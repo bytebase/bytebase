@@ -1,9 +1,8 @@
 import type {
   AutomatedReviewer,
   AutomatedReviewRow,
-  FindingAction,
-  FindingSet,
-  ReviewerFindings,
+  FindingGroup,
+  FindingPriority,
 } from "./planGates";
 
 type T = (key: string, options?: Record<string, unknown>) => string;
@@ -25,41 +24,41 @@ export const reviewerLabel = (t: T, reviewer: AutomatedReviewer): string => {
   }
 };
 
-export const findingSetLabel = (t: T, set: FindingSet): string => {
-  switch (set) {
-    case "fix":
-      return t("plan.findings.set.fix");
-    case "confirm":
-      return t("plan.findings.set.confirm");
-    case "advice":
-      return t("plan.findings.set.advice");
+export const findingGroupLabel = (t: T, group: FindingGroup): string => {
+  switch (group) {
+    case "p0":
+    case "p1":
+    case "p2":
+      return group.toUpperCase();
+    case "open":
+      return t("plan.findings.set.open");
     case "overridden":
       return t("plan.findings.set.overridden");
-    case "accepted":
-      return t("plan.findings.set.accepted");
-    case "dismissed":
-      return t("plan.findings.set.dismissed");
+    case "resolved":
+      return t("plan.findings.set.resolved");
     case "earlier":
       return t("plan.findings.set.earlier");
   }
 };
 
-const ACTIONS: readonly FindingAction[] = ["fix", "confirm", "advice"];
+export const isPlanCheckRow = (row: AutomatedReviewRow): boolean =>
+  row.reviewer !== "rule" && row.reviewer !== "ai";
 
-// The open findings by what they ask, largest stakes first: "1 must fix".
-export const openActionParts = (
-  t: T,
-  findings: ReviewerFindings
-): { action: FindingAction; label: string }[] =>
-  ACTIONS.filter((action) => findings[action] > 0).map((action) => ({
-    action,
-    label:
-      action === "fix"
-        ? t("plan.findings.n-fix", { count: findings.fix })
-        : action === "confirm"
-          ? t("plan.findings.n-confirm", { count: findings.confirm })
-          : t("plan.findings.n-advice", { count: findings.advice }),
-  }));
+const PRIORITIES: readonly FindingPriority[] = ["p0", "p1", "p2"];
+
+// A reviewer's open findings, P0 first: "1 P0, 2 P1". A plan check reports
+// errors rather than priorities.
+export const openFindingsLabel = (t: T, row: AutomatedReviewRow): string =>
+  isPlanCheckRow(row)
+    ? t("plan.automated-review.n-errors", { count: row.findings.open })
+    : PRIORITIES.filter((priority) => row.findings[priority] > 0)
+        .map((priority) =>
+          t("plan.findings.n-priority", {
+            count: row.findings[priority],
+            priority: priority.toUpperCase(),
+          })
+        )
+        .join(t("plan.findings.separator"));
 
 // A held reviewer as a line of what the rollout waits on.
 export const reviewGateLabel = (t: T, row: AutomatedReviewRow): string => {
@@ -68,9 +67,7 @@ export const reviewGateLabel = (t: T, row: AutomatedReviewRow): string => {
     case "open":
       return t("plan.deploy-waiting.reviewer-findings", {
         reviewer,
-        findings: openActionParts(t, row.findings)
-          .map((part) => part.label)
-          .join(t("plan.findings.separator")),
+        findings: openFindingsLabel(t, row),
       });
     case "failed":
       return t("plan.deploy-waiting.reviewer-failed", { reviewer });
@@ -84,35 +81,28 @@ export const reviewGateLabel = (t: T, row: AutomatedReviewRow): string => {
 };
 
 // A reviewer's conclusion in a collapsed summary, saying what people decided
-// about its findings: "Standard rules: 2 accepted, 1 resolved without a change".
+// about its findings: "Standard rules: 2 resolved, 1 P0 resolved without a
+// change".
 export const reviewSummaryPart = (t: T, row: AutomatedReviewRow): string => {
   const reviewer = reviewerLabel(t, row.reviewer);
   const { findings } = row;
   let status: string;
   switch (row.conclusion) {
     case "open":
-      status = openActionParts(t, findings)
-        .map((part) => part.label)
-        .join(t("plan.findings.separator"));
+      status = openFindingsLabel(t, row);
       break;
-    case "resolved": {
-      const accepted = findings.accepted.reduce(
-        (sum, group) => sum + group.count,
-        0
-      );
+    case "resolved":
       status = [
-        accepted > 0 ? t("plan.findings.n-accepted", { count: accepted }) : "",
+        findings.resolved > 0
+          ? t("plan.findings.n-resolved", { count: findings.resolved })
+          : "",
         findings.overridden > 0
           ? t("plan.findings.n-overridden", { count: findings.overridden })
-          : "",
-        findings.dismissed > 0
-          ? t("plan.findings.n-dismissed", { count: findings.dismissed })
           : "",
       ]
         .filter(Boolean)
         .join(t("plan.findings.separator"));
       break;
-    }
     case "passed":
       status = t("plan.automated-review.passed");
       break;

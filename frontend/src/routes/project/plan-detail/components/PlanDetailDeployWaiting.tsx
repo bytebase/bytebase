@@ -122,7 +122,7 @@ function GateLine({ gate }: { gate: PlanGate }) {
         row.conclusion === "open" ? (
           <CircleAlert
             className={
-              row.findings.fix > 0 ? "size-4 text-error" : "size-4 text-warning"
+              row.findings.p0 > 0 ? "size-4 text-error" : "size-4 text-warning"
             }
           />
         ) : row.conclusion === "running" || row.conclusion === "loading" ? (

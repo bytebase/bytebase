@@ -1,9 +1,11 @@
+import type { TFunction } from "i18next";
 import {
   CircleAlert,
   CircleCheck,
   CircleDashed,
   CircleX,
   EllipsisVertical,
+  Info,
   Loader2,
   Play,
   RotateCw,
@@ -27,6 +29,7 @@ import {
   AlertDialogFooter,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { badgeVariants } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -34,12 +37,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/app";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
 import {
   type IssueComment,
+  IssueComment_ReviewMetadata_Priority,
   ReviewRun_Status,
   ReviewRun_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
@@ -58,21 +63,28 @@ import {
 } from "../../shared/stores/usePlanDetailStore";
 import { PROJECT_NAME_PREFIX } from "../../shell/constants";
 import { usePlanDetailContext } from "../../shell/PlanDetailContext";
-import { findingsInOrder } from "../../utils/findingIndex";
+import { countByName, findingsInOrder } from "../../utils/findingIndex";
 import {
   type AutomatedReviewer,
   type AutomatedReviewRow,
-  type FindingSet,
+  type FindingGroup,
+  type FindingPriority,
   findingTitle,
+  resolvedByPeople,
   rowNeedsAttention,
 } from "../../utils/planGates";
-import { openActionParts, reviewerLabel } from "../../utils/reviewLabels";
+import { openFindingsLabel, reviewerLabel } from "../../utils/reviewLabels";
 import { reviewScope } from "../../utils/reviewScope";
-import { ReviewerIcon, reviewerName } from "../threads/ReviewResult";
+import {
+  priorityStyle,
+  ReviewerIcon,
+  reviewerName,
+} from "../threads/ReviewResult";
 
-// How many overridden findings the warning names before it counts the rest.
+// How many P0s resolved without a change a hover names before it counts the
+// rest.
 const NAMED_OVERRIDES = 3;
-// How many databases the scope line names before it counts them.
+// How many databases the scope names before it counts them.
 const NAMED_DATABASES = 3;
 const NO_COMMENTS: IssueComment[] = [];
 
@@ -83,11 +95,10 @@ const runTypeOf = (reviewer: AutomatedReviewer): ReviewRun_Type | undefined =>
       ? ReviewRun_Type.AI
       : undefined;
 
-// The machine reviewers, one row each, between Approval and Activity. Each
-// row gives one conclusion and what is left to do, split by what a finding
-// asks: fix the change, accept a risk, or consider advice. Below it, what
-// people already decided, which the editor folds away, and what the reviewer
-// covered. The findings themselves live in the editor; every count opens it.
+// The machine reviewers, one line each, between Approval and Activity: the
+// conclusion, the open findings by priority, what people resolved, and what
+// the reviewer covered on hover. The findings themselves live in the editor;
+// every count opens it there.
 export function AutomatedReviewSection({ state }: { state: PlanReviewState }) {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
@@ -97,8 +108,8 @@ export function AutomatedReviewSection({ state }: { state: PlanReviewState }) {
   const attention = rows.filter(rowNeedsAttention).length;
   const [checksDrawerOpen, setChecksDrawerOpen] = useState(false);
   const [confirmChecks, setConfirmChecks] = useState(false);
-  const ruleResolved =
-    rows.find((row) => row.reviewer === "rule")?.findings.resolved ?? 0;
+  const ruleRow = rows.find((row) => row.reviewer === "rule");
+  const ruleResolved = ruleRow ? resolvedByPeople(ruleRow.findings) : 0;
 
   // Running the checks also starts the rule review on the server, which
   // posts its findings again and reopens what people resolved.
@@ -273,13 +284,13 @@ function ReviewerRow({
     rowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [reviewRowRequest, row.reviewer]);
 
-  // A count opens the editor on the first finding of its set and narrows
-  // the walker to that set.
-  const openSet = (set: FindingSet) => {
+  // A count opens the editor on the first finding of its group and narrows
+  // the walker to that group.
+  const openGroup = (group: FindingGroup) => {
     if (runType === undefined) return;
-    const first = findingsInOrder(comments, runType, page.plan.specs, set)[0];
+    const first = findingsInOrder(comments, runType, page.plan.specs, group)[0];
     if (!first) return;
-    storeApi.getState().setWalkerFilter({ runType, set });
+    storeApi.getState().setWalkerFilter({ runType, group });
     focusInStatement(first);
   };
 
@@ -320,7 +331,7 @@ function ReviewerRow({
     ) {
       // A rerun posts the findings again, reopening what people resolved.
       const start = () => {
-        if (row.findings.resolved > 0) setConfirm("rule");
+        if (resolvedByPeople(row.findings) > 0) setConfirm("rule");
         else void rerunRule.run();
       };
       actions.push(
@@ -344,13 +355,17 @@ function ReviewerRow({
     const settled =
       ai.run?.status === ReviewRun_Status.DONE && !ai.run.outdated;
     actions.push(
-      <RunButton
-        conclusion={settled ? "passed" : row.conclusion}
-        disabled={!ai.canStart}
+      <Tooltip
+        content={ai.editing ? t("plan.ai-review.save-first") : undefined}
         key="run"
-        label={settled ? undefined : t("plan.ai-review.run")}
-        onClick={() => (settled ? setConfirm("ai") : void ai.runReview())}
-      />
+      >
+        <RunButton
+          conclusion={settled ? "passed" : row.conclusion}
+          disabled={!ai.canStart}
+          label={settled ? undefined : t("plan.ai-review.run")}
+          onClick={() => (settled ? setConfirm("ai") : void ai.runReview())}
+        />
+      </Tooltip>
     );
   }
   // Plan checks run together, and the run restarts the rule review too.
@@ -378,65 +393,36 @@ function ReviewerRow({
     );
   }
 
-  const details: ReactNode[] = [];
-  if (row.reviewer === "ai" && ai.allowRun && ai.editing) {
-    details.push(
-      <p className="text-xs text-control-light" key="save-first">
-        {t("plan.ai-review.save-first")}
-      </p>
-    );
-  }
-  const { findings } = row;
-  const decided =
-    findings.overridden > 0 ||
-    findings.accepted.length > 0 ||
-    findings.dismissed > 0 ||
-    findings.earlier > 0;
-  if (runType !== undefined && decided) {
-    details.push(
-      <FindingDecisions
-        comments={comments}
-        key="decisions"
-        onOpen={openSet}
-        row={row}
-        runType={runType}
-      />
-    );
-  }
   // A reviewer without a result has covered nothing yet.
   const hasResult =
     row.conclusion !== "not-run" &&
     row.conclusion !== "loading" &&
     row.conclusion !== "running";
-  if ((row.reviewer === "rule" || row.reviewer === "ai") && hasResult) {
-    details.push(<ScopeLine key="scope" reviewer={row.reviewer} />);
-  }
 
   return (
     <div
-      className="flex flex-col gap-y-1 px-3 py-2.5 text-sm"
+      className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-sm"
       data-testid={`automated-review-${row.reviewer}`}
       ref={rowRef}
     >
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <ConclusionIcon row={row} />
-        <span className="flex w-44 shrink-0 items-center gap-x-1.5 font-medium text-main">
-          {name}
-        </span>
-        <span className="min-w-0 flex-1 text-control">
-          <ConclusionText onOpen={openSet} row={row} />
-        </span>
-        {actions.length > 0 && (
-          <span className="flex shrink-0 items-center gap-x-2">{actions}</span>
+      <ConclusionIcon row={row} />
+      <span className="flex flex-1 items-center gap-x-1.5 font-medium text-main sm:w-44 sm:flex-none">
+        {name}
+      </span>
+      {/* Below the name on a narrow screen, lined up with it. */}
+      <span className="order-last flex min-w-0 basis-full flex-wrap items-center gap-x-1.5 gap-y-1 pl-7 text-control sm:order-none sm:flex-1 sm:pl-0">
+        <ConclusionText
+          comments={comments}
+          onOpen={openGroup}
+          row={row}
+          runType={runType}
+        />
+        {(row.reviewer === "rule" || row.reviewer === "ai") && hasResult && (
+          <ScopeInfo reviewer={row.reviewer} />
         )}
-      </div>
-      {details.length > 0 && (
-        <div className="flex gap-x-3">
-          {/* Lines up with the conclusion, past the icon and the name. */}
-          <span className="size-4 shrink-0" />
-          <span className="hidden w-44 shrink-0 sm:block" />
-          <div className="flex min-w-0 flex-1 flex-col gap-y-1">{details}</div>
-        </div>
+      </span>
+      {actions.length > 0 && (
+        <span className="flex shrink-0 items-center gap-x-2">{actions}</span>
       )}
       <RerunConfirmDialog
         confirmLabel={t("plan.automated-review.rerun")}
@@ -444,7 +430,7 @@ function ReviewerRow({
           confirm === "ai"
             ? t("plan.ai-review.run-again-description")
             : t("plan.automated-review.rerun-reopens", {
-                count: row.findings.resolved,
+                count: resolvedByPeople(row.findings),
               })
         }
         disabled={confirm === "ai" ? !ai.canStart : rerunRule.disabled}
@@ -519,7 +505,7 @@ function ConclusionIcon({ row }: { row: AutomatedReviewRow }) {
         <CircleAlert
           className={cn(
             className,
-            row.findings.fix > 0 ? "text-error" : "text-warning"
+            row.findings.p0 > 0 ? "text-error" : "text-warning"
           )}
         />
       );
@@ -535,45 +521,133 @@ function ConclusionIcon({ row }: { row: AutomatedReviewRow }) {
   }
 }
 
-function CountLink({
+const PRIORITY: Record<FindingPriority, IssueComment_ReviewMetadata_Priority> =
+  {
+    p0: IssueComment_ReviewMetadata_Priority.P0,
+    p1: IssueComment_ReviewMetadata_Priority.P1,
+    p2: IssueComment_ReviewMetadata_Priority.P2,
+  };
+const PRIORITIES: readonly FindingPriority[] = ["p0", "p1", "p2"];
+
+// A count of findings that opens them in the statement editor, with what
+// they are and where the click goes on hover.
+function FindingCount({
   label,
+  hint,
+  className,
   onClick,
-  emphasis = false,
+  children,
 }: {
   label: string;
+  hint: ReactNode;
+  className?: string;
   onClick: () => void;
-  emphasis?: boolean;
+  children: ReactNode;
 }) {
+  const { t } = useTranslation();
   return (
-    <Button
-      appearance="link"
-      className={cn(
-        "h-auto p-0 text-sm text-main underline decoration-control-border underline-offset-2",
-        emphasis && "font-medium"
-      )}
-      onClick={onClick}
-      size="xs"
+    <Tooltip
+      content={
+        <span className="flex flex-col gap-y-1">
+          {hint}
+          <span className="text-main-text/70">
+            {t("plan.automated-review.opens-in-sql")}
+          </span>
+        </span>
+      }
+      popupClassName="max-w-72"
+      render={
+        <Button
+          appearance="link"
+          aria-label={label}
+          className={cn("h-auto p-0 font-normal", className)}
+          onClick={onClick}
+          size="xs"
+        />
+      }
     >
-      {label}
-    </Button>
+      {children}
+    </Tooltip>
   );
+}
+
+// A finding's name: its rule, or for the AI review, its title.
+const findingName = (t: TFunction, comment: IssueComment): string => {
+  const ruleType =
+    comment.reviewMetadata?.ruleType ??
+    ReviewRuleType.REVIEW_RULE_TYPE_UNSPECIFIED;
+  return ruleType === ReviewRuleType.REVIEW_RULE_TYPE_UNSPECIFIED
+    ? findingTitle(comment)
+    : standardRuleText(t, ruleType).title;
+};
+
+// The names of a group's findings for a hover: by line for the few P0s that
+// need a look, by count per rule for the rest.
+function useGroupNames(
+  comments: readonly IssueComment[],
+  runType: ReviewRun_Type | undefined,
+  group: "overridden" | "resolved",
+  count: number
+): string {
+  const { t } = useTranslation();
+  const page = usePlanDetailContext();
+  return useMemo(() => {
+    if (runType === undefined || count === 0) return "";
+    const findings = findingsInOrder(comments, runType, page.plan.specs, group);
+    if (group === "overridden") {
+      const named = findings.slice(0, NAMED_OVERRIDES).map((comment) => {
+        const line = comment.statementAnchor?.startPosition?.line;
+        return line
+          ? t("plan.findings.name-at-line", {
+              name: findingName(t, comment),
+              line,
+            })
+          : findingName(t, comment);
+      });
+      const rest = findings.length - named.length;
+      if (rest > 0) named.push(t("plan.findings.n-more", { count: rest }));
+      return named.join(t("plan.findings.separator"));
+    }
+    return countByName(findings, (comment) => findingName(t, comment))
+      .map(([name, times]) =>
+        times > 1 ? t("plan.findings.name-times", { name, count: times }) : name
+      )
+      .join(t("plan.findings.separator"));
+  }, [comments, count, group, page.plan.specs, runType, t]);
 }
 
 function ConclusionText({
   row,
+  runType,
+  comments,
   onOpen,
 }: {
   row: AutomatedReviewRow;
-  onOpen: (set: FindingSet) => void;
+  runType: ReviewRun_Type | undefined;
+  comments: readonly IssueComment[];
+  onOpen: (group: FindingGroup) => void;
 }) {
   const { t } = useTranslation();
+  const { findings } = row;
+  const overriddenNames = useGroupNames(
+    comments,
+    runType,
+    "overridden",
+    findings.overridden
+  );
+  const resolvedNames = useGroupNames(
+    comments,
+    runType,
+    "resolved",
+    findings.resolved
+  );
   const time = row.time && (
     <HumanizeTs
       className="text-control-light"
       tsMs={getTimeForPbTimestampProtoEs(row.time)}
     />
   );
-  const isPlanCheck = runTypeOf(row.reviewer) === undefined;
+  const isPlanCheck = runType === undefined;
   const parts: ReactNode[] = [];
   switch (row.conclusion) {
     case "loading":
@@ -590,7 +664,7 @@ function ConclusionText({
       break;
     case "failed":
       parts.push(
-        <span className="break-words text-main" key="error">
+        <span className="break-words whitespace-normal text-main" key="error">
           {row.error || t("plan.automated-review.failed")}
         </span>
       );
@@ -607,24 +681,64 @@ function ConclusionText({
         );
       }
       break;
-    case "resolved":
-      parts.push(t("plan.automated-review.no-open-findings"));
-      break;
     case "open":
-      for (const part of openActionParts(t, row.findings)) {
+    case "resolved":
+      if (isPlanCheck) {
         parts.push(
-          isPlanCheck ? (
-            <span className="font-medium text-main" key={part.action}>
-              {part.label}
-            </span>
-          ) : (
-            <CountLink
-              emphasis={part.action !== "advice"}
-              key={part.action}
-              label={part.label}
-              onClick={() => onOpen(part.action)}
-            />
-          )
+          <span className="font-medium text-main" key="errors">
+            {openFindingsLabel(t, row)}
+          </span>
+        );
+        if (row.warnings) {
+          parts.push(
+            t("plan.automated-review.n-warnings", { count: row.warnings })
+          );
+        }
+        break;
+      }
+      if (findings.open > 0) {
+        parts.push(
+          <span className="flex items-center gap-x-1.5" key="open">
+            {PRIORITIES.filter((priority) => findings[priority] > 0).map(
+              (priority) => (
+                <PriorityCount
+                  count={findings[priority]}
+                  key={priority}
+                  onClick={() => onOpen(priority)}
+                  priority={priority}
+                />
+              )
+            )}
+          </span>
+        );
+      }
+      if (findings.resolved > 0) {
+        parts.push(
+          <FindingCount
+            className="text-sm text-control underline decoration-control-border underline-offset-2 hover:text-main"
+            hint={resolvedNames}
+            key="resolved"
+            label={t("plan.findings.n-resolved", { count: findings.resolved })}
+            onClick={() => onOpen("resolved")}
+          >
+            {t("plan.findings.n-resolved", { count: findings.resolved })}
+          </FindingCount>
+        );
+      }
+      if (findings.overridden > 0) {
+        parts.push(
+          <FindingCount
+            className="text-sm text-main underline decoration-warning underline-offset-2"
+            hint={overriddenNames}
+            key="overridden"
+            label={t("plan.findings.n-overridden", {
+              count: findings.overridden,
+            })}
+            onClick={() => onOpen("overridden")}
+          >
+            <TriangleAlert className="size-3.5 shrink-0 text-warning" />
+            {t("plan.findings.n-overridden", { count: findings.overridden })}
+          </FindingCount>
         );
       }
       break;
@@ -633,139 +747,51 @@ function ConclusionText({
     parts.push(time);
   }
   return (
-    <span className="flex flex-wrap items-center gap-x-1.5">
+    <>
       {parts.map((part, index) => (
-        <span className="flex items-center gap-x-1.5" key={index}>
+        <span
+          className="flex items-center gap-x-1.5 whitespace-nowrap"
+          key={index}
+        >
           {index > 0 && <span className="text-control-light">·</span>}
           {part}
         </span>
       ))}
-    </span>
+    </>
   );
 }
 
-// What people decided about the latest run's findings, which the editor
-// folds away: a P0 resolved without a change first, since an approver must
-// look at it, then the risks people accepted by rule, then counts only for
-// dismissed advice and earlier runs.
-function FindingDecisions({
-  row,
-  runType,
-  comments,
-  onOpen,
+// "P0 2", colored as the priority badge on each finding.
+function PriorityCount({
+  priority,
+  count,
+  onClick,
 }: {
-  row: AutomatedReviewRow;
-  runType: ReviewRun_Type;
-  comments: readonly IssueComment[];
-  onOpen: (set: FindingSet) => void;
+  priority: FindingPriority;
+  count: number;
+  onClick: () => void;
 }) {
   const { t } = useTranslation();
-  const page = usePlanDetailContext();
-  const { findings } = row;
-  const findingName = (comment: IssueComment) => {
-    const ruleType =
-      comment.reviewMetadata?.ruleType ??
-      ReviewRuleType.REVIEW_RULE_TYPE_UNSPECIFIED;
-    return ruleType === ReviewRuleType.REVIEW_RULE_TYPE_UNSPECIFIED
-      ? findingTitle(comment)
-      : standardRuleText(t, ruleType).title;
-  };
-  const overridden = useMemo(
-    () =>
-      findings.overridden > 0
-        ? findingsInOrder(comments, runType, page.plan.specs, "overridden")
-        : [],
-    [comments, findings.overridden, page.plan.specs, runType]
+  const style = priorityStyle(t, PRIORITY[priority]);
+  return (
+    <FindingCount
+      className={badgeVariants({ variant: style?.variant })}
+      hint={style?.description}
+      label={t("plan.findings.n-priority", {
+        count,
+        priority: priority.toUpperCase(),
+      })}
+      onClick={onClick}
+    >
+      {priority.toUpperCase()}
+      <span className="font-semibold">{count}</span>
+    </FindingCount>
   );
-
-  const lines: ReactNode[] = [];
-  if (overridden.length > 0) {
-    const named = overridden.slice(0, NAMED_OVERRIDES).map((comment) => {
-      const line = comment.statementAnchor?.startPosition?.line;
-      return line
-        ? t("plan.findings.name-at-line", {
-            name: findingName(comment),
-            line,
-          })
-        : findingName(comment);
-    });
-    const rest = overridden.length - named.length;
-    lines.push(
-      <p
-        className="flex items-start gap-x-1.5 text-main"
-        data-testid="findings-overridden"
-        key="overridden"
-      >
-        <TriangleAlert className="mt-0.5 size-4 shrink-0 text-warning" />
-        <span className="min-w-0">
-          <CountLink
-            emphasis
-            label={t("plan.findings.overridden-warning", {
-              count: overridden.length,
-            })}
-            onClick={() => onOpen("overridden")}
-          />{" "}
-          <span className="text-control">
-            {named.join(t("plan.findings.separator"))}
-            {rest > 0 &&
-              `${t("plan.findings.separator")}${t("plan.findings.n-more", {
-                count: rest,
-              })}`}
-          </span>
-        </span>
-      </p>
-    );
-  }
-  if (findings.accepted.length > 0) {
-    const accepted = findings.accepted.reduce(
-      (sum, group) => sum + group.count,
-      0
-    );
-    lines.push(
-      <p
-        className="text-control"
-        data-testid="findings-accepted"
-        key="accepted"
-      >
-        <CountLink
-          label={t("plan.findings.accepted", { count: accepted })}
-          onClick={() => onOpen("accepted")}
-        />{" "}
-        {findings.accepted
-          .map((group) => {
-            const name =
-              group.ruleType === ReviewRuleType.REVIEW_RULE_TYPE_UNSPECIFIED
-                ? group.title
-                : standardRuleText(t, group.ruleType).title;
-            return group.count > 1
-              ? t("plan.findings.name-times", { name, count: group.count })
-              : name;
-          })
-          .join(t("plan.findings.separator"))}
-      </p>
-    );
-  }
-  const counts = [
-    findings.dismissed > 0
-      ? t("plan.findings.n-dismissed", { count: findings.dismissed })
-      : "",
-    findings.earlier > 0
-      ? t("plan.findings.n-earlier", { count: findings.earlier })
-      : "",
-  ].filter(Boolean);
-  if (counts.length > 0) {
-    lines.push(
-      <p className="text-xs text-control-light" key="counts">
-        {counts.join(" · ")}
-      </p>
-    );
-  }
-  return lines.length > 0 ? <>{lines}</> : null;
 }
 
-// What the reviewer covered: the databases, and for the rule review, the
-// rules it applies. A "No findings" means little without it.
-function ScopeLine({ reviewer }: { reviewer: "rule" | "ai" }) {
+// What the reviewer covered, on hover: the databases, and for the rule
+// review, the rules it applies. A "No findings" means little without it.
+function ScopeInfo({ reviewer }: { reviewer: "rule" | "ai" }) {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
   const databasesByName = useAppStore((s) => s.databasesByName);
@@ -807,7 +833,7 @@ function ScopeLine({ reviewer }: { reviewer: "rule" | "ai" }) {
       : t("plan.automated-review.n-databases", {
           count: scope.databases.length,
         });
-  const parts = [
+  const lines = [
     scope.engines.length > 0
       ? t("plan.automated-review.scope-with-engines", {
           databases: names,
@@ -816,7 +842,7 @@ function ScopeLine({ reviewer }: { reviewer: "rule" | "ai" }) {
       : t("plan.automated-review.scope", { databases: names }),
   ];
   if (scope.total > scope.databases.length) {
-    parts.push(
+    lines.push(
       t("plan.automated-review.sampled", {
         count: scope.databases.length,
         total: scope.total,
@@ -828,15 +854,32 @@ function ScopeLine({ reviewer }: { reviewer: "rule" | "ai" }) {
       on: rules.rules.length,
       total: STANDARD_RULE_TYPES.length,
     };
-    parts.push(
+    lines.push(
       rules.source === "project"
         ? t("plan.automated-review.project-rules", counts)
         : t("plan.automated-review.workspace-rules", counts)
     );
   }
   return (
-    <p className="text-xs text-control-light" data-testid="review-scope">
-      {parts.join(" · ")}
-    </p>
+    <Tooltip
+      content={
+        <span className="flex flex-col gap-y-1" data-testid="review-scope">
+          {lines.map((line) => (
+            <span key={line}>{line}</span>
+          ))}
+        </span>
+      }
+      popupClassName="max-w-72"
+      render={
+        <Button
+          appearance="link"
+          aria-label={t("plan.automated-review.scope-label")}
+          className="h-auto cursor-help p-0 text-control-light hover:text-control"
+          size="xs"
+        />
+      }
+    >
+      <Info className="size-3.5" />
+    </Tooltip>
   );
 }

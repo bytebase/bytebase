@@ -503,7 +503,7 @@ function AutomatedReviewGateRow({
   let icon: ReactNode;
   if (held.some((row) => row.conclusion === "failed")) {
     icon = <CircleX className="size-5 shrink-0 text-error" />;
-  } else if (held.some((row) => row.findings.fix > 0)) {
+  } else if (held.some((row) => row.findings.p0 > 0)) {
     icon = <CircleAlert className="size-5 shrink-0 text-error" />;
   } else if (
     held.length > 0 &&

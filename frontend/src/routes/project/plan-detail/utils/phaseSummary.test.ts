@@ -32,8 +32,8 @@ const templates: Record<string, string> = {
   "plan.summary.n-warning": "{{n}} warning",
   "plan.summary.approved-by": "Approved by {{names}}",
   "plan.summary.no-approval-required": "No approval required",
-  "plan.findings.n-accepted": "{{count}} accepted",
-  "plan.findings.n-overridden": "{{count}} resolved without a change",
+  "plan.findings.n-resolved": "{{count}} resolved",
+  "plan.findings.n-overridden": "{{count}} P0 resolved without a change",
   "plan.findings.separator": ", ",
   "plan.automated-review.summary-part": "{{reviewer}}: {{status}}",
   "plan.deploy-waiting.open-discussions": "{{count}} open discussions",
@@ -345,12 +345,7 @@ describe("SQL Review V2 summaries", () => {
     run: null,
     stale: false,
     loadFailed: false,
-    findings: {
-      ...emptyFindings(),
-      resolved: 3,
-      overridden: 1,
-      accepted: [{ key: "rule:7", ruleType: 7, title: "", count: 2 }],
-    },
+    findings: { ...emptyFindings(), resolved: 2, overridden: 1 },
   });
 
   test("names the approvers and each reviewer's conclusion", () => {
@@ -371,7 +366,7 @@ describe("SQL Review V2 summaries", () => {
         0
       )
     ).toBe(
-      "Approved by alex, dana · Standard rules: 2 accepted, 1 resolved without a change"
+      "Approved by alex, dana · Standard rules: 2 resolved, 1 P0 resolved without a change"
     );
   });
 

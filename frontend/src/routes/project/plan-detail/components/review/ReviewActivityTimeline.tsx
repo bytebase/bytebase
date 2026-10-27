@@ -37,10 +37,7 @@ import {
 import { projectNamePrefix } from "@/stores/modules/v1/common";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { Issue, IssueComment } from "@/types/proto-es/v1/issue_service_pb";
-import {
-  IssueComment_ThreadState,
-  ReviewRun_Type,
-} from "@/types/proto-es/v1/issue_service_pb";
+import { IssueComment_ThreadState } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import { sqlReviewV2Enabled } from "@/utils/featureGates";
 import { hasProjectPermissionV2 } from "@/utils/iam/permission";
@@ -52,6 +49,7 @@ import {
   usePlanDetailStoreApi,
 } from "../../shared/stores/usePlanDetailStore";
 import { usePlanDetailContext } from "../../shell/PlanDetailContext";
+import { findingsInOrder } from "../../utils/findingIndex";
 import { PlanSpecChangeReference } from "../PlanChangeReference";
 import { CommentThreadCard } from "../threads/CommentThreadCard";
 import { ReviewerIcon, reviewerName } from "../threads/ReviewResult";
@@ -283,7 +281,7 @@ function ActivityRow({
 }) {
   const source = entry.source;
   if (source.type === "review-run") {
-    return <ReviewRunActivityRow isLast={isLast} source={source} />;
+    return <ReviewRunActivityRow isLast={isLast} plan={plan} source={source} />;
   }
   if (source.type === "comment" && isThreadRoot(source.comment)) {
     const thread = threads.find(
@@ -324,20 +322,37 @@ function ActivityRow({
   );
 }
 
-// One line per run: how many findings it posted and how many are still
-// open. "Show" opens the reviewer's row in Automated review.
+// One line per run in place of a card per finding, which the editor shows:
+// how many findings it posted and how many are still open. "Show" steps
+// through the open ones in the editor.
 function ReviewRunActivityRow({
   isLast,
+  plan,
   source,
 }: {
   isLast: boolean;
+  plan: Plan;
   source: Extract<TimelineSource, { type: "review-run" }>;
 }) {
   const { t } = useTranslation();
   const storeApi = usePlanDetailStoreApi();
+  const { focusInStatement } = useFocusThread();
   const open = source.findings.filter(
     (finding) => finding.threadState === IssueComment_ThreadState.OPEN
   ).length;
+  const showOpen = () => {
+    const first = findingsInOrder(
+      source.findings,
+      source.runType,
+      plan.specs,
+      "open"
+    )[0];
+    if (!first) return;
+    storeApi
+      .getState()
+      .setWalkerFilter({ runType: source.runType, group: "open" });
+    focusInStatement(first);
+  };
   return (
     <ActivityRowShell
       header={
@@ -360,20 +375,16 @@ function ReviewRunActivityRow({
             className="text-xs text-control-light"
             tsMs={getTimeForPbTimestampProtoEs(source.time)}
           />
-          <Button
-            appearance="link"
-            className="text-control-light"
-            onClick={() =>
-              storeApi
-                .getState()
-                .requestReviewRow(
-                  source.runType === ReviewRun_Type.AI ? "ai" : "rule"
-                )
-            }
-            size="xs"
-          >
-            {t("plan.deploy-waiting.show")}
-          </Button>
+          {open > 0 && (
+            <Button
+              appearance="link"
+              className="text-control-light"
+              onClick={showOpen}
+              size="xs"
+            >
+              {t("plan.deploy-waiting.show")}
+            </Button>
+          )}
         </>
       }
       icon={

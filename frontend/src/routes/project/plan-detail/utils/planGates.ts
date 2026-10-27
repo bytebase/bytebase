@@ -20,7 +20,6 @@ import {
   PlanCheckRun_Result_Type,
   PlanCheckRun_Status,
 } from "@/types/proto-es/v1/plan_service_pb";
-import { ReviewRuleType } from "@/types/proto-es/v1/review_rule_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 
 export type AutomatedReviewer =
@@ -45,43 +44,27 @@ export type ReviewConclusion =
   | "resolved"
   | "passed";
 
-// What a finding asks of people, from the priority its reviewer gave it: P0
-// says the change is wrong and must change, P1 that a person must accept a
-// real risk, P2 is advice.
-export type FindingAction = "fix" | "confirm" | "advice";
+// A finding's priority as its reviewer gave it: P0 says the SQL is wrong and
+// must change, P1 that a person must accept a real risk, P2 is advice.
+export type FindingPriority = "p0" | "p1" | "p2";
 
-// Where a finding stands. Open findings by what they ask; the latest run's
-// resolved findings by what resolving them meant: a P0 resolved without a
-// change is overridden, a P1 accepted, a P2 dismissed. A run supersedes and
-// resolves everything its reviewer posted before, so a resolved finding of
-// the latest run was resolved by a person on the current SQL.
+// Where a finding stands: open findings by priority, and the latest run's
+// resolved findings, where a P0 resolved without a change stands apart. A
+// run supersedes and resolves everything its reviewer posted before, so a
+// resolved finding of the latest run was resolved by a person on the
+// current SQL.
 export type FindingSet =
-  | FindingAction
+  | FindingPriority
   | "overridden"
-  | "accepted"
-  | "dismissed"
+  | "resolved"
   | "earlier";
 
-// The accepted findings of one rule, or for the AI review, of one title.
-export interface AcceptedGroup {
-  key: string;
-  ruleType: ReviewRuleType;
-  title: string;
-  count: number;
-}
+// What a count or the walker covers: one set, or every open finding.
+export type FindingGroup = FindingSet | "open";
 
-export interface ReviewerFindings {
+// The number of a reviewer's findings in each set.
+export interface ReviewerFindings extends Record<FindingSet, number> {
   open: number;
-  fix: number;
-  confirm: number;
-  advice: number;
-  // The latest run's findings people resolved.
-  resolved: number;
-  overridden: number;
-  accepted: AcceptedGroup[];
-  dismissed: number;
-  // Resolved findings of earlier runs.
-  earlier: number;
 }
 
 export interface AutomatedReviewRow {
@@ -104,28 +87,33 @@ export type PlanGate =
   | { kind: "review"; row: AutomatedReviewRow }
   | { kind: "discussion"; open: number };
 
-export const findingAction = (
+export const findingPriority = (
   priority: IssueComment_ReviewMetadata_Priority
-): FindingAction =>
+): FindingPriority =>
   priority === IssueComment_ReviewMetadata_Priority.P0
-    ? "fix"
+    ? "p0"
     : priority === IssueComment_ReviewMetadata_Priority.P2
-      ? "advice"
-      : "confirm";
-
-const RESOLVED_SET: Record<FindingAction, FindingSet> = {
-  fix: "overridden",
-  confirm: "accepted",
-  advice: "dismissed",
-};
+      ? "p2"
+      : "p1";
 
 // The set a reviewer's finding belongs to; undefined for anything else.
 export function findingSetOf(comment: IssueComment): FindingSet | undefined {
   const review = comment.reviewMetadata;
   if (!review || !isThreadRoot(comment)) return undefined;
-  const action = findingAction(review.priority);
-  if (comment.threadState === IssueComment_ThreadState.OPEN) return action;
-  return review.superseded ? "earlier" : RESOLVED_SET[action];
+  const priority = findingPriority(review.priority);
+  if (comment.threadState === IssueComment_ThreadState.OPEN) return priority;
+  if (review.superseded) return "earlier";
+  return priority === "p0" ? "overridden" : "resolved";
+}
+
+export function inFindingGroup(
+  comment: IssueComment,
+  group: FindingGroup
+): boolean {
+  const set = findingSetOf(comment);
+  return group === "open"
+    ? set === "p0" || set === "p1" || set === "p2"
+    : set === group;
 }
 
 // An AI finding names its rule in its text; its first line is the title.
@@ -137,15 +125,18 @@ export const findingTitle = (comment: IssueComment): string =>
 
 export const emptyFindings = (): ReviewerFindings => ({
   open: 0,
-  fix: 0,
-  confirm: 0,
-  advice: 0,
-  resolved: 0,
+  p0: 0,
+  p1: 0,
+  p2: 0,
   overridden: 0,
-  accepted: [],
-  dismissed: 0,
+  resolved: 0,
   earlier: 0,
 });
+
+// The latest run's findings people resolved, whatever their priority: what a
+// rerun reopens.
+export const resolvedByPeople = (findings: ReviewerFindings): number =>
+  findings.resolved + findings.overridden;
 
 const runTypeOf: Record<"rule" | "ai", ReviewRun_Type> = {
   rule: ReviewRun_Type.RULE,
@@ -160,43 +151,13 @@ export function countFindings(
 ): ReviewerFindings {
   const runType = runTypeOf[reviewer];
   const counts = emptyFindings();
-  const accepted = new Map<string, AcceptedGroup>();
   for (const comment of comments) {
     if (comment.reviewMetadata?.runType !== runType) continue;
     const set = findingSetOf(comment);
-    switch (set) {
-      case "fix":
-      case "confirm":
-      case "advice":
-        counts.open++;
-        counts[set]++;
-        break;
-      case "overridden":
-      case "dismissed":
-        counts.resolved++;
-        counts[set]++;
-        break;
-      case "accepted": {
-        counts.resolved++;
-        const ruleType =
-          comment.reviewMetadata?.ruleType ??
-          ReviewRuleType.REVIEW_RULE_TYPE_UNSPECIFIED;
-        const byRule = ruleType !== ReviewRuleType.REVIEW_RULE_TYPE_UNSPECIFIED;
-        const title = byRule ? "" : findingTitle(comment);
-        const key = byRule ? `rule:${ruleType}` : `title:${title}`;
-        const group = accepted.get(key);
-        if (group) group.count++;
-        else accepted.set(key, { key, ruleType, title, count: 1 });
-        break;
-      }
-      case "earlier":
-        counts.earlier++;
-        break;
-    }
+    if (!set) continue;
+    counts[set]++;
+    if (set === "p0" || set === "p1" || set === "p2") counts.open++;
   }
-  counts.accepted = [...accepted.values()].sort(
-    (a, b) => b.count - a.count || a.key.localeCompare(b.key)
-  );
   return counts;
 }
 
@@ -211,7 +172,11 @@ export function countOpenDiscussions(comments: readonly IssueComment[]) {
 }
 
 const findingsConclusion = (findings: ReviewerFindings): ReviewConclusion =>
-  findings.open > 0 ? "open" : findings.resolved > 0 ? "resolved" : "passed";
+  findings.open > 0
+    ? "open"
+    : resolvedByPeople(findings) > 0
+      ? "resolved"
+      : "passed";
 
 const runConclusion = (
   run: ReviewRun,
@@ -275,7 +240,7 @@ export function aiReviewRow(input: {
     run === undefined
       ? "loading"
       : run === null
-        ? findings.open + findings.resolved > 0
+        ? findings.open + resolvedByPeople(findings) > 0
           ? findingsConclusion(findings)
           : "not-run"
         : runConclusion(run, findings);
@@ -320,7 +285,7 @@ export function planCheckRow(
   return {
     reviewer,
     conclusion,
-    findings: { ...emptyFindings(), open: errors, fix: errors },
+    findings: { ...emptyFindings(), open: errors, p0: errors },
     holdsRollout: errors > 0,
     time: runs[0]?.createTime,
     targets: new Set(results.map((result) => result.target)).size,

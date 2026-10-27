@@ -11,7 +11,7 @@ import {
   StatementAnchorSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import { Plan_SpecSchema } from "@/types/proto-es/v1/plan_service_pb";
-import { findingsInOrder } from "./findingIndex";
+import { countByName, findingsInOrder } from "./findingIndex";
 
 const specs = [
   create(Plan_SpecSchema, { id: "spec-1" }),
@@ -46,32 +46,41 @@ const finding = (
     }),
   });
 
-test("lists one set of a reviewer's findings in change and line order", () => {
+test("lists one group of a reviewer's findings in change and line order", () => {
   const comments = [
     finding("other-change", { spec: "spec-2", line: 1 }),
     finding("whole-change"),
     finding("line-7", { line: 7 }),
     finding("line-2", { line: 2 }),
-    finding("must-fix", {
+    finding("p0", {
       line: 1,
       priority: IssueComment_ReviewMetadata_Priority.P0,
     }),
-    finding("accepted", { line: 3, resolved: true }),
+    finding("resolved", { line: 3, resolved: true }),
     finding("ai", { line: 1, runType: ReviewRun_Type.AI }),
   ];
   expect(
-    findingsInOrder(comments, ReviewRun_Type.RULE, specs, "confirm").map(
+    findingsInOrder(comments, ReviewRun_Type.RULE, specs, "p1").map(
       (comment) => comment.name
     )
   ).toEqual(["line-2", "line-7", "other-change", "whole-change"]);
   expect(
-    findingsInOrder(comments, ReviewRun_Type.RULE, specs, "fix").map(
+    findingsInOrder(comments, ReviewRun_Type.RULE, specs, "open").map(
       (comment) => comment.name
     )
-  ).toEqual(["must-fix"]);
+  ).toEqual(["p0", "line-2", "line-7", "other-change", "whole-change"]);
   expect(
-    findingsInOrder(comments, ReviewRun_Type.RULE, specs, "accepted").map(
+    findingsInOrder(comments, ReviewRun_Type.RULE, specs, "resolved").map(
       (comment) => comment.name
     )
-  ).toEqual(["accepted"]);
+  ).toEqual(["resolved"]);
+});
+
+test("counts findings by name, most frequent first", () => {
+  const comments = ["b", "a", "b", "c", "a", "b"].map((name) => finding(name));
+  expect(countByName(comments, (comment) => comment.name)).toEqual([
+    ["b", 3],
+    ["a", 2],
+    ["c", 1],
+  ]);
 });

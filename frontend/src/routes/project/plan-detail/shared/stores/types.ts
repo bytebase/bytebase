@@ -11,7 +11,7 @@ import type {
 } from "@/types/proto-es/v1/plan_service_pb";
 import type { Rollout, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Placement } from "../../components/threads/placement/place";
-import type { AutomatedReviewer, FindingSet } from "../../utils/planGates";
+import type { AutomatedReviewer, FindingGroup } from "../../utils/planGates";
 
 export type PlanDetailPhase = "changes" | "review" | "deploy";
 
@@ -82,11 +82,11 @@ export interface ThreadFocusRequest {
   nonce: number;
 }
 
-// Narrows the statement editor's walker to one set of one reviewer's
+// Narrows the statement editor's walker to one group of one reviewer's
 // findings, as a click on a finding count asks for.
 export interface WalkerFilter {
   runType: ReviewRun_Type;
-  set: FindingSet;
+  group: FindingGroup;
 }
 
 export type ThreadFocusSlice = {

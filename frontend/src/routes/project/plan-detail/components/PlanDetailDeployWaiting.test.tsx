@@ -77,7 +77,7 @@ import { PlanDetailDeployWaiting } from "./PlanDetailDeployWaiting";
 const openRule: AutomatedReviewRow = {
   reviewer: "rule",
   conclusion: "open",
-  findings: { ...emptyFindings(), open: 2, confirm: 2 },
+  findings: { ...emptyFindings(), open: 2, p1: 2 },
   holdsRollout: true,
 };
 
@@ -162,7 +162,7 @@ describe("PlanDetailDeployWaiting", () => {
       {
         reviewer: "rule",
         conclusion: "resolved",
-        findings: { ...emptyFindings(), resolved: 1, overridden: 1 },
+        findings: { ...emptyFindings(), overridden: 1 },
         holdsRollout: false,
       },
     ]);

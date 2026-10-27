@@ -27,8 +27,8 @@ import { useFocusThread } from "../../hooks/useFocusThread";
 import { placementsForSheet } from "../../shared/stores/placementSlice";
 import { usePlanDetailStore } from "../../shared/stores/usePlanDetailStore";
 import { usePlanDetailContext } from "../../shell/PlanDetailContext";
-import { findingSetOf } from "../../utils/planGates";
-import { findingSetLabel } from "../../utils/reviewLabels";
+import { inFindingGroup } from "../../utils/planGates";
+import { findingGroupLabel } from "../../utils/reviewLabels";
 import { InlineThreadComposer } from "./InlineThreadComposer";
 import { reviewerName } from "./ReviewResult";
 import "./statementThreads.css";
@@ -114,7 +114,7 @@ export function StatementThreadsLayer({
     previewEndLine === undefined && canReplyToThread(project, issue);
 
   const threads = useMemo(() => groupThreads(comments), [comments]);
-  // A click on a finding count narrows the walker to one set of that
+  // A click on a finding count narrows the walker to one group of that
   // reviewer's findings, across every change of the plan.
   const walkerFilter = usePlanDetailStore((s) => s.walkerFilter);
   const setWalkerFilter = usePlanDetailStore((s) => s.setWalkerFilter);
@@ -123,7 +123,7 @@ export function StatementThreadsLayer({
     (thread: CommentThread) =>
       walkerFilter
         ? thread.root.reviewMetadata?.runType === walkerFilter.runType &&
-          findingSetOf(thread.root) === walkerFilter.set
+          inFindingGroup(thread.root, walkerFilter.group)
         : !thread.resolved,
     [walkerFilter]
   );
@@ -791,7 +791,7 @@ export function StatementThreadsLayer({
                 walkerFilter
                   ? t("plan.review.thread.walker.filter", {
                       reviewer: reviewerName(t, walkerFilter.runType),
-                      state: findingSetLabel(t, walkerFilter.set),
+                      state: findingGroupLabel(t, walkerFilter.group),
                     })
                   : undefined
               }

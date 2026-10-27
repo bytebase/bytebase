@@ -38,7 +38,7 @@ const mocks = vi.hoisted(() => ({
   focusInStatement: vi.fn(),
   focusInActivity: vi.fn(),
   sqlReviewV2: false,
-  walkerFilter: undefined as { runType: number; set: string } | undefined,
+  walkerFilter: undefined as { runType: number; group: string } | undefined,
   setWalkerFilter: vi.fn(),
   placements: new Map<string, unknown>(),
   placementTargets: new Map<string, string>(),
@@ -621,7 +621,7 @@ describe("StatementThreadsLayer", () => {
         }),
       });
     mocks.comments = [threadRoot("discussion", 1, 1), finding("first", 3), finding("other-spec", 2, "spec-2")];
-    mocks.walkerFilter = { runType: ReviewRun_Type.RULE, set: "confirm" };
+    mocks.walkerFilter = { runType: ReviewRun_Type.RULE, group: "p1" };
     const fake = createFakeEditor();
     mount(fake.editor);
     const walker = () => hosted(fake.widgets, "[data-testid='thread-walker']");

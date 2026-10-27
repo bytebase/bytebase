@@ -18,7 +18,6 @@ import {
   PlanCheckRun_Status,
   PlanCheckRunSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
-import { ReviewRuleType } from "@/types/proto-es/v1/review_rule_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import {
   aiReviewRow,
@@ -27,9 +26,11 @@ import {
   countOpenDiscussions,
   emptyFindings,
   findingSetOf,
+  inFindingGroup,
   planCheckRow,
   planCheckRunRow,
   type ReviewerFindings,
+  resolvedByPeople,
   rowNeedsAttention,
   ruleReviewRow,
 } from "./planGates";
@@ -40,17 +41,13 @@ const finding = (
   options: {
     priority?: IssueComment_ReviewMetadata_Priority;
     superseded?: boolean;
-    ruleType?: ReviewRuleType;
-    comment?: string;
   } = {}
 ) =>
   create(IssueCommentSchema, {
     name: `c${Math.random()}`,
-    comment: options.comment ?? "",
     threadState,
     reviewMetadata: create(IssueComment_ReviewMetadataSchema, {
       runType,
-      ruleType: options.ruleType,
       priority: options.priority ?? IssueComment_ReviewMetadata_Priority.P1,
       superseded: options.superseded ?? false,
     }),
@@ -72,13 +69,13 @@ const { OPEN, RESOLVED } = IssueComment_ThreadState;
 
 describe("findingSetOf", () => {
   test.each([
-    [OPEN, P0, false, "fix"],
-    [OPEN, P1, false, "confirm"],
-    [OPEN, P2, false, "advice"],
-    [OPEN, P1, true, "confirm"],
+    [OPEN, P0, false, "p0"],
+    [OPEN, P1, false, "p1"],
+    [OPEN, P2, false, "p2"],
+    [OPEN, P1, true, "p1"],
     [RESOLVED, P0, false, "overridden"],
-    [RESOLVED, P1, false, "accepted"],
-    [RESOLVED, P2, false, "dismissed"],
+    [RESOLVED, P1, false, "resolved"],
+    [RESOLVED, P2, false, "resolved"],
     [RESOLVED, P0, true, "earlier"],
   ] as const)(
     "a %s %s finding (superseded %s) is %s",
@@ -96,56 +93,44 @@ describe("findingSetOf", () => {
   });
 });
 
+describe("inFindingGroup", () => {
+  test("open covers every open finding, whatever its priority", () => {
+    for (const priority of [P0, P1, P2]) {
+      expect(
+        inFindingGroup(finding(ReviewRun_Type.RULE, OPEN, { priority }), "open")
+      ).toBe(true);
+    }
+    expect(
+      inFindingGroup(finding(ReviewRun_Type.RULE, RESOLVED, {}), "open")
+    ).toBe(false);
+  });
+});
+
 describe("countFindings", () => {
-  test("splits open findings by action and resolved ones by decision", () => {
+  test("splits open findings by priority and sets resolved P0s apart", () => {
     const comments = [
       finding(ReviewRun_Type.RULE, OPEN, { priority: P0 }),
       finding(ReviewRun_Type.RULE, OPEN, { superseded: true }),
       finding(ReviewRun_Type.RULE, RESOLVED, { priority: P0 }),
-      finding(ReviewRun_Type.RULE, RESOLVED, {
-        ruleType: ReviewRuleType.DISALLOW_DROP_OBJECT,
-      }),
-      finding(ReviewRun_Type.RULE, RESOLVED, {
-        ruleType: ReviewRuleType.DISALLOW_DROP_OBJECT,
-      }),
-      finding(ReviewRun_Type.RULE, RESOLVED, {
-        ruleType: ReviewRuleType.REQUIRE_WHERE,
-      }),
+      finding(ReviewRun_Type.RULE, RESOLVED, {}),
+      finding(ReviewRun_Type.RULE, RESOLVED, { priority: P2 }),
       finding(ReviewRun_Type.RULE, RESOLVED, { superseded: true }),
       finding(ReviewRun_Type.AI, OPEN, { priority: P2 }),
       discussion(OPEN),
     ];
     const rule = countFindings(comments, "rule");
-    expect(rule).toMatchObject({
+    expect(rule).toEqual({
       open: 2,
-      fix: 1,
-      confirm: 1,
-      advice: 0,
-      resolved: 4,
+      p0: 1,
+      p1: 1,
+      p2: 0,
       overridden: 1,
-      dismissed: 0,
+      resolved: 2,
       earlier: 1,
     });
-    expect(rule.accepted.map((group) => [group.ruleType, group.count])).toEqual(
-      [
-        [ReviewRuleType.DISALLOW_DROP_OBJECT, 2],
-        [ReviewRuleType.REQUIRE_WHERE, 1],
-      ]
-    );
-    expect(countFindings(comments, "ai")).toMatchObject({ open: 1, advice: 1 });
+    expect(resolvedByPeople(rule)).toBe(3);
+    expect(countFindings(comments, "ai")).toMatchObject({ open: 1, p2: 1 });
     expect(countOpenDiscussions(comments)).toBe(1);
-  });
-
-  test("groups accepted AI findings by title", () => {
-    const comments = [
-      finding(ReviewRun_Type.AI, RESOLVED, {
-        comment: "## Missing index\nwhy",
-      }),
-      finding(ReviewRun_Type.AI, RESOLVED, { comment: "Missing index\nother" }),
-    ];
-    expect(countFindings(comments, "ai").accepted).toEqual([
-      expect.objectContaining({ title: "Missing index", count: 2 }),
-    ]);
   });
 });
 
@@ -155,7 +140,7 @@ describe("rowNeedsAttention", () => {
       run: run(ReviewRun_Status.DONE),
       stale: false,
       loadFailed: false,
-      findings: findings({ resolved: 1, overridden: 1 }),
+      findings: findings({ overridden: 1 }),
     });
     expect(row.conclusion).toBe("resolved");
     expect(row.holdsRollout).toBe(false);
@@ -169,7 +154,7 @@ describe("ruleReviewRow", () => {
     [run(ReviewRun_Status.DONE), findings({ resolved: 3 }), "resolved", false],
     [
       run(ReviewRun_Status.DONE),
-      findings({ open: 2, confirm: 2, resolved: 1 }),
+      findings({ open: 2, p1: 2, resolved: 1 }),
       "open",
       true,
     ],
@@ -227,7 +212,7 @@ describe("aiReviewRow", () => {
     );
     const open = aiReviewRow({
       run: run(ReviewRun_Status.DONE),
-      findings: findings({ open: 1, confirm: 1 }),
+      findings: findings({ open: 1, p1: 1 }),
     });
     expect(open.conclusion).toBe("open");
     expect(open.holdsRollout).toBe(true);
@@ -297,7 +282,7 @@ describe("statement report and run rows", () => {
     const failing = planCheckRow("report", [report(Advice_Level.ERROR)]);
     expect(failing?.conclusion).toBe("open");
     expect(failing?.holdsRollout).toBe(true);
-    expect(failing?.findings.fix).toBe(1);
+    expect(failing?.findings.p0).toBe(1);
     expect(
       planCheckRow("report", [report(Advice_Level.SUCCESS)])
     ).toBeUndefined();
@@ -339,7 +324,7 @@ describe("computePlanGates", () => {
     run: run(ReviewRun_Status.DONE),
     stale: false,
     loadFailed: false,
-    findings: findings({ open: 2, confirm: 2 }),
+    findings: findings({ open: 2, p1: 2 }),
   });
   const pendingAI = aiReviewRow({
     run: run(ReviewRun_Status.RUNNING),

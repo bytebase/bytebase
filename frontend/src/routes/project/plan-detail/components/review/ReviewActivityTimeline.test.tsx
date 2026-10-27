@@ -6,10 +6,12 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import { shownTimestampModes } from "@/test-utils/humanizeTs";
 import { PositionSchema } from "@/types/proto-es/v1/common_pb";
 import {
+  IssueComment_ReviewMetadataSchema,
   IssueComment_ReviewSubmissionSchema,
   IssueComment_ThreadState,
   IssueCommentSchema,
   IssueSchema,
+  ReviewRun_Type,
   StatementAnchorSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
@@ -20,6 +22,7 @@ import {
 
 const mocks = vi.hoisted(() => ({
   requestThreadFocus: vi.fn(),
+  setWalkerFilter: vi.fn(),
   expandPhase: vi.fn(),
   placements: new Map<string, unknown>(),
   placementTargets: new Map<string, string>(),
@@ -129,7 +132,10 @@ vi.mock("../../shared/stores/usePlanDetailStore", () => ({
       placementTargets: mocks.placementTargets,
     }),
   usePlanDetailStoreApi: () => ({
-    getState: () => ({ requestThreadFocus: mocks.requestThreadFocus }),
+    getState: () => ({
+      requestThreadFocus: mocks.requestThreadFocus,
+      setWalkerFilter: mocks.setWalkerFilter,
+    }),
   }),
 }));
 
@@ -285,6 +291,60 @@ describe("ReviewActivityTimeline", () => {
       lineNumber: expectedLine,
     });
     expect(mocks.expandPhase).toHaveBeenCalledWith("changes");
+    act(() => root.unmount());
+  });
+
+  test("a run's line steps through its open findings in the editor", () => {
+    const plan = create(PlanSchema, {
+      name: "projects/p1/plans/1",
+      specs: [create(Plan_SpecSchema, { id: "spec-1" })],
+    });
+    const finding = (
+      id: string,
+      line: number,
+      threadState: IssueComment_ThreadState
+    ) =>
+      create(IssueCommentSchema, {
+        name: `projects/p1/issues/1/issueComments/${id}`,
+        comment: "No WHERE clause",
+        threadState,
+        createTime: timestampFromMs(0),
+        statementAnchor: create(StatementAnchorSchema, {
+          spec: "spec-1",
+          startPosition: create(PositionSchema, { line, column: 0 }),
+        }),
+        reviewMetadata: create(IssueComment_ReviewMetadataSchema, {
+          runType: ReviewRun_Type.RULE,
+        }),
+      });
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    act(() => {
+      root.render(
+        <ReviewActivityTimeline
+          comments={[
+            finding("resolved", 1, IssueComment_ThreadState.RESOLVED),
+            finding("open-5", 5, IssueComment_ThreadState.OPEN),
+            finding("open-3", 3, IssueComment_ThreadState.OPEN),
+          ]}
+          issue={create(IssueSchema, { name: "projects/p1/issues/1" })}
+          plan={plan}
+        />
+      );
+    });
+    const show = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent === "plan.deploy-waiting.show"
+    );
+    act(() => show?.click());
+    expect(mocks.setWalkerFilter).toHaveBeenCalledWith({
+      runType: ReviewRun_Type.RULE,
+      group: "open",
+    });
+    expect(mocks.requestThreadFocus).toHaveBeenCalledWith(
+      expect.objectContaining({
+        commentName: "projects/p1/issues/1/issueComments/open-3",
+      })
+    );
     act(() => root.unmount());
   });
 
