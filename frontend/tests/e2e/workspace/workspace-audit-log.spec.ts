@@ -11,7 +11,7 @@
 
 import { test, expect, type BrowserContext, type Page } from "@playwright/test";
 import enUS from "../../../src/locales/en-US.json";
-import { BytebaseApiClient, type IamPolicy } from "../framework/api-client";
+import { BytebaseApiClient } from "../framework/api-client";
 import { loadTestEnv, type TestEnv } from "../framework/env";
 
 const ACTOR_SCOPE = enUS["audit-log"]["advanced-search"].scope.actor;
@@ -22,9 +22,9 @@ test.setTimeout(120_000);
 let env: TestEnv & { api: BytebaseApiClient };
 let sharedContext: BrowserContext;
 let page: Page;
-let originalProjectPolicy: IamPolicy;
 
 const suffix = Date.now();
+const OWN_ACCOUNT = /^serviceAccount:e2e-(auditor|proj-bot)-\d+@/;
 let workspaceAccount: { name: string; email: string };
 let projectAccount: { name: string; email: string };
 let workloadIdentity: { name: string; email: string };
@@ -52,7 +52,6 @@ test.beforeAll(async ({ browser }) => {
   workspaceAccount = workspaceSA;
   projectAccount = projectSA;
 
-  originalProjectPolicy = await env.api.getProjectIamPolicy(env.project);
   await env.api.appendProjectBinding(env.project, "roles/projectDeveloper", [
     `serviceAccount:${workspaceSA.email}`,
     `serviceAccount:${projectSA.email}`,
@@ -66,12 +65,18 @@ test.beforeAll(async ({ browser }) => {
 
 test.afterAll(async () => {
   await sharedContext?.close();
-  if (originalProjectPolicy) {
-    const current = await env.api.getProjectIamPolicy(env.project);
-    await env.api
-      .setProjectIamPolicy(env.project, { ...originalProjectPolicy, etag: current.etag })
-      .catch((e) => console.warn("restore project policy failed:", e));
-  }
+  // Drop this spec's bindings by name rather than restore a snapshot, so a
+  // retry also clears what a crashed attempt bound.
+  const policy = await env.api.getProjectIamPolicy(env.project);
+  policy.bindings = policy.bindings
+    .map((binding) => ({
+      ...binding,
+      members: binding.members.filter((member) => !OWN_ACCOUNT.test(member)),
+    }))
+    .filter((binding) => binding.members.length > 0);
+  await env.api
+    .setProjectIamPolicy(env.project, policy)
+    .catch((e) => console.warn("cleanup failed: project bindings", e));
   if (workspaceAccount) await env.api.deleteServiceAccount(workspaceAccount.email);
   if (projectAccount) await env.api.deleteServiceAccount(projectAccount.email);
   if (workloadIdentity) await env.api.deleteWorkloadIdentity(workloadIdentity.email);
