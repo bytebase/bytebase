@@ -15,6 +15,8 @@ import aggregateGroup from "./test-data/mongodb/aggregate-group.json";
 import collectionScan from "./test-data/mongodb/collection-scan.json";
 import indexScanSort from "./test-data/mongodb/index-scan-sort.json";
 import measuredCollectionScan from "./test-data/mongodb/measured-collection-scan.json";
+import measuredShardedIndexScan from "./test-data/mongodb/measured-sharded-index-scan.json";
+import shardedIndexScan from "./test-data/mongodb/sharded-index-scan.json";
 import slotBasedIndexScan from "./test-data/mongodb/slot-based-index-scan.json";
 
 /** A chain of `depth` stages, which is what drives the depth limit. */
@@ -56,6 +58,45 @@ describe("parseMongodbPlan", () => {
     expect(tree.root.subject).toBe('{"total":{"$gt":880}}');
     expect(tree.root.warnings).toEqual([PLAN_FULL_TABLE_SCAN]);
     expect(propertyValue(tree.root, "Direction")).toBe("forward");
+  });
+
+  test("draws each shard's own plan under the merge that reads them", () => {
+    const tree = parseFixture(shardedIndexScan);
+
+    // A sharded collection is planned a shard at a time, and the merge holds
+    // each shard's plan under `shards` rather than as an input stage.
+    expect(outline(tree)).toEqual([
+      "0 SHARD_MERGE",
+      "0.0 SHARDING_FILTER",
+      "0.0.0 FETCH",
+      "0.0.0.0 IXSCAN",
+      "0.1 SHARDING_FILTER",
+      "0.1.0 FETCH",
+      "0.1.0.0 IXSCAN",
+    ]);
+    expect(propertyValue(byId(tree, "0.0"), "Shard")).toBe("sh1");
+    expect(propertyValue(byId(tree, "0.1"), "Shard")).toBe("sh2");
+    // Each shard states the namespace it read, so its scans answer a lookup.
+    expect(byId(tree, "0.0.0.0").relation).toEqual({
+      database: "qp",
+      table: "orders",
+    });
+    // The merge reads its shards, not the collection.
+    expect(tree.root.relation).toBeUndefined();
+  });
+
+  test("reads what each shard returned from a measured sharded plan", () => {
+    const tree = parseFixture(measuredShardedIndexScan);
+
+    expect(tree.root.actualRows).toBe(2785);
+    expect(byId(tree, "0.0").actualRows).toBe(1420);
+    expect(byId(tree, "0.1").actualRows).toBe(1365);
+    // A shard's execution stages state no namespace of their own, so it comes
+    // from the planner's shards, which name the one collection they all read.
+    expect(byId(tree, "0.1.0.0").relation).toEqual({
+      database: "qp",
+      table: "orders",
+    });
   });
 
   test("reads the tree the slot-based engine wraps", () => {

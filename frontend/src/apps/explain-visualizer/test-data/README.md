@@ -95,10 +95,14 @@ index usage; only `executionStats` adds numbers, and only by running the query.
 | `aggregate-group.json` | An aggregation's `stages` pipeline, whose `$cursor` holds the read's own plan |
 | `measured-collection-scan.json` | `explain("executionStats")`: the same tree with rows returned and documents examined |
 | `slot-based-index-scan.json` | The slot-based engine's shape: the tree under `winningPlan.queryPlan`, beside the plan it compiled for itself |
+| `sharded-index-scan.json` | A sharded collection: each shard's own plan under the `SHARD_MERGE` that reads them, each naming its shard and namespace |
+| `measured-sharded-index-scan.json` | The same query run, where a shard's entry holds `executionStages` and states no namespace |
 
 The slot-based one is from MongoDB 7, which runs the classic engine by
 default; `db.adminCommand({ setParameter: 1, internalQueryFrameworkControl:
-"trySbeEngine" })` is what makes it choose the other one.
+"trySbeEngine" })` is what makes it choose the other one. The sharded pair is
+from a cluster of two single-node shards behind a `mongos`, explained through
+the router on a collection sharded by a hashed key.
 
 To add one, run the statement through the driver with
 `QueryContext{Explain: true}`, or in `mongosh`:

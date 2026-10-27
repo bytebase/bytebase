@@ -37,6 +37,7 @@ import {
 
 const CHILD_KEY = "inputStage";
 const CHILDREN_KEY = "inputStages";
+const SHARDS_KEY = "shards";
 const STAGE_KEY = "stage";
 
 /** Keys the model promotes to typed fields, so the property list drops them. */
@@ -44,6 +45,7 @@ const PROMOTED_KEYS = new Set([
   STAGE_KEY,
   CHILD_KEY,
   CHILDREN_KEY,
+  SHARDS_KEY,
   "nReturned",
 ]);
 
@@ -92,14 +94,19 @@ function formatValue(value: unknown): string {
  *
  * MongoDB states `database.collection` once, on the plan rather than on each
  * stage, so the stages that read it carry it down. Only the stages that reach
- * the collection get one: a sort or a projection reads its input, not a
- * collection.
+ * the collection get one: a sort or a projection reads its input, and a merge
+ * reads its shards, not a collection.
  */
 function toRelation(
   raw: JsonRecord,
   namespace: string | undefined
 ): PlanRelation | undefined {
-  if (!namespace || isJsonRecord(raw[CHILD_KEY]) || raw[CHILDREN_KEY]) {
+  if (
+    !namespace ||
+    isJsonRecord(raw[CHILD_KEY]) ||
+    raw[CHILDREN_KEY] ||
+    raw[SHARDS_KEY]
+  ) {
     return undefined;
   }
   const separator = namespace.indexOf(".");
@@ -145,6 +152,19 @@ function toSubject(raw: JsonRecord): string | undefined {
   return undefined;
 }
 
+/**
+ * The plan one entry of a `shards` list holds: `winningPlan` where the query
+ * was planned, `executionStages` where it ran. The planned one carries the
+ * slot-based wrapper like any other.
+ */
+function shardPlan(raw: JsonRecord): JsonRecord | undefined {
+  const planned = raw.winningPlan;
+  if (isJsonRecord(planned)) {
+    return isJsonRecord(planned.queryPlan) ? planned.queryPlan : planned;
+  }
+  return isJsonRecord(raw.executionStages) ? raw.executionStages : undefined;
+}
+
 function toPlanNode(
   raw: JsonRecord,
   namespace: string | undefined,
@@ -165,6 +185,34 @@ function toPlanNode(
       );
     }
   }
+  // A sharded collection is planned a shard at a time, and the merge stage
+  // holds each shard's own plan rather than an input stage. Each entry names
+  // the shard that ran it and the namespace it read.
+  const shards = raw[SHARDS_KEY];
+  if (Array.isArray(shards)) {
+    for (const each of shards.filter(isJsonRecord)) {
+      const plan = shardPlan(each);
+      if (!plan) continue;
+      const node = toPlanNode(
+        plan,
+        stringValue(each.namespace) ?? namespace,
+        `${id}.${children.length}`,
+        depth + 1
+      );
+      const shard = stringValue(each.shardName);
+      children.push(
+        shard
+          ? {
+              ...node,
+              properties: [
+                { label: "Shard", value: shard },
+                ...node.properties,
+              ],
+            }
+          : node
+      );
+    }
+  }
 
   const stage = stringValue(raw[STAGE_KEY]) ?? "Unknown";
   return {
@@ -179,6 +227,26 @@ function toPlanNode(
   };
 }
 
+/**
+ * The namespace a sharded explain names, which it states on each shard's entry
+ * rather than on the planner, since a shard answers for its own part of the
+ * collection. They all read the one collection the statement named.
+ */
+function shardedNamespace(planner: JsonRecord): string | undefined {
+  const winning = isJsonRecord(planner.winningPlan)
+    ? planner.winningPlan
+    : undefined;
+  const shards = winning?.[SHARDS_KEY];
+  if (!Array.isArray(shards)) return undefined;
+  for (const each of shards) {
+    const namespace = isJsonRecord(each)
+      ? stringValue(each.namespace)
+      : undefined;
+    if (namespace) return namespace;
+  }
+  return undefined;
+}
+
 /** The tree a `queryPlanner` holds: the measured one where the query ran. */
 function planTreeOf(
   explained: JsonRecord
@@ -189,7 +257,9 @@ function planTreeOf(
   const planner = isJsonRecord(explained.queryPlanner)
     ? explained.queryPlanner
     : undefined;
-  const namespace = stringValue(planner?.namespace);
+  const namespace = planner
+    ? (stringValue(planner.namespace) ?? shardedNamespace(planner))
+    : undefined;
   const measured =
     stats && isJsonRecord(stats.executionStages)
       ? stats.executionStages
