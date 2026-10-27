@@ -14,6 +14,7 @@ import {
 import aggregateGroup from "./test-data/mongodb/aggregate-group.json";
 import collectionScan from "./test-data/mongodb/collection-scan.json";
 import indexScanSort from "./test-data/mongodb/index-scan-sort.json";
+import measuredAggregateGroup from "./test-data/mongodb/measured-aggregate-group.json";
 import measuredCollectionScan from "./test-data/mongodb/measured-collection-scan.json";
 import measuredShardedIndexScan from "./test-data/mongodb/measured-sharded-index-scan.json";
 import shardedIndexScan from "./test-data/mongodb/sharded-index-scan.json";
@@ -58,6 +59,25 @@ describe("parseMongodbPlan", () => {
     expect(tree.root.subject).toBe('{"total":{"$gt":880}}');
     expect(tree.root.warnings).toEqual([PLAN_FULL_TABLE_SCAN]);
     expect(propertyValue(tree.root, "Direction")).toBe("forward");
+  });
+
+  test("keeps what a measured pipeline stage returned and spent", () => {
+    const tree = parseFixture(measuredAggregateGroup);
+    const group = byId(tree, "0.0");
+
+    expect(outline(tree)).toEqual([
+      "0 $sort",
+      "0.0 $group",
+      "0.0.0 PROJECTION_SIMPLE",
+      "0.0.0.0 COLLSCAN",
+    ]);
+    // A stage states these beside itself rather than inside its body, so
+    // reading the body alone loses both the rows and the spill diagnostics.
+    expect(group.actualRows).toBe(500);
+    expect(propertyValue(group, "Used disk")).toBe("false");
+    expect(propertyValue(group, "Spilled records")).toBe("0");
+    // The read under the pipeline keeps reporting its own.
+    expect(byId(tree, "0.0.0.0").actualRows).toBe(5000);
   });
 
   test("draws each shard's own plan under the merge that reads them", () => {

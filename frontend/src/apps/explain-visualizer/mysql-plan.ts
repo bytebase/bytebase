@@ -208,20 +208,32 @@ function toProperties(raw: JsonRecord, inherited: JsonRecord): PlanProperty[] {
   return properties;
 }
 
-/** The cost this operator states, in either dialect's spelling. */
-function statedCost(raw: JsonRecord): number | undefined {
+/**
+ * What this operator costs on its own, covering nothing below it: reading and
+ * filtering a table, or sorting what a sort was given. MariaDB spells a
+ * table's as `cost`. `prefix_cost` is the whole join prefix, so it is not
+ * this operator's.
+ */
+function exclusiveCost(key: string, raw: JsonRecord): number | undefined {
   const info = isJsonRecord(raw.cost_info) ? raw.cost_info : undefined;
-  if (info) {
-    const read = optionalNumber(info.read_cost);
-    const evaluate = optionalNumber(info.eval_cost);
-    // `prefix_cost` covers the whole join prefix, so it is not this operator's.
-    if (read !== undefined || evaluate !== undefined) {
-      return (read ?? 0) + (evaluate ?? 0);
-    }
-    const query = optionalNumber(info.query_cost);
-    if (query !== undefined) return query;
+  const sort = info ? optionalNumber(info.sort_cost) : undefined;
+  if (sort !== undefined) return sort;
+  if (key !== TABLE_KEY) return undefined;
+  const read = info ? optionalNumber(info.read_cost) : undefined;
+  const evaluate = info ? optionalNumber(info.eval_cost) : undefined;
+  if (read !== undefined || evaluate !== undefined) {
+    return (read ?? 0) + (evaluate ?? 0);
   }
   return optionalNumber(raw.cost);
+}
+
+/** What this operator costs including everything under it. */
+function cumulativeCost(raw: JsonRecord): number | undefined {
+  const info = isJsonRecord(raw.cost_info) ? raw.cost_info : undefined;
+  return (
+    (info ? optionalNumber(info.query_cost) : undefined) ??
+    optionalNumber(raw.cost)
+  );
 }
 
 /**
@@ -238,14 +250,13 @@ function toPlanNode(
 ): PlanNode {
   checkPlanDepth(depth);
   const children = toChildren(raw, id, depth);
-  const stated = statedCost(raw);
   const subtree = planSubtreeCost(children);
-  // A `table` states what reading and filtering that table costs and nothing
-  // below it: a subquery materialized for it is costed apart, and the block's
-  // `query_cost` leaves it out too. So a table's cost is its own, and every
-  // other operator's already covers what is under it.
-  const exclusive = key === TABLE_KEY && stated !== undefined;
-  const totalCost = exclusive ? stated + (subtree ?? 0) : (stated ?? subtree);
+  // A table and a sort each state what they cost and nothing below them: a
+  // subquery materialized for a table is costed apart, and the block's
+  // `query_cost` covers the lot.
+  const own = exclusiveCost(key, raw);
+  const totalCost =
+    own !== undefined ? own + (subtree ?? 0) : (cumulativeCost(raw) ?? subtree);
   const table = baseTable(key, raw);
   return {
     id,
@@ -253,7 +264,7 @@ function toPlanNode(
     subject: toSubject(raw),
     relation: table ? { table, unresolved: true } : undefined,
     totalCost,
-    selfCost: exclusive ? stated : planSelfCost(totalCost, children),
+    selfCost: own ?? planSelfCost(totalCost, children),
     rows:
       optionalNumber(raw.rows_produced_per_join) ??
       optionalNumber(raw.rows) ??

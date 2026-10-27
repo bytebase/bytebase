@@ -429,10 +429,11 @@ answer with the wrong table's indexes — the failure §3.3 exists to avoid. Nor
 between the query block and its tables: MariaDB charges a sort to the query
 block, which therefore ranks first in such a plan, since attributing that cost
 to the `filesort` or the `temporary_table` under it would be a guess about
-which of them spends it. What a `table` states costs that table alone: a
-subquery materialized for it is costed apart, and the block's `query_cost`
-leaves it out too, so it is the table's self cost rather than a total to
-subtract a subtree from. TiDB reports no cost in any format the editor can
+which of them spends it. What a `table` states costs that table alone, and an
+ordering's `sort_cost` costs the sort alone: a subquery materialized for a
+table is costed apart, and only the block's `query_cost` covers the lot. So
+each is its own operator's self cost rather than a total to subtract a subtree
+from. TiDB reports no cost in any format the editor can
 ask for, so its plans rank nothing and shade by rows; its measured plan is read
 for rows alone, because `time:` covers an operator and its subtree and the
 operators pushed down to a coprocessor report none — the same reason this

@@ -303,11 +303,20 @@ function aggregateNode(
   }
 
   const child = aggregateNode(stages, index - 1, `${id}.0`, depth + 1);
+  const properties = isJsonRecord(body) ? toProperties(body) : [];
+  // What the stage returned and what it spent sit beside the stage rather
+  // than inside it: the rows, the time it estimates, and whether it had to
+  // spill to disk.
+  for (const [key, value] of Object.entries(stage)) {
+    if (key === name || PROMOTED_KEYS.has(key)) continue;
+    addPlanProperty(properties, planLabel(key), formatValue(value));
+  }
   return {
     id,
     nodeType: name,
     subject: body === undefined ? undefined : formatValue(body) || undefined,
-    properties: isJsonRecord(body) ? toProperties(body) : [],
+    actualRows: optionalNumber(stage.nReturned),
+    properties,
     warnings: [],
     children: child ? [child] : [],
   };

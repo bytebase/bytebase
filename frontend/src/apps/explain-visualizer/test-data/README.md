@@ -94,6 +94,7 @@ index usage; only `executionStats` adds numbers, and only by running the query.
 | `index-scan-sort.json` | `SORT` over `FETCH` over `IXSCAN`, with the index bounds |
 | `aggregate-group.json` | An aggregation's `stages` pipeline, whose `$cursor` holds the read's own plan |
 | `measured-collection-scan.json` | `explain("executionStats")`: the same tree with rows returned and documents examined |
+| `measured-aggregate-group.json` | A measured pipeline, where each stage states its rows and its spill counters beside itself rather than in its body |
 | `slot-based-index-scan.json` | The slot-based engine's shape: the tree under `winningPlan.queryPlan`, beside the plan it compiled for itself |
 | `sharded-index-scan.json` | A sharded collection: each shard's own plan under the `SHARD_MERGE` that reads them, each naming its shard and namespace |
 | `measured-sharded-index-scan.json` | The same query run, where a shard's entry holds `executionStages` and states no namespace |
@@ -124,6 +125,7 @@ parser reads both and the `mariadb-` files are the second dialect's.
 | `group-sort-join.json` | MySQL | An ordering over a grouping over a two-table join |
 | `derived-table.json` | MySQL | A derived table materialized from its own query block |
 | `attached-subquery.json` | MySQL | A real table's scan carrying a subquery's operators under `attached_subqueries`, which a derived table's `materialized_from_subquery` is not |
+| `ordering-filesort.json` | MySQL | A filesort, whose `sort_cost` is the sort's alone where the block's `query_cost` is the whole |
 | `union-distinct.json` | MySQL | A union result over two query specifications |
 | `mariadb-sort-temporary-join.json` | MariaDB | `filesort` and `temporary_table` where MySQL says `ordering_operation` and `grouping_operation` |
 | `mariadb-block-nl-join.json` | MariaDB | `block-nl-join`, a join wrapper holding the table it buffers |

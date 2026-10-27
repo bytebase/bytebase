@@ -18,6 +18,7 @@ import fullScanFilter from "./test-data/mysql/full-scan-filter.json";
 import groupSortJoin from "./test-data/mysql/group-sort-join.json";
 import mariadbBlockNlJoin from "./test-data/mysql/mariadb-block-nl-join.json";
 import mariadbSortTemporaryJoin from "./test-data/mysql/mariadb-sort-temporary-join.json";
+import orderingFilesort from "./test-data/mysql/ordering-filesort.json";
 import unionDistinct from "./test-data/mysql/union-distinct.json";
 
 /** A chain of `depth` nested operators, which is what drives the depth limit. */
@@ -162,6 +163,21 @@ describe("parseMysqlPlan", () => {
     // What MySQL materialized for the subquery is not a table of its own.
     expect(byId(tree, "0.0.0.0").nodeType).toBe("Materialize");
     expect(byId(tree, "0.0.0.0").relation).toBeUndefined();
+  });
+
+  test("charges a sort what MySQL says sorting costs", () => {
+    const tree = parseFixture(orderingFilesort);
+    const order = byId(tree, "0.0");
+    const scan = byId(tree, "0.0.0");
+
+    // `sort_cost` is the sort's alone, and the block's `query_cost` is the two
+    // together. Left unread the sort looks free and the block ranks first,
+    // which is not an operator a reader can do anything about.
+    expect(order.nodeType).toBe("Order");
+    expect(order.selfCost).toBe(50184);
+    expect(order.totalCost).toBeCloseTo(50184 + 5058.65, 5);
+    expect(scan.selfCost).toBeCloseTo(5058.65, 5);
+    expect(tree.root.totalCost).toBeCloseTo(55242.65, 5);
   });
 
   test("charges a table its own cost, not what its subquery cost", () => {
