@@ -8,11 +8,12 @@ import { usePlanDetailContext } from "../shell/PlanDetailContext";
 
 // Opens the Changes phase on a thread's spec and asks the statement editor to
 // reveal it; the editor picks the request up once it shows that spec. A
-// thread without an anchor has only its Activity card.
+// thread without an anchor, or anchored to a change the plan no longer has,
+// has only its Activity card.
 export function useFocusThread() {
   const page = usePlanDetailContext();
   const storeApi = usePlanDetailStoreApi();
-  const { expandPhase, planId, projectId } = page;
+  const { expandPhase, plan, planId, projectId } = page;
 
   const focusInActivity = useCallback(
     (root: IssueComment) => {
@@ -25,7 +26,7 @@ export function useFocusThread() {
   const focusInStatement = useCallback(
     (root: IssueComment, lineNumber?: number) => {
       const specId = root.statementAnchor?.spec;
-      if (!specId) {
+      if (!specId || !plan.specs.some((spec) => spec.id === specId)) {
         focusInActivity(root);
         return;
       }
@@ -45,7 +46,7 @@ export function useFocusThread() {
         );
       }
     },
-    [expandPhase, focusInActivity, planId, projectId, storeApi]
+    [expandPhase, focusInActivity, plan.specs, planId, projectId, storeApi]
   );
 
   return { focusInActivity, focusInStatement };

@@ -238,12 +238,16 @@ export const ruleReviewApplies = (
   reviewsSQL: boolean
 ): boolean => run !== null || reviewsSQL;
 
-// The AI review holds the rollout only through the findings it posts.
+// The AI review holds the rollout only through the findings it posts. The
+// page reads its run only while a review can still start, as before a
+// rollout; otherwise the findings alone conclude.
 export function aiReviewRow(input: {
   run: ReviewRun | null | undefined;
+  runFetched: boolean;
   findings: ReviewerFindings;
 }): AutomatedReviewRow {
-  const { findings, run } = input;
+  const { findings } = input;
+  const run = input.runFetched ? input.run : null;
   const conclusion =
     run === undefined
       ? "loading"

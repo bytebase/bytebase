@@ -203,6 +203,7 @@ vi.mock("../../shell/PlanDetailContext", () => ({
   usePlanDetailContext: () => ({
     projectId: "p1",
     planId: "1",
+    plan: { specs: [{ id: "spec-1" }] },
     expandPhase: mocks.expandPhase,
   }),
 }));

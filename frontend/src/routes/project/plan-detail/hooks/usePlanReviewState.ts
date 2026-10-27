@@ -76,7 +76,9 @@ export function usePlanReviewState(): PlanReviewState | undefined {
     }
     const aiFindings = countFindings(comments, "ai");
     if (ai.shown || aiFindings.open + resolvedByPeople(aiFindings) > 0) {
-      rows.push(aiReviewRow({ run: ai.run, findings: aiFindings }));
+      rows.push(
+        aiReviewRow({ run: ai.run, runFetched: ai.shown, findings: aiFindings })
+      );
     }
     for (const reviewer of ["policy", "ghost", "report"] as const) {
       const row = planCheckRow(reviewer, page.planCheckRuns);

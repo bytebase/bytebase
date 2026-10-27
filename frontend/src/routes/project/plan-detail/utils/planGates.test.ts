@@ -221,18 +221,33 @@ describe("ruleReviewRow", () => {
 describe("aiReviewRow", () => {
   test("holds the rollout only through open findings", () => {
     expect(
-      aiReviewRow({ run: run(ReviewRun_Status.RUNNING), findings: NO_FINDINGS })
-        .holdsRollout
+      aiReviewRow({
+        run: run(ReviewRun_Status.RUNNING),
+        runFetched: true,
+        findings: NO_FINDINGS,
+      }).holdsRollout
     ).toBe(false);
-    expect(aiReviewRow({ run: null, findings: NO_FINDINGS }).conclusion).toBe(
-      "not-run"
-    );
+    expect(
+      aiReviewRow({ run: null, runFetched: true, findings: NO_FINDINGS })
+        .conclusion
+    ).toBe("not-run");
     const open = aiReviewRow({
       run: run(ReviewRun_Status.DONE),
+      runFetched: true,
       findings: findings({ open: 1, p1: 1 }),
     });
     expect(open.conclusion).toBe("open");
     expect(open.holdsRollout).toBe(true);
+  });
+
+  test("concludes from the findings when the page does not read the run", () => {
+    const row = aiReviewRow({
+      run: undefined,
+      runFetched: false,
+      findings: findings({ resolved: 2, overridden: 1 }),
+    });
+    expect(row.conclusion).toBe("resolved");
+    expect(rowNeedsAttention(row)).toBe(true);
   });
 });
 
@@ -345,6 +360,7 @@ describe("computePlanGates", () => {
   });
   const pendingAI = aiReviewRow({
     run: run(ReviewRun_Status.RUNNING),
+    runFetched: true,
     findings: NO_FINDINGS,
   });
 
