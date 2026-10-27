@@ -227,8 +227,12 @@ export function parseElasticsearchPlan(source: string): PlanParseResult {
       nodeType: "Search",
       subject: indices.length > 0 ? indices.join(", ") : undefined,
       relation: indices.length === 1 ? { table: indices[0] } : undefined,
+      // What the search took, which is wall time while the shards ran at once.
+      // Subtracting their times from it would not divide it: three shards of
+      // ten milliseconds each inside a search of twelve leave a remainder that
+      // means nothing. So the search claims no time of its own, and what the
+      // shards did not account for is simply unaccounted.
       actualTime: took,
-      selfTime: planSelfTime(took, children),
       properties,
       warnings: [],
       children,

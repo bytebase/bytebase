@@ -93,6 +93,9 @@ describe("parseElasticsearchPlan", () => {
     expect(tree.root.actualTime).toBe(102);
     expect(propertyValue(tree.root, "Took ms")).toBe("102");
     expect(propertyValue(tree.root, "Shards")).toBe("1");
+    // It claims no time of its own: the shards run at once, so what they did
+    // not account for cannot be attributed to the search as work it did.
+    expect(tree.root.selfTime).toBeUndefined();
   });
 
   test("resolves the index a shard read, which is a table here", () => {
