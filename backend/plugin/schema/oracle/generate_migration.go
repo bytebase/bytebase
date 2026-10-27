@@ -1,6 +1,7 @@
 package oracle
 
 import (
+	"cmp"
 	"fmt"
 	"slices"
 	"strings"
@@ -803,8 +804,24 @@ func generateAlterColumn(tableDiff *schema.TableDiff, colDiff *schema.ColumnDiff
 	if (oldGeneration == nil) != (newGeneration == nil) {
 		writeDropColumn(&buf, schemaName, tableName, colDiff.OldColumn.Name)
 		writeAddColumn(&buf, schemaName, tableName, colDiff.NewColumn)
-		writeColumnDependents(&buf, tableDiff, colDiff.NewColumn)
+		// DROP COLUMN took the comment, indexes, and constraints with it. A
+		// multi-column constraint makes it fail instead (ORA-12991).
+		if colDiff.NewColumn.Comment != "" {
+			writeColumnComment(&buf, schemaName, tableName, colDiff.NewColumn.Name, colDiff.NewColumn.Comment)
+		}
+		findColumnDependents(tableDiff.NewTable, colDiff.NewColumn.Name, diffObjectNames(tableDiff, schema.MetadataDiffActionCreate)).writeCreates(&buf, schemaName, tableName)
 		return buf.String()
+	}
+
+	// Oracle rejects a new virtual expression while an index or a constraint,
+	// NOT NULL included, is on the column (ORA-54022, ORA-54023), so they are
+	// dropped first and made again after.
+	expressionChanged := newGeneration != nil && oldGeneration.Expression != newGeneration.Expression
+	if expressionChanged {
+		findColumnDependents(tableDiff.OldTable, colDiff.OldColumn.Name, diffObjectNames(tableDiff, schema.MetadataDiffActionDrop)).writeDrops(&buf, schemaName, tableName)
+		if !colDiff.OldColumn.Nullable {
+			writeAlterColumnDropNotNull(&buf, schemaName, tableName, colDiff.OldColumn.Name)
+		}
 	}
 
 	// In Oracle, we need to handle different aspects of column changes separately
@@ -815,7 +832,7 @@ func generateAlterColumn(tableDiff *schema.TableDiff, colDiff *schema.ColumnDiff
 	}
 
 	// If nullability changed
-	if colDiff.OldColumn.Nullable != colDiff.NewColumn.Nullable {
+	if !expressionChanged && colDiff.OldColumn.Nullable != colDiff.NewColumn.Nullable {
 		if colDiff.NewColumn.Nullable {
 			writeAlterColumnDropNotNull(&buf, schemaName, tableName, colDiff.NewColumn.Name)
 		} else {
@@ -841,8 +858,12 @@ func generateAlterColumn(tableDiff *schema.TableDiff, colDiff *schema.ColumnDiff
 		}
 	}
 
-	if newGeneration != nil && oldGeneration.Expression != newGeneration.Expression {
+	if expressionChanged {
 		writeModifyColumn(&buf, schemaName, tableName, colDiff.NewColumn.Name, "AS ("+newGeneration.Expression+")")
+		if !colDiff.NewColumn.Nullable {
+			writeAlterColumnSetNotNull(&buf, schemaName, tableName, colDiff.NewColumn.Name)
+		}
+		findColumnDependents(tableDiff.NewTable, colDiff.NewColumn.Name, diffObjectNames(tableDiff, schema.MetadataDiffActionCreate)).writeCreates(&buf, schemaName, tableName)
 	}
 
 	if colDiff.OldColumn.IsInvisible != colDiff.NewColumn.IsInvisible {
@@ -856,38 +877,76 @@ func generateAlterColumn(tableDiff *schema.TableDiff, colDiff *schema.ColumnDiff
 	return buf.String()
 }
 
-// writeColumnDependents writes again what DROP COLUMN took with the column:
-// its comment, and the new table's indexes and constraints on it. Those the
-// diff creates anyway are left to it. A multi-column constraint makes DROP
-// COLUMN fail instead, so it never gets here.
-func writeColumnDependents(out *strings.Builder, tableDiff *schema.TableDiff, column *metadatapb.ColumnMetadata) {
-	schemaName, tableName, table := tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable
-	if column.Comment != "" {
-		writeColumnComment(out, schemaName, tableName, column.Name, column.Comment)
-	}
+// columnDependents are a table's indexes and constraints on one column.
+type columnDependents struct {
+	indexes     []*metadatapb.IndexMetadata
+	checks      []*metadatapb.CheckConstraintMetadata
+	foreignKeys []*metadatapb.ForeignKeyMetadata
+}
 
-	created := make(map[string]bool)
+// findColumnDependents lists the table's indexes and constraints on the
+// column, less those named in skip.
+func findColumnDependents(table *metadatapb.TableMetadata, column string, skip map[string]bool) columnDependents {
+	references := func(expression string) bool { return expressionReferencesColumn(expression, column) }
+	var dependents columnDependents
+	for _, index := range table.GetIndexes() {
+		if !skip[index.Name] && slices.ContainsFunc(index.Expressions, references) {
+			dependents.indexes = append(dependents.indexes, index)
+		}
+	}
+	for _, check := range table.GetCheckConstraints() {
+		if !skip[check.Name] && references(check.Expression) {
+			dependents.checks = append(dependents.checks, check)
+		}
+	}
+	for _, fk := range table.GetForeignKeys() {
+		if !skip[fk.Name] && slices.Contains(fk.Columns, column) {
+			dependents.foreignKeys = append(dependents.foreignKeys, fk)
+		}
+	}
+	return dependents
+}
+
+// diffObjectNames returns the names of the indexes and constraints the diff
+// drops, or creates, on the table itself.
+func diffObjectNames(tableDiff *schema.TableDiff, action schema.MetadataDiffAction) map[string]bool {
+	names := make(map[string]bool)
 	for _, indexDiff := range tableDiff.IndexChanges {
-		if indexDiff.Action == schema.MetadataDiffActionCreate {
-			created[indexDiff.NewIndex.Name] = true
+		if indexDiff.Action == action {
+			names[cmp.Or(indexDiff.NewIndex, indexDiff.OldIndex).GetName()] = true
 		}
 	}
 	for _, checkDiff := range tableDiff.CheckConstraintChanges {
-		if checkDiff.Action == schema.MetadataDiffActionCreate {
-			created[checkDiff.NewCheckConstraint.Name] = true
+		if checkDiff.Action == action {
+			names[cmp.Or(checkDiff.NewCheckConstraint, checkDiff.OldCheckConstraint).GetName()] = true
 		}
 	}
 	for _, fkDiff := range tableDiff.ForeignKeyChanges {
-		if fkDiff.Action == schema.MetadataDiffActionCreate {
-			created[fkDiff.NewForeignKey.Name] = true
+		if fkDiff.Action == action {
+			names[cmp.Or(fkDiff.NewForeignKey, fkDiff.OldForeignKey).GetName()] = true
 		}
 	}
-	references := func(expression string) bool { return expressionReferencesColumn(expression, column.Name) }
+	return names
+}
 
-	for _, index := range table.GetIndexes() {
-		if created[index.Name] || !slices.ContainsFunc(index.Expressions, references) {
-			continue
+func (d columnDependents) writeDrops(out *strings.Builder, schemaName, tableName string) {
+	for _, fk := range d.foreignKeys {
+		writeDropForeignKey(out, schemaName, tableName, fk.Name)
+	}
+	for _, check := range d.checks {
+		writeDropCheckConstraint(out, schemaName, tableName, check.Name)
+	}
+	for _, index := range d.indexes {
+		if index.IsConstraint {
+			writeDropConstraint(out, schemaName, tableName, index.Name)
+		} else {
+			writeDropIndex(out, schemaName, index.Name)
 		}
+	}
+}
+
+func (d columnDependents) writeCreates(out *strings.Builder, schemaName, tableName string) {
+	for _, index := range d.indexes {
 		switch {
 		case index.Primary:
 			writeMigrationPrimaryKey(out, schemaName, tableName, index)
@@ -897,15 +956,11 @@ func writeColumnDependents(out *strings.Builder, tableDiff *schema.TableDiff, co
 			writeMigrationIndex(out, schemaName, tableName, index)
 		}
 	}
-	for _, check := range table.GetCheckConstraints() {
-		if !created[check.Name] && references(check.Expression) {
-			writeAddCheckConstraint(out, schemaName, tableName, check)
-		}
+	for _, check := range d.checks {
+		writeAddCheckConstraint(out, schemaName, tableName, check)
 	}
-	for _, fk := range table.GetForeignKeys() {
-		if !created[fk.Name] && slices.Contains(fk.Columns, column.Name) {
-			writeMigrationForeignKey(out, schemaName, tableName, fk)
-		}
+	for _, fk := range d.foreignKeys {
+		writeMigrationForeignKey(out, schemaName, tableName, fk)
 	}
 }
 

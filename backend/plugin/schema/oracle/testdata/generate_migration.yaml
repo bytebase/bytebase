@@ -8278,7 +8278,6 @@
                   "name": "VC",
                   "position": 2,
                   "type": "NUMBER",
-                  "nullable": true,
                   "generation": {
                     "type": "TYPE_VIRTUAL",
                     "expression": "\"A\"+1"
@@ -8315,12 +8314,24 @@
                   ],
                   "type": "NORMAL",
                   "visible": true
+                },
+                {
+                  "name": "T_VC",
+                  "expressions": [
+                    "\"VC\""
+                  ],
+                  "type": "NORMAL",
+                  "visible": true
                 }
               ],
               "check_constraints": [
                 {
                   "name": "T_S_CK",
                   "expression": "\"S\" > 0"
+                },
+                {
+                  "name": "T_VC_CK",
+                  "expression": "\"VC\" > 0"
                 }
               ]
             }
@@ -8376,7 +8387,6 @@
                   "name": "VC",
                   "position": 2,
                   "type": "NUMBER",
-                  "nullable": true,
                   "generation": {
                     "type": "TYPE_VIRTUAL",
                     "expression": "\"A\"+2"
@@ -8434,12 +8444,24 @@
                   ],
                   "type": "NORMAL",
                   "visible": true
+                },
+                {
+                  "name": "T_VC",
+                  "expressions": [
+                    "\"VC\""
+                  ],
+                  "type": "NORMAL",
+                  "visible": true
                 }
               ],
               "check_constraints": [
                 {
                   "name": "T_S_CK",
                   "expression": "\"S\" > 0"
+                },
+                {
+                  "name": "T_VC_CK",
+                  "expression": "\"VC\" > 0"
                 }
               ]
             },
@@ -8483,7 +8505,13 @@
         "VC" NUMBER GENERATED ALWAYS AS ("A"+1) VIRTUAL
     );
 
+    ALTER TABLE "T" DROP CONSTRAINT "T_VC_CK";
+    DROP INDEX "T_VC";
+    ALTER TABLE "T" MODIFY "VC" NULL;
     ALTER TABLE "T" MODIFY ("VC" AS ("A"+2));
+    ALTER TABLE "T" MODIFY "VC" NOT NULL;
+    CREATE INDEX "T_VC" ON "T" ("VC" ASC);
+    ALTER TABLE "T" ADD CONSTRAINT "T_VC_CK" CHECK ("VC" > 0);
     ALTER TABLE "T" MODIFY ("H" VISIBLE);
     ALTER TABLE "T" DROP COLUMN "S";
     ALTER TABLE "T" ADD "S" NUMBER GENERATED ALWAYS AS ("A"*3) VIRTUAL;
