@@ -360,7 +360,6 @@ regression.
 | **Snowflake** | one `Query()`, on demand, cached | graph, with pruning in place of estimates | none — `EXPLAIN` compiles without running, whichever format it names |
 | **Hive** | one `Query()`, on demand, cached | graph, with rows and row widths, no costs | none in the editor |
 | **Databricks** | one `Query()`, on demand, cached | text: Spark's `EXPLAIN FORMATTED` has no parser yet | none — `EXPLAIN` never executes what it plans |
-| **Hive, Snowflake** | one `Query()`, on demand, cached | text | per engine, text at most |
 
 A plan opened from a result is always an estimate, on every engine. Measured
 plans come from a typed `EXPLAIN ANALYZE` or its engine's equivalent, which is a
