@@ -563,6 +563,14 @@ to Text rather than erroring; engines change their output between versions, and
 PostgreSQL 18 already reformatted part of it. An explain that the engine itself
 rejects shows that error in the tab, like any failed query.
 
+The format a parser reads can also be newer than the server. TiDB prints
+`FORMAT=tidb_json` from v6.5.0 (December 2022) and does not know the name
+before it, so every TiDB that cannot answer predates that release; the editor
+asks for the format regardless rather than carry a version gate, and such a
+server shows that error where it used to show a text plan. The floors of the
+other structured formats are unmeasured; `json = 1, indexes = 1` makes
+ClickHouse the one worth measuring next.
+
 ---
 
 ## 4. Alternatives

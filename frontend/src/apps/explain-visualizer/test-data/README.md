@@ -190,7 +190,8 @@ To add one, the same client as above against a Doris frontend.
 
 `EXPLAIN FORMAT=tidb_json` output from TiDB 8.5 against the same schema. TiDB
 reports no cost in this format or any other the editor can ask for, so these
-plans carry rows alone.
+plans carry rows alone. It has printed these same keys since it added the
+format in v6.5.0, so one capture stands for every release that answers at all.
 
 | File | Shape it covers |
 | --- | --- |

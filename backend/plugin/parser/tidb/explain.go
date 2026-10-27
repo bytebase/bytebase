@@ -16,6 +16,10 @@ func init() {
 
 // tidbJSONFormat is TiDB's name for the plan as a tree of JSON objects. Its
 // other JSON-ish format, plain `json`, TiDB rejects outright.
+//
+// TiDB added tidb_json in v6.5.0 (December 2022) and does not know the name
+// before it. Nothing here reads the server's version, so a server older than
+// that answers an explain request with its own error rather than a plan.
 const tidbJSONFormat = "tidb_json"
 
 // explainStatement implements base.ExplainStatement. TiDB spells its structured
