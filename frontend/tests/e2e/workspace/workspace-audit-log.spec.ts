@@ -13,7 +13,6 @@ import { test, expect, type BrowserContext, type Page } from "@playwright/test";
 import enUS from "../../../src/locales/en-US.json";
 import { BytebaseApiClient, type IamPolicy } from "../framework/api-client";
 import { loadTestEnv, type TestEnv } from "../framework/env";
-import { runBaseline } from "../framework/run-baseline";
 
 const ACTOR_SCOPE = enUS["audit-log"]["advanced-search"].scope.actor;
 const ACTOR_COLUMN = enUS["audit-log"].table.actor;
@@ -37,7 +36,7 @@ async function auditedWriteAs(account: { email: string; serviceKey: string }): P
   await client.createSheet(env.project, `SELECT ${suffix};`);
 }
 
-test.beforeAll(async ({ browser }, testInfo) => {
+test.beforeAll(async ({ browser }) => {
   env = loadTestEnv();
   await env.api.login(env.adminEmail, env.adminPassword);
   const { workspace } = await env.api.getActuatorInfo();
@@ -53,9 +52,7 @@ test.beforeAll(async ({ browser }, testInfo) => {
   workspaceAccount = workspaceSA;
   projectAccount = projectSA;
 
-  originalProjectPolicy = await runBaseline(testInfo, "project-iam-policy", () =>
-    env.api.getProjectIamPolicy(env.project),
-  );
+  originalProjectPolicy = await env.api.getProjectIamPolicy(env.project);
   await env.api.appendProjectBinding(env.project, "roles/projectDeveloper", [
     `serviceAccount:${workspaceSA.email}`,
     `serviceAccount:${projectSA.email}`,

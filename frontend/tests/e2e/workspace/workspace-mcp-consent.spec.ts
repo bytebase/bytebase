@@ -10,16 +10,15 @@
 // consent page must disclose the workspace ceiling the grant is worth, and a
 // DISABLED ceiling must withhold Allow entirely.
 //
-// State safety: the MCP capability is captured once per run (shared with
-// workspace-mcp-policy) and restored in afterAll, since a workspace left
+// State safety: afterAll puts the capability back to READ_ONLY, the value every
+// workspace starts with (backend/store/workspace.go), since a workspace left
 // DISABLED would break every later MCP test.
 
 import { createHash, randomBytes } from "node:crypto";
-import { test, expect, type BrowserContext, type Page } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import enUS from "../../../src/locales/en-US.json";
 import { loadTestEnv, type TestEnv } from "../framework/env";
 import type { BytebaseApiClient } from "../framework/api-client";
-import { runBaseline } from "../framework/run-baseline";
 
 const CONSENT = enUS.oauth2.consent;
 const MODE = enUS.settings.mcp.policy.mode;
@@ -28,11 +27,8 @@ const CLIENT_NAME = "E2E MCP client";
 test.setTimeout(120_000);
 
 let env: TestEnv & { api: BytebaseApiClient };
-let sharedContext: BrowserContext;
-let page: Page;
 let clientId: string;
 let redirectUri: string;
-let originalCapability: string;
 
 async function readCapability(): Promise<string> {
   const setting = (await env.api.getSetting("MCP")) as {
@@ -69,25 +65,15 @@ function authorizeUrl(state: string, challenge: string): string {
 // The callback lands on a path the SPA does not know, so the app routes on
 // to its 404 page; the navigation request itself still carries the code or
 // the error the server redirected with, so it is captured at request time.
-function waitForCallback(): Promise<URL> {
+function waitForCallback(page: Page): Promise<URL> {
   return page
     .waitForRequest((request) => request.url().startsWith(`${redirectUri}?`), { timeout: 20_000 })
     .then((request) => new URL(request.url()));
 }
 
-test.beforeAll(async ({ browser }, testInfo) => {
+test.beforeAll(async () => {
   env = loadTestEnv();
   await env.api.login(env.adminEmail, env.adminPassword);
-  const baseline = await runBaseline(testInfo, "mcp-setting", async () => {
-    const setting = (await env.api.getSetting("MCP")) as {
-      value?: { mcp?: Record<string, unknown> };
-    } | null;
-    if (!setting?.value?.mcp?.capability) {
-      throw new Error("could not read the workspace MCP setting; refusing to run, since teardown could not restore it");
-    }
-    return setting.value.mcp;
-  });
-  originalCapability = String(baseline.capability);
   redirectUri = `${env.baseURL}/oauth-e2e-callback`;
   const client = await env.api.registerOAuth2Client(CLIENT_NAME, [redirectUri], [
     "authorization_code",
@@ -95,21 +81,15 @@ test.beforeAll(async ({ browser }, testInfo) => {
   ]);
   clientId = client.client_id;
   expect(clientId).not.toBe("");
-
-  sharedContext = await browser.newContext({ storageState: ".auth/state.json" });
-  page = await sharedContext.newPage();
 });
 
 test.afterAll(async () => {
-  if (originalCapability) {
-    await setCapability(originalCapability);
-    expect(await readCapability()).toBe(originalCapability);
-  }
-  await sharedContext?.close();
+  await setCapability("READ_ONLY");
+  expect(await readCapability()).toBe("READ_ONLY");
 });
 
 test.describe("Consent discloses the served ceiling and Allow issues a usable grant (X1)", () => {
-  test("Allow access → code → token → MCP initialize", async () => {
+  test("Allow access → code → token → MCP initialize", async ({ page }) => {
     await setCapability("READ_ONLY");
     const { verifier, challenge } = pkce();
     const state = `allow-${Date.now()}`;
@@ -122,7 +102,7 @@ test.describe("Consent discloses the served ceiling and Allow issues a usable gr
     await expect(page.getByText(MODE["read-only"].title, { exact: true }).first()).toBeVisible();
     await expect(page.getByRole("button", { name: enUS.common.deny, exact: true })).toBeVisible();
 
-    const callback = waitForCallback();
+    const callback = waitForCallback(page);
     await page.getByRole("button", { name: CONSENT["allow-access"], exact: true }).click();
     const url = await callback;
     const code = url.searchParams.get("code") ?? "";
@@ -141,14 +121,14 @@ test.describe("Consent discloses the served ceiling and Allow issues a usable gr
 });
 
 test.describe("Deny sends the client an access_denied error (X3)", () => {
-  test("the callback carries error=access_denied and the state", async () => {
+  test("the callback carries error=access_denied and the state", async ({ page }) => {
     await setCapability("READ_ONLY");
     const { challenge } = pkce();
     const state = `deny-${Date.now()}`;
     await page.goto(authorizeUrl(state, challenge));
     await expect(page.getByRole("heading", { name: CONSENT.title })).toBeVisible({ timeout: 20_000 });
 
-    const callback = waitForCallback();
+    const callback = waitForCallback(page);
     await page.getByRole("button", { name: enUS.common.deny, exact: true }).click();
     const url = await callback;
     expect(url.searchParams.get("error")).toBe("access_denied");
@@ -158,7 +138,7 @@ test.describe("Deny sends the client an access_denied error (X3)", () => {
 });
 
 test.describe("A DISABLED ceiling withholds Allow (X2)", () => {
-  test("the page says MCP is turned off and offers only Close", async () => {
+  test("the page says MCP is turned off and offers only Close", async ({ page }) => {
     await setCapability("DISABLED");
     const { challenge } = pkce();
     await page.goto(authorizeUrl(`disabled-${Date.now()}`, challenge));
