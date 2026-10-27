@@ -118,7 +118,7 @@ export function StatementThreadsLayer({
   // reviewer's findings, across every change of the plan.
   const walkerFilter = usePlanDetailStore((s) => s.walkerFilter);
   const setWalkerFilter = usePlanDetailStore((s) => s.setWalkerFilter);
-  const { focusInStatement } = useFocusThread();
+  const { focusInActivity, focusInStatement } = useFocusThread();
   const matchesWalker = useCallback(
     (thread: CommentThread) =>
       walkerFilter
@@ -417,9 +417,16 @@ export function StatementThreadsLayer({
       (entry) => entry.thread.root.name === threadFocus.commentName
     );
     if (!target) {
-      // Anchors are current only for the saved version; a thread that is not
-      // placed here has nothing to reveal.
-      if (comments.length > 0) clearThreadFocus(threadFocus.nonce);
+      // Anchors are current only for the saved version, and an oversized
+      // statement loads only its head: a thread this editor cannot show is
+      // read in its Activity card.
+      if (comments.length > 0) {
+        const root = threads.find(
+          (thread) => thread.root.name === threadFocus.commentName
+        )?.root;
+        if (root) focusInActivity(root);
+        clearThreadFocus(threadFocus.nonce);
+      }
       return;
     }
     expandThread(target.range.endLine, target.thread.root.name);
@@ -433,8 +440,10 @@ export function StatementThreadsLayer({
     editor,
     editorThreads,
     expandThread,
+    focusInActivity,
     spec.id,
     threadFocus,
+    threads,
   ]);
 
   // Track the editor's selection as a line range (empty = none).

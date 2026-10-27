@@ -228,6 +228,33 @@ export function selectEditorThreads(
   return placed.sort(compareEditorThreads);
 }
 
+// Whether the statement editor shows a thread: anchored, placed CURRENT on
+// its spec's current sheet, and inside the part of an oversized statement
+// the editor loaded. Anything else can only be read in its Activity card.
+export function isShownInEditor(
+  root: IssueComment,
+  specs: readonly Plan_Spec[],
+  placementFor: (
+    commentName: string,
+    specId: string,
+    sheetSha256: string | undefined
+  ) => Placement | undefined,
+  previewEndLineFor: (specId: string) => number | undefined
+): boolean {
+  const anchor = root.statementAnchor;
+  if (!anchor) return false;
+  const spec = specs.find((candidate) => candidate.id === anchor.spec);
+  const sheetSha256 = targetSha256OfSpec(spec);
+  const placement =
+    placementFor(root.name, anchor.spec, sheetSha256) ??
+    trivialPlacement(anchor, sheetSha256);
+  if (placement?.state !== "CURRENT") return false;
+  const previewEndLine = previewEndLineFor(anchor.spec);
+  return (
+    previewEndLine === undefined || placement.range.endLine <= previewEndLine
+  );
+}
+
 export const isEditorThreadVisible = (
   entry: EditorThread,
   previewEndLine: number | undefined

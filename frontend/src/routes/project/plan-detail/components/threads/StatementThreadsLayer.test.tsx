@@ -36,6 +36,7 @@ const mocks = vi.hoisted(() => ({
     | undefined,
   clearThreadFocus: vi.fn(),
   focusInStatement: vi.fn(),
+  focusInActivity: vi.fn(),
   sqlReviewV2: false,
   walkerFilter: undefined as { runType: number; set: string } | undefined,
   setWalkerFilter: vi.fn(),
@@ -100,7 +101,7 @@ vi.mock("../../shared/stores/usePlanDetailStore", () => ({
 
 vi.mock("../../hooks/useFocusThread", () => ({
   useFocusThread: () => ({
-    focusInActivity: vi.fn(),
+    focusInActivity: mocks.focusInActivity,
     focusInStatement: mocks.focusInStatement,
   }),
 }));
@@ -1052,6 +1053,21 @@ describe("StatementThreadsLayer", () => {
     expect(fake.setScrollTop).toHaveBeenCalledExactlyOnceWith(lineTop(10) + 1 - 8);
     expect(mocks.clearThreadFocus).toHaveBeenCalledWith(7);
   });
+  test("a focus request for a thread past the loaded preview opens its Activity card", () => {
+    mocks.comments = [threadRoot("near", 3, 4), threadRoot("far", 30, 31)];
+    mocks.threadFocus = {
+      commentName: `${ISSUE}/issueComments/far`,
+      specId: "spec-1",
+      nonce: 9,
+    };
+    const fake = createFakeEditor();
+    mount(fake.editor, issue, 20);
+    expect(mocks.focusInActivity).toHaveBeenCalledWith(
+      expect.objectContaining({ name: `${ISSUE}/issueComments/far` })
+    );
+    expect(mocks.clearThreadFocus).toHaveBeenCalledWith(9);
+  });
+
   test("the walker steps through unresolved threads in editor order and wraps", () => {
     mocks.comments = [
       threadRoot("a", 2, 2, { createdAt: 1 }),

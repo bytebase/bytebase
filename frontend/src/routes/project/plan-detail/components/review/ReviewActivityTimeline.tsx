@@ -54,14 +54,15 @@ import {
 import { usePlanDetailContext } from "../../shell/PlanDetailContext";
 import { PlanSpecChangeReference } from "../PlanChangeReference";
 import { CommentThreadCard } from "../threads/CommentThreadCard";
-import { trivialPlacement } from "../threads/placement/place";
 import { ReviewerIcon, reviewerName } from "../threads/ReviewResult";
 import { StatementAnchorContext } from "../threads/StatementAnchorContext";
 import {
   type CommentThread,
   groupThreads,
+  isShownInEditor,
   targetSha256OfSpec,
 } from "../threads/threadModel";
+import { usePreviewEndLines } from "../threads/useUnresolvedThreadCounts";
 import { consolidateConsecutive } from "./consolidateTimeline";
 import { foldTimeline } from "./foldTimeline";
 import { ReviewCommentComposer } from "./ReviewCommentComposer";
@@ -117,26 +118,30 @@ export function ReviewActivityTimeline({
   // conversation, or when the editor cannot show it.
   const placements = usePlanDetailStore((s) => s.placements);
   const placementTargets = usePlanDetailStore((s) => s.placementTargets);
+  const previewEndLines = usePreviewEndLines(
+    plan.specs,
+    `${projectNamePrefix}${page.projectId}`
+  );
   const keepFindingCard = useMemo(() => {
     if (!sqlReviewV2Enabled()) return undefined;
     return (root: IssueComment) => {
       const thread = threads.find((candidate) => candidate.root === root);
       if (thread && thread.replies.length > 0) return true;
       if (root.reviewMetadata?.superseded) return false;
-      const anchor = root.statementAnchor;
-      if (!anchor) return true;
-      const spec = plan.specs.find((candidate) => candidate.id === anchor.spec);
-      const sheetSha256 = targetSha256OfSpec(spec);
-      const placement =
-        placementOf(
-          { placements, placementTargets },
-          root.name,
-          anchor.spec,
-          sheetSha256
-        ) ?? trivialPlacement(anchor, sheetSha256);
-      return placement?.state !== "CURRENT";
+      return !isShownInEditor(
+        root,
+        plan.specs,
+        (commentName, specId, sheetSha256) =>
+          placementOf(
+            { placements, placementTargets },
+            commentName,
+            specId,
+            sheetSha256
+          ),
+        (specId) => previewEndLines.get(specId)
+      );
     };
-  }, [placementTargets, placements, plan.specs, threads]);
+  }, [placementTargets, placements, plan.specs, previewEndLines, threads]);
 
   const entries = useMemo(
     () =>
