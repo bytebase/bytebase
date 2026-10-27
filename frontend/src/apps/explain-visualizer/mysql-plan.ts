@@ -208,8 +208,8 @@ function toProperties(raw: JsonRecord, inherited: JsonRecord): PlanProperty[] {
   return properties;
 }
 
-/** The cost this operator states for itself, in either dialect's spelling. */
-function ownCost(raw: JsonRecord): number | undefined {
+/** The cost this operator states, in either dialect's spelling. */
+function statedCost(raw: JsonRecord): number | undefined {
   const info = isJsonRecord(raw.cost_info) ? raw.cost_info : undefined;
   if (info) {
     const read = optionalNumber(info.read_cost);
@@ -238,7 +238,14 @@ function toPlanNode(
 ): PlanNode {
   checkPlanDepth(depth);
   const children = toChildren(raw, id, depth);
-  const totalCost = ownCost(raw) ?? planSubtreeCost(children);
+  const stated = statedCost(raw);
+  const subtree = planSubtreeCost(children);
+  // A `table` states what reading and filtering that table costs and nothing
+  // below it: a subquery materialized for it is costed apart, and the block's
+  // `query_cost` leaves it out too. So a table's cost is its own, and every
+  // other operator's already covers what is under it.
+  const exclusive = key === TABLE_KEY && stated !== undefined;
+  const totalCost = exclusive ? stated + (subtree ?? 0) : (stated ?? subtree);
   const table = baseTable(key, raw);
   return {
     id,
@@ -246,7 +253,7 @@ function toPlanNode(
     subject: toSubject(raw),
     relation: table ? { table, unresolved: true } : undefined,
     totalCost,
-    selfCost: planSelfCost(totalCost, children),
+    selfCost: exclusive ? stated : planSelfCost(totalCost, children),
     rows:
       optionalNumber(raw.rows_produced_per_join) ??
       optionalNumber(raw.rows) ??

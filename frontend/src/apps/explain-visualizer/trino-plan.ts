@@ -9,6 +9,7 @@ import {
   type PlanRelation,
   parseWithDepthLimit,
   planLabel,
+  planSizeBudget,
 } from "./plan-model";
 
 /**
@@ -162,20 +163,31 @@ function toRows(raw: JsonRecord): number | undefined {
  * @param seen - The fragments on the path to this node. A fragment that reads
  * itself, directly or through another, would never finish; the rest of the
  * plan still draws.
+ * @param count - The size budget, since a fragment two remote sources read is
+ * drawn under each of them.
  */
 function toPlanNode(
   raw: JsonRecord,
   fragments: Map<string, JsonRecord>,
   id: string,
   seen: Set<string>,
-  depth: number
+  depth: number,
+  count: () => void
 ): PlanNode {
   checkPlanDepth(depth);
+  count();
   const name = stringValue(raw.name) ?? "Unknown";
   const children: PlanNode[] = [];
   const add = (child: JsonRecord) =>
     children.push(
-      toPlanNode(child, fragments, `${id}.${children.length}`, seen, depth + 1)
+      toPlanNode(
+        child,
+        fragments,
+        `${id}.${children.length}`,
+        seen,
+        depth + 1,
+        count
+      )
     );
 
   const own = Array.isArray(raw[CHILDREN_KEY]) ? raw[CHILDREN_KEY] : [];
@@ -229,7 +241,8 @@ export function parseTrinoPlan(source: string): PlanParseResult {
     return { ok: false, message: TRINO_PLAN_NO_PLAN_MESSAGE };
   }
 
+  const count = planSizeBudget();
   return parseWithDepthLimit(() =>
-    toPlanNode(root, fragments, "0", new Set([ROOT_FRAGMENT]), 0)
+    toPlanNode(root, fragments, "0", new Set([ROOT_FRAGMENT]), 0, count)
   );
 }

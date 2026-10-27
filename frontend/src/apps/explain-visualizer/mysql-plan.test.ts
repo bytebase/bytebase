@@ -164,6 +164,23 @@ describe("parseMysqlPlan", () => {
     expect(byId(tree, "0.0.0.0").relation).toBeUndefined();
   });
 
+  test("charges a table its own cost, not what its subquery cost", () => {
+    const tree = parseFixture(derivedTable);
+    const derived = byId(tree, "0.0");
+    const inner = byId(tree, "0.0.0.0.0.0");
+
+    // `read_cost` and `eval_cost` are what reading and filtering that table
+    // costs, and cover nothing below it: the subquery materialized for it is
+    // costed apart, and the block's own `query_cost` leaves it out too. Taking
+    // the subquery out of the table's cost charged the outer read a tenth of
+    // what MySQL said, and ranked the inner scan above it.
+    expect(derived.selfCost).toBeCloseTo(601.19 + 4789.5, 5);
+    expect(derived.totalCost).toBeCloseTo(601.19 + 4789.5 + 4829.75, 5);
+    expect(inner.selfCost).toBeCloseTo(40.25 + 4789.5, 5);
+    // The whole plan is the two reads, so neither is more than all of it.
+    expect(tree.costBasis).toBeCloseTo(601.19 + 4789.5 + 4829.75, 5);
+  });
+
   test("leaves a derived table unanswered and unflagged", () => {
     const tree = parseFixture(derivedTable);
     const derived = byId(tree, "0.0");

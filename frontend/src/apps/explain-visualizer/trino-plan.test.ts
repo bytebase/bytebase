@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import {
   PLAN_TOO_DEEP_MESSAGE,
+  PLAN_TOO_MANY_NODES_MESSAGE,
   type PlanNode,
   type PlanTree,
 } from "./plan-model";
@@ -21,6 +22,30 @@ const nestedPlan = (depth: number): string => {
     plan = { name: "Project", children: [plan] };
   }
   return JSON.stringify({ "0": plan });
+};
+
+/**
+ * `stages` fragments, each joining two remote sources that both read the next
+ * one, which is the shape a repartitioning join takes. Every path through the
+ * plan splices the rest of it again, so the tree doubles per fragment: 30
+ * would be 2^31 nodes if they were all built before anything counted them.
+ */
+const repartitionedPlan = (stages: number): string => {
+  const fragments: Record<string, unknown> = {};
+  const remote = (id: string) => ({
+    name: "RemoteSource",
+    descriptor: { sourceFragmentIds: `[${id}]` },
+    children: [],
+  });
+  for (let stage = 0; stage < stages; stage += 1) {
+    fragments[String(stage)] = {
+      name: "Join",
+      descriptor: {},
+      children: [remote(String(stage + 1)), remote(String(stage + 1))],
+    };
+  }
+  fragments[String(stages)] = { name: "TableScan", descriptor: {} };
+  return JSON.stringify(fragments);
 };
 
 const parse = (source: string): PlanTree => {
@@ -172,6 +197,18 @@ describe("parseTrinoPlan", () => {
       ok: false,
       message: TRINO_PLAN_NO_PLAN_MESSAGE,
     });
+  });
+
+  test("gives up on a plan that expands past the operators it draws", () => {
+    // A fragment two remote sources read is drawn under each of them, so
+    // without a budget this builds every copy before anything counts them.
+    expect(parseTrinoPlan(repartitionedPlan(30))).toEqual({
+      ok: false,
+      message: PLAN_TOO_MANY_NODES_MESSAGE,
+    });
+    // A plan small enough to draw still draws every path through it: each
+    // fragment is a join and two remote sources over two copies of the next.
+    expect(parse(repartitionedPlan(3)).nodes).toHaveLength(29);
   });
 
   test("gives up past the depth it can draw", () => {
