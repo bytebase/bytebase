@@ -34,11 +34,16 @@ import { UserSchema } from "@/types/proto-es/v1/user_service_pb";
 import type { PlanDetailPageSnapshot, PlanDetailPhase } from "./types";
 
 const mocks = vi.hoisted(() => ({
+  sqlReviewV2: false,
   fetchPlanSnapshot: vi.fn(),
   getIssueRoute: vi.fn(() => ({ name: "issue-detail" })),
   routerPush: vi.fn(),
   routerReplace: vi.fn(),
   setDocumentTitle: vi.fn(),
+}));
+
+vi.mock("@/utils/featureGates", () => ({
+  sqlReviewV2Enabled: () => mocks.sqlReviewV2,
 }));
 
 vi.mock("react-i18next", () => ({
@@ -121,6 +126,7 @@ const buildSnapshotPatch = ({
 
 describe("usePlanDetailPage", () => {
   beforeEach(() => {
+    mocks.sqlReviewV2 = false;
     vi.clearAllMocks();
     clearPagedDataCache();
     vi.spyOn(Math, "random").mockReturnValue(0.5);
@@ -368,6 +374,31 @@ describe("usePlanDetailPage", () => {
     expect(readyRenders[0]).toEqual(new Set(["deploy"]));
     expect(mocks.routerPush).not.toHaveBeenCalled();
     expect(mocks.routerReplace).not.toHaveBeenCalled();
+  });
+
+  test("under SQL Review V2 keeps Changes and Review open until the rollout exists", async () => {
+    mocks.sqlReviewV2 = true;
+    mocks.fetchPlanSnapshot.mockResolvedValue(
+      buildSnapshotPatch({
+        issue: {
+          name: "projects/foo/issues/1",
+          approvalStatus: ApprovalStatus.APPROVED,
+          draft: false,
+          status: IssueStatus.OPEN,
+        } as PlanDetailPageSnapshot["issue"],
+        planId: "plan-1",
+      })
+    );
+
+    const { result } = renderHook(
+      () => usePlanDetailPage({ projectId: "foo", planId: "plan-1" }),
+      { wrapper }
+    );
+
+    await waitFor(() => expect(result.current.ready).toBe(true));
+    expect(result.current.activePhases).toEqual(
+      new Set(["changes", "review", "deploy"])
+    );
   });
 
   test("expands every phase for an explicit review route", async () => {

@@ -1,5 +1,9 @@
 import type { StateCreator } from "zustand";
-import type { Issue, IssueComment } from "@/types/proto-es/v1/issue_service_pb";
+import type {
+  Issue,
+  IssueComment,
+  ReviewRun_Type,
+} from "@/types/proto-es/v1/issue_service_pb";
 import type {
   Plan,
   Plan_Spec,
@@ -7,6 +11,7 @@ import type {
 } from "@/types/proto-es/v1/plan_service_pb";
 import type { Rollout, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Placement } from "../../components/threads/placement/place";
+import type { FindingSet } from "../../utils/planGates";
 
 export type PlanDetailPhase = "changes" | "review" | "deploy";
 
@@ -77,10 +82,23 @@ export interface ThreadFocusRequest {
   nonce: number;
 }
 
+// Narrows the statement editor's walker to one set of one reviewer's
+// findings, as a click on a finding count asks for.
+export interface WalkerFilter {
+  runType: ReviewRun_Type;
+  set: FindingSet;
+}
+
 export type ThreadFocusSlice = {
   threadFocus: ThreadFocusRequest | undefined;
   requestThreadFocus: (request: Omit<ThreadFocusRequest, "nonce">) => void;
   clearThreadFocus: (nonce: number) => void;
+  walkerFilter: WalkerFilter | undefined;
+  setWalkerFilter: (filter: WalkerFilter | undefined) => void;
+  // An automated review row to expand and scroll to, as Activity's "Show"
+  // asks for.
+  reviewRowRequest: { reviewer: ReviewRun_Type; nonce: number } | undefined;
+  requestReviewRow: (reviewer: ReviewRun_Type) => void;
 };
 
 // Measurements of one placement run, kept so the decision to move the rule

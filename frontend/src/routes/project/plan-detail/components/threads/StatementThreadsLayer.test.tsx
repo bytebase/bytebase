@@ -11,9 +11,12 @@ import type {
 import { fakeEditorLayout, lineTop } from "@/test-utils/monacoLayout";
 import { PositionSchema } from "@/types/proto-es/v1/common_pb";
 import {
+  IssueComment_ReviewMetadata_Priority,
+  IssueComment_ReviewMetadataSchema,
   IssueComment_ThreadState,
   IssueCommentSchema,
   IssueSchema,
+  ReviewRun_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
   Plan_ChangeDatabaseConfigSchema,
@@ -32,6 +35,10 @@ const mocks = vi.hoisted(() => ({
     | { commentName: string; specId: string; nonce: number }
     | undefined,
   clearThreadFocus: vi.fn(),
+  focusInStatement: vi.fn(),
+  sqlReviewV2: false,
+  walkerFilter: undefined as { runType: number; set: string } | undefined,
+  setWalkerFilter: vi.fn(),
   placements: new Map<string, unknown>(),
   placementTargets: new Map<string, string>(),
   hasPermission: vi.fn((_project: unknown, _permission: unknown) => true),
@@ -84,9 +91,22 @@ vi.mock("../../shared/stores/usePlanDetailStore", () => ({
     selector({
       threadFocus: mocks.threadFocus,
       clearThreadFocus: mocks.clearThreadFocus,
+      walkerFilter: mocks.walkerFilter,
+      setWalkerFilter: mocks.setWalkerFilter,
       placements: mocks.placements,
       placementTargets: mocks.placementTargets,
     }),
+}));
+
+vi.mock("../../hooks/useFocusThread", () => ({
+  useFocusThread: () => ({
+    focusInActivity: vi.fn(),
+    focusInStatement: mocks.focusInStatement,
+  }),
+}));
+
+vi.mock("@/utils/featureGates", () => ({
+  sqlReviewV2Enabled: () => mocks.sqlReviewV2,
 }));
 
 vi.mock("../../shell/PlanDetailContext", () => ({
@@ -404,6 +424,8 @@ beforeEach(() => {
   mocks.findController = null;
   vi.clearAllMocks();
   mocks.threadFocus = undefined;
+  mocks.sqlReviewV2 = false;
+  mocks.walkerFilter = undefined;
   mocks.placements = new Map();
   mocks.placementTargets = new Map();
   mocks.hasPermission.mockReturnValue(true);
@@ -540,13 +562,13 @@ describe("StatementThreadsLayer", () => {
     expect(cardRoot(fake.widgets)).toBe(`${ISSUE}/issueComments/first`);
   });
 
-  test("distinguishes the current range from non-stacking passive ranges", () => {
+  test("distinguishes the current range from passive ranges and leaves resolved lines untinted", () => {
     mocks.comments = [threadRoot("single", 2, 2), threadRoot("multi", 1, 2, { createdAt: 2, resolved: true })];
     const fake = createFakeEditor();
     mount(fake.editor);
     const highlighted = () => fake.decorations.current.filter((d) => d.options.className === "bb-thread-line").map((d) => d.range.startLineNumber);
     expect(highlighted()).toEqual([2]);
-    expect(classesOf(fake.decorations.current, 1)).toContain("bb-thread-line--passive");
+    expect(classesOf(fake.decorations.current, 1)).not.toContain("bb-thread-line--passive");
     expect(fake.decorations.current.filter((d) => d.options.isWholeLine && d.range.startLineNumber === 2)).toHaveLength(1);
     fake.fire("move", 1, MouseTargetType.GUTTER_LINE_NUMBERS);
     expect(highlighted()).toEqual([2]);
@@ -557,8 +579,72 @@ describe("StatementThreadsLayer", () => {
     expect(highlighted()).toEqual([2]);
     act(() => picker?.querySelector("[data-testid='close-thread']")?.dispatchEvent(new MouseEvent("click", { bubbles: true })));
     expect(highlighted()).toEqual([]);
-    expect(fake.decorations.current.filter((d) => d.options.className === "bb-thread-line--passive").map((d) => d.range.startLineNumber)).toEqual([1, 2]);
+    expect(fake.decorations.current.filter((d) => d.options.className === "bb-thread-line--passive").map((d) => d.range.startLineNumber)).toEqual([2]);
     expect(fake.decorations.current.filter((d) => d.options.glyphMarginClassName?.includes("bb-thread-glyph--count-2"))).toHaveLength(1);
+  });
+
+  test("open findings tint their lines by priority", () => {
+    const finding = (id: string, line: number, priority: IssueComment_ReviewMetadata_Priority) =>
+      create(IssueCommentSchema, {
+        ...threadRoot(id, line, line),
+        reviewMetadata: create(IssueComment_ReviewMetadataSchema, {
+          runType: ReviewRun_Type.RULE,
+          priority,
+        }),
+      });
+    mocks.comments = [
+      threadRoot("discussion", 2, 2),
+      finding("p0", 4, IssueComment_ReviewMetadata_Priority.P0),
+      finding("p1", 6, IssueComment_ReviewMetadata_Priority.P1),
+    ];
+    const fake = createFakeEditor();
+    mount(fake.editor);
+    expect(lines(fake.decorations.current, "bb-thread-line")).toEqual([2]);
+    expect(lines(fake.decorations.current, "bb-thread-line--blocking")).toEqual([4]);
+    expect(lines(fake.decorations.current, "bb-thread-line--attention")).toEqual([6]);
+  });
+
+  test("a filtered walker steps through one reviewer's findings across changes", () => {
+    const finding = (id: string, line: number, spec = "spec-1") =>
+      create(IssueCommentSchema, {
+        ...threadRoot(id, line, line),
+        statementAnchor: create(StatementAnchorSchema, {
+          spec,
+          sheetSha256: SHA,
+          startPosition: create(PositionSchema, { line, column: 0 }),
+          endPosition: create(PositionSchema, { line, column: 0 }),
+        }),
+        reviewMetadata: create(IssueComment_ReviewMetadataSchema, {
+          runType: ReviewRun_Type.RULE,
+          priority: IssueComment_ReviewMetadata_Priority.P1,
+        }),
+      });
+    mocks.comments = [threadRoot("discussion", 1, 1), finding("first", 3), finding("other-spec", 2, "spec-2")];
+    mocks.walkerFilter = { runType: ReviewRun_Type.RULE, set: "confirm" };
+    const fake = createFakeEditor();
+    mount(fake.editor);
+    const walker = () => hosted(fake.widgets, "[data-testid='thread-walker']");
+    expect(walker()?.textContent).toContain("plan.review.thread.walker.filter");
+    expect(walker()?.textContent).toContain("/2");
+    const next = () =>
+      act(() =>
+        walker()
+          ?.querySelector("[aria-label='plan.review.thread.walker.next']")
+          ?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+      );
+    next();
+    expect(cardRoots(fake.widgets)).toContain(`${ISSUE}/issueComments/first`);
+    expect(walker()?.textContent).toContain("1/2");
+    next();
+    expect(mocks.focusInStatement).toHaveBeenCalledWith(
+      expect.objectContaining({ name: `${ISSUE}/issueComments/other-spec` })
+    );
+    act(() =>
+      walker()
+        ?.querySelector("[aria-label='plan.review.thread.walker.clear-filter']")
+        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+    );
+    expect(mocks.setWalkerFilter).toHaveBeenCalledWith(undefined);
   });
 
   test("a pending selection replaces the reading highlight; an open composer keeps both", () => {
@@ -859,6 +945,16 @@ describe("StatementThreadsLayer", () => {
     expect(
       (fake.editor as unknown as { addAction: ReturnType<typeof vi.fn> }).addAction
     ).not.toHaveBeenCalled();
+  });
+
+  test("under SQL Review V2 a draft takes new threads", () => {
+    mocks.sqlReviewV2 = true;
+    mocks.comments = [];
+    const fake = createFakeEditor();
+    mount(fake.editor, create(IssueSchema, { name: ISSUE, draft: true }));
+    expect(fake.editor.addAction).toHaveBeenCalled();
+    fake.fire("move", 2, MouseTargetType.CONTENT_TEXT);
+    expect(classesOf(fake.decorations.current, 2)).toContain("bb-thread-add-glyph");
   });
 
   test("draft issues show existing threads but enable creation only after submission", () => {

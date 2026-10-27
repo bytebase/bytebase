@@ -11,6 +11,7 @@ import type { PlanDetailPageState } from "./shell/hooks/types";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
+  reviewState: undefined as unknown,
   localStorage: {
     clear: vi.fn(),
     getItem: vi.fn(() => null),
@@ -73,7 +74,7 @@ vi.mock("./components/deploy/DeployBranch", () => ({
 }));
 
 vi.mock("./components/review/PlanReviewSection", () => ({
-  PlanReviewSection: () => null,
+  PlanReviewSection: () => <div data-testid="plan-review-section" />,
 }));
 
 vi.mock("./components/PlanDetailChangesBranch", () => ({
@@ -124,6 +125,15 @@ vi.mock("./utils/phaseSummary", () => ({
   buildChangesSummary: () => "",
   buildDeploySummary: () => "",
   buildReviewSummary: () => "",
+  buildReviewSummaryV2: () => "review summary v2",
+}));
+
+vi.mock("./hooks/usePlanReviewState", () => ({
+  usePlanReviewState: () => mocks.reviewState,
+}));
+
+vi.mock("./components/PlanDetailDeployWaiting", () => ({
+  PlanDetailDeployWaiting: () => <div data-testid="deploy-waiting" />,
 }));
 
 import { ProjectPlanDetailPage } from "./ProjectPlanDetailPage";
@@ -133,6 +143,7 @@ let root: ReturnType<typeof createRoot>;
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.reviewState = undefined;
   mocks.branchMountCount.value = 0;
   container = document.createElement("div");
   document.body.appendChild(container);
@@ -503,6 +514,44 @@ describe("ProjectPlanDetailPage", () => {
       container.querySelector("[data-testid='deploy-future-control']")
     ).toBeNull();
     expect(container.textContent).not.toContain("common.not-started");
+  });
+
+  it("under SQL Review V2 a draft opens Review and Deploy lists what it waits on", async () => {
+    const page = buildPage();
+    page.isCreating = false;
+    page.planId = "1";
+    page.plan.name = "projects/foo/plans/1";
+    page.plan.issue = "projects/foo/issues/1";
+    page.activePhases = new Set(["changes", "review"]);
+    page.issue = {
+      name: "projects/foo/issues/1",
+      draft: true,
+    } as PlanDetailPageState["issue"];
+    mocks.usePlanDetailPage.mockReturnValue(page);
+    mocks.reviewState = {
+      rows: [
+        {
+          reviewer: "rule",
+          conclusion: "open",
+          findings: { open: 2, resolved: 0, openP0: 0 },
+          holdsRollout: true,
+        },
+      ],
+      gates: [],
+      openDiscussions: 0,
+    };
+
+    await act(async () => {
+      root.render(
+        <ProjectPlanDetailPage planId="1" projectId="foo" specId="spec-1" />
+      );
+      await Promise.resolve();
+    });
+
+    expect(container.querySelector("[data-testid='plan-review-section']")).not.toBeNull();
+    expect(container.textContent).not.toContain("plan.phase.review-description");
+    expect(container.querySelector("[data-testid='deploy-waiting']")).not.toBeNull();
+    expect(container.querySelector("[data-testid='phase-attention']")).not.toBeNull();
   });
 
   it("shows an incomplete state for a persisted plan without its Draft Review Issue", async () => {

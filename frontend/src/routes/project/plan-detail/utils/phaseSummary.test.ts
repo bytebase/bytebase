@@ -13,8 +13,10 @@ import {
   buildChangesSummary,
   buildDeploySummary,
   buildReviewSummary,
+  buildReviewSummaryV2,
   isRolloutExpected,
 } from "./phaseSummary";
+import { emptyFindings, ruleReviewRow } from "./planGates";
 
 const templates: Record<string, string> = {
   "common.and": "and",
@@ -28,6 +30,14 @@ const templates: Record<string, string> = {
   "plan.summary.n-passed": "{{n}} passed",
   "plan.summary.n-unresolved-threads": "{{count}} unresolved threads",
   "plan.summary.n-warning": "{{n}} warning",
+  "plan.summary.approved-by": "Approved by {{names}}",
+  "plan.summary.no-approval-required": "No approval required",
+  "plan.findings.n-accepted": "{{count}} accepted",
+  "plan.findings.n-overridden": "{{count}} resolved without a change",
+  "plan.findings.separator": ", ",
+  "plan.automated-review.summary-part": "{{reviewer}}: {{status}}",
+  "plan.deploy-waiting.open-discussions": "{{count}} open discussions",
+  "sql-review.standard-rules.self": "Standard rules",
 };
 
 const t = (key: string, options?: Record<string, unknown>) => {
@@ -327,5 +337,63 @@ describe("isRolloutExpected", () => {
     } as unknown as Plan;
 
     expect(isRolloutExpected({ issue: approvedIssue, plan })).toBe(true);
+  });
+});
+
+describe("SQL Review V2 summaries", () => {
+  const resolvedRule = ruleReviewRow({
+    run: null,
+    stale: false,
+    loadFailed: false,
+    findings: {
+      ...emptyFindings(),
+      resolved: 3,
+      overridden: 1,
+      accepted: [{ key: "rule:7", ruleType: 7, title: "", count: 2 }],
+    },
+  });
+
+  test("names the approvers and each reviewer's conclusion", () => {
+    const issue = {
+      draft: false,
+      approvalStatus: ApprovalStatus.APPROVED,
+      approvalTemplate: { flow: { roles: ["roles/a", "roles/b"] } },
+      approvers: [
+        { principal: "users/alex@example.com" },
+        { principal: "users/dana@example.com" },
+      ],
+    } as unknown as Issue;
+    expect(
+      buildReviewSummaryV2(
+        issue,
+        t,
+        [{ ...resolvedRule, conclusion: "resolved" }],
+        0
+      )
+    ).toBe(
+      "Approved by alex, dana · Standard rules: 2 accepted, 1 resolved without a change"
+    );
+  });
+
+  test("says no approval is required and counts open discussions", () => {
+    const issue = {
+      draft: false,
+      approvalStatus: ApprovalStatus.SKIPPED,
+      approvers: [],
+    } as unknown as Issue;
+    expect(buildReviewSummaryV2(issue, t, [], 2)).toBe(
+      "No approval required · 2 open discussions"
+    );
+  });
+
+  test("leaves the checks out of the Changes summary on request", () => {
+    const plan = {
+      planCheckRunStatusCount: { SUCCESS: 2 },
+      specs: [],
+    } as unknown as Plan;
+    expect(buildChangesSummary(plan, t)).toContain("2 passed");
+    expect(
+      buildChangesSummary(plan, t, { includeChecks: false })
+    ).not.toContain("passed");
   });
 });

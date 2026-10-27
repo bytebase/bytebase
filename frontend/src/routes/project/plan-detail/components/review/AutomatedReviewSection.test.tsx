@@ -1,0 +1,365 @@
+import { create } from "@bufbuild/protobuf";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { PositionSchema } from "@/types/proto-es/v1/common_pb";
+import {
+  IssueComment_ReviewMetadata_Priority,
+  IssueComment_ReviewMetadataSchema,
+  IssueComment_ThreadState,
+  IssueCommentSchema,
+  IssueSchema,
+  ReviewRun_Status,
+  ReviewRun_Type,
+  ReviewRunSchema,
+  StatementAnchorSchema,
+} from "@/types/proto-es/v1/issue_service_pb";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import {
+  Plan_ChangeDatabaseConfigSchema,
+  PlanSchema,
+} from "@/types/proto-es/v1/plan_service_pb";
+import { ReviewRuleType } from "@/types/proto-es/v1/review_rule_pb";
+import type { PlanReviewState } from "../../hooks/usePlanReviewState";
+import {
+  type AutomatedReviewRow,
+  emptyFindings,
+  type ReviewerFindings,
+} from "../../utils/planGates";
+
+const mocks = vi.hoisted(() => ({
+  comments: [] as unknown[],
+  focusInStatement: vi.fn(),
+  setWalkerFilter: vi.fn(),
+  runChecks: vi.fn(async () => undefined),
+  reload: vi.fn(async () => undefined),
+  routerPush: vi.fn(),
+  ruleReview: undefined as unknown,
+  rules: undefined as unknown,
+}));
+
+vi.mock("react-i18next", () => ({
+  initReactI18next: { type: "3rdParty", init: () => {} },
+  useTranslation: () => ({
+    t: (key: string, options?: Record<string, unknown>) =>
+      options?.count === undefined ? key : `${key}:${options.count}`,
+  }),
+}));
+
+vi.mock("@/app/router", () => ({ router: { push: mocks.routerPush } }));
+
+vi.mock("@/components/HumanizeTs", async () => ({
+  ...(await import("@/test-utils/humanizeTs")).humanizeTsStub(),
+}));
+
+vi.mock("@/components/plan-check/PlanCheckSection", () => ({
+  PlanCheckResultsDrawer: ({ open }: { open: boolean }) =>
+    open ? <div data-testid="checks-drawer" /> : null,
+}));
+
+vi.mock("@/stores/app", () => ({
+  useAppStore: (selector: (state: unknown) => unknown) =>
+    selector({
+      getIssueComments: () => mocks.comments,
+      databasesByName: {
+        "instances/i/databases/hr_test": {
+          instanceResource: { engine: Engine.POSTGRES },
+        },
+      },
+      dbGroupsByName: {},
+      dbGroupViewByName: {},
+    }),
+}));
+
+vi.mock("../../hooks/useEffectiveStandardRules", () => ({
+  useEffectiveStandardRules: () => mocks.rules,
+}));
+
+vi.mock("../../hooks/usePlanCheckActions", () => ({
+  usePlanCheckActions: () => ({
+    allowRunChecks: true,
+    isRunningChecks: false,
+    runChecks: mocks.runChecks,
+  }),
+}));
+
+vi.mock("../../hooks/useFocusThread", () => ({
+  useFocusThread: () => ({
+    focusInActivity: vi.fn(),
+    focusInStatement: mocks.focusInStatement,
+  }),
+}));
+
+vi.mock("../../hooks/useSqlReviewV2", () => ({
+  useSqlReviewV2: () => ({ ruleReview: mocks.ruleReview }),
+}));
+
+vi.mock("../../shared/stores/usePlanDetailStore", () => {
+  const state = {
+    reviewRowRequest: undefined,
+    setWalkerFilter: mocks.setWalkerFilter,
+  };
+  return {
+    usePlanDetailStore: (selector: (s: unknown) => unknown) => selector(state),
+    usePlanDetailStoreApi: () => ({ getState: () => state }),
+  };
+});
+
+vi.mock("../../shell/PlanDetailContext", () => ({
+  usePlanDetailContext: () => ({
+    issue: create(IssueSchema, { name: "projects/p/issues/1" }),
+    plan: create(PlanSchema, {
+      specs: [
+        {
+          id: "spec-1",
+          config: {
+            case: "changeDatabaseConfig",
+            value: create(Plan_ChangeDatabaseConfigSchema, {
+              targets: ["instances/i/databases/hr_test"],
+            }),
+          },
+        },
+      ],
+    }),
+    planCheckRuns: [],
+    project: { ciSamplingSize: 0 },
+    projectId: "p",
+  }),
+}));
+
+import { AutomatedReviewSection } from "./AutomatedReviewSection";
+
+const finding = (
+  name: string,
+  line: number,
+  options: {
+    ruleType?: ReviewRuleType;
+    resolved?: boolean;
+    priority?: IssueComment_ReviewMetadata_Priority;
+  } = {}
+) =>
+  create(IssueCommentSchema, {
+    name,
+    threadState: options.resolved
+      ? IssueComment_ThreadState.RESOLVED
+      : IssueComment_ThreadState.OPEN,
+    statementAnchor: create(StatementAnchorSchema, {
+      spec: "spec-1",
+      startPosition: create(PositionSchema, { line }),
+    }),
+    reviewMetadata: create(IssueComment_ReviewMetadataSchema, {
+      runType: ReviewRun_Type.RULE,
+      ruleType: options.ruleType ?? ReviewRuleType.DISALLOW_DROP_OBJECT,
+      priority: options.priority ?? IssueComment_ReviewMetadata_Priority.P1,
+    }),
+  });
+
+const findings = (extra: Partial<ReviewerFindings> = {}): ReviewerFindings => ({
+  ...emptyFindings(),
+  ...extra,
+});
+
+const row = (
+  reviewer: AutomatedReviewRow["reviewer"],
+  conclusion: AutomatedReviewRow["conclusion"],
+  rowFindings = findings(),
+  extra: Partial<AutomatedReviewRow> = {}
+): AutomatedReviewRow => ({
+  reviewer,
+  conclusion,
+  findings: rowFindings,
+  holdsRollout: conclusion !== "passed" && conclusion !== "resolved",
+  ...extra,
+});
+
+const ai = (overrides: Partial<PlanReviewState["ai"]> = {}) => ({
+  allowRun: true,
+  canStart: true,
+  editing: false,
+  run: null,
+  runReview: vi.fn(async () => undefined),
+  shown: true,
+  starting: false,
+  ...overrides,
+});
+
+const renderSection = (
+  rows: AutomatedReviewRow[],
+  aiState: PlanReviewState["ai"] = ai()
+) =>
+  render(
+    <AutomatedReviewSection
+      state={{ rows, gates: [], openDiscussions: 0, ai: aiState }}
+    />
+  );
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  mocks.comments = [];
+  mocks.ruleReview = { loadFailed: false, reload: mocks.reload };
+  mocks.rules = { rules: [1, 2, 3], source: "project" };
+});
+
+afterEach(cleanup);
+
+describe("AutomatedReviewSection", () => {
+  test("splits a reviewer's open findings by what they ask", () => {
+    renderSection([
+      row("rule", "open", findings({ open: 3, fix: 1, confirm: 2 })),
+      row("ai", "not-run"),
+      row("policy", "passed", undefined, { targets: 2 }),
+    ]);
+    expect(
+      screen.getByText("plan.automated-review.needs-attention:2")
+    ).toBeDefined();
+    expect(screen.getByText("plan.findings.n-fix:1")).toBeDefined();
+    expect(screen.getByText("plan.findings.n-confirm:2")).toBeDefined();
+    expect(screen.queryByText(/plan.findings.n-advice/)).toBeNull();
+    expect(screen.getByText("plan.automated-review.not-run")).toBeDefined();
+    expect(screen.getByText("plan.automated-review.passed-on:2")).toBeDefined();
+  });
+
+  test("a count opens the first finding of its set and narrows the walker", () => {
+    mocks.comments = [
+      finding("line-4", 4),
+      finding("line-2", 2),
+      finding("p0", 3, { priority: IssueComment_ReviewMetadata_Priority.P0 }),
+    ];
+    renderSection([row("rule", "open", findings({ open: 3, fix: 1, confirm: 2 }))]);
+    fireEvent.click(screen.getByText("plan.findings.n-confirm:2"));
+    expect(mocks.setWalkerFilter).toHaveBeenCalledWith({
+      runType: ReviewRun_Type.RULE,
+      set: "confirm",
+    });
+    expect(mocks.focusInStatement).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "line-2" })
+    );
+    fireEvent.click(screen.getByText("plan.findings.n-fix:1"));
+    expect(mocks.focusInStatement).toHaveBeenLastCalledWith(
+      expect.objectContaining({ name: "p0" })
+    );
+  });
+
+  test("names a P0 resolved without a change and counts it as needing attention", () => {
+    mocks.comments = [
+      finding("null-3", 3, {
+        ruleType: ReviewRuleType.REQUIRE_IS_NULL,
+        priority: IssueComment_ReviewMetadata_Priority.P0,
+        resolved: true,
+      }),
+    ];
+    renderSection([
+      row("rule", "resolved", findings({ resolved: 1, overridden: 1 })),
+    ]);
+    expect(
+      screen.getByText("plan.automated-review.needs-attention:1")
+    ).toBeDefined();
+    const warning = screen.getByTestId("findings-overridden");
+    expect(warning.textContent).toContain("plan.findings.overridden-warning:1");
+    expect(warning.textContent).toContain("plan.findings.name-at-line");
+    fireEvent.click(screen.getByText("plan.findings.overridden-warning:1"));
+    expect(mocks.setWalkerFilter).toHaveBeenCalledWith({
+      runType: ReviewRun_Type.RULE,
+      set: "overridden",
+    });
+    expect(mocks.focusInStatement).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "null-3" })
+    );
+  });
+
+  test("lists accepted risks by rule and only counts dismissed advice and earlier runs", () => {
+    renderSection([
+      row(
+        "rule",
+        "resolved",
+        findings({
+          resolved: 4,
+          accepted: [
+            {
+              key: "rule:7",
+              ruleType: ReviewRuleType.DISALLOW_DROP_OBJECT,
+              title: "",
+              count: 2,
+            },
+            {
+              key: "rule:6",
+              ruleType: ReviewRuleType.REQUIRE_WHERE,
+              title: "",
+              count: 1,
+            },
+          ],
+          dismissed: 1,
+          earlier: 3,
+        })
+      ),
+    ]);
+    const accepted = screen.getByTestId("findings-accepted");
+    expect(accepted.textContent).toContain("plan.findings.accepted:3");
+    expect(accepted.textContent).toContain("plan.findings.name-times:2");
+    expect(screen.getByText(/plan.findings.n-dismissed:1/)).toBeDefined();
+    expect(screen.getByText(/plan.findings.n-earlier:3/)).toBeDefined();
+    expect(screen.queryByTestId("findings-overridden")).toBeNull();
+  });
+
+  test("says what the rule review covered", () => {
+    renderSection([row("rule", "passed")]);
+    const scope = screen.getByTestId("review-scope");
+    expect(scope.textContent).toContain(
+      "plan.automated-review.scope-with-engines"
+    );
+    expect(scope.textContent).toContain("plan.automated-review.project-rules");
+  });
+
+  test("offers Run for a rule review that is out of date, and nothing for a current one", async () => {
+    const { unmount } = renderSection([row("rule", "outdated")]);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /common.run/ }));
+    });
+    expect(mocks.runChecks).toHaveBeenCalledOnce();
+    expect(mocks.reload).toHaveBeenCalledOnce();
+    unmount();
+
+    renderSection([row("rule", "open", findings({ open: 1, confirm: 1 }))]);
+    expect(screen.queryByRole("button", { name: /common.run/ })).toBeNull();
+  });
+
+  test("shows a failed run's error in full with a retry", () => {
+    renderSection([
+      row("rule", "failed", undefined, {
+        error: "hr_test: metadata not synced",
+      }),
+    ]);
+    expect(screen.getByText("hr_test: metadata not synced")).toBeDefined();
+    expect(
+      screen.getByRole("button", { name: /plan.automated-review.retry/ })
+    ).toBeDefined();
+  });
+
+  test("a finished AI review runs again only after a confirmation", async () => {
+    const aiState = ai({
+      run: create(ReviewRunSchema, { status: ReviewRun_Status.DONE }),
+    });
+    renderSection([row("ai", "passed")], aiState);
+    expect(
+      screen.queryByRole("button", { name: "plan.ai-review.run" })
+    ).toBeNull();
+    fireEvent.click(screen.getAllByRole("button", { name: "common.more" })[1]);
+    fireEvent.click(await screen.findByText("plan.ai-review.run-again"));
+    expect(aiState.runReview).not.toHaveBeenCalled();
+    expect(screen.getByText("plan.ai-review.run-again-title")).toBeDefined();
+    const confirm = screen
+      .getAllByRole("button", { name: "plan.ai-review.run-again" })
+      .at(-1);
+    await act(async () => {
+      fireEvent.click(confirm!);
+    });
+    expect(aiState.runReview).toHaveBeenCalledOnce();
+  });
+
+  test("a plan check row opens the check details", () => {
+    renderSection([
+      row("policy", "open", findings({ open: 1, fix: 1 }), { targets: 1 }),
+    ]);
+    fireEvent.click(screen.getByText("plan.automated-review.details"));
+    expect(screen.getByTestId("checks-drawer")).toBeDefined();
+  });
+});

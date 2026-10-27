@@ -4,7 +4,9 @@ import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
 import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
 import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
+import { usePlanReviewState } from "../../hooks/usePlanReviewState";
 import { usePlanDetailContext } from "../../shell/PlanDetailContext";
+import { AutomatedReviewSection } from "./AutomatedReviewSection";
 import { ReviewActivityTimeline } from "./ReviewActivityTimeline";
 import { ReviewApprovalFlow } from "./ReviewApprovalFlow";
 import { ReviewReadinessFooter } from "./ReviewReadinessFooter";
@@ -35,16 +37,32 @@ export function PlanReviewSection() {
   const comments = useAppStore((state) =>
     issueName ? state.getIssueComments(issueName) : EMPTY_COMMENTS
   );
+  // Under SQL Review V2 the machine reviews run from draft onward, so Review
+  // shows them, and Deploy lists what the rollout waits on.
+  const reviewState = usePlanReviewState();
 
   if (!issue) return null;
 
   if (issue.draft) {
     return (
-      <ReviewActivityTimeline
-        comments={comments}
-        issue={issue}
-        plan={page.plan}
-      />
+      <div className="flex flex-col">
+        {reviewState && (
+          <div className="flex flex-col gap-y-1 px-4 pt-3">
+            <h3 className="text-base font-medium text-main">
+              {t("issue.approval-flow.self")}
+            </h3>
+            <p className="text-sm text-control-light">
+              {t("plan.review.approval-after-submit")}
+            </p>
+          </div>
+        )}
+        {reviewState && <AutomatedReviewSection state={reviewState} />}
+        <ReviewActivityTimeline
+          comments={comments}
+          issue={issue}
+          plan={page.plan}
+        />
+      </div>
     );
   }
 
@@ -66,12 +84,13 @@ export function PlanReviewSection() {
           the approval is skipped / has no roles, so no guard is needed here. */}
       <ReviewApprovalFlow issue={issue} />
       <ReviewRejectionBanner comments={comments} issue={issue} />
+      {reviewState && <AutomatedReviewSection state={reviewState} />}
       <ReviewActivityTimeline
         comments={comments}
         issue={issue}
         plan={page.plan}
       />
-      <ReviewReadinessFooter issue={issue} plan={page.plan} />
+      {!reviewState && <ReviewReadinessFooter issue={issue} plan={page.plan} />}
     </div>
   );
 }

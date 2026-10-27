@@ -8,6 +8,7 @@ import {
   type StatementAnchor,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import { sqlReviewV2Enabled } from "@/utils/featureGates";
 import { hasProjectPermissionV2 } from "@/utils/iam/permission";
 
 // Resolve and Reopen go through UpdateIssueComment, which the server gates
@@ -19,12 +20,14 @@ export function canSettleThread(project: Project | undefined): boolean {
   );
 }
 
+// A draft takes comments only where its Review section shows them: under
+// SQL Review V2, which reviews drafts too.
 export function canReplyToThread(
   project: Project | undefined,
   issue: Issue
 ): boolean {
   return Boolean(
-    !issue.draft &&
+    (!issue.draft || sqlReviewV2Enabled()) &&
       project &&
       hasProjectPermissionV2(project, "bb.issueComments.create")
   );

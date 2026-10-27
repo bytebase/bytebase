@@ -1780,12 +1780,42 @@
     "add-spec-pending-draft": "请先保存或放弃当前的待处理变更，然后再添加新变更",
     "ai-review": {
       "failed-to-run": "无法启动 AI 审核",
-      "finished": "已完成",
-      "not-run": "尚未运行",
-      "queued": "排队中",
       "run": "运行 AI 审核",
-      "save-first": "请先保存或放弃修改，再运行 AI 审核。",
-      "status-unknown": "暂时无法获取状态"
+      "run-again": "再次运行",
+      "run-again-description": "每次运行都会为所审核的每个数据库调用模型，结果可能不同。新结果会替换上次运行的发现，包括已被解决的问题。",
+      "run-again-title": "再次运行 AI 审核？",
+      "save-first": "请先保存或放弃修改，再运行 AI 审核。"
+    },
+    "automated-review": {
+      "details": "详情",
+      "failed": "无法运行",
+      "ghost": "在线迁移试运行",
+      "n-databases_one": "{{count}} 个数据库",
+      "n-databases_other": "{{count}} 个数据库",
+      "n-open": "{{count}} 个待处理",
+      "n-warnings_one": "{{count}} 个警告",
+      "n-warnings_other": "{{count}} 个警告",
+      "needs-attention": "{{total}} 项中有 {{count}} 项需要处理",
+      "no-findings": "未发现问题",
+      "no-open-findings": "没有待处理的问题",
+      "not-run": "尚未运行",
+      "nothing-needs-attention": "无需处理",
+      "out-of-date": "已过期",
+      "outdated": "本次运行后 SQL 已变更",
+      "passed": "通过",
+      "passed-on_one": "在 {{count}} 个数据库上通过",
+      "passed-on_other": "在 {{count}} 个数据库上通过",
+      "policy": "审核策略",
+      "project-rules": "项目规则：开启 {{on}}/{{total}} 条",
+      "rerun-all": "全部重新运行",
+      "retry": "重试",
+      "running": "运行中",
+      "sampled": "抽样 {{count}}/{{total}} 个数据库",
+      "scope": "审核了 {{databases}}",
+      "scope-with-engines": "审核了 {{databases}}（{{engines}}）",
+      "self": "自动审核",
+      "summary-part": "{{reviewer}}：{{status}}",
+      "workspace-rules": "工作区规则：开启 {{on}}/{{total}} 条"
     },
     "blocker": {
       "clears-on-its-own": "将自动完成"
@@ -1800,12 +1830,57 @@
       "started": "已开始计划检查"
     },
     "create-plan": "创建计划",
+    "deploy-waiting": {
+      "approval": "审批",
+      "approval-from": "{{role}} 的审批",
+      "approval-rejected": "审批被拒绝",
+      "auto-create": "以上各项全部通过后，Bytebase 会自动创建发布。",
+      "creating-rollout": "全部通过，正在创建发布…",
+      "open-discussions_one": "{{count}} 个未解决的讨论",
+      "open-discussions_other": "{{count}} 个未解决的讨论",
+      "overridden_one": "{{reviewer}} 中有 {{count}} 项必须修改的问题未修改就被解决",
+      "overridden_other": "{{reviewer}} 中有 {{count}} 项必须修改的问题未修改就被解决",
+      "reviewer-failed": "{{reviewer}} 无法运行",
+      "reviewer-findings": "{{reviewer}}：{{findings}}",
+      "reviewer-not-run": "{{reviewer}} 尚未运行",
+      "reviewer-outdated": "{{reviewer}} 运行后 SQL 已变更",
+      "reviewer-running": "{{reviewer}} 运行中",
+      "show": "查看",
+      "submit": "提交审核",
+      "waiting-on": "正在等待",
+      "worth-a-look": "不会挡住发布，但值得看一下"
+    },
     "description": {
       "placeholder": "添加描述"
     },
     "draft-update-permission-required": "你可以查看此草稿，但需要 bb.issues.update 才能编辑工单标签或提交审批。",
     "editor": {
       "save-changes-before-continuing": "请保存或取消更改，然后再继续"
+    },
+    "findings": {
+      "accepted": "已接受（{{count}}）：",
+      "n-accepted": "已接受 {{count}} 项",
+      "n-advice": "{{count}} 项建议",
+      "n-confirm": "{{count}} 项待确认",
+      "n-dismissed": "{{count}} 项建议已忽略",
+      "n-earlier": "更早运行的 {{count}} 项",
+      "n-fix": "{{count}} 项必须修改",
+      "n-more": "另 {{count}} 项",
+      "n-overridden": "{{count}} 项未修改就被解决",
+      "name-at-line": "{{name}}（L{{line}}）",
+      "name-times": "{{name}} ×{{count}}",
+      "overridden-warning_one": "{{count}} 项必须修改的问题未修改就被标为已解决：",
+      "overridden-warning_other": "{{count}} 项必须修改的问题未修改就被标为已解决：",
+      "separator": "、",
+      "set": {
+        "accepted": "已接受",
+        "advice": "建议",
+        "confirm": "待确认",
+        "dismissed": "已忽略的建议",
+        "earlier": "更早的运行",
+        "fix": "必须修改",
+        "overridden": "未修改就被解决"
+      }
     },
     "ghost": {
       "configure": "配置",
@@ -1829,19 +1904,18 @@
       "checking": "检查中…",
       "checks-failing": "检查失败",
       "deployed": "已部署",
+      "gate-automated-review-passed": "自动审核已通过",
       "gate-checks-failed": "部分检查未通过",
       "gate-checks-failed-sub": "{{failing}} 项失败，{{passed}} 项通过",
       "gate-checks-passed": "所有检查已通过",
       "gate-checks-passed-sub": "{{count}} 项通过",
       "gate-checks-running": "检查运行中",
       "gate-checks-running-sub": "{{running}} 项运行中，{{passed}} 项通过",
+      "gate-no-open-discussions": "没有未解决的讨论",
       "gate-review-approved": "变更已批准",
       "gate-review-pending": "审批中",
       "gate-review-rejected": "请求变更",
       "gate-threads-open-sub": "解决所有讨论后才会创建发布",
-      "gate-threads-open_one": "{{count}} 个未解决的讨论",
-      "gate-threads-open_other": "{{count}} 个未解决的讨论",
-      "gate-threads-resolved": "所有讨论已解决",
       "incomplete": "不完整",
       "preparing-rollout": "正在准备发布…",
       "rejected": "已拒绝",
@@ -1888,11 +1962,15 @@
         "add-a-comment": "添加评论...",
         "created-this-plan": "创建了此计划",
         "marked-ready-for-review": "将此计划提交审批",
+        "n-findings_one": "{{count}} 个发现",
+        "n-findings_other": "{{count}} 个发现",
         "n-hidden-events_one": "{{count}} 条隐藏活动",
         "n-hidden-events_other": "{{count}} 条隐藏活动",
+        "reviewed-the-sql": "审核了 SQL",
         "self": "活动",
         "show-all": "显示全部"
       },
+      "approval-after-submit": "提交审核后开始审批。",
       "approval-flow": {
         "and-n-more_one": "还有 {{count}} 位",
         "and-n-more_other": "还有 {{count}} 位",
@@ -1968,6 +2046,7 @@
         "n-replies-hidden_other": "已隐藏 {{count}} 条回复",
         "n-replies_one": "{{count}} 条回复",
         "n-replies_other": "{{count}} 条回复",
+        "open": "待处理",
         "priority": {
           "p0": "SQL 有误，必须修改。",
           "p1": "有风险但合理，需要有人确认接受。",
@@ -1985,8 +2064,10 @@
         "threads-on-line_one": "此行有 {{count}} 个讨论",
         "threads-on-line_other": "此行有 {{count}} 个讨论",
         "walker": {
+          "clear-filter": "逐个查看所有待处理讨论",
           "count_one": "此版本有 {{count}} 个未解决的讨论",
           "count_other": "此版本有 {{count}} 个未解决的讨论",
+          "filter": "{{reviewer}} · {{state}}",
           "next": "下一个未解决的讨论",
           "position": "第 {{index}} 个，共 {{count}} 个",
           "previous": "上一个未解决的讨论",
@@ -2000,16 +2081,6 @@
       "description_one": "回滚发布 #{{rolloutId}} 中选中的 1 个任务。",
       "description_other": "回滚发布 #{{rolloutId}} 中选中的 {{count}} 个任务。",
       "title": "回滚发布 #{{rolloutId}}"
-    },
-    "rule-review": {
-      "failed": "SQL 审核失败",
-      "load-failed": "无法加载 SQL 审核状态。",
-      "no-open-findings": "没有未解决的问题",
-      "not-run": "SQL 审核未运行",
-      "open-findings_one": "{{count}} 个未解决的问题",
-      "open-findings_other": "{{count}} 个未解决的问题",
-      "queued": "SQL 审核排队中",
-      "running": "SQL 审核运行中"
     },
     "run": "重新检查",
     "select-isolation-level": "选择隔离级别",
@@ -2035,9 +2106,16 @@
       "reopen-confirm": "确认重新打开这个计划？",
       "reopen-review-confirm": "确认重新打开这个审批？"
     },
+    "statement-summary": {
+      "affected-rows_one": "约影响 {{count}} 行",
+      "affected-rows_other": "约影响 {{count}} 行",
+      "n-statements_one": "{{count}} 条语句",
+      "n-statements_other": "{{count}} 条语句"
+    },
     "submit-review-anyway": "仍然提交",
     "subtitle": "草拟数据库变更并运行预检查，然后创建工单以请求审批。",
     "summary": {
+      "approved-by": "已由 {{names}} 批准",
       "last-approved-by": "最后由 {{name}} 审批",
       "n-changes": "{{n}} 个变更",
       "n-database-groups": "{{n}} 个数据库组",
@@ -2048,7 +2126,8 @@
       "n-passed": "{{n}} 通过",
       "n-unresolved-threads_one": "{{count}} 个未解决的讨论",
       "n-unresolved-threads_other": "{{count}} 个未解决的讨论",
-      "n-warning": "{{n}} 警告"
+      "n-warning": "{{n}} 警告",
+      "no-approval-required": "无需审批"
     },
     "targets": {
       "no-targets-found": "未找到目标",

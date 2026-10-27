@@ -16,6 +16,8 @@ const badgeVariants = cva(
         destructive: "bg-error/10 text-error",
         warning: "bg-warning/10 text-warning",
         success: "bg-success/10 text-success",
+        // A state someone must act on, kept readable on any surface.
+        attention: "border-warning bg-background text-warning-hover",
       },
     },
     defaultVariants: {

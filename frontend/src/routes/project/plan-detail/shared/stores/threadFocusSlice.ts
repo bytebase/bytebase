@@ -20,4 +20,14 @@ export const createThreadFocusSlice: PlanDetailSliceCreator<
         ? { threadFocus: undefined }
         : state
     ),
+  walkerFilter: undefined,
+  setWalkerFilter: (walkerFilter) => set({ walkerFilter }),
+  reviewRowRequest: undefined,
+  requestReviewRow: (reviewer) =>
+    set((state) => ({
+      reviewRowRequest: {
+        reviewer,
+        nonce: (state.reviewRowRequest?.nonce ?? 0) + 1,
+      },
+    })),
 });

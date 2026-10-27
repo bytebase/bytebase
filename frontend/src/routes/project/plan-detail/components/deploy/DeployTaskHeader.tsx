@@ -121,7 +121,7 @@ export function DeployTaskHeader({
                   key={item.key}
                   onClick={() => onAction(item.key)}
                   size="xs"
-                  appearance={item.key === "RUN" ? "solid" : "outline"}
+                  appearance="outline"
                 >
                   {item.key === "RUN" && <Play className="size-3" />}
                   {item.key === "SKIP" && <SkipForward className="size-3" />}

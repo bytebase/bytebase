@@ -1780,12 +1780,42 @@
     "add-spec-pending-draft": "Lưu hoặc hủy thay đổi đang chờ trước khi thêm thay đổi khác",
     "ai-review": {
       "failed-to-run": "Không thể bắt đầu đánh giá bằng AI",
-      "finished": "Đã hoàn tất",
-      "not-run": "Chưa chạy",
-      "queued": "Đang chờ",
       "run": "Chạy đánh giá bằng AI",
-      "save-first": "Hãy lưu hoặc hủy các thay đổi để chạy đánh giá bằng AI.",
-      "status-unknown": "Chưa có trạng thái"
+      "run-again": "Chạy lại",
+      "run-again-description": "Mỗi lần chạy sẽ gọi mô hình cho từng cơ sở dữ liệu được đánh giá và có thể cho kết quả khác. Phát hiện mới sẽ thay thế phát hiện của lần chạy trước, kể cả những mục đã được giải quyết.",
+      "run-again-title": "Chạy lại đánh giá AI?",
+      "save-first": "Hãy lưu hoặc hủy các thay đổi để chạy đánh giá bằng AI."
+    },
+    "automated-review": {
+      "details": "Chi tiết",
+      "failed": "Không thể chạy",
+      "ghost": "Chạy thử di chuyển trực tuyến",
+      "n-databases_one": "{{count}} cơ sở dữ liệu",
+      "n-databases_other": "{{count}} cơ sở dữ liệu",
+      "n-open": "{{count}} đang mở",
+      "n-warnings_one": "{{count}} cảnh báo",
+      "n-warnings_other": "{{count}} cảnh báo",
+      "needs-attention": "{{count}}/{{total}} cần xử lý",
+      "no-findings": "Không có phát hiện",
+      "no-open-findings": "Không còn phát hiện đang mở",
+      "not-run": "Chưa chạy",
+      "nothing-needs-attention": "Không có mục nào cần xử lý",
+      "out-of-date": "đã cũ",
+      "outdated": "SQL đã thay đổi sau lần chạy này",
+      "passed": "đạt",
+      "passed-on_one": "Đạt trên {{count}} cơ sở dữ liệu",
+      "passed-on_other": "Đạt trên {{count}} cơ sở dữ liệu",
+      "policy": "Chính sách đánh giá",
+      "project-rules": "Quy tắc dự án: bật {{on}}/{{total}}",
+      "rerun-all": "Chạy lại tất cả",
+      "retry": "Thử lại",
+      "running": "Đang chạy",
+      "sampled": "lấy mẫu {{count}}/{{total}} cơ sở dữ liệu",
+      "scope": "Đã đánh giá {{databases}}",
+      "scope-with-engines": "Đã đánh giá {{databases}} ({{engines}})",
+      "self": "Đánh giá tự động",
+      "summary-part": "{{reviewer}}: {{status}}",
+      "workspace-rules": "Quy tắc không gian làm việc: bật {{on}}/{{total}}"
     },
     "blocker": {
       "clears-on-its-own": "Tự động hoàn tất"
@@ -1800,12 +1830,57 @@
       "started": "Đã bắt đầu kiểm tra kế hoạch"
     },
     "create-plan": "Tạo kế hoạch",
+    "deploy-waiting": {
+      "approval": "Phê duyệt",
+      "approval-from": "Phê duyệt từ {{role}}",
+      "approval-rejected": "Phê duyệt bị từ chối",
+      "auto-create": "Bytebase sẽ tạo bản triển khai khi tất cả các mục này đạt.",
+      "creating-rollout": "Tất cả đã đạt; đang tạo bản triển khai…",
+      "open-discussions_one": "{{count}} thảo luận đang mở",
+      "open-discussions_other": "{{count}} thảo luận đang mở",
+      "overridden_one": "{{count}} phát hiện phải sửa trong {{reviewer}} đã được giải quyết mà không sửa",
+      "overridden_other": "{{count}} phát hiện phải sửa trong {{reviewer}} đã được giải quyết mà không sửa",
+      "reviewer-failed": "{{reviewer}} không thể chạy",
+      "reviewer-findings": "{{reviewer}}: {{findings}}",
+      "reviewer-not-run": "{{reviewer}} chưa chạy",
+      "reviewer-outdated": "SQL đã thay đổi sau khi {{reviewer}} chạy",
+      "reviewer-running": "{{reviewer}} đang chạy",
+      "show": "Xem",
+      "submit": "Gửi để đánh giá",
+      "waiting-on": "Đang chờ",
+      "worth-a-look": "Không chặn bản triển khai, nhưng nên xem qua"
+    },
     "description": {
       "placeholder": "Thêm mô tả"
     },
     "draft-update-permission-required": "Bạn có thể xem bản nháp này, nhưng cần bb.issues.update để chỉnh sửa nhãn vấn đề hoặc gửi đi xem xét.",
     "editor": {
       "save-changes-before-continuing": "Vui lòng lưu hoặc hủy thay đổi của bạn trước khi tiếp tục"
+    },
+    "findings": {
+      "accepted": "Đã chấp nhận ({{count}}):",
+      "n-accepted": "{{count}} đã chấp nhận",
+      "n-advice": "{{count}} đề xuất",
+      "n-confirm": "{{count}} chờ xác nhận",
+      "n-dismissed": "{{count}} đề xuất đã bỏ qua",
+      "n-earlier": "{{count}} từ các lần chạy trước",
+      "n-fix": "{{count}} phải sửa",
+      "n-more": "{{count}} mục khác",
+      "n-overridden": "{{count}} đã giải quyết mà không sửa",
+      "name-at-line": "{{name}} (L{{line}})",
+      "name-times": "{{name}} ×{{count}}",
+      "overridden-warning_one": "{{count}} phát hiện phải sửa đã được giải quyết mà không sửa:",
+      "overridden-warning_other": "{{count}} phát hiện phải sửa đã được giải quyết mà không sửa:",
+      "separator": ", ",
+      "set": {
+        "accepted": "đã chấp nhận",
+        "advice": "đề xuất",
+        "confirm": "chờ xác nhận",
+        "dismissed": "đề xuất đã bỏ qua",
+        "earlier": "các lần chạy trước",
+        "fix": "phải sửa",
+        "overridden": "đã giải quyết mà không sửa"
+      }
     },
     "ghost": {
       "configure": "Cấu hình",
@@ -1829,19 +1904,18 @@
       "checking": "Đang kiểm tra…",
       "checks-failing": "Kiểm tra thất bại",
       "deployed": "Đã triển khai",
+      "gate-automated-review-passed": "Đánh giá tự động đã đạt",
       "gate-checks-failed": "Một số kiểm tra không thành công",
       "gate-checks-failed-sub": "{{failing}} thất bại, {{passed}} thành công",
       "gate-checks-passed": "Tất cả kiểm tra đã qua",
       "gate-checks-passed-sub": "{{count}} thành công",
       "gate-checks-running": "Đang chạy kiểm tra",
       "gate-checks-running-sub": "{{running}} đang chạy, {{passed}} thành công",
+      "gate-no-open-discussions": "Không có thảo luận đang mở",
       "gate-review-approved": "Đã duyệt thay đổi",
       "gate-review-pending": "Đang xem xét",
       "gate-review-rejected": "Yêu cầu thay đổi",
       "gate-threads-open-sub": "Giải quyết mọi luồng để tạo rollout",
-      "gate-threads-open_one": "{{count}} luồng chưa giải quyết",
-      "gate-threads-open_other": "{{count}} luồng chưa giải quyết",
-      "gate-threads-resolved": "Tất cả luồng đã được giải quyết",
       "incomplete": "Chưa hoàn tất",
       "preparing-rollout": "Đang chuẩn bị triển khai…",
       "rejected": "Đã từ chối",
@@ -1888,11 +1962,15 @@
         "add-a-comment": "Thêm bình luận...",
         "created-this-plan": "đã tạo kế hoạch này",
         "marked-ready-for-review": "đã đánh dấu kế hoạch này sẵn sàng xét duyệt",
+        "n-findings_one": "{{count}} phát hiện",
+        "n-findings_other": "{{count}} phát hiện",
         "n-hidden-events_one": "{{count}} sự kiện ẩn",
         "n-hidden-events_other": "{{count}} sự kiện ẩn",
+        "reviewed-the-sql": "đã đánh giá SQL",
         "self": "Hoạt động",
         "show-all": "Hiển thị tất cả"
       },
+      "approval-after-submit": "Phê duyệt bắt đầu khi bạn gửi để đánh giá.",
       "approval-flow": {
         "and-n-more_one": "và {{count}} người khác",
         "and-n-more_other": "và {{count}} người khác",
@@ -1968,6 +2046,7 @@
         "n-replies-hidden_other": "{{count}} phản hồi bị ẩn",
         "n-replies_one": "{{count}} phản hồi",
         "n-replies_other": "{{count}} phản hồi",
+        "open": "Đang mở",
         "priority": {
           "p0": "SQL sai và phải được sửa.",
           "p1": "Nguy hiểm nhưng hợp lệ. Cần có người chấp nhận.",
@@ -1985,8 +2064,10 @@
         "threads-on-line_one": "{{count}} chủ đề trên dòng này",
         "threads-on-line_other": "{{count}} chủ đề trên dòng này",
         "walker": {
+          "clear-filter": "Duyệt qua mọi chuỗi thảo luận đang mở",
           "count_one": "{{count}} luồng chưa giải quyết ở phiên bản này",
           "count_other": "{{count}} luồng chưa giải quyết ở phiên bản này",
+          "filter": "{{reviewer}} · {{state}}",
           "next": "Luồng chưa giải quyết tiếp theo",
           "position": "Luồng {{index}} trên {{count}}",
           "previous": "Luồng chưa giải quyết trước đó",
@@ -2000,16 +2081,6 @@
       "description_one": "Hoàn tác 1 tác vụ đã chọn từ bản triển khai #{{rolloutId}}.",
       "description_other": "Hoàn tác {{count}} tác vụ đã chọn từ bản triển khai #{{rolloutId}}.",
       "title": "Hoàn tác bản triển khai #{{rolloutId}}"
-    },
-    "rule-review": {
-      "failed": "Đánh giá SQL thất bại",
-      "load-failed": "Không thể tải trạng thái đánh giá SQL.",
-      "no-open-findings": "Không có phát hiện chưa giải quyết",
-      "not-run": "Chưa chạy đánh giá SQL",
-      "open-findings_one": "{{count}} phát hiện chưa giải quyết",
-      "open-findings_other": "{{count}} phát hiện chưa giải quyết",
-      "queued": "Đánh giá SQL đang chờ",
-      "running": "Đang đánh giá SQL"
     },
     "run": "Kiểm tra lại",
     "select-isolation-level": "Chọn mức độ cô lập",
@@ -2035,9 +2106,16 @@
       "reopen-confirm": "Mở lại kế hoạch này?",
       "reopen-review-confirm": "Mở lại đợt xem xét này?"
     },
+    "statement-summary": {
+      "affected-rows_one": "~{{count}} dòng bị ảnh hưởng",
+      "affected-rows_other": "~{{count}} dòng bị ảnh hưởng",
+      "n-statements_one": "{{count}} câu lệnh",
+      "n-statements_other": "{{count}} câu lệnh"
+    },
     "submit-review-anyway": "Vẫn gửi",
     "subtitle": "Soạn thảo các thay đổi cơ sở dữ liệu và chạy các bước kiểm tra sơ bộ trước khi tạo vấn đề để phê duyệt.",
     "summary": {
+      "approved-by": "Được phê duyệt bởi {{names}}",
       "last-approved-by": "Phê duyệt gần nhất bởi {{name}}",
       "n-changes": "{{n}} thay đổi",
       "n-database-groups": "{{n}} nhóm cơ sở dữ liệu",
@@ -2048,7 +2126,8 @@
       "n-passed": "{{n}} đã vượt qua",
       "n-unresolved-threads_one": "{{count}} luồng chưa giải quyết",
       "n-unresolved-threads_other": "{{count}} luồng chưa giải quyết",
-      "n-warning": "{{n}} cảnh báo"
+      "n-warning": "{{n}} cảnh báo",
+      "no-approval-required": "Không cần phê duyệt"
     },
     "targets": {
       "no-targets-found": "Không tìm thấy mục tiêu",

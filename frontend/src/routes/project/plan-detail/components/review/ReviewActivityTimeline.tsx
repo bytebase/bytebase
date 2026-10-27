@@ -8,8 +8,6 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
-import { router } from "@/app/router";
-import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/app/router/handles";
 import { HumanizeTs } from "@/components/HumanizeTs";
 import {
   ActivityRowFrame,
@@ -39,18 +37,22 @@ import {
 import { projectNamePrefix } from "@/stores/modules/v1/common";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { Issue, IssueComment } from "@/types/proto-es/v1/issue_service_pb";
+import { IssueComment_ThreadState } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
+import { sqlReviewV2Enabled } from "@/utils/featureGates";
 import { hasProjectPermissionV2 } from "@/utils/iam/permission";
+import { useFocusThread } from "../../hooks/useFocusThread";
 import { usePlanChangeReferenceData } from "../../hooks/usePlanChangeReferenceData";
 import { placementOf } from "../../shared/stores/placementSlice";
 import {
   usePlanDetailStore,
   usePlanDetailStoreApi,
 } from "../../shared/stores/usePlanDetailStore";
-import { focusPlanPhase } from "../../shell/focusPhase";
 import { usePlanDetailContext } from "../../shell/PlanDetailContext";
 import { PlanSpecChangeReference } from "../PlanChangeReference";
 import { CommentThreadCard } from "../threads/CommentThreadCard";
+import { trivialPlacement } from "../threads/placement/place";
+import { ReviewerIcon, reviewerName } from "../threads/ReviewResult";
 import { StatementAnchorContext } from "../threads/StatementAnchorContext";
 import {
   type CommentThread,
@@ -107,6 +109,32 @@ export function ReviewActivityTimeline({
     setExpanded(false);
   }, [page.pageKey]);
 
+  // Under SQL Review V2, Activity records each run as one line. A finding
+  // keeps its own card only when people replied to it, which makes it a
+  // conversation, or when the editor cannot show it.
+  const placements = usePlanDetailStore((s) => s.placements);
+  const placementTargets = usePlanDetailStore((s) => s.placementTargets);
+  const keepFindingCard = useMemo(() => {
+    if (!sqlReviewV2Enabled()) return undefined;
+    return (root: IssueComment) => {
+      const thread = threads.find((candidate) => candidate.root === root);
+      if (thread && thread.replies.length > 0) return true;
+      if (root.reviewMetadata?.superseded) return false;
+      const anchor = root.statementAnchor;
+      if (!anchor) return true;
+      const spec = plan.specs.find((candidate) => candidate.id === anchor.spec);
+      const sheetSha256 = targetSha256OfSpec(spec);
+      const placement =
+        placementOf(
+          { placements, placementTargets },
+          root.name,
+          anchor.spec,
+          sheetSha256
+        ) ?? trivialPlacement(anchor, sheetSha256);
+      return placement?.state !== "CURRENT";
+    };
+  }, [placementTargets, placements, plan.specs, threads]);
+
   const entries = useMemo(
     () =>
       buildTimelineEntries({
@@ -116,12 +144,14 @@ export function ReviewActivityTimeline({
         issueCreateTime: issue.createTime,
         issueDraft: issue.draft,
         comments,
+        keepFindingCard,
       }),
     [
       comments,
       issue.createTime,
       issue.creator,
       issue.draft,
+      keepFindingCard,
       plan.createTime,
       plan.creator,
     ]
@@ -243,6 +273,9 @@ function ActivityRow({
   threads: CommentThread[];
 }) {
   const source = entry.source;
+  if (source.type === "review-run") {
+    return <ReviewRunActivityRow isLast={isLast} source={source} />;
+  }
   if (source.type === "comment" && isThreadRoot(source.comment)) {
     const thread = threads.find(
       (candidate) => candidate.root.name === source.comment.name
@@ -277,6 +310,63 @@ function ActivityRow({
     <ActivityRowShell
       header={<SyntheticHeader source={source} />}
       icon={<SyntheticIcon type={source.type} />}
+      isLast={isLast}
+    />
+  );
+}
+
+// One line per run: how many findings it posted and how many are still
+// open. "Show" opens the reviewer's row in Automated review.
+function ReviewRunActivityRow({
+  isLast,
+  source,
+}: {
+  isLast: boolean;
+  source: Extract<TimelineSource, { type: "review-run" }>;
+}) {
+  const { t } = useTranslation();
+  const storeApi = usePlanDetailStoreApi();
+  const open = source.findings.filter(
+    (finding) => finding.threadState === IssueComment_ThreadState.OPEN
+  ).length;
+  return (
+    <ActivityRowShell
+      header={
+        <>
+          <span className="font-medium text-main">
+            {reviewerName(t, source.runType)}
+          </span>
+          <span className="wrap-break-word min-w-0 text-control-light">
+            {t("plan.review.activity.reviewed-the-sql")}
+          </span>
+          <span className="text-control-light">·</span>
+          <span className="text-control">
+            {t("plan.review.activity.n-findings", {
+              count: source.findings.length,
+            })}
+            {open > 0 &&
+              `, ${t("plan.automated-review.n-open", { count: open })}`}
+          </span>
+          <HumanizeTs
+            className="text-xs text-control-light"
+            tsMs={getTimeForPbTimestampProtoEs(source.time)}
+          />
+          <Button
+            appearance="link"
+            className="text-control-light"
+            onClick={() => storeApi.getState().requestReviewRow(source.runType)}
+            size="xs"
+          >
+            {t("plan.deploy-waiting.show")}
+          </Button>
+        </>
+      }
+      icon={
+        <CommentIconBadge
+          className="bg-control-bg text-control"
+          icon={<ReviewerIcon className="size-4" runType={source.runType} />}
+        />
+      }
       isLast={isLast}
     />
   );
@@ -492,8 +582,7 @@ function ThreadActivityRow({
 }) {
   const page = usePlanDetailContext();
   const project = useProjectByName(`${projectNamePrefix}${page.projectId}`);
-  const storeApi = usePlanDetailStoreApi();
-  const selectedSpecId = usePlanDetailStore((s) => s.selectedSpecId);
+  const { focusInStatement } = useFocusThread();
   const anchor = thread.root.statementAnchor;
   const spec = useMemo(
     () => plan.specs.find((candidate) => candidate.id === anchor?.spec),
@@ -506,31 +595,11 @@ function ThreadActivityRow({
       : undefined
   );
 
-  // Open the Changes phase on the anchored spec; the statement editor picks
-  // up the focus request once it shows that spec.
-  const viewInStatement = () => {
-    const specId = anchor?.spec;
-    if (!specId) return;
-    const lineNumber =
-      placement?.state === "CURRENT"
-        ? placement.range.startLine
-        : anchor?.startPosition?.line;
-    storeApi.getState().requestThreadFocus({
-      commentName: thread.root.name,
-      specId,
-      lineNumber,
-    });
-    focusPlanPhase("changes", page.expandPhase);
-    if (selectedSpecId !== specId) {
-      void router.push(
-        {
-          name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
-          params: { planId: page.planId, projectId: page.projectId, specId },
-        },
-        { preventScrollReset: true }
-      );
-    }
-  };
+  const viewInStatement = () =>
+    focusInStatement(
+      thread.root,
+      placement?.state === "CURRENT" ? placement.range.startLine : undefined
+    );
 
   return (
     <ActivityRowFrame
