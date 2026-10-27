@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -444,6 +445,52 @@ func TestOpenAppliesTLSSettings(t *testing.T) {
 		require.NoError(t, nextHandshake(t, handshakes).err)
 		// go-ora sets ServerName on the configuration it is handed, just before the handshake.
 		require.Empty(t, config.ServerName)
+	})
+}
+
+func TestCurrentSchemaOnNewSessions(t *testing.T) {
+	ctx := context.Background()
+	container, schema := testcontainer.NewOracleSchema(t)
+	open := func(schema string) (db.Driver, error) {
+		return (&Driver{}).Open(ctx, storepb.Engine_ORACLE, db.ConnectionConfig{
+			DataSource: &storepb.DataSource{
+				Host:        container.GetHost(),
+				Port:        container.GetPort(),
+				Username:    container.GetUsername(),
+				ServiceName: testcontainer.OracleServiceName,
+			},
+			Password:          container.GetPassword(),
+			ConnectionContext: db.ConnectionContext{DatabaseName: schema},
+		})
+	}
+	driver, err := open(schema)
+	require.NoError(t, err)
+	defer driver.Close(ctx)
+	// With no idle connection kept, the pool opens a new session for every connection it hands out.
+	driver.GetDB().SetMaxIdleConns(0)
+
+	t.Run("QueryConn", func(t *testing.T) {
+		conn, err := driver.GetDB().Conn(ctx)
+		require.NoError(t, err)
+		defer conn.Close()
+		results, err := driver.QueryConn(ctx, conn, "SELECT SYS_CONTEXT('USERENV', 'CURRENT_SCHEMA') FROM DUAL", db.QueryContext{MaximumSQLResultSize: 1024})
+		require.NoError(t, err)
+		require.Len(t, results, 1)
+		require.Empty(t, results[0].Error)
+		require.Equal(t, schema, results[0].Rows[0].Values[0].GetStringValue())
+	})
+
+	t.Run("Execute", func(t *testing.T) {
+		_, err := driver.Execute(ctx, "CREATE TABLE SESSION_SCHEMA AS SELECT SYS_CONTEXT('USERENV', 'CURRENT_SCHEMA') AS NAME FROM DUAL", db.ExecuteOptions{})
+		require.NoError(t, err)
+		var name string
+		require.NoError(t, container.GetDB().QueryRowContext(ctx, fmt.Sprintf("SELECT NAME FROM %s.SESSION_SCHEMA", schema)).Scan(&name))
+		require.Equal(t, schema, name)
+	})
+
+	t.Run("Open fails on a schema that doesn't exist", func(t *testing.T) {
+		_, err := open("NO_SUCH_SCHEMA")
+		require.ErrorContains(t, err, `failed to set current schema to "NO_SUCH_SCHEMA"`)
 	})
 }
 
