@@ -680,12 +680,7 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 			// Handle other ALTER operations
 
 			// Alter columns (type changes, nullability, etc.)
-			for _, colDiff := range tableDiff.ColumnChanges {
-				if colDiff.Action == schema.MetadataDiffActionAlter {
-					alterColSQL := generateAlterColumn(tableDiff, colDiff)
-					_, _ = buf.WriteString(alterColSQL)
-				}
-			}
+			writeAlterColumns(buf, tableDiff)
 
 			// Add indexes
 			for _, indexDiff := range tableDiff.IndexChanges {
@@ -794,33 +789,57 @@ func generateCreateTable(schemaName, tableName string, table *metadatapb.TableMe
 	return buf.String(), nil
 }
 
-func generateAlterColumn(tableDiff *schema.TableDiff, colDiff *schema.ColumnDiff) string {
-	var buf strings.Builder
+// writeAlterColumns writes one table's column alterations. A rebuilt column
+// cannot change while an index or a constraint is on it (ORA-12991, ORA-54022,
+// ORA-54023), so those of every rebuilt column are dropped before any column
+// changes and made again once all have, each once: a constraint shared by two
+// rebuilt columns is checked only against the finished table.
+func writeAlterColumns(buf *strings.Builder, tableDiff *schema.TableDiff) {
+	var oldColumns, newColumns []string
+	for _, colDiff := range tableDiff.ColumnChanges {
+		if colDiff.Action == schema.MetadataDiffActionAlter && rebuildsColumn(colDiff) {
+			oldColumns = append(oldColumns, colDiff.OldColumn.Name)
+			newColumns = append(newColumns, colDiff.NewColumn.Name)
+		}
+	}
 	schemaName, tableName := tableDiff.SchemaName, tableDiff.TableName
+	findColumnDependents(tableDiff.OldTable, oldColumns, diffObjectNames(tableDiff, schema.MetadataDiffActionDrop)).writeDrops(buf, schemaName, tableName)
+	for _, colDiff := range tableDiff.ColumnChanges {
+		if colDiff.Action == schema.MetadataDiffActionAlter {
+			_, _ = buf.WriteString(generateAlterColumn(schemaName, tableName, colDiff))
+		}
+	}
+	findColumnDependents(tableDiff.NewTable, newColumns, diffObjectNames(tableDiff, schema.MetadataDiffActionCreate)).writeCreates(buf, schemaName, tableName)
+}
 
-	// Oracle cannot turn a stored column into a virtual one or back, so the
-	// column is dropped and added again.
+// rebuildsColumn reports whether Oracle must drop and add the column again, or
+// give it a new virtual expression.
+func rebuildsColumn(colDiff *schema.ColumnDiff) bool {
 	oldGeneration, newGeneration := colDiff.OldColumn.Generation, colDiff.NewColumn.Generation
 	if (oldGeneration == nil) != (newGeneration == nil) {
-		// DROP COLUMN fails while a multi-column constraint is on the column
-		// (ORA-12991), so the column's indexes and constraints are dropped
-		// first; they and its comment are made again after.
-		findColumnDependents(tableDiff.OldTable, colDiff.OldColumn.Name, diffObjectNames(tableDiff, schema.MetadataDiffActionDrop)).writeDrops(&buf, schemaName, tableName)
+		return true
+	}
+	return newGeneration != nil && oldGeneration.Expression != newGeneration.Expression
+}
+
+func generateAlterColumn(schemaName, tableName string, colDiff *schema.ColumnDiff) string {
+	var buf strings.Builder
+
+	// Oracle cannot turn a stored column into a virtual one or back, so the
+	// column is dropped and added again, comment included.
+	oldGeneration, newGeneration := colDiff.OldColumn.Generation, colDiff.NewColumn.Generation
+	if (oldGeneration == nil) != (newGeneration == nil) {
 		writeDropColumn(&buf, schemaName, tableName, colDiff.OldColumn.Name)
 		writeAddColumn(&buf, schemaName, tableName, colDiff.NewColumn)
 		if colDiff.NewColumn.Comment != "" {
 			writeColumnComment(&buf, schemaName, tableName, colDiff.NewColumn.Name, colDiff.NewColumn.Comment)
 		}
-		findColumnDependents(tableDiff.NewTable, colDiff.NewColumn.Name, diffObjectNames(tableDiff, schema.MetadataDiffActionCreate)).writeCreates(&buf, schemaName, tableName)
 		return buf.String()
 	}
 
-	// Oracle rejects a new virtual expression while an index or a constraint,
-	// NOT NULL included, is on the column (ORA-54022, ORA-54023), so they are
-	// dropped first and made again after.
+	// NOT NULL also blocks a new virtual expression (ORA-54023).
 	expressionChanged := newGeneration != nil && oldGeneration.Expression != newGeneration.Expression
 	if expressionChanged {
-		findColumnDependents(tableDiff.OldTable, colDiff.OldColumn.Name, diffObjectNames(tableDiff, schema.MetadataDiffActionDrop)).writeDrops(&buf, schemaName, tableName)
 		if !colDiff.OldColumn.Nullable {
 			writeAlterColumnDropNotNull(&buf, schemaName, tableName, colDiff.OldColumn.Name)
 		}
@@ -865,7 +884,6 @@ func generateAlterColumn(tableDiff *schema.TableDiff, colDiff *schema.ColumnDiff
 		if !colDiff.NewColumn.Nullable {
 			writeAlterColumnSetNotNull(&buf, schemaName, tableName, colDiff.NewColumn.Name)
 		}
-		findColumnDependents(tableDiff.NewTable, colDiff.NewColumn.Name, diffObjectNames(tableDiff, schema.MetadataDiffActionCreate)).writeCreates(&buf, schemaName, tableName)
 	}
 
 	if colDiff.OldColumn.IsInvisible != colDiff.NewColumn.IsInvisible {
@@ -879,18 +897,23 @@ func generateAlterColumn(tableDiff *schema.TableDiff, colDiff *schema.ColumnDiff
 	return buf.String()
 }
 
-// columnDependents are a table's indexes and constraints on one column.
+// columnDependents are a table's indexes and constraints on some of its columns.
 type columnDependents struct {
 	indexes     []*metadatapb.IndexMetadata
 	checks      []*metadatapb.CheckConstraintMetadata
 	foreignKeys []*metadatapb.ForeignKeyMetadata
 }
 
-// findColumnDependents lists the table's indexes and constraints on the
-// column, less those named in skip.
-func findColumnDependents(table *metadatapb.TableMetadata, column string, skip map[string]bool) columnDependents {
-	references := func(expression string) bool { return expressionReferencesColumn(expression, column) }
+// findColumnDependents lists the table's indexes and constraints on any of the
+// columns, each once, less those named in skip.
+func findColumnDependents(table *metadatapb.TableMetadata, columns []string, skip map[string]bool) columnDependents {
 	var dependents columnDependents
+	if len(columns) == 0 {
+		return dependents
+	}
+	references := func(expression string) bool {
+		return slices.ContainsFunc(columns, func(column string) bool { return expressionReferencesColumn(expression, column) })
+	}
 	for _, index := range table.GetIndexes() {
 		if !skip[index.Name] && slices.ContainsFunc(index.Expressions, references) {
 			dependents.indexes = append(dependents.indexes, index)
@@ -902,7 +925,7 @@ func findColumnDependents(table *metadatapb.TableMetadata, column string, skip m
 		}
 	}
 	for _, fk := range table.GetForeignKeys() {
-		if !skip[fk.Name] && slices.Contains(fk.Columns, column) {
+		if !skip[fk.Name] && slices.ContainsFunc(fk.Columns, func(column string) bool { return slices.Contains(columns, column) }) {
 			dependents.foreignKeys = append(dependents.foreignKeys, fk)
 		}
 	}

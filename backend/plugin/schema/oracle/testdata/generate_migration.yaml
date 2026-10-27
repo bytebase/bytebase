@@ -8347,6 +8347,10 @@
                 {
                   "name": "T_SA_CK",
                   "expression": "\"S\" >= \"A\""
+                },
+                {
+                  "name": "T_VCS_CK",
+                  "expression": "\"VC\" <= \"S\" + 100"
                 }
               ]
             }
@@ -8492,6 +8496,10 @@
                 {
                   "name": "T_SA_CK",
                   "expression": "\"S\" >= \"A\""
+                },
+                {
+                  "name": "T_VCS_CK",
+                  "expression": "\"VC\" <= \"S\" + 100"
                 }
               ]
             },
@@ -8535,22 +8543,24 @@
         "VC" NUMBER GENERATED ALWAYS AS ("A"+1) VIRTUAL
     );
 
+    ALTER TABLE "T" DROP CONSTRAINT "T_S_CK";
     ALTER TABLE "T" DROP CONSTRAINT "T_VC_CK";
+    ALTER TABLE "T" DROP CONSTRAINT "T_SA_CK";
+    ALTER TABLE "T" DROP CONSTRAINT "T_VCS_CK";
+    DROP INDEX "T_S";
     DROP INDEX "T_VC";
+    ALTER TABLE "T" DROP CONSTRAINT "T_SA_UK";
     ALTER TABLE "T" MODIFY "VC" NULL;
     ALTER TABLE "T" MODIFY ("VC" AS ("A"+2));
     ALTER TABLE "T" MODIFY "VC" NOT NULL;
-    CREATE INDEX "T_VC" ON "T" ("VC" ASC);
-    ALTER TABLE "T" ADD CONSTRAINT "T_VC_CK" CHECK ("VC" > 0);
     ALTER TABLE "T" MODIFY ("H" VISIBLE);
-    ALTER TABLE "T" DROP CONSTRAINT "T_S_CK";
-    ALTER TABLE "T" DROP CONSTRAINT "T_SA_CK";
-    DROP INDEX "T_S";
-    ALTER TABLE "T" DROP CONSTRAINT "T_SA_UK";
     ALTER TABLE "T" DROP COLUMN "S";
     ALTER TABLE "T" ADD "S" NUMBER GENERATED ALWAYS AS ("A"*3) VIRTUAL;
     COMMENT ON COLUMN "T"."S" IS 'S comment';
     CREATE INDEX "T_S" ON "T" ("S" ASC);
+    CREATE INDEX "T_VC" ON "T" ("VC" ASC);
     ALTER TABLE "T" ADD CONSTRAINT "T_SA_UK" UNIQUE (S, A);
     ALTER TABLE "T" ADD CONSTRAINT "T_S_CK" CHECK ("S" > 0);
+    ALTER TABLE "T" ADD CONSTRAINT "T_VC_CK" CHECK ("VC" > 0);
     ALTER TABLE "T" ADD CONSTRAINT "T_SA_CK" CHECK ("S" >= "A");
+    ALTER TABLE "T" ADD CONSTRAINT "T_VCS_CK" CHECK ("VC" <= "S" + 100);
