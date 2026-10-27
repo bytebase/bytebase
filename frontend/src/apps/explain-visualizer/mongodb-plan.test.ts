@@ -17,6 +17,8 @@ import indexScanSort from "./test-data/mongodb/index-scan-sort.json";
 import measuredAggregateGroup from "./test-data/mongodb/measured-aggregate-group.json";
 import measuredCollectionScan from "./test-data/mongodb/measured-collection-scan.json";
 import measuredShardedIndexScan from "./test-data/mongodb/measured-sharded-index-scan.json";
+import measuredSlotBasedJoin from "./test-data/mongodb/measured-slot-based-join.json";
+import shardedAggregateGroup from "./test-data/mongodb/sharded-aggregate-group.json";
 import shardedIndexScan from "./test-data/mongodb/sharded-index-scan.json";
 import slotBasedIndexScan from "./test-data/mongodb/slot-based-index-scan.json";
 
@@ -114,6 +116,42 @@ describe("parseMongodbPlan", () => {
     // A shard's execution stages state no namespace of their own, so it comes
     // from the planner's shards, which name the one collection they all read.
     expect(byId(tree, "0.1.0.0").relation).toEqual({
+      database: "qp",
+      table: "orders",
+    });
+  });
+
+  test("follows a slot-based join to both of the sides it reads", () => {
+    const tree = parseFixture(measuredSlotBasedJoin);
+
+    // The slot-based engine spells a join's two sides `outerStage` and
+    // `innerStage`, so following `inputStage` alone stops at the join and
+    // leaves the seek that does the reading inside a property.
+    expect(outline(tree)).toEqual([
+      "0 filter",
+      "0.0 nlj",
+      "0.0.0 ixseek",
+      "0.0.1 limit",
+      "0.0.1.0 seek",
+    ]);
+    expect(byId(tree, "0.0").actualRows).toBe(5000);
+  });
+
+  test("draws a pipeline split across shards under the stage that merges it", () => {
+    const tree = parseFixture(shardedAggregateGroup);
+
+    // A split pipeline states no `stages` of its own: the merger's part is
+    // the plan, and each shard's part runs under `$mergeCursors`.
+    expect(outline(tree).slice(0, 4)).toEqual([
+      "0 $sort",
+      "0.0 $group",
+      "0.0.0 $mergeCursors",
+      "0.0.0.0 $group",
+    ]);
+    expect(propertyValue(byId(tree, "0.0.0.0"), "Shard")).toBe("sh1");
+    expect(propertyValue(byId(tree, "0.0.0.1"), "Shard")).toBe("sh2");
+    // Each shard's own read is drawn, down to the collection it scanned.
+    expect(byId(tree, "0.0.0.0.0.0.0").relation).toEqual({
       database: "qp",
       table: "orders",
     });

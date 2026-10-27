@@ -450,11 +450,14 @@ read backwards so the stage producing the result is the root and the `$cursor`
 feeding it becomes the read's own plan below. Which engine ran the query is not
 the reader's question, but it changes where the plan sits: the slot-based
 engine reports the operator tree under `winningPlan.queryPlan`, beside the plan
-it compiled for its own machine, where the classic engine puts the tree itself.
-A sharded collection is planned a shard at a time, and the merge stage holds
-each shard's whole plan under `shards` rather than as an input stage, so the
-shards are drawn as what they are — the branches the merge reads — and each
-node says which shard it ran on.
+it compiled for its own machine, where the classic engine puts the tree itself,
+and it spells a join's two sides `outerStage` and `innerStage` where the
+classic engine nests one `inputStage`. A sharded collection is planned a shard
+at a time, and the merge stage holds each shard's whole plan under `shards`
+rather than as an input stage, so the shards are drawn as what they are — the
+branches the merge reads — and each node says which shard it ran on. A sharded
+aggregation goes further and states no pipeline of its own: the merger's part
+is the plan, with each shard's part under the `$mergeCursors` that reads it.
 
 **Attaching a measured plan to an ordinary run is deferred.** Two engines could:
 Spanner has a run mode returning rows and plan and real timings in one execution,

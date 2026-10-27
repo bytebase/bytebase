@@ -98,6 +98,8 @@ index usage; only `executionStats` adds numbers, and only by running the query.
 | `slot-based-index-scan.json` | The slot-based engine's shape: the tree under `winningPlan.queryPlan`, beside the plan it compiled for itself |
 | `sharded-index-scan.json` | A sharded collection: each shard's own plan under the `SHARD_MERGE` that reads them, each naming its shard and namespace |
 | `measured-sharded-index-scan.json` | The same query run, where a shard's entry holds `executionStages` and states no namespace |
+| `measured-slot-based-join.json` | A measured slot-based plan, whose `nlj` holds its two sides under `outerStage` and `innerStage` |
+| `sharded-aggregate-group.json` | A pipeline split across shards: no `stages` of its own, each shard's part under `shards` and the merger's under `splitPipeline` |
 
 The slot-based one is from MongoDB 7, which runs the classic engine by
 default; `db.adminCommand({ setParameter: 1, internalQueryFrameworkControl:

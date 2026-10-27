@@ -35,19 +35,41 @@ import {
  * which is a different question from what this query will do.
  */
 
-const CHILD_KEY = "inputStage";
+/**
+ * Where a stage puts a child. The classic engine nests one under `inputStage`;
+ * the slot-based engine spells a join's two sides `outerStage` and
+ * `innerStage`, and a branch's two arms `thenStage` and `elseStage`.
+ */
+const CHILD_KEYS = [
+  "inputStage",
+  "outerStage",
+  "innerStage",
+  "thenStage",
+  "elseStage",
+];
 const CHILDREN_KEY = "inputStages";
 const SHARDS_KEY = "shards";
+/** The stage a split pipeline's merger reads its shards' output through. */
+const MERGE_CURSORS = "$mergeCursors";
 const STAGE_KEY = "stage";
 
 /** Keys the model promotes to typed fields, so the property list drops them. */
 const PROMOTED_KEYS = new Set([
   STAGE_KEY,
-  CHILD_KEY,
+  ...CHILD_KEYS,
   CHILDREN_KEY,
   SHARDS_KEY,
   "nReturned",
 ]);
+
+/** Whether this stage reads another, by any of the names one is nested under. */
+function readsAnotherStage(raw: JsonRecord): boolean {
+  return (
+    CHILD_KEYS.some((key) => isJsonRecord(raw[key])) ||
+    Boolean(raw[CHILDREN_KEY]) ||
+    Boolean(raw[SHARDS_KEY])
+  );
+}
 
 /** The operator that reads a whole collection, having no index to use. */
 const COLLECTION_SCAN = "COLLSCAN";
@@ -101,14 +123,7 @@ function toRelation(
   raw: JsonRecord,
   namespace: string | undefined
 ): PlanRelation | undefined {
-  if (
-    !namespace ||
-    isJsonRecord(raw[CHILD_KEY]) ||
-    raw[CHILDREN_KEY] ||
-    raw[SHARDS_KEY]
-  ) {
-    return undefined;
-  }
+  if (!namespace || readsAnotherStage(raw)) return undefined;
   const separator = namespace.indexOf(".");
   if (separator <= 0 || separator === namespace.length - 1) return undefined;
   return {
@@ -173,9 +188,13 @@ function toPlanNode(
 ): PlanNode {
   checkPlanDepth(depth);
   const children: PlanNode[] = [];
-  const child = raw[CHILD_KEY];
-  if (isJsonRecord(child)) {
-    children.push(toPlanNode(child, namespace, `${id}.0`, depth + 1));
+  for (const key of CHILD_KEYS) {
+    const child = raw[key];
+    if (isJsonRecord(child)) {
+      children.push(
+        toPlanNode(child, namespace, `${id}.${children.length}`, depth + 1)
+      );
+    }
   }
   const siblings = raw[CHILDREN_KEY];
   if (Array.isArray(siblings)) {
@@ -282,11 +301,16 @@ function planTreeOf(
  * result is the root. The `$cursor` that feeds the pipeline is not a stage of
  * its own: it holds the query plan for the read, which takes its place.
  */
+/**
+ * @param shards - Each shard's own pipeline, where the pipeline was split
+ * across shards. They hang under the stage that reads them.
+ */
 function aggregateNode(
   stages: readonly unknown[],
   index: number,
   id: string,
-  depth: number
+  depth: number,
+  shards?: JsonRecord
 ): PlanNode | undefined {
   checkPlanDepth(depth);
   if (index < 0) return undefined;
@@ -302,7 +326,29 @@ function aggregateNode(
     if (plan) return toPlanNode(plan.root, plan.namespace, id, depth);
   }
 
-  const child = aggregateNode(stages, index - 1, `${id}.0`, depth + 1);
+  const children: PlanNode[] = [];
+  if (name === MERGE_CURSORS && shards) {
+    for (const [shard, each] of Object.entries(shards)) {
+      const ran = isJsonRecord(each) ? each.stages : undefined;
+      if (!Array.isArray(ran) || ran.length === 0) continue;
+      const node = aggregateNode(
+        ran,
+        ran.length - 1,
+        `${id}.${children.length}`,
+        depth + 1
+      );
+      if (!node) continue;
+      children.push({
+        ...node,
+        properties: [{ label: "Shard", value: shard }, ...node.properties],
+      });
+    }
+  }
+  const child =
+    children.length > 0
+      ? undefined
+      : aggregateNode(stages, index - 1, `${id}.0`, depth + 1, shards);
+  if (child) children.push(child);
   const properties = isJsonRecord(body) ? toProperties(body) : [];
   // What the stage returned and what it spent sit beside the stage rather
   // than inside it: the rows, the time it estimates, and whether it had to
@@ -318,7 +364,7 @@ function aggregateNode(
     actualRows: optionalNumber(stage.nReturned),
     properties,
     warnings: [],
-    children: child ? [child] : [],
+    children,
   };
 }
 
@@ -338,10 +384,24 @@ export function parseMongodbPlan(source: string): PlanParseResult {
     return { ok: false, message: MONGODB_PLAN_INVALID_JSON_MESSAGE };
   }
 
-  const stages = parsed.stages;
+  // A pipeline split across shards states each shard's part under `shards`
+  // and the merger's own under `splitPipeline`, where no single `stages` is
+  // the plan. The merger is the plan, and the shards run under the stage that
+  // reads them.
+  const split = isJsonRecord(parsed.splitPipeline)
+    ? parsed.splitPipeline
+    : undefined;
+  const shards = isJsonRecord(parsed[SHARDS_KEY])
+    ? parsed[SHARDS_KEY]
+    : undefined;
+  const merger = split?.mergerPart;
+  const stages =
+    shards && Array.isArray(merger) && merger.length > 0
+      ? merger
+      : parsed.stages;
   if (Array.isArray(stages) && stages.length > 0) {
     return parseWithDepthLimit(() => {
-      const root = aggregateNode(stages, stages.length - 1, "0", 0);
+      const root = aggregateNode(stages, stages.length - 1, "0", 0, shards);
       if (!root) throw new Error(MONGODB_PLAN_NO_PLAN_MESSAGE);
       return root;
     });
