@@ -13,6 +13,11 @@ import {
   COCKROACHDB_PLAN_NO_PLAN_MESSAGE,
 } from "./cockroachdb-plan";
 import {
+  HIVE_PLAN_EMPTY_MESSAGE,
+  HIVE_PLAN_INVALID_JSON_MESSAGE,
+  HIVE_PLAN_NO_PLAN_MESSAGE,
+} from "./hive-plan";
+import {
   MONGODB_PLAN_EMPTY_MESSAGE,
   MONGODB_PLAN_INVALID_JSON_MESSAGE,
   MONGODB_PLAN_NO_PLAN_MESSAGE,
@@ -59,6 +64,11 @@ import {
   REDSHIFT_PLAN_EMPTY_MESSAGE,
   REDSHIFT_PLAN_NO_PLAN_MESSAGE,
 } from "./redshift-plan";
+import {
+  SNOWFLAKE_PLAN_EMPTY_MESSAGE,
+  SNOWFLAKE_PLAN_INVALID_JSON_MESSAGE,
+  SNOWFLAKE_PLAN_NO_PLAN_MESSAGE,
+} from "./snowflake-plan";
 import {
   SPANNER_PLAN_EMPTY_MESSAGE,
   SPANNER_PLAN_EMULATOR_MESSAGE,
@@ -117,6 +127,12 @@ const PARSE_ERROR_KEYS = new Map<string, QueryPlanTranslationKey>([
   [MONGODB_PLAN_EMPTY_MESSAGE, "error.mongodb-empty"],
   [MONGODB_PLAN_INVALID_JSON_MESSAGE, "error.mongodb-invalid"],
   [MONGODB_PLAN_NO_PLAN_MESSAGE, "error.mongodb-no-plan"],
+  [SNOWFLAKE_PLAN_EMPTY_MESSAGE, "error.snowflake-empty"],
+  [SNOWFLAKE_PLAN_INVALID_JSON_MESSAGE, "error.snowflake-invalid"],
+  [SNOWFLAKE_PLAN_NO_PLAN_MESSAGE, "error.snowflake-no-plan"],
+  [HIVE_PLAN_EMPTY_MESSAGE, "error.hive-empty"],
+  [HIVE_PLAN_INVALID_JSON_MESSAGE, "error.hive-invalid"],
+  [HIVE_PLAN_NO_PLAN_MESSAGE, "error.hive-no-plan"],
   [COCKROACHDB_PLAN_EMPTY_MESSAGE, "error.cockroachdb-empty"],
   [COCKROACHDB_PLAN_INVALID_JSON_MESSAGE, "error.cockroachdb-invalid"],
   [COCKROACHDB_PLAN_NO_PLAN_MESSAGE, "error.cockroachdb-no-plan"],

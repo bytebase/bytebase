@@ -24,6 +24,8 @@ export const VISUALIZER_EXPLAIN_FORMATS = {
   [Engine.OCEANBASE]: "JSON",
   [Engine.MONGODB]: "JSON",
   [Engine.COCKROACHDB]: "JSON",
+  [Engine.SNOWFLAKE]: "JSON",
+  [Engine.HIVE]: "JSON",
   // These three publish no plan as a document; their text plan is what there
   // is.
   [Engine.REDSHIFT]: "TEXT",

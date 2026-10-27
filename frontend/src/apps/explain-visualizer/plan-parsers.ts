@@ -2,6 +2,7 @@ import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { VisualizerEngine } from "@/utils/queryPlanEngines";
 import { parseClickhousePlan } from "./clickhouse-plan";
 import { parseCockroachdbPlan } from "./cockroachdb-plan";
+import { parseHivePlan } from "./hive-plan";
 import { parseMongodbPlan } from "./mongodb-plan";
 import { parseMssqlPlan } from "./mssql-plan";
 import { parseMysqlPlan } from "./mysql-plan";
@@ -10,6 +11,7 @@ import { parseOraclePlan } from "./oracle-plan";
 import type { PlanParseResult } from "./plan-model";
 import { parsePostgresPlan } from "./postgres-plan";
 import { parseRedshiftPlan } from "./redshift-plan";
+import { parseSnowflakePlan } from "./snowflake-plan";
 import { parseSpannerPlan } from "./spanner-plan";
 import { parseStarrocksPlan } from "./starrocks-plan";
 import { parseTidbPlan } from "./tidb-plan";
@@ -43,6 +45,11 @@ const PARSERS: Record<VisualizerEngine, (source: string) => PlanParseResult> = {
   // CockroachDB publishes no plan as a document; the server decodes the one it
   // encodes in the diagram link EXPLAIN (DISTSQL) prints.
   [Engine.COCKROACHDB]: parseCockroachdbPlan,
+  // Snowflake states each operation's parents rather than its children, so its
+  // parser turns those edges around.
+  [Engine.SNOWFLAKE]: parseSnowflakePlan,
+  // Hive answers with Calcite's own plan, as a JSON string within the JSON.
+  [Engine.HIVE]: parseHivePlan,
   // The text plans drawn here, because none of these engines publishes
   // anything else. StarRocks forked from Doris and their plans still agree on
   // the fragments and the tree, so one parser reads both.

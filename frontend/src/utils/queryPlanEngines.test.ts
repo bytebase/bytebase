@@ -24,6 +24,8 @@ describe("isVisualizerEngine", () => {
         Engine.OCEANBASE,
         Engine.MONGODB,
         Engine.COCKROACHDB,
+        Engine.SNOWFLAKE,
+        Engine.HIVE,
         Engine.REDSHIFT,
         Engine.STARROCKS,
         Engine.DORIS,
@@ -31,7 +33,8 @@ describe("isVisualizerEngine", () => {
     );
     expect(isVisualizerEngine(Engine.POSTGRES)).toBe(true);
     expect(isVisualizerEngine(Engine.MYSQL)).toBe(true);
-    expect(isVisualizerEngine(Engine.SNOWFLAKE)).toBe(false);
+    expect(isVisualizerEngine(Engine.SNOWFLAKE)).toBe(true);
+    expect(isVisualizerEngine(Engine.DATABRICKS)).toBe(false);
   });
 
   test("names only engines the editor offers Explain on", () => {
@@ -75,6 +78,8 @@ describe("explainQueryOption", () => {
       Engine.OCEANBASE,
       Engine.MONGODB,
       Engine.COCKROACHDB,
+      Engine.SNOWFLAKE,
+      Engine.HIVE,
     ]) {
       expect(explainQueryOption(engine).explainFormat).toBe(
         QueryOption_ExplainFormat.JSON
@@ -83,10 +88,11 @@ describe("explainQueryOption", () => {
   });
 
   test("leaves an engine the viewer cannot draw on its own default", () => {
-    expect(explainQueryOption(Engine.SNOWFLAKE).explainFormat).toBe(
+    // Databricks explains, in Spark's own FORMATTED text, which has no reader.
+    expect(explainQueryOption(Engine.DATABRICKS).explainFormat).toBe(
       QueryOption_ExplainFormat.EXPLAIN_FORMAT_UNSPECIFIED
     );
-    expect(explainQueryOption(Engine.HIVE).explainFormat).toBe(
+    expect(explainQueryOption(Engine.BIGQUERY).explainFormat).toBe(
       QueryOption_ExplainFormat.EXPLAIN_FORMAT_UNSPECIFIED
     );
   });

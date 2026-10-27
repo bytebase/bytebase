@@ -326,3 +326,40 @@ as it does every JSON file here.
 | `filter-limit.json` | `filter.input.json` | Global and local limits, a seek condition |
 | `scalar-subquery.json` | `scalar_subquery_with_filter_scan.input.json` | A scalar subquery with its own aggregates |
 | `nested-array-subqueries.json` | `array_subqueries_with_compute_struct.input.json` | An array subquery inside another |
+
+## `snowflake/`
+
+`EXPLAIN USING JSON` output as Snowflake publishes it in
+[its EXPLAIN documentation](https://docs.snowflake.com/en/sql-reference/sql/explain)
+— the one fixture here not captured through the driver, because Snowflake runs
+nowhere but Snowflake. What the driver hands over is the same single JSON value,
+the one cell the statement returns. Snowflake estimates neither cost nor rows;
+what it states is how much of each table the query would read.
+
+| File | Shape it covers |
+| --- | --- |
+| `inner-join.json` | A join and its filter over two scans, each reporting the partitions and bytes assigned to it, with the query's totals in `GlobalStats` |
+
+To add one, run `EXPLAIN USING JSON <statement>` on a Snowflake warehouse and
+keep the cell verbatim. The cases a published plan does not show — a scan
+assigned every partition of its table, a statement compiled into several steps —
+are written inline in the test, which is where a plan no server emitted belongs.
+
+## `hive/`
+
+`EXPLAIN FORMATTED` output from Hive 4.0.0, HiveServer2 with its embedded
+metastore, against `customers` and `orders`. The repository's formatter indents
+the outer object; the plan the parser reads stays one escaped line within it,
+the `CBOPlan` *string*, which is how Hive answers. It states that string only
+where its cost-based optimizer planned the statement.
+
+| File | Shape it covers |
+| --- | --- |
+| `single-scan.json` | A scan under a filter under a project — the chain Calcite writes by leaving `inputs` out |
+| `join-aggregate.json` | A join naming both of its inputs, under an aggregate, on tables nothing had analyzed |
+| `analyzed-join.json` | The same query once the tables held rows and `ANALYZE TABLE … COMPUTE STATISTICS FOR COLUMNS` had run, so every operator states rows and the scans state a row width |
+| `union-all.json` | A union reading two branches |
+| `order-limit.json` | A sort with a fetch |
+| `no-cbo-plan.json` | `hive.cbo.enable=false`: the Tez stages alone, with no `CBOPlan`, which the viewer shows as text |
+
+To add one, `EXPLAIN FORMATTED` through the same client.
