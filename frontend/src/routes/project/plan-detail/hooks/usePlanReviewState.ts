@@ -4,6 +4,10 @@ import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import { deriveSteps } from "../components/review/ReviewApprovalFlow";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
 import {
+  hasReviewableSQL,
+  loadedMatchedDatabaseCount,
+} from "../utils/aiReviewRun";
+import {
   type AutomatedReviewRow,
   aiReviewRow,
   computePlanGates,
@@ -12,6 +16,8 @@ import {
   type PlanGate,
   planCheckRow,
   planCheckRunRow,
+  resolvedByPeople,
+  ruleReviewApplies,
   ruleReviewRow,
 } from "../utils/planGates";
 import { useAIReviewRun } from "./useAIReviewRun";
@@ -37,6 +43,16 @@ export function usePlanReviewState(): PlanReviewState | undefined {
     issue ? state.getIssueComments(issue.name) : NO_COMMENTS
   );
   const ruleReview = sqlReview?.ruleReview;
+  const dbGroupsByName = useAppStore((state) => state.dbGroupsByName);
+  const dbGroupViewByName = useAppStore((state) => state.dbGroupViewByName);
+  const reviewsSQL = useMemo(
+    () =>
+      hasReviewableSQL(
+        page.plan,
+        loadedMatchedDatabaseCount({ dbGroupsByName, dbGroupViewByName })
+      ),
+    [dbGroupViewByName, dbGroupsByName, page.plan]
+  );
   const currentApprovalRole = useMemo(
     () =>
       issue
@@ -48,7 +64,7 @@ export function usePlanReviewState(): PlanReviewState | undefined {
   return useMemo(() => {
     if (!sqlReview || !issue) return undefined;
     const rows: AutomatedReviewRow[] = [];
-    if (ruleReview) {
+    if (ruleReview && ruleReviewApplies(ruleReview.run, reviewsSQL)) {
       rows.push(
         ruleReviewRow({
           run: ruleReview.run,
@@ -59,7 +75,7 @@ export function usePlanReviewState(): PlanReviewState | undefined {
       );
     }
     const aiFindings = countFindings(comments, "ai");
-    if (ai.shown || aiFindings.open + aiFindings.resolved > 0) {
+    if (ai.shown || aiFindings.open + resolvedByPeople(aiFindings) > 0) {
       rows.push(aiReviewRow({ run: ai.run, findings: aiFindings }));
     }
     for (const reviewer of ["policy", "ghost", "report"] as const) {
@@ -86,6 +102,7 @@ export function usePlanReviewState(): PlanReviewState | undefined {
     currentApprovalRole,
     issue,
     page.planCheckRuns,
+    reviewsSQL,
     ruleReview,
     sqlReview,
   ]);

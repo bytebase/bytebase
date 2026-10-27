@@ -21,6 +21,8 @@ import {
 } from "@/types/proto-es/v1/plan_service_pb";
 
 const mocks = vi.hoisted(() => ({
+  activityFocus: undefined as { commentName: string; nonce: number } | undefined,
+  clearActivityFocus: vi.fn(),
   requestThreadFocus: vi.fn(),
   setWalkerFilter: vi.fn(),
   expandPhase: vi.fn(),
@@ -42,11 +44,13 @@ vi.mock("@/components/issue-activity/IssueCommentActivity", () => ({
   ActivityRowFrame: ({
     children,
     icon,
+    id,
   }: {
     children: ReactNode;
     icon: ReactNode;
+    id?: string;
   }) => (
-    <li data-testid="thread-row">
+    <li data-testid="thread-row" id={id}>
       {icon}
       {children}
     </li>
@@ -130,6 +134,8 @@ vi.mock("../../shared/stores/usePlanDetailStore", () => ({
       selectedSpecId: "spec-1",
       placements: mocks.placements,
       placementTargets: mocks.placementTargets,
+      activityFocus: mocks.activityFocus,
+      clearActivityFocus: mocks.clearActivityFocus,
     }),
   usePlanDetailStoreApi: () => ({
     getState: () => ({
@@ -228,6 +234,7 @@ const reviewSubmission = (name: string) =>
 describe("ReviewActivityTimeline", () => {
   afterEach(() => {
     vi.clearAllMocks();
+    mocks.activityFocus = undefined;
     mocks.placements.clear();
     mocks.placementTargets.clear();
   });
@@ -346,6 +353,41 @@ describe("ReviewActivityTimeline", () => {
       })
     );
     act(() => root.unmount());
+  });
+
+  test("unfolds the timeline to reach a card asked for from elsewhere", () => {
+    const name = (i: number) => `projects/p1/issues/1/issueComments/t${i}`;
+    const comments = Array.from({ length: 12 }, (_, i) =>
+      create(IssueCommentSchema, {
+        name: name(i),
+        comment: `thread ${i}`,
+        threadState: IssueComment_ThreadState.OPEN,
+        createTime: timestampFromMs(i * 1000),
+      })
+    );
+    const scrollIntoView = vi.fn();
+    const original = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = scrollIntoView;
+    mocks.activityFocus = { commentName: name(6), nonce: 4 };
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    act(() => {
+      root.render(
+        <ReviewActivityTimeline
+          comments={comments}
+          issue={create(IssueSchema, { name: "projects/p1/issues/1" })}
+          plan={create(PlanSchema, { name: "projects/p1/plans/1" })}
+        />
+      );
+    });
+    const card = document.getElementById(name(6));
+    expect(card).not.toBeNull();
+    expect(scrollIntoView.mock.contexts).toContain(card);
+    expect(mocks.clearActivityFocus).toHaveBeenCalledWith(4);
+    act(() => root.unmount());
+    container.remove();
+    Element.prototype.scrollIntoView = original;
   });
 
   test("hands a thread card the plan spec its anchor names, and none for a spec the plan lacks", () => {

@@ -99,6 +99,10 @@ export type ThreadFocusSlice = {
   // asks for.
   reviewRowRequest: { reviewer: AutomatedReviewer; nonce: number } | undefined;
   requestReviewRow: (reviewer: AutomatedReviewer) => void;
+  // A thread's Activity card to scroll to; the timeline unfolds to show it.
+  activityFocus: { commentName: string; nonce: number } | undefined;
+  requestActivityFocus: (commentName: string) => void;
+  clearActivityFocus: (nonce: number) => void;
 };
 
 // Measurements of one placement run, kept so the decision to move the rule

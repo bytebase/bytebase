@@ -230,6 +230,14 @@ export function ruleReviewRow(input: {
   };
 }
 
+// A plan with no SQL to review never gets a rule review run, and the server
+// holds nothing for one; a run that exists still counts, since the server
+// restarts a stale run whatever the plan holds.
+export const ruleReviewApplies = (
+  run: ReviewRun | null | undefined,
+  reviewsSQL: boolean
+): boolean => run !== null || reviewsSQL;
+
 // The AI review holds the rollout only through the findings it posts.
 export function aiReviewRow(input: {
   run: ReviewRun | null | undefined;

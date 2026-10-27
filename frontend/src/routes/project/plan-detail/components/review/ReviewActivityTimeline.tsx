@@ -112,6 +112,14 @@ export function ReviewActivityTimeline({
     setExpanded(false);
   }, [page.pageKey]);
 
+  // A card asked for from elsewhere may sit in the folded middle, so the
+  // timeline unfolds first and scrolls once the card renders.
+  const activityFocus = usePlanDetailStore((s) => s.activityFocus);
+  const clearActivityFocus = usePlanDetailStore((s) => s.clearActivityFocus);
+  useEffect(() => {
+    if (activityFocus) setExpanded(true);
+  }, [activityFocus]);
+
   // Under SQL Review V2, Activity records each run as one line.
   const placements = usePlanDetailStore((s) => s.placements);
   const placementTargets = usePlanDetailStore((s) => s.placementTargets);
@@ -168,6 +176,13 @@ export function ReviewActivityTimeline({
     const consolidated = consolidateConsecutive(renderable);
     return foldTimeline(consolidated, expanded);
   }, [entries, expanded]);
+  useEffect(() => {
+    if (!activityFocus || !expanded) return;
+    document
+      .getElementById(activityFocus.commentName)
+      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    clearActivityFocus(activityFocus.nonce);
+  }, [activityFocus, clearActivityFocus, expanded, items]);
   // Permission-gated only — comments are allowed regardless of issue status
   // (the backend and the issue-detail list allow commenting on done issues).
   const allowComment = Boolean(

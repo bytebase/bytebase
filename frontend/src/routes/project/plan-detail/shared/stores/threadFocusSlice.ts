@@ -30,4 +30,18 @@ export const createThreadFocusSlice: PlanDetailSliceCreator<
         nonce: (state.reviewRowRequest?.nonce ?? 0) + 1,
       },
     })),
+  activityFocus: undefined,
+  requestActivityFocus: (commentName) =>
+    set((state) => ({
+      activityFocus: {
+        commentName,
+        nonce: (state.activityFocus?.nonce ?? 0) + 1,
+      },
+    })),
+  clearActivityFocus: (nonce) =>
+    set((state) =>
+      state.activityFocus && state.activityFocus.nonce === nonce
+        ? { activityFocus: undefined }
+        : state
+    ),
 });

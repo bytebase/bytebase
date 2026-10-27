@@ -32,6 +32,7 @@ import {
   type ReviewerFindings,
   resolvedByPeople,
   rowNeedsAttention,
+  ruleReviewApplies,
   ruleReviewRow,
 } from "./planGates";
 
@@ -145,6 +146,22 @@ describe("rowNeedsAttention", () => {
     expect(row.conclusion).toBe("resolved");
     expect(row.holdsRollout).toBe(false);
     expect(rowNeedsAttention(row)).toBe(true);
+  });
+});
+
+describe("ruleReviewApplies", () => {
+  test.each([
+    ["a missing run on a plan with SQL", null, true, true],
+    ["a missing run on a plan with nothing to review", null, false, false],
+    [
+      "a run on a plan with nothing left to review",
+      run(ReviewRun_Status.DONE),
+      false,
+      true,
+    ],
+    ["a run not loaded yet", undefined, false, true],
+  ] as const)("%s", (_, reviewRun, reviewsSQL, applies) => {
+    expect(ruleReviewApplies(reviewRun, reviewsSQL)).toBe(applies);
   });
 });
 

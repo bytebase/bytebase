@@ -17,13 +17,9 @@ export function useFocusThread() {
   const focusInActivity = useCallback(
     (root: IssueComment) => {
       focusPlanPhase("review", expandPhase);
-      requestAnimationFrame(() => {
-        document
-          .getElementById(root.name)
-          ?.scrollIntoView({ behavior: "smooth", block: "center" });
-      });
+      storeApi.getState().requestActivityFocus(root.name);
     },
-    [expandPhase]
+    [expandPhase, storeApi]
   );
 
   const focusInStatement = useCallback(
