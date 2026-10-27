@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"context"
 	"testing"
 
 	"connectrpc.com/connect"
@@ -8,10 +9,73 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
+	"github.com/bytebase/bytebase/backend/component/iam"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/store"
 )
+
+func TestListDatabasesAcrossProjects(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	db, stores, _ := testcontainer.NewMetadataDB(t)
+	_, err := db.ExecContext(ctx, `
+		INSERT INTO workspace (resource_id) VALUES ('default');
+		INSERT INTO project (resource_id, workspace, name, deleted) VALUES
+			('project-a', 'default', 'Project A', FALSE),
+			('project-b', 'default', 'Project B', FALSE),
+			('project-archived', 'default', 'Archived', TRUE);
+		INSERT INTO instance (resource_id, workspace) VALUES ('prod', 'default');
+		INSERT INTO db (instance, name, project) VALUES
+			('prod', 'a1', 'project-a'),
+			('prod', 'a2', 'project-a'),
+			('prod', 'b1', 'project-b'),
+			('prod', 'archived1', 'project-archived');
+	`)
+	require.NoError(t, err)
+	grant := func(resourceType storepb.Policy_Resource, resource, email, role string) {
+		_, err := stores.PatchIamPolicy(ctx, "default", resourceType, resource, func(policy *storepb.IamPolicy) error {
+			policy.Bindings = append(policy.Bindings, &storepb.Binding{Role: role, Members: []string{common.FormatUserEmail(email)}})
+			return nil
+		})
+		require.NoError(t, err)
+	}
+	grant(storepb.Policy_WORKSPACE, common.FormatWorkspace("default"), "admin@example.com", "roles/workspaceAdmin")
+	grant(storepb.Policy_PROJECT, common.FormatProject("project-a"), "dev@example.com", "roles/projectDeveloper")
+
+	iamManager, err := iam.NewManager(stores, nil, false)
+	require.NoError(t, err)
+	service := &DatabaseService{store: stores, iamManager: iamManager, licenseService: newInstanceServiceTestLicenseService(t, stores)}
+	list := func(email, filter string, pageSize int32) []string {
+		callerCtx := context.WithValue(ctx, common.WorkspaceIDContextKey, "default")
+		callerCtx = context.WithValue(callerCtx, common.UserContextKey, &store.UserMessage{Email: email})
+		var names []string
+		pageToken := ""
+		for {
+			resp, err := service.ListDatabases(callerCtx, connect.NewRequest(&v1pb.ListDatabasesRequest{
+				Parent:    "projects/-",
+				Filter:    filter,
+				PageSize:  pageSize,
+				PageToken: pageToken,
+			}))
+			require.NoError(t, err)
+			for _, database := range resp.Msg.Databases {
+				names = append(names, database.Name)
+			}
+			if resp.Msg.NextPageToken == "" {
+				return names
+			}
+			pageToken = resp.Msg.NextPageToken
+		}
+	}
+
+	require.Empty(t, list("nobody@example.com", "", 100), "a caller who can read no project lists no database")
+	require.Equal(t, []string{"instances/prod/databases/a1", "instances/prod/databases/a2"}, list("dev@example.com", "", 1))
+	require.Empty(t, list("dev@example.com", `project == "projects/project-b"`, 100), "a filter cannot reach a project the caller cannot read")
+	require.Equal(t, []string{"instances/prod/databases/a1", "instances/prod/databases/a2", "instances/prod/databases/b1"},
+		list("admin@example.com", "", 1), "pages cross projects, and an archived project lists nothing, as projects/{archived} does")
+}
 
 func TestShouldDiffSchemaViaSDL(t *testing.T) {
 	t.Parallel()

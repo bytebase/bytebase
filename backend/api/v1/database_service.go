@@ -304,6 +304,14 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, req *connect.Reques
 			return nil, permissionDeniedError(ctx, errors.Errorf("user does not have permission %q in %q", permission.InstancesGet, req.Msg.Parent))
 		}
 		find.InstanceID = &instanceID
+	} else if req.Msg.Parent == "projects/-" {
+		// AIP-159 wildcard: the union of the projects/{project} listings below,
+		// so it checks the same permission in each project.
+		projectIDs, err := getProjectIDsSearchFilter(ctx, user, permission.ProjectsGet, s.iamManager, s.store)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get projectIDs"))
+		}
+		find.ProjectIDs = projectIDs
 	} else if projectID, err := common.GetProjectID(req.Msg.Parent); err == nil {
 		project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 			Workspace:  common.GetWorkspaceIDFromContext(ctx),

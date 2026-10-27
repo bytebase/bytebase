@@ -94,23 +94,23 @@ func formatProjectFilter(project string) string {
 	return common.FormatProject(project)
 }
 
-// listDatabases lists databases matching the filter in the user's workspace.
-// Uses the workspace ID from the JWT token stored in context.
-func (s *Server) listDatabases(ctx context.Context, filter string) ([]databaseEntry, error) {
-	workspaceID := getWorkspaceID(ctx)
-	if workspaceID == "" {
-		return nil, &toolError{
-			Code:       "AUTH_ERROR",
-			Message:    "workspace ID not found in token",
-			Suggestion: "re-authenticate with Bytebase",
-		}
+// listDatabases lists the databases matching filter in the named project, or
+// in every project the caller can read when none is named.
+//
+// It never lists under the workspace parent: that needs bb.databases.list at
+// the workspace, which project roles lack, and with stdout audit logging on,
+// each refusal there would stream a permission denial on every resolve.
+func (s *Server) listDatabases(ctx context.Context, filter, project string) ([]databaseEntry, error) {
+	parent := "projects/-"
+	if project != "" {
+		parent = formatProjectFilter(project)
 	}
 
 	var databases []databaseEntry
 	pageToken := ""
 	for {
 		body := map[string]any{
-			"parent":   fmt.Sprintf("workspaces/%s", workspaceID),
+			"parent":   parent,
 			"filter":   filter,
 			"pageSize": 1000,
 		}
@@ -121,7 +121,7 @@ func (s *Server) listDatabases(ctx context.Context, filter string) ([]databaseEn
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to list databases")
 		}
-		if err := checkAPIResponse(resp, "list databases", "bb.databases.list"); err != nil {
+		if err := checkAPIResponse(resp, "list databases", "bb.projects.get"); err != nil {
 			return nil, err
 		}
 
@@ -151,7 +151,8 @@ func matchDatabases(databases []databaseEntry, database, instance, project strin
 	}
 
 	if len(matches) == 0 {
-		suggestion := "check the database name or use search_api to list available databases"
+		suggestion := "check the database name or use search_api to list available databases. " +
+			"Databases in projects you cannot read are not listed"
 		if instance != "" || project != "" {
 			suggestion = "try without instance/project filters, or use search_api to list available databases"
 		}
@@ -206,7 +207,7 @@ func candidateView(matches []databaseEntry) *resolvedDatabase {
 
 // resolveDatabase resolves a database name to a unique resource using tiered matching.
 func (s *Server) resolveDatabase(ctx context.Context, database, instance, project string) (*resolvedDatabase, error) {
-	databases, err := s.listDatabases(ctx, buildDatabaseFilter(database, instance, project))
+	databases, err := s.listDatabases(ctx, buildDatabaseFilter(database, instance, project), project)
 	if err != nil {
 		return nil, err
 	}

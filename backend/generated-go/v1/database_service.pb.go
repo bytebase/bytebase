@@ -668,6 +668,7 @@ func (x *BatchGetDatabasesResponse) GetDatabases() []*Database {
 type ListDatabasesRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// - projects/{project}: list databases in a project, require "bb.projects.get" permission.
+	// - projects/-: list databases across projects (AIP-159), restricted to the projects where the caller holds "bb.projects.get".
 	// - workspaces/{id}: list databases in the workspace, require "bb.databases.list" permission.
 	// - instances/{instance}: list databases in an instance, require "bb.instances.get" permission.
 	// - projects/{project}/instances/{instance}: list databases in a project instance, require "bb.instances.get" permission.

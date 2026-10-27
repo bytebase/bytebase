@@ -49,8 +49,9 @@ func makeDatabaseWithDualDS(name, instanceName, project, engine, adminDSID, read
 	}
 }
 
-// mockListDatabases returns an HTTP handler that serves ListDatabases requests.
-// Supports both workspace-scoped (parent: "workspaces/...") and project-scoped parents.
+// mockListDatabases returns an HTTP handler that serves ListDatabases requests
+// for a caller who can read every project: the workspace parent and projects/-
+// list all databases, and a project parent lists that project's.
 func mockListDatabases(databases []map[string]any) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -61,10 +62,8 @@ func mockListDatabases(databases []map[string]any) http.Handler {
 		}
 		_ = json.NewDecoder(r.Body).Decode(&reqBody)
 
-		// For workspace-scoped requests, include all databases.
-		// For project-scoped requests, filter by parent project.
 		var scoped []map[string]any
-		if strings.HasPrefix(reqBody.Parent, "workspaces/") {
+		if strings.HasPrefix(reqBody.Parent, "workspaces/") || reqBody.Parent == "projects/-" {
 			scoped = databases
 		} else {
 			for _, db := range databases {
@@ -297,38 +296,6 @@ func TestQueryDatabase_NotFoundWithFilters(t *testing.T) {
 	require.ErrorAs(t, err, &te)
 	require.Equal(t, "DATABASE_NOT_FOUND", te.Code)
 	require.Contains(t, te.Suggestion, "without instance/project filters")
-}
-
-func TestQueryDatabase_MissingWorkspaceID(t *testing.T) {
-	s := newTestServerWithMock(t, http.NotFoundHandler())
-
-	// Use context.Background() — no workspace ID set.
-	_, err := s.resolveDatabase(context.Background(), "employee_db", "", "")
-	require.Error(t, err)
-
-	var te *toolError
-	require.ErrorAs(t, err, &te)
-	require.Equal(t, "AUTH_ERROR", te.Code)
-}
-
-func TestQueryDatabase_WorkspacePermissionDenied(t *testing.T) {
-	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusForbidden)
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"message": `user does not have permission "bb.databases.list"`,
-			"code":    "PERMISSION_DENIED",
-		})
-	})
-	s := newTestServerWithMock(t, handler)
-
-	_, err := s.resolveDatabase(testContext(), "employee_db", "", "")
-	require.Error(t, err)
-
-	var te *toolError
-	require.ErrorAs(t, err, &te)
-	require.Equal(t, toolError{Code: "PERMISSION_DENIED", Message: `user does not have permission "bb.databases.list"`}, *te,
-		"the server's message names the permission, and nothing is added")
 }
 
 func TestQueryDatabase_Ambiguous(t *testing.T) {
