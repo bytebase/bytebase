@@ -456,3 +456,24 @@ func findStatementIndex(statements []string, stmtType, objectName string) int {
 	}
 	return -1
 }
+
+func TestExpressionReferencesColumn(t *testing.T) {
+	tests := []struct {
+		expression string
+		column     string
+		want       bool
+	}{
+		{expression: `"S"`, column: "S", want: true},
+		{expression: `UPPER("S")`, column: "S", want: true},
+		{expression: `S+1`, column: "S", want: true},
+		{expression: `s > 0`, column: "S", want: true},
+		{expression: `"S2"`, column: "S", want: false},
+		{expression: `S2`, column: "S", want: false},
+		{expression: `'S'`, column: "S", want: false},
+		{expression: `"s"`, column: "S", want: false},
+		{expression: `1E5`, column: "E5", want: false},
+	}
+	for _, tc := range tests {
+		require.Equal(t, tc.want, expressionReferencesColumn(tc.expression, tc.column), tc.expression)
+	}
+}

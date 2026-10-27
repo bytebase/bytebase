@@ -681,7 +681,7 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 			// Alter columns (type changes, nullability, etc.)
 			for _, colDiff := range tableDiff.ColumnChanges {
 				if colDiff.Action == schema.MetadataDiffActionAlter {
-					alterColSQL := generateAlterColumn(tableDiff.SchemaName, tableDiff.TableName, colDiff)
+					alterColSQL := generateAlterColumn(tableDiff, colDiff)
 					_, _ = buf.WriteString(alterColSQL)
 				}
 			}
@@ -793,8 +793,9 @@ func generateCreateTable(schemaName, tableName string, table *metadatapb.TableMe
 	return buf.String(), nil
 }
 
-func generateAlterColumn(schemaName, tableName string, colDiff *schema.ColumnDiff) string {
+func generateAlterColumn(tableDiff *schema.TableDiff, colDiff *schema.ColumnDiff) string {
 	var buf strings.Builder
+	schemaName, tableName := tableDiff.SchemaName, tableDiff.TableName
 
 	// Oracle cannot turn a stored column into a virtual one or back, so the
 	// column is dropped and added again.
@@ -802,6 +803,7 @@ func generateAlterColumn(schemaName, tableName string, colDiff *schema.ColumnDif
 	if (oldGeneration == nil) != (newGeneration == nil) {
 		writeDropColumn(&buf, schemaName, tableName, colDiff.OldColumn.Name)
 		writeAddColumn(&buf, schemaName, tableName, colDiff.NewColumn)
+		writeColumnDependents(&buf, tableDiff, colDiff.NewColumn)
 		return buf.String()
 	}
 
@@ -852,6 +854,94 @@ func generateAlterColumn(schemaName, tableName string, colDiff *schema.ColumnDif
 	}
 
 	return buf.String()
+}
+
+// writeColumnDependents writes again what DROP COLUMN took with the column:
+// its comment, and the new table's indexes and constraints on it. Those the
+// diff creates anyway are left to it. A multi-column constraint makes DROP
+// COLUMN fail instead, so it never gets here.
+func writeColumnDependents(out *strings.Builder, tableDiff *schema.TableDiff, column *metadatapb.ColumnMetadata) {
+	schemaName, tableName, table := tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable
+	if column.Comment != "" {
+		writeColumnComment(out, schemaName, tableName, column.Name, column.Comment)
+	}
+
+	created := make(map[string]bool)
+	for _, indexDiff := range tableDiff.IndexChanges {
+		if indexDiff.Action == schema.MetadataDiffActionCreate {
+			created[indexDiff.NewIndex.Name] = true
+		}
+	}
+	for _, checkDiff := range tableDiff.CheckConstraintChanges {
+		if checkDiff.Action == schema.MetadataDiffActionCreate {
+			created[checkDiff.NewCheckConstraint.Name] = true
+		}
+	}
+	for _, fkDiff := range tableDiff.ForeignKeyChanges {
+		if fkDiff.Action == schema.MetadataDiffActionCreate {
+			created[fkDiff.NewForeignKey.Name] = true
+		}
+	}
+	references := func(expression string) bool { return expressionReferencesColumn(expression, column.Name) }
+
+	for _, index := range table.GetIndexes() {
+		if created[index.Name] || !slices.ContainsFunc(index.Expressions, references) {
+			continue
+		}
+		switch {
+		case index.Primary:
+			writeMigrationPrimaryKey(out, schemaName, tableName, index)
+		case index.IsConstraint:
+			writeMigrationUniqueKey(out, schemaName, tableName, index)
+		default:
+			writeMigrationIndex(out, schemaName, tableName, index)
+		}
+	}
+	for _, check := range table.GetCheckConstraints() {
+		if !created[check.Name] && references(check.Expression) {
+			writeAddCheckConstraint(out, schemaName, tableName, check)
+		}
+	}
+	for _, fk := range table.GetForeignKeys() {
+		if !created[fk.Name] && slices.Contains(fk.Columns, column.Name) {
+			writeMigrationForeignKey(out, schemaName, tableName, fk)
+		}
+	}
+}
+
+// expressionReferencesColumn reports whether an index or check expression
+// names the column, quoted or as an unquoted identifier. String literals are
+// skipped.
+func expressionReferencesColumn(expression, column string) bool {
+	isIdentifierChar := func(c byte) bool {
+		return c == '_' || c == '$' || c == '#' || ('0' <= c && c <= '9') || ('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z')
+	}
+	for i := 0; i < len(expression); {
+		switch c := expression[i]; {
+		case c == '\'' || c == '"':
+			end := strings.IndexByte(expression[i+1:], c)
+			if end < 0 {
+				return false
+			}
+			if c == '"' && expression[i+1:i+1+end] == column {
+				return true
+			}
+			i += end + 2
+		case isIdentifierChar(c):
+			j := i + 1
+			for j < len(expression) && isIdentifierChar(expression[j]) {
+				j++
+			}
+			// A run that starts with a digit is a number, such as 1E5.
+			if (c < '0' || c > '9') && strings.ToUpper(expression[i:j]) == column {
+				return true
+			}
+			i = j
+		default:
+			i++
+		}
+	}
+	return false
 }
 
 // hasDefaultValue checks if a column has any default value

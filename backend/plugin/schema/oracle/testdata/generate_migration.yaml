@@ -8295,7 +8295,32 @@
                   "name": "S",
                   "position": 4,
                   "type": "NUMBER",
-                  "nullable": true
+                  "nullable": true,
+                  "comment": "S comment"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "T_A",
+                  "expressions": [
+                    "\"A\""
+                  ],
+                  "type": "NORMAL",
+                  "visible": true
+                },
+                {
+                  "name": "T_S",
+                  "expressions": [
+                    "\"S\""
+                  ],
+                  "type": "NORMAL",
+                  "visible": true
+                }
+              ],
+              "check_constraints": [
+                {
+                  "name": "T_S_CK",
+                  "expression": "\"S\" > 0"
                 }
               ]
             }
@@ -8371,7 +8396,8 @@
                   "generation": {
                     "type": "TYPE_VIRTUAL",
                     "expression": "\"A\"*3"
-                  }
+                  },
+                  "comment": "S comment"
                 },
                 {
                   "name": "N",
@@ -8390,6 +8416,30 @@
                     "type": "TYPE_VIRTUAL",
                     "expression": "\"A\"-1"
                   }
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "T_A",
+                  "expressions": [
+                    "\"A\""
+                  ],
+                  "type": "NORMAL",
+                  "visible": true
+                },
+                {
+                  "name": "T_S",
+                  "expressions": [
+                    "\"S\""
+                  ],
+                  "type": "NORMAL",
+                  "visible": true
+                }
+              ],
+              "check_constraints": [
+                {
+                  "name": "T_S_CK",
+                  "expression": "\"S\" > 0"
                 }
               ]
             },
@@ -8437,3 +8487,6 @@
     ALTER TABLE "T" MODIFY ("H" VISIBLE);
     ALTER TABLE "T" DROP COLUMN "S";
     ALTER TABLE "T" ADD "S" NUMBER GENERATED ALWAYS AS ("A"*3) VIRTUAL;
+    COMMENT ON COLUMN "T"."S" IS 'S comment';
+    CREATE INDEX "T_S" ON "T" ("S" ASC);
+    ALTER TABLE "T" ADD CONSTRAINT "T_S_CK" CHECK ("S" > 0);
