@@ -27,14 +27,21 @@ import (
 // Its four ratio fields are left out. Each is relative to the longest-running
 // segment of the whole query, which a single node's card cannot explain, and
 // the milliseconds beside them say the same thing absolutely.
+//
+// The record counts carry a zero, where everything else here drops one. A stage
+// that wrote no records measured that — a filter left nothing for the aggregate
+// above it — and the viewer reads these two as the rows a node really moved, so
+// dropping the zero would leave it showing an unknown count instead. A stage
+// that spent no time writing has nothing to say about writing, so those fields
+// stay out.
 type queryStage struct {
 	ID                        int64       `json:"id"`
 	Name                      string      `json:"name"`
 	Status                    string      `json:"status,omitempty"`
 	InputStages               []int64     `json:"inputStages,omitempty"`
 	Steps                     []queryStep `json:"steps,omitempty"`
-	RecordsRead               int64       `json:"recordsRead,omitempty"`
-	RecordsWritten            int64       `json:"recordsWritten,omitempty"`
+	RecordsRead               int64       `json:"recordsRead"`
+	RecordsWritten            int64       `json:"recordsWritten"`
 	ParallelInputs            int64       `json:"parallelInputs,omitempty"`
 	CompletedParallelInputs   int64       `json:"completedParallelInputs,omitempty"`
 	ShuffleOutputBytes        int64       `json:"shuffleOutputBytes,omitempty"`

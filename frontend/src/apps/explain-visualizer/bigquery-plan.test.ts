@@ -65,6 +65,28 @@ describe("parseBigqueryPlan", () => {
     expect(tree.estimates.cost).toBe(false);
   });
 
+  test("reads a measured zero as zero rather than as no measurement", () => {
+    // A filter can leave the stage above it nothing to aggregate, and that is a
+    // measurement: the driver encodes the zero rather than dropping it, so the
+    // node says zero rows instead of saying nothing.
+    const tree = parse(
+      JSON.stringify([
+        { id: 0, name: "S00: Input", recordsRead: 0, recordsWritten: 0 },
+        {
+          id: 1,
+          name: "S01: Output",
+          inputStages: [0],
+          recordsRead: 0,
+          recordsWritten: 0,
+        },
+      ])
+    );
+    expect(tree.root.actualRows).toBe(0);
+    expect(tree.nodes[1].actualRows).toBe(0);
+    // A plan of empty stages is still a measured plan.
+    expect(tree.measured.rows).toBe(true);
+  });
+
   test("resolves the table a stage read from its own READ step", () => {
     const tree = parseFixture(filteredAggregate);
     expect(tree.nodes[1].relation).toEqual({

@@ -96,6 +96,23 @@ func TestToQueryStages(t *testing.T) {
 	require.NotContains(t, stages[1], "writeMsAvg")
 }
 
+// TestToQueryStagesKeepsZeroRecords pins the one measurement that carries a
+// zero. A stage that wrote no records measured that, and the viewer reads these
+// counts as the rows a node really moved, so dropping the zero would leave it
+// showing an unknown count instead of an empty stage.
+func TestToQueryStagesKeepsZeroRecords(t *testing.T) {
+	encoded, err := json.Marshal(toQueryStages([]*bigquery.ExplainQueryStage{
+		{ID: 0, Name: "S00: Input", RecordsRead: 0, RecordsWritten: 0},
+	}))
+	require.NoError(t, err)
+
+	var stages []map[string]any
+	require.NoError(t, json.Unmarshal(encoded, &stages))
+	require.Len(t, stages, 1)
+	require.Equal(t, float64(0), stages[0]["recordsRead"])
+	require.Equal(t, float64(0), stages[0]["recordsWritten"])
+}
+
 func TestToQueryStagesSkipsNothing(t *testing.T) {
 	// A nil stage or step in the list is skipped rather than encoded as null,
 	// which the viewer would have to read as an operator.
