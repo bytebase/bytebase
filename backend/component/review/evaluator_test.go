@@ -1157,3 +1157,56 @@ func TestApprovalRuleMatchesOceanBaseSummaryReport(t *testing.T) {
 		})
 	}
 }
+
+func TestApprovalRuleMatchesMSSQLAliasTarget(t *testing.T) {
+	strict := &storepb.WorkspaceApprovalSetting_Rule{
+		Source:    storepb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE,
+		Condition: &expr.Expr{Expression: `statement.sql_type == "UPDATE" && resource.table_name.matches("(?i)^(orders)$")`},
+		Template:  &storepb.ApprovalTemplate{Title: "Trigger tables"},
+	}
+	general := &storepb.WorkspaceApprovalSetting_Rule{
+		Source:    storepb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE,
+		Condition: &expr.Expr{Expression: "true"},
+		Template:  &storepb.ApprovalTemplate{Title: "General"},
+	}
+	tests := []struct {
+		name      string
+		statement string
+		wantTitle string
+	}{
+		{"aliased UPDATE of a listed table", `UPDATE o SET o.status = 'x' FROM dbo.Orders AS o WHERE o.id = 1;`, "Trigger tables"},
+		{"alias named like a listed table writes another table", `UPDATE Orders SET name = 'x' FROM dbo.Customers AS Orders WHERE Orders.id = 1;`, "General"},
+		{"UPDATE of an unlisted table", `UPDATE dbo.Customers SET name = 'x' WHERE id = 1;`, "General"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := require.New(t)
+			stmts, err := parserbase.ParseStatements(storepb.Engine_MSSQL, tt.statement)
+			a.NoError(err)
+			asts := parserbase.ExtractASTs(stmts)
+			statementTypes, err := plancheck.SummaryStatementTypes(storepb.Engine_MSSQL, asts)
+			a.NoError(err)
+			changeSummary, err := parserbase.ExtractChangedResources(storepb.Engine_MSSQL, "db", "dbo", nil, asts, tt.statement)
+			a.NoError(err)
+
+			report := &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
+				StatementTypes:   statementTypes,
+				ChangedResources: changeSummary.ChangedResources.Build(),
+			}
+			tableNames, _ := changedTables(report)
+			celVars := expandCELVars(map[string]any{
+				common.CELAttributeResourceEnvironmentID: "prod",
+				common.CELAttributeResourceProjectID:     "project",
+				common.CELAttributeResourceDBEngine:      storepb.Engine_MSSQL.String(),
+				common.CELAttributeStatementText:         tt.statement,
+			}, report.StatementTypes, tableNames)
+
+			template, err := getApprovalTemplate(&storepb.WorkspaceApprovalSetting{
+				Rules: []*storepb.WorkspaceApprovalSetting_Rule{strict, general},
+			}, storepb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE, celVars)
+			a.NoError(err)
+			a.NotNil(template)
+			a.Equal(tt.wantTitle, template.Title)
+		})
+	}
+}

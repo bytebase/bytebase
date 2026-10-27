@@ -763,18 +763,7 @@ func buildCELVariablesForDatabaseChange(ctx context.Context, stores *store.Store
 		}
 
 		report := result.GetSqlSummaryReport()
-
-		// Calculate table rows from changed resources
-		var tableRows int64
-		var tableNames []string
-		for _, db := range report.GetChangedResources().GetDatabases() {
-			for _, sc := range db.GetSchemas() {
-				for _, tb := range sc.GetTables() {
-					tableRows += tb.GetTableRows()
-					tableNames = append(tableNames, tb.Name)
-				}
-			}
-		}
+		tableNames, tableRows := changedTables(report)
 
 		celVars[common.CELAttributeStatementAffectedRows] = report.AffectedRows
 		celVars[common.CELAttributeStatementTableRows] = tableRows
@@ -1178,6 +1167,22 @@ func statementTypesFromParser(engine storepb.Engine, statement string) []storepb
 		return nil
 	}
 	return statementTypes
+}
+
+// changedTables returns the names of the tables a summary report changes and their
+// total row count.
+func changedTables(report *storepb.PlanCheckRunResult_Result_SqlSummaryReport) ([]string, int64) {
+	var names []string
+	var rows int64
+	for _, db := range report.GetChangedResources().GetDatabases() {
+		for _, sc := range db.GetSchemas() {
+			for _, tb := range sc.GetTables() {
+				rows += tb.GetTableRows()
+				names = append(names, tb.Name)
+			}
+		}
+	}
+	return names, rows
 }
 
 // expandCELVars creates CEL variable maps for each combination of statement types and table names.
