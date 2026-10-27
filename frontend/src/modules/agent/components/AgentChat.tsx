@@ -18,11 +18,11 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Table } from "@/components/ui/table";
-import { projectNamePrefix } from "@/lib/resourceName";
 import {
   AI_ASSISTANT_PRODUCT_INTRO,
   PRODUCT_INTRO_QUERY_KEY,
 } from "@/lib/productIntro";
+import { projectNamePrefix } from "@/lib/resourceName";
 import { useAppStore } from "@/stores/app";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
