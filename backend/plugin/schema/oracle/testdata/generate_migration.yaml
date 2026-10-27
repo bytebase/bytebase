@@ -8650,6 +8650,42 @@
                   }
                 }
               ]
+            },
+            {
+              "name": "NEWCHILD",
+              "columns": [
+                {
+                  "name": "ID",
+                  "position": 1,
+                  "type": "NUMBER"
+                },
+                {
+                  "name": "S_REF",
+                  "position": 2,
+                  "type": "NUMBER",
+                  "nullable": true
+                },
+                {
+                  "name": "A_REF",
+                  "position": 3,
+                  "type": "NUMBER",
+                  "nullable": true
+                }
+              ],
+              "foreign_keys": [
+                {
+                  "name": "NEWCHILD_FK",
+                  "columns": [
+                    "S_REF",
+                    "A_REF"
+                  ],
+                  "referenced_table": "T",
+                  "referenced_columns": [
+                    "S",
+                    "A"
+                  ]
+                }
+              ]
             }
           ]
         }
@@ -8662,6 +8698,12 @@
         "A" NUMBER NOT NULL,
         "H" VARCHAR2(10 BYTE) INVISIBLE,
         "VC" NUMBER GENERATED ALWAYS AS ("A"+1) VIRTUAL
+    );
+
+    CREATE TABLE "NEWCHILD" (
+        "ID" NUMBER NOT NULL,
+        "S_REF" NUMBER,
+        "A_REF" NUMBER
     );
 
     ALTER TABLE "CHILD" DROP CONSTRAINT "CHILD_FK";
@@ -8692,3 +8734,4 @@
     ALTER TABLE "T" ADD CONSTRAINT "T_SA_CK" CHECK ("S" >= "A");
     ALTER TABLE "T" ADD CONSTRAINT "T_VCS_CK" CHECK ("VC" <= "S" + 100);
     ALTER TABLE "CHILD" ADD CONSTRAINT "CHILD_FK" FOREIGN KEY ("S_REF", "A_REF") REFERENCES "T" ("S", "A");
+    ALTER TABLE "NEWCHILD" ADD CONSTRAINT "NEWCHILD_FK" FOREIGN KEY ("S_REF", "A_REF") REFERENCES "T" ("S", "A");

@@ -615,7 +615,9 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 		for _, tableDiff := range tableMap {
 			if tableDiff.Action == schema.MetadataDiffActionCreate && tableDiff.NewTable != nil {
 				for _, fk := range tableDiff.NewTable.ForeignKeys {
-					writeMigrationForeignKey(buf, tableDiff.SchemaName, tableDiff.TableName, fk)
+					if !waitsForRebuild(diff, tableDiff.SchemaName, fk) {
+						writeMigrationForeignKey(buf, tableDiff.SchemaName, tableDiff.TableName, fk)
+					}
 				}
 			}
 		}
@@ -669,7 +671,9 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 		for _, tableDiff := range tableMap {
 			if tableDiff.Action == schema.MetadataDiffActionCreate && tableDiff.NewTable != nil {
 				for _, fk := range tableDiff.NewTable.ForeignKeys {
-					writeMigrationForeignKey(buf, tableDiff.SchemaName, tableDiff.TableName, fk)
+					if !waitsForRebuild(diff, tableDiff.SchemaName, fk) {
+						writeMigrationForeignKey(buf, tableDiff.SchemaName, tableDiff.TableName, fk)
+					}
 				}
 			}
 		}
@@ -856,12 +860,17 @@ func findIncomingForeignKeys(diff *schema.MetadataDiff, database *model.Database
 	}
 	var result []incomingForeignKey
 	for _, table := range schemaMetadata.GetProto().GetTables() {
-		other := tableDiffs[table.Name]
-		if table.Name == tableDiff.TableName || (other != nil && other.Action != schema.MetadataDiffActionAlter) {
+		if table.Name == tableDiff.TableName {
 			continue
 		}
 		var handled map[string]bool
-		if other != nil {
+		switch other := tableDiffs[table.Name]; {
+		case other == nil:
+		case other.Action == schema.MetadataDiffActionCreate && action == schema.MetadataDiffActionCreate:
+			// A new table's foreign keys on a rebuilt key waited for it.
+		case other.Action != schema.MetadataDiffActionAlter:
+			continue
+		default:
 			handled = diffObjectNames(other, action)
 		}
 		for _, fk := range table.GetForeignKeys() {
@@ -871,6 +880,24 @@ func findIncomingForeignKeys(diff *schema.MetadataDiff, database *model.Database
 		}
 	}
 	return result
+}
+
+// waitsForRebuild reports whether a new table's foreign key references a column
+// the diff rebuilds. writeAlterColumns adds it after the rebuild: added with
+// the table, it would hold the key the rebuild drops (ORA-02273).
+func waitsForRebuild(diff *schema.MetadataDiff, schemaName string, fk *metadatapb.ForeignKeyMetadata) bool {
+	for _, tableDiff := range diff.TableChanges {
+		if tableDiff.Action != schema.MetadataDiffActionAlter || tableDiff.SchemaName != schemaName {
+			continue
+		}
+		for _, colDiff := range tableDiff.ColumnChanges {
+			if colDiff.Action == schema.MetadataDiffActionAlter && rebuildsColumn(colDiff) &&
+				referencesColumns(fk, schemaName, diff.DatabaseName, tableDiff.TableName, []string{colDiff.NewColumn.Name}) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // referencesColumns reports whether the foreign key references any of the
