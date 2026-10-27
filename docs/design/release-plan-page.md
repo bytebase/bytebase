@@ -242,15 +242,22 @@ log) but leaves a task that has not run with no answer to what it will apply: no
 started" or "Running".
 
 **D5 · No new log entry: the already-applied list is derived from the markers the log already has.**
-The executor writes a `RELEASE_FILE_EXECUTE` marker for each file it runs, in version order, and
-stops at the first failure. With the release's file list that gives the already-applied set exactly
-for a done task and for every file before the failure point, which is all a finished run shows (D3);
-while a run is in progress the stored state (D4) gives the files not yet reached. It also works for
-runs from before this change. The executor does not change: its skips stay in the server log
-(`slog`, line 537 of `database_migrate_executor.go`). Rejected: a `RELEASE_FILE_SKIP` log entry
-listing the versions the executor passes over with the revision that satisfied each, which would let
-each fold row name the release that applied it but adds an executor write and a proto type for
-detail the Revisions link already reaches; reconstructing the set from the database's revisions
+The executor writes a `RELEASE_FILE_EXECUTE` marker before each file it runs, in version order, and
+stops at the first failure. With the release's file list, a version below the run's newest marker
+that has no marker was found applied: that part is exact. Above the newest marker the log says
+nothing, because a run can fail before the next file's marker (loading that file's statement fails)
+or before any marker at all (the driver cannot connect, the revisions cannot be read). So the
+boundary is the newest marker, not the failure. A done run's unmarked versions are all applied,
+since Done means every version has a live revision, marker or not. A run that ended any other way
+takes the versions above its newest marker, or all of them when it wrote none, from the stored state
+(D4): its applied versions join the already-applied fold and its to-apply versions are not listed,
+as nothing after a stop is (D3). A task without a stored state, whose run predates this change,
+shows only the versions below its newest marker. While a run is in progress the stored state gives
+the files not yet reached in the same way. The executor does not change: its skips stay in the
+server log (`slog`, line 537 of `database_migrate_executor.go`). Rejected: a `RELEASE_FILE_SKIP` log
+entry listing the versions the executor passes over with the revision that satisfied each, which
+would let each fold row name the release that applied it but adds an executor write and a proto type
+for detail the Revisions link already reaches; reconstructing the set from the database's revisions
 after the fact, which drifts the moment a revision is deleted or imported.
 
 **D6 · No new actions; Rerun, Skip and Cancel stay as today.** They render as today, for a user
@@ -381,9 +388,14 @@ themselves and fixing the file in git.
 file's SQL moves into Changes and the viewer, and the plan already shows everything else the page
 showed. The CI job summary prints a Release link (`action/github/summary.go`), so the URL keeps
 working: `/projects/<p>/releases/<r>` redirects to the newest plan whose spec references the
-release. A release no plan references (created through the API, or a CI run that died between
-the release and the plan) shows the not-found page; that is rare and the API still serves it.
-Rejected: keeping both pages, which leaves two places to open a file and the manifest shown twice.
+release. A release no plan references (created through the API, or a CI run that died between the
+release and the plan) shows the not-found page; that is rare and the API still serves it. The page
+is also the only place that archives and restores a release (`deleteRelease` and `undeleteRelease`,
+called only from `ProjectReleaseDetailPage.tsx`), so both move to the release list before the page
+goes: each row gets Archive with the page's confirmation, and a "Show archived" switch lists
+archived releases (`ListReleases` already takes `show_deleted`) with Restore on each row. Rejected:
+keeping both pages, which leaves two places to open a file and the manifest shown twice; putting
+Archive on the plan page, which is about deploying the release, not managing it.
 
 ## States
 
@@ -453,6 +465,7 @@ The details block's Source row:
 | Frontend | `frontend/src/components/release/ReleaseFileViewer.tsx` (new), `ReleaseFileDetailPanel.tsx` | The viewer: one body with the diagnostic drawn from the command's byte range and error, the path's copy control and the file-at-commit link; side panel or sheet by `useMediaQuery` (D8, D9). |
 | Frontend | `frontend/src/routes/project/plan-detail/components/PlanDetailTaskRolloutActionPanel.tsx` | Each task's status chip after its database, replacing the status icon, and a failed task's error line, for UIOps and release tasks; the reason field shown and required for release-backed tasks (D7). |
 | Frontend | `frontend/src/routes/project/plan-detail/components/PlanDetailHeaderDetails.tsx`, `PlanDetailMeta.tsx` | The details block for release and UIOps plans, with the Source row and the plan list's stage cell for Progress, above the description, which keeps today's clipping (D9, D10). |
+| Frontend | `frontend/src/routes/project/ProjectReleaseDashboardPage.tsx` | Archive on each row, a "Show archived" switch, and Restore on archived rows, before the detail page goes (D12). |
 | Frontend | `frontend/src/routes/project/ProjectReleaseDetailPage.tsx`, `frontend/src/app/router/routes/dashboard.tsx` | The page goes; the route redirects to the owning plan (D12). |
 | Frontend | `frontend/src/locales/*.json` | New strings; the retired release-page strings removed. |
 | Backend | `proto/store/store/task.proto`, `proto/v1/v1/rollout_service.proto`, `backend/api/v1/rollout_service_task.go`, `rollout_service_converter.go` | The release state field on the task payload, computed at creation with the store's `Versions` filter, returned on the v1 task (D4). |
@@ -467,16 +480,18 @@ Tests to write, per the placement rules in `AGENTS.md`:
 
 - `model.test.ts`: a file group ending at a database-sync entry (today's fixture puts the sync under
   the last file; the new one proves it is a sibling); the already-applied fold derived for a done
-  task (every file without a marker) and for a failed task (the files before the failure without a
-  marker), and its paging of five; a running task listing the files it has not reached as "Will
-  apply" from the stored state, the boundary at the current file; a stored "Will apply" version the
-  run passed over moving into the fold, and a stored applied version that gets a marker leaving it;
-  a failed task listing nothing after the failed file; a collapsed failed section carrying the
-  error's first line; the 24-section fold
-  with a failed section past the limit still shown and the fold expanding in place; a prior backup
-  as a sibling and a gh-ost migration inside its file's section; a run with no command response
-  carrying the run's error on the header; the log-only form without a task keeping the run's
-  defaults.
+  task (every file without a marker) and for a failed task (the files below the newest marker
+  without a marker), and its paging of five; a running task listing the files it has not reached as
+  "Will apply" from the stored state, the boundary at the current file; a stored "Will apply"
+  version the run passed over moving into the fold, and a stored applied version that gets a marker
+  leaving it; a failed task listing nothing after the failed file; a failed run with no marker at
+  all (the driver cannot connect) and one that failed loading the second file's statement after one
+  marker, each taking the versions above its newest marker from the stored state, and the same run
+  without a stored state listing only the versions below it; a done run with no marker, all applied;
+  a collapsed failed section carrying the error's first line; the 24-section fold with a failed
+  section past the limit still shown and the fold expanding in place; a prior backup as a sibling
+  and a gh-ost migration inside its file's section; a run with no command response carrying the
+  run's error on the header; the log-only form without a task keeping the run's defaults.
 - `useTaskRunLogData.test.tsx`: a run that reached two files of a 500-file release fetches two
   sheets; a re-run version keeps the stored "revision deleted" note on its section.
 - Folded card tests: each cell of the card table in States from the task, its latest run, the
@@ -489,6 +504,8 @@ Tests to write, per the placement rules in `AGENTS.md`:
   absent; Migration-based and State-based; the Progress row's stage cells wrapping at six stages;
   the labels editable in place and required when the project forces them; the description below the
   block clipped at 150 characters or 3 lines.
+- Release list tests: Archive on an active row with its confirmation, "Show archived" listing
+  archived releases through `show_deleted`, and Restore on an archived row.
 - Changes rail tests: descending order over timestamp, counter and dotted versions; the grouping per
   shape with the newest group open; 12 rows then "N more"; a backfilled low version landing in its
   old group; the collapsed line; the declarative one-liner.
