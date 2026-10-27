@@ -8,6 +8,7 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/json"
 	"encoding/pem"
 	"math/big"
 	"net/http"
@@ -21,7 +22,10 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
@@ -494,4 +498,90 @@ func TestRDSCertPoolLeaderCancellationDoesNotFailWaiter(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		require.Fail(t, "waiter never completed after leader cancellation")
 	}
+}
+
+// TestQueryConnExplainJSON pins the structured plan the query-plan viewer draws,
+// on the oldest MariaDB release Bytebase supports as well as the newest, since
+// FORMAT=JSON is the one plan format they share and a plan the viewer cannot
+// read loses the picture silently rather than failing.
+func TestQueryConnExplainJSON(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		version     string
+		newDatabase func(testing.TB) (*testcontainer.Container, string)
+	}{
+		{version: "11.8", newDatabase: testcontainer.NewMariaDBDatabase},
+		{version: "10.7", newDatabase: testcontainer.NewMariaDB107Database},
+	} {
+		t.Run(tc.version, func(t *testing.T) {
+			t.Parallel()
+			ctx := context.Background()
+			container, database := tc.newDatabase(t)
+			driver := openTestDriver(ctx, t, storepb.Engine_MARIADB, container, container.GetUsername(), container.GetPassword(), database)
+			_, err := driver.db.ExecContext(ctx, "CREATE TABLE plan_target (id INT PRIMARY KEY, note VARCHAR(64))")
+			require.NoError(t, err)
+
+			conn, err := driver.GetDB().Conn(ctx)
+			require.NoError(t, err)
+			defer conn.Close()
+
+			const statement = "SELECT note FROM plan_target WHERE id > 100"
+			explain := func(s string, option *v1pb.QueryOption, asExplain bool) *v1pb.QueryResult {
+				results, err := driver.QueryConn(ctx, conn, s, db.QueryContext{
+					Explain:              asExplain,
+					Limit:                5000,
+					MaximumSQLResultSize: 1 << 30,
+					Option:               option,
+				})
+				require.NoError(t, err)
+				require.Len(t, results, 1)
+				require.Empty(t, results[0].GetError())
+				return results[0]
+			}
+
+			jsonOption := &v1pb.QueryOption{ExplainFormat: v1pb.QueryOption_JSON}
+			plan := explain(statement, jsonOption, true)
+			require.Equal(t, "EXPLAIN FORMAT=JSON "+statement, plan.GetStatement())
+			require.Equal(t, "query_block", planRoot(t, plan))
+
+			// The default plan stays the table MariaDB has always returned.
+			text := explain(statement, nil, true)
+			require.Equal(t, "EXPLAIN "+statement, text.GetStatement())
+			require.Greater(t, len(text.GetColumnNames()), 1)
+
+			// A caller's own EXPLAIN is replanned in the format asked for rather
+			// than wrapped in a second one, which would not parse.
+			typed := explain("EXPLAIN FORMAT=JSON "+statement, jsonOption, true)
+			require.Equal(t, "EXPLAIN FORMAT=JSON "+statement, typed.GetStatement())
+			require.Equal(t, "query_block", planRoot(t, typed))
+
+			// Run on that same statement reports the plan it returned, so the
+			// viewer draws it without explaining a second time.
+			ran := explain("EXPLAIN FORMAT=JSON "+statement, nil, false)
+			require.Equal(t, v1pb.QueryOption_JSON, ran.GetQueryPlan().GetFormat())
+			require.False(t, ran.GetQueryPlan().GetExecuted())
+			require.Equal(t, "query_block", planRoot(t, ran))
+
+			// A plain EXPLAIN says nothing about its format: from MySQL 8.0.32 an
+			// omitted FORMAT follows the session's explain_format.
+			ranText := explain("EXPLAIN "+statement, nil, false)
+			require.Equal(t, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, ranText.GetQueryPlan().GetFormat())
+			require.NotNil(t, ranText.GetQueryPlan())
+		})
+	}
+}
+
+// planRoot returns the one key at the top of a one-column JSON plan.
+func planRoot(t *testing.T, result *v1pb.QueryResult) string {
+	t.Helper()
+	require.Len(t, result.GetColumnNames(), 1)
+	require.Len(t, result.GetRows(), 1)
+	require.Len(t, result.GetRows()[0].GetValues(), 1)
+	var plan map[string]json.RawMessage
+	require.NoError(t, json.Unmarshal([]byte(result.GetRows()[0].GetValues()[0].GetStringValue()), &plan))
+	require.Len(t, plan, 1)
+	for key := range plan {
+		return key
+	}
+	return ""
 }

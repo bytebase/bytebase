@@ -2,7 +2,7 @@ import { TriangleAlert } from "lucide-react";
 import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useQueryPlanTranslation } from "./plan-i18n";
+import { planWarningText, useQueryPlanTranslation } from "./plan-i18n";
 import {
   formatPlanCount,
   formatPlanShare,
@@ -12,6 +12,7 @@ import {
   planRankMetric,
   planSelfShare,
   planWarningGroups,
+  planWarningIdentity,
 } from "./plan-model";
 
 interface Props {
@@ -127,7 +128,7 @@ export function QueryPlanSummary({ tree, selectedId, onSelect }: Props) {
                 (node) => node.id === selectedId
               );
               return (
-                <li key={group.warning.title}>
+                <li key={planWarningIdentity(group.warning)}>
                   <Button
                     appearance="secondary"
                     data-testid="plan-summary-warning"
@@ -143,7 +144,7 @@ export function QueryPlanSummary({ tree, selectedId, onSelect }: Props) {
                     />
                     <span className="flex min-w-0 flex-1 flex-col">
                       <span className={titleClass(selected)}>
-                        {group.warning.title}
+                        {planWarningText(group.warning, translate).title}
                       </span>
                       <span className="truncate text-xs leading-4 text-control-light">
                         {warningSubject(group, translate)}

@@ -415,7 +415,8 @@ describe("parseMssqlPlan", () => {
         `<StmtSimple StatementType="SELECT"><QueryPlan><MissingIndexes><MissingIndexGroup Impact="50"><MissingIndex Schema="[dbo]" Table="[customer_order_history]"><ColumnGroup Usage="EQUALITY">${columns}</ColumnGroup></MissingIndex></MissingIndexGroup></MissingIndexes></QueryPlan></StmtSimple>`
       )
     );
-    const name = /INDEX \[([^\]]+)\]/.exec(root.warnings[0].detail)?.[1] ?? "";
+    const detail = root.warnings[0].detail ?? "";
+    const name = /INDEX \[([^\]]+)\]/.exec(detail)?.[1] ?? "";
 
     expect(name).toHaveLength(128);
     expect(name.startsWith("idx_customer_order_history_")).toBe(true);

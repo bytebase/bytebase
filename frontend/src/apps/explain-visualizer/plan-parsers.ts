@@ -1,9 +1,19 @@
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { VisualizerEngine } from "@/utils/queryPlanEngines";
+import { parseClickhousePlan } from "./clickhouse-plan";
+import { parseCockroachdbPlan } from "./cockroachdb-plan";
+import { parseMongodbPlan } from "./mongodb-plan";
 import { parseMssqlPlan } from "./mssql-plan";
+import { parseMysqlPlan } from "./mysql-plan";
+import { parseOceanbasePlan } from "./oceanbase-plan";
+import { parseOraclePlan } from "./oracle-plan";
 import type { PlanParseResult } from "./plan-model";
 import { parsePostgresPlan } from "./postgres-plan";
+import { parseRedshiftPlan } from "./redshift-plan";
 import { parseSpannerPlan } from "./spanner-plan";
+import { parseStarrocksPlan } from "./starrocks-plan";
+import { parseTidbPlan } from "./tidb-plan";
+import { parseTrinoPlan } from "./trino-plan";
 
 /**
  * Each engine's explain output on the engine-neutral model, keyed on the same
@@ -14,6 +24,31 @@ const PARSERS: Record<VisualizerEngine, (source: string) => PlanParseResult> = {
   [Engine.POSTGRES]: parsePostgresPlan,
   [Engine.MSSQL]: parseMssqlPlan,
   [Engine.SPANNER]: parseSpannerPlan,
+  // MySQL and MariaDB differ in which keys they put in FORMAT=JSON, not in its
+  // shape, so one parser reads both.
+  [Engine.MYSQL]: parseMysqlPlan,
+  [Engine.MARIADB]: parseMysqlPlan,
+  [Engine.TIDB]: parseTidbPlan,
+  // Oracle states its plan as plan-table rows, which the server renders as
+  // JSON because no EXPLAIN option of its own does.
+  [Engine.ORACLE]: parseOraclePlan,
+  [Engine.CLICKHOUSE]: parseClickhousePlan,
+  [Engine.TRINO]: parseTrinoPlan,
+  // OceanBase spells its plan FORMAT=JSON as MySQL does, but returns an
+  // operator tree rather than MySQL's nested query block.
+  [Engine.OCEANBASE]: parseOceanbasePlan,
+  // MongoDB asks for a plan with a cursor method rather than a keyword, and
+  // states it as one document.
+  [Engine.MONGODB]: parseMongodbPlan,
+  // CockroachDB publishes no plan as a document; the server decodes the one it
+  // encodes in the diagram link EXPLAIN (DISTSQL) prints.
+  [Engine.COCKROACHDB]: parseCockroachdbPlan,
+  // The text plans drawn here, because none of these engines publishes
+  // anything else. StarRocks forked from Doris and their plans still agree on
+  // the fragments and the tree, so one parser reads both.
+  [Engine.REDSHIFT]: parseRedshiftPlan,
+  [Engine.STARROCKS]: parseStarrocksPlan,
+  [Engine.DORIS]: parseStarrocksPlan,
 };
 
 export function parsePlan(

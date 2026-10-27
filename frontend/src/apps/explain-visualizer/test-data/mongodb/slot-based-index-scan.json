@@ -1,0 +1,84 @@
+{
+  "explainVersion": "2",
+  "queryPlanner": {
+    "namespace": "qp.orders",
+    "indexFilterSet": false,
+    "parsedQuery": {
+      "total": {
+        "$gt": 880
+      }
+    },
+    "queryHash": "B84B8321",
+    "planCacheKey": "95079DFC",
+    "optimizationTimeMillis": 0,
+    "maxIndexedOrSolutionsReached": false,
+    "maxIndexedAndSolutionsReached": false,
+    "maxScansToExplodeReached": false,
+    "winningPlan": {
+      "queryPlan": {
+        "stage": "FETCH",
+        "planNodeId": 2,
+        "filter": {
+          "total": {
+            "$gt": 880
+          }
+        },
+        "inputStage": {
+          "stage": "IXSCAN",
+          "planNodeId": 1,
+          "keyPattern": {
+            "customerId": 1
+          },
+          "indexName": "customerId_1",
+          "isMultiKey": false,
+          "multiKeyPaths": {
+            "customerId": []
+          },
+          "isUnique": false,
+          "isSparse": false,
+          "isPartial": false,
+          "indexVersion": 2,
+          "direction": "forward",
+          "indexBounds": {
+            "customerId": ["[MinKey, MaxKey]"]
+          }
+        }
+      },
+      "slotBasedPlan": {
+        "slots": "$$RESULT=s9 env: { s2 = Nothing (SEARCH_META), s8 = {\"customerId\" : 1}, s3 = 1793070381533 (NOW), s12 = 880, s1 = TimeZoneDatabase(Atlantic/Madeira...Asia/Baghdad) (timeZoneDB) }",
+        "stages": "[2] filter {traverseF(s11, lambda(l1.0) { ((l1.0 > s12) ?: false) }, false)} \n[2] nlj inner [] [s4, s5, s6, s7, s8] \n    left \n        [1] ixseek KS(0A0104) KS(F0FE04) s7 s4 s5 s6 lowPriority [] @\"dbdda938-ec63-471c-92b9-7d390a98b326\" @\"customerId_1\" true \n    right \n        [2] limit 1ll \n        [2] seek s4 s9 s10 s5 s6 s7 s8 [s11 = total] @\"dbdda938-ec63-471c-92b9-7d390a98b326\" true false \n"
+      }
+    },
+    "rejectedPlans": []
+  },
+  "command": {
+    "find": "orders",
+    "filter": {
+      "total": {
+        "$gt": 880
+      }
+    },
+    "sort": {
+      "customerId": 1
+    },
+    "$db": "qp"
+  },
+  "serverInfo": {
+    "host": "001bb39b8dbf",
+    "port": 27017,
+    "version": "7.0.45",
+    "gitVersion": "a52313e13ab55c9bddf7c3ff91dab286fa381796"
+  },
+  "serverParameters": {
+    "internalQueryFacetBufferSizeBytes": 104857600,
+    "internalQueryFacetMaxOutputDocSizeBytes": 104857600,
+    "internalLookupStageIntermediateDocumentMaxSizeBytes": 104857600,
+    "internalDocumentSourceGroupMaxMemoryBytes": 104857600,
+    "internalQueryMaxBlockingSortMemoryUsageBytes": 104857600,
+    "internalQueryProhibitBlockingMergeOnMongoS": 0,
+    "internalQueryMaxAddToSetBytes": 104857600,
+    "internalDocumentSourceSetWindowFieldsMaxMemoryBytes": 104857600,
+    "internalQueryFrameworkControl": "trySbeEngine"
+  },
+  "ok": 1
+}

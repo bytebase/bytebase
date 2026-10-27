@@ -1,10 +1,11 @@
 import { create } from "@bufbuild/protobuf";
 import { describe, expect, test } from "vitest";
 import {
+  QueryOption_ExplainFormat,
   QueryResult_QueryPlanSchema,
   QueryResultSchema,
 } from "@/types/proto-es/v1/sql_service_pb";
-import { planAvailability } from "./planAvailability";
+import { isTextPlanFormat, planAvailability } from "./planAvailability";
 
 const rows = (statement = "SELECT 1") =>
   create(QueryResultSchema, { statement, columnNames: ["a"] });
@@ -76,5 +77,22 @@ describe("planAvailability", () => {
     expect(offered({ results: [plan(false), rows()], resultIndex: 1 })).toBe(
       "offered"
     );
+  });
+});
+
+describe("isTextPlanFormat", () => {
+  test("counts an unknown format as text, so its plan can be fetched again", () => {
+    // MySQL's omitted FORMAT follows the session's explain_format, so a plain
+    // EXPLAIN comes back without the result being able to say in what.
+    expect(
+      isTextPlanFormat(QueryOption_ExplainFormat.EXPLAIN_FORMAT_UNSPECIFIED)
+    ).toBe(true);
+    expect(isTextPlanFormat(QueryOption_ExplainFormat.TEXT)).toBe(true);
+  });
+
+  test("leaves out a format the viewer draws, which needs no second call", () => {
+    expect(isTextPlanFormat(QueryOption_ExplainFormat.JSON)).toBe(false);
+    expect(isTextPlanFormat(QueryOption_ExplainFormat.XML)).toBe(false);
+    expect(isTextPlanFormat(undefined)).toBe(false);
   });
 });

@@ -1,18 +1,23 @@
 package cockroachdb
 
 import (
+	"bytes"
+	"compress/zlib"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/base64"
 	"encoding/pem"
 	"math/big"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
@@ -217,4 +222,69 @@ func generateCAAndServerCertificates(t *testing.T, hosts []string) (string, map[
 
 	caPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: caDER})
 	return string(caPEM), serverCertDERByHost
+}
+
+// encodeDiagram is how CockroachDB encodes the plan behind the link it prints:
+// deflated, then base64 in the standard alphabet.
+func encodeDiagram(t *testing.T, plan string) string {
+	t.Helper()
+	var deflated bytes.Buffer
+	writer := zlib.NewWriter(&deflated)
+	_, err := writer.Write([]byte(plan))
+	require.NoError(t, err)
+	require.NoError(t, writer.Close())
+	return base64.RawStdEncoding.EncodeToString(deflated.Bytes())
+}
+
+func diagramResult(lines ...string) *v1pb.QueryResult {
+	result := &v1pb.QueryResult{ColumnNames: []string{"info"}}
+	for _, line := range lines {
+		result.Rows = append(result.Rows, &v1pb.QueryRow{Values: []*v1pb.RowValue{
+			{Kind: &v1pb.RowValue_StringValue{StringValue: line}},
+		}})
+	}
+	return result
+}
+
+// TestPlanDiagram covers the one machine-readable plan CockroachDB publishes.
+// Every EXPLAIN option of its own returns text; this is the payload behind the
+// link EXPLAIN (DISTSQL) prints beside that text.
+func TestPlanDiagram(t *testing.T) {
+	t.Parallel()
+	const plan = `{"processors":[{"core":{"title":"TableReader/0"}}],"edges":[]}`
+
+	t.Run("reads the plan out of the link", func(t *testing.T) {
+		t.Parallel()
+		result, err := planDiagram(diagramResult(
+			"distribution: local",
+			"• scan",
+			"Diagram: https://cockroachdb.github.io/distsqlplan/decode.html#"+encodeDiagram(t, plan),
+		))
+		require.NoError(t, err)
+		require.Equal(t, []string{"plan"}, result.GetColumnNames())
+		require.Len(t, result.GetRows(), 1)
+		require.JSONEq(t, plan, result.GetRows()[0].GetValues()[0].GetStringValue())
+	})
+
+	t.Run("reads a link written in the URL alphabet", func(t *testing.T) {
+		t.Parallel()
+		// The payload rides in a URL fragment, so either spelling of the two
+		// bytes that differ between the alphabets has to decode.
+		encoded := strings.NewReplacer("+", "-", "/", "_").Replace(encodeDiagram(t, plan))
+		result, err := planDiagram(diagramResult("Diagram: https://example.test/#" + encoded))
+		require.NoError(t, err)
+		require.JSONEq(t, plan, result.GetRows()[0].GetValues()[0].GetStringValue())
+	})
+
+	t.Run("refuses a plan with no link in it", func(t *testing.T) {
+		t.Parallel()
+		_, err := planDiagram(diagramResult("distribution: local", "• scan"))
+		require.ErrorContains(t, err, "no diagram")
+	})
+
+	t.Run("refuses a link it cannot read", func(t *testing.T) {
+		t.Parallel()
+		_, err := planDiagram(diagramResult("Diagram: https://example.test/#bm90emxpYg"))
+		require.Error(t, err)
+	})
 }

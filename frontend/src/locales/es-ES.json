@@ -3521,18 +3521,46 @@
         "zoom-out": "Alejar"
       },
       "error": {
+        "clickhouse-empty": "ClickHouse no devolvió ningún plan de consulta para esta sentencia.",
+        "clickhouse-invalid": "El plan de consulta no es JSON válido. Se espera la salida de EXPLAIN json = 1.",
+        "clickhouse-no-plan": "El JSON del plan de consulta de ClickHouse no contiene un objeto \"Plan\".",
+        "cockroachdb-empty": "CockroachDB no devolvió ningún plan de consulta para esta sentencia.",
+        "cockroachdb-invalid": "El plan de consulta no es JSON válido. Se espera el diagrama que codifica EXPLAIN (DISTSQL).",
+        "cockroachdb-no-plan": "El JSON del plan de consulta no contiene \"processors\" que dibujar.",
+        "mongodb-empty": "MongoDB no devolvió ningún plan de consulta para esta sentencia.",
+        "mongodb-invalid": "El plan de consulta no es JSON válido. Se espera la salida de explain() de MongoDB.",
+        "mongodb-no-plan": "El JSON del plan de consulta no tiene ni \"queryPlanner\" ni una tubería \"stages\" que dibujar.",
         "mssql-empty": "SQL Server no devolvió ningún plan de consulta para esta sentencia.",
         "mssql-invalid": "El plan de consulta no es XML válido. Se espera la salida de SHOWPLAN_XML.",
         "mssql-no-plan": "El XML del plan de consulta no es un showplan de SQL Server con al menos una sentencia.",
+        "mysql-empty": "No se devolvió ningún plan de consulta para esta sentencia.",
+        "mysql-invalid": "El plan de consulta no es JSON válido. Se espera la salida de EXPLAIN FORMAT=JSON.",
+        "mysql-no-plan": "El JSON del plan de consulta no contiene un objeto \"query_block\".",
+        "oceanbase-empty": "OceanBase no devolvió ningún plan de consulta para esta sentencia.",
+        "oceanbase-invalid": "El plan de consulta no es JSON válido. Se espera la salida de EXPLAIN FORMAT=JSON de OceanBase.",
+        "oceanbase-no-plan": "El JSON del plan de consulta no nombra ningún operador, así que no hay nada que dibujar.",
+        "oracle-empty": "Oracle no devolvió ningún plan de consulta para esta sentencia.",
+        "oracle-invalid": "El plan de consulta no es JSON válido. Se espera la tabla de planes de Oracle, tal como la representa el servidor.",
+        "oracle-no-plan": "El plan de consulta no tiene ningún paso sin padre, así que no hay un operador por el que empezar.",
         "postgres-empty": "PostgreSQL no devolvió ningún plan de consulta para esta sentencia.",
         "postgres-invalid": "El plan de consulta no es JSON válido. Se espera la salida de EXPLAIN (FORMAT JSON).",
         "postgres-no-plan": "El JSON del plan de consulta no contiene un objeto \"Plan\".",
+        "redshift-empty": "Redshift no devolvió ningún plan de consulta para esta sentencia.",
+        "redshift-no-plan": "El plan de consulta no contiene ningún operador: un plan de Redshift indica un coste para cada uno.",
         "spanner-empty": "Spanner no devolvió ningún plan de consulta para esta sentencia.",
         "spanner-emulator": "Spanner no devolvió ningún plan de consulta para esta sentencia. El emulador de Spanner no devuelve ninguno para ninguna sentencia; explíquela en una instancia de Spanner para ver uno.",
         "spanner-invalid": "El plan de consulta no es JSON válido. Se espera un plan de consulta de Spanner.",
         "spanner-no-plan": "El JSON del plan de consulta no contiene una lista \"planNodes\" con un operador en la raíz.",
+        "starrocks-empty": "La sentencia no produjo ningún plan de consulta que dibujar.",
+        "starrocks-no-plan": "El plan de consulta no tiene ningún operador numerado en ninguno de sus fragmentos.",
+        "tidb-empty": "TiDB no devolvió ningún plan de consulta para esta sentencia.",
+        "tidb-invalid": "El plan de consulta no es JSON válido. Se espera la salida de EXPLAIN FORMAT=tidb_json.",
+        "tidb-no-plan": "El JSON del plan de consulta no contiene un operador en la raíz.",
         "too-deep": "El plan de consulta está demasiado anidado para que este visualizador pueda dibujarlo.",
         "too-many-nodes": "El plan de consulta tiene más operadores de los que este visualizador dibuja, así que se muestra como texto.",
+        "trino-empty": "Trino no devolvió ningún plan de consulta para esta sentencia.",
+        "trino-invalid": "El plan de consulta no es JSON válido. Se espera la salida de EXPLAIN (FORMAT JSON) de Trino.",
+        "trino-no-plan": "El JSON del plan de consulta no contiene ningún fragmento por el que empezar.",
         "unreadable": "No se pudo leer este plan de consulta"
       },
       "grid": {
@@ -3607,6 +3635,20 @@
         "estimated-cost": "coste estimado {{cost}}",
         "measured-time": "tiempo medido {{time}} ms",
         "nodes": "{{count}} nodos"
+      },
+      "warning": {
+        "data-redistribution": {
+          "detail": "Esta unión mueve filas entre segmentos antes de poder emparejarlas. Distribuir ambas tablas por su columna de unión, o hacer ALL la más pequeña, permite que la unión se ejecute donde ya están las filas.",
+          "title": "Redistribución de datos"
+        },
+        "full-index-scan": {
+          "detail": "Lee todas las entradas de este índice. Si la consulta solo necesita unas pocas, una condición sobre las columnas iniciales del índice evitaría la lectura completa.",
+          "title": "Exploración completa del índice"
+        },
+        "full-table-scan": {
+          "detail": "Lee todas las filas de esta tabla. Si la consulta solo necesita unas pocas, un índice sobre las columnas filtradas evitaría la lectura completa.",
+          "title": "Exploración completa de la tabla"
+        }
       }
     },
     "query-time": "Tiempo de consulta",

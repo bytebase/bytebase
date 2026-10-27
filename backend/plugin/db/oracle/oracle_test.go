@@ -8,6 +8,9 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"database/sql"
+	"database/sql/driver"
+	"encoding/json"
 	"encoding/pem"
 	"fmt"
 	"maps"
@@ -595,4 +598,57 @@ func ping(t *testing.T, dataSource *storepb.DataSource) string {
 	err = driver.Ping(ctx)
 	require.Error(t, err)
 	return err.Error()
+}
+
+// TestQueryPlanSteps covers the one form of plan the query-plan viewer draws:
+// Oracle states a plan as rows of PLAN_TABLE, and the driver is where those
+// become the JSON document the viewer parses.
+func TestQueryPlanSteps(t *testing.T) {
+	t.Parallel()
+	connector := &fakePlanConnector{
+		columns: []string{"ID", "PARENT_ID", "OPERATION", "OPTIONS", "OBJECT_NAME", "COST", "ACCESS_PREDICATES"},
+		plan: [][]driver.Value{
+			{"0", nil, "SELECT STATEMENT", nil, nil, "48", nil},
+			// The driver hands text back as bytes, which JSON would otherwise
+			// encode as base64.
+			{"1", "0", "TABLE ACCESS", []byte("FULL"), []byte("ORDERS"), "48", []byte(`"TOTAL">880`)},
+		},
+	}
+	database := sql.OpenDB(connector)
+	defer database.Close()
+	conn, err := database.Conn(context.Background())
+	require.NoError(t, err)
+	defer conn.Close()
+
+	result, err := queryPlanSteps(context.Background(), conn, "SELECT ...")
+	require.NoError(t, err)
+	require.Equal(t, []string{"PLAN"}, result.GetColumnNames())
+	require.Len(t, result.GetRows(), 1)
+
+	var steps []map[string]any
+	require.NoError(t, json.Unmarshal([]byte(result.GetRows()[0].GetValues()[0].GetStringValue()), &steps))
+	require.Equal(t, []map[string]any{
+		// A column the optimizer said nothing about is left out, not carried
+		// as a null the viewer would have to skip.
+		{"id": "0", "operation": "SELECT STATEMENT", "cost": "48"},
+		{
+			"id": "1", "parent_id": "0", "operation": "TABLE ACCESS",
+			"options": "FULL", "object_name": "ORDERS", "cost": "48",
+			"access_predicates": `"TOTAL">880`,
+		},
+	}, steps)
+}
+
+// TestRenderPlanStepsHandlesARaggedRow keeps the rendering off the end of a row
+// shorter than the column list, which no Oracle returns but a fake might.
+func TestRenderPlanStepsHandlesARaggedRow(t *testing.T) {
+	t.Parallel()
+	payload, err := renderPlanSteps([]string{"ID", "COST"}, [][]any{{"0"}})
+	require.NoError(t, err)
+	require.JSONEq(t, `[{"id":"0"}]`, payload)
+
+	// A plan with no steps is an empty list rather than a JSON null.
+	payload, err = renderPlanSteps([]string{"ID"}, nil)
+	require.NoError(t, err)
+	require.JSONEq(t, `[]`, payload)
 }

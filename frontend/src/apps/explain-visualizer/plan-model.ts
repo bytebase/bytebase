@@ -20,11 +20,29 @@ export interface PlanProperty {
 /** Where a warning came from, which decides whether relevance can hide it. */
 export type PlanWarningSource = "engine" | "heuristic";
 
-/** Something about a node worth a reader's attention, and what it means. */
+/** A warning this viewer raises itself, named by the words it shows for it. */
+export type PlanWarningKey =
+  | "full-table-scan"
+  | "full-index-scan"
+  | "data-redistribution";
+
+/**
+ * Something about a node worth a reader's attention, and what it means.
+ *
+ * This viewer's own advice names a key and the viewer holds its words, so they
+ * are read in the reader's language. A warning the engine itself reported
+ * carries the engine's words, as the plan's own operator names do.
+ */
 export interface PlanWarning {
-  readonly title: string;
-  readonly detail: string;
   readonly source: PlanWarningSource;
+  readonly key?: PlanWarningKey;
+  readonly title?: string;
+  readonly detail?: string;
+}
+
+/** What one warning is, for grouping and for telling two of them apart. */
+export function planWarningIdentity(warning: PlanWarning): string {
+  return warning.key ?? warning.title ?? "";
 }
 
 export interface PlanNode {
@@ -144,6 +162,24 @@ const PLAN_MAX_NODES = 1000;
 
 export const PLAN_TOO_MANY_NODES_MESSAGE = `The query plan has more than ${PLAN_MAX_NODES} operators, which is more than this visualizer draws.`;
 
+/** Raised by a size budget and caught by `parseWithDepthLimit` alone. */
+const PLAN_TOO_MANY_NODES = new Error(PLAN_TOO_MANY_NODES_MESSAGE);
+
+/**
+ * A budget for a parser that expands a graph into a tree. A node that several
+ * paths reach is drawn under each of them, so the copies multiply with the
+ * paths — a flow of 35 processors in two-way stages expands into 262,143 of
+ * them. Counting the finished tree would mean building every copy first, so a
+ * parser that splices calls this for each node it draws and stops there.
+ */
+export function planSizeBudget(): () => void {
+  let drawn = 0;
+  return () => {
+    drawn += 1;
+    if (drawn > PLAN_MAX_NODES) throw PLAN_TOO_MANY_NODES;
+  };
+}
+
 /**
  * A parser's tree from `build`, or the depth message when it went too deep or
  * the node-cap message when it is too large to draw.
@@ -156,8 +192,13 @@ export function parseWithDepthLimit(build: () => PlanNode): PlanParseResult {
     }
     return { ok: true, tree };
   } catch (error) {
-    if (error !== PLAN_TOO_DEEP) throw error;
-    return { ok: false, message: PLAN_TOO_DEEP_MESSAGE };
+    if (error === PLAN_TOO_DEEP) {
+      return { ok: false, message: PLAN_TOO_DEEP_MESSAGE };
+    }
+    if (error === PLAN_TOO_MANY_NODES) {
+      return { ok: false, message: PLAN_TOO_MANY_NODES_MESSAGE };
+    }
+    throw error;
   }
 }
 
@@ -211,6 +252,25 @@ export function planSelfCost(
 }
 
 /**
+ * What an operator that states no cost of its own carries: its children's.
+ *
+ * Engines leave the cost off an operator that adds none — MySQL states one on
+ * the query block and on each table and nothing in between, Oracle leaves it
+ * off a step like `STATISTICS COLLECTOR` — and without this the operator above
+ * would keep that subtree's cost as its own and rank ahead of the operator
+ * that really spends it. Undefined when no child states a cost either, which
+ * is a plan with no costs rather than a plan that costs nothing.
+ */
+export function planSubtreeCost(
+  children: readonly PlanNode[]
+): number | undefined {
+  const costs = children
+    .map((child) => child.totalCost)
+    .filter((cost): cost is number => cost !== undefined);
+  return costs.length ? costs.reduce((sum, cost) => sum + cost, 0) : undefined;
+}
+
+/**
  * A node's measured time minus its children's, on the same rule as
  * `planSelfCost`: the time the operator itself spent, which is what a reader
  * can act on. Ranking the cumulative number would only ever find the root.
@@ -222,19 +282,29 @@ export function planSelfTime(
   return planSelfValue(actualTime, children, (child) => child.actualTime);
 }
 
+/**
+ * A key from an engine's plan as a label: `access_predicates` and `taskType`
+ * both read "Access predicates" and "Task type". Engines that already report
+ * their keys as prose, such as PostgreSQL's "Node Type", need none of this.
+ */
+export function planLabel(key: string): string {
+  const words = key
+    .replace(/([a-z\d])([A-Z])/g, "$1 $2")
+    .replace(/[_-]+/g, " ")
+    .trim();
+  if (!words) return key;
+  return words[0].toUpperCase() + words.slice(1).toLowerCase();
+}
+
 /** Warning for a read of a whole table, attached by each engine's parser. */
 export const PLAN_FULL_TABLE_SCAN: PlanWarning = {
-  title: "Full table scan",
-  detail:
-    "Reads every row of this table. If the query needs only a few of them, an index on the filtered columns could avoid the full read.",
+  key: "full-table-scan",
   source: "heuristic",
 };
 
 /** Warning for a read of a whole index, attached by each engine's parser. */
 export const PLAN_FULL_INDEX_SCAN: PlanWarning = {
-  title: "Full index scan",
-  detail:
-    "Reads every entry of this index. If the query needs only a few of them, a condition on the index's leading columns could avoid the full read.",
+  key: "full-index-scan",
   source: "heuristic",
 };
 
@@ -249,6 +319,13 @@ export interface PlanRelation {
   readonly table: string;
   readonly database?: string;
   readonly schema?: string;
+  /**
+   * The name is the one the statement used, which is the alias where it gave
+   * one, and the engine did not resolve it to the table it read. It names the
+   * read for a reader, but nothing is looked up by it: a stored table that
+   * happens to share an alias would answer with the wrong table's facts.
+   */
+  readonly unresolved?: boolean;
 }
 
 /** One index on a table an operator reads, as Bytebase last synced it. */
@@ -649,9 +726,10 @@ export function planWarningGroups(tree: PlanTree): PlanWarningGroup[] {
       ) {
         continue;
       }
-      const group = groups.get(warning.title);
+      const identity = planWarningIdentity(warning);
+      const group = groups.get(identity);
       if (group) group.nodes.push(node);
-      else groups.set(warning.title, { warning, nodes: [node] });
+      else groups.set(identity, { warning, nodes: [node] });
     }
   }
   return [...groups.values()].map(({ warning, nodes }) => ({

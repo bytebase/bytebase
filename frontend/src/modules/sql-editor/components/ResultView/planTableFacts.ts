@@ -39,13 +39,18 @@ const sameIdentifier = (a: string, b: string) =>
  * The same holds within a database: a plan that names no schema and a name two
  * schemas both use is left unanswered. The metadata is the last sync's, which
  * is what the rest of the editor shows too.
+ *
+ * So is a name the engine left as the statement wrote it, which is the alias
+ * where the statement gave one: MySQL, MariaDB, TiDB and OceanBase all print
+ * that name and none of them resolves it, so nothing in the plan says whether
+ * `o` is a table or an alias for `orders`.
  */
 export function tableFactsLookup(
   metadata: DatabaseMetadata,
   connectedDatabase: string
 ): PlanTableLookup {
-  return ({ table, schema, database }) => {
-    if (!table) return undefined;
+  return ({ table, schema, database, unresolved }) => {
+    if (!table || unresolved) return undefined;
     if (database && !sameIdentifier(database, connectedDatabase)) {
       return undefined;
     }
