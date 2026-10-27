@@ -846,13 +846,15 @@ func generateAlterColumn(schemaName, tableName string, colDiff *schema.ColumnDif
 	oldGeneration, newGeneration := colDiff.OldColumn.Generation, colDiff.NewColumn.Generation
 	if (oldGeneration == nil) != (newGeneration == nil) {
 		writeDropColumn(&buf, schemaName, tableName, colDiff.OldColumn.Name)
-		column := colDiff.NewColumn
-		if notNull.name != "" {
-			column = proto.CloneOf(column)
+		if notNull.name == "" {
+			writeAddColumn(&buf, schemaName, tableName, colDiff.NewColumn)
+		} else {
+			// Added nullable, so that NOT NULL comes back under its name.
+			column := proto.CloneOf(colDiff.NewColumn)
 			column.Nullable = true
+			writeAddColumn(&buf, schemaName, tableName, column)
+			writeSetNotNull(&buf, schemaName, tableName, colDiff.NewColumn, notNull.name)
 		}
-		writeAddColumn(&buf, schemaName, tableName, column)
-		writeSetNotNull(&buf, schemaName, tableName, colDiff.NewColumn, notNull.name)
 		if colDiff.NewColumn.Comment != "" {
 			writeColumnComment(&buf, schemaName, tableName, colDiff.NewColumn.Name, colDiff.NewColumn.Comment)
 		}
