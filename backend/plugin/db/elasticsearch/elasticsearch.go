@@ -393,7 +393,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOpti
 	return 0, nil
 }
 
-func (d *Driver) QueryConn(_ context.Context, _ *sql.Conn, statement string, _ db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (d *Driver) QueryConn(_ context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	parseResult, err := parser.ParseElasticsearchREST(statement)
 	if err != nil {
 		return nil, err
@@ -407,6 +407,16 @@ func (d *Driver) QueryConn(_ context.Context, _ *sql.Conn, statement string, _ d
 
 	var results []*v1pb.QueryResult
 	for _, request := range parseResult.Requests {
+		if queryContext.Explain {
+			// The plan is what the search did, so the search runs with
+			// profiling on; anything that is not a search is refused rather
+			// than run.
+			profiled, err := profiledSearch(request)
+			if err != nil {
+				return nil, err
+			}
+			request = profiled
+		}
 		if err := func() error {
 			startTime := time.Now()
 			// send HTTP request.
@@ -486,6 +496,9 @@ func (d *Driver) QueryConn(_ context.Context, _ *sql.Conn, statement string, _ d
 				// Handle based on the actual type
 				switch v := data.(type) {
 				case map[string]any:
+					if queryContext.Explain {
+						result.QueryPlan = queryPlanOf(v)
+					}
 					// Object response: create one column per key
 					for key, val := range v {
 						result.ColumnNames = append(result.ColumnNames, key)

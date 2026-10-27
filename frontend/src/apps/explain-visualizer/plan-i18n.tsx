@@ -44,6 +44,12 @@ const ENGLISH = {
     "The query plan is not valid JSON. The diagram EXPLAIN (DISTSQL) encodes is expected.",
   "error.cockroachdb-no-plan":
     'The query plan JSON contains no "processors" to draw.',
+  "error.elasticsearch-empty":
+    "Elasticsearch returned no query plan for this statement.",
+  "error.elasticsearch-invalid":
+    "The query plan is not valid JSON. An Elasticsearch profile is expected.",
+  "error.elasticsearch-no-plan":
+    "The profile contains no shard to start from. Elasticsearch profiles a search it ran.",
   "error.hive-empty": "Hive returned no query plan for this statement.",
   "error.hive-invalid":
     "The query plan is not valid JSON. Hive's EXPLAIN FORMATTED output is expected.",

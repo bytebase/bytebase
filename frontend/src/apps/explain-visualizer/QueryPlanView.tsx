@@ -22,6 +22,11 @@ import {
   DATABRICKS_PLAN_NO_PLAN_MESSAGE,
 } from "./databricks-plan";
 import {
+  ELASTICSEARCH_PLAN_EMPTY_MESSAGE,
+  ELASTICSEARCH_PLAN_INVALID_JSON_MESSAGE,
+  ELASTICSEARCH_PLAN_NO_PLAN_MESSAGE,
+} from "./elasticsearch-plan";
+import {
   HIVE_PLAN_EMPTY_MESSAGE,
   HIVE_PLAN_INVALID_JSON_MESSAGE,
   HIVE_PLAN_NO_PLAN_MESSAGE,
@@ -142,6 +147,9 @@ const PARSE_ERROR_KEYS = new Map<string, QueryPlanTranslationKey>([
   [SNOWFLAKE_PLAN_EMPTY_MESSAGE, "error.snowflake-empty"],
   [SNOWFLAKE_PLAN_INVALID_JSON_MESSAGE, "error.snowflake-invalid"],
   [SNOWFLAKE_PLAN_NO_PLAN_MESSAGE, "error.snowflake-no-plan"],
+  [ELASTICSEARCH_PLAN_EMPTY_MESSAGE, "error.elasticsearch-empty"],
+  [ELASTICSEARCH_PLAN_INVALID_JSON_MESSAGE, "error.elasticsearch-invalid"],
+  [ELASTICSEARCH_PLAN_NO_PLAN_MESSAGE, "error.elasticsearch-no-plan"],
   [HIVE_PLAN_EMPTY_MESSAGE, "error.hive-empty"],
   [HIVE_PLAN_INVALID_JSON_MESSAGE, "error.hive-invalid"],
   [HIVE_PLAN_NO_PLAN_MESSAGE, "error.hive-no-plan"],
