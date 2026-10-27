@@ -902,7 +902,10 @@ func queryRetry(
 	if queryContext.Explain {
 		if format, ok := db.ExplainResultFormat(instance.Metadata.GetEngine(), queryContext.Option.GetExplainFormat()); ok {
 			for _, result := range results {
-				if result.Error == "" {
+				// A driver that stated the plan itself keeps it, with whether it
+				// ran and anything it carried: Elasticsearch answers an explain
+				// with the profile of a search it executed.
+				if result.Error == "" && result.QueryPlan == nil {
 					result.QueryPlan = &v1pb.QueryResult_QueryPlan{Format: format}
 				}
 			}
@@ -1702,12 +1705,17 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 		// A plan names the tables it reads, so reading one needs bb.sql.explain on
 		// every database the statement references, not only the connected one.
 		// A plain EXPLAIN, typed or requested, executes nothing and is done here;
-		// EXPLAIN ANALYZE executes its statement and is checked for that below.
+		// an explain that executes is checked for what it executes, below.
 		if isExplain || perm == permission.SQLExplain || (span.ExplainAnalyze && common.EngineSupportQueryNewACL(instance.Metadata.GetEngine())) {
 			if err := s.checkExplainAccess(ctx, user, instance, database, span, workspacePolicy.Policy, projectPolicy.Policy); err != nil {
 				return err
 			}
-			if !span.ExplainAnalyze {
+			// Elasticsearch states a plan only for a search it ran: an explain
+			// request there profiles the search, so it reads what the search
+			// reads and needs that permission too, as EXPLAIN ANALYZE does.
+			explainRuns := span.ExplainAnalyze ||
+				(isExplain && instance.Metadata.GetEngine() == storepb.Engine_ELASTICSEARCH)
+			if !explainRuns {
 				continue
 			}
 		}

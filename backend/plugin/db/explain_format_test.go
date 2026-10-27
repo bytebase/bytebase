@@ -56,6 +56,8 @@ func TestExplainResultFormat(t *testing.T) {
 		{name: "cockroachdb json", engine: storepb.Engine_COCKROACHDB, format: v1pb.QueryOption_JSON, want: v1pb.QueryOption_JSON, isPlan: true},
 		{name: "cockroachdb default", engine: storepb.Engine_COCKROACHDB, want: v1pb.QueryOption_TEXT, isPlan: true},
 		{name: "databricks default", engine: storepb.Engine_DATABRICKS, want: v1pb.QueryOption_TEXT, isPlan: true},
+		{name: "elasticsearch default", engine: storepb.Engine_ELASTICSEARCH, want: v1pb.QueryOption_JSON, isPlan: true},
+		{name: "elasticsearch json", engine: storepb.Engine_ELASTICSEARCH, format: v1pb.QueryOption_JSON, want: v1pb.QueryOption_JSON, isPlan: true},
 		{name: "snowflake json", engine: storepb.Engine_SNOWFLAKE, format: v1pb.QueryOption_JSON, want: v1pb.QueryOption_JSON, isPlan: true},
 		{name: "snowflake default", engine: storepb.Engine_SNOWFLAKE, want: v1pb.QueryOption_TEXT, isPlan: true},
 		{name: "hive json", engine: storepb.Engine_HIVE, format: v1pb.QueryOption_JSON, want: v1pb.QueryOption_JSON, isPlan: true},
@@ -80,10 +82,15 @@ func TestSupportedExplainFormats(t *testing.T) {
 		storepb.Engine_DYNAMODB,
 		storepb.Engine_CASSANDRA,
 		storepb.Engine_COSMOSDB,
-		storepb.Engine_ELASTICSEARCH,
 	} {
 		require.Emptyf(t, SupportedExplainFormats(engine), "%v", engine)
 	}
+	// Elasticsearch has one plan and it is its profile, which it states only
+	// for a search it ran: explaining there runs the search, and the driver
+	// refuses to profile anything that is not one.
+	require.Equal(t,
+		[]v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_JSON},
+		SupportedExplainFormats(storepb.Engine_ELASTICSEARCH))
 	// Databricks plans a statement through its own SQL, so it takes the text
 	// plan every engine without a reader of its own reports.
 	require.Equal(t,

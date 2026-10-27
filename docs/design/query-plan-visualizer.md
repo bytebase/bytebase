@@ -28,7 +28,7 @@ This ordering is a judgment call, not a measurement.
 ## 2. Background / problem
 
 The editor explained on 12 engines and drew a picture for 3 (PostgreSQL, SQL
-Server, Spanner); it now explains on 18 and draws for 19 (§3.4): every engine
+Server, Spanner); it now explains on 19 and draws for 20 (§3.4): every engine
 it explains, and BigQuery besides, whose plan arrives with an ordinary run
 rather than with an explain. Reaching the
 picture takes five steps: Ctrl/Cmd+E → plan rows in the grid → click a small
@@ -353,6 +353,7 @@ regression.
 | **MongoDB** | one `Query()`, on demand, cached | graph, with no estimates at all | `explain("executionStats")`, drawn for its rows |
 | **CockroachDB** | one `Query()`, on demand, cached | graph of the physical flow, with no estimates | none in the editor — `EXPLAIN ANALYZE` executes |
 | **BigQuery** | carried by the run that returned the rows, no second call | graph of the stage DAG, measured, with no estimates beside it | the plan is the measured one; BigQuery has no `EXPLAIN`, and its explain action is a dry run |
+| **Elasticsearch** | carried by the profiled search the explain ran | graph per shard, measured, timed to the nanosecond | the plan is the measured one: explaining here runs the search |
 | **Redshift** | one `Query()`, on demand, cached | graph, drawn from the text plan | none — `EXPLAIN` never analyzes |
 | **StarRocks** | one `Query()`, on demand, cached | graph, drawn from the text plan | none — `EXPLAIN ANALYZE` executes |
 | **Doris** | one `Query()`, on demand, cached | graph, drawn from the text plan by the StarRocks parser | none — Doris has no `EXPLAIN ANALYZE` |
@@ -416,11 +417,39 @@ detail — whether a filter reached the scan, which partitions it skipped,
 whether a join broadcast or shuffled, and where the exchanges are. That is what
 a Spark plan is read for.
 
+**Explain on Elasticsearch means the search, profiled.** It is the one engine
+here where an explain runs what it explains, and that follows from what
+Elasticsearch publishes. `_validate/query?explain` runs nothing, but answers
+with the rewritten Lucene query as a line of text: no tree, no timings, nothing
+to draw. The Profile API answers with the tree — every Lucene query, collector
+and aggregation, each timed — and only for a search that ran.
+
+So the request the driver sends is the caller's search with `"profile": true`
+in its body, and four things follow. It is a read, so it needs the permission
+that search needs as well as `bb.sql.explain`, which is the rule §3.5 already
+set for a typed `EXPLAIN ANALYZE`. Anything that is not a `_search` is refused
+rather than sent, so an explain can never carry out a write — a
+`_delete_by_query` reads like a search and is not one. The result is badged
+measured, because it is.
+
+And the hits do not come back. The search ran so that it could be profiled,
+which is not the same as being asked for; masking is off for an explain request
+— every other engine's explain states a plan and no data, so there has never
+been anything there to mask — and returning documents through this path would
+hand back what an ordinary query would have masked. The plan is the result, as
+it is for every other engine here.
+
+The profile is stated per shard with nothing above them, so the shards hang
+under a node for the search itself: the one node in any of these parsers that
+the engine did not state, carrying the `took` that no shard reports. Under each
+shard the phases keep Elasticsearch's own words and say which phase they are —
+the queries Lucene ran, the collectors that gathered their hits, the
+aggregations, the fetch. Every node's `time_in_nanos` covers its own subtree,
+which is what this model means by actual time, so this is the first engine
+added here whose graph ranks by time rather than shading by rows.
+
 The engines that remain state no plan at all: CQL has no `EXPLAIN`, and the
-document and key-value APIs publish none. Elasticsearch is the one with
-something to draw — its Profile API returns a measured tree — but reaching it
-means rewriting a request body rather than planning a statement, which is a
-different shape of request from every explain here.
+document and key-value APIs publish none.
 
 **Hive and Snowflake draw, and neither publishes what this section assumed.**
 Hive's `EXPLAIN FORMATTED` answers with one JSON object whose `CBOPlan` is

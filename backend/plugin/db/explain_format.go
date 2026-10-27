@@ -34,7 +34,9 @@ func SupportedExplainFormats(engine storepb.Engine) []v1pb.QueryOption_ExplainFo
 		return []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_TEXT, v1pb.QueryOption_JSON, v1pb.QueryOption_XML, v1pb.QueryOption_YAML}
 	case storepb.Engine_MSSQL:
 		return []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_TEXT, v1pb.QueryOption_XML}
-	case storepb.Engine_SPANNER, storepb.Engine_MONGODB:
+	// Elasticsearch joins these two in stating one plan format: its profile,
+	// which it answers with only for a search that ran.
+	case storepb.Engine_SPANNER, storepb.Engine_MONGODB, storepb.Engine_ELASTICSEARCH:
 		return []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_JSON}
 	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_TIDB,
 		storepb.Engine_ORACLE, storepb.Engine_CLICKHOUSE, storepb.Engine_TRINO,
@@ -45,8 +47,7 @@ func SupportedExplainFormats(engine storepb.Engine) []v1pb.QueryOption_ExplainFo
 	// APIs state none, and an engine listed here is refused an explain request
 	// outright, since its driver would otherwise run the statement as written.
 	case storepb.Engine_REDIS, storepb.Engine_DYNAMODB,
-		storepb.Engine_CASSANDRA, storepb.Engine_COSMOSDB,
-		storepb.Engine_ELASTICSEARCH:
+		storepb.Engine_CASSANDRA, storepb.Engine_COSMOSDB:
 		return nil
 	default:
 		return []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_TEXT}
@@ -68,7 +69,8 @@ func ExplainResultFormat(engine storepb.Engine, format v1pb.QueryOption_ExplainF
 	if format != v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED {
 		return format, true
 	}
-	if engine == storepb.Engine_SPANNER || engine == storepb.Engine_MONGODB {
+	if engine == storepb.Engine_SPANNER || engine == storepb.Engine_MONGODB ||
+		engine == storepb.Engine_ELASTICSEARCH {
 		return v1pb.QueryOption_JSON, true
 	}
 	return v1pb.QueryOption_TEXT, true

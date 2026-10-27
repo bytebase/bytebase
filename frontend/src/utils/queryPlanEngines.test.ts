@@ -27,6 +27,7 @@ describe("isVisualizerEngine", () => {
         Engine.SNOWFLAKE,
         Engine.HIVE,
         Engine.BIGQUERY,
+        Engine.ELASTICSEARCH,
         Engine.REDSHIFT,
         Engine.STARROCKS,
         Engine.DORIS,
@@ -91,6 +92,7 @@ describe("explainQueryOption", () => {
       Engine.COCKROACHDB,
       Engine.SNOWFLAKE,
       Engine.HIVE,
+      Engine.ELASTICSEARCH,
     ]) {
       expect(explainQueryOption(engine).explainFormat).toBe(
         QueryOption_ExplainFormat.JSON
@@ -114,7 +116,6 @@ describe("explainQueryOption", () => {
       Engine.REDIS,
       Engine.DYNAMODB,
       Engine.COSMOSDB,
-      Engine.ELASTICSEARCH,
     ]) {
       expect(explainQueryOption(engine).explainFormat, Engine[engine]).toBe(
         QueryOption_ExplainFormat.EXPLAIN_FORMAT_UNSPECIFIED

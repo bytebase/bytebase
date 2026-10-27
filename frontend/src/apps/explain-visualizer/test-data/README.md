@@ -401,3 +401,20 @@ suffixes each column with the expression id of the session that planned it, so
 a re-capture renumbers them; the tests match the shape of those values rather
 than the numbers.
 
+## `elasticsearch/`
+
+What a profiled search answers with, from Elasticsearch 8.15.0: the response's
+own `took` beside its `profile`, which is what the driver hands over once it has
+taken the profile out of the rows. Captured against an index of 60 documents and
+a three-shard index of 30, both created for the capture.
+
+| File | Shape it covers |
+| --- | --- |
+| `bool-aggregation.json` | One shard: a boolean query over a term and a range, the collectors that gathered it, a terms aggregation with an average nested inside, and the fetch's three phases |
+| `multi-shard.json` | The same search across three shards, each profiled on its own |
+
+To add one, send a search with `"profile": true` and keep the response's `took`
+and `profile`. Every node is timed in nanoseconds and covers its own
+subtree, so a re-capture renumbers every timing, and the tests that assert them
+against this capture would need updating with it.
+

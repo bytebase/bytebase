@@ -29,6 +29,9 @@ export const VISUALIZER_EXPLAIN_FORMATS = {
   // BigQuery states no plan for a statement it has not run. What it reports is
   // the stages of a job that did, which the result carries beside its rows.
   [Engine.BIGQUERY]: "JSON",
+  // Elasticsearch states none either: its profile records a search that ran,
+  // and the result carries it beside the hits.
+  [Engine.ELASTICSEARCH]: "JSON",
   // These four publish no plan as a document; their text plan is what there
   // is. Databricks prints Spark's FORMATTED plan: a tree of operators and then
   // a block of detail for each.

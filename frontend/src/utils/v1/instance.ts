@@ -241,6 +241,7 @@ export const instanceV1AllowsExplain = (
     Engine.CLICKHOUSE,
     Engine.COCKROACHDB,
     Engine.DATABRICKS,
+    Engine.ELASTICSEARCH,
     Engine.HIVE,
     Engine.MSSQL,
     Engine.ORACLE,

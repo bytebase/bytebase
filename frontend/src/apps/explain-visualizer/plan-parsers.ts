@@ -4,6 +4,7 @@ import { parseBigqueryPlan } from "./bigquery-plan";
 import { parseClickhousePlan } from "./clickhouse-plan";
 import { parseCockroachdbPlan } from "./cockroachdb-plan";
 import { parseDatabricksPlan } from "./databricks-plan";
+import { parseElasticsearchPlan } from "./elasticsearch-plan";
 import { parseHivePlan } from "./hive-plan";
 import { parseMongodbPlan } from "./mongodb-plan";
 import { parseMssqlPlan } from "./mssql-plan";
@@ -55,6 +56,9 @@ const PARSERS: Record<VisualizerEngine, (source: string) => PlanParseResult> = {
   // BigQuery's plan is the stages of the job that returned the rows, so it is
   // measured rather than estimated.
   [Engine.BIGQUERY]: parseBigqueryPlan,
+  // Elasticsearch profiles the search it ran, which is measured too, and timed
+  // to the nanosecond.
+  [Engine.ELASTICSEARCH]: parseElasticsearchPlan,
   // The text plans drawn here, because none of these engines publishes
   // anything else. StarRocks forked from Doris and their plans still agree on
   // the fragments and the tree, so one parser reads both.
