@@ -158,8 +158,9 @@ color, and below 640 px it moves under the database. Per state, with the full ta
   duration is the run's start and end time, as today's collapsed card already shows it. Which
   files this run applied, and the exact rows each statement affected, are in the opened task.
 - Running: "Applying 3 files · started 15:14", or "Running · started 15:14" for a UIOps task. The
-  count is the stored to-apply count, fixed when the run starts, and the time is absolute, so the
-  line does not go stale between polls; no file name, which would.
+  count is the stored to-apply count from rollout creation (D4), a preview like the not-started
+  line, and the time is absolute, so the line does not change between polls; no file name, which
+  would. The opened task's spine shows what the run actually reaches.
 - Not started: "3 to apply · 490 applied earlier" from the stored state (D4), or "DML · about 1,180
   rows" from the plan check's summary for a UIOps task, then the scheduled time or the waiting cause
   when the run has one.
@@ -168,9 +169,10 @@ color, and below 640 px it moves under the database. Per state, with the full ta
 *Applied earlier* counts the release's versions that were on the database before this plan; the
 statement kind is DDL, DML or Mixed from the plan check's `statement_types`, whose enum is grouped
 that way. A database sync that failed after the files applied leaves the task Done (the executor
-logs the error and goes on); its section carries the error as today, and the done line adds "·
-schema sync failed". The word "skipped" is reserved for the user action (D7); versions the executor
-passes over are "applied earlier" on the card and "already applied" in the fold.
+logs the error and goes on); the error reaches only the log, so it shows in the opened task's
+Database sync section as today, not on the folded card. The word "skipped" is reserved for the user
+action (D7); versions the executor passes over are "applied earlier" on the card and "already
+applied" in the fold.
 
 A file section header carries the version, the file's path as a link to the viewer (D8) with a copy
 control for the path, a status chip and the duration; the chevron toggles, the path opens the file.
@@ -420,7 +422,7 @@ The folded card's description, per task state (D3):
 |---|---|---|---|
 | Not started | "3 to apply · 490 applied earlier", then "· scheduled 18:00" or the waiting cause; a declarative release shows the status only | "DML · about 1,180 rows", then the schedule or waiting cause | gray |
 | Running | "Applying 3 files · started 15:14" | "Running · started 15:14" | blue |
-| Done | "All 493 applied · 4.1 s"; "· schema sync failed" when the sync failed | "DML · 4.1 s", "DDL · 1.2 s" or "Mixed · 3.4 s" | green |
+| Done | "All 493 applied · 4.1 s" | "DML · 4.1 s", "DDL · 1.2 s" or "Mixed · 3.4 s" | green |
 | Failed | `<failed version>` then the error's first line | The error's first line | red |
 | Skipped | "Skipped by `<user>` · `<reason>`" | Same | gray |
 | Canceled | "Canceled · `<time>`" | Same | gray |
@@ -498,8 +500,8 @@ Tests to write, per the placement rules in `AGENTS.md`:
   sheets; a re-run version keeps the stored "revision deleted" note on its section.
 - Folded card tests: each cell of the card table in States from the task, its latest run, the
   stored state and the plan check, before any log loads; the executor prefix removed from the
-  error's first line; the release's file count on a done release task and "· schema sync failed"
-  after a failed sync; DDL, DML and Mixed from the statement types, with the run's duration;
+  error's first line; the release's file count on a done release task; DDL, DML and Mixed from the
+  statement types, with the run's duration;
   the description under the database below 640 px; every task folded on load, the stage selected for
   a failed, a running and a deployed plan, and a URL naming a task opening it.
 - Details block tests: each row for a release plan and a UIOps plan, the rows a plan kind lacks
