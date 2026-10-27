@@ -721,31 +721,33 @@ test.describe("A compound condition reads back as its resources (K1)", () => {
     await revokeAllExemptions();
   });
 
-  test("each clause is its own resource row; the member reads All databases", async () => {
-    const listPage = new MaskingExemptionPage(page, env.baseURL);
-    await listPage.goto(projectId);
-    const summary = `${EXEMPTION["n-exemptions_one"].replace("{{n}}", "1")} · ${enUS.database.all}`;
-    await expect(listPage.getMemberItem(env.adminEmail)).toContainText(summary);
-    await listPage.selectMember(env.adminEmail);
+  test("each clause reads back as its own resource row, and the raw CEL toggle shows the stored expression", async () => {
+    await test.step("each clause is its own resource row; the member reads All databases", async () => {
+      const listPage = new MaskingExemptionPage(page, env.baseURL);
+      await listPage.goto(projectId);
+      const summary = `${EXEMPTION["n-exemptions_one"].replace("{{n}}", "1")} · ${enUS.database.all}`;
+      await expect(listPage.getMemberItem(env.adminEmail)).toContainText(summary);
+      await listPage.selectMember(env.adminEmail);
 
-    const columnOnly = page.getByRole("row").filter({ hasText: "salary, amount" });
-    await expect(columnOnly).toHaveCount(1);
-    await expect(columnOnly).toContainText(enUS.database.all);
-    const scoped = page.getByRole("row").filter({ hasText: "emp_no" });
-    await expect(scoped).toHaveCount(1);
-    await expect(scoped).toContainText(env.instanceId);
-    await expect(scoped).toContainText(env.databaseId);
-  });
+      const columnOnly = page.getByRole("row").filter({ hasText: "salary, amount" });
+      await expect(columnOnly).toHaveCount(1);
+      await expect(columnOnly).toContainText(enUS.database.all);
+      const scoped = page.getByRole("row").filter({ hasText: "emp_no" });
+      await expect(scoped).toHaveCount(1);
+      await expect(scoped).toContainText(env.instanceId);
+      await expect(scoped).toContainText(env.databaseId);
+    });
 
-  test("Show raw CEL condition reveals the stored expression and hides it again", async () => {
-    const show = page.getByRole("button", { name: EXEMPTION["show-raw-cel-condition"] });
-    await expect(show).toHaveAttribute("aria-expanded", "false");
-    await show.click();
-    const hide = page.getByRole("button", { name: EXEMPTION["hide-raw-cel-condition"] });
-    await expect(hide).toHaveAttribute("aria-expanded", "true");
-    await expect(page.locator("pre").filter({ hasText: "resource.column_name in" })).toHaveText(expression);
-    await hide.click();
-    await expect(page.locator("pre").filter({ hasText: "resource.column_name in" })).toHaveCount(0);
+    await test.step("Show raw CEL condition reveals the stored expression and hides it again", async () => {
+      const show = page.getByRole("button", { name: EXEMPTION["show-raw-cel-condition"] });
+      await expect(show).toHaveAttribute("aria-expanded", "false");
+      await show.click();
+      const hide = page.getByRole("button", { name: EXEMPTION["hide-raw-cel-condition"] });
+      await expect(hide).toHaveAttribute("aria-expanded", "true");
+      await expect(page.locator("pre").filter({ hasText: "resource.column_name in" })).toHaveText(expression);
+      await hide.click();
+      await expect(page.locator("pre").filter({ hasText: "resource.column_name in" })).toHaveCount(0);
+    });
   });
 });
 

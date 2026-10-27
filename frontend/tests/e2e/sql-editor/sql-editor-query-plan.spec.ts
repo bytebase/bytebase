@@ -162,49 +162,50 @@ test.describe("A typed EXPLAIN ANALYZE executed the statement and is never repla
 });
 
 test.describe("A plain SELECT offers its plan in the view switch (P4)", () => {
-  test.describe.configure({ mode: "serial" });
+  test("Plan explains the executed statement once, is cached on the result, and is remembered on re-run", async () => {
+    test.setTimeout(150_000);
+    await test.step("rows render in the Table view; no plan is fetched until asked", async () => {
+      await openFreshConnectedTab();
+      await sqlEditor.setEditorContent(STATEMENT);
+      queryRequests.length = 0;
+      await sqlEditor.runButton.click();
+      await expect(page.getByText(/^1\s+rows?$/i).first()).toBeVisible({ timeout: 20_000 });
+      await expect(page.locator('[data-row-index="0"]').first()).toContainText("10001");
+      await expect(viewSwitch().getByRole("radio", { name: SQL_EDITOR["table-view"] })).toBeChecked();
+      await expect(viewSwitch().getByRole("radio", { name: SQL_EDITOR["plan-view"] })).toBeEnabled();
+      await expect(tab(TAB.diagram)).toHaveCount(0);
+      expect(queryRequests).toHaveLength(1);
+    });
 
-  test("rows render in the Table view; no plan is fetched until asked", async () => {
-    await openFreshConnectedTab();
-    await sqlEditor.setEditorContent(STATEMENT);
-    queryRequests.length = 0;
-    await sqlEditor.runButton.click();
-    await expect(page.getByText(/^1\s+rows?$/i).first()).toBeVisible({ timeout: 20_000 });
-    await expect(page.locator('[data-row-index="0"]').first()).toContainText("10001");
-    await expect(viewSwitch().getByRole("radio", { name: SQL_EDITOR["table-view"] })).toBeChecked();
-    await expect(viewSwitch().getByRole("radio", { name: SQL_EDITOR["plan-view"] })).toBeEnabled();
-    await expect(tab(TAB.diagram)).toHaveCount(0);
-    expect(queryRequests).toHaveLength(1);
-  });
+    await test.step("Plan explains the executed statement once, limit included, and marks it Estimated", async () => {
+      queryRequests.length = 0;
+      // The radio is visually hidden inside its segment; the label takes the click.
+      await viewSwitch().getByRole("radio", { name: SQL_EDITOR["plan-view"] }).click({ force: true });
+      await expectDiagramOpenedOnCostliest();
+      await expect(page.getByText(SQL_EDITOR["plan-estimated"], { exact: true })).toBeVisible();
+      expect(queryRequests).toHaveLength(1);
+      expect(queryRequests[0]).toContain(`${STATEMENT} LIMIT 1000`);
+    });
 
-  test("Plan explains the executed statement once, limit included, and marks it Estimated", async () => {
-    queryRequests.length = 0;
-    // The radio is visually hidden inside its segment; the label takes the click.
-    await viewSwitch().getByRole("radio", { name: SQL_EDITOR["plan-view"] }).click({ force: true });
-    await expectDiagramOpenedOnCostliest();
-    await expect(page.getByText(SQL_EDITOR["plan-estimated"], { exact: true })).toBeVisible();
-    expect(queryRequests).toHaveLength(1);
-    expect(queryRequests[0]).toContain(`${STATEMENT} LIMIT 1000`);
-  });
+    await test.step("Table and back to Plan sends nothing: the plan is cached on the result", async () => {
+      queryRequests.length = 0;
+      await viewSwitch().getByRole("radio", { name: SQL_EDITOR["table-view"] }).click({ force: true });
+      await expect(page.locator('[data-row-index="0"]').first()).toContainText("10001");
+      await viewSwitch().getByRole("radio", { name: SQL_EDITOR["plan-view"] }).click({ force: true });
+      await expect(page.getByRole("button", { name: NODE })).toBeVisible();
+      expect(queryRequests).toHaveLength(0);
+    });
 
-  test("Table and back to Plan sends nothing: the plan is cached on the result", async () => {
-    queryRequests.length = 0;
-    await viewSwitch().getByRole("radio", { name: SQL_EDITOR["table-view"] }).click({ force: true });
-    await expect(page.locator('[data-row-index="0"]').first()).toContainText("10001");
-    await viewSwitch().getByRole("radio", { name: SQL_EDITOR["plan-view"] }).click({ force: true });
-    await expect(page.getByRole("button", { name: NODE })).toBeVisible();
-    expect(queryRequests).toHaveLength(0);
-  });
-
-  test("a re-run in the same tab reopens on the remembered Plan view", async () => {
-    // The editor drops a run within a second of the previous one
-    // (QUERY_INTERVAL_LIMIT in hooks/useExecuteSQL.ts).
-    await page.waitForTimeout(1_100);
-    queryRequests.length = 0;
-    await sqlEditor.runButton.click();
-    // The run, then the fresh result's own plan.
-    await expect.poll(() => queryRequests.length, { timeout: 20_000 }).toBe(2);
-    await expect(viewSwitch().getByRole("radio", { name: SQL_EDITOR["plan-view"] })).toBeChecked();
-    await expectDiagramOpenedOnCostliest();
+    await test.step("a re-run in the same tab reopens on the remembered Plan view", async () => {
+      // The editor drops a run within a second of the previous one
+      // (QUERY_INTERVAL_LIMIT in hooks/useExecuteSQL.ts).
+      await page.waitForTimeout(1_100);
+      queryRequests.length = 0;
+      await sqlEditor.runButton.click();
+      // The run, then the fresh result's own plan.
+      await expect.poll(() => queryRequests.length, { timeout: 20_000 }).toBe(2);
+      await expect(viewSwitch().getByRole("radio", { name: SQL_EDITOR["plan-view"] })).toBeChecked();
+      await expectDiagramOpenedOnCostliest();
+    });
   });
 });

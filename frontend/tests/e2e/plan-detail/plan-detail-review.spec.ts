@@ -1744,6 +1744,7 @@ test.describe("The project setting and plan edits move who may approve (L2/L3)",
   });
 
   test("an accepted specs update by another user moves the block to that user (L3)", async () => {
+    await env.api.updateProjectSettings(env.project, { allowLastPlanEditorApproval: false });
     const plan = await env.api.getPlan(planName);
     const sheet = await env.api.createSheet(
       env.project,
@@ -1802,7 +1803,6 @@ async function markerLine(): Promise<string> {
 }
 
 test.describe("Inline comments open with review submission, plain comments stay plain, anchors follow edits (C1–C3)", () => {
-  test.describe.configure({ mode: "serial" });
   const stamp = Date.now();
   const lines = [1, 2, 3].map(
     (n) => `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_c${n}_${stamp} TEXT;`,
@@ -1845,71 +1845,74 @@ test.describe("Inline comments open with review submission, plain comments stay 
     await planPage.dismissModals();
   });
 
-  test("a draft offers no way to start a thread; Ready for Review opens it (C1)", async () => {
-    await planPage.expandSection("Changes");
-    await expect(planPage.statementEditor).toBeVisible();
-    await expect(planPage.statementEditor).not.toHaveClass(/bb-thread-creatable/);
-    await planPage.hoverStatementLine(2);
-    await expect(planPage.addThreadGlyph).toHaveCount(0);
-    await expect(planPage.composerTrigger).toHaveCount(0);
+  test("a thread opens with review submission, stays apart from plain comments, and follows statement edits", async () => {
+    test.setTimeout(300_000);
+    await test.step("a draft offers no way to start a thread; Ready for Review opens it (C1)", async () => {
+      await planPage.expandSection("Changes");
+      await expect(planPage.statementEditor).toBeVisible();
+      await expect(planPage.statementEditor).not.toHaveClass(/bb-thread-creatable/);
+      await planPage.hoverStatementLine(2);
+      await expect(planPage.addThreadGlyph).toHaveCount(0);
+      await expect(planPage.composerTrigger).toHaveCount(0);
 
-    await submitDraftForReviewViaUI(page);
-    await expect(planPage.statementEditor).toHaveClass(/bb-thread-creatable/, { timeout: 15_000 });
-    await expect(planPage.composerTrigger).toBeVisible();
-    await planPage.hoverStatementLine(2);
-    await expect(planPage.addThreadGlyph).toBeVisible();
-  });
+      await submitDraftForReviewViaUI(page);
+      await expect(planPage.statementEditor).toHaveClass(/bb-thread-creatable/, { timeout: 15_000 });
+      await expect(planPage.composerTrigger).toBeVisible();
+      await planPage.hoverStatementLine(2);
+      await expect(planPage.addThreadGlyph).toBeVisible();
+    });
 
-  test("a general comment renders as a plain row; a gutter comment is a thread (C2)", async () => {
-    await planPage.composerTrigger.click();
-    await planPage.composerEditor.fill(plainText);
-    await planPage.composerSubmitButton.click();
-    const timeline = page.locator("#plan-phase-review");
-    const plain = timeline.getByText(plainText, { exact: true });
-    await expect(plain).toBeVisible({ timeout: 15_000 });
-    // Not a thread: no card, and no Reply / Resolve on its row.
-    await expect(timeline.getByTestId("comment-thread").filter({ hasText: plainText })).toHaveCount(0);
-    await expect(
-      plain.locator("xpath=ancestor::li[1]").getByRole("button", { name: /^(Reply|Resolve)/ }),
-    ).toHaveCount(0);
+    await test.step("a general comment renders as a plain row; a gutter comment is a thread (C2)", async () => {
+      await planPage.composerTrigger.click();
+      await planPage.composerEditor.fill(plainText);
+      await planPage.composerSubmitButton.click();
+      const timeline = page.locator("#plan-phase-review");
+      const plain = timeline.getByText(plainText, { exact: true });
+      await expect(plain).toBeVisible({ timeout: 15_000 });
+      // Not a thread: no card, and no Reply / Resolve on its row.
+      await expect(timeline.getByTestId("comment-thread").filter({ hasText: plainText })).toHaveCount(0);
+      await expect(
+        plain.locator("xpath=ancestor::li[1]").getByRole("button", { name: /^(Reply|Resolve)/ }),
+      ).toHaveCount(0);
 
-    await planPage.openInlineComposerOn(3);
-    await planPage.inlineComposerEditor.fill(rootText);
-    await planPage.inlineComposerPublishButton.click();
-    await expect(planPage.threadMarkers).toHaveCount(1, { timeout: 15_000 });
-    expect(await markerLine()).toBe("3");
-    const card = planPage.threadCardIn("review", rootText);
-    await expect(card).toBeVisible();
-    await expect(card.getByRole("button", { name: "Resolve", exact: true })).toBeVisible();
-    await expect(card.getByRole("button", { name: /^Reply/ })).toBeVisible();
-    const anchor = await timelineAnchor(rootText);
-    await expect(anchor).toHaveAttribute("data-anchor-state", "CURRENT", { timeout: 15_000 });
-    await expect(anchor).toContainText("Line 3");
-  });
+      await planPage.openInlineComposerOn(3);
+      await planPage.inlineComposerEditor.fill(rootText);
+      await planPage.inlineComposerPublishButton.click();
+      await expect(planPage.threadMarkers).toHaveCount(1, { timeout: 15_000 });
+      expect(await markerLine()).toBe("3");
+      const card = planPage.threadCardIn("review", rootText);
+      await expect(card).toBeVisible();
+      await expect(card.getByRole("button", { name: "Resolve", exact: true })).toBeVisible();
+      await expect(card.getByRole("button", { name: /^Reply/ })).toBeVisible();
+      const anchor = await timelineAnchor(rootText);
+      await expect(anchor).toHaveAttribute("data-anchor-state", "CURRENT", { timeout: 15_000 });
+      await expect(anchor).toContainText("Line 3");
+    });
 
-  test("an edit above the anchor shifts the marker and keeps the card current (C3)", async () => {
-    await replaceStatement([insertedLine, ...lines].join("\n"));
-    await expect(planPage.threadMarkers).toHaveCount(1, { timeout: 15_000 });
-    await expect.poll(markerLine).toBe("4");
-    const anchor = await timelineAnchor(rootText);
-    await expect(anchor).toHaveAttribute("data-anchor-state", "CURRENT", { timeout: 15_000 });
-    // The card keeps the lines as originally selected.
-    await expect(anchor).toContainText("Line 3");
-  });
+    await test.step("an edit above the anchor shifts the marker and keeps the card current (C3)", async () => {
+      await replaceStatement([insertedLine, ...lines].join("\n"));
+      await expect(planPage.threadMarkers).toHaveCount(1, { timeout: 15_000 });
+      await expect.poll(markerLine).toBe("4");
+      const anchor = await timelineAnchor(rootText);
+      await expect(anchor).toHaveAttribute("data-anchor-state", "CURRENT", { timeout: 15_000 });
+      // The card keeps the lines as originally selected.
+      await expect(anchor).toContainText("Line 3");
+    });
 
-  test("an edit on the anchored line outdates the thread and removes its marker (C3)", async () => {
-    await replaceStatement(
-      [
-        insertedLine,
-        lines[0],
-        lines[1],
-        `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_c3_changed_${stamp} TEXT;`,
-      ].join("\n"),
-    );
-    const anchor = await timelineAnchor(rootText);
-    await expect(anchor).toHaveAttribute("data-anchor-state", "OUTDATED", { timeout: 15_000 });
-    await expect(anchor).toContainText(enUS.plan.review.thread.anchor.outdated);
-    await expect(planPage.threadMarkers).toHaveCount(0);
+    await test.step("an edit on the anchored line outdates the thread and removes its marker (C3)", async () => {
+      await replaceStatement(
+        [
+          insertedLine,
+          lines[0],
+          lines[1],
+          `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_c3_changed_${stamp} TEXT;`,
+        ].join("\n"),
+      );
+      const anchor = await timelineAnchor(rootText);
+      await expect(anchor).toHaveAttribute("data-anchor-state", "OUTDATED", { timeout: 15_000 });
+      await expect(anchor).toContainText(enUS.plan.review.thread.anchor.outdated);
+      await expect(planPage.threadMarkers).toHaveCount(0);
+    });
   });
 });
 

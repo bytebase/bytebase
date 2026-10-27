@@ -138,65 +138,67 @@ test.describe("Create asks before saving a connection that failed (I4)", () => {
 });
 
 test.describe("Test, create, then edit the secret (I3)", () => {
-  test.describe.configure({ mode: "serial" });
   const title = `E2E Instance Form ${Date.now()}`;
   let instanceId = "";
 
-  test("a reachable sample Postgres tests successfully and Create lands on the instance", async () => {
-    await gotoNewPostgresInstance();
-    await page.getByRole("textbox", { name: "Instance Name *" }).fill(title);
-    await hostname().fill(sample.host);
-    await port().fill(sample.port);
-    await username().fill(sample.username);
-    await testConnection().click();
-    await expect(page.getByText(INSTANCE["successfully-connected-instance"])).toBeVisible({ timeout: 20_000 });
+  test("a tested connection creates the instance, whose stored password then edits through SecretInput", async () => {
+    test.setTimeout(180_000);
+    await test.step("a reachable sample Postgres tests successfully and Create lands on the instance", async () => {
+      await gotoNewPostgresInstance();
+      await page.getByRole("textbox", { name: "Instance Name *" }).fill(title);
+      await hostname().fill(sample.host);
+      await port().fill(sample.port);
+      await username().fill(sample.username);
+      await testConnection().click();
+      await expect(page.getByText(INSTANCE["successfully-connected-instance"])).toBeVisible({ timeout: 20_000 });
 
-    await closeToasts();
-    await create().click();
-    await page.waitForURL(/\/instances\/(?!new$)[^/?#]+/, { timeout: 60_000 });
-    instanceId = page.url().match(/\/instances\/([^/?#]+)/)?.[1] ?? "";
-    expect(instanceId).not.toBe("");
-    createdInstances.push(`instances/${instanceId}`);
-    // Exact and level 1: the creation toast's heading also contains the title.
-    await expect(page.getByRole("heading", { level: 1, name: title, exact: true })).toBeVisible({
-      timeout: 20_000,
+      await closeToasts();
+      await create().click();
+      await page.waitForURL(/\/instances\/(?!new$)[^/?#]+/, { timeout: 60_000 });
+      instanceId = page.url().match(/\/instances\/([^/?#]+)/)?.[1] ?? "";
+      expect(instanceId).not.toBe("");
+      createdInstances.push(`instances/${instanceId}`);
+      // Exact and level 1: the creation toast's heading also contains the title.
+      await expect(page.getByRole("heading", { level: 1, name: title, exact: true })).toBeVisible({
+        timeout: 20_000,
+      });
     });
-  });
 
-  test("the stored password reads Unchanged; typing, clearing and Cancel round-trip", async () => {
-    // Re-enter the instance without the post-create ?intro= query: that product
-    // intro dims the page once the database list loads and swallows clicks.
-    expect(instanceId).not.toBe("");
-    await page.goto(`${env.baseURL}/instances/${instanceId}`);
-    await page.getByRole("tab", { name: COMMON.overview, exact: true }).click();
+    await test.step("the stored password reads Unchanged; typing, clearing and Cancel round-trip", async () => {
+      // Re-enter the instance without the post-create ?intro= query: that product
+      // intro dims the page once the database list loads and swallows clicks.
+      expect(instanceId).not.toBe("");
+      await page.goto(`${env.baseURL}/instances/${instanceId}`);
+      await page.getByRole("tab", { name: COMMON.overview, exact: true }).click();
 
-    const password = page.getByRole("textbox", { name: "Password", exact: true });
-    const clear = page.getByRole("button", { name: COMMON.clear, exact: true });
-    const reveal = page.getByRole("button", { name: COMMON["toggle-password-visibility"] });
-    const update = page.getByRole("button", { name: COMMON.update, exact: true });
+      const password = page.getByRole("textbox", { name: "Password", exact: true });
+      const clear = page.getByRole("button", { name: COMMON.clear, exact: true });
+      const reveal = page.getByRole("button", { name: COMMON["toggle-password-visibility"] });
+      const update = page.getByRole("button", { name: COMMON.update, exact: true });
 
-    // Untouched: a placeholder, an explicit clear, no pending change.
-    await expect(password).toHaveAttribute("placeholder", COMMON["secret-input"].unchanged);
-    await expect(password).toHaveValue("");
-    await expect(clear).toBeVisible();
-    await expect(reveal).toHaveCount(0);
-    await expect(update).toHaveCount(0);
+      // Untouched: a placeholder, an explicit clear, no pending change.
+      await expect(password).toHaveAttribute("placeholder", COMMON["secret-input"].unchanged);
+      await expect(password).toHaveValue("");
+      await expect(clear).toBeVisible();
+      await expect(reveal).toHaveCount(0);
+      await expect(update).toHaveCount(0);
 
-    // Typing replaces: the eye reveals only the new input, the form is dirty.
-    await password.fill("e2e-new-secret");
-    await expect(password).toHaveValue("e2e-new-secret");
-    await expect(reveal).toBeVisible();
-    await expect(update).toBeEnabled();
+      // Typing replaces: the eye reveals only the new input, the form is dirty.
+      await password.fill("e2e-new-secret");
+      await expect(password).toHaveValue("e2e-new-secret");
+      await expect(reveal).toBeVisible();
+      await expect(update).toBeEnabled();
 
-    // × clears explicitly — an empty value, no "Unchanged" placeholder, still dirty.
-    await clear.click();
-    await expect(password).toHaveValue("");
-    await expect(password).not.toHaveAttribute("placeholder", COMMON["secret-input"].unchanged);
-    await expect(update).toBeEnabled();
+      // × clears explicitly — an empty value, no "Unchanged" placeholder, still dirty.
+      await clear.click();
+      await expect(password).toHaveValue("");
+      await expect(password).not.toHaveAttribute("placeholder", COMMON["secret-input"].unchanged);
+      await expect(update).toBeEnabled();
 
-    // The form's Cancel discards: back to Unchanged, nothing pending.
-    await page.getByRole("button", { name: COMMON.cancel, exact: true }).click();
-    await expect(password).toHaveAttribute("placeholder", COMMON["secret-input"].unchanged);
-    await expect(update).toHaveCount(0);
+      // The form's Cancel discards: back to Unchanged, nothing pending.
+      await page.getByRole("button", { name: COMMON.cancel, exact: true }).click();
+      await expect(password).toHaveAttribute("placeholder", COMMON["secret-input"].unchanged);
+      await expect(update).toHaveCount(0);
+    });
   });
 });
