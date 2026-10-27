@@ -799,6 +799,14 @@ Checked against `main` on 2026-10-27, at [#21669](https://github.com/bytebase/by
   unknown answer as text
   ([#21670](https://github.com/bytebase/bytebase/pull/21670)).
 
+- §3.4 — Databricks explains, and Snowflake and Hive draw. Databricks is asked
+  for Spark's `EXPLAIN FORMATTED` and was refused an explain request before,
+  since its driver runs the statement it is handed; its plan is text for now.
+  Snowflake is asked for `EXPLAIN USING JSON` and Hive for
+  `EXPLAIN FORMATTED`, whose `CBOPlan` is Calcite's own plan. Neither ranks
+  anything: Snowflake estimates no cost and Hive states one on its joins
+  alone ([#21677](https://github.com/bytebase/bytebase/pull/21677)).
+
 **Not yet**
 
 Nothing: every section of this design is implemented. The one question §3.3
