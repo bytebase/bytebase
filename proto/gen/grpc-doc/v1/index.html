@@ -25532,7 +25532,7 @@ Name of the operator class for each column. (PostgreSQL specific). </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>- projects/{project}: list databases in a project, require &#34;bb.projects.get&#34; permission.
-- projects/-: list databases across projects (AIP-159), restricted to the projects where the caller holds &#34;bb.projects.get&#34;.
+- projects/-: list databases across projects (AIP-159), restricted to the active (non-archived) projects where the caller holds &#34;bb.projects.get&#34;.
 - workspaces/{id}: list databases in the workspace, require &#34;bb.databases.list&#34; permission.
 - instances/{instance}: list databases in an instance, require &#34;bb.instances.get&#34; permission.
 - projects/{project}/instances/{instance}: list databases in a project instance, require &#34;bb.instances.get&#34; permission. </p></td>

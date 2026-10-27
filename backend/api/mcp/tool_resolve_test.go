@@ -8,6 +8,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 )
 
@@ -204,14 +205,16 @@ func TestResolve_UnreadableProjectIsNotFound(t *testing.T) {
 	for _, tc := range []struct {
 		name     string
 		readable []string
+		instance string
 	}{
 		{name: "project role", readable: []string{"projects/hr"}},
 		{name: "no project role"},
+		{name: "instance filter", readable: []string{"projects/hr"}, instance: "prod-pg"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			s := newTestServerWithMock(t, &listingAPI{databases: hrAndFinanceDatabases(), readable: tc.readable})
 
-			_, err := s.resolveDatabase(testContext(), "payroll_db", "", "")
+			_, err := s.resolveDatabase(testContext(), "payroll_db", tc.instance, "")
 			var te *toolError
 			require.ErrorAs(t, err, &te)
 			require.Equal(t, "DATABASE_NOT_FOUND", te.Code)
@@ -255,11 +258,17 @@ func TestResolve_NamedProjectIsListedDirectly(t *testing.T) {
 		name     string
 		project  string
 		database string
-		want     string
+		// wantDenied is the whole tool error for a refusal; wantText is the
+		// plain-text error for any other failure.
+		wantDenied *toolError
+		wantText   string
 	}{
 		{name: "readable", project: "hr", database: "employee_db"},
-		{name: "refused", project: "finance", database: "payroll_db", want: `user does not have permission "bb.projects.get" in "projects/finance"`},
-		{name: "missing", project: "gone", database: "employee_db", want: `project "gone" not found`},
+		{name: "refused", project: "finance", database: "payroll_db", wantDenied: &toolError{
+			Code:    "PERMISSION_DENIED",
+			Message: `user does not have permission "bb.projects.get" in "projects/finance"`,
+		}},
+		{name: "missing", project: "gone", database: "employee_db", wantText: `list databases failed: HTTP 404: project "gone" not found`},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			api := &listingAPI{databases: hrAndFinanceDatabases(), readable: []string{"projects/hr"}}
@@ -267,12 +276,18 @@ func TestResolve_NamedProjectIsListedDirectly(t *testing.T) {
 
 			resolved, err := s.resolveDatabase(testContext(), tc.database, "", tc.project)
 			require.Equal(t, []string{"projects/" + tc.project}, api.requested())
-			if tc.want == "" {
+			var te *toolError
+			switch {
+			case tc.wantDenied != nil:
+				require.ErrorAs(t, err, &te)
+				require.Equal(t, *tc.wantDenied, *te, "the server's refusal names the project, and nothing is added")
+			case tc.wantText != "":
+				require.False(t, errors.As(err, &te), "a missing project is not reported as a tool error code")
+				require.EqualError(t, err, tc.wantText)
+			default:
 				require.NoError(t, err)
 				require.Equal(t, "projects/hr", resolved.project)
-				return
 			}
-			require.ErrorContains(t, err, tc.want, "the server's answer for the named project comes through")
 		})
 	}
 }

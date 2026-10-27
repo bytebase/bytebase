@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/permission"
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -26,13 +27,19 @@ func TestListDatabasesAcrossProjects(t *testing.T) {
 			('project-a', 'default', 'Project A', FALSE),
 			('project-b', 'default', 'Project B', FALSE),
 			('project-archived', 'default', 'Archived', TRUE);
-		INSERT INTO instance (resource_id, workspace) VALUES ('prod', 'default');
+		INSERT INTO instance (resource_id, workspace) VALUES ('prod', 'default'), ('staging', 'default');
 		INSERT INTO db (instance, name, project) VALUES
 			('prod', 'a1', 'project-a'),
 			('prod', 'a2', 'project-a'),
 			('prod', 'b1', 'project-b'),
+			('staging', 'a1', 'project-b'),
 			('prod', 'archived1', 'project-archived');
 	`)
+	require.NoError(t, err)
+	_, err = stores.CreateRole(ctx, &store.RoleMessage{
+		ResourceID: "project-reader", Workspace: "default", Name: "project-reader",
+		Permissions: map[permission.Permission]bool{permission.ProjectsGet: true},
+	})
 	require.NoError(t, err)
 	grant := func(resourceType storepb.Policy_Resource, resource, email, role string) {
 		_, err := stores.PatchIamPolicy(ctx, "default", resourceType, resource, func(policy *storepb.IamPolicy) error {
@@ -43,6 +50,7 @@ func TestListDatabasesAcrossProjects(t *testing.T) {
 	}
 	grant(storepb.Policy_WORKSPACE, common.FormatWorkspace("default"), "admin@example.com", "roles/workspaceAdmin")
 	grant(storepb.Policy_PROJECT, common.FormatProject("project-a"), "dev@example.com", "roles/projectDeveloper")
+	grant(storepb.Policy_PROJECT, common.FormatProject("project-b"), "reader@example.com", "roles/project-reader")
 
 	iamManager, err := iam.NewManager(stores, nil, false)
 	require.NoError(t, err)
@@ -70,11 +78,15 @@ func TestListDatabasesAcrossProjects(t *testing.T) {
 		}
 	}
 
+	projectA := []string{"instances/prod/databases/a1", "instances/prod/databases/a2"}
+	projectB := []string{"instances/prod/databases/b1", "instances/staging/databases/a1"}
 	require.Empty(t, list("nobody@example.com", "", 100), "a caller who can read no project lists no database")
-	require.Equal(t, []string{"instances/prod/databases/a1", "instances/prod/databases/a2"}, list("dev@example.com", "", 1))
+	require.Equal(t, projectA, list("dev@example.com", "", 1), "staging/a1 shares a name but sits in a project dev cannot read")
+	require.Equal(t, projectB, list("reader@example.com", "", 100), "bb.projects.get alone is the permission the wildcard checks")
+	require.Equal(t, projectB, list("admin@example.com", `project == "projects/project-b"`, 100))
 	require.Empty(t, list("dev@example.com", `project == "projects/project-b"`, 100), "a filter cannot reach a project the caller cannot read")
-	require.Equal(t, []string{"instances/prod/databases/a1", "instances/prod/databases/a2", "instances/prod/databases/b1"},
-		list("admin@example.com", "", 1), "pages cross projects, and an archived project lists nothing, as projects/{archived} does")
+	require.Equal(t, append(projectA, projectB...), list("admin@example.com", "", 1),
+		"pages cross projects, and an archived project lists nothing, as projects/{archived} does")
 }
 
 func TestShouldDiffSchemaViaSDL(t *testing.T) {

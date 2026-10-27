@@ -50,18 +50,23 @@ func TestMCPResolvesDatabasesThroughProjectRoles(t *testing.T) {
 	for _, tc := range []struct {
 		project  string
 		database string
-		want     string
+		failed   bool
+		want     []string
 	}{
-		{project: ctl.project.Name, database: f.name, want: "Bytebase"},
-		{project: otherProject.Msg.Name, database: otherDatabase, want: "PERMISSION_DENIED"},
-		{project: "projects/" + missingProjectID, database: f.name, want: `project "` + missingProjectID + `" not found`},
+		{project: ctl.project.Name, database: f.name, want: []string{"Bytebase"}},
+		// The refusal is JSON-encoded, so its quotes are escaped; match the parts.
+		{project: otherProject.Msg.Name, database: otherDatabase, failed: true, want: []string{"PERMISSION_DENIED", "bb.projects.get", otherProject.Msg.Name}},
+		{project: "projects/" + missingProjectID, database: f.name, failed: true, want: []string{`project "` + missingProjectID + `" not found`}},
 	} {
-		_, text := callToolOnSession(ctx, t, editorSession, "query_database", map[string]any{
+		failed, text := callToolOnSession(ctx, t, editorSession, "query_database", map[string]any{
 			"database":  tc.database,
 			"project":   tc.project,
 			"statement": "SELECT name FROM employee",
 		})
-		a.Contains(text, tc.want, tc.project)
+		a.Equal(tc.failed, failed, "%s: %s", tc.project, text)
+		for _, want := range tc.want {
+			a.Contains(text, want, tc.project)
+		}
 	}
 
 	developerSession := openProjectRoleSession(ctx, t, ctl, "roles/projectDeveloper")

@@ -9050,7 +9050,7 @@ IndexMetadata is the metadata for indexes.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | - projects/{project}: list databases in a project, require &#34;bb.projects.get&#34; permission. - projects/-: list databases across projects (AIP-159), restricted to the projects where the caller holds &#34;bb.projects.get&#34;. - workspaces/{id}: list databases in the workspace, require &#34;bb.databases.list&#34; permission. - instances/{instance}: list databases in an instance, require &#34;bb.instances.get&#34; permission. - projects/{project}/instances/{instance}: list databases in a project instance, require &#34;bb.instances.get&#34; permission. |
+| parent | [string](#string) |  | - projects/{project}: list databases in a project, require &#34;bb.projects.get&#34; permission. - projects/-: list databases across projects (AIP-159), restricted to the active (non-archived) projects where the caller holds &#34;bb.projects.get&#34;. - workspaces/{id}: list databases in the workspace, require &#34;bb.databases.list&#34; permission. - instances/{instance}: list databases in an instance, require &#34;bb.instances.get&#34; permission. - projects/{project}/instances/{instance}: list databases in a project instance, require &#34;bb.instances.get&#34; permission. |
 | page_size | [int32](#int32) |  | The maximum number of databases to return. The service may return fewer than this value. If unspecified, at most 10 databases will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | A page token, received from a previous `ListDatabases` call. Provide this to retrieve the subsequent page.
 

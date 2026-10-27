@@ -85,7 +85,7 @@ export declare const BatchGetDatabasesResponseSchema: GenMessage<BatchGetDatabas
 export declare type ListDatabasesRequest = Message<"bytebase.v1.ListDatabasesRequest"> & {
   /**
    * - projects/{project}: list databases in a project, require "bb.projects.get" permission.
-   * - projects/-: list databases across projects (AIP-159), restricted to the projects where the caller holds "bb.projects.get".
+   * - projects/-: list databases across projects (AIP-159), restricted to the active (non-archived) projects where the caller holds "bb.projects.get".
    * - workspaces/{id}: list databases in the workspace, require "bb.databases.list" permission.
    * - instances/{instance}: list databases in an instance, require "bb.instances.get" permission.
    * - projects/{project}/instances/{instance}: list databases in a project instance, require "bb.instances.get" permission.

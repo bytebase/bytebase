@@ -151,15 +151,14 @@ func matchDatabases(databases []databaseEntry, database, instance, project strin
 	}
 
 	if len(matches) == 0 {
-		suggestion := "check the database name or use search_api to list available databases. " +
-			"Databases in projects you cannot read are not listed"
+		suggestion := "check the database name or use search_api to list available databases"
 		if instance != "" || project != "" {
 			suggestion = "try without instance/project filters, or use search_api to list available databases"
 		}
 		return nil, &toolError{
 			Code:       "DATABASE_NOT_FOUND",
 			Message:    fmt.Sprintf("no database matching %q", database),
-			Suggestion: suggestion,
+			Suggestion: suggestion + ". Databases in archived projects, or in projects you cannot read, are not listed",
 		}
 	}
 
