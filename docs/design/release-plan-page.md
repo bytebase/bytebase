@@ -101,13 +101,15 @@ rest, with the newest group open and the others collapsed with a count; counters
 get no date groups: flat up to the row limit, then buckets of a hundred. An open group shows at most
 12 rows and then "N more", which extends the group in place. A 535-file release therefore opens as
 one day group with its files and about eight month headers. A row shows the version and the file's
-path as stored in the release. Collapsed and declarative forms are in States. Rejected: naming the
-files added since the previous release first. It needs a lookup of an earlier release and a
-definition of "previous" (by creation time, of the same type, in the same project) that the executor
-does not share; descending version order puts the new files on top without any of that, and the one
-case it gets wrong, a backfilled migration given a low version on purpose, is the case the executor
-applies in that same low position, so the rail and the run agree. Also rejected: the current
-four-chip grid, and a sheet listing the files (one click too many for the most common visit).
+path as stored in the release. Opened, the section keeps today's spec tab and Targets on top; only
+the release card under them is replaced by this list. Collapsed and declarative forms are in States.
+Rejected: naming the files added since the previous release first. It needs a lookup of an earlier
+release and a definition of "previous" (by creation time, of the same type, in the same project)
+that the executor does not share; descending version order puts the new files on top without any of
+that, and the one case it gets wrong, a backfilled migration given a low version on purpose, is the
+case the executor applies in that same low position, so the rail and the run agree. Also rejected:
+the current four-chip grid, and a sheet listing the files (one click too many for the most common
+visit).
 
 **D2 · Changes never shows per-database status.** No chips, no "applied" marks, no counts of what
 ran. The aggregate is the Progress row (D10) and the stage chips; the detail is in each task.
@@ -429,7 +431,7 @@ Changes:
 
 | Rollout | Rail |
 |---|---|
-| Not started | Open: manifest line, groups, 12 rows then "N more" |
+| Not started | Open: today's spec tab and Targets, then the manifest line, groups, 12 rows then "N more" |
 | Started or finished | Collapsed: the targets per stage (the release facts are in the details block, D10); opens on click to the same content |
 | Declarative release | One line: the schema folder at its version, with Open |
 
