@@ -87,7 +87,7 @@ type AccessGrant struct {
 	// Format: projects/{project}/accessGrants/{access_grant}
 	// The {access_grant} segment is a server-generated unique ID.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// The creator of the access grant.
+	// The creator of the access grant, the caller who requested it.
 	// Format: users/{email}
 	Creator string `protobuf:"bytes,2,opt,name=creator,proto3" json:"creator,omitempty"`
 	// The status of the access grant.
@@ -800,7 +800,7 @@ const file_v1_access_grant_service_proto_rawDesc = "" +
 	"\x1dv1/access_grant_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"\xe8\x05\n" +
 	"\vAccessGrant\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1d\n" +
-	"\acreator\x18\x02 \x01(\tB\x03\xe0A\x02R\acreator\x12<\n" +
+	"\acreator\x18\x02 \x01(\tB\x03\xe0A\x03R\acreator\x12<\n" +
 	"\x06status\x18\x03 \x01(\x0e2\x1f.bytebase.v1.AccessGrant.StatusB\x03\xe0A\x03R\x06status\x12=\n" +
 	"\vexpire_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampH\x00R\n" +
 	"expireTime\x122\n" +

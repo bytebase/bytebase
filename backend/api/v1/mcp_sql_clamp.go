@@ -7,6 +7,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -126,6 +127,6 @@ func describeClampUnit(index, total int) string {
 func refuseClampedStatement(reason string) error {
 	return connect.NewError(connect.CodePermissionDenied, errors.Errorf(
 		"this workspace's MCP capability ceiling is READ_ONLY, so an MCP session may only run statements Bytebase can show are reads: %s. "+
-			"Ask a workspace admin to raise the MCP ceiling in the workspace settings, "+
-			"or run this statement signed in to the Bytebase console instead", reason))
+			"Ask a workspace admin to raise the MCP ceiling under %s, "+
+			"or run this statement signed in to the Bytebase console instead", reason, auth.MCPCeilingLocation))
 }
