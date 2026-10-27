@@ -81,8 +81,9 @@ describe("parseDatabricksPlan", () => {
   test("follows both sides of a join, and the exchange under one", () => {
     const tree = parse(broadcastJoin);
     expect(outline(tree)).toEqual([
-      // FORMATTED prints the operator alone; the isFinalPlan flag a plain
-      // EXPLAIN shows beside it is not in this mode.
+      // FORMATTED prints the operator alone on the tree line; the isFinalPlan
+      // flag a plain EXPLAIN puts beside it is in the detail block instead,
+      // which the node carries as a property.
       "0 AdaptiveSparkPlan -",
       "0.0 HashAggregate -",
       "0.0.0 Exchange -",
@@ -100,6 +101,7 @@ describe("parseDatabricksPlan", () => {
     // planned it, so the shape is what is worth pinning.
     expect(propertyValue(join, "Left keys")).toMatch(/^\[id#\d+\]$/);
     expect(propertyValue(join, "Join type")).toBe("Inner");
+    expect(propertyValue(tree.root, "Arguments")).toBe("isFinalPlan=false");
   });
 
   test("draws both branches of a union", () => {
