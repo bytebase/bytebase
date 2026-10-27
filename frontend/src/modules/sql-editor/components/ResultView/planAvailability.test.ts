@@ -35,7 +35,33 @@ const offered = (overrides: Partial<Parameters<typeof planAvailability>[0]>) =>
     ...overrides,
   });
 
+/** A result whose rows are data and whose plan came back beside them. */
+const carriedPlan = () =>
+  create(QueryResultSchema, {
+    statement: "SELECT city, count(*) FROM customers GROUP BY city",
+    columnNames: ["city", "f0_"],
+    queryPlan: create(QueryResult_QueryPlanSchema, {
+      format: QueryOption_ExplainFormat.JSON,
+      executed: true,
+      content: '[{"id":0,"name":"S00: Input"}]',
+    }),
+  });
+
 describe("planAvailability", () => {
+  test("offers the plan an engine stated beside the rows", () => {
+    // BigQuery reports the stages its job ran, so the plan is in hand: the view
+    // draws it without an explain request, which is why neither the engine's
+    // explain support nor the permission for one gates it.
+    expect(
+      offered({
+        result: carriedPlan(),
+        results: [carriedPlan()],
+        engineExplains: false,
+        canExplain: false,
+      })
+    ).toBe("offered");
+  });
+
   test("offers a plan for an ordinary read", () => {
     expect(offered({})).toBe("offered");
   });

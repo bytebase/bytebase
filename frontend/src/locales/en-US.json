@@ -3602,6 +3602,9 @@
         "zoom-out": "Zoom out"
       },
       "error": {
+        "bigquery-empty": "BigQuery returned no query plan for this statement.",
+        "bigquery-invalid": "The query plan is not valid JSON. The stages of a BigQuery job are expected.",
+        "bigquery-no-plan": "The query plan contains no stage to start from.",
         "clickhouse-empty": "ClickHouse returned no query plan for this statement.",
         "clickhouse-invalid": "The query plan is not valid JSON. EXPLAIN json = 1 output is expected.",
         "clickhouse-no-plan": "The ClickHouse query plan JSON does not contain a \"Plan\" object.",

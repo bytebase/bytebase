@@ -3602,6 +3602,9 @@
         "zoom-out": "Alejar"
       },
       "error": {
+        "bigquery-empty": "BigQuery no devolvió ningún plan de consulta para esta sentencia.",
+        "bigquery-invalid": "El plan de consulta no es JSON válido. Se esperan las etapas de un trabajo de BigQuery.",
+        "bigquery-no-plan": "El plan de consulta no contiene ninguna etapa por la que empezar.",
         "clickhouse-empty": "ClickHouse no devolvió ningún plan de consulta para esta sentencia.",
         "clickhouse-invalid": "El plan de consulta no es JSON válido. Se espera la salida de EXPLAIN json = 1.",
         "clickhouse-no-plan": "El JSON del plan de consulta de ClickHouse no contiene un objeto \"Plan\".",

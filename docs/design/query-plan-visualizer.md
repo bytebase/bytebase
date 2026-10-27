@@ -28,7 +28,10 @@ This ordering is a judgment call, not a measurement.
 ## 2. Background / problem
 
 The editor explained on 12 engines and drew a picture for 3 (PostgreSQL, SQL
-Server, Spanner); it now explains on 18 and draws for 17 (§3.4). Reaching the
+Server, Spanner); it now explains on 18 and draws for 18 (§3.4) — not the same
+eighteen, since Databricks explains with no parser to draw its plan, and
+BigQuery draws from a plan that arrives with an ordinary run rather than with an
+explain. Reaching the
 picture takes five steps: Ctrl/Cmd+E → plan rows in the grid → click a small
 "Visualize Explain" link → Bytebase runs `EXPLAIN` a second time for JSON → a
 separate browser tab opens.
@@ -350,13 +353,13 @@ regression.
 | **OceanBase** | one `Query()`, on demand, cached | graph, costed in estimated microseconds | none in the editor |
 | **MongoDB** | one `Query()`, on demand, cached | graph, with no estimates at all | `explain("executionStats")`, drawn for its rows |
 | **CockroachDB** | one `Query()`, on demand, cached | graph of the physical flow, with no estimates | none in the editor — `EXPLAIN ANALYZE` executes |
+| **BigQuery** | carried by the run that returned the rows, no second call | graph of the stage DAG, measured, with no estimates beside it | the plan is the measured one; BigQuery has no `EXPLAIN`, and its explain action is a dry run |
 | **Redshift** | one `Query()`, on demand, cached | graph, drawn from the text plan | none — `EXPLAIN` never analyzes |
 | **StarRocks** | one `Query()`, on demand, cached | graph, drawn from the text plan | none — `EXPLAIN ANALYZE` executes |
 | **Doris** | one `Query()`, on demand, cached | graph, drawn from the text plan by the StarRocks parser | none — Doris has no `EXPLAIN ANALYZE` |
 | **Snowflake** | one `Query()`, on demand, cached | graph, with pruning in place of estimates | none — `EXPLAIN` compiles without running, whichever format it names |
 | **Hive** | one `Query()`, on demand, cached | graph, with rows and row widths, no costs | none in the editor |
 | **Databricks** | one `Query()`, on demand, cached | text: Spark's `EXPLAIN FORMATTED` has no parser yet | none — `EXPLAIN` never executes what it plans |
-| **Hive, Snowflake** | one `Query()`, on demand, cached | text | per engine, text at most |
 
 A plan opened from a result is always an estimate, on every engine. Measured
 plans come from a typed `EXPLAIN ANALYZE` or its engine's equivalent, which is a
@@ -481,18 +484,25 @@ branches the merge reads — and each node says which shard it ran on. A sharded
 aggregation goes further and states no pipeline of its own: the merger's part
 is the plan, with each shard's part under the `$mergeCursors` that reads it.
 
-**Attaching a measured plan to an ordinary run is deferred.** Two engines could:
-Spanner has a run mode returning rows and plan and real timings in one execution,
-and SQL Server's `SET STATISTICS XML` does the same. That is how BigQuery,
-Snowflake and Databricks work, and it is tempting.
-
-It does not fit here. To have the plan ready when someone later clicks Plan, we
-would have to profile *every* run — and Spanner documents profiling overhead and
-discourages it for production traffic, while `SET STATISTICS XML` needs
+**Attaching a measured plan to an ordinary run is deferred, except where the
+engine states one anyway.** Spanner has a run mode returning rows and plan and
+real timings in one execution, and SQL Server's `SET STATISTICS XML` does the
+same. Both stay deferred: to have the plan ready when someone later clicks Plan
+we would have to profile *every* run — and Spanner documents profiling overhead
+and discourages it for production traffic, while `SET STATISTICS XML` needs
 `SHOWPLAN` on every database the statement touches, so turning it on blindly
 would fail queries the user is authorized to run. Profiling only when asked
 requires a control that says so before the run — the Explain analyze action §3.1
-leaves out. Out of scope.
+leaves out.
+
+BigQuery asks for nothing. Every job reports the stages it ran in its own
+statistics: no flag to set, no permission to hold, no overhead to weigh, and the
+only cost is one `jobs.get` after the rows. So its result carries that plan in
+`QueryResult.query_plan.content`, the one place a plan arrives beside the rows
+rather than in them, and the Plan view draws it without explaining anything —
+badged measured, since it is the record of the run the reader is looking at. A
+result carrying a plan keeps its data table however few columns it has: those
+rows are the query's answer, not the plan.
 
 The pop-up page, its token hand-off and the old link are deleted
 ([#21652](https://github.com/bytebase/bytebase/pull/21652)).

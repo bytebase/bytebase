@@ -534,6 +534,9 @@ function SingleResultViewInner({
     plan?.format ===
       QueryOption_ExplainFormat[VISUALIZER_EXPLAIN_FORMATS[engine]];
   const planInResult = useMemo(() => inlineQueryPlan(result), [result]);
+  // The plan BigQuery states beside the rows: already in hand, and a record of
+  // the run that returned them rather than an estimate made since.
+  const carriedPlan = plan?.content ? planInResult : undefined;
   const canReplay =
     isVisualizerEngine(engine) &&
     !!plan &&
@@ -544,9 +547,11 @@ function SingleResultViewInner({
     !plan.executed &&
     canReplayStatement(results, resultIndex);
   // Multi-column plans (SQL Server SHOWPLAN_ALL) keep their table unless the
-  // XML plan can be loaded for the visualizer.
+  // XML plan can be loaded for the visualizer. A plan the engine stated beside
+  // the rows leaves them as the query's data, however few columns they have,
+  // so that result keeps its table and the plan stays in the Plan view.
   const showInlinePlan =
-    !!plan && (result.columnNames.length === 1 || canReplay);
+    !!plan && !carriedPlan && (result.columnNames.length === 1 || canReplay);
   const loadPlan = useCallback(
     (signal: AbortSignal) =>
       isVisualizerEngine(engine)
@@ -816,11 +821,11 @@ function SingleResultViewInner({
               <QueryPlanResultView
                 key={planViewKey(result)}
                 rawPlan=""
-                initialPlan={resultPlan}
+                initialPlan={carriedPlan ?? resultPlan}
                 engine={isVisualizerEngine(engine) ? engine : undefined}
                 describeTable={describeTable}
-                loadPlan={loadResultPlan}
-                estimated
+                loadPlan={carriedPlan ? undefined : loadResultPlan}
+                estimated={!carriedPlan}
                 onCancel={() => setLayout("TABLE")}
                 disallowCopyingData={disallowCopyingData}
               />

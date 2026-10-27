@@ -26,6 +26,7 @@ describe("isVisualizerEngine", () => {
         Engine.COCKROACHDB,
         Engine.SNOWFLAKE,
         Engine.HIVE,
+        Engine.BIGQUERY,
         Engine.REDSHIFT,
         Engine.STARROCKS,
         Engine.DORIS,
@@ -37,12 +38,15 @@ describe("isVisualizerEngine", () => {
     expect(isVisualizerEngine(Engine.DATABRICKS)).toBe(false);
   });
 
-  test("names only engines the editor offers Explain on", () => {
+  test("names only engines whose plan the editor can reach", () => {
     // Explain is how a plan is asked for, so a parser for an engine the editor
-    // does not explain would never be reached.
+    // does not explain would never be reached — unless the plan comes back with
+    // an ordinary run, which is how BigQuery reports one.
     for (const engine of Object.keys(VISUALIZER_EXPLAIN_FORMATS).map(Number)) {
+      if (engine === Engine.BIGQUERY) continue;
       expect(instanceV1AllowsExplain(engine), Engine[engine]).toBe(true);
     }
+    expect(instanceV1AllowsExplain(Engine.BIGQUERY)).toBe(false);
   });
 });
 
@@ -87,12 +91,20 @@ describe("explainQueryOption", () => {
     }
   });
 
+  test("leaves BigQuery's explain request alone, since it is a dry run", () => {
+    // Asking for the format the viewer draws would refuse the dry run, and the
+    // plan it draws arrives with an ordinary run rather than this request.
+    expect(explainQueryOption(Engine.BIGQUERY).explainFormat).toBe(
+      QueryOption_ExplainFormat.EXPLAIN_FORMAT_UNSPECIFIED
+    );
+  });
+
   test("leaves an engine the viewer cannot draw on its own default", () => {
     // Databricks explains, in Spark's own FORMATTED text, which has no reader.
     expect(explainQueryOption(Engine.DATABRICKS).explainFormat).toBe(
       QueryOption_ExplainFormat.EXPLAIN_FORMAT_UNSPECIFIED
     );
-    expect(explainQueryOption(Engine.BIGQUERY).explainFormat).toBe(
+    expect(explainQueryOption(Engine.HIVE).explainFormat).not.toBe(
       QueryOption_ExplainFormat.EXPLAIN_FORMAT_UNSPECIFIED
     );
   });

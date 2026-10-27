@@ -26,6 +26,9 @@ export const VISUALIZER_EXPLAIN_FORMATS = {
   [Engine.COCKROACHDB]: "JSON",
   [Engine.SNOWFLAKE]: "JSON",
   [Engine.HIVE]: "JSON",
+  // BigQuery states no plan for a statement it has not run. What it reports is
+  // the stages of a job that did, which the result carries beside its rows.
+  [Engine.BIGQUERY]: "JSON",
   // These three publish no plan as a document; their text plan is what there
   // is.
   [Engine.REDSHIFT]: "TEXT",
@@ -42,10 +45,16 @@ export const isVisualizerEngine = (
 /**
  * The options of an explain request: the format the visualizer draws where the
  * engine has one, and the engine's default otherwise.
+ *
+ * BigQuery is the exception on both counts. Its explain request is a dry run,
+ * which validates a statement rather than planning it, and the plan the viewer
+ * draws arrives with an ordinary run instead — so asking for a format here
+ * would only refuse the dry run.
  */
 export const explainQueryOption = (engine: Engine) =>
   create(QueryOptionSchema, {
-    explainFormat: isVisualizerEngine(engine)
-      ? QueryOption_ExplainFormat[VISUALIZER_EXPLAIN_FORMATS[engine]]
-      : QueryOption_ExplainFormat.EXPLAIN_FORMAT_UNSPECIFIED,
+    explainFormat:
+      isVisualizerEngine(engine) && engine !== Engine.BIGQUERY
+        ? QueryOption_ExplainFormat[VISUALIZER_EXPLAIN_FORMATS[engine]]
+        : QueryOption_ExplainFormat.EXPLAIN_FORMAT_UNSPECIFIED,
   });

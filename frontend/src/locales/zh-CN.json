@@ -3602,6 +3602,9 @@
         "zoom-out": "缩小"
       },
       "error": {
+        "bigquery-empty": "BigQuery 未返回此语句的查询计划。",
+        "bigquery-invalid": "查询计划不是有效的 JSON。需要 BigQuery 作业的阶段信息。",
+        "bigquery-no-plan": "查询计划中没有可作为起点的阶段。",
         "clickhouse-empty": "ClickHouse 未返回此语句的查询计划。",
         "clickhouse-invalid": "查询计划不是有效的 JSON。需要 EXPLAIN json = 1 输出。",
         "clickhouse-no-plan": "ClickHouse 查询计划 JSON 不包含 \"Plan\" 对象。",

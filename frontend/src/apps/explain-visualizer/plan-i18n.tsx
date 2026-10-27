@@ -24,6 +24,10 @@ const ENGLISH = {
     "The query plan is not valid XML. SHOWPLAN_XML output is expected.",
   "error.mssql-no-plan":
     "The query plan XML is not a SQL Server showplan with at least one statement.",
+  "error.bigquery-empty": "BigQuery returned no query plan for this statement.",
+  "error.bigquery-invalid":
+    "The query plan is not valid JSON. The stages of a BigQuery job are expected.",
+  "error.bigquery-no-plan": "The query plan contains no stage to start from.",
   "error.clickhouse-empty":
     "ClickHouse returned no query plan for this statement.",
   "error.clickhouse-invalid":
