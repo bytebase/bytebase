@@ -1,5 +1,5 @@
 import type { ReactElement } from "react";
-import { act } from "react";
+import { act, createRef } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import enUS from "@/locales/en-US.json";
@@ -52,8 +52,14 @@ const mocks = vi.hoisted(() => ({
   getOrFetchProjectByName: vi.fn(),
   searchAgentProjects: vi.fn(),
   searchAgentDatabases: vi.fn(),
-  canListWorkspaceDatabases: false,
-  projectsByName: {} as Record<string, { title: string }>,
+  searchAgentIssues: vi.fn(),
+  canListWorkspaceProjects: true,
+  canListWorkspaceDatabases: true,
+  canListProjectDatabases: true,
+  fetchProject: vi.fn(),
+  loadProjectIamPolicy: vi.fn(),
+  projectsByName: {} as Record<string, { name: string; title: string }>,
+  projectPoliciesByName: {} as Record<string, object>,
   availableProjects: [] as { name: string; title: string }[],
   workspace: { name: "workspaces/demo", title: "Demo workspace" },
   currentContext: "projects/orders" as string | undefined,
@@ -111,10 +117,24 @@ vi.mock("@/stores/app", () => {
     getOrFetchSettingByName: mocks.getOrFetchSettingByName,
     getOrFetchProjectByName: mocks.getOrFetchProjectByName,
     getSettingByName: () => undefined,
-    hasWorkspacePermission: (permission: string) =>
-      permission === "bb.databases.list" && mocks.canListWorkspaceDatabases,
+    hasWorkspacePermission: (permission: string) => {
+      if (permission === "bb.projects.list") return mocks.canListWorkspaceProjects;
+      if (permission === "bb.databases.list") return mocks.canListWorkspaceDatabases;
+      if (permission === "bb.projects.get") return true;
+      return false;
+    },
+    hasProjectPermission: (project: { name: string }, permission: string) =>
+      permission === "bb.databases.list" &&
+      mocks.canListProjectDatabases &&
+      Boolean(project?.name),
+    fetchProject: mocks.fetchProject,
+    loadProjectIamPolicy: mocks.loadProjectIamPolicy,
+    getUserByIdentifier: () => undefined,
     get projectsByName() {
       return mocks.projectsByName;
+    },
+    get projectPoliciesByName() {
+      return mocks.projectPoliciesByName;
     },
     get workspace() {
       return mocks.workspace;
@@ -164,6 +184,7 @@ vi.mock("../logic/chatContext", () => ({
 vi.mock("../logic/resourceSearch", () => ({
   searchAgentProjects: mocks.searchAgentProjects,
   searchAgentDatabases: mocks.searchAgentDatabases,
+  searchAgentIssues: mocks.searchAgentIssues,
 }));
 
 vi.mock("../logic/tools", () => ({
@@ -301,7 +322,13 @@ beforeEach(async () => {
     nextPageToken: "",
   });
   mocks.searchAgentDatabases.mockReset();
-  mocks.canListWorkspaceDatabases = false;
+  mocks.canListWorkspaceProjects = true;
+  mocks.canListWorkspaceDatabases = true;
+  mocks.canListProjectDatabases = true;
+  mocks.fetchProject.mockReset();
+  mocks.fetchProject.mockImplementation(async (name: string) => mocks.projectsByName[name]);
+  mocks.loadProjectIamPolicy.mockReset();
+  mocks.loadProjectIamPolicy.mockResolvedValue(undefined);
   mocks.searchAgentDatabases.mockResolvedValue({
     items: [
       {
@@ -311,7 +338,20 @@ beforeEach(async () => {
     ],
     nextPageToken: "",
   });
-  mocks.projectsByName = { "projects/orders": { title: "Order service" } };
+  mocks.searchAgentIssues.mockReset();
+  mocks.searchAgentIssues.mockResolvedValue({
+    items: [
+      {
+        name: "projects/orders/issues/42",
+        title: "Update orders schema",
+      },
+    ],
+    nextPageToken: "",
+  });
+  mocks.projectsByName = {
+    "projects/orders": { name: "projects/orders", title: "Order service" },
+    "projects/billing": { name: "projects/billing", title: "Billing" },
+  };
   mocks.availableProjects = [
     { name: "projects/orders", title: "Order service" },
     { name: "projects/billing", title: "Billing" },
@@ -324,6 +364,7 @@ beforeEach(async () => {
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllGlobals();
 });
 
@@ -1392,7 +1433,8 @@ describe("AgentInput", () => {
       runMode: "read-only",
     });
 
-    const view = renderIntoContainer(<AgentInput />);
+    const retryActionRef = createRef<(() => void) | null>();
+    const view = renderIntoContainer(<AgentInput retryActionRef={retryActionRef} />);
     view.render();
     await act(async () => {
       await vi.waitFor(() =>
@@ -1400,15 +1442,46 @@ describe("AgentInput", () => {
       );
     });
     await act(async () => {
-      [...view.container.querySelectorAll("button")]
-        .find((button) => button.textContent === "agent.retry-last-chat-turn")
-        ?.click();
+      retryActionRef.current?.();
       await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledTimes(2));
     });
 
     expect(mocks.getToolDefinitions).toHaveBeenLastCalledWith({
       runMode: "read-only",
     });
+    view.unmount();
+  });
+
+  test("does not leave composer actions when the user stops a running request", () => {
+    const store = useAgentStore.getState();
+    const chatId = store.currentChatId!;
+    store.startChatRun(chatId, { path: "/demo", title: "Demo" });
+
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+
+    act(() => {
+      [...view.container.querySelectorAll("button")]
+        .find((button) => button.textContent === "agent.stop")
+        ?.click();
+    });
+
+    expect(view.container.textContent).not.toContain("agent.request-stopped-by-user");
+    expect(view.container.textContent).not.toContain("agent.retry-last-chat-turn");
+    expect(view.container.textContent).not.toContain("common.dismiss");
+    view.unmount();
+  });
+
+  test("moves unexpected interruption feedback out of the composer", () => {
+    const store = useAgentStore.getState();
+    store.interruptChatRun(store.currentChatId!);
+
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+
+    expect(view.container.textContent).not.toContain("agent.interrupted-retry-hint");
+    expect(view.container.textContent).not.toContain("agent.retry-last-chat-turn");
+    expect(view.container.textContent).not.toContain("common.dismiss");
     view.unmount();
   });
 
@@ -1815,7 +1888,20 @@ describe("AgentInput", () => {
     }
   });
 
-  test("keeps a cancelled @ literal without loading page-element suggestions", async () => {
+  test("localizes user-stopped request messaging", () => {
+    expect(enUS.agent["request-stopped-by-user"]).toBe(
+      "Request stopped by user"
+    );
+    expect(enUS.agent["request-stopped-retry-hint"]).toContain(
+      "may still complete"
+    );
+    for (const locale of [enUS, esES, jaJP, viVN, zhCN]) {
+      expect(locale.agent["request-stopped-by-user"].trim()).not.toBe("");
+      expect(locale.agent["request-stopped-retry-hint"].trim()).not.toBe("");
+    }
+  });
+
+  test("removes a cancelled @ trigger without loading page-element suggestions", async () => {
     const suggestions: DomRefSuggestion[] = [
       {
         ref: "button.submit",
@@ -1868,22 +1954,14 @@ describe("AgentInput", () => {
       );
     });
     expect(document.body.querySelector("[data-agent-resource-picker]")).toBeNull();
+    expect(textarea.value).toBe("");
 
     await act(async () => {
       textarea.dispatchEvent(
         new KeyboardEvent("keydown", { key: "Enter", bubbles: true })
       );
-      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
     });
-    expect(
-      useAgentStore
-        .getState()
-        .getMessages(useAgentStore.getState().currentChatId!)
-    ).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ role: "user", content: "@" }),
-      ])
-    );
+    expect(mocks.runAgentLoop).not.toHaveBeenCalled();
 
     unmount();
   });
@@ -2104,6 +2182,16 @@ describe("AgentInput", () => {
   test("selects a database directly from workspace context without opening projects", async () => {
     mocks.canListWorkspaceDatabases = true;
     mocks.currentContext = "workspaces/demo";
+    mocks.searchAgentDatabases.mockResolvedValueOnce({
+      items: [
+        {
+          name: "instances/prod/databases/orders",
+          project: "projects/orders",
+          instanceResource: { title: "Production" },
+        },
+      ],
+      nextPageToken: "",
+    });
     mocks.executeTool.mockResolvedValueOnce({
       kind: "tool_result",
       result: JSON.stringify({
@@ -2151,8 +2239,8 @@ describe("AgentInput", () => {
         '[data-agent-resource-database="instances/prod/databases/orders"]'
       )?.click();
     });
-    expect(textarea.value).toBe("@orders ");
-    expect(view.container.querySelector("[data-agent-inline-mention]")?.textContent).toBe("@orders");
+    expect(textarea.value).toBe("@orders (Production) ");
+    expect(view.container.querySelector("[data-agent-inline-mention]")?.textContent).toBe("@orders (Production)");
     expect(document.querySelector("[data-agent-resource-picker]")).toBeNull();
     expect(store.getChat(chat.id)?.context).toBe("workspaces/demo");
 
@@ -2165,8 +2253,222 @@ describe("AgentInput", () => {
       kind: "database",
       name: "instances/prod/databases/orders",
       project: "projects/orders",
-      label: "orders",
+      label: "orders (Production)",
     });
+    view.unmount();
+  });
+
+  test("selects an issue from the chat project and uses its fresh overview for one turn", async () => {
+    const issueName = "projects/orders/issues/42";
+    const overview = JSON.stringify({
+      project: "projects/orders",
+      issue: { status: "available", name: issueName, title: "Update orders schema" },
+      evidence: {
+        project: "projects/orders",
+        references: [{ kind: "issue", name: issueName, title: "Update orders schema" }],
+      },
+    });
+    mocks.executeTool.mockResolvedValueOnce({ kind: "tool_result", result: overview });
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/orders" });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    const textarea = view.container.querySelector("textarea") as HTMLTextAreaElement;
+
+    await act(async () => {
+      setTextareaValue(textarea, "@");
+      textarea.setSelectionRange(1, 1);
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await act(async () => {
+      document.querySelector<HTMLButtonElement>(
+        '[data-agent-resource-category="issue"]'
+      )?.click();
+    });
+    await vi.waitFor(() =>
+      expect(mocks.searchAgentIssues).toHaveBeenCalledWith(
+        "projects/orders", "", "", expect.any(AbortSignal)
+      )
+    );
+    await act(async () => {
+      document.querySelector<HTMLButtonElement>(
+        `[data-agent-resource-issue="${issueName}"]`
+      )?.click();
+    });
+    expect(textarea.value).toBe("@Update orders schema ");
+    expect(view.container.querySelector("[data-agent-inline-mention]")?.textContent).toBe("@Update orders schema");
+
+    await act(async () => {
+      view.container.querySelector<HTMLButtonElement>("[data-agent-send]")?.click();
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+    });
+    expect(store.getMessages(chat.id)[0].metadata?.resourceReference).toEqual({
+      kind: "issue", name: issueName, project: "projects/orders", label: "Update orders schema",
+    });
+    expect(mocks.executeTool).toHaveBeenCalledWith(
+      "get_issue_overview", { issueName }, expect.any(String)
+    );
+    expect(mocks.createToolExecutor).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        context: "projects/orders",
+        referencedProject: "projects/orders",
+        referencedIssue: issueName,
+      })
+    );
+    const history = mocks.runAgentLoop.mock.calls[0][0] as {
+      role: string;
+      toolCalls?: { name: string; arguments: string }[];
+      content?: string;
+    }[];
+    expect(history.slice(-2)).toMatchObject([
+      { role: "assistant", toolCalls: [{ name: "get_issue_overview", arguments: JSON.stringify({ issueName }) }] },
+      { role: "tool", content: overview },
+    ]);
+
+    await act(async () => {
+      setTextareaValue(textarea, "How many issues here?");
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+      view.container.querySelector<HTMLButtonElement>("[data-agent-send]")?.click();
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledTimes(2));
+    });
+    expect(mocks.createToolExecutor).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.objectContaining({ referencedProject: undefined, referencedIssue: undefined })
+    );
+    view.unmount();
+  });
+
+  test("selects a cross-project issue in workspace chat without changing its context", async () => {
+    const issueName = "projects/orders/issues/42";
+    mocks.currentContext = "workspaces/demo";
+    mocks.executeTool.mockResolvedValueOnce({
+      kind: "tool_result",
+      result: JSON.stringify({
+        project: "projects/orders",
+        issue: { status: "available", name: issueName },
+      }),
+    });
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "workspaces/demo" });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    const textarea = view.container.querySelector("textarea") as HTMLTextAreaElement;
+
+    await act(async () => {
+      setTextareaValue(textarea, "@");
+      textarea.setSelectionRange(1, 1);
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await act(async () => {
+      document.querySelector<HTMLButtonElement>(
+        '[data-agent-resource-category="issue"]'
+      )?.click();
+    });
+    await vi.waitFor(() =>
+      expect(mocks.searchAgentIssues).toHaveBeenCalledWith(
+        "projects/-", "", "", expect.any(AbortSignal)
+      )
+    );
+    await act(async () => {
+      document.querySelector<HTMLButtonElement>(
+        `[data-agent-resource-issue="${issueName}"]`
+      )?.click();
+      view.container.querySelector<HTMLButtonElement>("[data-agent-send]")?.click();
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+    });
+
+    expect(store.getChat(chat.id)?.context).toBe("workspaces/demo");
+    expect(store.getMessages(chat.id)[0].metadata?.resourceReference).toEqual({
+      kind: "issue", name: issueName, project: "projects/orders", label: "Update orders schema",
+    });
+    expect(mocks.executeTool).toHaveBeenCalledWith(
+      "get_issue_overview", { issueName }, expect.any(String)
+    );
+    expect(mocks.createToolExecutor).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        context: "workspaces/demo",
+        referencedProject: "projects/orders",
+        referencedIssue: issueName,
+      })
+    );
+    view.unmount();
+  });
+
+  test("does not send an unavailable selected issue to the model", async () => {
+    const issueName = "projects/orders/issues/42";
+    mocks.executeTool.mockResolvedValueOnce({
+      kind: "tool_result",
+      result: JSON.stringify({ project: "projects/orders", issue: { status: "unavailable" } }),
+    });
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/orders" });
+    store.setDraft(chat.id, {
+      text: "Review @Update orders schema",
+      mention: { start: 7, end: 28 },
+      resource: { kind: "issue", name: issueName, project: "projects/orders", label: "Update orders schema" },
+    });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+
+    await act(async () => {
+      view.container.querySelector<HTMLButtonElement>("[data-agent-send]")?.click();
+      await vi.waitFor(() =>
+        expect(store.getMessages(chat.id).some(
+          (message) => message.content === "agent.issue-reference-unavailable"
+        )).toBe(true)
+      );
+    });
+    expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+    view.unmount();
+  });
+
+  test("uses an inline project with its Issue without changing the chat context", async () => {
+    const issueName = "projects/billing/issues/7";
+    mocks.executeTool.mockResolvedValueOnce({
+      kind: "tool_result",
+      result: JSON.stringify({
+        project: "projects/billing",
+        issue: { status: "available", name: issueName },
+      }),
+    });
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/orders" });
+    store.setDraft(chat.id, {
+      text: "Approve @Billing @Change billing",
+      mentions: [
+        {
+          resource: { kind: "project", name: "projects/billing", project: "projects/billing", label: "Billing" },
+          range: { start: 8, end: 16 },
+        },
+        {
+          resource: { kind: "issue", name: issueName, project: "projects/billing", label: "Change billing" },
+          range: { start: 17, end: 32 },
+        },
+      ],
+    });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+
+    await act(async () => {
+      view.container.querySelector<HTMLButtonElement>("[data-agent-send]")?.click();
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+    });
+    expect(store.getChat(chat.id)?.context).toBe("projects/orders");
+    expect(mocks.executeTool).toHaveBeenCalledWith(
+      "get_issue_overview", { issueName }, expect.any(String)
+    );
+    expect(mocks.executeTool).not.toHaveBeenCalledWith(
+      "get_project_overview", {}, expect.any(String)
+    );
+    expect(mocks.createToolExecutor).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ referencedProject: "projects/billing", referencedIssue: issueName })
+    );
     view.unmount();
   });
 
@@ -2267,7 +2569,7 @@ describe("AgentInput", () => {
         `[data-agent-resource-database="${databaseName}"]`
       )?.click();
     });
-    expect(textarea.value).toBe("@Billing @invoices ");
+    expect(textarea.value).toBe("@Billing @invoices (prod) ");
     expect(view.container.querySelectorAll("[data-agent-inline-mention]")).toHaveLength(2);
 
     await act(async () => {
@@ -2286,7 +2588,7 @@ describe("AgentInput", () => {
         kind: "database",
         name: databaseName,
         project: "projects/billing",
-        label: "invoices",
+        label: "invoices (prod)",
       },
     ]);
     expect(mocks.executeTool).toHaveBeenCalledWith(
@@ -2400,8 +2702,8 @@ describe("AgentInput", () => {
         `[data-agent-resource-database="${databaseName}"]`
       )?.click();
     });
-    expect(textarea.value).toBe("Check @orders ");
-    expect(view.container.querySelector("[data-agent-inline-mention]")?.textContent).toBe("@orders");
+    expect(textarea.value).toBe("Check @orders (prod) ");
+    expect(view.container.querySelector("[data-agent-inline-mention]")?.textContent).toBe("@orders (prod)");
     expect(store.getChat(chat.id)?.context).toBe("projects/orders");
     expect(mocks.runAgentLoop).not.toHaveBeenCalled();
 
@@ -2413,7 +2715,7 @@ describe("AgentInput", () => {
       kind: "database",
       name: databaseName,
       project: "projects/orders",
-      label: "orders",
+      label: "orders (prod)",
     });
     expect(mocks.executeTool).toHaveBeenCalledWith(
       "get_database_overview",
@@ -2733,7 +3035,9 @@ describe("AgentInput", () => {
     });
     expect(document.querySelector("[data-agent-resource-picker]")).toBeNull();
     expect(view.container.querySelector('[role="alert"]')).toBeNull();
-    expect(view.container.querySelector("[data-agent-send]")).toBeDisabled();
+    expect(textarea.value).toBe("Ask @Billing and ");
+    expect(store.getDraft(chat.id).mentions?.[0].resource.name).toBe("projects/billing");
+    expect(view.container.querySelector("[data-agent-send]")).not.toBeDisabled();
 
     await act(async () => {
       setTextareaValue(textarea, "Ask @Billing and ed@example.com");
@@ -3280,6 +3584,144 @@ describe("AgentInput", () => {
     unmount();
   });
 
+  test.each(["input", "choose", "confirm"] as const)(
+    "cancels an unanswered %s request without replying or restarting",
+    (kind) => {
+      const store = useAgentStore.getState();
+      const chatId = store.currentChatId!;
+      store.addMessage({ chatId, role: "user", content: "Original question" });
+      store.setDraft(chatId, { text: "Next question" });
+      useAgentStore.setState({
+        chats: useAgentStore.getState().chats.map((chat) =>
+          chat.id === chatId ? { ...chat, status: "awaiting_user" } : chat
+        ),
+        pendingAskByChatId: {
+          [chatId]: {
+            toolCallId: "tool-ask",
+            prompt: "Need more information",
+            kind,
+            ...(kind === "choose"
+              ? { options: [{ label: "First option", value: "first" }] }
+              : {}),
+          },
+        },
+      });
+
+      const view = renderIntoContainer(<AgentInput />);
+      view.render();
+      const cancel = [...view.container.querySelectorAll("button")].find(
+        (button) => button.textContent === "agent.cancel-request"
+      );
+      expect(cancel).toBeDefined();
+      if (kind === "confirm") {
+        expect(view.container.textContent).toContain("agent.cancel");
+      }
+
+      act(() => cancel?.click());
+
+      expect(store.getPendingAsk(chatId)).toBeNull();
+      expect(store.getChat(chatId)?.status).toBe("idle");
+      expect(store.getChat(chatId)?.interrupted).toBe(false);
+      expect(store.getDraft(chatId).text).toBe("Next question");
+      expect(view.container.textContent).not.toContain("Need more information");
+      expect(view.container.textContent).toContain("agent.send");
+      expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+      expect(store.getMessages(chatId)).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            role: "tool",
+            toolCallId: "tool-ask",
+            content: JSON.stringify({ kind: "cancelled", reason: "user" }),
+          }),
+        ])
+      );
+      view.unmount();
+    }
+  );
+
+  test("does not offer Cancel request for an API permission decision", () => {
+    const chatId = useAgentStore.getState().currentChatId!;
+    useAgentStore.setState({
+      chats: useAgentStore.getState().chats.map((chat) =>
+        chat.id === chatId ? { ...chat, status: "awaiting_user" } : chat
+      ),
+      pendingAskByChatId: {
+        [chatId]: {
+          toolCallId: "tool-write",
+          prompt: "Update project",
+          kind: "confirm",
+          apiPermission: {
+            actionId: "action-1",
+            operationId: "ProjectService/UpdateProject",
+          },
+        },
+      },
+    });
+
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+
+    expect(view.container.textContent).not.toContain("agent.cancel-request");
+    expect(view.container.textContent).toContain("agent.api-permission-dismiss");
+    view.unmount();
+  });
+
+  test("does not submit an answer when the request is canceled during configuration check", async () => {
+    const store = useAgentStore.getState();
+    const chatId = store.currentChatId!;
+    store.addMessage({ chatId, role: "user", content: "Original question" });
+    useAgentStore.setState({
+      chats: useAgentStore.getState().chats.map((chat) =>
+        chat.id === chatId ? { ...chat, status: "awaiting_user" } : chat
+      ),
+      pendingAskByChatId: {
+        [chatId]: {
+          toolCallId: "tool-ask",
+          prompt: "Which database?",
+          kind: "input",
+        },
+      },
+    });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    let finishConfigurationCheck!: (setting: undefined) => void;
+    mocks.getOrFetchSettingByName.mockImplementationOnce(
+      () =>
+        new Promise<undefined>((resolve) => {
+          finishConfigurationCheck = resolve;
+        })
+    );
+    const textarea = view.container.querySelector("textarea") as HTMLTextAreaElement;
+
+    act(() => {
+      setTextareaValue(textarea, "Orders");
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+      view.container.querySelector<HTMLButtonElement>("[data-agent-send]")?.click();
+    });
+    expect(mocks.getOrFetchSettingByName).toHaveBeenCalled();
+    act(() => {
+      [...view.container.querySelectorAll("button")]
+        .find((button) => button.textContent === "agent.cancel-request")
+        ?.click();
+    });
+    await act(async () => finishConfigurationCheck(undefined));
+
+    expect(store.getPendingAsk(chatId)).toBeNull();
+    expect(store.getMessages(chatId).filter((message) => message.role === "tool"))
+      .toHaveLength(1);
+    expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+    view.unmount();
+  });
+
+  test("localizes the separate Cancel request action and canceled status", () => {
+    expect(enUS.agent["cancel-request"]).toBe("Cancel request");
+    expect(enUS.agent["tool-request-canceled"]).toBe("Request canceled");
+    for (const locale of [enUS, esES, jaJP, viVN, zhCN]) {
+      expect(locale.agent["cancel-request"].trim()).not.toBe("");
+      expect(locale.agent["tool-request-canceled"].trim()).not.toBe("");
+    }
+  });
+
   test("shows the exact pending API request and dispatches it only after approval", async () => {
     const chatId = useAgentStore.getState().currentChatId!;
     useAgentStore.setState({
@@ -3303,6 +3745,7 @@ describe("AgentInput", () => {
     mocks.getPendingApiCallPreview.mockReturnValue({
       operationId: "bytebase.v1.ProjectService.UpdateProject",
       body: '{"project":{"name":"projects/orders","title":"Orders"}}',
+      expiresAt: Date.now() + 5 * 60_000,
     });
     mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
 
@@ -3332,6 +3775,7 @@ describe("AgentInput", () => {
       toolCallId: "tool-write",
       userName: "users/me@example.com",
       approved: true,
+      signal: expect.any(AbortSignal),
     });
     expect(useAgentStore.getState().getMessages(chatId)).toEqual(
       expect.arrayContaining([
@@ -3343,6 +3787,195 @@ describe("AgentInput", () => {
       ])
     );
     expect(useAgentStore.getState().getPendingAsk(chatId)).toBeNull();
+    view.unmount();
+  });
+
+  test("resumes after an approved delete without preflighting the now-deleted project", async () => {
+    const store = useAgentStore.getState();
+    const chatId = store.currentChatId!;
+    store.addMessage({
+      chatId,
+      role: "user",
+      content: "@Order service Soft-delete this project",
+      metadata: {
+        resourceReference: {
+          kind: "project",
+          name: "projects/orders",
+          project: "projects/orders",
+          label: "Order service",
+        },
+      },
+    });
+    useAgentStore.setState({
+      chats: store.chats.map((chat) =>
+        chat.id === chatId ? { ...chat, status: "awaiting_user" } : chat
+      ),
+      pendingAskByChatId: {
+        [chatId]: {
+          toolCallId: "tool-delete",
+          prompt: "bytebase.v1.ProjectService.DeleteProject",
+          kind: "confirm",
+          apiPermission: {
+            actionId: "action-delete",
+            operationId: "bytebase.v1.ProjectService.DeleteProject",
+          },
+        },
+      },
+    });
+    mocks.getPendingApiCallPreview.mockReturnValue({
+      operationId: "bytebase.v1.ProjectService.DeleteProject",
+      body: '{"name":"projects/orders","purge":false}',
+      expiresAt: Date.now() + 5 * 60_000,
+    });
+    mocks.executeTool.mockResolvedValue({
+      kind: "tool_result",
+      result: '{"error":"The referenced project is unavailable."}',
+    });
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => {
+      [...view.container.querySelectorAll("button")]
+        .find((button) => button.textContent === "agent.api-permission-allow")
+        ?.click();
+    });
+
+    expect(mocks.runAgentLoop).toHaveBeenCalledOnce();
+    expect(mocks.executeTool).not.toHaveBeenCalledWith(
+      "get_project_overview",
+      {},
+      expect.any(String)
+    );
+    expect(store.getMessages(chatId)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          role: "tool",
+          toolCallId: "tool-delete",
+          content: '{"status":200,"response":{}}',
+        }),
+      ])
+    );
+    view.unmount();
+  });
+
+  test("does not resume an approved API call after the user stops it", async () => {
+    const chatId = useAgentStore.getState().currentChatId!;
+    useAgentStore.getState().addMessage({
+      chatId,
+      role: "user",
+      content: "Update the project",
+    });
+    useAgentStore.setState({
+      chats: useAgentStore
+        .getState()
+        .chats.map((chat) =>
+          chat.id === chatId ? { ...chat, status: "awaiting_user" } : chat
+        ),
+      pendingAskByChatId: {
+        [chatId]: {
+          toolCallId: "tool-write",
+          prompt: "bytebase.v1.ProjectService.UpdateProject",
+          kind: "confirm",
+          apiPermission: {
+            actionId: "action-stop",
+            operationId: "bytebase.v1.ProjectService.UpdateProject",
+          },
+        },
+      },
+    });
+    mocks.getPendingApiCallPreview.mockReturnValue({
+      operationId: "bytebase.v1.ProjectService.UpdateProject",
+      body: '{"project":{"name":"projects/orders"}}',
+      expiresAt: Date.now() + 5 * 60_000,
+    });
+    let resolvePermission!: (result: string) => void;
+    mocks.resolvePendingApiCall.mockImplementation(
+      () =>
+        new Promise<string>((resolve) => {
+          resolvePermission = resolve;
+        })
+    );
+
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => {
+      const allow = [...view.container.querySelectorAll("button")].find(
+        (button) => button.textContent === "agent.api-permission-allow"
+      );
+      allow?.click();
+    });
+    expect(useAgentStore.getState().getChat(chatId)?.status).toBe("running");
+
+    await act(async () => {
+      const stop = [...view.container.querySelectorAll("button")].find(
+        (button) => button.textContent === "agent.stop"
+      );
+      stop?.click();
+    });
+    expect(useAgentStore.getState().getChat(chatId)?.interruptionReason).toBe(
+      "user"
+    );
+
+    await act(async () => {
+      resolvePermission('{"status":200,"response":{}}');
+    });
+    expect(useAgentStore.getState().getChat(chatId)?.interruptionReason).toBe(
+      "user"
+    );
+    expect(
+      useAgentStore.getState().getMessages(chatId).some((message) =>
+        message.role === "tool" && message.toolCallId === "tool-write"
+      )
+    ).toBe(false);
+    expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+    view.unmount();
+  });
+
+  test.each([
+    ["final-approval-with-rollout", "agent.permission.issue-approval-rollout"],
+    ["final-approval-with-access-grant", "agent.permission.issue-approval-access-grant"],
+    ["final-approval-with-role-grant", "agent.permission.issue-approval-role-grant"],
+    ["final-approval", "agent.permission.issue-approval-final"],
+    ["intermediate-approval", "agent.permission.issue-approval"],
+    ["reject", "agent.permission.issue-rejection"],
+  ])("shows the %s consequence beside an Issue permission request", (impact, messageKey) => {
+    const chatId = useAgentStore.getState().currentChatId!;
+    useAgentStore.setState({
+      chats: useAgentStore
+        .getState()
+        .chats.map((chat) =>
+          chat.id === chatId ? { ...chat, status: "awaiting_user" } : chat
+        ),
+      pendingAskByChatId: {
+        [chatId]: {
+          toolCallId: "tool-issue-decision",
+          prompt: "bytebase.v1.IssueService.ApproveIssue",
+          kind: "confirm",
+          apiPermission: {
+            actionId: "issue-action",
+            operationId: "bytebase.v1.IssueService.ApproveIssue",
+          },
+        },
+      },
+    });
+    mocks.getPendingApiCallPreview.mockReturnValue({
+      operationId: "bytebase.v1.IssueService.ApproveIssue",
+      body: '{"name":"projects/orders/issues/42"}',
+      expiresAt: Date.now() + 5 * 60_000,
+      issueDecision: {
+        issueName: "projects/orders/issues/42",
+        issueTitle: "Update orders schema",
+        impact,
+      },
+    });
+
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    expect(view.container.textContent).toContain("Update orders schema");
+    expect(view.container.textContent).toContain("projects/orders/issues/42");
+    expect(view.container.textContent).toContain(messageKey);
+    expect(mocks.resolvePendingApiCall).not.toHaveBeenCalled();
     view.unmount();
   });
 
@@ -3378,6 +4011,184 @@ describe("AgentInput", () => {
     view.unmount();
   });
 
+  test("counts down and disables approval as soon as a permission expires", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(100_000);
+    const expiresAt = Date.now() + 5 * 60_000;
+    const chatId = useAgentStore.getState().currentChatId!;
+    useAgentStore.setState({
+      chats: useAgentStore
+        .getState()
+        .chats.map((chat) =>
+          chat.id === chatId ? { ...chat, status: "awaiting_user" } : chat
+        ),
+      pendingAskByChatId: {
+        [chatId]: {
+          toolCallId: "tool-write",
+          prompt: "bytebase.v1.ProjectService.UpdateProject",
+          kind: "confirm",
+          apiPermission: {
+            actionId: "action-expiring",
+            operationId: "bytebase.v1.ProjectService.UpdateProject",
+          },
+        },
+      },
+    });
+    mocks.getPendingApiCallPreview.mockImplementation(() =>
+      Date.now() < expiresAt
+        ? {
+            operationId: "bytebase.v1.ProjectService.UpdateProject",
+            body: '{"project":{"name":"projects/orders"}}',
+            expiresAt,
+          }
+        : undefined
+    );
+    mocks.useTranslation.mockReturnValue({
+      t: (key: string, values?: Record<string, unknown>) =>
+        key === "agent.api-permission-expires-in"
+          ? `Expires in ${values?.time}`
+          : key,
+      i18n: { language: "en-US" },
+    });
+
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    expect(view.container.textContent).toContain("Expires in 5:00");
+    const allow = [...view.container.querySelectorAll("button")].find(
+      (button) => button.textContent === "agent.api-permission-allow"
+    );
+    expect(allow).not.toBeDisabled();
+
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(view.container.textContent).toContain("Expires in 4:59");
+
+    act(() => {
+      vi.setSystemTime(expiresAt - 1000);
+      vi.advanceTimersByTime(1000);
+    });
+    expect(view.container.textContent).toContain("agent.api-permission-expired");
+    expect(allow).toBeDisabled();
+    expect(view.container.textContent).not.toContain("agent.api-permission-deny");
+    expect(view.container.textContent).toContain("agent.api-permission-dismiss");
+    expect(mocks.resolvePendingApiCall).not.toHaveBeenCalled();
+    view.unmount();
+  });
+
+  test("dismisses an unavailable permission without restarting the agent", async () => {
+    const chatId = useAgentStore.getState().currentChatId!;
+    useAgentStore.setState({
+      chats: useAgentStore
+        .getState()
+        .chats.map((chat) =>
+          chat.id === chatId ? { ...chat, status: "awaiting_user" } : chat
+        ),
+      pendingAskByChatId: {
+        [chatId]: {
+          toolCallId: "tool-write",
+          prompt: "bytebase.v1.ProjectService.UpdateProject",
+          kind: "confirm",
+          apiPermission: {
+            actionId: "lost-action",
+            operationId: "bytebase.v1.ProjectService.UpdateProject",
+          },
+        },
+      },
+    });
+    mocks.resolvePendingApiCall.mockResolvedValue(
+      '{"error":"Permission request expired."}'
+    );
+
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => {
+      const dismiss = [...view.container.querySelectorAll("button")].find(
+        (button) => button.textContent === "agent.api-permission-dismiss"
+      );
+      dismiss?.click();
+    });
+
+    expect(mocks.resolvePendingApiCall).toHaveBeenCalledWith({
+      actionId: "lost-action",
+      chatId,
+      toolCallId: "tool-write",
+      userName: "users/me@example.com",
+      approved: false,
+      signal: expect.any(AbortSignal),
+    });
+    expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+    expect(useAgentStore.getState().getPendingAsk(chatId)).toBeNull();
+    expect(useAgentStore.getState().getMessages(chatId)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          role: "tool",
+          toolCallId: "tool-write",
+          content: '{"error":"Permission request expired."}',
+        }),
+        expect.objectContaining({
+          role: "assistant",
+          content: "agent.api-permission-expired",
+        }),
+      ])
+    );
+    view.unmount();
+  });
+
+  test("does not restart the agent if permission expires during approval", async () => {
+    const chatId = useAgentStore.getState().currentChatId!;
+    useAgentStore.setState({
+      chats: useAgentStore
+        .getState()
+        .chats.map((chat) =>
+          chat.id === chatId ? { ...chat, status: "awaiting_user" } : chat
+        ),
+      pendingAskByChatId: {
+        [chatId]: {
+          toolCallId: "tool-write",
+          prompt: "bytebase.v1.ProjectService.UpdateProject",
+          kind: "confirm",
+          apiPermission: {
+            actionId: "action-expiring",
+            operationId: "bytebase.v1.ProjectService.UpdateProject",
+          },
+        },
+      },
+    });
+    mocks.getPendingApiCallPreview.mockReturnValue({
+      operationId: "bytebase.v1.ProjectService.UpdateProject",
+      body: '{"project":{"name":"projects/orders"}}',
+      expiresAt: Date.now() + 1000,
+    });
+    mocks.resolvePendingApiCall.mockResolvedValue(
+      '{"error":"Permission request expired."}'
+    );
+
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => {
+      const allow = [...view.container.querySelectorAll("button")].find(
+        (button) => button.textContent === "agent.api-permission-allow"
+      );
+      allow?.click();
+    });
+
+    expect(mocks.resolvePendingApiCall).toHaveBeenCalledWith(
+      expect.objectContaining({ approved: true })
+    );
+    expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+    expect(useAgentStore.getState().getPendingAsk(chatId)).toBeNull();
+    expect(useAgentStore.getState().getMessages(chatId)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          role: "assistant",
+          content: "agent.api-permission-expired",
+        }),
+      ])
+    );
+    view.unmount();
+  });
+
   test("returns a denied API request to the agent without dispatching it", async () => {
     const chatId = useAgentStore.getState().currentChatId!;
     useAgentStore.setState({
@@ -3401,6 +4212,7 @@ describe("AgentInput", () => {
     mocks.getPendingApiCallPreview.mockReturnValue({
       operationId: "bytebase.v1.ProjectService.UpdateProject",
       body: '{"project":{"name":"projects/orders"}}',
+      expiresAt: Date.now() + 5 * 60_000,
     });
     mocks.resolvePendingApiCall.mockResolvedValue(
       '{"error":"Permission request denied."}'
@@ -3422,6 +4234,7 @@ describe("AgentInput", () => {
       toolCallId: "tool-write",
       userName: "users/me@example.com",
       approved: false,
+      signal: expect.any(AbortSignal),
     });
     expect(useAgentStore.getState().getMessages(chatId)).toEqual(
       expect.arrayContaining([

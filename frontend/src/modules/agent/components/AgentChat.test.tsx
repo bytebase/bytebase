@@ -144,6 +144,204 @@ afterEach(() => {
 });
 
 describe("AgentChat", () => {
+  test("shows a canceled clarification without the running-request warning", () => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat();
+    store.addMessage({
+      chatId: chat.id,
+      role: "user",
+      content: "Reject the issue",
+    });
+    store.startChatRun(chat.id, undefined, { runId: "run-1" });
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      toolCalls: [
+        { id: "ask-1", name: "ask_user", arguments: '{"prompt":"Why?"}' },
+      ],
+      metadata: { runId: "run-1" },
+    });
+    store.awaitUser(chat.id, {
+      toolCallId: "ask-1",
+      prompt: "Why?",
+      kind: "input",
+    });
+    store.cancelPendingAsk(chat.id);
+
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+    try {
+      expect(container.textContent).toContain("agent.tool-request-canceled");
+      expect(
+        container.querySelector("[data-agent-interruption-status]")
+      ).toBeNull();
+    } finally {
+      unmount();
+    }
+  });
+
+  test("renders a user-stopped result after the interrupted turn's tool calls without actions", () => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat();
+    store.addMessage({
+      chatId: chat.id,
+      role: "user",
+      content: "Count databases",
+    });
+    store.startChatRun(chat.id, undefined, { runId: "run-1" });
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      toolCalls: [{ id: "tool-1", name: "get_page_state", arguments: "{}" }],
+      metadata: { runId: "run-1" },
+    });
+    store.addMessage({
+      chatId: chat.id,
+      role: "tool",
+      toolCallId: "tool-1",
+      content: "{}",
+      metadata: { runId: "run-1" },
+    });
+    store.interruptChatRun(chat.id, undefined, "user");
+
+    const onRetry = vi.fn();
+    const { container, render, unmount } = renderIntoContainer(
+      <AgentChat onRetry={onRetry} />
+    );
+    render();
+    try {
+      const result = container.querySelector(
+        "[data-agent-interruption-status]"
+      );
+      const toolRow = [...container.querySelectorAll(".font-mono")].find(
+        (element) => element.textContent === "get_page_state"
+      );
+      expect(result).not.toBeNull();
+      expect(result?.textContent).toContain("agent.request-stopped-by-user");
+      expect(result?.textContent).toContain("agent.request-stopped-retry-hint");
+      expect(toolRow).toBeDefined();
+      expect(
+        toolRow &&
+          result &&
+          (toolRow.compareDocumentPosition(result) &
+            Node.DOCUMENT_POSITION_FOLLOWING)
+      ).toBeTruthy();
+      expect(result?.textContent).not.toContain("agent.retry-last-chat-turn");
+      expect(result?.textContent).not.toContain("common.dismiss");
+      expect(onRetry).not.toHaveBeenCalled();
+    } finally {
+      unmount();
+    }
+  });
+
+  test("offers Retry for the current unexpected interruption", () => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat();
+    store.addMessage({
+      chatId: chat.id,
+      role: "user",
+      content: "Count databases",
+    });
+    store.startChatRun(chat.id, undefined, { runId: "run-1" });
+    store.interruptChatRun(chat.id);
+
+    const onRetry = vi.fn();
+    const { container, render, unmount } = renderIntoContainer(
+      <AgentChat onRetry={onRetry} />
+    );
+    render();
+    try {
+      const result = container.querySelector(
+        "[data-agent-interruption-status]"
+      );
+      expect(result).not.toBeNull();
+      expect(result?.textContent).toContain("agent.interrupted");
+      expect(result?.textContent).toContain("agent.interrupted-retry-hint");
+      const retry = [...(result?.querySelectorAll("button") ?? [])].find(
+        (button) => button.textContent === "agent.retry-last-chat-turn"
+      );
+      expect(retry).toBeDefined();
+      act(() => retry?.click());
+      expect(onRetry).toHaveBeenCalledOnce();
+      expect(result?.textContent).not.toContain("common.dismiss");
+    } finally {
+      unmount();
+    }
+  });
+
+  test("scrolls to the interruption result when no message was added", () => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat();
+    store.addMessage({
+      chatId: chat.id,
+      role: "user",
+      content: "Count databases",
+    });
+    store.startChatRun(chat.id, undefined, { runId: "run-1" });
+
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+    try {
+      const transcript = container.firstElementChild as HTMLDivElement;
+      Object.defineProperty(transcript, "scrollHeight", { value: 500 });
+      transcript.scrollTop = 0;
+
+      act(() => store.interruptChatRun(chat.id, undefined, "user"));
+
+      expect(
+        container.querySelector("[data-agent-interruption-status]")
+      ).not.toBeNull();
+      expect(transcript.scrollTop).toBe(500);
+    } finally {
+      unmount();
+    }
+  });
+
+  test("keeps an old interruption result in the transcript without a stale Retry action", () => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat();
+    store.addMessage({
+      chatId: chat.id,
+      role: "user",
+      content: "First request",
+    });
+    store.startChatRun(chat.id, undefined, { runId: "run-1" });
+    store.interruptChatRun(chat.id);
+    store.addMessage({
+      chatId: chat.id,
+      role: "user",
+      content: "Second request",
+    });
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "Second answer",
+    });
+
+    const onRetry = vi.fn();
+    const { container, render, unmount } = renderIntoContainer(
+      <AgentChat onRetry={onRetry} />
+    );
+    render();
+    try {
+      const result = container.querySelector(
+        "[data-agent-interruption-status]"
+      );
+      expect(result).not.toBeNull();
+      expect(result?.textContent).toContain("agent.interrupted");
+      expect(result?.querySelector("button")).toBeNull();
+      expect(container.textContent?.indexOf("First request")).toBeLessThan(
+        container.textContent?.indexOf("agent.interrupted") ?? -1
+      );
+      expect(container.textContent?.indexOf("agent.interrupted")).toBeLessThan(
+        container.textContent?.indexOf("Second request") ?? -1
+      );
+      expect(onRetry).not.toHaveBeenCalled();
+    } finally {
+      unmount();
+    }
+  });
+
   test("shows the selected Project separately from the plain user question", () => {
     useAgentStore.getState().addMessage({
       role: "user",

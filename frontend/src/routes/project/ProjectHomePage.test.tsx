@@ -487,9 +487,9 @@ describe("ProjectHomePage", () => {
     fireEvent.change(prompt, { target: { value: "Check @", selectionStart: 7 } });
     fireEvent.click(screen.getByRole("button", { name: "Select app database" }));
 
-    expect(prompt).toHaveValue("Check @app ");
+    expect(prompt).toHaveValue("Check @app (primary) ");
     expect(document.querySelector("[data-agent-inline-mention]")).toHaveTextContent(
-      "@app"
+      "@app (primary)"
     );
     expect(screen.getByText("agent.context: Order service")).toBeVisible();
     expect(mocks.queueUserMessage).not.toHaveBeenCalled();
@@ -502,13 +502,13 @@ describe("ProjectHomePage", () => {
     );
     expect(mocks.queueUserMessage).toHaveBeenCalledWith({
       chatId: "new-chat",
-      text: "Check @app",
+      text: "Check @app (primary)",
       page: expect.objectContaining({ path: expect.any(String) }),
       resourceReference: {
         kind: "database",
         name: "instances/primary/databases/app",
         project: "projects/orders",
-        label: "app",
+        label: "app (primary)",
       },
     });
 
@@ -638,7 +638,8 @@ describe("ProjectHomePage", () => {
     fireEvent.keyDown(prompt, { key: "Escape" });
     expect(screen.queryByRole("status")).toBeNull();
     expect(screen.queryByRole("alert")).toBeNull();
-    expect(screen.getByRole("button", { name: "agent.send" })).toBeDisabled();
+    expect(prompt).toHaveValue("Compare @Second project and ");
+    expect(screen.getByRole("button", { name: "agent.send" })).toBeEnabled();
 
     const replacementTrigger = "Compare and @";
     fireEvent.change(prompt, {
@@ -679,12 +680,12 @@ describe("ProjectHomePage", () => {
     expect(database).toHaveAttribute("data-selected-project-name", "projects/second");
     fireEvent.click(database);
 
-    expect(prompt).toHaveValue("Compare @Second project and @app ");
+    expect(prompt).toHaveValue("Compare @Second project and @app (primary) ");
     expect(screen.getByRole("button", { name: "agent.send" })).toBeEnabled();
     fireEvent.click(screen.getByRole("button", { name: "agent.send" }));
     expect(mocks.queueUserMessage).toHaveBeenLastCalledWith(
       expect.objectContaining({
-        text: "Compare @Second project and @app",
+        text: "Compare @Second project and @app (primary)",
         resourceReferences: [
           {
             kind: "project",
@@ -696,7 +697,7 @@ describe("ProjectHomePage", () => {
             kind: "database",
             name: "instances/primary/databases/app",
             project: "projects/second",
-            label: "app",
+            label: "app (primary)",
           },
         ],
       })

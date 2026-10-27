@@ -40,6 +40,7 @@ import type {
   ToolCall,
 } from "../logic/types";
 import {
+  selectCurrentChat,
   selectCurrentChatRequiresAIConfiguration,
   selectError,
   selectLoading,
@@ -50,6 +51,7 @@ import { ToolCallCard } from "./ToolCallCard";
 
 interface AgentChatProps {
   className?: string;
+  onRetry?: () => void;
 }
 
 const ISSUE_NAME_PATTERN = /^projects\/([^/]+)\/issues\/([^/]+)$/;
@@ -246,7 +248,7 @@ function renderBoundMentions(
   return parts;
 }
 
-export function AgentChat({ className }: AgentChatProps) {
+export function AgentChat({ className, onRetry }: AgentChatProps) {
   const { t } = useTranslation();
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const [
@@ -255,6 +257,7 @@ export function AgentChat({ className }: AgentChatProps) {
   ] = useState(false);
 
   const messages = useAgentStore(selectMessages);
+  const currentChat = useAgentStore(selectCurrentChat);
   const loading = useAgentStore(selectLoading);
   const error = useAgentStore(selectError);
   const chatRequiresAIConfiguration = useAgentStore(
@@ -281,6 +284,40 @@ export function AgentChat({ className }: AgentChatProps) {
       ),
     [messages]
   );
+  // An interruption belongs after the turn's final visible message, including tool calls.
+  const interruptionByLastMessageId = useMemo(() => {
+    const interruptions = new Map<
+      string,
+      { reason: "user" | "unexpected"; userMessageId: string }
+    >();
+    let userMessage: AgentMessage | undefined;
+    let lastMessage: AgentMessage | undefined;
+    const addInterruption = () => {
+      const reason = userMessage?.metadata?.interruptionReason;
+      if (
+        userMessage &&
+        lastMessage &&
+        (reason === "user" || reason === "unexpected")
+      ) {
+        interruptions.set(lastMessage.id, {
+          reason,
+          userMessageId: userMessage.id,
+        });
+      }
+    };
+    for (const message of displayMessages) {
+      if (message.role === "user") {
+        addInterruption();
+        userMessage = message;
+      }
+      lastMessage = message;
+    }
+    addInterruption();
+    return interruptions;
+  }, [displayMessages]);
+  const latestUserMessageId = displayMessages.findLast(
+    (message) => message.role === "user"
+  )?.id;
 
   function getToolResult(
     messageId: string,
@@ -341,7 +378,7 @@ export function AgentChat({ className }: AgentChatProps) {
       chatContainerRef.current.scrollTop =
         chatContainerRef.current.scrollHeight;
     }
-  }, [currentChatId, messages.length]);
+  }, [currentChatId, currentChat?.interrupted, messages.length]);
 
   useEffect(() => {
     setAIConfigurationRecoveryDismissed(false);
@@ -353,6 +390,14 @@ export function AgentChat({ className }: AgentChatProps) {
       className={`flex flex-col overflow-y-auto gap-3 p-3 ${className ?? ""}`}
     >
       {displayMessages.map((msg) => {
+        const interruption = interruptionByLastMessageId.get(msg.id);
+        const canRetry =
+          interruption?.reason === "unexpected" &&
+          interruption.userMessageId === latestUserMessageId &&
+          currentChat?.interrupted &&
+          currentChat.interruptionReason === "unexpected" &&
+          !loading &&
+          onRetry;
         const isPending = msg.metadata?.pending === true;
         const references =
           msg.role === "user"
@@ -502,6 +547,37 @@ export function AgentChat({ className }: AgentChatProps) {
                   ))}
                 </div>
                 {showTimestamp && timestamp}
+              </div>
+            )}
+            {interruption && (
+              <div
+                role="status"
+                data-agent-interruption-status
+                className="mt-3 rounded-sm border border-block-border bg-control-bg px-2 py-1.5 text-xs"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span
+                    className={`font-medium ${
+                      interruption.reason === "user"
+                        ? "text-warning"
+                        : "text-error"
+                    }`}
+                  >
+                    {interruption.reason === "user"
+                      ? t("agent.request-stopped-by-user")
+                      : t("agent.interrupted")}
+                  </span>
+                  {canRetry && (
+                    <Button appearance="outline" size="xs" onClick={onRetry}>
+                      {t("agent.retry-last-chat-turn")}
+                    </Button>
+                  )}
+                </div>
+                <div className="mt-0.5 text-control-light">
+                  {interruption.reason === "user"
+                    ? t("agent.request-stopped-retry-hint")
+                    : t("agent.interrupted-retry-hint")}
+                </div>
               </div>
             )}
           </div>

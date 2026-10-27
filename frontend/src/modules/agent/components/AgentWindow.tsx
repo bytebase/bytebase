@@ -723,6 +723,8 @@ export function AgentWindow() {
 
   const sidebarPanelRef = useRef<PanelImperativeHandle | null>(null);
   const resizeCleanupRef = useRef<(() => void) | null>(null);
+  const retryLastTurnRef = useRef<(() => void) | null>(null);
+  const retryLastTurn = useCallback(() => retryLastTurnRef.current?.(), []);
 
   // Cleanup resize listeners on unmount.
   useEffect(() => {
@@ -1298,8 +1300,11 @@ export function AgentWindow() {
                   className="flex size-full flex-col bg-background"
                   data-agent-mobile-conversation
                 >
-                  <AgentChat className="min-h-0 flex-1" />
-                  <AgentInput />
+                  <AgentChat
+                    className="min-h-0 flex-1"
+                    onRetry={retryLastTurn}
+                  />
+                  <AgentInput retryActionRef={retryLastTurnRef} />
                 </div>
               ) : (
                 <div
@@ -1873,8 +1878,11 @@ export function AgentWindow() {
                   {/* Main panel */}
                   <Panel id="agent-chat-main" minSize={minMainPanelWidth}>
                     <div className="relative flex size-full min-w-0 flex-col">
-                      <AgentChat className="min-h-0 flex-1" />
-                      <AgentInput />
+                      <AgentChat
+                        className="min-h-0 flex-1"
+                        onRetry={retryLastTurn}
+                      />
+                      <AgentInput retryActionRef={retryLastTurnRef} />
                     </div>
                   </Panel>
                 </PanelGroup>

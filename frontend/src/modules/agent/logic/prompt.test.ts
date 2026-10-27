@@ -3,6 +3,20 @@ import { describe, expect, test } from "vitest";
 import { buildSystemPrompt } from "./prompt";
 
 describe("buildSystemPrompt", () => {
+  test("requires a failed completion when an API request is rejected", () => {
+    const prompt = buildSystemPrompt({
+      path: "/projects/orders/issues",
+      title: "Issues",
+      context: "projects/orders",
+    });
+
+    expect(prompt).toContain(
+      "If call_api returns an error or HTTP status 400 or higher"
+    );
+    expect(prompt).toContain("done({ text, success: false })");
+    expect(prompt).toContain("Do not claim the change succeeded");
+  });
+
   test("uses a selected project for one turn without narrowing normal API calls", () => {
     const prompt = buildSystemPrompt({
       path: "/projects/original",
@@ -58,6 +72,32 @@ describe("buildSystemPrompt", () => {
     );
     expect(prompt).toContain(
       "For other instance-specific or filtered counts, use search_api and call_api ListDatabases"
+    );
+    expect(prompt).not.toContain("Referenced project for this turn");
+  });
+
+  test("grounds a selected issue and its approval consequence in fresh state", () => {
+    const prompt = buildSystemPrompt({
+      path: "/projects/orders",
+      title: "Orders",
+      context: "projects/orders",
+      referencedProject: "projects/billing",
+      referencedIssue: "projects/billing/issues/42",
+      runMode: "read-only",
+    });
+
+    expect(prompt).toContain(
+      "Selected Issue for this turn: projects/billing/issues/42"
+    );
+    expect(prompt).toContain("fresh get_issue_overview result");
+    expect(prompt).toContain("does not change the chat context");
+    expect(prompt).toContain("IssueService/ApproveIssue");
+    expect(prompt).toContain("IssueService/RejectIssue");
+    expect(prompt).toContain("may queue rollout creation");
+    expect(prompt).toContain("does not mean tasks have executed");
+    expect(prompt).toContain("may immediately grant access or a project role");
+    expect(prompt).toContain(
+      "After an approved decision request, re-read the Issue"
     );
     expect(prompt).not.toContain("Referenced project for this turn");
   });

@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 import { aiServiceClientConnect } from "@/api";
 import { AIChatMessageRole } from "@/types/proto-es/v1/ai_service_pb";
 import { runAgentLoop } from "./agentLoop";
-import type { ToolExecutor } from "./types";
+import type { ToolExecutionResult, ToolExecutor } from "./types";
 
 vi.mock("@/api", () => ({
   aiServiceClientConnect: {
@@ -15,6 +15,128 @@ describe("runAgentLoop", () => {
   beforeEach(() => {
     vi.mocked(aiServiceClientConnect.chat).mockReset();
   });
+
+  test("treats a non-AbortError response after user cancellation as aborted", async () => {
+    let rejectChat!: (error: Error) => void;
+    vi.mocked(aiServiceClientConnect.chat).mockImplementation(
+      () =>
+        new Promise((_, reject) => {
+          rejectChat = reject;
+        })
+    );
+    const controller = new AbortController();
+    const run = runAgentLoop(
+      [{ role: "user", content: "Check the project" }],
+      [],
+      vi.fn(),
+      undefined,
+      controller.signal
+    );
+    await vi.waitFor(() =>
+      expect(aiServiceClientConnect.chat).toHaveBeenCalled()
+    );
+    controller.abort();
+    rejectChat(new Error("Transport closed"));
+
+    expect(await run).toEqual({ kind: "aborted", totalTokensUsed: 0 });
+  });
+
+  test("does not execute tool calls returned after cancellation", async () => {
+    let resolveChat!: (
+      response: Awaited<ReturnType<typeof aiServiceClientConnect.chat>>
+    ) => void;
+    vi.mocked(aiServiceClientConnect.chat).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveChat = resolve;
+        })
+    );
+    const controller = new AbortController();
+    const executeTool = vi.fn();
+    const onAssistantMessage = vi.fn();
+    const run = runAgentLoop(
+      [{ role: "user", content: "Check the project" }],
+      [{ name: "test_tool", description: "test", parametersSchema: {} }],
+      executeTool,
+      { onAssistantMessage },
+      controller.signal
+    );
+    await vi.waitFor(() =>
+      expect(aiServiceClientConnect.chat).toHaveBeenCalled()
+    );
+    controller.abort();
+    resolveChat({
+      content: "",
+      toolCalls: [
+        { id: "tool-1", name: "test_tool", arguments: "{}", metadata: "" },
+      ],
+    } as never);
+
+    expect(await run).toEqual({ kind: "aborted", totalTokensUsed: 0 });
+    expect(executeTool).not.toHaveBeenCalled();
+    expect(onAssistantMessage).not.toHaveBeenCalled();
+  });
+
+  test.each([
+    {
+      name: "tool result",
+      result: { kind: "tool_result", result: "late result" },
+    },
+    {
+      name: "completion",
+      result: { kind: "done", text: "Finished", success: true },
+    },
+    {
+      name: "request for input",
+      result: {
+        kind: "ask_user",
+        ask: { toolCallId: "tool-1", prompt: "Which database?", kind: "input" },
+      },
+    },
+  ] satisfies { name: string; result: ToolExecutionResult }[])(
+    "does not publish a late $name after aborting a tool",
+    async ({ result }) => {
+      vi.mocked(aiServiceClientConnect.chat).mockResolvedValue({
+        content: "",
+        toolCalls: [
+          {
+            id: "tool-1",
+            name: "test_tool",
+            arguments: "{}",
+            metadata: "",
+          },
+        ],
+      } as never);
+      let resolveTool!: (result: ToolExecutionResult) => void;
+      const executeTool: ToolExecutor = vi.fn(
+        () =>
+          new Promise<ToolExecutionResult>((resolve) => {
+            resolveTool = resolve;
+          })
+      );
+      const controller = new AbortController();
+      const onToolResult = vi.fn();
+      const onText = vi.fn();
+      const onError = vi.fn();
+
+      const run = runAgentLoop(
+        [{ role: "user", content: "Do the task" }],
+        [{ name: "test_tool", description: "test", parametersSchema: {} }],
+        executeTool,
+        { onToolResult, onText, onError },
+        controller.signal
+      );
+      await vi.waitFor(() => expect(executeTool).toHaveBeenCalledTimes(1));
+      controller.abort();
+      resolveTool(result);
+
+      expect(await run).toEqual({ kind: "aborted", totalTokensUsed: 0 });
+      expect(onToolResult).not.toHaveBeenCalled();
+      expect(onText).not.toHaveBeenCalled();
+      expect(onError).not.toHaveBeenCalled();
+      expect(aiServiceClientConnect.chat).toHaveBeenCalledTimes(1);
+    }
+  );
 
   test("returns a completed outcome for explicit done", async () => {
     vi.mocked(aiServiceClientConnect.chat).mockResolvedValue({
@@ -341,6 +463,56 @@ describe("runAgentLoop", () => {
     ).toEqual(["ask_user", "done"]);
   });
 
+  test("recovers an empty model response by requesting a terminal answer", async () => {
+    vi.mocked(aiServiceClientConnect.chat)
+      .mockResolvedValueOnce({ content: "", toolCalls: [] } as never)
+      .mockResolvedValueOnce({
+        content: "",
+        toolCalls: [
+          {
+            id: "done-1",
+            name: "done",
+            arguments: JSON.stringify({
+              text: "Issue is canceled.",
+              success: true,
+            }),
+            metadata: "",
+          },
+        ],
+      } as never);
+    const executeTool: ToolExecutor = vi.fn(async (_name, args) => ({
+      kind: "done" as const,
+      text: String(args.text),
+      success: true,
+    }));
+
+    const outcome = await runAgentLoop(
+      [{ role: "user", content: "Summarize the selected issue" }],
+      ["ask_user", "done"].map((name) => ({
+        name,
+        description: name,
+        parametersSchema: {},
+      })),
+      executeTool,
+      undefined,
+      undefined,
+      { allowPlainTextCompletion: true }
+    );
+
+    expect(outcome).toEqual({
+      kind: "completed",
+      text: "Issue is canceled.",
+      success: true,
+      totalTokensUsed: 0,
+    });
+    expect(aiServiceClientConnect.chat).toHaveBeenCalledTimes(2);
+    expect(
+      vi
+        .mocked(aiServiceClientConnect.chat)
+        .mock.calls[1]?.[0]?.messages?.at(-1)?.content
+    ).toMatch(/previous response was empty/i);
+  });
+
   test("still rejects plain text after one terminal-tool retry", async () => {
     vi.mocked(aiServiceClientConnect.chat).mockResolvedValue({
       content: "Answer without done",
@@ -357,6 +529,437 @@ describe("runAgentLoop", () => {
     expect(outcome.kind).toBe("error");
     expect(aiServiceClientConnect.chat).toHaveBeenCalledTimes(2);
     expect(executeTool).not.toHaveBeenCalled();
+  });
+
+  test("reports a rejected API request instead of a terminal-tool error", async () => {
+    const apiError = "cannot change status from DONE to OPEN for issue 101";
+    vi.mocked(aiServiceClientConnect.chat)
+      .mockResolvedValueOnce({
+        content: "",
+        toolCalls: [
+          {
+            id: "api-1",
+            name: "call_api",
+            arguments: JSON.stringify({
+              operationId: "IssueService/BatchUpdateIssuesStatus",
+            }),
+            metadata: "",
+          },
+        ],
+      } as never)
+      .mockResolvedValue({
+        content: "The issue was reopened.",
+        toolCalls: [],
+      } as never);
+    const executeTool: ToolExecutor = vi.fn(async () => ({
+      kind: "tool_result" as const,
+      result: JSON.stringify({ status: 400, error: apiError }),
+    }));
+    const onText = vi.fn();
+    const onError = vi.fn();
+
+    const outcome = await runAgentLoop(
+      [{ role: "user", content: "Reopen the issue" }],
+      ["call_api", "done", "ask_user"].map((name) => ({
+        name,
+        description: name,
+        parametersSchema: {},
+      })),
+      executeTool,
+      { onText, onError }
+    );
+
+    expect(outcome).toEqual({
+      kind: "completed",
+      text: apiError,
+      success: false,
+      totalTokensUsed: 0,
+    });
+    expect(onText).toHaveBeenCalledExactlyOnceWith(apiError);
+    expect(onError).not.toHaveBeenCalled();
+    expect(executeTool).toHaveBeenCalledTimes(1);
+    expect(aiServiceClientConnect.chat).toHaveBeenCalledTimes(3);
+  });
+
+  test("reports an API rejection after permission approval from replayed history", async () => {
+    const apiError = "cannot change status from DONE to OPEN for issue 101";
+    vi.mocked(aiServiceClientConnect.chat).mockResolvedValue({
+      content: "This issue cannot be reopened.",
+      toolCalls: [],
+    } as never);
+    const executeTool: ToolExecutor = vi.fn();
+    const onText = vi.fn();
+
+    const outcome = await runAgentLoop(
+      [
+        { role: "user", content: "Reopen the issue" },
+        {
+          role: "assistant",
+          toolCalls: [
+            {
+              id: "api-1",
+              name: "call_api",
+              arguments: JSON.stringify({
+                operationId: "IssueService/BatchUpdateIssuesStatus",
+              }),
+            },
+          ],
+        },
+        {
+          role: "tool",
+          toolCallId: "api-1",
+          content: JSON.stringify({ status: 400, error: apiError }),
+        },
+      ],
+      [{ name: "done", description: "done", parametersSchema: {} }],
+      executeTool,
+      { onText }
+    );
+
+    expect(outcome).toEqual({
+      kind: "completed",
+      text: apiError,
+      success: false,
+      totalTokensUsed: 0,
+    });
+    expect(onText).toHaveBeenCalledExactlyOnceWith(apiError);
+    expect(executeTool).not.toHaveBeenCalled();
+  });
+
+  test("does not treat a rejected API call as a successful plain-text completion", async () => {
+    const apiError = "cannot change status from DONE to OPEN for issue 101";
+    vi.mocked(aiServiceClientConnect.chat).mockResolvedValue({
+      content: "The issue was reopened.",
+      toolCalls: [],
+    } as never);
+
+    const outcome = await runAgentLoop(
+      [
+        { role: "user", content: "Reopen the issue" },
+        {
+          role: "assistant",
+          toolCalls: [{ id: "api-1", name: "call_api", arguments: "{}" }],
+        },
+        {
+          role: "tool",
+          toolCallId: "api-1",
+          content: JSON.stringify({ status: 400, error: apiError }),
+        },
+      ],
+      [{ name: "done", description: "done", parametersSchema: {} }],
+      vi.fn(),
+      undefined,
+      undefined,
+      { allowPlainTextCompletion: true }
+    );
+
+    expect(outcome).toEqual({
+      kind: "completed",
+      text: apiError,
+      success: false,
+      totalTokensUsed: 0,
+    });
+    expect(aiServiceClientConnect.chat).toHaveBeenCalledTimes(1);
+  });
+
+  test("clears a prior API rejection after a corrected retry for the same target", async () => {
+    vi.mocked(aiServiceClientConnect.chat).mockResolvedValue({
+      content: "Recovered answer without done",
+      toolCalls: [],
+    } as never);
+
+    const outcome = await runAgentLoop(
+      [
+        { role: "user", content: "Update the issue" },
+        {
+          role: "assistant",
+          toolCalls: [
+            {
+              id: "api-1",
+              name: "call_api",
+              arguments: JSON.stringify({
+                operationId: "IssueService/BatchUpdateIssuesStatus",
+                body: { issues: ["projects/a/issues/101"], status: "OPEN" },
+              }),
+            },
+            {
+              id: "api-2",
+              name: "call_api",
+              arguments: JSON.stringify({
+                body: {
+                  parent: "projects/a",
+                  status: "OPEN",
+                  issues: ["projects/a/issues/101"],
+                },
+                operationId: "IssueService/BatchUpdateIssuesStatus",
+              }),
+            },
+          ],
+        },
+        {
+          role: "tool",
+          toolCallId: "api-1",
+          content: JSON.stringify({ status: 400, error: "Initial failure" }),
+        },
+        {
+          role: "tool",
+          toolCallId: "api-2",
+          content: JSON.stringify({ status: 200, response: {} }),
+        },
+      ],
+      [{ name: "done", description: "done", parametersSchema: {} }],
+      vi.fn()
+    );
+
+    expect(outcome.kind).toBe("error");
+    expect(aiServiceClientConnect.chat).toHaveBeenCalledTimes(2);
+  });
+
+  test("does not clear a rejected API request after the same operation succeeds for another target", async () => {
+    const apiError = "cannot change status from DONE to OPEN for issue 101";
+    vi.mocked(aiServiceClientConnect.chat).mockResolvedValue({
+      content: "Both issues were reopened.",
+      toolCalls: [],
+    } as never);
+
+    const outcome = await runAgentLoop(
+      [
+        { role: "user", content: "Reopen two issues" },
+        {
+          role: "assistant",
+          toolCalls: [
+            {
+              id: "api-1",
+              name: "call_api",
+              arguments: JSON.stringify({
+                operationId: "IssueService/BatchUpdateIssuesStatus",
+                body: { issues: ["projects/a/issues/101"], status: "OPEN" },
+              }),
+            },
+            {
+              id: "api-2",
+              name: "call_api",
+              arguments: JSON.stringify({
+                operationId: "IssueService/BatchUpdateIssuesStatus",
+                body: { issues: ["projects/a/issues/102"], status: "OPEN" },
+              }),
+            },
+          ],
+        },
+        {
+          role: "tool",
+          toolCallId: "api-1",
+          content: JSON.stringify({ status: 400, error: apiError }),
+        },
+        {
+          role: "tool",
+          toolCallId: "api-2",
+          content: JSON.stringify({ status: 200, response: {} }),
+        },
+      ],
+      [{ name: "done", description: "done", parametersSchema: {} }],
+      vi.fn()
+    );
+
+    expect(outcome).toEqual({
+      kind: "completed",
+      text: apiError,
+      success: false,
+      totalTokensUsed: 0,
+    });
+  });
+
+  test("retains a rejected write after an unrelated successful API read", async () => {
+    const apiError = "cannot change status from DONE to OPEN for issue 101";
+    vi.mocked(aiServiceClientConnect.chat).mockResolvedValue({
+      content: "The issue was reopened.",
+      toolCalls: [],
+    } as never);
+
+    const outcome = await runAgentLoop(
+      [
+        { role: "user", content: "Reopen the issue" },
+        {
+          role: "assistant",
+          toolCalls: [
+            {
+              id: "api-1",
+              name: "call_api",
+              arguments: JSON.stringify({
+                operationId: "IssueService/BatchUpdateIssuesStatus",
+                body: { issues: ["projects/a/issues/101"], status: "OPEN" },
+              }),
+            },
+            {
+              id: "api-2",
+              name: "call_api",
+              arguments: JSON.stringify({
+                operationId: "IssueService/GetIssue",
+                body: { name: "projects/a/issues/101" },
+              }),
+            },
+          ],
+        },
+        {
+          role: "tool",
+          toolCallId: "api-1",
+          content: JSON.stringify({ status: 400, error: apiError }),
+        },
+        {
+          role: "tool",
+          toolCallId: "api-2",
+          content: JSON.stringify({
+            status: 200,
+            response: { status: "DONE" },
+          }),
+        },
+      ],
+      [{ name: "done", description: "done", parametersSchema: {} }],
+      vi.fn()
+    );
+
+    expect(outcome).toEqual({
+      kind: "completed",
+      text: apiError,
+      success: false,
+      totalTokensUsed: 0,
+    });
+  });
+
+  test("does not accept a successful done after an unresolved API rejection", async () => {
+    const apiError = "cannot change status from DONE to OPEN for issue 101";
+    vi.mocked(aiServiceClientConnect.chat).mockResolvedValue({
+      content: "",
+      toolCalls: [
+        {
+          id: "done-1",
+          name: "done",
+          arguments: JSON.stringify({ text: "The issue was reopened." }),
+          metadata: "",
+        },
+      ],
+    } as never);
+    const onToolResult = vi.fn();
+
+    const outcome = await runAgentLoop(
+      [
+        { role: "user", content: "Reopen the issue" },
+        {
+          role: "assistant",
+          toolCalls: [
+            {
+              id: "api-1",
+              name: "call_api",
+              arguments: JSON.stringify({
+                operationId: "IssueService/BatchUpdateIssuesStatus",
+                body: { issues: ["projects/a/issues/101"], status: "OPEN" },
+              }),
+            },
+          ],
+        },
+        {
+          role: "tool",
+          toolCallId: "api-1",
+          content: JSON.stringify({ status: 400, error: apiError }),
+        },
+      ],
+      [{ name: "done", description: "done", parametersSchema: {} }],
+      vi.fn(async () => ({
+        kind: "done" as const,
+        text: "The issue was reopened.",
+        success: true,
+      })),
+      { onToolResult }
+    );
+
+    expect(outcome).toEqual({
+      kind: "completed",
+      text: apiError,
+      success: false,
+      totalTokensUsed: 0,
+    });
+    expect(onToolResult).toHaveBeenCalledWith(
+      "done-1",
+      JSON.stringify({ text: apiError, success: false })
+    );
+  });
+
+  test.each(["SQLService/Query", "bytebase.v1.SQLService.Query"])(
+    "reports a query result error for %s inside a successful API response",
+    async (operationId) => {
+      const queryError = "permission denied for relation records";
+      vi.mocked(aiServiceClientConnect.chat).mockResolvedValue({
+        content: "The query returned rows.",
+        toolCalls: [],
+      } as never);
+
+      const outcome = await runAgentLoop(
+        [
+          { role: "user", content: "Query the database" },
+          {
+            role: "assistant",
+            toolCalls: [
+              {
+                id: "api-1",
+                name: "call_api",
+                arguments: JSON.stringify({ operationId }),
+              },
+            ],
+          },
+          {
+            role: "tool",
+            toolCallId: "api-1",
+            content: JSON.stringify({
+              status: 200,
+              response: { results: [{ error: queryError }] },
+            }),
+          },
+        ],
+        [{ name: "done", description: "done", parametersSchema: {} }],
+        vi.fn()
+      );
+
+      expect(outcome).toEqual({
+        kind: "completed",
+        text: queryError,
+        success: false,
+        totalTokensUsed: 0,
+      });
+    }
+  );
+
+  test("does not reuse an API rejection from an earlier user turn", async () => {
+    vi.mocked(aiServiceClientConnect.chat).mockResolvedValue({
+      content: "Answer without done",
+      toolCalls: [],
+    } as never);
+
+    const outcome = await runAgentLoop(
+      [
+        { role: "user", content: "Reopen the issue" },
+        {
+          role: "assistant",
+          toolCalls: [
+            {
+              id: "api-1",
+              name: "call_api",
+              arguments: "{}",
+            },
+          ],
+        },
+        {
+          role: "tool",
+          toolCallId: "api-1",
+          content: JSON.stringify({ status: 400, error: "Not allowed" }),
+        },
+        { role: "user", content: "What is next?" },
+      ],
+      [{ name: "done", description: "done", parametersSchema: {} }],
+      vi.fn()
+    );
+
+    expect(outcome.kind).toBe("error");
+    expect(aiServiceClientConnect.chat).toHaveBeenCalledTimes(2);
   });
 
   test("does not execute a non-terminal tool requested during finalization", async () => {

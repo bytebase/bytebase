@@ -20,6 +20,8 @@ export interface Message {
 
 export type AgentChatStatus = "idle" | "running" | "awaiting_user" | "error";
 
+export type AgentInterruptionReason = "user" | "unexpected";
+
 export type AgentRunMode = "default" | "read-only";
 
 export interface AgentChatSnapshot {
@@ -80,6 +82,7 @@ export interface AgentMessageMetadata {
   hidden?: boolean;
   error?: string;
   runId?: string;
+  interruptionReason?: AgentInterruptionReason;
   evidence?: AgentAnswerEvidence;
   resourceReference?: AgentResourceReference;
   resourceReferences?: AgentResourceReference[];
@@ -106,6 +109,7 @@ export interface AgentChat {
   lastError?: string | null;
   requiresAIConfiguration?: boolean;
   interrupted?: boolean;
+  interruptionReason?: AgentInterruptionReason;
   runId?: string | null;
   runMode?: AgentRunMode;
 }

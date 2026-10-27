@@ -85,6 +85,32 @@ describe("sanitizeOutboundHistory", () => {
     expect(outbound.content).not.toContain("Orders DB");
   });
 
+  test("forwards a selected project and its issue together for the current turn", () => {
+    const message = userMessage({
+      resourceReferences: [
+        {
+          kind: "issue",
+          name: "projects/orders/issues/12",
+          project: "projects/orders",
+          label: "Change orders table",
+        },
+        {
+          kind: "project",
+          name: "projects/orders",
+          project: "projects/orders",
+          label: "Orders",
+        },
+      ],
+    });
+
+    const [outbound] = sanitizeOutboundHistory([message], "workspaces/default");
+
+    expect(outbound.content).toContain('"kind":"project"');
+    expect(outbound.content).toContain('"kind":"issue"');
+    expect(outbound.content).toContain('"name":"projects/orders/issues/12"');
+    expect(outbound.content).not.toContain("Change orders table");
+  });
+
   test("does not forward malformed cached references", () => {
     const message = userMessage({
       resourceReference: {
@@ -103,6 +129,61 @@ describe("sanitizeOutboundHistory", () => {
         toolCalls: undefined,
       },
     ]);
+  });
+
+  test("tells the agent when the user stopped an earlier request without forwarding its incomplete tools", () => {
+    const stopped = userMessage({ interruptionReason: "user" });
+    const partialToolCall: AgentMessage = {
+      ...userMessage(),
+      id: "call-1",
+      role: "assistant",
+      content: undefined,
+      toolCalls: [{ id: "tool-1", name: "call_api", arguments: "{}" }],
+    };
+    const partialToolResult: AgentMessage = {
+      ...userMessage(),
+      id: "result-1",
+      role: "tool",
+      toolCallId: "tool-1",
+      content: '{"status":200}',
+    };
+    const followUp = {
+      ...userMessage(),
+      id: "turn-2",
+      content: "What happened?",
+    };
+
+    const history = sanitizeOutboundHistory([
+      stopped,
+      partialToolCall,
+      partialToolResult,
+      followUp,
+    ]);
+
+    expect(history).toHaveLength(2);
+    expect(history[0].content).toContain("stopped by the user");
+    expect(history[0].content).toContain("may have completed");
+    expect(history[1].content).toBe("What happened?");
+    expect(stopped.content).toBe("What changed?");
+  });
+
+  test("distinguishes an unexpected interruption from a user stop", () => {
+    const interrupted = userMessage({ interruptionReason: "unexpected" });
+
+    const history = sanitizeOutboundHistory([
+      interrupted,
+      { ...userMessage(), id: "turn-2", content: "Continue" },
+    ]);
+
+    expect(history[0].content).toContain("interrupted unexpectedly");
+    expect(history[0].content).not.toContain("stopped by the user");
+    expect(history[1].content).toBe("Continue");
+  });
+
+  test("does not treat a marked current user message as historical", () => {
+    const current = userMessage({ interruptionReason: "user" });
+
+    expect(sanitizeOutboundHistory([current])[0].content).toBe("What changed?");
   });
 });
 
@@ -225,6 +306,69 @@ describe("buildOutboundHistory", () => {
     ).toEqual(["system", "What needs attention?"]);
   });
 
+  test("keeps an unqualified project follow-up free of a selected issue in that project", () => {
+    const issueTurn = [
+      {
+        ...userMessage({
+          resourceReference: {
+            kind: "issue" as const,
+            name: "projects/orders/issues/12",
+            project: "projects/orders",
+            label: "Change orders table",
+          },
+        }),
+        content: "Review @Change orders table",
+      },
+      {
+        ...userMessage(),
+        id: "answer-1",
+        role: "assistant" as const,
+        content: "The issue is waiting for approval.",
+      },
+      { ...userMessage(), id: "turn-2", content: "What needs attention?" },
+    ];
+
+    expect(
+      buildOutboundHistory("system", issueTurn, "projects/orders").map(
+        (message) => message.content
+      )
+    ).toEqual(["system", "What needs attention?"]);
+  });
+
+  test("keeps an unqualified workspace follow-up free of a selected project and issue", () => {
+    const issueTurn = [
+      userMessage({
+        resourceReferences: [
+          {
+            kind: "project" as const,
+            name: "projects/orders",
+            project: "projects/orders",
+            label: "Orders",
+          },
+          {
+            kind: "issue" as const,
+            name: "projects/orders/issues/12",
+            project: "projects/orders",
+            label: "Change orders table",
+          },
+        ],
+      }),
+      {
+        ...userMessage(),
+        id: "answer-1",
+        role: "assistant" as const,
+        content: "The issue is waiting for approval.",
+      },
+      { ...userMessage(), id: "turn-2", content: "What needs attention?" },
+    ];
+
+    expect(
+      buildOutboundHistory("system", issueTurn, "workspaces/default").map(
+        (message) => message.content
+      )
+    ).toEqual(["system", "What needs attention?"]);
+  });
+
   test("keeps an unqualified follow-up free of a project and database pair", () => {
     const multiReferenceTurn = [
       userMessage({
@@ -341,5 +485,39 @@ describe("buildOutboundHistory", () => {
     );
 
     expect(history.at(-1)?.content).toBe("How many instances are in Orders?");
+  });
+
+  test("keeps the interruption cause without leaking an off-context request", () => {
+    const interruptedProjectTurn = [
+      userMessage({
+        interruptionReason: "user",
+        resourceReference: {
+          kind: "project" as const,
+          name: "projects/billing",
+          project: "projects/billing",
+          label: "Billing",
+        },
+      }),
+      {
+        ...userMessage(),
+        id: "call-1",
+        role: "assistant" as const,
+        toolCalls: [{ id: "tool-1", name: "call_api", arguments: "{}" }],
+      },
+      { ...userMessage(), id: "turn-2", content: "How many instances?" },
+    ];
+
+    const history = buildOutboundHistory(
+      "system",
+      interruptedProjectTurn,
+      "workspaces/default"
+    );
+    expect(history.map((message) => message.content)).toEqual([
+      "system",
+      expect.stringContaining("stopped by the user"),
+      "How many instances?",
+    ]);
+    expect(history[1].content).not.toContain("projects/billing");
+    expect(history[1].content).not.toContain("What changed?");
   });
 });

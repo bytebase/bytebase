@@ -377,7 +377,10 @@ export type IamSlice = {
   roles: Role[];
   rolesRequest?: Promise<Role[]>;
   loadWorkspacePermissionState: () => Promise<void>;
-  loadProjectIamPolicy: (project: string) => Promise<IamPolicy | undefined>;
+  loadProjectIamPolicy: (
+    project: string,
+    silent?: boolean
+  ) => Promise<IamPolicy | undefined>;
   getProjectIamPolicy: (project: string) => IamPolicy;
   updateProjectIamPolicy: (
     project: string,

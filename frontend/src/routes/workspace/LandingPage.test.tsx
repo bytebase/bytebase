@@ -446,9 +446,9 @@ describe("LandingPage", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Select Orders database" }));
 
-    expect(prompt).toHaveValue("Check @orders ");
+    expect(prompt).toHaveValue("Check @orders (primary) ");
     expect(document.querySelector("[data-agent-inline-mention]")).toHaveTextContent(
-      "@orders"
+      "@orders (primary)"
     );
     expect(screen.getByText("agent.context: Acme workspace")).toBeVisible();
     expect(mocks.queueUserMessage).not.toHaveBeenCalled();
@@ -461,13 +461,13 @@ describe("LandingPage", () => {
     );
     expect(mocks.queueUserMessage).toHaveBeenCalledWith({
       chatId: "workspace-chat",
-      text: "Check @orders",
+      text: "Check @orders (primary)",
       page: expect.objectContaining({ path: expect.any(String) }),
       resourceReference: {
         kind: "database",
         name: "instances/primary/databases/orders",
         project: "projects/orders",
-        label: "orders",
+        label: "orders (primary)",
       },
     });
   });
@@ -603,7 +603,8 @@ describe("LandingPage", () => {
     fireEvent.keyDown(prompt, { key: "Escape" });
     expect(screen.queryByRole("status")).toBeNull();
     expect(screen.queryByRole("alert")).toBeNull();
-    expect(screen.getByRole("button", { name: "agent.send" })).toBeDisabled();
+    expect(prompt).toHaveValue("Check @Orders and ");
+    expect(screen.getByRole("button", { name: "agent.send" })).toBeEnabled();
 
     const replacementTrigger = "Check and @";
     fireEvent.change(prompt, {
@@ -644,12 +645,12 @@ describe("LandingPage", () => {
     expect(database).toHaveAttribute("data-selected-project-name", "projects/orders");
     fireEvent.click(database);
 
-    expect(prompt).toHaveValue("Check @Orders and @orders ");
+    expect(prompt).toHaveValue("Check @Orders and @orders (primary) ");
     expect(screen.getByRole("button", { name: "agent.send" })).toBeEnabled();
     fireEvent.click(screen.getByRole("button", { name: "agent.send" }));
     expect(mocks.queueUserMessage).toHaveBeenLastCalledWith(
       expect.objectContaining({
-        text: "Check @Orders and @orders",
+        text: "Check @Orders and @orders (primary)",
         resourceReferences: [
           {
             kind: "project",
@@ -661,7 +662,7 @@ describe("LandingPage", () => {
             kind: "database",
             name: "instances/primary/databases/orders",
             project: "projects/orders",
-            label: "orders",
+            label: "orders (primary)",
           },
         ],
       })
