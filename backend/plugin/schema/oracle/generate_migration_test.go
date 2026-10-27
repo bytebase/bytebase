@@ -2,6 +2,7 @@ package oracle
 
 import (
 	"os"
+	"slices"
 	"strings"
 	"testing"
 
@@ -476,4 +477,27 @@ func TestExpressionReferencesColumn(t *testing.T) {
 	for _, tc := range tests {
 		require.Equal(t, tc.want, expressionReferencesColumn(tc.expression, tc.column), tc.expression)
 	}
+}
+
+func TestFindColumnDependentsMatchesKeyColumnsByName(t *testing.T) {
+	table := &metadatapb.TableMetadata{
+		Indexes: []*metadatapb.IndexMetadata{
+			{Name: "LOWER_PK", Expressions: []string{"v"}, Primary: true, Unique: true, IsConstraint: true},
+			{Name: "MIXED_UK", Expressions: []string{"A", "Vv"}, Unique: true, IsConstraint: true},
+			{Name: "UPPER_UK", Expressions: []string{"V"}, Unique: true, IsConstraint: true},
+			{Name: "LOWER_IX", Expressions: []string{`"v"`}},
+		},
+	}
+	require.Equal(t, []string{"LOWER_IX", "LOWER_PK"}, sortedIndexNames(findColumnDependents(table, []string{"v"}, nil)))
+	require.Equal(t, []string{"MIXED_UK"}, sortedIndexNames(findColumnDependents(table, []string{"Vv"}, nil)))
+	require.Equal(t, []string{"UPPER_UK"}, sortedIndexNames(findColumnDependents(table, []string{"V"}, nil)))
+}
+
+func sortedIndexNames(dependents columnDependents) []string {
+	var names []string
+	for _, index := range dependents.indexes {
+		names = append(names, index.Name)
+	}
+	slices.Sort(names)
+	return names
 }

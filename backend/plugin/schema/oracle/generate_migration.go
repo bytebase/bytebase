@@ -914,8 +914,15 @@ func findColumnDependents(table *metadatapb.TableMetadata, columns []string, ski
 	references := func(expression string) bool {
 		return slices.ContainsFunc(columns, func(column string) bool { return expressionReferencesColumn(expression, column) })
 	}
+	// A primary or unique key lists column names as Oracle stores them, not
+	// SQL, so they compare as they are.
+	isColumn := func(name string) bool { return slices.Contains(columns, strings.Trim(name, `"`)) }
 	for _, index := range table.GetIndexes() {
-		if !skip[index.Name] && slices.ContainsFunc(index.Expressions, references) {
+		matches := references
+		if index.IsConstraint {
+			matches = isColumn
+		}
+		if !skip[index.Name] && slices.ContainsFunc(index.Expressions, matches) {
 			dependents.indexes = append(dependents.indexes, index)
 		}
 	}
