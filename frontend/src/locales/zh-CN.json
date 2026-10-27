@@ -2110,9 +2110,7 @@
     },
     "statement-summary": {
       "affected-rows_one": "约影响 {{count}} 行",
-      "affected-rows_other": "约影响 {{count}} 行",
-      "n-statements_one": "{{count}} 条语句",
-      "n-statements_other": "{{count}} 条语句"
+      "affected-rows_other": "约影响 {{count}} 行"
     },
     "submit-review-anyway": "仍然提交",
     "subtitle": "草拟数据库变更并运行预检查，然后创建工单以请求审批。",

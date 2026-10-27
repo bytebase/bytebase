@@ -233,6 +233,18 @@ export function PlanDetailStatementSection({
     () => (sqlReviewV2Enabled() ? statementSummary(planCheckRuns) : undefined),
     [planCheckRuns]
   );
+  const summaryText = summary
+    ? [
+        summary.types.join(", "),
+        summary.affectedRows > 0n
+          ? t("plan.statement-summary.affected-rows", {
+              count: Number(summary.affectedRows),
+            })
+          : "",
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    : "";
 
   useEffect(() => {
     if (!isEditing) {
@@ -577,24 +589,12 @@ export function PlanDetailStatementSection({
         >
           <span>{statementTitle}</span>
           {isEmpty && <span className="text-error">*</span>}
-          {summary && !isEmpty && (
+          {summaryText && !isEmpty && (
             <span
               className="ml-2 text-xs font-normal normal-case text-control-light"
               data-testid="statement-summary"
             >
-              {[
-                t("plan.statement-summary.n-statements", {
-                  count: summary.statements,
-                }),
-                summary.types.join(", "),
-                summary.affectedRows > 0n
-                  ? t("plan.statement-summary.affected-rows", {
-                      count: Number(summary.affectedRows),
-                    })
-                  : undefined,
-              ]
-                .filter(Boolean)
-                .join(" · ")}
+              {summaryText}
             </span>
           )}
         </div>

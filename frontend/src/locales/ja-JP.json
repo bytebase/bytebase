@@ -2110,9 +2110,7 @@
     },
     "statement-summary": {
       "affected-rows_one": "約 {{count}} 行に影響",
-      "affected-rows_other": "約 {{count}} 行に影響",
-      "n-statements_one": "{{count}} 個のステートメント",
-      "n-statements_other": "{{count}} 個のステートメント"
+      "affected-rows_other": "約 {{count}} 行に影響"
     },
     "submit-review-anyway": "それでも提出する",
     "subtitle": "承認のためにイシューを作成する前に、データベースの変更を下書きし、事前チェックを実行します。",

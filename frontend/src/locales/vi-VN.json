@@ -2110,9 +2110,7 @@
     },
     "statement-summary": {
       "affected-rows_one": "~{{count}} dòng bị ảnh hưởng",
-      "affected-rows_other": "~{{count}} dòng bị ảnh hưởng",
-      "n-statements_one": "{{count}} câu lệnh",
-      "n-statements_other": "{{count}} câu lệnh"
+      "affected-rows_other": "~{{count}} dòng bị ảnh hưởng"
     },
     "submit-review-anyway": "Vẫn gửi",
     "subtitle": "Soạn thảo các thay đổi cơ sở dữ liệu và chạy các bước kiểm tra sơ bộ trước khi tạo vấn đề để phê duyệt.",

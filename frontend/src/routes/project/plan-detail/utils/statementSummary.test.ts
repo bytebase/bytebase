@@ -22,7 +22,7 @@ const report = (types: StatementType[], affectedRows: bigint) =>
     },
   });
 
-test("summarizes the statements and the most rows a target affects", () => {
+test("summarizes the statement kinds and the most rows a target affects", () => {
   const types = [
     StatementType.DELETE,
     StatementType.ALTER_TABLE,
@@ -35,7 +35,6 @@ test("summarizes the statements and the most rows a target affects", () => {
     }),
   ]);
   expect(summary).toEqual({
-    statements: 4,
     types: ["DELETE", "ALTER TABLE", "UPDATE"],
     affectedRows: 900n,
   });

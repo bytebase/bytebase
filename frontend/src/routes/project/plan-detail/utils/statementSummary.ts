@@ -5,8 +5,9 @@ import {
 } from "@/types/proto-es/v1/plan_service_pb";
 
 export interface StatementSummary {
-  statements: number;
   // Distinct statement kinds in order of first appearance: "ALTER TABLE".
+  // Some engines' reports list each kind once, so their number is not a
+  // statement count.
   types: string[];
   // The most rows any target expects the change to affect.
   affectedRows: bigint;
@@ -39,5 +40,5 @@ export function statementSummary(
     (max, report) => (report.affectedRows > max ? report.affectedRows : max),
     0n
   );
-  return { statements: first.statementTypes.length, types, affectedRows };
+  return { types, affectedRows };
 }

@@ -2110,9 +2110,7 @@
     },
     "statement-summary": {
       "affected-rows_one": "~{{count}} row affected",
-      "affected-rows_other": "~{{count}} rows affected",
-      "n-statements_one": "{{count}} statement",
-      "n-statements_other": "{{count}} statements"
+      "affected-rows_other": "~{{count}} rows affected"
     },
     "submit-review-anyway": "Submit anyway",
     "subtitle": "Draft database changes and run pre-checks before creating an issue for approval.",

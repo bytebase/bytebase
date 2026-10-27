@@ -2110,9 +2110,7 @@
     },
     "statement-summary": {
       "affected-rows_one": "~{{count}} fila afectada",
-      "affected-rows_other": "~{{count}} filas afectadas",
-      "n-statements_one": "{{count}} sentencia",
-      "n-statements_other": "{{count}} sentencias"
+      "affected-rows_other": "~{{count}} filas afectadas"
     },
     "submit-review-anyway": "Enviar de todos modos",
     "subtitle": "Redactar cambios en la base de datos y ejecutar comprobaciones previas antes de crear un problema para su aprobación.",
