@@ -415,9 +415,10 @@ func TestValidateExplainFormat(t *testing.T) {
 // Databricks prefixes EXPLAIN too and is left out: it is the one SQL engine with
 // no read-only validator registered, so the gate has nothing to classify the
 // planned form with — for an ordinary query as much as for an explain. What
-// keeps a write from running there is Spark's EXPLAIN itself, which compiles a
-// statement without executing it, and the planned form always being one. See
-// TestExplainGateOnlyPlansOnDatabricks.
+// keeps a write from running there is Spark's EXPLAIN, which compiles a
+// statement without executing it, and the planner reading the caller's comments
+// as Databricks does, so a write behind one is planned rather than preserved.
+// See TestExplainGateOnlyPlansOnDatabricks.
 var explainPrefixEngines = []storepb.Engine{
 	storepb.Engine_POSTGRES, storepb.Engine_MYSQL, storepb.Engine_MARIADB,
 	storepb.Engine_OCEANBASE, storepb.Engine_TIDB, storepb.Engine_REDSHIFT,
@@ -433,19 +434,23 @@ var explainPrefixEngines = []storepb.Engine{
 // not executed.
 func TestExplainGateOnlyPlansOnDatabricks(t *testing.T) {
 	t.Parallel()
-	for _, statement := range []string{
-		"SELECT 1",
-		"DELETE FROM t WHERE id = 1",
-		"ANALYZE DELETE FROM t",
-		"INSERT INTO t VALUES (1)",
-		"EXPLAIN SELECT 1",
-		"-- a comment first\nSELECT 1",
+	for _, tc := range []struct {
+		name      string
+		statement string
+		want      string
+	}{
+		{name: "a write is planned", statement: "DELETE FROM t WHERE id = 1", want: "EXPLAIN FORMATTED DELETE FROM t WHERE id = 1"},
+		{name: "ANALYZE DELETE is planned", statement: "ANALYZE DELETE FROM t", want: "EXPLAIN FORMATTED ANALYZE DELETE FROM t"},
+		// Databricks block comments nest, so the EXPLAIN here is inside one and
+		// the statement is the delete.
+		{name: "a write behind a nested comment", statement: "/* outer /* inner */\nEXPLAIN\n*/\nDELETE FROM t", want: "EXPLAIN FORMATTED /* outer /* inner */\nEXPLAIN\n*/\nDELETE FROM t"},
+		{name: "a plan the caller asked for", statement: "EXPLAIN SELECT 1", want: "EXPLAIN SELECT 1"},
 	} {
-		t.Run(statement, func(t *testing.T) {
+		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			planned, err := parserbase.ExplainStatement(storepb.Engine_DATABRICKS, statement, parserbase.ExplainFormatDefault)
+			planned, err := parserbase.ExplainStatement(storepb.Engine_DATABRICKS, tc.statement, parserbase.ExplainFormatDefault)
 			require.NoError(t, err)
-			require.Truef(t, parserbase.StartsWithExplain(planned), "planned %q", planned)
+			require.Equal(t, tc.want, planned)
 		})
 	}
 }
