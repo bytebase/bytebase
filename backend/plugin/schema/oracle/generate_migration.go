@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	metadatapb "github.com/bytebase/omni/metadata"
+	"google.golang.org/protobuf/proto"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -803,26 +804,41 @@ func writeAlterColumns(buf *strings.Builder, tableDiff *schema.TableDiff) {
 		}
 	}
 	schemaName, tableName := tableDiff.SchemaName, tableDiff.TableName
+	created := diffObjectNames(tableDiff, schema.MetadataDiffActionCreate)
 	findColumnDependents(tableDiff.OldTable, oldColumns, diffObjectNames(tableDiff, schema.MetadataDiffActionDrop)).writeDrops(buf, schemaName, tableName)
 	for _, colDiff := range tableDiff.ColumnChanges {
-		if colDiff.Action == schema.MetadataDiffActionAlter {
-			_, _ = buf.WriteString(generateAlterColumn(schemaName, tableName, colDiff))
+		if colDiff.Action != schema.MetadataDiffActionAlter {
+			continue
 		}
+		// A named NOT NULL went with the dependents. One the diff creates is
+		// left to it.
+		notNull := columnNotNull{dropped: notNullConstraintName(tableDiff.OldTable, colDiff.OldColumn.Name) != ""}
+		if name := notNullConstraintName(tableDiff.NewTable, colDiff.NewColumn.Name); !created[name] {
+			notNull.name = name
+		}
+		_, _ = buf.WriteString(generateAlterColumn(schemaName, tableName, colDiff, notNull))
 	}
-	findColumnDependents(tableDiff.NewTable, newColumns, diffObjectNames(tableDiff, schema.MetadataDiffActionCreate)).writeCreates(buf, schemaName, tableName)
+	findColumnDependents(tableDiff.NewTable, newColumns, created).writeCreates(buf, schemaName, tableName)
 }
 
 // rebuildsColumn reports whether Oracle must drop and add the column again, or
-// give it a new virtual expression.
+// give it a new virtual type or expression.
 func rebuildsColumn(colDiff *schema.ColumnDiff) bool {
 	oldGeneration, newGeneration := colDiff.OldColumn.Generation, colDiff.NewColumn.Generation
 	if (oldGeneration == nil) != (newGeneration == nil) {
 		return true
 	}
-	return newGeneration != nil && oldGeneration.Expression != newGeneration.Expression
+	return newGeneration != nil && (oldGeneration.Expression != newGeneration.Expression || colDiff.OldColumn.Type != colDiff.NewColumn.Type)
 }
 
-func generateAlterColumn(schemaName, tableName string, colDiff *schema.ColumnDiff) string {
+// columnNotNull is how a rebuilt column's NOT NULL is handled: dropped means a
+// named one was dropped with the dependents, and name is the one to restore.
+type columnNotNull struct {
+	dropped bool
+	name    string
+}
+
+func generateAlterColumn(schemaName, tableName string, colDiff *schema.ColumnDiff, notNull columnNotNull) string {
 	var buf strings.Builder
 
 	// Oracle cannot turn a stored column into a virtual one or back, so the
@@ -830,30 +846,35 @@ func generateAlterColumn(schemaName, tableName string, colDiff *schema.ColumnDif
 	oldGeneration, newGeneration := colDiff.OldColumn.Generation, colDiff.NewColumn.Generation
 	if (oldGeneration == nil) != (newGeneration == nil) {
 		writeDropColumn(&buf, schemaName, tableName, colDiff.OldColumn.Name)
-		writeAddColumn(&buf, schemaName, tableName, colDiff.NewColumn)
+		column := colDiff.NewColumn
+		if notNull.name != "" {
+			column = proto.CloneOf(column)
+			column.Nullable = true
+		}
+		writeAddColumn(&buf, schemaName, tableName, column)
+		writeSetNotNull(&buf, schemaName, tableName, colDiff.NewColumn, notNull.name)
 		if colDiff.NewColumn.Comment != "" {
 			writeColumnComment(&buf, schemaName, tableName, colDiff.NewColumn.Name, colDiff.NewColumn.Comment)
 		}
 		return buf.String()
 	}
 
-	// NOT NULL also blocks a new virtual expression (ORA-54023).
-	expressionChanged := newGeneration != nil && oldGeneration.Expression != newGeneration.Expression
-	if expressionChanged {
-		if !colDiff.OldColumn.Nullable {
-			writeAlterColumnDropNotNull(&buf, schemaName, tableName, colDiff.OldColumn.Name)
-		}
+	// Oracle changes a virtual column's type only with its expression
+	// (ORA-54027), and NOT NULL blocks both (ORA-54023).
+	virtualChanged := newGeneration != nil && (oldGeneration.Expression != newGeneration.Expression || colDiff.OldColumn.Type != colDiff.NewColumn.Type)
+	if virtualChanged && !colDiff.OldColumn.Nullable && !notNull.dropped {
+		writeAlterColumnDropNotNull(&buf, schemaName, tableName, colDiff.OldColumn.Name)
 	}
 
 	// In Oracle, we need to handle different aspects of column changes separately
 
 	// If type changed, alter the column type
-	if colDiff.OldColumn.Type != colDiff.NewColumn.Type {
+	if !virtualChanged && colDiff.OldColumn.Type != colDiff.NewColumn.Type {
 		writeAlterColumnType(&buf, schemaName, tableName, colDiff.NewColumn.Name, colDiff.NewColumn.Type)
 	}
 
 	// If nullability changed
-	if !expressionChanged && colDiff.OldColumn.Nullable != colDiff.NewColumn.Nullable {
+	if !virtualChanged && colDiff.OldColumn.Nullable != colDiff.NewColumn.Nullable {
 		if colDiff.NewColumn.Nullable {
 			writeAlterColumnDropNotNull(&buf, schemaName, tableName, colDiff.NewColumn.Name)
 		} else {
@@ -879,11 +900,9 @@ func generateAlterColumn(schemaName, tableName string, colDiff *schema.ColumnDif
 		}
 	}
 
-	if expressionChanged {
-		writeModifyColumn(&buf, schemaName, tableName, colDiff.NewColumn.Name, "AS ("+newGeneration.Expression+")")
-		if !colDiff.NewColumn.Nullable {
-			writeAlterColumnSetNotNull(&buf, schemaName, tableName, colDiff.NewColumn.Name)
-		}
+	if virtualChanged {
+		writeModifyColumn(&buf, schemaName, tableName, colDiff.NewColumn.Name, colDiff.NewColumn.Type+" AS ("+newGeneration.Expression+")")
+		writeSetNotNull(&buf, schemaName, tableName, colDiff.NewColumn, notNull.name)
 	}
 
 	if colDiff.OldColumn.IsInvisible != colDiff.NewColumn.IsInvisible {
@@ -897,10 +916,38 @@ func generateAlterColumn(schemaName, tableName string, colDiff *schema.ColumnDif
 	return buf.String()
 }
 
-// columnDependents are a table's indexes and constraints on some of its columns.
+// writeSetNotNull restores a rebuilt column's NOT NULL, under its name when it
+// had one.
+func writeSetNotNull(out *strings.Builder, schemaName, tableName string, column *metadatapb.ColumnMetadata, name string) {
+	switch {
+	case column.Nullable:
+	case name != "":
+		writeModifyColumn(out, schemaName, tableName, column.Name, `CONSTRAINT "`+name+`" NOT NULL`)
+	default:
+		writeAlterColumnSetNotNull(out, schemaName, tableName, column.Name)
+	}
+}
+
+// notNullConstraintName returns the name of the column's named NOT NULL
+// constraint, which the sync lists as a check on "<column>" IS NOT NULL.
+func notNullConstraintName(table *metadatapb.TableMetadata, column string) string {
+	want := `"` + column + `" IS NOT NULL`
+	for _, check := range table.GetCheckConstraints() {
+		if strings.Join(strings.Fields(check.Expression), " ") == want {
+			return check.Name
+		}
+	}
+	return ""
+}
+
+// columnDependents are a table's indexes and constraints on some of its
+// columns. notNulls are named NOT NULL constraints: they are dropped with the
+// rest, but restored by the column's own MODIFY, since a CHECK does not make
+// a column NOT NULL.
 type columnDependents struct {
 	indexes     []*metadatapb.IndexMetadata
 	checks      []*metadatapb.CheckConstraintMetadata
+	notNulls    []*metadatapb.CheckConstraintMetadata
 	foreignKeys []*metadatapb.ForeignKeyMetadata
 }
 
@@ -927,7 +974,11 @@ func findColumnDependents(table *metadatapb.TableMetadata, columns []string, ski
 		}
 	}
 	for _, check := range table.GetCheckConstraints() {
-		if !skip[check.Name] && references(check.Expression) {
+		switch {
+		case skip[check.Name] || !references(check.Expression):
+		case slices.ContainsFunc(columns, func(column string) bool { return notNullConstraintName(table, column) == check.Name }):
+			dependents.notNulls = append(dependents.notNulls, check)
+		default:
 			dependents.checks = append(dependents.checks, check)
 		}
 	}
@@ -965,7 +1016,7 @@ func (d columnDependents) writeDrops(out *strings.Builder, schemaName, tableName
 	for _, fk := range d.foreignKeys {
 		writeDropForeignKey(out, schemaName, tableName, fk.Name)
 	}
-	for _, check := range d.checks {
+	for _, check := range slices.Concat(d.checks, d.notNulls) {
 		writeDropCheckConstraint(out, schemaName, tableName, check.Name)
 	}
 	for _, index := range d.indexes {

@@ -8296,6 +8296,16 @@
                   "type": "NUMBER",
                   "nullable": true,
                   "comment": "S comment"
+                },
+                {
+                  "name": "VT",
+                  "position": 5,
+                  "type": "NUMBER",
+                  "nullable": true,
+                  "generation": {
+                    "type": "TYPE_VIRTUAL",
+                    "expression": "\"A\"+5"
+                  }
                 }
               ],
               "indexes": [
@@ -8351,6 +8361,10 @@
                 {
                   "name": "T_VCS_CK",
                   "expression": "\"VC\" <= \"S\" + 100"
+                },
+                {
+                  "name": "VC_NN",
+                  "expression": "\"VC\" IS NOT NULL"
                 }
               ]
             }
@@ -8445,6 +8459,16 @@
                     "type": "TYPE_VIRTUAL",
                     "expression": "\"A\"-1"
                   }
+                },
+                {
+                  "name": "VT",
+                  "position": 7,
+                  "type": "VARCHAR2(40 BYTE)",
+                  "nullable": true,
+                  "generation": {
+                    "type": "TYPE_VIRTUAL",
+                    "expression": "TO_CHAR(\"A\")"
+                  }
                 }
               ],
               "indexes": [
@@ -8500,6 +8524,10 @@
                 {
                   "name": "T_VCS_CK",
                   "expression": "\"VC\" <= \"S\" + 100"
+                },
+                {
+                  "name": "VC_NN",
+                  "expression": "\"VC\" IS NOT NULL"
                 }
               ]
             },
@@ -8547,16 +8575,17 @@
     ALTER TABLE "T" DROP CONSTRAINT "T_VC_CK";
     ALTER TABLE "T" DROP CONSTRAINT "T_SA_CK";
     ALTER TABLE "T" DROP CONSTRAINT "T_VCS_CK";
+    ALTER TABLE "T" DROP CONSTRAINT "VC_NN";
     DROP INDEX "T_S";
     DROP INDEX "T_VC";
     ALTER TABLE "T" DROP CONSTRAINT "T_SA_UK";
-    ALTER TABLE "T" MODIFY "VC" NULL;
-    ALTER TABLE "T" MODIFY ("VC" AS ("A"+2));
-    ALTER TABLE "T" MODIFY "VC" NOT NULL;
+    ALTER TABLE "T" MODIFY ("VC" NUMBER AS ("A"+2));
+    ALTER TABLE "T" MODIFY ("VC" CONSTRAINT "VC_NN" NOT NULL);
     ALTER TABLE "T" MODIFY ("H" VISIBLE);
     ALTER TABLE "T" DROP COLUMN "S";
     ALTER TABLE "T" ADD "S" NUMBER GENERATED ALWAYS AS ("A"*3) VIRTUAL;
     COMMENT ON COLUMN "T"."S" IS 'S comment';
+    ALTER TABLE "T" MODIFY ("VT" VARCHAR2(40 BYTE) AS (TO_CHAR("A")));
     CREATE INDEX "T_S" ON "T" ("S" ASC);
     CREATE INDEX "T_VC" ON "T" ("VC" ASC);
     ALTER TABLE "T" ADD CONSTRAINT "T_SA_UK" UNIQUE (S, A);
