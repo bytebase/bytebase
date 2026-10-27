@@ -337,6 +337,31 @@ func getTiDBContainer(ctx context.Context) (*Container, error) {
 	})
 }
 
+// OracleServiceName is the pluggable database the Oracle container's tests connect to.
+const OracleServiceName = "FREEPDB1"
+
+// getOracleContainer starts Oracle Database Free. The admin handle signs in as
+// SYSTEM, which may create users and objects in any schema; the caller's test
+// binary must link go-ora, which registers the "oracle" driver.
+func getOracleContainer(ctx context.Context) (*Container, error) {
+	const user, password = "SYSTEM", "Test123"
+	return start(ctx, testcontainers.ContainerRequest{
+		Image: "gvenzl/oracle-free:23.26.3-slim-faststart",
+		Env: map[string]string{
+			"ORACLE_PASSWORD": password,
+		},
+		WaitingFor: wait.ForLog("DATABASE IS READY TO USE!").WithStartupTimeout(5 * time.Minute),
+	}, spec{
+		port:     "1521/tcp",
+		username: user,
+		password: password,
+		driver:   "oracle",
+		dsn: func(c *Container) string {
+			return fmt.Sprintf("oracle://%s:%s@%s:%s/%s", c.username, c.password, c.host, c.port, OracleServiceName)
+		},
+	})
+}
+
 // getMongoDBContainer starts MongoDB, which has no database/sql driver: its
 // tests open the Mongo driver themselves from the container's credentials.
 func getMongoDBContainer(ctx context.Context) (*Container, error) {

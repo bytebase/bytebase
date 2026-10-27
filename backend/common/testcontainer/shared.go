@@ -108,6 +108,10 @@ func SharedTiDBContainer(t testing.TB) *Container { return shared(t, sharedTiDB)
 // each with NewMongoDatabase.
 func SharedMongoDBContainer(t testing.TB) *Container { return shared(t, sharedMongo) }
 
+// SharedOracleContainer is SharedPgContainer for Oracle, reached through
+// OracleServiceName; tests take a schema each with NewOracleSchema.
+func SharedOracleContainer(t testing.TB) *Container { return shared(t, sharedOracle) }
+
 // SharedMariaDBContainer is SharedPgContainer for MariaDB 11.8; tests take a
 // database each with NewMariaDBDatabase.
 func SharedMariaDBContainer(t testing.TB) *Container { return shared(t, sharedMariaDB) }
@@ -204,6 +208,18 @@ func createMySQLProtocolDatabase(t testing.TB, container *Container) (*Container
 func NewMongoDatabase(t testing.TB) (*Container, string) {
 	t.Helper()
 	return SharedMongoDBContainer(t), newDatabaseName()
+}
+
+// NewOracleSchema creates an empty schema for the test on the shared Oracle
+// container and returns the container with the schema's name. The schema is a
+// user that can't sign in, with quota for the objects the admin creates in it.
+func NewOracleSchema(t testing.TB) (*Container, string) {
+	t.Helper()
+	container := SharedOracleContainer(t)
+	name := strings.ToUpper(newDatabaseName())
+	_, err := container.GetDB().Exec(fmt.Sprintf("CREATE USER %s NO AUTHENTICATION QUOTA UNLIMITED ON USERS", name))
+	require.NoError(t, err)
+	return container, name
 }
 
 // newDatabaseName is unique across the test binary, so tests that run in

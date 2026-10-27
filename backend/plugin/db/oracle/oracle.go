@@ -68,11 +68,12 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 	}
 	options := connectionOptions(config.DataSource.GetSid(), config.DataSource.GetExtraConnectionParameters(), tlsConfig != nil)
 	dsn := goora.BuildUrl(config.DataSource.Host, port, config.DataSource.GetServiceName(), config.DataSource.Username, config.Password, options)
-	db := sql.OpenDB(&connector{dsn: dsn, tlsConfig: tlsConfig})
+	db := sql.OpenDB(&connector{dsn: dsn, tlsConfig: tlsConfig, currentSchema: config.ConnectionContext.DatabaseName})
 	if config.ConnectionContext.DatabaseName != "" {
-		if _, err := db.ExecContext(ctx, fmt.Sprintf("ALTER SESSION SET CURRENT_SCHEMA = \"%s\"", config.ConnectionContext.DatabaseName)); err != nil {
+		// Connect now so that a schema the session can't switch to fails Open, not the first statement.
+		if err := db.PingContext(ctx); err != nil {
 			_ = db.Close()
-			return nil, errors.Wrapf(err, "failed to set current schema to %q", config.ConnectionContext.DatabaseName)
+			return nil, err
 		}
 	}
 	d.db = db
@@ -99,9 +100,14 @@ func getTLSConfig(dataSource *storepb.DataSource) (*tls.Config, error) {
 // connector opens each connection through go-ora's default driver, as sql.Open("oracle") does,
 // with its own copy of the TLS configuration: go-ora sets ServerName on the configuration it is
 // given, so connections opened in parallel can't share one.
+//
+// It also sets currentSchema on every session it opens, because the pool opens a new session
+// whenever none is idle or one goes bad. go-ora's AddSessionParam can't do this: it stores the
+// parameter on the default driver, which every Bytebase Oracle connection shares.
 type connector struct {
-	dsn       string
-	tlsConfig *tls.Config
+	dsn           string
+	tlsConfig     *tls.Config
+	currentSchema string
 }
 
 func (c *connector) Connect(ctx context.Context) (driver.Conn, error) {
@@ -110,7 +116,18 @@ func (c *connector) Connect(ctx context.Context) (driver.Conn, error) {
 		return nil, err
 	}
 	oracleConnector.(*goora.OracleConnector).WithTLSConfig(c.tlsConfig.Clone())
-	return oracleConnector.Connect(ctx)
+	conn, err := oracleConnector.Connect(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if c.currentSchema == "" {
+		return conn, nil
+	}
+	if _, err := conn.(driver.ExecerContext).ExecContext(ctx, fmt.Sprintf("ALTER SESSION SET CURRENT_SCHEMA = \"%s\"", c.currentSchema), nil); err != nil {
+		_ = conn.Close()
+		return nil, errors.Wrapf(err, "failed to set current schema to %q", c.currentSchema)
+	}
+	return conn, nil
 }
 
 func (*connector) Driver() driver.Driver {
