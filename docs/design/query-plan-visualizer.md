@@ -28,10 +28,9 @@ This ordering is a judgment call, not a measurement.
 ## 2. Background / problem
 
 The editor explained on 12 engines and drew a picture for 3 (PostgreSQL, SQL
-Server, Spanner); it now explains on 18 and draws for 18 (§3.4) — not the same
-eighteen, since Databricks explains with no parser to draw its plan, and
-BigQuery draws from a plan that arrives with an ordinary run rather than with an
-explain. Reaching the
+Server, Spanner); it now explains on 18 and draws for 19 (§3.4): every engine
+it explains, and BigQuery besides, whose plan arrives with an ordinary run
+rather than with an explain. Reaching the
 picture takes five steps: Ctrl/Cmd+E → plan rows in the grid → click a small
 "Visualize Explain" link → Bytebase runs `EXPLAIN` a second time for JSON → a
 separate browser tab opens.
@@ -359,7 +358,7 @@ regression.
 | **Doris** | one `Query()`, on demand, cached | graph, drawn from the text plan by the StarRocks parser | none — Doris has no `EXPLAIN ANALYZE` |
 | **Snowflake** | one `Query()`, on demand, cached | graph, with pruning in place of estimates | none — `EXPLAIN` compiles without running, whichever format it names |
 | **Hive** | one `Query()`, on demand, cached | graph, with rows and row widths, no costs | none in the editor |
-| **Databricks** | one `Query()`, on demand, cached | text: Spark's `EXPLAIN FORMATTED` has no parser yet | none — `EXPLAIN` never executes what it plans |
+| **Databricks** | one `Query()`, on demand, cached | graph, drawn from Spark's FORMATTED plan; shape and detail, no cost or rows | none — `EXPLAIN` never executes what it plans |
 
 A plan opened from a result is always an estimate, on every engine. Measured
 plans come from a typed `EXPLAIN ANALYZE` or its engine's equivalent, which is a
@@ -402,15 +401,26 @@ statistics, and if the slow run was caused by stale statistics that have since
 refreshed, the plan shown is the *good* one, and the reader concludes the query
 was never the problem. That is the inverted failure this wording exists to stop.
 
-**One of the eighteen engines the editor explains has no parser**, so there the
-plan is text. Databricks is that one, and it is the engine this section had
-listed as explaining nothing at all: its driver runs whatever SQL it is handed,
-so the capability table refused explain requests to keep an unplanned statement
-from running — an explain request skips the read-only validation an ordinary
-query gets. It now asks for Spark's `EXPLAIN FORMATTED`, a numbered tree
-followed by a block of detail per operator, which is the shape the Redshift and
-StarRocks parsers already read, so the graph is a parser away rather than a
-question to answer.
+**Every engine the editor explains now draws.** Databricks was the last one
+without a parser, and the engine this section had first listed as explaining
+nothing at all: its driver runs whatever SQL it is handed, so the capability
+table refused explain requests to keep an unplanned statement from running — an
+explain request skips the read-only validation an ordinary query gets. It asks
+for Spark's `EXPLAIN FORMATTED`, a numbered tree followed by a block of detail
+per operator, and its parser puts the two back together.
+
+What that plan does not state is cost or rows. Spark reports those from
+`EXPLAIN COST`, and only for the logical plan, which is not the plan that ran,
+so a Databricks graph ranks nothing: what it carries is the shape and the
+detail — whether a filter reached the scan, which partitions it skipped,
+whether a join broadcast or shuffled, and where the exchanges are. That is what
+a Spark plan is read for.
+
+The engines that remain state no plan at all: CQL has no `EXPLAIN`, and the
+document and key-value APIs publish none. Elasticsearch is the one with
+something to draw — its Profile API returns a measured tree — but reaching it
+means rewriting a request body rather than planning a statement, which is a
+different shape of request from every explain here.
 
 **Hive and Snowflake draw, and neither publishes what this section assumed.**
 Hive's `EXPLAIN FORMATTED` answers with one JSON object whose `CBOPlan` is

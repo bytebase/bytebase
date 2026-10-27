@@ -1105,8 +1105,9 @@ describe("SingleResultView explain visualizer", () => {
     );
 
   test("keeps multi-column explain output in the result table", () => {
-    // Databricks explains in Spark's own FORMATTED text, which has no parser,
-    // so there is no drawable plan to fetch and the grid is all there is.
+    // Databricks' plan is text and comes back in one column, which is what its
+    // parser reads; a grid of several columns is not that plan, and there is no
+    // other format to fetch, so the grid is all there is.
     tabularPlan(Engine.DATABRICKS, QueryOption_ExplainFormat.TEXT);
 
     expect(screen.queryByTestId("query-plan-result")).toBeNull();

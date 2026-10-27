@@ -30,12 +30,14 @@ describe("isVisualizerEngine", () => {
         Engine.REDSHIFT,
         Engine.STARROCKS,
         Engine.DORIS,
+        Engine.DATABRICKS,
       ].sort()
     );
     expect(isVisualizerEngine(Engine.POSTGRES)).toBe(true);
     expect(isVisualizerEngine(Engine.MYSQL)).toBe(true);
     expect(isVisualizerEngine(Engine.SNOWFLAKE)).toBe(true);
-    expect(isVisualizerEngine(Engine.DATABRICKS)).toBe(false);
+    expect(isVisualizerEngine(Engine.DATABRICKS)).toBe(true);
+    expect(isVisualizerEngine(Engine.CASSANDRA)).toBe(false);
   });
 
   test("names only engines whose plan the editor can reach", () => {
@@ -65,7 +67,12 @@ describe("explainQueryOption", () => {
     );
     // These plans are text; the viewer draws them because these engines
     // publish nothing else.
-    for (const engine of [Engine.REDSHIFT, Engine.STARROCKS, Engine.DORIS]) {
+    for (const engine of [
+      Engine.REDSHIFT,
+      Engine.STARROCKS,
+      Engine.DORIS,
+      Engine.DATABRICKS,
+    ]) {
       expect(explainQueryOption(engine).explainFormat).toBe(
         QueryOption_ExplainFormat.TEXT
       );
@@ -100,12 +107,18 @@ describe("explainQueryOption", () => {
   });
 
   test("leaves an engine the viewer cannot draw on its own default", () => {
-    // Databricks explains, in Spark's own FORMATTED text, which has no reader.
-    expect(explainQueryOption(Engine.DATABRICKS).explainFormat).toBe(
-      QueryOption_ExplainFormat.EXPLAIN_FORMAT_UNSPECIFIED
-    );
-    expect(explainQueryOption(Engine.HIVE).explainFormat).not.toBe(
-      QueryOption_ExplainFormat.EXPLAIN_FORMAT_UNSPECIFIED
-    );
+    // What is left are the engines that stated no plan to begin with: CQL has
+    // no EXPLAIN, and the document and key-value APIs publish none.
+    for (const engine of [
+      Engine.CASSANDRA,
+      Engine.REDIS,
+      Engine.DYNAMODB,
+      Engine.COSMOSDB,
+      Engine.ELASTICSEARCH,
+    ]) {
+      expect(explainQueryOption(engine).explainFormat, Engine[engine]).toBe(
+        QueryOption_ExplainFormat.EXPLAIN_FORMAT_UNSPECIFIED
+      );
+    }
   });
 });

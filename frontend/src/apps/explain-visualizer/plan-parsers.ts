@@ -3,6 +3,7 @@ import type { VisualizerEngine } from "@/utils/queryPlanEngines";
 import { parseBigqueryPlan } from "./bigquery-plan";
 import { parseClickhousePlan } from "./clickhouse-plan";
 import { parseCockroachdbPlan } from "./cockroachdb-plan";
+import { parseDatabricksPlan } from "./databricks-plan";
 import { parseHivePlan } from "./hive-plan";
 import { parseMongodbPlan } from "./mongodb-plan";
 import { parseMssqlPlan } from "./mssql-plan";
@@ -58,6 +59,9 @@ const PARSERS: Record<VisualizerEngine, (source: string) => PlanParseResult> = {
   // anything else. StarRocks forked from Doris and their plans still agree on
   // the fragments and the tree, so one parser reads both.
   [Engine.REDSHIFT]: parseRedshiftPlan,
+  // Databricks is Spark, whose FORMATTED plan is a tree of numbered operators
+  // and then a block of detail per number.
+  [Engine.DATABRICKS]: parseDatabricksPlan,
   [Engine.STARROCKS]: parseStarrocksPlan,
   [Engine.DORIS]: parseStarrocksPlan,
 };

@@ -3611,6 +3611,8 @@
         "cockroachdb-empty": "CockroachDB returned no query plan for this statement.",
         "cockroachdb-invalid": "The query plan is not valid JSON. The diagram EXPLAIN (DISTSQL) encodes is expected.",
         "cockroachdb-no-plan": "The query plan JSON contains no \"processors\" to draw.",
+        "databricks-empty": "Databricks returned no query plan for this statement.",
+        "databricks-no-plan": "The query plan has no physical plan in it. EXPLAIN FORMATTED output is expected.",
         "hive-empty": "Hive returned no query plan for this statement.",
         "hive-invalid": "The query plan is not valid JSON. Hive's EXPLAIN FORMATTED output is expected.",
         "hive-no-plan": "The query plan has no CBO plan to draw. Hive states one only when its cost-based optimizer planned the statement.",

@@ -3611,6 +3611,8 @@
         "cockroachdb-empty": "CockroachDB không trả về kế hoạch truy vấn cho câu lệnh này.",
         "cockroachdb-invalid": "Kế hoạch truy vấn không phải JSON hợp lệ. Cần sơ đồ mà EXPLAIN (DISTSQL) mã hoá.",
         "cockroachdb-no-plan": "JSON của kế hoạch truy vấn không chứa \"processors\" nào để vẽ.",
+        "databricks-empty": "Databricks không trả về kế hoạch truy vấn cho câu lệnh này.",
+        "databricks-no-plan": "Kế hoạch truy vấn không có kế hoạch vật lý. Cần đầu ra EXPLAIN FORMATTED.",
         "hive-empty": "Hive không trả về kế hoạch truy vấn cho câu lệnh này.",
         "hive-invalid": "Kế hoạch truy vấn không phải JSON hợp lệ. Cần đầu ra EXPLAIN FORMATTED của Hive.",
         "hive-no-plan": "Kế hoạch truy vấn không có kế hoạch CBO nào để vẽ. Hive chỉ nêu kế hoạch này khi bộ tối ưu hóa dựa trên chi phí lập kế hoạch cho câu lệnh.",

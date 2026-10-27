@@ -42,6 +42,7 @@ describe("QueryPlanView", () => {
     [Engine.OCEANBASE]: "oceanbase",
     [Engine.MONGODB]: "mongodb",
     [Engine.COCKROACHDB]: "cockroachdb",
+    [Engine.DATABRICKS]: "databricks",
     [Engine.SNOWFLAKE]: "snowflake",
     [Engine.HIVE]: "hive",
     [Engine.REDSHIFT]: "redshift",

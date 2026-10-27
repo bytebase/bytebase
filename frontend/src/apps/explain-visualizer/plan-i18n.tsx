@@ -34,6 +34,10 @@ const ENGLISH = {
     "The query plan is not valid JSON. EXPLAIN json = 1 output is expected.",
   "error.clickhouse-no-plan":
     'The ClickHouse query plan JSON does not contain a "Plan" object.',
+  "error.databricks-empty":
+    "Databricks returned no query plan for this statement.",
+  "error.databricks-no-plan":
+    "The query plan has no physical plan in it. EXPLAIN FORMATTED output is expected.",
   "error.cockroachdb-empty":
     "CockroachDB returned no query plan for this statement.",
   "error.cockroachdb-invalid":

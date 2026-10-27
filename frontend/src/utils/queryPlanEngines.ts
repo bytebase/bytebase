@@ -29,11 +29,13 @@ export const VISUALIZER_EXPLAIN_FORMATS = {
   // BigQuery states no plan for a statement it has not run. What it reports is
   // the stages of a job that did, which the result carries beside its rows.
   [Engine.BIGQUERY]: "JSON",
-  // These three publish no plan as a document; their text plan is what there
-  // is.
+  // These four publish no plan as a document; their text plan is what there
+  // is. Databricks prints Spark's FORMATTED plan: a tree of operators and then
+  // a block of detail for each.
   [Engine.REDSHIFT]: "TEXT",
   [Engine.STARROCKS]: "TEXT",
   [Engine.DORIS]: "TEXT",
+  [Engine.DATABRICKS]: "TEXT",
 } as const;
 
 export type VisualizerEngine = keyof typeof VISUALIZER_EXPLAIN_FORMATS;
