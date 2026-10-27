@@ -523,6 +523,20 @@ func TestQueryConnExplain(t *testing.T) {
 	require.Equal(t, statement+`.explain("queryPlanner")`, replanned.GetStatement())
 	require.NotContains(t, planner(replanned), "executionStats")
 
+	// The client runs a whole script in one call, but a plan covers one
+	// statement, so a script is planned a statement at a time rather than
+	// refused for holding two.
+	const second = `db.orders.find({total: {$lt: 500}})`
+	scripted, err := opened.QueryConn(ctx, nil, statement+"; "+second, db.QueryContext{
+		Explain: true, MaximumSQLResultSize: 1 << 30,
+		Option: &v1pb.QueryOption{ExplainFormat: v1pb.QueryOption_JSON},
+	})
+	require.NoError(t, err)
+	require.Len(t, scripted, 2)
+	require.Equal(t, statement+`.explain("queryPlanner")`, scripted[0].GetStatement())
+	require.Equal(t, second+`.explain("queryPlanner")`, scripted[1].GetStatement())
+	require.Contains(t, planner(scripted[1]), "winningPlan")
+
 	// Run on a statement that explains itself reports the plan it returned.
 	ran := explain(statement+`.explain()`, false)
 	require.Equal(t, v1pb.QueryOption_JSON, ran.GetQueryPlan().GetFormat())

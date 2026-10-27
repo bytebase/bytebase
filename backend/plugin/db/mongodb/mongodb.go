@@ -185,19 +185,13 @@ func getBasicMongoDBConnectionURI(connConfig db.ConnectionConfig) string {
 func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	statement = strings.Trim(statement, " \t\n\r\f;")
 	if queryContext.Explain {
-		explained, err := base.ExplainStatement(storepb.Engine_MONGODB, statement, db.ExplainFormat(queryContext.Option.GetExplainFormat()))
-		if err != nil {
-			return nil, err
-		}
-		statement = explained
+		return d.explainConn(ctx, statement, queryContext)
 	}
 	startTime := time.Now()
 
 	gmClient := gomongo.NewClient(d.client)
 	var gmOpts []gomongo.ExecuteOption
-	// A plan is one document, and a row limit on the query it plans would
-	// change the plan rather than the reading of it.
-	if !queryContext.Explain && queryContext.Limit > 0 {
+	if queryContext.Limit > 0 {
 		gmOpts = append(gmOpts, gomongo.WithMaxRows(int64(queryContext.Limit)))
 	}
 	result, err := gmClient.Execute(ctx, d.databaseName, statement, gmOpts...)
@@ -205,10 +199,38 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		return nil, err
 	}
 	results := d.convertGomongoResult(result, statement, startTime)
-	if !queryContext.Explain {
-		for _, r := range results {
-			r.QueryPlan = db.TypedExplainPlan(mongodbparser.DescribeExplain(statement))
+	for _, r := range results {
+		r.QueryPlan = db.TypedExplainPlan(mongodbparser.DescribeExplain(statement))
+	}
+	return results, nil
+}
+
+// explainConn plans each statement of the request on its own. The client runs a
+// whole script in one call, but a plan covers one statement: a request holding
+// two would be refused outright and the reader would get no plan at all. No row
+// limit is set, since limiting the query a plan covers would change the plan
+// rather than the reading of it.
+func (d *Driver) explainConn(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+	statements, err := base.SplitMultiSQL(storepb.Engine_MONGODB, statement)
+	if err != nil {
+		return nil, err
+	}
+	gmClient := gomongo.NewClient(d.client)
+	var results []*v1pb.QueryResult
+	for _, each := range statements {
+		if each.Empty {
+			continue
 		}
+		explained, err := base.ExplainStatement(storepb.Engine_MONGODB, each.Text, db.ExplainFormat(queryContext.Option.GetExplainFormat()))
+		if err != nil {
+			return nil, err
+		}
+		startTime := time.Now()
+		result, err := gmClient.Execute(ctx, d.databaseName, explained)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, d.convertGomongoResult(result, explained, startTime)...)
 	}
 	return results, nil
 }
