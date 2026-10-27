@@ -53,6 +53,7 @@ import enUS from "../../../src/locales/en-US.json";
 import { loadTestEnv, type TestEnv } from "../framework/env";
 import { BytebaseApiClient, type IamPolicy } from "../framework/api-client";
 import { signInBrowserAs } from "../framework/sign-in";
+import { runBaseline } from "../framework/run-baseline";
 import {
   createDatabaseChangePlanViaUI,
   submitDraftForReviewViaUI,
@@ -1603,9 +1604,13 @@ test.describe("The last plan editor cannot approve by default; another reviewer 
   let planId: string;
   let issueName: string;
 
-  test.beforeAll(async ({ browser }) => {
+  test.beforeAll(async ({ browser }, testInfo) => {
     await setupApproval(ONE_STEP_RULE);
-    originalAllowLastEditor = !!(await env.api.getProject(env.project)).allowLastPlanEditorApproval;
+    originalAllowLastEditor = await runBaseline(
+      testInfo,
+      "allow-last-plan-editor-approval",
+      async () => !!(await env.api.getProject(env.project)).allowLastPlanEditorApproval,
+    );
     // The author may self-approve; only the last-editor rule is in force.
     await env.api.updateProjectSettings(env.project, {
       allowSelfApproval: true,
@@ -1673,9 +1678,13 @@ test.describe("The project setting and plan edits move who may approve (L2/L3)",
   let planId: string;
   let planName: string;
 
-  test.beforeAll(async ({ browser }) => {
+  test.beforeAll(async ({ browser }, testInfo) => {
     await setupApproval(ONE_STEP_RULE);
-    originalAllowLastEditor = !!(await env.api.getProject(env.project)).allowLastPlanEditorApproval;
+    originalAllowLastEditor = await runBaseline(
+      testInfo,
+      "allow-last-plan-editor-approval",
+      async () => !!(await env.api.getProject(env.project)).allowLastPlanEditorApproval,
+    );
     await env.api.updateProjectSettings(env.project, {
       allowSelfApproval: true,
       allowLastPlanEditorApproval: false,

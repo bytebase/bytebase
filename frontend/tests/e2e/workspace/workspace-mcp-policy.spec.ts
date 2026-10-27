@@ -5,13 +5,12 @@
 // later suite's MCP session is allowed to do. This file runs before
 // workspace-seat-limit's license drop (directory order).
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
 import { test, expect, type Page } from "@playwright/test";
 import { rowsInTier } from "../../../src/components/mcp/mcpCapabilityRows";
 import enUS from "../../../src/locales/en-US.json";
 import { loadTestEnv, type TestEnv } from "../framework/env";
 import { BytebaseApiClient } from "../framework/api-client";
+import { runBaseline } from "../framework/run-baseline";
 
 // Prose the page must SHOW is read from the locale file, so a copy edit cannot
 // leave an assertion pointing at a sentence that does not exist. Copy that must
@@ -91,33 +90,22 @@ test.beforeAll(async ({}, testInfo) => {
   env = loadTestEnv();
   await env.api.login(env.adminEmail, env.adminPassword);
 
-  // Captured once per run, not once per attempt. A CI retry restarts the worker
-  // and re-runs this hook, so an attempt that died after M3 persisted
-  // Read-write would otherwise be re-snapshotted as the baseline — and teardown
-  // would pin the shared workspace there, which is the outcome the snapshot
-  // exists to prevent. The project output directory is cleared at the start of
-  // a run and survives its retries.
-  const baselinePath = join(testInfo.project.outputDir, "mcp-baseline.json");
-  if (existsSync(baselinePath)) {
-    originalMCPSetting = JSON.parse(readFileSync(baselinePath, "utf8"));
-    return;
-  }
-
-  const setting = (await env.api.getSetting("MCP")) as {
-    value?: { mcp?: Record<string, unknown> };
-  } | null;
-  // Workspace creation persists an MCP row (backend/store/workspace.go), so a
-  // missing one means the read failed. Refuse to mutate a ceiling that could not
-  // be snapshotted, rather than leave the workspace on whatever this suite last
-  // wrote.
-  if (!setting?.value?.mcp?.capability) {
-    throw new Error(
-      "could not read the workspace MCP setting; refusing to run, since teardown could not restore it"
-    );
-  }
-  originalMCPSetting = setting.value.mcp;
-  mkdirSync(testInfo.project.outputDir, { recursive: true });
-  writeFileSync(baselinePath, JSON.stringify(originalMCPSetting));
+  // Once per run: workspace-mcp-consent changes the same setting.
+  originalMCPSetting = await runBaseline(testInfo, "mcp-setting", async () => {
+    const setting = (await env.api.getSetting("MCP")) as {
+      value?: { mcp?: Record<string, unknown> };
+    } | null;
+    // Workspace creation persists an MCP row (backend/store/workspace.go), so a
+    // missing one means the read failed. Refuse to mutate a ceiling that could
+    // not be snapshotted, rather than leave the workspace on whatever this suite
+    // last wrote.
+    if (!setting?.value?.mcp?.capability) {
+      throw new Error(
+        "could not read the workspace MCP setting; refusing to run, since teardown could not restore it"
+      );
+    }
+    return setting.value.mcp;
+  });
 });
 
 test.afterAll(async () => {

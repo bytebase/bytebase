@@ -10,14 +10,16 @@
 // consent page must disclose the workspace ceiling the grant is worth, and a
 // DISABLED ceiling must withhold Allow entirely.
 //
-// State safety: the MCP capability is read in beforeAll and restored in
-// afterAll, since a workspace left DISABLED would break every later MCP test.
+// State safety: the MCP capability is captured once per run (shared with
+// workspace-mcp-policy) and restored in afterAll, since a workspace left
+// DISABLED would break every later MCP test.
 
 import { createHash, randomBytes } from "node:crypto";
 import { test, expect, type BrowserContext, type Page } from "@playwright/test";
 import enUS from "../../../src/locales/en-US.json";
 import { loadTestEnv, type TestEnv } from "../framework/env";
 import type { BytebaseApiClient } from "../framework/api-client";
+import { runBaseline } from "../framework/run-baseline";
 
 const CONSENT = enUS.oauth2.consent;
 const MODE = enUS.settings.mcp.policy.mode;
@@ -73,13 +75,19 @@ function waitForCallback(): Promise<URL> {
     .then((request) => new URL(request.url()));
 }
 
-test.beforeAll(async ({ browser }) => {
+test.beforeAll(async ({ browser }, testInfo) => {
   env = loadTestEnv();
   await env.api.login(env.adminEmail, env.adminPassword);
-  originalCapability = await readCapability();
-  if (!originalCapability) {
-    throw new Error("could not read the workspace MCP setting; refusing to run, since teardown could not restore it");
-  }
+  const baseline = await runBaseline(testInfo, "mcp-setting", async () => {
+    const setting = (await env.api.getSetting("MCP")) as {
+      value?: { mcp?: Record<string, unknown> };
+    } | null;
+    if (!setting?.value?.mcp?.capability) {
+      throw new Error("could not read the workspace MCP setting; refusing to run, since teardown could not restore it");
+    }
+    return setting.value.mcp;
+  });
+  originalCapability = String(baseline.capability);
   redirectUri = `${env.baseURL}/oauth-e2e-callback`;
   const client = await env.api.registerOAuth2Client(CLIENT_NAME, [redirectUri], [
     "authorization_code",
