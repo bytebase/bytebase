@@ -802,10 +802,12 @@ func generateAlterColumn(tableDiff *schema.TableDiff, colDiff *schema.ColumnDiff
 	// column is dropped and added again.
 	oldGeneration, newGeneration := colDiff.OldColumn.Generation, colDiff.NewColumn.Generation
 	if (oldGeneration == nil) != (newGeneration == nil) {
+		// DROP COLUMN fails while a multi-column constraint is on the column
+		// (ORA-12991), so the column's indexes and constraints are dropped
+		// first; they and its comment are made again after.
+		findColumnDependents(tableDiff.OldTable, colDiff.OldColumn.Name, diffObjectNames(tableDiff, schema.MetadataDiffActionDrop)).writeDrops(&buf, schemaName, tableName)
 		writeDropColumn(&buf, schemaName, tableName, colDiff.OldColumn.Name)
 		writeAddColumn(&buf, schemaName, tableName, colDiff.NewColumn)
-		// DROP COLUMN took the comment, indexes, and constraints with it. A
-		// multi-column constraint makes it fail instead (ORA-12991).
 		if colDiff.NewColumn.Comment != "" {
 			writeColumnComment(&buf, schemaName, tableName, colDiff.NewColumn.Name, colDiff.NewColumn.Comment)
 		}
