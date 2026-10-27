@@ -13,7 +13,7 @@ import {
   ReviewRunSchema,
   StatementAnchorSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
-import { Engine } from "@/types/proto-es/v1/common_pb";
+import { Engine, IssueStatus } from "@/types/proto-es/v1/common_pb";
 import {
   Plan_ChangeDatabaseConfigSchema,
   PlanSchema,
@@ -35,6 +35,18 @@ const mocks = vi.hoisted(() => ({
   routerPush: vi.fn(),
   ruleReview: undefined as unknown,
   rules: undefined as unknown,
+  runReview: vi.fn(async () => ({})),
+  pushNotification: vi.fn(),
+}));
+
+vi.mock("@/api", () => ({
+  issueServiceClientConnect: { runReview: mocks.runReview },
+}));
+
+vi.mock("@/stores", () => ({ pushNotification: mocks.pushNotification }));
+
+vi.mock("@/utils/iam/permission", () => ({
+  hasProjectPermissionV2: () => true,
 }));
 
 vi.mock("react-i18next", () => ({
@@ -106,7 +118,13 @@ vi.mock("../../shared/stores/usePlanDetailStore", () => {
 
 vi.mock("../../shell/PlanDetailContext", () => ({
   usePlanDetailContext: () => ({
-    issue: create(IssueSchema, { name: "projects/p/issues/1" }),
+    issue: create(IssueSchema, {
+      name: "projects/p/issues/1",
+      status: IssueStatus.OPEN,
+    }),
+    isEditing: false,
+    readonly: false,
+    rollout: undefined,
     plan: create(PlanSchema, {
       specs: [
         {
@@ -309,50 +327,117 @@ describe("AutomatedReviewSection", () => {
     expect(scope.textContent).toContain("plan.automated-review.project-rules");
   });
 
-  test("offers Run for a rule review that is out of date, and nothing for a current one", async () => {
+  test("claims no coverage for a reviewer that has not run", () => {
+    renderSection([row("ai", "not-run"), row("rule", "running")]);
+    expect(screen.queryByTestId("review-scope")).toBeNull();
+  });
+
+  test("Run, Retry, and Rerun start the rule review alone", async () => {
     const { unmount } = renderSection([row("rule", "outdated")]);
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: /common.run/ }));
     });
-    expect(mocks.runChecks).toHaveBeenCalledOnce();
+    expect(mocks.runReview).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ name: "projects/p/issues/1/reviewRuns/rule" }),
+      expect.anything()
+    );
     expect(mocks.reload).toHaveBeenCalledOnce();
+    expect(mocks.runChecks).not.toHaveBeenCalled();
     unmount();
 
-    renderSection([row("rule", "open", findings({ open: 1, confirm: 1 }))]);
-    expect(screen.queryByRole("button", { name: /common.run/ })).toBeNull();
+    renderSection([row("rule", "failed", undefined, { error: "hr_test: metadata not synced" })]);
+    expect(
+      screen.getByRole("button", { name: /plan.automated-review.retry/ })
+    ).toBeDefined();
   });
 
-  test("shows a failed run's error in full with a retry", () => {
+  test("a rule review with a result offers Rerun, since settings and schema change results", async () => {
+    renderSection([row("rule", "open", findings({ open: 1, confirm: 1 }))]);
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("button", { name: /plan.automated-review.rerun/ })
+      );
+    });
+    expect(mocks.runReview).toHaveBeenCalledOnce();
+  });
+
+  test("a rerun that would reopen resolved findings asks first", async () => {
+    renderSection([
+      row("rule", "open", findings({ open: 1, confirm: 1, resolved: 2 })),
+    ]);
+    fireEvent.click(
+      screen.getByRole("button", { name: /plan.automated-review.rerun/ })
+    );
+    expect(mocks.runReview).not.toHaveBeenCalled();
+    expect(
+      screen.getByText("plan.automated-review.rerun-rule-title")
+    ).toBeDefined();
+    expect(
+      screen.getByText("plan.automated-review.rerun-reopens:2")
+    ).toBeDefined();
+    const confirm = screen
+      .getAllByRole("button", { name: "plan.automated-review.rerun" })
+      .at(-1);
+    await act(async () => {
+      fireEvent.click(confirm!);
+    });
+    expect(mocks.runReview).toHaveBeenCalledOnce();
+  });
+
+  test("shows a failed run's error in full", () => {
     renderSection([
       row("rule", "failed", undefined, {
         error: "hr_test: metadata not synced",
       }),
     ]);
     expect(screen.getByText("hr_test: metadata not synced")).toBeDefined();
-    expect(
-      screen.getByRole("button", { name: /plan.automated-review.retry/ })
-    ).toBeDefined();
   });
 
-  test("a finished AI review runs again only after a confirmation", async () => {
+  test("a finished AI review offers Rerun behind a confirmation", async () => {
     const aiState = ai({
       run: create(ReviewRunSchema, { status: ReviewRun_Status.DONE }),
     });
     renderSection([row("ai", "passed")], aiState);
-    expect(
-      screen.queryByRole("button", { name: "plan.ai-review.run" })
-    ).toBeNull();
-    fireEvent.click(screen.getAllByRole("button", { name: "common.more" })[1]);
-    fireEvent.click(await screen.findByText("plan.ai-review.run-again"));
+    fireEvent.click(
+      screen.getByRole("button", { name: /plan.automated-review.rerun/ })
+    );
     expect(aiState.runReview).not.toHaveBeenCalled();
     expect(screen.getByText("plan.ai-review.run-again-title")).toBeDefined();
     const confirm = screen
-      .getAllByRole("button", { name: "plan.ai-review.run-again" })
+      .getAllByRole("button", { name: "plan.automated-review.rerun" })
       .at(-1);
     await act(async () => {
       fireEvent.click(confirm!);
     });
     expect(aiState.runReview).toHaveBeenCalledOnce();
+  });
+
+  test("Re-run all asks first when it would reopen resolved rule findings", async () => {
+    renderSection([row("rule", "resolved", findings({ resolved: 3 }))]);
+    fireEvent.click(screen.getByRole("button", { name: "common.more" }));
+    fireEvent.click(await screen.findByText("plan.automated-review.rerun-all"));
+    expect(mocks.runChecks).not.toHaveBeenCalled();
+    expect(
+      screen.getByText("plan.automated-review.rerun-all-description:3")
+    ).toBeDefined();
+    const confirm = screen
+      .getAllByRole("button", { name: "plan.automated-review.rerun-all" })
+      .at(-1);
+    await act(async () => {
+      fireEvent.click(confirm!);
+    });
+    expect(mocks.runChecks).toHaveBeenCalledOnce();
+    expect(mocks.reload).toHaveBeenCalledOnce();
+  });
+
+  test("a plan check row reruns the checks", async () => {
+    renderSection([row("policy", "passed", undefined, { targets: 1 })]);
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("button", { name: /plan.automated-review.rerun/ })
+      );
+    });
+    expect(mocks.runChecks).toHaveBeenCalledOnce();
   });
 
   test("a plan check row opens the check details", () => {

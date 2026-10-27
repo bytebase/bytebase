@@ -18,7 +18,6 @@ import {
   type Issue,
   type IssueComment,
   IssueComment_ThreadState,
-  ReviewRun_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import { useFocusThread } from "../hooks/useFocusThread";
@@ -132,11 +131,9 @@ function GateLine({ gate }: { gate: PlanGate }) {
           <CircleDashed className="size-4 text-control-light" />
         );
       label = reviewGateLabel(t, row);
-      const runType =
-        row.reviewer === "ai" ? ReviewRun_Type.AI : ReviewRun_Type.RULE;
       onShow = () => {
         focusPlanPhase("review", page.expandPhase);
-        storeApi.getState().requestReviewRow(runType);
+        storeApi.getState().requestReviewRow(row.reviewer);
       };
       break;
     }
@@ -194,11 +191,7 @@ function OverriddenLine({ row }: { row: AutomatedReviewRow }) {
         className="text-control-light"
         onClick={() => {
           focusPlanPhase("review", page.expandPhase);
-          storeApi
-            .getState()
-            .requestReviewRow(
-              row.reviewer === "ai" ? ReviewRun_Type.AI : ReviewRun_Type.RULE
-            );
+          storeApi.getState().requestReviewRow(row.reviewer);
         }}
         size="xs"
       >

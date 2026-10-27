@@ -11,6 +11,7 @@ import {
   countOpenDiscussions,
   type PlanGate,
   planCheckRow,
+  planCheckRunRow,
   ruleReviewRow,
 } from "../utils/planGates";
 import { useAIReviewRun } from "./useAIReviewRun";
@@ -61,10 +62,12 @@ export function usePlanReviewState(): PlanReviewState | undefined {
     if (ai.shown || aiFindings.open + aiFindings.resolved > 0) {
       rows.push(aiReviewRow({ run: ai.run, findings: aiFindings }));
     }
-    for (const reviewer of ["policy", "ghost"] as const) {
+    for (const reviewer of ["policy", "ghost", "report"] as const) {
       const row = planCheckRow(reviewer, page.planCheckRuns);
       if (row) rows.push(row);
     }
+    const runRow = planCheckRunRow(page.planCheckRuns);
+    if (runRow) rows.push(runRow);
     const openDiscussions = countOpenDiscussions(comments);
     return {
       rows,

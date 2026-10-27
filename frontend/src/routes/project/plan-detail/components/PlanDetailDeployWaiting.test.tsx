@@ -128,7 +128,7 @@ describe("PlanDetailDeployWaiting", () => {
       "review",
       expect.any(Function)
     );
-    expect(mocks.requestReviewRow).toHaveBeenCalledWith(ReviewRun_Type.RULE);
+    expect(mocks.requestReviewRow).toHaveBeenCalledWith("rule");
 
     fireEvent.click(shows[2]);
     expect(mocks.focusInStatement).toHaveBeenCalledWith(
@@ -172,6 +172,6 @@ describe("PlanDetailDeployWaiting", () => {
     const line = screen.getByTestId("deploy-overridden");
     expect(line.textContent).toContain("plan.deploy-waiting.overridden");
     fireEvent.click(screen.getAllByText("plan.deploy-waiting.show")[0]);
-    expect(mocks.requestReviewRow).toHaveBeenCalledWith(ReviewRun_Type.RULE);
+    expect(mocks.requestReviewRow).toHaveBeenCalledWith("rule");
   });
 });

@@ -37,7 +37,10 @@ import {
 import { projectNamePrefix } from "@/stores/modules/v1/common";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { Issue, IssueComment } from "@/types/proto-es/v1/issue_service_pb";
-import { IssueComment_ThreadState } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  IssueComment_ThreadState,
+  ReviewRun_Type,
+} from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import { sqlReviewV2Enabled } from "@/utils/featureGates";
 import { hasProjectPermissionV2 } from "@/utils/iam/permission";
@@ -354,7 +357,13 @@ function ReviewRunActivityRow({
           <Button
             appearance="link"
             className="text-control-light"
-            onClick={() => storeApi.getState().requestReviewRow(source.runType)}
+            onClick={() =>
+              storeApi
+                .getState()
+                .requestReviewRow(
+                  source.runType === ReviewRun_Type.AI ? "ai" : "rule"
+                )
+            }
             size="xs"
           >
             {t("plan.deploy-waiting.show")}

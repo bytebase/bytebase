@@ -28,6 +28,7 @@ import {
   emptyFindings,
   findingSetOf,
   planCheckRow,
+  planCheckRunRow,
   type ReviewerFindings,
   rowNeedsAttention,
   ruleReviewRow,
@@ -277,6 +278,57 @@ describe("planCheckRow", () => {
     expect(policy?.warnings).toBe(1);
     expect(policy?.targets).toBe(2);
     expect(planCheckRow("ghost", runs)?.conclusion).toBe("passed");
+  });
+});
+
+describe("statement report and run rows", () => {
+  test("a report that fails holds the rollout; one that passes has no row", () => {
+    const report = (level: Advice_Level) =>
+      create(PlanCheckRunSchema, {
+        status: PlanCheckRun_Status.DONE,
+        results: [
+          create(PlanCheckRun_ResultSchema, {
+            type: PlanCheckRun_Result_Type.STATEMENT_SUMMARY_REPORT,
+            status: level,
+            target: "db1",
+          }),
+        ],
+      });
+    const failing = planCheckRow("report", [report(Advice_Level.ERROR)]);
+    expect(failing?.conclusion).toBe("open");
+    expect(failing?.holdsRollout).toBe(true);
+    expect(failing?.findings.fix).toBe(1);
+    expect(
+      planCheckRow("report", [report(Advice_Level.SUCCESS)])
+    ).toBeUndefined();
+    expect(
+      planCheckRow("report", [report(Advice_Level.WARNING)])?.holdsRollout
+    ).toBe(false);
+  });
+
+  test.each([
+    [PlanCheckRun_Status.FAILED, "failed"],
+    [PlanCheckRun_Status.CANCELED, "failed"],
+    [PlanCheckRun_Status.RUNNING, "running"],
+    [PlanCheckRun_Status.STATUS_UNSPECIFIED, "running"],
+  ] as const)(
+    "a run %s without results holds the rollout as %s",
+    (status, conclusion) => {
+      const row = planCheckRunRow([
+        create(PlanCheckRunSchema, { status, error: "cannot derive targets" }),
+      ]);
+      expect(row?.conclusion).toBe(conclusion);
+      expect(row?.holdsRollout).toBe(true);
+      expect(row?.error).toBe("cannot derive targets");
+    }
+  );
+
+  test("a finished run has no run row", () => {
+    expect(
+      planCheckRunRow([
+        create(PlanCheckRunSchema, { status: PlanCheckRun_Status.DONE }),
+      ])
+    ).toBeUndefined();
   });
 });
 

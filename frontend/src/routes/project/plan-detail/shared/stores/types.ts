@@ -11,7 +11,7 @@ import type {
 } from "@/types/proto-es/v1/plan_service_pb";
 import type { Rollout, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Placement } from "../../components/threads/placement/place";
-import type { FindingSet } from "../../utils/planGates";
+import type { AutomatedReviewer, FindingSet } from "../../utils/planGates";
 
 export type PlanDetailPhase = "changes" | "review" | "deploy";
 
@@ -97,8 +97,8 @@ export type ThreadFocusSlice = {
   setWalkerFilter: (filter: WalkerFilter | undefined) => void;
   // An automated review row to expand and scroll to, as Activity's "Show"
   // asks for.
-  reviewRowRequest: { reviewer: ReviewRun_Type; nonce: number } | undefined;
-  requestReviewRow: (reviewer: ReviewRun_Type) => void;
+  reviewRowRequest: { reviewer: AutomatedReviewer; nonce: number } | undefined;
+  requestReviewRow: (reviewer: AutomatedReviewer) => void;
 };
 
 // Measurements of one placement run, kept so the decision to move the rule

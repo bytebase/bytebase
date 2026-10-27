@@ -23,7 +23,15 @@ import {
 import { ReviewRuleType } from "@/types/proto-es/v1/review_rule_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 
-export type AutomatedReviewer = "rule" | "ai" | "policy" | "ghost";
+export type AutomatedReviewer =
+  | "rule"
+  | "ai"
+  | "policy"
+  | "ghost"
+  | "report"
+  | "checks";
+
+export type PlanCheckReviewer = "policy" | "ghost" | "report";
 
 // One conclusion per reviewer. "passed" is a run with no findings;
 // "resolved" a run whose findings people have all resolved.
@@ -281,49 +289,67 @@ export function aiReviewRow(input: {
   };
 }
 
-// A plan check type's row: the V1 SQL review on engines the standard rules
-// do not cover, or the gh-ost dry run. Undefined when the plan's checks have
-// no result of that type.
+const PLAN_CHECK_TYPE: Record<PlanCheckReviewer, PlanCheckRun_Result_Type> = {
+  policy: PlanCheckRun_Result_Type.STATEMENT_ADVISE,
+  ghost: PlanCheckRun_Result_Type.GHOST_SYNC,
+  report: PlanCheckRun_Result_Type.STATEMENT_SUMMARY_REPORT,
+};
+
+// A plan check type's row, from its results: the V1 SQL review on engines the
+// standard rules do not cover, the gh-ost dry run, or the statement report.
+// The server creates no rollout while any result is an ERROR. A report that
+// passes describes the statement rather than judging it, so it has no row.
+// Undefined without a result to show.
 export function planCheckRow(
-  reviewer: "policy" | "ghost",
+  reviewer: PlanCheckReviewer,
   runs: readonly PlanCheckRun[]
 ): AutomatedReviewRow | undefined {
-  const type =
-    reviewer === "policy"
-      ? PlanCheckRun_Result_Type.STATEMENT_ADVISE
-      : PlanCheckRun_Result_Type.GHOST_SYNC;
+  const type = PLAN_CHECK_TYPE[reviewer];
   const results = runs.flatMap((run) =>
     run.results.filter((result) => result.type === type)
   );
-  const running = runs.some(
-    (run) => run.status === PlanCheckRun_Status.RUNNING
-  );
-  if (results.length === 0 && !running) return undefined;
   const errors = results.filter(
     (result) => result.status === Advice_Level.ERROR
   ).length;
   const warnings = results.filter(
     (result) => result.status === Advice_Level.WARNING
   ).length;
-  const failedRun = runs.find(
-    (run) => run.status === PlanCheckRun_Status.FAILED
-  );
-  const conclusion: ReviewConclusion = running
-    ? "running"
-    : failedRun
-      ? "failed"
-      : errors > 0
-        ? "open"
-        : "passed";
+  if (results.length === 0) return undefined;
+  if (reviewer === "report" && errors === 0 && warnings === 0) return undefined;
+  const conclusion: ReviewConclusion = errors > 0 ? "open" : "passed";
   return {
     reviewer,
     conclusion,
     findings: { ...emptyFindings(), open: errors, fix: errors },
-    holdsRollout: conclusion !== "passed",
-    error: failedRun?.error || undefined,
+    holdsRollout: errors > 0,
     time: runs[0]?.createTime,
     targets: new Set(results.map((result) => result.target)).size,
     warnings,
+  };
+}
+
+// The plan check run while it has no results to show: queued, running, or
+// stopped before producing any, as when its targets cannot be derived. The
+// server creates the rollout only once the current run is DONE.
+export function planCheckRunRow(
+  runs: readonly PlanCheckRun[]
+): AutomatedReviewRow | undefined {
+  const run = runs.find(
+    (candidate) =>
+      candidate.status !== PlanCheckRun_Status.DONE &&
+      candidate.results.length === 0
+  );
+  if (!run) return undefined;
+  const stopped =
+    run.status === PlanCheckRun_Status.FAILED ||
+    run.status === PlanCheckRun_Status.CANCELED;
+  return {
+    reviewer: "checks",
+    conclusion: stopped ? "failed" : "running",
+    findings: emptyFindings(),
+    holdsRollout: true,
+    error: run.error || undefined,
+    time: run.createTime,
   };
 }
 

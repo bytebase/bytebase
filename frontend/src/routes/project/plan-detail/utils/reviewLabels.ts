@@ -18,6 +18,10 @@ export const reviewerLabel = (t: T, reviewer: AutomatedReviewer): string => {
       return t("plan.automated-review.policy");
     case "ghost":
       return t("plan.automated-review.ghost");
+    case "report":
+      return t("plan.automated-review.report");
+    case "checks":
+      return t("plan.automated-review.checks");
   }
 };
 

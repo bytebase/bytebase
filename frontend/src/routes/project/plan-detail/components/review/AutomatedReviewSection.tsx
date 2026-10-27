@@ -50,6 +50,7 @@ import { useEffectiveStandardRules } from "../../hooks/useEffectiveStandardRules
 import { useFocusThread } from "../../hooks/useFocusThread";
 import { usePlanCheckActions } from "../../hooks/usePlanCheckActions";
 import type { PlanReviewState } from "../../hooks/usePlanReviewState";
+import { useRuleReviewRerun } from "../../hooks/useRuleReviewRerun";
 import { useSqlReviewV2 } from "../../hooks/useSqlReviewV2";
 import {
   usePlanDetailStore,
@@ -65,7 +66,7 @@ import {
   findingTitle,
   rowNeedsAttention,
 } from "../../utils/planGates";
-import { openActionParts } from "../../utils/reviewLabels";
+import { openActionParts, reviewerLabel } from "../../utils/reviewLabels";
 import { reviewScope } from "../../utils/reviewScope";
 import { ReviewerIcon, reviewerName } from "../threads/ReviewResult";
 
@@ -95,11 +96,19 @@ export function AutomatedReviewSection({ state }: { state: PlanReviewState }) {
   const { rows } = state;
   const attention = rows.filter(rowNeedsAttention).length;
   const [checksDrawerOpen, setChecksDrawerOpen] = useState(false);
+  const [confirmChecks, setConfirmChecks] = useState(false);
+  const ruleResolved =
+    rows.find((row) => row.reviewer === "rule")?.findings.resolved ?? 0;
 
-  // Running the checks also starts the rule review on the server.
+  // Running the checks also starts the rule review on the server, which
+  // posts its findings again and reopens what people resolved.
   const rerunAll = async () => {
     await runChecks();
     await ruleReview?.reload();
+  };
+  const requestRerunChecks = () => {
+    if (ruleResolved > 0) setConfirmChecks(true);
+    else void rerunAll();
   };
 
   if (rows.length === 0) return null;
@@ -151,7 +160,7 @@ export function AutomatedReviewSection({ state }: { state: PlanReviewState }) {
             <DropdownMenuContent>
               <DropdownMenuItem
                 disabled={isRunningChecks}
-                onClick={() => void rerunAll()}
+                onClick={requestRerunChecks}
               >
                 {t("plan.automated-review.rerun-all")}
               </DropdownMenuItem>
@@ -163,7 +172,7 @@ export function AutomatedReviewSection({ state }: { state: PlanReviewState }) {
         {rows.map((row) => (
           <ReviewerRow
             key={row.reviewer}
-            onRerunChecks={rerunAll}
+            onRerunChecks={requestRerunChecks}
             onViewChecks={() => setChecksDrawerOpen(true)}
             row={row}
             state={state}
@@ -176,7 +185,59 @@ export function AutomatedReviewSection({ state }: { state: PlanReviewState }) {
         open={checksDrawerOpen}
         planCheckRuns={page.planCheckRuns}
       />
+      <RerunConfirmDialog
+        confirmLabel={t("plan.automated-review.rerun-all")}
+        description={t("plan.automated-review.rerun-all-description", {
+          count: ruleResolved,
+        })}
+        onConfirm={() => void rerunAll()}
+        onOpenChange={setConfirmChecks}
+        open={confirmChecks}
+        title={t("plan.automated-review.rerun-all-title")}
+      />
     </div>
+  );
+}
+
+function RerunConfirmDialog({
+  open,
+  onOpenChange,
+  title,
+  description,
+  confirmLabel,
+  onConfirm,
+  disabled = false,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  title: string;
+  description: string;
+  confirmLabel: string;
+  onConfirm: () => void;
+  disabled?: boolean;
+}) {
+  const { t } = useTranslation();
+  return (
+    <AlertDialog onOpenChange={onOpenChange} open={open}>
+      <AlertDialogContent>
+        <AlertDialogTitle>{title}</AlertDialogTitle>
+        <AlertDialogDescription>{description}</AlertDialogDescription>
+        <AlertDialogFooter>
+          <Button appearance="secondary" onClick={() => onOpenChange(false)}>
+            {t("common.cancel")}
+          </Button>
+          <Button
+            disabled={disabled}
+            onClick={() => {
+              onOpenChange(false);
+              onConfirm();
+            }}
+          >
+            {confirmLabel}
+          </Button>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 
@@ -188,7 +249,7 @@ function ReviewerRow({
 }: {
   row: AutomatedReviewRow;
   state: PlanReviewState;
-  onRerunChecks: () => Promise<void>;
+  onRerunChecks: () => void;
   onViewChecks: () => void;
 }) {
   const { t } = useTranslation();
@@ -197,19 +258,20 @@ function ReviewerRow({
   const { focusInStatement } = useFocusThread();
   const ruleReview = useSqlReviewV2()?.ruleReview;
   const { allowRunChecks, isRunningChecks } = usePlanCheckActions();
+  const rerunRule = useRuleReviewRerun();
   const runType = runTypeOf(row.reviewer);
   const comments = useAppStore((s) =>
     page.issue ? s.getIssueComments(page.issue.name) : NO_COMMENTS
   );
-  const [confirmRunAgain, setConfirmRunAgain] = useState(false);
+  const [confirm, setConfirm] = useState<"rule" | "ai">();
   const rowRef = useRef<HTMLDivElement>(null);
 
   // Activity's "Show" brings this row into view.
   const reviewRowRequest = usePlanDetailStore((s) => s.reviewRowRequest);
   useEffect(() => {
-    if (!reviewRowRequest || reviewRowRequest.reviewer !== runType) return;
+    if (reviewRowRequest?.reviewer !== row.reviewer) return;
     rowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-  }, [reviewRowRequest, runType]);
+  }, [reviewRowRequest, row.reviewer]);
 
   // A count opens the editor on the first finding of its set and narrows
   // the walker to that set.
@@ -234,10 +296,7 @@ function ReviewerRow({
       </>
     );
   } else {
-    name =
-      row.reviewer === "policy"
-        ? t("plan.automated-review.policy")
-        : t("plan.automated-review.ghost");
+    name = reviewerLabel(t, row.reviewer);
   }
 
   const actions: ReactNode[] = [];
@@ -255,75 +314,57 @@ function ReviewerRow({
         </Button>
       );
     } else if (
-      allowRunChecks &&
-      (row.conclusion === "not-run" ||
-        row.conclusion === "outdated" ||
-        row.conclusion === "failed")
+      rerunRule.allowed &&
+      row.conclusion !== "running" &&
+      row.conclusion !== "loading"
     ) {
+      // A rerun posts the findings again, reopening what people resolved.
+      const start = () => {
+        if (row.findings.resolved > 0) setConfirm("rule");
+        else void rerunRule.run();
+      };
       actions.push(
-        <Button
-          appearance="outline"
-          disabled={isRunningChecks}
+        <RunButton
+          conclusion={row.conclusion}
+          disabled={rerunRule.disabled}
           key="run"
-          onClick={() => void onRerunChecks()}
-          size="xs"
-        >
-          {row.conclusion === "failed" ? (
-            <RotateCw className="size-3.5" />
-          ) : (
-            <Play className="size-3.5" />
-          )}
-          {row.conclusion === "failed"
-            ? t("plan.automated-review.retry")
-            : t("common.run")}
-        </Button>
+          onClick={start}
+        />
       );
     }
   }
-  if (row.reviewer === "ai" && ai.allowRun) {
+  if (
+    row.reviewer === "ai" &&
+    ai.allowRun &&
+    row.conclusion !== "running" &&
+    row.conclusion !== "loading"
+  ) {
+    // Every finished run is paid for in model calls, so running it again
+    // asks first.
     const settled =
       ai.run?.status === ReviewRun_Status.DONE && !ai.run.outdated;
-    if (settled) {
-      actions.push(
-        <DropdownMenu key="more">
-          <DropdownMenuTrigger
-            render={
-              <Button
-                aria-label={t("common.more")}
-                appearance="secondary"
-                size="xs"
-              />
-            }
-          >
-            <EllipsisVertical className="size-4" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuItem
-              disabled={!ai.canStart}
-              onClick={() => setConfirmRunAgain(true)}
-            >
-              {t("plan.ai-review.run-again")}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      );
-    } else if (row.conclusion !== "running" && row.conclusion !== "loading") {
-      actions.push(
-        <Button
-          appearance="outline"
-          aria-label={t("plan.ai-review.run")}
-          disabled={!ai.canStart}
-          key="run"
-          onClick={() => void ai.runReview()}
-          size="xs"
-        >
-          <Play className="size-3.5" />
-          {t("common.run")}
-        </Button>
-      );
-    }
+    actions.push(
+      <RunButton
+        conclusion={settled ? "passed" : row.conclusion}
+        disabled={!ai.canStart}
+        key="run"
+        label={settled ? undefined : t("plan.ai-review.run")}
+        onClick={() => (settled ? setConfirm("ai") : void ai.runReview())}
+      />
+    );
   }
-  if (row.reviewer === "policy" || row.reviewer === "ghost") {
+  // Plan checks run together, and the run restarts the rule review too.
+  if (runType === undefined && allowRunChecks && row.conclusion !== "running") {
+    actions.push(
+      <RunButton
+        conclusion={row.conclusion}
+        disabled={isRunningChecks}
+        key="run"
+        onClick={onRerunChecks}
+      />
+    );
+  }
+  if (runType === undefined) {
     actions.push(
       <Button
         appearance="link"
@@ -345,7 +386,13 @@ function ReviewerRow({
       </p>
     );
   }
-  if (runType !== undefined) {
+  const { findings } = row;
+  const decided =
+    findings.overridden > 0 ||
+    findings.accepted.length > 0 ||
+    findings.dismissed > 0 ||
+    findings.earlier > 0;
+  if (runType !== undefined && decided) {
     details.push(
       <FindingDecisions
         comments={comments}
@@ -356,7 +403,12 @@ function ReviewerRow({
       />
     );
   }
-  if (row.reviewer === "rule" || row.reviewer === "ai") {
+  // A reviewer without a result has covered nothing yet.
+  const hasResult =
+    row.conclusion !== "not-run" &&
+    row.conclusion !== "loading" &&
+    row.conclusion !== "running";
+  if ((row.reviewer === "rule" || row.reviewer === "ai") && hasResult) {
     details.push(<ScopeLine key="scope" reviewer={row.reviewer} />);
   }
 
@@ -386,34 +438,66 @@ function ReviewerRow({
           <div className="flex min-w-0 flex-1 flex-col gap-y-1">{details}</div>
         </div>
       )}
-      <AlertDialog onOpenChange={setConfirmRunAgain} open={confirmRunAgain}>
-        <AlertDialogContent>
-          <AlertDialogTitle>
-            {t("plan.ai-review.run-again-title")}
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            {t("plan.ai-review.run-again-description")}
-          </AlertDialogDescription>
-          <AlertDialogFooter>
-            <Button
-              appearance="secondary"
-              onClick={() => setConfirmRunAgain(false)}
-            >
-              {t("common.cancel")}
-            </Button>
-            <Button
-              disabled={!ai.canStart}
-              onClick={() => {
-                setConfirmRunAgain(false);
-                void ai.runReview();
-              }}
-            >
-              {t("plan.ai-review.run-again")}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <RerunConfirmDialog
+        confirmLabel={t("plan.automated-review.rerun")}
+        description={
+          confirm === "ai"
+            ? t("plan.ai-review.run-again-description")
+            : t("plan.automated-review.rerun-reopens", {
+                count: row.findings.resolved,
+              })
+        }
+        disabled={confirm === "ai" ? !ai.canStart : rerunRule.disabled}
+        onConfirm={() =>
+          confirm === "ai" ? void ai.runReview() : void rerunRule.run()
+        }
+        onOpenChange={(open) => !open && setConfirm(undefined)}
+        open={confirm !== undefined}
+        title={
+          confirm === "ai"
+            ? t("plan.ai-review.run-again-title")
+            : t("plan.automated-review.rerun-rule-title")
+        }
+      />
     </div>
+  );
+}
+
+// Run before a first result or after the SQL changed, Retry after a failed
+// run, Rerun once there is a result.
+function RunButton({
+  conclusion,
+  disabled,
+  onClick,
+  label,
+}: {
+  conclusion: AutomatedReviewRow["conclusion"];
+  disabled: boolean;
+  onClick: () => void;
+  label?: string;
+}) {
+  const { t } = useTranslation();
+  const first = conclusion === "not-run" || conclusion === "outdated";
+  const text = first
+    ? t("common.run")
+    : conclusion === "failed"
+      ? t("plan.automated-review.retry")
+      : t("plan.automated-review.rerun");
+  return (
+    <Button
+      appearance="outline"
+      aria-label={label}
+      disabled={disabled}
+      onClick={onClick}
+      size="xs"
+    >
+      {first ? (
+        <Play className="size-3.5" />
+      ) : (
+        <RotateCw className="size-3.5" />
+      )}
+      {text}
+    </Button>
   );
 }
 
@@ -489,7 +573,7 @@ function ConclusionText({
       tsMs={getTimeForPbTimestampProtoEs(row.time)}
     />
   );
-  const isPlanCheck = row.reviewer === "policy" || row.reviewer === "ghost";
+  const isPlanCheck = runTypeOf(row.reviewer) === undefined;
   const parts: ReactNode[] = [];
   switch (row.conclusion) {
     case "loading":
