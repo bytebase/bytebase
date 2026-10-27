@@ -7,7 +7,14 @@ import {
   IssueSchema,
   ReviewRun_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
-import { PlanSchema } from "@/types/proto-es/v1/plan_service_pb";
+import { State } from "@/types/proto-es/v1/common_pb";
+import {
+  Plan_ChangeDatabaseConfigSchema,
+  Plan_CreateDatabaseConfigSchema,
+  type Plan_Spec,
+  Plan_SpecSchema,
+  PlanSchema,
+} from "@/types/proto-es/v1/plan_service_pb";
 import type { PlanReviewState } from "../hooks/usePlanReviewState";
 import {
   type AutomatedReviewRow,
@@ -81,15 +88,35 @@ const openRule: AutomatedReviewRow = {
   holdsRollout: true,
 };
 
+const changeSpec = create(Plan_SpecSchema, {
+  id: "change",
+  config: {
+    case: "changeDatabaseConfig",
+    value: create(Plan_ChangeDatabaseConfigSchema),
+  },
+});
+const createDatabaseSpec = create(Plan_SpecSchema, {
+  id: "create",
+  config: {
+    case: "createDatabaseConfig",
+    value: create(Plan_CreateDatabaseConfigSchema),
+  },
+});
+
 const renderWaiting = (
   gates: PlanGate[],
   draft = false,
-  rows: AutomatedReviewRow[] = []
+  rows: AutomatedReviewRow[] = [],
+  specs: Plan_Spec[] = [changeSpec]
 ) =>
   render(
     <PlanDetailDeployWaiting
       issue={create(IssueSchema, { name: "projects/p/issues/1", draft })}
-      plan={create(PlanSchema, { name: "projects/p/plans/1" })}
+      plan={create(PlanSchema, {
+        name: "projects/p/plans/1",
+        state: State.ACTIVE,
+        specs,
+      })}
       state={{ rows, gates, openDiscussions: 0 } as unknown as PlanReviewState}
     />
   );
@@ -141,6 +168,19 @@ describe("PlanDetailDeployWaiting", () => {
     expect(
       screen.getByText("plan.deploy-waiting.creating-rollout")
     ).toBeDefined();
+    expect(screen.getByText("plan.deploy-waiting.auto-create")).toBeDefined();
+  });
+
+  test("promises no automatic rollout for a plan that creates a database", () => {
+    renderWaiting([], false, [], [changeSpec, createDatabaseSpec]);
+    expect(
+      screen.queryByText("plan.deploy-waiting.creating-rollout")
+    ).toBeNull();
+    expect(screen.getByText("plan.deploy-waiting.ready-to-deploy")).toBeDefined();
+    expect(
+      screen.getByText("plan.deploy-waiting.manual-rollout")
+    ).toBeDefined();
+    expect(screen.queryByText("plan.deploy-waiting.auto-create")).toBeNull();
   });
 
   test("a draft waits on submission and offers no override", () => {

@@ -24,7 +24,7 @@ const isDatabaseGroupName = (name: string): boolean =>
 // Mirrors the eligibility gates that can permanently prevent RolloutCreator
 // from materializing a rollout. Transient approval and check gates are handled
 // separately below.
-const supportsAutomaticRollout = (plan: Plan): boolean =>
+export const supportsAutomaticRollout = (plan: Plan): boolean =>
   plan.state === State.ACTIVE &&
   plan.specs.length > 0 &&
   plan.specs.every((spec) => spec.config?.case === "changeDatabaseConfig");

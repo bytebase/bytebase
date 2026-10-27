@@ -3,7 +3,7 @@ import { act, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MAIN_SCROLL_RESTORATION_ID } from "@/app/router/NavigationScrollRestoration";
-import { State } from "@/types/proto-es/v1/common_pb";
+import { IssueStatus, State } from "@/types/proto-es/v1/common_pb";
 import type { PlanDetailPageState } from "./shell/hooks/types";
 
 (
@@ -526,6 +526,7 @@ describe("ProjectPlanDetailPage", () => {
     page.issue = {
       name: "projects/foo/issues/1",
       draft: true,
+      status: IssueStatus.OPEN,
     } as PlanDetailPageState["issue"];
     mocks.usePlanDetailPage.mockReturnValue(page);
     mocks.reviewState = {
@@ -552,6 +553,33 @@ describe("ProjectPlanDetailPage", () => {
     expect(container.textContent).not.toContain("plan.phase.review-description");
     expect(container.querySelector("[data-testid='deploy-waiting']")).not.toBeNull();
     expect(container.querySelector("[data-testid='phase-attention']")).not.toBeNull();
+  });
+
+  it("under SQL Review V2 a canceled issue's Deploy waits on nothing", async () => {
+    const page = buildPage();
+    page.isCreating = false;
+    page.planId = "1";
+    page.plan.name = "projects/foo/plans/1";
+    page.plan.issue = "projects/foo/issues/1";
+    page.issue = {
+      name: "projects/foo/issues/1",
+      draft: false,
+      status: IssueStatus.CANCELED,
+    } as PlanDetailPageState["issue"];
+    mocks.usePlanDetailPage.mockReturnValue(page);
+    mocks.reviewState = { rows: [], gates: [], openDiscussions: 0 };
+
+    await act(async () => {
+      root.render(
+        <ProjectPlanDetailPage planId="1" projectId="foo" specId="spec-1" />
+      );
+      await Promise.resolve();
+    });
+
+    expect(container.querySelector("[data-testid='deploy-waiting']")).toBeNull();
+    expect(
+      container.querySelector("[data-testid='deploy-future-control']")
+    ).not.toBeNull();
   });
 
   it("shows an incomplete state for a persisted plan without its Draft Review Issue", async () => {

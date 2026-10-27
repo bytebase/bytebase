@@ -1,5 +1,6 @@
 import {
   CircleAlert,
+  CircleCheck,
   CircleDashed,
   Clock3,
   Loader2,
@@ -25,6 +26,7 @@ import type { PlanReviewState } from "../hooks/usePlanReviewState";
 import { usePlanDetailStoreApi } from "../shared/stores/usePlanDetailStore";
 import { focusPlanPhase } from "../shell/focusPhase";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
+import { supportsAutomaticRollout } from "../utils/phaseSummary";
 import type { AutomatedReviewRow, PlanGate } from "../utils/planGates";
 import { reviewerLabel, reviewGateLabel } from "../utils/reviewLabels";
 import { BypassAndDeploySheet, useBypassDeploy } from "./review/bypassDeploy";
@@ -44,6 +46,9 @@ export function PlanDetailDeployWaiting({
 }) {
   const { t } = useTranslation();
   const { gates } = state;
+  // The server creates no rollout for a plan with other kinds of changes,
+  // such as creating a database; someone deploys it once these pass.
+  const automatic = supportsAutomaticRollout(plan);
   // Not a gate: the server rolls out past it, so it sits apart from what the
   // rollout waits on, but an approver should look at it.
   const overridden = state.rows.filter((row) => row.findings.overridden > 0);
@@ -53,10 +58,17 @@ export function PlanDetailDeployWaiting({
       data-testid="deploy-waiting"
     >
       {gates.length === 0 ? (
-        <div className="flex items-center gap-x-2 text-sm text-control">
-          <Loader2 className="size-4 animate-spin text-control-light" />
-          {t("plan.deploy-waiting.creating-rollout")}
-        </div>
+        automatic ? (
+          <div className="flex items-center gap-x-2 text-sm text-control">
+            <Loader2 className="size-4 animate-spin text-control-light" />
+            {t("plan.deploy-waiting.creating-rollout")}
+          </div>
+        ) : (
+          <div className="flex items-center gap-x-2 text-sm text-control">
+            <CircleCheck className="size-4 text-success" />
+            {t("plan.deploy-waiting.ready-to-deploy")}
+          </div>
+        )
       ) : (
         <>
           <span className="text-xs text-control-light">
@@ -69,7 +81,9 @@ export function PlanDetailDeployWaiting({
           </ul>
         </>
       )}
-      {!issue.draft && <DeployWaitingFooter issue={issue} plan={plan} />}
+      {!issue.draft && (
+        <DeployWaitingFooter automatic={automatic} issue={issue} plan={plan} />
+      )}
       {overridden.length > 0 && (
         <div className="flex flex-col gap-y-1.5 border-t pt-2">
           <span className="text-xs text-control-light">
@@ -201,14 +215,24 @@ function OverriddenLine({ row }: { row: AutomatedReviewRow }) {
   );
 }
 
-function DeployWaitingFooter({ issue, plan }: { issue: Issue; plan: Plan }) {
+function DeployWaitingFooter({
+  automatic,
+  issue,
+  plan,
+}: {
+  automatic: boolean;
+  issue: Issue;
+  plan: Plan;
+}) {
   const { t } = useTranslation();
   const bypass = useBypassDeploy(issue, plan);
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t pt-2">
       <span className="flex min-w-0 flex-1 items-center gap-x-1.5 text-xs text-control-light">
         <Clock3 className="size-3.5 shrink-0" />
-        {t("plan.deploy-waiting.auto-create")}
+        {automatic
+          ? t("plan.deploy-waiting.auto-create")
+          : t("plan.deploy-waiting.manual-rollout")}
       </span>
       {bypass.weight !== "none" && (
         <Button

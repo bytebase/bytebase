@@ -372,7 +372,8 @@ function PlanPhaseRail({
     : buildReviewSummary(page.issue, t, unresolvedThreads);
 
   let deployFuture: ReactNode;
-  if (reviewState && page.issue && !isGitOpsPlan) {
+  // A closed issue waits on nothing, so Deploy describes the phase instead.
+  if (reviewState && page.issue?.status === IssueStatus.OPEN && !isGitOpsPlan) {
     deployFuture = (
       <PlanDetailDeployWaiting
         issue={page.issue}
