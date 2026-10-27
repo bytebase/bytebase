@@ -8255,6 +8255,42 @@
         {
           "tables": [
             {
+              "name": "CHILD",
+              "columns": [
+                {
+                  "name": "ID",
+                  "position": 1,
+                  "type": "NUMBER"
+                },
+                {
+                  "name": "S_REF",
+                  "position": 2,
+                  "type": "NUMBER",
+                  "nullable": true
+                },
+                {
+                  "name": "A_REF",
+                  "position": 3,
+                  "type": "NUMBER",
+                  "nullable": true
+                }
+              ],
+              "foreign_keys": [
+                {
+                  "name": "CHILD_FK",
+                  "columns": [
+                    "S_REF",
+                    "A_REF"
+                  ],
+                  "referenced_table": "T",
+                  "referenced_columns": [
+                    "S",
+                    "A"
+                  ]
+                }
+              ]
+            },
+            {
               "name": "OT",
               "skip_dump": true,
               "columns": [
@@ -8387,6 +8423,42 @@
       "schemas": [
         {
           "tables": [
+            {
+              "name": "CHILD",
+              "columns": [
+                {
+                  "name": "ID",
+                  "position": 1,
+                  "type": "NUMBER"
+                },
+                {
+                  "name": "S_REF",
+                  "position": 2,
+                  "type": "NUMBER",
+                  "nullable": true
+                },
+                {
+                  "name": "A_REF",
+                  "position": 3,
+                  "type": "NUMBER",
+                  "nullable": true
+                }
+              ],
+              "foreign_keys": [
+                {
+                  "name": "CHILD_FK",
+                  "columns": [
+                    "S_REF",
+                    "A_REF"
+                  ],
+                  "referenced_table": "T",
+                  "referenced_columns": [
+                    "S",
+                    "A"
+                  ]
+                }
+              ]
+            },
             {
               "name": "OT",
               "skip_dump": true,
@@ -8592,6 +8664,7 @@
         "VC" NUMBER GENERATED ALWAYS AS ("A"+1) VIRTUAL
     );
 
+    ALTER TABLE "CHILD" DROP CONSTRAINT "CHILD_FK";
     ALTER TABLE "T" DROP CONSTRAINT "T_S_CK";
     ALTER TABLE "T" DROP CONSTRAINT "T_VC_CK";
     ALTER TABLE "T" DROP CONSTRAINT "T_SA_CK";
@@ -8618,3 +8691,4 @@
     ALTER TABLE "T" ADD CONSTRAINT "T_VC_CK" CHECK ("VC" > 0);
     ALTER TABLE "T" ADD CONSTRAINT "T_SA_CK" CHECK ("S" >= "A");
     ALTER TABLE "T" ADD CONSTRAINT "T_VCS_CK" CHECK ("VC" <= "S" + 100);
+    ALTER TABLE "CHILD" ADD CONSTRAINT "CHILD_FK" FOREIGN KEY ("S_REF", "A_REF") REFERENCES "T" ("S", "A");

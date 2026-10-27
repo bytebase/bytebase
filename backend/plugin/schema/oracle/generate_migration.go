@@ -12,6 +12,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 func init() {
@@ -681,7 +682,7 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 			// Handle other ALTER operations
 
 			// Alter columns (type changes, nullability, etc.)
-			writeAlterColumns(buf, tableDiff)
+			writeAlterColumns(buf, diff, tableDiff)
 
 			// Add indexes
 			for _, indexDiff := range tableDiff.IndexChanges {
@@ -795,7 +796,7 @@ func generateCreateTable(schemaName, tableName string, table *metadatapb.TableMe
 // ORA-54023), so those of every rebuilt column are dropped before any column
 // changes and made again once all have, each once: a constraint shared by two
 // rebuilt columns is checked only against the finished table.
-func writeAlterColumns(buf *strings.Builder, tableDiff *schema.TableDiff) {
+func writeAlterColumns(buf *strings.Builder, diff *schema.MetadataDiff, tableDiff *schema.TableDiff) {
 	var oldColumns, newColumns []string
 	for _, colDiff := range tableDiff.ColumnChanges {
 		if colDiff.Action == schema.MetadataDiffActionAlter && rebuildsColumn(colDiff) {
@@ -805,6 +806,11 @@ func writeAlterColumns(buf *strings.Builder, tableDiff *schema.TableDiff) {
 	}
 	schemaName, tableName := tableDiff.SchemaName, tableDiff.TableName
 	created := diffObjectNames(tableDiff, schema.MetadataDiffActionCreate)
+	// Other tables' foreign keys on a rebuilt key go first, or dropping the key
+	// fails (ORA-02273), and come back after it.
+	for _, incoming := range findIncomingForeignKeys(diff, diff.OldDatabase, tableDiff, oldColumns, schema.MetadataDiffActionDrop) {
+		writeDropForeignKey(buf, schemaName, incoming.table, incoming.foreignKey.Name)
+	}
 	findColumnDependents(tableDiff.OldTable, oldColumns, diffObjectNames(tableDiff, schema.MetadataDiffActionDrop)).writeDrops(buf, schemaName, tableName)
 	for _, colDiff := range tableDiff.ColumnChanges {
 		if colDiff.Action != schema.MetadataDiffActionAlter {
@@ -819,6 +825,62 @@ func writeAlterColumns(buf *strings.Builder, tableDiff *schema.TableDiff) {
 		_, _ = buf.WriteString(generateAlterColumn(schemaName, tableName, colDiff, notNull))
 	}
 	findColumnDependents(tableDiff.NewTable, newColumns, created).writeCreates(buf, schemaName, tableName)
+	for _, incoming := range findIncomingForeignKeys(diff, diff.NewDatabase, tableDiff, newColumns, schema.MetadataDiffActionCreate) {
+		writeMigrationForeignKey(buf, schemaName, incoming.table, incoming.foreignKey)
+	}
+}
+
+// incomingForeignKey is another table's foreign key on a rebuilt column.
+type incomingForeignKey struct {
+	table      string
+	foreignKey *metadatapb.ForeignKeyMetadata
+}
+
+// findIncomingForeignKeys lists the foreign keys of the database's other tables
+// that reference any of the columns of tableDiff's table. It leaves out those
+// the diff handles itself: on a table it creates or drops, or that it creates
+// or drops, as action says.
+func findIncomingForeignKeys(diff *schema.MetadataDiff, database *model.DatabaseMetadata, tableDiff *schema.TableDiff, columns []string, action schema.MetadataDiffAction) []incomingForeignKey {
+	if len(columns) == 0 || database == nil {
+		return nil
+	}
+	schemaMetadata := database.GetSchemaMetadata(tableDiff.SchemaName)
+	if schemaMetadata == nil {
+		return nil
+	}
+	tableDiffs := make(map[string]*schema.TableDiff)
+	for _, other := range diff.TableChanges {
+		if other.SchemaName == tableDiff.SchemaName {
+			tableDiffs[other.TableName] = other
+		}
+	}
+	var result []incomingForeignKey
+	for _, table := range schemaMetadata.GetProto().GetTables() {
+		other := tableDiffs[table.Name]
+		if table.Name == tableDiff.TableName || (other != nil && other.Action != schema.MetadataDiffActionAlter) {
+			continue
+		}
+		var handled map[string]bool
+		if other != nil {
+			handled = diffObjectNames(other, action)
+		}
+		for _, fk := range table.GetForeignKeys() {
+			if !handled[fk.Name] && referencesColumns(fk, tableDiff.SchemaName, diff.DatabaseName, tableDiff.TableName, columns) {
+				result = append(result, incomingForeignKey{table: table.Name, foreignKey: fk})
+			}
+		}
+	}
+	return result
+}
+
+// referencesColumns reports whether the foreign key references any of the
+// columns of the table, which the sync names without a schema when it is the
+// foreign key's own.
+func referencesColumns(fk *metadatapb.ForeignKeyMetadata, schemaName, databaseName, tableName string, columns []string) bool {
+	if fk.ReferencedTable != tableName || (fk.ReferencedSchema != "" && fk.ReferencedSchema != schemaName && fk.ReferencedSchema != databaseName) {
+		return false
+	}
+	return slices.ContainsFunc(fk.ReferencedColumns, func(column string) bool { return slices.Contains(columns, column) })
 }
 
 // rebuildsColumn reports whether Oracle must drop and add the column again, or
@@ -985,7 +1047,9 @@ func findColumnDependents(table *metadatapb.TableMetadata, columns []string, ski
 		}
 	}
 	for _, fk := range table.GetForeignKeys() {
-		if !skip[fk.Name] && slices.ContainsFunc(fk.Columns, func(column string) bool { return slices.Contains(columns, column) }) {
+		onColumn := slices.ContainsFunc(fk.Columns, func(column string) bool { return slices.Contains(columns, column) })
+		// A foreign key of the table on its own rebuilt key goes with the key.
+		if !skip[fk.Name] && (onColumn || referencesColumns(fk, "", "", table.Name, columns)) {
 			dependents.foreignKeys = append(dependents.foreignKeys, fk)
 		}
 	}

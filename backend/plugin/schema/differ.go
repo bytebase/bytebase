@@ -25,6 +25,12 @@ type MetadataDiff struct {
 	// Database level changes
 	DatabaseName string
 
+	// OldDatabase and NewDatabase are the metadata the diff was taken between.
+	// A generator reads them for objects the diff leaves alone, such as another
+	// table's foreign key on a key it must rebuild.
+	OldDatabase *model.DatabaseMetadata
+	NewDatabase *model.DatabaseMetadata
+
 	// Schema changes
 	SchemaChanges []*SchemaDiff
 
@@ -317,6 +323,8 @@ func GetDatabaseSchemaDiff(engine storepb.Engine, oldSchema, newSchema *model.Da
 
 	diff := &MetadataDiff{
 		DatabaseName: newMetadata.Name,
+		OldDatabase:  oldSchema,
+		NewDatabase:  newSchema,
 	}
 
 	// Use the internal DatabaseMetadata structures for efficient access
@@ -2261,6 +2269,8 @@ func FilterPostgresArchiveSchema(diff *MetadataDiff) *MetadataDiff {
 	// Create a new diff object with filtered changes
 	filtered := &MetadataDiff{
 		DatabaseName: diff.DatabaseName,
+		OldDatabase:  diff.OldDatabase,
+		NewDatabase:  diff.NewDatabase,
 	}
 
 	// Filter schema changes

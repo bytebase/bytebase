@@ -13,6 +13,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/plsql"
@@ -518,10 +519,12 @@ func getTableColumns(txn *sql.Tx, schemaName string, version *plsql.Version) (ma
 		WHERE OWNER = '%s' AND USER_GENERATED = 'YES'
 		ORDER BY TABLE_NAME, COLUMN_ID NULLS LAST, COLUMN_NAME`, schemaName)
 	} else {
+		// Failing to tell virtual columns apart only keeps their expressions
+		// in Default, as before, so it must not fail the sync.
 		var err error
 		virtualColumns, err = getVirtualColumns(txn, schemaName)
 		if err != nil {
-			return nil, err
+			slog.Warn("failed to list Oracle virtual columns", slog.String("schema", schemaName), log.BBError(err))
 		}
 		query = fmt.Sprintf(`
 		SELECT
