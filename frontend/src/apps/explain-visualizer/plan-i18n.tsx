@@ -5,6 +5,7 @@ const ENGLISH = {
   "copy.failed": "Copy failed",
   "copy.plan": "Copy plan",
   "details.select-node": "Select a node to see its details.",
+  "diagram.actual-rows": "actual rows {{count}}",
   "diagram.collapse": "Collapse {{count}} nodes under {{node}}",
   "diagram.cost": "cost {{cost}}",
   "diagram.estimated-rows": "{{count}} estimated rows",
@@ -12,7 +13,9 @@ const ENGLISH = {
   "diagram.fit": "Fit to view",
   "diagram.nodes-hidden": "{{count}} nodes hidden",
   "diagram.plan-cost-share": "{{share}} of plan cost",
+  "diagram.plan-time-share": "{{share}} of plan time",
   "diagram.rows": "rows {{count}}",
+  "diagram.time": "time {{time}} ms",
   "diagram.zoom-in": "Zoom in",
   "diagram.zoom-out": "Zoom out",
   "error.mssql-empty": "SQL Server returned no query plan for this statement.",
@@ -38,6 +41,9 @@ const ENGLISH = {
   "error.too-many-nodes":
     "The query plan has more operators than this visualizer draws, so it is shown as text.",
   "error.unreadable": "This query plan could not be read",
+  "grid.actual-rows": "Actual rows",
+  "grid.actual-rows-hint":
+    "Rows the operator really returned, over all its runs together",
   "grid.added-cost": "Added cost",
   "grid.added-cost-hint":
     "Cost this node adds on top of its children; some engines also count an input's repeats here, as under a nested loop. The bar is that cost as a share of the plan.",
@@ -46,6 +52,9 @@ const ENGLISH = {
   "grid.estimated-rows": "Estimated rows",
   "grid.node": "Node",
   "grid.rows": "Rows",
+  "grid.self-time": "Self time",
+  "grid.self-time-hint":
+    "Milliseconds this node took on top of its children, over all its runs. The bar is that time as a share of the plan.",
   "grid.total-cost": "Total cost",
   "grid.width": "Width",
   "grid.width-hint": "Estimated row width in bytes",
@@ -56,23 +65,50 @@ const ENGLISH = {
   "highlight.off-hint": "Leave every node card unshaded",
   "highlight.rows": "Rows",
   "highlight.rows-hint": "Shade by the estimated row count",
+  "highlight.time": "Time",
+  "highlight.time-hint": "Shade by the time a node took on top of its children",
   "legend.cost":
     "each card's bar is that node's share of the plan's estimated cost",
   "legend.rows":
     "an edge thickens with the rows its child is estimated to return",
+  "legend.time":
+    "each card's bar is that node's share of the plan's measured time",
+  "metric.actual-rows": "Actual rows",
+  "metric.actual-time": "Actual time",
   "metric.added-cost": "Added cost",
   "metric.bytes": "{{count}} bytes",
   "metric.estimated-rows": "Estimated rows",
+  "metric.loops": "Loops",
+  "metric.milliseconds": "{{count}} ms",
   "metric.row-width": "Row width",
+  "metric.rows-none": "Returned no rows, where the planner expected some.",
+  "metric.rows-over":
+    "Returned {{factor}}× more rows than the planner estimated.",
+  "metric.rows-under":
+    "Returned {{factor}}× fewer rows than the planner estimated.",
   "metric.startup-cost": "Startup cost",
   "metric.total-cost": "Total cost",
   "summary.costliest": "Costliest by estimated cost",
   "summary.no-added-cost":
     "No node in this plan adds an estimated cost of its own.",
+  "summary.no-added-time":
+    "No node in this plan took measurable time of its own.",
+  "summary.no-ranking":
+    "This plan reports no cost or time, so its operators cannot be ranked.",
+  "summary.slowest-measured": "Slowest by measured time",
+  "summary.warning-operators": "{{count}} operators",
+  "summary.warnings": "Warnings",
   "tab.diagram": "Diagram",
   "tab.grid": "Table",
   "tab.text": "Text",
+  "table.heading": "Table",
+  "table.indexes": "Indexes",
+  "table.no-indexes": "No indexes on this table.",
+  "table.primary": "primary",
+  "table.rows": "{{count}} rows at the last sync",
+  "table.unique": "unique",
   "totals.estimated-cost": "estimated cost {{cost}}",
+  "totals.measured-time": "measured time {{time}} ms",
   "totals.nodes": "{{count}} nodes",
 } as const;
 

@@ -39,6 +39,7 @@ import {
 import {
   formatPlanCost,
   formatPlanCount,
+  formatPlanDuration,
   formatPlanShare,
   type PlanHighlightMode,
   type PlanNode,
@@ -47,8 +48,10 @@ import {
   planCostliestNodes,
   planDescendantCount,
   planEdgeWidth,
+  planHasSelfMetric,
   planHighlightIntensity,
-  planSelfCostShare,
+  planRankMetric,
+  planSelfShare,
 } from "./plan-model";
 import { PlanCostShareBar } from "./plan-shared";
 
@@ -92,28 +95,49 @@ function wheelPixels(event: WheelEvent): number {
   return event.deltaY;
 }
 
-/** Semantic surface each shading scale tints a card with. */
+/**
+ * Semantic surface each shading scale tints a card with. Cost and time share
+ * one: both say this operator is where the work went, and only one shades at
+ * a time.
+ */
 const HIGHLIGHT_CLASS: Record<Exclude<PlanHighlightMode, "off">, string> = {
   cost: "bg-warning",
+  time: "bg-warning",
   rows: "bg-info",
 };
 
-/** The estimates a card prints, leaving out any the plan does not carry. */
+/**
+ * The numbers a card prints, leaving out any the plan does not carry. A
+ * measured plan prints what happened and leaves the estimate to the node's
+ * details, where the two sit side by side.
+ */
 function planCardMetrics(
   node: PlanNode,
   tree: PlanTree,
   translate: QueryPlanTranslate
 ): string {
-  return [
-    tree.estimates.cost
-      ? translate("diagram.cost", { cost: formatPlanCost(node.totalCost) })
-      : undefined,
-    tree.estimates.rows
-      ? translate("diagram.rows", { count: formatPlanCount(node.rows) })
-      : undefined,
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  const parts: string[] = [];
+  if (planRankMetric(tree) === "time") {
+    parts.push(
+      translate("diagram.time", { time: formatPlanDuration(node.actualTime) })
+    );
+  } else if (tree.estimates.cost) {
+    parts.push(
+      translate("diagram.cost", { cost: formatPlanCost(node.totalCost) })
+    );
+  }
+  if (tree.measured.rows) {
+    parts.push(
+      translate("diagram.actual-rows", {
+        count: formatPlanCount(node.actualRows),
+      })
+    );
+  } else if (tree.estimates.rows) {
+    parts.push(
+      translate("diagram.rows", { count: formatPlanCount(node.rows) })
+    );
+  }
+  return parts.join(" · ");
 }
 
 /** Opacity of the tint on the plan's worst node; the rest scale below it. */
@@ -424,7 +448,7 @@ export function QueryPlanDiagram({
         const { node, x, y } = placed;
         const selected = node.id === selectedId;
         const metrics = planCardMetrics(node, tree, translate);
-        const share = planSelfCostShare(node, tree);
+        const share = planSelfShare(node, tree);
         const warnings = node.warnings.map((warning) => warning.title);
         const collapsed = collapsedIds.has(node.id);
         const subtreeCount = planDescendantCount(node);
@@ -452,10 +476,13 @@ export function QueryPlanDiagram({
                 relationship,
                 node.subject,
                 metrics,
-                tree.estimates.cost
-                  ? translate("diagram.plan-cost-share", {
-                      share: formatPlanShare(share),
-                    })
+                planHasSelfMetric(tree)
+                  ? translate(
+                      planRankMetric(tree) === "time"
+                        ? "diagram.plan-time-share"
+                        : "diagram.plan-cost-share",
+                      { share: formatPlanShare(share) }
+                    )
                   : undefined,
                 ...warnings,
                 collapsed
@@ -524,7 +551,7 @@ export function QueryPlanDiagram({
                     {metrics}
                   </span>
                 ) : null}
-                {tree.estimates.cost ? (
+                {planHasSelfMetric(tree) ? (
                   <span className="flex w-full items-center gap-2">
                     <PlanCostShareBar
                       share={share}

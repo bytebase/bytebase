@@ -316,7 +316,7 @@ func TestQueryDatabase_WorkspacePermissionDenied(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusForbidden)
 		_ = json.NewEncoder(w).Encode(map[string]any{
-			"message": "permission denied",
+			"message": `user does not have permission "bb.databases.list"`,
 			"code":    "PERMISSION_DENIED",
 		})
 	})
@@ -327,8 +327,8 @@ func TestQueryDatabase_WorkspacePermissionDenied(t *testing.T) {
 
 	var te *toolError
 	require.ErrorAs(t, err, &te)
-	require.Equal(t, "PERMISSION_DENIED", te.Code)
-	require.Contains(t, te.Suggestion, "bb.databases.list")
+	require.Equal(t, toolError{Code: "PERMISSION_DENIED", Message: `user does not have permission "bb.databases.list"`}, *te,
+		"the server's message names the permission, and nothing is added")
 }
 
 func TestQueryDatabase_Ambiguous(t *testing.T) {
@@ -669,10 +669,10 @@ func TestQueryDatabase_QueryError(t *testing.T) {
 	require.Contains(t, text, "syntax error")
 }
 
-// TestQueryDatabase_PolicyDenialGetsNoRoleAdvice is the same contract on the
-// read tool. The masked-write guard refuses through SQLService/Query, and a
-// project role cannot lift a workspace setting.
-func TestQueryDatabase_PolicyDenialGetsNoRoleAdvice(t *testing.T) {
+// TestQueryDatabase_PolicyDenialGetsNoAccessAdvice: the masked-write guard
+// refuses through SQLService/Query, and no access grant lifts a workspace
+// setting.
+func TestQueryDatabase_PolicyDenialGetsNoAccessAdvice(t *testing.T) {
 	databases := []map[string]any{
 		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),
 	}
@@ -700,8 +700,7 @@ func TestQueryDatabase_PolicyDenialGetsNoRoleAdvice(t *testing.T) {
 
 	text := result.Content[0].(*mcpsdk.TextContent).Text
 	require.Contains(t, text, "******")
-	require.NotContains(t, text, "SQL Editor role",
-		"no project role lifts a workspace setting")
+	require.NotContains(t, text, "suggestion", "the refusal names its own way out")
 }
 
 func TestQueryDatabase_PermissionDenied(t *testing.T) {
@@ -731,6 +730,127 @@ func TestQueryDatabase_PermissionDenied(t *testing.T) {
 
 	text := result.Content[0].(*mcpsdk.TextContent).Text
 	require.Contains(t, text, "permission denied")
+	require.NotContains(t, text, "suggestion", "the ACL refuses a missing bb.databases.get before any access grant applies")
+}
+
+// The SQL access check answers inside a 200 result, the shape the server
+// returns when the caller can see the database but not read its tables.
+func TestQueryDatabase_TableAccessDenialAdvisesAnAccessGrant(t *testing.T) {
+	databases := []map[string]any{
+		makeDatabase("projects/hr/instances/prod-pg/databases/employee_db", "projects/hr/instances/prod-pg", "projects/hr", "POSTGRES", "ds-admin-1"),
+	}
+	for name, tt := range map[string]struct {
+		statement string
+		result    map[string]any
+		want      string
+	}{
+		"the access check refused the tables": {
+			result: map[string]any{
+				"error":     "permission_denied: permission denied to access resources: [projects/hr/instances/prod-pg/databases/employee_db/schemas/public/tables/employee]",
+				"statement": "SELECT first_name FROM employee",
+				"permissionDenied": map[string]any{
+					"requiredPermissions": []string{"bb.sql.select"},
+					"resources":           []string{"projects/hr/instances/prod-pg/databases/employee_db/schemas/public/tables/employee"},
+				},
+			},
+			want: "in a Read-write session, request an access grant for this statement with request_access_grant " +
+				"(the project must allow just-in-time access); otherwise the user requests access in the SQL Editor",
+		},
+		// A grant must name a read-only statement and applies only to that exact
+		// statement, so the batch as a whole can neither be granted nor use the grant.
+		"the access check refused a read in a batch that also writes": {
+			statement: "SELECT first_name FROM employee; UPDATE employee SET first_name = 'x'",
+			result: map[string]any{
+				"error":     "permission_denied: permission denied to access resources: [projects/hr/instances/prod-pg/databases/employee_db/schemas/public/tables/employee]",
+				"statement": "SELECT first_name FROM employee;",
+				"permissionDenied": map[string]any{
+					"requiredPermissions": []string{"bb.sql.select"},
+					"resources":           []string{"projects/hr/instances/prod-pg/databases/employee_db/schemas/public/tables/employee"},
+				},
+			},
+			want: `the batch stopped at "SELECT first_name FROM employee;": in a Read-write session, request an access grant for that statement alone ` +
+				"with request_access_grant and, once approved, run it by itself " +
+				"(the project must allow just-in-time access); otherwise the user requests access in the SQL Editor",
+		},
+		"the access check refused a metadata read": {
+			result: map[string]any{
+				"error": "permission_denied: permission denied to access resources: projects/hr/instances/prod-pg/databases/employee_db",
+				"permissionDenied": map[string]any{
+					"requiredPermissions": []string{"bb.sql.info"},
+					"resources":           []string{"projects/hr/instances/prod-pg/databases/employee_db"},
+				},
+			},
+			want: "in a Read-write session, request an access grant for this statement with request_access_grant " +
+				"(the project must allow just-in-time access); otherwise the user requests access in the SQL Editor",
+		},
+		// A grant from request_access_grant targets the queried database only.
+		"the access check refused a table in another database": {
+			result: map[string]any{
+				"error": "permission_denied: permission denied to access resources: [projects/hr/instances/prod-pg/databases/payroll/schemas/public/tables/salary]",
+				"permissionDenied": map[string]any{
+					"requiredPermissions": []string{"bb.sql.select"},
+					"resources":           []string{"projects/hr/instances/prod-pg/databases/payroll/schemas/public/tables/salary"},
+				},
+			},
+		},
+		"the access check refused tables in this and another database": {
+			result: map[string]any{
+				"error": "permission_denied: permission denied to access resources: [two tables]",
+				"permissionDenied": map[string]any{
+					"requiredPermissions": []string{"bb.sql.select"},
+					"resources": []string{
+						"projects/hr/instances/prod-pg/databases/employee_db/schemas/public/tables/employee",
+						"projects/hr/instances/prod-pg/databases/employee_db2/schemas/public/tables/salary",
+					},
+				},
+			},
+		},
+		// No grant lifts these: a grant's statement must be read-only, and a
+		// granted target still needs bb.sql.explain from IAM.
+		"the access check refused a write": {
+			result: map[string]any{
+				"error":            "permission_denied: permission denied to access resources: [projects/hr/instances/prod-pg/databases/employee_db/schemas/public/tables/employee]",
+				"permissionDenied": map[string]any{"requiredPermissions": []string{"bb.sql.dml"}},
+			},
+		},
+		"the access check refused an EXPLAIN": {
+			result: map[string]any{
+				"error":            "permission_denied: permission denied to access resources: projects/hr/instances/prod-pg/databases/employee_db",
+				"permissionDenied": map[string]any{"requiredPermissions": []string{"bb.sql.explain"}},
+			},
+		},
+		"a statement the engine rejected": {
+			result: map[string]any{"error": `syntax error at or near "SELEC"`},
+			want:   "check your SQL syntax and try again",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if strings.Contains(r.URL.Path, "SQLService/Query") {
+					w.Header().Set("Content-Type", "application/json")
+					_ = json.NewEncoder(w).Encode(map[string]any{"results": []any{tt.result}})
+					return
+				}
+				mockListDatabases(databases).ServeHTTP(w, r)
+			})
+			s := newTestServerWithMock(t, handler)
+			statement := tt.statement
+			if statement == "" {
+				statement = "SELECT first_name FROM employee"
+			}
+
+			result, _, err := s.handleQueryDatabase(testContext(), nil, QueryInput{
+				Database:  "employee_db",
+				Statement: statement,
+			})
+			require.NoError(t, err)
+			require.True(t, result.IsError)
+			var denial toolError
+			require.NoError(t, json.Unmarshal([]byte(result.Content[0].(*mcpsdk.TextContent).Text), &denial))
+			require.Equal(t, tt.result["error"], denial.Message)
+			require.Equal(t, tt.want, denial.Suggestion)
+		})
+	}
 }
 
 // --- Task 6 tests: masked values and timeout ---

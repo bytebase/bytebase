@@ -243,6 +243,26 @@ func GetMySQLContainer(ctx context.Context) (*Container, error) {
 	})
 }
 
+// mariaDBStarter starts the MariaDB image, whose root password is root-password.
+func mariaDBStarter(image string) func(context.Context) (*Container, error) {
+	return func(ctx context.Context) (*Container, error) {
+		const user, password = "root", "root-password"
+		return start(ctx, testcontainers.ContainerRequest{
+			Image:      image,
+			Env:        map[string]string{"MARIADB_ROOT_PASSWORD": password},
+			WaitingFor: wait.ForLog("ready for connections").WithOccurrence(2).WithStartupTimeout(5 * time.Minute),
+		}, spec{
+			port:     "3306/tcp",
+			username: user,
+			password: password,
+			driver:   "mysql",
+			dsn: func(c *Container) string {
+				return fmt.Sprintf("%s:%s@tcp(%s:%s)/?multiStatements=true", c.username, c.password, c.host, c.port)
+			},
+		})
+	}
+}
+
 // mssqlTLSConf points SQL Server at the certificate getMSSQLContainer copies in,
 // leaving encryption up to the client.
 const mssqlTLSConf = `[network]

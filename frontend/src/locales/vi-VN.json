@@ -3436,6 +3436,7 @@
     "data-explorer-sql-filter-placeholder": "Nhập điều kiện truy vấn, ví dụ WHERE id = 1",
     "ddl-dml-requires-data-change-plan": "Để thực thi câu lệnh DDL/DML trong <environment></environment>, vui lòng gửi Kế hoạch Thay đổi Dữ liệu để được phê duyệt.",
     "download-as-file": "Tải xuống dưới dạng {{file}}",
+    "dry-run": "Chạy thử",
     "duration-day": "{{days}} ngày",
     "duration-days": "{{days}} ngày",
     "duration-hour": "{{hours}} giờ",
@@ -3445,6 +3446,8 @@
     "expire-at": "Hết hạn lúc {{time}}",
     "expire-in": "Hết hạn sau {{time}}",
     "expired": "Đã hết hạn",
+    "explain": "Giải thích",
+    "explain-hint": "Hiển thị kế hoạch mà không chạy truy vấn",
     "explore-data": "Khám phá dữ liệu",
     "export-available-via-issue": "Xuất khả dụng qua issue \"{{title}}\"",
     "export-available-via-n-grants": "Xuất khả dụng qua {{count}} cấp quyền truy cập:",
@@ -3482,6 +3485,7 @@
     "open-in-new-tab": "Mở trong tab mới",
     "opened-from-link": "Mở từ liên kết",
     "pending-query": "Đang chờ truy vấn",
+    "plan-cost-share": "{{share}} chi phí ước tính của toàn bộ script",
     "plan-estimated": "Ước tính",
     "plan-view": "Kế hoạch",
     "previous-row": "Dòng trước",
@@ -3502,6 +3506,7 @@
         "select-node": "Chọn một nút để xem chi tiết."
       },
       "diagram": {
+        "actual-rows": "hàng thực tế {{count}}",
         "collapse": "Thu gọn {{count}} nút bên dưới {{node}}",
         "cost": "chi phí {{cost}}",
         "estimated-rows": "{{count}} hàng ước tính",
@@ -3509,7 +3514,9 @@
         "fit": "Vừa với khung nhìn",
         "nodes-hidden": "Đã ẩn {{count}} nút",
         "plan-cost-share": "{{share}} chi phí kế hoạch",
+        "plan-time-share": "{{share}} thời gian kế hoạch",
         "rows": "hàng {{count}}",
+        "time": "thời gian {{time}} ms",
         "zoom-in": "Phóng to",
         "zoom-out": "Thu nhỏ"
       },
@@ -3529,12 +3536,16 @@
         "unreadable": "Không thể đọc kế hoạch truy vấn này"
       },
       "grid": {
+        "actual-rows": "Số hàng thực tế",
+        "actual-rows-hint": "Số hàng toán tử thực sự trả về, tính trên tất cả các lần chạy",
         "added-cost": "Chi phí thêm",
         "added-cost-hint": "Chi phí mà nút này thêm ngoài các nút con; một số máy cơ sở dữ liệu cũng tính số lần lặp của đầu vào tại đây, chẳng hạn trong vòng lặp lồng nhau. Thanh thể hiện tỷ lệ chi phí này trong kế hoạch.",
         "caption": "Các nút kế hoạch theo thứ tự lồng nhau của bộ lập kế hoạch, nút cha đứng trước nút con.",
         "estimated-rows": "Số hàng ước tính",
         "node": "Nút",
         "rows": "Hàng",
+        "self-time": "Thời gian riêng",
+        "self-time-hint": "Số milisecond nút này tiêu tốn ngoài các nút con, tính trên tất cả các lần chạy. Thanh thể hiện tỷ lệ thời gian này trong kế hoạch.",
         "total-cost": "Tổng chi phí",
         "width": "Độ rộng",
         "width-hint": "Độ rộng hàng ước tính theo byte"
@@ -3546,31 +3557,55 @@
         "off": "Tắt",
         "off-hint": "Không tô màu các thẻ nút",
         "rows": "Hàng",
-        "rows-hint": "Tô màu theo số hàng ước tính"
+        "rows-hint": "Tô màu theo số hàng ước tính",
+        "time": "Thời gian",
+        "time-hint": "Tô màu theo thời gian nút tiêu tốn ngoài các nút con"
       },
       "legend": {
         "cost": "thanh trên mỗi thẻ thể hiện tỷ lệ chi phí ước tính của nút trong kế hoạch",
-        "rows": "cạnh dày hơn theo số hàng mà nút con dự kiến trả về"
+        "rows": "cạnh dày hơn theo số hàng mà nút con dự kiến trả về",
+        "time": "thanh trên mỗi thẻ thể hiện tỷ lệ thời gian đo được của nút trong kế hoạch"
       },
       "metric": {
+        "actual-rows": "Số hàng thực tế",
+        "actual-time": "Thời gian thực tế",
         "added-cost": "Chi phí thêm",
         "bytes": "{{count}} byte",
         "estimated-rows": "Số hàng ước tính",
+        "loops": "Số lần chạy",
+        "milliseconds": "{{count}} ms",
         "row-width": "Độ rộng hàng",
+        "rows-none": "Không trả về hàng nào, trong khi bộ lập kế hoạch dự kiến có hàng.",
+        "rows-over": "Trả về nhiều hơn {{factor}}× số hàng mà bộ lập kế hoạch ước tính.",
+        "rows-under": "Trả về ít hơn {{factor}}× số hàng mà bộ lập kế hoạch ước tính.",
         "startup-cost": "Chi phí khởi động",
         "total-cost": "Tổng chi phí"
       },
       "summary": {
         "costliest": "Tốn kém nhất theo chi phí ước tính",
-        "no-added-cost": "Không có nút nào trong kế hoạch này tự thêm chi phí ước tính."
+        "no-added-cost": "Không có nút nào trong kế hoạch này tự thêm chi phí ước tính.",
+        "no-added-time": "Không có nút nào trong kế hoạch này tiêu tốn thời gian riêng đo được.",
+        "no-ranking": "Kế hoạch này không báo cáo chi phí hay thời gian, nên không thể xếp hạng các toán tử.",
+        "slowest-measured": "Chậm nhất theo thời gian đo được",
+        "warning-operators": "{{count}} toán tử",
+        "warnings": "Cảnh báo"
       },
       "tab": {
         "diagram": "Sơ đồ",
         "grid": "Bảng",
         "text": "Văn bản"
       },
+      "table": {
+        "heading": "Bảng",
+        "indexes": "Chỉ mục",
+        "no-indexes": "Bảng này không có chỉ mục nào.",
+        "primary": "khóa chính",
+        "rows": "{{count}} hàng tại lần đồng bộ gần nhất",
+        "unique": "duy nhất"
+      },
       "totals": {
         "estimated-cost": "chi phí ước tính {{cost}}",
+        "measured-time": "thời gian đo được {{time}} ms",
         "nodes": "{{count}} nút"
       }
     },

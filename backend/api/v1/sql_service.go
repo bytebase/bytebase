@@ -871,8 +871,12 @@ func queryRetry(
 				return nil, nil, time.Duration(0), err
 			}
 		}
-		if err := refuseSensitivePredicateColumns(ctx, stores, spans, instance, user); err != nil {
+		refusal, err := sensitivePredicateRefusal(ctx, stores, spans, instance, user)
+		if err != nil {
 			return nil, nil, time.Duration(0), err
+		}
+		if refusal != "" {
+			return refusedQueryResults(refusal, originalStatement), nil, time.Duration(0), nil
 		}
 		if err := preExecuteMaskingCheck(ctx, stores, instance.Metadata.GetEngine(), database, spans); err != nil {
 			return nil, nil, time.Duration(0), err
@@ -932,8 +936,12 @@ func queryRetry(
 		// A table the first span did not find may surface a condition the
 		// pre-execution check could not see.
 		if maskingEnabled {
-			if err := refuseSensitivePredicateColumns(ctx, stores, spans, instance, user); err != nil {
+			refusal, err := sensitivePredicateRefusal(ctx, stores, spans, instance, user)
+			if err != nil {
 				return nil, nil, duration, err
+			}
+			if refusal != "" {
+				return refusedQueryResults(refusal, originalStatement), nil, duration, nil
 			}
 		}
 	}
@@ -967,6 +975,12 @@ func queryRetry(
 		}
 	}
 	return results, spans, duration, nil
+}
+
+// refusedQueryResults reports a refusal as the statement's error rather than
+// the request's, so every engine shows the message without an RPC code prefix.
+func refusedQueryResults(refusal, statement string) []*v1pb.QueryResult {
+	return []*v1pb.QueryResult{{Error: refusal, Statement: statement}}
 }
 
 // buildQuerySpans analyzes statements for access checks and masking.
@@ -1987,17 +2001,7 @@ func (s *SQLService) authorizeWriteTargets(
 			envByDatabase[t.database] = env
 		}
 
-		attributes := map[string]any{
-			common.CELAttributeRequestTime:           requestTime,
-			common.CELAttributeResourceDatabase:      databaseFullName,
-			common.CELAttributeResourceEnvironmentID: env,
-		}
-		if !useDatabaseLevel {
-			attributes[common.CELAttributeResourceTableName] = t.table
-			if t.schema != "" {
-				attributes[common.CELAttributeResourceSchemaName] = t.schema
-			}
-		}
+		attributes := writeTargetAttributes(requestTime, databaseFullName, env, t, useDatabaseLevel)
 		allowed, err := s.hasDatabaseAccessRights(ctx, user, perm, attributes, iamPolicies...)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check access control for target %q: %v", deniedResource, err))
@@ -2007,6 +2011,23 @@ func (s *SQLService) authorizeWriteTargets(
 		}
 	}
 	return deniedResources, nil
+}
+
+// writeTargetAttributes returns the attributes a grant condition is evaluated against
+// for write target t; a database-level check carries no table or schema.
+func writeTargetAttributes(requestTime time.Time, databaseFullName, env string, t writeTargetResource, databaseLevel bool) map[string]any {
+	attributes := map[string]any{
+		common.CELAttributeRequestTime:           requestTime,
+		common.CELAttributeResourceDatabase:      databaseFullName,
+		common.CELAttributeResourceEnvironmentID: env,
+	}
+	if !databaseLevel {
+		attributes[common.CELAttributeResourceTableName] = t.table
+		if t.schema != "" {
+			attributes[common.CELAttributeResourceSchemaName] = t.schema
+		}
+	}
+	return attributes
 }
 
 // formatWriteTargetResource renders a denied write target as
@@ -2034,7 +2055,9 @@ type writeTargetResource struct {
 // Some engines' extractors report auxiliary tables referenced by the change (e.g.
 // the joined/using tables of an UPDATE … JOIN … / DELETE … USING …) alongside the
 // mutated table, others only the primary target; either way this can only ever
-// over-restrict (fail-closed), never under-restrict.
+// over-restrict (fail-closed), never under-restrict. The exception is a SQL Server target
+// left as written (BOT-158, BOT-160): it is checked as a table of that name in the request
+// database.
 //
 // DDL on a non-table object (view/procedure/function/trigger/…) has no table to scope. When
 // such DDL names an EXPLICIT target database (e.g. CREATE VIEW other_db.v), the extractor

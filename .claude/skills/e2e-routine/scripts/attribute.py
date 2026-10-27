@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
-"""Rank the product commits that could explain a red spec, and name an owner.
+"""Rank the commits that could explain a red spec, and name an owner.
 
     attribute.py --spec frontend/tests/e2e/sql-editor/sql-editor-result.spec.ts \
                  --since <last-green-sha> [--text "Request export" ...] [--json]
 
-Candidates are the non-merge commits in <since>..origin/main that touch the
-area's source paths (owners.json), the component files that render any quoted
-UI text (found through the locale files), or whose diff adds/removes the text
-itself (git log -S). Score = 3 per text hit + 1 per path hit. The owner is the
-top candidate's author mapped through owners.json to a Linear user name, else
-the area default.
+Candidates are the non-merge commits in <since>..HEAD that touch the area's
+source paths (owners.json), the component files that render any quoted UI
+text (found through the locale files), or whose diff adds/removes the text
+itself (git log -S), plus the test changes: commits to the spec itself and to
+the e2e framework. Score = 3 per text hit or spec change, 2 per rendering
+file, 1 per area or framework path. The owner is the top candidate's author
+mapped through owners.json to a Linear user name, else the area default. Exits
+with an error when --since or --head is not a commit in this clone.
 """
 import argparse
 import glob
@@ -114,13 +116,21 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--spec", required=True)
     ap.add_argument("--since", required=True)
-    # HEAD is the tested checkout. origin/main can move during a 40-60 minute
+    # HEAD is the tested checkout. origin/main can move during a 15-45 minute
     # run, and a commit merged after the test cannot have caused its failure.
     ap.add_argument("--head", default="HEAD")
     ap.add_argument("--text", action="append", default=[])
     ap.add_argument("--json", action="store_true")
     a = ap.parse_args()
     a.spec = repo_spec_path(a.spec)
+    # An unknown SHA makes every git query below come back empty, which would
+    # read as "no commit explains it" and fall through to the area default.
+    for name, ref in (("--since", a.since), ("--head", a.head)):
+        if subprocess.run(["git", "-C", REPO, "rev-parse", "-q", "--verify", f"{ref}^{{commit}}"],
+                          capture_output=True).returncode != 0:
+            print(f"attribute.py: {name} {ref!r} is not a commit in this clone; "
+                  "use `ledger.sh last-green` or a SHA on main", file=sys.stderr)
+            sys.exit(2)
 
     owners = json.load(open(os.path.join(SKILL_DIR, "owners.json")))
     rng = f"{a.since}..{a.head}"
@@ -144,6 +154,11 @@ def main():
 
     if source_mode:
         add(commits(rng, [a.spec]), 3, f"changes {a.spec}, the file that fails")
+    else:
+        # A test can break itself: a new locator or step in the spec, or a
+        # framework helper it calls. These are test changes (SPEC-ROT).
+        add(commits(rng, [a.spec]), 3, "test change: edits this spec")
+        add(commits(rng, [f"{E2E_ROOT}/framework"]), 1, "test change: edits the e2e framework")
     # An empty path list would make git log return every commit in the range.
     if area_cfg["sources"]:
         add(commits(rng, area_cfg["sources"]), 1, f"touches {area} sources")

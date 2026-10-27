@@ -326,7 +326,7 @@ func TestSensitiveData(t *testing.T) {
 		}))
 		a.NoError(err, statement)
 		a.Len(resp.Msg.Results, 1, statement)
-		a.Contains(resp.Msg.Results[0].Error, refusedPredicate, statement)
+		a.True(strings.HasPrefix(resp.Msg.Results[0].Error, refusedPredicate), "%s: %s", statement, resp.Msg.Results[0].Error)
 		a.Empty(resp.Msg.Results[0].Rows, statement)
 	}
 
@@ -365,7 +365,7 @@ func TestSensitiveData(t *testing.T) {
 	a.Len(batchResp.Msg.Results, 2)
 	a.Empty(batchResp.Msg.Results[0].Error)
 	a.Len(batchResp.Msg.Results[0].Rows, 3)
-	a.Contains(batchResp.Msg.Results[1].Error, refusedPredicate)
+	a.Equal(fmt.Sprintf("%s: %s.public.%s.author", refusedPredicate, databaseName, tableName), batchResp.Msg.Results[1].Error)
 
 	// Created directly on the target, after the last schema sync, so the synced
 	// schema does not know the function or how many columns it returns.
@@ -429,5 +429,5 @@ func TestSensitiveData(t *testing.T) {
 	a.NoError(err)
 	a.Less(time.Since(start), 20*time.Second)
 	a.Len(ghostResp.Msg.Results, 1)
-	a.Contains(ghostResp.Msg.Results[0].Error, refusedPredicate)
+	a.True(strings.HasPrefix(ghostResp.Msg.Results[0].Error, refusedPredicate), ghostResp.Msg.Results[0].Error)
 }

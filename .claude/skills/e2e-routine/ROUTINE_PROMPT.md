@@ -21,15 +21,6 @@ Policy for this task:
 - Finish with Phase 6 even when an earlier phase failed, and end your final message with the report.
 ```
 
-## Bootstrap prompt (until the skill is on `main`)
-
-The cloud clone starts on `main`. While the skill lives on a branch, prepend
-this to the prompt and drop it once the PR merges:
-
-```
-First: git fetch origin worktree-e2e-routine && git checkout origin/worktree-e2e-routine -- .claude/skills/e2e-routine frontend/tests/e2e (stay on main's commit; overlay only the routine's files). Then read .claude/skills/e2e-routine/SKILL.md. For this bootstrap run use FORCE=1 on Phase 1, run Phases 0 to 4 and 6, skip the adaptation PR of Phase 5 (list what it would change instead), and report build and suite timings.
-```
-
 ## Environment `bytebase-e2e` (create once at claude.ai/code, Environments)
 
 | Setting | Value |

@@ -3436,6 +3436,7 @@
     "data-explorer-sql-filter-placeholder": "Enter a query predicate, e.g. WHERE id = 1",
     "ddl-dml-requires-data-change-plan": "To execute DDL/DML statements in <environment></environment>, please submit a Data Change Plan for approval.",
     "download-as-file": "Download as {{file}}",
+    "dry-run": "Dry run",
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
     "duration-hour": "{{hours}} hour",
@@ -3445,6 +3446,8 @@
     "expire-at": "Expire at {{time}}",
     "expire-in": "Expire in {{time}}",
     "expired": "Expired",
+    "explain": "Explain",
+    "explain-hint": "Show the plan without running the query",
     "explore-data": "Explore data",
     "export-available-via-issue": "Export available via issue \"{{title}}\"",
     "export-available-via-n-grants": "Export available via {{count}} access grants:",
@@ -3482,6 +3485,7 @@
     "open-in-new-tab": "Open in new tab",
     "opened-from-link": "Opened from link",
     "pending-query": "Pending query",
+    "plan-cost-share": "{{share}} of the script's estimated cost",
     "plan-estimated": "Estimated",
     "plan-view": "Plan",
     "previous-row": "Previous Row",
@@ -3502,6 +3506,7 @@
         "select-node": "Select a node to see its details."
       },
       "diagram": {
+        "actual-rows": "actual rows {{count}}",
         "collapse": "Collapse {{count}} nodes under {{node}}",
         "cost": "cost {{cost}}",
         "estimated-rows": "{{count}} estimated rows",
@@ -3509,7 +3514,9 @@
         "fit": "Fit to view",
         "nodes-hidden": "{{count}} nodes hidden",
         "plan-cost-share": "{{share}} of plan cost",
+        "plan-time-share": "{{share}} of plan time",
         "rows": "rows {{count}}",
+        "time": "time {{time}} ms",
         "zoom-in": "Zoom in",
         "zoom-out": "Zoom out"
       },
@@ -3529,12 +3536,16 @@
         "unreadable": "This query plan could not be read"
       },
       "grid": {
+        "actual-rows": "Actual rows",
+        "actual-rows-hint": "Rows the operator really returned, over all its runs together",
         "added-cost": "Added cost",
         "added-cost-hint": "Cost this node adds on top of its children; some engines also count an input's repeats here, as under a nested loop. The bar is that cost as a share of the plan.",
         "caption": "Plan nodes in the order the planner nests them, parents before children.",
         "estimated-rows": "Estimated rows",
         "node": "Node",
         "rows": "Rows",
+        "self-time": "Self time",
+        "self-time-hint": "Milliseconds this node took on top of its children, over all its runs. The bar is that time as a share of the plan.",
         "total-cost": "Total cost",
         "width": "Width",
         "width-hint": "Estimated row width in bytes"
@@ -3546,31 +3557,55 @@
         "off": "Off",
         "off-hint": "Leave every node card unshaded",
         "rows": "Rows",
-        "rows-hint": "Shade by the estimated row count"
+        "rows-hint": "Shade by the estimated row count",
+        "time": "Time",
+        "time-hint": "Shade by the time a node took on top of its children"
       },
       "legend": {
         "cost": "each card's bar is that node's share of the plan's estimated cost",
-        "rows": "an edge thickens with the rows its child is estimated to return"
+        "rows": "an edge thickens with the rows its child is estimated to return",
+        "time": "each card's bar is that node's share of the plan's measured time"
       },
       "metric": {
+        "actual-rows": "Actual rows",
+        "actual-time": "Actual time",
         "added-cost": "Added cost",
         "bytes": "{{count}} bytes",
         "estimated-rows": "Estimated rows",
+        "loops": "Loops",
+        "milliseconds": "{{count}} ms",
         "row-width": "Row width",
+        "rows-none": "Returned no rows, where the planner expected some.",
+        "rows-over": "Returned {{factor}}× more rows than the planner estimated.",
+        "rows-under": "Returned {{factor}}× fewer rows than the planner estimated.",
         "startup-cost": "Startup cost",
         "total-cost": "Total cost"
       },
       "summary": {
         "costliest": "Costliest by estimated cost",
-        "no-added-cost": "No node in this plan adds an estimated cost of its own."
+        "no-added-cost": "No node in this plan adds an estimated cost of its own.",
+        "no-added-time": "No node in this plan took measurable time of its own.",
+        "no-ranking": "This plan reports no cost or time, so its operators cannot be ranked.",
+        "slowest-measured": "Slowest by measured time",
+        "warning-operators": "{{count}} operators",
+        "warnings": "Warnings"
       },
       "tab": {
         "diagram": "Diagram",
         "grid": "Table",
         "text": "Text"
       },
+      "table": {
+        "heading": "Table",
+        "indexes": "Indexes",
+        "no-indexes": "No indexes on this table.",
+        "primary": "primary",
+        "rows": "{{count}} rows at the last sync",
+        "unique": "unique"
+      },
       "totals": {
         "estimated-cost": "estimated cost {{cost}}",
+        "measured-time": "measured time {{time}} ms",
         "nodes": "{{count}} nodes"
       }
     },

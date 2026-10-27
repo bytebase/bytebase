@@ -384,3 +384,57 @@ describe("QueryPlanGrid", () => {
     expect(container.querySelector("img")).toBeNull();
   });
 });
+
+describe("QueryPlanGrid on a measured plan", () => {
+  const measuredPlan = [
+    {
+      Plan: {
+        "Node Type": "Nested Loop",
+        "Total Cost": 100,
+        "Plan Rows": 10,
+        "Plan Width": 8,
+        "Actual Total Time": 20,
+        "Actual Rows": 10,
+        "Actual Loops": 1,
+        Plans: [
+          {
+            "Node Type": "Seq Scan",
+            "Parent Relationship": "Outer",
+            "Relation Name": "orders",
+            "Total Cost": 40,
+            "Plan Rows": 4,
+            "Plan Width": 8,
+            "Actual Total Time": 16,
+            "Actual Rows": 3,
+            "Actual Loops": 1,
+          },
+        ],
+      },
+    },
+  ];
+
+  test("reports the time each node took where the plan measured it", () => {
+    renderGrid({ tree: treeFrom(measuredPlan) });
+
+    expect(headers()).toEqual([
+      "#",
+      "Node",
+      "Self time",
+      "Total cost",
+      "Rows",
+      "Actual rows",
+      "Width",
+    ]);
+    // 16 ms of the plan's 20 went to the scan, which the bar shows as its
+    // share; the estimate columns stay beside it.
+    expect(cellsOf(rows()[1]).slice(2)).toEqual(["16", "40", "4", "3", "8"]);
+  });
+
+  test("keeps the cost column where nothing measured a time", () => {
+    renderGrid();
+
+    expect(headers()).toContain("Added cost");
+    expect(headers()).not.toContain("Self time");
+    expect(headers()).not.toContain("Actual rows");
+  });
+});

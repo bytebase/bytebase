@@ -1,4 +1,3 @@
-import { create } from "@bufbuild/protobuf";
 import { isEmpty } from "lodash-es";
 import {
   ArrowDownIcon,
@@ -36,6 +35,7 @@ import {
 } from "@/components/ui/segmented-control";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip } from "@/components/ui/tooltip";
+import { useAppDatabaseMetadata } from "@/hooks/useAppDatabaseMetadata";
 import { useExecuteSQL } from "@/hooks/useExecuteSQL";
 import { writeTextToClipboard } from "@/lib/clipboard";
 import { cn } from "@/lib/utils";
@@ -51,11 +51,11 @@ import { Engine, ExportFormat } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
   QueryOption_ExplainFormat,
-  QueryOptionSchema,
   type QueryResult,
 } from "@/types/proto-es/v1/sql_service_pb";
 import { hasProjectPermissionV2 } from "@/utils/iam/permission";
 import {
+  explainQueryOption,
   isVisualizerEngine,
   VISUALIZER_EXPLAIN_FORMATS,
 } from "@/utils/queryPlanEngines";
@@ -66,7 +66,11 @@ import {
   isNoSQLQueryResult,
 } from "@/utils/sqlResult";
 import { STORAGE_KEY_SQL_EDITOR_NOSQL_TABLE_VIEW } from "@/utils/storage-keys";
-import { getDatabaseProject, getInstanceResource } from "@/utils/v1/database";
+import {
+  extractDatabaseResourceName,
+  getDatabaseProject,
+  getInstanceResource,
+} from "@/utils/v1/database";
 import { instanceV1AllowsExplain } from "@/utils/v1/instance";
 import { compareQueryRowValues, extractSQLRowValuePlain } from "@/utils/v1/sql";
 import { CopyAllButton } from "./CopyAllButton";
@@ -77,11 +81,13 @@ import { DocumentJSONView } from "./DocumentJSONView";
 import { EmptyView } from "./EmptyView";
 import { ErrorView } from "./ErrorView";
 import { canReplayStatement, planAvailability } from "./planAvailability";
+import { tableFactsLookup } from "./planTableFacts";
 import {
   type InlineQueryPlan,
   QueryPlanResultView,
 } from "./QueryPlanResultView";
 import { formatQueryTime, ResultStatusBar } from "./ResultStatusBar";
+import { inlineQueryPlan } from "./resultPlans";
 import { SelectionCopyTooltips } from "./SelectionCopyTooltips";
 import { TextSearchControl } from "./TextSearchControl";
 import type {
@@ -503,12 +509,27 @@ function SingleResultViewInner({
     [flattenedTableView, result.masked]
   );
 
+  // The editor's panels already fetch this database's metadata, so the plan
+  // reads that cache rather than asking for it again; without it a node simply
+  // says nothing about its table.
+  const databaseMetadata = useAppDatabaseMetadata(database.name, {
+    autoFetch: false,
+  });
+  const describeTable = useMemo(
+    () =>
+      tableFactsLookup(
+        databaseMetadata,
+        extractDatabaseResourceName(database.name).databaseName
+      ),
+    [databaseMetadata, database.name]
+  );
+
   const plan = result.queryPlan;
   const planInRows =
     isVisualizerEngine(engine) &&
     plan?.format ===
       QueryOption_ExplainFormat[VISUALIZER_EXPLAIN_FORMATS[engine]];
-  const planInResult = useMemo(() => getInlineQueryPlan(result), [result]);
+  const planInResult = useMemo(() => inlineQueryPlan(result), [result]);
   const canReplay =
     isVisualizerEngine(engine) &&
     plan?.format === QueryOption_ExplainFormat.TEXT &&
@@ -612,6 +633,7 @@ function SingleResultViewInner({
               rawPlan={planInResult?.source ?? ""}
               initialPlan={planInRows ? planInResult : undefined}
               engine={isVisualizerEngine(engine) ? engine : undefined}
+              describeTable={describeTable}
               loadPlan={canReplay ? loadPlan : undefined}
               disallowCopyingData={disallowCopyingData}
             />
@@ -788,6 +810,7 @@ function SingleResultViewInner({
                 rawPlan=""
                 initialPlan={resultPlan}
                 engine={isVisualizerEngine(engine) ? engine : undefined}
+                describeTable={describeTable}
                 loadPlan={loadResultPlan}
                 estimated
                 onCancel={() => setLayout("TABLE")}
@@ -987,19 +1010,6 @@ function DatabaseInfo({ database }: { database: Database }) {
   );
 }
 
-function getInlineQueryPlan(result: QueryResult): InlineQueryPlan | undefined {
-  const lines = result.rows.map((row) =>
-    row.values.map((value) => String(extractSQLRowValuePlain(value)))
-  );
-  // Multi-column plans keep every column, tab-separated under a header.
-  const source =
-    result.columnNames.length > 1
-      ? [result.columnNames, ...lines].map((line) => line.join("\t")).join("\n")
-      : lines.map((line) => line[0]).join("\n");
-  if (!source) return undefined;
-  return { source };
-}
-
 // explainStatement asks the engine for the plan of a statement as it ran, in
 // the format the visualizer draws where there is one and the engine's default
 // otherwise. The signal cancels the request.
@@ -1012,16 +1022,13 @@ async function explainStatement(
   signal?: AbortSignal
 ): Promise<InlineQueryPlan | undefined> {
   if (!statement) return undefined;
-  const explainFormat = isVisualizerEngine(engine)
-    ? QueryOption_ExplainFormat[VISUALIZER_EXPLAIN_FORMATS[engine]]
-    : QueryOption_ExplainFormat.EXPLAIN_FORMAT_UNSPECIFIED;
   const context: SQLEditorDatabaseQueryContext = {
     id: uuidv4(),
     params: {
       ...params,
       statement,
       explain: true,
-      queryOption: create(QueryOptionSchema, { explainFormat }),
+      queryOption: explainQueryOption(engine),
     },
     status: "PENDING",
   };
@@ -1035,5 +1042,5 @@ async function explainStatement(
   const result = resultSet?.results[0];
   if (!result) return undefined;
   if (result.error) throw new Error(result.error);
-  return getInlineQueryPlan(result);
+  return inlineQueryPlan(result);
 }

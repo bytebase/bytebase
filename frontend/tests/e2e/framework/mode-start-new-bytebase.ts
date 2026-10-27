@@ -188,9 +188,9 @@ function findServerBinary(): string {
   const binPath = candidates.find((p) => fs.existsSync(p));
   if (!binPath) {
     throw new Error(
-      `Bytebase binary not found. Build it with:\n` +
-        `  pnpm --dir frontend build\n` +
-        `  go build -tags embed_frontend -ldflags "-w -s" -p=16 -o ./bytebase-build/bytebase ./backend/bin/server/main.go\n` +
+      `Bytebase binary not found. Build it from the repository root with:\n` +
+        `  (cd frontend && pnpm release)\n` +
+        `  bash frontend/tests/e2e/build-server.sh\n` +
         `Or set BYTEBASE_BIN to the binary path.`
     );
   }

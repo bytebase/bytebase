@@ -3436,6 +3436,7 @@
     "data-explorer-sql-filter-placeholder": "输入查询条件，例如 WHERE id = 1",
     "ddl-dml-requires-data-change-plan": "如需在 <environment></environment> 中执行 DDL/DML 语句，请创建变更计划以获得审批。",
     "download-as-file": "下载为 {{file}} 格式",
+    "dry-run": "试运行",
     "duration-day": "{{days}} 天",
     "duration-days": "{{days}} 天",
     "duration-hour": "{{hours}} 小时",
@@ -3445,6 +3446,8 @@
     "expire-at": "{{time}} 过期",
     "expire-in": "{{time}} 后过期",
     "expired": "已过期",
+    "explain": "查看执行计划",
+    "explain-hint": "显示执行计划，不运行查询",
     "explore-data": "浏览数据",
     "export-available-via-issue": "通过工单 \"{{title}}\" 可导出",
     "export-available-via-n-grants": "通过 {{count}} 个访问授权可导出:",
@@ -3482,6 +3485,7 @@
     "open-in-new-tab": "在新选项卡中打开",
     "opened-from-link": "从链接打开",
     "pending-query": "待处理查询",
+    "plan-cost-share": "占整个脚本预计成本的 {{share}}",
     "plan-estimated": "预估",
     "plan-view": "执行计划",
     "previous-row": "上一行",
@@ -3502,6 +3506,7 @@
         "select-node": "选择节点以查看详情。"
       },
       "diagram": {
+        "actual-rows": "实际行数 {{count}}",
         "collapse": "折叠 {{node}} 下的 {{count}} 个节点",
         "cost": "成本 {{cost}}",
         "estimated-rows": "预计 {{count}} 行",
@@ -3509,7 +3514,9 @@
         "fit": "适应视图",
         "nodes-hidden": "已隐藏 {{count}} 个节点",
         "plan-cost-share": "占计划成本的 {{share}}",
+        "plan-time-share": "占计划耗时的 {{share}}",
         "rows": "行数 {{count}}",
+        "time": "耗时 {{time}} ms",
         "zoom-in": "放大",
         "zoom-out": "缩小"
       },
@@ -3529,12 +3536,16 @@
         "unreadable": "无法读取此查询计划"
       },
       "grid": {
+        "actual-rows": "实际行数",
+        "actual-rows-hint": "该算子实际返回的行数，为所有执行次数的合计",
         "added-cost": "新增成本",
         "added-cost-hint": "此节点在其子节点之上增加的成本；某些引擎还会在此计入输入重复执行的成本，例如嵌套循环下的输入。条形图表示该成本占计划总成本的比例。",
         "caption": "按规划器嵌套顺序排列的计划节点，父节点在子节点之前。",
         "estimated-rows": "预计行数",
         "node": "节点",
         "rows": "行数",
+        "self-time": "自身耗时",
+        "self-time-hint": "该节点在其子节点之上耗费的毫秒数，为所有执行次数的合计。条形图表示该时间占计划总耗时的比例。",
         "total-cost": "总成本",
         "width": "宽度",
         "width-hint": "预计行宽（字节）"
@@ -3546,31 +3557,55 @@
         "off": "关闭",
         "off-hint": "不为任何节点卡片着色",
         "rows": "行数",
-        "rows-hint": "按预计行数着色"
+        "rows-hint": "按预计行数着色",
+        "time": "耗时",
+        "time-hint": "按节点在其子节点之上耗费的时间着色"
       },
       "legend": {
         "cost": "每张卡片的条形图表示该节点占计划预计成本的比例",
-        "rows": "边的粗细随其子节点预计返回的行数增加"
+        "rows": "边的粗细随其子节点预计返回的行数增加",
+        "time": "每张卡片的条形图表示该节点占计划实测耗时的比例"
       },
       "metric": {
+        "actual-rows": "实际行数",
+        "actual-time": "实际耗时",
         "added-cost": "新增成本",
         "bytes": "{{count}} 字节",
         "estimated-rows": "预计行数",
+        "loops": "执行次数",
+        "milliseconds": "{{count}} ms",
         "row-width": "行宽",
+        "rows-none": "未返回任何行，而规划器预计会有行返回。",
+        "rows-over": "返回的行数是规划器预计的 {{factor}} 倍。",
+        "rows-under": "返回的行数是规划器预计的 {{factor}} 分之一。",
         "startup-cost": "启动成本",
         "total-cost": "总成本"
       },
       "summary": {
         "costliest": "按预估成本最高的操作符",
-        "no-added-cost": "此计划中没有节点自身增加预计成本。"
+        "no-added-cost": "此计划中没有节点自身增加预计成本。",
+        "no-added-time": "此计划中没有节点自身耗费可测量的时间。",
+        "no-ranking": "此计划未报告成本或耗时，因此无法为其算子排序。",
+        "slowest-measured": "按实测耗时最长的操作符",
+        "warning-operators": "{{count}} 个算子",
+        "warnings": "警告"
       },
       "tab": {
         "diagram": "图表",
         "grid": "表格",
         "text": "文本"
       },
+      "table": {
+        "heading": "表",
+        "indexes": "索引",
+        "no-indexes": "此表没有索引。",
+        "primary": "主键",
+        "rows": "上次同步时 {{count}} 行",
+        "unique": "唯一"
+      },
       "totals": {
         "estimated-cost": "预计成本 {{cost}}",
+        "measured-time": "实测耗时 {{time}} ms",
         "nodes": "{{count}} 个节点"
       }
     },
