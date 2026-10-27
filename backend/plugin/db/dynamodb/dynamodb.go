@@ -193,7 +193,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 			stop = true
 		}
 		result.Latency = durationpb.New(time.Since(startTime))
-		result.Statement = statement
+		result.Statement = singleSQL.Text
 		result.RowsCount = int64(len(result.Rows))
 		results = append(results, result)
 		if stop {
