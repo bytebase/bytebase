@@ -35,7 +35,9 @@ func profiledSearch(request *parser.Request) (*parser.Request, error) {
 		return nil, err
 	}
 
-	body := map[string]any{}
+	// Every value is kept as the caller wrote it: decoding a number here would
+	// round a long past 2^53, and the search that ran would not be theirs.
+	body := map[string]json.RawMessage{}
 	if len(request.Data) > 0 {
 		// A search carries one JSON document; the newline-delimited endpoints
 		// that carry several are not searches this profiles.
@@ -43,7 +45,7 @@ func profiledSearch(request *parser.Request) (*parser.Request, error) {
 			return nil, errors.Wrapf(err, "the search body is not a JSON object to profile")
 		}
 	}
-	body[profileField] = true
+	body[profileField] = json.RawMessage("true")
 	profiled, err := json.Marshal(body)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to encode the profiled search")
@@ -74,30 +76,38 @@ func searchable(request *parser.Request) error {
 	return nil
 }
 
-// queryPlanOf returns the plan a profiled search answered with, and removes it
-// from the response: the viewer draws it beside the result rather than in it,
-// and a profile in the grid is a page of JSON in one cell.
+// profileOnly returns the plan a profiled search answered with: its profile
+// and the time the search took, and nothing else the response carried.
 //
-// The search's own `took` goes with it, since that is what the whole search
-// cost and no node in the profile states it.
-func queryPlanOf(response map[string]any) *v1pb.QueryResult_QueryPlan {
+// The hits are dropped rather than returned. Masking is off for an explain
+// request — every other engine's explain states a plan and no data, so there
+// has never been anything there to mask — and a search profiled through this
+// path would otherwise hand back documents that an ordinary query would have
+// masked. The plan is what an explain asks for; the documents are not.
+//
+// The search's own `took` goes with the profile, since that is what the whole
+// search cost and no node within it states that.
+func profileOnly(response map[string]any) (string, error) {
 	profile, ok := response[profileField]
 	if !ok {
-		return nil
+		return "", errors.Errorf("the search answered with no profile to explain")
 	}
-	delete(response, profileField)
-	carried := map[string]any{profileField: profile}
+	plan := map[string]any{profileField: profile}
 	if took, ok := response[tookField]; ok {
-		carried[tookField] = took
+		plan[tookField] = took
 	}
-	content, err := json.Marshal(carried)
+	encoded, err := json.Marshal(plan)
 	if err != nil {
-		return nil
+		return "", errors.Wrapf(err, "failed to encode the profile")
 	}
+	return string(encoded), nil
+}
+
+// explainQueryPlan marks a result as the plan of a search that ran, which is
+// the only kind Elasticsearch states.
+func explainQueryPlan() *v1pb.QueryResult_QueryPlan {
 	return &v1pb.QueryResult_QueryPlan{
-		Format: v1pb.QueryOption_JSON,
-		// The profile records the search that returned these hits.
+		Format:   v1pb.QueryOption_JSON,
 		Executed: true,
-		Content:  string(content),
 	}
 }

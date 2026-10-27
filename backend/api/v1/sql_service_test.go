@@ -390,7 +390,11 @@ func TestValidateExplainFormat(t *testing.T) {
 		// plan is text.
 		{name: "databricks text", engine: storepb.Engine_DATABRICKS, format: v1pb.QueryOption_TEXT},
 		{name: "databricks json has no reader", engine: storepb.Engine_DATABRICKS, format: v1pb.QueryOption_JSON, wantErr: true},
-		{name: "elasticsearch refuses even an unspecified format", engine: storepb.Engine_ELASTICSEARCH, format: v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, wantErr: true},
+		// Elasticsearch states one plan, its profile, which it answers with only
+		// for a search it ran; the driver refuses to profile anything else.
+		{name: "elasticsearch default", engine: storepb.Engine_ELASTICSEARCH, format: v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED},
+		{name: "elasticsearch json", engine: storepb.Engine_ELASTICSEARCH, format: v1pb.QueryOption_JSON},
+		{name: "elasticsearch has no text plan", engine: storepb.Engine_ELASTICSEARCH, format: v1pb.QueryOption_TEXT, wantErr: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()

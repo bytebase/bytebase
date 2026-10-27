@@ -902,10 +902,10 @@ func queryRetry(
 	if queryContext.Explain {
 		if format, ok := db.ExplainResultFormat(instance.Metadata.GetEngine(), queryContext.Option.GetExplainFormat()); ok {
 			for _, result := range results {
-				// A driver that stated the plan itself keeps it: Elasticsearch
-				// carries the profile beside the rows, with what it measured
-				// and the fact that it ran.
-				if result.Error == "" && result.QueryPlan.GetContent() == "" {
+				// A driver that stated the plan itself keeps it, with whether it
+				// ran and anything it carried: Elasticsearch answers an explain
+				// with the profile of a search it executed.
+				if result.Error == "" && result.QueryPlan == nil {
 					result.QueryPlan = &v1pb.QueryResult_QueryPlan{Format: format}
 				}
 			}

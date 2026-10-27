@@ -497,7 +497,18 @@ func (d *Driver) QueryConn(_ context.Context, _ *sql.Conn, statement string, que
 				switch v := data.(type) {
 				case map[string]any:
 					if queryContext.Explain {
-						result.QueryPlan = queryPlanOf(v)
+						// The search ran so that it could be profiled; its hits
+						// are not what an explain asked for, and they leave
+						// here rather than reaching a caller that masking no
+						// longer covers.
+						profile, err := profileOnly(v)
+						if err != nil {
+							return err
+						}
+						result.ColumnNames = append(result.ColumnNames, profileField)
+						row.Values = append(row.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: profile}})
+						result.QueryPlan = explainQueryPlan()
+						break
 					}
 					// Object response: create one column per key
 					for key, val := range v {
@@ -509,6 +520,9 @@ func (d *Driver) QueryConn(_ context.Context, _ *sql.Conn, statement string, que
 						row.Values = append(row.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: string(bytes)}})
 					}
 				case []any:
+					if queryContext.Explain {
+						return errors.Errorf("the profiled search answered with a list, which is not a search response")
+					}
 					// Array response (e.g., _cat APIs with format=json): create a single column with array data
 					result.ColumnNames = append(result.ColumnNames, "result")
 					bytes, err := json.Marshal(v)

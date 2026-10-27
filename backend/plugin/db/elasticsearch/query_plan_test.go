@@ -2,6 +2,7 @@ package elasticsearch
 
 import (
 	"encoding/json"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -85,34 +86,71 @@ func TestProfiledSearchRefusesWhatIsNotASearch(t *testing.T) {
 	}
 }
 
-// TestQueryPlanOf pins what the result carries: the profile and the search's
-// own time, taken out of the rows so the grid keeps the answer.
-func TestQueryPlanOf(t *testing.T) {
+// TestProfileOnly pins what an explain answers with: the profile and the time
+// the search took, and nothing else it returned. The hits are dropped here
+// rather than masked, because masking is off for an explain request.
+func TestProfileOnly(t *testing.T) {
 	response := map[string]any{
-		"took":    float64(102),
-		"hits":    map[string]any{"total": map[string]any{"value": float64(3)}},
-		"profile": map[string]any{"shards": []any{map[string]any{"id": "[n][customers][0]"}}},
+		"took": float64(102),
+		"hits": map[string]any{
+			"total": map[string]any{"value": float64(3)},
+			"hits":  []any{map[string]any{"_source": map[string]any{"ssn": "111-22-3333"}}},
+		},
+		"aggregations": map[string]any{"by_city": map[string]any{"buckets": []any{}}},
+		"profile":      map[string]any{"shards": []any{map[string]any{"id": "[n][customers][0]"}}},
 	}
-	plan := queryPlanOf(response)
-	require.NotNil(t, plan)
-	require.Equal(t, v1pb.QueryOption_JSON, plan.Format)
-	// The profile records the search that returned these hits.
-	require.True(t, plan.Executed)
+	encoded, err := profileOnly(response)
+	require.NoError(t, err)
 
-	var carried map[string]any
-	require.NoError(t, json.Unmarshal([]byte(plan.Content), &carried))
-	require.Equal(t, float64(102), carried["took"])
-	require.Contains(t, carried, "profile")
-
-	// The profile leaves the response, so it is not also a cell of the grid.
-	require.NotContains(t, response, "profile")
-	require.Contains(t, response, "hits")
-	require.Contains(t, response, "took")
+	var plan map[string]any
+	require.NoError(t, json.Unmarshal([]byte(encoded), &plan))
+	require.Equal(t, []string{"profile", "took"}, sortedKeys(plan))
+	require.Equal(t, float64(102), plan["took"])
+	// Nothing a document could hide in survives.
+	require.NotContains(t, encoded, "ssn")
+	require.NotContains(t, encoded, "111-22-3333")
+	require.NotContains(t, encoded, "aggregations")
 }
 
-func TestQueryPlanOfWithoutAProfile(t *testing.T) {
-	// A response that carries no profile leaves the result as it was.
-	response := map[string]any{"took": float64(1), "hits": map[string]any{}}
-	require.Nil(t, queryPlanOf(response))
-	require.Len(t, response, 2)
+// TestExplainQueryPlan pins what the result says about its plan: JSON, and
+// that it ran, which is what the viewer badges measured.
+func TestExplainQueryPlan(t *testing.T) {
+	plan := explainQueryPlan()
+	require.Equal(t, v1pb.QueryOption_JSON, plan.Format)
+	require.True(t, plan.Executed)
+	// The plan is the result's rows here, not something carried beside them:
+	// an explain returns no data to carry it beside.
+	require.Empty(t, plan.Content)
+}
+
+func TestProfileOnlyWithoutAProfile(t *testing.T) {
+	// A response with no profile is not a plan, and saying so beats answering
+	// with the search's own hits.
+	_, err := profileOnly(map[string]any{"took": float64(1), "hits": map[string]any{}})
+	require.Error(t, err)
+}
+
+// TestProfiledSearchKeepsNumbersExact locks the caller's own body. Decoding a
+// number on the way through would round a long past 2^53, and the search that
+// ran would not be the one they wrote.
+func TestProfiledSearchKeepsNumbersExact(t *testing.T) {
+	const big = "9007199254740993"
+	request := parser.Request{
+		Method: "POST",
+		URL:    "/events/_search",
+		Data:   []string{`{"query":{"term":{"id":` + big + `}},"size":2}`},
+	}
+	profiled, err := profiledSearch(&request)
+	require.NoError(t, err)
+	require.Contains(t, profiled.Data[0], big)
+	require.Contains(t, profiled.Data[0], `"profile":true`)
+}
+
+func sortedKeys(m map[string]any) []string {
+	keys := make([]string, 0, len(m))
+	for key := range m {
+		keys = append(keys, key)
+	}
+	slices.Sort(keys)
+	return keys
 }

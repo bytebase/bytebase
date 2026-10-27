@@ -425,12 +425,19 @@ to draw. The Profile API answers with the tree — every Lucene query, collector
 and aggregation, each timed — and only for a search that ran.
 
 So the request the driver sends is the caller's search with `"profile": true`
-in its body, and three things follow. It is a read, so it needs the permission
+in its body, and four things follow. It is a read, so it needs the permission
 that search needs as well as `bb.sql.explain`, which is the rule §3.5 already
 set for a typed `EXPLAIN ANALYZE`. Anything that is not a `_search` is refused
 rather than sent, so an explain can never carry out a write — a
-`_delete_by_query` reads like a search and is not one. And the result is badged
+`_delete_by_query` reads like a search and is not one. The result is badged
 measured, because it is.
+
+And the hits do not come back. The search ran so that it could be profiled,
+which is not the same as being asked for; masking is off for an explain request
+— every other engine's explain states a plan and no data, so there has never
+been anything there to mask — and returning documents through this path would
+hand back what an ordinary query would have masked. The plan is the result, as
+it is for every other engine here.
 
 The profile is stated per shard with nothing above them, so the shards hang
 under a node for the search itself: the one node in any of these parsers that
