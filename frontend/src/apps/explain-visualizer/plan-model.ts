@@ -319,6 +319,13 @@ export interface PlanRelation {
   readonly table: string;
   readonly database?: string;
   readonly schema?: string;
+  /**
+   * The name is the one the statement used, which is the alias where it gave
+   * one, and the engine did not resolve it to the table it read. It names the
+   * read for a reader, but nothing is looked up by it: a stored table that
+   * happens to share an alias would answer with the wrong table's facts.
+   */
+  readonly unresolved?: boolean;
 }
 
 /** One index on a table an operator reads, as Bytebase last synced it. */

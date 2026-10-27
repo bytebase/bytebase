@@ -421,9 +421,11 @@ which is what a ClickHouse plan is read for.
 
 Neither MySQL nor MariaDB names
 the stored table a `table` entry reads — it prints the alias where the statement
-gave one, unqualified — so a node's table facts (§3.3) answer only an unaliased
-read, and an aliased one says nothing rather than describing another table that
-happens to share the alias. Nor does either name an operator for the work
+gave one, unqualified, and nothing in the plan says which it is. TiDB and
+OceanBase print that name too. So on those four the name is carried as the
+statement's: it names the read on the node, and a node's table facts (§3.3) are
+not looked up by it, since a stored table that happens to share an alias would
+answer with the wrong table's indexes — the failure §3.3 exists to avoid. Nor does either name an operator for the work
 between the query block and its tables: MariaDB charges a sort to the query
 block, which therefore ranks first in such a plan, since attributing that cost
 to the `filesort` or the `temporary_table` under it would be a guess about

@@ -119,12 +119,12 @@ function accessObjectOf(raw: JsonRecord): [string, string][] {
  * The table this operator reads.
  *
  * TiDB prints the name the statement used, which is the alias where it gave
- * one, and never qualifies it — so a lookup answers only where that name is a
- * table Bytebase synced, as it does for MySQL.
+ * one, and never qualifies it, so the name is carried as the statement's and
+ * no table is looked up by it — as for MySQL.
  */
 function toRelation(raw: JsonRecord): PlanRelation | undefined {
   const table = accessObjectOf(raw).find(([label]) => label === "table");
-  return table ? { table: table[1] } : undefined;
+  return table ? { table: table[1], unresolved: true } : undefined;
 }
 
 function toProperties(raw: JsonRecord): PlanProperty[] {

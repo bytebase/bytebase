@@ -88,6 +88,9 @@ const ACCESS_TYPES: Record<string, string> = {
 /** A result MySQL materialized for itself: `<derived2>`, `<union1,2>`. */
 const INTERNAL_TABLE = /^<.*>$/;
 
+/** What a `table` entry holds when it stands in for a materialized result. */
+const MATERIALIZED_KEY = "materialized_from_subquery";
+
 /**
  * Rows a read examines before reading all of them is worth flagging.
  *
@@ -152,23 +155,22 @@ function toSubject(raw: JsonRecord): string | undefined {
  * The stored table this operator reads, where it reads one.
  *
  * A `table` entry can stand in for a result the engine materialized for
- * itself. Those are named after the derived result — `<derived2>` — or after
- * the alias the statement gave the subquery, and they carry the subquery's own
- * operators, so they are neither a table Bytebase can describe nor a read an
- * index would change.
+ * itself. Those name the subquery they were built from, and are named after
+ * the derived result — `<derived2>` — or after the alias the statement gave
+ * the subquery, so they are neither a table Bytebase can describe nor a read
+ * an index would change. A real table's entry carries operators too, in
+ * `attached_subqueries`, which is a subquery run against the table rather than
+ * a result standing in for it: that is still a read of the table.
  *
  * What is left is the name the statement used for a real table, which is the
- * alias where it gave one, and neither engine qualifies it. So a lookup
- * answers only where that name is a table Bytebase synced, and an aliased read
- * goes unanswered rather than being answered with another table that happens
- * to share the alias.
+ * alias where it gave one, and neither engine qualifies it. Nothing in the
+ * plan says which it is, so the name is carried as the statement's: it names
+ * the read, and no table is looked up by it.
  */
-function baseTable(
-  key: string,
-  raw: JsonRecord,
-  children: readonly PlanNode[]
-): string | undefined {
-  if (key !== TABLE_KEY || children.length > 0) return undefined;
+function baseTable(key: string, raw: JsonRecord): string | undefined {
+  if (key !== TABLE_KEY || isJsonRecord(raw[MATERIALIZED_KEY])) {
+    return undefined;
+  }
   const table = stringValue(raw.table_name);
   return table && !INTERNAL_TABLE.test(table) ? table : undefined;
 }
@@ -237,12 +239,12 @@ function toPlanNode(
   checkPlanDepth(depth);
   const children = toChildren(raw, id, depth);
   const totalCost = ownCost(raw) ?? planSubtreeCost(children);
-  const table = baseTable(key, raw, children);
+  const table = baseTable(key, raw);
   return {
     id,
     nodeType: toNodeType(key, raw),
     subject: toSubject(raw),
-    relation: table ? { table } : undefined,
+    relation: table ? { table, unresolved: true } : undefined,
     totalCost,
     selfCost: planSelfCost(totalCost, children),
     rows:

@@ -12,6 +12,7 @@ import {
   type PlanNode,
   type PlanTree,
 } from "./plan-model";
+import attachedSubquery from "./test-data/mysql/attached-subquery.json";
 import derivedTable from "./test-data/mysql/derived-table.json";
 import fullScanFilter from "./test-data/mysql/full-scan-filter.json";
 import groupSortJoin from "./test-data/mysql/group-sort-join.json";
@@ -145,6 +146,24 @@ describe("parseMysqlPlan", () => {
     expect(union.totalCost).toBeCloseTo(4829.75 + 503.75, 5);
   });
 
+  test("reads the table a subquery is attached to, which is still a read", () => {
+    const tree = parseFixture(attachedSubquery);
+    const scan = byId(tree, "0.0");
+
+    // The scan carries the subquery's own operators under
+    // `attached_subqueries`, which is a subquery run against the table rather
+    // than a result standing in for it — so it is still a read of `o`, and
+    // reading every row of it is still worth flagging.
+    expect(scan.nodeType).toBe("Full Table Scan");
+    expect(scan.children).toHaveLength(1);
+    expect(scan.relation).toEqual({ table: "o", unresolved: true });
+    expect(scan.rows).toBe(50184);
+    expect(scan.warnings).toEqual([PLAN_FULL_TABLE_SCAN]);
+    // What MySQL materialized for the subquery is not a table of its own.
+    expect(byId(tree, "0.0.0.0").nodeType).toBe("Materialize");
+    expect(byId(tree, "0.0.0.0").relation).toBeUndefined();
+  });
+
   test("leaves a derived table unanswered and unflagged", () => {
     const tree = parseFixture(derivedTable);
     const derived = byId(tree, "0.0");
@@ -162,7 +181,7 @@ describe("parseMysqlPlan", () => {
     // all of what MySQL materialized is not a read an index would change.
     expect(derived.relation).toBeUndefined();
     expect(derived.warnings).toEqual([]);
-    expect(scan.relation).toEqual({ table: "orders" });
+    expect(scan.relation).toEqual({ table: "orders", unresolved: true });
     expect(scan.warnings).toEqual([PLAN_FULL_INDEX_SCAN]);
   });
 

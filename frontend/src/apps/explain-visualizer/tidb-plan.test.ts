@@ -104,7 +104,9 @@ describe("parseTidbPlan", () => {
   test("splits an access object into the table it reads and the index it uses", () => {
     const indexScan = byId(parseFixture(indexHashJoin), "0.1.0.0");
 
-    expect(indexScan.relation).toEqual({ table: "o" });
+    // `o` is the statement's name for the table, which TiDB does not resolve,
+    // so it names the read and nothing is looked up by it.
+    expect(indexScan.relation).toEqual({ table: "o", unresolved: true });
     expect(propertyValue(indexScan, "Table")).toBe("o");
     // The index names its columns in parentheses, where a comma separates
     // columns rather than parts of the access object.
@@ -124,8 +126,14 @@ describe("parseTidbPlan", () => {
       "0.0.0 TableReader data:Projection_14",
     ]);
     expect(byId(tree, "0.0").children).toHaveLength(2);
-    expect(byId(tree, "0.0.0.0.0.0").relation).toEqual({ table: "orders" });
-    expect(byId(tree, "0.0.1.0.0.0").relation).toEqual({ table: "customers" });
+    expect(byId(tree, "0.0.0.0.0.0").relation).toEqual({
+      table: "orders",
+      unresolved: true,
+    });
+    expect(byId(tree, "0.0.1.0.0.0").relation).toEqual({
+      table: "customers",
+      unresolved: true,
+    });
   });
 
   test("reads a measured plan for its rows and not its timings", () => {

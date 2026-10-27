@@ -89,13 +89,13 @@ function childrenOf(raw: JsonRecord): JsonRecord[] {
  * The table this operator reads.
  *
  * `NAME` is the name the statement used, which is the alias where it gave one,
- * and OceanBase does not qualify it — so a lookup answers only where that name
- * is a table Bytebase synced, as it does for MySQL. An operator that reads no
+ * and OceanBase does not qualify it, so the name is carried as the statement's
+ * and no table is looked up by it — as for MySQL. An operator that reads no
  * object leaves it empty.
  */
 function toRelation(raw: JsonRecord): PlanRelation | undefined {
   const table = stringValue(raw[NAME_KEY]);
-  return table ? { table } : undefined;
+  return table ? { table, unresolved: true } : undefined;
 }
 
 function toWarnings(operator: string, raw: JsonRecord): PlanWarning[] {

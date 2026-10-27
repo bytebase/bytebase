@@ -54,7 +54,7 @@ describe("parseOceanbasePlan", () => {
     const tree = parseFixture(fullScanFilter);
 
     expect(outline(tree)).toEqual(["0 TABLE FULL SCAN orders"]);
-    expect(tree.root.relation).toEqual({ table: "orders" });
+    expect(tree.root.relation).toEqual({ table: "orders", unresolved: true });
     expect(tree.root.warnings).toEqual([PLAN_FULL_TABLE_SCAN]);
     expect(propertyValue(tree.root, "Output")).toContain("orders.total");
   });
@@ -90,8 +90,12 @@ describe("parseOceanbasePlan", () => {
     const tree = parseFixture(hashJoinGroupSort);
 
     expect(byId(tree, "0.0.0").relation).toBeUndefined();
-    // The name is the one the statement used, which is the alias it gave.
-    expect(byId(tree, "0.0.0.0").relation).toEqual({ table: "c" });
+    // The name is the one the statement used, which is the alias it gave, so
+    // it names the read and nothing is looked up by it.
+    expect(byId(tree, "0.0.0.0").relation).toEqual({
+      table: "c",
+      unresolved: true,
+    });
   });
 
   test("does not flag a range scan, or a small full read", () => {

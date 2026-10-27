@@ -119,6 +119,7 @@ parser reads both and the `mariadb-` files are the second dialect's.
 | `full-scan-filter.json` | MySQL | A query block over one scan — the smallest real plan |
 | `group-sort-join.json` | MySQL | An ordering over a grouping over a two-table join |
 | `derived-table.json` | MySQL | A derived table materialized from its own query block |
+| `attached-subquery.json` | MySQL | A real table's scan carrying a subquery's operators under `attached_subqueries`, which a derived table's `materialized_from_subquery` is not |
 | `union-distinct.json` | MySQL | A union result over two query specifications |
 | `mariadb-sort-temporary-join.json` | MariaDB | `filesort` and `temporary_table` where MySQL says `ordering_operation` and `grouping_operation` |
 | `mariadb-block-nl-join.json` | MariaDB | `block-nl-join`, a join wrapper holding the table it buffers |
