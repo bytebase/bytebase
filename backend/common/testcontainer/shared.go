@@ -109,7 +109,8 @@ func SharedTiDBContainer(t testing.TB) *Container { return shared(t, sharedTiDB)
 func SharedMongoDBContainer(t testing.TB) *Container { return shared(t, sharedMongo) }
 
 // SharedOracleContainer is SharedPgContainer for Oracle, reached through
-// OracleServiceName; tests take a schema each with NewOracleSchema.
+// OracleServiceName; tests take a schema each with NewOracleSchema. Its admin
+// user is a DBA.
 func SharedOracleContainer(t testing.TB) *Container { return shared(t, sharedOracle) }
 
 // SharedMariaDBContainer is SharedPgContainer for MariaDB 11.8; tests take a
@@ -119,28 +120,6 @@ func SharedMariaDBContainer(t testing.TB) *Container { return shared(t, sharedMa
 // SharedMariaDB107Container is SharedMariaDBContainer for MariaDB 10.7, the
 // oldest supported release; tests take a database each with NewMariaDB107Database.
 func SharedMariaDB107Container(t testing.TB) *Container { return shared(t, sharedMariaDB107) }
-
-// SharedOracleContainer is SharedPgContainer for Oracle; tests take a schema
-// each with NewOracleSchema. Its admin user is a DBA.
-func SharedOracleContainer(t testing.TB) *Container { return shared(t, sharedOracle) }
-
-// NewOracleSchema creates an empty schema for the test on the shared Oracle
-// container and returns the container with the schema's name. An Oracle schema
-// is a user; this one may own the tables and materialized views the admin
-// creates in it.
-func NewOracleSchema(t testing.TB) (*Container, string) {
-	t.Helper()
-	container := SharedOracleContainer(t)
-	name := strings.ToUpper(newDatabaseName())
-	for _, statement := range []string{
-		fmt.Sprintf(`CREATE USER %s IDENTIFIED BY "%s" QUOTA UNLIMITED ON USERS`, name, container.GetPassword()),
-		fmt.Sprintf(`GRANT CREATE SESSION, CREATE TABLE, CREATE MATERIALIZED VIEW TO %s`, name),
-	} {
-		_, err := container.GetDB().Exec(statement)
-		require.NoError(t, err)
-	}
-	return container, name
-}
 
 // NewPgDatabase creates an empty database for the test on the shared
 // PostgreSQL container and returns its name with a superuser handle to it.
@@ -212,13 +191,24 @@ func NewMongoDatabase(t testing.TB) (*Container, string) {
 
 // NewOracleSchema creates an empty schema for the test on the shared Oracle
 // container and returns the container with the schema's name. The schema is a
-// user that can't sign in, with quota for the objects the admin creates in it.
+// user that cannot sign in, with quota for the objects the admin creates in it.
+//
+// It is granted what it must own rather than what it may do: Oracle checks the
+// schema owner's privileges for some of what the admin creates there, a
+// materialized view among them, which fails with ORA-01031 without this. The
+// grants a session would need are left out, since this user has no way to open
+// one.
 func NewOracleSchema(t testing.TB) (*Container, string) {
 	t.Helper()
 	container := SharedOracleContainer(t)
 	name := strings.ToUpper(newDatabaseName())
-	_, err := container.GetDB().Exec(fmt.Sprintf("CREATE USER %s NO AUTHENTICATION QUOTA UNLIMITED ON USERS", name))
-	require.NoError(t, err)
+	for _, statement := range []string{
+		fmt.Sprintf("CREATE USER %s NO AUTHENTICATION QUOTA UNLIMITED ON USERS", name),
+		fmt.Sprintf("GRANT CREATE TABLE, CREATE MATERIALIZED VIEW TO %s", name),
+	} {
+		_, err := container.GetDB().Exec(statement)
+		require.NoError(t, err)
+	}
 	return container, name
 }
 
