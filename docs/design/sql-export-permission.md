@@ -21,9 +21,12 @@
   User's permissions plus `bb.sql.export`. Workspace Admin, Workspace DBA and Project Owner also
   hold `bb.sql.export`. SQL Editor User and SQL Editor Read User do not.
 - The server enforces the permission for every caller: console, API and MCP.
-- A one-time migration keeps who can export today. Workspaces that allow export without approval
-  give `bb.sql.export` to the users who export today. Workspaces that require approval get no
-  new standing export, so approved access grants stay the only export path for ordinary users.
+- A one-time migration keeps export for users who export today through SQL Editor User or SQL
+  Editor Read User. Workspaces that allow export without approval give those users a SQL Editor
+  Exporter binding. Workspaces that require approval get no new standing export, so approved
+  access grants stay the only export path for ordinary users. The migration does not change
+  custom roles: holders of custom roles with `bb.sql.select` lose export until an administrator
+  adds `bb.sql.export` to the role.
 
 ## Background
 
@@ -56,8 +59,10 @@ nothing left to decide.
 - Enforce it on the server for every caller.
 - Keep one control for export: role bindings and access grants, with no workspace flag that
   overlaps them.
-- On upgrade, keep who can export in every workspace: standing export where the workspace allows
-  export without approval, and approval-only export where it requires approval.
+- On upgrade, keep export for users who export through SQL Editor User or SQL Editor Read User:
+  standing export where the workspace allows export without approval, and approval-only export
+  where it requires approval. Holders of custom roles with `bb.sql.select` lose export until an
+  administrator adds `bb.sql.export` to the role.
 
 ## Non-goals
 
@@ -78,7 +83,7 @@ nothing left to decide.
 | Workspace Admin, Workspace DBA, Project Owner | Yes | All three hold `bb.projects.setIamPolicy` and could grant it to themselves. Withholding it would be cosmetic. |
 | SQL Editor User, SQL Editor Read User | No | Export becomes an explicit grant. |
 | SQL Editor Exporter (new) | Yes | "Query databases and export results, without DDL or DML access." |
-| Custom roles | As configured | The migration adds it where export works without approval today. |
+| Custom roles | As configured | The migration does not change custom roles. |
 
 SQL Editor Exporter can be stacked on SQL Editor User to add export to someone who can write.
 
@@ -230,15 +235,15 @@ Steps:
    new server cannot start until the conflict is gone, and a role id cannot be renamed, so the
    error message gives the fix: on the previous version, create a replacement custom role, move
    its bindings, and delete the conflicting role. Check Cloud data for the id before release.
-2. In export-enabled workspaces, add `bb.sql.export` to every custom role with `bb.sql.select`.
-3. In export-enabled workspaces, for every workspace or project IAM binding of SQL Editor User
+2. In export-enabled workspaces, for every workspace or project IAM binding of SQL Editor User
    or SQL Editor Read User, add a SQL Editor Exporter binding with the same members and
    condition.
-4. Remove the `disableExport` key from every `QUERY_DATA` policy, at workspace and project
+3. Remove the `disableExport` key from every `QUERY_DATA` policy, at workspace and project
    level, enforced or not.
 
-Approval-only workspaces get no new permissions or bindings. Ordinary users there keep exporting
-only through approved grants. Built-in role definitions live in Go and need no migration.
+Approval-only workspaces get no new bindings. Ordinary users there keep exporting only through
+approved grants. Custom roles are not changed in any workspace. Built-in role definitions live in
+Go and need no migration.
 
 ```sql
 DO $$
@@ -255,13 +260,6 @@ CREATE TEMP TABLE approval_only_workspace ON COMMIT DROP AS
 SELECT workspace FROM policy
 WHERE resource_type = 'WORKSPACE' AND type = 'QUERY_DATA' AND enforce
   AND COALESCE((payload ->> 'disableExport')::boolean, false);
-
-UPDATE role
-SET permissions = jsonb_set(permissions, '{permissions}',
-      (permissions -> 'permissions') || '"bb.sql.export"'::jsonb)
-WHERE permissions -> 'permissions' @> '["bb.sql.select"]'
-  AND NOT permissions -> 'permissions' @> '["bb.sql.export"]'
-  AND workspace NOT IN (SELECT workspace FROM approval_only_workspace);
 
 WITH added AS (
   SELECT p.workspace, p.resource_type, p.resource,
@@ -295,7 +293,7 @@ approval rules are not touched.
 | Who | Export-enabled workspace | Approval-only workspace |
 |---|---|---|
 | SQL Editor User, SQL Editor Read User | Export, through the added binding | Request export, then export after approval (unchanged)* |
-| Custom roles with `bb.sql.select` | Export, through the added permission | Request export (unchanged)* |
+| Custom roles with `bb.sql.select` | No export until an admin adds `bb.sql.export` to the role | Request export (unchanged)* |
 | Admin, DBA, Project Owner | Export | **Export without a grant** |
 | Export grant holders | Export | Export (unchanged) |
 | API and MCP callers | Same as the SQL Editor | **Same as the SQL Editor** |
@@ -311,6 +309,8 @@ offered, as today.
   directly. The release note must state this.
 - In approval-only workspaces, API and MCP callers need `bb.sql.export` or a matching export
   grant, where before anyone with select could export. This closes X1.
+- In export-enabled workspaces, holders of custom roles with `bb.sql.select` lose export until an
+  administrator adds `bb.sql.export` to the role. The release note must state this.
 - The workspace export setting is gone. To stop a user exporting, remove export from their
   roles; to stop export through grants in a project, turn off just-in-time access there. The
   release note must state this.
@@ -325,14 +325,12 @@ offered, as today.
 
 The Terraform provider manages the whole IAM policy of a parent through `bytebase_iam_policy`,
 custom roles and their permission sets through `bytebase_role`, and `disable_export` through
-`bytebase_policy`. The migration changes all three, so each can drift.
+`bytebase_policy`. The migration changes IAM policies and query data policies, so
+`bytebase_iam_policy` and `bytebase_policy` can drift. It does not change custom roles.
 
 - **IAM drift (export-enabled workspaces).** `terraform plan` wants to remove the added exporter
   bindings. Applying it takes export away from SQL Editor users. This failure removes access and
   never adds it, which is why the migration adds bindings instead of rewriting roles.
-- **Custom-role drift (export-enabled workspaces).** `terraform plan` wants to remove
-  `bb.sql.export` from the custom roles that gained it. Applying it takes export away from their
-  holders.
 - **`disable_export` (approval-only workspaces).** A config that sets `disable_export = true` shows a
   `false → true` change, and applying it fails with the rejection message. A config that sets
   `false` keeps applying until the provider drops the attribute.
@@ -353,8 +351,7 @@ Upgrade runbook for Terraform users:
 3. Run `terraform plan`.
 4. In export-enabled workspaces, add every exporter binding the plan wants to remove: for each
    SQL Editor binding that should keep export, a binding with the same members and condition and
-   `role = "roles/sqlEditorExporter"`. Add `bb.sql.export` to each custom role the plan wants to
-   change.
+   `role = "roles/sqlEditorExporter"`.
 5. Remove `disable_export` from every `bytebase_policy` config.
 6. Resume automatic apply when the plan is clean.
 
@@ -378,10 +375,10 @@ binding {
   User binding, a group SQL Editor Read User binding, and workspace and project IAM policies.
   Include a third workspace with a non-enforced disabled policy, and a project-level query data
   policy that stores `disableExport`. Assert exact payloads: the approval-only workspace has no
-  new bindings or permissions; the export-enabled workspace has the added bindings and
-  permissions; the third workspace is treated as export-enabled; no query data policy keeps a
-  `disableExport` key, their other fields and `enforce` are unchanged. Assert that the id
-  collision raises.
+  new bindings; the export-enabled workspace has the added bindings; the third workspace is
+  treated as export-enabled; every custom role, with or without `bb.sql.select`, is unchanged in
+  every workspace; no query data policy keeps a `disableExport` key, their other fields and
+  `enforce` are unchanged. Assert that the id collision raises.
 - **Export authorization** (`backend/api/v1`):
   - A select-only user cannot export.
   - A user with only `bb.sql.export`, scoped to one table, exports that table, is refused on
@@ -425,6 +422,18 @@ Accepting and dropping the value keeps old configs applying. `terraform plan` wo
 
 The migration could add exporter bindings in approval-only workspaces too. That would hand
 standing export to every SQL Editor user in workspaces that chose to require approval.
+
+### Add `bb.sql.export` to custom roles with select
+
+This keeps export for holders of custom roles in export-enabled workspaces. It also rewrites
+roles that administrators own, often through Terraform `bytebase_role`, whose next plan would
+want to undo the change.
+
+### Add an Exporter binding beside custom-role bindings
+
+This keeps export without touching the roles. It also grants the rest of SQL Editor Exporter's
+permissions (database sync, IAM policy read, explain, info, saved queries, database groups and
+catalogs), which a narrow custom role may not include.
 
 ### Require `bb.sql.select` and `bb.sql.export`
 

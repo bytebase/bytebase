@@ -13,13 +13,6 @@ SELECT workspace FROM policy
 WHERE resource_type = 'WORKSPACE' AND type = 'QUERY_DATA' AND enforce
   AND COALESCE((payload ->> 'disableExport')::boolean, false);
 
-UPDATE role
-SET permissions = jsonb_set(permissions, '{permissions}',
-      (permissions -> 'permissions') || '"bb.sql.export"'::jsonb)
-WHERE permissions -> 'permissions' @> '["bb.sql.select"]'
-  AND NOT permissions -> 'permissions' @> '["bb.sql.export"]'
-  AND workspace NOT IN (SELECT workspace FROM approval_only_workspace);
-
 WITH added AS (
   SELECT p.workspace, p.resource_type, p.resource,
          jsonb_agg(jsonb_set(b, '{role}', '"roles/sqlEditorExporter"') ORDER BY ord) AS bindings

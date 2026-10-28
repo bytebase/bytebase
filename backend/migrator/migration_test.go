@@ -129,21 +129,25 @@ func TestMigration3_25_0_SQLExportPermission(t *testing.T) {
 	)
 	require.NoError(t, err)
 
+	rolePermissions := func() map[string]string {
+		rows, err := db.QueryContext(ctx, `SELECT resource_id, permissions::text FROM role`)
+		require.NoError(t, err)
+		defer rows.Close()
+		permissions := map[string]string{}
+		for rows.Next() {
+			var role, text string
+			require.NoError(t, rows.Scan(&role, &text))
+			permissions[role] = text
+		}
+		require.NoError(t, rows.Err())
+		return permissions
+	}
+	rolesBefore := rolePermissions()
+	require.Len(t, rolesBefore, 7)
+
 	require.NoError(t, runMigration3_25_0SQL(ctx, db))
 
-	for role, want := range map[string]string{
-		"export-select":       `{"permissions":["bb.databases.get","bb.sql.select","bb.sql.export"]}`,
-		"export-no-select":    `{"permissions":["bb.databases.get","bb.sql.info"]}`,
-		"export-already":      `{"permissions":["bb.sql.select","bb.sql.export"]}`,
-		"approval-select":     `{"permissions":["bb.databases.get","bb.sql.select"]}`,
-		"approval-no-select":  `{"permissions":["bb.databases.get"]}`,
-		"unenforced-select":   `{"permissions":["bb.sql.select","bb.sql.export"]}`,
-		"unchanged-no-select": `{"permissions":["bb.databases.get"]}`,
-	} {
-		var got string
-		require.NoError(t, db.QueryRowContext(ctx, `SELECT permissions::text FROM role WHERE resource_id = $1`, role).Scan(&got))
-		require.JSONEq(t, want, got, role)
-	}
+	require.Equal(t, rolesBefore, rolePermissions(), "the migration does not change custom roles")
 
 	type policyKey struct{ workspace, resource, policyType string }
 	type policyWant struct {
