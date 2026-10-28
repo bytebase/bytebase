@@ -85,7 +85,7 @@ func mockListDatabases(databases []map[string]any) http.Handler {
 }
 
 // applyMockFilter applies a simplified filter to mock databases.
-// Supports: name.contains("x"), instance == "instances/x", project == "projects/x"
+// Supports: name.contains("x"), instance == "instances/x"
 func applyMockFilter(databases []map[string]any, filter string) []map[string]any {
 	var result []map[string]any
 	for _, db := range databases {
@@ -121,17 +121,6 @@ func applyMockFilter(databases []map[string]any, filter string) []map[string]any
 			if end > 0 {
 				expected := filter[start : start+end]
 				if instanceName != expected {
-					match = false
-				}
-			}
-		}
-		// Check project == "projects/x"
-		if idx := strings.Index(filter, `project == "`); idx >= 0 {
-			start := idx + len(`project == "`)
-			end := strings.Index(filter[start:], `"`)
-			if end > 0 {
-				expected := filter[start : start+end]
-				if proj, ok := db["project"].(string); ok && proj != expected {
 					match = false
 				}
 			}
@@ -188,7 +177,6 @@ func TestBuildDatabaseFilter(t *testing.T) {
 		name     string
 		database string
 		instance string
-		project  string
 		expect   string
 	}{
 		{
@@ -203,19 +191,6 @@ func TestBuildDatabaseFilter(t *testing.T) {
 			expect:   `name.contains("employee_db") && instance == "instances/prod-pg"`,
 		},
 		{
-			name:     "with project",
-			database: "employee_db",
-			project:  "hr-system",
-			expect:   `name.contains("employee_db") && project == "projects/hr-system"`,
-		},
-		{
-			name:     "with instance and project",
-			database: "employee_db",
-			instance: "prod-pg",
-			project:  "hr-system",
-			expect:   `name.contains("employee_db") && instance == "instances/prod-pg" && project == "projects/hr-system"`,
-		},
-		{
 			name:     "with canonical project instance",
 			database: "employee_db",
 			instance: "projects/hr-system/instances/prod-pg",
@@ -224,7 +199,7 @@ func TestBuildDatabaseFilter(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := buildDatabaseFilter(tc.database, tc.instance, tc.project)
+			got := buildDatabaseFilter(tc.database, tc.instance)
 			require.Equal(t, tc.expect, got)
 		})
 	}

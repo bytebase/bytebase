@@ -142,6 +142,7 @@ func TestSearchDatabases(t *testing.T) {
 			if resp.Msg.NextPageToken == "" {
 				return names, nil
 			}
+			require.Len(t, resp.Msg.Databases, int(pageSize), "a page with a next page token is full")
 			pageToken = resp.Msg.NextPageToken
 		}
 	}

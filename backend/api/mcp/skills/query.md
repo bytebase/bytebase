@@ -27,14 +27,16 @@ Run SQL queries against databases managed by Bytebase.
 
 2. **Find the database** (if needed):
    ```
+   search_api(operationId="DatabaseService/SearchDatabases")
+   ```
+   ```
    call_api(operationId="DatabaseService/SearchDatabases", body={
      "filter": "name.contains(\"db_name\")"
    })
    ```
 
-   SearchDatabases returns databases from every project where you have
-   `bb.databases.list`. To list one project, call `DatabaseService/ListDatabases`
-   with `"parent": "projects/{project-id}"`.
+   SearchDatabases returns databases from every active project where you have
+   `bb.databases.list`.
 
    Filter examples:
    - `name.contains("employee")` - database name contains "employee"

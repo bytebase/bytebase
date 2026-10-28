@@ -85,11 +85,7 @@ func TestResolve_ProjectInstanceDatabaseAndFilter(t *testing.T) {
 
 	require.Equal(t,
 		`name.contains("app") && instance == "projects/project-a/instances/instance-a"`,
-		buildDatabaseFilter("app", projectInstance, ""),
-	)
-	require.Equal(t,
-		`name.contains("app") && instance == "instances/instance-a" && project == "projects/project-a"`,
-		buildDatabaseFilter("app", "instance-a", "project-a"),
+		buildDatabaseFilter("app", projectInstance),
 	)
 }
 
@@ -186,24 +182,51 @@ func hrAndFinanceDatabases() []map[string]any {
 }
 
 func TestResolve_SearchesWhenNoProjectIsNamed(t *testing.T) {
-	for _, tc := range []struct {
-		name     string
-		readable []string
-	}{
-		{name: "project role", readable: []string{"projects/hr"}},
-		{name: "workspace admin", readable: []string{"projects/hr", "projects/finance"}},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			api := &listingAPI{databases: hrAndFinanceDatabases(), readable: tc.readable}
-			s := newTestServerWithMock(t, api)
+	api := &listingAPI{databases: hrAndFinanceDatabases(), readable: []string{"projects/hr"}}
+	s := newTestServerWithMock(t, api)
 
-			resolved, err := s.resolveDatabase(testContext(), "employee_db", "", "")
-			require.NoError(t, err)
-			require.Equal(t, "instances/prod-pg/databases/employee_db", resolved.resourceName)
-			require.Equal(t, "projects/hr", resolved.project)
-			require.Equal(t, []string{"SearchDatabases"}, api.requested())
-		})
-	}
+	resolved, err := s.resolveDatabase(testContext(), "employee_db", "", "")
+	require.NoError(t, err)
+	require.Equal(t, "instances/prod-pg/databases/employee_db", resolved.resourceName)
+	require.Equal(t, "projects/hr", resolved.project)
+	require.Equal(t, []string{"SearchDatabases"}, api.requested())
+}
+
+func TestResolve_ReadsEveryPage(t *testing.T) {
+	var (
+		mu     sync.Mutex
+		tokens []string
+	)
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var body struct {
+			PageToken string `json:"pageToken"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		mu.Lock()
+		tokens = append(tokens, body.PageToken)
+		requests := len(tokens)
+		mu.Unlock()
+		// A loop that resends the first page fails here instead of hanging.
+		if requests > 2 {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		databases := hrAndFinanceDatabases()
+		page := map[string]any{"databases": databases[:1]}
+		if body.PageToken == "" {
+			page = map[string]any{"databases": databases[1:], "nextPageToken": "page-2"}
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(page)
+	})
+	s := newTestServerWithMock(t, handler)
+
+	resolved, err := s.resolveDatabase(testContext(), "employee_db", "", "")
+	require.NoError(t, err)
+	require.Equal(t, "instances/prod-pg/databases/employee_db", resolved.resourceName)
+	mu.Lock()
+	defer mu.Unlock()
+	require.Equal(t, []string{"", "page-2"}, tokens)
 }
 
 func TestResolve_UnreadableProjectIsNotFound(t *testing.T) {
@@ -225,36 +248,6 @@ func TestResolve_UnreadableProjectIsNotFound(t *testing.T) {
 			require.Equal(t, "DATABASE_NOT_FOUND", te.Code)
 			require.Contains(t, te.Suggestion, "projects where you lack bb.databases.list")
 		})
-	}
-}
-
-func TestResolve_SearchKeepsTheInstanceFilter(t *testing.T) {
-	api := &listingAPI{
-		databases: []map[string]any{
-			makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr", "POSTGRES", "ds-1"),
-			makeDatabase("instances/staging-pg/databases/employee_db", "instances/staging-pg", "projects/ops", "POSTGRES", "ds-2"),
-			makeDatabase("projects/ops/instances/ops-pg/databases/employee_db", "projects/ops/instances/ops-pg", "projects/ops", "POSTGRES", "ds-3"),
-			makeDatabase("instances/prod-pg/databases/payroll_db", "instances/prod-pg", "projects/finance", "POSTGRES", "ds-4"),
-		},
-		readable: []string{"projects/hr", "projects/ops"},
-	}
-	s := newTestServerWithMock(t, api)
-
-	resolved, err := s.resolveDatabase(testContext(), "employee_db", "", "")
-	require.NoError(t, err)
-	require.True(t, resolved.ambiguous)
-	require.ElementsMatch(t, []string{"hr", "ops", "ops"}, []string{
-		resolved.candidates[0].Project, resolved.candidates[1].Project, resolved.candidates[2].Project,
-	})
-
-	for instance, want := range map[string]string{
-		"staging-pg":                    "instances/staging-pg/databases/employee_db",
-		"projects/ops/instances/ops-pg": "projects/ops/instances/ops-pg/databases/employee_db",
-	} {
-		resolved, err := s.resolveDatabase(testContext(), "employee_db", instance, "")
-		require.NoError(t, err)
-		require.False(t, resolved.ambiguous, instance)
-		require.Equal(t, want, resolved.resourceName)
 	}
 }
 

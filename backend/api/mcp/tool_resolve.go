@@ -38,13 +38,13 @@ type resolvedDatabase struct {
 	projects      map[string]string // resourceName -> project
 }
 
-// listDatabasesResponse is the typed response from ListDatabases API.
+// listDatabasesResponse is the typed response from ListDatabases and SearchDatabases.
 type listDatabasesResponse struct {
 	Databases     []databaseEntry `json:"databases"`
 	NextPageToken string          `json:"nextPageToken,omitempty"`
 }
 
-// databaseEntry represents a database in the ListDatabases response.
+// databaseEntry represents a database in a ListDatabases or SearchDatabases response.
 type databaseEntry struct {
 	Name             string           `json:"name"`
 	Project          string           `json:"project"`
@@ -64,15 +64,12 @@ type dataSource struct {
 	Type string `json:"type"`
 }
 
-// buildDatabaseFilter builds a CEL filter expression for ListDatabases.
-func buildDatabaseFilter(database, instance, project string) string {
+// buildDatabaseFilter builds a CEL filter expression for the database lookup.
+func buildDatabaseFilter(database, instance string) string {
 	// name.contains does substring matching server-side.
 	filter := fmt.Sprintf("name.contains(%q)", database)
 	if instance != "" {
 		filter += fmt.Sprintf(" && instance == %q", formatInstanceFilter(instance))
-	}
-	if project != "" {
-		filter += fmt.Sprintf(" && project == %q", formatProjectFilter(project))
 	}
 	return filter
 }
@@ -87,7 +84,7 @@ func formatInstanceFilter(instance string) string {
 	return common.FormatInstance(instance)
 }
 
-func formatProjectFilter(project string) string {
+func formatProjectName(project string) string {
 	if _, err := common.GetProjectID(project); err == nil {
 		return project
 	}
@@ -108,7 +105,7 @@ func (s *Server) listDatabases(ctx context.Context, filter, project string) ([]d
 	}
 	if project != "" {
 		path = "/bytebase.v1.DatabaseService/ListDatabases"
-		body["parent"] = formatProjectFilter(project)
+		body["parent"] = formatProjectName(project)
 	}
 
 	var databases []databaseEntry
@@ -202,7 +199,7 @@ func candidateView(matches []databaseEntry) *resolvedDatabase {
 
 // resolveDatabase resolves a database name to a unique resource using tiered matching.
 func (s *Server) resolveDatabase(ctx context.Context, database, instance, project string) (*resolvedDatabase, error) {
-	databases, err := s.listDatabases(ctx, buildDatabaseFilter(database, instance, project), project)
+	databases, err := s.listDatabases(ctx, buildDatabaseFilter(database, instance), project)
 	if err != nil {
 		return nil, err
 	}
