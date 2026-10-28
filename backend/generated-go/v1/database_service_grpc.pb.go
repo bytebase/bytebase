@@ -49,7 +49,7 @@ type DatabaseServiceClient interface {
 	// Permissions required: bb.databases.get (on each named database's project)
 	BatchGetDatabases(ctx context.Context, in *BatchGetDatabasesRequest, opts ...grpc.CallOption) (*BatchGetDatabasesResponse, error)
 	// Lists databases in a project, instance, or workspace.
-	// Permissions required: bb.projects.get (for project parent), bb.databases.list (for workspace parent), or bb.instances.get (for instance parent)
+	// Permissions required: bb.databases.list (for project or workspace parent), or bb.instances.get (for instance parent)
 	ListDatabases(ctx context.Context, in *ListDatabasesRequest, opts ...grpc.CallOption) (*ListDatabasesResponse, error)
 	// Updates database properties such as labels and project assignment.
 	// Permissions required: bb.databases.update
@@ -237,7 +237,7 @@ type DatabaseServiceServer interface {
 	// Permissions required: bb.databases.get (on each named database's project)
 	BatchGetDatabases(context.Context, *BatchGetDatabasesRequest) (*BatchGetDatabasesResponse, error)
 	// Lists databases in a project, instance, or workspace.
-	// Permissions required: bb.projects.get (for project parent), bb.databases.list (for workspace parent), or bb.instances.get (for instance parent)
+	// Permissions required: bb.databases.list (for project or workspace parent), or bb.instances.get (for instance parent)
 	ListDatabases(context.Context, *ListDatabasesRequest) (*ListDatabasesResponse, error)
 	// Updates database properties such as labels and project assignment.
 	// Permissions required: bb.databases.update
