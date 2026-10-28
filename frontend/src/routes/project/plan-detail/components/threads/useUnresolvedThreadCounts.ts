@@ -39,18 +39,14 @@ export function useIssueThreadsLoaded(issueName: string | undefined) {
   );
 }
 
-// Unresolved threads the statement editor shows for each of `specs`, so a
-// change tab and its editor walker agree.
-export function usePlacedUnresolvedThreadCounts(
-  issueName: string | undefined,
-  specs: Plan_Spec[],
+// The last complete line the statement editor loads for each spec whose
+// sheet is too large to load whole; specs loaded whole have no entry.
+export function usePreviewEndLines(
+  specs: readonly Plan_Spec[],
   projectName: string
 ): ReadonlyMap<string, number> {
-  const threads = useIssueThreads(issueName);
   const sheetsByName = useAppStore((s) => s.sheetsByName);
-  const placements = usePlanDetailStore((s) => s.placements);
-  const placementTargets = usePlanDetailStore((s) => s.placementTargets);
-  const previewEndLines = useMemo(() => {
+  return useMemo(() => {
     const lines = new Map<string, number>();
     for (const spec of specs) {
       const sha = targetSha256OfSpec(spec);
@@ -67,6 +63,19 @@ export function usePlacedUnresolvedThreadCounts(
     }
     return lines;
   }, [projectName, sheetsByName, specs]);
+}
+
+// Unresolved threads the statement editor shows for each of `specs`, so a
+// change tab and its editor walker agree.
+export function usePlacedUnresolvedThreadCounts(
+  issueName: string | undefined,
+  specs: Plan_Spec[],
+  projectName: string
+): ReadonlyMap<string, number> {
+  const threads = useIssueThreads(issueName);
+  const placements = usePlanDetailStore((s) => s.placements);
+  const placementTargets = usePlanDetailStore((s) => s.placementTargets);
+  const previewEndLines = usePreviewEndLines(specs, projectName);
   return useMemo(
     () =>
       countPlacedUnresolvedBySpec(

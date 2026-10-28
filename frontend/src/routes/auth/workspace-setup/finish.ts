@@ -86,10 +86,11 @@ const SUPERSEDED = { ok: false, superseded: true } as const;
 // would report it a second time.
 const REPORT = { byCaller: true };
 
-// Together these let an invitee propose changes and run read-only queries.
+// Together these let an invitee propose changes, run read-only queries, and
+// export their results.
 const INVITEE_PROJECT_ROLES: string[] = [
   PresetRoleType.PROJECT_DEVELOPER,
-  PresetRoleType.SQL_EDITOR_READ_USER,
+  PresetRoleType.SQL_EDITOR_EXPORTER,
 ];
 
 // Screen 1's two names. The name is optional, and an empty one is not saved

@@ -127,6 +127,9 @@ type QuerySpanResult struct {
 	SourceFieldPaths map[string][]*PathAST
 	// SelectAsterisk indicates whether the field is selected by asterisk, used by Cosmos DB.
 	SelectAsterisk bool
+	// Invisible marks a table column that SELECT * leaves out, such as an
+	// Oracle INVISIBLE column. A reference by name still resolves it.
+	Invisible bool
 }
 
 // ColumnResource is the resource key for a column.
@@ -279,6 +282,8 @@ type PhysicalTable struct {
 	Name string
 	// Columns are the columns of the table.
 	Columns []string
+	// InvisibleColumns are the Columns that SELECT * leaves out.
+	InvisibleColumns map[string]bool
 }
 
 func (p *PhysicalTable) GetTableName() string {
@@ -312,6 +317,7 @@ func (p *PhysicalTable) GetQuerySpanResult() []QuerySpanResult {
 			Name:          column,
 			SourceColumns: sourceColumnSet,
 			IsPlainField:  true,
+			Invisible:     p.InvisibleColumns[column],
 		})
 	}
 	return result

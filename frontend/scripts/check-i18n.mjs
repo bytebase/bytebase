@@ -468,21 +468,11 @@ for (const locale of LOCALES) {
 // ---------------------------------------------------------------------------
 // Check 7: linked wording
 // ---------------------------------------------------------------------------
-// The data-export setting's description quotes the "Request export" button
-// label so admins can connect the policy to what users see; the label has
-// been renamed before (#21081, #21200). The unmask capability is a different
-// mechanism from the Masking Exemptions feature, so its strings must not
-// reuse the feature's name (zh once shipped 脱敏豁免 on the unmask button).
+// The unmask capability is a different mechanism from the Masking Exemptions
+// feature, so its strings must not reuse the feature's name (zh once shipped
+// 脱敏豁免 on the unmask button).
 for (const locale of LOCALES) {
   const values = localeValues(locale);
-  const label = values["sql-editor.request-export"] ?? "";
-  const description =
-    values["settings.general.workspace.data-export.description"] ?? "";
-  if (!label || !description.includes(label)) {
-    error(
-      `${locale}: settings.general.workspace.data-export.description must quote sql-editor.request-export (${JSON.stringify(label)})`
-    );
-  }
   const featureName = values["project.masking-exemption.self"] ?? "";
   for (const key of ["sql-editor.request-unmask", "sql-editor.grant-type-unmask"]) {
     const value = values[key] ?? "";

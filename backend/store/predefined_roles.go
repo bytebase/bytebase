@@ -11,6 +11,7 @@ const (
 	ProjectDeveloperRole   = "projectDeveloper"
 	SQLEditorUserRole      = "sqlEditorUser"
 	SQLEditorReadUserRole  = "sqlEditorReadUser"
+	SQLEditorExporterRole  = "sqlEditorExporter"
 	ProjectReleaserRole    = "projectReleaser"
 	GitOpsServiceAgentRole = "gitopsServiceAgent"
 	ProjectViewerRole      = "projectViewer"
@@ -149,6 +150,7 @@ var PredefinedRoles = []*RoleMessage{
 			permission.SQLDdl,
 			permission.SQLDml,
 			permission.SQLExplain,
+			permission.SQLExport,
 			permission.SQLInfo,
 			permission.SQLSelect,
 			permission.UsersCreate,
@@ -295,6 +297,7 @@ var PredefinedRoles = []*RoleMessage{
 			permission.SQLDdl,
 			permission.SQLDml,
 			permission.SQLExplain,
+			permission.SQLExport,
 			permission.SQLInfo,
 			permission.SQLSelect,
 			permission.UsersGet,
@@ -431,6 +434,7 @@ var PredefinedRoles = []*RoleMessage{
 			permission.SQLDdl,
 			permission.SQLDml,
 			permission.SQLExplain,
+			permission.SQLExport,
 			permission.SQLInfo,
 			permission.SQLSelect,
 			permission.UsersGet,
@@ -545,6 +549,29 @@ var PredefinedRoles = []*RoleMessage{
 			permission.ProjectsGet,
 			permission.ProjectsGetIAMPolicy,
 			permission.SQLExplain,
+			permission.SQLInfo,
+			permission.SQLSelect,
+			permission.SavedQueriesCreate,
+			permission.SavedQueriesSearch,
+		),
+	},
+	{
+		ResourceID: SQLEditorExporterRole,
+		Name:       "SQL Editor Exporter",
+		Predefined: true,
+		Permissions: permissionSet(
+			permission.DatabaseCatalogsGet,
+			permission.DatabaseGroupsGet,
+			permission.DatabaseGroupsList,
+			permission.DatabasesCheck,
+			permission.DatabasesGet,
+			permission.DatabasesGetSchema,
+			permission.DatabasesList,
+			permission.DatabasesSync,
+			permission.ProjectsGet,
+			permission.ProjectsGetIAMPolicy,
+			permission.SQLExplain,
+			permission.SQLExport,
 			permission.SQLInfo,
 			permission.SQLSelect,
 			permission.SavedQueriesCreate,

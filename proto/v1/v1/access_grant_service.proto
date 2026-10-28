@@ -152,7 +152,8 @@ message AccessGrant {
 
   string reason = 12;
 
-  // Whether export the query result.
+  // Whether the grant allows exporting the query result.
+  // An active grant with export=true grants bb.sql.export for this query until the grant expires.
   bool export = 13;
 
   // The default schema to execute the query.

@@ -1,4 +1,7 @@
-import type { QueryResult } from "@/types/proto-es/v1/sql_service_pb";
+import {
+  QueryOption_ExplainFormat,
+  type QueryResult,
+} from "@/types/proto-es/v1/sql_service_pb";
 
 export type PlanAvailability = "offered" | "needs-permission" | "absent";
 
@@ -38,6 +41,12 @@ export function planAvailability({
   engineExplains: boolean;
   canExplain: boolean;
 }): PlanAvailability {
+  // A plan the engine stated beside the result is in hand: the Plan view draws
+  // it without asking the server for anything, so neither the engine's explain
+  // support nor the permission to explain gates it.
+  if (result.queryPlan?.content) {
+    return "offered";
+  }
   if (result.queryPlan || !engineExplains || !result.statement) {
     return "absent";
   }
@@ -45,4 +54,21 @@ export function planAvailability({
     return "absent";
   }
   return canExplain ? "offered" : "needs-permission";
+}
+
+/**
+ * Whether the viewer shows a plan in this format as text, which is what makes
+ * it worth fetching again in a format the viewer draws.
+ *
+ * Unknown counts as text. MySQL's omitted FORMAT follows the session's
+ * explain_format, so a result cannot say what came back, and text is what the
+ * viewer shows for anything it cannot read.
+ */
+export function isTextPlanFormat(
+  format: QueryOption_ExplainFormat | undefined
+): boolean {
+  return (
+    format === QueryOption_ExplainFormat.TEXT ||
+    format === QueryOption_ExplainFormat.EXPLAIN_FORMAT_UNSPECIFIED
+  );
 }

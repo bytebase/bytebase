@@ -228,6 +228,47 @@ export function selectEditorThreads(
   return placed.sort(compareEditorThreads);
 }
 
+// Whether the statement editor shows a thread: anchored, placed CURRENT on
+// its spec's current sheet, and inside the part of an oversized statement
+// the editor loaded. Anything else can only be read in its Activity card.
+export function isShownInEditor(
+  root: IssueComment,
+  specs: readonly Plan_Spec[],
+  placementFor: (
+    commentName: string,
+    specId: string,
+    sheetSha256: string | undefined
+  ) => Placement | undefined,
+  previewEndLineFor: (specId: string) => number | undefined
+): boolean {
+  const anchor = root.statementAnchor;
+  if (!anchor) return false;
+  const spec = specs.find((candidate) => candidate.id === anchor.spec);
+  const sheetSha256 = targetSha256OfSpec(spec);
+  const placement =
+    placementFor(root.name, anchor.spec, sheetSha256) ??
+    trivialPlacement(anchor, sheetSha256);
+  if (placement?.state !== "CURRENT") return false;
+  const previewEndLine = previewEndLineFor(anchor.spec);
+  return (
+    previewEndLine === undefined || placement.range.endLine <= previewEndLine
+  );
+}
+
+// Under SQL Review V2, a folded run shows in Activity as one line, so a
+// finding of it keeps its own card only where nothing else shows it: people
+// replied to it, or the editor cannot show it. A result a later run superseded
+// is history unless someone reopened it, since an open thread holds the
+// rollout.
+export function needsActivityCard(
+  thread: CommentThread,
+  shownInEditor: boolean
+): boolean {
+  if (thread.replies.length > 0) return true;
+  if (thread.root.reviewMetadata?.superseded && thread.resolved) return false;
+  return !shownInEditor;
+}
+
 export const isEditorThreadVisible = (
   entry: EditorThread,
   previewEndLine: number | undefined

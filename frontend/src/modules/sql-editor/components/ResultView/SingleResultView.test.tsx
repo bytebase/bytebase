@@ -292,6 +292,7 @@ vi.mock("./QueryPlanResultView", () => ({
     rawPlan,
     initialPlan,
     loadPlan,
+    estimated,
     disallowCopyingData,
   }: {
     rawPlan: string;
@@ -299,6 +300,7 @@ vi.mock("./QueryPlanResultView", () => ({
     loadPlan?: () => Promise<
       { source: string } | undefined
     >;
+    estimated?: boolean;
     disallowCopyingData?: boolean;
   }) => {
     const [plan, setPlan] = useState(initialPlan);
@@ -306,6 +308,7 @@ vi.mock("./QueryPlanResultView", () => ({
       <div
         data-testid="query-plan-result"
         data-copy-disabled={disallowCopyingData}
+        data-estimated={estimated ? "true" : "false"}
       >
         <span data-testid="raw-plan">{rawPlan}</span>
         {plan ? <span data-testid="inline-plan">{plan.source}</span> : null}
@@ -1073,19 +1076,17 @@ describe("SingleResultView explain visualizer", () => {
     expect(runQuery).not.toHaveBeenCalled();
   });
 
-  test("keeps multi-column explain output in the result table", () => {
+  const tabularPlan = (engine: Engine, format: QueryOption_ExplainFormat) =>
     render(
       <SingleResultView
         disallowCopyingData={false}
-        params={{ ...params, engine: Engine.MYSQL, explain: true }}
-        database={databaseForEngine(Engine.MYSQL)}
+        params={{ ...params, engine, explain: true }}
+        database={databaseForEngine(engine)}
         result={create(QueryResultSchema, {
           columnNames: ["table", "type"],
           columnTypeNames: ["TEXT", "TEXT"],
           statement: "EXPLAIN SELECT * FROM t",
-          queryPlan: create(QueryResult_QueryPlanSchema, {
-            format: QueryOption_ExplainFormat.TEXT,
-          }),
+          queryPlan: create(QueryResult_QueryPlanSchema, { format }),
           rows: [
             create(QueryRowSchema, {
               values: [
@@ -1103,10 +1104,30 @@ describe("SingleResultView explain visualizer", () => {
       />
     );
 
+  test("keeps multi-column explain output in the result table", () => {
+    // Databricks' plan is text and comes back in one column, which is what its
+    // parser reads; a grid of several columns is not that plan, and there is no
+    // other format to fetch, so the grid is all there is.
+    tabularPlan(Engine.DATABRICKS, QueryOption_ExplainFormat.TEXT);
+
     expect(screen.queryByTestId("query-plan-result")).toBeNull();
     expect(screen.getByTestId("result-table")).toHaveTextContent(
       "table,typet,ALL"
     );
+  });
+
+  test("offers a MySQL tabular plan the visualizer, in whatever format it came back", () => {
+    // A tabular EXPLAIN can be re-explained as FORMAT=JSON, so it opens the
+    // viewer with Visualize rather than staying a grid. An omitted FORMAT is
+    // unknown rather than text, and is worth the same offer.
+    for (const format of [
+      QueryOption_ExplainFormat.TEXT,
+      QueryOption_ExplainFormat.EXPLAIN_FORMAT_UNSPECIFIED,
+    ]) {
+      const { unmount } = tabularPlan(Engine.MYSQL, format);
+      expect(screen.getByTestId("query-plan-result")).toBeInTheDocument();
+      unmount();
+    }
   });
 
   test("SQL Server multi-column SHOWPLAN_ALL still opens the visualizer", () => {
@@ -1178,6 +1199,47 @@ describe("SingleResultView plan view", () => {
         {...overrides}
       />
     );
+
+  test("draws the plan an engine stated beside the rows, without fetching", () => {
+    // BigQuery reports the stages its job ran, so the Plan view has the plan
+    // already: nothing is explained again, and what it shows is a record of the
+    // run that returned these rows rather than an estimate made since.
+    const content = JSON.stringify([{ id: 0, name: "S00: Input" }]);
+    renderRows(Engine.BIGQUERY, {
+      result: create(QueryResultSchema, {
+        statement: "SELECT * FROM t",
+        columnNames: ["id"],
+        columnTypeNames: ["INT"],
+        rows: [
+          create(QueryRowSchema, {
+            values: [
+              create(RowValueSchema, {
+                kind: { case: "stringValue", value: "1" },
+              }),
+            ],
+          }),
+        ],
+        queryPlan: create(QueryResult_QueryPlanSchema, {
+          format: QueryOption_ExplainFormat.JSON,
+          executed: true,
+          content,
+        }),
+      }),
+    });
+
+    // The rows are the query's data, so the table is what opens.
+    expect(screen.getByTestId("result-table")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("sql-editor.plan-view"));
+
+    expect(screen.getByTestId("inline-plan")).toHaveTextContent("S00: Input");
+    expect(screen.getByTestId("query-plan-result")).toHaveAttribute(
+      "data-estimated",
+      "false"
+    );
+    // No button to load one: there is nothing left to ask the server for.
+    expect(screen.queryByRole("button", { name: "common.plan" })).toBeNull();
+    expect(runQuery).not.toHaveBeenCalled();
+  });
 
   test("offers Plan beside Table and Vertical and shows the plan in place", () => {
     renderRows(Engine.POSTGRES);

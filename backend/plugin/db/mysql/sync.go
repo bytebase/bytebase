@@ -17,6 +17,7 @@ import (
 	metadatapb "github.com/bytebase/omni/metadata"
 	"golang.org/x/text/encoding/charmap"
 	"golang.org/x/text/transform"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
@@ -586,6 +587,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMe
 	// Keyed on the registered engine, not the server: an instance registered as MySQL
 	// keeps its MySQL sync result even when the server is MariaDB.
 	mariaDBInstance := d.dbType == storepb.Engine_MARIADB
+	oceanBaseInstance := d.dbType == storepb.Engine_OCEANBASE
 	var sequences []*metadatapb.SequenceMetadata
 	for tableRows.Next() {
 		var tableName, tableType, engine, collation, createOptions, comment, charset string
@@ -669,6 +671,11 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMe
 				DataType: mariaDBSequenceDataType(columnMap[key]),
 				Comment:  comment,
 			})
+		case oceanBaseInstance && tableType == oceanBaseExternalTableType:
+			schemaMetadata.ExternalTables = append(schemaMetadata.ExternalTables, &metadatapb.ExternalTableMetadata{
+				Name:    tableName,
+				Columns: columnMap[key],
+			})
 		default:
 			// Unknown table type, skip
 		}
@@ -680,6 +687,13 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMe
 		return nil, err
 	}
 	schemaMetadata.Sequences = sequences
+	if oceanBaseInstance {
+		materializedViews, err := d.listOceanBaseMaterializedViews(ctx, d.databaseName, schemaMetadata.Tables)
+		if err != nil {
+			return nil, err
+		}
+		schemaMetadata.MaterializedViews = materializedViews
+	}
 
 	databaseMetadata := &metadatapb.DatabaseSchemaMetadata{
 		Name:    d.databaseName,
@@ -748,7 +762,60 @@ func (d *Driver) readMariaDBSequenceAttributes(ctx context.Context, databaseName
 	return nil
 }
 
+// listOceanBaseMaterializedViews reads the database's materialized views. OceanBase lists one
+// in neither information_schema.TABLES nor VIEWS, only its storage table __mv_container_<id>,
+// which carries the view's comment and indexes and stays synced as a table. A failed read, such
+// as one without SELECT on the oceanbase database, leaves the list empty; a caller can tell,
+// because a container table is then synced without its materialized view.
+func (d *Driver) listOceanBaseMaterializedViews(ctx context.Context, databaseName string, tables []*metadatapb.TableMetadata) ([]*metadatapb.MaterializedViewMetadata, error) {
+	query := `
+		SELECT MVIEW_NAME, CONTAINER_NAME, QUERY
+		FROM oceanbase.DBA_MVIEWS
+		WHERE OWNER = ?
+		ORDER BY MVIEW_NAME`
+	rows, err := d.db.QueryContext(ctx, query, databaseName)
+	if err != nil {
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
+		slog.Warn("failed to list OceanBase materialized views", slog.String("database", databaseName), log.BBError(err))
+		return nil, nil
+	}
+	defer rows.Close()
+	containers := make(map[string]*metadatapb.TableMetadata, len(tables))
+	for _, table := range tables {
+		containers[table.Name] = table
+	}
+	var views []*metadatapb.MaterializedViewMetadata
+	for rows.Next() {
+		var name, containerName, definition string
+		if err := rows.Scan(&name, &containerName, &definition); err != nil {
+			return nil, err
+		}
+		view := &metadatapb.MaterializedViewMetadata{
+			Name:       name,
+			Definition: definition,
+			// No MySQL-family DDL writer renders OceanBase's CREATE MATERIALIZED VIEW.
+			SkipDump: true,
+		}
+		if container, ok := containers[containerName]; ok {
+			view.Comment = container.Comment
+			for _, index := range container.Indexes {
+				view.Indexes = append(view.Indexes, proto.CloneOf(index))
+			}
+		}
+		views = append(views, view)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	return views, nil
+}
+
 func (d *Driver) getEventList(ctx context.Context, databaseName string) ([]*metadatapb.EventMetadata, error) {
+	if d.dbType == storepb.Engine_OCEANBASE {
+		return d.listOceanBaseEvents(ctx, databaseName)
+	}
 	listEventsQuery := `
 	SELECT
 		EVENT_NAME,
@@ -794,6 +861,39 @@ func (d *Driver) getEventList(ctx context.Context, databaseName string) ([]*meta
 	}
 	if err := eventRows.Err(); err != nil {
 		return nil, util.FormatErrorWithQuery(err, listEventsQuery)
+	}
+	return events, nil
+}
+
+// listOceanBaseEvents lists the database's events by name only. OceanBase rejects SHOW CREATE
+// EVENT, and information_schema.EVENTS cannot rebuild it: it shows the schedule in the session
+// time zone, flattens a BEGIN...END body, and does not record the creating session's time zone,
+// SQL mode, or character set. The definition stays empty, so the DDL writers in
+// backend/plugin/schema/mysql skip the event.
+//
+// A database created under a dropped one's name also lists the dropped one's events, which
+// information_schema cannot tell from its own; DISTINCT lists a name both have once.
+func (d *Driver) listOceanBaseEvents(ctx context.Context, databaseName string) ([]*metadatapb.EventMetadata, error) {
+	query := `
+		SELECT DISTINCT EVENT_NAME
+		FROM information_schema.EVENTS
+		WHERE EVENT_SCHEMA = ?
+		ORDER BY EVENT_NAME`
+	rows, err := d.db.QueryContext(ctx, query, databaseName)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	defer rows.Close()
+	var events []*metadatapb.EventMetadata
+	for rows.Next() {
+		event := &metadatapb.EventMetadata{}
+		if err := rows.Scan(&event.Name); err != nil {
+			return nil, err
+		}
+		events = append(events, event)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
 	}
 	return events, nil
 }

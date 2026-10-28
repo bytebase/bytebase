@@ -15,10 +15,12 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
+	goora "github.com/sijms/go-ora/v2"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -350,6 +352,37 @@ func getMongoDBContainer(ctx context.Context) (*Container, error) {
 		port:     "27017/tcp",
 		username: user,
 		password: password,
+	})
+}
+
+// OracleServiceName is the pluggable database the Oracle container serves.
+// OracleServiceName is the pluggable database the Oracle container's tests
+// connect to.
+const OracleServiceName = "FREEPDB1"
+
+// getOracleContainer starts Oracle Database Free. Its admin handle signs in as
+// SYSTEM, which may create users and objects in any schema; the caller's test
+// binary must link go-ora, which registers the "oracle" driver. The connect
+// timeout makes a listener that never answers fail each ping instead of
+// hanging it.
+func getOracleContainer(ctx context.Context) (*Container, error) {
+	const password = "test-Passw0rd"
+	return start(ctx, testcontainers.ContainerRequest{
+		Image:      "gvenzl/oracle-free:23.26.3-slim-faststart",
+		Env:        map[string]string{"ORACLE_PASSWORD": password},
+		WaitingFor: wait.ForLog("DATABASE IS READY TO USE!").WithStartupTimeout(5 * time.Minute),
+	}, spec{
+		port:     "1521/tcp",
+		username: "system",
+		password: password,
+		driver:   "oracle",
+		dsn: func(c *Container) string {
+			port, err := strconv.Atoi(c.port)
+			if err != nil {
+				return ""
+			}
+			return goora.BuildUrl(c.host, port, OracleServiceName, c.username, c.password, map[string]string{"CONNECTION TIMEOUT": "10"})
+		},
 	})
 }
 

@@ -24,9 +24,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/transaction"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-
-	// Register how this engine plans a statement, for base.ExplainStatement below.
-	_ "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
+	snowflakeparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 
 	snow "github.com/snowflakedb/gosnowflake/v2"
 )
@@ -387,6 +385,9 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 				}
 				if err := rows.Err(); err != nil {
 					return nil, err
+				}
+				if !queryContext.Explain {
+					r.QueryPlan = db.TypedExplainPlan(snowflakeparser.DescribeExplain(statement))
 				}
 				return r, nil
 			}

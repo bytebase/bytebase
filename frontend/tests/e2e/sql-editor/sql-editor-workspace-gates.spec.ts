@@ -1,13 +1,15 @@
 // SQL Editor — workspace-level QueryDataPolicy gates (Batch 9, M-series).
 //
 // Covers:
-//   - M1 disableExport hides the result toolbar's Export button.
 //   - M2 disableCopyData hides the Copy button on a non-empty result.
 //
-// Both fields live on a `QueryDataPolicy` policy attached to the
+// The field lives on a `QueryDataPolicy` policy attached to the
 // workspace resource (PolicyType.DATA_QUERY). We capture the current
 // policy in `beforeAll`, mutate per-test, and restore on `afterEach` so
 // other specs see the original baseline.
+//
+// Export is gated by the bb.sql.export permission; sql-editor-export.spec.ts
+// covers it.
 //
 // Deferred from this batch (need separate investigation):
 //   - M3 maximumResultRows enforcement — frontend caps the row-limit
@@ -40,7 +42,6 @@ let sqlEditor: SqlEditorPage;
 // Snapshot of the original QueryDataPolicy body so afterEach can restore.
 // Stored as the raw policy resource so we can re-PATCH with the same shape.
 let originalQueryDataPolicy: {
-  disableExport?: boolean;
   disableCopyData?: boolean;
   allowAdminDataSource?: boolean;
   maximumResultRows?: number;
@@ -78,7 +79,6 @@ test.afterEach(async () => {
       type: "DATA_QUERY",
       resourceType: "WORKSPACE",
       queryDataPolicy: {
-        disableExport: originalQueryDataPolicy.disableExport ?? false,
         disableCopyData: originalQueryDataPolicy.disableCopyData ?? false,
         allowAdminDataSource:
           originalQueryDataPolicy.allowAdminDataSource ?? false,
@@ -103,8 +103,6 @@ async function applyQueryDataPolicy(
     queryDataPolicy: {
       // Preserve all other fields; only mutate the ones the test cares
       // about.
-      disableExport:
-        patch.disableExport ?? originalQueryDataPolicy.disableExport ?? false,
       disableCopyData:
         patch.disableCopyData ??
         originalQueryDataPolicy.disableCopyData ??
@@ -120,40 +118,6 @@ async function applyQueryDataPolicy(
     },
   });
 }
-
-test.describe("disableExport hides the result toolbar Export button (M1)", () => {
-  test("setting disableExport=true removes the Export button from a non-empty result", async () => {
-    // QueryDataPolicy enforcement is enterprise-gated; the license is installed at bootstrap.
-    await applyQueryDataPolicy({ disableExport: true });
-
-    const projectId = env.project.split("/").pop()!;
-    await sqlEditor.gotoWithDb(projectId, env.instanceId, env.databaseId);
-    await sqlEditor.runPreparedQuery("SELECT 1 AS n;");
-    await expect(page.getByText(/^1\s+rows?$/i).first()).toBeVisible({
-      timeout: 10_000,
-    });
-
-    // No Export button in the result toolbar.
-    await expect(
-      page.getByRole("button", { name: /^Export/ }),
-    ).toHaveCount(0);
-  });
-
-  test("with disableExport=false (baseline) the Export button is present", async () => {
-    await applyQueryDataPolicy({ disableExport: false }).catch(() => {});
-
-    const projectId = env.project.split("/").pop()!;
-    await sqlEditor.gotoWithDb(projectId, env.instanceId, env.databaseId);
-    await sqlEditor.runPreparedQuery("SELECT 1 AS n;");
-    await expect(page.getByText(/^1\s+rows?$/i).first()).toBeVisible({
-      timeout: 10_000,
-    });
-
-    await expect(
-      page.getByRole("button", { name: /^Export/ }).first(),
-    ).toBeVisible({ timeout: 5_000 });
-  });
-});
 
 test.describe("disableCopyData hides the Copy button on results (M2)", () => {
   test("setting disableCopyData=true removes the Copy button", async () => {

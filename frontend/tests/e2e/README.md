@@ -57,7 +57,7 @@ pnpm exec playwright test masking-exemption
 ### Enterprise license
 
 The suite exercises enterprise-only features (masking, JIT drawer, approval
-rules, query-data-policy gates like `disableExport` / `disableCopyData`,
+rules, query-data-policy gates like `disableCopyData`,
 database groups) and does not run on the free plan. Global setup installs a
 license before any spec runs, resolved in this order:
 

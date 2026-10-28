@@ -39,6 +39,24 @@ func reviewRules(policy *storepb.ReviewRulePolicy) []review.Rule {
 	return rules
 }
 
+// markOtherSpecs sets OtherSpecs on each target whose database another spec
+// of the plan also changes. Such specs run in no fixed order (only release
+// tasks are sequential), so neither may assume it meets the synced schema.
+// Check.Target names a database in one form only: ResolveDatabaseTarget
+// rejects the other.
+func markOtherSpecs(targets []*reviewTarget) {
+	specs := make(map[string]map[string]bool)
+	for _, target := range targets {
+		if specs[target.Check.Target] == nil {
+			specs[target.Check.Target] = make(map[string]bool)
+		}
+		specs[target.Check.Target][target.Check.SpecID] = true
+	}
+	for _, target := range targets {
+		target.Input.OtherSpecs = len(specs[target.Check.Target]) > 1
+	}
+}
+
 // groupReviewUnits folds the targets into one unit per (spec, engine), in
 // first-seen order. The change's requested behaviors are read from the first
 // target: they come from the spec and its sheet, so every target of a spec

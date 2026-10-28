@@ -1695,7 +1695,7 @@ paths:
       summary: ListDatabases
       description: |-
         Lists databases in a project, instance, or workspace.
-         Permissions required: bb.projects.get (for project parent), bb.databases.list (for workspace parent), or bb.instances.get (for instance parent)
+         Permissions required: bb.databases.list (for project or workspace parent), or bb.instances.get (for instance parent)
       operationId: bytebase.v1.DatabaseService.ListDatabases
       parameters:
         - name: Connect-Protocol-Version
@@ -6166,7 +6166,8 @@ paths:
       summary: Export
       description: |-
         Exports query results to a file format.
-         Permissions required: bb.databases.get
+         Permissions required: bb.databases.get, and bb.sql.export on the data the statement reads.
+         An active access grant with export=true for the statement satisfies bb.sql.export on its target databases.
       operationId: bytebase.v1.SQLService.Export
       parameters:
         - name: Connect-Protocol-Version
@@ -9338,7 +9339,9 @@ components:
         export:
           type: boolean
           title: export
-          description: Whether export the query result.
+          description: |-
+            Whether the grant allows exporting the query result.
+             An active grant with export=true grants bb.sql.export for this query until the grant expires.
         schema:
           type: string
           title: schema
@@ -10768,9 +10771,9 @@ components:
              The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
              Support variables:
-             resource.database: the canonical database full name in "instances/{instance}/databases/{database}" or "projects/{project}/instances/{instance}/databases/{database}" format, used by any role with SQL Editor read (e.g. "roles/sqlEditorUser", "roles/sqlEditorReadUser") or write (bb.sql.ddl / bb.sql.dml) access, support "==" operator.
-             resource.schema_name: the schema name, used by any role with SQL Editor read or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support "==" operator.
-             resource.table_name: the table name, used by any role with SQL Editor read or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support "==" operator.
+             resource.database: the canonical database full name in "instances/{instance}/databases/{database}" or "projects/{project}/instances/{instance}/databases/{database}" format, used by any role with SQL Editor read (e.g. "roles/sqlEditorUser", "roles/sqlEditorReadUser"), export (bb.sql.export, e.g. "roles/sqlEditorExporter") or write (bb.sql.ddl / bb.sql.dml) access, support "==" operator.
+             resource.schema_name: the schema name, used by any role with SQL Editor read, export (bb.sql.export) or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support "==" operator.
+             resource.table_name: the table name, used by any role with SQL Editor read, export (bb.sql.export) or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support "==" operator.
              resource.environment_id: the environment to allow the DDL/DML operation in the SQL Editor, only works for the role with bb.sql.ddl or bb.sql.dml permissions. Support "in" operator.
              request.time: the expiration. Only support "<" operation in `request.time < timestamp("{ISO datetime string format}")`.
 
@@ -15527,7 +15530,7 @@ components:
           type: string
           title: parent
           description: |-
-            - projects/{project}: list databases in a project, require "bb.projects.get" permission.
+            - projects/{project}: list databases in a project, require "bb.databases.list" permission.
              - workspaces/{id}: list databases in the workspace, require "bb.databases.list" permission.
              - instances/{instance}: list databases in an instance, require "bb.instances.get" permission.
              - projects/{project}/instances/{instance}: list databases in a project instance, require "bb.instances.get" permission.
@@ -18631,9 +18634,8 @@ components:
         disableExport:
           type: boolean
           title: disable_export
-          description: |-
-            workspace-level policy
-             Disable data export in the SQL editor.
+          description: 'Deprecated: export is controlled by the bb.sql.export permission. Always false; setting it to true is rejected.'
+          deprecated: true
         disableCopyData:
           type: boolean
           title: disable_copy_data
@@ -19048,9 +19050,19 @@ components:
           description: |-
             Whether producing the plan executed the statement, as EXPLAIN ANALYZE
              does.
+        content:
+          type: string
+          title: content
+          description: |-
+            The plan itself, where the engine states it beside the result rather
+             than in the result's rows. BigQuery reports the stages its job ran in
+             the job's own statistics, so one result carries the query's data and
+             the plan of the run that produced it. Empty when the plan is the rows,
+             which is every other engine. Omitted from the audit log, as the rows
+             are: the statement is what an audit reads.
       title: QueryPlan
       additionalProperties: false
-      description: A query plan held in the result's rows.
+      description: 'A query plan the result carries: in its rows, or beside them.'
     bytebase.v1.QueryResult.SyntaxError:
       type: object
       properties:
@@ -19737,7 +19749,7 @@ components:
           title: role
           description: |-
             The requested role.
-             Format: roles/EXPORTER.
+             Format: roles/{role}.
         user:
           type: string
           title: user

@@ -577,6 +577,7 @@
     "sensitive-placeholder": "機密データ - 書き込みのみ",
     "settings": "設定",
     "share": "共有",
+    "show": "表示",
     "show-less": "折りたたむ",
     "show-more": "もっと見る",
     "sign-in": "ログイン",
@@ -1031,6 +1032,7 @@
     "password-optional": "パスワード暗号化の設定 (オプション)"
   },
   "gitops": {
+    "back-to-releases": "リリースに戻る",
     "checklist": {
       "database-group-recommendation": "同じスキーマを持つデータベースには、データベースグループを使用すると一度の変更でまとめてマイグレーションできます。グループを一度定義すれば、毎回個別にデータベースを選択することなく、マイグレーション全体で再利用できます。",
       "external-url": "外部URL",
@@ -1046,7 +1048,6 @@
       "description-git": "データベーススキーマはアプリケーションコードと一緒に Git で管理されます。プルリクエストで SQL レビューがトリガーされ、ターゲットブランチへのマージで自動的にロールアウトが作成されます。",
       "title": "GitOps とは"
     },
-    "self": "GitOps",
     "test-setup": {
       "description": "サンプルマイグレーションファイルでワークフロー全体が正常に動作するか確認します。",
       "naming-convention": "マイグレーションファイルは辞書順に適用されます。タイムスタンプまたはシーケンス番号のプレフィックスを使用してください（例: 20240101000000_create_table.sql）。変更タイプを示すために _ddl または _dml を末尾に追加してください。",
@@ -1804,12 +1805,54 @@
     "add-spec-pending-draft": "新しい変更を追加する前に、保留中の変更を保存または破棄してください",
     "ai-review": {
       "failed-to-run": "AI レビューを開始できませんでした",
-      "finished": "完了",
-      "not-run": "未実行",
-      "queued": "待機中",
       "run": "AI レビューを実行",
-      "save-first": "AI レビューを実行するには、編集内容を保存または破棄してください。",
-      "status-unknown": "状態を取得できません"
+      "run-again-description": "実行するたびにレビュー対象の各データベースでモデルを呼び出すため、結果が異なる場合があります。新しい検出事項は、解決済みのものを含め前回の結果を置き換えます。",
+      "run-again-title": "AI レビューを再実行しますか？",
+      "save-first": "AI レビューを実行するには、編集内容を保存または破棄してください。"
+    },
+    "automated-review": {
+      "checks": "プランチェック",
+      "details": "詳細",
+      "failed": "実行できませんでした",
+      "failed-to-rerun": "レビューを開始できませんでした",
+      "ghost": "オンラインマイグレーションのドライラン",
+      "n-databases_one": "{{count}} 個のデータベース",
+      "n-databases_other": "{{count}} 個のデータベース",
+      "n-errors_one": "{{count}} 件のエラー",
+      "n-errors_other": "{{count}} 件のエラー",
+      "n-open": "未解決 {{count}} 件",
+      "n-warnings_one": "{{count}} 件の警告",
+      "n-warnings_other": "{{count}} 件の警告",
+      "needs-attention": "{{total}} 件中 {{count}} 件に対応が必要",
+      "no-findings": "検出事項なし",
+      "not-run": "未実行",
+      "nothing-needs-attention": "対応が必要な項目はありません",
+      "opens-in-sql": "クリックすると SQL 内で順に確認できます。",
+      "out-of-date": "古い結果",
+      "outdated": "この実行後に SQL が変更されました",
+      "passed": "合格",
+      "passed-on_one": "{{count}} 個のデータベースで合格",
+      "passed-on_other": "{{count}} 個のデータベースで合格",
+      "policy": "レビューポリシー",
+      "project-rules": "プロジェクトのルール：{{total}} 件中 {{on}} 件が有効",
+      "report": "ステートメントレポート",
+      "rerun": "再実行",
+      "rerun-all": "すべて再実行",
+      "rerun-all-description_one": "プランチェックと Standard rules を再実行します。Standard rules の解決済みの検出事項 {{count}} 件が未解決に戻ります。",
+      "rerun-all-description_other": "プランチェックと Standard rules を再実行します。Standard rules の解決済みの検出事項 {{count}} 件が未解決に戻ります。",
+      "rerun-all-title": "すべて再実行しますか？",
+      "rerun-reopens_one": "解決済みの検出事項 {{count}} 件が未解決に戻り、再度対応が必要になります。",
+      "rerun-reopens_other": "解決済みの検出事項 {{count}} 件が未解決に戻り、再度対応が必要になります。",
+      "rerun-rule-title": "Standard rules を再実行しますか？",
+      "retry": "再試行",
+      "running": "実行中",
+      "sampled": "{{total}} 個中 {{count}} 個のデータベースを抽出",
+      "scope": "{{databases}} をレビュー",
+      "scope-label": "このレビューの対象",
+      "scope-with-engines": "{{databases}}（{{engines}}）をレビュー",
+      "self": "自動レビュー",
+      "summary-part": "{{reviewer}}: {{status}}",
+      "workspace-rules": "ワークスペースのルール：{{total}} 件中 {{on}} 件が有効"
     },
     "blocker": {
       "clears-on-its-own": "自動的に解消されます"
@@ -1824,12 +1867,49 @@
       "started": "プランチェックを開始しました"
     },
     "create-plan": "プランを作成",
+    "deploy-waiting": {
+      "approval": "承認",
+      "approval-from": "{{role}} の承認",
+      "approval-rejected": "承認が却下されました",
+      "auto-create": "これらがすべて合格すると、Bytebase がロールアウトを作成します。",
+      "creating-rollout": "すべて合格しました。ロールアウトを作成しています…",
+      "manual-rollout": "このプランのロールアウトは自動作成されません。上記がすべて通過したら手動でデプロイしてください。",
+      "open-discussions_one": "未解決のディスカッション {{count}} 件",
+      "open-discussions_other": "未解決のディスカッション {{count}} 件",
+      "overridden_one": "{{reviewer}} の P0 の検出事項 {{count}} 件が変更されずに解決されました",
+      "overridden_other": "{{reviewer}} の P0 の検出事項 {{count}} 件が変更されずに解決されました",
+      "ready-to-deploy": "すべて通過しました。デプロイできます。",
+      "reviewer-failed": "{{reviewer}} を実行できませんでした",
+      "reviewer-findings": "{{reviewer}}：{{findings}}",
+      "reviewer-not-run": "{{reviewer}} は未実行です",
+      "reviewer-outdated": "{{reviewer}} の実行後に SQL が変更されました",
+      "reviewer-running": "{{reviewer}} を実行中",
+      "show": "表示",
+      "submit": "レビューに提出",
+      "waiting-on": "待機中の項目",
+      "worth-a-look": "ロールアウトは止めませんが、確認をおすすめします"
+    },
     "description": {
       "placeholder": "説明を追加"
     },
     "draft-update-permission-required": "この下書きは表示できますが、イシューラベルの編集やレビューへの提出には bb.issues.update が必要です。",
     "editor": {
       "save-changes-before-continuing": "続行する前に変更を保存またはキャンセルしてください"
+    },
+    "findings": {
+      "n-more": "他 {{count}} 件",
+      "n-overridden": "変更せずに解決した P0 {{count}} 件",
+      "n-priority": "{{priority}} {{count}} 件",
+      "n-resolved": "解決済み {{count}} 件",
+      "name-at-line": "{{name}}（L{{line}}）",
+      "name-times": "{{name}} ×{{count}}",
+      "separator": "、",
+      "set": {
+        "earlier": "以前の実行",
+        "open": "未解決",
+        "overridden": "変更せずに解決した P0",
+        "resolved": "解決済み"
+      }
     },
     "ghost": {
       "configure": "設定",
@@ -1853,19 +1933,18 @@
       "checking": "チェック中…",
       "checks-failing": "チェック失敗",
       "deployed": "デプロイ済み",
+      "gate-automated-review-passed": "自動レビューに合格",
       "gate-checks-failed": "一部のチェックが失敗しました",
       "gate-checks-failed-sub": "{{failing}} 件失敗、{{passed}} 件成功",
       "gate-checks-passed": "すべてのチェックに合格",
       "gate-checks-passed-sub": "{{count}} 件成功",
       "gate-checks-running": "チェックを実行中",
       "gate-checks-running-sub": "{{running}} 件実行中、{{passed}} 件成功",
+      "gate-no-open-discussions": "未解決のディスカッションはありません",
       "gate-review-approved": "変更が承認されました",
       "gate-review-pending": "レビュー中",
       "gate-review-rejected": "変更がリクエストされました",
       "gate-threads-open-sub": "すべてのスレッドを解決するとロールアウトが作成されます",
-      "gate-threads-open_one": "未解決のスレッド {{count}} 件",
-      "gate-threads-open_other": "未解決のスレッド {{count}} 件",
-      "gate-threads-resolved": "すべてのスレッドが解決済み",
       "incomplete": "未完了",
       "preparing-rollout": "ロールアウトを準備中…",
       "rejected": "却下されました",
@@ -1873,6 +1952,7 @@
       "review-waiting": "{{role}} の承認待ち",
       "run": "実行"
     },
+    "list-description": "UI で作成された変更リクエストとそのデプロイ進捗。",
     "meta": {
       "created-by": "{{user}} が作成"
     },
@@ -1912,11 +1992,15 @@
         "add-a-comment": "コメントを追加...",
         "created-this-plan": "がこのプランを作成しました",
         "marked-ready-for-review": "がこのプランをレビュー準備完了にしました",
+        "n-findings_one": "検出事項 {{count}} 件",
+        "n-findings_other": "検出事項 {{count}} 件",
         "n-hidden-events_one": "{{count}} 件の非表示イベント",
         "n-hidden-events_other": "{{count}} 件の非表示イベント",
+        "reviewed-the-sql": "が SQL をレビューしました",
         "self": "アクティビティ",
         "show-all": "すべて表示"
       },
+      "approval-after-submit": "レビューに提出すると承認が始まります。",
       "approval-flow": {
         "and-n-more_one": "他 {{count}} 名",
         "and-n-more_other": "他 {{count}} 名",
@@ -1992,6 +2076,7 @@
         "n-replies-hidden_other": "{{count}} 件の返信が非表示",
         "n-replies_one": "{{count}} 件の返信",
         "n-replies_other": "{{count}} 件の返信",
+        "open": "未解決",
         "priority": {
           "p0": "SQL に誤りがあり、修正が必要です。",
           "p1": "危険ですが正当な変更です。担当者による承認が必要です。",
@@ -2009,8 +2094,10 @@
         "threads-on-line_one": "この行に {{count}} 件のスレッド",
         "threads-on-line_other": "この行に {{count}} 件のスレッド",
         "walker": {
+          "clear-filter": "すべての未解決スレッドを順に表示",
           "count_one": "このバージョンに未解決のスレッドが {{count}} 件",
           "count_other": "このバージョンに未解決のスレッドが {{count}} 件",
+          "filter": "{{reviewer}} · {{state}}",
           "next": "次の未解決スレッド",
           "position": "{{count}} 件中 {{index}} 件目",
           "previous": "前の未解決スレッド",
@@ -2024,16 +2111,6 @@
       "description_one": "ロールアウト #{{rolloutId}} の選択したタスク 1 件をロールバックします。",
       "description_other": "ロールアウト #{{rolloutId}} の選択したタスク {{count}} 件をロールバックします。",
       "title": "ロールアウト #{{rolloutId}} のロールバック"
-    },
-    "rule-review": {
-      "failed": "SQL レビューに失敗しました",
-      "load-failed": "SQL レビューの状態を読み込めませんでした。",
-      "no-open-findings": "未解決の指摘はありません",
-      "not-run": "SQL レビュー未実行",
-      "open-findings_one": "未解決の指摘 {{count}} 件",
-      "open-findings_other": "未解決の指摘 {{count}} 件",
-      "queued": "SQL レビュー待機中",
-      "running": "SQL レビュー実行中"
     },
     "run": "再チェック",
     "select-isolation-level": "分離レベルを選択",
@@ -2059,9 +2136,17 @@
       "reopen-confirm": "このプランを再開きますか？",
       "reopen-review-confirm": "このレビューを再開しますか？"
     },
+    "statement-summary": {
+      "affected-rows_one": "約 {{count}} 行に影響",
+      "affected-rows_other": "約 {{count}} 行に影響"
+    },
+    "status-scope": {
+      "description": "プラン内のタスクの現在のステータスで絞り込みます",
+      "waiting": "待機中"
+    },
     "submit-review-anyway": "それでも提出する",
-    "subtitle": "承認のためにイシューを作成する前に、データベースの変更を下書きし、事前チェックを実行します。",
     "summary": {
+      "approved-by": "{{names}} が承認",
       "last-approved-by": "{{name}} が最後に承認",
       "n-changes": "{{n}} 件の変更",
       "n-database-groups": "{{n}} 個のデータベースグループ",
@@ -2072,7 +2157,8 @@
       "n-passed": "{{n}} 件合格",
       "n-unresolved-threads_one": "未解決のスレッド {{count}} 件",
       "n-unresolved-threads_other": "未解決のスレッド {{count}} 件",
-      "n-warning": "{{n}} 件の警告"
+      "n-warning": "{{n}} 件の警告",
+      "no-approval-required": "承認不要"
     },
     "targets": {
       "no-targets-found": "対象が見つかりません",
@@ -2408,17 +2494,24 @@
   "release": {
     "and-n-more-files": "他 {{count}} 件のファイル",
     "change-tip": "この変更はリリースアーティファクトにリンクされています。",
-    "file": "リリースファイル",
+    "empty": {
+      "description": "CI パイプラインが Bytebase にリリースした変更が、デプロイ進捗とともにここに表示されます。",
+      "read-guide": "GitOps ガイドを読む",
+      "set-up": "GitOps を設定",
+      "title": "GitOps の変更はまだありません"
+    },
     "file-type": {
       "declarative": "宣言的",
       "unspecified": "未指定",
       "versioned": "バージョン管理"
     },
     "files": "ファイル",
+    "gitops-setup": "GitOps 設定",
+    "list-description": "GitOps でリリースされた変更とそのデプロイ進捗。",
     "not-found": "リリースが見つかりません",
     "releases": "リリース",
-    "total-files": "合計 {{}} ファイル",
-    "usage-description": "リリースは、GitOpsワークフローによって環境へのデプロイがトリガーされるバージョン管理されたアプリケーションアーティファクトです。",
+    "self": "リリース",
+    "source": "ソース",
     "vcs-source": "VCS ソース",
     "vcs-type": {
       "unspecified": "不明な VCS"
@@ -2489,6 +2582,10 @@
       "description": "プロジェクトメンバーとカスタム承認に適用できるカスタムロールを定義します。",
       "description-placeholder": "ロールの説明を入力してください",
       "title-placeholder": "ロールのタイトルを入力してください"
+    },
+    "sql-editor-exporter": {
+      "description": "DDLまたはDMLアクセスなしで、データベースをクエリして結果をエクスポートできます。",
+      "self": "SQLエディタエクスポートユーザー"
     },
     "sql-editor-read-user": {
       "description": "DDLまたはDMLアクセスなしで、データベースデータのクエリのための読み取り専用権限。",
@@ -2750,10 +2847,6 @@
           "exiting": "退出中..."
         },
         "data-copy": "データのコピーを有効にする",
-        "data-export": {
-          "description": "無効にすると、ユーザーはクエリ結果を直接エクスポートできません。アクセス付与が有効なプロジェクトでは、「エクスポートをリクエスト」からアクセス付与をリクエストし、承認後にエクスポートできます。",
-          "self": "承認なしのデータエクスポートを許可"
-        },
         "default-landing-page": {
           "default-view-changed-to-sql-editor": "ワークスペースのデフォルト ビューが SQL エディターに変更されました。",
           "go-to-sql-editor": "SQLエディタに移動",
@@ -3545,18 +3638,60 @@
         "zoom-out": "縮小"
       },
       "error": {
+        "bigquery-empty": "BigQuery はこのステートメントのクエリプランを返しませんでした。",
+        "bigquery-invalid": "クエリプランが有効な JSON ではありません。BigQuery ジョブのステージが必要です。",
+        "bigquery-no-plan": "クエリプランに開始できるステージがありません。",
+        "clickhouse-empty": "ClickHouse はこのステートメントのクエリプランを返しませんでした。",
+        "clickhouse-invalid": "クエリプランが有効な JSON ではありません。EXPLAIN json = 1 の出力が必要です。",
+        "clickhouse-no-plan": "ClickHouse のクエリプラン JSON に \"Plan\" オブジェクトがありません。",
+        "cockroachdb-empty": "CockroachDB はこのステートメントのクエリプランを返しませんでした。",
+        "cockroachdb-invalid": "クエリプランが有効な JSON ではありません。EXPLAIN (DISTSQL) が埋め込む図が必要です。",
+        "cockroachdb-no-plan": "クエリプラン JSON に描画できる \"processors\" がありません。",
+        "databricks-empty": "Databricks はこのステートメントのクエリプランを返しませんでした。",
+        "databricks-no-plan": "クエリプランに物理プランがありません。EXPLAIN FORMATTED の出力が必要です。",
+        "elasticsearch-empty": "Elasticsearch はこのステートメントのクエリプランを返しませんでした。",
+        "elasticsearch-invalid": "クエリプランが有効な JSON ではありません。Elasticsearch のプロファイルが必要です。",
+        "elasticsearch-no-plan": "プロファイルに開始できるシャードがありません。Elasticsearch は実行した検索のみをプロファイルします。",
+        "hive-empty": "Hive はこのステートメントのクエリプランを返しませんでした。",
+        "hive-invalid": "クエリプランが有効な JSON ではありません。Hive の EXPLAIN FORMATTED の出力が必要です。",
+        "hive-no-plan": "クエリプランに描画できる CBO プランがありません。Hive はコストベースオプティマイザーがステートメントをプランした場合にのみ出力します。",
+        "mongodb-empty": "MongoDB はこのステートメントのクエリプランを返しませんでした。",
+        "mongodb-invalid": "クエリプランが有効な JSON ではありません。MongoDB の explain() の出力が必要です。",
+        "mongodb-no-plan": "クエリプラン JSON に \"queryPlanner\" も、描画できる \"stages\" パイプラインもありません。",
         "mssql-empty": "SQL Server はこのステートメントのクエリプランを返しませんでした。",
         "mssql-invalid": "クエリプランが有効な XML ではありません。SHOWPLAN_XML の出力が必要です。",
         "mssql-no-plan": "クエリプラン XML は、1つ以上のステートメントを含む SQL Server showplan ではありません。",
+        "mysql-empty": "このステートメントのクエリプランは返されませんでした。",
+        "mysql-invalid": "クエリプランが有効な JSON ではありません。EXPLAIN FORMAT=JSON の出力が必要です。",
+        "mysql-no-plan": "クエリプラン JSON に \"query_block\" オブジェクトがありません。",
+        "oceanbase-empty": "OceanBase はこのステートメントのクエリプランを返しませんでした。",
+        "oceanbase-invalid": "クエリプランが有効な JSON ではありません。OceanBase の EXPLAIN FORMAT=JSON の出力が必要です。",
+        "oceanbase-no-plan": "クエリプラン JSON にオペレーターの記載がないため、描画できません。",
+        "oracle-empty": "Oracle はこのステートメントのクエリプランを返しませんでした。",
+        "oracle-invalid": "クエリプランが有効な JSON ではありません。サーバーが描画した Oracle のプランテーブルが必要です。",
+        "oracle-no-plan": "クエリプランに親を持たないステップがないため、起点となるオペレーターがありません。",
         "postgres-empty": "PostgreSQL はこのステートメントのクエリプランを返しませんでした。",
         "postgres-invalid": "クエリプランが有効な JSON ではありません。EXPLAIN (FORMAT JSON) の出力が必要です。",
         "postgres-no-plan": "クエリプラン JSON に \"Plan\" オブジェクトがありません。",
+        "redshift-empty": "Redshift はこのステートメントのクエリプランを返しませんでした。",
+        "redshift-no-plan": "クエリプランにオペレーターがありません。Redshift のプランは各オペレーターにコストを示します。",
+        "snowflake-empty": "Snowflake はこのステートメントのクエリプランを返しませんでした。",
+        "snowflake-invalid": "クエリプランが有効な JSON ではありません。Snowflake の EXPLAIN USING JSON の出力が必要です。",
+        "snowflake-no-plan": "クエリプラン JSON に開始できるオペレーションがありません。",
         "spanner-empty": "Spanner はこのステートメントのクエリプランを返しませんでした。",
         "spanner-emulator": "Spanner はこのステートメントのクエリプランを返しませんでした。Spanner エミュレーターはいずれのステートメントにもプランを返さないため、Spanner インスタンスで説明を実行してください。",
         "spanner-invalid": "クエリプランが有効な JSON ではありません。Spanner クエリプランが必要です。",
         "spanner-no-plan": "クエリプラン JSON に、ルートがオペレーターである \"planNodes\" リストがありません。",
+        "starrocks-empty": "このステートメントから描画できるクエリプランは得られませんでした。",
+        "starrocks-no-plan": "クエリプランのどのフラグメントにも番号付きのオペレーターがありません。",
+        "tidb-empty": "TiDB はこのステートメントのクエリプランを返しませんでした。",
+        "tidb-invalid": "クエリプランが有効な JSON ではありません。EXPLAIN FORMAT=tidb_json の出力が必要です。",
+        "tidb-no-plan": "クエリプラン JSON のルートにオペレーターがありません。",
         "too-deep": "クエリプランの入れ子が深すぎるため、このビジュアライザーでは描画できません。",
         "too-many-nodes": "クエリプランの演算子数がこのビジュアライザーで描画できる数を超えているため、テキストで表示します。",
+        "trino-empty": "Trino はこのステートメントのクエリプランを返しませんでした。",
+        "trino-invalid": "クエリプランが有効な JSON ではありません。Trino の EXPLAIN (FORMAT JSON) の出力が必要です。",
+        "trino-no-plan": "クエリプラン JSON に、起点となるプランフラグメントがありません。",
         "unreadable": "このクエリプランを読み取れませんでした"
       },
       "grid": {
@@ -3631,6 +3766,20 @@
         "estimated-cost": "推定コスト {{cost}}",
         "measured-time": "実測時間 {{time}} ms",
         "nodes": "{{count}} ノード"
+      },
+      "warning": {
+        "data-redistribution": {
+          "detail": "この結合は、照合の前に行をスライス間で移動します。両方のテーブルを結合列で分散するか、小さいほうを ALL にすると、行がある場所のまま結合できます。",
+          "title": "データの再分配"
+        },
+        "full-index-scan": {
+          "detail": "このインデックスの全エントリを読み取ります。クエリが必要とするエントリがわずかであれば、インデックスの先頭列に条件を付けることで全件読み取りを避けられます。",
+          "title": "フルインデックススキャン"
+        },
+        "full-table-scan": {
+          "detail": "このテーブルの全行を読み取ります。クエリが必要とする行がわずかであれば、絞り込みに使う列へのインデックスで全件読み取りを避けられます。",
+          "title": "フルテーブルスキャン"
+        }
       }
     },
     "query-time": "クエリ時間",

@@ -705,7 +705,7 @@ export declare const Issue_TypeSchema: GenEnum<Issue_Type>;
 export declare type RoleGrant = Message<"bytebase.v1.RoleGrant"> & {
   /**
    * The requested role.
-   * Format: roles/EXPORTER.
+   * Format: roles/{role}.
    *
    * @generated from field: string role = 1;
    */

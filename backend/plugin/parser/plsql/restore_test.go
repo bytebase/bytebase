@@ -216,6 +216,15 @@ func fixedMockDatabaseMetadataGetter(_ context.Context, _ string, database strin
 				Name: "",
 				Tables: []*metadatapb.TableMetadata{
 					{
+						Name: "T_HIDDEN",
+						Columns: []*metadatapb.ColumnMetadata{
+							{Name: "A"},
+							{Name: "H", IsInvisible: true},
+							{Name: "V", Generation: &metadatapb.GenerationMetadata{Type: metadatapb.GenerationMetadata_TYPE_VIRTUAL, Expression: `"A"+1`}},
+							{Name: "B"},
+						},
+					},
+					{
 						Name: "T_GENERATED",
 						Columns: []*metadatapb.ColumnMetadata{
 							{

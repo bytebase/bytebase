@@ -135,6 +135,7 @@ const (
 	SheetsCreate                         Permission = "bb.sheets.create"
 	SheetsGet                            Permission = "bb.sheets.get"
 	SQLSelect                            Permission = "bb.sql.select"
+	SQLExport                            Permission = "bb.sql.export"
 	SQLDdl                               Permission = "bb.sql.ddl"
 	SQLDml                               Permission = "bb.sql.dml"
 	SQLExplain                           Permission = "bb.sql.explain"

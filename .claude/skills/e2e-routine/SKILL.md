@@ -34,9 +34,9 @@ issue body is `references/issue-template.md`; the ledger format is
 - **Processes**: never kill a process you did not start. The harness owns its
   server (PID file, port 18234 with fallback). A port conflict is reported, not
   resolved by killing.
-- **Linear**: the team in `E2E_ROUTINE_LINEAR_TEAM` only (default `BOT`, the
-  agent-issue team from docs/agents/issue-tracker.md), parent = the issue in
-  `E2E_ROUTINE_UMBRELLA`.
+- **Linear**: the team in `E2E_ROUTINE_LINEAR_TEAM` only (default `BOT`). The
+  routine's owner names this team, which docs/agents/issue-tracker.md allows in
+  place of `BYT`; parent = the issue in `E2E_ROUTINE_UMBRELLA`.
   Create issues and comments only when `E2E_ROUTINE_FILE_ISSUES=1`; otherwise
   write proposals into the report. Never edit, retitle, close, reassign or
   relabel an existing issue: a comment and its evidence attachments are the

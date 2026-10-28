@@ -2077,7 +2077,7 @@ describe("WorkspaceSetupPage", () => {
       expect(projectBindings()).toEqual([
         OWNER_BINDING,
         ["roles/projectDeveloper", ["user:ann@example.com"]],
-        ["roles/sqlEditorReadUser", ["user:ann@example.com"]],
+        ["roles/sqlEditorExporter", ["user:ann@example.com"]],
       ]);
       expect(mocks.patchWorkspaceIamPolicy).toHaveBeenCalledWith(
         [{ member: "user:ann@example.com", roles: ["roles/workspaceMember"] }],
@@ -2420,7 +2420,7 @@ describe("WorkspaceSetupPage", () => {
       expect(projectBindings()).toEqual([
         OWNER_BINDING,
         ["roles/projectDeveloper", ["user:ann@example.com"]],
-        ["roles/sqlEditorReadUser", ["user:ann@example.com"]],
+        ["roles/sqlEditorExporter", ["user:ann@example.com"]],
       ]);
     });
 
@@ -2479,7 +2479,7 @@ describe("WorkspaceSetupPage", () => {
       expect(projectBindings()).toEqual([
         OWNER_BINDING,
         ["roles/projectDeveloper", ["user:ann@example.com"]],
-        ["roles/sqlEditorReadUser", ["user:ann@example.com"]],
+        ["roles/sqlEditorExporter", ["user:ann@example.com"]],
       ]);
       expect(mocks.patchWorkspaceIamPolicy).toHaveBeenLastCalledWith(
         [{ member: "user:ann@example.com", roles: ["roles/workspaceMember"] }],
@@ -2545,7 +2545,7 @@ describe("WorkspaceSetupPage", () => {
           ["user:ann@example.com", "user:zoe@example.com"],
           "",
         ],
-        ["roles/sqlEditorReadUser", ["user:ann@example.com"], ""],
+        ["roles/sqlEditorExporter", ["user:ann@example.com"], ""],
       ]);
     });
 
@@ -2581,7 +2581,7 @@ describe("WorkspaceSetupPage", () => {
         bindings: [
           ...server.projectPolicy.bindings,
           { role: "roles/projectDeveloper", members: ["user:ann@example.com"] },
-          { role: "roles/sqlEditorReadUser", members: ["user:ann@example.com"] },
+          { role: "roles/sqlEditorExporter", members: ["user:ann@example.com"] },
         ],
       } as IamPolicy;
       mocks.patchWorkspaceIamPolicy.mockRejectedValueOnce(unavailable());
@@ -2598,7 +2598,7 @@ describe("WorkspaceSetupPage", () => {
       expect(serverBindings()).toEqual([
         OWNER_BINDING,
         ["roles/projectDeveloper", ["user:ann@example.com"]],
-        ["roles/sqlEditorReadUser", ["user:ann@example.com"]],
+        ["roles/sqlEditorExporter", ["user:ann@example.com"]],
       ]);
     });
 
@@ -2620,7 +2620,7 @@ describe("WorkspaceSetupPage", () => {
       expect(serverBindings()).toEqual([
         OWNER_BINDING,
         ["roles/projectDeveloper", ["user:ann@example.com"]],
-        ["roles/sqlEditorReadUser", ["user:ann@example.com"]],
+        ["roles/sqlEditorExporter", ["user:ann@example.com"]],
       ]);
     });
 
@@ -2648,7 +2648,7 @@ describe("WorkspaceSetupPage", () => {
           "roles/projectDeveloper",
           ["user:ann@example.com", "user:bob@example.com"],
         ],
-        ["roles/sqlEditorReadUser", ["user:ann@example.com"]],
+        ["roles/sqlEditorExporter", ["user:ann@example.com"]],
       ]);
     });
 
@@ -2662,7 +2662,7 @@ describe("WorkspaceSetupPage", () => {
           bindings: [
             ...read.bindings,
             { role: "roles/projectDeveloper", members: ["user:ann@example.com"] },
-            { role: "roles/sqlEditorReadUser", members: ["user:ann@example.com"] },
+            { role: "roles/sqlEditorExporter", members: ["user:ann@example.com"] },
           ],
         } as IamPolicy;
         return read;
@@ -2678,7 +2678,7 @@ describe("WorkspaceSetupPage", () => {
       expect(serverBindings()).toEqual([
         OWNER_BINDING,
         ["roles/projectDeveloper", ["user:ann@example.com"]],
-        ["roles/sqlEditorReadUser", ["user:ann@example.com"]],
+        ["roles/sqlEditorExporter", ["user:ann@example.com"]],
       ]);
     });
 
@@ -2715,7 +2715,7 @@ describe("WorkspaceSetupPage", () => {
           "roles/projectDeveloper",
           ["user:ann@example.com", "user:bob@example.com"],
         ],
-        ["roles/sqlEditorReadUser", ["user:ann@example.com"]],
+        ["roles/sqlEditorExporter", ["user:ann@example.com"]],
       ]);
     });
 
@@ -2760,7 +2760,7 @@ describe("WorkspaceSetupPage", () => {
       expect(serverBindings()).toEqual([
         OWNER_BINDING,
         ["roles/projectDeveloper", ["user:bob@example.com"]],
-        ["roles/sqlEditorReadUser", ["user:bob@example.com"]],
+        ["roles/sqlEditorExporter", ["user:bob@example.com"]],
       ]);
     });
 
@@ -2886,7 +2886,7 @@ describe("WorkspaceSetupPage", () => {
         expect(serverBindings()).toEqual([
           OWNER_BINDING,
           ["roles/projectDeveloper", ["user:ann@example.com"]],
-          ["roles/sqlEditorReadUser", ["user:ann@example.com"]],
+          ["roles/sqlEditorExporter", ["user:ann@example.com"]],
         ]);
       });
 
@@ -3302,7 +3302,7 @@ describe("WorkspaceSetupPage", () => {
         bindings: [
           ...server.projectPolicy.bindings,
           { role: "roles/projectDeveloper", members: ["user:zoe@example.com"] },
-          { role: "roles/sqlEditorReadUser", members: ["user:yan@example.com"] },
+          { role: "roles/sqlEditorExporter", members: ["user:yan@example.com"] },
         ],
       } as IamPolicy;
       render(<WorkspaceSetupPage />);

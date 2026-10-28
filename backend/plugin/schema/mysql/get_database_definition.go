@@ -194,6 +194,10 @@ func GetProcedureDefinition(_ string, procedure *metadatapb.ProcedureMetadata) (
 }
 
 func writeEvent(out io.Writer, event *metadatapb.EventMetadata) error {
+	// An event synced without its CREATE EVENT, as on OceanBase, has nothing faithful to write.
+	if event.Definition == "" {
+		return nil
+	}
 	// Header.
 	if _, err := io.WriteString(out, emptyCommentLine); err != nil {
 		return err

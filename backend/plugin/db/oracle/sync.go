@@ -13,6 +13,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/plsql"
@@ -101,7 +102,11 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMe
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get triggers from database %q", d.databaseName)
 	}
-	tableMap, err := getTables(txn, d.databaseName, columnMap, tableTriggerMap)
+	indexMap, checkConstraintMap, foreignKeyMap, err := getIndexesAndConstraints(txn, d.databaseName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get indices")
+	}
+	tableMap, err := getTables(txn, d.databaseName, columnMap, indexMap, checkConstraintMap, foreignKeyMap, tableTriggerMap)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get tables from database %q", d.databaseName)
 	}
@@ -121,7 +126,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMe
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get routines from database %q", d.databaseName)
 	}
-	materializedViews, err := getMaterializedViews(txn, d.databaseName, columnMap)
+	materializedViews, err := getMaterializedViews(txn, d.databaseName, indexMap, tableTriggerMap)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get materialized views from database %q", d.databaseName)
 	}
@@ -235,11 +240,13 @@ func getTriggers(txn *sql.Tx, schemaName string) (map[db.TableKey][]*metadatapb.
 		return nil, nil, errors.Wrapf(err, "failed to get trigger comments")
 	}
 
+	// A trigger the schema owns on another schema's table is left out: keyed by
+	// TABLE_NAME alone, it would land on this schema's table of the same name.
 	query := fmt.Sprintf(`
 		SELECT TRIGGER_NAME, TABLE_NAME, DESCRIPTION, TRIGGER_BODY, BASE_OBJECT_TYPE, TRIGGER_TYPE, TRIGGERING_EVENT
 		FROM sys.all_triggers
-		WHERE OWNER = '%s' AND TABLE_NAME is NOT NULL AND (BASE_OBJECT_TYPE = 'TABLE' OR BASE_OBJECT_TYPE = 'VIEW')
-		ORDER BY TRIGGER_NAME`, schemaName)
+		WHERE OWNER = '%s' AND TABLE_OWNER = '%s' AND TABLE_NAME is NOT NULL AND (BASE_OBJECT_TYPE = 'TABLE' OR BASE_OBJECT_TYPE = 'VIEW')
+		ORDER BY TRIGGER_NAME`, schemaName, schemaName)
 
 	slog.Debug("running get triggers query")
 	rows, err := txn.Query(query)
@@ -301,11 +308,15 @@ func constructTriggerBody(description, triggerBody string) string {
 }
 
 // getTables gets all tables of a database.
-func getTables(txn *sql.Tx, schemaName string, columnMap map[db.TableKey][]*metadatapb.ColumnMetadata, triggerMap map[db.TableKey][]*metadatapb.TriggerMetadata) (map[string][]*metadatapb.TableMetadata, error) {
-	indexMap, checkConstraintMap, foreignKeyMap, err := getIndexesAndConstraints(txn, schemaName)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get indices")
-	}
+func getTables(
+	txn *sql.Tx,
+	schemaName string,
+	columnMap map[db.TableKey][]*metadatapb.ColumnMetadata,
+	indexMap map[db.TableKey][]*metadatapb.IndexMetadata,
+	checkConstraintMap map[db.TableKey][]*metadatapb.CheckConstraintMetadata,
+	foreignKeyMap map[db.TableKey][]*metadatapb.ForeignKeyMetadata,
+	triggerMap map[db.TableKey][]*metadatapb.TriggerMetadata,
+) (map[string][]*metadatapb.TableMetadata, error) {
 	columnCommentMap, err := getTableColumnComments(txn, schemaName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get table column comments")
@@ -323,6 +334,41 @@ func getTables(txn *sql.Tx, schemaName string, columnMap map[db.TableKey][]*meta
 		return nil, errors.Wrapf(err, "failed to get table comments")
 	}
 	tableMap := make(map[string][]*metadatapb.TableMetadata)
+	appendTables := func(query string, skipDump bool) error {
+		rows, err := txn.Query(query)
+		if err != nil {
+			return util.FormatErrorWithQuery(err, query)
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			table := &metadatapb.TableMetadata{SkipDump: skipDump}
+			var schemaName string
+			// https://github.com/rana/ora/issues/57#issuecomment-179909837
+			// NUMBER in Oracle can hold 38 decimal digits, so int64 is not enough with its 19 decimal digits.
+			// float64 is a little bit better - not precise enough, but won't overflow.
+			var count sql.NullFloat64
+			if err := rows.Scan(&schemaName, &table.Name, &count); err != nil {
+				return err
+			}
+			table.RowCount = int64(count.Float64)
+			key := db.TableKey{Schema: schemaName, Table: table.Name}
+			table.Columns = columnMap[key]
+			table.Indexes = indexMap[key]
+			table.CheckConstraints = checkConstraintMap[key]
+			table.ForeignKeys = foreignKeyMap[key]
+			table.Triggers = triggerMap[key]
+			if comment, ok := tableCommentMap[db.TableKey{Schema: schemaName, Table: table.Name}]; ok {
+				table.Comment = comment
+			}
+
+			tableMap[schemaName] = append(tableMap[schemaName], table)
+		}
+		if err := rows.Err(); err != nil {
+			return util.FormatErrorWithQuery(err, query)
+		}
+		return rows.Close()
+	}
 
 	query := fmt.Sprintf(`
 		SELECT OWNER, TABLE_NAME, NUM_ROWS
@@ -332,42 +378,27 @@ func getTables(txn *sql.Tx, schemaName string, columnMap map[db.TableKey][]*meta
 			SELECT MVIEW_NAME FROM all_mviews WHERE OWNER = '%s'
 		)
 		ORDER BY TABLE_NAME`, schemaName, schemaName)
-
 	slog.Debug("running get tables query")
-	rows, err := txn.Query(query)
-	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, query)
+	if err := appendTables(query, false); err != nil {
+		return nil, err
 	}
-	defer rows.Close()
 
-	for rows.Next() {
-		table := &metadatapb.TableMetadata{}
-		var schemaName string
-		// https://github.com/rana/ora/issues/57#issuecomment-179909837
-		// NUMBER in Oracle can hold 38 decimal digits, so int64 is not enough with its 19 decimal digits.
-		// float64 is a little bit better - not precise enough, but won't overflow.
-		var count sql.NullFloat64
-		if err := rows.Scan(&schemaName, &table.Name, &count); err != nil {
-			return nil, err
-		}
-		table.RowCount = int64(count.Float64)
-		key := db.TableKey{Schema: schemaName, Table: table.Name}
-		table.Columns = columnMap[key]
-		table.Indexes = indexMap[key]
-		table.CheckConstraints = checkConstraintMap[key]
-		table.ForeignKeys = foreignKeyMap[key]
-		table.Triggers = triggerMap[key]
-		if comment, ok := tableCommentMap[db.TableKey{Schema: schemaName, Table: table.Name}]; ok {
-			table.Comment = comment
-		}
-
-		tableMap[schemaName] = append(tableMap[schemaName], table)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, util.FormatErrorWithQuery(err, query)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, errors.Wrapf(err, "failed to close rows")
+	// ALL_TABLES omits object and XMLType tables (CREATE TABLE ... OF), which
+	// DROP TABLE drops all the same, so they are listed too, with SkipDump. The
+	// ALL_MVIEWS subquery drops an object materialized view's container and keeps
+	// the plan on the owner index: without it Oracle full-scans OBJ$, which holds
+	// every schema's objects.
+	objectTableQuery := fmt.Sprintf(`
+		SELECT OWNER, TABLE_NAME, NUM_ROWS
+		FROM all_object_tables
+		WHERE OWNER = '%s'
+		AND TABLE_NAME NOT IN (
+			SELECT MVIEW_NAME FROM all_mviews WHERE OWNER = '%s'
+		)
+		ORDER BY TABLE_NAME`, schemaName, schemaName)
+	slog.Debug("running get object tables query")
+	if err := appendTables(objectTableQuery, true); err != nil {
+		return nil, err
 	}
 
 	return tableMap, nil
@@ -460,9 +491,12 @@ func getTableColumnComments(txn *sql.Tx, schemaName string) (map[db.ColumnKey]st
 func getTableColumns(txn *sql.Tx, schemaName string, version *plsql.Version) (map[db.TableKey][]*metadatapb.ColumnMetadata, error) {
 	columnsMap := make(map[db.TableKey][]*metadatapb.ColumnMetadata)
 
-	// https://github.com/bytebase/bytebase/issues/6663
-	// Invisible columns don't have column ID so that we need to filter out them.
+	// Invisible columns have no COLUMN_ID. They sort after the visible columns
+	// and take the positions that follow. ALL_TAB_COLUMNS is ALL_TAB_COLS with
+	// USER_GENERATED = 'YES', which leaves out hidden system columns; the newer
+	// query reads ALL_TAB_COLS under that filter to get VIRTUAL_COLUMN too.
 	query := ""
+	var virtualColumns map[db.ColumnKey]bool
 	// https://docs.oracle.com/en/database/oracle/oracle-database/12.2/refrn/ALL_TAB_COLS.html#GUID-85036F42-140A-406B-BE11-0AC49A00DBA3
 	equalOrHigherThan12c2release := version.First > 12 || (version.First == 12 && version.Second >= 2)
 	if equalOrHigherThan12c2release {
@@ -479,11 +513,19 @@ func getTableColumns(txn *sql.Tx, schemaName string, version *plsql.Version) (ma
 			DATA_DEFAULT,
 			NULLABLE,
 			COLLATION,
-			DEFAULT_ON_NULL
-		FROM sys.all_tab_columns
-		WHERE OWNER = '%s' AND COLUMN_ID IS NOT NULL
-		ORDER BY TABLE_NAME, COLUMN_ID`, schemaName)
+			DEFAULT_ON_NULL,
+			VIRTUAL_COLUMN
+		FROM sys.all_tab_cols
+		WHERE OWNER = '%s' AND USER_GENERATED = 'YES'
+		ORDER BY TABLE_NAME, COLUMN_ID NULLS LAST, COLUMN_NAME`, schemaName)
 	} else {
+		// Failing to tell virtual columns apart only keeps their expressions
+		// in Default, as before, so it must not fail the sync.
+		var err error
+		virtualColumns, err = getVirtualColumns(txn, schemaName)
+		if err != nil {
+			slog.Warn("failed to list Oracle virtual columns", slog.String("schema", schemaName), log.BBError(err))
+		}
 		query = fmt.Sprintf(`
 		SELECT
 			OWNER,
@@ -497,10 +539,11 @@ func getTableColumns(txn *sql.Tx, schemaName string, version *plsql.Version) (ma
 			DATA_DEFAULT,
 			NULLABLE,
 			NULL,
+			NULL,
 			NULL
 		FROM sys.all_tab_columns
-		WHERE OWNER = '%s' AND COLUMN_ID IS NOT NULL
-		ORDER BY TABLE_NAME, COLUMN_ID`, schemaName)
+		WHERE OWNER = '%s'
+		ORDER BY TABLE_NAME, COLUMN_ID NULLS LAST, COLUMN_NAME`, schemaName)
 	}
 
 	slog.Debug("running get columns query")
@@ -512,8 +555,9 @@ func getTableColumns(txn *sql.Tx, schemaName string, version *plsql.Version) (ma
 	for rows.Next() {
 		column := &metadatapb.ColumnMetadata{}
 		var schemaName, tableName, nullable string
-		var defaultStr, collation, defaultOnNull sql.NullString
+		var defaultStr, collation, defaultOnNull, virtualColumn sql.NullString
 		var dataLength, dataPrecision, dataScale sql.NullInt64
+		var columnID sql.NullInt32
 		if err := rows.Scan(
 			&schemaName,
 			&tableName,
@@ -522,11 +566,12 @@ func getTableColumns(txn *sql.Tx, schemaName string, version *plsql.Version) (ma
 			&dataLength,
 			&dataPrecision,
 			&dataScale,
-			&column.Position,
+			&columnID,
 			&defaultStr,
 			&nullable,
 			&collation,
 			&defaultOnNull,
+			&virtualColumn,
 		); err != nil {
 			return nil, err
 		}
@@ -534,8 +579,15 @@ func getTableColumns(txn *sql.Tx, schemaName string, version *plsql.Version) (ma
 		if defaultStr.Valid {
 			// Clean up the default expression to remove current schema name and fix NEXTVAL syntax
 			cleanedDefault := cleanDefaultExpression(defaultStr.String, schemaName)
-			// Store in Default field (migration from DefaultExpression to Default)
-			column.Default = cleanedDefault
+			// DATA_DEFAULT holds a virtual column's expression.
+			if virtualColumn.String == "YES" || virtualColumns[db.ColumnKey{Schema: schemaName, Table: tableName, Column: column.Name}] {
+				column.Generation = &metadatapb.GenerationMetadata{
+					Type:       metadatapb.GenerationMetadata_TYPE_VIRTUAL,
+					Expression: cleanedDefault,
+				}
+			} else {
+				column.Default = cleanedDefault
+			}
 		}
 		isNullBool, err := util.ConvertYesNo(nullable)
 		if err != nil {
@@ -550,6 +602,15 @@ func getTableColumns(txn *sql.Tx, schemaName string, version *plsql.Version) (ma
 		}
 
 		key := db.TableKey{Schema: schemaName, Table: tableName}
+		if columnID.Valid {
+			column.Position = columnID.Int32
+		} else {
+			column.IsInvisible = true
+			column.Position = 1
+			if columns := columnsMap[key]; len(columns) > 0 {
+				column.Position = columns[len(columns)-1].Position + 1
+			}
+		}
 		columnsMap[key] = append(columnsMap[key], column)
 	}
 	if err := rows.Err(); err != nil {
@@ -560,6 +621,33 @@ func getTableColumns(txn *sql.Tx, schemaName string, version *plsql.Version) (ma
 	}
 
 	return columnsMap, nil
+}
+
+// getVirtualColumns lists the virtual columns for versions whose column query
+// reads ALL_TAB_COLUMNS, which has no VIRTUAL_COLUMN.
+func getVirtualColumns(txn *sql.Tx, schemaName string) (map[db.ColumnKey]bool, error) {
+	query := fmt.Sprintf(`
+		SELECT TABLE_NAME, COLUMN_NAME
+		FROM sys.all_tab_cols
+		WHERE OWNER = '%s' AND VIRTUAL_COLUMN = 'YES'`, schemaName)
+	slog.Debug("running get virtual columns query")
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	defer rows.Close()
+	virtualColumns := make(map[db.ColumnKey]bool)
+	for rows.Next() {
+		var tableName, columnName string
+		if err := rows.Scan(&tableName, &columnName); err != nil {
+			return nil, err
+		}
+		virtualColumns[db.ColumnKey{Schema: schemaName, Table: tableName, Column: columnName}] = true
+	}
+	if err := rows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	return virtualColumns, nil
 }
 
 func getTypeString(dataType string, dataLength, dataPrecision, dataScale sql.NullInt64) string {
@@ -881,8 +969,8 @@ func getIndexesAndConstraints(txn *sql.Tx, schemaName string) (map[db.TableKey][
 			continue
 		}
 
-		// Skip system-generated indexes for materialized views and virtual columns
-		if strings.HasPrefix(index.Name, "I_SNAP$_") || strings.HasPrefix(index.Name, "SYS_") {
+		// Skip system-generated indexes, such as those of LOBs, IOTs, and nested tables.
+		if strings.HasPrefix(index.Name, "SYS_") {
 			continue
 		}
 
@@ -1111,7 +1199,7 @@ func getAllMaterializedViewDependencies(txn *sql.Tx, schemaName string) (map[db.
 }
 
 // getMaterializedViews gets all materialized views of a database.
-func getMaterializedViews(txn *sql.Tx, schemaName string, _ map[db.TableKey][]*metadatapb.ColumnMetadata) ([]*metadatapb.MaterializedViewMetadata, error) {
+func getMaterializedViews(txn *sql.Tx, schemaName string, indexMap map[db.TableKey][]*metadatapb.IndexMetadata, triggerMap map[db.TableKey][]*metadatapb.TriggerMetadata) ([]*metadatapb.MaterializedViewMetadata, error) {
 	var materializedViews []*metadatapb.MaterializedViewMetadata
 
 	// Get materialized view comments
@@ -1157,6 +1245,9 @@ func getMaterializedViews(txn *sql.Tx, schemaName string, _ map[db.TableKey][]*m
 		if comment, ok := materializedViewCommentMap[key]; ok {
 			materializedView.Comment = comment
 		}
+		// Indexes and triggers are on the container table, which has the view's name.
+		materializedView.Indexes = indexMap[key]
+		materializedView.Triggers = triggerMap[key]
 
 		materializedViews = append(materializedViews, materializedView)
 	}

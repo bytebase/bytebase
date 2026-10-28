@@ -9,6 +9,10 @@ import type { InlineQueryPlan } from "./QueryPlanResultView";
 export function inlineQueryPlan(
   result: QueryResult
 ): InlineQueryPlan | undefined {
+  // A plan the engine states beside the result rather than in its rows, which
+  // is how BigQuery reports the stages its job ran.
+  const carried = result.queryPlan?.content;
+  if (carried) return { source: carried };
   const lines = result.rows.map((row) =>
     row.values.map((value) => String(extractSQLRowValuePlain(value)))
   );

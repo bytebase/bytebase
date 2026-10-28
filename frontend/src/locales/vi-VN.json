@@ -577,6 +577,7 @@
     "sensitive-placeholder": "Nhạy cảm - Chỉ ghi",
     "settings": "Cài đặt",
     "share": "Chia sẻ",
+    "show": "Hiện",
     "show-less": "Thu gọn",
     "show-more": "Hiển thị thêm",
     "sign-in": "Đăng nhập",
@@ -1031,6 +1032,7 @@
     "password-optional": "Mã hóa bằng mật khẩu (Tùy chọn)"
   },
   "gitops": {
+    "back-to-releases": "Quay lại Bản phát hành",
     "checklist": {
       "database-group-recommendation": "Đối với các cơ sở dữ liệu có cùng schema, nhóm cơ sở dữ liệu cho phép bạn migration tất cả cùng lúc trong một thay đổi. Chỉ cần định nghĩa nhóm một lần và tái sử dụng trong các lần migration mà không cần chọn từng cơ sở dữ liệu mỗi lần.",
       "external-url": "URL bên ngoài",
@@ -1046,7 +1048,6 @@
       "description-git": "Schema cơ sở dữ liệu của bạn được lưu trữ trong Git cùng với mã nguồn ứng dụng. Pull request sẽ kích hoạt SQL review, và việc merge vào nhánh đích sẽ tự động tạo rollout.",
       "title": "GitOps là gì"
     },
-    "self": "GitOps",
     "test-setup": {
       "description": "Xác minh workflow hoạt động đầy đủ với một tệp migration mẫu.",
       "naming-convention": "Các tệp migration được áp dụng theo thứ tự từ điển. Sử dụng tiền tố timestamp hoặc số thứ tự, ví dụ: 20240101000000_create_table.sql. Thêm _ddl hoặc _dml để chỉ loại thay đổi.",
@@ -1804,12 +1805,54 @@
     "add-spec-pending-draft": "Lưu hoặc hủy thay đổi đang chờ trước khi thêm thay đổi khác",
     "ai-review": {
       "failed-to-run": "Không thể bắt đầu đánh giá bằng AI",
-      "finished": "Đã hoàn tất",
-      "not-run": "Chưa chạy",
-      "queued": "Đang chờ",
       "run": "Chạy đánh giá bằng AI",
-      "save-first": "Hãy lưu hoặc hủy các thay đổi để chạy đánh giá bằng AI.",
-      "status-unknown": "Chưa có trạng thái"
+      "run-again-description": "Mỗi lần chạy sẽ gọi mô hình cho từng cơ sở dữ liệu được đánh giá và có thể cho kết quả khác. Phát hiện mới sẽ thay thế phát hiện của lần chạy trước, kể cả những mục đã được giải quyết.",
+      "run-again-title": "Chạy lại đánh giá AI?",
+      "save-first": "Hãy lưu hoặc hủy các thay đổi để chạy đánh giá bằng AI."
+    },
+    "automated-review": {
+      "checks": "Kiểm tra kế hoạch",
+      "details": "Chi tiết",
+      "failed": "Không thể chạy",
+      "failed-to-rerun": "Không thể bắt đầu đánh giá",
+      "ghost": "Chạy thử di chuyển trực tuyến",
+      "n-databases_one": "{{count}} cơ sở dữ liệu",
+      "n-databases_other": "{{count}} cơ sở dữ liệu",
+      "n-errors_one": "{{count}} lỗi",
+      "n-errors_other": "{{count}} lỗi",
+      "n-open": "{{count}} đang mở",
+      "n-warnings_one": "{{count}} cảnh báo",
+      "n-warnings_other": "{{count}} cảnh báo",
+      "needs-attention": "{{count}}/{{total}} cần xử lý",
+      "no-findings": "Không có phát hiện",
+      "not-run": "Chưa chạy",
+      "nothing-needs-attention": "Không có mục nào cần xử lý",
+      "opens-in-sql": "Nhấp để xem lần lượt trong SQL.",
+      "out-of-date": "đã cũ",
+      "outdated": "SQL đã thay đổi sau lần chạy này",
+      "passed": "đạt",
+      "passed-on_one": "Đạt trên {{count}} cơ sở dữ liệu",
+      "passed-on_other": "Đạt trên {{count}} cơ sở dữ liệu",
+      "policy": "Chính sách đánh giá",
+      "project-rules": "Quy tắc dự án: bật {{on}}/{{total}}",
+      "report": "Báo cáo câu lệnh",
+      "rerun": "Chạy lại",
+      "rerun-all": "Chạy lại tất cả",
+      "rerun-all-description_one": "Thao tác này chạy lại kiểm tra kế hoạch và Standard rules. {{count}} phát hiện đã được giải quyết của Standard rules sẽ mở lại.",
+      "rerun-all-description_other": "Thao tác này chạy lại kiểm tra kế hoạch và Standard rules. {{count}} phát hiện đã được giải quyết của Standard rules sẽ mở lại.",
+      "rerun-all-title": "Chạy lại tất cả kiểm tra?",
+      "rerun-reopens_one": "{{count}} phát hiện đã được giải quyết sẽ mở lại và cần giải quyết lại.",
+      "rerun-reopens_other": "{{count}} phát hiện đã được giải quyết sẽ mở lại và cần giải quyết lại.",
+      "rerun-rule-title": "Chạy lại Standard rules?",
+      "retry": "Thử lại",
+      "running": "Đang chạy",
+      "sampled": "lấy mẫu {{count}}/{{total}} cơ sở dữ liệu",
+      "scope": "Đã đánh giá {{databases}}",
+      "scope-label": "Phạm vi của lần đánh giá này",
+      "scope-with-engines": "Đã đánh giá {{databases}} ({{engines}})",
+      "self": "Đánh giá tự động",
+      "summary-part": "{{reviewer}}: {{status}}",
+      "workspace-rules": "Quy tắc không gian làm việc: bật {{on}}/{{total}}"
     },
     "blocker": {
       "clears-on-its-own": "Tự động hoàn tất"
@@ -1824,12 +1867,49 @@
       "started": "Đã bắt đầu kiểm tra kế hoạch"
     },
     "create-plan": "Tạo kế hoạch",
+    "deploy-waiting": {
+      "approval": "Phê duyệt",
+      "approval-from": "Phê duyệt từ {{role}}",
+      "approval-rejected": "Phê duyệt bị từ chối",
+      "auto-create": "Bytebase sẽ tạo bản triển khai khi tất cả các mục này đạt.",
+      "creating-rollout": "Tất cả đã đạt; đang tạo bản triển khai…",
+      "manual-rollout": "Bytebase không tự động tạo bản triển khai cho kế hoạch này; hãy triển khai khi các mục trên đều đạt.",
+      "open-discussions_one": "{{count}} thảo luận đang mở",
+      "open-discussions_other": "{{count}} thảo luận đang mở",
+      "overridden_one": "{{count}} phát hiện P0 trong {{reviewer}} đã được giải quyết mà không sửa",
+      "overridden_other": "{{count}} phát hiện P0 trong {{reviewer}} đã được giải quyết mà không sửa",
+      "ready-to-deploy": "Mọi thứ đã đạt; sẵn sàng triển khai.",
+      "reviewer-failed": "{{reviewer}} không thể chạy",
+      "reviewer-findings": "{{reviewer}}: {{findings}}",
+      "reviewer-not-run": "{{reviewer}} chưa chạy",
+      "reviewer-outdated": "SQL đã thay đổi sau khi {{reviewer}} chạy",
+      "reviewer-running": "{{reviewer}} đang chạy",
+      "show": "Xem",
+      "submit": "Gửi để đánh giá",
+      "waiting-on": "Đang chờ",
+      "worth-a-look": "Không chặn bản triển khai, nhưng nên xem qua"
+    },
     "description": {
       "placeholder": "Thêm mô tả"
     },
     "draft-update-permission-required": "Bạn có thể xem bản nháp này, nhưng cần bb.issues.update để chỉnh sửa nhãn vấn đề hoặc gửi đi xem xét.",
     "editor": {
       "save-changes-before-continuing": "Vui lòng lưu hoặc hủy thay đổi của bạn trước khi tiếp tục"
+    },
+    "findings": {
+      "n-more": "{{count}} mục khác",
+      "n-overridden": "{{count}} P0 đã giải quyết mà không sửa",
+      "n-priority": "{{count}} {{priority}}",
+      "n-resolved": "{{count}} đã giải quyết",
+      "name-at-line": "{{name}} (L{{line}})",
+      "name-times": "{{name}} ×{{count}}",
+      "separator": ", ",
+      "set": {
+        "earlier": "các lần chạy trước",
+        "open": "đang mở",
+        "overridden": "P0 đã giải quyết mà không sửa",
+        "resolved": "đã giải quyết"
+      }
     },
     "ghost": {
       "configure": "Cấu hình",
@@ -1853,19 +1933,18 @@
       "checking": "Đang kiểm tra…",
       "checks-failing": "Kiểm tra thất bại",
       "deployed": "Đã triển khai",
+      "gate-automated-review-passed": "Đánh giá tự động đã đạt",
       "gate-checks-failed": "Một số kiểm tra không thành công",
       "gate-checks-failed-sub": "{{failing}} thất bại, {{passed}} thành công",
       "gate-checks-passed": "Tất cả kiểm tra đã qua",
       "gate-checks-passed-sub": "{{count}} thành công",
       "gate-checks-running": "Đang chạy kiểm tra",
       "gate-checks-running-sub": "{{running}} đang chạy, {{passed}} thành công",
+      "gate-no-open-discussions": "Không có thảo luận đang mở",
       "gate-review-approved": "Đã duyệt thay đổi",
       "gate-review-pending": "Đang xem xét",
       "gate-review-rejected": "Yêu cầu thay đổi",
       "gate-threads-open-sub": "Giải quyết mọi luồng để tạo rollout",
-      "gate-threads-open_one": "{{count}} luồng chưa giải quyết",
-      "gate-threads-open_other": "{{count}} luồng chưa giải quyết",
-      "gate-threads-resolved": "Tất cả luồng đã được giải quyết",
       "incomplete": "Chưa hoàn tất",
       "preparing-rollout": "Đang chuẩn bị triển khai…",
       "rejected": "Đã từ chối",
@@ -1873,6 +1952,7 @@
       "review-waiting": "Đang chờ {{role}}",
       "run": "Chạy"
     },
+    "list-description": "Các yêu cầu thay đổi được tạo trong giao diện và tiến độ triển khai của chúng.",
     "meta": {
       "created-by": "Tạo bởi {{user}}"
     },
@@ -1912,11 +1992,15 @@
         "add-a-comment": "Thêm bình luận...",
         "created-this-plan": "đã tạo kế hoạch này",
         "marked-ready-for-review": "đã đánh dấu kế hoạch này sẵn sàng xét duyệt",
+        "n-findings_one": "{{count}} phát hiện",
+        "n-findings_other": "{{count}} phát hiện",
         "n-hidden-events_one": "{{count}} sự kiện ẩn",
         "n-hidden-events_other": "{{count}} sự kiện ẩn",
+        "reviewed-the-sql": "đã đánh giá SQL",
         "self": "Hoạt động",
         "show-all": "Hiển thị tất cả"
       },
+      "approval-after-submit": "Phê duyệt bắt đầu khi bạn gửi để đánh giá.",
       "approval-flow": {
         "and-n-more_one": "và {{count}} người khác",
         "and-n-more_other": "và {{count}} người khác",
@@ -1992,6 +2076,7 @@
         "n-replies-hidden_other": "{{count}} phản hồi bị ẩn",
         "n-replies_one": "{{count}} phản hồi",
         "n-replies_other": "{{count}} phản hồi",
+        "open": "Đang mở",
         "priority": {
           "p0": "SQL sai và phải được sửa.",
           "p1": "Nguy hiểm nhưng hợp lệ. Cần có người chấp nhận.",
@@ -2009,8 +2094,10 @@
         "threads-on-line_one": "{{count}} chủ đề trên dòng này",
         "threads-on-line_other": "{{count}} chủ đề trên dòng này",
         "walker": {
+          "clear-filter": "Duyệt qua mọi chuỗi thảo luận đang mở",
           "count_one": "{{count}} luồng chưa giải quyết ở phiên bản này",
           "count_other": "{{count}} luồng chưa giải quyết ở phiên bản này",
+          "filter": "{{reviewer}} · {{state}}",
           "next": "Luồng chưa giải quyết tiếp theo",
           "position": "Luồng {{index}} trên {{count}}",
           "previous": "Luồng chưa giải quyết trước đó",
@@ -2024,16 +2111,6 @@
       "description_one": "Hoàn tác 1 tác vụ đã chọn từ bản triển khai #{{rolloutId}}.",
       "description_other": "Hoàn tác {{count}} tác vụ đã chọn từ bản triển khai #{{rolloutId}}.",
       "title": "Hoàn tác bản triển khai #{{rolloutId}}"
-    },
-    "rule-review": {
-      "failed": "Đánh giá SQL thất bại",
-      "load-failed": "Không thể tải trạng thái đánh giá SQL.",
-      "no-open-findings": "Không có phát hiện chưa giải quyết",
-      "not-run": "Chưa chạy đánh giá SQL",
-      "open-findings_one": "{{count}} phát hiện chưa giải quyết",
-      "open-findings_other": "{{count}} phát hiện chưa giải quyết",
-      "queued": "Đánh giá SQL đang chờ",
-      "running": "Đang đánh giá SQL"
     },
     "run": "Kiểm tra lại",
     "select-isolation-level": "Chọn mức độ cô lập",
@@ -2059,9 +2136,17 @@
       "reopen-confirm": "Mở lại kế hoạch này?",
       "reopen-review-confirm": "Mở lại đợt xem xét này?"
     },
+    "statement-summary": {
+      "affected-rows_one": "~{{count}} dòng bị ảnh hưởng",
+      "affected-rows_other": "~{{count}} dòng bị ảnh hưởng"
+    },
+    "status-scope": {
+      "description": "Lọc theo trạng thái hiện tại của các tác vụ trong kế hoạch",
+      "waiting": "Đang chờ"
+    },
     "submit-review-anyway": "Vẫn gửi",
-    "subtitle": "Soạn thảo các thay đổi cơ sở dữ liệu và chạy các bước kiểm tra sơ bộ trước khi tạo vấn đề để phê duyệt.",
     "summary": {
+      "approved-by": "Được phê duyệt bởi {{names}}",
       "last-approved-by": "Phê duyệt gần nhất bởi {{name}}",
       "n-changes": "{{n}} thay đổi",
       "n-database-groups": "{{n}} nhóm cơ sở dữ liệu",
@@ -2072,7 +2157,8 @@
       "n-passed": "{{n}} đã vượt qua",
       "n-unresolved-threads_one": "{{count}} luồng chưa giải quyết",
       "n-unresolved-threads_other": "{{count}} luồng chưa giải quyết",
-      "n-warning": "{{n}} cảnh báo"
+      "n-warning": "{{n}} cảnh báo",
+      "no-approval-required": "Không cần phê duyệt"
     },
     "targets": {
       "no-targets-found": "Không tìm thấy mục tiêu",
@@ -2408,17 +2494,24 @@
   "release": {
     "and-n-more-files": "và {{count}} tệp khác",
     "change-tip": "Thay đổi này được liên kết với một artifact phát hành.",
-    "file": "Tệp phát hành",
+    "empty": {
+      "description": "Các thay đổi mà pipeline CI của bạn phát hành lên Bytebase sẽ hiển thị ở đây cùng tiến độ triển khai.",
+      "read-guide": "Đọc hướng dẫn GitOps",
+      "set-up": "Thiết lập GitOps",
+      "title": "Chưa có thay đổi GitOps nào"
+    },
     "file-type": {
       "declarative": "Khai báo",
       "unspecified": "Không xác định",
       "versioned": "Có phiên bản"
     },
     "files": "Tệp",
+    "gitops-setup": "Thiết lập GitOps",
+    "list-description": "Các thay đổi được phát hành qua GitOps và tiến độ triển khai của chúng.",
     "not-found": "Không tìm thấy bản phát hành",
     "releases": "Bản phát hành",
-    "total-files": "Tổng số {{}} tệp",
-    "usage-description": "Bản phát hành là một artifact ứng dụng có phiên bản mà việc triển khai vào môi trường được kích hoạt bởi quy trình GitOps.",
+    "self": "Bản phát hành",
+    "source": "Nguồn",
     "vcs-source": "Nguồn VCS",
     "vcs-type": {
       "unspecified": "VCS không xác định"
@@ -2489,6 +2582,10 @@
       "description": "Xác định vai trò tùy chỉnh. Bạn có thể áp dụng chúng cho các thành viên dự án và được sử dụng trong phê duyệt tùy chỉnh.",
       "description-placeholder": "Nhập mô tả vai trò",
       "title-placeholder": "Nhập tiêu đề vai trò"
+    },
+    "sql-editor-exporter": {
+      "description": "Truy vấn cơ sở dữ liệu và xuất kết quả, không có quyền DDL hoặc DML.",
+      "self": "Người xuất dữ liệu Trình soạn thảo SQL"
     },
     "sql-editor-read-user": {
       "description": "Quyền chỉ đọc để truy vấn dữ liệu cơ sở dữ liệu, không có quyền DDL hoặc DML.",
@@ -2750,10 +2847,6 @@
           "exiting": "Đang rời..."
         },
         "data-copy": "Bật sao chép dữ liệu",
-        "data-export": {
-          "description": "Khi tắt, người dùng không thể xuất trực tiếp kết quả truy vấn. Trong các dự án cho phép cấp quyền truy cập, người dùng vẫn có thể nhấn \"Yêu cầu xuất dữ liệu\" để gửi yêu cầu cấp quyền truy cập và xuất sau khi được phê duyệt.",
-          "self": "Cho phép xuất dữ liệu mà không cần phê duyệt"
-        },
         "default-landing-page": {
           "default-view-changed-to-sql-editor": "Chế độ xem mặc định của không gian làm việc đã được thay đổi thành SQL Editor.",
           "go-to-sql-editor": "Đi tới Trình soạn thảo SQL",
@@ -3545,18 +3638,60 @@
         "zoom-out": "Thu nhỏ"
       },
       "error": {
+        "bigquery-empty": "BigQuery không trả về kế hoạch truy vấn cho câu lệnh này.",
+        "bigquery-invalid": "Kế hoạch truy vấn không phải JSON hợp lệ. Cần các giai đoạn của một job BigQuery.",
+        "bigquery-no-plan": "Kế hoạch truy vấn không có giai đoạn nào để bắt đầu.",
+        "clickhouse-empty": "ClickHouse không trả về kế hoạch truy vấn cho câu lệnh này.",
+        "clickhouse-invalid": "Kế hoạch truy vấn không phải JSON hợp lệ. Cần đầu ra EXPLAIN json = 1.",
+        "clickhouse-no-plan": "JSON của kế hoạch truy vấn ClickHouse không chứa đối tượng \"Plan\".",
+        "cockroachdb-empty": "CockroachDB không trả về kế hoạch truy vấn cho câu lệnh này.",
+        "cockroachdb-invalid": "Kế hoạch truy vấn không phải JSON hợp lệ. Cần sơ đồ mà EXPLAIN (DISTSQL) mã hoá.",
+        "cockroachdb-no-plan": "JSON của kế hoạch truy vấn không chứa \"processors\" nào để vẽ.",
+        "databricks-empty": "Databricks không trả về kế hoạch truy vấn cho câu lệnh này.",
+        "databricks-no-plan": "Kế hoạch truy vấn không có kế hoạch vật lý. Cần đầu ra EXPLAIN FORMATTED.",
+        "elasticsearch-empty": "Elasticsearch không trả về kế hoạch truy vấn cho câu lệnh này.",
+        "elasticsearch-invalid": "Kế hoạch truy vấn không phải JSON hợp lệ. Cần hồ sơ phân tích của Elasticsearch.",
+        "elasticsearch-no-plan": "Hồ sơ phân tích không có phân mảnh nào để bắt đầu. Elasticsearch chỉ phân tích tìm kiếm đã chạy.",
+        "hive-empty": "Hive không trả về kế hoạch truy vấn cho câu lệnh này.",
+        "hive-invalid": "Kế hoạch truy vấn không phải JSON hợp lệ. Cần đầu ra EXPLAIN FORMATTED của Hive.",
+        "hive-no-plan": "Kế hoạch truy vấn không có kế hoạch CBO nào để vẽ. Hive chỉ nêu kế hoạch này khi bộ tối ưu hóa dựa trên chi phí lập kế hoạch cho câu lệnh.",
+        "mongodb-empty": "MongoDB không trả về kế hoạch truy vấn cho câu lệnh này.",
+        "mongodb-invalid": "Kế hoạch truy vấn không phải JSON hợp lệ. Cần đầu ra explain() của MongoDB.",
+        "mongodb-no-plan": "JSON của kế hoạch truy vấn không có \"queryPlanner\" lẫn tuyến \"stages\" để vẽ.",
         "mssql-empty": "SQL Server không trả về kế hoạch truy vấn cho câu lệnh này.",
         "mssql-invalid": "Kế hoạch truy vấn không phải XML hợp lệ. Cần đầu ra SHOWPLAN_XML.",
         "mssql-no-plan": "XML của kế hoạch truy vấn không phải showplan SQL Server có ít nhất một câu lệnh.",
+        "mysql-empty": "Không có kế hoạch truy vấn nào được trả về cho câu lệnh này.",
+        "mysql-invalid": "Kế hoạch truy vấn không phải JSON hợp lệ. Cần đầu ra EXPLAIN FORMAT=JSON.",
+        "mysql-no-plan": "JSON của kế hoạch truy vấn không chứa đối tượng \"query_block\".",
+        "oceanbase-empty": "OceanBase không trả về kế hoạch truy vấn cho câu lệnh này.",
+        "oceanbase-invalid": "Kế hoạch truy vấn không phải JSON hợp lệ. Cần đầu ra EXPLAIN FORMAT=JSON của OceanBase.",
+        "oceanbase-no-plan": "JSON của kế hoạch truy vấn không nêu toán tử nào, nên không có gì để vẽ.",
+        "oracle-empty": "Oracle không trả về kế hoạch truy vấn cho câu lệnh này.",
+        "oracle-invalid": "Kế hoạch truy vấn không phải JSON hợp lệ. Cần bảng kế hoạch của Oracle, theo cách máy chủ kết xuất nó.",
+        "oracle-no-plan": "Kế hoạch truy vấn không có bước nào không có cha, nên không có toán tử để bắt đầu.",
         "postgres-empty": "PostgreSQL không trả về kế hoạch truy vấn cho câu lệnh này.",
         "postgres-invalid": "Kế hoạch truy vấn không phải JSON hợp lệ. Cần đầu ra EXPLAIN (FORMAT JSON).",
         "postgres-no-plan": "JSON của kế hoạch truy vấn không chứa đối tượng \"Plan\".",
+        "redshift-empty": "Redshift không trả về kế hoạch truy vấn cho câu lệnh này.",
+        "redshift-no-plan": "Kế hoạch truy vấn không có toán tử nào: kế hoạch của Redshift nêu chi phí cho từng toán tử.",
+        "snowflake-empty": "Snowflake không trả về kế hoạch truy vấn cho câu lệnh này.",
+        "snowflake-invalid": "Kế hoạch truy vấn không phải JSON hợp lệ. Cần đầu ra EXPLAIN USING JSON của Snowflake.",
+        "snowflake-no-plan": "JSON của kế hoạch truy vấn không có toán tử nào để bắt đầu.",
         "spanner-empty": "Spanner không trả về kế hoạch truy vấn cho câu lệnh này.",
         "spanner-emulator": "Spanner không trả về kế hoạch truy vấn cho câu lệnh này. Trình giả lập Spanner không trả về kế hoạch cho bất kỳ câu lệnh nào; hãy giải thích câu lệnh trên một phiên bản Spanner để xem kế hoạch.",
         "spanner-invalid": "Kế hoạch truy vấn không phải JSON hợp lệ. Cần một kế hoạch truy vấn Spanner.",
         "spanner-no-plan": "JSON của kế hoạch truy vấn không chứa danh sách \"planNodes\" có toán tử ở gốc.",
+        "starrocks-empty": "Câu lệnh không tạo ra kế hoạch truy vấn nào để vẽ.",
+        "starrocks-no-plan": "Kế hoạch truy vấn không có toán tử được đánh số trong bất kỳ phân đoạn nào.",
+        "tidb-empty": "TiDB không trả về kế hoạch truy vấn cho câu lệnh này.",
+        "tidb-invalid": "Kế hoạch truy vấn không phải JSON hợp lệ. Cần đầu ra EXPLAIN FORMAT=tidb_json.",
+        "tidb-no-plan": "JSON của kế hoạch truy vấn không chứa toán tử ở gốc.",
         "too-deep": "Kế hoạch truy vấn lồng quá sâu để trình trực quan hóa này có thể vẽ.",
         "too-many-nodes": "Kế hoạch truy vấn có nhiều toán tử hơn mức trình trực quan hóa này vẽ được, nên được hiển thị dưới dạng văn bản.",
+        "trino-empty": "Trino không trả về kế hoạch truy vấn cho câu lệnh này.",
+        "trino-invalid": "Kế hoạch truy vấn không phải JSON hợp lệ. Cần đầu ra EXPLAIN (FORMAT JSON) của Trino.",
+        "trino-no-plan": "JSON của kế hoạch truy vấn không chứa phân đoạn nào để bắt đầu.",
         "unreadable": "Không thể đọc kế hoạch truy vấn này"
       },
       "grid": {
@@ -3631,6 +3766,20 @@
         "estimated-cost": "chi phí ước tính {{cost}}",
         "measured-time": "thời gian đo được {{time}} ms",
         "nodes": "{{count}} nút"
+      },
+      "warning": {
+        "data-redistribution": {
+          "detail": "Phép nối này phải chuyển các hàng giữa các phân mảnh trước khi khớp được chúng. Phân phối cả hai bảng theo cột nối, hoặc đặt bảng nhỏ hơn thành ALL, để phép nối chạy ngay tại nơi đã có dữ liệu.",
+          "title": "Tái phân phối dữ liệu"
+        },
+        "full-index-scan": {
+          "detail": "Đọc mọi mục của chỉ mục này. Nếu truy vấn chỉ cần một vài mục, một điều kiện trên các cột dẫn đầu của chỉ mục có thể tránh được việc đọc toàn bộ.",
+          "title": "Quét toàn bộ chỉ mục"
+        },
+        "full-table-scan": {
+          "detail": "Đọc mọi hàng của bảng này. Nếu truy vấn chỉ cần một vài hàng, một chỉ mục trên các cột lọc có thể tránh được việc đọc toàn bộ.",
+          "title": "Quét toàn bộ bảng"
+        }
       }
     },
     "query-time": "Thời gian truy vấn",

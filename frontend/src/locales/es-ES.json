@@ -577,6 +577,7 @@
     "sensitive-placeholder": "Sensible - solo escritura",
     "settings": "Configuraciones",
     "share": "Compartir",
+    "show": "Mostrar",
     "show-less": "Mostrar menos",
     "show-more": "Mostrar más",
     "sign-in": "Iniciar sesión",
@@ -1031,6 +1032,7 @@
     "password-optional": "Cifrar con contraseña (opcional)"
   },
   "gitops": {
+    "back-to-releases": "Volver a Lanzamientos",
     "checklist": {
       "database-group-recommendation": "Para bases de datos con el mismo esquema, un grupo de bases de datos permite migrarlas juntas en un solo cambio. Defina el grupo una vez y reutilícelo en las migraciones sin tener que seleccionar bases de datos individuales cada vez.",
       "external-url": "URL externa",
@@ -1046,7 +1048,6 @@
       "description-git": "El esquema de su base de datos se almacena en Git junto con el código de su aplicación. Las pull requests activan la revisión de SQL, y la fusión en la rama de destino crea automáticamente los despliegues.",
       "title": "Qué es GitOps"
     },
-    "self": "GitOps",
     "test-setup": {
       "description": "Verifique que el flujo de trabajo funciona de extremo a extremo con un archivo de migración de ejemplo.",
       "naming-convention": "Los archivos de migración se aplican en orden lexicográfico. Use un prefijo de marca de tiempo o secuencia, p. ej. 20240101000000_create_table.sql. Agregue _ddl o _dml para indicar el tipo de cambio.",
@@ -1804,12 +1805,54 @@
     "add-spec-pending-draft": "Guarda o descarta el cambio pendiente antes de agregar otro",
     "ai-review": {
       "failed-to-run": "No se pudo iniciar la revisión con IA",
-      "finished": "Finalizada",
-      "not-run": "Aún no se ha ejecutado",
-      "queued": "En cola",
       "run": "Ejecutar revisión con IA",
-      "save-first": "Guarda o descarta tus cambios para ejecutar la revisión con IA.",
-      "status-unknown": "Estado no disponible"
+      "run-again-description": "Cada ejecución llama al modelo por cada base de datos revisada y puede encontrar problemas distintos. Sus hallazgos sustituyen a los de la ejecución anterior, incluidos los que ya se resolvieron.",
+      "run-again-title": "¿Ejecutar de nuevo la revisión con IA?",
+      "save-first": "Guarda o descarta tus cambios para ejecutar la revisión con IA."
+    },
+    "automated-review": {
+      "checks": "Comprobación del plan",
+      "details": "Detalles",
+      "failed": "No se pudo ejecutar",
+      "failed-to-rerun": "No se pudo iniciar la revisión",
+      "ghost": "Simulación de migración en línea",
+      "n-databases_one": "{{count}} base de datos",
+      "n-databases_other": "{{count}} bases de datos",
+      "n-errors_one": "{{count}} error",
+      "n-errors_other": "{{count}} errores",
+      "n-open": "{{count}} abiertos",
+      "n-warnings_one": "{{count}} advertencia",
+      "n-warnings_other": "{{count}} advertencias",
+      "needs-attention": "{{count}} de {{total}} requieren atención",
+      "no-findings": "Sin hallazgos",
+      "not-run": "Aún no se ha ejecutado",
+      "nothing-needs-attention": "Nada requiere atención",
+      "opens-in-sql": "Haz clic para recorrerlos en el SQL.",
+      "out-of-date": "desactualizado",
+      "outdated": "El SQL cambió después de esta ejecución",
+      "passed": "aprobado",
+      "passed-on_one": "Aprobado en {{count}} base de datos",
+      "passed-on_other": "Aprobado en {{count}} bases de datos",
+      "policy": "Política de revisión",
+      "project-rules": "Reglas del proyecto: {{on}} de {{total}} activas",
+      "report": "Informe de sentencias",
+      "rerun": "Volver a ejecutar",
+      "rerun-all": "Volver a ejecutar todo",
+      "rerun-all-description_one": "Se vuelven a ejecutar las comprobaciones del plan y Standard rules. {{count}} hallazgo ya resuelto de Standard rules volverá a quedar abierto.",
+      "rerun-all-description_other": "Se vuelven a ejecutar las comprobaciones del plan y Standard rules. {{count}} hallazgos ya resueltos de Standard rules volverán a quedar abiertos.",
+      "rerun-all-title": "¿Volver a ejecutar todas las comprobaciones?",
+      "rerun-reopens_one": "{{count}} hallazgo ya resuelto volverá a quedar abierto y habrá que resolverlo de nuevo.",
+      "rerun-reopens_other": "{{count}} hallazgos ya resueltos volverán a quedar abiertos y habrá que resolverlos de nuevo.",
+      "rerun-rule-title": "¿Volver a ejecutar Standard rules?",
+      "retry": "Reintentar",
+      "running": "En ejecución",
+      "sampled": "una muestra de {{count}} de {{total}} bases de datos",
+      "scope": "Se revisó {{databases}}",
+      "scope-label": "Qué cubrió esta revisión",
+      "scope-with-engines": "Se revisó {{databases}} ({{engines}})",
+      "self": "Revisión automática",
+      "summary-part": "{{reviewer}}: {{status}}",
+      "workspace-rules": "Reglas del espacio de trabajo: {{on}} de {{total}} activas"
     },
     "blocker": {
       "clears-on-its-own": "Se resuelve solo"
@@ -1824,12 +1867,49 @@
       "started": "Se iniciaron las verificaciones del plan"
     },
     "create-plan": "Crear plan",
+    "deploy-waiting": {
+      "approval": "Aprobación",
+      "approval-from": "Aprobación de {{role}}",
+      "approval-rejected": "Aprobación rechazada",
+      "auto-create": "Bytebase crea el despliegue cuando todo esto se cumple.",
+      "creating-rollout": "Todo aprobado; creando el despliegue…",
+      "manual-rollout": "Bytebase no crea automáticamente el despliegue de este plan; despliégalo cuando todo esto se cumpla.",
+      "open-discussions_one": "{{count}} conversación abierta",
+      "open-discussions_other": "{{count}} conversaciones abiertas",
+      "overridden_one": "{{count}} hallazgo P0 de {{reviewer}} se resolvió sin cambios",
+      "overridden_other": "{{count}} hallazgos P0 de {{reviewer}} se resolvieron sin cambios",
+      "ready-to-deploy": "Todo superado; listo para desplegar.",
+      "reviewer-failed": "{{reviewer}} no se pudo ejecutar",
+      "reviewer-findings": "{{reviewer}}: {{findings}}",
+      "reviewer-not-run": "{{reviewer}} aún no se ha ejecutado",
+      "reviewer-outdated": "El SQL cambió después de ejecutar {{reviewer}}",
+      "reviewer-running": "{{reviewer}} en ejecución",
+      "show": "Mostrar",
+      "submit": "Enviar a revisión",
+      "waiting-on": "En espera de",
+      "worth-a-look": "No detiene el despliegue, pero conviene revisarlo"
+    },
     "description": {
       "placeholder": "Agregar descripción"
     },
     "draft-update-permission-required": "Puedes ver este borrador, pero necesitas bb.issues.update para editar etiquetas de problema o enviarlo a revisión.",
     "editor": {
       "save-changes-before-continuing": "Guarde o cancele sus cambios antes de continuar."
+    },
+    "findings": {
+      "n-more": "{{count}} más",
+      "n-overridden": "{{count}} P0 resueltos sin cambios",
+      "n-priority": "{{count}} {{priority}}",
+      "n-resolved": "{{count}} resueltos",
+      "name-at-line": "{{name}} (L{{line}})",
+      "name-times": "{{name}} ×{{count}}",
+      "separator": ", ",
+      "set": {
+        "earlier": "ejecuciones anteriores",
+        "open": "abiertos",
+        "overridden": "P0 resueltos sin cambios",
+        "resolved": "resueltos"
+      }
     },
     "ghost": {
       "configure": "Configurar",
@@ -1853,19 +1933,18 @@
       "checking": "Comprobando…",
       "checks-failing": "Comprobaciones fallidas",
       "deployed": "Desplegado",
+      "gate-automated-review-passed": "La revisión automática se aprobó",
       "gate-checks-failed": "Algunas comprobaciones fallaron",
       "gate-checks-failed-sub": "{{failing}} con errores, {{passed}} correctas",
       "gate-checks-passed": "Todas las comprobaciones correctas",
       "gate-checks-passed-sub": "{{count}} correctas",
       "gate-checks-running": "Comprobaciones en curso",
       "gate-checks-running-sub": "{{running}} en curso, {{passed}} correctas",
+      "gate-no-open-discussions": "No hay conversaciones abiertas",
       "gate-review-approved": "Cambios aprobados",
       "gate-review-pending": "Revisión en curso",
       "gate-review-rejected": "Cambios solicitados",
       "gate-threads-open-sub": "Resuelve todos los hilos para crear el rollout",
-      "gate-threads-open_one": "{{count}} hilo sin resolver",
-      "gate-threads-open_other": "{{count}} hilos sin resolver",
-      "gate-threads-resolved": "Todos los hilos resueltos",
       "incomplete": "Incompleto",
       "preparing-rollout": "Preparando despliegue…",
       "rejected": "Rechazado",
@@ -1873,6 +1952,7 @@
       "review-waiting": "Esperando a {{role}}",
       "run": "Ejecutar"
     },
+    "list-description": "Solicitudes de cambio creadas en la interfaz y su progreso de despliegue.",
     "meta": {
       "created-by": "Creado por {{user}}"
     },
@@ -1912,11 +1992,15 @@
         "add-a-comment": "Añadir un comentario...",
         "created-this-plan": "creó este plan",
         "marked-ready-for-review": "marcó este plan como listo para revisión",
+        "n-findings_one": "{{count}} hallazgo",
+        "n-findings_other": "{{count}} hallazgos",
         "n-hidden-events_one": "{{count}} evento oculto",
         "n-hidden-events_other": "{{count}} eventos ocultos",
+        "reviewed-the-sql": "revisó el SQL",
         "self": "Actividad",
         "show-all": "Mostrar todo"
       },
+      "approval-after-submit": "La aprobación empieza cuando envías a revisión.",
       "approval-flow": {
         "and-n-more_one": "y {{count}} más",
         "and-n-more_other": "y {{count}} más",
@@ -1992,6 +2076,7 @@
         "n-replies-hidden_other": "{{count}} respuestas ocultas",
         "n-replies_one": "{{count}} respuesta",
         "n-replies_other": "{{count}} respuestas",
+        "open": "Abierto",
         "priority": {
           "p0": "El SQL es incorrecto y debe cambiar.",
           "p1": "Peligroso pero legítimo. Una persona debe aceptarlo.",
@@ -2009,8 +2094,10 @@
         "threads-on-line_one": "{{count}} hilo en esta línea",
         "threads-on-line_other": "{{count}} hilos en esta línea",
         "walker": {
+          "clear-filter": "Recorrer todos los hilos abiertos",
           "count_one": "{{count}} hilo sin resolver en esta versión",
           "count_other": "{{count}} hilos sin resolver en esta versión",
+          "filter": "{{reviewer}} · {{state}}",
           "next": "Siguiente hilo sin resolver",
           "position": "Hilo {{index}} de {{count}}",
           "previous": "Hilo sin resolver anterior",
@@ -2024,16 +2111,6 @@
       "description_one": "Revertir 1 tarea seleccionada del rollout #{{rolloutId}}.",
       "description_other": "Revertir {{count}} tareas seleccionadas del rollout #{{rolloutId}}.",
       "title": "Revertir rollout #{{rolloutId}}"
-    },
-    "rule-review": {
-      "failed": "La revisión SQL falló",
-      "load-failed": "No se pudo cargar el estado de la revisión SQL.",
-      "no-open-findings": "No hay hallazgos abiertos",
-      "not-run": "Revisión SQL no ejecutada",
-      "open-findings_one": "{{count}} hallazgo abierto",
-      "open-findings_other": "{{count}} hallazgos abiertos",
-      "queued": "Revisión SQL en cola",
-      "running": "Revisión SQL en curso"
     },
     "run": "Volver a verificar",
     "select-isolation-level": "Seleccionar nivel de aislamiento",
@@ -2059,9 +2136,17 @@
       "reopen-confirm": "¿Reabrir este plan?",
       "reopen-review-confirm": "¿Reabrir esta revisión?"
     },
+    "statement-summary": {
+      "affected-rows_one": "~{{count}} fila afectada",
+      "affected-rows_other": "~{{count}} filas afectadas"
+    },
+    "status-scope": {
+      "description": "Filtrar por el estado actual de las tareas del plan",
+      "waiting": "En espera"
+    },
     "submit-review-anyway": "Enviar de todos modos",
-    "subtitle": "Redactar cambios en la base de datos y ejecutar comprobaciones previas antes de crear un problema para su aprobación.",
     "summary": {
+      "approved-by": "Aprobado por {{names}}",
       "last-approved-by": "Última aprobación por {{name}}",
       "n-changes": "{{n}} cambios",
       "n-database-groups": "{{n}} grupos de bases de datos",
@@ -2072,7 +2157,8 @@
       "n-passed": "{{n}} aprobadas",
       "n-unresolved-threads_one": "{{count}} hilo sin resolver",
       "n-unresolved-threads_other": "{{count}} hilos sin resolver",
-      "n-warning": "{{n}} advertencia"
+      "n-warning": "{{n}} advertencia",
+      "no-approval-required": "No requiere aprobación"
     },
     "targets": {
       "no-targets-found": "No se encontraron objetivos",
@@ -2408,17 +2494,24 @@
   "release": {
     "and-n-more-files": "y {{count}} archivos más",
     "change-tip": "Este cambio está vinculado a un artefacto de versión.",
-    "file": "Archivo de lanzamiento",
+    "empty": {
+      "description": "Los cambios que tu pipeline de CI publica en Bytebase aparecen aquí con su progreso de despliegue.",
+      "read-guide": "Leer la guía de GitOps",
+      "set-up": "Configurar GitOps",
+      "title": "Aún no hay cambios de GitOps"
+    },
     "file-type": {
       "declarative": "Declarativo",
       "unspecified": "Sin especificar",
       "versioned": "Versionado"
     },
     "files": "Archivos",
+    "gitops-setup": "Configuración de GitOps",
+    "list-description": "Cambios publicados mediante GitOps y su progreso de despliegue.",
     "not-found": "Versión no encontrada",
     "releases": "Lanzamientos",
-    "total-files": "Total de {{}} archivos",
-    "usage-description": "Un lanzamiento es un artefacto de aplicación versionado cuyo despliegue a un entorno es activado por un flujo de trabajo GitOps.",
+    "self": "Lanzamiento",
+    "source": "Origen",
     "vcs-source": "Origen de VCS",
     "vcs-type": {
       "unspecified": "VCS desconocido"
@@ -2489,6 +2582,10 @@
       "description": "Definición de roles personalizados. \nPuede aplicarlos a los miembros del proyecto y utilizarlos en un flujo de aprobación personalizado.",
       "description-placeholder": "Ingrese la descripción del rol",
       "title-placeholder": "Ingrese el título del rol"
+    },
+    "sql-editor-exporter": {
+      "description": "Consultar bases de datos y exportar resultados, sin acceso DDL o DML.",
+      "self": "Exportador del editor SQL"
     },
     "sql-editor-read-user": {
       "description": "Permisos de solo lectura para consultar datos de la base de datos, sin acceso DDL o DML.",
@@ -2750,10 +2847,6 @@
           "exiting": "Saliendo..."
         },
         "data-copy": "Habilitar la copia de datos",
-        "data-export": {
-          "description": "Si está deshabilitado, los usuarios no pueden exportar directamente los resultados de las consultas. En los proyectos que permiten concesiones de acceso, aún pueden pulsar \"Solicitar exportación\" para enviar una solicitud de concesión de acceso y exportar tras la aprobación.",
-          "self": "Permitir la exportación de datos sin aprobación"
-        },
         "default-landing-page": {
           "default-view-changed-to-sql-editor": "La vista predeterminada del espacio de trabajo se ha cambiado al Editor SQL.",
           "go-to-sql-editor": "Ir al Editor SQL",
@@ -3545,18 +3638,60 @@
         "zoom-out": "Alejar"
       },
       "error": {
+        "bigquery-empty": "BigQuery no devolvió ningún plan de consulta para esta sentencia.",
+        "bigquery-invalid": "El plan de consulta no es JSON válido. Se esperan las etapas de un trabajo de BigQuery.",
+        "bigquery-no-plan": "El plan de consulta no contiene ninguna etapa por la que empezar.",
+        "clickhouse-empty": "ClickHouse no devolvió ningún plan de consulta para esta sentencia.",
+        "clickhouse-invalid": "El plan de consulta no es JSON válido. Se espera la salida de EXPLAIN json = 1.",
+        "clickhouse-no-plan": "El JSON del plan de consulta de ClickHouse no contiene un objeto \"Plan\".",
+        "cockroachdb-empty": "CockroachDB no devolvió ningún plan de consulta para esta sentencia.",
+        "cockroachdb-invalid": "El plan de consulta no es JSON válido. Se espera el diagrama que codifica EXPLAIN (DISTSQL).",
+        "cockroachdb-no-plan": "El JSON del plan de consulta no contiene \"processors\" que dibujar.",
+        "databricks-empty": "Databricks no devolvió ningún plan de consulta para esta sentencia.",
+        "databricks-no-plan": "El plan de consulta no contiene un plan físico. Se espera la salida de EXPLAIN FORMATTED.",
+        "elasticsearch-empty": "Elasticsearch no devolvió ningún plan de consulta para esta sentencia.",
+        "elasticsearch-invalid": "El plan de consulta no es JSON válido. Se espera un perfil de Elasticsearch.",
+        "elasticsearch-no-plan": "El perfil no contiene ningún fragmento por el que empezar. Elasticsearch perfila una búsqueda que ejecutó.",
+        "hive-empty": "Hive no devolvió ningún plan de consulta para esta sentencia.",
+        "hive-invalid": "El plan de consulta no es JSON válido. Se espera la salida de EXPLAIN FORMATTED de Hive.",
+        "hive-no-plan": "El plan de consulta no tiene un plan de CBO que dibujar. Hive solo lo indica cuando su optimizador basado en costes planificó la sentencia.",
+        "mongodb-empty": "MongoDB no devolvió ningún plan de consulta para esta sentencia.",
+        "mongodb-invalid": "El plan de consulta no es JSON válido. Se espera la salida de explain() de MongoDB.",
+        "mongodb-no-plan": "El JSON del plan de consulta no tiene ni \"queryPlanner\" ni una tubería \"stages\" que dibujar.",
         "mssql-empty": "SQL Server no devolvió ningún plan de consulta para esta sentencia.",
         "mssql-invalid": "El plan de consulta no es XML válido. Se espera la salida de SHOWPLAN_XML.",
         "mssql-no-plan": "El XML del plan de consulta no es un showplan de SQL Server con al menos una sentencia.",
+        "mysql-empty": "No se devolvió ningún plan de consulta para esta sentencia.",
+        "mysql-invalid": "El plan de consulta no es JSON válido. Se espera la salida de EXPLAIN FORMAT=JSON.",
+        "mysql-no-plan": "El JSON del plan de consulta no contiene un objeto \"query_block\".",
+        "oceanbase-empty": "OceanBase no devolvió ningún plan de consulta para esta sentencia.",
+        "oceanbase-invalid": "El plan de consulta no es JSON válido. Se espera la salida de EXPLAIN FORMAT=JSON de OceanBase.",
+        "oceanbase-no-plan": "El JSON del plan de consulta no nombra ningún operador, así que no hay nada que dibujar.",
+        "oracle-empty": "Oracle no devolvió ningún plan de consulta para esta sentencia.",
+        "oracle-invalid": "El plan de consulta no es JSON válido. Se espera la tabla de planes de Oracle, tal como la representa el servidor.",
+        "oracle-no-plan": "El plan de consulta no tiene ningún paso sin padre, así que no hay un operador por el que empezar.",
         "postgres-empty": "PostgreSQL no devolvió ningún plan de consulta para esta sentencia.",
         "postgres-invalid": "El plan de consulta no es JSON válido. Se espera la salida de EXPLAIN (FORMAT JSON).",
         "postgres-no-plan": "El JSON del plan de consulta no contiene un objeto \"Plan\".",
+        "redshift-empty": "Redshift no devolvió ningún plan de consulta para esta sentencia.",
+        "redshift-no-plan": "El plan de consulta no contiene ningún operador: un plan de Redshift indica un coste para cada uno.",
+        "snowflake-empty": "Snowflake no devolvió ningún plan de consulta para esta sentencia.",
+        "snowflake-invalid": "El plan de consulta no es JSON válido. Se espera la salida de EXPLAIN USING JSON de Snowflake.",
+        "snowflake-no-plan": "El JSON del plan de consulta no contiene ninguna operación por la que empezar.",
         "spanner-empty": "Spanner no devolvió ningún plan de consulta para esta sentencia.",
         "spanner-emulator": "Spanner no devolvió ningún plan de consulta para esta sentencia. El emulador de Spanner no devuelve ninguno para ninguna sentencia; explíquela en una instancia de Spanner para ver uno.",
         "spanner-invalid": "El plan de consulta no es JSON válido. Se espera un plan de consulta de Spanner.",
         "spanner-no-plan": "El JSON del plan de consulta no contiene una lista \"planNodes\" con un operador en la raíz.",
+        "starrocks-empty": "La sentencia no produjo ningún plan de consulta que dibujar.",
+        "starrocks-no-plan": "El plan de consulta no tiene ningún operador numerado en ninguno de sus fragmentos.",
+        "tidb-empty": "TiDB no devolvió ningún plan de consulta para esta sentencia.",
+        "tidb-invalid": "El plan de consulta no es JSON válido. Se espera la salida de EXPLAIN FORMAT=tidb_json.",
+        "tidb-no-plan": "El JSON del plan de consulta no contiene un operador en la raíz.",
         "too-deep": "El plan de consulta está demasiado anidado para que este visualizador pueda dibujarlo.",
         "too-many-nodes": "El plan de consulta tiene más operadores de los que este visualizador dibuja, así que se muestra como texto.",
+        "trino-empty": "Trino no devolvió ningún plan de consulta para esta sentencia.",
+        "trino-invalid": "El plan de consulta no es JSON válido. Se espera la salida de EXPLAIN (FORMAT JSON) de Trino.",
+        "trino-no-plan": "El JSON del plan de consulta no contiene ningún fragmento por el que empezar.",
         "unreadable": "No se pudo leer este plan de consulta"
       },
       "grid": {
@@ -3631,6 +3766,20 @@
         "estimated-cost": "coste estimado {{cost}}",
         "measured-time": "tiempo medido {{time}} ms",
         "nodes": "{{count}} nodos"
+      },
+      "warning": {
+        "data-redistribution": {
+          "detail": "Esta unión mueve filas entre segmentos antes de poder emparejarlas. Distribuir ambas tablas por su columna de unión, o hacer ALL la más pequeña, permite que la unión se ejecute donde ya están las filas.",
+          "title": "Redistribución de datos"
+        },
+        "full-index-scan": {
+          "detail": "Lee todas las entradas de este índice. Si la consulta solo necesita unas pocas, una condición sobre las columnas iniciales del índice evitaría la lectura completa.",
+          "title": "Exploración completa del índice"
+        },
+        "full-table-scan": {
+          "detail": "Lee todas las filas de esta tabla. Si la consulta solo necesita unas pocas, un índice sobre las columnas filtradas evitaría la lectura completa.",
+          "title": "Exploración completa de la tabla"
+        }
       }
     },
     "query-time": "Tiempo de consulta",

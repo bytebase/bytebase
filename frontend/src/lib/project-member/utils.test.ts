@@ -3,6 +3,7 @@ import { describe, expect, test, vi } from "vitest";
 import {
   getRoleEnvironmentLimitationKind,
   getRolesEnvironmentLimitationKind,
+  roleHasDatabaseLimitation,
 } from "./utils";
 
 const fixtures: Record<string, string[]> = {
@@ -10,6 +11,7 @@ const fixtures: Record<string, string[]> = {
   "roles/sqlEditorDDLOnly": ["bb.sql.ddl"],
   "roles/sqlEditorDMLOnly": ["bb.sql.dml"],
   "roles/queryOnly": ["bb.sql.select"],
+  "roles/exportOnly": ["bb.sql.export"],
   "roles/projectViewer": [],
 };
 vi.mock("@/stores/app", () => ({
@@ -20,6 +22,17 @@ vi.mock("@/utils", () => ({
   checkRoleContainsAnyPermission: (role: string, ...permissions: string[]) =>
     permissions.some((permission) => fixtures[role]?.includes(permission)),
 }));
+
+describe("roleHasDatabaseLimitation", () => {
+  test("offers database scoping for roles that read or export data", () => {
+    expect(roleHasDatabaseLimitation("roles/queryOnly")).toBe(true);
+    expect(roleHasDatabaseLimitation("roles/exportOnly")).toBe(true);
+  });
+
+  test("offers no database scoping for roles without SQL permissions", () => {
+    expect(roleHasDatabaseLimitation("roles/projectViewer")).toBe(false);
+  });
+});
 
 describe("getRoleEnvironmentLimitationKind", () => {
   test("returns 'DDL/DML' when role has both ddl and dml", () => {
