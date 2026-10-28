@@ -80,6 +80,7 @@ func (e *RuleExecutor) RunOnce(ctx context.Context, projectID string, issueUID i
 		}
 		targets = append(targets, target)
 	}
+	markOtherSpecs(targets)
 
 	var comments []*store.IssueCommentMessage
 	sheets := make(map[string]string)
