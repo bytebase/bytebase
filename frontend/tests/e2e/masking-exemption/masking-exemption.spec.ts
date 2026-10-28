@@ -1,4 +1,5 @@
 import { test, expect, type Page, type BrowserContext } from "@playwright/test";
+import enUS from "../../../src/locales/en-US.json";
 import { loadTestEnv, type TestEnv } from "../framework/env";
 import { BytebaseApiClient } from "../framework/api-client";
 import { getInstancePgPort, execSql } from "../framework/psql";
@@ -675,6 +676,116 @@ test.describe("Composite Exemption Expiration (BYT-9788)", () => {
     await page.waitForTimeout(500);
     await expect(page.getByText("composite display past")).toBeVisible();
     await expect(page.getByText("(Expired)").first()).toBeVisible();
+  });
+});
+
+// ── Compound conditions and the database filter (3.24: #21609) ──
+
+const EXEMPTION = enUS.project["masking-exemption"];
+const DBA_EMAIL = "dba1@example.com";
+const APPROVER_EMAIL = "approver1@example.com";
+
+// Replaces the project's exemption policy with exactly these exemptions.
+async function setExemptions(
+  exemptions: { member: string; expression: string; description: string }[],
+): Promise<void> {
+  await env.api.upsertPolicy(env.project, "masking_exemption", {
+    type: "MASKING_EXEMPTION",
+    maskingExemptionPolicy: {
+      exemptions: exemptions.map(({ member, expression, description }) => ({
+        members: [member],
+        condition: { expression, description },
+      })),
+    },
+  });
+}
+
+// The scope the Grant page writes for one manually selected database.
+function databaseScope(databaseName: string): string {
+  return `(resource.instance_id == "${env.instanceId}" && resource.database_name == "${databaseName}")`;
+}
+
+test.describe("A compound condition reads back as its resources (K1)", () => {
+  // An OR of a column-only clause and an instance/database/column clause, the
+  // shape #21609's parser learned to read.
+  let expression: string;
+
+  test.beforeAll(async () => {
+    expression =
+      `(resource.column_name in ["salary", "amount"] || ` +
+      `resource.instance_id == "${env.instanceId}" && resource.database_name == "${env.databaseId}" && resource.column_name == "emp_no")`;
+    await setExemptions([{ member: `user:${env.adminEmail}`, expression, description: "K1 compound" }]);
+  });
+
+  test.afterAll(async () => {
+    await revokeAllExemptions();
+  });
+
+  test("each clause reads back as its own resource row, and the raw CEL toggle shows the stored expression", async () => {
+    await test.step("each clause is its own resource row; the member reads All databases", async () => {
+      const listPage = new MaskingExemptionPage(page, env.baseURL);
+      await listPage.goto(projectId);
+      const summary = `${EXEMPTION["n-exemptions_one"].replace("{{n}}", "1")} · ${enUS.database.all}`;
+      await expect(listPage.getMemberItem(env.adminEmail)).toContainText(summary);
+      await listPage.selectMember(env.adminEmail);
+
+      const columnOnly = page.getByRole("row").filter({ hasText: "salary, amount" });
+      await expect(columnOnly).toHaveCount(1);
+      await expect(columnOnly).toContainText(enUS.database.all);
+      const scoped = page.getByRole("row").filter({ hasText: "emp_no" });
+      await expect(scoped).toHaveCount(1);
+      await expect(scoped).toContainText(env.instanceId);
+      await expect(scoped).toContainText(env.databaseId);
+    });
+
+    await test.step("Show raw CEL condition reveals the stored expression and hides it again", async () => {
+      const show = page.getByRole("button", { name: EXEMPTION["show-raw-cel-condition"] });
+      await expect(show).toHaveAttribute("aria-expanded", "false");
+      await show.click();
+      const hide = page.getByRole("button", { name: EXEMPTION["hide-raw-cel-condition"] });
+      await expect(hide).toHaveAttribute("aria-expanded", "true");
+      await expect(page.locator("pre").filter({ hasText: "resource.column_name in" })).toHaveText(expression);
+      await hide.click();
+      await expect(page.locator("pre").filter({ hasText: "resource.column_name in" })).toHaveCount(0);
+    });
+  });
+});
+
+test.describe("Filtering by database keeps every exemption written for it (K2)", () => {
+  test.beforeAll(async () => {
+    await setExemptions([
+      { member: `user:${DBA_EMAIL}`, expression: databaseScope(env.databaseId), description: "K2 this database" },
+      { member: `user:${APPROVER_EMAIL}`, expression: databaseScope("e2e_other_db"), description: "K2 other database" },
+    ]);
+  });
+
+  test.afterAll(async () => {
+    await revokeAllExemptions();
+  });
+
+  test("the database's own exemption stays and another database's goes", async () => {
+    // The suite's sample instance is project-owned, so the filter's value is
+    // projects/<p>/instances/<i>/databases/<d>, while the parser names an
+    // instance_id + database_name scope instances/<i>/databases/<d> and the
+    // filter compares the two names exactly (BYT-10359).
+    test.fail();
+    const listPage = new MaskingExemptionPage(page, env.baseURL);
+    await listPage.goto(projectId);
+    await expect(listPage.getMemberItem(DBA_EMAIL)).toBeVisible();
+    await expect(listPage.getMemberItem(APPROVER_EMAIL)).toBeVisible();
+
+    await page.locator('input[autocomplete="off"]').first().click();
+    await page
+      .locator("[data-search-menu-option-index]")
+      .filter({ hasText: enUS.issue["advanced-search"].scope.database.description })
+      .click();
+    await page.keyboard.type(env.databaseId, { delay: 30 });
+    const database = page.locator("[data-search-menu-option-index]").filter({ hasText: env.databaseId });
+    await database.first().click();
+    await expect(page.locator('[data-search-scope-id="database"]')).toContainText(`/databases/${env.databaseId}`);
+
+    await expect(listPage.getMemberItem(APPROVER_EMAIL)).toHaveCount(0);
+    await expect(listPage.getMemberItem(DBA_EMAIL)).toBeVisible({ timeout: 5_000 });
   });
 });
 

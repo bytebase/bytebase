@@ -1,8 +1,6 @@
 package standard
 
 import (
-	"strings"
-
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
@@ -40,56 +38,13 @@ func hiveExplainStatement(statement string, format base.ExplainFormat) (string, 
 // named; EXPLAIN never executes what it plans, so the planned form of a write
 // is a plan of that write.
 //
-// Which statement that is has to be read the way Databricks reads it. Its block
-// comments nest, so `/* a /* b */ EXPLAIN */ DELETE FROM t` is a DELETE with the
-// EXPLAIN inside the comment, and preserving it as the caller's own plan would
-// run the delete. The engines sharing this file stop at the first `*/` because a
-// read-only validator is registered for them, which refuses such a statement at
-// the gate; Databricks has none.
+// Which statement that is has to be read the way Spark reads it, down to the
+// nesting of its block comments, which is what base.StartsWithExplain reads.
 func databricksExplainStatement(statement string, _ base.ExplainFormat) (string, error) {
-	if base.StartsWithExplain(pastNestedComments(statement)) {
+	if base.StartsWithExplain(statement) {
 		return statement, nil
 	}
 	return "EXPLAIN FORMATTED " + statement, nil
-}
-
-// pastNestedComments returns statement from its first token that is not a
-// comment, counting the depth of block comments rather than ending one at the
-// first `*/`. A comment left open runs to the end of the statement, which
-// leaves no token at all.
-func pastNestedComments(statement string) string {
-	s := statement
-	for {
-		s = strings.TrimLeft(s, " \t\r\n\v\f")
-		switch {
-		case strings.HasPrefix(s, "--"):
-			_, rest, found := strings.Cut(s, "\n")
-			if !found {
-				return ""
-			}
-			s = rest
-		case strings.HasPrefix(s, "/*"):
-			depth, at := 1, len("/*")
-			for depth > 0 && at < len(s) {
-				switch {
-				case strings.HasPrefix(s[at:], "/*"):
-					depth++
-					at += len("/*")
-				case strings.HasPrefix(s[at:], "*/"):
-					depth--
-					at += len("*/")
-				default:
-					at++
-				}
-			}
-			if depth > 0 {
-				return ""
-			}
-			s = s[at:]
-		default:
-			return s
-		}
-	}
 }
 
 // clickhouseExplainStatement asks ClickHouse for the structured plan the
