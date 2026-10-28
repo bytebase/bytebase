@@ -56,7 +56,9 @@ func TestBuildMessages(t *testing.T) {
 	system := messages[0].GetContent()
 	require.True(t, strings.HasPrefix(system, strings.TrimSpace(basePrompt)), "the base prompt comes first so the vendor cache holds it")
 	require.Contains(t, system, "When the two conflict, the project policy wins.")
-	require.Contains(t, system, "## Workspace policy\n\nNo TRUNCATE in production.\n")
+	require.Contains(t, system, "these checks:\n\n- `fails`: The statement fails on this database")
+	require.NotContains(t, system, "{{checks}}")
+	require.Contains(t, system, "## Workspace policy\n\n- `workspace-1`: No TRUNCATE in production.\n")
 	require.Contains(t, system, "## Project policy\n\n(none)\n")
 	require.NotContains(t, system, "TRUNCATE orders", "the statements stay out of the cached part")
 

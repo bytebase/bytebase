@@ -1,6 +1,7 @@
 package reviewrun
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"log/slog"
@@ -11,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/aireview"
@@ -77,73 +79,195 @@ func schemaObjectCount(s *metadatapb.SchemaMetadata) int {
 		len(s.GetEvents()) + len(s.GetStreams()) + len(s.GetTasks()) + len(s.GetEnumTypes()) + len(s.GetCompositeTypes())
 }
 
+// aiReviewOccurrence is one database's finding of a problem.
+type aiReviewOccurrence struct {
+	Target  string
+	Finding aireview.Finding
+}
+
 // aiReviewComments converts the findings of the completed units into the
-// review result comments to post: one OPEN root per finding, anchored to the
-// line it starts on in the spec's sheet, with the priority of its severity and
-// every database it applies to. The same title on the same line of a spec
-// across databases is one finding: its comment lists every database, carries
-// the highest priority among them, and keeps the evidence of the first.
-func aiReviewComments(projectID string, issueUID int64, results []*aiReviewResult) []*store.IssueCommentMessage {
+// review result comments to post: one OPEN root per problem, anchored to the
+// line it starts on in the spec's sheet. Findings that cite the same rule on
+// the same line of a spec are one problem across databases, since a rule
+// holds one kind of fix. Its comment lists every database it applies to, and
+// carries the highest priority among them and each database's evidence.
+func aiReviewComments(projectID string, issueUID int64, results []*aiReviewResult, rules []aireview.Rule) []*store.IssueCommentMessage {
 	type key struct {
 		specID string
 		line   int
-		title  string
+		rule   string
+		// repeat tells apart the findings of one database that cite the same
+		// rule on the same line, which the reviewer accepts only when the
+		// model keeps them after a correction.
+		repeat int
 	}
-	merged := make(map[key]*store.IssueCommentMessage)
-	var comments []*store.IssueCommentMessage
+	type problem struct {
+		check       *plancheck.CheckTarget
+		line        int
+		rule        string
+		occurrences []aiReviewOccurrence
+	}
+	problems := make(map[key]*problem)
+	var ordered []*problem
+	reviewed := make(map[string][]string)
 	for _, result := range results {
 		if result == nil {
 			continue
 		}
+		check := result.Unit.Check
+		reviewed[check.SpecID] = append(reviewed[check.SpecID], check.Target)
+		repeats := make(map[key]int)
 		for _, finding := range result.Findings {
-			k := key{specID: result.Unit.Check.SpecID, line: finding.Line, title: finding.Title}
-			comment, ok := merged[k]
+			k := key{specID: check.SpecID, line: finding.Line, rule: finding.Rule}
+			repeat := repeats[k]
+			repeats[k]++
+			k.repeat = repeat
+			p, ok := problems[k]
 			if !ok {
-				comment = &store.IssueCommentMessage{
-					ProjectID: projectID,
-					IssueUID:  issueUID,
-					Payload: &storepb.IssueCommentPayload{
-						Comment: aiReviewCommentText(finding),
-						StatementAnchor: &storepb.IssueCommentPayload_StatementAnchor{
-							SpecId:        result.Unit.Check.SpecID,
-							SheetSha256:   result.Unit.Check.SheetSha256,
-							StartPosition: &storepb.Position{Line: int32(finding.Line)},
-							EndPosition:   &storepb.Position{Line: int32(finding.Line)},
-						},
-						ReviewMetadata: &storepb.IssueCommentPayload_ReviewMetadata{
-							RunType:  storepb.ReviewRun_AI,
-							Priority: aiReviewPriority(finding.Severity),
-						},
-					},
-				}
-				merged[k] = comment
-				comments = append(comments, comment)
+				p = &problem{check: check, line: finding.Line, rule: finding.Rule}
+				problems[k] = p
+				ordered = append(ordered, p)
 			}
-			metadata := comment.Payload.ReviewMetadata
-			if !slices.Contains(metadata.Targets, result.Unit.Check.Target) {
-				metadata.Targets = append(metadata.Targets, result.Unit.Check.Target)
-			}
-			// The enum orders P0 before P1 before P2, so the smaller value is
-			// the higher priority.
-			if priority := aiReviewPriority(finding.Severity); priority < metadata.Priority {
-				metadata.Priority = priority
-			}
+			p.occurrences = append(p.occurrences, aiReviewOccurrence{Target: check.Target, Finding: finding})
 		}
 	}
-	for _, comment := range comments {
-		slices.Sort(comment.Payload.ReviewMetadata.Targets)
+
+	ruleTexts := make(map[string]string, len(rules))
+	for _, rule := range rules {
+		ruleTexts[rule.ID] = rule.Text
+	}
+	comments := make([]*store.IssueCommentMessage, 0, len(ordered))
+	for _, p := range ordered {
+		// The most severe finding leads, and among equals the first database
+		// by name.
+		slices.SortFunc(p.occurrences, func(a, b aiReviewOccurrence) int {
+			return cmp.Or(
+				cmp.Compare(aiReviewPriority(a.Finding.Severity), aiReviewPriority(b.Finding.Severity)),
+				cmp.Compare(a.Target, b.Target),
+			)
+		})
+		targets := make([]string, 0, len(p.occurrences))
+		for _, occurrence := range p.occurrences {
+			targets = append(targets, occurrence.Target)
+		}
+		slices.Sort(targets)
+		ruleText, ok := ruleTexts[p.rule]
+		if !ok {
+			ruleText = p.rule
+		}
+		comments = append(comments, &store.IssueCommentMessage{
+			ProjectID: projectID,
+			IssueUID:  issueUID,
+			Payload: &storepb.IssueCommentPayload{
+				Comment: aiReviewCommentText(p.occurrences, ruleText, reviewed[p.check.SpecID]),
+				StatementAnchor: &storepb.IssueCommentPayload_StatementAnchor{
+					SpecId:        p.check.SpecID,
+					SheetSha256:   p.check.SheetSha256,
+					StartPosition: &storepb.Position{Line: int32(p.line)},
+					EndPosition:   &storepb.Position{Line: int32(p.line)},
+				},
+				ReviewMetadata: &storepb.IssueCommentPayload_ReviewMetadata{
+					RunType:  storepb.ReviewRun_AI,
+					Priority: aiReviewPriority(p.occurrences[0].Finding.Severity),
+					Targets:  targets,
+				},
+			},
+		})
 	}
 	return comments
 }
 
-// aiReviewCommentText renders a finding as the body of its thread.
-func aiReviewCommentText(finding aireview.Finding) string {
+// maxNamedUnflaggedDatabases is how many databases that did not report a
+// problem its comment names; more are counted instead.
+const maxNamedUnflaggedDatabases = 5
+
+// aiReviewCommentText renders a problem as the body of its thread, from its
+// occurrences with the leading one first. On a spec reviewed against one
+// database it reads as that database's finding. Otherwise each database's
+// evidence gets a line, as the facts differ between databases, and the
+// databases that did not report the problem are named.
+func aiReviewCommentText(occurrences []aiReviewOccurrence, ruleText string, reviewed []string) string {
+	lead := occurrences[0].Finding
 	var b strings.Builder
-	_, _ = b.WriteString(finding.Title)
-	_, _ = fmt.Fprintf(&b, "\n\n%s", finding.Evidence)
-	_, _ = fmt.Fprintf(&b, "\n\nRule: %s", finding.Rule)
-	_, _ = fmt.Fprintf(&b, "\n\nSuggested fix: %s", finding.Fix)
+	_, _ = b.WriteString(lead.Title)
+	if len(reviewed) <= 1 {
+		_, _ = fmt.Fprintf(&b, "\n\n%s", lead.Evidence)
+	} else {
+		labels := databaseLabels(reviewed)
+		_, _ = b.WriteString("\n\nEvidence by database:\n")
+		writeEvidence(&b, occurrences, labels)
+		var unflagged []string
+		for _, target := range reviewed {
+			if !slices.ContainsFunc(occurrences, func(o aiReviewOccurrence) bool { return o.Target == target }) {
+				unflagged = append(unflagged, labels[target])
+			}
+		}
+		switch {
+		case len(unflagged) == 0:
+		case len(unflagged) <= maxNamedUnflaggedDatabases:
+			slices.Sort(unflagged)
+			_, _ = fmt.Fprintf(&b, "\n\nNot flagged on %s.", strings.Join(unflagged, ", "))
+		default:
+			_, _ = fmt.Fprintf(&b, "\n\nNot flagged on %d other databases.", len(unflagged))
+		}
+	}
+	_, _ = fmt.Fprintf(&b, "\n\nRule: %s", ruleText)
+	_, _ = fmt.Fprintf(&b, "\n\nSuggested fix: %s", lead.Fix)
 	return b.String()
+}
+
+// writeEvidence writes one list item per distinct evidence, naming the
+// databases that reported it, and their severity when it differs from the
+// leading one's.
+func writeEvidence(b *strings.Builder, occurrences []aiReviewOccurrence, labels map[string]string) {
+	type entry struct {
+		severity aireview.Severity
+		evidence string
+	}
+	databases := make(map[entry][]string)
+	var entries []entry
+	for _, occurrence := range occurrences {
+		// A list item holds one line.
+		e := entry{severity: occurrence.Finding.Severity, evidence: strings.Join(strings.Fields(occurrence.Finding.Evidence), " ")}
+		if _, ok := databases[e]; !ok {
+			entries = append(entries, e)
+		}
+		databases[e] = append(databases[e], labels[occurrence.Target])
+	}
+	for i, e := range entries {
+		if i > 0 {
+			_ = b.WriteByte('\n')
+		}
+		_, _ = fmt.Fprintf(b, "- %s", strings.Join(databases[e], ", "))
+		if e.severity != occurrences[0].Finding.Severity {
+			_, _ = fmt.Fprintf(b, " (%s)", e.severity)
+		}
+		_, _ = fmt.Fprintf(b, ": %s", e.evidence)
+	}
+}
+
+// databaseLabels names each target by its database, and by instance and
+// database when two targets share a database name.
+func databaseLabels(targets []string) map[string]string {
+	names := make(map[string]string, len(targets))
+	counts := make(map[string]int, len(targets))
+	for _, target := range targets {
+		names[target] = target
+		if _, database, err := common.GetInstanceDatabaseID(target); err == nil {
+			names[target] = database
+		}
+		counts[names[target]]++
+	}
+	labels := make(map[string]string, len(targets))
+	for _, target := range targets {
+		labels[target] = names[target]
+		if counts[names[target]] > 1 {
+			if instance, database, err := common.GetInstanceDatabaseID(target); err == nil {
+				labels[target] = instance + "/" + database
+			}
+		}
+	}
+	return labels
 }
 
 // aiReviewPriority maps a finding's severity to the thread priority. The

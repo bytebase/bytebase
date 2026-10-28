@@ -224,7 +224,7 @@ type findingModel struct {
 
 func (m *findingModel) Chat(context.Context, *v1pb.AIChatRequest) (*v1pb.AIChatResponse, error) {
 	m.calls.Add(1)
-	content := `{"findings": [{"title": "Backfill note", "severity": "P2", "line": 1, "rule": "r", "evidence": "e", "fix": "f"}]}`
+	content := `{"findings": [{"title": "Backfill note", "severity": "P2", "line": 1, "rule": "blocks", "evidence": "e", "fix": "f"}]}`
 	return &v1pb.AIChatResponse{Content: &content}, nil
 }
 

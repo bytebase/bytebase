@@ -222,7 +222,7 @@ func TestCollision_RunReviewLifecycle(t *testing.T) {
 			for _, part := range content.Parts {
 				if part.FunctionResponse != nil {
 					toolResults.Store(part.FunctionResponse.Name, string(part.FunctionResponse.Response))
-					reply = `{"candidates": [{"content": {"parts": [{"text": "{\"findings\": [{\"title\": \"Remove the placeholder statement\", \"severity\": \"P2\", \"line\": 1, \"rule\": \"Anything the policy below asks for.\", \"evidence\": \"SELECT 1 changes nothing.\", \"fix\": \"Delete the statement.\"}], \"notes\": []}"}]}}], "usageMetadata": {"totalTokenCount": 10}}`
+					reply = `{"candidates": [{"content": {"parts": [{"text": "{\"findings\": [{\"title\": \"Remove the placeholder statement\", \"severity\": \"P2\", \"line\": 1, \"rule\": \"fails\", \"evidence\": \"SELECT 1 changes nothing.\", \"fix\": \"Delete the statement.\"}], \"notes\": []}"}]}}], "usageMetadata": {"totalTokenCount": 10}}`
 				}
 			}
 		}
@@ -251,7 +251,7 @@ func TestCollision_RunReviewLifecycle(t *testing.T) {
 	}
 	a.Len(results, 1, "one AI review result")
 	result := results[0]
-	a.Equal("Remove the placeholder statement\n\nSELECT 1 changes nothing.\n\nRule: Anything the policy below asks for.\n\nSuggested fix: Delete the statement.", result.Comment)
+	a.Equal("Remove the placeholder statement\n\nSELECT 1 changes nothing.\n\nRule: The statement fails on this database, for example because an object it creates already exists, an object it uses does not exist, or existing rows violate a constraint or a foreign key.\n\nSuggested fix: Delete the statement.", result.Comment)
 	a.Equal(v1pb.IssueComment_ReviewMetadata_P2, result.GetReviewMetadata().GetPriority())
 	a.Len(result.GetReviewMetadata().GetTargets(), 1)
 	a.True(strings.HasSuffix(result.GetReviewMetadata().GetTargets()[0], fixture.DatabaseA.Name), "target %q", result.GetReviewMetadata().GetTargets()[0])

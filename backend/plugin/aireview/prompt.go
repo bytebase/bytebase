@@ -9,7 +9,10 @@ import (
 )
 
 //go:embed base_prompt.md
-var basePrompt string
+var basePromptTemplate string
+
+// basePrompt is the start of every system prompt, with the checks listed.
+var basePrompt = strings.Replace(basePromptTemplate, "{{checks}}", ruleList(checks), 1)
 
 // Target is what the prompt states about the database under review.
 type Target struct {
@@ -52,16 +55,16 @@ func buildSystemPrompt(request *Request) string {
 	var b strings.Builder
 	_, _ = b.WriteString(strings.TrimSpace(basePrompt))
 	_, _ = b.WriteString("\n\n# Policy\n\n")
-	_, _ = b.WriteString("The workspace policy holds the company's standards. The project policy holds the team's conventions. When the two conflict, the project policy wins.\n")
-	writePolicy(&b, "Workspace policy", request.WorkspacePolicy)
-	writePolicy(&b, "Project policy", request.ProjectPolicy)
+	_, _ = b.WriteString("The workspace policy holds the company's standards. The project policy holds the team's conventions. When the two conflict, the project policy wins. Each line of a policy is a rule, listed after its ID.\n")
+	writePolicy(&b, "Workspace policy", policyRules("workspace", request.WorkspacePolicy))
+	writePolicy(&b, "Project policy", policyRules("project", request.ProjectPolicy))
 	return b.String()
 }
 
-func writePolicy(b *strings.Builder, title string, policy string) {
-	policy = strings.TrimSpace(policy)
-	if policy == "" {
-		policy = "(none)"
+func writePolicy(b *strings.Builder, title string, rules []Rule) {
+	policy := "(none)"
+	if len(rules) > 0 {
+		policy = ruleList(rules)
 	}
 	_, _ = fmt.Fprintf(b, "\n## %s\n\n%s\n", title, policy)
 }
