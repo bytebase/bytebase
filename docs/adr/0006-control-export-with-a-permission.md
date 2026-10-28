@@ -4,7 +4,7 @@ Design: [sql-export-permission.md](../design/sql-export-permission.md)
 
 The Export Permission (`bb.sql.export`) is the only control over who may export, held through a role binding or an Access Grant. The workspace flag `disable_export`, which meant "export requires approval", is removed: requiring approval is now expressed by assigning roles without the permission, so the flag would be a second control for the same decision. If a switch that stops all export is ever needed, it gets a new field rather than a new meaning for `disable_export`.
 
-The upgrade keeps who can export. Workspaces with `disable_export = true` get no new standing export, so approval stays the only export path for ordinary users. Workspaces with `disable_export = false` get an SQL Editor Exporter binding beside each SQL Editor binding, so the same people keep export.
+The upgrade keeps who can export. Workspaces whose enforced workspace-level policy sets `disable_export = true` get no new standing export, so approval stays the only export path for ordinary users. Every other workspace gets a SQL Editor Exporter binding beside each SQL Editor binding, so the same people keep export.
 
 ## Considered options
 
