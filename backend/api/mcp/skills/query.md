@@ -14,7 +14,8 @@ Run SQL queries against databases managed by Bytebase.
 ## Prerequisites
 
 - Know the database's exact canonical resource name. Preserve the `name`
-  returned by ListDatabases; do not shorten a project instance to `instances/{id}`.
+  returned by SearchDatabases or ListDatabases; do not shorten a project instance
+  to `instances/{id}`.
 - Have `bb.sql.query` permission
 
 ## Workflow
@@ -24,13 +25,18 @@ Run SQL queries against databases managed by Bytebase.
    search_api(operationId="SQLService/Query")
    ```
 
-2. **List databases** (if needed):
+2. **Find the database** (if needed):
    ```
-   call_api(operationId="DatabaseService/ListDatabases", body={
-     "parent": "workspaces/{id}",
+   search_api(operationId="DatabaseService/SearchDatabases")
+   ```
+   ```
+   call_api(operationId="DatabaseService/SearchDatabases", body={
      "filter": "name.contains(\"db_name\")"
    })
    ```
+
+   SearchDatabases returns databases from every active project where you have
+   `bb.databases.get`.
 
    Filter examples:
    - `name.contains("employee")` - database name contains "employee"

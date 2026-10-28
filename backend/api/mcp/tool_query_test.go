@@ -49,8 +49,10 @@ func makeDatabaseWithDualDS(name, instanceName, project, engine, adminDSID, read
 	}
 }
 
-// mockListDatabases returns an HTTP handler that serves ListDatabases requests.
-// Supports both workspace-scoped (parent: "workspaces/...") and project-scoped parents.
+// mockListDatabases returns an HTTP handler that serves database listings for
+// a caller who holds bb.databases.get and bb.databases.list in every project:
+// SearchDatabases lists all databases, and ListDatabases with a project parent
+// lists that project's.
 func mockListDatabases(databases []map[string]any) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -61,10 +63,8 @@ func mockListDatabases(databases []map[string]any) http.Handler {
 		}
 		_ = json.NewDecoder(r.Body).Decode(&reqBody)
 
-		// For workspace-scoped requests, include all databases.
-		// For project-scoped requests, filter by parent project.
 		var scoped []map[string]any
-		if strings.HasPrefix(reqBody.Parent, "workspaces/") {
+		if strings.HasSuffix(r.URL.Path, "DatabaseService/SearchDatabases") {
 			scoped = databases
 		} else {
 			for _, db := range databases {
@@ -86,7 +86,7 @@ func mockListDatabases(databases []map[string]any) http.Handler {
 }
 
 // applyMockFilter applies a simplified filter to mock databases.
-// Supports: name.contains("x"), instance == "instances/x", project == "projects/x"
+// Supports: name.contains("x"), instance == "instances/x"
 func applyMockFilter(databases []map[string]any, filter string) []map[string]any {
 	var result []map[string]any
 	for _, db := range databases {
@@ -122,17 +122,6 @@ func applyMockFilter(databases []map[string]any, filter string) []map[string]any
 			if end > 0 {
 				expected := filter[start : start+end]
 				if instanceName != expected {
-					match = false
-				}
-			}
-		}
-		// Check project == "projects/x"
-		if idx := strings.Index(filter, `project == "`); idx >= 0 {
-			start := idx + len(`project == "`)
-			end := strings.Index(filter[start:], `"`)
-			if end > 0 {
-				expected := filter[start : start+end]
-				if proj, ok := db["project"].(string); ok && proj != expected {
 					match = false
 				}
 			}
@@ -189,7 +178,6 @@ func TestBuildDatabaseFilter(t *testing.T) {
 		name     string
 		database string
 		instance string
-		project  string
 		expect   string
 	}{
 		{
@@ -204,19 +192,6 @@ func TestBuildDatabaseFilter(t *testing.T) {
 			expect:   `name.contains("employee_db") && instance == "instances/prod-pg"`,
 		},
 		{
-			name:     "with project",
-			database: "employee_db",
-			project:  "hr-system",
-			expect:   `name.contains("employee_db") && project == "projects/hr-system"`,
-		},
-		{
-			name:     "with instance and project",
-			database: "employee_db",
-			instance: "prod-pg",
-			project:  "hr-system",
-			expect:   `name.contains("employee_db") && instance == "instances/prod-pg" && project == "projects/hr-system"`,
-		},
-		{
 			name:     "with canonical project instance",
 			database: "employee_db",
 			instance: "projects/hr-system/instances/prod-pg",
@@ -225,7 +200,7 @@ func TestBuildDatabaseFilter(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := buildDatabaseFilter(tc.database, tc.instance, tc.project)
+			got := buildDatabaseFilter(tc.database, tc.instance)
 			require.Equal(t, tc.expect, got)
 		})
 	}
@@ -297,38 +272,6 @@ func TestQueryDatabase_NotFoundWithFilters(t *testing.T) {
 	require.ErrorAs(t, err, &te)
 	require.Equal(t, "DATABASE_NOT_FOUND", te.Code)
 	require.Contains(t, te.Suggestion, "without instance/project filters")
-}
-
-func TestQueryDatabase_MissingWorkspaceID(t *testing.T) {
-	s := newTestServerWithMock(t, http.NotFoundHandler())
-
-	// Use context.Background() — no workspace ID set.
-	_, err := s.resolveDatabase(context.Background(), "employee_db", "", "")
-	require.Error(t, err)
-
-	var te *toolError
-	require.ErrorAs(t, err, &te)
-	require.Equal(t, "AUTH_ERROR", te.Code)
-}
-
-func TestQueryDatabase_WorkspacePermissionDenied(t *testing.T) {
-	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusForbidden)
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"message": `user does not have permission "bb.databases.list"`,
-			"code":    "PERMISSION_DENIED",
-		})
-	})
-	s := newTestServerWithMock(t, handler)
-
-	_, err := s.resolveDatabase(testContext(), "employee_db", "", "")
-	require.Error(t, err)
-
-	var te *toolError
-	require.ErrorAs(t, err, &te)
-	require.Equal(t, toolError{Code: "PERMISSION_DENIED", Message: `user does not have permission "bb.databases.list"`}, *te,
-		"the server's message names the permission, and nothing is added")
 }
 
 func TestQueryDatabase_Ambiguous(t *testing.T) {

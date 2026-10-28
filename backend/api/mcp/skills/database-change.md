@@ -90,7 +90,7 @@ call_api(operationId="PlanService/CreatePlan", body={
 - `specs` is a flat array directly on the plan (no "steps" wrapper)
 - Each `spec` has a unique `id` (any string, used for identification)
 - `targets` is an **array** (even for single database)
-- Preserve the exact canonical database name returned by ListDatabases. A project instance
+- Preserve the exact canonical database name returned by SearchDatabases or ListDatabases. A project instance
   uses `projects/{project-id}/instances/{instance-id}/databases/{database-name}`;
   do not shorten it to `instances/{instance-id}/databases/{database-name}`.
 - Specs are executed based on rollout policy (can be sequential or parallel)
