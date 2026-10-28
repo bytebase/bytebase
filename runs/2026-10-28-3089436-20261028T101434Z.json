@@ -1,0 +1,16 @@
+{
+  "run_id": "20261028T101434Z",
+  "sha": "3089436e3a3e6d0149fd3d35e17a28254b3d97f2",
+  "date": "2026-10-28",
+  "result": "infra",
+  "totals": {},
+  "failed": [],
+  "flaky": [],
+  "lock_unstable": [],
+  "infra": {
+    "kind": "preflight",
+    "detail": "FAIL  root-user  running as root and no 'bytebase' user (setup-env.sh not applied: also no /opt/node24, no en_US.UTF-8 locale)"
+  },
+  "note": "infra: preflight root-user FAIL (cloud setup script not applied); no build, no suite; no PR, no issues",
+  "run_url": "https://claude.ai/code/session_cse_016qZUAw2WzadfnNemrF4KJL"
+}
