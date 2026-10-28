@@ -43,6 +43,8 @@ var (
 	// MariaDB-only TABLE_TYPE values. Both kinds share the table namespace.
 	mariaDBSystemVersionedTableType = "SYSTEM VERSIONED"
 	mariaDBSequenceTableType        = "SEQUENCE"
+	// OceanBase-only TABLE_TYPE value; the kind shares the table namespace.
+	oceanBaseExternalTableType = "EXTERNAL TABLE"
 
 	_ db.Driver = (*Driver)(nil)
 )
