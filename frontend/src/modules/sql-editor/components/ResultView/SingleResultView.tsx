@@ -121,12 +121,12 @@ export interface SingleResultViewProps {
   resultIndex?: number;
   showExport: boolean;
   // Optional tooltip shown on the export button — used to explain when the
-  // export is enabled by a JIT access grant despite the policy disabling it.
+  // export is enabled by a JIT access grant rather than bb.sql.export.
   exportTooltip?: ReactNode;
   maximumExportCount?: number;
   onExport?: (req: DataExportRequest & { statement: string }) => void;
   // Rendered in the toolbar when `showExport` is false — e.g. a
-  // "Request export" affordance when the policy disables direct export.
+  // "Request export" affordance when the user lacks bb.sql.export.
   requestExportSlot?: ReactNode;
   // Compact layout (fixed-height, non-growing body) used by the terminal /
   // admin result panel. Defaults to the flex-grow saved query layout.

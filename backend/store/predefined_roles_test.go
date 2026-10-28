@@ -1,6 +1,7 @@
 package store
 
 import (
+	"maps"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -24,6 +25,34 @@ func TestProjectOwnerInstancePermissions(t *testing.T) {
 	}
 	for _, p := range instancePermissions {
 		require.Truef(t, role.Permissions[p], "Project Owner must have %q", p)
+	}
+}
+
+func TestSQLEditorExporterRole(t *testing.T) {
+	t.Parallel()
+	exporter := GetPredefinedRole(SQLEditorExporterRole)
+	require.NotNil(t, exporter)
+	require.Equal(t, "SQL Editor Exporter", exporter.Name)
+
+	want := maps.Clone(GetPredefinedRole(SQLEditorReadUserRole).Permissions)
+	want[permission.SQLExport] = true
+	require.Equal(t, want, exporter.Permissions)
+	for p := range exporter.Permissions {
+		require.Truef(t, permission.Exists(p), "permission %s is not defined in permission.yaml", p)
+	}
+}
+
+func TestPredefinedRolesSQLExport(t *testing.T) {
+	t.Parallel()
+	for roleID, want := range map[string]bool{
+		WorkspaceAdminRole:    true,
+		WorkspaceDBARole:      true,
+		ProjectOwnerRole:      true,
+		SQLEditorExporterRole: true,
+		SQLEditorUserRole:     false,
+		SQLEditorReadUserRole: false,
+	} {
+		require.Equalf(t, want, GetPredefinedRole(roleID).Permissions[permission.SQLExport], "role %s", roleID)
 	}
 }
 

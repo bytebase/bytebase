@@ -42,6 +42,7 @@ call_api(operationId="RoleService/ListRoles", body={})
 | \`roles/projectDeveloper\` | Development access (create issues, plans) |
 | \`roles/projectReleaser\` | Execute rollouts |
 | \`roles/sqlEditorUser\` | SQL Editor access only |
+| \`roles/sqlEditorExporter\` | Query and export results (\`bb.sql.export\`), without DDL or DML |
 | \`roles/projectViewer\` | Read-only access |
 | \`roles/gitopsServiceAgent\` | GitOps automation |
 
@@ -152,7 +153,7 @@ call_api(operationId="ProjectService/SetIamPolicy", body={
 })
 \`\`\`
 
-**CEL variables for sqlEditorUser:**
+**CEL variables for sqlEditorUser and sqlEditorExporter:**
 - \`resource.database\`: Canonical database name (\`instances/{id}/databases/{name}\` or \`projects/{project}/instances/{id}/databases/{name}\`)
 - \`resource.schema_name\`: Schema name
 - \`resource.table_name\`: Table name

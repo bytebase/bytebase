@@ -384,7 +384,6 @@ type EffectiveQueryDataPolicy struct {
 	MaximumResultSize        int64
 	MaximumResultRows        int32
 	DisableCopyData          bool
-	DisableExport            bool
 	MaxQueryTimeoutInSeconds int64
 	AllowAdminDataSource     bool
 }
@@ -398,7 +397,6 @@ func formatEffectiveQueryDataPolicy(policy *storepb.QueryDataPolicy) *EffectiveQ
 	return &EffectiveQueryDataPolicy{
 		MaximumResultRows:    maximumResultRows,
 		DisableCopyData:      policy.GetDisableCopyData(),
-		DisableExport:        policy.GetDisableExport(),
 		AllowAdminDataSource: policy.GetAllowAdminDataSource(),
 	}
 }
@@ -429,7 +427,6 @@ func (s *Store) GetEffectiveQueryDataPolicy(ctx context.Context, workspaceID str
 
 	return &EffectiveQueryDataPolicy{
 		DisableCopyData:          formatWorkspacePolicy.DisableCopyData,
-		DisableExport:            formatWorkspacePolicy.DisableExport,
 		MaximumResultRows:        min(formatWorkspacePolicy.MaximumResultRows, formatProjectPolicy.MaximumResultRows),
 		MaximumResultSize:        maximumResultSize,
 		MaxQueryTimeoutInSeconds: queryTimeout,

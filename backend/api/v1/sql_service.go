@@ -420,7 +420,7 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 	// (e.g. `SELECT * FROM db_b.secret` from a grant on `db_a`) still has
 	// to clear the regular IAM check on the foreign database. See PR
 	// #20487 review for the cross-DB exfiltration scenario this guards.
-	optionalAccessCheck := s.accessCheckWithGrant(accessGrant)
+	optionalAccessCheck := s.accessCheckWithGrant(accessGrant, false /* export */)
 	results, _, duration, queryErr := queryRetryStopOnError(
 		ctx,
 		s.store,
@@ -1241,10 +1241,9 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 		return nil, err
 	}
 
-	// Same cross-database guardrail as Query: the JIT grant authorizes only
-	// its target databases, so span-level ACL still runs and only the
-	// granted targets are exempted from IAM. See PR #20487 review.
-	optionalAccessCheck := s.accessCheckWithGrant(accessGrant)
+	// The JIT grant satisfies bb.sql.export only on its target databases, so
+	// span-level ACL still runs for every other database.
+	optionalAccessCheck := s.accessCheckWithGrant(accessGrant, true /* export */)
 	skipMasking := false
 	if accessGrant != nil {
 		skipMasking = accessGrant.Payload.Unmask
@@ -1272,7 +1271,6 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 }
 
 // doExport performs SQL Editor exports with masking applied.
-// This is used for ad-hoc exports where users have the EXPORTER role.
 func doExport(
 	ctx context.Context,
 	stores *store.Store,
@@ -1539,44 +1537,27 @@ func (s *SQLService) GetQueryHistory(ctx context.Context, req *connect.Request[v
 // without an import cycle. See parsercontext.BuildGetDatabaseMetadataFunc,
 // BuildListDatabaseNamesFunc, BuildGetLinkedDatabaseMetadataFunc.
 
-// accessCheck check the access for the database. Do not support cross-project resources.
-func (s *SQLService) accessCheck(
-	ctx context.Context,
-	instance *store.InstanceMessage,
-	database *store.DatabaseMessage,
-	user *store.UserMessage,
-	spans []*parserbase.QuerySpan,
-	isExplain bool,
-	statements []parserbase.Statement,
-	requestSchema string,
-	multiStatement bool,
-) error {
-	return s.accessCheckWithGrantedTargets(ctx, instance, database, user, spans, isExplain, statements, nil, requestSchema, multiStatement)
-}
-
-// accessCheckWithGrant returns an accessCheckFunc that exempts the access
-// grant's target databases from IAM checks while keeping span-level checks for
-// every other source database. This preserves JIT-grant behavior for the
-// grant's target (the user is already authorized there) but blocks cross-
-// database exfiltration via cross-DB references like `SELECT * FROM db_b.t`
-// from a grant targeting `db_a` — see PR #20487 review. The exemption is for
-// data access only; see checkDatabaseAccess for why explain stays with IAM.
-//
-// Pass `accessGrant == nil` to skip wrapping; callers in that case should
-// reference `s.accessCheck` directly.
-func (s *SQLService) accessCheckWithGrant(accessGrant *store.AccessGrantMessage) accessCheckFunc {
-	if accessGrant == nil || accessGrant.Payload == nil {
-		return s.accessCheck
-	}
-	grantedTargets := make(map[string]struct{}, len(accessGrant.Payload.Targets))
-	for _, t := range accessGrant.Payload.Targets {
-		grantedTargets[t] = struct{}{}
+// accessCheckWithGrant returns the per-statement access check for Query, or for
+// Export when export is true. accessGrant, which may be nil, applies only to its
+// target databases; every other source database keeps its span-level IAM check,
+// which blocks cross-database exfiltration like `SELECT * FROM db_b.t` through
+// a grant on `db_a`. Cross-project resources are not supported.
+func (s *SQLService) accessCheckWithGrant(accessGrant *store.AccessGrantMessage, export bool) accessCheckFunc {
+	var grantedTargets map[string]struct{}
+	if accessGrant != nil && accessGrant.Payload != nil {
+		grantedTargets = make(map[string]struct{}, len(accessGrant.Payload.Targets))
+		for _, t := range accessGrant.Payload.Targets {
+			grantedTargets[t] = struct{}{}
+		}
 	}
 	return func(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage, user *store.UserMessage, spans []*parserbase.QuerySpan, isExplain bool, statements []parserbase.Statement, requestSchema string, multiStatement bool) error {
-		return s.accessCheckWithGrantedTargets(ctx, instance, database, user, spans, isExplain, statements, grantedTargets, requestSchema, multiStatement)
+		return s.accessCheckWithGrantedTargets(ctx, instance, database, user, spans, isExplain, statements, grantedTargets, export, requestSchema, multiStatement)
 	}
 }
 
+// accessCheckWithGrantedTargets authorizes each statement span. For Export,
+// reading data, including info-schema output, requires bb.sql.export in place
+// of bb.sql.select or bb.sql.info; explain, DML and DDL keep their permissions.
 func (s *SQLService) accessCheckWithGrantedTargets(
 	ctx context.Context,
 	instance *store.InstanceMessage,
@@ -1586,6 +1567,7 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 	isExplain bool,
 	statements []parserbase.Statement,
 	grantedTargets map[string]struct{},
+	export bool,
 	requestSchema string,
 	multiStatement bool,
 ) error {
@@ -1607,14 +1589,31 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 		return connect.NewError(connect.CodeInternal, errors.New(err.Error()))
 	}
 
+	readPermission := func(perm permission.Permission) permission.Permission {
+		if export && (perm == permission.SQLSelect || perm == permission.SQLInfo) {
+			return permission.SQLExport
+		}
+		return perm
+	}
+
+	// grantSatisfies reports whether the access grant satisfies perm on target.
+	// A grant approves one read-only statement on its target databases: for
+	// Export it satisfies bb.sql.export, and for Query the statement's own
+	// permission. Reading the statement's plan is a separate capability, so
+	// bb.sql.explain always comes from IAM.
+	grantSatisfies := func(target string, perm permission.Permission) bool {
+		if _, granted := grantedTargets[target]; !granted {
+			return false
+		}
+		if export {
+			return perm == permission.SQLExport
+		}
+		return perm != permission.SQLExplain
+	}
+
 	checkDatabaseAccess := func(perm permission.Permission) error {
 		databaseFullName := formatDatabaseResourceName(instance, database)
-		// A grant approves reading one statement's data on its target databases, so
-		// the holder needs no IAM role there for that statement. Reading the
-		// statement's plan is a separate capability: the approved statement can
-		// arrive with the explain flag, or be a typed EXPLAIN, and either way
-		// bb.sql.explain still comes from IAM.
-		if _, granted := grantedTargets[databaseFullName]; granted && perm != permission.SQLExplain {
+		if grantSatisfies(databaseFullName, perm) {
 			return nil
 		}
 		attributes := map[string]any{
@@ -1659,7 +1658,7 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 	// No spans: an engine without a span extractor. Check at the database level,
 	// with the explain permission for an explain request.
 	if len(spans) == 0 {
-		perm := permission.SQLSelect
+		perm := readPermission(permission.SQLSelect)
 		if isExplain {
 			perm = permission.SQLExplain
 		}
@@ -1701,6 +1700,7 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 			// always fallback to bb.sql.select
 			perm = permission.SQLSelect
 		}
+		perm = readPermission(perm)
 
 		// A plan names the tables it reads, so reading one needs bb.sql.explain on
 		// every database the statement references, not only the connected one.
@@ -1749,7 +1749,12 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 				continue
 			}
 			databaseLevelOnly := multiStatement || len(nonEmptyStatements) != 1
-			deniedResources, err := s.authorizeWriteTargets(ctx, user, instance, database, perm, targets, grantedTargets, databaseLevelOnly, workspacePolicy.Policy, projectPolicy.Policy)
+			writeGrantedTargets := grantedTargets
+			if export {
+				// An export grant satisfies only bb.sql.export; see grantSatisfies.
+				writeGrantedTargets = nil
+			}
+			deniedResources, err := s.authorizeWriteTargets(ctx, user, instance, database, perm, targets, writeGrantedTargets, databaseLevelOnly, workspacePolicy.Policy, projectPolicy.Policy)
 			if err != nil {
 				return err
 			}
@@ -1803,7 +1808,7 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 				InstanceID:   instance.ResourceID,
 				DatabaseName: column.Database,
 			})
-			if _, granted := grantedTargets[grantTargetName]; granted {
+			if grantSatisfies(grantTargetName, perm) {
 				continue
 			}
 			attributes := map[string]any{

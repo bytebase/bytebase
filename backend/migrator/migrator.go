@@ -39,6 +39,7 @@ type GoMigrationFunc func(ctx context.Context, conn *sql.Conn) error
 var goMigrations = map[string]GoMigrationFunc{
 	"3.13.21": migrate3_13_21,
 	"3.21.1":  migrate3_21_1,
+	"3.25.0":  migrate3_25_0,
 }
 
 // MigrateSchema migrates the schema for metadata database.

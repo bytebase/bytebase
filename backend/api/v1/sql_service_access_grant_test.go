@@ -122,7 +122,7 @@ func TestAccessGrantDoesNotExemptExplain(t *testing.T) {
 	granted := map[string]struct{}{"instances/test/databases/db": {}}
 	check := func(email string, isExplain bool) error {
 		user := &store.UserMessage{Email: email}
-		return service.accessCheckWithGrantedTargets(ctx, instance, database, user, nil, isExplain, nil, granted, "", false)
+		return service.accessCheckWithGrantedTargets(ctx, instance, database, user, nil, isExplain, nil, granted, false, "", false)
 	}
 
 	require.NoError(t, check("selector@example.com", false), "the grant covers select")

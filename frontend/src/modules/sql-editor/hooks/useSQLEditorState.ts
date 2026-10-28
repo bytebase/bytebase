@@ -8,6 +8,7 @@ import { useSQLEditorTabsStore } from "@/modules/sql-editor/store/tab";
 import { useAppStore } from "@/stores/app";
 import type { SQLEditorConnection } from "@/types";
 import { isValidDatabaseName, isValidProjectName } from "@/types";
+import type { Permission } from "@/types/iam";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { InstanceResource } from "@/types/proto-es/v1/instance_service_pb";
 import {
@@ -41,7 +42,6 @@ export const useSQLEditorFeature = (feature: PlanFeature): boolean => {
 // policy limits.
 type FormattedQueryDataPolicy = {
   disableCopyData: boolean;
-  disableExport: boolean;
   allowAdminDataSource: boolean;
   maximumResultRows: number;
 };
@@ -52,7 +52,6 @@ const formatQueryDataPolicy = (
   const max = policy?.maximumResultRows ?? -1;
   return {
     disableCopyData: policy?.disableCopyData ?? false,
-    disableExport: policy?.disableExport ?? false,
     allowAdminDataSource: policy?.allowAdminDataSource ?? false,
     maximumResultRows: max <= 0 ? Number.MAX_VALUE : max,
   };
@@ -129,12 +128,15 @@ export const useClampResultRowsLimitToPolicy = (project: string): void => {
 };
 
 /**
- * React access to "can the current user run admin SQL against this
- * project?". Self-fetches the project + its IAM policy so the SQL editor
- * route (which doesn't preload either) gets a correct answer once both
- * resolve.
+ * React access to a project permission of the current user. Self-fetches the
+ * project + its IAM policy so the SQL editor route (which doesn't preload
+ * either) gets a correct answer once both resolve. Database-scoped binding
+ * conditions are ignored; the server makes the final decision.
  */
-export const useSQLEditorAllowAdmin = (project: string): boolean => {
+const useSQLEditorProjectPermission = (
+  project: string,
+  permission: Permission
+): boolean => {
   const fetchProject = useAppStore((s) => s.fetchProject);
   const loadProjectIamPolicy = useAppStore((s) => s.loadProjectIamPolicy);
   useEffect(() => {
@@ -143,9 +145,20 @@ export const useSQLEditorAllowAdmin = (project: string): boolean => {
     void loadProjectIamPolicy(project);
   }, [fetchProject, loadProjectIamPolicy, project]);
   return useAppStore((s) =>
-    s.hasProjectPermission(s.getProjectByName(project), "bb.sql.admin")
+    s.hasProjectPermission(s.getProjectByName(project), permission)
   );
 };
+
+/** Whether the current user can run admin SQL against this project. */
+export const useSQLEditorAllowAdmin = (project: string): boolean =>
+  useSQLEditorProjectPermission(project, "bb.sql.admin");
+
+/**
+ * Whether the current user holds bb.sql.export on this project through a
+ * role. Without it, export needs an active export grant for the query.
+ */
+export const useSQLEditorAllowExport = (project: string): boolean =>
+  useSQLEditorProjectPermission(project, "bb.sql.export");
 
 /**
  * React access to the workspace-wide "list projects" permission.

@@ -2558,6 +2558,10 @@
       "description-placeholder": "ロールの説明を入力してください",
       "title-placeholder": "ロールのタイトルを入力してください"
     },
+    "sql-editor-exporter": {
+      "description": "DDLまたはDMLアクセスなしで、データベースをクエリして結果をエクスポートできます。",
+      "self": "SQLエディタエクスポートユーザー"
+    },
     "sql-editor-read-user": {
       "description": "DDLまたはDMLアクセスなしで、データベースデータのクエリのための読み取り専用権限。",
       "self": "SQLエディタ読み取り専用ユーザー"
@@ -2818,10 +2822,6 @@
           "exiting": "退出中..."
         },
         "data-copy": "データのコピーを有効にする",
-        "data-export": {
-          "description": "無効にすると、ユーザーはクエリ結果を直接エクスポートできません。アクセス付与が有効なプロジェクトでは、「エクスポートをリクエスト」からアクセス付与をリクエストし、承認後にエクスポートできます。",
-          "self": "承認なしのデータエクスポートを許可"
-        },
         "default-landing-page": {
           "default-view-changed-to-sql-editor": "ワークスペースのデフォルト ビューが SQL エディターに変更されました。",
           "go-to-sql-editor": "SQLエディタに移動",

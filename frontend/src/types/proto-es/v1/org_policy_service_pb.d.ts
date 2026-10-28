@@ -370,10 +370,10 @@ export declare type QueryDataPolicy = Message<"bytebase.v1.QueryDataPolicy"> & {
   maximumResultRows: number;
 
   /**
-   * workspace-level policy
-   * Disable data export in the SQL editor.
+   * Deprecated: export is controlled by the bb.sql.export permission. Always false; setting it to true is rejected.
    *
-   * @generated from field: bool disable_export = 2;
+   * @generated from field: bool disable_export = 2 [deprecated = true];
+   * @deprecated
    */
   disableExport: boolean;
 

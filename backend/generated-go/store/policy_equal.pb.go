@@ -223,9 +223,6 @@ func (x *QueryDataPolicy) Equal(y *QueryDataPolicy) bool {
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if x.DisableExport != y.DisableExport {
-		return false
-	}
 	if x.MaximumResultRows != y.MaximumResultRows {
 		return false
 	}

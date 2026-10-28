@@ -12,8 +12,10 @@ import {
 } from "@/types/proto-es/v1/sql_service_pb";
 import { ResultView } from "./ResultView";
 
-const { exportData } = vi.hoisted(() => ({
+const { exportData, exportAccess, useExportGrantBypass } = vi.hoisted(() => ({
   exportData: vi.fn(),
+  exportAccess: { allowExport: false },
+  useExportGrantBypass: vi.fn(),
 }));
 
 vi.mock("react-i18next", () => ({
@@ -29,7 +31,9 @@ vi.mock("@/components/DataExportButton", () => ({
 }));
 
 vi.mock("@/modules/sql-editor/components/RequestExportButton", () => ({
-  RequestExportButton: () => null,
+  RequestExportButton: ({ targets }: { targets: string[] }) => (
+    <div data-testid="request-export">{targets.join(",")}</div>
+  ),
 }));
 
 vi.mock("@/modules/sql-editor/components/RequestQueryButton", () => ({
@@ -37,17 +41,11 @@ vi.mock("@/modules/sql-editor/components/RequestQueryButton", () => ({
 }));
 
 vi.mock("@/modules/sql-editor/components/useExportGrantBypass", () => ({
-  useExportGrantBypass: () => ({
-    loading: false,
-    failedDatabases: [],
-    unmatchedDatabases: [],
-    retry: vi.fn(),
-    grantName: undefined,
-    tooltip: undefined,
-  }),
+  useExportGrantBypass,
 }));
 
 vi.mock("@/modules/sql-editor/hooks/useSQLEditorState", () => ({
+  useSQLEditorAllowExport: () => exportAccess.allowExport,
   useSQLEditorQueryDataPolicy: () => undefined,
 }));
 
@@ -102,21 +100,32 @@ vi.mock("./ErrorView", () => ({
 }));
 
 vi.mock("./SingleResultView", () => ({
-  SingleResultView: ({ onExport }: { onExport: (request: unknown) => void }) => (
-    <button
-      type="button"
-      onClick={() =>
-        onExport({
-          options: { format: ExportFormat.CSV, limit: 100, password: "" },
-          resolve: vi.fn(),
-          reject: vi.fn(),
-          statement: "SELECT * FROM c",
-        })
-      }
-    >
-      export
-    </button>
-  ),
+  SingleResultView: ({
+    onExport,
+    requestExportSlot,
+    showExport,
+  }: {
+    onExport: (request: unknown) => void;
+    requestExportSlot?: React.ReactNode;
+    showExport: boolean;
+  }) =>
+    showExport ? (
+      <button
+        type="button"
+        onClick={() =>
+          onExport({
+            options: { format: ExportFormat.CSV, limit: 100, password: "" },
+            resolve: vi.fn(),
+            reject: vi.fn(),
+            statement: "SELECT * FROM c",
+          })
+        }
+      >
+        export
+      </button>
+    ) : (
+      requestExportSlot
+    ),
 }));
 
 const executeParams: SQLEditorQueryParams = {
@@ -136,10 +145,26 @@ const database = {
   project: "projects/prod",
 } as Database;
 
+const grantLookup = ({
+  grantName = "",
+  unmatchedDatabases = [] as string[],
+}) =>
+  useExportGrantBypass.mockReturnValue({
+    loading: false,
+    failedDatabases: [],
+    matchedDatabases: [],
+    unmatchedDatabases,
+    retry: vi.fn(),
+    grantName,
+    tooltip: undefined,
+  });
+
 describe("ResultView", () => {
   beforeEach(() => {
     exportData.mockReset();
     exportData.mockResolvedValue(new Uint8Array());
+    exportAccess.allowExport = false;
+    grantLookup({});
   });
 
   test("blocks analytics recording for query results", () => {
@@ -151,6 +176,7 @@ describe("ResultView", () => {
   });
 
   test("includes the selected CosmosDB container in export requests", async () => {
+    exportAccess.allowExport = true;
     render(
       <ResultView
         executeParams={{
@@ -180,6 +206,62 @@ describe("ResultView", () => {
         expect.objectContaining({ container: "customers" })
       );
     });
+  });
+
+  const queryResult = {
+    error: "",
+    results: [create(QueryResultSchema, { statement: "SELECT 1" })],
+  };
+
+  test("bb.sql.export offers Export without looking up a grant", () => {
+    exportAccess.allowExport = true;
+    render(
+      <ResultView
+        executeParams={executeParams}
+        database={database}
+        resultSet={queryResult}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: "export" })).toBeInTheDocument();
+    expect(screen.queryByTestId("request-export")).not.toBeInTheDocument();
+    expect(useExportGrantBypass).toHaveBeenLastCalledWith(
+      expect.objectContaining({ enabled: false })
+    );
+  });
+
+  test("a matching export grant offers Export without bb.sql.export", () => {
+    grantLookup({ grantName: "projects/prod/accessGrants/g" });
+    render(
+      <ResultView
+        executeParams={executeParams}
+        database={database}
+        resultSet={queryResult}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: "export" })).toBeInTheDocument();
+    expect(useExportGrantBypass).toHaveBeenLastCalledWith(
+      expect.objectContaining({ enabled: true, project: "projects/prod" })
+    );
+  });
+
+  test("without bb.sql.export or a grant, offers Request export", () => {
+    grantLookup({ unmatchedDatabases: [database.name] });
+    render(
+      <ResultView
+        executeParams={executeParams}
+        database={database}
+        resultSet={queryResult}
+      />
+    );
+
+    expect(
+      screen.queryByRole("button", { name: "export" })
+    ).not.toBeInTheDocument();
+    expect(screen.getByTestId("request-export")).toHaveTextContent(
+      database.name
+    );
   });
 
   /** A PostgreSQL plan result whose root costs `totalCost`. */

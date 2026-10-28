@@ -1955,7 +1955,7 @@ RoleGrant contains details for requesting a project role.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| role | [string](#string) |  | The role being requested for the user. Format: roles/EXPORTER. |
+| role | [string](#string) |  | The role being requested for the user. Format: roles/{role}. |
 | user | [string](#string) |  | The user who will receive the role. Format: users/{email}. |
 | condition | [google.type.Expr](#google-type-Expr) |  | Optional conditional expression that limits when the grant applies. |
 | expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | Duration after which the grant automatically expires. |
@@ -2736,7 +2736,6 @@ QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| disable_export | [bool](#bool) |  | workspace-level policy Disable exporting data in the SQL editor. |
 | maximum_result_rows | [int32](#int32) |  | Support both project-level and workspace-level. The maximum number of rows to return in the SQL editor. The default value &lt;= 0, means no limit. |
 | disable_copy_data | [bool](#bool) |  | workspace-level policy Disable copying data. |
 | allow_admin_data_source | [bool](#bool) |  | workspace-level policy Allow using the admin data source to query in the SQL editor. |

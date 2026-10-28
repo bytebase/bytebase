@@ -130,6 +130,7 @@ export type Permission =
   | "bb.sheets.get"
   | "bb.subscription.manage"
   | "bb.sql.select"
+  | "bb.sql.export"
   | "bb.sql.ddl"
   | "bb.sql.dml"
   | "bb.sql.explain"

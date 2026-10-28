@@ -871,8 +871,9 @@ type QueryDataPolicy struct {
 	// The maximum number of rows to return in the SQL editor.
 	// The default value <= 0, means no limit.
 	MaximumResultRows int32 `protobuf:"varint,1,opt,name=maximum_result_rows,json=maximumResultRows,proto3" json:"maximum_result_rows,omitempty"`
-	// workspace-level policy
-	// Disable data export in the SQL editor.
+	// Deprecated: export is controlled by the bb.sql.export permission. Always false; setting it to true is rejected.
+	//
+	// Deprecated: Marked as deprecated in v1/org_policy_service.proto.
 	DisableExport bool `protobuf:"varint,2,opt,name=disable_export,json=disableExport,proto3" json:"disable_export,omitempty"`
 	// workspace-level policy
 	// Disable copying query results in the SQL editor.
@@ -925,6 +926,7 @@ func (x *QueryDataPolicy) GetMaximumResultRows() int32 {
 	return 0
 }
 
+// Deprecated: Marked as deprecated in v1/org_policy_service.proto.
 func (x *QueryDataPolicy) GetDisableExport() bool {
 	if x != nil {
 		return x.DisableExport
@@ -1295,10 +1297,10 @@ const file_v1_org_policy_service_proto_rawDesc = "" +
 	"\acontent\x18\x01 \x01(\tR\acontent\"C\n" +
 	"\rRolloutPolicy\x12\x1c\n" +
 	"\tautomatic\x18\x01 \x01(\bR\tautomatic\x12\x14\n" +
-	"\x05roles\x18\x02 \x03(\tR\x05roles\"\xcb\x01\n" +
+	"\x05roles\x18\x02 \x03(\tR\x05roles\"\xcf\x01\n" +
 	"\x0fQueryDataPolicy\x12.\n" +
-	"\x13maximum_result_rows\x18\x01 \x01(\x05R\x11maximumResultRows\x12%\n" +
-	"\x0edisable_export\x18\x02 \x01(\bR\rdisableExport\x12*\n" +
+	"\x13maximum_result_rows\x18\x01 \x01(\x05R\x11maximumResultRows\x12)\n" +
+	"\x0edisable_export\x18\x02 \x01(\bB\x02\x18\x01R\rdisableExport\x12*\n" +
 	"\x11disable_copy_data\x18\x03 \x01(\bR\x0fdisableCopyData\x125\n" +
 	"\x17allow_admin_data_source\x18\x04 \x01(\bR\x14allowAdminDataSource\"\xbf\x01\n" +
 	"\x16MaskingExemptionPolicy\x12M\n" +
