@@ -102,9 +102,13 @@ func TestDatabricksExplainReadsNestedComments(t *testing.T) {
 			"EXPLAIN FORMATTED /* outer /* inner */\nEXPLAIN\n*/\nDELETE FROM t",
 		},
 		{"/* a /* b */ EXPLAIN */ SELECT 1", "EXPLAIN FORMATTED /* a /* b */ EXPLAIN */ SELECT 1"},
-		// A nested comment that closes before a real EXPLAIN leaves the plan the
-		// caller asked for.
-		{"/* a /* b */ */ EXPLAIN SELECT 1", "/* a /* b */ */ EXPLAIN SELECT 1"},
+		// A nested comment closing before a real EXPLAIN is a plan Spark would
+		// have kept, and this plans it again: the keyword scan refuses to read
+		// past a comment holding another one, because the same text ends in a
+		// different place on an engine that does not nest them. Spark then
+		// rejects `EXPLAIN FORMATTED EXPLAIN`, which costs this caller their
+		// plan and costs every other engine nothing.
+		{"/* a /* b */ */ EXPLAIN SELECT 1", "EXPLAIN FORMATTED /* a /* b */ */ EXPLAIN SELECT 1"},
 		// A comment left open runs to the end, so there is no statement to
 		// preserve.
 		{"/* a /* b */ EXPLAIN SELECT 1", "EXPLAIN FORMATTED /* a /* b */ EXPLAIN SELECT 1"},
