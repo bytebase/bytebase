@@ -581,7 +581,17 @@ export class BytebaseApiClient {
   async createCreateDatabasePlan(
     project: string,
     title: string,
-    spec: { id: string; target: string; database: string; environment?: string },
+    spec: {
+      id: string;
+      target: string;
+      database: string;
+      environment?: string;
+      // Rolling the plan out on Postgres needs all three; a plan that is only
+      // opened, never rolled out, can leave them off.
+      characterSet?: string;
+      collation?: string;
+      owner?: string;
+    },
   ): Promise<{ name: string }> {
     return this.request<{ name: string }>("POST", `/v1/${project}/plans`, {
       title,
@@ -592,6 +602,9 @@ export class BytebaseApiClient {
             target: spec.target,
             database: spec.database,
             ...(spec.environment ? { environment: spec.environment } : {}),
+            ...(spec.characterSet ? { characterSet: spec.characterSet } : {}),
+            ...(spec.collation ? { collation: spec.collation } : {}),
+            ...(spec.owner ? { owner: spec.owner } : {}),
           },
         },
       ],
