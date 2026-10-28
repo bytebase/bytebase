@@ -38,6 +38,8 @@ export const displayRoleTitle = (role: string): string => {
       return i18n.t("role.sql-editor-user.self");
     case PresetRoleType.SQL_EDITOR_READ_USER:
       return i18n.t("role.sql-editor-read-user.self");
+    case PresetRoleType.SQL_EDITOR_EXPORTER:
+      return i18n.t("role.sql-editor-exporter.self");
     case PresetRoleType.GITOPS_SERVICE_AGENT:
       return i18n.t("role.gitops-service-agent.self");
     case PresetRoleType.PROJECT_VIEWER:
@@ -67,6 +69,8 @@ export const displayRoleDescription = (role: string): string => {
       return i18n.t("role.sql-editor-user.description");
     case PresetRoleType.SQL_EDITOR_READ_USER:
       return i18n.t("role.sql-editor-read-user.description");
+    case PresetRoleType.SQL_EDITOR_EXPORTER:
+      return i18n.t("role.sql-editor-exporter.description");
     case PresetRoleType.GITOPS_SERVICE_AGENT:
       return i18n.t("role.gitops-service-agent.description");
     case PresetRoleType.PROJECT_VIEWER:

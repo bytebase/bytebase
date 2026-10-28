@@ -2559,6 +2559,10 @@
       "description-placeholder": "Nhập mô tả vai trò",
       "title-placeholder": "Nhập tiêu đề vai trò"
     },
+    "sql-editor-exporter": {
+      "description": "Truy vấn cơ sở dữ liệu và xuất kết quả, không có quyền DDL hoặc DML.",
+      "self": "Người xuất dữ liệu Trình soạn thảo SQL"
+    },
     "sql-editor-read-user": {
       "description": "Quyền chỉ đọc để truy vấn dữ liệu cơ sở dữ liệu, không có quyền DDL hoặc DML.",
       "self": "Người dùng Trình soạn thảo SQL chỉ đọc"
@@ -2819,10 +2823,6 @@
           "exiting": "Đang rời..."
         },
         "data-copy": "Bật sao chép dữ liệu",
-        "data-export": {
-          "description": "Khi tắt, người dùng không thể xuất trực tiếp kết quả truy vấn. Trong các dự án cho phép cấp quyền truy cập, người dùng vẫn có thể nhấn \"Yêu cầu xuất dữ liệu\" để gửi yêu cầu cấp quyền truy cập và xuất sau khi được phê duyệt.",
-          "self": "Cho phép xuất dữ liệu mà không cần phê duyệt"
-        },
         "default-landing-page": {
           "default-view-changed-to-sql-editor": "Chế độ xem mặc định của không gian làm việc đã được thay đổi thành SQL Editor.",
           "go-to-sql-editor": "Đi tới Trình soạn thảo SQL",

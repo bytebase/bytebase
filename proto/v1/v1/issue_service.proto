@@ -553,7 +553,7 @@ message Issue {
 
 message RoleGrant {
   // The requested role.
-  // Format: roles/EXPORTER.
+  // Format: roles/{role}.
   string role = 1;
   // The user to be granted.
   // Format: users/{email}.

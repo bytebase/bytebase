@@ -21,7 +21,8 @@ export const roleHasDatabaseLimitation = (role: string) => {
     "bb.sql.ddl",
     "bb.sql.dml",
     "bb.sql.explain",
-    "bb.sql.info"
+    "bb.sql.info",
+    "bb.sql.export"
   );
 };
 

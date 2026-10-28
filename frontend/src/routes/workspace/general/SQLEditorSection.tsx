@@ -75,7 +75,6 @@ interface SQLEditorSectionProps {
 }
 
 interface LocalState {
-  disableExport: boolean;
   disableCopyData: boolean;
   allowAdminDataSource: boolean;
   // `null` represents an empty input while the user is typing; coerced to a
@@ -149,7 +148,6 @@ export const SQLEditorSection = forwardRef<
       rows = 0;
     }
     return {
-      disableExport: policyPayload.disableExport,
       disableCopyData: policyPayload.disableCopyData,
       allowAdminDataSource: policyPayload.allowAdminDataSource,
       maximumResultSize: Math.round(Number(size) / 1024 / 1024),
@@ -291,7 +289,6 @@ export const SQLEditorSection = forwardRef<
     const init = getInitialState();
     const maximumResultRows = state.maximumResultRows ?? 0;
     return (
-      init.disableExport !== state.disableExport ||
       init.disableCopyData !== state.disableCopyData ||
       init.allowAdminDataSource !== state.allowAdminDataSource ||
       init.maximumResultRows !== maximumResultRows
@@ -356,7 +353,6 @@ export const SQLEditorSection = forwardRef<
             case: "queryDataPolicy",
             value: create(QueryDataPolicySchema, {
               ...policyPayload,
-              disableExport: state.disableExport,
               disableCopyData: state.disableCopyData,
               allowAdminDataSource: state.allowAdminDataSource,
               maximumResultRows,
@@ -406,7 +402,7 @@ export const SQLEditorSection = forwardRef<
   }, [state, selectedThemeId, customDraft, onDirtyChange]);
 
   const handleToggle = (
-    field: "disableExport" | "disableCopyData" | "allowAdminDataSource",
+    field: "disableCopyData" | "allowAdminDataSource",
     value: boolean
   ) => {
     setState((prev) => ({ ...prev, [field]: value }));
@@ -422,28 +418,6 @@ export const SQLEditorSection = forwardRef<
   return (
     <FormSection id="security" title={title}>
       <FormFieldGroup>
-        {/* Data Export toggle */}
-        <PermissionGuard permissions={["bb.policies.update"]} display="block">
-          <FormField
-            title={
-              <span className="w-full inline-flex items-center gap-x-2">
-                <Switch
-                  checked={!state.disableExport}
-                  disabled={!canUpdatePolicy || !hasQueryPolicyFeature}
-                  onCheckedChange={(checked) =>
-                    handleToggle("disableExport", !checked)
-                  }
-                />
-                {t("settings.general.workspace.data-export.self")}
-                <FeatureBadge feature={PlanFeature.FEATURE_QUERY_POLICY} />
-              </span>
-            }
-            description={t(
-              "settings.general.workspace.data-export.description"
-            )}
-          />
-        </PermissionGuard>
-
         {/* Data Copy toggle */}
         <PermissionGuard permissions={["bb.policies.update"]} display="block">
           <FormField

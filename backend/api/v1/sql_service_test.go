@@ -633,7 +633,7 @@ func newExplainAccessFixture(ctx context.Context, t *testing.T, engine storepb.E
 
 func (f *explainAccessFixture) check(ctx context.Context, email string, isExplain bool, statement string, span *parserbase.QuerySpan) error {
 	user := &store.UserMessage{Email: email}
-	return f.service.accessCheckWithGrantedTargets(ctx, f.instance, f.database, user, []*parserbase.QuerySpan{span}, isExplain, []parserbase.Statement{{Text: statement}}, nil, "", false)
+	return f.service.accessCheckWithGrantedTargets(ctx, f.instance, f.database, user, []*parserbase.QuerySpan{span}, isExplain, []parserbase.Statement{{Text: statement}}, nil, false, "", false)
 }
 
 func reads(databases ...string) parserbase.SourceColumnSet {

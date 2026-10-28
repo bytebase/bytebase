@@ -118,7 +118,8 @@ type AccessGrant struct {
 	CreateTime *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
 	UpdateTime *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=update_time,json=updateTime,proto3" json:"update_time,omitempty"`
 	Reason     string                 `protobuf:"bytes,12,opt,name=reason,proto3" json:"reason,omitempty"`
-	// Whether export the query result.
+	// Whether the grant allows exporting the query result.
+	// An active grant with export=true grants bb.sql.export for this query until the grant expires.
 	Export bool `protobuf:"varint,13,opt,name=export,proto3" json:"export,omitempty"`
 	// The default schema to execute the query.
 	Schema string `protobuf:"bytes,14,opt,name=schema,proto3" json:"schema,omitempty"`

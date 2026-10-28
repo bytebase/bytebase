@@ -17,7 +17,10 @@ import { cn } from "@/lib/utils";
 import { RequestExportButton } from "@/modules/sql-editor/components/RequestExportButton";
 import { RequestQueryButton } from "@/modules/sql-editor/components/RequestQueryButton";
 import { useExportGrantBypass } from "@/modules/sql-editor/components/useExportGrantBypass";
-import { useSQLEditorQueryDataPolicy } from "@/modules/sql-editor/hooks/useSQLEditorState";
+import {
+  useSQLEditorDatabasesWithExport,
+  useSQLEditorQueryDataPolicy,
+} from "@/modules/sql-editor/hooks/useSQLEditorState";
 import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
 import { getSQLEditorTabsState } from "@/modules/sql-editor/store/tab";
 import { useAppStore } from "@/stores/app";
@@ -132,8 +135,14 @@ export function ResultView({
     return false;
   }, [queryDataPolicy, envQueryDataPolicy]);
 
-  // Export discovery is independent of the grant applied during Query, which
-  // may permit unmasking without export.
+  const exportDatabases = useMemo(() => [database], [database]);
+  const allowExport = useSQLEditorDatabasesWithExport(exportDatabases).has(
+    database.name
+  );
+
+  // Without bb.sql.export from a role, an active export grant for this query
+  // enables Export. Export discovery is independent of the grant applied
+  // during Query, which may permit unmasking without export.
   const {
     grantName: exportGrantName,
     tooltip: exportTooltip,
@@ -142,7 +151,7 @@ export function ResultView({
     retry,
     unmatchedDatabases,
   } = useExportGrantBypass({
-    enabled: !!queryDataPolicy?.disableExport && !!executeParams?.statement,
+    enabled: !allowExport && !!executeParams?.statement,
     project: database.project,
     targets: [
       {
@@ -154,7 +163,7 @@ export function ResultView({
     ],
   });
 
-  const showExport = !queryDataPolicy?.disableExport || !!exportGrantName;
+  const showExport = allowExport || !!exportGrantName;
 
   // When direct export is unavailable, offer a "Request export" affordance that
   // opens the access-grant drawer (pre-filled with this database, statement,

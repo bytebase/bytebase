@@ -2559,6 +2559,10 @@
       "description-placeholder": "Ingrese la descripción del rol",
       "title-placeholder": "Ingrese el título del rol"
     },
+    "sql-editor-exporter": {
+      "description": "Consultar bases de datos y exportar resultados, sin acceso DDL o DML.",
+      "self": "Exportador del editor SQL"
+    },
     "sql-editor-read-user": {
       "description": "Permisos de solo lectura para consultar datos de la base de datos, sin acceso DDL o DML.",
       "self": "Usuario de solo lectura del editor SQL"
@@ -2819,10 +2823,6 @@
           "exiting": "Saliendo..."
         },
         "data-copy": "Habilitar la copia de datos",
-        "data-export": {
-          "description": "Si está deshabilitado, los usuarios no pueden exportar directamente los resultados de las consultas. En los proyectos que permiten concesiones de acceso, aún pueden pulsar \"Solicitar exportación\" para enviar una solicitud de concesión de acceso y exportar tras la aprobación.",
-          "self": "Permitir la exportación de datos sin aprobación"
-        },
         "default-landing-page": {
           "default-view-changed-to-sql-editor": "La vista predeterminada del espacio de trabajo se ha cambiado al Editor SQL.",
           "go-to-sql-editor": "Ir al Editor SQL",

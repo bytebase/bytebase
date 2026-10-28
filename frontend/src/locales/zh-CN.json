@@ -2559,6 +2559,10 @@
       "description-placeholder": "输入角色描述",
       "title-placeholder": "输入角色称谓"
     },
+    "sql-editor-exporter": {
+      "description": "可查询数据库数据并导出结果，不包含 DDL 或 DML 访问权限。",
+      "self": "SQL 编辑器导出用户"
+    },
     "sql-editor-read-user": {
       "description": "只读权限，可查询数据库数据，不包含 DDL 或 DML 访问权限。",
       "self": "SQL 编辑器只读用户"
@@ -2819,10 +2823,6 @@
           "exiting": "退出中..."
         },
         "data-copy": "启用复制数据",
-        "data-export": {
-          "description": "关闭后，用户无法直接导出查询结果。在启用访问授权的项目中，用户仍可点击“申请导出”提交访问授权申请，审批通过后即可导出。",
-          "self": "允许无需审批导出数据"
-        },
         "default-landing-page": {
           "default-view-changed-to-sql-editor": "工作区的默认视图已更改为 SQL 编辑器。",
           "go-to-sql-editor": "转到 SQL 编辑器",

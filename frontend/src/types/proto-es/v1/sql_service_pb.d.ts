@@ -1250,7 +1250,8 @@ export declare const SQLService: GenService<{
   },
   /**
    * Exports query results to a file format.
-   * Permissions required: bb.databases.get
+   * Permissions required: bb.databases.get, and bb.sql.export on the data the statement reads.
+   * An active access grant with export=true for the statement satisfies bb.sql.export on its target databases.
    *
    * @generated from rpc bytebase.v1.SQLService.Export
    */

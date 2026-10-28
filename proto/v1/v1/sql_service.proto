@@ -85,7 +85,8 @@ service SQLService {
   }
 
   // Exports query results to a file format.
-  // Permissions required: bb.databases.get
+  // Permissions required: bb.databases.get, and bb.sql.export on the data the statement reads.
+  // An active access grant with export=true for the statement satisfies bb.sql.export on its target databases.
   rpc Export(ExportRequest) returns (ExportResponse) {
     option (google.api.http) = {
       post: "/v1/{name=instances/*/databases/*}:export"

@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"connectrpc.com/connect"
 	"github.com/pkg/errors"
 	"google.golang.org/genproto/googleapis/type/expr"
 
@@ -170,7 +171,6 @@ func convertToV1PBQueryDataPolicy(payloadStr string) (*v1pb.Policy_QueryDataPoli
 	}
 	return &v1pb.Policy_QueryDataPolicy{
 		QueryDataPolicy: &v1pb.QueryDataPolicy{
-			DisableExport:        payload.DisableExport,
 			MaximumResultRows:    payload.MaximumResultRows,
 			DisableCopyData:      payload.DisableCopyData,
 			AllowAdminDataSource: payload.AllowAdminDataSource,
@@ -178,13 +178,17 @@ func convertToV1PBQueryDataPolicy(payloadStr string) (*v1pb.Policy_QueryDataPoli
 	}, nil
 }
 
-func convertToQueryDataPolicyPayload(policy *v1pb.QueryDataPolicy) *storepb.QueryDataPolicy {
-	return &storepb.QueryDataPolicy{
-		DisableExport:        policy.DisableExport,
-		MaximumResultRows:    policy.MaximumResultRows,
-		DisableCopyData:      policy.DisableCopyData,
-		AllowAdminDataSource: policy.AllowAdminDataSource,
+// convertToQueryDataPolicyPayload rejects disable_export=true so stale configs learn the
+// setting is gone; false is accepted and dropped.
+func convertToQueryDataPolicyPayload(policy *v1pb.QueryDataPolicy) (*storepb.QueryDataPolicy, error) {
+	if policy.GetDisableExport() { //nolint:staticcheck // The deprecated field is read only to reject it.
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("disable_export is removed. Export requires the bb.sql.export permission; to require approval for export, assign roles without it.")) //nolint:revive // The message is an API contract.
 	}
+	return &storepb.QueryDataPolicy{
+		MaximumResultRows:    policy.GetMaximumResultRows(),
+		DisableCopyData:      policy.GetDisableCopyData(),
+		AllowAdminDataSource: policy.GetAllowAdminDataSource(),
+	}, nil
 }
 
 func convertToV1PBReviewRulePolicy(payloadStr string) (*v1pb.Policy_ReviewRulePolicy, error) {

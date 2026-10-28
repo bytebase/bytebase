@@ -22,7 +22,6 @@ const mocks = vi.hoisted(() => {
       queryTimeout: undefined as undefined | { seconds: bigint },
     },
     policy: {
-      disableExport: false,
       disableCopyData: false,
       allowAdminDataSource: false,
       maximumResultRows: 0n,
@@ -186,7 +185,6 @@ beforeEach(() => {
   mocks.profile.sqlEditorCustomTheme = undefined;
   mocks.profile.sqlResultSize = 0n;
   mocks.profile.queryTimeout = undefined;
-  mocks.policy.disableExport = false;
   mocks.policy.disableCopyData = false;
   mocks.policy.allowAdminDataSource = false;
   mocks.policy.maximumResultRows = 0n;
@@ -356,60 +354,48 @@ describe("SQLEditorSection theme", () => {
   });
 });
 
-// The data-export policy is stored as `disableExport`, while the control names
-// the inverse allowed state. Keep that inversion and its explanatory copy in
-// sync.
-describe("SQLEditorSection data-export policy toggle", () => {
-  function renderSection() {
+// Export is controlled by the bb.sql.export permission, so the query data
+// policy toggles cover only copying and the admin data source.
+describe("SQLEditorSection query data policy toggles", () => {
+  // The theme preview renders switches of its own; keep the settings ones.
+  function settingSwitchLabels(): string[] {
+    return Array.from(container.querySelectorAll('[role="switch"]'))
+      .map((control) => control.parentElement?.textContent ?? "")
+      .filter((label) => label.startsWith("settings.general.workspace."));
+  }
+
+  test("offers no workspace export setting", () => {
+    render(<SQLEditorSection title="SQL Editor" onDirtyChange={() => {}} />);
+
+    expect(settingSwitchLabels()).toEqual([
+      "settings.general.workspace.data-copy",
+      "settings.general.workspace.allow-admin-data-source.self",
+    ]);
+  });
+
+  test("saving a toggle change upserts the remaining policy fields", async () => {
     const ref = createRef<SectionHandle>();
     render(
       <SQLEditorSection ref={ref} title="SQL Editor" onDirtyChange={() => {}} />
     );
-    return ref;
-  }
-
-  function exportSwitch(): HTMLElement {
-    // The switch renders inside the FormField title span, as a sibling of
-    // the label text (SQLEditorSection.tsx) — scope by that span.
-    const span = Array.from(container.querySelectorAll("span")).find((s) =>
-      s.textContent?.includes("settings.general.workspace.data-export.self")
-    );
-    expect(span).toBeTruthy();
-    const control = span?.querySelector<HTMLElement>('[role="switch"]');
-    expect(control).toBeTruthy();
-    return control as HTMLElement;
-  }
-
-  test("renders the retitled label with its description", () => {
-    renderSection();
-    expect(container.textContent).toContain(
-      "settings.general.workspace.data-export.self"
-    );
-    expect(container.textContent).toContain(
-      "settings.general.workspace.data-export.description"
-    );
-  });
-
-  test("export allowed without approval (disableExport=false) renders checked", () => {
-    mocks.policy.disableExport = false;
-    renderSection();
-    expect(exportSwitch().getAttribute("aria-checked")).toBe("true");
-  });
-
-  test("approval-gated export (disableExport=true) renders unchecked", () => {
-    mocks.policy.disableExport = true;
-    renderSection();
-    expect(exportSwitch().getAttribute("aria-checked")).toBe("false");
-  });
-
-  test("toggling the switch marks the section dirty for the Update bar", () => {
-    mocks.policy.disableExport = false;
-    const ref = renderSection();
-    expect(ref.current?.isDirty()).toBe(false);
+    const copySwitch = container.querySelector<HTMLElement>('[role="switch"]');
     act(() => {
-      exportSwitch().click();
+      copySwitch!.click();
     });
     expect(ref.current?.isDirty()).toBe(true);
-    expect(exportSwitch().getAttribute("aria-checked")).toBe("false");
+
+    await act(async () => {
+      await ref.current?.update();
+    });
+
+    expect(mocks.upsertPolicy).toHaveBeenCalledTimes(1);
+    expect(mocks.upsertPolicy.mock.calls[0][0]).toMatchObject({
+      policy: {
+        policy: {
+          case: "queryDataPolicy",
+          value: { disableCopyData: true, allowAdminDataSource: false },
+        },
+      },
+    });
   });
 });

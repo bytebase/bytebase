@@ -6166,7 +6166,8 @@ paths:
       summary: Export
       description: |-
         Exports query results to a file format.
-         Permissions required: bb.databases.get
+         Permissions required: bb.databases.get, and bb.sql.export on the data the statement reads.
+         An active access grant with export=true for the statement satisfies bb.sql.export on its target databases.
       operationId: bytebase.v1.SQLService.Export
       parameters:
         - name: Connect-Protocol-Version
@@ -9338,7 +9339,9 @@ components:
         export:
           type: boolean
           title: export
-          description: Whether export the query result.
+          description: |-
+            Whether the grant allows exporting the query result.
+             An active grant with export=true grants bb.sql.export for this query until the grant expires.
         schema:
           type: string
           title: schema
@@ -10768,9 +10771,9 @@ components:
              The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
              Support variables:
-             resource.database: the canonical database full name in "instances/{instance}/databases/{database}" or "projects/{project}/instances/{instance}/databases/{database}" format, used by any role with SQL Editor read (e.g. "roles/sqlEditorUser", "roles/sqlEditorReadUser") or write (bb.sql.ddl / bb.sql.dml) access, support "==" operator.
-             resource.schema_name: the schema name, used by any role with SQL Editor read or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support "==" operator.
-             resource.table_name: the table name, used by any role with SQL Editor read or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support "==" operator.
+             resource.database: the canonical database full name in "instances/{instance}/databases/{database}" or "projects/{project}/instances/{instance}/databases/{database}" format, used by any role with SQL Editor read (e.g. "roles/sqlEditorUser", "roles/sqlEditorReadUser"), export (bb.sql.export, e.g. "roles/sqlEditorExporter") or write (bb.sql.ddl / bb.sql.dml) access, support "==" operator.
+             resource.schema_name: the schema name, used by any role with SQL Editor read, export (bb.sql.export) or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support "==" operator.
+             resource.table_name: the table name, used by any role with SQL Editor read, export (bb.sql.export) or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support "==" operator.
              resource.environment_id: the environment to allow the DDL/DML operation in the SQL Editor, only works for the role with bb.sql.ddl or bb.sql.dml permissions. Support "in" operator.
              request.time: the expiration. Only support "<" operation in `request.time < timestamp("{ISO datetime string format}")`.
 
@@ -18631,9 +18634,8 @@ components:
         disableExport:
           type: boolean
           title: disable_export
-          description: |-
-            workspace-level policy
-             Disable data export in the SQL editor.
+          description: 'Deprecated: export is controlled by the bb.sql.export permission. Always false; setting it to true is rejected.'
+          deprecated: true
         disableCopyData:
           type: boolean
           title: disable_copy_data
@@ -19747,7 +19749,7 @@ components:
           title: role
           description: |-
             The requested role.
-             Format: roles/EXPORTER.
+             Format: roles/{role}.
         user:
           type: string
           title: user
