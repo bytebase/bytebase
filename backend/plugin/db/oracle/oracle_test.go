@@ -8,6 +8,9 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"database/sql"
+	"database/sql/driver"
+	"encoding/json"
 	"encoding/pem"
 	"fmt"
 	"maps"
@@ -23,6 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -447,6 +451,52 @@ func TestOpenAppliesTLSSettings(t *testing.T) {
 	})
 }
 
+func TestCurrentSchemaOnNewSessions(t *testing.T) {
+	ctx := context.Background()
+	container, schema := testcontainer.NewOracleSchema(t)
+	open := func(schema string) (db.Driver, error) {
+		return (&Driver{}).Open(ctx, storepb.Engine_ORACLE, db.ConnectionConfig{
+			DataSource: &storepb.DataSource{
+				Host:        container.GetHost(),
+				Port:        container.GetPort(),
+				Username:    container.GetUsername(),
+				ServiceName: testcontainer.OracleServiceName,
+			},
+			Password:          container.GetPassword(),
+			ConnectionContext: db.ConnectionContext{DatabaseName: schema},
+		})
+	}
+	driver, err := open(schema)
+	require.NoError(t, err)
+	defer driver.Close(ctx)
+	// With no idle connection kept, the pool opens a new session for every connection it hands out.
+	driver.GetDB().SetMaxIdleConns(0)
+
+	t.Run("QueryConn", func(t *testing.T) {
+		conn, err := driver.GetDB().Conn(ctx)
+		require.NoError(t, err)
+		defer conn.Close()
+		results, err := driver.QueryConn(ctx, conn, "SELECT SYS_CONTEXT('USERENV', 'CURRENT_SCHEMA') FROM DUAL", db.QueryContext{MaximumSQLResultSize: 1024})
+		require.NoError(t, err)
+		require.Len(t, results, 1)
+		require.Empty(t, results[0].Error)
+		require.Equal(t, schema, results[0].Rows[0].Values[0].GetStringValue())
+	})
+
+	t.Run("Execute", func(t *testing.T) {
+		_, err := driver.Execute(ctx, "CREATE TABLE SESSION_SCHEMA AS SELECT SYS_CONTEXT('USERENV', 'CURRENT_SCHEMA') AS NAME FROM DUAL", db.ExecuteOptions{})
+		require.NoError(t, err)
+		var name string
+		require.NoError(t, container.GetDB().QueryRowContext(ctx, fmt.Sprintf("SELECT NAME FROM %s.SESSION_SCHEMA", schema)).Scan(&name))
+		require.Equal(t, schema, name)
+	})
+
+	t.Run("Open fails on a schema that doesn't exist", func(t *testing.T) {
+		_, err := open("NO_SUCH_SCHEMA")
+		require.ErrorContains(t, err, `failed to set current schema to "NO_SUCH_SCHEMA"`)
+	})
+}
+
 func closedPort(t *testing.T) string {
 	t.Helper()
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
@@ -595,4 +645,57 @@ func ping(t *testing.T, dataSource *storepb.DataSource) string {
 	err = driver.Ping(ctx)
 	require.Error(t, err)
 	return err.Error()
+}
+
+// TestQueryPlanSteps covers the one form of plan the query-plan viewer draws:
+// Oracle states a plan as rows of PLAN_TABLE, and the driver is where those
+// become the JSON document the viewer parses.
+func TestQueryPlanSteps(t *testing.T) {
+	t.Parallel()
+	connector := &fakePlanConnector{
+		columns: []string{"ID", "PARENT_ID", "OPERATION", "OPTIONS", "OBJECT_NAME", "COST", "ACCESS_PREDICATES"},
+		plan: [][]driver.Value{
+			{"0", nil, "SELECT STATEMENT", nil, nil, "48", nil},
+			// The driver hands text back as bytes, which JSON would otherwise
+			// encode as base64.
+			{"1", "0", "TABLE ACCESS", []byte("FULL"), []byte("ORDERS"), "48", []byte(`"TOTAL">880`)},
+		},
+	}
+	database := sql.OpenDB(connector)
+	defer database.Close()
+	conn, err := database.Conn(context.Background())
+	require.NoError(t, err)
+	defer conn.Close()
+
+	result, err := queryPlanSteps(context.Background(), conn, "SELECT ...")
+	require.NoError(t, err)
+	require.Equal(t, []string{"PLAN"}, result.GetColumnNames())
+	require.Len(t, result.GetRows(), 1)
+
+	var steps []map[string]any
+	require.NoError(t, json.Unmarshal([]byte(result.GetRows()[0].GetValues()[0].GetStringValue()), &steps))
+	require.Equal(t, []map[string]any{
+		// A column the optimizer said nothing about is left out, not carried
+		// as a null the viewer would have to skip.
+		{"id": "0", "operation": "SELECT STATEMENT", "cost": "48"},
+		{
+			"id": "1", "parent_id": "0", "operation": "TABLE ACCESS",
+			"options": "FULL", "object_name": "ORDERS", "cost": "48",
+			"access_predicates": `"TOTAL">880`,
+		},
+	}, steps)
+}
+
+// TestRenderPlanStepsHandlesARaggedRow keeps the rendering off the end of a row
+// shorter than the column list, which no Oracle returns but a fake might.
+func TestRenderPlanStepsHandlesARaggedRow(t *testing.T) {
+	t.Parallel()
+	payload, err := renderPlanSteps([]string{"ID", "COST"}, [][]any{{"0"}})
+	require.NoError(t, err)
+	require.JSONEq(t, `[{"id":"0"}]`, payload)
+
+	// A plan with no steps is an empty list rather than a JSON null.
+	payload, err = renderPlanSteps([]string{"ID"}, nil)
+	require.NoError(t, err)
+	require.JSONEq(t, `[]`, payload)
 }

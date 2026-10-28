@@ -43,6 +43,8 @@ var (
 	// MariaDB-only TABLE_TYPE values. Both kinds share the table namespace.
 	mariaDBSystemVersionedTableType = "SYSTEM VERSIONED"
 	mariaDBSequenceTableType        = "SEQUENCE"
+	// OceanBase-only TABLE_TYPE value; the kind shares the table namespace.
+	oceanBaseExternalTableType = "EXTERNAL TABLE"
 
 	_ db.Driver = (*Driver)(nil)
 )
@@ -637,6 +639,9 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 				}
 				if err := rows.Err(); err != nil {
 					return nil, err
+				}
+				if !queryContext.Explain {
+					r.QueryPlan = db.TypedExplainPlan(mysqlparser.DescribeExplain(statement))
 				}
 				return r, nil
 			}

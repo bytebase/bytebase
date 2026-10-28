@@ -258,7 +258,7 @@ export function ResultView({
   return (
     <div
       className={cn(
-        "relative flex flex-col justify-start items-start pb-1 overflow-y-auto h-full w-full",
+        "relative flex flex-col justify-start pb-1 overflow-y-auto h-full w-full",
         "bg-background ph-no-capture"
       )}
     >

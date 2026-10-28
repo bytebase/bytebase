@@ -19,7 +19,11 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { minmax } from "@/utils/math";
 import { PLAN_MINI_MAP_BOX, PlanMiniMap } from "./PlanMiniMap";
-import { type QueryPlanTranslate, useQueryPlanTranslation } from "./plan-i18n";
+import {
+  planWarningText,
+  type QueryPlanTranslate,
+  useQueryPlanTranslation,
+} from "./plan-i18n";
 import {
   layoutPlan,
   PLAN_IDENTITY_VIEWPORT,
@@ -449,7 +453,9 @@ export function QueryPlanDiagram({
         const selected = node.id === selectedId;
         const metrics = planCardMetrics(node, tree, translate);
         const share = planSelfShare(node, tree);
-        const warnings = node.warnings.map((warning) => warning.title);
+        const warnings = node.warnings.map(
+          (warning) => planWarningText(warning, translate).title
+        );
         const collapsed = collapsedIds.has(node.id);
         const subtreeCount = planDescendantCount(node);
         const { relationship } = node;

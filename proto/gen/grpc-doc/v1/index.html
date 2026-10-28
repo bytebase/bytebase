@@ -8557,7 +8557,7 @@ Examples include PostgreSQL&#39;s RAISE NOTICE, MSSQL&#39;s PRINT, or Oracle&#39
         
       
         <h3 id="bytebase.v1.QueryResult.QueryPlan">QueryResult.QueryPlan</h3>
-        <p>A query plan held in the result's rows.</p>
+        <p>A query plan the result carries: in its rows, or beside them.</p>
 
         
           <table class="field-table">
@@ -8579,6 +8579,18 @@ Examples include PostgreSQL&#39;s RAISE NOTICE, MSSQL&#39;s PRINT, or Oracle&#39
                   <td></td>
                   <td><p>Whether producing the plan executed the statement, as EXPLAIN ANALYZE
 does. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>content</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The plan itself, where the engine states it beside the result rather
+than in the result&#39;s rows. BigQuery reports the stages its job ran in
+the job&#39;s own statistics, so one result carries the query&#39;s data and
+the plan of the run that produced it. Empty when the plan is the rows,
+which is every other engine. Omitted from the audit log, as the rows
+are: the statement is what an audit reads. </p></td>
                 </tr>
               
             </tbody>

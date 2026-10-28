@@ -18,17 +18,25 @@ import { useMonacoFindWidgetVisible } from "@/components/monaco/useMonacoFindWid
 import { useProjectByName } from "@/hooks/useProjectByName";
 import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
-import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  type Issue,
+  IssueComment_ReviewMetadata_Priority,
+} from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
+import { useFocusThread } from "../../hooks/useFocusThread";
 import { placementsForSheet } from "../../shared/stores/placementSlice";
 import { usePlanDetailStore } from "../../shared/stores/usePlanDetailStore";
 import { usePlanDetailContext } from "../../shell/PlanDetailContext";
+import { inFindingGroup } from "../../utils/planGates";
+import { findingGroupLabel } from "../../utils/reviewLabels";
 import { InlineThreadComposer } from "./InlineThreadComposer";
+import { reviewerName } from "./ReviewResult";
 import "./statementThreads.css";
 import { StatementThreadWalker } from "./StatementThreadWalker";
 import { ThreadStack } from "./ThreadStack";
 import {
   buildWholeLineAnchor,
+  type CommentThread,
   defaultExpandedThread,
   type EditorThread,
   groupMarkersByLine,
@@ -47,6 +55,12 @@ const firstToExpand = (threads: EditorThread[] | undefined): string[] => {
   const entry = threads && (defaultExpandedThread(threads) ?? threads[0]);
   return entry ? [entry.thread.root.name] : [];
 };
+
+const LINE_CLASS_BY_WEIGHT = [
+  "bb-thread-line--passive",
+  "bb-thread-line--attention",
+  "bb-thread-line--blocking",
+] as const;
 
 // An unpublished comment form, keyed by the last line of its range so one
 // line carries at most one form. Drafts live in their own record so typing
@@ -100,6 +114,19 @@ export function StatementThreadsLayer({
     previewEndLine === undefined && canReplyToThread(project, issue);
 
   const threads = useMemo(() => groupThreads(comments), [comments]);
+  // A click on a finding count narrows the walker to one group of that
+  // reviewer's findings, across every change of the plan.
+  const walkerFilter = usePlanDetailStore((s) => s.walkerFilter);
+  const setWalkerFilter = usePlanDetailStore((s) => s.setWalkerFilter);
+  const { focusInActivity, focusInStatement } = useFocusThread();
+  const matchesWalker = useCallback(
+    (thread: CommentThread) =>
+      walkerFilter
+        ? thread.root.reviewMetadata?.runType === walkerFilter.runType &&
+          inFindingGroup(thread.root, walkerFilter.group)
+        : !thread.resolved,
+    [walkerFilter]
+  );
   const editorThreads = useMemo(
     () =>
       selectEditorThreads(
@@ -112,30 +139,60 @@ export function StatementThreadsLayer({
   // What the walker can visit, in editor order, and how many unresolved
   // threads of this change it cannot because they are not placed here.
   const visitableThreads = useMemo(
-    () => editorThreads.filter(({ thread }) => !thread.resolved),
-    [editorThreads]
+    () => editorThreads.filter(({ thread }) => matchesWalker(thread)),
+    [editorThreads, matchesWalker]
   );
   const unplacedUnresolved = useMemo(
     () =>
       threads.filter(
         (thread) =>
-          !thread.resolved && thread.root.statementAnchor?.spec === spec.id
+          matchesWalker(thread) && thread.root.statementAnchor?.spec === spec.id
       ).length - visitableThreads.length,
-    [spec.id, threads, visitableThreads.length]
+    [matchesWalker, spec.id, threads, visitableThreads.length]
   );
+  // A filtered walk spans the plan: the matching anchored threads in change
+  // and line order.
+  const specOrder = page.plan.specs;
+  const planMatches = useMemo(() => {
+    if (!walkerFilter) return undefined;
+    const specIndex = (id: string | undefined) => {
+      const index = specOrder.findIndex((candidate) => candidate.id === id);
+      return index === -1 ? Number.MAX_SAFE_INTEGER : index;
+    };
+    return threads
+      .filter((thread) => thread.root.statementAnchor && matchesWalker(thread))
+      .sort(
+        (a, b) =>
+          specIndex(a.root.statementAnchor?.spec) -
+            specIndex(b.root.statementAnchor?.spec) ||
+          (a.root.statementAnchor?.startPosition?.line ?? 0) -
+            (b.root.statementAnchor?.startPosition?.line ?? 0)
+      );
+  }, [matchesWalker, specOrder, threads, walkerFilter]);
   const markersByLine = useMemo(
     () => groupMarkersByLine(editorThreads),
     [editorThreads]
   );
 
-  // A union of commented lines, so overlapping threads never darken a line.
+  // One background per commented line, so overlapping threads never darken
+  // it. Open findings tint by priority, open discussions stay neutral, and
+  // resolved threads leave the line untinted.
   const commentedLines = useMemo(() => {
-    const lines = new Set<number>();
-    for (const { range } of editorThreads) {
+    const rank = new Map<number, number>();
+    for (const { range, thread } of editorThreads) {
+      if (thread.resolved) continue;
+      const priority = thread.root.reviewMetadata?.priority;
+      const weight = !thread.root.reviewMetadata
+        ? 0
+        : priority === IssueComment_ReviewMetadata_Priority.P0
+          ? 2
+          : 1;
       for (let line = range.startLine; line <= range.endLine; line++)
-        lines.add(line);
+        rank.set(line, Math.max(rank.get(line) ?? 0, weight));
     }
-    return [...lines].sort((a, b) => a - b);
+    return [...rank]
+      .sort(([a], [b]) => a - b)
+      .map(([line, weight]) => [line, LINE_CLASS_BY_WEIGHT[weight]] as const);
   }, [editorThreads]);
 
   // Open lines and expanded roots are independent: opening another thread
@@ -175,14 +232,14 @@ export function StatementThreadsLayer({
       const entry = markersByLine
         .get(line)
         ?.find((candidate) => candidate.thread.root.name === rootName);
-      if (entry && !entry.thread.resolved) setSelectedRoot(rootName);
+      if (entry && matchesWalker(entry.thread)) setSelectedRoot(rootName);
       setRevealRequest((previous) => ({
         line,
         rootName,
         nonce: (previous?.nonce ?? 0) + 1,
       }));
     },
-    [markersByLine]
+    [markersByLine, matchesWalker]
   );
   const collapseThread = useCallback((rootName: string) => {
     setExpandedRoots((previous) => {
@@ -280,6 +337,10 @@ export function StatementThreadsLayer({
     [expandedRoots, selectedRoot, visitableThreads]
   );
   const walk = (step: 1 | -1) => {
+    if (planMatches) {
+      walkPlan(step);
+      return;
+    }
     const count = visitableThreads.length;
     if (!count) return;
     const from =
@@ -297,6 +358,50 @@ export function StatementThreadsLayer({
     );
   };
 
+  // Steps through the plan's matching threads, handing a thread on another
+  // change to that change's editor. Threads this version cannot place are
+  // skipped.
+  const walkPlan = (step: 1 | -1) => {
+    const matches = planMatches ?? [];
+    const count = matches.length;
+    if (!count) return;
+    const currentName =
+      visitableThreads[currentVisitableIndex]?.thread.root.name;
+    let index = matches.findIndex((thread) => thread.root.name === currentName);
+    for (let tries = 0; tries < count; tries++) {
+      index =
+        index === -1
+          ? step > 0
+            ? 0
+            : count - 1
+          : (index + step + count) % count;
+      const target = matches[index];
+      if (target.root.statementAnchor?.spec !== spec.id) {
+        focusInStatement(target.root);
+        return;
+      }
+      const placed = visitableThreads.find(
+        (entry) => entry.thread.root.name === target.root.name
+      );
+      if (!placed) continue;
+      expandThread(placed.range.endLine, placed.thread.root.name);
+      setSelection(undefined);
+      setFlashRoot(placed.thread.root.name);
+      editor.getDomNode()?.scrollIntoView({ block: "nearest" });
+      setWalkerAnnouncement(
+        t("plan.review.thread.walker.position", { index: index + 1, count })
+      );
+      return;
+    }
+  };
+  const planPosition = planMatches
+    ? planMatches.findIndex(
+        (thread) =>
+          thread.root.name ===
+          visitableThreads[currentVisitableIndex]?.thread.root.name
+      ) + 1
+    : undefined;
+
   // The line that carries the comment action: the end of the selection, or
   // the hovered line when nothing is selected.
   const actionLine = canCreate
@@ -312,9 +417,16 @@ export function StatementThreadsLayer({
       (entry) => entry.thread.root.name === threadFocus.commentName
     );
     if (!target) {
-      // Anchors are current only for the saved version; a thread that is not
-      // placed here has nothing to reveal.
-      if (comments.length > 0) clearThreadFocus(threadFocus.nonce);
+      // Anchors are current only for the saved version, and an oversized
+      // statement loads only its head: a thread this editor cannot show is
+      // read in its Activity card.
+      if (comments.length > 0) {
+        const root = threads.find(
+          (thread) => thread.root.name === threadFocus.commentName
+        )?.root;
+        if (root) focusInActivity(root);
+        clearThreadFocus(threadFocus.nonce);
+      }
       return;
     }
     expandThread(target.range.endLine, target.thread.root.name);
@@ -328,8 +440,10 @@ export function StatementThreadsLayer({
     editor,
     editorThreads,
     expandThread,
+    focusInActivity,
     spec.id,
     threadFocus,
+    threads,
   ]);
 
   // Track the editor's selection as a line range (empty = none).
@@ -355,9 +469,7 @@ export function StatementThreadsLayer({
       monacoModule.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges;
     // Exactly one background per line: passive, current, or creation.
     // Higher-priority states replace the base instead of layering over it.
-    const lineClasses = new Map<number, string>(
-      commentedLines.map((line) => [line, "bb-thread-line--passive"])
-    );
+    const lineClasses = new Map<number, string>(commentedLines);
     // A pending selection replaces the reading highlight; open composers
     // keep theirs beside it, and win where they overlap.
     const pendingSelection = canCreate ? selection : undefined;
@@ -669,18 +781,28 @@ export function StatementThreadsLayer({
 
   return (
     <>
-      {visitableThreads.length > 0 && !findWidgetVisible && (
-        <MonacoOverlayWidget editor={editor}>
-          <StatementThreadWalker
-            announcement={walkerAnnouncement}
-            count={visitableThreads.length}
-            position={currentVisitableIndex + 1}
-            onNext={() => walk(1)}
-            onPrevious={() => walk(-1)}
-            remainder={unplacedUnresolved}
-          />
-        </MonacoOverlayWidget>
-      )}
+      {(planMatches ? planMatches.length : visitableThreads.length) > 0 &&
+        !findWidgetVisible && (
+          <MonacoOverlayWidget editor={editor}>
+            <StatementThreadWalker
+              announcement={walkerAnnouncement}
+              count={planMatches?.length ?? visitableThreads.length}
+              filterLabel={
+                walkerFilter
+                  ? t("plan.review.thread.walker.filter", {
+                      reviewer: reviewerName(t, walkerFilter.runType),
+                      state: findingGroupLabel(t, walkerFilter.group),
+                    })
+                  : undefined
+              }
+              onClearFilter={() => setWalkerFilter(undefined)}
+              position={planPosition ?? currentVisitableIndex + 1}
+              onNext={() => walk(1)}
+              onPrevious={() => walk(-1)}
+              remainder={unplacedUnresolved}
+            />
+          </MonacoOverlayWidget>
+        )}
       {[...openLines]
         .sort((a, b) => a - b)
         .map((line) => {

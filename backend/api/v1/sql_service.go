@@ -155,7 +155,8 @@ func (s *SQLService) AdminExecute(ctx context.Context, stream *connect.BidiStrea
 		if queryErr != nil {
 			response.Results = []*v1pb.QueryResult{
 				{
-					Error: queryErr.Error(),
+					Error:     queryErr.Error(),
+					Statement: request.Statement,
 				},
 			}
 		} else {
@@ -901,7 +902,10 @@ func queryRetry(
 	if queryContext.Explain {
 		if format, ok := db.ExplainResultFormat(instance.Metadata.GetEngine(), queryContext.Option.GetExplainFormat()); ok {
 			for _, result := range results {
-				if result.Error == "" {
+				// A driver that stated the plan itself keeps it, with whether it
+				// ran and anything it carried: Elasticsearch answers an explain
+				// with the profile of a search it executed.
+				if result.Error == "" && result.QueryPlan == nil {
 					result.QueryPlan = &v1pb.QueryResult_QueryPlan{Format: format}
 				}
 			}
@@ -1082,7 +1086,11 @@ func queryRetryStopOnError(
 		if err != nil {
 			return nil, nil, 0, err
 		}
-		return queryRetry(ctx, stores, user, instance, database, driver, conn, statements, statement, queryContext, licenseService, optionalAccessCheck, schemaSyncer, hasMultipleStatements(statements))
+		results, spans, duration, err := queryRetry(ctx, stores, user, instance, database, driver, conn, statements, statement, queryContext, licenseService, optionalAccessCheck, schemaSyncer, hasMultipleStatements(statements))
+		if len(results) == 0 {
+			results = resultForTimeout(statement, err)
+		}
+		return results, spans, duration, err
 	}
 
 	// Split the statement into individual SQLs
@@ -1093,7 +1101,11 @@ func queryRetryStopOnError(
 		// statement as a single unit. Where GetQuerySpan is supported (e.g. MongoDB),
 		// it re-parses the raw text and surfaces the parse error; otherwise
 		// queryRetry returns nil spans (old behavior).
-		return queryRetry(ctx, stores, user, instance, database, driver, conn, []parserbase.Statement{{Text: statement}}, statement, queryContext, licenseService, optionalAccessCheck, schemaSyncer, false)
+		results, spans, duration, err := queryRetry(ctx, stores, user, instance, database, driver, conn, []parserbase.Statement{{Text: statement}}, statement, queryContext, licenseService, optionalAccessCheck, schemaSyncer, false)
+		if len(results) == 0 {
+			results = resultForTimeout(statement, err)
+		}
+		return results, spans, duration, err
 	}
 
 	// A multi-statement batch can change the session schema mid-batch (e.g. SET search_path),
@@ -1137,6 +1149,28 @@ func queryRetryStopOnError(
 	return allResults, allSpans, totalDuration, nil
 }
 
+// queryTimeoutError marks a run the server cut off at its deadline, apart from
+// an error the engine reported, so a caller can answer it with the statement
+// that was running.
+type queryTimeoutError struct {
+	timeout time.Duration
+}
+
+func (e *queryTimeoutError) Error() string {
+	return fmt.Sprintf("timeout reached: %v", e.timeout)
+}
+
+// resultForTimeout names the statement a timed-out run was cut off in. No
+// driver returns a result for a statement it never finished, so without this
+// the editor has an error and nothing to point at.
+func resultForTimeout(statement string, err error) []*v1pb.QueryResult {
+	var timedOut *queryTimeoutError
+	if !errors.As(err, &timedOut) {
+		return nil
+	}
+	return []*v1pb.QueryResult{{Error: err.Error(), Statement: statement}}
+}
+
 func executeWithTimeout(
 	ctx context.Context,
 	driver db.Driver,
@@ -1161,7 +1195,7 @@ func executeWithTimeout(
 	select {
 	case <-queryCtx.Done():
 		// canceled or timed out
-		return nil, time.Since(start), errors.Errorf("timeout reached: %v", timeout)
+		return nil, time.Since(start), &queryTimeoutError{timeout: timeout}
 	default:
 		// So the select will not block
 	}
@@ -1671,12 +1705,17 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 		// A plan names the tables it reads, so reading one needs bb.sql.explain on
 		// every database the statement references, not only the connected one.
 		// A plain EXPLAIN, typed or requested, executes nothing and is done here;
-		// EXPLAIN ANALYZE executes its statement and is checked for that below.
+		// an explain that executes is checked for what it executes, below.
 		if isExplain || perm == permission.SQLExplain || (span.ExplainAnalyze && common.EngineSupportQueryNewACL(instance.Metadata.GetEngine())) {
 			if err := s.checkExplainAccess(ctx, user, instance, database, span, workspacePolicy.Policy, projectPolicy.Policy); err != nil {
 				return err
 			}
-			if !span.ExplainAnalyze {
+			// Elasticsearch states a plan only for a search it ran: an explain
+			// request there profiles the search, so it reads what the search
+			// reads and needs that permission too, as EXPLAIN ANALYZE does.
+			explainRuns := span.ExplainAnalyze ||
+				(isExplain && instance.Metadata.GetEngine() == storepb.Engine_ELASTICSEARCH)
+			if !explainRuns {
 				continue
 			}
 		}

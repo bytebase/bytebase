@@ -20,6 +20,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 func TestGetDatabaseInCreateDatabaseStatement(t *testing.T) {
@@ -440,7 +441,7 @@ func TestTypedExplainPlan(t *testing.T) {
 		{statement: "EXPLAIN (ANALYZE, FORMAT XML) SELECT 1", want: &v1pb.QueryResult_QueryPlan{Format: v1pb.QueryOption_XML, Executed: true}},
 		{statement: "EXPLAIN (FORMAT YAML) SELECT 1", want: &v1pb.QueryResult_QueryPlan{Format: v1pb.QueryOption_YAML}},
 	} {
-		require.Equal(t, tc.want, typedExplainPlan(tc.statement), tc.statement)
+		require.Equal(t, tc.want, db.TypedExplainPlan(pgparser.DescribeExplain(tc.statement)), tc.statement)
 	}
 }
 

@@ -3,6 +3,7 @@ package plsql
 import (
 	"context"
 	"reflect"
+	"slices"
 	"strings"
 	"unicode"
 
@@ -218,14 +219,19 @@ func (q *querySpanExtractor) findTableSchemaInMetadata(instanceID string, dbMeta
 
 	if table != nil {
 		var columns []string
+		invisibleColumns := make(map[string]bool)
 		for _, column := range table.GetProto().GetColumns() {
 			columns = append(columns, column.Name)
+			if column.IsInvisible {
+				invisibleColumns[column.Name] = true
+			}
 		}
 		return &base.PhysicalTable{
-			Server:   "",
-			Database: databaseName,
-			Name:     table.GetProto().Name,
-			Columns:  columns,
+			Server:           "",
+			Database:         databaseName,
+			Name:             table.GetProto().Name,
+			Columns:          columns,
+			InvisibleColumns: invisibleColumns,
 		}, nil
 	}
 
@@ -1503,7 +1509,18 @@ func (q *omniQuerySpanExtractor) getOmniFieldColumnSource(schemaName, tableName,
 	return base.SourceColumnSet{}
 }
 
+// expandOmniAsterisk returns the columns * stands for. It leaves out invisible
+// columns, as Oracle does; including one would shift every result after it,
+// and the masking applied to each.
 func (q *omniQuerySpanExtractor) expandOmniAsterisk(schemaName, tableName string) ([]base.QuerySpanResult, error) {
+	results, err := q.expandOmniAsteriskWithInvisible(schemaName, tableName)
+	if err != nil {
+		return nil, err
+	}
+	return slices.DeleteFunc(results, func(result base.QuerySpanResult) bool { return result.Invisible }), nil
+}
+
+func (q *omniQuerySpanExtractor) expandOmniAsteriskWithInvisible(schemaName, tableName string) ([]base.QuerySpanResult, error) {
 	findInTableSource := func(tableSource base.TableSource) ([]base.QuerySpanResult, bool) {
 		if schemaName != "" && schemaName != tableSource.GetDatabaseName() {
 			return nil, false
@@ -1662,6 +1679,7 @@ func cloneQuerySpanResult(result base.QuerySpanResult) base.QuerySpanResult {
 		Name:          result.Name,
 		SourceColumns: cloneSourceColumnSet(result.SourceColumns),
 		IsPlainField:  result.IsPlainField,
+		Invisible:     result.Invisible,
 	}
 }
 

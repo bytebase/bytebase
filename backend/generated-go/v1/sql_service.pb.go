@@ -1947,13 +1947,20 @@ func (x *QueryResult_Message) GetContent() string {
 	return ""
 }
 
-// A query plan held in the result's rows.
+// A query plan the result carries: in its rows, or beside them.
 type QueryResult_QueryPlan struct {
 	state  protoimpl.MessageState    `protogen:"open.v1"`
 	Format QueryOption_ExplainFormat `protobuf:"varint,1,opt,name=format,proto3,enum=bytebase.v1.QueryOption_ExplainFormat" json:"format,omitempty"`
 	// Whether producing the plan executed the statement, as EXPLAIN ANALYZE
 	// does.
-	Executed      bool `protobuf:"varint,2,opt,name=executed,proto3" json:"executed,omitempty"`
+	Executed bool `protobuf:"varint,2,opt,name=executed,proto3" json:"executed,omitempty"`
+	// The plan itself, where the engine states it beside the result rather
+	// than in the result's rows. BigQuery reports the stages its job ran in
+	// the job's own statistics, so one result carries the query's data and
+	// the plan of the run that produced it. Empty when the plan is the rows,
+	// which is every other engine. Omitted from the audit log, as the rows
+	// are: the statement is what an audit reads.
+	Content       string `protobuf:"bytes,3,opt,name=content,proto3" json:"content,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2000,6 +2007,13 @@ func (x *QueryResult_QueryPlan) GetExecuted() bool {
 		return x.Executed
 	}
 	return false
+}
+
+func (x *QueryResult_QueryPlan) GetContent() string {
+	if x != nil {
+		return x.Content
+	}
+	return ""
 }
 
 type RowValue_Timestamp struct {
@@ -2175,7 +2189,7 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\x04TEXT\x10\x01\x12\b\n" +
 	"\x04JSON\x10\x02\x12\a\n" +
 	"\x03XML\x10\x03\x12\b\n" +
-	"\x04YAML\x10\x04J\x04\b\x02\x10\x03R\x14mssql_explain_format\"\xc3\x0e\n" +
+	"\x04YAML\x10\x04J\x04\b\x02\x10\x03R\x14mssql_explain_format\"\xe4\x0e\n" +
 	"\vQueryResult\x12!\n" +
 	"\fcolumn_names\x18\x01 \x03(\tR\vcolumnNames\x12*\n" +
 	"\x11column_type_names\x18\x02 \x03(\tR\x0fcolumnTypeNames\x12/\n" +
@@ -2236,10 +2250,11 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\x03LOG\x10\x04\x12\n" +
 	"\n" +
 	"\x06NOTICE\x10\x05\x12\r\n" +
-	"\tEXCEPTION\x10\x06\x1ag\n" +
+	"\tEXCEPTION\x10\x06\x1a\x87\x01\n" +
 	"\tQueryPlan\x12>\n" +
 	"\x06format\x18\x01 \x01(\x0e2&.bytebase.v1.QueryOption.ExplainFormatR\x06format\x12\x1a\n" +
-	"\bexecuted\x18\x02 \x01(\bR\bexecutedB\x10\n" +
+	"\bexecuted\x18\x02 \x01(\bR\bexecuted\x12\x1e\n" +
+	"\acontent\x18\x03 \x01(\tB\x04\xd0\xea0\x02R\acontentB\x10\n" +
 	"\x0edetailed_error\"\xb0\x02\n" +
 	"\rMaskingReason\x12(\n" +
 	"\x10semantic_type_id\x18\x01 \x01(\tR\x0esemanticTypeId\x12.\n" +

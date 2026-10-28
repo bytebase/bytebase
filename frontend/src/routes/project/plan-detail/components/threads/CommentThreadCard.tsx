@@ -2,7 +2,6 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
-  CircleCheck,
   Loader2,
   RotateCcw,
 } from "lucide-react";
@@ -22,7 +21,6 @@ import { HumanizeTs } from "@/components/HumanizeTs";
 import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { MonacoViewZoneRevealContext } from "@/components/monaco/MonacoViewZone";
 import { UserAvatar } from "@/components/UserAvatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useCurrentUser } from "@/hooks/useAppState";
@@ -34,6 +32,7 @@ import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import "./CommentThreadCard.css";
 import { ReviewPriorityBadge, useCommentAuthor } from "./ReviewResult";
 import { ThreadComment } from "./ThreadComment";
+import { ThreadStateBadge } from "./ThreadStateBadge";
 import type { CommentThread } from "./threadModel";
 import {
   canReplyToThread,
@@ -257,12 +256,7 @@ export function CommentThreadCard({
         status={
           <>
             {label}
-            {thread.resolved && (
-              <Badge className="gap-x-1 px-2 text-xs" variant="success">
-                <CircleCheck className="size-3" />
-                {t("plan.review.thread.resolved")}
-              </Badge>
-            )}
+            <ThreadStateBadge resolved={thread.resolved} />
           </>
         }
       />
@@ -437,10 +431,7 @@ function ThreadSummary({
         className="hidden shrink-0 text-xs text-control-light sm:inline"
         tsMs={getTimeForPbTimestampProtoEs(thread.root.createTime)}
       />
-      <Badge className="shrink-0 gap-x-1 px-2 text-xs" variant="success">
-        <CircleCheck className="size-3" />
-        {t("plan.review.thread.resolved")}
-      </Badge>
+      <ThreadStateBadge resolved />
       <ChevronDown className="size-4 shrink-0 text-control-light" />
     </Button>
   );

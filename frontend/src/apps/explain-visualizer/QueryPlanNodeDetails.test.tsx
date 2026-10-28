@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
+import { QueryPlanI18nProvider } from "./plan-i18n";
 import { PLAN_FULL_TABLE_SCAN, type PlanNode } from "./plan-model";
 import { QueryPlanNodeDetails } from "./QueryPlanNodeDetails";
 
@@ -99,6 +100,38 @@ describe("QueryPlanNodeDetails", () => {
     expect(warnings[0]).toHaveTextContent(/an index on the filtered columns/);
     expect(warnings[1]).toHaveTextContent("No join predicate");
     expect(screen.getAllByRole("alert")).toEqual(warnings);
+  });
+
+  test("reads this viewer's own warning in the reader's language", () => {
+    const translate = vi.fn((key: string) => `localized:${key}`);
+    render(
+      <QueryPlanI18nProvider translate={translate}>
+        <QueryPlanNodeDetails
+          node={node({
+            warnings: [
+              PLAN_FULL_TABLE_SCAN,
+              {
+                title: "No join predicate",
+                detail: "Every row pairs up.",
+                source: "engine",
+              },
+            ],
+          })}
+        />
+      </QueryPlanI18nProvider>
+    );
+
+    const warnings = screen.getAllByTestId("plan-details-warning");
+    expect(warnings[0]).toHaveTextContent(
+      "localized:warning.full-table-scan.title"
+    );
+    expect(warnings[0]).toHaveTextContent(
+      "localized:warning.full-table-scan.detail"
+    );
+    // A warning the engine reported keeps the engine's words, as the plan's
+    // own operator names and values do.
+    expect(warnings[1]).toHaveTextContent("No join predicate");
+    expect(warnings[1]).toHaveTextContent("Every row pairs up.");
   });
 
   test("shows a warning the engine repeats as often as it reports it", () => {

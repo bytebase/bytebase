@@ -4,9 +4,11 @@ import (
 	"context"
 	"strings"
 	"testing"
+	"time"
 
 	"connectrpc.com/connect"
 	metadatapb "github.com/bytebase/omni/metadata"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -360,17 +362,39 @@ func TestValidateExplainFormat(t *testing.T) {
 		{name: "spanner json", engine: storepb.Engine_SPANNER, format: v1pb.QueryOption_JSON},
 		{name: "spanner has no text plan", engine: storepb.Engine_SPANNER, format: v1pb.QueryOption_TEXT, wantErr: true},
 		{name: "mysql text", engine: storepb.Engine_MYSQL, format: v1pb.QueryOption_TEXT},
-		{name: "mysql json is not implemented yet", engine: storepb.Engine_MYSQL, format: v1pb.QueryOption_JSON, wantErr: true},
+		{name: "mysql json", engine: storepb.Engine_MYSQL, format: v1pb.QueryOption_JSON},
+		{name: "mysql has no xml plan", engine: storepb.Engine_MYSQL, format: v1pb.QueryOption_XML, wantErr: true},
+		{name: "mariadb json", engine: storepb.Engine_MARIADB, format: v1pb.QueryOption_JSON},
+		{name: "tidb json", engine: storepb.Engine_TIDB, format: v1pb.QueryOption_JSON},
+		{name: "oceanbase json", engine: storepb.Engine_OCEANBASE, format: v1pb.QueryOption_JSON},
+		{name: "oracle json", engine: storepb.Engine_ORACLE, format: v1pb.QueryOption_JSON},
 		{name: "oracle xml is not implemented yet", engine: storepb.Engine_ORACLE, format: v1pb.QueryOption_XML, wantErr: true},
+		{name: "clickhouse json", engine: storepb.Engine_CLICKHOUSE, format: v1pb.QueryOption_JSON},
+		{name: "trino json", engine: storepb.Engine_TRINO, format: v1pb.QueryOption_JSON},
+		// CockroachDB's own EXPLAIN takes no JSON — the plan the driver reads is
+		// the one encoded in the diagram EXPLAIN (DISTSQL) links to.
+		{name: "cockroachdb json", engine: storepb.Engine_COCKROACHDB, format: v1pb.QueryOption_JSON},
+		{name: "starrocks json is a syntax error on the engine", engine: storepb.Engine_STARROCKS, format: v1pb.QueryOption_JSON, wantErr: true},
+		{name: "doris text", engine: storepb.Engine_DORIS, format: v1pb.QueryOption_TEXT},
+		{name: "doris json is a syntax error on the engine too", engine: storepb.Engine_DORIS, format: v1pb.QueryOption_JSON, wantErr: true},
+		{name: "hive json", engine: storepb.Engine_HIVE, format: v1pb.QueryOption_JSON},
 		{name: "redis explains nothing at all", engine: storepb.Engine_REDIS, format: v1pb.QueryOption_TEXT, wantErr: true},
-		{name: "mongodb explains nothing at all", engine: storepb.Engine_MONGODB, format: v1pb.QueryOption_JSON, wantErr: true},
+		{name: "mongodb json", engine: storepb.Engine_MONGODB, format: v1pb.QueryOption_JSON},
+		{name: "mongodb has no text plan", engine: storepb.Engine_MONGODB, format: v1pb.QueryOption_TEXT, wantErr: true},
 		// A driver that ignores the explain flag runs the statement instead, and
 		// the explain path skips the read-only validation, so an unspecified
 		// format must be refused here too rather than reaching the driver.
 		{name: "cassandra refuses even an unspecified format", engine: storepb.Engine_CASSANDRA, format: v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, wantErr: true},
 		{name: "cosmosdb refuses even an unspecified format", engine: storepb.Engine_COSMOSDB, format: v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, wantErr: true},
-		{name: "databricks refuses even an unspecified format", engine: storepb.Engine_DATABRICKS, format: v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, wantErr: true},
-		{name: "elasticsearch refuses even an unspecified format", engine: storepb.Engine_ELASTICSEARCH, format: v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, wantErr: true},
+		// Databricks plans a statement through Spark's own EXPLAIN, whose only
+		// plan is text.
+		{name: "databricks text", engine: storepb.Engine_DATABRICKS, format: v1pb.QueryOption_TEXT},
+		{name: "databricks json has no reader", engine: storepb.Engine_DATABRICKS, format: v1pb.QueryOption_JSON, wantErr: true},
+		// Elasticsearch states one plan, its profile, which it answers with only
+		// for a search it ran; the driver refuses to profile anything else.
+		{name: "elasticsearch default", engine: storepb.Engine_ELASTICSEARCH, format: v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED},
+		{name: "elasticsearch json", engine: storepb.Engine_ELASTICSEARCH, format: v1pb.QueryOption_JSON},
+		{name: "elasticsearch has no text plan", engine: storepb.Engine_ELASTICSEARCH, format: v1pb.QueryOption_TEXT, wantErr: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -391,12 +415,48 @@ func TestValidateExplainFormat(t *testing.T) {
 // The engine parsers are registered for the whole v1 test binary by blank imports
 // elsewhere in the package, so each call below returns that engine's real verdict
 // rather than a no-parser default.
+//
+// Databricks prefixes EXPLAIN too and is left out: it is the one SQL engine with
+// no read-only validator registered, so the gate has nothing to classify the
+// planned form with — for an ordinary query as much as for an explain. What
+// keeps a write from running there is Spark's EXPLAIN, which compiles a
+// statement without executing it, and the planner reading the caller's comments
+// as Databricks does, so a write behind one is planned rather than preserved.
+// See TestExplainGateOnlyPlansOnDatabricks.
 var explainPrefixEngines = []storepb.Engine{
 	storepb.Engine_POSTGRES, storepb.Engine_MYSQL, storepb.Engine_MARIADB,
 	storepb.Engine_OCEANBASE, storepb.Engine_TIDB, storepb.Engine_REDSHIFT,
 	storepb.Engine_COCKROACHDB, storepb.Engine_SNOWFLAKE, storepb.Engine_CLICKHOUSE,
 	storepb.Engine_STARROCKS, storepb.Engine_DORIS, storepb.Engine_HIVE,
 	storepb.Engine_TRINO,
+}
+
+// TestExplainGateOnlyPlansOnDatabricks locks what stands in for the smuggle
+// defense on the one engine whose planned form the gate cannot classify: every
+// statement an explain request reaches the driver with begins with EXPLAIN, so
+// Spark compiles it rather than running it. A write the caller sends is planned,
+// not executed.
+func TestExplainGateOnlyPlansOnDatabricks(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name      string
+		statement string
+		want      string
+	}{
+		{name: "a write is planned", statement: "DELETE FROM t WHERE id = 1", want: "EXPLAIN FORMATTED DELETE FROM t WHERE id = 1"},
+		{name: "ANALYZE DELETE is planned", statement: "ANALYZE DELETE FROM t", want: "EXPLAIN FORMATTED ANALYZE DELETE FROM t"},
+		// Databricks block comments nest, so the EXPLAIN here is inside one and
+		// the statement is the delete.
+		{name: "a write behind a nested comment", statement: "/* outer /* inner */\nEXPLAIN\n*/\nDELETE FROM t", want: "EXPLAIN FORMATTED /* outer /* inner */\nEXPLAIN\n*/\nDELETE FROM t"},
+		{name: "a plan the caller asked for", statement: "EXPLAIN SELECT 1", want: "EXPLAIN SELECT 1"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			planned, err := parserbase.ExplainStatement(storepb.Engine_DATABRICKS, tc.statement, parserbase.ExplainFormatDefault)
+			require.NoError(t, err)
+			require.Equal(t, tc.want, planned)
+		})
+	}
 }
 
 // TestExplainGateRejectsSmuggledWrite locks the smuggle defense. An explain
@@ -667,4 +727,28 @@ func TestRemapBackupTableColumns(t *testing.T) {
 	require.Equal(t, want, span.SourceColumns)
 	require.Equal(t, want, span.PredicateColumns)
 	require.Equal(t, want, span.Results[0].SourceColumns)
+}
+
+func TestResultForTimeoutNamesTheStatementItCutOff(t *testing.T) {
+	t.Parallel()
+	results := resultForTimeout("SELECT * FROM t", &queryTimeoutError{timeout: 30 * time.Second})
+	require.Len(t, results, 1)
+	require.Equal(t, "SELECT * FROM t", results[0].Statement)
+	require.Equal(t, "timeout reached: 30s", results[0].Error)
+}
+
+func TestResultForTimeoutLeavesAnEngineErrorAlone(t *testing.T) {
+	t.Parallel()
+	// Only a run the server cut off has no result of its own; an engine error
+	// already reaches the editor as the driver reported it.
+	require.Nil(t, resultForTimeout("SELECT * FROM t", errors.New("syntax error")))
+	require.Nil(t, resultForTimeout("SELECT * FROM t", nil))
+}
+
+func TestResultForTimeoutUnwrapsAWrappedTimeout(t *testing.T) {
+	t.Parallel()
+	err := errors.Wrap(&queryTimeoutError{timeout: time.Second}, "failed to query")
+	results := resultForTimeout("SELECT 1", err)
+	require.Len(t, results, 1)
+	require.Equal(t, "SELECT 1", results[0].Statement)
 }

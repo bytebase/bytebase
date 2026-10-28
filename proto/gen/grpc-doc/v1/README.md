@@ -2717,13 +2717,14 @@ for field description.
 <a name="bytebase-v1-QueryResult-QueryPlan"></a>
 
 ### QueryResult.QueryPlan
-A query plan held in the result&#39;s rows.
+A query plan the result carries: in its rows, or beside them.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | format | [QueryOption.ExplainFormat](#bytebase-v1-QueryOption-ExplainFormat) |  |  |
 | executed | [bool](#bool) |  | Whether producing the plan executed the statement, as EXPLAIN ANALYZE does. |
+| content | [string](#string) |  | The plan itself, where the engine states it beside the result rather than in the result&#39;s rows. BigQuery reports the stages its job ran in the job&#39;s own statistics, so one result carries the query&#39;s data and the plan of the run that produced it. Empty when the plan is the rows, which is every other engine. Omitted from the audit log, as the rows are: the statement is what an audit reads. |
 
 
 

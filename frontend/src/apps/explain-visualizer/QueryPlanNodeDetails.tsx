@@ -1,6 +1,10 @@
 import { Alert } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { type QueryPlanTranslate, useQueryPlanTranslation } from "./plan-i18n";
+import {
+  planWarningText,
+  type QueryPlanTranslate,
+  useQueryPlanTranslation,
+} from "./plan-i18n";
 import {
   formatPlanCost,
   formatPlanCount,
@@ -189,17 +193,20 @@ export function QueryPlanNodeDetails({ node, table }: Props) {
       {/* The diagram flags these with a hover-only icon, which a touch reader
           never reaches. The pane is where the selected node is explained, so
           it carries the warnings too. */}
-      {node.warnings.map((warning, index) => (
-        <Alert
-          // An engine can report the same warning twice, so its text is not a
-          // key; a node's warnings never reorder.
-          key={index}
-          variant="warning"
-          data-testid="plan-details-warning"
-          title={warning.title}
-          description={warning.detail}
-        />
-      ))}
+      {node.warnings.map((warning, index) => {
+        const { title, detail } = planWarningText(warning, translate);
+        return (
+          <Alert
+            // An engine can report the same warning twice, so its text is not
+            // a key; a node's warnings never reorder.
+            key={index}
+            variant="warning"
+            data-testid="plan-details-warning"
+            title={title}
+            description={detail}
+          />
+        );
+      })}
 
       {metrics.length > 0 ? (
         <>

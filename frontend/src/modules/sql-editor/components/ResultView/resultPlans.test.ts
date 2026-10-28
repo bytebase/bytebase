@@ -37,6 +37,27 @@ const planResult = (totalCost: number) => {
 };
 
 describe("inlineQueryPlan", () => {
+  test("prefers the plan an engine stated beside the rows", () => {
+    // BigQuery's result holds the query's data, and its plan arrives with the
+    // job rather than in those rows, so the rows are not the plan to read.
+    const content = '[{"id":0,"name":"S00: Input"}]';
+    const result = create(QueryResultSchema, {
+      statement: "SELECT city FROM customers",
+      columnNames: ["city"],
+      rows: [
+        create(QueryRowSchema, {
+          values: [
+            create(RowValueSchema, {
+              kind: { case: "stringValue", value: "berlin" },
+            }),
+          ],
+        }),
+      ],
+      queryPlan: create(QueryResult_QueryPlanSchema, { content }),
+    });
+    expect(inlineQueryPlan(result)?.source).toBe(content);
+  });
+
   test("joins a single-column plan into its source text", () => {
     expect(
       inlineQueryPlan(textResult(["Seq Scan on t", "  Filter: (a = 1)"]))

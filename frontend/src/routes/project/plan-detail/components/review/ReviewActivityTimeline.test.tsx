@@ -6,10 +6,12 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import { shownTimestampModes } from "@/test-utils/humanizeTs";
 import { PositionSchema } from "@/types/proto-es/v1/common_pb";
 import {
+  IssueComment_ReviewMetadataSchema,
   IssueComment_ReviewSubmissionSchema,
   IssueComment_ThreadState,
   IssueCommentSchema,
   IssueSchema,
+  ReviewRun_Type,
   StatementAnchorSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
@@ -19,7 +21,10 @@ import {
 } from "@/types/proto-es/v1/plan_service_pb";
 
 const mocks = vi.hoisted(() => ({
+  activityFocus: undefined as { commentName: string; nonce: number } | undefined,
+  clearActivityFocus: vi.fn(),
   requestThreadFocus: vi.fn(),
+  setWalkerFilter: vi.fn(),
   expandPhase: vi.fn(),
   placements: new Map<string, unknown>(),
   placementTargets: new Map<string, string>(),
@@ -39,11 +44,13 @@ vi.mock("@/components/issue-activity/IssueCommentActivity", () => ({
   ActivityRowFrame: ({
     children,
     icon,
+    id,
   }: {
     children: ReactNode;
     icon: ReactNode;
+    id?: string;
   }) => (
-    <li data-testid="thread-row">
+    <li data-testid="thread-row" id={id}>
       {icon}
       {children}
     </li>
@@ -127,9 +134,14 @@ vi.mock("../../shared/stores/usePlanDetailStore", () => ({
       selectedSpecId: "spec-1",
       placements: mocks.placements,
       placementTargets: mocks.placementTargets,
+      activityFocus: mocks.activityFocus,
+      clearActivityFocus: mocks.clearActivityFocus,
     }),
   usePlanDetailStoreApi: () => ({
-    getState: () => ({ requestThreadFocus: mocks.requestThreadFocus }),
+    getState: () => ({
+      requestThreadFocus: mocks.requestThreadFocus,
+      setWalkerFilter: mocks.setWalkerFilter,
+    }),
   }),
 }));
 
@@ -191,6 +203,7 @@ vi.mock("../../shell/PlanDetailContext", () => ({
   usePlanDetailContext: () => ({
     projectId: "p1",
     planId: "1",
+    plan: { specs: [{ id: "spec-1" }] },
     expandPhase: mocks.expandPhase,
   }),
 }));
@@ -222,6 +235,7 @@ const reviewSubmission = (name: string) =>
 describe("ReviewActivityTimeline", () => {
   afterEach(() => {
     vi.clearAllMocks();
+    mocks.activityFocus = undefined;
     mocks.placements.clear();
     mocks.placementTargets.clear();
   });
@@ -286,6 +300,95 @@ describe("ReviewActivityTimeline", () => {
     });
     expect(mocks.expandPhase).toHaveBeenCalledWith("changes");
     act(() => root.unmount());
+  });
+
+  test("a run's line steps through its open findings in the editor", () => {
+    const plan = create(PlanSchema, {
+      name: "projects/p1/plans/1",
+      specs: [create(Plan_SpecSchema, { id: "spec-1" })],
+    });
+    const finding = (
+      id: string,
+      line: number,
+      threadState: IssueComment_ThreadState
+    ) =>
+      create(IssueCommentSchema, {
+        name: `projects/p1/issues/1/issueComments/${id}`,
+        comment: "No WHERE clause",
+        threadState,
+        createTime: timestampFromMs(0),
+        statementAnchor: create(StatementAnchorSchema, {
+          spec: "spec-1",
+          startPosition: create(PositionSchema, { line, column: 0 }),
+        }),
+        reviewMetadata: create(IssueComment_ReviewMetadataSchema, {
+          runType: ReviewRun_Type.RULE,
+        }),
+      });
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    act(() => {
+      root.render(
+        <ReviewActivityTimeline
+          comments={[
+            finding("resolved", 1, IssueComment_ThreadState.RESOLVED),
+            finding("open-5", 5, IssueComment_ThreadState.OPEN),
+            finding("open-3", 3, IssueComment_ThreadState.OPEN),
+          ]}
+          issue={create(IssueSchema, { name: "projects/p1/issues/1" })}
+          plan={plan}
+        />
+      );
+    });
+    const show = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent === "plan.deploy-waiting.show"
+    );
+    act(() => show?.click());
+    expect(mocks.setWalkerFilter).toHaveBeenCalledWith({
+      runType: ReviewRun_Type.RULE,
+      group: "open",
+    });
+    expect(mocks.requestThreadFocus).toHaveBeenCalledWith(
+      expect.objectContaining({
+        commentName: "projects/p1/issues/1/issueComments/open-3",
+      })
+    );
+    act(() => root.unmount());
+  });
+
+  test("unfolds the timeline to reach a card asked for from elsewhere", () => {
+    const name = (i: number) => `projects/p1/issues/1/issueComments/t${i}`;
+    const comments = Array.from({ length: 12 }, (_, i) =>
+      create(IssueCommentSchema, {
+        name: name(i),
+        comment: `thread ${i}`,
+        threadState: IssueComment_ThreadState.OPEN,
+        createTime: timestampFromMs(i * 1000),
+      })
+    );
+    const scrollIntoView = vi.fn();
+    const original = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = scrollIntoView;
+    mocks.activityFocus = { commentName: name(6), nonce: 4 };
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    act(() => {
+      root.render(
+        <ReviewActivityTimeline
+          comments={comments}
+          issue={create(IssueSchema, { name: "projects/p1/issues/1" })}
+          plan={create(PlanSchema, { name: "projects/p1/plans/1" })}
+        />
+      );
+    });
+    const card = document.getElementById(name(6));
+    expect(card).not.toBeNull();
+    expect(scrollIntoView.mock.contexts).toContain(card);
+    expect(mocks.clearActivityFocus).toHaveBeenCalledWith(4);
+    act(() => root.unmount());
+    container.remove();
+    Element.prototype.scrollIntoView = original;
   });
 
   test("hands a thread card the plan spec its anchor names, and none for a spec the plan lacks", () => {

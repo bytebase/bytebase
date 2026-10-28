@@ -16,10 +16,15 @@ import {
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 
 const mocks = vi.hoisted(() => ({
+  sqlReviewV2: false,
   createIssueComment: vi.fn(),
   notify: vi.fn(),
   updateIssueComment: vi.fn(),
   hasPermission: vi.fn((_project: unknown, _permission: unknown) => true),
+}));
+
+vi.mock("@/utils/featureGates", () => ({
+  sqlReviewV2Enabled: () => mocks.sqlReviewV2,
 }));
 
 vi.mock("react-i18next", () => ({
@@ -154,6 +159,7 @@ let container: HTMLDivElement;
 let root: Root;
 
 beforeEach(() => {
+  mocks.sqlReviewV2 = false;
   HTMLElement.prototype.scrollIntoView = vi.fn();
   vi.clearAllMocks();
   mocks.hasPermission.mockReturnValue(true);
@@ -216,6 +222,13 @@ describe("CommentThreadCard", () => {
     submitReply();
     await act(async () => {});
     expect(mocks.createIssueComment).toHaveBeenCalledExactlyOnceWith({ issueName: ISSUE, comment: "New reply", root: rootName });
+  });
+
+  test("under SQL Review V2 a draft takes replies", () => {
+    mocks.sqlReviewV2 = true;
+    const [thread] = groupThreads([comment("root", "Root question")]);
+    render(<CommentThreadCard project={project} thread={thread} issue={create(IssueSchema, { ...issue, draft: true })} />);
+    expect(buttonByText("plan.review.thread.reply-placeholder")).toBeDefined();
   });
 
   test("places statement context above the root author as a separate full-width region", () => {

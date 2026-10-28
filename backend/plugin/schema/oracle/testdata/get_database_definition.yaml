@@ -249,3 +249,80 @@
         INSERT INTO EMPLOYEES (EMP_ID, EMAIL) VALUES (:NEW.EMP_ID, :NEW.EMAIL);
     END;
 
+- description: An object table is left out, and invisible and virtual columns keep their clauses
+  metadata: |
+    {
+      "name": "TESTSCHEMA",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "OT",
+              "skip_dump": true,
+              "columns": [
+                {
+                  "name": "X",
+                  "position": 1,
+                  "type": "NUMBER",
+                  "nullable": true
+                }
+              ]
+            },
+            {
+              "name": "T",
+              "columns": [
+                {
+                  "name": "A",
+                  "position": 1,
+                  "type": "NUMBER"
+                },
+                {
+                  "name": "VC",
+                  "position": 2,
+                  "type": "NUMBER",
+                  "nullable": true,
+                  "generation": {
+                    "type": "TYPE_VIRTUAL",
+                    "expression": "\"A\"+1"
+                  }
+                },
+                {
+                  "name": "H",
+                  "position": 3,
+                  "type": "NUMBER",
+                  "nullable": true,
+                  "is_invisible": true
+                },
+                {
+                  "name": "HV",
+                  "position": 4,
+                  "type": "NUMBER",
+                  "is_invisible": true,
+                  "default": "7"
+                },
+                {
+                  "name": "IHV",
+                  "position": 5,
+                  "type": "NUMBER",
+                  "nullable": true,
+                  "is_invisible": true,
+                  "generation": {
+                    "type": "TYPE_VIRTUAL",
+                    "expression": "\"A\"*2"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  expected: |+
+    CREATE TABLE "T" (
+      "A" NUMBER NOT NULL,
+      "VC" NUMBER GENERATED ALWAYS AS ("A"+1) VIRTUAL,
+      "H" NUMBER INVISIBLE,
+      "HV" NUMBER INVISIBLE DEFAULT 7 NOT NULL,
+      "IHV" NUMBER INVISIBLE GENERATED ALWAYS AS ("A"*2) VIRTUAL
+    );
+

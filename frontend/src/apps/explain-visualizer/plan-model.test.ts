@@ -34,7 +34,9 @@ import {
   planSelfCostShare,
   planSelfShare,
   planSelfTime,
+  planSizeBudget,
   planWarningGroups,
+  planWarningIdentity,
 } from "./plan-model";
 import { parsePostgresPlan } from "./postgres-plan";
 import cteNestedLoopInitplan from "./test-data/postgres/cte-nested-loop-initplan.json";
@@ -157,6 +159,18 @@ describe("parseWithDepthLimit", () => {
   test("turns a tree with more operators than the cap into the node-cap message", () => {
     const children = Array.from({ length: 1001 }, (_, i) => bareNode(`0.${i}`));
     const result = parseWithDepthLimit(() => bareNode("0", children));
+    expect(result).toEqual({ ok: false, message: PLAN_TOO_MANY_NODES_MESSAGE });
+  });
+
+  test("stops a parser expanding a graph as soon as it passes the cap", () => {
+    const count = planSizeBudget();
+    const result = parseWithDepthLimit(() => {
+      // A parser that splices a graph into a tree draws a node several paths
+      // reach once per path, so the copies have to be counted as they are
+      // made rather than after the whole tree is built.
+      for (let drawn = 0; drawn < 5000; drawn += 1) count();
+      return bareNode("0");
+    });
     expect(result).toEqual({ ok: false, message: PLAN_TOO_MANY_NODES_MESSAGE });
   });
 
@@ -676,11 +690,11 @@ describe("planWarningGroups", () => {
   test("keeps an engine diagnostic whatever the node costs", () => {
     expect(
       planWarningGroups(mixedTree()).map((group) => [
-        group.warning.title,
+        planWarningIdentity(group.warning),
         group.nodes.map((entry) => entry.id),
       ])
     ).toEqual([
-      ["Full table scan", ["0.0"]],
+      ["full-table-scan", ["0.0"]],
       ["Columns with no statistics", ["0.2"]],
     ]);
   });
@@ -715,9 +729,9 @@ describe("planWarningGroups", () => {
         { ...bareNode("0.0"), warnings: [PLAN_FULL_TABLE_SCAN] },
       ]),
     });
-    expect(planWarningGroups(tree).map((group) => group.warning.title)).toEqual(
-      ["Full table scan"]
-    );
+    expect(
+      planWarningGroups(tree).map((group) => planWarningIdentity(group.warning))
+    ).toEqual(["full-table-scan"]);
   });
 
   test("is empty for a plan nothing is wrong with", () => {

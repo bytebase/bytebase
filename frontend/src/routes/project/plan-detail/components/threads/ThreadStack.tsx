@@ -1,8 +1,7 @@
-import { ChevronDown, CircleCheck, MessageSquare } from "lucide-react";
+import { ChevronDown, MessageSquare } from "lucide-react";
 import { type ReactNode, type Ref, type SetStateAction, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { HumanizeTs } from "@/components/HumanizeTs";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getTimeForPbTimestampProtoEs } from "@/types";
@@ -11,6 +10,7 @@ import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { CommentThreadCard } from "./CommentThreadCard";
 import { ReviewPriorityBadge, useCommentAuthor } from "./ReviewResult";
+import { ThreadStateBadge } from "./ThreadStateBadge";
 import {
   compareByCreateTime,
   type EditorThread,
@@ -213,12 +213,7 @@ function CollapsedThreadRow({
         className="hidden shrink-0 text-xs text-control-light @xl:inline"
         tsMs={getTimeForPbTimestampProtoEs(comment.createTime)}
       />
-      {resolved && (
-        <Badge className="shrink-0 gap-x-1 px-2 text-xs" variant="success">
-          <CircleCheck className="size-3" />
-          {t("plan.review.thread.resolved")}
-        </Badge>
-      )}
+      {resolved && <ThreadStateBadge resolved />}
       <ChevronDown className="size-4 shrink-0 text-control-light" />
     </Button>
   );

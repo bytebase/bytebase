@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronUp, MessagesSquare } from "lucide-react";
+import { ChevronDown, ChevronUp, MessagesSquare, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -9,12 +9,15 @@ import { Tooltip } from "@/components/ui/tooltip";
 const ARROW_CLASS =
   "rounded-none border-l border-control-border text-control-light hover:text-control focus-visible:ring-inset focus-visible:ring-offset-0 pointer-coarse:focus-visible:ring-0";
 
-// Steps through the unresolved threads placed on the displayed statement.
-// `count` is what the arrows can visit; `remainder` is how many unresolved
-// threads of this change are not placed on this version.
+// Steps through the unresolved threads placed on the displayed statement, or
+// with a filter, through one reviewer's findings in one state across the
+// plan. `count` is what the arrows can visit; `remainder` is how many of this
+// change's matching threads are not placed on this version.
 export function StatementThreadWalker({
   announcement,
   count,
+  filterLabel,
+  onClearFilter,
   position,
   onNext,
   onPrevious,
@@ -22,6 +25,8 @@ export function StatementThreadWalker({
 }: {
   announcement: string;
   count: number;
+  filterLabel?: string;
+  onClearFilter?: () => void;
   position: number;
   onNext: () => void;
   onPrevious: () => void;
@@ -52,6 +57,7 @@ export function StatementThreadWalker({
         }
       >
         <MessagesSquare className="size-3.5" />
+        {filterLabel && <span className="text-control">{filterLabel}</span>}
         {position}/{count}
       </Tooltip>
       <Button
@@ -72,6 +78,17 @@ export function StatementThreadWalker({
       >
         <ChevronDown className="size-4" />
       </Button>
+      {filterLabel && onClearFilter && (
+        <Button
+          appearance="secondary"
+          aria-label={t("plan.review.thread.walker.clear-filter")}
+          className={ARROW_CLASS}
+          onClick={onClearFilter}
+          size="sm"
+        >
+          <X className="size-4" />
+        </Button>
+      )}
       <span aria-live="polite" className="sr-only">
         {announcement}
       </span>

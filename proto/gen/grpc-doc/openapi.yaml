@@ -26552,9 +26552,19 @@ components:
           description: |-
             Whether producing the plan executed the statement, as EXPLAIN ANALYZE
              does.
+        content:
+          type: string
+          title: content
+          description: |-
+            The plan itself, where the engine states it beside the result rather
+             than in the result's rows. BigQuery reports the stages its job ran in
+             the job's own statistics, so one result carries the query's data and
+             the plan of the run that produced it. Empty when the plan is the rows,
+             which is every other engine. Omitted from the audit log, as the rows
+             are: the statement is what an audit reads.
       title: QueryPlan
       additionalProperties: false
-      description: A query plan held in the result's rows.
+      description: 'A query plan the result carries: in its rows, or beside them.'
     bytebase.v1.QueryResult.SyntaxError:
       type: object
       properties:

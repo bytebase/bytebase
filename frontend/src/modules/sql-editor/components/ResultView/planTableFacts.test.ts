@@ -66,6 +66,17 @@ describe("tableFactsLookup", () => {
     ).toBeUndefined();
   });
 
+  test("says nothing about a name the engine left as the statement wrote it", () => {
+    // `FROM orders AS o` makes MySQL, MariaDB, TiDB and OceanBase print `o`,
+    // and a database can hold a table called `o`. Answering would describe
+    // that unrelated table as facts about the orders scan.
+    const data = metadata([{ name: "public", tables: [table("o", 12n)] }]);
+
+    expect(lookup(data)({ table: "o", unresolved: true })).toBeUndefined();
+    // The same name from an engine that resolved it is answered as before.
+    expect(lookup(data)({ table: "o" })).toMatchObject({ rowCount: 12 });
+  });
+
   test("says nothing about a relation it does not have", () => {
     expect(lookup()({ table: "orders" })).toBeUndefined();
     expect(lookup()({ table: "" })).toBeUndefined();
