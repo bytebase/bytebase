@@ -354,7 +354,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, req *connect.Reques
 	}), nil
 }
 
-// SearchDatabases searches the databases of every project where the caller holds bb.databases.list.
+// SearchDatabases searches the databases of every project where the caller holds bb.databases.get.
 func (s *DatabaseService) SearchDatabases(ctx context.Context, req *connect.Request[v1pb.SearchDatabasesRequest]) (*connect.Response[v1pb.SearchDatabasesResponse], error) {
 	user, ok := GetUserFromContext(ctx)
 	if !ok {
@@ -375,8 +375,8 @@ func (s *DatabaseService) SearchDatabases(ctx context.Context, req *connect.Requ
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	// Checks what ListDatabases checks for projects/{project}, so the result is the union of those listings.
-	projectIDs, err := getProjectIDsSearchFilter(ctx, user, permission.DatabasesList, s.iamManager, s.store)
+	// A search filters by the get permission, as Google's projects.search does, while ListDatabases checks bb.databases.list on its parent.
+	projectIDs, err := getProjectIDsSearchFilter(ctx, user, permission.DatabasesGet, s.iamManager, s.store)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get projectIDs"))
 	}

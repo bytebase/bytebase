@@ -115,8 +115,9 @@ func TestResolve_PolicyDenialPassesThrough(t *testing.T) {
 }
 
 // listingAPI answers SearchDatabases and ListDatabases the way the server
-// answers a caller who holds bb.databases.list in the readable projects. It
-// fails any workspace-parent listing, which project roles cannot make.
+// answers a caller who holds bb.databases.get and bb.databases.list in the
+// readable projects, as every built-in project role does. It fails any
+// workspace-parent listing, which project roles cannot make.
 type listingAPI struct {
 	databases []map[string]any
 	readable  []string
@@ -246,7 +247,7 @@ func TestResolve_UnreadableProjectIsNotFound(t *testing.T) {
 			var te *toolError
 			require.ErrorAs(t, err, &te)
 			require.Equal(t, "DATABASE_NOT_FOUND", te.Code)
-			require.Contains(t, te.Suggestion, "projects where you lack bb.databases.list")
+			require.Contains(t, te.Suggestion, "projects where you lack bb.databases.get")
 		})
 	}
 }

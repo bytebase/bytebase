@@ -92,19 +92,19 @@ func formatProjectName(project string) string {
 }
 
 // listDatabases lists the databases matching filter in the named project, or
-// in every project where the caller holds bb.databases.list when none is named.
+// in every project where the caller holds bb.databases.get when none is named.
 //
 // It never lists under the workspace parent: that needs bb.databases.list at
 // the workspace, which project roles lack, and with stdout audit logging on,
 // each refusal there would stream a permission denial on every resolve.
 func (s *Server) listDatabases(ctx context.Context, filter, project string) ([]databaseEntry, error) {
-	path := "/bytebase.v1.DatabaseService/SearchDatabases"
+	path, required := "/bytebase.v1.DatabaseService/SearchDatabases", "bb.databases.get"
 	body := map[string]any{
 		"filter":   filter,
 		"pageSize": 1000,
 	}
 	if project != "" {
-		path = "/bytebase.v1.DatabaseService/ListDatabases"
+		path, required = "/bytebase.v1.DatabaseService/ListDatabases", "bb.databases.list"
 		body["parent"] = formatProjectName(project)
 	}
 
@@ -114,7 +114,7 @@ func (s *Server) listDatabases(ctx context.Context, filter, project string) ([]d
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to list databases")
 		}
-		if err := checkAPIResponse(resp, "list databases", "bb.databases.list"); err != nil {
+		if err := checkAPIResponse(resp, "list databases", required); err != nil {
 			return nil, err
 		}
 
@@ -151,7 +151,7 @@ func matchDatabases(databases []databaseEntry, database, instance, project strin
 		return nil, &toolError{
 			Code:       "DATABASE_NOT_FOUND",
 			Message:    fmt.Sprintf("no database matching %q", database),
-			Suggestion: suggestion + ". Databases in archived projects, or in projects where you lack bb.databases.list, are not listed",
+			Suggestion: suggestion + ". Databases in archived projects, or in projects where you lack bb.databases.get, are not listed",
 		}
 	}
 

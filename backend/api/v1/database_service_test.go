@@ -98,7 +98,7 @@ func TestSearchDatabases(t *testing.T) {
 	require.NoError(t, err)
 	for role, permissions := range map[string][]permission.Permission{
 		"database-lister": {permission.DatabasesList},
-		"database-getter": {permission.ProjectsGet, permission.DatabasesGet},
+		"database-getter": {permission.DatabasesGet},
 	} {
 		granted := map[permission.Permission]bool{}
 		for _, p := range permissions {
@@ -156,8 +156,8 @@ func TestSearchDatabases(t *testing.T) {
 	projectB := []string{"instances/prod/databases/b1", "instances/staging/databases/a1"}
 	require.Empty(t, found("nobody@example.com", "", 100), "a caller who can list no project finds no database")
 	require.Equal(t, projectA, found("dev@example.com", "", 1), "staging/a1 shares a name but sits in a project dev cannot list")
-	require.Equal(t, projectB, found("lister@example.com", "", 100), "bb.databases.list alone is the permission the search checks")
-	require.Empty(t, found("getter@example.com", "", 100), "bb.projects.get and bb.databases.get do not list a project")
+	require.Equal(t, projectB, found("getter@example.com", "", 100), "bb.databases.get alone is the permission the search checks")
+	require.Empty(t, found("lister@example.com", "", 100), "bb.databases.list, which ListDatabases checks, does not search a project")
 	require.Equal(t, projectB, found("admin@example.com", `project == "projects/project-b"`, 100))
 	require.Empty(t, found("dev@example.com", `project == "projects/project-b"`, 100), "a filter cannot reach a project the caller cannot list")
 	require.Equal(t, append(projectA, projectB...), found("admin@example.com", "", 1),

@@ -90,8 +90,8 @@ type DatabaseServiceClient interface {
 	// Lists databases in a project, instance, or workspace.
 	// Permissions required: bb.databases.list (for project or workspace parent), or bb.instances.get (for instance parent)
 	ListDatabases(context.Context, *connect.Request[v1.ListDatabasesRequest]) (*connect.Response[v1.ListDatabasesResponse], error)
-	// Searches for databases in every active project where the caller has the bb.databases.list permission, filtered by the specified filter.
-	// Permissions required: bb.databases.list (checked in each project)
+	// Searches for databases in every active project where the caller has the bb.databases.get permission, filtered by the specified filter.
+	// Permissions required: bb.databases.get (checked in each project)
 	SearchDatabases(context.Context, *connect.Request[v1.SearchDatabasesRequest]) (*connect.Response[v1.SearchDatabasesResponse], error)
 	// Updates database properties such as labels and project assignment.
 	// Permissions required: bb.databases.update
@@ -325,8 +325,8 @@ type DatabaseServiceHandler interface {
 	// Lists databases in a project, instance, or workspace.
 	// Permissions required: bb.databases.list (for project or workspace parent), or bb.instances.get (for instance parent)
 	ListDatabases(context.Context, *connect.Request[v1.ListDatabasesRequest]) (*connect.Response[v1.ListDatabasesResponse], error)
-	// Searches for databases in every active project where the caller has the bb.databases.list permission, filtered by the specified filter.
-	// Permissions required: bb.databases.list (checked in each project)
+	// Searches for databases in every active project where the caller has the bb.databases.get permission, filtered by the specified filter.
+	// Permissions required: bb.databases.get (checked in each project)
 	SearchDatabases(context.Context, *connect.Request[v1.SearchDatabasesRequest]) (*connect.Response[v1.SearchDatabasesResponse], error)
 	// Updates database properties such as labels and project assignment.
 	// Permissions required: bb.databases.update

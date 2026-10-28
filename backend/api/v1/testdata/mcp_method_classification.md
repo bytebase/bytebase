@@ -67,7 +67,7 @@ served by no ceiling.
 | DatabaseService/GetDatabaseSchema | READ | — | bb.databases.getSchema |
 | DatabaseService/GetSchemaString | READ | — | bb.databases.getSchema |
 | DatabaseService/ListDatabases | READ | — | bb.databases.list |
-| DatabaseService/SearchDatabases | READ | — | bb.databases.list |
+| DatabaseService/SearchDatabases | READ | — | bb.databases.get |
 | DatabaseService/SyncDatabase | WRITE | — | bb.databases.sync |
 | DatabaseService/UpdateDatabase | EXCLUDED | REDRAWS_GOVERNANCE_BOUNDARY | bb.databases.update |
 | GroupService/BatchGetGroups | READ | — | bb.groups.get |

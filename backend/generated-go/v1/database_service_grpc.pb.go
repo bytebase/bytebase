@@ -52,8 +52,8 @@ type DatabaseServiceClient interface {
 	// Lists databases in a project, instance, or workspace.
 	// Permissions required: bb.databases.list (for project or workspace parent), or bb.instances.get (for instance parent)
 	ListDatabases(ctx context.Context, in *ListDatabasesRequest, opts ...grpc.CallOption) (*ListDatabasesResponse, error)
-	// Searches for databases in every active project where the caller has the bb.databases.list permission, filtered by the specified filter.
-	// Permissions required: bb.databases.list (checked in each project)
+	// Searches for databases in every active project where the caller has the bb.databases.get permission, filtered by the specified filter.
+	// Permissions required: bb.databases.get (checked in each project)
 	SearchDatabases(ctx context.Context, in *SearchDatabasesRequest, opts ...grpc.CallOption) (*SearchDatabasesResponse, error)
 	// Updates database properties such as labels and project assignment.
 	// Permissions required: bb.databases.update
@@ -253,8 +253,8 @@ type DatabaseServiceServer interface {
 	// Lists databases in a project, instance, or workspace.
 	// Permissions required: bb.databases.list (for project or workspace parent), or bb.instances.get (for instance parent)
 	ListDatabases(context.Context, *ListDatabasesRequest) (*ListDatabasesResponse, error)
-	// Searches for databases in every active project where the caller has the bb.databases.list permission, filtered by the specified filter.
-	// Permissions required: bb.databases.list (checked in each project)
+	// Searches for databases in every active project where the caller has the bb.databases.get permission, filtered by the specified filter.
+	// Permissions required: bb.databases.get (checked in each project)
 	SearchDatabases(context.Context, *SearchDatabasesRequest) (*SearchDatabasesResponse, error)
 	// Updates database properties such as labels and project assignment.
 	// Permissions required: bb.databases.update

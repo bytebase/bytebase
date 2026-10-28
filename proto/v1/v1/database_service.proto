@@ -61,15 +61,15 @@ service DatabaseService {
     option (bytebase.v1.mcp_method_class) = READ;
   }
 
-  // Searches for databases in every active project where the caller has the bb.databases.list permission, filtered by the specified filter.
-  // Permissions required: bb.databases.list (checked in each project)
+  // Searches for databases in every active project where the caller has the bb.databases.get permission, filtered by the specified filter.
+  // Permissions required: bb.databases.get (checked in each project)
   rpc SearchDatabases(SearchDatabasesRequest) returns (SearchDatabasesResponse) {
     option (google.api.http) = {
       post: "/v1/databases:search"
       body: "*"
     };
     option (google.api.method_signature) = "";
-    option (bytebase.v1.permission) = "bb.databases.list";
+    option (bytebase.v1.permission) = "bb.databases.get";
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.mcp_method_class) = READ;
   }

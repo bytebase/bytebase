@@ -36,7 +36,7 @@ Run SQL queries against databases managed by Bytebase.
    ```
 
    SearchDatabases returns databases from every active project where you have
-   `bb.databases.list`.
+   `bb.databases.get`.
 
    Filter examples:
    - `name.contains("employee")` - database name contains "employee"
