@@ -139,36 +139,15 @@ function getCallApiRequestKey(argumentsJson: string): string {
         typeof body === "object" &&
         !Array.isArray(body)
       ) {
-        const requestBody = body as Record<string, unknown>;
-        for (const field of ["issues", "databases", "projects", "instances"]) {
-          const names = requestBody[field];
-          if (
-            Array.isArray(names) &&
-            names.length > 0 &&
-            names.every((name) => typeof name === "string")
-          ) {
-            return JSON.stringify([operationId, field, [...names].sort()]);
-          }
-        }
-        for (const field of ["name", "projectId", "databaseId", "issueId"]) {
-          if (typeof requestBody[field] === "string") {
-            return JSON.stringify([operationId, field, requestBody[field]]);
-          }
-        }
-        for (const field of ["issue", "database", "project", "instance"]) {
-          const resource = requestBody[field];
-          if (
-            resource &&
-            typeof resource === "object" &&
-            !Array.isArray(resource) &&
-            typeof (resource as Record<string, unknown>).name === "string"
-          ) {
-            return JSON.stringify([
-              operationId,
-              field,
-              (resource as Record<string, unknown>).name,
-            ]);
-          }
+        if (/IssueService[/.]BatchUpdateIssuesStatus$/.test(operationId)) {
+          // The backend identifies this operation by its issues and status, not parent.
+          const { parent: _parent, ...requestBody } = body as Record<
+            string,
+            unknown
+          >;
+          return JSON.stringify(
+            canonicalizeJson({ ...args, body: requestBody })
+          );
         }
       }
     }

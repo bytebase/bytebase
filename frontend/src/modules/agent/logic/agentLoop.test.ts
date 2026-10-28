@@ -769,6 +769,86 @@ describe("runAgentLoop", () => {
     });
   });
 
+  test.each([
+    {
+      label: "a different issue status",
+      first: {
+        operationId: "IssueService/BatchUpdateIssuesStatus",
+        body: { issues: ["projects/a/issues/101"], status: "OPEN" },
+      },
+      second: {
+        operationId: "IssueService/BatchUpdateIssuesStatus",
+        body: { issues: ["projects/a/issues/101"], status: "DONE" },
+      },
+    },
+    {
+      label: "a different SQL statement",
+      first: {
+        operationId: "SQLService/Query",
+        body: {
+          name: "instances/i/databases/db",
+          statement: "SELECT missing FROM t",
+        },
+      },
+      second: {
+        operationId: "SQLService/Query",
+        body: {
+          name: "instances/i/databases/db",
+          statement: "SELECT id FROM t",
+        },
+      },
+    },
+  ])(
+    "retains an API rejection after $label succeeds",
+    async ({ first, second }) => {
+      const apiError = "First request failed";
+      vi.mocked(aiServiceClientConnect.chat).mockResolvedValue({
+        content: "Both requests succeeded.",
+        toolCalls: [],
+      } as never);
+
+      const outcome = await runAgentLoop(
+        [
+          { role: "user", content: "Run both requests" },
+          {
+            role: "assistant",
+            toolCalls: [
+              {
+                id: "api-1",
+                name: "call_api",
+                arguments: JSON.stringify(first),
+              },
+              {
+                id: "api-2",
+                name: "call_api",
+                arguments: JSON.stringify(second),
+              },
+            ],
+          },
+          {
+            role: "tool",
+            toolCallId: "api-1",
+            content: JSON.stringify({ status: 400, error: apiError }),
+          },
+          {
+            role: "tool",
+            toolCallId: "api-2",
+            content: JSON.stringify({ status: 200, response: {} }),
+          },
+        ],
+        [{ name: "done", description: "done", parametersSchema: {} }],
+        vi.fn()
+      );
+
+      expect(outcome).toEqual({
+        kind: "completed",
+        text: apiError,
+        success: false,
+        totalTokensUsed: 0,
+      });
+    }
+  );
+
   test("retains a rejected write after an unrelated successful API read", async () => {
     const apiError = "cannot change status from DONE to OPEN for issue 101";
     vi.mocked(aiServiceClientConnect.chat).mockResolvedValue({

@@ -15,6 +15,14 @@ const resourceFields = new Set(["parent", "name", "resource", "project"]);
 const resourceListFields = new Set(["names", "issues"]);
 const databaseNamePattern = /^(instances\/[^/]+\/databases\/[^/]+)(?:\/.*)?$/;
 
+// These APIs resolve IAM targets using request-specific backend rules.
+const backendPermissionCheckPaths = new Set([
+  "/bytebase.v1.DatabaseService/UpdateDatabase",
+  "/bytebase.v1.DatabaseService/BatchUpdateDatabases",
+  "/bytebase.v1.DatabaseService/BatchSyncDatabases",
+  "/bytebase.v1.IssueService/BatchUpdateIssuesStatus",
+]);
+
 const collectResourceNames = (value: unknown, names: Set<string>): void => {
   if (Array.isArray(value)) {
     for (const entry of value) collectResourceNames(entry, names);
@@ -32,35 +40,6 @@ const collectResourceNames = (value: unknown, names: Set<string>): void => {
       collectResourceNames(entry, names);
     }
   }
-};
-
-const resourceNamesForCall = (
-  call: PreparedApiCall,
-  body: unknown
-): Set<string> | undefined => {
-  if (
-    call.path === "/bytebase.v1.DatabaseService/BatchSyncDatabases" ||
-    call.path === "/bytebase.v1.IssueService/BatchUpdateIssuesStatus"
-  ) {
-    const field = call.path.endsWith("BatchSyncDatabases") ? "names" : "issues";
-    const targets =
-      body && typeof body === "object" && !Array.isArray(body)
-        ? (body as Record<string, unknown>)[field]
-        : undefined;
-    if (
-      !Array.isArray(targets) ||
-      targets.length === 0 ||
-      !targets.every((target) => typeof target === "string" && target)
-    ) {
-      return undefined;
-    }
-    // These RPCs authorize target resources rather than their request parent.
-    return new Set(targets);
-  }
-
-  const names = new Set<string>();
-  collectResourceNames(body, names);
-  return names;
 };
 
 const currentDatabaseProject = async (
@@ -93,8 +72,8 @@ const scopesForCall = async (
   } catch {
     return undefined;
   }
-  const names = resourceNamesForCall(call, body);
-  if (!names) return undefined;
+  const names = new Set<string>();
+  collectResourceNames(body, names);
   if (names.size === 0) {
     // The backend authorizes parent-less top-level lists at workspace scope.
     return /\.List[^/]+$/.test(call.operationId)
@@ -155,6 +134,8 @@ const denied = (
 export const checkPreparedApiPermission = async (
   call: PreparedApiCall
 ): Promise<PreflightResult> => {
+  if (backendPermissionCheckPaths.has(call.path)) return { kind: "allowed" };
+
   const authorization = getApiAuthorization(call.operationId);
   if (authorization?.authMethod !== "IAM" || !authorization.permission) {
     return { kind: "allowed" };
