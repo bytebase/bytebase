@@ -1007,6 +1007,7 @@
     "password-optional": "Cifrar con contraseña (opcional)"
   },
   "gitops": {
+    "back-to-releases": "Volver a Lanzamientos",
     "checklist": {
       "database-group-recommendation": "Para bases de datos con el mismo esquema, un grupo de bases de datos permite migrarlas juntas en un solo cambio. Defina el grupo una vez y reutilícelo en las migraciones sin tener que seleccionar bases de datos individuales cada vez.",
       "external-url": "URL externa",
@@ -1022,7 +1023,6 @@
       "description-git": "El esquema de su base de datos se almacena en Git junto con el código de su aplicación. Las pull requests activan la revisión de SQL, y la fusión en la rama de destino crea automáticamente los despliegues.",
       "title": "Qué es GitOps"
     },
-    "self": "GitOps",
     "test-setup": {
       "description": "Verifique que el flujo de trabajo funciona de extremo a extremo con un archivo de migración de ejemplo.",
       "naming-convention": "Los archivos de migración se aplican en orden lexicográfico. Use un prefijo de marca de tiempo o secuencia, p. ej. 20240101000000_create_table.sql. Agregue _ddl o _dml para indicar el tipo de cambio.",
@@ -1927,6 +1927,7 @@
       "review-waiting": "Esperando a {{role}}",
       "run": "Ejecutar"
     },
+    "list-description": "Solicitudes de cambio creadas en la interfaz y su progreso de despliegue.",
     "meta": {
       "created-by": "Creado por {{user}}"
     },
@@ -2114,8 +2115,11 @@
       "affected-rows_one": "~{{count}} fila afectada",
       "affected-rows_other": "~{{count}} filas afectadas"
     },
+    "status-scope": {
+      "description": "Filtrar por el estado actual de las tareas del plan",
+      "waiting": "En espera"
+    },
     "submit-review-anyway": "Enviar de todos modos",
-    "subtitle": "Redactar cambios en la base de datos y ejecutar comprobaciones previas antes de crear un problema para su aprobación.",
     "summary": {
       "approved-by": "Aprobado por {{names}}",
       "last-approved-by": "Última aprobación por {{name}}",
@@ -2465,17 +2469,24 @@
   "release": {
     "and-n-more-files": "y {{count}} archivos más",
     "change-tip": "Este cambio está vinculado a un artefacto de versión.",
-    "file": "Archivo de lanzamiento",
+    "empty": {
+      "description": "Los cambios que tu pipeline de CI publica en Bytebase aparecen aquí con su progreso de despliegue.",
+      "read-guide": "Leer la guía de GitOps",
+      "set-up": "Configurar GitOps",
+      "title": "Aún no hay cambios de GitOps"
+    },
     "file-type": {
       "declarative": "Declarativo",
       "unspecified": "Sin especificar",
       "versioned": "Versionado"
     },
     "files": "Archivos",
+    "gitops-setup": "Configuración de GitOps",
+    "list-description": "Cambios publicados mediante GitOps y su progreso de despliegue.",
     "not-found": "Versión no encontrada",
     "releases": "Lanzamientos",
-    "total-files": "Total de {{}} archivos",
-    "usage-description": "Un lanzamiento es un artefacto de aplicación versionado cuyo despliegue a un entorno es activado por un flujo de trabajo GitOps.",
+    "self": "Lanzamiento",
+    "source": "Origen",
     "vcs-source": "Origen de VCS",
     "vcs-type": {
       "unspecified": "VCS desconocido"

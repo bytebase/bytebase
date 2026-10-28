@@ -24,6 +24,7 @@ import {
   PROJECT_V1_ROUTE_ISSUES,
   PROJECT_V1_ROUTE_MASKING_EXEMPTION,
   PROJECT_V1_ROUTE_MEMBERS,
+  PROJECT_V1_ROUTE_PLAN_DETAIL,
   PROJECT_V1_ROUTE_PLANS,
   PROJECT_V1_ROUTE_RELEASES,
   PROJECT_V1_ROUTE_SERVICE_ACCOUNTS,
@@ -51,16 +52,28 @@ interface SidebarItem {
   type: "div";
   expand?: boolean;
   children?: SidebarItem[];
+  // Routes outside `path` that also highlight this item, and routes under
+  // `path` that do not.
+  activeRoutes?: string[];
+  inactiveRoutes?: string[];
 }
 
 // ---------------------------------------------------------------------------
 // Active-route detection
 // ---------------------------------------------------------------------------
 
+const matchesRoute = (route: string | undefined, currentRouteName: string) =>
+  !!route &&
+  (route === currentRouteName || currentRouteName.startsWith(`${route}.`));
+
 function getItemClass(item: SidebarItem, currentRouteName: string): string[] {
   const isActive =
-    item.path === currentRouteName ||
-    currentRouteName.startsWith(`${item.path}.`);
+    !item.inactiveRoutes?.some((route) =>
+      matchesRoute(route, currentRouteName)
+    ) &&
+    [item.path, ...(item.activeRoutes ?? [])].some((route) =>
+      matchesRoute(route, currentRouteName)
+    );
   if (isActive) {
     return ["router-link-active", "bg-link-hover"];
   }
@@ -82,6 +95,14 @@ function useSidebarItems(): SidebarItem[] {
     ? `${projectNamePrefix}${sidebarProjectId}`
     : "";
   const isDefault = !!defaultProject && sidebarProjectName === defaultProject;
+  // Plan Detail serves both kinds of Plan; a GitOps Plan belongs to Releases.
+  const sidebarPlanId = sidebarRoute.params.planId as string | undefined;
+  const isGitOpsPlanDetail = useAppStore(
+    (s) =>
+      !!sidebarPlanId &&
+      s.viewedPlan?.name === `${sidebarProjectName}/plans/${sidebarPlanId}` &&
+      s.viewedPlan.isReleaseBacked
+  );
 
   return useMemo(
     (): SidebarItem[] => [
@@ -109,16 +130,17 @@ function useSidebarItems(): SidebarItem[] {
             title: t("plan.plans"),
             path: PROJECT_V1_ROUTE_PLANS,
             type: "div",
+            inactiveRoutes: isGitOpsPlanDetail
+              ? [PROJECT_V1_ROUTE_PLAN_DETAIL]
+              : undefined,
           },
           {
             title: t("release.releases"),
             path: PROJECT_V1_ROUTE_RELEASES,
             type: "div",
-          },
-          {
-            title: t("gitops.self"),
-            path: PROJECT_V1_ROUTE_GITOPS,
-            type: "div",
+            activeRoutes: isGitOpsPlanDetail
+              ? [PROJECT_V1_ROUTE_GITOPS, PROJECT_V1_ROUTE_PLAN_DETAIL]
+              : [PROJECT_V1_ROUTE_GITOPS],
           },
           {
             title: t("sql-review.title"),
@@ -218,7 +240,7 @@ function useSidebarItems(): SidebarItem[] {
         hide: isDefault,
       },
     ],
-    [t, isDefault]
+    [t, isDefault, isGitOpsPlanDetail]
   );
 }
 

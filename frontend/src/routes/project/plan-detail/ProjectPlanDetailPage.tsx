@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useOnKeyChange } from "@/hooks/useOnKeyChange";
 import { cn } from "@/lib/utils";
+import { useAppStore } from "@/stores/app";
 import { ApprovalStatus, IssueStatus } from "@/types/proto-es/v1/common_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { getRolloutStatus } from "@/utils";
@@ -119,6 +120,12 @@ function ProjectPlanDetailPageInner({
     ready: page.ready,
     specs: page.plan.specs,
   });
+  const setViewedPlan = useAppStore((s) => s.setViewedPlan);
+  const isReleaseBacked = isReleaseBackedPlan(page.plan.specs);
+  useEffect(() => {
+    if (!page.ready) return;
+    setViewedPlan({ name: page.plan.name, isReleaseBacked });
+  }, [page.ready, page.plan.name, isReleaseBacked, setViewedPlan]);
   // Route-driven spec changes reset during render, so the first paint after a
   // Back/Forward or tab navigation already shows the destination spec. The
   // keyed provider remounts this subtree when the plan itself changes.

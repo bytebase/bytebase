@@ -1007,6 +1007,7 @@
     "password-optional": "パスワード暗号化の設定 (オプション)"
   },
   "gitops": {
+    "back-to-releases": "リリースに戻る",
     "checklist": {
       "database-group-recommendation": "同じスキーマを持つデータベースには、データベースグループを使用すると一度の変更でまとめてマイグレーションできます。グループを一度定義すれば、毎回個別にデータベースを選択することなく、マイグレーション全体で再利用できます。",
       "external-url": "外部URL",
@@ -1022,7 +1023,6 @@
       "description-git": "データベーススキーマはアプリケーションコードと一緒に Git で管理されます。プルリクエストで SQL レビューがトリガーされ、ターゲットブランチへのマージで自動的にロールアウトが作成されます。",
       "title": "GitOps とは"
     },
-    "self": "GitOps",
     "test-setup": {
       "description": "サンプルマイグレーションファイルでワークフロー全体が正常に動作するか確認します。",
       "naming-convention": "マイグレーションファイルは辞書順に適用されます。タイムスタンプまたはシーケンス番号のプレフィックスを使用してください（例: 20240101000000_create_table.sql）。変更タイプを示すために _ddl または _dml を末尾に追加してください。",
@@ -1927,6 +1927,7 @@
       "review-waiting": "{{role}} の承認待ち",
       "run": "実行"
     },
+    "list-description": "UI で作成された変更リクエストとそのデプロイ進捗。",
     "meta": {
       "created-by": "{{user}} が作成"
     },
@@ -2114,8 +2115,11 @@
       "affected-rows_one": "約 {{count}} 行に影響",
       "affected-rows_other": "約 {{count}} 行に影響"
     },
+    "status-scope": {
+      "description": "プラン内のタスクの現在のステータスで絞り込みます",
+      "waiting": "待機中"
+    },
     "submit-review-anyway": "それでも提出する",
-    "subtitle": "承認のためにイシューを作成する前に、データベースの変更を下書きし、事前チェックを実行します。",
     "summary": {
       "approved-by": "{{names}} が承認",
       "last-approved-by": "{{name}} が最後に承認",
@@ -2465,17 +2469,24 @@
   "release": {
     "and-n-more-files": "他 {{count}} 件のファイル",
     "change-tip": "この変更はリリースアーティファクトにリンクされています。",
-    "file": "リリースファイル",
+    "empty": {
+      "description": "CI パイプラインが Bytebase にリリースした変更が、デプロイ進捗とともにここに表示されます。",
+      "read-guide": "GitOps ガイドを読む",
+      "set-up": "GitOps を設定",
+      "title": "GitOps の変更はまだありません"
+    },
     "file-type": {
       "declarative": "宣言的",
       "unspecified": "未指定",
       "versioned": "バージョン管理"
     },
     "files": "ファイル",
+    "gitops-setup": "GitOps 設定",
+    "list-description": "GitOps でリリースされた変更とそのデプロイ進捗。",
     "not-found": "リリースが見つかりません",
     "releases": "リリース",
-    "total-files": "合計 {{}} ファイル",
-    "usage-description": "リリースは、GitOpsワークフローによって環境へのデプロイがトリガーされるバージョン管理されたアプリケーションアーティファクトです。",
+    "self": "リリース",
+    "source": "ソース",
     "vcs-source": "VCS ソース",
     "vcs-type": {
       "unspecified": "不明な VCS"

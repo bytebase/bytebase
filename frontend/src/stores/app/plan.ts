@@ -9,6 +9,7 @@ import {
 import {
   getTsRangeFromSearchParams,
   getValueFromSearchParams,
+  getValuesFromSearchParams,
   type SearchParams,
 } from "@/utils";
 import { celString } from "@/utils/v1/celLiteral";
@@ -37,6 +38,17 @@ export const buildPlanFilter = (find: PlanFind): string => {
   if (find.hasRollout !== undefined) {
     filter.push(`has_rollout == ${find.hasRollout}`);
   }
+  if (find.hasRelease !== undefined) {
+    filter.push(`has_release == ${find.hasRelease}`);
+  }
+  if (find.release) {
+    filter.push(`release == ${celString(find.release)}`);
+  }
+  if (find.taskStatuses && find.taskStatuses.length > 0) {
+    filter.push(
+      `task_status in [${find.taskStatuses.map(celString).join(", ")}]`
+    );
+  }
   if (find.specType) {
     filter.push(`spec_type == ${celString(find.specType)}`);
   }
@@ -45,6 +57,20 @@ export const buildPlanFilter = (find: PlanFind): string => {
   }
   return filter.join(" && ");
 };
+
+// The `status` scope groups Task.Status values into the stages a reader scans for.
+export const PLAN_STATUS_SCOPE_TASK_STATUSES = {
+  FAILED: ["FAILED"],
+  RUNNING: ["RUNNING"],
+  WAITING: ["NOT_STARTED", "PENDING"],
+  // A skipped task is finished, as in rollout completion.
+  DONE: ["DONE", "SKIPPED"],
+} as const satisfies Record<string, readonly string[]>;
+
+export type PlanStatusScopeValue = keyof typeof PLAN_STATUS_SCOPE_TASK_STATUSES;
+
+const isPlanStatusScopeValue = (value: string): value is PlanStatusScopeValue =>
+  Object.hasOwn(PLAN_STATUS_SCOPE_TASK_STATUSES, value);
 
 export const buildPlanFindBySearchParams = (
   params: SearchParams,
@@ -58,6 +84,12 @@ export const buildPlanFindBySearchParams = (
     "DELETED",
   ]) as "ACTIVE" | "DELETED" | "";
 
+  const taskStatuses = uniq(
+    getValuesFromSearchParams(params, "status")
+      .filter(isPlanStatusScopeValue)
+      .flatMap((value) => PLAN_STATUS_SCOPE_TASK_STATUSES[value])
+  );
+
   const filter: PlanFind = {
     ...defaultFind,
     project: `projects/${projectScope || "-"}`,
@@ -65,12 +97,27 @@ export const buildPlanFindBySearchParams = (
     createdTsAfter: createdTsRange?.[0],
     createdTsBefore: createdTsRange?.[1],
     creator: getValueFromSearchParams(params, "creator", "users/"),
+    release:
+      getValueFromSearchParams(params, "release") || defaultFind?.release,
+    taskStatuses:
+      taskStatuses.length > 0 ? taskStatuses : defaultFind?.taskStatuses,
     state: state || defaultFind?.state,
   };
   return filter;
 };
 
-export const createPlanSlice: AppSliceCreator<PlanSlice> = (_set, get) => ({
+export const createPlanSlice: AppSliceCreator<PlanSlice> = (set, get) => ({
+  viewedPlan: undefined,
+  setViewedPlan: (viewedPlan) => {
+    const current = get().viewedPlan;
+    if (
+      current?.name === viewedPlan.name &&
+      current.isReleaseBacked === viewedPlan.isReleaseBacked
+    ) {
+      return;
+    }
+    set({ viewedPlan });
+  },
   listPlans: async ({ find, pageSize, pageToken }) => {
     const { plans, nextPageToken } = await planServiceClientConnect.listPlans(
       createProto(ListPlansRequestSchema, {

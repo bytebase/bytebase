@@ -1007,6 +1007,7 @@
     "password-optional": "Encrypt with password (Optional)"
   },
   "gitops": {
+    "back-to-releases": "Back to Releases",
     "checklist": {
       "database-group-recommendation": "For databases sharing the same schema, a database group lets you migrate them together in one change. Define the group once and reuse it across migrations without picking individual databases every time.",
       "external-url": "External URL",
@@ -1022,7 +1023,6 @@
       "description-git": "Your database schema lives in Git alongside your application code. Pull requests trigger SQL review, and merging to the target branch automatically creates rollouts.",
       "title": "What is GitOps"
     },
-    "self": "GitOps",
     "test-setup": {
       "description": "Verify the workflow is working end-to-end with a sample migration file.",
       "naming-convention": "Migration files are applied in lexicographic order. Use a timestamp or sequence prefix, e.g. 20240101000000_create_table.sql. Append _ddl or _dml to indicate the change type.",
@@ -1927,6 +1927,7 @@
       "review-waiting": "Waiting for {{role}}",
       "run": "Run"
     },
+    "list-description": "Change requests created in the UI and their deploy progress.",
     "meta": {
       "created-by": "Created by {{user}}"
     },
@@ -2114,8 +2115,11 @@
       "affected-rows_one": "~{{count}} row affected",
       "affected-rows_other": "~{{count}} rows affected"
     },
+    "status-scope": {
+      "description": "Filter by the current status of the plan's tasks",
+      "waiting": "Waiting"
+    },
     "submit-review-anyway": "Submit anyway",
-    "subtitle": "Draft database changes and run pre-checks before creating an issue for approval.",
     "summary": {
       "approved-by": "Approved by {{names}}",
       "last-approved-by": "Last approved by {{name}}",
@@ -2465,17 +2469,24 @@
   "release": {
     "and-n-more-files": "and {{count}} more files",
     "change-tip": "This change is linked to a release artifact.",
-    "file": "Release File",
+    "empty": {
+      "description": "Changes your CI pipeline releases to Bytebase appear here with their deploy progress.",
+      "read-guide": "Read the GitOps guide",
+      "set-up": "Set up GitOps",
+      "title": "No GitOps changes yet"
+    },
     "file-type": {
       "declarative": "Declarative",
       "unspecified": "Unspecified",
       "versioned": "Versioned"
     },
     "files": "Files",
+    "gitops-setup": "GitOps setup",
+    "list-description": "Changes released through GitOps and their deploy progress.",
     "not-found": "Release not found",
     "releases": "Releases",
-    "total-files": "Total {{}} files",
-    "usage-description": "A release is a versioned application artifact whose deployment to an environment is triggered by a GitOps workflow.",
+    "self": "Release",
+    "source": "Source",
     "vcs-source": "VCS Source",
     "vcs-type": {
       "unspecified": "Unknown VCS"
