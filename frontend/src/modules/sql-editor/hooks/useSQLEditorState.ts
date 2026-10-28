@@ -17,7 +17,11 @@ import {
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import type { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { Environment } from "@/types/v1/environment";
-import { getDatabaseEnvironment, getInstanceResource } from "@/utils";
+import {
+  getDatabaseEnvironment,
+  getInstanceResource,
+  isDatabaseV1Queryable,
+} from "@/utils";
 
 /**
  * React access to a workspace-level plan feature flag. Re-renders when
@@ -154,11 +158,57 @@ export const useSQLEditorAllowAdmin = (project: string): boolean =>
   useSQLEditorProjectPermission(project, "bb.sql.admin");
 
 /**
- * Whether the current user holds bb.sql.export on this project through a
- * role. Without it, export needs an active export grant for the query.
+ * The names of `databases` the current user can export from without an access
+ * grant: bb.sql.export from a role, including database-scoped binding
+ * conditions. Schema and table conditions are checked only by the server.
+ * Self-fetches each project and its IAM policy, which the SQL editor route
+ * doesn't preload.
  */
-export const useSQLEditorAllowExport = (project: string): boolean =>
-  useSQLEditorProjectPermission(project, "bb.sql.export");
+export const useSQLEditorDatabasesWithExport = (
+  databases: Database[]
+): Set<string> => {
+  const fetchProject = useAppStore((s) => s.fetchProject);
+  const loadProjectIamPolicy = useAppStore((s) => s.loadProjectIamPolicy);
+  const projectsKey = [
+    ...new Set(databases.map((database) => database.project)),
+  ]
+    .filter(isValidProjectName)
+    .sort((a, b) => a.localeCompare(b))
+    .join(",");
+  useEffect(() => {
+    for (const project of projectsKey.split(",").filter(Boolean)) {
+      void fetchProject(project);
+      void loadProjectIamPolicy(project);
+    }
+  }, [fetchProject, loadProjectIamPolicy, projectsKey]);
+  // isDatabaseV1Queryable reads these through the store bridge; subscribing
+  // recomputes the answer once they load.
+  const currentUser = useAppStore((s) => s.currentUser);
+  const roles = useAppStore((s) => s.roles);
+  const roleList = useAppStore((s) => s.roleList);
+  const workspacePolicy = useAppStore((s) => s.workspacePolicy);
+  const projectsByName = useAppStore((s) => s.projectsByName);
+  const projectPoliciesByName = useAppStore((s) => s.projectPoliciesByName);
+  return useMemo(
+    () =>
+      new Set(
+        databases
+          .filter((database) =>
+            isDatabaseV1Queryable(database, ["bb.sql.export"])
+          )
+          .map((database) => database.name)
+      ),
+    [
+      databases,
+      currentUser,
+      roles,
+      roleList,
+      workspacePolicy,
+      projectsByName,
+      projectPoliciesByName,
+    ]
+  );
+};
 
 /**
  * React access to the workspace-wide "list projects" permission.

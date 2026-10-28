@@ -111,8 +111,8 @@ then request export through an access grant in projects with just-in-time access
 | No | Yes | Request export |
 | No | No | Neither |
 
-The project-level permission check ignores database-scoped conditions. The server has the final
-say, and a denied export shows its error.
+The SQL Editor checks `bb.sql.export` per database, including database-scoped binding conditions.
+Schema and table conditions are checked only by the server, and a denied export shows its error.
 
 ### Access grants
 
@@ -202,8 +202,8 @@ grant holders too.
 ### Frontend
 
 - Export gates in `ResultView.tsx` and `BatchQuerySelect.tsx` follow the SQL Editor table above.
-  `useExportGrantBypass` runs when the user lacks `bb.sql.export` on the project, instead of when
-  the flag is set.
+  Standing export is decided per database with `isDatabaseV1Queryable(database, ["bb.sql.export"])`,
+  and `useExportGrantBypass` runs for the databases that lack it, instead of when the flag is set.
 - Remove the toggle from `routes/workspace/general/SQLEditorSection.tsx`, its "data-export"
   strings in all five locales (`frontend/src/locales/en-US.json`), and its tests.
 - Remove `disableExport` from `useSQLEditorQueryDataPolicy`

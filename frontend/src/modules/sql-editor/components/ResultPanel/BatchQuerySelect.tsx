@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 import { RequestExportButton } from "@/modules/sql-editor/components/RequestExportButton";
 import { useExportGrantBypass } from "@/modules/sql-editor/components/useExportGrantBypass";
 import {
-  useSQLEditorAllowExport,
+  useSQLEditorDatabasesWithExport,
   useSQLEditorQueryDataPolicy,
 } from "@/modules/sql-editor/hooks/useSQLEditorState";
 import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
@@ -86,7 +86,6 @@ export function BatchQuerySelect({
   const currentTab = useCurrentSQLEditorTab();
   const project = useSQLEditorEditorState((s) => s.project);
   const queryDataPolicy = useSQLEditorQueryDataPolicy(project);
-  const allowExport = useSQLEditorAllowExport(project);
 
   const [showEmpty, setShowEmpty] = useState(true);
   const [selectedDatabaseNames, setSelectedDatabaseNames] = useState<
@@ -163,11 +162,31 @@ export function BatchQuerySelect({
     return "";
   }, [contextsByDatabase]);
 
-  // Per-DB grant lookup. When the user lacks bb.sql.export, the hook
-  // reports which of the queried DBs are covered by an active export
+  const queriedDatabases = useMemo(
+    () => items.map((item) => item.database),
+    [items]
+  );
+  const databasesWithExport = useSQLEditorDatabasesWithExport(queriedDatabases);
+
+  // Per-DB grant lookup for the queried DBs without bb.sql.export from a
+  // role. The hook reports which of them are covered by an active export
   // grant (matched) and which are not (unmatched). Both lists feed the
-  // partial-coverage UX: Export operates on the matched set only,
+  // partial-coverage UX: Export operates on the authorized set only,
   // Request Export pre-seeds the unmatched set.
+  const grantTargets = queriedDatabaseNames.flatMap((database) => {
+    if (databasesWithExport.has(database)) return [];
+    const params = contextsByDatabase.get(database)?.params;
+    return params?.statement
+      ? [
+          {
+            database,
+            statement: params.statement,
+            schema: params.connection.schema ?? "",
+            container: params.connection.table ?? "",
+          },
+        ]
+      : [];
+  });
   const {
     matchedDatabases,
     unmatchedDatabases,
@@ -176,31 +195,23 @@ export function BatchQuerySelect({
     failedDatabases,
     retry,
   } = useExportGrantBypass({
-    enabled: !allowExport,
+    enabled: grantTargets.length > 0,
     project,
-    targets: queriedDatabaseNames.flatMap((database) => {
-      const params = contextsByDatabase.get(database)?.params;
-      return params?.statement
-        ? [
-            {
-              database,
-              statement: params.statement,
-              schema: params.connection.schema ?? "",
-              container: params.connection.table ?? "",
-            },
-          ]
-        : [];
-    }),
+    targets: grantTargets,
   });
 
-  // With bb.sql.export, every queried DB is authorized; otherwise only
-  // the JIT-matched subset. The Export drawer's
-  // `DatabaseTableView` is filtered to this list so users can't
-  // physically pick an unauthorized DB — eliminating the partial-
-  // failure toast storm.
-  const exportableDatabaseNames = allowExport
-    ? queriedDatabaseNames
-    : matchedDatabases;
+  // A queried DB is authorized by bb.sql.export from a role or by a
+  // matching grant. The Export drawer's `DatabaseTableView` is filtered
+  // to this list so users can't physically pick an unauthorized DB —
+  // eliminating the partial-failure toast storm.
+  const exportableDatabaseNames = useMemo(
+    () =>
+      queriedDatabaseNames.filter(
+        (name) =>
+          databasesWithExport.has(name) || matchedDatabases.includes(name)
+      ),
+    [queriedDatabaseNames, databasesWithExport, matchedDatabases]
+  );
   const exportableDatabaseList = useMemo(
     () => exportableDatabaseNames.map((name) => getDatabaseByName(name)),
     [exportableDatabaseNames, getDatabaseByName]
@@ -211,14 +222,12 @@ export function BatchQuerySelect({
   // Visible alongside Export in the partial-coverage case (e.g. 2 of 5
   // covered) so users can request grants for the missing ones without
   // losing the immediate export of the covered set.
-  const showRequestExport = !allowExport && unmatchedDatabases.length > 0;
+  const showRequestExport = unmatchedDatabases.length > 0;
   // Partial-coverage flag: some matched, some not. Drives the Export
   // button label change from "Batch export" to "Partial batch export"
   // so the user knows up-front the action operates on a strict subset.
   const isPartialExport =
-    showExport &&
-    !allowExport &&
-    matchedDatabases.length < queriedDatabaseNames.length;
+    showExport && exportableDatabaseNames.length < queriedDatabaseNames.length;
 
   const handleCloseSingleResultView = (item: BatchQueryItem) => {
     const contexts = currentTab?.databaseQueryContexts?.get(item.database.name);

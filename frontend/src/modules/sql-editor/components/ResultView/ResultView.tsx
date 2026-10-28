@@ -18,7 +18,7 @@ import { RequestExportButton } from "@/modules/sql-editor/components/RequestExpo
 import { RequestQueryButton } from "@/modules/sql-editor/components/RequestQueryButton";
 import { useExportGrantBypass } from "@/modules/sql-editor/components/useExportGrantBypass";
 import {
-  useSQLEditorAllowExport,
+  useSQLEditorDatabasesWithExport,
   useSQLEditorQueryDataPolicy,
 } from "@/modules/sql-editor/hooks/useSQLEditorState";
 import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
@@ -135,7 +135,10 @@ export function ResultView({
     return false;
   }, [queryDataPolicy, envQueryDataPolicy]);
 
-  const allowExport = useSQLEditorAllowExport(database.project);
+  const exportDatabases = useMemo(() => [database], [database]);
+  const allowExport = useSQLEditorDatabasesWithExport(exportDatabases).has(
+    database.name
+  );
 
   // Without bb.sql.export from a role, an active export grant for this query
   // enables Export. Export discovery is independent of the grant applied

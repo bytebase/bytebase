@@ -21,7 +21,7 @@ const mocks = vi.hoisted(() => ({
     tags: {},
   },
   deleteDatabaseQueryContext: vi.fn(),
-  allowExport: false,
+  databasesWithExport: [] as string[],
   useExportGrantBypass: vi.fn(),
 }));
 
@@ -88,7 +88,12 @@ vi.mock("@/modules/sql-editor/components/useExportGrantBypass", () => ({
 }));
 
 vi.mock("@/modules/sql-editor/hooks/useSQLEditorState", () => ({
-  useSQLEditorAllowExport: () => mocks.allowExport,
+  useSQLEditorDatabasesWithExport: (databases: Database[]) =>
+    new Set(
+      databases
+        .map((database) => database.name)
+        .filter((name) => mocks.databasesWithExport.includes(name))
+    ),
   useSQLEditorQueryDataPolicy: () => ({
     maximumResultRows: 100,
   }),
@@ -165,7 +170,7 @@ describe("BatchQuerySelect", () => {
     container = document.createElement("div");
     document.body.append(container);
     root = createRoot(container);
-    mocks.allowExport = false;
+    mocks.databasesWithExport = [];
     grantLookup([], []);
 
     cellA = {
@@ -255,7 +260,7 @@ describe("BatchQuerySelect", () => {
     container.querySelector(`[data-testid="${id}"]`);
 
   it("offers export of every database with bb.sql.export, without a grant lookup", () => {
-    mocks.allowExport = true;
+    mocks.databasesWithExport = [cellA.name, cellB.name];
     render();
 
     expect(testId("batch-export")?.textContent).toContain(
@@ -266,7 +271,25 @@ describe("BatchQuerySelect", () => {
     );
     expect(testId("request-export")).toBeNull();
     expect(mocks.useExportGrantBypass).toHaveBeenLastCalledWith(
-      expect.objectContaining({ enabled: false })
+      expect.objectContaining({ enabled: false, targets: [] })
+    );
+  });
+
+  it("exports the database with bb.sql.export and requests export for the other", () => {
+    mocks.databasesWithExport = [cellA.name];
+    grantLookup([], [cellB.name]);
+    render();
+
+    expect(testId("batch-export")?.textContent).toContain(
+      "sql-editor.batch-export.partial"
+    );
+    expect(testId("exportable")?.textContent).toBe(cellA.name);
+    expect(testId("request-export")?.textContent).toBe(cellB.name);
+    expect(mocks.useExportGrantBypass).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        enabled: true,
+        targets: [expect.objectContaining({ database: cellB.name })],
+      })
     );
   });
 

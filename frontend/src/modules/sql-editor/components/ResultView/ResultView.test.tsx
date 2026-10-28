@@ -14,7 +14,7 @@ import { ResultView } from "./ResultView";
 
 const { exportData, exportAccess, useExportGrantBypass } = vi.hoisted(() => ({
   exportData: vi.fn(),
-  exportAccess: { allowExport: false },
+  exportAccess: { databasesWithExport: [] as string[] },
   useExportGrantBypass: vi.fn(),
 }));
 
@@ -45,7 +45,12 @@ vi.mock("@/modules/sql-editor/components/useExportGrantBypass", () => ({
 }));
 
 vi.mock("@/modules/sql-editor/hooks/useSQLEditorState", () => ({
-  useSQLEditorAllowExport: () => exportAccess.allowExport,
+  useSQLEditorDatabasesWithExport: (databases: Database[]) =>
+    new Set(
+      databases
+        .map((database) => database.name)
+        .filter((name) => exportAccess.databasesWithExport.includes(name))
+    ),
   useSQLEditorQueryDataPolicy: () => undefined,
 }));
 
@@ -163,7 +168,7 @@ describe("ResultView", () => {
   beforeEach(() => {
     exportData.mockReset();
     exportData.mockResolvedValue(new Uint8Array());
-    exportAccess.allowExport = false;
+    exportAccess.databasesWithExport = [];
     grantLookup({});
   });
 
@@ -176,7 +181,7 @@ describe("ResultView", () => {
   });
 
   test("includes the selected CosmosDB container in export requests", async () => {
-    exportAccess.allowExport = true;
+    exportAccess.databasesWithExport = [database.name];
     render(
       <ResultView
         executeParams={{
@@ -214,7 +219,7 @@ describe("ResultView", () => {
   };
 
   test("bb.sql.export offers Export without looking up a grant", () => {
-    exportAccess.allowExport = true;
+    exportAccess.databasesWithExport = [database.name];
     render(
       <ResultView
         executeParams={executeParams}
@@ -261,6 +266,44 @@ describe("ResultView", () => {
     ).not.toBeInTheDocument();
     expect(screen.getByTestId("request-export")).toHaveTextContent(
       database.name
+    );
+  });
+
+  test("bb.sql.export scoped to one database offers Export there and Request export elsewhere", () => {
+    const other = {
+      ...database,
+      name: "instances/prod/databases/other",
+    } as Database;
+    exportAccess.databasesWithExport = [database.name];
+    grantLookup({ unmatchedDatabases: [other.name] });
+
+    const { unmount } = render(
+      <ResultView
+        executeParams={executeParams}
+        database={database}
+        resultSet={queryResult}
+      />
+    );
+    expect(screen.getByRole("button", { name: "export" })).toBeInTheDocument();
+    expect(screen.queryByTestId("request-export")).not.toBeInTheDocument();
+    unmount();
+
+    render(
+      <ResultView
+        executeParams={executeParams}
+        database={other}
+        resultSet={queryResult}
+      />
+    );
+    expect(
+      screen.queryByRole("button", { name: "export" })
+    ).not.toBeInTheDocument();
+    expect(screen.getByTestId("request-export")).toHaveTextContent(other.name);
+    expect(useExportGrantBypass).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        enabled: true,
+        targets: [expect.objectContaining({ database: other.name })],
+      })
     );
   });
 
