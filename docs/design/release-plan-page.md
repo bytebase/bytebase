@@ -148,7 +148,8 @@ the database, one short description, and today's buttons. The description takes 
 task's state (green done, blue running, red failed, gray otherwise) while the dot keeps the full
 color, and below 640 px it moves under the database. Per state, with the full table in States:
 
-- Failed: the error's first line in red, after the failed version for a release task. It is the
+- Failed: the error's first line in red, after the failed version for a release task whose error
+  names a file. It is the
   run's `detail` with the executor's prefix naming the file and version removed, so a stage with
   several failed tasks says why each failed without opening any.
 - Done: "All 493 applied · 4.1 s" for a release task: the executor ends a run Done only after every
@@ -186,10 +187,17 @@ A failed section that is collapsed also shows the error's first line in red, as 
 card does. Inside a file the rows are exactly the UIOps rows (`SectionContent.tsx`): begin, one row
 per command, commit or rollback, retries as attempts. A succeeded command's line is its statement's
 first line; a failed command's line is the error, and the row toggles to the statement block with
-its copy control; below 640 px the failed row opens with the block folded. For a driver that never
-writes a command response (the `TaskRunErrorAlert.tsx` comment lists them), and for a run that
-failed in a task-level step or before any file, the failed section's header line carries the run's
-error (`TaskRun.detail`) and says that no statement was identified, so the cause is never absent.
+its copy control; below 640 px the failed row opens with the block folded.
+
+A failed run's error (`TaskRun.detail`) always has a section. An error with the executor's file
+prefix ("failed to execute release file `<path>` (version `<v>`)") belongs to that file's section,
+the newest one; one from a task-level step (a prior backup) belongs to that step's section. Every
+other error has no section of its own: the revisions could not be read, the driver could not
+connect, a file's statement could not be loaded before its marker, or a revision could not be
+written after the file ran. For those the spine ends with an open task-level "Run failed" section
+holding the full error. A section carrying the error with no failed command row, as with a driver
+that never writes a command response (the `TaskRunErrorAlert.tsx` comment lists them), says that no
+statement was identified, so the cause is never absent.
 
 On load, a URL that names a stage or task wins and opens that task; otherwise the page selects the
 stage holding the latest failed task, else the running one, else the last stage, and opens no task.
@@ -338,11 +346,16 @@ that `vcs_user.go` already parses for pull-request events:
 
 | Field | GitHub Actions | GitLab CI | Bitbucket Pipelines | Azure Pipelines |
 |---|---|---|---|---|
-| Branch | `GITHUB_REF_NAME` | `CI_COMMIT_REF_NAME` | `BITBUCKET_BRANCH` | `BUILD_SOURCEBRANCHNAME` |
+| Branch | `GITHUB_HEAD_REF` in pull-request runs, else `GITHUB_REF_NAME` | `CI_MERGE_REQUEST_SOURCE_BRANCH_NAME` in MR pipelines, else `CI_COMMIT_REF_NAME` | `BITBUCKET_BRANCH`, the source branch in PR pipelines too | `SYSTEM_PULLREQUEST_SOURCEBRANCH` in PR builds, else `BUILD_SOURCEBRANCH`, without `refs/heads/` |
 | Commit title | event payload `head_commit.message`, first line | `CI_COMMIT_TITLE` | not in the environment | `BUILD_SOURCEVERSIONMESSAGE`, first line |
 | Author | `head_commit.author.username`, or `pull_request.user.login` | `CI_COMMIT_AUTHOR` | not in the environment | `BUILD_REQUESTEDFOR` |
 | Pull request | `pull_request` event: number, title, URL. On push, the merge marker in the head commit's message: `(#N)` at the end of a squash merge, `Merge pull request #N` on a merge commit; a rebase merge carries none | `CI_MERGE_REQUEST_IID` and `CI_MERGE_REQUEST_TITLE` in MR pipelines; on push, `See merge request …!N` | `BITBUCKET_PR_ID` in PR pipelines; on push, `(pull request #N)` | `SYSTEM_PULLREQUEST_PULLREQUESTID` in PR builds; on push, `Merged PR N:` |
 | File at commit (frontend, from `repo@sha` and the file's path) | `<repo>/blob/<sha>/<path>` | `<repo>/-/blob/<sha>/<path>` | `<repo>/src/<sha>/<path>` | `<repo>?path=/<path>&version=GC<sha>` |
+
+In pull-request builds the platform's own ref is synthetic (`<N>/merge` on GitHub, `merge` on
+Azure), so the branch comes from the source-branch variable; Azure's `BUILD_SOURCEBRANCHNAME` also
+keeps only the last segment of `feature/x`. The SHA stays the checked-out commit, a merge commit in
+those builds, because the release's files came from it and D8 links them there.
 
 The file's path is the action's glob match, relative to the pipeline's working directory; a pipeline
 that runs in a subdirectory gets a link that misses, and an unknown platform gets none. A marker
@@ -416,7 +429,7 @@ The spine, per task status:
 | Not started, pending | Stored state, caption "As of plan creation, `<time ago>`; the run re-checks the database." | "N already applied" folded with the version range; one "Will apply" section per file to apply, in version order, no children and no caret; "Will apply again · revision deleted `<date>` by `<who>`" where a revision was deleted |
 | Running | The live log, the release's file list, and the stored state for files not reached | Already-applied fold; reached files (applied collapsed, the current one open with a running indicator); unreached files below as "Will apply"; the boundary moves down |
 | Done | The log and the release's file list | Already-applied fold (the files without a marker); every file section Applied; task-level steps as siblings; "Revisions on `<database>`" at the end |
-| Failed | The log and the release's file list | Already-applied fold; applied sections collapsed; the failed section open, its failed row open with the error on the line and the statement block under it (folded below 640 px); task-level steps as siblings; nothing for the files after the failed one |
+| Failed | The log and the release's file list | Already-applied fold; applied sections collapsed; the failed section open, its failed row open with the error on the line and the statement block under it (folded below 640 px); task-level steps as siblings; nothing for the files after the failed one. An error that names no file or step (D3) ends the spine with an open "Run failed" section instead, after the already-applied fold and any applied sections |
 | Canceled | The log and the release's file list | As Failed, with the section the cancel interrupted marked Canceled |
 | Skipped, after a run | As Failed | "Skipped by `<user>` · `<time>` · `<reason>`", then the last run as Failed |
 | Skipped, never run | Stored state | "Skipped by `<user>` · `<time>` · `<reason>`", then the planned list, collapsed |
@@ -429,7 +442,7 @@ The folded card's description, per task state (D3):
 | Not started | "3 to apply · 490 applied earlier", or "Nothing to apply · 493 applied earlier", then "· scheduled 18:00" or the waiting cause; a declarative release shows the status only | "DML · about 1,180 rows", then the schedule or waiting cause | gray |
 | Running | "Applying 3 files · started 15:14", or "Running · started 15:14" with nothing to apply | "Running · started 15:14" | blue |
 | Done | "All 493 applied · 4.1 s", or "Nothing new · 493 applied earlier · 0.3 s" when the stored list was empty | "DML · 4.1 s", "DDL · 1.2 s" or "Mixed · 3.4 s" | green |
-| Failed | `<failed version>` then the error's first line | The error's first line | red |
+| Failed | `<failed version>` then the error's first line, or the first line alone when the error names no file | The error's first line | red |
 | Skipped | "Skipped by `<user>` · `<reason>`" | Same | gray |
 | Canceled | "Canceled · `<time>`" | Same | gray |
 
@@ -496,8 +509,11 @@ Tests to write, per the placement rules in `AGENTS.md`:
   version the run passed over moving into the fold, and a stored applied version that gets a marker
   leaving it; a failed task listing nothing after the failed file; a failed run with no marker at
   all (the driver cannot connect) and one that failed loading the second file's statement after one
-  marker, each taking the versions above its newest marker from the stored state, and the same run
-  without a stored state listing only the versions below it; a done run with no marker, all applied;
+  marker, each taking the versions above its newest marker from the stored state and ending with an
+  open "Run failed" section holding the full error, and the same run without a stored state listing
+  only the versions below it; a revision-write failure after a file ran, the file's section applied
+  and the error in "Run failed"; a file-prefixed error on the newest file's section, with "no
+  statement identified" when it has no failed command; a done run with no marker, all applied;
   a collapsed failed section carrying the error's first line; the 24-section fold with a failed
   section past the limit still shown and the fold expanding in place; a prior backup as a sibling
   and a gh-ost migration inside its file's section; a run with no command response carrying the
@@ -542,7 +558,9 @@ Tests to write, per the placement rules in `AGENTS.md`:
   returns them.
 - `action/command`: `getVCSSource` per platform from environment fixtures and a GitHub payload file:
   PR event, squash-merge push, merge-commit push, rebase push (commit title, no PR), Bitbucket push
-  (no title), undetected platform with and without the flags, flags overriding detection.
+  (no title), undetected platform with and without the flags, flags overriding detection; the
+  source branch, not the synthetic ref, in a GitHub pull-request run, a GitLab MR pipeline and an
+  Azure PR build, and a slashed Azure branch kept whole.
 - `frontend/tests/e2e/plan-detail`: a release-backed plan created through the API against the shared
   server with a target that already carries one version, read as a project Developer: the Changes
   rail newest first with the viewer opening from a file path; the planned spine before the run;
