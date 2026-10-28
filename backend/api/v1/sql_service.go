@@ -1253,11 +1253,7 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 	s.createQueryHistory(instance, database, store.QueryHistoryTypeExport, statement, user.Email, duration, exportErr)
 
 	if exportErr != nil {
-		var connectErr *connect.Error
-		if errors.As(exportErr, &connectErr) {
-			return nil, connectErr
-		}
-		return nil, connect.NewError(connect.CodeInternal, exportErr)
+		return nil, exportConnectError(exportErr)
 	}
 
 	exportResponse := &v1pb.ExportResponse{
@@ -1268,6 +1264,21 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 	}
 
 	return connect.NewResponse(exportResponse), nil
+}
+
+// exportConnectError returns the connect error Export answers with. A refusal
+// from the access check arrives as a queryError, which errors.As cannot see
+// through, so its own connect error (such as PERMISSION_DENIED) is returned.
+func exportConnectError(err error) *connect.Error {
+	var connectErr *connect.Error
+	var qe *queryError
+	if errors.As(err, &qe) && errors.As(qe.err, &connectErr) {
+		return connectErr
+	}
+	if errors.As(err, &connectErr) {
+		return connectErr
+	}
+	return connect.NewError(connect.CodeInternal, err)
 }
 
 // doExport performs SQL Editor exports with masking applied.

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"connectrpc.com/connect"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/type/expr"
 
@@ -172,4 +173,23 @@ func TestExportRequiresExportPermission(t *testing.T) {
 		grant := &store.AccessGrantMessage{Payload: &storepb.AccessGrantPayload{Targets: []string{db}, Export: true}}
 		requireDenied(t, f.check(ctx, "grantee@example.com", export, grant, insert, write), permission.SQLDml, db)
 	})
+}
+
+func TestExportRefusalIsPermissionDenied(t *testing.T) {
+	t.Parallel()
+	ctx := context.WithValue(context.Background(), common.WorkspaceIDContextKey, "default")
+	f := newExportAccessFixture(ctx, t)
+
+	denied := false
+	ctx = withSetPermissionDenied(ctx, func() { denied = true })
+	refusal := f.check(ctx, "reader@example.com", true /* export */, nil, "SELECT * FROM t1", readsTable("db", "t1"))
+	require.Error(t, refusal)
+	require.True(t, denied, "the refusal marks the request for the audit log")
+
+	err := exportConnectError(refusal)
+	require.Equal(t, connect.CodePermissionDenied, err.Code())
+	require.Equal(t, "permission denied to access resources: [instances/test/databases/db/tables/t1]", err.Message())
+
+	require.Equal(t, connect.CodeNotFound, exportConnectError(connect.NewError(connect.CodeNotFound, errors.New("missing"))).Code())
+	require.Equal(t, connect.CodeInternal, exportConnectError(errors.New("driver failed")).Code())
 }
