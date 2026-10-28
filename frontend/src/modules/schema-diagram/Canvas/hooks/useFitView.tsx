@@ -35,13 +35,13 @@ export const useFitView = (canvas: Element | null) => {
   fitToRef.current = fitTo;
 
   useEffect(() => {
-    const off = events.on("fit-view", (event) => {
-      fitToRef.current(event?.data?.geometries ?? [...geometries]);
+    const off = events.on("fit-view", ({ data }) => {
+      fitToRef.current(data.geometries);
     });
     return () => {
       off();
     };
-  }, [events, geometries]);
+  }, [events]);
 
   return handleFitView;
 };

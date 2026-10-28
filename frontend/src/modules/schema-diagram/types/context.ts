@@ -81,9 +81,9 @@ export type SchemaDiagramContext = {
 export type SchemaDiagramEvents = {
   render: undefined;
   layout: undefined;
-  // `geometries` fits a layout whose table nodes have not yet registered
-  // their new rects; without it, fit-view uses the registered geometries.
-  "fit-view": { geometries?: Geometry[] } | undefined;
+  // Carries the laid-out rects: the table nodes register them only after
+  // React commits, which can be later than the fit.
+  "fit-view": { geometries: Geometry[] };
   "edit-table": { schema: SchemaMetadata; table: TableMetadata };
   "edit-column": {
     schema: SchemaMetadata;

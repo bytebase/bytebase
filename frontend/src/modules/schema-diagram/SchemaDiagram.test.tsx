@@ -90,41 +90,66 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+const mountDiagram = async () => {
+  autoLayoutMock.mockImplementation(async (nodes) => ({
+    rects: new Map(
+      (nodes as { id: string }[]).map(({ id }, i) => [
+        id,
+        TABLE_RECTS.get(`t${i}`)!,
+      ])
+    ),
+    paths: new Map(),
+  }));
+
+  await act(async () => {
+    root.render(
+      <SchemaDiagram
+        database={create(DatabaseSchema$, {
+          name: "instances/i/databases/db",
+        })}
+        databaseMetadata={makeMetadata()}
+      />
+    );
+  });
+  expect(autoLayoutMock).toHaveBeenCalled();
+};
+
+const expectEveryTableInCanvas = () => {
+  const { zoom, x, y } = desktopTransform(container);
+  expect(zoom).toBeLessThan(1);
+  for (const rect of TABLE_RECTS.values()) {
+    expect(x + rect.x * zoom).toBeGreaterThanOrEqual(0);
+    expect(y + rect.y * zoom).toBeGreaterThanOrEqual(0);
+    expect(x + (rect.x + rect.width) * zoom).toBeLessThanOrEqual(CANVAS.width);
+    expect(y + (rect.y + rect.height) * zoom).toBeLessThanOrEqual(
+      CANVAS.height
+    );
+  }
+};
+
+const click = (label: string) => {
+  const button = container.querySelector<HTMLButtonElement>(
+    `button[aria-label="${label}"]`
+  );
+  expect(button).not.toBeNull();
+  act(() => button!.click());
+};
+
 describe("SchemaDiagram", () => {
   it("fits every laid-out table into the canvas on mount", async () => {
-    autoLayoutMock.mockImplementation(async (nodes) => ({
-      rects: new Map(
-        (nodes as { id: string }[]).map(({ id }, i) => [
-          id,
-          TABLE_RECTS.get(`t${i}`)!,
-        ])
-      ),
-      paths: new Map(),
-    }));
+    await mountDiagram();
+    expectEveryTableInCanvas();
+  });
 
-    await act(async () => {
-      root.render(
-        <SchemaDiagram
-          database={create(DatabaseSchema$, {
-            name: "instances/i/databases/db",
-          })}
-          databaseMetadata={makeMetadata()}
-        />
-      );
-    });
+  it("fits every table again from the fit button after zooming", async () => {
+    await mountDiagram();
+    const fitted = desktopTransform(container);
 
-    expect(autoLayoutMock).toHaveBeenCalled();
-    const { zoom, x, y } = desktopTransform(container);
-    expect(zoom).toBeLessThan(1);
-    for (const rect of TABLE_RECTS.values()) {
-      expect(x + rect.x * zoom).toBeGreaterThanOrEqual(0);
-      expect(y + rect.y * zoom).toBeGreaterThanOrEqual(0);
-      expect(x + (rect.x + rect.width) * zoom).toBeLessThanOrEqual(
-        CANVAS.width
-      );
-      expect(y + (rect.y + rect.height) * zoom).toBeLessThanOrEqual(
-        CANVAS.height
-      );
-    }
+    click("Zoom out");
+    expect(desktopTransform(container).zoom).toBeLessThan(fitted.zoom);
+
+    click("Fit content within view");
+    expect(desktopTransform(container)).toEqual(fitted);
+    expectEveryTableInCanvas();
   });
 });
