@@ -24,7 +24,6 @@
 - A one-time migration keeps who can export today. Workspaces that allow export without approval
   give `bb.sql.export` to the users who export today. Workspaces that require approval get no
   new standing export, so approved access grants stay the only export path for ordinary users.
-  A log line per changed workspace records what the migration did.
 
 ## Background
 
@@ -243,9 +242,12 @@ only through approved grants. Built-in role definitions live in Go and need no m
 
 ```sql
 DO $$
+DECLARE
+  conflicting_workspace text;
 BEGIN
-  IF EXISTS (SELECT 1 FROM role WHERE resource_id = 'sqlEditorExporter') THEN
-    RAISE EXCEPTION 'custom role "sqlEditorExporter" conflicts with a new built-in role. On the previous Bytebase version, create a replacement custom role, move its bindings, and delete "sqlEditorExporter".';
+  SELECT workspace INTO conflicting_workspace FROM role WHERE resource_id = 'sqlEditorExporter';
+  IF FOUND THEN
+    RAISE EXCEPTION 'custom role "sqlEditorExporter" in workspace "%" conflicts with a new built-in role. On the previous Bytebase version, create a replacement custom role, move its bindings, and delete "sqlEditorExporter".', conflicting_workspace;
   END IF;
 END $$;
 
@@ -287,28 +289,6 @@ Copying the binding and changing only the role carries members (users, groups, `
 the condition over exactly, including database, schema, table and expiration scope. A member who
 holds both SQL Editor roles receives two exporter bindings, which is harmless. Access grants and
 approval rules are not touched.
-
-### Migration log
-
-A SQL file cannot write to the server log: the migrator executes it and logs only the version
-(`migrator.go:222`). The log therefore comes from a Go migration, `migrate3_25_0` in
-`backend/migrator/migration_3_25_0.go`, registered in `goMigrations` under `3.25.0`. The migrator
-runs it before the SQL file (`migrator.go:140`).
-
-The Go migration only reads. It applies the same classification as the SQL file and logs one
-`INFO` line for each workspace the SQL file will change, with:
-
-- the workspace id and whether it is approval-only or export-enabled;
-- the number of exporter bindings added to the workspace IAM policy and to each project IAM
-  policy;
-- the custom roles that gain `bb.sql.export`;
-- the workspace and project query data policies whose `disableExport` value is removed, with the
-  removed value.
-
-Workspaces with nothing to change get no line. If the SQL file fails, the server stops with that
-error after the log lines, the version is not recorded, and the next start logs again. On Cloud,
-the operator reads this log; tenant administrators see the result in their IAM settings and in
-`terraform plan`.
 
 ### Resulting behavior
 
@@ -369,8 +349,7 @@ Provider release, shipped with the server release:
 Upgrade runbook for Terraform users:
 
 1. Pause automatic `terraform apply`.
-2. Upgrade Bytebase. Self-hosted administrators read the migration log; Cloud administrators use
-   step 3 alone.
+2. Upgrade Bytebase.
 3. Run `terraform plan`.
 4. In export-enabled workspaces, add every exporter binding the plan wants to remove: for each
    SQL Editor binding that should keep export, a binding with the same members and condition and
@@ -403,8 +382,6 @@ binding {
   permissions; the third workspace is treated as export-enabled; no query data policy keeps a
   `disableExport` key, their other fields and `enforce` are unchanged. Assert that the id
   collision raises.
-- **Migration log**: on the same fixture, the summary `migrate3_25_0` computes matches the
-  changes the SQL file makes, and a workspace with nothing to change produces no entry.
 - **Export authorization** (`backend/api/v1`):
   - A select-only user cannot export.
   - A user with only `bb.sql.export`, scoped to one table, exports that table, is refused on

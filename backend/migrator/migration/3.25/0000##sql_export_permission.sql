@@ -1,10 +1,10 @@
--- migrate3_25_0 logs what this file changes and must use the same
--- approval-only classification.
-
 DO $$
+DECLARE
+  conflicting_workspace text;
 BEGIN
-  IF EXISTS (SELECT 1 FROM role WHERE resource_id = 'sqlEditorExporter') THEN
-    RAISE EXCEPTION 'custom role "sqlEditorExporter" conflicts with a new built-in role. On the previous Bytebase version, create a replacement custom role, move its bindings, and delete "sqlEditorExporter".';
+  SELECT workspace INTO conflicting_workspace FROM role WHERE resource_id = 'sqlEditorExporter';
+  IF FOUND THEN
+    RAISE EXCEPTION 'custom role "sqlEditorExporter" in workspace "%" conflicts with a new built-in role. On the previous Bytebase version, create a replacement custom role, move its bindings, and delete "sqlEditorExporter".', conflicting_workspace;
   END IF;
 END $$;
 

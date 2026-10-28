@@ -129,29 +129,6 @@ func TestMigration3_25_0_SQLExportPermission(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	summaries, err := migrator.SummarizeMigration3_25_0(ctx, db)
-	require.NoError(t, err)
-	require.Equal(t, []*migrator.SQLExportMigrationSummary{
-		{
-			Workspace:            "ws-approval",
-			ApprovalOnly:         true,
-			ExporterBindings:     map[string]int{},
-			RemovedDisableExport: map[string]string{"workspaces/ws-approval": "true"},
-		},
-		{
-			Workspace:            "ws-export",
-			ExporterBindings:     map[string]int{"workspaces/ws-export": 2, "projects/export-project": 2},
-			RolesGainingExport:   []string{"export-select"},
-			RemovedDisableExport: map[string]string{"projects/export-project": "true"},
-		},
-		{
-			Workspace:            "ws-unenforced",
-			ExporterBindings:     map[string]int{"projects/unenforced-project": 1},
-			RolesGainingExport:   []string{"unenforced-select"},
-			RemovedDisableExport: map[string]string{"workspaces/ws-unenforced": "true"},
-		},
-	}, summaries)
-
 	require.NoError(t, runMigration3_25_0SQL(ctx, db))
 
 	for role, want := range map[string]string{
@@ -218,7 +195,7 @@ func TestMigration3_25_0_SQLEditorExporterIDCollision(t *testing.T) {
 	require.NoError(t, err)
 
 	err = runMigration3_25_0SQL(ctx, db)
-	require.ErrorContains(t, err, `custom role "sqlEditorExporter" conflicts with a new built-in role`)
+	require.ErrorContains(t, err, `custom role "sqlEditorExporter" in workspace "ws-export" conflicts with a new built-in role`)
 
 	var got string
 	require.NoError(t, db.QueryRowContext(ctx, `SELECT permissions::text FROM role WHERE resource_id = 'sqlEditorExporter'`).Scan(&got))
