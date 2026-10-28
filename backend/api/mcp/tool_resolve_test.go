@@ -257,15 +257,20 @@ func TestResolve_NamedProjectIsListedDirectly(t *testing.T) {
 		name     string
 		project  string
 		database string
-		// wantDenied is the whole tool error for a refusal; wantText is the
-		// plain-text error for any other failure.
-		wantDenied *toolError
-		wantText   string
+		// wantError is the whole tool error; wantText is the plain-text error
+		// for any other failure.
+		wantError *toolError
+		wantText  string
 	}{
 		{name: "readable", project: "hr", database: "employee_db"},
-		{name: "refused", project: "finance", database: "payroll_db", wantDenied: &toolError{
+		{name: "refused", project: "finance", database: "payroll_db", wantError: &toolError{
 			Code:    "PERMISSION_DENIED",
 			Message: `user does not have permission "bb.databases.list" in "projects/finance"`,
+		}},
+		{name: "no match", project: "hr", database: "payroll_db", wantError: &toolError{
+			Code:       "DATABASE_NOT_FOUND",
+			Message:    `no database matching "payroll_db"`,
+			Suggestion: "try without instance/project filters, or use search_api to list available databases",
 		}},
 		{name: "missing", project: "gone", database: "employee_db", wantText: `list databases failed: HTTP 404: project "gone" not found`},
 	} {
@@ -277,9 +282,9 @@ func TestResolve_NamedProjectIsListedDirectly(t *testing.T) {
 			require.Equal(t, []string{"projects/" + tc.project}, api.requested())
 			var te *toolError
 			switch {
-			case tc.wantDenied != nil:
+			case tc.wantError != nil:
 				require.ErrorAs(t, err, &te)
-				require.Equal(t, *tc.wantDenied, *te, "the server's refusal names the project, and nothing is added")
+				require.Equal(t, *tc.wantError, *te)
 			case tc.wantText != "":
 				require.False(t, errors.As(err, &te), "a missing project is not reported as a tool error code")
 				require.EqualError(t, err, tc.wantText)
