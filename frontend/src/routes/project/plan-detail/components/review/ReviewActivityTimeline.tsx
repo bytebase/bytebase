@@ -44,12 +44,8 @@ import { hasProjectPermissionV2 } from "@/utils/iam/permission";
 import { useFocusThread } from "../../hooks/useFocusThread";
 import { usePlanChangeReferenceData } from "../../hooks/usePlanChangeReferenceData";
 import { placementOf } from "../../shared/stores/placementSlice";
-import {
-  usePlanDetailStore,
-  usePlanDetailStoreApi,
-} from "../../shared/stores/usePlanDetailStore";
+import { usePlanDetailStore } from "../../shared/stores/usePlanDetailStore";
 import { usePlanDetailContext } from "../../shell/PlanDetailContext";
-import { findingsInOrder } from "../../utils/findingIndex";
 import { PlanSpecChangeReference } from "../PlanChangeReference";
 import { CommentThreadCard } from "../threads/CommentThreadCard";
 import { ReviewerIcon, reviewerName } from "../threads/ReviewResult";
@@ -84,6 +80,12 @@ export function ReviewActivityTimeline({
   const page = usePlanDetailContext();
   const project = useProjectByName(`${projectNamePrefix}${page.projectId}`);
   const [expanded, setExpanded] = useState(false);
+  const [runToggles, setRunToggles] = useState<ReadonlyMap<string, boolean>>(
+    new Map()
+  );
+  const toggleRun = useCallback((runId: string, open: boolean) => {
+    setRunToggles((prev) => new Map(prev).set(runId, open));
+  }, []);
   const planUpdateSpecs = useMemo(
     () => collectPlanUpdateSpecs(comments),
     [comments]
@@ -110,6 +112,7 @@ export function ReviewActivityTimeline({
 
   useEffect(() => {
     setExpanded(false);
+    setRunToggles(new Map());
   }, [page.pageKey]);
 
   // A card asked for from elsewhere may sit in the folded middle, so the
@@ -160,6 +163,7 @@ export function ReviewActivityTimeline({
         issueDraft: issue.draft,
         comments,
         keepFindingCard,
+        runToggles,
       }),
     [
       comments,
@@ -169,6 +173,7 @@ export function ReviewActivityTimeline({
       keepFindingCard,
       plan.createTime,
       plan.creator,
+      runToggles,
     ]
   );
   const items = useMemo(() => {
@@ -214,6 +219,7 @@ export function ReviewActivityTimeline({
               issue={issue}
               isLast={isLast}
               key={item.entry.id}
+              onToggleRun={toggleRun}
               plan={plan}
               renderPlanChangeReference={renderPlanChangeReference}
               threads={threads}
@@ -283,6 +289,7 @@ function ActivityRow({
   entry,
   issue,
   isLast,
+  onToggleRun,
   plan,
   renderPlanChangeReference,
   threads,
@@ -290,13 +297,20 @@ function ActivityRow({
   entry: TimelineEntry;
   issue: Issue;
   isLast: boolean;
+  onToggleRun: (runId: string, open: boolean) => void;
   plan: Plan;
   renderPlanChangeReference: PlanChangeReferenceRenderer;
   threads: CommentThread[];
 }) {
   const source = entry.source;
   if (source.type === "review-run") {
-    return <ReviewRunActivityRow isLast={isLast} plan={plan} source={source} />;
+    return (
+      <ReviewRunActivityRow
+        isLast={isLast}
+        onToggle={() => onToggleRun(entry.id, !source.open)}
+        source={source}
+      />
+    );
   }
   if (source.type === "comment" && isThreadRoot(source.comment)) {
     const thread = threads.find(
@@ -337,37 +351,21 @@ function ActivityRow({
   );
 }
 
-// One line per run in place of a card per finding, which the editor shows:
-// how many findings it posted and how many are still open. "Show" steps
-// through the open ones in the editor.
+// One line per run: how many findings it posted and how many are still open.
+// "Show" opens the run's finding cards below it.
 function ReviewRunActivityRow({
   isLast,
-  plan,
+  onToggle,
   source,
 }: {
   isLast: boolean;
-  plan: Plan;
+  onToggle: () => void;
   source: Extract<TimelineSource, { type: "review-run" }>;
 }) {
   const { t } = useTranslation();
-  const storeApi = usePlanDetailStoreApi();
-  const { focusInStatement } = useFocusThread();
   const open = source.findings.filter(
     (finding) => finding.threadState === IssueComment_ThreadState.OPEN
   ).length;
-  const showOpen = () => {
-    const first = findingsInOrder(
-      source.findings,
-      source.runType,
-      plan.specs,
-      "open"
-    )[0];
-    if (!first) return;
-    storeApi
-      .getState()
-      .setWalkerFilter({ runType: source.runType, group: "open" });
-    focusInStatement(first);
-  };
   return (
     <ActivityRowShell
       header={
@@ -390,16 +388,15 @@ function ReviewRunActivityRow({
             className="text-xs text-control-light"
             tsMs={getTimeForPbTimestampProtoEs(source.time)}
           />
-          {open > 0 && (
-            <Button
-              appearance="link"
-              className="text-control-light"
-              onClick={showOpen}
-              size="xs"
-            >
-              {t("plan.deploy-waiting.show")}
-            </Button>
-          )}
+          <Button
+            aria-expanded={source.open}
+            appearance="link"
+            className="text-control-light"
+            onClick={onToggle}
+            size="xs"
+          >
+            {source.open ? t("common.hide") : t("common.show")}
+          </Button>
         </>
       }
       icon={

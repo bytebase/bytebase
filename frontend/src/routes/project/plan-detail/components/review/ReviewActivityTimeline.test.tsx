@@ -24,7 +24,6 @@ const mocks = vi.hoisted(() => ({
   activityFocus: undefined as { commentName: string; nonce: number } | undefined,
   clearActivityFocus: vi.fn(),
   requestThreadFocus: vi.fn(),
-  setWalkerFilter: vi.fn(),
   expandPhase: vi.fn(),
   placements: new Map<string, unknown>(),
   placementTargets: new Map<string, string>(),
@@ -140,7 +139,6 @@ vi.mock("../../shared/stores/usePlanDetailStore", () => ({
   usePlanDetailStoreApi: () => ({
     getState: () => ({
       requestThreadFocus: mocks.requestThreadFocus,
-      setWalkerFilter: mocks.setWalkerFilter,
     }),
   }),
 }));
@@ -302,27 +300,39 @@ describe("ReviewActivityTimeline", () => {
     act(() => root.unmount());
   });
 
-  test("a run's line steps through its open findings in the editor", () => {
+  test("a run's line shows and hides its finding cards in place", () => {
+    const sha = "c".repeat(64);
     const plan = create(PlanSchema, {
       name: "projects/p1/plans/1",
-      specs: [create(Plan_SpecSchema, { id: "spec-1" })],
+      specs: [
+        create(Plan_SpecSchema, {
+          id: "spec-1",
+          config: {
+            case: "changeDatabaseConfig",
+            value: create(Plan_ChangeDatabaseConfigSchema, {
+              sheet: `projects/p1/sheets/${sha}`,
+            }),
+          },
+        }),
+      ],
     });
-    const finding = (
-      id: string,
-      line: number,
-      threadState: IssueComment_ThreadState
-    ) =>
+    const finding = (id: string, ms: number, superseded: boolean) =>
       create(IssueCommentSchema, {
         name: `projects/p1/issues/1/issueComments/${id}`,
         comment: "No WHERE clause",
-        threadState,
-        createTime: timestampFromMs(0),
+        threadState: superseded
+          ? IssueComment_ThreadState.RESOLVED
+          : IssueComment_ThreadState.OPEN,
+        createTime: timestampFromMs(ms),
         statementAnchor: create(StatementAnchorSchema, {
           spec: "spec-1",
-          startPosition: create(PositionSchema, { line, column: 0 }),
+          sheetSha256: sha,
+          startPosition: create(PositionSchema, { line: 1, column: 0 }),
+          endPosition: create(PositionSchema, { line: 1, column: 0 }),
         }),
         reviewMetadata: create(IssueComment_ReviewMetadataSchema, {
           runType: ReviewRun_Type.RULE,
+          superseded,
         }),
       });
     const container = document.createElement("div");
@@ -330,29 +340,30 @@ describe("ReviewActivityTimeline", () => {
     act(() => {
       root.render(
         <ReviewActivityTimeline
-          comments={[
-            finding("resolved", 1, IssueComment_ThreadState.RESOLVED),
-            finding("open-5", 5, IssueComment_ThreadState.OPEN),
-            finding("open-3", 3, IssueComment_ThreadState.OPEN),
-          ]}
+          comments={[finding("old", 0, true), finding("new", 60_000, false)]}
           issue={create(IssueSchema, { name: "projects/p1/issues/1" })}
           plan={plan}
         />
       );
     });
-    const show = [...container.querySelectorAll("button")].find(
-      (button) => button.textContent === "plan.deploy-waiting.show"
-    );
-    act(() => show?.click());
-    expect(mocks.setWalkerFilter).toHaveBeenCalledWith({
-      runType: ReviewRun_Type.RULE,
-      group: "open",
-    });
-    expect(mocks.requestThreadFocus).toHaveBeenCalledWith(
-      expect.objectContaining({
-        commentName: "projects/p1/issues/1/issueComments/open-3",
-      })
-    );
+    const cards = () =>
+      [...container.querySelectorAll("[data-testid='thread-card']")].map(
+        (card) => card.getAttribute("data-root")?.split("/").pop()
+      );
+    const runButtons = () =>
+      [...container.querySelectorAll("button[aria-expanded]")];
+    expect(cards()).toEqual(["new"]);
+    expect(runButtons().map((button) => button.textContent)).toEqual([
+      "common.show",
+      "common.hide",
+    ]);
+
+    act(() => (runButtons()[0] as HTMLButtonElement).click());
+    expect(cards()).toEqual(["old", "new"]);
+
+    act(() => (runButtons()[1] as HTMLButtonElement).click());
+    expect(cards()).toEqual(["old"]);
+    expect(mocks.requestThreadFocus).not.toHaveBeenCalled();
     act(() => root.unmount());
   });
 

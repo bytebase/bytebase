@@ -255,10 +255,11 @@ export function isShownInEditor(
   );
 }
 
-// Under SQL Review V2, Activity records each run as one line, so a finding
-// keeps its own card only where nothing else shows it: people replied to it,
-// or the editor cannot show it. A result a later run superseded is history
-// unless someone reopened it, since an open thread holds the rollout.
+// Under SQL Review V2, a folded run shows in Activity as one line, so a
+// finding of it keeps its own card only where nothing else shows it: people
+// replied to it, or the editor cannot show it. A result a later run superseded
+// is history unless someone reopened it, since an open thread holds the
+// rollout.
 export function needsActivityCard(
   thread: CommentThread,
   shownInEditor: boolean
