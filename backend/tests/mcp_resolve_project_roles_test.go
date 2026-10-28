@@ -55,7 +55,7 @@ func TestMCPResolvesDatabasesThroughProjectRoles(t *testing.T) {
 	}{
 		{project: ctl.project.Name, database: f.name, want: []string{"Bytebase"}},
 		// The refusal is JSON-encoded, so its quotes are escaped; match the parts.
-		{project: otherProject.Msg.Name, database: otherDatabase, failed: true, want: []string{"PERMISSION_DENIED", "bb.projects.get", otherProject.Msg.Name}},
+		{project: otherProject.Msg.Name, database: otherDatabase, failed: true, want: []string{"PERMISSION_DENIED", "bb.databases.list", otherProject.Msg.Name}},
 		{project: "projects/" + missingProjectID, database: f.name, failed: true, want: []string{`project "` + missingProjectID + `" not found`}},
 	} {
 		failed, text := callToolOnSession(ctx, t, editorSession, "query_database", map[string]any{

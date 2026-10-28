@@ -97,11 +97,11 @@ func TestResolve_ProjectInstanceDatabaseAndFilter(t *testing.T) {
 // and the refusal names its own way out.
 func TestResolve_PolicyDenialPassesThrough(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.Contains(r.URL.Path, "DatabaseService/ListDatabases") {
+		if strings.Contains(r.URL.Path, "DatabaseService/SearchDatabases") {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusForbidden)
 			_ = json.NewEncoder(w).Encode(map[string]any{
-				"message": "/bytebase.v1.DatabaseService/ListDatabases is refused: this workspace's " +
+				"message": "/bytebase.v1.DatabaseService/SearchDatabases is refused: this workspace's " +
 					"stored MCP capability ceiling is not one this build serves",
 			})
 			return
@@ -118,15 +118,15 @@ func TestResolve_PolicyDenialPassesThrough(t *testing.T) {
 	require.Empty(t, te.Suggestion, "no grant fixes a stored ceiling this build does not serve")
 }
 
-// listingAPI answers ListDatabases the way the server answers a caller who
-// can read the readable projects. It fails any workspace-parent listing, which
-// project roles cannot make.
+// listingAPI answers SearchDatabases and ListDatabases the way the server
+// answers a caller who holds bb.databases.list in the readable projects. It
+// fails any workspace-parent listing, which project roles cannot make.
 type listingAPI struct {
 	databases []map[string]any
 	readable  []string
 
-	mu      sync.Mutex
-	parents []string
+	mu       sync.Mutex
+	requests []string
 }
 
 func (a *listingAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -135,8 +135,13 @@ func (a *listingAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Filter string `json:"filter"`
 	}
 	_ = json.NewDecoder(r.Body).Decode(&body)
+	search := strings.HasSuffix(r.URL.Path, "DatabaseService/SearchDatabases")
 	a.mu.Lock()
-	a.parents = append(a.parents, body.Parent)
+	if search {
+		a.requests = append(a.requests, "SearchDatabases")
+	} else {
+		a.requests = append(a.requests, body.Parent)
+	}
 	a.mu.Unlock()
 
 	reply := func(status int, payload map[string]any) {
@@ -154,12 +159,12 @@ func (a *listingAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return scoped
 	}
 	switch {
-	case body.Parent == "projects/-":
+	case search:
 		reply(http.StatusOK, map[string]any{"databases": applyMockFilter(inProjects(a.readable...), body.Filter)})
 	case slices.Contains(a.readable, body.Parent):
 		reply(http.StatusOK, map[string]any{"databases": applyMockFilter(inProjects(body.Parent), body.Filter)})
 	case len(inProjects(body.Parent)) > 0:
-		reply(http.StatusForbidden, map[string]any{"message": `user does not have permission "bb.projects.get" in "` + body.Parent + `"`})
+		reply(http.StatusForbidden, map[string]any{"message": `user does not have permission "bb.databases.list" in "` + body.Parent + `"`})
 	case strings.HasPrefix(body.Parent, "projects/"):
 		reply(http.StatusNotFound, map[string]any{"message": `project "` + strings.TrimPrefix(body.Parent, "projects/") + `" not found`})
 	default:
@@ -170,7 +175,7 @@ func (a *listingAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (a *listingAPI) requested() []string {
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	return slices.Clone(a.parents)
+	return slices.Clone(a.requests)
 }
 
 func hrAndFinanceDatabases() []map[string]any {
@@ -180,7 +185,7 @@ func hrAndFinanceDatabases() []map[string]any {
 	}
 }
 
-func TestResolve_ListsThroughTheWildcard(t *testing.T) {
+func TestResolve_SearchesWhenNoProjectIsNamed(t *testing.T) {
 	for _, tc := range []struct {
 		name     string
 		readable []string
@@ -196,7 +201,7 @@ func TestResolve_ListsThroughTheWildcard(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, "instances/prod-pg/databases/employee_db", resolved.resourceName)
 			require.Equal(t, "projects/hr", resolved.project)
-			require.Equal(t, []string{"projects/-"}, api.requested())
+			require.Equal(t, []string{"SearchDatabases"}, api.requested())
 		})
 	}
 }
@@ -218,12 +223,12 @@ func TestResolve_UnreadableProjectIsNotFound(t *testing.T) {
 			var te *toolError
 			require.ErrorAs(t, err, &te)
 			require.Equal(t, "DATABASE_NOT_FOUND", te.Code)
-			require.Contains(t, te.Suggestion, "projects you cannot read")
+			require.Contains(t, te.Suggestion, "projects where you lack bb.databases.list")
 		})
 	}
 }
 
-func TestResolve_WildcardKeepsTheInstanceFilter(t *testing.T) {
+func TestResolve_SearchKeepsTheInstanceFilter(t *testing.T) {
 	api := &listingAPI{
 		databases: []map[string]any{
 			makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr", "POSTGRES", "ds-1"),
@@ -266,7 +271,7 @@ func TestResolve_NamedProjectIsListedDirectly(t *testing.T) {
 		{name: "readable", project: "hr", database: "employee_db"},
 		{name: "refused", project: "finance", database: "payroll_db", wantDenied: &toolError{
 			Code:    "PERMISSION_DENIED",
-			Message: `user does not have permission "bb.projects.get" in "projects/finance"`,
+			Message: `user does not have permission "bb.databases.list" in "projects/finance"`,
 		}},
 		{name: "missing", project: "gone", database: "employee_db", wantText: `list databases failed: HTTP 404: project "gone" not found`},
 	} {

@@ -1729,6 +1729,47 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.ListDatabasesResponse'
+  /bytebase.v1.DatabaseService/SearchDatabases:
+    post:
+      tags:
+        - bytebase.v1.DatabaseService
+      summary: SearchDatabases
+      description: |-
+        Searches for databases in every active project where the caller has the bb.databases.list permission, filtered by the specified filter.
+         Permissions required: bb.databases.list (checked in each project)
+      operationId: bytebase.v1.DatabaseService.SearchDatabases
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          description: Define the version of the Connect protocol
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+          example: 1
+        - name: Connect-Timeout-Ms
+          in: header
+          description: Define the timeout, in ms
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+          example: 1000
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.SearchDatabasesRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.SearchDatabasesResponse'
   /bytebase.v1.DatabaseService/SyncDatabase:
     post:
       tags:
@@ -15528,7 +15569,6 @@ components:
           title: parent
           description: |-
             - projects/{project}: list databases in a project, require "bb.projects.get" permission.
-             - projects/-: list databases across projects (AIP-159), restricted to the active (non-archived) projects where the caller holds "bb.projects.get".
              - workspaces/{id}: list databases in the workspace, require "bb.databases.list" permission.
              - instances/{instance}: list databases in an instance, require "bb.instances.get" permission.
              - projects/{project}/instances/{instance}: list databases in a project instance, require "bb.instances.get" permission.
@@ -20758,6 +20798,56 @@ components:
       title: SearchAuditLogsResponse
       additionalProperties: false
       description: Response message for searching audit logs.
+    bytebase.v1.SearchDatabasesRequest:
+      type: object
+      properties:
+        pageSize:
+          type: integer
+          title: page_size
+          format: int32
+          description: |-
+            The maximum number of databases to return. The service may return fewer
+             than this value.
+             If unspecified, at most 10 databases will be returned.
+             The maximum value is 1000; values above 1000 will be coerced to 1000.
+        pageToken:
+          type: string
+          title: page_token
+          description: |-
+            A page token, received from a previous `SearchDatabases` call.
+             Provide this to retrieve the subsequent page.
+
+             When paginating, all other parameters provided to `SearchDatabases` must
+             match the call that provided the page token.
+        filter:
+          type: string
+          title: filter
+          description: |-
+            Filter is used to filter databases returned in the list.
+             It supports the same fields and operators as `ListDatabasesRequest.filter`.
+
+             For example:
+             project == "projects/{project resource id}"
+             name.contains("database name") && engine == "POSTGRES"
+      title: SearchDatabasesRequest
+      additionalProperties: false
+    bytebase.v1.SearchDatabasesResponse:
+      type: object
+      properties:
+        databases:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.Database'
+          title: databases
+          description: The databases from the specified request.
+        nextPageToken:
+          type: string
+          title: next_page_token
+          description: |-
+            A token, which can be sent as `page_token` to retrieve the next page.
+             If this field is omitted, there are no subsequent pages.
+      title: SearchDatabasesResponse
+      additionalProperties: false
     bytebase.v1.SearchIssuesRequest:
       type: object
       properties:

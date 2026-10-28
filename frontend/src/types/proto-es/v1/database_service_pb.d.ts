@@ -85,7 +85,6 @@ export declare const BatchGetDatabasesResponseSchema: GenMessage<BatchGetDatabas
 export declare type ListDatabasesRequest = Message<"bytebase.v1.ListDatabasesRequest"> & {
   /**
    * - projects/{project}: list databases in a project, require "bb.projects.get" permission.
-   * - projects/-: list databases across projects (AIP-159), restricted to the active (non-archived) projects where the caller holds "bb.projects.get".
    * - workspaces/{id}: list databases in the workspace, require "bb.databases.list" permission.
    * - instances/{instance}: list databases in an instance, require "bb.instances.get" permission.
    * - projects/{project}/instances/{instance}: list databases in a project instance, require "bb.instances.get" permission.
@@ -204,6 +203,76 @@ export declare type ListDatabasesResponse = Message<"bytebase.v1.ListDatabasesRe
  * Use `create(ListDatabasesResponseSchema)` to create a new message.
  */
 export declare const ListDatabasesResponseSchema: GenMessage<ListDatabasesResponse>;
+
+/**
+ * @generated from message bytebase.v1.SearchDatabasesRequest
+ */
+export declare type SearchDatabasesRequest = Message<"bytebase.v1.SearchDatabasesRequest"> & {
+  /**
+   * The maximum number of databases to return. The service may return fewer
+   * than this value.
+   * If unspecified, at most 10 databases will be returned.
+   * The maximum value is 1000; values above 1000 will be coerced to 1000.
+   *
+   * @generated from field: int32 page_size = 1;
+   */
+  pageSize: number;
+
+  /**
+   * A page token, received from a previous `SearchDatabases` call.
+   * Provide this to retrieve the subsequent page.
+   *
+   * When paginating, all other parameters provided to `SearchDatabases` must
+   * match the call that provided the page token.
+   *
+   * @generated from field: string page_token = 2;
+   */
+  pageToken: string;
+
+  /**
+   * Filter is used to filter databases returned in the list.
+   * It supports the same fields and operators as `ListDatabasesRequest.filter`.
+   *
+   * For example:
+   * project == "projects/{project resource id}"
+   * name.contains("database name") && engine == "POSTGRES"
+   *
+   * @generated from field: string filter = 3;
+   */
+  filter: string;
+};
+
+/**
+ * Describes the message bytebase.v1.SearchDatabasesRequest.
+ * Use `create(SearchDatabasesRequestSchema)` to create a new message.
+ */
+export declare const SearchDatabasesRequestSchema: GenMessage<SearchDatabasesRequest>;
+
+/**
+ * @generated from message bytebase.v1.SearchDatabasesResponse
+ */
+export declare type SearchDatabasesResponse = Message<"bytebase.v1.SearchDatabasesResponse"> & {
+  /**
+   * The databases from the specified request.
+   *
+   * @generated from field: repeated bytebase.v1.Database databases = 1;
+   */
+  databases: Database[];
+
+  /**
+   * A token, which can be sent as `page_token` to retrieve the next page.
+   * If this field is omitted, there are no subsequent pages.
+   *
+   * @generated from field: string next_page_token = 2;
+   */
+  nextPageToken: string;
+};
+
+/**
+ * Describes the message bytebase.v1.SearchDatabasesResponse.
+ * Use `create(SearchDatabasesResponseSchema)` to create a new message.
+ */
+export declare const SearchDatabasesResponseSchema: GenMessage<SearchDatabasesResponse>;
 
 /**
  * @generated from message bytebase.v1.UpdateDatabaseRequest
@@ -3246,6 +3315,17 @@ export declare const DatabaseService: GenService<{
     methodKind: "unary";
     input: typeof ListDatabasesRequestSchema;
     output: typeof ListDatabasesResponseSchema;
+  },
+  /**
+   * Searches for databases in every active project where the caller has the bb.databases.list permission, filtered by the specified filter.
+   * Permissions required: bb.databases.list (checked in each project)
+   *
+   * @generated from rpc bytebase.v1.DatabaseService.SearchDatabases
+   */
+  searchDatabases: {
+    methodKind: "unary";
+    input: typeof SearchDatabasesRequestSchema;
+    output: typeof SearchDatabasesResponseSchema;
   },
   /**
    * Updates database properties such as labels and project assignment.

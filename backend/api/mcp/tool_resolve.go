@@ -95,33 +95,29 @@ func formatProjectFilter(project string) string {
 }
 
 // listDatabases lists the databases matching filter in the named project, or
-// in every project the caller can read when none is named.
+// in every project where the caller holds bb.databases.list when none is named.
 //
 // It never lists under the workspace parent: that needs bb.databases.list at
 // the workspace, which project roles lack, and with stdout audit logging on,
 // each refusal there would stream a permission denial on every resolve.
 func (s *Server) listDatabases(ctx context.Context, filter, project string) ([]databaseEntry, error) {
-	parent := "projects/-"
+	path := "/bytebase.v1.DatabaseService/SearchDatabases"
+	body := map[string]any{
+		"filter":   filter,
+		"pageSize": 1000,
+	}
 	if project != "" {
-		parent = formatProjectFilter(project)
+		path = "/bytebase.v1.DatabaseService/ListDatabases"
+		body["parent"] = formatProjectFilter(project)
 	}
 
 	var databases []databaseEntry
-	pageToken := ""
 	for {
-		body := map[string]any{
-			"parent":   parent,
-			"filter":   filter,
-			"pageSize": 1000,
-		}
-		if pageToken != "" {
-			body["pageToken"] = pageToken
-		}
-		resp, err := s.apiRequest(ctx, "/bytebase.v1.DatabaseService/ListDatabases", body)
+		resp, err := s.apiRequest(ctx, path, body)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to list databases")
 		}
-		if err := checkAPIResponse(resp, "list databases", "bb.projects.get"); err != nil {
+		if err := checkAPIResponse(resp, "list databases", "bb.databases.list"); err != nil {
 			return nil, err
 		}
 
@@ -134,7 +130,7 @@ func (s *Server) listDatabases(ctx context.Context, filter, project string) ([]d
 		if listResp.NextPageToken == "" {
 			break
 		}
-		pageToken = listResp.NextPageToken
+		body["pageToken"] = listResp.NextPageToken
 	}
 	return databases, nil
 }
@@ -158,7 +154,7 @@ func matchDatabases(databases []databaseEntry, database, instance, project strin
 		return nil, &toolError{
 			Code:       "DATABASE_NOT_FOUND",
 			Message:    fmt.Sprintf("no database matching %q", database),
-			Suggestion: suggestion + ". Databases in archived projects, or in projects you cannot read, are not listed",
+			Suggestion: suggestion + ". Databases in archived projects, or in projects where you lack bb.databases.list, are not listed",
 		}
 	}
 

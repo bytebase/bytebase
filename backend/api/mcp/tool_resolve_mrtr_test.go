@@ -297,7 +297,7 @@ func TestAmbiguousDatabaseCompletesForAClientAskingBeyondTheCeiling(t *testing.T
 		"the call must complete against the database the client picked")
 }
 
-// shrinkingDatabases serves the full set on the first ListDatabases call and the
+// shrinkingDatabases serves the full set on the first database listing and the
 // reduced one after, so a tool call's two resolves disagree.
 func shrinkingDatabases(t *testing.T, first, rest []map[string]any) (http.Handler, *atomic.Int32) {
 	t.Helper()
@@ -306,7 +306,7 @@ func shrinkingDatabases(t *testing.T, first, rest []map[string]any) (http.Handle
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		if !strings.Contains(r.URL.Path, "ListDatabases") {
+		if !strings.Contains(r.URL.Path, "ListDatabases") && !strings.Contains(r.URL.Path, "SearchDatabases") {
 			_ = json.NewEncoder(w).Encode(queryResp)
 			return
 		}

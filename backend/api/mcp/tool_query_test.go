@@ -49,9 +49,9 @@ func makeDatabaseWithDualDS(name, instanceName, project, engine, adminDSID, read
 	}
 }
 
-// mockListDatabases returns an HTTP handler that serves ListDatabases requests
-// for a caller who can read every project: projects/- lists all databases, and
-// a project parent lists that project's.
+// mockListDatabases returns an HTTP handler that serves database listings for
+// a caller who holds bb.databases.list in every project: SearchDatabases lists
+// all databases, and ListDatabases with a project parent lists that project's.
 func mockListDatabases(databases []map[string]any) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -63,7 +63,7 @@ func mockListDatabases(databases []map[string]any) http.Handler {
 		_ = json.NewDecoder(r.Body).Decode(&reqBody)
 
 		var scoped []map[string]any
-		if reqBody.Parent == "projects/-" {
+		if strings.HasSuffix(r.URL.Path, "DatabaseService/SearchDatabases") {
 			scoped = databases
 		} else {
 			for _, db := range databases {

@@ -17,7 +17,7 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-func TestListDatabasesAcrossProjects(t *testing.T) {
+func TestSearchDatabases(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	db, stores, _ := testcontainer.NewMetadataDB(t)
@@ -36,11 +36,17 @@ func TestListDatabasesAcrossProjects(t *testing.T) {
 			('prod', 'archived1', 'project-archived');
 	`)
 	require.NoError(t, err)
-	_, err = stores.CreateRole(ctx, &store.RoleMessage{
-		ResourceID: "project-reader", Workspace: "default", Name: "project-reader",
-		Permissions: map[permission.Permission]bool{permission.ProjectsGet: true},
-	})
-	require.NoError(t, err)
+	for role, permissions := range map[string][]permission.Permission{
+		"database-lister": {permission.DatabasesList},
+		"database-getter": {permission.ProjectsGet, permission.DatabasesGet},
+	} {
+		granted := map[permission.Permission]bool{}
+		for _, p := range permissions {
+			granted[p] = true
+		}
+		_, err := stores.CreateRole(ctx, &store.RoleMessage{ResourceID: role, Workspace: "default", Name: role, Permissions: granted})
+		require.NoError(t, err)
+	}
 	grant := func(resourceType storepb.Policy_Resource, resource, email, role string) {
 		_, err := stores.PatchIamPolicy(ctx, "default", resourceType, resource, func(policy *storepb.IamPolicy) error {
 			policy.Bindings = append(policy.Bindings, &storepb.Binding{Role: role, Members: []string{common.FormatUserEmail(email)}})
@@ -50,43 +56,53 @@ func TestListDatabasesAcrossProjects(t *testing.T) {
 	}
 	grant(storepb.Policy_WORKSPACE, common.FormatWorkspace("default"), "admin@example.com", "roles/workspaceAdmin")
 	grant(storepb.Policy_PROJECT, common.FormatProject("project-a"), "dev@example.com", "roles/projectDeveloper")
-	grant(storepb.Policy_PROJECT, common.FormatProject("project-b"), "reader@example.com", "roles/project-reader")
+	grant(storepb.Policy_PROJECT, common.FormatProject("project-b"), "lister@example.com", "roles/database-lister")
+	grant(storepb.Policy_PROJECT, common.FormatProject("project-b"), "getter@example.com", "roles/database-getter")
 
 	iamManager, err := iam.NewManager(stores, nil, false)
 	require.NoError(t, err)
 	service := &DatabaseService{store: stores, iamManager: iamManager, licenseService: newInstanceServiceTestLicenseService(t, stores)}
-	list := func(email, filter string, pageSize int32) []string {
+	search := func(email, filter string, pageSize int32) ([]string, error) {
 		callerCtx := context.WithValue(ctx, common.WorkspaceIDContextKey, "default")
 		callerCtx = context.WithValue(callerCtx, common.UserContextKey, &store.UserMessage{Email: email})
 		var names []string
 		pageToken := ""
 		for {
-			resp, err := service.ListDatabases(callerCtx, connect.NewRequest(&v1pb.ListDatabasesRequest{
-				Parent:    "projects/-",
+			resp, err := service.SearchDatabases(callerCtx, connect.NewRequest(&v1pb.SearchDatabasesRequest{
 				Filter:    filter,
 				PageSize:  pageSize,
 				PageToken: pageToken,
 			}))
-			require.NoError(t, err)
+			if err != nil {
+				return nil, err
+			}
 			for _, database := range resp.Msg.Databases {
 				names = append(names, database.Name)
 			}
 			if resp.Msg.NextPageToken == "" {
-				return names
+				return names, nil
 			}
 			pageToken = resp.Msg.NextPageToken
 		}
 	}
+	found := func(email, filter string, pageSize int32) []string {
+		names, err := search(email, filter, pageSize)
+		require.NoError(t, err)
+		return names
+	}
 
 	projectA := []string{"instances/prod/databases/a1", "instances/prod/databases/a2"}
 	projectB := []string{"instances/prod/databases/b1", "instances/staging/databases/a1"}
-	require.Empty(t, list("nobody@example.com", "", 100), "a caller who can read no project lists no database")
-	require.Equal(t, projectA, list("dev@example.com", "", 1), "staging/a1 shares a name but sits in a project dev cannot read")
-	require.Equal(t, projectB, list("reader@example.com", "", 100), "bb.projects.get alone is the permission the wildcard checks")
-	require.Equal(t, projectB, list("admin@example.com", `project == "projects/project-b"`, 100))
-	require.Empty(t, list("dev@example.com", `project == "projects/project-b"`, 100), "a filter cannot reach a project the caller cannot read")
-	require.Equal(t, append(projectA, projectB...), list("admin@example.com", "", 1),
+	require.Empty(t, found("nobody@example.com", "", 100), "a caller who can list no project finds no database")
+	require.Equal(t, projectA, found("dev@example.com", "", 1), "staging/a1 shares a name but sits in a project dev cannot list")
+	require.Equal(t, projectB, found("lister@example.com", "", 100), "bb.databases.list alone is the permission the search checks")
+	require.Empty(t, found("getter@example.com", "", 100), "bb.projects.get and bb.databases.get do not list a project")
+	require.Equal(t, projectB, found("admin@example.com", `project == "projects/project-b"`, 100))
+	require.Empty(t, found("dev@example.com", `project == "projects/project-b"`, 100), "a filter cannot reach a project the caller cannot list")
+	require.Equal(t, append(projectA, projectB...), found("admin@example.com", "", 1),
 		"pages cross projects, and an archived project lists nothing, as projects/{archived} does")
+	_, err = search("dev@example.com", "name ==", 100)
+	require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
 }
 
 func TestShouldDiffSchemaViaSDL(t *testing.T) {
