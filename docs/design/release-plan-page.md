@@ -152,9 +152,11 @@ color, and below 640 px it moves under the database. Per state, with the full ta
   names a file. It is the
   run's `detail` with the executor's prefix naming the file and version removed, so a stage with
   several failed tasks says why each failed without opening any.
-- Done: "All 493 applied · 4.1 s" for a release task: the executor ends a run Done only after every
-  version in the release has a live revision on the database, so the release's file count is exact
-  without counting anything, and it answers whether the database reached the release. For a UIOps
+- Done: "All 493 applied · 4.1 s" for a release task: the executor ends a run Done only when every
+  version in the release had a live revision when the run read them at its start or was applied by
+  the run, so the release's file count is exact without counting anything, and it answers whether
+  the run brought the database to the release. It is the run's result, not a live check: a revision
+  deleted during or after the run leaves the line as it was, as it leaves today's Done status. For a UIOps
   task the statement kind and the duration ("DML · 4.1 s", "DDL · 1.2 s", "Mixed · 3.4 s"). The
   duration is the run's start and end time, as today's collapsed card already shows it. Which
   files this run applied, and the exact rows each statement affected, are in the opened task.
@@ -266,7 +268,7 @@ that has no marker was found applied: that part is exact. Above the newest marke
 nothing, because a run can fail before the next file's marker (loading that file's statement fails)
 or before any marker at all (the driver cannot connect, the revisions cannot be read). So the
 boundary is the newest marker, not the failure. A done run's unmarked versions are all applied,
-since Done means every version has a live revision, marker or not. A run that ended any other way
+since Done means every version was found applied at the run's start or applied by it, marker or not. A run that ended any other way
 takes the versions above its newest marker, or all of them when it wrote none, from the stored state
 (D4): its applied versions join the already-applied fold and its to-apply versions are not listed,
 as nothing after a stop is (D3). A task without a stored state, whose run predates this change,
