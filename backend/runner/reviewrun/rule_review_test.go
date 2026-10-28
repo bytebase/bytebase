@@ -86,6 +86,22 @@ func TestGroupReviewUnits(t *testing.T) {
 	require.Equal(t, []string{"instances/pg/databases/c"}, targetNames(units[2]))
 }
 
+func TestMarkOtherSpecs(t *testing.T) {
+	t.Parallel()
+	shared1 := target("spec-1", "instances/pg/databases/a", storepb.Engine_POSTGRES, false)
+	own := target("spec-1", "instances/pg/databases/b", storepb.Engine_POSTGRES, false)
+	shared2 := target("spec-2", "instances/pg/databases/a", storepb.Engine_POSTGRES, false)
+	repeated1 := target("spec-3", "instances/pg/databases/c", storepb.Engine_POSTGRES, false)
+	repeated2 := target("spec-3", "instances/pg/databases/c", storepb.Engine_POSTGRES, false)
+	markOtherSpecs([]*reviewTarget{shared1, own, shared2, repeated1, repeated2})
+
+	require.True(t, shared1.Input.OtherSpecs)
+	require.True(t, shared2.Input.OtherSpecs)
+	require.False(t, own.Input.OtherSpecs)
+	require.False(t, repeated1.Input.OtherSpecs, "one spec naming a database twice is still one spec")
+	require.False(t, repeated2.Input.OtherSpecs)
+}
+
 func targetNames(unit *reviewUnit) []string {
 	var names []string
 	for _, target := range unit.Targets {
