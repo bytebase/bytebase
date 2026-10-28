@@ -1,4 +1,5 @@
 import { Popover as BasePopover } from "@base-ui/react/popover";
+import { create } from "@bufbuild/protobuf";
 import {
   ArrowLeft,
   ChevronRight,
@@ -32,7 +33,10 @@ import {
 } from "@/stores/modules/v1/common";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
-import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import {
+  type Project,
+  ProjectSchema,
+} from "@/types/proto-es/v1/project_service_pb";
 import { extractDatabaseResourceName } from "@/utils/v1/database";
 import { normalizeAgentResourceReference } from "../logic/resourceMention";
 import {
@@ -54,7 +58,12 @@ interface AgentResourcePickerProps {
   onSelectIssue: (issue: Issue) => void;
 }
 
-type PickerView = "categories" | "projects" | "databases" | "issues";
+type PickerView =
+  | "categories"
+  | "projects"
+  | "database-projects"
+  | "databases"
+  | "issues";
 type SearchStatus =
   | "idle"
   | "loading"
@@ -113,15 +122,23 @@ export function AgentResourcePicker({
   const canListWorkspaceProjects = useAppStore((state) =>
     state.hasWorkspacePermission("bb.projects.list")
   );
+  const canListWorkspaceDatabases = useAppStore((state) =>
+    state.hasWorkspacePermission("bb.databases.list")
+  );
   const [view, setView] = useState<PickerView>("categories");
   const [query, setQuery] = useState("");
   const [projects, setProjects] = useState<Project[]>([]);
   const [databases, setDatabases] = useState<Database[]>([]);
   const [issues, setIssues] = useState<Issue[]>([]);
+  const [chosenProject, setChosenProject] = useState<{
+    name: string;
+    workspaceName: string;
+  }>();
   const [nextPageToken, setNextPageToken] = useState("");
   const [status, setStatus] = useState<SearchStatus>("idle");
   const requestGeneration = useRef(0);
   const requestController = useRef<AbortController | null>(null);
+  const previousWorkspaceName = useRef(workspaceName);
   const categoryRef = useRef<HTMLButtonElement>(null);
   const databaseCategoryRef = useRef<HTMLButtonElement>(null);
   const issueCategoryRef = useRef<HTMLButtonElement>(null);
@@ -132,38 +149,33 @@ export function AgentResourcePicker({
   const resultRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const databaseProjectName =
     selectedProjectName ??
-    (projectName && projectName !== "projects/-" ? projectName : undefined);
-  const fetchProject = useAppStore((state) => state.fetchProject);
+    (projectName && projectName !== "projects/-" ? projectName : undefined) ??
+    (chosenProject?.workspaceName === workspaceName
+      ? chosenProject.name
+      : undefined);
   const loadProjectIamPolicy = useAppStore(
     (state) => state.loadProjectIamPolicy
   );
-  const projectIsCached = useAppStore((state) =>
-    databaseProjectName
-      ? Boolean(state.projectsByName[databaseProjectName])
-      : false
-  );
+  const projectsByName = useAppStore((state) => state.projectsByName);
   const projectPolicyIsCached = useAppStore((state) =>
     databaseProjectName
       ? Boolean(state.projectPoliciesByName[databaseProjectName])
       : false
   );
   const canListDatabases = useAppStore((state) => {
-    const canListWorkspaceDatabases =
-      state.hasWorkspacePermission("bb.databases.list");
-    if (!databaseProjectName) return canListWorkspaceDatabases;
-    const project = state.projectsByName[databaseProjectName];
-    // Project-parent ListDatabases also requires bb.projects.get.
-    const canGetProject =
-      state.hasWorkspacePermission("bb.projects.get") ||
-      Boolean(
-        project && state.hasProjectPermission(project, "bb.projects.get")
-      );
-    const canListProjectDatabases =
-      canListWorkspaceDatabases ||
-      Boolean(
-        project && state.hasProjectPermission(project, "bb.databases.list")
-      );
-    return canGetProject && canListProjectDatabases;
+    if (canListWorkspaceDatabases) return true;
+    if (!databaseProjectName) return false;
+    if (
+      !state.projectPoliciesByName[databaseProjectName] ||
+      !state.currentUser ||
+      state.roles.length === 0 ||
+      !state.workspacePolicy
+    )
+      return true;
+    const project =
+      state.projectsByName[databaseProjectName] ??
+      create(ProjectSchema, { name: databaseProjectName });
+    return state.hasProjectPermission(project, "bb.databases.list");
   });
   const databaseParent = databaseProjectName ?? workspaceName;
   const isDatabaseView = view === "databases";
@@ -180,7 +192,8 @@ export function AgentResourcePicker({
         : undefined;
   const results = isIssueView ? issues : isDatabaseView ? databases : projects;
   const showProjectCategory = !selectedProjectName && canListWorkspaceProjects;
-  const showDatabaseCategory = canListDatabases;
+  const showDatabaseCategory =
+    canListDatabases || (!databaseProjectName && canListWorkspaceProjects);
   const firstCategoryRef = showProjectCategory
     ? categoryRef
     : showDatabaseCategory
@@ -188,26 +201,30 @@ export function AgentResourcePicker({
       : issueCategoryRef;
 
   useEffect(() => {
-    if (!open || !databaseProjectName || canListDatabases) return;
-    if (!projectIsCached) {
-      void fetchProject(databaseProjectName, true);
-    } else if (!projectPolicyIsCached) {
-      void loadProjectIamPolicy(databaseProjectName, true);
-    }
+    if (
+      !open ||
+      !databaseProjectName ||
+      canListWorkspaceDatabases ||
+      projectPolicyIsCached
+    )
+      return;
+    void loadProjectIamPolicy(databaseProjectName, true).catch(() => undefined);
   }, [
-    canListDatabases,
+    canListWorkspaceDatabases,
     databaseProjectName,
-    fetchProject,
     loadProjectIamPolicy,
     open,
-    projectIsCached,
     projectPolicyIsCached,
   ]);
 
   const loadPage = useCallback(
     async (pageToken: string, append: boolean) => {
       if (view === "issues" && !issueParent) return;
-      if (view === "projects" && !canListWorkspaceProjects) return;
+      if (
+        (view === "projects" || view === "database-projects") &&
+        !canListWorkspaceProjects
+      )
+        return;
       if (view === "databases" && !canListDatabases) return;
       requestController.current?.abort();
       const controller = new AbortController();
@@ -251,7 +268,7 @@ export function AgentResourcePicker({
                     query,
                     pageToken,
                     controller.signal,
-                    false
+                    view === "database-projects"
                   ),
                 };
         if (
@@ -300,20 +317,43 @@ export function AgentResourcePicker({
 
   useLayoutEffect(() => {
     if (
-      (view !== "projects" || canListWorkspaceProjects) &&
+      ((view !== "projects" && view !== "database-projects") ||
+        canListWorkspaceProjects) &&
       (view !== "databases" || canListDatabases)
     ) {
       return;
     }
     requestController.current?.abort();
     requestGeneration.current += 1;
-    setView("categories");
+    setView(
+      view === "databases" && chosenProject ? "database-projects" : "categories"
+    );
     setQuery("");
     setProjects([]);
     setDatabases([]);
     setNextPageToken("");
     setStatus("idle");
-  }, [canListDatabases, canListWorkspaceProjects, view]);
+  }, [canListDatabases, canListWorkspaceProjects, chosenProject, view]);
+
+  useLayoutEffect(() => {
+    if (previousWorkspaceName.current === workspaceName) return;
+    previousWorkspaceName.current = workspaceName;
+    if (selectedProjectName || projectName || view !== "databases") return;
+    requestController.current?.abort();
+    requestGeneration.current += 1;
+    setChosenProject(undefined);
+    setView(canListWorkspaceDatabases ? "databases" : "database-projects");
+    setQuery("");
+    setDatabases([]);
+    setNextPageToken("");
+    setStatus("idle");
+  }, [
+    canListWorkspaceDatabases,
+    projectName,
+    selectedProjectName,
+    view,
+    workspaceName,
+  ]);
 
   useLayoutEffect(() => {
     if (view !== "issues" || issueParent) return;
@@ -328,7 +368,11 @@ export function AgentResourcePicker({
 
   useEffect(() => {
     if (!open || view === "categories" || hasSelectedReference) return;
-    if (view === "projects" && !canListWorkspaceProjects) return;
+    if (
+      (view === "projects" || view === "database-projects") &&
+      !canListWorkspaceProjects
+    )
+      return;
     if (view === "databases" && !canListDatabases) return;
     if (view === "issues" && !issueParent) return;
     void loadPage("", false);
@@ -355,6 +399,7 @@ export function AgentResourcePicker({
     setProjects([]);
     setDatabases([]);
     setIssues([]);
+    setChosenProject(undefined);
     setNextPageToken("");
     setStatus("idle");
   }, [open]);
@@ -368,6 +413,12 @@ export function AgentResourcePicker({
 
   const selectProject = (project: Project) => {
     if (hasSelectedReference || !canListWorkspaceProjects) return;
+    if (view === "database-projects") {
+      setChosenProject({ name: project.name, workspaceName });
+      setQuery("");
+      setView("databases");
+      return;
+    }
     onSelectProject(project);
     onOpenChange(false);
   };
@@ -406,7 +457,13 @@ export function AgentResourcePicker({
   };
 
   const goBack = () => {
-    setView("categories");
+    if (view === "databases" && chosenProject) {
+      setChosenProject(undefined);
+      setView("database-projects");
+    } else {
+      setChosenProject(undefined);
+      setView("categories");
+    }
     setQuery("");
   };
 
@@ -566,10 +623,20 @@ export function AgentResourcePicker({
                         issueCategoryRef.current?.focus();
                       } else if (event.key === "Enter") {
                         event.preventDefault();
-                        showView("databases");
+                        showView(
+                          canListWorkspaceDatabases || databaseProjectName
+                            ? "databases"
+                            : "database-projects"
+                        );
                       }
                     }}
-                    onClick={() => showView("databases")}
+                    onClick={() =>
+                      showView(
+                        canListWorkspaceDatabases || databaseProjectName
+                          ? "databases"
+                          : "database-projects"
+                      )
+                    }
                   >
                     <DatabaseIcon className="size-4 shrink-0" />
                     <span className="min-w-0 flex-1 truncate">
@@ -712,23 +779,48 @@ export function AgentResourcePicker({
                       </Button>
                     ))}
                   {isIssueView &&
-                    issues.map((issue, index) => (
-                      <Button
-                        key={issue.name}
-                        ref={(element) => {
-                          resultRefs.current[index] = element;
-                        }}
-                        appearance="secondary"
-                        size="sm"
-                        className="h-auto w-full justify-start gap-2 px-2 py-2 text-left focus:bg-control-bg focus:ring-2 focus:ring-accent focus:ring-offset-2"
-                        data-agent-resource-issue={issue.name}
-                        onMouseEnter={focusHoveredOption}
-                        onKeyDown={(event) => handleResultKeyDown(event, index)}
-                        onClick={() => selectIssue(issue)}
-                      >
-                        <IssueSummary issue={issue} />
-                      </Button>
-                    ))}
+                    issues.map((issue, index) => {
+                      const projectId = getNameParentTokens(issue.name, [
+                        projectNamePrefix,
+                        issueNamePrefix,
+                      ])[0];
+                      const issueProjectName = `projects/${projectId}`;
+                      const issueProjectTitle =
+                        projectsByName[issueProjectName]?.title;
+                      return (
+                        <Button
+                          key={issue.name}
+                          ref={(element) => {
+                            resultRefs.current[index] = element;
+                          }}
+                          appearance="secondary"
+                          size="sm"
+                          className="h-auto w-full justify-start gap-2 px-2 py-2 text-left focus:bg-control-bg focus:ring-2 focus:ring-accent focus:ring-offset-2"
+                          data-agent-resource-issue={issue.name}
+                          onMouseEnter={focusHoveredOption}
+                          onKeyDown={(event) =>
+                            handleResultKeyDown(event, index)
+                          }
+                          onClick={() => selectIssue(issue)}
+                        >
+                          <IssueSummary
+                            issue={issue}
+                            metadataTrailing={
+                              issueParent === "projects/-" ? (
+                                <>
+                                  <span>&middot;</span>
+                                  <span className="min-w-0 break-all">
+                                    {issueProjectTitle
+                                      ? `${issueProjectTitle} (${issueProjectName})`
+                                      : issueProjectName}
+                                  </span>
+                                </>
+                              ) : undefined
+                            }
+                          />
+                        </Button>
+                      );
+                    })}
                   {status === "loading" ? (
                     <p
                       className="flex items-center gap-2 px-2 py-2 text-xs text-control-light"
