@@ -81,7 +81,9 @@ export type SchemaDiagramContext = {
 export type SchemaDiagramEvents = {
   render: undefined;
   layout: undefined;
-  "fit-view": undefined;
+  // `geometries` fits a layout whose table nodes have not yet registered
+  // their new rects; without it, fit-view uses the registered geometries.
+  "fit-view": { geometries?: Geometry[] } | undefined;
   "edit-table": { schema: SchemaMetadata; table: TableMetadata };
   "edit-column": {
     schema: SchemaMetadata;

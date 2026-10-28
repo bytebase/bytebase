@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { DEFAULT_PADDINGS, ZOOM_RANGE } from "../../common/const";
 import { useSchemaDiagramContext } from "../../common/context";
+import type { Geometry } from "../../types";
 import { fitView } from "../libs/fitView";
 
 /**
@@ -13,27 +14,34 @@ export const useFitView = (canvas: Element | null) => {
   const ctx = useSchemaDiagramContext();
   const { setZoom, setPosition, geometries, events } = ctx;
 
-  const handleFitView = useCallback(() => {
-    if (!canvas) return;
-    const layout = fitView(canvas, [...geometries], DEFAULT_PADDINGS, [
-      ZOOM_RANGE.min,
-      1.0,
-    ]);
-    setZoom(layout.zoom);
-    setPosition({ x: layout.rect.x, y: layout.rect.y });
-  }, [canvas, geometries, setZoom, setPosition]);
+  const fitTo = useCallback(
+    (targets: Geometry[]) => {
+      if (!canvas) return;
+      const layout = fitView(canvas, targets, DEFAULT_PADDINGS, [
+        ZOOM_RANGE.min,
+        1.0,
+      ]);
+      setZoom(layout.zoom);
+      setPosition({ x: layout.rect.x, y: layout.rect.y });
+    },
+    [canvas, setZoom, setPosition]
+  );
 
-  const handleFitViewRef = useRef(handleFitView);
-  handleFitViewRef.current = handleFitView;
+  const handleFitView = useCallback(() => {
+    fitTo([...geometries]);
+  }, [fitTo, geometries]);
+
+  const fitToRef = useRef(fitTo);
+  fitToRef.current = fitTo;
 
   useEffect(() => {
-    const off = events.on("fit-view", () => {
-      handleFitViewRef.current();
+    const off = events.on("fit-view", (event) => {
+      fitToRef.current(event?.data?.geometries ?? [...geometries]);
     });
     return () => {
       off();
     };
-  }, [events]);
+  }, [events, geometries]);
 
   return handleFitView;
 };
