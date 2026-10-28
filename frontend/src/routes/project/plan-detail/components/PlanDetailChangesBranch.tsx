@@ -121,6 +121,7 @@ import { extractDatabaseGroupName } from "@/utils/v1/databaseGroup";
 import { sheetNameOfSpec } from "@/utils/v1/issue/plan";
 import { extractSheetUID, getSheetStatement } from "@/utils/v1/sheet";
 import { usePlanChangeReferenceData } from "../hooks/usePlanChangeReferenceData";
+import { usePlanDetailStore } from "../shared/stores/usePlanDetailStore";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
 import { derivePlanChangeReference } from "../utils/changeReference";
 import {
@@ -261,6 +262,12 @@ export function PlanDetailChangesBranch({
     }
     return getSelectedSpec({ selectedSpecId, specs });
   }, [pendingNewSpec, isPendingSelected, selectedSpecId, specs]);
+  const setDisplayedSpecId = usePlanDetailStore((s) => s.setDisplayedSpecId);
+  const displayedSpecId = selectedSpec?.id;
+  useEffect(() => {
+    setDisplayedSpecId(displayedSpecId);
+    return () => setDisplayedSpecId(undefined);
+  }, [displayedSpecId, setDisplayedSpecId]);
   const canModifySpecs = useMemo(() => {
     if (page.plan.state === State.DELETED) return false;
     if (page.readonly) return false;

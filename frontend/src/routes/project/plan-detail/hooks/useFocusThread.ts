@@ -36,7 +36,7 @@ export function useFocusThread() {
         lineNumber: lineNumber ?? root.statementAnchor?.startPosition?.line,
       });
       focusPlanPhase("changes", expandPhase);
-      if (storeApi.getState().selectedSpecId !== specId) {
+      if (storeApi.getState().displayedSpecId !== specId) {
         void router.push(
           {
             name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,

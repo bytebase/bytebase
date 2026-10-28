@@ -42,6 +42,9 @@ const (
 	// DatabaseServiceListDatabasesProcedure is the fully-qualified name of the DatabaseService's
 	// ListDatabases RPC.
 	DatabaseServiceListDatabasesProcedure = "/bytebase.v1.DatabaseService/ListDatabases"
+	// DatabaseServiceSearchDatabasesProcedure is the fully-qualified name of the DatabaseService's
+	// SearchDatabases RPC.
+	DatabaseServiceSearchDatabasesProcedure = "/bytebase.v1.DatabaseService/SearchDatabases"
 	// DatabaseServiceUpdateDatabaseProcedure is the fully-qualified name of the DatabaseService's
 	// UpdateDatabase RPC.
 	DatabaseServiceUpdateDatabaseProcedure = "/bytebase.v1.DatabaseService/UpdateDatabase"
@@ -87,6 +90,9 @@ type DatabaseServiceClient interface {
 	// Lists databases in a project, instance, or workspace.
 	// Permissions required: bb.databases.list (for project or workspace parent), or bb.instances.get (for instance parent)
 	ListDatabases(context.Context, *connect.Request[v1.ListDatabasesRequest]) (*connect.Response[v1.ListDatabasesResponse], error)
+	// Searches for databases in every active project where the caller has the bb.databases.get permission, filtered by the specified filter.
+	// Permissions required: bb.databases.get (checked in each project)
+	SearchDatabases(context.Context, *connect.Request[v1.SearchDatabasesRequest]) (*connect.Response[v1.SearchDatabasesResponse], error)
 	// Updates database properties such as labels and project assignment.
 	// Permissions required: bb.databases.update
 	UpdateDatabase(context.Context, *connect.Request[v1.UpdateDatabaseRequest]) (*connect.Response[v1.Database], error)
@@ -147,6 +153,12 @@ func NewDatabaseServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			httpClient,
 			baseURL+DatabaseServiceListDatabasesProcedure,
 			connect.WithSchema(databaseServiceMethods.ByName("ListDatabases")),
+			connect.WithClientOptions(opts...),
+		),
+		searchDatabases: connect.NewClient[v1.SearchDatabasesRequest, v1.SearchDatabasesResponse](
+			httpClient,
+			baseURL+DatabaseServiceSearchDatabasesProcedure,
+			connect.WithSchema(databaseServiceMethods.ByName("SearchDatabases")),
 			connect.WithClientOptions(opts...),
 		),
 		updateDatabase: connect.NewClient[v1.UpdateDatabaseRequest, v1.Database](
@@ -217,6 +229,7 @@ type databaseServiceClient struct {
 	getDatabase          *connect.Client[v1.GetDatabaseRequest, v1.Database]
 	batchGetDatabases    *connect.Client[v1.BatchGetDatabasesRequest, v1.BatchGetDatabasesResponse]
 	listDatabases        *connect.Client[v1.ListDatabasesRequest, v1.ListDatabasesResponse]
+	searchDatabases      *connect.Client[v1.SearchDatabasesRequest, v1.SearchDatabasesResponse]
 	updateDatabase       *connect.Client[v1.UpdateDatabaseRequest, v1.Database]
 	batchUpdateDatabases *connect.Client[v1.BatchUpdateDatabasesRequest, v1.BatchUpdateDatabasesResponse]
 	syncDatabase         *connect.Client[v1.SyncDatabaseRequest, v1.SyncDatabaseResponse]
@@ -242,6 +255,11 @@ func (c *databaseServiceClient) BatchGetDatabases(ctx context.Context, req *conn
 // ListDatabases calls bytebase.v1.DatabaseService.ListDatabases.
 func (c *databaseServiceClient) ListDatabases(ctx context.Context, req *connect.Request[v1.ListDatabasesRequest]) (*connect.Response[v1.ListDatabasesResponse], error) {
 	return c.listDatabases.CallUnary(ctx, req)
+}
+
+// SearchDatabases calls bytebase.v1.DatabaseService.SearchDatabases.
+func (c *databaseServiceClient) SearchDatabases(ctx context.Context, req *connect.Request[v1.SearchDatabasesRequest]) (*connect.Response[v1.SearchDatabasesResponse], error) {
+	return c.searchDatabases.CallUnary(ctx, req)
 }
 
 // UpdateDatabase calls bytebase.v1.DatabaseService.UpdateDatabase.
@@ -307,6 +325,9 @@ type DatabaseServiceHandler interface {
 	// Lists databases in a project, instance, or workspace.
 	// Permissions required: bb.databases.list (for project or workspace parent), or bb.instances.get (for instance parent)
 	ListDatabases(context.Context, *connect.Request[v1.ListDatabasesRequest]) (*connect.Response[v1.ListDatabasesResponse], error)
+	// Searches for databases in every active project where the caller has the bb.databases.get permission, filtered by the specified filter.
+	// Permissions required: bb.databases.get (checked in each project)
+	SearchDatabases(context.Context, *connect.Request[v1.SearchDatabasesRequest]) (*connect.Response[v1.SearchDatabasesResponse], error)
 	// Updates database properties such as labels and project assignment.
 	// Permissions required: bb.databases.update
 	UpdateDatabase(context.Context, *connect.Request[v1.UpdateDatabaseRequest]) (*connect.Response[v1.Database], error)
@@ -363,6 +384,12 @@ func NewDatabaseServiceHandler(svc DatabaseServiceHandler, opts ...connect.Handl
 		DatabaseServiceListDatabasesProcedure,
 		svc.ListDatabases,
 		connect.WithSchema(databaseServiceMethods.ByName("ListDatabases")),
+		connect.WithHandlerOptions(opts...),
+	)
+	databaseServiceSearchDatabasesHandler := connect.NewUnaryHandler(
+		DatabaseServiceSearchDatabasesProcedure,
+		svc.SearchDatabases,
+		connect.WithSchema(databaseServiceMethods.ByName("SearchDatabases")),
 		connect.WithHandlerOptions(opts...),
 	)
 	databaseServiceUpdateDatabaseHandler := connect.NewUnaryHandler(
@@ -433,6 +460,8 @@ func NewDatabaseServiceHandler(svc DatabaseServiceHandler, opts ...connect.Handl
 			databaseServiceBatchGetDatabasesHandler.ServeHTTP(w, r)
 		case DatabaseServiceListDatabasesProcedure:
 			databaseServiceListDatabasesHandler.ServeHTTP(w, r)
+		case DatabaseServiceSearchDatabasesProcedure:
+			databaseServiceSearchDatabasesHandler.ServeHTTP(w, r)
 		case DatabaseServiceUpdateDatabaseProcedure:
 			databaseServiceUpdateDatabaseHandler.ServeHTTP(w, r)
 		case DatabaseServiceBatchUpdateDatabasesProcedure:
@@ -472,6 +501,10 @@ func (UnimplementedDatabaseServiceHandler) BatchGetDatabases(context.Context, *c
 
 func (UnimplementedDatabaseServiceHandler) ListDatabases(context.Context, *connect.Request[v1.ListDatabasesRequest]) (*connect.Response[v1.ListDatabasesResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.DatabaseService.ListDatabases is not implemented"))
+}
+
+func (UnimplementedDatabaseServiceHandler) SearchDatabases(context.Context, *connect.Request[v1.SearchDatabasesRequest]) (*connect.Response[v1.SearchDatabasesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.DatabaseService.SearchDatabases is not implemented"))
 }
 
 func (UnimplementedDatabaseServiceHandler) UpdateDatabase(context.Context, *connect.Request[v1.UpdateDatabaseRequest]) (*connect.Response[v1.Database], error) {
