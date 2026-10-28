@@ -23,7 +23,7 @@ func TestListDatabasesProjectParentChecksDatabasesList(t *testing.T) {
 	db, stores, _ := testcontainer.NewMetadataDB(t)
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('default');
-		INSERT INTO project (resource_id, workspace, name) VALUES ('project-a', 'default', 'Project A');
+		INSERT INTO project (resource_id, workspace, name) VALUES ('project-a', 'default', 'Project A'), ('project-b', 'default', 'Project B');
 		INSERT INTO instance (resource_id, workspace) VALUES ('prod', 'default');
 		INSERT INTO db (instance, name, project) VALUES ('prod', 'a1', 'project-a'), ('prod', 'a2', 'project-a');
 	`)
@@ -46,6 +46,7 @@ func TestListDatabasesProjectParentChecksDatabasesList(t *testing.T) {
 	grant(storepb.Policy_PROJECT, common.FormatProject("project-a"), "dev@example.com", "roles/projectDeveloper")
 	grant(storepb.Policy_PROJECT, common.FormatProject("project-a"), "getter@example.com", "roles/project-getter")
 	grant(storepb.Policy_PROJECT, common.FormatProject("project-a"), "lister@example.com", "roles/database-lister")
+	grant(storepb.Policy_PROJECT, common.FormatProject("project-b"), "elsewhere@example.com", "roles/database-lister")
 
 	iamManager, err := iam.NewManager(stores, nil, false)
 	require.NoError(t, err)
@@ -69,10 +70,10 @@ func TestListDatabasesProjectParentChecksDatabasesList(t *testing.T) {
 		require.NoError(t, err, email)
 		require.Equal(t, []string{"instances/prod/databases/a1", "instances/prod/databases/a2"}, names, email)
 	}
-	for _, email := range []string{"getter@example.com", "nobody@example.com"} {
+	for _, email := range []string{"getter@example.com", "elsewhere@example.com"} {
 		_, err := list(email)
 		require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(err), email)
-		require.ErrorContains(t, err, `"bb.databases.list"`, email)
+		require.ErrorContains(t, err, `user does not have permission "bb.databases.list" in "projects/project-a"`, email)
 	}
 }
 
