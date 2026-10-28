@@ -1,6 +1,10 @@
 import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
-import { issueServiceClientConnect, projectServiceClientConnect } from "@/api";
+import {
+  databaseServiceClientConnect,
+  issueServiceClientConnect,
+  projectServiceClientConnect,
+} from "@/api";
 import type { AppRouterInstance } from "@/app/router";
 import { silentContextKey } from "@/api/context-key";
 import {
@@ -9,6 +13,7 @@ import {
   projectNamePrefix,
 } from "@/stores/modules/v1/common";
 import { State } from "@/types/proto-es/v1/common_pb";
+import { GetDatabaseRequestSchema } from "@/types/proto-es/v1/database_service_pb";
 import { GetIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { GetProjectRequestSchema } from "@/types/proto-es/v1/project_service_pb";
 import { getSkill, type GetSkillArgs } from "../skills";
@@ -670,6 +675,7 @@ export function createToolExecutor(
     ]).length === 2
       ? options.referencedIssue
       : undefined;
+  const referencedDatabase = options.referencedDatabase;
   const projectName = referencedProject ?? options.context;
   const navigateTool = createNavigateTool(router);
   const pageStateTool = createPageStateTool(router);
@@ -711,6 +717,7 @@ export function createToolExecutor(
     workspaceName: options.context,
   });
   let referencedProjectAccess: Promise<boolean> | undefined;
+  let referencedDatabaseAccess: Promise<boolean> | undefined;
   let referencedIssueAccess: Promise<boolean> | undefined;
   const hasReferencedProjectAccess = (): Promise<boolean> => {
     if (!referencedProject) return Promise.resolve(true);
@@ -725,6 +732,23 @@ export function createToolExecutor(
       )
       .catch(() => false);
     return referencedProjectAccess;
+  };
+  const hasReferencedDatabaseAccess = (): Promise<boolean> => {
+    if (!referencedDatabase || !referencedProject)
+      return Promise.resolve(false);
+    referencedDatabaseAccess ??= databaseServiceClientConnect
+      .getDatabase(
+        create(GetDatabaseRequestSchema, { name: referencedDatabase }),
+        { contextValues: createContextValues().set(silentContextKey, true) }
+      )
+      .then(
+        (database) =>
+          database.name === referencedDatabase &&
+          database.project === referencedProject &&
+          database.state === State.ACTIVE
+      )
+      .catch(() => false);
+    return referencedDatabaseAccess;
   };
   const hasReferencedIssueAccess = (): Promise<boolean> => {
     if (!referencedIssue) return Promise.resolve(false);
@@ -745,6 +769,15 @@ export function createToolExecutor(
     !!referencedIssue &&
     ((name === "get_issue_overview" && args.issueName === referencedIssue) ||
       (name === "call_api" && targetsSelectedIssue(args, referencedIssue)));
+  const canUseDatabaseAccess = (
+    name: string,
+    args: Record<string, unknown>
+  ): boolean =>
+    !!referencedDatabase &&
+    ((name === "get_database_overview" &&
+      args.databaseName === referencedDatabase) ||
+      name === "get_database_count" ||
+      name === "call_api");
 
   return async (
     name: string,
@@ -769,6 +802,10 @@ export function createToolExecutor(
     if (
       referencedProject &&
       (PROJECT_SCOPED_TOOL_NAMES.has(name) || name === "call_api") &&
+      !(
+        canUseDatabaseAccess(name, args) &&
+        (await hasReferencedDatabaseAccess())
+      ) &&
       !(await hasReferencedProjectAccess()) &&
       !(canUseIssueAccess(name, args) && (await hasReferencedIssueAccess()))
     ) {
