@@ -52,15 +52,17 @@ export type EditingSlice = {
 
 export type SelectionSlice = {
   routePhase: PlanDetailPhase | undefined;
-  selectedSpecId: string | undefined;
   selectedStageId: string | undefined;
   selectedTaskName: string | undefined;
   setRouteSelection: (selection: {
     phase?: PlanDetailPhase;
-    specId?: string;
     stageId?: string;
     taskName?: string;
   }) => void;
+  // The spec the Changes phase shows, which a URL without a spec still
+  // resolves to one. Undefined while the Changes phase is not rendered.
+  displayedSpecId: string | undefined;
+  setDisplayedSpecId: (specId: string | undefined) => void;
 };
 
 export type PollingSlice = {
