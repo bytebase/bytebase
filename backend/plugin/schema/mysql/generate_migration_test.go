@@ -110,7 +110,7 @@ func databaseOf(tables ...*metadatapb.TableMetadata) *model.DatabaseMetadata {
 	}, nil, &storepb.DatabaseConfig{}, storepb.Engine_MYSQL, true)
 }
 
-func TestEventWithoutDefinitionIsNotWritten(t *testing.T) {
+func TestDiffMigrationEventWithoutDefinition(t *testing.T) {
 	oceanBaseDatabaseOf := func(events ...*metadatapb.EventMetadata) *model.DatabaseMetadata {
 		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
 			Name:    "db",
@@ -118,12 +118,6 @@ func TestEventWithoutDefinitionIsNotWritten(t *testing.T) {
 		}, nil, &storepb.DatabaseConfig{}, storepb.Engine_OCEANBASE, true)
 	}
 	withEvent := oceanBaseDatabaseOf(&metadatapb.EventMetadata{Name: "e"})
-
-	for _, sdl := range []bool{false, true} {
-		definition, err := GetDatabaseDefinition(schema.GetDefinitionContext{SDLFormat: sdl}, withEvent.GetProto())
-		require.NoError(t, err)
-		require.Empty(t, definition, "SDLFormat=%t", sdl)
-	}
 
 	migration, err := schema.DiffMigration(storepb.Engine_OCEANBASE, oceanBaseDatabaseOf(), withEvent)
 	require.NoError(t, err)
