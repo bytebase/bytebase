@@ -315,12 +315,12 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, req *connect.Reques
 		if project == nil || project.Deleted {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", req.Msg.Parent))
 		}
-		ok, err := s.iamManager.CheckPermission(ctx, permission.ProjectsGet, user, common.GetWorkspaceIDFromContext(ctx), projectID)
+		ok, err := s.iamManager.CheckPermission(ctx, permission.DatabasesList, user, common.GetWorkspaceIDFromContext(ctx), projectID)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err))
 		}
 		if !ok {
-			return nil, permissionDeniedError(ctx, errors.Errorf("user does not have permission %q in %q", permission.ProjectsGet, req.Msg.Parent))
+			return nil, permissionDeniedError(ctx, errors.Errorf("user does not have permission %q in %q", permission.DatabasesList, req.Msg.Parent))
 		}
 		find.ProjectID = &projectID
 	} else if _, err := common.GetWorkspaceID(req.Msg.Parent); err == nil {

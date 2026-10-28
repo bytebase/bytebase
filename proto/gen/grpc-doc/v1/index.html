@@ -25543,7 +25543,7 @@ Name of the operator class for each column. (PostgreSQL specific). </p></td>
                   <td>parent</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>- projects/{project}: list databases in a project, require &#34;bb.projects.get&#34; permission.
+                  <td><p>- projects/{project}: list databases in a project, require &#34;bb.databases.list&#34; permission.
 - workspaces/{id}: list databases in the workspace, require &#34;bb.databases.list&#34; permission.
 - instances/{instance}: list databases in an instance, require &#34;bb.instances.get&#34; permission.
 - projects/{project}/instances/{instance}: list databases in a project instance, require &#34;bb.instances.get&#34; permission. </p></td>
@@ -27302,7 +27302,7 @@ Permissions required: bb.databases.get (on each named database&#39;s project)</p
                 <td><a href="#bytebase.v1.ListDatabasesRequest">ListDatabasesRequest</a></td>
                 <td><a href="#bytebase.v1.ListDatabasesResponse">ListDatabasesResponse</a></td>
                 <td><p>Lists databases in a project, instance, or workspace.
-Permissions required: bb.projects.get (for project parent), bb.databases.list (for workspace parent), or bb.instances.get (for instance parent)</p></td>
+Permissions required: bb.databases.list (for project or workspace parent), or bb.instances.get (for instance parent)</p></td>
               </tr>
             
               <tr>
