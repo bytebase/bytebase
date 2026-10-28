@@ -168,6 +168,82 @@ func TestSyncOceanBaseTableNamespace(t *testing.T) {
 	require.ElementsMatch(t, []string{"t", "v", "mlog$_t", container}, syncedRelationNames(metadata.Schemas[0]))
 }
 
+func TestSyncOceanBaseEvents(t *testing.T) {
+	server := newOceanBaseTestServer(t)
+	ctx := context.Background()
+	database := fmt.Sprintf("sync_events_%d", time.Now().UnixNano())
+
+	admin := server.open(ctx, t, storepb.Engine_OCEANBASE, server.user, server.password, "")
+	_, err := admin.db.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s`", database))
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_, err := admin.db.ExecContext(ctx, fmt.Sprintf("DROP DATABASE `%s`", database))
+		require.NoError(t, err)
+	})
+
+	driver := server.open(ctx, t, storepb.Engine_OCEANBASE, server.user, server.password, database)
+	for _, statement := range []string{
+		"CREATE TABLE t (id INT)",
+		"CREATE EVENT e_every ON SCHEDULE EVERY 1 DAY STARTS '2030-01-01 00:00:00' ON COMPLETION PRESERVE DISABLE DO INSERT INTO t VALUES (1)",
+		"CREATE EVENT e_at ON SCHEDULE AT '2030-06-01 12:00:00' DO BEGIN INSERT INTO t VALUES (2); DELETE FROM t WHERE id = 1; END",
+	} {
+		_, err := driver.db.ExecContext(ctx, statement)
+		require.NoError(t, err, statement)
+	}
+
+	metadata, err := driver.SyncDBSchema(ctx)
+	require.NoError(t, err)
+	schema := metadata.Schemas[0]
+	require.Equal(t, []string{"t"}, syncedRelationNames(schema))
+	require.Empty(t, cmp.Diff([]*metadatapb.EventMetadata{
+		{Name: "e_at"},
+		{Name: "e_every"},
+	}, schema.Events, protocmp.Transform()))
+
+	// The same server registered as a MySQL instance keeps the MySQL event sync, which cannot
+	// read OceanBase's events.
+	asMySQL := server.open(ctx, t, storepb.Engine_MYSQL, server.user, server.password, database)
+	_, err = asMySQL.SyncDBSchema(ctx)
+	require.ErrorContains(t, err, "CHARACTER_SET_CLIENT")
+}
+
+// OceanBase keeps listing a dropped database's events under its name, so a database created
+// again under that name lists an event created again twice.
+func TestSyncOceanBaseEventsOfRecreatedDatabase(t *testing.T) {
+	server := newOceanBaseTestServer(t)
+	ctx := context.Background()
+	database := fmt.Sprintf("sync_recreated_%d", time.Now().UnixNano())
+
+	admin := server.open(ctx, t, storepb.Engine_OCEANBASE, server.user, server.password, "")
+	t.Cleanup(func() {
+		_, err := admin.db.ExecContext(ctx, fmt.Sprintf("DROP DATABASE IF EXISTS `%s`", database))
+		require.NoError(t, err)
+	})
+	var listed int
+	for range 2 {
+		_, err := admin.db.ExecContext(ctx, fmt.Sprintf("DROP DATABASE IF EXISTS `%s`", database))
+		require.NoError(t, err)
+		_, err = admin.db.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s`", database))
+		require.NoError(t, err)
+		driver := server.open(ctx, t, storepb.Engine_OCEANBASE, server.user, server.password, database)
+		for _, statement := range []string{
+			"CREATE TABLE t (id INT)",
+			"CREATE EVENT e ON SCHEDULE EVERY 1 DAY STARTS '2030-01-01 00:00:00' DO DELETE FROM t",
+		} {
+			_, err := driver.db.ExecContext(ctx, statement)
+			require.NoError(t, err, statement)
+		}
+		require.NoError(t, admin.db.QueryRowContext(ctx,
+			"SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA = ? AND EVENT_NAME = 'e'", database,
+		).Scan(&listed))
+
+		metadata, err := driver.SyncDBSchema(ctx)
+		require.NoError(t, err)
+		require.Empty(t, cmp.Diff([]*metadatapb.EventMetadata{{Name: "e"}}, metadata.Schemas[0].Events, protocmp.Transform()))
+	}
+	require.Equal(t, 2, listed)
+}
+
 // oceanBaseObjectCensus lists every object the catalog holds in the database except the
 // database itself and its indexes.
 func oceanBaseObjectCensus(ctx context.Context, t *testing.T, driver *Driver, database string) []string {

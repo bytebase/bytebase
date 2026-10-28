@@ -978,6 +978,10 @@ func writeProcedureDiff(buf *strings.Builder, procDiff *schema.ProcedureDiff) er
 
 func writeEventDiff(buf *strings.Builder, eventDiff *schema.EventDiff) error {
 	if eventDiff.Action == schema.MetadataDiffActionCreate || eventDiff.Action == schema.MetadataDiffActionAlter {
+		// An event synced without its CREATE EVENT, as on OceanBase, has nothing faithful to write.
+		if eventDiff.NewEvent.Definition == "" {
+			return nil
+		}
 		// Write the event definition
 		_, _ = buf.WriteString(eventDiff.NewEvent.Definition)
 		if !strings.HasSuffix(strings.TrimSpace(eventDiff.NewEvent.Definition), ";") {

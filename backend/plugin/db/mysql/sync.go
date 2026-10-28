@@ -813,6 +813,9 @@ func (d *Driver) listOceanBaseMaterializedViews(ctx context.Context, databaseNam
 }
 
 func (d *Driver) getEventList(ctx context.Context, databaseName string) ([]*metadatapb.EventMetadata, error) {
+	if d.dbType == storepb.Engine_OCEANBASE {
+		return d.listOceanBaseEvents(ctx, databaseName)
+	}
 	listEventsQuery := `
 	SELECT
 		EVENT_NAME,
@@ -858,6 +861,39 @@ func (d *Driver) getEventList(ctx context.Context, databaseName string) ([]*meta
 	}
 	if err := eventRows.Err(); err != nil {
 		return nil, util.FormatErrorWithQuery(err, listEventsQuery)
+	}
+	return events, nil
+}
+
+// listOceanBaseEvents lists the database's events by name only. OceanBase rejects SHOW CREATE
+// EVENT, and information_schema.EVENTS cannot rebuild it: it shows the schedule in the session
+// time zone, flattens a BEGIN...END body, and does not record the creating session's time zone,
+// SQL mode, or character set. The definition stays empty, so the DDL writers in
+// backend/plugin/schema/mysql skip the event.
+//
+// A database created under a dropped one's name also lists the dropped one's events, which
+// information_schema cannot tell from its own; DISTINCT lists a name both have once.
+func (d *Driver) listOceanBaseEvents(ctx context.Context, databaseName string) ([]*metadatapb.EventMetadata, error) {
+	query := `
+		SELECT DISTINCT EVENT_NAME
+		FROM information_schema.EVENTS
+		WHERE EVENT_SCHEMA = ?
+		ORDER BY EVENT_NAME`
+	rows, err := d.db.QueryContext(ctx, query, databaseName)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	defer rows.Close()
+	var events []*metadatapb.EventMetadata
+	for rows.Next() {
+		event := &metadatapb.EventMetadata{}
+		if err := rows.Scan(&event.Name); err != nil {
+			return nil, err
+		}
+		events = append(events, event)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
 	}
 	return events, nil
 }
