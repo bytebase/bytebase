@@ -84,7 +84,7 @@ export declare const BatchGetDatabasesResponseSchema: GenMessage<BatchGetDatabas
  */
 export declare type ListDatabasesRequest = Message<"bytebase.v1.ListDatabasesRequest"> & {
   /**
-   * - projects/{project}: list databases in a project, require "bb.projects.get" permission.
+   * - projects/{project}: list databases in a project, require "bb.databases.list" permission.
    * - workspaces/{id}: list databases in the workspace, require "bb.databases.list" permission.
    * - instances/{instance}: list databases in an instance, require "bb.instances.get" permission.
    * - projects/{project}/instances/{instance}: list databases in a project instance, require "bb.instances.get" permission.
@@ -3307,7 +3307,7 @@ export declare const DatabaseService: GenService<{
   },
   /**
    * Lists databases in a project, instance, or workspace.
-   * Permissions required: bb.projects.get (for project parent), bb.databases.list (for workspace parent), or bb.instances.get (for instance parent)
+   * Permissions required: bb.databases.list (for project or workspace parent), or bb.instances.get (for instance parent)
    *
    * @generated from rpc bytebase.v1.DatabaseService.ListDatabases
    */

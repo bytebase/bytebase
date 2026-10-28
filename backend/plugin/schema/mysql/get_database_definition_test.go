@@ -130,6 +130,18 @@ func TestGetFunctionDefinitionWithMultilineParameters(t *testing.T) {
 	require.Equal(t, want, got)
 }
 
+func TestGetDatabaseDefinitionSkipsEventWithoutDefinition(t *testing.T) {
+	metadata := &metadatapb.DatabaseSchemaMetadata{
+		Name:    "db",
+		Schemas: []*metadatapb.SchemaMetadata{{Events: []*metadatapb.EventMetadata{{Name: "e"}}}},
+	}
+	for _, sdl := range []bool{false, true} {
+		definition, err := GetDatabaseDefinition(schema.GetDefinitionContext{SDLFormat: sdl}, metadata)
+		require.NoError(t, err)
+		require.Empty(t, definition, "SDLFormat=%t", sdl)
+	}
+}
+
 func TestRenderColumnDefaultBitLiteral(t *testing.T) {
 	testCases := []struct {
 		name       string

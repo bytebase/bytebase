@@ -88,7 +88,7 @@ type DatabaseServiceClient interface {
 	// Permissions required: bb.databases.get (on each named database's project)
 	BatchGetDatabases(context.Context, *connect.Request[v1.BatchGetDatabasesRequest]) (*connect.Response[v1.BatchGetDatabasesResponse], error)
 	// Lists databases in a project, instance, or workspace.
-	// Permissions required: bb.projects.get (for project parent), bb.databases.list (for workspace parent), or bb.instances.get (for instance parent)
+	// Permissions required: bb.databases.list (for project or workspace parent), or bb.instances.get (for instance parent)
 	ListDatabases(context.Context, *connect.Request[v1.ListDatabasesRequest]) (*connect.Response[v1.ListDatabasesResponse], error)
 	// Searches for databases in every active project where the caller has the bb.databases.list permission, filtered by the specified filter.
 	// Permissions required: bb.databases.list (checked in each project)
@@ -323,7 +323,7 @@ type DatabaseServiceHandler interface {
 	// Permissions required: bb.databases.get (on each named database's project)
 	BatchGetDatabases(context.Context, *connect.Request[v1.BatchGetDatabasesRequest]) (*connect.Response[v1.BatchGetDatabasesResponse], error)
 	// Lists databases in a project, instance, or workspace.
-	// Permissions required: bb.projects.get (for project parent), bb.databases.list (for workspace parent), or bb.instances.get (for instance parent)
+	// Permissions required: bb.databases.list (for project or workspace parent), or bb.instances.get (for instance parent)
 	ListDatabases(context.Context, *connect.Request[v1.ListDatabasesRequest]) (*connect.Response[v1.ListDatabasesResponse], error)
 	// Searches for databases in every active project where the caller has the bb.databases.list permission, filtered by the specified filter.
 	// Permissions required: bb.databases.list (checked in each project)
