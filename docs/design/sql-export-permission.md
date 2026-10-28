@@ -223,9 +223,10 @@ with `3.24/0000` to `0002`. Update `TestLatestVersion`. `LATEST.sql` does not ch
 role permissions, IAM bindings and policies are JSONB. The migrator runs the file in one
 transaction (`backend/migrator/migrator.go:227`).
 
-A workspace is **approval-only** when its workspace-level `QUERY_DATA` policy is enforced and has
-`disableExport = true`. This is the row the SQL Editor reads today; non-enforced policies are
-ignored (`backend/store/policy.go:801`). Every other workspace is **export-enabled**.
+A workspace is **approval-only** when its workspace-level `QUERY_DATA` policy stores
+`disableExport = true`, whether or not it is enforced: `GetPolicy` ignores `enforce`
+(`backend/store/policy.go:751`), so the SQL Editor honored the value either way. Every other
+workspace is **export-enabled**.
 
 Steps:
 
@@ -258,7 +259,7 @@ END $$;
 
 CREATE TEMP TABLE approval_only_workspace ON COMMIT DROP AS
 SELECT workspace FROM policy
-WHERE resource_type = 'WORKSPACE' AND type = 'QUERY_DATA' AND enforce
+WHERE resource_type = 'WORKSPACE' AND type = 'QUERY_DATA'
   AND COALESCE((payload ->> 'disableExport')::boolean, false);
 
 WITH added AS (
@@ -376,7 +377,7 @@ binding {
   Include a third workspace with a non-enforced disabled policy, and a project-level query data
   policy that stores `disableExport`. Assert exact payloads: the approval-only workspace has no
   new bindings; the export-enabled workspace has the added bindings; the third workspace is
-  treated as export-enabled; every custom role, with or without `bb.sql.select`, is unchanged in
+  treated as approval-only; every custom role, with or without `bb.sql.select`, is unchanged in
   every workspace; no query data policy keeps a `disableExport` key, their other fields and
   `enforce` are unchanged. Assert that the id collision raises.
 - **Export authorization** (`backend/api/v1`):

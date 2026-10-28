@@ -10,7 +10,7 @@ END $$;
 
 CREATE TEMP TABLE approval_only_workspace ON COMMIT DROP AS
 SELECT workspace FROM policy
-WHERE resource_type = 'WORKSPACE' AND type = 'QUERY_DATA' AND enforce
+WHERE resource_type = 'WORKSPACE' AND type = 'QUERY_DATA'
   AND COALESCE((payload ->> 'disableExport')::boolean, false);
 
 WITH added AS (

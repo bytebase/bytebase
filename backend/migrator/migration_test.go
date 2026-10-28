@@ -172,7 +172,7 @@ func TestMigration3_25_0_SQLExportPermission(t *testing.T) {
 		{"ws-approval", "workspaces/ws-approval", "IAM"}:            {true, migration3_25_0WorkspaceIAM},
 		{"ws-approval", "projects/approval-project", "IAM"}:         {true, migration3_25_0ProjectIAM},
 		{"ws-approval", "workspaces/ws-approval", "QUERY_DATA"}:     {true, `{"maximumResultRows":10,"allowAdminDataSource":true}`},
-		{"ws-unenforced", "projects/unenforced-project", "IAM"}:     {true, `{"bindings":[{"role":"roles/sqlEditorReadUser","members":["groups/analysts@example.com"]},{"role":"roles/sqlEditorExporter","members":["groups/analysts@example.com"]}]}`},
+		{"ws-unenforced", "projects/unenforced-project", "IAM"}:     {true, `{"bindings":[{"role":"roles/sqlEditorReadUser","members":["groups/analysts@example.com"]}]}`},
 		{"ws-unenforced", "workspaces/ws-unenforced", "QUERY_DATA"}: {false, `{"disableCopyData":true}`},
 		{"ws-unchanged", "workspaces/ws-unchanged", "IAM"}:          {true, `{"bindings":[{"role":"roles/workspaceMember","members":["allUsers"]}]}`},
 		{"ws-unchanged", "workspaces/ws-unchanged", "QUERY_DATA"}:   {true, `{"maximumResultRows":5}`},
