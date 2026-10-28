@@ -164,6 +164,12 @@ color, and below 640 px it moves under the database. Per state, with the full ta
 - Not started: "3 to apply · 490 applied earlier" from the stored state (D4), or "DML · about 1,180
   rows" from the plan check's summary for a UIOps task, then the scheduled time or the waiting cause
   when the run has one.
+
+A release task whose stored to-apply list is empty (a declarative release has no list) says so in every state that would show the
+count: "Nothing to apply · 493 applied earlier" not started, "Running · started 15:14" running, and
+"Nothing new · 493 applied earlier · 0.3 s" done. The run records no result of its own, so the done
+line is the stored preview too: a revision deleted between rollout creation and the run makes it
+wrong, and the opened task's log shows what the run applied.
 - Skipped: "Skipped by `<user>` · `<reason>`". Canceled: "Canceled · `<time>`".
 
 *Applied earlier* counts the release's versions that were on the database before this plan; the
@@ -420,9 +426,9 @@ The folded card's description, per task state (D3):
 
 | Task | Release-backed | UIOps | Tint |
 |---|---|---|---|
-| Not started | "3 to apply · 490 applied earlier", then "· scheduled 18:00" or the waiting cause; a declarative release shows the status only | "DML · about 1,180 rows", then the schedule or waiting cause | gray |
-| Running | "Applying 3 files · started 15:14" | "Running · started 15:14" | blue |
-| Done | "All 493 applied · 4.1 s" | "DML · 4.1 s", "DDL · 1.2 s" or "Mixed · 3.4 s" | green |
+| Not started | "3 to apply · 490 applied earlier", or "Nothing to apply · 493 applied earlier", then "· scheduled 18:00" or the waiting cause; a declarative release shows the status only | "DML · about 1,180 rows", then the schedule or waiting cause | gray |
+| Running | "Applying 3 files · started 15:14", or "Running · started 15:14" with nothing to apply | "Running · started 15:14" | blue |
+| Done | "All 493 applied · 4.1 s", or "Nothing new · 493 applied earlier · 0.3 s" when the stored list was empty | "DML · 4.1 s", "DDL · 1.2 s" or "Mixed · 3.4 s" | green |
 | Failed | `<failed version>` then the error's first line | The error's first line | red |
 | Skipped | "Skipped by `<user>` · `<reason>`" | Same | gray |
 | Canceled | "Canceled · `<time>`" | Same | gray |
@@ -501,8 +507,9 @@ Tests to write, per the placement rules in `AGENTS.md`:
 - Folded card tests: each cell of the card table in States from the task, its latest run, the
   stored state and the plan check, before any log loads; the executor prefix removed from the
   error's first line; the release's file count on a done release task; DDL, DML and Mixed from the
-  statement types, with the run's duration;
-  the description under the database below 640 px; every task folded on load, the stage selected for
+  statement types, with the run's duration; an empty stored list reading "Nothing to apply",
+  "Running" and "Nothing new" by state, and a declarative task, which has no list, never reading
+  "Nothing new"; the description under the database below 640 px; every task folded on load, the stage selected for
   a failed, a running and a deployed plan, and a URL naming a task opening it.
 - Details block tests: each row for a release plan and a UIOps plan, the rows a plan kind lacks
   absent; Migration-based and State-based; the Progress row's stage cells wrapping at six stages;
