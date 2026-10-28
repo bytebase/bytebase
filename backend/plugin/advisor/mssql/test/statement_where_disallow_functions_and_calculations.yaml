@@ -326,12 +326,29 @@
         column: 0
       endposition: null
 
-# Test (adversarial): MERGE with SourceAlias — alias in WHEN condition should resolve.
+# Test (adversarial): MERGE with a source alias — alias in WHEN condition should resolve.
 - statement: |-
     MERGE INTO pokes2 AS tgt
     USING pokes AS src
     ON tgt.foo = src.c1
     WHEN MATCHED AND ABS(src.c1) > 0 THEN UPDATE SET foo = 0;
+  changeType: 1
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"ABS\" is applied to indexed column \"c1\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+
+# Test: MERGE target without an alias — USING is not its alias, so the table name resolves.
+- statement: |-
+    MERGE INTO pokes
+    USING pokes2 AS src
+    ON pokes.c1 = src.foo
+    WHEN MATCHED AND ABS(pokes.c1) > 0 THEN UPDATE SET bar = 0;
   changeType: 1
   want:
     - status: 2
