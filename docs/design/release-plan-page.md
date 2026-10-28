@@ -164,13 +164,13 @@ color, and below 640 px it moves under the database. Per state, with the full ta
 - Not started: "3 to apply · 490 applied earlier" from the stored state (D4), or "DML · about 1,180
   rows" from the plan check's summary for a UIOps task, then the scheduled time or the waiting cause
   when the run has one.
-
-A release task whose stored to-apply list is empty (a declarative release has no list) says so in every state that would show the
-count: "Nothing to apply · 493 applied earlier" not started, "Running · started 15:14" running, and
-"Nothing new · 493 applied earlier · 0.3 s" done. The run records no result of its own, so the done
-line is the stored preview too: a revision deleted between rollout creation and the run makes it
-wrong, and the opened task's log shows what the run applied.
 - Skipped: "Skipped by `<user>` · `<reason>`". Canceled: "Canceled · `<time>`".
+
+A release task whose stored to-apply list is empty (a declarative release has no list) says so in
+every state that would show the count: "Nothing to apply · 493 applied earlier" not started,
+"Running · started 15:14" running, and "Nothing new · 493 applied earlier · 0.3 s" done. The run
+records no result of its own, so the done line is the stored preview too: a revision deleted between
+rollout creation and the run makes it wrong, and the opened task's log shows what the run applied.
 
 *Applied earlier* counts the release's versions that were on the database before this plan; the
 statement kind is DDL, DML or Mixed from the plan check's `statement_types`, whose enum is grouped
