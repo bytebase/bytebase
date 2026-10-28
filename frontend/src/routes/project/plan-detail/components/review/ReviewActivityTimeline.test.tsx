@@ -130,7 +130,6 @@ vi.mock("@/app/router", () => ({
 vi.mock("../../shared/stores/usePlanDetailStore", () => ({
   usePlanDetailStore: (selector: (state: unknown) => unknown) =>
     selector({
-      selectedSpecId: "spec-1",
       placements: mocks.placements,
       placementTargets: mocks.placementTargets,
       activityFocus: mocks.activityFocus,

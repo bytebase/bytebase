@@ -109,9 +109,8 @@ export function useRouteSelection(params: {
       phase,
       stageId,
       taskName: taskId,
-      specId,
     });
-  }, [setRouteSelection, phase, specId, stageId, taskId]);
+  }, [setRouteSelection, phase, stageId, taskId]);
 
   return { phase, selectionKey, specId, stageId, taskId };
 }
