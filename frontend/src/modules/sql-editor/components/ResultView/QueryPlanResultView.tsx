@@ -1,14 +1,17 @@
 import { LoaderCircle } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { QueryPlanTranslate } from "@/apps/explain-visualizer/plan-i18n";
+import { PlanCopyButton } from "@/apps/explain-visualizer/PlanCopyButton";
+import {
+  QueryPlanI18nProvider,
+  type QueryPlanTranslate,
+} from "@/apps/explain-visualizer/plan-i18n";
 import type { PlanTableLookup } from "@/apps/explain-visualizer/plan-model";
 import { QueryPlanView } from "@/apps/explain-visualizer/QueryPlanView";
 import { formatPlanSource } from "@/apps/explain-visualizer/QueryPlanViewer";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CopyButton } from "@/components/ui/copy-button";
 import { Tabs, TabsList, TabsPanel, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -43,9 +46,11 @@ interface LoadRequest {
 function TextPlan({
   source,
   disallowCopyingData,
+  translate,
 }: {
   source: string;
   disallowCopyingData: boolean;
+  translate: QueryPlanTranslate;
 }) {
   const formatted = useMemo(() => formatPlanSource(source), [source]);
   return (
@@ -56,8 +61,15 @@ function TextPlan({
       )}
     >
       {disallowCopyingData ? null : (
-        <div className="flex shrink-0 justify-end px-4 py-2">
-          <CopyButton content={formatted} size="sm" appearance="outline" />
+        // The visualizer's own copy control, so a text-only plan offers the
+        // same "Copy plan" as the visualizer's Text tab.
+        <div className="flex shrink-0 items-center justify-end px-4 py-2">
+          <QueryPlanI18nProvider translate={translate}>
+            <PlanCopyButton
+              content={formatted}
+              label={translate("copy.plan")}
+            />
+          </QueryPlanI18nProvider>
         </div>
       )}
       <pre className="min-h-0 flex-1 overflow-auto px-4 pb-4 font-mono text-xs leading-4 break-words whitespace-pre-wrap text-main">
@@ -182,6 +194,7 @@ export function QueryPlanResultView({
           <TextPlan
             source={rawPlan}
             disallowCopyingData={disallowCopyingData}
+            translate={translatePlan}
           />
         ) : null}
       </div>
@@ -206,6 +219,7 @@ export function QueryPlanResultView({
         <TextPlan
           source={plan?.source ?? rawPlan}
           disallowCopyingData={disallowCopyingData}
+          translate={translatePlan}
         />
       </TabsPanel>
     </Tabs>
