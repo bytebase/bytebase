@@ -51,10 +51,17 @@ describe("generated workflows", () => {
     ["GitHub SQL review", generateGithubSqlReviewYaml, 1],
     ["GitHub release", generateGithubReleaseYaml, 3],
     ["GitLab CI", generateGitlabCiYaml, 4],
-  ])("%s uses the action image for every job", (_, generate, jobCount) => {
-    const images = generate(params).match(/image: .+/g);
-    expect(images).toEqual(
+  ])("%s configures every job", (_, generate, jobCount) => {
+    const yaml = generate(params);
+    expect(yaml.match(/image: .+/g)).toEqual(
       Array(jobCount).fill("image: bytebase/bytebase-action:cloud")
+    );
+    // A failed exchange returns no accessToken, so the job must stop there.
+    expect(yaml.match(/jq -r '\.accessToken \/\/ empty'/g)).toHaveLength(
+      jobCount
+    );
+    expect(yaml.match(/if \[ -z "\$ACCESS_TOKEN" \]; then/g)).toHaveLength(
+      jobCount
     );
   });
 

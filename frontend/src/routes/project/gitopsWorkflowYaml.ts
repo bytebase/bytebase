@@ -29,11 +29,19 @@ const exchangeTokenStep = (indent: string) =>
 ${indent}  id: bytebase-auth
 ${indent}  run: |
 ${indent}    OIDC_TOKEN=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \\
-${indent}      "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=${GENERATED_WORKFLOW_AUDIENCE}" | jq -r '.value')
-${indent}    ACCESS_TOKEN=$(curl -s -X POST "$BYTEBASE_URL/v1/auth:exchangeToken" \\
+${indent}      "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=${GENERATED_WORKFLOW_AUDIENCE}" | jq -r '.value // empty' 2>/dev/null || true)
+${indent}    if [ -z "$OIDC_TOKEN" ]; then
+${indent}      echo "::error::Failed to get a GitHub OIDC token. Check that the job has the id-token: write permission."
+${indent}      exit 1
+${indent}    fi
+${indent}    RESPONSE=$(curl -s -X POST "$BYTEBASE_URL/v1/auth:exchangeToken" \\
 ${indent}      -H "Content-Type: application/json" \\
-${indent}      -d "{\\"token\\":\\"$OIDC_TOKEN\\",\\"email\\":\\"$BYTEBASE_WORKLOAD_IDENTITY\\"}" \\
-${indent}      | jq -r '.accessToken')
+${indent}      -d "{\\"token\\":\\"$OIDC_TOKEN\\",\\"email\\":\\"$BYTEBASE_WORKLOAD_IDENTITY\\"}")
+${indent}    ACCESS_TOKEN=$(echo "$RESPONSE" | jq -r '.accessToken // empty' 2>/dev/null || true)
+${indent}    if [ -z "$ACCESS_TOKEN" ]; then
+${indent}      echo "::error::Failed to exchange the OIDC token for a Bytebase access token: $RESPONSE"
+${indent}      exit 1
+${indent}    fi
 ${indent}    echo "access-token=$ACCESS_TOKEN" >> $GITHUB_OUTPUT`;
 
 const accessTokenFlag =
@@ -155,10 +163,14 @@ ${exchangeTokenStep("      ")}
 }
 
 const gitlabExchangeScript = `    - |
-      ACCESS_TOKEN=$(curl -s -X POST "$BYTEBASE_URL/v1/auth:exchangeToken" \\
+      RESPONSE=$(curl -s -X POST "$BYTEBASE_URL/v1/auth:exchangeToken" \\
         -H "Content-Type: application/json" \\
-        -d "{\\"token\\":\\"$GITLAB_OIDC_TOKEN\\",\\"email\\":\\"$BYTEBASE_WORKLOAD_IDENTITY\\"}" \\
-        | jq -r '.accessToken')
+        -d "{\\"token\\":\\"$GITLAB_OIDC_TOKEN\\",\\"email\\":\\"$BYTEBASE_WORKLOAD_IDENTITY\\"}")
+      ACCESS_TOKEN=$(echo "$RESPONSE" | jq -r '.accessToken // empty' 2>/dev/null || true)
+      if [ -z "$ACCESS_TOKEN" ]; then
+        echo "Failed to exchange the GitLab OIDC token for a Bytebase access token: $RESPONSE"
+        exit 1
+      fi
       export BYTEBASE_ACCESS_TOKEN=$ACCESS_TOKEN`;
 
 export function generateGitlabCiYaml(p: YamlParams): string {
