@@ -175,7 +175,7 @@ every state that would show the count: "Nothing to apply · 493 applied earlier"
 records no result of its own, so the done line is the stored preview too: a revision deleted between
 rollout creation and the run makes it wrong, and the opened task's log shows what the run applied.
 
-*Applied earlier* counts the release's versions that were on the database before this plan; the
+*Applied earlier* counts the release's versions that were on the database when the rollout was created; the
 statement kind is DDL, DML or Mixed from the plan check's `statement_types`, whose enum is grouped
 that way. A database sync that failed after the files applied leaves the task Done (the executor
 logs the error and goes on); the error reaches only the log, so it shows in the opened task's
@@ -247,7 +247,8 @@ uses per target), so the cost is bounded by the release's file count, not the da
 the field with no second request. What a run applies is decided only when it runs: the executor
 reads live revisions at its start, so the field is a preview that can go stale (another plan applies
 a version first, a revision is imported or deleted). The caption on the planned spine says so: "As
-of plan creation, `<time ago>`; the run re-checks the database." Once a run starts, its log corrects
+of rollout creation, `<time ago>`; the run re-checks the database.", its age from the stored
+computation time, not the plan's: a plan can wait before its rollout is created. Once a run starts, its log corrects
 the list version by version (D3). A declarative release gets no stored list: `runDeclarativeRelease`
 computes its diff inside the run, so its pending task shows only its status. Rerun creates a new
 task run, not a new task, so the field is refreshed only when a new rollout re-creates the task,
@@ -435,7 +436,7 @@ The spine, per task status:
 
 | Task | Sources | Sections, top to bottom |
 |---|---|---|
-| Not started, pending | Stored state, caption "As of plan creation, `<time ago>`; the run re-checks the database." | "N already applied" folded with the version range; one "Will apply" section per file to apply, in version order, no children and no caret; "Will apply again · revision deleted `<date>` by `<who>`" where a revision was deleted |
+| Not started, pending | Stored state, caption "As of rollout creation, `<time ago>`; the run re-checks the database.", the age from the stored computation time | "N already applied" folded with the version range; one "Will apply" section per file to apply, in version order, no children and no caret; "Will apply again · revision deleted `<date>` by `<who>`" where a revision was deleted |
 | Running | The live log, the release's file list, and the stored state for files not reached | Already-applied fold; reached files (applied collapsed, the current one open with a running indicator); unreached files below as "Will apply"; the boundary moves down |
 | Done | The log and the release's file list | Already-applied fold (the files without a marker); every file section Applied; task-level steps as siblings; "Revisions on `<database>`" at the end |
 | Failed | The log and the release's file list | Already-applied fold; applied sections collapsed; the failed section open, its failed row open with the error on the line and the statement block under it (folded below 640 px); task-level steps as siblings; nothing for the files after the failed one. An error that names no file or step (D3) ends the spine with an open "Run failed" section instead, after the already-applied fold and any applied sections |
@@ -593,7 +594,7 @@ Tests to write, per the placement rules in `AGENTS.md`:
   revision page's existing link to its task run is the only change-free path back.
 - A files-by-database grid for stages with dozens of databases, which can be added without changing
   the task, and a refresh of a pending task's stored state without a new rollout: a small refresh
-  control beside the "As of plan creation" caption that recomputes the list read-only and does not
+  control beside the "As of rollout creation" caption that recomputes the list read-only and does not
   store it (an option on `CheckRelease` to skip review and return the applied files is the cheapest
   form), if stale previews on long-gated stages turn out to matter. The actions stay enabled while
   it runs, since a run re-checks the database anyway.
