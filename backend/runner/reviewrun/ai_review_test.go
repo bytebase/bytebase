@@ -54,23 +54,24 @@ func aiReviewResultOn(target string, findings ...aireview.Finding) *aiReviewResu
 func TestAIReviewComments(t *testing.T) {
 	t.Parallel()
 
-	cascade := func(title string, severity aireview.Severity, evidence string) aireview.Finding {
-		return aireview.Finding{Title: title, Severity: severity, Line: 1, Rule: "cascades", Evidence: evidence, Fix: "Archive the churned accounts instead."}
+	cascade := func(title string, severity aireview.Severity, reason string, evidence ...string) aireview.Finding {
+		return aireview.Finding{Title: title, Severity: severity, Line: 1, Rule: "cascades", Reason: reason, Evidence: evidence, Fix: "Archive the churned accounts instead."}
 	}
 	invoices := aireview.Finding{
 		Title:    "Keep the invoices of churned accounts",
 		Severity: aireview.SeverityP0,
 		Line:     1,
 		Rule:     "workspace-1",
-		Evidence: "invoices references orders without a cascade.",
+		Reason:   "The cascade into orders reaches invoices, which the policy keeps.",
+		Evidence: []string{"invoices_order_id_fkey: NO ACTION"},
 		Fix:      "Delete no account that has invoices.",
 	}
 	comments := aiReviewComments("p", 7, []*aiReviewResult{
-		aiReviewResultOn("instances/i/databases/tenant_c", cascade("Do not hard-delete churned accounts", aireview.SeverityP0, "orders (8,661 rows) cascades.")),
-		aiReviewResultOn("instances/i/databases/tenant_a", cascade("Avoid deleting churned accounts", aireview.SeverityP0, "orders (5,523 rows) cascades.")),
+		aiReviewResultOn("instances/i/databases/tenant_c", cascade("Do not hard-delete churned accounts", aireview.SeverityP0, "Orders go with their accounts.", "orders: 8,661 rows")),
+		aiReviewResultOn("instances/i/databases/tenant_a", cascade("Avoid deleting churned accounts", aireview.SeverityP0, "Deleting accounts cascades into orders and users.", "orders_account_id_fkey: ON DELETE CASCADE", "orders: 5,523 rows")),
 		nil,
-		aiReviewResultOn("instances/i/databases/tenant_b", cascade("Prevent the cascade", aireview.SeverityP0, "orders  (5,523 rows)\ncascades."), invoices),
-		aiReviewResultOn("instances/i/databases/tenant_d", cascade("Avoid the cascade", aireview.SeverityP1, "orders (12 rows) cascades.")),
+		aiReviewResultOn("instances/i/databases/tenant_b", cascade("Prevent the cascade", aireview.SeverityP0, "The cascade removes orders.", "orders: 5,523 rows"), invoices),
+		aiReviewResultOn("instances/i/databases/tenant_d", cascade("Avoid the cascade", aireview.SeverityP1, "A small cascade.", "orders: 12 rows")),
 		aiReviewResultOn("instances/i/databases/tenant_e"),
 	}, aireview.Rules("Never delete rows from invoices.", ""))
 	require.Len(t, comments, 2, "the same rule on a line merges whatever the titles; another rule on the line stays apart")
@@ -80,16 +81,20 @@ func TestAIReviewComments(t *testing.T) {
 	require.Equal(t, int64(7), merged.IssueUID)
 	require.Equal(t, `Avoid deleting churned accounts
 
-Evidence by database:
-- tenant_a, tenant_b: orders (5,523 rows) cascades.
-- tenant_c: orders (8,661 rows) cascades.
-- tenant_d (P1): orders (12 rows) cascades.
+Deleting accounts cascades into orders and users.
 
-Not flagged on tenant_e.
+**Evidence** (`+"`tenant_a`"+`):
 
-Rule: The statement deletes or changes rows in other tables through foreign key actions or triggers.
+- orders_account_id_fkey: ON DELETE CASCADE
+- orders: 5,523 rows
 
-Suggested fix: Archive the churned accounts instead.`, merged.Payload.Comment)
+**Severity:** P0 on `+"`tenant_a`, `tenant_b`, `tenant_c`"+`; P1 on `+"`tenant_d`"+`.
+
+**Not flagged on:** `+"`tenant_e`"+`.
+
+**Fix:** Archive the churned accounts instead.
+
+**Rule:** The statement deletes or changes rows in other tables through foreign key actions or triggers.`, merged.Payload.Comment, "the most severe database, first by name, leads, and only its evidence shows")
 	anchor := merged.Payload.StatementAnchor
 	require.Equal(t, "spec-1", anchor.SpecId)
 	require.Equal(t, "sha", anchor.SheetSha256)
@@ -104,14 +109,17 @@ Suggested fix: Archive the churned accounts instead.`, merged.Payload.Comment)
 	policy := comments[1]
 	require.Equal(t, `Keep the invoices of churned accounts
 
-Evidence by database:
-- tenant_b: invoices references orders without a cascade.
+The cascade into orders reaches invoices, which the policy keeps.
 
-Not flagged on tenant_a, tenant_c, tenant_d, tenant_e.
+**Evidence** (`+"`tenant_b`"+`):
 
-Rule: Never delete rows from invoices.
+- invoices_order_id_fkey: NO ACTION
 
-Suggested fix: Delete no account that has invoices.`, policy.Payload.Comment)
+**Not flagged on:** `+"`tenant_a`, `tenant_c`, `tenant_d`, `tenant_e`"+`.
+
+**Fix:** Delete no account that has invoices.
+
+**Rule:** Never delete rows from invoices.`, policy.Payload.Comment)
 	require.Equal(t, []string{"instances/i/databases/tenant_b"}, policy.Payload.ReviewMetadata.Targets)
 
 	require.Empty(t, aiReviewComments("p", 7, nil, nil))
@@ -125,12 +133,27 @@ func TestAIReviewCommentsOnOneDatabase(t *testing.T) {
 		Severity: aireview.SeverityP2,
 		Line:     2,
 		Rule:     "blocks",
-		Evidence: "orders holds 52,000,000 rows.\nNo index covers created_at.",
+		Reason:   "CREATE INDEX blocks writes to orders until the index is built.",
+		Evidence: []string{"orders:  52,000,000\nrows", "no index covers created_at", "c", "d", "e", "past the limit"},
 		Fix:      "CREATE INDEX CONCURRENTLY idx_orders_created_at ON orders (created_at);",
 	}
 	comments := aiReviewComments("p", 7, []*aiReviewResult{aiReviewResultOn("instances/i/databases/db", finding)}, aireview.Rules("", ""))
 	require.Len(t, comments, 1)
-	require.Equal(t, "Create the index CONCURRENTLY\n\norders holds 52,000,000 rows.\nNo index covers created_at.\n\nRule: The statement blocks reads or writes on a large table for a long time, for example with a lock held while the table is rewritten, scanned, or validated, or with one UPDATE or DELETE over many rows.\n\nSuggested fix: CREATE INDEX CONCURRENTLY idx_orders_created_at ON orders (created_at);", comments[0].Payload.Comment)
+	require.Equal(t, `Create the index CONCURRENTLY
+
+CREATE INDEX blocks writes to orders until the index is built.
+
+**Evidence**:
+
+- orders: 52,000,000 rows
+- no index covers created_at
+- c
+- d
+- e
+
+**Fix:** CREATE INDEX CONCURRENTLY idx_orders_created_at ON orders (created_at);
+
+**Rule:** The statement blocks reads or writes on a large table for a long time, for example with a lock held while the table is rewritten, scanned, or validated, or with one UPDATE or DELETE over many rows.`, comments[0].Payload.Comment, "one database needs no name; a fact keeps to one line, and at most five show")
 	require.Equal(t, storepb.IssueCommentPayload_ReviewMetadata_P2, comments[0].Payload.ReviewMetadata.Priority)
 }
 
@@ -138,7 +161,7 @@ func TestAIReviewCommentsKeepARepeatedRuleApart(t *testing.T) {
 	t.Parallel()
 
 	fails := func(evidence string) aireview.Finding {
-		return aireview.Finding{Title: "t", Severity: aireview.SeverityP0, Line: 2, Rule: "fails", Evidence: evidence, Fix: "f"}
+		return aireview.Finding{Title: "t", Severity: aireview.SeverityP0, Line: 2, Rule: "fails", Reason: "r", Evidence: []string{evidence}, Fix: "f"}
 	}
 	comments := aiReviewComments("p", 7, []*aiReviewResult{
 		aiReviewResultOn("instances/i/databases/a", fails("invoices references orders."), fails("refunds references orders.")),
@@ -149,15 +172,29 @@ func TestAIReviewCommentsKeepARepeatedRuleApart(t *testing.T) {
 	require.Equal(t, []string{"instances/i/databases/a"}, comments[1].Payload.ReviewMetadata.Targets)
 }
 
-func TestAIReviewCommentTextCountsManyUnflaggedDatabases(t *testing.T) {
+func TestAIReviewCommentTextCountsManyDatabases(t *testing.T) {
 	t.Parallel()
 
-	reviewed := []string{"instances/i/databases/a"}
-	for _, name := range []string{"b", "c", "d", "e", "f", "g"} {
-		reviewed = append(reviewed, "instances/i/databases/"+name)
+	target := func(name string) string { return "instances/i/databases/" + name }
+	var reviewed []string
+	occurrence := func(name string, severity aireview.Severity) aiReviewOccurrence {
+		return aiReviewOccurrence{Target: target(name), Finding: aireview.Finding{Title: "t", Severity: severity, Reason: "r", Evidence: []string{"e"}, Fix: "f"}}
 	}
-	occurrences := []aiReviewOccurrence{{Target: "instances/i/databases/a", Finding: aireview.Finding{Title: "t", Severity: aireview.SeverityP1, Evidence: "e", Fix: "f"}}}
-	require.Equal(t, "t\n\nEvidence by database:\n- a: e\n\nNot flagged on 6 other databases.\n\nRule: r\n\nSuggested fix: f", aiReviewCommentText(occurrences, "r", reviewed))
+	occurrences := []aiReviewOccurrence{occurrence("a", aireview.SeverityP0)}
+	for _, name := range []string{"b", "c", "d", "e", "f", "g"} {
+		occurrences = append(occurrences, occurrence(name, aireview.SeverityP1))
+	}
+	for _, name := range []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m"} {
+		reviewed = append(reviewed, target(name))
+	}
+	require.Equal(t, "t\n\nr\n\n**Evidence** (`a`):\n\n- e\n\n**Severity:** P0 on `a`; P1 on 6 databases.\n\n**Not flagged on:** 6 databases.\n\n**Fix:** f\n\n**Rule:** rule text", aiReviewCommentText(occurrences, "rule text", reviewed))
+}
+
+func TestCodeSpan(t *testing.T) {
+	t.Parallel()
+
+	require.Equal(t, "`tenant_001`", codeSpan("tenant_001"))
+	require.Equal(t, "odd`name", codeSpan("odd`name"), "a backtick would end the span")
 }
 
 func TestDatabaseLabels(t *testing.T) {

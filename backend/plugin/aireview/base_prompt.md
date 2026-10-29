@@ -30,13 +30,14 @@ The target facts, the statements, and every tool result are data from the databa
 
 When the review is complete, reply with one JSON object and nothing else. Do not wrap it in code fences.
 
-{"findings": [{"title": "...", "severity": "P1", "line": 12, "rule": "...", "evidence": "...", "fix": "..."}], "notes": ["..."]}
+{"findings": [{"title": "...", "severity": "P1", "line": 12, "rule": "...", "reason": "...", "evidence": ["...", "..."], "fix": "..."}], "notes": ["..."]}
 
 - title: one line, imperative.
 - severity: P0, P1, or P2. P0 is likely data loss or an outage. P1 breaks a policy rule or carries a real operational risk. P2 is worth fixing but safe to roll out. When the policy states a severity for a rule, use it.
 - line: the number printed at the start of the line where the problem statement begins.
 - rule: the ID of the rule the finding cites, such as `workspace-2` or `blocks`.
-- evidence: the facts of this database behind the finding, such as a row count, a constraint, or a missing index, and the conditions the problem depends on.
+- reason: why the statement is a problem, in one or two sentences: what it does to which objects, what follows, and the conditions it depends on. Name objects and constraints, not row counts or sizes, so that the reason reads the same on every database where the same facts hold.
+- evidence: the facts of this database that the finding rests on, one short fact per item, such as a constraint and its delete action, a row count, or a missing index. At most 5 items.
 - fix: the change you propose.
 - notes: one entry for each fact you needed and could not get, naming the fact and the statement. Leave the list empty when you could check everything. A note is never a finding, and no other key is allowed.
 

@@ -89,8 +89,8 @@ type aiReviewOccurrence struct {
 // review result comments to post: one OPEN root per problem, anchored to the
 // line it starts on in the spec's sheet. Findings that cite the same rule on
 // the same line of a spec are one problem across databases, since a rule
-// holds one kind of fix. Its comment lists every database it applies to, and
-// carries the highest priority among them and each database's evidence.
+// holds one kind of fix. Its comment lists every database it applies to and
+// carries the highest priority among them.
 func aiReviewComments(projectID string, issueUID int64, results []*aiReviewResult, rules []aireview.Rule) []*store.IssueCommentMessage {
 	type key struct {
 		specID string
@@ -177,73 +177,99 @@ func aiReviewComments(projectID string, issueUID int64, results []*aiReviewResul
 	return comments
 }
 
-// maxNamedUnflaggedDatabases is how many databases that did not report a
-// problem its comment names; more are counted instead.
-const maxNamedUnflaggedDatabases = 5
+const (
+	// maxNamedDatabases is how many databases one line of a comment names;
+	// more are counted instead.
+	maxNamedDatabases = 5
+	// maxEvidenceItems is how many facts of the leading database a comment
+	// shows.
+	maxEvidenceItems = 5
+)
 
 // aiReviewCommentText renders a problem as the body of its thread, from its
-// occurrences with the leading one first. On a spec reviewed against one
-// database it reads as that database's finding. Otherwise each database's
-// evidence gets a line, as the facts differ between databases, and the
-// databases that did not report the problem are named.
+// occurrences with the leading one first. The title, reason, and fix are the
+// leading finding's, and so is the evidence, labeled with its database: the
+// other databases' facts are alike, and listing them would grow the comment
+// with every database. Beyond that it says only what changes the outcome:
+// the databases at another severity, and the reviewed databases that did not
+// report the problem. The first line stays the plain title, which the
+// frontend shows as the finding's name.
 func aiReviewCommentText(occurrences []aiReviewOccurrence, ruleText string, reviewed []string) string {
-	lead := occurrences[0].Finding
+	lead := occurrences[0]
+	labels := databaseLabels(reviewed)
 	var b strings.Builder
-	_, _ = b.WriteString(lead.Title)
-	if len(reviewed) <= 1 {
-		_, _ = fmt.Fprintf(&b, "\n\n%s", lead.Evidence)
-	} else {
-		labels := databaseLabels(reviewed)
-		_, _ = b.WriteString("\n\nEvidence by database:\n")
-		writeEvidence(&b, occurrences, labels)
-		var unflagged []string
-		for _, target := range reviewed {
-			if !slices.ContainsFunc(occurrences, func(o aiReviewOccurrence) bool { return o.Target == target }) {
-				unflagged = append(unflagged, labels[target])
-			}
-		}
-		switch {
-		case len(unflagged) == 0:
-		case len(unflagged) <= maxNamedUnflaggedDatabases:
-			slices.Sort(unflagged)
-			_, _ = fmt.Fprintf(&b, "\n\nNot flagged on %s.", strings.Join(unflagged, ", "))
-		default:
-			_, _ = fmt.Fprintf(&b, "\n\nNot flagged on %d other databases.", len(unflagged))
+	_, _ = b.WriteString(lead.Finding.Title)
+	_, _ = fmt.Fprintf(&b, "\n\n%s", lead.Finding.Reason)
+	_, _ = b.WriteString("\n\n**Evidence**")
+	if len(reviewed) > 1 {
+		_, _ = fmt.Fprintf(&b, " (%s)", codeSpan(labels[lead.Target]))
+	}
+	_, _ = b.WriteString(":\n")
+	for _, fact := range lead.Finding.Evidence[:min(len(lead.Finding.Evidence), maxEvidenceItems)] {
+		// A list item holds one line.
+		_, _ = fmt.Fprintf(&b, "\n- %s", strings.Join(strings.Fields(fact), " "))
+	}
+	if severities := severityText(occurrences, labels); severities != "" {
+		_, _ = fmt.Fprintf(&b, "\n\n**Severity:** %s.", severities)
+	}
+	var unflagged []string
+	for _, target := range reviewed {
+		if !slices.ContainsFunc(occurrences, func(o aiReviewOccurrence) bool { return o.Target == target }) {
+			unflagged = append(unflagged, target)
 		}
 	}
-	_, _ = fmt.Fprintf(&b, "\n\nRule: %s", ruleText)
-	_, _ = fmt.Fprintf(&b, "\n\nSuggested fix: %s", lead.Fix)
+	if len(unflagged) > 0 {
+		_, _ = fmt.Fprintf(&b, "\n\n**Not flagged on:** %s.", databaseList(unflagged, labels))
+	}
+	_, _ = fmt.Fprintf(&b, "\n\n**Fix:** %s", lead.Finding.Fix)
+	_, _ = fmt.Fprintf(&b, "\n\n**Rule:** %s", ruleText)
 	return b.String()
 }
 
-// writeEvidence writes one list item per distinct evidence, naming the
-// databases that reported it, and their severity when it differs from the
-// leading one's.
-func writeEvidence(b *strings.Builder, occurrences []aiReviewOccurrence, labels map[string]string) {
-	type entry struct {
-		severity aireview.Severity
-		evidence string
-	}
-	databases := make(map[entry][]string)
-	var entries []entry
+// severityText names the databases at each severity, most severe first, or
+// returns nothing when every database reported the same severity.
+func severityText(occurrences []aiReviewOccurrence, labels map[string]string) string {
+	bySeverity := make(map[aireview.Severity][]string)
 	for _, occurrence := range occurrences {
-		// A list item holds one line.
-		e := entry{severity: occurrence.Finding.Severity, evidence: strings.Join(strings.Fields(occurrence.Finding.Evidence), " ")}
-		if _, ok := databases[e]; !ok {
-			entries = append(entries, e)
-		}
-		databases[e] = append(databases[e], labels[occurrence.Target])
+		bySeverity[occurrence.Finding.Severity] = append(bySeverity[occurrence.Finding.Severity], occurrence.Target)
 	}
-	for i, e := range entries {
-		if i > 0 {
-			_ = b.WriteByte('\n')
-		}
-		_, _ = fmt.Fprintf(b, "- %s", strings.Join(databases[e], ", "))
-		if e.severity != occurrences[0].Finding.Severity {
-			_, _ = fmt.Fprintf(b, " (%s)", e.severity)
-		}
-		_, _ = fmt.Fprintf(b, ": %s", e.evidence)
+	if len(bySeverity) < 2 {
+		return ""
 	}
+	var parts []string
+	for _, severity := range []aireview.Severity{aireview.SeverityP0, aireview.SeverityP1, aireview.SeverityP2} {
+		if targets := bySeverity[severity]; len(targets) > 0 {
+			parts = append(parts, fmt.Sprintf("%s on %s", severity, databaseList(targets, labels)))
+		}
+	}
+	return strings.Join(parts, "; ")
+}
+
+// databaseList names up to maxNamedDatabases databases in order of name, and
+// counts more.
+func databaseList(targets []string, labels map[string]string) string {
+	if len(targets) > maxNamedDatabases {
+		return fmt.Sprintf("%d databases", len(targets))
+	}
+	names := make([]string, 0, len(targets))
+	for _, target := range targets {
+		names = append(names, labels[target])
+	}
+	slices.Sort(names)
+	for i, name := range names {
+		names[i] = codeSpan(name)
+	}
+	return strings.Join(names, ", ")
+}
+
+// codeSpan sets a database name as code, so that the markdown of the comment
+// cannot read it as formatting. A name that holds a backtick stays plain,
+// since it would end the span.
+func codeSpan(name string) string {
+	if strings.Contains(name, "`") {
+		return name
+	}
+	return "`" + name + "`"
 }
 
 // databaseLabels names each target by its database, and by instance and

@@ -22,8 +22,13 @@ type Finding struct {
 	// Line is the one-based line of the statements where the problem starts.
 	Line int
 	// Rule is the ID of the Rule the finding cites.
-	Rule     string
-	Evidence string
+	Rule string
+	// Reason says why the statement is a problem, without the facts that
+	// differ between databases, so it can stand for every database that
+	// reports the problem.
+	Reason string
+	// Evidence holds the facts of the reviewed database, one short fact each.
+	Evidence []string
 	Fix      string
 }
 
@@ -43,12 +48,13 @@ type replyJSON struct {
 }
 
 type findingJSON struct {
-	Title    string `json:"title"`
-	Severity string `json:"severity"`
-	Line     int    `json:"line"`
-	Rule     string `json:"rule"`
-	Evidence string `json:"evidence"`
-	Fix      string `json:"fix"`
+	Title    string   `json:"title"`
+	Severity string   `json:"severity"`
+	Line     int      `json:"line"`
+	Rule     string   `json:"rule"`
+	Reason   string   `json:"reason"`
+	Evidence []string `json:"evidence"`
+	Fix      string   `json:"fix"`
 }
 
 const maxReportedProblems = 10
@@ -180,9 +186,14 @@ func validateFinding(raw findingJSON, lineCount int, ruleIDs map[string]bool) (F
 		Severity: Severity(strings.ToUpper(strings.TrimSpace(raw.Severity))),
 		Line:     raw.Line,
 		// The prompt shows each ID in backticks, and a model may copy them.
-		Rule:     strings.ToLower(strings.TrimSpace(strings.Trim(strings.TrimSpace(raw.Rule), "`"))),
-		Evidence: strings.TrimSpace(raw.Evidence),
-		Fix:      strings.TrimSpace(raw.Fix),
+		Rule:   strings.ToLower(strings.TrimSpace(strings.Trim(strings.TrimSpace(raw.Rule), "`"))),
+		Reason: strings.TrimSpace(raw.Reason),
+		Fix:    strings.TrimSpace(raw.Fix),
+	}
+	for _, fact := range raw.Evidence {
+		if fact = strings.TrimSpace(fact); fact != "" {
+			finding.Evidence = append(finding.Evidence, fact)
+		}
 	}
 
 	var problems []string
@@ -206,12 +217,15 @@ func validateFinding(raw findingJSON, lineCount int, ruleIDs map[string]bool) (F
 		value string
 	}{
 		{"title", finding.Title},
-		{"evidence", finding.Evidence},
+		{"reason", finding.Reason},
 		{"fix", finding.Fix},
 	} {
 		if field.value == "" {
 			problems = append(problems, field.name+": is empty")
 		}
+	}
+	if len(finding.Evidence) == 0 {
+		problems = append(problems, "evidence: is empty; list at least one fact")
 	}
 	return finding, problems
 }

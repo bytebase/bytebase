@@ -30,9 +30,9 @@ const (
 
 const threeLineStatement = "ALTER TABLE orders ADD COLUMN note text;\n\nDELETE FROM order_events;\n"
 
-const validReply = `{"findings": [{"title": "Add a WHERE clause", "severity": "P0", "line": 3, "rule": "too-many-rows", "evidence": "order_events has 9000000 rows", "fix": "Delete in batches by id range"}]}`
+const validReply = `{"findings": [{"title": "Add a WHERE clause", "severity": "P0", "line": 3, "rule": "too-many-rows", "reason": "r", "evidence": ["order_events has 9000000 rows"], "fix": "Delete in batches by id range"}]}`
 
-const repeatedRuleReply = `{"findings": [{"title": "Delete the invoices first", "severity": "P0", "line": 3, "rule": "fails", "evidence": "invoices references order_events", "fix": "f"}, {"title": "Delete the refunds first", "severity": "P0", "line": 3, "rule": "fails", "evidence": "refunds references order_events", "fix": "f"}]}`
+const repeatedRuleReply = `{"findings": [{"title": "Delete the invoices first", "severity": "P0", "line": 3, "rule": "fails", "reason": "r", "evidence": ["invoices references order_events"], "fix": "f"}, {"title": "Delete the refunds first", "severity": "P0", "line": 3, "rule": "fails", "reason": "r", "evidence": ["refunds references order_events"], "fix": "f"}]}`
 
 type modelStep struct {
 	response *v1pb.AIChatResponse
@@ -107,7 +107,8 @@ func TestReviewReturnsFindings(t *testing.T) {
 		Severity: SeverityP0,
 		Line:     3,
 		Rule:     "too-many-rows",
-		Evidence: "order_events has 9000000 rows",
+		Reason:   "r",
+		Evidence: []string{"order_events has 9000000 rows"},
 		Fix:      "Delete in batches by id range",
 	}}, result.Findings)
 
@@ -170,7 +171,7 @@ func TestReviewExitPaths(t *testing.T) {
 		},
 		{
 			name:             "invalid reply is corrected once",
-			steps:            []modelStep{finalReply(`{"findings": [{"title": "t", "severity": "critical", "line": 3, "rule": "fails", "evidence": "e", "fix": "f"}]}`), finalReply(validReply)},
+			steps:            []modelStep{finalReply(`{"findings": [{"title": "t", "severity": "critical", "line": 3, "rule": "fails", "reason": "r", "evidence": ["e"], "fix": "f"}]}`), finalReply(validReply)},
 			wantFindings:     1,
 			wantCalls:        2,
 			wantLastUserText: `findings[0].severity: "critical" is not one of P0, P1, P2`,

@@ -9,13 +9,14 @@ import (
 func TestParseReply(t *testing.T) {
 	t.Parallel()
 
-	const finding = `{"title": "Create the index concurrently", "severity": "P1", "line": 2, "rule": "blocks", "evidence": "orders has 52000000 rows", "fix": "Use CREATE INDEX CONCURRENTLY"}`
+	const finding = `{"title": "Create the index concurrently", "severity": "P1", "line": 2, "rule": "blocks", "reason": "r", "evidence": ["orders has 52000000 rows"], "fix": "Use CREATE INDEX CONCURRENTLY"}`
 	want := []Finding{{
 		Title:    "Create the index concurrently",
 		Severity: SeverityP1,
 		Line:     2,
 		Rule:     "blocks",
-		Evidence: "orders has 52000000 rows",
+		Reason:   "r",
+		Evidence: []string{"orders has 52000000 rows"},
 		Fix:      "Use CREATE INDEX CONCURRENTLY",
 	}}
 
@@ -54,7 +55,7 @@ func TestParseReply(t *testing.T) {
 		},
 		{
 			name:                "unknown key inside a finding is rejected",
-			reply:               `{"findings": [{"title": "t", "severity": "P1", "line": 1, "rule": "fails", "evidence": "e", "fix": "f", "confidence": 0.9}]}`,
+			reply:               `{"findings": [{"title": "t", "severity": "P1", "line": 1, "rule": "fails", "reason": "r", "evidence": ["e"], "fix": "f", "confidence": 0.9}]}`,
 			wantProblemContains: []string{`unknown object member name "confidence" within "/findings/0"`},
 		},
 		{
@@ -87,20 +88,35 @@ func TestParseReply(t *testing.T) {
 		},
 		{
 			name:  "lower case severity is accepted",
-			reply: `{"findings": [{"title": "t", "severity": " p0 ", "line": 1, "rule": "fails", "evidence": "e", "fix": "f"}]}`,
-			want:  []Finding{{Title: "t", Severity: SeverityP0, Line: 1, Rule: "fails", Evidence: "e", Fix: "f"}},
+			reply: `{"findings": [{"title": "t", "severity": " p0 ", "line": 1, "rule": "fails", "reason": "r", "evidence": ["e"], "fix": "f"}]}`,
+			want:  []Finding{{Title: "t", Severity: SeverityP0, Line: 1, Rule: "fails", Reason: "r", Evidence: []string{"e"}, Fix: "f"}},
 		},
 		{
 			name:  "a rule ID copied with its backticks is accepted",
-			reply: `{"findings": [{"title": "t", "severity": "P1", "line": 1, "rule": " ` + "`BLOCKS`" + ` ", "evidence": "e", "fix": "f"}]}`,
-			want:  []Finding{{Title: "t", Severity: SeverityP1, Line: 1, Rule: "blocks", Evidence: "e", Fix: "f"}},
+			reply: `{"findings": [{"title": "t", "severity": "P1", "line": 1, "rule": " ` + "`BLOCKS`" + ` ", "reason": "r", "evidence": ["e"], "fix": "f"}]}`,
+			want:  []Finding{{Title: "t", Severity: SeverityP1, Line: 1, Rule: "blocks", Reason: "r", Evidence: []string{"e"}, Fix: "f"}},
 		},
 		{
 			// A quoted sentence is not an ID, and findings merge across
 			// databases by their rule.
 			name:         "a rule that is not an ID is rejected",
-			reply:        `{"findings": [{"title": "t", "severity": "P1", "line": 1, "rule": "a long lock", "evidence": "e", "fix": "f"}]}`,
+			reply:        `{"findings": [{"title": "t", "severity": "P1", "line": 1, "rule": "a long lock", "reason": "r", "evidence": ["e"], "fix": "f"}]}`,
 			wantProblems: []string{`findings[0].rule: "a long lock" is not the ID of a policy line or a check`},
+		},
+		{
+			name:  "blank facts are dropped",
+			reply: `{"findings": [{"title": "t", "severity": "P1", "line": 1, "rule": "fails", "reason": "r", "evidence": ["  invoices has 4,603 rows ", " ", ""], "fix": "f"}]}`,
+			want:  []Finding{{Title: "t", Severity: SeverityP1, Line: 1, Rule: "fails", Reason: "r", Evidence: []string{"invoices has 4,603 rows"}, Fix: "f"}},
+		},
+		{
+			name:         "a finding without a reason is rejected",
+			reply:        `{"findings": [{"title": "t", "severity": "P1", "line": 1, "rule": "fails", "evidence": ["e"], "fix": "f"}]}`,
+			wantProblems: []string{"findings[0].reason: is empty"},
+		},
+		{
+			name:                "evidence as one string is rejected",
+			reply:               `{"findings": [{"title": "t", "severity": "P1", "line": 1, "rule": "fails", "reason": "r", "evidence": "e", "fix": "f"}]}`,
+			wantProblemContains: []string{`"/findings/0/evidence"`},
 		},
 		{name: "empty reply", reply: "  \n", wantProblems: []string{"the reply is empty"}},
 		{name: "prose only", reply: "Let me check the orders table first.", wantProblems: []string{"the reply is not a JSON object"}},
@@ -113,17 +129,17 @@ func TestParseReply(t *testing.T) {
 		},
 		{
 			name:  "every problem is reported at once",
-			reply: `{"findings": [` + finding + `, {"title": "", "severity": "critical", "line": 9, "rule": "fails", "evidence": "", "fix": "f"}]}`,
+			reply: `{"findings": [` + finding + `, {"title": "", "severity": "critical", "line": 9, "rule": "fails", "reason": "r", "evidence": [""], "fix": "f"}]}`,
 			wantProblems: []string{
 				`findings[1].severity: "critical" is not one of P0, P1, P2`,
 				"findings[1].line: 9 is outside the statements, which have lines 1 to 5",
 				"findings[1].title: is empty",
-				"findings[1].evidence: is empty",
+				"findings[1].evidence: is empty; list at least one fact",
 			},
 		},
 		{
 			name:         "missing line",
-			reply:        `{"findings": [{"title": "t", "severity": "P2", "rule": "fails", "evidence": "e", "fix": "f"}]}`,
+			reply:        `{"findings": [{"title": "t", "severity": "P2", "rule": "fails", "reason": "r", "evidence": ["e"], "fix": "f"}]}`,
 			wantProblems: []string{"findings[0].line: 0 is outside the statements, which have lines 1 to 5"},
 		},
 	}
@@ -156,7 +172,7 @@ func TestParseReplyAcceptsThePolicyLines(t *testing.T) {
 
 	rules := Rules("Never delete rows from payment.", "- Every new table has an id column.")
 	reply := func(rule string) string {
-		return `{"findings": [{"title": "t", "severity": "P1", "line": 1, "rule": "` + rule + `", "evidence": "e", "fix": "f"}]}`
+		return `{"findings": [{"title": "t", "severity": "P1", "line": 1, "rule": "` + rule + `", "reason": "r", "evidence": ["e"], "fix": "f"}]}`
 	}
 	for _, rule := range []string{"workspace-1", "project-1", "fails"} {
 		got, problems := parseReply(reply(rule), 5, rules, false)
@@ -171,9 +187,9 @@ func TestParseReplyRepeatedRuleOnALine(t *testing.T) {
 	t.Parallel()
 
 	const reply = `{"findings": [
-		{"title": "Remove the duplicate index", "severity": "P1", "line": 2, "rule": "fails", "evidence": "orders_idx exists", "fix": "f"},
-		{"title": "Drop the duplicate check", "severity": "P1", "line": 2, "rule": "fails", "evidence": "orders_check exists", "fix": "f"},
-		{"title": "Create orders_archive first", "severity": "P1", "line": 3, "rule": "fails", "evidence": "orders_archive does not exist", "fix": "f"}
+		{"title": "Remove the duplicate index", "severity": "P1", "line": 2, "rule": "fails", "reason": "r", "evidence": ["orders_idx exists"], "fix": "f"},
+		{"title": "Drop the duplicate check", "severity": "P1", "line": 2, "rule": "fails", "reason": "r", "evidence": ["orders_check exists"], "fix": "f"},
+		{"title": "Create orders_archive first", "severity": "P1", "line": 3, "rule": "fails", "reason": "r", "evidence": ["orders_archive does not exist"], "fix": "f"}
 	]}`
 	got, problems := parseReply(reply, 5, Rules("", ""), false)
 	require.Nil(t, got)
@@ -208,5 +224,5 @@ func TestParseReplyCapsTheProblemList(t *testing.T) {
 
 	_, problems := parseReply(reply, 5, Rules("", ""), false)
 	require.Len(t, problems, maxReportedProblems+1)
-	require.Equal(t, "and 14 more problems", problems[maxReportedProblems])
+	require.Equal(t, "and 20 more problems", problems[maxReportedProblems])
 }
