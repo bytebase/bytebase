@@ -138,11 +138,11 @@ message QueryDataPolicy {
   bool allow_admin_data_source = 9;
 
   // workspace-level policy
-  // Where exports may be delivered. Unset allows LOCAL only.
-  ExportDeliveryPolicy export_delivery_policy = 10;
+  // Where exports may go. Unset allows DOWNLOAD only.
+  ExportDestinationPolicy export_destination_policy = 10;
 
-  message ExportDeliveryPolicy {
-    repeated ExportDelivery allowed_deliveries = 1;
+  message ExportDestinationPolicy {
+    repeated ExportDestination allowed_destinations = 1;
   }
 
   // ================
@@ -153,9 +153,9 @@ message QueryDataPolicy {
   bool disallow_dml = 8;
 }
 
-// Where an export is delivered.
-enum ExportDelivery {
-  EXPORT_DELIVERY_UNSPECIFIED = 0;
-  LOCAL = 1;
+// Where an export goes.
+enum ExportDestination {
+  EXPORT_DESTINATION_UNSPECIFIED = 0;
+  DOWNLOAD = 1;
   SHAREPOINT = 2;
 }

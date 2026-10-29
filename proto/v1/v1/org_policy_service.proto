@@ -316,16 +316,16 @@ message QueryDataPolicy {
   bool allow_admin_data_source = 4;
 
   // workspace-level policy
-  // Where SQLService.Export may deliver results. When the stored policy has
-  // none, only LOCAL is allowed, and reads return that default. An update that
-  // omits it keeps the stored value.
-  ExportDeliveryPolicy export_delivery_policy = 5;
+  // Where SQLService.Export may send results. When the stored policy has
+  // none, only DOWNLOAD is allowed, and reads return that default. An update
+  // that omits it keeps the stored value.
+  ExportDestinationPolicy export_destination_policy = 5;
 
-  message ExportDeliveryPolicy {
-    // The allowed deliveries: at least one, without duplicates or
-    // EXPORT_DELIVERY_UNSPECIFIED. A delivery added to ExportDelivery later is
-    // not allowed until it is listed here.
-    repeated ExportDelivery allowed_deliveries = 1;
+  message ExportDestinationPolicy {
+    // The allowed destinations: at least one, without duplicates or
+    // EXPORT_DESTINATION_UNSPECIFIED. A destination added to ExportDestination
+    // later is not allowed until it is listed here.
+    repeated ExportDestination allowed_destinations = 1;
   }
 }
 

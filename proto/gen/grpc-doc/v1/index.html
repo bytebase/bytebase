@@ -310,7 +310,7 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.ExportDelivery"><span class="badge">E</span>ExportDelivery</a>
+                  <a href="#bytebase.v1.ExportDestination"><span class="badge">E</span>ExportDestination</a>
                 </li>
               
                 <li>
@@ -2506,7 +2506,7 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.QueryDataPolicy.ExportDeliveryPolicy"><span class="badge">M</span>QueryDataPolicy.ExportDeliveryPolicy</a>
+                  <a href="#bytebase.v1.QueryDataPolicy.ExportDestinationPolicy"><span class="badge">M</span>QueryDataPolicy.ExportDestinationPolicy</a>
                 </li>
               
                 <li>
@@ -4646,8 +4646,8 @@ Examples:
           </tbody>
         </table>
       
-        <h3 id="bytebase.v1.ExportDelivery">ExportDelivery</h3>
-        <p>Where an export is delivered. Values are added as destinations are</p><p>supported.</p>
+        <h3 id="bytebase.v1.ExportDestination">ExportDestination</h3>
+        <p>Where an export goes. Values are added as destinations are supported.</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -4655,13 +4655,13 @@ Examples:
           <tbody>
             
               <tr>
-                <td>EXPORT_DELIVERY_UNSPECIFIED</td>
+                <td>EXPORT_DESTINATION_UNSPECIFIED</td>
                 <td>0</td>
-                <td><p>Treated as LOCAL.</p></td>
+                <td><p>Treated as DOWNLOAD.</p></td>
               </tr>
             
               <tr>
-                <td>LOCAL</td>
+                <td>DOWNLOAD</td>
                 <td>1</td>
                 <td><p>Return the export in the response.</p></td>
               </tr>
@@ -8055,10 +8055,10 @@ CosmosDB only. </p></td>
                 </tr>
               
                 <tr>
-                  <td>delivery</td>
-                  <td><a href="#bytebase.v1.ExportDelivery">ExportDelivery</a></td>
+                  <td>destination</td>
+                  <td><a href="#bytebase.v1.ExportDestination">ExportDestination</a></td>
                   <td></td>
-                  <td><p>Where the export is delivered. A delivery the workspace query data policy
+                  <td><p>Where the export goes. A destination the workspace query data policy
 does not allow is rejected with FAILED_PRECONDITION. </p></td>
                 </tr>
               
@@ -28943,13 +28943,13 @@ If false,
                 </tr>
               
                 <tr>
-                  <td>export_delivery_policy</td>
-                  <td><a href="#bytebase.v1.QueryDataPolicy.ExportDeliveryPolicy">QueryDataPolicy.ExportDeliveryPolicy</a></td>
+                  <td>export_destination_policy</td>
+                  <td><a href="#bytebase.v1.QueryDataPolicy.ExportDestinationPolicy">QueryDataPolicy.ExportDestinationPolicy</a></td>
                   <td></td>
                   <td><p>workspace-level policy
-Where SQLService.Export may deliver results. When the stored policy has
-none, only LOCAL is allowed, and reads return that default. An update that
-omits it keeps the stored value. </p></td>
+Where SQLService.Export may send results. When the stored policy has
+none, only DOWNLOAD is allowed, and reads return that default. An update
+that omits it keeps the stored value. </p></td>
                 </tr>
               
             </tbody>
@@ -28980,7 +28980,7 @@ omits it keeps the stored value. </p></td>
 
         
       
-        <h3 id="bytebase.v1.QueryDataPolicy.ExportDeliveryPolicy">QueryDataPolicy.ExportDeliveryPolicy</h3>
+        <h3 id="bytebase.v1.QueryDataPolicy.ExportDestinationPolicy">QueryDataPolicy.ExportDestinationPolicy</h3>
         <p></p>
 
         
@@ -28991,12 +28991,12 @@ omits it keeps the stored value. </p></td>
             <tbody>
               
                 <tr>
-                  <td>allowed_deliveries</td>
-                  <td><a href="#bytebase.v1.ExportDelivery">ExportDelivery</a></td>
+                  <td>allowed_destinations</td>
+                  <td><a href="#bytebase.v1.ExportDestination">ExportDestination</a></td>
                   <td>repeated</td>
-                  <td><p>The allowed deliveries: at least one, without duplicates or
-EXPORT_DELIVERY_UNSPECIFIED. A delivery added to ExportDelivery later is
-not allowed until it is listed here. </p></td>
+                  <td><p>The allowed destinations: at least one, without duplicates or
+EXPORT_DESTINATION_UNSPECIFIED. A destination added to ExportDestination
+later is not allowed until it is listed here. </p></td>
                 </tr>
               
             </tbody>

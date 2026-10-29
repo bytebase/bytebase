@@ -435,24 +435,23 @@ func (s *Store) GetEffectiveQueryDataPolicy(ctx context.Context, workspaceID str
 }
 
 // GetDefaultWorkspaceQueryDataPolicy returns the workspace query data policy a
-// new workspace starts with: local export download is the only allowed export
-// delivery.
+// new workspace starts with: download is the only allowed export destination.
 func GetDefaultWorkspaceQueryDataPolicy() *storepb.QueryDataPolicy {
 	return &storepb.QueryDataPolicy{
-		ExportDeliveryPolicy: &storepb.QueryDataPolicy_ExportDeliveryPolicy{
-			AllowedDeliveries: []storepb.ExportDelivery{storepb.ExportDelivery_LOCAL},
+		ExportDestinationPolicy: &storepb.QueryDataPolicy_ExportDestinationPolicy{
+			AllowedDestinations: []storepb.ExportDestination{storepb.ExportDestination_DOWNLOAD},
 		},
 	}
 }
 
-// GetAllowedExportDeliveries returns the export deliveries a workspace query
-// data policy allows. A policy without an export delivery policy allows the
+// GetAllowedExportDestinations returns the export destinations a workspace query
+// data policy allows. A policy without an export destination policy allows the
 // default.
-func GetAllowedExportDeliveries(policy *storepb.QueryDataPolicy) []storepb.ExportDelivery {
-	if exportDeliveryPolicy := policy.GetExportDeliveryPolicy(); exportDeliveryPolicy != nil {
-		return exportDeliveryPolicy.GetAllowedDeliveries()
+func GetAllowedExportDestinations(policy *storepb.QueryDataPolicy) []storepb.ExportDestination {
+	if exportDestinationPolicy := policy.GetExportDestinationPolicy(); exportDestinationPolicy != nil {
+		return exportDestinationPolicy.GetAllowedDestinations()
 	}
-	return GetDefaultWorkspaceQueryDataPolicy().GetExportDeliveryPolicy().GetAllowedDeliveries()
+	return GetDefaultWorkspaceQueryDataPolicy().GetExportDestinationPolicy().GetAllowedDestinations()
 }
 
 // GetWorkspaceQueryDataPolicy gets the workspace-level query data policy as

@@ -881,25 +881,24 @@ export enum StatementType {
 export declare const StatementTypeSchema: GenEnum<StatementType>;
 
 /**
- * Where an export is delivered. Values are added as destinations are
- * supported.
+ * Where an export goes. Values are added as destinations are supported.
  *
- * @generated from enum bytebase.v1.ExportDelivery
+ * @generated from enum bytebase.v1.ExportDestination
  */
-export enum ExportDelivery {
+export enum ExportDestination {
   /**
-   * Treated as LOCAL.
+   * Treated as DOWNLOAD.
    *
-   * @generated from enum value: EXPORT_DELIVERY_UNSPECIFIED = 0;
+   * @generated from enum value: EXPORT_DESTINATION_UNSPECIFIED = 0;
    */
-  EXPORT_DELIVERY_UNSPECIFIED = 0,
+  EXPORT_DESTINATION_UNSPECIFIED = 0,
 
   /**
    * Return the export in the response.
    *
-   * @generated from enum value: LOCAL = 1;
+   * @generated from enum value: DOWNLOAD = 1;
    */
-  LOCAL = 1,
+  DOWNLOAD = 1,
 
   /**
    * Upload the export to the project's SharePoint export destination.
@@ -910,7 +909,7 @@ export enum ExportDelivery {
 }
 
 /**
- * Describes the enum bytebase.v1.ExportDelivery.
+ * Describes the enum bytebase.v1.ExportDestination.
  */
-export declare const ExportDeliverySchema: GenEnum<ExportDelivery>;
+export declare const ExportDestinationSchema: GenEnum<ExportDestination>;
 

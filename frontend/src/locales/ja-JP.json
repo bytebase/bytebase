@@ -1025,9 +1025,9 @@
     "unexpected-error-description": "このページの表示中に予期しないエラーが発生しました。通常は更新すると解決します。問題が続く場合は、管理者にご報告ください。"
   },
   "export-data": {
-    "delivery": {
-      "local": "ローカルダウンロード",
-      "self": "配信方法",
+    "destination": {
+      "download": "ダウンロード",
+      "self": "エクスポート先",
       "sharepoint": "SharePoint"
     },
     "export-format": "エクスポート形式",
@@ -2905,11 +2905,11 @@
         "enable-debug": {
           "enable": "バックエンドサービスのデバッグレベルのログを有効にする"
         },
-        "export-delivery": {
-          "description": "ユーザーがエクスポートしたクエリ結果を配信できる場所です。少なくとも 1 つは許可したままにする必要があります。承認済みのエクスポートアクセス許可があっても、ここでオフにした配信先は使用できません。",
-          "local": "ローカルダウンロード",
-          "self": "エクスポートの配信先",
-          "sharepoint": "プロジェクトの SharePoint 配信先"
+        "export-destination": {
+          "description": "ユーザーがエクスポートしたクエリ結果を送信できる場所です。少なくとも 1 つは許可したままにする必要があります。承認済みのエクスポートアクセス許可があっても、ここでオフにしたエクスポート先は使用できません。",
+          "download": "ダウンロード",
+          "self": "エクスポート先",
+          "sharepoint": "プロジェクトの SharePoint エクスポート先"
         },
         "external-url": {
           "cannot-edit-flag": "外部URLは --external-url コマンドラインフラグで設定されているため変更できません",

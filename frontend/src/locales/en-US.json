@@ -1025,9 +1025,9 @@
     "unexpected-error-description": "An unexpected error occurred while displaying this page. Refreshing usually fixes it; if it keeps happening, please report the issue to your administrator."
   },
   "export-data": {
-    "delivery": {
-      "local": "Local download",
-      "self": "Delivery",
+    "destination": {
+      "download": "Download",
+      "self": "Destination",
       "sharepoint": "SharePoint"
     },
     "export-format": "Export format",
@@ -2905,10 +2905,10 @@
         "enable-debug": {
           "enable": "Enable debug level log for the backend service"
         },
-        "export-delivery": {
-          "description": "Where users can deliver exported query results. At least one must stay allowed. An approved export access grant does not allow a delivery turned off here.",
-          "local": "Local download",
-          "self": "Export delivery",
+        "export-destination": {
+          "description": "Where users can send exported query results. At least one must stay allowed. An approved export access grant does not allow a destination turned off here.",
+          "download": "Download",
+          "self": "Export destinations",
           "sharepoint": "Project SharePoint destination"
         },
         "external-url": {

@@ -13464,16 +13464,14 @@ components:
       title: ExportAuditLogsResponse
       additionalProperties: false
       description: Response message for exporting audit logs.
-    bytebase.v1.ExportDelivery:
+    bytebase.v1.ExportDestination:
       type: string
-      title: ExportDelivery
+      title: ExportDestination
       enum:
-        - EXPORT_DELIVERY_UNSPECIFIED
-        - LOCAL
+        - EXPORT_DESTINATION_UNSPECIFIED
+        - DOWNLOAD
         - SHAREPOINT
-      description: |-
-        Where an export is delivered. Values are added as destinations are
-         supported.
+      description: Where an export goes. Values are added as destinations are supported.
     bytebase.v1.ExportFormat:
       type: string
       title: ExportFormat
@@ -13543,12 +13541,12 @@ components:
           description: |-
             Container is the container name to execute the query against, used for
              CosmosDB only.
-        delivery:
+        destination:
           allOf:
-            - $ref: '#/components/schemas/bytebase.v1.ExportDelivery'
-          title: delivery
+            - $ref: '#/components/schemas/bytebase.v1.ExportDestination'
+          title: destination
           description: |-
-            Where the export is delivered. A delivery the workspace query data policy
+            Where the export goes. A destination the workspace query data policy
              does not allow is rejected with FAILED_PRECONDITION.
       title: ExportRequest
       required:
@@ -18745,31 +18743,31 @@ components:
              If false,
              1. when read-only data source is configured, users're force to use the read-only data source
              2. otherwise fallback to use the admin data source.
-        exportDeliveryPolicy:
+        exportDestinationPolicy:
           allOf:
-            - $ref: '#/components/schemas/bytebase.v1.QueryDataPolicy.ExportDeliveryPolicy'
-          title: export_delivery_policy
+            - $ref: '#/components/schemas/bytebase.v1.QueryDataPolicy.ExportDestinationPolicy'
+          title: export_destination_policy
           description: |-
             workspace-level policy
-             Where SQLService.Export may deliver results. When the stored policy has
-             none, only LOCAL is allowed, and reads return that default. An update that
-             omits it keeps the stored value.
+             Where SQLService.Export may send results. When the stored policy has
+             none, only DOWNLOAD is allowed, and reads return that default. An update
+             that omits it keeps the stored value.
       title: QueryDataPolicy
       additionalProperties: false
       description: QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
-    bytebase.v1.QueryDataPolicy.ExportDeliveryPolicy:
+    bytebase.v1.QueryDataPolicy.ExportDestinationPolicy:
       type: object
       properties:
-        allowedDeliveries:
+        allowedDestinations:
           type: array
           items:
-            $ref: '#/components/schemas/bytebase.v1.ExportDelivery'
-          title: allowed_deliveries
+            $ref: '#/components/schemas/bytebase.v1.ExportDestination'
+          title: allowed_destinations
           description: |-
-            The allowed deliveries: at least one, without duplicates or
-             EXPORT_DELIVERY_UNSPECIFIED. A delivery added to ExportDelivery later is
-             not allowed until it is listed here.
-      title: ExportDeliveryPolicy
+            The allowed destinations: at least one, without duplicates or
+             EXPORT_DESTINATION_UNSPECIFIED. A destination added to ExportDestination
+             later is not allowed until it is listed here.
+      title: ExportDestinationPolicy
       additionalProperties: false
     bytebase.v1.QueryHistory:
       type: object

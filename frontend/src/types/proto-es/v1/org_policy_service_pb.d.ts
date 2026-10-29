@@ -6,7 +6,7 @@ import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobu
 import type { Message } from "@bufbuild/protobuf";
 import type { EmptySchema, FieldMask } from "@bufbuild/protobuf/wkt";
 import type { ReviewRuleType } from "./review_rule_pb";
-import type { ExportDelivery } from "./common_pb";
+import type { ExportDestination } from "./common_pb";
 import type { Expr } from "../google/type/expr_pb";
 
 /**
@@ -400,13 +400,13 @@ export declare type QueryDataPolicy = Message<"bytebase.v1.QueryDataPolicy"> & {
 
   /**
    * workspace-level policy
-   * Where SQLService.Export may deliver results. When the stored policy has
-   * none, only LOCAL is allowed, and reads return that default. An update that
-   * omits it keeps the stored value.
+   * Where SQLService.Export may send results. When the stored policy has
+   * none, only DOWNLOAD is allowed, and reads return that default. An update
+   * that omits it keeps the stored value.
    *
-   * @generated from field: bytebase.v1.QueryDataPolicy.ExportDeliveryPolicy export_delivery_policy = 5;
+   * @generated from field: bytebase.v1.QueryDataPolicy.ExportDestinationPolicy export_destination_policy = 5;
    */
-  exportDeliveryPolicy?: QueryDataPolicy_ExportDeliveryPolicy | undefined;
+  exportDestinationPolicy?: QueryDataPolicy_ExportDestinationPolicy | undefined;
 };
 
 /**
@@ -416,24 +416,24 @@ export declare type QueryDataPolicy = Message<"bytebase.v1.QueryDataPolicy"> & {
 export declare const QueryDataPolicySchema: GenMessage<QueryDataPolicy>;
 
 /**
- * @generated from message bytebase.v1.QueryDataPolicy.ExportDeliveryPolicy
+ * @generated from message bytebase.v1.QueryDataPolicy.ExportDestinationPolicy
  */
-export declare type QueryDataPolicy_ExportDeliveryPolicy = Message<"bytebase.v1.QueryDataPolicy.ExportDeliveryPolicy"> & {
+export declare type QueryDataPolicy_ExportDestinationPolicy = Message<"bytebase.v1.QueryDataPolicy.ExportDestinationPolicy"> & {
   /**
-   * The allowed deliveries: at least one, without duplicates or
-   * EXPORT_DELIVERY_UNSPECIFIED. A delivery added to ExportDelivery later is
-   * not allowed until it is listed here.
+   * The allowed destinations: at least one, without duplicates or
+   * EXPORT_DESTINATION_UNSPECIFIED. A destination added to ExportDestination
+   * later is not allowed until it is listed here.
    *
-   * @generated from field: repeated bytebase.v1.ExportDelivery allowed_deliveries = 1;
+   * @generated from field: repeated bytebase.v1.ExportDestination allowed_destinations = 1;
    */
-  allowedDeliveries: ExportDelivery[];
+  allowedDestinations: ExportDestination[];
 };
 
 /**
- * Describes the message bytebase.v1.QueryDataPolicy.ExportDeliveryPolicy.
- * Use `create(QueryDataPolicy_ExportDeliveryPolicySchema)` to create a new message.
+ * Describes the message bytebase.v1.QueryDataPolicy.ExportDestinationPolicy.
+ * Use `create(QueryDataPolicy_ExportDestinationPolicySchema)` to create a new message.
  */
-export declare const QueryDataPolicy_ExportDeliveryPolicySchema: GenMessage<QueryDataPolicy_ExportDeliveryPolicy>;
+export declare const QueryDataPolicy_ExportDestinationPolicySchema: GenMessage<QueryDataPolicy_ExportDestinationPolicy>;
 
 /**
  * MaskingExemptionPolicy is the allowlist of users who can access sensitive data.

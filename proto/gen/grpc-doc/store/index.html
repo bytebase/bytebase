@@ -841,7 +841,7 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.QueryDataPolicy.ExportDeliveryPolicy"><span class="badge">M</span>QueryDataPolicy.ExportDeliveryPolicy</a>
+                  <a href="#bytebase.store.QueryDataPolicy.ExportDestinationPolicy"><span class="badge">M</span>QueryDataPolicy.ExportDestinationPolicy</a>
                 </li>
               
                 <li>
@@ -866,7 +866,7 @@
               
               
                 <li>
-                  <a href="#bytebase.store.ExportDelivery"><span class="badge">E</span>ExportDelivery</a>
+                  <a href="#bytebase.store.ExportDestination"><span class="badge">E</span>ExportDestination</a>
                 </li>
               
                 <li>
@@ -7490,11 +7490,11 @@ Allow using the admin data source to query in the SQL editor. </p></td>
                 </tr>
               
                 <tr>
-                  <td>export_delivery_policy</td>
-                  <td><a href="#bytebase.store.QueryDataPolicy.ExportDeliveryPolicy">QueryDataPolicy.ExportDeliveryPolicy</a></td>
+                  <td>export_destination_policy</td>
+                  <td><a href="#bytebase.store.QueryDataPolicy.ExportDestinationPolicy">QueryDataPolicy.ExportDestinationPolicy</a></td>
                   <td></td>
                   <td><p>workspace-level policy
-Where exports may be delivered. Unset allows LOCAL only. </p></td>
+Where exports may go. Unset allows DOWNLOAD only. </p></td>
                 </tr>
               
                 <tr>
@@ -7520,7 +7520,7 @@ Disallow running DDL statements in the SQL editor. </p></td>
 
         
       
-        <h3 id="bytebase.store.QueryDataPolicy.ExportDeliveryPolicy">QueryDataPolicy.ExportDeliveryPolicy</h3>
+        <h3 id="bytebase.store.QueryDataPolicy.ExportDestinationPolicy">QueryDataPolicy.ExportDestinationPolicy</h3>
         <p></p>
 
         
@@ -7531,8 +7531,8 @@ Disallow running DDL statements in the SQL editor. </p></td>
             <tbody>
               
                 <tr>
-                  <td>allowed_deliveries</td>
-                  <td><a href="#bytebase.store.ExportDelivery">ExportDelivery</a></td>
+                  <td>allowed_destinations</td>
+                  <td><a href="#bytebase.store.ExportDestination">ExportDestination</a></td>
                   <td>repeated</td>
                   <td><p> </p></td>
                 </tr>
@@ -7681,8 +7681,8 @@ For example, the environment resource can have the SQL review config tag, such a
       
 
       
-        <h3 id="bytebase.store.ExportDelivery">ExportDelivery</h3>
-        <p>Where an export is delivered.</p>
+        <h3 id="bytebase.store.ExportDestination">ExportDestination</h3>
+        <p>Where an export goes.</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -7690,13 +7690,13 @@ For example, the environment resource can have the SQL review config tag, such a
           <tbody>
             
               <tr>
-                <td>EXPORT_DELIVERY_UNSPECIFIED</td>
+                <td>EXPORT_DESTINATION_UNSPECIFIED</td>
                 <td>0</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>LOCAL</td>
+                <td>DOWNLOAD</td>
                 <td>1</td>
                 <td><p></p></td>
               </tr>

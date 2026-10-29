@@ -63,23 +63,23 @@ func TestConvertToPolicyQueryDataIgnoresStoredDisableExport(t *testing.T) {
 	require.True(t, queryData.GetDisableCopyData())
 }
 
-func TestConvertToQueryDataPolicyPayloadExportDeliveryPolicy(t *testing.T) {
+func TestConvertToQueryDataPolicyPayloadExportDestinationPolicy(t *testing.T) {
 	t.Parallel()
 	for _, tc := range []struct {
 		name    string
-		allowed []v1pb.ExportDelivery
-		want    []storepb.ExportDelivery
+		allowed []v1pb.ExportDestination
+		want    []storepb.ExportDestination
 		wantErr string
 	}{
-		{name: "local and sharepoint", allowed: []v1pb.ExportDelivery{v1pb.ExportDelivery_SHAREPOINT, v1pb.ExportDelivery_LOCAL}, want: []storepb.ExportDelivery{storepb.ExportDelivery_SHAREPOINT, storepb.ExportDelivery_LOCAL}},
-		{name: "empty", wantErr: "must allow at least one delivery"},
-		{name: "unspecified", allowed: []v1pb.ExportDelivery{v1pb.ExportDelivery_EXPORT_DELIVERY_UNSPECIFIED}, wantErr: "unsupported export delivery"},
-		{name: "duplicate", allowed: []v1pb.ExportDelivery{v1pb.ExportDelivery_LOCAL, v1pb.ExportDelivery_LOCAL}, wantErr: "more than once"},
+		{name: "download and sharepoint", allowed: []v1pb.ExportDestination{v1pb.ExportDestination_SHAREPOINT, v1pb.ExportDestination_DOWNLOAD}, want: []storepb.ExportDestination{storepb.ExportDestination_SHAREPOINT, storepb.ExportDestination_DOWNLOAD}},
+		{name: "empty", wantErr: "must allow at least one destination"},
+		{name: "unspecified", allowed: []v1pb.ExportDestination{v1pb.ExportDestination_EXPORT_DESTINATION_UNSPECIFIED}, wantErr: "unsupported export destination"},
+		{name: "duplicate", allowed: []v1pb.ExportDestination{v1pb.ExportDestination_DOWNLOAD, v1pb.ExportDestination_DOWNLOAD}, wantErr: "more than once"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			payload, err := convertToQueryDataPolicyPayload(&v1pb.QueryDataPolicy{
-				ExportDeliveryPolicy: &v1pb.QueryDataPolicy_ExportDeliveryPolicy{AllowedDeliveries: tc.allowed},
+				ExportDestinationPolicy: &v1pb.QueryDataPolicy_ExportDestinationPolicy{AllowedDestinations: tc.allowed},
 			})
 			if tc.wantErr != "" {
 				require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
@@ -87,34 +87,34 @@ func TestConvertToQueryDataPolicyPayloadExportDeliveryPolicy(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			require.Equal(t, tc.want, payload.GetExportDeliveryPolicy().GetAllowedDeliveries())
+			require.Equal(t, tc.want, payload.GetExportDestinationPolicy().GetAllowedDestinations())
 		})
 	}
 
 	payload, err := convertToQueryDataPolicyPayload(&v1pb.QueryDataPolicy{MaximumResultRows: 10})
 	require.NoError(t, err)
-	require.Nil(t, payload.GetExportDeliveryPolicy(), "an omitted export delivery policy stays unset")
+	require.Nil(t, payload.GetExportDestinationPolicy(), "an omitted export destination policy stays unset")
 }
 
-func TestConvertToPolicyQueryDataExportDeliveryDefault(t *testing.T) {
+func TestConvertToPolicyQueryDataExportDestinationDefault(t *testing.T) {
 	t.Parallel()
 	for _, tc := range []struct {
 		name         string
 		resourceType storepb.Policy_Resource
 		payload      string
-		want         *v1pb.QueryDataPolicy_ExportDeliveryPolicy
+		want         *v1pb.QueryDataPolicy_ExportDestinationPolicy
 	}{
 		{
 			name:         "workspace without the field reads the default",
 			resourceType: storepb.Policy_WORKSPACE,
 			payload:      `{"maximumResultRows":10}`,
-			want:         &v1pb.QueryDataPolicy_ExportDeliveryPolicy{AllowedDeliveries: []v1pb.ExportDelivery{v1pb.ExportDelivery_LOCAL}},
+			want:         &v1pb.QueryDataPolicy_ExportDestinationPolicy{AllowedDestinations: []v1pb.ExportDestination{v1pb.ExportDestination_DOWNLOAD}},
 		},
 		{
 			name:         "workspace with the field reads it",
 			resourceType: storepb.Policy_WORKSPACE,
-			payload:      `{"exportDeliveryPolicy":{"allowedDeliveries":["SHAREPOINT"]}}`,
-			want:         &v1pb.QueryDataPolicy_ExportDeliveryPolicy{AllowedDeliveries: []v1pb.ExportDelivery{v1pb.ExportDelivery_SHAREPOINT}},
+			payload:      `{"exportDestinationPolicy":{"allowedDestinations":["SHAREPOINT"]}}`,
+			want:         &v1pb.QueryDataPolicy_ExportDestinationPolicy{AllowedDestinations: []v1pb.ExportDestination{v1pb.ExportDestination_SHAREPOINT}},
 		},
 		{
 			name:         "project has none",
@@ -132,28 +132,28 @@ func TestConvertToPolicyQueryDataExportDeliveryDefault(t *testing.T) {
 				Enforce:      true,
 			})
 			require.NoError(t, err)
-			require.Empty(t, cmp.Diff(tc.want, policy.GetQueryDataPolicy().GetExportDeliveryPolicy(), protocmp.Transform()))
+			require.Empty(t, cmp.Diff(tc.want, policy.GetQueryDataPolicy().GetExportDestinationPolicy(), protocmp.Transform()))
 		})
 	}
 }
 
-func TestKeepStoredExportDeliveryPolicy(t *testing.T) {
+func TestKeepStoredExportDestinationPolicy(t *testing.T) {
 	t.Parallel()
-	const stored = `{"maximumResultRows":5,"exportDeliveryPolicy":{"allowedDeliveries":["LOCAL","SHAREPOINT"]}}`
+	const stored = `{"maximumResultRows":5,"exportDestinationPolicy":{"allowedDestinations":["DOWNLOAD","SHAREPOINT"]}}`
 
-	got, err := keepStoredExportDeliveryPolicy(`{"maximumResultRows":10}`, stored)
+	got, err := keepStoredExportDestinationPolicy(`{"maximumResultRows":10}`, stored)
 	require.NoError(t, err)
-	require.JSONEq(t, `{"maximumResultRows":10,"exportDeliveryPolicy":{"allowedDeliveries":["LOCAL","SHAREPOINT"]}}`, got, "an update that omits it keeps the stored value")
+	require.JSONEq(t, `{"maximumResultRows":10,"exportDestinationPolicy":{"allowedDestinations":["DOWNLOAD","SHAREPOINT"]}}`, got, "an update that omits it keeps the stored value")
 
-	got, err = keepStoredExportDeliveryPolicy(`{"exportDeliveryPolicy":{"allowedDeliveries":["SHAREPOINT"]}}`, stored)
+	got, err = keepStoredExportDestinationPolicy(`{"exportDestinationPolicy":{"allowedDestinations":["SHAREPOINT"]}}`, stored)
 	require.NoError(t, err)
-	require.JSONEq(t, `{"exportDeliveryPolicy":{"allowedDeliveries":["SHAREPOINT"]}}`, got, "an update that sets it replaces the stored value")
+	require.JSONEq(t, `{"exportDestinationPolicy":{"allowedDestinations":["SHAREPOINT"]}}`, got, "an update that sets it replaces the stored value")
 }
 
 func TestValidateQueryDataPolicyResource(t *testing.T) {
 	t.Parallel()
 	policy := &v1pb.Policy{Policy: &v1pb.Policy_QueryDataPolicy{QueryDataPolicy: &v1pb.QueryDataPolicy{
-		ExportDeliveryPolicy: &v1pb.QueryDataPolicy_ExportDeliveryPolicy{AllowedDeliveries: []v1pb.ExportDelivery{v1pb.ExportDelivery_LOCAL}},
+		ExportDestinationPolicy: &v1pb.QueryDataPolicy_ExportDestinationPolicy{AllowedDestinations: []v1pb.ExportDestination{v1pb.ExportDestination_DOWNLOAD}},
 	}}}
 	require.NoError(t, validateQueryDataPolicyResource(storepb.Policy_WORKSPACE, policy))
 	require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(validateQueryDataPolicyResource(storepb.Policy_PROJECT, policy)))

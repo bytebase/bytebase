@@ -1025,9 +1025,9 @@
     "unexpected-error-description": "Se produjo un error inesperado al mostrar esta página. Actualizar suele solucionarlo; si persiste, informa el problema a tu administrador."
   },
   "export-data": {
-    "delivery": {
-      "local": "Descarga local",
-      "self": "Entrega",
+    "destination": {
+      "download": "Descarga",
+      "self": "Destino",
       "sharepoint": "SharePoint"
     },
     "export-format": "Formato de exportación",
@@ -2905,10 +2905,10 @@
         "enable-debug": {
           "enable": "Habilitar el nivel de registro de depuración para el servicio backend"
         },
-        "export-delivery": {
-          "description": "Dónde pueden entregar los usuarios los resultados exportados. Al menos una opción debe permanecer permitida. Una concesión de acceso de exportación aprobada no habilita una entrega desactivada aquí.",
-          "local": "Descarga local",
-          "self": "Entrega de exportaciones",
+        "export-destination": {
+          "description": "Dónde pueden enviar los usuarios los resultados exportados. Al menos un destino debe permanecer permitido. Una concesión de acceso de exportación aprobada no habilita un destino desactivado aquí.",
+          "download": "Descarga",
+          "self": "Destinos de exportación",
           "sharepoint": "Destino de SharePoint del proyecto"
         },
         "external-url": {

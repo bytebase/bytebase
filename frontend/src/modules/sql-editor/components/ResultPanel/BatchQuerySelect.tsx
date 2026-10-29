@@ -21,7 +21,7 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { RequestExportButton } from "@/modules/sql-editor/components/RequestExportButton";
 import { sharePointDeliveryDatabaseLabel } from "@/modules/sql-editor/components/sharePointDeliveryLabel";
-import { useExportDelivery } from "@/modules/sql-editor/components/useExportDelivery";
+import { useExportDestination } from "@/modules/sql-editor/components/useExportDestination";
 import { useExportGrantBypass } from "@/modules/sql-editor/components/useExportGrantBypass";
 import {
   useSQLEditorDatabasesWithExport,
@@ -34,7 +34,7 @@ import {
   useSQLEditorTabState,
 } from "@/modules/sql-editor/store/tab";
 import { useAppStore } from "@/stores/app";
-import { ExportDelivery, ExportFormat } from "@/types/proto-es/v1/common_pb";
+import { ExportDestination, ExportFormat } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { ExportRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
 import type { SQLEditorDatabaseQueryContext } from "@/types/sqlEditor/tab";
@@ -93,7 +93,7 @@ export function BatchQuerySelect({
   const currentTab = useCurrentSQLEditorTab();
   const project = useSQLEditorEditorState((s) => s.project);
   const queryDataPolicy = useSQLEditorQueryDataPolicy(project);
-  const exportDelivery = useExportDelivery(project);
+  const exportDestination = useExportDestination(project);
 
   const [showEmpty, setShowEmpty] = useState(true);
   const [selectedDatabaseNames, setSelectedDatabaseNames] = useState<
@@ -224,13 +224,13 @@ export function BatchQuerySelect({
     () => exportableDatabaseNames.map((name) => getDatabaseByName(name)),
     [exportableDatabaseNames, getDatabaseByName]
   );
-  const hasDelivery = exportDelivery.deliveries.length > 0;
-  const showExport = hasDelivery && exportableDatabaseNames.length > 0;
+  const hasDestination = exportDestination.destinations.length > 0;
+  const showExport = hasDestination && exportableDatabaseNames.length > 0;
   // Visible alongside Export in the partial-coverage case (e.g. 2 of 5
   // covered) so users can request grants for the missing ones without
   // losing the immediate export of the covered set. A grant never adds a
-  // delivery, so neither button shows when no delivery is offered.
-  const showRequestExport = hasDelivery && unmatchedDatabases.length > 0;
+  // destination, so neither button shows when no destination is offered.
+  const showRequestExport = hasDestination && unmatchedDatabases.length > 0;
   // Partial-coverage flag: some matched, some not. Drives the Export
   // button label change from "Batch export" to "Partial batch export"
   // so the user knows up-front the action operates on a strict subset.
@@ -294,7 +294,7 @@ export function BatchQuerySelect({
   const handleExport = ({ options, resolve }: DataExportRequest) => {
     void (async () => {
       // === Prod path: per-database backend Export RPC ===
-      const toSharePoint = options.delivery === ExportDelivery.SHAREPOINT;
+      const toSharePoint = options.destination === ExportDestination.SHAREPOINT;
       const contents: DownloadContent[] = [];
       const deliveries: SharePointDeliveryResult[] = [];
       const tabsState = getSQLEditorTabsState();
@@ -326,7 +326,7 @@ export function BatchQuerySelect({
               password: options.password,
               schema: context.params.connection.schema,
               container: context.params.connection.table,
-              delivery: options.delivery,
+              destination: options.destination,
             })
           );
           if (toSharePoint) {
@@ -334,7 +334,7 @@ export function BatchQuerySelect({
               toDeliveredSharePointResult(
                 label,
                 uri,
-                exportDelivery.sharepointUrl ?? ""
+                exportDestination.sharepointUrl ?? ""
               )
             );
             continue;
@@ -424,8 +424,8 @@ export function BatchQuerySelect({
             }
             validate={validateExport}
             maximumExportCount={queryDataPolicy.maximumResultRows}
-            deliveries={exportDelivery.deliveries}
-            sharepointUrl={exportDelivery.sharepointUrl}
+            destinations={exportDestination.destinations}
+            sharepointUrl={exportDestination.sharepointUrl}
             onExport={handleExport}
             formContent={
               <div className="w-full flex flex-col gap-y-2">

@@ -39,7 +39,7 @@ import { useAppDatabaseMetadata } from "@/hooks/useAppDatabaseMetadata";
 import { useExecuteSQL } from "@/hooks/useExecuteSQL";
 import { writeTextToClipboard } from "@/lib/clipboard";
 import { cn } from "@/lib/utils";
-import type { ExportDeliveryState } from "@/modules/sql-editor/components/useExportDelivery";
+import type { ExportDestinationState } from "@/modules/sql-editor/components/useExportDestination";
 import { useSQLEditorQueryDataPolicy } from "@/modules/sql-editor/hooks/useSQLEditorState";
 import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
 import { useSQLEditorTabState } from "@/modules/sql-editor/store/tab";
@@ -124,7 +124,7 @@ export interface SingleResultViewProps {
   // Optional tooltip shown on the export button — used to explain when the
   // export is enabled by a JIT access grant rather than bb.sql.export.
   exportTooltip?: ReactNode;
-  exportDelivery?: ExportDeliveryState;
+  exportDestination?: ExportDestinationState;
   maximumExportCount?: number;
   onExport?: (req: DataExportRequest & { statement: string }) => void;
   // Rendered in the toolbar after the export button — e.g. a "Request export"
@@ -309,7 +309,7 @@ function SingleResultViewInner({
   resultIndex = 0,
   showExport,
   exportTooltip,
-  exportDelivery,
+  exportDestination,
   maximumExportCount,
   onExport,
   requestExportSlot,
@@ -793,8 +793,8 @@ function SingleResultViewInner({
                   viewMode="DRAWER"
                   supportPassword
                   tooltip={exportTooltip}
-                  deliveries={exportDelivery?.deliveries}
-                  sharepointUrl={exportDelivery?.sharepointUrl}
+                  destinations={exportDestination?.destinations}
+                  sharepointUrl={exportDestination?.sharepointUrl}
                   maximumExportCount={maximumExportCount}
                   formContent={<DatabaseInfo database={database} />}
                   onExport={handleExport}

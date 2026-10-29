@@ -768,57 +768,56 @@ func (StatementType) EnumDescriptor() ([]byte, []int) {
 	return file_v1_common_proto_rawDescGZIP(), []int{8}
 }
 
-// Where an export is delivered. Values are added as destinations are
-// supported.
-type ExportDelivery int32
+// Where an export goes. Values are added as destinations are supported.
+type ExportDestination int32
 
 const (
-	// Treated as LOCAL.
-	ExportDelivery_EXPORT_DELIVERY_UNSPECIFIED ExportDelivery = 0
+	// Treated as DOWNLOAD.
+	ExportDestination_EXPORT_DESTINATION_UNSPECIFIED ExportDestination = 0
 	// Return the export in the response.
-	ExportDelivery_LOCAL ExportDelivery = 1
+	ExportDestination_DOWNLOAD ExportDestination = 1
 	// Upload the export to the project's SharePoint export destination.
-	ExportDelivery_SHAREPOINT ExportDelivery = 2
+	ExportDestination_SHAREPOINT ExportDestination = 2
 )
 
-// Enum value maps for ExportDelivery.
+// Enum value maps for ExportDestination.
 var (
-	ExportDelivery_name = map[int32]string{
-		0: "EXPORT_DELIVERY_UNSPECIFIED",
-		1: "LOCAL",
+	ExportDestination_name = map[int32]string{
+		0: "EXPORT_DESTINATION_UNSPECIFIED",
+		1: "DOWNLOAD",
 		2: "SHAREPOINT",
 	}
-	ExportDelivery_value = map[string]int32{
-		"EXPORT_DELIVERY_UNSPECIFIED": 0,
-		"LOCAL":                       1,
-		"SHAREPOINT":                  2,
+	ExportDestination_value = map[string]int32{
+		"EXPORT_DESTINATION_UNSPECIFIED": 0,
+		"DOWNLOAD":                       1,
+		"SHAREPOINT":                     2,
 	}
 )
 
-func (x ExportDelivery) Enum() *ExportDelivery {
-	p := new(ExportDelivery)
+func (x ExportDestination) Enum() *ExportDestination {
+	p := new(ExportDestination)
 	*p = x
 	return p
 }
 
-func (x ExportDelivery) String() string {
+func (x ExportDestination) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
-func (ExportDelivery) Descriptor() protoreflect.EnumDescriptor {
+func (ExportDestination) Descriptor() protoreflect.EnumDescriptor {
 	return file_v1_common_proto_enumTypes[9].Descriptor()
 }
 
-func (ExportDelivery) Type() protoreflect.EnumType {
+func (ExportDestination) Type() protoreflect.EnumType {
 	return &file_v1_common_proto_enumTypes[9]
 }
 
-func (x ExportDelivery) Number() protoreflect.EnumNumber {
+func (x ExportDestination) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use ExportDelivery.Descriptor instead.
-func (ExportDelivery) EnumDescriptor() ([]byte, []int) {
+// Deprecated: Use ExportDestination.Descriptor instead.
+func (ExportDestination) EnumDescriptor() ([]byte, []int) {
 	return file_v1_common_proto_rawDescGZIP(), []int{9}
 }
 
@@ -1165,10 +1164,10 @@ const file_v1_common_proto_rawDesc = "" +
 	"\x06UPDATE\x10=\x12\n" +
 	"\n" +
 	"\x06DELETE\x10>\x12\t\n" +
-	"\x05MERGE\x10?\"\x04\b\r\x10\x13\"\x04\b \x10'\"\x04\b/\x101\"\x04\b8\x10;*L\n" +
-	"\x0eExportDelivery\x12\x1f\n" +
-	"\x1bEXPORT_DELIVERY_UNSPECIFIED\x10\x00\x12\t\n" +
-	"\x05LOCAL\x10\x01\x12\x0e\n" +
+	"\x05MERGE\x10?\"\x04\b\r\x10\x13\"\x04\b \x10'\"\x04\b/\x101\"\x04\b8\x10;*U\n" +
+	"\x11ExportDestination\x12\"\n" +
+	"\x1eEXPORT_DESTINATION_UNSPECIFIED\x10\x00\x12\f\n" +
+	"\bDOWNLOAD\x10\x01\x12\x0e\n" +
 	"\n" +
 	"SHAREPOINT\x10\x02B\xa1\x01\n" +
 	"\x0fcom.bytebase.v1B\vCommonProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
@@ -1197,7 +1196,7 @@ var file_v1_common_proto_goTypes = []any{
 	(RiskLevel)(0),                 // 6: bytebase.v1.RiskLevel
 	(WebhookType)(0),               // 7: bytebase.v1.WebhookType
 	(StatementType)(0),             // 8: bytebase.v1.StatementType
-	(ExportDelivery)(0),            // 9: bytebase.v1.ExportDelivery
+	(ExportDestination)(0),         // 9: bytebase.v1.ExportDestination
 	(*Position)(nil),               // 10: bytebase.v1.Position
 	(*Range)(nil),                  // 11: bytebase.v1.Range
 	(*PermissionDeniedDetail)(nil), // 12: bytebase.v1.PermissionDeniedDetail

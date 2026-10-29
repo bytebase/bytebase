@@ -1025,9 +1025,9 @@
     "unexpected-error-description": "显示此页面时发生意外错误。刷新通常可以解决；如果问题持续出现，请联系管理员反馈。"
   },
   "export-data": {
-    "delivery": {
-      "local": "本地下载",
-      "self": "发送方式",
+    "destination": {
+      "download": "下载",
+      "self": "导出目标",
       "sharepoint": "SharePoint"
     },
     "export-format": "导出格式",
@@ -2905,10 +2905,10 @@
         "enable-debug": {
           "enable": "启用后端服务的调试级别日志"
         },
-        "export-delivery": {
-          "description": "用户可以将导出的查询结果投递到的位置。至少需要保留一项。已批准的导出访问授权也无法使用此处关闭的投递方式。",
-          "local": "本地下载",
-          "self": "导出投递方式",
+        "export-destination": {
+          "description": "用户可以将导出的查询结果发送到的位置。至少需要保留一项。已批准的导出访问授权也无法使用此处关闭的导出目标。",
+          "download": "下载",
+          "self": "导出目标",
           "sharepoint": "项目的 SharePoint 目标位置"
         },
         "external-url": {

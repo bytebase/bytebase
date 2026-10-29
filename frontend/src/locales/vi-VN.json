@@ -1025,9 +1025,9 @@
     "unexpected-error-description": "Đã xảy ra lỗi không mong muốn khi hiển thị trang này. Tải lại thường sẽ khắc phục được; nếu lỗi tiếp diễn, vui lòng báo cáo cho quản trị viên."
   },
   "export-data": {
-    "delivery": {
-      "local": "Tải về máy",
-      "self": "Hình thức gửi",
+    "destination": {
+      "download": "Tải xuống",
+      "self": "Đích xuất",
       "sharepoint": "SharePoint"
     },
     "export-format": "Định dạng xuất",
@@ -2905,10 +2905,10 @@
         "enable-debug": {
           "enable": "Bật nhật ký cấp độ gỡ lỗi cho dịch vụ backend"
         },
-        "export-delivery": {
-          "description": "Nơi người dùng có thể gửi kết quả truy vấn đã xuất. Phải cho phép ít nhất một tùy chọn. Quyền truy cập xuất đã được phê duyệt không cho phép dùng tùy chọn đã tắt ở đây.",
-          "local": "Tải xuống cục bộ",
-          "self": "Nơi nhận dữ liệu xuất",
+        "export-destination": {
+          "description": "Nơi người dùng có thể gửi kết quả truy vấn đã xuất. Phải cho phép ít nhất một đích. Quyền truy cập xuất đã được phê duyệt không cho phép dùng đích đã tắt ở đây.",
+          "download": "Tải xuống",
+          "self": "Đích xuất dữ liệu",
           "sharepoint": "Đích SharePoint của dự án"
         },
         "external-url": {

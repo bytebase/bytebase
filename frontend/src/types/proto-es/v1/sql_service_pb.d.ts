@@ -5,7 +5,7 @@
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { Duration, NullValue, Timestamp, Value } from "@bufbuild/protobuf/wkt";
-import type { ExportDelivery, ExportFormat, PermissionDeniedDetail, Position } from "./common_pb";
+import type { ExportDestination, ExportFormat, PermissionDeniedDetail, Position } from "./common_pb";
 import type { GetQueryHistoryRequestSchema, ListQueryHistoriesRequestSchema, ListQueryHistoriesResponseSchema, QueryHistorySchema, SearchQueryHistoriesRequestSchema, SearchQueryHistoriesResponseSchema } from "./query_history_service_pb";
 
 /**
@@ -1145,12 +1145,12 @@ export declare type ExportRequest = Message<"bytebase.v1.ExportRequest"> & {
   container?: string | undefined;
 
   /**
-   * Where the export is delivered. A delivery the workspace query data policy
+   * Where the export goes. A destination the workspace query data policy
    * does not allow is rejected with FAILED_PRECONDITION.
    *
-   * @generated from field: bytebase.v1.ExportDelivery delivery = 10;
+   * @generated from field: bytebase.v1.ExportDestination destination = 10;
    */
-  delivery: ExportDelivery;
+  destination: ExportDestination;
 };
 
 /**

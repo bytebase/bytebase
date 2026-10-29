@@ -497,9 +497,9 @@ message ExportRequest {
   // CosmosDB only.
   optional string container = 9;
 
-  // Where the export is delivered. A delivery the workspace query data policy
+  // Where the export goes. A destination the workspace query data policy
   // does not allow is rejected with FAILED_PRECONDITION.
-  ExportDelivery delivery = 10;
+  ExportDestination destination = 10;
 }
 
 message ExportResponse {

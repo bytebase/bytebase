@@ -886,12 +886,12 @@ type QueryDataPolicy struct {
 	// 2. otherwise fallback to use the admin data source.
 	AllowAdminDataSource bool `protobuf:"varint,4,opt,name=allow_admin_data_source,json=allowAdminDataSource,proto3" json:"allow_admin_data_source,omitempty"`
 	// workspace-level policy
-	// Where SQLService.Export may deliver results. When the stored policy has
-	// none, only LOCAL is allowed, and reads return that default. An update that
-	// omits it keeps the stored value.
-	ExportDeliveryPolicy *QueryDataPolicy_ExportDeliveryPolicy `protobuf:"bytes,5,opt,name=export_delivery_policy,json=exportDeliveryPolicy,proto3" json:"export_delivery_policy,omitempty"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	// Where SQLService.Export may send results. When the stored policy has
+	// none, only DOWNLOAD is allowed, and reads return that default. An update
+	// that omits it keeps the stored value.
+	ExportDestinationPolicy *QueryDataPolicy_ExportDestinationPolicy `protobuf:"bytes,5,opt,name=export_destination_policy,json=exportDestinationPolicy,proto3" json:"export_destination_policy,omitempty"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
 }
 
 func (x *QueryDataPolicy) Reset() {
@@ -953,9 +953,9 @@ func (x *QueryDataPolicy) GetAllowAdminDataSource() bool {
 	return false
 }
 
-func (x *QueryDataPolicy) GetExportDeliveryPolicy() *QueryDataPolicy_ExportDeliveryPolicy {
+func (x *QueryDataPolicy) GetExportDestinationPolicy() *QueryDataPolicy_ExportDestinationPolicy {
 	if x != nil {
-		return x.ExportDeliveryPolicy
+		return x.ExportDestinationPolicy
 	}
 	return nil
 }
@@ -1098,30 +1098,30 @@ func (x *TagPolicy) GetTags() map[string]string {
 	return nil
 }
 
-type QueryDataPolicy_ExportDeliveryPolicy struct {
+type QueryDataPolicy_ExportDestinationPolicy struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The allowed deliveries: at least one, without duplicates or
-	// EXPORT_DELIVERY_UNSPECIFIED. A delivery added to ExportDelivery later is
-	// not allowed until it is listed here.
-	AllowedDeliveries []ExportDelivery `protobuf:"varint,1,rep,packed,name=allowed_deliveries,json=allowedDeliveries,proto3,enum=bytebase.v1.ExportDelivery" json:"allowed_deliveries,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	// The allowed destinations: at least one, without duplicates or
+	// EXPORT_DESTINATION_UNSPECIFIED. A destination added to ExportDestination
+	// later is not allowed until it is listed here.
+	AllowedDestinations []ExportDestination `protobuf:"varint,1,rep,packed,name=allowed_destinations,json=allowedDestinations,proto3,enum=bytebase.v1.ExportDestination" json:"allowed_destinations,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
-func (x *QueryDataPolicy_ExportDeliveryPolicy) Reset() {
-	*x = QueryDataPolicy_ExportDeliveryPolicy{}
+func (x *QueryDataPolicy_ExportDestinationPolicy) Reset() {
+	*x = QueryDataPolicy_ExportDestinationPolicy{}
 	mi := &file_v1_org_policy_service_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *QueryDataPolicy_ExportDeliveryPolicy) String() string {
+func (x *QueryDataPolicy_ExportDestinationPolicy) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*QueryDataPolicy_ExportDeliveryPolicy) ProtoMessage() {}
+func (*QueryDataPolicy_ExportDestinationPolicy) ProtoMessage() {}
 
-func (x *QueryDataPolicy_ExportDeliveryPolicy) ProtoReflect() protoreflect.Message {
+func (x *QueryDataPolicy_ExportDestinationPolicy) ProtoReflect() protoreflect.Message {
 	mi := &file_v1_org_policy_service_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1133,14 +1133,14 @@ func (x *QueryDataPolicy_ExportDeliveryPolicy) ProtoReflect() protoreflect.Messa
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use QueryDataPolicy_ExportDeliveryPolicy.ProtoReflect.Descriptor instead.
-func (*QueryDataPolicy_ExportDeliveryPolicy) Descriptor() ([]byte, []int) {
+// Deprecated: Use QueryDataPolicy_ExportDestinationPolicy.ProtoReflect.Descriptor instead.
+func (*QueryDataPolicy_ExportDestinationPolicy) Descriptor() ([]byte, []int) {
 	return file_v1_org_policy_service_proto_rawDescGZIP(), []int{10, 0}
 }
 
-func (x *QueryDataPolicy_ExportDeliveryPolicy) GetAllowedDeliveries() []ExportDelivery {
+func (x *QueryDataPolicy_ExportDestinationPolicy) GetAllowedDestinations() []ExportDestination {
 	if x != nil {
-		return x.AllowedDeliveries
+		return x.AllowedDestinations
 	}
 	return nil
 }
@@ -1356,15 +1356,15 @@ const file_v1_org_policy_service_proto_rawDesc = "" +
 	"\acontent\x18\x01 \x01(\tR\acontent\"C\n" +
 	"\rRolloutPolicy\x12\x1c\n" +
 	"\tautomatic\x18\x01 \x01(\bR\tautomatic\x12\x14\n" +
-	"\x05roles\x18\x02 \x03(\tR\x05roles\"\x9c\x03\n" +
+	"\x05roles\x18\x02 \x03(\tR\x05roles\"\xaf\x03\n" +
 	"\x0fQueryDataPolicy\x12.\n" +
 	"\x13maximum_result_rows\x18\x01 \x01(\x05R\x11maximumResultRows\x12)\n" +
 	"\x0edisable_export\x18\x02 \x01(\bB\x02\x18\x01R\rdisableExport\x12*\n" +
 	"\x11disable_copy_data\x18\x03 \x01(\bR\x0fdisableCopyData\x125\n" +
-	"\x17allow_admin_data_source\x18\x04 \x01(\bR\x14allowAdminDataSource\x12g\n" +
-	"\x16export_delivery_policy\x18\x05 \x01(\v21.bytebase.v1.QueryDataPolicy.ExportDeliveryPolicyR\x14exportDeliveryPolicy\x1ab\n" +
-	"\x14ExportDeliveryPolicy\x12J\n" +
-	"\x12allowed_deliveries\x18\x01 \x03(\x0e2\x1b.bytebase.v1.ExportDeliveryR\x11allowedDeliveries\"\xbf\x01\n" +
+	"\x17allow_admin_data_source\x18\x04 \x01(\bR\x14allowAdminDataSource\x12p\n" +
+	"\x19export_destination_policy\x18\x05 \x01(\v24.bytebase.v1.QueryDataPolicy.ExportDestinationPolicyR\x17exportDestinationPolicy\x1al\n" +
+	"\x17ExportDestinationPolicy\x12Q\n" +
+	"\x14allowed_destinations\x18\x01 \x03(\x0e2\x1e.bytebase.v1.ExportDestinationR\x13allowedDestinations\"\xbf\x01\n" +
 	"\x16MaskingExemptionPolicy\x12M\n" +
 	"\n" +
 	"exemptions\x18\x01 \x03(\v2-.bytebase.v1.MaskingExemptionPolicy.ExemptionR\n" +
@@ -1423,31 +1423,31 @@ func file_v1_org_policy_service_proto_rawDescGZIP() []byte {
 var file_v1_org_policy_service_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_v1_org_policy_service_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
 var file_v1_org_policy_service_proto_goTypes = []any{
-	(PolicyType)(0),                              // 0: bytebase.v1.PolicyType
-	(PolicyResourceType)(0),                      // 1: bytebase.v1.PolicyResourceType
-	(*CreatePolicyRequest)(nil),                  // 2: bytebase.v1.CreatePolicyRequest
-	(*UpdatePolicyRequest)(nil),                  // 3: bytebase.v1.UpdatePolicyRequest
-	(*DeletePolicyRequest)(nil),                  // 4: bytebase.v1.DeletePolicyRequest
-	(*GetPolicyRequest)(nil),                     // 5: bytebase.v1.GetPolicyRequest
-	(*ListPoliciesRequest)(nil),                  // 6: bytebase.v1.ListPoliciesRequest
-	(*ListPoliciesResponse)(nil),                 // 7: bytebase.v1.ListPoliciesResponse
-	(*Policy)(nil),                               // 8: bytebase.v1.Policy
-	(*ReviewRulePolicy)(nil),                     // 9: bytebase.v1.ReviewRulePolicy
-	(*ReviewAIPolicy)(nil),                       // 10: bytebase.v1.ReviewAIPolicy
-	(*RolloutPolicy)(nil),                        // 11: bytebase.v1.RolloutPolicy
-	(*QueryDataPolicy)(nil),                      // 12: bytebase.v1.QueryDataPolicy
-	(*MaskingExemptionPolicy)(nil),               // 13: bytebase.v1.MaskingExemptionPolicy
-	(*MaskingRulePolicy)(nil),                    // 14: bytebase.v1.MaskingRulePolicy
-	(*TagPolicy)(nil),                            // 15: bytebase.v1.TagPolicy
-	(*QueryDataPolicy_ExportDeliveryPolicy)(nil), // 16: bytebase.v1.QueryDataPolicy.ExportDeliveryPolicy
-	(*MaskingExemptionPolicy_Exemption)(nil),     // 17: bytebase.v1.MaskingExemptionPolicy.Exemption
-	(*MaskingRulePolicy_MaskingRule)(nil),        // 18: bytebase.v1.MaskingRulePolicy.MaskingRule
-	nil,                                          // 19: bytebase.v1.TagPolicy.TagsEntry
-	(*fieldmaskpb.FieldMask)(nil),                // 20: google.protobuf.FieldMask
-	(ReviewRuleType)(0),                          // 21: bytebase.v1.ReviewRuleType
-	(ExportDelivery)(0),                          // 22: bytebase.v1.ExportDelivery
-	(*expr.Expr)(nil),                            // 23: google.type.Expr
-	(*emptypb.Empty)(nil),                        // 24: google.protobuf.Empty
+	(PolicyType)(0),                                 // 0: bytebase.v1.PolicyType
+	(PolicyResourceType)(0),                         // 1: bytebase.v1.PolicyResourceType
+	(*CreatePolicyRequest)(nil),                     // 2: bytebase.v1.CreatePolicyRequest
+	(*UpdatePolicyRequest)(nil),                     // 3: bytebase.v1.UpdatePolicyRequest
+	(*DeletePolicyRequest)(nil),                     // 4: bytebase.v1.DeletePolicyRequest
+	(*GetPolicyRequest)(nil),                        // 5: bytebase.v1.GetPolicyRequest
+	(*ListPoliciesRequest)(nil),                     // 6: bytebase.v1.ListPoliciesRequest
+	(*ListPoliciesResponse)(nil),                    // 7: bytebase.v1.ListPoliciesResponse
+	(*Policy)(nil),                                  // 8: bytebase.v1.Policy
+	(*ReviewRulePolicy)(nil),                        // 9: bytebase.v1.ReviewRulePolicy
+	(*ReviewAIPolicy)(nil),                          // 10: bytebase.v1.ReviewAIPolicy
+	(*RolloutPolicy)(nil),                           // 11: bytebase.v1.RolloutPolicy
+	(*QueryDataPolicy)(nil),                         // 12: bytebase.v1.QueryDataPolicy
+	(*MaskingExemptionPolicy)(nil),                  // 13: bytebase.v1.MaskingExemptionPolicy
+	(*MaskingRulePolicy)(nil),                       // 14: bytebase.v1.MaskingRulePolicy
+	(*TagPolicy)(nil),                               // 15: bytebase.v1.TagPolicy
+	(*QueryDataPolicy_ExportDestinationPolicy)(nil), // 16: bytebase.v1.QueryDataPolicy.ExportDestinationPolicy
+	(*MaskingExemptionPolicy_Exemption)(nil),        // 17: bytebase.v1.MaskingExemptionPolicy.Exemption
+	(*MaskingRulePolicy_MaskingRule)(nil),           // 18: bytebase.v1.MaskingRulePolicy.MaskingRule
+	nil,                                             // 19: bytebase.v1.TagPolicy.TagsEntry
+	(*fieldmaskpb.FieldMask)(nil),                   // 20: google.protobuf.FieldMask
+	(ReviewRuleType)(0),                             // 21: bytebase.v1.ReviewRuleType
+	(ExportDestination)(0),                          // 22: bytebase.v1.ExportDestination
+	(*expr.Expr)(nil),                               // 23: google.type.Expr
+	(*emptypb.Empty)(nil),                           // 24: google.protobuf.Empty
 }
 var file_v1_org_policy_service_proto_depIdxs = []int32{
 	8,  // 0: bytebase.v1.CreatePolicyRequest.policy:type_name -> bytebase.v1.Policy
@@ -1466,11 +1466,11 @@ var file_v1_org_policy_service_proto_depIdxs = []int32{
 	10, // 13: bytebase.v1.Policy.review_ai_policy:type_name -> bytebase.v1.ReviewAIPolicy
 	1,  // 14: bytebase.v1.Policy.resource_type:type_name -> bytebase.v1.PolicyResourceType
 	21, // 15: bytebase.v1.ReviewRulePolicy.rules:type_name -> bytebase.v1.ReviewRuleType
-	16, // 16: bytebase.v1.QueryDataPolicy.export_delivery_policy:type_name -> bytebase.v1.QueryDataPolicy.ExportDeliveryPolicy
+	16, // 16: bytebase.v1.QueryDataPolicy.export_destination_policy:type_name -> bytebase.v1.QueryDataPolicy.ExportDestinationPolicy
 	17, // 17: bytebase.v1.MaskingExemptionPolicy.exemptions:type_name -> bytebase.v1.MaskingExemptionPolicy.Exemption
 	18, // 18: bytebase.v1.MaskingRulePolicy.rules:type_name -> bytebase.v1.MaskingRulePolicy.MaskingRule
 	19, // 19: bytebase.v1.TagPolicy.tags:type_name -> bytebase.v1.TagPolicy.TagsEntry
-	22, // 20: bytebase.v1.QueryDataPolicy.ExportDeliveryPolicy.allowed_deliveries:type_name -> bytebase.v1.ExportDelivery
+	22, // 20: bytebase.v1.QueryDataPolicy.ExportDestinationPolicy.allowed_destinations:type_name -> bytebase.v1.ExportDestination
 	23, // 21: bytebase.v1.MaskingExemptionPolicy.Exemption.condition:type_name -> google.type.Expr
 	23, // 22: bytebase.v1.MaskingRulePolicy.MaskingRule.condition:type_name -> google.type.Expr
 	5,  // 23: bytebase.v1.OrgPolicyService.GetPolicy:input_type -> bytebase.v1.GetPolicyRequest

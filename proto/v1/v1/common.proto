@@ -270,13 +270,12 @@ message PermissionDeniedDetail {
   repeated string resources = 3;
 }
 
-// Where an export is delivered. Values are added as destinations are
-// supported.
-enum ExportDelivery {
-  // Treated as LOCAL.
-  EXPORT_DELIVERY_UNSPECIFIED = 0;
+// Where an export goes. Values are added as destinations are supported.
+enum ExportDestination {
+  // Treated as DOWNLOAD.
+  EXPORT_DESTINATION_UNSPECIFIED = 0;
   // Return the export in the response.
-  LOCAL = 1;
+  DOWNLOAD = 1;
   // Upload the export to the project's SharePoint export destination.
   SHAREPOINT = 2;
 }

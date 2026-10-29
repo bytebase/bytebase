@@ -25,9 +25,9 @@ const mocks = vi.hoisted(() => {
       disableCopyData: false,
       allowAdminDataSource: false,
       maximumResultRows: 0n,
-      exportDeliveryPolicy: undefined as
+      exportDestinationPolicy: undefined as
         | undefined
-        | { allowedDeliveries: number[] },
+        | { allowedDestinations: number[] },
     },
     updateWorkspaceProfile: vi.fn(
       async (_params: {
@@ -168,7 +168,7 @@ vi.mock("@/stores", () => ({
   DEFAULT_MAX_RESULT_SIZE_IN_MB: 100,
 }));
 
-import { ExportDelivery } from "@/types/proto-es/v1/common_pb";
+import { ExportDestination } from "@/types/proto-es/v1/common_pb";
 import { SQLEditorSection } from "./SQLEditorSection";
 import type { SectionHandle } from "./useSettingSection";
 
@@ -358,11 +358,11 @@ describe("SQLEditorSection theme", () => {
   });
 });
 
-// The bb.sql.export permission controls who may export; the export delivery
+// The bb.sql.export permission controls who may export; the export destination
 // switches control only where exports go.
 describe("SQLEditorSection query data policy toggles", () => {
   beforeEach(() => {
-    mocks.policy.exportDeliveryPolicy = undefined;
+    mocks.policy.exportDestinationPolicy = undefined;
   });
 
   // The theme preview renders switches of its own; keep the settings ones.
@@ -384,16 +384,16 @@ describe("SQLEditorSection query data policy toggles", () => {
     return control as HTMLElement;
   }
 
-  const LOCAL = "settings.general.workspace.export-delivery.local";
-  const SHAREPOINT = "settings.general.workspace.export-delivery.sharepoint";
+  const DOWNLOAD = "settings.general.workspace.export-destination.download";
+  const SHAREPOINT = "settings.general.workspace.export-destination.sharepoint";
 
-  test("offers a switch per export delivery beside the copy and admin data source switches", () => {
+  test("offers a switch per export destination beside the copy and admin data source switches", () => {
     render(<SQLEditorSection title="SQL Editor" onDirtyChange={() => {}} />);
 
     expect(
       settingSwitches().map((control) => control.parentElement?.textContent)
     ).toEqual([
-      LOCAL,
+      DOWNLOAD,
       SHAREPOINT,
       "settings.general.workspace.data-copy",
       "settings.general.workspace.allow-admin-data-source.self",
@@ -422,22 +422,22 @@ describe("SQLEditorSection query data policy toggles", () => {
           value: {
             disableCopyData: true,
             allowAdminDataSource: false,
-            exportDeliveryPolicy: { allowedDeliveries: [ExportDelivery.LOCAL] },
+            exportDestinationPolicy: { allowedDestinations: [ExportDestination.DOWNLOAD] },
           },
         },
       },
     });
   });
 
-  test("allows only local download by default and keeps the last allowed delivery on", () => {
+  test("allows only download by default and keeps the last allowed destination on", () => {
     render(<SQLEditorSection title="SQL Editor" onDirtyChange={() => {}} />);
 
-    expect(settingSwitch(LOCAL)).toHaveAttribute("aria-checked", "true");
-    expect(settingSwitch(LOCAL)).toHaveAttribute("data-disabled");
+    expect(settingSwitch(DOWNLOAD)).toHaveAttribute("aria-checked", "true");
+    expect(settingSwitch(DOWNLOAD)).toHaveAttribute("data-disabled");
     expect(settingSwitch(SHAREPOINT)).toHaveAttribute("aria-checked", "false");
   });
 
-  test("allowing SharePoint saves both deliveries", async () => {
+  test("allowing SharePoint saves both destinations", async () => {
     const ref = createRef<SectionHandle>();
     render(
       <SQLEditorSection ref={ref} title="SQL Editor" onDirtyChange={() => {}} />
@@ -445,7 +445,7 @@ describe("SQLEditorSection query data policy toggles", () => {
     act(() => {
       settingSwitch(SHAREPOINT).click();
     });
-    expect(settingSwitch(LOCAL)).not.toHaveAttribute("data-disabled");
+    expect(settingSwitch(DOWNLOAD)).not.toHaveAttribute("data-disabled");
     expect(ref.current?.isDirty()).toBe(true);
 
     await act(async () => {
@@ -456,10 +456,10 @@ describe("SQLEditorSection query data policy toggles", () => {
       policy: {
         policy: {
           value: {
-            exportDeliveryPolicy: {
-              allowedDeliveries: [
-                ExportDelivery.LOCAL,
-                ExportDelivery.SHAREPOINT,
+            exportDestinationPolicy: {
+              allowedDestinations: [
+                ExportDestination.DOWNLOAD,
+                ExportDestination.SHAREPOINT,
               ],
             },
           },
@@ -468,16 +468,16 @@ describe("SQLEditorSection query data policy toggles", () => {
     });
   });
 
-  test("reads the stored deliveries", () => {
-    mocks.policy.exportDeliveryPolicy = {
-      allowedDeliveries: [ExportDelivery.SHAREPOINT],
+  test("reads the stored destinations", () => {
+    mocks.policy.exportDestinationPolicy = {
+      allowedDestinations: [ExportDestination.SHAREPOINT],
     };
     const ref = createRef<SectionHandle>();
     render(
       <SQLEditorSection ref={ref} title="SQL Editor" onDirtyChange={() => {}} />
     );
 
-    expect(settingSwitch(LOCAL)).toHaveAttribute("aria-checked", "false");
+    expect(settingSwitch(DOWNLOAD)).toHaveAttribute("aria-checked", "false");
     expect(settingSwitch(SHAREPOINT)).toHaveAttribute("aria-checked", "true");
     expect(settingSwitch(SHAREPOINT)).toHaveAttribute("data-disabled");
     expect(ref.current?.isDirty()).toBe(false);

@@ -2,7 +2,7 @@ import { Code, ConnectError } from "@connectrpc/connect";
 import { act, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { Engine, ExportDelivery } from "@/types/proto-es/v1/common_pb";
+import { Engine, ExportDestination } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { BatchQuerySelect } from "./BatchQuerySelect";
 
@@ -24,7 +24,7 @@ const mocks = vi.hoisted(() => ({
   deleteDatabaseQueryContext: vi.fn(),
   databasesWithExport: [] as string[],
   useExportGrantBypass: vi.fn(),
-  deliveries: [] as number[],
+  destinations: [] as number[],
   exportData: vi.fn(),
   resolveExport: vi.fn(),
 }));
@@ -56,7 +56,7 @@ vi.mock("@/components/DataExportButton", () => ({
               format: 1,
               limit: 100,
               password: "",
-              delivery: 2,
+              destination: 2,
             },
             resolve: mocks.resolveExport,
             reject: vi.fn(),
@@ -122,9 +122,9 @@ vi.mock("@/modules/sql-editor/components/useExportGrantBypass", () => ({
   useExportGrantBypass: mocks.useExportGrantBypass,
 }));
 
-vi.mock("@/modules/sql-editor/components/useExportDelivery", () => ({
-  useExportDelivery: () => ({
-    deliveries: mocks.deliveries,
+vi.mock("@/modules/sql-editor/components/useExportDestination", () => ({
+  useExportDestination: () => ({
+    destinations: mocks.destinations,
     sharepointUrl: "https://contoso.sharepoint.com/sites/x/Exports",
   }),
 }));
@@ -214,7 +214,7 @@ describe("BatchQuerySelect", () => {
     document.body.append(container);
     root = createRoot(container);
     mocks.databasesWithExport = [];
-    mocks.deliveries = [ExportDelivery.LOCAL];
+    mocks.destinations = [ExportDestination.DOWNLOAD];
     grantLookup([], []);
 
     cellA = {
@@ -361,8 +361,8 @@ describe("BatchQuerySelect", () => {
     );
   });
 
-  it("hides Export and Request export when no delivery is offered", () => {
-    mocks.deliveries = [];
+  it("hides Export and Request export when no destination is offered", () => {
+    mocks.destinations = [];
     mocks.databasesWithExport = [cellA.name];
     grantLookup([], [cellB.name]);
     render();
@@ -373,7 +373,7 @@ describe("BatchQuerySelect", () => {
 
   it("reports each database's SharePoint delivery separately", async () => {
     mocks.databasesWithExport = [cellA.name, cellB.name];
-    mocks.deliveries = [ExportDelivery.SHAREPOINT];
+    mocks.destinations = [ExportDestination.SHAREPOINT];
     mocks.exportData
       .mockResolvedValueOnce({
         content: new Uint8Array(),
@@ -412,7 +412,7 @@ describe("BatchQuerySelect", () => {
       });
     });
     expect(mocks.exportData).toHaveBeenCalledWith(
-      expect.objectContaining({ delivery: ExportDelivery.SHAREPOINT })
+      expect.objectContaining({ destination: ExportDestination.SHAREPOINT })
     );
   });
 });

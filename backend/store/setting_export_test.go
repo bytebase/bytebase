@@ -37,37 +37,37 @@ func TestGetWorkspaceQueryDataPolicy(t *testing.T) {
 	t.Parallel()
 	fixture := newStorePostgresFixture(t, "")
 	ctx, s := fixture.ctx, fixture.store
-	local := []storepb.ExportDelivery{storepb.ExportDelivery_LOCAL}
-	both := []storepb.ExportDelivery{storepb.ExportDelivery_LOCAL, storepb.ExportDelivery_SHAREPOINT}
+	download := []storepb.ExportDestination{storepb.ExportDestination_DOWNLOAD}
+	both := []storepb.ExportDestination{storepb.ExportDestination_DOWNLOAD, storepb.ExportDestination_SHAREPOINT}
 
 	policy, err := s.GetWorkspaceQueryDataPolicy(ctx, "default")
 	require.NoError(t, err)
-	require.Nil(t, policy.GetExportDeliveryPolicy())
-	require.Equal(t, local, store.GetAllowedExportDeliveries(policy), "a workspace without a policy allows the default")
+	require.Nil(t, policy.GetExportDestinationPolicy())
+	require.Equal(t, download, store.GetAllowedExportDestinations(policy), "a workspace without a policy allows the default")
 
 	_, err = s.CreatePolicy(ctx, &store.PolicyMessage{
 		Workspace:    "default",
 		ResourceType: storepb.Policy_PROJECT,
 		Resource:     common.FormatProject("default"),
 		Type:         storepb.Policy_QUERY_DATA,
-		Payload:      `{"exportDeliveryPolicy":{"allowedDeliveries":["SHAREPOINT"]}}`,
+		Payload:      `{"exportDestinationPolicy":{"allowedDestinations":["SHAREPOINT"]}}`,
 		Enforce:      true,
 	})
 	require.NoError(t, err)
 	policy, err = s.GetWorkspaceQueryDataPolicy(ctx, "default")
 	require.NoError(t, err)
-	require.Equal(t, local, store.GetAllowedExportDeliveries(policy), "a project policy does not set the workspace policy")
+	require.Equal(t, download, store.GetAllowedExportDestinations(policy), "a project policy does not set the workspace policy")
 
 	_, err = s.CreatePolicy(ctx, &store.PolicyMessage{
 		Workspace:    "default",
 		ResourceType: storepb.Policy_WORKSPACE,
 		Resource:     common.FormatWorkspace("default"),
 		Type:         storepb.Policy_QUERY_DATA,
-		Payload:      `{"exportDeliveryPolicy":{"allowedDeliveries":["LOCAL","SHAREPOINT"]}}`,
+		Payload:      `{"exportDestinationPolicy":{"allowedDestinations":["DOWNLOAD","SHAREPOINT"]}}`,
 		Enforce:      true,
 	})
 	require.NoError(t, err)
 	policy, err = s.GetWorkspaceQueryDataPolicy(ctx, "default")
 	require.NoError(t, err)
-	require.Equal(t, both, store.GetAllowedExportDeliveries(policy))
+	require.Equal(t, both, store.GetAllowedExportDestinations(policy))
 }

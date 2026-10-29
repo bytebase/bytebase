@@ -255,7 +255,7 @@ func runMigration3_25_0SQL(ctx context.Context, db *sql.DB) error {
 	return tx.Commit()
 }
 
-func TestMigration3_25_1_ExportDeliveryPolicy(t *testing.T) {
+func TestMigration3_25_1_ExportDestinationPolicy(t *testing.T) {
 	ctx := context.Background()
 	_, db := testcontainer.NewPgDatabase(t)
 	_, err := db.ExecContext(ctx, `
@@ -280,30 +280,30 @@ func TestMigration3_25_1_ExportDeliveryPolicy(t *testing.T) {
 			('ws-policy', 'WORKSPACE', 'workspaces/ws-policy', 'IAM', true, '{"bindings":[]}'),
 			('ws-unenforced', 'WORKSPACE', 'workspaces/ws-unenforced', 'QUERY_DATA', false, '{}'),
 			('ws-none', 'WORKSPACE', 'workspaces/ws-none', 'IAM', true, '{"bindings":[]}'),
-			('ws-set', 'WORKSPACE', 'workspaces/ws-set', 'QUERY_DATA', true, '{"exportDeliveryPolicy":{"allowedDeliveries":["SHAREPOINT"]}}');
+			('ws-set', 'WORKSPACE', 'workspaces/ws-set', 'QUERY_DATA', true, '{"exportDestinationPolicy":{"allowedDestinations":["SHAREPOINT"]}}');
 	`)
 	require.NoError(t, err)
 
-	statement, err := migrator.MigrationFS.ReadFile("migration/3.25/0001##export_delivery_policy.sql")
+	statement, err := migrator.MigrationFS.ReadFile("migration/3.25/0001##export_destination_policy.sql")
 	require.NoError(t, err)
 	_, err = db.ExecContext(ctx, string(statement))
 	require.NoError(t, err)
 
-	const local = `{"exportDeliveryPolicy":{"allowedDeliveries":["LOCAL"]}}`
+	const download = `{"exportDestinationPolicy":{"allowedDestinations":["DOWNLOAD"]}}`
 	type policyKey struct{ workspace, resource, policyType string }
 	type policyWant struct {
 		enforce bool
 		payload string
 	}
 	want := map[policyKey]policyWant{
-		{"ws-policy", "workspaces/ws-policy", "QUERY_DATA"}:         {true, `{"maximumResultRows":10,"disableCopyData":true,"exportDeliveryPolicy":{"allowedDeliveries":["LOCAL"]}}`},
+		{"ws-policy", "workspaces/ws-policy", "QUERY_DATA"}:         {true, `{"maximumResultRows":10,"disableCopyData":true,"exportDestinationPolicy":{"allowedDestinations":["DOWNLOAD"]}}`},
 		{"ws-policy", "projects/p1", "QUERY_DATA"}:                  {true, `{"maximumResultRows":5}`},
 		{"ws-policy", "workspaces/ws-policy", "IAM"}:                {true, `{"bindings":[]}`},
-		{"ws-unenforced", "workspaces/ws-unenforced", "QUERY_DATA"}: {false, local},
+		{"ws-unenforced", "workspaces/ws-unenforced", "QUERY_DATA"}: {false, download},
 		{"ws-none", "workspaces/ws-none", "IAM"}:                    {true, `{"bindings":[]}`},
-		{"ws-none", "workspaces/ws-none", "QUERY_DATA"}:             {true, local},
-		{"ws-set", "workspaces/ws-set", "QUERY_DATA"}:               {true, `{"exportDeliveryPolicy":{"allowedDeliveries":["SHAREPOINT"]}}`},
-		{"ws-deleted", "workspaces/ws-deleted", "QUERY_DATA"}:       {true, local},
+		{"ws-none", "workspaces/ws-none", "QUERY_DATA"}:             {true, download},
+		{"ws-set", "workspaces/ws-set", "QUERY_DATA"}:               {true, `{"exportDestinationPolicy":{"allowedDestinations":["SHAREPOINT"]}}`},
+		{"ws-deleted", "workspaces/ws-deleted", "QUERY_DATA"}:       {true, download},
 	}
 	var count int
 	require.NoError(t, db.QueryRowContext(ctx, `SELECT count(*) FROM policy`).Scan(&count))

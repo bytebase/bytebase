@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { ExportDelivery, ExportFormat } from "@/types/proto-es/v1/common_pb";
+import { ExportDestination, ExportFormat } from "@/types/proto-es/v1/common_pb";
 import { type DataExportRequest, DataExportButton } from "./DataExportButton";
 
 vi.mock("react-i18next", () => ({
@@ -19,13 +19,13 @@ const folderUri = `${sharepointUrl}/20261022-main`;
 
 const onExport = vi.fn<(request: DataExportRequest) => void>();
 
-const renderButton = (deliveries: ExportDelivery[]) =>
+const renderButton = (destinations: ExportDestination[]) =>
   render(
     <DataExportButton
       viewMode="DRAWER"
       supportFormats={[ExportFormat.CSV]}
       supportPassword
-      deliveries={deliveries}
+      destinations={destinations}
       sharepointUrl={sharepointUrl}
       onExport={onExport}
     />
@@ -34,13 +34,13 @@ const renderButton = (deliveries: ExportDelivery[]) =>
 const openDrawer = () =>
   fireEvent.click(screen.getByRole("button", { name: "common.export" }));
 
-describe("DataExportButton delivery", () => {
+describe("DataExportButton destination", () => {
   beforeEach(() => {
     onExport.mockReset();
   });
 
   test("defaults to SharePoint and hides the zip password for it", () => {
-    renderButton([ExportDelivery.SHAREPOINT, ExportDelivery.LOCAL]);
+    renderButton([ExportDestination.SHAREPOINT, ExportDestination.DOWNLOAD]);
     openDrawer();
 
     const radios = screen.getAllByRole("radio");
@@ -59,13 +59,13 @@ describe("DataExportButton delivery", () => {
 
   test("shows the delivered folder instead of downloading", async () => {
     onExport.mockImplementation(({ options, resolve }) => {
-      expect(options.delivery).toBe(ExportDelivery.SHAREPOINT);
+      expect(options.destination).toBe(ExportDestination.SHAREPOINT);
       expect(options.password).toBe("");
       resolve({
         sharepoint: [{ database: "main", status: "DELIVERED", uri: folderUri }],
       });
     });
-    renderButton([ExportDelivery.SHAREPOINT]);
+    renderButton([ExportDestination.SHAREPOINT]);
     openDrawer();
 
     expect(screen.queryAllByRole("radio")).toHaveLength(0);
@@ -85,20 +85,20 @@ describe("DataExportButton delivery", () => {
     ).toHaveAttribute("href", folderUri);
   });
 
-  test("offers local download alone with the zip password", () => {
-    renderButton([ExportDelivery.LOCAL]);
+  test("offers download alone with the zip password", () => {
+    renderButton([ExportDestination.DOWNLOAD]);
     openDrawer();
 
     expect(screen.queryAllByRole("radio")).toHaveLength(0);
     expect(
-      screen.queryByText("export-data.delivery.self")
+      screen.queryByText("export-data.destination.self")
     ).not.toBeInTheDocument();
     expect(
       screen.getByLabelText("export-data.password-optional")
     ).toBeInTheDocument();
   });
 
-  test("disables export when no delivery is available", () => {
+  test("disables export when no destination is available", () => {
     renderButton([]);
     expect(
       screen.getByRole("button", { name: "common.export" })

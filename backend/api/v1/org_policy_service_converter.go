@@ -169,7 +169,7 @@ func convertToStorePBRolloutPolicy(policy *v1pb.RolloutPolicy) *storepb.RolloutP
 }
 
 // convertToV1PBQueryDataPolicy returns the stored policy, with the default
-// export delivery policy on a workspace policy that has none.
+// export destination policy on a workspace policy that has none.
 func convertToV1PBQueryDataPolicy(payloadStr string, resourceType storepb.Policy_Resource) (*v1pb.Policy_QueryDataPolicy, error) {
 	payload := &storepb.QueryDataPolicy{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(payloadStr), payload); err != nil {
@@ -181,11 +181,11 @@ func convertToV1PBQueryDataPolicy(payloadStr string, resourceType storepb.Policy
 		AllowAdminDataSource: payload.AllowAdminDataSource,
 	}
 	if resourceType == storepb.Policy_WORKSPACE {
-		var allowed []v1pb.ExportDelivery
-		for _, delivery := range store.GetAllowedExportDeliveries(payload) {
-			allowed = append(allowed, convertToV1ExportDelivery(delivery))
+		var allowed []v1pb.ExportDestination
+		for _, destination := range store.GetAllowedExportDestinations(payload) {
+			allowed = append(allowed, convertToV1ExportDestination(destination))
 		}
-		policy.ExportDeliveryPolicy = &v1pb.QueryDataPolicy_ExportDeliveryPolicy{AllowedDeliveries: allowed}
+		policy.ExportDestinationPolicy = &v1pb.QueryDataPolicy_ExportDestinationPolicy{AllowedDestinations: allowed}
 	}
 	return &v1pb.Policy_QueryDataPolicy{QueryDataPolicy: policy}, nil
 }
@@ -201,77 +201,77 @@ func convertToQueryDataPolicyPayload(policy *v1pb.QueryDataPolicy) (*storepb.Que
 		DisableCopyData:      policy.GetDisableCopyData(),
 		AllowAdminDataSource: policy.GetAllowAdminDataSource(),
 	}
-	if exportDeliveryPolicy := policy.GetExportDeliveryPolicy(); exportDeliveryPolicy != nil {
-		allowed, err := convertToStoreAllowedExportDeliveries(exportDeliveryPolicy.GetAllowedDeliveries())
+	if exportDestinationPolicy := policy.GetExportDestinationPolicy(); exportDestinationPolicy != nil {
+		allowed, err := convertToStoreAllowedExportDestinations(exportDestinationPolicy.GetAllowedDestinations())
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, err)
 		}
-		payload.ExportDeliveryPolicy = &storepb.QueryDataPolicy_ExportDeliveryPolicy{AllowedDeliveries: allowed}
+		payload.ExportDestinationPolicy = &storepb.QueryDataPolicy_ExportDestinationPolicy{AllowedDestinations: allowed}
 	}
 	return payload, nil
 }
 
-// convertToStoreAllowedExportDeliveries rejects an empty list: who may export is
-// controlled by bb.sql.export, so the policy only chooses where exports go.
-func convertToStoreAllowedExportDeliveries(deliveries []v1pb.ExportDelivery) ([]storepb.ExportDelivery, error) {
-	if len(deliveries) == 0 {
-		return nil, errors.New("export_delivery_policy.allowed_deliveries must allow at least one delivery")
+// convertToStoreAllowedExportDestinations rejects an empty list: who may export
+// is controlled by bb.sql.export, so the policy only chooses where exports go.
+func convertToStoreAllowedExportDestinations(destinations []v1pb.ExportDestination) ([]storepb.ExportDestination, error) {
+	if len(destinations) == 0 {
+		return nil, errors.New("export_destination_policy.allowed_destinations must allow at least one destination")
 	}
-	var allowed []storepb.ExportDelivery
-	for _, delivery := range deliveries {
-		storeDelivery, err := convertToStoreExportDelivery(delivery)
+	var allowed []storepb.ExportDestination
+	for _, destination := range destinations {
+		storeDestination, err := convertToStoreExportDestination(destination)
 		if err != nil {
 			return nil, err
 		}
-		if slices.Contains(allowed, storeDelivery) {
-			return nil, errors.Errorf("export_delivery_policy.allowed_deliveries lists %s more than once", delivery)
+		if slices.Contains(allowed, storeDestination) {
+			return nil, errors.Errorf("export_destination_policy.allowed_destinations lists %s more than once", destination)
 		}
-		allowed = append(allowed, storeDelivery)
+		allowed = append(allowed, storeDestination)
 	}
 	return allowed, nil
 }
 
-func convertToStoreExportDelivery(delivery v1pb.ExportDelivery) (storepb.ExportDelivery, error) {
-	switch delivery {
-	case v1pb.ExportDelivery_LOCAL:
-		return storepb.ExportDelivery_LOCAL, nil
-	case v1pb.ExportDelivery_SHAREPOINT:
-		return storepb.ExportDelivery_SHAREPOINT, nil
+func convertToStoreExportDestination(destination v1pb.ExportDestination) (storepb.ExportDestination, error) {
+	switch destination {
+	case v1pb.ExportDestination_DOWNLOAD:
+		return storepb.ExportDestination_DOWNLOAD, nil
+	case v1pb.ExportDestination_SHAREPOINT:
+		return storepb.ExportDestination_SHAREPOINT, nil
 	default:
-		return storepb.ExportDelivery_EXPORT_DELIVERY_UNSPECIFIED, errors.Errorf("unsupported export delivery %v", delivery)
+		return storepb.ExportDestination_EXPORT_DESTINATION_UNSPECIFIED, errors.Errorf("unsupported export destination %v", destination)
 	}
 }
 
-func convertToV1ExportDelivery(delivery storepb.ExportDelivery) v1pb.ExportDelivery {
-	switch delivery {
-	case storepb.ExportDelivery_LOCAL:
-		return v1pb.ExportDelivery_LOCAL
-	case storepb.ExportDelivery_SHAREPOINT:
-		return v1pb.ExportDelivery_SHAREPOINT
+func convertToV1ExportDestination(destination storepb.ExportDestination) v1pb.ExportDestination {
+	switch destination {
+	case storepb.ExportDestination_DOWNLOAD:
+		return v1pb.ExportDestination_DOWNLOAD
+	case storepb.ExportDestination_SHAREPOINT:
+		return v1pb.ExportDestination_SHAREPOINT
 	default:
-		return v1pb.ExportDelivery_EXPORT_DELIVERY_UNSPECIFIED
+		return v1pb.ExportDestination_EXPORT_DESTINATION_UNSPECIFIED
 	}
 }
 
-// keepStoredExportDeliveryPolicy carries the stored export delivery policy into
-// an updated query data policy that omits it, so a client that does not know
-// the field cannot clear it.
-func keepStoredExportDeliveryPolicy(payloadStr, storedPayloadStr string) (string, error) {
+// keepStoredExportDestinationPolicy carries the stored export destination
+// policy into an updated query data policy that omits it, so a client that does
+// not know the field cannot clear it.
+func keepStoredExportDestinationPolicy(payloadStr, storedPayloadStr string) (string, error) {
 	payload := &storepb.QueryDataPolicy{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(payloadStr), payload); err != nil {
 		return "", errors.Wrap(err, "failed to unmarshal query data policy payload")
 	}
-	if payload.ExportDeliveryPolicy != nil {
+	if payload.ExportDestinationPolicy != nil {
 		return payloadStr, nil
 	}
 	stored := &storepb.QueryDataPolicy{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(storedPayloadStr), stored); err != nil {
 		return "", errors.Wrap(err, "failed to unmarshal stored query data policy payload")
 	}
-	if stored.ExportDeliveryPolicy == nil {
+	if stored.ExportDestinationPolicy == nil {
 		return payloadStr, nil
 	}
-	payload.ExportDeliveryPolicy = stored.ExportDeliveryPolicy
+	payload.ExportDestinationPolicy = stored.ExportDestinationPolicy
 	payloadBytes, err := protojson.Marshal(payload)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to marshal query data policy payload")

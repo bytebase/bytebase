@@ -39,7 +39,7 @@
   
     - [ApprovalStatus](#bytebase-v1-ApprovalStatus)
     - [Engine](#bytebase-v1-Engine)
-    - [ExportDelivery](#bytebase-v1-ExportDelivery)
+    - [ExportDestination](#bytebase-v1-ExportDestination)
     - [ExportFormat](#bytebase-v1-ExportFormat)
     - [IssueStatus](#bytebase-v1-IssueStatus)
     - [RiskLevel](#bytebase-v1-RiskLevel)
@@ -607,7 +607,7 @@
     - [MaskingRulePolicy.MaskingRule](#bytebase-v1-MaskingRulePolicy-MaskingRule)
     - [Policy](#bytebase-v1-Policy)
     - [QueryDataPolicy](#bytebase-v1-QueryDataPolicy)
-    - [QueryDataPolicy.ExportDeliveryPolicy](#bytebase-v1-QueryDataPolicy-ExportDeliveryPolicy)
+    - [QueryDataPolicy.ExportDestinationPolicy](#bytebase-v1-QueryDataPolicy-ExportDestinationPolicy)
     - [ReviewAIPolicy](#bytebase-v1-ReviewAIPolicy)
     - [ReviewRulePolicy](#bytebase-v1-ReviewRulePolicy)
     - [RolloutPolicy](#bytebase-v1-RolloutPolicy)
@@ -1295,16 +1295,15 @@ Database engine type.
 
 
 
-<a name="bytebase-v1-ExportDelivery"></a>
+<a name="bytebase-v1-ExportDestination"></a>
 
-### ExportDelivery
-Where an export is delivered. Values are added as destinations are
-supported.
+### ExportDestination
+Where an export goes. Values are added as destinations are supported.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| EXPORT_DELIVERY_UNSPECIFIED | 0 | Treated as LOCAL. |
-| LOCAL | 1 | Return the export in the response. |
+| EXPORT_DESTINATION_UNSPECIFIED | 0 | Treated as DOWNLOAD. |
+| DOWNLOAD | 1 | Return the export in the response. |
 | SHAREPOINT | 2 | Upload the export to the project&#39;s SharePoint export destination. |
 
 
@@ -2545,7 +2544,7 @@ QueryHistoryService manages query history records of SQL Editor queries and expo
 | data_source_id | [string](#string) |  | The id of data source. If omitted, Export resolves the data source server-side by using the single read-only data source when exactly one exists, or the admin data source otherwise. It can also be set explicitly to export from the admin data source or a specific read-only data source. |
 | schema | [string](#string) | optional | The default schema to search objects. Equals to the current schema in Oracle and search path in Postgres. |
 | container | [string](#string) | optional | Container is the container name to execute the query against, used for CosmosDB only. |
-| delivery | [ExportDelivery](#bytebase-v1-ExportDelivery) |  | Where the export is delivered. A delivery the workspace query data policy does not allow is rejected with FAILED_PRECONDITION. |
+| destination | [ExportDestination](#bytebase-v1-ExportDestination) |  | Where the export goes. A destination the workspace query data policy does not allow is rejected with FAILED_PRECONDITION. |
 
 
 
@@ -10138,22 +10137,22 @@ QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 | disable_export | [bool](#bool) |  | **Deprecated.** Deprecated: export is controlled by the bb.sql.export permission. Always false; setting it to true is rejected. |
 | disable_copy_data | [bool](#bool) |  | workspace-level policy Disable copying query results in the SQL editor. |
 | allow_admin_data_source | [bool](#bool) |  | workspace-level policy Allow using the admin data source to query in the SQL editor. If true, users can select the admin data source or read-only data source If false, 1. when read-only data source is configured, users&#39;re force to use the read-only data source 2. otherwise fallback to use the admin data source. |
-| export_delivery_policy | [QueryDataPolicy.ExportDeliveryPolicy](#bytebase-v1-QueryDataPolicy-ExportDeliveryPolicy) |  | workspace-level policy Where SQLService.Export may deliver results. When the stored policy has none, only LOCAL is allowed, and reads return that default. An update that omits it keeps the stored value. |
+| export_destination_policy | [QueryDataPolicy.ExportDestinationPolicy](#bytebase-v1-QueryDataPolicy-ExportDestinationPolicy) |  | workspace-level policy Where SQLService.Export may send results. When the stored policy has none, only DOWNLOAD is allowed, and reads return that default. An update that omits it keeps the stored value. |
 
 
 
 
 
 
-<a name="bytebase-v1-QueryDataPolicy-ExportDeliveryPolicy"></a>
+<a name="bytebase-v1-QueryDataPolicy-ExportDestinationPolicy"></a>
 
-### QueryDataPolicy.ExportDeliveryPolicy
+### QueryDataPolicy.ExportDestinationPolicy
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| allowed_deliveries | [ExportDelivery](#bytebase-v1-ExportDelivery) | repeated | The allowed deliveries: at least one, without duplicates or EXPORT_DELIVERY_UNSPECIFIED. A delivery added to ExportDelivery later is not allowed until it is listed here. |
+| allowed_destinations | [ExportDestination](#bytebase-v1-ExportDestination) | repeated | The allowed destinations: at least one, without duplicates or EXPORT_DESTINATION_UNSPECIFIED. A destination added to ExportDestination later is not allowed until it is listed here. |
 
 
 

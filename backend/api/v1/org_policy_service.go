@@ -261,7 +261,7 @@ func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, req *connect.Reques
 				return nil, err
 			}
 			if policy.Type == storepb.Policy_QUERY_DATA {
-				if payloadStr, err = keepStoredExportDeliveryPolicy(payloadStr, policy.Payload); err != nil {
+				if payloadStr, err = keepStoredExportDestinationPolicy(payloadStr, policy.Payload); err != nil {
 					return nil, connect.NewError(connect.CodeInternal, err)
 				}
 			}
@@ -574,11 +574,11 @@ func (s *OrgPolicyService) checkPolicyFeatureGuard(ctx context.Context, policyTy
 	return nil
 }
 
-// validateQueryDataPolicyResource rejects an export delivery policy outside the
-// workspace, where Export would never read it.
+// validateQueryDataPolicyResource rejects an export destination policy outside
+// the workspace, where Export would never read it.
 func validateQueryDataPolicyResource(resourceType storepb.Policy_Resource, policy *v1pb.Policy) error {
-	if resourceType != storepb.Policy_WORKSPACE && policy.GetQueryDataPolicy().GetExportDeliveryPolicy() != nil {
-		return connect.NewError(connect.CodeInvalidArgument, errors.New("export_delivery_policy is only supported on the workspace query data policy"))
+	if resourceType != storepb.Policy_WORKSPACE && policy.GetQueryDataPolicy().GetExportDestinationPolicy() != nil {
+		return connect.NewError(connect.CodeInvalidArgument, errors.New("export_destination_policy is only supported on the workspace query data policy"))
 	}
 	return nil
 }

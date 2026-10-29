@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from "vitest";
-import { ExportDelivery } from "@/types/proto-es/v1/common_pb";
+import { ExportDestination } from "@/types/proto-es/v1/common_pb";
 
 vi.mock("@/hooks/useAppState", () => ({ usePlanFeature: () => true }));
 vi.mock("@/hooks/useProjectByName", () => ({ useProjectByName: vi.fn() }));
@@ -8,54 +8,57 @@ vi.mock("@/modules/sql-editor/hooks/useSQLEditorState", () => ({
 }));
 vi.mock("@/stores/app", () => ({ useAppStore: vi.fn() }));
 
-import { resolveExportDelivery } from "./useExportDelivery";
+import { resolveExportDestination } from "./useExportDestination";
 
 const url = "https://contoso.sharepoint.com/sites/Finance/Shared%20Documents";
 
-const both = [ExportDelivery.LOCAL, ExportDelivery.SHAREPOINT];
+const both = [ExportDestination.DOWNLOAD, ExportDestination.SHAREPOINT];
 
-describe("resolveExportDelivery", () => {
-  test("defaults to SharePoint and keeps local download as the alternative", () => {
+describe("resolveExportDestination", () => {
+  test("defaults to SharePoint and keeps download as the alternative", () => {
     expect(
-      resolveExportDelivery({
+      resolveExportDestination({
         hasSharePointFeature: true,
         sharepointUrl: url,
-        allowedDeliveries: both,
+        allowedDestinations: both,
       })
     ).toEqual({
-      deliveries: [ExportDelivery.SHAREPOINT, ExportDelivery.LOCAL],
+      destinations: [ExportDestination.SHAREPOINT, ExportDestination.DOWNLOAD],
       sharepointUrl: url,
     });
   });
 
   test("offers only SharePoint when the policy allows only SharePoint", () => {
     expect(
-      resolveExportDelivery({
+      resolveExportDestination({
         hasSharePointFeature: true,
         sharepointUrl: url,
-        allowedDeliveries: [ExportDelivery.SHAREPOINT],
+        allowedDestinations: [ExportDestination.SHAREPOINT],
       })
-    ).toEqual({ deliveries: [ExportDelivery.SHAREPOINT], sharepointUrl: url });
+    ).toEqual({
+      destinations: [ExportDestination.SHAREPOINT],
+      sharepointUrl: url,
+    });
   });
 
-  test("offers only local download when the policy allows only local download", () => {
+  test("offers only download when the policy allows only download", () => {
     expect(
-      resolveExportDelivery({
+      resolveExportDestination({
         hasSharePointFeature: true,
         sharepointUrl: url,
-        allowedDeliveries: [ExportDelivery.LOCAL],
+        allowedDestinations: [ExportDestination.DOWNLOAD],
       })
-    ).toEqual({ deliveries: [ExportDelivery.LOCAL] });
+    ).toEqual({ destinations: [ExportDestination.DOWNLOAD] });
   });
 
-  test("offers only local download without a destination or the feature", () => {
+  test("offers only download without a SharePoint destination or the feature", () => {
     for (const input of [
       { hasSharePointFeature: true, sharepointUrl: "" },
       { hasSharePointFeature: false, sharepointUrl: url },
     ]) {
       expect(
-        resolveExportDelivery({ ...input, allowedDeliveries: both })
-      ).toEqual({ deliveries: [ExportDelivery.LOCAL] });
+        resolveExportDestination({ ...input, allowedDestinations: both })
+      ).toEqual({ destinations: [ExportDestination.DOWNLOAD] });
     }
   });
 
@@ -65,11 +68,11 @@ describe("resolveExportDelivery", () => {
       { hasSharePointFeature: false, sharepointUrl: url },
     ]) {
       expect(
-        resolveExportDelivery({
+        resolveExportDestination({
           ...input,
-          allowedDeliveries: [ExportDelivery.SHAREPOINT],
+          allowedDestinations: [ExportDestination.SHAREPOINT],
         })
-      ).toEqual({ deliveries: [] });
+      ).toEqual({ destinations: [] });
     }
   });
 });

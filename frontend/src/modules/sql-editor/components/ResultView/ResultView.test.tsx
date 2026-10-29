@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { SQLEditorQueryParams } from "@/types";
 import {
   Engine,
-  ExportDelivery,
+  ExportDestination,
   ExportFormat,
 } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
@@ -20,18 +20,18 @@ import { ResultView } from "./ResultView";
 const {
   exportData,
   exportAccess,
-  exportDelivery,
+  exportDestination,
   exportRequest,
   useExportGrantBypass,
 } = vi.hoisted(() => ({
   exportData: vi.fn(),
   exportAccess: { databasesWithExport: [] as string[] },
-  exportDelivery: {
-    deliveries: [] as number[],
+  exportDestination: {
+    destinations: [] as number[],
     sharepointUrl: undefined as string | undefined,
   },
   exportRequest: {
-    delivery: 1,
+    destination: 1,
     resolve: (_outcome: unknown) => {},
     reject: (_reason: unknown) => {},
   },
@@ -64,8 +64,8 @@ vi.mock("@/modules/sql-editor/components/useExportGrantBypass", () => ({
   useExportGrantBypass,
 }));
 
-vi.mock("@/modules/sql-editor/components/useExportDelivery", () => ({
-  useExportDelivery: () => exportDelivery,
+vi.mock("@/modules/sql-editor/components/useExportDestination", () => ({
+  useExportDestination: () => exportDestination,
 }));
 
 vi.mock("@/modules/sql-editor/hooks/useSQLEditorState", () => ({
@@ -147,7 +147,7 @@ vi.mock("./SingleResultView", () => ({
               format: ExportFormat.CSV,
               limit: 100,
               password: "",
-              delivery: exportRequest.delivery,
+              destination: exportRequest.destination,
             },
             resolve: exportRequest.resolve,
             reject: exportRequest.reject,
@@ -198,10 +198,10 @@ describe("ResultView", () => {
     exportData.mockReset();
     exportData.mockResolvedValue({ content: new Uint8Array(), uri: "" });
     exportAccess.databasesWithExport = [];
-    exportDelivery.deliveries = [ExportDelivery.SHAREPOINT, ExportDelivery.LOCAL];
-    exportDelivery.sharepointUrl =
+    exportDestination.destinations = [ExportDestination.SHAREPOINT, ExportDestination.DOWNLOAD];
+    exportDestination.sharepointUrl =
       "https://contoso.sharepoint.com/sites/x/Exports";
-    exportRequest.delivery = ExportDelivery.LOCAL;
+    exportRequest.destination = ExportDestination.DOWNLOAD;
     exportRequest.resolve = vi.fn();
     exportRequest.reject = vi.fn();
     grantLookup({});
@@ -342,9 +342,9 @@ describe("ResultView", () => {
     );
   });
 
-  test("offers neither Export nor Request export when no delivery is offered", () => {
-    exportDelivery.deliveries = [];
-    exportDelivery.sharepointUrl = undefined;
+  test("offers neither Export nor Request export when no destination is offered", () => {
+    exportDestination.destinations = [];
+    exportDestination.sharepointUrl = undefined;
     exportAccess.databasesWithExport = [database.name];
     const { unmount } = render(
       <ResultView
@@ -371,7 +371,7 @@ describe("ResultView", () => {
   });
 
   test("offers Export when only SharePoint is offered", () => {
-    exportDelivery.deliveries = [ExportDelivery.SHAREPOINT];
+    exportDestination.destinations = [ExportDestination.SHAREPOINT];
     exportAccess.databasesWithExport = [database.name];
     render(
       <ResultView
@@ -386,7 +386,7 @@ describe("ResultView", () => {
 
   test("resolves a SharePoint export with its delivered folder", async () => {
     exportAccess.databasesWithExport = [database.name];
-    exportRequest.delivery = ExportDelivery.SHAREPOINT;
+    exportRequest.destination = ExportDestination.SHAREPOINT;
     exportData.mockResolvedValue({
       content: new Uint8Array(),
       uri: "https://contoso.sharepoint.com/sites/x/Exports/20261022-main",
@@ -413,13 +413,13 @@ describe("ResultView", () => {
       });
     });
     expect(exportData).toHaveBeenCalledWith(
-      expect.objectContaining({ delivery: ExportDelivery.SHAREPOINT })
+      expect.objectContaining({ destination: ExportDestination.SHAREPOINT })
     );
   });
 
   test("reports an unconfirmed SharePoint delivery instead of rejecting", async () => {
     exportAccess.databasesWithExport = [database.name];
-    exportRequest.delivery = ExportDelivery.SHAREPOINT;
+    exportRequest.destination = ExportDestination.SHAREPOINT;
     exportData.mockRejectedValue(
       new ConnectError("could not be confirmed", Code.Unavailable)
     );

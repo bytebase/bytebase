@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 import { RequestExportButton } from "@/modules/sql-editor/components/RequestExportButton";
 import { RequestQueryButton } from "@/modules/sql-editor/components/RequestQueryButton";
 import { sharePointDeliveryDatabaseLabel } from "@/modules/sql-editor/components/sharePointDeliveryLabel";
-import { useExportDelivery } from "@/modules/sql-editor/components/useExportDelivery";
+import { useExportDestination } from "@/modules/sql-editor/components/useExportDestination";
 import { useExportGrantBypass } from "@/modules/sql-editor/components/useExportGrantBypass";
 import {
   useSQLEditorDatabasesWithExport,
@@ -33,7 +33,7 @@ import { useAppStore } from "@/stores/app";
 import type { SQLEditorQueryParams, SQLResultSetV1 } from "@/types";
 import { isValidDatabaseName } from "@/types";
 import {
-  ExportDelivery,
+  ExportDestination,
   ExportFormat,
   type PermissionDeniedDetail,
 } from "@/types/proto-es/v1/common_pb";
@@ -170,11 +170,11 @@ export function ResultView({
     ],
   });
 
-  // A grant never adds a delivery, so neither Export nor Request export shows
-  // when no delivery is offered.
-  const exportDelivery = useExportDelivery(database.project);
-  const hasDelivery = exportDelivery.deliveries.length > 0;
-  const showExport = hasDelivery && (allowExport || !!exportGrantName);
+  // A grant never adds a destination, so neither Export nor Request export shows
+  // when no destination is offered.
+  const exportDestination = useExportDestination(database.project);
+  const hasDestination = exportDestination.destinations.length > 0;
+  const showExport = hasDestination && (allowExport || !!exportGrantName);
 
   // When direct export is unavailable, offer a "Request export" affordance that
   // opens the access-grant drawer (pre-filled with this database, statement,
@@ -187,7 +187,7 @@ export function ResultView({
         failed={failedDatabases.length > 0}
         onRetry={retry}
       />
-    ) : hasDelivery && executeParams && unmatchedDatabases.length > 0 ? (
+    ) : hasDestination && executeParams && unmatchedDatabases.length > 0 ? (
       <RequestExportButton
         statement={executeParams.statement}
         targets={[database.name]}
@@ -225,7 +225,7 @@ export function ResultView({
   ) => {
     const { options, resolve, reject, statement } = req;
     const { databaseName } = extractDatabaseResourceName(database.name);
-    const toSharePoint = options.delivery === ExportDelivery.SHAREPOINT;
+    const toSharePoint = options.destination === ExportDestination.SHAREPOINT;
 
     // === Prod path: backend Export RPC ===
     const tabsState = getSQLEditorTabsState();
@@ -245,7 +245,7 @@ export function ResultView({
           password: options.password,
           schema: executeParams.connection.schema,
           container: executeParams.connection.table,
-          delivery: options.delivery,
+          destination: options.destination,
         })
       );
       if (toSharePoint) {
@@ -254,7 +254,7 @@ export function ResultView({
             toDeliveredSharePointResult(
               sharePointDeliveryDatabaseLabel(database),
               uri,
-              exportDelivery.sharepointUrl ?? ""
+              exportDestination.sharepointUrl ?? ""
             ),
           ],
         });
@@ -326,7 +326,7 @@ export function ResultView({
                 result={resultSet.results[0]}
                 showExport={showExport}
                 exportTooltip={exportTooltip}
-                exportDelivery={exportDelivery}
+                exportDestination={exportDestination}
                 maximumExportCount={queryDataPolicy?.maximumResultRows}
                 onExport={handleExport}
                 requestExportSlot={requestExportButton}
@@ -389,8 +389,8 @@ export function ResultView({
                       viewMode="DRAWER"
                       supportPassword
                       tooltip={exportTooltip}
-                      deliveries={exportDelivery.deliveries}
-                      sharepointUrl={exportDelivery.sharepointUrl}
+                      destinations={exportDestination.destinations}
+                      sharepointUrl={exportDestination.sharepointUrl}
                       maximumExportCount={queryDataPolicy?.maximumResultRows}
                       onExport={(req) =>
                         handleExport({

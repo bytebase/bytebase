@@ -1475,9 +1475,9 @@ type ExportRequest struct {
 	// Container is the container name to execute the query against, used for
 	// CosmosDB only.
 	Container *string `protobuf:"bytes,9,opt,name=container,proto3,oneof" json:"container,omitempty"`
-	// Where the export is delivered. A delivery the workspace query data policy
+	// Where the export goes. A destination the workspace query data policy
 	// does not allow is rejected with FAILED_PRECONDITION.
-	Delivery      ExportDelivery `protobuf:"varint,10,opt,name=delivery,proto3,enum=bytebase.v1.ExportDelivery" json:"delivery,omitempty"`
+	Destination   ExportDestination `protobuf:"varint,10,opt,name=destination,proto3,enum=bytebase.v1.ExportDestination" json:"destination,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1575,11 +1575,11 @@ func (x *ExportRequest) GetContainer() string {
 	return ""
 }
 
-func (x *ExportRequest) GetDelivery() ExportDelivery {
+func (x *ExportRequest) GetDestination() ExportDestination {
 	if x != nil {
-		return x.Delivery
+		return x.Destination
 	}
-	return ExportDelivery_EXPORT_DELIVERY_UNSPECIFIED
+	return ExportDestination_EXPORT_DESTINATION_UNSPECIFIED
 }
 
 type ExportResponse struct {
@@ -2335,7 +2335,7 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\x15RULE_TYPE_UNSPECIFIED\x10\x00\x12\x10\n" +
 	"\fPARSER_BASED\x10\x01\x12\x0e\n" +
 	"\n" +
-	"AI_POWERED\x10\x02\"\x99\x03\n" +
+	"AI_POWERED\x10\x02\"\xa2\x03\n" +
 	"\rExportRequest\x121\n" +
 	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
 	"\x15bytebase.com/DatabaseR\x04name\x12\x1c\n" +
@@ -2346,9 +2346,9 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\bpassword\x18\x06 \x01(\tB\x04\xd0\xea0\x01R\bpassword\x12$\n" +
 	"\x0edata_source_id\x18\a \x01(\tR\fdataSourceId\x12\x1b\n" +
 	"\x06schema\x18\b \x01(\tH\x00R\x06schema\x88\x01\x01\x12!\n" +
-	"\tcontainer\x18\t \x01(\tH\x01R\tcontainer\x88\x01\x01\x127\n" +
-	"\bdelivery\x18\n" +
-	" \x01(\x0e2\x1b.bytebase.v1.ExportDeliveryR\bdeliveryB\t\n" +
+	"\tcontainer\x18\t \x01(\tH\x01R\tcontainer\x88\x01\x01\x12@\n" +
+	"\vdestination\x18\n" +
+	" \x01(\x0e2\x1e.bytebase.v1.ExportDestinationR\vdestinationB\t\n" +
 	"\a_schemaB\f\n" +
 	"\n" +
 	"_container\"t\n" +
@@ -2413,7 +2413,7 @@ var file_v1_sql_service_proto_goTypes = []any{
 	(*structpb.Value)(nil),               // 28: google.protobuf.Value
 	(*Position)(nil),                     // 29: bytebase.v1.Position
 	(ExportFormat)(0),                    // 30: bytebase.v1.ExportFormat
-	(ExportDelivery)(0),                  // 31: bytebase.v1.ExportDelivery
+	(ExportDestination)(0),               // 31: bytebase.v1.ExportDestination
 	(*timestamppb.Timestamp)(nil),        // 32: google.protobuf.Timestamp
 	(*SearchQueryHistoriesRequest)(nil),  // 33: bytebase.v1.SearchQueryHistoriesRequest
 	(*ListQueryHistoriesRequest)(nil),    // 34: bytebase.v1.ListQueryHistoriesRequest
@@ -2447,7 +2447,7 @@ var file_v1_sql_service_proto_depIdxs = []int32{
 	29, // 21: bytebase.v1.Advice.end_position:type_name -> bytebase.v1.Position
 	5,  // 22: bytebase.v1.Advice.rule_type:type_name -> bytebase.v1.Advice.RuleType
 	30, // 23: bytebase.v1.ExportRequest.format:type_name -> bytebase.v1.ExportFormat
-	31, // 24: bytebase.v1.ExportRequest.delivery:type_name -> bytebase.v1.ExportDelivery
+	31, // 24: bytebase.v1.ExportRequest.destination:type_name -> bytebase.v1.ExportDestination
 	29, // 25: bytebase.v1.QueryResult.SyntaxError.start_position:type_name -> bytebase.v1.Position
 	2,  // 26: bytebase.v1.QueryResult.CommandError.command_type:type_name -> bytebase.v1.QueryResult.CommandError.Type
 	3,  // 27: bytebase.v1.QueryResult.Message.level:type_name -> bytebase.v1.QueryResult.Message.Level

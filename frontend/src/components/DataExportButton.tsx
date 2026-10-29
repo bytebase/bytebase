@@ -47,7 +47,7 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { writeTextToClipboard } from "@/lib/clipboard";
 import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
-import { ExportDelivery, ExportFormat } from "@/types/proto-es/v1/common_pb";
+import { ExportDestination, ExportFormat } from "@/types/proto-es/v1/common_pb";
 import { MaxRowCountSelect } from "./MaxRowCountSelect";
 import {
   formatSharePointUrl,
@@ -63,13 +63,13 @@ export type DownloadContent = {
 export interface ExportOption {
   limit: number;
   format: ExportFormat;
-  // Applies only to LOCAL delivery.
+  // Applies only to DOWNLOAD.
   password: string;
-  delivery: ExportDelivery;
+  destination: ExportDestination;
 }
 
-// Local exports resolve with the files to download; SharePoint exports resolve
-// with each database's delivery result.
+// Downloads resolve with the files to save; SharePoint exports resolve with
+// each database's delivery result.
 export type ExportOutcome =
   | DownloadContent[]
   | { sharepoint: SharePointDeliveryResult[] };
@@ -95,15 +95,15 @@ interface DataExportButtonProps {
   maximumExportCount?: number;
   /** Custom form content rendered above the row-count / format / password fields in DRAWER mode. */
   formContent?: ReactNode;
-  /** Offered deliveries in DRAWER mode; the first is the default. Empty disables export. */
-  deliveries?: ExportDelivery[];
-  /** The project's SharePoint destination URL, shown beside that delivery. */
+  /** Offered destinations in DRAWER mode; the first is the default. Empty disables export. */
+  destinations?: ExportDestination[];
+  /** The project's SharePoint destination URL, shown beside that destination. */
   sharepointUrl?: string;
   onExport: (req: DataExportRequest) => void;
   className?: string;
 }
 
-const LOCAL_ONLY = [ExportDelivery.LOCAL];
+const DOWNLOAD_ONLY = [ExportDestination.DOWNLOAD];
 
 const SIZE_TO_BUTTON: Record<Size, ButtonProps["size"]> = {
   tiny: "xs",
@@ -217,7 +217,7 @@ export function DataExportButton({
   validate,
   maximumExportCount = Number.MAX_VALUE,
   formContent,
-  deliveries = LOCAL_ONLY,
+  destinations = DOWNLOAD_ONLY,
   sharepointUrl,
   onExport,
   className,
@@ -230,7 +230,7 @@ export function DataExportButton({
   const [deliveryResults, setDeliveryResults] = useState<
     SharePointDeliveryResult[]
   >([]);
-  const exportUnavailable = deliveries.length === 0;
+  const exportUnavailable = destinations.length === 0;
 
   const presetMax = useMemo(
     () => computeMaximumPreset(maximumExportCount),
@@ -241,17 +241,17 @@ export function DataExportButton({
   const [limit, setLimit] = useState<number>(defaultLimit);
   const [format, setFormat] = useState<ExportFormat>(supportFormats[0]);
   const [password, setPassword] = useState("");
-  const [delivery, setDelivery] = useState<ExportDelivery>(
-    deliveries[0] ?? ExportDelivery.LOCAL
+  const [destination, setDestination] = useState<ExportDestination>(
+    destinations[0] ?? ExportDestination.DOWNLOAD
   );
-  const isLocalDelivery = delivery !== ExportDelivery.SHAREPOINT;
+  const isDownload = destination !== ExportDestination.SHAREPOINT;
 
   const resetForm = useCallback(() => {
     setLimit(defaultLimit);
     setFormat(supportFormats[0]);
     setPassword("");
-    setDelivery(deliveries[0] ?? ExportDelivery.LOCAL);
-  }, [defaultLimit, supportFormats, deliveries]);
+    setDestination(destinations[0] ?? ExportDestination.DOWNLOAD);
+  }, [defaultLimit, supportFormats, destinations]);
 
   // Reset form whenever the drawer transitions to OPEN. Depending on
   // `resetForm` here would re-fire the reset on every parent re-render
@@ -282,15 +282,17 @@ export function DataExportButton({
     () => ({
       limit,
       format,
-      password: isLocalDelivery ? password : "",
-      delivery,
+      password: isDownload ? password : "",
+      destination,
     }),
-    [limit, format, password, delivery, isLocalDelivery]
+    [limit, format, password, destination, isDownload]
   );
 
   const validateOption = validate ?? (() => true);
   const formIsValid =
-    limit > 0 && deliveries.includes(delivery) && validateOption(currentOption);
+    limit > 0 &&
+    destinations.includes(destination) &&
+    validateOption(currentOption);
 
   const doExport = useCallback(() => {
     if (isRequesting) return;
@@ -372,7 +374,7 @@ export function DataExportButton({
 
   const handleSelectDropdownFormat = (selected: ExportFormat) => {
     setFormat(selected);
-    if (supportPassword && isLocalDelivery) {
+    if (supportPassword && isDownload) {
       setShowPasswordDialog(true);
     } else {
       // Run after state batched.
@@ -453,20 +455,20 @@ export function DataExportButton({
               <FormFieldGroup>
                 {formContent}
 
-                {deliveries.length > 1 ? (
-                  <FormField title={t("export-data.delivery.self")}>
+                {destinations.length > 1 ? (
+                  <FormField title={t("export-data.destination.self")}>
                     <RadioGroup
-                      aria-label={t("export-data.delivery.self")}
+                      aria-label={t("export-data.destination.self")}
                       className="flex-col items-start gap-y-2"
-                      value={String(delivery)}
+                      value={String(destination)}
                       onValueChange={(value) =>
-                        setDelivery(Number(value) as ExportDelivery)
+                        setDestination(Number(value) as ExportDestination)
                       }
                     >
-                      {deliveries.map((option) => (
+                      {destinations.map((option) => (
                         <RadioGroupItem key={option} value={String(option)}>
-                          <DeliveryLabel
-                            delivery={option}
+                          <DestinationLabel
+                            destination={option}
                             sharepointUrl={sharepointUrl}
                           />
                         </RadioGroupItem>
@@ -474,10 +476,10 @@ export function DataExportButton({
                     </RadioGroup>
                   </FormField>
                 ) : (
-                  delivery === ExportDelivery.SHAREPOINT && (
-                    <FormField title={t("export-data.delivery.self")}>
-                      <DeliveryLabel
-                        delivery={delivery}
+                  destination === ExportDestination.SHAREPOINT && (
+                    <FormField title={t("export-data.destination.self")}>
+                      <DestinationLabel
+                        destination={destination}
                         sharepointUrl={sharepointUrl}
                       />
                     </FormField>
@@ -516,7 +518,7 @@ export function DataExportButton({
                   </Select>
                 </FormField>
 
-                {supportPassword && isLocalDelivery && (
+                {supportPassword && isDownload && (
                   <FormField
                     title={
                       <FormLabel htmlFor="data-export-password">
@@ -619,20 +621,20 @@ export function DataExportButton({
   );
 }
 
-function DeliveryLabel({
-  delivery,
+function DestinationLabel({
+  destination,
   sharepointUrl,
 }: {
-  delivery: ExportDelivery;
+  destination: ExportDestination;
   sharepointUrl?: string;
 }) {
   const { t } = useTranslation();
-  if (delivery !== ExportDelivery.SHAREPOINT) {
-    return <span>{t("export-data.delivery.local")}</span>;
+  if (destination !== ExportDestination.SHAREPOINT) {
+    return <span>{t("export-data.destination.download")}</span>;
   }
   return (
     <span className="flex flex-col">
-      <span>{t("export-data.delivery.sharepoint")}</span>
+      <span>{t("export-data.destination.sharepoint")}</span>
       {sharepointUrl && (
         <span className="break-all text-xs text-control-light">
           {formatSharePointUrl(sharepointUrl)}

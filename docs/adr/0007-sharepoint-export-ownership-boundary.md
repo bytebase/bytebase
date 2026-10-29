@@ -54,18 +54,19 @@ Bytebase does not select a different destination based on the exporting user.
 Multiple Microsoft tenants or independently configured application identities are not
 implied by support for multiple sites.
 
-Configuring SharePoint does not by itself allow exports to it or disable local
-downloads. The workspace query data policy lists the allowed Export Deliveries
-(`export_delivery_policy.allowed_deliveries`): Local Export Download and SharePoint today, more destinations later. A
-delivery is offered only when the list allows it and, for a destination, the
-project has one configured. Every workspace starts with Local Export Download
-only, and a delivery added later stays off until an administrator lists it, so
-an upgrade never opens a new destination. The list cannot be empty: the Export
+Configuring SharePoint does not by itself allow exports to it or disable
+Download. The workspace query data policy lists the allowed Export Destinations
+(`export_destination_policy.allowed_destinations`): Download and SharePoint
+today, more destinations later. A destination is offered only when the list
+allows it and, for a storage destination, the project has one configured. Every
+workspace starts with Download only, and a destination added later stays off
+until an administrator lists it, so an upgrade never opens a new destination.
+The list cannot be empty: the Export
 Permission (`bb.sql.export`, ADR 0006) decides who may export, and this policy decides only
 where exports go. An approved export access grant satisfies the Export Permission
-but never adds a delivery. A list of disabled deliveries was rejected because a
+but never adds a destination. A list of disabled destinations was rejected because a
 destination added later would be on in every workspace that had turned
-deliveries off; one switch per destination was rejected because each new
+destinations off; one switch per destination was rejected because each new
 destination would need a new policy field. The Export API enforces the list for
 every caller, including MCP; hiding the UI is not enforcement. The list stays in
 effect if the workspace license lapses; only changing it requires the license.
@@ -78,7 +79,7 @@ grants with their own administrator account; Bytebase never holds
 `Sites.FullControl.All` or performs grants itself.
 
 Upload failures return an actionable error after bounded retries, without a
-fallback to local download or durable background delivery in the initial version.
+fallback to Download or durable background delivery in the initial version.
 
 A project's destination is part of the project's settings and is changed with
 the existing `bb.projects.update` permission, so Project Owners can change it.
@@ -112,9 +113,9 @@ the same export file names. If delivery remains uncertain, Bytebase reports that
 delivery could not be confirmed and files may exist in SharePoint. It does
 not claim that no file was created.
 
-Bytebase checks the allowed deliveries once, before the query runs. A change
-made while an export is running applies to the next export. A rejected delivery
-is never redirected to another one.
+Bytebase checks the allowed destinations once, before the query runs. A change
+made while an export is running applies to the next export. A rejected
+destination is never redirected to another one.
 
 Internal upload retries reuse the generated files, file names, and captured
 destination without rerunning the query. A new Export action starts a new export
@@ -149,8 +150,8 @@ can replace the secret without changing project mappings; Bytebase does not
 create or renew Entra credentials.
 
 When both destinations are available, Export defaults to SharePoint and offers
-local download as an explicit alternative. Removing Local Export Download from
-the allowed deliveries removes that alternative.
+Download as an explicit alternative. Removing Download from the allowed
+destinations removes that alternative.
 
 Destination validation in the initial release only resolves the configured URL.
 A destination that resolves is accepted, not verified: the application can read a library root it
@@ -159,13 +160,13 @@ export is the actual write check. SharePoint does not distinguish a missing
 destination from one Bytebase cannot access, so errors report both
 possibilities. A write probe is a later improvement.
 
-The initial release preserves existing export limits and result formats. Changing the
-delivery destination does not expand export capacity.
+The initial release preserves existing export limits and result formats. Changing
+the export destination does not expand export capacity.
 
 SharePoint delivery uploads the export's statement and result files directly
 instead of a zip, so readers can open each result in the browser without
 downloading it. Readers of the destination therefore also see the query text.
-Zip passwords apply only to Local Export Download. Batch export
+Zip passwords apply only to Download. Batch export
 is a client-side composition of per-database exports: each database delivers
 its own files, and the batch reports delivered, failed, and unconfirmed
 databases separately without rolling back delivered files.

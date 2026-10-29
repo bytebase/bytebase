@@ -74,7 +74,7 @@ func TestCreateWorkspaceInitializesDefaults(t *testing.T) {
 
 	queryDataPolicy, err := stores.GetWorkspaceQueryDataPolicy(ctx, workspaceID)
 	require.NoError(t, err)
-	require.Equal(t, []storepb.ExportDelivery{storepb.ExportDelivery_LOCAL}, queryDataPolicy.GetExportDeliveryPolicy().GetAllowedDeliveries())
+	require.Equal(t, []storepb.ExportDestination{storepb.ExportDestination_DOWNLOAD}, queryDataPolicy.GetExportDestinationPolicy().GetAllowedDestinations())
 }
 
 // TestCreateWorkspaceSwitchesEveryReviewRuleOn pins that a new workspace has

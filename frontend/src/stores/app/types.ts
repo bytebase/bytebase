@@ -1053,7 +1053,8 @@ export type SQLSlice = {
   exportData: (params: ExportRequest) => Promise<ExportDataResult>;
 };
 
-// For a destination delivery, `uri` locates the delivered folder and
+// For an export to a storage destination such as SharePoint, `uri` locates the
+// delivered folder and
 // `content` is empty.
 export type ExportDataResult = {
   content: Uint8Array;

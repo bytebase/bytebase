@@ -169,14 +169,14 @@
     - [MaskingRulePolicy.MaskingRule](#bytebase-store-MaskingRulePolicy-MaskingRule)
     - [Policy](#bytebase-store-Policy)
     - [QueryDataPolicy](#bytebase-store-QueryDataPolicy)
-    - [QueryDataPolicy.ExportDeliveryPolicy](#bytebase-store-QueryDataPolicy-ExportDeliveryPolicy)
+    - [QueryDataPolicy.ExportDestinationPolicy](#bytebase-store-QueryDataPolicy-ExportDestinationPolicy)
     - [ReviewAIPolicy](#bytebase-store-ReviewAIPolicy)
     - [ReviewRulePolicy](#bytebase-store-ReviewRulePolicy)
     - [RolloutPolicy](#bytebase-store-RolloutPolicy)
     - [TagPolicy](#bytebase-store-TagPolicy)
     - [TagPolicy.TagsEntry](#bytebase-store-TagPolicy-TagsEntry)
   
-    - [ExportDelivery](#bytebase-store-ExportDelivery)
+    - [ExportDestination](#bytebase-store-ExportDestination)
     - [Policy.Resource](#bytebase-store-Policy-Resource)
     - [Policy.Type](#bytebase-store-Policy-Type)
   
@@ -2745,7 +2745,7 @@ QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 | maximum_result_rows | [int32](#int32) |  | Support both project-level and workspace-level. The maximum number of rows to return in the SQL editor. The default value &lt;= 0, means no limit. |
 | disable_copy_data | [bool](#bool) |  | workspace-level policy Disable copying data. |
 | allow_admin_data_source | [bool](#bool) |  | workspace-level policy Allow using the admin data source to query in the SQL editor. |
-| export_delivery_policy | [QueryDataPolicy.ExportDeliveryPolicy](#bytebase-store-QueryDataPolicy-ExportDeliveryPolicy) |  | workspace-level policy Where exports may be delivered. Unset allows LOCAL only. |
+| export_destination_policy | [QueryDataPolicy.ExportDestinationPolicy](#bytebase-store-QueryDataPolicy-ExportDestinationPolicy) |  | workspace-level policy Where exports may go. Unset allows DOWNLOAD only. |
 | disallow_ddl | [bool](#bool) |  | ================ Deprecate following fields. Disallow running DDL statements in the SQL editor. |
 | disallow_dml | [bool](#bool) |  | Disallow running DML statements in the SQL editor. |
 
@@ -2754,15 +2754,15 @@ QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 
 
 
-<a name="bytebase-store-QueryDataPolicy-ExportDeliveryPolicy"></a>
+<a name="bytebase-store-QueryDataPolicy-ExportDestinationPolicy"></a>
 
-### QueryDataPolicy.ExportDeliveryPolicy
+### QueryDataPolicy.ExportDestinationPolicy
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| allowed_deliveries | [ExportDelivery](#bytebase-store-ExportDelivery) | repeated |  |
+| allowed_destinations | [ExportDestination](#bytebase-store-ExportDestination) | repeated |  |
 
 
 
@@ -2852,15 +2852,15 @@ wins: the project&#39;s if it has one, else the workspace&#39;s, else every rule
  
 
 
-<a name="bytebase-store-ExportDelivery"></a>
+<a name="bytebase-store-ExportDestination"></a>
 
-### ExportDelivery
-Where an export is delivered.
+### ExportDestination
+Where an export goes.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| EXPORT_DELIVERY_UNSPECIFIED | 0 |  |
-| LOCAL | 1 |  |
+| EXPORT_DESTINATION_UNSPECIFIED | 0 |  |
+| DOWNLOAD | 1 |  |
 | SHAREPOINT | 2 |  |
 
 

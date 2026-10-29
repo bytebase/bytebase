@@ -46,11 +46,11 @@ import type {
 import { resolveWorkspaceTheme } from "@/modules/sql-editor/components/theme/useWorkspaceSQLEditorTheme";
 import { DEFAULT_MAX_RESULT_SIZE_IN_MB } from "@/stores";
 import { useAppStore } from "@/stores/app";
-import { ExportDelivery } from "@/types/proto-es/v1/common_pb";
+import { ExportDestination } from "@/types/proto-es/v1/common_pb";
 import {
   PolicyResourceType,
   PolicyType,
-  QueryDataPolicy_ExportDeliveryPolicySchema,
+  QueryDataPolicy_ExportDestinationPolicySchema,
   QueryDataPolicySchema,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import { SQLEditorThemeSettingSchema } from "@/types/proto-es/v1/setting_service_pb";
@@ -63,8 +63,8 @@ import type { SectionHandle } from "./useSettingSection";
 const CUSTOM_THEME_OPTION = "__custom__";
 
 // Sorted so that dirty checks do not depend on the stored order.
-const sortedDeliveries = (deliveries: readonly ExportDelivery[]) =>
-  [...deliveries].sort((a, b) => a - b);
+const sortedDestinations = (destinations: readonly ExportDestination[]) =>
+  [...destinations].sort((a, b) => a - b);
 
 const toSQLEditorThemeSettingPayload = (theme: SQLEditorTheme) => ({
   id: theme.id,
@@ -82,7 +82,7 @@ interface SQLEditorSectionProps {
 
 interface LocalState {
   disableCopyData: boolean;
-  allowedExportDeliveries: ExportDelivery[];
+  allowedExportDestinations: ExportDestination[];
   allowAdminDataSource: boolean;
   // `null` represents an empty input while the user is typing; coerced to a
   // number on save.
@@ -156,9 +156,9 @@ export const SQLEditorSection = forwardRef<
     }
     return {
       disableCopyData: policyPayload.disableCopyData,
-      allowedExportDeliveries: sortedDeliveries(
-        policyPayload.exportDeliveryPolicy?.allowedDeliveries ?? [
-          ExportDelivery.LOCAL,
+      allowedExportDestinations: sortedDestinations(
+        policyPayload.exportDestinationPolicy?.allowedDestinations ?? [
+          ExportDestination.DOWNLOAD,
         ]
       ),
       allowAdminDataSource: policyPayload.allowAdminDataSource,
@@ -302,7 +302,10 @@ export const SQLEditorSection = forwardRef<
     const maximumResultRows = state.maximumResultRows ?? 0;
     return (
       init.disableCopyData !== state.disableCopyData ||
-      !isEqual(init.allowedExportDeliveries, state.allowedExportDeliveries) ||
+      !isEqual(
+        init.allowedExportDestinations,
+        state.allowedExportDestinations
+      ) ||
       init.allowAdminDataSource !== state.allowAdminDataSource ||
       init.maximumResultRows !== maximumResultRows
     );
@@ -367,9 +370,9 @@ export const SQLEditorSection = forwardRef<
             value: create(QueryDataPolicySchema, {
               ...policyPayload,
               disableCopyData: state.disableCopyData,
-              exportDeliveryPolicy: create(
-                QueryDataPolicy_ExportDeliveryPolicySchema,
-                { allowedDeliveries: state.allowedExportDeliveries }
+              exportDestinationPolicy: create(
+                QueryDataPolicy_ExportDestinationPolicySchema,
+                { allowedDestinations: state.allowedExportDestinations }
               ),
               allowAdminDataSource: state.allowAdminDataSource,
               maximumResultRows,
@@ -425,32 +428,34 @@ export const SQLEditorSection = forwardRef<
     setState((prev) => ({ ...prev, [field]: value }));
   };
 
-  const exportDeliveryOptions: {
-    delivery: ExportDelivery;
+  const exportDestinationOptions: {
+    destination: ExportDestination;
     label: string;
     feature?: PlanFeature;
   }[] = [
     {
-      delivery: ExportDelivery.LOCAL,
-      label: t("settings.general.workspace.export-delivery.local"),
+      destination: ExportDestination.DOWNLOAD,
+      label: t("settings.general.workspace.export-destination.download"),
     },
     {
-      delivery: ExportDelivery.SHAREPOINT,
-      label: t("settings.general.workspace.export-delivery.sharepoint"),
+      destination: ExportDestination.SHAREPOINT,
+      label: t("settings.general.workspace.export-destination.sharepoint"),
       feature: PlanFeature.FEATURE_SHAREPOINT_EXPORT,
     },
   ];
 
-  const handleToggleExportDelivery = (
-    delivery: ExportDelivery,
+  const handleToggleExportDestination = (
+    destination: ExportDestination,
     allowed: boolean
   ) => {
     setState((prev) => {
-      const others = prev.allowedExportDeliveries.filter((d) => d !== delivery);
+      const others = prev.allowedExportDestinations.filter(
+        (d) => d !== destination
+      );
       return {
         ...prev,
-        allowedExportDeliveries: sortedDeliveries(
-          allowed ? [...others, delivery] : others
+        allowedExportDestinations: sortedDestinations(
+          allowed ? [...others, destination] : others
         ),
       };
     });
@@ -466,49 +471,51 @@ export const SQLEditorSection = forwardRef<
   return (
     <FormSection id="security" title={title}>
       <FormFieldGroup>
-        {/* Export delivery toggles; at least one stays on */}
+        {/* Export destination toggles; at least one stays on */}
         <PermissionGuard permissions={["bb.policies.update"]} display="block">
           <FormField
             title={
               <span className="flex flex-row justify-start items-center gap-x-2">
-                {t("settings.general.workspace.export-delivery.self")}
+                {t("settings.general.workspace.export-destination.self")}
                 <FeatureBadge feature={PlanFeature.FEATURE_QUERY_POLICY} />
               </span>
             }
             description={t(
-              "settings.general.workspace.export-delivery.description"
+              "settings.general.workspace.export-destination.description"
             )}
           >
             <div className="flex flex-col gap-y-2">
-              {exportDeliveryOptions.map(({ delivery, label, feature }) => {
-                const checked =
-                  state.allowedExportDeliveries.includes(delivery);
-                const isLastAllowed =
-                  checked && state.allowedExportDeliveries.length === 1;
-                return (
-                  <span
-                    key={delivery}
-                    className="inline-flex items-center gap-x-2"
-                  >
-                    <Switch
-                      aria-label={label}
-                      checked={checked}
-                      disabled={
-                        !canUpdatePolicy ||
-                        !hasQueryPolicyFeature ||
-                        isLastAllowed
-                      }
-                      onCheckedChange={(next) =>
-                        handleToggleExportDelivery(delivery, next)
-                      }
-                    />
-                    {label}
-                    {feature !== undefined && (
-                      <FeatureBadge feature={feature} />
-                    )}
-                  </span>
-                );
-              })}
+              {exportDestinationOptions.map(
+                ({ destination, label, feature }) => {
+                  const checked =
+                    state.allowedExportDestinations.includes(destination);
+                  const isLastAllowed =
+                    checked && state.allowedExportDestinations.length === 1;
+                  return (
+                    <span
+                      key={destination}
+                      className="inline-flex items-center gap-x-2"
+                    >
+                      <Switch
+                        aria-label={label}
+                        checked={checked}
+                        disabled={
+                          !canUpdatePolicy ||
+                          !hasQueryPolicyFeature ||
+                          isLastAllowed
+                        }
+                        onCheckedChange={(next) =>
+                          handleToggleExportDestination(destination, next)
+                        }
+                      />
+                      {label}
+                      {feature !== undefined && (
+                        <FeatureBadge feature={feature} />
+                      )}
+                    </span>
+                  );
+                }
+              )}
             </div>
           </FormField>
         </PermissionGuard>

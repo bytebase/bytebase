@@ -3,7 +3,7 @@ import { create } from "@bufbuild/protobuf";
 import type { ContextValues } from "@connectrpc/connect";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { silentContextKey } from "@/api/context-key";
-import { ExportDelivery } from "@/types/proto-es/v1/common_pb";
+import { ExportDestination } from "@/types/proto-es/v1/common_pb";
 import {
   ExportRequestSchema,
   ExportResponseSchema,
@@ -28,12 +28,12 @@ describe("exportData", () => {
     mocks.export.mockReset();
   });
 
-  test("returns local content and reports errors normally", async () => {
+  test("returns download content and reports errors normally", async () => {
     const content = new Uint8Array([1, 2]);
     mocks.export.mockResolvedValue(create(ExportResponseSchema, { content }));
 
     const result = await slice().exportData(
-      create(ExportRequestSchema, { delivery: ExportDelivery.LOCAL })
+      create(ExportRequestSchema, { destination: ExportDestination.DOWNLOAD })
     );
 
     expect(result).toEqual({ content, uri: "" });
@@ -45,7 +45,7 @@ describe("exportData", () => {
     mocks.export.mockResolvedValue(create(ExportResponseSchema, { uri }));
 
     const result = await slice().exportData(
-      create(ExportRequestSchema, { delivery: ExportDelivery.SHAREPOINT })
+      create(ExportRequestSchema, { destination: ExportDestination.SHAREPOINT })
     );
 
     expect(result).toEqual({ content: new Uint8Array(), uri });
