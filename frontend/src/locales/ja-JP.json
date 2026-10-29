@@ -98,7 +98,7 @@
     "pending-confirm-hint": "上で確認またはキャンセルしてください",
     "pending-input-hint": "上に入力してください",
     "permission": {
-      "issue-approval": "この承認でイシューは次のレビュー段階に進みます。ロールアウトはまだ作成されません。",
+      "issue-approval": "この承認でレビューが進むか完了する場合があります。完了すると、必要なチェックの後にデータベースのロールアウトが作成されるか、申請された権限が付与される場合があります。",
       "issue-approval-access-grant": "これは最終承認です。承認によって、ロールアウトなしで申請されたアクセス権が直ちに有効になる場合があります。",
       "issue-approval-final": "これで承認判断は完了しますが、それだけでロールアウトの作成やタスクの実行が保証されるわけではありません。",
       "issue-approval-role-grant": "これは最終承認です。承認によって、ロールアウトなしで申請されたプロジェクトロールが直ちに付与される場合があります。",
@@ -163,6 +163,7 @@
     "tool-ask-user-confirm": "操作を確認",
     "tool-ask-user-input": "入力を提供",
     "tool-completed": "完了",
+    "tool-completed-with-warnings": "警告ありで完了",
     "tool-default-value": "デフォルト",
     "tool-failed": "失敗",
     "tool-options": "オプション",

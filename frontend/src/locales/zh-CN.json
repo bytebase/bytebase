@@ -98,7 +98,7 @@
     "pending-confirm-hint": "请在上方确认或取消",
     "pending-input-hint": "请在上方提供输入",
     "permission": {
-      "issue-approval": "此次审批将工单推进到下一审核步骤，尚不会创建部署。",
+      "issue-approval": "此次审批可能推进或完成审核。审核完成后，可能在通过必要检查后创建数据库部署，或授予所请求的权限。",
       "issue-approval-access-grant": "这是最后一步审批。批准后可能立即激活所请求的访问权限，无需部署。",
       "issue-approval-final": "这将完成审批决定，但仅凭此次审批并不能保证创建部署或执行任务。",
       "issue-approval-role-grant": "这是最后一步审批。批准后可能立即授予所请求的项目角色，无需部署。",
@@ -163,6 +163,7 @@
     "tool-ask-user-confirm": "确认操作",
     "tool-ask-user-input": "提供输入",
     "tool-completed": "已完成",
+    "tool-completed-with-warnings": "已完成，但有警告",
     "tool-default-value": "默认",
     "tool-failed": "失败",
     "tool-options": "选项",

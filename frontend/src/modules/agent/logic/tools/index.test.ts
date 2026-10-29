@@ -3,6 +3,13 @@ import { create } from "@bufbuild/protobuf";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { AppRouterInstance } from "@/app/router";
 import {
+  ConstantSchema,
+  type Expr,
+  Expr_CallSchema,
+  Expr_IdentSchema,
+  ExprSchema,
+} from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
+import {
   ApprovalStatus,
   IssueStatus,
   State,
@@ -17,11 +24,13 @@ import {
 const projectApi = vi.hoisted(() => ({ getProject: vi.fn() }));
 const issueApi = vi.hoisted(() => ({ getIssue: vi.fn() }));
 const databaseApi = vi.hoisted(() => ({ getDatabase: vi.fn() }));
+const celApi = vi.hoisted(() => ({ batchParse: vi.fn() }));
 
 vi.mock("@/api", () => ({
   projectServiceClientConnect: { getProject: projectApi.getProject },
   issueServiceClientConnect: { getIssue: issueApi.getIssue },
   databaseServiceClientConnect: { getDatabase: databaseApi.getDatabase },
+  celServiceClientConnect: { batchParse: celApi.batchParse },
 }));
 
 vi.mock("../skills", () => ({
@@ -135,6 +144,58 @@ beforeEach(() => {
     name: "instances/prod/databases/app",
     project: "projects/referenced",
     state: State.ACTIVE,
+  });
+  celApi.batchParse.mockReset();
+});
+
+const ident = (name: string): Expr =>
+  create(ExprSchema, {
+    exprKind: {
+      case: "identExpr",
+      value: create(Expr_IdentSchema, { name }),
+    },
+  });
+const literal = (value: string): Expr =>
+  create(ExprSchema, {
+    exprKind: {
+      case: "constExpr",
+      value: create(ConstantSchema, {
+        constantKind: { case: "stringValue", value },
+      }),
+    },
+  });
+const call = (fn: string, ...args: Expr[]): Expr =>
+  create(ExprSchema, {
+    exprKind: {
+      case: "callExpr",
+      value: create(Expr_CallSchema, { function: fn, args }),
+    },
+  });
+const projectFilter = (project: string): Expr =>
+  call("_==_", ident("project"), literal(project));
+
+describe("done tool", () => {
+  test("requires an explicit task success value", async () => {
+    const definition = getToolDefinitions().find((tool) => tool.name === "done");
+    expect(definition?.parametersSchema).toMatchObject({
+      required: ["text", "success"],
+    });
+
+    const executeTool = createToolExecutor({} as AppRouterInstance);
+    await expect(
+      executeTool("done", { text: "Finished" }, "tool-done")
+    ).rejects.toThrow(/success/i);
+    await expect(
+      executeTool(
+        "done",
+        { text: "Could not finish", success: false },
+        "tool-done"
+      )
+    ).resolves.toEqual({
+      kind: "done",
+      text: "Could not finish",
+      success: false,
+    });
   });
 });
 
@@ -509,6 +570,245 @@ describe("agent tools referenced project", () => {
       }),
     });
     expect(issueApi.getIssue).not.toHaveBeenCalled();
+    expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
+  });
+
+  test("does not call an API for another project even when the selected Project is accessible", async () => {
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      referencedProject: "projects/referenced",
+    });
+
+    const result = await executor(
+      "call_api",
+      {
+        operationId: "IssueService/GetIssue",
+        body: { name: "projects/other/issues/34" },
+      },
+      "tool-other-issue"
+    );
+
+    expect(result.kind).toBe("tool_result");
+    if (result.kind === "tool_result") {
+      expect(JSON.parse(result.result).error).toMatch(/referenced project/i);
+    }
+    expect(projectApi.getProject).toHaveBeenCalledTimes(1);
+    expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
+  });
+
+  test("does not let selected Database access bypass the API target scope", async () => {
+    projectApi.getProject.mockRejectedValue(new Error("permission denied"));
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      referencedProject: "projects/referenced",
+      referencedDatabase: "instances/prod/databases/app",
+    });
+
+    const result = await executor(
+      "call_api",
+      {
+        operationId: "IssueService/GetIssue",
+        body: { name: "projects/other/issues/34" },
+      },
+      "tool-other-issue"
+    );
+
+    expect(result.kind).toBe("tool_result");
+    if (result.kind === "tool_result") {
+      expect(JSON.parse(result.result).error).toMatch(/referenced project/i);
+    }
+    expect(databaseApi.getDatabase).toHaveBeenCalledTimes(1);
+    expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
+  });
+
+  test("scopes batch Issue status updates by Issue names, not an ignored parent", async () => {
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      chatId: "chat-issue",
+      userName: "users/me@example.com",
+      referencedProject: "projects/referenced",
+    });
+
+    const result = await executor(
+      "call_api",
+      {
+        operationId: "IssueService/BatchUpdateIssuesStatus",
+        body: {
+          parent: "projects/other",
+          issues: ["projects/referenced/issues/12"],
+          status: "OPEN",
+        },
+      },
+      "tool-update-status"
+    );
+
+    expect(result).toMatchObject({
+      kind: "ask_user",
+      ask: {
+        apiPermission: {
+          operationId: "bytebase.v1.IssueService.BatchUpdateIssuesStatus",
+        },
+      },
+    });
+  });
+
+  test("rejects a batch Issue status update targeting another Project", async () => {
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      chatId: "chat-issue",
+      userName: "users/me@example.com",
+      referencedProject: "projects/referenced",
+    });
+
+    const result = await executor(
+      "call_api",
+      {
+        operationId: "IssueService/BatchUpdateIssuesStatus",
+        body: {
+          parent: "projects/referenced",
+          issues: ["projects/other/issues/34"],
+          status: "OPEN",
+        },
+      },
+      "tool-other-status"
+    );
+
+    expect(result.kind).toBe("tool_result");
+    if (result.kind === "tool_result") {
+      expect(JSON.parse(result.result).error).toMatch(/referenced project/i);
+    }
+    expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
+  });
+
+  test("does not run a cross-project database search for a selected Project", async () => {
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      referencedProject: "projects/referenced",
+    });
+
+    const result = await executor(
+      "call_api",
+      {
+        operationId: "DatabaseService/SearchDatabases",
+        body: { pageSize: 25 },
+      },
+      "tool-search-databases"
+    );
+
+    expect(result.kind).toBe("tool_result");
+    if (result.kind === "tool_result") {
+      expect(JSON.parse(result.result).error).toMatch(/referenced project/i);
+    }
+    expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
+  });
+
+  test("allows a database search constrained to the selected Project", async () => {
+    celApi.batchParse.mockResolvedValue({
+      expressions: [
+        call(
+          "_&&_",
+          projectFilter("projects/referenced"),
+          call("_==_", ident("engine"), literal("MYSQL"))
+        ),
+      ],
+    });
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      referencedProject: "projects/referenced",
+    });
+
+    expect(
+      await executor(
+        "call_api",
+        {
+          operationId: "DatabaseService/SearchDatabases",
+          body: {
+            filter: 'project == "projects/referenced" && engine == "MYSQL"',
+          },
+        },
+        "tool-project-search"
+      )
+    ).toEqual({ kind: "tool_result", result: "call_api" });
+    expect(celApi.batchParse).toHaveBeenCalledTimes(1);
+    expect(dispatchPreparedApiCall).toHaveBeenCalledTimes(1);
+  });
+
+  test("does not accept a database search whose filter can include another Project", async () => {
+    celApi.batchParse.mockResolvedValue({
+      expressions: [
+        call(
+          "_||_",
+          projectFilter("projects/referenced"),
+          projectFilter("projects/other")
+        ),
+      ],
+    });
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      referencedProject: "projects/referenced",
+    });
+
+    const result = await executor(
+      "call_api",
+      {
+        operationId: "DatabaseService/SearchDatabases",
+        body: {
+          filter:
+            'project == "projects/referenced" || project == "projects/other"',
+        },
+      },
+      "tool-other-search"
+    );
+
+    expect(result.kind).toBe("tool_result");
+    if (result.kind === "tool_result") {
+      expect(JSON.parse(result.result).error).toMatch(/referenced project/i);
+    }
+    expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
+  });
+
+  test("does not run a database search when its project filter cannot be verified", async () => {
+    celApi.batchParse.mockRejectedValue(new Error("parser unavailable"));
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      referencedProject: "projects/referenced",
+    });
+
+    const result = await executor(
+      "call_api",
+      {
+        operationId: "DatabaseService/SearchDatabases",
+        body: { filter: 'project == "projects/referenced"' },
+      },
+      "tool-unverified-search"
+    );
+
+    expect(result.kind).toBe("tool_result");
+    if (result.kind === "tool_result") {
+      expect(JSON.parse(result.result).error).toMatch(/referenced project/i);
+    }
+    expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
+  });
+
+  test("does not call a database API for a database in another Project", async () => {
+    databaseApi.getDatabase.mockResolvedValue({
+      name: "instances/prod/databases/app",
+      project: "projects/other",
+      state: State.ACTIVE,
+    });
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      referencedProject: "projects/referenced",
+    });
+
+    const result = await executor(
+      "call_api",
+      {
+        operationId: "SQLService/Query",
+        body: {
+          name: "instances/prod/databases/app",
+          statement: "SELECT 1",
+        },
+      },
+      "tool-other-database"
+    );
+
+    expect(result.kind).toBe("tool_result");
+    if (result.kind === "tool_result") {
+      expect(JSON.parse(result.result).error).toMatch(/referenced project/i);
+    }
+    expect(databaseApi.getDatabase).toHaveBeenCalledTimes(1);
     expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
   });
 

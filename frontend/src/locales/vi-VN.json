@@ -98,7 +98,7 @@
     "pending-confirm-hint": "Vui lòng xác nhận hoặc hủy ở trên",
     "pending-input-hint": "Vui lòng cung cấp đầu vào ở trên",
     "permission": {
-      "issue-approval": "Phê duyệt này chuyển vấn đề sang bước xem xét tiếp theo. Chưa tạo đợt triển khai.",
+      "issue-approval": "Lần phê duyệt này có thể đưa quá trình xét duyệt sang bước tiếp theo hoặc hoàn tất. Khi hoàn tất, đợt triển khai cơ sở dữ liệu có thể được tạo sau các bước kiểm tra bắt buộc hoặc quyền được yêu cầu có thể được cấp.",
       "issue-approval-access-grant": "Đây là bước phê duyệt cuối cùng. Việc phê duyệt có thể kích hoạt quyền truy cập được yêu cầu ngay lập tức, không cần đợt triển khai.",
       "issue-approval-final": "Quyết định phê duyệt được hoàn tất, nhưng riêng quyết định này không đảm bảo tạo đợt triển khai hoặc thực thi tác vụ.",
       "issue-approval-role-grant": "Đây là bước phê duyệt cuối cùng. Việc phê duyệt có thể cấp vai trò dự án được yêu cầu ngay lập tức, không cần đợt triển khai.",
@@ -163,6 +163,7 @@
     "tool-ask-user-confirm": "Xác nhận hành động",
     "tool-ask-user-input": "Cung cấp đầu vào",
     "tool-completed": "Đã hoàn thành",
+    "tool-completed-with-warnings": "Đã hoàn thành với cảnh báo",
     "tool-default-value": "Mặc định",
     "tool-failed": "Thất bại",
     "tool-options": "Tùy chọn",

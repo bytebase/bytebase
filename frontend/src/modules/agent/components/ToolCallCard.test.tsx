@@ -403,6 +403,32 @@ describe("ToolCallCard", () => {
     act(() => root.unmount());
   });
 
+  test("warns when a successful answer followed a failed API attempt", () => {
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    act(() => {
+      root.render(
+        <ToolCallCard
+          toolCall={{
+            id: "done-1",
+            name: "done",
+            arguments: JSON.stringify({ text: "Recovered", success: true }),
+          }}
+          result={JSON.stringify({
+            text: "Recovered",
+            success: true,
+            failedApiCallCount: 1,
+          })}
+        />
+      );
+    });
+
+    expect(container.querySelector("button .text-warning")).toHaveTextContent(
+      "agent.tool-completed-with-warnings"
+    );
+    act(() => root.unmount());
+  });
+
   test("keeps malformed SQL tool results behind the raw disclosure", () => {
     const { container, unmount } = renderCard(
       "SQLService/Query",

@@ -45,6 +45,7 @@ import { createProjectOpenIssuesTool } from "./projectOpenIssues";
 import { createProjectGovernanceOverviewTool } from "./projectGovernanceOverview";
 import { createProjectRecentActivityTool } from "./projectRecentActivity";
 import { createProjectOverviewTool } from "./projectOverview";
+import { apiTargetsAnotherProject } from "./referencedProjectApiScope";
 import { searchApi, type SearchApiArgs } from "./searchApi";
 import { createWorkspaceOverviewTool } from "./workspaceOverview";
 import { createWorkspaceRecentActivityTool } from "./workspaceRecentActivity";
@@ -111,10 +112,13 @@ const parseDoneArgs = (args: Record<string, unknown>): ToolExecutionResult => {
   if (typeof args.text !== "string" || !args.text.trim()) {
     throw new Error("done requires a non-empty text string");
   }
+  if (typeof args.success !== "boolean") {
+    throw new Error("done requires a boolean success value");
+  }
   return {
     kind: "done",
     text: args.text,
-    success: args.success !== false,
+    success: args.success,
   };
 };
 
@@ -599,7 +603,7 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
               "Set to false when the task could not be completed successfully.",
           },
         },
-        required: ["text"],
+        required: ["text", "success"],
       },
     },
   ];
@@ -825,6 +829,16 @@ export function createToolExecutor(
         const prepared = prepareApiCall(apiArgs);
         if (prepared.kind === "error") {
           return toToolResult(prepared.result);
+        }
+        if (
+          referencedProject &&
+          (await apiTargetsAnotherProject(prepared.call, referencedProject))
+        ) {
+          return toToolResult(
+            JSON.stringify({
+              error: `This API request is outside the referenced project (${referencedProject}). Ask in a separate message to use another project.`,
+            })
+          );
         }
         const access = await checkPreparedApiPermission(prepared.call);
         if (access.kind === "denied") {
