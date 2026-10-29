@@ -147,14 +147,17 @@ func resolveSharePointExportTarget(ctx context.Context, newClient func(sharepoin
 func deliverSharePointExport(ctx context.Context, target *sharePointExportTarget, folderName string, files []sharepoint.File) (string, error) {
 	delivery, err := target.client.Deliver(ctx, target.location, folderName, files)
 	if err != nil {
-		switch {
-		case errors.Is(err, sharepoint.ErrUnconfirmed):
+		if errors.Is(err, sharepoint.ErrUnconfirmed) {
 			return "", connect.NewError(connect.CodeUnavailable, errors.Errorf("delivery to SharePoint could not be confirmed; files may exist in folder %q", folderName))
-		case errors.Is(err, sharepoint.ErrNotFoundOrNoAccess), errors.Is(err, sharepoint.ErrCredential):
-			return "", connect.NewError(connect.CodeFailedPrecondition, errors.Wrapf(err, "delivery to SharePoint failed; some files may already exist in folder %q", folderName))
-		default:
-			return "", connect.NewError(connect.CodeInternal, errors.Wrapf(err, "delivery to SharePoint failed; some files may already exist in folder %q", folderName))
 		}
+		code := connect.CodeInternal
+		if errors.Is(err, sharepoint.ErrNotFoundOrNoAccess) || errors.Is(err, sharepoint.ErrCredential) {
+			code = connect.CodeFailedPrecondition
+		}
+		if errors.Is(err, sharepoint.ErrNothingDelivered) {
+			return "", connect.NewError(code, errors.Wrap(err, "delivery to SharePoint failed; nothing was delivered"))
+		}
+		return "", connect.NewError(code, errors.Wrapf(err, "delivery to SharePoint failed; some files may already exist in folder %q", folderName))
 	}
 	return delivery.WebURL, nil
 }

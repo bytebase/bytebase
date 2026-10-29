@@ -48,7 +48,16 @@ var (
 	// ErrUnconfirmed means delivery could not be confirmed after retries and
 	// reconciliation; some files may exist in SharePoint.
 	ErrUnconfirmed = errors.New("delivery to SharePoint could not be confirmed; files may exist in the destination")
+	// ErrNothingDelivered marks a Deliver failure before any file was
+	// uploaded. It wraps the cause, so errors.Is still matches the cause.
+	ErrNothingDelivered = errors.New("nothing was delivered to SharePoint")
 )
+
+type nothingDeliveredError struct{ err error }
+
+func (e *nothingDeliveredError) Error() string      { return e.err.Error() }
+func (e *nothingDeliveredError) Unwrap() error      { return e.err }
+func (*nothingDeliveredError) Is(target error) bool { return target == ErrNothingDelivered }
 
 // Client resolves destinations and delivers exports.
 type Client interface {

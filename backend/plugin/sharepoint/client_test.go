@@ -369,8 +369,25 @@ func TestDeliverFileConflict(t *testing.T) {
 			}
 			require.ErrorContains(t, err, tc.wantErr)
 			require.NotErrorIs(t, err, ErrUnconfirmed)
+			require.NotErrorIs(t, err, ErrNothingDelivered)
 		})
 	}
+}
+
+func TestDeliverFolderCreationFailureDeliversNothing(t *testing.T) {
+	fake := newFakeGraph(t)
+	fake.override = func(w http.ResponseWriter, r *http.Request) bool {
+		if r.URL.Path != "/drives/d1/items/dest/children" {
+			return false
+		}
+		writeGraphError(w, http.StatusForbidden, "accessDenied")
+		return true
+	}
+	client, _ := newTestClient(t, fake)
+	_, err := client.Deliver(context.Background(), testLocation, testFolder, testFiles)
+	require.ErrorIs(t, err, ErrNothingDelivered)
+	require.ErrorIs(t, err, ErrNotFoundOrNoAccess)
+	require.Zero(t, fake.sessionCount)
 }
 
 func TestDeliverHonorsRetryAfter(t *testing.T) {

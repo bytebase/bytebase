@@ -50,6 +50,7 @@ import { pushNotification } from "@/stores";
 import { ExportDelivery, ExportFormat } from "@/types/proto-es/v1/common_pb";
 import { MaxRowCountSelect } from "./MaxRowCountSelect";
 import {
+  formatSharePointUrl,
   type SharePointDeliveryResult,
   SharePointDeliveryResultDialog,
 } from "./SharePointDeliveryResultDialog";
@@ -634,7 +635,7 @@ function DeliveryLabel({
       <span>{t("export-data.delivery.sharepoint")}</span>
       {sharepointUrl && (
         <span className="break-all text-xs text-control-light">
-          {sharepointUrl}
+          {formatSharePointUrl(sharepointUrl)}
         </span>
       )}
     </span>

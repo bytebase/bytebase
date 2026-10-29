@@ -46,7 +46,7 @@ describe("DataExportButton delivery", () => {
     const radios = screen.getAllByRole("radio");
     expect(radios).toHaveLength(2);
     expect(radios[0]).toHaveAttribute("aria-checked", "true");
-    expect(screen.getByText(sharepointUrl)).toBeInTheDocument();
+    expect(screen.getByText(decodeURI(sharepointUrl))).toBeInTheDocument();
     expect(
       screen.queryByLabelText("export-data.password-optional")
     ).not.toBeInTheDocument();
@@ -79,7 +79,7 @@ describe("DataExportButton delivery", () => {
         screen.getByText("export-data.sharepoint.delivered-title")
       ).toBeInTheDocument();
     });
-    expect(screen.getByText(folderUri)).toBeInTheDocument();
+    expect(screen.getByText(decodeURI(folderUri))).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "export-data.sharepoint.open" })
     ).toHaveAttribute("href", folderUri);

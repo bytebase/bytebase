@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { RequestExportButton } from "@/modules/sql-editor/components/RequestExportButton";
+import { sharePointDeliveryDatabaseLabel } from "@/modules/sql-editor/components/sharePointDeliveryLabel";
 import { useExportDelivery } from "@/modules/sql-editor/components/useExportDelivery";
 import { useExportGrantBypass } from "@/modules/sql-editor/components/useExportGrantBypass";
 import {
@@ -305,8 +306,10 @@ export function BatchQuerySelect({
       for (const databaseName of Array.from(selectedDatabaseNames)) {
         if (!exportableSet.has(databaseName)) continue;
         const database = getDatabaseByName(databaseName);
-        const { instanceName, databaseName: shortName } =
-          extractDatabaseResourceName(database.name);
+        const { databaseName: shortName } = extractDatabaseResourceName(
+          database.name
+        );
+        const label = sharePointDeliveryDatabaseLabel(database);
         const context = head(tab?.databaseQueryContexts?.get(databaseName));
         if (!context) continue;
         try {
@@ -329,7 +332,7 @@ export function BatchQuerySelect({
           if (toSharePoint) {
             deliveries.push(
               toDeliveredSharePointResult(
-                `${instanceName}/${shortName}`,
+                label,
                 uri,
                 exportDelivery.sharepointUrl ?? ""
               )
@@ -342,9 +345,7 @@ export function BatchQuerySelect({
           });
         } catch (e) {
           if (toSharePoint) {
-            deliveries.push(
-              toFailedSharePointDelivery(`${instanceName}/${shortName}`, e)
-            );
+            deliveries.push(toFailedSharePointDelivery(label, e));
             continue;
           }
           useAppStore.getState().notify({

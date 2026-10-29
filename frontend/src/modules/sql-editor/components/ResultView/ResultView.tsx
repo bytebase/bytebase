@@ -20,6 +20,7 @@ import { isDisallowChangeDatabaseError } from "@/hooks/useExecuteSQL";
 import { cn } from "@/lib/utils";
 import { RequestExportButton } from "@/modules/sql-editor/components/RequestExportButton";
 import { RequestQueryButton } from "@/modules/sql-editor/components/RequestQueryButton";
+import { sharePointDeliveryDatabaseLabel } from "@/modules/sql-editor/components/sharePointDeliveryLabel";
 import { useExportDelivery } from "@/modules/sql-editor/components/useExportDelivery";
 import { useExportGrantBypass } from "@/modules/sql-editor/components/useExportGrantBypass";
 import {
@@ -251,7 +252,7 @@ export function ResultView({
         resolve({
           sharepoint: [
             toDeliveredSharePointResult(
-              databaseName,
+              sharePointDeliveryDatabaseLabel(database),
               uri,
               exportDelivery.sharepointUrl ?? ""
             ),
@@ -267,7 +268,14 @@ export function ResultView({
       ]);
     } catch (e) {
       if (toSharePoint) {
-        resolve({ sharepoint: [toFailedSharePointDelivery(databaseName, e)] });
+        resolve({
+          sharepoint: [
+            toFailedSharePointDelivery(
+              sharePointDeliveryDatabaseLabel(database),
+              e
+            ),
+          ],
+        });
         return;
       }
       reject(e);

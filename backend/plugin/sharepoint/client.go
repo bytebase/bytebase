@@ -196,7 +196,7 @@ func (c *graphClient) Deliver(ctx context.Context, loc *Location, folderName str
 
 	folder, err := c.ensureFolder(ctx, loc, folderName)
 	if err != nil {
-		return nil, err
+		return nil, &nothingDeliveredError{err: err}
 	}
 	for _, file := range files {
 		if err := c.uploadFile(ctx, loc.DriveID, folder.ID, file); err != nil {

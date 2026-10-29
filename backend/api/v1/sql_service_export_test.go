@@ -316,24 +316,33 @@ func TestSharePointExportDeliversToCapturedTarget(t *testing.T) {
 	require.Equal(t, files, client.deliveredFiles)
 }
 
+// nothingDeliveredError stands in for the SharePoint client's marking of a
+// delivery that failed before any upload.
+type nothingDeliveredError struct{ error }
+
+func (e nothingDeliveredError) Unwrap() error      { return e.error }
+func (nothingDeliveredError) Is(target error) bool { return target == sharepoint.ErrNothingDelivered }
+
 func TestSharePointExportErrors(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	setting := &storepb.SharePointSetting{TenantId: "tenant", ClientId: "client", ClientSecret: "secret"}
 	for _, tc := range []struct {
-		name       string
-		resolveErr error
-		deliverErr error
-		wantCode   connect.Code
-		wantInMsg  []string
+		name         string
+		resolveErr   error
+		deliverErr   error
+		wantCode     connect.Code
+		wantInMsg    []string
+		wantNotInMsg []string
 	}{
 		{name: "resolve not found", resolveErr: errors.Wrap(sharepoint.ErrNotFoundOrNoAccess, "graph"), wantCode: connect.CodeFailedPrecondition},
 		{name: "resolve credential", resolveErr: sharepoint.ErrCredential, wantCode: connect.CodeFailedPrecondition},
 		{name: "resolve other", resolveErr: errors.New("boom"), wantCode: connect.CodeInternal},
-		{name: "deliver not found", deliverErr: sharepoint.ErrNotFoundOrNoAccess, wantCode: connect.CodeFailedPrecondition, wantInMsg: []string{"may already exist"}},
-		{name: "deliver credential", deliverErr: errors.Wrap(sharepoint.ErrCredential, "token"), wantCode: connect.CodeFailedPrecondition, wantInMsg: []string{"may already exist"}},
-		{name: "deliver unconfirmed", deliverErr: errors.Wrap(sharepoint.ErrUnconfirmed, "upload"), wantCode: connect.CodeUnavailable, wantInMsg: []string{"could not be confirmed"}},
-		{name: "deliver failed after some files", deliverErr: errors.New("upload statement-1.result.csv: 507 insufficientStorage"), wantCode: connect.CodeInternal, wantInMsg: []string{"delivery to SharePoint failed", "may already exist", "insufficientStorage"}},
+		{name: "deliver not found", deliverErr: sharepoint.ErrNotFoundOrNoAccess, wantCode: connect.CodeFailedPrecondition, wantInMsg: []string{"may already exist", "20261022T010507Z-alice@example.com-hr-0a1b2c3d"}},
+		{name: "folder not created", deliverErr: nothingDeliveredError{sharepoint.ErrNotFoundOrNoAccess}, wantCode: connect.CodeFailedPrecondition, wantInMsg: []string{"nothing was delivered"}, wantNotInMsg: []string{"may already exist", "20261022T010507Z-alice@example.com-hr-0a1b2c3d"}},
+		{name: "deliver credential", deliverErr: errors.Wrap(sharepoint.ErrCredential, "token"), wantCode: connect.CodeFailedPrecondition, wantInMsg: []string{"may already exist", "20261022T010507Z-alice@example.com-hr-0a1b2c3d"}},
+		{name: "deliver unconfirmed", deliverErr: errors.Wrap(sharepoint.ErrUnconfirmed, "upload"), wantCode: connect.CodeUnavailable, wantInMsg: []string{"could not be confirmed", "20261022T010507Z-alice@example.com-hr-0a1b2c3d"}},
+		{name: "deliver failed after some files", deliverErr: errors.New("upload statement-1.result.csv: 507 insufficientStorage"), wantCode: connect.CodeInternal, wantInMsg: []string{"delivery to SharePoint failed", "may already exist", "insufficientStorage", "20261022T010507Z-alice@example.com-hr-0a1b2c3d"}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -347,9 +356,11 @@ func TestSharePointExportErrors(t *testing.T) {
 			require.NoError(t, err)
 			_, err = deliverSharePointExport(ctx, target, "20261022T010507Z-alice@example.com-hr-0a1b2c3d", nil)
 			require.Equal(t, tc.wantCode, connect.CodeOf(err))
-			require.Contains(t, err.Error(), "20261022T010507Z-alice@example.com-hr-0a1b2c3d")
 			for _, want := range tc.wantInMsg {
 				require.Contains(t, err.Error(), want)
+			}
+			for _, unwanted := range tc.wantNotInMsg {
+				require.NotContains(t, err.Error(), unwanted)
 			}
 		})
 	}

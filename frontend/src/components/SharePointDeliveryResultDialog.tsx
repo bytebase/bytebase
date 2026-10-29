@@ -10,6 +10,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+// SharePoint URLs arrive percent-encoded; show them as people typed them.
+export function formatSharePointUrl(url: string): string {
+  try {
+    return decodeURI(url);
+  } catch {
+    return url;
+  }
+}
+
 export type SharePointDeliveryResult = {
   database: string;
 } & (
@@ -86,7 +95,7 @@ export function SharePointDeliveryResultDialog({ results, onClose }: Props) {
                   result.uri && (
                     <>
                       <span className="break-all text-control-light">
-                        {result.uri}
+                        {formatSharePointUrl(result.uri)}
                       </span>
                       <a
                         href={result.uri}

@@ -491,6 +491,7 @@ export const SQLEditorSection = forwardRef<
                     className="inline-flex items-center gap-x-2"
                   >
                     <Switch
+                      aria-label={label}
                       checked={checked}
                       disabled={
                         !canUpdatePolicy ||
