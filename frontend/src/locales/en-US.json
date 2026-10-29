@@ -98,7 +98,7 @@
     "pending-confirm-hint": "Please confirm or cancel above",
     "pending-input-hint": "Please provide input above",
     "permission": {
-      "issue-approval": "This approval may advance or complete the review. Completion may create a database rollout after required checks or activate a requested grant.",
+      "issue-approval": "This approval advances the issue to the next review step. It does not create a rollout yet.",
       "issue-approval-access-grant": "This is the final approval step. Approval may immediately activate the requested access grant, without a rollout.",
       "issue-approval-final": "This completes the approval decision, but does not itself guarantee rollout creation or task execution.",
       "issue-approval-role-grant": "This is the final approval step. Approval may immediately grant the requested project role, without a rollout.",

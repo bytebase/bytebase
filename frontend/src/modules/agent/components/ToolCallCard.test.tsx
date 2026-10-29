@@ -348,7 +348,6 @@ describe("ToolCallCard", () => {
     expect(container.querySelector("button .text-error")).toHaveTextContent(
       "agent.tool-failed"
     );
-
     unmount();
   });
 

@@ -176,7 +176,9 @@ const projectFilter = (project: string): Expr =>
 
 describe("done tool", () => {
   test("requires an explicit task success value", async () => {
-    const definition = getToolDefinitions().find((tool) => tool.name === "done");
+    const definition = getToolDefinitions().find(
+      (tool) => tool.name === "done"
+    );
     expect(definition?.parametersSchema).toMatchObject({
       required: ["text", "success"],
     });

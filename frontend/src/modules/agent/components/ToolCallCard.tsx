@@ -480,7 +480,6 @@ export function ToolCallCard({ toolCall, result }: Props) {
     }
     return true;
   }, [parsedArguments, parsedResult]);
-
   const doneHasApiWarnings =
     doneSuccess &&
     typeof parsedResult === "object" &&
@@ -488,8 +487,8 @@ export function ToolCallCard({ toolCall, result }: Props) {
     !Array.isArray(parsedResult) &&
     typeof (parsedResult as Record<string, unknown>).failedApiCallCount ===
       "number" &&
-    ((parsedResult as Record<string, unknown>).failedApiCallCount as number) > 0;
-
+    ((parsedResult as Record<string, unknown>).failedApiCallCount as number) >
+      0;
   const renderStatus = () => {
     if (hasErrorResult || callApiError) {
       return <span className="text-error">{t("agent.tool-failed")}</span>;

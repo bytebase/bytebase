@@ -98,7 +98,7 @@
     "pending-confirm-hint": "Confirme o cancele arriba",
     "pending-input-hint": "Proporcione la entrada arriba",
     "permission": {
-      "issue-approval": "Esta aprobación puede avanzar o completar la revisión. Al completarse, puede crear un despliegue de base de datos tras las comprobaciones necesarias o activar una concesión solicitada.",
+      "issue-approval": "Esta aprobación lleva la incidencia al siguiente paso de revisión. Aún no crea un despliegue.",
       "issue-approval-access-grant": "Este es el último paso de aprobación. La aprobación puede activar de inmediato el acceso solicitado, sin un despliegue.",
       "issue-approval-final": "Esto completa la decisión de aprobación, pero no garantiza por sí solo la creación de un despliegue ni la ejecución de las tareas.",
       "issue-approval-role-grant": "Este es el último paso de aprobación. La aprobación puede conceder de inmediato el rol de proyecto solicitado, sin un despliegue.",

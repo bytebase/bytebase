@@ -154,7 +154,6 @@ describe("issueDecisionPermission", () => {
       validateIssueDecisionPermission(result.decision)
     ).resolves.toBe(false);
   });
-
   test("does not alter unrelated generic API calls", async () => {
     expect(
       await prepareIssueDecisionPermission({

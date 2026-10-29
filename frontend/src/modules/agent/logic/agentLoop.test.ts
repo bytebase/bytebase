@@ -840,7 +840,7 @@ describe("runAgentLoop", () => {
             name: "done",
             arguments: JSON.stringify({
               text: "The corrected query returned one row.",
-            success: true,
+              success: true,
             }),
             metadata: "",
           },
@@ -1124,13 +1124,6 @@ describe("runAgentLoop", () => {
                 body: { name: "projects/a/issues/101" },
               }),
             },
-            {
-              id: "api-3",
-              name: "call_api",
-              arguments: JSON.stringify({
-                operationId: "IssueService/BatchUpdateIssuesStatus",
-                body: { issues: ["projects/a/issues/101"], status: "OPEN" },
-              }),
           ],
         },
         {
@@ -1194,6 +1187,14 @@ describe("runAgentLoop", () => {
                 body: { name: "projects/a/issues/101" },
               }),
             },
+            {
+              id: "api-3",
+              name: "call_api",
+              arguments: JSON.stringify({
+                operationId: "IssueService/BatchUpdateIssuesStatus",
+                body: { issues: ["projects/a/issues/101"], status: "OPEN" },
+              }),
+            },
           ],
         },
         {
@@ -1236,7 +1237,6 @@ describe("runAgentLoop", () => {
       })
     );
   });
-
   test.each(["SQLService/Query", "bytebase.v1.SQLService.Query"])(
     "reports a query result error for %s inside a successful API response",
     async (operationId) => {
