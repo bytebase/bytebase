@@ -290,7 +290,7 @@ export function getToolDefinitions(
     {
       name: "call_api",
       description: referencedProject
-        ? `Call a Bytebase API for this turn. Use search_api first to inspect the operation and request schema. Use ${referencedProject} for project-scoped requests. Ask the member to split a question that needs another project. Calls use the signed-in member's existing permissions and may change data; do not make changes unless the member explicitly asks. Follow nextPageToken when a complete result is needed.`
+        ? `Call a Bytebase API for this turn. Use search_api first to inspect the operation and request schema. Use ${referencedProject} for project-scoped requests. Ask the member to split a question that needs another project. Calls use the signed-in member's existing permissions and may change data; do not make changes unless the member explicitly asks. A nextPageToken means the response is partial; do not automatically fetch every page to count resources.`
         : `Execute a Bytebase API endpoint. **Use search_api first to get operationId and schema.**
 
 | Parameter | Required | Description |
@@ -413,7 +413,7 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
     },
     {
       name: "get_database_count",
-      description: `Count active databases visible to the current member in ${referencedProject ? projectScope : "the Project or Workspace bound to this chat"}. With a selected @Database in the current turn, set scope to "referenced-instance" to count active databases on that database's canonical instance scope. A workspace instance may span projects; a project instance does not. This tool follows every database search or list page internally and returns only the count, never database records. It cannot choose an arbitrary instance or apply filters. If unavailable, do not report a partial count as exact.`,
+      description: `Get a bounded active-database count visible to the current member in ${referencedProject ? projectScope : "the Project or Workspace bound to this chat"}. With a selected @Database in the current turn, set scope to "referenced-instance" to count active databases on that database's canonical instance scope. A workspace instance may span projects; a project instance does not. This tool reads one page and returns its count and partial flag, never database records. If partial is true, report "at least N", not an exact total. It cannot choose an arbitrary instance or apply filters. Do not call repeatedly to enumerate all pages.`,
       parametersSchema: {
         type: "object",
         properties: {

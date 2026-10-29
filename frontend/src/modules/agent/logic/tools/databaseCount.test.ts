@@ -13,6 +13,10 @@ vi.mock("@/api", () => ({
   },
 }));
 
+vi.mock("@/utils/pagination", () => ({
+  getDefaultPagination: () => 17,
+}));
+
 import { createDatabaseCountTool } from "./databaseCount";
 
 const databases = (count: number) =>
@@ -26,12 +30,11 @@ beforeEach(() => {
 });
 
 describe("get_database_count", () => {
-  test("counts all workspace pages without returning database records", async () => {
-    databaseApi.searchDatabases
-      .mockResolvedValueOnce({ databases: databases(1000), nextPageToken: "2" })
-      .mockResolvedValueOnce({ databases: databases(1000), nextPageToken: "3" })
-      .mockResolvedValueOnce({ databases: databases(1000), nextPageToken: "4" })
-      .mockResolvedValueOnce({ databases: databases(200), nextPageToken: "" });
+  test("returns one workspace page without returning database records", async () => {
+    databaseApi.searchDatabases.mockResolvedValueOnce({
+      databases: databases(17),
+      nextPageToken: "2",
+    });
 
     const result = await createDatabaseCountTool({
       scopeName: "workspaces/demo",
@@ -40,20 +43,15 @@ describe("get_database_count", () => {
     expect(JSON.parse(result)).toEqual({
       scope: "workspaces/demo",
       status: "available",
-      count: 3200,
+      count: 17,
+      partial: true,
     });
     expect(result).not.toContain("private-");
-    expect(databaseApi.searchDatabases).toHaveBeenCalledTimes(4);
-    expect(
-      databaseApi.searchDatabases.mock.calls.map(
-        ([request]) => request.pageToken
-      )
-    ).toEqual(["", "2", "3", "4"]);
-    for (const [request] of databaseApi.searchDatabases.mock.calls) {
-      expect(request).toMatchObject({
-        pageSize: 1000,
-      });
-    }
+    expect(databaseApi.searchDatabases).toHaveBeenCalledTimes(1);
+    expect(databaseApi.searchDatabases.mock.calls[0][0]).toMatchObject({
+      pageSize: 17,
+      pageToken: "",
+    });
     expect(databaseApi.listDatabases).not.toHaveBeenCalled();
   });
 
@@ -71,6 +69,7 @@ describe("get_database_count", () => {
       scope: "projects/sample",
       status: "available",
       count: 2,
+      partial: false,
     });
     expect(databaseApi.searchDatabases).toHaveBeenCalledWith(
       expect.objectContaining({ filter: 'project == "projects/sample"' }),
@@ -79,10 +78,11 @@ describe("get_database_count", () => {
     expect(databaseApi.listDatabases).not.toHaveBeenCalled();
   });
 
-  test("counts all projects on the selected workspace-instance database's instance", async () => {
-    databaseApi.listDatabases
-      .mockResolvedValueOnce({ databases: databases(1000), nextPageToken: "2" })
-      .mockResolvedValueOnce({ databases: databases(25), nextPageToken: "" });
+  test("returns one page for the selected workspace-instance database", async () => {
+    databaseApi.searchDatabases.mockResolvedValueOnce({
+      databases: databases(17),
+      nextPageToken: "2",
+    });
 
     const result = await createDatabaseCountTool({
       scopeName: "projects/selected",
@@ -93,16 +93,21 @@ describe("get_database_count", () => {
     expect(JSON.parse(result)).toEqual({
       scope: "instances/shared",
       status: "available",
-      count: 1025,
+      count: 17,
+      partial: true,
     });
     expect(result).not.toContain("private-db");
-    expect(
-      databaseApi.listDatabases.mock.calls.map(([request]) => request.parent)
-    ).toEqual(["instances/shared", "instances/shared"]);
+    expect(databaseApi.searchDatabases).toHaveBeenCalledTimes(1);
+    expect(databaseApi.searchDatabases.mock.calls[0][0]).toMatchObject({
+      filter: 'instance == "instances/shared"',
+      pageSize: 17,
+      pageToken: "",
+    });
+    expect(databaseApi.listDatabases).not.toHaveBeenCalled();
   });
 
   test("preserves the full parent of a selected project-instance database", async () => {
-    databaseApi.listDatabases.mockResolvedValue({
+    databaseApi.searchDatabases.mockResolvedValue({
       databases: databases(3),
       nextPageToken: "",
     });
@@ -118,13 +123,15 @@ describe("get_database_count", () => {
       scope: "projects/selected/instances/dedicated",
       status: "available",
       count: 3,
+      partial: false,
     });
-    expect(databaseApi.listDatabases).toHaveBeenCalledWith(
+    expect(databaseApi.searchDatabases).toHaveBeenCalledWith(
       expect.objectContaining({
-        parent: "projects/selected/instances/dedicated",
+        filter: 'instance == "projects/selected/instances/dedicated"',
       }),
       expect.anything()
     );
+    expect(databaseApi.listDatabases).not.toHaveBeenCalled();
   });
 
   test("rejects an instance count without the current matching database reference", async () => {
@@ -142,6 +149,7 @@ describe("get_database_count", () => {
       })({ scope: "referenced-instance" });
       expect(JSON.parse(result)).toHaveProperty("error");
     }
+    expect(databaseApi.searchDatabases).not.toHaveBeenCalled();
     expect(databaseApi.listDatabases).not.toHaveBeenCalled();
   });
 
@@ -153,13 +161,14 @@ describe("get_database_count", () => {
     })({ scope: "instances/another" });
 
     expect(JSON.parse(result)).toHaveProperty("error");
+    expect(databaseApi.searchDatabases).not.toHaveBeenCalled();
     expect(databaseApi.listDatabases).not.toHaveBeenCalled();
   });
 
-  test("does not report a partial instance count after permission failure", async () => {
-    databaseApi.listDatabases
-      .mockResolvedValueOnce({ databases: databases(1000), nextPageToken: "2" })
-      .mockRejectedValueOnce(new Error("permission denied"));
+  test("reports unavailable when the instance request fails", async () => {
+    databaseApi.searchDatabases.mockRejectedValueOnce(
+      new Error("permission denied")
+    );
 
     const result = await createDatabaseCountTool({
       scopeName: "projects/selected",
@@ -171,7 +180,8 @@ describe("get_database_count", () => {
       scope: "instances/shared",
       status: "unavailable",
     });
-    expect(result).not.toContain("1000");
+    expect(databaseApi.searchDatabases).toHaveBeenCalledTimes(1);
+    expect(databaseApi.listDatabases).not.toHaveBeenCalled();
   });
 
   test("reports zero only after a complete empty page", async () => {
@@ -188,6 +198,7 @@ describe("get_database_count", () => {
       scope: "projects/empty",
       status: "available",
       count: 0,
+      partial: false,
     });
     expect(databaseApi.searchDatabases).toHaveBeenCalledWith(
       expect.objectContaining({ filter: 'project == "projects/empty"' }),
@@ -195,10 +206,10 @@ describe("get_database_count", () => {
     );
   });
 
-  test("does not claim an exact count if a later page fails", async () => {
-    databaseApi.searchDatabases
-      .mockResolvedValueOnce({ databases: databases(1000), nextPageToken: "2" })
-      .mockRejectedValueOnce(new Error("permission denied"));
+  test("reports unavailable when the first workspace request fails", async () => {
+    databaseApi.searchDatabases.mockRejectedValueOnce(
+      new Error("permission denied")
+    );
 
     const result = await createDatabaseCountTool({
       scopeName: "workspaces/demo",
@@ -208,16 +219,14 @@ describe("get_database_count", () => {
       scope: "workspaces/demo",
       status: "unavailable",
     });
-    expect(result).not.toContain("1000");
+    expect(databaseApi.searchDatabases).toHaveBeenCalledTimes(1);
   });
 
-  test("does not claim an exact count if pagination repeats a token", async () => {
-    databaseApi.searchDatabases
-      .mockResolvedValueOnce({ databases: databases(1000), nextPageToken: "2" })
-      .mockResolvedValueOnce({
-        databases: databases(1000),
-        nextPageToken: "2",
-      });
+  test("marks an underfilled page as partial when the API returns a page token", async () => {
+    databaseApi.searchDatabases.mockResolvedValueOnce({
+      databases: databases(4),
+      nextPageToken: "2",
+    });
 
     const result = await createDatabaseCountTool({
       scopeName: "workspaces/demo",
@@ -225,9 +234,30 @@ describe("get_database_count", () => {
 
     expect(JSON.parse(result)).toEqual({
       scope: "workspaces/demo",
-      status: "unavailable",
+      status: "available",
+      count: 4,
+      partial: true,
     });
-    expect(databaseApi.searchDatabases).toHaveBeenCalledTimes(2);
+    expect(databaseApi.searchDatabases).toHaveBeenCalledTimes(1);
+  });
+
+  test("does not infer another page solely from a full page", async () => {
+    databaseApi.searchDatabases.mockResolvedValueOnce({
+      databases: databases(17),
+      nextPageToken: "",
+    });
+
+    const result = await createDatabaseCountTool({
+      scopeName: "workspaces/demo",
+    })();
+
+    expect(JSON.parse(result)).toEqual({
+      scope: "workspaces/demo",
+      status: "available",
+      count: 17,
+      partial: false,
+    });
+    expect(databaseApi.searchDatabases).toHaveBeenCalledTimes(1);
   });
 
   test("rejects an invalid or missing chat scope", async () => {

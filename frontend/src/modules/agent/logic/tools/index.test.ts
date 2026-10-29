@@ -1044,6 +1044,15 @@ describe("agent tools dom_action", () => {
 });
 
 describe("agent tools read-only mode", () => {
+  test("describes database counts as bounded and partial", () => {
+    const tool = getToolDefinitions({ runMode: "read-only" }).find(
+      ({ name }) => name === "get_database_count"
+    );
+    expect(tool?.description).toContain("reads one page");
+    expect(tool?.description).toContain('report "at least N"');
+    expect(tool?.description).not.toContain("follows every");
+  });
+
   test("only exposes page inspection, guidance, and completion", () => {
     expect(
       getToolDefinitions({ runMode: "read-only" }).map((tool) => tool.name)

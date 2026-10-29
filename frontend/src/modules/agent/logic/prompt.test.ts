@@ -73,6 +73,8 @@ describe("buildSystemPrompt", () => {
     expect(prompt).toContain(
       "For filtered counts in the referenced Project, use search_api and call_api SearchDatabases with a project filter"
     );
+    expect(prompt).toContain("inspect one page");
+    expect(prompt).toContain("report only a lower bound, not a total");
     expect(prompt).not.toContain("Referenced project for this turn");
   });
 
@@ -141,17 +143,24 @@ describe("buildSystemPrompt", () => {
       "For an unqualified list or count in a workspace-bound chat, use the whole chat workspace"
     );
     expect(prompt).toContain(
-      "For an unfiltered total of active databases in the chat Workspace or Project, or the referenced Project for this turn, use get_database_count with its default scope"
+      "For an unfiltered active-database count in the chat Workspace or Project, or the referenced Project for this turn, use get_database_count with its default scope"
     );
     expect(prompt).toContain(
       "For filtered counts in a Workspace or Project, use search_api and call_api SearchDatabases"
     );
     expect(prompt).toContain(
-      "For other instance scopes, use search_api and call_api ListDatabases with the precise parent and filter"
+      "For other instance scopes, use search_api and call_api SearchDatabases with the precise instance filter"
     );
     expect(prompt).toContain(
       "ask which project only when the member requests a project-specific result without identifying one"
     );
+    expect(prompt).toContain(
+      'If partial is true, say "at least N" rather than claiming an exact total'
+    );
+    expect(prompt).toContain(
+      "Do not automatically follow pagination tokens to count all resources"
+    );
+    expect(prompt).not.toContain("follow every page");
     expect(prompt).not.toContain(
       "if it is a workspace and the request requires a specific project, ask which project"
     );
@@ -171,10 +180,10 @@ describe("buildSystemPrompt", () => {
     });
 
     expect(projectPrompt).toContain(
-      "For an unfiltered total of active databases in the chat Workspace or Project, or the referenced Project for this turn, use get_database_count with its default scope"
+      "For an unfiltered active-database count in the chat Workspace or Project, or the referenced Project for this turn, use get_database_count with its default scope"
     );
     expect(referencePrompt).toContain(
-      "For an unfiltered total of active databases in the chat Workspace or Project, or the referenced Project for this turn, use get_database_count with its default scope"
+      "For an unfiltered active-database count in the chat Workspace or Project, or the referenced Project for this turn, use get_database_count with its default scope"
     );
     expect(referencePrompt).toContain("referenced Project for this turn");
     expect(referencePrompt).toContain(

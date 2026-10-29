@@ -39,6 +39,8 @@ vi.mock("@/stores/app", () => ({
   },
 }));
 
+vi.mock("@/utils/pagination", () => ({ getDefaultPagination: () => 17 }));
+
 import {
   searchAgentDatabases,
   searchAgentIssues,
@@ -55,7 +57,7 @@ describe("searchAgentProjects", () => {
     mocks.fetchProjectList.mockReset();
   });
 
-  test("searches accessible active projects by title or ID in pages of 20", async () => {
+  test("searches accessible active projects by title or ID with the default page size", async () => {
     const controller = new AbortController();
     mocks.fetchProjectList.mockResolvedValueOnce({
       projects: [project],
@@ -71,7 +73,7 @@ describe("searchAgentProjects", () => {
         state: State.ACTIVE,
         excludeDefault: true,
       },
-      pageSize: 20,
+      pageSize: 17,
       pageToken: "",
       signal: controller.signal,
       silent: true,
@@ -139,7 +141,7 @@ describe("searchAgentDatabases", () => {
       databaseServiceClientConnect.searchDatabases
     ).toHaveBeenCalledExactlyOnceWith(
       create(SearchDatabasesRequestSchema, {
-        pageSize: 20,
+        pageSize: 17,
         pageToken: "previous-page",
         filter:
           'project == "projects/orders" && name.contains("orders\\"main")',
@@ -166,7 +168,7 @@ describe("searchAgentDatabases", () => {
     ).resolves.toEqual({ items: [], nextPageToken: "" });
     expect(mocks.searchDatabases).toHaveBeenCalledWith(
       create(SearchDatabasesRequestSchema, {
-        pageSize: 20,
+        pageSize: 17,
         pageToken: "",
         filter: 'project == "projects/orders"',
       }),
@@ -191,7 +193,7 @@ describe("searchAgentDatabases", () => {
     ).resolves.toEqual({ items: [database], nextPageToken: "next-page" });
     expect(mocks.searchDatabases).toHaveBeenCalledWith(
       create(SearchDatabasesRequestSchema, {
-        pageSize: 20,
+        pageSize: 17,
         pageToken: "previous-page",
         filter: 'name.contains("orders")',
       }),
@@ -330,7 +332,7 @@ describe("searchAgentIssues", () => {
     ).toHaveBeenCalledExactlyOnceWith(
       create(SearchIssuesRequestSchema, {
         parent: "projects/orders",
-        pageSize: 20,
+        pageSize: 17,
         pageToken: "previous-page",
         query: "index",
         orderBy: "update_time desc",
@@ -379,7 +381,7 @@ describe("searchAgentIssues", () => {
     expect(mocks.searchIssues).toHaveBeenCalledExactlyOnceWith(
       create(SearchIssuesRequestSchema, {
         parent: "projects/-",
-        pageSize: 20,
+        pageSize: 17,
         pageToken: "previous-page",
         query: "index",
         orderBy: "update_time desc",

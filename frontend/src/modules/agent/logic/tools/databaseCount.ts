@@ -9,13 +9,9 @@ import {
   projectNamePrefix,
   workspaceNamePrefix,
 } from "@/stores/modules/v1/common";
-import {
-  ListDatabasesRequestSchema,
-  SearchDatabasesRequestSchema,
-} from "@/types/proto-es/v1/database_service_pb";
+import { SearchDatabasesRequestSchema } from "@/types/proto-es/v1/database_service_pb";
+import { getDefaultPagination } from "@/utils/pagination";
 import { celString } from "@/utils/v1/celLiteral";
-
-const PAGE_SIZE = 1000;
 
 const isDatabaseCollectionParent = (name: string | undefined): name is string =>
   !!name &&
@@ -89,43 +85,29 @@ export function createDatabaseCountTool({
       });
     }
 
-    let count = 0;
-    let pageToken = "";
-    const seenPageTokens = new Set<string>();
     try {
-      do {
-        const options = {
-          contextValues: createContextValues().set(silentContextKey, true),
-        };
-        const page =
-          scope === "context"
-            ? await databaseServiceClientConnect.searchDatabases(
-                create(SearchDatabasesRequestSchema, {
-                  pageSize: PAGE_SIZE,
-                  pageToken,
-                  filter: parent.startsWith(projectNamePrefix)
-                    ? `project == ${celString(parent)}`
-                    : "",
-                }),
-                options
-              )
-            : await databaseServiceClientConnect.listDatabases(
-                create(ListDatabasesRequestSchema, {
-                  parent,
-                  pageSize: PAGE_SIZE,
-                  pageToken,
-                  showDeleted: false,
-                }),
-                options
-              );
-        count += page.databases.length;
-        pageToken = page.nextPageToken;
-        if (pageToken && seenPageTokens.has(pageToken)) {
-          return JSON.stringify({ scope: parent, status: "unavailable" });
-        }
-        seenPageTokens.add(pageToken);
-      } while (pageToken);
-      return JSON.stringify({ scope: parent, status: "available", count });
+      const options = {
+        contextValues: createContextValues().set(silentContextKey, true),
+      };
+      const filter =
+        scope === "referenced-instance"
+          ? `instance == ${celString(parent)}`
+          : parent.startsWith(projectNamePrefix)
+            ? `project == ${celString(parent)}`
+            : "";
+      const page = await databaseServiceClientConnect.searchDatabases(
+        create(SearchDatabasesRequestSchema, {
+          pageSize: getDefaultPagination(),
+          filter,
+        }),
+        options
+      );
+      return JSON.stringify({
+        scope: parent,
+        status: "available",
+        count: page.databases.length,
+        partial: Boolean(page.nextPageToken),
+      });
     } catch {
       return JSON.stringify({ scope: parent, status: "unavailable" });
     }

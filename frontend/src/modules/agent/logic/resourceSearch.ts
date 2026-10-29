@@ -18,6 +18,7 @@ import {
   SearchIssuesRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import { getDefaultPagination } from "@/utils/pagination";
 import { celString } from "@/utils/v1/celLiteral";
 
 export async function searchAgentProjects(
@@ -33,7 +34,7 @@ export async function searchAgentProjects(
         state: State.ACTIVE,
         excludeDefault: true,
       },
-      pageSize: 20,
+      pageSize: getDefaultPagination(),
       pageToken,
       signal,
       silent: true,
@@ -73,7 +74,7 @@ export async function searchAgentDatabases(
   };
   const response = await databaseServiceClientConnect.searchDatabases(
     create(SearchDatabasesRequestSchema, {
-      pageSize: 20,
+      pageSize: getDefaultPagination(),
       pageToken,
       filter,
     }),
@@ -100,7 +101,7 @@ export async function searchAgentIssues(
   const response = await issueServiceClientConnect.searchIssues(
     create(SearchIssuesRequestSchema, {
       parent,
-      pageSize: 20,
+      pageSize: getDefaultPagination(),
       pageToken,
       query: query.trim(),
       orderBy: "update_time desc",
