@@ -64,6 +64,40 @@ afterEach(() => {
 const s = (store: StoreApi<AgentState>) => store.getState();
 
 describe("useAgentStore (Zustand)", () => {
+  test("persists a validated handoff and drops an invalid saved target", () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/alpha");
+    const chatId = s(store).currentChatId!;
+    s(store).addMessage({
+      chatId,
+      role: "assistant",
+      content: "Review the queue",
+      metadata: {
+        handoff: { kind: "review-project-issues", project: "projects/sample" },
+      },
+    });
+    const reloaded = createAgentStore();
+    s(reloaded).setWorkspaceName("workspaces/alpha");
+    expect(s(reloaded).getMessages(chatId)[0].metadata?.handoff).toEqual({
+      kind: "review-project-issues",
+      project: "projects/sample",
+    });
+
+    const key = getAgentStateKey("workspaces/alpha");
+    const raw = JSON.parse(localStorage.getItem(key)!) as {
+      messagesByChatId: Record<string, { metadata?: { handoff?: unknown } }[]>;
+    };
+    raw.messagesByChatId[chatId][0].metadata!.handoff = {
+      kind: "review-project-issues",
+      project: "projects/-",
+    };
+    localStorage.setItem(key, JSON.stringify(raw));
+    const corrupted = createAgentStore();
+    s(corrupted).setWorkspaceName("workspaces/alpha");
+    expect(
+      s(corrupted).getMessages(chatId)[0].metadata?.handoff
+    ).toBeUndefined();
+  });
   test("opens the selected chat without toggling or interrupting it", () => {
     const store = createAgentStore();
     const chatId = s(store).currentChatId;

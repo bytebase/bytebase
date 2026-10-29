@@ -3,6 +3,30 @@ import { describe, expect, test } from "vitest";
 import { buildSystemPrompt } from "./prompt";
 
 describe("buildSystemPrompt", () => {
+  test("limits handoffs to one supported current-turn next step", () => {
+    const prompt = buildSystemPrompt({ path: "/landing", title: "Workspace" });
+    expect(prompt).toContain("at most one handoff");
+    expect(prompt).toContain("current-turn overview evidence");
+    expect(prompt).toContain("member-clicked");
+  });
+
+  test("uses empty-project setup evidence in the same priority as Project Home", () => {
+    const prompt = buildSystemPrompt({
+      path: "/projects/sample",
+      title: "Sample",
+    });
+    expect(prompt).toContain("transfer an eligible unassigned database first");
+    expect(prompt).toContain("connect an instance directly");
+    expect(prompt).toContain("create a database on an available instance");
+    expect(prompt).toContain("transfer-project-databases");
+  });
+  test("requests fresh validation only for database choices", () => {
+    const prompt = buildSystemPrompt({ path: "/landing", title: "Workspace" });
+    expect(prompt).toContain("resourceKind");
+    expect(prompt).toContain("canonical option values");
+    expect(prompt).toContain("Ask which Project first");
+    expect(prompt).not.toContain('resourceKind="environment"');
+  });
   test("requires a failed completion when an API request is rejected", () => {
     const prompt = buildSystemPrompt({
       path: "/projects/orders/issues",

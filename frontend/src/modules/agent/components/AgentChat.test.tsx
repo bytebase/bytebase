@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import {
   PROJECT_V1_ROUTE_DATABASE_DETAIL,
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
+  PROJECT_V1_ROUTE_ISSUES,
 } from "@/app/router/handles";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { createAgentStore, useAgentStore } from "../store/agent";
@@ -80,7 +81,8 @@ vi.mock("@/app/router", async (importOriginal) => ({
   },
 }));
 
-vi.mock("@/utils", () => ({
+vi.mock("@/utils", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/utils")>()),
   hasWorkspacePermissionV2: mocks.hasWorkspacePermissionV2,
 }));
 
@@ -145,6 +147,57 @@ afterEach(() => {
 });
 
 describe("AgentChat", () => {
+  test("renders a member-clicked handoff only on a final answer", () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/sample" });
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "Review the current change queue.",
+      metadata: {
+        handoff: { kind: "review-database-changes", project: "projects/sample" },
+      },
+    });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+    const link = container.querySelector<HTMLAnchorElement>("[data-agent-handoff]");
+    expect(link?.textContent).toContain("agent.handoff.review-database-changes");
+    expect(link?.getAttribute("href")).toContain(PROJECT_V1_ROUTE_ISSUES);
+    expect(mocks.routerPush).not.toHaveBeenCalled();
+    unmount();
+  });
+
+  test("uses the same setup action label as Project Home", () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/sample" });
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "Transfer an eligible database.",
+      metadata: {
+        handoff: { kind: "transfer-project-databases", project: "projects/sample" },
+      },
+    });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+    expect(container.querySelector("[data-agent-handoff]")?.textContent).toContain(
+      "project.home.transfer-databases"
+    );
+    unmount();
+  });
+
+  test("does not render a handoff from pending, errored, or malformed messages", () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/sample" });
+    const handoff = { kind: "review-project-issues" as const, project: "projects/sample" };
+    store.addMessage({ chatId: chat.id, role: "assistant", content: "Loading", metadata: { pending: true, handoff } });
+    store.addMessage({ chatId: chat.id, role: "assistant", content: "Failed", metadata: { error: "failed", handoff } });
+    store.addMessage({ chatId: chat.id, role: "assistant", content: "Old", metadata: { handoff: { kind: "review-project-issues", project: "projects/-" } } });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+    expect(container.querySelectorAll("[data-agent-handoff]")).toHaveLength(0);
+    unmount();
+  });
   test("shows project landing prompts in an empty project chat and prefills without sending", () => {
     const store = useAgentStore.getState();
     const chat = store.createChat({ context: "projects/sample" });
@@ -167,6 +220,7 @@ describe("AgentChat", () => {
       "project-open-blockers",
       "project-open-recent",
       "project-propose-change",
+      "project-next",
     ]);
 
     act(() => {

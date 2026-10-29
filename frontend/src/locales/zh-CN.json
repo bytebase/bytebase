@@ -53,6 +53,19 @@
     "context-no-projects": "没有可访问的项目",
     "context-select": "选择上下文",
     "context-workspace": "工作区",
+    "contextual-start": {
+      "active-request": "请先完成当前请求，再开始新的聊天。",
+      "continue-chat": "继续当前聊天",
+      "database-heading": "询问此数据库",
+      "database-recent": "此数据库最近有什么变更？",
+      "database-schema": "此数据库有哪些表？",
+      "issue-changes": "此工单涉及哪些变更？",
+      "issue-heading": "询问此工单",
+      "issue-security": "此工单是否存在安全隐患？",
+      "issue-summary": "总结此工单及其当前状态",
+      "project-heading": "询问此项目",
+      "resource-unavailable": "此资源不可引用。"
+    },
     "database-reference-unavailable": "此数据库已不可用，或你没有访问权限。",
     "delete-all-chats": "删除所有对话",
     "delete-all-chats-confirmation": "确定要删除所有已归档对话吗？此操作无法撤销。",
@@ -67,6 +80,13 @@
       "database": "数据库",
       "issue": "issue",
       "references": "依据"
+    },
+    "handoff": {
+      "open-project-instances": "打开项目实例",
+      "review-database-changes": "查看数据库变更",
+      "review-project-issues": "查看项目工单",
+      "review-workspace-issues": "查看我的工单",
+      "view-failed-tasks": "查看失败的任务"
     },
     "input-keyboard-hint": "按 Enter 发送 · 按 Shift+Enter 换行",
     "input-placeholder": "向 AI 提问，或输入 @ 选择资源",

@@ -53,6 +53,19 @@
     "context-no-projects": "No accessible projects",
     "context-select": "Select context",
     "context-workspace": "Workspace",
+    "contextual-start": {
+      "active-request": "Finish the active request before starting another chat.",
+      "continue-chat": "Continue current chat",
+      "database-heading": "Ask about this database",
+      "database-recent": "What changed recently in this database?",
+      "database-schema": "What tables are in this database?",
+      "issue-changes": "What changes does this issue involve?",
+      "issue-heading": "Ask about this issue",
+      "issue-security": "Are there any security concerns with this issue?",
+      "issue-summary": "Summarize this issue and its status",
+      "project-heading": "Ask about this project",
+      "resource-unavailable": "This resource is not available to reference."
+    },
     "database-reference-unavailable": "This database is no longer available or you do not have access to it.",
     "delete-all-chats": "Delete all chats",
     "delete-all-chats-confirmation": "Are you sure you want to delete all archived chats? This action cannot be undone.",
@@ -67,6 +80,13 @@
       "database": "database",
       "issue": "issue",
       "references": "Evidence"
+    },
+    "handoff": {
+      "open-project-instances": "Open project instances",
+      "review-database-changes": "Review database changes",
+      "review-project-issues": "Review project issues",
+      "review-workspace-issues": "Review my issues",
+      "view-failed-tasks": "View failed tasks"
     },
     "input-keyboard-hint": "Enter to send · Shift+Enter for a new line",
     "input-placeholder": "Ask AI anything or type @ to select a resource",

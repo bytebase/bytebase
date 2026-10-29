@@ -53,6 +53,19 @@
     "context-no-projects": "No hay proyectos accesibles",
     "context-select": "Seleccionar contexto",
     "context-workspace": "Espacio de trabajo",
+    "contextual-start": {
+      "active-request": "Termina la solicitud activa antes de iniciar otro chat.",
+      "continue-chat": "Continuar el chat actual",
+      "database-heading": "Preguntar sobre esta base de datos",
+      "database-recent": "¿Qué cambió recientemente en esta base de datos?",
+      "database-schema": "¿Qué tablas hay en esta base de datos?",
+      "issue-changes": "¿Qué cambios implica esta solicitud?",
+      "issue-heading": "Preguntar sobre esta solicitud",
+      "issue-security": "¿Hay algún problema de seguridad relacionado con esta solicitud?",
+      "issue-summary": "Resume esta solicitud y su estado",
+      "project-heading": "Preguntar sobre este proyecto",
+      "resource-unavailable": "Este recurso no está disponible para referenciarlo."
+    },
     "database-reference-unavailable": "Esta base de datos ya no está disponible o no tienes acceso a ella.",
     "delete-all-chats": "Eliminar todos los chats",
     "delete-all-chats-confirmation": "¿Está seguro de que desea eliminar todos los chats archivados? Esta acción no se puede deshacer.",
@@ -67,6 +80,13 @@
       "database": "base de datos",
       "issue": "issue",
       "references": "Evidencia"
+    },
+    "handoff": {
+      "open-project-instances": "Abrir instancias del proyecto",
+      "review-database-changes": "Revisar cambios de base de datos",
+      "review-project-issues": "Revisar incidencias del proyecto",
+      "review-workspace-issues": "Revisar mis incidencias",
+      "view-failed-tasks": "Ver tareas fallidas"
     },
     "input-keyboard-hint": "Enter para enviar · Shift+Enter para un salto de línea",
     "input-placeholder": "Pregunta a la IA o escribe @ para seleccionar un recurso",

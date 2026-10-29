@@ -13,6 +13,7 @@ import {
 } from "@/types/proto-es/v1/ai_service_pb";
 import { parseCallApiResult } from "./callApiResult";
 import type {
+  AgentHandoff,
   AgentLoopOutcome,
   Message,
   ToolCall,
@@ -96,7 +97,7 @@ export interface AgentCallbacks {
     message: Pick<Message, "content" | "toolCalls">
   ) => void;
   onToolResult?: (toolCallId: string, result: string) => void;
-  onText?: (text: string) => void;
+  onText?: (text: string, handoff?: AgentHandoff) => void;
   onError?: (error: Error) => void;
 }
 
@@ -326,9 +327,11 @@ export async function runAgentLoop(
           }
 
           const { text, success } = executionResult;
+          const handoff = success ? executionResult.handoff : undefined;
           const doneResult = JSON.stringify({
             text,
             success,
+            ...(handoff ? { handoff } : {}),
             ...(success && apiAttempts.failedApiCallCount > 0
               ? { failedApiCallCount: apiAttempts.failedApiCallCount }
               : {}),
@@ -344,6 +347,7 @@ export async function runAgentLoop(
               kind: "completed",
               text,
               success,
+              ...(handoff ? { handoff } : {}),
               totalTokensUsed,
             },
             blockedBy: {
@@ -355,7 +359,14 @@ export async function runAgentLoop(
 
         if (terminalState) {
           if (terminalState.outcome.kind === "completed") {
-            callbacks?.onText?.(terminalState.outcome.text);
+            if (terminalState.outcome.handoff) {
+              callbacks?.onText?.(
+                terminalState.outcome.text,
+                terminalState.outcome.handoff
+              );
+            } else {
+              callbacks?.onText?.(terminalState.outcome.text);
+            }
           }
           return terminalState.outcome;
         }

@@ -2,13 +2,21 @@ import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
 import { issueServiceClientConnect } from "@/api";
 import { silentContextKey } from "@/api/context-key";
+import {
+  getProjectSetupSteps,
+  type ProjectSetupState,
+  type ProjectSetupStep,
+  type ResourceAvailability,
+} from "@/lib/projectSetup";
 import { useAppStore } from "@/stores/app";
 import { buildIssueFilter } from "@/stores/app/issue";
-import { IssueStatus } from "@/types/proto-es/v1/common_pb";
+import type { Permission } from "@/types/iam";
+import { IssueStatus, State } from "@/types/proto-es/v1/common_pb";
 import {
   Issue_Type,
   SearchIssuesRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
+import { ProjectSchema } from "@/types/proto-es/v1/project_service_pb";
 import type { AgentEvidence, AgentEvidenceReference } from "../types";
 import { createProjectOpenIssuesTool } from "./projectOpenIssues";
 
@@ -41,8 +49,123 @@ export type ProjectOverview = {
   personalIssues: EvidenceFacet<"issues", ProjectIssue[]>;
   databases: EvidenceFacet<"databases", { name: string }[]>;
   openDatabaseChanges: EvidenceFacet<"issues", DatabaseChange[]>;
+  setup?: ProjectSetupState & { recommendedStep?: ProjectSetupStep };
   evidence: AgentEvidence;
 };
+
+async function collectProjectSetup(
+  projectName: string
+): Promise<ProjectSetupState> {
+  const initialState = useAppStore.getState();
+  if (
+    !initialState.currentUser ||
+    !initialState.workspacePolicy ||
+    !initialState.roles.length
+  ) {
+    await initialState.loadWorkspacePermissionState().catch(() => undefined);
+  }
+  if (!useAppStore.getState().projectPoliciesByName[projectName]) {
+    await useAppStore
+      .getState()
+      .loadProjectIamPolicy(projectName, true)
+      .catch(() => undefined);
+  }
+  const state = useAppStore.getState();
+  const project = create(ProjectSchema, { name: projectName });
+  const workspacePermissionKnown = Boolean(
+    state.currentUser && state.workspacePolicy && state.roles.length
+  );
+  const projectPermissionKnown = Boolean(
+    workspacePermissionKnown && state.projectPoliciesByName[projectName]
+  );
+  const workspaceAllows = (permission: Permission) =>
+    !workspacePermissionKnown || state.hasWorkspacePermission(permission);
+  const projectAllows = (permission: Permission) =>
+    !projectPermissionKnown || state.hasProjectPermission(project, permission);
+  const defaultProject = state.serverInfo?.defaultProject ?? "";
+  const workspaceName = state.workspaceResourceName();
+  const canListProjectInstances =
+    projectName !== defaultProject && projectAllows("bb.instances.list");
+  const canListWorkspaceInstances = workspaceAllows("bb.instances.list");
+  const canTransferDatabases =
+    workspaceAllows("bb.databases.list") &&
+    workspaceAllows("bb.databases.update") &&
+    projectAllows("bb.databases.update") &&
+    Boolean(defaultProject && workspaceName);
+
+  if (!defaultProject) {
+    return {
+      isDefault: false,
+      instance: "unknown",
+      transferableDatabase: "unknown",
+      canConnectInstance: false,
+      canTransferDatabases: false,
+      canCreateDatabase: false,
+    };
+  }
+
+  if (projectName === defaultProject) {
+    return {
+      isDefault: true,
+      instance: "unknown",
+      transferableDatabase: "unknown",
+      canConnectInstance: false,
+      canTransferDatabases: false,
+      canCreateDatabase: false,
+    };
+  }
+
+  const instanceRequests = [
+    ...(canListProjectInstances ? [projectName] : []),
+    ...(canListWorkspaceInstances ? [undefined] : []),
+  ].map(async (parent) => {
+    const { instances } = await state.fetchInstanceList({
+      parent,
+      pageSize: 1,
+      filter: { state: State.ACTIVE },
+      silent: true,
+    });
+    return instances.length ? ("present" as const) : ("empty" as const);
+  });
+  const [instanceResults, transferableDatabase] = await Promise.all([
+    Promise.allSettled(instanceRequests),
+    canTransferDatabases
+      ? state
+          .fetchDatabases({
+            parent: workspaceName,
+            pageSize: 1,
+            filter: { project: defaultProject },
+            silent: true,
+          })
+          .then(({ databases }) =>
+            databases.length ? ("present" as const) : ("empty" as const)
+          )
+          .catch(() => "unknown" as const)
+      : Promise.resolve("empty" as const),
+  ]);
+  const instanceStates = instanceResults.map((result) =>
+    result.status === "fulfilled" ? result.value : "unknown"
+  );
+  const instance: ResourceAvailability = instanceStates.includes("present")
+    ? "present"
+    : !instanceStates.length || instanceStates.includes("unknown")
+      ? "unknown"
+      : "empty";
+  return {
+    isDefault: false,
+    instance,
+    transferableDatabase,
+    canConnectInstance:
+      projectName !== defaultProject && projectAllows("bb.instances.create"),
+    canTransferDatabases,
+    canCreateDatabase:
+      projectAllows("bb.databases.list") &&
+      projectAllows("bb.instances.list") &&
+      projectAllows("bb.issues.create") &&
+      projectAllows("bb.plans.create") &&
+      projectAllows("bb.sheets.create"),
+  };
+}
 
 function isProjectName(value: string | undefined): value is string {
   return !!value && /^projects\/[^/]+$/.test(value);
@@ -185,12 +308,30 @@ export async function collectProjectOverview(
           })),
         }
       : unavailableFacet<"issues", DatabaseChange[]>();
+  const setupState =
+    databases.status === "available" &&
+    !databases.partial &&
+    databases.databases.length === 0 &&
+    useAppStore.getState().projectsByName[projectName]?.state !== State.DELETED
+      ? await collectProjectSetup(projectName)
+      : undefined;
+  const recommendedStep = setupState
+    ? getProjectSetupSteps(setupState)[0]
+    : undefined;
 
   return {
     project: projectName,
     personalIssues,
     databases,
     openDatabaseChanges,
+    ...(setupState
+      ? {
+          setup: {
+            ...setupState,
+            ...(recommendedStep ? { recommendedStep } : {}),
+          },
+        }
+      : {}),
     evidence: collectEvidenceReferences(
       projectName,
       personalIssues,

@@ -721,6 +721,417 @@ describe("AgentInput", () => {
     view.unmount();
   });
 
+  test("attaches only an observed handoff to a final answer", async () => {
+    mocks.runAgentLoop.mockImplementation(
+      async (_history, _tools, _executor, callbacks) => {
+        callbacks.onAssistantMessage({
+          toolCalls: [{ id: "overview-1", name: "get_project_overview", arguments: "{}" }],
+        });
+        callbacks.onToolResult(
+          "overview-1",
+          JSON.stringify({
+            project: "projects/orders",
+            personalIssues: {
+              status: "available",
+              issues: [{ name: "projects/orders/issues/42", relation: "review" }],
+            },
+          })
+        );
+        callbacks.onText("Review this issue.", {
+          kind: "review-project-issues",
+          project: "projects/orders",
+        });
+        return { kind: "completed", success: true, totalTokensUsed: 0 };
+      }
+    );
+    const page = { path: "/projects/orders", title: "Orders" };
+    const chat = useAgentStore.getState().createChat({ context: "projects/orders", page });
+    useAgentStore.getState().queueUserMessage({ chatId: chat.id, text: "What should I review?", page });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => {
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+    });
+    expect(useAgentStore.getState().getMessages(chat.id).find((message) => message.content === "Review this issue.")?.metadata?.handoff).toEqual({
+      kind: "review-project-issues",
+      project: "projects/orders",
+    });
+    view.unmount();
+  });
+
+  test("does not attach a setup handoff from before a mutating API call", async () => {
+    mocks.executeTool.mockResolvedValue({
+      kind: "tool_result",
+      result: '{"status":200}',
+    });
+    mocks.runAgentLoop.mockImplementation(
+      async (_history, _tools, executeTool, callbacks) => {
+        callbacks.onAssistantMessage({
+          toolCalls: [
+            { id: "overview-1", name: "get_project_overview", arguments: "{}" },
+          ],
+        });
+        callbacks.onToolResult(
+          "overview-1",
+          JSON.stringify({
+            project: "projects/orders",
+            databases: { status: "available", partial: false, databases: [] },
+            setup: {
+              isDefault: false,
+              instance: "empty",
+              transferableDatabase: "empty",
+              canConnectInstance: true,
+              canTransferDatabases: true,
+              canCreateDatabase: true,
+            },
+          })
+        );
+        await executeTool(
+          "call_api",
+          { operationId: "DatabaseService/UpdateDatabase", body: {} },
+          "write-1"
+        );
+        callbacks.onText("The database is ready.", {
+          kind: "connect-project-instance",
+          project: "projects/orders",
+        });
+        return { kind: "completed", success: true, totalTokensUsed: 0 };
+      }
+    );
+    const page = { path: "/projects/orders", title: "Orders" };
+    const chat = useAgentStore.getState().createChat({ context: "projects/orders", page });
+    useAgentStore.getState().queueUserMessage({
+      chatId: chat.id,
+      text: "Update the database",
+      page,
+    });
+
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => {
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+    });
+    expect(
+      useAgentStore
+        .getState()
+        .getMessages(chat.id)
+        .find((message) => message.content === "The database is ready.")
+        ?.metadata?.handoff
+    ).toBeUndefined();
+    view.unmount();
+  });
+
+  test("refetches a referenced project overview after a mutating API call", async () => {
+    const project = "projects/orders";
+    const staleOverview = JSON.stringify({
+      project,
+      databases: { status: "available", partial: false, databases: [] },
+      setup: {
+        isDefault: false,
+        instance: "empty",
+        transferableDatabase: "empty",
+        canConnectInstance: true,
+        canTransferDatabases: true,
+        canCreateDatabase: true,
+      },
+    });
+    const freshOverview = JSON.stringify({
+      project,
+      databases: {
+        status: "available",
+        partial: false,
+        databases: [{ name: "instances/prod/databases/orders" }],
+      },
+    });
+    mocks.executeTool
+      .mockResolvedValueOnce({ kind: "tool_result", result: staleOverview })
+      .mockResolvedValueOnce({ kind: "tool_result", result: '{"status":200}' })
+      .mockResolvedValueOnce({ kind: "tool_result", result: freshOverview });
+    mocks.runAgentLoop.mockImplementation(
+      async (_history, _tools, executeTool, callbacks) => {
+        await executeTool(
+          "call_api",
+          { operationId: "DatabaseService/UpdateDatabase", body: {} },
+          "write-1"
+        );
+        callbacks.onAssistantMessage({
+          toolCalls: [
+            { id: "overview-2", name: "get_project_overview", arguments: "{}" },
+          ],
+        });
+        const overview = await executeTool("get_project_overview", {}, "overview-2");
+        callbacks.onToolResult("overview-2", overview.result);
+        callbacks.onText("The database is ready.", {
+          kind: "connect-project-instance",
+          project,
+        });
+        return { kind: "completed", success: true, totalTokensUsed: 0 };
+      }
+    );
+    const page = { path: "/projects/orders", title: "Orders" };
+    const chat = useAgentStore.getState().createChat({ context: project, page });
+    useAgentStore.getState().queueUserMessage({
+      chatId: chat.id,
+      text: "@Orders update the database",
+      page,
+      resourceReference: {
+        kind: "project",
+        name: project,
+        project,
+        label: "Orders",
+      },
+    });
+
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => {
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+    });
+    expect(mocks.executeTool.mock.calls.map(([name]) => name)).toEqual([
+      "get_project_overview",
+      "call_api",
+      "get_project_overview",
+    ]);
+    expect(
+      useAgentStore
+        .getState()
+        .getMessages(chat.id)
+        .find((message) => message.content === "The database is ready.")
+        ?.metadata?.handoff
+    ).toBeUndefined();
+    view.unmount();
+  });
+
+  test.each([false, true])(
+    "drops pre-mutation database evidence and repopulates only from a later read: %s",
+    async (readAgain) => {
+      const project = "projects/orders";
+      const databaseName = "instances/prod/databases/orders";
+      const staleEvidence = {
+        project,
+        references: [{ kind: "database", name: databaseName, title: "Before update" }],
+      };
+      const freshEvidence = {
+        project,
+        references: [{ kind: "database", name: databaseName, title: "After update" }],
+      };
+      const overview = (evidence: typeof staleEvidence) =>
+        JSON.stringify({
+          project,
+          database: { status: "available", name: databaseName, state: "ACTIVE" },
+          evidence,
+        });
+      mocks.executeTool
+        .mockResolvedValueOnce({ kind: "tool_result", result: overview(staleEvidence) })
+        .mockResolvedValueOnce({ kind: "tool_result", result: '{"status":200}' });
+      if (readAgain) {
+        mocks.executeTool.mockResolvedValueOnce({
+          kind: "tool_result",
+          result: overview(freshEvidence),
+        });
+      }
+      mocks.runAgentLoop.mockImplementation(
+        async (_history, _tools, executeTool, callbacks) => {
+          await executeTool(
+            "call_api",
+            { operationId: "DatabaseService/UpdateDatabase", body: {} },
+            "write-1"
+          );
+          if (readAgain) {
+            callbacks.onAssistantMessage({
+              toolCalls: [
+                {
+                  id: "overview-2",
+                  name: "get_database_overview",
+                  arguments: JSON.stringify({ databaseName }),
+                },
+              ],
+            });
+            const result = await executeTool(
+              "get_database_overview",
+              { databaseName },
+              "overview-2"
+            );
+            callbacks.onToolResult("overview-2", result.result);
+          }
+          callbacks.onText("The database has been updated.");
+          return { kind: "completed", success: true, totalTokensUsed: 0 };
+        }
+      );
+      const page = { path: "/projects/orders/databases", title: "Databases" };
+      const chat = useAgentStore.getState().createChat({ context: project, page });
+      useAgentStore.getState().queueUserMessage({
+        chatId: chat.id,
+        text: "@orders Update the database",
+        page,
+        resourceReference: {
+          kind: "database",
+          name: databaseName,
+          project,
+          label: "orders",
+        },
+      });
+
+      const view = renderIntoContainer(<AgentInput />);
+      view.render();
+      await act(async () => {
+        await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+      });
+      expect(
+        useAgentStore
+          .getState()
+          .getMessages(chat.id)
+          .find((message) => message.content === "The database has been updated.")
+          ?.metadata?.evidence
+      ).toEqual(readAgain ? freshEvidence : undefined);
+      view.unmount();
+    }
+  );
+
+  test("does not attach an unproposed setup handoff to a completed answer", async () => {
+    mocks.runAgentLoop.mockImplementation(
+      async (_history, _tools, _executor, callbacks) => {
+        callbacks.onAssistantMessage({
+          toolCalls: [
+            { id: "overview-1", name: "get_project_overview", arguments: "{}" },
+          ],
+        });
+        callbacks.onToolResult(
+          "overview-1",
+          JSON.stringify({
+            project: "projects/new-project-8i6r",
+            personalIssues: { status: "available", partial: false, issues: [] },
+            databases: { status: "available", partial: false, databases: [] },
+            setup: {
+              isDefault: false,
+              instance: "empty",
+              transferableDatabase: "empty",
+              canConnectInstance: true,
+              canTransferDatabases: true,
+              canCreateDatabase: true,
+            },
+            openDatabaseChanges: {
+              status: "available",
+              partial: false,
+              issues: [],
+            },
+          })
+        );
+        callbacks.onText("Connect an instance, then add its databases.");
+        return { kind: "completed", text: "Connect an instance, then add its databases.", success: true, totalTokensUsed: 0 };
+      }
+    );
+    const page = { path: "/projects/new-project-8i6r/databases", title: "Databases" };
+    const chat = useAgentStore.getState().createChat({
+      context: "projects/new-project-8i6r",
+      page,
+    });
+    useAgentStore.getState().queueUserMessage({
+      chatId: chat.id,
+      text: "What should I set up next in this project?",
+      page,
+    });
+
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => {
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+    });
+    expect(
+      useAgentStore
+        .getState()
+        .getMessages(chat.id)
+        .find((message) => message.content === "Connect an instance, then add its databases.")
+        ?.metadata?.handoff
+    ).toBeUndefined();
+    view.unmount();
+  });
+
+  test.each([
+    {
+      name: "an unusable model handoff",
+      success: true,
+      proposedHandoff: {
+        kind: "review-project-issues" as const,
+        project: "projects/orders",
+      },
+      expectedHandoff: undefined,
+    },
+    {
+      name: "a matching model handoff",
+      success: true,
+      proposedHandoff: {
+        kind: "connect-project-instance" as const,
+        project: "projects/orders",
+      },
+      expectedHandoff: {
+        kind: "connect-project-instance",
+        project: "projects/orders",
+      },
+    },
+    {
+      name: "a failed answer",
+      success: false,
+      proposedHandoff: {
+        kind: "connect-project-instance" as const,
+        project: "projects/orders",
+      },
+      expectedHandoff: undefined,
+    },
+  ])("validates the setup handoff for $name", async ({ success, proposedHandoff, expectedHandoff }) => {
+    mocks.runAgentLoop.mockImplementation(
+      async (_history, _tools, _executor, callbacks) => {
+        callbacks.onAssistantMessage({
+          toolCalls: [
+            { id: "overview-1", name: "get_project_overview", arguments: "{}" },
+          ],
+        });
+        callbacks.onToolResult(
+          "overview-1",
+          JSON.stringify({
+            project: "projects/orders",
+            databases: { status: "available", partial: false, databases: [] },
+            setup: {
+              isDefault: false,
+              instance: "empty",
+              transferableDatabase: "empty",
+              canConnectInstance: true,
+              canTransferDatabases: true,
+              canCreateDatabase: true,
+            },
+          })
+        );
+        callbacks.onText("Set up an instance.", proposedHandoff);
+        return {
+          kind: "completed",
+          text: "Set up an instance.",
+          success,
+          totalTokensUsed: 0,
+        };
+      }
+    );
+    const page = { path: "/projects/orders", title: "Orders" };
+    const chat = useAgentStore.getState().createChat({ context: "projects/orders", page });
+    useAgentStore.getState().queueUserMessage({
+      chatId: chat.id,
+      text: "What should I set up next?",
+      page,
+    });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => {
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+    });
+    expect(
+      useAgentStore
+        .getState()
+        .getMessages(chat.id)
+        .find((message) => message.content === "Set up an instance.")?.metadata
+        ?.handoff
+    ).toEqual(expectedHandoff);
+    view.unmount();
+  });
+
   test("attaches Issue overview evidence to the final answer", async () => {
     mocks.runAgentLoop.mockImplementation(
       async (_history, _tools, _executor, callbacks) => {
@@ -1251,6 +1662,7 @@ describe("AgentInput", () => {
           {
             name: "projects/orders/issues/42",
             title: "Add customer table",
+            relation: "review",
           },
         ],
         partial: false,
@@ -1282,6 +1694,12 @@ describe("AgentInput", () => {
         expect.objectContaining({
           role: "assistant",
           content: expect.stringContaining("agent.workspace-attention.issue"),
+          metadata: expect.objectContaining({
+            handoff: {
+              kind: "review-workspace-issues",
+              workspace: "workspaces/demo",
+            },
+          }),
         }),
       ])
     );

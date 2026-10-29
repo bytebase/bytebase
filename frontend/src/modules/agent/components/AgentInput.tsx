@@ -27,6 +27,7 @@ import {
   isAgentAIConfigurationError,
 } from "../logic/aiConfiguration";
 import { getCurrentChatContext } from "../logic/chatContext";
+import { acceptAgentHandoff, collectAgentHandoffs } from "../logic/handoff";
 import type { IssueDecisionImpact } from "../logic/issueDecisionImpact";
 import {
   getLandingStarterIdForText,
@@ -46,6 +47,7 @@ import {
   updateDraftResourceMentions,
 } from "../logic/resourceMention";
 import { createToolExecutor, getToolDefinitions } from "../logic/tools";
+import { apiCallNeedsConfirmation } from "../logic/tools/apiMethodClass";
 import { extractDatabaseOverviewEvidence } from "../logic/tools/databaseOverview";
 import { extractIssueOverviewEvidence } from "../logic/tools/issueOverview";
 import {
@@ -61,6 +63,7 @@ import type {
   AgentAnswerEvidence,
   AgentAskUserOption,
   AgentEvidence,
+  AgentHandoff,
   AgentResourceReference,
   AgentRunMode,
   Message,
@@ -800,6 +803,7 @@ export function AgentInput({
         chatId,
         userName: useAppStore.getState().currentUser?.name,
         context: store.getChat(chatId)?.context,
+        workspaceName: workspace?.name,
         referencedProject,
         referencedDatabase,
         referencedIssue,
@@ -812,6 +816,23 @@ export function AgentInput({
       });
       const toolNamesByCallId = new Map<string, string>();
       let overviewEvidence: AgentAnswerEvidence | undefined;
+      const handoffCandidates: AgentHandoff[] = [];
+      const chatContext = store.getChat(chatId)?.context;
+      const handoffScope = {
+        workspaceName: chatContext?.startsWith("workspaces/")
+          ? chatContext
+          : workspace?.name,
+        projectName:
+          referencedProject ??
+          (chatContext?.startsWith(projectNamePrefix)
+            ? chatContext
+            : undefined),
+      };
+      const observeHandoffs = (name: string, result: string) => {
+        handoffCandidates.push(
+          ...collectAgentHandoffs(name, result, handoffScope)
+        );
+      };
 
       try {
         const history = buildChatHistory(chatId, systemPrompt);
@@ -861,6 +882,7 @@ export function AgentInput({
             return;
           }
           prefetchedProjectOverview = overviewResult;
+          observeHandoffs("get_project_overview", overviewResult);
           history.push(
             {
               role: "assistant",
@@ -928,6 +950,7 @@ export function AgentInput({
             overviewEvidence,
             extractIssueOverviewEvidence(overviewResult)
           );
+          observeHandoffs("get_issue_overview", overviewResult);
           history.push(
             {
               role: "assistant",
@@ -1018,16 +1041,31 @@ export function AgentInput({
             }
           );
         }
+        let finalText: string | undefined;
+        let finalHandoffProposal: AgentHandoff | undefined;
         const outcome = await runAgentLoop(
           history,
           tools,
-          (name, args, toolCallId) =>
-            name === "get_project_overview" && prefetchedProjectOverview
+          (name, args, toolCallId) => {
+            if (
+              (name === "call_api" &&
+                (typeof args.operationId !== "string" ||
+                  apiCallNeedsConfirmation(args.operationId))) ||
+              (name === "dom_action" &&
+                args.type !== "read" &&
+                args.type !== "scroll")
+            ) {
+              handoffCandidates.length = 0;
+              prefetchedProjectOverview = undefined;
+              overviewEvidence = undefined;
+            }
+            return name === "get_project_overview" && prefetchedProjectOverview
               ? Promise.resolve({
                   kind: "tool_result" as const,
                   result: prefetchedProjectOverview,
                 })
-              : executor(name, args, toolCallId),
+              : executor(name, args, toolCallId);
+          },
           {
             onAssistantMessage: (message) => {
               for (const toolCall of message.toolCalls ?? []) {
@@ -1044,6 +1082,7 @@ export function AgentInput({
             },
             onToolResult: (toolCallId, result) => {
               const toolName = toolNamesByCallId.get(toolCallId);
+              if (toolName) observeHandoffs(toolName, result);
               if (toolName === "get_project_overview") {
                 overviewEvidence = mergeOverviewEvidence(
                   overviewEvidence,
@@ -1073,18 +1112,10 @@ export function AgentInput({
                 metadata: { route: page.path, runId },
               });
             },
-            onText: (text) => {
+            onText: (text, proposedHandoff) => {
               if (!text) return;
-              useAgentStore.getState().addMessage({
-                chatId,
-                role: "assistant",
-                content: text,
-                metadata: {
-                  route: page.path,
-                  runId,
-                  ...(overviewEvidence ? { evidence: overviewEvidence } : {}),
-                },
-              });
+              finalText = text;
+              finalHandoffProposal = proposedHandoff;
             },
           },
           controller.signal,
@@ -1097,6 +1128,23 @@ export function AgentInput({
 
         if (runToken !== runTokens.get(chatId)) return;
 
+        if (finalText && outcome.kind === "completed") {
+          const handoff = outcome.success
+            ? acceptAgentHandoff(finalHandoffProposal, handoffCandidates)
+            : undefined;
+          useAgentStore.getState().addMessage({
+            chatId,
+            role: "assistant",
+            content: finalText,
+            metadata: {
+              route: page.path,
+              runId,
+              ...(overviewEvidence ? { evidence: overviewEvidence } : {}),
+              ...(handoff ? { handoff } : {}),
+            },
+          });
+        }
+
         handleOutcome(chatId, page, "Error: ", outcome);
       } finally {
         if (
@@ -1106,7 +1154,7 @@ export function AgentInput({
         }
       }
     },
-    [buildChatHistory, handleOutcome, t]
+    [buildChatHistory, handleOutcome, t, workspace?.name]
   );
 
   const runRecentActivityStarter = useCallback(
@@ -1195,7 +1243,13 @@ export function AgentInput({
           chatId,
           role: "assistant",
           content: formatWorkspaceAttention(result),
-          metadata: { route: page.path, runId },
+          metadata: {
+            route: page.path,
+            runId,
+            handoff: collectAgentHandoffs("get_workspace_attention", result, {
+              workspaceName: store.getChat(chatId)?.context,
+            })[0],
+          },
         });
         store.finishChatRun(chatId);
       } catch {
@@ -1251,7 +1305,13 @@ export function AgentInput({
           chatId,
           role: "assistant",
           content: formatProjectAttention(result),
-          metadata: { route: page.path, runId },
+          metadata: {
+            route: page.path,
+            runId,
+            handoff: collectAgentHandoffs("get_project_open_issues", result, {
+              projectName: store.getChat(chatId)?.context,
+            })[0],
+          },
         });
         store.finishChatRun(chatId);
       } catch {

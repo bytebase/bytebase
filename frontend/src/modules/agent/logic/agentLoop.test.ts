@@ -203,6 +203,70 @@ describe("runAgentLoop", () => {
     });
   });
 
+  test("forwards a successful handoff with the final answer", async () => {
+    vi.mocked(aiServiceClientConnect.chat).mockResolvedValue({
+      content: "",
+      toolCalls: [
+        { id: "done-1", name: "done", arguments: "{}", metadata: "" },
+      ],
+    } as never);
+    const handoff = {
+      kind: "review-project-issues" as const,
+      project: "projects/sample",
+    };
+    const onText = vi.fn();
+    const outcome = await runAgentLoop(
+      [{ role: "system", content: "system" }],
+      [],
+      vi.fn(async () => ({
+        kind: "done" as const,
+        text: "Review the queue",
+        success: true,
+        handoff,
+      })),
+      { onText }
+    );
+    expect(outcome).toEqual({
+      kind: "completed",
+      text: "Review the queue",
+      success: true,
+      handoff,
+      totalTokensUsed: 0,
+    });
+    expect(onText).toHaveBeenCalledWith("Review the queue", handoff);
+  });
+
+  test("drops a proposed handoff when the final answer fails", async () => {
+    vi.mocked(aiServiceClientConnect.chat).mockResolvedValue({
+      content: "",
+      toolCalls: [
+        { id: "done-1", name: "done", arguments: "{}", metadata: "" },
+      ],
+    } as never);
+    const onText = vi.fn();
+    const outcome = await runAgentLoop(
+      [{ role: "system", content: "system" }],
+      [],
+      vi.fn(async () => ({
+        kind: "done" as const,
+        text: "The request failed",
+        success: false,
+        handoff: {
+          kind: "review-project-issues" as const,
+          project: "projects/sample",
+        },
+      })),
+      { onText }
+    );
+    expect(outcome).toEqual({
+      kind: "completed",
+      text: "The request failed",
+      success: false,
+      totalTokensUsed: 0,
+    });
+    expect(onText).toHaveBeenCalledExactlyOnceWith("The request failed");
+  });
+
   test("accumulates token usage across repeated provider calls", async () => {
     vi.mocked(aiServiceClientConnect.chat)
       .mockResolvedValueOnce({

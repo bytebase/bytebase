@@ -25,6 +25,7 @@ const projectApi = vi.hoisted(() => ({ getProject: vi.fn() }));
 const issueApi = vi.hoisted(() => ({ getIssue: vi.fn() }));
 const databaseApi = vi.hoisted(() => ({ getDatabase: vi.fn() }));
 const celApi = vi.hoisted(() => ({ batchParse: vi.fn() }));
+const resourceChoiceApi = vi.hoisted(() => ({ validate: vi.fn() }));
 
 vi.mock("@/api", () => ({
   projectServiceClientConnect: { getProject: projectApi.getProject },
@@ -42,6 +43,9 @@ vi.mock("./callApi", async (importOriginal) => ({
 }));
 vi.mock("./apiPermissionPreflight", () => ({
   checkPreparedApiPermission: vi.fn(async () => ({ kind: "allowed" })),
+}));
+vi.mock("./resourceChoices", () => ({
+  validateResourceChoices: resourceChoiceApi.validate,
 }));
 vi.mock("./databaseCount", () => ({
   createDatabaseCountTool: vi.fn(() => vi.fn(async () => "database_count")),
@@ -117,6 +121,7 @@ import { createWorkspaceOverviewTool } from "./workspaceOverview";
 import { createWorkspaceRecentActivityTool } from "./workspaceRecentActivity";
 
 beforeEach(() => {
+  resourceChoiceApi.validate.mockReset();
   vi.mocked(checkPreparedApiPermission).mockReset();
   vi.mocked(checkPreparedApiPermission).mockResolvedValue({ kind: "allowed" });
   projectApi.getProject.mockReset();
@@ -1713,6 +1718,175 @@ describe("agent tools read-only mode", () => {
 });
 
 describe("agent tools ask_user", () => {
+  test("replaces model labels with verified resource choices", async () => {
+    resourceChoiceApi.validate.mockResolvedValue([
+      {
+        label: "orders (Production)",
+        value: "instances/prod/databases/orders",
+      },
+    ]);
+    const executeTool = createToolExecutor({} as AppRouterInstance, {
+      context: "projects/sample",
+      workspaceName: "workspaces/example",
+    });
+    const result = await executeTool(
+      "ask_user",
+      {
+        kind: "choose",
+        resourceKind: "database",
+        prompt: "Which database?",
+        options: [
+          { label: "Forged label", value: "instances/prod/databases/orders" },
+        ],
+      },
+      "choose-1"
+    );
+    expect(resourceChoiceApi.validate).toHaveBeenCalledWith(
+      "database",
+      ["instances/prod/databases/orders"],
+      "projects/sample",
+      "workspaces/example"
+    );
+    expect(result).toEqual({
+      kind: "ask_user",
+      ask: {
+        toolCallId: "choose-1",
+        prompt: "Which database?",
+        kind: "choose",
+        options: [
+          {
+            label: "orders (Production)",
+            value: "instances/prod/databases/orders",
+          },
+        ],
+      },
+    });
+  });
+
+  test("asks for a Project before offering database choices", async () => {
+    const executeTool = createToolExecutor({} as AppRouterInstance, {
+      context: "workspaces/example",
+      workspaceName: "workspaces/example",
+    });
+    const result = await executeTool(
+      "ask_user",
+      {
+        kind: "choose",
+        resourceKind: "database",
+        prompt: "Which database?",
+        options: [{ value: "instances/prod/databases/orders" }],
+      },
+      "choose-1"
+    );
+    expect(result.kind).toBe("tool_result");
+    expect(result).toEqual({
+      kind: "tool_result",
+      result: expect.stringContaining("A Project is required"),
+    });
+    expect(resourceChoiceApi.validate).not.toHaveBeenCalled();
+  });
+
+  test("does not offer a dedicated environment resource choice", async () => {
+    const askUser = getToolDefinitions().find(
+      (tool) => tool.name === "ask_user"
+    );
+    expect(askUser?.parametersSchema).toEqual(
+      expect.objectContaining({
+        properties: expect.objectContaining({
+          resourceKind: expect.objectContaining({ enum: ["database"] }),
+        }),
+      })
+    );
+
+    const executeTool = createToolExecutor({} as AppRouterInstance, {
+      context: "projects/sample",
+      workspaceName: "workspaces/example",
+    });
+    const result = await executeTool(
+      "ask_user",
+      {
+        kind: "choose",
+        resourceKind: "environment",
+        prompt: "Which environment?",
+        options: [{ value: "environments/test" }],
+      },
+      "choose-environment"
+    );
+    expect(result).toEqual({
+      kind: "tool_result",
+      result: expect.stringContaining("Unsupported resource choice kind"),
+    });
+    expect(resourceChoiceApi.validate).not.toHaveBeenCalled();
+  });
+
+  test("does not pause for unverified resource options", async () => {
+    resourceChoiceApi.validate.mockResolvedValue(undefined);
+    const executeTool = createToolExecutor({} as AppRouterInstance, {
+      context: "projects/sample",
+      workspaceName: "workspaces/example",
+    });
+    const result = await executeTool(
+      "ask_user",
+      {
+        kind: "choose",
+        resourceKind: "database",
+        prompt: "Which database?",
+        options: [{ value: "instances/prod/databases/orders" }],
+      },
+      "choose-1"
+    );
+    expect(result).toEqual({
+      kind: "tool_result",
+      result: expect.stringContaining("could not be verified"),
+    });
+  });
+
+  test("accepts a proposed typed handoff on done", async () => {
+    const executeTool = createToolExecutor({} as AppRouterInstance);
+    await expect(
+      executeTool(
+        "done",
+        {
+          text: "Review the issue queue.",
+          success: true,
+          handoff: {
+            kind: "review-project-issues",
+            project: "projects/sample",
+          },
+        },
+        "done-1"
+      )
+    ).resolves.toEqual({
+      kind: "done",
+      text: "Review the issue queue.",
+      success: true,
+      handoff: { kind: "review-project-issues", project: "projects/sample" },
+    });
+  });
+
+  test("drops a malformed proposed handoff", async () => {
+    const executeTool = createToolExecutor({} as AppRouterInstance);
+    await expect(
+      executeTool(
+        "done",
+        {
+          text: "Open the project.",
+          success: true,
+          handoff: {
+            kind: "open-project-instances",
+            project: "projects/sample",
+            href: "https://example.com",
+          },
+        },
+        "done-1"
+      )
+    ).resolves.toEqual({
+      kind: "done",
+      text: "Open the project.",
+      success: true,
+    });
+  });
+
   test("exposes choose in the ask_user schema", () => {
     const askUser = getToolDefinitions().find(
       (tool) => tool.name === "ask_user"

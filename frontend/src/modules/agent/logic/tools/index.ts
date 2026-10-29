@@ -17,6 +17,7 @@ import { GetDatabaseRequestSchema } from "@/types/proto-es/v1/database_service_p
 import { GetIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { GetProjectRequestSchema } from "@/types/proto-es/v1/project_service_pb";
 import { getSkill, type GetSkillArgs } from "../skills";
+import { normalizeAgentHandoff } from "../handoff";
 import type {
   AgentAskUserKind,
   AgentAskUserOption,
@@ -44,6 +45,7 @@ import { createPendingApiCall } from "./pendingApiCall";
 import { createProjectOpenIssuesTool } from "./projectOpenIssues";
 import { createProjectGovernanceOverviewTool } from "./projectGovernanceOverview";
 import { createProjectRecentActivityTool } from "./projectRecentActivity";
+import { validateResourceChoices } from "./resourceChoices";
 import { createProjectOverviewTool } from "./projectOverview";
 import { apiTargetsAnotherProject } from "./referencedProjectApiScope";
 import { searchApi, type SearchApiArgs } from "./searchApi";
@@ -115,10 +117,14 @@ const parseDoneArgs = (args: Record<string, unknown>): ToolExecutionResult => {
   if (typeof args.success !== "boolean") {
     throw new Error("done requires a boolean success value");
   }
+  const handoff = args.success
+    ? normalizeAgentHandoff(args.handoff)
+    : undefined;
   return {
     kind: "done",
     text: args.text,
     success: args.success,
+    ...(handoff ? { handoff } : {}),
   };
 };
 
@@ -373,7 +379,7 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
     },
     {
       name: "get_project_overview",
-      description: `Get a bounded snapshot of ${projectScope}. The result includes the current member's relevant open Issues, open database-change Issues, and accessible databases, with partial or unavailable facets made explicit. Use this before recommending what to do next or describing current project readiness. Answer the member's actual question from the returned evidence, rather than listing generic capabilities. This tool has no parameters. ${projectScopeRestriction}`,
+      description: `Get a bounded snapshot of ${projectScope}. The result includes the current member's relevant open Issues, open database-change Issues, and accessible databases, with partial or unavailable facets made explicit. For a confirmed empty project it also includes instance availability, eligible unassigned database availability, and setup permissions. Use this before recommending what to do next or describing current project readiness. Answer the member's actual question from the returned evidence, rather than listing generic capabilities. This tool has no parameters. ${projectScopeRestriction}`,
       parametersSchema: {
         type: "object",
         properties: {},
@@ -532,7 +538,7 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
     {
       name: "ask_user",
       description:
-        "Ask the user for missing information, confirmation, or an explicit choice. Use kind='input' for free-form text, kind='confirm' for confirm/cancel decisions, and kind='choose' with options=[{label,value}] when the user must pick from explicit options.",
+        "Ask the user for missing information, confirmation, or an explicit choice. Use kind='input' for free-form text, kind='confirm' for confirm/cancel decisions, and kind='choose' with options=[{label,value}] when the user must pick from explicit options. For database choices, set resourceKind='database' and provide canonical option values; labels are refreshed from the API.",
       parametersSchema: {
         type: "object",
         properties: {
@@ -545,6 +551,12 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
             enum: ["input", "confirm", "choose"],
             description:
               'Defaults to "input" when omitted. kind="choose" requires a non-empty options array.',
+          },
+          resourceKind: {
+            type: "string",
+            enum: ["database"],
+            description:
+              "Validate database choices against fresh database data.",
           },
           defaultValue: {
             type: "string",
@@ -579,7 +591,7 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
                   description: "Optional helper text shown with the option.",
                 },
               },
-              required: ["label", "value"],
+              required: ["value"],
             },
           },
         },
@@ -589,7 +601,7 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
     {
       name: "done",
       description:
-        "Complete the current task explicitly. Provide the final user-visible text and whether the task succeeded.",
+        "Complete the current task explicitly. Provide the final user-visible text and whether the task succeeded. Optionally propose one evidence-backed, member-clicked handoff; the runtime validates it against this turn's tool results.",
       parametersSchema: {
         type: "object",
         properties: {
@@ -601,6 +613,29 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
             type: "boolean",
             description:
               "Set to false when the task could not be completed successfully.",
+          },
+          handoff: {
+            type: "object",
+            description:
+              "Optional single next-step destination observed in a current-turn overview. Never provide a URL or invent a resource name.",
+            properties: {
+              kind: {
+                type: "string",
+                enum: [
+                  "review-workspace-issues",
+                  "review-project-issues",
+                  "review-database-changes",
+                  "transfer-project-databases",
+                  "connect-project-instance",
+                  "create-project-database",
+                  "view-failed-tasks",
+                ],
+              },
+              workspace: { type: "string" },
+              project: { type: "string" },
+              plan: { type: "string" },
+            },
+            required: ["kind"],
           },
         },
         required: ["text", "success"],
@@ -628,6 +663,7 @@ interface CreateToolExecutorOptions {
   chatId?: string;
   userName?: string;
   context?: string;
+  workspaceName?: string;
   referencedProject?: string;
   referencedDatabase?: string;
   referencedIssue?: string;
@@ -936,8 +972,49 @@ export function createToolExecutor(
         );
       case "get_skill":
         return toToolResult(await getSkill(args as GetSkillArgs));
-      case "ask_user":
-        return parseAskUserArgs(args, toolCallId);
+      case "ask_user": {
+        if (args.kind !== "choose" || !args.resourceKind) {
+          return parseAskUserArgs(args, toolCallId);
+        }
+        if (args.resourceKind !== "database") {
+          return toToolResult(
+            "Error: Unsupported resource choice kind. Ask a free-form question instead."
+          );
+        }
+        if (
+          args.resourceKind === "database" &&
+          !isCanonicalProjectName(projectName)
+        ) {
+          return toToolResult(
+            "Error: A Project is required to verify database choices. Ask the member which Project first."
+          );
+        }
+        const rawOptions = Array.isArray(args.options) ? args.options : [];
+        const values = rawOptions.map((option) =>
+          option &&
+          typeof option === "object" &&
+          typeof option.value === "string"
+            ? option.value
+            : undefined
+        );
+        if (values.some((value) => value === undefined)) {
+          return toToolResult(
+            "Error: Resource choices require canonical option values. Ask a free-form question instead."
+          );
+        }
+        const verified = await validateResourceChoices(
+          args.resourceKind,
+          values as string[],
+          projectName,
+          options.workspaceName
+        );
+        if (!verified) {
+          return toToolResult(
+            "Error: Resource choices could not be verified with current access. Ask a free-form question instead; do not describe the list as empty."
+          );
+        }
+        return parseAskUserArgs({ ...args, options: verified }, toolCallId);
+      }
       case "done":
         return parseDoneArgs(args);
       default:

@@ -53,6 +53,19 @@
     "context-no-projects": "Không có dự án nào có thể truy cập",
     "context-select": "Chọn ngữ cảnh",
     "context-workspace": "Không gian làm việc",
+    "contextual-start": {
+      "active-request": "Hoàn tất yêu cầu đang chạy trước khi bắt đầu cuộc trò chuyện khác.",
+      "continue-chat": "Tiếp tục cuộc trò chuyện hiện tại",
+      "database-heading": "Hỏi về cơ sở dữ liệu này",
+      "database-recent": "Cơ sở dữ liệu này có thay đổi gì gần đây?",
+      "database-schema": "Cơ sở dữ liệu này có những bảng nào?",
+      "issue-changes": "Yêu cầu này bao gồm những thay đổi gì?",
+      "issue-heading": "Hỏi về yêu cầu này",
+      "issue-security": "Yêu cầu này có vấn đề bảo mật nào cần lưu ý không?",
+      "issue-summary": "Tóm tắt yêu cầu này và trạng thái của nó",
+      "project-heading": "Hỏi về dự án này",
+      "resource-unavailable": "Không thể tham chiếu tài nguyên này."
+    },
     "database-reference-unavailable": "Cơ sở dữ liệu này không còn khả dụng hoặc bạn không có quyền truy cập.",
     "delete-all-chats": "Xóa tất cả cuộc trò chuyện",
     "delete-all-chats-confirmation": "Bạn có chắc chắn muốn xóa tất cả cuộc trò chuyện đã lưu trữ không? Hành động này không thể hoàn tác.",
@@ -67,6 +80,13 @@
       "database": "cơ sở dữ liệu",
       "issue": "issue",
       "references": "Bằng chứng"
+    },
+    "handoff": {
+      "open-project-instances": "Mở các phiên bản của dự án",
+      "review-database-changes": "Xem các thay đổi cơ sở dữ liệu",
+      "review-project-issues": "Xem các vấn đề của dự án",
+      "review-workspace-issues": "Xem các vấn đề của tôi",
+      "view-failed-tasks": "Xem các tác vụ thất bại"
     },
     "input-keyboard-hint": "Enter để gửi · Shift+Enter để xuống dòng",
     "input-placeholder": "Hỏi AI hoặc nhập @ để chọn tài nguyên",

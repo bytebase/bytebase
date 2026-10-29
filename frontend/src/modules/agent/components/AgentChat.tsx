@@ -27,6 +27,7 @@ import { useAppStore } from "@/stores/app";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { getAgentAIConfigurationEnabled } from "../logic/aiConfiguration";
+import { resolveAgentHandoffRoute } from "../logic/handoff";
 import type { LandingStarterId } from "../logic/landingStarters";
 import {
   formatResourceMention,
@@ -37,6 +38,7 @@ import type {
   AgentAnswerEvidence,
   AgentEvidence,
   AgentEvidenceReference,
+  AgentHandoff,
   AgentMessage,
   AgentResourceReference,
   ToolCall,
@@ -69,6 +71,7 @@ const EMPTY_CHAT_STARTERS: Record<"workspace" | "project", LandingStarterId[]> =
       "project-open-blockers",
       "project-open-recent",
       "project-propose-change",
+      "project-next",
     ],
   };
 
@@ -212,6 +215,30 @@ function EvidenceReferences({ evidence }: { evidence?: AgentAnswerEvidence }) {
         </ul>
       </CollapsiblePanel>
     </Collapsible>
+  );
+}
+
+function HandoffLink({ handoff }: { handoff?: AgentHandoff }) {
+  const { t } = useTranslation();
+  const to = resolveAgentHandoffRoute(handoff);
+  if (!to || !handoff) return null;
+  const labelKey =
+    handoff.kind === "transfer-project-databases"
+      ? "project.home.transfer-databases"
+      : handoff.kind === "connect-project-instance"
+        ? "project.home.connect"
+        : handoff.kind === "create-project-database"
+          ? "project.home.create-database"
+          : `agent.handoff.${handoff.kind}`;
+  return (
+    <RouterLink
+      data-agent-handoff
+      to={to}
+      className="mt-2 inline-flex items-center gap-1 text-sm text-accent hover:underline"
+    >
+      {t(labelKey)}
+      <ArrowUpRight className="size-3.5" aria-hidden="true" />
+    </RouterLink>
   );
 }
 
@@ -615,6 +642,9 @@ export function AgentChat({
                         {msg.content}
                       </ReactMarkdown>
                       <EvidenceReferences evidence={msg.metadata?.evidence} />
+                      {!msg.metadata?.pending && !msg.metadata?.error && (
+                        <HandoffLink handoff={msg.metadata?.handoff} />
+                      )}
                     </div>
                   ) : null}
                   {msg.toolCalls?.map((toolCall, index, toolCalls) => (

@@ -53,6 +53,19 @@
     "context-no-projects": "アクセス可能なプロジェクトがありません",
     "context-select": "コンテキストを選択",
     "context-workspace": "ワークスペース",
+    "contextual-start": {
+      "active-request": "別のチャットを始める前に、進行中のリクエストを完了してください。",
+      "continue-chat": "現在のチャットを続ける",
+      "database-heading": "このデータベースについて質問する",
+      "database-recent": "このデータベースでは最近何が変更されましたか？",
+      "database-schema": "このデータベースにはどのテーブルがありますか？",
+      "issue-changes": "このイシューにはどのような変更が含まれますか？",
+      "issue-heading": "このイシューについて質問する",
+      "issue-security": "このイシューにセキュリティ上の懸念はありますか？",
+      "issue-summary": "このイシューと現在の状態を要約して",
+      "project-heading": "このプロジェクトについて質問する",
+      "resource-unavailable": "このリソースは参照できません。"
+    },
     "database-reference-unavailable": "このデータベースは利用できないか、アクセス権がありません。",
     "delete-all-chats": "すべてのチャットを削除",
     "delete-all-chats-confirmation": "アーカイブ済みのチャットをすべて削除しますか？この操作は元に戻せません。",
@@ -67,6 +80,13 @@
       "database": "データベース",
       "issue": "issue",
       "references": "根拠"
+    },
+    "handoff": {
+      "open-project-instances": "プロジェクトのインスタンスを開く",
+      "review-database-changes": "データベース変更を確認",
+      "review-project-issues": "プロジェクトの課題を確認",
+      "review-workspace-issues": "自分の課題を確認",
+      "view-failed-tasks": "失敗したタスクを表示"
     },
     "input-keyboard-hint": "Enter で送信・Shift+Enter で改行",
     "input-placeholder": "AI に質問するか、@ でリソースを選択",

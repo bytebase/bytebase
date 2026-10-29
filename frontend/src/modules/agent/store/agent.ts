@@ -6,6 +6,7 @@ import {
   getNameParentTokens,
   projectNamePrefix,
 } from "@/stores/modules/v1/common";
+import { normalizeAgentHandoff } from "../logic/handoff";
 import type { LandingStarterId } from "../logic/landingStarters";
 import {
   formatResourceMention,
@@ -326,6 +327,7 @@ const normalizeMessage = (
           interruptionReason: normalizeInterruptionReason(
             metadata.interruptionReason
           ),
+          handoff: normalizeAgentHandoff(metadata.handoff),
           resourceReference:
             metadata.resourceReferences === undefined
               ? resourceReferences[0]
