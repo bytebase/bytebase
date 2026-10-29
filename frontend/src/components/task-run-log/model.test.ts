@@ -1444,3 +1444,25 @@ describe("release spine review fixes", () => {
     expect(groups.filter((group) => group.isOrphan)).toHaveLength(2);
   });
 });
+
+describe("release spine error ownership", () => {
+  test("a revision-write failure after a retried command stays in Run failed", () => {
+    const error = "failed to create revision for version 005: duplicate key";
+    const spine = buildReleaseSpine({
+      files: FILES,
+      entries: [
+        releaseFile(1, "005"),
+        command(2, { error: "lock timeout" }),
+        retryMarker(4),
+        command(5, { error: "" }),
+      ],
+      run: { status: TaskRun_Status.FAILED, error },
+      state: stateOf(["005"]),
+    });
+    expect(spine.items.find((item) => item.kind === "file")).toMatchObject({
+      version: "005",
+      status: "applied",
+    });
+    expect(spine.items.at(-1)).toMatchObject({ kind: "run-failed", error });
+  });
+});

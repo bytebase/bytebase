@@ -14,6 +14,10 @@ import {
 const mocks = vi.hoisted(() => ({
   fetchSheet: vi.fn(),
   editorProps: [] as Array<{ content: string; advices?: unknown[] }>,
+  // What the editor drew: as in MonacoEditor, only advices that change after
+  // the editor is ready.
+  drawn: [] as unknown[][],
+  revealed: [] as number[],
 }));
 
 vi.mock("@/stores/app", () => {
@@ -34,10 +38,16 @@ vi.mock("@/components/monaco", async () => {
       onReady?: (monaco: unknown, editor: unknown) => void;
     }) => {
       mocks.editorProps.push(props);
-      const { onReady } = props;
+      const { onReady, advices } = props;
+      const ready = React.useRef(false);
       React.useEffect(() => {
-        onReady?.({}, { revealLineInCenter: () => {} });
-      }, [onReady]);
+        if (ready.current) mocks.drawn.push(advices ?? []);
+      }, [advices]);
+      React.useEffect(() => {
+        ready.current = true;
+        onReady?.({}, { revealLineInCenter: (line: number) => mocks.revealed.push(line) });
+        // biome-ignore lint/correctness/useExhaustiveDependencies: once per mount, as the editor loads once.
+      }, []);
       return <pre data-testid="editor">{props.content}</pre>;
     },
   };
@@ -92,6 +102,8 @@ beforeAll(async () => {
 
 beforeEach(() => {
   mocks.editorProps.length = 0;
+  mocks.drawn.length = 0;
+  mocks.revealed.length = 0;
   mocks.fetchSheet.mockResolvedValue(sheetOf(STATEMENT));
   setViewport(1440);
 });
@@ -271,5 +283,70 @@ describe("ReleaseFileViewer", () => {
     await flush();
     expect(screen.getAllByTestId("release-file-viewer")).toHaveLength(1);
     expect(screen.getByTestId("release-file-viewer").textContent).toContain("b.sql");
+  });
+
+  test("each failed file opened in the page's viewer gets its diagnostic drawn, reopened ones too", async () => {
+    const failedTarget = (path: string) => ({
+      file: { version: path, path, sheet: `projects/p/sheets/${path}` },
+      context: { kind: "failed" as const, error: `error in ${path}`, range: { start: 13, end: 37 } },
+    });
+    const Opener = ({ target: t }: { target: ReleaseFileViewerTarget }) => {
+      const open = useOpenReleaseFile();
+      return (
+        <button type="button" onClick={() => open?.(t)}>
+          {`open ${t.file.path}`}
+        </button>
+      );
+    };
+    render(
+      <ReleaseFileViewerProvider>
+        <Opener target={failedTarget("a.sql")} />
+        <Opener target={failedTarget("b.sql")} />
+      </ReleaseFileViewerProvider>
+    );
+    const drewErrorFor = (path: string) =>
+      mocks.drawn.some((advices) =>
+        advices.some((a) => (a as { message: string }).message === `error in ${path}`)
+      );
+    fireEvent.click(screen.getByRole("button", { name: "open a.sql" }));
+    await flush();
+    expect(drewErrorFor("a.sql")).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "open b.sql" }));
+    await flush();
+    expect(drewErrorFor("b.sql")).toBe(true);
+    // Closed and reopened.
+    fireEvent.keyDown(screen.getByTestId("release-file-viewer"), { key: "Escape" });
+    await flush();
+    mocks.drawn.length = 0;
+    fireEvent.click(screen.getByRole("button", { name: "open a.sql" }));
+    await flush();
+    expect(drewErrorFor("a.sql")).toBe(true);
+  });
+
+  test("the same file opened again from its failed section scrolls to the failed statement", async () => {
+    const file = { version: "a", path: "a.sql", sheet: "projects/p/sheets/a" };
+    const Opener = ({ label, t }: { label: string; t: ReleaseFileViewerTarget }) => {
+      const open = useOpenReleaseFile();
+      return (
+        <button type="button" onClick={() => open?.(t)}>
+          {label}
+        </button>
+      );
+    };
+    render(
+      <ReleaseFileViewerProvider>
+        <Opener label="from changes" t={{ file }} />
+        <Opener
+          label="from failed"
+          t={{ file, context: { kind: "failed", error: "boom", range: { start: 13, end: 37 } } }}
+        />
+      </ReleaseFileViewerProvider>
+    );
+    fireEvent.click(screen.getByRole("button", { name: "from changes" }));
+    await flush();
+    expect(mocks.revealed).toEqual([]);
+    fireEvent.click(screen.getByRole("button", { name: "from failed" }));
+    await flush();
+    expect(mocks.revealed).toEqual([2]);
   });
 });

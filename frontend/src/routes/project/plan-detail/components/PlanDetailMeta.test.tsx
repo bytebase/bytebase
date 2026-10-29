@@ -35,7 +35,13 @@ vi.mock("../../PlanTable", () => ({
 }));
 
 vi.mock("react-i18next", () => ({
-  useTranslation: () => ({ t: (key: string) => key }),
+  // Interpolated values follow the key, so a test can see what was passed.
+  useTranslation: () => ({
+    t: (key: string, options?: Record<string, unknown>) =>
+      options?.user !== undefined || options?.role !== undefined
+        ? `${key}(${[options.user, options.role].filter(Boolean).join(",")})`
+        : key,
+  }),
   initReactI18next: { type: "3rdParty", init: () => {} },
 }));
 vi.mock("./useUserDisplayName", () => ({
@@ -512,9 +518,15 @@ test("a UIOps plan's folded block keeps only the progress", () => {
 test("Triggered names the creator by display name, with the creation time", () => {
   mocks.page = releasePage(githubSource);
   render(<PlanDetailMeta />);
-  const created = screen.getByTestId("plan-detail-created").textContent ?? "";
-  expect(created).toContain("Shop CI");
-  expect(created).not.toContain("ci@example.com");
+  const created = screen.getByTestId("plan-detail-created");
+  expect(created.textContent).toContain("Shop CI");
+  expect(created.textContent).not.toContain("ci@example.com");
+  // The creation time as a date, then its age.
+  expect(
+    Array.from(created.querySelectorAll('[data-testid="humanize-ts"]')).map((ts) =>
+      ts.getAttribute("data-mode")
+    )
+  ).toEqual(["datetime", "queue"]);
 });
 
 test("Review names the last approver with their role, or the role that is next", () => {
@@ -531,14 +543,14 @@ test("Review names the last approver with their role, or the role that is next",
   const { unmount } = render(<PlanDetailMeta />);
   const review = () =>
     screen.getAllByTestId("plan-detail-row").find((row) => row.getAttribute("data-row") === "review")!;
-  expect(review().textContent).toContain("plan.details.approved-by");
+  expect(review().querySelector("dd")?.textContent).toBe("plan.details.approved-by(Alex Doe (workspaceDBA))");
   unmount();
   mocks.page = {
     ...mocks.page,
     issue: { ...issue, approvalStatus: 2, approvers: [{ status: 2, principal: "users/owner@example.com" }] },
   } as unknown as PlanDetailPageState;
   render(<PlanDetailMeta />);
-  expect(review().textContent).toContain("plan.details.waiting-for");
+  expect(review().querySelector("dd")?.textContent).toBe("plan.details.waiting-for(workspaceDBA)");
 });
 
 test("the Changes row counts databases and database groups apart", () => {

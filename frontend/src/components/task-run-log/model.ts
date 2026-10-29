@@ -1020,7 +1020,7 @@ export const buildReleaseSpine = ({
       else if (run.status === TaskRun_Status.CANCELED) status = "canceled";
       else if (fileError && fileError.version === file.version) {
         status = "failed";
-      } else if (failed && group.entries.some(commandFailed)) {
+      } else if (failed && !run.error && group.entries.some(commandFailed)) {
         // The run's error is unknown here (a caller passed none), but the
         // file's own command failed.
         status = "failed";

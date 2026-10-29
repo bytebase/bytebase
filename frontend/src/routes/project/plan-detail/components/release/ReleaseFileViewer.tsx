@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
@@ -101,6 +102,18 @@ export function ReleaseFileViewer({
   }, [fetchSheet, sheetName]);
 
   const settled = !sheetName || sheet?.name === sheetName;
+  // A new key for every opening, even of the same file.
+  const openings = useRef(new WeakMap<ReleaseFileViewerTarget, number>());
+  const openingCount = useRef(0);
+  let openingKey = 0;
+  if (target) {
+    let key = openings.current.get(target);
+    if (key === undefined) {
+      key = ++openingCount.current;
+      openings.current.set(target, key);
+    }
+    openingKey = key;
+  }
   const loaded = sheet?.name === sheetName ? sheet.value : undefined;
   const statement = useMemo(
     () => (loaded ? new TextDecoder().decode(loaded.content) : ""),
@@ -121,9 +134,11 @@ export function ReleaseFileViewer({
         : undefined,
     [statement, failedError, rangeStart, rangeEnd]
   );
-  // The editor draws advices only when the prop changes after it exists, so
-  // the diagnostic is handed over once the editor is ready.
-  const [editorReady, setEditorReady] = useState(false);
+  // The editor draws advices only when the prop changes after it exists, and
+  // reveals a line only when told. So each opening mounts its own editor, and
+  // the diagnostic is handed over once that editor is ready.
+  const [readyFor, setReadyFor] = useState<ReleaseFileViewerTarget>();
+  const editorReady = target !== undefined && readyFor === target;
   const advices = useMemo(
     () => (diagnostic && editorReady ? [diagnostic] : []),
     [diagnostic, editorReady]
@@ -222,13 +237,14 @@ export function ReleaseFileViewer({
                     <CopyButton content={statement} />
                   </div>
                   <ReadonlyMonaco
+                    key={openingKey}
                     className="rounded-sm border text-sm"
                     content={statement}
                     advices={advices}
                     max={10000}
                     options={{ wordWrap: sidePanel ? "off" : "on" }}
                     onReady={(_monaco, editor) => {
-                      setEditorReady(true);
+                      setReadyFor(target);
                       if (diagnostic) {
                         editor.revealLineInCenter(diagnostic.startLineNumber);
                       }

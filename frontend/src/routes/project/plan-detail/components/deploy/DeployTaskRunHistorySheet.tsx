@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronRight, Clock3, User } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { HumanizeTs } from "@/components/HumanizeTs";
 import { TaskRunStatusIcon } from "@/components/TaskRunStatusIcon";
@@ -108,6 +108,11 @@ function TaskRunHistoryItem({
   taskRun: TaskRun;
 }) {
   const { t } = useTranslation();
+  // Stable across renders, so the memoized log viewer keeps its memo.
+  const errorAlert = useMemo(
+    () => <TaskRunErrorAlert taskRun={taskRun} />,
+    [taskRun]
+  );
   const startMs =
     getTimeForPbTimestampProtoEs(taskRun.startTime) ??
     getTimeForPbTimestampProtoEs(taskRun.createTime);
@@ -168,7 +173,7 @@ function TaskRunHistoryItem({
             taskRunName={taskRun.name}
             taskRunStatus={taskRun.status}
             runError={taskRun.detail}
-            errorAlert={<TaskRunErrorAlert taskRun={taskRun} />}
+            errorAlert={errorAlert}
           />
         </div>
       )}
