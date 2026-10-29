@@ -1136,4 +1136,16 @@ describe("TaskRunLogViewer release spine", () => {
     expect(within(replicas.container).getByTestId("error-alert")).toBeDefined();
     replicas.unmount();
   });
+
+  test("a failed poll that keeps the entries keeps the spine", () => {
+    mocks.useTaskRunLogData.mockReturnValue({
+      ...createDefaultData(),
+      logFetch: { status: "error", error: "network" },
+      entries: [marker(1, "007"), run(2, ""), marker(4, "008"), run(5, "")],
+      release: { name: "projects/p/releases/r1", type: 1, files: FILES },
+    });
+    const view = renderViewer({ taskRunStatus: TaskRun_Status.RUNNING });
+    expect(within(view.container).getByTestId("release-spine")).toBeDefined();
+    view.unmount();
+  });
 });
