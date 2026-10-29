@@ -24,6 +24,7 @@ var checks = []Rule{
 	{ID: "violates-constraint", Text: "The statement fails on this database because existing rows violate a constraint or a foreign key."},
 	{ID: "fails", Text: "The statement fails on this database for another reason, such as syntax or a type the engine version does not support."},
 	{ID: "blocks", Text: "The statement blocks reads or writes on a large table for a long time, for example with a lock held while the table is rewritten, scanned, or validated, or with one UPDATE or DELETE over many rows."},
+	{ID: "full-scan", Text: "The statement reads every row of a large table without blocking it, for example an UPDATE or DELETE whose condition no index serves."},
 	{ID: "drops-data", Text: "The statement drops a table, column, or partition that still holds data."},
 	{ID: "too-many-rows", Text: "An UPDATE or DELETE changes more rows than the author means."},
 	{ID: "cascades", Text: "The statement deletes or changes rows in other tables through foreign key actions or triggers."},

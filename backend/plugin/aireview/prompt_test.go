@@ -58,6 +58,7 @@ func TestBuildMessages(t *testing.T) {
 	require.Contains(t, system, "When the two conflict, the project policy wins.")
 	require.Contains(t, system, "these checks:\n\n- `already-exists`: The statement fails on this database because an object it creates already exists.\n")
 	require.NotContains(t, system, "{{checks}}")
+	require.Contains(t, system, "- `full-scan`: The statement reads every row of a large table without blocking it", "a scan that blocks nothing is still a cost the review reports")
 	require.Contains(t, system, "## Workspace policy\n\n- `workspace-1`: No TRUNCATE in production.\n")
 	require.Contains(t, system, "## Project policy\n\n(none)\n")
 	require.NotContains(t, system, "TRUNCATE orders", "the statements stay out of the cached part")
