@@ -351,12 +351,12 @@ func queryFailure(results []queryResult, failed int, database string) *queryErro
 		}
 	}
 	denied := results[failed].PermissionDenied
+	// The access check refuses a statement before it runs, so a denial with
+	// nothing in ran changed nothing and gets no caution.
 	var advice []string
 	if len(qe.Ran) > 0 {
 		advice = append(advice, "Bytebase ran the statements in ran, in a session that has since closed; check the data before you retry")
 	} else if denied == nil {
-		// The access check refuses a statement before it runs, so a denial
-		// with nothing in ran changed nothing.
 		advice = append(advice, whatRanUnknown)
 	}
 	// MCP sessions cannot file role requests, so a grant is the only access
