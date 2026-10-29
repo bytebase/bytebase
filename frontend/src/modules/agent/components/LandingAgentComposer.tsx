@@ -3,17 +3,23 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { projectNamePrefix } from "@/lib/resourceName";
+import {
+  getNameParentTokens,
+  issueNamePrefix,
+} from "@/stores/modules/v1/common";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import { extractDatabaseResourceName } from "@/utils/v1/database";
 import type { LandingStarterId } from "../logic/landingStarters";
 import {
   type AgentMentionRange,
   canAddResourceMention,
+  getDatabaseMentionLabel,
   getMentionTriggerRange,
   hasUnboundResourceMention,
   insertResourceMention,
   normalizeAgentResourceReferences,
+  removeMentionTrigger,
   updateDraftResourceMentions,
 } from "../logic/resourceMention";
 import type {
@@ -96,8 +102,36 @@ export function LandingAgentComposer({
       kind: "database",
       name: database.name,
       project: database.project,
-      label: extractDatabaseResourceName(database.name).databaseName,
+      label: getDatabaseMentionLabel(database),
     });
+
+  const selectMentionIssue = (issue: Issue) => {
+    const [projectId] = getNameParentTokens(issue.name, [
+      projectNamePrefix,
+      issueNamePrefix,
+    ]);
+    if (!projectId) return;
+    selectMentionResource({
+      kind: "issue",
+      name: issue.name,
+      project: `${projectNamePrefix}${projectId}`,
+      label: issue.title || issue.name,
+    });
+  };
+
+  const handleResourcePickerOpenChange = (nextOpen: boolean) => {
+    setResourcePickerOpen(nextOpen);
+    if (nextOpen) return;
+    const trigger = mentionRangeRef.current;
+    mentionRangeRef.current = null;
+    const removed = removeMentionTrigger(prompt, trigger);
+    if (!removed) return;
+    pendingCaretRef.current = removed.caret;
+    setStagedMentions(
+      updateDraftResourceMentions(prompt, removed.text, stagedMentions)
+    );
+    setPrompt(removed.text);
+  };
 
   const selectedProjectMention = stagedMentions.find(
     ({ resource }) => resource.kind === "project"
@@ -222,8 +256,7 @@ export function LandingAgentComposer({
                 mentionRangeRef.current = null;
               } else if (event.key === "Escape") {
                 event.preventDefault();
-                setResourcePickerOpen(false);
-                mentionRangeRef.current = null;
+                handleResourcePickerOpenChange(false);
                 return;
               } else if (
                 event.key === "Enter" &&
@@ -250,7 +283,7 @@ export function LandingAgentComposer({
         />
         <AgentResourcePicker
           open={resourcePickerOpen}
-          onOpenChange={setResourcePickerOpen}
+          onOpenChange={handleResourcePickerOpenChange}
           anchorRef={textareaRef}
           workspaceName={workspaceName}
           projectName={
@@ -263,6 +296,7 @@ export function LandingAgentComposer({
           }
           onSelectProject={selectMentionProject}
           onSelectDatabase={selectMentionDatabase}
+          onSelectIssue={selectMentionIssue}
         />
       </div>
       <div className="flex flex-wrap items-end justify-between gap-2 px-3 pb-3">

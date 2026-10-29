@@ -146,7 +146,7 @@ export const createIamSlice: AppSliceCreator<IamSlice> = (set, get) => ({
     await Promise.all([rolesRequest, policyRequest]);
   },
 
-  loadProjectIamPolicy: async (project) => {
+  loadProjectIamPolicy: async (project, silent = false) => {
     const existing = get().projectPoliciesByName[project];
     if (existing) return existing;
     const pending = get().projectPolicyRequests[project];
@@ -156,7 +156,10 @@ export const createIamSlice: AppSliceCreator<IamSlice> = (set, get) => ({
 
     const request = projectServiceClientConnect
       .getIamPolicy(
-        createProto(GetIamPolicyRequestSchema, { resource: project })
+        createProto(GetIamPolicyRequestSchema, { resource: project }),
+        silent
+          ? { contextValues: createContextValues().set(silentContextKey, true) }
+          : undefined
       )
       .then(async (policy) => {
         set((state) => {

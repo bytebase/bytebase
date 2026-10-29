@@ -22,6 +22,7 @@ import type {
   AgentChatSnapshot,
   AgentChatStatus,
   AgentDraft,
+  AgentInterruptionReason,
   AgentMentionRange,
   AgentMessage,
   AgentPendingAsk,
@@ -89,6 +90,32 @@ type QueueUserMessageInput = Omit<QueuedUserMessage, "id">;
 
 const DEFAULT_CHAT_STATUS: AgentChatStatus = "idle";
 const DRAFT_PERSIST_DELAY_MS = 250;
+
+const normalizeInterruptionReason = (
+  value: unknown
+): AgentInterruptionReason | undefined =>
+  value === "user" || value === "unexpected" ? value : undefined;
+
+const setLastUserInterruptionReason = (
+  messages: AgentMessage[],
+  reason?: AgentInterruptionReason
+) => {
+  const lastUserMessage = messages.findLast(
+    (message) => message.role === "user"
+  );
+  if (!lastUserMessage) return;
+  if (reason) {
+    lastUserMessage.metadata = {
+      ...lastUserMessage.metadata,
+      interruptionReason: reason,
+    };
+  } else if (lastUserMessage.metadata?.interruptionReason) {
+    const { interruptionReason: _, ...metadata } = lastUserMessage.metadata;
+    lastUserMessage.metadata = Object.keys(metadata).length
+      ? metadata
+      : undefined;
+  }
+};
 
 // --- Pure helper functions ---
 
@@ -296,6 +323,9 @@ const normalizeMessage = (
     metadata: metadata
       ? {
           ...(metadata as AgentMessage["metadata"]),
+          interruptionReason: normalizeInterruptionReason(
+            metadata.interruptionReason
+          ),
           resourceReference:
             metadata.resourceReferences === undefined
               ? resourceReferences[0]
@@ -434,6 +464,9 @@ const normalizeChat = (raw: unknown): AgentChat => {
           : null,
     requiresAIConfiguration: Boolean(chat.requiresAIConfiguration),
     interrupted: Boolean(chat.interrupted),
+    interruptionReason: chat.interrupted
+      ? (normalizeInterruptionReason(chat.interruptionReason) ?? "unexpected")
+      : undefined,
     runId: typeof chat.runId === "string" ? chat.runId : null,
     runMode:
       chat.runMode === "read-only" || chat.runMode === "default"
@@ -509,8 +542,15 @@ const normalizePersistedState = (raw: unknown): PersistedAgentState => {
     if (chat.status === "running") {
       chat.status = DEFAULT_CHAT_STATUS;
       chat.interrupted = true;
+      chat.interruptionReason = "unexpected";
       chat.lastError = null;
       chat.requiresAIConfiguration = false;
+    }
+    if (chat.interrupted) {
+      setLastUserInterruptionReason(
+        messages,
+        chat.interruptionReason ?? "unexpected"
+      );
     }
 
     const pendingAsk = normalizePendingAsk(rawPendingAskByChatId[chat.id]);
@@ -651,6 +691,7 @@ export interface AgentState {
     status: AgentChatStatus,
     options?: {
       interrupted?: boolean;
+      interruptionReason?: AgentInterruptionReason;
       lastError?: string | null;
       requiresAIConfiguration?: boolean;
       page?: AgentChatSnapshot;
@@ -669,7 +710,11 @@ export interface AgentState {
       requiresAIConfiguration?: boolean;
     }
   ) => void;
-  interruptChatRun: (chatId: string, page?: AgentChatSnapshot) => void;
+  interruptChatRun: (
+    chatId: string,
+    page?: AgentChatSnapshot,
+    reason?: AgentInterruptionReason
+  ) => void;
 
   // Pending ask
   setPendingAsk: (
@@ -678,6 +723,7 @@ export interface AgentState {
   ) => AgentPendingAsk;
   clearPendingAsk: (chatId?: string | null) => void;
   awaitUser: (chatId: string, pendingAsk: AgentPendingAsk) => AgentPendingAsk;
+  cancelPendingAsk: (chatId?: string | null) => boolean;
   answerPendingAsk: (
     chatId: string,
     response: AgentAskUserResponse,
@@ -696,7 +742,7 @@ export interface AgentState {
     controller: AbortController | null
   ) => AbortController | null;
   getAbortController: (chatId?: string | null) => AbortController | null;
-  cancel: (chatId?: string | null) => void;
+  cancel: (chatId?: string | null, reason?: AgentInterruptionReason) => void;
 
   // Error
   clearError: (chatId?: string | null) => void;
@@ -1234,6 +1280,7 @@ export const createAgentStore = () => {
                 chat.lastError = null;
                 chat.requiresAIConfiguration = false;
                 chat.interrupted = false;
+                chat.interruptionReason = undefined;
                 chat.updatedTs = committed.createdTs;
               }
             }
@@ -1577,7 +1624,10 @@ export const createAgentStore = () => {
               }
               chat.lastError = null;
               chat.requiresAIConfiguration = false;
-              chat.interrupted = false;
+              if (message.role === "user") {
+                chat.interrupted = false;
+                chat.interruptionReason = undefined;
+              }
               chat.updatedTs = createdTs;
             }
           });
@@ -1627,6 +1677,9 @@ export const createAgentStore = () => {
             if (chat) {
               chat.status = status;
               chat.interrupted = options.interrupted ?? false;
+              chat.interruptionReason = chat.interrupted
+                ? (options.interruptionReason ?? "unexpected")
+                : undefined;
               chat.lastError = options.lastError ?? null;
               chat.requiresAIConfiguration =
                 options.requiresAIConfiguration ?? false;
@@ -1662,6 +1715,9 @@ export const createAgentStore = () => {
             if (chat) {
               chat.runId = options.runId ?? chat.runId ?? null;
               chat.runMode = options.runMode;
+              setLastUserInterruptionReason(
+                state.messagesByChatId[chatId] ?? []
+              );
             }
           });
         },
@@ -1681,10 +1737,21 @@ export const createAgentStore = () => {
           });
         },
 
-        interruptChatRun: (chatId, page) => {
+        interruptChatRun: (chatId, page, reason) => {
+          const interruptionReason =
+            reason === "user" || _getChat(chatId)?.interruptionReason === "user"
+              ? "user"
+              : "unexpected";
           get().setChatStatus(chatId, DEFAULT_CHAT_STATUS, {
             interrupted: true,
+            interruptionReason,
             page,
+          });
+          set((state) => {
+            setLastUserInterruptionReason(
+              state.messagesByChatId[chatId] ?? [],
+              interruptionReason
+            );
           });
         },
 
@@ -1724,6 +1791,47 @@ export const createAgentStore = () => {
           return get().setPendingAsk(chatId, pendingAsk);
         },
 
+        cancelPendingAsk: (chatId) => {
+          const id = chatId ?? get().currentChatId;
+          const chat = _getChat(id);
+          const pendingAsk = id ? get().pendingAskByChatId[id] : undefined;
+          if (
+            !id ||
+            chat?.status !== "awaiting_user" ||
+            !pendingAsk ||
+            pendingAsk.apiPermission
+          ) {
+            return false;
+          }
+          const toolMessage: AgentMessage = {
+            id: uuidv4(),
+            chatId: id,
+            createdTs: Date.now(),
+            role: "tool",
+            toolCallId: pendingAsk.toolCallId,
+            content: JSON.stringify({ kind: "cancelled", reason: "user" }),
+            metadata: chat.runId ? { runId: chat.runId } : undefined,
+          };
+          set((state) => {
+            const currentChat = state.chats.find(
+              (candidate) => candidate.id === id
+            );
+            if (!currentChat) return;
+            delete state.pendingAskByChatId[id];
+            state.messagesByChatId[id] ??= [];
+            state.messagesByChatId[id].push(toolMessage);
+            currentChat.status = DEFAULT_CHAT_STATUS;
+            currentChat.runId = null;
+            currentChat.runMode = undefined;
+            currentChat.interrupted = false;
+            currentChat.interruptionReason = undefined;
+            currentChat.lastError = null;
+            setLastUserInterruptionReason(state.messagesByChatId[id] ?? []);
+            _touchChatInDraft(state.chats, id);
+          });
+          return true;
+        },
+
         answerPendingAsk: (chatId, response, metadata) => {
           const pendingAsk = get().getPendingAsk(chatId);
           if (!pendingAsk) return null;
@@ -1752,13 +1860,13 @@ export const createAgentStore = () => {
         },
 
         // Abort / cancel
-        cancel: (chatId) => {
+        cancel: (chatId, reason) => {
           const id = chatId ?? get().currentChatId;
           if (!id) return;
           get().getAbortController(id)?.abort();
           get().setAbortController(id, null);
           if (get().isChatRunning(id)) {
-            get().interruptChatRun(id);
+            get().interruptChatRun(id, undefined, reason);
           }
         },
 
@@ -1773,6 +1881,7 @@ export const createAgentStore = () => {
               c.lastError = null;
               c.requiresAIConfiguration = false;
               c.interrupted = false;
+              c.interruptionReason = undefined;
               c.runId = null;
               if (c.status === "error") {
                 c.status = DEFAULT_CHAT_STATUS;

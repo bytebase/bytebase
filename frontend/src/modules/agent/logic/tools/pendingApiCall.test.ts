@@ -2,11 +2,20 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { PreparedApiCall } from "./callApi";
 
 const mocks = vi.hoisted(() => ({
+  checkPreparedApiPermission: vi.fn(),
   dispatchPreparedApiCall: vi.fn(),
+  validateIssueDecisionPermission: vi.fn(),
+}));
+
+vi.mock("./apiPermissionPreflight", () => ({
+  checkPreparedApiPermission: mocks.checkPreparedApiPermission,
 }));
 
 vi.mock("./callApi", () => ({
   dispatchPreparedApiCall: mocks.dispatchPreparedApiCall,
+}));
+vi.mock("./issueDecisionPermission", () => ({
+  validateIssueDecisionPermission: mocks.validateIssueDecisionPermission,
 }));
 
 import {
@@ -24,10 +33,39 @@ const makeCall = (): PreparedApiCall => ({
 describe("pendingApiCall", () => {
   beforeEach(() => {
     vi.useRealTimers();
+    mocks.checkPreparedApiPermission.mockReset();
+    mocks.checkPreparedApiPermission.mockResolvedValue({ kind: "allowed" });
     mocks.dispatchPreparedApiCall.mockReset();
     mocks.dispatchPreparedApiCall.mockResolvedValue(
       JSON.stringify({ status: 200, response: {} })
     );
+    mocks.validateIssueDecisionPermission.mockReset();
+    mocks.validateIssueDecisionPermission.mockResolvedValue(true);
+  });
+
+  test("rechecks access after approval before sending the target request", async () => {
+    const { actionId } = createPendingApiCall({
+      chatId: "chat-1",
+      toolCallId: "tool-revoked",
+      userName: "users/1",
+      call: makeCall(),
+    });
+    mocks.checkPreparedApiPermission.mockResolvedValue({
+      kind: "denied",
+      result: JSON.stringify({
+        status: 403,
+        error: "Not called: bb.projects.update is not granted.",
+      }),
+    });
+    const result = await resolvePendingApiCall({
+      actionId,
+      chatId: "chat-1",
+      toolCallId: "tool-revoked",
+      userName: "users/1",
+      approved: true,
+    });
+    expect(JSON.parse(result)).toMatchObject({ status: 403 });
+    expect(mocks.dispatchPreparedApiCall).not.toHaveBeenCalled();
   });
 
   test("does not create a permission request without a signed-in principal", () => {
@@ -93,7 +131,11 @@ describe("pendingApiCall", () => {
         toolCallId: "tool-1",
         userName: "users/1",
       })
-    ).toEqual({ operationId: call.operationId, body: call.body });
+    ).toEqual({
+      operationId: call.operationId,
+      body: call.body,
+      expiresAt,
+    });
     expect(
       getPendingApiCallPreview({
         actionId,
@@ -191,6 +233,173 @@ describe("pendingApiCall", () => {
       userName: "users/1",
       approved: true,
     });
+    expect(mocks.dispatchPreparedApiCall).not.toHaveBeenCalled();
+  });
+
+  test("shows Issue consequence and revalidates its state before approval", async () => {
+    const call = {
+      operationId: "bytebase.v1.IssueService.ApproveIssue",
+      path: "/bytebase.v1.IssueService/ApproveIssue",
+      body: JSON.stringify({ name: "projects/demo/issues/12" }),
+    };
+    const issueDecision = {
+      issueName: "projects/demo/issues/12",
+      issueTitle: "Change account table",
+      impact: "final-approval-with-rollout" as const,
+      action: "approve" as const,
+      snapshot: "before",
+    };
+    const { actionId, expiresAt } = createPendingApiCall({
+      chatId: "chat-issue",
+      toolCallId: "tool-issue",
+      userName: "users/1",
+      call,
+      issueDecision,
+    });
+
+    expect(
+      getPendingApiCallPreview({
+        actionId,
+        chatId: "chat-issue",
+        toolCallId: "tool-issue",
+        userName: "users/1",
+      })
+    ).toEqual({
+      operationId: call.operationId,
+      body: call.body,
+      expiresAt,
+      issueDecision: {
+        issueName: issueDecision.issueName,
+        issueTitle: issueDecision.issueTitle,
+        impact: issueDecision.impact,
+      },
+    });
+
+    mocks.validateIssueDecisionPermission.mockResolvedValueOnce(false);
+    const stale = await resolvePendingApiCall({
+      actionId,
+      chatId: "chat-issue",
+      toolCallId: "tool-issue",
+      userName: "users/1",
+      approved: true,
+    });
+    expect(JSON.parse(stale).error).toMatch(/changed|unavailable/i);
+    expect(mocks.dispatchPreparedApiCall).not.toHaveBeenCalled();
+    expect(mocks.validateIssueDecisionPermission).toHaveBeenCalledWith(
+      issueDecision
+    );
+  });
+
+  test("dispatches a current Issue decision once and does not revalidate denial", async () => {
+    const call = {
+      operationId: "bytebase.v1.IssueService.RejectIssue",
+      path: "/bytebase.v1.IssueService/RejectIssue",
+      body: JSON.stringify({ name: "projects/demo/issues/12" }),
+    };
+    const issueDecision = {
+      issueName: "projects/demo/issues/12",
+      issueTitle: "Change account table",
+      impact: "reject" as const,
+      action: "reject" as const,
+      snapshot: "before",
+    };
+    const denied = createPendingApiCall({
+      chatId: "chat-issue",
+      toolCallId: "tool-deny",
+      userName: "users/1",
+      call,
+      issueDecision,
+    });
+    await resolvePendingApiCall({
+      actionId: denied.actionId,
+      chatId: "chat-issue",
+      toolCallId: "tool-deny",
+      userName: "users/1",
+      approved: false,
+    });
+    expect(mocks.validateIssueDecisionPermission).not.toHaveBeenCalled();
+
+    const allowed = createPendingApiCall({
+      chatId: "chat-issue",
+      toolCallId: "tool-allow",
+      userName: "users/1",
+      call,
+      issueDecision,
+    });
+    await resolvePendingApiCall({
+      actionId: allowed.actionId,
+      chatId: "chat-issue",
+      toolCallId: "tool-allow",
+      userName: "users/1",
+      approved: true,
+    });
+    expect(mocks.validateIssueDecisionPermission).toHaveBeenCalledOnce();
+    expect(mocks.dispatchPreparedApiCall).toHaveBeenCalledExactlyOnceWith(call);
+  });
+
+  test("does not dispatch when the approved request was stopped before execution", async () => {
+    const { actionId } = createPendingApiCall({
+      chatId: "chat-1",
+      toolCallId: "tool-1",
+      userName: "users/1",
+      call: makeCall(),
+    });
+    const controller = new AbortController();
+    controller.abort();
+
+    const result = await resolvePendingApiCall({
+      actionId,
+      chatId: "chat-1",
+      toolCallId: "tool-1",
+      userName: "users/1",
+      approved: true,
+      signal: controller.signal,
+    });
+
+    expect(JSON.parse(result).error).toMatch(/stopped/i);
+    expect(mocks.dispatchPreparedApiCall).not.toHaveBeenCalled();
+    expect(
+      getPendingApiCallPreview({
+        actionId,
+        chatId: "chat-1",
+        toolCallId: "tool-1",
+        userName: "users/1",
+      })
+    ).toBeUndefined();
+  });
+
+  test("does not dispatch when stopped during Issue decision validation", async () => {
+    let finishValidation!: (valid: boolean) => void;
+    mocks.validateIssueDecisionPermission.mockImplementationOnce(
+      () => new Promise<boolean>((resolve) => (finishValidation = resolve))
+    );
+    const { actionId } = createPendingApiCall({
+      chatId: "chat-issue",
+      toolCallId: "tool-issue",
+      userName: "users/1",
+      call: makeCall(),
+      issueDecision: {
+        issueName: "projects/demo/issues/12",
+        issueTitle: "Example change",
+        impact: "final-approval-with-rollout",
+        action: "approve",
+        snapshot: "before",
+      },
+    });
+    const controller = new AbortController();
+    const resolution = resolvePendingApiCall({
+      actionId,
+      chatId: "chat-issue",
+      toolCallId: "tool-issue",
+      userName: "users/1",
+      approved: true,
+      signal: controller.signal,
+    });
+    expect(mocks.validateIssueDecisionPermission).toHaveBeenCalledOnce();
+    controller.abort();
+    finishValidation(true);
+
+    expect(JSON.parse(await resolution).error).toMatch(/stopped/i);
     expect(mocks.dispatchPreparedApiCall).not.toHaveBeenCalled();
   });
 

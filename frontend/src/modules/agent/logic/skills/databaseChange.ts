@@ -11,7 +11,7 @@ Create database changes (DDL/DML) through Bytebase's review workflow. Supports s
 ## Prerequisites
 
 - Have \`bb.plans.create\` and \`bb.issues.create\` permissions to propose a change; manual deployment also requires \`bb.rollouts.create\`
-- Know the target database(s)
+- Know the target database(s); use SearchDatabases with a \`project == "projects/{project-id}"\` filter to find them within the project if needed
 
 ## Workflow
 
@@ -92,7 +92,7 @@ call_api(operationId="PlanService/CreatePlan", body={
 - \`specs\` is a flat array directly on the plan (no "steps" wrapper)
 - Each \`spec\` has a unique \`id\` (any string, used for identification)
 - \`targets\` is an **array** (even for single database)
-- Preserve each exact canonical database name returned by ListDatabases. Do not remove a \`projects/{project-id}\` instance parent.
+- Preserve each exact canonical database name returned by SearchDatabases. Do not remove a \`projects/{project-id}\` instance parent.
 - Specs are executed based on rollout policy (can be sequential or parallel)
 
 **Using database groups:**
@@ -142,7 +142,7 @@ call_api(operationId="RolloutService/CreateRollout", body={
 
 | Error | Cause | Fix |
 |-------|-------|-----|
-| database not found | Wrong database reference | Use the exact \`instances/{id}/databases/{name}\` or \`projects/{project}/instances/{id}/databases/{name}\` returned by ListDatabases |
+| database not found | Wrong database reference | Use the exact \`instances/{id}/databases/{name}\` or \`projects/{project}/instances/{id}/databases/{name}\` returned by SearchDatabases |
 | sheet not found | Sheet doesn't exist | Create sheet first (Step 1) |
 | missing engine | Sheet without engine field | Add \`engine\` field to sheet |
 | plan not found | Plan doesn't exist | Create plan before issue |

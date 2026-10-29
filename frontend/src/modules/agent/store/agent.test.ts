@@ -585,8 +585,80 @@ describe("useAgentStore (Zustand)", () => {
     expect(chat).not.toBeNull();
     expect(chat?.status).toBe("idle");
     expect(chat?.interrupted).toBe(true);
+    expect(chat?.interruptionReason).toBe("unexpected");
+    expect(s(store).getMessages(chat!.id)[0].metadata?.interruptionReason).toBe(
+      "unexpected"
+    );
     expect(chat?.runId).toBe("run-1");
     expect(selectLoading(s(store))).toBe(false);
+  });
+
+  test("records a user stop on the interrupted turn and preserves it after a late status update", () => {
+    const store = createAgentStore();
+    const chatId = s(store).currentChatId!;
+    s(store).addMessage({
+      chatId,
+      role: "user",
+      content: "Update the project",
+    });
+    s(store).startChatRun(chatId, undefined, { runId: "run-1" });
+    const controller = new AbortController();
+    s(store).setAbortController(chatId, controller);
+
+    s(store).cancel(chatId, "user");
+    s(store).interruptChatRun(chatId);
+
+    expect(controller.signal.aborted).toBe(true);
+    expect(s(store).getChat(chatId)?.interruptionReason).toBe("user");
+    expect(s(store).getMessages(chatId)[0].metadata?.interruptionReason).toBe(
+      "user"
+    );
+
+    s(store).addMessage({ chatId, role: "assistant", content: "Late result" });
+    expect(s(store).getChat(chatId)?.interruptionReason).toBe("user");
+  });
+
+  test("persists the interruption cause for the next agent turn", () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/acme");
+    const chatId = s(store).currentChatId!;
+    s(store).addMessage({ chatId, role: "user", content: "First request" });
+    s(store).startChatRun(chatId, undefined, { runId: "run-1" });
+    s(store).cancel(chatId, "user");
+
+    const reloaded = createAgentStore();
+    s(reloaded).setWorkspaceName("workspaces/acme");
+    expect(s(reloaded).getChat(chatId)?.interruptionReason).toBe("user");
+    expect(
+      s(reloaded).getMessages(chatId)[0].metadata?.interruptionReason
+    ).toBe("user");
+
+    s(reloaded).addMessage({ chatId, role: "user", content: "Second request" });
+    s(reloaded).startChatRun(chatId, undefined, { runId: "run-2" });
+    expect(
+      s(reloaded).getMessages(chatId)[0].metadata?.interruptionReason
+    ).toBe("user");
+    expect(
+      s(reloaded).getMessages(chatId)[1].metadata?.interruptionReason
+    ).toBeUndefined();
+    expect(s(reloaded).getChat(chatId)?.interruptionReason).toBeUndefined();
+  });
+
+  test("clears the current turn's interruption cause when retried", () => {
+    const store = createAgentStore();
+    const chatId = s(store).currentChatId!;
+    s(store).addMessage({ chatId, role: "user", content: "Retry this" });
+    s(store).startChatRun(chatId, undefined, { runId: "run-1" });
+    s(store).interruptChatRun(chatId);
+
+    expect(s(store).getMessages(chatId)[0].metadata?.interruptionReason).toBe(
+      "unexpected"
+    );
+    s(store).startChatRun(chatId, undefined, { runId: "run-2" });
+    expect(
+      s(store).getMessages(chatId)[0].metadata?.interruptionReason
+    ).toBeUndefined();
+    expect(s(store).getChat(chatId)?.interruptionReason).toBeUndefined();
   });
 
   test("clears interruption markers when a new run starts", () => {
@@ -928,6 +1000,110 @@ describe("useAgentStore (Zustand)", () => {
       confirmed: true,
     });
     expect(s(store).getPendingAsk(chatId)).toBeNull();
+  });
+
+  test("cancelPendingAsk closes an ordinary ask without answering or resuming it", () => {
+    const store = createAgentStore();
+    const chatId = s(store).currentChatId!;
+    s(store).addMessage({
+      chatId,
+      role: "user",
+      content: "Check the database",
+    });
+    s(store).startChatRun(chatId, undefined, { runId: "run-1" });
+    s(store).addMessage({
+      chatId,
+      role: "assistant",
+      toolCalls: [
+        { id: "ask-1", name: "ask_user", arguments: '{"prompt":"Which one?"}' },
+      ],
+      metadata: { runId: "run-1" },
+    });
+    s(store).awaitUser(chatId, {
+      toolCallId: "ask-1",
+      prompt: "Which one?",
+      kind: "input",
+    });
+
+    expect(s(store).cancelPendingAsk(chatId)).toBe(true);
+    expect(s(store).getChat(chatId)).toMatchObject({
+      status: "idle",
+      interrupted: false,
+      runId: null,
+    });
+    expect(s(store).getChat(chatId)?.runMode).toBeUndefined();
+    expect(s(store).getPendingAsk(chatId)).toBeNull();
+    expect(s(store).getMessages(chatId)).toHaveLength(3);
+    expect(
+      s(store).getMessages(chatId)[0].metadata?.interruptionReason
+    ).toBeUndefined();
+    expect(s(store).getMessages(chatId)[2]).toMatchObject({
+      role: "tool",
+      toolCallId: "ask-1",
+      metadata: { runId: "run-1" },
+    });
+    expect(JSON.parse(s(store).getMessages(chatId)[2].content ?? "{}")).toEqual(
+      {
+        kind: "cancelled",
+        reason: "user",
+      }
+    );
+    expect(s(store).cancelPendingAsk(chatId)).toBe(false);
+    expect(s(store).getMessages(chatId)).toHaveLength(3);
+  });
+
+  test("cancelPendingAsk does not handle API permissions as ordinary asks", () => {
+    const store = createAgentStore();
+    const chatId = s(store).currentChatId!;
+    s(store).addMessage({
+      chatId,
+      role: "user",
+      content: "Update the project",
+    });
+    s(store).awaitUser(chatId, {
+      toolCallId: "write-1",
+      prompt: "Allow this update?",
+      kind: "confirm",
+      apiPermission: {
+        actionId: "action-1",
+        operationId: "ProjectService/UpdateProject",
+      },
+    });
+
+    expect(s(store).cancelPendingAsk(chatId)).toBe(false);
+    expect(s(store).getChat(chatId)?.status).toBe("awaiting_user");
+    expect(s(store).getPendingAsk(chatId)?.toolCallId).toBe("write-1");
+    expect(
+      s(store).getMessages(chatId)[0].metadata?.interruptionReason
+    ).toBeUndefined();
+  });
+
+  test("cancelPendingAsk keeps the canceled tool result after reload", () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/example");
+    const chatId = s(store).currentChatId!;
+    s(store).addMessage({
+      chatId,
+      role: "user",
+      content: "Check the database",
+    });
+    s(store).awaitUser(chatId, {
+      toolCallId: "ask-1",
+      prompt: "Which one?",
+      kind: "input",
+    });
+    expect(s(store).cancelPendingAsk(chatId)).toBe(true);
+
+    const rehydrated = createAgentStore();
+    s(rehydrated).setWorkspaceName("workspaces/example");
+    expect(s(rehydrated).getChat(chatId)?.status).toBe("idle");
+    expect(s(rehydrated).getPendingAsk(chatId)).toBeNull();
+    expect(
+      s(rehydrated).getMessages(chatId)[0].metadata?.interruptionReason
+    ).toBeUndefined();
+    expect(s(rehydrated).getMessages(chatId).at(-1)?.content).toBe(
+      JSON.stringify({ kind: "cancelled", reason: "user" })
+    );
   });
 
   test("answerPendingAsk stores choose labels and values", () => {
