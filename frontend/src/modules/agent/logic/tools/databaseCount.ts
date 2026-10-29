@@ -9,7 +9,11 @@ import {
   projectNamePrefix,
   workspaceNamePrefix,
 } from "@/stores/modules/v1/common";
-import { ListDatabasesRequestSchema } from "@/types/proto-es/v1/database_service_pb";
+import {
+  ListDatabasesRequestSchema,
+  SearchDatabasesRequestSchema,
+} from "@/types/proto-es/v1/database_service_pb";
+import { celString } from "@/utils/v1/celLiteral";
 
 const PAGE_SIZE = 1000;
 
@@ -90,17 +94,30 @@ export function createDatabaseCountTool({
     const seenPageTokens = new Set<string>();
     try {
       do {
-        const page = await databaseServiceClientConnect.listDatabases(
-          create(ListDatabasesRequestSchema, {
-            parent,
-            pageSize: PAGE_SIZE,
-            pageToken,
-            showDeleted: false,
-          }),
-          {
-            contextValues: createContextValues().set(silentContextKey, true),
-          }
-        );
+        const options = {
+          contextValues: createContextValues().set(silentContextKey, true),
+        };
+        const page =
+          scope === "context"
+            ? await databaseServiceClientConnect.searchDatabases(
+                create(SearchDatabasesRequestSchema, {
+                  pageSize: PAGE_SIZE,
+                  pageToken,
+                  filter: parent.startsWith(projectNamePrefix)
+                    ? `project == ${celString(parent)}`
+                    : "",
+                }),
+                options
+              )
+            : await databaseServiceClientConnect.listDatabases(
+                create(ListDatabasesRequestSchema, {
+                  parent,
+                  pageSize: PAGE_SIZE,
+                  pageToken,
+                  showDeleted: false,
+                }),
+                options
+              );
         count += page.databases.length;
         pageToken = page.nextPageToken;
         if (pageToken && seenPageTokens.has(pageToken)) {

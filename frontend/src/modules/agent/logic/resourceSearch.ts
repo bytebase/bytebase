@@ -11,7 +11,7 @@ import {
 import { State } from "@/types/proto-es/v1/common_pb";
 import {
   type Database,
-  ListDatabasesRequestSchema,
+  SearchDatabasesRequestSchema,
 } from "@/types/proto-es/v1/database_service_pb";
 import {
   type Issue,
@@ -23,8 +23,7 @@ import { celString } from "@/utils/v1/celLiteral";
 export async function searchAgentProjects(
   query: string,
   pageToken: string,
-  signal: AbortSignal,
-  includeDefault = false
+  signal: AbortSignal
 ): Promise<{ items: Project[]; nextPageToken: string }> {
   const { projects, nextPageToken } = await useAppStore
     .getState()
@@ -32,7 +31,7 @@ export async function searchAgentProjects(
       filter: {
         query: query.trim(),
         state: State.ACTIVE,
-        excludeDefault: !includeDefault,
+        excludeDefault: true,
       },
       pageSize: 20,
       pageToken,
@@ -60,19 +59,25 @@ export async function searchAgentDatabases(
   }
   signal.throwIfAborted();
   const keyword = query.trim().toLowerCase();
-  const response = await databaseServiceClientConnect.listDatabases(
-    create(ListDatabasesRequestSchema, {
-      parent,
+  const filter = [
+    parent.startsWith(projectNamePrefix)
+      ? `project == ${celString(parent)}`
+      : "",
+    keyword ? `name.contains(${celString(keyword)})` : "",
+  ]
+    .filter(Boolean)
+    .join(" && ");
+  const options = {
+    signal,
+    contextValues: createContextValues().set(silentContextKey, true),
+  };
+  const response = await databaseServiceClientConnect.searchDatabases(
+    create(SearchDatabasesRequestSchema, {
       pageSize: 20,
       pageToken,
-      filter: keyword ? `name.contains(${celString(keyword)})` : "",
-      orderBy: "name",
-      showDeleted: false,
+      filter,
     }),
-    {
-      signal,
-      contextValues: createContextValues().set(silentContextKey, true),
-    }
+    options
   );
   signal.throwIfAborted();
   return {

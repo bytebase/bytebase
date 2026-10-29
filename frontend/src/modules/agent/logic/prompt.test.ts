@@ -71,7 +71,7 @@ describe("buildSystemPrompt", () => {
       "A workspace instance may span projects; a project instance remains in its owning project"
     );
     expect(prompt).toContain(
-      "For other instance-specific or filtered counts, use search_api and call_api ListDatabases"
+      "For filtered counts in the referenced Project, use search_api and call_api SearchDatabases with a project filter"
     );
     expect(prompt).not.toContain("Referenced project for this turn");
   });
@@ -144,10 +144,10 @@ describe("buildSystemPrompt", () => {
       "For an unfiltered total of active databases in the chat Workspace or Project, or the referenced Project for this turn, use get_database_count with its default scope"
     );
     expect(prompt).toContain(
-      "For filtered counts or other instance scopes, use search_api and call_api ListDatabases"
+      "For filtered counts in a Workspace or Project, use search_api and call_api SearchDatabases"
     );
     expect(prompt).toContain(
-      "use search_api and call_api ListDatabases with the precise parent and filter"
+      "For other instance scopes, use search_api and call_api ListDatabases with the precise parent and filter"
     );
     expect(prompt).toContain(
       "ask which project only when the member requests a project-specific result without identifying one"
@@ -178,7 +178,7 @@ describe("buildSystemPrompt", () => {
     );
     expect(referencePrompt).toContain("referenced Project for this turn");
     expect(referencePrompt).toContain(
-      "For other instance-specific or filtered counts, use search_api and call_api ListDatabases"
+      "For filtered counts in the referenced Project, use search_api and call_api SearchDatabases with a project filter"
     );
   });
 

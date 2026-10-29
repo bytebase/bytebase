@@ -58,12 +58,7 @@ interface AgentResourcePickerProps {
   onSelectIssue: (issue: Issue) => void;
 }
 
-type PickerView =
-  | "categories"
-  | "projects"
-  | "database-projects"
-  | "databases"
-  | "issues";
+type PickerView = "categories" | "projects" | "databases" | "issues";
 type SearchStatus =
   | "idle"
   | "loading"
@@ -122,18 +117,14 @@ export function AgentResourcePicker({
   const canListWorkspaceProjects = useAppStore((state) =>
     state.hasWorkspacePermission("bb.projects.list")
   );
-  const canListWorkspaceDatabases = useAppStore((state) =>
-    state.hasWorkspacePermission("bb.databases.list")
+  const canSearchWorkspaceDatabases = useAppStore((state) =>
+    state.hasWorkspacePermission("bb.databases.get")
   );
   const [view, setView] = useState<PickerView>("categories");
   const [query, setQuery] = useState("");
   const [projects, setProjects] = useState<Project[]>([]);
   const [databases, setDatabases] = useState<Database[]>([]);
   const [issues, setIssues] = useState<Issue[]>([]);
-  const [chosenProject, setChosenProject] = useState<{
-    name: string;
-    workspaceName: string;
-  }>();
   const [nextPageToken, setNextPageToken] = useState("");
   const [status, setStatus] = useState<SearchStatus>("idle");
   const requestGeneration = useRef(0);
@@ -149,10 +140,7 @@ export function AgentResourcePicker({
   const resultRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const databaseProjectName =
     selectedProjectName ??
-    (projectName && projectName !== "projects/-" ? projectName : undefined) ??
-    (chosenProject?.workspaceName === workspaceName
-      ? chosenProject.name
-      : undefined);
+    (projectName && projectName !== "projects/-" ? projectName : undefined);
   const loadProjectIamPolicy = useAppStore(
     (state) => state.loadProjectIamPolicy
   );
@@ -162,9 +150,9 @@ export function AgentResourcePicker({
       ? Boolean(state.projectPoliciesByName[databaseProjectName])
       : false
   );
-  const canListDatabases = useAppStore((state) => {
-    if (canListWorkspaceDatabases) return true;
-    if (!databaseProjectName) return false;
+  const canSearchDatabases = useAppStore((state) => {
+    if (!databaseProjectName) return true;
+    if (canSearchWorkspaceDatabases) return true;
     if (
       !state.projectPoliciesByName[databaseProjectName] ||
       !state.currentUser ||
@@ -175,7 +163,7 @@ export function AgentResourcePicker({
     const project =
       state.projectsByName[databaseProjectName] ??
       create(ProjectSchema, { name: databaseProjectName });
-    return state.hasProjectPermission(project, "bb.databases.list");
+    return state.hasProjectPermission(project, "bb.databases.get");
   });
   const databaseParent = databaseProjectName ?? workspaceName;
   const isDatabaseView = view === "databases";
@@ -192,8 +180,7 @@ export function AgentResourcePicker({
         : undefined;
   const results = isIssueView ? issues : isDatabaseView ? databases : projects;
   const showProjectCategory = !selectedProjectName && canListWorkspaceProjects;
-  const showDatabaseCategory =
-    canListDatabases || (!databaseProjectName && canListWorkspaceProjects);
+  const showDatabaseCategory = canSearchDatabases;
   const firstCategoryRef = showProjectCategory
     ? categoryRef
     : showDatabaseCategory
@@ -204,13 +191,13 @@ export function AgentResourcePicker({
     if (
       !open ||
       !databaseProjectName ||
-      canListWorkspaceDatabases ||
+      canSearchWorkspaceDatabases ||
       projectPolicyIsCached
     )
       return;
     void loadProjectIamPolicy(databaseProjectName, true).catch(() => undefined);
   }, [
-    canListWorkspaceDatabases,
+    canSearchWorkspaceDatabases,
     databaseProjectName,
     loadProjectIamPolicy,
     open,
@@ -220,12 +207,8 @@ export function AgentResourcePicker({
   const loadPage = useCallback(
     async (pageToken: string, append: boolean) => {
       if (view === "issues" && !issueParent) return;
-      if (
-        (view === "projects" || view === "database-projects") &&
-        !canListWorkspaceProjects
-      )
-        return;
-      if (view === "databases" && !canListDatabases) return;
+      if (view === "projects" && !canListWorkspaceProjects) return;
+      if (view === "databases" && !canSearchDatabases) return;
       requestController.current?.abort();
       const controller = new AbortController();
       requestController.current = controller;
@@ -267,8 +250,7 @@ export function AgentResourcePicker({
                   result: await searchAgentProjects(
                     query,
                     pageToken,
-                    controller.signal,
-                    view === "database-projects"
+                    controller.signal
                   ),
                 };
         if (
@@ -305,7 +287,7 @@ export function AgentResourcePicker({
       }
     },
     [
-      canListDatabases,
+      canSearchDatabases,
       canListWorkspaceProjects,
       databaseParent,
       databaseProjectName,
@@ -317,23 +299,20 @@ export function AgentResourcePicker({
 
   useLayoutEffect(() => {
     if (
-      ((view !== "projects" && view !== "database-projects") ||
-        canListWorkspaceProjects) &&
-      (view !== "databases" || canListDatabases)
+      (view !== "projects" || canListWorkspaceProjects) &&
+      (view !== "databases" || canSearchDatabases)
     ) {
       return;
     }
     requestController.current?.abort();
     requestGeneration.current += 1;
-    setView(
-      view === "databases" && chosenProject ? "database-projects" : "categories"
-    );
+    setView("categories");
     setQuery("");
     setProjects([]);
     setDatabases([]);
     setNextPageToken("");
     setStatus("idle");
-  }, [canListDatabases, canListWorkspaceProjects, chosenProject, view]);
+  }, [canSearchDatabases, canListWorkspaceProjects, view]);
 
   useLayoutEffect(() => {
     if (previousWorkspaceName.current === workspaceName) return;
@@ -341,19 +320,12 @@ export function AgentResourcePicker({
     if (selectedProjectName || projectName || view !== "databases") return;
     requestController.current?.abort();
     requestGeneration.current += 1;
-    setChosenProject(undefined);
-    setView(canListWorkspaceDatabases ? "databases" : "database-projects");
+    setView("databases");
     setQuery("");
     setDatabases([]);
     setNextPageToken("");
     setStatus("idle");
-  }, [
-    canListWorkspaceDatabases,
-    projectName,
-    selectedProjectName,
-    view,
-    workspaceName,
-  ]);
+  }, [projectName, selectedProjectName, view, workspaceName]);
 
   useLayoutEffect(() => {
     if (view !== "issues" || issueParent) return;
@@ -368,12 +340,8 @@ export function AgentResourcePicker({
 
   useEffect(() => {
     if (!open || view === "categories" || hasSelectedReference) return;
-    if (
-      (view === "projects" || view === "database-projects") &&
-      !canListWorkspaceProjects
-    )
-      return;
-    if (view === "databases" && !canListDatabases) return;
+    if (view === "projects" && !canListWorkspaceProjects) return;
+    if (view === "databases" && !canSearchDatabases) return;
     if (view === "issues" && !issueParent) return;
     void loadPage("", false);
     return () => {
@@ -381,7 +349,7 @@ export function AgentResourcePicker({
       requestGeneration.current += 1;
     };
   }, [
-    canListDatabases,
+    canSearchDatabases,
     canListWorkspaceProjects,
     databaseParent,
     hasSelectedReference,
@@ -399,7 +367,6 @@ export function AgentResourcePicker({
     setProjects([]);
     setDatabases([]);
     setIssues([]);
-    setChosenProject(undefined);
     setNextPageToken("");
     setStatus("idle");
   }, [open]);
@@ -413,12 +380,6 @@ export function AgentResourcePicker({
 
   const selectProject = (project: Project) => {
     if (hasSelectedReference || !canListWorkspaceProjects) return;
-    if (view === "database-projects") {
-      setChosenProject({ name: project.name, workspaceName });
-      setQuery("");
-      setView("databases");
-      return;
-    }
     onSelectProject(project);
     onOpenChange(false);
   };
@@ -426,7 +387,7 @@ export function AgentResourcePicker({
   const selectDatabase = (database: Database) => {
     if (
       hasSelectedReference ||
-      !canListDatabases ||
+      !canSearchDatabases ||
       !isSelectableDatabase(database, databaseProjectName)
     ) {
       return;
@@ -457,13 +418,7 @@ export function AgentResourcePicker({
   };
 
   const goBack = () => {
-    if (view === "databases" && chosenProject) {
-      setChosenProject(undefined);
-      setView("database-projects");
-    } else {
-      setChosenProject(undefined);
-      setView("categories");
-    }
+    setView("categories");
     setQuery("");
   };
 
@@ -623,20 +578,10 @@ export function AgentResourcePicker({
                         issueCategoryRef.current?.focus();
                       } else if (event.key === "Enter") {
                         event.preventDefault();
-                        showView(
-                          canListWorkspaceDatabases || databaseProjectName
-                            ? "databases"
-                            : "database-projects"
-                        );
+                        showView("databases");
                       }
                     }}
-                    onClick={() =>
-                      showView(
-                        canListWorkspaceDatabases || databaseProjectName
-                          ? "databases"
-                          : "database-projects"
-                      )
-                    }
+                    onClick={() => showView("databases")}
                   >
                     <DatabaseIcon className="size-4 shrink-0" />
                     <span className="min-w-0 flex-1 truncate">

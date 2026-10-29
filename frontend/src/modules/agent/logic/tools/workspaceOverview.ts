@@ -6,7 +6,7 @@ import {
   projectServiceClientConnect,
 } from "@/api";
 import { silentContextKey } from "@/api/context-key";
-import { ListDatabasesRequestSchema } from "@/types/proto-es/v1/database_service_pb";
+import { SearchDatabasesRequestSchema } from "@/types/proto-es/v1/database_service_pb";
 import { ListInstancesRequestSchema } from "@/types/proto-es/v1/instance_service_pb";
 import { SearchProjectsRequestSchema } from "@/types/proto-es/v1/project_service_pb";
 import type { AgentEvidence, AgentEvidenceReference } from "../types";
@@ -136,12 +136,8 @@ export async function collectWorkspaceOverview(
       }),
       silentOptions
     ),
-    databaseServiceClientConnect.listDatabases(
-      create(ListDatabasesRequestSchema, {
-        parent: workspaceName,
-        pageSize: PAGE_SIZE,
-        showDeleted: false,
-      }),
+    databaseServiceClientConnect.searchDatabases(
+      create(SearchDatabasesRequestSchema, { pageSize: PAGE_SIZE }),
       silentOptions
     ),
   ]);

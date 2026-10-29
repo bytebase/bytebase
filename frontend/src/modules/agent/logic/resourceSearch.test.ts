@@ -6,7 +6,7 @@ import { silentContextKey } from "@/api/context-key";
 import { State } from "@/types/proto-es/v1/common_pb";
 import {
   DatabaseSchema$,
-  ListDatabasesRequestSchema,
+  SearchDatabasesRequestSchema,
 } from "@/types/proto-es/v1/database_service_pb";
 import {
   IssueSchema,
@@ -17,12 +17,16 @@ import { ProjectSchema } from "@/types/proto-es/v1/project_service_pb";
 const mocks = vi.hoisted(() => ({
   fetchProjectList: vi.fn(),
   listDatabases: vi.fn(),
+  searchDatabases: vi.fn(),
   searchIssues: vi.fn(),
   batchGetOrFetchUsers: vi.fn(),
 }));
 
 vi.mock("@/api", () => ({
-  databaseServiceClientConnect: { listDatabases: mocks.listDatabases },
+  databaseServiceClientConnect: {
+    listDatabases: mocks.listDatabases,
+    searchDatabases: mocks.searchDatabases,
+  },
   issueServiceClientConnect: { searchIssues: mocks.searchIssues },
 }));
 
@@ -93,19 +97,6 @@ describe("searchAgentProjects", () => {
     );
   });
 
-  test("includes the default project when choosing a database owner", async () => {
-    const controller = new AbortController();
-    mocks.fetchProjectList.mockResolvedValueOnce({ projects: [] });
-
-    await searchAgentProjects("", "", controller.signal, true);
-
-    expect(mocks.fetchProjectList).toHaveBeenCalledWith(
-      expect.objectContaining({
-        filter: expect.objectContaining({ excludeDefault: false }),
-      })
-    );
-  });
-
   test("propagates fetch failures so the picker can offer Retry", async () => {
     const controller = new AbortController();
     const failure = new Error("projects unavailable");
@@ -126,11 +117,12 @@ describe("searchAgentDatabases", () => {
 
   beforeEach(() => {
     mocks.listDatabases.mockReset();
+    mocks.searchDatabases.mockReset();
   });
 
   test("searches a project page by database name with an escaped CEL query", async () => {
     const controller = new AbortController();
-    mocks.listDatabases.mockResolvedValueOnce({
+    mocks.searchDatabases.mockResolvedValueOnce({
       databases: [database],
       nextPageToken: "next-page",
     });
@@ -144,15 +136,13 @@ describe("searchAgentDatabases", () => {
       )
     ).resolves.toEqual({ items: [database], nextPageToken: "next-page" });
     expect(
-      databaseServiceClientConnect.listDatabases
+      databaseServiceClientConnect.searchDatabases
     ).toHaveBeenCalledExactlyOnceWith(
-      create(ListDatabasesRequestSchema, {
-        parent: "projects/orders",
+      create(SearchDatabasesRequestSchema, {
         pageSize: 20,
         pageToken: "previous-page",
-        filter: 'name.contains("orders\\"main")',
-        orderBy: "name",
-        showDeleted: false,
+        filter:
+          'project == "projects/orders" && name.contains("orders\\"main")',
       }),
       expect.objectContaining({
         signal: controller.signal,
@@ -160,33 +150,33 @@ describe("searchAgentDatabases", () => {
       })
     );
     expect(
-      mocks.listDatabases.mock.calls[0][1]?.contextValues.get(silentContextKey)
+      mocks.searchDatabases.mock.calls[0][1]?.contextValues.get(
+        silentContextKey
+      )
     ).toBe(true);
+    expect(mocks.listDatabases).not.toHaveBeenCalled();
   });
 
   test("browses the first page without a query and normalizes an exhausted result", async () => {
     const controller = new AbortController();
-    mocks.listDatabases.mockResolvedValueOnce({ databases: [] });
+    mocks.searchDatabases.mockResolvedValueOnce({ databases: [] });
 
     await expect(
       searchAgentDatabases("projects/orders", "  ", "", controller.signal)
     ).resolves.toEqual({ items: [], nextPageToken: "" });
-    expect(mocks.listDatabases).toHaveBeenCalledWith(
-      create(ListDatabasesRequestSchema, {
-        parent: "projects/orders",
+    expect(mocks.searchDatabases).toHaveBeenCalledWith(
+      create(SearchDatabasesRequestSchema, {
         pageSize: 20,
         pageToken: "",
-        filter: "",
-        orderBy: "name",
-        showDeleted: false,
+        filter: 'project == "projects/orders"',
       }),
       expect.anything()
     );
   });
 
-  test("searches a workspace page without requiring a project", async () => {
+  test("uses cross-project search for a workspace database page", async () => {
     const controller = new AbortController();
-    mocks.listDatabases.mockResolvedValueOnce({
+    mocks.searchDatabases.mockResolvedValueOnce({
       databases: [database],
       nextPageToken: "next-page",
     });
@@ -199,17 +189,15 @@ describe("searchAgentDatabases", () => {
         controller.signal
       )
     ).resolves.toEqual({ items: [database], nextPageToken: "next-page" });
-    expect(mocks.listDatabases).toHaveBeenCalledWith(
-      create(ListDatabasesRequestSchema, {
-        parent: "workspaces/default",
+    expect(mocks.searchDatabases).toHaveBeenCalledWith(
+      create(SearchDatabasesRequestSchema, {
         pageSize: 20,
         pageToken: "previous-page",
         filter: 'name.contains("orders")',
-        orderBy: "name",
-        showDeleted: false,
       }),
-      expect.anything()
+      expect.objectContaining({ signal: controller.signal })
     );
+    expect(mocks.listDatabases).not.toHaveBeenCalled();
   });
 
   test("rejects non-project and non-workspace parents without listing databases", async () => {
@@ -236,7 +224,7 @@ describe("searchAgentDatabases", () => {
 
   test("propagates API failures for the picker Retry state", async () => {
     const failure = new Error("databases unavailable");
-    mocks.listDatabases.mockRejectedValueOnce(failure);
+    mocks.searchDatabases.mockRejectedValueOnce(failure);
 
     await expect(
       searchAgentDatabases(

@@ -413,7 +413,7 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
     },
     {
       name: "get_database_count",
-      description: `Count the unfiltered total of active databases in ${referencedProject ? projectScope : "the Project or Workspace bound to this chat"}. With a selected @Database in the current turn, set scope to "referenced-instance" to count active databases on that database's canonical instance scope. A workspace instance may span projects; a project instance does not. This tool follows every ListDatabases page internally and returns only the count, never database records. It cannot choose an arbitrary instance or apply filters. If unavailable, do not report a partial count as exact.`,
+      description: `Count active databases visible to the current member in ${referencedProject ? projectScope : "the Project or Workspace bound to this chat"}. With a selected @Database in the current turn, set scope to "referenced-instance" to count active databases on that database's canonical instance scope. A workspace instance may span projects; a project instance does not. This tool follows every database search or list page internally and returns only the count, never database records. It cannot choose an arbitrary instance or apply filters. If unavailable, do not report a partial count as exact.`,
       parametersSchema: {
         type: "object",
         properties: {

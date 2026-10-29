@@ -1,11 +1,15 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
-const databaseApi = vi.hoisted(() => ({ listDatabases: vi.fn() }));
+const databaseApi = vi.hoisted(() => ({
+  listDatabases: vi.fn(),
+  searchDatabases: vi.fn(),
+}));
 
 vi.mock("@/api", () => ({
   databaseServiceClientConnect: {
     listDatabases: databaseApi.listDatabases,
+    searchDatabases: databaseApi.searchDatabases,
   },
 }));
 
@@ -16,11 +20,14 @@ const databases = (count: number) =>
     name: `instances/test/databases/private-${index}`,
   }));
 
-beforeEach(() => databaseApi.listDatabases.mockReset());
+beforeEach(() => {
+  databaseApi.listDatabases.mockReset();
+  databaseApi.searchDatabases.mockReset();
+});
 
 describe("get_database_count", () => {
   test("counts all workspace pages without returning database records", async () => {
-    databaseApi.listDatabases
+    databaseApi.searchDatabases
       .mockResolvedValueOnce({ databases: databases(1000), nextPageToken: "2" })
       .mockResolvedValueOnce({ databases: databases(1000), nextPageToken: "3" })
       .mockResolvedValueOnce({ databases: databases(1000), nextPageToken: "4" })
@@ -36,21 +43,22 @@ describe("get_database_count", () => {
       count: 3200,
     });
     expect(result).not.toContain("private-");
-    expect(databaseApi.listDatabases).toHaveBeenCalledTimes(4);
+    expect(databaseApi.searchDatabases).toHaveBeenCalledTimes(4);
     expect(
-      databaseApi.listDatabases.mock.calls.map(([request]) => request.pageToken)
+      databaseApi.searchDatabases.mock.calls.map(
+        ([request]) => request.pageToken
+      )
     ).toEqual(["", "2", "3", "4"]);
-    for (const [request] of databaseApi.listDatabases.mock.calls) {
+    for (const [request] of databaseApi.searchDatabases.mock.calls) {
       expect(request).toMatchObject({
-        parent: "workspaces/demo",
         pageSize: 1000,
-        showDeleted: false,
       });
     }
+    expect(databaseApi.listDatabases).not.toHaveBeenCalled();
   });
 
   test("counts the bound project instead of the workspace", async () => {
-    databaseApi.listDatabases.mockResolvedValue({
+    databaseApi.searchDatabases.mockResolvedValue({
       databases: databases(2),
       nextPageToken: "",
     });
@@ -64,10 +72,11 @@ describe("get_database_count", () => {
       status: "available",
       count: 2,
     });
-    expect(databaseApi.listDatabases).toHaveBeenCalledWith(
-      expect.objectContaining({ parent: "projects/sample" }),
+    expect(databaseApi.searchDatabases).toHaveBeenCalledWith(
+      expect.objectContaining({ filter: 'project == "projects/sample"' }),
       expect.anything()
     );
+    expect(databaseApi.listDatabases).not.toHaveBeenCalled();
   });
 
   test("counts all projects on the selected workspace-instance database's instance", async () => {
@@ -166,7 +175,7 @@ describe("get_database_count", () => {
   });
 
   test("reports zero only after a complete empty page", async () => {
-    databaseApi.listDatabases.mockResolvedValue({
+    databaseApi.searchDatabases.mockResolvedValue({
       databases: [],
       nextPageToken: "",
     });
@@ -180,10 +189,14 @@ describe("get_database_count", () => {
       status: "available",
       count: 0,
     });
+    expect(databaseApi.searchDatabases).toHaveBeenCalledWith(
+      expect.objectContaining({ filter: 'project == "projects/empty"' }),
+      expect.anything()
+    );
   });
 
   test("does not claim an exact count if a later page fails", async () => {
-    databaseApi.listDatabases
+    databaseApi.searchDatabases
       .mockResolvedValueOnce({ databases: databases(1000), nextPageToken: "2" })
       .mockRejectedValueOnce(new Error("permission denied"));
 
@@ -199,7 +212,7 @@ describe("get_database_count", () => {
   });
 
   test("does not claim an exact count if pagination repeats a token", async () => {
-    databaseApi.listDatabases
+    databaseApi.searchDatabases
       .mockResolvedValueOnce({ databases: databases(1000), nextPageToken: "2" })
       .mockResolvedValueOnce({
         databases: databases(1000),
@@ -214,7 +227,7 @@ describe("get_database_count", () => {
       scope: "workspaces/demo",
       status: "unavailable",
     });
-    expect(databaseApi.listDatabases).toHaveBeenCalledTimes(2);
+    expect(databaseApi.searchDatabases).toHaveBeenCalledTimes(2);
   });
 
   test("rejects an invalid or missing chat scope", async () => {

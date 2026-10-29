@@ -7,19 +7,19 @@ import {
   projectServiceClientConnect,
 } from "@/api";
 import { silentContextKey } from "@/api/context-key";
-import { ListDatabasesRequestSchema } from "@/types/proto-es/v1/database_service_pb";
+import { SearchDatabasesRequestSchema } from "@/types/proto-es/v1/database_service_pb";
 import { ListInstancesRequestSchema } from "@/types/proto-es/v1/instance_service_pb";
 import { SearchProjectsRequestSchema } from "@/types/proto-es/v1/project_service_pb";
 
 const workspaceAttentionTool = vi.fn();
 const mocks = vi.hoisted(() => ({
-  listDatabases: vi.fn(),
+  searchDatabases: vi.fn(),
   listInstances: vi.fn(),
   searchProjects: vi.fn(),
 }));
 
 vi.mock("@/api", () => ({
-  databaseServiceClientConnect: { listDatabases: mocks.listDatabases },
+  databaseServiceClientConnect: { searchDatabases: mocks.searchDatabases },
   instanceServiceClientConnect: { listInstances: mocks.listInstances },
   projectServiceClientConnect: { searchProjects: mocks.searchProjects },
 }));
@@ -39,7 +39,7 @@ describe("workspaceOverview", () => {
     workspaceAttentionTool.mockReset();
     mocks.searchProjects.mockReset();
     mocks.listInstances.mockReset();
-    mocks.listDatabases.mockReset();
+    mocks.searchDatabases.mockReset();
   });
 
   test("collects bounded setup readiness and member attention", async () => {
@@ -65,7 +65,7 @@ describe("workspaceOverview", () => {
         nextPageToken: "",
       } as never)
       .mockResolvedValueOnce({ instances: [], nextPageToken: "" } as never);
-    mocks.listDatabases.mockResolvedValue({
+    mocks.searchDatabases.mockResolvedValue({
       databases: [{ name: "instances/prod/databases/orders" }],
       nextPageToken: "",
     } as never);
@@ -123,18 +123,14 @@ describe("workspaceOverview", () => {
       }),
       expect.anything()
     );
-    expect(databaseServiceClientConnect.listDatabases).toHaveBeenCalledWith(
-      create(ListDatabasesRequestSchema, {
-        parent: "workspaces/default",
-        pageSize: 3,
-        showDeleted: false,
-      }),
+    expect(databaseServiceClientConnect.searchDatabases).toHaveBeenCalledWith(
+      create(SearchDatabasesRequestSchema, { pageSize: 3 }),
       expect.anything()
     );
     for (const read of [
       mocks.searchProjects,
       mocks.listInstances,
-      mocks.listDatabases,
+      mocks.searchDatabases,
     ]) {
       for (const [, options] of read.mock.calls) {
         expect(options.contextValues.get(silentContextKey)).toBe(true);
@@ -156,7 +152,7 @@ describe("workspaceOverview", () => {
         instances: [{ name: "projects/orders/instances/prod" }],
         nextPageToken: "",
       } as never);
-    mocks.listDatabases.mockResolvedValue({
+    mocks.searchDatabases.mockResolvedValue({
       databases: [],
       nextPageToken: "",
     } as never);
@@ -190,7 +186,7 @@ describe("workspaceOverview", () => {
       instances: [],
       nextPageToken: "",
     } as never);
-    mocks.listDatabases.mockResolvedValue({
+    mocks.searchDatabases.mockResolvedValue({
       databases: [],
       nextPageToken: "",
     } as never);
@@ -211,7 +207,7 @@ describe("workspaceOverview", () => {
     mocks.listInstances
       .mockResolvedValueOnce({ instances: [], nextPageToken: "" } as never)
       .mockRejectedValueOnce(new Error("project instances unavailable"));
-    mocks.listDatabases.mockResolvedValue({
+    mocks.searchDatabases.mockResolvedValue({
       databases: [],
       nextPageToken: "",
     } as never);
@@ -230,7 +226,7 @@ describe("workspaceOverview", () => {
       instances: [],
       nextPageToken: "",
     } as never);
-    mocks.listDatabases.mockResolvedValue({
+    mocks.searchDatabases.mockResolvedValue({
       databases: [],
       nextPageToken: "",
     } as never);
@@ -250,7 +246,7 @@ describe("workspaceOverview", () => {
       instances: [{ name: "instances/prod" }],
       nextPageToken: "more-instances",
     } as never);
-    mocks.listDatabases.mockResolvedValue({
+    mocks.searchDatabases.mockResolvedValue({
       databases: [],
       nextPageToken: "",
     } as never);
@@ -274,7 +270,7 @@ describe("workspaceOverview", () => {
     expect(workspaceAttentionTool).not.toHaveBeenCalled();
     expect(projectServiceClientConnect.searchProjects).not.toHaveBeenCalled();
     expect(instanceServiceClientConnect.listInstances).not.toHaveBeenCalled();
-    expect(databaseServiceClientConnect.listDatabases).not.toHaveBeenCalled();
+    expect(databaseServiceClientConnect.searchDatabases).not.toHaveBeenCalled();
   });
 
   test("returns a workspace-bound JSON snapshot for the Agent", async () => {
@@ -289,7 +285,7 @@ describe("workspaceOverview", () => {
       instances: [],
       nextPageToken: "",
     } as never);
-    mocks.listDatabases.mockResolvedValue({
+    mocks.searchDatabases.mockResolvedValue({
       databases: [],
       nextPageToken: "",
     } as never);
