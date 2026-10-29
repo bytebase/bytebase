@@ -30,22 +30,10 @@ test.afterAll(async () => {
 });
 
 test.describe("Schema Diagram fits all table cards into the viewport on mount", () => {
-  // BYT-9481: the schema diagram is mounted with no auto-fit applied,
-  // so most table cards land off-screen on a wide virtual canvas. The
-  // user sees one or two cards on the left and assumes the diagram is
-  // empty or broken — they must zoom out manually to discover the rest.
-  //
-  // Bug evidence: .playwright-cli/qa-session-2026-05-12/r42-byt9481-schema-diagram/
-  //   - 02-card-positions.txt (DOM-measured card positions, only 1 of N visible)
-  //   - 01-schema-diagram-full-view.png
+  // BYT-9481, BYT-10363: without a fit on mount, most table cards land
+  // off-screen and the diagram looks empty.
 
   test("every table card lands inside the viewport at default zoom", async () => {
-    // BYT-9481 is queued as not-high-priority. The fix is flaky on
-    // main — auto-fit sometimes runs early enough to land all cards
-    // in view, often it doesn't. Mark expected-fail so the suite
-    // stays green; a real fix will surface as "Expected to fail, but
-    // passed" → flip the marker off.
-    test.fail();
     test.setTimeout(120_000);
 
     const projectId = env.project.split("/").pop()!;
