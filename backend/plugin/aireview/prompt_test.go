@@ -56,7 +56,7 @@ func TestBuildMessages(t *testing.T) {
 	system := messages[0].GetContent()
 	require.True(t, strings.HasPrefix(system, strings.TrimSpace(basePrompt)), "the base prompt comes first so the vendor cache holds it")
 	require.Contains(t, system, "When the two conflict, the project policy wins.")
-	require.Contains(t, system, "these checks:\n\n- `fails`: The statement fails on this database")
+	require.Contains(t, system, "these checks:\n\n- `already-exists`: The statement fails on this database because an object it creates already exists.\n")
 	require.NotContains(t, system, "{{checks}}")
 	require.Contains(t, system, "## Workspace policy\n\n- `workspace-1`: No TRUNCATE in production.\n")
 	require.Contains(t, system, "## Project policy\n\n(none)\n")

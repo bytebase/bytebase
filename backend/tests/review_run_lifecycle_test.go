@@ -251,7 +251,7 @@ func TestCollision_RunReviewLifecycle(t *testing.T) {
 	}
 	a.Len(results, 1, "one AI review result")
 	result := results[0]
-	a.Equal("Remove the placeholder statement\n\nSELECT 1 reads nothing and changes nothing.\n\n**Evidence**:\n\n- the sheet holds only SELECT 1\n\n**Fix:** Delete the statement.\n\n**Rule:** The statement fails on this database, for example because an object it creates already exists, an object it uses does not exist, or existing rows violate a constraint or a foreign key.", result.Comment)
+	a.Equal("Remove the placeholder statement\n\nSELECT 1 reads nothing and changes nothing.\n\n**Evidence**:\n\n- the sheet holds only SELECT 1\n\n**Fix:** Delete the statement.\n\n**Rule:** The statement fails on this database for another reason, such as syntax or a type the engine version does not support.", result.Comment)
 	a.Equal(v1pb.IssueComment_ReviewMetadata_P2, result.GetReviewMetadata().GetPriority())
 	a.Len(result.GetReviewMetadata().GetTargets(), 1)
 	a.True(strings.HasSuffix(result.GetReviewMetadata().GetTargets()[0], fixture.DatabaseA.Name), "target %q", result.GetReviewMetadata().GetTargets()[0])

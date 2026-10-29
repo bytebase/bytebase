@@ -172,6 +172,21 @@ func TestAIReviewCommentsKeepARepeatedRuleApart(t *testing.T) {
 	require.Equal(t, []string{"instances/i/databases/a"}, comments[1].Payload.ReviewMetadata.Targets)
 }
 
+func TestAIReviewCommentsKeepFailureCausesApart(t *testing.T) {
+	t.Parallel()
+
+	addNote := func(rule string, reason string, fix string) aireview.Finding {
+		return aireview.Finding{Title: "Fix ADD COLUMN note", Severity: aireview.SeverityP1, Line: 1, Rule: rule, Reason: reason, Evidence: []string{"e"}, Fix: fix}
+	}
+	comments := aiReviewComments("p", 7, []*aiReviewResult{
+		aiReviewResultOn("instances/i/databases/a", addNote("already-exists", "orders already has a column note.", "Use ADD COLUMN IF NOT EXISTS.")),
+		aiReviewResultOn("instances/i/databases/b", addNote("missing-object", "orders does not exist.", "Create orders first.")),
+	}, aireview.Rules("", ""))
+	require.Len(t, comments, 2, "a statement that fails for different causes on different databases needs a fix per cause")
+	require.Contains(t, comments[0].Payload.Comment, "**Fix:** Use ADD COLUMN IF NOT EXISTS.")
+	require.Contains(t, comments[1].Payload.Comment, "**Fix:** Create orders first.")
+}
+
 func TestAIReviewCommentTextCountsManyDatabases(t *testing.T) {
 	t.Parallel()
 

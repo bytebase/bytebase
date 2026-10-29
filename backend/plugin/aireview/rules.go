@@ -17,7 +17,12 @@ type Rule struct {
 // the same line merge into one thread across databases, so a check that
 // spans two fixes would merge two problems.
 var checks = []Rule{
-	{ID: "fails", Text: "The statement fails on this database, for example because an object it creates already exists, an object it uses does not exist, or existing rows violate a constraint or a foreign key."},
+	// A statement fails on one database and not another because their schemas
+	// or rows differ, and each cause has its own fix, so each is a check.
+	{ID: "already-exists", Text: "The statement fails on this database because an object it creates already exists."},
+	{ID: "missing-object", Text: "The statement fails on this database because an object it uses or changes does not exist."},
+	{ID: "violates-constraint", Text: "The statement fails on this database because existing rows violate a constraint or a foreign key."},
+	{ID: "fails", Text: "The statement fails on this database for another reason, such as syntax or a type the engine version does not support."},
 	{ID: "blocks", Text: "The statement blocks reads or writes on a large table for a long time, for example with a lock held while the table is rewritten, scanned, or validated, or with one UPDATE or DELETE over many rows."},
 	{ID: "drops-data", Text: "The statement drops a table, column, or partition that still holds data."},
 	{ID: "too-many-rows", Text: "An UPDATE or DELETE changes more rows than the author means."},
