@@ -389,6 +389,12 @@ title row and the description:
 | Review | none | The issue's approval state, "✓ Approved by alex (DBA) · Oct 5, 14:45", or who is next; absent when the plan has no issue |
 | Progress | The plan list's stage cell (`ProjectPlanDashboardPage.tsx`): each stage's status icon and name, joined by arrows, wrapping when there are many | Same |
 
+The block folds. It opens unfolded every time the page loads, with "Hide details" at its top right,
+the plan page's existing link text for its sections. Folded, it keeps one line in the same box: the
+Progress cell, after the Source title on a release plan, with "Show details" at the right. The fold
+lasts while the page is open and is not remembered, so the next plan opened, or this one reloaded,
+starts unfolded. The description is not part of the block and keeps its own Show more.
+
 The description stays below the block, rendered and clipped as today (`PlanDetailHeaderDetails.tsx`:
 150 characters or 3 lines, then Show more), so the rows keep their place whatever its length. A
 release plan's collapsed Changes line then shows only the targets per stage. "Migration-based" and
@@ -398,7 +404,8 @@ breaks the link from the CI summary and the plan list, and is absent on a rebase
 undetected platform; a side panel for the block, which competes with the file viewer's side panel
 (D8) and takes width the folded cards need; the description as the block's last row, which turns
 the block into a document container under a second label and gives every CI-created plan an empty
-row; the release facts in the Changes summary instead of a block, which leaves Progress no place and
+row; remembering the fold across plans, which would hide Source and Review on the next plan without
+the reader choosing it; folding by default, which hides the facts a reader opens the page for; the release facts in the Changes summary instead of a block, which leaves Progress no place and
 splits plan facts between two spots; a statement count (it needs a parse the page does not have)
 and a summed row estimate (each database differs; its card has its own); counts in the Progress
 row, which the stage tabs and chips already carry.
@@ -489,7 +496,7 @@ The details block's Source row:
 | Frontend | `frontend/src/routes/project/plan-detail/components/deploy/DeployTaskHeader.tsx`, `DeployTaskItem.tsx`, `DeployBranch.tsx` | Every task folded on load; the folded card's one-line description per state for release and UIOps tasks, with its tint, under the database below 640 px; the stage selected on load (D3). |
 | Frontend | `frontend/src/components/release/ReleaseFileViewer.tsx` (new), `ReleaseFileDetailPanel.tsx` | The viewer: one body with the diagnostic drawn from the command's byte range and error, the path's copy control and the file-at-commit link; side panel or sheet by `useMediaQuery` (D8, D9). |
 | Frontend | `frontend/src/routes/project/plan-detail/components/PlanDetailTaskRolloutActionPanel.tsx` | Each task's status chip after its database, replacing the status icon, and a failed task's error line, for UIOps and release tasks; the reason field shown and required for release-backed tasks (D7). |
-| Frontend | `frontend/src/routes/project/plan-detail/components/PlanDetailHeaderDetails.tsx`, `PlanDetailMeta.tsx` | The details block for release and UIOps plans, with the Source row and the plan list's stage cell for Progress, above the description, which keeps today's clipping (D9, D10). |
+| Frontend | `frontend/src/routes/project/plan-detail/components/PlanDetailHeaderDetails.tsx`, `PlanDetailMeta.tsx` | The details block for release and UIOps plans, with the Source row and the plan list's stage cell for Progress, its fold (unfolded on every load, held in component state), above the description, which keeps today's clipping (D9, D10). |
 | Frontend | `frontend/src/routes/project/ProjectReleaseDashboardPage.tsx` | Archive on each row, a "Show archived" switch, and Restore on archived rows, before the detail page goes (D12). |
 | Frontend | `frontend/src/routes/project/ProjectReleaseDetailPage.tsx`, `frontend/src/app/router/routes/dashboard.tsx` | The page goes; the route redirects to the owning plan (D12). |
 | Frontend | `frontend/src/locales/*.json` | New strings; the retired release-page strings removed. |
@@ -532,7 +539,9 @@ Tests to write, per the placement rules in `AGENTS.md`:
 - Details block tests: each row for a release plan and a UIOps plan, the rows a plan kind lacks
   absent; Migration-based and State-based; the Progress row's stage cells wrapping at six stages;
   the labels editable in place and required when the project forces them; the description below the
-  block clipped at 150 characters or 3 lines.
+  block clipped at 150 characters or 3 lines; the block unfolded on load, folding to the Progress
+  line (after the Source title on a release plan) and back, and unfolded again after a reload or on
+  another plan.
 - Release list tests: Archive on an active row with its confirmation, "Show archived" listing
   archived releases through `show_deleted`, and Restore on an archived row.
 - Changes rail tests: descending order over timestamp, counter and dotted versions; the grouping per
