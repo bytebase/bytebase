@@ -102,7 +102,7 @@ func buildFKMetaData(tableName string, constraint *ast.Constraint, line int) *in
 		advisor.ReferencedColumnNameTemplateToken:  strings.Join(referencedColumnList, "_"),
 	}
 	return &indexMetaData{
-		indexName: constraint.Name,
+		indexName: omniConstraintName(constraint),
 		tableName: tableName,
 		metaData:  metaData,
 		line:      line,
