@@ -79,13 +79,38 @@ export const statementKindOf = (
   return dml ? "DML" : "DDL";
 };
 
-const clockOf = (timestamp: Timestamp | undefined, locale: string) => {
+// The clock time for today, the date and time for any other day, so an old
+// cancel or a run stuck since yesterday does not read as today.
+const clockOf = (
+  timestamp: Timestamp | undefined,
+  locale: string,
+  nowMs: number
+) => {
   if (!timestamp) return "";
-  return new Date(Number(timestamp.seconds) * 1000).toLocaleTimeString(locale, {
+  const date = new Date(Number(timestamp.seconds) * 1000);
+  const time: Intl.DateTimeFormatOptions = {
     hour: "2-digit",
     minute: "2-digit",
     hourCycle: "h23",
-  });
+  };
+  return date.toDateString() === new Date(nowMs).toDateString()
+    ? date.toLocaleTimeString(locale, time)
+    : date.toLocaleString(locale, { month: "short", day: "numeric", ...time });
+};
+
+// DDL, DML or Mixed, as the reader's locale writes it.
+export const statementKindLabel = (
+  kind: "DDL" | "DML" | "Mixed",
+  t: TFunction
+): string => {
+  switch (kind) {
+    case "DDL":
+      return t("task.folded.kind-ddl");
+    case "DML":
+      return t("task.folded.kind-dml");
+    case "Mixed":
+      return t("task.folded.kind-mixed");
+  }
 };
 
 const join = (...parts: (string | undefined)[]) =>
@@ -100,8 +125,10 @@ export function foldedTaskDescription({
   release,
   statementSummary,
   duration,
+  skipperName,
   t,
   locale,
+  nowMs = Date.now(),
 }: {
   task: Task;
   latestTaskRun?: TaskRun;
@@ -109,6 +136,9 @@ export function foldedTaskDescription({
   statementSummary?: FoldedStatementSummary;
   // The latest run's duration, as the card formats it.
   duration: string;
+  // The skipper's display name; the email when the user has not loaded.
+  skipperName?: string;
+  nowMs?: number;
   t: TFunction;
   locale: string;
 }): FoldedDescription {
@@ -123,14 +153,16 @@ export function foldedTaskDescription({
   const pendingCount = state?.pendingVersions.length ?? 0;
   const appliedEarlier =
     state && t("task.folded.applied-earlier", { count: state.appliedCount });
-  const kind = statementSummary
+  const statementKind = statementSummary
     ? statementKindOf(statementSummary.statementTypes)
     : undefined;
+  const kind = statementKind ? statementKindLabel(statementKind, t) : undefined;
   const started = latestTaskRun
     ? t("task.folded.started", {
         time: clockOf(
           latestTaskRun.startTime ?? latestTaskRun.createTime,
-          locale
+          locale,
+          nowMs
         ),
       })
     : undefined;
@@ -153,7 +185,7 @@ export function foldedTaskDescription({
         text: join(
           task.skipper
             ? t("task.folded.skipped-by", {
-                user: task.skipper.replace(/^users\//, ""),
+                user: skipperName || task.skipper.replace(/^users\//, ""),
               })
             : statusLabel(task.status),
           task.skippedReason
@@ -164,7 +196,7 @@ export function foldedTaskDescription({
       return {
         text: join(
           statusLabel(task.status),
-          clockOf(latestTaskRun?.updateTime, locale)
+          clockOf(latestTaskRun?.updateTime, locale, nowMs)
         ),
         tone: "muted",
       };

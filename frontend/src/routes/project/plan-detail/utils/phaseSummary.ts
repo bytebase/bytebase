@@ -18,7 +18,7 @@ export type { PlanCheckSummary } from "@/lib/plan/check";
 
 type T = (key: string, options?: Record<string, unknown>) => string;
 
-const isDatabaseGroupName = (name: string): boolean =>
+export const isDatabaseGroupName = (name: string): boolean =>
   name.includes("/databaseGroups/");
 
 // Mirrors the eligibility gates that can permanently prevent RolloutCreator

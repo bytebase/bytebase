@@ -12,6 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { FormError, FormField, FormLabel } from "@/components/ui/form";
 import {
   Sheet,
   SheetBody,
@@ -449,14 +450,11 @@ export function PlanDetailTaskRolloutActionPanel({
             )}
 
             {action === "SKIP" && (
-              <div className="flex shrink-0 flex-col gap-y-1">
-                <label
-                  className="font-medium text-control"
-                  htmlFor="skip-reason"
-                >
+              <FormField data-testid="skip-reason-field">
+                <FormLabel htmlFor="skip-reason">
                   {t("common.reason")}
                   {reasonRequired && <span className="text-error"> *</span>}
-                </label>
+                </FormLabel>
                 <Textarea
                   id="skip-reason"
                   className="min-h-28"
@@ -465,7 +463,10 @@ export function PlanDetailTaskRolloutActionPanel({
                   placeholder={t("issue.leave-a-comment")}
                   value={comment}
                 />
-              </div>
+                {reasonRequired && !comment.trim() && (
+                  <FormError>{t("task.skip-reason-required")}</FormError>
+                )}
+              </FormField>
             )}
           </div>
 

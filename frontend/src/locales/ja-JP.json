@@ -2101,6 +2101,8 @@
       "changes-on_one": "{{count}} データベースで {{kind}}",
       "changes-on_other": "{{count}} データベースで {{kind}}",
       "created": "作成",
+      "database-groups_one": "{{count}} データベースグループ",
+      "database-groups_other": "{{count}} データベースグループ",
       "databases_one": "{{count}} データベース",
       "databases_other": "{{count}} データベース",
       "labels": "ラベル",
@@ -2111,10 +2113,10 @@
       "rejected": "却下",
       "release": "リリース",
       "review": "レビュー",
-      "self": "詳細",
       "source": "ソース",
       "state-based": "ステートベース · {{version}}",
-      "triggered": "トリガー"
+      "triggered": "トリガー",
+      "waiting-for": "{{role}} の承認待ち"
     },
     "draft-update-permission-required": "この下書きは表示できますが、イシューラベルの編集やレビューへの提出には bb.issues.update が必要です。",
     "editor": {
@@ -2179,9 +2181,6 @@
       "run": "実行"
     },
     "list-description": "UI で作成された変更リクエストとそのデプロイ進捗。",
-    "meta": {
-      "created-by": "{{user}} が作成"
-    },
     "navigator": {
       "changes": "変更点",
       "checks": "チェック",
@@ -2758,10 +2757,12 @@
     "view-all-files": "すべてのファイルを表示",
     "viewer": {
       "already-applied": "適用済み。この実行では対象外",
+      "already-applied-before-run": "このロールアウト以前に適用済み",
       "applied-by-run": "この実行で適用",
       "failed-on": "{{stage}} で失敗",
       "open-at-commit": "{{platform}} で {{sha}} を開く",
-      "size": "{{size}} バイト"
+      "size": "{{size}} バイト",
+      "statement-unavailable": "ファイルのステートメントを読み込めませんでした。"
     }
   },
   "remind": {
@@ -4351,6 +4352,9 @@
       "applied-earlier_other": "{{count}} 件適用済み",
       "applying_one": "{{count}} ファイルを適用中",
       "applying_other": "{{count}} ファイルを適用中",
+      "kind-ddl": "DDL",
+      "kind-dml": "DML",
+      "kind-mixed": "混在",
       "nothing-new": "新しい変更なし",
       "nothing-to-apply": "適用対象なし",
       "scheduled": "予定",
@@ -4450,10 +4454,10 @@
     "spine": {
       "already-applied": "{{count}} 件適用済み",
       "applied-sections": "{{count}} 件適用済み",
-      "as-of": "プラン作成時点（{{time}}）の状態です。実行時にデータベースを再確認します。",
+      "as-of": "ロールアウト作成時点（{{time}}）の状態です。実行時にデータベースを再確認します。",
       "no-statement": "このエラーに対応するステートメントを特定できませんでした。",
       "pending-sections": "ほか {{count}} 件、適用予定",
-      "revision-deleted": "再適用：リビジョンは {{user}} によって削除されました",
+      "revision-deleted": "{{date}} に {{user}} がリビジョンを削除",
       "revisions-on": "{{database}} のリビジョン",
       "run-failed": "実行失敗",
       "status": {

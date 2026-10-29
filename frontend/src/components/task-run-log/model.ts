@@ -826,13 +826,20 @@ export const buildReleaseFileGroups = (
 
   const results: ReleaseFileGroup[] = [];
   let fileIndex = 0;
+  // Task-level steps before and after the file loop each make a group with no
+  // file, so each needs its own id.
+  let orphanIndex = 0;
 
   for (const group of groupEntriesByReleaseFile(entries)) {
     if (group.file === null) {
       if (!buildOptions.includeOrphanGroup || group.entries.length === 0) {
         continue;
       }
-      const orphanPrefix = prefixId(buildOptions.idPrefix, "orphan");
+      const orphanPrefix = prefixId(
+        buildOptions.idPrefix,
+        orphanIndex === 0 ? "orphan" : `orphan-${orphanIndex}`
+      );
+      orphanIndex++;
       results.push({
         id: orphanPrefix,
         version: "",
@@ -1013,6 +1020,11 @@ export const buildReleaseSpine = ({
       else if (run.status === TaskRun_Status.CANCELED) status = "canceled";
       else if (fileError && fileError.version === file.version) {
         status = "failed";
+      } else if (failed && group.entries.some(commandFailed)) {
+        // The run's error is unknown here (a caller passed none), but the
+        // file's own command failed.
+        status = "failed";
+        errorOwned = true;
       }
     }
     const section = fileSection(file, status, group.entries);
@@ -1038,6 +1050,9 @@ export const isSpineItemOpenByDefault = (item: SpineItem): boolean => {
   switch (item.kind) {
     case "run-failed":
       return true;
+    case "step":
+      // A failed step, such as a prior backup, carries the run's error.
+      return item.entries.some(hasError);
     case "file":
       return (
         item.status === "failed" ||

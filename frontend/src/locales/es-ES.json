@@ -2101,6 +2101,8 @@
       "changes-on_one": "{{kind}} en {{count}} base de datos",
       "changes-on_other": "{{kind}} en {{count}} bases de datos",
       "created": "Creado",
+      "database-groups_one": "{{count}} grupo de bases de datos",
+      "database-groups_other": "{{count}} grupos de bases de datos",
       "databases_one": "{{count}} base de datos",
       "databases_other": "{{count}} bases de datos",
       "labels": "Etiquetas",
@@ -2111,10 +2113,10 @@
       "rejected": "Rechazado",
       "release": "Versión",
       "review": "Revisión",
-      "self": "Detalles",
       "source": "Origen",
       "state-based": "Basado en estado · {{version}}",
-      "triggered": "Activado"
+      "triggered": "Activado",
+      "waiting-for": "Esperando a {{role}}"
     },
     "draft-update-permission-required": "Puedes ver este borrador, pero necesitas bb.issues.update para editar etiquetas de problema o enviarlo a revisión.",
     "editor": {
@@ -2179,9 +2181,6 @@
       "run": "Ejecutar"
     },
     "list-description": "Solicitudes de cambio creadas en la interfaz y su progreso de despliegue.",
-    "meta": {
-      "created-by": "Creado por {{user}}"
-    },
     "navigator": {
       "changes": "Cambios",
       "checks": "Verificaciones",
@@ -2758,10 +2757,12 @@
     "view-all-files": "Ver todos los archivos",
     "viewer": {
       "already-applied": "Ya aplicado; esta ejecución lo omitió",
+      "already-applied-before-run": "Ya aplicado antes de este despliegue",
       "applied-by-run": "Aplicado por esta ejecución",
       "failed-on": "Falló en {{stage}}",
       "open-at-commit": "Abrir en {{platform}} en {{sha}}",
-      "size": "{{size}} bytes"
+      "size": "{{size}} bytes",
+      "statement-unavailable": "No se pudo cargar la sentencia del archivo."
     }
   },
   "remind": {
@@ -4351,6 +4352,9 @@
       "applied-earlier_other": "{{count}} aplicados antes",
       "applying_one": "Aplicando {{count}} archivo",
       "applying_other": "Aplicando {{count}} archivos",
+      "kind-ddl": "DDL",
+      "kind-dml": "DML",
+      "kind-mixed": "Mixto",
       "nothing-new": "Nada nuevo",
       "nothing-to-apply": "Nada que aplicar",
       "scheduled": "programado",
@@ -4450,10 +4454,10 @@
     "spine": {
       "already-applied": "{{count}} ya aplicados",
       "applied-sections": "{{count}} aplicados",
-      "as-of": "Según la creación del plan, {{time}}; la ejecución vuelve a comprobar la base de datos.",
+      "as-of": "Según la creación del despliegue, {{time}}; la ejecución vuelve a comprobar la base de datos.",
       "no-statement": "No se identificó ninguna sentencia para este error.",
       "pending-sections": "{{count}} más, se aplicarán",
-      "revision-deleted": "Aplicado de nuevo: {{user}} eliminó su revisión",
+      "revision-deleted": "Revisión eliminada el {{date}} por {{user}}",
       "revisions-on": "Revisiones en {{database}}",
       "run-failed": "Ejecución fallida",
       "status": {

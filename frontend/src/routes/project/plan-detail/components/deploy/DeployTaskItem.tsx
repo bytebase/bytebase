@@ -151,7 +151,7 @@ export const DeployTaskItem = memo(function DeployTaskItem({
   const release = useReleaseByName(releaseName ?? "");
   const fetchRelease = useAppStore((state) => state.fetchRelease);
   useEffect(() => {
-    if (releaseName) void fetchRelease(releaseName);
+    if (releaseName) fetchRelease(releaseName, true).catch(() => {});
   }, [fetchRelease, releaseName]);
   const stageTitle = useAppStore(
     (state) => state.getEnvironmentByName(stageEnvironment)?.title

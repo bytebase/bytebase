@@ -1,16 +1,18 @@
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  ReleaseFileViewer,
-  type ReleaseFileViewerTarget,
-} from "@/components/release/ReleaseFileViewer";
 import { Button } from "@/components/ui/button";
+import {
+  Collapsible,
+  CollapsiblePanel,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import {
   type Release,
   Release_Type,
 } from "@/types/proto-es/v1/release_service_pb";
+import { useOpenReleaseFile } from "../release/ReleaseFileViewer";
 import {
   CHANGES_ROW_LIMIT,
   groupReleaseChanges,
@@ -28,8 +30,11 @@ export function ReleaseChangesRail({
   release: Release;
 }) {
   const { t } = useTranslation();
-  const [viewerTarget, setViewerTarget] = useState<ReleaseFileViewerTarget>();
-  const open = (file: ReleaseChangeFile) => setViewerTarget({ file });
+  const openViewer = useOpenReleaseFile();
+  // Opened from Changes there is no database, so no context.
+  const open = openViewer
+    ? (file: ReleaseChangeFile) => openViewer({ file }, release.vcsSource)
+    : undefined;
   const files = useMemo(
     () =>
       release.files.map((file) => ({
@@ -40,14 +45,6 @@ export function ReleaseChangesRail({
     [release]
   );
   const groups = useMemo(() => groupReleaseChanges(files), [files]);
-
-  const viewer = (
-    <ReleaseFileViewer
-      target={viewerTarget}
-      vcsSource={release.vcsSource}
-      onClose={() => setViewerTarget(undefined)}
-    />
-  );
 
   if (release.type === Release_Type.DECLARATIVE) {
     const file = files[0];
@@ -65,12 +62,13 @@ export function ReleaseChangesRail({
             <span className="shrink-0 font-mono tabular-nums text-control-light">
               {file.version}
             </span>
-            <Button size="xs" appearance="outline" onClick={() => open(file)}>
-              {t("common.open")}
-            </Button>
+            {open ? (
+              <Button size="xs" appearance="outline" onClick={() => open(file)}>
+                {t("common.open")}
+              </Button>
+            ) : null}
           </>
         ) : null}
-        {viewer}
       </div>
     );
   }
@@ -96,7 +94,6 @@ export function ReleaseChangesRail({
           />
         ))}
       </div>
-      {viewer}
     </div>
   );
 }
@@ -108,7 +105,8 @@ function ChangeGroup({
 }: {
   group: ReleaseChangeGroup;
   defaultOpen: boolean;
-  onOpen: (file: ReleaseChangeFile) => void;
+  // Absent outside a plan page; the path is then plain text.
+  onOpen?: (file: ReleaseChangeFile) => void;
 }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(defaultOpen);
@@ -126,15 +124,21 @@ function ChangeGroup({
           <span className="shrink-0 font-mono text-xs tabular-nums text-control-light">
             {file.version}
           </span>
-          <Button
-            type="button"
-            appearance="link"
-            size="sm"
-            className="h-auto min-w-0 truncate p-0 font-mono text-xs"
-            onClick={() => onOpen(file)}
-          >
-            {file.path}
-          </Button>
+          {onOpen ? (
+            <Button
+              type="button"
+              appearance="link"
+              size="sm"
+              className="h-auto min-w-0 truncate p-0 font-mono text-xs"
+              onClick={() => onOpen(file)}
+            >
+              {file.path}
+            </Button>
+          ) : (
+            <span className="min-w-0 truncate font-mono text-xs">
+              {file.path}
+            </span>
+          )}
         </div>
       ))}
       {remaining > 0 ? (
@@ -155,26 +159,26 @@ function ChangeGroup({
   // The one flat list has no header.
   if (!group.key) return rows;
   return (
-    <div className="border-block-border border-b last:border-b-0">
-      <Button
-        type="button"
-        appearance="secondary"
-        size="sm"
-        aria-expanded={open}
-        className="w-full justify-start rounded-none bg-background px-3 hover:bg-control-bg"
+    <Collapsible
+      open={open}
+      onOpenChange={setOpen}
+      className="border-block-border border-b last:border-b-0"
+    >
+      <CollapsibleTrigger
+        className="bg-background px-3 py-1.5 hover:bg-control-bg"
         data-testid="release-change-group"
         data-group={group.key}
-        onClick={() => setOpen((value) => !value)}
       >
-        {open ? (
-          <ChevronDown className="size-3.5 shrink-0 text-control-placeholder" />
-        ) : (
-          <ChevronRight className="size-3.5 shrink-0 text-control-placeholder" />
-        )}
+        <ChevronRight
+          className={cn(
+            "size-3.5 shrink-0 text-control-placeholder transition-transform",
+            open && "rotate-90"
+          )}
+        />
         <span className="tabular-nums text-control">{group.key}</span>
         <span className="text-control-placeholder">{group.files.length}</span>
-      </Button>
-      {open ? rows : null}
-    </div>
+      </CollapsibleTrigger>
+      <CollapsiblePanel>{rows}</CollapsiblePanel>
+    </Collapsible>
   );
 }

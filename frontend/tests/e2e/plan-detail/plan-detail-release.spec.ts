@@ -8,6 +8,7 @@
 import { type Browser, expect, type Page, test } from "@playwright/test";
 import { BytebaseApiClient } from "../framework/api-client";
 import { loadTestEnv, type TestEnv } from "../framework/env";
+import { execSql, getInstancePgPort } from "../framework/psql";
 import { signInBrowserAs } from "../framework/sign-in";
 import { setPermissiveGates } from "./plan-helpers";
 
@@ -28,6 +29,7 @@ let env: TestEnv & { api: BytebaseApiClient };
 let projectId: string;
 let databaseName: string;
 let schema: string;
+let pgPort: string | undefined;
 // Versions are counters unique to this run, so a retry on the same server
 // applies its own and never finds them already applied.
 let version: (n: number) => string;
@@ -161,6 +163,10 @@ test.beforeAll(async ({ browser }) => {
     { n: 5, statement: `ALTER TABLE ${schema}.missing ADD COLUMN c INT;` },
     { n: 6, statement: `CREATE TABLE ${schema}.later (id INT);` },
   ]);
+  // Failed here, not in a test, so each test that reads the failure stands
+  // on its own.
+  await runAndWait(failedPlan.name, "FAILED");
+  pgPort = await getInstancePgPort(env);
 });
 
 test.afterAll(async () => {
@@ -170,6 +176,9 @@ test.afterAll(async () => {
     await env.api.upsertSetting("WORKSPACE_APPROVAL", originalApprovalSetting, "value.workspace_approval");
   }
   await editPolicy(dropDeveloper);
+  if (pgPort && /^release_plan_\d+$/.test(schema)) {
+    execSql(databaseName, pgPort, `DROP SCHEMA IF EXISTS ${schema} CASCADE`);
+  }
   for (const plan of createdPlans) await env.api.closePlan(plan).catch(() => {});
   for (const release of createdReleases) await env.api.deleteRelease(release).catch(() => {});
 });
@@ -205,7 +214,7 @@ test("before the run, Changes lists the release newest first and the task shows 
   await expect(spine.getByRole("button", { name: /1 already applied/ })).toBeVisible();
   await expect(spine.getByTestId(`spine-file-${version(2)}`)).toContainText("Will apply");
   await expect(spine.getByTestId(`spine-file-${version(3)}`)).toContainText("Will apply");
-  await expect(page.getByText(/As of plan creation/)).toBeVisible();
+  await expect(page.getByText(/As of rollout creation/)).toBeVisible();
   await screenshot(page, "release-planned-spine");
   await page.context().close();
 });
@@ -224,14 +233,15 @@ test("after the run, the task folds the version it passed over and links to the 
   await expect(spine.getByTestId("spine-applied-row")).toHaveText([`migrations/${version(1)}_orders.sql`]);
   await expect(spine.getByTestId(`spine-file-${version(2)}`)).toContainText("Applied");
   await expect(spine.getByTestId(`spine-file-${version(3)}`)).toContainText("Applied");
-  const revisions = page.getByRole("link", { name: `Revisions on ${databaseName}` });
-  await expect(revisions).toHaveAttribute("href", new RegExp(`/databases/${databaseName}#revision$`));
   await screenshot(page, "release-done-spine");
+  // The sample instance is a project instance, so the link must carry it.
+  await page.getByRole("link", { name: `Revisions on ${databaseName}` }).click();
+  await expect(page).toHaveURL(new RegExp(`/databases/${databaseName}\\?parent=.*#revision$`));
+  await expect(page.getByRole("tab", { name: "Revision" })).toHaveAttribute("aria-selected", "true");
   await page.context().close();
 });
 
 test("a failed file shows its error on the row, in the viewer and on the folded card, and nothing after it", async ({ browser }) => {
-  await runAndWait(failedPlan.name, "FAILED");
   const page = await developerPage(browser);
   await page.goto(`${env.baseURL}/projects/${projectId}/plans/${failedPlan.id}`);
 
@@ -278,7 +288,7 @@ test("an Owner's skip needs a reason, then the task says who skipped it and the 
   await screenshot(page, "release-skip-dialog");
   await confirm.click();
 
-  await expect(page.getByText(`Skipped by ${env.adminEmail}`).first()).toBeVisible();
+  await expect(page.getByText(/^Skipped by .+ · /).first()).toBeVisible();
   await expect(page.getByText("Fixed in git; the next release carries it").first()).toBeVisible();
   await expect(page.getByText("Deployed, 1 task skipped")).toBeVisible();
   await screenshot(page, "release-skipped");

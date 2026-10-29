@@ -2101,6 +2101,8 @@
       "changes-on_one": "{{count}} 个数据库上的 {{kind}}",
       "changes-on_other": "{{count}} 个数据库上的 {{kind}}",
       "created": "创建",
+      "database-groups_one": "{{count}} 个数据库组",
+      "database-groups_other": "{{count}} 个数据库组",
       "databases_one": "{{count}} 个数据库",
       "databases_other": "{{count}} 个数据库",
       "labels": "标签",
@@ -2111,10 +2113,10 @@
       "rejected": "已拒绝",
       "release": "发布",
       "review": "审核",
-      "self": "详情",
       "source": "来源",
       "state-based": "基于状态 · {{version}}",
-      "triggered": "触发"
+      "triggered": "触发",
+      "waiting-for": "等待 {{role}} 审批"
     },
     "draft-update-permission-required": "你可以查看此草稿，但需要 bb.issues.update 才能编辑工单标签或提交审批。",
     "editor": {
@@ -2179,9 +2181,6 @@
       "run": "执行"
     },
     "list-description": "在界面中创建的变更请求及其部署进度。",
-    "meta": {
-      "created-by": "由 {{user}} 创建"
-    },
     "navigator": {
       "changes": "变更项",
       "checks": "检查",
@@ -2758,10 +2757,12 @@
     "view-all-files": "查看全部文件",
     "viewer": {
       "already-applied": "此前已应用；本次运行已跳过",
+      "already-applied-before-run": "在此部署之前已应用",
       "applied-by-run": "由本次运行应用",
       "failed-on": "在 {{stage}} 失败",
       "open-at-commit": "在 {{platform}} 中打开 {{sha}}",
-      "size": "{{size}} 字节"
+      "size": "{{size}} 字节",
+      "statement-unavailable": "无法加载该文件的语句。"
     }
   },
   "remind": {
@@ -4351,6 +4352,9 @@
       "applied-earlier_other": "{{count}} 个此前已应用",
       "applying_one": "正在应用 {{count}} 个文件",
       "applying_other": "正在应用 {{count}} 个文件",
+      "kind-ddl": "DDL",
+      "kind-dml": "DML",
+      "kind-mixed": "混合",
       "nothing-new": "没有新的变更",
       "nothing-to-apply": "无需应用",
       "scheduled": "计划于",
@@ -4450,10 +4454,10 @@
     "spine": {
       "already-applied": "{{count}} 个已应用",
       "applied-sections": "{{count}} 个已应用",
-      "as-of": "截至计划创建时（{{time}}）；运行时会重新检查数据库。",
+      "as-of": "截至部署创建时（{{time}}）；运行时会重新检查数据库。",
       "no-statement": "未能确定此错误对应的语句。",
       "pending-sections": "还有 {{count}} 个，将应用",
-      "revision-deleted": "再次应用：其修订已被 {{user}} 删除",
+      "revision-deleted": "修订已于 {{date}} 被 {{user}} 删除",
       "revisions-on": "{{database}} 上的修订",
       "run-failed": "运行失败",
       "status": {

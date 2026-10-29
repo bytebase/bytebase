@@ -1,10 +1,6 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ReadonlyMonaco } from "@/components/monaco";
-import {
-  ReleaseFileViewer,
-  type ReleaseFileViewerTarget,
-} from "@/components/release/ReleaseFileViewer";
 import {
   type OpenReleaseFile,
   ReleaseSpineView,
@@ -23,15 +19,23 @@ import {
   releaseNameOfTaskV1,
 } from "@/utils/v1/issue/rollout";
 import { PROJECT_DATABASE_DETAIL_TAB_REVISION } from "../../../database-detail/tabs";
+import { useOpenReleaseFile } from "../release/ReleaseFileViewer";
 import { DeployLatestTaskRunInfo } from "./DeployLatestTaskRunInfo";
 import { DeployTaskSkippedReason } from "./DeployTaskSkippedReason";
 
 const NO_ENTRIES: never[] = [];
 
-// "instances/{i}/databases/{d}", optionally under projects/{p}/.
+// "instances/{i}/databases/{d}", optionally under projects/{p}/. The
+// instance's full name is the database page's `parent`: a project instance
+// is not found under the workspace's instances.
 const parseDatabaseTarget = (target: string) => {
-  const match = /instances\/([^/]+)\/databases\/([^/]+)$/.exec(target);
-  return match ? { instance: match[1], database: match[2] } : undefined;
+  const match =
+    /^((?:projects\/[^/]+\/)?instances\/([^/]+))\/databases\/([^/]+)$/.exec(
+      target
+    );
+  return match
+    ? { parent: match[1], instance: match[2], database: match[3] }
+    : undefined;
 };
 
 // The expanded card body: a skipped reason, a waiting note, the SQL statement
@@ -94,22 +98,32 @@ export function DeployTaskBody({
       ? Number(releaseState.computeTime.seconds) * 1000
       : undefined
   );
-  const [viewerTarget, setViewerTarget] = useState<ReleaseFileViewerTarget>();
-  const openFile: OpenReleaseFile = (file, context) =>
-    setViewerTarget({
-      file: {
-        ...file,
-        sheet:
-          release?.files.find((f) => f.version === file.version)?.sheet ?? "",
-      },
-      context,
-      stageTitle,
-    });
+  const openViewer = useOpenReleaseFile();
+  const openFile = useMemo<OpenReleaseFile | undefined>(
+    () =>
+      openViewer && release
+        ? (file, context) =>
+            openViewer(
+              {
+                file: {
+                  ...file,
+                  sheet:
+                    release.files.find((f) => f.version === file.version)
+                      ?.sheet ?? "",
+                },
+                context,
+                stageTitle,
+              },
+              release.vcsSource
+            )
+        : undefined,
+    [openViewer, release, stageTitle]
+  );
   const target = parseDatabaseTarget(task.target);
   const databaseName = target?.database ?? "";
   const revisionsUrl =
     target && projectId
-      ? `/projects/${projectId}/instances/${target.instance}/databases/${target.database}#${PROJECT_DATABASE_DETAIL_TAB_REVISION}`
+      ? `/projects/${projectId}/instances/${target.instance}/databases/${target.database}?parent=${encodeURIComponent(target.parent)}#${PROJECT_DATABASE_DETAIL_TAB_REVISION}`
       : undefined;
   // The one state line that matters for a waiting task.
   const waitingComment = latestTaskRun
@@ -190,7 +204,6 @@ export function DeployTaskBody({
           onOpenFile={openFile}
           onShowHistory={onShowHistory}
           releaseState={releaseState}
-          showsSpine={spineFiles.length > 0}
           taskRun={latestTaskRun}
         />
       )}
@@ -202,14 +215,6 @@ export function DeployTaskBody({
         >
           {t("task-run.spine.revisions-on", { database: databaseName })}
         </a>
-      ) : null}
-
-      {release ? (
-        <ReleaseFileViewer
-          target={viewerTarget}
-          vcsSource={release.vcsSource}
-          onClose={() => setViewerTarget(undefined)}
-        />
       ) : null}
     </div>
   );

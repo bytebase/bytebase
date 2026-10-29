@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { rolloutServiceClientConnect } from "@/api";
 import { silentContextKey } from "@/api/context-key";
 import { useLatestRef } from "@/hooks/useLatestRef";
@@ -12,7 +12,9 @@ import { unknownRollout } from "@/types";
 import type { Release } from "@/types/proto-es/v1/release_service_pb";
 import {
   GetTaskRunLogRequestSchema,
+  GetTaskRunRequestSchema,
   type Task,
+  type TaskRun,
   TaskRun_Status,
   type TaskRunLogEntry,
   TaskRunLogEntry_Type,
@@ -44,6 +46,9 @@ export interface SheetFetchState extends FetchState {
 export interface UseTaskRunLogDataResult {
   // The run's task, from the cached rollout.
   task?: Task;
+  // The run itself, fetched only when the caller passed no status (the
+  // revision and changelog pages), so the log can read its status and error.
+  taskRun?: TaskRun;
   // The task's release, when the task is release-based.
   release?: Release;
   entries: TaskRunLogEntry[];
@@ -478,6 +483,28 @@ export const useTaskRunLogData = (
     []
   );
 
+  // ---- The run, when the caller has no status for it ----
+
+  const [fetchedRun, setFetchedRun] = useState<TaskRun>();
+  useEffect(() => {
+    if (!taskRunName || taskRunStatus !== undefined) return;
+    let canceled = false;
+    rolloutServiceClientConnect
+      .getTaskRun(create(GetTaskRunRequestSchema, { name: taskRunName }), {
+        // A reader of the database may not read the project that ran it.
+        contextValues: createContextValues().set(silentContextKey, true),
+      })
+      .then((run) => {
+        if (!canceled) setFetchedRun(run);
+      })
+      .catch(() => {
+        // Without the run the log renders without the spine.
+      });
+    return () => {
+      canceled = true;
+    };
+  }, [taskRunName, taskRunStatus]);
+
   // ---- Sheet(s) referenced by the log ----
 
   // A release task fetches only the sheets of the files its run reached: one to
@@ -614,6 +641,7 @@ export const useTaskRunLogData = (
 
   return {
     task,
+    taskRun: fetchedRun?.name === taskRunName ? fetchedRun : undefined,
     release: sheetSlice.release,
     entries: logSlice.entries,
     sheet: sheetSlice.sheet,

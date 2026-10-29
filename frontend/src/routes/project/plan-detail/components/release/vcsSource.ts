@@ -78,7 +78,7 @@ export const cleanSourceText = (text: string | undefined): string =>
 export interface SourceRow {
   // The PR title and number, else the commit title.
   title?: string;
-  // The PR, else the commit.
+  // The PR, else the commit; empty when the release carries no URL.
   href: string;
   author?: string;
   // "owner/name@sha7"; the link itself when there is no title.
@@ -87,11 +87,12 @@ export interface SourceRow {
 }
 
 // The details block's Source row (D9): title · author · repo@sha · branch,
-// whatever subset the release carries.
+// whatever subset the release carries. A CI the action does not detect passes
+// only what its --source-* flags give.
 export const buildSourceRow = (
   source: Release_VCSSource | undefined
 ): SourceRow | undefined => {
-  if (!source?.url) return undefined;
+  if (!source) return undefined;
   const commit = parseRepoCommit(source);
   const pr =
     source.pullRequest && BigInt(source.pullRequest.number) > 0n
@@ -105,11 +106,14 @@ export const buildSourceRow = (
     title = `${title} #${pr.number}`;
   }
   const author = cleanSourceText(source.authorName || source.authorLogin);
+  const branch = cleanSourceText(source.branch);
+  const href = pr?.url || source.url;
+  if (!href && !title && !author && !branch) return undefined;
   return {
     title: title || undefined,
-    href: pr?.url || source.url,
+    href,
     author: author || undefined,
     repoAtSha: commit ? `${commit.repo}@${commit.sha.slice(0, 7)}` : undefined,
-    branch: cleanSourceText(source.branch) || undefined,
+    branch: branch || undefined,
   };
 };

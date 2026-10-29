@@ -13,7 +13,10 @@ import {
 import { usePlanDetailContext } from "../../shell/PlanDetailContext";
 import { DeployTaskItem } from "./DeployTaskItem";
 import { DeployTaskToolbar } from "./DeployTaskToolbar";
-import { statementSummaryForTarget } from "./foldedTaskDescription";
+import {
+  type FoldedStatementSummary,
+  statementSummaryForTarget,
+} from "./foldedTaskDescription";
 import { isDeployTaskSelectable } from "./taskActionState";
 
 const DEFAULT_PAGE_SIZE = 20;
@@ -55,6 +58,18 @@ export function DeployTaskList({
 }) {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
+  // One summary object per target, rebuilt only when the plan check runs
+  // change, so the memoized cards see the same prop across poll ticks.
+  const statementSummaries = useMemo(() => {
+    const byTarget = new Map<string, FoldedStatementSummary | undefined>();
+    for (const task of stage.tasks) {
+      byTarget.set(
+        task.target,
+        statementSummaryForTarget(page.planCheckRuns, task.target)
+      );
+    }
+    return byTarget;
+  }, [page.planCheckRuns, stage.tasks]);
   // Full task resource name resolved from the task resource route.
   const selectedTaskName = page.selectedTaskName;
   const filteredTasks = stage.tasks;
@@ -260,10 +275,7 @@ export function DeployTaskList({
             stageEnvironment={stage.environment}
             task={task}
             taskRuns={page.taskRunsByTaskName.get(task.name) ?? EMPTY_TASK_RUNS}
-            statementSummary={statementSummaryForTarget(
-              page.planCheckRuns,
-              task.target
-            )}
+            statementSummary={statementSummaries.get(task.target)}
           />
         ))}
 

@@ -1406,3 +1406,41 @@ describe("release spine limits and defaults", () => {
     );
   });
 });
+
+describe("release spine review fixes", () => {
+  test("a step that holds the run's error, such as a failed prior backup, opens by default", () => {
+    const failedBackup = create(TaskRunLogEntrySchema, {
+      type: TaskRunLogEntry_Type.PRIOR_BACKUP,
+      logTime: ts(1),
+      priorBackup: { startTime: ts(1), endTime: ts(2), error: "backup failed" },
+    });
+    const spine = buildReleaseSpine({
+      files: FILES,
+      entries: [failedBackup],
+      run: {
+        status: TaskRun_Status.FAILED,
+        error: "failed to back up: backup failed",
+      },
+    });
+    const step = spine.items.find((item) => item.kind === "step");
+    expect(step && isSpineItemOpenByDefault(step)).toBe(true);
+  });
+
+  test("each group with no file, before and after the file loop, gets its own id", () => {
+    const entries = [
+      databaseSync(1, 2),
+      releaseFile(3, "001"),
+      command(4, { error: "" }),
+      databaseSync(6, 7),
+    ];
+    const groups = buildReleaseFileGroups(entries, {
+      getSectionLabel: (type) => String(type),
+      entryKeys: assignEntryKeys(entries),
+      includeOrphanGroup: true,
+    });
+    const ids = groups.map((group) => group.id);
+    expect(ids).toHaveLength(3);
+    expect(new Set(ids).size).toBe(3);
+    expect(groups.filter((group) => group.isOrphan)).toHaveLength(2);
+  });
+});

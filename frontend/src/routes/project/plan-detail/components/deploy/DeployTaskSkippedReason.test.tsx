@@ -16,6 +16,11 @@ const mocks = vi.hoisted(() => ({
   })),
 }));
 
+vi.mock("../useUserDisplayName", () => ({
+  useUserDisplayName: (name?: string) =>
+    name === "users/alex@example.com" ? "Alex Doe" : "",
+}));
+
 vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
   initReactI18next: { type: "3rdParty", init: () => {} },
@@ -104,7 +109,7 @@ describe("DeployTaskSkippedReason", () => {
     render();
 
     const text = container.textContent ?? "";
-    expect(text).toContain("task.folded.skipped-by(alex@example.com)");
+    expect(text).toContain("task.folded.skipped-by(Alex Doe)");
     expect(text).toContain("2026");
     expect(text).toContain("fixed in git");
     expect(text.indexOf("alex@example.com")).toBeLessThan(text.indexOf("fixed in git"));
