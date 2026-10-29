@@ -216,7 +216,7 @@ func nameSignedInAccount(next mcp.MethodHandler) mcp.MethodHandler {
 		// and a panic here would end the process.
 		if initialized, ok := result.(*mcp.InitializeResult); ok && initialized != nil {
 			account := fmt.Sprintf(`This session acts as the Bytebase account %s: every tool call runs with its permissions, and "you" in tool results means it. The user may have other accounts with other emails, such as the client's own sign-in.`, getUserEmail(ctx))
-			initialized.Instructions = strings.TrimSpace(account + "\n\n" + initialized.Instructions)
+			initialized.Instructions = account + "\n\n" + initialized.Instructions
 		}
 		return result, err
 	}
@@ -288,7 +288,7 @@ func requiresUserInteraction() mcp.Meta {
 const serverInstructions = `Bytebase governs access to databases and changes to them. Every call is also limited by the workspace's MCP access policy.
 
 Choose the tool by task:
-- Find a database: call_api on DatabaseService/SearchDatabases lists the databases you can view.
+- Find a database: call_api(operationId="DatabaseService/SearchDatabases") lists the databases you can view.
 - Read data: query_database. Before you write SQL for a database, read its schema with get_schema.
 - Inspect a schema: get_schema.
 - Change a database: propose_database_change, the easiest way into the governed workflow. It creates the plan and the issue and runs the plan checks; approval and rollout follow the project's policy. ` + singleDatabaseLimit + `
@@ -296,7 +296,7 @@ Choose the tool by task:
 
 When the workspace's MCP access policy is Read-write, query_database can also run DML and DDL. They take effect at once, without an issue or approval, as far as the engine and the account's permissions allow. Before you run one, through query_database or call_api, show the user the exact statement, tell them it takes effect at once without an issue or approval, and ask them to confirm. On an instance with a read-only data source, query_database runs every statement through that data source, so make changes there with propose_database_change. Use propose_database_change for any change that should be reviewed.
 
-When Bytebase refuses a call, the error states the reason and may name a next step, such as a tool to use. Pass it on to the user.`
+When Bytebase refuses a call, the error states the reason and may name a next step, such as a tool to use.`
 
 // authMiddleware validates OAuth2 bearer tokens for MCP requests.
 //

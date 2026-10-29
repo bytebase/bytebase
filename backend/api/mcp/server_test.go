@@ -671,8 +671,10 @@ func TestServerInstructionsFitClientLimit(t *testing.T) {
 	require.Contains(t, instructions, "ask them to confirm")
 }
 
-func TestToolGuidanceNamesOnlyRegisteredTools(t *testing.T) {
+func TestToolGuidanceNamesOnlyServedToolsAndOperations(t *testing.T) {
 	_, tools := listToolsOverRoute(t)
+	idx, err := NewOpenAPIIndex()
+	require.NoError(t, err)
 
 	registered := make(map[string]bool, len(tools))
 	guidance := map[string]string{"server instructions": serverInstructions}
@@ -683,9 +685,19 @@ func TestToolGuidanceNamesOnlyRegisteredTools(t *testing.T) {
 	// Quoted strings are example values, such as a database named "employee_db".
 	quoted := regexp.MustCompile(`"[^"]*"`)
 	snakeCase := regexp.MustCompile(`\b[a-z]+(?:_[a-z]+)+\b`)
+	// Any ID with a letter is checked, so a malformed one fails rather than
+	// going unmatched; the operationId="..." placeholder has none.
+	operationID := regexp.MustCompile(`operationId="([^"]*[A-Za-z][^"]*)"`)
 	for source, text := range guidance {
 		for _, name := range snakeCase.FindAllString(quoted.ReplaceAllString(text, ""), -1) {
 			require.True(t, registered[name], "%s names %q, which is not a registered tool", source, name)
+		}
+		for _, match := range operationID.FindAllStringSubmatch(text, -1) {
+			endpoint, ok := idx.GetEndpoint(match[1])
+			require.True(t, ok, "%s names operation %q, which call_api cannot resolve", source, match[1])
+			class, err := auth.MCPMethodClassOfProcedure(endpoint.Path)
+			require.NoError(t, err)
+			require.False(t, auth.MCPClassIsRefused(class), "%s names operation %q, which is %v: no MCP session can call it", source, match[1], class)
 		}
 	}
 }

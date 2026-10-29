@@ -123,8 +123,8 @@ func (e *changeError) Error() string {
 
 // singleDatabaseLimit is shared with the server instructions, so the two
 // cannot state different limits.
-const singleDatabaseLimit = "It changes one database per call. For a change to several databases in one plan, " +
-	"ask the user to make it in the Bytebase console or through GitOps."
+const singleDatabaseLimit = "It changes one database per call. For several databases in one plan, " +
+	"ask the user to use the Bytebase console or GitOps."
 
 // proposeChangeDescription is the description for the propose_database_change tool.
 const proposeChangeDescription = `Run DDL/DML changes (ALTER TABLE, CREATE TABLE, INSERT, UPDATE, migrations) against a Bytebase database.
