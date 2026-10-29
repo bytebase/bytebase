@@ -45,7 +45,7 @@ func TestValidateSQLForEditor(t *testing.T) {
 			valid:     true,
 		},
 		{
-			name:      "a listed option that adds a result set",
+			name:      "fmtonly listed after an allowed option",
 			statement: "SET NOCOUNT, FMTONLY ON; SELECT id FROM t",
 		},
 		{

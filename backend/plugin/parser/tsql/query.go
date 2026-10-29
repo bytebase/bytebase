@@ -14,6 +14,7 @@ func init() {
 // ValidateSQLForEditor validates that every statement in the SQL is a read-only
 // SELECT (no SELECT INTO) or sets read-only session options. Returns (valid,
 // allQuery, err); a session option returns no data, so it clears allQuery.
+// DECLARE and SET @variable are refused (BOT-166).
 func ValidateSQLForEditor(statement string) (bool, bool, error) {
 	stmts, err := ParseTSQL(statement)
 	if err != nil {
@@ -40,8 +41,7 @@ func ValidateSQLForEditor(statement string) (bool, bool, error) {
 }
 
 // readOnlySessionOptions are the SET options a read-only request may carry: they
-// write nothing and add no result set, unlike SET STATISTICS XML. DECLARE and SET
-// @variable stay refused (BOT-166).
+// write nothing and add no result set, unlike SET STATISTICS XML.
 var readOnlySessionOptions = map[string]bool{
 	"TRANSACTION ISOLATION LEVEL": true,
 	"NOCOUNT":                     true,
@@ -51,7 +51,7 @@ var readOnlySessionOptions = map[string]bool{
 // read-only session options. One SET can name several, as in SET NOCOUNT, FMTONLY ON.
 func isReadOnlySessionOption(node ast.Node) bool {
 	set, ok := node.(*ast.SetOptionStmt)
-	if !ok || len(set.Options) == 0 {
+	if !ok {
 		return false
 	}
 	for _, option := range set.Options {
