@@ -1227,7 +1227,7 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 	// New query ACL experience.
 	if instance.Metadata.GetEngine() != storepb.Engine_MYSQL {
 		if err := validateQueryRequest(instance, statement); err != nil {
-			return nil, err
+			return nil, exportConnectError(err)
 		}
 	}
 
@@ -1267,8 +1267,9 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 }
 
 // exportConnectError returns the connect error Export answers with. A refusal
-// from the access check arrives as a queryError, which errors.As cannot see
-// through, so its own connect error (such as PERMISSION_DENIED) is returned.
+// from the read-only or access check arrives as a queryError, which errors.As
+// cannot see through, so its own connect error (such as PERMISSION_DENIED) is
+// returned.
 func exportConnectError(err error) *connect.Error {
 	var connectErr *connect.Error
 	var qe *queryError
@@ -1362,33 +1363,53 @@ func doExport(
 		}
 	}
 
+	content, err := exportResultsToZip(ctx, stores, instance, database, results, request)
+	if err != nil {
+		return nil, duration, err
+	}
+	return content, duration, nil
+}
+
+// exportResultsToZip writes each result that has columns to a ZIP archive,
+// numbered in export order. A statement that returns no result set, such as
+// SET, has no columns and no data to export.
+func exportResultsToZip(
+	ctx context.Context,
+	stores *store.Store,
+	instance *store.InstanceMessage,
+	database *store.DatabaseMessage,
+	results []*v1pb.QueryResult,
+	request *v1pb.ExportRequest,
+) ([]byte, error) {
 	var buf bytes.Buffer
 	zipw := zip.NewWriter(&buf)
 
 	exportCount := 0
-	for i, result := range results {
+	for _, result := range results {
 		if result.GetError() != "" {
-			return nil, duration, errors.Errorf("failed to exec the SQL with error: %v", result.GetError())
+			return nil, errors.Errorf("failed to exec the SQL with error: %v", result.GetError())
 		}
-
-		if err := exportResultToZip(ctx, zipw, stores, instance, database, result, request, i+1); err != nil {
-			return nil, duration, errors.Errorf("failed to export result to zip with error: %v", result.GetError())
+		if len(result.GetColumnNames()) == 0 {
+			continue
 		}
 
 		exportCount++
+		if err := exportResultToZip(ctx, zipw, stores, instance, database, result, request, exportCount); err != nil {
+			return nil, errors.Wrap(err, "failed to export result to zip")
+		}
 		// Help GC by clearing the result data we've already processed
 		result.Rows = nil
 	}
 
 	if exportCount == 0 {
-		return nil, duration, errors.Errorf("empty export data for database %s", database.DatabaseName)
+		return nil, errors.Errorf("empty export data for database %s", database.DatabaseName)
 	}
 
 	if err := zipw.Close(); err != nil {
-		return nil, duration, errors.Wrap(err, "failed to close zip writer")
+		return nil, errors.Wrap(err, "failed to close zip writer")
 	}
 
-	return buf.Bytes(), duration, nil
+	return buf.Bytes(), nil
 }
 
 // exportResultToZip exports a single query result to the ZIP archive.

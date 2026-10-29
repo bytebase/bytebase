@@ -1,7 +1,10 @@
 package v1
 
 import (
+	"archive/zip"
+	"bytes"
 	"context"
+	"io"
 	"strings"
 	"testing"
 	"time"
@@ -75,6 +78,55 @@ func TestExportRejectsRetiredRolloutNames(t *testing.T) {
 		_, err := s.Export(ctx, connect.NewRequest(&v1pb.ExportRequest{Name: name, Statement: "SELECT 1"}))
 		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err), "name %q", name)
 	}
+}
+
+func TestExportResultsToZipSkipsResultsWithoutColumns(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	instance := &store.InstanceMessage{ResourceID: "instance-a"}
+	database := &store.DatabaseMessage{InstanceID: "instance-a", DatabaseName: "app"}
+	request := &v1pb.ExportRequest{Format: v1pb.ExportFormat_CSV}
+	setOption := &v1pb.QueryResult{Statement: "SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;"}
+
+	content, err := exportResultsToZip(ctx, nil, instance, database, []*v1pb.QueryResult{
+		setOption,
+		{
+			Statement:   "SELECT id FROM t;",
+			ColumnNames: []string{"id"},
+			Rows:        []*v1pb.QueryRow{{Values: []*v1pb.RowValue{{Kind: &v1pb.RowValue_Int64Value{Int64Value: 1}}}}},
+		},
+		{Statement: "SELECT id FROM t WHERE 1 = 0;", ColumnNames: []string{"id"}},
+	}, request)
+	require.NoError(t, err)
+
+	reader, err := zip.NewReader(bytes.NewReader(content), int64(len(content)))
+	require.NoError(t, err)
+	files := map[string]string{}
+	for _, file := range reader.File {
+		r, err := file.Open()
+		require.NoError(t, err)
+		data, err := io.ReadAll(r)
+		require.NoError(t, err)
+		require.NoError(t, r.Close())
+		files[file.Name] = string(data)
+	}
+	require.Equal(t, map[string]string{
+		"instance-a/app/statement-1.sql":        "SELECT id FROM t;",
+		"instance-a/app/statement-1.result.csv": "id\n1",
+		"instance-a/app/statement-2.sql":        "SELECT id FROM t WHERE 1 = 0;",
+		"instance-a/app/statement-2.result.csv": "id\n",
+	}, files)
+
+	_, err = exportResultsToZip(ctx, nil, instance, database, []*v1pb.QueryResult{setOption}, request)
+	require.ErrorContains(t, err, "empty export data")
+}
+
+func TestRequiresAdminDataSourceForSQLServer(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	require.False(t, requiresAdminDataSource(ctx, storepb.Engine_MSSQL, "SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED\nSELECT id FROM t"))
+	require.True(t, requiresAdminDataSource(ctx, storepb.Engine_MSSQL, "SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED\nDELETE FROM t"))
+	require.True(t, requiresAdminDataSource(ctx, storepb.Engine_MSSQL, "DECLARE @n int = 1; SELECT @n"))
 }
 
 // TestSelectBestAccessGrantPrefersUnmask covers the Unmask-only ranking:
