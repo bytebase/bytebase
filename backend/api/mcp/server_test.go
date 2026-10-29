@@ -688,6 +688,9 @@ func TestToolGuidanceNamesOnlyServedToolsAndOperations(t *testing.T) {
 	// Any ID with a letter is checked, so a malformed one fails rather than
 	// going unmatched; the operationId="..." placeholder has none.
 	operationID := regexp.MustCompile(`operationId="([^"]*[A-Za-z][^"]*)"`)
+	// The check sees only that spelling, so the instructions must write the
+	// operation they route to as a call.
+	require.NotEmpty(t, operationID.FindString(serverInstructions), "server instructions name no operationId=\"...\" call to check")
 	for source, text := range guidance {
 		for _, name := range snakeCase.FindAllString(quoted.ReplaceAllString(text, ""), -1) {
 			require.True(t, registered[name], "%s names %q, which is not a registered tool", source, name)
