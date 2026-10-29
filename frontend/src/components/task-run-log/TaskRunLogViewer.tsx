@@ -195,15 +195,13 @@ export const TaskRunLogViewer = memo(function TaskRunLogViewer({
     );
 
   // A versioned release's run reads as one spine of file sections. Several
-  // replicas, or a run whose status is unknown, keep the plain log.
-  // The log decides the spine, so it waits for the log: an empty log would
-  // read as every file already applied.
+  // replicas, or a run whose status is unknown, keep the plain log. The log
+  // decides the spine, so it waits for a first load (an empty log reads as
+  // every file applied); a failed refresh keeps its entries.
   if (
     spineRun &&
     spineFiles.length > 0 &&
     !hasMultipleReplicas &&
-    // A failed refresh keeps the entries it had; only a log never loaded
-    // would read as every file already applied.
     (logFetch.status === "success" || entries.length > 0)
   ) {
     return (
