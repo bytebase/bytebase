@@ -31,11 +31,9 @@ func queryDatabaseRequest(ctx context.Context, database string) bool {
 }
 
 // mcpWriteDataSourceID routes a query_database request that may write as the SQL
-// Editor routes a write that names no data source. picked is the tool's own
+// Editor routes a write that names no data source, since picked is the tool's own
 // choice: the first read-only data source, or ADMIN when there is none. It skips
 // requiresAdminDataSource, which reads every Databricks statement as a read.
-// Where the SQL Editor asks for a pick among read-only data sources, picked
-// stands.
 func mcpWriteDataSourceID(instance *store.InstanceMessage, picked string, allowAdminDataSource bool) (string, error) {
 	id, err := routeDataSource(instance, allowAdminDataSource, func() bool { return true })
 	if errors.Is(err, errMultipleReadOnlyDataSources) && picked != "" {
