@@ -283,13 +283,28 @@ func databaseList(targets []string, labels map[string]string) string {
 }
 
 // codeSpan sets a database name as code, so that the markdown of the comment
-// cannot read it as formatting. A name that holds a backtick stays plain,
-// since it would end the span.
+// cannot read it as formatting. The fence is one backtick longer than the
+// longest run of backticks in the name, and a space pads a name that a fence
+// would otherwise misread, as CommonMark reads code spans. Line breaks, which
+// a quoted identifier can hold, become spaces.
 func codeSpan(name string) string {
-	if strings.Contains(name, "`") {
-		return name
+	name = strings.NewReplacer("\r\n", " ", "\n", " ", "\r", " ").Replace(name)
+	longest, run := 0, 0
+	for _, r := range name {
+		if r != '`' {
+			run = 0
+			continue
+		}
+		run++
+		longest = max(longest, run)
 	}
-	return "`" + name + "`"
+	fence := strings.Repeat("`", longest+1)
+	// CommonMark drops one space from each end of a span that starts and ends
+	// with one, so such a name gets a pair of its own.
+	if strings.HasPrefix(name, "`") || strings.HasSuffix(name, "`") || (strings.HasPrefix(name, " ") && strings.HasSuffix(name, " ")) {
+		name = " " + name + " "
+	}
+	return fence + name + fence
 }
 
 // databaseLabels names each target by its database, and by instance and
@@ -299,7 +314,7 @@ func databaseLabels(targets []string) map[string]string {
 	counts := make(map[string]int, len(targets))
 	for _, target := range targets {
 		names[target] = target
-		if _, database, err := common.GetInstanceDatabaseID(target); err == nil {
+		if _, database, ok := instanceDatabase(target); ok {
 			names[target] = database
 		}
 		counts[names[target]]++
@@ -308,12 +323,24 @@ func databaseLabels(targets []string) map[string]string {
 	for _, target := range targets {
 		labels[target] = names[target]
 		if counts[names[target]] > 1 {
-			if instance, database, err := common.GetInstanceDatabaseID(target); err == nil {
+			if instance, database, ok := instanceDatabase(target); ok {
 				labels[target] = instance + "/" + database
 			}
 		}
 	}
 	return labels
+}
+
+// instanceDatabase reads the instance and database of a target, which names
+// a database of a workspace instance or of a project instance.
+func instanceDatabase(target string) (string, string, bool) {
+	if instance, database, err := common.GetInstanceDatabaseID(target); err == nil {
+		return instance, database, true
+	}
+	if _, instance, database, err := common.GetProjectIDInstanceDatabaseID(target); err == nil {
+		return instance, database, true
+	}
+	return "", "", false
 }
 
 // aiReviewPriority maps a finding's severity to the thread priority. The

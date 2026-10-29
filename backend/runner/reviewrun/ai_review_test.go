@@ -224,23 +224,35 @@ func flaggedSet(occurrences []aiReviewOccurrence) map[string]bool {
 func TestCodeSpan(t *testing.T) {
 	t.Parallel()
 
-	require.Equal(t, "`tenant_001`", codeSpan("tenant_001"))
-	require.Equal(t, "odd`name", codeSpan("odd`name"), "a backtick would end the span")
+	for _, tc := range []struct{ name, want string }{
+		{name: "tenant_001", want: "`tenant_001`"},
+		{name: "odd`name", want: "``odd`name``"},
+		{name: "two``ticks", want: "```two``ticks```"},
+		{name: "`leading", want: "`` `leading ``"},
+		{name: " spaced ", want: "`  spaced  `"},
+		{name: "line\nbreak", want: "`line break`"},
+	} {
+		require.Equal(t, tc.want, codeSpan(tc.name), tc.name)
+	}
 }
 
 func TestDatabaseLabels(t *testing.T) {
 	t.Parallel()
 
 	require.Equal(t, map[string]string{
-		"instances/prod-1/databases/orders": "prod-1/orders",
-		"instances/prod-2/databases/orders": "prod-2/orders",
-		"instances/prod-1/databases/users":  "users",
-		"not a database":                    "not a database",
+		"instances/prod-1/databases/orders":            "prod-1/orders",
+		"instances/prod-2/databases/orders":            "prod-2/orders",
+		"instances/prod-1/databases/users":             "users",
+		"not a database":                               "not a database",
+		"projects/p/instances/prod-3/databases/orders": "prod-3/orders",
+		"projects/p/instances/prod-3/databases/events": "events",
 	}, databaseLabels([]string{
 		"instances/prod-1/databases/orders",
 		"instances/prod-2/databases/orders",
 		"instances/prod-1/databases/users",
 		"not a database",
+		"projects/p/instances/prod-3/databases/orders",
+		"projects/p/instances/prod-3/databases/events",
 	}))
 }
 
