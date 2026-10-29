@@ -123,6 +123,10 @@ func (s *Server) handleQueryDatabase(ctx context.Context, req *mcp.CallToolReque
 
 	output, err := s.executeQuery(queryCtx, resolved, input, limit)
 	if err != nil {
+		var qe *queryError
+		if errors.As(err, &qe) {
+			return formatQueryError(qe), nil, nil
+		}
 		return formatToolError(err), nil, nil
 	}
 
@@ -231,10 +235,11 @@ func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, i
 	}
 	resp, err := s.apiRequest(ctx, "/bytebase.v1.SQLService/Query", body)
 	if err != nil {
+		// The call can end partway through a batch, as when queryTimeout passes.
 		return nil, &toolError{
 			Code:       "QUERY_ERROR",
 			Message:    fmt.Sprintf("query request failed: %s", err.Error()),
-			Suggestion: "check network connectivity and try again",
+			Suggestion: whatRanUnknown,
 		}
 	}
 	if resp.Status >= 400 {
@@ -242,23 +247,23 @@ func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, i
 		if errMsg == "" {
 			errMsg = fmt.Sprintf("HTTP %d", resp.Status)
 		}
-		// A refusal at this level gets no advice: no access grant lifts a
-		// missing bb.databases.get, which the ACL checks first, or an MCP policy.
 		suggestion := ""
-		if resp.Status != http.StatusForbidden && resp.Status != http.StatusUnauthorized {
+		switch {
+		case resp.Status >= http.StatusInternalServerError:
+			// A 5xx can follow statements that ran, as when a SQL Server batch
+			// fails partway: its driver then returns no result.
+			suggestion = whatRanUnknown
+		case resp.Status != http.StatusForbidden && resp.Status != http.StatusUnauthorized:
 			suggestion = "check your SQL syntax and try again"
+		default:
+			// A refusal at this level gets no advice: no access grant lifts a
+			// missing bb.databases.get, which the ACL checks first, or an MCP policy.
 		}
-		te := &toolError{
+		return nil, &toolError{
 			Code:       "QUERY_ERROR",
 			Message:    errMsg,
 			Suggestion: suggestion,
 		}
-		// A SQL Server batch that fails returns no result at all, so it
-		// arrives here rather than as a failed result.
-		if resolved.engine == engineMSSQL && resp.Status >= http.StatusInternalServerError {
-			te.Executed = sqlServerExecutionUnknown
-		}
-		return nil, te
 	}
 
 	var qr queryResponse
@@ -275,7 +280,7 @@ func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, i
 	}
 
 	if failed := slices.IndexFunc(qr.Results, func(r queryResult) bool { return r.Error != "" }); failed >= 0 {
-		return nil, queryFailure(qr.Results[:failed+1], input.Statement, resolved)
+		return nil, queryFailure(qr.Results, failed, resolved.resourceName)
 	}
 	result := qr.Results[0]
 
@@ -307,56 +312,57 @@ func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, i
 	}, nil
 }
 
-const engineMSSQL = "MSSQL"
+const whatRanUnknown = "Bytebase cannot always tell which statements of a failed request ran; if it held a write, check the data before you retry"
 
-// sqlServerExecutionUnknown is what Bytebase knows of a failed SQL Server
-// request. Its driver sends the request as one batch and returns no result
-// once a statement fails, and with XACT_ABORT OFF, the default, SQL Server runs
-// on past some errors:
-// https://learn.microsoft.com/en-us/sql/t-sql/statements/set-xact-abort-transact-sql
-const sqlServerExecutionUnknown = "unknown: SQL Server runs the request as one batch, and some errors let the statements after them run. Check the data before you retry."
-
-// queryFailure reports a failed request. results end with the first failed
-// statement. Except on SQL Server, Query runs a batch one statement at a time
-// and stops at the first failure (queryRetryStopOnError), so the results
-// before it are the statements that ran.
-func queryFailure(results []queryResult, input string, resolved *resolvedDatabase) *toolError {
-	failed := results[len(results)-1]
-	te := &toolError{
-		Code:       "QUERY_ERROR",
-		Message:    failed.Error,
-		Suggestion: "check your SQL syntax and try again",
-	}
-	if denied := failed.PermissionDenied; denied != nil {
-		// MCP sessions cannot file role requests, so the only advice is a grant.
-		te.Suggestion = ""
-		if grantLifts(denied.RequiredPermissions) && withinDatabase(denied.Resources, resolved.resourceName) {
-			te.Suggestion = grantAdvice(input, failed.Statement)
-		}
-	}
-	if resolved.engine == engineMSSQL {
-		te.Executed = sqlServerExecutionUnknown
-		return te
-	}
-	if !partOfBatch(input, failed.Statement) {
-		return te
-	}
-	te.FailedStatement = strings.TrimSpace(failed.Statement)
-	for _, r := range results[:len(results)-1] {
-		te.Ran = append(te.Ran, strings.TrimSpace(r.Statement))
-	}
-	te.Executed = "no statement after failedStatement ran, since Bytebase stops a batch at its first failure. The statements in ran completed, unless a transaction in the batch undid them."
-	// Rerunning the whole batch would repeat the statements that completed.
-	if len(te.Ran) > 0 && failed.PermissionDenied == nil {
-		te.Suggestion = "fix failedStatement, then rerun only what did not complete"
-	}
-	return te
+// queryError is a failed query_database request.
+type queryError struct {
+	Code       string `json:"code"`
+	Message    string `json:"message"`
+	Suggestion string `json:"suggestion,omitempty"`
+	// FailedStatement is the statement, or on SQL Server the whole batch,
+	// that Bytebase reported as failed.
+	FailedStatement string   `json:"failedStatement,omitempty"`
+	Ran             []string `json:"ran,omitempty"`
 }
 
-// partOfBatch reports whether statement is one statement of a longer input.
-func partOfBatch(input, statement string) bool {
-	statement = strings.TrimSpace(statement)
-	return statement != "" && statement != strings.TrimSpace(input)
+func (e *queryError) Error() string {
+	return fmt.Sprintf("%s: %s", e.Code, e.Message)
+}
+
+// formatQueryError formats a queryError into an MCP error result.
+func formatQueryError(err *queryError) *mcp.CallToolResult {
+	jsonBytes, _ := json.MarshalIndent(err, "", "  ")
+	return &mcp.CallToolResult{
+		Content: []mcp.Content{&mcp.TextContent{Text: string(jsonBytes)}},
+		IsError: true,
+	}
+}
+
+// queryFailure reports a request whose first failed result is results[failed].
+func queryFailure(results []queryResult, failed int, database string) *queryError {
+	qe := &queryError{
+		Code:            "QUERY_ERROR",
+		Message:         results[failed].Error,
+		FailedStatement: strings.TrimSpace(results[failed].Statement),
+	}
+	for _, r := range results {
+		if r.Error == "" {
+			qe.Ran = append(qe.Ran, strings.TrimSpace(r.Statement))
+		}
+	}
+	denied := results[failed].PermissionDenied
+	switch {
+	case denied != nil && grantLifts(denied.RequiredPermissions) && withinDatabase(denied.Resources, database):
+		qe.Suggestion = grantAdvice
+	case len(qe.Ran) > 0:
+		qe.Suggestion = "Bytebase ran the statements in ran, in a session that has since closed; check the data before you retry"
+	case denied == nil:
+		qe.Suggestion = whatRanUnknown
+	default:
+		// MCP sessions cannot file role requests, so a denial no grant lifts
+		// gets no advice of its own.
+	}
+	return qe
 }
 
 // maskedColumns pairs each masked column with its reason. Query aligns masked
@@ -489,15 +495,7 @@ func withinDatabase(resources []string, database string) bool {
 	return true
 }
 
-// grantAdvice names the refused statement when the input was a batch. Query
-// runs a batch one statement at a time and stops at the first refusal
-// (queryRetryStopOnError), and a grant applies only to the exact read-only
-// statement it names (hashAccessGrantQuery).
-func grantAdvice(input, refused string) string {
-	const howTo = "(the project must allow just-in-time access); otherwise the user requests access in the SQL Editor"
-	if !partOfBatch(input, refused) {
-		return "in a Read-write session, request an access grant for this statement with request_access_grant " + howTo
-	}
-	return fmt.Sprintf("the batch stopped at %q: in a Read-write session, request an access grant for that statement alone "+
-		"with request_access_grant and, once approved, run it by itself %s", strings.TrimSpace(refused), howTo)
-}
+// grantAdvice advises on a refusal an access grant lifts. A grant applies only
+// to the exact read-only statement it names (hashAccessGrantQuery).
+const grantAdvice = "in a Read-write session, request an access grant for failedStatement with request_access_grant and, " +
+	"once approved, run it by itself (the project must allow just-in-time access); otherwise the user requests access in the SQL Editor"
