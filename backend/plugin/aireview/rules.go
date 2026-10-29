@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 )
 
 // Rule is what a finding cites by ID: a line of a policy or one of the checks.
@@ -31,28 +33,79 @@ var checks = []Rule{
 	{ID: "breaks-dependent", Text: "The statement breaks an object that depends on what it changes, such as a view, trigger, or function that reads a renamed or dropped column."},
 }
 
-// listMarker matches the bullet or number that starts a list item.
-var listMarker = regexp.MustCompile(`^(?:[-*+]|\d+[.)])\s+`)
+var (
+	// listMarker matches the bullet or number that starts a list item.
+	listMarker = regexp.MustCompile(`^(?:[-*+]|\d+[.)])\s+`)
+	// headingMarker matches the hashes that start a markdown heading.
+	headingMarker = regexp.MustCompile(`^#{1,6}(?:\s+|$)`)
+)
 
 // Rules returns every rule a review under the two policies can cite: the
-// lines of the workspace policy, the lines of the project policy, then the
+// rules of the workspace policy, the rules of the project policy, then the
 // checks.
 func Rules(workspacePolicy, projectPolicy string) []Rule {
-	rules := policyRules("workspace", workspacePolicy)
-	rules = append(rules, policyRules("project", projectPolicy)...)
+	rules := policyRules(parsePolicy("workspace", workspacePolicy))
+	rules = append(rules, policyRules(parsePolicy("project", projectPolicy))...)
 	return append(rules, checks...)
 }
 
-// policyRules numbers the lines of a policy that hold text: one line is one
-// rule.
-func policyRules(level string, policy string) []Rule {
-	var rules []Rule
+// policyPart is a heading of a policy, which the rules below it read under,
+// or one of its rules.
+type policyPart struct {
+	Heading string
+	Rule    Rule
+}
+
+// parsePolicy splits a policy into its headings and numbered rules. A rule is
+// a list item or a line of text, with the lines that continue it: a line
+// continues the rule above when that rule has not ended its sentence and the
+// line starts in lower case, as a hard-wrapped sentence does. A blank line, a
+// heading, or a list marker ends a rule. A policy that wraps a sentence
+// before a capitalized word reads as two rules; the prompt still shows both.
+func parsePolicy(level string, policy string) []policyPart {
+	var parts []policyPart
+	count := 0
+	// open is the index of the rule the next line can continue, or -1.
+	open := -1
 	for _, line := range strings.Split(policy, "\n") {
-		line = listMarker.ReplaceAllString(strings.TrimSpace(line), "")
-		if line == "" {
-			continue
+		line = strings.TrimSpace(line)
+		switch {
+		case line == "":
+			open = -1
+		case headingMarker.MatchString(line):
+			if heading := strings.TrimSpace(headingMarker.ReplaceAllString(line, "")); heading != "" {
+				parts = append(parts, policyPart{Heading: heading})
+			}
+			open = -1
+		case open >= 0 && !listMarker.MatchString(line) && continuesRule(parts[open].Rule.Text, line):
+			parts[open].Rule.Text += " " + line
+		default:
+			count++
+			parts = append(parts, policyPart{Rule: Rule{ID: fmt.Sprintf("%s-%d", level, count), Text: listMarker.ReplaceAllString(line, "")}})
+			open = len(parts) - 1
 		}
-		rules = append(rules, Rule{ID: fmt.Sprintf("%s-%d", level, len(rules)+1), Text: line})
+	}
+	return parts
+}
+
+// continuesRule reports whether line goes on with the sentence of rule.
+func continuesRule(rule string, line string) bool {
+	first, _ := utf8.DecodeRuneInString(line)
+	if !unicode.IsLower(first) {
+		return false
+	}
+	// Closing quotes, brackets, and emphasis can follow the end of a sentence.
+	rule = strings.TrimRight(rule, ")]}\"'`*_\u201d\u2019")
+	last, _ := utf8.DecodeLastRuneInString(rule)
+	return !strings.ContainsRune(".!?;\u3002\uff01\uff1f\uff1b", last)
+}
+
+func policyRules(parts []policyPart) []Rule {
+	var rules []Rule
+	for _, part := range parts {
+		if part.Heading == "" {
+			rules = append(rules, part.Rule)
+		}
 	}
 	return rules
 }

@@ -6,7 +6,7 @@ Report what breaks a line of the policy below, and what breaks one of these chec
 
 {{checks}}
 
-Every finding cites one rule by its ID: the policy line that covers the problem, or, when none does, the first check above that fits it.
+Every finding cites one rule by its ID. When a policy rule covers the problem, cite the first project policy rule that does, or else the first workspace policy rule, since the project policy wins on conflict. When none does, cite the first check above that fits it.
 
 Do not report naming, formatting, or style problems unless the policy asks for them. A separate rule engine checks those.
 

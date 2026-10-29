@@ -55,16 +55,27 @@ func buildSystemPrompt(request *Request) string {
 	var b strings.Builder
 	_, _ = b.WriteString(strings.TrimSpace(basePrompt))
 	_, _ = b.WriteString("\n\n# Policy\n\n")
-	_, _ = b.WriteString("The workspace policy holds the company's standards. The project policy holds the team's conventions. When the two conflict, the project policy wins. Each line of a policy is a rule, listed after its ID.\n")
-	writePolicy(&b, "Workspace policy", policyRules("workspace", request.WorkspacePolicy))
-	writePolicy(&b, "Project policy", policyRules("project", request.ProjectPolicy))
+	_, _ = b.WriteString("The workspace policy holds the company's standards. The project policy holds the team's conventions. When the two conflict, the project policy wins. Each rule of a policy is listed after its ID, below the headings of the policy that it reads under.\n")
+	writePolicy(&b, "Workspace policy", parsePolicy("workspace", request.WorkspacePolicy))
+	writePolicy(&b, "Project policy", parsePolicy("project", request.ProjectPolicy))
 	return b.String()
 }
 
-func writePolicy(b *strings.Builder, title string, rules []Rule) {
+func writePolicy(b *strings.Builder, title string, parts []policyPart) {
 	policy := "(none)"
-	if len(rules) > 0 {
-		policy = ruleList(rules)
+	if len(policyRules(parts)) > 0 {
+		var lines []string
+		for _, part := range parts {
+			if part.Heading != "" {
+				if len(lines) > 0 {
+					lines = append(lines, "")
+				}
+				lines = append(lines, part.Heading, "")
+				continue
+			}
+			lines = append(lines, ruleList([]Rule{part.Rule}))
+		}
+		policy = strings.TrimRight(strings.Join(lines, "\n"), "\n")
 	}
 	_, _ = fmt.Fprintf(b, "\n## %s\n\n%s\n", title, policy)
 }
