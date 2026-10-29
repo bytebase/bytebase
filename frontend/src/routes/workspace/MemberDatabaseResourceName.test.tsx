@@ -81,12 +81,6 @@ describe("MemberDatabaseResourceName", () => {
     ).not.toBeInTheDocument();
   });
 
-  test("exposes the full instance and database name as a tooltip", () => {
-    render(<MemberDatabaseResourceName resource={resource} />);
-
-    expect(screen.getByTitle("Production > hr")).toBeInTheDocument();
-  });
-
   test("falls back to instance id without showing unknown instance engine", () => {
     mocks.databasesByName = {
       "instances/prod/databases/hr": {

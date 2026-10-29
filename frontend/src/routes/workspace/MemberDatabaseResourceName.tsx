@@ -53,16 +53,17 @@ export function MemberDatabaseResourceName({
   }
 
   return (
-    <div
-      className="flex min-w-0 items-center text-sm"
-      title={`${display.instanceTitle} > ${display.databaseName}`}
-    >
+    <div className="flex min-w-0 flex-wrap items-center text-sm">
       {display.engine !== undefined && (
-        <EngineIcon engine={display.engine} className="mr-1 h-4 w-4" />
+        <EngineIcon engine={display.engine} className="mr-1 h-4 w-4 shrink-0" />
       )}
-      <span className="truncate text-control">{display.instanceTitle}</span>
+      <span className="min-w-0 wrap-anywhere text-control">
+        {display.instanceTitle}
+      </span>
       <ChevronRight className="h-4 w-4 shrink-0 text-control-light opacity-60" />
-      <span className="truncate text-main">{display.databaseName}</span>
+      <span className="min-w-0 wrap-anywhere text-main">
+        {display.databaseName}
+      </span>
     </div>
   );
 }

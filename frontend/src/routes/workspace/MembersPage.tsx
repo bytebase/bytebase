@@ -1889,16 +1889,10 @@ function EditMemberRoleDrawer({
                                     resource={row.databaseResource}
                                   />
                                 </TableCell>
-                                <TableCell
-                                  className="truncate"
-                                  title={row.databaseResource?.schema}
-                                >
+                                <TableCell className="wrap-anywhere">
                                   {row.databaseResource?.schema ?? "*"}
                                 </TableCell>
-                                <TableCell
-                                  className="truncate"
-                                  title={row.databaseResource?.table}
-                                >
+                                <TableCell className="wrap-anywhere">
                                   {row.databaseResource?.table ?? "*"}
                                 </TableCell>
                                 <TableCell>
