@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
@@ -247,11 +248,17 @@ func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, i
 		if resp.Status != http.StatusForbidden && resp.Status != http.StatusUnauthorized {
 			suggestion = "check your SQL syntax and try again"
 		}
-		return nil, &toolError{
+		te := &toolError{
 			Code:       "QUERY_ERROR",
 			Message:    errMsg,
 			Suggestion: suggestion,
 		}
+		// A SQL Server batch that fails returns no result at all, so it
+		// arrives here rather than as a failed result.
+		if resolved.engine == engineMSSQL && resp.Status >= http.StatusInternalServerError {
+			te.Executed = sqlServerExecutionUnknown
+		}
+		return nil, te
 	}
 
 	var qr queryResponse
@@ -267,22 +274,10 @@ func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, i
 		}, nil
 	}
 
-	result := qr.Results[0]
-	if result.Error != "" {
-		suggestion := "check your SQL syntax and try again"
-		if result.PermissionDenied != nil {
-			// MCP sessions cannot file role requests, so the only advice is a grant.
-			suggestion = ""
-			if denied := result.PermissionDenied; grantLifts(denied.RequiredPermissions) && withinDatabase(denied.Resources, resolved.resourceName) {
-				suggestion = grantAdvice(input.Statement, result.Statement)
-			}
-		}
-		return nil, &toolError{
-			Code:       "QUERY_ERROR",
-			Message:    result.Error,
-			Suggestion: suggestion,
-		}
+	if failed := slices.IndexFunc(qr.Results, func(r queryResult) bool { return r.Error != "" }); failed >= 0 {
+		return nil, queryFailure(qr.Results[:failed+1], input.Statement, resolved)
 	}
+	result := qr.Results[0]
 
 	// Flatten rows.
 	rows := make([][]any, 0, len(result.Rows))
@@ -310,6 +305,58 @@ func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, i
 		MaskedColumns:      maskedColumns(result.ColumnNames, result.Masked),
 		AppliedAccessGrant: qr.AppliedAccessGrant,
 	}, nil
+}
+
+const engineMSSQL = "MSSQL"
+
+// sqlServerExecutionUnknown is what Bytebase knows of a failed SQL Server
+// request. Its driver sends the request as one batch and returns no result
+// once a statement fails, and with XACT_ABORT OFF, the default, SQL Server runs
+// on past some errors:
+// https://learn.microsoft.com/en-us/sql/t-sql/statements/set-xact-abort-transact-sql
+const sqlServerExecutionUnknown = "unknown: SQL Server runs the request as one batch, and some errors let the statements after them run. Check the data before you retry."
+
+// queryFailure reports a failed request. results end with the first failed
+// statement. Except on SQL Server, Query runs a batch one statement at a time
+// and stops at the first failure (queryRetryStopOnError), so the results
+// before it are the statements that ran.
+func queryFailure(results []queryResult, input string, resolved *resolvedDatabase) *toolError {
+	failed := results[len(results)-1]
+	te := &toolError{
+		Code:       "QUERY_ERROR",
+		Message:    failed.Error,
+		Suggestion: "check your SQL syntax and try again",
+	}
+	if denied := failed.PermissionDenied; denied != nil {
+		// MCP sessions cannot file role requests, so the only advice is a grant.
+		te.Suggestion = ""
+		if grantLifts(denied.RequiredPermissions) && withinDatabase(denied.Resources, resolved.resourceName) {
+			te.Suggestion = grantAdvice(input, failed.Statement)
+		}
+	}
+	if resolved.engine == engineMSSQL {
+		te.Executed = sqlServerExecutionUnknown
+		return te
+	}
+	if !partOfBatch(input, failed.Statement) {
+		return te
+	}
+	te.FailedStatement = strings.TrimSpace(failed.Statement)
+	for _, r := range results[:len(results)-1] {
+		te.Ran = append(te.Ran, strings.TrimSpace(r.Statement))
+	}
+	te.Executed = "no statement after failedStatement ran, since Bytebase stops a batch at its first failure. The statements in ran completed, unless a transaction in the batch undid them."
+	// Rerunning the whole batch would repeat the statements that completed.
+	if len(te.Ran) > 0 && failed.PermissionDenied == nil {
+		te.Suggestion = "fix failedStatement, then rerun only what did not complete"
+	}
+	return te
+}
+
+// partOfBatch reports whether statement is one statement of a longer input.
+func partOfBatch(input, statement string) bool {
+	statement = strings.TrimSpace(statement)
+	return statement != "" && statement != strings.TrimSpace(input)
 }
 
 // maskedColumns pairs each masked column with its reason. Query aligns masked
@@ -448,10 +495,9 @@ func withinDatabase(resources []string, database string) bool {
 // statement it names (hashAccessGrantQuery).
 func grantAdvice(input, refused string) string {
 	const howTo = "(the project must allow just-in-time access); otherwise the user requests access in the SQL Editor"
-	refused = strings.TrimSpace(refused)
-	if refused == "" || refused == strings.TrimSpace(input) {
+	if !partOfBatch(input, refused) {
 		return "in a Read-write session, request an access grant for this statement with request_access_grant " + howTo
 	}
 	return fmt.Sprintf("the batch stopped at %q: in a Read-write session, request an access grant for that statement alone "+
-		"with request_access_grant and, once approved, run it by itself %s", refused, howTo)
+		"with request_access_grant and, once approved, run it by itself %s", strings.TrimSpace(refused), howTo)
 }

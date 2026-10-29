@@ -850,6 +850,122 @@ func TestQueryDatabase_Timeout(t *testing.T) {
 	require.Contains(t, err.Error(), "QUERY_ERROR")
 }
 
+// Query returns a result per statement and stops at the first failure, so the
+// failure can follow results for statements that ran.
+func TestQueryDatabase_FailureReportsWhatRan(t *testing.T) {
+	databases := []map[string]any{
+		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),
+	}
+	const stopped = "no statement after failedStatement ran, since Bytebase stops a batch at its first failure. " +
+		"The statements in ran completed, unless a transaction in the batch undid them."
+	for name, tt := range map[string]struct {
+		statement      string
+		results        []map[string]any
+		wantFailed     string
+		wantRan        []string
+		wantExecuted   string
+		wantSuggestion string
+	}{
+		"a later statement failed": {
+			statement: "INSERT INTO t VALUES (1); INSERT INTO t VALUES (1); INSERT INTO t VALUES (2);",
+			results: []map[string]any{
+				{"columnNames": []string{"Affected Rows"}, "statement": "INSERT INTO t VALUES (1);"},
+				{"error": `duplicate key value violates unique constraint "t_pkey"`, "statement": "INSERT INTO t VALUES (1);"},
+			},
+			wantFailed:     "INSERT INTO t VALUES (1);",
+			wantRan:        []string{"INSERT INTO t VALUES (1);"},
+			wantExecuted:   stopped,
+			wantSuggestion: "fix failedStatement, then rerun only what did not complete",
+		},
+		"the first statement of a batch failed": {
+			statement: "UPDATE t SET a = 1; UPDATE t SET b = 2;",
+			results: []map[string]any{
+				{"error": `column "a" does not exist`, "statement": "UPDATE t SET a = 1;"},
+			},
+			wantFailed:     "UPDATE t SET a = 1;",
+			wantExecuted:   stopped,
+			wantSuggestion: "check your SQL syntax and try again",
+		},
+		"a single statement failed": {
+			statement: "UPDATE t SET a = 1",
+			results: []map[string]any{
+				{"error": `column "a" does not exist`, "statement": "UPDATE t SET a = 1"},
+			},
+			wantSuggestion: "check your SQL syntax and try again",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			s := newTestServerWithMock(t, mockQueryServer(databases, map[string]any{"results": tt.results}))
+
+			result, _, err := s.handleQueryDatabase(testContext(), nil, QueryInput{
+				Database:  "employee_db",
+				Statement: tt.statement,
+			})
+			require.NoError(t, err)
+			require.True(t, result.IsError)
+			var failure toolError
+			require.NoError(t, json.Unmarshal([]byte(result.Content[0].(*mcpsdk.TextContent).Text), &failure))
+			require.Equal(t, tt.results[len(tt.results)-1]["error"], failure.Message)
+			require.Equal(t, tt.wantFailed, failure.FailedStatement)
+			require.Equal(t, tt.wantRan, failure.Ran)
+			require.Equal(t, tt.wantExecuted, failure.Executed)
+			require.Equal(t, tt.wantSuggestion, failure.Suggestion)
+		})
+	}
+}
+
+// SQL Server runs a request as one batch and returns no result once a
+// statement fails, so Bytebase cannot tell what ran.
+func TestQueryDatabase_SQLServerFailureLeavesExecutionUnknown(t *testing.T) {
+	databases := []map[string]any{
+		makeDatabase("instances/prod-mssql/databases/employee_db", "instances/prod-mssql", "projects/hr-system", "MSSQL", "ds-admin-1"),
+	}
+	for name, tt := range map[string]struct {
+		status       int
+		body         map[string]any
+		wantExecuted string
+	}{
+		"the batch failed": {
+			status:       http.StatusInternalServerError,
+			body:         map[string]any{"code": "internal", "message": "Violation of PRIMARY KEY constraint 'PK_t'."},
+			wantExecuted: sqlServerExecutionUnknown,
+		},
+		"the batch timed out": {
+			status:       http.StatusOK,
+			body:         map[string]any{"results": []any{map[string]any{"error": "timeout reached: 30s", "statement": "INSERT INTO t VALUES (1); INSERT INTO t VALUES (2);"}}},
+			wantExecuted: sqlServerExecutionUnknown,
+		},
+		"a refusal before the batch ran": {
+			status: http.StatusPreconditionFailed,
+			body:   map[string]any{"code": "failed_precondition", "message": "refused before execution"},
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if strings.Contains(r.URL.Path, "SQLService/Query") {
+					w.Header().Set("Content-Type", "application/json")
+					w.WriteHeader(tt.status)
+					_ = json.NewEncoder(w).Encode(tt.body)
+					return
+				}
+				mockListDatabases(databases).ServeHTTP(w, r)
+			})
+			s := newTestServerWithMock(t, handler)
+
+			result, _, err := s.handleQueryDatabase(testContext(), nil, QueryInput{
+				Database:  "employee_db",
+				Statement: "INSERT INTO t VALUES (1); INSERT INTO t VALUES (2);",
+			})
+			require.NoError(t, err)
+			require.True(t, result.IsError)
+			var failure toolError
+			require.NoError(t, json.Unmarshal([]byte(result.Content[0].(*mcpsdk.TextContent).Text), &failure))
+			require.Equal(t, tt.wantExecuted, failure.Executed)
+			require.Empty(t, failure.Ran)
+		})
+	}
+}
+
 // protoQueryResponse encodes resp with protojson.MarshalOptions{}, the options
 // connect-go's JSON codec uses for the Query response.
 func protoQueryResponse(t *testing.T, resp *v1pb.QueryResponse) map[string]any {

@@ -218,9 +218,15 @@ func parseError(body json.RawMessage) string {
 
 // toolError is a structured error returned by MCP tools.
 type toolError struct {
-	Code       string `json:"code"`
-	Message    string `json:"message"`
-	Suggestion string `json:"suggestion,omitempty"`
+	Code    string `json:"code"`
+	Message string `json:"message"`
+	// FailedStatement, Ran and Executed describe a failed query_database
+	// request: the statement that failed, those that ran before it, and what
+	// Bytebase knows of the rest.
+	FailedStatement string   `json:"failedStatement,omitempty"`
+	Ran             []string `json:"ran,omitempty"`
+	Executed        string   `json:"executed,omitempty"`
+	Suggestion      string   `json:"suggestion,omitempty"`
 }
 
 func (e *toolError) Error() string {
