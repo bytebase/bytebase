@@ -381,11 +381,21 @@ func getVCSSource(w *world.World) *v1pb.Release_VCSSource {
 	if source == nil {
 		source = &v1pb.Release_VCSSource{}
 	}
+	// The Source row shows a pull request's title and link over the commit's,
+	// so a flag replaces both. A flag URL is another commit: the detected SHA
+	// no longer matches it.
 	if w.SourceTitle != "" {
 		source.CommitTitle = w.SourceTitle
+		if source.PullRequest != nil {
+			source.PullRequest.Title = w.SourceTitle
+		}
 	}
 	if w.SourceURL != "" {
 		source.Url = w.SourceURL
+		source.CommitSha = ""
+		if source.PullRequest != nil {
+			source.PullRequest.Url = w.SourceURL
+		}
 	}
 	if w.SourceAuthor != "" {
 		source.AuthorName = w.SourceAuthor

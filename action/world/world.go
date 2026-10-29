@@ -35,7 +35,7 @@ type World struct {
 	// Whether to use declarative mode.
 	Declarative bool
 	// What the pipeline knows about the commit, for a CI the action does not
-	// detect. Each wins over the detected value.
+	// detect.
 	SourceTitle  string
 	SourceURL    string
 	SourceAuthor string

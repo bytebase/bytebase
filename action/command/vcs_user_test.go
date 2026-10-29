@@ -543,10 +543,28 @@ func TestGetVCSSource(t *testing.T) {
 				w.SourceAuthor = "Release Bot"
 				w.SourceURL = "https://github.com/example/app/commit/ffff"
 			},
+			// The flag's commit URL replaces the detected commit, SHA included.
 			want: &v1pb.Release_VCSSource{
 				VcsType: v1pb.VCSType_GITHUB, Url: "https://github.com/example/app/commit/ffff",
-				CommitSha: "0a1b2c3d", Branch: "release/12", CommitTitle: "Release train 12",
+				Branch: "release/12", CommitTitle: "Release train 12",
 				AuthorName: "Release Bot", AuthorLogin: "alexdoe",
+			},
+		},
+		{
+			name:     "flags win over a detected pull request",
+			platform: world.GitHub,
+			env: with(githubPush, map[string]string{
+				"GITHUB_EVENT_NAME": "pull_request",
+				githubEventPayload:  `{"pull_request":{"number":42,"title":"Add the orders table","html_url":"https://github.com/example/app/pull/42","user":{"login":"alexdoe"}}}`,
+			}),
+			flags: func(w *world.World) {
+				w.SourceTitle = "Release train 12"
+				w.SourceURL = "https://github.com/example/app/pull/99"
+			},
+			want: &v1pb.Release_VCSSource{
+				VcsType: v1pb.VCSType_GITHUB, Url: "https://github.com/example/app/pull/99",
+				Branch: "main", CommitTitle: "Release train 12", AuthorLogin: "alexdoe",
+				PullRequest: &v1pb.Release_VCSSource_PullRequest{Url: "https://github.com/example/app/pull/99", Number: 42, Title: "Release train 12"},
 			},
 		},
 	}
