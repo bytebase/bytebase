@@ -1,17 +1,38 @@
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ReadonlyMonaco } from "@/components/monaco";
+import {
+  ReleaseFileViewer,
+  type ReleaseFileViewerTarget,
+} from "@/components/release/ReleaseFileViewer";
+import {
+  type OpenReleaseFile,
+  ReleaseSpineView,
+} from "@/components/task-run-log/ReleaseSpineView";
+import { useReleaseByName } from "@/hooks/useAppState";
+import { useTimeReading } from "@/hooks/useTimeReading";
 import { getTaskRunWaitingMessage } from "@/lib/taskRun";
 import { cn } from "@/lib/utils";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
+import { Release_Type } from "@/types/proto-es/v1/release_service_pb";
 import type { Task, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
+import { relativeTimeReading } from "@/utils/datetime";
 import {
   isReleaseBasedTask,
   releaseNameOfTaskV1,
 } from "@/utils/v1/issue/rollout";
+import { PROJECT_DATABASE_DETAIL_TAB_REVISION } from "../../../database-detail/tabs";
 import { DeployLatestTaskRunInfo } from "./DeployLatestTaskRunInfo";
-import { DeployReleaseInfoCard } from "./DeployReleaseInfoCard";
 import { DeployTaskSkippedReason } from "./DeployTaskSkippedReason";
+
+const NO_ENTRIES: never[] = [];
+
+// "instances/{i}/databases/{d}", optionally under projects/{p}/.
+const parseDatabaseTarget = (target: string) => {
+  const match = /instances\/([^/]+)\/databases\/([^/]+)$/.exec(target);
+  return match ? { instance: match[1], database: match[2] } : undefined;
+};
 
 // The expanded card body: a skipped reason, a waiting note, the SQL statement
 // (or release info), and the latest task run. Only mounts when the card is
@@ -26,6 +47,8 @@ export function DeployTaskBody({
   isTruncated,
   latestTaskRun,
   onShowHistory,
+  projectId,
+  stageTitle,
   statement,
   task,
   timingDisplay,
@@ -38,6 +61,10 @@ export function DeployTaskBody({
   isTruncated: boolean;
   latestTaskRun?: TaskRun;
   onShowHistory: () => void;
+  // For the Revisions link on a done release task.
+  projectId?: string;
+  // The task's stage, for the file viewer's "Failed on" header.
+  stageTitle?: string;
   statement: string;
   task: Task;
   // The latest run's duration, formatted by DeployTaskItem (single source).
@@ -46,6 +73,44 @@ export function DeployTaskBody({
   const { t } = useTranslation();
   const isReleaseTask = isReleaseBasedTask(task);
   const releaseName = releaseNameOfTaskV1(task);
+  const release = useReleaseByName(releaseName ?? "");
+  const releaseState =
+    task.payload.case === "databaseUpdate"
+      ? task.payload.value.releaseState
+      : undefined;
+  const spineFiles = useMemo(
+    () =>
+      release?.type === Release_Type.VERSIONED
+        ? release.files.map((file) => ({
+            version: file.version,
+            path: file.path,
+          }))
+        : [],
+    [release]
+  );
+  const computedAgo = useTimeReading(
+    relativeTimeReading,
+    releaseState?.computeTime
+      ? Number(releaseState.computeTime.seconds) * 1000
+      : undefined
+  );
+  const [viewerTarget, setViewerTarget] = useState<ReleaseFileViewerTarget>();
+  const openFile: OpenReleaseFile = (file, context) =>
+    setViewerTarget({
+      file: {
+        ...file,
+        sheet:
+          release?.files.find((f) => f.version === file.version)?.sheet ?? "",
+      },
+      context,
+      stageTitle,
+    });
+  const target = parseDatabaseTarget(task.target);
+  const databaseName = target?.database ?? "";
+  const revisionsUrl =
+    target && projectId
+      ? `/projects/${projectId}/instances/${target.instance}/databases/${target.database}#${PROJECT_DATABASE_DETAIL_TAB_REVISION}`
+      : undefined;
   // The one state line that matters for a waiting task.
   const waitingComment = latestTaskRun
     ? getTaskRunWaitingMessage(latestTaskRun, t)
@@ -99,8 +164,21 @@ export function DeployTaskBody({
             </div>
           )}
         </div>
-      ) : releaseName ? (
-        <DeployReleaseInfoCard releaseName={releaseName} />
+      ) : !latestTaskRun && spineFiles.length > 0 && releaseState ? (
+        <div className="flex flex-col gap-1">
+          <div className="text-xs text-control-light">
+            {t("task-run.spine.as-of", {
+              time: computedAgo ?? "",
+            })}
+          </div>
+          <ReleaseSpineView
+            files={spineFiles}
+            entries={NO_ENTRIES}
+            state={releaseState}
+            getSectionLabel={() => ""}
+            onOpenFile={openFile}
+          />
+        </div>
       ) : null}
 
       {latestTaskRun && (
@@ -109,10 +187,30 @@ export function DeployTaskBody({
           databaseEngine={databaseEngine}
           duration={duration}
           historyCount={historyCount}
+          onOpenFile={openFile}
           onShowHistory={onShowHistory}
+          releaseState={releaseState}
+          showsSpine={spineFiles.length > 0}
           taskRun={latestTaskRun}
         />
       )}
+
+      {isReleaseTask && task.status === Task_Status.DONE && revisionsUrl ? (
+        <a
+          className="self-start text-sm text-accent hover:underline"
+          href={revisionsUrl}
+        >
+          {t("task-run.spine.revisions-on", { database: databaseName })}
+        </a>
+      ) : null}
+
+      {release ? (
+        <ReleaseFileViewer
+          target={viewerTarget}
+          vcsSource={release.vcsSource}
+          onClose={() => setViewerTarget(undefined)}
+        />
+      ) : null}
     </div>
   );
 }

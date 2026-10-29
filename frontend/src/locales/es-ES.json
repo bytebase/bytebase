@@ -2008,6 +2008,30 @@
     "description": {
       "placeholder": "Agregar descripción"
     },
+    "details": {
+      "approved": "Aprobado",
+      "approved-by": "Aprobado por {{user}}",
+      "awaiting-approval": "Pendiente de aprobación",
+      "by-author": "por {{author}}",
+      "changes": "Cambios",
+      "changes-on_one": "{{kind}} en {{count}} base de datos",
+      "changes-on_other": "{{kind}} en {{count}} bases de datos",
+      "created": "Creado",
+      "databases_one": "{{count}} base de datos",
+      "databases_other": "{{count}} bases de datos",
+      "labels": "Etiquetas",
+      "migration-based_one": "Basado en migraciones · {{count}} archivo · actualizar a la versión {{version}}",
+      "migration-based_other": "Basado en migraciones · {{count}} archivos · actualizar a la versión {{version}}",
+      "no-approval": "No requiere aprobación",
+      "progress": "Progreso",
+      "rejected": "Rechazado",
+      "release": "Versión",
+      "review": "Revisión",
+      "self": "Detalles",
+      "source": "Origen",
+      "state-based": "Basado en estado · {{version}}",
+      "triggered": "Activado"
+    },
     "draft-update-permission-required": "Puedes ver este borrador, pero necesitas bb.issues.update para editar etiquetas de problema o enviarlo a revisión.",
     "editor": {
       "save-changes-before-continuing": "Guarde o cancele sus cambios antes de continuar."
@@ -2049,6 +2073,8 @@
       "checking": "Comprobando…",
       "checks-failing": "Comprobaciones fallidas",
       "deployed": "Desplegado",
+      "deployed-with-skipped_one": "Desplegado, {{count}} tarea omitida",
+      "deployed-with-skipped_other": "Desplegado, {{count}} tareas omitidas",
       "gate-automated-review-passed": "La revisión automática se aprobó",
       "gate-checks-failed": "Algunas comprobaciones fallaron",
       "gate-checks-failed-sub": "{{failing}} con errores, {{passed}} correctas",
@@ -2623,6 +2649,13 @@
   "release": {
     "and-n-more-files": "y {{count}} archivos más",
     "change-tip": "Este cambio está vinculado a un artefacto de versión.",
+    "changes": {
+      "manifest_one": "{{count}} archivo · más reciente {{version}}",
+      "manifest_other": "{{count}} archivos · más reciente {{version}}",
+      "n-more_one": "{{count}} más",
+      "n-more_other": "{{count}} más",
+      "schema": "Esquema"
+    },
     "empty": {
       "description": "Los cambios que tu pipeline de CI publica en Bytebase aparecen aquí con su progreso de despliegue.",
       "read-guide": "Leer la guía de GitOps",
@@ -2645,7 +2678,14 @@
     "vcs-type": {
       "unspecified": "VCS desconocido"
     },
-    "view-all-files": "Ver todos los archivos"
+    "view-all-files": "Ver todos los archivos",
+    "viewer": {
+      "already-applied": "Ya aplicado; esta ejecución lo omitió",
+      "applied-by-run": "Aplicado por esta ejecución",
+      "failed-on": "Falló en {{stage}}",
+      "open-at-commit": "Abrir en {{platform}} en {{sha}}",
+      "size": "{{size}} bytes"
+    }
   },
   "remind": {
     "role-expire": {
@@ -4200,6 +4240,23 @@
     },
     "executed-by": "Ejecutado por",
     "execution-time": "Tiempo de ejecución",
+    "folded": {
+      "about-rows_one": "unas {{rows}} fila",
+      "about-rows_other": "unas {{rows}} filas",
+      "all-applied_one": "{{count}} aplicado",
+      "all-applied_other": "Los {{count}} aplicados",
+      "applied-earlier_one": "{{count}} aplicado antes",
+      "applied-earlier_other": "{{count}} aplicados antes",
+      "applying_one": "Aplicando {{count}} archivo",
+      "applying_other": "Aplicando {{count}} archivos",
+      "nothing-new": "Nada nuevo",
+      "nothing-to-apply": "Nada que aplicar",
+      "scheduled": "programado",
+      "skipped-by": "Omitido por {{user}}",
+      "started": "iniciado a las {{time}}",
+      "to-apply_one": "{{count}} por aplicar",
+      "to-apply_other": "{{count}} por aplicar"
+    },
     "no-cancelable-tasks": "No hay tareas cancelables",
     "no-permission": "No hay permiso para realizar esta acción",
     "no-runnable-tasks": "No hay tareas ejecutables",
@@ -4222,6 +4279,7 @@
     "select-task": "Seleccionar tarea",
     "skip-prior-backup": "Omitir respaldo previo",
     "skip-prior-backup-description": "Omitir la copia de seguridad automática de datos antes de aplicar cambios",
+    "skip-reason-required": "Indique por qué se omite la tarea.",
     "skip-task": "Saltar tarea | Saltar tareas",
     "skipped-no-reason": "No se indicó ningún motivo",
     "started": "Iniciado",
@@ -4287,6 +4345,24 @@
       }
     },
     "run-number": "Ejecución n.º {{number}}",
+    "spine": {
+      "already-applied": "{{count}} ya aplicados",
+      "applied-sections": "{{count}} aplicados",
+      "as-of": "Según la creación del plan, {{time}}; la ejecución vuelve a comprobar la base de datos.",
+      "no-statement": "No se identificó ninguna sentencia para este error.",
+      "pending-sections": "{{count}} más, se aplicarán",
+      "revision-deleted": "Aplicado de nuevo: {{user}} eliminó su revisión",
+      "revisions-on": "Revisiones en {{database}}",
+      "run-failed": "Ejecución fallida",
+      "status": {
+        "applied": "Aplicado",
+        "canceled": "Cancelado",
+        "failed": "Fallido",
+        "running": "En ejecución"
+      },
+      "will-apply": "Se aplicará",
+      "will-apply-again": "Se aplicará de nuevo · revisión eliminada el {{date}} por {{user}}"
+    },
     "status": {
       "enqueued": "Esperando a ser ejecutada.",
       "enqueued-with-rollout-time": "Esperando para ejecutar después de {{time}}.",

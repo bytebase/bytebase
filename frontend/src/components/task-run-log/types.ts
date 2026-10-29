@@ -1,3 +1,4 @@
+import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import type { LucideIcon } from "lucide-react";
 import type {
   TaskRunLogEntry,
@@ -99,4 +100,71 @@ export interface ReplicaGroup {
   replicaId: string;
   releaseFileGroups: ReleaseFileGroup[];
   rows: LogRow[];
+}
+
+export interface ReleaseSpineFile {
+  version: string;
+  path: string;
+}
+
+// "pending" is a file the task will apply; the rest describe the run.
+export type SpineFileStatus =
+  | "applied"
+  | "running"
+  | "failed"
+  | "canceled"
+  | "pending";
+
+export interface SpineFileSection {
+  kind: "file";
+  id: string;
+  version: string;
+  path: string;
+  status: SpineFileStatus;
+  entries: TaskRunLogEntry[];
+  // The run's error with the executor's file prefix removed, on the section it
+  // belongs to.
+  error?: string;
+  // The failed section has no failed command row to show the error on.
+  noStatement?: boolean;
+  // The database had a revision of this version that was deleted.
+  revisionDeleted?: { time?: Timestamp; deleter: string };
+}
+
+// A task-level step: prior backup, schema dump, database sync.
+export interface SpineStepSection {
+  kind: "step";
+  id: string;
+  type: TaskRunLogEntry_Type;
+  entries: TaskRunLogEntry[];
+}
+
+// The release's versions the database already had, newest first.
+export interface SpineAppliedFold {
+  kind: "applied-fold";
+  files: ReleaseSpineFile[];
+}
+
+// A run error that names no file and no step.
+export interface SpineRunFailed {
+  kind: "run-failed";
+  error: string;
+}
+
+// Past the section limit: the oldest applied sections, or the planned tail.
+export interface SpineSectionFold {
+  kind: "applied-sections" | "pending-sections";
+  id: string;
+  sections: SpineFileSection[];
+}
+
+export type SpineItem =
+  | SpineAppliedFold
+  | SpineFileSection
+  | SpineStepSection
+  | SpineRunFailed
+  | SpineSectionFold;
+
+export interface ReleaseSpine {
+  items: SpineItem[];
 }

@@ -25,7 +25,11 @@ export function PlanLifecycleStamp({
       return (
         <LifecycleStamp tone="success">
           <CircleCheckBig className="size-4" />
-          {t("plan.lifecycle.deployed")}
+          {state.skippedCount > 0
+            ? t("plan.lifecycle.deployed-with-skipped", {
+                count: state.skippedCount,
+              })
+            : t("plan.lifecycle.deployed")}
         </LifecycleStamp>
       );
     default:

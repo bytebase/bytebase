@@ -77,6 +77,9 @@ const sheetContentVariants = cva(
         // screens cap at a fixed width.
         workspace:
           "w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] sm:w-[calc(100vw-8rem)] sm:max-w-[calc(100vw-8rem)] lg:w-240",
+        // A non-modal reading panel beside the page, which keeps about 38% of
+        // the width and stays interactive (the release file viewer).
+        split: "w-[62vw]",
       },
     },
     defaultVariants: {
@@ -87,12 +90,16 @@ const sheetContentVariants = cva(
 
 interface SheetContentProps
   extends ComponentProps<typeof BaseDialog.Popup>,
-    VariantProps<typeof sheetContentVariants> {}
+    VariantProps<typeof sheetContentVariants> {
+  // False for a non-modal panel the page stays usable beside.
+  scrim?: boolean;
+}
 
 function SheetContent({
   className,
   children,
   width,
+  scrim = true,
   ref,
   ...props
 }: SheetContentProps) {
@@ -100,7 +107,7 @@ function SheetContent({
 
   return (
     <BaseDialog.Portal container={getLayerRoot("overlay")}>
-      <SheetOverlay />
+      {scrim ? <SheetOverlay /> : null}
       <BaseDialog.Popup
         ref={ref}
         className={cn(

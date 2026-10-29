@@ -2008,6 +2008,30 @@
     "description": {
       "placeholder": "添加描述"
     },
+    "details": {
+      "approved": "已批准",
+      "approved-by": "由 {{user}} 批准",
+      "awaiting-approval": "等待审批",
+      "by-author": "作者 {{author}}",
+      "changes": "变更",
+      "changes-on_one": "{{count}} 个数据库上的 {{kind}}",
+      "changes-on_other": "{{count}} 个数据库上的 {{kind}}",
+      "created": "创建",
+      "databases_one": "{{count}} 个数据库",
+      "databases_other": "{{count}} 个数据库",
+      "labels": "标签",
+      "migration-based_one": "基于迁移 · {{count}} 个文件 · 更新到版本 {{version}}",
+      "migration-based_other": "基于迁移 · {{count}} 个文件 · 更新到版本 {{version}}",
+      "no-approval": "无需审批",
+      "progress": "进度",
+      "rejected": "已拒绝",
+      "release": "发布",
+      "review": "审核",
+      "self": "详情",
+      "source": "来源",
+      "state-based": "基于状态 · {{version}}",
+      "triggered": "触发"
+    },
     "draft-update-permission-required": "你可以查看此草稿，但需要 bb.issues.update 才能编辑工单标签或提交审批。",
     "editor": {
       "save-changes-before-continuing": "请保存或取消更改，然后再继续"
@@ -2049,6 +2073,8 @@
       "checking": "检查中…",
       "checks-failing": "检查失败",
       "deployed": "已部署",
+      "deployed-with-skipped_one": "已部署，{{count}} 个任务已跳过",
+      "deployed-with-skipped_other": "已部署，{{count}} 个任务已跳过",
       "gate-automated-review-passed": "自动审核已通过",
       "gate-checks-failed": "部分检查未通过",
       "gate-checks-failed-sub": "{{failing}} 项失败，{{passed}} 项通过",
@@ -2623,6 +2649,13 @@
   "release": {
     "and-n-more-files": "以及另外 {{count}} 个文件",
     "change-tip": "该变更关联到了一个发布包。",
+    "changes": {
+      "manifest_one": "{{count}} 个文件 · 最新 {{version}}",
+      "manifest_other": "{{count}} 个文件 · 最新 {{version}}",
+      "n-more_one": "还有 {{count}} 个",
+      "n-more_other": "还有 {{count}} 个",
+      "schema": "Schema"
+    },
     "empty": {
       "description": "CI 流水线发布到 Bytebase 的变更会连同部署进度显示在这里。",
       "read-guide": "阅读 GitOps 指南",
@@ -2645,7 +2678,14 @@
     "vcs-type": {
       "unspecified": "未知 VCS"
     },
-    "view-all-files": "查看全部文件"
+    "view-all-files": "查看全部文件",
+    "viewer": {
+      "already-applied": "此前已应用；本次运行已跳过",
+      "applied-by-run": "由本次运行应用",
+      "failed-on": "在 {{stage}} 失败",
+      "open-at-commit": "在 {{platform}} 中打开 {{sha}}",
+      "size": "{{size}} 字节"
+    }
   },
   "remind": {
     "role-expire": {
@@ -4200,6 +4240,23 @@
     },
     "executed-by": "执行人",
     "execution-time": "执行时间",
+    "folded": {
+      "about-rows_one": "约 {{rows}} 行",
+      "about-rows_other": "约 {{rows}} 行",
+      "all-applied_one": "全部 {{count}} 个已应用",
+      "all-applied_other": "全部 {{count}} 个已应用",
+      "applied-earlier_one": "{{count}} 个此前已应用",
+      "applied-earlier_other": "{{count}} 个此前已应用",
+      "applying_one": "正在应用 {{count}} 个文件",
+      "applying_other": "正在应用 {{count}} 个文件",
+      "nothing-new": "没有新的变更",
+      "nothing-to-apply": "无需应用",
+      "scheduled": "计划于",
+      "skipped-by": "由 {{user}} 跳过",
+      "started": "开始于 {{time}}",
+      "to-apply_one": "{{count}} 个待应用",
+      "to-apply_other": "{{count}} 个待应用"
+    },
     "no-cancelable-tasks": "没有可取消的任务",
     "no-permission": "无权限执行该操作",
     "no-runnable-tasks": "没有可运行的任务",
@@ -4222,6 +4279,7 @@
     "select-task": "选择任务",
     "skip-prior-backup": "跳过预备份",
     "skip-prior-backup-description": "跳过变更前的自动数据备份",
+    "skip-reason-required": "请填写跳过任务的原因。",
     "skip-task": "跳过任务 | 跳过任务",
     "skipped-no-reason": "未提供原因",
     "started": "开始于",
@@ -4287,6 +4345,24 @@
       }
     },
     "run-number": "第 {{number}} 次运行",
+    "spine": {
+      "already-applied": "{{count}} 个已应用",
+      "applied-sections": "{{count}} 个已应用",
+      "as-of": "截至计划创建时（{{time}}）；运行时会重新检查数据库。",
+      "no-statement": "未能确定此错误对应的语句。",
+      "pending-sections": "还有 {{count}} 个，将应用",
+      "revision-deleted": "再次应用：其修订已被 {{user}} 删除",
+      "revisions-on": "{{database}} 上的修订",
+      "run-failed": "运行失败",
+      "status": {
+        "applied": "已应用",
+        "canceled": "已取消",
+        "failed": "失败",
+        "running": "运行中"
+      },
+      "will-apply": "将应用",
+      "will-apply-again": "将再次应用 · 修订已于 {{date}} 被 {{user}} 删除"
+    },
     "status": {
       "enqueued": "等待执行。",
       "enqueued-with-rollout-time": "等待执行，{{time}} 后执行。",

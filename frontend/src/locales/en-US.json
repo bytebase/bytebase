@@ -2008,6 +2008,30 @@
     "description": {
       "placeholder": "Add description"
     },
+    "details": {
+      "approved": "Approved",
+      "approved-by": "Approved by {{user}}",
+      "awaiting-approval": "Awaiting approval",
+      "by-author": "by {{author}}",
+      "changes": "Changes",
+      "changes-on_one": "{{kind}} on {{count}} database",
+      "changes-on_other": "{{kind}} on {{count}} databases",
+      "created": "Created",
+      "databases_one": "{{count}} database",
+      "databases_other": "{{count}} databases",
+      "labels": "Labels",
+      "migration-based_one": "Migration-based · {{count}} file · update to version {{version}}",
+      "migration-based_other": "Migration-based · {{count}} files · update to version {{version}}",
+      "no-approval": "No approval required",
+      "progress": "Progress",
+      "rejected": "Rejected",
+      "release": "Release",
+      "review": "Review",
+      "self": "Details",
+      "source": "Source",
+      "state-based": "State-based · {{version}}",
+      "triggered": "Triggered"
+    },
     "draft-update-permission-required": "You can view this draft, but you need bb.issues.update to edit issue labels or submit it for review.",
     "editor": {
       "save-changes-before-continuing": "Please save or cancel your changes before continuing"
@@ -2049,6 +2073,8 @@
       "checking": "Checking…",
       "checks-failing": "Checks failing",
       "deployed": "Deployed",
+      "deployed-with-skipped_one": "Deployed, {{count}} task skipped",
+      "deployed-with-skipped_other": "Deployed, {{count}} tasks skipped",
       "gate-automated-review-passed": "Automated review passed",
       "gate-checks-failed": "Some checks were not successful",
       "gate-checks-failed-sub": "{{failing}} failing, {{passed}} passed",
@@ -2623,6 +2649,13 @@
   "release": {
     "and-n-more-files": "and {{count}} more files",
     "change-tip": "This change is linked to a release artifact.",
+    "changes": {
+      "manifest_one": "{{count}} file · newest {{version}}",
+      "manifest_other": "{{count}} files · newest {{version}}",
+      "n-more_one": "{{count}} more",
+      "n-more_other": "{{count}} more",
+      "schema": "Schema"
+    },
     "empty": {
       "description": "Changes your CI pipeline releases to Bytebase appear here with their deploy progress.",
       "read-guide": "Read the GitOps guide",
@@ -2645,7 +2678,14 @@
     "vcs-type": {
       "unspecified": "Unknown VCS"
     },
-    "view-all-files": "View all files"
+    "view-all-files": "View all files",
+    "viewer": {
+      "already-applied": "Already applied; this run passed over it",
+      "applied-by-run": "Applied by this run",
+      "failed-on": "Failed on {{stage}}",
+      "open-at-commit": "Open in {{platform}} at {{sha}}",
+      "size": "{{size}} bytes"
+    }
   },
   "remind": {
     "role-expire": {
@@ -4200,6 +4240,23 @@
     },
     "executed-by": "Executed by",
     "execution-time": "Execution time",
+    "folded": {
+      "about-rows_one": "about {{rows}} row",
+      "about-rows_other": "about {{rows}} rows",
+      "all-applied_one": "All {{count}} applied",
+      "all-applied_other": "All {{count}} applied",
+      "applied-earlier_one": "{{count}} applied earlier",
+      "applied-earlier_other": "{{count}} applied earlier",
+      "applying_one": "Applying {{count}} file",
+      "applying_other": "Applying {{count}} files",
+      "nothing-new": "Nothing new",
+      "nothing-to-apply": "Nothing to apply",
+      "scheduled": "scheduled",
+      "skipped-by": "Skipped by {{user}}",
+      "started": "started {{time}}",
+      "to-apply_one": "{{count}} to apply",
+      "to-apply_other": "{{count}} to apply"
+    },
     "no-cancelable-tasks": "No cancelable tasks",
     "no-permission": "No permission to perform this action",
     "no-runnable-tasks": "No runnable tasks",
@@ -4222,6 +4279,7 @@
     "select-task": "Select Task",
     "skip-prior-backup": "Skip prior backup",
     "skip-prior-backup-description": "Skip the automatic data backup before applying changes",
+    "skip-reason-required": "Enter why the task is skipped.",
     "skip-task": "Skip task | Skip tasks",
     "skipped-no-reason": "No reason provided",
     "started": "Started",
@@ -4287,6 +4345,24 @@
       }
     },
     "run-number": "Run #{{number}}",
+    "spine": {
+      "already-applied": "{{count}} already applied",
+      "applied-sections": "{{count}} applied",
+      "as-of": "As of plan creation, {{time}}; the run re-checks the database.",
+      "no-statement": "No statement was identified for this error.",
+      "pending-sections": "{{count}} more, will apply",
+      "revision-deleted": "Applied again: its revision was deleted by {{user}}",
+      "revisions-on": "Revisions on {{database}}",
+      "run-failed": "Run failed",
+      "status": {
+        "applied": "Applied",
+        "canceled": "Canceled",
+        "failed": "Failed",
+        "running": "Running"
+      },
+      "will-apply": "Will apply",
+      "will-apply-again": "Will apply again · revision deleted {{date}} by {{user}}"
+    },
     "status": {
       "enqueued": "Waiting for execution.",
       "enqueued-with-rollout-time": "Waiting to execute after {{time}}.",

@@ -80,6 +80,24 @@ export const buildChangesSummary = (
   t: T,
   { includeChecks = true }: { includeChecks?: boolean } = {}
 ): string => {
+  // A release plan's facts live in the details block; once its rollout exists
+  // the collapsed line names only the targets per stage (D10).
+  const isRelease = plan.specs.some(
+    (spec) =>
+      spec.config?.case === "changeDatabaseConfig" && spec.config.value.release
+  );
+  if (isRelease && plan.rolloutStageSummaries.length > 0) {
+    return plan.rolloutStageSummaries
+      .map((summary) => {
+        const count = summary.taskStatusCounts.reduce(
+          (sum, item) => sum + item.count,
+          0
+        );
+        return `${summary.stage.split("/").at(-1)}: ${t("plan.summary.n-databases", { n: count })}`;
+      })
+      .join(" → ");
+  }
+
   const parts: string[] = [];
 
   parts.push(t("plan.summary.n-changes", { n: plan.specs.length }));

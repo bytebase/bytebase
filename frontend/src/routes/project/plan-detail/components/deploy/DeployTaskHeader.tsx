@@ -11,22 +11,38 @@ import { HumanizeTs } from "@/components/HumanizeTs";
 import { TaskStatusIcon } from "@/components/TaskStatusIcon";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { getTaskRunWaitingMessage } from "@/lib/taskRun";
 import { cn } from "@/lib/utils";
-import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { Task, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import type { PlanDetailTaskRolloutAction } from "../PlanDetailTaskRolloutActionPanel";
 import { PlanTargetDisplay } from "../PlanTargetDisplay";
+import {
+  type FoldedReleaseInfo,
+  type FoldedStatementSummary,
+  type FoldedTone,
+  foldedTaskDescription,
+} from "./foldedTaskDescription";
 
 type ActionItem = { key: PlanDetailTaskRolloutAction; label: string };
 
 // The card header: a bulk-select checkbox, the task identity (which toggles the
 // card open/closed), the per-card actions when expanded, and a caret. Purely
 // presentational — DeployTaskItem owns the derived data and handlers.
+const TONE_CLASS: Record<FoldedTone, string> = {
+  success: "text-success",
+  info: "text-info",
+  error: "text-error",
+  muted: "text-control-light",
+};
+
+// Below Tailwind's `sm` breakpoint the folded description moves under the
+// database.
+const NARROW_MEDIA_QUERY = "(max-width: 639px)";
+
 export function DeployTaskHeader({
   actionItems,
-  collapsedContextInfo,
-  collapsedStatusText,
   isExpanded,
   isSelectable,
   isSelected,
@@ -35,14 +51,14 @@ export function DeployTaskHeader({
   onRollback,
   onToggleExpand,
   onToggleSelect,
+  release,
   scheduledTimeMs,
   showRollback,
+  statementSummary,
   task,
   timingDisplay,
 }: {
   actionItems: ActionItem[];
-  collapsedContextInfo: string;
-  collapsedStatusText: string;
   isExpanded: boolean;
   isSelectable: boolean;
   isSelected: boolean;
@@ -51,13 +67,36 @@ export function DeployTaskHeader({
   onRollback: () => void;
   onToggleExpand: () => void;
   onToggleSelect: () => void;
+  // The task's release, for a release-backed task.
+  release?: FoldedReleaseInfo;
   scheduledTimeMs: number | undefined;
   showRollback: boolean;
+  // The plan check's statement summary for the task's target.
+  statementSummary?: FoldedStatementSummary;
   task: Task;
   timingDisplay: string;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const narrow = useMediaQuery(NARROW_MEDIA_QUERY);
   const showActions = actionItems.length > 0 || showRollback;
+  const folded = isExpanded
+    ? undefined
+    : foldedTaskDescription({
+        task,
+        latestTaskRun,
+        release,
+        statementSummary,
+        duration: timingDisplay,
+        t,
+        locale: i18n.language,
+      });
+  const waitingCause =
+    folded &&
+    latestTaskRun &&
+    (task.status === Task_Status.NOT_STARTED ||
+      task.status === Task_Status.PENDING)
+      ? getTaskRunWaitingMessage(latestTaskRun, t)
+      : undefined;
 
   return (
     <>
@@ -84,6 +123,30 @@ export function DeployTaskHeader({
           <TaskStatusIcon size="small" status={task.status} />
           <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
             <PlanTargetDisplay size="md" target={task.target} />
+            {folded && (
+              <span
+                className={cn(
+                  "min-w-0 truncate text-sm",
+                  TONE_CLASS[folded.tone],
+                  narrow && "basis-full"
+                )}
+                data-testid="folded-description"
+              >
+                {folded.version ? (
+                  <span className="tabular-nums">{folded.version} </span>
+                ) : null}
+                {folded.text}
+                {scheduledTimeMs !== undefined ? (
+                  <>
+                    {" · "}
+                    {t("task.folded.scheduled")}{" "}
+                    <HumanizeTs mode="operational" tsMs={scheduledTimeMs} />
+                  </>
+                ) : waitingCause ? (
+                  ` · ${waitingCause}`
+                ) : null}
+              </span>
+            )}
             {isExpanded && scheduledTimeMs !== undefined && (
               <span className="flex shrink-0 items-center gap-x-1 rounded-xs border border-transparent bg-info/10 px-1.5 py-0.5 text-xs text-info">
                 <LoaderCircle className="size-3 animate-spin motion-reduce:animate-none" />
@@ -97,23 +160,6 @@ export function DeployTaskHeader({
             the expanded actions, then the caret. Actions live in the header —
             consistent with the app, reachable without scrolling the body. */}
         <div className="ml-auto flex shrink-0 items-center gap-x-2">
-          {!isExpanded && (
-            <span className="text-xs tabular-nums text-control-light">
-              {scheduledTimeMs !== undefined ||
-              (task.status === Task_Status.RUNNING && timingDisplay) ? (
-                <span className="flex items-center gap-x-1 text-info">
-                  <LoaderCircle className="size-3 animate-spin motion-reduce:animate-none" />
-                  {scheduledTimeMs !== undefined ? (
-                    <HumanizeTs mode="operational" tsMs={scheduledTimeMs} />
-                  ) : (
-                    timingDisplay
-                  )}
-                </span>
-              ) : collapsedContextInfo ? (
-                <span>{collapsedContextInfo}</span>
-              ) : null}
-            </span>
-          )}
           {isExpanded && showActions && (
             <div className="flex flex-wrap items-center justify-end gap-2">
               {actionItems.map((item) => (
@@ -156,28 +202,6 @@ export function DeployTaskHeader({
           </Button>
         </div>
       </div>
-
-      {!isExpanded && collapsedStatusText && (
-        <div className="mt-1 flex items-center gap-x-2 text-xs">
-          {latestTaskRun?.createTime && (
-            <span className="rounded-xs border bg-control-bg px-1.5 py-0.5 text-control-light">
-              <HumanizeTs
-                tsMs={getTimeForPbTimestampProtoEs(latestTaskRun.createTime)}
-              />
-            </span>
-          )}
-          <span
-            className={cn(
-              "min-w-0 truncate",
-              task.status === Task_Status.FAILED
-                ? "text-error"
-                : "italic text-control-light"
-            )}
-          >
-            {collapsedStatusText}
-          </span>
-        </div>
-      )}
     </>
   );
 }

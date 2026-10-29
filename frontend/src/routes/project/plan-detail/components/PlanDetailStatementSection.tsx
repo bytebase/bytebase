@@ -24,7 +24,6 @@ import {
   type MonacoModule,
   ReadonlyMonaco,
 } from "@/components/monaco";
-import { ReleaseInfoCard } from "@/components/release/ReleaseInfoCard";
 import { Alert } from "@/components/ui/alert";
 import {
   AlertDialog,
@@ -88,6 +87,7 @@ import {
 } from "../utils/localSheet";
 import { getSQLAdviceMarkers } from "../utils/sqlAdvice";
 import { statementSummary } from "../utils/statementSummary";
+import { ReleaseChangesRail } from "./changes/ReleaseChangesRail";
 import { SchemaEditorSheet } from "./SchemaEditorSheet";
 import { StatementThreadsLayer } from "./threads/StatementThreadsLayer";
 import {
@@ -932,12 +932,13 @@ function PlanDetailReleaseStatement({
   release?: Release;
   releaseName: string;
 }) {
-  return (
-    <ReleaseInfoCard
-      className={cn("h-full", className)}
-      isLoading={isLoading}
-      release={release}
-      releaseName={releaseName}
-    />
-  );
+  const { t } = useTranslation();
+  if (!release) {
+    return (
+      <div className={cn("text-sm text-control-light", className)}>
+        {isLoading ? t("common.loading") : releaseName}
+      </div>
+    );
+  }
+  return <ReleaseChangesRail className={className} release={release} />;
 }

@@ -10,12 +10,15 @@ import { memo, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { useSeededState } from "@/hooks/useSeededState";
+import { Release_Type } from "@/types/proto-es/v1/release_service_pb";
 import {
+  type Task_ReleaseState,
   TaskRun_Status,
   TaskRunLogEntry_Type,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import { LogRows, ROW_DIVIDER } from "./LogRows";
 import { countRetryMarkers, type TaskRunLogDetailText } from "./model";
+import { type OpenReleaseFile, ReleaseSpineView } from "./ReleaseSpineView";
 import { SectionContent } from "./SectionContent";
 import { SectionStatusIcon } from "./SectionHeader";
 import type { LogRow } from "./types";
@@ -32,6 +35,13 @@ export interface TaskRunLogViewerProps {
   // When false, pause the live log poll — the card is mounted but its stage is
   // hidden. Defaults to live.
   active?: boolean;
+  // The run's error (TaskRun.detail): a versioned release's spine places it on
+  // the section it belongs to.
+  runError?: string;
+  // The task's stored release state. The plan page passes it; the revision
+  // page renders the run's log alone.
+  releaseState?: Task_ReleaseState;
+  onOpenFile?: OpenReleaseFile;
 }
 
 // memo: both props are scalars and data flows in via zustand subscriptions
@@ -41,9 +51,12 @@ export const TaskRunLogViewer = memo(function TaskRunLogViewer({
   taskRunName,
   taskRunStatus,
   active = true,
+  runError,
+  releaseState,
+  onOpenFile,
 }: TaskRunLogViewerProps) {
   const { t } = useTranslation();
-  const { entries, logFetch, sheet, sheetsMap } = useTaskRunLogData(
+  const { entries, logFetch, sheet, sheetsMap, release } = useTaskRunLogData(
     taskRunName,
     taskRunStatus,
     active
@@ -138,6 +151,24 @@ export const TaskRunLogViewer = memo(function TaskRunLogViewer({
     taskRunStatus,
   });
 
+  const spineFiles = useMemo(
+    () =>
+      release?.type === Release_Type.VERSIONED
+        ? release.files.map((file) => ({
+            version: file.version,
+            path: file.path,
+          }))
+        : [],
+    [release]
+  );
+  const spineRun = useMemo(
+    () =>
+      taskRunStatus === undefined
+        ? undefined
+        : { status: taskRunStatus, error: runError ?? "" },
+    [taskRunStatus, runError]
+  );
+
   const hasRenderableReleaseFiles =
     hasReleaseFiles && releaseFileGroups.length > 0;
   const hasContent =
@@ -145,6 +176,24 @@ export const TaskRunLogViewer = memo(function TaskRunLogViewer({
 
   if (!taskRunName) {
     return null;
+  }
+
+  // A versioned release's run reads as one spine of file sections. Several
+  // replicas, or a run whose status is unknown, keep the plain log.
+  if (spineRun && spineFiles.length > 0 && !hasMultipleReplicas) {
+    return (
+      <ReleaseSpineView
+        key={datasetKey}
+        files={spineFiles}
+        entries={entries}
+        run={spineRun}
+        state={releaseState}
+        sheetsMap={sheetsMap}
+        getSectionLabel={getSectionLabel}
+        detailText={detailText}
+        onOpenFile={onOpenFile}
+      />
+    );
   }
 
   if (!hasContent) {

@@ -1,9 +1,12 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
+import { create } from "@bufbuild/protobuf";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import {
   type Task,
   TaskRun_Status,
+  TaskRunLogEntry_Type,
+  TaskRunLogEntrySchema,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import type { UseTaskRunLogDataResult } from "./useTaskRunLogData";
@@ -44,8 +47,10 @@ vi.mock("@/utils", () => ({
   extractRolloutNameFromTaskRunName: (name: string) =>
     name.split("/stages/")[0],
   extractTaskNameFromTaskRunName: (name: string) => name.split("/taskRuns/")[0],
-  isReleaseBasedTask: () => false,
-  releaseNameOfTaskV1: () => "",
+  isReleaseBasedTask: (task: Task) =>
+    Boolean((task as unknown as { release?: string }).release),
+  releaseNameOfTaskV1: (task: Task) =>
+    (task as unknown as { release?: string }).release ?? "",
   sheetNameOfTaskV1: (task: Task) =>
     (task as unknown as { sheet: string }).sheet,
 }));
@@ -413,6 +418,45 @@ describe("useTaskRunLogData caching", () => {
     expect(hook.result().sheet).toBeDefined();
     expect(hook.result().sheetFetch.status).toBe("success");
     expect(hook.result().metadataFetch.status).toBe("success");
+    hook.unmount();
+  });
+});
+
+describe("useTaskRunLogData release sheets", () => {
+  test("a run that reached two files of a 500-file release fetches two sheets", async () => {
+    const releaseName = "projects/p/releases/r1";
+    mocks.rolloutsByName = {
+      [ROLLOUT_NAME]: {
+        stages: [{ tasks: [{ name: TASK_NAME, release: releaseName }] }],
+      },
+    };
+    const files = Array.from({ length: 500 }, (_, i) => {
+      const version = String(i + 1).padStart(4, "0");
+      return { version, path: `${version}.sql`, sheet: `projects/p/sheets/s${version}` };
+    });
+    mocks.fetchRelease.mockResolvedValue({ name: releaseName, files });
+    mocks.getTaskRunLog.mockResolvedValue({
+      entries: ["0499", "0500"].map((version, i) =>
+        create(TaskRunLogEntrySchema, {
+          type: TaskRunLogEntry_Type.RELEASE_FILE_EXECUTE,
+          logTime: { seconds: BigInt(i + 1), nanos: 0 },
+          releaseFileExecute: { version, filePath: `${version}.sql` },
+        })
+      ),
+    });
+    mocks.fetchSheet.mockImplementation(async (name: string) =>
+      makeSheet(name, name.length)
+    );
+
+    const hook = renderHook(`${TASK_NAME}/taskRuns/reached-two`, TaskRun_Status.FAILED);
+    await hook.flush();
+    await hook.flush();
+
+    expect(mocks.fetchSheet.mock.calls.map(([name]) => name).sort()).toEqual([
+      "projects/p/sheets/s0499",
+      "projects/p/sheets/s0500",
+    ]);
+    expect(hook.result().release?.files).toHaveLength(500);
     hook.unmount();
   });
 });

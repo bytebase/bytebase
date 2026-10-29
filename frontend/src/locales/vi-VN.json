@@ -2008,6 +2008,30 @@
     "description": {
       "placeholder": "Thêm mô tả"
     },
+    "details": {
+      "approved": "Đã phê duyệt",
+      "approved-by": "Được {{user}} phê duyệt",
+      "awaiting-approval": "Đang chờ phê duyệt",
+      "by-author": "bởi {{author}}",
+      "changes": "Thay đổi",
+      "changes-on_one": "{{kind}} trên {{count}} cơ sở dữ liệu",
+      "changes-on_other": "{{kind}} trên {{count}} cơ sở dữ liệu",
+      "created": "Tạo",
+      "databases_one": "{{count}} cơ sở dữ liệu",
+      "databases_other": "{{count}} cơ sở dữ liệu",
+      "labels": "Nhãn",
+      "migration-based_one": "Dựa trên migration · {{count}} tệp · cập nhật lên phiên bản {{version}}",
+      "migration-based_other": "Dựa trên migration · {{count}} tệp · cập nhật lên phiên bản {{version}}",
+      "no-approval": "Không cần phê duyệt",
+      "progress": "Tiến độ",
+      "rejected": "Bị từ chối",
+      "release": "Bản phát hành",
+      "review": "Duyệt",
+      "self": "Chi tiết",
+      "source": "Nguồn",
+      "state-based": "Dựa trên trạng thái · {{version}}",
+      "triggered": "Kích hoạt"
+    },
     "draft-update-permission-required": "Bạn có thể xem bản nháp này, nhưng cần bb.issues.update để chỉnh sửa nhãn vấn đề hoặc gửi đi xem xét.",
     "editor": {
       "save-changes-before-continuing": "Vui lòng lưu hoặc hủy thay đổi của bạn trước khi tiếp tục"
@@ -2049,6 +2073,8 @@
       "checking": "Đang kiểm tra…",
       "checks-failing": "Kiểm tra thất bại",
       "deployed": "Đã triển khai",
+      "deployed-with-skipped_one": "Đã triển khai, {{count}} tác vụ bị bỏ qua",
+      "deployed-with-skipped_other": "Đã triển khai, {{count}} tác vụ bị bỏ qua",
       "gate-automated-review-passed": "Đánh giá tự động đã đạt",
       "gate-checks-failed": "Một số kiểm tra không thành công",
       "gate-checks-failed-sub": "{{failing}} thất bại, {{passed}} thành công",
@@ -2623,6 +2649,13 @@
   "release": {
     "and-n-more-files": "và {{count}} tệp khác",
     "change-tip": "Thay đổi này được liên kết với một artifact phát hành.",
+    "changes": {
+      "manifest_one": "{{count}} tệp · mới nhất {{version}}",
+      "manifest_other": "{{count}} tệp · mới nhất {{version}}",
+      "n-more_one": "Thêm {{count}}",
+      "n-more_other": "Thêm {{count}}",
+      "schema": "Schema"
+    },
     "empty": {
       "description": "Các thay đổi mà pipeline CI của bạn phát hành lên Bytebase sẽ hiển thị ở đây cùng tiến độ triển khai.",
       "read-guide": "Đọc hướng dẫn GitOps",
@@ -2645,7 +2678,14 @@
     "vcs-type": {
       "unspecified": "VCS không xác định"
     },
-    "view-all-files": "Xem tất cả tệp"
+    "view-all-files": "Xem tất cả tệp",
+    "viewer": {
+      "already-applied": "Đã áp dụng; lần chạy này đã bỏ qua",
+      "applied-by-run": "Được áp dụng bởi lần chạy này",
+      "failed-on": "Thất bại ở {{stage}}",
+      "open-at-commit": "Mở trong {{platform}} tại {{sha}}",
+      "size": "{{size}} byte"
+    }
   },
   "remind": {
     "role-expire": {
@@ -4200,6 +4240,23 @@
     },
     "executed-by": "Người thực thi",
     "execution-time": "Thời gian thực thi",
+    "folded": {
+      "about-rows_one": "khoảng {{rows}} hàng",
+      "about-rows_other": "khoảng {{rows}} hàng",
+      "all-applied_one": "Đã áp dụng tất cả {{count}}",
+      "all-applied_other": "Đã áp dụng tất cả {{count}}",
+      "applied-earlier_one": "{{count}} đã áp dụng trước đó",
+      "applied-earlier_other": "{{count}} đã áp dụng trước đó",
+      "applying_one": "Đang áp dụng {{count}} tệp",
+      "applying_other": "Đang áp dụng {{count}} tệp",
+      "nothing-new": "Không có gì mới",
+      "nothing-to-apply": "Không có gì để áp dụng",
+      "scheduled": "đã lên lịch",
+      "skipped-by": "{{user}} đã bỏ qua",
+      "started": "bắt đầu lúc {{time}}",
+      "to-apply_one": "{{count}} cần áp dụng",
+      "to-apply_other": "{{count}} cần áp dụng"
+    },
     "no-cancelable-tasks": "Không có tác vụ nào có thể hủy",
     "no-permission": "Không có quyền thực hiện hành động này",
     "no-runnable-tasks": "Không có tác vụ nào có thể chạy được",
@@ -4222,6 +4279,7 @@
     "select-task": "Chọn tác vụ",
     "skip-prior-backup": "Bỏ qua sao lưu trước",
     "skip-prior-backup-description": "Bỏ qua sao lưu dữ liệu tự động trước khi áp dụng thay đổi",
+    "skip-reason-required": "Nhập lý do bỏ qua tác vụ.",
     "skip-task": "Bỏ qua nhiệm vụ | Bỏ qua nhiệm vụ",
     "skipped-no-reason": "Không có lý do",
     "started": "Bắt đầu",
@@ -4287,6 +4345,24 @@
       }
     },
     "run-number": "Lần chạy #{{number}}",
+    "spine": {
+      "already-applied": "{{count}} đã áp dụng",
+      "applied-sections": "{{count}} đã áp dụng",
+      "as-of": "Tính đến lúc tạo kế hoạch, {{time}}; lần chạy sẽ kiểm tra lại cơ sở dữ liệu.",
+      "no-statement": "Không xác định được câu lệnh cho lỗi này.",
+      "pending-sections": "Thêm {{count}}, sẽ áp dụng",
+      "revision-deleted": "Áp dụng lại: bản sửa đổi đã bị {{user}} xóa",
+      "revisions-on": "Các bản sửa đổi trên {{database}}",
+      "run-failed": "Chạy thất bại",
+      "status": {
+        "applied": "Đã áp dụng",
+        "canceled": "Đã hủy",
+        "failed": "Thất bại",
+        "running": "Đang chạy"
+      },
+      "will-apply": "Sẽ áp dụng",
+      "will-apply-again": "Sẽ áp dụng lại · bản sửa đổi đã bị {{user}} xóa vào {{date}}"
+    },
     "status": {
       "enqueued": "Đang chờ thực thi.",
       "enqueued-with-rollout-time": "Đang chờ thực thi sau {{time}}.",
