@@ -1,15 +1,16 @@
 import { create } from "@bufbuild/protobuf";
-import { ChevronDown, ChevronRight, Plus, X } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect } from "@/api";
 import { HumanizeTs } from "@/components/HumanizeTs";
-import {
-  buildSourceRow,
-  SOURCE_TITLE_LIMIT,
-} from "@/components/release/vcsSource";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Collapsible,
+  CollapsiblePanel,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   Popover,
   PopoverContent,
@@ -18,7 +19,11 @@ import {
 import { useReleaseByName } from "@/hooks/useAppState";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { cn } from "@/lib/utils";
-import { extractUserEmail, pushNotification } from "@/stores";
+import {
+  buildSourceRow,
+  SOURCE_TITLE_LIMIT,
+} from "@/routes/project/plan-detail/components/release/vcsSource";
+import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { Color } from "@/types/proto-es/google/type/color_pb";
@@ -34,20 +39,23 @@ import {
   type Release_VCSSource,
 } from "@/types/proto-es/v1/release_service_pb";
 import { colorToHex, hasProjectPermissionV2 } from "@/utils";
+import { displayRoleTitle } from "@/utils/role";
 import { PlanStages } from "../../PlanTable";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
+import { isDatabaseGroupName } from "../utils/phaseSummary";
 import { compareVersions } from "./changes/releaseChanges";
-import { statementKindOf } from "./deploy/foldedTaskDescription";
+import {
+  statementKindLabel,
+  statementKindOf,
+} from "./deploy/foldedTaskDescription";
+import { useUserDisplayName } from "./useUserDisplayName";
 
 export function PlanDetailMeta() {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
   const { patchState } = page;
   const project = page.project;
-  const creatorEmail = useMemo(
-    () => extractUserEmail(page.plan.creator),
-    [page.plan.creator]
-  );
+  const creatorName = useUserDisplayName(page.plan.creator || undefined);
   const createdTimeMs = getTimeForPbTimestampProtoEs(page.plan.createTime);
   const [detailsOpen, setDetailsOpen] = useState(true);
   const releaseName = page.plan.specs?.find(
@@ -60,16 +68,22 @@ export function PlanDetailMeta() {
   const release = useReleaseByName(releaseResource);
   const fetchRelease = useAppStore((state) => state.fetchRelease);
   useEffect(() => {
-    if (releaseResource) void fetchRelease(releaseResource);
+    if (releaseResource) {
+      fetchRelease(releaseResource, true).catch(() => {});
+    }
   }, [fetchRelease, releaseResource]);
   const changesSummary = useMemo(() => {
-    const targets = new Set(
-      (page.plan.specs ?? []).flatMap((spec) =>
-        spec.config?.case === "changeDatabaseConfig"
-          ? spec.config.value.targets
-          : []
-      )
-    );
+    const targets = [
+      ...new Set(
+        (page.plan.specs ?? []).flatMap((spec) =>
+          spec.config?.case === "changeDatabaseConfig"
+            ? spec.config.value.targets
+            : []
+        )
+      ),
+    ];
+    const groupCount = targets.filter(isDatabaseGroupName).length;
+    const databaseCount = targets.length - groupCount;
     const types = (page.planCheckRuns ?? []).flatMap((run) =>
       run.results.flatMap((result) =>
         result.report.case === "sqlSummaryReport"
@@ -78,21 +92,34 @@ export function PlanDetailMeta() {
       )
     );
     const kind = statementKindOf(types);
-    return kind
-      ? t("plan.details.changes-on", { kind, count: targets.size })
-      : t("plan.details.databases", { count: targets.size });
+    const databases = kind
+      ? t("plan.details.changes-on", {
+          kind: statementKindLabel(kind, t),
+          count: databaseCount,
+        })
+      : t("plan.details.databases", { count: databaseCount });
+    return groupCount > 0
+      ? `${databases} · ${t("plan.details.database-groups", { count: groupCount })}`
+      : databases;
   }, [page.plan.specs, page.planCheckRuns, t]);
+  // Approvers are recorded in the order of the approval flow's roles.
+  const flowRoles = page.issue?.approvalTemplate?.flow?.roles ?? [];
+  const approvedSteps = (page.issue?.approvers ?? []).filter(
+    (approver) => approver.status === Issue_Approver_Status.APPROVED
+  );
+  const lastApprover = approvedSteps.at(-1);
+  const lastApproverName = useUserDisplayName(lastApprover?.principal);
   const reviewSummary = useMemo(() => {
     const issue = page.issue;
     if (!issue) return "";
     switch (issue.approvalStatus) {
       case ApprovalStatus.APPROVED: {
-        const approver = [...issue.approvers]
-          .reverse()
-          .find((a) => a.status === Issue_Approver_Status.APPROVED);
-        return approver
+        const role = flowRoles[approvedSteps.length - 1];
+        return lastApprover
           ? t("plan.details.approved-by", {
-              user: approver.principal.replace(/^users\//, ""),
+              user: role
+                ? `${lastApproverName} (${displayRoleTitle(role)})`
+                : lastApproverName,
             })
           : t("plan.details.approved");
       }
@@ -100,10 +127,14 @@ export function PlanDetailMeta() {
         return t("plan.details.rejected");
       case ApprovalStatus.SKIPPED:
         return t("plan.details.no-approval");
-      default:
-        return t("plan.details.awaiting-approval");
+      default: {
+        const next = flowRoles[approvedSteps.length];
+        return next
+          ? t("plan.details.waiting-for", { role: displayRoleTitle(next) })
+          : t("plan.details.awaiting-approval");
+      }
     }
-  }, [page.issue, t]);
+  }, [page.issue, t, flowRoles, approvedSteps, lastApprover, lastApproverName]);
   const allowChangeLabels = useMemo(() => {
     if (!project || !page.issue || page.issue.status !== IssueStatus.OPEN) {
       return false;
@@ -153,10 +184,15 @@ export function PlanDetailMeta() {
   };
 
   const createdLine = (
-    <span className="flex flex-wrap items-center gap-x-1">
-      <span>{t("plan.meta.created-by", { user: creatorEmail })}</span>
+    <span
+      className="flex flex-wrap items-center gap-x-1"
+      data-testid="plan-detail-created"
+    >
+      <span>{creatorName}</span>
       {createdTimeMs !== undefined && (
         <>
+          <span aria-hidden="true">·</span>
+          <HumanizeTs mode="datetime" tsMs={createdTimeMs} />
           <span aria-hidden="true">·</span>
           <HumanizeTs tsMs={createdTimeMs} />
         </>
@@ -164,26 +200,35 @@ export function PlanDetailMeta() {
     </span>
   );
 
+  // Folded, the block keeps one line: the source title on a release plan,
+  // then the progress. The fold lives only while the page is open (D10).
+  const toggle = (
+    <CollapsibleTrigger
+      className="w-auto shrink-0 text-accent hover:underline"
+      data-testid="plan-details-toggle"
+    >
+      {detailsOpen
+        ? t("plan.phase.hide-details")
+        : t("plan.phase.show-details")}
+    </CollapsibleTrigger>
+  );
   return (
-    <div className="mt-1 flex flex-col gap-y-1 text-xs">
-      <Button
-        type="button"
-        appearance="secondary"
-        size="xs"
-        aria-expanded={detailsOpen}
-        className="h-auto self-start bg-transparent p-0 text-control-light hover:bg-transparent"
-        data-testid="plan-details-toggle"
-        onClick={() => setDetailsOpen((open) => !open)}
-      >
-        {detailsOpen ? (
-          <ChevronDown className="size-3.5" />
-        ) : (
-          <ChevronRight className="size-3.5" />
-        )}
-        {t("plan.details.self")}
-      </Button>
-      {detailsOpen && (
-        <dl className="grid grid-cols-[max-content_minmax(0,1fr)] gap-x-4 gap-y-1">
+    <Collapsible
+      open={detailsOpen}
+      onOpenChange={setDetailsOpen}
+      className="mt-1 flex flex-col gap-y-1 text-xs"
+      data-testid="plan-details"
+    >
+      {!detailsOpen && (
+        <div className="flex min-w-0 items-center gap-x-3">
+          {release && <SourceRowView source={release.vcsSource} titleOnly />}
+          <PlanStages plan={page.plan} />
+          <span className="flex-1" />
+          {toggle}
+        </div>
+      )}
+      <CollapsiblePanel className="flex items-start gap-x-3">
+        <dl className="grid min-w-0 flex-1 grid-cols-[max-content_minmax(0,1fr)] gap-x-4 gap-y-1">
           {release && (
             <DetailRow label={t("plan.details.source")} row="source">
               <SourceRowView source={release.vcsSource} />
@@ -237,8 +282,9 @@ export function PlanDetailMeta() {
             <PlanStages plan={page.plan} />
           </DetailRow>
         </dl>
-      )}
-    </div>
+        {toggle}
+      </CollapsiblePanel>
+    </Collapsible>
   );
 }
 
@@ -265,29 +311,44 @@ const newestVersion = (release: Release) =>
     .sort(compareVersions)
     .at(-1) ?? "";
 
-function SourceRowView({ source }: { source?: Release_VCSSource }) {
+function SourceRowView({
+  source,
+  titleOnly = false,
+}: {
+  source?: Release_VCSSource;
+  // The folded block keeps only the title.
+  titleOnly?: boolean;
+}) {
   const { t } = useTranslation();
   const narrow = useMediaQuery("(max-width: 639px)");
   const row = buildSourceRow(source);
   if (!row) return <span className="text-control-placeholder">-</span>;
+  const text = row.title ?? row.repoAtSha ?? row.href;
   const truncated =
-    row.title && row.title.length > SOURCE_TITLE_LIMIT
-      ? `${row.title.slice(0, SOURCE_TITLE_LIMIT)}…`
-      : row.title;
-  const link = (text: string, full?: string) => (
-    <a
-      className="truncate text-accent hover:underline"
-      data-testid="source-part"
-      href={row.href}
-      rel="noopener noreferrer"
-      target="_blank"
-      title={full}
-    >
-      {text}
-    </a>
-  );
+    text && text.length > SOURCE_TITLE_LIMIT
+      ? `${text.slice(0, SOURCE_TITLE_LIMIT)}…`
+      : text;
+  const head = truncated ? (
+    row.href ? (
+      <a
+        className="truncate text-accent hover:underline"
+        data-testid="source-part"
+        href={row.href}
+        rel="noopener noreferrer"
+        target="_blank"
+        title={text}
+      >
+        {truncated}
+      </a>
+    ) : (
+      <span className="truncate" data-testid="source-part" title={text}>
+        {truncated}
+      </span>
+    )
+  ) : null;
+  if (titleOnly) return head;
   const rest = [
-    row.title && row.author
+    row.author
       ? t("plan.details.by-author", { author: row.author })
       : undefined,
     row.title ? row.repoAtSha : undefined,
@@ -295,11 +356,7 @@ function SourceRowView({ source }: { source?: Release_VCSSource }) {
   ].filter((part): part is string => Boolean(part));
   return (
     <span className="flex min-w-0 flex-wrap items-center gap-x-1">
-      {row.title
-        ? link(truncated ?? "", row.title)
-        : row.repoAtSha
-          ? link(row.repoAtSha)
-          : null}
+      {head}
       {rest.length > 0 && (
         <span
           className={cn(
@@ -307,9 +364,11 @@ function SourceRowView({ source }: { source?: Release_VCSSource }) {
             narrow && "basis-full text-control-light"
           )}
         >
-          {rest.map((part) => (
+          {rest.map((part, index) => (
             <span key={part} className="flex items-center gap-x-1">
-              {!narrow && <span aria-hidden="true">·</span>}
+              {(!narrow || index > 0) && head !== null && (
+                <span aria-hidden="true">·</span>
+              )}
               <span data-testid="source-part">{part}</span>
             </span>
           ))}

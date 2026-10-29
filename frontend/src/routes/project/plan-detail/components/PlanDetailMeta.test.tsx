@@ -18,12 +18,13 @@ const mocks = vi.hoisted(() => ({
   setCreationIssueLabels: vi.fn(),
   updateIssue: vi.fn(),
   release: undefined as unknown,
+  fetchRelease: vi.fn(),
 }));
 vi.mock("@/hooks/useAppState", () => ({
   useReleaseByName: () => mocks.release,
 }));
 vi.mock("@/stores/app", () => {
-  const state = () => ({ fetchRelease: vi.fn(async () => mocks.release) });
+  const state = () => ({ fetchRelease: mocks.fetchRelease });
   const useAppStore = (selector?: (s: unknown) => unknown) =>
     selector ? selector(state()) : state();
   useAppStore.getState = state;
@@ -35,6 +36,16 @@ vi.mock("../../PlanTable", () => ({
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
+  initReactI18next: { type: "3rdParty", init: () => {} },
+}));
+vi.mock("./useUserDisplayName", () => ({
+  useUserDisplayName: (name?: string) =>
+    ({ "users/ci@example.com": "Shop CI", "users/alex@example.com": "Alex Doe" })[
+      name ?? ""
+    ] ?? (name ?? "").replace(/^users\//, ""),
+}));
+vi.mock("@/utils/role", () => ({
+  displayRoleTitle: (role: string) => role.replace(/^roles\//, ""),
 }));
 
 vi.mock("@bufbuild/protobuf", () => ({
@@ -163,6 +174,7 @@ beforeEach(() => {
   });
   vi.clearAllMocks();
   mocks.release = undefined;
+  mocks.fetchRelease.mockImplementation(async () => mocks.release);
   mocks.creationIssueLabels = [];
   mocks.page = makePage();
   mocks.permissions = new Set();
@@ -464,13 +476,112 @@ test("a title with markdown and control characters renders as plain text", () =>
   expect(link.querySelector("strong, code")).toBeNull();
 });
 
-test("the details block can be folded and starts unfolded", () => {
-  mocks.page = releasePage(githubSource);
-  render(<PlanDetailMeta />);
+test("the details block opens unfolded and folds to the source title and the progress", () => {
+  mocks.page = releasePage({ ...githubSource, commitTitle: "Add the orders table" });
+  const { unmount } = render(<PlanDetailMeta />);
   const toggle = screen.getByTestId("plan-details-toggle");
-  expect(toggle.getAttribute("aria-expanded")).toBe("true");
+  expect(toggle.textContent).toBe("plan.phase.hide-details");
   expect(rows()).not.toHaveLength(0);
   fireEvent.click(toggle);
-  expect(toggle.getAttribute("aria-expanded")).toBe("false");
   expect(rows()).toHaveLength(0);
+  const block = screen.getByTestId("plan-details");
+  expect(block.textContent).toContain("Add the orders table");
+  expect(screen.getByTestId("stage-cells")).toBeDefined();
+  expect(screen.getByTestId("plan-details-toggle").textContent).toBe("plan.phase.show-details");
+  fireEvent.click(screen.getByTestId("plan-details-toggle"));
+  expect(rows()).not.toHaveLength(0);
+  fireEvent.click(screen.getByTestId("plan-details-toggle"));
+  unmount();
+  // Another plan, or this one reloaded, starts unfolded again.
+  render(<PlanDetailMeta />);
+  expect(rows()).not.toHaveLength(0);
+});
+
+test("a UIOps plan's folded block keeps only the progress", () => {
+  mocks.page = {
+    ...makePage(),
+    plan: { ...makePage().plan, specs: [], rolloutStageSummaries: [] },
+    planCheckRuns: [],
+  } as unknown as PlanDetailPageState;
+  render(<PlanDetailMeta />);
+  fireEvent.click(screen.getByTestId("plan-details-toggle"));
+  expect(screen.getByTestId("stage-cells")).toBeDefined();
+  expect(screen.queryAllByTestId("source-part")).toHaveLength(0);
+});
+
+test("Triggered names the creator by display name, with the creation time", () => {
+  mocks.page = releasePage(githubSource);
+  render(<PlanDetailMeta />);
+  const created = screen.getByTestId("plan-detail-created").textContent ?? "";
+  expect(created).toContain("Shop CI");
+  expect(created).not.toContain("ci@example.com");
+});
+
+test("Review names the last approver with their role, or the role that is next", () => {
+  const issue = {
+    ...makePage().issue,
+    approvalStatus: 3,
+    approvalTemplate: { flow: { roles: ["roles/projectOwner", "roles/workspaceDBA"] } },
+    approvers: [
+      { status: 2, principal: "users/owner@example.com" },
+      { status: 2, principal: "users/alex@example.com" },
+    ],
+  };
+  mocks.page = { ...makePage(), issue, plan: { ...makePage().plan, specs: [], rolloutStageSummaries: [] }, planCheckRuns: [] } as unknown as PlanDetailPageState;
+  const { unmount } = render(<PlanDetailMeta />);
+  const review = () =>
+    screen.getAllByTestId("plan-detail-row").find((row) => row.getAttribute("data-row") === "review")!;
+  expect(review().textContent).toContain("plan.details.approved-by");
+  unmount();
+  mocks.page = {
+    ...mocks.page,
+    issue: { ...issue, approvalStatus: 2, approvers: [{ status: 2, principal: "users/owner@example.com" }] },
+  } as unknown as PlanDetailPageState;
+  render(<PlanDetailMeta />);
+  expect(review().textContent).toContain("plan.details.waiting-for");
+});
+
+test("the Changes row counts databases and database groups apart", () => {
+  mocks.page = {
+    ...makePage(),
+    plan: {
+      ...makePage().plan,
+      specs: [
+        {
+          config: {
+            case: "changeDatabaseConfig",
+            value: { targets: ["instances/i/databases/a", "projects/p1/databaseGroups/g1"] },
+          },
+        },
+      ],
+      rolloutStageSummaries: [],
+    },
+    planCheckRuns: [],
+  } as unknown as PlanDetailPageState;
+  render(<PlanDetailMeta />);
+  const changes = screen
+    .getAllByTestId("plan-detail-row")
+    .find((row) => row.getAttribute("data-row") === "changes")!;
+  expect(changes.textContent).toBe("plan.details.changesplan.details.databases · plan.details.database-groups");
+});
+
+test.each([
+  ["only a URL", { url: "https://git.example.com/app/commit/77aa" }, ["https://git.example.com/app/commit/77aa"]],
+  ["a title, an author and a ref with no URL", { url: "", commitTitle: "Release train 12", authorName: "Alex Doe", branch: "main" }, ["Release train 12", "plan.details.by-author", "main"]],
+])("an undetected CI's Source row shows what the flags passed: %s", (_, source, parts) => {
+  mocks.page = releasePage({ vcsType: 0, ...source });
+  render(<PlanDetailMeta />);
+  const texts = Array.from(sourceRow().querySelectorAll('[data-testid="source-part"]')).map(
+    (part) => part.textContent
+  );
+  expect(texts).toEqual(parts);
+});
+
+test("the release is fetched silently, and a failed fetch is swallowed", async () => {
+  mocks.page = releasePage(githubSource);
+  mocks.fetchRelease.mockRejectedValue(new Error("permission denied"));
+  render(<PlanDetailMeta />);
+  await waitFor(() =>
+    expect(mocks.fetchRelease).toHaveBeenCalledWith("projects/p1/releases/r1", true)
+  );
 });

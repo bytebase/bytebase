@@ -4,7 +4,12 @@ import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from "vi
 import i18n from "@/lib/i18n";
 import { VCSType } from "@/types/proto-es/v1/common_pb";
 import { Release_VCSSourceSchema } from "@/types/proto-es/v1/release_service_pb";
-import { ReleaseFileViewer, type ReleaseFileViewerTarget } from "./ReleaseFileViewer";
+import {
+  ReleaseFileViewer,
+  ReleaseFileViewerProvider,
+  type ReleaseFileViewerTarget,
+  useOpenReleaseFile,
+} from "./ReleaseFileViewer";
 
 const mocks = vi.hoisted(() => ({
   fetchSheet: vi.fn(),
@@ -19,12 +24,24 @@ vi.mock("@/stores/app", () => {
   return { useAppStore };
 });
 
-vi.mock("@/components/monaco", () => ({
-  ReadonlyMonaco: (props: { content: string; advices?: unknown[] }) => {
-    mocks.editorProps.push(props);
-    return <pre data-testid="editor">{props.content}</pre>;
-  },
-}));
+vi.mock("@/components/monaco", async () => {
+  const React = await vi.importActual<typeof import("react")>("react");
+  return {
+    // Reports ready after mount, as the real editor does once Monaco loads.
+    ReadonlyMonaco: (props: {
+      content: string;
+      advices?: unknown[];
+      onReady?: (monaco: unknown, editor: unknown) => void;
+    }) => {
+      mocks.editorProps.push(props);
+      const { onReady } = props;
+      React.useEffect(() => {
+        onReady?.({}, { revealLineInCenter: () => {} });
+      }, [onReady]);
+      return <pre data-testid="editor">{props.content}</pre>;
+    },
+  };
+});
 
 const STATEMENT = "SELECT 'é';\nALTER TABLE t ADD c INT;";
 const sheetOf = (content: string) => {
@@ -132,7 +149,7 @@ describe("ReleaseFileViewer", () => {
     await flush();
     expect(screen.getByTestId("release-file-database-line").textContent).toBe("Applied by this run");
     rerender(
-      <ReleaseFileViewer target={target({ context: { kind: "already-applied" } })} onClose={() => {}} />
+      <ReleaseFileViewer target={target({ context: { kind: "already-applied", run: true } })} onClose={() => {}} />
     );
     expect(screen.getByTestId("release-file-database-line").textContent).toBe(
       "Already applied; this run passed over it"
@@ -203,5 +220,56 @@ describe("ReleaseFileViewer", () => {
     await flush();
     fireEvent.keyDown(screen.getByTestId("release-file-viewer"), { key: "Escape" });
     expect(onClose).toHaveBeenCalled();
+  });
+
+  test("before any run, the already-applied line names no run", async () => {
+    render(<ReleaseFileViewer target={target({ context: { kind: "already-applied", run: false } })} onClose={() => {}} />);
+    await flush();
+    expect(screen.getByTestId("release-file-database-line").textContent).toBe(
+      "Already applied before this rollout"
+    );
+  });
+
+  test("a sheet that cannot be loaded says so instead of loading forever", async () => {
+    mocks.fetchSheet.mockRejectedValue(new Error("permission denied"));
+    render(<ReleaseFileViewer target={target()} onClose={() => {}} />);
+    await flush();
+    expect(screen.getByTestId("release-file-statement-state").textContent).toBe(
+      "The file's statement could not be loaded."
+    );
+    const { unmount } = render(
+      <ReleaseFileViewer
+        target={target({ file: { version: "009", path: "x.sql", sheet: "" } })}
+        onClose={() => {}}
+      />
+    );
+    await flush();
+    expect(screen.getAllByTestId("release-file-statement-state").at(-1)?.textContent).toBe(
+      "The file's statement could not be loaded."
+    );
+    unmount();
+  });
+
+  test("the page has one viewer: a file opened from anywhere swaps its content", async () => {
+    const Opener = ({ path }: { path: string }) => {
+      const open = useOpenReleaseFile();
+      return (
+        <button type="button" onClick={() => open?.({ file: { version: path, path, sheet: `projects/p/sheets/${path}` } })}>
+          {`open ${path}`}
+        </button>
+      );
+    };
+    render(
+      <ReleaseFileViewerProvider>
+        <Opener path="a.sql" />
+        <Opener path="b.sql" />
+      </ReleaseFileViewerProvider>
+    );
+    fireEvent.click(screen.getByRole("button", { name: "open a.sql" }));
+    await flush();
+    fireEvent.click(screen.getByRole("button", { name: "open b.sql" }));
+    await flush();
+    expect(screen.getAllByTestId("release-file-viewer")).toHaveLength(1);
+    expect(screen.getByTestId("release-file-viewer").textContent).toContain("b.sql");
   });
 });

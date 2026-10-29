@@ -2017,6 +2017,8 @@
       "changes-on_one": "{{kind}} on {{count}} database",
       "changes-on_other": "{{kind}} on {{count}} databases",
       "created": "Created",
+      "database-groups_one": "{{count}} database group",
+      "database-groups_other": "{{count}} database groups",
       "databases_one": "{{count}} database",
       "databases_other": "{{count}} databases",
       "labels": "Labels",
@@ -2027,10 +2029,10 @@
       "rejected": "Rejected",
       "release": "Release",
       "review": "Review",
-      "self": "Details",
       "source": "Source",
       "state-based": "State-based · {{version}}",
-      "triggered": "Triggered"
+      "triggered": "Triggered",
+      "waiting-for": "Waiting for {{role}}"
     },
     "draft-update-permission-required": "You can view this draft, but you need bb.issues.update to edit issue labels or submit it for review.",
     "editor": {
@@ -2095,9 +2097,6 @@
       "run": "Run"
     },
     "list-description": "Change requests created in the UI and their deploy progress.",
-    "meta": {
-      "created-by": "Created by {{user}}"
-    },
     "navigator": {
       "changes": "Changes",
       "checks": "Checks",
@@ -2681,10 +2680,12 @@
     "view-all-files": "View all files",
     "viewer": {
       "already-applied": "Already applied; this run passed over it",
+      "already-applied-before-run": "Already applied before this rollout",
       "applied-by-run": "Applied by this run",
       "failed-on": "Failed on {{stage}}",
       "open-at-commit": "Open in {{platform}} at {{sha}}",
-      "size": "{{size}} bytes"
+      "size": "{{size}} bytes",
+      "statement-unavailable": "The file's statement could not be loaded."
     }
   },
   "remind": {
@@ -4249,6 +4250,9 @@
       "applied-earlier_other": "{{count}} applied earlier",
       "applying_one": "Applying {{count}} file",
       "applying_other": "Applying {{count}} files",
+      "kind-ddl": "DDL",
+      "kind-dml": "DML",
+      "kind-mixed": "Mixed",
       "nothing-new": "Nothing new",
       "nothing-to-apply": "Nothing to apply",
       "scheduled": "scheduled",
@@ -4348,10 +4352,10 @@
     "spine": {
       "already-applied": "{{count}} already applied",
       "applied-sections": "{{count}} applied",
-      "as-of": "As of plan creation, {{time}}; the run re-checks the database.",
+      "as-of": "As of rollout creation, {{time}}; the run re-checks the database.",
       "no-statement": "No statement was identified for this error.",
       "pending-sections": "{{count}} more, will apply",
-      "revision-deleted": "Applied again: its revision was deleted by {{user}}",
+      "revision-deleted": "Revision deleted {{date}} by {{user}}",
       "revisions-on": "Revisions on {{database}}",
       "run-failed": "Run failed",
       "status": {

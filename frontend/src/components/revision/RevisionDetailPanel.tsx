@@ -1,8 +1,7 @@
-import { create } from "@bufbuild/protobuf";
 import { ArrowUpRight, LoaderCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { rolloutServiceClientConnect, sheetServiceClientConnect } from "@/api";
+import { sheetServiceClientConnect } from "@/api";
 import { HumanizeTs } from "@/components/HumanizeTs";
 import { ReadonlyMonaco } from "@/components/monaco";
 import { RouterLink } from "@/components/RouterLink";
@@ -12,10 +11,6 @@ import { CopyButton } from "@/components/ui/copy-button";
 import { useRevisionByName } from "@/hooks/useAppState";
 import { useAppStore } from "@/stores/app";
 import { getTimeForPbTimestampProtoEs } from "@/types";
-import {
-  GetTaskRunRequestSchema,
-  type TaskRun,
-} from "@/types/proto-es/v1/rollout_service_pb";
 import { bytesToString } from "@/utils";
 import { extractProjectResourceName } from "@/utils/v1/project";
 import { extractTaskLink, getRevisionType } from "@/utils/v1/revision";
@@ -115,25 +110,6 @@ export function RevisionDetailPanel({
     return t("revision.statement-withheld.unknown-owner");
   })();
 
-  // The run's status and error give a release run's log its spine: the
-  // sections of that run, without the task's stored state.
-  const [taskRun, setTaskRun] = useState<TaskRun>();
-  const taskRunName = revision?.taskRun ?? "";
-  useEffect(() => {
-    if (!taskRunName) return;
-    let canceled = false;
-    rolloutServiceClientConnect
-      .getTaskRun(create(GetTaskRunRequestSchema, { name: taskRunName }))
-      .then((run) => {
-        if (!canceled) setTaskRun(run);
-      })
-      .catch(() => {
-        // Without the run the log renders without the spine.
-      });
-    return () => {
-      canceled = true;
-    };
-  }, [taskRunName]);
   const taskFullLink = revision?.taskRun
     ? extractTaskLink(revision.taskRun)
     : "";
@@ -187,11 +163,7 @@ export function RevisionDetailPanel({
                   </RouterLink>
                 ) : null}
               </div>
-              <TaskRunLogViewer
-                taskRunName={revision.taskRun}
-                taskRunStatus={taskRun?.status}
-                runError={taskRun?.detail}
-              />
+              <TaskRunLogViewer taskRunName={revision.taskRun} />
             </div>
           ) : null}
 

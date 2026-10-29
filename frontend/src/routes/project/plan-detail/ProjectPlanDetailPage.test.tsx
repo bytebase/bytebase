@@ -71,6 +71,10 @@ vi.mock("@/lib/utils", () => ({
     classes.filter(Boolean).join(" "),
 }));
 
+vi.mock("./components/release/ReleaseFileViewer", () => ({
+  ReleaseFileViewerProvider: ({ children }: { children: ReactNode }) => children,
+  useOpenReleaseFile: () => undefined,
+}));
 vi.mock("./components/deploy/DeployBranch", () => ({
   DeployBranch: () => <div data-testid="deploy-branch">deploy branch</div>,
 }));

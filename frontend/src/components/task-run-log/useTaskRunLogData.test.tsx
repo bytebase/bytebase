@@ -9,6 +9,7 @@ import {
   TaskRunLogEntrySchema,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
+import { silentContextKey } from "@/api/context-key";
 import type { UseTaskRunLogDataResult } from "./useTaskRunLogData";
 import { useTaskRunLogData } from "./useTaskRunLogData";
 
@@ -22,11 +23,15 @@ const mocks = vi.hoisted(() => ({
   fetchSheet: vi.fn(),
   getSheetByName: vi.fn(),
   getTaskRunLog: vi.fn(),
+  getTaskRun: vi.fn(),
   rolloutsByName: {} as Record<string, unknown>,
 }));
 
 vi.mock("@/api", () => ({
-  rolloutServiceClientConnect: { getTaskRunLog: mocks.getTaskRunLog },
+  rolloutServiceClientConnect: {
+    getTaskRunLog: mocks.getTaskRunLog,
+    getTaskRun: mocks.getTaskRun,
+  },
 }));
 
 vi.mock("@/stores/app", () => {
@@ -121,6 +126,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.rolloutsByName = {};
   mocks.getTaskRunLog.mockResolvedValue({ entries: [] });
+  mocks.getTaskRun.mockResolvedValue(undefined);
   mocks.getSheetByName.mockReturnValue(undefined);
   mocks.fetchSheet.mockResolvedValue(undefined);
   mocks.fetchRolloutByName.mockResolvedValue(makeRolloutWithTask());
@@ -457,6 +463,29 @@ describe("useTaskRunLogData release sheets", () => {
       "projects/p/sheets/s0500",
     ]);
     expect(hook.result().release?.files).toHaveLength(500);
+    hook.unmount();
+  });
+});
+
+describe("useTaskRunLogData run lookup", () => {
+  test("a caller with no status gets the run, fetched silently", async () => {
+    const name = `${TASK_NAME}/taskRuns/no-status`;
+    mocks.getTaskRun.mockResolvedValue({ name, status: TaskRun_Status.FAILED, detail: "boom" });
+    const hook = renderHook(name);
+    await hook.flush();
+    expect(mocks.getTaskRun).toHaveBeenCalledTimes(1);
+    const options = mocks.getTaskRun.mock.calls[0][1] as {
+      contextValues: { get: (key: unknown) => unknown };
+    };
+    expect(options.contextValues.get(silentContextKey)).toBe(true);
+    expect(hook.result().taskRun?.detail).toBe("boom");
+    hook.unmount();
+  });
+
+  test("a caller that passes the status triggers no run lookup", async () => {
+    const hook = renderHook(`${TASK_NAME}/taskRuns/with-status`, TaskRun_Status.DONE);
+    await hook.flush();
+    expect(mocks.getTaskRun).not.toHaveBeenCalled();
     hook.unmount();
   });
 });

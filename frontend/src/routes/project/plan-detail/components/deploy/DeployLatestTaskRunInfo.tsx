@@ -1,4 +1,5 @@
 import { Clock3, History, User } from "lucide-react";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { HumanizeTs } from "@/components/HumanizeTs";
 import { TaskRunStatusIcon } from "@/components/TaskRunStatusIcon";
@@ -34,7 +35,6 @@ export function DeployLatestTaskRunInfo({
   onOpenFile,
   onShowHistory,
   releaseState,
-  showsSpine = false,
   taskRun,
 }: {
   // When false, the card's stage is hidden (kept mounted); pause the live log
@@ -46,12 +46,15 @@ export function DeployLatestTaskRunInfo({
   onOpenFile?: OpenReleaseFile;
   onShowHistory: () => void;
   releaseState?: Task_ReleaseState;
-  // A versioned release task: its spine carries the run's error on the
-  // section it belongs to, so the separate alert goes.
-  showsSpine?: boolean;
   taskRun: TaskRun;
 }) {
   const { t } = useTranslation();
+  // Stable across renders, so the memoized log viewer re-renders only when
+  // the run changes.
+  const errorAlert = useMemo(
+    () => <TaskRunErrorAlert taskRun={taskRun} />,
+    [taskRun]
+  );
   const updateDate = getDateForPbTimestampProtoEs(taskRun.updateTime);
   const executorEmail = executorEmailOfTaskRun(taskRun);
   const showSession =
@@ -115,8 +118,6 @@ export function DeployLatestTaskRunInfo({
         )}
       </div>
 
-      {!showsSpine && <TaskRunErrorAlert taskRun={taskRun} />}
-
       {/* Status is part of the key on purpose: a status flip (RUNNING→DONE)
           remounts the viewer for a fresh disclosure state on the new phase.
           The remount paints fully formed — useTaskRunLogData seeds from its
@@ -130,6 +131,7 @@ export function DeployLatestTaskRunInfo({
         runError={taskRun.detail}
         releaseState={releaseState}
         onOpenFile={onOpenFile}
+        errorAlert={errorAlert}
       />
 
       {showSession && (

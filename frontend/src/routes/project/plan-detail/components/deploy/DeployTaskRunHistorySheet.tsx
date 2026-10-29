@@ -159,7 +159,6 @@ function TaskRunHistoryItem({
       </Button>
       {isExpanded && (
         <div className="flex flex-col gap-2 border-t p-3">
-          <TaskRunErrorAlert taskRun={taskRun} />
           {/* Status is part of the key (as in the latest-run panel): a
               RUNNING -> DONE flip remounts the viewer so useTaskRunLogData's
               unmount cleanup invalidates the in-flight RUNNING log request,
@@ -168,6 +167,8 @@ function TaskRunHistoryItem({
             key={`logs-${taskRun.name}-${taskRun.status}`}
             taskRunName={taskRun.name}
             taskRunStatus={taskRun.status}
+            runError={taskRun.detail}
+            errorAlert={<TaskRunErrorAlert taskRun={taskRun} />}
           />
         </div>
       )}

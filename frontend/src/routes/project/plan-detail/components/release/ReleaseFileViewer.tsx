@@ -1,9 +1,18 @@
 import { ExternalLink } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { ReadonlyMonaco } from "@/components/monaco";
 import type { AdviceOption } from "@/components/monaco/types";
 import type { ReleaseFileOpenContext } from "@/components/task-run-log/ReleaseSpineView";
+import { Alert } from "@/components/ui/alert";
 import { buttonVariants } from "@/components/ui/button";
 import { CopyButton } from "@/components/ui/copy-button";
 import {
@@ -75,19 +84,23 @@ export function ReleaseFileViewer({
   const sidePanel = useMediaQuery(SIDE_PANEL_MEDIA_QUERY);
   const fetchSheet = useAppStore((state) => state.fetchSheet);
   const sheetName = target?.file.sheet ?? "";
+  // `value` is undefined once the fetch has settled without a sheet.
   const [sheet, setSheet] = useState<{ name: string; value?: SheetMessage }>();
 
   useEffect(() => {
     if (!sheetName) return;
     let canceled = false;
-    void fetchSheet(sheetName, true).then((value) => {
-      if (!canceled) setSheet({ name: sheetName, value });
-    });
+    void fetchSheet(sheetName, true)
+      .catch(() => undefined)
+      .then((value) => {
+        if (!canceled) setSheet({ name: sheetName, value });
+      });
     return () => {
       canceled = true;
     };
   }, [fetchSheet, sheetName]);
 
+  const settled = !sheetName || sheet?.name === sheetName;
   const loaded = sheet?.name === sheetName ? sheet.value : undefined;
   const statement = useMemo(
     () => (loaded ? new TextDecoder().decode(loaded.content) : ""),
@@ -95,10 +108,26 @@ export function ReleaseFileViewer({
   );
   const context = target?.context;
   const failed = context?.kind === "failed" ? context : undefined;
-  const diagnostic =
-    failed?.range && statement
-      ? diagnosticOf(statement, failed.error, failed.range)
-      : undefined;
+  const failedError = failed?.error ?? "";
+  const rangeStart = failed?.range?.start;
+  const rangeEnd = failed?.range?.end;
+  const diagnostic = useMemo(
+    () =>
+      rangeStart !== undefined && rangeEnd !== undefined && statement
+        ? diagnosticOf(statement, failedError, {
+            start: rangeStart,
+            end: rangeEnd,
+          })
+        : undefined,
+    [statement, failedError, rangeStart, rangeEnd]
+  );
+  // The editor draws advices only when the prop changes after it exists, so
+  // the diagnostic is handed over once the editor is ready.
+  const [editorReady, setEditorReady] = useState(false);
+  const advices = useMemo(
+    () => (diagnostic && editorReady ? [diagnostic] : []),
+    [diagnostic, editorReady]
+  );
   const commit = parseRepoCommit(vcsSource);
   const link = target
     ? fileAtCommitUrl(vcsSource, target.file.path)
@@ -108,7 +137,9 @@ export function ReleaseFileViewer({
     context?.kind === "applied"
       ? t("release.viewer.applied-by-run")
       : context?.kind === "already-applied"
-        ? t("release.viewer.already-applied")
+        ? context.run
+          ? t("release.viewer.already-applied")
+          : t("release.viewer.already-applied-before-run")
         : undefined;
 
   return (
@@ -139,7 +170,7 @@ export function ReleaseFileViewer({
                   <span className="shrink-0 tabular-nums text-control-light">
                     {target.file.version}
                   </span>
-                  <SheetTitle className="truncate font-mono text-base">
+                  <SheetTitle className="truncate font-mono">
                     {target.file.path}
                   </SheetTitle>
                   <CopyButton content={target.file.path} />
@@ -181,12 +212,9 @@ export function ReleaseFileViewer({
             </SheetHeader>
             <SheetBody className="flex flex-col gap-2">
               {failed && !diagnostic && failed.error ? (
-                <div
-                  className="whitespace-pre-wrap rounded-xs border border-error/40 bg-error/10 px-3 py-2 text-sm text-error"
-                  data-testid="release-file-error"
-                >
-                  {failed.error}
-                </div>
+                <Alert variant="error" data-testid="release-file-error">
+                  <span className="whitespace-pre-wrap">{failed.error}</span>
+                </Alert>
               ) : null}
               {loaded ? (
                 <div className="relative">
@@ -196,10 +224,11 @@ export function ReleaseFileViewer({
                   <ReadonlyMonaco
                     className="rounded-sm border text-sm"
                     content={statement}
-                    advices={diagnostic ? [diagnostic] : []}
+                    advices={advices}
                     max={10000}
                     options={{ wordWrap: sidePanel ? "off" : "on" }}
                     onReady={(_monaco, editor) => {
+                      setEditorReady(true);
                       if (diagnostic) {
                         editor.revealLineInCenter(diagnostic.startLineNumber);
                       }
@@ -207,8 +236,13 @@ export function ReleaseFileViewer({
                   />
                 </div>
               ) : (
-                <div className="text-sm text-control-light">
-                  {t("common.loading")}
+                <div
+                  className="text-sm text-control-light"
+                  data-testid="release-file-statement-state"
+                >
+                  {settled
+                    ? t("release.viewer.statement-unavailable")
+                    : t("common.loading")}
                 </div>
               )}
             </SheetBody>
@@ -218,3 +252,42 @@ export function ReleaseFileViewer({
     </Sheet>
   );
 }
+
+type OpenReleaseFileTarget = (
+  target: ReleaseFileViewerTarget,
+  vcsSource?: Release_VCSSource
+) => void;
+
+const ReleaseFileViewerContext = createContext<
+  OpenReleaseFileTarget | undefined
+>(undefined);
+
+// One viewer for the whole plan page: opening another file, from Changes or
+// any task, swaps its content (D8).
+export function ReleaseFileViewerProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const [opened, setOpened] = useState<{
+    target: ReleaseFileViewerTarget;
+    vcsSource?: Release_VCSSource;
+  }>();
+  const open = useCallback<OpenReleaseFileTarget>(
+    (target, vcsSource) => setOpened({ target, vcsSource }),
+    []
+  );
+  return (
+    <ReleaseFileViewerContext.Provider value={open}>
+      {children}
+      <ReleaseFileViewer
+        target={opened?.target}
+        vcsSource={opened?.vcsSource}
+        onClose={() => setOpened(undefined)}
+      />
+    </ReleaseFileViewerContext.Provider>
+  );
+}
+
+// Undefined outside a plan page: file paths then render as plain text.
+export const useOpenReleaseFile = () => useContext(ReleaseFileViewerContext);

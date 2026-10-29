@@ -148,6 +148,8 @@ describe("Skip dialog", () => {
     renderPanel(tasks);
     const reason = await screen.findByRole("textbox");
     await waitFor(() => expect(confirmButton()).toHaveProperty("disabled", true));
+    // The reason's error sits with the field, not only on the disabled button.
+    expect(within(screen.getByTestId("skip-reason-field")).getByText("Enter why the task is skipped.")).toBeDefined();
     fireEvent.change(reason, { target: { value: "fixed in git" } });
     await waitFor(() => expect(confirmButton()).toHaveProperty("disabled", false));
     fireEvent.click(confirmButton());

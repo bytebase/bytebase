@@ -42,10 +42,9 @@ vi.mock("@/api", () => ({
   sheetServiceClientConnect: {},
   releaseServiceClientConnect: { getRelease: mocks.getRelease },
 }));
-vi.mock("@/components/release/ReleaseFileViewer", () => ({
-  ReleaseFileViewer: ({ target }: { target?: { file: { path: string } } }) => {
+vi.mock("./release/ReleaseFileViewer", () => ({
+  useOpenReleaseFile: () => (target: unknown) => {
     mocks.openedFile = target;
-    return target ? <div data-testid="viewer">{target.file.path}</div> : null;
   },
 }));
 
@@ -568,7 +567,7 @@ test("a backfilled low version lands in its own old group, not on top", async ()
 test("a file path opens the viewer with no database context", async () => {
   const view = await renderRail(["001", "002"].map((v) => fileOf(v)));
   fireEvent.click(view.getByRole("button", { name: "migrations/002.sql" }));
-  expect(view.getByTestId("viewer").textContent).toBe("migrations/002.sql");
+  expect((mocks.openedFile as { file: { path: string } }).file.path).toBe("migrations/002.sql");
   expect((mocks.openedFile as { context?: unknown }).context).toBeUndefined();
 });
 
@@ -579,5 +578,5 @@ test("a declarative release is one line: the schema at its version, with Open", 
   expect(line.textContent).toContain("schema/schema.sql");
   expect(line.textContent).toContain("20261005");
   fireEvent.click(view.getByRole("button", { name: "common.open" }));
-  expect(view.getByTestId("viewer").textContent).toBe("schema/schema.sql");
+  expect((mocks.openedFile as { file: { path: string } }).file.path).toBe("schema/schema.sql");
 });

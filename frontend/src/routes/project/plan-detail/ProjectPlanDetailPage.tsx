@@ -26,6 +26,7 @@ import { PlanDetailDeployFuture } from "./components/PlanDetailDeployFuture";
 import { PlanDetailDeployWaiting } from "./components/PlanDetailDeployWaiting";
 import { PlanDetailHeader } from "./components/PlanDetailHeader";
 import { PlanDetailHeaderDetails } from "./components/PlanDetailHeaderDetails";
+import { ReleaseFileViewerProvider } from "./components/release/ReleaseFileViewer";
 import { PlanReviewSection } from "./components/review/PlanReviewSection";
 import { useUnresolvedThreadTotal } from "./components/threads/useUnresolvedThreadCounts";
 import { useIssueCommentThreadsSync } from "./hooks/useIssueCommentThreadsSync";
@@ -172,80 +173,82 @@ function ProjectPlanDetailPageInner({
 
   return (
     <PlanDetailProvider value={page}>
-      <SqlReviewV2Provider>
-        <div
-          ref={setPageHost}
-          data-testid="plan-detail-page"
-          className="relative min-h-full overflow-x-clip bg-control-bg/50"
-        >
+      <ReleaseFileViewerProvider>
+        <SqlReviewV2Provider>
           <div
-            className={cn(
-              "flex min-h-full flex-col",
-              page.ready ? "" : "invisible pointer-events-none"
-            )}
+            ref={setPageHost}
+            data-testid="plan-detail-page"
+            className="relative min-h-full overflow-x-clip bg-control-bg/50"
           >
-            {/* Only the title/action row is sticky (GitHub issue-header pattern);
+            <div
+              className={cn(
+                "flex min-h-full flex-col",
+                page.ready ? "" : "invisible pointer-events-none"
+              )}
+            >
+              {/* Only the title/action row is sticky (GitHub issue-header pattern);
               the description + metadata below scroll away beneath it. The
               dashboard main pane is the scroll container, so top-0 pins to it;
               z-20 keeps it above the phase rail nodes (z-10). The border appears
               only when stuck, so the row is flat at the top. */}
-            <header
-              className={cn(
-                "sticky top-0 z-20 shrink-0 bg-background",
-                headerStuck && "border-b"
-              )}
-            >
-              <PlanDetailHeader />
-            </header>
-            <PlanDetailHeaderDetails />
+              <header
+                className={cn(
+                  "sticky top-0 z-20 shrink-0 bg-background",
+                  headerStuck && "border-b"
+                )}
+              >
+                <PlanDetailHeader />
+              </header>
+              <PlanDetailHeaderDetails />
 
-            <main className="min-h-[calc(100vh-4rem)] min-w-0 flex-1">
-              <PlanPhaseRail
-                onSelectedSpecIdChange={setSelectedSpecId}
-                selectedSpecId={effectiveSelectedSpecId}
-              />
-            </main>
-          </div>
-
-          {!page.ready && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-y-3 bg-background">
-              <Loader2 className="h-8 w-8 animate-spin text-accent" />
-              <div className="text-sm text-control-light">
-                {t("common.loading")}
-              </div>
+              <main className="min-h-[calc(100vh-4rem)] min-w-0 flex-1">
+                <PlanPhaseRail
+                  onSelectedSpecIdChange={setSelectedSpecId}
+                  selectedSpecId={effectiveSelectedSpecId}
+                />
+              </main>
             </div>
-          )}
 
-          <AlertDialog
-            open={page.pendingLeaveConfirm}
-            onOpenChange={(open) => {
-              if (!open) {
-                page.resolveLeaveConfirm(false);
-              }
-            }}
-          >
-            <AlertDialogContent>
-              <AlertDialogTitle>
-                {t("common.leave-without-saving")}
-              </AlertDialogTitle>
-              <AlertDialogFooter>
-                <Button
-                  appearance="outline"
-                  onClick={() => page.resolveLeaveConfirm(false)}
-                >
-                  {t("common.cancel")}
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={() => page.resolveLeaveConfirm(true)}
-                >
-                  {t("common.discard-changes")}
-                </Button>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
-      </SqlReviewV2Provider>
+            {!page.ready && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-y-3 bg-background">
+                <Loader2 className="h-8 w-8 animate-spin text-accent" />
+                <div className="text-sm text-control-light">
+                  {t("common.loading")}
+                </div>
+              </div>
+            )}
+
+            <AlertDialog
+              open={page.pendingLeaveConfirm}
+              onOpenChange={(open) => {
+                if (!open) {
+                  page.resolveLeaveConfirm(false);
+                }
+              }}
+            >
+              <AlertDialogContent>
+                <AlertDialogTitle>
+                  {t("common.leave-without-saving")}
+                </AlertDialogTitle>
+                <AlertDialogFooter>
+                  <Button
+                    appearance="outline"
+                    onClick={() => page.resolveLeaveConfirm(false)}
+                  >
+                    {t("common.cancel")}
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() => page.resolveLeaveConfirm(true)}
+                  >
+                    {t("common.discard-changes")}
+                  </Button>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </SqlReviewV2Provider>
+      </ReleaseFileViewerProvider>
     </PlanDetailProvider>
   );
 }

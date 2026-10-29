@@ -1,7 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 import i18n from "@/lib/i18n";
 import { Release_Type } from "@/types/proto-es/v1/release_service_pb";
 import {
@@ -17,6 +17,11 @@ import {
 // the scheduled badge beside it.
 vi.mock("../PlanTargetDisplay", () => ({
   PlanTargetDisplay: () => null,
+}));
+
+vi.mock("../useUserDisplayName", () => ({
+  useUserDisplayName: (name?: string) =>
+    name === "users/alex@example.com" ? "Alex Doe" : (name ?? "").replace(/^users\//, ""),
 }));
 
 vi.mock("@/components/TaskStatusIcon", () => ({
@@ -130,6 +135,15 @@ const describeFolded = (props: Partial<HeaderProps>) =>
   );
 
 describe("folded card description", () => {
+  // The runs below start on Oct 5; the clock reads that day unless a test moves it.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(Date.UTC(2026, 9, 5, 9, 0)));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   test.each([
     ["not started", releaseTask(Task_Status.NOT_STARTED, ["202610051500", "202610051510", "202610051530"], 490), undefined, "", "3 to apply · 490 applied earlier"],
     ["not started, nothing to apply", releaseTask(Task_Status.NOT_STARTED, [], 493), undefined, "", "Nothing to apply · 493 applied earlier"],
@@ -181,11 +195,16 @@ describe("folded card description", () => {
 
   test("skipped and canceled tasks", () => {
     const skipped = create(TaskSchema, { status: Task_Status.SKIPPED, skipper: "users/alex@example.com", skippedReason: "fixed in git" });
-    expect(describeFolded({ task: skipped })?.textContent).toBe("Skipped by alex@example.com · fixed in git");
+    expect(describeFolded({ task: skipped })?.textContent).toBe("Skipped by Alex Doe · fixed in git");
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(Date.UTC(2026, 9, 5, 9, 0)));
     const canceled = create(TaskSchema, { status: Task_Status.CANCELED });
-    expect(
-      describeFolded({ task: canceled, latestTaskRun: create(TaskRunSchema, { status: TaskRun_Status.CANCELED, updateTime: STARTED }) })?.textContent
-    ).toBe("Canceled · 15:14");
+    const canceledRun = create(TaskRunSchema, { status: TaskRun_Status.CANCELED, updateTime: STARTED });
+    expect(describeFolded({ task: canceled, latestTaskRun: canceledRun })?.textContent).toBe("Canceled · 15:14");
+    // A cancel from another day carries its date.
+    vi.setSystemTime(new Date(Date.UTC(2026, 9, 9, 9, 0)));
+    expect(describeFolded({ task: canceled, latestTaskRun: canceledRun })?.textContent).toBe("Canceled · Oct 5, 15:14");
+    vi.useRealTimers();
   });
 
   test.each([
@@ -242,5 +261,45 @@ describe("folded card description", () => {
     matchMedia.mockRestore();
     const wide = describeFolded({ task: releaseTask(Task_Status.NOT_STARTED, ["a"], 1), release: VERSIONED });
     expect(wide?.className).not.toContain("basis-full");
+  });
+
+  test("a run that started on another day shows the date with its start", () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(Date.UTC(2026, 9, 7, 2, 0)));
+    expect(
+      describeFolded({
+        task: releaseTask(Task_Status.RUNNING, ["a"], 1),
+        latestTaskRun: runOf(TaskRun_Status.RUNNING),
+        release: VERSIONED,
+      })?.textContent
+    ).toBe("Applying 1 file · started Oct 5, 15:14");
+    vi.useRealTimers();
+  });
+
+  test("a task waiting on its run says why after the not-started line", () => {
+    const waiting = create(TaskRunSchema, {
+      status: TaskRun_Status.PENDING,
+      schedulerInfo: {
+        waitingCause: { cause: { case: "parallelTasksLimit", value: true } },
+      },
+    });
+    const line = describeFolded({
+      task: releaseTask(Task_Status.PENDING, ["a"], 1),
+      latestTaskRun: waiting,
+      release: VERSIONED,
+    });
+    expect(line?.textContent).toMatch(/^1 to apply · 1 applied earlier · .+/);
+  });
+
+  test("Mixed is written in the reader's language", async () => {
+    await i18n.changeLanguage("zh-CN");
+    const text = describeFolded({
+      task: create(TaskSchema, { status: Task_Status.DONE }),
+      latestTaskRun: runOf(TaskRun_Status.DONE),
+      timingDisplay: "4.1s",
+      statementSummary: { statementTypes: [41, 60], affectedRows: 0n },
+    })?.textContent;
+    await i18n.changeLanguage("en-US");
+    expect(text).toBe("混合 · 4.1s");
   });
 });

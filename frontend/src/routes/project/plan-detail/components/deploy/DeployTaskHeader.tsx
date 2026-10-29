@@ -18,6 +18,7 @@ import type { Task, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import type { PlanDetailTaskRolloutAction } from "../PlanDetailTaskRolloutActionPanel";
 import { PlanTargetDisplay } from "../PlanTargetDisplay";
+import { useUserDisplayName } from "../useUserDisplayName";
 import {
   type FoldedReleaseInfo,
   type FoldedStatementSummary,
@@ -27,9 +28,6 @@ import {
 
 type ActionItem = { key: PlanDetailTaskRolloutAction; label: string };
 
-// The card header: a bulk-select checkbox, the task identity (which toggles the
-// card open/closed), the per-card actions when expanded, and a caret. Purely
-// presentational — DeployTaskItem owns the derived data and handlers.
 const TONE_CLASS: Record<FoldedTone, string> = {
   success: "text-success",
   info: "text-info",
@@ -41,6 +39,9 @@ const TONE_CLASS: Record<FoldedTone, string> = {
 // database.
 const NARROW_MEDIA_QUERY = "(max-width: 639px)";
 
+// The card header: a bulk-select checkbox, the task identity (which toggles the
+// card open/closed), the folded card's one-line description, the per-card
+// actions when expanded, and a caret. DeployTaskItem owns the handlers.
 export function DeployTaskHeader({
   actionItems,
   isExpanded,
@@ -78,6 +79,7 @@ export function DeployTaskHeader({
 }) {
   const { t, i18n } = useTranslation();
   const narrow = useMediaQuery(NARROW_MEDIA_QUERY);
+  const skipperName = useUserDisplayName(task.skipper || undefined);
   const showActions = actionItems.length > 0 || showRollback;
   const folded = isExpanded
     ? undefined
@@ -87,6 +89,7 @@ export function DeployTaskHeader({
         release,
         statementSummary,
         duration: timingDisplay,
+        skipperName,
         t,
         locale: i18n.language,
       });
