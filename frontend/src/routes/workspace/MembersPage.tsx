@@ -1864,13 +1864,21 @@ function EditMemberRoleDrawer({
 
                       {/* Database resources table */}
                       <div className="p-4">
-                        <Table>
+                        <Table className="table-fixed">
                           <TableHeader>
                             <TableRow>
-                              <TableHead>{t("common.database")}</TableHead>
-                              <TableHead>{t("common.schema")}</TableHead>
-                              <TableHead>{t("common.table")}</TableHead>
-                              <TableHead>{t("common.expiration")}</TableHead>
+                              <TableHead className="w-2/5">
+                                {t("common.database")}
+                              </TableHead>
+                              <TableHead className="w-1/5">
+                                {t("common.schema")}
+                              </TableHead>
+                              <TableHead className="w-1/5">
+                                {t("common.table")}
+                              </TableHead>
+                              <TableHead className="w-1/5">
+                                {t("common.expiration")}
+                              </TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -1881,10 +1889,16 @@ function EditMemberRoleDrawer({
                                     resource={row.databaseResource}
                                   />
                                 </TableCell>
-                                <TableCell>
+                                <TableCell
+                                  className="truncate"
+                                  title={row.databaseResource?.schema}
+                                >
                                   {row.databaseResource?.schema ?? "*"}
                                 </TableCell>
-                                <TableCell>
+                                <TableCell
+                                  className="truncate"
+                                  title={row.databaseResource?.table}
+                                >
                                   {row.databaseResource?.table ?? "*"}
                                 </TableCell>
                                 <TableCell>

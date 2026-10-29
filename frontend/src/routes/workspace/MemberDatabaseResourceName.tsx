@@ -53,7 +53,10 @@ export function MemberDatabaseResourceName({
   }
 
   return (
-    <div className="flex min-w-0 items-center text-sm">
+    <div
+      className="flex min-w-0 items-center text-sm"
+      title={`${display.instanceTitle} > ${display.databaseName}`}
+    >
       {display.engine !== undefined && (
         <EngineIcon engine={display.engine} className="mr-1 h-4 w-4" />
       )}
