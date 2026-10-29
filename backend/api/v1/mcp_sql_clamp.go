@@ -65,23 +65,31 @@ func refuseNonReadOnlyStatement(engine storepb.Engine, statement string) error {
 		return refuseClampedStatement(fmt.Sprintf(
 			"Bytebase has no read-only classifier for %v, so no statement on this engine can be shown to be a read", engine))
 	}
+	if reason := nonReadReason(engine, statement); reason != "" {
+		return refuseClampedStatement(reason)
+	}
+	return nil
+}
+
+// nonReadReason says why a request on an engine with a validator is not shown
+// to be a read, or returns "" when every statement the driver would run is one.
+func nonReadReason(engine storepb.Engine, statement string) string {
 	units := mcpClampUnits(engine, statement)
 	for i, unit := range units {
 		readOnly, allQuery, err := parserbase.ValidateSQLForEditor(engine, unit)
 		if err != nil {
-			return refuseClampedStatement(fmt.Sprintf(
-				"%s could not be parsed, so it cannot be shown to be a read: %v", describeClampUnit(i, len(units)), err))
+			return fmt.Sprintf("%s could not be parsed, so it cannot be shown to be a read: %v", describeClampUnit(i, len(units)), err)
 		}
 		if !readOnly {
-			return refuseClampedStatement(fmt.Sprintf("%s is not a read", describeClampUnit(i, len(units))))
+			return fmt.Sprintf("%s is not a read", describeClampUnit(i, len(units)))
 		}
 		if !allQuery {
-			return refuseClampedStatement(fmt.Sprintf(
+			return fmt.Sprintf(
 				"%s returns no data, so it either rewrites the session it runs on, which can switch off the read-only session the rest of the request depends on, or runs the query to measure it. A read-only ceiling serves statements that only read",
-				describeClampUnit(i, len(units))))
+				describeClampUnit(i, len(units)))
 		}
 	}
-	return nil
+	return ""
 }
 
 // mcpClampUnits splits a request the way queryRetryStopOnError does, including

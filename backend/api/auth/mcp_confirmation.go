@@ -20,6 +20,9 @@ type MCPConfirmedDecision struct {
 	// user confirmed. The review workflow refuses the decision when it no longer
 	// matches.
 	IssueUpdateTime time.Time
+	// WithoutAsking marks a statement query_database runs without asking the
+	// user. SQLService/Query runs a possible write for MCP only with this mark.
+	WithoutAsking bool
 }
 
 // mcpConfirmedDecisionKey is unexported so that only code in this process can

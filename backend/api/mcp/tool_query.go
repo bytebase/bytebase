@@ -11,7 +11,9 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common/permission"
+	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 )
 
 const (
@@ -228,6 +230,13 @@ func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, i
 	if input.Container != "" {
 		body["container"] = input.Container
 	}
+	// Until the form that asks before a write lands (BYT-9292), query_database
+	// runs every statement without asking.
+	ctx = auth.WithMCPConfirmedDecision(ctx, auth.MCPConfirmedDecision{
+		Procedure:     v1connect.SQLServiceQueryProcedure,
+		Resource:      resolved.resourceName,
+		WithoutAsking: true,
+	})
 	resp, err := s.apiRequest(ctx, "/bytebase.v1.SQLService/Query", body)
 	if err != nil {
 		return nil, &toolError{
