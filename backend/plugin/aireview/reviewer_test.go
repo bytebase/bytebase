@@ -107,6 +107,7 @@ func TestReviewReturnsFindings(t *testing.T) {
 		Severity: SeverityP0,
 		Line:     3,
 		Rule:     "too-many-rows",
+		Kind:     "too-many-rows",
 		Reason:   "r",
 		Evidence: []string{"order_events has 9000000 rows"},
 		Fix:      "Delete in batches by id range",

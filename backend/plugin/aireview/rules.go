@@ -3,6 +3,7 @@ package aireview
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -31,6 +32,11 @@ var checks = []Rule{
 	{ID: "too-many-rows", Text: "An UPDATE or DELETE changes more rows than the author means."},
 	{ID: "cascades", Text: "The statement deletes or changes rows in other tables through foreign key actions or triggers."},
 	{ID: "breaks-dependent", Text: "The statement breaks an object that depends on what it changes, such as a view, trigger, or function that reads a renamed or dropped column."},
+}
+
+// isCheck reports whether id names one of the checks.
+func isCheck(id string) bool {
+	return slices.ContainsFunc(checks, func(check Rule) bool { return check.ID == id })
 }
 
 var (

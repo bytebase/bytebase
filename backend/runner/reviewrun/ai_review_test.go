@@ -195,6 +195,25 @@ func TestAIReviewCommentsKeepFailureCausesApart(t *testing.T) {
 	require.Contains(t, comments[1].Payload.Comment, "**Fix:** Create orders first.")
 }
 
+func TestAIReviewCommentsSplitABroadPolicyRuleByKind(t *testing.T) {
+	t.Parallel()
+
+	breaks := func(kind string, fix string) aireview.Finding {
+		return aireview.Finding{Title: "t", Severity: aireview.SeverityP1, Line: 1, Rule: "workspace-1", Kind: kind, Reason: "r", Evidence: []string{"e"}, Fix: fix}
+	}
+	comments := aiReviewComments("p", 7, []*aiReviewResult{
+		aiReviewResultOn("instances/i/databases/a", breaks("drops-data", "Archive the column first.")),
+		aiReviewResultOn("instances/i/databases/b", breaks("blocks", "Run it in a quiet window.")),
+		aiReviewResultOn("instances/i/databases/c", breaks("blocks", "Run it in a quiet window.")),
+	}, aireview.Rules("Do not run destructive or blocking DDL.", ""))
+	require.Len(t, comments, 2, "one policy rule broken two ways is two problems")
+	require.Equal(t, []string{"instances/i/databases/a"}, comments[0].Payload.ReviewMetadata.Targets)
+	require.Contains(t, comments[0].Payload.Comment, "**Fix:** Archive the column first.")
+	require.Equal(t, []string{"instances/i/databases/b", "instances/i/databases/c"}, comments[1].Payload.ReviewMetadata.Targets)
+	require.Contains(t, comments[1].Payload.Comment, "**Fix:** Run it in a quiet window.")
+	require.Contains(t, comments[1].Payload.Comment, "**Not flagged on:** `a`.", "a database that broke the rule another way did not report this problem")
+}
+
 func TestAIReviewCommentTextCountsManyDatabases(t *testing.T) {
 	t.Parallel()
 

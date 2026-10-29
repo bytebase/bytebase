@@ -15,6 +15,7 @@ func TestParseReply(t *testing.T) {
 		Severity: SeverityP1,
 		Line:     2,
 		Rule:     "blocks",
+		Kind:     "blocks",
 		Reason:   "r",
 		Evidence: []string{"orders has 52000000 rows"},
 		Fix:      "Use CREATE INDEX CONCURRENTLY",
@@ -89,12 +90,12 @@ func TestParseReply(t *testing.T) {
 		{
 			name:  "lower case severity is accepted",
 			reply: `{"findings": [{"title": "t", "severity": " p0 ", "line": 1, "rule": "fails", "reason": "r", "evidence": ["e"], "fix": "f"}]}`,
-			want:  []Finding{{Title: "t", Severity: SeverityP0, Line: 1, Rule: "fails", Reason: "r", Evidence: []string{"e"}, Fix: "f"}},
+			want:  []Finding{{Title: "t", Severity: SeverityP0, Line: 1, Rule: "fails", Kind: "fails", Reason: "r", Evidence: []string{"e"}, Fix: "f"}},
 		},
 		{
 			name:  "a rule ID copied with its backticks is accepted",
 			reply: `{"findings": [{"title": "t", "severity": "P1", "line": 1, "rule": " ` + "`BLOCKS`" + ` ", "reason": "r", "evidence": ["e"], "fix": "f"}]}`,
-			want:  []Finding{{Title: "t", Severity: SeverityP1, Line: 1, Rule: "blocks", Reason: "r", Evidence: []string{"e"}, Fix: "f"}},
+			want:  []Finding{{Title: "t", Severity: SeverityP1, Line: 1, Rule: "blocks", Kind: "blocks", Reason: "r", Evidence: []string{"e"}, Fix: "f"}},
 		},
 		{
 			// A quoted sentence is not an ID, and findings merge across
@@ -106,7 +107,7 @@ func TestParseReply(t *testing.T) {
 		{
 			name:  "blank facts are dropped",
 			reply: `{"findings": [{"title": "t", "severity": "P1", "line": 1, "rule": "fails", "reason": "r", "evidence": ["  invoices has 4,603 rows ", " ", ""], "fix": "f"}]}`,
-			want:  []Finding{{Title: "t", Severity: SeverityP1, Line: 1, Rule: "fails", Reason: "r", Evidence: []string{"invoices has 4,603 rows"}, Fix: "f"}},
+			want:  []Finding{{Title: "t", Severity: SeverityP1, Line: 1, Rule: "fails", Kind: "fails", Reason: "r", Evidence: []string{"invoices has 4,603 rows"}, Fix: "f"}},
 		},
 		{
 			name:         "a finding without a reason is rejected",
@@ -171,16 +172,43 @@ func TestParseReplyAcceptsThePolicyLines(t *testing.T) {
 	t.Parallel()
 
 	rules := Rules("Never delete rows from payment.", "- Every new table has an id column.")
-	reply := func(rule string) string {
-		return `{"findings": [{"title": "t", "severity": "P1", "line": 1, "rule": "` + rule + `", "reason": "r", "evidence": ["e"], "fix": "f"}]}`
+	reply := func(rule string, kind string) string {
+		return `{"findings": [{"title": "t", "severity": "P1", "line": 1, "rule": "` + rule + `", "kind": "` + kind + `", "reason": "r", "evidence": ["e"], "fix": "f"}]}`
 	}
-	for _, rule := range []string{"workspace-1", "project-1", "fails"} {
-		got, problems := parseReply(reply(rule), 5, rules, false)
-		require.Empty(t, problems, rule)
-		require.Equal(t, rule, got.Findings[0].Rule)
+	for _, tc := range []struct{ rule, kind, wantKind string }{
+		{rule: "workspace-1", kind: "drops-data", wantKind: "drops-data"},
+		{rule: "project-1", kind: " `OTHER` ", wantKind: KindOther},
+		{rule: "fails", kind: "", wantKind: "fails"},
+		{rule: "fails", kind: "blocks", wantKind: "fails"},
+	} {
+		got, problems := parseReply(reply(tc.rule, tc.kind), 5, rules, false)
+		require.Empty(t, problems, tc)
+		require.Equal(t, tc.rule, got.Findings[0].Rule)
+		require.Equal(t, tc.wantKind, got.Findings[0].Kind, "a check is its own kind, and a policy rule takes the kind the reply names")
 	}
-	_, problems := parseReply(reply("workspace-2"), 5, rules, false)
-	require.Equal(t, []string{`findings[0].rule: "workspace-2" is not the ID of a policy line or a check`}, problems)
+	for _, tc := range []struct{ rule, kind, want string }{
+		{rule: "workspace-2", kind: "blocks", want: `findings[0].rule: "workspace-2" is not the ID of a policy line or a check`},
+		{rule: "workspace-1", kind: "", want: "findings[0].kind: is empty; a finding that cites a policy rule names the check for its kind of problem, or other"},
+		{rule: "workspace-1", kind: "project-1", want: `findings[0].kind: "project-1" is not the ID of a check or other`},
+	} {
+		_, problems := parseReply(reply(tc.rule, tc.kind), 5, rules, false)
+		require.Equal(t, []string{tc.want}, problems)
+	}
+}
+
+func TestParseReplyPolicyRuleOfTwoKindsOnALine(t *testing.T) {
+	t.Parallel()
+
+	rules := Rules("Do not run destructive or blocking DDL.", "")
+	finding := func(kind string) string {
+		return `{"title": "t", "severity": "P1", "line": 1, "rule": "workspace-1", "kind": "` + kind + `", "reason": "r", "evidence": ["e"], "fix": "f"}`
+	}
+	got, problems := parseReply(`{"findings": [`+finding("drops-data")+`, `+finding("blocks")+`]}`, 5, rules, false)
+	require.Empty(t, problems, "a broad policy rule broken two ways on a line is two findings")
+	require.Len(t, got.Findings, 2)
+
+	_, problems = parseReply(`{"findings": [`+finding("blocks")+`, `+finding("blocks")+`]}`, 5, rules, false)
+	require.Equal(t, []string{`findings[1].kind: findings[0] already cites "workspace-1" as "blocks" on line 1; report one finding per rule and kind on a line, naming every cause in it`}, problems)
 }
 
 func TestParseReplyRepeatedRuleOnALine(t *testing.T) {

@@ -87,23 +87,25 @@ type aiReviewOccurrence struct {
 
 // aiReviewComments converts the findings of the completed units into the
 // review result comments to post: one OPEN root per problem, anchored to the
-// line it starts on in the spec's sheet. Findings that cite the same rule on
-// the same line of a spec are one problem across databases, since a rule
-// holds one kind of fix. Its comment lists every database it applies to and
-// carries the highest priority among them.
+// line it starts on in the spec's sheet. Findings that cite the same rule and
+// kind on the same line of a spec are one problem across databases, since a
+// check holds one kind of fix and the kind splits a policy rule that covers
+// several. Its comment lists every database it applies to and carries the
+// highest priority among them.
 func aiReviewComments(projectID string, issueUID int64, results []*aiReviewResult, rules []aireview.Rule) []*store.IssueCommentMessage {
 	type ruleKey struct {
 		specID string
 		line   int
 		rule   string
+		kind   string
 	}
 	type key struct {
 		ruleKey
 		// target and repeat keep apart the findings of a database that cites
-		// one rule on one line more than once, which the reviewer accepts
-		// only when the model keeps them after a correction. Nothing tells
-		// which of them another database's finding matches, so they merge
-		// with none.
+		// one rule and kind on one line more than once, which the reviewer
+		// accepts only when the model keeps them after a correction. Nothing
+		// tells which of them another database's finding matches, so they
+		// merge with none.
 		target string
 		repeat int
 	}
@@ -117,8 +119,8 @@ func aiReviewComments(projectID string, issueUID int64, results []*aiReviewResul
 	problems := make(map[key]*problem)
 	var ordered []*problem
 	reviewed := make(map[string][]string)
-	// flagged holds the databases that cite a rule on a line, so that none
-	// of them reads as not flagged on a thread of that rule and line.
+	// flagged holds the databases that cite a rule and kind on a line, so
+	// that none of them reads as not flagged on a thread of them.
 	flagged := make(map[ruleKey]map[string]bool)
 	for _, result := range results {
 		if result == nil {
@@ -128,11 +130,11 @@ func aiReviewComments(projectID string, issueUID int64, results []*aiReviewResul
 		reviewed[check.SpecID] = append(reviewed[check.SpecID], check.Target)
 		counts := make(map[ruleKey]int)
 		for _, finding := range result.Findings {
-			counts[ruleKey{specID: check.SpecID, line: finding.Line, rule: finding.Rule}]++
+			counts[ruleKey{specID: check.SpecID, line: finding.Line, rule: finding.Rule, kind: finding.Kind}]++
 		}
 		repeats := make(map[ruleKey]int)
 		for _, finding := range result.Findings {
-			rk := ruleKey{specID: check.SpecID, line: finding.Line, rule: finding.Rule}
+			rk := ruleKey{specID: check.SpecID, line: finding.Line, rule: finding.Rule, kind: finding.Kind}
 			if flagged[rk] == nil {
 				flagged[rk] = make(map[string]bool)
 			}

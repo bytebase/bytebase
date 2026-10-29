@@ -81,6 +81,7 @@ func TestBuildMessagesListsPolicyRulesUnderTheirHeadings(t *testing.T) {
 	require.Contains(t, system, "## Workspace policy\n\n- `workspace-1`: Never delete payment rows unless they have been archived.\n\nProduction only\n\n- `workspace-2`: No TRUNCATE\n- `workspace-3`: Create indexes concurrently\n")
 	require.Contains(t, system, "## Project policy\n\n(none)\n", "a policy of headings alone has no rule to cite")
 	require.Contains(t, system, "cite the first project policy rule that does, or else the first workspace policy rule", "overlapping rules resolve the same way in every review, so the merge key is stable")
+	require.Contains(t, system, "a finding that cites one also names its kind: the first check above that fits the problem, or `other` when none does", "a policy rule that covers several kinds of problem merges by kind")
 }
 
 func TestBuildMessagesKeepsTargetFactsOnOneLine(t *testing.T) {

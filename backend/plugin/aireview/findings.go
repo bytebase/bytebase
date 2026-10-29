@@ -23,6 +23,10 @@ type Finding struct {
 	Line int
 	// Rule is the ID of the Rule the finding cites.
 	Rule string
+	// Kind is the ID of the check that names the kind of problem: the rule
+	// itself when the rule is a check, or for a policy rule, which can cover
+	// several kinds, a check or KindOther.
+	Kind string
 	// Reason says why the statement is a problem, without the facts that
 	// differ between databases, so it can stand for every database that
 	// reports the problem.
@@ -52,12 +56,16 @@ type findingJSON struct {
 	Severity string   `json:"severity"`
 	Line     int      `json:"line"`
 	Rule     string   `json:"rule"`
+	Kind     string   `json:"kind"`
 	Reason   string   `json:"reason"`
 	Evidence []string `json:"evidence"`
 	Fix      string   `json:"fix"`
 }
 
 const maxReportedProblems = 10
+
+// KindOther is the kind of a problem a policy rule covers and no check names.
+const KindOther = "other"
 
 // parseReply reads the model's final reply. It returns the problems that make
 // the reply invalid, worded for the model to correct. One invalid finding
@@ -87,6 +95,7 @@ func parseReply(text string, lineCount int, rules []Rule, allowRepeatedRules boo
 	type placement struct {
 		line int
 		rule string
+		kind string
 	}
 	firstAt := make(map[placement]int)
 
@@ -98,10 +107,14 @@ func parseReply(text string, lineCount int, rules []Rule, allowRepeatedRules boo
 			problems = append(problems, fmt.Sprintf("findings[%d].%s", i, problem))
 		}
 		if len(findingProblems) == 0 && !allowRepeatedRules {
-			at := placement{line: finding.Line, rule: finding.Rule}
-			if first, ok := firstAt[at]; ok {
+			at := placement{line: finding.Line, rule: finding.Rule, kind: finding.Kind}
+			first, ok := firstAt[at]
+			switch {
+			case ok && finding.Kind == finding.Rule:
 				problems = append(problems, fmt.Sprintf("findings[%d].rule: findings[%d] already cites %q on line %d; report one finding per rule on a line, naming every cause in it", i, first, finding.Rule, finding.Line))
-			} else {
+			case ok:
+				problems = append(problems, fmt.Sprintf("findings[%d].kind: findings[%d] already cites %q as %q on line %d; report one finding per rule and kind on a line, naming every cause in it", i, first, finding.Rule, finding.Kind, finding.Line))
+			default:
 				firstAt[at] = i
 			}
 		}
@@ -185,10 +198,10 @@ func validateFinding(raw findingJSON, lineCount int, ruleIDs map[string]bool) (F
 		Title:    strings.TrimSpace(raw.Title),
 		Severity: Severity(strings.ToUpper(strings.TrimSpace(raw.Severity))),
 		Line:     raw.Line,
-		// The prompt shows each ID in backticks, and a model may copy them.
-		Rule:   strings.ToLower(strings.TrimSpace(strings.Trim(strings.TrimSpace(raw.Rule), "`"))),
-		Reason: strings.TrimSpace(raw.Reason),
-		Fix:    strings.TrimSpace(raw.Fix),
+		Rule:     normalizeID(raw.Rule),
+		Kind:     normalizeID(raw.Kind),
+		Reason:   strings.TrimSpace(raw.Reason),
+		Fix:      strings.TrimSpace(raw.Fix),
 	}
 	for _, fact := range raw.Evidence {
 		if fact = strings.TrimSpace(fact); fact != "" {
@@ -210,6 +223,13 @@ func validateFinding(raw findingJSON, lineCount int, ruleIDs map[string]bool) (F
 		problems = append(problems, "rule: is empty")
 	case !ruleIDs[finding.Rule]:
 		problems = append(problems, fmt.Sprintf("rule: %q is not the ID of a policy line or a check", raw.Rule))
+	case isCheck(finding.Rule):
+		// A check is its own kind, whatever the reply says.
+		finding.Kind = finding.Rule
+	case finding.Kind == "":
+		problems = append(problems, "kind: is empty; a finding that cites a policy rule names the check for its kind of problem, or other")
+	case finding.Kind != KindOther && !isCheck(finding.Kind):
+		problems = append(problems, fmt.Sprintf("kind: %q is not the ID of a check or other", raw.Kind))
 	default:
 	}
 	for _, field := range []struct {
@@ -228,4 +248,10 @@ func validateFinding(raw findingJSON, lineCount int, ruleIDs map[string]bool) (F
 		problems = append(problems, "evidence: is empty; list at least one fact")
 	}
 	return finding, problems
+}
+
+// normalizeID reads a rule or check ID as the reply gives it. The prompt shows
+// each ID in backticks, and a model may copy them.
+func normalizeID(id string) string {
+	return strings.ToLower(strings.TrimSpace(strings.Trim(strings.TrimSpace(id), "`")))
 }
