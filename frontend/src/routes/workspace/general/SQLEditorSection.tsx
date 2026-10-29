@@ -46,9 +46,11 @@ import type {
 import { resolveWorkspaceTheme } from "@/modules/sql-editor/components/theme/useWorkspaceSQLEditorTheme";
 import { DEFAULT_MAX_RESULT_SIZE_IN_MB } from "@/stores";
 import { useAppStore } from "@/stores/app";
+import { ExportDelivery } from "@/types/proto-es/v1/common_pb";
 import {
   PolicyResourceType,
   PolicyType,
+  QueryDataPolicy_ExportDeliveryPolicySchema,
   QueryDataPolicySchema,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import { SQLEditorThemeSettingSchema } from "@/types/proto-es/v1/setting_service_pb";
@@ -59,6 +61,10 @@ import { ThemePreview } from "./sql-editor-theme/ThemePreview";
 import type { SectionHandle } from "./useSettingSection";
 
 const CUSTOM_THEME_OPTION = "__custom__";
+
+// Sorted so that dirty checks do not depend on the stored order.
+const sortedDeliveries = (deliveries: readonly ExportDelivery[]) =>
+  [...deliveries].sort((a, b) => a - b);
 
 const toSQLEditorThemeSettingPayload = (theme: SQLEditorTheme) => ({
   id: theme.id,
@@ -75,8 +81,8 @@ interface SQLEditorSectionProps {
 }
 
 interface LocalState {
-  disableExport: boolean;
   disableCopyData: boolean;
+  allowedExportDeliveries: ExportDelivery[];
   allowAdminDataSource: boolean;
   // `null` represents an empty input while the user is typing; coerced to a
   // number on save.
@@ -149,8 +155,12 @@ export const SQLEditorSection = forwardRef<
       rows = 0;
     }
     return {
-      disableExport: policyPayload.disableExport,
       disableCopyData: policyPayload.disableCopyData,
+      allowedExportDeliveries: sortedDeliveries(
+        policyPayload.exportDeliveryPolicy?.allowedDeliveries ?? [
+          ExportDelivery.LOCAL,
+        ]
+      ),
       allowAdminDataSource: policyPayload.allowAdminDataSource,
       maximumResultSize: Math.round(Number(size) / 1024 / 1024),
       maximumResultRows: rows,
@@ -291,8 +301,8 @@ export const SQLEditorSection = forwardRef<
     const init = getInitialState();
     const maximumResultRows = state.maximumResultRows ?? 0;
     return (
-      init.disableExport !== state.disableExport ||
       init.disableCopyData !== state.disableCopyData ||
+      !isEqual(init.allowedExportDeliveries, state.allowedExportDeliveries) ||
       init.allowAdminDataSource !== state.allowAdminDataSource ||
       init.maximumResultRows !== maximumResultRows
     );
@@ -356,8 +366,11 @@ export const SQLEditorSection = forwardRef<
             case: "queryDataPolicy",
             value: create(QueryDataPolicySchema, {
               ...policyPayload,
-              disableExport: state.disableExport,
               disableCopyData: state.disableCopyData,
+              exportDeliveryPolicy: create(
+                QueryDataPolicy_ExportDeliveryPolicySchema,
+                { allowedDeliveries: state.allowedExportDeliveries }
+              ),
               allowAdminDataSource: state.allowAdminDataSource,
               maximumResultRows,
             }),
@@ -406,10 +419,41 @@ export const SQLEditorSection = forwardRef<
   }, [state, selectedThemeId, customDraft, onDirtyChange]);
 
   const handleToggle = (
-    field: "disableExport" | "disableCopyData" | "allowAdminDataSource",
+    field: "disableCopyData" | "allowAdminDataSource",
     value: boolean
   ) => {
     setState((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const exportDeliveryOptions: {
+    delivery: ExportDelivery;
+    label: string;
+    feature?: PlanFeature;
+  }[] = [
+    {
+      delivery: ExportDelivery.LOCAL,
+      label: t("settings.general.workspace.export-delivery.local"),
+    },
+    {
+      delivery: ExportDelivery.SHAREPOINT,
+      label: t("settings.general.workspace.export-delivery.sharepoint"),
+      feature: PlanFeature.FEATURE_SHAREPOINT_EXPORT,
+    },
+  ];
+
+  const handleToggleExportDelivery = (
+    delivery: ExportDelivery,
+    allowed: boolean
+  ) => {
+    setState((prev) => {
+      const others = prev.allowedExportDeliveries.filter((d) => d !== delivery);
+      return {
+        ...prev,
+        allowedExportDeliveries: sortedDeliveries(
+          allowed ? [...others, delivery] : others
+        ),
+      };
+    });
   };
 
   const handleNumberInput = (
@@ -422,26 +466,50 @@ export const SQLEditorSection = forwardRef<
   return (
     <FormSection id="security" title={title}>
       <FormFieldGroup>
-        {/* Local Export Download toggle, stored inverted as disableExport */}
+        {/* Export delivery toggles; at least one stays on */}
         <PermissionGuard permissions={["bb.policies.update"]} display="block">
           <FormField
             title={
-              <span className="w-full inline-flex items-center gap-x-2">
-                <Switch
-                  checked={!state.disableExport}
-                  disabled={!canUpdatePolicy || !hasQueryPolicyFeature}
-                  onCheckedChange={(checked) =>
-                    handleToggle("disableExport", !checked)
-                  }
-                />
-                {t("settings.general.workspace.data-export.self")}
+              <span className="flex flex-row justify-start items-center gap-x-2">
+                {t("settings.general.workspace.export-delivery.self")}
                 <FeatureBadge feature={PlanFeature.FEATURE_QUERY_POLICY} />
               </span>
             }
             description={t(
-              "settings.general.workspace.data-export.description"
+              "settings.general.workspace.export-delivery.description"
             )}
-          />
+          >
+            <div className="flex flex-col gap-y-2">
+              {exportDeliveryOptions.map(({ delivery, label, feature }) => {
+                const checked =
+                  state.allowedExportDeliveries.includes(delivery);
+                const isLastAllowed =
+                  checked && state.allowedExportDeliveries.length === 1;
+                return (
+                  <span
+                    key={delivery}
+                    className="inline-flex items-center gap-x-2"
+                  >
+                    <Switch
+                      checked={checked}
+                      disabled={
+                        !canUpdatePolicy ||
+                        !hasQueryPolicyFeature ||
+                        isLastAllowed
+                      }
+                      onCheckedChange={(next) =>
+                        handleToggleExportDelivery(delivery, next)
+                      }
+                    />
+                    {label}
+                    {feature !== undefined && (
+                      <FeatureBadge feature={feature} />
+                    )}
+                  </span>
+                );
+              })}
+            </div>
+          </FormField>
         </PermissionGuard>
 
         {/* Data Copy toggle */}

@@ -267,6 +267,131 @@ describe("runAgentLoop", () => {
     expect(executeTool).not.toHaveBeenCalled();
   });
 
+  test("asks for a terminal tool call after a plain-text reply to a database count", async () => {
+    vi.mocked(aiServiceClientConnect.chat)
+      .mockResolvedValueOnce({
+        content: "",
+        toolCalls: [
+          {
+            id: "count-1",
+            name: "get_database_count",
+            arguments: "{}",
+            metadata: "",
+          },
+        ],
+      } as never)
+      .mockResolvedValueOnce({
+        content: "The project has 26 active databases.",
+        toolCalls: [],
+      } as never)
+      .mockResolvedValueOnce({
+        content: "",
+        toolCalls: [
+          {
+            id: "done-1",
+            name: "done",
+            arguments: JSON.stringify({
+              text: "The project has 26 active databases.",
+              success: true,
+            }),
+            metadata: "",
+          },
+        ],
+      } as never);
+
+    const executeTool: ToolExecutor = vi.fn(async (name, args) =>
+      name === "done"
+        ? {
+            kind: "done" as const,
+            text: String(args.text),
+            success: true,
+          }
+        : {
+            kind: "tool_result" as const,
+            result: JSON.stringify({ count: 26 }),
+          }
+    );
+    const onText = vi.fn();
+    const onError = vi.fn();
+    const tools = ["get_database_count", "call_api", "ask_user", "done"].map(
+      (name) => ({ name, description: name, parametersSchema: {} })
+    );
+
+    const outcome = await runAgentLoop(
+      [{ role: "system", content: "system" }],
+      tools,
+      executeTool,
+      { onText, onError }
+    );
+
+    expect(outcome).toEqual({
+      kind: "completed",
+      text: "The project has 26 active databases.",
+      success: true,
+      totalTokensUsed: 0,
+    });
+    expect(onText).toHaveBeenCalledOnce();
+    expect(onText).toHaveBeenCalledWith("The project has 26 active databases.");
+    expect(onError).not.toHaveBeenCalled();
+    expect(executeTool).toHaveBeenCalledTimes(2);
+    expect(
+      vi
+        .mocked(aiServiceClientConnect.chat)
+        .mock.calls[2]?.[0]?.toolDefinitions?.map((tool) => tool.name)
+    ).toEqual(["ask_user", "done"]);
+  });
+
+  test("still rejects plain text after one terminal-tool retry", async () => {
+    vi.mocked(aiServiceClientConnect.chat).mockResolvedValue({
+      content: "Answer without done",
+      toolCalls: [],
+    } as never);
+    const executeTool: ToolExecutor = vi.fn();
+
+    const outcome = await runAgentLoop(
+      [{ role: "system", content: "system" }],
+      [{ name: "done", description: "done", parametersSchema: {} }],
+      executeTool
+    );
+
+    expect(outcome.kind).toBe("error");
+    expect(aiServiceClientConnect.chat).toHaveBeenCalledTimes(2);
+    expect(executeTool).not.toHaveBeenCalled();
+  });
+
+  test("does not execute a non-terminal tool requested during finalization", async () => {
+    vi.mocked(aiServiceClientConnect.chat)
+      .mockResolvedValueOnce({
+        content: "The project has 26 active databases.",
+        toolCalls: [],
+      } as never)
+      .mockResolvedValueOnce({
+        content: "",
+        toolCalls: [
+          {
+            id: "api-1",
+            name: "call_api",
+            arguments: JSON.stringify({ operationId: "DeleteDatabase" }),
+            metadata: "",
+          },
+        ],
+      } as never);
+    const executeTool: ToolExecutor = vi.fn();
+
+    const outcome = await runAgentLoop(
+      [{ role: "system", content: "system" }],
+      ["call_api", "done"].map((name) => ({
+        name,
+        description: name,
+        parametersSchema: {},
+      })),
+      executeTool
+    );
+
+    expect(outcome.kind).toBe("error");
+    expect(executeTool).not.toHaveBeenCalled();
+  });
+
   test("completes a read-only starter when the model answers in plain text after a tool result", async () => {
     vi.mocked(aiServiceClientConnect.chat)
       .mockResolvedValueOnce({

@@ -2498,6 +2498,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.QueryDataPolicy.ExportDeliveryPolicy"><span class="badge">M</span>QueryDataPolicy.ExportDeliveryPolicy</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.ReviewAIPolicy"><span class="badge">M</span>ReviewAIPolicy</a>
                 </li>
               
@@ -3712,7 +3716,7 @@ The {access_grant} segment is a server-generated unique ID. </p></td>
                   <td>creator</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The creator of the access grant.
+                  <td><p>The creator of the access grant, the caller who requested it.
 Format: users/{email} </p></td>
                 </tr>
               
@@ -3797,7 +3801,8 @@ Format: instances/{instance}/databases/{database} or projects/{project}/instance
                   <td>export</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>Whether export the query result. </p></td>
+                  <td><p>Whether the grant allows exporting the query result.
+An active grant with export=true grants bb.sql.export for this query until the grant expires. </p></td>
                 </tr>
               
                 <tr>
@@ -4634,7 +4639,7 @@ Examples:
         </table>
       
         <h3 id="bytebase.v1.ExportDelivery">ExportDelivery</h3>
-        <p>Where an export is delivered.</p>
+        <p>Where an export is delivered. Values are added as destinations are</p><p>supported.</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -8045,8 +8050,8 @@ CosmosDB only. </p></td>
                   <td>delivery</td>
                   <td><a href="#bytebase.v1.ExportDelivery">ExportDelivery</a></td>
                   <td></td>
-                  <td><p>Where the export is delivered. LOCAL is rejected when the workspace query
-data policy disables export. </p></td>
+                  <td><p>Where the export is delivered. A delivery the workspace query data policy
+does not allow is rejected with FAILED_PRECONDITION. </p></td>
                 </tr>
               
             </tbody>
@@ -8623,7 +8628,7 @@ Examples include PostgreSQL&#39;s RAISE NOTICE, MSSQL&#39;s PRINT, or Oracle&#39
         
       
         <h3 id="bytebase.v1.QueryResult.QueryPlan">QueryResult.QueryPlan</h3>
-        <p>A query plan held in the result's rows.</p>
+        <p>A query plan the result carries: in its rows, or beside them.</p>
 
         
           <table class="field-table">
@@ -8645,6 +8650,18 @@ Examples include PostgreSQL&#39;s RAISE NOTICE, MSSQL&#39;s PRINT, or Oracle&#39
                   <td></td>
                   <td><p>Whether producing the plan executed the statement, as EXPLAIN ANALYZE
 does. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>content</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The plan itself, where the engine states it beside the result rather
+than in the result&#39;s rows. BigQuery reports the stages its job ran in
+the job&#39;s own statistics, so one result carries the query&#39;s data and
+the plan of the run that produced it. Empty when the plan is the rows,
+which is every other engine. Omitted from the audit log, as the rows
+are: the statement is what an audit reads. </p></td>
                 </tr>
               
             </tbody>
@@ -9188,7 +9205,8 @@ Permissions required: None (only returns the caller&#39;s own query history)</p>
                 <td><a href="#bytebase.v1.ExportRequest">ExportRequest</a></td>
                 <td><a href="#bytebase.v1.ExportResponse">ExportResponse</a></td>
                 <td><p>Exports query results to a file format.
-Permissions required: bb.databases.get</p></td>
+Permissions required: bb.databases.get, and bb.sql.export on the data the statement reads.
+An active access grant with export=true for the statement satisfies bb.sql.export on its target databases.</p></td>
               </tr>
             
           </tbody>
@@ -11675,7 +11693,7 @@ creates the rollout automatically. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The requested role.
-Format: roles/EXPORTER. </p></td>
+Format: roles/{role}. </p></td>
                 </tr>
               
                 <tr>
@@ -15651,9 +15669,9 @@ If the condition evaluates to false, then this binding does not apply to the cur
 The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
 Support variables:
-resource.database: the canonical database full name in &#34;instances/{instance}/databases/{database}&#34; or &#34;projects/{project}/instances/{instance}/databases/{database}&#34; format, used by any role with SQL Editor read (e.g. &#34;roles/sqlEditorUser&#34;, &#34;roles/sqlEditorReadUser&#34;) or write (bb.sql.ddl / bb.sql.dml) access, support &#34;==&#34; operator.
-resource.schema_name: the schema name, used by any role with SQL Editor read or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support &#34;==&#34; operator.
-resource.table_name: the table name, used by any role with SQL Editor read or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support &#34;==&#34; operator.
+resource.database: the canonical database full name in &#34;instances/{instance}/databases/{database}&#34; or &#34;projects/{project}/instances/{instance}/databases/{database}&#34; format, used by any role with SQL Editor read (e.g. &#34;roles/sqlEditorUser&#34;, &#34;roles/sqlEditorReadUser&#34;), export (bb.sql.export, e.g. &#34;roles/sqlEditorExporter&#34;) or write (bb.sql.ddl / bb.sql.dml) access, support &#34;==&#34; operator.
+resource.schema_name: the schema name, used by any role with SQL Editor read, export (bb.sql.export) or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support &#34;==&#34; operator.
+resource.table_name: the table name, used by any role with SQL Editor read, export (bb.sql.export) or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support &#34;==&#34; operator.
 resource.environment_id: the environment to allow the DDL/DML operation in the SQL Editor, only works for the role with bb.sql.ddl or bb.sql.dml permissions. Support &#34;in&#34; operator.
 request.time: the expiration. Only support &#34;&lt;&#34; operation in `request.time &lt; timestamp(&#34;{ISO datetime string format}&#34;)`.
 
@@ -25679,7 +25697,7 @@ Name of the operator class for each column. (PostgreSQL specific). </p></td>
                   <td>parent</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>- projects/{project}: list databases in a project, require &#34;bb.projects.get&#34; permission.
+                  <td><p>- projects/{project}: list databases in a project, require &#34;bb.databases.list&#34; permission.
 - workspaces/{id}: list databases in the workspace, require &#34;bb.databases.list&#34; permission.
 - instances/{instance}: list databases in an instance, require &#34;bb.instances.get&#34; permission.
 - projects/{project}/instances/{instance}: list databases in a project instance, require &#34;bb.instances.get&#34; permission. </p></td>
@@ -27438,7 +27456,7 @@ Permissions required: bb.databases.get (on each named database&#39;s project)</p
                 <td><a href="#bytebase.v1.ListDatabasesRequest">ListDatabasesRequest</a></td>
                 <td><a href="#bytebase.v1.ListDatabasesResponse">ListDatabasesResponse</a></td>
                 <td><p>Lists databases in a project, instance, or workspace.
-Permissions required: bb.projects.get (for project parent), bb.databases.list (for workspace parent), or bb.instances.get (for instance parent)</p></td>
+Permissions required: bb.databases.list (for project or workspace parent), or bb.instances.get (for instance parent)</p></td>
               </tr>
             
               <tr>
@@ -28793,9 +28811,7 @@ The default value &lt;= 0, means no limit. </p></td>
                   <td>disable_export</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>workspace-level policy
-Disallow local export download. Exports can then only be delivered to an
-export destination, even when an export access grant covers them. </p></td>
+                  <td><p><strong>Deprecated.</strong> Deprecated: export is controlled by the bb.sql.export permission. Always false; setting it to true is rejected. </p></td>
                 </tr>
               
                 <tr>
@@ -28816,6 +28832,63 @@ If true, users can select the admin data source or read-only data source
 If false,
 1. when read-only data source is configured, users&#39;re force to use the read-only data source
 2. otherwise fallback to use the admin data source. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>export_delivery_policy</td>
+                  <td><a href="#bytebase.v1.QueryDataPolicy.ExportDeliveryPolicy">QueryDataPolicy.ExportDeliveryPolicy</a></td>
+                  <td></td>
+                  <td><p>workspace-level policy
+Where SQLService.Export may deliver results. When the stored policy has
+none, only LOCAL is allowed, and reads return that default. An update that
+omits it keeps the stored value. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+            
+            
+            <h4>Fields with deprecated option</h4>
+            <table>
+              <thead>
+                <tr>
+                  <td>Name</td>
+                  <td>Option</td>
+                </tr>
+              </thead>
+              <tbody>
+              
+                <tr>
+                  <td>disable_export</td>
+                  <td><p>true</p></td>
+                </tr>
+              
+              </tbody>
+            </table>
+            
+          
+
+        
+      
+        <h3 id="bytebase.v1.QueryDataPolicy.ExportDeliveryPolicy">QueryDataPolicy.ExportDeliveryPolicy</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>allowed_deliveries</td>
+                  <td><a href="#bytebase.v1.ExportDelivery">ExportDelivery</a></td>
+                  <td>repeated</td>
+                  <td><p>The allowed deliveries: at least one, without duplicates or
+EXPORT_DELIVERY_UNSPECIFIED. A delivery added to ExportDelivery later is
+not allowed until it is listed here. </p></td>
                 </tr>
               
             </tbody>

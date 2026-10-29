@@ -28,8 +28,11 @@ const mocks = vi.hoisted(() => ({
   isAgentAIConfigurationError: vi.fn(() => false),
   buildOutboundHistory: vi.fn(() => []),
   buildSystemPrompt: vi.fn(() => "system"),
-  createToolExecutor: vi.fn(() => ({})),
+  executeTool: vi.fn(),
+  createToolExecutor: vi.fn(() => mocks.executeTool),
   getToolDefinitions: vi.fn(() => []),
+  getPendingApiCallPreview: vi.fn(),
+  resolvePendingApiCall: vi.fn(),
   getRecentActivity: vi.fn(),
   getWorkspaceAttention: vi.fn(),
   getProjectAttention: vi.fn(),
@@ -47,6 +50,9 @@ const mocks = vi.hoisted(() => ({
   }),
   getOrFetchSettingByName: vi.fn(),
   getOrFetchProjectByName: vi.fn(),
+  searchAgentProjects: vi.fn(),
+  searchAgentDatabases: vi.fn(),
+  canListWorkspaceDatabases: false,
   projectsByName: {} as Record<string, { title: string }>,
   availableProjects: [] as { name: string; title: string }[],
   workspace: { name: "workspaces/demo", title: "Demo workspace" },
@@ -101,9 +107,12 @@ vi.mock("@/app/router", async (importOriginal) => ({
 
 vi.mock("@/stores/app", () => {
   const state = {
+    currentUser: { name: "users/me@example.com" },
     getOrFetchSettingByName: mocks.getOrFetchSettingByName,
     getOrFetchProjectByName: mocks.getOrFetchProjectByName,
     getSettingByName: () => undefined,
+    hasWorkspacePermission: (permission: string) =>
+      permission === "bb.databases.list" && mocks.canListWorkspaceDatabases,
     get projectsByName() {
       return mocks.projectsByName;
     },
@@ -152,6 +161,11 @@ vi.mock("../logic/chatContext", () => ({
   getCurrentChatContext: () => mocks.currentContext,
 }));
 
+vi.mock("../logic/resourceSearch", () => ({
+  searchAgentProjects: mocks.searchAgentProjects,
+  searchAgentDatabases: mocks.searchAgentDatabases,
+}));
+
 vi.mock("../logic/tools", () => ({
   createToolExecutor: mocks.createToolExecutor,
   getToolDefinitions: mocks.getToolDefinitions,
@@ -179,6 +193,11 @@ vi.mock("../logic/tools/issueOverview", () => ({
 
 vi.mock("../logic/tools/databaseOverview", () => ({
   extractDatabaseOverviewEvidence: mocks.extractDatabaseOverviewEvidence,
+}));
+
+vi.mock("../logic/tools/pendingApiCall", () => ({
+  getPendingApiCallPreview: mocks.getPendingApiCallPreview,
+  resolvePendingApiCall: mocks.resolvePendingApiCall,
 }));
 
 const renderIntoContainer = (element: ReactElement) => {
@@ -216,6 +235,7 @@ beforeEach(async () => {
     chats: initialState.chats,
     messagesByChatId: initialState.messagesByChatId,
     pendingAskByChatId: initialState.pendingAskByChatId,
+    draftsByChatId: initialState.draftsByChatId,
     queuedUserMessage: null,
     queuedUserMessageInFlight: false,
     currentChatId: initialState.currentChatId,
@@ -238,9 +258,23 @@ beforeEach(async () => {
   mocks.buildSystemPrompt.mockReset();
   mocks.buildSystemPrompt.mockReturnValue("system");
   mocks.createToolExecutor.mockReset();
-  mocks.createToolExecutor.mockReturnValue({});
+  mocks.executeTool.mockReset();
+  mocks.executeTool.mockResolvedValue({
+    kind: "tool_result",
+    result: JSON.stringify({
+      project: "projects/billing",
+      personalIssues: { status: "available", partial: false, issues: [] },
+      databases: { status: "available", partial: false, databases: [] },
+      openDatabaseChanges: { status: "available", partial: false, issues: [] },
+      evidence: { project: "projects/billing", references: [] },
+    }),
+  });
+  mocks.createToolExecutor.mockReturnValue(mocks.executeTool);
   mocks.getToolDefinitions.mockReset();
   mocks.getToolDefinitions.mockReturnValue([]);
+  mocks.getPendingApiCallPreview.mockReset();
+  mocks.resolvePendingApiCall.mockReset();
+  mocks.resolvePendingApiCall.mockResolvedValue('{"status":200,"response":{}}');
   mocks.getRecentActivity.mockReset();
   mocks.getWorkspaceAttention.mockReset();
   mocks.getProjectAttention.mockReset();
@@ -258,6 +292,25 @@ beforeEach(async () => {
   mocks.getOrFetchSettingByName.mockResolvedValue(undefined);
   mocks.getOrFetchProjectByName.mockReset();
   mocks.getOrFetchProjectByName.mockResolvedValue(undefined);
+  mocks.searchAgentProjects.mockReset();
+  mocks.searchAgentProjects.mockResolvedValue({
+    items: [
+      { name: "projects/orders", title: "Order service" },
+      { name: "projects/billing", title: "Billing" },
+    ],
+    nextPageToken: "",
+  });
+  mocks.searchAgentDatabases.mockReset();
+  mocks.canListWorkspaceDatabases = false;
+  mocks.searchAgentDatabases.mockResolvedValue({
+    items: [
+      {
+        name: "instances/prod/databases/orders",
+        project: "projects/orders",
+      },
+    ],
+    nextPageToken: "",
+  });
   mocks.projectsByName = { "projects/orders": { title: "Order service" } };
   mocks.availableProjects = [
     { name: "projects/orders", title: "Order service" },
@@ -1389,6 +1442,26 @@ describe("AgentInput", () => {
     view.unmount();
   });
 
+  test("does not overwrite a saved draft when a queued prompt is blocked", async () => {
+    mocks.getOrFetchSettingByName.mockResolvedValue({
+      value: { value: { case: "ai", value: { enabled: false } } },
+    });
+    const page = { path: "/projects/billing", title: "Billing" };
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/billing", page });
+    store.setDraft(chat.id, { text: "My unsent question" });
+    store.queueUserMessage({ chatId: chat.id, text: "Landing suggestion", page });
+
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => {
+      await vi.waitFor(() => expect(useAgentStore.getState().queuedUserMessage).toBeNull());
+    });
+    expect(useAgentStore.getState().getDraft(chat.id).text).toBe("My unsent question");
+    expect(useAgentStore.getState().getMessages(chat.id)).toHaveLength(0);
+    view.unmount();
+  });
+
   test("binds an initial empty chat and uses its context for every run", async () => {
     mocks.runAgentLoop.mockResolvedValue({
       kind: "completed",
@@ -1504,10 +1577,11 @@ describe("AgentInput", () => {
     unmount();
   });
 
-  test("changes the current chat context after a message", async () => {
+  test("starts a separate chat when selecting another context after a message", async () => {
+    useAgentStore.getState().setWorkspaceName("workspaces/demo");
     const original = useAgentStore
       .getState()
-      .ensureCurrentChat(undefined, "projects/orders");
+      .ensureCurrentChat(undefined, "projects/orders", "workspaces/demo");
     act(() => {
       useAgentStore.getState().addMessage({
         chatId: original.id,
@@ -1533,12 +1607,14 @@ describe("AgentInput", () => {
         ?.click();
     });
 
-    expect(useAgentStore.getState().chats).toHaveLength(1);
+    expect(useAgentStore.getState().chats).toHaveLength(2);
     expect(useAgentStore.getState().getChat(original.id)?.context).toBe(
-      "projects/billing"
+      "projects/orders"
     );
     expect(useAgentStore.getState().getMessages(original.id)).toHaveLength(1);
-    expect(useAgentStore.getState().currentChatId).toBe(original.id);
+    expect(useAgentStore.getState().currentChatId).not.toBe(original.id);
+    expect(useAgentStore.getState().getChat(useAgentStore.getState().currentChatId)?.context)
+      .toBe("projects/billing");
 
     mocks.runAgentLoop.mockResolvedValue({
       kind: "completed",
@@ -1555,6 +1631,78 @@ describe("AgentInput", () => {
     });
     expect(mocks.buildSystemPrompt).toHaveBeenLastCalledWith(
       expect.objectContaining({ context: "projects/billing" })
+    );
+    unmount();
+  });
+
+  test("keeps an inline mention in the source draft when switching contexts", async () => {
+    const store = useAgentStore.getState();
+    store.setWorkspaceName("workspaces/demo");
+    const original = store.ensureCurrentChat(
+      undefined,
+      "projects/orders",
+      "workspaces/demo"
+    );
+    act(() => {
+      store.addMessage({
+        chatId: original.id,
+        role: "user",
+        content: "Earlier question",
+      });
+      store.setDraft(original.id, {
+        text: "Compare @Billing policies",
+        mention: { start: 8, end: 16 },
+        resource: {
+          kind: "project",
+          name: "projects/billing",
+          project: "projects/billing",
+          label: "Billing",
+        },
+      });
+    });
+    const { container, render, unmount } = renderIntoContainer(<AgentInput />);
+    render();
+
+    await act(async () => {
+      container
+        .querySelector<HTMLButtonElement>("[data-agent-context-trigger]")
+        ?.click();
+    });
+    await act(async () => {
+      document
+        .querySelector<HTMLButtonElement>(
+          '[data-agent-context-option="projects/orders"]'
+        )
+        ?.click();
+    });
+    expect(useAgentStore.getState().currentChatId).toBe(original.id);
+    expect(store.getDraft(original.id).mention).toEqual({ start: 8, end: 16 });
+
+    await act(async () => {
+      container
+        .querySelector<HTMLButtonElement>("[data-agent-context-trigger]")
+        ?.click();
+    });
+    await act(async () => {
+      document
+        .querySelector<HTMLButtonElement>(
+          '[data-agent-context-option="workspaces/demo"]'
+        )
+        ?.click();
+    });
+
+    expect(useAgentStore.getState().currentChatId).not.toBe(original.id);
+    expect(store.getDraft(original.id)).toMatchObject({
+      text: "Compare @Billing policies",
+      mention: { start: 8, end: 16 },
+      resource: { name: "projects/billing" },
+    });
+    act(() => store.setCurrentChat(original.id));
+    expect((container.querySelector("textarea") as HTMLTextAreaElement).value).toBe(
+      "Compare @Billing policies"
+    );
+    expect(container.querySelector("[data-agent-inline-mention]")?.textContent).toBe(
+      "@Billing"
     );
     unmount();
   });
@@ -1667,7 +1815,7 @@ describe("AgentInput", () => {
     }
   });
 
-  test("treats @ as ordinary text without loading page-element suggestions", async () => {
+  test("keeps a cancelled @ literal without loading page-element suggestions", async () => {
     const suggestions: DomRefSuggestion[] = [
       {
         ref: "button.submit",
@@ -1679,6 +1827,10 @@ describe("AgentInput", () => {
     ];
     mocks.lazyExtractDomRefSuggestions.mockResolvedValue(suggestions);
     mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+    useAgentStore.getState().createChat({
+      context: "workspaces/demo",
+      workspaceName: "workspaces/demo",
+    });
 
     const { render, unmount } = renderIntoContainer(<AgentInput />);
 
@@ -1695,7 +1847,27 @@ describe("AgentInput", () => {
     });
 
     expect(mocks.lazyExtractDomRefSuggestions).not.toHaveBeenCalled();
+    expect(document.body.querySelector("[data-agent-resource-picker]")).not.toBeNull();
     expect(document.body.querySelector("[data-agent-mention-list]")).toBeNull();
+
+    const shiftEnter = new KeyboardEvent("keydown", {
+      key: "Enter",
+      shiftKey: true,
+      bubbles: true,
+      cancelable: true,
+    });
+    await act(async () => {
+      textarea.dispatchEvent(shiftEnter);
+    });
+    expect(shiftEnter.defaultPrevented).toBe(false);
+    expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+
+    await act(async () => {
+      textarea.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true })
+      );
+    });
+    expect(document.body.querySelector("[data-agent-resource-picker]")).toBeNull();
 
     await act(async () => {
       textarea.dispatchEvent(
@@ -1714,6 +1886,1327 @@ describe("AgentInput", () => {
     );
 
     unmount();
+  });
+
+  test("keeps a workspace chat and scopes only the mentioned turn to another project", async () => {
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+    const store = useAgentStore.getState();
+    store.setWorkspaceName("workspaces/demo");
+    const original = store.createChat({
+      context: "workspaces/demo",
+      workspaceName: "workspaces/demo",
+      page: { path: "/landing", title: "Demo workspace" },
+    });
+    store.addMessage({ chatId: original.id, role: "user", content: "Earlier work" });
+    const destination = store.createChat({
+      context: "projects/billing",
+      workspaceName: "workspaces/demo",
+      select: false,
+    });
+    store.setDraft(destination.id, { text: "Billing draft" });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    const textarea = view.container.querySelector("textarea") as HTMLTextAreaElement;
+
+    await act(async () => {
+      setTextareaValue(textarea, "Tell me about @");
+      textarea.setSelectionRange(15, 15);
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    expect(document.querySelector("[data-agent-resource-picker]")).not.toBeNull();
+    await act(async () => {
+      document.querySelector<HTMLButtonElement>(
+        '[data-agent-resource-category="project"]'
+      )?.click();
+    });
+    await vi.waitFor(() => expect(mocks.searchAgentProjects).toHaveBeenCalled());
+    await vi.waitFor(() =>
+      expect(document.querySelector('[data-agent-resource-project="projects/billing"]')).not.toBeNull()
+    );
+    await act(async () => {
+      document.querySelector<HTMLButtonElement>(
+        '[data-agent-resource-project="projects/billing"]'
+      )?.click();
+    });
+
+    expect(textarea.value).toBe("Tell me about @Billing ");
+    expect(view.container.querySelector("[data-agent-context]")?.textContent).toBe("Demo workspace");
+    expect(view.container.querySelector("[data-agent-project-reference]")).toBeNull();
+    expect(view.container.querySelector("[data-agent-inline-mention]")?.textContent).toBe("@Billing");
+    expect(store.getChat(original.id)?.context).toBe("workspaces/demo");
+    expect(store.getMessages(original.id)).toHaveLength(1);
+    expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+    expect(mocks.routerPush).not.toHaveBeenCalled();
+
+    await act(async () => {
+      setTextareaValue(textarea, "Tell me about @Billing's policies");
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await act(async () => {
+      view.container.querySelector<HTMLButtonElement>("[data-agent-send]")?.click();
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+    });
+    const currentChatId = useAgentStore.getState().currentChatId!;
+    expect(currentChatId).toBe(original.id);
+    expect(useAgentStore.getState().getChat(currentChatId)?.context).toBe("workspaces/demo");
+    expect(useAgentStore.getState().getMessages(currentChatId)[1]).toMatchObject({
+      role: "user",
+      content: "Tell me about @Billing's policies",
+      metadata: {
+        resourceReference: {
+          kind: "project",
+          name: "projects/billing",
+          project: "projects/billing",
+          label: "Billing",
+        },
+      },
+    });
+    expect(mocks.createToolExecutor).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        context: "workspaces/demo",
+        referencedProject: "projects/billing",
+        runMode: "read-only",
+      })
+    );
+    expect(mocks.buildSystemPrompt).toHaveBeenCalledWith(
+      expect.objectContaining({
+        context: "workspaces/demo",
+        referencedProject: "projects/billing",
+        runMode: "read-only",
+      })
+    );
+    expect(mocks.getToolDefinitions).toHaveBeenCalledWith({
+      runMode: "read-only",
+      referencedProject: "projects/billing",
+    });
+    expect(mocks.executeTool).toHaveBeenCalledWith(
+      "get_project_overview",
+      {},
+      expect.any(String)
+    );
+    const referenceHistory = mocks.runAgentLoop.mock.calls[0][0] as {
+      role: string;
+      toolCalls?: { name: string; id: string }[];
+      toolCallId?: string;
+    }[];
+    expect(referenceHistory.slice(-2)).toMatchObject([
+      {
+        role: "assistant",
+        toolCalls: [{ name: "get_project_overview" }],
+      },
+      { role: "tool", toolCallId: referenceHistory.at(-2)?.toolCalls?.[0].id },
+    ]);
+    expect(useAgentStore.getState().getDraft(original.id)).toEqual({ text: "" });
+    expect(useAgentStore.getState().getDraft(destination.id).text).toBe("Billing draft");
+
+    await act(async () => {
+      setTextareaValue(textarea, "What about this workspace?");
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+      view.container.querySelector<HTMLButtonElement>("[data-agent-send]")?.click();
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledTimes(2));
+    });
+    expect(mocks.createToolExecutor).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.objectContaining({ context: "workspaces/demo", referencedProject: undefined })
+    );
+    expect(mocks.buildOutboundHistory).toHaveBeenLastCalledWith(
+      expect.any(String),
+      expect.any(Array),
+      "workspaces/demo"
+    );
+    view.unmount();
+  });
+
+  test("does not cite unrelated project overview resources for a generic API answer", async () => {
+    mocks.executeTool.mockResolvedValueOnce({
+      kind: "tool_result",
+      result: JSON.stringify({
+        project: "projects/billing",
+        evidence: {
+          project: "projects/billing",
+          references: [
+            {
+              kind: "issue",
+              name: "projects/billing/issues/42",
+              title: "Unrelated access request",
+            },
+            {
+              kind: "database",
+              name: "projects/billing/instances/prod/databases/example",
+            },
+          ],
+        },
+      }),
+    });
+    mocks.runAgentLoop.mockImplementation(
+      async (_history, _tools, _executor, callbacks) => {
+        callbacks.onAssistantMessage({
+          toolCalls: [
+            {
+              id: "tool-list-databases",
+              name: "call_api",
+              arguments: JSON.stringify({
+                operationId: "DatabaseService/ListDatabases",
+                body: { parent: "projects/billing", pageSize: 100 },
+              }),
+            },
+          ],
+        });
+        callbacks.onToolResult(
+          "tool-list-databases",
+          JSON.stringify({
+            status: 200,
+            response: {
+              databases: Array.from({ length: 26 }, (_, index) => ({
+                name: `instances/prod/databases/db-${index}`,
+              })),
+            },
+          })
+        );
+        callbacks.onText("Billing has 26 active databases.");
+        return { kind: "completed", totalTokensUsed: 0 };
+      }
+    );
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "workspaces/demo" });
+    store.setDraft(chat.id, {
+      text: "@Billing how many dbs?",
+      mention: { start: 0, end: 8 },
+      resource: {
+        kind: "project",
+        name: "projects/billing",
+        project: "projects/billing",
+        label: "Billing",
+      },
+    });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+
+    await act(async () => {
+      view.container.querySelector<HTMLButtonElement>("[data-agent-send]")?.click();
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+    });
+
+    expect(mocks.executeTool).toHaveBeenCalledWith(
+      "get_project_overview",
+      {},
+      expect.any(String)
+    );
+    expect(
+      store.getMessages(chat.id).find(
+        (message) => message.content === "Billing has 26 active databases."
+      )?.metadata?.evidence
+    ).toBeUndefined();
+    view.unmount();
+  });
+
+  test("selects a database directly from workspace context without opening projects", async () => {
+    mocks.canListWorkspaceDatabases = true;
+    mocks.currentContext = "workspaces/demo";
+    mocks.executeTool.mockResolvedValueOnce({
+      kind: "tool_result",
+      result: JSON.stringify({
+        project: "projects/orders",
+        database: {
+          status: "available",
+          name: "instances/prod/databases/orders",
+          state: "ACTIVE",
+        },
+      }),
+    });
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+    const store = useAgentStore.getState();
+    const chat = store.createChat({
+      context: "workspaces/demo",
+      workspaceName: "workspaces/demo",
+    });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    const textarea = view.container.querySelector("textarea") as HTMLTextAreaElement;
+
+    await act(async () => {
+      setTextareaValue(textarea, "@");
+      textarea.setSelectionRange(1, 1);
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await act(async () => {
+      document.querySelector<HTMLButtonElement>(
+        '[data-agent-resource-category="database"]'
+      )?.click();
+    });
+    await vi.waitFor(() =>
+      expect(mocks.searchAgentDatabases).toHaveBeenCalledWith(
+        "workspaces/demo",
+        "",
+        "",
+        expect.any(AbortSignal)
+      )
+    );
+    expect(mocks.searchAgentProjects).not.toHaveBeenCalled();
+    expect(document.querySelector('input[aria-label="agent.resource-picker.search-projects"]')).toBeNull();
+
+    await act(async () => {
+      document.querySelector<HTMLButtonElement>(
+        '[data-agent-resource-database="instances/prod/databases/orders"]'
+      )?.click();
+    });
+    expect(textarea.value).toBe("@orders ");
+    expect(view.container.querySelector("[data-agent-inline-mention]")?.textContent).toBe("@orders");
+    expect(document.querySelector("[data-agent-resource-picker]")).toBeNull();
+    expect(store.getChat(chat.id)?.context).toBe("workspaces/demo");
+
+    expect(view.container.querySelector<HTMLButtonElement>("[data-agent-send]")).not.toBeDisabled();
+    await act(async () => {
+      view.container.querySelector<HTMLButtonElement>("[data-agent-send]")?.click();
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+    });
+    expect(store.getMessages(chat.id)[0].metadata?.resourceReference).toEqual({
+      kind: "database",
+      name: "instances/prod/databases/orders",
+      project: "projects/orders",
+      label: "orders",
+    });
+    view.unmount();
+  });
+
+  test("falls back to the workspace for database search in a contextless chat", async () => {
+    mocks.currentContext = undefined;
+    mocks.canListWorkspaceDatabases = true;
+    const store = useAgentStore.getState();
+    store.createChat({ workspaceName: "workspaces/demo" });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    const textarea = view.container.querySelector("textarea") as HTMLTextAreaElement;
+
+    await act(async () => {
+      setTextareaValue(textarea, "@");
+      textarea.setSelectionRange(1, 1);
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await act(async () => {
+      document.querySelector<HTMLButtonElement>(
+        '[data-agent-resource-category="database"]'
+      )?.click();
+    });
+
+    await vi.waitFor(() =>
+      expect(mocks.searchAgentDatabases).toHaveBeenCalledWith(
+        "workspaces/demo",
+        "",
+        "",
+        expect.any(AbortSignal)
+      )
+    );
+    view.unmount();
+  });
+
+  test("uses an inline project as the database search parent and binds both references", async () => {
+    const databaseName = "instances/prod/databases/invoices";
+    mocks.searchAgentDatabases.mockResolvedValue({
+      items: [{ name: databaseName, project: "projects/billing" }],
+      nextPageToken: "",
+    });
+    mocks.executeTool.mockResolvedValueOnce({
+      kind: "tool_result",
+      result: JSON.stringify({
+        project: "projects/billing",
+        database: { status: "available", name: databaseName, state: "ACTIVE" },
+      }),
+    });
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+    const store = useAgentStore.getState();
+    const chat = store.createChat({
+      context: "projects/orders",
+      workspaceName: "workspaces/demo",
+    });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    const textarea = view.container.querySelector("textarea") as HTMLTextAreaElement;
+
+    await act(async () => {
+      setTextareaValue(textarea, "@");
+      textarea.setSelectionRange(1, 1);
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await act(async () => {
+      document.querySelector<HTMLButtonElement>(
+        '[data-agent-resource-category="project"]'
+      )?.click();
+    });
+    await vi.waitFor(() =>
+      expect(document.querySelector('[data-agent-resource-project="projects/billing"]'))
+        .not.toBeNull()
+    );
+    await act(async () => {
+      document.querySelector<HTMLButtonElement>(
+        '[data-agent-resource-project="projects/billing"]'
+      )?.click();
+    });
+    await act(async () => {
+      setTextareaValue(textarea, "@Billing @");
+      textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    expect(document.querySelector('[data-agent-resource-category="project"]')).toBeNull();
+    await act(async () => {
+      document.querySelector<HTMLButtonElement>(
+        '[data-agent-resource-category="database"]'
+      )?.click();
+    });
+    await vi.waitFor(() =>
+      expect(mocks.searchAgentDatabases).toHaveBeenCalledWith(
+        "projects/billing",
+        "",
+        "",
+        expect.any(AbortSignal)
+      )
+    );
+    await act(async () => {
+      document.querySelector<HTMLButtonElement>(
+        `[data-agent-resource-database="${databaseName}"]`
+      )?.click();
+    });
+    expect(textarea.value).toBe("@Billing @invoices ");
+    expect(view.container.querySelectorAll("[data-agent-inline-mention]")).toHaveLength(2);
+
+    await act(async () => {
+      view.container.querySelector<HTMLButtonElement>("[data-agent-send]")?.click();
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+    });
+    expect(store.getChat(chat.id)?.context).toBe("projects/orders");
+    expect(store.getMessages(chat.id)[0].metadata?.resourceReferences).toEqual([
+      {
+        kind: "project",
+        name: "projects/billing",
+        project: "projects/billing",
+        label: "Billing",
+      },
+      {
+        kind: "database",
+        name: databaseName,
+        project: "projects/billing",
+        label: "invoices",
+      },
+    ]);
+    expect(mocks.executeTool).toHaveBeenCalledWith(
+      "get_database_overview",
+      { databaseName },
+      expect.any(String)
+    );
+    expect(mocks.buildSystemPrompt).toHaveBeenCalledWith(
+      expect.objectContaining({
+        context: "projects/orders",
+        referencedProject: "projects/billing",
+        referencedDatabase: databaseName,
+      })
+    );
+    view.unmount();
+  });
+
+  test("deleting a database token keeps its preceding project binding", () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({
+      context: "workspaces/demo",
+      workspaceName: "workspaces/demo",
+    });
+    store.setDraft(chat.id, {
+      text: "@Billing @invoices ",
+      mentions: [
+        {
+          resource: {
+            kind: "project",
+            name: "projects/billing",
+            project: "projects/billing",
+            label: "Billing",
+          },
+          range: { start: 0, end: 8 },
+        },
+        {
+          resource: {
+            kind: "database",
+            name: "instances/prod/databases/invoices",
+            project: "projects/billing",
+            label: "invoices",
+          },
+          range: { start: 9, end: 18 },
+        },
+      ],
+    });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    const textarea = view.container.querySelector("textarea") as HTMLTextAreaElement;
+
+    act(() => {
+      textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+      textarea.dispatchEvent(new KeyboardEvent("keydown", {
+        key: "Backspace",
+        bubbles: true,
+        cancelable: true,
+      }));
+    });
+
+    expect(textarea.value).toBe("@Billing ");
+    expect(store.getDraft(chat.id).mentions).toHaveLength(1);
+    expect(store.getDraft(chat.id).mentions?.[0].resource.name).toBe("projects/billing");
+    expect(view.container.querySelectorAll("[data-agent-inline-mention]")).toHaveLength(1);
+    view.unmount();
+  });
+
+  test("selects a database inline and uses a fresh overview for only that turn", async () => {
+    const databaseName = "instances/prod/databases/orders";
+    const overview = JSON.stringify({
+      project: "projects/orders",
+      database: { status: "available", name: databaseName, state: "ACTIVE" },
+      evidence: {
+        project: "projects/orders",
+        references: [{ kind: "database", name: databaseName }],
+      },
+    });
+    mocks.executeTool.mockResolvedValueOnce({
+      kind: "tool_result",
+      result: overview,
+    });
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+    const store = useAgentStore.getState();
+    const chat = store.createChat({
+      context: "projects/orders",
+      workspaceName: "workspaces/demo",
+    });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    const textarea = view.container.querySelector("textarea") as HTMLTextAreaElement;
+
+    await act(async () => {
+      setTextareaValue(textarea, "Check @");
+      textarea.setSelectionRange(7, 7);
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await act(async () => {
+      document.querySelector<HTMLButtonElement>(
+        '[data-agent-resource-category="database"]'
+      )?.click();
+    });
+    await vi.waitFor(() =>
+      expect(mocks.searchAgentDatabases).toHaveBeenCalledWith(
+        "projects/orders",
+        "",
+        "",
+        expect.any(AbortSignal)
+      )
+    );
+    await act(async () => {
+      document.querySelector<HTMLButtonElement>(
+        `[data-agent-resource-database="${databaseName}"]`
+      )?.click();
+    });
+    expect(textarea.value).toBe("Check @orders ");
+    expect(view.container.querySelector("[data-agent-inline-mention]")?.textContent).toBe("@orders");
+    expect(store.getChat(chat.id)?.context).toBe("projects/orders");
+    expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+
+    await act(async () => {
+      view.container.querySelector<HTMLButtonElement>("[data-agent-send]")?.click();
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+    });
+    expect(store.getMessages(chat.id)[0].metadata?.resourceReference).toEqual({
+      kind: "database",
+      name: databaseName,
+      project: "projects/orders",
+      label: "orders",
+    });
+    expect(mocks.executeTool).toHaveBeenCalledWith(
+      "get_database_overview",
+      { databaseName },
+      expect.any(String)
+    );
+    expect(mocks.buildSystemPrompt).toHaveBeenCalledWith(
+      expect.objectContaining({
+        context: "projects/orders",
+        referencedProject: "projects/orders",
+        referencedDatabase: databaseName,
+      })
+    );
+    expect(mocks.createToolExecutor).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        context: "projects/orders",
+        referencedProject: "projects/orders",
+        referencedDatabase: databaseName,
+      })
+    );
+    const history = mocks.runAgentLoop.mock.calls[0][0] as {
+      role: string;
+      toolCalls?: { name: string; arguments: string; id: string }[];
+      content?: string;
+      toolCallId?: string;
+    }[];
+    expect(history.slice(-2)).toMatchObject([
+      {
+        role: "assistant",
+        toolCalls: [{
+          name: "get_database_overview",
+          arguments: JSON.stringify({ databaseName }),
+        }],
+      },
+      { role: "tool", content: overview },
+    ]);
+
+    await act(async () => {
+      setTextareaValue(textarea, "How many databases here?");
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+      view.container.querySelector<HTMLButtonElement>("[data-agent-send]")?.click();
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledTimes(2));
+    });
+    expect(mocks.createToolExecutor).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        context: "projects/orders",
+        referencedProject: undefined,
+      })
+    );
+    view.unmount();
+  });
+
+  test("reads a selected database again after an API write in the same turn", async () => {
+    const databaseName = "instances/prod/databases/orders";
+    const beforeWrite = JSON.stringify({
+      project: "projects/orders",
+      database: {
+        status: "available",
+        name: databaseName,
+        state: "ACTIVE",
+        sync: { status: "available", syncStatus: "FAILED" },
+      },
+    });
+    const afterWrite = JSON.stringify({
+      project: "projects/orders",
+      database: {
+        status: "available",
+        name: databaseName,
+        state: "ACTIVE",
+        sync: { status: "available", syncStatus: "OK" },
+      },
+    });
+    mocks.executeTool
+      .mockResolvedValueOnce({ kind: "tool_result", result: beforeWrite })
+      .mockResolvedValueOnce({ kind: "tool_result", result: "{}" })
+      .mockResolvedValueOnce({ kind: "tool_result", result: afterWrite });
+    let postWriteResult: unknown;
+    mocks.runAgentLoop.mockImplementation(async (_history, _tools, execute) => {
+      await execute(
+        "call_api",
+        {
+          operationId: "DatabaseService/SyncDatabase",
+          body: { name: databaseName },
+        },
+        "sync-call"
+      );
+      postWriteResult = await execute(
+        "get_database_overview",
+        { databaseName },
+        "read-after-sync"
+      );
+      return { kind: "completed", totalTokensUsed: 0 };
+    });
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/orders" });
+    store.setDraft(chat.id, {
+      text: "Sync @orders and report its status",
+      mention: { start: 5, end: 12 },
+      resource: {
+        kind: "database",
+        name: databaseName,
+        project: "projects/orders",
+        label: "orders",
+      },
+    });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+
+    await act(async () => {
+      view.container.querySelector<HTMLButtonElement>("[data-agent-send]")?.click();
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+      await vi.waitFor(() => expect(store.getChat(chat.id)?.status).toBe("idle"));
+    });
+
+    const executorCalls = mocks.executeTool.mock.calls;
+    view.unmount();
+    expect(postWriteResult).toEqual({ kind: "tool_result", result: afterWrite });
+    expect(executorCalls).toHaveLength(3);
+    expect(mocks.executeTool).toHaveBeenNthCalledWith(
+      3,
+      "get_database_overview",
+      { databaseName },
+      "read-after-sync"
+    );
+  });
+
+  test("attaches database Evidence when the model answers from preflight alone", async () => {
+    const databaseName = "instances/prod/databases/orders";
+    const evidence = {
+      project: "projects/orders",
+      references: [{ kind: "database", name: databaseName }],
+    };
+    mocks.executeTool.mockResolvedValueOnce({
+      kind: "tool_result",
+      result: JSON.stringify({
+        project: "projects/orders",
+        database: { status: "available", name: databaseName, state: "ACTIVE" },
+        evidence,
+      }),
+    });
+    mocks.runAgentLoop.mockImplementation(
+      async (_history, _tools, _executor, callbacks) => {
+        callbacks.onText("Orders is active.");
+        return { kind: "completed", totalTokensUsed: 0 };
+      }
+    );
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/orders" });
+    store.setDraft(chat.id, {
+      text: "Check @orders",
+      mention: { start: 6, end: 13 },
+      resource: {
+        kind: "database",
+        name: databaseName,
+        project: "projects/orders",
+        label: "orders",
+      },
+    });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+
+    await act(async () => {
+      view.container.querySelector<HTMLButtonElement>("[data-agent-send]")?.click();
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+      await vi.waitFor(() => expect(store.getChat(chat.id)?.status).toBe("idle"));
+    });
+
+    const answerEvidence = store
+      .getMessages(chat.id)
+      .find((message) => message.content === "Orders is active.")?.metadata
+      ?.evidence;
+    view.unmount();
+    expect(mocks.executeTool).toHaveBeenCalledTimes(1);
+    expect(answerEvidence).toEqual(evidence);
+  });
+
+  test.each([
+    ["moved", { project: "projects/billing", database: { status: "available", name: "instances/prod/databases/orders", state: "ACTIVE" } }],
+    ["deleted", { project: "projects/orders", database: { status: "available", name: "instances/prod/databases/orders", state: "DELETED" } }],
+    ["inaccessible", { project: "projects/orders", database: { status: "unavailable" } }],
+  ])("does not run the model for a %s selected database", async (_case, overview) => {
+    mocks.executeTool.mockResolvedValueOnce({
+      kind: "tool_result",
+      result: JSON.stringify(overview),
+    });
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/orders" });
+    store.setDraft(chat.id, {
+      text: "Check @orders",
+      mention: { start: 6, end: 13 },
+      resource: {
+        kind: "database",
+        name: "instances/prod/databases/orders",
+        project: "projects/orders",
+        label: "orders",
+      },
+    });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+
+    await act(async () => {
+      view.container.querySelector<HTMLButtonElement>("[data-agent-send]")?.click();
+      await vi.waitFor(() =>
+        expect(store.getMessages(chat.id).some(
+          (message) => message.content === "agent.database-reference-unavailable"
+        )).toBe(true)
+      );
+    });
+    expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+    expect(store.getChat(chat.id)?.context).toBe("projects/orders");
+    view.unmount();
+  });
+
+  test("binds a contextless chat to the selected database's owner project", async () => {
+    const databaseName = "instances/prod/databases/billing";
+    mocks.currentContext = undefined;
+    mocks.executeTool.mockResolvedValueOnce({
+      kind: "tool_result",
+      result: JSON.stringify({
+        project: "projects/billing",
+        database: { status: "available", name: databaseName, state: "ACTIVE" },
+      }),
+    });
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ workspaceName: "workspaces/demo" });
+    store.setDraft(chat.id, {
+      text: "Inspect @billing",
+      mention: { start: 8, end: 16 },
+      resource: {
+        kind: "database",
+        name: databaseName,
+        project: "projects/billing",
+        label: "billing",
+      },
+    });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+
+    await act(async () => {
+      view.container.querySelector<HTMLButtonElement>("[data-agent-send]")?.click();
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+    });
+    expect(store.getChat(chat.id)?.context).toBe("projects/billing");
+    expect(store.getMessages(chat.id)[0].metadata?.resourceReference).toMatchObject({
+      kind: "database",
+      name: databaseName,
+      project: "projects/billing",
+    });
+    view.unmount();
+  });
+
+  test("offers databases under a selected project, but not another project", async () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({
+      context: "projects/orders",
+      workspaceName: "workspaces/demo",
+    });
+    store.setDraft(chat.id, {
+      text: "Ask @Billing and ",
+      mention: { start: 4, end: 12 },
+      resource: {
+        kind: "project",
+        name: "projects/billing",
+        project: "projects/billing",
+        label: "Billing",
+      },
+    });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    const textarea = view.container.querySelector("textarea") as HTMLTextAreaElement;
+
+    await act(async () => {
+      setTextareaValue(textarea, "Ask @Billing and @");
+      textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+
+    expect(
+      document.querySelector("[data-agent-resource-picker]")
+    ).not.toBeNull();
+    expect(
+      document.querySelector('[data-agent-resource-category="project"]')
+    ).toBeNull();
+    expect(
+      document.querySelector('[data-agent-resource-category="database"]')
+    ).not.toBeNull();
+    expect(
+      document.querySelector('[data-agent-resource-picker] [role="status"]')
+    ).toBeNull();
+    expect(mocks.searchAgentDatabases).not.toHaveBeenCalled();
+    await act(async () => {
+      document.querySelector<HTMLButtonElement>(
+        '[data-agent-resource-category="database"]'
+      )?.click();
+    });
+    await vi.waitFor(() =>
+      expect(mocks.searchAgentDatabases).toHaveBeenCalledWith(
+        "projects/billing",
+        "",
+        "",
+        expect.any(AbortSignal)
+      )
+    );
+    expect(view.container.querySelector('[role="alert"]')).toBeNull();
+    expect(store.getDraft(chat.id).mentions?.[0].resource.name).toBe("projects/billing");
+    expect(
+      view.container.querySelector("[data-agent-send]")
+    ).toBeDisabled();
+
+    await act(async () => {
+      textarea.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true })
+      );
+    });
+    expect(document.querySelector("[data-agent-resource-picker]")).toBeNull();
+    expect(view.container.querySelector('[role="alert"]')).toBeNull();
+    expect(view.container.querySelector("[data-agent-send]")).toBeDisabled();
+
+    await act(async () => {
+      setTextareaValue(textarea, "Ask @Billing and ed@example.com");
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    expect(
+      view.container.querySelector("[data-agent-send]")
+    ).not.toBeDisabled();
+
+    await act(async () => {
+      setTextareaValue(textarea, "Ask Billing and @");
+      textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    expect(store.getDraft(chat.id).mentions).toBeUndefined();
+    expect(
+      view.container.querySelector("[data-agent-send]")
+    ).not.toBeDisabled();
+    expect(
+      document.querySelector('[data-agent-resource-category="project"]')
+    ).not.toBeNull();
+    view.unmount();
+  });
+
+  test("drops the selected resource when its visible mention is edited", async () => {
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "workspaces/demo" });
+    store.setDraft(chat.id, {
+      text: "Ask @Billing about policy",
+      mention: { start: 4, end: 12 },
+      resource: {
+        kind: "project",
+        name: "projects/billing",
+        project: "projects/billing",
+        label: "Billing",
+      },
+    });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    expect(view.container.querySelector("[data-agent-inline-mention]")?.textContent).toBe(
+      "@Billing"
+    );
+
+    const textarea = view.container.querySelector("textarea") as HTMLTextAreaElement;
+    await act(async () => {
+      setTextareaValue(textarea, "Ask @Bill about policy");
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+
+    expect(store.getDraft(chat.id)).toEqual({ text: "Ask @Bill about policy" });
+    expect(view.container.querySelector("[data-agent-inline-mention]")).toBeNull();
+    await act(async () => {
+      view.container.querySelector<HTMLButtonElement>("[data-agent-send]")?.click();
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+    });
+    expect(store.getMessages(chat.id)[0].metadata?.resourceReference).toBeUndefined();
+    expect(mocks.createToolExecutor).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.objectContaining({ referencedProject: undefined, runMode: "default" })
+    );
+    view.unmount();
+  });
+
+  test("Backspace after the selected Project removes the mention and clears its reference", async () => {
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "workspaces/demo" });
+    store.setDraft(chat.id, {
+      text: "Ask @Billing ",
+      mention: { start: 4, end: 12 },
+      resource: {
+        kind: "project",
+        name: "projects/billing",
+        project: "projects/billing",
+        label: "Billing",
+      },
+    });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    const textarea = view.container.querySelector("textarea") as HTMLTextAreaElement;
+    expect(view.container.querySelector("[data-agent-inline-mention]")?.textContent).toBe(
+      "@Billing"
+    );
+
+    act(() => {
+      textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+      textarea.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "Backspace",
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+    });
+
+    expect(textarea.value).toBe("Ask ");
+    expect(textarea.selectionStart).toBe(4);
+    expect(store.getDraft(chat.id)).toEqual({ text: "Ask " });
+    expect(view.container.querySelector("[data-agent-inline-mention]")).toBeNull();
+    await act(async () => {
+      view.container.querySelector<HTMLButtonElement>("[data-agent-send]")?.click();
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+    });
+    expect(store.getMessages(chat.id)[0]).toMatchObject({ content: "Ask" });
+    expect(store.getMessages(chat.id)[0].metadata?.resourceReference).toBeUndefined();
+    view.unmount();
+  });
+
+  test("Delete inside the selected Project preserves surrounding draft text", () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "workspaces/demo" });
+    store.setDraft(chat.id, {
+      text: "Ask @Billing about policy",
+      mention: { start: 4, end: 12 },
+      resource: {
+        kind: "project",
+        name: "projects/billing",
+        project: "projects/billing",
+        label: "Billing",
+      },
+    });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    const textarea = view.container.querySelector("textarea") as HTMLTextAreaElement;
+
+    act(() => {
+      textarea.setSelectionRange(8, 8);
+      textarea.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "Delete",
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+    });
+
+    expect(textarea.value).toBe("Ask about policy");
+    expect(textarea.selectionStart).toBe(4);
+    expect(store.getDraft(chat.id)).toEqual({ text: "Ask about policy" });
+    expect(view.container.querySelector("[data-agent-inline-mention]")).toBeNull();
+    view.unmount();
+  });
+
+  test("keeps the selected resource when editing around its visible mention", async () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "workspaces/demo" });
+    store.setDraft(chat.id, {
+      text: "Ask @Billing about policy",
+      mention: { start: 4, end: 12 },
+      resource: {
+        kind: "project",
+        name: "projects/billing",
+        project: "projects/billing",
+        label: "Billing",
+      },
+    });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    const textarea = view.container.querySelector("textarea") as HTMLTextAreaElement;
+
+    await act(async () => {
+      setTextareaValue(textarea, "Please ask @Billing about policy");
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+
+    expect(store.getDraft(chat.id).mentions?.[0].range).toEqual({ start: 11, end: 19 });
+    expect(store.getDraft(chat.id).mentions?.[0].resource.name).toBe("projects/billing");
+    expect(view.container.querySelector("[data-agent-inline-mention]")?.textContent).toBe(
+      "@Billing"
+    );
+    view.unmount();
+  });
+
+  test("does not ask the model about a deleted or inaccessible mentioned project", async () => {
+    mocks.executeTool.mockResolvedValueOnce({
+      kind: "tool_result",
+      result: JSON.stringify({ error: "The referenced project is unavailable." }),
+    });
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/orders" });
+    store.setDraft(chat.id, {
+      text: "What changed in billing?",
+      resource: {
+        kind: "project",
+        name: "projects/billing",
+        project: "projects/billing",
+        label: "Billing",
+      },
+    });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+
+    await act(async () => {
+      view.container.querySelector<HTMLButtonElement>("[data-agent-send]")?.click();
+      await vi.waitFor(() =>
+        expect(store.getMessages(chat.id).some(
+          (message) => message.content === "agent.project-reference-unavailable"
+        )).toBe(true)
+      );
+    });
+
+    expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+    expect(store.getChat(chat.id)?.context).toBe("projects/orders");
+    view.unmount();
+  });
+
+  test("does not reclassify a populated contextless chat when sending a project mention", async () => {
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+    mocks.currentContext = undefined;
+    const store = useAgentStore.getState();
+    const legacy = store.createChat({ workspaceName: "workspaces/demo" });
+    store.addMessage({ chatId: legacy.id, role: "user", content: "Old question" });
+    store.setDraft(legacy.id, {
+      text: "Inspect billing",
+      resource: {
+        kind: "project",
+        name: "projects/billing",
+        project: "projects/billing",
+        label: "Billing",
+      },
+    });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+
+    await act(async () => {
+      view.container.querySelector<HTMLButtonElement>("[data-agent-send]")?.click();
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+    });
+
+    expect(store.getChat(legacy.id)?.context).toBeUndefined();
+    expect(store.getMessages(legacy.id)).toHaveLength(1);
+    const nextChatId = useAgentStore.getState().currentChatId!;
+    expect(nextChatId).not.toBe(legacy.id);
+    expect(store.getChat(nextChatId)?.context).toBe("projects/billing");
+    expect(store.getMessages(nextChatId)[0].content).toBe("Inspect billing @Billing");
+    expect(store.getMessages(nextChatId)[0].metadata?.resourceReference?.name).toBe(
+      "projects/billing"
+    );
+    expect(mocks.executeTool).toHaveBeenCalledWith(
+      "get_project_overview",
+      {},
+      expect.any(String)
+    );
+    view.unmount();
+  });
+
+  test("does not reuse a stale project chat when a contextless mention is unavailable", async () => {
+    mocks.currentContext = undefined;
+    mocks.executeTool.mockResolvedValueOnce({
+      kind: "tool_result",
+      result: JSON.stringify({ error: "The referenced project is unavailable." }),
+    });
+    const store = useAgentStore.getState();
+    const legacy = store.createChat({ workspaceName: "workspaces/demo" });
+    store.addMessage({ chatId: legacy.id, role: "user", content: "Old question" });
+    store.setDraft(legacy.id, {
+      text: "Inspect billing",
+      resource: {
+        kind: "project",
+        name: "projects/billing",
+        project: "projects/billing",
+        label: "Billing",
+      },
+    });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+
+    await act(async () => {
+      view.container.querySelector<HTMLButtonElement>("[data-agent-send]")?.click();
+      await vi.waitFor(() =>
+        expect(useAgentStore.getState().getMessages(useAgentStore.getState().currentChatId!).some(
+          (message) => message.content === "agent.project-reference-unavailable"
+        )).toBe(true)
+      );
+    });
+
+    expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+    expect(store.getChat(legacy.id)?.context).toBeUndefined();
+    expect(store.getMessages(legacy.id)).toHaveLength(1);
+    view.unmount();
+  });
+
+  test("does not run a chat-context starter fast path for a referenced project", async () => {
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/orders" });
+    store.queueUserMessage({
+      chatId: chat.id,
+      text: "What changed recently in this project?",
+      page: { path: "/projects/orders", title: "Orders" },
+      starterId: "project-open-recent",
+      resourceReference: {
+        kind: "project",
+        name: "projects/billing",
+        project: "projects/billing",
+        label: "Billing",
+      },
+    });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+
+    await act(async () => {
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+    });
+    expect(mocks.getRecentActivity).not.toHaveBeenCalled();
+    expect(mocks.createToolExecutor).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        context: "projects/orders",
+        referencedProject: "projects/billing",
+      })
+    );
+    view.unmount();
+  });
+
+  test("sends the submitted draft without discarding edits made during the configuration check", async () => {
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+    const chat = useAgentStore.getState().createChat({
+      context: "workspaces/demo",
+      workspaceName: "workspaces/demo",
+    });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    const textarea = view.container.querySelector("textarea") as HTMLTextAreaElement;
+
+    await act(async () => {
+      setTextareaValue(textarea, "First question");
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+
+    let finishConfigurationCheck: (() => void) | undefined;
+    mocks.getOrFetchSettingByName.mockImplementationOnce(
+      () => new Promise<undefined>((resolve) => {
+        finishConfigurationCheck = () => resolve(undefined);
+      })
+    );
+    act(() => {
+      view.container.querySelector<HTMLButtonElement>("[data-agent-send]")?.click();
+    });
+    expect(finishConfigurationCheck).toBeDefined();
+
+    await act(async () => {
+      setTextareaValue(textarea, "Second question");
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await act(async () => {
+      finishConfigurationCheck?.();
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+    });
+
+    expect(useAgentStore.getState().getMessages(chat.id)[0]).toMatchObject({
+      role: "user",
+      content: "First question",
+    });
+    expect(textarea.value).toBe("Second question");
+    expect(useAgentStore.getState().getDraft(chat.id).text).toBe("Second question");
+    view.unmount();
+  });
+
+  test("does not open the resource picker for an email address", async () => {
+    useAgentStore.getState().createChat({
+      context: "workspaces/demo",
+      workspaceName: "workspaces/demo",
+    });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    const textarea = view.container.querySelector("textarea") as HTMLTextAreaElement;
+    await act(async () => {
+      setTextareaValue(textarea, "ed@example.com");
+      textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    expect(document.querySelector("[data-agent-resource-picker]")).toBeNull();
+    view.unmount();
+  });
+
+  test.each([
+    ["project", "projects/orders"],
+    ["legacy", undefined],
+  ])("offers the project picker in a %s chat", async (_kind, context) => {
+    const store = useAgentStore.getState();
+    store.createChat({ context, workspaceName: "workspaces/demo" });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    const textarea = view.container.querySelector("textarea") as HTMLTextAreaElement;
+
+    await act(async () => {
+      setTextareaValue(textarea, "Ask @ about policy");
+      textarea.setSelectionRange(5, 5);
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+
+    expect(textarea.value).toBe("Ask @ about policy");
+    expect(document.querySelector("[data-agent-resource-picker]")).not.toBeNull();
+    view.unmount();
+  });
+
+  test("closes the picker when the caret moves away from the mention", async () => {
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+    useAgentStore.getState().createChat({
+      context: "workspaces/demo",
+      workspaceName: "workspaces/demo",
+    });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    const textarea = view.container.querySelector("textarea") as HTMLTextAreaElement;
+    await act(async () => {
+      setTextareaValue(textarea, "Ask @ about policy");
+      textarea.setSelectionRange(5, 5);
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    expect(document.querySelector("[data-agent-resource-picker]")).not.toBeNull();
+
+    textarea.setSelectionRange(0, 0);
+    await act(async () => {
+      textarea.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+    });
+    expect(document.querySelector("[data-agent-resource-picker]")).toBeNull();
+    expect(useAgentStore.getState().getMessages(useAgentStore.getState().currentChatId!))
+      .toEqual(expect.arrayContaining([
+        expect.objectContaining({ role: "user", content: "Ask @ about policy" }),
+      ]));
+    view.unmount();
+  });
+
+  test("does not send while Enter is part of IME composition", async () => {
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    const textarea = view.container.querySelector("textarea") as HTMLTextAreaElement;
+    await act(async () => {
+      setTextareaValue(textarea, "A question");
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+      textarea.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "Enter",
+          isComposing: true,
+          bubbles: true,
+        })
+      );
+    });
+    expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+    view.unmount();
+  });
+
+  test("restores an unsent question after switching chats and remounting", async () => {
+    const store = useAgentStore.getState();
+    const original = store.createChat({ context: "projects/orders" });
+    const second = store.createChat({ context: "projects/billing", select: false });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    const textarea = view.container.querySelector("textarea") as HTMLTextAreaElement;
+    await act(async () => {
+      setTextareaValue(textarea, "Unsent question");
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    expect(store.getDraft(original.id).text).toBe("Unsent question");
+    await act(async () => {
+      store.setCurrentChat(second.id);
+    });
+    expect(textarea.value).toBe("");
+    await act(async () => {
+      store.setCurrentChat(original.id);
+    });
+    expect(textarea.value).toBe("Unsent question");
+    view.unmount();
+
+    const remounted = renderIntoContainer(<AgentInput />);
+    remounted.render();
+    expect((remounted.container.querySelector("textarea") as HTMLTextAreaElement).value)
+      .toBe("Unsent question");
+    remounted.unmount();
   });
 
   test("shows token usage near the textarea", () => {
@@ -1778,8 +3271,168 @@ describe("AgentInput", () => {
     expect(inputFooter).toBeInstanceOf(HTMLDivElement);
     expect(inputFooter?.textContent).toContain("Tokens used: 5,678");
     expect(container.textContent).toContain("Continue?");
+    expect(
+      [...container.querySelectorAll("button")].find(
+        (button) => button.textContent === "agent.confirm"
+      )?.classList.contains("h-9")
+    ).toBe(true);
 
     unmount();
+  });
+
+  test("shows the exact pending API request and dispatches it only after approval", async () => {
+    const chatId = useAgentStore.getState().currentChatId!;
+    useAgentStore.setState({
+      chats: useAgentStore
+        .getState()
+        .chats.map((chat) =>
+          chat.id === chatId ? { ...chat, status: "awaiting_user" } : chat
+        ),
+      pendingAskByChatId: {
+        [chatId]: {
+          toolCallId: "tool-write",
+          prompt: "bytebase.v1.ProjectService.UpdateProject",
+          kind: "confirm",
+          apiPermission: {
+            actionId: "action-1",
+            operationId: "bytebase.v1.ProjectService.UpdateProject",
+          },
+        },
+      },
+    });
+    mocks.getPendingApiCallPreview.mockReturnValue({
+      operationId: "bytebase.v1.ProjectService.UpdateProject",
+      body: '{"project":{"name":"projects/orders","title":"Orders"}}',
+    });
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    expect(view.container.textContent).toContain("bytebase.v1.ProjectService.UpdateProject");
+    expect(view.container.textContent).toContain("projects/orders");
+    expect(mocks.resolvePendingApiCall).not.toHaveBeenCalled();
+    for (const label of ["agent.api-permission-allow", "agent.api-permission-deny"]) {
+      const button = [...view.container.querySelectorAll("button")].find(
+        (button) => button.textContent === label
+      );
+      expect(button?.classList.contains("h-7")).toBe(true);
+      expect(button?.classList.contains("text-xs")).toBe(true);
+    }
+
+    await act(async () => {
+      const confirm = [...view.container.querySelectorAll("button")].find(
+        (button) => button.textContent === "agent.api-permission-allow"
+      );
+      confirm?.click();
+    });
+
+    expect(mocks.resolvePendingApiCall).toHaveBeenCalledWith({
+      actionId: "action-1",
+      chatId,
+      toolCallId: "tool-write",
+      userName: "users/me@example.com",
+      approved: true,
+    });
+    expect(useAgentStore.getState().getMessages(chatId)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          role: "tool",
+          toolCallId: "tool-write",
+          content: '{"status":200,"response":{}}',
+        }),
+      ])
+    );
+    expect(useAgentStore.getState().getPendingAsk(chatId)).toBeNull();
+    view.unmount();
+  });
+
+  test("does not allow approval after the pending API request is lost", () => {
+    const chatId = useAgentStore.getState().currentChatId!;
+    useAgentStore.setState({
+      chats: useAgentStore
+        .getState()
+        .chats.map((chat) =>
+          chat.id === chatId ? { ...chat, status: "awaiting_user" } : chat
+        ),
+      pendingAskByChatId: {
+        [chatId]: {
+          toolCallId: "tool-write",
+          prompt: "bytebase.v1.ProjectService.UpdateProject",
+          kind: "confirm",
+          apiPermission: {
+            actionId: "lost-action",
+            operationId: "bytebase.v1.ProjectService.UpdateProject",
+          },
+        },
+      },
+    });
+
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    expect(view.container.textContent).toContain("agent.api-permission-expired");
+    const confirm = [...view.container.querySelectorAll("button")].find(
+      (button) => button.textContent === "agent.api-permission-allow"
+    );
+    expect(confirm).toBeDisabled();
+    expect(mocks.resolvePendingApiCall).not.toHaveBeenCalled();
+    view.unmount();
+  });
+
+  test("returns a denied API request to the agent without dispatching it", async () => {
+    const chatId = useAgentStore.getState().currentChatId!;
+    useAgentStore.setState({
+      chats: useAgentStore
+        .getState()
+        .chats.map((chat) =>
+          chat.id === chatId ? { ...chat, status: "awaiting_user" } : chat
+        ),
+      pendingAskByChatId: {
+        [chatId]: {
+          toolCallId: "tool-write",
+          prompt: "bytebase.v1.ProjectService.UpdateProject",
+          kind: "confirm",
+          apiPermission: {
+            actionId: "action-denied",
+            operationId: "bytebase.v1.ProjectService.UpdateProject",
+          },
+        },
+      },
+    });
+    mocks.getPendingApiCallPreview.mockReturnValue({
+      operationId: "bytebase.v1.ProjectService.UpdateProject",
+      body: '{"project":{"name":"projects/orders"}}',
+    });
+    mocks.resolvePendingApiCall.mockResolvedValue(
+      '{"error":"Permission request denied."}'
+    );
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => {
+      const cancel = [...view.container.querySelectorAll("button")].find(
+        (button) => button.textContent === "agent.api-permission-deny"
+      );
+      cancel?.click();
+    });
+
+    expect(mocks.resolvePendingApiCall).toHaveBeenCalledWith({
+      actionId: "action-denied",
+      chatId,
+      toolCallId: "tool-write",
+      userName: "users/me@example.com",
+      approved: false,
+    });
+    expect(useAgentStore.getState().getMessages(chatId)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          role: "tool",
+          toolCallId: "tool-write",
+          content: '{"error":"Permission request denied."}',
+        }),
+      ])
+    );
+    view.unmount();
   });
 
   test("shows a single-line overlay placeholder and hides it when typing", () => {

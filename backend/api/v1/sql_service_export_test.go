@@ -7,7 +7,6 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
-	"fmt"
 	"io"
 	"regexp"
 	"strings"
@@ -18,6 +17,7 @@ import (
 	"github.com/alexmullins/zip"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
@@ -32,8 +32,13 @@ import (
 func TestDecideExportDelivery(t *testing.T) {
 	t.Parallel()
 	configured := &storepb.SharePointSetting{TenantId: "tenant", ClientId: "client", ClientSecret: "secret"}
+	local := []storepb.ExportDelivery{storepb.ExportDelivery_LOCAL}
+	sharePointOnly := []storepb.ExportDelivery{storepb.ExportDelivery_SHAREPOINT}
 	sharePointReady := func(in exportDeliveryInput) exportDeliveryInput {
 		in.delivery = v1pb.ExportDelivery_SHAREPOINT
+		if in.allowedDeliveries == nil {
+			in.allowedDeliveries = sharePointOnly
+		}
 		in.sharePointFeatureEnabled = true
 		in.destinationURL = "https://contoso.sharepoint.com/sites/data/Exports"
 		in.sharePointSetting = configured
@@ -45,12 +50,13 @@ func TestDecideExportDelivery(t *testing.T) {
 		want     v1pb.ExportDelivery
 		wantCode connect.Code
 	}{
-		{name: "unspecified is local", in: exportDeliveryInput{}, want: v1pb.ExportDelivery_LOCAL},
-		{name: "local", in: exportDeliveryInput{delivery: v1pb.ExportDelivery_LOCAL, password: "pw"}, want: v1pb.ExportDelivery_LOCAL},
-		{name: "local with export disabled", in: exportDeliveryInput{delivery: v1pb.ExportDelivery_LOCAL, disableExport: true}, wantCode: connect.CodePermissionDenied},
-		{name: "unspecified with export disabled", in: exportDeliveryInput{disableExport: true}, wantCode: connect.CodePermissionDenied},
+		{name: "unspecified is local", in: exportDeliveryInput{allowedDeliveries: local}, want: v1pb.ExportDelivery_LOCAL},
+		{name: "local", in: exportDeliveryInput{delivery: v1pb.ExportDelivery_LOCAL, allowedDeliveries: local, password: "pw"}, want: v1pb.ExportDelivery_LOCAL},
+		{name: "local not allowed", in: exportDeliveryInput{delivery: v1pb.ExportDelivery_LOCAL, allowedDeliveries: sharePointOnly}, wantCode: connect.CodeFailedPrecondition},
+		{name: "unspecified not allowed", in: exportDeliveryInput{allowedDeliveries: sharePointOnly}, wantCode: connect.CodeFailedPrecondition},
+		{name: "nothing allowed", in: exportDeliveryInput{delivery: v1pb.ExportDelivery_LOCAL}, wantCode: connect.CodeFailedPrecondition},
 		{name: "sharepoint", in: sharePointReady(exportDeliveryInput{}), want: v1pb.ExportDelivery_SHAREPOINT},
-		{name: "sharepoint with export disabled", in: sharePointReady(exportDeliveryInput{disableExport: true}), want: v1pb.ExportDelivery_SHAREPOINT},
+		{name: "sharepoint not allowed", in: sharePointReady(exportDeliveryInput{allowedDeliveries: local}), wantCode: connect.CodeFailedPrecondition},
 		{
 			name: "sharepoint without the feature",
 			in: func() exportDeliveryInput {
@@ -96,7 +102,7 @@ func TestDecideExportDelivery(t *testing.T) {
 			}(),
 			wantCode: connect.CodeFailedPrecondition,
 		},
-		{name: "unknown delivery", in: exportDeliveryInput{delivery: v1pb.ExportDelivery(99)}, wantCode: connect.CodeInvalidArgument},
+		{name: "unknown delivery", in: exportDeliveryInput{delivery: v1pb.ExportDelivery(99), allowedDeliveries: []storepb.ExportDelivery{storepb.ExportDelivery_LOCAL, storepb.ExportDelivery_SHAREPOINT}}, wantCode: connect.CodeInvalidArgument},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -368,14 +374,18 @@ func newEnterpriseLicenseService(ctx context.Context, t *testing.T, stores *stor
 	return licenseService
 }
 
-func setWorkspaceDisableExport(ctx context.Context, t *testing.T, stores *store.Store, disabled bool) {
+func setWorkspaceAllowedExportDeliveries(ctx context.Context, t *testing.T, stores *store.Store, deliveries ...storepb.ExportDelivery) {
 	t.Helper()
-	_, err := stores.CreatePolicy(ctx, &store.PolicyMessage{
+	payload, err := protojson.Marshal(&storepb.QueryDataPolicy{
+		ExportDeliveryPolicy: &storepb.QueryDataPolicy_ExportDeliveryPolicy{AllowedDeliveries: deliveries},
+	})
+	require.NoError(t, err)
+	_, err = stores.CreatePolicy(ctx, &store.PolicyMessage{
 		Workspace:    "default",
 		ResourceType: storepb.Policy_WORKSPACE,
 		Resource:     common.FormatWorkspace("default"),
 		Type:         storepb.Policy_QUERY_DATA,
-		Payload:      fmt.Sprintf(`{"disableExport":%t}`, disabled),
+		Payload:      string(payload),
 		Enforce:      true,
 	})
 	require.NoError(t, err)
@@ -397,10 +407,9 @@ func newExportDeliveryFixture(t *testing.T) (context.Context, *store.Store, *sto
 	return ctx, stores, &store.DatabaseMessage{ProjectID: "export-project", InstanceID: "prod", DatabaseName: "hr"}
 }
 
-// TestPrepareExportDeliveryReadsDisableExportWithoutLicense runs on a free
-// plan, as after a lapsed license: the license-gated policy read no longer
-// sees disable_export, but local download stays blocked.
-func TestPrepareExportDeliveryReadsDisableExportWithoutLicense(t *testing.T) {
+// TestPrepareExportDeliveryReadsPolicyWithoutLicense runs on a free plan, as
+// after a lapsed license: the export delivery policy still applies.
+func TestPrepareExportDeliveryReadsPolicyWithoutLicense(t *testing.T) {
 	t.Parallel()
 	ctx, stores, database := newExportDeliveryFixture(t)
 	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, stores, false, "")
@@ -409,25 +418,24 @@ func TestPrepareExportDeliveryReadsDisableExportWithoutLicense(t *testing.T) {
 	service := &SQLService{store: stores, licenseService: licenseService}
 
 	target, err := service.prepareExportDelivery(ctx, &v1pb.ExportRequest{Delivery: v1pb.ExportDelivery_LOCAL}, database)
-	require.NoError(t, err, "local download is allowed while disable_export is off")
+	require.NoError(t, err, "a workspace without a policy allows local download")
 	require.Nil(t, target)
 
-	setWorkspaceDisableExport(ctx, t, stores, true)
-	require.False(t, getEffectiveQueryDataPolicy(ctx, stores, licenseService, 0, database.ProjectID).DisableExport)
+	setWorkspaceAllowedExportDeliveries(ctx, t, stores, storepb.ExportDelivery_SHAREPOINT)
 	for _, delivery := range []v1pb.ExportDelivery{v1pb.ExportDelivery_EXPORT_DELIVERY_UNSPECIFIED, v1pb.ExportDelivery_LOCAL} {
 		_, err := service.prepareExportDelivery(ctx, &v1pb.ExportRequest{Delivery: delivery}, database)
-		require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(err), delivery.String())
+		require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err), delivery.String())
 	}
 	_, err = service.prepareExportDelivery(ctx, &v1pb.ExportRequest{Delivery: v1pb.ExportDelivery_SHAREPOINT}, database)
 	require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(err), "SharePoint delivery needs the license")
 
-	setWorkspaceDisableExport(ctx, t, stores, false)
+	setWorkspaceAllowedExportDeliveries(ctx, t, stores, storepb.ExportDelivery_LOCAL)
 	target, err = service.prepareExportDelivery(ctx, &v1pb.ExportRequest{}, database)
 	require.NoError(t, err)
 	require.Nil(t, target)
 }
 
-func TestPrepareExportDeliveryAllowsSharePointWhenExportDisabled(t *testing.T) {
+func TestPrepareExportDeliveryAllowsOnlyListedDeliveries(t *testing.T) {
 	t.Parallel()
 	ctx, stores, database := newExportDeliveryFixture(t)
 	licenseService := newEnterpriseLicenseService(ctx, t, stores, "default")
@@ -436,15 +444,19 @@ func TestPrepareExportDeliveryAllowsSharePointWhenExportDisabled(t *testing.T) {
 		require.Equal(t, sharepoint.Config{TenantID: "tenant", ClientID: "client", ClientSecret: "secret"}, cfg)
 		return client, nil
 	}}
-	setWorkspaceDisableExport(ctx, t, stores, true)
 
+	_, err := service.prepareExportDelivery(ctx, &v1pb.ExportRequest{Delivery: v1pb.ExportDelivery_SHAREPOINT}, database)
+	require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err), "SharePoint is not allowed by default")
+	require.Empty(t, client.resolvedURL)
+
+	setWorkspaceAllowedExportDeliveries(ctx, t, stores, storepb.ExportDelivery_SHAREPOINT)
 	target, err := service.prepareExportDelivery(ctx, &v1pb.ExportRequest{Delivery: v1pb.ExportDelivery_SHAREPOINT}, database)
 	require.NoError(t, err)
 	require.Same(t, client.location, target.location)
 	require.Equal(t, "https://contoso.sharepoint.com/sites/data/Exports", client.resolvedURL)
 
 	_, err = service.prepareExportDelivery(ctx, &v1pb.ExportRequest{Delivery: v1pb.ExportDelivery_LOCAL}, database)
-	require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(err), "the license does not unlock local download")
+	require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err), "the license does not unlock local download")
 }
 
 // TestExportRejectsLocalDownloadDespiteExportGrant calls Export with an active
@@ -488,7 +500,7 @@ func TestExportRejectsLocalDownloadDespiteExportGrant(t *testing.T) {
 	require.NotNil(t, got)
 	require.Equal(t, grant.ID, got.ID)
 
-	setWorkspaceDisableExport(ctx, t, stores, true)
+	setWorkspaceAllowedExportDeliveries(ctx, t, stores, storepb.ExportDelivery_SHAREPOINT)
 	for _, delivery := range []v1pb.ExportDelivery{v1pb.ExportDelivery_EXPORT_DELIVERY_UNSPECIFIED, v1pb.ExportDelivery_LOCAL} {
 		_, err := service.Export(ctx, connect.NewRequest(&v1pb.ExportRequest{
 			Name:      "instances/prod/databases/hr",
@@ -496,7 +508,7 @@ func TestExportRejectsLocalDownloadDespiteExportGrant(t *testing.T) {
 			Format:    v1pb.ExportFormat_CSV,
 			Delivery:  delivery,
 		}))
-		require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(err), delivery.String())
-		require.ErrorContains(t, err, "local export download is disabled", delivery.String())
+		require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err), delivery.String())
+		require.ErrorContains(t, err, "export delivery LOCAL is not allowed", delivery.String())
 	}
 }

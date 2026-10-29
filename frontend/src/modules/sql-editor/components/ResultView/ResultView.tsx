@@ -4,6 +4,7 @@ import dayjs from "dayjs";
 import { InfoIcon, LoaderCircle } from "lucide-react";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { formatPlanShare } from "@/apps/explain-visualizer/plan-model";
 import {
   DataExportButton,
   type DataExportRequest,
@@ -21,7 +22,10 @@ import { RequestExportButton } from "@/modules/sql-editor/components/RequestExpo
 import { RequestQueryButton } from "@/modules/sql-editor/components/RequestQueryButton";
 import { useExportDelivery } from "@/modules/sql-editor/components/useExportDelivery";
 import { useExportGrantBypass } from "@/modules/sql-editor/components/useExportGrantBypass";
-import { useSQLEditorQueryDataPolicy } from "@/modules/sql-editor/hooks/useSQLEditorState";
+import {
+  useSQLEditorDatabasesWithExport,
+  useSQLEditorQueryDataPolicy,
+} from "@/modules/sql-editor/hooks/useSQLEditorState";
 import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
 import { getSQLEditorTabsState } from "@/modules/sql-editor/store/tab";
 import { useAppStore } from "@/stores/app";
@@ -39,10 +43,12 @@ import { hasProjectPermissionV2 } from "@/utils/iam/permission";
 import {
   extractDatabaseResourceName,
   getDatabaseProject,
+  getInstanceResource,
 } from "@/utils/v1/database";
 import { ExportGrantLookupStatus } from "../ExportGrantLookupStatus";
 import { EmptyView } from "./EmptyView";
 import { ErrorView } from "./ErrorView";
+import { planCostShares } from "./resultPlans";
 import { SingleResultView } from "./SingleResultView";
 import type { ResultViewPresentation } from "./types";
 
@@ -135,16 +141,23 @@ export function ResultView({
     return false;
   }, [queryDataPolicy, envQueryDataPolicy]);
 
-  // Export discovery is independent of the grant applied during Query, which
-  // may permit unmasking without export.
+  const exportDatabases = useMemo(() => [database], [database]);
+  const allowExport = useSQLEditorDatabasesWithExport(exportDatabases).has(
+    database.name
+  );
+
+  // Without bb.sql.export from a role, an active export grant for this query
+  // enables Export. Export discovery is independent of the grant applied
+  // during Query, which may permit unmasking without export.
   const {
+    grantName: exportGrantName,
     tooltip: exportTooltip,
     loading: grantLoading,
     failedDatabases,
     retry,
     unmatchedDatabases,
   } = useExportGrantBypass({
-    enabled: !!queryDataPolicy?.disableExport && !!executeParams?.statement,
+    enabled: !allowExport && !!executeParams?.statement,
     project: database.project,
     targets: [
       {
@@ -156,15 +169,16 @@ export function ResultView({
     ],
   });
 
-  // disableExport removes only local download, which no grant restores;
-  // a destination delivery stays offered either way.
+  // A grant never adds a delivery, so neither Export nor Request export shows
+  // when no delivery is offered.
   const exportDelivery = useExportDelivery(database.project);
-  const showExport = exportDelivery.deliveries.length > 0;
+  const hasDelivery = exportDelivery.deliveries.length > 0;
+  const showExport = hasDelivery && (allowExport || !!exportGrantName);
 
-  // While the policy disables export, offer a "Request export" affordance that
+  // When direct export is unavailable, offer a "Request export" affordance that
   // opens the access-grant drawer (pre-filled with this database, statement,
-  // and export checked). The button self-hides when the project doesn't allow
-  // just-in-time access.
+  // and unmask + export checked). The button self-hides when the project
+  // doesn't allow just-in-time access.
   const requestExportButton =
     grantLoading || failedDatabases.length > 0 ? (
       <ExportGrantLookupStatus
@@ -172,7 +186,7 @@ export function ResultView({
         failed={failedDatabases.length > 0}
         onRetry={retry}
       />
-    ) : executeParams && unmatchedDatabases.length > 0 ? (
+    ) : hasDelivery && executeParams && unmatchedDatabases.length > 0 ? (
       <RequestExportButton
         statement={executeParams.statement}
         targets={[database.name]}
@@ -187,6 +201,13 @@ export function ResultView({
   }, [resultSet]);
 
   const tabName = (index: number) => `${t("common.query")} #${index + 1}`;
+
+  // Which of several plans is the one to read. Only a run that planned every
+  // statement knows the whole script's cost, so most runs show no share.
+  const costShares = useMemo(
+    () => planCostShares(filteredResults, getInstanceResource(database).engine),
+    [filteredResults, database]
+  );
 
   const supportFormats = useMemo(
     () => [
@@ -275,7 +296,7 @@ export function ResultView({
   return (
     <div
       className={cn(
-        "relative flex flex-col justify-start items-start pb-1 overflow-y-auto h-full w-full",
+        "relative flex flex-col justify-start pb-1 overflow-y-auto h-full w-full",
         "bg-background ph-no-capture"
       )}
     >
@@ -313,22 +334,43 @@ export function ResultView({
             >
               <div className="flex items-center justify-between gap-x-2">
                 <TabsList>
-                  {filteredResults.map((result, i) => (
-                    <Tooltip
-                      key={i}
-                      content={result.statement}
-                      popupClassName="ph-no-capture"
-                    >
-                      <TabsTrigger value={tabName(i)}>
-                        <div className="flex items-center gap-x-2 mb-1">
-                          <span>{tabName(i)}</span>
-                          {result.error && (
-                            <InfoIcon className="size-4 text-warning" />
-                          )}
-                        </div>
-                      </TabsTrigger>
-                    </Tooltip>
-                  ))}
+                  {filteredResults.map((result, i) => {
+                    const share = costShares?.[i];
+                    return (
+                      <Tooltip
+                        key={i}
+                        content={
+                          share === undefined ? (
+                            result.statement
+                          ) : (
+                            <span className="flex flex-col gap-1">
+                              <span>
+                                {t("sql-editor.plan-cost-share", {
+                                  share: formatPlanShare(share),
+                                })}
+                              </span>
+                              <span>{result.statement}</span>
+                            </span>
+                          )
+                        }
+                        popupClassName="ph-no-capture"
+                      >
+                        <TabsTrigger value={tabName(i)}>
+                          <div className="flex items-center gap-x-2 mb-1">
+                            <span>{tabName(i)}</span>
+                            {share === undefined ? null : (
+                              <span className="text-xs text-control-light tabular-nums">
+                                {formatPlanShare(share)}
+                              </span>
+                            )}
+                            {result.error && (
+                              <InfoIcon className="size-4 text-warning" />
+                            )}
+                          </div>
+                        </TabsTrigger>
+                      </Tooltip>
+                    );
+                  })}
                 </TabsList>
                 <div className="mb-1 flex items-center gap-x-2">
                   {showExport && (

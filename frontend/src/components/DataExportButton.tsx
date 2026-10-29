@@ -20,6 +20,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  FormControlGroup,
   FormControlRow,
   FormField,
   FormFieldGroup,
@@ -529,27 +530,29 @@ export function DataExportButton({
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                     />
-                    <FormControlRow>
-                      <Button
-                        type="button"
-                        appearance="outline"
-                        size="sm"
-                        onClick={handleGeneratePassword}
-                      >
-                        <Wand2 className="size-4" />
-                        {t("export-data.generate-password")}
-                      </Button>
-                      <Button
-                        type="button"
-                        appearance="outline"
-                        size="sm"
-                        disabled={!password}
-                        onClick={() => void copyPasswordToClipboard(password)}
-                      >
-                        <Copy className="size-4" />
-                        {t("common.copy")}
-                      </Button>
-                    </FormControlRow>
+                    <FormControlGroup>
+                      <FormControlRow>
+                        <Button
+                          type="button"
+                          appearance="outline"
+                          size="sm"
+                          onClick={handleGeneratePassword}
+                        >
+                          <Wand2 className="size-4" />
+                          {t("export-data.generate-password")}
+                        </Button>
+                        <Button
+                          type="button"
+                          appearance="outline"
+                          size="sm"
+                          disabled={!password}
+                          onClick={() => void copyPasswordToClipboard(password)}
+                        >
+                          <Copy className="size-4" />
+                          {t("common.copy")}
+                        </Button>
+                      </FormControlRow>
+                    </FormControlGroup>
                   </FormField>
                 )}
               </FormFieldGroup>

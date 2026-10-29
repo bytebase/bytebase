@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"context"
 	"testing"
 
 	"connectrpc.com/connect"
@@ -8,10 +9,73 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/permission"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
+	"github.com/bytebase/bytebase/backend/component/iam"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/store"
 )
+
+func TestListDatabasesProjectParentChecksDatabasesList(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	db, stores, _ := testcontainer.NewMetadataDB(t)
+	_, err := db.ExecContext(ctx, `
+		INSERT INTO workspace (resource_id) VALUES ('default');
+		INSERT INTO project (resource_id, workspace, name) VALUES ('project-a', 'default', 'Project A'), ('project-b', 'default', 'Project B');
+		INSERT INTO instance (resource_id, workspace) VALUES ('prod', 'default');
+		INSERT INTO db (instance, name, project) VALUES ('prod', 'a1', 'project-a'), ('prod', 'a2', 'project-a');
+	`)
+	require.NoError(t, err)
+	for role, p := range map[string]permission.Permission{"project-getter": permission.ProjectsGet, "database-lister": permission.DatabasesList} {
+		_, err := stores.CreateRole(ctx, &store.RoleMessage{
+			ResourceID: role, Workspace: "default", Name: role,
+			Permissions: map[permission.Permission]bool{p: true},
+		})
+		require.NoError(t, err)
+	}
+	grant := func(resourceType storepb.Policy_Resource, resource, email, role string) {
+		_, err := stores.PatchIamPolicy(ctx, "default", resourceType, resource, func(policy *storepb.IamPolicy) error {
+			policy.Bindings = append(policy.Bindings, &storepb.Binding{Role: role, Members: []string{common.FormatUserEmail(email)}})
+			return nil
+		})
+		require.NoError(t, err)
+	}
+	grant(storepb.Policy_WORKSPACE, common.FormatWorkspace("default"), "admin@example.com", "roles/workspaceAdmin")
+	grant(storepb.Policy_PROJECT, common.FormatProject("project-a"), "dev@example.com", "roles/projectDeveloper")
+	grant(storepb.Policy_PROJECT, common.FormatProject("project-a"), "getter@example.com", "roles/project-getter")
+	grant(storepb.Policy_PROJECT, common.FormatProject("project-a"), "lister@example.com", "roles/database-lister")
+	grant(storepb.Policy_PROJECT, common.FormatProject("project-b"), "elsewhere@example.com", "roles/database-lister")
+
+	iamManager, err := iam.NewManager(stores, nil, false)
+	require.NoError(t, err)
+	service := &DatabaseService{store: stores, iamManager: iamManager, licenseService: newInstanceServiceTestLicenseService(t, stores)}
+	list := func(email string) ([]string, error) {
+		callerCtx := context.WithValue(ctx, common.WorkspaceIDContextKey, "default")
+		callerCtx = context.WithValue(callerCtx, common.UserContextKey, &store.UserMessage{Email: email})
+		resp, err := service.ListDatabases(callerCtx, connect.NewRequest(&v1pb.ListDatabasesRequest{Parent: "projects/project-a", PageSize: 100}))
+		if err != nil {
+			return nil, err
+		}
+		var names []string
+		for _, database := range resp.Msg.Databases {
+			names = append(names, database.Name)
+		}
+		return names, nil
+	}
+
+	for _, email := range []string{"dev@example.com", "lister@example.com", "admin@example.com"} {
+		names, err := list(email)
+		require.NoError(t, err, email)
+		require.Equal(t, []string{"instances/prod/databases/a1", "instances/prod/databases/a2"}, names, email)
+	}
+	for _, email := range []string{"getter@example.com", "elsewhere@example.com"} {
+		_, err := list(email)
+		require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(err), email)
+		require.ErrorContains(t, err, `user does not have permission "bb.databases.list" in "projects/project-a"`, email)
+	}
+}
 
 func TestShouldDiffSchemaViaSDL(t *testing.T) {
 	t.Parallel()

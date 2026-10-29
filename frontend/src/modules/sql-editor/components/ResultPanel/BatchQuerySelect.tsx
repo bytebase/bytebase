@@ -22,7 +22,10 @@ import { cn } from "@/lib/utils";
 import { RequestExportButton } from "@/modules/sql-editor/components/RequestExportButton";
 import { useExportDelivery } from "@/modules/sql-editor/components/useExportDelivery";
 import { useExportGrantBypass } from "@/modules/sql-editor/components/useExportGrantBypass";
-import { useSQLEditorQueryDataPolicy } from "@/modules/sql-editor/hooks/useSQLEditorState";
+import {
+  useSQLEditorDatabasesWithExport,
+  useSQLEditorQueryDataPolicy,
+} from "@/modules/sql-editor/hooks/useSQLEditorState";
 import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
 import {
   getSQLEditorTabsState,
@@ -158,7 +161,7 @@ export function BatchQuerySelect({
   // The batch was run from a single user-typed statement against many
   // databases — pull it from any one context (they all carry the same
   // params.statement). Used as the request-export drawer seed when the
-  // policy disables direct export.
+  // user lacks bb.sql.export.
   const batchStatement = useMemo(() => {
     for (const context of contextsByDatabase.values()) {
       if (context?.params.statement) return context.params.statement;
@@ -166,44 +169,72 @@ export function BatchQuerySelect({
     return "";
   }, [contextsByDatabase]);
 
-  // Per-DB grant lookup. When the policy disables export, the hook reports
-  // which of the queried DBs are covered by an active export grant; Request
-  // Export pre-seeds the uncovered set.
-  const policyAllowsExport = !queryDataPolicy?.disableExport;
+  const queriedDatabases = useMemo(
+    () => items.map((item) => item.database),
+    [items]
+  );
+  const databasesWithExport = useSQLEditorDatabasesWithExport(queriedDatabases);
+
+  // Per-DB grant lookup for the queried DBs without bb.sql.export from a
+  // role. The hook reports which of them are covered by an active export
+  // grant (matched) and which are not (unmatched). Both lists feed the
+  // partial-coverage UX: Export operates on the authorized set only,
+  // Request Export pre-seeds the unmatched set.
+  const grantTargets = queriedDatabaseNames.flatMap((database) => {
+    if (databasesWithExport.has(database)) return [];
+    const params = contextsByDatabase.get(database)?.params;
+    return params?.statement
+      ? [
+          {
+            database,
+            statement: params.statement,
+            schema: params.connection.schema ?? "",
+            container: params.connection.table ?? "",
+          },
+        ]
+      : [];
+  });
   const {
+    matchedDatabases,
     unmatchedDatabases,
     tooltip: exportTooltip,
     loading: grantLoading,
     failedDatabases,
     retry,
   } = useExportGrantBypass({
-    enabled: !policyAllowsExport,
+    enabled: grantTargets.length > 0,
     project,
-    targets: queriedDatabaseNames.flatMap((database) => {
-      const params = contextsByDatabase.get(database)?.params;
-      return params?.statement
-        ? [
-            {
-              database,
-              statement: params.statement,
-              schema: params.connection.schema ?? "",
-              container: params.connection.table ?? "",
-            },
-          ]
-        : [];
-    }),
+    targets: grantTargets,
   });
 
-  // disableExport removes only local download, which no grant restores, so
-  // every offered delivery covers every queried DB.
-  const queriedDatabaseList = useMemo(
-    () => queriedDatabaseNames.map((name) => getDatabaseByName(name)),
-    [queriedDatabaseNames, getDatabaseByName]
+  // A queried DB is authorized by bb.sql.export from a role or by a
+  // matching grant. The Export drawer's `DatabaseTableView` is filtered
+  // to this list so users can't physically pick an unauthorized DB —
+  // eliminating the partial-failure toast storm.
+  const exportableDatabaseNames = useMemo(
+    () =>
+      queriedDatabaseNames.filter(
+        (name) =>
+          databasesWithExport.has(name) || matchedDatabases.includes(name)
+      ),
+    [queriedDatabaseNames, databasesWithExport, matchedDatabases]
   );
-  const showExport = exportDelivery.deliveries.length > 0;
-  // Surface "Request Export" whenever the batch contains uncovered DBs.
-  const showRequestExport =
-    !policyAllowsExport && unmatchedDatabases.length > 0;
+  const exportableDatabaseList = useMemo(
+    () => exportableDatabaseNames.map((name) => getDatabaseByName(name)),
+    [exportableDatabaseNames, getDatabaseByName]
+  );
+  const hasDelivery = exportDelivery.deliveries.length > 0;
+  const showExport = hasDelivery && exportableDatabaseNames.length > 0;
+  // Visible alongside Export in the partial-coverage case (e.g. 2 of 5
+  // covered) so users can request grants for the missing ones without
+  // losing the immediate export of the covered set. A grant never adds a
+  // delivery, so neither button shows when no delivery is offered.
+  const showRequestExport = hasDelivery && unmatchedDatabases.length > 0;
+  // Partial-coverage flag: some matched, some not. Drives the Export
+  // button label change from "Batch export" to "Partial batch export"
+  // so the user knows up-front the action operates on a strict subset.
+  const isPartialExport =
+    showExport && exportableDatabaseNames.length < queriedDatabaseNames.length;
 
   const handleCloseSingleResultView = (item: BatchQueryItem) => {
     const contexts = currentTab?.databaseQueryContexts?.get(item.database.name);
@@ -267,10 +298,12 @@ export function BatchQuerySelect({
       const deliveries: SharePointDeliveryResult[] = [];
       const tabsState = getSQLEditorTabsState();
       const tab = tabsState.tabsById.get(tabsState.currentTabId);
-      // Skips a stale selection whose result tab has since been closed.
-      const queriedSet = new Set(queriedDatabaseNames);
+      // Defensive intersect — the drawer already filters to authorized
+      // DBs, but if a stale name lingers in `selectedDatabaseNames` we skip it here rather
+      // than firing a doomed backend call.
+      const exportableSet = new Set(exportableDatabaseNames);
       for (const databaseName of Array.from(selectedDatabaseNames)) {
-        if (!queriedSet.has(databaseName)) continue;
+        if (!exportableSet.has(databaseName)) continue;
         const database = getDatabaseByName(databaseName);
         const { instanceName, databaseName: shortName } =
           extractDatabaseResourceName(database.name);
@@ -358,6 +391,13 @@ export function BatchQuerySelect({
         </Tooltip>
       )}
 
+      {/*
+        Partial-coverage UX: when the user lacks bb.sql.export and only a
+        subset of the queried DBs has an active grant, both buttons can
+        appear — Export operates on the covered set, Request Export
+        pre-seeds the uncovered set so the user can extend coverage
+        without losing the immediate export.
+      */}
       <div className="mb-2 flex flex-row flex-wrap items-center gap-2">
         <ExportGrantLookupStatus
           loading={grantLoading}
@@ -370,7 +410,11 @@ export function BatchQuerySelect({
             viewMode="DRAWER"
             supportFormats={supportFormats}
             supportPassword
-            text={t("sql-editor.batch-export.self")}
+            text={
+              isPartialExport
+                ? t("sql-editor.batch-export.partial")
+                : t("sql-editor.batch-export.self")
+            }
             // Surface the grant explanation when one matched; otherwise keep
             // the long-standing "select at most N databases" hint.
             tooltip={
@@ -393,8 +437,13 @@ export function BatchQuerySelect({
                     {t("sql-editor.batch-export.tooltip", { max: MAX_EXPORT })}
                   </span>
                 </div>
+                {/*
+                  Filtered to `exportableDatabaseList` so users can only check authorized DBs.
+                  Unauthorized ones are routed to the Request Export button
+                  next to this one.
+                */}
                 <DatabaseTableView
-                  databases={queriedDatabaseList}
+                  databases={exportableDatabaseList}
                   mode="PROJECT"
                   selectedNames={selectedDatabaseNames}
                   onSelectedNamesChange={setSelectedDatabaseNames}

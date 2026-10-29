@@ -1,12 +1,11 @@
 // SQL Editor — result export workflow (PRs #20487 / #20491 / #20501).
 //
-// The export path was rewritten: the client-side `sql-download` formatter
-// library was deleted and export now goes through the backend Export RPC. A
-// workspace `DATA_QUERY` policy (`disableExport`) gates the toolbar's Export
-// button by disallowing local download; when export is disabled but the
-// project allows access grants, a "Request export" affordance replaces it. An
-// active export grant does not restore local download, so with no export
-// destination configured the granted statement shows neither control.
+// Export goes through the backend Export RPC and requires bb.sql.export. A
+// user who holds it through a role (SQL Editor Exporter, Workspace Admin) sees
+// the toolbar's Export button. A user without it (SQL Editor Read User) sees a
+// "Request export" affordance in projects that allow just-in-time access, and
+// an active export grant for the EXACT statement re-enables the real Export
+// button.
 //
 // One file per sub-area (the repo convention): all export CUJs live here as
 // describe blocks with describe-scoped setup, and the bug-lock is inlined
@@ -16,84 +15,123 @@
 // the bug's state changes, not on an unrelated setup error).
 //
 // Groups (CUJ ids from the QA session):
-//   - Direct export (export allowed): C1 backend Export RPC, C9 password
-//   - Gated + JIT on: C2 Request export, C3/C4 drawer pre-fill (export only)
-//   - Gated + JIT off: C8 no affordance
-//   - Multi-statement: C10 one affordance above the tabs
-//   - Active export grant: C7 no local download under the grant, C5 badge, C6 filter
-//   - Masking ↔ export security: no-leak without grant, reveal with grant
+//   - Exporter role: C1 backend Export RPC, C9 password
+//   - Read user + JIT on: C2 Request export, C3/C4 drawer pre-fill (export only)
+//   - Read user + JIT off: C8 no affordance
+//   - Read user, multi-statement: C10 one affordance above the tabs
+//   - Read user with an active export grant: C7 exact-match re-enable,
+//     C5 badge, C6 filter
+//   - Masking ↔ export security (admin): no-leak without grant, reveal with grant
 //   - BUG (BYT-9656): re-request of a revoked grant drops the Export pre-fill
 //
-// Owns its fixtures (API/psql for setup, browser for verification) and
-// restores the workspace policy + project JIT in afterAll. Requires `psql` +
-// `unzip` on PATH and an enterprise license (installed at bootstrap).
+// Owns its fixtures (API/psql for setup, browser for verification): it creates
+// the two role users, binds them on the sample project, and removes the
+// bindings and restores project JIT in afterAll. Each role signs in to its own
+// browser context. Requires `psql` + `unzip` on PATH and an enterprise license
+// (installed at bootstrap).
 
-import { test, expect, type BrowserContext, type Page } from "@playwright/test";
+import {
+  test,
+  expect,
+  type Browser,
+  type BrowserContext,
+  type Page,
+} from "@playwright/test";
 import { execFileSync } from "child_process";
 import { loadTestEnv, type TestEnv } from "../framework/env";
-import type { BytebaseApiClient } from "../framework/api-client";
+import { BytebaseApiClient } from "../framework/api-client";
 import { execSql, getInstancePgPort } from "../framework/psql";
+import { signInBrowserAs } from "../framework/sign-in";
 import { SqlEditorPage } from "./sql-editor.page";
 
 test.setTimeout(180_000);
 
 let env: TestEnv & { api: BytebaseApiClient };
 let projectId: string;
-let workspace = "";
 let pgPort = "";
 let sharedContext: BrowserContext;
 let page: Page;
 let sqlEditor: SqlEditorPage;
 
-// Snapshot of the original workspace QueryDataPolicy + project JIT flag so the
-// file-level afterAll restores the baseline other specs depend on.
-let originalDisableExport = false;
-let originalDisableCopyData = false;
-let originalMaxRows = 0;
-let originalAllowAdminDataSource = false;
+// Snapshot of the project JIT flag so the file-level afterAll restores the
+// baseline other specs depend on.
 let originalJIT = false;
 // createActiveGrant + the masking reveal test flip allowSelfApproval; snapshot it
 // so afterAll restores it (otherwise it leaks into later specs).
 let originalSelfApproval = false;
 
-async function setWorkspaceExportPolicy(disableExport: boolean): Promise<void> {
-  await env.api.upsertPolicy(workspace, "data_query", {
-    name: `${workspace}/policies/data_query`,
-    type: "DATA_QUERY",
-    resourceType: "WORKSPACE",
-    queryDataPolicy: {
-      disableExport,
-      disableCopyData: originalDisableCopyData,
-      allowAdminDataSource: originalAllowAdminDataSource,
-      maximumResultRows: originalMaxRows,
-    },
+// The shared password of this file's role users.
+const TEST_PASSWORD = "e2e-export-pw-1!"; // NOSONAR — e2e fixture only
+
+// Holds bb.sql.export through SQL Editor Exporter.
+const EXPORTER = {
+  email: "e2e-export-exporter@example.com",
+  title: "E2E Export Exporter",
+  authFile: ".auth/export-exporter.json",
+  role: "roles/sqlEditorExporter",
+};
+// Can query but lacks bb.sql.export.
+const READER = {
+  email: "e2e-export-reader@example.com",
+  title: "E2E Export Reader",
+  authFile: ".auth/export-reader.json",
+  role: "roles/sqlEditorReadUser",
+};
+
+type RoleContext = {
+  context: BrowserContext;
+  page: Page;
+  sqlEditor: SqlEditorPage;
+};
+
+let exporter: RoleContext;
+let reader: RoleContext;
+// The reader's own API client: access grants belong to their creator.
+let readerApi: BytebaseApiClient;
+
+async function openAs(
+  browser: Browser,
+  user: { authFile: string },
+): Promise<RoleContext> {
+  // Clipboard permission so the C9 generate-password copy-gate hits its
+  // SUCCESS path.
+  const context = await browser.newContext({
+    storageState: user.authFile,
+    permissions: ["clipboard-read", "clipboard-write"],
   });
+  const rolePage = await context.newPage();
+  return {
+    context,
+    page: rolePage,
+    sqlEditor: new SqlEditorPage(rolePage, env.baseURL),
+  };
 }
 
-// Apply the export-gate state, then hard-reload the editor so the SQL editor
-// store picks up the new workspace policy + project JIT flag (both cached
-// per-tab; an in-flight API change doesn't invalidate that cache).
-async function applyExportState(opts: {
-  disableExport: boolean;
-  jit: boolean;
-}): Promise<void> {
-  await setWorkspaceExportPolicy(opts.disableExport);
+// Set the project JIT flag, then hard-reload the editor so the SQL editor
+// store picks up the change (the project is cached per-tab; an in-flight API
+// change doesn't invalidate that cache).
+async function openEditorAs(
+  rc: RoleContext,
+  opts: { jit: boolean },
+): Promise<void> {
   await env.api.updateProjectSettings(env.project, {
     allowJustInTimeAccess: opts.jit,
   });
-  await sqlEditor.gotoWithDb(projectId, env.instanceId, env.databaseId);
-  await page.waitForTimeout(1200);
+  await rc.sqlEditor.gotoWithDb(projectId, env.instanceId, env.databaseId);
+  await rc.page.waitForTimeout(1200);
 }
 
-// Create a grant for `query` and drive it to ACTIVE. JIT grants open an
-// approval issue even with no workspace approval rules; as workspace admin
-// (creator + approver) we self-approve. The issue's approval flow can 404 for
-// a beat right after creation, so retry approve until the grant activates.
+// Create a grant for `query` as `creator` and drive it to ACTIVE. JIT grants
+// open an approval issue even with no workspace approval rules; the workspace
+// admin approves it, which needs self-approval when the admin is also the
+// creator. The issue's approval flow can 404 for a beat right after creation,
+// so retry approve until the grant activates.
 async function createActiveGrant(
+  creator: BytebaseApiClient,
   query: string,
   caps: { unmask: boolean; export: boolean },
 ): Promise<string> {
-  const grant = await env.api.createAccessGrant(env.project, {
+  const grant = await creator.createAccessGrant(env.project, {
     targets: [env.database],
     query,
     reason: "e2e export grant",
@@ -116,7 +154,7 @@ async function createActiveGrant(
         // many other grants exist (a client-side scan of a status==ACTIVE page
         // could miss ours past pageSize, and matching by query/caps could pick a
         // stale grant from a prior CI retry against the same server).
-        const r = await env.api.searchMyAccessGrants(
+        const r = await creator.searchMyAccessGrants(
           env.project,
           `name == "${grant.name}"`,
         );
@@ -133,34 +171,57 @@ async function createActiveGrant(
 // Open the export drawer (after a query is on screen) and return it, ready at
 // the Confirm step. Centralizes the click-Export + "Export Data" dialog + wait
 // ritual that C1/C7/C9 and the masking export helper all need.
-async function openExportDrawer() {
-  await page.getByRole("button", { name: /^Export$/ }).first().click();
-  const drawer = page.getByRole("dialog").filter({ hasText: "Export Data" });
+async function openExportDrawer(on: Page = page) {
+  await on.getByRole("button", { name: /^Export$/ }).first().click();
+  const drawer = on.getByRole("dialog").filter({ hasText: "Export Data" });
   await expect(drawer.getByText("Export rows")).toBeVisible({ timeout: 10_000 });
   return drawer;
 }
 
+// Remove this file's role users from the project IAM policy.
+async function removeRoleBindings(): Promise<void> {
+  const members = [EXPORTER, READER].map((u) => `user:${u.email}`);
+  const policy = await env.api.getProjectIamPolicy(env.project);
+  policy.bindings = policy.bindings
+    .map((b) => ({ ...b, members: b.members.filter((m) => !members.includes(m)) }))
+    .filter((b) => b.members.length > 0);
+  await env.api.setProjectIamPolicy(env.project, policy);
+}
+
 test.beforeAll(async ({ browser }) => {
+  test.setTimeout(180_000);
   env = loadTestEnv();
   projectId = env.project.split("/").pop()!;
   await env.api.login(env.adminEmail, env.adminPassword);
-  ({ workspace } = await env.api.getActuatorInfo());
   pgPort = await getInstancePgPort(env);
 
-  const existing = await env.api.getPolicy(`${workspace}/policies/data_query`);
-  const qdp =
-    (existing as { queryDataPolicy?: Record<string, unknown> } | null)
-      ?.queryDataPolicy ?? {};
-  originalDisableExport = Boolean(qdp.disableExport);
-  originalDisableCopyData = Boolean(qdp.disableCopyData);
-  originalAllowAdminDataSource = Boolean(qdp.allowAdminDataSource);
-  originalMaxRows = Number(qdp.maximumResultRows ?? 0);
   const project = (await env.api.getProject(env.project)) as {
     allowJustInTimeAccess?: boolean;
     allowSelfApproval?: boolean;
   };
   originalJIT = Boolean(project.allowJustInTimeAccess);
   originalSelfApproval = Boolean(project.allowSelfApproval);
+
+  // A rerun against the same server finds the users already created.
+  for (const u of [EXPORTER, READER]) {
+    try {
+      await env.api.createUser(u.email, TEST_PASSWORD, u.title);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (!msg.includes("(409)")) throw err;
+    }
+    await env.api.appendProjectBinding(env.project, u.role, [
+      `user:${u.email}`,
+    ]);
+    await signInBrowserAs(browser, env.baseURL, u.email, TEST_PASSWORD, u.authFile);
+  }
+  exporter = await openAs(browser, EXPORTER);
+  reader = await openAs(browser, READER);
+  readerApi = await BytebaseApiClient.asUser(
+    env.baseURL,
+    READER.email,
+    TEST_PASSWORD,
+  );
 
   // Clipboard permission so the C9 generate-password copy-gate hits its
   // SUCCESS path; acceptDownloads so the masking tests can read the export zip.
@@ -177,7 +238,7 @@ test.afterAll(async () => {
   // Restore each piece of mutated state independently so one failing restore
   // doesn't skip the others (and so a leak in one field is isolated).
   for (const restore of [
-    () => setWorkspaceExportPolicy(originalDisableExport),
+    removeRoleBindings,
     () =>
       env.api.updateProjectSettings(env.project, {
         allowJustInTimeAccess: originalJIT,
@@ -190,20 +251,25 @@ test.afterAll(async () => {
       /* best-effort restore */
     }
   }
+  await exporter?.context.close();
+  await reader?.context.close();
   await sharedContext?.close();
 });
 
-// --- Direct export when the policy allows it (C1, C9) ---------------------
+// --- Direct export with bb.sql.export from a role (C1, C9) ----------------
 
-test.describe("Direct export when the policy allows it (C1, C9)", () => {
+test.describe("Direct export with the SQL Editor Exporter role (C1, C9)", () => {
   test("running a query then Export opens the backend-export drawer and Confirm fires the Export RPC", async () => {
-    await applyExportState({ disableExport: false, jit: originalJIT });
+    const { page, sqlEditor } = exporter;
+    // JIT on, so a missing Request export proves the role, not the project.
+    await openEditorAs(exporter, { jit: true });
     await sqlEditor.runPreparedQuery("SELECT emp_no, first_name FROM employee LIMIT 5;");
 
     await expect(
       page.getByRole("button", { name: /^Export$/ }).first(),
     ).toBeVisible({ timeout: 10_000 });
-    const drawer = await openExportDrawer();
+    await expect(sqlEditor.requestExportButton).toHaveCount(0);
+    const drawer = await openExportDrawer(page);
     await expect(drawer.getByText("Export format")).toBeVisible();
     // The format is a Select whose list renders in a popup outside the drawer.
     const formatSelect = drawer.getByRole("combobox");
@@ -235,10 +301,11 @@ test.describe("Direct export when the policy allows it (C1, C9)", () => {
   });
 
   test("Generate password fills an 8-character value (copy-gated) (C9)", async () => {
-    await applyExportState({ disableExport: false, jit: originalJIT });
+    const { page, sqlEditor } = exporter;
+    await openEditorAs(exporter, { jit: originalJIT });
     await sqlEditor.runPreparedQuery("SELECT emp_no FROM employee LIMIT 2;");
 
-    const drawer = await openExportDrawer();
+    const drawer = await openExportDrawer(page);
     await drawer.getByRole("button", { name: "Generate password" }).click();
 
     // The password commits to the field ONLY after the clipboard copy
@@ -266,11 +333,12 @@ test.describe("Direct export when the policy allows it (C1, C9)", () => {
   });
 });
 
-// --- Gated export, JIT on → Request export (C2, C3, C4) -------------------
+// --- Without bb.sql.export, JIT on → Request export (C2, C3, C4) ----------
 
-test.describe("Export gated by policy, JIT enabled (C2, C3, C4)", () => {
+test.describe("Read user without bb.sql.export, JIT enabled (C2, C3, C4)", () => {
   test('the toolbar shows "Request export" instead of "Export"', async () => {
-    await applyExportState({ disableExport: true, jit: true });
+    const { page, sqlEditor } = reader;
+    await openEditorAs(reader, { jit: true });
     await sqlEditor.runPreparedQuery("SELECT emp_no, first_name FROM employee LIMIT 5;");
 
     await expect(
@@ -283,7 +351,8 @@ test.describe("Export gated by policy, JIT enabled (C2, C3, C4)", () => {
   });
 
   test('the export-blocked "Request export" CTA opens the grant drawer pre-filled with the statement, DB, and Export checked (unmask not)', async () => {
-    await applyExportState({ disableExport: true, jit: true });
+    const { page, sqlEditor } = reader;
+    await openEditorAs(reader, { jit: true });
     const statement = "SELECT emp_no, last_name FROM employee LIMIT 4;";
     await sqlEditor.runPreparedQuery(statement);
 
@@ -315,7 +384,8 @@ test.describe("Export gated by policy, JIT enabled (C2, C3, C4)", () => {
     // (Export checked, Unmask not). This proves the SUBMITTED grant carries the
     // same capabilities — an export request must not silently escalate into an
     // unmask request that approvers would unknowingly grant.
-    await applyExportState({ disableExport: true, jit: true });
+    const { sqlEditor } = reader;
+    await openEditorAs(reader, { jit: true });
     // Unique statement so we can find exactly this grant via the API.
     const marker = Date.now();
     const statement = `SELECT emp_no FROM employee WHERE emp_no = ${marker % 100000} LIMIT 1;`;
@@ -351,7 +421,7 @@ test.describe("Export gated by policy, JIT enabled (C2, C3, C4)", () => {
     await expect
       .poll(
         async () => {
-          const r = await env.api.searchMyAccessGrants(env.project);
+          const r = await readerApi.searchMyAccessGrants(env.project);
           const g = r.accessGrants.find((x) => x.query === statement);
           if (!g) return "not-found";
           createdName = g.name;
@@ -371,11 +441,12 @@ test.describe("Export gated by policy, JIT enabled (C2, C3, C4)", () => {
   });
 });
 
-// --- Gated export, JIT off → no export affordance (C8) --------------------
+// --- Without bb.sql.export, JIT off → no export affordance (C8) -----------
 
-test.describe("Export gated by policy, JIT disabled (C8)", () => {
+test.describe("Read user without bb.sql.export, JIT disabled (C8)", () => {
   test("neither an Export button nor a Request-export button is shown", async () => {
-    await applyExportState({ disableExport: true, jit: false });
+    const { page, sqlEditor } = reader;
+    await openEditorAs(reader, { jit: false });
     await sqlEditor.runPreparedQuery("SELECT emp_no FROM employee LIMIT 3;");
 
     await expect(
@@ -392,7 +463,8 @@ test.describe("Export gated by policy, JIT disabled (C8)", () => {
 
 test.describe("Multi-statement result export affordance (C10)", () => {
   test("two SELECTs render Query #1 / #2 tabs with a single Request-export control above them", async () => {
-    await applyExportState({ disableExport: true, jit: true });
+    const { page, sqlEditor } = reader;
+    await openEditorAs(reader, { jit: true });
     await sqlEditor.runPreparedQuery("SELECT 1 AS a; SELECT 2 AS b;");
 
     await expect(
@@ -407,10 +479,10 @@ test.describe("Multi-statement result export affordance (C10)", () => {
   });
 });
 
-// --- Active export grant: no local download for its exact statement (C7),
-//     surfaces an Export badge (C5), and is filterable (C6) ----------------
+// --- A read user's active export grant re-enables Export for its exact
+//     statement (C7), surfaces an Export badge (C5), and is filterable (C6) --
 
-test.describe("Active export grant (C5, C6, C7)", () => {
+test.describe("Active export grant without bb.sql.export (C5, C6, C7)", () => {
   const GRANTED_STATEMENT =
     "SELECT emp_no, first_name, last_name FROM employee LIMIT 6;";
   const UNGRANTED_STATEMENT = "SELECT emp_no FROM employee LIMIT 6;";
@@ -420,8 +492,7 @@ test.describe("Active export grant (C5, C6, C7)", () => {
     await env.api.updateProjectSettings(env.project, {
       allowJustInTimeAccess: true,
     });
-    await setWorkspaceExportPolicy(true);
-    grantedAccessName = await createActiveGrant(GRANTED_STATEMENT, {
+    grantedAccessName = await createActiveGrant(readerApi, GRANTED_STATEMENT, {
       unmask: true,
       export: true,
     });
@@ -438,23 +509,51 @@ test.describe("Active export grant (C5, C6, C7)", () => {
   });
 
   test.beforeEach(async () => {
-    await sqlEditor.gotoWithDb(projectId, env.instanceId, env.databaseId);
-    await page.waitForTimeout(1000);
+    await reader.sqlEditor.gotoWithDb(projectId, env.instanceId, env.databaseId);
+    await reader.page.waitForTimeout(1000);
   });
 
-  test("the granted statement does not restore local download (C7)", async () => {
+  test("the granted statement re-enables Export AND exporting under the grant succeeds (C7)", async () => {
+    const { page, sqlEditor } = reader;
     await sqlEditor.runPreparedQuery(GRANTED_STATEMENT);
 
-    // The grant matches, so "Request export" is gone; the project has no
-    // export destination, so Export is hidden too.
+    const exportButton = page.getByRole("button", { name: /^Export$/ }).first();
+    await expect(exportButton).toBeVisible({ timeout: 10_000 });
     await expect(
-      page.getByRole("button", { name: "Copy", exact: true }).first(),
-    ).toBeVisible({ timeout: 10_000 });
-    await expect(sqlEditor.requestExportButton).toHaveCount(0);
-    await expect(page.getByRole("button", { name: /^Export$/ })).toHaveCount(0);
+      sqlEditor.requestExportButton,
+    ).toHaveCount(0);
+
+    await exportButton.hover();
+    // The tooltip attributes the export to the grant. #20513 made the headline
+    // "Export available via issue \"<title>\"" when the grant has an approval
+    // issue (ours does), falling back to "Export enabled by access grant"
+    // otherwise (or before the issue title resolves) — accept either.
+    await expect(
+      page.getByText(/Export (available via issue|enabled by access grant)/),
+    ).toBeVisible({ timeout: 5000 });
+
+    // Not just "the button shows" — actually export. Without bb.sql.export the
+    // backend must honor the export grant, so Confirm fires a successful Export
+    // RPC. (We can't read ExportResponse.applied_access_grant here: the Export RPC
+    // uses the Connect protobuf codec, so the response body is binary protobuf —
+    // the zip-bearing ExportResponse — not JSON. The grant-vs-ACL authorization is
+    // a backend concern covered by backend tests; here we prove the UI exports
+    // end-to-end under the grant.)
+    const drawer = await openExportDrawer(page);
+    const exportResponse = page.waitForResponse(
+      (r) => r.url().includes("SQLService/Export"),
+      { timeout: 20_000 },
+    );
+    await drawer.getByRole("button", { name: "Confirm", exact: true }).click();
+    const resp = await exportResponse;
+    expect(
+      resp.ok(),
+      "exporting under an active export grant must succeed",
+    ).toBeTruthy();
   });
 
   test("running a DIFFERENT statement keeps export gated (Request export, no Export) (C7)", async () => {
+    const { page, sqlEditor } = reader;
     await sqlEditor.runPreparedQuery(UNGRANTED_STATEMENT);
 
     await expect(
@@ -464,6 +563,7 @@ test.describe("Active export grant (C5, C6, C7)", () => {
   });
 
   test("the granted access is listed in the ACCESS pane with an Export badge (C5)", async () => {
+    const { page, sqlEditor } = reader;
     await sqlEditor.gutterAccessTab.click();
     await page.waitForTimeout(1000);
 
@@ -480,6 +580,7 @@ test.describe("Active export grant (C5, C6, C7)", () => {
   });
 
   test('filtering the ACCESS pane by export "No" hides the export grant (C6)', async () => {
+    const { page, sqlEditor } = reader;
     await sqlEditor.gutterAccessTab.click();
     await page.waitForTimeout(1000);
     await expect(page.getByText(GRANTED_STATEMENT).first()).toBeVisible({
@@ -561,8 +662,8 @@ test.describe("Masking ↔ export security", () => {
   }
 
   test.beforeAll(async () => {
-    // Export allowed (so the Export button shows), JIT on for the grant test.
-    await setWorkspaceExportPolicy(false);
+    // The admin holds bb.sql.export, so the Export button shows; JIT on for
+    // the grant test.
     await env.api.updateProjectSettings(env.project, {
       allowJustInTimeAccess: true,
     });
@@ -685,7 +786,7 @@ test.describe("Masking ↔ export security", () => {
     await env.api.updateProjectSettings(env.project, {
       allowSelfApproval: true,
     });
-    unmaskGrantName = await createActiveGrant(STATEMENT, {
+    unmaskGrantName = await createActiveGrant(env.api, STATEMENT, {
       unmask: true,
       export: true,
     });
@@ -729,7 +830,7 @@ test.describe("Re-requesting a revoked grant restores Unmask AND Export (BYT-965
     // Seed an unmask+export grant, then revoke it so the ACCESS pane offers
     // a "Re-request" affordance for it. (revokeAccessGrant throws on non-OK,
     // so a failed revoke surfaces here instead of silently leaving it ACTIVE.)
-    const name = await createActiveGrant(REVOKED_STATEMENT, {
+    const name = await createActiveGrant(env.api, REVOKED_STATEMENT, {
       unmask: true,
       export: true,
     });

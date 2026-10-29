@@ -384,7 +384,6 @@ type EffectiveQueryDataPolicy struct {
 	MaximumResultSize        int64
 	MaximumResultRows        int32
 	DisableCopyData          bool
-	DisableExport            bool
 	MaxQueryTimeoutInSeconds int64
 	AllowAdminDataSource     bool
 }
@@ -398,7 +397,6 @@ func formatEffectiveQueryDataPolicy(policy *storepb.QueryDataPolicy) *EffectiveQ
 	return &EffectiveQueryDataPolicy{
 		MaximumResultRows:    maximumResultRows,
 		DisableCopyData:      policy.GetDisableCopyData(),
-		DisableExport:        policy.GetDisableExport(),
 		AllowAdminDataSource: policy.GetAllowAdminDataSource(),
 	}
 }
@@ -429,12 +427,32 @@ func (s *Store) GetEffectiveQueryDataPolicy(ctx context.Context, workspaceID str
 
 	return &EffectiveQueryDataPolicy{
 		DisableCopyData:          formatWorkspacePolicy.DisableCopyData,
-		DisableExport:            formatWorkspacePolicy.DisableExport,
 		MaximumResultRows:        min(formatWorkspacePolicy.MaximumResultRows, formatProjectPolicy.MaximumResultRows),
 		MaximumResultSize:        maximumResultSize,
 		MaxQueryTimeoutInSeconds: queryTimeout,
 		AllowAdminDataSource:     formatWorkspacePolicy.AllowAdminDataSource,
 	}, nil
+}
+
+// GetDefaultWorkspaceQueryDataPolicy returns the workspace query data policy a
+// new workspace starts with: local export download is the only allowed export
+// delivery.
+func GetDefaultWorkspaceQueryDataPolicy() *storepb.QueryDataPolicy {
+	return &storepb.QueryDataPolicy{
+		ExportDeliveryPolicy: &storepb.QueryDataPolicy_ExportDeliveryPolicy{
+			AllowedDeliveries: []storepb.ExportDelivery{storepb.ExportDelivery_LOCAL},
+		},
+	}
+}
+
+// GetAllowedExportDeliveries returns the export deliveries a workspace query
+// data policy allows. A policy without an export delivery policy allows the
+// default.
+func GetAllowedExportDeliveries(policy *storepb.QueryDataPolicy) []storepb.ExportDelivery {
+	if exportDeliveryPolicy := policy.GetExportDeliveryPolicy(); exportDeliveryPolicy != nil {
+		return exportDeliveryPolicy.GetAllowedDeliveries()
+	}
+	return GetDefaultWorkspaceQueryDataPolicy().GetExportDeliveryPolicy().GetAllowedDeliveries()
 }
 
 // GetWorkspaceQueryDataPolicy gets the workspace-level query data policy as

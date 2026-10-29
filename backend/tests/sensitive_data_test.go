@@ -6,12 +6,15 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/genproto/googleapis/type/expr"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
@@ -92,6 +95,7 @@ func TestSensitiveData(t *testing.T) {
 				name varchar(220),
 				author varchar(220)
 			);
+			CREATE TABLE ghost();
 		`
 		insertData = `
 			INSERT INTO tech_book VALUES
@@ -285,7 +289,7 @@ func TestSensitiveData(t *testing.T) {
 	// but the masking pipeline should redact it.
 	errorLeakResp, err := ctl.sqlServiceClient.Query(ctx, connect.NewRequest(&v1pb.QueryRequest{
 		Name:      database.Name,
-		Statement: "SELECT author::uuid FROM tech_book WHERE id = 1",
+		Statement: "SELECT author::uuid FROM tech_book WHERE name = 'bytebase'",
 	}))
 	a.NoError(err)
 	a.Equal(1, len(errorLeakResp.Msg.Results))
@@ -297,13 +301,71 @@ func TestSensitiveData(t *testing.T) {
 	// Same query on a non-masked column should preserve the original error.
 	nonMaskedErrorResp, err := ctl.sqlServiceClient.Query(ctx, connect.NewRequest(&v1pb.QueryRequest{
 		Name:      database.Name,
-		Statement: "SELECT name::uuid FROM tech_book WHERE id = 1",
+		Statement: "SELECT name::uuid FROM tech_book WHERE name = 'bytebase'",
 	}))
 	a.NoError(err)
 	a.Equal(1, len(nonMaskedErrorResp.Msg.Results))
 	a.NotEmpty(nonMaskedErrorResp.Msg.Results[0].Error)
 	// The error should NOT be redacted — name is not masked.
 	a.NotContains(nonMaskedErrorResp.Msg.Results[0].Error, "data masking policies")
+
+	const refusedPredicate = "Using sensitive columns in query conditions is not allowed"
+	for _, statement := range []string{
+		"SELECT name FROM tech_book WHERE author = 'bber'",
+		"SELECT b.name FROM tech_book b JOIN tech_book a ON a.id = b.id AND ascii(substr(a.author, 1, 1)) > 70",
+		"SELECT name FROM tech_book WHERE EXISTS (SELECT 1 FROM tech_book t WHERE t.author LIKE 'E%')",
+		"EXPLAIN ANALYZE SELECT name FROM tech_book WHERE author LIKE 'E%'",
+		"SELECT count(*) FILTER (WHERE author LIKE 'E%') FROM tech_book",
+		"SELECT count(*) FROM tech_book NATURAL JOIN (SELECT 'bber'::varchar AS author) x",
+		// Running this would fail on the cast, so the refusal proves it never ran.
+		"SELECT name FROM tech_book WHERE author::int = 1",
+	} {
+		resp, err := ctl.sqlServiceClient.Query(ctx, connect.NewRequest(&v1pb.QueryRequest{
+			Name:      database.Name,
+			Statement: statement,
+		}))
+		a.NoError(err, statement)
+		a.Len(resp.Msg.Results, 1, statement)
+		a.True(strings.HasPrefix(resp.Msg.Results[0].Error, refusedPredicate), "%s: %s", statement, resp.Msg.Results[0].Error)
+		a.Empty(resp.Msg.Results[0].Rows, statement)
+	}
+
+	unmaskedPredicateResp, err := ctl.sqlServiceClient.Query(ctx, connect.NewRequest(&v1pb.QueryRequest{
+		Name:      database.Name,
+		Statement: "SELECT name FROM tech_book WHERE name = 'bytebase'",
+	}))
+	a.NoError(err)
+	a.Len(unmaskedPredicateResp.Msg.Results, 1)
+	a.Empty(unmaskedPredicateResp.Msg.Results[0].Error)
+	a.Len(unmaskedPredicateResp.Msg.Results[0].Rows, 1)
+
+	for _, statement := range []string{
+		"SELECT a FROM (SELECT author AS a FROM tech_book UNION ALL SELECT name FROM tech_book) s",
+		"WITH c AS (SELECT author FROM tech_book UNION SELECT name FROM tech_book) SELECT author FROM c",
+		"SELECT s.x FROM (SELECT row_number() OVER (ORDER BY name) AS rn, author AS x FROM tech_book) s",
+	} {
+		resp, err := ctl.sqlServiceClient.Query(ctx, connect.NewRequest(&v1pb.QueryRequest{
+			Name:      database.Name,
+			Statement: statement,
+		}))
+		a.NoError(err, statement)
+		a.Len(resp.Msg.Results, 1, statement)
+		a.Empty(resp.Msg.Results[0].Error, statement)
+		a.NotEmpty(resp.Msg.Results[0].Rows, statement)
+		for _, row := range resp.Msg.Results[0].Rows {
+			a.NotContains([]string{"bber", "Egor Rogov", "Martin Kleppmann"}, row.Values[0].GetStringValue(), statement)
+		}
+	}
+
+	batchResp, err := ctl.sqlServiceClient.Query(ctx, connect.NewRequest(&v1pb.QueryRequest{
+		Name:      database.Name,
+		Statement: "SELECT name FROM tech_book; SELECT name FROM tech_book WHERE author = 'bber';",
+	}))
+	a.NoError(err)
+	a.Len(batchResp.Msg.Results, 2)
+	a.Empty(batchResp.Msg.Results[0].Error)
+	a.Len(batchResp.Msg.Results[0].Rows, 3)
+	a.Equal(fmt.Sprintf("%s: %s.public.%s.author", refusedPredicate, databaseName, tableName), batchResp.Msg.Results[1].Error)
 
 	// Created directly on the target, after the last schema sync, so the synced
 	// schema does not know the function or how many columns it returns.
@@ -332,4 +394,40 @@ func TestSensitiveData(t *testing.T) {
 	a.Len(unmaskedResp.Msg.Results, 1)
 	a.Equal([]string{"a", "b"}, unmaskedResp.Msg.Results[0].ColumnNames)
 	a.Len(unmaskedResp.Msg.Results[0].Rows, 1)
+
+	// ghost synced with no columns. A column added outside Bytebase is masked by
+	// name once it syncs, so the condition on it must be refused before the
+	// query runs: a run would take the 30 seconds pg_sleep asks for. The query
+	// syncs the database, so it comes after the unsynced_rows checks.
+	_, err = targetDB.ExecContext(ctx, "ALTER TABLE ghost ADD COLUMN ghost_secret text; INSERT INTO ghost VALUES ('x')")
+	a.NoError(err)
+	workspace, err := ctl.workspaceServiceClient.GetWorkspace(ctx, connect.NewRequest(&v1pb.GetWorkspaceRequest{Name: "workspaces/-"}))
+	a.NoError(err)
+	_, err = ctl.orgPolicyServiceClient.UpdatePolicy(ctx, connect.NewRequest(&v1pb.UpdatePolicyRequest{
+		Policy: &v1pb.Policy{
+			Name: workspace.Msg.Name + "/policies/masking_rule",
+			Type: v1pb.PolicyType_MASKING_RULE,
+			Policy: &v1pb.Policy_MaskingRulePolicy{
+				MaskingRulePolicy: &v1pb.MaskingRulePolicy{
+					Rules: []*v1pb.MaskingRulePolicy_MaskingRule{{
+						Id:           "6b1e7c2a-3f4d-4e5a-9b8c-0d1e2f3a4b5c",
+						Condition:    &expr.Expr{Expression: `resource.column_name == "ghost_secret"`},
+						SemanticType: "default",
+					}},
+				},
+			},
+		},
+		AllowMissing: true,
+		UpdateMask:   &fieldmaskpb.FieldMask{Paths: []string{"masking_rule_policy"}},
+	}))
+	a.NoError(err)
+	start := time.Now()
+	ghostResp, err := ctl.sqlServiceClient.Query(ctx, connect.NewRequest(&v1pb.QueryRequest{
+		Name:      database.Name,
+		Statement: "SELECT 1 FROM ghost WHERE ghost_secret = 'x' AND pg_sleep(30) IS NOT NULL",
+	}))
+	a.NoError(err)
+	a.Less(time.Since(start), 20*time.Second)
+	a.Len(ghostResp.Msg.Results, 1)
+	a.True(strings.HasPrefix(ghostResp.Msg.Results[0].Error, refusedPredicate), ghostResp.Msg.Results[0].Error)
 }

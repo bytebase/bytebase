@@ -97,9 +97,9 @@ message AccessGrant {
   // The {access_grant} segment is a server-generated unique ID.
   string name = 1;
 
-  // The creator of the access grant.
+  // The creator of the access grant, the caller who requested it.
   // Format: users/{email}
-  string creator = 2 [(google.api.field_behavior) = REQUIRED];
+  string creator = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The status of the access grant.
   // An ACTIVE grant with `expire_time` in the past is effectively expired
@@ -152,7 +152,8 @@ message AccessGrant {
 
   string reason = 12;
 
-  // Whether export the query result.
+  // Whether the grant allows exporting the query result.
+  // An active grant with export=true grants bb.sql.export for this query until the grant expires.
   bool export = 13;
 
   // The default schema to execute the query.

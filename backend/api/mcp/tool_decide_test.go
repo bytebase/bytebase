@@ -677,7 +677,7 @@ func TestDecideIssueReportsTheRefusalInTheServersWords(t *testing.T) {
 	for name, refusal := range map[string]string{
 		"the workflow": "cannot approve because self-approval is not allowed for this project",
 		"the ceiling": "/bytebase.v1.IssueService/ApproveIssue is a WRITE method and this workspace's MCP capability ceiling is READ_ONLY, " +
-			"which serves READ methods. Ask a workspace admin to raise the MCP ceiling in the workspace settings, " +
+			"which serves READ methods. Ask a workspace admin to raise the MCP ceiling under Integration > MCP > Access policy, " +
 			"or perform this action signed in to the Bytebase console instead",
 	} {
 		t.Run(name, func(t *testing.T) {

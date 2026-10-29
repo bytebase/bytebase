@@ -841,6 +841,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.QueryDataPolicy.ExportDeliveryPolicy"><span class="badge">M</span>QueryDataPolicy.ExportDeliveryPolicy</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.ReviewAIPolicy"><span class="badge">M</span>ReviewAIPolicy</a>
                 </li>
               
@@ -860,6 +864,10 @@
                   <a href="#bytebase.store.TagPolicy.TagsEntry"><span class="badge">M</span>TagPolicy.TagsEntry</a>
                 </li>
               
+              
+                <li>
+                  <a href="#bytebase.store.ExportDelivery"><span class="badge">E</span>ExportDelivery</a>
+                </li>
               
                 <li>
                   <a href="#bytebase.store.Policy.Resource"><span class="badge">E</span>Policy.Resource</a>
@@ -5816,7 +5824,7 @@ Missing from persisted payloads means false. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The role being requested for the user.
-Format: roles/EXPORTER. </p></td>
+Format: roles/{role}. </p></td>
                 </tr>
               
                 <tr>
@@ -7457,15 +7465,6 @@ resource.instance_id == &#34;local&#34; &amp;&amp; resource.database_name == &#3
             <tbody>
               
                 <tr>
-                  <td>disable_export</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>workspace-level policy
-Disallow local export download. Exports can then only be delivered to an
-export destination. </p></td>
-                </tr>
-              
-                <tr>
                   <td>maximum_result_rows</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
@@ -7491,6 +7490,14 @@ Allow using the admin data source to query in the SQL editor. </p></td>
                 </tr>
               
                 <tr>
+                  <td>export_delivery_policy</td>
+                  <td><a href="#bytebase.store.QueryDataPolicy.ExportDeliveryPolicy">QueryDataPolicy.ExportDeliveryPolicy</a></td>
+                  <td></td>
+                  <td><p>workspace-level policy
+Where exports may be delivered. Unset allows LOCAL only. </p></td>
+                </tr>
+              
+                <tr>
                   <td>disallow_ddl</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
@@ -7504,6 +7511,30 @@ Disallow running DDL statements in the SQL editor. </p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>Disallow running DML statements in the SQL editor. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.QueryDataPolicy.ExportDeliveryPolicy">QueryDataPolicy.ExportDeliveryPolicy</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>allowed_deliveries</td>
+                  <td><a href="#bytebase.store.ExportDelivery">ExportDelivery</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -7649,6 +7680,35 @@ For example, the environment resource can have the SQL review config tag, such a
         
       
 
+      
+        <h3 id="bytebase.store.ExportDelivery">ExportDelivery</h3>
+        <p>Where an export is delivered.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>EXPORT_DELIVERY_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>LOCAL</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SHAREPOINT</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
       
         <h3 id="bytebase.store.Policy.Resource">Policy.Resource</h3>
         <p></p>

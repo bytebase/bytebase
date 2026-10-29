@@ -1184,6 +1184,11 @@ export interface PlanFind {
   createdTsAfter?: number;
   createdTsBefore?: number;
   hasRollout?: boolean;
+  // Whether any spec references a Release, which separates GitOps from ClickOps Plans.
+  hasRelease?: boolean;
+  release?: string;
+  // Task.Status names; a Plan matches when any task is in one of them.
+  taskStatuses?: string[];
   specType?: string;
   state?: "ACTIVE" | "DELETED";
 }
@@ -1198,6 +1203,13 @@ export type PlanSlice = {
   listPlans: (
     params: ListPlanParams
   ) => Promise<{ plans: Plan[]; nextPageToken: string }>;
+  // The Plan last opened in Plan Detail, so the sidebar can highlight Releases
+  // for a GitOps Plan and Plans for a ClickOps Plan.
+  viewedPlan?: { name: string; isReleaseBacked: boolean };
+  setViewedPlan: (viewedPlan: {
+    name: string;
+    isReleaseBacked: boolean;
+  }) => void;
 };
 
 export type RolloutSlice = {

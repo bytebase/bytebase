@@ -212,6 +212,24 @@ func (x *RolloutPolicy) Equal(y *RolloutPolicy) bool {
 	return true
 }
 
+func (x *QueryDataPolicy_ExportDeliveryPolicy) Equal(y *QueryDataPolicy_ExportDeliveryPolicy) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if len(x.AllowedDeliveries) != len(y.AllowedDeliveries) {
+		return false
+	}
+	for i := 0; i < len(x.AllowedDeliveries); i++ {
+		if x.AllowedDeliveries[i] != y.AllowedDeliveries[i] {
+			return false
+		}
+	}
+	return true
+}
+
 func (x *QueryDataPolicy) Equal(y *QueryDataPolicy) bool {
 	if x == y {
 		return true
@@ -229,6 +247,9 @@ func (x *QueryDataPolicy) Equal(y *QueryDataPolicy) bool {
 		return false
 	}
 	if x.AllowAdminDataSource != y.AllowAdminDataSource {
+		return false
+	}
+	if !x.ExportDeliveryPolicy.Equal(y.ExportDeliveryPolicy) {
 		return false
 	}
 	return true

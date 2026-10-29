@@ -1,7 +1,6 @@
 package v1
 
 import (
-	"bytes"
 	"context"
 	"database/sql"
 	"fmt"
@@ -157,7 +156,8 @@ func (s *SQLService) AdminExecute(ctx context.Context, stream *connect.BidiStrea
 		if queryErr != nil {
 			response.Results = []*v1pb.QueryResult{
 				{
-					Error: queryErr.Error(),
+					Error:     queryErr.Error(),
+					Statement: request.Statement,
 				},
 			}
 		} else {
@@ -421,7 +421,7 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 	// (e.g. `SELECT * FROM db_b.secret` from a grant on `db_a`) still has
 	// to clear the regular IAM check on the foreign database. See PR
 	// #20487 review for the cross-DB exfiltration scenario this guards.
-	optionalAccessCheck := s.accessCheckWithGrant(accessGrant)
+	optionalAccessCheck := s.accessCheckWithGrant(accessGrant, false /* export */)
 	results, _, duration, queryErr := queryRetryStopOnError(
 		ctx,
 		s.store,
@@ -604,12 +604,19 @@ func replaceBackupTableWithSource(ctx context.Context, stores *store.Store, inst
 	}
 
 	for _, span := range spans {
-		span.SourceColumns = generateNewSourceColumnSet(instance.Metadata.GetEngine(), span.SourceColumns, schema)
-		for _, result := range span.Results {
-			result.SourceColumns = generateNewSourceColumnSet(instance.Metadata.GetEngine(), result.SourceColumns, schema)
-		}
+		remapBackupTableColumns(instance.Metadata.GetEngine(), span, schema)
 	}
 	return nil
+}
+
+// remapBackupTableColumns points the columns span reads from backup tables at
+// the source columns, whose masking policies apply to the backups too.
+func remapBackupTableColumns(engine storepb.Engine, span *parserbase.QuerySpan, schema *model.SchemaMetadata) {
+	span.SourceColumns = generateNewSourceColumnSet(engine, span.SourceColumns, schema)
+	span.PredicateColumns = generateNewSourceColumnSet(engine, span.PredicateColumns, schema)
+	for i := range span.Results {
+		span.Results[i].SourceColumns = generateNewSourceColumnSet(engine, span.Results[i].SourceColumns, schema)
+	}
 }
 
 func generateNewSourceColumnSet(engine storepb.Engine, origin parserbase.SourceColumnSet, schema *model.SchemaMetadata) parserbase.SourceColumnSet {
@@ -835,30 +842,11 @@ func queryRetry(
 	schemaSyncer *schemasync.Syncer,
 	multiStatement bool,
 ) ([]*v1pb.QueryResult, []*parserbase.QuerySpan, time.Duration, error) {
-	var sensitivePredicateColumns [][]parserbase.ColumnResource
 	// An explain request carries the bare statements the driver will wrap, so
 	// their spans name the databases the plan describes.
-	spans, err := parserbase.GetQuerySpan(
-		ctx,
-		parserbase.GetQuerySpanContext{
-			InstanceID:                    instance.ResourceID,
-			GetDatabaseMetadataFunc:       parsercontext.BuildGetDatabaseMetadataFunc(stores),
-			ListDatabaseNamesFunc:         parsercontext.BuildListDatabaseNamesFunc(stores),
-			GetLinkedDatabaseMetadataFunc: parsercontext.BuildGetLinkedDatabaseMetadataFunc(stores, instance.Metadata.GetEngine()),
-		},
-		instance.Metadata.GetEngine(),
-		statements,
-		database.DatabaseName,
-		queryContext.Schema,
-		!store.IsObjectCaseSensitive(instance),
-	)
+	spans, err := buildQuerySpans(ctx, stores, instance, database, statements, queryContext.Schema)
 	if err != nil {
 		return nil, nil, time.Duration(0), err
-	}
-	// After replacing backup table with source, we can apply the original access check and mask sensitive data for backup table.
-	// If err != nil, this function will return the original spans.
-	if err := replaceBackupTableWithSource(ctx, stores, instance, database, spans); err != nil {
-		slog.Debug("failed to replace backup table with source", log.BBError(err))
 	}
 	if optionalAccessCheck != nil {
 		// A smuggled write (EXPLAIN ANALYZE of a write) is refused earlier, in
@@ -868,20 +856,30 @@ func queryRetry(
 		}
 		slog.Debug("optional access check", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
 	}
-	if !queryContext.Explain && !queryContext.SkipMasking && licenseService.IsFeatureEnabledForInstance(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil {
-		masker := NewQueryResultMasker(stores)
-		sensitivePredicateColumns, err = masker.ExtractSensitivePredicateColumns(ctx, spans, instance, user)
-		if err != nil {
-			return nil, nil, time.Duration(0), connect.NewError(connect.CodeInternal, errors.New(err.Error()))
-		}
-		slog.Debug("extract sensitive predicate columns", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
-	}
-
 	maskingEnabled := !queryContext.Explain && !queryContext.SkipMasking &&
 		licenseService.IsFeatureEnabledForInstance(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil
 	queryContext.MaskingEnabled = maskingEnabled
 
 	if maskingEnabled {
+		// Columns a stale snapshot lacks can hide a condition from the predicate
+		// check, so sync before execution. MaskResults refuses the result if the
+		// columns stay unresolved. Permanently empty tables re-sync on every query
+		// until BYT-10074 adds throttling.
+		if unresolved := unresolvedColumnDatabases(spans, instance); len(unresolved) > 0 {
+			if err := syncDatabaseMetadata(ctx, stores, schemaSyncer, instance, unresolved); err != nil {
+				return nil, nil, time.Duration(0), err
+			}
+			if spans, err = buildQuerySpans(ctx, stores, instance, database, statements, queryContext.Schema); err != nil {
+				return nil, nil, time.Duration(0), err
+			}
+		}
+		refusal, err := sensitivePredicateRefusal(ctx, stores, spans, instance, user)
+		if err != nil {
+			return nil, nil, time.Duration(0), err
+		}
+		if refusal != "" {
+			return refusedQueryResults(refusal, originalStatement), nil, time.Duration(0), nil
+		}
 		if err := preExecuteMaskingCheck(ctx, stores, instance.Metadata.GetEngine(), database, spans); err != nil {
 			return nil, nil, time.Duration(0), err
 		}
@@ -905,7 +903,10 @@ func queryRetry(
 	if queryContext.Explain {
 		if format, ok := db.ExplainResultFormat(instance.Metadata.GetEngine(), queryContext.Option.GetExplainFormat()); ok {
 			for _, result := range results {
-				if result.Error == "" {
+				// A driver that stated the plan itself keeps it, with whether it
+				// ran and anything it carried: Elasticsearch answers an explain
+				// with the profile of a search it executed.
+				if result.Error == "" && result.QueryPlan == nil {
 					result.QueryPlan = &v1pb.QueryResult_QueryPlan{Format: format}
 				}
 			}
@@ -915,21 +916,7 @@ func queryRetry(
 
 	syncDatabaseMap := make(map[string]bool)
 	for i, r := range results {
-		if i >= len(spans) {
-			continue
-		}
-		// Re-sync even for error results: MaskResults also refuses partial rows.
-		// Permanently empty tables re-sync on every query until BYT-10074 adds throttling.
-		if maskingEnabled && maskingBlockedByUnresolvedColumns(spans[i], instance) {
-			for _, dbName := range spans[i].UnresolvedColumnsError.Databases() {
-				slog.Debug("database metadata need to sync: unresolved columns",
-					slog.String("instance", instance.ResourceID),
-					slog.String("database", dbName),
-					slog.String("detail", spans[i].UnresolvedColumnsError.Error()))
-				syncDatabaseMap[dbName] = true
-			}
-		}
-		if r.Error != "" {
+		if i >= len(spans) || r.Error != "" {
 			continue
 		}
 		if spans[i].NotFoundError != nil {
@@ -940,55 +927,26 @@ func queryRetry(
 		}
 	}
 
-	// Sync database metadata.
-	for accessDatabaseName := range syncDatabaseMap {
-		slog.Debug("sync database metadata", slog.String("instance", instance.ResourceID), slog.String("database", accessDatabaseName))
-		d, err := stores.GetDatabase(ctx, &store.FindDatabaseMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), InstanceID: &instance.ResourceID, DatabaseName: &accessDatabaseName})
-		if err != nil {
-			return nil, nil, duration, err
-		}
-		if d == nil {
-			// Leave the span error in place so masking can reject an untracked database.
-			slog.Debug("skip metadata sync: database not tracked",
-				slog.String("instance", instance.ResourceID),
-				slog.String("database", accessDatabaseName))
-			continue
-		}
-		if err := schemaSyncer.SyncDatabaseSchema(ctx, d); err != nil {
-			return nil, nil, duration, errors.Wrapf(err, "failed to sync database schema for database %q", accessDatabaseName)
-		}
+	if err := syncDatabaseMetadata(ctx, stores, schemaSyncer, instance, syncDatabaseMap); err != nil {
+		return nil, nil, duration, err
 	}
 
 	// Retry getting query span.
 	if len(syncDatabaseMap) > 0 {
 		slog.Debug("retry query after sync metadata", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
-		spans, err = parserbase.GetQuerySpan(
-			ctx,
-			parserbase.GetQuerySpanContext{
-				InstanceID:                    instance.ResourceID,
-				GetDatabaseMetadataFunc:       parsercontext.BuildGetDatabaseMetadataFunc(stores),
-				ListDatabaseNamesFunc:         parsercontext.BuildListDatabaseNamesFunc(stores),
-				GetLinkedDatabaseMetadataFunc: parsercontext.BuildGetLinkedDatabaseMetadataFunc(stores, instance.Metadata.GetEngine()),
-			},
-			instance.Metadata.GetEngine(),
-			statements,
-			database.DatabaseName,
-			queryContext.Schema,
-			!store.IsObjectCaseSensitive(instance),
-		)
+		spans, err = buildQuerySpans(ctx, stores, instance, database, statements, queryContext.Schema)
 		if err != nil {
 			return nil, nil, time.Duration(0), err
 		}
-		// After replacing backup table with source, we can apply the original access check and mask sensitive data for backup table.
-		// If err != nil, this function will return the original spans.
-		if err := replaceBackupTableWithSource(ctx, stores, instance, database, spans); err != nil {
-			slog.Debug("failed to replace backup table with source", log.BBError(err))
-		}
-		if !queryContext.SkipMasking && licenseService.IsFeatureEnabledForInstance(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil {
-			masker := NewQueryResultMasker(stores)
-			sensitivePredicateColumns, err = masker.ExtractSensitivePredicateColumns(ctx, spans, instance, user)
+		// A table the first span did not find may surface a condition the
+		// pre-execution check could not see.
+		if maskingEnabled {
+			refusal, err := sensitivePredicateRefusal(ctx, stores, spans, instance, user)
 			if err != nil {
-				return nil, nil, time.Duration(0), connect.NewError(connect.CodeInternal, errors.New(err.Error()))
+				return nil, nil, duration, err
+			}
+			if refusal != "" {
+				return refusedQueryResults(refusal, originalStatement), nil, duration, nil
 			}
 		}
 	}
@@ -1019,33 +977,89 @@ func queryRetry(
 			if err := masker.MaskResults(ctx, spans, results, instance, user); err != nil {
 				return nil, nil, duration, connect.NewError(connect.CodeInternal, errors.New(err.Error()))
 			}
-
-			for i, result := range results {
-				if i >= len(sensitivePredicateColumns) {
-					continue
-				}
-				if len(sensitivePredicateColumns[i]) == 0 {
-					continue
-				}
-				result.Error = getSensitivePredicateColumnErrorMessages(sensitivePredicateColumns[i])
-				result.Rows = nil
-				result.RowsCount = 0
-			}
 		}
 	}
 	return results, spans, duration, nil
 }
 
-func getSensitivePredicateColumnErrorMessages(sensitiveColumns []parserbase.ColumnResource) string {
-	var buf bytes.Buffer
-	_, _ = buf.WriteString("Using sensitive columns in WHERE clause is not allowed: ")
-	for j, column := range sensitiveColumns {
-		if j > 0 {
-			_, _ = buf.WriteString(", ")
-		}
-		_, _ = buf.WriteString(column.String())
+// refusedQueryResults reports a refusal as the statement's error rather than
+// the request's, so every engine shows the message without an RPC code prefix.
+func refusedQueryResults(refusal, statement string) []*v1pb.QueryResult {
+	return []*v1pb.QueryResult{{Error: refusal, Statement: statement}}
+}
+
+// buildQuerySpans analyzes statements for access checks and masking.
+func buildQuerySpans(
+	ctx context.Context,
+	stores *store.Store,
+	instance *store.InstanceMessage,
+	database *store.DatabaseMessage,
+	statements []parserbase.Statement,
+	schema string,
+) ([]*parserbase.QuerySpan, error) {
+	spans, err := parserbase.GetQuerySpan(
+		ctx,
+		parserbase.GetQuerySpanContext{
+			InstanceID:                    instance.ResourceID,
+			GetDatabaseMetadataFunc:       parsercontext.BuildGetDatabaseMetadataFunc(stores),
+			ListDatabaseNamesFunc:         parsercontext.BuildListDatabaseNamesFunc(stores),
+			GetLinkedDatabaseMetadataFunc: parsercontext.BuildGetLinkedDatabaseMetadataFunc(stores, instance.Metadata.GetEngine()),
+		},
+		instance.Metadata.GetEngine(),
+		statements,
+		database.DatabaseName,
+		schema,
+		!store.IsObjectCaseSensitive(instance),
+	)
+	if err != nil {
+		return nil, err
 	}
-	return buf.String()
+	// After replacing backup table with source, we can apply the original access check and mask sensitive data for backup table.
+	// If err != nil, this function will return the original spans.
+	if err := replaceBackupTableWithSource(ctx, stores, instance, database, spans); err != nil {
+		slog.Debug("failed to replace backup table with source", log.BBError(err))
+	}
+	return spans, nil
+}
+
+// unresolvedColumnDatabases returns the databases whose stale metadata keeps
+// masking from resolving a span's columns.
+func unresolvedColumnDatabases(spans []*parserbase.QuerySpan, instance *store.InstanceMessage) map[string]bool {
+	databases := make(map[string]bool)
+	for _, span := range spans {
+		if !maskingBlockedByUnresolvedColumns(span, instance) {
+			continue
+		}
+		for _, name := range span.UnresolvedColumnsError.Databases() {
+			slog.Debug("database metadata need to sync: unresolved columns",
+				slog.String("instance", instance.ResourceID),
+				slog.String("database", name),
+				slog.String("detail", span.UnresolvedColumnsError.Error()))
+			databases[name] = true
+		}
+	}
+	return databases
+}
+
+func syncDatabaseMetadata(ctx context.Context, stores *store.Store, schemaSyncer *schemasync.Syncer, instance *store.InstanceMessage, databaseNames map[string]bool) error {
+	for name := range databaseNames {
+		slog.Debug("sync database metadata", slog.String("instance", instance.ResourceID), slog.String("database", name))
+		d, err := stores.GetDatabase(ctx, &store.FindDatabaseMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), InstanceID: &instance.ResourceID, DatabaseName: &name})
+		if err != nil {
+			return err
+		}
+		if d == nil {
+			// Leave the span error in place so masking can reject an untracked database.
+			slog.Debug("skip metadata sync: database not tracked",
+				slog.String("instance", instance.ResourceID),
+				slog.String("database", name))
+			continue
+		}
+		if err := schemaSyncer.SyncDatabaseSchema(ctx, d); err != nil {
+			return errors.Wrapf(err, "failed to sync database schema for database %q", name)
+		}
+	}
+	return nil
 }
 
 // queryRetryStopOnError runs the query and stops on encountering errors.
@@ -1073,7 +1087,11 @@ func queryRetryStopOnError(
 		if err != nil {
 			return nil, nil, 0, err
 		}
-		return queryRetry(ctx, stores, user, instance, database, driver, conn, statements, statement, queryContext, licenseService, optionalAccessCheck, schemaSyncer, hasMultipleStatements(statements))
+		results, spans, duration, err := queryRetry(ctx, stores, user, instance, database, driver, conn, statements, statement, queryContext, licenseService, optionalAccessCheck, schemaSyncer, hasMultipleStatements(statements))
+		if len(results) == 0 {
+			results = resultForTimeout(statement, err)
+		}
+		return results, spans, duration, err
 	}
 
 	// Split the statement into individual SQLs
@@ -1084,7 +1102,11 @@ func queryRetryStopOnError(
 		// statement as a single unit. Where GetQuerySpan is supported (e.g. MongoDB),
 		// it re-parses the raw text and surfaces the parse error; otherwise
 		// queryRetry returns nil spans (old behavior).
-		return queryRetry(ctx, stores, user, instance, database, driver, conn, []parserbase.Statement{{Text: statement}}, statement, queryContext, licenseService, optionalAccessCheck, schemaSyncer, false)
+		results, spans, duration, err := queryRetry(ctx, stores, user, instance, database, driver, conn, []parserbase.Statement{{Text: statement}}, statement, queryContext, licenseService, optionalAccessCheck, schemaSyncer, false)
+		if len(results) == 0 {
+			results = resultForTimeout(statement, err)
+		}
+		return results, spans, duration, err
 	}
 
 	// A multi-statement batch can change the session schema mid-batch (e.g. SET search_path),
@@ -1128,6 +1150,28 @@ func queryRetryStopOnError(
 	return allResults, allSpans, totalDuration, nil
 }
 
+// queryTimeoutError marks a run the server cut off at its deadline, apart from
+// an error the engine reported, so a caller can answer it with the statement
+// that was running.
+type queryTimeoutError struct {
+	timeout time.Duration
+}
+
+func (e *queryTimeoutError) Error() string {
+	return fmt.Sprintf("timeout reached: %v", e.timeout)
+}
+
+// resultForTimeout names the statement a timed-out run was cut off in. No
+// driver returns a result for a statement it never finished, so without this
+// the editor has an error and nothing to point at.
+func resultForTimeout(statement string, err error) []*v1pb.QueryResult {
+	var timedOut *queryTimeoutError
+	if !errors.As(err, &timedOut) {
+		return nil
+	}
+	return []*v1pb.QueryResult{{Error: err.Error(), Statement: statement}}
+}
+
 func executeWithTimeout(
 	ctx context.Context,
 	driver db.Driver,
@@ -1152,7 +1196,7 @@ func executeWithTimeout(
 	select {
 	case <-queryCtx.Done():
 		// canceled or timed out
-		return nil, time.Since(start), errors.Errorf("timeout reached: %v", timeout)
+		return nil, time.Since(start), &queryTimeoutError{timeout: timeout}
 	default:
 		// So the select will not block
 	}
@@ -1204,10 +1248,9 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 		return nil, err
 	}
 
-	// Same cross-database guardrail as Query: the JIT grant authorizes only
-	// its target databases, so span-level ACL still runs and only the
-	// granted targets are exempted from IAM. See PR #20487 review.
-	optionalAccessCheck := s.accessCheckWithGrant(accessGrant)
+	// The JIT grant satisfies bb.sql.export only on its target databases, so
+	// span-level ACL still runs for every other database.
+	optionalAccessCheck := s.accessCheckWithGrant(accessGrant, true /* export */)
 	skipMasking := false
 	if accessGrant != nil {
 		skipMasking = accessGrant.Payload.Unmask
@@ -1217,11 +1260,7 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 	s.createQueryHistory(instance, database, store.QueryHistoryTypeExport, statement, user.Email, duration, exportErr)
 
 	if exportErr != nil {
-		var connectErr *connect.Error
-		if errors.As(exportErr, &connectErr) {
-			return nil, connectErr
-		}
-		return nil, connect.NewError(connect.CodeInternal, exportErr)
+		return nil, exportConnectError(exportErr)
 	}
 
 	exportResponse, err := deliverExport(ctx, sharePointTarget, user, database, files, request, exportTime)
@@ -1233,6 +1272,21 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 	}
 
 	return connect.NewResponse(exportResponse), nil
+}
+
+// exportConnectError returns the connect error Export answers with. A refusal
+// from the access check arrives as a queryError, which errors.As cannot see
+// through, so its own connect error (such as PERMISSION_DENIED) is returned.
+func exportConnectError(err error) *connect.Error {
+	var connectErr *connect.Error
+	var qe *queryError
+	if errors.As(err, &qe) && errors.As(qe.err, &connectErr) {
+		return connectErr
+	}
+	if errors.As(err, &connectErr) {
+		return connectErr
+	}
+	return connect.NewError(connect.CodeInternal, err)
 }
 
 // doExport runs an SQL Editor export with masking applied and returns its
@@ -1444,44 +1498,27 @@ func (s *SQLService) GetQueryHistory(ctx context.Context, req *connect.Request[v
 // without an import cycle. See parsercontext.BuildGetDatabaseMetadataFunc,
 // BuildListDatabaseNamesFunc, BuildGetLinkedDatabaseMetadataFunc.
 
-// accessCheck check the access for the database. Do not support cross-project resources.
-func (s *SQLService) accessCheck(
-	ctx context.Context,
-	instance *store.InstanceMessage,
-	database *store.DatabaseMessage,
-	user *store.UserMessage,
-	spans []*parserbase.QuerySpan,
-	isExplain bool,
-	statements []parserbase.Statement,
-	requestSchema string,
-	multiStatement bool,
-) error {
-	return s.accessCheckWithGrantedTargets(ctx, instance, database, user, spans, isExplain, statements, nil, requestSchema, multiStatement)
-}
-
-// accessCheckWithGrant returns an accessCheckFunc that exempts the access
-// grant's target databases from IAM checks while keeping span-level checks for
-// every other source database. This preserves JIT-grant behavior for the
-// grant's target (the user is already authorized there) but blocks cross-
-// database exfiltration via cross-DB references like `SELECT * FROM db_b.t`
-// from a grant targeting `db_a` — see PR #20487 review. The exemption is for
-// data access only; see checkDatabaseAccess for why explain stays with IAM.
-//
-// Pass `accessGrant == nil` to skip wrapping; callers in that case should
-// reference `s.accessCheck` directly.
-func (s *SQLService) accessCheckWithGrant(accessGrant *store.AccessGrantMessage) accessCheckFunc {
-	if accessGrant == nil || accessGrant.Payload == nil {
-		return s.accessCheck
-	}
-	grantedTargets := make(map[string]struct{}, len(accessGrant.Payload.Targets))
-	for _, t := range accessGrant.Payload.Targets {
-		grantedTargets[t] = struct{}{}
+// accessCheckWithGrant returns the per-statement access check for Query, or for
+// Export when export is true. accessGrant, which may be nil, applies only to its
+// target databases; every other source database keeps its span-level IAM check,
+// which blocks cross-database exfiltration like `SELECT * FROM db_b.t` through
+// a grant on `db_a`. Cross-project resources are not supported.
+func (s *SQLService) accessCheckWithGrant(accessGrant *store.AccessGrantMessage, export bool) accessCheckFunc {
+	var grantedTargets map[string]struct{}
+	if accessGrant != nil && accessGrant.Payload != nil {
+		grantedTargets = make(map[string]struct{}, len(accessGrant.Payload.Targets))
+		for _, t := range accessGrant.Payload.Targets {
+			grantedTargets[t] = struct{}{}
+		}
 	}
 	return func(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage, user *store.UserMessage, spans []*parserbase.QuerySpan, isExplain bool, statements []parserbase.Statement, requestSchema string, multiStatement bool) error {
-		return s.accessCheckWithGrantedTargets(ctx, instance, database, user, spans, isExplain, statements, grantedTargets, requestSchema, multiStatement)
+		return s.accessCheckWithGrantedTargets(ctx, instance, database, user, spans, isExplain, statements, grantedTargets, export, requestSchema, multiStatement)
 	}
 }
 
+// accessCheckWithGrantedTargets authorizes each statement span. For Export,
+// reading data, including info-schema output, requires bb.sql.export in place
+// of bb.sql.select or bb.sql.info; explain, DML and DDL keep their permissions.
 func (s *SQLService) accessCheckWithGrantedTargets(
 	ctx context.Context,
 	instance *store.InstanceMessage,
@@ -1491,6 +1528,7 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 	isExplain bool,
 	statements []parserbase.Statement,
 	grantedTargets map[string]struct{},
+	export bool,
 	requestSchema string,
 	multiStatement bool,
 ) error {
@@ -1512,14 +1550,31 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 		return connect.NewError(connect.CodeInternal, errors.New(err.Error()))
 	}
 
+	readPermission := func(perm permission.Permission) permission.Permission {
+		if export && (perm == permission.SQLSelect || perm == permission.SQLInfo) {
+			return permission.SQLExport
+		}
+		return perm
+	}
+
+	// grantSatisfies reports whether the access grant satisfies perm on target.
+	// A grant approves one read-only statement on its target databases: for
+	// Export it satisfies bb.sql.export, and for Query the statement's own
+	// permission. Reading the statement's plan is a separate capability, so
+	// bb.sql.explain always comes from IAM.
+	grantSatisfies := func(target string, perm permission.Permission) bool {
+		if _, granted := grantedTargets[target]; !granted {
+			return false
+		}
+		if export {
+			return perm == permission.SQLExport
+		}
+		return perm != permission.SQLExplain
+	}
+
 	checkDatabaseAccess := func(perm permission.Permission) error {
 		databaseFullName := formatDatabaseResourceName(instance, database)
-		// A grant approves reading one statement's data on its target databases, so
-		// the holder needs no IAM role there for that statement. Reading the
-		// statement's plan is a separate capability: the approved statement can
-		// arrive with the explain flag, or be a typed EXPLAIN, and either way
-		// bb.sql.explain still comes from IAM.
-		if _, granted := grantedTargets[databaseFullName]; granted && perm != permission.SQLExplain {
+		if grantSatisfies(databaseFullName, perm) {
 			return nil
 		}
 		attributes := map[string]any{
@@ -1564,7 +1619,7 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 	// No spans: an engine without a span extractor. Check at the database level,
 	// with the explain permission for an explain request.
 	if len(spans) == 0 {
-		perm := permission.SQLSelect
+		perm := readPermission(permission.SQLSelect)
 		if isExplain {
 			perm = permission.SQLExplain
 		}
@@ -1606,16 +1661,22 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 			// always fallback to bb.sql.select
 			perm = permission.SQLSelect
 		}
+		perm = readPermission(perm)
 
 		// A plan names the tables it reads, so reading one needs bb.sql.explain on
 		// every database the statement references, not only the connected one.
 		// A plain EXPLAIN, typed or requested, executes nothing and is done here;
-		// EXPLAIN ANALYZE executes its statement and is checked for that below.
+		// an explain that executes is checked for what it executes, below.
 		if isExplain || perm == permission.SQLExplain || (span.ExplainAnalyze && common.EngineSupportQueryNewACL(instance.Metadata.GetEngine())) {
 			if err := s.checkExplainAccess(ctx, user, instance, database, span, workspacePolicy.Policy, projectPolicy.Policy); err != nil {
 				return err
 			}
-			if !span.ExplainAnalyze {
+			// Elasticsearch states a plan only for a search it ran: an explain
+			// request there profiles the search, so it reads what the search
+			// reads and needs that permission too, as EXPLAIN ANALYZE does.
+			explainRuns := span.ExplainAnalyze ||
+				(isExplain && instance.Metadata.GetEngine() == storepb.Engine_ELASTICSEARCH)
+			if !explainRuns {
 				continue
 			}
 		}
@@ -1649,7 +1710,12 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 				continue
 			}
 			databaseLevelOnly := multiStatement || len(nonEmptyStatements) != 1
-			deniedResources, err := s.authorizeWriteTargets(ctx, user, instance, database, perm, targets, grantedTargets, databaseLevelOnly, workspacePolicy.Policy, projectPolicy.Policy)
+			writeGrantedTargets := grantedTargets
+			if export {
+				// An export grant satisfies only bb.sql.export; see grantSatisfies.
+				writeGrantedTargets = nil
+			}
+			deniedResources, err := s.authorizeWriteTargets(ctx, user, instance, database, perm, targets, writeGrantedTargets, databaseLevelOnly, workspacePolicy.Policy, projectPolicy.Policy)
 			if err != nil {
 				return err
 			}
@@ -1703,7 +1769,7 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 				InstanceID:   instance.ResourceID,
 				DatabaseName: column.Database,
 			})
-			if _, granted := grantedTargets[grantTargetName]; granted {
+			if grantSatisfies(grantTargetName, perm) {
 				continue
 			}
 			attributes := map[string]any{
@@ -1940,17 +2006,7 @@ func (s *SQLService) authorizeWriteTargets(
 			envByDatabase[t.database] = env
 		}
 
-		attributes := map[string]any{
-			common.CELAttributeRequestTime:           requestTime,
-			common.CELAttributeResourceDatabase:      databaseFullName,
-			common.CELAttributeResourceEnvironmentID: env,
-		}
-		if !useDatabaseLevel {
-			attributes[common.CELAttributeResourceTableName] = t.table
-			if t.schema != "" {
-				attributes[common.CELAttributeResourceSchemaName] = t.schema
-			}
-		}
+		attributes := writeTargetAttributes(requestTime, databaseFullName, env, t, useDatabaseLevel)
 		allowed, err := s.hasDatabaseAccessRights(ctx, user, perm, attributes, iamPolicies...)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check access control for target %q: %v", deniedResource, err))
@@ -1960,6 +2016,23 @@ func (s *SQLService) authorizeWriteTargets(
 		}
 	}
 	return deniedResources, nil
+}
+
+// writeTargetAttributes returns the attributes a grant condition is evaluated against
+// for write target t; a database-level check carries no table or schema.
+func writeTargetAttributes(requestTime time.Time, databaseFullName, env string, t writeTargetResource, databaseLevel bool) map[string]any {
+	attributes := map[string]any{
+		common.CELAttributeRequestTime:           requestTime,
+		common.CELAttributeResourceDatabase:      databaseFullName,
+		common.CELAttributeResourceEnvironmentID: env,
+	}
+	if !databaseLevel {
+		attributes[common.CELAttributeResourceTableName] = t.table
+		if t.schema != "" {
+			attributes[common.CELAttributeResourceSchemaName] = t.schema
+		}
+	}
+	return attributes
 }
 
 // formatWriteTargetResource renders a denied write target as
@@ -1987,7 +2060,9 @@ type writeTargetResource struct {
 // Some engines' extractors report auxiliary tables referenced by the change (e.g.
 // the joined/using tables of an UPDATE … JOIN … / DELETE … USING …) alongside the
 // mutated table, others only the primary target; either way this can only ever
-// over-restrict (fail-closed), never under-restrict.
+// over-restrict (fail-closed), never under-restrict. The exception is a SQL Server target
+// left as written (BOT-158, BOT-160): it is checked as a table of that name in the request
+// database.
 //
 // DDL on a non-table object (view/procedure/function/trigger/…) has no table to scope. When
 // such DDL names an EXPLICIT target database (e.g. CREATE VIEW other_db.v), the extractor

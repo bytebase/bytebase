@@ -1,12 +1,21 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import { router } from "@/app/router";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { projectNamePrefix } from "@/lib/resourceName";
 import { useAppStore } from "@/stores/app";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
+import { extractDatabaseResourceName } from "@/utils/v1/database";
 import { runAgentLoop } from "../logic/agentLoop";
 import {
   getAgentAIConfigurationEnabled,
@@ -19,9 +28,22 @@ import {
 } from "../logic/landingStarters";
 import { buildOutboundHistory } from "../logic/outboundHistory";
 import { buildSystemPrompt } from "../logic/prompt";
+import {
+  canAddResourceMention,
+  getDraftResourceMentions,
+  getMentionTriggerRange,
+  hasUnboundResourceMention,
+  insertResourceMention,
+  normalizeAgentResourceReferences,
+  updateDraftResourceMentions,
+} from "../logic/resourceMention";
 import { createToolExecutor, getToolDefinitions } from "../logic/tools";
 import { extractDatabaseOverviewEvidence } from "../logic/tools/databaseOverview";
 import { extractIssueOverviewEvidence } from "../logic/tools/issueOverview";
+import {
+  getPendingApiCallPreview,
+  resolvePendingApiCall,
+} from "../logic/tools/pendingApiCall";
 import { createProjectOpenIssuesTool } from "../logic/tools/projectOpenIssues";
 import { extractProjectOverviewEvidence } from "../logic/tools/projectOverview";
 import { getRecentActivity } from "../logic/tools/recentActivity";
@@ -31,6 +53,7 @@ import type {
   AgentAnswerEvidence,
   AgentAskUserOption,
   AgentEvidence,
+  AgentResourceReference,
   AgentRunMode,
   Message,
 } from "../logic/types";
@@ -43,6 +66,8 @@ import {
   useAgentStore,
 } from "../store/agent";
 import { AgentContextPicker } from "./AgentContextPicker";
+import { AgentMentionTextarea } from "./AgentMentionTextarea";
+import { AgentResourcePicker } from "./AgentResourcePicker";
 
 // Module-level map — survives across renders.
 const runTokens = new Map<string, number>();
@@ -199,8 +224,12 @@ export function AgentInput() {
     selectCurrentChatRequiresAIConfiguration
   );
   const currentChatId = useAgentStore((s) => s.currentChatId);
+  const currentDraft = useAgentStore((s) =>
+    currentChatId ? s.draftsByChatId[currentChatId] : undefined
+  );
   const queuedUserMessage = useAgentStore((s) => s.queuedUserMessage);
   const getOrFetchSettingByName = useAppStore((s) => s.getOrFetchSettingByName);
+  const currentUserName = useAppStore((s) => s.currentUser?.name ?? "");
   const context = currentChat?.context;
   const projectContext = context?.startsWith(projectNamePrefix)
     ? context
@@ -305,8 +334,12 @@ export function AgentInput() {
     [t]
   );
 
-  // Local state
-  const [input, setInput] = useState("");
+  const [askInput, setAskInput] = useState("");
+  const [resourcePickerOpen, setResourcePickerOpen] = useState(false);
+  const mentionRangeRef = useRef<{ start: number; end: number } | null>(null);
+  const selectedMentionCaretRef = useRef<number | null>(null);
+  const previousChatIdRef = useRef<string | null>(null);
+  const confirmationInFlightRef = useRef(false);
 
   const composerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -319,8 +352,46 @@ export function AgentInput() {
       ? (currentPendingAsk.options ?? [])
       : [];
   const isAwaitingConfirm = currentPendingAsk?.kind === "confirm";
+  const apiPermission = currentPendingAsk?.apiPermission;
+  const apiPermissionPreview =
+    apiPermission && currentChat && currentUserName
+      ? getPendingApiCallPreview({
+          actionId: apiPermission.actionId,
+          chatId: currentChat.id,
+          toolCallId: currentPendingAsk.toolCallId,
+          userName: currentUserName,
+        })
+      : undefined;
   const isAwaitingChoose =
     currentPendingAsk?.kind === "choose" && chooseOptions.length > 0;
+  const input = currentPendingAsk ? askInput : (currentDraft?.text ?? "");
+  const setInput = useCallback(
+    (value: string) => {
+      if (currentPendingAsk) {
+        setAskInput(value);
+        return;
+      }
+      const store = useAgentStore.getState();
+      const chatId =
+        store.currentChatId ??
+        store.ensureCurrentChat(
+          getCurrentPageSnapshot(),
+          getCurrentChatContext(),
+          workspace?.name
+        ).id;
+      const draft = store.getDraft(chatId);
+      const mentions = updateDraftResourceMentions(
+        draft.text,
+        value,
+        getDraftResourceMentions(draft)
+      );
+      store.setDraft(chatId, {
+        text: value,
+        ...(mentions.length > 0 ? { mentions } : {}),
+      });
+    },
+    [currentPendingAsk, workspace?.name]
+  );
   const sendLabel = currentPendingAsk ? t("agent.reply") : t("agent.send");
   const inputPlaceholder =
     currentPendingAsk?.kind === "input"
@@ -330,11 +401,23 @@ export function AgentInput() {
         : t("agent.input-placeholder");
   const confirmLabel = currentPendingAsk?.confirmLabel ?? t("agent.confirm");
   const cancelLabel = currentPendingAsk?.cancelLabel ?? t("agent.cancel");
+  const draftMentions =
+    currentPendingAsk || !currentDraft
+      ? []
+      : getDraftResourceMentions(currentDraft);
+  const selectedProjectMention = draftMentions.find(
+    ({ resource }) => resource.kind === "project"
+  );
+  const hasAdditionalMention =
+    !currentPendingAsk &&
+    draftMentions.length > 0 &&
+    hasUnboundResourceMention(input, draftMentions);
   const isSendDisabled =
     isCurrentChatRunning ||
     isAwaitingConfirm ||
     isAwaitingChoose ||
     isAIConfigurationBlocked ||
+    hasAdditionalMention ||
     !input.trim();
   const currentChatTokenUsageLabel = useMemo(
     () =>
@@ -348,20 +431,74 @@ export function AgentInput() {
     : context === workspace?.name
       ? workspace?.title || context
       : context;
+  const canMentionResource = Boolean(workspace?.name && !currentPendingAsk);
 
   const selectContext = useCallback(
     (resource: string) => {
-      return Boolean(
-        useAgentStore
-          .getState()
-          .selectChatContext(
-            resource,
-            getCurrentPageSnapshot(),
-            workspace?.name
-          )
+      const store = useAgentStore.getState();
+      const selected = store.selectOrCreateChatForContext(
+        resource,
+        getCurrentPageSnapshot(),
+        workspace?.name
       );
+      if (!selected) return false;
+      setResourcePickerOpen(false);
+      mentionRangeRef.current = null;
+      return true;
     },
     [workspace?.name]
+  );
+
+  const selectMentionResource = useCallback(
+    (resource: AgentResourceReference) => {
+      const store = useAgentStore.getState();
+      const chatId =
+        store.currentChatId ??
+        store.ensureCurrentChat(
+          getCurrentPageSnapshot(),
+          getCurrentChatContext(),
+          workspace?.name
+        ).id;
+      const draft = store.getDraft(chatId);
+      const mentions = getDraftResourceMentions(draft);
+      if (!canAddResourceMention(mentions, resource)) return;
+      const range = mentionRangeRef.current;
+      const label = resource.label;
+      const insertion = insertResourceMention(draft.text, range, label);
+      if (!insertion) return;
+      selectedMentionCaretRef.current = insertion.caret;
+      store.setDraft(chatId, {
+        text: insertion.text,
+        mentions: [
+          ...updateDraftResourceMentions(draft.text, insertion.text, mentions),
+          { resource, range: insertion.mention },
+        ],
+      });
+      mentionRangeRef.current = null;
+    },
+    [workspace?.name]
+  );
+
+  const selectMentionProject = useCallback(
+    (project: Project) =>
+      selectMentionResource({
+        kind: "project",
+        name: project.name,
+        project: project.name,
+        label: project.title || project.name,
+      }),
+    [selectMentionResource]
+  );
+
+  const selectMentionDatabase = useCallback(
+    (database: Database) =>
+      selectMentionResource({
+        kind: "database",
+        name: database.name,
+        project: database.project,
+        label: extractDatabaseResourceName(database.name).databaseName,
+      }),
+    [selectMentionResource]
   );
 
   useEffect(() => {
@@ -408,22 +545,42 @@ export function AgentInput() {
     void blockWhenAIIsNotConfigured(chat.id);
   }, [blockWhenAIIsNotConfigured, currentChatId]);
 
-  // Reset input when chat/pendingAsk changes
+  // Pending-ask answers are separate from the saved question draft.
   useEffect(() => {
     if (
       currentPendingAsk?.kind === "input" ||
       currentPendingAsk?.kind === "choose"
     ) {
-      setInput(currentPendingAsk.defaultValue ?? "");
+      setAskInput(currentPendingAsk.defaultValue ?? "");
       return;
     }
-    setInput("");
+    setAskInput("");
   }, [
     currentChatId,
     currentPendingAsk?.toolCallId,
     currentPendingAsk?.kind,
     currentPendingAsk?.defaultValue,
   ]);
+
+  useEffect(() => {
+    if (
+      previousChatIdRef.current &&
+      previousChatIdRef.current !== currentChatId
+    ) {
+      setResourcePickerOpen(false);
+      mentionRangeRef.current = null;
+      selectedMentionCaretRef.current = null;
+    }
+    previousChatIdRef.current = currentChatId;
+  }, [currentChatId]);
+
+  useLayoutEffect(() => {
+    const caret = selectedMentionCaretRef.current;
+    if (caret === null) return;
+    selectedMentionCaretRef.current = null;
+    textareaRef.current?.focus();
+    textareaRef.current?.setSelectionRange(caret, caret);
+  }, [input]);
 
   const autoResize = useCallback(() => {
     const el = textareaRef.current;
@@ -475,7 +632,8 @@ export function AgentInput() {
     (chatId: string, systemPrompt: string): Message[] => {
       return buildOutboundHistory(
         systemPrompt,
-        useAgentStore.getState().getMessages(chatId)
+        useAgentStore.getState().getMessages(chatId),
+        useAgentStore.getState().getChat(chatId)?.context
       );
     },
     []
@@ -531,6 +689,22 @@ export function AgentInput() {
       runMode: AgentRunMode
     ) => {
       const store = useAgentStore.getState();
+      const lastUserMessage = store
+        .getMessages(chatId)
+        .findLast((message) => message.role === "user");
+      const references = normalizeAgentResourceReferences(
+        lastUserMessage?.metadata?.resourceReferences,
+        lastUserMessage?.metadata?.resourceReference
+      );
+      const projectReference = references.find(
+        (reference) => reference.kind === "project"
+      );
+      const databaseReference = references.find(
+        (reference) => reference.kind === "database"
+      );
+      const referencedProject =
+        projectReference?.name ?? databaseReference?.project;
+      const referencedDatabase = databaseReference?.name;
       const controller = new AbortController();
       const runToken = (runTokens.get(chatId) ?? 0) + 1;
       runTokens.set(chatId, runToken);
@@ -539,12 +713,17 @@ export function AgentInput() {
       const systemPrompt = buildSystemPrompt({
         ...page,
         context: store.getChat(chatId)?.context,
+        referencedProject,
+        referencedDatabase,
         runMode,
       });
-      const tools = getToolDefinitions({ runMode });
+      const tools = getToolDefinitions({ runMode, referencedProject });
       const executor = createToolExecutor(router, {
         chatId,
+        userName: useAppStore.getState().currentUser?.name,
         context: store.getChat(chatId)?.context,
+        referencedProject,
+        referencedDatabase,
         runMode,
         onNavigate: () => {
           useAgentStore
@@ -556,10 +735,143 @@ export function AgentInput() {
       let overviewEvidence: AgentAnswerEvidence | undefined;
 
       try {
+        const history = buildChatHistory(chatId, systemPrompt);
+        let prefetchedProjectOverview: string | undefined;
+        if (projectReference && !databaseReference && referencedProject) {
+          const preflightCallId = uuidv4();
+          const result = await executor(
+            "get_project_overview",
+            {},
+            preflightCallId
+          ).catch(() => undefined);
+          if (
+            controller.signal.aborted ||
+            runToken !== runTokens.get(chatId) ||
+            !useAgentStore.getState().getChat(chatId)
+          ) {
+            return;
+          }
+          const overviewResult =
+            result?.kind === "tool_result" ? result.result : undefined;
+          let valid = false;
+          if (overviewResult) {
+            try {
+              const overview = JSON.parse(overviewResult) as {
+                project?: unknown;
+                error?: unknown;
+              };
+              valid = overview.project === referencedProject && !overview.error;
+            } catch {
+              valid = false;
+            }
+          }
+          if (!valid || !overviewResult) {
+            useAgentStore.getState().addMessage({
+              chatId,
+              role: "assistant",
+              content: t("agent.project-reference-unavailable"),
+              metadata: { route: page.path, runId },
+            });
+            useAgentStore.getState().finishChatRun(chatId);
+            return;
+          }
+          prefetchedProjectOverview = overviewResult;
+          history.push(
+            {
+              role: "assistant",
+              toolCalls: [
+                {
+                  id: preflightCallId,
+                  name: "get_project_overview",
+                  arguments: "{}",
+                },
+              ],
+            },
+            {
+              role: "tool",
+              toolCallId: preflightCallId,
+              content: overviewResult,
+            }
+          );
+        } else if (referencedDatabase && referencedProject) {
+          const preflightCallId = uuidv4();
+          const args = { databaseName: referencedDatabase };
+          const result = await executor(
+            "get_database_overview",
+            args,
+            preflightCallId
+          ).catch(() => undefined);
+          if (
+            controller.signal.aborted ||
+            runToken !== runTokens.get(chatId) ||
+            !useAgentStore.getState().getChat(chatId)
+          ) {
+            return;
+          }
+          const overviewResult =
+            result?.kind === "tool_result" ? result.result : undefined;
+          let valid = false;
+          if (overviewResult) {
+            try {
+              const overview = JSON.parse(overviewResult) as {
+                project?: unknown;
+                database?: {
+                  status?: unknown;
+                  name?: unknown;
+                  state?: unknown;
+                };
+              };
+              valid =
+                overview.project === referencedProject &&
+                overview.database?.status === "available" &&
+                overview.database.name === referencedDatabase &&
+                overview.database.state === "ACTIVE";
+            } catch {
+              valid = false;
+            }
+          }
+          if (!valid || !overviewResult) {
+            useAgentStore.getState().addMessage({
+              chatId,
+              role: "assistant",
+              content: t("agent.database-reference-unavailable"),
+              metadata: { route: page.path, runId },
+            });
+            useAgentStore.getState().finishChatRun(chatId);
+            return;
+          }
+          overviewEvidence = mergeOverviewEvidence(
+            overviewEvidence,
+            extractDatabaseOverviewEvidence(overviewResult)
+          );
+          history.push(
+            {
+              role: "assistant",
+              toolCalls: [
+                {
+                  id: preflightCallId,
+                  name: "get_database_overview",
+                  arguments: JSON.stringify(args),
+                },
+              ],
+            },
+            {
+              role: "tool",
+              toolCallId: preflightCallId,
+              content: overviewResult,
+            }
+          );
+        }
         const outcome = await runAgentLoop(
-          buildChatHistory(chatId, systemPrompt),
+          history,
           tools,
-          executor,
+          (name, args, toolCallId) =>
+            name === "get_project_overview" && prefetchedProjectOverview
+              ? Promise.resolve({
+                  kind: "tool_result" as const,
+                  result: prefetchedProjectOverview,
+                })
+              : executor(name, args, toolCallId),
           {
             onAssistantMessage: (message) => {
               for (const toolCall of message.toolCalls ?? []) {
@@ -638,7 +950,7 @@ export function AgentInput() {
         }
       }
     },
-    [buildChatHistory, handleOutcome]
+    [buildChatHistory, handleOutcome, t]
   );
 
   const runRecentActivityStarter = useCallback(
@@ -817,9 +1129,24 @@ export function AgentInput() {
     ) => {
       const runId = uuidv4();
       const store = useAgentStore.getState();
+      const lastUserMessage = store
+        .getMessages(chatId)
+        .findLast((message) => message.role === "user");
+      const references = normalizeAgentResourceReferences(
+        lastUserMessage?.metadata?.resourceReferences,
+        lastUserMessage?.metadata?.resourceReference
+      );
+      const hasResourceReference = references.some(
+        (reference) =>
+          reference.kind === "project" || reference.kind === "database"
+      );
+      const effectiveRunMode = hasResourceReference ? "read-only" : runMode;
       store.updateChatPage(chatId, currentPage);
-      store.startChatRun(chatId, currentPage, { runId, runMode });
-      if (starterId === "workspace-recent") {
+      store.startChatRun(chatId, currentPage, {
+        runId,
+        runMode: effectiveRunMode,
+      });
+      if (!hasResourceReference && starterId === "workspace-recent") {
         await runRecentActivityStarter(
           chatId,
           currentPage,
@@ -828,7 +1155,7 @@ export function AgentInput() {
         );
         return;
       }
-      if (starterId === "project-open-recent") {
+      if (!hasResourceReference && starterId === "project-open-recent") {
         const projectName = store.getChat(chatId)?.context;
         if (projectName?.startsWith(projectNamePrefix)) {
           await runRecentActivityStarter(
@@ -840,18 +1167,18 @@ export function AgentInput() {
           return;
         }
       }
-      if (starterId === "workspace-attention") {
+      if (!hasResourceReference && starterId === "workspace-attention") {
         await runWorkspaceAttentionStarter(chatId, currentPage, runId);
         return;
       }
-      if (starterId === "project-open-blockers") {
+      if (!hasResourceReference && starterId === "project-open-blockers") {
         const projectName = store.getChat(chatId)?.context;
         if (projectName?.startsWith(projectNamePrefix)) {
           await runProjectAttentionStarter(chatId, currentPage, runId);
           return;
         }
       }
-      await runChat(chatId, currentPage, runId, runMode);
+      await runChat(chatId, currentPage, runId, effectiveRunMode);
     },
     [
       runChat,
@@ -868,27 +1195,39 @@ export function AgentInput() {
     if (!message) return;
 
     void (async () => {
-      try {
-        if (await blockWhenAIIsNotConfigured(message.chatId)) {
-          setInput(message.text);
-          return;
+      const restoreQueuedText = () => {
+        const draft = store.getDraft(message.chatId);
+        if (!draft.text && !draft.project && !draft.resource) {
+          store.setDraft(message.chatId, {
+            text: message.text,
+            resource: message.resourceReference,
+          });
         }
-        store.clearError(message.chatId);
-        store.addMessage({
-          chatId: message.chatId,
-          role: "user",
-          content: message.text,
-          metadata: { route: message.page.path },
-        });
-        await startChatRun(
-          message.chatId,
-          message.page,
-          message.runMode ?? "default",
-          message.starterId
-        );
-      } finally {
-        store.finishQueuedUserMessage(message.chatId);
+      };
+      let isBlocked: boolean;
+      try {
+        isBlocked = await blockWhenAIIsNotConfigured(message.chatId);
+      } catch {
+        if (store.queuedUserMessage?.id === message.id) {
+          restoreQueuedText();
+          store.finishQueuedUserMessage(message.chatId);
+        }
+        return;
       }
+      if (isBlocked) {
+        restoreQueuedText();
+        store.finishQueuedUserMessage(message.chatId);
+        return;
+      }
+      const committed = store.commitQueuedUserMessage(message.chatId);
+      if (!committed) return;
+      store.clearError(message.chatId);
+      await startChatRun(
+        message.chatId,
+        message.page,
+        message.runMode ?? "default",
+        message.starterId
+      );
     })();
   }, [
     blockWhenAIIsNotConfigured,
@@ -903,30 +1242,31 @@ export function AgentInput() {
     if (store.isChatRunning(chat?.id)) return;
 
     const currentPage = getCurrentPageSnapshot();
-    const thread = store.ensureCurrentChat(
+    const sourceThread = store.ensureCurrentChat(
       currentPage,
       getCurrentChatContext(),
       workspace?.name
     );
-    const chatId = thread.id;
-    if (await blockWhenAIIsNotConfigured(chatId)) return;
-    store.clearError(chatId);
+    const sourceChatId = sourceThread.id;
+    const submittedDraft = store.getDraft(sourceChatId);
+    if (await blockWhenAIIsNotConfigured(sourceChatId)) return;
+    store.clearError(sourceChatId);
 
     const pendingAsk = selectCurrentPendingAsk(store);
     if (pendingAsk) {
       const answer = input.trim();
       if (!answer) return;
-      setInput("");
+      setAskInput("");
 
       if (pendingAsk.kind === "choose") {
         store.answerPendingAsk(
-          chatId,
+          sourceChatId,
           { kind: "choose", answer, value: answer },
           { route: currentPage.path }
         );
       } else if (pendingAsk.kind === "input") {
         store.answerPendingAsk(
-          chatId,
+          sourceChatId,
           { kind: "input", answer },
           { route: currentPage.path }
         );
@@ -934,22 +1274,50 @@ export function AgentInput() {
         return;
       }
       await startChatRun(
-        chatId,
+        sourceChatId,
         currentPage,
-        store.getChat(chatId)?.runMode ?? "default"
+        store.getChat(sourceChatId)?.runMode ?? "default"
       );
       return;
     }
 
-    const text = input.trim();
+    const text = submittedDraft.text.trim();
     if (!text) return;
-    setInput("");
+    const mentions = getDraftResourceMentions(submittedDraft);
+    if (
+      mentions.length > 0 &&
+      hasUnboundResourceMention(submittedDraft.text, mentions)
+    )
+      return;
+    const references = normalizeAgentResourceReferences(
+      mentions.map(({ resource }) => resource)
+    );
+    const stagedReference = references[0];
+    const thread =
+      stagedReference && !sourceThread.context
+        ? store.selectOrCreateChatForContext(
+            stagedReference.project,
+            currentPage,
+            workspace?.name
+          )
+        : sourceThread;
+    if (!thread) return;
+    const chatId = thread.id;
     store.addMessage({
       chatId,
       role: "user",
       content: text,
-      metadata: { route: currentPage.path },
+      metadata: {
+        route: currentPage.path,
+        ...(stagedReference ? { resourceReference: stagedReference } : {}),
+        ...(references.length > 1 ? { resourceReferences: references } : {}),
+      },
     });
+    if (store.getDraft(sourceChatId) === submittedDraft) {
+      store.clearDraft(sourceChatId);
+    }
+    setResourcePickerOpen(false);
+    mentionRangeRef.current = null;
     const starterId = getLandingStarterIdForText({
       context: thread.context,
       text,
@@ -987,8 +1355,52 @@ export function AgentInput() {
       if (
         !pendingAsk ||
         pendingAsk.kind !== "confirm" ||
+        confirmationInFlightRef.current ||
         store.isChatRunning(chat?.id)
       ) {
+        return;
+      }
+
+      if (pendingAsk.apiPermission && chat) {
+        confirmationInFlightRef.current = true;
+        try {
+          const chatId = chat.id;
+          const currentPage = getCurrentPageSnapshot();
+          if (await blockWhenAIIsNotConfigured(chatId)) return;
+
+          const currentStore = useAgentStore.getState();
+          if (
+            currentStore.getPendingAsk(chatId)?.apiPermission?.actionId !==
+              pendingAsk.apiPermission.actionId ||
+            currentStore.isChatRunning(chatId)
+          ) {
+            return;
+          }
+
+          const runMode = currentStore.getChat(chatId)?.runMode ?? "default";
+          currentStore.setChatStatus(chatId, "running");
+          const result = await resolvePendingApiCall({
+            actionId: pendingAsk.apiPermission.actionId,
+            chatId,
+            toolCallId: pendingAsk.toolCallId,
+            userName: useAppStore.getState().currentUser?.name ?? "",
+            approved: confirmed,
+          });
+          if (!currentStore.getChat(chatId)) return;
+          currentStore.addMessage({
+            chatId,
+            role: "tool",
+            toolCallId: pendingAsk.toolCallId,
+            content: result,
+            metadata: {
+              route: currentPage.path,
+              runId: chat.runId ?? undefined,
+            },
+          });
+          await startChatRun(chatId, currentPage, runMode);
+        } finally {
+          confirmationInFlightRef.current = false;
+        }
         return;
       }
 
@@ -1048,6 +1460,30 @@ export function AgentInput() {
 
   const handleTextareaKeydown = useCallback(
     (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (event.nativeEvent.isComposing) return;
+      if (resourcePickerOpen && canMentionResource) {
+        const range = getMentionTriggerRange(
+          input,
+          event.currentTarget.selectionStart
+        );
+        if (!range) {
+          setResourcePickerOpen(false);
+          mentionRangeRef.current = null;
+        } else if (event.key === "Escape") {
+          event.preventDefault();
+          setResourcePickerOpen(false);
+          mentionRangeRef.current = null;
+        } else if (
+          event.key === "Enter" &&
+          !event.shiftKey &&
+          !event.altKey &&
+          !event.ctrlKey &&
+          !event.metaKey
+        ) {
+          event.preventDefault();
+        }
+        if (range) return;
+      }
       if (
         event.key === "Enter" &&
         !event.shiftKey &&
@@ -1059,7 +1495,7 @@ export function AgentInput() {
         void send();
       }
     },
-    [send]
+    [canMentionResource, input, resourcePickerOpen, send]
   );
 
   // ---------------------------------------------------------------------------
@@ -1071,14 +1507,43 @@ export function AgentInput() {
       {/* Pending ask banner */}
       {currentPendingAsk && (
         <div className="mb-3 rounded-xs bg-warning/10 px-3 py-2 text-xs text-warning">
-          <div className="font-medium">{currentPendingAsk.prompt}</div>
-          <div className="mt-1">
-            {currentPendingAsk.kind === "confirm"
-              ? t("agent.pending-confirm-hint")
-              : currentPendingAsk.kind === "choose"
-                ? t("agent.pending-choose-hint")
-                : t("agent.pending-input-hint")}
-          </div>
+          {apiPermission ? (
+            <>
+              <div className="font-medium">
+                {t("agent.api-permission-title")}
+              </div>
+              {apiPermissionPreview ? (
+                <>
+                  <div className="mt-1">
+                    {t("agent.api-permission-request")}
+                  </div>
+                  <div className="mt-2 font-mono break-all">
+                    {apiPermissionPreview.operationId}
+                  </div>
+                  <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap break-all rounded-xs border bg-background p-2 font-mono text-control">
+                    {JSON.stringify(
+                      JSON.parse(apiPermissionPreview.body),
+                      null,
+                      2
+                    )}
+                  </pre>
+                </>
+              ) : (
+                <div className="mt-1">{t("agent.api-permission-expired")}</div>
+              )}
+            </>
+          ) : (
+            <>
+              <div className="font-medium">{currentPendingAsk.prompt}</div>
+              <div className="mt-1">
+                {currentPendingAsk.kind === "confirm"
+                  ? t("agent.pending-confirm-hint")
+                  : currentPendingAsk.kind === "choose"
+                    ? t("agent.pending-choose-hint")
+                    : t("agent.pending-input-hint")}
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -1129,21 +1594,23 @@ export function AgentInput() {
         <div className="flex flex-wrap gap-x-2 gap-y-2">
           <Button
             appearance="secondary"
-            size="md"
-            className="rounded-xs bg-accent px-3 py-2 text-sm text-accent-text hover:bg-accent-hover disabled:opacity-50"
-            disabled={isCurrentChatRunning}
+            size={apiPermission ? "sm" : "md"}
+            className="rounded-xs bg-accent text-accent-text hover:bg-accent-hover disabled:opacity-50"
+            disabled={
+              isCurrentChatRunning || (apiPermission && !apiPermissionPreview)
+            }
             onClick={() => submitConfirmation(true)}
           >
-            {confirmLabel}
+            {apiPermission ? t("agent.api-permission-allow") : confirmLabel}
           </Button>
           <Button
             appearance="secondary"
-            size="md"
-            className="rounded-xs border px-3 py-2 text-sm text-control hover:bg-control-bg disabled:opacity-50"
+            size={apiPermission ? "sm" : "md"}
+            className="rounded-xs border text-control hover:bg-control-bg disabled:opacity-50"
             disabled={isCurrentChatRunning}
             onClick={() => submitConfirmation(false)}
           >
-            {cancelLabel}
+            {apiPermission ? t("agent.api-permission-deny") : cancelLabel}
           </Button>
         </div>
       ) : isAwaitingChoose ? (
@@ -1180,17 +1647,66 @@ export function AgentInput() {
                 {inputPlaceholder} · {t("agent.input-keyboard-hint")}
               </div>
             )}
-            <Textarea
+            <AgentMentionTextarea
               size="md"
-              ref={textareaRef}
+              textareaRef={textareaRef}
               value={input}
+              mentions={draftMentions.map(({ resource, range }) => ({
+                range,
+                label: resource.label,
+              }))}
+              onDeleteMention={({ text, caret }) => {
+                const store = useAgentStore.getState();
+                if (!store.currentChatId) return;
+                const draft = store.getDraft(store.currentChatId);
+                selectedMentionCaretRef.current = caret;
+                mentionRangeRef.current = null;
+                setResourcePickerOpen(false);
+                store.setDraft(store.currentChatId, {
+                  text,
+                  mentions: updateDraftResourceMentions(
+                    draft.text,
+                    text,
+                    getDraftResourceMentions(draft)
+                  ),
+                });
+              }}
               rows={1}
               className="block h-9 min-h-9 w-full resize-none overflow-y-hidden rounded-xs border px-3 py-1.5 text-sm leading-5 outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
               aria-label={inputPlaceholder}
               disabled={isCurrentChatRunning || isAIConfigurationBlocked}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(event) => {
+                setInput(event.target.value);
+                if (!canMentionResource) {
+                  mentionRangeRef.current = null;
+                  setResourcePickerOpen(false);
+                  return;
+                }
+                const range = getMentionTriggerRange(
+                  event.target.value,
+                  event.target.selectionStart
+                );
+                mentionRangeRef.current = range;
+                setResourcePickerOpen(Boolean(range));
+              }}
               onKeyDown={handleTextareaKeydown}
             />
+            {canMentionResource && workspace?.name ? (
+              <AgentResourcePicker
+                open={resourcePickerOpen}
+                onOpenChange={setResourcePickerOpen}
+                anchorRef={textareaRef}
+                workspaceName={workspace.name}
+                projectName={projectContext}
+                selectedProjectName={selectedProjectMention?.resource.name}
+                hasSelectedReference={
+                  draftMentions.length > 1 ||
+                  (draftMentions.length === 1 && !selectedProjectMention)
+                }
+                onSelectProject={selectMentionProject}
+                onSelectDatabase={selectMentionDatabase}
+              />
+            ) : null}
           </div>
 
           {loading ? (

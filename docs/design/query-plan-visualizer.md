@@ -1,6 +1,6 @@
 # Query plan visualizer
 
-**Status:** partly implemented, see §6 · **Scope:** SQL Editor · Code references are to `main` at `7664688752` unless a PR is named.
+**Status:** implemented, see §6 · **Scope:** SQL Editor · Code references are to `main` at `7664688752`, the commit this design was written against, unless a PR is named; line numbers have since moved.
 
 Bytebase draws query plans, but few users reach the drawing. This covers the
 whole journey: how you ask for a plan, when you get a picture, how you read it,
@@ -27,10 +27,13 @@ This ordering is a judgment call, not a measurement.
 
 ## 2. Background / problem
 
-The editor explains on 12 engines and draws a picture for 3 (PostgreSQL, SQL
-Server, Spanner). Reaching the picture takes five steps: Ctrl/Cmd+E → plan rows
-in the grid → click a small "Visualize Explain" link → Bytebase runs `EXPLAIN` a
-second time for JSON → a separate browser tab opens.
+The editor explained on 12 engines and drew a picture for 3 (PostgreSQL, SQL
+Server, Spanner); it now explains on 19 and draws for 20 (§3.4): every engine
+it explains, and BigQuery besides, whose plan arrives with an ordinary run
+rather than with an explain. Reaching the
+picture takes five steps: Ctrl/Cmd+E → plan rows in the grid → click a small
+"Visualize Explain" link → Bytebase runs `EXPLAIN` a second time for JSON → a
+separate browser tab opens.
 
 Four problems, ordered by how many users each blocks:
 
@@ -59,55 +62,49 @@ context first.
 
 ## 3. Design
 
-### 3.1 Four triggers
+### 3.1 Three triggers
 
 | Trigger | Where the control is | Journey | Executes? |
 |---|---|---|---|
 | Choose **Plan** in the result's view switch | the result pane, beside Table and Vertical | 1, 2 | no |
 | Type `EXPLAIN …`, press **Run** (`Ctrl/Cmd+Enter`) | the editor | 1, 2 | as typed |
 | Choose **Explain**, press `Ctrl/Cmd+E`, or right-click → Explain | Run button's dropdown; keyboard; editor context menu | 3 | **no** |
-| Choose **Explain analyze** | Run button's dropdown | 1, 2 | **yes** |
 
-Both explain actions go in the dropdown Run already has, not on the toolbar.
-Spanner Studio puts "Results only / Explanation only" in exactly that place, and
-none of the four reference products ships a toolbar Explain button. They explain
+**Explain** goes in the dropdown Run already has, not on the toolbar. Spanner
+Studio puts "Results only / Explanation only" in exactly that place, and none of
+the four reference products ships a toolbar Explain button. It explains
 **exactly the statements Run would run** — same selection, same caret rule — so
 there is no second scoping rule to learn. With one refusal: a submission that
 sets session state, such as `SET search_path = tenant; SELECT * FROM orders`,
 cannot be explained statement by statement. `EXPLAIN SET …` is not valid, and
-skipping the `SET` would plan the next statement against the wrong search path.
-The actions say so rather than explaining part of the script — the same rule
-§3.3 applies to the Plan view, stated once and enforced on both paths.
+skipping the `SET` would plan the next statement against the wrong search path,
+so the request is refused rather than explaining part of the script — the same
+rule §3.3 applies to the Plan view.
 
-They are two actions, not one, because the difference is whether your query runs.
-pgAdmin splits them the same way (F7 / Shift+F7). **Explain** never executes:
-given a statement that already says `EXPLAIN ANALYZE`, it refuses and says why,
-rather than running an expensive query behind a control whose whole purpose is
-to avoid running it. **Explain analyze** executes by definition, and asks for a
-machine-readable plan on that single run, so nothing needs re-running afterwards.
+**Explain never executes.** Given a statement that already says `EXPLAIN
+ANALYZE`, it refuses and says why, rather than running an expensive query behind
+a control whose whole purpose is to avoid running it. It asks for the engine's
+machine-readable plan, so the picture comes back in one call.
 
-The mirror case: given a statement that already says plain `EXPLAIN`, **Explain
-analyze** adds `ANALYZE` and the format to the options already there, keeping the
-rest. Replaying it unchanged would return an estimate and never execute, which is
-not what the action promises, and prefixing a second `EXPLAIN` is invalid — so
-it is the same option substitution §3.2 uses for Visualize. Each action does what
-its name says: one refuses to execute, the other insists on it.
+**Explain plans the statement as written, with no limit added.** The result
+limit caps how many rows the editor reads back. It is not part of the query, and
+appending `LIMIT N` would plan a different statement, because `LIMIT` changes
+plan shape. The drivers already leave the limit off on the explain path. A plan
+opened from a result is different: it explains the statement that produced the
+result, including the limit Run added (§3.4).
 
-**Both actions plan the statement Run would execute, limit included.** The
-drivers apply the result limit only when the request is not an explain
-(`pg.go:801-809`, `mysql.go:530-538`), so reusing that path plans the unbounded
-query while Run stops at the limit — and `LIMIT` changes plan shape, so the two
-are different queries. The limited statement has to be carried or reconstructed
-before either action wraps it. It matters twice over for **Explain analyze**,
-which executes: unbounded, an `EXPLAIN ANALYZE` against a large table becomes the
-workload it was meant to diagnose.
-
-**Explain analyze returns a plan, not rows.** On PostgreSQL that is automatic —
-`EXPLAIN ANALYZE` replaces the result set. Spanner's profile mode and SQL
-Server's `SET STATISTICS XML` instead hand back the rows *and* the plan, and the
-explain path skips masking (§3.5), so passing those rows on would show unmasked
-values to a user who is subject to masking. The backend discards them. Same
-action, same output, on every engine.
+**There is no Explain analyze action.** A measured plan comes from typing
+`EXPLAIN ANALYZE` and pressing Run, which executes exactly once and is drawn
+when it names a format we read (§3.2). Desktop clients do pair the two — pgAdmin
+(F7 / Shift+F7), SSMS's estimated and actual plans, SQL Developer's Explain Plan
+and Autotrace — but how an engine measures a plan does not make one control: a
+statement prefix on PostgreSQL, CockroachDB and TiDB; text only on MySQL 8.0.18
+and later; a session setting that returns the rows as well on SQL Server; an API
+mode on Spanner; a hint and `DBMS_XPLAN` on Oracle; nothing on ClickHouse or
+Redshift; and every run already measured on BigQuery, Snowflake and Databricks.
+Built cheaply it would exist for PostgreSQL alone, it would be the one explain
+control that executes — writes included — and it would save only remembering the
+syntax. Revisit if users ask.
 
 Run stays literal: a typed `EXPLAIN ANALYZE` executes, because that is what the
 user typed. What we never do is wrap a statement that already starts with
@@ -139,7 +136,7 @@ rather than to an error.
 
 | Statement Bytebase ran | Result tab shows | `Query()` calls |
 |---|---|---|
-| **Explain** / **Explain analyze** — we build it, so we ask for the engine's machine-readable format | picture where the engine has one (§3.4) | 1 |
+| **Explain** — we build it, so we ask for the engine's machine-readable format | picture where the engine has one (§3.4) | 1 |
 | Typed `EXPLAIN (FORMAT JSON)` | picture, drawn from what came back | 1 — nothing extra |
 | Typed `EXPLAIN (FORMAT XML)` | text for now — see below | 1 |
 | Typed `EXPLAIN` | text, plus a **Visualize** button | 1, +1 only on Visualize |
@@ -159,8 +156,8 @@ The existing link replays the same params with a different format
 and flipping `explain` true instead would have the driver prefix a second
 `EXPLAIN` onto a statement that already starts with one. So Visualize sends that
 statement as an explain request naming the format it wants, and the backend
-substitutes the format rather than prefixing, which is the rule §3.1 already
-sets for every statement that arrives already explaining itself.
+substitutes the format rather than prefixing, as it does for every explain
+request whose statement already explains itself.
 
 Substitution today keeps the planned statement and nothing else: the caller's
 remaining options (`VERBOSE`, `COSTS OFF`) go with the format they came with,
@@ -200,9 +197,9 @@ only way to draw it would be to run the query a second time. One that names a
 format we can read is drawn like any other structured plan — it has already run,
 exactly once, and came back machine-readable, so the drawing rule applies
 unchanged. The user who wants a picture of
-a measured plan uses **Explain analyze** (§3.1), which asks for the structured
-plan on its single run. That keeps the cost rule intact without this design
-rewriting anyone's statement.
+a measured plan types `EXPLAIN (ANALYZE, FORMAT JSON)`, which returns the
+structured plan on its single run. That keeps the cost rule intact without this
+design rewriting anyone's statement.
 
 ### 3.3 Reading the plan
 
@@ -222,7 +219,7 @@ Text is not optional. The explain action is that one icon: where the engine
 cannot explain, the option is absent; where the user lacks the permission, it
 is disabled with the reason (§3.5).
 
-**Text appears only when Plan has a picture.** On the nine engines we cannot draw
+**Text appears only when Plan has a picture.** On the engines we cannot draw
 (§3.4), the plan *is* text, so a second text view would say the same thing
 twice. There, Plan shows the plan as text, and nothing else.
 
@@ -239,7 +236,7 @@ twice. There, Plan shows the plan as text, and nothing else.
    includes its children and is reported per loop, so ranking the raw number
    just finds the root. Subtract the children and multiply out the loops, per
    engine — which is what the model already does for estimates by ranking
-   `selfCost` (`plan-model.ts:467-468`), and the measured side has to match it
+   `selfCost` (`planCostliestNodes`), and the measured side has to match it
    before any percentage or opening zoom is shown.
 2. **Graph** — opens zoomed on the costliest operator, not the root; long
    single-child chains fold into one box with a count. Nodes show their share of
@@ -266,23 +263,24 @@ twice. There, Plan shows the plan as text, and nothing else.
 The pane is already big enough: [#21459](https://github.com/bytebase/bytebase/pull/21459)
 shipped Maximize, a remembered height and the sidebar stepping aside.
 
-**What changes from today's viewer.** The pop-up page offers five tabs —
-Diagram, Grid, Summary, Raw plan, Query. Five tabs for one plan is three too
-many: Summary is the answer most readers want and should not be hidden behind a
-tab, and Query duplicates the editor they came from.
+**What changes from the pop-up viewer.** The pop-up page offered five tabs —
+Diagram, Grid, Summary, Raw plan, Query. Five tabs for one plan is two too many:
+Summary is the answer most readers want and should not be hidden behind a tab,
+and Query duplicates what the result pane already shows.
 
-| Today | Becomes |
+| Pop-up | Becomes |
 |---|---|
-| Diagram | **Graph**, opening on the costliest operator instead of the root |
+| Diagram | **Diagram**, the tab the viewer opens on, centered on the costliest operator instead of the root, which starts selected |
 | Grid | **Table** |
-| Summary (tab, only when the plan has costs) | **always-visible panel** beside the graph |
-| Raw plan | the **Text** tab, beside Plan |
-| Query | becomes a **View SQL** disclosure in the Plan view |
+| Summary (tab, only when the plan has costs) | the three costliest operators, ranked, at the top of the **side panel** beside the diagram and the table; the cost timeline and per-operation table are dropped |
+| Raw plan | the **Text** tab |
+| Query | dropped: the result pane's status bar shows the statement that ran, limit and all, with a copy control |
 
-View SQL is not a tooltip. The editor may have moved on since the result was
-produced, so the statement a plan belongs to has to be readable somewhere — and
-selectable and copyable, which a hover tooltip is not, least of all for a long
-statement.
+The statement a plan belongs to still has to be readable, selectable and
+copyable, because the editor may have moved on since the result was produced.
+The status bar under the Plan view already does that, so the viewer does not
+repeat it. What the diagram's bars and edges encode is a hover away on the
+totals line rather than a line of its own, since the result pane is short.
 
 The view switch's choice — Table, Vertical, Plan or Text — is remembered per
 editor tab, like the result pane's height, so comparing two runs does not mean
@@ -327,6 +325,13 @@ never do this. It turns "this scan is expensive" into a next step, with no AI
 involved, and it is the strongest reason for the plan to live inside Bytebase
 rather than in a tab that could have been any web page.
 
+**It has to be the same table.** The editor knows the connected database, and
+only that one. A plan can name another — SQL Server writes the database on every
+object it reads, and a query can cross databases — so a node whose table lives
+elsewhere says nothing rather than describing the local table that happens to
+share its name. The same holds for a name two schemas both use where the plan
+names no schema. The wrong table's indexes are worse than none.
+
 **Keep the plan portable.** Experts have tools they trust, so a **Copy plan**
 action stays, as it is in the viewer today (`PlanCopyButton`) and in every viewer
 we surveyed. Dropping it while retiring the pop-up page would be a quiet
@@ -334,31 +339,56 @@ regression.
 
 ### 3.4 Engine differences
 
-| Engine | Plan on a result | Picture | Explain analyze |
+| Engine | Plan on a result | Picture | Measured plan, typed |
 |---|---|---|---|
-| **PostgreSQL** | one `Query()`, on demand, cached | graph | yes — `EXPLAIN (ANALYZE, FORMAT JSON)` |
-| **SQL Server** | one `Query()`, on demand, cached | graph | yes — `SET STATISTICS XML` |
-| **Spanner** | one `Query()`, on demand, cached | graph | yes — profile mode |
-| **MySQL** | one `Query()`, on demand, cached | text | 8.0.18+ only, and text — `EXPLAIN ANALYZE` is TREE and rejects JSON. Below that it is not valid syntax, so the action is disabled with the version as the reason |
-| **Oracle, 7 others** | one `Query()`, on demand, cached | text | no |
+| **PostgreSQL** | one `Query()`, on demand, cached | graph | `EXPLAIN (ANALYZE, FORMAT JSON)`, drawn |
+| **SQL Server** | one `Query()`, on demand, cached | graph | `SET STATISTICS XML ON`, with the rows |
+| **Spanner** | one `Query()`, on demand, cached | graph | none in the editor — profile mode is an API, not SQL |
+| **MySQL, MariaDB** | one `Query()`, on demand, cached | graph | `EXPLAIN ANALYZE` from MySQL 8.0.18, TREE text only; MariaDB's `ANALYZE FORMAT=JSON` is not an `EXPLAIN` the parser reads |
+| **TiDB** | one `Query()`, on demand, cached | graph, with no costs | `EXPLAIN ANALYZE FORMAT=tidb_json`, drawn for its rows |
+| **Oracle** | one `Query()`, on demand, cached | graph | none: `EXPLAIN PLAN` never executes, and a measured plan needs `DBMS_XPLAN` over a cursor Bytebase did not run |
+| **ClickHouse** | one `Query()`, on demand, cached | graph, with no costs | none in the editor — `EXPLAIN PIPELINE` describes the pipeline, not a run |
+| **Trino** | one `Query()`, on demand, cached | graph, with no costs | none in the editor — `EXPLAIN ANALYZE` executes |
+| **OceanBase** | one `Query()`, on demand, cached | graph, costed in estimated microseconds | none in the editor |
+| **MongoDB** | one `Query()`, on demand, cached | graph, with no estimates at all | `explain("executionStats")`, drawn for its rows |
+| **CockroachDB** | one `Query()`, on demand, cached | graph of the physical flow, with no estimates | none in the editor — `EXPLAIN ANALYZE` executes |
+| **BigQuery** | carried by the run that returned the rows, no second call | graph of the stage DAG, measured, with no estimates beside it | the plan is the measured one; BigQuery has no `EXPLAIN`, and its explain action is a dry run |
+| **Elasticsearch** | carried by the profiled search the explain ran | graph per shard, measured, timed to the nanosecond | the plan is the measured one: explaining here runs the search |
+| **Redshift** | one `Query()`, on demand, cached | graph, drawn from the text plan | none — `EXPLAIN` never analyzes |
+| **StarRocks** | one `Query()`, on demand, cached | graph, drawn from the text plan | none — `EXPLAIN ANALYZE` executes |
+| **Doris** | one `Query()`, on demand, cached | graph, drawn from the text plan by the StarRocks parser | none — Doris has no `EXPLAIN ANALYZE` |
+| **Snowflake** | one `Query()`, on demand, cached | graph, with pruning in place of estimates | none — `EXPLAIN` compiles without running, whichever format it names |
+| **Hive** | one `Query()`, on demand, cached | graph, with rows and row widths, no costs | none in the editor |
+| **Databricks** | one `Query()`, on demand, cached | graph, drawn from Spark's FORMATTED plan; shape and detail, no cost or rows | none — `EXPLAIN` never executes what it plans |
 
 A plan opened from a result is always an estimate, on every engine. Measured
-plans come from **Explain analyze** (§3.1), which is a deliberate action.
+plans come from a typed `EXPLAIN ANALYZE` or its engine's equivalent, which is a
+deliberate act (§3.1).
+
+**What a measured plan is read for.** PostgreSQL reports a node's time and rows
+as averages over its executions, so both are multiplied out to totals before
+anything is ranked or compared. SQL Server's actual plan is read for rows alone:
+`ActualElapsedms` is cumulative on a row-mode operator but per operator on a
+batch-mode one, so a single plan can mean both and a ranking built on it would
+be wrong for half of it. Those plans rank by the estimated cost they always
+carry, with estimated and actual rows side by side on each node.
 
 **It explains the statement that ran, limits included.** The driver wraps an
 ordinary query with the result limit but skips that wrapper on the explain path
 (`pg.go:801-809`), so explaining the original text would plan an unbounded query
 when the user ran a bounded one — and PostgreSQL plans for `LIMIT`, so the two
 differ, not just in cost but in shape. The plan request and its cache carry the
-executed statement and its connection context, and View SQL shows that statement,
+executed statement and its connection context, and the status bar shows that statement,
 limit and all. The estimate badge is about statistics moving; it must not quietly
 cover a different query.
 
 That requires every driver that rewrites a statement to record what it actually
 ran. SQL Server and Spanner did not until
 [#21476](https://github.com/bytebase/bytebase/pull/21476) and
-[#21481](https://github.com/bytebase/bytebase/pull/21481); the timed-out case
-still waits on the timeout response carrying its statement.
+[#21481](https://github.com/bytebase/bytebase/pull/21481), and Redis, DynamoDB
+and Databricks named the wrong statement or none at all. A run the server cuts
+off at its timeout now names the statement it was running as well, which no
+driver can do for a statement it never finished.
 
 **Say which one it is.** Measured and estimated carry a one-word badge at the
 end of the viewer's tab row, and the estimated badge's tooltip says *"A new
@@ -372,35 +402,157 @@ statistics, and if the slow run was caused by stale statistics that have since
 refreshed, the plan shown is the *good* one, and the reader concludes the query
 was never the problem. That is the inverted failure this wording exists to stop.
 
-**Nine of twelve engines have no parser**, so for those the plan is text. Showing
-it as formatted text instead of grid rows is a small change with wide reach.
-MySQL and Oracle are the
-cheapest graphs to add later: MySQL already emits structured JSON, and Oracle's
-plan table already holds the parent-child links the driver discards.
+**Every engine the editor explains now draws.** Databricks was the last one
+without a parser, and the engine this section had first listed as explaining
+nothing at all: its driver runs whatever SQL it is handed, so the capability
+table refused explain requests to keep an unplanned statement from running — an
+explain request skips the read-only validation an ordinary query gets. It asks
+for Spark's `EXPLAIN FORMATTED`, a numbered tree followed by a block of detail
+per operator, and its parser puts the two back together.
 
-**Attaching a measured plan to an ordinary run is deferred.** Two engines could:
-Spanner has a run mode returning rows and plan and real timings in one execution,
-and SQL Server's `SET STATISTICS XML` does the same. That is how BigQuery,
-Snowflake and Databricks work, and it is tempting.
+What that plan does not state is cost or rows. Spark reports those from
+`EXPLAIN COST`, and only for the logical plan, which is not the plan that ran,
+so a Databricks graph ranks nothing: what it carries is the shape and the
+detail — whether a filter reached the scan, which partitions it skipped,
+whether a join broadcast or shuffled, and where the exchanges are. That is what
+a Spark plan is read for.
 
-It does not fit here. To have the plan ready when someone later clicks Plan, we
-would have to profile *every* run — and Spanner documents profiling overhead and
-discourages it for production traffic, while `SET STATISTICS XML` needs
+**Explain on Elasticsearch means the search, profiled.** It is the one engine
+here where an explain runs what it explains, and that follows from what
+Elasticsearch publishes. `_validate/query?explain` runs nothing, but answers
+with the rewritten Lucene query as a line of text: no tree, no timings, nothing
+to draw. The Profile API answers with the tree — every Lucene query, collector
+and aggregation, each timed — and only for a search that ran.
+
+So the request the driver sends is the caller's search with `"profile": true`
+in its body, and four things follow. It is a read, so it needs the permission
+that search needs as well as `bb.sql.explain`, which is the rule §3.5 already
+set for a typed `EXPLAIN ANALYZE`. Anything that is not a `_search` is refused
+rather than sent, so an explain can never carry out a write — a
+`_delete_by_query` reads like a search and is not one. The result is badged
+measured, because it is.
+
+And the hits do not come back. The search ran so that it could be profiled,
+which is not the same as being asked for; masking is off for an explain request
+— every other engine's explain states a plan and no data, so there has never
+been anything there to mask — and returning documents through this path would
+hand back what an ordinary query would have masked. The plan is the result, as
+it is for every other engine here.
+
+The profile is stated per shard with nothing above them, so the shards hang
+under a node for the search itself: the one node in any of these parsers that
+the engine did not state, carrying the `took` that no shard reports. Under each
+shard the phases keep Elasticsearch's own words and say which phase they are —
+the queries Lucene ran, the collectors that gathered their hits, the
+aggregations, the fetch. Every node's `time_in_nanos` covers its own subtree,
+which is what this model means by actual time, so this is the first engine
+added here whose graph ranks by time rather than shading by rows.
+
+The engines that remain state no plan at all: CQL has no `EXPLAIN`, and the
+document and key-value APIs publish none.
+
+**Hive and Snowflake draw, and neither publishes what this section assumed.**
+Hive's `EXPLAIN FORMATTED` answers with one JSON object whose `CBOPlan` is
+Calcite's own plan: a flat list of operators, each naming the ones it reads,
+beside the Tez stages that were the reason to defer it. The stages are a third
+shape again; the CBO plan is a tree to walk. Hive states it only where its
+cost-based optimizer planned the statement, and where it does not the viewer
+shows the plan as text. Snowflake's `EXPLAIN USING JSON` runs nowhere but
+Snowflake, so its fixture is the output Snowflake publishes rather than a
+capture through the driver, which is recorded beside the fixture.
+
+**What each new engine's plans do and do not carry.** Oracle states a plan as
+rows of `PLAN_TABLE` rather than as a document, and no EXPLAIN option of its
+own renders one, so the driver renders those rows as JSON and the viewer
+rebuilds the tree from their parent links. It is the one engine here that
+qualifies every object it reads with its owning schema, so its nodes answer a
+table lookup exactly. ClickHouse publishes no cost or row estimate in any
+EXPLAIN it offers, so its plans rank nothing and shade by rows, but with
+`indexes = 1` each read reports the parts and granules its indexes let it skip,
+which is what a ClickHouse plan is read for.
+
+Snowflake estimates neither cost nor rows. What it states instead is how much
+of each table the query would read — the micro-partitions assigned out of the
+table's total, and the bytes they hold — so its plans rank nothing, and a scan
+assigned every partition of a table with more than one carries the full-scan
+warning. Hive states a row count and an average row width per operator, and a
+cost on its joins alone, which on a table nothing has analyzed reads "not
+available"; so its plans rank nothing either and shade by rows. Both are read
+from documents Calcite and Snowflake write for their own tooling, which is why
+each parser turns an edge list around rather than walking a tree: Snowflake
+names each operation's parents, Hive leaves an operator's one input out and
+means the operator declared before it.
+
+Neither MySQL nor MariaDB names
+the stored table a `table` entry reads — it prints the alias where the statement
+gave one, unqualified, and nothing in the plan says which it is. TiDB and
+OceanBase print that name too. So on those four the name is carried as the
+statement's: it names the read on the node, and a node's table facts (§3.3) are
+not looked up by it, since a stored table that happens to share an alias would
+answer with the wrong table's indexes — the failure §3.3 exists to avoid. Nor does either name an operator for the work
+between the query block and its tables: MariaDB charges a sort to the query
+block, which therefore ranks first in such a plan, since attributing that cost
+to the `filesort` or the `temporary_table` under it would be a guess about
+which of them spends it. What a `table` states costs that table alone, and an
+ordering's `sort_cost` costs the sort alone: a subquery materialized for a
+table is costed apart, and only the block's `query_cost` covers the lot. So
+each is its own operator's self cost rather than a total to subtract a subtree
+from. TiDB reports no cost in any format the editor can
+ask for, so its plans rank nothing and shade by rows; its measured plan is read
+for rows alone, because `time:` covers an operator and its subtree and the
+operators pushed down to a coprocessor report none — the same reason this
+section gives for SQL Server's actual plan.
+
+**MongoDB has no estimates at all.** Its planner publishes neither a cost nor a
+row count, so a plan that did not run is shape and index usage: which is the
+question a reader opens one to answer, since `COLLSCAN` against `IXSCAN` is
+what there is to see. A measured plan adds the rows each stage returned, and
+not its timings: MongoDB labels the per-stage time an estimate itself, and on a
+query that finishes quickly every stage reports zero, so a ranking built on it
+would be arbitrary. An aggregation explains to a pipeline rather than a tree,
+read backwards so the stage producing the result is the root and the `$cursor`
+feeding it becomes the read's own plan below. Which engine ran the query is not
+the reader's question, but it changes where the plan sits: the slot-based
+engine reports the operator tree under `winningPlan.queryPlan`, beside the plan
+it compiled for its own machine, where the classic engine puts the tree itself,
+and it spells a join's two sides `outerStage` and `innerStage` where the
+classic engine nests one `inputStage`. A sharded collection is planned a shard
+at a time, and the merge stage holds each shard's whole plan under `shards`
+rather than as an input stage, so the shards are drawn as what they are — the
+branches the merge reads — and each node says which shard it ran on. A sharded
+aggregation goes further and states no pipeline of its own: the merger's part
+is the plan, with each shard's part under the `$mergeCursors` that reads it.
+
+**Attaching a measured plan to an ordinary run is deferred, except where the
+engine states one anyway.** Spanner has a run mode returning rows and plan and
+real timings in one execution, and SQL Server's `SET STATISTICS XML` does the
+same. Both stay deferred: to have the plan ready when someone later clicks Plan
+we would have to profile *every* run — and Spanner documents profiling overhead
+and discourages it for production traffic, while `SET STATISTICS XML` needs
 `SHOWPLAN` on every database the statement touches, so turning it on blindly
 would fail queries the user is authorized to run. Profiling only when asked
-requires a control that says so before the run, which is a second explain action
-on the Run button for a case **Explain analyze** already covers. Out of scope.
+requires a control that says so before the run — the Explain analyze action §3.1
+leaves out.
 
-Once the Plan view matches the pop-up page, delete the page, its token hand-off
-and the old link.
+BigQuery asks for nothing. Every job reports the stages it ran in its own
+statistics: no flag to set, no permission to hold, no overhead to weigh, and the
+only cost is one `jobs.get` after the rows. So its result carries that plan in
+`QueryResult.query_plan.content`, the one place a plan arrives beside the rows
+rather than in them, and the Plan view draws it without explaining anything —
+badged measured, since it is the record of the run the reader is looking at. A
+result carrying a plan keeps its data table however few columns it has: those
+rows are the query's answer, not the plan.
+
+The pop-up page, its token hand-off and the old link are deleted
+([#21652](https://github.com/bytebase/bytebase/pull/21652)).
 
 ### 3.5 Permissions, masking and limits
 
 **Explain is its own permission** — `bb.sql.explain`, not `bb.sql.select`
 (`sql_service.go:1480`) — so a user can be allowed to run a query and not to plan
-it. For them the Plan option is **disabled with the reason shown**, not hidden:
-hiding it leaves them unable to tell the capability exists or what to ask an
-admin for.
+it. For them the Plan option and Explain in Run's dropdown are **disabled with
+the reason shown**, not hidden: hiding them leaves them unable to tell the
+capability exists or what to ask an admin for.
 
 **Anything that both executes and returns a plan needs both permissions.** A
 typed `EXPLAIN ANALYZE` was classified as its *inner* statement, so it passed on
@@ -410,11 +562,10 @@ them. Both now mark the span as an executed plan, so the statement needs its
 normal ACL, write-target checks included, **and** `bb.sql.explain`
 ([#21642](https://github.com/bytebase/bytebase/pull/21642),
 [#21648](https://github.com/bytebase/bytebase/pull/21648)). SQL Server's settings are read from the parsed `SET` statement,
-not matched as text, so a comment or an option list does not hide them. The
-**Explain analyze** action comes the other way: an explain request is checked
-on `bb.sql.explain` and is safe today only because `validateExplainStatements`
-refuses anything that is not read-only, which is exactly the refusal this
-action has to relax; when it lands it must add the statement's own ACL.
+not matched as text, so a comment or an option list does not hide them. No
+explain request executes — there is no Explain analyze action (§3.1) — so an
+explain request needs `bb.sql.explain` alone, and `validateExplainStatements`
+refuses any planned form that is not read-only.
 
 **Plans are never masked, and that is a privilege, not a safe default.** Explain
 skips masking (`sql_service.go:726`, `:735`). A plan is not row data, but it is
@@ -446,10 +597,12 @@ Two ways that boundary leaked, both in `checkDatabaseAccess`
   engine folds case; one Bytebase does not track as a database — Oracle's
   `SYS`, Snowflake's `SNOWFLAKE` — is left to the connected database's check. A
   typed `EXPLAIN ANALYZE` carries an `ExplainAnalyze` mark on its span and needs
-  the inner statement's permission as well. SQL Server's `SET STATISTICS XML
-  ON` also executes and returns a plan, and still passes on `bb.sql.select`
-  alone: the explain recognizer knows only SHOWPLAN. That is the one permission
-  item still open here.
+  the inner statement's permission as well, and so does SQL Server's `SET
+  STATISTICS XML ON`, which executes the statement and returns its plan beside
+  its rows. Which plan options a batch has turned on is read from the parsed
+  `SET` statement and carried across the batch, so a statement after one is
+  marked too
+  ([#21648](https://github.com/bytebase/bytebase/pull/21648)).
 - **A data access grant exempted it**
   ([#21619](https://github.com/bytebase/bytebase/pull/21619)). The check
   returned early for a granted target before the permission was evaluated, so a
@@ -470,12 +623,24 @@ the statement type, so this is the only case left to that single check.
 **Slow and large plans.** The on-demand call can take as long as any query: show
 a skeleton, allow cancel, time out rather than hang. Past a node cap the Plan view
 falls back to Text instead of drawing something unreadable — SSMS degrades the
-same way, at 2 MB.
+same way, at 2 MB. Where a parser splices a graph into a tree — CockroachDB's
+processors, and the fragments of StarRocks, Doris and Trino — the cap is
+counted as the nodes are drawn rather than once the tree is built: a node that
+several paths reach is drawn under each of them, so the copies multiply with
+the paths and a flow of 35 processors expands into 262,143 of them.
 
 **When the plan cannot be drawn or fetched.** A plan we fail to parse falls back
 to Text rather than erroring; engines change their output between versions, and
 PostgreSQL 18 already reformatted part of it. An explain that the engine itself
 rejects shows that error in the tab, like any failed query.
+
+The format a parser reads can also be newer than the server. TiDB prints
+`FORMAT=tidb_json` from v6.5.0 (December 2022) and does not know the name
+before it, so every TiDB that cannot answer predates that release; the editor
+asks for the format regardless rather than carry a version gate, and such a
+server shows that error where it used to show a text plan. The floors of the
+other structured formats are unmeasured; `json = 1, indexes = 1` makes
+ClickHouse the one worth measuring next.
 
 ---
 
@@ -492,6 +657,9 @@ rejects shows that error in the tab, like any failed query.
   the four does. Permanent space for the rarest journey.
 - **Parse the text plan.** PostgreSQL's text output has no escaping, so a string
   containing a newline can fake a plan node. Supabase reverted it; pgcli declined.
+  Redshift, StarRocks and Doris are the engines where this is done anyway,
+  because none of them publishes any other plan at all; §6 says what holds the
+  hazard off there.
 - **Profile every run everywhere.** Possible only on Spanner and SQL Server, and
   not free even there (§3.4); on PostgreSQL it would run every statement twice.
 
@@ -521,7 +689,7 @@ live servers, September 2026.
 
 ## 6. Status
 
-Checked against `main` on 2026-10-23.
+Checked against `main` on 2026-10-27, at [#21669](https://github.com/bytebase/bytebase/pull/21669), plus [#21670](https://github.com/bytebase/bytebase/pull/21670) below.
 
 **Landed**
 
@@ -553,12 +721,144 @@ Checked against `main` on 2026-10-23.
   choice remembered per editor tab
   ([#21646](https://github.com/bytebase/bytebase/pull/21646)).
 
-**Not yet, in the order to do them**
+- §3.3/§3.4 — the viewer opens on the diagram, centered on the costliest
+  operator; three tabs (Diagram, Table, Text) instead of five; the costliest
+  operators ranked in the side panel; the legend on hover; the pop-up page
+  deleted ([#21652](https://github.com/bytebase/bytebase/pull/21652)). The
+  ranking and the opening view use estimated cost and say so.
 
-1. §3.1 — Explain and Explain analyze in the Run dropdown, planning the limited
-   statement; today every driver's explain path skips the limit.
-2. §3.3 — the reading changes: summary panel always visible, graph opening on
-   the costliest operator, View SQL, warning relevance, measured plans with
-   planned vs actual rows, cost share on the tab label.
-3. §3.4 — delete the pop-up page (`frontend/explain-visualizer.html`), which
-   nothing links to any more.
+- §3.1 — Explain at the top of Run's dropdown, on the statement as written,
+  disabled with the reason without `bb.sql.explain`; it, `Ctrl/Cmd+E` and
+  right-click → Explain, in the editor and the admin terminal, ask for the
+  drawable format, so the picture takes one call. No limit is added to an
+  explain, and there is no Explain analyze action; measured plans come from a
+  typed `EXPLAIN ANALYZE`
+  ([#21666](https://github.com/bytebase/bytebase/pull/21666),
+  [#21668](https://github.com/bytebase/bytebase/pull/21668)). §3.1 is closed.
+
+- §3.3 — the rest of the reading changes. A measured plan is ranked by the time
+  each operator spent — its own total less its children's — and says that is
+  what it ranked; the shading, the node cards and the table follow the same
+  number, and a plan reporting neither cost nor time says why it ranks nothing.
+  Planned and actual rows sit together on a node, with the misestimate spelled
+  out as a multiple once it is worth a line. One of Bytebase's own scan
+  heuristics reaches the summary panel only where the operator is a tenth of
+  the plan, while a diagnostic the engine itself reports always does, grouped
+  by warning and never removed from node details. A run that planned every
+  statement puts each statement's share of the script's estimated cost on its
+  result tab. A node that reads a table Bytebase has synced shows that table's
+  size and its indexes, which no standalone viewer can do; a table in another
+  database, or a bare name two schemas both use, is left unanswered rather than
+  answered with the wrong table's indexes
+  ([#21668](https://github.com/bytebase/bytebase/pull/21668)). §3.3 is closed.
+
+- §3.4 — every driver that runs a statement records that statement: Redis no
+  longer shifts them by a blank line, DynamoDB no longer gives every result the
+  whole request, Databricks records one where it recorded none, and a run cut
+  off at its timeout carries the statement it was running. *Show in Editor* on a failed
+  result reads through the `WITH result AS (…)` wrapper the row limit adds,
+  which it could not find in the editor before
+  ([#21669](https://github.com/bytebase/bytebase/pull/21669)).
+
+- §4 — Redshift, StarRocks and Doris draw, from their text plans, which is the
+  one thing §4 says not to parse. None of them publishes anything else:
+  StarRocks and Doris reject every JSON spelling outright, and Redshift's
+  EXPLAIN takes no format at all, its one structured copy living in
+  `STL_EXPLAIN`, which can be read from nowhere but a running cluster. The
+  hazard §4 names is a literal holding a newline putting a line that looks like
+  an operator into the output, and two things hold it off for all three: the
+  plan arrives one row per line, so a newline inside a value stays inside its
+  row, and an operator is recognized only by its own heading — a whole cost
+  tuple on Redshift, a number and a name on the other two.
+
+  Redshift's grammar is PostgreSQL's with an `XN` prefix, so a plan captured
+  from a real PostgreSQL server pins it — which matters, because Redshift
+  itself cannot be run from this repository and the rest of its fixtures are
+  AWS's documented output. What its plan is read for is the distribution
+  strategy on a join: `DS_BCAST_INNER` and its kin say rows moved between
+  slices, which is what a distribution key is chosen to avoid.
+
+  StarRocks' plan is two nested structures: fragments joined where one sends to
+  another's exchange, and within each a tree whose second input is drawn in a
+  `|----` branch behind a bar, so which operator a line belongs to is the
+  column its number starts at. It states no cost, but a scan states its table,
+  the predicates pushed into it and the rows it expects.
+
+  Doris is read by that same parser, and the editor offers it Explain for the
+  first time: the server could always explain it, which made it a gap of its
+  own rather than a missing parser. StarRocks forked from Doris and the plan is
+  what did not diverge; what differs is how an operator spells itself. Doris
+  prefixes the vectorized operators with `V`, prints its own plan node id after
+  the name, packs an operator's numbers onto one line, qualifies a scanned
+  table with its database, and prints the statistics it planned from under a
+  rule of equals signs. Until a table has been analyzed it says
+  `avgRowSize=0.0`, which is no width rather than a zero one
+  ([#21670](https://github.com/bytebase/bytebase/pull/21670)).
+
+- §3.4 — CockroachDB draws as well. Its EXPLAIN takes no format that returns a
+  document — every option is text — but `EXPLAIN (DISTSQL)` prints a link to a
+  diagram beside the text plan, and the payload in that link is a plan a parser
+  can read. The driver decodes it, as the Oracle driver renders the plan table,
+  so the browser fetches nothing. What that plan carries is the physical flow
+  rather than the logical one: processors and the streams between them, the
+  table and index each read covers and the keys it spans, and no estimate — the
+  row counts a reader wants stay in the text plan the same statement returns
+  ([#21670](https://github.com/bytebase/bytebase/pull/21670)).
+
+- §3.1/§3.4 — MongoDB draws as well, and the editor offers it Explain for the
+  first time. It is the first engine here that did not explain at all: the
+  driver refused outright, and asking for a plan means appending the
+  `.explain()` cursor method rather than prefixing a keyword, which the parser
+  does from the statement's own syntax tree. Only the `queryPlanner` verbosity
+  describes a query without running it, so that is the one an explain request
+  uses, and a statement that names another has its verbosity replaced rather
+  than kept. A typed `explain("executionStats")` runs the query, so its result
+  is marked as an executed plan and gated as one
+  ([#21670](https://github.com/bytebase/bytebase/pull/21670)).
+
+- §3.4 — OceanBase draws as well, and the editor offers it Explain for the
+  first time. It spells its plan `FORMAT=JSON` as MySQL does but returns an
+  operator tree, each operator naming its children under `CHILD_1`, `CHILD_2`;
+  its `EST.TIME(us)` covers an operator and everything below it, so what the
+  viewer ranks there is microseconds the optimizer expects
+  ([#21670](https://github.com/bytebase/bytebase/pull/21670)).
+
+- §3.4 — Trino draws as well, and the editor offers it Explain for the first
+  time. Its `EXPLAIN (FORMAT JSON)` returns the fragments it would distribute,
+  keyed by number and linked by `RemoteSource`, which the parser splices back
+  into the one tree Trino's own text plan shows. Its rows are read and its
+  costs are not: `cpuCost` is each operation's own rather than its subtree's,
+  an operator Trino fused reports one per fused step, and most report `NaN`
+  outright, so ranking by it would point at whichever happened to be known
+  ([#21670](https://github.com/bytebase/bytebase/pull/21670)).
+
+- §3.4 — Oracle and ClickHouse draw as well. Oracle's plan table is rendered
+  as JSON by the driver, built in Go rather than with Oracle's own
+  `JSON_ARRAYAGG` so that it works on releases older than 12.2; ClickHouse is
+  asked for `EXPLAIN json = 1, indexes = 1`
+  ([#21670](https://github.com/bytebase/bytebase/pull/21670)).
+
+- §3.4 — the MySQL family draws. MySQL and MariaDB are asked for
+  `EXPLAIN FORMAT=JSON` and TiDB for `EXPLAIN FORMAT=tidb_json`, one parser
+  reading both MySQL dialects and one reading TiDB's. MariaDB could always be
+  explained and was missing from the editor's own list. A typed
+  `EXPLAIN FORMAT=JSON` draws without a second call, and a typed plain
+  `EXPLAIN` offers Visualize, which it could not before: MySQL's omitted
+  FORMAT follows the session's `explain_format`, and the viewer now reads that
+  unknown answer as text
+  ([#21670](https://github.com/bytebase/bytebase/pull/21670)).
+
+- §3.4 — Databricks explains, and Snowflake and Hive draw. Databricks is asked
+  for Spark's `EXPLAIN FORMATTED` and was refused an explain request before,
+  since its driver runs the statement it is handed; its plan is text for now.
+  Snowflake is asked for `EXPLAIN USING JSON` and Hive for
+  `EXPLAIN FORMATTED`, whose `CBOPlan` is Calcite's own plan. Neither ranks
+  anything: Snowflake estimates no cost and Hive states one on its joins
+  alone ([#21677](https://github.com/bytebase/bytebase/pull/21677)).
+
+**Not yet**
+
+Nothing: every section of this design is implemented. The one question §3.3
+left open is not code but evidence — whether the diagram should open zoomed on
+the costliest operator, as it does, or fit the whole graph and offer *Jump to
+operator*. That belongs to the §1 usability test.

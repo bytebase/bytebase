@@ -1695,7 +1695,7 @@ paths:
       summary: ListDatabases
       description: |-
         Lists databases in a project, instance, or workspace.
-         Permissions required: bb.projects.get (for project parent), bb.databases.list (for workspace parent), or bb.instances.get (for instance parent)
+         Permissions required: bb.databases.list (for project or workspace parent), or bb.instances.get (for instance parent)
       operationId: bytebase.v1.DatabaseService.ListDatabases
       parameters:
         - name: Connect-Protocol-Version
@@ -6166,7 +6166,8 @@ paths:
       summary: Export
       description: |-
         Exports query results to a file format.
-         Permissions required: bb.databases.get
+         Permissions required: bb.databases.get, and bb.sql.export on the data the statement reads.
+         An active access grant with export=true for the statement satisfies bb.sql.export on its target databases.
       operationId: bytebase.v1.SQLService.Export
       parameters:
         - name: Connect-Protocol-Version
@@ -9285,8 +9286,9 @@ components:
           type: string
           title: creator
           description: |-
-            The creator of the access grant.
+            The creator of the access grant, the caller who requested it.
              Format: users/{email}
+          readOnly: true
         status:
           allOf:
             - $ref: '#/components/schemas/bytebase.v1.AccessGrant.Status'
@@ -9337,7 +9339,9 @@ components:
         export:
           type: boolean
           title: export
-          description: Whether export the query result.
+          description: |-
+            Whether the grant allows exporting the query result.
+             An active grant with export=true grants bb.sql.export for this query until the grant expires.
         schema:
           type: string
           title: schema
@@ -9348,7 +9352,6 @@ components:
           description: The container name to execute the query against, used for CosmosDB only.
       title: AccessGrant
       required:
-        - creator
         - targets
     bytebase.v1.AccessGrant.Status:
       type: string
@@ -10768,9 +10771,9 @@ components:
              The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
              Support variables:
-             resource.database: the canonical database full name in "instances/{instance}/databases/{database}" or "projects/{project}/instances/{instance}/databases/{database}" format, used by any role with SQL Editor read (e.g. "roles/sqlEditorUser", "roles/sqlEditorReadUser") or write (bb.sql.ddl / bb.sql.dml) access, support "==" operator.
-             resource.schema_name: the schema name, used by any role with SQL Editor read or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support "==" operator.
-             resource.table_name: the table name, used by any role with SQL Editor read or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support "==" operator.
+             resource.database: the canonical database full name in "instances/{instance}/databases/{database}" or "projects/{project}/instances/{instance}/databases/{database}" format, used by any role with SQL Editor read (e.g. "roles/sqlEditorUser", "roles/sqlEditorReadUser"), export (bb.sql.export, e.g. "roles/sqlEditorExporter") or write (bb.sql.ddl / bb.sql.dml) access, support "==" operator.
+             resource.schema_name: the schema name, used by any role with SQL Editor read, export (bb.sql.export) or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support "==" operator.
+             resource.table_name: the table name, used by any role with SQL Editor read, export (bb.sql.export) or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support "==" operator.
              resource.environment_id: the environment to allow the DDL/DML operation in the SQL Editor, only works for the role with bb.sql.ddl or bb.sql.dml permissions. Support "in" operator.
              request.time: the expiration. Only support "<" operation in `request.time < timestamp("{ISO datetime string format}")`.
 
@@ -13427,7 +13430,9 @@ components:
         - EXPORT_DELIVERY_UNSPECIFIED
         - LOCAL
         - SHAREPOINT
-      description: Where an export is delivered.
+      description: |-
+        Where an export is delivered. Values are added as destinations are
+         supported.
     bytebase.v1.ExportFormat:
       type: string
       title: ExportFormat
@@ -13502,8 +13507,8 @@ components:
             - $ref: '#/components/schemas/bytebase.v1.ExportDelivery'
           title: delivery
           description: |-
-            Where the export is delivered. LOCAL is rejected when the workspace query
-             data policy disables export.
+            Where the export is delivered. A delivery the workspace query data policy
+             does not allow is rejected with FAILED_PRECONDITION.
       title: ExportRequest
       required:
         - name
@@ -15560,7 +15565,7 @@ components:
           type: string
           title: parent
           description: |-
-            - projects/{project}: list databases in a project, require "bb.projects.get" permission.
+            - projects/{project}: list databases in a project, require "bb.databases.list" permission.
              - workspaces/{id}: list databases in the workspace, require "bb.databases.list" permission.
              - instances/{instance}: list databases in an instance, require "bb.instances.get" permission.
              - projects/{project}/instances/{instance}: list databases in a project instance, require "bb.instances.get" permission.
@@ -18681,10 +18686,8 @@ components:
         disableExport:
           type: boolean
           title: disable_export
-          description: |-
-            workspace-level policy
-             Disallow local export download. Exports can then only be delivered to an
-             export destination, even when an export access grant covers them.
+          description: 'Deprecated: export is controlled by the bb.sql.export permission. Always false; setting it to true is rejected.'
+          deprecated: true
         disableCopyData:
           type: boolean
           title: disable_copy_data
@@ -18701,9 +18704,32 @@ components:
              If false,
              1. when read-only data source is configured, users're force to use the read-only data source
              2. otherwise fallback to use the admin data source.
+        exportDeliveryPolicy:
+          allOf:
+            - $ref: '#/components/schemas/bytebase.v1.QueryDataPolicy.ExportDeliveryPolicy'
+          title: export_delivery_policy
+          description: |-
+            workspace-level policy
+             Where SQLService.Export may deliver results. When the stored policy has
+             none, only LOCAL is allowed, and reads return that default. An update that
+             omits it keeps the stored value.
       title: QueryDataPolicy
       additionalProperties: false
       description: QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
+    bytebase.v1.QueryDataPolicy.ExportDeliveryPolicy:
+      type: object
+      properties:
+        allowedDeliveries:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.ExportDelivery'
+          title: allowed_deliveries
+          description: |-
+            The allowed deliveries: at least one, without duplicates or
+             EXPORT_DELIVERY_UNSPECIFIED. A delivery added to ExportDelivery later is
+             not allowed until it is listed here.
+      title: ExportDeliveryPolicy
+      additionalProperties: false
     bytebase.v1.QueryHistory:
       type: object
       properties:
@@ -19099,9 +19125,19 @@ components:
           description: |-
             Whether producing the plan executed the statement, as EXPLAIN ANALYZE
              does.
+        content:
+          type: string
+          title: content
+          description: |-
+            The plan itself, where the engine states it beside the result rather
+             than in the result's rows. BigQuery reports the stages its job ran in
+             the job's own statistics, so one result carries the query's data and
+             the plan of the run that produced it. Empty when the plan is the rows,
+             which is every other engine. Omitted from the audit log, as the rows
+             are: the statement is what an audit reads.
       title: QueryPlan
       additionalProperties: false
-      description: A query plan held in the result's rows.
+      description: 'A query plan the result carries: in its rows, or beside them.'
     bytebase.v1.QueryResult.SyntaxError:
       type: object
       properties:
@@ -19788,7 +19824,7 @@ components:
           title: role
           description: |-
             The requested role.
-             Format: roles/EXPORTER.
+             Format: roles/{role}.
         user:
           type: string
           title: user
@@ -25304,10 +25340,15 @@ components:
       enum:
         - NULL_VALUE
       description: |-
-        `NullValue` is a singleton enumeration to represent the null value for the
-         `Value` type union.
+        Represents a JSON `null`.
 
-         The JSON representation for `NullValue` is JSON `null`.
+         `NullValue` is a sentinel, using an enum with only one value to represent
+         the null value for the `Value` type union.
+
+         A field of type `NullValue` with any value other than `0` is considered
+         invalid. Most ProtoJSON serializers will emit a `Value` with a `null_value`
+         set as a JSON `null` regardless of the integer value, and so will round trip
+         to a `0` value.
     google.protobuf.Struct:
       type: object
       additionalProperties:

@@ -551,22 +551,14 @@ func (s *Server) callAPI(ctx context.Context, path, operation, permission string
 // Returns nil if the response is OK, or a structured error otherwise.
 func checkAPIResponse(resp *apiResponse, operation, permission string) error {
 	if resp.Status == http.StatusForbidden || resp.Status == http.StatusUnauthorized {
-		// A 403 here is not always a missing permission: the MCP enforcement
-		// chain answers the same status for the method class, the ceiling, the
-		// request's own shape and the masked-write guard. No grant lifts a
-		// workspace setting, so those keep their own remedy and get no advice.
+		// The server's message goes alone. A 403 is not always a missing
+		// permission (a plan feature, the MCP ceiling, the request's own shape),
+		// and the ACL refusal names the permission itself.
 		message := parseError(resp.Body)
-		if IsPolicyRefusal(message) {
-			return &toolError{Code: "PERMISSION_DENIED", Message: message}
-		}
 		if message == "" {
-			message = fmt.Sprintf("you don't have permission to %s", operation)
+			message = fmt.Sprintf("you don't have permission to %s, which requires %s", operation, permission)
 		}
-		return &toolError{
-			Code:       "PERMISSION_DENIED",
-			Message:    message,
-			Suggestion: fmt.Sprintf("ask your workspace admin to grant you the %s permission", permission),
-		}
+		return &toolError{Code: "PERMISSION_DENIED", Message: message}
 	}
 	if resp.Status >= 400 {
 		return errors.Errorf("%s failed: HTTP %d: %s", operation, resp.Status, parseError(resp.Body))
@@ -594,12 +586,11 @@ func formatChangeStepError(err error, defaultCode string, partialRefs map[string
 func formatChangeStepErrorWithHint(err error, defaultCode string, partialRefs map[string]string, hint string) *mcp.CallToolResult {
 	var te *toolError
 	if errors.As(err, &te) && te.Code == "PERMISSION_DENIED" {
-		// Passed through rather than re-derived: re-deriving overwrote a policy
-		// denial's own remedy with the permission advice.
+		// A permission denial keeps its code and the server's words; the step's
+		// hint is about something else.
 		return formatChangeError(&changeError{
 			Code:        "PERMISSION_DENIED",
 			Message:     te.Message,
-			Suggestion:  te.Suggestion,
 			PartialRefs: partialRefs,
 		})
 	}

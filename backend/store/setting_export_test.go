@@ -37,34 +37,37 @@ func TestGetWorkspaceQueryDataPolicy(t *testing.T) {
 	t.Parallel()
 	fixture := newStorePostgresFixture(t, "")
 	ctx, s := fixture.ctx, fixture.store
+	local := []storepb.ExportDelivery{storepb.ExportDelivery_LOCAL}
+	both := []storepb.ExportDelivery{storepb.ExportDelivery_LOCAL, storepb.ExportDelivery_SHAREPOINT}
 
 	policy, err := s.GetWorkspaceQueryDataPolicy(ctx, "default")
 	require.NoError(t, err)
-	require.False(t, policy.GetDisableExport())
+	require.Nil(t, policy.GetExportDeliveryPolicy())
+	require.Equal(t, local, store.GetAllowedExportDeliveries(policy), "a workspace without a policy allows the default")
 
 	_, err = s.CreatePolicy(ctx, &store.PolicyMessage{
 		Workspace:    "default",
 		ResourceType: storepb.Policy_PROJECT,
 		Resource:     common.FormatProject("default"),
 		Type:         storepb.Policy_QUERY_DATA,
-		Payload:      `{"disableExport":true}`,
+		Payload:      `{"exportDeliveryPolicy":{"allowedDeliveries":["SHAREPOINT"]}}`,
 		Enforce:      true,
 	})
 	require.NoError(t, err)
 	policy, err = s.GetWorkspaceQueryDataPolicy(ctx, "default")
 	require.NoError(t, err)
-	require.False(t, policy.GetDisableExport(), "a project policy does not set the workspace policy")
+	require.Equal(t, local, store.GetAllowedExportDeliveries(policy), "a project policy does not set the workspace policy")
 
 	_, err = s.CreatePolicy(ctx, &store.PolicyMessage{
 		Workspace:    "default",
 		ResourceType: storepb.Policy_WORKSPACE,
 		Resource:     common.FormatWorkspace("default"),
 		Type:         storepb.Policy_QUERY_DATA,
-		Payload:      `{"disableExport":true}`,
+		Payload:      `{"exportDeliveryPolicy":{"allowedDeliveries":["LOCAL","SHAREPOINT"]}}`,
 		Enforce:      true,
 	})
 	require.NoError(t, err)
 	policy, err = s.GetWorkspaceQueryDataPolicy(ctx, "default")
 	require.NoError(t, err)
-	require.True(t, policy.GetDisableExport())
+	require.Equal(t, both, store.GetAllowedExportDeliveries(policy))
 }

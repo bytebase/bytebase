@@ -768,7 +768,8 @@ func (StatementType) EnumDescriptor() ([]byte, []int) {
 	return file_v1_common_proto_rawDescGZIP(), []int{8}
 }
 
-// Where an export is delivered.
+// Where an export is delivered. Values are added as destinations are
+// supported.
 type ExportDelivery int32
 
 const (

@@ -1,12 +1,23 @@
 // @vitest-environment node
-import { describe, expect, test, vi } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { AppRouterInstance } from "@/app/router";
+import { State } from "@/types/proto-es/v1/common_pb";
+
+const projectApi = vi.hoisted(() => ({ getProject: vi.fn() }));
+
+vi.mock("@/api", () => ({
+  projectServiceClientConnect: { getProject: projectApi.getProject },
+}));
 
 vi.mock("../skills", () => ({
   getSkill: vi.fn(async () => "skill"),
 }));
-vi.mock("./callApi", () => ({
-  callApi: vi.fn(async () => "call_api"),
+vi.mock("./callApi", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./callApi")>()),
+  dispatchPreparedApiCall: vi.fn(async () => "call_api"),
+}));
+vi.mock("./databaseCount", () => ({
+  createDatabaseCountTool: vi.fn(() => vi.fn(async () => "database_count")),
 }));
 vi.mock("./databaseOverview", () => ({
   createDatabaseOverviewTool: vi.fn(() =>
@@ -56,12 +67,14 @@ vi.mock("./workspaceAttention", () => ({
     vi.fn(async () => "workspace_attention")
   ),
 }));
-vi.mock("./searchApi", () => ({
+vi.mock("./searchApi", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./searchApi")>()),
   searchApi: vi.fn(async () => "search_api"),
 }));
 
 import { createToolExecutor, getToolDefinitions } from ".";
-import { callApi } from "./callApi";
+import { dispatchPreparedApiCall } from "./callApi";
+import { createDatabaseCountTool } from "./databaseCount";
 import { createDatabaseOverviewTool } from "./databaseOverview";
 import { createDomActionTool } from "./domAction";
 import { createIssueOverviewTool } from "./issueOverview";
@@ -73,6 +86,356 @@ import { createProjectRecentActivityTool } from "./projectRecentActivity";
 import { createWorkspaceAttentionTool } from "./workspaceAttention";
 import { createWorkspaceOverviewTool } from "./workspaceOverview";
 import { createWorkspaceRecentActivityTool } from "./workspaceRecentActivity";
+
+beforeEach(() => {
+  projectApi.getProject.mockReset();
+  vi.mocked(dispatchPreparedApiCall).mockClear();
+  projectApi.getProject.mockResolvedValue({
+    name: "projects/referenced",
+    state: State.ACTIVE,
+  });
+});
+
+describe("agent tools referenced project", () => {
+  test("scopes bounded project reads to the reference for one executor only", async () => {
+    const referencedExecutor = createToolExecutor({} as AppRouterInstance, {
+      context: "projects/original",
+      referencedProject: "projects/referenced",
+      runMode: "read-only",
+    });
+
+    await referencedExecutor("get_project_overview", {}, "tool-project");
+    await referencedExecutor(
+      "get_project_governance_overview",
+      {},
+      "tool-policy"
+    );
+    await referencedExecutor("get_project_open_issues", {}, "tool-issues");
+    await referencedExecutor("get_project_recent_activity", {}, "tool-recent");
+    await referencedExecutor(
+      "get_issue_overview",
+      { issueName: "projects/referenced/issues/123" },
+      "tool-issue"
+    );
+    await referencedExecutor(
+      "get_database_overview",
+      { databaseName: "projects/referenced/instances/prod/databases/app" },
+      "tool-database"
+    );
+    await referencedExecutor("get_database_count", {}, "tool-count");
+
+    expect(projectApi.getProject).toHaveBeenCalledTimes(1);
+    expect(projectApi.getProject).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "projects/referenced" }),
+      expect.anything()
+    );
+    for (const factory of [
+      createProjectOverviewTool,
+      createProjectGovernanceOverviewTool,
+      createProjectOpenIssuesTool,
+      createProjectRecentActivityTool,
+      createIssueOverviewTool,
+      createDatabaseOverviewTool,
+    ]) {
+      expect(factory).toHaveBeenCalledWith({
+        projectName: "projects/referenced",
+      });
+    }
+    expect(createDatabaseCountTool).toHaveBeenCalledWith({
+      scopeName: "projects/referenced",
+    });
+
+    createToolExecutor({} as AppRouterInstance, {
+      context: "projects/original",
+    });
+    expect(createProjectOverviewTool).toHaveBeenLastCalledWith({
+      projectName: "projects/original",
+    });
+  });
+
+  test("does not read stale or inaccessible referenced projects", async () => {
+    projectApi.getProject.mockRejectedValue(new Error("not found"));
+    const overview = vi.fn(async () => "must not run");
+    vi.mocked(createProjectOverviewTool).mockReturnValueOnce(overview);
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      context: "projects/original",
+      referencedProject: "projects/referenced",
+    });
+
+    expect(await executor("get_project_overview", {}, "tool-project")).toEqual({
+      kind: "tool_result",
+      result: JSON.stringify({
+        error:
+          "The referenced project is unavailable or you do not have access.",
+      }),
+    });
+    expect(
+      await executor(
+        "call_api",
+        {
+          operationId: "DatabaseService/ListDatabases",
+          body: { parent: "projects/referenced" },
+        },
+        "tool-api"
+      )
+    ).toEqual({
+      kind: "tool_result",
+      result: JSON.stringify({
+        error:
+          "The referenced project is unavailable or you do not have access.",
+      }),
+    });
+    expect(overview).not.toHaveBeenCalled();
+    expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
+  });
+
+  test("does not count databases in an inaccessible referenced project", async () => {
+    projectApi.getProject.mockRejectedValue(new Error("not found"));
+    const count = vi.fn(async () => "must not run");
+    vi.mocked(createDatabaseCountTool).mockReturnValueOnce(count);
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      context: "workspaces/demo",
+      referencedProject: "projects/referenced",
+    });
+
+    expect(await executor("get_database_count", {}, "tool-count")).toEqual({
+      kind: "tool_result",
+      result: JSON.stringify({
+        error:
+          "The referenced project is unavailable or you do not have access.",
+      }),
+    });
+    expect(count).not.toHaveBeenCalled();
+  });
+
+  test("passes only the current database reference to the instance count tool", async () => {
+    const count = vi.fn(async () => "instance_count");
+    vi.mocked(createDatabaseCountTool).mockReturnValueOnce(count);
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      context: "projects/original",
+      referencedProject: "projects/referenced",
+      referencedDatabase: "instances/shared/databases/selected",
+      runMode: "read-only",
+    });
+
+    await expect(
+      executor(
+        "get_database_count",
+        { scope: "referenced-instance" },
+        "tool-instance-count"
+      )
+    ).resolves.toEqual({ kind: "tool_result", result: "instance_count" });
+    expect(createDatabaseCountTool).toHaveBeenCalledWith({
+      scopeName: "projects/referenced",
+      referencedProject: "projects/referenced",
+      referencedDatabase: "instances/shared/databases/selected",
+    });
+    expect(count).toHaveBeenCalledWith({ scope: "referenced-instance" });
+    expect(projectApi.getProject).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "projects/referenced" }),
+      expect.anything()
+    );
+  });
+
+  test("does not read a soft-deleted referenced project", async () => {
+    projectApi.getProject.mockResolvedValue({
+      name: "projects/referenced",
+      state: State.DELETED,
+    });
+    const overview = vi.fn(async () => "must not run");
+    vi.mocked(createProjectOverviewTool).mockReturnValueOnce(overview);
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      context: "projects/original",
+      referencedProject: "projects/referenced",
+    });
+
+    const result = await executor("get_project_overview", {}, "tool-project");
+
+    expect(result).toMatchObject({ kind: "tool_result" });
+    expect(
+      JSON.parse(result.kind === "tool_result" ? result.result : "{}")
+    ).toHaveProperty("error");
+    expect(overview).not.toHaveBeenCalled();
+  });
+
+  test("reference turns can discover and call APIs without page actions", async () => {
+    const definitions = getToolDefinitions({
+      referencedProject: "projects/referenced",
+    });
+    expect(definitions.map((tool) => tool.name)).toEqual(
+      expect.arrayContaining(["search_api", "call_api"])
+    );
+    expect(definitions.map((tool) => tool.name)).not.toEqual(
+      expect.arrayContaining(["navigate", "dom_action"])
+    );
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      context: "projects/original",
+      referencedProject: "projects/referenced",
+    });
+
+    expect(
+      await executor("search_api", { query: "list databases" }, "tool-search")
+    ).toEqual({
+      kind: "tool_result",
+      result: "search_api",
+    });
+    expect(
+      await executor(
+        "call_api",
+        {
+          operationId: "DatabaseService/ListDatabases",
+          body: { parent: "projects/referenced", pageSize: 25 },
+        },
+        "tool-read"
+      )
+    ).toEqual({
+      kind: "tool_result",
+      result: "call_api",
+    });
+    expect(dispatchPreparedApiCall).toHaveBeenCalledTimes(1);
+    expect(dispatchPreparedApiCall).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operationId: "bytebase.v1.DatabaseService.ListDatabases",
+        body: JSON.stringify({ parent: "projects/referenced", pageSize: 25 }),
+      })
+    );
+
+    for (const name of ["navigate", "dom_action"]) {
+      const result = await executor(name, {}, `tool-${name}`);
+      expect(result.kind).toBe("tool_result");
+      if (result.kind === "tool_result") {
+        expect(JSON.parse(result.result)).toHaveProperty("error");
+      }
+    }
+  });
+
+  test("asks before a referenced-project write API request", async () => {
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      chatId: "chat-1",
+      userName: "users/me@example.com",
+      context: "projects/original",
+      referencedProject: "projects/referenced",
+      runMode: "read-only",
+    });
+    const args = {
+      operationId: "ProjectService/UpdateProject",
+      body: {
+        project: {
+          name: "projects/referenced",
+          title: "Renamed project",
+        },
+        updateMask: { paths: ["title"] },
+      },
+    };
+
+    expect(await executor("call_api", args, "tool-api")).toMatchObject({
+      kind: "ask_user",
+      ask: {
+        kind: "confirm",
+        toolCallId: "tool-api",
+        apiPermission: {
+          operationId: "bytebase.v1.ProjectService.UpdateProject",
+        },
+      },
+    });
+    expect(projectApi.getProject).toHaveBeenCalledTimes(1);
+    expect(projectApi.getProject).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "projects/referenced" }),
+      expect.anything()
+    );
+    expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
+  });
+
+  test("asks before SQLService/Query even though its RPC is classified READ", async () => {
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      chatId: "chat-1",
+      userName: "users/me@example.com",
+    });
+
+    expect(
+      await executor(
+        "call_api",
+        {
+          operationId: "SQLService/Query",
+          body: {
+            name: "instances/example/databases/app",
+            statement: "UPDATE accounts SET active = false",
+          },
+        },
+        "tool-query"
+      )
+    ).toMatchObject({
+      kind: "ask_user",
+      ask: {
+        kind: "confirm",
+        toolCallId: "tool-query",
+        apiPermission: { operationId: "bytebase.v1.SQLService.Query" },
+      },
+    });
+    expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
+  });
+
+  test("refuses a write API when no signed-in chat can approve it", async () => {
+    const executor = createToolExecutor({} as AppRouterInstance);
+
+    expect(
+      await executor(
+        "call_api",
+        {
+          operationId: "ProjectService/UpdateProject",
+          body: { project: { name: "projects/example", title: "Changed" } },
+        },
+        "tool-write"
+      )
+    ).toEqual({
+      kind: "tool_result",
+      result: expect.stringContaining("Cannot request API permission"),
+    });
+    expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
+  });
+
+  test("rejects malformed references and keeps the chat-bound project", async () => {
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      context: "projects/original",
+      referencedProject: "projects/referenced/issues/123",
+    });
+    await executor("get_project_overview", {}, "tool-project");
+
+    expect(projectApi.getProject).not.toHaveBeenCalled();
+    expect(createProjectOverviewTool).toHaveBeenLastCalledWith({
+      projectName: "projects/original",
+    });
+  });
+
+  test("describes the one-turn reference without reclassifying the chat", () => {
+    const definitions = getToolDefinitions({
+      referencedProject: "projects/referenced",
+      runMode: "read-only",
+    });
+    const projectOverview = definitions.find(
+      (tool) => tool.name === "get_project_overview"
+    );
+    const workspaceOverview = definitions.find(
+      (tool) => tool.name === "get_workspace_overview"
+    );
+
+    expect(projectOverview?.description).toContain("projects/referenced");
+    expect(projectOverview?.description).toContain("this turn");
+    expect(workspaceOverview?.description).toContain(
+      "workspace bound to this chat"
+    );
+    expect(
+      getToolDefinitions({ referencedProject: "projects/referenced" }).map(
+        (tool) => tool.name
+      )
+    ).toEqual(
+      expect.arrayContaining([
+        "get_project_open_issues",
+        "get_project_recent_activity",
+      ])
+    );
+  });
+});
 
 describe("agent tools navigate", () => {
   test("calls onNavigate after a successful navigation result", async () => {
@@ -172,6 +535,7 @@ describe("agent tools read-only mode", () => {
       "get_project_governance_overview",
       "get_issue_overview",
       "get_database_overview",
+      "get_database_count",
       "get_workspace_overview",
       "get_project_open_issues",
       "get_project_recent_activity",
@@ -205,6 +569,32 @@ describe("agent tools read-only mode", () => {
     expect(getToolDefinitions().map((tool) => tool.name)).toContain(
       "get_database_overview"
     );
+    expect(getToolDefinitions().map((tool) => tool.name)).toContain(
+      "get_database_count"
+    );
+  });
+
+  test.each([
+    ["workspace", "workspaces/default"],
+    ["project", "projects/sample"],
+  ])("uses the chat-bound %s for a database count", async (_, context) => {
+    const count = vi.fn(async () => "database_count");
+    vi.mocked(createDatabaseCountTool).mockReturnValueOnce(count);
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      context,
+      runMode: "read-only",
+    });
+
+    await expect(
+      executor("get_database_count", {}, "tool-count")
+    ).resolves.toEqual({
+      kind: "tool_result",
+      result: "database_count",
+    });
+    expect(createDatabaseCountTool).toHaveBeenLastCalledWith({
+      scopeName: context,
+    });
+    expect(count).toHaveBeenCalledOnce();
   });
 
   test("uses the chat-bound project for a generic overview lookup", async () => {
@@ -453,7 +843,7 @@ describe("agent tools read-only mode", () => {
     const executeTool = createToolExecutor({} as AppRouterInstance, {
       runMode: "read-only",
     });
-    const callApiMock = vi.mocked(callApi);
+    const callApiMock = vi.mocked(dispatchPreparedApiCall);
     const createDomActionToolMock = vi.mocked(createDomActionTool);
     callApiMock.mockClear();
     createDomActionToolMock.mockClear();
@@ -462,13 +852,17 @@ describe("agent tools read-only mode", () => {
       executeTool("call_api", { operationId: "SQLService/Query" }, "tool-api")
     ).resolves.toEqual({
       kind: "tool_result",
-      result: expect.stringContaining("not available during this starter"),
+      result: expect.stringContaining(
+        "not available during a read-only request"
+      ),
     });
     await expect(
       executeTool("dom_action", { type: "click", ref: "e1" }, "tool-dom")
     ).resolves.toEqual({
       kind: "tool_result",
-      result: expect.stringContaining("not available during this starter"),
+      result: expect.stringContaining(
+        "not available during a read-only request"
+      ),
     });
     await expect(
       executeTool(
@@ -478,7 +872,9 @@ describe("agent tools read-only mode", () => {
       )
     ).resolves.toEqual({
       kind: "tool_result",
-      result: expect.stringContaining("not available during this starter"),
+      result: expect.stringContaining(
+        "not available during a read-only request"
+      ),
     });
 
     expect(callApiMock).not.toHaveBeenCalled();

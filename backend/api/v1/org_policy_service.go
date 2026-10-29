@@ -253,9 +253,17 @@ func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, req *connect.Reques
 			if err := validatePolicyPayload(policy.Type, req.Msg.Policy); err != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrap(err, "invalid policy"))
 			}
+			if err := validateQueryDataPolicyResource(policy.ResourceType, req.Msg.Policy); err != nil {
+				return nil, err
+			}
 			payloadStr, err := s.convertPolicyPayloadToString(ctx, req.Msg.Policy)
 			if err != nil {
 				return nil, err
+			}
+			if policy.Type == storepb.Policy_QUERY_DATA {
+				if payloadStr, err = keepStoredExportDeliveryPolicy(payloadStr, policy.Payload); err != nil {
+					return nil, connect.NewError(connect.CodeInternal, err)
+				}
 			}
 			patch.Payload = &payloadStr
 		case "enforce":
@@ -468,6 +476,9 @@ func (s *OrgPolicyService) createPolicyMessage(ctx context.Context, req *connect
 	if err := validatePolicyPayload(policyType, policy); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrap(err, "invalid policy"))
 	}
+	if err := validateQueryDataPolicyResource(resourceType, policy); err != nil {
+		return nil, err
+	}
 
 	payloadStr, err := s.convertPolicyPayloadToString(ctx, policy)
 	if err != nil {
@@ -559,6 +570,15 @@ func (s *OrgPolicyService) checkPolicyFeatureGuard(ctx context.Context, policyTy
 		if err := s.licenseService.IsFeatureEnabled(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_QUERY_POLICY); err != nil {
 			return connect.NewError(connect.CodePermissionDenied, err)
 		}
+	}
+	return nil
+}
+
+// validateQueryDataPolicyResource rejects an export delivery policy outside the
+// workspace, where Export would never read it.
+func validateQueryDataPolicyResource(resourceType storepb.Policy_Resource, policy *v1pb.Policy) error {
+	if resourceType != storepb.Policy_WORKSPACE && policy.GetQueryDataPolicy().GetExportDeliveryPolicy() != nil {
+		return connect.NewError(connect.CodeInvalidArgument, errors.New("export_delivery_policy is only supported on the workspace query data policy"))
 	}
 	return nil
 }
@@ -682,6 +702,10 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(ctx context.Context, pol
 		}
 		return string(payloadBytes), nil
 	case v1pb.PolicyType_DATA_QUERY:
+		payload, err := convertToQueryDataPolicyPayload(policy.GetQueryDataPolicy())
+		if err != nil {
+			return "", err
+		}
 		// Check license for both query policy and restrict copying data features
 		if policy.GetQueryDataPolicy() != nil && policy.GetQueryDataPolicy().DisableCopyData {
 			if err := s.licenseService.IsFeatureEnabled(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_RESTRICT_COPYING_DATA); err != nil {
@@ -691,7 +715,6 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(ctx context.Context, pol
 		if err := s.licenseService.IsFeatureEnabled(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_QUERY_POLICY); err != nil {
 			return "", connect.NewError(connect.CodePermissionDenied, err)
 		}
-		payload := convertToQueryDataPolicyPayload(policy.GetQueryDataPolicy())
 		payloadBytes, err := protojson.Marshal(payload)
 		if err != nil {
 			return "", errors.Wrap(err, "failed to marshal policy")
@@ -773,7 +796,7 @@ func convertToPolicy(policyMessage *store.PolicyMessage) (*v1pb.Policy, error) {
 			TagPolicy: p,
 		}
 	case storepb.Policy_QUERY_DATA:
-		payload, err := convertToV1PBQueryDataPolicy(policyMessage.Payload)
+		payload, err := convertToV1PBQueryDataPolicy(policyMessage.Payload, policyMessage.ResourceType)
 		if err != nil {
 			return nil, err
 		}

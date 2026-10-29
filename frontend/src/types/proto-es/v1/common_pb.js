@@ -168,7 +168,8 @@ export const ExportDeliverySchema = /*@__PURE__*/
   enumDesc(file_v1_common, 9);
 
 /**
- * Where an export is delivered.
+ * Where an export is delivered. Values are added as destinations are
+ * supported.
  *
  * @generated from enum bytebase.v1.ExportDelivery
  */

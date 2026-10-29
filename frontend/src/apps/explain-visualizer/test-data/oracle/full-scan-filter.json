@@ -1,0 +1,26 @@
+[
+  {
+    "bytes": "32260",
+    "cardinality": "1613",
+    "cost": "48",
+    "id": "0",
+    "operation": "SELECT STATEMENT",
+    "optimizer": "ALL_ROWS",
+    "position": "48"
+  },
+  {
+    "bytes": "32260",
+    "cardinality": "1613",
+    "cost": "48",
+    "filter_predicates": "\"TOTAL\"\u003e880",
+    "id": "1",
+    "object_name": "ORDERS",
+    "object_owner": "SYSTEM",
+    "object_type": "TABLE",
+    "operation": "TABLE ACCESS",
+    "optimizer": "ANALYZED",
+    "options": "FULL",
+    "parent_id": "0",
+    "position": "1"
+  }
+]

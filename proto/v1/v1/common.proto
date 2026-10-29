@@ -270,7 +270,8 @@ message PermissionDeniedDetail {
   repeated string resources = 3;
 }
 
-// Where an export is delivered.
+// Where an export is delivered. Values are added as destinations are
+// supported.
 enum ExportDelivery {
   // Treated as LOCAL.
   EXPORT_DELIVERY_UNSPECIFIED = 0;

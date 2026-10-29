@@ -189,7 +189,7 @@ func local_request_IdentityProviderService_CreateIdentityProvider_0(ctx context.
 	return msg, metadata, err
 }
 
-var filter_IdentityProviderService_UpdateIdentityProvider_0 = &utilities.DoubleArray{Encoding: map[string]int{"identity_provider": 0, "name": 1}, Base: []int{1, 2, 1, 0, 0}, Check: []int{0, 1, 2, 3, 2}}
+var filter_IdentityProviderService_UpdateIdentityProvider_0 = &utilities.DoubleArray{Encoding: map[string]int{"identity_provider": 0, "name": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 2, 2, 3}}
 
 func request_IdentityProviderService_UpdateIdentityProvider_0(ctx context.Context, marshaler runtime.Marshaler, client IdentityProviderServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (

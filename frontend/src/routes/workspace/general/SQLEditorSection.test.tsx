@@ -22,10 +22,12 @@ const mocks = vi.hoisted(() => {
       queryTimeout: undefined as undefined | { seconds: bigint },
     },
     policy: {
-      disableExport: false,
       disableCopyData: false,
       allowAdminDataSource: false,
       maximumResultRows: 0n,
+      exportDeliveryPolicy: undefined as
+        | undefined
+        | { allowedDeliveries: number[] },
     },
     updateWorkspaceProfile: vi.fn(
       async (_params: {
@@ -43,7 +45,6 @@ const mocks = vi.hoisted(() => {
     upsertPolicy: vi.fn(async (_params: unknown) => {}),
     getOrFetchPolicyByParentAndType: vi.fn(async (_params: unknown) => {}),
     hasWorkspacePermissionV2: vi.fn((_permission: string) => true),
-    hasPlanFeature: vi.fn((_feature: unknown) => true),
   };
 });
 
@@ -67,7 +68,7 @@ vi.mock("@/utils", () => ({
 }));
 
 vi.mock("@/hooks/useAppState", () => ({
-  usePlanFeature: mocks.hasPlanFeature,
+  usePlanFeature: () => true,
   useWorkspaceResourceName: () => "workspaces/-",
 }));
 
@@ -167,9 +168,9 @@ vi.mock("@/stores", () => ({
   DEFAULT_MAX_RESULT_SIZE_IN_MB: 100,
 }));
 
+import { ExportDelivery } from "@/types/proto-es/v1/common_pb";
 import { SQLEditorSection } from "./SQLEditorSection";
 import type { SectionHandle } from "./useSettingSection";
-import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 
 let container: HTMLDivElement;
 let root: Root;
@@ -188,14 +189,12 @@ beforeEach(() => {
   mocks.profile.sqlEditorCustomTheme = undefined;
   mocks.profile.sqlResultSize = 0n;
   mocks.profile.queryTimeout = undefined;
-  mocks.policy.disableExport = false;
   mocks.policy.disableCopyData = false;
   mocks.policy.allowAdminDataSource = false;
   mocks.policy.maximumResultRows = 0n;
   mocks.updateWorkspaceProfile.mockClear();
   mocks.upsertPolicy.mockClear();
   mocks.hasWorkspacePermissionV2.mockReturnValue(true);
-  mocks.hasPlanFeature.mockImplementation(() => true);
 });
 
 afterEach(() => {
@@ -359,70 +358,128 @@ describe("SQLEditorSection theme", () => {
   });
 });
 
-// Local export download is stored inverted as the policy's `disableExport`.
-describe("SQLEditorSection local export download toggle", () => {
-  function renderSection() {
-    const ref = createRef<SectionHandle>();
-    render(
-      <SQLEditorSection ref={ref} title="SQL Editor" onDirtyChange={() => {}} />
-    );
-    return ref;
-  }
+// The bb.sql.export permission controls who may export; the export delivery
+// switches control only where exports go.
+describe("SQLEditorSection query data policy toggles", () => {
+  beforeEach(() => {
+    mocks.policy.exportDeliveryPolicy = undefined;
+  });
 
-  function localDownloadSwitch(): HTMLElement {
-    // The switch renders inside the FormField title span, beside the label.
-    const span = Array.from(container.querySelectorAll("span")).find((s) =>
-      s.textContent?.includes(
-        "settings.general.workspace.data-export.self"
+  // The theme preview renders switches of its own; keep the settings ones.
+  function settingSwitches(): HTMLElement[] {
+    return Array.from(
+      container.querySelectorAll<HTMLElement>('[role="switch"]')
+    ).filter((control) =>
+      (control.parentElement?.textContent ?? "").startsWith(
+        "settings.general.workspace."
       )
     );
-    const control = span?.querySelector<HTMLElement>('[role="switch"]');
+  }
+
+  function settingSwitch(label: string): HTMLElement {
+    const control = settingSwitches().find(
+      (candidate) => candidate.parentElement?.textContent === label
+    );
     expect(control).toBeTruthy();
     return control as HTMLElement;
   }
 
-  test("renders checked while disableExport is off", () => {
-    renderSection();
-    expect(localDownloadSwitch().getAttribute("aria-checked")).toBe("true");
-    expect(container.textContent).toContain(
-      "settings.general.workspace.data-export.description"
+  const LOCAL = "settings.general.workspace.export-delivery.local";
+  const SHAREPOINT = "settings.general.workspace.export-delivery.sharepoint";
+
+  test("offers a switch per export delivery beside the copy and admin data source switches", () => {
+    render(<SQLEditorSection title="SQL Editor" onDirtyChange={() => {}} />);
+
+    expect(
+      settingSwitches().map((control) => control.parentElement?.textContent)
+    ).toEqual([
+      LOCAL,
+      SHAREPOINT,
+      "settings.general.workspace.data-copy",
+      "settings.general.workspace.allow-admin-data-source.self",
+    ]);
+  });
+
+  test("saving a toggle change upserts the remaining policy fields", async () => {
+    const ref = createRef<SectionHandle>();
+    render(
+      <SQLEditorSection ref={ref} title="SQL Editor" onDirtyChange={() => {}} />
     );
-  });
-
-  test("renders unchecked when disableExport is on", () => {
-    mocks.policy.disableExport = true;
-    renderSection();
-    expect(localDownloadSwitch().getAttribute("aria-checked")).toBe("false");
-  });
-
-  test("turning it off saves disableExport in the query data policy", async () => {
-    const ref = renderSection();
-    expect(ref.current?.isDirty()).toBe(false);
     act(() => {
-      localDownloadSwitch().click();
+      settingSwitch("settings.general.workspace.data-copy").click();
     });
     expect(ref.current?.isDirty()).toBe(true);
+
     await act(async () => {
       await ref.current?.update();
     });
-    expect(mocks.upsertPolicy).toHaveBeenCalledWith(
-      expect.objectContaining({
-        policy: expect.objectContaining({
-          policy: expect.objectContaining({
-            case: "queryDataPolicy",
-            value: expect.objectContaining({ disableExport: true }),
-          }),
-        }),
-      })
-    );
-    expect(mocks.updateWorkspaceProfile).not.toHaveBeenCalled();
+
+    expect(mocks.upsertPolicy).toHaveBeenCalledTimes(1);
+    expect(mocks.upsertPolicy.mock.calls[0][0]).toMatchObject({
+      policy: {
+        policy: {
+          case: "queryDataPolicy",
+          value: {
+            disableCopyData: true,
+            allowAdminDataSource: false,
+            exportDeliveryPolicy: { allowedDeliveries: [ExportDelivery.LOCAL] },
+          },
+        },
+      },
+    });
   });
 
-  test("cannot be changed without the query policy feature", () => {
-    mocks.hasPlanFeature.mockImplementation(
-      (feature) => feature !== PlanFeature.FEATURE_QUERY_POLICY
+  test("allows only local download by default and keeps the last allowed delivery on", () => {
+    render(<SQLEditorSection title="SQL Editor" onDirtyChange={() => {}} />);
+
+    expect(settingSwitch(LOCAL)).toHaveAttribute("aria-checked", "true");
+    expect(settingSwitch(LOCAL)).toHaveAttribute("data-disabled");
+    expect(settingSwitch(SHAREPOINT)).toHaveAttribute("aria-checked", "false");
+  });
+
+  test("allowing SharePoint saves both deliveries", async () => {
+    const ref = createRef<SectionHandle>();
+    render(
+      <SQLEditorSection ref={ref} title="SQL Editor" onDirtyChange={() => {}} />
     );
-    renderSection();
-    expect(localDownloadSwitch()).toHaveAttribute("data-disabled");
+    act(() => {
+      settingSwitch(SHAREPOINT).click();
+    });
+    expect(settingSwitch(LOCAL)).not.toHaveAttribute("data-disabled");
+    expect(ref.current?.isDirty()).toBe(true);
+
+    await act(async () => {
+      await ref.current?.update();
+    });
+
+    expect(mocks.upsertPolicy.mock.calls[0][0]).toMatchObject({
+      policy: {
+        policy: {
+          value: {
+            exportDeliveryPolicy: {
+              allowedDeliveries: [
+                ExportDelivery.LOCAL,
+                ExportDelivery.SHAREPOINT,
+              ],
+            },
+          },
+        },
+      },
+    });
+  });
+
+  test("reads the stored deliveries", () => {
+    mocks.policy.exportDeliveryPolicy = {
+      allowedDeliveries: [ExportDelivery.SHAREPOINT],
+    };
+    const ref = createRef<SectionHandle>();
+    render(
+      <SQLEditorSection ref={ref} title="SQL Editor" onDirtyChange={() => {}} />
+    );
+
+    expect(settingSwitch(LOCAL)).toHaveAttribute("aria-checked", "false");
+    expect(settingSwitch(SHAREPOINT)).toHaveAttribute("aria-checked", "true");
+    expect(settingSwitch(SHAREPOINT)).toHaveAttribute("data-disabled");
+    expect(ref.current?.isDirty()).toBe(false);
   });
 });

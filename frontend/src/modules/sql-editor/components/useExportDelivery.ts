@@ -14,23 +14,27 @@ export interface ExportDeliveryAvailability {
   sharepointUrl?: string;
 }
 
-// An export access grant never adds a delivery: local download follows only
-// the workspace's disableExport, and destinations need no grant.
+// An export access grant never adds a delivery: a delivery is offered only when
+// the workspace query data policy allows it and, for a destination, the
+// project has one configured.
 export function resolveExportDelivery({
   hasSharePointFeature,
   sharepointUrl,
-  disableExport,
+  allowedDeliveries,
 }: {
   hasSharePointFeature: boolean;
   sharepointUrl: string;
-  disableExport: boolean;
+  allowedDeliveries: readonly ExportDelivery[];
 }): ExportDeliveryAvailability {
   const deliveries: ExportDelivery[] = [];
-  const canDeliverToSharePoint = hasSharePointFeature && sharepointUrl !== "";
+  const canDeliverToSharePoint =
+    allowedDeliveries.includes(ExportDelivery.SHAREPOINT) &&
+    hasSharePointFeature &&
+    sharepointUrl !== "";
   if (canDeliverToSharePoint) {
     deliveries.push(ExportDelivery.SHAREPOINT);
   }
-  if (!disableExport) {
+  if (allowedDeliveries.includes(ExportDelivery.LOCAL)) {
     deliveries.push(ExportDelivery.LOCAL);
   }
   return canDeliverToSharePoint
@@ -43,9 +47,9 @@ export function useExportDelivery(projectName: string) {
   const hasSharePointFeature = usePlanFeature(
     PlanFeature.FEATURE_SHAREPOINT_EXPORT
   );
-  // The server enforces disableExport without a license check, so it is read
-  // regardless of FEATURE_QUERY_POLICY.
-  const { disableExport } = useSQLEditorQueryDataPolicy(projectName);
+  // The server enforces the allowed deliveries without a license check, so
+  // they are read regardless of FEATURE_QUERY_POLICY.
+  const { allowedExportDeliveries } = useSQLEditorQueryDataPolicy(projectName);
 
   useEffect(() => {
     if (!projectName) return;
@@ -58,7 +62,7 @@ export function useExportDelivery(projectName: string) {
   return resolveExportDelivery({
     hasSharePointFeature,
     sharepointUrl: project.exportSetting?.sharepoint?.url ?? "",
-    disableExport,
+    allowedDeliveries: allowedExportDeliveries,
   });
 }
 

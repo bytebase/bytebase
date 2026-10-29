@@ -2,6 +2,7 @@ import { LoaderCircle } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { QueryPlanTranslate } from "@/apps/explain-visualizer/plan-i18n";
+import type { PlanTableLookup } from "@/apps/explain-visualizer/plan-model";
 import { QueryPlanView } from "@/apps/explain-visualizer/QueryPlanView";
 import { formatPlanSource } from "@/apps/explain-visualizer/QueryPlanViewer";
 import { Alert } from "@/components/ui/alert";
@@ -11,11 +12,10 @@ import { CopyButton } from "@/components/ui/copy-button";
 import { Tabs, TabsList, TabsPanel, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import type { VisualizerEngine } from "@/utils/explainToken";
+import type { VisualizerEngine } from "@/utils/queryPlanEngines";
 
 export interface InlineQueryPlan {
   source: string;
-  statement: string;
 }
 
 /** Fetches the plan; the signal fires when the reader cancels the load. */
@@ -29,6 +29,7 @@ interface Props {
   // The plan was made on demand for a result that already ran, so it is an
   // estimate of now, not a record of that run.
   estimated?: boolean;
+  describeTable?: PlanTableLookup;
   onCancel?: () => void;
   disallowCopyingData?: boolean;
 }
@@ -72,6 +73,7 @@ export function QueryPlanResultView({
   engine,
   loadPlan,
   estimated = false,
+  describeTable,
   onCancel,
   disallowCopyingData = false,
 }: Props) {
@@ -146,11 +148,10 @@ export function QueryPlanResultView({
         engine={engine}
         planSource={plan.source}
         textPlanSource={rawPlan || undefined}
-        planQuery={plan.statement}
         note={estimateNote}
+        describeTable={describeTable}
         translate={translatePlan}
         disallowCopyingData={disallowCopyingData}
-        syncSelectionWithHash={false}
       />
     );
   }

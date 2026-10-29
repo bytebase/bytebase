@@ -1098,7 +1098,7 @@ func TestMCPGateUnderAReadOnlyCeiling(t *testing.T) {
 		require.False(t, got.dispatched)
 		require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got.err))
 		require.Contains(t, got.err.Error(), "READ_ONLY", "the denial must name the ceiling in force")
-		require.Contains(t, got.err.Error(), "raise the MCP ceiling", "the denial must name the way out")
+		require.Contains(t, got.err.Error(), "raise the MCP ceiling under "+auth.MCPCeilingLocation, "the denial must name the way out")
 		require.True(t, got.auditMarked)
 	})
 }
@@ -1252,7 +1252,7 @@ func TestMCPGateRefusesGrantIssues(t *testing.T) {
 		wayOut    []string
 		notWayOut string
 	}{
-		v1pb.Issue_ROLE_GRANT:   {[]string{mcpConsoleWayOut}, v1connect.AccessGrantServiceCreateAccessGrantProcedure},
+		v1pb.Issue_ROLE_GRANT:   {[]string{"whatever the approval rules say", "request_access_grant", "Bytebase console"}, v1connect.AccessGrantServiceCreateAccessGrantProcedure},
 		v1pb.Issue_ACCESS_GRANT: {[]string{v1connect.AccessGrantServiceCreateAccessGrantProcedure, "request_access_grant"}, mcpConsoleWayOut},
 	} {
 		t.Run("CreateIssue refuses "+issueType.String(), func(t *testing.T) {
@@ -1836,7 +1836,8 @@ func TestRejectMCPOriginatedGrantIssue(t *testing.T) {
 		wayOut    []string
 		notWayOut string
 	}{
-		"an MCP session may not create a role grant": {mcpCtx, v1pb.Issue_ROLE_GRANT, []string{mcpConsoleWayOut}, v1connect.AccessGrantServiceCreateAccessGrantProcedure},
+		"an MCP session may not create a role grant": {mcpCtx, v1pb.Issue_ROLE_GRANT,
+			[]string{"whatever the approval rules say", "request_access_grant", "Bytebase console"}, v1connect.AccessGrantServiceCreateAccessGrantProcedure},
 		"an MCP session may not create an access grant": {mcpCtx, v1pb.Issue_ACCESS_GRANT,
 			[]string{v1connect.AccessGrantServiceCreateAccessGrantProcedure, "request_access_grant"}, mcpConsoleWayOut},
 		"an MCP session may not create an unknown type": {mcpCtx, v1pb.Issue_Type(9999), []string{mcpConsoleWayOut}, v1connect.AccessGrantServiceCreateAccessGrantProcedure},

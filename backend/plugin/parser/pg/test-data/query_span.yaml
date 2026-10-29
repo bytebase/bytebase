@@ -859,6 +859,21 @@
           database: db
           schema: public
           table: issue
+          column: id
+        - server: ""
+          database: db
+          schema: public
+          table: issue
+          column: payload
+        - server: ""
+          database: db
+          schema: public
+          table: issue
+          column: pipeline_id
+        - server: ""
+          database: db
+          schema: public
+          table: issue
           column: status
         - server: ""
           database: db
@@ -868,8 +883,38 @@
         - server: ""
           database: db
           schema: public
+          table: principal
+          column: id
+        - server: ""
+          database: db
+          schema: public
+          table: task
+          column: id
+        - server: ""
+          database: db
+          schema: public
+          table: task
+          column: pipeline_id
+        - server: ""
+          database: db
+          schema: public
+          table: task
+          column: status
+        - server: ""
+          database: db
+          schema: public
           table: task_run
           column: creator_id
+        - server: ""
+          database: db
+          schema: public
+          table: task_run
+          column: status
+        - server: ""
+          database: db
+          schema: public
+          table: task_run
+          column: task_id
 - description: Test For PLpgSQL User Defined Function in expression
   statement: SELECT plpgsql_t(1);
   defaultDatabase: db
@@ -1114,7 +1159,12 @@
           schema: public
           table: t
           column: ""
-    predicatecolumns: []
+    predicatecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: t
+          column: a
 - description: to_jsonb accept table as argument with from table alias
   statement: SELECT to_jsonb(t1) FROM t t1;
   defaultDatabase: db
@@ -1390,7 +1440,12 @@
           schema: public
           table: t
           column: ""
-    predicatecolumns: []
+    predicatecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: t
+          column: a
 - description: Test For Complex PLpgSQL Function As Table Source
   statement: SELECT * FROM plpgsql_complex_t(1);
   defaultDatabase: db
@@ -1458,7 +1513,17 @@
           schema: public
           table: t2
           column: ""
-    predicatecolumns: []
+    predicatecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: t
+          column: a
+        - server: ""
+          database: db
+          schema: public
+          table: t2
+          column: a
 - description: Test For PLpgSQL Function As Table Source
   statement: SELECT * FROM plpgsql_t(1);
   defaultDatabase: db
@@ -1507,7 +1572,12 @@
           schema: public
           table: t
           column: ""
-    predicatecolumns: []
+    predicatecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: t
+          column: a
 - description: Test For Cascade Function As Table Source
   statement: SELECT * FROM cascade_t(1);
   defaultDatabase: db
@@ -1560,7 +1630,12 @@
           schema: public
           table: t
           column: ""
-    predicatecolumns: []
+    predicatecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: t
+          column: a
 - description: Test For Function As Table Source
   statement: SELECT * FROM select_t(1);
   defaultDatabase: db
@@ -1609,7 +1684,12 @@
           schema: public
           table: t
           column: ""
-    predicatecolumns: []
+    predicatecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: t
+          column: a
 - description: Test For Explain statements
   statement: EXPLAIN SELECT 1;
   defaultDatabase: db
@@ -2060,7 +2140,12 @@
           schema: public
           table: t
           column: ""
-    predicatecolumns: []
+    predicatecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: t
+          column: a
 - description: Correlated subquery in the target field clause.
   statement: SELECT city, (SELECT COUNT(*) FROM paintings p WHERE g.id = p.gallery_id) AS total_paintings FROM galleries g;
   defaultDatabase: db
@@ -2478,7 +2563,12 @@
           schema: public
           table: t
           column: ""
-    predicatecolumns: []
+    predicatecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: t
+          column: a
 - description: Simple CTE
   statement: WITH t1 AS (SELECT * FROM t) SELECT * FROM t1;
   defaultDatabase: db
@@ -3026,7 +3116,17 @@
           schema: public
           table: users
           column: ""
-    predicatecolumns: []
+    predicatecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: payments
+          column: user_id
+        - server: ""
+          database: db
+          schema: public
+          table: users
+          column: id
 - description: jsonb_array_elements as table source
   statement: SELECT * FROM t, jsonb_array_elements(a) AS elems WHERE id = 1;
   defaultDatabase: db
@@ -3079,7 +3179,12 @@
           schema: public
           table: t
           column: ""
-    predicatecolumns: []
+    predicatecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: t
+          column: a
 - description: jsonb_array_elements with column alias
   statement: SELECT * FROM t, jsonb_array_elements(a) AS elems(val) WHERE id = 1;
   defaultDatabase: db
@@ -3132,7 +3237,12 @@
           schema: public
           table: t
           column: ""
-    predicatecolumns: []
+    predicatecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: t
+          column: a
 - description: jsonb_array_elements_text as table source with alias
   statement: SELECT * FROM t CROSS JOIN LATERAL jsonb_array_elements_text(a) AS part WHERE id = 1;
   defaultDatabase: db
@@ -3185,7 +3295,12 @@
           schema: public
           table: t
           column: ""
-    predicatecolumns: []
+    predicatecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: t
+          column: a
 - description: array subscript in select list
   statement: |-
     SELECT

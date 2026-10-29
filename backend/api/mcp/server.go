@@ -22,6 +22,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/audit"
 	"github.com/bytebase/bytebase/backend/component/config"
+	"github.com/bytebase/bytebase/backend/component/review"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -42,6 +43,10 @@ type Server struct {
 	internalClient *http.Client
 
 	revokedAccessTokens sync.Map // map[string]struct{}
+
+	// findUnapprovableStep needs the concrete store, which serverStore hides,
+	// so NewServer binds it and tests replace it.
+	findUnapprovableStep func(ctx context.Context, workspace, issueName string) (*review.UnapprovableStep, error)
 
 	// planCheckPollBudgetOverride lets tests shorten the plan-check poll budget.
 	// Zero means use the default (planCheckPollBudget).
@@ -72,7 +77,14 @@ func NewServer(stores *store.Store, profile *config.Profile, secret string, inte
 	if stores == nil {
 		return nil, errors.New("store is required")
 	}
-	return newServerWithStore(stores, profile, secret, internalAPI)
+	s, err := newServerWithStore(stores, profile, secret, internalAPI)
+	if err != nil {
+		return nil, err
+	}
+	s.findUnapprovableStep = func(ctx context.Context, workspace, issueName string) (*review.UnapprovableStep, error) {
+		return review.FindUnapprovableStep(ctx, stores, workspace, issueName)
+	}
+	return s, nil
 }
 
 func newServerWithStore(stores serverStore, profile *config.Profile, secret string, internalAPI http.Handler) (*Server, error) {
@@ -141,6 +153,7 @@ func newServerWithStore(stores serverStore, profile *config.Profile, secret stri
 	// principal.
 	mcpServer.AddReceivingMiddleware(negotiateLegacyProtocol)
 	mcpServer.AddReceivingMiddleware(liveRequestMetadata)
+	mcpServer.AddReceivingMiddleware(nameSignedInAccount)
 
 	// Pin each session to the identity it was opened with. The SDK captures
 	// TokenInfo.UserID when a session is created and rejects later requests
@@ -190,6 +203,22 @@ func negotiateLegacyProtocol(next mcp.MethodHandler) mcp.MethodHandler {
 			params.ProtocolVersion = legacyProtocolCeiling
 		}
 		return next(ctx, method, req)
+	}
+}
+
+// nameSignedInAccount opens the initialize instructions with the session's
+// Bytebase account: clients also show the model other accounts, such as their
+// own sign-in. It goes first, so a client that cuts long instructions keeps it.
+func nameSignedInAccount(next mcp.MethodHandler) mcp.MethodHandler {
+	return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
+		result, err := next(ctx, method, req)
+		// The SDK refuses a second initialize on a session with a nil result,
+		// and a panic here would end the process.
+		if initialized, ok := result.(*mcp.InitializeResult); ok && initialized != nil {
+			account := fmt.Sprintf(`This session acts as the Bytebase account %s: every tool call runs with its permissions, and "you" in tool results means it. The user may have other accounts with other emails, such as the client's own sign-in.`, getUserEmail(ctx))
+			initialized.Instructions = strings.TrimSpace(account + "\n\n" + initialized.Instructions)
+		}
+		return result, err
 	}
 }
 

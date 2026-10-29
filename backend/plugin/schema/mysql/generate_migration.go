@@ -546,6 +546,7 @@ func writeCreateTableWithoutForeignKeys(buf *strings.Builder, tableName string, 
 		// generated-column ordering: GENERATED ALWAYS AS (...) precedes NOT NULL/SRID).
 		writeColumnDefinitionBody(buf, col)
 	}
+	writeSystemTimePeriod(buf, table)
 
 	// Write primary key constraint inline if exists
 	for _, index := range table.Indexes {
@@ -611,6 +612,7 @@ func writeCreateTableWithoutForeignKeys(buf *strings.Builder, tableName string, 
 		_, _ = buf.WriteString(table.Comment)
 		_, _ = buf.WriteString("'")
 	}
+	writeSystemVersioningOption(buf, table)
 
 	// Partitioning is part of the table definition, so it has to be emitted here: MySQL
 	// cannot partition a table after the fact without rewriting it. printPartitionClause
@@ -708,17 +710,21 @@ func writeColumnDefinitionBody(buf *strings.Builder, column *metadatapb.ColumnMe
 // and generated columns. Generated columns never carry DEFAULT / AUTO_INCREMENT / ON
 // UPDATE, so those clauses are intentionally omitted.
 func writeGeneratedColumnAttributes(buf *strings.Builder, column *metadatapb.ColumnMetadata) {
-	_, _ = buf.WriteString(" GENERATED ALWAYS AS (")
-	_, _ = buf.WriteString(column.Generation.Expression)
-	_, _ = buf.WriteString(") ")
-	switch column.Generation.Type {
-	case metadatapb.GenerationMetadata_TYPE_STORED:
-		_, _ = buf.WriteString("STORED")
-	case metadatapb.GenerationMetadata_TYPE_VIRTUAL:
-		_, _ = buf.WriteString("VIRTUAL")
-	default:
-		// Default to VIRTUAL for unknown types
-		_, _ = buf.WriteString("VIRTUAL")
+	if isSystemTimeColumn(column) {
+		writeSystemTimeColumnAttribute(buf, column)
+	} else {
+		_, _ = buf.WriteString(" GENERATED ALWAYS AS (")
+		_, _ = buf.WriteString(column.Generation.Expression)
+		_, _ = buf.WriteString(") ")
+		switch column.Generation.Type {
+		case metadatapb.GenerationMetadata_TYPE_STORED:
+			_, _ = buf.WriteString("STORED")
+		case metadatapb.GenerationMetadata_TYPE_VIRTUAL:
+			_, _ = buf.WriteString("VIRTUAL")
+		default:
+			// Default to VIRTUAL for unknown types
+			_, _ = buf.WriteString("VIRTUAL")
+		}
 	}
 
 	if !column.Nullable {
@@ -972,6 +978,10 @@ func writeProcedureDiff(buf *strings.Builder, procDiff *schema.ProcedureDiff) er
 
 func writeEventDiff(buf *strings.Builder, eventDiff *schema.EventDiff) error {
 	if eventDiff.Action == schema.MetadataDiffActionCreate || eventDiff.Action == schema.MetadataDiffActionAlter {
+		// An event synced without its CREATE EVENT, as on OceanBase, has nothing faithful to write.
+		if eventDiff.NewEvent.Definition == "" {
+			return nil
+		}
 		// Write the event definition
 		_, _ = buf.WriteString(eventDiff.NewEvent.Definition)
 		if !strings.HasSuffix(strings.TrimSpace(eventDiff.NewEvent.Definition), ";") {

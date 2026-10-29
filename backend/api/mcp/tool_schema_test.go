@@ -723,7 +723,7 @@ func TestGetSchema_PermissionDenied(t *testing.T) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusForbidden)
 			_ = json.NewEncoder(w).Encode(map[string]any{
-				"message": "permission denied",
+				"message": `user does not have permission "bb.databases.getSchema"`,
 				"code":    "PERMISSION_DENIED",
 			})
 			return
@@ -741,6 +741,7 @@ func TestGetSchema_PermissionDenied(t *testing.T) {
 	text := result.Content[0].(*mcpsdk.TextContent).Text
 	require.Contains(t, text, "PERMISSION_DENIED")
 	require.Contains(t, text, "bb.databases.getSchema")
+	require.NotContains(t, text, "suggestion", "the server's message is the whole answer")
 }
 
 func TestGetSchema_InvalidIncludeValue(t *testing.T) {

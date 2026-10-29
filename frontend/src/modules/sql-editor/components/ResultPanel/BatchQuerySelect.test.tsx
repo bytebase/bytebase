@@ -22,9 +22,9 @@ const mocks = vi.hoisted(() => ({
     tags: {},
   },
   deleteDatabaseQueryContext: vi.fn(),
+  databasesWithExport: [] as string[],
+  useExportGrantBypass: vi.fn(),
   deliveries: [] as number[],
-  disableExport: false,
-  unmatchedDatabases: [] as string[],
   exportData: vi.fn(),
   resolveExport: vi.fn(),
 }));
@@ -37,16 +37,19 @@ vi.mock("react-i18next", () => ({
 vi.mock("@/components/DataExportButton", () => ({
   DataExportButton: ({
     formContent,
+    text,
     onExport,
   }: {
     formContent: ReactNode;
+    text: string;
     onExport: (request: unknown) => void;
   }) => (
-    <div>
+    <div data-testid="batch-export">
+      <span>{text}</span>
       {formContent}
       <button
         type="button"
-        data-testid="batch-export"
+        data-testid="batch-export-submit"
         onClick={() =>
           onExport({
             options: {
@@ -72,13 +75,16 @@ vi.mock("@/components/database", () => ({
     databases: Database[];
     onSelectedNamesChange: (names: Set<string>) => void;
   }) => (
-    <button
-      type="button"
-      data-testid="select-all"
-      onClick={() =>
-        onSelectedNamesChange(new Set(databases.map((db) => db.name)))
-      }
-    />
+    <span data-testid="exportable">
+      {databases.map((database) => database.name).join(",")}
+      <button
+        type="button"
+        data-testid="select-all"
+        onClick={() =>
+          onSelectedNamesChange(new Set(databases.map((db) => db.name)))
+        }
+      />
+    </span>
   ),
 }));
 
@@ -108,19 +114,12 @@ vi.mock("@/components/ui/ellipsis-text", () => ({
 
 vi.mock("@/modules/sql-editor/components/RequestExportButton", () => ({
   RequestExportButton: ({ targets }: { targets: string[] }) => (
-    <span data-testid="request-export">{targets.join(",")}</span>
+    <div data-testid="request-export">{targets.join(",")}</div>
   ),
 }));
 
 vi.mock("@/modules/sql-editor/components/useExportGrantBypass", () => ({
-  useExportGrantBypass: () => ({
-    loading: false,
-    failedDatabases: [],
-    unmatchedDatabases: mocks.unmatchedDatabases,
-    retry: vi.fn(),
-    matchedDatabases: [],
-    tooltip: undefined,
-  }),
+  useExportGrantBypass: mocks.useExportGrantBypass,
 }));
 
 vi.mock("@/modules/sql-editor/components/useExportDelivery", () => ({
@@ -131,8 +130,13 @@ vi.mock("@/modules/sql-editor/components/useExportDelivery", () => ({
 }));
 
 vi.mock("@/modules/sql-editor/hooks/useSQLEditorState", () => ({
+  useSQLEditorDatabasesWithExport: (databases: Database[]) =>
+    new Set(
+      databases
+        .map((database) => database.name)
+        .filter((name) => mocks.databasesWithExport.includes(name))
+    ),
   useSQLEditorQueryDataPolicy: () => ({
-    disableExport: mocks.disableExport,
     maximumResultRows: 100,
   }),
 }));
@@ -192,11 +196,26 @@ describe("BatchQuerySelect", () => {
   let container: HTMLDivElement;
   let root: ReturnType<typeof createRoot>;
   let cellA: Database;
+  let cellB: Database;
+
+  const grantLookup = (matched: string[], unmatched: string[]) =>
+    mocks.useExportGrantBypass.mockReturnValue({
+      loading: false,
+      failedDatabases: [],
+      matchedDatabases: matched,
+      unmatchedDatabases: unmatched,
+      retry: vi.fn(),
+      grantName: "",
+      tooltip: undefined,
+    });
 
   beforeEach(() => {
     container = document.createElement("div");
     document.body.append(container);
     root = createRoot(container);
+    mocks.databasesWithExport = [];
+    mocks.deliveries = [ExportDelivery.LOCAL];
+    grantLookup([], []);
 
     cellA = {
       name: "instances/cell-a/databases/linear",
@@ -207,7 +226,7 @@ describe("BatchQuerySelect", () => {
         title: "cell-a",
       },
     } as Database;
-    const cellB = {
+    cellB = {
       name: "instances/cell-b/databases/linear",
       effectiveEnvironment: mocks.environment.name,
       instanceResource: {
@@ -248,9 +267,6 @@ describe("BatchQuerySelect", () => {
     act(() => root.unmount());
     container.remove();
     vi.clearAllMocks();
-    mocks.deliveries = [];
-    mocks.disableExport = false;
-    mocks.unmatchedDatabases = [];
   });
 
   const render = () => {
@@ -284,20 +300,80 @@ describe("BatchQuerySelect", () => {
     expect(buttons[1].className).toContain("shrink-0");
   });
 
-  it("hides batch export when no delivery is offered", () => {
+  const testId = (id: string) =>
+    container.querySelector(`[data-testid="${id}"]`);
+
+  it("offers export of every database with bb.sql.export, without a grant lookup", () => {
+    mocks.databasesWithExport = [cellA.name, cellB.name];
     render();
 
-    expect(
-      container.querySelector('[data-testid="batch-export"]')
-    ).toBeNull();
+    expect(testId("batch-export")?.textContent).toContain(
+      "sql-editor.batch-export.self"
+    );
+    expect(testId("exportable")?.textContent).toBe(
+      `${cellA.name},${cellB.name}`
+    );
+    expect(testId("request-export")).toBeNull();
+    expect(mocks.useExportGrantBypass).toHaveBeenLastCalledWith(
+      expect.objectContaining({ enabled: false, targets: [] })
+    );
+  });
+
+  it("exports the database with bb.sql.export and requests export for the other", () => {
+    mocks.databasesWithExport = [cellA.name];
+    grantLookup([], [cellB.name]);
+    render();
+
+    expect(testId("batch-export")?.textContent).toContain(
+      "sql-editor.batch-export.partial"
+    );
+    expect(testId("exportable")?.textContent).toBe(cellA.name);
+    expect(testId("request-export")?.textContent).toBe(cellB.name);
+    expect(mocks.useExportGrantBypass).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        enabled: true,
+        targets: [expect.objectContaining({ database: cellB.name })],
+      })
+    );
+  });
+
+  it("without bb.sql.export, exports granted databases and requests the rest", () => {
+    grantLookup([cellA.name], [cellB.name]);
+    render();
+
+    expect(testId("batch-export")?.textContent).toContain(
+      "sql-editor.batch-export.partial"
+    );
+    expect(testId("exportable")?.textContent).toBe(cellA.name);
+    expect(testId("request-export")?.textContent).toBe(cellB.name);
+    expect(mocks.useExportGrantBypass).toHaveBeenLastCalledWith(
+      expect.objectContaining({ enabled: true, project: "projects/p" })
+    );
+  });
+
+  it("without bb.sql.export or grants, offers only Request export", () => {
+    grantLookup([], [cellA.name, cellB.name]);
+    render();
+
+    expect(testId("batch-export")).toBeNull();
+    expect(testId("request-export")?.textContent).toBe(
+      `${cellA.name},${cellB.name}`
+    );
+  });
+
+  it("hides Export and Request export when no delivery is offered", () => {
+    mocks.deliveries = [];
+    mocks.databasesWithExport = [cellA.name];
+    grantLookup([], [cellB.name]);
+    render();
+
+    expect(testId("batch-export")).toBeNull();
+    expect(testId("request-export")).toBeNull();
   });
 
   it("reports each database's SharePoint delivery separately", async () => {
-    // disableExport is on and no grant matched: SharePoint still covers every
-    // queried database, and Request export stays offered for the uncovered.
-    mocks.disableExport = true;
+    mocks.databasesWithExport = [cellA.name, cellB.name];
     mocks.deliveries = [ExportDelivery.SHAREPOINT];
-    mocks.unmatchedDatabases = [cellA.name];
     mocks.exportData
       .mockResolvedValueOnce({
         content: new Uint8Array(),
@@ -307,9 +383,6 @@ describe("BatchQuerySelect", () => {
         new ConnectError("destination not found", Code.FailedPrecondition)
       );
     render();
-    expect(
-      container.querySelector('[data-testid="request-export"]')?.textContent
-    ).toBe(cellA.name);
 
     act(() => {
       container
@@ -318,7 +391,7 @@ describe("BatchQuerySelect", () => {
     });
     await act(async () => {
       container
-        .querySelector<HTMLButtonElement>('[data-testid="batch-export"]')
+        .querySelector<HTMLButtonElement>('[data-testid="batch-export-submit"]')
         ?.click();
     });
 

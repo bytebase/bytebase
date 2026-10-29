@@ -24,6 +24,7 @@ const mocks = vi.hoisted(() => ({
       engine: 1,
     },
   },
+  useUnsavedChangesGuard: vi.fn(),
 }));
 
 vi.mock("react-i18next", () => ({
@@ -100,6 +101,10 @@ vi.mock("@/components/ui/sheet", () => ({
 
 vi.mock("@/hooks/useProjectByName", () => ({
   useProjectByName: () => ({ name: "projects/project", title: "Project" }),
+}));
+
+vi.mock("@/hooks/useUnsavedChangesGuard", () => ({
+  useUnsavedChangesGuard: mocks.useUnsavedChangesGuard,
 }));
 
 vi.mock("@/components/monaco/core", () => ({
@@ -183,6 +188,7 @@ describe("ProjectSyncSchemaPage target database search", () => {
   let root: ReturnType<typeof createRoot>;
 
   beforeEach(() => {
+    mocks.useUnsavedChangesGuard.mockReset();
     mocks.routeQuery = {
       changelog: "instances/source/databases/source-db/changelogs/1",
     };
@@ -256,6 +262,15 @@ describe("ProjectSyncSchemaPage target database search", () => {
       pageToken: "filtered-page-2",
       filter: { engines: [1], query: "Payroll" },
     });
+  });
+
+  test("uses the shared unsaved changes guard", async () => {
+    act(() => {
+      root.render(<ProjectSyncSchemaPage projectId="project" />);
+    });
+    await flush();
+
+    expect(mocks.useUnsavedChangesGuard).toHaveBeenLastCalledWith(false);
   });
 
   test("allows an environmentless source database with a valid changelog", async () => {

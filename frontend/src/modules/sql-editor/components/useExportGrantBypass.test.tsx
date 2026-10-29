@@ -20,6 +20,23 @@ const args = {enabled: true, project: "projects/p", targets: [target]};
 beforeEach(() => vi.resetAllMocks());
 afterEach(() => vi.restoreAllMocks());
 
+test("users with bb.sql.export skip the grant lookup", async () => {
+  searchMyAccessGrants.mockResolvedValue({accessGrants: [grant]});
+  const {result} = renderHook(() => useExportGrantBypass({...args, enabled: false}));
+  await act(async () => {});
+  expect(searchMyAccessGrants).not.toHaveBeenCalled();
+  expect(result.current).toMatchObject({loading: false, grantName: "", matchedDatabases: [], unmatchedDatabases: [], failedDatabases: []});
+  expect(result.current.tooltip).toBeUndefined();
+});
+
+test("users without bb.sql.export find a matching export grant", async () => {
+  searchMyAccessGrants.mockResolvedValue({accessGrants: [grant]});
+  const {result} = renderHook(() => useExportGrantBypass(args));
+  await waitFor(() => expect(result.current.grantName).toBe(grant.name));
+  expect(result.current.matchedDatabases).toEqual([target.database]);
+  expect(searchMyAccessGrants).toHaveBeenCalledWith(expect.objectContaining({filter: expect.objectContaining({export: true, status: ["ACTIVE"]})}));
+});
+
 test("large batches keep render keys compact and reuse hashes across renders", async () => {
   const hash = vi.spyOn(queryHashUtils, "hashAccessGrantQuery");
   const stringify = JSON.stringify;

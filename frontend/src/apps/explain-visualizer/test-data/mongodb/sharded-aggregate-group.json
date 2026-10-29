@@ -1,0 +1,139 @@
+{
+  "serverInfo": {
+    "host": "5b7b536ff83f",
+    "port": 27017,
+    "version": "7.0.45",
+    "gitVersion": "a52313e13ab55c9bddf7c3ff91dab286fa381796"
+  },
+  "serverParameters": {
+    "internalQueryFacetBufferSizeBytes": 104857600,
+    "internalQueryFacetMaxOutputDocSizeBytes": 104857600,
+    "internalLookupStageIntermediateDocumentMaxSizeBytes": 104857600,
+    "internalDocumentSourceGroupMaxMemoryBytes": 104857600,
+    "internalQueryMaxBlockingSortMemoryUsageBytes": 104857600,
+    "internalQueryProhibitBlockingMergeOnMongoS": 0,
+    "internalQueryMaxAddToSetBytes": 104857600,
+    "internalDocumentSourceSetWindowFieldsMaxMemoryBytes": 104857600,
+    "internalQueryFrameworkControl": "forceClassicEngine"
+  },
+  "mergeType": "mongos",
+  "splitPipeline": {
+    "shardsPart": [
+      { "$group": { "_id": "$status", "n": { "$sum": "$total" } } }
+    ],
+    "mergerPart": [
+      {
+        "$mergeCursors": {
+          "lsid": {
+            "id": {
+              "$binary": {
+                "base64": "bB0ZWnVbS+ujkw78P3U4/Q==",
+                "subType": "04"
+              }
+            },
+            "uid": {
+              "$binary": {
+                "base64": "47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=",
+                "subType": "00"
+              }
+            }
+          },
+          "compareWholeSortKey": false,
+          "tailableMode": "normal",
+          "nss": "qp.orders",
+          "allowPartialResults": false,
+          "recordRemoteOpWaitTime": false
+        }
+      },
+      {
+        "$group": {
+          "_id": "$$ROOT._id",
+          "n": { "$sum": "$$ROOT.n" },
+          "$doingMerge": true
+        }
+      },
+      { "$sort": { "sortKey": { "n": -1 } } }
+    ]
+  },
+  "shards": {
+    "sh1": {
+      "host": "qp-sh1:27018",
+      "stages": [
+        {
+          "$cursor": {
+            "queryPlanner": {
+              "namespace": "qp.orders",
+              "indexFilterSet": false,
+              "parsedQuery": {},
+              "queryHash": "B8F0391B",
+              "planCacheKey": "B8F0391B",
+              "optimizationTimeMillis": 0,
+              "maxIndexedOrSolutionsReached": false,
+              "maxIndexedAndSolutionsReached": false,
+              "maxScansToExplodeReached": false,
+              "winningPlan": {
+                "stage": "PROJECTION_SIMPLE",
+                "transformBy": { "status": 1, "total": 1, "_id": 0 },
+                "inputStage": {
+                  "stage": "SHARDING_FILTER",
+                  "inputStage": { "stage": "COLLSCAN", "direction": "forward" }
+                }
+              },
+              "rejectedPlans": []
+            }
+          }
+        },
+        { "$group": { "_id": "$status", "n": { "$sum": "$total" } } }
+      ]
+    },
+    "sh2": {
+      "host": "qp-sh2:27018",
+      "stages": [
+        {
+          "$cursor": {
+            "queryPlanner": {
+              "namespace": "qp.orders",
+              "indexFilterSet": false,
+              "parsedQuery": {},
+              "queryHash": "B8F0391B",
+              "planCacheKey": "B8F0391B",
+              "optimizationTimeMillis": 0,
+              "maxIndexedOrSolutionsReached": false,
+              "maxIndexedAndSolutionsReached": false,
+              "maxScansToExplodeReached": false,
+              "winningPlan": {
+                "stage": "PROJECTION_SIMPLE",
+                "transformBy": { "status": 1, "total": 1, "_id": 0 },
+                "inputStage": {
+                  "stage": "SHARDING_FILTER",
+                  "inputStage": { "stage": "COLLSCAN", "direction": "forward" }
+                }
+              },
+              "rejectedPlans": []
+            }
+          }
+        },
+        { "$group": { "_id": "$status", "n": { "$sum": "$total" } } }
+      ]
+    }
+  },
+  "command": {
+    "aggregate": "orders",
+    "pipeline": [
+      { "$group": { "_id": "$status", "n": { "$sum": "$total" } } },
+      { "$sort": { "n": -1 } }
+    ],
+    "cursor": {}
+  },
+  "ok": 1,
+  "$clusterTime": {
+    "clusterTime": { "$timestamp": { "t": 1793077694, "i": 1 } },
+    "signature": {
+      "hash": {
+        "$binary": { "base64": "AAAAAAAAAAAAAAAAAAAAAAAAAAA=", "subType": "00" }
+      },
+      "keyId": 0
+    }
+  },
+  "operationTime": { "$timestamp": { "t": 1793077691, "i": 1 } }
+}

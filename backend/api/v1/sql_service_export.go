@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -25,42 +26,46 @@ import (
 // The SharePoint fields are read only for SharePoint delivery.
 type exportDeliveryInput struct {
 	delivery v1pb.ExportDelivery
-	// disableExport is the workspace query data policy's disable_export.
-	disableExport            bool
+	// allowedDeliveries is the workspace query data policy's allow list.
+	allowedDeliveries        []storepb.ExportDelivery
 	password                 string
 	sharePointFeatureEnabled bool
 	destinationURL           string
 	sharePointSetting        *storepb.SharePointSetting
 }
 
-// decideExportDelivery returns LOCAL or SHAREPOINT. Nothing unlocks a local
-// download that disable_export forbids: not an export grant, admin mode, or a
-// lapsed license.
+// decideExportDelivery returns LOCAL or SHAREPOINT. Nothing unlocks a delivery
+// the policy does not allow: not an export grant, admin mode, or a lapsed
+// license.
 func decideExportDelivery(in exportDeliveryInput) (v1pb.ExportDelivery, error) {
-	switch in.delivery {
-	case v1pb.ExportDelivery_EXPORT_DELIVERY_UNSPECIFIED, v1pb.ExportDelivery_LOCAL:
-		if in.disableExport {
-			return 0, connect.NewError(connect.CodePermissionDenied, errors.New("local export download is disabled by the workspace query data policy; deliver the export to an export destination instead"))
-		}
-		return v1pb.ExportDelivery_LOCAL, nil
-	case v1pb.ExportDelivery_SHAREPOINT:
-		if !in.sharePointFeatureEnabled {
-			return 0, connect.NewError(connect.CodePermissionDenied, errors.Errorf("SharePoint export requires the %s feature", v1pb.PlanFeature_FEATURE_SHAREPOINT_EXPORT))
-		}
-		if in.password != "" {
-			return 0, connect.NewError(connect.CodeInvalidArgument, errors.New("password applies only to local export download"))
-		}
-		if in.destinationURL == "" {
-			return 0, connect.NewError(connect.CodeFailedPrecondition, errors.New("the project has no SharePoint export destination"))
-		}
-		setting := in.sharePointSetting
-		if setting.GetTenantId() == "" || setting.GetClientId() == "" || setting.GetClientSecret() == "" {
-			return 0, connect.NewError(connect.CodeFailedPrecondition, errors.New("SharePoint is not configured in workspace settings"))
-		}
-		return v1pb.ExportDelivery_SHAREPOINT, nil
-	default:
-		return 0, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported export delivery %v", in.delivery))
+	delivery := in.delivery
+	if delivery == v1pb.ExportDelivery_EXPORT_DELIVERY_UNSPECIFIED {
+		delivery = v1pb.ExportDelivery_LOCAL
 	}
+	storeDelivery, err := convertToStoreExportDelivery(delivery)
+	if err != nil {
+		return 0, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	if !slices.Contains(in.allowedDeliveries, storeDelivery) {
+		return 0, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("export delivery %s is not allowed by the workspace query data policy", delivery))
+	}
+	if delivery == v1pb.ExportDelivery_LOCAL {
+		return v1pb.ExportDelivery_LOCAL, nil
+	}
+	if !in.sharePointFeatureEnabled {
+		return 0, connect.NewError(connect.CodePermissionDenied, errors.Errorf("SharePoint export requires the %s feature", v1pb.PlanFeature_FEATURE_SHAREPOINT_EXPORT))
+	}
+	if in.password != "" {
+		return 0, connect.NewError(connect.CodeInvalidArgument, errors.New("password applies only to local export download"))
+	}
+	if in.destinationURL == "" {
+		return 0, connect.NewError(connect.CodeFailedPrecondition, errors.New("the project has no SharePoint export destination"))
+	}
+	setting := in.sharePointSetting
+	if setting.GetTenantId() == "" || setting.GetClientId() == "" || setting.GetClientSecret() == "" {
+		return 0, connect.NewError(connect.CodeFailedPrecondition, errors.New("SharePoint is not configured in workspace settings"))
+	}
+	return v1pb.ExportDelivery_SHAREPOINT, nil
 }
 
 // sharePointExportTarget is the destination an export captured when it started.
@@ -73,9 +78,15 @@ type sharePointExportTarget struct {
 // project's destination so the export captures it before running the query.
 func (s *SQLService) prepareExportDelivery(ctx context.Context, request *v1pb.ExportRequest, database *store.DatabaseMessage) (*sharePointExportTarget, error) {
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	// Read without the license check, so the policy outlives the license.
+	policy, err := s.store.GetWorkspaceQueryDataPolicy(ctx, workspaceID)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get the workspace query data policy"))
+	}
 	in := exportDeliveryInput{
-		delivery: request.GetDelivery(),
-		password: request.GetPassword(),
+		delivery:          request.GetDelivery(),
+		allowedDeliveries: store.GetAllowedExportDeliveries(policy),
+		password:          request.GetPassword(),
 	}
 	if in.delivery == v1pb.ExportDelivery_SHAREPOINT {
 		in.sharePointFeatureEnabled = s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_SHAREPOINT_EXPORT) == nil
@@ -92,13 +103,6 @@ func (s *SQLService) prepareExportDelivery(ctx context.Context, request *v1pb.Ex
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get export setting"))
 		}
 		in.sharePointSetting = exportSetting.GetSharepoint()
-	} else {
-		// Read without the license check, so the policy outlives the license.
-		policy, err := s.store.GetWorkspaceQueryDataPolicy(ctx, workspaceID)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get the workspace query data policy"))
-		}
-		in.disableExport = policy.GetDisableExport()
 	}
 
 	delivery, err := decideExportDelivery(in)

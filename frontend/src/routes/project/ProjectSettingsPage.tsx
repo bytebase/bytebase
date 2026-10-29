@@ -38,6 +38,7 @@ import { StickyActionFooter } from "@/components/ui/sticky-action-footer";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useProjectByName } from "@/hooks/useProjectByName";
+import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
@@ -383,26 +384,7 @@ export function ProjectSettingsPage() {
     savedExportDestinationUrl,
   ]);
 
-  // Unsaved-changes protection: browser close + in-app navigation
-  useEffect(() => {
-    if (!isDirty) return;
-    const onBeforeUnload = (e: BeforeUnloadEvent) => {
-      e.returnValue = t("common.leave-without-saving");
-      e.preventDefault();
-    };
-    window.addEventListener("beforeunload", onBeforeUnload);
-    const removeGuard = router.beforeEach((_to, _from, next) => {
-      if (window.confirm(t("common.leave-without-saving"))) {
-        next();
-      } else {
-        next(false);
-      }
-    });
-    return () => {
-      window.removeEventListener("beforeunload", onBeforeUnload);
-      removeGuard();
-    };
-  }, [isDirty, t]);
+  useUnsavedChangesGuard(isDirty);
 
   // -----------------------------------------------------------------------
   // Revert

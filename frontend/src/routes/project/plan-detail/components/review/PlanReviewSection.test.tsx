@@ -54,6 +54,7 @@ const mocks = vi.hoisted(() => ({
     name: "users/me@example.com",
     title: "Me",
   },
+  reviewState: undefined as unknown,
 }));
 
 // ---------------------------------------------------------------------------
@@ -309,6 +310,14 @@ vi.mock("./ReviewActivityTimeline", () => ({
   ReviewActivityTimeline: () => null,
 }));
 
+vi.mock("../../hooks/usePlanReviewState", () => ({
+  usePlanReviewState: () => mocks.reviewState,
+}));
+
+vi.mock("./AutomatedReviewSection", () => ({
+  AutomatedReviewSection: () => <div data-testid="automated-review" />,
+}));
+
 // Import React for JSX — must come after vi.mock calls.
 import React from "react";
 
@@ -437,6 +446,7 @@ const renderIntoContainer = (element: ReactElement) => {
 // ---------------------------------------------------------------------------
 
 beforeEach(() => {
+  mocks.reviewState = undefined;
   mocks.comments = [];
   mocks.getIssueComments.mockImplementation(() => mocks.comments);
   vi.clearAllMocks();
@@ -671,4 +681,31 @@ describe("PlanReviewSection — five review states", () => {
 
     unmount();
   });
+
+  test.each([
+    ["keeps the automated reviewers below it under SQL Review V2", {}, true],
+    ["shows only that without SQL Review V2", undefined, false],
+  ])(
+    "while the approval flow is generated, %s",
+    (_, reviewState, showsReviewers) => {
+      mocks.reviewState = reviewState;
+      const issue = makeIssue({ approvalStatus: ApprovalStatus.CHECKING });
+      const { container, render, unmount } = renderIntoContainer(
+        <PlanDetailProvider value={makePageState(issue, makePlan())}>
+          <PlanReviewSection />
+        </PlanDetailProvider>
+      );
+
+      render();
+
+      expect(container.textContent).toContain(
+        "custom-approval.issue-review.generating-approval-flow"
+      );
+      expect(
+        container.querySelector("[data-testid='automated-review']") !== null
+      ).toBe(showsReviewers);
+
+      unmount();
+    }
+  );
 });

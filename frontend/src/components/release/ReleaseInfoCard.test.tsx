@@ -87,6 +87,26 @@ describe("ReleaseInfoCard", () => {
     unmount();
   });
 
+  test("expands to every file in place", async () => {
+    ({ ReleaseInfoCard } = await import("./ReleaseInfoCard"));
+    const { container, unmount } = renderIntoContainer(
+      createElement(ReleaseInfoCard, {
+        release: buildRelease(6),
+        releaseName: "projects/p/releases/r1",
+      })
+    );
+
+    const viewAll = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent === "release.view-all-files"
+    );
+    act(() => viewAll?.click());
+
+    expect(container.textContent).toContain("V0006.sql");
+    expect(container.textContent).not.toContain("release.and-n-more-files");
+    expect(container.querySelector("a")).toBeNull();
+    unmount();
+  });
+
   test("renders the loading state when isLoading is true", async () => {
     ({ ReleaseInfoCard } = await import("./ReleaseInfoCard"));
     const { container, unmount } = renderIntoContainer(

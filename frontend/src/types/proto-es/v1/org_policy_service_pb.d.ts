@@ -6,6 +6,7 @@ import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobu
 import type { Message } from "@bufbuild/protobuf";
 import type { EmptySchema, FieldMask } from "@bufbuild/protobuf/wkt";
 import type { ReviewRuleType } from "./review_rule_pb";
+import type { ExportDelivery } from "./common_pb";
 import type { Expr } from "../google/type/expr_pb";
 
 /**
@@ -370,11 +371,10 @@ export declare type QueryDataPolicy = Message<"bytebase.v1.QueryDataPolicy"> & {
   maximumResultRows: number;
 
   /**
-   * workspace-level policy
-   * Disallow local export download. Exports can then only be delivered to an
-   * export destination, even when an export access grant covers them.
+   * Deprecated: export is controlled by the bb.sql.export permission. Always false; setting it to true is rejected.
    *
-   * @generated from field: bool disable_export = 2;
+   * @generated from field: bool disable_export = 2 [deprecated = true];
+   * @deprecated
    */
   disableExport: boolean;
 
@@ -397,6 +397,16 @@ export declare type QueryDataPolicy = Message<"bytebase.v1.QueryDataPolicy"> & {
    * @generated from field: bool allow_admin_data_source = 4;
    */
   allowAdminDataSource: boolean;
+
+  /**
+   * workspace-level policy
+   * Where SQLService.Export may deliver results. When the stored policy has
+   * none, only LOCAL is allowed, and reads return that default. An update that
+   * omits it keeps the stored value.
+   *
+   * @generated from field: bytebase.v1.QueryDataPolicy.ExportDeliveryPolicy export_delivery_policy = 5;
+   */
+  exportDeliveryPolicy?: QueryDataPolicy_ExportDeliveryPolicy | undefined;
 };
 
 /**
@@ -404,6 +414,26 @@ export declare type QueryDataPolicy = Message<"bytebase.v1.QueryDataPolicy"> & {
  * Use `create(QueryDataPolicySchema)` to create a new message.
  */
 export declare const QueryDataPolicySchema: GenMessage<QueryDataPolicy>;
+
+/**
+ * @generated from message bytebase.v1.QueryDataPolicy.ExportDeliveryPolicy
+ */
+export declare type QueryDataPolicy_ExportDeliveryPolicy = Message<"bytebase.v1.QueryDataPolicy.ExportDeliveryPolicy"> & {
+  /**
+   * The allowed deliveries: at least one, without duplicates or
+   * EXPORT_DELIVERY_UNSPECIFIED. A delivery added to ExportDelivery later is
+   * not allowed until it is listed here.
+   *
+   * @generated from field: repeated bytebase.v1.ExportDelivery allowed_deliveries = 1;
+   */
+  allowedDeliveries: ExportDelivery[];
+};
+
+/**
+ * Describes the message bytebase.v1.QueryDataPolicy.ExportDeliveryPolicy.
+ * Use `create(QueryDataPolicy_ExportDeliveryPolicySchema)` to create a new message.
+ */
+export declare const QueryDataPolicy_ExportDeliveryPolicySchema: GenMessage<QueryDataPolicy_ExportDeliveryPolicy>;
 
 /**
  * MaskingExemptionPolicy is the allowlist of users who can access sensitive data.

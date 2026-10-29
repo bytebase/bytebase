@@ -912,7 +912,7 @@ function ExpirationChip({
       className={cn(
         "px-2.5 py-1 text-xs rounded-sm border transition-colors",
         selected
-          ? "bg-accent text-accent-text border-accent"
+          ? "bg-accent text-accent-text border-accent hover:bg-accent-hover"
           : "bg-background text-control border-control-border hover:bg-control-bg"
       )}
       onClick={onClick}

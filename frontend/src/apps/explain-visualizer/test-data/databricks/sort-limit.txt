@@ -1,0 +1,18 @@
+== Physical Plan ==
+TakeOrderedAndProject (3)
++- * ColumnarToRow (2)
+   +- Scan parquet spark_catalog.default.customers (1)
+
+
+(1) Scan parquet spark_catalog.default.customers
+Output [1]: [city#49]
+Batched: true
+Location: InMemoryFileIndex [file:/tmp/warehouse2/customers]
+ReadSchema: struct<city:string>
+
+(2) ColumnarToRow [codegen id : 1]
+Input [1]: [city#49]
+
+(3) TakeOrderedAndProject
+Input [1]: [city#49]
+Arguments: 5, [city#49 ASC NULLS FIRST], [city#49]

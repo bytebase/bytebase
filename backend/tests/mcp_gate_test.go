@@ -132,7 +132,8 @@ func TestMCPGrantIssuesAndAccessRequests(t *testing.T) {
 	})
 	a.Equal(http.StatusForbidden, grant.Status)
 	a.Contains(grant.Error, "ROLE_GRANT", "the denial must name the issue type it refused")
-	a.Contains(grant.Error, "no human step")
+	a.Contains(grant.Error, "whatever the approval rules say", "the denial must not read as if an approval rule would lift it")
+	a.Contains(grant.Error, "request_access_grant", "the denial must name the way to run a statement")
 
 	upsert := callAPIOnSession(ctx, t, session, "IssueService/UpdateIssue", map[string]any{
 		"issue": map[string]any{

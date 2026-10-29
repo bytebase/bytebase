@@ -140,6 +140,7 @@ function formatPropertyType(prop: PropertyInfo): string {
 function formatProperty(prop: PropertyInfo): string {
   const required = prop.required ? " (required)" : "";
   const type = formatPropertyType(prop);
+  const descriptionLimit = prop.name === "parent" ? 512 : 97;
 
   let desc = "";
 
@@ -149,8 +150,8 @@ function formatProperty(prop: PropertyInfo): string {
   } else if (prop.description) {
     const clean = prop.description.replace(/[\n\r]/g, " ");
     desc = desc
-      ? `${desc}; ${truncate(clean, 97)}`
-      : ` // ${truncate(clean, 97)}`;
+      ? `${desc}; ${truncate(clean, descriptionLimit)}`
+      : ` // ${truncate(clean, descriptionLimit)}`;
   }
 
   return `  "${prop.name}": ${type}${required}${desc}`;

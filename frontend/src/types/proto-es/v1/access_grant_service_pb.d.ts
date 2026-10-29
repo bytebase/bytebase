@@ -25,7 +25,7 @@ export declare type AccessGrant = Message<"bytebase.v1.AccessGrant"> & {
   name: string;
 
   /**
-   * The creator of the access grant.
+   * The creator of the access grant, the caller who requested it.
    * Format: users/{email}
    *
    * @generated from field: string creator = 2;
@@ -115,7 +115,8 @@ export declare type AccessGrant = Message<"bytebase.v1.AccessGrant"> & {
   reason: string;
 
   /**
-   * Whether export the query result.
+   * Whether the grant allows exporting the query result.
+   * An active grant with export=true grants bb.sql.export for this query until the grant expires.
    *
    * @generated from field: bool export = 13;
    */

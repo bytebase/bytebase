@@ -12,8 +12,12 @@ _Avoid_: Download location
 The single configured Export Destination for a project's exports. Its readers are determined by the customer's storage permissions, independently of who initiates an export.
 _Avoid_: User export folder
 
+**Export Delivery**:
+Where an export goes: Local Export Download or a Project Export Destination. The workspace query data policy lists the allowed deliveries, at least one; the Export Permission decides who may export, and an export access grant never adds a delivery.
+_Avoid_: Export destination (for local download)
+
 **Local Export Download**:
-Delivery of an exported file from Bytebase to the caller's machine. This is distinct from viewing query results in SQL Editor or accessing a file already delivered to an Export Destination. The workspace query data policy's `disable_export` disallows it, and no export access grant overrides that.
+Delivery of an exported file from Bytebase to the caller's machine. This is distinct from viewing query results in SQL Editor or accessing a file already delivered to an Export Destination. It is one Export Delivery, allowed only when the workspace query data policy lists it.
 _Avoid_: Query access
 
 **Workspace**:
@@ -99,3 +103,19 @@ _Avoid_: Work queue, activity feed
 **Composite Type**:
 A PostgreSQL-family standalone named row type (`CREATE TYPE x AS (...)`, `pg_type.typtype = 'c'` excluding table row types). Distinct from enums, domains, ranges, Oracle object types, and SQL Server table/alias types — each is its own concept with its own name.
 _Avoid_: UDT, user-defined type, custom type, object type
+
+**Export Permission**:
+The permission to export query results from specific databases, schemas, or tables. It decides who may export, and on its own it lets the holder read the data it covers through export.
+_Avoid_: Exporter role, export right, export approval
+
+**Access Grant**:
+An approved, time-limited permission for one user to run one specific query on its target databases. A grant that includes export satisfies the Export Permission for that query.
+_Avoid_: JIT access, temporary role, export ticket
+
+**Export Destination**:
+A place exported query results may go. Local Export is the only destination today.
+_Avoid_: Export target, export format
+
+**Local Export**:
+An export whose results are returned to the requester as a file.
+_Avoid_: Download, data export

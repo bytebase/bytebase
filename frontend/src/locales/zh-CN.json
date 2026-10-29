@@ -28,6 +28,11 @@
       "description": "此工作区尚未配置 AI。",
       "title": "AI 未配置"
     },
+    "api-permission-allow": "仅允许一次",
+    "api-permission-deny": "拒绝",
+    "api-permission-expired": "此请求已失效。请让 AI 助手重新准备。",
+    "api-permission-request": "允许 AI 助手执行此 API 请求吗？",
+    "api-permission-title": "请求执行许可",
     "archive-all-chats": "归档所有对话",
     "archive-chat": "归档对话",
     "archived-only-chats": "查看已归档对话",
@@ -44,6 +49,7 @@
     "context-no-projects": "没有可访问的项目",
     "context-select": "选择上下文",
     "context-workspace": "工作区",
+    "database-reference-unavailable": "此数据库已不可用，或你没有访问权限。",
     "delete-all-chats": "删除所有对话",
     "delete-all-chats-confirmation": "确定要删除所有已归档对话吗？此操作无法撤销。",
     "delete-chat": "删除对话",
@@ -54,7 +60,7 @@
       "references": "依据"
     },
     "input-keyboard-hint": "按 Enter 发送 · 按 Shift+Enter 换行",
-    "input-placeholder": "向 AI 提问...",
+    "input-placeholder": "向 AI 提问，或输入 @ 选择资源",
     "interrupted": "已中断",
     "interrupted-retry-hint": "对话已中断。您可以重试或发送新消息。",
     "landing-starters": {
@@ -91,6 +97,13 @@
       "summary": "此项目中的这些 issue 需要你关注：",
       "unavailable": "无法加载此项目中需要你关注的事项。"
     },
+    "project-reference-unavailable": "此项目已不可用，或你没有访问权限。",
+    "query-result": {
+      "returned-rows": "返回行数：{{count}}",
+      "showing-columns": "显示 {{total}} 列中的 {{shown}} 列",
+      "showing-results": "显示 {{total}} 个结果集中的 {{shown}} 个",
+      "showing-rows": "显示返回的 {{total}} 行中的 {{shown}} 行"
+    },
     "recent-activity": {
       "checking": "正在检查最近活动...",
       "empty": "过去 3 天内没有记录到重要活动。",
@@ -102,6 +115,20 @@
     },
     "rename-chat-placeholder": "输入对话名称",
     "reply": "回复",
+    "resource-picker": {
+      "add-context": "添加上下文",
+      "choose-project-for-databases": "选择项目以浏览数据库",
+      "databases": "数据库",
+      "load-databases-error": "无法加载数据库。",
+      "load-error": "无法加载项目。",
+      "no-databases": "未找到可访问的数据库",
+      "no-projects": "未找到可访问的项目",
+      "projects": "项目",
+      "reference-limit": "每条消息可引用一个项目及该项目的一个数据库。如需同时引用两者，请先选择项目。如需询问其他资源，请另发消息。",
+      "retry": "重试",
+      "search-databases": "搜索数据库",
+      "search-projects": "搜索项目"
+    },
     "result": "结果",
     "retry-last-chat-turn": "重试",
     "self": "助手",
@@ -526,6 +553,7 @@
     "sensitive-placeholder": "敏感数据 - 仅写入",
     "settings": "设置",
     "share": "分享",
+    "show": "显示",
     "show-less": "收起",
     "show-more": "显示更多",
     "sign-in": "登录",
@@ -996,6 +1024,7 @@
     }
   },
   "gitops": {
+    "back-to-releases": "返回发布包",
     "checklist": {
       "database-group-recommendation": "对于具有相同 Schema 的数据库，数据库分组可以让您在一次变更中同时迁移它们。只需定义一次分组，即可在多次迁移中复用，无需每次都逐个选择数据库。",
       "external-url": "外部访问地址",
@@ -1011,7 +1040,6 @@
       "description-git": "数据库架构与应用代码一起存储在 Git 中。拉取请求会触发 SQL 审查，合并到目标分支后会自动创建变更发布。",
       "title": "什么是 GitOps"
     },
-    "self": "GitOps",
     "test-setup": {
       "description": "使用示例迁移文件验证整个工作流是否正常运行。",
       "naming-convention": "迁移文件按字典顺序执行。请使用时间戳或序号前缀，例如 20240101000000_create_table.sql。在文件名末尾添加 _ddl 或 _dml 来标识变更类型。",
@@ -1675,7 +1703,7 @@
     }
   },
   "landing": {
-    "ai-placeholder": "向 AI 询问工作区设置、项目或访问权限",
+    "ai-placeholder": "询问此工作区，或输入 @ 选择资源",
     "ai-setup": {
       "action": "配置 AI",
       "description": "配置服务提供方和模型，以在此工作区使用 AI。",
@@ -1769,12 +1797,54 @@
     "add-spec-pending-draft": "请先保存或放弃当前的待处理变更，然后再添加新变更",
     "ai-review": {
       "failed-to-run": "无法启动 AI 审核",
-      "finished": "已完成",
-      "not-run": "尚未运行",
-      "queued": "排队中",
       "run": "运行 AI 审核",
-      "save-first": "请先保存或放弃修改，再运行 AI 审核。",
-      "status-unknown": "暂时无法获取状态"
+      "run-again-description": "每次运行都会为所审核的每个数据库调用模型，结果可能不同。新结果会替换上次运行的发现，包括已被解决的问题。",
+      "run-again-title": "再次运行 AI 审核？",
+      "save-first": "请先保存或放弃修改，再运行 AI 审核。"
+    },
+    "automated-review": {
+      "checks": "计划检查",
+      "details": "详情",
+      "failed": "无法运行",
+      "failed-to-rerun": "无法开始审核",
+      "ghost": "在线迁移试运行",
+      "n-databases_one": "{{count}} 个数据库",
+      "n-databases_other": "{{count}} 个数据库",
+      "n-errors_one": "{{count}} 个错误",
+      "n-errors_other": "{{count}} 个错误",
+      "n-open": "{{count}} 个待处理",
+      "n-warnings_one": "{{count}} 个警告",
+      "n-warnings_other": "{{count}} 个警告",
+      "needs-attention": "{{total}} 项中有 {{count}} 项需要处理",
+      "no-findings": "未发现问题",
+      "not-run": "尚未运行",
+      "nothing-needs-attention": "无需处理",
+      "opens-in-sql": "点击在 SQL 中逐条查看。",
+      "out-of-date": "已过期",
+      "outdated": "本次运行后 SQL 已变更",
+      "passed": "通过",
+      "passed-on_one": "在 {{count}} 个数据库上通过",
+      "passed-on_other": "在 {{count}} 个数据库上通过",
+      "policy": "审核策略",
+      "project-rules": "项目规则：开启 {{on}}/{{total}} 条",
+      "report": "语句报告",
+      "rerun": "重新运行",
+      "rerun-all": "全部重新运行",
+      "rerun-all-description_one": "这会重新运行计划检查和 Standard rules。Standard rules 中已被解决的 {{count}} 项问题会重新变为待处理。",
+      "rerun-all-description_other": "这会重新运行计划检查和 Standard rules。Standard rules 中已被解决的 {{count}} 项问题会重新变为待处理。",
+      "rerun-all-title": "全部重新运行？",
+      "rerun-reopens_one": "已被解决的 {{count}} 项问题会重新变为待处理，需要再次处理。",
+      "rerun-reopens_other": "已被解决的 {{count}} 项问题会重新变为待处理，需要再次处理。",
+      "rerun-rule-title": "重新运行 Standard rules？",
+      "retry": "重试",
+      "running": "运行中",
+      "sampled": "抽样 {{count}}/{{total}} 个数据库",
+      "scope": "审核了 {{databases}}",
+      "scope-label": "本次审核的范围",
+      "scope-with-engines": "审核了 {{databases}}（{{engines}}）",
+      "self": "自动审核",
+      "summary-part": "{{reviewer}}：{{status}}",
+      "workspace-rules": "工作区规则：开启 {{on}}/{{total}} 条"
     },
     "blocker": {
       "clears-on-its-own": "将自动完成"
@@ -1789,12 +1859,49 @@
       "started": "已开始计划检查"
     },
     "create-plan": "创建计划",
+    "deploy-waiting": {
+      "approval": "审批",
+      "approval-from": "{{role}} 的审批",
+      "approval-rejected": "审批被拒绝",
+      "auto-create": "以上各项全部通过后，Bytebase 会自动创建发布。",
+      "creating-rollout": "全部通过，正在创建发布…",
+      "manual-rollout": "Bytebase 不会为此计划自动创建发布；以上条件通过后请手动部署。",
+      "open-discussions_one": "{{count}} 个未解决的讨论",
+      "open-discussions_other": "{{count}} 个未解决的讨论",
+      "overridden_one": "{{reviewer}} 中有 {{count}} 个 P0 问题未修改就被解决",
+      "overridden_other": "{{reviewer}} 中有 {{count}} 个 P0 问题未修改就被解决",
+      "ready-to-deploy": "全部通过，可以部署。",
+      "reviewer-failed": "{{reviewer}} 无法运行",
+      "reviewer-findings": "{{reviewer}}：{{findings}}",
+      "reviewer-not-run": "{{reviewer}} 尚未运行",
+      "reviewer-outdated": "{{reviewer}} 运行后 SQL 已变更",
+      "reviewer-running": "{{reviewer}} 运行中",
+      "show": "查看",
+      "submit": "提交审核",
+      "waiting-on": "正在等待",
+      "worth-a-look": "不会挡住发布，但值得看一下"
+    },
     "description": {
       "placeholder": "添加描述"
     },
     "draft-update-permission-required": "你可以查看此草稿，但需要 bb.issues.update 才能编辑工单标签或提交审批。",
     "editor": {
       "save-changes-before-continuing": "请保存或取消更改，然后再继续"
+    },
+    "findings": {
+      "n-more": "另 {{count}} 项",
+      "n-overridden": "{{count}} 个 P0 未修改就被解决",
+      "n-priority": "{{count}} 个 {{priority}}",
+      "n-resolved": "{{count}} 个已解决",
+      "name-at-line": "{{name}}（L{{line}}）",
+      "name-times": "{{name}} ×{{count}}",
+      "separator": "、",
+      "set": {
+        "earlier": "更早的运行",
+        "open": "待处理",
+        "overridden": "P0 未修改就被解决",
+        "resolved": "已解决"
+      }
     },
     "ghost": {
       "configure": "配置",
@@ -1818,19 +1925,18 @@
       "checking": "检查中…",
       "checks-failing": "检查失败",
       "deployed": "已部署",
+      "gate-automated-review-passed": "自动审核已通过",
       "gate-checks-failed": "部分检查未通过",
       "gate-checks-failed-sub": "{{failing}} 项失败，{{passed}} 项通过",
       "gate-checks-passed": "所有检查已通过",
       "gate-checks-passed-sub": "{{count}} 项通过",
       "gate-checks-running": "检查运行中",
       "gate-checks-running-sub": "{{running}} 项运行中，{{passed}} 项通过",
+      "gate-no-open-discussions": "没有未解决的讨论",
       "gate-review-approved": "变更已批准",
       "gate-review-pending": "审批中",
       "gate-review-rejected": "请求变更",
       "gate-threads-open-sub": "解决所有讨论后才会创建发布",
-      "gate-threads-open_one": "{{count}} 个未解决的讨论",
-      "gate-threads-open_other": "{{count}} 个未解决的讨论",
-      "gate-threads-resolved": "所有讨论已解决",
       "incomplete": "不完整",
       "preparing-rollout": "正在准备发布…",
       "rejected": "已拒绝",
@@ -1838,6 +1944,7 @@
       "review-waiting": "等待 {{role}}",
       "run": "执行"
     },
+    "list-description": "在界面中创建的变更请求及其部署进度。",
     "meta": {
       "created-by": "由 {{user}} 创建"
     },
@@ -1877,11 +1984,15 @@
         "add-a-comment": "添加评论...",
         "created-this-plan": "创建了此计划",
         "marked-ready-for-review": "将此计划提交审批",
+        "n-findings_one": "{{count}} 个发现",
+        "n-findings_other": "{{count}} 个发现",
         "n-hidden-events_one": "{{count}} 条隐藏活动",
         "n-hidden-events_other": "{{count}} 条隐藏活动",
+        "reviewed-the-sql": "审核了 SQL",
         "self": "活动",
         "show-all": "显示全部"
       },
+      "approval-after-submit": "提交审核后开始审批。",
       "approval-flow": {
         "and-n-more_one": "还有 {{count}} 位",
         "and-n-more_other": "还有 {{count}} 位",
@@ -1957,6 +2068,7 @@
         "n-replies-hidden_other": "已隐藏 {{count}} 条回复",
         "n-replies_one": "{{count}} 条回复",
         "n-replies_other": "{{count}} 条回复",
+        "open": "待处理",
         "priority": {
           "p0": "SQL 有误，必须修改。",
           "p1": "有风险但合理，需要有人确认接受。",
@@ -1974,8 +2086,10 @@
         "threads-on-line_one": "此行有 {{count}} 个讨论",
         "threads-on-line_other": "此行有 {{count}} 个讨论",
         "walker": {
+          "clear-filter": "逐个查看所有待处理讨论",
           "count_one": "此版本有 {{count}} 个未解决的讨论",
           "count_other": "此版本有 {{count}} 个未解决的讨论",
+          "filter": "{{reviewer}} · {{state}}",
           "next": "下一个未解决的讨论",
           "position": "第 {{index}} 个，共 {{count}} 个",
           "previous": "上一个未解决的讨论",
@@ -1989,16 +2103,6 @@
       "description_one": "回滚发布 #{{rolloutId}} 中选中的 1 个任务。",
       "description_other": "回滚发布 #{{rolloutId}} 中选中的 {{count}} 个任务。",
       "title": "回滚发布 #{{rolloutId}}"
-    },
-    "rule-review": {
-      "failed": "SQL 审核失败",
-      "load-failed": "无法加载 SQL 审核状态。",
-      "no-open-findings": "没有未解决的问题",
-      "not-run": "SQL 审核未运行",
-      "open-findings_one": "{{count}} 个未解决的问题",
-      "open-findings_other": "{{count}} 个未解决的问题",
-      "queued": "SQL 审核排队中",
-      "running": "SQL 审核运行中"
     },
     "run": "重新检查",
     "select-isolation-level": "选择隔离级别",
@@ -2024,9 +2128,17 @@
       "reopen-confirm": "确认重新打开这个计划？",
       "reopen-review-confirm": "确认重新打开这个审批？"
     },
+    "statement-summary": {
+      "affected-rows_one": "约影响 {{count}} 行",
+      "affected-rows_other": "约影响 {{count}} 行"
+    },
+    "status-scope": {
+      "description": "按计划中任务的当前状态筛选",
+      "waiting": "等待中"
+    },
     "submit-review-anyway": "仍然提交",
-    "subtitle": "草拟数据库变更并运行预检查，然后创建工单以请求审批。",
     "summary": {
+      "approved-by": "已由 {{names}} 批准",
       "last-approved-by": "最后由 {{name}} 审批",
       "n-changes": "{{n}} 个变更",
       "n-database-groups": "{{n}} 个数据库组",
@@ -2037,7 +2149,8 @@
       "n-passed": "{{n}} 通过",
       "n-unresolved-threads_one": "{{count}} 个未解决的讨论",
       "n-unresolved-threads_other": "{{count}} 个未解决的讨论",
-      "n-warning": "{{n}} 警告"
+      "n-warning": "{{n}} 警告",
+      "no-approval-required": "无需审批"
     },
     "targets": {
       "no-targets-found": "未找到目标",
@@ -2130,7 +2243,7 @@
     "home": {
       "active-issues": "你的待处理工单",
       "active-issues-unavailable": "你无法查看此项目的工单。",
-      "ai-placeholder": "询问 AI 如何查询、更改或设置此项目",
+      "ai-placeholder": "询问此项目，或输入 @ 选择资源",
       "archived-description": "此项目已归档，处于只读状态。",
       "change-database": "变更数据库",
       "change-database-description": "在此项目中规划受管控的数据库变更。",
@@ -2379,17 +2492,24 @@
   "release": {
     "and-n-more-files": "以及另外 {{count}} 个文件",
     "change-tip": "该变更关联到了一个发布包。",
-    "file": "发布包文件",
+    "empty": {
+      "description": "CI 流水线发布到 Bytebase 的变更会连同部署进度显示在这里。",
+      "read-guide": "阅读 GitOps 指南",
+      "set-up": "设置 GitOps",
+      "title": "暂无 GitOps 变更"
+    },
     "file-type": {
       "declarative": "声明式",
       "unspecified": "未指定",
       "versioned": "版本化"
     },
     "files": "文件",
+    "gitops-setup": "GitOps 设置",
+    "list-description": "通过 GitOps 发布的变更及其部署进度。",
     "not-found": "未找到发布包",
     "releases": "发布包",
-    "total-files": "共 {{}} 个文件",
-    "usage-description": "发布包是版本化的应用制品。GitOps 工作流将发布包部署到环境。",
+    "self": "发布包",
+    "source": "来源",
     "vcs-source": "VCS 来源",
     "vcs-type": {
       "unspecified": "未知 VCS"
@@ -2460,6 +2580,10 @@
       "description": "定义自定义角色，你可以将它们应用到项目成员和自定义审批。",
       "description-placeholder": "输入角色描述",
       "title-placeholder": "输入角色称谓"
+    },
+    "sql-editor-exporter": {
+      "description": "可查询数据库数据并导出结果，不包含 DDL 或 DML 访问权限。",
+      "self": "SQL 编辑器导出用户"
     },
     "sql-editor-read-user": {
       "description": "只读权限，可查询数据库数据，不包含 DDL 或 DML 访问权限。",
@@ -2721,10 +2845,6 @@
           "exiting": "退出中..."
         },
         "data-copy": "启用复制数据",
-        "data-export": {
-          "description": "关闭后，导出文件只能发送到项目的导出目标，未配置导出目标的项目无法导出。已获批的导出访问授权（包括通过“申请导出”申请的授权）也不会恢复本地下载。除非限制了数据复制，用户仍可复制可见的查询结果。",
-          "self": "允许本地下载导出文件"
-        },
         "default-landing-page": {
           "default-view-changed-to-sql-editor": "工作区的默认视图已更改为 SQL 编辑器。",
           "go-to-sql-editor": "转到 SQL 编辑器",
@@ -2760,6 +2880,12 @@
         "drag-logo": "或拖拽文件",
         "enable-debug": {
           "enable": "启用后端服务的调试级别日志"
+        },
+        "export-delivery": {
+          "description": "用户可以将导出的查询结果投递到的位置。至少需要保留一项。已批准的导出访问授权也无法使用此处关闭的投递方式。",
+          "local": "本地下载",
+          "self": "导出投递方式",
+          "sharepoint": "项目的 SharePoint 目标位置"
         },
         "external-url": {
           "cannot-edit-flag": "外部 URL 无法更改，因为它是通过 --external-url 命令行参数设置的",
@@ -3397,6 +3523,7 @@
     "and-n-more-databases": "及其他 {{n}} 个数据库",
     "batch-export": {
       "failed-for-db": "无法导出 {{db}} 的数据",
+      "partial": "部分批量导出",
       "self": "批量导出",
       "tooltip": "最多选择 {{max}} 个数据库，批量导出最后一次执行的查询结果"
     },
@@ -3439,6 +3566,7 @@
     "data-explorer-sql-filter-placeholder": "输入查询条件，例如 WHERE id = 1",
     "ddl-dml-requires-data-change-plan": "如需在 <environment></environment> 中执行 DDL/DML 语句，请创建变更计划以获得审批。",
     "download-as-file": "下载为 {{file}} 格式",
+    "dry-run": "试运行",
     "duration-day": "{{days}} 天",
     "duration-days": "{{days}} 天",
     "duration-hour": "{{hours}} 小时",
@@ -3448,6 +3576,8 @@
     "expire-at": "{{time}} 过期",
     "expire-in": "{{time}} 后过期",
     "expired": "已过期",
+    "explain": "查看执行计划",
+    "explain-hint": "显示执行计划，不运行查询",
     "explore-data": "浏览数据",
     "export-available-via-issue": "通过工单 \"{{title}}\" 可导出",
     "export-available-via-n-grants": "通过 {{count}} 个访问授权可导出:",
@@ -3485,6 +3615,7 @@
     "open-in-new-tab": "在新选项卡中打开",
     "opened-from-link": "从链接打开",
     "pending-query": "待处理查询",
+    "plan-cost-share": "占整个脚本预计成本的 {{share}}",
     "plan-estimated": "预估",
     "plan-view": "执行计划",
     "previous-row": "上一行",
@@ -3499,13 +3630,13 @@
       "copy": {
         "copied": "已复制",
         "failed": "复制失败",
-        "plan": "复制计划",
-        "query": "复制查询"
+        "plan": "复制计划"
       },
       "details": {
         "select-node": "选择节点以查看详情。"
       },
       "diagram": {
+        "actual-rows": "实际行数 {{count}}",
         "collapse": "折叠 {{node}} 下的 {{count}} 个节点",
         "cost": "成本 {{cost}}",
         "estimated-rows": "预计 {{count}} 行",
@@ -3513,32 +3644,80 @@
         "fit": "适应视图",
         "nodes-hidden": "已隐藏 {{count}} 个节点",
         "plan-cost-share": "占计划成本的 {{share}}",
+        "plan-time-share": "占计划耗时的 {{share}}",
         "rows": "行数 {{count}}",
+        "time": "耗时 {{time}} ms",
         "zoom-in": "放大",
         "zoom-out": "缩小"
       },
       "error": {
+        "bigquery-empty": "BigQuery 未返回此语句的查询计划。",
+        "bigquery-invalid": "查询计划不是有效的 JSON。需要 BigQuery 作业的阶段信息。",
+        "bigquery-no-plan": "查询计划中没有可作为起点的阶段。",
+        "clickhouse-empty": "ClickHouse 未返回此语句的查询计划。",
+        "clickhouse-invalid": "查询计划不是有效的 JSON。需要 EXPLAIN json = 1 输出。",
+        "clickhouse-no-plan": "ClickHouse 查询计划 JSON 不包含 \"Plan\" 对象。",
+        "cockroachdb-empty": "CockroachDB 未返回此语句的查询计划。",
+        "cockroachdb-invalid": "查询计划不是有效的 JSON。需要 EXPLAIN (DISTSQL) 编码的图示。",
+        "cockroachdb-no-plan": "查询计划 JSON 不包含可绘制的 \"processors\"。",
+        "databricks-empty": "Databricks 未返回此语句的查询计划。",
+        "databricks-no-plan": "查询计划中没有物理计划。需要 EXPLAIN FORMATTED 输出。",
+        "elasticsearch-empty": "Elasticsearch 未返回此语句的查询计划。",
+        "elasticsearch-invalid": "查询计划不是有效的 JSON。需要 Elasticsearch 的性能分析结果。",
+        "elasticsearch-no-plan": "性能分析结果中没有可作为起点的分片。Elasticsearch 只分析已执行的搜索。",
+        "hive-empty": "Hive 未返回此语句的查询计划。",
+        "hive-invalid": "查询计划不是有效的 JSON。需要 Hive EXPLAIN FORMATTED 输出。",
+        "hive-no-plan": "查询计划中没有可绘制的 CBO 计划。只有基于代价的优化器为该语句生成计划时，Hive 才会输出它。",
+        "mongodb-empty": "MongoDB 未返回此语句的查询计划。",
+        "mongodb-invalid": "查询计划不是有效的 JSON。需要 MongoDB 的 explain() 输出。",
+        "mongodb-no-plan": "查询计划 JSON 既不包含 \"queryPlanner\"，也不包含可绘制的 \"stages\" 管道。",
         "mssql-empty": "SQL Server 未返回此语句的查询计划。",
         "mssql-invalid": "查询计划不是有效的 XML。需要 SHOWPLAN_XML 输出。",
         "mssql-no-plan": "查询计划 XML 不是至少包含一条语句的 SQL Server showplan。",
+        "mysql-empty": "未返回此语句的查询计划。",
+        "mysql-invalid": "查询计划不是有效的 JSON。需要 EXPLAIN FORMAT=JSON 输出。",
+        "mysql-no-plan": "查询计划 JSON 不包含 \"query_block\" 对象。",
+        "oceanbase-empty": "OceanBase 未返回此语句的查询计划。",
+        "oceanbase-invalid": "查询计划不是有效的 JSON。需要 OceanBase 的 EXPLAIN FORMAT=JSON 输出。",
+        "oceanbase-no-plan": "查询计划 JSON 未指明任何操作符，无法绘制。",
+        "oracle-empty": "Oracle 未返回此语句的查询计划。",
+        "oracle-invalid": "查询计划不是有效的 JSON。需要服务器渲染的 Oracle 计划表。",
+        "oracle-no-plan": "查询计划中没有不带父节点的步骤，因此没有可作为起点的操作符。",
         "postgres-empty": "PostgreSQL 未返回此语句的查询计划。",
         "postgres-invalid": "查询计划不是有效的 JSON。需要 EXPLAIN (FORMAT JSON) 输出。",
         "postgres-no-plan": "查询计划 JSON 不包含 \"Plan\" 对象。",
+        "redshift-empty": "Redshift 未返回此语句的查询计划。",
+        "redshift-no-plan": "查询计划中没有操作符：Redshift 的计划会为每个操作符给出成本。",
+        "snowflake-empty": "Snowflake 未返回此语句的查询计划。",
+        "snowflake-invalid": "查询计划不是有效的 JSON。需要 Snowflake EXPLAIN USING JSON 输出。",
+        "snowflake-no-plan": "查询计划 JSON 中没有可作为起点的操作。",
         "spanner-empty": "Spanner 未返回此语句的查询计划。",
         "spanner-emulator": "Spanner 未返回此语句的查询计划。Spanner 模拟器不会为任何语句返回计划，请在 Spanner 实例上执行解释以查看计划。",
         "spanner-invalid": "查询计划不是有效的 JSON。需要 Spanner 查询计划。",
         "spanner-no-plan": "查询计划 JSON 不包含根节点为操作符的 \"planNodes\" 列表。",
+        "starrocks-empty": "该语句未产生可绘制的查询计划。",
+        "starrocks-no-plan": "查询计划的各个片段中都没有编号的操作符。",
+        "tidb-empty": "TiDB 未返回此语句的查询计划。",
+        "tidb-invalid": "查询计划不是有效的 JSON。需要 EXPLAIN FORMAT=tidb_json 输出。",
+        "tidb-no-plan": "查询计划 JSON 的根节点不是操作符。",
         "too-deep": "查询计划嵌套过深，此可视化工具无法绘制。",
         "too-many-nodes": "查询计划的算子数量超过此可视化工具可绘制的上限，已改为文本展示。",
+        "trino-empty": "Trino 未返回此语句的查询计划。",
+        "trino-invalid": "查询计划不是有效的 JSON。需要 Trino 的 EXPLAIN (FORMAT JSON) 输出。",
+        "trino-no-plan": "查询计划 JSON 中没有可作为起点的计划片段。",
         "unreadable": "无法读取此查询计划"
       },
       "grid": {
+        "actual-rows": "实际行数",
+        "actual-rows-hint": "该算子实际返回的行数，为所有执行次数的合计",
         "added-cost": "新增成本",
         "added-cost-hint": "此节点在其子节点之上增加的成本；某些引擎还会在此计入输入重复执行的成本，例如嵌套循环下的输入。条形图表示该成本占计划总成本的比例。",
         "caption": "按规划器嵌套顺序排列的计划节点，父节点在子节点之前。",
         "estimated-rows": "预计行数",
         "node": "节点",
         "rows": "行数",
+        "self-time": "自身耗时",
+        "self-time-hint": "该节点在其子节点之上耗费的毫秒数，为所有执行次数的合计。条形图表示该时间占计划总耗时的比例。",
         "total-cost": "总成本",
         "width": "宽度",
         "width-hint": "预计行宽（字节）"
@@ -3550,51 +3729,70 @@
         "off": "关闭",
         "off-hint": "不为任何节点卡片着色",
         "rows": "行数",
-        "rows-hint": "按预计行数着色"
+        "rows-hint": "按预计行数着色",
+        "time": "耗时",
+        "time-hint": "按节点在其子节点之上耗费的时间着色"
       },
       "legend": {
         "cost": "每张卡片的条形图表示该节点占计划预计成本的比例",
-        "rows": "边的粗细随其子节点预计返回的行数增加"
+        "rows": "边的粗细随其子节点预计返回的行数增加",
+        "time": "每张卡片的条形图表示该节点占计划实测耗时的比例"
       },
       "metric": {
+        "actual-rows": "实际行数",
+        "actual-time": "实际耗时",
         "added-cost": "新增成本",
         "bytes": "{{count}} 字节",
         "estimated-rows": "预计行数",
+        "loops": "执行次数",
+        "milliseconds": "{{count}} ms",
         "row-width": "行宽",
+        "rows-none": "未返回任何行，而规划器预计会有行返回。",
+        "rows-over": "返回的行数是规划器预计的 {{factor}} 倍。",
+        "rows-under": "返回的行数是规划器预计的 {{factor}} 分之一。",
         "startup-cost": "启动成本",
         "total-cost": "总成本"
       },
-      "query": {
-        "missing": "此计划未记录对应语句。"
-      },
       "summary": {
-        "added-cost": "新增成本",
-        "cost-by-operation": "按操作统计成本",
-        "cost-by-operation-description": "计划中每种节点类型及其总成本。",
-        "cost-ranges": "成本范围",
-        "cost-ranges-description": "每个节点从启动成本（返回第一行前的成本）延伸到总成本，两者都包含其下所有节点。颜色越深表示承担的计划成本越高。成本并非执行时间表：连接的两个输入会在此重叠，但实际依次执行。",
-        "costliest": "成本最高的操作符",
-        "costliest-description": "按节点在其子节点之上增加的成本排序。当输入重复执行时（如嵌套循环），某些引擎会将重复成本计入重新运行该输入的节点，而不是输入本身。",
-        "count": "数量",
-        "estimate-note": "语句已规划但未执行，因此此处所有数据都是优化器估算值，而非测量值。成本单位是任意的，只能在此计划内比较。",
-        "estimated-rows-returned": "预计返回行数",
+        "costliest": "按预估成本最高的操作符",
         "no-added-cost": "此计划中没有节点自身增加预计成本。",
-        "nodes": "节点",
-        "operation": "操作",
-        "share": "占比",
-        "timeline-node": "{{name}}，成本 {{startup}} 到 {{total}}，占计划成本的 {{share}}",
-        "total-estimated-cost": "预计总成本"
+        "no-added-time": "此计划中没有节点自身耗费可测量的时间。",
+        "no-ranking": "此计划未报告成本或耗时，因此无法为其算子排序。",
+        "slowest-measured": "按实测耗时最长的操作符",
+        "warning-operators": "{{count}} 个算子",
+        "warnings": "警告"
       },
       "tab": {
         "diagram": "图表",
-        "grid": "网格",
-        "query": "查询",
-        "summary": "摘要",
+        "grid": "表格",
         "text": "文本"
+      },
+      "table": {
+        "heading": "表",
+        "indexes": "索引",
+        "no-indexes": "此表没有索引。",
+        "primary": "主键",
+        "rows": "上次同步时 {{count}} 行",
+        "unique": "唯一"
       },
       "totals": {
         "estimated-cost": "预计成本 {{cost}}",
+        "measured-time": "实测耗时 {{time}} ms",
         "nodes": "{{count}} 个节点"
+      },
+      "warning": {
+        "data-redistribution": {
+          "detail": "该连接在匹配之前需要在计算分片之间搬运数据。将两张表都按连接列分布，或把较小的表设为 ALL，可以让连接在数据所在之处完成。",
+          "title": "数据重分布"
+        },
+        "full-index-scan": {
+          "detail": "读取该索引的每一条记录。如果查询只需要其中少数几条，为索引的前导列加上条件就可以避免整体读取。",
+          "title": "全索引扫描"
+        },
+        "full-table-scan": {
+          "detail": "读取该表的每一行。如果查询只需要其中少数几行，在过滤列上建立索引就可以避免整表读取。",
+          "title": "全表扫描"
+        }
       }
     },
     "query-time": "查询时间",

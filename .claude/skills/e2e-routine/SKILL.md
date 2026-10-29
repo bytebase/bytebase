@@ -34,17 +34,19 @@ issue body is `references/issue-template.md`; the ledger format is
 - **Processes**: never kill a process you did not start. The harness owns its
   server (PID file, port 18234 with fallback). A port conflict is reported, not
   resolved by killing.
-- **Linear**: the team in `E2E_ROUTINE_LINEAR_TEAM` only (default `BOT`, the
-  agent-issue team from docs/agents/issue-tracker.md), parent = the issue in
-  `E2E_ROUTINE_UMBRELLA`.
+- **Linear**: the team in `E2E_ROUTINE_LINEAR_TEAM` only (default `BOT`). The
+  routine's owner names this team, which docs/agents/issue-tracker.md allows in
+  place of `BYT`; parent = the issue in `E2E_ROUTINE_UMBRELLA`.
   Create issues and comments only when `E2E_ROUTINE_FILE_ISSUES=1`; otherwise
   write proposals into the report. Never edit, retitle, close, reassign or
   relabel an existing issue: a comment and its evidence attachments are the
   only additions. The one edit allowed is putting the uploaded screenshot into
   the description of an issue created in this run. Search before creating;
   one issue per mechanism.
-- **Build**: `-tags embed_frontend` without `release`, so the dev-signed license
-  validates.
+- **Build**: `frontend/tests/e2e/build-server.sh`: `-tags embed_frontend` without
+  `release`, so the dev-signed license validates, with dev-only product switches
+  (SQL review V2) set to their release values. The suite tests what release
+  builds ship.
 - **Evidence before claims**: every class cites the attempt error line, the
   screenshot you opened and what it shows (or that the attempt has none) and,
   for SPEC-ROT or PRODUCT, a commit. A gate without pasted evidence is not
@@ -65,7 +67,7 @@ issue body is `references/issue-template.md`; the ledger format is
 | `E2E_ROUTINE_UMBRELLA` | none | the umbrella issue (parent of filed issues, target of the run comment) |
 | `E2E_ROUTINE_LINEAR_TEAM` | `BOT` | the only Linear team the routine may create issues in |
 | `E2E_ROUTINE_SLACK_CHANNEL` | none | when set and the Slack connector is attached, post the report summary there |
-| `E2E_RESULTS_ROOT` | `/tmp/e2e-routine` | run directories |
+| `E2E_RESULTS_ROOT` | `/tmp/e2e-routine/<checkout>-<path hash>` | run directories, one root per checkout so two worktrees never share `run-dir.sh`'s current run |
 | `E2E_LEDGER_BRANCH` | `claude/e2e-ledger` | ledger branch |
 | `E2E_LEDGER_PUSH` | `1` | `0` commits the ledger entry to the local ref `refs/e2e-routine/ledger-dry-run` without pushing, and ledger reads use it (local dry runs) |
 | `E2E_GLOBAL_TIMEOUT_MS` | `7200000` | wall-clock cap for one suite run; tests not reached count as skipped and the run is reported as such |
@@ -114,12 +116,12 @@ DIR=$(bash .claude/skills/e2e-routine/scripts/run-dir.sh) && bash .claude/skills
 ```
 
 Build from `origin/main` checked out at `head_sha` (`git checkout -q
-<head_sha>` in the clone is fine; the ledger records `HEAD`, so it must be
-main's commit). While this skill lives on a branch, overlay its files onto that
-checkout instead of cherry-picking:
-`git checkout origin/<branch> -- .claude/skills/e2e-routine frontend/tests/e2e`.
-A build failure is INFRA unless the failing step is the Go or frontend compile
-of a product file.
+<head_sha>` in the clone is fine). The skill and the suite are both on `main`,
+so nothing is overlaid: copying files in from another branch reverts every
+`main` change to them since that branch forked. The ledger records the main
+commit under test, never a local commit on top (`references/ledger.md`), and
+refuses a tree whose product files are not on `main`. A build failure is INFRA
+unless the failing step is the Go or frontend compile of a product file.
 
 - INFRA (dependency download, toolchain, disk): record it with
   `summarize.py --pre-run-failure "$(bash .claude/skills/e2e-routine/scripts/run-dir.sh)" build "<failing step and first error line>"`
@@ -141,15 +143,18 @@ python3 .claude/skills/e2e-routine/scripts/summarize.py "$(bash .claude/skills/e
 `start` detaches the suite (its own session, so a tool timeout cannot kill it)
 and prints the run directory. Call `wait` with the Bash tool's maximum timeout;
 if the tool returns before the suite ends, call `wait` again: it resumes. Do not
-run anything else that boots a Bytebase while it runs. The suite takes roughly
-40 to 60 minutes.
+run anything else that boots a Bytebase while it runs. A green suite took
+43 minutes on the 4-vCPU cloud VM and 15 minutes on a 12-core Mac; red tests
+add their retries on top.
 
 `summarize.py` writes `summary.json` and `summary.md` (buckets: `failed`,
-`flaky`, `lock_flipped`, `lock_holding`, `not_run`, `skipped`, `infra`,
-`incomplete`). Each entry's `evidence` names the screenshots (one per open
-page), aria snapshot (`error-context.md`) and trace of the failed attempt it
-reports; `summary.md` prints the screenshot paths under each failed and flaky
-row. When the server was lost and `server.log` holds a Go crash, the run is
+`flaky`, `lock_flipped`, `lock_unstable`, `lock_holding`, `not_run`, `skipped`, `infra`,
+`incomplete`; the truth table is in `references/triage.md`). Each entry's
+`evidence` names the screenshots (one per open page), aria snapshot
+(`error-context.md`) and trace of the anomalous attempt it reports: a failure
+of an ordinary test, a pass of a `test.fail()` lock. `summary.md` prints the
+screenshot paths under each row, and a `hint` when the error itself names the
+class (a strict-mode violation is a spec defect). When the server was lost and `server.log` holds a Go crash, the run is
 red, not infra: one `failed` row "Bytebase server crashed" carries the crash
 line and backend frame, and the tests that died with it go to `lost_to_crash`
 (SERVER-CRASH in `triage.md`). `not_run` lists tests that never ran because an earlier test in
@@ -163,11 +168,14 @@ say how much wall clock the build and the suite took.
 
 ## Phase 4: Classify and verify
 
-Work `references/triage.md` for every entry of `failed`, `flaky` and
-`lock_flipped`. For each `failed` entry:
+Work `references/triage.md` for every entry of `failed`, `flaky`,
+`lock_unstable` and `lock_flipped`. For each `failed`, `flaky` and
+`lock_unstable` entry:
 
-1. Isolate: `run-suite.sh start "$(bash .claude/skills/e2e-routine/scripts/run-dir.sh id)-iso-<n>" -- <spec file> --retries=0 --repeat-each=2`,
-   then `wait` on the directory it prints, one file after another, always in the foreground. Never park
+1. Isolate: `run-suite.sh start "$(bash .claude/skills/e2e-routine/scripts/run-dir.sh id)-iso-<n>" -- <spec file> --retries=0 --repeat-each=2`
+   (a `lock_unstable` entry: `-- <spec file> -g "<title>" --retries=0 --repeat-each=10`, and count the passes).
+   A `flaky` entry that is red here is not a flake; work it as `failed`.
+   Then `wait` on the directory it prints, one file after another, always in the foreground. Never park
    the reruns in a background loop and go idle: a cloud session with nothing
    in the foreground pauses, and the first run lost 25 minutes that way.
 2. Open each of the entry's `evidence.screenshots` with the Read tool and look
@@ -194,7 +202,7 @@ check it in Linear (`get_issue`).
 
 ### Phase 4 gate
 
-The decision table, with every `failed` row showing the isolated rerun result,
+The decision table, with every `failed`, `flaky` and `lock_unstable` row showing the isolated rerun result,
 the screenshot path and what it shows, and a commit or the words "no commit
 explains it", and every PRODUCT row naming the violated expectation.
 

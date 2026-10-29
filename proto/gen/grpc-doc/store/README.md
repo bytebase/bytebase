@@ -169,12 +169,14 @@
     - [MaskingRulePolicy.MaskingRule](#bytebase-store-MaskingRulePolicy-MaskingRule)
     - [Policy](#bytebase-store-Policy)
     - [QueryDataPolicy](#bytebase-store-QueryDataPolicy)
+    - [QueryDataPolicy.ExportDeliveryPolicy](#bytebase-store-QueryDataPolicy-ExportDeliveryPolicy)
     - [ReviewAIPolicy](#bytebase-store-ReviewAIPolicy)
     - [ReviewRulePolicy](#bytebase-store-ReviewRulePolicy)
     - [RolloutPolicy](#bytebase-store-RolloutPolicy)
     - [TagPolicy](#bytebase-store-TagPolicy)
     - [TagPolicy.TagsEntry](#bytebase-store-TagPolicy-TagsEntry)
   
+    - [ExportDelivery](#bytebase-store-ExportDelivery)
     - [Policy.Resource](#bytebase-store-Policy-Resource)
     - [Policy.Type](#bytebase-store-Policy-Type)
   
@@ -1959,7 +1961,7 @@ RoleGrant contains details for requesting a project role.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| role | [string](#string) |  | The role being requested for the user. Format: roles/EXPORTER. |
+| role | [string](#string) |  | The role being requested for the user. Format: roles/{role}. |
 | user | [string](#string) |  | The user who will receive the role. Format: users/{email}. |
 | condition | [google.type.Expr](#google-type-Expr) |  | Optional conditional expression that limits when the grant applies. |
 | expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | Duration after which the grant automatically expires. |
@@ -2740,12 +2742,27 @@ QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| disable_export | [bool](#bool) |  | workspace-level policy Disallow local export download. Exports can then only be delivered to an export destination. |
 | maximum_result_rows | [int32](#int32) |  | Support both project-level and workspace-level. The maximum number of rows to return in the SQL editor. The default value &lt;= 0, means no limit. |
 | disable_copy_data | [bool](#bool) |  | workspace-level policy Disable copying data. |
 | allow_admin_data_source | [bool](#bool) |  | workspace-level policy Allow using the admin data source to query in the SQL editor. |
+| export_delivery_policy | [QueryDataPolicy.ExportDeliveryPolicy](#bytebase-store-QueryDataPolicy-ExportDeliveryPolicy) |  | workspace-level policy Where exports may be delivered. Unset allows LOCAL only. |
 | disallow_ddl | [bool](#bool) |  | ================ Deprecate following fields. Disallow running DDL statements in the SQL editor. |
 | disallow_dml | [bool](#bool) |  | Disallow running DML statements in the SQL editor. |
+
+
+
+
+
+
+<a name="bytebase-store-QueryDataPolicy-ExportDeliveryPolicy"></a>
+
+### QueryDataPolicy.ExportDeliveryPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| allowed_deliveries | [ExportDelivery](#bytebase-store-ExportDelivery) | repeated |  |
 
 
 
@@ -2833,6 +2850,19 @@ wins: the project&#39;s if it has one, else the workspace&#39;s, else every rule
 
 
  
+
+
+<a name="bytebase-store-ExportDelivery"></a>
+
+### ExportDelivery
+Where an export is delivered.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| EXPORT_DELIVERY_UNSPECIFIED | 0 |  |
+| LOCAL | 1 |  |
+| SHAREPOINT | 2 |  |
+
 
 
 <a name="bytebase-store-Policy-Resource"></a>

@@ -1,10 +1,10 @@
 // The header's read-only "Plan status" control, shown when the current user does
 // not own the next action (observer, not-your-turn) or the plan is in a pre-deploy
 // blocker state. The trigger names the blocker; clicking opens a details panel
-// styled after GitHub's merge box — gate rows (Review, Plan checks, and under
-// SQL Review V2 the open threads), each a status icon + headline + subtext. The detail is ours: Review
-// expands to the (compact) approval flow; Plan checks expands to a severity
-// breakdown with a "View Details" link into the existing plan-check drawer. The
+// styled after GitHub's merge box — gate rows, each a status icon + headline +
+// subtext: Review, then Plan checks, or under SQL Review V2 the same gates the
+// Deploy waiting list shows (Automated review, Discussion). Review expands to
+// the (compact) approval flow; the other rows link to their details. The
 // footer shows at most one state-dependent action: re-request review when
 // rejected (mirroring the section's rejection banner), otherwise the demoted
 // bypass-and-deploy override (BYT-9722).
@@ -12,11 +12,13 @@ import { create } from "@bufbuild/protobuf";
 import {
   ChevronDown,
   ChevronRight,
+  CircleAlert,
   CircleCheck,
   CircleX,
   Clock3,
   Loader2,
   MessagesSquare,
+  TriangleAlert,
 } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -38,9 +40,15 @@ import { userNamePrefix } from "@/stores/modules/v1/common";
 import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { RequestIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
-import { useSqlReviewV2 } from "../../hooks/useSqlReviewV2";
+import {
+  type PlanReviewState,
+  usePlanReviewState,
+} from "../../hooks/usePlanReviewState";
+import { focusPlanPhase } from "../../shell/focusPhase";
 import { usePlanDetailContext } from "../../shell/PlanDetailContext";
 import type { PlanCheckSummary } from "../../utils/phaseSummary";
+import { rowNeedsAttention } from "../../utils/planGates";
+import { reviewerLabel, reviewGateLabel } from "../../utils/reviewLabels";
 import { BypassAndDeploySheet, useBypassDeploy } from "../review/bypassDeploy";
 import { deriveSteps, ReviewApprovalFlow } from "../review/ReviewApprovalFlow";
 import type { PlanStatusReason } from "./planLifecycleHeaderState";
@@ -63,7 +71,7 @@ export function PlanStatusAction({
   const [open, setOpen] = useState(false);
   const [checksDrawerOpen, setChecksDrawerOpen] = useState(false);
   const bypass = useBypassDeploy(issue, page.plan);
-  const sqlReview = useSqlReviewV2();
+  const reviewState = usePlanReviewState();
   const tone = getPlanStatusTone(reason);
   // Only the Review gate expands (to the approval flow); Checks is a static row
   // with a View Details link. Open Review by default when it is the active gate.
@@ -84,10 +92,22 @@ export function PlanStatusAction({
         return t("plan.lifecycle.rejected");
       case "checks-failing":
         return t("plan.lifecycle.checks-failing");
-      case "threads-open":
+      case "threads-open": {
+        // Name what holds the rollout, from the same gates Deploy lists.
+        const gate = reviewState?.gates.find(
+          (candidate) =>
+            candidate.kind === "review" || candidate.kind === "discussion"
+        );
+        if (gate?.kind === "review") return reviewGateLabel(t, gate.row);
+        if (gate?.kind === "discussion") {
+          return t("plan.deploy-waiting.open-discussions", {
+            count: gate.open,
+          });
+        }
         return t("plan.summary.n-unresolved-threads", {
           count: bypass.unresolvedThreads,
         });
+      }
     }
   })();
 
@@ -120,15 +140,25 @@ export function PlanStatusAction({
               onToggle={() => setReviewOpen((v) => !v)}
               open={reviewOpen}
             />
-            <ChecksGateRow
-              onViewDetails={() => {
-                setOpen(false);
-                setChecksDrawerOpen(true);
-              }}
-              summary={bypass.planCheckSummary}
-            />
-            {sqlReview && (
-              <ThreadsGateRow count={sqlReview.unresolvedThreads} />
+            {reviewState ? (
+              <>
+                <AutomatedReviewGateRow
+                  onViewDetails={() => {
+                    setOpen(false);
+                    focusPlanPhase("review", page.expandPhase);
+                  }}
+                  state={reviewState}
+                />
+                <DiscussionGateRow count={reviewState.openDiscussions} />
+              </>
+            ) : (
+              <ChecksGateRow
+                onViewDetails={() => {
+                  setOpen(false);
+                  setChecksDrawerOpen(true);
+                }}
+                summary={bypass.planCheckSummary}
+              />
             )}
           </div>
           <PlanStatusFooter
@@ -455,10 +485,86 @@ function BypassAction({
   );
 }
 
-/* -------------------------- threads gate (ours) ------------------------- */
+/* ---------------------- SQL Review V2 gates (ours) ---------------------- */
 
-// Under SQL Review V2 every open thread holds the automatic rollout.
-function ThreadsGateRow({ count }: { count: number }) {
+// The machine reviewers as one gate: what holds the rollout, or that they
+// passed. Details leads to the Automated review rows.
+function AutomatedReviewGateRow({
+  state,
+  onViewDetails,
+}: {
+  state: PlanReviewState;
+  onViewDetails: () => void;
+}) {
+  const { t } = useTranslation();
+  const held = state.rows.filter((row) => row.holdsRollout);
+  const overridden = state.rows.find((row) => row.findings.overridden > 0);
+  const attention = state.rows.filter(rowNeedsAttention).length;
+  let icon: ReactNode;
+  if (held.some((row) => row.conclusion === "failed")) {
+    icon = <CircleX className="size-5 shrink-0 text-error" />;
+  } else if (held.some((row) => row.findings.p0 > 0)) {
+    icon = <CircleAlert className="size-5 shrink-0 text-error" />;
+  } else if (
+    held.length > 0 &&
+    held.every((row) => row.conclusion === "running")
+  ) {
+    icon = (
+      <Loader2 className="size-5 shrink-0 animate-spin text-control-light" />
+    );
+  } else if (held.length > 0) {
+    icon = <CircleAlert className="size-5 shrink-0 text-warning" />;
+  } else if (overridden) {
+    icon = <TriangleAlert className="size-5 shrink-0 text-warning" />;
+  } else {
+    icon = <CircleCheck className="size-5 shrink-0 text-success" />;
+  }
+  let title: string;
+  if (held.length > 0) {
+    title = reviewGateLabel(t, held[0]);
+  } else if (overridden) {
+    title = t("plan.deploy-waiting.overridden", {
+      count: overridden.findings.overridden,
+      reviewer: reviewerLabel(t, overridden.reviewer),
+    });
+  } else {
+    title = t("plan.lifecycle.gate-automated-review-passed");
+  }
+  return (
+    <div className="flex items-center gap-3 px-4 py-3">
+      {icon}
+      <GateLabel
+        subtitle={
+          held.length > 0 && overridden
+            ? t("plan.deploy-waiting.overridden", {
+                count: overridden.findings.overridden,
+                reviewer: reviewerLabel(t, overridden.reviewer),
+              })
+            : attention > 0
+              ? t("plan.automated-review.needs-attention", {
+                  count: attention,
+                  total: state.rows.length,
+                })
+              : ""
+        }
+        title={title}
+      />
+      <Button
+        appearance="secondary"
+        size="xs"
+        className="inline-flex shrink-0 items-center gap-1 text-xs text-accent hover:underline"
+        onClick={onViewDetails}
+        type="button"
+      >
+        {t("common.view-details")}
+        <ChevronRight className="size-3.5" />
+      </Button>
+    </div>
+  );
+}
+
+// Open threads people started; each holds the rollout.
+function DiscussionGateRow({ count }: { count: number }) {
   const { t } = useTranslation();
   return (
     <div className="flex items-center gap-3 px-4 py-3">
@@ -471,8 +577,8 @@ function ThreadsGateRow({ count }: { count: number }) {
         subtitle={count > 0 ? t("plan.lifecycle.gate-threads-open-sub") : ""}
         title={
           count > 0
-            ? t("plan.lifecycle.gate-threads-open", { count })
-            : t("plan.lifecycle.gate-threads-resolved")
+            ? t("plan.deploy-waiting.open-discussions", { count })
+            : t("plan.lifecycle.gate-no-open-discussions")
         }
       />
     </div>

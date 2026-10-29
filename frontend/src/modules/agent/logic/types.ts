@@ -46,6 +46,34 @@ export interface AgentEvidence {
 
 export type AgentAnswerEvidence = AgentEvidence | AgentEvidence[];
 
+export interface AgentResourceReference {
+  kind: "project" | "database" | "issue";
+  name: string;
+  project: string;
+  label: string;
+}
+
+export interface AgentMentionRange {
+  start: number;
+  end: number;
+}
+
+export interface AgentResourceMention {
+  resource: AgentResourceReference;
+  range: AgentMentionRange;
+}
+
+export interface AgentDraft {
+  text: string;
+  mentions?: AgentResourceMention[];
+  project?: {
+    name: string;
+    title: string;
+  };
+  resource?: AgentResourceReference;
+  mention?: AgentMentionRange;
+}
+
 export interface AgentMessageMetadata {
   route?: string;
   pending?: boolean;
@@ -53,6 +81,8 @@ export interface AgentMessageMetadata {
   error?: string;
   runId?: string;
   evidence?: AgentAnswerEvidence;
+  resourceReference?: AgentResourceReference;
+  resourceReferences?: AgentResourceReference[];
 }
 
 export interface AgentMessage extends Message {
@@ -92,6 +122,10 @@ export interface AgentPendingAsk {
   toolCallId: string;
   prompt: string;
   kind: AgentAskUserKind;
+  apiPermission?: {
+    actionId: string;
+    operationId: string;
+  };
   defaultValue?: string;
   confirmLabel?: string;
   cancelLabel?: string;

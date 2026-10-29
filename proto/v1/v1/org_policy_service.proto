@@ -10,6 +10,7 @@ import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/type/expr.proto";
 import "v1/annotation.proto";
+import "v1/common.proto";
 import "v1/review_rule.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
@@ -299,10 +300,8 @@ message QueryDataPolicy {
   // The default value <= 0, means no limit.
   int32 maximum_result_rows = 1;
 
-  // workspace-level policy
-  // Disallow local export download. Exports can then only be delivered to an
-  // export destination, even when an export access grant covers them.
-  bool disable_export = 2;
+  // Deprecated: export is controlled by the bb.sql.export permission. Always false; setting it to true is rejected.
+  bool disable_export = 2 [deprecated = true];
 
   // workspace-level policy
   // Disable copying query results in the SQL editor.
@@ -315,6 +314,19 @@ message QueryDataPolicy {
   // 1. when read-only data source is configured, users're force to use the read-only data source
   // 2. otherwise fallback to use the admin data source.
   bool allow_admin_data_source = 4;
+
+  // workspace-level policy
+  // Where SQLService.Export may deliver results. When the stored policy has
+  // none, only LOCAL is allowed, and reads return that default. An update that
+  // omits it keeps the stored value.
+  ExportDeliveryPolicy export_delivery_policy = 5;
+
+  message ExportDeliveryPolicy {
+    // The allowed deliveries: at least one, without duplicates or
+    // EXPORT_DELIVERY_UNSPECIFIED. A delivery added to ExportDelivery later is
+    // not allowed until it is listed here.
+    repeated ExportDelivery allowed_deliveries = 1;
+  }
 }
 
 // MaskingExemptionPolicy is the allowlist of users who can access sensitive data.

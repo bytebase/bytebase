@@ -1,0 +1,40 @@
+{
+  "STAGE DEPENDENCIES": { "Stage-0": { "ROOT STAGE": "TRUE" } },
+  "STAGE PLANS": {
+    "Stage-0": {
+      "Fetch Operator": {
+        "limit:": "-1",
+        "Processor Tree:": {
+          "TableScan": {
+            "alias:": "customers",
+            "columns:": ["id", "name", "city"],
+            "database:": "default",
+            "filterExpr:": "(city = 'berlin') (type: boolean)",
+            "table:": "customers",
+            "isTempTable:": "false",
+            "OperatorId:": "TS_0",
+            "children": {
+              "Filter Operator": {
+                "predicate:": "(city = 'berlin') (type: boolean)",
+                "OperatorId:": "FIL_4",
+                "children": {
+                  "Select Operator": {
+                    "expressions:": "id (type: int), name (type: string), 'berlin' (type: string)",
+                    "columnExprMap:": {
+                      "_col0": "id",
+                      "_col1": "name",
+                      "_col2": "'berlin'"
+                    },
+                    "outputColumnNames:": ["_col0", "_col1", "_col2"],
+                    "OperatorId:": "SEL_2",
+                    "children": { "ListSink": { "OperatorId:": "LIST_SINK_5" } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import {
   Table,
   TableBody,
@@ -9,18 +9,17 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { useQueryPlanTranslation } from "./plan-i18n";
-import {
-  PLAN_INDENT_STEP,
-  planGuideLevels,
-  planIndentPixels,
-} from "./plan-layout";
+import { planIndentPixels, planIndentStep } from "./plan-layout";
 import {
   formatPlanCost,
   formatPlanCount,
+  formatPlanDuration,
   type PlanRow,
   type PlanTree,
+  planHasSelfMetric,
+  planRankMetric,
   planRows,
-  planSelfCostShare,
+  planSelfShare,
 } from "./plan-model";
 import { PlanCostShareBar, SECONDARY_COLUMN_CLASS } from "./plan-shared";
 
@@ -48,19 +47,20 @@ const GUIDE_LINE_CLASS = "absolute bg-control-border";
  */
 function PlanTreeGuides({
   branchContinues,
+  step,
 }: {
   branchContinues: readonly boolean[];
+  step: number;
 }) {
-  const levels = planGuideLevels(branchContinues);
-  if (levels.length === 0) return null;
+  if (branchContinues.length === 0) return null;
   return (
     <span
       aria-hidden="true"
       data-testid="plan-grid-guides"
       className="pointer-events-none absolute inset-y-0 left-4 flex"
     >
-      {levels.map((continues, index) => {
-        const last = index === levels.length - 1;
+      {branchContinues.map((continues, index) => {
+        const last = index === branchContinues.length - 1;
         // Every level but the last is a pass-through: a line only where an
         // ancestor still has rows to come. The last level turns into the row,
         // so it always arrives from above and carries on only when a sibling
@@ -72,7 +72,7 @@ function PlanTreeGuides({
             // A level has no identity apart from its position in the indent.
             key={index}
             className="relative shrink-0"
-            style={{ width: PLAN_INDENT_STEP }}
+            style={{ width: step }}
           >
             {vertical ? (
               <span
@@ -108,6 +108,7 @@ const PlanGridRow = memo(function PlanGridRow({
   row: { node, depth, branchContinues },
   index,
   tree,
+  step,
   selected,
   tabStop,
   onSelect,
@@ -116,6 +117,8 @@ const PlanGridRow = memo(function PlanGridRow({
   row: PlanRow;
   index: number;
   tree: PlanTree;
+  /** The plan's indent step, shared by every row so the guides line up. */
+  step: number;
   selected: boolean;
   tabStop: boolean;
   onSelect: (id: string) => void;
@@ -143,11 +146,11 @@ const PlanGridRow = memo(function PlanGridRow({
       </TableCell>
 
       <TableCell className="relative py-2">
-        <PlanTreeGuides branchContinues={branchContinues} />
+        <PlanTreeGuides branchContinues={branchContinues} step={step} />
         <div
           data-testid="plan-grid-node"
           className="relative flex min-w-0 items-baseline gap-2"
-          style={{ paddingLeft: planIndentPixels(depth) }}
+          style={{ paddingLeft: planIndentPixels(depth, step) }}
         >
           <span
             data-testid="plan-grid-node-type"
@@ -170,27 +173,34 @@ const PlanGridRow = memo(function PlanGridRow({
         </div>
       </TableCell>
 
+      {planHasSelfMetric(tree) ? (
+        <TableCell className="py-2 pr-4 pl-2">
+          <div className="flex items-center justify-end gap-2">
+            <PlanCostShareBar
+              share={planSelfShare(node, tree)}
+              className="w-10 shrink-0 sm:w-16"
+            />
+            <span className="text-xs leading-4 text-main tabular-nums">
+              {planRankMetric(tree) === "time"
+                ? formatPlanDuration(node.selfTime)
+                : formatPlanCost(node.selfCost)}
+            </span>
+          </div>
+        </TableCell>
+      ) : null}
       {tree.estimates.cost ? (
-        <>
-          <TableCell className="py-2 pr-4 pl-2">
-            <div className="flex items-center justify-end gap-2">
-              <PlanCostShareBar
-                share={planSelfCostShare(node, tree)}
-                className="w-10 shrink-0 sm:w-16"
-              />
-              <span className="text-xs leading-4 text-main tabular-nums">
-                {formatPlanCost(node.selfCost)}
-              </span>
-            </div>
-          </TableCell>
-          <TableCell className={cn(NUMERIC_CELL_CLASS, SECONDARY_COLUMN_CLASS)}>
-            {formatPlanCost(node.totalCost)}
-          </TableCell>
-        </>
+        <TableCell className={cn(NUMERIC_CELL_CLASS, SECONDARY_COLUMN_CLASS)}>
+          {formatPlanCost(node.totalCost)}
+        </TableCell>
       ) : null}
       {tree.estimates.rows ? (
         <TableCell className={cn(NUMERIC_CELL_CLASS, SECONDARY_COLUMN_CLASS)}>
           {formatPlanCount(node.rows)}
+        </TableCell>
+      ) : null}
+      {tree.measured.rows ? (
+        <TableCell className={cn(NUMERIC_CELL_CLASS, SECONDARY_COLUMN_CLASS)}>
+          {formatPlanCount(node.actualRows)}
         </TableCell>
       ) : null}
       {tree.estimates.width ? (
@@ -204,7 +214,21 @@ const PlanGridRow = memo(function PlanGridRow({
 
 export function QueryPlanGrid({ tree, selectedId, onSelect }: Props) {
   const translate = useQueryPlanTranslation();
+  const measured = planRankMetric(tree) === "time";
   const rows = useMemo(() => planRows(tree.root), [tree]);
+  const step = useMemo(
+    () => planIndentStep(Math.max(0, ...rows.map((row) => row.depth))),
+    [rows]
+  );
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // The selection can be chosen beside the table, from the ranking or the
+  // diagram, so the table brings it on screen rather than leaving it below.
+  useEffect(() => {
+    scrollRef.current
+      ?.querySelector('[aria-selected="true"]')
+      ?.scrollIntoView?.({ block: "nearest" });
+  }, [selectedId]);
 
   // Roving tab stop: Tab reaches the grid once and the arrow keys move within
   // it, rather than making every row of a 30-node plan its own tab stop.
@@ -252,6 +276,7 @@ export function QueryPlanGrid({ tree, selectedId, onSelect }: Props) {
 
   return (
     <div
+      ref={scrollRef}
       data-testid="plan-grid-scroll"
       className="min-h-0 w-full flex-1 overflow-auto"
     >
@@ -265,24 +290,26 @@ export function QueryPlanGrid({ tree, selectedId, onSelect }: Props) {
             <TableHead className={HEAD_CLASS}>
               {translate("grid.node")}
             </TableHead>
+            {planHasSelfMetric(tree) ? (
+              <TableHead
+                className={cn(HEAD_CLASS, "w-32 pl-2 text-right sm:w-48")}
+                title={translate(
+                  measured ? "grid.self-time-hint" : "grid.added-cost-hint"
+                )}
+              >
+                {translate(measured ? "grid.self-time" : "grid.added-cost")}
+              </TableHead>
+            ) : null}
             {tree.estimates.cost ? (
-              <>
-                <TableHead
-                  className={cn(HEAD_CLASS, "w-32 pl-2 text-right sm:w-48")}
-                  title={translate("grid.added-cost-hint")}
-                >
-                  {translate("grid.added-cost")}
-                </TableHead>
-                <TableHead
-                  className={cn(
-                    HEAD_CLASS,
-                    SECONDARY_COLUMN_CLASS,
-                    "text-right sm:w-28"
-                  )}
-                >
-                  {translate("grid.total-cost")}
-                </TableHead>
-              </>
+              <TableHead
+                className={cn(
+                  HEAD_CLASS,
+                  SECONDARY_COLUMN_CLASS,
+                  "text-right sm:w-28"
+                )}
+              >
+                {translate("grid.total-cost")}
+              </TableHead>
             ) : null}
             {tree.estimates.rows ? (
               <TableHead
@@ -294,6 +321,18 @@ export function QueryPlanGrid({ tree, selectedId, onSelect }: Props) {
                 title={translate("grid.estimated-rows")}
               >
                 {translate("grid.rows")}
+              </TableHead>
+            ) : null}
+            {tree.measured.rows ? (
+              <TableHead
+                className={cn(
+                  HEAD_CLASS,
+                  SECONDARY_COLUMN_CLASS,
+                  "text-right sm:w-24"
+                )}
+                title={translate("grid.actual-rows-hint")}
+              >
+                {translate("grid.actual-rows")}
               </TableHead>
             ) : null}
             {tree.estimates.width ? (
@@ -318,6 +357,7 @@ export function QueryPlanGrid({ tree, selectedId, onSelect }: Props) {
               row={row}
               index={index}
               tree={tree}
+              step={step}
               selected={row.node.id === selectedId}
               tabStop={row.node.id === tabStopId}
               onSelect={onSelect}

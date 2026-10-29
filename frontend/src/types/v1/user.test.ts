@@ -7,9 +7,9 @@ import { AccountType, getAccountTypeByEmail } from "./user";
 describe("getAccountTypeByEmail", () => {
   test.each([
     ["deploy@service.bytebase.com", AccountType.SERVICE_ACCOUNT],
-    ["testdt@uk-orders.service.bytebase.com", AccountType.SERVICE_ACCOUNT],
+    ["approver@project-a.service.bytebase.com", AccountType.SERVICE_ACCOUNT],
     ["ci@workload.bytebase.com", AccountType.WORKLOAD_IDENTITY],
-    ["ci@uk-orders.workload.bytebase.com", AccountType.WORKLOAD_IDENTITY],
+    ["ci@project-a.workload.bytebase.com", AccountType.WORKLOAD_IDENTITY],
     ["alice@example.com", AccountType.USER],
     ["alice@myservice.bytebase.com", AccountType.USER],
     ["alice@customer-service.bytebase.com", AccountType.USER],

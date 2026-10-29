@@ -361,7 +361,7 @@ func (w *Workflow) applyReviewAction(ctx context.Context, project *store.Project
 			return nil, workflowReasonError(ErrorPermissionDenied, ReasonApproverRoleRequired,
 				"cannot %s because the user does not have the required permission", verb)
 		}
-		if !project.Setting.GetAllowSelfApproval() && issue.CreatorEmail == input.Actor.Email {
+		if refusesSelfApproval(project, issue.CreatorEmail, input.Actor.Email) {
 			return nil, workflowError(ErrorPermissionDenied, "cannot %s because self-approval is not allowed for this project", verb)
 		}
 		if input.Action == ActionApprove && !project.Setting.GetAllowLastPlanEditorApproval() && plan != nil {
@@ -410,6 +410,12 @@ func (w *Workflow) applyReviewAction(ctx context.Context, project *store.Project
 	default:
 		return nil, workflowError(ErrorInvalidAction, "unsupported review action")
 	}
+}
+
+// refusesSelfApproval reports whether the project refuses the actor's review,
+// approval or rejection, of an issue the actor created.
+func refusesSelfApproval(project *store.ProjectMessage, creatorEmail, actorEmail string) bool {
+	return !project.Setting.GetAllowSelfApproval() && creatorEmail == actorEmail
 }
 
 func effectiveLastPlanEditor(plan *store.PlanMessage) string {
