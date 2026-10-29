@@ -355,12 +355,6 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 			return nil, err
 		}
 	}
-	// A Read-write MCP session runs a statement that may write only through
-	// query_database. An explain runs nothing it explains.
-	mcpWrite := !clamped && !request.Explain && mcpSession(ctx) && !mcpStatementIsRead(ctx, instance.Metadata.GetEngine(), statement)
-	if mcpWrite && !mcpWriteMarked(ctx, request.Name) {
-		return nil, mcpWriteOutsideQueryDatabase()
-	}
 
 	queryRestriction := getEffectiveQueryDataPolicy(
 		ctx,
@@ -369,8 +363,9 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		request.Limit,
 		database.ProjectID,
 	)
+	routeAsWrite := !clamped && queryDatabaseRequest(ctx, request.Name) && !mcpStatementIsRead(ctx, instance.Metadata.GetEngine(), statement)
 	var resolvedDataSourceID string
-	if mcpWrite {
+	if routeAsWrite {
 		resolvedDataSourceID, err = mcpWriteDataSourceID(instance, request.DataSourceId, queryRestriction.AllowAdminDataSource)
 	} else {
 		resolvedDataSourceID, err = resolveDataSourceID(ctx, instance, request.DataSourceId, statement, queryRestriction.AllowAdminDataSource)
@@ -1237,8 +1232,7 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 	// The validation below admits a write on MySQL and on an engine with no
 	// validator, and the driver runs it.
 	if mcpSession(ctx) && !mcpStatementIsRead(ctx, instance.Metadata.GetEngine(), statement) {
-		setPermissionDenied(ctx)
-		return nil, mcpExportOfPossibleWrite()
+		return nil, permissionDeniedError(ctx, errors.Errorf("an MCP session exports only statements Bytebase can show are reads. %s", mcpConsoleWayOut))
 	}
 
 	// Validate the request.
@@ -2512,6 +2506,8 @@ func resolveDataSourceID(ctx context.Context, instance *store.InstanceMessage, d
 		return requiresAdminDataSource(ctx, instance.Metadata.GetEngine(), statement)
 	})
 }
+
+var errMultipleReadOnlyDataSources = errors.New("instance has multiple read-only data sources, please specify data_source_id explicitly")
 
 // routeDataSource picks the data source for a request that names none.
 func routeDataSource(instance *store.InstanceMessage, allowAdminDataSource bool, needsAdmin func() bool) (string, error) {

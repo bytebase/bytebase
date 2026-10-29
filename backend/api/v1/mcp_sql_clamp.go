@@ -43,12 +43,22 @@ func mcpReadOnlyClampApplies(ctx context.Context) (bool, error) {
 	return settings.Capability == storepb.MCPSetting_READ_ONLY, nil
 }
 
-// refuseNonReadOnlyStatement classifies a request fail-closed. Nothing here
-// calls base.ValidateSQLForEditor bare: it answers "read-only" for an engine
-// with no registered validator, which suits a caller that only routes on the
-// verdict and admits every write for one that must refuse a write.
+// refuseNonReadOnlyStatement refuses a request nonReadReason does not show to be
+// a read.
+func refuseNonReadOnlyStatement(engine storepb.Engine, statement string) error {
+	if reason := nonReadReason(engine, statement); reason != "" {
+		return refuseClampedStatement(reason)
+	}
+	return nil
+}
+
+// nonReadReason classifies a request fail-closed: it says why the request is not
+// shown to be a read, or returns "" when every statement the driver would run is
+// one. Nothing here calls base.ValidateSQLForEditor bare: it answers "read-only"
+// for an engine with no registered validator, which suits a caller that only
+// routes on the verdict and admits every write for one that must refuse a write.
 //
-// A statement that returns no data is refused as well as one that is not a
+// A statement that returns no data fails as well as one that is not a
 // read. Every unit of a request runs on one connection, and Postgres applies a
 // changed default_transaction_read_only to the next transaction, so
 // "SET default_transaction_read_only = off" followed by a classifier-admitted
@@ -60,20 +70,10 @@ func mcpReadOnlyClampApplies(ctx context.Context) (bool, error) {
 //
 // Not closed: a structurally-reading statement can still call a function that
 // rewrites the same setting (set_config, BOT-88).
-func refuseNonReadOnlyStatement(engine storepb.Engine, statement string) error {
-	if !parserbase.HasQueryValidator(engine) {
-		return refuseClampedStatement(fmt.Sprintf(
-			"Bytebase has no read-only classifier for %v, so no statement on this engine can be shown to be a read", engine))
-	}
-	if reason := nonReadReason(engine, statement); reason != "" {
-		return refuseClampedStatement(reason)
-	}
-	return nil
-}
-
-// nonReadReason says why a request on an engine with a validator is not shown
-// to be a read, or returns "" when every statement the driver would run is one.
 func nonReadReason(engine storepb.Engine, statement string) string {
+	if !parserbase.HasQueryValidator(engine) {
+		return fmt.Sprintf("Bytebase has no read-only classifier for %v, so no statement on this engine can be shown to be a read", engine)
+	}
 	units := mcpClampUnits(engine, statement)
 	for i, unit := range units {
 		readOnly, allQuery, err := parserbase.ValidateSQLForEditor(engine, unit)

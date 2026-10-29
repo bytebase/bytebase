@@ -37,16 +37,10 @@ func TestMCPStatementIsRead(t *testing.T) {
 	}
 }
 
-func TestMCPWriteMarked(t *testing.T) {
+func TestQueryDatabaseRequest(t *testing.T) {
 	const database = "instances/prod/databases/hr"
-	mark := func(edit func(*auth.MCPConfirmedDecision)) context.Context {
-		decision := auth.MCPConfirmedDecision{
-			Procedure:     v1connect.SQLServiceQueryProcedure,
-			Resource:      database,
-			WithoutAsking: true,
-		}
-		edit(&decision)
-		return auth.WithMCPConfirmedDecision(context.Background(), decision)
+	mark := func(procedure, resource string) context.Context {
+		return auth.WithMCPConfirmedDecision(context.Background(), auth.MCPConfirmedDecision{Procedure: procedure, Resource: resource})
 	}
 	for _, row := range []struct {
 		name   string
@@ -54,13 +48,12 @@ func TestMCPWriteMarked(t *testing.T) {
 		marked bool
 	}{
 		{name: "no mark", ctx: context.Background()},
-		{name: "query_database's mark", ctx: mark(func(*auth.MCPConfirmedDecision) {}), marked: true},
-		{name: "a mark for another database", ctx: mark(func(d *auth.MCPConfirmedDecision) { d.Resource = "instances/prod/databases/payroll" })},
-		{name: "a mark for another procedure", ctx: mark(func(d *auth.MCPConfirmedDecision) { d.Procedure = v1connect.IssueServiceApproveIssueProcedure })},
-		{name: "a decision that does not run unasked", ctx: mark(func(d *auth.MCPConfirmedDecision) { d.WithoutAsking = false })},
+		{name: "query_database's mark", ctx: mark(v1connect.SQLServiceQueryProcedure, database), marked: true},
+		{name: "a mark for another database", ctx: mark(v1connect.SQLServiceQueryProcedure, "instances/prod/databases/payroll")},
+		{name: "a mark for another procedure", ctx: mark(v1connect.IssueServiceApproveIssueProcedure, database)},
 	} {
 		t.Run(row.name, func(t *testing.T) {
-			require.Equal(t, row.marked, mcpWriteMarked(row.ctx, database))
+			require.Equal(t, row.marked, queryDatabaseRequest(row.ctx, database))
 		})
 	}
 }
@@ -93,20 +86,5 @@ func TestMCPWriteDataSourceID(t *testing.T) {
 		instance := &store.InstanceMessage{Metadata: &storepb.Instance{Engine: storepb.Engine_POSTGRES, DataSources: []*storepb.DataSource{readOnly, readOnly2}}}
 		_, err := mcpWriteDataSourceID(instance, "", false)
 		require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
-	})
-
-	// The SQL Editor's routing reads a statement it cannot parse as a read, and
-	// a person there can still pick ADMIN. An MCP write is routed by the verdict.
-	t.Run("a write the SQL Editor's routing cannot parse", func(t *testing.T) {
-		instance := &store.InstanceMessage{Metadata: &storepb.Instance{Engine: storepb.Engine_POSTGRES, DataSources: []*storepb.DataSource{admin, readOnly}}}
-		const statement = "UPSERT INTO employee VALUES (1)"
-		require.False(t, mcpStatementIsRead(context.Background(), storepb.Engine_POSTGRES, statement))
-
-		editor, err := resolveDataSourceID(context.Background(), instance, "", statement, true)
-		require.NoError(t, err)
-		require.Equal(t, "ro", editor)
-		routed, err := mcpWriteDataSourceID(instance, "ro", true)
-		require.NoError(t, err)
-		require.Equal(t, "admin", routed)
 	})
 }

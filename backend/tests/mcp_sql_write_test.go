@@ -38,7 +38,7 @@ func countRows(ctx context.Context, t *testing.T, ctl *controller, database, tab
 // An instance with a read-only data source, where the query data policy lets
 // writes use ADMIN. query_database sends the read-only data source, and the
 // read-only account can only SELECT.
-func TestMCPReadWriteWritesOnlyThroughQueryDatabase(t *testing.T) {
+func TestMCPQueryDatabaseRoutesWritesAsWrites(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctl, ctx := startWorkspace(context.Background(), t)
@@ -108,19 +108,25 @@ func TestMCPReadWriteWritesOnlyThroughQueryDatabase(t *testing.T) {
 	session := openMCPSession(ctx, t, ctl, token)
 	defer session.Close()
 
-	read := callAPIOnSession(ctx, t, session, "SQLService/Query", map[string]any{
-		"name":      database,
-		"statement": "SELECT name FROM employee",
-	})
-	a.Equal(http.StatusOK, read.Status, "call_api still reads: %s", read.Error)
+	read := queryDatabaseOnSession(ctx, t, session, databaseName, "SELECT current_user")
+	a.False(read.isError, read.text)
+	a.Equal([][]any{{"mcp_write_ro"}}, read.output.Rows, "a read keeps the data source query_database sends")
 
-	refused := callAPIOnSession(ctx, t, session, "SQLService/Query", map[string]any{
-		"name":      database,
-		"statement": "INSERT INTO employee VALUES (2, 'call_api')",
+	// A SET returns no data, so the verdict cannot show this request is a read,
+	// while the SQL Editor's routing reads it as one.
+	const setsTheSession = "SELECT current_user; SET search_path TO public"
+	routed := queryDatabaseOnSession(ctx, t, session, databaseName, setsTheSession)
+	a.False(routed.isError, routed.text)
+	a.Equal([][]any{{"postgres"}}, routed.output.Rows, "the verdict routes the request to ADMIN")
+	named := callAPIOnSession(ctx, t, session, "SQLService/Query", map[string]any{
+		"name":         database,
+		"dataSourceId": "readonly",
+		"statement":    setsTheSession,
 	})
-	a.Equal(http.StatusBadRequest, refused.Status, "call_api must not write: %s", refused.Error)
-	a.Contains(refused.Error, "query_database")
-	a.Equal(1, countRows(ctx, t, ctl, database, "employee"))
+	a.Equal(http.StatusOK, named.Status, named.Error)
+	var namedResponse v1pb.QueryResponse
+	a.NoError(common.ProtojsonUnmarshaler.Unmarshal([]byte(named.RawResponse), &namedResponse))
+	a.Equal("mcp_write_ro", namedResponse.Results[0].Rows[0].Values[0].GetStringValue(), "call_api keeps the data source it names")
 
 	written := queryDatabaseOnSession(ctx, t, session, databaseName, "INSERT INTO employee VALUES (2, 'query_database')")
 	a.False(written.isError, "query_database writes on ADMIN, though it sends the read-only data source: %s", written.text)
@@ -159,6 +165,13 @@ func TestMCPExportRunsOnlyReads(t *testing.T) {
 		"format":    "JSON",
 	})
 	a.Equal(http.StatusForbidden, refused.Status, "an export must not write: %s", refused.Error)
-	a.Contains(refused.Error, "query_database")
+	a.Contains(refused.Error, "exports only statements Bytebase can show are reads")
 	a.Equal(1, countRows(ctx, t, ctl, database.Name, "employee"))
+
+	_, err = ctl.sqlServiceClient.Export(ctx, connect.NewRequest(&v1pb.ExportRequest{
+		Name:      database.Name,
+		Statement: "SET @n = 1; SELECT id FROM employee",
+		Format:    v1pb.ExportFormat_JSON,
+	}))
+	a.NoError(err, "the console still exports a request the verdict cannot show is a read")
 }

@@ -230,14 +230,13 @@ func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, i
 	if input.Container != "" {
 		body["container"] = input.Container
 	}
-	// Until the form that asks before a write lands (BYT-9292), query_database
-	// runs every statement without asking.
+	// Query routes a statement that may write as a write only for a request this
+	// mark names.
 	ctx = auth.WithMCPConfirmedDecision(ctx, auth.MCPConfirmedDecision{
-		Procedure:     v1connect.SQLServiceQueryProcedure,
-		Resource:      resolved.resourceName,
-		WithoutAsking: true,
+		Procedure: v1connect.SQLServiceQueryProcedure,
+		Resource:  resolved.resourceName,
 	})
-	resp, err := s.apiRequest(ctx, "/bytebase.v1.SQLService/Query", body)
+	resp, err := s.apiRequest(ctx, v1connect.SQLServiceQueryProcedure, body)
 	if err != nil {
 		return nil, &toolError{
 			Code:       "QUERY_ERROR",

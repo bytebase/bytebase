@@ -562,12 +562,15 @@ func TestMCPMaskedWriteIsRefused(t *testing.T) {
 	a.NoError(err, "the console path must be untouched by the mask guard")
 	a.NotEmpty(created.Msg.Name)
 
-	// And the door really is open, which "refused" alone cannot show. An MCP
-	// session writes only through query_database, so the clean write goes there
-	// and is asserted on the stored value, not the status.
+	// And the door really is open, which "refused" alone cannot show. A clean
+	// write through SQLService/Query is the only place in this PR an MCP session
+	// runs DML end to end, so it is asserted on the stored value, not the status.
 	const agentWrite = "UPDATE employee SET secret = 'rotated-by-agent' WHERE id = 1"
-	agentRan := queryDatabaseOnSession(f.ctx, t, f.session, f.name, agentWrite)
-	a.False(agentRan.isError, "the execution door is open: %s", agentRan.text)
+	agentRan := callAPIOnSession(f.ctx, t, f.session, "SQLService/Query", map[string]any{
+		"name":      f.database,
+		"statement": agentWrite,
+	})
+	a.Equal(http.StatusOK, agentRan.Status, "the execution door is open: %s", agentRan.Error)
 	a.Equal("rotated-by-agent", f.consoleReadsSecret(t),
 		"the agent's write landed, so the refusals above were the guard and not a closed door")
 }
