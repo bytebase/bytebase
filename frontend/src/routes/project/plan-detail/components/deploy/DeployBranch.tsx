@@ -8,7 +8,7 @@ import type { Rollout, Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { extractStageUID } from "@/utils/v1/issue/rollout";
 import { usePlanDetailContext } from "../../shell/PlanDetailContext";
 import { generateRolloutPreview } from "../../utils/rolloutPreview";
-import { getFrontierStage } from "../lifecycle/frontierStage";
+import { getDefaultDeployStage } from "../lifecycle/frontierStage";
 import { DeployPendingTasksSection } from "./DeployPendingTasksSection";
 import { DeployStageList } from "./DeployStageCard";
 import { DeployStageContentView } from "./DeployStageContentView";
@@ -115,9 +115,9 @@ export function DeployBranch() {
       }
     }
     // A missing route stage canonicalizes to the rollout route. Render that
-    // route's frontier synchronously too, so a stale URL cannot flash the
+    // route's default synchronously too, so a stale URL cannot flash the
     // misleading empty-stage state before the replace settles.
-    return getFrontierStage(page.rollout) ?? page.rollout.stages[0];
+    return getDefaultDeployStage(page.rollout) ?? page.rollout.stages[0];
   }, [page.rollout, page.routeStageId, selectedTaskName, optimisticStageName]);
 
   useEffect(() => {

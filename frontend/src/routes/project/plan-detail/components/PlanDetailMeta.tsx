@@ -1,9 +1,13 @@
 import { create } from "@bufbuild/protobuf";
-import { Plus, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { ChevronDown, ChevronRight, Plus, X } from "lucide-react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect } from "@/api";
 import { HumanizeTs } from "@/components/HumanizeTs";
+import {
+  buildSourceRow,
+  SOURCE_TITLE_LIMIT,
+} from "@/components/release/vcsSource";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -11,17 +15,29 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { useReleaseByName } from "@/hooks/useAppState";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { cn } from "@/lib/utils";
 import { extractUserEmail, pushNotification } from "@/stores";
+import { useAppStore } from "@/stores/app";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { Color } from "@/types/proto-es/google/type/color_pb";
-import { IssueStatus } from "@/types/proto-es/v1/common_pb";
+import { ApprovalStatus, IssueStatus } from "@/types/proto-es/v1/common_pb";
 import {
+  Issue_Approver_Status,
   IssueSchema,
   UpdateIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  type Release,
+  Release_Type,
+  type Release_VCSSource,
+} from "@/types/proto-es/v1/release_service_pb";
 import { colorToHex, hasProjectPermissionV2 } from "@/utils";
+import { PlanStages } from "../../PlanTable";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
+import { compareVersions } from "./changes/releaseChanges";
+import { statementKindOf } from "./deploy/foldedTaskDescription";
 
 export function PlanDetailMeta() {
   const { t } = useTranslation();
@@ -33,6 +49,61 @@ export function PlanDetailMeta() {
     [page.plan.creator]
   );
   const createdTimeMs = getTimeForPbTimestampProtoEs(page.plan.createTime);
+  const [detailsOpen, setDetailsOpen] = useState(true);
+  const releaseName = page.plan.specs?.find(
+    (spec) => spec.config?.case === "changeDatabaseConfig"
+  )?.config;
+  const releaseResource =
+    releaseName?.case === "changeDatabaseConfig"
+      ? releaseName.value.release
+      : "";
+  const release = useReleaseByName(releaseResource);
+  const fetchRelease = useAppStore((state) => state.fetchRelease);
+  useEffect(() => {
+    if (releaseResource) void fetchRelease(releaseResource);
+  }, [fetchRelease, releaseResource]);
+  const changesSummary = useMemo(() => {
+    const targets = new Set(
+      (page.plan.specs ?? []).flatMap((spec) =>
+        spec.config?.case === "changeDatabaseConfig"
+          ? spec.config.value.targets
+          : []
+      )
+    );
+    const types = (page.planCheckRuns ?? []).flatMap((run) =>
+      run.results.flatMap((result) =>
+        result.report.case === "sqlSummaryReport"
+          ? result.report.value.statementTypes
+          : []
+      )
+    );
+    const kind = statementKindOf(types);
+    return kind
+      ? t("plan.details.changes-on", { kind, count: targets.size })
+      : t("plan.details.databases", { count: targets.size });
+  }, [page.plan.specs, page.planCheckRuns, t]);
+  const reviewSummary = useMemo(() => {
+    const issue = page.issue;
+    if (!issue) return "";
+    switch (issue.approvalStatus) {
+      case ApprovalStatus.APPROVED: {
+        const approver = [...issue.approvers]
+          .reverse()
+          .find((a) => a.status === Issue_Approver_Status.APPROVED);
+        return approver
+          ? t("plan.details.approved-by", {
+              user: approver.principal.replace(/^users\//, ""),
+            })
+          : t("plan.details.approved");
+      }
+      case ApprovalStatus.REJECTED:
+        return t("plan.details.rejected");
+      case ApprovalStatus.SKIPPED:
+        return t("plan.details.no-approval");
+      default:
+        return t("plan.details.awaiting-approval");
+    }
+  }, [page.issue, t]);
   const allowChangeLabels = useMemo(() => {
     if (!project || !page.issue || page.issue.status !== IssueStatus.OPEN) {
       return false;
@@ -81,8 +152,8 @@ export function PlanDetailMeta() {
     }
   };
 
-  return (
-    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-control-placeholder">
+  const createdLine = (
+    <span className="flex flex-wrap items-center gap-x-1">
       <span>{t("plan.meta.created-by", { user: creatorEmail })}</span>
       {createdTimeMs !== undefined && (
         <>
@@ -90,20 +161,161 @@ export function PlanDetailMeta() {
           <HumanizeTs tsMs={createdTimeMs} />
         </>
       )}
+    </span>
+  );
 
-      {page.issue && (
-        <>
-          <span aria-hidden="true">·</span>
-          <InlineLabels
-            allowChange={allowChangeLabels}
-            issueLabels={project?.issueLabels ?? []}
-            labels={page.issue.labels || []}
-            onUpdate={handleLabelsUpdate}
-            required={page.issue.draft && (project?.forceIssueLabels ?? false)}
-          />
-        </>
+  return (
+    <div className="mt-1 flex flex-col gap-y-1 text-xs">
+      <Button
+        type="button"
+        appearance="secondary"
+        size="xs"
+        aria-expanded={detailsOpen}
+        className="h-auto self-start bg-transparent p-0 text-control-light hover:bg-transparent"
+        data-testid="plan-details-toggle"
+        onClick={() => setDetailsOpen((open) => !open)}
+      >
+        {detailsOpen ? (
+          <ChevronDown className="size-3.5" />
+        ) : (
+          <ChevronRight className="size-3.5" />
+        )}
+        {t("plan.details.self")}
+      </Button>
+      {detailsOpen && (
+        <dl className="grid grid-cols-[max-content_minmax(0,1fr)] gap-x-4 gap-y-1">
+          {release && (
+            <DetailRow label={t("plan.details.source")} row="source">
+              <SourceRowView source={release.vcsSource} />
+            </DetailRow>
+          )}
+          <DetailRow
+            label={
+              release ? t("plan.details.triggered") : t("plan.details.created")
+            }
+            row="created"
+          >
+            {createdLine}
+          </DetailRow>
+          {page.issue && !release && (
+            <DetailRow label={t("plan.details.labels")} row="labels">
+              <InlineLabels
+                allowChange={allowChangeLabels}
+                issueLabels={project?.issueLabels ?? []}
+                labels={page.issue.labels || []}
+                onUpdate={handleLabelsUpdate}
+                required={
+                  page.issue.draft && (project?.forceIssueLabels ?? false)
+                }
+              />
+            </DetailRow>
+          )}
+          {release ? (
+            <DetailRow label={t("plan.details.release")} row="release">
+              <span data-testid="plan-detail-release">
+                {release.type === Release_Type.DECLARATIVE
+                  ? t("plan.details.state-based", {
+                      version: release.files[0]?.version ?? "",
+                    })
+                  : t("plan.details.migration-based", {
+                      count: release.files.length,
+                      version: newestVersion(release),
+                    })}
+              </span>
+            </DetailRow>
+          ) : (
+            <DetailRow label={t("plan.details.changes")} row="changes">
+              {changesSummary}
+            </DetailRow>
+          )}
+          {page.issue && !release && (
+            <DetailRow label={t("plan.details.review")} row="review">
+              {reviewSummary}
+            </DetailRow>
+          )}
+          <DetailRow label={t("plan.details.progress")} row="progress">
+            <PlanStages plan={page.plan} />
+          </DetailRow>
+        </dl>
       )}
     </div>
+  );
+}
+
+function DetailRow({
+  label,
+  row,
+  children,
+}: {
+  label: string;
+  row: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="contents" data-testid="plan-detail-row" data-row={row}>
+      <dt className="text-control-placeholder">{label}</dt>
+      <dd className="min-w-0 text-control">{children}</dd>
+    </div>
+  );
+}
+
+const newestVersion = (release: Release) =>
+  [...release.files]
+    .map((file) => file.version)
+    .sort(compareVersions)
+    .at(-1) ?? "";
+
+function SourceRowView({ source }: { source?: Release_VCSSource }) {
+  const { t } = useTranslation();
+  const narrow = useMediaQuery("(max-width: 639px)");
+  const row = buildSourceRow(source);
+  if (!row) return <span className="text-control-placeholder">-</span>;
+  const truncated =
+    row.title && row.title.length > SOURCE_TITLE_LIMIT
+      ? `${row.title.slice(0, SOURCE_TITLE_LIMIT)}…`
+      : row.title;
+  const link = (text: string, full?: string) => (
+    <a
+      className="truncate text-accent hover:underline"
+      data-testid="source-part"
+      href={row.href}
+      rel="noopener noreferrer"
+      target="_blank"
+      title={full}
+    >
+      {text}
+    </a>
+  );
+  const rest = [
+    row.title && row.author
+      ? t("plan.details.by-author", { author: row.author })
+      : undefined,
+    row.title ? row.repoAtSha : undefined,
+    row.branch,
+  ].filter((part): part is string => Boolean(part));
+  return (
+    <span className="flex min-w-0 flex-wrap items-center gap-x-1">
+      {row.title
+        ? link(truncated ?? "", row.title)
+        : row.repoAtSha
+          ? link(row.repoAtSha)
+          : null}
+      {rest.length > 0 && (
+        <span
+          className={cn(
+            "flex flex-wrap items-center gap-x-1",
+            narrow && "basis-full text-control-light"
+          )}
+        >
+          {rest.map((part) => (
+            <span key={part} className="flex items-center gap-x-1">
+              {!narrow && <span aria-hidden="true">·</span>}
+              <span data-testid="source-part">{part}</span>
+            </span>
+          ))}
+        </span>
+      )}
+    </span>
   );
 }
 

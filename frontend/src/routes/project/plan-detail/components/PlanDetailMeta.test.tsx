@@ -17,6 +17,20 @@ const mocks = vi.hoisted(() => ({
   pushNotification: vi.fn(),
   setCreationIssueLabels: vi.fn(),
   updateIssue: vi.fn(),
+  release: undefined as unknown,
+}));
+vi.mock("@/hooks/useAppState", () => ({
+  useReleaseByName: () => mocks.release,
+}));
+vi.mock("@/stores/app", () => {
+  const state = () => ({ fetchRelease: vi.fn(async () => mocks.release) });
+  const useAppStore = (selector?: (s: unknown) => unknown) =>
+    selector ? selector(state()) : state();
+  useAppStore.getState = state;
+  return { useAppStore };
+});
+vi.mock("../../PlanTable", () => ({
+  PlanStages: () => <div data-testid="stage-cells" />,
 }));
 
 vi.mock("react-i18next", () => ({
@@ -135,7 +149,20 @@ const makePage = (): PlanDetailPageState =>
   }) as unknown as PlanDetailPageState;
 
 beforeEach(() => {
+  // jsdom has no matchMedia; the Source row asks it for the phone layout.
+  Object.defineProperty(window, "matchMedia", {
+    configurable: true,
+    writable: true,
+    value: (query: string) =>
+      ({
+        matches: false,
+        media: query,
+        addEventListener: () => {},
+        removeEventListener: () => {},
+      }) as unknown as MediaQueryList,
+  });
   vi.clearAllMocks();
+  mocks.release = undefined;
   mocks.creationIssueLabels = [];
   mocks.page = makePage();
   mocks.permissions = new Set();
@@ -293,4 +320,157 @@ test("keeps draft labels read-only without issues.update and editable with it", 
       updateMask: { paths: ["labels"] },
     })
   );
+});
+
+const releasePage = (vcsSource?: Record<string, unknown>, type = 1) => {
+  mocks.release = {
+    name: "projects/p1/releases/r1",
+    type,
+    vcsSource,
+    files: [
+      { version: "202610051500", path: "a.sql" },
+      { version: "202610051530", path: "b.sql" },
+    ],
+  };
+  return {
+    ...makePage(),
+    issue: undefined,
+    plan: {
+      creator: "users/ci@example.com",
+      name: "projects/p1/plans/123",
+      specs: [
+        {
+          id: "s",
+          config: {
+            case: "changeDatabaseConfig",
+            value: { release: "projects/p1/releases/r1", targets: [] },
+          },
+        },
+      ],
+      rolloutStageSummaries: [],
+    },
+  } as unknown as PlanDetailPageState;
+};
+const rows = () =>
+  screen.queryAllByTestId("plan-detail-row").map((row) => row.getAttribute("data-row"));
+const sourceRow = () =>
+  screen.getAllByTestId("plan-detail-row").find((row) => row.getAttribute("data-row") === "source")!;
+
+const GITHUB = 1;
+const githubSource = {
+  vcsType: GITHUB,
+  url: "https://github.com/example/app/commit/0a1b2c3d4e5f",
+  commitSha: "0a1b2c3d4e5f",
+  branch: "feature/orders",
+};
+
+test("a release plan's details block has Source, Triggered, Release and Progress, and no Labels or Review", () => {
+  mocks.page = releasePage(githubSource);
+  render(<PlanDetailMeta />);
+  expect(rows()).toEqual(["source", "created", "release", "progress"]);
+  expect(screen.getByTestId("stage-cells")).toBeDefined();
+});
+
+test("a UIOps plan's details block has Created, Labels, Changes, Review and Progress, and no Source", () => {
+  mocks.page = {
+    ...makePage(),
+    plan: { ...makePage().plan, specs: [], rolloutStageSummaries: [] },
+    planCheckRuns: [],
+  } as unknown as PlanDetailPageState;
+  render(<PlanDetailMeta />);
+  expect(rows()).toEqual(["created", "labels", "changes", "review", "progress"]);
+});
+
+test("a UIOps plan without an issue has no Labels or Review row", () => {
+  mocks.page = {
+    ...makePage(),
+    issue: undefined,
+    plan: { ...makePage().plan, specs: [], rolloutStageSummaries: [] },
+    planCheckRuns: [],
+  } as unknown as PlanDetailPageState;
+  render(<PlanDetailMeta />);
+  expect(rows()).toEqual(["created", "changes", "progress"]);
+});
+
+test("Migration-based and State-based releases", () => {
+  mocks.page = releasePage(githubSource, 1);
+  const { unmount } = render(<PlanDetailMeta />);
+  expect(screen.getByTestId("plan-detail-release").textContent).toContain("plan.details.migration-based");
+  unmount();
+  mocks.page = releasePage(githubSource, 2);
+  render(<PlanDetailMeta />);
+  expect(screen.getByTestId("plan-detail-release").textContent).toContain("plan.details.state-based");
+});
+
+test.each([
+  [
+    "a known PR",
+    { ...githubSource, authorLogin: "alexdoe", pullRequest: { url: "https://github.com/example/app/pull/42", number: 42n, title: "Add the orders table" } },
+    ["Add the orders table #42", "plan.details.by-author", "example/app@0a1b2c3", "feature/orders"],
+    "https://github.com/example/app/pull/42",
+  ],
+  [
+    "a commit title only",
+    { ...githubSource, commitTitle: "Add the orders index", authorName: "Alex Doe" },
+    ["Add the orders index", "plan.details.by-author", "example/app@0a1b2c3", "feature/orders"],
+    "https://github.com/example/app/commit/0a1b2c3d4e5f",
+  ],
+  [
+    "no title or author (a Bitbucket push)",
+    { vcsType: 3, url: "https://bitbucket.org/example/app/commits/5e6f7a8b9c0d", commitSha: "5e6f7a8b9c0d", branch: "main" },
+    ["example/app@5e6f7a8", "main"],
+    "https://bitbucket.org/example/app/commits/5e6f7a8b9c0d",
+  ],
+  [
+    "only the commit URL",
+    { vcsType: 2, url: "https://gitlab.example.com/group/app/-/commit/9f8e7d6c5b4a" },
+    ["group/app@9f8e7d6"],
+    "https://gitlab.example.com/group/app/-/commit/9f8e7d6c5b4a",
+  ],
+])("the Source row with %s", (_, source, parts, href) => {
+  mocks.page = releasePage(source);
+  render(<PlanDetailMeta />);
+  const texts = Array.from(sourceRow().querySelectorAll('[data-testid="source-part"]')).map(
+    (part) => part.textContent
+  );
+  expect(texts).toEqual(parts);
+  expect(sourceRow().querySelector("a")?.getAttribute("href")).toBe(href);
+});
+
+test("a squash-merge title ending in (#N) shows the number once", () => {
+  mocks.page = releasePage({
+    ...githubSource,
+    commitTitle: "Add the orders table (#42)",
+    pullRequest: { url: "https://github.com/example/app/pull/42", number: 42n, title: "" },
+  });
+  render(<PlanDetailMeta />);
+  expect(sourceRow().querySelector("a")?.textContent).toBe("Add the orders table #42");
+});
+
+test("a long title is cut at 72 characters with the full text as its tooltip", () => {
+  const title = "x".repeat(100);
+  mocks.page = releasePage({ ...githubSource, commitTitle: title });
+  render(<PlanDetailMeta />);
+  const link = sourceRow().querySelector("a")!;
+  expect(link.textContent).toBe(`${"x".repeat(72)}…`);
+  expect(link.getAttribute("title")).toBe(title);
+});
+
+test("a title with markdown and control characters renders as plain text", () => {
+  mocks.page = releasePage({ ...githubSource, commitTitle: "  **Bold** `code`\u0007\u001b[0m  " });
+  render(<PlanDetailMeta />);
+  const link = sourceRow().querySelector("a")!;
+  expect(link.textContent).toBe("**Bold** `code`[0m");
+  expect(link.querySelector("strong, code")).toBeNull();
+});
+
+test("the details block can be folded and starts unfolded", () => {
+  mocks.page = releasePage(githubSource);
+  render(<PlanDetailMeta />);
+  const toggle = screen.getByTestId("plan-details-toggle");
+  expect(toggle.getAttribute("aria-expanded")).toBe("true");
+  expect(rows()).not.toHaveLength(0);
+  fireEvent.click(toggle);
+  expect(toggle.getAttribute("aria-expanded")).toBe("false");
+  expect(rows()).toHaveLength(0);
 });

@@ -93,7 +93,9 @@ export function createPlanStagesColumn(t: TFunction): PlanColumn {
   };
 }
 
-function PlanStages({ plan }: { plan: Plan }) {
+// Each stage's status icon and name, joined by arrows. Also the plan page's
+// Progress row.
+export function PlanStages({ plan }: { plan: Plan }) {
   // Subscribe so stage names re-render when the environment cache loads.
   const getEnvironmentByName = useAppStore((s) => s.getEnvironmentByName);
   void useAppStore((s) => s.environmentList);

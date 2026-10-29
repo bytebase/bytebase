@@ -33,6 +33,20 @@ const mocks = vi.hoisted(() => ({
   minimizeAgent: vi.fn(),
   openAgentWithPrompt: vi.fn(),
   localSheetNames: [] as string[],
+  getRelease: vi.fn(),
+  openedFile: undefined as unknown,
+}));
+
+vi.mock("@/api", () => ({
+  planServiceClientConnect: {},
+  sheetServiceClientConnect: {},
+  releaseServiceClientConnect: { getRelease: mocks.getRelease },
+}));
+vi.mock("@/components/release/ReleaseFileViewer", () => ({
+  ReleaseFileViewer: ({ target }: { target?: { file: { path: string } } }) => {
+    mocks.openedFile = target;
+    return target ? <div data-testid="viewer">{target.file.path}</div> : null;
+  },
 }));
 
 vi.mock("react-i18next", () => ({
@@ -461,4 +475,109 @@ test("an Activity anchor wins over the reading position captured by Edit", () =>
   expect(mocks.revealLineInCenter).toHaveBeenCalledWith(1);
   expect(mocks.setScrollTop).not.toHaveBeenCalled();
   expect(mocks.clearThreadFocus).toHaveBeenCalledWith(3);
+});
+
+const releaseSpec = create(Plan_SpecSchema, {
+  id: "spec",
+  config: {
+    case: "changeDatabaseConfig",
+    value: create(Plan_ChangeDatabaseConfigSchema, {
+      release: "projects/p/releases/r1",
+    }),
+  },
+});
+const releasePage = {
+  currentUser: { name: "users/test" },
+  isCreating: false,
+  readonly: true,
+  project: { name: "projects/p" },
+  plan: create(PlanSchema, { name: "projects/p/plans/1", specs: [releaseSpec] }),
+  setEditing: vi.fn(),
+};
+const fileOf = (version: string, path = `migrations/${version}.sql`) => ({
+  version,
+  path,
+  sheet: `projects/p/sheets/${version}`,
+});
+const renderRail = async (files: ReturnType<typeof fileOf>[], type = 1) => {
+  mocks.page = releasePage;
+  mocks.getRelease.mockResolvedValue({ name: "projects/p/releases/r1", type, files });
+  const view = render(<PlanDetailStatementSection spec={releaseSpec} />);
+  await waitFor(() => expect(view.getByTestId("release-changes")).toBeDefined());
+  return view;
+};
+const rowVersions = (view: ReturnType<typeof render>) =>
+  view.queryAllByTestId("release-change-row").map((row) => row.getAttribute("data-version"));
+
+test("the Changes list puts the newest version on top whatever its shape", async () => {
+  for (const versions of [
+    ["202610051200", "202610051400", "202610051530"],
+    ["001", "002", "010"],
+    ["1.2.9", "1.10.0", "1.10.2"],
+  ]) {
+    const view = await renderRail(versions.map((v) => fileOf(v)));
+    expect(rowVersions(view)).toEqual([...versions].reverse());
+    cleanup();
+  }
+});
+
+test("timestamp versions group by day for the newest group and by month for the rest, newest open", async () => {
+  const view = await renderRail(
+    ["202608011200", "202609150900", "202609200900", "202610050900", "202610051530"].map((v) => fileOf(v))
+  );
+  const groups = view.getAllByTestId("release-change-group");
+  expect(groups.map((g) => [g.getAttribute("data-group"), g.getAttribute("aria-expanded")])).toEqual([
+    ["2026-10-05", "true"],
+    ["2026-09", "false"],
+    ["2026-08", "false"],
+  ]);
+  expect(groups[1].textContent).toContain("2");
+  expect(rowVersions(view)).toEqual(["202610051530", "202610050900"]);
+  fireEvent.click(groups[1]);
+  expect(rowVersions(view)).toContain("202609200900");
+});
+
+test("a group shows 12 rows, then N more extends it in place", async () => {
+  const versions = Array.from({ length: 30 }, (_, i) => String(i + 1).padStart(3, "0"));
+  const view = await renderRail(versions.map((v) => fileOf(v)));
+  expect(rowVersions(view)).toHaveLength(12);
+  fireEvent.click(view.getByRole("button", { name: "release.changes.n-more" }));
+  expect(rowVersions(view).length).toBeGreaterThan(12);
+});
+
+test("counters past a hundred fall into buckets of a hundred, the newest open", async () => {
+  const versions = Array.from({ length: 250 }, (_, i) => String(i + 1).padStart(4, "0"));
+  const view = await renderRail(versions.map((v) => fileOf(v)));
+  const groups = view.getAllByTestId("release-change-group");
+  expect(groups).toHaveLength(3);
+  expect(groups[0].getAttribute("aria-expanded")).toBe("true");
+  expect(rowVersions(view)[0]).toBe("0250");
+});
+
+test("a backfilled low version lands in its own old group, not on top", async () => {
+  const view = await renderRail(
+    ["202607010000", "202610051500", "202610051530"].map((v) => fileOf(v))
+  );
+  expect(rowVersions(view)).toEqual(["202610051530", "202610051500"]);
+  expect(view.getAllByTestId("release-change-group").map((g) => g.getAttribute("data-group"))).toEqual([
+    "2026-10-05",
+    "2026-07",
+  ]);
+});
+
+test("a file path opens the viewer with no database context", async () => {
+  const view = await renderRail(["001", "002"].map((v) => fileOf(v)));
+  fireEvent.click(view.getByRole("button", { name: "migrations/002.sql" }));
+  expect(view.getByTestId("viewer").textContent).toBe("migrations/002.sql");
+  expect((mocks.openedFile as { context?: unknown }).context).toBeUndefined();
+});
+
+test("a declarative release is one line: the schema at its version, with Open", async () => {
+  const view = await renderRail([fileOf("20261005", "schema/schema.sql")], 2);
+  expect(view.queryAllByTestId("release-change-row")).toHaveLength(0);
+  const line = view.getByTestId("release-changes");
+  expect(line.textContent).toContain("schema/schema.sql");
+  expect(line.textContent).toContain("20261005");
+  fireEvent.click(view.getByRole("button", { name: "common.open" }));
+  expect(view.getByTestId("viewer").textContent).toBe("schema/schema.sql");
 });

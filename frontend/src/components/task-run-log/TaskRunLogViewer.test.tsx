@@ -838,3 +838,151 @@ describe("TaskRunLogViewer row folds", () => {
     view.unmount();
   });
 });
+
+describe("TaskRunLogViewer release spine", () => {
+  const ts = (seconds: number) => ({ seconds: BigInt(seconds), nanos: 0 });
+  const marker = (seconds: number, version: string) =>
+    create(TaskRunLogEntrySchema, {
+      type: TaskRunLogEntry_Type.RELEASE_FILE_EXECUTE,
+      logTime: ts(seconds),
+      releaseFileExecute: { version, filePath: `migrations/${version}_change.sql` },
+    });
+  const run = (seconds: number, error: string, range?: { start: number; end: number }) =>
+    create(TaskRunLogEntrySchema, {
+      type: TaskRunLogEntry_Type.COMMAND_EXECUTE,
+      logTime: ts(seconds),
+      commandExecute: {
+        logTime: ts(seconds),
+        statement: `STATEMENT ${seconds};`,
+        range,
+        response: { logTime: ts(seconds + 1), error },
+      },
+    });
+  const FILES = ["001", "002", "003", "004", "005", "006", "007", "008"].map((version) => ({
+    version,
+    path: `migrations/${version}_change.sql`,
+    sheet: `projects/p/sheets/${version}`,
+  }));
+  const useRelease = (entries: TaskRunLogEntry[]) =>
+    mocks.useTaskRunLogData.mockReturnValue({
+      ...createDefaultData(),
+      entries,
+      release: { name: "projects/p/releases/r1", type: 1, files: FILES },
+    });
+
+  beforeEach(() => {
+    mocks.useTaskRunLogSections.mockImplementation(
+      (options: UseTaskRunLogSectionsOptions) =>
+        mocks.actualUseTaskRunLogSections!(options)
+    );
+  });
+
+  const failedRun = () => {
+    useRelease([
+      marker(1, "007"),
+      run(2, ""),
+      marker(4, "008"),
+      run(5, "ERROR: column \"c\" already exists\nDETAIL: more", { start: 10, end: 40 }),
+    ]);
+  };
+  const failedError =
+    'failed to execute release file migrations/008_change.sql (version 008): ERROR: column "c" already exists\nDETAIL: more';
+
+  test("the failed section opens on its failed row; collapsed, its header carries the error's first line", () => {
+    failedRun();
+    const view = renderViewer({ taskRunStatus: TaskRun_Status.FAILED, runError: failedError });
+    const header = within(view.container).getByTestId("spine-file-008");
+    expect(header.getAttribute("aria-expanded")).toBe("true");
+    expect(header.textContent).toContain("008");
+    expect(header.textContent).toContain("Failed");
+    expect(view.container.textContent).toContain('ERROR: column "c" already exists');
+    // Applied sections start collapsed.
+    expect(within(view.container).getByTestId("spine-file-007").getAttribute("aria-expanded")).toBe("false");
+
+    act(() => header.click());
+    expect(header.getAttribute("aria-expanded")).toBe("false");
+    expect(
+      within(view.container).getByTestId("spine-file-008-error").textContent
+    ).toBe('ERROR: column "c" already exists');
+    view.unmount();
+  });
+
+  test("the path opens the file viewer at the failed command", () => {
+    failedRun();
+    const onOpenFile = vi.fn();
+    const view = renderViewer({ taskRunStatus: TaskRun_Status.FAILED, runError: failedError, onOpenFile });
+    act(() => button(view.container, /migrations\/008_change\.sql/).click());
+    expect(onOpenFile).toHaveBeenCalledWith(
+      { version: "008", path: "migrations/008_change.sql" },
+      {
+        kind: "failed",
+        error: 'ERROR: column "c" already exists\nDETAIL: more',
+        range: { start: 10, end: 40 },
+      }
+    );
+    act(() => button(view.container, /migrations\/007_change\.sql/).click());
+    expect(onOpenFile).toHaveBeenLastCalledWith(
+      { version: "007", path: "migrations/007_change.sql" },
+      { kind: "applied" }
+    );
+    view.unmount();
+  });
+
+  test("the already-applied fold is folded, opens newest first and shows five rows at a time", () => {
+    failedRun();
+    const onOpenFile = vi.fn();
+    const view = renderViewer({ taskRunStatus: TaskRun_Status.FAILED, runError: failedError, onOpenFile });
+    const fold = button(view.container, /6 already applied/);
+    expect(fold.getAttribute("aria-expanded")).toBe("false");
+    expect(fold.textContent).toContain("001");
+    expect(fold.textContent).toContain("006");
+    act(() => fold.click());
+    const rows = () =>
+      within(view.container).getAllByTestId("spine-applied-row").map((row) => row.textContent);
+    expect(rows()).toEqual([
+      "migrations/006_change.sql",
+      "migrations/005_change.sql",
+      "migrations/004_change.sql",
+      "migrations/003_change.sql",
+      "migrations/002_change.sql",
+    ]);
+    act(() => button(view.container, /Show more/).click());
+    expect(rows()).toHaveLength(6);
+    act(() => button(view.container, /migrations\/001_change\.sql/).click());
+    expect(onOpenFile).toHaveBeenCalledWith(
+      { version: "001", path: "migrations/001_change.sql" },
+      { kind: "already-applied" }
+    );
+    view.unmount();
+  });
+
+  test("an error that names no file ends the spine with an open Run failed section holding it", () => {
+    useRelease([marker(1, "008"), run(2, "")]);
+    const error = "failed to create revision for version 008: duplicate key";
+    const view = renderViewer({ taskRunStatus: TaskRun_Status.FAILED, runError: error });
+    const section = within(view.container).getByTestId("spine-run-failed");
+    expect(section.textContent).toContain("Run failed");
+    expect(section.textContent).toContain(error);
+    view.unmount();
+  });
+
+  test("a failed file with no command response says no statement was identified and carries the run's error", () => {
+    useRelease([marker(1, "008")]);
+    const view = renderViewer({
+      taskRunStatus: TaskRun_Status.FAILED,
+      runError: "failed to execute release file migrations/008_change.sql (version 008): ORA-00942: table or view does not exist",
+    });
+    const content = within(view.container).getByTestId("spine-file-008-content");
+    expect(content.textContent).toContain("No statement was identified");
+    expect(content.textContent).toContain("ORA-00942: table or view does not exist");
+    view.unmount();
+  });
+
+  test("the log-only form, without a run error or a stored state, keeps the run's defaults", () => {
+    useRelease([marker(1, "007"), run(2, ""), marker(4, "008"), run(5, "boom")]);
+    const view = renderViewer({ taskRunStatus: TaskRun_Status.DONE });
+    expect(within(view.container).getByTestId("spine-file-008").getAttribute("aria-expanded")).toBe("false");
+    expect(button(view.container, /6 already applied/)).toBeDefined();
+    view.unmount();
+  });
+});

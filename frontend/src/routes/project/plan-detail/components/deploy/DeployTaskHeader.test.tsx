@@ -1,17 +1,17 @@
 import { create } from "@bufbuild/protobuf";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { afterEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
+import i18n from "@/lib/i18n";
+import { Release_Type } from "@/types/proto-es/v1/release_service_pb";
 import {
-  TaskSchema,
+  Task_ReleaseStateSchema,
   Task_Status,
+  TaskRun_Status,
+  TaskRunSchema,
+  TaskSchema,
 } from "@/types/proto-es/v1/rollout_service_pb";
 
-vi.mock("react-i18next", () => ({
-  useTranslation: () => ({ t: (key: string) => key }),
-  // @/lib/i18n initializes with this, and the timestamp reads the locale there.
-  initReactI18next: { type: "3rdParty", init: () => {} },
-}));
 
 // The header's identity block pulls the database stores; this spec is about
 // the scheduled badge beside it.
@@ -39,7 +39,25 @@ afterEach(() => {
   }
 });
 
-const render = (props: { scheduledTimeMs: number | undefined; isExpanded: boolean }) => {
+beforeAll(async () => {
+  await i18n.changeLanguage("en-US");
+  // jsdom has no matchMedia; the header asks it for the narrow layout.
+  Object.defineProperty(window, "matchMedia", {
+    configurable: true,
+    writable: true,
+    value: (query: string) =>
+      ({
+        matches: false,
+        media: query,
+        addEventListener: () => {},
+        removeEventListener: () => {},
+      }) as unknown as MediaQueryList,
+  });
+});
+
+type HeaderProps = Parameters<typeof DeployTaskHeader>[0];
+
+const render = (props: Partial<HeaderProps> & { scheduledTimeMs: number | undefined; isExpanded: boolean }) => {
   const container = document.createElement("div");
   document.body.appendChild(container);
   const root = createRoot(container);
@@ -48,8 +66,6 @@ const render = (props: { scheduledTimeMs: number | undefined; isExpanded: boolea
     root.render(
       <DeployTaskHeader
         actionItems={[]}
-        collapsedContextInfo=""
-        collapsedStatusText=""
         isSelectable={false}
         isSelected={false}
         onAction={() => {}}
@@ -87,4 +103,144 @@ describe("DeployTaskHeader", () => {
       expect(container.textContent).not.toContain("2026");
     }
   );
+});
+
+// 07:14 UTC is 15:14 in the suite's Asia/Shanghai zone.
+const STARTED = { seconds: BigInt(Date.UTC(2026, 9, 5, 7, 14) / 1000), nanos: 0 };
+const releaseTask = (status: Task_Status, pending: string[], applied: number) =>
+  create(TaskSchema, {
+    status,
+    payload: {
+      case: "databaseUpdate",
+      value: {
+        source: { case: "release", value: "projects/p/releases/r1" },
+        releaseState: create(Task_ReleaseStateSchema, {
+          appliedCount: applied,
+          pendingVersions: pending.map((version) => ({ version })),
+        }),
+      },
+    },
+  });
+const VERSIONED = { type: Release_Type.VERSIONED, fileCount: 493 };
+const runOf = (status: TaskRun_Status, detail = "") =>
+  create(TaskRunSchema, { status, detail, startTime: STARTED, createTime: STARTED });
+const describeFolded = (props: Partial<HeaderProps>) =>
+  render({ scheduledTimeMs: undefined, isExpanded: false, ...props }).querySelector(
+    '[data-testid="folded-description"]'
+  );
+
+describe("folded card description", () => {
+  test.each([
+    ["not started", releaseTask(Task_Status.NOT_STARTED, ["202610051500", "202610051510", "202610051530"], 490), undefined, "", "3 to apply · 490 applied earlier"],
+    ["not started, nothing to apply", releaseTask(Task_Status.NOT_STARTED, [], 493), undefined, "", "Nothing to apply · 493 applied earlier"],
+    ["running", releaseTask(Task_Status.RUNNING, ["a", "b", "c"], 490), runOf(TaskRun_Status.RUNNING), "", "Applying 3 files · started 15:14"],
+    ["running, nothing to apply", releaseTask(Task_Status.RUNNING, [], 493), runOf(TaskRun_Status.RUNNING), "", "Running · started 15:14"],
+    ["done", releaseTask(Task_Status.DONE, ["a"], 492), runOf(TaskRun_Status.DONE), "4.1s", "All 493 applied · 4.1s"],
+    ["done, nothing new", releaseTask(Task_Status.DONE, [], 493), runOf(TaskRun_Status.DONE), "0.3s", "Nothing new · 493 applied earlier · 0.3s"],
+  ])("a release task, %s", (_, task, latestTaskRun, timingDisplay, expected) => {
+    expect(
+      describeFolded({ task, latestTaskRun, timingDisplay, release: VERSIONED })?.textContent
+    ).toBe(expected);
+  });
+
+  test("a failed release task names the failed version, then the error's first line without the executor's prefix", () => {
+    const line = describeFolded({
+      task: releaseTask(Task_Status.FAILED, ["202610051530"], 492),
+      latestTaskRun: runOf(
+        TaskRun_Status.FAILED,
+        'failed to execute release file 2026/202610051530_orders.sql (version 202610051530): ERROR: relation "orders" already exists\nDETAIL: x'
+      ),
+      release: VERSIONED,
+    });
+    expect(line?.textContent).toBe('202610051530 ERROR: relation "orders" already exists');
+    expect(line?.className).toContain("text-error");
+  });
+
+  test("a failed task whose error names no file shows the first line alone", () => {
+    expect(
+      describeFolded({
+        task: releaseTask(Task_Status.FAILED, ["a"], 492),
+        latestTaskRun: runOf(TaskRun_Status.FAILED, "failed to get driver connection: refused\nmore"),
+        release: VERSIONED,
+      })?.textContent
+    ).toBe("failed to get driver connection: refused");
+  });
+
+  test("a declarative task shows its status and never reads Nothing new", () => {
+    const declarative = { type: Release_Type.DECLARATIVE, fileCount: 1 };
+    const pending = create(TaskSchema, {
+      status: Task_Status.NOT_STARTED,
+      payload: { case: "databaseUpdate", value: { source: { case: "release", value: "projects/p/releases/r2" } } },
+    });
+    expect(describeFolded({ task: pending, release: declarative })?.textContent).toBe("Not started");
+    const done = create(TaskSchema, { ...pending, status: Task_Status.DONE });
+    const text = describeFolded({ task: done, latestTaskRun: runOf(TaskRun_Status.DONE), timingDisplay: "0.3s", release: declarative })?.textContent;
+    expect(text).toBe("Done · 0.3s");
+    expect(text).not.toContain("Nothing new");
+  });
+
+  test("skipped and canceled tasks", () => {
+    const skipped = create(TaskSchema, { status: Task_Status.SKIPPED, skipper: "users/alex@example.com", skippedReason: "fixed in git" });
+    expect(describeFolded({ task: skipped })?.textContent).toBe("Skipped by alex@example.com · fixed in git");
+    const canceled = create(TaskSchema, { status: Task_Status.CANCELED });
+    expect(
+      describeFolded({ task: canceled, latestTaskRun: create(TaskRunSchema, { status: TaskRun_Status.CANCELED, updateTime: STARTED }) })?.textContent
+    ).toBe("Canceled · 15:14");
+  });
+
+  test.each([
+    ["DML", [60, 61], "DML"],
+    ["DDL", [2, 41], "DDL"],
+    ["Mixed", [41, 60], "Mixed"],
+  ])("a done UIOps task reads %s with its duration", (_, types, kind) => {
+    expect(
+      describeFolded({
+        task: create(TaskSchema, { status: Task_Status.DONE }),
+        latestTaskRun: runOf(TaskRun_Status.DONE),
+        timingDisplay: "4.1s",
+        statementSummary: { statementTypes: types, affectedRows: 0n },
+      })?.textContent
+    ).toBe(`${kind} · 4.1s`);
+  });
+
+  test("a UIOps task before its run reads the kind and the estimated rows; running reads its start", () => {
+    expect(
+      describeFolded({
+        task: create(TaskSchema, { status: Task_Status.NOT_STARTED }),
+        statementSummary: { statementTypes: [61], affectedRows: 1180n },
+      })?.textContent
+    ).toBe("DML · about 1,180 rows");
+    expect(
+      describeFolded({
+        task: create(TaskSchema, { status: Task_Status.RUNNING }),
+        latestTaskRun: runOf(TaskRun_Status.RUNNING),
+      })?.textContent
+    ).toBe("Running · started 15:14");
+  });
+
+  test("the tint follows the state: green done, blue running, gray otherwise", () => {
+    const done = describeFolded({ task: create(TaskSchema, { status: Task_Status.DONE }), latestTaskRun: runOf(TaskRun_Status.DONE), timingDisplay: "1s" });
+    expect(done?.className).toContain("text-success");
+    const running = describeFolded({ task: create(TaskSchema, { status: Task_Status.RUNNING }), latestTaskRun: runOf(TaskRun_Status.RUNNING) });
+    expect(running?.className).toContain("text-info");
+    const pending = describeFolded({ task: releaseTask(Task_Status.NOT_STARTED, ["a"], 1), release: VERSIONED });
+    expect(pending?.className).toContain("text-control-light");
+  });
+
+  test("below 640 px the description moves under the database", () => {
+    const matchMedia = vi.spyOn(window, "matchMedia").mockImplementation(
+      (query: string) =>
+        ({
+          matches: query === "(max-width: 639px)",
+          media: query,
+          addEventListener: () => {},
+          removeEventListener: () => {},
+        }) as unknown as MediaQueryList
+    );
+    const line = describeFolded({ task: releaseTask(Task_Status.NOT_STARTED, ["a"], 1), release: VERSIONED });
+    expect(line?.className).toContain("basis-full");
+    matchMedia.mockRestore();
+    const wide = describeFolded({ task: releaseTask(Task_Status.NOT_STARTED, ["a"], 1), release: VERSIONED });
+    expect(wide?.className).not.toContain("basis-full");
+  });
 });

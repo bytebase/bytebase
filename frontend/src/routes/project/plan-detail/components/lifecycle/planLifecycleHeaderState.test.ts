@@ -273,6 +273,18 @@ describe("resolvePlanLifecycleHeaderState — deploy", () => {
     ).toBe("deployed");
   });
 
+  test("a deployed rollout counts its skipped tasks", () => {
+    expect(
+      resolve({
+        ...deployBase,
+        rollout: rollout(
+          stage("stages/1", [Task_Status.DONE, Task_Status.SKIPPED]),
+          stage("stages/2", [Task_Status.DONE])
+        ),
+      })
+    ).toEqual({ kind: "deployed", skippedCount: 1 });
+  });
+
   test("rollout exists but is empty -> none", () => {
     expect(resolve({ ...deployBase, rollout: rollout() }).kind).toBe("none");
   });

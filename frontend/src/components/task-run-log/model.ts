@@ -1,7 +1,10 @@
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import type { LucideIcon } from "lucide-react";
 import { CheckCircle2, Circle, LoaderCircle, XCircle } from "lucide-react";
-import type { TaskRunLogEntry } from "@/types/proto-es/v1/rollout_service_pb";
+import type {
+  Task_ReleaseState,
+  TaskRunLogEntry,
+} from "@/types/proto-es/v1/rollout_service_pb";
 import {
   TaskRun_Status,
   TaskRunLogEntry_TransactionControl_Type,
@@ -16,8 +19,13 @@ import type {
   LogRow,
   ReleaseFileEntriesGroup,
   ReleaseFileGroup,
+  ReleaseSpine,
+  ReleaseSpineFile,
   Section,
   SectionStatus,
+  SpineFileSection,
+  SpineItem,
+  SpineStepSection,
 } from "./types";
 
 const STATUS_CONFIG: Record<
@@ -216,6 +224,20 @@ export const hasReleaseFileMarkers = (entries: TaskRunLogEntry[]): boolean => {
   );
 };
 
+// Steps the executor runs once per task, around the file loop. A gh-ost
+// migration runs per file inside the loop, so it is not one of them.
+const TASK_LEVEL_TYPES: ReadonlySet<TaskRunLogEntry_Type> = new Set([
+  TaskRunLogEntry_Type.PRIOR_BACKUP,
+  TaskRunLogEntry_Type.SCHEMA_DUMP,
+  TaskRunLogEntry_Type.DATABASE_SYNC,
+  TaskRunLogEntry_Type.COMPUTE_DIFF,
+]);
+
+export const isTaskLevelEntry = (entry: TaskRunLogEntry): boolean =>
+  TASK_LEVEL_TYPES.has(entry.type);
+
+// A file group ends at the next file marker or at a task-level entry, which
+// starts a group of its own with no file.
 export const groupEntriesByReleaseFile = (
   entries: TaskRunLogEntry[]
 ): ReleaseFileEntriesGroup[] => {
@@ -226,6 +248,10 @@ export const groupEntriesByReleaseFile = (
   let current: ReleaseFileEntriesGroup = { file: null, entries: [] };
 
   for (const entry of sorted) {
+    if (isTaskLevelEntry(entry) && current.file !== null) {
+      groups.push(current);
+      current = { file: null, entries: [] };
+    }
     if (entry.type === TaskRunLogEntry_Type.RELEASE_FILE_EXECUTE) {
       if (current.file !== null || current.entries.length > 0) {
         groups.push(current);
@@ -839,4 +865,260 @@ export const buildReleaseFileGroups = (
   }
 
   return results;
+};
+
+// The executor's wrapper around a file's execution error
+// (runVersionedRelease in database_migrate_executor.go).
+const RELEASE_FILE_ERROR_RE =
+  /^failed to execute release file (.*) \(version ([^)]*)\): ([\s\S]*)$/;
+
+export const parseReleaseFileError = (
+  error: string
+): { path: string; version: string; message: string } | undefined => {
+  const match = RELEASE_FILE_ERROR_RE.exec(error);
+  if (!match) return undefined;
+  return { path: match[1], version: match[2], message: match[3] };
+};
+
+export const firstLineOf = (text: string): string =>
+  text
+    .split("\n")
+    .map((line) => line.trim())
+    .find((line) => line !== "") ?? "";
+
+export interface ReleaseSpineInput {
+  // The release's files in release order: ascending by version, the order the
+  // executor runs them.
+  files: ReleaseSpineFile[];
+  // The latest run's log; empty before the first run.
+  entries: TaskRunLogEntry[];
+  // The latest run; absent before the first run.
+  run?: { status: TaskRun_Status; error: string };
+  // The state stored on the task at rollout creation; absent for a task
+  // created before it existed, and on the revision page.
+  state?: Task_ReleaseState;
+}
+
+const isEnded = (status: TaskRun_Status) =>
+  status !== TaskRun_Status.RUNNING &&
+  status !== TaskRun_Status.PENDING &&
+  status !== TaskRun_Status.AVAILABLE;
+
+// Before the first run the stored state is the only source. Once a run has
+// started, its log decides every version up to the newest file marker, since
+// the executor writes a marker before each file it runs and nothing for a
+// file it passes over; the stored state covers the versions above it. An
+// ended run lists only what ran (D3, D5).
+export const buildReleaseSpine = ({
+  files,
+  entries,
+  run,
+  state,
+}: ReleaseSpineInput): ReleaseSpine => {
+  const pending = new Map(
+    (state?.pendingVersions ?? []).map((p) => [p.version, p])
+  );
+  const deletedNote = (version: string) => {
+    const p = pending.get(version);
+    return p?.revisionDeleter || p?.revisionDeleteTime
+      ? { time: p.revisionDeleteTime, deleter: p.revisionDeleter }
+      : undefined;
+  };
+  const fileSection = (
+    file: ReleaseSpineFile,
+    status: SpineFileSection["status"],
+    sectionEntries: TaskRunLogEntry[] = []
+  ): SpineFileSection => ({
+    kind: "file",
+    id: `file-${file.version}`,
+    version: file.version,
+    path: file.path,
+    status,
+    entries: sectionEntries,
+    revisionDeleted: deletedNote(file.version),
+  });
+  const foldOf = (applied: ReleaseSpineFile[]): SpineItem[] =>
+    applied.length > 0
+      ? [{ kind: "applied-fold", files: [...applied].reverse() }]
+      : [];
+
+  if (!run) {
+    if (!state) return { items: [] };
+    return {
+      items: [
+        ...foldOf(files.filter((f) => !pending.has(f.version))),
+        ...files
+          .filter((f) => pending.has(f.version))
+          .map((f) => fileSection(f, "pending")),
+      ],
+    };
+  }
+
+  const fileIndex = new Map(files.map((f, i) => [f.version, i]));
+  const groups = groupEntriesByReleaseFile(entries);
+  const marked = groups.filter((g) => g.file !== null);
+  const newestMarked = marked.at(-1)?.file?.version;
+  const boundary =
+    newestMarked === undefined ? -1 : (fileIndex.get(newestMarked) ?? -1);
+  const markedVersions = new Set(marked.map((g) => g.file?.version));
+  const ended = isEnded(run.status);
+  const failed = run.status === TaskRun_Status.FAILED;
+  const fileError = failed ? parseReleaseFileError(run.error) : undefined;
+
+  const applied: ReleaseSpineFile[] = [];
+  const willApply: SpineFileSection[] = [];
+  files.forEach((file, index) => {
+    if (markedVersions.has(file.version)) return;
+    if (index < boundary || run.status === TaskRun_Status.DONE) {
+      applied.push(file);
+      return;
+    }
+    if (!state) return;
+    if (!pending.has(file.version)) {
+      applied.push(file);
+    } else if (!ended) {
+      willApply.push(fileSection(file, "pending"));
+    }
+  });
+
+  const runItems: SpineItem[] = [];
+  let errorOwned = !failed;
+  groups.forEach((group, index) => {
+    if (group.file === null) {
+      if (group.entries.length === 0) return;
+      const step: SpineStepSection = {
+        kind: "step",
+        id: `step-${index}`,
+        type: group.entries[0].type,
+        entries: group.entries,
+      };
+      if (failed && !fileError && group.entries.some(hasError)) {
+        errorOwned = true;
+      }
+      runItems.push(step);
+      return;
+    }
+    const file: ReleaseSpineFile = {
+      version: group.file.version,
+      path:
+        group.file.filePath ||
+        files[fileIndex.get(group.file.version) ?? -1]?.path ||
+        "",
+    };
+    const isNewest =
+      group.file.version === newestMarked && group === marked.at(-1);
+    let status: SpineFileSection["status"] = "applied";
+    if (isNewest) {
+      if (!ended) status = "running";
+      else if (run.status === TaskRun_Status.CANCELED) status = "canceled";
+      else if (fileError && fileError.version === file.version) {
+        status = "failed";
+      }
+    }
+    const section = fileSection(file, status, group.entries);
+    if (status === "failed" && fileError) {
+      section.error = fileError.message;
+      section.noStatement = !group.entries.some(commandFailed);
+      errorOwned = true;
+    }
+    runItems.push(section);
+  });
+
+  const items: SpineItem[] = [...foldOf(applied), ...runItems, ...willApply];
+  if (!errorOwned && run.error) {
+    items.push({ kind: "run-failed", error: run.error });
+  }
+  return { items };
+};
+
+export const SPINE_SECTION_LIMIT = 24;
+export const APPLIED_FOLD_PAGE_SIZE = 5;
+
+export const isSpineItemOpenByDefault = (item: SpineItem): boolean => {
+  switch (item.kind) {
+    case "run-failed":
+      return true;
+    case "file":
+      return (
+        item.status === "failed" ||
+        item.status === "running" ||
+        item.status === "canceled"
+      );
+    default:
+      return false;
+  }
+};
+
+// Keeps at most `limit` file sections in view. The running and failed
+// sections always stay; the oldest applied sections fold into one row and the
+// planned tail into another, each expanding in place.
+export const limitSpineSections = (
+  items: SpineItem[],
+  limit = SPINE_SECTION_LIMIT
+): SpineItem[] => {
+  const sections = items.filter(
+    (item): item is SpineFileSection => item.kind === "file"
+  );
+  if (sections.length <= limit) return items;
+
+  const applied = sections.filter((s) => s.status === "applied");
+  const pending = sections.filter((s) => s.status === "pending");
+  const budget = Math.max(
+    limit - (sections.length - applied.length - pending.length),
+    0
+  );
+  const appliedKeep = Math.min(
+    applied.length,
+    budget - Math.min(pending.length, Math.floor(budget / 2))
+  );
+  const pendingKeep = Math.min(pending.length, budget - appliedKeep);
+  const foldedApplied = new Set(applied.slice(0, applied.length - appliedKeep));
+  const foldedPending = new Set(pending.slice(pendingKeep));
+
+  const result: SpineItem[] = [];
+  for (const item of items) {
+    if (item.kind === "file" && foldedApplied.has(item)) {
+      const last = result.at(-1);
+      if (last?.kind === "applied-sections") last.sections.push(item);
+      else
+        result.push({
+          kind: "applied-sections",
+          id: "applied-sections",
+          sections: [item],
+        });
+      continue;
+    }
+    if (item.kind === "file" && foldedPending.has(item)) {
+      const last = result.at(-1);
+      if (last?.kind === "pending-sections") last.sections.push(item);
+      else
+        result.push({
+          kind: "pending-sections",
+          id: "pending-sections",
+          sections: [item],
+        });
+      continue;
+    }
+    result.push(item);
+  }
+  return result;
+};
+
+// The span from the first entry's start to the last entry's end.
+export const formatEntriesDuration = (entries: TaskRunLogEntry[]): string =>
+  formatOptionalDuration(getEntriesTimeSpan(entries).durationMs);
+
+// The failed command of a file section, for the viewer's diagnostic.
+export const findFailedCommand = (
+  entries: TaskRunLogEntry[]
+): { error: string; range?: { start: number; end: number } } | undefined => {
+  const failedEntry = [...entries].reverse().find(commandFailed);
+  const command = failedEntry?.commandExecute;
+  if (!command) return undefined;
+  return {
+    error: command.response?.error ?? "",
+    range: command.range
+      ? { start: command.range.start, end: command.range.end }
+      : undefined,
+  };
 };
