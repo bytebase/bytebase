@@ -656,11 +656,19 @@ func TestDuplicateInitializeIsRefusedAndTheServerKeepsServing(t *testing.T) {
 }
 
 func TestServerInstructionsFitClientLimit(t *testing.T) {
-	// Claude Code truncates each server's instructions at 2,048 characters by
-	// default (code.claude.com/docs/en/mcp), and the confirmation sentence for
-	// direct DML and DDL sits near the end.
-	require.LessOrEqual(t, utf8.RuneCountInString(serverInstructions), 2048)
-	require.Contains(t, serverInstructions, "ask them to confirm")
+	// No deliverable address is longer than 254 characters: RFC 5321
+	// §4.5.3.1.3 caps a path at 256 octets, angle brackets included.
+	email := strings.Repeat("a", 242) + "@example.com"
+	endpoint, _, _ := newProbeServer(t)
+	session := connectLegacy(t, endpoint, mintMCPToken(t, email, "client-A", "ws-test", "mcp:read-write", time.Hour), nil)
+	instructions := session.InitializeResult().Instructions
+	require.Contains(t, instructions, email)
+
+	// Claude Code cuts server instructions at 4,096 characters, and before
+	// v2.1.296 at 2,048 (code.claude.com/docs/en/mcp). Holding the older limit
+	// keeps the confirmation sentence near the end on those versions too.
+	require.LessOrEqual(t, utf8.RuneCountInString(instructions), 2048)
+	require.Contains(t, instructions, "ask them to confirm")
 }
 
 func TestToolGuidanceNamesOnlyRegisteredTools(t *testing.T) {
