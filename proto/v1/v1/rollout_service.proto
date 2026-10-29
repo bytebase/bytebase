@@ -455,6 +455,13 @@ message Task {
   // If there are no task runs or the task run is not scheduled, it will be empty.
   optional google.protobuf.Timestamp run_time = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
 
+  // The user who skipped the task.
+  // Format: users/hello@world.com
+  string skipper = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When the task was skipped.
+  google.protobuf.Timestamp skip_time = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
+
   // Payload for creating a new database.
   message DatabaseCreate {
     reserved 1 to 3;
@@ -471,6 +478,30 @@ message Task {
       string sheet = 1;
       // Format: projects/{project}/releases/{release}
       string release = 4;
+    }
+
+    // The release's file state on the target database when the rollout was
+    // created. Set only for a versioned release. The run reads the database's
+    // revisions again when it starts.
+    ReleaseState release_state = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+  }
+
+  message ReleaseState {
+    // The versions the task will apply, in release order. Every other version
+    // of the release had a live revision on the database.
+    repeated PendingVersion pending_versions = 1;
+    // The number of the release's versions already applied.
+    int32 applied_count = 2;
+    // When the state was computed.
+    google.protobuf.Timestamp compute_time = 3;
+
+    message PendingVersion {
+      string version = 1;
+      // Set when the database had a revision of this version that was deleted.
+      google.protobuf.Timestamp revision_delete_time = 2;
+      // The user who deleted that revision.
+      // Format: users/hello@world.com
+      string revision_deleter = 3;
     }
   }
 }

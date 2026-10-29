@@ -326,6 +326,52 @@ func (x *Task_DatabaseUpdate) Equal(y *Task_DatabaseUpdate) bool {
 	if x.GetRelease() != y.GetRelease() {
 		return false
 	}
+	if !x.ReleaseState.Equal(y.ReleaseState) {
+		return false
+	}
+	return true
+}
+
+func (x *Task_ReleaseState_PendingVersion) Equal(y *Task_ReleaseState_PendingVersion) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Version != y.Version {
+		return false
+	}
+	if p, q := x.RevisionDeleteTime, y.RevisionDeleteTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
+		return false
+	}
+	if x.RevisionDeleter != y.RevisionDeleter {
+		return false
+	}
+	return true
+}
+
+func (x *Task_ReleaseState) Equal(y *Task_ReleaseState) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if len(x.PendingVersions) != len(y.PendingVersions) {
+		return false
+	}
+	for i := 0; i < len(x.PendingVersions); i++ {
+		if !x.PendingVersions[i].Equal(y.PendingVersions[i]) {
+			return false
+		}
+	}
+	if x.AppliedCount != y.AppliedCount {
+		return false
+	}
+	if p, q := x.ComputeTime, y.ComputeTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
+		return false
+	}
 	return true
 }
 
@@ -364,6 +410,12 @@ func (x *Task) Equal(y *Task) bool {
 		return false
 	}
 	if p, q := x.RunTime, y.RunTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
+		return false
+	}
+	if x.Skipper != y.Skipper {
+		return false
+	}
+	if p, q := x.SkipTime, y.SkipTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
 		return false
 	}
 	return true

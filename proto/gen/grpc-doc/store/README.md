@@ -200,6 +200,7 @@
     - [ReleasePayload](#bytebase-store-ReleasePayload)
     - [ReleasePayload.File](#bytebase-store-ReleasePayload-File)
     - [ReleasePayload.VCSSource](#bytebase-store-ReleasePayload-VCSSource)
+    - [ReleasePayload.VCSSource.PullRequest](#bytebase-store-ReleasePayload-VCSSource-PullRequest)
   
 - [store/review_config.proto](#store_review_config-proto)
     - [ReviewConfigPayload](#bytebase-store-ReviewConfigPayload)
@@ -299,6 +300,8 @@
   
 - [store/task.proto](#store_task-proto)
     - [Task](#bytebase-store-Task)
+    - [Task.ReleaseState](#bytebase-store-Task-ReleaseState)
+    - [Task.ReleaseState.PendingVersion](#bytebase-store-Task-ReleaseState-PendingVersion)
   
     - [Task.Type](#bytebase-store-Task-Type)
   
@@ -3171,6 +3174,29 @@ Activity type enumeration.
 | ----- | ---- | ----- | ----------- |
 | vcs_type | [VCSType](#bytebase-store-VCSType) |  |  |
 | url | [string](#string) |  |  |
+| commit_sha | [string](#string) |  |  |
+| branch | [string](#string) |  |  |
+| commit_title | [string](#string) |  |  |
+| author_name | [string](#string) |  |  |
+| author_login | [string](#string) |  |  |
+| pull_request | [ReleasePayload.VCSSource.PullRequest](#bytebase-store-ReleasePayload-VCSSource-PullRequest) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-ReleasePayload-VCSSource-PullRequest"></a>
+
+### ReleasePayload.VCSSource.PullRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| url | [string](#string) |  |  |
+| number | [int64](#int64) |  |  |
+| title | [string](#string) |  |  |
 
 
 
@@ -4677,6 +4703,43 @@ Task is the metadata for database operation tasks.
 | sheet_sha256 | [string](#string) |  | The SHA256 hash of a single sheet content (hex-encoded). Used for non-release tasks. |
 | release | [string](#string) |  | The release resource name: projects/{project}/releases/{release}. Used for GitOps release-based tasks that execute multiple files. |
 | enable_prior_backup | [bool](#bool) |  | Whether to create an automatic backup before applying changes. |
+| skipper | [string](#string) |  | The email of the user who skipped the task. |
+| skip_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the task was skipped. |
+| release_state | [Task.ReleaseState](#bytebase-store-Task-ReleaseState) |  | The release&#39;s file state on the task&#39;s database when the task was created. Set only for tasks of a versioned release. |
+
+
+
+
+
+
+<a name="bytebase-store-Task-ReleaseState"></a>
+
+### Task.ReleaseState
+A preview: the run reads the database&#39;s revisions again when it starts.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| pending_versions | [Task.ReleaseState.PendingVersion](#bytebase-store-Task-ReleaseState-PendingVersion) | repeated | The versions the task will apply, in release order. Every other version of the release was applied: the database had a live VERSIONED revision with it. |
+| applied_count | [int32](#int32) |  | The number of the release&#39;s versions already applied. |
+| compute_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the state was computed. |
+
+
+
+
+
+
+<a name="bytebase-store-Task-ReleaseState-PendingVersion"></a>
+
+### Task.ReleaseState.PendingVersion
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| version | [string](#string) |  |  |
+| revision_delete_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Set when the database had a revision of this version that was deleted: the newest deletion&#39;s time and the deleter&#39;s email. |
+| revision_deleter | [string](#string) |  |  |
 
 
 

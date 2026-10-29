@@ -9,6 +9,7 @@ package store
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -93,8 +94,15 @@ type Task struct {
 	Source isTask_Source `protobuf_oneof:"source"`
 	// Whether to create an automatic backup before applying changes.
 	EnablePriorBackup bool `protobuf:"varint,11,opt,name=enable_prior_backup,json=enablePriorBackup,proto3" json:"enable_prior_backup,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	// The email of the user who skipped the task.
+	Skipper string `protobuf:"bytes,14,opt,name=skipper,proto3" json:"skipper,omitempty"`
+	// When the task was skipped.
+	SkipTime *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=skip_time,json=skipTime,proto3" json:"skip_time,omitempty"`
+	// The release's file state on the task's database when the task was
+	// created. Set only for tasks of a versioned release.
+	ReleaseState  *Task_ReleaseState `protobuf:"bytes,16,opt,name=release_state,json=releaseState,proto3" json:"release_state,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Task) Reset() {
@@ -180,6 +188,27 @@ func (x *Task) GetEnablePriorBackup() bool {
 	return false
 }
 
+func (x *Task) GetSkipper() string {
+	if x != nil {
+		return x.Skipper
+	}
+	return ""
+}
+
+func (x *Task) GetSkipTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.SkipTime
+	}
+	return nil
+}
+
+func (x *Task) GetReleaseState() *Task_ReleaseState {
+	if x != nil {
+		return x.ReleaseState
+	}
+	return nil
+}
+
 type isTask_Source interface {
 	isTask_Source()
 }
@@ -200,11 +229,139 @@ func (*Task_SheetSha256) isTask_Source() {}
 
 func (*Task_Release) isTask_Source() {}
 
+// A preview: the run reads the database's revisions again when it starts.
+type Task_ReleaseState struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The versions the task will apply, in release order. Every other version
+	// of the release was applied: the database had a live VERSIONED revision
+	// with it.
+	PendingVersions []*Task_ReleaseState_PendingVersion `protobuf:"bytes,1,rep,name=pending_versions,json=pendingVersions,proto3" json:"pending_versions,omitempty"`
+	// The number of the release's versions already applied.
+	AppliedCount int32 `protobuf:"varint,2,opt,name=applied_count,json=appliedCount,proto3" json:"applied_count,omitempty"`
+	// When the state was computed.
+	ComputeTime   *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=compute_time,json=computeTime,proto3" json:"compute_time,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Task_ReleaseState) Reset() {
+	*x = Task_ReleaseState{}
+	mi := &file_store_task_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Task_ReleaseState) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Task_ReleaseState) ProtoMessage() {}
+
+func (x *Task_ReleaseState) ProtoReflect() protoreflect.Message {
+	mi := &file_store_task_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Task_ReleaseState.ProtoReflect.Descriptor instead.
+func (*Task_ReleaseState) Descriptor() ([]byte, []int) {
+	return file_store_task_proto_rawDescGZIP(), []int{0, 0}
+}
+
+func (x *Task_ReleaseState) GetPendingVersions() []*Task_ReleaseState_PendingVersion {
+	if x != nil {
+		return x.PendingVersions
+	}
+	return nil
+}
+
+func (x *Task_ReleaseState) GetAppliedCount() int32 {
+	if x != nil {
+		return x.AppliedCount
+	}
+	return 0
+}
+
+func (x *Task_ReleaseState) GetComputeTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.ComputeTime
+	}
+	return nil
+}
+
+type Task_ReleaseState_PendingVersion struct {
+	state   protoimpl.MessageState `protogen:"open.v1"`
+	Version string                 `protobuf:"bytes,1,opt,name=version,proto3" json:"version,omitempty"`
+	// Set when the database had a revision of this version that was deleted:
+	// the newest deletion's time and the deleter's email.
+	RevisionDeleteTime *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=revision_delete_time,json=revisionDeleteTime,proto3" json:"revision_delete_time,omitempty"`
+	RevisionDeleter    string                 `protobuf:"bytes,3,opt,name=revision_deleter,json=revisionDeleter,proto3" json:"revision_deleter,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *Task_ReleaseState_PendingVersion) Reset() {
+	*x = Task_ReleaseState_PendingVersion{}
+	mi := &file_store_task_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Task_ReleaseState_PendingVersion) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Task_ReleaseState_PendingVersion) ProtoMessage() {}
+
+func (x *Task_ReleaseState_PendingVersion) ProtoReflect() protoreflect.Message {
+	mi := &file_store_task_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Task_ReleaseState_PendingVersion.ProtoReflect.Descriptor instead.
+func (*Task_ReleaseState_PendingVersion) Descriptor() ([]byte, []int) {
+	return file_store_task_proto_rawDescGZIP(), []int{0, 0, 0}
+}
+
+func (x *Task_ReleaseState_PendingVersion) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
+}
+
+func (x *Task_ReleaseState_PendingVersion) GetRevisionDeleteTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.RevisionDeleteTime
+	}
+	return nil
+}
+
+func (x *Task_ReleaseState_PendingVersion) GetRevisionDeleter() string {
+	if x != nil {
+		return x.RevisionDeleter
+	}
+	return ""
+}
+
 var File_store_task_proto protoreflect.FileDescriptor
 
 const file_store_task_proto_rawDesc = "" +
 	"\n" +
-	"\x10store/task.proto\x12\x0ebytebase.store\"\xb5\x02\n" +
+	"\x10store/task.proto\x12\x0ebytebase.store\x1a\x1fgoogle/protobuf/timestamp.proto\"\xc8\x06\n" +
 	"\x04Task\x12\x18\n" +
 	"\askipped\x18\x01 \x01(\bR\askipped\x12%\n" +
 	"\x0eskipped_reason\x18\x02 \x01(\tR\rskippedReason\x12\x17\n" +
@@ -212,7 +369,18 @@ const file_store_task_proto_rawDesc = "" +
 	"\fsheet_sha256\x18\n" +
 	" \x01(\tH\x00R\vsheetSha256\x12\x1a\n" +
 	"\arelease\x18\r \x01(\tH\x00R\arelease\x12.\n" +
-	"\x13enable_prior_backup\x18\v \x01(\bR\x11enablePriorBackup\"L\n" +
+	"\x13enable_prior_backup\x18\v \x01(\bR\x11enablePriorBackup\x12\x18\n" +
+	"\askipper\x18\x0e \x01(\tR\askipper\x127\n" +
+	"\tskip_time\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\bskipTime\x12F\n" +
+	"\rrelease_state\x18\x10 \x01(\v2!.bytebase.store.Task.ReleaseStateR\freleaseState\x1a\xf5\x02\n" +
+	"\fReleaseState\x12[\n" +
+	"\x10pending_versions\x18\x01 \x03(\v20.bytebase.store.Task.ReleaseState.PendingVersionR\x0fpendingVersions\x12#\n" +
+	"\rapplied_count\x18\x02 \x01(\x05R\fappliedCount\x12=\n" +
+	"\fcompute_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\vcomputeTime\x1a\xa3\x01\n" +
+	"\x0ePendingVersion\x12\x18\n" +
+	"\aversion\x18\x01 \x01(\tR\aversion\x12L\n" +
+	"\x14revision_delete_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x12revisionDeleteTime\x12)\n" +
+	"\x10revision_deleter\x18\x03 \x01(\tR\x0frevisionDeleter\"L\n" +
 	"\x04Type\x12\x19\n" +
 	"\x15TASK_TYPE_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fDATABASE_CREATE\x10\x01\x12\x14\n" +
@@ -234,17 +402,25 @@ func file_store_task_proto_rawDescGZIP() []byte {
 }
 
 var file_store_task_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_store_task_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+var file_store_task_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_store_task_proto_goTypes = []any{
-	(Task_Type)(0), // 0: bytebase.store.Task.Type
-	(*Task)(nil),   // 1: bytebase.store.Task
+	(Task_Type)(0),                           // 0: bytebase.store.Task.Type
+	(*Task)(nil),                             // 1: bytebase.store.Task
+	(*Task_ReleaseState)(nil),                // 2: bytebase.store.Task.ReleaseState
+	(*Task_ReleaseState_PendingVersion)(nil), // 3: bytebase.store.Task.ReleaseState.PendingVersion
+	(*timestamppb.Timestamp)(nil),            // 4: google.protobuf.Timestamp
 }
 var file_store_task_proto_depIdxs = []int32{
-	0, // [0:0] is the sub-list for method output_type
-	0, // [0:0] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	4, // 0: bytebase.store.Task.skip_time:type_name -> google.protobuf.Timestamp
+	2, // 1: bytebase.store.Task.release_state:type_name -> bytebase.store.Task.ReleaseState
+	3, // 2: bytebase.store.Task.ReleaseState.pending_versions:type_name -> bytebase.store.Task.ReleaseState.PendingVersion
+	4, // 3: bytebase.store.Task.ReleaseState.compute_time:type_name -> google.protobuf.Timestamp
+	4, // 4: bytebase.store.Task.ReleaseState.PendingVersion.revision_delete_time:type_name -> google.protobuf.Timestamp
+	5, // [5:5] is the sub-list for method output_type
+	5, // [5:5] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_store_task_proto_init() }
@@ -262,7 +438,7 @@ func file_store_task_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_task_proto_rawDesc), len(file_store_task_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   1,
+			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
