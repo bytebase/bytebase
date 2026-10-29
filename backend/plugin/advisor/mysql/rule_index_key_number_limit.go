@@ -113,7 +113,7 @@ func (r *indexKeyNumberLimitOmniRule) handleConstraint(tableName string, constra
 		return
 	}
 
-	indexName := constraint.Name
+	indexName := omniConstraintName(constraint)
 	if indexName == "" && constraint.Type == ast.ConstrPrimaryKey {
 		indexName = extractPKNameFromText(r.StmtText)
 	}
