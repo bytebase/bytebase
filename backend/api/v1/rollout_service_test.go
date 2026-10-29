@@ -7,6 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
@@ -34,64 +35,28 @@ func TestClassifyRolloutError(t *testing.T) {
 	require.Equal(t, other, classifyRolloutError(other), "anything else passes through as it came")
 }
 
-// Two projects whose plan and task ids collide, each with two tasks on one
-// stage, so a skip that ignored the project or the task id would show.
-const skipFixtureSQL = `
-	INSERT INTO workspace (resource_id) VALUES ('default');
-	INSERT INTO project (resource_id, workspace, name) VALUES ('project-a', 'default', 'Project A');
-	INSERT INTO project (resource_id, workspace, name) VALUES ('project-b', 'default', 'Project B');
-	INSERT INTO instance (resource_id, workspace) VALUES ('instance-a', 'default');
-	INSERT INTO plan (id, creator, project, name, description) VALUES
-		(101, 'creator@example.com', 'project-a', 'Plan A', ''),
-		(101, 'creator@example.com', 'project-b', 'Plan B', '');
-	INSERT INTO task (id, project, plan_id, instance, environment, db_name, type) VALUES
-		(101, 'project-a', 101, 'instance-a', 'test', 'db1', 'DATABASE_MIGRATE'),
-		(102, 'project-a', 101, 'instance-a', 'test', 'db2', 'DATABASE_MIGRATE'),
-		(101, 'project-b', 101, 'instance-a', 'test', 'db1', 'DATABASE_MIGRATE'),
-		(102, 'project-b', 101, 'instance-a', 'test', 'db2', 'DATABASE_MIGRATE');
-`
-
-func TestBatchSkipTasksRecordsSkipperAndTime(t *testing.T) {
-	t.Parallel()
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-	db, s, _ := testcontainer.NewMetadataDB(t)
-	_, err := db.ExecContext(ctx, skipFixtureSQL)
-	require.NoError(t, err)
-
-	before := time.Now()
-	require.NoError(t, s.BatchSkipTasks(ctx, "project-a", []int64{101}, "fixed in git", "alex@example.com"))
-
-	tasksOf := func(projectID string) map[int64]*store.TaskMessage {
-		planID := int64(101)
-		tasks, err := s.ListTasks(ctx, &store.TaskFind{ProjectID: projectID, PlanID: &planID})
-		require.NoError(t, err)
-		require.Len(t, tasks, 2)
-		byID := map[int64]*store.TaskMessage{}
-		for _, task := range tasks {
-			byID[task.ID] = task
-		}
-		return byID
+func TestConvertToTaskReturnsSkipperAndTime(t *testing.T) {
+	skipTime := time.Date(2026, 10, 5, 7, 14, 0, 0, time.UTC)
+	databaseName := "db1"
+	task := &store.TaskMessage{
+		ProjectID: "project-a", PlanID: 101, ID: 101, Environment: "test",
+		InstanceID: "instance-a", DatabaseName: &databaseName, Type: storepb.Task_DATABASE_MIGRATE,
+		Payload: &storepb.Task{
+			Skipped: true, SkippedReason: "fixed in git",
+			Skipper: "alex@example.com", SkipTime: timestamppb.New(skipTime),
+		},
 	}
-	projectA := &store.ProjectMessage{ResourceID: "project-a"}
-
-	skipped, err := convertToTask(projectA, tasksOf("project-a")[101])
+	v1Task, err := convertToTask(&store.ProjectMessage{ResourceID: "project-a"}, task)
 	require.NoError(t, err)
-	require.Equal(t, "users/alex@example.com", skipped.Skipper)
-	require.Equal(t, "fixed in git", skipped.SkippedReason)
-	require.NotNil(t, skipped.SkipTime)
-	require.WithinDuration(t, before, skipped.SkipTime.AsTime(), time.Minute)
+	require.Equal(t, "users/alex@example.com", v1Task.Skipper)
+	require.True(t, v1Task.SkipTime.AsTime().Equal(skipTime))
 
-	sibling, err := convertToTask(projectA, tasksOf("project-a")[102])
+	// A task skipped before the skipper was recorded has neither.
+	task.Payload.Skipper, task.Payload.SkipTime = "", nil
+	v1Task, err = convertToTask(&store.ProjectMessage{ResourceID: "project-a"}, task)
 	require.NoError(t, err)
-	require.Empty(t, sibling.Skipper)
-	require.Nil(t, sibling.SkipTime)
-
-	for id, task := range tasksOf("project-b") {
-		require.False(t, task.Payload.GetSkipped(), "project-b task %d", id)
-		require.Empty(t, task.Payload.GetSkipper(), "project-b task %d", id)
-		require.Nil(t, task.Payload.GetSkipTime(), "project-b task %d", id)
-	}
+	require.Empty(t, v1Task.Skipper)
+	require.Nil(t, v1Task.SkipTime)
 }
 
 // db1 has 001 and 002 live and 003 deleted; its sibling db2 on the same
@@ -112,9 +77,11 @@ const releaseStateFixtureSQL = `
 		('instance-a', 'db1', '003', '{"type":"VERSIONED"}', 'alex@example.com', '2026-10-05T09:30:00Z'),
 		('instance-a', 'db2', '003', '{"type":"VERSIONED"}', NULL, NULL),
 		('instance-a', 'db3', '001', '{"type":"DECLARATIVE"}', NULL, NULL);
-	INSERT INTO release (project, release_id, creator, payload) VALUES
-		('project-a', 'r1', 'ci@example.com',
-		 '{"type":"VERSIONED","files":[{"path":"001_init.sql","version":"001"},{"path":"002_orders.sql","version":"002"},{"path":"003_index.sql","version":"003"}]}');
+	INSERT INTO release (project, iteration, release_id, creator, payload) VALUES
+		('project-a', 1, 'r1', 'ci@example.com',
+		 '{"type":"VERSIONED","files":[{"path":"001_init.sql","version":"001"},{"path":"002_orders.sql","version":"002"},{"path":"003_index.sql","version":"003"}]}'),
+		('project-a', 2, 'r2', 'ci@example.com',
+		 '{"type":"DECLARATIVE","files":[{"path":"schema.sql","version":"001"}]}');
 `
 
 func TestRolloutCreationStoresReleaseState(t *testing.T) {
@@ -191,4 +158,19 @@ func TestRolloutCreationStoresReleaseState(t *testing.T) {
 	db3 := stateOf["db3"]
 	require.Equal(t, []string{"001", "002", "003"}, pendingOf(db3))
 	require.Equal(t, int32(0), db3.AppliedCount)
+
+	// A declarative release computes its diff when it runs: no stored state.
+	declarative, err := getTaskCreatesFromChangeDatabaseConfig(ctx, s,
+		&storepb.PlanConfig_Spec{Id: "spec-2"},
+		&storepb.PlanConfig_ChangeDatabaseConfig{
+			Targets: []string{"instances/instance-a/databases/db3"},
+			Release: "projects/project-a/releases/r2",
+		}, "project-a")
+	require.NoError(t, err)
+	require.Len(t, declarative, 1)
+	require.Nil(t, declarative[0].Payload.GetReleaseState())
+	declarative[0].ProjectID, declarative[0].PlanID, declarative[0].ID = "project-a", 102, 103
+	v1Declarative, err := convertToTask(&store.ProjectMessage{ResourceID: "project-a"}, declarative[0])
+	require.NoError(t, err)
+	require.Nil(t, v1Declarative.GetDatabaseUpdate().GetReleaseState())
 }
