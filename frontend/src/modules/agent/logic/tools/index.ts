@@ -1,13 +1,20 @@
 import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
-import { projectServiceClientConnect } from "@/api";
+import {
+  databaseServiceClientConnect,
+  issueServiceClientConnect,
+  projectServiceClientConnect,
+} from "@/api";
 import type { AppRouterInstance } from "@/app/router";
 import { silentContextKey } from "@/api/context-key";
 import {
   getNameParentTokens,
+  issueNamePrefix,
   projectNamePrefix,
 } from "@/stores/modules/v1/common";
 import { State } from "@/types/proto-es/v1/common_pb";
+import { GetDatabaseRequestSchema } from "@/types/proto-es/v1/database_service_pb";
+import { GetIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { GetProjectRequestSchema } from "@/types/proto-es/v1/project_service_pb";
 import { getSkill, type GetSkillArgs } from "../skills";
 import type {
@@ -20,6 +27,7 @@ import type {
   ToolExecutor,
 } from "../types";
 import { apiCallNeedsConfirmation } from "./apiMethodClass";
+import { checkPreparedApiPermission } from "./apiPermissionPreflight";
 import {
   dispatchPreparedApiCall,
   prepareApiCall,
@@ -29,6 +37,7 @@ import { createDatabaseCountTool } from "./databaseCount";
 import { createDatabaseOverviewTool } from "./databaseOverview";
 import { createDomActionTool, type DomActionArgs } from "./domAction";
 import { createIssueOverviewTool } from "./issueOverview";
+import { prepareIssueDecisionPermission } from "./issueDecisionPermission";
 import { createNavigateTool } from "./navigate";
 import { createPageStateTool, type PageStateArgs } from "./pageState";
 import { createPendingApiCall } from "./pendingApiCall";
@@ -183,6 +192,50 @@ const PROJECT_SCOPED_TOOL_NAMES = new Set([
 const isCanonicalProjectName = (value: string | undefined): value is string =>
   !!value && getNameParentTokens(value, [projectNamePrefix]).length === 1;
 
+const ISSUE_NAME_API_METHODS = new Set([
+  "GetIssue",
+  "ApproveIssue",
+  "RejectIssue",
+  "RequestIssue",
+]);
+const ISSUE_PARENT_API_METHODS = new Set([
+  "ListIssueComments",
+  "CreateIssueComment",
+  "UpdateIssueComment",
+]);
+
+const targetsSelectedIssue = (
+  args: Record<string, unknown>,
+  referencedIssue: string
+): boolean => {
+  const operationId = args.operationId;
+  const body = args.body;
+  if (typeof operationId !== "string" || !body || typeof body !== "object") {
+    return false;
+  }
+  const method = operationId.match(
+    /^(?:bytebase\.v1\.)?IssueService[/.]([A-Za-z]+)$/
+  )?.[1];
+  if (!method) return false;
+
+  const request = body as Record<string, unknown>;
+  if (ISSUE_NAME_API_METHODS.has(method)) {
+    return request.name === referencedIssue;
+  }
+  if (ISSUE_PARENT_API_METHODS.has(method)) {
+    return request.parent === referencedIssue;
+  }
+  if (method === "UpdateIssue") {
+    const issue = request.issue;
+    return (
+      !!issue &&
+      typeof issue === "object" &&
+      (issue as Record<string, unknown>).name === referencedIssue
+    );
+  }
+  return false;
+};
+
 export function getToolDefinitions(
   options: { runMode?: AgentRunMode; referencedProject?: string } = {}
 ): ToolDefinition[] {
@@ -237,7 +290,7 @@ export function getToolDefinitions(
     {
       name: "call_api",
       description: referencedProject
-        ? `Call a Bytebase API for this turn. Use search_api first to inspect the operation and request schema. Use ${referencedProject} for project-scoped requests. Ask the member to split a question that needs another project. Calls use the signed-in member's existing permissions and may change data; do not make changes unless the member explicitly asks. Follow nextPageToken when a complete result is needed.`
+        ? `Call a Bytebase API for this turn. Use search_api first to inspect the operation and request schema. Use ${referencedProject} for project-scoped requests. Ask the member to split a question that needs another project. Calls use the signed-in member's existing permissions and may change data; do not make changes unless the member explicitly asks. A nextPageToken means the response is partial; do not automatically fetch every page to count resources.`
         : `Execute a Bytebase API endpoint. **Use search_api first to get operationId and schema.**
 
 | Parameter | Required | Description |
@@ -360,7 +413,7 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
     },
     {
       name: "get_database_count",
-      description: `Count the unfiltered total of active databases in ${referencedProject ? projectScope : "the Project or Workspace bound to this chat"}. With a selected @Database in the current turn, set scope to "referenced-instance" to count active databases on that database's canonical instance scope. A workspace instance may span projects; a project instance does not. This tool follows every ListDatabases page internally and returns only the count, never database records. It cannot choose an arbitrary instance or apply filters. If unavailable, do not report a partial count as exact.`,
+      description: `Get a bounded active-database count visible to the current member in ${referencedProject ? projectScope : "the Project or Workspace bound to this chat"}. With a selected @Database in the current turn, set scope to "referenced-instance" to count active databases on that database's canonical instance scope. A workspace instance may span projects; a project instance does not. This tool reads one page and returns its count and partial flag, never database records. If partial is true, report "at least N", not an exact total. It cannot choose an arbitrary instance or apply filters. Do not call repeatedly to enumerate all pages.`,
       parametersSchema: {
         type: "object",
         properties: {
@@ -573,6 +626,7 @@ interface CreateToolExecutorOptions {
   context?: string;
   referencedProject?: string;
   referencedDatabase?: string;
+  referencedIssue?: string;
   onNavigate?: () => void;
   runMode?: AgentRunMode;
 }
@@ -611,6 +665,17 @@ export function createToolExecutor(
   const referencedProject = isCanonicalProjectName(options.referencedProject)
     ? options.referencedProject
     : undefined;
+  const referencedIssue =
+    referencedProject &&
+    !options.referencedDatabase &&
+    options.referencedIssue?.startsWith(`${referencedProject}/issues/`) &&
+    getNameParentTokens(options.referencedIssue, [
+      projectNamePrefix,
+      issueNamePrefix,
+    ]).length === 2
+      ? options.referencedIssue
+      : undefined;
+  const referencedDatabase = options.referencedDatabase;
   const projectName = referencedProject ?? options.context;
   const navigateTool = createNavigateTool(router);
   const pageStateTool = createPageStateTool(router);
@@ -652,6 +717,8 @@ export function createToolExecutor(
     workspaceName: options.context,
   });
   let referencedProjectAccess: Promise<boolean> | undefined;
+  let referencedDatabaseAccess: Promise<boolean> | undefined;
+  let referencedIssueAccess: Promise<boolean> | undefined;
   const hasReferencedProjectAccess = (): Promise<boolean> => {
     if (!referencedProject) return Promise.resolve(true);
     referencedProjectAccess ??= projectServiceClientConnect
@@ -666,6 +733,51 @@ export function createToolExecutor(
       .catch(() => false);
     return referencedProjectAccess;
   };
+  const hasReferencedDatabaseAccess = (): Promise<boolean> => {
+    if (!referencedDatabase || !referencedProject)
+      return Promise.resolve(false);
+    referencedDatabaseAccess ??= databaseServiceClientConnect
+      .getDatabase(
+        create(GetDatabaseRequestSchema, { name: referencedDatabase }),
+        { contextValues: createContextValues().set(silentContextKey, true) }
+      )
+      .then(
+        (database) =>
+          database.name === referencedDatabase &&
+          database.project === referencedProject &&
+          database.state === State.ACTIVE
+      )
+      .catch(() => false);
+    return referencedDatabaseAccess;
+  };
+  const hasReferencedIssueAccess = (): Promise<boolean> => {
+    if (!referencedIssue) return Promise.resolve(false);
+    referencedIssueAccess ??= issueServiceClientConnect
+      .getIssue(
+        create(GetIssueRequestSchema, { name: referencedIssue, force: true }),
+        { contextValues: createContextValues().set(silentContextKey, true) }
+      )
+      .then((issue) => issue.name === referencedIssue)
+      .catch(() => false);
+    return referencedIssueAccess;
+  };
+
+  const canUseIssueAccess = (
+    name: string,
+    args: Record<string, unknown>
+  ): boolean =>
+    !!referencedIssue &&
+    ((name === "get_issue_overview" && args.issueName === referencedIssue) ||
+      (name === "call_api" && targetsSelectedIssue(args, referencedIssue)));
+  const canUseDatabaseAccess = (
+    name: string,
+    args: Record<string, unknown>
+  ): boolean =>
+    !!referencedDatabase &&
+    ((name === "get_database_overview" &&
+      args.databaseName === referencedDatabase) ||
+      name === "get_database_count" ||
+      name === "call_api");
 
   return async (
     name: string,
@@ -690,7 +802,12 @@ export function createToolExecutor(
     if (
       referencedProject &&
       (PROJECT_SCOPED_TOOL_NAMES.has(name) || name === "call_api") &&
-      !(await hasReferencedProjectAccess())
+      !(
+        canUseDatabaseAccess(name, args) &&
+        (await hasReferencedDatabaseAccess())
+      ) &&
+      !(await hasReferencedProjectAccess()) &&
+      !(canUseIssueAccess(name, args) && (await hasReferencedIssueAccess()))
     ) {
       return toToolResult(
         JSON.stringify({
@@ -709,7 +826,21 @@ export function createToolExecutor(
         if (prepared.kind === "error") {
           return toToolResult(prepared.result);
         }
-        if (!apiCallNeedsConfirmation(prepared.call.operationId)) {
+        const access = await checkPreparedApiPermission(prepared.call);
+        if (access.kind === "denied") {
+          return toToolResult(access.result);
+        }
+        const issueDecision = await prepareIssueDecisionPermission(
+          prepared.call,
+          options.referencedIssue
+        );
+        if (issueDecision.kind === "error") {
+          return toToolResult(issueDecision.result);
+        }
+        if (
+          issueDecision.kind === "not-issue-decision" &&
+          !apiCallNeedsConfirmation(prepared.call.operationId)
+        ) {
           return toToolResult(await dispatchPreparedApiCall(prepared.call));
         }
         if (!options.chatId || !options.userName) {
@@ -724,6 +855,10 @@ export function createToolExecutor(
           toolCallId,
           userName: options.userName,
           call: prepared.call,
+          issueDecision:
+            issueDecision.kind === "issue-decision"
+              ? issueDecision.decision
+              : undefined,
         });
         return {
           kind: "ask_user",

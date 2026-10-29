@@ -16,12 +16,12 @@ served by no ceiling.
 
 | Class | Methods | Meaning |
 |---|---|---|
-| READ | 68 | served to a read-only session and above |
+| READ | 69 | served to a read-only session and above |
 | WRITE | 42 | served to a read-write session only |
 | EXCLUDED | 75 | served by no ceiling this phase ships |
 | FORBIDDEN | 34 | never served, whatever the ceiling |
 | MCP_METHOD_CLASS_UNSPECIFIED | 0 | unclassified — CI rejects this, and the gate refuses it |
-| **total** | **219** | |
+| **total** | **220** | |
 
 | Method | Class | Reason | Permission |
 |---|---|---|---|
@@ -67,6 +67,7 @@ served by no ceiling.
 | DatabaseService/GetDatabaseSchema | READ | — | bb.databases.getSchema |
 | DatabaseService/GetSchemaString | READ | — | bb.databases.getSchema |
 | DatabaseService/ListDatabases | READ | — | bb.databases.list |
+| DatabaseService/SearchDatabases | READ | — | bb.databases.get |
 | DatabaseService/SyncDatabase | WRITE | — | bb.databases.sync |
 | DatabaseService/UpdateDatabase | EXCLUDED | REDRAWS_GOVERNANCE_BOUNDARY | bb.databases.update |
 | GroupService/BatchGetGroups | READ | — | bb.groups.get |

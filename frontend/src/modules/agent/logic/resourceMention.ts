@@ -5,6 +5,8 @@ import {
   issueNamePrefix,
   projectNamePrefix,
 } from "@/stores/modules/v1/common";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import { extractDatabaseResourceName } from "@/utils/v1/database";
 import type {
   AgentDraft,
   AgentMentionRange,
@@ -16,6 +18,15 @@ export type { AgentMentionRange, AgentResourceMention } from "./types";
 
 export const formatResourceMention = (label: string) =>
   `@${label.trim().replace(/\s+/g, " ")}`;
+
+export const getDatabaseMentionLabel = (database: Database): string => {
+  const { databaseName, instanceName } = extractDatabaseResourceName(
+    database.name
+  );
+  const instanceTitle =
+    database.instanceResource?.title?.trim() || instanceName;
+  return instanceTitle ? `${databaseName} (${instanceTitle})` : databaseName;
+};
 
 export const isResourceMentionRange = (
   text: string,
@@ -159,6 +170,19 @@ export const getMentionTriggerRange = (
   return match ? { start: caret - match[1].length, end: caret } : null;
 };
 
+export const removeMentionTrigger = (
+  text: string,
+  trigger: AgentMentionRange | null
+): { text: string; caret: number } | null => {
+  if (!trigger) return null;
+  const current = getMentionTriggerRange(text, trigger.end);
+  if (!current || current.start !== trigger.start) return null;
+  return {
+    text: text.slice(0, trigger.start) + text.slice(trigger.end),
+    caret: trigger.start,
+  };
+};
+
 export const hasAdditionalResourceMention = (
   text: string,
   selected: AgentMentionRange
@@ -254,11 +278,11 @@ export const normalizeAgentResourceReferences = (
     return [references[0]!];
   }
   const project = references.find((reference) => reference?.kind === "project");
-  const database = references.find(
-    (reference) => reference?.kind === "database"
+  const child = references.find(
+    (reference) => reference?.kind === "database" || reference?.kind === "issue"
   );
-  return project && database && database.project === project.name
-    ? [project, database]
+  return project && child && child.project === project.name
+    ? [project, child]
     : [];
 };
 

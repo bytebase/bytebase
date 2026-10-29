@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { MCPMethodClass } from "@/types/proto-es/v1/annotation_pb";
-import { apiCallNeedsConfirmation, getApiMethodClass } from "./apiMethodClass";
+import {
+  apiCallNeedsConfirmation,
+  getApiAuthorization,
+  getApiMethodClass,
+} from "./apiMethodClass";
 import { endpoints } from "./gen/openapi-index";
 
 describe("getApiMethodClass", () => {
@@ -33,6 +37,38 @@ describe("getApiMethodClass", () => {
       )
       .map((endpoint) => endpoint.operationId);
     expect(unclassified).toEqual([]);
+  });
+});
+
+describe("getApiAuthorization", () => {
+  it("reports declared IAM permission for a target API", () => {
+    expect(getApiAuthorization("ProjectService/UpdateProject")).toEqual({
+      authMethod: "IAM",
+      permission: "bb.projects.update",
+    });
+  });
+
+  it("does not claim a fixed permission for CUSTOM APIs", () => {
+    expect(getApiAuthorization("DatabaseService/ListDatabases")).toEqual({
+      authMethod: "CUSTOM",
+    });
+  });
+
+  it("returns undefined for unknown operations", () => {
+    expect(getApiAuthorization("ProjectService/DoesNotExist")).toBeUndefined();
+  });
+
+  it("has a declared permission for every indexed IAM API", () => {
+    expect(
+      endpoints
+        .filter((endpoint) => {
+          const authorization = getApiAuthorization(endpoint.operationId);
+          return (
+            authorization?.authMethod === "IAM" && !authorization.permission
+          );
+        })
+        .map((endpoint) => endpoint.operationId)
+    ).toEqual([]);
   });
 });
 

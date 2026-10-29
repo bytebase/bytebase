@@ -3,6 +3,20 @@ import { describe, expect, test } from "vitest";
 import { buildSystemPrompt } from "./prompt";
 
 describe("buildSystemPrompt", () => {
+  test("requires a failed completion when an API request is rejected", () => {
+    const prompt = buildSystemPrompt({
+      path: "/projects/orders/issues",
+      title: "Issues",
+      context: "projects/orders",
+    });
+
+    expect(prompt).toContain(
+      "If call_api returns an error or HTTP status 400 or higher"
+    );
+    expect(prompt).toContain("done({ text, success: false })");
+    expect(prompt).toContain("Do not claim the change succeeded");
+  });
+
   test("uses a selected project for one turn without narrowing normal API calls", () => {
     const prompt = buildSystemPrompt({
       path: "/projects/original",
@@ -57,7 +71,35 @@ describe("buildSystemPrompt", () => {
       "A workspace instance may span projects; a project instance remains in its owning project"
     );
     expect(prompt).toContain(
-      "For other instance-specific or filtered counts, use search_api and call_api ListDatabases"
+      "For filtered counts in the referenced Project, use search_api and call_api SearchDatabases with a project filter"
+    );
+    expect(prompt).toContain("inspect one page");
+    expect(prompt).toContain("report only a lower bound, not a total");
+    expect(prompt).not.toContain("Referenced project for this turn");
+  });
+
+  test("grounds a selected issue and its approval consequence in fresh state", () => {
+    const prompt = buildSystemPrompt({
+      path: "/projects/orders",
+      title: "Orders",
+      context: "projects/orders",
+      referencedProject: "projects/billing",
+      referencedIssue: "projects/billing/issues/42",
+      runMode: "read-only",
+    });
+
+    expect(prompt).toContain(
+      "Selected Issue for this turn: projects/billing/issues/42"
+    );
+    expect(prompt).toContain("fresh get_issue_overview result");
+    expect(prompt).toContain("does not change the chat context");
+    expect(prompt).toContain("IssueService/ApproveIssue");
+    expect(prompt).toContain("IssueService/RejectIssue");
+    expect(prompt).toContain("may queue rollout creation");
+    expect(prompt).toContain("does not mean tasks have executed");
+    expect(prompt).toContain("may immediately grant access or a project role");
+    expect(prompt).toContain(
+      "After an approved decision request, re-read the Issue"
     );
     expect(prompt).not.toContain("Referenced project for this turn");
   });
@@ -101,17 +143,24 @@ describe("buildSystemPrompt", () => {
       "For an unqualified list or count in a workspace-bound chat, use the whole chat workspace"
     );
     expect(prompt).toContain(
-      "For an unfiltered total of active databases in the chat Workspace or Project, or the referenced Project for this turn, use get_database_count with its default scope"
+      "For an unfiltered active-database count in the chat Workspace or Project, or the referenced Project for this turn, use get_database_count with its default scope"
     );
     expect(prompt).toContain(
-      "For filtered counts or other instance scopes, use search_api and call_api ListDatabases"
+      "For filtered counts in a Workspace or Project, use search_api and call_api SearchDatabases"
     );
     expect(prompt).toContain(
-      "use search_api and call_api ListDatabases with the precise parent and filter"
+      "For other instance scopes, use search_api and call_api SearchDatabases with the precise instance filter"
     );
     expect(prompt).toContain(
       "ask which project only when the member requests a project-specific result without identifying one"
     );
+    expect(prompt).toContain(
+      'If partial is true, say "at least N" rather than claiming an exact total'
+    );
+    expect(prompt).toContain(
+      "Do not automatically follow pagination tokens to count all resources"
+    );
+    expect(prompt).not.toContain("follow every page");
     expect(prompt).not.toContain(
       "if it is a workspace and the request requires a specific project, ask which project"
     );
@@ -131,14 +180,14 @@ describe("buildSystemPrompt", () => {
     });
 
     expect(projectPrompt).toContain(
-      "For an unfiltered total of active databases in the chat Workspace or Project, or the referenced Project for this turn, use get_database_count with its default scope"
+      "For an unfiltered active-database count in the chat Workspace or Project, or the referenced Project for this turn, use get_database_count with its default scope"
     );
     expect(referencePrompt).toContain(
-      "For an unfiltered total of active databases in the chat Workspace or Project, or the referenced Project for this turn, use get_database_count with its default scope"
+      "For an unfiltered active-database count in the chat Workspace or Project, or the referenced Project for this turn, use get_database_count with its default scope"
     );
     expect(referencePrompt).toContain("referenced Project for this turn");
     expect(referencePrompt).toContain(
-      "For other instance-specific or filtered counts, use search_api and call_api ListDatabases"
+      "For filtered counts in the referenced Project, use search_api and call_api SearchDatabases with a project filter"
     );
   });
 

@@ -28,7 +28,7 @@ vi.mock("../shared/stores/usePlanDetailStore", () => ({
     getState: () => ({
       requestActivityFocus: mocks.requestActivityFocus,
       requestThreadFocus: mocks.requestThreadFocus,
-      selectedSpecId: "spec-1",
+      displayedSpecId: "spec-1",
     }),
   }),
 }));
@@ -67,6 +67,17 @@ test("opens a thread on another change in that change's editor", () => {
   });
   expect(mocks.push).toHaveBeenCalledOnce();
   expect(mocks.requestActivityFocus).not.toHaveBeenCalled();
+});
+
+test("opens a thread on the change on screen without navigating", () => {
+  const { result } = renderHook(() => useFocusThread());
+  result.current.focusInStatement(thread("spec-1"), 4);
+  expect(mocks.requestThreadFocus).toHaveBeenCalledWith({
+    commentName: "projects/p/issues/1/issueComments/7",
+    specId: "spec-1",
+    lineNumber: 4,
+  });
+  expect(mocks.push).not.toHaveBeenCalled();
 });
 
 test.each([

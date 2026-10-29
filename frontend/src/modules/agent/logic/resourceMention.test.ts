@@ -9,6 +9,7 @@ import {
   insertResourceMention,
   normalizeAgentResourceReference,
   normalizeAgentResourceReferences,
+  removeMentionTrigger,
   updateDraftResourceMentions,
   updateResourceMentionRange,
 } from "./resourceMention";
@@ -24,6 +25,12 @@ const databaseReference = {
   name: "instances/main/databases/orders",
   project: "projects/orders",
   label: "orders_db",
+};
+const issueReference = {
+  kind: "issue" as const,
+  name: "projects/orders/issues/123",
+  project: "projects/orders",
+  label: "Update orders table",
 };
 
 describe("getMentionTriggerRange", () => {
@@ -44,6 +51,28 @@ describe("getMentionTriggerRange", () => {
     expect(getMentionTriggerRange("hello @orders now", 17)).toBeNull();
     expect(getMentionTriggerRange("@one@two", 8)).toBeNull();
     expect(getMentionTriggerRange("@orders", 20)).toBeNull();
+  });
+});
+
+describe("removeMentionTrigger", () => {
+  test("removes only the unfinished trigger and returns its caret", () => {
+    expect(removeMentionTrigger("Ask @", { start: 4, end: 5 })).toEqual({
+      text: "Ask ",
+      caret: 4,
+    });
+    expect(
+      removeMentionTrigger("Ask @Billing and @ord", { start: 17, end: 21 })
+    ).toEqual({ text: "Ask @Billing and ", caret: 17 });
+  });
+
+  test("does not delete stale ranges or email text", () => {
+    expect(
+      removeMentionTrigger("Ask Billing", { start: 4, end: 8 })
+    ).toBeNull();
+    expect(
+      removeMentionTrigger("ed@example.com", { start: 2, end: 10 })
+    ).toBeNull();
+    expect(removeMentionTrigger("Ask @", null)).toBeNull();
   });
 });
 
@@ -330,6 +359,54 @@ describe("paired resource mentions", () => {
         databaseReference
       )
     ).toBe(true);
+  });
+
+  test("accepts an Issue alone or with its Project in either selection order", () => {
+    expect(normalizeAgentResourceReferences([issueReference])).toEqual([
+      issueReference,
+    ]);
+    expect(
+      normalizeAgentResourceReferences([issueReference, projectReference])
+    ).toEqual([projectReference, issueReference]);
+    expect(
+      normalizeAgentResourceReferences([projectReference, issueReference])
+    ).toEqual([projectReference, issueReference]);
+    expect(
+      canAddResourceMention(
+        [{ resource: issueReference, range: { start: 0, end: 20 } }],
+        projectReference
+      )
+    ).toBe(true);
+  });
+
+  test("rejects an Issue with a Database, another Project, or a duplicate", () => {
+    const otherProject = {
+      ...projectReference,
+      name: "projects/billing",
+      project: "projects/billing",
+    };
+    expect(
+      normalizeAgentResourceReferences([databaseReference, issueReference])
+    ).toEqual([]);
+    expect(
+      normalizeAgentResourceReferences([otherProject, issueReference])
+    ).toEqual([]);
+    expect(
+      normalizeAgentResourceReferences([issueReference, issueReference])
+    ).toEqual([]);
+    expect(
+      canAddResourceMention(
+        [{ resource: databaseReference, range: { start: 0, end: 10 } }],
+        issueReference
+      )
+    ).toBe(false);
+    expect(
+      normalizeAgentResourceReferences([
+        projectReference,
+        databaseReference,
+        issueReference,
+      ])
+    ).toEqual([]);
   });
 
   test("rejects mismatched, duplicate, malformed, or excessive references", () => {

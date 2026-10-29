@@ -1,12 +1,27 @@
 // @vitest-environment node
+import { create } from "@bufbuild/protobuf";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { AppRouterInstance } from "@/app/router";
-import { State } from "@/types/proto-es/v1/common_pb";
+import {
+  ApprovalStatus,
+  IssueStatus,
+  State,
+} from "@/types/proto-es/v1/common_pb";
+import {
+  ApprovalFlowSchema,
+  ApprovalTemplateSchema,
+  Issue_Type,
+  IssueSchema,
+} from "@/types/proto-es/v1/issue_service_pb";
 
 const projectApi = vi.hoisted(() => ({ getProject: vi.fn() }));
+const issueApi = vi.hoisted(() => ({ getIssue: vi.fn() }));
+const databaseApi = vi.hoisted(() => ({ getDatabase: vi.fn() }));
 
 vi.mock("@/api", () => ({
   projectServiceClientConnect: { getProject: projectApi.getProject },
+  issueServiceClientConnect: { getIssue: issueApi.getIssue },
+  databaseServiceClientConnect: { getDatabase: databaseApi.getDatabase },
 }));
 
 vi.mock("../skills", () => ({
@@ -15,6 +30,9 @@ vi.mock("../skills", () => ({
 vi.mock("./callApi", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./callApi")>()),
   dispatchPreparedApiCall: vi.fn(async () => "call_api"),
+}));
+vi.mock("./apiPermissionPreflight", () => ({
+  checkPreparedApiPermission: vi.fn(async () => ({ kind: "allowed" })),
 }));
 vi.mock("./databaseCount", () => ({
   createDatabaseCountTool: vi.fn(() => vi.fn(async () => "database_count")),
@@ -73,12 +91,14 @@ vi.mock("./searchApi", async (importOriginal) => ({
 }));
 
 import { createToolExecutor, getToolDefinitions } from ".";
+import { checkPreparedApiPermission } from "./apiPermissionPreflight";
 import { dispatchPreparedApiCall } from "./callApi";
 import { createDatabaseCountTool } from "./databaseCount";
 import { createDatabaseOverviewTool } from "./databaseOverview";
 import { createDomActionTool } from "./domAction";
 import { createIssueOverviewTool } from "./issueOverview";
 import { createNavigateTool } from "./navigate";
+import { getPendingApiCallPreview } from "./pendingApiCall";
 import { createProjectGovernanceOverviewTool } from "./projectGovernanceOverview";
 import { createProjectOpenIssuesTool } from "./projectOpenIssues";
 import { createProjectOverviewTool } from "./projectOverview";
@@ -88,10 +108,32 @@ import { createWorkspaceOverviewTool } from "./workspaceOverview";
 import { createWorkspaceRecentActivityTool } from "./workspaceRecentActivity";
 
 beforeEach(() => {
+  vi.mocked(checkPreparedApiPermission).mockReset();
+  vi.mocked(checkPreparedApiPermission).mockResolvedValue({ kind: "allowed" });
   projectApi.getProject.mockReset();
   vi.mocked(dispatchPreparedApiCall).mockClear();
   projectApi.getProject.mockResolvedValue({
     name: "projects/referenced",
+    state: State.ACTIVE,
+  });
+  issueApi.getIssue.mockReset();
+  issueApi.getIssue.mockResolvedValue(
+    create(IssueSchema, {
+      name: "projects/referenced/issues/12",
+      title: "Change account table",
+      type: Issue_Type.DATABASE_CHANGE,
+      status: IssueStatus.OPEN,
+      approvalStatus: ApprovalStatus.PENDING,
+      approvalTemplate: create(ApprovalTemplateSchema, {
+        flow: create(ApprovalFlowSchema, { roles: ["roles/PROJECT_OWNER"] }),
+      }),
+      plan: "projects/referenced/plans/12",
+    })
+  );
+  databaseApi.getDatabase.mockReset();
+  databaseApi.getDatabase.mockResolvedValue({
+    name: "instances/prod/databases/app",
+    project: "projects/referenced",
     state: State.ACTIVE,
   });
 });
@@ -206,6 +248,351 @@ describe("agent tools referenced project", () => {
       }),
     });
     expect(count).not.toHaveBeenCalled();
+  });
+
+  test("allows a selected Issue read when Issue access exists without Project access", async () => {
+    projectApi.getProject.mockRejectedValue(new Error("permission denied"));
+    const overview = vi.fn(async () => "issue_overview");
+    vi.mocked(createIssueOverviewTool).mockReturnValueOnce(overview);
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      context: "workspaces/demo",
+      referencedProject: "projects/referenced",
+      referencedIssue: "projects/referenced/issues/12",
+    });
+
+    expect(
+      await executor(
+        "get_issue_overview",
+        { issueName: "projects/referenced/issues/12" },
+        "tool-issue"
+      )
+    ).toEqual({ kind: "tool_result", result: "issue_overview" });
+    expect(issueApi.getIssue).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "projects/referenced/issues/12" }),
+      expect.anything()
+    );
+    expect(overview).toHaveBeenCalledWith({
+      issueName: "projects/referenced/issues/12",
+    });
+  });
+
+  test("allows a selected Issue decision to request permission without Project access", async () => {
+    projectApi.getProject.mockRejectedValue(new Error("permission denied"));
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      chatId: "chat-issue",
+      userName: "users/me@example.com",
+      context: "workspaces/demo",
+      referencedProject: "projects/referenced",
+      referencedIssue: "projects/referenced/issues/12",
+    });
+
+    const result = await executor(
+      "call_api",
+      {
+        operationId: "IssueService/ApproveIssue",
+        body: { name: "projects/referenced/issues/12" },
+      },
+      "tool-approve"
+    );
+
+    expect(result).toMatchObject({
+      kind: "ask_user",
+      ask: {
+        apiPermission: {
+          operationId: "bytebase.v1.IssueService.ApproveIssue",
+        },
+      },
+    });
+    expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
+  });
+
+  test("does not use Issue access for other project or database tools", async () => {
+    projectApi.getProject.mockRejectedValue(new Error("permission denied"));
+    const projectOverview = vi.fn(async () => "must not run");
+    const databaseOverview = vi.fn(async () => "must not run");
+    vi.mocked(createProjectOverviewTool).mockReturnValueOnce(projectOverview);
+    vi.mocked(createDatabaseOverviewTool).mockReturnValueOnce(databaseOverview);
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      referencedProject: "projects/referenced",
+      referencedIssue: "projects/referenced/issues/12",
+    });
+
+    for (const [name, args] of [
+      ["get_project_overview", {}],
+      [
+        "get_database_overview",
+        { databaseName: "instances/prod/databases/app" },
+      ],
+    ] as const) {
+      const result = await executor(name, args, `tool-${name}`);
+      expect(result).toEqual({
+        kind: "tool_result",
+        result: JSON.stringify({
+          error:
+            "The referenced project is unavailable or you do not have access.",
+        }),
+      });
+    }
+    expect(projectOverview).not.toHaveBeenCalled();
+    expect(databaseOverview).not.toHaveBeenCalled();
+    expect(issueApi.getIssue).not.toHaveBeenCalled();
+  });
+
+  test("does not use Issue access for a database-reference turn", async () => {
+    projectApi.getProject.mockRejectedValue(new Error("permission denied"));
+    databaseApi.getDatabase.mockRejectedValue(new Error("permission denied"));
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      referencedProject: "projects/referenced",
+      referencedDatabase: "instances/prod/databases/app",
+      referencedIssue: "projects/referenced/issues/12",
+    });
+
+    const result = await executor(
+      "get_database_count",
+      { scope: "referenced-instance" },
+      "tool-count"
+    );
+
+    expect(result).toEqual({
+      kind: "tool_result",
+      result: JSON.stringify({
+        error:
+          "The referenced project is unavailable or you do not have access.",
+      }),
+    });
+    expect(issueApi.getIssue).not.toHaveBeenCalled();
+  });
+
+  test("uses selected Database access without requiring Project get access", async () => {
+    projectApi.getProject.mockRejectedValue(new Error("permission denied"));
+    const databaseOverview = vi.fn(async () => "database_overview");
+    const databaseCount = vi.fn(async () => "database_count");
+    vi.mocked(createDatabaseOverviewTool).mockReturnValueOnce(databaseOverview);
+    vi.mocked(createDatabaseCountTool).mockReturnValueOnce(databaseCount);
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      referencedProject: "projects/referenced",
+      referencedDatabase: "instances/prod/databases/app",
+    });
+
+    expect(
+      await executor(
+        "get_database_overview",
+        { databaseName: "instances/prod/databases/app" },
+        "tool-overview"
+      )
+    ).toEqual({ kind: "tool_result", result: "database_overview" });
+    expect(
+      await executor(
+        "get_database_count",
+        { scope: "referenced-instance" },
+        "tool-count"
+      )
+    ).toEqual({ kind: "tool_result", result: "database_count" });
+    expect(
+      await executor(
+        "call_api",
+        {
+          operationId: "DatabaseService/ListDatabases",
+          body: { parent: "projects/referenced" },
+        },
+        "tool-api"
+      )
+    ).toEqual({ kind: "tool_result", result: "call_api" });
+    expect(databaseApi.getDatabase).toHaveBeenCalledTimes(1);
+    expect(databaseOverview).toHaveBeenCalledWith({
+      databaseName: "instances/prod/databases/app",
+    });
+    expect(databaseCount).toHaveBeenCalledWith({
+      scope: "referenced-instance",
+    });
+    expect(projectApi.getProject).not.toHaveBeenCalled();
+    expect(dispatchPreparedApiCall).toHaveBeenCalledTimes(1);
+  });
+
+  test("does not use selected Database access for another project tool", async () => {
+    projectApi.getProject.mockRejectedValue(new Error("permission denied"));
+    const projectOverview = vi.fn(async () => "must not run");
+    vi.mocked(createProjectOverviewTool).mockReturnValueOnce(projectOverview);
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      referencedProject: "projects/referenced",
+      referencedDatabase: "instances/prod/databases/app",
+    });
+
+    expect(await executor("get_project_overview", {}, "tool-project")).toEqual({
+      kind: "tool_result",
+      result: JSON.stringify({
+        error:
+          "The referenced project is unavailable or you do not have access.",
+      }),
+    });
+    expect(projectOverview).not.toHaveBeenCalled();
+    expect(databaseApi.getDatabase).not.toHaveBeenCalled();
+  });
+
+  test("does not accept a Database from another project as access proof", async () => {
+    projectApi.getProject.mockRejectedValue(new Error("permission denied"));
+    databaseApi.getDatabase.mockResolvedValue({
+      name: "instances/prod/databases/app",
+      project: "projects/other",
+      state: State.ACTIVE,
+    });
+    const databaseOverview = vi.fn(async () => "must not run");
+    vi.mocked(createDatabaseOverviewTool).mockReturnValueOnce(databaseOverview);
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      referencedProject: "projects/referenced",
+      referencedDatabase: "instances/prod/databases/app",
+    });
+
+    expect(
+      await executor(
+        "get_database_overview",
+        { databaseName: "instances/prod/databases/app" },
+        "tool-overview"
+      )
+    ).toEqual({
+      kind: "tool_result",
+      result: JSON.stringify({
+        error:
+          "The referenced project is unavailable or you do not have access.",
+      }),
+    });
+    expect(databaseOverview).not.toHaveBeenCalled();
+  });
+
+  test("does not use selected Database access for another Database", async () => {
+    projectApi.getProject.mockRejectedValue(new Error("permission denied"));
+    const databaseOverview = vi.fn(async () => "must not run");
+    vi.mocked(createDatabaseOverviewTool).mockReturnValueOnce(databaseOverview);
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      referencedProject: "projects/referenced",
+      referencedDatabase: "instances/prod/databases/app",
+    });
+
+    expect(
+      await executor(
+        "get_database_overview",
+        { databaseName: "instances/prod/databases/other" },
+        "tool-overview"
+      )
+    ).toEqual({
+      kind: "tool_result",
+      result: JSON.stringify({
+        error:
+          "The referenced project is unavailable or you do not have access.",
+      }),
+    });
+    expect(databaseOverview).not.toHaveBeenCalled();
+    expect(databaseApi.getDatabase).not.toHaveBeenCalled();
+  });
+
+  test("does not authorize another project through a mismatched Issue reference", async () => {
+    projectApi.getProject.mockRejectedValue(new Error("permission denied"));
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      referencedProject: "projects/referenced",
+      referencedIssue: "projects/other/issues/12",
+    });
+
+    const result = await executor(
+      "call_api",
+      {
+        operationId: "IssueService/GetIssue",
+        body: { name: "projects/other/issues/12" },
+      },
+      "tool-other-issue"
+    );
+
+    expect(result).toEqual({
+      kind: "tool_result",
+      result: JSON.stringify({
+        error:
+          "The referenced project is unavailable or you do not have access.",
+      }),
+    });
+    expect(issueApi.getIssue).not.toHaveBeenCalled();
+    expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
+  });
+
+  test("does not use selected Issue access for an unrelated API target", async () => {
+    projectApi.getProject.mockRejectedValue(new Error("permission denied"));
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      referencedProject: "projects/referenced",
+      referencedIssue: "projects/referenced/issues/12",
+    });
+
+    const result = await executor(
+      "call_api",
+      {
+        operationId: "IssueService/GetIssue",
+        body: { name: "projects/other/issues/34" },
+      },
+      "tool-other-issue"
+    );
+
+    expect(result).toEqual({
+      kind: "tool_result",
+      result: JSON.stringify({
+        error:
+          "The referenced project is unavailable or you do not have access.",
+      }),
+    });
+    expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
+  });
+
+  test("does not accept a different Issue from GetIssue as access proof", async () => {
+    projectApi.getProject.mockRejectedValue(new Error("permission denied"));
+    issueApi.getIssue.mockResolvedValue({
+      name: "projects/referenced/issues/13",
+    });
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      referencedProject: "projects/referenced",
+      referencedIssue: "projects/referenced/issues/12",
+    });
+
+    const result = await executor(
+      "get_issue_overview",
+      { issueName: "projects/referenced/issues/12" },
+      "tool-issue"
+    );
+
+    expect(result).toEqual({
+      kind: "tool_result",
+      result: JSON.stringify({
+        error:
+          "The referenced project is unavailable or you do not have access.",
+      }),
+    });
+  });
+
+  test("allows a comment on the selected Issue without Project read access", async () => {
+    projectApi.getProject.mockRejectedValue(new Error("permission denied"));
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      chatId: "chat-issue",
+      userName: "users/me@example.com",
+      referencedProject: "projects/referenced",
+      referencedIssue: "projects/referenced/issues/12",
+    });
+
+    const result = await executor(
+      "call_api",
+      {
+        operationId: "IssueService/CreateIssueComment",
+        body: {
+          parent: "projects/referenced/issues/12",
+          issueComment: { comment: "Looks ready." },
+        },
+      },
+      "tool-comment"
+    );
+
+    expect(result).toMatchObject({
+      kind: "ask_user",
+      ask: {
+        apiPermission: {
+          operationId: "bytebase.v1.IssueService.CreateIssueComment",
+        },
+      },
+    });
+    expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
   });
 
   test("passes only the current database reference to the instance count tool", async () => {
@@ -343,6 +730,137 @@ describe("agent tools referenced project", () => {
       expect.objectContaining({ name: "projects/referenced" }),
       expect.anything()
     );
+    expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
+  });
+
+  test("refuses an IAM-denied write before requesting user confirmation", async () => {
+    vi.mocked(checkPreparedApiPermission).mockResolvedValue({
+      kind: "denied",
+      result: JSON.stringify({
+        status: 403,
+        error:
+          "Not called: bb.projects.update is not granted on projects/referenced.",
+      }),
+    });
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      chatId: "chat-1",
+      userName: "users/me@example.com",
+      context: "projects/referenced",
+    });
+    const result = await executor(
+      "call_api",
+      {
+        operationId: "ProjectService/UpdateProject",
+        body: {
+          project: { name: "projects/referenced", title: "Changed" },
+          updateMask: "title",
+        },
+      },
+      "tool-denied"
+    );
+    expect(result).toMatchObject({
+      kind: "tool_result",
+      result: expect.stringContaining("Not called: bb.projects.update"),
+    });
+    expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
+  });
+
+  test("refuses an IAM-denied read without calling the target API", async () => {
+    vi.mocked(checkPreparedApiPermission).mockResolvedValue({
+      kind: "denied",
+      result: JSON.stringify({
+        status: 403,
+        error: "Not called: bb.projects.get is not granted.",
+      }),
+    });
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      context: "projects/referenced",
+    });
+    const result = await executor(
+      "call_api",
+      {
+        operationId: "ProjectService/GetProject",
+        body: { name: "projects/referenced" },
+      },
+      "tool-denied-read"
+    );
+    expect(result).toMatchObject({
+      kind: "tool_result",
+      result: expect.stringContaining("Not called: bb.projects.get"),
+    });
+    expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
+  });
+
+  test("previews the selected Issue approval and potential rollout in permission", async () => {
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      chatId: "chat-issue",
+      userName: "users/me@example.com",
+      context: "projects/original",
+      referencedProject: "projects/referenced",
+      referencedIssue: "projects/referenced/issues/12",
+      runMode: "read-only",
+    });
+
+    const result = await executor(
+      "call_api",
+      {
+        operationId: "IssueService/ApproveIssue",
+        body: { name: "projects/referenced/issues/12" },
+      },
+      "tool-approve"
+    );
+
+    expect(result).toMatchObject({
+      kind: "ask_user",
+      ask: {
+        apiPermission: {
+          operationId: "bytebase.v1.IssueService.ApproveIssue",
+        },
+      },
+    });
+    if (result.kind !== "ask_user" || !result.ask.apiPermission) {
+      throw new Error("Expected permission request");
+    }
+    expect(
+      getPendingApiCallPreview({
+        actionId: result.ask.apiPermission.actionId,
+        chatId: "chat-issue",
+        toolCallId: "tool-approve",
+        userName: "users/me@example.com",
+      })
+    ).toMatchObject({
+      issueDecision: {
+        issueName: "projects/referenced/issues/12",
+        issueTitle: "Change account table",
+        impact: "final-approval-with-rollout",
+      },
+    });
+    expect(issueApi.getIssue).toHaveBeenCalledTimes(1);
+    expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
+  });
+
+  test("blocks an Issue decision that targets a different Issue reference", async () => {
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      chatId: "chat-issue",
+      userName: "users/me@example.com",
+      referencedProject: "projects/referenced",
+      referencedIssue: "projects/referenced/issues/12",
+    });
+
+    const result = await executor(
+      "call_api",
+      {
+        operationId: "IssueService/RejectIssue",
+        body: { name: "projects/referenced/issues/13" },
+      },
+      "tool-reject"
+    );
+
+    expect(result.kind).toBe("tool_result");
+    if (result.kind === "tool_result") {
+      expect(JSON.parse(result.result).error).toMatch(/selected Issue/);
+    }
+    expect(issueApi.getIssue).not.toHaveBeenCalled();
     expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
   });
 
@@ -526,6 +1044,15 @@ describe("agent tools dom_action", () => {
 });
 
 describe("agent tools read-only mode", () => {
+  test("describes database counts as bounded and partial", () => {
+    const tool = getToolDefinitions({ runMode: "read-only" }).find(
+      ({ name }) => name === "get_database_count"
+    );
+    expect(tool?.description).toContain("reads one page");
+    expect(tool?.description).toContain('report "at least N"');
+    expect(tool?.description).not.toContain("follows every");
+  });
+
   test("only exposes page inspection, guidance, and completion", () => {
     expect(
       getToolDefinitions({ runMode: "read-only" }).map((tool) => tool.name)

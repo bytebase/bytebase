@@ -49,6 +49,7 @@ import { useAppStore } from "@/stores/app";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { getAgentAIConfigurationEnabled } from "../logic/aiConfiguration";
 import { getCurrentChatContext } from "../logic/chatContext";
+import type { LandingStarterId } from "../logic/landingStarters";
 import type { AgentChat as AgentChatRecord } from "../logic/types";
 import {
   selectCurrentChat,
@@ -723,6 +724,28 @@ export function AgentWindow() {
 
   const sidebarPanelRef = useRef<PanelImperativeHandle | null>(null);
   const resizeCleanupRef = useRef<(() => void) | null>(null);
+  const retryLastTurnRef = useRef<(() => void) | null>(null);
+  const retryLastTurn = useCallback(() => retryLastTurnRef.current?.(), []);
+  const focusInputRef = useRef<(() => void) | null>(null);
+  const selectEmptyChatSuggestion = useCallback(
+    (starterId: LandingStarterId) => {
+      const store = useAgentStore.getState();
+      const chat = store.getChat(store.currentChatId);
+      if (
+        !chat ||
+        chat.status !== "idle" ||
+        store.getMessages(chat.id).length ||
+        store.getDraft(chat.id).text.trim()
+      ) {
+        return;
+      }
+      store.setDraft(chat.id, {
+        text: t(`agent.landing-starters.${starterId}`),
+      });
+      focusInputRef.current?.();
+    },
+    [t]
+  );
 
   // Cleanup resize listeners on unmount.
   useEffect(() => {
@@ -1298,8 +1321,20 @@ export function AgentWindow() {
                   className="flex size-full flex-col bg-background"
                   data-agent-mobile-conversation
                 >
-                  <AgentChat className="min-h-0 flex-1" />
-                  <AgentInput />
+                  <AgentChat
+                    className="min-h-0 flex-1"
+                    contextLabel={
+                      currentChat?.context
+                        ? getContextLabel(currentChat.context)
+                        : workspace?.title || t("agent.context-workspace")
+                    }
+                    onRetry={retryLastTurn}
+                    onSelectSuggestion={selectEmptyChatSuggestion}
+                  />
+                  <AgentInput
+                    retryActionRef={retryLastTurnRef}
+                    focusActionRef={focusInputRef}
+                  />
                 </div>
               ) : (
                 <div
@@ -1873,8 +1908,20 @@ export function AgentWindow() {
                   {/* Main panel */}
                   <Panel id="agent-chat-main" minSize={minMainPanelWidth}>
                     <div className="relative flex size-full min-w-0 flex-col">
-                      <AgentChat className="min-h-0 flex-1" />
-                      <AgentInput />
+                      <AgentChat
+                        className="min-h-0 flex-1"
+                        contextLabel={
+                          currentChat?.context
+                            ? getContextLabel(currentChat.context)
+                            : workspace?.title || t("agent.context-workspace")
+                        }
+                        onRetry={retryLastTurn}
+                        onSelectSuggestion={selectEmptyChatSuggestion}
+                      />
+                      <AgentInput
+                        retryActionRef={retryLastTurnRef}
+                        focusActionRef={focusInputRef}
+                      />
                     </div>
                   </Panel>
                 </PanelGroup>

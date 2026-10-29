@@ -1,4 +1,4 @@
-import { ChevronRight } from "lucide-react";
+import { ArrowUpRight, Building2, ChevronRight, Folder } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -22,10 +22,12 @@ import {
   AI_ASSISTANT_PRODUCT_INTRO,
   PRODUCT_INTRO_QUERY_KEY,
 } from "@/lib/productIntro";
+import { projectNamePrefix } from "@/lib/resourceName";
 import { useAppStore } from "@/stores/app";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { getAgentAIConfigurationEnabled } from "../logic/aiConfiguration";
+import type { LandingStarterId } from "../logic/landingStarters";
 import {
   formatResourceMention,
   isResourceMentionRange,
@@ -40,6 +42,7 @@ import type {
   ToolCall,
 } from "../logic/types";
 import {
+  selectCurrentChat,
   selectCurrentChatRequiresAIConfiguration,
   selectError,
   selectLoading,
@@ -50,7 +53,24 @@ import { ToolCallCard } from "./ToolCallCard";
 
 interface AgentChatProps {
   className?: string;
+  contextLabel?: string;
+  onRetry?: () => void;
+  onSelectSuggestion?: (starterId: LandingStarterId) => void;
 }
+
+const EMPTY_CHAT_STARTERS: Record<"workspace" | "project", LandingStarterId[]> =
+  {
+    workspace: [
+      "workspace-attention",
+      "workspace-recent",
+      "workspace-governance",
+    ],
+    project: [
+      "project-open-blockers",
+      "project-open-recent",
+      "project-propose-change",
+    ],
+  };
 
 const ISSUE_NAME_PATTERN = /^projects\/([^/]+)\/issues\/([^/]+)$/;
 const DATABASE_NAME_PATTERN =
@@ -246,7 +266,12 @@ function renderBoundMentions(
   return parts;
 }
 
-export function AgentChat({ className }: AgentChatProps) {
+export function AgentChat({
+  className,
+  contextLabel,
+  onRetry,
+  onSelectSuggestion,
+}: AgentChatProps) {
   const { t } = useTranslation();
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const [
@@ -255,12 +280,16 @@ export function AgentChat({ className }: AgentChatProps) {
   ] = useState(false);
 
   const messages = useAgentStore(selectMessages);
+  const currentChat = useAgentStore(selectCurrentChat);
   const loading = useAgentStore(selectLoading);
   const error = useAgentStore(selectError);
   const chatRequiresAIConfiguration = useAgentStore(
     selectCurrentChatRequiresAIConfiguration
   );
   const currentChatId = useAgentStore((s) => s.currentChatId);
+  const draftText = useAgentStore((s) =>
+    currentChatId ? s.draftsByChatId[currentChatId]?.text : undefined
+  );
   const aiConfigurationEnabled = useAppStore((s) =>
     getAgentAIConfigurationEnabled(s.getSettingByName(Setting_SettingName.AI))
   );
@@ -281,6 +310,50 @@ export function AgentChat({ className }: AgentChatProps) {
       ),
     [messages]
   );
+  const emptyChatScope = currentChat?.context?.startsWith(projectNamePrefix)
+    ? "project"
+    : "workspace";
+  const showEmptyChat =
+    currentChat?.status === "idle" &&
+    !currentChat.archived &&
+    messages.length === 0 &&
+    !loading &&
+    !error &&
+    !showAIConfigurationRecovery;
+  // An interruption belongs after the turn's final visible message, including tool calls.
+  const interruptionByLastMessageId = useMemo(() => {
+    const interruptions = new Map<
+      string,
+      { reason: "user" | "unexpected"; userMessageId: string }
+    >();
+    let userMessage: AgentMessage | undefined;
+    let lastMessage: AgentMessage | undefined;
+    const addInterruption = () => {
+      const reason = userMessage?.metadata?.interruptionReason;
+      if (
+        userMessage &&
+        lastMessage &&
+        (reason === "user" || reason === "unexpected")
+      ) {
+        interruptions.set(lastMessage.id, {
+          reason,
+          userMessageId: userMessage.id,
+        });
+      }
+    };
+    for (const message of displayMessages) {
+      if (message.role === "user") {
+        addInterruption();
+        userMessage = message;
+      }
+      lastMessage = message;
+    }
+    addInterruption();
+    return interruptions;
+  }, [displayMessages]);
+  const latestUserMessageId = displayMessages.findLast(
+    (message) => message.role === "user"
+  )?.id;
 
   function getToolResult(
     messageId: string,
@@ -338,10 +411,11 @@ export function AgentChat({ className }: AgentChatProps) {
 
   useEffect(() => {
     if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop =
-        chatContainerRef.current.scrollHeight;
+      chatContainerRef.current.scrollTop = showEmptyChat
+        ? 0
+        : chatContainerRef.current.scrollHeight;
     }
-  }, [currentChatId, messages.length]);
+  }, [currentChatId, currentChat?.interrupted, messages.length, showEmptyChat]);
 
   useEffect(() => {
     setAIConfigurationRecoveryDismissed(false);
@@ -352,7 +426,61 @@ export function AgentChat({ className }: AgentChatProps) {
       ref={chatContainerRef}
       className={`flex flex-col overflow-y-auto gap-3 p-3 ${className ?? ""}`}
     >
+      {showEmptyChat && (
+        <div className="m-auto w-full max-w-xl py-2" data-agent-empty-chat>
+          <div className="flex min-w-0 items-center gap-2 text-sm font-medium text-control-light">
+            {emptyChatScope === "project" ? (
+              <Folder className="size-4 shrink-0" aria-hidden="true" />
+            ) : (
+              <Building2 className="size-4 shrink-0" aria-hidden="true" />
+            )}
+            <span className="min-w-0 truncate">
+              {contextLabel ??
+                currentChat.context ??
+                t("agent.context-workspace")}
+            </span>
+          </div>
+          <h2 className="mt-3 text-xl font-semibold text-main">
+            {emptyChatScope === "project"
+              ? t("agent.empty-chat.project-heading")
+              : t("agent.empty-chat.workspace-heading")}
+          </h2>
+          {!draftText?.trim() && (
+            <>
+              <div className="mt-4 text-xs font-medium text-control-light">
+                {t("agent.empty-chat.suggestions")}
+              </div>
+              <div className="mt-2 divide-y divide-block-border border-y border-block-border">
+                {EMPTY_CHAT_STARTERS[emptyChatScope].map((starterId) => (
+                  <Button
+                    key={starterId}
+                    appearance="secondary"
+                    size="md"
+                    className="h-auto w-full min-w-0 justify-between rounded-xs px-3 py-2 text-left whitespace-normal hover:text-accent"
+                    onClick={() => onSelectSuggestion?.(starterId)}
+                    data-agent-empty-suggestion
+                    data-starter-id={starterId}
+                  >
+                    <span className="min-w-0 flex-1 break-words">
+                      {t(`agent.landing-starters.${starterId}`)}
+                    </span>
+                    <ArrowUpRight className="shrink-0" aria-hidden="true" />
+                  </Button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
       {displayMessages.map((msg) => {
+        const interruption = interruptionByLastMessageId.get(msg.id);
+        const canRetry =
+          interruption?.reason === "unexpected" &&
+          interruption.userMessageId === latestUserMessageId &&
+          currentChat?.interrupted &&
+          currentChat.interruptionReason === "unexpected" &&
+          !loading &&
+          onRetry;
         const isPending = msg.metadata?.pending === true;
         const references =
           msg.role === "user"
@@ -502,6 +630,37 @@ export function AgentChat({ className }: AgentChatProps) {
                   ))}
                 </div>
                 {showTimestamp && timestamp}
+              </div>
+            )}
+            {interruption && (
+              <div
+                role="status"
+                data-agent-interruption-status
+                className="mt-3 rounded-sm border border-block-border bg-control-bg px-2 py-1.5 text-xs"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span
+                    className={`font-medium ${
+                      interruption.reason === "user"
+                        ? "text-warning"
+                        : "text-error"
+                    }`}
+                  >
+                    {interruption.reason === "user"
+                      ? t("agent.request-stopped-by-user")
+                      : t("agent.interrupted")}
+                  </span>
+                  {canRetry && (
+                    <Button appearance="outline" size="xs" onClick={onRetry}>
+                      {t("agent.retry-last-chat-turn")}
+                    </Button>
+                  )}
+                </div>
+                <div className="mt-0.5 text-control-light">
+                  {interruption.reason === "user"
+                    ? t("agent.request-stopped-retry-hint")
+                    : t("agent.interrupted-retry-hint")}
+                </div>
               </div>
             )}
           </div>

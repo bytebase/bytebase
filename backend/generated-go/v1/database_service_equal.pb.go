@@ -110,6 +110,46 @@ func (x *ListDatabasesResponse) Equal(y *ListDatabasesResponse) bool {
 	return true
 }
 
+func (x *SearchDatabasesRequest) Equal(y *SearchDatabasesRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.PageSize != y.PageSize {
+		return false
+	}
+	if x.PageToken != y.PageToken {
+		return false
+	}
+	if x.Filter != y.Filter {
+		return false
+	}
+	return true
+}
+
+func (x *SearchDatabasesResponse) Equal(y *SearchDatabasesResponse) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if len(x.Databases) != len(y.Databases) {
+		return false
+	}
+	for i := 0; i < len(x.Databases); i++ {
+		if !x.Databases[i].Equal(y.Databases[i]) {
+			return false
+		}
+	}
+	if x.NextPageToken != y.NextPageToken {
+		return false
+	}
+	return true
+}
+
 func (x *UpdateDatabaseRequest) Equal(y *UpdateDatabaseRequest) bool {
 	if x == y {
 		return true

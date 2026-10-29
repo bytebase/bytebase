@@ -62,6 +62,27 @@ const renderCard = (operationId: string, result: string) => {
 };
 
 describe("ToolCallCard", () => {
+  test("shows a canceled ask without claiming the user submitted an answer", () => {
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    act(() => {
+      root.render(
+        <ToolCallCard
+          toolCall={{
+            id: "ask-1",
+            name: "ask_user",
+            arguments: JSON.stringify({ kind: "input", prompt: "Which project?" }),
+          }}
+          result={JSON.stringify({ kind: "cancelled", reason: "user" })}
+        />
+      );
+    });
+
+    expect(container.textContent).toContain("agent.tool-request-canceled");
+    expect(container.textContent).not.toContain("agent.tool-response-submitted");
+    act(() => root.unmount());
+  });
+
   const queryResult = JSON.stringify({
     status: 200,
     response: {
@@ -324,8 +345,62 @@ describe("ToolCallCard", () => {
     expect(container.querySelector('[role="alert"]')?.textContent).toBe(
       "query failed"
     );
+    expect(container.querySelector("button .text-error")).toHaveTextContent(
+      "agent.tool-failed"
+    );
 
     unmount();
+  });
+
+  test("marks a query failed when an error is beyond the displayed result sets", () => {
+    const { container, unmount } = renderCard(
+      "SQLService/Query",
+      JSON.stringify({
+        status: 200,
+        response: {
+          results: [
+            { columnNames: ["value"], rows: [] },
+            { columnNames: ["value"], rows: [] },
+            { columnNames: ["value"], rows: [] },
+            { error: "fourth statement failed" },
+          ],
+        },
+      })
+    );
+
+    expect(container.querySelector("button .text-error")).toHaveTextContent(
+      "agent.tool-failed"
+    );
+    unmount();
+  });
+
+  test("shows the effective failed done result rather than the model's success claim", () => {
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    act(() => {
+      root.render(
+        <ToolCallCard
+          toolCall={{
+            id: "done-1",
+            name: "done",
+            arguments: JSON.stringify({ text: "Query succeeded", success: true }),
+          }}
+          result={JSON.stringify({ text: "query failed", success: false })}
+        />
+      );
+    });
+
+    expect(container.querySelector(".text-error")).toHaveTextContent(
+      "agent.tool-failed"
+    );
+    act(() => {
+      (container.querySelector("button") as HTMLElement).click();
+    });
+    expect(container.querySelector("pre")).toHaveTextContent("query failed");
+    expect(container.querySelector("pre")).not.toHaveTextContent(
+      "Query succeeded"
+    );
+    act(() => root.unmount());
   });
 
   test("keeps malformed SQL tool results behind the raw disclosure", () => {

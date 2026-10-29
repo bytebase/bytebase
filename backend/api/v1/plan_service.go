@@ -386,11 +386,11 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 		}
 	}
 
-	// The review starts before the plan checks and the approval check are
-	// signaled, as either can create the rollout: a slot already reset holds it
-	// until the review of the new SQL is done.
+	// The reviews start before the plan checks and the approval check are
+	// signaled, as either can create the rollout: a rule slot already reset
+	// holds it until the rule review of the new SQL is done.
 	if planCheckRunsTrigger {
-		startRuleReview(ctx, s.profile, s.store, s.bus, updateResult.Issue)
+		startReviews(ctx, s.profile, s.store, s.bus, updateResult.Issue, store.ReviewRunTypeRule, store.ReviewRunTypeAI)
 	}
 
 	if updatedIssue := updateResult.Issue; updateResult.ApprovalReset && updatedIssue != nil {
@@ -453,7 +453,8 @@ func (s *PlanService) GetPlanCheckRun(ctx context.Context, request *connect.Requ
 }
 
 // startRuleReviewOfPlan starts the standard rule review of the plan's issue,
-// if it has one.
+// if it has one. Rerunning the checks leaves the AI review alone: rerunning it
+// costs model calls, so it has its own RunReview.
 func (s *PlanService) startRuleReviewOfPlan(ctx context.Context, plan *store.PlanMessage) {
 	if !s.profile.SQLReviewV2 {
 		return
@@ -470,7 +471,7 @@ func (s *PlanService) startRuleReviewOfPlan(ctx context.Context, plan *store.Pla
 			log.BBError(err))
 		return
 	}
-	startRuleReview(ctx, s.profile, s.store, s.bus, issue)
+	startReviews(ctx, s.profile, s.store, s.bus, issue, store.ReviewRunTypeRule)
 }
 
 // RunPlanChecks runs plan checks for a plan.

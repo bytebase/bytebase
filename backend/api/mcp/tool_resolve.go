@@ -38,13 +38,13 @@ type resolvedDatabase struct {
 	projects      map[string]string // resourceName -> project
 }
 
-// listDatabasesResponse is the typed response from ListDatabases API.
+// listDatabasesResponse is the typed response from ListDatabases and SearchDatabases.
 type listDatabasesResponse struct {
 	Databases     []databaseEntry `json:"databases"`
 	NextPageToken string          `json:"nextPageToken,omitempty"`
 }
 
-// databaseEntry represents a database in the ListDatabases response.
+// databaseEntry represents a database in a ListDatabases or SearchDatabases response.
 type databaseEntry struct {
 	Name             string           `json:"name"`
 	Project          string           `json:"project"`
@@ -64,15 +64,12 @@ type dataSource struct {
 	Type string `json:"type"`
 }
 
-// buildDatabaseFilter builds a CEL filter expression for ListDatabases.
-func buildDatabaseFilter(database, instance, project string) string {
+// buildDatabaseFilter builds a CEL filter expression for the database lookup.
+func buildDatabaseFilter(database, instance string) string {
 	// name.contains does substring matching server-side.
 	filter := fmt.Sprintf("name.contains(%q)", database)
 	if instance != "" {
 		filter += fmt.Sprintf(" && instance == %q", formatInstanceFilter(instance))
-	}
-	if project != "" {
-		filter += fmt.Sprintf(" && project == %q", formatProjectFilter(project))
 	}
 	return filter
 }
@@ -87,41 +84,37 @@ func formatInstanceFilter(instance string) string {
 	return common.FormatInstance(instance)
 }
 
-func formatProjectFilter(project string) string {
+func formatProjectName(project string) string {
 	if _, err := common.GetProjectID(project); err == nil {
 		return project
 	}
 	return common.FormatProject(project)
 }
 
-// listDatabases lists databases matching the filter in the user's workspace.
-// Uses the workspace ID from the JWT token stored in context.
-func (s *Server) listDatabases(ctx context.Context, filter string) ([]databaseEntry, error) {
-	workspaceID := getWorkspaceID(ctx)
-	if workspaceID == "" {
-		return nil, &toolError{
-			Code:       "AUTH_ERROR",
-			Message:    "workspace ID not found in token",
-			Suggestion: "re-authenticate with Bytebase",
-		}
+// listDatabases lists the databases matching filter in the named project, or
+// in every project where the caller holds bb.databases.get when none is named.
+//
+// It never lists under the workspace parent: that needs bb.databases.list at
+// the workspace, which project roles lack, and with stdout audit logging on,
+// each refusal there would stream a permission denial on every resolve.
+func (s *Server) listDatabases(ctx context.Context, filter, project string) ([]databaseEntry, error) {
+	path, required := "/bytebase.v1.DatabaseService/SearchDatabases", "bb.databases.get"
+	body := map[string]any{
+		"filter":   filter,
+		"pageSize": 1000,
+	}
+	if project != "" {
+		path, required = "/bytebase.v1.DatabaseService/ListDatabases", "bb.databases.list"
+		body["parent"] = formatProjectName(project)
 	}
 
 	var databases []databaseEntry
-	pageToken := ""
 	for {
-		body := map[string]any{
-			"parent":   fmt.Sprintf("workspaces/%s", workspaceID),
-			"filter":   filter,
-			"pageSize": 1000,
-		}
-		if pageToken != "" {
-			body["pageToken"] = pageToken
-		}
-		resp, err := s.apiRequest(ctx, "/bytebase.v1.DatabaseService/ListDatabases", body)
+		resp, err := s.apiRequest(ctx, path, body)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to list databases")
 		}
-		if err := checkAPIResponse(resp, "list databases", "bb.databases.list"); err != nil {
+		if err := checkAPIResponse(resp, "list databases", required); err != nil {
 			return nil, err
 		}
 
@@ -134,7 +127,7 @@ func (s *Server) listDatabases(ctx context.Context, filter string) ([]databaseEn
 		if listResp.NextPageToken == "" {
 			break
 		}
-		pageToken = listResp.NextPageToken
+		body["pageToken"] = listResp.NextPageToken
 	}
 	return databases, nil
 }
@@ -154,6 +147,10 @@ func matchDatabases(databases []databaseEntry, database, instance, project strin
 		suggestion := "check the database name or use search_api to list available databases"
 		if instance != "" || project != "" {
 			suggestion = "try without instance/project filters, or use search_api to list available databases"
+		}
+		// Only the search skips projects silently; ListDatabases refuses a named project the caller cannot list.
+		if project == "" {
+			suggestion += ". Databases in archived projects, or in projects where you lack bb.databases.get, are not listed"
 		}
 		return nil, &toolError{
 			Code:       "DATABASE_NOT_FOUND",
@@ -206,7 +203,7 @@ func candidateView(matches []databaseEntry) *resolvedDatabase {
 
 // resolveDatabase resolves a database name to a unique resource using tiered matching.
 func (s *Server) resolveDatabase(ctx context.Context, database, instance, project string) (*resolvedDatabase, error) {
-	databases, err := s.listDatabases(ctx, buildDatabaseFilter(database, instance, project))
+	databases, err := s.listDatabases(ctx, buildDatabaseFilter(database, instance), project)
 	if err != nil {
 		return nil, err
 	}

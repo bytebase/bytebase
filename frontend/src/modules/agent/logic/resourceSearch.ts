@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
-import { databaseServiceClientConnect } from "@/api";
+import { databaseServiceClientConnect, issueServiceClientConnect } from "@/api";
 import { silentContextKey } from "@/api/context-key";
 import { useAppStore } from "@/stores/app";
 import {
@@ -11,16 +11,20 @@ import {
 import { State } from "@/types/proto-es/v1/common_pb";
 import {
   type Database,
-  ListDatabasesRequestSchema,
+  SearchDatabasesRequestSchema,
 } from "@/types/proto-es/v1/database_service_pb";
+import {
+  type Issue,
+  SearchIssuesRequestSchema,
+} from "@/types/proto-es/v1/issue_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import { getDefaultPagination } from "@/utils/pagination";
 import { celString } from "@/utils/v1/celLiteral";
 
 export async function searchAgentProjects(
   query: string,
   pageToken: string,
-  signal: AbortSignal,
-  includeDefault = false
+  signal: AbortSignal
 ): Promise<{ items: Project[]; nextPageToken: string }> {
   const { projects, nextPageToken } = await useAppStore
     .getState()
@@ -28,9 +32,9 @@ export async function searchAgentProjects(
       filter: {
         query: query.trim(),
         state: State.ACTIVE,
-        excludeDefault: !includeDefault,
+        excludeDefault: true,
       },
-      pageSize: 20,
+      pageSize: getDefaultPagination(),
       pageToken,
       signal,
       silent: true,
@@ -56,14 +60,51 @@ export async function searchAgentDatabases(
   }
   signal.throwIfAborted();
   const keyword = query.trim().toLowerCase();
-  const response = await databaseServiceClientConnect.listDatabases(
-    create(ListDatabasesRequestSchema, {
-      parent,
-      pageSize: 20,
+  const filter = [
+    parent.startsWith(projectNamePrefix)
+      ? `project == ${celString(parent)}`
+      : "",
+    keyword ? `name.contains(${celString(keyword)})` : "",
+  ]
+    .filter(Boolean)
+    .join(" && ");
+  const options = {
+    signal,
+    contextValues: createContextValues().set(silentContextKey, true),
+  };
+  const response = await databaseServiceClientConnect.searchDatabases(
+    create(SearchDatabasesRequestSchema, {
+      pageSize: getDefaultPagination(),
       pageToken,
-      filter: keyword ? `name.contains(${celString(keyword)})` : "",
-      orderBy: "name",
-      showDeleted: false,
+      filter,
+    }),
+    options
+  );
+  signal.throwIfAborted();
+  return {
+    items: response.databases,
+    nextPageToken: response.nextPageToken ?? "",
+  };
+}
+
+export async function searchAgentIssues(
+  parent: string,
+  query: string,
+  pageToken: string,
+  signal: AbortSignal
+): Promise<{ items: Issue[]; nextPageToken: string }> {
+  const tokens = getNameParentTokens(parent, [projectNamePrefix]);
+  if (tokens.length !== 1) {
+    throw new Error("A canonical project is required to search issues.");
+  }
+  signal.throwIfAborted();
+  const response = await issueServiceClientConnect.searchIssues(
+    create(SearchIssuesRequestSchema, {
+      parent,
+      pageSize: getDefaultPagination(),
+      pageToken,
+      query: query.trim(),
+      orderBy: "update_time desc",
     }),
     {
       signal,
@@ -71,8 +112,19 @@ export async function searchAgentDatabases(
     }
   );
   signal.throwIfAborted();
+  const creators = [
+    ...new Set(response.issues.map((issue) => issue.creator).filter(Boolean)),
+  ];
+  if (creators.length > 0) {
+    try {
+      await useAppStore.getState().batchGetOrFetchUsers(creators);
+    } catch {
+      // Missing creator details must not hide otherwise accessible issues.
+    }
+  }
+  signal.throwIfAborted();
   return {
-    items: response.databases,
+    items: response.issues,
     nextPageToken: response.nextPageToken ?? "",
   };
 }

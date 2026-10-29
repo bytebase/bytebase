@@ -20,13 +20,14 @@ Run SQL queries against databases managed by Bytebase.
    search_api(operationId="SQLService/Query")
    \`\`\`
 
-2. **List databases** (if needed):
+2. **Find databases** (if needed):
    \`\`\`
-   call_api(operationId="DatabaseService/ListDatabases", body={
-     "parent": "workspaces/{id}",
+   call_api(operationId="DatabaseService/SearchDatabases", body={
      "filter": "name.contains(\\"db_name\\")"
    })
    \`\`\`
+
+   SearchDatabases searches across projects where the member can get databases. In a project context, add \`project == "projects/{project-id}"\` to the filter to limit results to that project.
 
    Filter examples:
    - \`name.contains("employee")\` - database name contains "employee"
@@ -54,7 +55,7 @@ Run SQL queries against databases managed by Bytebase.
   - Full mask: \`******\`
   - Partial mask: \`**rn**\` (only "rn" visible)
 - **Displaying partial masks:** Use backticks or code blocks when presenting results. Without escaping, markdown interprets \`**text**\` as bold formatting.
-- Preserve the exact canonical database name returned by ListDatabases. Workspace databases use \`instances/{instance}/databases/{database}\`; project-instance databases use \`projects/{project}/instances/{instance}/databases/{database}\`.
+- Preserve the exact canonical database name returned by SearchDatabases. Workspace databases use \`instances/{instance}/databases/{database}\`; project-instance databases use \`projects/{project}/instances/{instance}/databases/{database}\`.
 
 ## Common Errors
 

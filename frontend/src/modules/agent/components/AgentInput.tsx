@@ -1,4 +1,5 @@
 import {
+  type RefObject,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -12,16 +13,21 @@ import { router } from "@/app/router";
 import { Button } from "@/components/ui/button";
 import { projectNamePrefix } from "@/lib/resourceName";
 import { useAppStore } from "@/stores/app";
+import {
+  getNameParentTokens,
+  issueNamePrefix,
+} from "@/stores/modules/v1/common";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
-import { extractDatabaseResourceName } from "@/utils/v1/database";
 import { runAgentLoop } from "../logic/agentLoop";
 import {
   getAgentAIConfigurationEnabled,
   isAgentAIConfigurationError,
 } from "../logic/aiConfiguration";
 import { getCurrentChatContext } from "../logic/chatContext";
+import type { IssueDecisionImpact } from "../logic/issueDecisionImpact";
 import {
   getLandingStarterIdForText,
   type LandingStarterId,
@@ -30,11 +36,13 @@ import { buildOutboundHistory } from "../logic/outboundHistory";
 import { buildSystemPrompt } from "../logic/prompt";
 import {
   canAddResourceMention,
+  getDatabaseMentionLabel,
   getDraftResourceMentions,
   getMentionTriggerRange,
   hasUnboundResourceMention,
   insertResourceMention,
   normalizeAgentResourceReferences,
+  removeMentionTrigger,
   updateDraftResourceMentions,
 } from "../logic/resourceMention";
 import { createToolExecutor, getToolDefinitions } from "../logic/tools";
@@ -73,6 +81,11 @@ import { AgentResourcePicker } from "./AgentResourcePicker";
 const runTokens = new Map<string, number>();
 
 const tokenFormatter = new Intl.NumberFormat();
+
+const formatPermissionTime = (expiresAt: number): string => {
+  const seconds = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+};
 
 // ---------------------------------------------------------------------------
 // Helper functions
@@ -213,7 +226,13 @@ const mergeOverviewEvidence = (
 // Component
 // ---------------------------------------------------------------------------
 
-export function AgentInput() {
+export function AgentInput({
+  retryActionRef,
+  focusActionRef,
+}: {
+  retryActionRef?: RefObject<(() => void) | null>;
+  focusActionRef?: RefObject<(() => void) | null>;
+}) {
   const { t, i18n } = useTranslation();
   // Zustand selectors
   const currentChat = useAgentStore(selectCurrentChat);
@@ -335,6 +354,7 @@ export function AgentInput() {
   );
 
   const [askInput, setAskInput] = useState("");
+  const [, setPermissionTick] = useState(0);
   const [resourcePickerOpen, setResourcePickerOpen] = useState(false);
   const mentionRangeRef = useRef<{ start: number; end: number } | null>(null);
   const selectedMentionCaretRef = useRef<number | null>(null);
@@ -344,8 +364,16 @@ export function AgentInput() {
   const composerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  useEffect(() => {
+    if (!focusActionRef) return;
+    const focus = () => textareaRef.current?.focus();
+    focusActionRef.current = focus;
+    return () => {
+      if (focusActionRef.current === focus) focusActionRef.current = null;
+    };
+  }, [focusActionRef]);
+
   // Derived values
-  const isInterrupted = Boolean(currentChat?.interrupted);
   const isCurrentChatRunning = currentChat?.status === "running";
   const chooseOptions =
     currentPendingAsk?.kind === "choose"
@@ -353,6 +381,10 @@ export function AgentInput() {
       : [];
   const isAwaitingConfirm = currentPendingAsk?.kind === "confirm";
   const apiPermission = currentPendingAsk?.apiPermission;
+  const canCancelPendingRequest =
+    currentChat?.status === "awaiting_user" &&
+    Boolean(currentPendingAsk) &&
+    !apiPermission;
   const apiPermissionPreview =
     apiPermission && currentChat && currentUserName
       ? getPendingApiCallPreview({
@@ -362,6 +394,14 @@ export function AgentInput() {
           userName: currentUserName,
         })
       : undefined;
+  useEffect(() => {
+    if (!apiPermissionPreview) return;
+    const timer = window.setInterval(
+      () => setPermissionTick((tick) => tick + 1),
+      1000
+    );
+    return () => window.clearInterval(timer);
+  }, [apiPermissionPreview?.expiresAt]);
   const isAwaitingChoose =
     currentPendingAsk?.kind === "choose" && chooseOptions.length > 0;
   const input = currentPendingAsk ? askInput : (currentDraft?.text ?? "");
@@ -391,6 +431,19 @@ export function AgentInput() {
       });
     },
     [currentPendingAsk, workspace?.name]
+  );
+  const handleResourcePickerOpenChange = useCallback(
+    (nextOpen: boolean) => {
+      setResourcePickerOpen(nextOpen);
+      if (nextOpen) return;
+      const trigger = mentionRangeRef.current;
+      mentionRangeRef.current = null;
+      const removed = removeMentionTrigger(input, trigger);
+      if (!removed) return;
+      selectedMentionCaretRef.current = removed.caret;
+      setInput(removed.text);
+    },
+    [input, setInput]
   );
   const sendLabel = currentPendingAsk ? t("agent.reply") : t("agent.send");
   const inputPlaceholder =
@@ -496,8 +549,25 @@ export function AgentInput() {
         kind: "database",
         name: database.name,
         project: database.project,
-        label: extractDatabaseResourceName(database.name).databaseName,
+        label: getDatabaseMentionLabel(database),
       }),
+    [selectMentionResource]
+  );
+
+  const selectMentionIssue = useCallback(
+    (issue: Issue) => {
+      const [projectId] = getNameParentTokens(issue.name, [
+        projectNamePrefix,
+        issueNamePrefix,
+      ]);
+      if (!projectId) return;
+      selectMentionResource({
+        kind: "issue",
+        name: issue.name,
+        project: `${projectNamePrefix}${projectId}`,
+        label: issue.title || issue.name,
+      });
+    },
     [selectMentionResource]
   );
 
@@ -686,7 +756,8 @@ export function AgentInput() {
       chatId: string,
       page: { path: string; title: string },
       runId: string,
-      runMode: AgentRunMode
+      runMode: AgentRunMode,
+      skipReferencePreflight = false
     ) => {
       const store = useAgentStore.getState();
       const lastUserMessage = store
@@ -702,9 +773,15 @@ export function AgentInput() {
       const databaseReference = references.find(
         (reference) => reference.kind === "database"
       );
+      const issueReference = references.find(
+        (reference) => reference.kind === "issue"
+      );
       const referencedProject =
-        projectReference?.name ?? databaseReference?.project;
+        projectReference?.name ??
+        databaseReference?.project ??
+        issueReference?.project;
       const referencedDatabase = databaseReference?.name;
+      const referencedIssue = issueReference?.name;
       const controller = new AbortController();
       const runToken = (runTokens.get(chatId) ?? 0) + 1;
       runTokens.set(chatId, runToken);
@@ -715,6 +792,7 @@ export function AgentInput() {
         context: store.getChat(chatId)?.context,
         referencedProject,
         referencedDatabase,
+        referencedIssue,
         runMode,
       });
       const tools = getToolDefinitions({ runMode, referencedProject });
@@ -724,6 +802,7 @@ export function AgentInput() {
         context: store.getChat(chatId)?.context,
         referencedProject,
         referencedDatabase,
+        referencedIssue,
         runMode,
         onNavigate: () => {
           useAgentStore
@@ -737,7 +816,13 @@ export function AgentInput() {
       try {
         const history = buildChatHistory(chatId, systemPrompt);
         let prefetchedProjectOverview: string | undefined;
-        if (projectReference && !databaseReference && referencedProject) {
+        if (
+          !skipReferencePreflight &&
+          projectReference &&
+          !databaseReference &&
+          !issueReference &&
+          referencedProject
+        ) {
           const preflightCallId = uuidv4();
           const result = await executor(
             "get_project_overview",
@@ -793,7 +878,78 @@ export function AgentInput() {
               content: overviewResult,
             }
           );
-        } else if (referencedDatabase && referencedProject) {
+        } else if (
+          !skipReferencePreflight &&
+          referencedIssue &&
+          referencedProject
+        ) {
+          const preflightCallId = uuidv4();
+          const args = { issueName: referencedIssue };
+          const result = await executor(
+            "get_issue_overview",
+            args,
+            preflightCallId
+          ).catch(() => undefined);
+          if (
+            controller.signal.aborted ||
+            runToken !== runTokens.get(chatId) ||
+            !useAgentStore.getState().getChat(chatId)
+          ) {
+            return;
+          }
+          const overviewResult =
+            result?.kind === "tool_result" ? result.result : undefined;
+          let valid = false;
+          if (overviewResult) {
+            try {
+              const overview = JSON.parse(overviewResult) as {
+                project?: unknown;
+                issue?: { status?: unknown; name?: unknown };
+              };
+              valid =
+                overview.project === referencedProject &&
+                overview.issue?.status === "available" &&
+                overview.issue.name === referencedIssue;
+            } catch {
+              valid = false;
+            }
+          }
+          if (!valid || !overviewResult) {
+            useAgentStore.getState().addMessage({
+              chatId,
+              role: "assistant",
+              content: t("agent.issue-reference-unavailable"),
+              metadata: { route: page.path, runId },
+            });
+            useAgentStore.getState().finishChatRun(chatId);
+            return;
+          }
+          overviewEvidence = mergeOverviewEvidence(
+            overviewEvidence,
+            extractIssueOverviewEvidence(overviewResult)
+          );
+          history.push(
+            {
+              role: "assistant",
+              toolCalls: [
+                {
+                  id: preflightCallId,
+                  name: "get_issue_overview",
+                  arguments: JSON.stringify(args),
+                },
+              ],
+            },
+            {
+              role: "tool",
+              toolCallId: preflightCallId,
+              content: overviewResult,
+            }
+          );
+        } else if (
+          !skipReferencePreflight &&
+          referencedDatabase &&
+          referencedProject
+        ) {
           const preflightCallId = uuidv4();
           const args = { databaseName: referencedDatabase };
           const result = await executor(
@@ -1125,7 +1281,8 @@ export function AgentInput() {
       chatId: string,
       currentPage: { path: string; title: string },
       runMode: AgentRunMode = "default",
-      starterId?: LandingStarterId
+      starterId?: LandingStarterId,
+      skipReferencePreflight = false
     ) => {
       const runId = uuidv4();
       const store = useAgentStore.getState();
@@ -1138,7 +1295,9 @@ export function AgentInput() {
       );
       const hasResourceReference = references.some(
         (reference) =>
-          reference.kind === "project" || reference.kind === "database"
+          reference.kind === "project" ||
+          reference.kind === "database" ||
+          reference.kind === "issue"
       );
       const effectiveRunMode = hasResourceReference ? "read-only" : runMode;
       store.updateChatPage(chatId, currentPage);
@@ -1178,7 +1337,13 @@ export function AgentInput() {
           return;
         }
       }
-      await runChat(chatId, currentPage, runId, effectiveRunMode);
+      await runChat(
+        chatId,
+        currentPage,
+        runId,
+        effectiveRunMode,
+        skipReferencePreflight
+      );
     },
     [
       runChat,
@@ -1249,23 +1414,31 @@ export function AgentInput() {
     );
     const sourceChatId = sourceThread.id;
     const submittedDraft = store.getDraft(sourceChatId);
+    const pendingAskBeforeConfig = store.getPendingAsk(sourceChatId);
     if (await blockWhenAIIsNotConfigured(sourceChatId)) return;
-    store.clearError(sourceChatId);
+    const currentStore = useAgentStore.getState();
+    const pendingAsk = currentStore.getPendingAsk(sourceChatId);
+    if (pendingAsk?.toolCallId !== pendingAskBeforeConfig?.toolCallId) return;
+    if (
+      pendingAsk &&
+      currentStore.getChat(sourceChatId)?.status !== "awaiting_user"
+    ) {
+      return;
+    }
+    currentStore.clearError(sourceChatId);
 
-    const pendingAsk = selectCurrentPendingAsk(store);
     if (pendingAsk) {
       const answer = input.trim();
       if (!answer) return;
-      setAskInput("");
-
+      let answered;
       if (pendingAsk.kind === "choose") {
-        store.answerPendingAsk(
+        answered = currentStore.answerPendingAsk(
           sourceChatId,
           { kind: "choose", answer, value: answer },
           { route: currentPage.path }
         );
       } else if (pendingAsk.kind === "input") {
-        store.answerPendingAsk(
+        answered = currentStore.answerPendingAsk(
           sourceChatId,
           { kind: "input", answer },
           { route: currentPage.path }
@@ -1273,10 +1446,12 @@ export function AgentInput() {
       } else {
         return;
       }
+      if (!answered) return;
+      setAskInput("");
       await startChatRun(
         sourceChatId,
         currentPage,
-        store.getChat(sourceChatId)?.runMode ?? "default"
+        currentStore.getChat(sourceChatId)?.runMode ?? "default"
       );
       return;
     }
@@ -1339,12 +1514,20 @@ export function AgentInput() {
     await startChatRun(chatId, currentPage, chat.runMode ?? "default");
   }, [blockWhenAIIsNotConfigured, startChatRun]);
 
-  const dismissInterrupted = useCallback(() => {
+  useEffect(() => {
+    if (!retryActionRef) return;
+    const retry = () => void retryLastTurn();
+    retryActionRef.current = retry;
+    return () => {
+      if (retryActionRef.current === retry) retryActionRef.current = null;
+    };
+  }, [retryActionRef, retryLastTurn]);
+
+  const cancelPendingRequest = useCallback(() => {
     const store = useAgentStore.getState();
     const chat = selectCurrentChat(store);
-    if (!chat) return;
-    store.removeMessagesByRunId(chat.id, chat.runId);
-    store.clearError(chat.id);
+    if (!store.cancelPendingAsk(chat?.id)) return;
+    setAskInput("");
   }, []);
 
   const submitConfirmation = useCallback(
@@ -1363,10 +1546,22 @@ export function AgentInput() {
 
       if (pendingAsk.apiPermission && chat) {
         confirmationInFlightRef.current = true;
+        let approvalController: AbortController | undefined;
         try {
           const chatId = chat.id;
           const currentPage = getCurrentPageSnapshot();
-          if (await blockWhenAIIsNotConfigured(chatId)) return;
+          const permissionArgs = {
+            actionId: pendingAsk.apiPermission.actionId,
+            chatId,
+            toolCallId: pendingAsk.toolCallId,
+            userName: useAppStore.getState().currentUser?.name ?? "",
+          };
+          const requestAvailable = Boolean(
+            getPendingApiCallPreview(permissionArgs)
+          );
+          if (requestAvailable && (await blockWhenAIIsNotConfigured(chatId))) {
+            return;
+          }
 
           const currentStore = useAgentStore.getState();
           if (
@@ -1379,14 +1574,22 @@ export function AgentInput() {
 
           const runMode = currentStore.getChat(chatId)?.runMode ?? "default";
           currentStore.setChatStatus(chatId, "running");
+          approvalController = new AbortController();
+          currentStore.setAbortController(chatId, approvalController);
           const result = await resolvePendingApiCall({
-            actionId: pendingAsk.apiPermission.actionId,
-            chatId,
-            toolCallId: pendingAsk.toolCallId,
-            userName: useAppStore.getState().currentUser?.name ?? "",
-            approved: confirmed,
+            ...permissionArgs,
+            approved: confirmed && requestAvailable,
+            signal: approvalController.signal,
           });
-          if (!currentStore.getChat(chatId)) return;
+          const currentChat = currentStore.getChat(chatId);
+          if (
+            approvalController.signal.aborted ||
+            !currentChat ||
+            currentChat.status !== "running" ||
+            currentChat.runId !== chat.runId
+          ) {
+            return;
+          }
           currentStore.addMessage({
             chatId,
             role: "tool",
@@ -1397,8 +1600,34 @@ export function AgentInput() {
               runId: chat.runId ?? undefined,
             },
           });
-          await startChatRun(chatId, currentPage, runMode);
+          if (
+            !requestAvailable ||
+            result === '{"error":"Permission request expired."}' ||
+            result ===
+              '{"error":"Permission request not found or already used."}'
+          ) {
+            currentStore.addMessage({
+              chatId,
+              role: "assistant",
+              content: t("agent.api-permission-expired"),
+              metadata: {
+                route: currentPage.path,
+                runId: chat.runId ?? undefined,
+              },
+            });
+            currentStore.finishChatRun(chatId);
+            return;
+          }
+          // An approved write can make the selected resource unavailable.
+          // Resume from its recorded result; the executor still checks further access.
+          await startChatRun(chatId, currentPage, runMode, undefined, true);
         } finally {
+          if (
+            approvalController &&
+            store.getAbortController(chat.id) === approvalController
+          ) {
+            store.setAbortController(chat.id, null);
+          }
           confirmationInFlightRef.current = false;
         }
         return;
@@ -1410,19 +1639,27 @@ export function AgentInput() {
       const answer = confirmed ? confirmLabel : cancelLabel;
 
       if (await blockWhenAIIsNotConfigured(chatId)) return;
-      store.clearError(chatId);
-      store.answerPendingAsk(
+      const currentStore = useAgentStore.getState();
+      if (
+        currentStore.getChat(chatId)?.status !== "awaiting_user" ||
+        currentStore.getPendingAsk(chatId)?.toolCallId !== pendingAsk.toolCallId
+      ) {
+        return;
+      }
+      currentStore.clearError(chatId);
+      const answered = currentStore.answerPendingAsk(
         chatId,
         { kind: "confirm", answer, confirmed },
         { route: currentPage.path }
       );
+      if (!answered) return;
       await startChatRun(
         chatId,
         currentPage,
-        store.getChat(chatId)?.runMode ?? "default"
+        currentStore.getChat(chatId)?.runMode ?? "default"
       );
     },
-    [blockWhenAIIsNotConfigured, confirmLabel, cancelLabel, startChatRun]
+    [blockWhenAIIsNotConfigured, confirmLabel, cancelLabel, startChatRun, t]
   );
 
   const submitChoice = useCallback(
@@ -1443,16 +1680,24 @@ export function AgentInput() {
       const chatId = thread.id;
 
       if (await blockWhenAIIsNotConfigured(chatId)) return;
-      store.clearError(chatId);
-      store.answerPendingAsk(
+      const currentStore = useAgentStore.getState();
+      if (
+        currentStore.getChat(chatId)?.status !== "awaiting_user" ||
+        currentStore.getPendingAsk(chatId)?.toolCallId !== pendingAsk.toolCallId
+      ) {
+        return;
+      }
+      currentStore.clearError(chatId);
+      const answered = currentStore.answerPendingAsk(
         chatId,
         { kind: "choose", answer: option.label, value: option.value },
         { route: currentPage.path }
       );
+      if (!answered) return;
       await startChatRun(
         chatId,
         currentPage,
-        store.getChat(chatId)?.runMode ?? "default"
+        currentStore.getChat(chatId)?.runMode ?? "default"
       );
     },
     [blockWhenAIIsNotConfigured, startChatRun]
@@ -1471,8 +1716,7 @@ export function AgentInput() {
           mentionRangeRef.current = null;
         } else if (event.key === "Escape") {
           event.preventDefault();
-          setResourcePickerOpen(false);
-          mentionRangeRef.current = null;
+          handleResourcePickerOpenChange(false);
         } else if (
           event.key === "Enter" &&
           !event.shiftKey &&
@@ -1495,12 +1739,35 @@ export function AgentInput() {
         void send();
       }
     },
-    [canMentionResource, input, resourcePickerOpen, send]
+    [
+      canMentionResource,
+      handleResourcePickerOpenChange,
+      input,
+      resourcePickerOpen,
+      send,
+    ]
   );
 
   // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
+
+  const issueDecisionPermissionText = (impact: IssueDecisionImpact["kind"]) => {
+    switch (impact) {
+      case "reject":
+        return t("agent.permission.issue-rejection");
+      case "final-approval-with-rollout":
+        return t("agent.permission.issue-approval-rollout");
+      case "final-approval-with-access-grant":
+        return t("agent.permission.issue-approval-access-grant");
+      case "final-approval-with-role-grant":
+        return t("agent.permission.issue-approval-role-grant");
+      case "final-approval":
+        return t("agent.permission.issue-approval-final");
+      default:
+        return t("agent.permission.issue-approval");
+    }
+  };
 
   return (
     <div ref={composerRef} className="border-t p-3">
@@ -1509,8 +1776,21 @@ export function AgentInput() {
         <div className="mb-3 rounded-xs bg-warning/10 px-3 py-2 text-xs text-warning">
           {apiPermission ? (
             <>
-              <div className="font-medium">
-                {t("agent.api-permission-title")}
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="font-medium">
+                  {apiPermissionPreview
+                    ? t("agent.api-permission-title")
+                    : t("agent.api-permission-expired-title")}
+                </div>
+                {apiPermissionPreview && (
+                  <span role="timer" className="tabular-nums">
+                    {t("agent.api-permission-expires-in", {
+                      time: formatPermissionTime(
+                        apiPermissionPreview.expiresAt
+                      ),
+                    })}
+                  </span>
+                )}
               </div>
               {apiPermissionPreview ? (
                 <>
@@ -1520,6 +1800,21 @@ export function AgentInput() {
                   <div className="mt-2 font-mono break-all">
                     {apiPermissionPreview.operationId}
                   </div>
+                  {apiPermissionPreview.issueDecision && (
+                    <div className="mt-2 border-l-2 border-warning pl-2">
+                      <div className="font-medium">
+                        {apiPermissionPreview.issueDecision.issueTitle}
+                      </div>
+                      <div className="font-mono break-all text-control-light">
+                        {apiPermissionPreview.issueDecision.issueName}
+                      </div>
+                      <div className="mt-1">
+                        {issueDecisionPermissionText(
+                          apiPermissionPreview.issueDecision.impact
+                        )}
+                      </div>
+                    </div>
+                  )}
                   <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap break-all rounded-xs border bg-background p-2 font-mono text-control">
                     {JSON.stringify(
                       JSON.parse(apiPermissionPreview.body),
@@ -1542,36 +1837,20 @@ export function AgentInput() {
                     ? t("agent.pending-choose-hint")
                     : t("agent.pending-input-hint")}
               </div>
+              {canCancelPendingRequest && (
+                <div className="mt-2 flex justify-end">
+                  <Button
+                    appearance="secondary"
+                    size="sm"
+                    className="rounded-xs border text-control hover:bg-control-bg"
+                    onClick={cancelPendingRequest}
+                  >
+                    {t("agent.cancel-request")}
+                  </Button>
+                </div>
+              )}
             </>
           )}
-        </div>
-      )}
-
-      {/* Interrupted banner */}
-      {isInterrupted && (
-        <div className="mb-3 rounded-xs bg-error/10 px-3 py-2 text-xs text-error">
-          <div className="font-medium">{t("agent.interrupted")}</div>
-          <div className="mt-1">{t("agent.interrupted-retry-hint")}</div>
-          <div className="mt-2 flex flex-wrap gap-x-2 gap-y-2">
-            <Button
-              appearance="secondary"
-              size="md"
-              className="rounded-xs bg-error px-3 py-2 text-sm text-accent-text hover:bg-error/90 disabled:opacity-50"
-              disabled={isCurrentChatRunning}
-              onClick={retryLastTurn}
-            >
-              {t("agent.retry-last-chat-turn")}
-            </Button>
-            <Button
-              appearance="secondary"
-              size="md"
-              className="rounded-xs border px-3 py-2 text-sm text-control hover:bg-control-bg disabled:opacity-50"
-              disabled={isCurrentChatRunning}
-              onClick={dismissInterrupted}
-            >
-              {t("common.dismiss")}
-            </Button>
-          </div>
         </div>
       )}
 
@@ -1610,7 +1889,11 @@ export function AgentInput() {
             disabled={isCurrentChatRunning}
             onClick={() => submitConfirmation(false)}
           >
-            {apiPermission ? t("agent.api-permission-deny") : cancelLabel}
+            {apiPermission
+              ? apiPermissionPreview
+                ? t("agent.api-permission-deny")
+                : t("agent.api-permission-dismiss")
+              : cancelLabel}
           </Button>
         </div>
       ) : isAwaitingChoose ? (
@@ -1694,7 +1977,7 @@ export function AgentInput() {
             {canMentionResource && workspace?.name ? (
               <AgentResourcePicker
                 open={resourcePickerOpen}
-                onOpenChange={setResourcePickerOpen}
+                onOpenChange={handleResourcePickerOpenChange}
                 anchorRef={textareaRef}
                 workspaceName={workspace.name}
                 projectName={projectContext}
@@ -1705,6 +1988,7 @@ export function AgentInput() {
                 }
                 onSelectProject={selectMentionProject}
                 onSelectDatabase={selectMentionDatabase}
+                onSelectIssue={selectMentionIssue}
               />
             ) : null}
           </div>
@@ -1714,7 +1998,9 @@ export function AgentInput() {
               variant="destructive"
               size="md"
               className="shrink-0 self-end whitespace-nowrap"
-              onClick={() => useAgentStore.getState().cancel(currentChat?.id)}
+              onClick={() =>
+                useAgentStore.getState().cancel(currentChat?.id, "user")
+              }
             >
               {t("agent.stop")}
             </Button>

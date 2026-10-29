@@ -13,8 +13,7 @@ import {
   type ValueOption,
 } from "@/components/AdvancedSearch";
 import { HighlightLabelText } from "@/components/HighlightLabelText";
-import { HumanizeTs } from "@/components/HumanizeTs";
-import { IssueStatusIcon } from "@/components/IssueStatusIcon";
+import { IssueSummary } from "@/components/IssueSummary";
 import { RouterLink } from "@/components/RouterLink";
 import { SelectionActionBar } from "@/components/SelectionActionBar";
 import { TimeRangePicker } from "@/components/TimeRangePicker";
@@ -50,9 +49,7 @@ import { useAppStore } from "@/stores/app";
 import {
   AccountType,
   getAccountTypeByEmail,
-  getTimeForPbTimestampProtoEs,
   isValidProjectName,
-  unknownUser,
 } from "@/types";
 import {
   ApprovalStatus,
@@ -67,7 +64,6 @@ import {
 import type { Label } from "@/types/proto-es/v1/project_service_pb";
 import {
   colorToHex,
-  extractIssueUID,
   extractProjectResourceName,
   getDefaultPagination,
   getIssueRoute,
@@ -631,14 +627,7 @@ export const IssueListItem = memo(function IssueListItem({
   showProject?: boolean;
 }) {
   const { t } = useTranslation();
-  const creatorUser = useAppStore((state) =>
-    state.getUserByIdentifier(issue.creator)
-  );
-  const creator = creatorUser || unknownUser(issue.creator);
-
   const issueProject = useMemo(() => projectOfIssue(issue), [issue]);
-
-  const createTimeMs = getTimeForPbTimestampProtoEs(issue.createTime);
 
   const issueUrl = useMemo(() => {
     const issueRoute = getIssueRoute(issue);
@@ -722,97 +711,98 @@ export const IssueListItem = memo(function IssueListItem({
 
       <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-start sm:gap-x-2">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-x-1.5">
-            <div className="h-6 flex justify-center items-center">
-              <IssueStatusIcon status={issue.status} />
-            </div>
-            {issue.title ? (
-              <RouterLink
-                to={issueUrl}
-                className="font-medium text-main text-base hover:underline min-w-0 block"
-                onClick={onTitleClick}
-              >
-                <EllipsisText text={issue.title}>
-                  <HighlightLabelText
-                    text={issue.title}
-                    keyword={highlightWords}
-                  />
-                </EllipsisText>
-              </RouterLink>
-            ) : (
-              <RouterLink
-                to={issueUrl}
-                className="font-medium text-base truncate hover:underline italic text-control-placeholder"
-                onClick={onTitleClick}
-              >
-                {t("common.untitled")}
-              </RouterLink>
-            )}
-            <RiskLevelIcon riskLevel={issue.riskLevel} />
-            {labels.map((label: Label) => (
-              <span
-                key={label.value}
-                className="inline-flex items-center gap-x-1 px-1.5 py-0.5 rounded-xs text-xs whitespace-nowrap border shrink-0"
-              >
-                <span
-                  className="size-2.5 rounded-sm shrink-0"
-                  style={{
-                    backgroundColor: label.color
-                      ? colorToHex(label.color)
-                      : undefined,
-                  }}
-                />
-                {label.value}
-              </span>
-            ))}
-          </div>
-          <div className="flex items-center flex-wrap gap-x-1 text-xs text-control-light mt-1">
-            <span className="opacity-80">#{extractIssueUID(issue.name)}</span>
-            {createTimeMs !== undefined && (
-              <>
-                <span>&middot;</span>
-                {t("common.created")}
-                <HumanizeTs tsMs={createTimeMs} />
-              </>
-            )}
-            <span>&middot;</span>
-            {getAccountTypeByEmail(creator.email) === AccountType.USER ? (
-              <UserHoverCard
-                email={creator.email}
-                fallbackTitle={creator.title}
-              >
-                <span
-                  className="cursor-default"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                  }}
-                >
-                  {creator.title}
-                </span>
-              </UserHoverCard>
-            ) : (
-              <span>{creator.title}</span>
-            )}
-            {showProject && issueProject && (
-              <>
-                <span>&middot;</span>
+          <IssueSummary
+            issue={issue}
+            titleContent={
+              issue.title ? (
                 <RouterLink
-                  className="hover:underline"
-                  to={{
-                    name: PROJECT_V1_ROUTE_DETAIL,
-                    params: {
-                      projectId: extractProjectResourceName(issueProject.name),
-                    },
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                  }}
+                  to={issueUrl}
+                  className="font-medium text-main text-base hover:underline min-w-0 block"
+                  onClick={onTitleClick}
                 >
-                  {issueProject.title}
+                  <EllipsisText text={issue.title}>
+                    <HighlightLabelText
+                      text={issue.title}
+                      keyword={highlightWords}
+                    />
+                  </EllipsisText>
                 </RouterLink>
+              ) : (
+                <RouterLink
+                  to={issueUrl}
+                  className="font-medium text-base truncate hover:underline italic text-control-placeholder"
+                  onClick={onTitleClick}
+                >
+                  {t("common.untitled")}
+                </RouterLink>
+              )
+            }
+            titleTrailing={
+              <>
+                <RiskLevelIcon riskLevel={issue.riskLevel} />
+                {labels.map((label: Label) => (
+                  <span
+                    key={label.value}
+                    className="inline-flex items-center gap-x-1 px-1.5 py-0.5 rounded-xs text-xs whitespace-nowrap border shrink-0"
+                  >
+                    <span
+                      className="size-2.5 rounded-sm shrink-0"
+                      style={{
+                        backgroundColor: label.color
+                          ? colorToHex(label.color)
+                          : undefined,
+                      }}
+                    />
+                    {label.value}
+                  </span>
+                ))}
               </>
-            )}
-          </div>
+            }
+            renderCreator={(creator) =>
+              getAccountTypeByEmail(creator.email) === AccountType.USER ? (
+                <UserHoverCard
+                  email={creator.email}
+                  fallbackTitle={creator.title}
+                >
+                  <span
+                    className="cursor-default"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
+                  >
+                    {creator.title}
+                  </span>
+                </UserHoverCard>
+              ) : (
+                <span>{creator.title}</span>
+              )
+            }
+            metadataTrailing={
+              showProject &&
+              issueProject && (
+                <>
+                  <span>&middot;</span>
+                  <RouterLink
+                    className="hover:underline"
+                    to={{
+                      name: PROJECT_V1_ROUTE_DETAIL,
+                      params: {
+                        projectId: extractProjectResourceName(
+                          issueProject.name
+                        ),
+                      },
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
+                  >
+                    {issueProject.title}
+                  </RouterLink>
+                </>
+              )
+            }
+            timeTooltip
+          />
           {expanded && (
             <div className="mt-2 max-h-80 overflow-auto whitespace-pre-wrap break-all text-sm text-control-light">
               <HighlightLabelText

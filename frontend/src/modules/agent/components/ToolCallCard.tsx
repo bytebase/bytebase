@@ -18,6 +18,7 @@ import type {
 } from "@/modules/sql-editor/components/ResultView/types";
 import type { RowValue } from "@/types/proto-es/v1/sql_service_pb";
 import { extractSQLRowValuePlain } from "@/utils/v1/sql";
+import { parseCallApiResult } from "../logic/callApiResult";
 import {
   type AgentQueryResultPreview,
   type AgentQueryResultSetPreview,
@@ -323,6 +324,17 @@ export function ToolCallCard({ toolCall, result }: Props) {
     parsedResult !== null &&
     !Array.isArray(parsedResult) &&
     typeof (parsedResult as Record<string, unknown>).error === "string";
+  const operationId =
+    typeof parsedArguments === "object" &&
+    parsedArguments !== null &&
+    !Array.isArray(parsedArguments) &&
+    typeof (parsedArguments as Record<string, unknown>).operationId === "string"
+      ? ((parsedArguments as Record<string, unknown>).operationId as string)
+      : undefined;
+  const callApiError =
+    toolCall.name === "call_api"
+      ? parseCallApiResult(resultText, operationId).error
+      : undefined;
   const queryPreview = useMemo(() => {
     if (
       toolCall.name !== "call_api" ||
@@ -343,6 +355,12 @@ export function ToolCallCard({ toolCall, result }: Props) {
   }, [parsedArguments, resultText, toolCall.name]);
   const isAskUser = toolCall.name === "ask_user";
   const isDone = toolCall.name === "done";
+  const isCanceledAsk =
+    isAskUser &&
+    typeof parsedResult === "object" &&
+    parsedResult !== null &&
+    !Array.isArray(parsedResult) &&
+    (parsedResult as Record<string, unknown>).kind === "cancelled";
 
   const askPrompt = useMemo(() => {
     if (
@@ -426,6 +444,14 @@ export function ToolCallCard({ toolCall, result }: Props) {
 
   const doneText = useMemo(() => {
     if (
+      typeof parsedResult === "object" &&
+      parsedResult !== null &&
+      !Array.isArray(parsedResult) &&
+      typeof (parsedResult as Record<string, unknown>).text === "string"
+    ) {
+      return (parsedResult as Record<string, unknown>).text as string;
+    }
+    if (
       typeof parsedArguments === "object" &&
       parsedArguments &&
       "text" in parsedArguments &&
@@ -434,9 +460,17 @@ export function ToolCallCard({ toolCall, result }: Props) {
       return (parsedArguments as Record<string, unknown>).text as string;
     }
     return "";
-  }, [parsedArguments]);
+  }, [parsedArguments, parsedResult]);
 
   const doneSuccess = useMemo(() => {
+    if (
+      typeof parsedResult === "object" &&
+      parsedResult !== null &&
+      !Array.isArray(parsedResult) &&
+      typeof (parsedResult as Record<string, unknown>).success === "boolean"
+    ) {
+      return (parsedResult as Record<string, unknown>).success as boolean;
+    }
     if (
       typeof parsedArguments === "object" &&
       parsedArguments &&
@@ -445,13 +479,20 @@ export function ToolCallCard({ toolCall, result }: Props) {
       return (parsedArguments as Record<string, unknown>).success !== false;
     }
     return true;
-  }, [parsedArguments]);
+  }, [parsedArguments, parsedResult]);
 
   const renderStatus = () => {
-    if (hasErrorResult) {
+    if (hasErrorResult || callApiError) {
       return <span className="text-error">{t("agent.tool-failed")}</span>;
     }
     if (isAskUser) {
+      if (isCanceledAsk) {
+        return (
+          <span className="text-control-light">
+            {t("agent.tool-request-canceled")}
+          </span>
+        );
+      }
       return resultText ? (
         <span className="text-success">
           {t("agent.tool-response-submitted")}

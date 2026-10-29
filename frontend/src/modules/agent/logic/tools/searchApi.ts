@@ -1,6 +1,7 @@
 // Multi-mode search for Bytebase API endpoints.
 // Ported from backend/api/mcp/openapi_index.go and tool_search.go.
 
+import { getApiAuthorization } from "./apiMethodClass";
 import {
   type EndpointInfo,
   endpoints,
@@ -334,6 +335,18 @@ function formatEndpointDetail(operationId: string): string {
   const lines: string[] = [];
   lines.push(`## ${ep.service}/${ep.method}\n`);
   lines.push(`${ep.summary}\n`);
+
+  const authorization = getApiAuthorization(ep.operationId);
+  if (authorization?.authMethod === "IAM") {
+    lines.push(`Declared IAM permission: ${authorization.permission}`);
+    lines.push(
+      "The exact request may have additional or different requirements; access is checked against its resources before execution.\n"
+    );
+  } else if (authorization?.authMethod === "CUSTOM") {
+    lines.push(
+      "Authorization: custom, request-dependent. The API checks access during execution.\n"
+    );
+  }
 
   // Request schema
   if (ep.requestSchemaRef) {

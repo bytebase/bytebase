@@ -127,7 +127,7 @@ func (x GetDatabaseSDLSchemaRequest_SDLFormat) Number() protoreflect.EnumNumber 
 
 // Deprecated: Use GetDatabaseSDLSchemaRequest_SDLFormat.Descriptor instead.
 func (GetDatabaseSDLSchemaRequest_SDLFormat) EnumDescriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{14, 0}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{16, 0}
 }
 
 // Type is the type of a table partition, some database engines may not
@@ -201,7 +201,7 @@ func (x TablePartitionMetadata_Type) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use TablePartitionMetadata_Type.Descriptor instead.
 func (TablePartitionMetadata_Type) EnumDescriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{31, 0}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{33, 0}
 }
 
 type ColumnMetadata_IdentityGeneration int32
@@ -250,7 +250,7 @@ func (x ColumnMetadata_IdentityGeneration) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ColumnMetadata_IdentityGeneration.Descriptor instead.
 func (ColumnMetadata_IdentityGeneration) EnumDescriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{32, 0}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{34, 0}
 }
 
 type GenerationMetadata_Type int32
@@ -299,7 +299,7 @@ func (x GenerationMetadata_Type) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use GenerationMetadata_Type.Descriptor instead.
 func (GenerationMetadata_Type) EnumDescriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{33, 0}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{35, 0}
 }
 
 type TaskMetadata_State int32
@@ -348,7 +348,7 @@ func (x TaskMetadata_State) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use TaskMetadata_State.Descriptor instead.
 func (TaskMetadata_State) EnumDescriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{41, 0}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{43, 0}
 }
 
 type StreamMetadata_Type int32
@@ -394,7 +394,7 @@ func (x StreamMetadata_Type) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use StreamMetadata_Type.Descriptor instead.
 func (StreamMetadata_Type) EnumDescriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{42, 0}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{44, 0}
 }
 
 type StreamMetadata_Mode int32
@@ -446,7 +446,7 @@ func (x StreamMetadata_Mode) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use StreamMetadata_Mode.Descriptor instead.
 func (StreamMetadata_Mode) EnumDescriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{42, 1}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{44, 1}
 }
 
 type GetSchemaStringRequest_ObjectType int32
@@ -513,7 +513,7 @@ func (x GetSchemaStringRequest_ObjectType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use GetSchemaStringRequest_ObjectType.Descriptor instead.
 func (GetSchemaStringRequest_ObjectType) EnumDescriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{55, 0}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{57, 0}
 }
 
 type GetDatabaseRequest struct {
@@ -856,6 +856,136 @@ func (x *ListDatabasesResponse) GetNextPageToken() string {
 	return ""
 }
 
+type SearchDatabasesRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The maximum number of databases to return. The service may return fewer
+	// than this value.
+	// If unspecified, at most 10 databases will be returned.
+	// The maximum value is 1000; values above 1000 will be coerced to 1000.
+	PageSize int32 `protobuf:"varint,1,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	// A page token, received from a previous `SearchDatabases` call.
+	// Provide this to retrieve the subsequent page.
+	//
+	// When paginating, all other parameters provided to `SearchDatabases` must
+	// match the call that provided the page token.
+	PageToken string `protobuf:"bytes,2,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	// Filter is used to filter databases returned in the list.
+	// It supports the same fields and operators as `ListDatabasesRequest.filter`.
+	//
+	// For example:
+	// project == "projects/{project resource id}"
+	// name.contains("database name") && engine == "POSTGRES"
+	Filter        string `protobuf:"bytes,3,opt,name=filter,proto3" json:"filter,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SearchDatabasesRequest) Reset() {
+	*x = SearchDatabasesRequest{}
+	mi := &file_v1_database_service_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SearchDatabasesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SearchDatabasesRequest) ProtoMessage() {}
+
+func (x *SearchDatabasesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_database_service_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SearchDatabasesRequest.ProtoReflect.Descriptor instead.
+func (*SearchDatabasesRequest) Descriptor() ([]byte, []int) {
+	return file_v1_database_service_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *SearchDatabasesRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+func (x *SearchDatabasesRequest) GetPageToken() string {
+	if x != nil {
+		return x.PageToken
+	}
+	return ""
+}
+
+func (x *SearchDatabasesRequest) GetFilter() string {
+	if x != nil {
+		return x.Filter
+	}
+	return ""
+}
+
+type SearchDatabasesResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The databases from the specified request.
+	Databases []*Database `protobuf:"bytes,1,rep,name=databases,proto3" json:"databases,omitempty"`
+	// A token, which can be sent as `page_token` to retrieve the next page.
+	// If this field is omitted, there are no subsequent pages.
+	NextPageToken string `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SearchDatabasesResponse) Reset() {
+	*x = SearchDatabasesResponse{}
+	mi := &file_v1_database_service_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SearchDatabasesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SearchDatabasesResponse) ProtoMessage() {}
+
+func (x *SearchDatabasesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_database_service_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SearchDatabasesResponse.ProtoReflect.Descriptor instead.
+func (*SearchDatabasesResponse) Descriptor() ([]byte, []int) {
+	return file_v1_database_service_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *SearchDatabasesResponse) GetDatabases() []*Database {
+	if x != nil {
+		return x.Databases
+	}
+	return nil
+}
+
+func (x *SearchDatabasesResponse) GetNextPageToken() string {
+	if x != nil {
+		return x.NextPageToken
+	}
+	return ""
+}
+
 type UpdateDatabaseRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The database to update.
@@ -871,7 +1001,7 @@ type UpdateDatabaseRequest struct {
 
 func (x *UpdateDatabaseRequest) Reset() {
 	*x = UpdateDatabaseRequest{}
-	mi := &file_v1_database_service_proto_msgTypes[5]
+	mi := &file_v1_database_service_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -883,7 +1013,7 @@ func (x *UpdateDatabaseRequest) String() string {
 func (*UpdateDatabaseRequest) ProtoMessage() {}
 
 func (x *UpdateDatabaseRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[5]
+	mi := &file_v1_database_service_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -896,7 +1026,7 @@ func (x *UpdateDatabaseRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateDatabaseRequest.ProtoReflect.Descriptor instead.
 func (*UpdateDatabaseRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{5}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *UpdateDatabaseRequest) GetDatabase() *Database {
@@ -929,7 +1059,7 @@ type BatchUpdateDatabasesRequest struct {
 
 func (x *BatchUpdateDatabasesRequest) Reset() {
 	*x = BatchUpdateDatabasesRequest{}
-	mi := &file_v1_database_service_proto_msgTypes[6]
+	mi := &file_v1_database_service_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -941,7 +1071,7 @@ func (x *BatchUpdateDatabasesRequest) String() string {
 func (*BatchUpdateDatabasesRequest) ProtoMessage() {}
 
 func (x *BatchUpdateDatabasesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[6]
+	mi := &file_v1_database_service_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -954,7 +1084,7 @@ func (x *BatchUpdateDatabasesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BatchUpdateDatabasesRequest.ProtoReflect.Descriptor instead.
 func (*BatchUpdateDatabasesRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{6}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *BatchUpdateDatabasesRequest) GetParent() string {
@@ -981,7 +1111,7 @@ type BatchUpdateDatabasesResponse struct {
 
 func (x *BatchUpdateDatabasesResponse) Reset() {
 	*x = BatchUpdateDatabasesResponse{}
-	mi := &file_v1_database_service_proto_msgTypes[7]
+	mi := &file_v1_database_service_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -993,7 +1123,7 @@ func (x *BatchUpdateDatabasesResponse) String() string {
 func (*BatchUpdateDatabasesResponse) ProtoMessage() {}
 
 func (x *BatchUpdateDatabasesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[7]
+	mi := &file_v1_database_service_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1006,7 +1136,7 @@ func (x *BatchUpdateDatabasesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BatchUpdateDatabasesResponse.ProtoReflect.Descriptor instead.
 func (*BatchUpdateDatabasesResponse) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{7}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *BatchUpdateDatabasesResponse) GetDatabases() []*Database {
@@ -1030,7 +1160,7 @@ type BatchSyncDatabasesRequest struct {
 
 func (x *BatchSyncDatabasesRequest) Reset() {
 	*x = BatchSyncDatabasesRequest{}
-	mi := &file_v1_database_service_proto_msgTypes[8]
+	mi := &file_v1_database_service_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1042,7 +1172,7 @@ func (x *BatchSyncDatabasesRequest) String() string {
 func (*BatchSyncDatabasesRequest) ProtoMessage() {}
 
 func (x *BatchSyncDatabasesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[8]
+	mi := &file_v1_database_service_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1055,7 +1185,7 @@ func (x *BatchSyncDatabasesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BatchSyncDatabasesRequest.ProtoReflect.Descriptor instead.
 func (*BatchSyncDatabasesRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{8}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *BatchSyncDatabasesRequest) GetParent() string {
@@ -1080,7 +1210,7 @@ type BatchSyncDatabasesResponse struct {
 
 func (x *BatchSyncDatabasesResponse) Reset() {
 	*x = BatchSyncDatabasesResponse{}
-	mi := &file_v1_database_service_proto_msgTypes[9]
+	mi := &file_v1_database_service_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1092,7 +1222,7 @@ func (x *BatchSyncDatabasesResponse) String() string {
 func (*BatchSyncDatabasesResponse) ProtoMessage() {}
 
 func (x *BatchSyncDatabasesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[9]
+	mi := &file_v1_database_service_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1105,7 +1235,7 @@ func (x *BatchSyncDatabasesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BatchSyncDatabasesResponse.ProtoReflect.Descriptor instead.
 func (*BatchSyncDatabasesResponse) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{9}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{11}
 }
 
 type SyncDatabaseRequest struct {
@@ -1119,7 +1249,7 @@ type SyncDatabaseRequest struct {
 
 func (x *SyncDatabaseRequest) Reset() {
 	*x = SyncDatabaseRequest{}
-	mi := &file_v1_database_service_proto_msgTypes[10]
+	mi := &file_v1_database_service_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1131,7 +1261,7 @@ func (x *SyncDatabaseRequest) String() string {
 func (*SyncDatabaseRequest) ProtoMessage() {}
 
 func (x *SyncDatabaseRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[10]
+	mi := &file_v1_database_service_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1144,7 +1274,7 @@ func (x *SyncDatabaseRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncDatabaseRequest.ProtoReflect.Descriptor instead.
 func (*SyncDatabaseRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{10}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *SyncDatabaseRequest) GetName() string {
@@ -1162,7 +1292,7 @@ type SyncDatabaseResponse struct {
 
 func (x *SyncDatabaseResponse) Reset() {
 	*x = SyncDatabaseResponse{}
-	mi := &file_v1_database_service_proto_msgTypes[11]
+	mi := &file_v1_database_service_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1174,7 +1304,7 @@ func (x *SyncDatabaseResponse) String() string {
 func (*SyncDatabaseResponse) ProtoMessage() {}
 
 func (x *SyncDatabaseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[11]
+	mi := &file_v1_database_service_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1187,7 +1317,7 @@ func (x *SyncDatabaseResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncDatabaseResponse.ProtoReflect.Descriptor instead.
 func (*SyncDatabaseResponse) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{11}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{13}
 }
 
 type GetDatabaseMetadataRequest struct {
@@ -1221,7 +1351,7 @@ type GetDatabaseMetadataRequest struct {
 
 func (x *GetDatabaseMetadataRequest) Reset() {
 	*x = GetDatabaseMetadataRequest{}
-	mi := &file_v1_database_service_proto_msgTypes[12]
+	mi := &file_v1_database_service_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1233,7 +1363,7 @@ func (x *GetDatabaseMetadataRequest) String() string {
 func (*GetDatabaseMetadataRequest) ProtoMessage() {}
 
 func (x *GetDatabaseMetadataRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[12]
+	mi := &file_v1_database_service_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1246,7 +1376,7 @@ func (x *GetDatabaseMetadataRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDatabaseMetadataRequest.ProtoReflect.Descriptor instead.
 func (*GetDatabaseMetadataRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{12}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *GetDatabaseMetadataRequest) GetName() string {
@@ -1281,7 +1411,7 @@ type GetDatabaseSchemaRequest struct {
 
 func (x *GetDatabaseSchemaRequest) Reset() {
 	*x = GetDatabaseSchemaRequest{}
-	mi := &file_v1_database_service_proto_msgTypes[13]
+	mi := &file_v1_database_service_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1293,7 +1423,7 @@ func (x *GetDatabaseSchemaRequest) String() string {
 func (*GetDatabaseSchemaRequest) ProtoMessage() {}
 
 func (x *GetDatabaseSchemaRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[13]
+	mi := &file_v1_database_service_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1306,7 +1436,7 @@ func (x *GetDatabaseSchemaRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDatabaseSchemaRequest.ProtoReflect.Descriptor instead.
 func (*GetDatabaseSchemaRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{13}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *GetDatabaseSchemaRequest) GetName() string {
@@ -1329,7 +1459,7 @@ type GetDatabaseSDLSchemaRequest struct {
 
 func (x *GetDatabaseSDLSchemaRequest) Reset() {
 	*x = GetDatabaseSDLSchemaRequest{}
-	mi := &file_v1_database_service_proto_msgTypes[14]
+	mi := &file_v1_database_service_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1341,7 +1471,7 @@ func (x *GetDatabaseSDLSchemaRequest) String() string {
 func (*GetDatabaseSDLSchemaRequest) ProtoMessage() {}
 
 func (x *GetDatabaseSDLSchemaRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[14]
+	mi := &file_v1_database_service_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1354,7 +1484,7 @@ func (x *GetDatabaseSDLSchemaRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDatabaseSDLSchemaRequest.ProtoReflect.Descriptor instead.
 func (*GetDatabaseSDLSchemaRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{14}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *GetDatabaseSDLSchemaRequest) GetName() string {
@@ -1389,7 +1519,7 @@ type DiffSchemaRequest struct {
 
 func (x *DiffSchemaRequest) Reset() {
 	*x = DiffSchemaRequest{}
-	mi := &file_v1_database_service_proto_msgTypes[15]
+	mi := &file_v1_database_service_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1401,7 +1531,7 @@ func (x *DiffSchemaRequest) String() string {
 func (*DiffSchemaRequest) ProtoMessage() {}
 
 func (x *DiffSchemaRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[15]
+	mi := &file_v1_database_service_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1414,7 +1544,7 @@ func (x *DiffSchemaRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DiffSchemaRequest.ProtoReflect.Descriptor instead.
 func (*DiffSchemaRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{15}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *DiffSchemaRequest) GetName() string {
@@ -1478,7 +1608,7 @@ type DiffSchemaResponse struct {
 
 func (x *DiffSchemaResponse) Reset() {
 	*x = DiffSchemaResponse{}
-	mi := &file_v1_database_service_proto_msgTypes[16]
+	mi := &file_v1_database_service_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1490,7 +1620,7 @@ func (x *DiffSchemaResponse) String() string {
 func (*DiffSchemaResponse) ProtoMessage() {}
 
 func (x *DiffSchemaResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[16]
+	mi := &file_v1_database_service_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1503,7 +1633,7 @@ func (x *DiffSchemaResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DiffSchemaResponse.ProtoReflect.Descriptor instead.
 func (*DiffSchemaResponse) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{16}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *DiffSchemaResponse) GetDiff() string {
@@ -1530,7 +1660,7 @@ type DiffMetadataRequest struct {
 
 func (x *DiffMetadataRequest) Reset() {
 	*x = DiffMetadataRequest{}
-	mi := &file_v1_database_service_proto_msgTypes[17]
+	mi := &file_v1_database_service_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1542,7 +1672,7 @@ func (x *DiffMetadataRequest) String() string {
 func (*DiffMetadataRequest) ProtoMessage() {}
 
 func (x *DiffMetadataRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[17]
+	mi := &file_v1_database_service_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1555,7 +1685,7 @@ func (x *DiffMetadataRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DiffMetadataRequest.ProtoReflect.Descriptor instead.
 func (*DiffMetadataRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{17}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *DiffMetadataRequest) GetName() string {
@@ -1582,7 +1712,7 @@ type DiffMetadataResponse struct {
 
 func (x *DiffMetadataResponse) Reset() {
 	*x = DiffMetadataResponse{}
-	mi := &file_v1_database_service_proto_msgTypes[18]
+	mi := &file_v1_database_service_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1594,7 +1724,7 @@ func (x *DiffMetadataResponse) String() string {
 func (*DiffMetadataResponse) ProtoMessage() {}
 
 func (x *DiffMetadataResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[18]
+	mi := &file_v1_database_service_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1607,7 +1737,7 @@ func (x *DiffMetadataResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DiffMetadataResponse.ProtoReflect.Descriptor instead.
 func (*DiffMetadataResponse) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{18}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *DiffMetadataResponse) GetDiff() string {
@@ -1657,7 +1787,7 @@ type Database struct {
 
 func (x *Database) Reset() {
 	*x = Database{}
-	mi := &file_v1_database_service_proto_msgTypes[19]
+	mi := &file_v1_database_service_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1669,7 +1799,7 @@ func (x *Database) String() string {
 func (*Database) ProtoMessage() {}
 
 func (x *Database) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[19]
+	mi := &file_v1_database_service_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1682,7 +1812,7 @@ func (x *Database) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Database.ProtoReflect.Descriptor instead.
 func (*Database) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{19}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *Database) GetName() string {
@@ -1794,7 +1924,7 @@ type DatabaseMetadata struct {
 
 func (x *DatabaseMetadata) Reset() {
 	*x = DatabaseMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[20]
+	mi := &file_v1_database_service_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1806,7 +1936,7 @@ func (x *DatabaseMetadata) String() string {
 func (*DatabaseMetadata) ProtoMessage() {}
 
 func (x *DatabaseMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[20]
+	mi := &file_v1_database_service_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1819,7 +1949,7 @@ func (x *DatabaseMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DatabaseMetadata.ProtoReflect.Descriptor instead.
 func (*DatabaseMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{20}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *DatabaseMetadata) GetName() string {
@@ -1920,7 +2050,7 @@ type SchemaMetadata struct {
 
 func (x *SchemaMetadata) Reset() {
 	*x = SchemaMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[21]
+	mi := &file_v1_database_service_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1932,7 +2062,7 @@ func (x *SchemaMetadata) String() string {
 func (*SchemaMetadata) ProtoMessage() {}
 
 func (x *SchemaMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[21]
+	mi := &file_v1_database_service_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1945,7 +2075,7 @@ func (x *SchemaMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SchemaMetadata.ProtoReflect.Descriptor instead.
 func (*SchemaMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{21}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *SchemaMetadata) GetName() string {
@@ -2083,7 +2213,7 @@ type EnumTypeMetadata struct {
 
 func (x *EnumTypeMetadata) Reset() {
 	*x = EnumTypeMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[22]
+	mi := &file_v1_database_service_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2095,7 +2225,7 @@ func (x *EnumTypeMetadata) String() string {
 func (*EnumTypeMetadata) ProtoMessage() {}
 
 func (x *EnumTypeMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[22]
+	mi := &file_v1_database_service_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2108,7 +2238,7 @@ func (x *EnumTypeMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EnumTypeMetadata.ProtoReflect.Descriptor instead.
 func (*EnumTypeMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{22}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *EnumTypeMetadata) GetName() string {
@@ -2153,7 +2283,7 @@ type CompositeTypeMetadata struct {
 
 func (x *CompositeTypeMetadata) Reset() {
 	*x = CompositeTypeMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[23]
+	mi := &file_v1_database_service_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2165,7 +2295,7 @@ func (x *CompositeTypeMetadata) String() string {
 func (*CompositeTypeMetadata) ProtoMessage() {}
 
 func (x *CompositeTypeMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[23]
+	mi := &file_v1_database_service_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2178,7 +2308,7 @@ func (x *CompositeTypeMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CompositeTypeMetadata.ProtoReflect.Descriptor instead.
 func (*CompositeTypeMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{23}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *CompositeTypeMetadata) GetName() string {
@@ -2220,7 +2350,7 @@ type CompositeTypeAttribute struct {
 
 func (x *CompositeTypeAttribute) Reset() {
 	*x = CompositeTypeAttribute{}
-	mi := &file_v1_database_service_proto_msgTypes[24]
+	mi := &file_v1_database_service_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2232,7 +2362,7 @@ func (x *CompositeTypeAttribute) String() string {
 func (*CompositeTypeAttribute) ProtoMessage() {}
 
 func (x *CompositeTypeAttribute) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[24]
+	mi := &file_v1_database_service_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2245,7 +2375,7 @@ func (x *CompositeTypeAttribute) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CompositeTypeAttribute.ProtoReflect.Descriptor instead.
 func (*CompositeTypeAttribute) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{24}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *CompositeTypeAttribute) GetName() string {
@@ -2298,7 +2428,7 @@ type EventMetadata struct {
 
 func (x *EventMetadata) Reset() {
 	*x = EventMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[25]
+	mi := &file_v1_database_service_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2310,7 +2440,7 @@ func (x *EventMetadata) String() string {
 func (*EventMetadata) ProtoMessage() {}
 
 func (x *EventMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[25]
+	mi := &file_v1_database_service_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2323,7 +2453,7 @@ func (x *EventMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EventMetadata.ProtoReflect.Descriptor instead.
 func (*EventMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{25}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *EventMetadata) GetName() string {
@@ -2409,7 +2539,7 @@ type SequenceMetadata struct {
 
 func (x *SequenceMetadata) Reset() {
 	*x = SequenceMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[26]
+	mi := &file_v1_database_service_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2421,7 +2551,7 @@ func (x *SequenceMetadata) String() string {
 func (*SequenceMetadata) ProtoMessage() {}
 
 func (x *SequenceMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[26]
+	mi := &file_v1_database_service_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2434,7 +2564,7 @@ func (x *SequenceMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SequenceMetadata.ProtoReflect.Descriptor instead.
 func (*SequenceMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{26}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *SequenceMetadata) GetName() string {
@@ -2555,7 +2685,7 @@ type TriggerMetadata struct {
 
 func (x *TriggerMetadata) Reset() {
 	*x = TriggerMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[27]
+	mi := &file_v1_database_service_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2567,7 +2697,7 @@ func (x *TriggerMetadata) String() string {
 func (*TriggerMetadata) ProtoMessage() {}
 
 func (x *TriggerMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[27]
+	mi := &file_v1_database_service_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2580,7 +2710,7 @@ func (x *TriggerMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TriggerMetadata.ProtoReflect.Descriptor instead.
 func (*TriggerMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{27}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *TriggerMetadata) GetName() string {
@@ -2662,7 +2792,7 @@ type ExternalTableMetadata struct {
 
 func (x *ExternalTableMetadata) Reset() {
 	*x = ExternalTableMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[28]
+	mi := &file_v1_database_service_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2674,7 +2804,7 @@ func (x *ExternalTableMetadata) String() string {
 func (*ExternalTableMetadata) ProtoMessage() {}
 
 func (x *ExternalTableMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[28]
+	mi := &file_v1_database_service_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2687,7 +2817,7 @@ func (x *ExternalTableMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExternalTableMetadata.ProtoReflect.Descriptor instead.
 func (*ExternalTableMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{28}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *ExternalTableMetadata) GetName() string {
@@ -2771,7 +2901,7 @@ type TableMetadata struct {
 
 func (x *TableMetadata) Reset() {
 	*x = TableMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[29]
+	mi := &file_v1_database_service_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2783,7 +2913,7 @@ func (x *TableMetadata) String() string {
 func (*TableMetadata) ProtoMessage() {}
 
 func (x *TableMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[29]
+	mi := &file_v1_database_service_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2796,7 +2926,7 @@ func (x *TableMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TableMetadata.ProtoReflect.Descriptor instead.
 func (*TableMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{29}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *TableMetadata) GetName() string {
@@ -2959,7 +3089,7 @@ type CheckConstraintMetadata struct {
 
 func (x *CheckConstraintMetadata) Reset() {
 	*x = CheckConstraintMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[30]
+	mi := &file_v1_database_service_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2971,7 +3101,7 @@ func (x *CheckConstraintMetadata) String() string {
 func (*CheckConstraintMetadata) ProtoMessage() {}
 
 func (x *CheckConstraintMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[30]
+	mi := &file_v1_database_service_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2984,7 +3114,7 @@ func (x *CheckConstraintMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CheckConstraintMetadata.ProtoReflect.Descriptor instead.
 func (*CheckConstraintMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{30}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *CheckConstraintMetadata) GetName() string {
@@ -3044,7 +3174,7 @@ type TablePartitionMetadata struct {
 
 func (x *TablePartitionMetadata) Reset() {
 	*x = TablePartitionMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[31]
+	mi := &file_v1_database_service_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3056,7 +3186,7 @@ func (x *TablePartitionMetadata) String() string {
 func (*TablePartitionMetadata) ProtoMessage() {}
 
 func (x *TablePartitionMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[31]
+	mi := &file_v1_database_service_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3069,7 +3199,7 @@ func (x *TablePartitionMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TablePartitionMetadata.ProtoReflect.Descriptor instead.
 func (*TablePartitionMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{31}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *TablePartitionMetadata) GetName() string {
@@ -3201,7 +3331,7 @@ type ColumnMetadata struct {
 
 func (x *ColumnMetadata) Reset() {
 	*x = ColumnMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[32]
+	mi := &file_v1_database_service_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3213,7 +3343,7 @@ func (x *ColumnMetadata) String() string {
 func (*ColumnMetadata) ProtoMessage() {}
 
 func (x *ColumnMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[32]
+	mi := &file_v1_database_service_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3226,7 +3356,7 @@ func (x *ColumnMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ColumnMetadata.ProtoReflect.Descriptor instead.
 func (*ColumnMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{32}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *ColumnMetadata) GetName() string {
@@ -3372,7 +3502,7 @@ type GenerationMetadata struct {
 
 func (x *GenerationMetadata) Reset() {
 	*x = GenerationMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[33]
+	mi := &file_v1_database_service_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3384,7 +3514,7 @@ func (x *GenerationMetadata) String() string {
 func (*GenerationMetadata) ProtoMessage() {}
 
 func (x *GenerationMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[33]
+	mi := &file_v1_database_service_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3397,7 +3527,7 @@ func (x *GenerationMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GenerationMetadata.ProtoReflect.Descriptor instead.
 func (*GenerationMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{33}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *GenerationMetadata) GetType() GenerationMetadata_Type {
@@ -3436,7 +3566,7 @@ type ViewMetadata struct {
 
 func (x *ViewMetadata) Reset() {
 	*x = ViewMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[34]
+	mi := &file_v1_database_service_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3448,7 +3578,7 @@ func (x *ViewMetadata) String() string {
 func (*ViewMetadata) ProtoMessage() {}
 
 func (x *ViewMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[34]
+	mi := &file_v1_database_service_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3461,7 +3591,7 @@ func (x *ViewMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ViewMetadata.ProtoReflect.Descriptor instead.
 func (*ViewMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{34}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *ViewMetadata) GetName() string {
@@ -3528,7 +3658,7 @@ type DependencyColumn struct {
 
 func (x *DependencyColumn) Reset() {
 	*x = DependencyColumn{}
-	mi := &file_v1_database_service_proto_msgTypes[35]
+	mi := &file_v1_database_service_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3540,7 +3670,7 @@ func (x *DependencyColumn) String() string {
 func (*DependencyColumn) ProtoMessage() {}
 
 func (x *DependencyColumn) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[35]
+	mi := &file_v1_database_service_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3553,7 +3683,7 @@ func (x *DependencyColumn) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DependencyColumn.ProtoReflect.Descriptor instead.
 func (*DependencyColumn) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{35}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *DependencyColumn) GetSchema() string {
@@ -3600,7 +3730,7 @@ type MaterializedViewMetadata struct {
 
 func (x *MaterializedViewMetadata) Reset() {
 	*x = MaterializedViewMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[36]
+	mi := &file_v1_database_service_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3612,7 +3742,7 @@ func (x *MaterializedViewMetadata) String() string {
 func (*MaterializedViewMetadata) ProtoMessage() {}
 
 func (x *MaterializedViewMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[36]
+	mi := &file_v1_database_service_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3625,7 +3755,7 @@ func (x *MaterializedViewMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MaterializedViewMetadata.ProtoReflect.Descriptor instead.
 func (*MaterializedViewMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{36}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *MaterializedViewMetadata) GetName() string {
@@ -3689,7 +3819,7 @@ type DependencyTable struct {
 
 func (x *DependencyTable) Reset() {
 	*x = DependencyTable{}
-	mi := &file_v1_database_service_proto_msgTypes[37]
+	mi := &file_v1_database_service_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3701,7 +3831,7 @@ func (x *DependencyTable) String() string {
 func (*DependencyTable) ProtoMessage() {}
 
 func (x *DependencyTable) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[37]
+	mi := &file_v1_database_service_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3714,7 +3844,7 @@ func (x *DependencyTable) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DependencyTable.ProtoReflect.Descriptor instead.
 func (*DependencyTable) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{37}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *DependencyTable) GetSchema() string {
@@ -3757,7 +3887,7 @@ type FunctionMetadata struct {
 
 func (x *FunctionMetadata) Reset() {
 	*x = FunctionMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[38]
+	mi := &file_v1_database_service_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3769,7 +3899,7 @@ func (x *FunctionMetadata) String() string {
 func (*FunctionMetadata) ProtoMessage() {}
 
 func (x *FunctionMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[38]
+	mi := &file_v1_database_service_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3782,7 +3912,7 @@ func (x *FunctionMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FunctionMetadata.ProtoReflect.Descriptor instead.
 func (*FunctionMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{38}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{40}
 }
 
 func (x *FunctionMetadata) GetName() string {
@@ -3879,7 +4009,7 @@ type ProcedureMetadata struct {
 
 func (x *ProcedureMetadata) Reset() {
 	*x = ProcedureMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[39]
+	mi := &file_v1_database_service_proto_msgTypes[41]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3891,7 +4021,7 @@ func (x *ProcedureMetadata) String() string {
 func (*ProcedureMetadata) ProtoMessage() {}
 
 func (x *ProcedureMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[39]
+	mi := &file_v1_database_service_proto_msgTypes[41]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3904,7 +4034,7 @@ func (x *ProcedureMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProcedureMetadata.ProtoReflect.Descriptor instead.
 func (*ProcedureMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{39}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{41}
 }
 
 func (x *ProcedureMetadata) GetName() string {
@@ -3983,7 +4113,7 @@ type PackageMetadata struct {
 
 func (x *PackageMetadata) Reset() {
 	*x = PackageMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[40]
+	mi := &file_v1_database_service_proto_msgTypes[42]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3995,7 +4125,7 @@ func (x *PackageMetadata) String() string {
 func (*PackageMetadata) ProtoMessage() {}
 
 func (x *PackageMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[40]
+	mi := &file_v1_database_service_proto_msgTypes[42]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4008,7 +4138,7 @@ func (x *PackageMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PackageMetadata.ProtoReflect.Descriptor instead.
 func (*PackageMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{40}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{42}
 }
 
 func (x *PackageMetadata) GetName() string {
@@ -4054,7 +4184,7 @@ type TaskMetadata struct {
 
 func (x *TaskMetadata) Reset() {
 	*x = TaskMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[41]
+	mi := &file_v1_database_service_proto_msgTypes[43]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4066,7 +4196,7 @@ func (x *TaskMetadata) String() string {
 func (*TaskMetadata) ProtoMessage() {}
 
 func (x *TaskMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[41]
+	mi := &file_v1_database_service_proto_msgTypes[43]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4079,7 +4209,7 @@ func (x *TaskMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TaskMetadata.ProtoReflect.Descriptor instead.
 func (*TaskMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{41}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{43}
 }
 
 func (x *TaskMetadata) GetName() string {
@@ -4176,7 +4306,7 @@ type StreamMetadata struct {
 
 func (x *StreamMetadata) Reset() {
 	*x = StreamMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[42]
+	mi := &file_v1_database_service_proto_msgTypes[44]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4188,7 +4318,7 @@ func (x *StreamMetadata) String() string {
 func (*StreamMetadata) ProtoMessage() {}
 
 func (x *StreamMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[42]
+	mi := &file_v1_database_service_proto_msgTypes[44]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4201,7 +4331,7 @@ func (x *StreamMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StreamMetadata.ProtoReflect.Descriptor instead.
 func (*StreamMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{42}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{44}
 }
 
 func (x *StreamMetadata) GetName() string {
@@ -4277,7 +4407,7 @@ type SpatialIndexConfig struct {
 
 func (x *SpatialIndexConfig) Reset() {
 	*x = SpatialIndexConfig{}
-	mi := &file_v1_database_service_proto_msgTypes[43]
+	mi := &file_v1_database_service_proto_msgTypes[45]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4289,7 +4419,7 @@ func (x *SpatialIndexConfig) String() string {
 func (*SpatialIndexConfig) ProtoMessage() {}
 
 func (x *SpatialIndexConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[43]
+	mi := &file_v1_database_service_proto_msgTypes[45]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4302,7 +4432,7 @@ func (x *SpatialIndexConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SpatialIndexConfig.ProtoReflect.Descriptor instead.
 func (*SpatialIndexConfig) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{43}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{45}
 }
 
 func (x *SpatialIndexConfig) GetMethod() string {
@@ -4350,7 +4480,7 @@ type TessellationConfig struct {
 
 func (x *TessellationConfig) Reset() {
 	*x = TessellationConfig{}
-	mi := &file_v1_database_service_proto_msgTypes[44]
+	mi := &file_v1_database_service_proto_msgTypes[46]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4362,7 +4492,7 @@ func (x *TessellationConfig) String() string {
 func (*TessellationConfig) ProtoMessage() {}
 
 func (x *TessellationConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[44]
+	mi := &file_v1_database_service_proto_msgTypes[46]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4375,7 +4505,7 @@ func (x *TessellationConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TessellationConfig.ProtoReflect.Descriptor instead.
 func (*TessellationConfig) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{44}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{46}
 }
 
 func (x *TessellationConfig) GetScheme() string {
@@ -4419,7 +4549,7 @@ type GridLevel struct {
 
 func (x *GridLevel) Reset() {
 	*x = GridLevel{}
-	mi := &file_v1_database_service_proto_msgTypes[45]
+	mi := &file_v1_database_service_proto_msgTypes[47]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4431,7 +4561,7 @@ func (x *GridLevel) String() string {
 func (*GridLevel) ProtoMessage() {}
 
 func (x *GridLevel) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[45]
+	mi := &file_v1_database_service_proto_msgTypes[47]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4444,7 +4574,7 @@ func (x *GridLevel) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GridLevel.ProtoReflect.Descriptor instead.
 func (*GridLevel) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{45}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{47}
 }
 
 func (x *GridLevel) GetLevel() int32 {
@@ -4478,7 +4608,7 @@ type BoundingBox struct {
 
 func (x *BoundingBox) Reset() {
 	*x = BoundingBox{}
-	mi := &file_v1_database_service_proto_msgTypes[46]
+	mi := &file_v1_database_service_proto_msgTypes[48]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4490,7 +4620,7 @@ func (x *BoundingBox) String() string {
 func (*BoundingBox) ProtoMessage() {}
 
 func (x *BoundingBox) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[46]
+	mi := &file_v1_database_service_proto_msgTypes[48]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4503,7 +4633,7 @@ func (x *BoundingBox) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BoundingBox.ProtoReflect.Descriptor instead.
 func (*BoundingBox) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{46}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{48}
 }
 
 func (x *BoundingBox) GetXmin() float64 {
@@ -4561,7 +4691,7 @@ type StorageConfig struct {
 
 func (x *StorageConfig) Reset() {
 	*x = StorageConfig{}
-	mi := &file_v1_database_service_proto_msgTypes[47]
+	mi := &file_v1_database_service_proto_msgTypes[49]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4573,7 +4703,7 @@ func (x *StorageConfig) String() string {
 func (*StorageConfig) ProtoMessage() {}
 
 func (x *StorageConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[47]
+	mi := &file_v1_database_service_proto_msgTypes[49]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4586,7 +4716,7 @@ func (x *StorageConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StorageConfig.ProtoReflect.Descriptor instead.
 func (*StorageConfig) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{47}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{49}
 }
 
 func (x *StorageConfig) GetFillfactor() int32 {
@@ -4704,7 +4834,7 @@ type DimensionalConfig struct {
 
 func (x *DimensionalConfig) Reset() {
 	*x = DimensionalConfig{}
-	mi := &file_v1_database_service_proto_msgTypes[48]
+	mi := &file_v1_database_service_proto_msgTypes[50]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4716,7 +4846,7 @@ func (x *DimensionalConfig) String() string {
 func (*DimensionalConfig) ProtoMessage() {}
 
 func (x *DimensionalConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[48]
+	mi := &file_v1_database_service_proto_msgTypes[50]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4729,7 +4859,7 @@ func (x *DimensionalConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DimensionalConfig.ProtoReflect.Descriptor instead.
 func (*DimensionalConfig) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{48}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{50}
 }
 
 func (x *DimensionalConfig) GetDimensions() int32 {
@@ -4777,7 +4907,7 @@ type DimensionConstraint struct {
 
 func (x *DimensionConstraint) Reset() {
 	*x = DimensionConstraint{}
-	mi := &file_v1_database_service_proto_msgTypes[49]
+	mi := &file_v1_database_service_proto_msgTypes[51]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4789,7 +4919,7 @@ func (x *DimensionConstraint) String() string {
 func (*DimensionConstraint) ProtoMessage() {}
 
 func (x *DimensionConstraint) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[49]
+	mi := &file_v1_database_service_proto_msgTypes[51]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4802,7 +4932,7 @@ func (x *DimensionConstraint) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DimensionConstraint.ProtoReflect.Descriptor instead.
 func (*DimensionConstraint) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{49}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{51}
 }
 
 func (x *DimensionConstraint) GetDimension() string {
@@ -4880,7 +5010,7 @@ type IndexMetadata struct {
 
 func (x *IndexMetadata) Reset() {
 	*x = IndexMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[50]
+	mi := &file_v1_database_service_proto_msgTypes[52]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4892,7 +5022,7 @@ func (x *IndexMetadata) String() string {
 func (*IndexMetadata) ProtoMessage() {}
 
 func (x *IndexMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[50]
+	mi := &file_v1_database_service_proto_msgTypes[52]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4905,7 +5035,7 @@ func (x *IndexMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IndexMetadata.ProtoReflect.Descriptor instead.
 func (*IndexMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{50}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{52}
 }
 
 func (x *IndexMetadata) GetName() string {
@@ -5045,7 +5175,7 @@ type ExtensionMetadata struct {
 
 func (x *ExtensionMetadata) Reset() {
 	*x = ExtensionMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[51]
+	mi := &file_v1_database_service_proto_msgTypes[53]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5057,7 +5187,7 @@ func (x *ExtensionMetadata) String() string {
 func (*ExtensionMetadata) ProtoMessage() {}
 
 func (x *ExtensionMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[51]
+	mi := &file_v1_database_service_proto_msgTypes[53]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5070,7 +5200,7 @@ func (x *ExtensionMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExtensionMetadata.ProtoReflect.Descriptor instead.
 func (*ExtensionMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{51}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{53}
 }
 
 func (x *ExtensionMetadata) GetName() string {
@@ -5129,7 +5259,7 @@ type ForeignKeyMetadata struct {
 
 func (x *ForeignKeyMetadata) Reset() {
 	*x = ForeignKeyMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[52]
+	mi := &file_v1_database_service_proto_msgTypes[54]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5141,7 +5271,7 @@ func (x *ForeignKeyMetadata) String() string {
 func (*ForeignKeyMetadata) ProtoMessage() {}
 
 func (x *ForeignKeyMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[52]
+	mi := &file_v1_database_service_proto_msgTypes[54]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5154,7 +5284,7 @@ func (x *ForeignKeyMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ForeignKeyMetadata.ProtoReflect.Descriptor instead.
 func (*ForeignKeyMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{52}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{54}
 }
 
 func (x *ForeignKeyMetadata) GetName() string {
@@ -5224,7 +5354,7 @@ type DatabaseSchema struct {
 
 func (x *DatabaseSchema) Reset() {
 	*x = DatabaseSchema{}
-	mi := &file_v1_database_service_proto_msgTypes[53]
+	mi := &file_v1_database_service_proto_msgTypes[55]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5236,7 +5366,7 @@ func (x *DatabaseSchema) String() string {
 func (*DatabaseSchema) ProtoMessage() {}
 
 func (x *DatabaseSchema) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[53]
+	mi := &file_v1_database_service_proto_msgTypes[55]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5249,7 +5379,7 @@ func (x *DatabaseSchema) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DatabaseSchema.ProtoReflect.Descriptor instead.
 func (*DatabaseSchema) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{53}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{55}
 }
 
 func (x *DatabaseSchema) GetSchema() string {
@@ -5278,7 +5408,7 @@ type DatabaseSDLSchema struct {
 
 func (x *DatabaseSDLSchema) Reset() {
 	*x = DatabaseSDLSchema{}
-	mi := &file_v1_database_service_proto_msgTypes[54]
+	mi := &file_v1_database_service_proto_msgTypes[56]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5290,7 +5420,7 @@ func (x *DatabaseSDLSchema) String() string {
 func (*DatabaseSDLSchema) ProtoMessage() {}
 
 func (x *DatabaseSDLSchema) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[54]
+	mi := &file_v1_database_service_proto_msgTypes[56]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5303,7 +5433,7 @@ func (x *DatabaseSDLSchema) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DatabaseSDLSchema.ProtoReflect.Descriptor instead.
 func (*DatabaseSDLSchema) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{54}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{56}
 }
 
 func (x *DatabaseSDLSchema) GetSchema() []byte {
@@ -5339,7 +5469,7 @@ type GetSchemaStringRequest struct {
 
 func (x *GetSchemaStringRequest) Reset() {
 	*x = GetSchemaStringRequest{}
-	mi := &file_v1_database_service_proto_msgTypes[55]
+	mi := &file_v1_database_service_proto_msgTypes[57]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5351,7 +5481,7 @@ func (x *GetSchemaStringRequest) String() string {
 func (*GetSchemaStringRequest) ProtoMessage() {}
 
 func (x *GetSchemaStringRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[55]
+	mi := &file_v1_database_service_proto_msgTypes[57]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5364,7 +5494,7 @@ func (x *GetSchemaStringRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSchemaStringRequest.ProtoReflect.Descriptor instead.
 func (*GetSchemaStringRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{55}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{57}
 }
 
 func (x *GetSchemaStringRequest) GetName() string {
@@ -5411,7 +5541,7 @@ type GetSchemaStringResponse struct {
 
 func (x *GetSchemaStringResponse) Reset() {
 	*x = GetSchemaStringResponse{}
-	mi := &file_v1_database_service_proto_msgTypes[56]
+	mi := &file_v1_database_service_proto_msgTypes[58]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5423,7 +5553,7 @@ func (x *GetSchemaStringResponse) String() string {
 func (*GetSchemaStringResponse) ProtoMessage() {}
 
 func (x *GetSchemaStringResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[56]
+	mi := &file_v1_database_service_proto_msgTypes[58]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5436,7 +5566,7 @@ func (x *GetSchemaStringResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSchemaStringResponse.ProtoReflect.Descriptor instead.
 func (*GetSchemaStringResponse) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{56}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{58}
 }
 
 func (x *GetSchemaStringResponse) GetSchemaString() string {
@@ -5469,6 +5599,14 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\fshow_deleted\x18\x05 \x01(\bR\vshowDeleted\x12\x19\n" +
 	"\border_by\x18\x06 \x01(\tR\aorderBy\"t\n" +
 	"\x15ListDatabasesResponse\x123\n" +
+	"\tdatabases\x18\x01 \x03(\v2\x15.bytebase.v1.DatabaseR\tdatabases\x12&\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"l\n" +
+	"\x16SearchDatabasesRequest\x12\x1b\n" +
+	"\tpage_size\x18\x01 \x01(\x05R\bpageSize\x12\x1d\n" +
+	"\n" +
+	"page_token\x18\x02 \x01(\tR\tpageToken\x12\x16\n" +
+	"\x06filter\x18\x03 \x01(\tR\x06filter\"v\n" +
+	"\x17SearchDatabasesResponse\x123\n" +
 	"\tdatabases\x18\x01 \x03(\v2\x15.bytebase.v1.DatabaseR\tdatabases\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x8c\x01\n" +
 	"\x15UpdateDatabaseRequest\x126\n" +
@@ -5948,11 +6086,12 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\x17SYNC_STATUS_UNSPECIFIED\x10\x00\x12\x06\n" +
 	"\x02OK\x10\x01\x12\n" +
 	"\n" +
-	"\x06FAILED\x10\x022\xda\x1a\n" +
+	"\x06FAILED\x10\x022\xf9\x1b\n" +
 	"\x0fDatabaseService\x12\xc5\x01\n" +
 	"\vGetDatabase\x12\x1f.bytebase.v1.GetDatabaseRequest\x1a\x15.bytebase.v1.Database\"~\xdaA\x04name\x8a\xea0\x10bb.databases.get\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02UZ/\x12-/v1/{name=projects/*/instances/*/databases/*}\x12\"/v1/{name=instances/*/databases/*}\x12\x9d\x02\n" +
 	"\x11BatchGetDatabases\x12%.bytebase.v1.BatchGetDatabasesRequest\x1a&.bytebase.v1.BatchGetDatabasesResponse\"\xb8\x01\x8a\xea0\x10bb.databases.get\x90\xea0\x02\xa0\xea0\x01\x82\xd3\xe4\x93\x02\x95\x01Z-\x12+/v1/{parent=instances/*}/databases:batchGetZ8\x126/v1/{parent=projects/*/instances/*}/databases:batchGet\x12*/v1/{parent=projects/*}/databases:batchGet\x12\xa1\x02\n" +
-	"\rListDatabases\x12!.bytebase.v1.ListDatabasesRequest\x1a\".bytebase.v1.ListDatabasesResponse\"\xc8\x01\xdaA\x00\x8a\xea0\x11bb.databases.list\x90\xea0\x02\xa0\xea0\x01\x82\xd3\xe4\x93\x02\xa1\x01Z$\x12\"/v1/{parent=instances/*}/databasesZ%\x12#/v1/{parent=workspaces/*}/databasesZ/\x12-/v1/{parent=projects/*/instances/*}/databases\x12!/v1/{parent=projects/*}/databases\x12\x8d\x02\n" +
+	"\rListDatabases\x12!.bytebase.v1.ListDatabasesRequest\x1a\".bytebase.v1.ListDatabasesResponse\"\xc8\x01\xdaA\x00\x8a\xea0\x11bb.databases.list\x90\xea0\x02\xa0\xea0\x01\x82\xd3\xe4\x93\x02\xa1\x01Z$\x12\"/v1/{parent=instances/*}/databasesZ%\x12#/v1/{parent=workspaces/*}/databasesZ/\x12-/v1/{parent=projects/*/instances/*}/databases\x12!/v1/{parent=projects/*}/databases\x12\x9c\x01\n" +
+	"\x0fSearchDatabases\x12#.bytebase.v1.SearchDatabasesRequest\x1a$.bytebase.v1.SearchDatabasesResponse\">\xdaA\x00\x8a\xea0\x10bb.databases.get\x90\xea0\x02\xa0\xea0\x01\x82\xd3\xe4\x93\x02\x19:\x01*\"\x14/v1/databases:search\x12\x8d\x02\n" +
 	"\x0eUpdateDatabase\x12\".bytebase.v1.UpdateDatabaseRequest\x1a\x15.bytebase.v1.Database\"\xbf\x01\xdaA\x14database,update_mask\x8a\xea0\x13bb.databases.update\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\x0e\x82\xd3\xe4\x93\x02{:\bdatabaseZB:\bdatabase26/v1/{database.name=projects/*/instances/*/databases/*}2+/v1/{database.name=instances/*/databases/*}\x12\x8e\x02\n" +
 	"\x14BatchUpdateDatabases\x12(.bytebase.v1.BatchUpdateDatabasesRequest\x1a).bytebase.v1.BatchUpdateDatabasesResponse\"\xa0\x01\x8a\xea0\x13bb.databases.update\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\x0e\x82\xd3\xe4\x93\x02s:\x01*Z>:\x01*\"9/v1/{parent=projects/*/instances/*}/databases:batchUpdate\"./v1/{parent=instances/*}/databases:batchUpdate\x12\xde\x01\n" +
 	"\fSyncDatabase\x12 .bytebase.v1.SyncDatabaseRequest\x1a!.bytebase.v1.SyncDatabaseResponse\"\x88\x01\x8a\xea0\x11bb.databases.sync\x90\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x02e:\x01*Z7:\x01*\"2/v1/{name=projects/*/instances/*/databases/*}:sync\"'/v1/{name=instances/*/databases/*}:sync\x12\xfa\x01\n" +
@@ -5979,7 +6118,7 @@ func file_v1_database_service_proto_rawDescGZIP() []byte {
 }
 
 var file_v1_database_service_proto_enumTypes = make([]protoimpl.EnumInfo, 9)
-var file_v1_database_service_proto_msgTypes = make([]protoimpl.MessageInfo, 58)
+var file_v1_database_service_proto_msgTypes = make([]protoimpl.MessageInfo, 60)
 var file_v1_database_service_proto_goTypes = []any{
 	(SyncStatus)(0), // 0: bytebase.v1.SyncStatus
 	(GetDatabaseSDLSchemaRequest_SDLFormat)(0), // 1: bytebase.v1.GetDatabaseSDLSchemaRequest.SDLFormat
@@ -5995,158 +6134,163 @@ var file_v1_database_service_proto_goTypes = []any{
 	(*BatchGetDatabasesResponse)(nil),          // 11: bytebase.v1.BatchGetDatabasesResponse
 	(*ListDatabasesRequest)(nil),               // 12: bytebase.v1.ListDatabasesRequest
 	(*ListDatabasesResponse)(nil),              // 13: bytebase.v1.ListDatabasesResponse
-	(*UpdateDatabaseRequest)(nil),              // 14: bytebase.v1.UpdateDatabaseRequest
-	(*BatchUpdateDatabasesRequest)(nil),        // 15: bytebase.v1.BatchUpdateDatabasesRequest
-	(*BatchUpdateDatabasesResponse)(nil),       // 16: bytebase.v1.BatchUpdateDatabasesResponse
-	(*BatchSyncDatabasesRequest)(nil),          // 17: bytebase.v1.BatchSyncDatabasesRequest
-	(*BatchSyncDatabasesResponse)(nil),         // 18: bytebase.v1.BatchSyncDatabasesResponse
-	(*SyncDatabaseRequest)(nil),                // 19: bytebase.v1.SyncDatabaseRequest
-	(*SyncDatabaseResponse)(nil),               // 20: bytebase.v1.SyncDatabaseResponse
-	(*GetDatabaseMetadataRequest)(nil),         // 21: bytebase.v1.GetDatabaseMetadataRequest
-	(*GetDatabaseSchemaRequest)(nil),           // 22: bytebase.v1.GetDatabaseSchemaRequest
-	(*GetDatabaseSDLSchemaRequest)(nil),        // 23: bytebase.v1.GetDatabaseSDLSchemaRequest
-	(*DiffSchemaRequest)(nil),                  // 24: bytebase.v1.DiffSchemaRequest
-	(*DiffSchemaResponse)(nil),                 // 25: bytebase.v1.DiffSchemaResponse
-	(*DiffMetadataRequest)(nil),                // 26: bytebase.v1.DiffMetadataRequest
-	(*DiffMetadataResponse)(nil),               // 27: bytebase.v1.DiffMetadataResponse
-	(*Database)(nil),                           // 28: bytebase.v1.Database
-	(*DatabaseMetadata)(nil),                   // 29: bytebase.v1.DatabaseMetadata
-	(*SchemaMetadata)(nil),                     // 30: bytebase.v1.SchemaMetadata
-	(*EnumTypeMetadata)(nil),                   // 31: bytebase.v1.EnumTypeMetadata
-	(*CompositeTypeMetadata)(nil),              // 32: bytebase.v1.CompositeTypeMetadata
-	(*CompositeTypeAttribute)(nil),             // 33: bytebase.v1.CompositeTypeAttribute
-	(*EventMetadata)(nil),                      // 34: bytebase.v1.EventMetadata
-	(*SequenceMetadata)(nil),                   // 35: bytebase.v1.SequenceMetadata
-	(*TriggerMetadata)(nil),                    // 36: bytebase.v1.TriggerMetadata
-	(*ExternalTableMetadata)(nil),              // 37: bytebase.v1.ExternalTableMetadata
-	(*TableMetadata)(nil),                      // 38: bytebase.v1.TableMetadata
-	(*CheckConstraintMetadata)(nil),            // 39: bytebase.v1.CheckConstraintMetadata
-	(*TablePartitionMetadata)(nil),             // 40: bytebase.v1.TablePartitionMetadata
-	(*ColumnMetadata)(nil),                     // 41: bytebase.v1.ColumnMetadata
-	(*GenerationMetadata)(nil),                 // 42: bytebase.v1.GenerationMetadata
-	(*ViewMetadata)(nil),                       // 43: bytebase.v1.ViewMetadata
-	(*DependencyColumn)(nil),                   // 44: bytebase.v1.DependencyColumn
-	(*MaterializedViewMetadata)(nil),           // 45: bytebase.v1.MaterializedViewMetadata
-	(*DependencyTable)(nil),                    // 46: bytebase.v1.DependencyTable
-	(*FunctionMetadata)(nil),                   // 47: bytebase.v1.FunctionMetadata
-	(*ProcedureMetadata)(nil),                  // 48: bytebase.v1.ProcedureMetadata
-	(*PackageMetadata)(nil),                    // 49: bytebase.v1.PackageMetadata
-	(*TaskMetadata)(nil),                       // 50: bytebase.v1.TaskMetadata
-	(*StreamMetadata)(nil),                     // 51: bytebase.v1.StreamMetadata
-	(*SpatialIndexConfig)(nil),                 // 52: bytebase.v1.SpatialIndexConfig
-	(*TessellationConfig)(nil),                 // 53: bytebase.v1.TessellationConfig
-	(*GridLevel)(nil),                          // 54: bytebase.v1.GridLevel
-	(*BoundingBox)(nil),                        // 55: bytebase.v1.BoundingBox
-	(*StorageConfig)(nil),                      // 56: bytebase.v1.StorageConfig
-	(*DimensionalConfig)(nil),                  // 57: bytebase.v1.DimensionalConfig
-	(*DimensionConstraint)(nil),                // 58: bytebase.v1.DimensionConstraint
-	(*IndexMetadata)(nil),                      // 59: bytebase.v1.IndexMetadata
-	(*ExtensionMetadata)(nil),                  // 60: bytebase.v1.ExtensionMetadata
-	(*ForeignKeyMetadata)(nil),                 // 61: bytebase.v1.ForeignKeyMetadata
-	(*DatabaseSchema)(nil),                     // 62: bytebase.v1.DatabaseSchema
-	(*DatabaseSDLSchema)(nil),                  // 63: bytebase.v1.DatabaseSDLSchema
-	(*GetSchemaStringRequest)(nil),             // 64: bytebase.v1.GetSchemaStringRequest
-	(*GetSchemaStringResponse)(nil),            // 65: bytebase.v1.GetSchemaStringResponse
-	nil,                                        // 66: bytebase.v1.Database.LabelsEntry
-	(*fieldmaskpb.FieldMask)(nil),              // 67: google.protobuf.FieldMask
-	(State)(0),                                 // 68: bytebase.v1.State
-	(*timestamppb.Timestamp)(nil),              // 69: google.protobuf.Timestamp
-	(*InstanceResource)(nil),                   // 70: bytebase.v1.InstanceResource
+	(*SearchDatabasesRequest)(nil),             // 14: bytebase.v1.SearchDatabasesRequest
+	(*SearchDatabasesResponse)(nil),            // 15: bytebase.v1.SearchDatabasesResponse
+	(*UpdateDatabaseRequest)(nil),              // 16: bytebase.v1.UpdateDatabaseRequest
+	(*BatchUpdateDatabasesRequest)(nil),        // 17: bytebase.v1.BatchUpdateDatabasesRequest
+	(*BatchUpdateDatabasesResponse)(nil),       // 18: bytebase.v1.BatchUpdateDatabasesResponse
+	(*BatchSyncDatabasesRequest)(nil),          // 19: bytebase.v1.BatchSyncDatabasesRequest
+	(*BatchSyncDatabasesResponse)(nil),         // 20: bytebase.v1.BatchSyncDatabasesResponse
+	(*SyncDatabaseRequest)(nil),                // 21: bytebase.v1.SyncDatabaseRequest
+	(*SyncDatabaseResponse)(nil),               // 22: bytebase.v1.SyncDatabaseResponse
+	(*GetDatabaseMetadataRequest)(nil),         // 23: bytebase.v1.GetDatabaseMetadataRequest
+	(*GetDatabaseSchemaRequest)(nil),           // 24: bytebase.v1.GetDatabaseSchemaRequest
+	(*GetDatabaseSDLSchemaRequest)(nil),        // 25: bytebase.v1.GetDatabaseSDLSchemaRequest
+	(*DiffSchemaRequest)(nil),                  // 26: bytebase.v1.DiffSchemaRequest
+	(*DiffSchemaResponse)(nil),                 // 27: bytebase.v1.DiffSchemaResponse
+	(*DiffMetadataRequest)(nil),                // 28: bytebase.v1.DiffMetadataRequest
+	(*DiffMetadataResponse)(nil),               // 29: bytebase.v1.DiffMetadataResponse
+	(*Database)(nil),                           // 30: bytebase.v1.Database
+	(*DatabaseMetadata)(nil),                   // 31: bytebase.v1.DatabaseMetadata
+	(*SchemaMetadata)(nil),                     // 32: bytebase.v1.SchemaMetadata
+	(*EnumTypeMetadata)(nil),                   // 33: bytebase.v1.EnumTypeMetadata
+	(*CompositeTypeMetadata)(nil),              // 34: bytebase.v1.CompositeTypeMetadata
+	(*CompositeTypeAttribute)(nil),             // 35: bytebase.v1.CompositeTypeAttribute
+	(*EventMetadata)(nil),                      // 36: bytebase.v1.EventMetadata
+	(*SequenceMetadata)(nil),                   // 37: bytebase.v1.SequenceMetadata
+	(*TriggerMetadata)(nil),                    // 38: bytebase.v1.TriggerMetadata
+	(*ExternalTableMetadata)(nil),              // 39: bytebase.v1.ExternalTableMetadata
+	(*TableMetadata)(nil),                      // 40: bytebase.v1.TableMetadata
+	(*CheckConstraintMetadata)(nil),            // 41: bytebase.v1.CheckConstraintMetadata
+	(*TablePartitionMetadata)(nil),             // 42: bytebase.v1.TablePartitionMetadata
+	(*ColumnMetadata)(nil),                     // 43: bytebase.v1.ColumnMetadata
+	(*GenerationMetadata)(nil),                 // 44: bytebase.v1.GenerationMetadata
+	(*ViewMetadata)(nil),                       // 45: bytebase.v1.ViewMetadata
+	(*DependencyColumn)(nil),                   // 46: bytebase.v1.DependencyColumn
+	(*MaterializedViewMetadata)(nil),           // 47: bytebase.v1.MaterializedViewMetadata
+	(*DependencyTable)(nil),                    // 48: bytebase.v1.DependencyTable
+	(*FunctionMetadata)(nil),                   // 49: bytebase.v1.FunctionMetadata
+	(*ProcedureMetadata)(nil),                  // 50: bytebase.v1.ProcedureMetadata
+	(*PackageMetadata)(nil),                    // 51: bytebase.v1.PackageMetadata
+	(*TaskMetadata)(nil),                       // 52: bytebase.v1.TaskMetadata
+	(*StreamMetadata)(nil),                     // 53: bytebase.v1.StreamMetadata
+	(*SpatialIndexConfig)(nil),                 // 54: bytebase.v1.SpatialIndexConfig
+	(*TessellationConfig)(nil),                 // 55: bytebase.v1.TessellationConfig
+	(*GridLevel)(nil),                          // 56: bytebase.v1.GridLevel
+	(*BoundingBox)(nil),                        // 57: bytebase.v1.BoundingBox
+	(*StorageConfig)(nil),                      // 58: bytebase.v1.StorageConfig
+	(*DimensionalConfig)(nil),                  // 59: bytebase.v1.DimensionalConfig
+	(*DimensionConstraint)(nil),                // 60: bytebase.v1.DimensionConstraint
+	(*IndexMetadata)(nil),                      // 61: bytebase.v1.IndexMetadata
+	(*ExtensionMetadata)(nil),                  // 62: bytebase.v1.ExtensionMetadata
+	(*ForeignKeyMetadata)(nil),                 // 63: bytebase.v1.ForeignKeyMetadata
+	(*DatabaseSchema)(nil),                     // 64: bytebase.v1.DatabaseSchema
+	(*DatabaseSDLSchema)(nil),                  // 65: bytebase.v1.DatabaseSDLSchema
+	(*GetSchemaStringRequest)(nil),             // 66: bytebase.v1.GetSchemaStringRequest
+	(*GetSchemaStringResponse)(nil),            // 67: bytebase.v1.GetSchemaStringResponse
+	nil,                                        // 68: bytebase.v1.Database.LabelsEntry
+	(*fieldmaskpb.FieldMask)(nil),              // 69: google.protobuf.FieldMask
+	(State)(0),                                 // 70: bytebase.v1.State
+	(*timestamppb.Timestamp)(nil),              // 71: google.protobuf.Timestamp
+	(*InstanceResource)(nil),                   // 72: bytebase.v1.InstanceResource
 }
 var file_v1_database_service_proto_depIdxs = []int32{
-	28, // 0: bytebase.v1.BatchGetDatabasesResponse.databases:type_name -> bytebase.v1.Database
-	28, // 1: bytebase.v1.ListDatabasesResponse.databases:type_name -> bytebase.v1.Database
-	28, // 2: bytebase.v1.UpdateDatabaseRequest.database:type_name -> bytebase.v1.Database
-	67, // 3: bytebase.v1.UpdateDatabaseRequest.update_mask:type_name -> google.protobuf.FieldMask
-	14, // 4: bytebase.v1.BatchUpdateDatabasesRequest.requests:type_name -> bytebase.v1.UpdateDatabaseRequest
-	28, // 5: bytebase.v1.BatchUpdateDatabasesResponse.databases:type_name -> bytebase.v1.Database
-	1,  // 6: bytebase.v1.GetDatabaseSDLSchemaRequest.format:type_name -> bytebase.v1.GetDatabaseSDLSchemaRequest.SDLFormat
-	29, // 7: bytebase.v1.DiffMetadataRequest.target_metadata:type_name -> bytebase.v1.DatabaseMetadata
-	68, // 8: bytebase.v1.Database.state:type_name -> bytebase.v1.State
-	69, // 9: bytebase.v1.Database.successful_sync_time:type_name -> google.protobuf.Timestamp
-	66, // 10: bytebase.v1.Database.labels:type_name -> bytebase.v1.Database.LabelsEntry
-	70, // 11: bytebase.v1.Database.instance_resource:type_name -> bytebase.v1.InstanceResource
-	0,  // 12: bytebase.v1.Database.sync_status:type_name -> bytebase.v1.SyncStatus
-	30, // 13: bytebase.v1.DatabaseMetadata.schemas:type_name -> bytebase.v1.SchemaMetadata
-	60, // 14: bytebase.v1.DatabaseMetadata.extensions:type_name -> bytebase.v1.ExtensionMetadata
-	38, // 15: bytebase.v1.SchemaMetadata.tables:type_name -> bytebase.v1.TableMetadata
-	37, // 16: bytebase.v1.SchemaMetadata.external_tables:type_name -> bytebase.v1.ExternalTableMetadata
-	43, // 17: bytebase.v1.SchemaMetadata.views:type_name -> bytebase.v1.ViewMetadata
-	47, // 18: bytebase.v1.SchemaMetadata.functions:type_name -> bytebase.v1.FunctionMetadata
-	48, // 19: bytebase.v1.SchemaMetadata.procedures:type_name -> bytebase.v1.ProcedureMetadata
-	51, // 20: bytebase.v1.SchemaMetadata.streams:type_name -> bytebase.v1.StreamMetadata
-	50, // 21: bytebase.v1.SchemaMetadata.tasks:type_name -> bytebase.v1.TaskMetadata
-	45, // 22: bytebase.v1.SchemaMetadata.materialized_views:type_name -> bytebase.v1.MaterializedViewMetadata
-	49, // 23: bytebase.v1.SchemaMetadata.packages:type_name -> bytebase.v1.PackageMetadata
-	35, // 24: bytebase.v1.SchemaMetadata.sequences:type_name -> bytebase.v1.SequenceMetadata
-	34, // 25: bytebase.v1.SchemaMetadata.events:type_name -> bytebase.v1.EventMetadata
-	31, // 26: bytebase.v1.SchemaMetadata.enum_types:type_name -> bytebase.v1.EnumTypeMetadata
-	32, // 27: bytebase.v1.SchemaMetadata.composite_types:type_name -> bytebase.v1.CompositeTypeMetadata
-	33, // 28: bytebase.v1.CompositeTypeMetadata.attributes:type_name -> bytebase.v1.CompositeTypeAttribute
-	41, // 29: bytebase.v1.ExternalTableMetadata.columns:type_name -> bytebase.v1.ColumnMetadata
-	41, // 30: bytebase.v1.TableMetadata.columns:type_name -> bytebase.v1.ColumnMetadata
-	59, // 31: bytebase.v1.TableMetadata.indexes:type_name -> bytebase.v1.IndexMetadata
-	61, // 32: bytebase.v1.TableMetadata.foreign_keys:type_name -> bytebase.v1.ForeignKeyMetadata
-	40, // 33: bytebase.v1.TableMetadata.partitions:type_name -> bytebase.v1.TablePartitionMetadata
-	39, // 34: bytebase.v1.TableMetadata.check_constraints:type_name -> bytebase.v1.CheckConstraintMetadata
-	36, // 35: bytebase.v1.TableMetadata.triggers:type_name -> bytebase.v1.TriggerMetadata
-	2,  // 36: bytebase.v1.TablePartitionMetadata.type:type_name -> bytebase.v1.TablePartitionMetadata.Type
-	40, // 37: bytebase.v1.TablePartitionMetadata.subpartitions:type_name -> bytebase.v1.TablePartitionMetadata
-	59, // 38: bytebase.v1.TablePartitionMetadata.indexes:type_name -> bytebase.v1.IndexMetadata
-	39, // 39: bytebase.v1.TablePartitionMetadata.check_constraints:type_name -> bytebase.v1.CheckConstraintMetadata
-	42, // 40: bytebase.v1.ColumnMetadata.generation:type_name -> bytebase.v1.GenerationMetadata
-	3,  // 41: bytebase.v1.ColumnMetadata.identity_generation:type_name -> bytebase.v1.ColumnMetadata.IdentityGeneration
-	4,  // 42: bytebase.v1.GenerationMetadata.type:type_name -> bytebase.v1.GenerationMetadata.Type
-	44, // 43: bytebase.v1.ViewMetadata.dependency_columns:type_name -> bytebase.v1.DependencyColumn
-	41, // 44: bytebase.v1.ViewMetadata.columns:type_name -> bytebase.v1.ColumnMetadata
-	36, // 45: bytebase.v1.ViewMetadata.triggers:type_name -> bytebase.v1.TriggerMetadata
-	44, // 46: bytebase.v1.MaterializedViewMetadata.dependency_columns:type_name -> bytebase.v1.DependencyColumn
-	36, // 47: bytebase.v1.MaterializedViewMetadata.triggers:type_name -> bytebase.v1.TriggerMetadata
-	59, // 48: bytebase.v1.MaterializedViewMetadata.indexes:type_name -> bytebase.v1.IndexMetadata
-	46, // 49: bytebase.v1.FunctionMetadata.dependency_tables:type_name -> bytebase.v1.DependencyTable
-	5,  // 50: bytebase.v1.TaskMetadata.state:type_name -> bytebase.v1.TaskMetadata.State
-	6,  // 51: bytebase.v1.StreamMetadata.type:type_name -> bytebase.v1.StreamMetadata.Type
-	7,  // 52: bytebase.v1.StreamMetadata.mode:type_name -> bytebase.v1.StreamMetadata.Mode
-	53, // 53: bytebase.v1.SpatialIndexConfig.tessellation:type_name -> bytebase.v1.TessellationConfig
-	56, // 54: bytebase.v1.SpatialIndexConfig.storage:type_name -> bytebase.v1.StorageConfig
-	57, // 55: bytebase.v1.SpatialIndexConfig.dimensional:type_name -> bytebase.v1.DimensionalConfig
-	54, // 56: bytebase.v1.TessellationConfig.grid_levels:type_name -> bytebase.v1.GridLevel
-	55, // 57: bytebase.v1.TessellationConfig.bounding_box:type_name -> bytebase.v1.BoundingBox
-	58, // 58: bytebase.v1.DimensionalConfig.constraints:type_name -> bytebase.v1.DimensionConstraint
-	52, // 59: bytebase.v1.IndexMetadata.spatial_config:type_name -> bytebase.v1.SpatialIndexConfig
-	8,  // 60: bytebase.v1.GetSchemaStringRequest.type:type_name -> bytebase.v1.GetSchemaStringRequest.ObjectType
-	29, // 61: bytebase.v1.GetSchemaStringRequest.metadata:type_name -> bytebase.v1.DatabaseMetadata
-	9,  // 62: bytebase.v1.DatabaseService.GetDatabase:input_type -> bytebase.v1.GetDatabaseRequest
-	10, // 63: bytebase.v1.DatabaseService.BatchGetDatabases:input_type -> bytebase.v1.BatchGetDatabasesRequest
-	12, // 64: bytebase.v1.DatabaseService.ListDatabases:input_type -> bytebase.v1.ListDatabasesRequest
-	14, // 65: bytebase.v1.DatabaseService.UpdateDatabase:input_type -> bytebase.v1.UpdateDatabaseRequest
-	15, // 66: bytebase.v1.DatabaseService.BatchUpdateDatabases:input_type -> bytebase.v1.BatchUpdateDatabasesRequest
-	19, // 67: bytebase.v1.DatabaseService.SyncDatabase:input_type -> bytebase.v1.SyncDatabaseRequest
-	17, // 68: bytebase.v1.DatabaseService.BatchSyncDatabases:input_type -> bytebase.v1.BatchSyncDatabasesRequest
-	21, // 69: bytebase.v1.DatabaseService.GetDatabaseMetadata:input_type -> bytebase.v1.GetDatabaseMetadataRequest
-	22, // 70: bytebase.v1.DatabaseService.GetDatabaseSchema:input_type -> bytebase.v1.GetDatabaseSchemaRequest
-	23, // 71: bytebase.v1.DatabaseService.GetDatabaseSDLSchema:input_type -> bytebase.v1.GetDatabaseSDLSchemaRequest
-	24, // 72: bytebase.v1.DatabaseService.DiffSchema:input_type -> bytebase.v1.DiffSchemaRequest
-	26, // 73: bytebase.v1.DatabaseService.DiffMetadata:input_type -> bytebase.v1.DiffMetadataRequest
-	64, // 74: bytebase.v1.DatabaseService.GetSchemaString:input_type -> bytebase.v1.GetSchemaStringRequest
-	28, // 75: bytebase.v1.DatabaseService.GetDatabase:output_type -> bytebase.v1.Database
-	11, // 76: bytebase.v1.DatabaseService.BatchGetDatabases:output_type -> bytebase.v1.BatchGetDatabasesResponse
-	13, // 77: bytebase.v1.DatabaseService.ListDatabases:output_type -> bytebase.v1.ListDatabasesResponse
-	28, // 78: bytebase.v1.DatabaseService.UpdateDatabase:output_type -> bytebase.v1.Database
-	16, // 79: bytebase.v1.DatabaseService.BatchUpdateDatabases:output_type -> bytebase.v1.BatchUpdateDatabasesResponse
-	20, // 80: bytebase.v1.DatabaseService.SyncDatabase:output_type -> bytebase.v1.SyncDatabaseResponse
-	18, // 81: bytebase.v1.DatabaseService.BatchSyncDatabases:output_type -> bytebase.v1.BatchSyncDatabasesResponse
-	29, // 82: bytebase.v1.DatabaseService.GetDatabaseMetadata:output_type -> bytebase.v1.DatabaseMetadata
-	62, // 83: bytebase.v1.DatabaseService.GetDatabaseSchema:output_type -> bytebase.v1.DatabaseSchema
-	63, // 84: bytebase.v1.DatabaseService.GetDatabaseSDLSchema:output_type -> bytebase.v1.DatabaseSDLSchema
-	25, // 85: bytebase.v1.DatabaseService.DiffSchema:output_type -> bytebase.v1.DiffSchemaResponse
-	27, // 86: bytebase.v1.DatabaseService.DiffMetadata:output_type -> bytebase.v1.DiffMetadataResponse
-	65, // 87: bytebase.v1.DatabaseService.GetSchemaString:output_type -> bytebase.v1.GetSchemaStringResponse
-	75, // [75:88] is the sub-list for method output_type
-	62, // [62:75] is the sub-list for method input_type
-	62, // [62:62] is the sub-list for extension type_name
-	62, // [62:62] is the sub-list for extension extendee
-	0,  // [0:62] is the sub-list for field type_name
+	30, // 0: bytebase.v1.BatchGetDatabasesResponse.databases:type_name -> bytebase.v1.Database
+	30, // 1: bytebase.v1.ListDatabasesResponse.databases:type_name -> bytebase.v1.Database
+	30, // 2: bytebase.v1.SearchDatabasesResponse.databases:type_name -> bytebase.v1.Database
+	30, // 3: bytebase.v1.UpdateDatabaseRequest.database:type_name -> bytebase.v1.Database
+	69, // 4: bytebase.v1.UpdateDatabaseRequest.update_mask:type_name -> google.protobuf.FieldMask
+	16, // 5: bytebase.v1.BatchUpdateDatabasesRequest.requests:type_name -> bytebase.v1.UpdateDatabaseRequest
+	30, // 6: bytebase.v1.BatchUpdateDatabasesResponse.databases:type_name -> bytebase.v1.Database
+	1,  // 7: bytebase.v1.GetDatabaseSDLSchemaRequest.format:type_name -> bytebase.v1.GetDatabaseSDLSchemaRequest.SDLFormat
+	31, // 8: bytebase.v1.DiffMetadataRequest.target_metadata:type_name -> bytebase.v1.DatabaseMetadata
+	70, // 9: bytebase.v1.Database.state:type_name -> bytebase.v1.State
+	71, // 10: bytebase.v1.Database.successful_sync_time:type_name -> google.protobuf.Timestamp
+	68, // 11: bytebase.v1.Database.labels:type_name -> bytebase.v1.Database.LabelsEntry
+	72, // 12: bytebase.v1.Database.instance_resource:type_name -> bytebase.v1.InstanceResource
+	0,  // 13: bytebase.v1.Database.sync_status:type_name -> bytebase.v1.SyncStatus
+	32, // 14: bytebase.v1.DatabaseMetadata.schemas:type_name -> bytebase.v1.SchemaMetadata
+	62, // 15: bytebase.v1.DatabaseMetadata.extensions:type_name -> bytebase.v1.ExtensionMetadata
+	40, // 16: bytebase.v1.SchemaMetadata.tables:type_name -> bytebase.v1.TableMetadata
+	39, // 17: bytebase.v1.SchemaMetadata.external_tables:type_name -> bytebase.v1.ExternalTableMetadata
+	45, // 18: bytebase.v1.SchemaMetadata.views:type_name -> bytebase.v1.ViewMetadata
+	49, // 19: bytebase.v1.SchemaMetadata.functions:type_name -> bytebase.v1.FunctionMetadata
+	50, // 20: bytebase.v1.SchemaMetadata.procedures:type_name -> bytebase.v1.ProcedureMetadata
+	53, // 21: bytebase.v1.SchemaMetadata.streams:type_name -> bytebase.v1.StreamMetadata
+	52, // 22: bytebase.v1.SchemaMetadata.tasks:type_name -> bytebase.v1.TaskMetadata
+	47, // 23: bytebase.v1.SchemaMetadata.materialized_views:type_name -> bytebase.v1.MaterializedViewMetadata
+	51, // 24: bytebase.v1.SchemaMetadata.packages:type_name -> bytebase.v1.PackageMetadata
+	37, // 25: bytebase.v1.SchemaMetadata.sequences:type_name -> bytebase.v1.SequenceMetadata
+	36, // 26: bytebase.v1.SchemaMetadata.events:type_name -> bytebase.v1.EventMetadata
+	33, // 27: bytebase.v1.SchemaMetadata.enum_types:type_name -> bytebase.v1.EnumTypeMetadata
+	34, // 28: bytebase.v1.SchemaMetadata.composite_types:type_name -> bytebase.v1.CompositeTypeMetadata
+	35, // 29: bytebase.v1.CompositeTypeMetadata.attributes:type_name -> bytebase.v1.CompositeTypeAttribute
+	43, // 30: bytebase.v1.ExternalTableMetadata.columns:type_name -> bytebase.v1.ColumnMetadata
+	43, // 31: bytebase.v1.TableMetadata.columns:type_name -> bytebase.v1.ColumnMetadata
+	61, // 32: bytebase.v1.TableMetadata.indexes:type_name -> bytebase.v1.IndexMetadata
+	63, // 33: bytebase.v1.TableMetadata.foreign_keys:type_name -> bytebase.v1.ForeignKeyMetadata
+	42, // 34: bytebase.v1.TableMetadata.partitions:type_name -> bytebase.v1.TablePartitionMetadata
+	41, // 35: bytebase.v1.TableMetadata.check_constraints:type_name -> bytebase.v1.CheckConstraintMetadata
+	38, // 36: bytebase.v1.TableMetadata.triggers:type_name -> bytebase.v1.TriggerMetadata
+	2,  // 37: bytebase.v1.TablePartitionMetadata.type:type_name -> bytebase.v1.TablePartitionMetadata.Type
+	42, // 38: bytebase.v1.TablePartitionMetadata.subpartitions:type_name -> bytebase.v1.TablePartitionMetadata
+	61, // 39: bytebase.v1.TablePartitionMetadata.indexes:type_name -> bytebase.v1.IndexMetadata
+	41, // 40: bytebase.v1.TablePartitionMetadata.check_constraints:type_name -> bytebase.v1.CheckConstraintMetadata
+	44, // 41: bytebase.v1.ColumnMetadata.generation:type_name -> bytebase.v1.GenerationMetadata
+	3,  // 42: bytebase.v1.ColumnMetadata.identity_generation:type_name -> bytebase.v1.ColumnMetadata.IdentityGeneration
+	4,  // 43: bytebase.v1.GenerationMetadata.type:type_name -> bytebase.v1.GenerationMetadata.Type
+	46, // 44: bytebase.v1.ViewMetadata.dependency_columns:type_name -> bytebase.v1.DependencyColumn
+	43, // 45: bytebase.v1.ViewMetadata.columns:type_name -> bytebase.v1.ColumnMetadata
+	38, // 46: bytebase.v1.ViewMetadata.triggers:type_name -> bytebase.v1.TriggerMetadata
+	46, // 47: bytebase.v1.MaterializedViewMetadata.dependency_columns:type_name -> bytebase.v1.DependencyColumn
+	38, // 48: bytebase.v1.MaterializedViewMetadata.triggers:type_name -> bytebase.v1.TriggerMetadata
+	61, // 49: bytebase.v1.MaterializedViewMetadata.indexes:type_name -> bytebase.v1.IndexMetadata
+	48, // 50: bytebase.v1.FunctionMetadata.dependency_tables:type_name -> bytebase.v1.DependencyTable
+	5,  // 51: bytebase.v1.TaskMetadata.state:type_name -> bytebase.v1.TaskMetadata.State
+	6,  // 52: bytebase.v1.StreamMetadata.type:type_name -> bytebase.v1.StreamMetadata.Type
+	7,  // 53: bytebase.v1.StreamMetadata.mode:type_name -> bytebase.v1.StreamMetadata.Mode
+	55, // 54: bytebase.v1.SpatialIndexConfig.tessellation:type_name -> bytebase.v1.TessellationConfig
+	58, // 55: bytebase.v1.SpatialIndexConfig.storage:type_name -> bytebase.v1.StorageConfig
+	59, // 56: bytebase.v1.SpatialIndexConfig.dimensional:type_name -> bytebase.v1.DimensionalConfig
+	56, // 57: bytebase.v1.TessellationConfig.grid_levels:type_name -> bytebase.v1.GridLevel
+	57, // 58: bytebase.v1.TessellationConfig.bounding_box:type_name -> bytebase.v1.BoundingBox
+	60, // 59: bytebase.v1.DimensionalConfig.constraints:type_name -> bytebase.v1.DimensionConstraint
+	54, // 60: bytebase.v1.IndexMetadata.spatial_config:type_name -> bytebase.v1.SpatialIndexConfig
+	8,  // 61: bytebase.v1.GetSchemaStringRequest.type:type_name -> bytebase.v1.GetSchemaStringRequest.ObjectType
+	31, // 62: bytebase.v1.GetSchemaStringRequest.metadata:type_name -> bytebase.v1.DatabaseMetadata
+	9,  // 63: bytebase.v1.DatabaseService.GetDatabase:input_type -> bytebase.v1.GetDatabaseRequest
+	10, // 64: bytebase.v1.DatabaseService.BatchGetDatabases:input_type -> bytebase.v1.BatchGetDatabasesRequest
+	12, // 65: bytebase.v1.DatabaseService.ListDatabases:input_type -> bytebase.v1.ListDatabasesRequest
+	14, // 66: bytebase.v1.DatabaseService.SearchDatabases:input_type -> bytebase.v1.SearchDatabasesRequest
+	16, // 67: bytebase.v1.DatabaseService.UpdateDatabase:input_type -> bytebase.v1.UpdateDatabaseRequest
+	17, // 68: bytebase.v1.DatabaseService.BatchUpdateDatabases:input_type -> bytebase.v1.BatchUpdateDatabasesRequest
+	21, // 69: bytebase.v1.DatabaseService.SyncDatabase:input_type -> bytebase.v1.SyncDatabaseRequest
+	19, // 70: bytebase.v1.DatabaseService.BatchSyncDatabases:input_type -> bytebase.v1.BatchSyncDatabasesRequest
+	23, // 71: bytebase.v1.DatabaseService.GetDatabaseMetadata:input_type -> bytebase.v1.GetDatabaseMetadataRequest
+	24, // 72: bytebase.v1.DatabaseService.GetDatabaseSchema:input_type -> bytebase.v1.GetDatabaseSchemaRequest
+	25, // 73: bytebase.v1.DatabaseService.GetDatabaseSDLSchema:input_type -> bytebase.v1.GetDatabaseSDLSchemaRequest
+	26, // 74: bytebase.v1.DatabaseService.DiffSchema:input_type -> bytebase.v1.DiffSchemaRequest
+	28, // 75: bytebase.v1.DatabaseService.DiffMetadata:input_type -> bytebase.v1.DiffMetadataRequest
+	66, // 76: bytebase.v1.DatabaseService.GetSchemaString:input_type -> bytebase.v1.GetSchemaStringRequest
+	30, // 77: bytebase.v1.DatabaseService.GetDatabase:output_type -> bytebase.v1.Database
+	11, // 78: bytebase.v1.DatabaseService.BatchGetDatabases:output_type -> bytebase.v1.BatchGetDatabasesResponse
+	13, // 79: bytebase.v1.DatabaseService.ListDatabases:output_type -> bytebase.v1.ListDatabasesResponse
+	15, // 80: bytebase.v1.DatabaseService.SearchDatabases:output_type -> bytebase.v1.SearchDatabasesResponse
+	30, // 81: bytebase.v1.DatabaseService.UpdateDatabase:output_type -> bytebase.v1.Database
+	18, // 82: bytebase.v1.DatabaseService.BatchUpdateDatabases:output_type -> bytebase.v1.BatchUpdateDatabasesResponse
+	22, // 83: bytebase.v1.DatabaseService.SyncDatabase:output_type -> bytebase.v1.SyncDatabaseResponse
+	20, // 84: bytebase.v1.DatabaseService.BatchSyncDatabases:output_type -> bytebase.v1.BatchSyncDatabasesResponse
+	31, // 85: bytebase.v1.DatabaseService.GetDatabaseMetadata:output_type -> bytebase.v1.DatabaseMetadata
+	64, // 86: bytebase.v1.DatabaseService.GetDatabaseSchema:output_type -> bytebase.v1.DatabaseSchema
+	65, // 87: bytebase.v1.DatabaseService.GetDatabaseSDLSchema:output_type -> bytebase.v1.DatabaseSDLSchema
+	27, // 88: bytebase.v1.DatabaseService.DiffSchema:output_type -> bytebase.v1.DiffSchemaResponse
+	29, // 89: bytebase.v1.DatabaseService.DiffMetadata:output_type -> bytebase.v1.DiffMetadataResponse
+	67, // 90: bytebase.v1.DatabaseService.GetSchemaString:output_type -> bytebase.v1.GetSchemaStringResponse
+	77, // [77:91] is the sub-list for method output_type
+	63, // [63:77] is the sub-list for method input_type
+	63, // [63:63] is the sub-list for extension type_name
+	63, // [63:63] is the sub-list for extension extendee
+	0,  // [0:63] is the sub-list for field type_name
 }
 
 func init() { file_v1_database_service_proto_init() }
@@ -6157,19 +6301,19 @@ func file_v1_database_service_proto_init() {
 	file_v1_annotation_proto_init()
 	file_v1_common_proto_init()
 	file_v1_instance_service_proto_init()
-	file_v1_database_service_proto_msgTypes[15].OneofWrappers = []any{
+	file_v1_database_service_proto_msgTypes[17].OneofWrappers = []any{
 		(*DiffSchemaRequest_Schema)(nil),
 		(*DiffSchemaRequest_Changelog)(nil),
 	}
-	file_v1_database_service_proto_msgTypes[19].OneofWrappers = []any{}
-	file_v1_database_service_proto_msgTypes[32].OneofWrappers = []any{}
+	file_v1_database_service_proto_msgTypes[21].OneofWrappers = []any{}
+	file_v1_database_service_proto_msgTypes[34].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_database_service_proto_rawDesc), len(file_v1_database_service_proto_rawDesc)),
 			NumEnums:      9,
-			NumMessages:   58,
+			NumMessages:   60,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

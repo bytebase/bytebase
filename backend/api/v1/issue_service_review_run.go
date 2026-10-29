@@ -169,31 +169,52 @@ func checkReviewable(ctx context.Context, stores *store.Store, issue *store.Issu
 	return nil
 }
 
-// startRuleReview starts the standard rule review of the issue where SQL
-// Review V2 is on, at the points the plan checks run. It never fails its
-// caller: an issue the review does not apply to is skipped, and a failure is
-// logged.
-func startRuleReview(ctx context.Context, profile *config.Profile, stores *store.Store, b *bus.Bus, issue *store.IssueMessage) {
+// startReviews starts the issue's reviews of the given types where SQL Review
+// V2 is on, at the points the plan checks run. The AI review starts only while
+// the workspace allows it, and only the rule review's run holds the rollout.
+// It never fails its caller: an issue the reviews do not apply to is skipped,
+// and a failure is logged.
+func startReviews(ctx context.Context, profile *config.Profile, stores *store.Store, b *bus.Bus, issue *store.IssueMessage, reviewTypes ...string) {
 	if !profile.SQLReviewV2 || issue == nil || issue.Type != storepb.Issue_DATABASE_CHANGE {
 		return
 	}
 	if err := checkReviewable(ctx, stores, issue); err != nil {
 		if connect.CodeOf(err) != connect.CodeFailedPrecondition {
-			slog.Warn("failed to start the standard rule review",
+			slog.Warn("failed to start the review",
 				slog.String("project", issue.ProjectID),
 				slog.Int64("issue_id", issue.UID),
 				log.BBError(err))
 		}
 		return
 	}
-	if _, err := stores.CreateReviewRun(ctx, issue.ProjectID, issue.UID, store.ReviewRunTypeRule); err != nil {
-		slog.Error("failed to start the standard rule review",
-			slog.String("project", issue.ProjectID),
-			slog.Int64("issue_id", issue.UID),
-			log.BBError(err))
-		return
+	started := false
+	for _, reviewType := range reviewTypes {
+		if reviewType == store.ReviewRunTypeAI {
+			aiSetting, err := stores.GetAISettingUncached(ctx, common.GetWorkspaceIDFromContext(ctx))
+			if err != nil {
+				slog.Warn("failed to get the AI setting to start the AI review",
+					slog.String("project", issue.ProjectID),
+					slog.Int64("issue_id", issue.UID),
+					log.BBError(err))
+				continue
+			}
+			if aireview.CheckSetting(aiSetting) != nil {
+				continue
+			}
+		}
+		if _, err := stores.CreateReviewRun(ctx, issue.ProjectID, issue.UID, reviewType); err != nil {
+			slog.Error("failed to start the review",
+				slog.String("project", issue.ProjectID),
+				slog.Int64("issue_id", issue.UID),
+				slog.String("type", reviewType),
+				log.BBError(err))
+			continue
+		}
+		started = true
 	}
-	b.ReviewRunTickleChan <- 0
+	if started {
+		b.ReviewRunTickleChan <- 0
+	}
 }
 
 // requestRolloutCheck asks the rollout creator to look at the issue's plan

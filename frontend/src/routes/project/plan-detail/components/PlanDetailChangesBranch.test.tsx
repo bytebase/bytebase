@@ -46,6 +46,7 @@ const mocks = vi.hoisted(() => ({
   localSheetListeners: new Set<() => void>(),
   patchState: vi.fn(),
   routerPush: vi.fn(),
+  setDisplayedSpecId: vi.fn(),
   databaseStore: {
     batchGetOrFetchDatabases: vi.fn(async () => []),
     fetchDatabases: vi.fn(),
@@ -281,7 +282,11 @@ vi.mock("@/stores", () => ({
 
 vi.mock("../shared/stores/usePlanDetailStore", () => ({
   usePlanDetailStore: (selector: (state: unknown) => unknown) =>
-    selector({ placements: new Map(), placementTargets: new Map() }),
+    selector({
+      placements: new Map(),
+      placementTargets: new Map(),
+      setDisplayedSpecId: mocks.setDisplayedSpecId,
+    }),
 }));
 
 // The migrated component reads resource state via imperative
@@ -725,6 +730,29 @@ async function flush() {
 }
 
 describe("PlanDetailChangesBranch", () => {
+  it("publishes the change on screen, which is the first when none is selected", async () => {
+    const page = buildPageState();
+    page.plan.specs = [
+      { id: "spec-1", config: { case: "changeDatabaseConfig", value: { targets: [] } } },
+      { id: "spec-2", config: { case: "changeDatabaseConfig", value: { targets: [] } } },
+    ] as unknown as PlanDetailPageState["plan"]["specs"];
+    const render = (selectedSpecId: string) =>
+      act(() => {
+        root.render(
+          <PlanDetailProvider value={page}>
+            <PlanDetailChangesBranch selectedSpecId={selectedSpecId} onSelectedSpecIdChange={vi.fn()} />
+          </PlanDetailProvider>
+        );
+      });
+
+    render("");
+    expect(mocks.setDisplayedSpecId).toHaveBeenLastCalledWith("spec-1");
+    render("spec-2");
+    expect(mocks.setDisplayedSpecId).toHaveBeenLastCalledWith("spec-2");
+    act(() => root.render(null));
+    expect(mocks.setDisplayedSpecId).toHaveBeenLastCalledWith(undefined);
+  });
+
   it("shows a count of unresolved threads on the tabs of the changes they anchor to", async () => {
     const page = buildPageState();
     page.issue = { name: "projects/foo/issues/1" } as PlanDetailPageState["issue"];

@@ -76,6 +76,7 @@ type FindDatabaseMessage struct {
 	// Empty string skips filtering (for cross-workspace queries like runners).
 	Workspace              string
 	ProjectID              *string
+	ProjectIDs             *[]string
 	EffectiveEnvironmentID *string
 	InstanceID             *string
 	DatabaseName           *string
@@ -151,6 +152,11 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 	}
 	if v := find.ProjectID; v != nil {
 		where.And("db.project = ?", *v)
+	}
+	if v := find.ProjectIDs; v != nil {
+		// Applied even when empty: an empty set must match no database, since
+		// it is how a caller who can read no project is listed.
+		where.And("db.project = ANY(?)", *v)
 	}
 	if v := find.EffectiveEnvironmentID; v != nil {
 		where.And(`COALESCE(

@@ -39,4 +39,21 @@ describe("searchApi", () => {
       "projects/{project}/instances/{instance}: list databases in a project instance"
     );
   });
+
+  test("shows declared IAM permission without claiming current access", async () => {
+    const result = await searchApi({
+      operationId: "ProjectService/UpdateProject",
+    });
+    expect(result).toContain("Declared IAM permission: bb.projects.update");
+    expect(result).toContain(
+      "access is checked against its resources before execution"
+    );
+  });
+
+  test("labels custom authorization as request-dependent", async () => {
+    const result = await searchApi({
+      operationId: "DatabaseService/ListDatabases",
+    });
+    expect(result).toContain("Authorization: custom, request-dependent");
+  });
 });

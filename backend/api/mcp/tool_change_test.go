@@ -108,7 +108,8 @@ func (m *changeMock) handler() http.Handler {
 			w.WriteHeader(m.rolloutStatus)
 			_ = json.NewEncoder(w).Encode(m.rolloutResponse)
 
-		case strings.Contains(r.URL.Path, "DatabaseService/ListDatabases"):
+		case strings.Contains(r.URL.Path, "DatabaseService/ListDatabases"),
+			strings.Contains(r.URL.Path, "DatabaseService/SearchDatabases"):
 			listHandler.ServeHTTP(w, r)
 
 		default:

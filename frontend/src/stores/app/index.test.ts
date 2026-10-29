@@ -2973,11 +2973,38 @@ describe("useAppStore", () => {
 
     expect(mocks.getProjectIamPolicy).toHaveBeenCalledTimes(1);
     expect(
+      mocks.getProjectIamPolicy.mock.calls[0][1]?.contextValues?.get(
+        silentContextKey
+      ) ?? false
+    ).toBe(false);
+    expect(
       store.getState().hasProjectPermission(projectA, "bb.projects.update")
     ).toBe(true);
     expect(
       store.getState().hasProjectPermission(projectA, "bb.projects.delete")
     ).toBe(false);
+  });
+
+  test("loads project IAM policy silently when requested", async () => {
+    mocks.getCurrentUser.mockResolvedValue(user);
+    mocks.getActuatorInfo.mockResolvedValue({
+      workspace: "workspaces/default",
+    });
+    mocks.getWorkspace.mockResolvedValue({ name: "workspaces/default" });
+    mocks.listRoles.mockResolvedValue({ roles: [] });
+    mocks.getIamPolicy.mockResolvedValue(createProto(IamPolicySchema, {}));
+    mocks.getProjectIamPolicy.mockResolvedValue(
+      createProto(IamPolicySchema, {})
+    );
+    const store = createAppStore();
+
+    await store.getState().loadProjectIamPolicy(projectA.name, true);
+
+    expect(
+      mocks.getProjectIamPolicy.mock.calls[0][1]?.contextValues.get(
+        silentContextKey
+      )
+    ).toBe(true);
   });
 
   test("caches instances by resource name", async () => {

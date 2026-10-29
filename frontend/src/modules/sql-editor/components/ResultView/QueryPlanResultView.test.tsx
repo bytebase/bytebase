@@ -35,13 +35,7 @@ vi.mock("@/apps/explain-visualizer/QueryPlanViewer", () => ({
   formatPlanSource: (source: string) => `formatted:${source}`,
 }));
 
-vi.mock("@/components/ui/copy-button", () => ({
-  CopyButton: ({ content }: { content: string }) => (
-    <button type="button" data-content={content}>
-      copy
-    </button>
-  ),
-}));
+const COPY_PLAN = "sql-editor.query-plan-viewer.copy.plan";
 
 describe("QueryPlanResultView", () => {
   beforeEach(() => vi.clearAllMocks());
@@ -122,6 +116,10 @@ describe("QueryPlanResultView", () => {
     );
     expect(screen.queryAllByRole("tab")).toHaveLength(1);
     expect(screen.getByText("formatted:text plan")).toBeInTheDocument();
+    // The same labelled copy control as the visualizer's Text tab.
+    expect(screen.getByTestId("plan-copy-button")).toHaveAccessibleName(
+      COPY_PLAN
+    );
   });
 
   test("hides copying for a protected text plan", () => {
@@ -129,7 +127,7 @@ describe("QueryPlanResultView", () => {
       <QueryPlanResultView rawPlan="text plan" disallowCopyingData />
     );
 
-    expect(screen.queryByRole("button", { name: "copy" })).toBeNull();
+    expect(screen.queryByTestId("plan-copy-button")).toBeNull();
     expect(screen.getByText("formatted:text plan").parentElement).toHaveClass(
       "select-none"
     );
@@ -150,6 +148,9 @@ describe("QueryPlanResultView", () => {
       )
     );
     expect(screen.getByText("formatted:text plan")).toBeInTheDocument();
+    expect(screen.getByTestId("plan-copy-button")).toHaveAccessibleName(
+      COPY_PLAN
+    );
   });
 
   test("loads a text plan on demand when no picture is available", async () => {
