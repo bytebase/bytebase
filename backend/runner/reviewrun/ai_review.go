@@ -92,39 +92,59 @@ type aiReviewOccurrence struct {
 // holds one kind of fix. Its comment lists every database it applies to and
 // carries the highest priority among them.
 func aiReviewComments(projectID string, issueUID int64, results []*aiReviewResult, rules []aireview.Rule) []*store.IssueCommentMessage {
-	type key struct {
+	type ruleKey struct {
 		specID string
 		line   int
 		rule   string
-		// repeat tells apart the findings of one database that cite the same
-		// rule on the same line, which the reviewer accepts only when the
-		// model keeps them after a correction.
+	}
+	type key struct {
+		ruleKey
+		// target and repeat keep apart the findings of a database that cites
+		// one rule on one line more than once, which the reviewer accepts
+		// only when the model keeps them after a correction. Nothing tells
+		// which of them another database's finding matches, so they merge
+		// with none.
+		target string
 		repeat int
 	}
 	type problem struct {
 		check       *plancheck.CheckTarget
 		line        int
 		rule        string
+		flagged     map[string]bool
 		occurrences []aiReviewOccurrence
 	}
 	problems := make(map[key]*problem)
 	var ordered []*problem
 	reviewed := make(map[string][]string)
+	// flagged holds the databases that cite a rule on a line, so that none
+	// of them reads as not flagged on a thread of that rule and line.
+	flagged := make(map[ruleKey]map[string]bool)
 	for _, result := range results {
 		if result == nil {
 			continue
 		}
 		check := result.Unit.Check
 		reviewed[check.SpecID] = append(reviewed[check.SpecID], check.Target)
-		repeats := make(map[key]int)
+		counts := make(map[ruleKey]int)
 		for _, finding := range result.Findings {
-			k := key{specID: check.SpecID, line: finding.Line, rule: finding.Rule}
-			repeat := repeats[k]
-			repeats[k]++
-			k.repeat = repeat
+			counts[ruleKey{specID: check.SpecID, line: finding.Line, rule: finding.Rule}]++
+		}
+		repeats := make(map[ruleKey]int)
+		for _, finding := range result.Findings {
+			rk := ruleKey{specID: check.SpecID, line: finding.Line, rule: finding.Rule}
+			if flagged[rk] == nil {
+				flagged[rk] = make(map[string]bool)
+			}
+			flagged[rk][check.Target] = true
+			k := key{ruleKey: rk}
+			if counts[rk] > 1 {
+				k.target, k.repeat = check.Target, repeats[rk]
+				repeats[rk]++
+			}
 			p, ok := problems[k]
 			if !ok {
-				p = &problem{check: check, line: finding.Line, rule: finding.Rule}
+				p = &problem{check: check, line: finding.Line, rule: finding.Rule, flagged: flagged[rk]}
 				problems[k] = p
 				ordered = append(ordered, p)
 			}
@@ -159,7 +179,7 @@ func aiReviewComments(projectID string, issueUID int64, results []*aiReviewResul
 			ProjectID: projectID,
 			IssueUID:  issueUID,
 			Payload: &storepb.IssueCommentPayload{
-				Comment: aiReviewCommentText(p.occurrences, ruleText, reviewed[p.check.SpecID]),
+				Comment: aiReviewCommentText(p.occurrences, ruleText, reviewed[p.check.SpecID], p.flagged),
 				StatementAnchor: &storepb.IssueCommentPayload_StatementAnchor{
 					SpecId:        p.check.SpecID,
 					SheetSha256:   p.check.SheetSha256,
@@ -192,9 +212,9 @@ const (
 // other databases' facts are alike, and listing them would grow the comment
 // with every database. Beyond that it says only what changes the outcome:
 // the databases at another severity, and the reviewed databases that did not
-// report the problem. The first line stays the plain title, which the
-// frontend shows as the finding's name.
-func aiReviewCommentText(occurrences []aiReviewOccurrence, ruleText string, reviewed []string) string {
+// cite the rule on the line, which flagged holds. The first line stays the
+// plain title, which the frontend shows as the finding's name.
+func aiReviewCommentText(occurrences []aiReviewOccurrence, ruleText string, reviewed []string, flagged map[string]bool) string {
 	lead := occurrences[0]
 	labels := databaseLabels(reviewed)
 	var b strings.Builder
@@ -214,7 +234,7 @@ func aiReviewCommentText(occurrences []aiReviewOccurrence, ruleText string, revi
 	}
 	var unflagged []string
 	for _, target := range reviewed {
-		if !slices.ContainsFunc(occurrences, func(o aiReviewOccurrence) bool { return o.Target == target }) {
+		if !flagged[target] {
 			unflagged = append(unflagged, target)
 		}
 	}

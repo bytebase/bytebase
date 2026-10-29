@@ -160,16 +160,24 @@ CREATE INDEX blocks writes to orders until the index is built.
 func TestAIReviewCommentsKeepARepeatedRuleApart(t *testing.T) {
 	t.Parallel()
 
-	fails := func(evidence string) aireview.Finding {
-		return aireview.Finding{Title: "t", Severity: aireview.SeverityP0, Line: 2, Rule: "fails", Reason: "r", Evidence: []string{evidence}, Fix: "f"}
+	violates := func(fix string) aireview.Finding {
+		return aireview.Finding{Title: "t", Severity: aireview.SeverityP0, Line: 2, Rule: "violates-constraint", Reason: "r", Evidence: []string{"e"}, Fix: fix}
 	}
 	comments := aiReviewComments("p", 7, []*aiReviewResult{
-		aiReviewResultOn("instances/i/databases/a", fails("invoices references orders."), fails("refunds references orders.")),
-		aiReviewResultOn("instances/i/databases/b", fails("invoices references orders.")),
+		aiReviewResultOn("instances/i/databases/a", violates("Delete the invoices first."), violates("Delete the refunds first.")),
+		aiReviewResultOn("instances/i/databases/b", violates("Delete the refunds first.")),
+		aiReviewResultOn("instances/i/databases/c", violates("Delete the refunds first.")),
+		aiReviewResultOn("instances/i/databases/d"),
 	}, aireview.Rules("", ""))
-	require.Len(t, comments, 2, "one database's two findings never merge with each other")
-	require.Equal(t, []string{"instances/i/databases/a", "instances/i/databases/b"}, comments[0].Payload.ReviewMetadata.Targets)
+	require.Len(t, comments, 3, "a database that cites the rule twice on the line merges with no other database, whatever the order of its findings")
+	require.Equal(t, []string{"instances/i/databases/a"}, comments[0].Payload.ReviewMetadata.Targets)
+	require.Contains(t, comments[0].Payload.Comment, "**Fix:** Delete the invoices first.")
 	require.Equal(t, []string{"instances/i/databases/a"}, comments[1].Payload.ReviewMetadata.Targets)
+	require.Contains(t, comments[1].Payload.Comment, "**Fix:** Delete the refunds first.")
+	require.Equal(t, []string{"instances/i/databases/b", "instances/i/databases/c"}, comments[2].Payload.ReviewMetadata.Targets)
+	for _, comment := range comments {
+		require.Contains(t, comment.Payload.Comment, "**Not flagged on:** `d`.", "a database that cites the rule on the line is never listed as not flagged")
+	}
 }
 
 func TestAIReviewCommentsKeepFailureCausesApart(t *testing.T) {
@@ -202,7 +210,15 @@ func TestAIReviewCommentTextCountsManyDatabases(t *testing.T) {
 	for _, name := range []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m"} {
 		reviewed = append(reviewed, target(name))
 	}
-	require.Equal(t, "t\n\nr\n\n**Evidence** (`a`):\n\n- e\n\n**Severity:** P0 on `a`; P1 on 6 databases.\n\n**Not flagged on:** 6 databases.\n\n**Fix:** f\n\n**Rule:** rule text", aiReviewCommentText(occurrences, "rule text", reviewed))
+	require.Equal(t, "t\n\nr\n\n**Evidence** (`a`):\n\n- e\n\n**Severity:** P0 on `a`; P1 on 6 databases.\n\n**Not flagged on:** 6 databases.\n\n**Fix:** f\n\n**Rule:** rule text", aiReviewCommentText(occurrences, "rule text", reviewed, flaggedSet(occurrences)))
+}
+
+func flaggedSet(occurrences []aiReviewOccurrence) map[string]bool {
+	flagged := make(map[string]bool)
+	for _, occurrence := range occurrences {
+		flagged[occurrence.Target] = true
+	}
+	return flagged
 }
 
 func TestCodeSpan(t *testing.T) {
