@@ -913,7 +913,7 @@ func TestQueryDatabase_FailureReportsWhatRan(t *testing.T) {
 			},
 			wantFailed:     "SELECT first_name FROM employee;",
 			wantRan:        []string{"INSERT INTO t VALUES (1);"},
-			wantSuggestion: wantGrant,
+			wantSuggestion: ranAdvice + "; " + wantGrant,
 		},
 		"the access check refused a write after a statement ran": {
 			statement: "INSERT INTO t VALUES (1); DROP TABLE t;",

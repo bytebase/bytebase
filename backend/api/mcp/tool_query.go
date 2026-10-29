@@ -319,8 +319,8 @@ type queryError struct {
 	Code       string `json:"code"`
 	Message    string `json:"message"`
 	Suggestion string `json:"suggestion,omitempty"`
-	// FailedStatement is the statement, or on SQL Server the whole batch,
-	// that Bytebase reported as failed.
+	// FailedStatement is what Bytebase reported as failed: one statement, or
+	// the whole request where Query runs it as one unit, as on SQL Server.
 	FailedStatement string   `json:"failedStatement,omitempty"`
 	Ran             []string `json:"ran,omitempty"`
 }
@@ -351,17 +351,20 @@ func queryFailure(results []queryResult, failed int, database string) *queryErro
 		}
 	}
 	denied := results[failed].PermissionDenied
-	switch {
-	case denied != nil && grantLifts(denied.RequiredPermissions) && withinDatabase(denied.Resources, database):
-		qe.Suggestion = grantAdvice
-	case len(qe.Ran) > 0:
-		qe.Suggestion = "Bytebase ran the statements in ran, in a session that has since closed; check the data before you retry"
-	case denied == nil:
-		qe.Suggestion = whatRanUnknown
-	default:
-		// MCP sessions cannot file role requests, so a denial no grant lifts
-		// gets no advice of its own.
+	var advice []string
+	if len(qe.Ran) > 0 {
+		advice = append(advice, "Bytebase ran the statements in ran, in a session that has since closed; check the data before you retry")
+	} else if denied == nil {
+		// The access check refuses a statement before it runs, so a denial
+		// with nothing in ran changed nothing.
+		advice = append(advice, whatRanUnknown)
 	}
+	// MCP sessions cannot file role requests, so a grant is the only access
+	// advice a denial gets.
+	if denied != nil && grantLifts(denied.RequiredPermissions) && withinDatabase(denied.Resources, database) {
+		advice = append(advice, grantAdvice)
+	}
+	qe.Suggestion = strings.Join(advice, "; ")
 	return qe
 }
 
