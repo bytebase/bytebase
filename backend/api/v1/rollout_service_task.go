@@ -7,6 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/ghost"
@@ -203,6 +204,14 @@ func getTaskCreatesFromChangeDatabaseConfig(
 		}
 	}
 
+	var versionedRelease *store.ReleaseMessage
+	if c.Release != "" {
+		versionedRelease, err = getVersionedRelease(ctx, s, c.Release)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	var tasks []*store.TaskMessage
 	for _, database := range databases {
 		if database.EffectiveEnvironmentID == nil {
@@ -223,6 +232,13 @@ func getTaskCreatesFromChangeDatabaseConfig(
 		if c.Release != "" {
 			payload.Source = &storepb.Task_Release{
 				Release: c.Release,
+			}
+			if versionedRelease != nil {
+				state, err := computeReleaseState(ctx, s, versionedRelease, database)
+				if err != nil {
+					return nil, err
+				}
+				payload.ReleaseState = state
 			}
 		} else {
 			payload.Source = &storepb.Task_SheetSha256{
@@ -245,6 +261,75 @@ func getTaskCreatesFromChangeDatabaseConfig(
 	}
 
 	return tasks, nil
+}
+
+// getVersionedRelease returns the release, or nil when it is declarative:
+// a declarative run computes its diff when it runs, so it has no state to store.
+func getVersionedRelease(ctx context.Context, s *store.Store, releaseName string) (*store.ReleaseMessage, error) {
+	projectID, releaseID, err := common.GetProjectReleaseID(releaseName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parse release name %q", releaseName)
+	}
+	release, err := s.GetRelease(ctx, &store.FindReleaseMessage{ProjectID: &projectID, ReleaseID: &releaseID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get release %q", releaseName)
+	}
+	if release == nil {
+		return nil, errors.Errorf("release %q not found", releaseName)
+	}
+	if release.Payload.GetType() != storepb.SchemaChangeType_VERSIONED {
+		return nil, nil
+	}
+	return release, nil
+}
+
+// computeReleaseState applies the executor's rule (runVersionedRelease): a
+// version is applied when the database has a live VERSIONED revision with it.
+// One query bounded by the release's file count, not the database's history.
+func computeReleaseState(ctx context.Context, s *store.Store, release *store.ReleaseMessage, database *store.DatabaseMessage) (*storepb.Task_ReleaseState, error) {
+	versions := make([]string, 0, len(release.Payload.GetFiles()))
+	for _, file := range release.Payload.GetFiles() {
+		versions = append(versions, file.Version)
+	}
+	versioned := storepb.SchemaChangeType_VERSIONED
+	revisions, err := s.ListRevisions(ctx, &store.FindRevisionMessage{
+		InstanceID:   database.InstanceID,
+		DatabaseName: &database.DatabaseName,
+		Type:         &versioned,
+		Versions:     &versions,
+		ShowDeleted:  true,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list revisions of database %q", database.DatabaseName)
+	}
+	applied := map[string]bool{}
+	lastDeleted := map[string]*store.RevisionMessage{}
+	for _, revision := range revisions {
+		if revision.DeletedAt == nil {
+			applied[revision.Version] = true
+			continue
+		}
+		if prev, ok := lastDeleted[revision.Version]; !ok || revision.DeletedAt.After(*prev.DeletedAt) {
+			lastDeleted[revision.Version] = revision
+		}
+	}
+
+	state := &storepb.Task_ReleaseState{ComputeTime: timestamppb.Now()}
+	for _, version := range versions {
+		if applied[version] {
+			state.AppliedCount++
+			continue
+		}
+		pending := &storepb.Task_ReleaseState_PendingVersion{Version: version}
+		if deleted, ok := lastDeleted[version]; ok {
+			pending.RevisionDeleteTime = timestamppb.New(*deleted.DeletedAt)
+			if deleted.Deleter != nil {
+				pending.RevisionDeleter = *deleted.Deleter
+			}
+		}
+		state.PendingVersions = append(state.PendingVersions, pending)
+	}
+	return state, nil
 }
 
 func getDatabaseMessagesByTargets(ctx context.Context, s *store.Store, targets []string) ([]*store.DatabaseMessage, error) {

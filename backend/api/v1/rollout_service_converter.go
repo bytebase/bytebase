@@ -248,6 +248,7 @@ func convertToTaskFromDatabaseCreate(project *store.ProjectMessage, task *store.
 	if task.RunAt != nil {
 		v1pbTask.RunTime = timestamppb.New(*task.RunAt)
 	}
+	setTaskSkipper(v1pbTask, task.Payload)
 	return v1pbTask, nil
 }
 
@@ -271,6 +272,7 @@ func convertToTaskFromSchemaUpdate(project *store.ProjectMessage, task *store.Ta
 		databaseUpdate.Source = &v1pb.Task_DatabaseUpdate_Release{
 			Release: releaseName,
 		}
+		databaseUpdate.ReleaseState = convertToTaskReleaseState(task.Payload.GetReleaseState())
 	} else if sheetSha256 := task.Payload.GetSheetSha256(); sheetSha256 != "" {
 		databaseUpdate.Source = &v1pb.Task_DatabaseUpdate_Sheet{
 			Sheet: common.FormatSheet(project.ResourceID, sheetSha256),
@@ -294,6 +296,7 @@ func convertToTaskFromSchemaUpdate(project *store.ProjectMessage, task *store.Ta
 	if task.RunAt != nil {
 		v1pbTask.RunTime = timestamppb.New(*task.RunAt)
 	}
+	setTaskSkipper(v1pbTask, task.Payload)
 	return v1pbTask, nil
 }
 
@@ -555,4 +558,32 @@ func convertToRange(r *storepb.Range) *v1pb.Range {
 		Start: r.Start,
 		End:   r.End,
 	}
+}
+
+func setTaskSkipper(v1pbTask *v1pb.Task, payload *storepb.Task) {
+	if skipper := payload.GetSkipper(); skipper != "" {
+		v1pbTask.Skipper = common.FormatUserEmail(skipper)
+	}
+	v1pbTask.SkipTime = payload.GetSkipTime()
+}
+
+func convertToTaskReleaseState(state *storepb.Task_ReleaseState) *v1pb.Task_ReleaseState {
+	if state == nil {
+		return nil
+	}
+	r := &v1pb.Task_ReleaseState{
+		AppliedCount: state.AppliedCount,
+		ComputeTime:  state.ComputeTime,
+	}
+	for _, pending := range state.PendingVersions {
+		v := &v1pb.Task_ReleaseState_PendingVersion{
+			Version:            pending.Version,
+			RevisionDeleteTime: pending.RevisionDeleteTime,
+		}
+		if pending.RevisionDeleter != "" {
+			v.RevisionDeleter = common.FormatUserEmail(pending.RevisionDeleter)
+		}
+		r.PendingVersions = append(r.PendingVersions, v)
+	}
+	return r
 }

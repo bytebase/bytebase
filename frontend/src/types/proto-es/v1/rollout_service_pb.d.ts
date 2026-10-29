@@ -550,6 +550,21 @@ export declare type Task = Message<"bytebase.v1.Task"> & {
    * @generated from field: optional google.protobuf.Timestamp run_time = 11;
    */
   runTime?: Timestamp | undefined;
+
+  /**
+   * The user who skipped the task.
+   * Format: users/hello@world.com
+   *
+   * @generated from field: string skipper = 12;
+   */
+  skipper: string;
+
+  /**
+   * When the task was skipped.
+   *
+   * @generated from field: google.protobuf.Timestamp skip_time = 13;
+   */
+  skipTime?: Timestamp | undefined;
 };
 
 /**
@@ -606,6 +621,15 @@ export declare type Task_DatabaseUpdate = Message<"bytebase.v1.Task.DatabaseUpda
     value: string;
     case: "release";
   } | { case: undefined; value?: undefined };
+
+  /**
+   * The release's file state on the target database when the rollout was
+   * created. Set only for a versioned release. The run reads the database's
+   * revisions again when it starts.
+   *
+   * @generated from field: bytebase.v1.Task.ReleaseState release_state = 5;
+   */
+  releaseState?: Task_ReleaseState | undefined;
 };
 
 /**
@@ -613,6 +637,70 @@ export declare type Task_DatabaseUpdate = Message<"bytebase.v1.Task.DatabaseUpda
  * Use `create(Task_DatabaseUpdateSchema)` to create a new message.
  */
 export declare const Task_DatabaseUpdateSchema: GenMessage<Task_DatabaseUpdate>;
+
+/**
+ * @generated from message bytebase.v1.Task.ReleaseState
+ */
+export declare type Task_ReleaseState = Message<"bytebase.v1.Task.ReleaseState"> & {
+  /**
+   * The versions the task will apply, in release order. Every other version
+   * of the release had a live revision on the database.
+   *
+   * @generated from field: repeated bytebase.v1.Task.ReleaseState.PendingVersion pending_versions = 1;
+   */
+  pendingVersions: Task_ReleaseState_PendingVersion[];
+
+  /**
+   * The number of the release's versions already applied.
+   *
+   * @generated from field: int32 applied_count = 2;
+   */
+  appliedCount: number;
+
+  /**
+   * When the state was computed.
+   *
+   * @generated from field: google.protobuf.Timestamp compute_time = 3;
+   */
+  computeTime?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message bytebase.v1.Task.ReleaseState.
+ * Use `create(Task_ReleaseStateSchema)` to create a new message.
+ */
+export declare const Task_ReleaseStateSchema: GenMessage<Task_ReleaseState>;
+
+/**
+ * @generated from message bytebase.v1.Task.ReleaseState.PendingVersion
+ */
+export declare type Task_ReleaseState_PendingVersion = Message<"bytebase.v1.Task.ReleaseState.PendingVersion"> & {
+  /**
+   * @generated from field: string version = 1;
+   */
+  version: string;
+
+  /**
+   * Set when the database had a revision of this version that was deleted.
+   *
+   * @generated from field: google.protobuf.Timestamp revision_delete_time = 2;
+   */
+  revisionDeleteTime?: Timestamp | undefined;
+
+  /**
+   * The user who deleted that revision.
+   * Format: users/hello@world.com
+   *
+   * @generated from field: string revision_deleter = 3;
+   */
+  revisionDeleter: string;
+};
+
+/**
+ * Describes the message bytebase.v1.Task.ReleaseState.PendingVersion.
+ * Use `create(Task_ReleaseState_PendingVersionSchema)` to create a new message.
+ */
+export declare const Task_ReleaseState_PendingVersionSchema: GenMessage<Task_ReleaseState_PendingVersion>;
 
 /**
  * @generated from enum bytebase.v1.Task.Status

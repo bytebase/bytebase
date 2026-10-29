@@ -26958,9 +26958,51 @@ components:
           type: string
           title: url
           description: The url link to the e.g., GitHub commit or pull request.
+        commitSha:
+          type: string
+          title: commit_sha
+          description: The commit the release's files were read from.
+        branch:
+          type: string
+          title: branch
+          description: |-
+            The source branch. In a pull request build, the pull request's source
+             branch rather than the platform's synthetic merge ref.
+        commitTitle:
+          type: string
+          title: commit_title
+          description: The first line of the commit message.
+        authorName:
+          type: string
+          title: author_name
+          description: The commit author's display name.
+        authorLogin:
+          type: string
+          title: author_login
+          description: The commit author's login on the VCS platform.
+        pullRequest:
+          allOf:
+            - $ref: '#/components/schemas/bytebase.v1.Release.VCSSource.PullRequest'
+          title: pull_request
+          description: The pull request the commit belongs to, when the build knows it.
       title: VCSSource
       additionalProperties: false
       description: Version control system source information.
+    bytebase.v1.Release.VCSSource.PullRequest:
+      type: object
+      properties:
+        url:
+          type: string
+          title: url
+        number:
+          type: string
+          title: number
+          format: int64
+        title:
+          type: string
+          title: title
+      title: PullRequest
+      additionalProperties: false
     bytebase.v1.RemoveDataSourceRequest:
       type: object
       properties:
@@ -30126,6 +30168,19 @@ components:
             The run_time is the scheduled run time of latest task run.
              If there are no task runs or the task run is not scheduled, it will be empty.
           readOnly: true
+        skipper:
+          type: string
+          title: skipper
+          description: |-
+            The user who skipped the task.
+             Format: users/hello@world.com
+          readOnly: true
+        skipTime:
+          allOf:
+            - $ref: '#/components/schemas/google.protobuf.Timestamp'
+          title: skip_time
+          description: When the task was skipped.
+          readOnly: true
       title: Task
     bytebase.v1.Task.DatabaseCreate:
       type: object
@@ -30168,8 +30223,60 @@ components:
                     - release
                 - required:
                     - sheet
+      properties:
+        releaseState:
+          allOf:
+            - $ref: '#/components/schemas/bytebase.v1.Task.ReleaseState'
+          title: release_state
+          description: |-
+            The release's file state on the target database when the rollout was
+             created. Set only for a versioned release. The run reads the database's
+             revisions again when it starts.
+          readOnly: true
       title: DatabaseUpdate
       description: Payload for updating a database schema.
+    bytebase.v1.Task.ReleaseState:
+      type: object
+      properties:
+        pendingVersions:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.Task.ReleaseState.PendingVersion'
+          title: pending_versions
+          description: |-
+            The versions the task will apply, in release order. Every other version
+             of the release had a live revision on the database.
+        appliedCount:
+          type: integer
+          title: applied_count
+          format: int32
+          description: The number of the release's versions already applied.
+        computeTime:
+          allOf:
+            - $ref: '#/components/schemas/google.protobuf.Timestamp'
+          title: compute_time
+          description: When the state was computed.
+      title: ReleaseState
+      additionalProperties: false
+    bytebase.v1.Task.ReleaseState.PendingVersion:
+      type: object
+      properties:
+        version:
+          type: string
+          title: version
+        revisionDeleteTime:
+          allOf:
+            - $ref: '#/components/schemas/google.protobuf.Timestamp'
+          title: revision_delete_time
+          description: Set when the database had a revision of this version that was deleted.
+        revisionDeleter:
+          type: string
+          title: revision_deleter
+          description: |-
+            The user who deleted that revision.
+             Format: users/hello@world.com
+      title: PendingVersion
+      additionalProperties: false
     bytebase.v1.Task.Status:
       type: string
       title: Status

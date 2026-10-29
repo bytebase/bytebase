@@ -564,6 +564,49 @@ export declare type Release_VCSSource = Message<"bytebase.v1.Release.VCSSource">
    * @generated from field: string url = 2;
    */
   url: string;
+
+  /**
+   * The commit the release's files were read from.
+   *
+   * @generated from field: string commit_sha = 3;
+   */
+  commitSha: string;
+
+  /**
+   * The source branch. In a pull request build, the pull request's source
+   * branch rather than the platform's synthetic merge ref.
+   *
+   * @generated from field: string branch = 4;
+   */
+  branch: string;
+
+  /**
+   * The first line of the commit message.
+   *
+   * @generated from field: string commit_title = 5;
+   */
+  commitTitle: string;
+
+  /**
+   * The commit author's display name.
+   *
+   * @generated from field: string author_name = 6;
+   */
+  authorName: string;
+
+  /**
+   * The commit author's login on the VCS platform.
+   *
+   * @generated from field: string author_login = 7;
+   */
+  authorLogin: string;
+
+  /**
+   * The pull request the commit belongs to, when the build knows it.
+   *
+   * @generated from field: bytebase.v1.Release.VCSSource.PullRequest pull_request = 8;
+   */
+  pullRequest?: Release_VCSSource_PullRequest | undefined;
 };
 
 /**
@@ -571,6 +614,32 @@ export declare type Release_VCSSource = Message<"bytebase.v1.Release.VCSSource">
  * Use `create(Release_VCSSourceSchema)` to create a new message.
  */
 export declare const Release_VCSSourceSchema: GenMessage<Release_VCSSource>;
+
+/**
+ * @generated from message bytebase.v1.Release.VCSSource.PullRequest
+ */
+export declare type Release_VCSSource_PullRequest = Message<"bytebase.v1.Release.VCSSource.PullRequest"> & {
+  /**
+   * @generated from field: string url = 1;
+   */
+  url: string;
+
+  /**
+   * @generated from field: int64 number = 2;
+   */
+  number: bigint;
+
+  /**
+   * @generated from field: string title = 3;
+   */
+  title: string;
+};
+
+/**
+ * Describes the message bytebase.v1.Release.VCSSource.PullRequest.
+ * Use `create(Release_VCSSource_PullRequestSchema)` to create a new message.
+ */
+export declare const Release_VCSSource_PullRequestSchema: GenMessage<Release_VCSSource_PullRequest>;
 
 /**
  * The type of schema change.
