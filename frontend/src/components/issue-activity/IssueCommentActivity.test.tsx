@@ -6,11 +6,13 @@ import { describe, expect, test, vi } from "vitest";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/app/router/handles";
 import { IssueStatus } from "@/types/proto-es/v1/common_pb";
 import {
+  IssueComment_Approval_Status,
   IssueComment_PlanUpdateSchema,
   Issue_Type,
   IssueComment_ReviewSubmissionSchema,
   IssueCommentSchema,
   IssueSchema,
+  ReviewRun_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
   Plan_ChangeDatabaseConfigSchema,
@@ -48,20 +50,22 @@ vi.mock("@/utils/iam/permission", async (importOriginal) => ({
 }));
 
 vi.mock("@/stores/app", () => ({
-  useAppStore: (selector: (state: unknown) => unknown) =>
-    selector({
-      getUserByIdentifier: (identifier: string) =>
-        identifier.includes("alice")
-          ? {
-              email: "alice@example.com",
-              title: "Alice",
-            }
-          : {
-              name: "users/submitter@example.com",
-              email: "submitter@example.com",
-              title: "Submitter",
-            },
-    }),
+  useAppStore: (selector: (state: unknown) => unknown) => selector({}),
+}));
+
+// What usePrincipal resolves: two people and a service account.
+vi.mock("@/hooks/usePrincipal", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/hooks/usePrincipal")>()),
+  usePrincipal: (identifier?: string) => {
+    if (!identifier) return undefined;
+    if (identifier.includes("alice")) {
+      return { email: "alice@example.com", title: "Alice" };
+    }
+    if (identifier.includes("service.bytebase.com")) {
+      return { email: "deploy@service.bytebase.com", title: "Deploy bot" };
+    }
+    return { email: "submitter@example.com", title: "Submitter" };
+  },
 }));
 
 vi.mock("@/components/HumanizeTs", async () => ({
@@ -151,6 +155,19 @@ describe("canEditIssueComment", () => {
     expect(canEditIssueComment(reviewSubmission, project)).toBe(false);
     expect(canEditIssueComment(own, undefined)).toBe(false);
   });
+
+  test("a review result is never editable: its text is the reviewer's", () => {
+    mocks.hasPermission.mockImplementation(
+      (_project: unknown, permission: unknown) =>
+        permission === "bb.issueComments.update"
+    );
+    const result = create(IssueCommentSchema, {
+      name: "projects/p1/issues/1/issueComments/10",
+      comment: "DELETE FROM employee has no WHERE clause",
+      reviewMetadata: { runType: ReviewRun_Type.RULE },
+    });
+    expect(canEditIssueComment(result, project)).toBe(false);
+  });
 });
 
 describe("IssueCommentRow", () => {
@@ -209,6 +226,52 @@ describe("IssueCommentRow", () => {
     expect(
       screen.getByText("activity.sentence.review-skipped-rollout-created")
     ).toBeInTheDocument();
+  });
+
+  test("names the service account that approved and marks its account type", () => {
+    const comment = create(IssueCommentSchema, {
+      creator: "users/deploy@service.bytebase.com",
+      event: {
+        case: "approval",
+        value: { status: IssueComment_Approval_Status.APPROVED },
+      },
+    });
+
+    render(
+      <IssueCommentRow
+        comment={comment}
+        isLast
+        issue={create(IssueSchema, { type: Issue_Type.DATABASE_CHANGE })}
+        linkless
+      />
+    );
+
+    expect(screen.getByText("Deploy bot")).toBeInTheDocument();
+    expect(
+      screen.getByText("settings.members.service-account")
+    ).toBeInTheDocument();
+  });
+
+  test("a person's activity carries no account-type mark", () => {
+    const comment = create(IssueCommentSchema, {
+      creator: "users/alice@example.com",
+      event: {
+        case: "approval",
+        value: { status: IssueComment_Approval_Status.APPROVED },
+      },
+    });
+
+    render(
+      <IssueCommentRow
+        comment={comment}
+        isLast
+        issue={create(IssueSchema, { type: Issue_Type.DATABASE_CHANGE })}
+        linkless
+      />
+    );
+
+    expect(screen.getByText("Alice")).toBeInTheDocument();
+    expect(screen.queryByText(/settings\.members\./)).not.toBeInTheDocument();
   });
 
   test("renders Review Submission as a meaningful Issue Detail activity", () => {

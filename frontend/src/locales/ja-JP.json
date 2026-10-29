@@ -22,39 +22,136 @@
     }
   },
   "agent": {
-    "active-only-chats": "アクティブなチャットを表示",
     "ai-not-configured": {
       "configure": "設定",
       "contact-admin": "ワークスペース管理者に AI の設定を依頼してください。",
       "description": "このワークスペースでは AI が設定されていません。",
       "title": "AI 未設定"
     },
+    "api-permission-allow": "今回のみ許可",
+    "api-permission-deny": "拒否",
+    "api-permission-dismiss": "閉じる",
+    "api-permission-expired": "このリクエストは利用できなくなりました。AI アシスタントに再度準備するよう依頼してください。",
+    "api-permission-expired-title": "許可リクエストの期限切れ",
+    "api-permission-expires-in": "有効期限まで {{time}}",
+    "api-permission-request": "AI アシスタントによるこの API リクエストの実行を許可しますか？",
+    "api-permission-title": "実行の許可を求める",
     "archive-all-chats": "すべてのチャットをアーカイブ",
     "archive-chat": "チャットをアーカイブ",
     "archived-only-chats": "アーカイブ済みのチャットを表示",
     "args": "引数",
     "assistant-title": "AI アシスタント",
     "cancel": "キャンセル",
+    "cancel-request": "リクエストをキャンセル",
     "chat-archived-label": "アーカイブ済み",
     "chat-default-title": "新しいチャット",
     "chat-list-label": "チャット",
     "chat-total-tokens": "合計トークン数: {{count}}",
     "close": "閉じる",
     "confirm": "確認",
+    "context": "コンテキスト",
+    "context-no-projects": "アクセス可能なプロジェクトがありません",
+    "context-select": "コンテキストを選択",
+    "context-workspace": "ワークスペース",
+    "database-reference-unavailable": "このデータベースは利用できないか、アクセス権がありません。",
     "delete-all-chats": "すべてのチャットを削除",
     "delete-all-chats-confirmation": "アーカイブ済みのチャットをすべて削除しますか？この操作は元に戻せません。",
     "delete-chat": "チャットを削除",
     "delete-chat-confirmation": "このチャットを削除しますか？この操作は元に戻せません。",
-    "input-placeholder": "AI に何でも聞いてください...",
+    "empty-chat": {
+      "project-heading": "このプロジェクトについて、何をお手伝いできますか？",
+      "suggestions": "おすすめの質問",
+      "workspace-heading": "このワークスペースについて、何をお手伝いできますか？"
+    },
+    "evidence": {
+      "database": "データベース",
+      "issue": "issue",
+      "references": "根拠"
+    },
+    "input-keyboard-hint": "Enter で送信・Shift+Enter で改行",
+    "input-placeholder": "AI に質問するか、@ でリソースを選択",
     "interrupted": "中断",
     "interrupted-retry-hint": "会話が中断されました。再試行するか、新しいメッセージを送信できます。",
+    "issue-reference-unavailable": "このイシューは利用できないか、アクセス権がありません。",
+    "landing-starters": {
+      "menu": "候補",
+      "more": "候補をさらに表示",
+      "project-access": "このプロジェクトで共同作業を始める前に何を設定すればよいですか？",
+      "project-collaborate": "このプロジェクトにチームメンバーを招待するにはどうすればよいですか？",
+      "project-connect": "このプロジェクトにデータベースを接続するにはどうすればよいですか？",
+      "project-next": "次に何ができますか？",
+      "project-open-blockers": "このプロジェクトで私の対応が必要なことは何ですか？",
+      "project-open-recent": "このプロジェクトで最近何が変わりましたか？",
+      "project-organize": "このプロジェクトのデータベースと環境をどのように整理すればよいですか？",
+      "project-propose-change": "データベース変更を提案するにはどうすればよいですか？",
+      "project-review": "このプロジェクトのデータベース変更はどのようにレビューされますか？",
+      "workspace-attention": "私が確認すべきことは何ですか？",
+      "workspace-concepts": "プロジェクト、インスタンス、データベースについて教えてください",
+      "workspace-governance": "Bytebase はデータベース変更をどのように管理しますか？",
+      "workspace-recent": "このワークスペースで最近何が変わりましたか？",
+      "workspace-setup-first": "最初に何を設定すればよいですか？"
+    },
     "minimize": "最小化",
     "new-chat": "新しいチャット",
+    "other-chats": "その他のチャット",
     "pending-choose-hint": "上のオプションから選択してください",
     "pending-confirm-hint": "上で確認またはキャンセルしてください",
     "pending-input-hint": "上に入力してください",
+    "permission": {
+      "issue-approval": "この承認でイシューは次のレビュー段階に進みます。ロールアウトはまだ作成されません。",
+      "issue-approval-access-grant": "これは最終承認です。承認によって、ロールアウトなしで申請されたアクセス権が直ちに有効になる場合があります。",
+      "issue-approval-final": "これで承認判断は完了しますが、それだけでロールアウトの作成やタスクの実行が保証されるわけではありません。",
+      "issue-approval-role-grant": "これは最終承認です。承認によって、ロールアウトなしで申請されたプロジェクトロールが直ちに付与される場合があります。",
+      "issue-approval-rollout": "これは最終承認です。必要なチェックとレビューを通過するとロールアウトが作成される場合がありますが、タスクの実行は保証されません。",
+      "issue-rejection": "このイシューを却下すると、現在の承認フローは停止します。承認を再開するには却下理由への対応が必要です。"
+    },
+    "project-attention": {
+      "checking": "対応が必要な項目を確認しています...",
+      "empty": "このプロジェクトに対応が必要なオープン issue はありません。",
+      "issue-created": "- {{title}}（自分が作成）",
+      "issue-review": "- {{title}}（承認待ち）",
+      "more": "このプロジェクトに対応が必要なオープン issue がさらにあります。",
+      "partial": "このプロジェクトで対応が必要なすべてのオープン issue を確認できませんでした。",
+      "summary": "このプロジェクトの次の issue はあなたの対応が必要です:",
+      "unavailable": "このプロジェクトで対応が必要な項目を読み込めません。"
+    },
+    "project-reference-unavailable": "このプロジェクトは利用できないか、アクセス権がありません。",
+    "query-result": {
+      "returned-rows": "返された行数: {{count}}",
+      "showing-columns": "{{total}} 列中 {{shown}} 列を表示",
+      "showing-results": "{{total}} 件の結果セット中 {{shown}} 件を表示",
+      "showing-rows": "返された {{total}} 行中 {{shown}} 行を表示"
+    },
+    "recent-activity": {
+      "checking": "最近のアクティビティを確認しています...",
+      "empty": "過去 3 日間に重要なアクティビティは記録されていません。",
+      "event": "{{time}} に {{actor}} が {{resource}} を {{action}}",
+      "more": "さらに最近のアクティビティがあります。",
+      "summary": "過去 3 日間の最近のアクティビティ:",
+      "unavailable": "最近のアクティビティを読み込めません。",
+      "unknown-time": "不明な時刻"
+    },
     "rename-chat-placeholder": "チャット名を入力",
     "reply": "返信",
+    "request-stopped-by-user": "ユーザーがリクエストを停止しました",
+    "request-stopped-retry-hint": "送信済みの操作は完了する可能性があります。再試行する前に状態を確認してください。",
+    "resource-picker": {
+      "add-context": "コンテキストを追加",
+      "databases": "データベース",
+      "issues": "イシュー",
+      "load-databases-error": "データベースを読み込めませんでした。",
+      "load-error": "プロジェクトを読み込めませんでした。",
+      "load-issues-error": "イシューを読み込めませんでした。",
+      "no-databases": "アクセス可能なデータベースが見つかりません",
+      "no-issues": "アクセス可能なイシューが見つかりません",
+      "no-projects": "アクセス可能なプロジェクトが見つかりません",
+      "projects": "プロジェクト",
+      "reference-limit": "1 つのメッセージでは、プロジェクト 1 件と、そのデータベースまたはイシュー 1 件を参照できます。両方を参照する場合は、先にプロジェクトを選択してください。別のリソースは別のメッセージで質問してください。",
+      "retry": "再試行",
+      "search-databases": "データベースを検索",
+      "search-issues": "イシューを検索",
+      "search-projects": "プロジェクトを検索"
+    },
     "result": "結果",
     "retry-last-chat-turn": "再試行",
     "self": "エージェント",
@@ -70,10 +167,21 @@
     "tool-failed": "失敗",
     "tool-options": "オプション",
     "tool-prompt": "プロンプト",
+    "tool-request-canceled": "リクエストをキャンセルしました",
     "tool-response-submitted": "回答が送信されました",
     "tool-value": "値",
     "unarchive-all-chats": "すべてのチャットのアーカイブを解除",
-    "unarchive-chat": "アーカイブ解除"
+    "unarchive-chat": "アーカイブ解除",
+    "workspace-attention": {
+      "checking": "対応が必要な項目を確認しています...",
+      "empty": "対応が必要なオープン issue はありません。",
+      "issue-created": "- {{title}}（自分が作成）",
+      "issue-review": "- {{title}}（承認待ち）",
+      "more": "対応が必要なオープン issue がさらにあります。",
+      "partial": "対応が必要なすべてのオープン issue を確認できませんでした。",
+      "summary": "次の issue はあなたの対応が必要です:",
+      "unavailable": "対応が必要な項目を読み込めません。"
+    }
   },
   "audit-log": {
     "advanced-search": {
@@ -354,6 +462,7 @@
     "google-chat": "Google Chat",
     "group": "グループ",
     "groups": "グループ",
+    "hide": "隠す",
     "history": "履歴",
     "home": "ホームページ",
     "id": "ID",
@@ -468,6 +577,7 @@
     "sensitive-placeholder": "機密データ - 書き込みのみ",
     "settings": "設定",
     "share": "共有",
+    "show": "表示",
     "show-less": "折りたたむ",
     "show-more": "もっと見る",
     "sign-in": "ログイン",
@@ -642,7 +752,9 @@
     "direct-connection": "直接接続",
     "extra-params": {
       "description": "データベース接続文字列の追加パラメーター",
-      "self": "追加のパラメーター"
+      "overridden-by-tls": "TLS セクションの設定が優先されます。",
+      "self": "追加のパラメーター",
+      "wallet-overridden-by-tls": "保存されたパスワードのみ使用されます。証明書は TLS セクションのものが使われます。"
     },
     "no-read-only-data-source": "読み取り専用データソースがありません",
     "private-key-passphrase": "秘密鍵のパスフレーズ",
@@ -920,6 +1032,7 @@
     "password-optional": "パスワード暗号化の設定 (オプション)"
   },
   "gitops": {
+    "back-to-releases": "リリースに戻る",
     "checklist": {
       "database-group-recommendation": "同じスキーマを持つデータベースには、データベースグループを使用すると一度の変更でまとめてマイグレーションできます。グループを一度定義すれば、毎回個別にデータベースを選択することなく、マイグレーション全体で再利用できます。",
       "external-url": "外部URL",
@@ -935,7 +1048,6 @@
       "description-git": "データベーススキーマはアプリケーションコードと一緒に Git で管理されます。プルリクエストで SQL レビューがトリガーされ、ターゲットブランチへのマージで自動的にロールアウトが作成されます。",
       "title": "GitOps とは"
     },
-    "self": "GitOps",
     "test-setup": {
       "description": "サンプルマイグレーションファイルでワークフロー全体が正常に動作するか確認します。",
       "naming-convention": "マイグレーションファイルは辞書順に適用されます。タイムスタンプまたはシーケンス番号のプレフィックスを使用してください（例: 20240101000000_create_table.sql）。変更タイプを示すために _ddl または _dml を末尾に追加してください。",
@@ -1307,7 +1419,11 @@
           "template": "ユーザー {{user}}、パスワード {{password}} を作成し、必要な権限を付与する例は次のとおりです。次のコマンドを実行してユーザーを作成する前に、{{link}} を有効にする必要があります。"
         },
         "mysql": {
-          "template": "ユーザー {{user}}、パスワード {{password}} を作成し、必要な権限を付与する例は次のとおりです。"
+          "template": "ユーザー {{user}}、パスワード {{password}} を作成し、必要な権限を付与する例は次のとおりです。",
+          "warn": "DEFINER を別のアカウントに設定する変更を Bytebase で実行するには、MySQL 8.0 では SET_USER_ID、MySQL 8.4 以降では SET_ANY_DEFINER も付与してください。一部のクラウドプロバイダーはこれらの権限を制限しています。"
+        },
+        "oracle": {
+          "warn": "Amazon RDS for Oracle では GRANT ALL PRIVILEGES を実行できません。"
         },
         "postgresql": {
           "template": "ユーザー {{user}}、パスワード {{password}} を作成し、必要な権限を付与する例は次のとおりです。接続しているインスタンスが自己ホスト型の場合は、SUPERUSER を付与できます。",
@@ -1533,8 +1649,11 @@
       "all-databases": "すべてのデータベース",
       "all-databases-tip": "このプロジェクトに属する現在および将来のすべてのデータベース。",
       "details": "ロール付与の詳細",
+      "direct-execution-suffix": "{{environments}} で承認なしに {{kind}} を実行",
       "expired-at": "有効期限",
+      "grantee": "付与先",
       "manually-select": "手動選択",
+      "requested-by": "{{creator}} による申請",
       "use-cel": "CEL式を使用"
     },
     "sort": {
@@ -1592,14 +1711,26 @@
     }
   },
   "landing": {
+    "ai-placeholder": "このワークスペースについて質問するか、@ でリソースを選択",
+    "ai-setup": {
+      "action": "AI を設定",
+      "description": "このワークスペースで AI を使用するため、プロバイダーとモデルを設定してください。",
+      "title": "AI アシスタントを設定"
+    },
     "changelog-for-version": "{{version}} の変更履歴",
     "last-visit": "最終訪問",
+    "onboarding": {
+      "completed-progress": "{{total}} 件中 {{completed}} 件完了",
+      "connect-action": "インスタンスを接続",
+      "connect-description": "データベースサーバーを {{project}} に接続します。"
+    },
     "quick-link": {
       "manage": "クイックリンクを管理する",
-      "self": "クイックリンク",
       "visit-issues": "イシューを開く",
-      "visit-prjects": "プロジェクトを開く"
-    }
+      "visit-prjects": "プロジェクトを開く",
+      "yours": "クイックリンク"
+    },
+    "workspace": "ワークスペース"
   },
   "masking": {
     "reason": {
@@ -1672,6 +1803,57 @@
   "plan": {
     "add-spec": "変更を追加",
     "add-spec-pending-draft": "新しい変更を追加する前に、保留中の変更を保存または破棄してください",
+    "ai-review": {
+      "failed-to-run": "AI レビューを開始できませんでした",
+      "run": "AI レビューを実行",
+      "run-again-description": "実行するたびにレビュー対象の各データベースでモデルを呼び出すため、結果が異なる場合があります。新しい検出事項は、解決済みのものを含め前回の結果を置き換えます。",
+      "run-again-title": "AI レビューを再実行しますか？",
+      "save-first": "AI レビューを実行するには、編集内容を保存または破棄してください。"
+    },
+    "automated-review": {
+      "checks": "プランチェック",
+      "details": "詳細",
+      "failed": "実行できませんでした",
+      "failed-to-rerun": "レビューを開始できませんでした",
+      "ghost": "オンラインマイグレーションのドライラン",
+      "n-databases_one": "{{count}} 個のデータベース",
+      "n-databases_other": "{{count}} 個のデータベース",
+      "n-errors_one": "{{count}} 件のエラー",
+      "n-errors_other": "{{count}} 件のエラー",
+      "n-open": "未解決 {{count}} 件",
+      "n-warnings_one": "{{count}} 件の警告",
+      "n-warnings_other": "{{count}} 件の警告",
+      "needs-attention": "{{total}} 件中 {{count}} 件に対応が必要",
+      "no-findings": "検出事項なし",
+      "not-run": "未実行",
+      "nothing-needs-attention": "対応が必要な項目はありません",
+      "opens-in-sql": "クリックすると SQL 内で順に確認できます。",
+      "out-of-date": "古い結果",
+      "outdated": "この実行後に SQL が変更されました",
+      "passed": "合格",
+      "passed-on_one": "{{count}} 個のデータベースで合格",
+      "passed-on_other": "{{count}} 個のデータベースで合格",
+      "policy": "レビューポリシー",
+      "project-rules": "プロジェクトのルール：{{total}} 件中 {{on}} 件が有効",
+      "report": "ステートメントレポート",
+      "rerun": "再実行",
+      "rerun-all": "すべて再実行",
+      "rerun-all-description_one": "プランチェックと Standard rules を再実行します。Standard rules の解決済みの検出事項 {{count}} 件が未解決に戻ります。",
+      "rerun-all-description_other": "プランチェックと Standard rules を再実行します。Standard rules の解決済みの検出事項 {{count}} 件が未解決に戻ります。",
+      "rerun-all-title": "すべて再実行しますか？",
+      "rerun-reopens_one": "解決済みの検出事項 {{count}} 件が未解決に戻り、再度対応が必要になります。",
+      "rerun-reopens_other": "解決済みの検出事項 {{count}} 件が未解決に戻り、再度対応が必要になります。",
+      "rerun-rule-title": "Standard rules を再実行しますか？",
+      "retry": "再試行",
+      "running": "実行中",
+      "sampled": "{{total}} 個中 {{count}} 個のデータベースを抽出",
+      "scope": "{{databases}} をレビュー",
+      "scope-label": "このレビューの対象",
+      "scope-with-engines": "{{databases}}（{{engines}}）をレビュー",
+      "self": "自動レビュー",
+      "summary-part": "{{reviewer}}: {{status}}",
+      "workspace-rules": "ワークスペースのルール：{{total}} 件中 {{on}} 件が有効"
+    },
     "blocker": {
       "clears-on-its-own": "自動的に解消されます"
     },
@@ -1685,12 +1867,49 @@
       "started": "プランチェックを開始しました"
     },
     "create-plan": "プランを作成",
+    "deploy-waiting": {
+      "approval": "承認",
+      "approval-from": "{{role}} の承認",
+      "approval-rejected": "承認が却下されました",
+      "auto-create": "これらがすべて合格すると、Bytebase がロールアウトを作成します。",
+      "creating-rollout": "すべて合格しました。ロールアウトを作成しています…",
+      "manual-rollout": "このプランのロールアウトは自動作成されません。上記がすべて通過したら手動でデプロイしてください。",
+      "open-discussions_one": "未解決のディスカッション {{count}} 件",
+      "open-discussions_other": "未解決のディスカッション {{count}} 件",
+      "overridden_one": "{{reviewer}} の P0 の検出事項 {{count}} 件が変更されずに解決されました",
+      "overridden_other": "{{reviewer}} の P0 の検出事項 {{count}} 件が変更されずに解決されました",
+      "ready-to-deploy": "すべて通過しました。デプロイできます。",
+      "reviewer-failed": "{{reviewer}} を実行できませんでした",
+      "reviewer-findings": "{{reviewer}}：{{findings}}",
+      "reviewer-not-run": "{{reviewer}} は未実行です",
+      "reviewer-outdated": "{{reviewer}} の実行後に SQL が変更されました",
+      "reviewer-running": "{{reviewer}} を実行中",
+      "show": "表示",
+      "submit": "レビューに提出",
+      "waiting-on": "待機中の項目",
+      "worth-a-look": "ロールアウトは止めませんが、確認をおすすめします"
+    },
     "description": {
       "placeholder": "説明を追加"
     },
     "draft-update-permission-required": "この下書きは表示できますが、イシューラベルの編集やレビューへの提出には bb.issues.update が必要です。",
     "editor": {
       "save-changes-before-continuing": "続行する前に変更を保存またはキャンセルしてください"
+    },
+    "findings": {
+      "n-more": "他 {{count}} 件",
+      "n-overridden": "変更せずに解決した P0 {{count}} 件",
+      "n-priority": "{{priority}} {{count}} 件",
+      "n-resolved": "解決済み {{count}} 件",
+      "name-at-line": "{{name}}（L{{line}}）",
+      "name-times": "{{name}} ×{{count}}",
+      "separator": "、",
+      "set": {
+        "earlier": "以前の実行",
+        "open": "未解決",
+        "overridden": "変更せずに解決した P0",
+        "resolved": "解決済み"
+      }
     },
     "ghost": {
       "configure": "設定",
@@ -1714,15 +1933,18 @@
       "checking": "チェック中…",
       "checks-failing": "チェック失敗",
       "deployed": "デプロイ済み",
+      "gate-automated-review-passed": "自動レビューに合格",
       "gate-checks-failed": "一部のチェックが失敗しました",
       "gate-checks-failed-sub": "{{failing}} 件失敗、{{passed}} 件成功",
       "gate-checks-passed": "すべてのチェックに合格",
       "gate-checks-passed-sub": "{{count}} 件成功",
       "gate-checks-running": "チェックを実行中",
       "gate-checks-running-sub": "{{running}} 件実行中、{{passed}} 件成功",
+      "gate-no-open-discussions": "未解決のディスカッションはありません",
       "gate-review-approved": "変更が承認されました",
       "gate-review-pending": "レビュー中",
       "gate-review-rejected": "変更がリクエストされました",
+      "gate-threads-open-sub": "すべてのスレッドを解決するとロールアウトが作成されます",
       "incomplete": "未完了",
       "preparing-rollout": "ロールアウトを準備中…",
       "rejected": "却下されました",
@@ -1730,6 +1952,7 @@
       "review-waiting": "{{role}} の承認待ち",
       "run": "実行"
     },
+    "list-description": "UI で作成された変更リクエストとそのデプロイ進捗。",
     "meta": {
       "created-by": "{{user}} が作成"
     },
@@ -1753,6 +1976,7 @@
       "create-rollout-action": "手動でロールアウトを作成",
       "deploy-description": "すべてのチェックが通過し、Issue が承認されると、Bytebase は自動的にロールアウトを作成します。",
       "deploy-description-gitops": "このプランはロールアウトの準備ができています。リンクされたリリースをデプロイするにはロールアウトを作成してください。",
+      "deploy-description-v2": "すべてのチェックが通過し、すべてのスレッドが解決され、Issue が承認されると、Bytebase は自動的にロールアウトを作成します。",
       "hide-details": "詳細を隠す",
       "review-description": "続行するにはレビューに提出してください",
       "show-details": "詳細を表示"
@@ -1768,11 +1992,15 @@
         "add-a-comment": "コメントを追加...",
         "created-this-plan": "がこのプランを作成しました",
         "marked-ready-for-review": "がこのプランをレビュー準備完了にしました",
+        "n-findings_one": "検出事項 {{count}} 件",
+        "n-findings_other": "検出事項 {{count}} 件",
         "n-hidden-events_one": "{{count}} 件の非表示イベント",
         "n-hidden-events_other": "{{count}} 件の非表示イベント",
+        "reviewed-the-sql": "が SQL をレビューしました",
         "self": "アクティビティ",
         "show-all": "すべて表示"
       },
+      "approval-after-submit": "レビューに提出すると承認が始まります。",
       "approval-flow": {
         "and-n-more_one": "他 {{count}} 名",
         "and-n-more_other": "他 {{count}} 名",
@@ -1790,6 +2018,7 @@
       "footer": {
         "all-gates-passed": "すべての条件を満たしました",
         "approved-but-checks-failed": "レビューは承認されましたが、プランチェックに失敗しました",
+        "approved-but-threads-open": "レビューは承認されましたが、未解決のスレッドがあります",
         "auto-rollout-after-approval": "承認後にロールアウトが自動作成されます",
         "blocked-by-rejection": "却下されたレビューによりブロックされています — 続行するには上記のフィードバックに対応してください",
         "bypass-and-deploy": "バイパスしてデプロイ",
@@ -1800,6 +2029,10 @@
         "confirm-checks-running": "プランチェック実行中",
         "confirm-review-not-approved": "レビュー未承認",
         "confirm-review-rejected": "レビュー却下",
+        "confirm-rule-review-unknown": "SQL レビューの状態が不明",
+        "confirm-threads-unknown": "スレッドの状態が不明",
+        "confirm-unresolved-threads_one": "未解決のスレッド {{count}} 件",
+        "confirm-unresolved-threads_other": "未解決のスレッド {{count}} 件",
         "creating-rollout-automatically": "ロールアウトを自動作成中...",
         "errors-passed-not-created_one": "{{count}} 件のエラー、{{passed}} 件合格。ロールアウトは自動作成されませんでした。",
         "errors-passed-not-created_other": "{{count}} 件のエラー、{{passed}} 件合格。ロールアウトは自動作成されませんでした。",
@@ -1813,6 +2046,8 @@
         "rollout-auto-creates": "承認後にロールアウトが自動作成されます",
         "rollout-blocked-by-failed-checks": "チェックが通過するまでロールアウトは自動作成されません",
         "rollout-not-created": "ロールアウトは自動作成されませんでした",
+        "threads-open-not-created_one": "未解決のスレッド {{count}} 件。ロールアウトは自動作成されませんでした。",
+        "threads-open-not-created_other": "未解決のスレッド {{count}} 件。ロールアウトは自動作成されませんでした。",
         "waiting-on-review": "レビュー待ち"
       },
       "last-plan-editor-cannot-approve": "この Issue を承認できません。最後にプランを変更したユーザーであるためです。別のレビュー担当者による承認が必要です。",
@@ -1835,11 +2070,18 @@
           "unavailable-change": "削除された変更",
           "view-in-statement": "ステートメントで表示"
         },
+        "applies-to": "対象",
         "comment-on-lines": "選択行にコメント",
         "n-replies-hidden_one": "{{count}} 件の返信が非表示",
         "n-replies-hidden_other": "{{count}} 件の返信が非表示",
         "n-replies_one": "{{count}} 件の返信",
         "n-replies_other": "{{count}} 件の返信",
+        "open": "未解決",
+        "priority": {
+          "p0": "SQL に誤りがあり、修正が必要です。",
+          "p1": "危険ですが正当な変更です。担当者による承認が必要です。",
+          "p2": "参考情報です。"
+        },
         "publish": "公開",
         "reopen-thread": "スレッドを再開",
         "reply": "返信",
@@ -1848,11 +2090,14 @@
         "resolve": "解決",
         "resolve-thread": "スレッドを解決",
         "resolved": "解決済み",
+        "rule": "ルール",
         "threads-on-line_one": "この行に {{count}} 件のスレッド",
         "threads-on-line_other": "この行に {{count}} 件のスレッド",
         "walker": {
+          "clear-filter": "すべての未解決スレッドを順に表示",
           "count_one": "このバージョンに未解決のスレッドが {{count}} 件",
           "count_other": "このバージョンに未解決のスレッドが {{count}} 件",
+          "filter": "{{reviewer}} · {{state}}",
           "next": "次の未解決スレッド",
           "position": "{{count}} 件中 {{index}} 件目",
           "previous": "前の未解決スレッド",
@@ -1891,9 +2136,17 @@
       "reopen-confirm": "このプランを再開きますか？",
       "reopen-review-confirm": "このレビューを再開しますか？"
     },
+    "statement-summary": {
+      "affected-rows_one": "約 {{count}} 行に影響",
+      "affected-rows_other": "約 {{count}} 行に影響"
+    },
+    "status-scope": {
+      "description": "プラン内のタスクの現在のステータスで絞り込みます",
+      "waiting": "待機中"
+    },
     "submit-review-anyway": "それでも提出する",
-    "subtitle": "承認のためにイシューを作成する前に、データベースの変更を下書きし、事前チェックを実行します。",
     "summary": {
+      "approved-by": "{{names}} が承認",
       "last-approved-by": "{{name}} が最後に承認",
       "n-changes": "{{n}} 件の変更",
       "n-database-groups": "{{n}} 個のデータベースグループ",
@@ -1904,7 +2157,8 @@
       "n-passed": "{{n}} 件合格",
       "n-unresolved-threads_one": "未解決のスレッド {{count}} 件",
       "n-unresolved-threads_other": "未解決のスレッド {{count}} 件",
-      "n-warning": "{{n}} 件の警告"
+      "n-warning": "{{n}} 件の警告",
+      "no-approval-required": "承認不要"
     },
     "targets": {
       "no-targets-found": "対象が見つかりません",
@@ -1994,6 +2248,39 @@
       "success-prompt": "{{name}} が正常に作成されました。"
     },
     "filter-projects": "プロジェクトをフィルタリング",
+    "home": {
+      "active-issues": "あなたの対応中の課題",
+      "active-issues-unavailable": "このプロジェクトの課題は表示できません。",
+      "ai-placeholder": "このプロジェクトについて質問するか、@ でリソースを選択",
+      "archived-description": "このプロジェクトはアーカイブされており、読み取り専用です。",
+      "change-database": "データベースを変更",
+      "change-database-description": "このプロジェクトで管理されたデータベース変更を計画します。",
+      "connect": "インスタンスを接続",
+      "connect-description": "データベースサーバーをこのプロジェクトに接続します。",
+      "create-database": "データベースを作成",
+      "create-database-description": "接続済みインスタンスに最初のデータベースを作成します。",
+      "created-by-you": "あなたが作成",
+      "customize": "カスタマイズ",
+      "databases": "データベース",
+      "databases-load-error": "データベースを読み込めませんでした。",
+      "databases-unavailable": "このプロジェクトのデータベースは利用できません。",
+      "members": "メンバーを管理",
+      "members-optional-description": "任意: チームメンバーに共同作業とレビューのためのアクセス権を付与します。",
+      "needs-review": "あなたのレビュー待ち",
+      "next-step": "次のステップ",
+      "no-active-issues": "このプロジェクトには、あなたが作成した、またはレビュー待ちの未完了の課題はありません。",
+      "no-databases": "アクセスできるデータベースはまだありません。",
+      "no-databases-create-description": "接続済みインスタンスにデータベースを作成して始めましょう。",
+      "no-databases-description": "インスタンスを接続して、このプロジェクトにデータベースを追加します。",
+      "no-databases-prerequisite": "ここにデータベースを表示するには、インスタンスの接続が必要です。",
+      "no-databases-transfer-description": "未割り当てのデータベースをこのプロジェクトに移管するか、新しく作成します。",
+      "query-database": "データベースをクエリ",
+      "query-database-description": "SQL エディターでこのプロジェクトのデータベースを参照します。",
+      "transfer-databases": "データベースを移管",
+      "transfer-databases-description": "未割り当てのデータベースをこのプロジェクトに移管します。",
+      "view-all": "すべて表示",
+      "view-issues": "課題を見る"
+    },
     "masking-exemption": {
       "advanced-search": {
         "scope": {
@@ -2007,20 +2294,36 @@
       "expires-in-days_other": "{{days}} 日後に期限切れ",
       "expires-today": "本日期限切れ",
       "grant-exemption": "免除を付与",
+      "hide-raw-cel-condition": "生の CEL 条件を非表示",
       "level": "レベル",
+      "n-databases_one": "{{n}} 個のデータベース",
+      "n-databases_other": "{{n}} 個のデータベース",
       "n-exemptions_one": "{{n}} 件の免除",
       "n-exemptions_other": "{{n}} 件の免除",
       "no-exemptions": "マスキング免除はまだ付与されていません",
       "no-reason": "理由が提供されていません",
       "revoke-exemption-title": "{{member}} のマスキング免除を削除しますか？",
-      "self": "マスキング免除"
+      "self": "マスキング免除",
+      "show-raw-cel-condition": "生の CEL 条件を表示"
     },
     "members": {
-      "ddl-current-all": "すべての（ALL）環境で {{kind}} ステートメントを SQL エディターで承認なしに直接実行できます。",
-      "ddl-current-none": "{{kind}} ステートメントを SQL エディターで実行するには承認が必要です。",
-      "ddl-current-some": "リストされた環境で {{kind}} ステートメントを SQL エディターで承認なしに直接実行できます。",
-      "ddl-warning": "選択した環境では、{{kind}} ステートメントを SQL エディターで承認なしに直接実行できます。",
       "description": "プロジェクトメンバーのロールにより、プロジェクト内のデータベースとイシューを操作するための権限が決まります。プロジェクト所有者、ワークスペース管理者、および DBA はすべて、プロジェクトに対する完全な権限を持っています。",
+      "direct-execution": {
+        "all": "すべての環境で SQL エディターから承認なしに {{kind}} を実行できます。",
+        "environment-required": "環境を 1 つ以上選択してください。",
+        "in-environments": "対象の環境",
+        "lead-approver": "承認すると、{{grantee}} は SQL エディターで承認なしに {{kind}} を実行できます。対象：",
+        "lead-binding": "SQL エディターで承認なしに {{kind}} を実行できます。対象：",
+        "lead-grant": "このロールを持つメンバーは SQL エディターで承認なしに {{kind}} を実行できます。対象：",
+        "lead-request": "承認されると、SQL エディターで承認なしに {{kind}} を実行できます。対象：",
+        "none": "{{kind}} は承認なしには SQL エディターで実行できません。",
+        "protected-tag": "本番環境",
+        "protected_one": "{{environments}} は本番環境です。",
+        "protected_other": "{{environments}} は本番環境です。",
+        "select-environments": "環境を選択",
+        "switch-label": "SQL エディターで承認なしに {{kind}} を実行することを許可する",
+        "title": "{{kind}} の直接実行"
+      },
       "edit-member": "メンバー編集 - {{member}}",
       "expiration-presets": {
         "one-month": "1か月",
@@ -2191,17 +2494,24 @@
   "release": {
     "and-n-more-files": "他 {{count}} 件のファイル",
     "change-tip": "この変更はリリースアーティファクトにリンクされています。",
-    "file": "リリースファイル",
+    "empty": {
+      "description": "CI パイプラインが Bytebase にリリースした変更が、デプロイ進捗とともにここに表示されます。",
+      "read-guide": "GitOps ガイドを読む",
+      "set-up": "GitOps を設定",
+      "title": "GitOps の変更はまだありません"
+    },
     "file-type": {
       "declarative": "宣言的",
       "unspecified": "未指定",
       "versioned": "バージョン管理"
     },
     "files": "ファイル",
+    "gitops-setup": "GitOps 設定",
+    "list-description": "GitOps でリリースされた変更とそのデプロイ進捗。",
     "not-found": "リリースが見つかりません",
     "releases": "リリース",
-    "total-files": "合計 {{}} ファイル",
-    "usage-description": "リリースは、GitOpsワークフローによって環境へのデプロイがトリガーされるバージョン管理されたアプリケーションアーティファクトです。",
+    "self": "リリース",
+    "source": "ソース",
     "vcs-source": "VCS ソース",
     "vcs-type": {
       "unspecified": "不明な VCS"
@@ -2273,12 +2583,16 @@
       "description-placeholder": "ロールの説明を入力してください",
       "title-placeholder": "ロールのタイトルを入力してください"
     },
+    "sql-editor-exporter": {
+      "description": "DDLまたはDMLアクセスなしで、データベースをクエリして結果をエクスポートできます。",
+      "self": "SQLエディタエクスポートユーザー"
+    },
     "sql-editor-read-user": {
       "description": "DDLまたはDMLアクセスなしで、データベースデータのクエリのための読み取り専用権限。",
       "self": "SQLエディタ読み取り専用ユーザー"
     },
     "sql-editor-user": {
-      "description": "指定した範囲内のデータをクエリできます。",
+      "description": "データを照会し、許可された環境で DDL/DML を実行できます。",
       "self": "SQLエディタのユーザー"
     },
     "title": "タイトル",
@@ -2452,9 +2766,9 @@
             "placeholder": "API キーは通常 sk-***** で始まります",
             "self": "APIキー"
           },
+          "available-in-saas": "AI アシスタントはこのワークスペースで利用でき、Bytebase によって管理されています。",
           "description": "AI を使用してデータベース開発タスクを支援します。",
           "enable-ai-assistant": "AIアシスタントを有効にする",
-          "enabled-in-saas": "Gemini AI は SaaS モードで自動的に有効になります。",
           "endpoint": {
             "description": "カスタムモデルの API エンドポイントを入力します。",
             "openai-description": "Responses API には /responses、Chat Completions API には /chat/completions のエンドポイントを使用します。",
@@ -2475,7 +2789,8 @@
             "open_ai": "OpenAI",
             "self": "AIプロバイダー"
           },
-          "self": "AI アシスタント"
+          "self": "AI アシスタント",
+          "unavailable-in-saas": "このワークスペースでは AI アシスタントを利用できません。Bytebase 管理者にお問い合わせください。"
         },
         "allow-admin-data-source": {
           "description": "有効にすると、ユーザーは管理データソースと読み取り専用データソースのどちらかを選択できます。無効にすると、読み取り専用データソースが設定されている場合は強制的に読み取り専用データソースを使用し、設定されていない場合は管理データソースにフォールバックします。",
@@ -2532,10 +2847,6 @@
           "exiting": "退出中..."
         },
         "data-copy": "データのコピーを有効にする",
-        "data-export": {
-          "description": "無効にすると、ユーザーはクエリ結果を直接エクスポートできません。アクセス付与が有効なプロジェクトでは、「エクスポートをリクエスト」からアクセス付与をリクエストし、承認後にエクスポートできます。",
-          "self": "承認なしのデータエクスポートを許可"
-        },
         "default-landing-page": {
           "default-view-changed-to-sql-editor": "ワークスペースのデフォルト ビューが SQL エディターに変更されました。",
           "go-to-sql-editor": "SQLエディタに移動",
@@ -2696,7 +3007,7 @@
         "disabled": "何も許可されません。MCP セッションは接続できません。",
         "floor": {
           "label": "どのモードでも決してできないこと：",
-          "text": "Issue の承認、ワークスペースの管理、認証情報の取り扱い、Admin モードのセッションの開始、他人のクエリ履歴の閲覧。"
+          "text": "ワークスペースの管理、認証情報の取り扱い、Admin モードのセッションの開始、他人のクエリ履歴の閲覧。"
         },
         "heading": "{{mode}} で許可されること",
         "hide-details": "詳細を隠す",
@@ -2705,17 +3016,29 @@
           "refused": "不許可"
         },
         "row": {
+          "approve": {
+            "details": "各判断は、実行される前にユーザーの MCP クライアントで確認されます · ロール申請はコンソールで承認・却下します · 承認ルールとプロジェクトの自己承認設定は、コンソールと同じように適用されます",
+            "title": "Issue の承認・却下"
+          },
           "export": {
             "details": "結果をファイルとしてダウンロードします。データが Bytebase の外に出ます。",
             "title": "クエリ結果をエクスポートする"
           },
           "manage": {
-            "details": "インスタンスとデータベースの同期 · データベースの設定とラベル · データベースをプロジェクト間で移動 · データベースグループ · 保存済みクエリ",
+            "details": "インスタンスとデータベースの同期 · 保存済みクエリ",
             "title": "データベースの運用設定を管理する"
           },
+          "masking-exemptions": {
+            "details": "データベース、スキーマ、テーブル、列、またはプロジェクト内のすべてのデータベースについて、メンバー1人をマスキングから免除します（有効期限は任意） · 各免除とその取り消しは、適用前にユーザーのMCPクライアントで確認されます · 免除されたデータは、クエリとエクスポートの結果でマスクなしで表示されます",
+            "title": "マスキング免除を付与・取り消す"
+          },
           "propose": {
-            "details": "シートの作成 · Plan と Issue の作成・編集 · プランチェックとレビューの実行 · リリースの作成・削除・復元 · リビジョンの作成・削除 · スキーマ差分の生成。エージェントが自分の変更を承認することはありません。人の承認が必要かどうかはプロジェクトの承認ポリシーが決めます",
+            "details": "シートの作成 · Plan と Issue の作成・編集 · プランチェックとレビューの実行 · リリースの作成・削除・復元 · リビジョンの作成・削除 · スキーマ差分の生成。変更に承認が必要かどうかはプロジェクトの承認ポリシーが決めます",
             "title": "変更を提案する"
+          },
+          "read-access": {
+            "details": "ワークスペースとそのプロジェクトで誰がどのロールを持つか · グループとそのメンバー · ロールとその権限 · マスキングルールとマスキング免除 · リリース戦略、およびデータクエリ・タグ・レビューのポリシー · アクセス付与（承認待ちのリクエストを含む）",
+            "title": "メンバー・ロール・ポリシーの読み取り"
           },
           "read-data": {
             "details": "読み取り専用のクエリを実行 · 読み取り専用では、すべてのステートメントがデータを返す読み取りだと確認できない限りリクエスト全体を拒否します。どこまで確認できるかはエンジンによって異なり、どのステートメントも読み取りだと確認できないエンジンもあります · 自分のクエリ履歴 · アクセス権のある保存済みクエリとシート",
@@ -2728,6 +3051,10 @@
           "read-workflow": {
             "details": "Issue とコメント · Plan とプランチェック · ロールアウト・タスク実行・ログ · リリース · ロールバックのプレビュー",
             "title": "変更ワークフローの読み取り"
+          },
+          "request-access": {
+            "details": "特定のステートメントを実行するための期限付きアクセス付与をリクエストします。結果のマスク解除やエクスポートも含められます。エンジンが確認できる範囲で、ステートメントは読み取りでなければなりません · 付与は承認された後にのみ有効になり、誰の承認も必要としないリクエストは拒否されます · 付与は、プロジェクトがアクセス付与を許可している場合にのみ適用されます · 有効なアクセス付与を取り消す · プロジェクトの「アクセス付与を許可」をオン・オフにする（ユーザーの確認後）",
+            "title": "アクセス付与をリクエストする"
           },
           "run-rollouts": {
             "details": "ロールアウトの作成 · プロジェクトの承認ポリシーのもとでタスクを実行・スキップ・キャンセル",
@@ -2744,8 +3071,8 @@
           "write": "読み書きはここまで"
         },
         "summary": {
-          "read-only": "スキーマ・データ・変更ワークフローの読み取り。読み取りだと確認できないものを含むリクエストは拒否され、エクスポートもできません",
-          "read-write": "スキーマ・データ・変更ワークフローの読み取り。提案・実行・エクスポート・管理"
+          "read-only": "スキーマ・データ・変更ワークフロー・メンバー・ロール・ポリシーの読み取り。読み取りだと確認できないものを含むリクエストは拒否され、エクスポートもできません",
+          "read-write": "スキーマ・データ・変更ワークフロー・メンバー・ロール・ポリシーの読み取り。提案・アクセスのリクエストと取り消し・マスキング免除の付与・承認・実行・エクスポート・管理"
         },
         "tier": {
           "read": "読み取り",
@@ -2919,59 +3246,16 @@
       "workload-identity-tag-hint": "すべてのタグを許可する場合は空欄にしてください"
     },
     "profile": {
-      "default-project-name": "新しいプロジェクト",
       "display-name": "あなたの名前",
       "display-name-placeholder": "名前を入力してください",
       "email": "メールアドレス",
-      "enable-sample-databases": "サンプルデータベースを有効にする",
-      "enable-sample-databases-create-change": "安全な変更対象としてサンプルデータベースを有効にする",
-      "enable-sample-databases-mark-sensitive-data": "データマスキングをすぐに試せるようサンプルデータベースを有効にする",
-      "enable-sample-databases-query-data": "すぐにクエリを試せるようサンプルデータベースを有効にする",
       "password": "パスワード",
       "password-confirm": "パスワードの確認",
       "password-confirm-placeholder": "新しいパスワードを確認します",
       "password-hint": "パスワードは制限設定に従う必要があります",
       "password-mismatch": "新しいパスワードが一致しません",
       "phone": "電話番号",
-      "phone-tips": "国コードを必ず含めてください +81xxxxxx",
-      "setup-failed": "プロフィールの更新に失敗しました。",
-      "setup-first-project": "最初のプロジェクトを設定",
-      "setup-scenario": {
-        "continue": "続行",
-        "create-database-change": {
-          "description": "変更を定義し、追跡可能なイシューを作成します。",
-          "title": "データベース変更を作成"
-        },
-        "mark-sensitive-data": {
-          "description": "機密カラムを特定してデータマスキングを適用します。",
-          "title": "機密データをマーク"
-        },
-        "outcome-title": "Bytebase で何をしたいですか？",
-        "query-data": {
-          "description": "SQL Editor を開き、データベースでステートメントを実行します。",
-          "title": "データをクエリ"
-        },
-        "workspace-usage": {
-          "solo": {
-            "description": "自分だけで Bytebase を使用します。",
-            "title": "自分だけ"
-          },
-          "team": {
-            "description": "他のメンバーと一緒に使用します。",
-            "title": "チームで使用"
-          },
-          "title": "Bytebase を誰と使用しますか？"
-        }
-      },
-      "setup-skip": "後で設定する",
-      "setup-steps": {
-        "scenario": "目標を選択",
-        "workspace": "ワークスペースを設定"
-      },
-      "setup-submit": "ワークスペースをセットアップ",
-      "setup-success": "プロフィールが更新されました。",
-      "workspace-name": "ワークスペース名",
-      "workspace-name-placeholder": "ワークスペース名を入力"
+      "phone-tips": "国コードを必ず含めてください +81xxxxxx"
     },
     "sensitive-data": {
       "algorithms": {
@@ -3269,6 +3553,7 @@
     "data-explorer-sql-filter-placeholder": "クエリ条件を入力（例: WHERE id = 1）",
     "ddl-dml-requires-data-change-plan": "<environment></environment> で DDL/DML ステートメントを実行するには、承認のためデータ変更プランを送信してください。",
     "download-as-file": "{{file}} 形式でダウンロード",
+    "dry-run": "ドライラン",
     "duration-day": "{{days}} 日",
     "duration-days": "{{days}} 日",
     "duration-hour": "{{hours}} 時間",
@@ -3278,10 +3563,15 @@
     "expire-at": "{{time}} に期限切れ",
     "expire-in": "{{time}} 後に期限切れ",
     "expired": "期限切れ",
+    "explain": "実行計画を表示",
+    "explain-hint": "クエリを実行せずに実行計画を表示します",
     "explore-data": "データを探索",
     "export-available-via-issue": "Issue「{{title}}」によりエクスポート可能",
     "export-available-via-n-grants": "{{count}} 件のアクセス付与によりエクスポート可能:",
     "export-enabled-by-grant": "アクセス付与により有効になっています",
+    "export-grant-lookup-failed": "エクスポート権限を確認できませんでした。",
+    "export-grant-lookup-loading": "エクスポート権限を確認中…",
+    "export-grant-lookup-retry": "再試行",
     "format": "フォーマット",
     "format-default": "デフォルト",
     "format-sql": "SQL を整形",
@@ -3312,23 +3602,28 @@
     "open-in-new-tab": "新しいタブで開く",
     "opened-from-link": "リンクから開く",
     "pending-query": "保留中のクエリ",
+    "plan-cost-share": "スクリプト全体の推定コストの {{share}}",
+    "plan-estimated": "推定",
+    "plan-view": "プラン",
     "previous-row": "前の行",
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "管理者データ ソースはクエリできません。"
     },
     "query-history-not-found": "クエリ履歴が見つからないか、アクセスできなくなりました",
+    "query-plan-estimated": "たった今作成された新しいプランです。実行時のプランとは異なる場合があります。",
     "query-plan-load-failed": "クエリプランの読み込みに失敗しました",
+    "query-plan-requires-explain": "このプロジェクトで bb.sql.explain 権限が必要です",
     "query-plan-viewer": {
       "copy": {
         "copied": "コピーしました",
         "failed": "コピーに失敗しました",
-        "plan": "プランをコピー",
-        "query": "クエリをコピー"
+        "plan": "プランをコピー"
       },
       "details": {
         "select-node": "詳細を表示するノードを選択してください。"
       },
       "diagram": {
+        "actual-rows": "実測 {{count}} 行",
         "collapse": "{{node}} 配下の {{count}} ノードを折りたたむ",
         "cost": "コスト {{cost}}",
         "estimated-rows": "推定 {{count}} 行",
@@ -3336,31 +3631,80 @@
         "fit": "全体を表示",
         "nodes-hidden": "{{count}} ノードを非表示",
         "plan-cost-share": "プランコストの {{share}}",
+        "plan-time-share": "プラン実行時間の {{share}}",
         "rows": "行数 {{count}}",
+        "time": "時間 {{time}} ms",
         "zoom-in": "拡大",
         "zoom-out": "縮小"
       },
       "error": {
+        "bigquery-empty": "BigQuery はこのステートメントのクエリプランを返しませんでした。",
+        "bigquery-invalid": "クエリプランが有効な JSON ではありません。BigQuery ジョブのステージが必要です。",
+        "bigquery-no-plan": "クエリプランに開始できるステージがありません。",
+        "clickhouse-empty": "ClickHouse はこのステートメントのクエリプランを返しませんでした。",
+        "clickhouse-invalid": "クエリプランが有効な JSON ではありません。EXPLAIN json = 1 の出力が必要です。",
+        "clickhouse-no-plan": "ClickHouse のクエリプラン JSON に \"Plan\" オブジェクトがありません。",
+        "cockroachdb-empty": "CockroachDB はこのステートメントのクエリプランを返しませんでした。",
+        "cockroachdb-invalid": "クエリプランが有効な JSON ではありません。EXPLAIN (DISTSQL) が埋め込む図が必要です。",
+        "cockroachdb-no-plan": "クエリプラン JSON に描画できる \"processors\" がありません。",
+        "databricks-empty": "Databricks はこのステートメントのクエリプランを返しませんでした。",
+        "databricks-no-plan": "クエリプランに物理プランがありません。EXPLAIN FORMATTED の出力が必要です。",
+        "elasticsearch-empty": "Elasticsearch はこのステートメントのクエリプランを返しませんでした。",
+        "elasticsearch-invalid": "クエリプランが有効な JSON ではありません。Elasticsearch のプロファイルが必要です。",
+        "elasticsearch-no-plan": "プロファイルに開始できるシャードがありません。Elasticsearch は実行した検索のみをプロファイルします。",
+        "hive-empty": "Hive はこのステートメントのクエリプランを返しませんでした。",
+        "hive-invalid": "クエリプランが有効な JSON ではありません。Hive の EXPLAIN FORMATTED の出力が必要です。",
+        "hive-no-plan": "クエリプランに描画できる CBO プランがありません。Hive はコストベースオプティマイザーがステートメントをプランした場合にのみ出力します。",
+        "mongodb-empty": "MongoDB はこのステートメントのクエリプランを返しませんでした。",
+        "mongodb-invalid": "クエリプランが有効な JSON ではありません。MongoDB の explain() の出力が必要です。",
+        "mongodb-no-plan": "クエリプラン JSON に \"queryPlanner\" も、描画できる \"stages\" パイプラインもありません。",
         "mssql-empty": "SQL Server はこのステートメントのクエリプランを返しませんでした。",
         "mssql-invalid": "クエリプランが有効な XML ではありません。SHOWPLAN_XML の出力が必要です。",
         "mssql-no-plan": "クエリプラン XML は、1つ以上のステートメントを含む SQL Server showplan ではありません。",
+        "mysql-empty": "このステートメントのクエリプランは返されませんでした。",
+        "mysql-invalid": "クエリプランが有効な JSON ではありません。EXPLAIN FORMAT=JSON の出力が必要です。",
+        "mysql-no-plan": "クエリプラン JSON に \"query_block\" オブジェクトがありません。",
+        "oceanbase-empty": "OceanBase はこのステートメントのクエリプランを返しませんでした。",
+        "oceanbase-invalid": "クエリプランが有効な JSON ではありません。OceanBase の EXPLAIN FORMAT=JSON の出力が必要です。",
+        "oceanbase-no-plan": "クエリプラン JSON にオペレーターの記載がないため、描画できません。",
+        "oracle-empty": "Oracle はこのステートメントのクエリプランを返しませんでした。",
+        "oracle-invalid": "クエリプランが有効な JSON ではありません。サーバーが描画した Oracle のプランテーブルが必要です。",
+        "oracle-no-plan": "クエリプランに親を持たないステップがないため、起点となるオペレーターがありません。",
         "postgres-empty": "PostgreSQL はこのステートメントのクエリプランを返しませんでした。",
         "postgres-invalid": "クエリプランが有効な JSON ではありません。EXPLAIN (FORMAT JSON) の出力が必要です。",
         "postgres-no-plan": "クエリプラン JSON に \"Plan\" オブジェクトがありません。",
+        "redshift-empty": "Redshift はこのステートメントのクエリプランを返しませんでした。",
+        "redshift-no-plan": "クエリプランにオペレーターがありません。Redshift のプランは各オペレーターにコストを示します。",
+        "snowflake-empty": "Snowflake はこのステートメントのクエリプランを返しませんでした。",
+        "snowflake-invalid": "クエリプランが有効な JSON ではありません。Snowflake の EXPLAIN USING JSON の出力が必要です。",
+        "snowflake-no-plan": "クエリプラン JSON に開始できるオペレーションがありません。",
         "spanner-empty": "Spanner はこのステートメントのクエリプランを返しませんでした。",
         "spanner-emulator": "Spanner はこのステートメントのクエリプランを返しませんでした。Spanner エミュレーターはいずれのステートメントにもプランを返さないため、Spanner インスタンスで説明を実行してください。",
         "spanner-invalid": "クエリプランが有効な JSON ではありません。Spanner クエリプランが必要です。",
         "spanner-no-plan": "クエリプラン JSON に、ルートがオペレーターである \"planNodes\" リストがありません。",
+        "starrocks-empty": "このステートメントから描画できるクエリプランは得られませんでした。",
+        "starrocks-no-plan": "クエリプランのどのフラグメントにも番号付きのオペレーターがありません。",
+        "tidb-empty": "TiDB はこのステートメントのクエリプランを返しませんでした。",
+        "tidb-invalid": "クエリプランが有効な JSON ではありません。EXPLAIN FORMAT=tidb_json の出力が必要です。",
+        "tidb-no-plan": "クエリプラン JSON のルートにオペレーターがありません。",
         "too-deep": "クエリプランの入れ子が深すぎるため、このビジュアライザーでは描画できません。",
+        "too-many-nodes": "クエリプランの演算子数がこのビジュアライザーで描画できる数を超えているため、テキストで表示します。",
+        "trino-empty": "Trino はこのステートメントのクエリプランを返しませんでした。",
+        "trino-invalid": "クエリプランが有効な JSON ではありません。Trino の EXPLAIN (FORMAT JSON) の出力が必要です。",
+        "trino-no-plan": "クエリプラン JSON に、起点となるプランフラグメントがありません。",
         "unreadable": "このクエリプランを読み取れませんでした"
       },
       "grid": {
+        "actual-rows": "実測行数",
+        "actual-rows-hint": "この演算子が実際に返した行数（全実行回数の合計）",
         "added-cost": "追加コスト",
         "added-cost-hint": "このノードが子ノードに加えて追加するコストです。一部のエンジンでは、ネストループ配下などで入力の反復実行もここに含めます。バーはプラン全体に占めるこのコストの割合です。",
         "caption": "プランナーが入れ子にする順序で並べたプランノードです。親が子より先に表示されます。",
         "estimated-rows": "推定行数",
         "node": "ノード",
         "rows": "行数",
+        "self-time": "自ノード時間",
+        "self-time-hint": "このノードが子ノードに加えて要した時間（ミリ秒、全実行回数の合計）です。バーはプラン全体に占めるこの時間の割合です。",
         "total-cost": "総コスト",
         "width": "幅",
         "width-hint": "推定行幅（バイト）"
@@ -3372,51 +3716,70 @@
         "off": "オフ",
         "off-hint": "すべてのノードカードを色付けしない",
         "rows": "行数",
-        "rows-hint": "推定行数で色付け"
+        "rows-hint": "推定行数で色付け",
+        "time": "時間",
+        "time-hint": "ノードが子ノードに加えて要した時間で色付け"
       },
       "legend": {
         "cost": "各カードのバーは、そのノードがプランの推定コストに占める割合を示します",
-        "rows": "子ノードが返すと推定される行数に応じてエッジが太くなります"
+        "rows": "子ノードが返すと推定される行数に応じてエッジが太くなります",
+        "time": "各カードのバーは、そのノードがプランの実測時間に占める割合を示します"
       },
       "metric": {
+        "actual-rows": "実測行数",
+        "actual-time": "実測時間",
         "added-cost": "追加コスト",
         "bytes": "{{count}} バイト",
         "estimated-rows": "推定行数",
+        "loops": "実行回数",
+        "milliseconds": "{{count}} ms",
         "row-width": "行幅",
+        "rows-none": "プランナーは行を見込んでいましたが、1 行も返しませんでした。",
+        "rows-over": "プランナーの推定より {{factor}} 倍多い行を返しました。",
+        "rows-under": "プランナーの推定の {{factor}} 分の 1 の行しか返しませんでした。",
         "startup-cost": "開始コスト",
         "total-cost": "総コスト"
       },
-      "query": {
-        "missing": "このプランにはステートメントが保存されていません。"
-      },
       "summary": {
-        "added-cost": "追加コスト",
-        "cost-by-operation": "操作別コスト",
-        "cost-by-operation-description": "プラン内の各ノード種別と、その総コストです。",
-        "cost-ranges": "コスト範囲",
-        "cost-ranges-description": "各ノードは、最初の行を返す前の開始コストから、その配下のすべてを含む総コストまでを示します。濃い範囲ほどプランコストの割合が高くなります。コストは実行スケジュールではありません。結合の2つの入力はここでは重なりますが、実際には順番に実行されます。",
-        "costliest": "高コストなオペレーター",
-        "costliest-description": "ノードが子ノードに加えて追加するコスト順です。ネストループ配下などで入力が繰り返し実行される場合、一部のエンジンは反復コストを入力自体ではなく、その入力を再実行するノードに計上します。",
-        "count": "件数",
-        "estimate-note": "ステートメントはプランニングされましたが実行されていないため、ここにある数値はすべて測定値ではなくオプティマイザーの推定値です。コスト単位は任意で、このプラン内でのみ比較できます。",
-        "estimated-rows-returned": "推定返却行数",
+        "costliest": "推定コストの高い順",
         "no-added-cost": "このプランには固有の推定コストを追加するノードがありません。",
-        "nodes": "ノード",
-        "operation": "操作",
-        "share": "割合",
-        "timeline-node": "{{name}}、コスト {{startup}} から {{total}}、プランコストの {{share}}",
-        "total-estimated-cost": "推定総コスト"
+        "no-added-time": "このプランには固有の実測時間があるノードがありません。",
+        "no-ranking": "このプランはコストも時間も報告しないため、演算子を順位付けできません。",
+        "slowest-measured": "実測時間の長い順",
+        "warning-operators": "{{count}} 個の演算子",
+        "warnings": "警告"
       },
       "tab": {
         "diagram": "ダイアグラム",
-        "grid": "グリッド",
-        "query": "クエリ",
-        "summary": "概要",
+        "grid": "テーブル",
         "text": "テキスト"
+      },
+      "table": {
+        "heading": "テーブル",
+        "indexes": "インデックス",
+        "no-indexes": "このテーブルにはインデックスがありません。",
+        "primary": "主キー",
+        "rows": "前回の同期時点で {{count}} 行",
+        "unique": "一意"
       },
       "totals": {
         "estimated-cost": "推定コスト {{cost}}",
+        "measured-time": "実測時間 {{time}} ms",
         "nodes": "{{count}} ノード"
+      },
+      "warning": {
+        "data-redistribution": {
+          "detail": "この結合は、照合の前に行をスライス間で移動します。両方のテーブルを結合列で分散するか、小さいほうを ALL にすると、行がある場所のまま結合できます。",
+          "title": "データの再分配"
+        },
+        "full-index-scan": {
+          "detail": "このインデックスの全エントリを読み取ります。クエリが必要とするエントリがわずかであれば、インデックスの先頭列に条件を付けることで全件読み取りを避けられます。",
+          "title": "フルインデックススキャン"
+        },
+        "full-table-scan": {
+          "detail": "このテーブルの全行を読み取ります。クエリが必要とする行がわずかであれば、絞り込みに使う列へのインデックスで全件読み取りを避けられます。",
+          "title": "フルテーブルスキャン"
+        }
       }
     },
     "query-time": "クエリ時間",
@@ -3537,6 +3900,7 @@
       "manage-license": "ライセンスの管理",
       "missing-license-attention": "この機能のロックを解除するには、インスタンスにライセンスを割り当ててください。",
       "n-license-remain": "残り {{n}}",
+      "project-instance-hint": "この一覧にはワークスペースのインスタンスのみが表示されます。プロジェクトのインスタンスのライセンスを管理するには、そのインスタンスの詳細ページを開いてください。",
       "require-license": "インスタンスライセンスが必要です",
       "success-notification": "ライセンスの割り当てが正常に更新されました",
       "used-and-total-instance": "アクティブ/合計インスタンス制限",
@@ -3818,6 +4182,123 @@
       "copy-succeed": "正常にコピーされました。申請書に入力してください。",
       "description": "キーをコピーし、アプリケーションに手動で入力します。",
       "self": "二要素認証キー"
+    }
+  },
+  "workspace-setup": {
+    "continue": "続行",
+    "elsewhere": {
+      "continue": "ここで続行",
+      "ended": "このセットアップは別のタブで終了しました",
+      "saved": "このセットアップは別のタブで続行されました",
+      "workspace": "ワークスペースへ移動"
+    },
+    "goal": {
+      "change": {
+        "description": "スキーマ変更またはデータ修正を作成し、SQLレビューでチェックしてからデータベースにロールアウトします。",
+        "finish-line": "ゴール：SQLレビューを通過してロールアウトされた変更",
+        "title": "データベース変更を計画・レビューしてロールアウトする"
+      },
+      "description": "ここに来た目的を選択してください。セットアップ完了後、最初にそれを提案します。",
+      "explore": {
+        "description": "まず簡単なクエリを提案します。方向は後で選べます。",
+        "title": "まだ決めていない、試してみたい"
+      },
+      "query": {
+        "description": "エディタからデータベースに対してSQLを実行します。すべてのステートメントがクエリ履歴に記録されます。",
+        "finish-line": "ゴール：データベースからのクエリ結果",
+        "title": "ガードレール付きでデータをクエリする"
+      },
+      "required": "続行するには1つ選択してください",
+      "title": "最初に何をしますか？"
+    },
+    "optional": "任意",
+    "panel": {
+      "connected-after-setup": "セットアップ後に接続",
+      "own-databases": "そのデータベース",
+      "own-instance": "あなたのインスタンス",
+      "sample-database": "サンプルデータベース",
+      "sample-instance": "サンプルプロジェクトインスタンス",
+      "workspace": "ワークスペース"
+    },
+    "project": {
+      "database-title": "{{project}} のデータベース",
+      "description": "Bytebase を使うにはデータベースが必要です。それを保持するプロジェクトに名前を付け、最初のデータベースの入手元を選択してください。",
+      "exists": "このプロジェクトはすでに存在します。名前はプロジェクト設定で変更できます。",
+      "name": "プロジェクト名",
+      "name-hint": "プロジェクトは、チームが扱うデータベースをメンバーやポリシーとともにまとめます。すべての変更とクエリはプロジェクト内で行われます。",
+      "name-optional-note": "空欄のままにすると、プロジェクトは後で作成できます。",
+      "name-placeholder": "決済、データ基盤、社内ツール",
+      "name-required": "プロジェクト名を入力してください",
+      "own": {
+        "description": "インスタンスとはお使いのデータベースサーバーです。先にセットアップを完了し、その後 {{project}} から接続します。",
+        "title": "セットアップ後に自分のインスタンスを接続する"
+      },
+      "sample": {
+        "description": "従業員のサンプルデータを含む PostgreSQL データベース1つ。Bytebase Cloud がホストします。インストール不要、7日間利用可能です。",
+        "description-self-host": "従業員のサンプルデータを含む PostgreSQL データベース1つ。このサーバー上で動作します。インストール不要です。",
+        "prepared": "サンプルデータベースはこのプロジェクトで利用できます。",
+        "recommended": "おすすめ",
+        "title": "サンプルデータベースで始める",
+        "unavailable": "このサーバーではサンプルデータベースを利用できません。",
+        "used": "このワークスペースはすでにサンプルデータベースを使用しています。"
+      },
+      "skip": "後で設定する",
+      "title": "プロジェクトを作成してデータベースを選択",
+      "your-project": "あなたのプロジェクト"
+    },
+    "steps": {
+      "goal": "目的",
+      "project": "プロジェクト",
+      "team": "チーム",
+      "workspace": "ワークスペース"
+    },
+    "team": {
+      "address-invalid": "メールアドレスではありません",
+      "address-own": "あなた自身のアドレスです",
+      "address-placeholder": "name@company.com",
+      "address-placeholder-more": "別のアドレス",
+      "description": "完了前の最後の質問です。",
+      "failed": {
+        "invitees": "指定したメンバーを追加できませんでした。",
+        "names": "名前とワークスペース名を保存できませんでした。",
+        "project": "{{project}} を作成できませんでした。",
+        "sample": "サンプルデータベースを準備できませんでした。"
+      },
+      "finish": "完了",
+      "finish-invite_one": "{{count}} 件の招待を送信して完了",
+      "finish-invite_other": "{{count}} 件の招待を送信して完了",
+      "finish-without-sample": "サンプルなしで完了",
+      "finishing": "セットアップ中…",
+      "invite-teammates": "チームメンバーを招待",
+      "members-enter": "アドレスごとに Enter キーを押してください。",
+      "members-own": "データベースはインスタンスの接続後に表示されます。",
+      "members-role": "{{project}} でクエリと変更の提案ができるメンバーとして参加します。",
+      "members-roles-later": "ロールは「メンバー」でいつでも変更できます。",
+      "progress": "{{project}} を作成中…",
+      "progress-sample": "{{project}} とサンプルデータベースを作成中…",
+      "remove-address": "{{email}} を削除",
+      "size": "Bytebase を何人で使いますか？",
+      "size-required": "完了するにはチームの人数を選択してください",
+      "sizes": {
+        "11-50": "11–50",
+        "2-10": "2–10",
+        "200-plus": "200+",
+        "51-200": "51–200",
+        "just-me": "自分だけ"
+      },
+      "title": "あなたのチーム",
+      "try-again": "再試行"
+    },
+    "workspace": {
+      "default-name": "{{name}} のワークスペース",
+      "default-name-anonymous": "マイワークスペース",
+      "description": "ワークスペース、プロジェクト、データベースがそろえば Bytebase を使い始められます。",
+      "name-placeholder": "名前を入力",
+      "title": "ワークスペースをセットアップ",
+      "workspace-name": "ワークスペース名",
+      "workspace-name-hint": "追加したメンバーは全員このワークスペースに参加します。",
+      "workspace-name-placeholder": "通常は会社名",
+      "workspace-name-required": "ワークスペース名を入力してください"
     }
   },
   "workspace-setup-guide": {

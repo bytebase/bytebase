@@ -63,7 +63,27 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 
 	node := nodeList[0]
 
-	accessTables := q.getAccessTables(node)
+	accessNode := node
+	includeUncached := false
+	if explain, ok := node.(*tidbast.ExplainStmt); ok {
+		if explain.Stmt == nil {
+			return nil, errors.New("EXPLAIN by digest or connection is not supported: referenced tables cannot be determined")
+		}
+		// A plan carries the tables it reads. System tables are left out: they are
+		// not tracked databases, and a plain EXPLAIN may mix them with user tables.
+		if !explain.Analyze {
+			sourceColumns := q.getAccessTables(explain.Stmt, true)
+			for resource := range sourceColumns {
+				if isSystemResource(resource) {
+					delete(sourceColumns, resource)
+				}
+			}
+			return &base.QuerySpan{Type: base.Explain, Results: []base.QuerySpanResult{}, SourceColumns: sourceColumns}, nil
+		}
+		accessNode = explain.Stmt
+		includeUncached = true
+	}
+	accessTables := q.getAccessTables(accessNode, includeUncached)
 	allSystems, mixed := isMixedQuery(accessTables)
 	if mixed {
 		return nil, base.MixUserSystemTablesError
@@ -72,18 +92,20 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 	queryType, isExplainAnalyze := getQueryType(node, allSystems)
 	if skipQuerySpan(node, queryType) {
 		return &base.QuerySpan{
-			Type:          queryType,
-			Results:       []base.QuerySpanResult{},
-			SourceColumns: base.SourceColumnSet{},
+			Type:           queryType,
+			ExplainAnalyze: isExplainAnalyze,
+			Results:        []base.QuerySpanResult{},
+			SourceColumns:  accessTables,
 		}, nil
 	}
 
 	// For EXPLAIN ANALYZE SELECT, we determine the query type and access tables from the inner SELECT statement.
 	if isExplainAnalyze {
 		return &base.QuerySpan{
-			Type:          queryType,
-			Results:       []base.QuerySpanResult{},
-			SourceColumns: accessTables,
+			Type:           queryType,
+			ExplainAnalyze: true,
+			Results:        []base.QuerySpanResult{},
+			SourceColumns:  accessTables,
 		}, nil
 	}
 
@@ -191,10 +213,13 @@ var systemDatabases = map[string]bool{
 	"metrics_schema": true,
 }
 
-func (q *querySpanExtractor) getAccessTables(node tidbast.Node) base.SourceColumnSet {
+func (q *querySpanExtractor) getAccessTables(node tidbast.Node, includeUncached bool) base.SourceColumnSet {
 	accessesMap := make(base.SourceColumnSet)
-	tables := ExtractMySQLTableList(node, false /* asName */)
-	for _, table := range tables {
+	// ANALYZE executes before metadata can be refreshed. Keep every physical
+	// target for authorization, excluding only references to in-scope CTEs.
+	v := &accessTableVisitor{resolveCTEs: includeUncached}
+	node.Accept(v)
+	for _, table := range v.tables {
 		databaseName := table.Schema.O
 		if databaseName == "" {
 			databaseName = q.defaultDatabase
@@ -206,7 +231,7 @@ func (q *querySpanExtractor) getAccessTables(node tidbast.Node) base.SourceColum
 		// We do this because we do not have too much time to implement the real behavior.
 		// XXX(rebelice/zp): Can we pass more information here to make this function know the context and then
 		// figure out whether the table is the table the query actually accesses
-		if !q.existsTableMetadata(databaseName, table.Name.O) {
+		if !includeUncached && !q.existsTableMetadata(databaseName, table.Name.O) {
 			continue
 		}
 

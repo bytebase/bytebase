@@ -788,6 +788,56 @@ func TestBuildCELVariablesForAccessGrantResolvesProjectInstanceWithoutCache(t *t
 	require.Equal(t, "prod", variables[0][common.CELAttributeResourceEnvironmentID])
 }
 
+func TestEvaluateAccessGrantApproval(t *testing.T) {
+	ctx := context.Background()
+	const workspaceID = "workspace-a"
+	s := setupApprovalRunnerStoreInWorkspace(ctx, t, workspaceID)
+	projectID := "project-a"
+	setupApprovalProjectInstanceDatabase(ctx, t, s)
+	project, err := s.GetProject(ctx, &store.FindProjectMessage{Workspace: workspaceID, ResourceID: &projectID})
+	require.NoError(t, err)
+	ctx = context.WithValue(ctx, common.WorkspaceIDContextKey, workspaceID)
+	request := func(unmask bool) *storepb.AccessGrantPayload {
+		return &storepb.AccessGrantPayload{
+			Targets: []string{"projects/project-a/instances/prod/databases/app"},
+			Query:   "SELECT 1",
+			Unmask:  unmask,
+		}
+	}
+
+	_, _, err = EvaluateAccessGrantApproval(ctx, s, project, request(true))
+	require.ErrorContains(t, err, "WORKSPACE_APPROVAL")
+
+	_, err = s.UpsertSetting(ctx, &store.SettingMessage{
+		Name:      storepb.SettingName_WORKSPACE_APPROVAL,
+		Workspace: workspaceID,
+		Value: &storepb.WorkspaceApprovalSetting{Rules: []*storepb.WorkspaceApprovalSetting_Rule{
+			{
+				Source:    storepb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE,
+				Condition: &expr.Expr{Expression: "true"},
+				Template:  &storepb.ApprovalTemplate{Flow: &storepb.ApprovalFlow{Roles: []string{"roles/projectOwner"}}},
+			},
+			{
+				Source:    storepb.WorkspaceApprovalSetting_Rule_REQUEST_ACCESS,
+				Condition: &expr.Expr{Expression: `resource.database_name == "app" && request.unmask`},
+				Template:  &storepb.ApprovalTemplate{Flow: &storepb.ApprovalFlow{Roles: []string{"roles/workspaceDBA"}}},
+			},
+		}},
+	})
+	require.NoError(t, err)
+
+	unmasked, _, err := EvaluateAccessGrantApproval(ctx, s, project, request(true))
+	require.NoError(t, err)
+	require.True(t, unmasked.GetApprovalFindingDone())
+	require.Equal(t, []string{"roles/workspaceDBA"}, unmasked.GetApprovalTemplate().GetFlow().GetRoles())
+
+	plain, riskLevel, err := EvaluateAccessGrantApproval(ctx, s, project, request(false))
+	require.NoError(t, err)
+	require.True(t, plain.GetApprovalFindingDone())
+	require.Nil(t, plain.GetApprovalTemplate(), "a rule for another source does not apply to an access request")
+	require.Equal(t, storepb.RiskLevel_LOW, riskLevel)
+}
+
 func TestBuildCELVariablesForAccessGrantRejectsArchivedProjectInstanceWithoutCache(t *testing.T) {
 	ctx := context.Background()
 	const workspaceID = "workspace-a"
@@ -1102,6 +1152,59 @@ func TestApprovalRuleMatchesOceanBaseSummaryReport(t *testing.T) {
 				a.Nil(template)
 				return
 			}
+			a.NotNil(template)
+			a.Equal(tt.wantTitle, template.Title)
+		})
+	}
+}
+
+func TestApprovalRuleMatchesMSSQLAliasTarget(t *testing.T) {
+	strict := &storepb.WorkspaceApprovalSetting_Rule{
+		Source:    storepb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE,
+		Condition: &expr.Expr{Expression: `statement.sql_type == "UPDATE" && resource.table_name.matches("(?i)^(orders)$")`},
+		Template:  &storepb.ApprovalTemplate{Title: "Trigger tables"},
+	}
+	general := &storepb.WorkspaceApprovalSetting_Rule{
+		Source:    storepb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE,
+		Condition: &expr.Expr{Expression: "true"},
+		Template:  &storepb.ApprovalTemplate{Title: "General"},
+	}
+	tests := []struct {
+		name      string
+		statement string
+		wantTitle string
+	}{
+		{"aliased UPDATE of a listed table", `UPDATE o SET o.status = 'x' FROM dbo.Orders AS o WHERE o.id = 1;`, "Trigger tables"},
+		{"alias named like a listed table writes another table", `UPDATE Orders SET name = 'x' FROM dbo.Customers AS Orders WHERE Orders.id = 1;`, "General"},
+		{"UPDATE of an unlisted table", `UPDATE dbo.Customers SET name = 'x' WHERE id = 1;`, "General"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := require.New(t)
+			stmts, err := parserbase.ParseStatements(storepb.Engine_MSSQL, tt.statement)
+			a.NoError(err)
+			asts := parserbase.ExtractASTs(stmts)
+			statementTypes, err := plancheck.SummaryStatementTypes(storepb.Engine_MSSQL, asts)
+			a.NoError(err)
+			changeSummary, err := parserbase.ExtractChangedResources(storepb.Engine_MSSQL, "db", "dbo", nil, asts, tt.statement)
+			a.NoError(err)
+
+			report := &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
+				StatementTypes:   statementTypes,
+				ChangedResources: changeSummary.ChangedResources.Build(),
+			}
+			tableNames, _ := changedTables(report)
+			celVars := expandCELVars(map[string]any{
+				common.CELAttributeResourceEnvironmentID: "prod",
+				common.CELAttributeResourceProjectID:     "project",
+				common.CELAttributeResourceDBEngine:      storepb.Engine_MSSQL.String(),
+				common.CELAttributeStatementText:         tt.statement,
+			}, report.StatementTypes, tableNames)
+
+			template, err := getApprovalTemplate(&storepb.WorkspaceApprovalSetting{
+				Rules: []*storepb.WorkspaceApprovalSetting_Rule{strict, general},
+			}, storepb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE, celVars)
+			a.NoError(err)
 			a.NotNil(template)
 			a.Equal(tt.wantTitle, template.Title)
 		})

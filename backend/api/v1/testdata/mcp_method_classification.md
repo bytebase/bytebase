@@ -16,21 +16,21 @@ served by no ceiling.
 
 | Class | Methods | Meaning |
 |---|---|---|
-| READ | 56 | served to a read-only session and above |
-| WRITE | 41 | served to a read-write session only |
-| EXCLUDED | 86 | served by no ceiling this phase ships |
-| FORBIDDEN | 35 | never served, whatever the ceiling |
+| READ | 69 | served to a read-only session and above |
+| WRITE | 42 | served to a read-write session only |
+| EXCLUDED | 75 | served by no ceiling this phase ships |
+| FORBIDDEN | 34 | never served, whatever the ceiling |
 | MCP_METHOD_CLASS_UNSPECIFIED | 0 | unclassified — CI rejects this, and the gate refuses it |
-| **total** | **218** | |
+| **total** | **220** | |
 
 | Method | Class | Reason | Permission |
 |---|---|---|---|
 | AIService/Chat | EXCLUDED | SENDS_DATA_TO_A_THIRD_PARTY | — |
-| AccessGrantService/ActivateAccessGrant | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.accessGrants.activate |
-| AccessGrantService/CreateAccessGrant | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.accessGrants.create |
-| AccessGrantService/GetAccessGrant | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.accessGrants.get |
-| AccessGrantService/ListAccessGrants | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.accessGrants.list |
-| AccessGrantService/RevokeAccessGrant | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.accessGrants.revoke |
+| AccessGrantService/ActivateAccessGrant | FORBIDDEN | DRIVES_THE_APPROVAL_DECISION | bb.accessGrants.activate |
+| AccessGrantService/CreateAccessGrant | WRITE | — | bb.accessGrants.create |
+| AccessGrantService/GetAccessGrant | READ | — | bb.accessGrants.get |
+| AccessGrantService/ListAccessGrants | READ | — | bb.accessGrants.list |
+| AccessGrantService/RevokeAccessGrant | WRITE | — | bb.accessGrants.revoke |
 | AccessGrantService/SearchMyAccessGrants | READ | — | bb.accessGrants.get |
 | ActuatorService/GetActuatorInfo | READ | — | — |
 | AuditLogService/ExportAuditLogs | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.auditLogs.export |
@@ -51,14 +51,14 @@ served by no ceiling.
 | ChangelogService/ListChangelogs | READ | — | bb.changelogs.list |
 | DatabaseCatalogService/GetDatabaseCatalog | READ | — | bb.databaseCatalogs.get |
 | DatabaseCatalogService/UpdateDatabaseCatalog | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.databaseCatalogs.update |
-| DatabaseGroupService/CreateDatabaseGroup | WRITE | — | bb.databaseGroups.create |
-| DatabaseGroupService/DeleteDatabaseGroup | WRITE | — | bb.databaseGroups.delete |
+| DatabaseGroupService/CreateDatabaseGroup | EXCLUDED | REDRAWS_GOVERNANCE_BOUNDARY | bb.databaseGroups.create |
+| DatabaseGroupService/DeleteDatabaseGroup | EXCLUDED | REDRAWS_GOVERNANCE_BOUNDARY | bb.databaseGroups.delete |
 | DatabaseGroupService/GetDatabaseGroup | READ | — | bb.databaseGroups.get |
 | DatabaseGroupService/ListDatabaseGroups | READ | — | bb.databaseGroups.list |
-| DatabaseGroupService/UpdateDatabaseGroup | WRITE | — | bb.databaseGroups.update |
+| DatabaseGroupService/UpdateDatabaseGroup | EXCLUDED | REDRAWS_GOVERNANCE_BOUNDARY | bb.databaseGroups.update |
 | DatabaseService/BatchGetDatabases | READ | — | bb.databases.get |
 | DatabaseService/BatchSyncDatabases | WRITE | — | bb.databases.sync |
-| DatabaseService/BatchUpdateDatabases | WRITE | — | bb.databases.update |
+| DatabaseService/BatchUpdateDatabases | EXCLUDED | REDRAWS_GOVERNANCE_BOUNDARY | bb.databases.update |
 | DatabaseService/DiffMetadata | WRITE | — | bb.databases.diffMetadata |
 | DatabaseService/DiffSchema | WRITE | — | bb.databases.get |
 | DatabaseService/GetDatabase | READ | — | bb.databases.get |
@@ -67,13 +67,14 @@ served by no ceiling.
 | DatabaseService/GetDatabaseSchema | READ | — | bb.databases.getSchema |
 | DatabaseService/GetSchemaString | READ | — | bb.databases.getSchema |
 | DatabaseService/ListDatabases | READ | — | bb.databases.list |
+| DatabaseService/SearchDatabases | READ | — | bb.databases.get |
 | DatabaseService/SyncDatabase | WRITE | — | bb.databases.sync |
-| DatabaseService/UpdateDatabase | WRITE | — | bb.databases.update |
-| GroupService/BatchGetGroups | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.groups.get |
+| DatabaseService/UpdateDatabase | EXCLUDED | REDRAWS_GOVERNANCE_BOUNDARY | bb.databases.update |
+| GroupService/BatchGetGroups | READ | — | bb.groups.get |
 | GroupService/CreateGroup | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.groups.create |
 | GroupService/DeleteGroup | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.groups.delete |
-| GroupService/GetGroup | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.groups.get |
-| GroupService/ListGroups | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.groups.list |
+| GroupService/GetGroup | READ | — | bb.groups.get |
+| GroupService/ListGroups | READ | — | bb.groups.list |
 | GroupService/UpdateGroup | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.groups.update |
 | IdentityProviderService/CreateIdentityProvider | FORBIDDEN | MINTS_CREDENTIAL_FOR_OTHERS | bb.identityProviders.create |
 | IdentityProviderService/DeleteIdentityProvider | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.identityProviders.delete |
@@ -96,14 +97,15 @@ served by no ceiling.
 | InstanceService/UndeleteInstance | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.instances.undelete |
 | InstanceService/UpdateDataSource | FORBIDDEN | MINTS_CREDENTIAL_FOR_OTHERS | bb.instances.update |
 | InstanceService/UpdateInstance | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.instances.update |
-| IssueService/ApproveIssue | FORBIDDEN | DRIVES_THE_APPROVAL_DECISION | — |
+| IssueService/ApproveIssue | WRITE | — | — |
 | IssueService/BatchUpdateIssuesStatus | WRITE | — | bb.issues.update |
 | IssueService/CreateIssue | WRITE | — | bb.issues.create |
 | IssueService/CreateIssueComment | WRITE | — | bb.issueComments.create |
 | IssueService/GetIssue | READ | — | bb.issues.get |
+| IssueService/GetReviewRun | READ | — | bb.reviewRuns.get |
 | IssueService/ListIssueComments | READ | — | bb.issueComments.list |
 | IssueService/ListIssues | READ | — | bb.issues.list |
-| IssueService/RejectIssue | FORBIDDEN | DRIVES_THE_APPROVAL_DECISION | — |
+| IssueService/RejectIssue | WRITE | — | — |
 | IssueService/RequestIssue | WRITE | — | — |
 | IssueService/RetryIssueApproval | FORBIDDEN | DRIVES_THE_APPROVAL_DECISION | — |
 | IssueService/RunReview | WRITE | — | bb.reviewRuns.run |
@@ -112,9 +114,9 @@ served by no ceiling.
 | IssueService/UpdateIssueComment | WRITE | — | bb.issueComments.update |
 | OrgPolicyService/CreatePolicy | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.policies.create |
 | OrgPolicyService/DeletePolicy | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.policies.delete |
-| OrgPolicyService/GetPolicy | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.policies.get |
-| OrgPolicyService/ListPolicies | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.policies.list |
-| OrgPolicyService/UpdatePolicy | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.policies.update |
+| OrgPolicyService/GetPolicy | READ | — | bb.policies.get |
+| OrgPolicyService/ListPolicies | READ | — | bb.policies.list |
+| OrgPolicyService/UpdatePolicy | WRITE | — | bb.policies.update |
 | PlanService/CancelPlanCheckRun | WRITE | — | bb.planCheckRuns.run |
 | PlanService/CreatePlan | WRITE | — | bb.plans.create |
 | PlanService/GetPlan | READ | — | bb.plans.get |
@@ -127,7 +129,7 @@ served by no ceiling.
 | ProjectService/BatchGetProjects | READ | — | bb.projects.get |
 | ProjectService/CreateProject | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.projects.create |
 | ProjectService/DeleteProject | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.projects.delete |
-| ProjectService/GetIamPolicy | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.projects.getIamPolicy |
+| ProjectService/GetIamPolicy | READ | — | bb.projects.getIamPolicy |
 | ProjectService/GetProject | READ | — | bb.projects.get |
 | ProjectService/ListProjects | READ | — | bb.projects.list |
 | ProjectService/RemoveWebhook | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.projects.update |
@@ -135,7 +137,7 @@ served by no ceiling.
 | ProjectService/SetIamPolicy | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.projects.setIamPolicy |
 | ProjectService/TestWebhook | EXCLUDED | SENDS_DATA_TO_A_THIRD_PARTY | bb.projects.update |
 | ProjectService/UndeleteProject | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.projects.undelete |
-| ProjectService/UpdateProject | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.projects.update |
+| ProjectService/UpdateProject | WRITE | — | bb.projects.update |
 | ProjectService/UpdateWebhook | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.projects.update |
 | QueryHistoryService/GetQueryHistory | READ | — | — |
 | QueryHistoryService/ListQueryHistories | EXCLUDED | READS_OTHER_USERS_SQL | bb.queryHistories.list |
@@ -159,8 +161,8 @@ served by no ceiling.
 | RevisionService/ListRevisions | READ | — | bb.revisions.list |
 | RoleService/CreateRole | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.roles.create |
 | RoleService/DeleteRole | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.roles.delete |
-| RoleService/GetRole | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.roles.get |
-| RoleService/ListRoles | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.roles.list |
+| RoleService/GetRole | READ | — | bb.roles.get |
+| RoleService/ListRoles | READ | — | bb.roles.list |
 | RoleService/UpdateRole | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.roles.update |
 | RolloutService/BatchCancelTaskRuns | WRITE | — | — |
 | RolloutService/BatchRunTasks | WRITE | — | — |
@@ -236,7 +238,7 @@ served by no ceiling.
 | WorkloadIdentityService/UndeleteWorkloadIdentity | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.workloadIdentities.undelete |
 | WorkloadIdentityService/UpdateWorkloadIdentity | FORBIDDEN | MINTS_CREDENTIAL_FOR_OTHERS | bb.workloadIdentities.update |
 | WorkspaceService/DeleteWorkspace | FORBIDDEN | ENDS_MEMBERSHIP | bb.workspaces.delete |
-| WorkspaceService/GetIamPolicy | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.workspaces.getIamPolicy |
+| WorkspaceService/GetIamPolicy | READ | — | bb.workspaces.getIamPolicy |
 | WorkspaceService/GetWorkspace | READ | — | — |
 | WorkspaceService/LeaveWorkspace | FORBIDDEN | ENDS_MEMBERSHIP | — |
 | WorkspaceService/ListWorkspaces | READ | — | — |

@@ -35,6 +35,9 @@ const getUpdateMaskFromPolicyType = (policyType: PolicyType): string[] => {
         PolicySchema.field.reviewRulePolicy.name,
         PolicySchema.field.enforce.name,
       ];
+    case PolicyType.REVIEW_AI:
+      // Saving the text leaves a policy paused through the API paused.
+      return [PolicySchema.field.reviewAiPolicy.name];
     default:
       throw new Error(`unexpected policy type ${policyType}`);
   }

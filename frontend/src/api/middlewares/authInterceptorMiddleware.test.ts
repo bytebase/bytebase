@@ -1,7 +1,11 @@
 import { Code, ConnectError, createContextValues } from "@connectrpc/connect";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { Permission } from "@/types";
-import { ignoredCodesContextKey, silentContextKey } from "../context-key";
+import {
+  ignoredCodesContextKey,
+  silentContextKey,
+  skipErrorNotificationContextKey,
+} from "../context-key";
 
 const mocks = vi.hoisted(() => ({
   authStore: {
@@ -56,15 +60,18 @@ import { authInterceptor } from "./authInterceptorMiddleware";
 const createRequest = ({
   methodName = "Chat",
   silent = false,
+  skipErrorNotification = false,
   ignoredCodes = [],
 }: {
   methodName?: string;
   silent?: boolean;
+  skipErrorNotification?: boolean;
   ignoredCodes?: Code[];
 } = {}) =>
   ({
     contextValues: createContextValues()
       .set(silentContextKey, silent)
+      .set(skipErrorNotificationContextKey, skipErrorNotification)
       .set(ignoredCodesContextKey, ignoredCodes),
     method: { name: methodName },
     service: { name: "TestService", typeName: "bytebase.v1.TestService" },
@@ -101,6 +108,129 @@ describe("authInterceptor", () => {
     expect(mocks.pushNotification).not.toHaveBeenCalled();
     expect(mocks.authStore.unauthenticatedOccurred).toBe(false);
   });
+
+  test("recovers worker startup before marking the session expired", async () => {
+    const { refreshTokensInWorker } = await import(
+      "../refreshTokenSharedWorker"
+    );
+    const refreshRequests = vi.fn();
+    let attempts = 0;
+    class StartupWorker extends EventTarget {
+      port = Object.assign(new EventTarget(), {
+        start: vi.fn(),
+        close: vi.fn(),
+        postMessage: () => {
+          refreshRequests();
+          queueMicrotask(() =>
+            this.port.dispatchEvent(new MessageEvent("message", { data: {} }))
+          );
+        },
+      });
+      constructor() {
+        super();
+        const fail = ++attempts === 1;
+        queueMicrotask(() => {
+          if (fail) this.dispatchEvent(new Event("error"));
+          else {
+            this.port.dispatchEvent(
+              new MessageEvent("message", { data: { ready: true } })
+            );
+          }
+        });
+      }
+    }
+    vi.stubGlobal("SharedWorker", StartupWorker);
+    mocks.refreshTokens.mockImplementation(refreshTokensInWorker);
+    const next = vi
+      .fn()
+      .mockRejectedValueOnce(
+        new ConnectError("access token not found", Code.Unauthenticated)
+      )
+      .mockResolvedValueOnce({ ok: true });
+    try {
+      await expect(authInterceptor(next)(createRequest())).resolves.toEqual({
+        ok: true,
+      });
+      expect(attempts).toBe(2);
+      expect(refreshRequests).toHaveBeenCalledTimes(1);
+      expect(next).toHaveBeenCalledTimes(2);
+      expect(mocks.authStore.unauthenticatedOccurred).toBe(false);
+      expect(mocks.pushNotification).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  test.each([false, true])(
+    "startup exhaustion preserves the session and later recovers (silent=%s)",
+    async (silent) => {
+      vi.resetModules();
+      const { refreshTokensInWorker } = await import(
+        "../refreshTokenSharedWorker"
+      );
+      const { authInterceptor: interceptor } = await import(
+        "./authInterceptorMiddleware"
+      );
+      let attempts = 0;
+      let available = false;
+      const refreshRequests = vi.fn();
+      class StartupWorker extends EventTarget {
+        port = Object.assign(new EventTarget(), {
+          start: vi.fn(),
+          close: vi.fn(),
+          postMessage: () => {
+            refreshRequests();
+            queueMicrotask(() =>
+              this.port.dispatchEvent(new MessageEvent("message", { data: {} }))
+            );
+          },
+        });
+        constructor() {
+          super();
+          attempts++;
+          queueMicrotask(() => {
+            if (!available) this.dispatchEvent(new Event("error"));
+            else
+              this.port.dispatchEvent(
+                new MessageEvent("message", { data: { ready: true } })
+              );
+          });
+        }
+      }
+      vi.stubGlobal("SharedWorker", StartupWorker);
+      mocks.refreshTokens.mockImplementation(refreshTokensInWorker);
+      const next = vi
+        .fn()
+        .mockRejectedValue(
+          new ConnectError("access token expired", Code.Unauthenticated)
+        );
+      try {
+        for (let outage = 0; outage < 2; outage++) {
+          await expect(
+            interceptor(next)(createRequest({ silent }))
+          ).rejects.toMatchObject({ code: Code.Unavailable });
+          expect(mocks.authStore.unauthenticatedOccurred).toBe(false);
+          expect(mocks.pushNotification).not.toHaveBeenCalled();
+          expect(refreshRequests).not.toHaveBeenCalled();
+        }
+        expect(attempts).toBe(6);
+        available = true;
+        next
+          .mockRejectedValueOnce(
+            new ConnectError("access token expired", Code.Unauthenticated)
+          )
+          .mockResolvedValueOnce({ ok: true });
+        await expect(
+          interceptor(next)(createRequest({ silent }))
+        ).resolves.toEqual({ ok: true });
+        expect(refreshRequests).toHaveBeenCalledTimes(1);
+        expect(mocks.authStore.unauthenticatedOccurred).toBe(false);
+        expect(mocks.pushNotification).not.toHaveBeenCalled();
+      } finally {
+        vi.unstubAllGlobals();
+      }
+    }
+  );
 
   test("keeps silent unauthenticated refresh failures notification-free", async () => {
     const next = vi
@@ -179,6 +309,33 @@ describe("authInterceptor", () => {
         resources: "",
       },
     });
+  });
+
+  test("keeps redirects and session notices when the caller reports the error", async () => {
+    const request = createRequest({ skipErrorNotification: true });
+
+    const denied = vi
+      .fn()
+      .mockRejectedValue(new ConnectError("forbidden", Code.PermissionDenied));
+    await expect(authInterceptor(denied)(request)).rejects.toMatchObject({
+      code: Code.PermissionDenied,
+    });
+    expect(mocks.routerPush).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "error.403" })
+    );
+
+    const expired = vi
+      .fn()
+      .mockRejectedValue(
+        new ConnectError("access token not found", Code.Unauthenticated)
+      );
+    mocks.refreshTokens.mockRejectedValue(new Error("refresh failed"));
+    await expect(authInterceptor(expired)(request)).rejects.toMatchObject({
+      code: Code.Unauthenticated,
+    });
+    expect(mocks.pushNotification).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "auth.token-expired-title" })
+    );
   });
 
   test("does not leave sign-in for a rejected web login", async () => {

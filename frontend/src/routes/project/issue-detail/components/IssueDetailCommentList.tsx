@@ -1,12 +1,20 @@
 import { create } from "@bufbuild/protobuf";
 import { Loader2, Pencil, Plus } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect } from "@/api";
 import { useCurrentRoute } from "@/app/router";
 import { HumanizeTs } from "@/components/HumanizeTs";
 import {
+  ActivityRowShell,
   CommentCreator,
+  CommentIconBadge,
   canEditIssueComment,
   IssueCommentRow,
   type PlanChangeReferenceRenderer,
@@ -15,21 +23,32 @@ import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { UserAvatar } from "@/components/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { useCurrentUser } from "@/hooks/useAppState";
+import { principalLabel, usePrincipal } from "@/hooks/usePrincipal";
 import { useProjectByName } from "@/hooks/useProjectByName";
 import { collectPlanUpdateSpecs } from "@/lib/plan/diffPlanSpecs";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import { isThreadReply } from "@/stores/app/issueComment";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
-import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
+import { getTimeForPbTimestampProtoEs } from "@/types";
 import {
   type IssueComment,
+  type IssueComment_ReviewMetadata,
   IssueSchema,
+  ReviewRun_Type,
   UpdateIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
+import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import { extractProjectResourceName } from "@/utils";
 import { hasProjectPermissionV2 } from "@/utils/iam/permission";
 import { PlanSpecChangeReference } from "../../plan-detail/components/PlanChangeReference";
+import {
+  ReviewerIcon,
+  ReviewPriorityBadge,
+  ReviewRule,
+  ReviewTargets,
+  reviewerName,
+} from "../../plan-detail/components/threads/ReviewResult";
 import { usePlanChangeReferenceData } from "../../plan-detail/hooks/usePlanChangeReferenceData";
 import { useIssueDetailContext } from "../context/IssueDetailContext";
 
@@ -231,43 +250,55 @@ export function IssueDetailCommentList() {
         />
         {issueComments.map((item, index) => {
           const isEditing = activeCommentName === item.name;
-          return (
+          const review = item.reviewMetadata;
+          const body = item.comment ? (
+            <EditableMarkdownContent
+              allowSave={allowUpdateComment}
+              content={item.comment}
+              untrusted={Boolean(review)}
+              editContent={editContent}
+              isEditing={isEditing}
+              onCancel={cancelEditComment}
+              onChange={setEditContent}
+              onSave={() => {
+                void saveEditComment();
+              }}
+              placeholder={t("issue.no-description-provided")}
+              projectName={project?.name}
+            />
+          ) : null;
+          const subjectSuffix =
+            allowEditComment(item) && !activeCommentName ? (
+              <Button
+                className="text-control-light hover:text-control"
+                onClick={() => startEditComment(item)}
+                size="xs"
+                appearance="secondary"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+            ) : null;
+          const isLast = index === issueComments.length - 1;
+          return review ? (
+            <ReviewResultActivityRow
+              key={item.name}
+              body={body}
+              comment={item}
+              isLast={isLast}
+              plan={page.plan}
+              review={review}
+              subjectSuffix={subjectSuffix}
+            />
+          ) : (
             <IssueCommentRow
               key={item.name}
-              body={
-                item.comment ? (
-                  <EditableMarkdownContent
-                    allowSave={allowUpdateComment}
-                    content={item.comment}
-                    editContent={editContent}
-                    isEditing={isEditing}
-                    onCancel={cancelEditComment}
-                    onChange={setEditContent}
-                    onSave={() => {
-                      void saveEditComment();
-                    }}
-                    placeholder={t("issue.no-description-provided")}
-                    projectName={project?.name}
-                  />
-                ) : null
-              }
+              body={body}
               comment={item}
-              isLast={index === issueComments.length - 1}
+              isLast={isLast}
               issue={page.issue}
               plan={page.plan}
               renderPlanChangeReference={renderPlanChangeReference}
-              subjectSuffix={
-                allowEditComment(item) && !activeCommentName ? (
-                  <Button
-                    className="text-control-light hover:text-control"
-                    onClick={() => startEditComment(item)}
-                    size="xs"
-                    appearance="secondary"
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
-                ) : null
-              }
+              subjectSuffix={subjectSuffix}
             />
           );
         })}
@@ -336,10 +367,7 @@ function IssueDescriptionCommentRow({
   const projectName = `${projectNamePrefix}${page.projectId}`;
   const project = useProjectByName(projectName);
   void projectsByName;
-  const creatorUser = useAppStore((state) =>
-    state.getUserByIdentifier(page.issue?.creator || "")
-  );
-  const creator = creatorUser ?? unknownUser(page.issue?.creator || "");
+  const creator = usePrincipal(page.issue?.creator);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(page.issue?.description || "");
   const [isSaving, setIsSaving] = useState(false);
@@ -407,7 +435,7 @@ function IssueDescriptionCommentRow({
             <UserAvatar
               className="h-7 w-7 text-xs font-medium"
               size="sm"
-              title={creator.title || creator.email}
+              title={principalLabel(creator)}
             />
             <div className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-control-bg ring-2 ring-background">
               <Plus className="h-4 w-4 text-control" />
@@ -419,7 +447,7 @@ function IssueDescriptionCommentRow({
               <div className="bg-control-bg/50 px-3 py-2">
                 <div className="flex items-center justify-between">
                   <div className="flex min-w-0 flex-wrap items-center gap-x-2 text-sm">
-                    <CommentCreator creator={creator} />
+                    <CommentCreator creator={page.issue?.creator ?? ""} />
                     <span className="wrap-break-word min-w-0 text-control">
                       {t("activity.sentence.created-issue")}
                     </span>
@@ -479,6 +507,7 @@ function EditableMarkdownContent({
   onSave,
   placeholder,
   projectName,
+  untrusted = false,
 }: {
   allowSave: boolean;
   content: string;
@@ -490,6 +519,9 @@ function EditableMarkdownContent({
   onSave: () => void;
   placeholder: string;
   projectName?: string;
+  // A review result is a model's or a rule's text, not a member's, so it
+  // renders without raw HTML or images.
+  untrusted?: boolean;
 }) {
   const { t } = useTranslation();
   const transform = useIssueRefTransform(projectName);
@@ -511,6 +543,7 @@ function EditableMarkdownContent({
         onChange={onChange}
         onSubmit={onSave}
         transform={transform}
+        untrusted={untrusted}
       />
       {isEditing && (
         <div className="mt-2 flex items-center justify-end gap-x-2">
@@ -524,5 +557,68 @@ function EditableMarkdownContent({
         </div>
       )}
     </div>
+  );
+}
+
+// A review result in an activity timeline. It is headed by its reviewer,
+// priority, and targets, as on the plan page's thread card, since it has no
+// creator to name.
+function ReviewResultActivityRow({
+  body,
+  comment,
+  isLast,
+  plan,
+  review,
+  subjectSuffix,
+}: {
+  body: ReactNode;
+  comment: IssueComment;
+  isLast: boolean;
+  plan: Plan | undefined;
+  review: IssueComment_ReviewMetadata;
+  subjectSuffix?: ReactNode;
+}) {
+  const { t } = useTranslation();
+  const createdTs = getTimeForPbTimestampProtoEs(comment.createTime);
+  const updatedTs = getTimeForPbTimestampProtoEs(comment.updateTime);
+  const specId = comment.statementAnchor?.spec;
+  const spec = specId
+    ? plan?.specs.find((candidate) => candidate.id === specId)
+    : undefined;
+  return (
+    <ActivityRowShell
+      body={
+        <div className="flex flex-col gap-y-2">
+          <ReviewTargets spec={spec} targets={review.targets} />
+          {body}
+          {review.runType === ReviewRun_Type.RULE && (
+            <ReviewRule ruleType={review.ruleType} />
+          )}
+        </div>
+      }
+      header={
+        <>
+          <span className="font-medium text-main">
+            {reviewerName(t, review.runType)}
+          </span>
+          <ReviewPriorityBadge priority={review.priority} />
+          <HumanizeTs className="text-xs text-control-light" tsMs={createdTs} />
+          {createdTs !== updatedTs && (
+            <span className="text-control-light text-xs">
+              ({t("common.edited")})
+            </span>
+          )}
+        </>
+      }
+      icon={
+        <CommentIconBadge
+          className="bg-control-bg text-control"
+          icon={<ReviewerIcon className="size-4" runType={review.runType} />}
+        />
+      }
+      id={comment.name}
+      isLast={isLast}
+      subjectSuffix={subjectSuffix}
+    />
   );
 }

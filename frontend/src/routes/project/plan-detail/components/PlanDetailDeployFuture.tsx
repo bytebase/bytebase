@@ -8,12 +8,14 @@ import { Button } from "@/components/ui/button";
 import { pushNotification } from "@/stores";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
+import { useSqlReviewV2 } from "../hooks/useSqlReviewV2";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
 import { isReleaseBackedPlan } from "../utils/spec";
 
 export function PlanDetailDeployFuture() {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
+  const sqlReview = useSqlReviewV2();
   const [creatingRollout, setCreatingRollout] = useState(false);
 
   const isGitOpsPlan = useMemo(
@@ -60,7 +62,9 @@ export function PlanDetailDeployFuture() {
       <p className="text-sm text-control-placeholder">
         {isGitOpsPlan
           ? t("plan.phase.deploy-description-gitops")
-          : t("plan.phase.deploy-description")}
+          : sqlReview
+            ? t("plan.phase.deploy-description-v2")
+            : t("plan.phase.deploy-description")}
       </p>
       {canCreateRollout && (
         <div className="mt-3">

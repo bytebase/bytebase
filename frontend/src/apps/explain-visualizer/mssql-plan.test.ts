@@ -282,6 +282,7 @@ describe("parseMssqlPlan", () => {
         title: "No join predicate",
         detail:
           "The join has no condition, so every row of one input is paired with every row of the other.",
+        source: "engine",
       },
     ]);
   });
@@ -303,6 +304,7 @@ describe("parseMssqlPlan", () => {
         title: "Missing index",
         detail:
           "SQL Server estimates this index would lower the statement's cost by 78.4%: CREATE NONCLUSTERED INDEX [idx_orders_total] ON [dbo].[orders] ([total]) INCLUDE ([customer_id]);",
+        source: "engine",
       },
     ]);
   });
@@ -359,10 +361,12 @@ describe("parseMssqlPlan", () => {
         title: "Unmatched indexes",
         detail:
           "A filtered index could not be used because the statement is parameterized.",
+        source: "engine",
       },
       {
         title: "Spatial Guess",
         detail: "SQL Server flagged this while compiling the plan.",
+        source: "engine",
       },
     ]);
   });
@@ -374,6 +378,7 @@ describe("parseMssqlPlan", () => {
       title: "Unmatched indexes",
       detail:
         "The statement is parameterized, so SQL Server could not use the filtered index [plandb].[dbo].[orders].[orders_big_total_idx].",
+      source: "engine",
     });
   });
 
@@ -385,10 +390,15 @@ describe("parseMssqlPlan", () => {
     );
 
     expect(root.warnings).toEqual([
-      { title: "Columns With Stale Statistics", detail: "customers.region" },
+      {
+        title: "Columns With Stale Statistics",
+        detail: "customers.region",
+        source: "engine",
+      },
       {
         title: "Spill Occurred",
         detail: "SQL Server flagged this while compiling the plan.",
+        source: "engine",
       },
     ]);
   });
@@ -405,7 +415,8 @@ describe("parseMssqlPlan", () => {
         `<StmtSimple StatementType="SELECT"><QueryPlan><MissingIndexes><MissingIndexGroup Impact="50"><MissingIndex Schema="[dbo]" Table="[customer_order_history]"><ColumnGroup Usage="EQUALITY">${columns}</ColumnGroup></MissingIndex></MissingIndexGroup></MissingIndexes></QueryPlan></StmtSimple>`
       )
     );
-    const name = /INDEX \[([^\]]+)\]/.exec(root.warnings[0].detail)?.[1] ?? "";
+    const detail = root.warnings[0].detail ?? "";
+    const name = /INDEX \[([^\]]+)\]/.exec(detail)?.[1] ?? "";
 
     expect(name).toHaveLength(128);
     expect(name.startsWith("idx_customer_order_history_")).toBe(true);
@@ -477,5 +488,68 @@ describe("parseMssqlPlan", () => {
     [showplan(""), MSSQL_PLAN_NO_PLAN_MESSAGE],
   ])("rejects %j with a specific message", (source, message) => {
     expect(parseMssqlPlan(source)).toEqual({ ok: false, message });
+  });
+});
+
+describe("parseMssqlPlan on an actual plan", () => {
+  // SET STATISTICS XML ON: each thread of a parallel scan counts its own rows.
+  const parallelScanActual = showplan(
+    `<StmtSimple StatementType="SELECT" StatementSubTreeCost="3.5">
+       <QueryPlan>
+         <RelOp NodeId="0" PhysicalOp="Table Scan" LogicalOp="Table Scan" EstimateRows="900" EstimatedTotalSubtreeCost="3.5">
+           <RunTimeInformation>
+             <RunTimeCountersPerThread Thread="1" ActualRows="500" ActualExecutions="1"/>
+             <RunTimeCountersPerThread Thread="2" ActualRows="700" ActualExecutions="1"/>
+           </RunTimeInformation>
+           <TableScan><Object Table="[orders]"/></TableScan>
+         </RelOp>
+       </QueryPlan>
+     </StmtSimple>`
+  );
+
+  test("adds up the rows every thread really returned", () => {
+    const scan = byType(parseFixture(parallelScanActual), "Table Scan");
+
+    expect(scan.actualRows).toBe(1200);
+    expect(scan.loops).toBe(2);
+    expect(scan.rows).toBe(900);
+  });
+
+  test("says the plan measured rows but not time", () => {
+    const { measured } = parseFixture(parallelScanActual);
+
+    // SQL Server's elapsed time means different things in row and batch mode,
+    // so the ranking stays on the estimated cost the plan always carries.
+    expect(measured).toEqual({ time: false, rows: true });
+  });
+
+  test("leaves an estimated plan with no measurements", () => {
+    const { measured } = parseFixture(hashJoinAggregateSort);
+
+    expect(measured).toEqual({ time: false, rows: false });
+  });
+});
+
+describe("parseMssqlPlan relation", () => {
+  test("keeps the qualifiers SQL Server writes on the object", () => {
+    const scan = byType(parseFixture(indexSeekKeyLookup), "Index Seek");
+
+    // The database matters: a cross-database read must not be answered from
+    // the connected database's catalog.
+    expect(scan.relation).toEqual({
+      table: "orders",
+      database: "plandb",
+      schema: "dbo",
+    });
+  });
+
+  test("names no relation for an operator that reads no table", () => {
+    const tree = parseFixture(
+      showplan(
+        '<StmtSimple StatementType="SELECT"><QueryPlan><RelOp NodeId="0" PhysicalOp="Sort" LogicalOp="Sort"><Sort/></RelOp></QueryPlan></StmtSimple>'
+      )
+    );
+
+    expect(byType(tree, "Sort").relation).toBeUndefined();
   });
 });

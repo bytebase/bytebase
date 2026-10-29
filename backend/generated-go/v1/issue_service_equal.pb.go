@@ -517,6 +517,9 @@ func (x *IssueComment_ReviewMetadata) Equal(y *IssueComment_ReviewMetadata) bool
 			return false
 		}
 	}
+	if x.Superseded != y.Superseded {
+		return false
+	}
 	return true
 }
 
@@ -710,6 +713,22 @@ func (x *ReviewRun) Equal(y *ReviewRun) bool {
 		return false
 	}
 	if x.Error != y.Error {
+		return false
+	}
+	if x.Outdated != y.Outdated {
+		return false
+	}
+	return true
+}
+
+func (x *GetReviewRunRequest) Equal(y *GetReviewRunRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
 		return false
 	}
 	return true

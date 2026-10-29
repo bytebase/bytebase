@@ -1,12 +1,17 @@
+import { create } from "@bufbuild/protobuf";
 import { describe, expect, it } from "vitest";
+import { PositionSchema } from "@/types/proto-es/v1/common_pb";
+import { StatementAnchorSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { SHEET_PREVIEW_CHARACTER_LIMIT } from "@/utils/v1/sheet";
 import {
+  anchorLineRange,
   current,
   diffPair,
   OUTDATED,
   placeOnPair,
   placeWithHunks,
   tokenizeSheet,
+  trivialPlacement,
   UNAVAILABLE,
   UNAVAILABLE_SIZE_LIMIT,
 } from "./place";
@@ -224,5 +229,74 @@ describe("place: invalid input and limits", () => {
     expect(
       placeOnPair(diffPair(over, over, limits), { startLine: 1, endLine: 1 })
     ).toEqual(UNAVAILABLE_SIZE_LIMIT);
+  });
+});
+
+const anchorAt = (
+  start: [line: number, column: number],
+  end: [line: number, column: number],
+  sheetSha256 = ""
+) =>
+  create(StatementAnchorSchema, {
+    sheetSha256,
+    startPosition: create(PositionSchema, { line: start[0], column: start[1] }),
+    endPosition: create(PositionSchema, { line: end[0], column: end[1] }),
+  });
+
+describe("anchorLineRange", () => {
+  it("includes the end line of a whole-line anchor", () => {
+    expect(anchorLineRange(anchorAt([8, 0], [10, 0]))).toEqual({
+      startLine: 8,
+      endLine: 10,
+    });
+  });
+
+  it("covers the lines of a code-point range", () => {
+    expect(anchorLineRange(anchorAt([2, 1], [2, 21]))).toEqual({
+      startLine: 2,
+      endLine: 2,
+    });
+    expect(anchorLineRange(anchorAt([3, 2], [4, 7]))).toEqual({
+      startLine: 3,
+      endLine: 4,
+    });
+  });
+
+  it("stops a code-point range ending at column 1 on the previous line", () => {
+    expect(anchorLineRange(anchorAt([3, 2], [5, 1]))).toEqual({
+      startLine: 3,
+      endLine: 4,
+    });
+  });
+
+  it("rejects malformed anchors", () => {
+    expect(anchorLineRange(create(StatementAnchorSchema))).toBeUndefined();
+    expect(anchorLineRange(anchorAt([0, 0], [1, 0]))).toBeUndefined();
+    expect(anchorLineRange(anchorAt([5, 0], [2, 0]))).toBeUndefined();
+  });
+});
+
+describe("trivialPlacement", () => {
+  const SHA = "a".repeat(64);
+
+  it("places a code-point anchor on its own sheet at its covered lines", () => {
+    expect(trivialPlacement(anchorAt([4, 1], [4, 52], SHA), SHA)).toEqual(
+      current(4, 4)
+    );
+  });
+
+  it("leaves an anchor on another sheet to the diff", () => {
+    expect(
+      trivialPlacement(anchorAt([4, 1], [4, 52], SHA), "b".repeat(64))
+    ).toBeUndefined();
+  });
+
+  it("is UNAVAILABLE without a target or with a malformed anchor", () => {
+    expect(trivialPlacement(anchorAt([4, 1], [4, 52], SHA), undefined)).toBe(
+      UNAVAILABLE
+    );
+    expect(trivialPlacement(anchorAt([0, 0], [0, 0], SHA), SHA)).toBe(
+      UNAVAILABLE
+    );
   });
 });

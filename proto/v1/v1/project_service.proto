@@ -89,8 +89,9 @@ service ProjectService {
     option (bytebase.v1.permission) = "bb.projects.update";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
-    option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
+    // An MCP session reaches it only through the set_just_in_time_access tool,
+    // after the user confirms the change in the MCP client.
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Deletes (soft-delete or purge) a project.
@@ -139,8 +140,7 @@ service ProjectService {
     option (google.api.http) = {get: "/v1/{resource=projects/*}:getIamPolicy"};
     option (bytebase.v1.permission) = "bb.projects.getIamPolicy";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Sets the IAM policy for a project.
@@ -466,8 +466,9 @@ message Project {
     int32 maximum_retries = 1;
   }
 
-  // The maximum number of database rows to sample during CI data validation.
-  // Without specification, sampling is disabled, resulting in full validation.
+  // The maximum number of databases to sample during CI data validation and
+  // AI review. Without specification, sampling is disabled, resulting in full
+  // validation.
   int32 ci_sampling_size = 16;
 
   // The maximum number of parallel tasks allowed during rollout execution.

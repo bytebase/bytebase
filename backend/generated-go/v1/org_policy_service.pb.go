@@ -871,8 +871,9 @@ type QueryDataPolicy struct {
 	// The maximum number of rows to return in the SQL editor.
 	// The default value <= 0, means no limit.
 	MaximumResultRows int32 `protobuf:"varint,1,opt,name=maximum_result_rows,json=maximumResultRows,proto3" json:"maximum_result_rows,omitempty"`
-	// workspace-level policy
-	// Disable data export in the SQL editor.
+	// Deprecated: export is controlled by the bb.sql.export permission. Always false; setting it to true is rejected.
+	//
+	// Deprecated: Marked as deprecated in v1/org_policy_service.proto.
 	DisableExport bool `protobuf:"varint,2,opt,name=disable_export,json=disableExport,proto3" json:"disable_export,omitempty"`
 	// workspace-level policy
 	// Disable copying query results in the SQL editor.
@@ -925,6 +926,7 @@ func (x *QueryDataPolicy) GetMaximumResultRows() int32 {
 	return 0
 }
 
+// Deprecated: Marked as deprecated in v1/org_policy_service.proto.
 func (x *QueryDataPolicy) GetDisableExport() bool {
 	if x != nil {
 		return x.DisableExport
@@ -1295,10 +1297,10 @@ const file_v1_org_policy_service_proto_rawDesc = "" +
 	"\acontent\x18\x01 \x01(\tR\acontent\"C\n" +
 	"\rRolloutPolicy\x12\x1c\n" +
 	"\tautomatic\x18\x01 \x01(\bR\tautomatic\x12\x14\n" +
-	"\x05roles\x18\x02 \x03(\tR\x05roles\"\xcb\x01\n" +
+	"\x05roles\x18\x02 \x03(\tR\x05roles\"\xcf\x01\n" +
 	"\x0fQueryDataPolicy\x12.\n" +
-	"\x13maximum_result_rows\x18\x01 \x01(\x05R\x11maximumResultRows\x12%\n" +
-	"\x0edisable_export\x18\x02 \x01(\bR\rdisableExport\x12*\n" +
+	"\x13maximum_result_rows\x18\x01 \x01(\x05R\x11maximumResultRows\x12)\n" +
+	"\x0edisable_export\x18\x02 \x01(\bB\x02\x18\x01R\rdisableExport\x12*\n" +
 	"\x11disable_copy_data\x18\x03 \x01(\bR\x0fdisableCopyData\x125\n" +
 	"\x17allow_admin_data_source\x18\x04 \x01(\bR\x14allowAdminDataSource\"\xbf\x01\n" +
 	"\x16MaskingExemptionPolicy\x12M\n" +
@@ -1334,13 +1336,13 @@ const file_v1_org_policy_service_proto_rawDesc = "" +
 	"\x19RESOURCE_TYPE_UNSPECIFIED\x10\x00\x12\r\n" +
 	"\tWORKSPACE\x10\x01\x12\x0f\n" +
 	"\vENVIRONMENT\x10\x02\x12\v\n" +
-	"\aPROJECT\x10\x032\x90\n" +
+	"\aPROJECT\x10\x032\x84\n" +
 	"\n" +
-	"\x10OrgPolicyService\x12\xde\x01\n" +
-	"\tGetPolicy\x12\x1d.bytebase.v1.GetPolicyRequest\x1a\x13.bytebase.v1.Policy\"\x9c\x01\xdaA\x04name\x8a\xea0\x0fbb.policies.get\x90\xea0\x02\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02pZ\"\x12 /v1/{name=projects/*/policies/*}Z&\x12$/v1/{name=environments/*/policies/*}\x12\"/v1/{name=workspaces/*/policies/*}\x12\xef\x01\n" +
-	"\fListPolicies\x12 .bytebase.v1.ListPoliciesRequest\x1a!.bytebase.v1.ListPoliciesResponse\"\x99\x01\xdaA\x00\x8a\xea0\x10bb.policies.list\x90\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02pZ\"\x12 /v1/{parent=projects/*}/policiesZ&\x12$/v1/{parent=environments/*}/policies\x12\"/v1/{parent=workspaces/*}/policies\x12\x8d\x02\n" +
-	"\fCreatePolicy\x12 .bytebase.v1.CreatePolicyRequest\x1a\x13.bytebase.v1.Policy\"\xc5\x01\xdaA\rparent,policy\x8a\xea0\x12bb.policies.create\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02\x88\x01:\x06policyZ*:\x06policy\" /v1/{parent=projects/*}/policiesZ.:\x06policy\"$/v1/{parent=environments/*}/policies\"\"/v1/{parent=workspaces/*}/policies\x12\xa7\x02\n" +
-	"\fUpdatePolicy\x12 .bytebase.v1.UpdatePolicyRequest\x1a\x13.bytebase.v1.Policy\"\xdf\x01\xdaA\x12policy,update_mask\x8a\xea0\x12bb.policies.update\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02\x9d\x01:\x06policyZ1:\x06policy2'/v1/{policy.name=projects/*/policies/*}Z5:\x06policy2+/v1/{policy.name=environments/*/policies/*}2)/v1/{policy.name=workspaces/*/policies/*}\x12\xee\x01\n" +
+	"\x10OrgPolicyService\x12\xda\x01\n" +
+	"\tGetPolicy\x12\x1d.bytebase.v1.GetPolicyRequest\x1a\x13.bytebase.v1.Policy\"\x98\x01\xdaA\x04name\x8a\xea0\x0fbb.policies.get\x90\xea0\x02\xa0\xea0\x01\x82\xd3\xe4\x93\x02pZ\"\x12 /v1/{name=projects/*/policies/*}Z&\x12$/v1/{name=environments/*/policies/*}\x12\"/v1/{name=workspaces/*/policies/*}\x12\xeb\x01\n" +
+	"\fListPolicies\x12 .bytebase.v1.ListPoliciesRequest\x1a!.bytebase.v1.ListPoliciesResponse\"\x95\x01\xdaA\x00\x8a\xea0\x10bb.policies.list\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02pZ\"\x12 /v1/{parent=projects/*}/policiesZ&\x12$/v1/{parent=environments/*}/policies\x12\"/v1/{parent=workspaces/*}/policies\x12\x8d\x02\n" +
+	"\fCreatePolicy\x12 .bytebase.v1.CreatePolicyRequest\x1a\x13.bytebase.v1.Policy\"\xc5\x01\xdaA\rparent,policy\x8a\xea0\x12bb.policies.create\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02\x88\x01:\x06policyZ*:\x06policy\" /v1/{parent=projects/*}/policiesZ.:\x06policy\"$/v1/{parent=environments/*}/policies\"\"/v1/{parent=workspaces/*}/policies\x12\xa3\x02\n" +
+	"\fUpdatePolicy\x12 .bytebase.v1.UpdatePolicyRequest\x1a\x13.bytebase.v1.Policy\"\xdb\x01\xdaA\x12policy,update_mask\x8a\xea0\x12bb.policies.update\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x02\x9d\x01:\x06policyZ1:\x06policy2'/v1/{policy.name=projects/*/policies/*}Z5:\x06policy2+/v1/{policy.name=environments/*/policies/*}2)/v1/{policy.name=workspaces/*/policies/*}\x12\xee\x01\n" +
 	"\fDeletePolicy\x12 .bytebase.v1.DeletePolicyRequest\x1a\x16.google.protobuf.Empty\"\xa3\x01\xdaA\x04name\x8a\xea0\x12bb.policies.delete\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02pZ\"* /v1/{name=projects/*/policies/*}Z&*$/v1/{name=environments/*/policies/*}*\"/v1/{name=workspaces/*/policies/*}B\xab\x01\n" +
 	"\x0fcom.bytebase.v1B\x15OrgPolicyServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 

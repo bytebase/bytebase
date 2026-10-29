@@ -1,49 +1,93 @@
 import { create } from "@bufbuild/protobuf";
-import { Loader2 } from "lucide-react";
+import { GitCommitHorizontal, Loader2, Settings2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { releaseServiceClientConnect } from "@/api";
+import { planServiceClientConnect } from "@/api";
 import { router } from "@/app/router";
 import {
+  PROJECT_V1_ROUTE_GITOPS,
+  PROJECT_V1_ROUTE_PLAN_DETAIL,
+  PROJECT_V1_ROUTE_PLAN_ROLLOUT,
+} from "@/app/router/handles";
+import {
   markListScrollRestorationEntry,
+  useListScrollRestorationKey,
   useListScrollRestorationLoadMore,
 } from "@/app/router/NavigationScrollRestoration";
+import azureDevOpsIcon from "@/assets/git/azure-devops.svg";
+import bitbucketIcon from "@/assets/git/bitbucket.svg";
+import githubIcon from "@/assets/git/github.svg";
+import gitlabIcon from "@/assets/git/gitlab.svg";
+import {
+  AdvancedSearch,
+  type ScopeOption,
+  type SearchParams,
+} from "@/components/AdvancedSearch";
 import { HumanizeTs } from "@/components/HumanizeTs";
-import { LearnMoreLink } from "@/components/LearnMoreLink";
+import {
+  PermissionGuard,
+  usePermissionCheck,
+} from "@/components/PermissionGuard";
 import {
   ProjectPageContent,
   ProjectPageFooter,
   ProjectPageInfo,
   ProjectPageLayout,
 } from "@/components/ProjectPageLayout";
+import { TimeRangePicker } from "@/components/TimeRangePicker";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { PagedTableFooter, usePagedData } from "@/hooks/usePagedData";
-import { useURLSearchParam } from "@/hooks/useURLSearchParam";
-import { cn } from "@/lib/utils";
+import { useProjectByName } from "@/hooks/useProjectByName";
+import {
+  createAdvancedSearchParser,
+  serializeAdvancedSearch,
+  useURLSearchParam,
+} from "@/hooks/useURLSearchParam";
+import { projectPlansPagedDataCacheScope } from "@/lib/projectPagedDataCache";
 import { useAppStore } from "@/stores/app";
+import {
+  buildPlanFilter,
+  buildPlanFindBySearchParams,
+} from "@/stores/app/plan";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
-import { getTimeForPbTimestampProtoEs } from "@/types";
-import { State } from "@/types/proto-es/v1/common_pb";
-import type { Release } from "@/types/proto-es/v1/release_service_pb";
-import { ListReleaseCategoriesRequestSchema } from "@/types/proto-es/v1/release_service_pb";
-import { buildCategoryFilter } from "@/utils/releaseFilter";
+import type { Permission } from "@/types";
+import { State, VCSType } from "@/types/proto-es/v1/common_pb";
+import {
+  ListPlansRequestSchema,
+  type Plan,
+} from "@/types/proto-es/v1/plan_service_pb";
+import { extractPlanUID } from "@/utils";
+import {
+  createPlanStagesColumn,
+  type PlanColumn,
+  PlanLifecycleBadges,
+  PlanTable,
+} from "./PlanTable";
+import { planStateScopeOption, planStatusScopeOption } from "./planListSearch";
 
-const MAX_SHOW_FILES_COUNT = 3;
+// Below Tailwind's `sm` breakpoint (640px) the table keeps a compact Release
+// column and scrolls sideways.
+const MOBILE_MEDIA_QUERY = "(max-width: 639px)";
+// `release` is not offered in the scope menu; the retired release detail URL
+// redirects here with it set.
+const parseReleaseSearchParams = createAdvancedSearchParser([
+  "state",
+  "status",
+  "created",
+  "release",
+]);
+const GITOPS_PLAN_FIND = {
+  specType: "change_database_config",
+  hasRelease: true,
+} as const;
+const GITOPS_SETUP_PERMISSIONS: Permission[] = [
+  "bb.workloadIdentities.list",
+  "bb.databases.list",
+];
+const GET_RELEASE_PERMISSIONS: Permission[] = ["bb.releases.get"];
+const GITOPS_GUIDE_URL =
+  "https://docs.bytebase.com/gitops/overview?source=console";
 
 export function ProjectReleaseDashboardPage({
   projectId,
@@ -51,103 +95,200 @@ export function ProjectReleaseDashboardPage({
   projectId: string;
 }) {
   const { t } = useTranslation();
-  const listReleasesByProject = useAppStore(
-    (state) => state.listReleasesByProject
-  );
+  const listScrollRestorationKey = useListScrollRestorationKey();
   const projectName = `${projectNamePrefix}${projectId}`;
-
-  // Empty string means "All" — elided from the URL as the default.
-  const [selectedCategory, setSelectedCategory] = useURLSearchParam({
-    param: "category",
-    defaultValue: "",
-  });
-
-  // Fetch categories
-  const [categories, setCategories] = useState<string[]>([]);
-  const [categoriesLoading, setCategoriesLoading] = useState(false);
-
-  useEffect(() => {
-    setCategoriesLoading(true);
-    const request = create(ListReleaseCategoriesRequestSchema, {
-      parent: projectName,
-    });
-    releaseServiceClientConnect
-      .listReleaseCategories(request)
-      .then((resp) => setCategories(resp.categories))
-      .catch(() => setCategories([]))
-      .finally(() => setCategoriesLoading(false));
-  }, [projectName]);
-
-  // Fetch releases
-  const fetchReleaseList = useCallback(
-    async (params: { pageSize: number; pageToken: string }) => {
-      const filter = buildCategoryFilter(selectedCategory);
-      const { nextPageToken, releases } = await listReleasesByProject(
-        projectName,
-        { pageSize: params.pageSize, pageToken: params.pageToken },
-        false,
-        filter
-      );
-      return { list: releases, nextPageToken };
-    },
-    [listReleasesByProject, projectName, selectedCategory]
+  const project = useProjectByName(projectName);
+  const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY);
+  const [canSetUpGitOps] = usePermissionCheck(
+    GITOPS_SETUP_PERMISSIONS,
+    project
   );
 
-  const paged = usePagedData<Release>({
-    sessionKey: `project-${projectName}-releases`,
-    fetchList: fetchReleaseList,
+  const defaultSearchParams = useMemo<SearchParams>(
+    () => ({
+      query: "",
+      scopes: [{ id: "state", value: "ACTIVE" }],
+    }),
+    []
+  );
+  const [searchParams, setSearchParams] = useURLSearchParam({
+    param: "q",
+    parse: parseReleaseSearchParams,
+    serialize: serializeAdvancedSearch,
+    defaultValue: defaultSearchParams,
+  });
+  const serializedSearch = serializeAdvancedSearch(searchParams);
+  const isDefaultSearch =
+    serializedSearch === serializeAdvancedSearch(defaultSearchParams);
+
+  const scopeOptions: ScopeOption[] = useMemo(
+    () => [planStateScopeOption(t), planStatusScopeOption(t)],
+    [t]
+  );
+
+  const planFind = useMemo(
+    () =>
+      buildPlanFindBySearchParams(
+        {
+          query: searchParams.query.trim().toLowerCase(),
+          scopes: [
+            ...searchParams.scopes.map((s) => ({ id: s.id, value: s.value })),
+            { id: "project", value: projectId },
+          ],
+        },
+        GITOPS_PLAN_FIND
+      ),
+    [searchParams, projectId]
+  );
+
+  const fetchPlanList = useCallback(
+    async (params: { pageSize: number; pageToken: string }) => {
+      const { nextPageToken, plans } = await useAppStore.getState().listPlans({
+        find: planFind,
+        pageSize: params.pageSize,
+        pageToken: params.pageToken,
+      });
+      return { list: plans, nextPageToken };
+    },
+    [planFind]
+  );
+
+  const paged = usePagedData<Plan>({
+    sessionKey: `bb.${projectName}.release-plan-table`,
+    cacheKey: JSON.stringify([
+      "project-releases",
+      projectName,
+      serializedSearch,
+    ]),
+    cacheScope: projectPlansPagedDataCacheScope(projectId),
+    cacheRestoreToken: listScrollRestorationKey,
+    fetchList: fetchPlanList,
   });
   useListScrollRestorationLoadMore(paged);
+
+  const isEmpty = !paged.isLoading && paged.dataList.length === 0;
+  const projectHasGitOpsPlan = useProjectHasGitOpsPlan(projectName, isEmpty);
+  const hasGitOpsPlan = paged.dataList.length > 0 || projectHasGitOpsPlan;
+
+  const columns = useReleaseColumns(isMobile);
+  const releaseNames = useMemo(
+    () => paged.dataList.map(getPlanReleaseName).filter(Boolean),
+    [paged.dataList]
+  );
+  // A role that can list plans but not read releases sees "-" in Source.
+  const [canGetReleases] = usePermissionCheck(GET_RELEASE_PERMISSIONS, project);
+  useFetchReleases(canGetReleases ? releaseNames : []);
+
+  const gitOpsSetupUrl = router.resolve({
+    name: PROJECT_V1_ROUTE_GITOPS,
+    params: { projectId },
+  }).fullPath;
+  const openGitOpsSetup = () => router.push(gitOpsSetupUrl);
+
+  let content;
+  if (paged.isLoading || (isEmpty && projectHasGitOpsPlan === undefined)) {
+    content = (
+      <div className="flex justify-center py-8 text-control-light">
+        <Loader2 className="size-5 animate-spin" />
+      </div>
+    );
+  } else if (isEmpty && !projectHasGitOpsPlan) {
+    content = (
+      <div
+        data-testid="release-setup-empty-state"
+        className="flex flex-col items-center gap-y-4 rounded-sm border border-dashed border-block-border px-4 py-16 text-center"
+      >
+        <div className="flex flex-col items-center gap-y-1">
+          <h2 className="text-base font-semibold text-main">
+            {t("release.empty.title")}
+          </h2>
+          <p className="max-w-md text-sm text-control-light">
+            {t("release.empty.description")}
+          </p>
+        </div>
+        <PermissionGuard
+          permissions={GITOPS_SETUP_PERMISSIONS}
+          project={project}
+        >
+          <Button disabled={!canSetUpGitOps} onClick={openGitOpsSetup}>
+            {t("release.empty.set-up")}
+          </Button>
+        </PermissionGuard>
+        <a
+          href={GITOPS_GUIDE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-sm text-accent hover:underline"
+        >
+          {t("release.empty.read-guide")}
+        </a>
+      </div>
+    );
+  } else if (isEmpty) {
+    content = (
+      <div className="flex flex-col items-center gap-y-2 py-8 text-control-light">
+        <span>{t("common.no-data")}</span>
+        {!isDefaultSearch && (
+          <Button
+            appearance="secondary"
+            size="sm"
+            onClick={() => setSearchParams(defaultSearchParams)}
+          >
+            {t("common.clear-filters")}
+          </Button>
+        )}
+      </div>
+    );
+  } else {
+    content = (
+      <PlanTable
+        plans={paged.dataList}
+        projectId={projectId}
+        columns={columns}
+        isMobile={isMobile}
+        resolvePlanUrl={resolveReleasePlanUrl}
+        onOpenPlan={markListScrollRestorationEntry}
+      />
+    );
+  }
 
   return (
     <ProjectPageLayout>
       <div className="flex flex-col gap-y-2">
-        <ProjectPageInfo
-          description={
-            <>
-              <span>{t("release.usage-description")}</span>
-              <LearnMoreLink
-                href="https://docs.bytebase.com/gitops/migration-based-workflow/release/?source=console"
-                className="ml-1"
-              />
-            </>
-          }
-        />
-
-        {/* Category filter */}
-        <div className="flex items-center gap-x-4">
-          <CategorySelect
-            value={selectedCategory}
-            onChange={setSelectedCategory}
-            categories={categories}
-            loading={categoriesLoading}
+        <ProjectPageInfo description={t("release.list-description")} />
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="min-w-0 basis-80 grow">
+            <AdvancedSearch
+              params={searchParams}
+              onParamsChange={setSearchParams}
+              scopeOptions={scopeOptions}
+            />
+          </div>
+          <TimeRangePicker
+            params={searchParams}
+            onParamsChange={setSearchParams}
           />
-          {selectedCategory && (
-            <Button
-              appearance="secondary"
-              size="sm"
-              onClick={() => setSelectedCategory("")}
+          {hasGitOpsPlan && (
+            <PermissionGuard
+              permissions={GITOPS_SETUP_PERMISSIONS}
+              project={project}
             >
-              {t("common.clear-filters")}
-            </Button>
+              <Button
+                data-testid="release-gitops-setup"
+                appearance="outline"
+                disabled={!canSetUpGitOps}
+                onClick={openGitOpsSetup}
+              >
+                <Settings2 className="size-4 mr-1" />
+                {t("release.gitops-setup")}
+              </Button>
+            </PermissionGuard>
           )}
         </div>
       </div>
 
-      {/* Release table */}
       <ProjectPageContent>
-        {paged.isLoading ? (
-          <div className="flex justify-center py-8 text-control-light">
-            <Loader2 className="size-5 animate-spin" />
-          </div>
-        ) : paged.dataList.length === 0 ? (
-          <div className="flex justify-center py-8 text-control-light">
-            {t("common.no-data")}
-          </div>
-        ) : (
-          <ReleaseTable releases={paged.dataList} />
-        )}
-
+        {content}
         {paged.dataList.length > 0 && (
           <ProjectPageFooter>
             <PagedTableFooter
@@ -165,136 +306,170 @@ export function ProjectReleaseDashboardPage({
   );
 }
 
-// ---------------------------------------------------------------------------
-// CategorySelect
-// ---------------------------------------------------------------------------
+// Only asked when the filtered page is empty: it decides between the setup
+// empty state and the ordinary "No data" state.
+function useProjectHasGitOpsPlan(
+  projectName: string,
+  enabled: boolean
+): boolean | undefined {
+  const [result, setResult] = useState<{
+    projectName: string;
+    hasPlan: boolean;
+  }>();
+  useEffect(() => {
+    if (!enabled || result?.projectName === projectName) {
+      return;
+    }
+    let canceled = false;
+    planServiceClientConnect
+      .listPlans(
+        create(ListPlansRequestSchema, {
+          parent: projectName,
+          filter: buildPlanFilter({
+            project: projectName,
+            ...GITOPS_PLAN_FIND,
+          }),
+          pageSize: 1,
+        })
+      )
+      // On failure, fall back to "No data" rather than inviting a second setup.
+      .then(
+        (resp) => resp.plans.length > 0,
+        () => true
+      )
+      .then((hasPlan) => {
+        if (!canceled) setResult({ projectName, hasPlan });
+      });
+    return () => {
+      canceled = true;
+    };
+  }, [enabled, projectName, result?.projectName]);
+  return result?.projectName === projectName ? result.hasPlan : undefined;
+}
 
-function CategorySelect({
-  value,
-  onChange,
-  categories,
-  loading,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  categories: string[];
-  loading: boolean;
-}) {
+const getPlanReleaseName = (plan: Plan): string => {
+  for (const spec of plan.specs) {
+    if (
+      spec.config?.case === "changeDatabaseConfig" &&
+      spec.config.value.release
+    ) {
+      return spec.config.value.release;
+    }
+  }
+  return "";
+};
+
+const lastPathSegment = (value: string): string => {
+  const path = value.split(/[?#]/)[0].replace(/\/+$/, "");
+  return path.slice(path.lastIndexOf("/") + 1);
+};
+
+const resolveReleasePlanUrl = (plan: Plan, projectId: string): string =>
+  router.resolve({
+    name: plan.hasRollout
+      ? PROJECT_V1_ROUTE_PLAN_ROLLOUT
+      : PROJECT_V1_ROUTE_PLAN_DETAIL,
+    params: { projectId, planId: extractPlanUID(plan.name) },
+  }).fullPath;
+
+// Each distinct release is fetched once per page; a failed fetch is not retried
+// and its row shows "-".
+function useFetchReleases(releaseNames: string[]) {
+  const fetchRelease = useAppStore((s) => s.fetchRelease);
+  const [failed] = useState(() => new Set<string>());
+  const key = [...new Set(releaseNames)].sort().join(",");
+  useEffect(() => {
+    if (!key) return;
+    const { releasesByName } = useAppStore.getState();
+    for (const name of key.split(",")) {
+      if (releasesByName[name] || failed.has(name)) continue;
+      fetchRelease(name, /* silent */ true).catch(() => failed.add(name));
+    }
+  }, [key, fetchRelease, failed]);
+}
+
+function useReleaseColumns(isMobile: boolean): PlanColumn[] {
+  const { t } = useTranslation();
+  return useMemo<PlanColumn[]>(
+    () => [
+      {
+        key: "release",
+        title: t("release.self"),
+        defaultWidth: isMobile ? 200 : 360,
+        minWidth: 200,
+        resizable: !isMobile,
+        render: (plan, ctx) => (
+          <div className="flex items-center gap-x-2 overflow-hidden">
+            <span className="truncate min-w-0">
+              {lastPathSegment(getPlanReleaseName(plan))}
+            </span>
+            <PlanLifecycleBadges ctx={ctx} />
+          </div>
+        ),
+      },
+      {
+        key: "source",
+        title: t("release.source"),
+        defaultWidth: 160,
+        minWidth: 120,
+        resizable: true,
+        render: (plan) => (
+          <ReleaseSourceCell releaseName={getPlanReleaseName(plan)} />
+        ),
+      },
+      createPlanStagesColumn(t),
+      {
+        key: "created",
+        title: t("common.created-at"),
+        defaultWidth: 152,
+        minWidth: 100,
+        resizable: true,
+        render: (_plan, ctx) =>
+          ctx.createTimeMs === undefined ? (
+            <span className="text-control-light">-</span>
+          ) : (
+            <HumanizeTs
+              tsMs={ctx.createTimeMs}
+              className="text-control-light whitespace-nowrap"
+            />
+          ),
+      },
+    ],
+    [t, isMobile]
+  );
+}
+
+const VCS_ICONS: Partial<Record<VCSType, string>> = {
+  [VCSType.GITHUB]: githubIcon,
+  [VCSType.GITLAB]: gitlabIcon,
+  [VCSType.BITBUCKET]: bitbucketIcon,
+  [VCSType.AZURE_DEVOPS]: azureDevOpsIcon,
+};
+
+function ReleaseSourceCell({ releaseName }: { releaseName: string }) {
+  const release = useAppStore((s) => s.releasesByName[releaseName]);
+  const url = release?.vcsSource?.url ?? "";
+  const commit = lastPathSegment(url);
+  if (!release || release.state === State.DELETED || !commit) {
+    return <span className="text-control-light">-</span>;
+  }
+  const icon =
+    VCS_ICONS[release.vcsSource?.vcsType ?? VCSType.VCS_TYPE_UNSPECIFIED];
   return (
-    <Select
-      value={value}
-      onValueChange={(nextValue: string | null) => {
-        if (nextValue !== null) onChange(nextValue);
-      }}
-      disabled={loading}
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={url}
+      className="inline-flex items-center gap-x-1 text-accent hover:underline"
+      onClick={(e) => e.stopPropagation()}
     >
-      <SelectTrigger className="w-64 rounded-sm px-3 text-sm">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="">All</SelectItem>
-        {categories.map((cat) => (
-          <SelectItem key={cat} value={cat}>
-            {cat}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// ReleaseTable
-// ---------------------------------------------------------------------------
-
-function ReleaseTable({ releases }: { releases: Release[] }) {
-  const { t } = useTranslation();
-
-  return (
-    <div className="overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow className="bg-control-bg">
-            <TableHead className="w-75">{t("common.name")}</TableHead>
-            <TableHead>{t("release.files")}</TableHead>
-            <TableHead className="w-32">{t("common.created-at")}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {releases.map((release) => (
-            <ReleaseRow key={release.name} release={release} />
-          ))}
-        </TableBody>
-      </Table>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// ReleaseRow
-// ---------------------------------------------------------------------------
-
-function ReleaseRow({ release }: { release: Release }) {
-  const { t } = useTranslation();
-  const isDeleted = release.state === State.DELETED;
-
-  const releaseName = useMemo(() => {
-    const parts = release.name.split("/");
-    return parts[parts.length - 1] || release.name;
-  }, [release.name]);
-
-  const showFiles = release.files.slice(0, MAX_SHOW_FILES_COUNT);
-
-  const createTimeMs = getTimeForPbTimestampProtoEs(release.createTime);
-
-  const url = `/${release.name}`;
-
-  const onRowClick = useCallback(
-    (e: React.MouseEvent) => {
-      if (e.ctrlKey || e.metaKey) {
-        window.open(url, "_blank");
-      } else {
-        markListScrollRestorationEntry();
-        router.push(url);
-      }
-    },
-    [url]
-  );
-
-  return (
-    <TableRow className="cursor-pointer" onClick={onRowClick}>
-      <TableCell>
-        <span
-          className={cn(
-            "truncate",
-            isDeleted && "text-control-light line-through"
-          )}
-        >
-          {releaseName}
-        </span>
-      </TableCell>
-      <TableCell>
-        <div className="flex flex-col items-start gap-1">
-          {showFiles.map((file, idx) => (
-            <p key={idx} className="w-full truncate">
-              {file.version && (
-                <span className="mr-2 inline-flex items-center rounded-full bg-control-bg px-2 py-0.5 text-xs">
-                  {file.version}
-                </span>
-              )}
-              {file.path}
-            </p>
-          ))}
-          {release.files.length > MAX_SHOW_FILES_COUNT && (
-            <p className="text-control-placeholder text-xs italic">
-              {t("release.total-files", { count: release.files.length })}
-            </p>
-          )}
-        </div>
-      </TableCell>
-      <TableCell>
-        {createTimeMs === undefined ? "-" : <HumanizeTs tsMs={createTimeMs} />}
-      </TableCell>
-    </TableRow>
+      {icon ? (
+        <img src={icon} alt="" className="size-4" />
+      ) : (
+        <GitCommitHorizontal className="size-4" />
+      )}
+      <span className="font-mono text-sm">{commit.slice(0, 7)}</span>
+    </a>
   );
 }

@@ -382,6 +382,7 @@
 | export | [bool](#bool) |  | Whether export the query result. |
 | schema | [string](#string) |  | The default schema to execute the query. |
 | container | [string](#string) |  | The container name to execute the query against, used for CosmosDB only. |
+| query_hash | [string](#string) |  | Lowercase hex SHA-256 of query after trimming boundary space, tab, LF, CR, vertical tab, and form feed. Derived by the store for grant matching. |
 
 
 
@@ -1954,7 +1955,7 @@ RoleGrant contains details for requesting a project role.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| role | [string](#string) |  | The role being requested for the user. Format: roles/EXPORTER. |
+| role | [string](#string) |  | The role being requested for the user. Format: roles/{role}. |
 | user | [string](#string) |  | The user who will receive the role. Format: users/{email}. |
 | condition | [google.type.Expr](#google-type-Expr) |  | Optional conditional expression that limits when the grant applies. |
 | expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | Duration after which the grant automatically expires. |
@@ -2162,6 +2163,7 @@ issue. Results live in issue comments; the run carries none.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | error | [string](#string) |  | Fatal execution error for the FAILED status, e.g. &#34;metadata not synced: instances/prod/databases/db1, db2, db3 (&#43;497 more)&#34;. Written by the executor or by the reaper. |
+| approval_input_version | [int64](#int64) |  | The plan&#39;s PlanConfig.approval_input_version when the slot was reset: the version of the plan&#39;s SQL this run reviews. Completion keeps it. |
 
 
 
@@ -2298,7 +2300,8 @@ ReviewMetadata is what a review result carries beyond its text: which
 reviewer posted it, what it was judged against, its priority, and the
 databases it applies to. Results from the same reviewer are superseded
 together: when a run completes, it resolves every OPEN root of its type
-in the transaction that posts the new results.
+and marks every earlier root of its type superseded, in the transaction
+that posts the new results.
 
 
 | Field | Type | Label | Description |
@@ -2307,6 +2310,7 @@ in the transaction that posts the new results.
 | rule_type | [ReviewRuleType](#bytebase-store-ReviewRuleType) |  | The rule judged against. Set if and only if run_type is RULE. |
 | priority | [IssueCommentPayload.ReviewMetadata.Priority](#bytebase-store-IssueCommentPayload-ReviewMetadata-Priority) |  | A result merged across databases carries the highest priority among them. |
 | targets | [string](#string) | repeated | Every database the result applies to, sorted. Always complete; the renderer collapses it when it equals the spec&#39;s target set. Format: instances/{instance}/databases/{database} |
+| superseded | [bool](#bool) |  | A later run of the same reviewer has completed, so the result is not from the latest review. Set by that run whatever the thread state, and never cleared. |
 
 
 
@@ -2732,7 +2736,6 @@ QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| disable_export | [bool](#bool) |  | workspace-level policy Disable exporting data in the SQL editor. |
 | maximum_result_rows | [int32](#int32) |  | Support both project-level and workspace-level. The maximum number of rows to return in the SQL editor. The default value &lt;= 0, means no limit. |
 | disable_copy_data | [bool](#bool) |  | workspace-level policy Disable copying data. |
 | allow_admin_data_source | [bool](#bool) |  | workspace-level policy Allow using the admin data source to query in the SQL editor. |
@@ -2905,7 +2908,7 @@ Project contains settings and configuration for a Bytebase project.
 | postgres_database_tenant_mode | [bool](#bool) |  | Whether to enable the database tenant mode for PostgreSQL. If enabled, the issue will be created with the prepend &#34;set role &lt;db_owner&gt;&#34; statement. |
 | allow_self_approval | [bool](#bool) |  | Whether to allow the issue creator to self-approve the issue. |
 | execution_retry_policy | [Project.ExecutionRetryPolicy](#bytebase-store-Project-ExecutionRetryPolicy) |  | Configuration for automatic retry on task execution failures. |
-| ci_sampling_size | [int32](#int32) |  | The maximum number of databases to sample during CI data validation. If not specified, sampling is disabled, resulting in a full validation. |
+| ci_sampling_size | [int32](#int32) |  | The maximum number of databases to sample during CI data validation and AI review. If not specified, sampling is disabled, resulting in a full validation. |
 | parallel_tasks_per_rollout | [int32](#int32) |  | The maximum number of parallel tasks to run during the rollout. |
 | labels | [Project.LabelsEntry](#bytebase-store-Project-LabelsEntry) | repeated | Labels are key-value pairs that can be attached to the project. For example, { &#34;environment&#34;: &#34;production&#34;, &#34;team&#34;: &#34;backend&#34; } |
 | enforce_sql_review | [bool](#bool) |  | Whether to enforce SQL review checks to pass before issue creation. If enabled, issues cannot be created when SQL review finds errors. |
@@ -3653,6 +3656,7 @@ All other settings live in per-workspace WORKSPACE_PROFILE.
 | api_key | [string](#string) |  |  |
 | model | [string](#string) |  |  |
 | version | [string](#string) |  |  |
+| sql_review_enabled | [bool](#bool) |  | Whether the AI SQL review may run. It is a consent of its own beside `enabled`, because a review sends the statements of a change to the provider and can send the schema of its target databases. |
 
 
 

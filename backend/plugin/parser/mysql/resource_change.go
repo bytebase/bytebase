@@ -8,6 +8,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/plugin/parser/mariadb"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -22,7 +23,7 @@ func init() {
 func extractChangedResources(currentDatabase string, _ string, dbMetadata *model.DatabaseMetadata, asts []base.AST, _ string) (*base.ChangeSummary, error) {
 	changedResources := model.NewChangedResources(dbMetadata)
 
-	var dmlCount, insertCount int
+	var dmlCount, insertCount, skippedStatements int
 	var dmlStatements []string
 
 	// addObjectDatabase records a database-only write target for a non-table object DDL
@@ -36,6 +37,10 @@ func extractChangedResources(currentDatabase string, _ string, dbMetadata *model
 	}
 
 	for _, unifiedAST := range asts {
+		if _, ok := unifiedAST.(*mariadb.OmniAST); ok {
+			skippedStatements++
+			continue
+		}
 		omniAST, ok := unifiedAST.(*OmniAST)
 		if !ok {
 			return nil, errors.New("expected OmniAST for MySQL")
@@ -158,10 +163,11 @@ func extractChangedResources(currentDatabase string, _ string, dbMetadata *model
 	}
 
 	return &base.ChangeSummary{
-		ChangedResources: changedResources,
-		DMLStatements:    dmlStatements,
-		DMLCount:         dmlCount,
-		InsertCount:      insertCount,
+		ChangedResources:  changedResources,
+		DMLStatements:     dmlStatements,
+		DMLCount:          dmlCount,
+		InsertCount:       insertCount,
+		SkippedStatements: skippedStatements,
 	}, nil
 }
 

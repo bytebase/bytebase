@@ -183,6 +183,68 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 			want: "",
 		},
 		{
+			description:     "Respect An Exception That Lists The Column",
+			databaseMessage: defaultDatabaseMessage,
+			schemaName:      "hiring",
+			tableName:       "employees",
+			columnName:      "salary",
+			columnCatalog: &storepb.ColumnCatalog{
+				Classification: "1-1-1",
+			},
+			maskingRulePolicy: &storepb.MaskingRulePolicy{
+				Rules: []*storepb.MaskingRulePolicy_MaskingRule{
+					{
+						Condition:    &expr.Expr{Expression: `resource.classification_level == 2`},
+						SemanticType: "default",
+					},
+				},
+			},
+			filteredMaskingExemptions: []*storepb.MaskingExemptionPolicy_Exemption{
+				{
+					Condition: &expr.Expr{
+						Expression: `(resource.instance_id == "neon-host" && resource.database_name == "bb" && resource.schema_name == "hiring" && resource.table_name == "employees" && resource.column_name in ["bonus", "salary"])`,
+					},
+					Members: []string{"users/1234"},
+				},
+			},
+			dataClassification:                      defaultClassification,
+			databaseProjectDatabaseClassificationID: defaultProjectDatabaseDataClassificationID,
+
+			want: "",
+		},
+		{
+			description:     "An Exception That Lists Other Columns",
+			databaseMessage: defaultDatabaseMessage,
+			schemaName:      "hiring",
+			tableName:       "employees",
+			columnName:      "salary",
+			columnCatalog: &storepb.ColumnCatalog{
+				Classification: "1-1-1",
+			},
+			maskingRulePolicy: &storepb.MaskingRulePolicy{
+				Rules: []*storepb.MaskingRulePolicy_MaskingRule{
+					{
+						Condition:    &expr.Expr{Expression: `resource.classification_level == 2`},
+						SemanticType: "default",
+					},
+				},
+			},
+			filteredMaskingExemptions: []*storepb.MaskingExemptionPolicy_Exemption{
+				{
+					Condition: &expr.Expr{
+						Expression: `(resource.instance_id == "neon-host" && resource.database_name == "bb" && resource.schema_name == "hiring" && resource.table_name == "employees" && resource.column_name in ["bonus", "commission"])`,
+					},
+					Members: []string{"users/1234"},
+				},
+			},
+			dataClassification:                      defaultClassification,
+			databaseProjectDatabaseClassificationID: defaultProjectDatabaseDataClassificationID,
+
+			want:           "default",
+			wantAlgorithm:  "Full mask",
+			wantClassLevel: 2,
+		},
+		{
 			description:     "Exemption By Classification Level",
 			databaseMessage: defaultDatabaseMessage,
 			schemaName:      "hiring",

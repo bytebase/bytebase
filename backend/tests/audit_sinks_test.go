@@ -370,15 +370,6 @@ func TestAuditSinksOnBothChains(t *testing.T) {
 			call: mcpCall(adminSession, "WorkspaceService/ListWorkspaces", map[string]any{}, http.StatusOK),
 		},
 		{
-			name: "mcp/audited validate-only ok", method: v1connect.DatabaseGroupServiceCreateDatabaseGroupProcedure, mcp: true, parent: project,
-			call: mcpCall(adminSession, "DatabaseGroupService/CreateDatabaseGroup", map[string]any{
-				"parent":          project,
-				"databaseGroupId": "sinks-mcp",
-				"databaseGroup":   map[string]any{"title": "sinks-mcp", "databaseExpr": map[string]any{"expression": "true"}},
-				"validateOnly":    true,
-			}, http.StatusOK),
-		},
-		{
 			name: "mcp/audited validate-only refused by the gate", method: v1connect.InstanceServiceUpdateDataSourceProcedure, mcp: true, parent: workspace,
 			wantWarning: true,
 			checkLine: func(t *testing.T, line map[string]any) {

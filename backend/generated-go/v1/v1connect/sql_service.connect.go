@@ -80,7 +80,8 @@ type SQLServiceClient interface {
 	// Deprecated: do not use.
 	GetQueryHistory(context.Context, *connect.Request[v1.GetQueryHistoryRequest]) (*connect.Response[v1.QueryHistory], error)
 	// Exports query results to a file format.
-	// Permissions required: bb.databases.get
+	// Permissions required: bb.databases.get, and bb.sql.export on the data the statement reads.
+	// An active access grant with export=true for the statement satisfies bb.sql.export on its target databases.
 	Export(context.Context, *connect.Request[v1.ExportRequest]) (*connect.Response[v1.ExportResponse], error)
 }
 
@@ -210,7 +211,8 @@ type SQLServiceHandler interface {
 	// Deprecated: do not use.
 	GetQueryHistory(context.Context, *connect.Request[v1.GetQueryHistoryRequest]) (*connect.Response[v1.QueryHistory], error)
 	// Exports query results to a file format.
-	// Permissions required: bb.databases.get
+	// Permissions required: bb.databases.get, and bb.sql.export on the data the statement reads.
+	// An active access grant with export=true for the statement satisfies bb.sql.export on its target databases.
 	Export(context.Context, *connect.Request[v1.ExportRequest]) (*connect.Response[v1.ExportResponse], error)
 }
 

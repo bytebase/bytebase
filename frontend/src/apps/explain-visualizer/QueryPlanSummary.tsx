@@ -1,35 +1,19 @@
-import { Info } from "lucide-react";
-import type { ReactNode } from "react";
-import { memo, useMemo } from "react";
+import { TriangleAlert } from "lucide-react";
+import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-import { useQueryPlanTranslation } from "./plan-i18n";
-import { planIndentPixels } from "./plan-layout";
+import { planWarningText, useQueryPlanTranslation } from "./plan-i18n";
 import {
-  formatPlanCost,
   formatPlanCount,
   formatPlanShare,
-  type PlanTimelineRow,
   type PlanTree,
-  planCostByOperation,
+  type PlanWarningGroup,
   planCostliestNodes,
-  planHighlightIntensity,
-  planSelfCostShare,
-  planTimeline,
+  planRankMetric,
+  planSelfShare,
+  planWarningGroups,
+  planWarningIdentity,
 } from "./plan-model";
-import {
-  PlanCostShareBar,
-  PlanMetric,
-  SECONDARY_COLUMN_CLASS,
-} from "./plan-shared";
 
 interface Props {
   readonly tree: PlanTree;
@@ -37,389 +21,142 @@ interface Props {
   readonly onSelect: (id: string) => void;
 }
 
-/**
- * Faintest a timeline span is drawn. A node that adds no cost of its own still
- * occupies a span of the plan, and hiding it would misreport the shape.
- */
-const MIN_SPAN_OPACITY = 0.3;
+const HEADING_CLASS = "text-xs leading-4 text-control-light";
+const ROW_CLASS =
+  "h-auto w-full items-baseline justify-start gap-2 rounded-xs px-2 py-1 text-left font-normal";
+const SELECTED_ROW_CLASS = "bg-accent/10 hover:bg-accent/15";
 
-/**
- * Narrowest a timeline span is drawn, as a fraction of the axis. A node whose
- * startup and total costs are the same spans nothing, and a bar of no width
- * would read as an absent row rather than an instant one.
- */
-const MIN_SPAN_FRACTION = 0.005;
-
-/** A span's placement on the axis, kept whole and inside the track. */
-function spanGeometry(start: number, end: number) {
-  const width = Math.min(1, Math.max(end - start, MIN_SPAN_FRACTION));
-  return {
-    left: `${Math.min(start, 1 - width) * 100}%`,
-    width: `${width * 100}%`,
-  };
-}
-
-/** Width of the label column once the row has room to put it beside the track. */
-const LABEL_COLUMN_CLASS = "sm:w-56 sm:shrink-0";
-/** Width of the trailing share column in the lists that carry one. */
-const SHARE_COLUMN_CLASS = "w-12 shrink-0 text-right";
-
-const ROW_BUTTON_CLASS =
-  "h-auto w-full justify-start rounded-xs px-2 py-1.5 text-left font-normal";
-
-function Section({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description?: string;
-  children: ReactNode;
-}) {
-  return (
-    <section className="flex flex-col gap-3">
-      <div className="flex flex-col gap-1">
-        <h2 className="text-base leading-6 font-semibold text-main">{title}</h2>
-        {description ? (
-          <p className="text-xs leading-4 text-control-light">{description}</p>
-        ) : null}
-      </div>
-      {children}
-    </section>
+function titleClass(selected: boolean): string {
+  return cn(
+    "truncate text-sm leading-5",
+    selected ? "font-medium text-accent" : "text-main"
   );
 }
 
-function PlanTotals({ tree }: { tree: PlanTree }) {
-  const translate = useQueryPlanTranslation();
-  return (
-    <div className="flex flex-col gap-3">
-      <dl className="flex flex-wrap gap-4">
-        <PlanMetric
-          label={translate("summary.nodes")}
-          value={formatPlanCount(tree.nodes.length)}
-        />
-        <PlanMetric
-          label={translate("summary.total-estimated-cost")}
-          value={formatPlanCost(tree.root.totalCost)}
-        />
-        {tree.root.rows === undefined ? null : (
-          <PlanMetric
-            label={translate("summary.estimated-rows-returned")}
-            value={formatPlanCount(tree.root.rows)}
-          />
-        )}
-      </dl>
-      <p className="flex items-start gap-2 text-xs leading-4 text-control-light">
-        <Info aria-hidden="true" className="mt-px size-3.5 shrink-0" />
-        <span>{translate("summary.estimate-note")}</span>
-      </p>
-    </div>
-  );
-}
-
-/**
- * One node as a span on the plan's cost axis.
- *
- * Memoized because a selection change re-renders the timeline, and every other
- * row of a large plan is drawing exactly what it drew before.
- */
-const TimelineRow = memo(function TimelineRow({
-  row,
-  tree,
-  selected,
-  onSelect,
-}: {
-  row: PlanTimelineRow;
-  tree: PlanTree;
-  selected: boolean;
-  onSelect: (id: string) => void;
-}) {
-  const translate = useQueryPlanTranslation();
-  const { node, depth, start, end, share } = row;
-  return (
-    <li>
-      <Button
-        appearance="secondary"
-        data-testid="plan-timeline-row"
-        aria-pressed={selected}
-        aria-label={translate("summary.timeline-node", {
-          name: [node.nodeType, node.subject].filter(Boolean).join(", "),
-          startup: formatPlanCost(node.startupCost),
-          total: formatPlanCost(node.totalCost),
-          share: formatPlanShare(share),
-        })}
-        onClick={() => onSelect(node.id)}
-        className={cn(
-          ROW_BUTTON_CLASS,
-          "flex-col items-stretch gap-1 sm:flex-row sm:items-center sm:gap-3",
-          selected && "bg-accent/10 hover:bg-accent/15"
-        )}
-      >
-        <span
-          className={cn(
-            "flex min-w-0 items-baseline gap-2",
-            LABEL_COLUMN_CLASS
-          )}
-          style={{ paddingLeft: planIndentPixels(depth) }}
-        >
-          <span
-            data-testid="plan-timeline-node-type"
-            className={cn(
-              "truncate text-xs leading-4",
-              selected ? "font-medium text-accent" : "text-main"
-            )}
-          >
-            {node.nodeType}
-          </span>
-          <span className="min-w-0 flex-1 truncate text-xs leading-4 text-control-light">
-            {node.subject ?? ""}
-          </span>
-          <span className="shrink-0 text-xs leading-4 text-control tabular-nums">
-            {formatPlanShare(share)}
-          </span>
-        </span>
-        <span
-          aria-hidden="true"
-          // `flex-1` only once the row is horizontal: in the stacked layout it
-          // is the column's main axis and would flatten the track to nothing.
-          className="relative h-2.5 w-full min-w-0 overflow-hidden rounded-xs bg-control-bg sm:flex-1"
-        >
-          <span
-            data-testid="plan-timeline-span"
-            className="absolute inset-y-0 rounded-xs bg-warning"
-            style={{
-              ...spanGeometry(start, end),
-              opacity:
-                MIN_SPAN_OPACITY +
-                (1 - MIN_SPAN_OPACITY) *
-                  planHighlightIntensity(node, tree, "cost"),
-            }}
-          />
-        </span>
-      </Button>
-    </li>
-  );
-});
-
-function CostTimeline({
-  tree,
-  selectedId,
-  onSelect,
-}: {
-  tree: PlanTree;
-  selectedId: string | undefined;
-  onSelect: (id: string) => void;
-}) {
-  const rows = useMemo(() => planTimeline(tree), [tree]);
-  return (
-    <div className="flex flex-col gap-1">
-      <div className="flex items-center gap-3">
-        <span
-          aria-hidden="true"
-          className={cn("hidden sm:block", LABEL_COLUMN_CLASS)}
-        />
-        <span
-          data-testid="plan-timeline-axis"
-          className="flex min-w-0 flex-1 items-baseline justify-between px-2 text-xs leading-4 text-control-light tabular-nums sm:px-0"
-        >
-          <span>0</span>
-          <span>{formatPlanCost(tree.costBasis)}</span>
-        </span>
-      </div>
-      <ol data-testid="plan-timeline" className="flex flex-col">
-        {rows.map((row) => (
-          <TimelineRow
-            key={row.node.id}
-            row={row}
-            tree={tree}
-            selected={row.node.id === selectedId}
-            onSelect={onSelect}
-          />
-        ))}
-      </ol>
-    </div>
-  );
-}
-
-function CostliestOperators({
-  tree,
-  selectedId,
-  onSelect,
-}: {
-  tree: PlanTree;
-  selectedId: string | undefined;
-  onSelect: (id: string) => void;
-}) {
-  const translate = useQueryPlanTranslation();
-  const nodes = useMemo(() => planCostliestNodes(tree), [tree]);
-
-  if (nodes.length === 0) {
-    return (
-      <p className="text-sm leading-5 text-control-light">
-        {translate("summary.no-added-cost")}
-      </p>
-    );
+/** Where a warning fired: the operator itself, or how many reported it. */
+function warningSubject(
+  group: PlanWarningGroup,
+  translate: ReturnType<typeof useQueryPlanTranslation>
+): string {
+  if (group.nodes.length > 1) {
+    return translate("summary.warning-operators", {
+      count: formatPlanCount(group.nodes.length),
+    });
   }
-
-  return (
-    <ol data-testid="plan-costliest" className="flex flex-col">
-      {nodes.map((node, index) => {
-        const selected = node.id === selectedId;
-        return (
-          <li key={node.id}>
-            <Button
-              appearance="secondary"
-              data-testid="plan-costliest-row"
-              aria-pressed={selected}
-              onClick={() => onSelect(node.id)}
-              className={cn(
-                ROW_BUTTON_CLASS,
-                "items-baseline gap-3",
-                selected && "bg-accent/10 hover:bg-accent/15"
-              )}
-            >
-              <span className="w-4 shrink-0 text-xs leading-4 text-control-light tabular-nums">
-                {index + 1}
-              </span>
-              <span className="flex min-w-0 flex-1 items-baseline gap-2">
-                <span
-                  className={cn(
-                    "truncate text-sm leading-5",
-                    selected ? "font-medium text-accent" : "text-main"
-                  )}
-                >
-                  {node.nodeType}
-                </span>
-                <span className="min-w-0 flex-1 truncate text-xs leading-4 text-control-light">
-                  {node.subject ?? ""}
-                </span>
-              </span>
-              <span className="hidden shrink-0 text-xs leading-4 text-control tabular-nums sm:inline">
-                {formatPlanCost(node.selfCost)}
-              </span>
-              <span
-                className={cn(
-                  SHARE_COLUMN_CLASS,
-                  "text-xs leading-4 text-main tabular-nums"
-                )}
-              >
-                {formatPlanShare(planSelfCostShare(node, tree))}
-              </span>
-            </Button>
-          </li>
-        );
-      })}
-    </ol>
-  );
-}
-
-function CostByOperation({ tree }: { tree: PlanTree }) {
-  const translate = useQueryPlanTranslation();
-  const operations = useMemo(() => planCostByOperation(tree), [tree]);
-  return (
-    <Table className="table-fixed">
-      <TableHeader>
-        <TableRow>
-          <TableHead className="text-xs leading-4">
-            {translate("summary.operation")}
-          </TableHead>
-          <TableHead className="w-16 text-right text-xs leading-4">
-            {translate("summary.count")}
-          </TableHead>
-          <TableHead
-            className={cn(
-              SECONDARY_COLUMN_CLASS,
-              "text-right text-xs leading-4 sm:w-28"
-            )}
-          >
-            {translate("summary.added-cost")}
-          </TableHead>
-          <TableHead className="w-28 text-right text-xs leading-4 sm:w-40">
-            {translate("summary.share")}
-          </TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody striped={false}>
-        {operations.map((operation) => (
-          <TableRow key={operation.nodeType} data-testid="plan-operation-row">
-            <TableCell className="py-2 text-sm leading-5 text-main">
-              <span className="block truncate">{operation.nodeType}</span>
-            </TableCell>
-            <TableCell className="py-2 text-right text-xs leading-4 text-control tabular-nums">
-              {formatPlanCount(operation.count)}
-            </TableCell>
-            <TableCell
-              className={cn(
-                SECONDARY_COLUMN_CLASS,
-                "py-2 text-right text-xs leading-4 text-control tabular-nums"
-              )}
-            >
-              {formatPlanCost(operation.selfCost)}
-            </TableCell>
-            <TableCell className="py-2 pr-4">
-              <span className="flex items-center justify-end gap-2">
-                <PlanCostShareBar
-                  share={operation.share}
-                  className="w-10 shrink-0 sm:w-20"
-                />
-                <span className="w-12 shrink-0 text-right text-xs leading-4 text-main tabular-nums">
-                  {formatPlanShare(operation.share)}
-                </span>
-              </span>
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
-  );
+  const [node] = group.nodes;
+  return [node.nodeType, node.subject].filter(Boolean).join(" · ");
 }
 
 /**
- * Where the plan's estimated cost goes, read three ways: how much of it each
- * node spans, which nodes own the most of it, and which kinds of operation do.
+ * The operators that own the most of the plan, ranked, and the warnings worth
+ * a reader's time, so the step to look at is named outright with no graph to
+ * read first. Both pick a node, which the diagram and the table follow.
+ *
+ * Measured plans rank by measured time and say so: planner costs are arbitrary
+ * units and are wrong in exactly the cases worth investigating.
  */
 export function QueryPlanSummary({ tree, selectedId, onSelect }: Props) {
   const translate = useQueryPlanTranslation();
+  const nodes = useMemo(() => planCostliestNodes(tree), [tree]);
+  const warnings = useMemo(() => planWarningGroups(tree), [tree]);
+  const measured = planRankMetric(tree) === "time";
+  const hasMetric = measured || tree.estimates.cost;
+
   return (
-    <div
-      data-testid="plan-summary"
-      className="min-h-0 w-full flex-1 overflow-auto"
-    >
-      <div className="flex flex-col gap-6 p-4">
-        <PlanTotals tree={tree} />
+    <section data-testid="plan-summary" className="flex flex-col gap-4">
+      {/* An engine that reports neither a cost nor a time says so, rather than
+          leaving the panel to imply there was nothing worth ranking. */}
+      {!hasMetric ? (
+        <p className="text-sm leading-5 text-control-light">
+          {translate("summary.no-ranking")}
+        </p>
+      ) : (
+        <div className="flex flex-col gap-1">
+          <h2 className={HEADING_CLASS}>
+            {translate(
+              measured ? "summary.slowest-measured" : "summary.costliest"
+            )}
+          </h2>
+          {nodes.length === 0 ? (
+            <p className="text-sm leading-5 text-control-light">
+              {translate(
+                measured ? "summary.no-added-time" : "summary.no-added-cost"
+              )}
+            </p>
+          ) : (
+            <ol data-testid="plan-costliest" className="flex flex-col">
+              {nodes.map((node, index) => {
+                const selected = node.id === selectedId;
+                return (
+                  <li key={node.id}>
+                    <Button
+                      appearance="secondary"
+                      data-testid="plan-costliest-row"
+                      aria-pressed={selected}
+                      onClick={() => onSelect(node.id)}
+                      className={cn(ROW_CLASS, selected && SELECTED_ROW_CLASS)}
+                    >
+                      <span className="w-3 shrink-0 text-xs leading-4 text-control-light tabular-nums">
+                        {index + 1}
+                      </span>
+                      <span className="flex min-w-0 flex-1 items-baseline gap-2">
+                        <span className={titleClass(selected)}>
+                          {node.nodeType}
+                        </span>
+                        <span className="min-w-0 flex-1 truncate text-xs leading-4 text-control-light">
+                          {node.subject ?? ""}
+                        </span>
+                      </span>
+                      <span className="shrink-0 text-xs leading-4 text-main tabular-nums">
+                        {formatPlanShare(planSelfShare(node, tree))}
+                      </span>
+                    </Button>
+                  </li>
+                );
+              })}
+            </ol>
+          )}
+        </div>
+      )}
 
-        {/* A span starts at a startup cost, which not every engine reports. */}
-        {tree.estimates.startupCost ? (
-          <Section
-            title={translate("summary.cost-ranges")}
-            description={translate("summary.cost-ranges-description")}
-          >
-            <CostTimeline
-              tree={tree}
-              selectedId={selectedId}
-              onSelect={onSelect}
-            />
-          </Section>
-        ) : null}
-
-        <Section
-          title={translate("summary.costliest")}
-          description={translate("summary.costliest-description")}
-        >
-          <CostliestOperators
-            tree={tree}
-            selectedId={selectedId}
-            onSelect={onSelect}
-          />
-        </Section>
-
-        <Section
-          title={translate("summary.cost-by-operation")}
-          description={translate("summary.cost-by-operation-description")}
-        >
-          <CostByOperation tree={tree} />
-        </Section>
-      </div>
-    </div>
+      {warnings.length > 0 ? (
+        <div className="flex flex-col gap-1">
+          <h2 className={HEADING_CLASS}>{translate("summary.warnings")}</h2>
+          <ul data-testid="plan-summary-warnings" className="flex flex-col">
+            {warnings.map((group) => {
+              const selected = group.nodes.some(
+                (node) => node.id === selectedId
+              );
+              return (
+                <li key={planWarningIdentity(group.warning)}>
+                  <Button
+                    appearance="secondary"
+                    data-testid="plan-summary-warning"
+                    aria-pressed={selected}
+                    // The worst reporting node, so a grouped warning opens on
+                    // the one most worth reading.
+                    onClick={() => onSelect(group.nodes[0].id)}
+                    className={cn(ROW_CLASS, selected && SELECTED_ROW_CLASS)}
+                  >
+                    <TriangleAlert
+                      aria-hidden="true"
+                      className="shrink-0 self-center text-warning"
+                    />
+                    <span className="flex min-w-0 flex-1 flex-col">
+                      <span className={titleClass(selected)}>
+                        {planWarningText(group.warning, translate).title}
+                      </span>
+                      <span className="truncate text-xs leading-4 text-control-light">
+                        {warningSubject(group, translate)}
+                      </span>
+                    </span>
+                  </Button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ) : null}
+    </section>
   );
 }

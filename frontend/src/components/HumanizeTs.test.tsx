@@ -154,6 +154,17 @@ describe("HumanizeTs", () => {
     expect(formatters.formatAbsoluteDateTime).toHaveBeenCalledWith(1000000);
   });
 
+  test("updates a calendar label at local midnight", () => {
+    vi.setSystemTime(new Date("2026-10-23T15:59:59Z"));
+    const tsMs = new Date("2026-10-23T02:03:00Z").getTime();
+    const { container, root } = mount();
+    act(() => root.render(<HumanizeTs mode="calendar" tsMs={tsMs} tooltip={false} />));
+    expect(container.textContent).toBe("Today 10:03 AM");
+
+    act(() => vi.advanceTimersByTime(1_000));
+    expect(container.textContent).toBe("Yesterday 10:03 AM");
+  });
+
   test("renders one element, so layout classes reach the box that lays out", () => {
     const { container, root } = mount();
     act(() =>

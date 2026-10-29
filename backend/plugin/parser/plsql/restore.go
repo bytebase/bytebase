@@ -116,6 +116,9 @@ func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment str
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get database metadata for %s", sourceDatabase)
 	}
+	if metadata == nil {
+		return "", errors.Errorf("database metadata for database %q not found (database not synced)", sourceDatabase)
+	}
 
 	schemaMetadata := metadata.GetSchemaMetadata("")
 	if schemaMetadata == nil {
@@ -183,7 +186,8 @@ func (g *generator) generateDelete() {
 func (g *generator) restorableColumns() []string {
 	var columns []string
 	for _, column := range g.table.GetProto().GetColumns() {
-		if column.GetGeneration() != nil {
+		// The backup is copied with SELECT t.*, which has no invisible columns.
+		if column.GetGeneration() != nil || column.IsInvisible {
 			continue
 		}
 		columns = append(columns, column.Name)

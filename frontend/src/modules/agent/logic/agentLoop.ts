@@ -11,6 +11,7 @@ import {
   AIChatMessageSchema,
   AIChatToolDefinitionSchema,
 } from "@/types/proto-es/v1/ai_service_pb";
+import { parseCallApiResult } from "./callApiResult";
 import type {
   AgentLoopOutcome,
   Message,
@@ -36,7 +37,7 @@ async function callWithRetry<T>(
       return await fn();
     } catch (err) {
       lastError = err instanceof Error ? err : new Error(String(err));
-      if (lastError.name === "AbortError") throw lastError;
+      if (signal?.aborted || lastError.name === "AbortError") throw lastError;
       const msg = lastError.message.toLowerCase();
       if (
         msg.includes("400") ||
@@ -99,6 +100,10 @@ export interface AgentCallbacks {
   onError?: (error: Error) => void;
 }
 
+export interface AgentLoopOptions {
+  allowPlainTextCompletion?: boolean;
+}
+
 function createSkippedToolResult(blockedBy: {
   toolCallId: string;
   kind: "ask_user" | "done";
@@ -111,16 +116,123 @@ function createSkippedToolResult(blockedBy: {
   });
 }
 
+function canonicalizeJson(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonicalizeJson);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([key, entry]) => [key, canonicalizeJson(entry)])
+    );
+  }
+  return value;
+}
+
+function getCallApiRequestKey(argumentsJson: string): string {
+  try {
+    const args: unknown = JSON.parse(argumentsJson);
+    if (args && typeof args === "object" && !Array.isArray(args)) {
+      const { operationId, body } = args as Record<string, unknown>;
+      if (
+        typeof operationId === "string" &&
+        body &&
+        typeof body === "object" &&
+        !Array.isArray(body)
+      ) {
+        if (/IssueService[/.]BatchUpdateIssuesStatus$/.test(operationId)) {
+          // The backend identifies this operation by its issues and status, not parent.
+          const { parent: _parent, ...requestBody } = body as Record<
+            string,
+            unknown
+          >;
+          return JSON.stringify(
+            canonicalizeJson({ ...args, body: requestBody })
+          );
+        }
+      }
+    }
+    return JSON.stringify(canonicalizeJson(args));
+  } catch {
+    return argumentsJson;
+  }
+}
+
+function getCallApiOperationId(argumentsJson: string): string | undefined {
+  try {
+    const args: unknown = JSON.parse(argumentsJson);
+    if (args && typeof args === "object" && !Array.isArray(args)) {
+      const operationId = (args as Record<string, unknown>).operationId;
+      return typeof operationId === "string" ? operationId : undefined;
+    }
+  } catch {
+    return undefined;
+  }
+  return undefined;
+}
+
+function updateCallApiErrors(
+  errors: Map<string, string>,
+  toolCall: ToolCall,
+  result: string
+): void {
+  const requestKey = getCallApiRequestKey(toolCall.arguments);
+  const outcome = parseCallApiResult(
+    result,
+    getCallApiOperationId(toolCall.arguments)
+  );
+  if (outcome.error) {
+    errors.delete(requestKey);
+    errors.set(requestKey, outcome.error);
+  } else if (outcome.succeeded) {
+    errors.delete(requestKey);
+  }
+}
+
+function getCurrentTurnCallApiErrors(messages: Message[]): Map<string, string> {
+  const errors = new Map<string, string>();
+  const userIndex = messages.findLastIndex(
+    (message) => message.role === "user"
+  );
+  if (userIndex < 0) return errors;
+
+  const toolCalls = new Map<string, ToolCall>();
+  for (const message of messages.slice(userIndex + 1)) {
+    if (message.role === "assistant") {
+      for (const toolCall of message.toolCalls ?? []) {
+        toolCalls.set(toolCall.id, toolCall);
+      }
+    } else if (message.role === "tool" && message.toolCallId) {
+      const toolCall = toolCalls.get(message.toolCallId);
+      if (toolCall?.name === "call_api") {
+        updateCallApiErrors(errors, toolCall, message.content ?? "");
+      }
+    }
+  }
+  return errors;
+}
+
 export async function runAgentLoop(
   messages: Message[],
   tools: ToolDefinition[],
   executeTool: ToolExecutor,
   callbacks?: AgentCallbacks,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  options: AgentLoopOptions = {}
 ): Promise<AgentLoopOutcome> {
   const conversation: Message[] = [...messages];
   const protoTools = tools.map(toolDefToProto);
+  const terminalTools = protoTools.filter(
+    (tool) => tool.name === "done" || tool.name === "ask_user"
+  );
   let totalTokensUsed = 0;
+  let awaitingTerminalCall = false;
+  const callApiErrors = getCurrentTurnCallApiErrors(messages);
+  const latestCallApiError = () => Array.from(callApiErrors.values()).at(-1);
+
+  const completeWithApiError = (error: string): AgentLoopOutcome => {
+    callbacks?.onText?.(error);
+    return { kind: "completed", text: error, success: false, totalTokensUsed };
+  };
 
   try {
     for (let i = 0; i < MAX_ITERATIONS; i++) {
@@ -133,7 +245,12 @@ export async function runAgentLoop(
       const response = await callWithRetry(
         () =>
           aiServiceClientConnect.chat(
-            { messages: protoMessages, toolDefinitions: protoTools },
+            {
+              messages: protoMessages,
+              toolDefinitions: awaitingTerminalCall
+                ? terminalTools
+                : protoTools,
+            },
             {
               signal,
               contextValues: createContextValues().set(silentContextKey, true),
@@ -142,9 +259,25 @@ export async function runAgentLoop(
         signal
       );
 
+      if (signal?.aborted) {
+        return { kind: "aborted", totalTokensUsed };
+      }
+
       totalTokensUsed += response.usage?.totalTokens ?? 0;
 
       if (response.toolCalls.length > 0) {
+        if (
+          awaitingTerminalCall &&
+          response.toolCalls.some(
+            (call) => call.name !== "done" && call.name !== "ask_user"
+          )
+        ) {
+          const error = new Error(
+            "Agent called a non-terminal tool while finalizing its answer."
+          );
+          callbacks?.onError?.(error);
+          return { kind: "error", error, totalTokensUsed };
+        }
         const toolCalls: ToolCall[] = response.toolCalls.map((tc) => ({
           id: tc.id,
           name: tc.name,
@@ -168,6 +301,9 @@ export async function runAgentLoop(
           | undefined;
 
         for (const tc of toolCalls) {
+          if (signal?.aborted) {
+            return { kind: "aborted", totalTokensUsed };
+          }
           if (terminalState) {
             const skippedResult = createSkippedToolResult(
               terminalState.blockedBy
@@ -186,6 +322,9 @@ export async function runAgentLoop(
             const args = JSON.parse(tc.arguments) as Record<string, unknown>;
             executionResult = await executeTool(tc.name, args, tc.id);
           } catch (err) {
+            if (signal?.aborted) {
+              return { kind: "aborted", totalTokensUsed };
+            }
             const error = err instanceof Error ? err : new Error(String(err));
             callbacks?.onError?.(error);
             executionResult = {
@@ -194,7 +333,14 @@ export async function runAgentLoop(
             };
           }
 
+          if (signal?.aborted) {
+            return { kind: "aborted", totalTokensUsed };
+          }
+
           if (executionResult.kind === "tool_result") {
+            if (tc.name === "call_api") {
+              updateCallApiErrors(callApiErrors, tc, executionResult.result);
+            }
             callbacks?.onToolResult?.(tc.id, executionResult.result);
             conversation.push({
               role: "tool",
@@ -219,10 +365,13 @@ export async function runAgentLoop(
             continue;
           }
 
-          const doneResult = JSON.stringify({
-            text: executionResult.text,
-            success: executionResult.success,
-          });
+          const apiError = latestCallApiError();
+          const text =
+            executionResult.success && apiError
+              ? apiError
+              : executionResult.text;
+          const success = executionResult.success && !apiError;
+          const doneResult = JSON.stringify({ text, success });
           callbacks?.onToolResult?.(tc.id, doneResult);
           conversation.push({
             role: "tool",
@@ -232,8 +381,8 @@ export async function runAgentLoop(
           terminalState = {
             outcome: {
               kind: "completed",
-              text: executionResult.text,
-              success: executionResult.success,
+              text,
+              success,
               totalTokensUsed,
             },
             blockedBy: {
@@ -251,6 +400,43 @@ export async function runAgentLoop(
         }
 
         continue;
+      }
+
+      const text = response.content?.trim() ?? "";
+      if (options.allowPlainTextCompletion && text) {
+        const apiError = latestCallApiError();
+        if (apiError) {
+          return completeWithApiError(apiError);
+        }
+        callbacks?.onText?.(text);
+        return {
+          kind: "completed",
+          text,
+          success: true,
+          totalTokensUsed,
+        };
+      }
+
+      if (
+        !awaitingTerminalCall &&
+        terminalTools.some((tool) => tool.name === "done")
+      ) {
+        if (text) {
+          conversation.push({ role: "assistant", content: response.content });
+        }
+        conversation.push({
+          role: "user",
+          content: text
+            ? "Finalize your preceding answer by calling done({ text, success }), or call ask_user if input is required. Do not call any other tools or start another task."
+            : "Your previous response was empty. Answer the user's request by calling done({ text, success }), or call ask_user if input is required. Do not call any other tools or start another task.",
+        });
+        awaitingTerminalCall = true;
+        continue;
+      }
+
+      const apiError = latestCallApiError();
+      if (apiError && (awaitingTerminalCall || !text)) {
+        return completeWithApiError(apiError);
       }
 
       const error = new Error(
@@ -271,7 +457,7 @@ export async function runAgentLoop(
     };
   } catch (err) {
     const error = err instanceof Error ? err : new Error(String(err));
-    if (error.name === "AbortError") {
+    if (signal?.aborted || error.name === "AbortError") {
       return { kind: "aborted", totalTokensUsed };
     }
     return {

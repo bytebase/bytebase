@@ -2,7 +2,6 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
-  CircleCheck,
   Loader2,
   RotateCcw,
 } from "lucide-react";
@@ -22,16 +21,18 @@ import { HumanizeTs } from "@/components/HumanizeTs";
 import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { MonacoViewZoneRevealContext } from "@/components/monaco/MonacoViewZone";
 import { UserAvatar } from "@/components/UserAvatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useCurrentUser, useUserByIdentifier } from "@/hooks/useAppState";
+import { useCurrentUser } from "@/hooks/useAppState";
 import { cn } from "@/lib/utils";
-import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
+import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
+import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import "./CommentThreadCard.css";
+import { ReviewPriorityBadge, useCommentAuthor } from "./ReviewResult";
 import { ThreadComment } from "./ThreadComment";
+import { ThreadStateBadge } from "./ThreadStateBadge";
 import type { CommentThread } from "./threadModel";
 import {
   canReplyToThread,
@@ -59,6 +60,7 @@ export function CommentThreadCard({
   replyDraft: savedReplyDraft,
   onReplyDraftChange,
   project,
+  spec,
   thread,
 }: {
   className?: string;
@@ -76,6 +78,8 @@ export function CommentThreadCard({
   replyDraft?: string;
   onReplyDraftChange?: (draft: SetStateAction<string>) => void;
   project: Project | undefined;
+  // The plan spec the thread sits on, when the owner knows it.
+  spec?: Plan_Spec;
   thread: CommentThread;
 }) {
   const { t } = useTranslation();
@@ -248,15 +252,11 @@ export function CommentThreadCard({
         comment={thread.root}
         onEdit={actions.edit}
         project={project}
+        spec={spec}
         status={
           <>
             {label}
-            {thread.resolved && (
-              <Badge className="gap-x-1 px-2 text-xs" variant="success">
-                <CircleCheck className="size-3" />
-                {t("plan.review.thread.resolved")}
-              </Badge>
-            )}
+            <ThreadStateBadge resolved={thread.resolved} />
           </>
         }
       />
@@ -404,9 +404,8 @@ function ThreadSummary({
   onExpand: () => void;
 }) {
   const { t } = useTranslation();
-  const creator =
-    useUserByIdentifier(thread.root.creator) ??
-    unknownUser(thread.root.creator);
+  const author = useCommentAuthor(thread.root);
+  const review = thread.root.reviewMetadata;
   const summary = thread.root.comment.split("\n")[0] ?? "";
   return (
     <Button
@@ -415,14 +414,11 @@ function ThreadSummary({
       onClick={onExpand}
       size="md"
     >
-      <UserAvatar
-        colorSeed={creator.email}
-        size="xs"
-        title={creator.title || creator.email}
-      />
+      {author.avatar}
       <span className="max-w-24 truncate font-medium text-main">
-        {creator.title || creator.email}
+        {author.name}
       </span>
+      {review && <ReviewPriorityBadge priority={review.priority} />}
       <span className="min-w-0 flex-1 truncate text-control" title={summary}>
         {summary}
       </span>
@@ -435,10 +431,7 @@ function ThreadSummary({
         className="hidden shrink-0 text-xs text-control-light sm:inline"
         tsMs={getTimeForPbTimestampProtoEs(thread.root.createTime)}
       />
-      <Badge className="shrink-0 gap-x-1 px-2 text-xs" variant="success">
-        <CircleCheck className="size-3" />
-        {t("plan.review.thread.resolved")}
-      </Badge>
+      <ThreadStateBadge resolved />
       <ChevronDown className="size-4 shrink-0 text-control-light" />
     </Button>
   );

@@ -117,3 +117,150 @@ func TestReviewRunStoreLifecycle(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, int64(0), rowsAffected)
 }
+
+func TestGetReviewRunCollidingIssues(t *testing.T) {
+	t.Parallel()
+	fixture := newStorePostgresFixture(t, `
+		INSERT INTO project (resource_id, workspace, name) VALUES ('other', 'default', 'Other');
+		INSERT INTO issue (id, creator, project, name, status, type)
+		VALUES (201, 'admin@example.com', 'default', 'Issue Default', 'OPEN', 'DATABASE_CHANGE');
+		INSERT INTO issue (id, creator, project, name, status, type)
+		VALUES (201, 'admin@example.com', 'other', 'Issue Other', 'OPEN', 'DATABASE_CHANGE');
+	`)
+	ctx, db, s := fixture.ctx, fixture.db, fixture.store
+
+	got, err := s.GetReviewRun(ctx, "default", 201, store.ReviewRunTypeRule)
+	require.NoError(t, err)
+	require.Nil(t, got, "a slot that was never created")
+
+	// default: FAILED at attempt 0. other: AVAILABLE at attempt 1.
+	_, err = s.CreateReviewRun(ctx, "default", 201, store.ReviewRunTypeRule)
+	require.NoError(t, err)
+	claimed, err := s.ClaimAvailableReviewRuns(ctx, "replica-1")
+	require.NoError(t, err)
+	require.Len(t, claimed, 1)
+	updated, err := s.CompleteReviewRun(ctx, claimed[0], "replica-1", storepb.ReviewRun_FAILED, &storepb.ReviewRunPayload{Error: "boom"}, nil)
+	require.NoError(t, err)
+	require.True(t, updated)
+	for range 2 {
+		_, err = s.CreateReviewRun(ctx, "other", 201, store.ReviewRunTypeRule)
+		require.NoError(t, err)
+	}
+
+	type slotRow struct {
+		Attempt   int64
+		Status    string
+		CreatedAt time.Time
+		UpdatedAt time.Time
+	}
+	readRaw := func(projectID string) slotRow {
+		var row slotRow
+		require.NoError(t, db.QueryRowContext(ctx, `
+			SELECT attempt, status, created_at, updated_at FROM review_run
+			WHERE project = $1 AND issue_id = 201 AND type = 'RULE'
+		`, projectID).Scan(&row.Attempt, &row.Status, &row.CreatedAt, &row.UpdatedAt))
+		return row
+	}
+	rawDefault, rawOther := readRaw("default"), readRaw("other")
+	require.NotEqual(t, rawDefault.Status, rawOther.Status, "the two slots must differ to tell them apart")
+
+	got, err = s.GetReviewRun(ctx, "default", 201, store.ReviewRunTypeRule)
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	require.Equal(t, "default", got.ProjectID)
+	require.Equal(t, int64(201), got.IssueUID)
+	require.Equal(t, store.ReviewRunTypeRule, got.Type)
+	require.Equal(t, int64(0), got.Attempt)
+	require.Equal(t, storepb.ReviewRun_FAILED, got.Status)
+	require.Equal(t, "boom", got.Payload.GetError())
+	require.True(t, got.CreatedAt.Equal(rawDefault.CreatedAt))
+	require.True(t, got.UpdatedAt.Equal(rawDefault.UpdatedAt))
+
+	got, err = s.GetReviewRun(ctx, "other", 201, store.ReviewRunTypeRule)
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	require.Equal(t, "other", got.ProjectID)
+	require.Equal(t, int64(1), got.Attempt)
+	require.Equal(t, storepb.ReviewRun_AVAILABLE, got.Status)
+	require.Empty(t, got.Payload.GetError())
+	require.True(t, got.CreatedAt.Equal(rawOther.CreatedAt))
+	require.True(t, got.UpdatedAt.Equal(rawOther.UpdatedAt))
+
+	// The reviewer type is part of the key, and so is the issue.
+	got, err = s.GetReviewRun(ctx, "default", 201, store.ReviewRunTypeAI)
+	require.NoError(t, err)
+	require.Nil(t, got)
+	got, err = s.GetReviewRun(ctx, "default", 999, store.ReviewRunTypeRule)
+	require.NoError(t, err)
+	require.Nil(t, got)
+}
+
+func TestReviewRunKeepsItsApprovalInputVersion(t *testing.T) {
+	t.Parallel()
+	fixture := newStorePostgresFixture(t, `
+		INSERT INTO project (resource_id, workspace, name) VALUES ('other', 'default', 'Other');
+		INSERT INTO plan (id, creator, project, name, description, config)
+		VALUES (101, 'admin@example.com', 'default', 'Plan Default', '', '{"approvalInputVersion": "2"}');
+		INSERT INTO plan (id, creator, project, name, description, config)
+		VALUES (101, 'admin@example.com', 'other', 'Plan Other', '', '{"approvalInputVersion": "7"}');
+		INSERT INTO issue (id, creator, project, name, status, type, plan_id)
+		VALUES (201, 'admin@example.com', 'default', 'Issue Default', 'OPEN', 'DATABASE_CHANGE', 101);
+		INSERT INTO issue (id, creator, project, name, status, type, plan_id)
+		VALUES (201, 'admin@example.com', 'other', 'Issue Other', 'OPEN', 'DATABASE_CHANGE', 101);
+	`)
+	ctx, db, s := fixture.ctx, fixture.db, fixture.store
+	slot := func(projectID string) *store.ReviewRunMessage {
+		t.Helper()
+		run, err := s.GetReviewRun(ctx, projectID, 201, store.ReviewRunTypeRule)
+		require.NoError(t, err)
+		require.NotNil(t, run)
+		return run
+	}
+
+	run, err := s.CreateReviewRun(ctx, "default", 201, store.ReviewRunTypeRule)
+	require.NoError(t, err)
+	require.Equal(t, int64(2), run.Payload.GetApprovalInputVersion())
+	run, err = s.CreateReviewRun(ctx, "other", 201, store.ReviewRunTypeRule)
+	require.NoError(t, err)
+	require.Equal(t, int64(7), run.Payload.GetApprovalInputVersion())
+	claimed, err := s.ClaimAvailableReviewRuns(ctx, "replica-1")
+	require.NoError(t, err)
+	require.Len(t, claimed, 2)
+
+	// The plan's SQL changes while the run reads version 2: the run finishes
+	// with the version it reviewed.
+	_, err = db.ExecContext(ctx, `
+		UPDATE plan SET config = jsonb_set(config, '{approvalInputVersion}', '"3"')
+		WHERE project = 'default' AND id = 101
+	`)
+	require.NoError(t, err)
+	for _, c := range claimed {
+		if c.ProjectID != "default" {
+			continue
+		}
+		updated, err := s.CompleteReviewRun(ctx, c, "replica-1", storepb.ReviewRun_DONE, &storepb.ReviewRunPayload{}, nil)
+		require.NoError(t, err)
+		require.True(t, updated)
+	}
+	require.Equal(t, storepb.ReviewRun_DONE, slot("default").Status)
+	require.Equal(t, int64(2), slot("default").Payload.GetApprovalInputVersion())
+
+	run, err = s.CreateReviewRun(ctx, "default", 201, store.ReviewRunTypeRule)
+	require.NoError(t, err)
+	require.Equal(t, int64(3), run.Payload.GetApprovalInputVersion())
+	require.Equal(t, int64(3), slot("default").Payload.GetApprovalInputVersion())
+	_, err = s.ClaimAvailableReviewRuns(ctx, "replica-1")
+	require.NoError(t, err)
+
+	// replica-1 has no heartbeat, so the reaper fails both running slots; each
+	// keeps its own version.
+	reaped, err := s.FailStaleReviewRuns(ctx, time.Minute)
+	require.NoError(t, err)
+	require.Equal(t, int64(2), reaped)
+	for projectID, version := range map[string]int64{"default": 3, "other": 7} {
+		got := slot(projectID)
+		require.Equal(t, storepb.ReviewRun_FAILED, got.Status)
+		require.NotEmpty(t, got.Payload.GetError())
+		require.Equal(t, version, got.Payload.GetApprovalInputVersion(), projectID)
+	}
+}

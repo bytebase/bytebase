@@ -20,9 +20,60 @@ export interface Message {
 
 export type AgentChatStatus = "idle" | "running" | "awaiting_user" | "error";
 
+export type AgentInterruptionReason = "user" | "unexpected";
+
+export type AgentRunMode = "default" | "read-only";
+
 export interface AgentChatSnapshot {
   path: string;
   title: string;
+}
+
+export type AgentEvidenceReference =
+  | {
+      kind: "issue";
+      name: string;
+      title: string;
+    }
+  | {
+      kind: "database";
+      name: string;
+    };
+
+export interface AgentEvidence {
+  project?: string;
+  workspace?: string;
+  references: AgentEvidenceReference[];
+}
+
+export type AgentAnswerEvidence = AgentEvidence | AgentEvidence[];
+
+export interface AgentResourceReference {
+  kind: "project" | "database" | "issue";
+  name: string;
+  project: string;
+  label: string;
+}
+
+export interface AgentMentionRange {
+  start: number;
+  end: number;
+}
+
+export interface AgentResourceMention {
+  resource: AgentResourceReference;
+  range: AgentMentionRange;
+}
+
+export interface AgentDraft {
+  text: string;
+  mentions?: AgentResourceMention[];
+  project?: {
+    name: string;
+    title: string;
+  };
+  resource?: AgentResourceReference;
+  mention?: AgentMentionRange;
 }
 
 export interface AgentMessageMetadata {
@@ -31,6 +82,10 @@ export interface AgentMessageMetadata {
   hidden?: boolean;
   error?: string;
   runId?: string;
+  interruptionReason?: AgentInterruptionReason;
+  evidence?: AgentAnswerEvidence;
+  resourceReference?: AgentResourceReference;
+  resourceReferences?: AgentResourceReference[];
 }
 
 export interface AgentMessage extends Message {
@@ -43,6 +98,8 @@ export interface AgentMessage extends Message {
 export interface AgentChat {
   id: string;
   title: string;
+  context?: string;
+  workspaceName?: string;
   createdTs: number;
   updatedTs: number;
   status: AgentChatStatus;
@@ -52,7 +109,9 @@ export interface AgentChat {
   lastError?: string | null;
   requiresAIConfiguration?: boolean;
   interrupted?: boolean;
+  interruptionReason?: AgentInterruptionReason;
   runId?: string | null;
+  runMode?: AgentRunMode;
 }
 
 export type AgentAskUserKind = "input" | "confirm" | "choose";
@@ -67,6 +126,10 @@ export interface AgentPendingAsk {
   toolCallId: string;
   prompt: string;
   kind: AgentAskUserKind;
+  apiPermission?: {
+    actionId: string;
+    operationId: string;
+  };
   defaultValue?: string;
   confirmLabel?: string;
   cancelLabel?: string;

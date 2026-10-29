@@ -1,0 +1,43 @@
+{
+  "CBOPlan": "{\n  \"rels\": [\n    {\n      \"id\": \"0\",\n      \"relOp\": \"org.apache.hadoop.hive.ql.optimizer.calcite.reloperators.HiveTableScan\",\n      \"table\": [\n        \"default\",\n        \"customers\"\n      ],\n      \"table:alias\": \"customers\",\n      \"inputs\": [],\n      \"rowCount\": 1.0,\n      \"avgRowSize\": 204.0,\n      \"rowType\": [\n        {\n          \"type\": \"INTEGER\",\n          \"nullable\": true,\n          \"name\": \"id\"\n        },\n        {\n          \"type\": \"VARCHAR\",\n          \"nullable\": true,\n          \"precision\": 2147483647,\n          \"name\": \"name\"\n        },\n        {\n          \"type\": \"VARCHAR\",\n          \"nullable\": true,\n          \"precision\": 2147483647,\n          \"name\": \"city\"\n        },\n        {\n          \"type\": \"BIGINT\",\n          \"nullable\": true,\n          \"name\": \"BLOCK__OFFSET__INSIDE__FILE\"\n        },\n        {\n          \"type\": \"VARCHAR\",\n          \"nullable\": true,\n          \"precision\": 2147483647,\n          \"name\": \"INPUT__FILE__NAME\"\n        },\n        {\n          \"fields\": [\n            {\n              \"type\": \"BIGINT\",\n              \"nullable\": true,\n              \"name\": \"writeid\"\n            },\n            {\n              \"type\": \"INTEGER\",\n              \"nullable\": true,\n              \"name\": \"bucketid\"\n            },\n            {\n              \"type\": \"BIGINT\",\n              \"nullable\": true,\n              \"name\": \"rowid\"\n            }\n          ],\n          \"name\": \"ROW__ID\"\n        },\n        {\n          \"type\": \"BOOLEAN\",\n          \"nullable\": true,\n          \"name\": \"ROW__IS__DELETED\"\n        }\n      ],\n      \"colStats\": [\n        {\n          \"name\": \"id\",\n          \"ndv\": 1,\n          \"minValue\": -9223372036854775808,\n          \"maxValue\": 9223372036854775807\n        },\n        {\n          \"name\": \"name\",\n          \"ndv\": 1\n        },\n        {\n          \"name\": \"city\",\n          \"ndv\": 1\n        }\n      ]\n    },\n    {\n      \"id\": \"1\",\n      \"relOp\": \"org.apache.hadoop.hive.ql.optimizer.calcite.reloperators.HiveFilter\",\n      \"condition\": {\n        \"op\": {\n          \"name\": \"=\",\n          \"kind\": \"EQUALS\",\n          \"syntax\": \"BINARY\"\n        },\n        \"operands\": [\n          {\n            \"input\": 2,\n            \"name\": \"$2\"\n          },\n          {\n            \"literal\": \"berlin\",\n            \"type\": {\n              \"type\": \"VARCHAR\",\n              \"nullable\": false,\n              \"precision\": 2147483647\n            }\n          }\n        ]\n      },\n      \"rowCount\": 1.0\n    },\n    {\n      \"id\": \"2\",\n      \"relOp\": \"org.apache.hadoop.hive.ql.optimizer.calcite.reloperators.HiveProject\",\n      \"fields\": [\n        \"id\",\n        \"name\",\n        \"city\"\n      ],\n      \"exprs\": [\n        {\n          \"input\": 0,\n          \"name\": \"$0\"\n        },\n        {\n          \"input\": 1,\n          \"name\": \"$1\"\n        },\n        {\n          \"op\": {\n            \"name\": \"CAST\",\n            \"kind\": \"CAST\",\n            \"syntax\": \"SPECIAL\"\n          },\n          \"operands\": [\n            {\n              \"literal\": \"berlin\",\n              \"type\": {\n                \"type\": \"VARCHAR\",\n                \"nullable\": false,\n                \"precision\": 2147483647\n              }\n            }\n          ],\n          \"type\": {\n            \"type\": \"VARCHAR\",\n            \"nullable\": true,\n            \"precision\": 2147483647\n          }\n        }\n      ],\n      \"rowCount\": 1.0\n    }\n  ]\n}",
+  "optimizedSQL": "SELECT `id`, `name`, CAST('berlin' AS STRING) AS `city`\nFROM `default`.`customers`\nWHERE `city` = 'berlin'",
+  "cboInfo": "Plan optimized by CBO.",
+  "STAGE DEPENDENCIES": { "Stage-0": { "ROOT STAGE": "TRUE" } },
+  "STAGE PLANS": {
+    "Stage-0": {
+      "Fetch Operator": {
+        "limit:": "-1",
+        "Processor Tree:": {
+          "TableScan": {
+            "alias:": "customers",
+            "columns:": ["id", "name", "city"],
+            "database:": "default",
+            "filterExpr:": "(city = 'berlin') (type: boolean)",
+            "table:": "customers",
+            "isTempTable:": "false",
+            "OperatorId:": "TS_0",
+            "children": {
+              "Filter Operator": {
+                "predicate:": "(city = 'berlin') (type: boolean)",
+                "OperatorId:": "FIL_4",
+                "children": {
+                  "Select Operator": {
+                    "expressions:": "id (type: int), name (type: string), 'berlin' (type: string)",
+                    "columnExprMap:": {
+                      "_col0": "id",
+                      "_col1": "name",
+                      "_col2": "'berlin'"
+                    },
+                    "outputColumnNames:": ["_col0", "_col1", "_col2"],
+                    "OperatorId:": "SEL_2",
+                    "children": { "ListSink": { "OperatorId:": "LIST_SINK_5" } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

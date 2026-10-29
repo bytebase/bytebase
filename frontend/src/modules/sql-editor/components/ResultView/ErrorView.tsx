@@ -9,6 +9,7 @@ import { activeSQLEditorRef } from "@/modules/sql-editor/components/StandardPane
 import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
 import type { SQLEditorQueryParams, SQLResultSetV1 } from "@/types";
 import { PostgresError } from "./PostgresError";
+import { statementAsTyped } from "./statementText";
 
 interface ErrorViewProps {
   error: string | undefined;
@@ -42,14 +43,14 @@ export function ErrorView({
   const canShowInEditor = hasErrorPosition || !!failingStatement;
 
   const findStatementRange = (): IRange | undefined => {
-    let statement = failingStatement;
-    if (!statement) return undefined;
+    if (!failingStatement) return undefined;
 
     const editor = activeSQLEditorRef.value;
     const model = editor?.getModel();
     if (!model) return undefined;
 
-    statement = statement.replace(/\s+LIMIT\s+\d+\s*;?\s*$/i, "").trim();
+    const statement = statementAsTyped(failingStatement);
+    if (!statement) return undefined;
     let matches = model.findMatches(
       statement,
       false,

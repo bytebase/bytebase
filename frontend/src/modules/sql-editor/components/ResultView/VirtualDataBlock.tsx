@@ -1,13 +1,7 @@
-import { useVirtualizer } from "@tanstack/react-virtual";
 import { CheckIcon, CopyIcon } from "lucide-react";
-import {
-  forwardRef,
-  useCallback,
-  useImperativeHandle,
-  useRef,
-  useState,
-} from "react";
+import { forwardRef, useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { QueryResultVerticalBody } from "@/components/QueryResultVerticalBody";
 import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
 import { writeTextToClipboard } from "@/lib/clipboard";
@@ -57,43 +51,8 @@ export const VirtualDataBlock = forwardRef<
   ref
 ) {
   const { t } = useTranslation();
-  const containerRef = useRef<HTMLDivElement>(null);
   const { getBinaryFormat } = useBinaryFormatContext();
   const { setDetail } = useSQLResultViewContext();
-
-  // Estimate based on column count: header + (per-column line ≈ 28px) +
-  // padding. Real measurements come from `measureElement` once mounted.
-  const estimateRowHeight = useCallback(
-    () => 60 + columns.length * 28,
-    [columns.length]
-  );
-
-  const virtualizer = useVirtualizer({
-    count: rows.length,
-    getScrollElement: () => containerRef.current,
-    estimateSize: estimateRowHeight,
-    measureElement: (el) => el.getBoundingClientRect().height,
-    overscan: 4,
-    // Each row is `position: absolute` (placed by `translateY(start)`),
-    // so a margin / padding-bottom on the row div has no effect on the
-    // gap to the next row. The virtualizer's `gap` option adds the
-    // requested pixels into each row's `start` so cards visibly breathe.
-    gap: 16,
-    paddingEnd: 96,
-  });
-
-  useImperativeHandle(
-    ref,
-    () => ({
-      scrollTo(index: number) {
-        virtualizer.scrollToIndex(index, {
-          align: "start",
-          behavior: "smooth",
-        });
-      },
-    }),
-    [virtualizer]
-  );
 
   const buildRowJSON = useCallback(
     (rowIndex: number): string => {
@@ -120,80 +79,57 @@ export const VirtualDataBlock = forwardRef<
 
   return (
     <ResultCopyContextMenu>
-      <div
-        ref={containerRef}
-        className="relative w-full flex-1 min-h-0 overflow-auto rounded-sm border"
-      >
-        <div
-          style={{
-            height: `${virtualizer.getTotalSize()}px`,
-            position: "relative",
-          }}
-        >
-          {virtualizer.getVirtualItems().map((virtualRow) => {
-            const rowIndex = virtualRow.index;
-            const row = rows[rowIndex];
-            if (!row) return null;
-            const isActive = activeRowIndex === rowIndex;
-            return (
-              <div
-                key={virtualRow.key}
-                ref={virtualizer.measureElement}
-                data-index={rowIndex}
-                className="font-mono mx-2 absolute inset-x-0"
-                style={{
-                  top: 0,
-                  transform: `translateY(${virtualRow.start}px)`,
-                }}
-              >
-                <p className="font-bold text-control-light overflow-hidden whitespace-nowrap mb-1">
-                  ******************************** {rowIndex + 1}. row
-                  ********************************
-                </p>
-                <RowDataBlock
-                  columns={columns}
-                  database={database.name}
-                  statement={statement}
-                  getMaskingReason={getMaskingReason}
-                  className={cn(
-                    isActive && "border-2 border-accent/20 bg-accent/10!"
-                  )}
-                  actions={
-                    <CopyJSONButton
-                      getContent={() => buildRowJSON(rowIndex)}
-                      label={t("common.copy")}
-                    />
-                  }
-                  renderValue={(column, columnIndex) => (
-                    <div
-                      onDoubleClick={(event) => {
-                        event.stopPropagation();
-                        setDetail({
-                          row: rowIndex,
-                          col: columnIndex,
-                          view: "cell",
-                        });
-                      }}
-                    >
-                      <TableCell
-                        value={row.item.values[columnIndex]}
-                        keyword={search.query}
-                        scope={search.scopes.find(
-                          (scope) => scope.id === column.id
-                        )}
-                        rowIndex={rowIndex}
-                        colIndex={columnIndex}
-                        columnType={column.columnType}
-                        allowSelect
-                      />
-                    </div>
-                  )}
+      <QueryResultVerticalBody
+        ref={ref}
+        rowCount={rows.length}
+        columnCount={columns.length}
+        renderRow={(rowIndex) => {
+          const row = rows[rowIndex];
+          if (!row) return null;
+          const isActive = activeRowIndex === rowIndex;
+          return (
+            <RowDataBlock
+              columns={columns}
+              database={database.name}
+              statement={statement}
+              getMaskingReason={getMaskingReason}
+              className={cn(
+                isActive && "border-2 border-accent/20 bg-accent/10!"
+              )}
+              actions={
+                <CopyJSONButton
+                  getContent={() => buildRowJSON(rowIndex)}
+                  label={t("common.copy")}
                 />
-              </div>
-            );
-          })}
-        </div>
-      </div>
+              }
+              renderValue={(column, columnIndex) => (
+                <div
+                  onDoubleClick={(event) => {
+                    event.stopPropagation();
+                    setDetail({
+                      row: rowIndex,
+                      col: columnIndex,
+                      view: "cell",
+                    });
+                  }}
+                >
+                  <TableCell
+                    value={row.item.values[columnIndex]}
+                    keyword={search.query}
+                    scope={search.scopes.find(
+                      (scope) => scope.id === column.id
+                    )}
+                    rowIndex={rowIndex}
+                    colIndex={columnIndex}
+                    columnType={column.columnType}
+                    allowSelect
+                  />
+                </div>
+              )}
+            />
+          );
+        }}
+      />
     </ResultCopyContextMenu>
   );
 });

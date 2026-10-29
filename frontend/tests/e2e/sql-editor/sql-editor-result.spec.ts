@@ -7,6 +7,7 @@
 // a bug-lock (BYT-9478 row-selection highlight) marked inline.
 
 import { test, expect, type BrowserContext, type Page } from "@playwright/test";
+import enUS from "../../../src/locales/en-US.json";
 import { loadTestEnv, type TestEnv } from "../framework/env";
 import type { BytebaseApiClient } from "../framework/api-client";
 import { SqlEditorPage } from "./sql-editor.page";
@@ -433,5 +434,141 @@ test.describe("Detail panel scrolls long content to the last line (BYT-9610)", (
 
     // Close the tab so a sibling describe sharing the page starts clean.
     await page.keyboard.press("Escape");
+  });
+});
+
+// --- Maximize the result pane (3.23, #21459) ---
+//
+// A toggle beside the result tabs fills the editor area with the result pane:
+// the editor pane and the sidebar collapse in place (Monaco keeps its text),
+// Escape restores unless a dialog owns the key, the state is momentary (a tab
+// switch hands the editor back), and only a dragged height is remembered.
+
+const RESULT_PANEL_SIZE_KEY = "bb.sql-editor.result-panel-size";
+
+// Monaco sizes its node in pixels and re-lays out on a later frame after its
+// container changes, so callers poll this rather than read it once.
+async function editorHeight(): Promise<number> {
+  const box = await sqlEditor.codeEditor.first().boundingBox();
+  return box?.height ?? 0;
+}
+
+// The sidebar tree keeps its element while collapsed; its width tells the state.
+async function sidebarWidth(): Promise<number> {
+  return page.getByRole("tree").first().evaluate((tree) => tree.clientWidth);
+}
+
+const maximizeToggle = () =>
+  page.getByRole("button", { name: enUS.common.maximize, exact: true });
+const restoreToggle = () =>
+  page.getByRole("button", { name: enUS.common.restore, exact: true });
+
+test.describe("Maximize fills the editor area with the result pane (M1)", () => {
+  test.describe.configure({ mode: "serial" });
+  let dockedEditorHeight = 0;
+  let dockedSidebarWidth = 0;
+
+  test.beforeAll(async () => {
+    await openFreshConnectedTab();
+    await sqlEditor.runPreparedQuery("SELECT 1");
+    await expect(maximizeToggle()).toBeVisible();
+    dockedEditorHeight = await editorHeight();
+    dockedSidebarWidth = await sidebarWidth();
+    expect(dockedEditorHeight).toBeGreaterThan(100);
+    expect(dockedSidebarWidth).toBeGreaterThan(100);
+  });
+
+  test("the toggle collapses the editor and sidebar in place; Escape restores the geometry and the statement", async () => {
+    await maximizeToggle().click();
+    await expect(restoreToggle()).toHaveAttribute("aria-pressed", "true");
+    await expect.poll(editorHeight).toBeLessThan(dockedEditorHeight / 4);
+    await expect.poll(sidebarWidth).toBe(0);
+
+    await page.keyboard.press("Escape");
+    await expect(maximizeToggle()).toHaveAttribute("aria-pressed", "false");
+    await expect
+      .poll(async () => Math.abs((await editorHeight()) - dockedEditorHeight))
+      .toBeLessThanOrEqual(2);
+    await expect.poll(sidebarWidth).toBe(dockedSidebarWidth);
+    expect(await sqlEditor.readEditorContent()).toBe("SELECT 1");
+  });
+
+  test("Escape while a dialog is open closes the dialog only; the next Escape restores", async () => {
+    await maximizeToggle().click();
+    await expect(restoreToggle()).toHaveAttribute("aria-pressed", "true");
+    await page.getByRole("button", { name: enUS.common.export, exact: true }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    await expect(restoreToggle()).toHaveAttribute("aria-pressed", "true");
+
+    await page.keyboard.press("Escape");
+    await expect(maximizeToggle()).toHaveAttribute("aria-pressed", "false");
+  });
+});
+
+test.describe("Maximize is momentary: a tab switch hands the editor back (M2)", () => {
+  test("a new query tab opens docked and the maximized tab is docked again on return", async () => {
+    await openFreshConnectedTab();
+    await sqlEditor.runPreparedQuery("SELECT 1");
+    const docked = await editorHeight();
+    await maximizeToggle().click();
+    await expect(restoreToggle()).toHaveAttribute("aria-pressed", "true");
+
+    await page.getByRole("button", { name: enUS.common.add, exact: true }).click();
+    // The new tab has no result pane, hence no toggle, and a full-height editor.
+    await expect(restoreToggle()).toHaveCount(0);
+    await expect(maximizeToggle()).toHaveCount(0);
+    await expect.poll(editorHeight).toBeGreaterThan(docked);
+
+    // Back on the tab that was maximized (the one before the tab just added).
+    await page.locator("[data-tab-id]").nth(-2).click();
+    await expect(maximizeToggle()).toHaveAttribute("aria-pressed", "false");
+    await expect
+      .poll(async () => Math.abs((await editorHeight()) - docked))
+      .toBeLessThanOrEqual(2);
+  });
+});
+
+test.describe("A dragged result-pane height is remembered; maximizing is not (M3)", () => {
+  test.afterAll(async () => {
+    // Leave later specs the default split.
+    await page.evaluate((key) => localStorage.removeItem(key), RESULT_PANEL_SIZE_KEY);
+  });
+
+  test("dragging the separator persists the height across a reload", async () => {
+    await openFreshConnectedTab();
+    await sqlEditor.runPreparedQuery("SELECT 1");
+    const docked = await editorHeight();
+    await page.evaluate((key) => localStorage.removeItem(key), RESULT_PANEL_SIZE_KEY);
+
+    // Drag the editor/result separator up to the middle of the editor.
+    const separator = page.locator('[role="separator"][aria-orientation="horizontal"]').first();
+    const from = await separator.boundingBox();
+    const editor = await sqlEditor.codeEditor.first().boundingBox();
+    if (!from || !editor) throw new Error("the separator or the editor has no bounding box");
+    await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(from.x + from.width / 2, editor.y + editor.height / 2, { steps: 8 });
+    await page.mouse.up();
+
+    await expect.poll(editorHeight).toBeLessThan(docked * 0.7);
+    await expect
+      .poll(() => page.evaluate((key) => Number(localStorage.getItem(key)), RESULT_PANEL_SIZE_KEY))
+      .toBeGreaterThan(0.5);
+
+    // Maximizing must not overwrite the remembered height.
+    const remembered = await page.evaluate((key) => localStorage.getItem(key), RESULT_PANEL_SIZE_KEY);
+    await maximizeToggle().click();
+    await page.keyboard.press("Escape");
+    await expect(maximizeToggle()).toHaveAttribute("aria-pressed", "false");
+    expect(await page.evaluate((key) => localStorage.getItem(key), RESULT_PANEL_SIZE_KEY)).toBe(remembered);
+
+    await page.reload();
+    await expect(sqlEditor.codeEditor.first()).toBeVisible({ timeout: 15_000 });
+    await sqlEditor.runPreparedQuery("SELECT 1");
+    await expect.poll(editorHeight).toBeLessThan(docked * 0.7);
   });
 });

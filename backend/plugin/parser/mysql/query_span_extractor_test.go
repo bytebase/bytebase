@@ -37,9 +37,12 @@ func TestOmniQuerySpanScaffold_QueryTypesAndAccessTables(t *testing.T) {
 			wantType:  base.SelectInfoSchema,
 		},
 		{
-			name:      "plain_explain_is_explain",
+			name:      "plain_explain_keeps_the_tables_it_plans",
 			statement: "EXPLAIN SELECT * FROM t",
 			wantType:  base.Explain,
+			wantResources: []base.ColumnResource{
+				{Database: "db", Table: "t"},
+			},
 		},
 		{
 			name:      "describe_is_info_schema",
@@ -57,14 +60,16 @@ func TestOmniQuerySpanScaffold_QueryTypesAndAccessTables(t *testing.T) {
 			wantType:  base.SelectInfoSchema,
 		},
 		{
-			name:      "ddl",
-			statement: "CREATE TABLE t(a INT)",
-			wantType:  base.DDL,
+			name:          "ddl",
+			statement:     "CREATE TABLE t(a INT)",
+			wantType:      base.DDL,
+			wantResources: []base.ColumnResource{{Database: "db", Table: "t"}},
 		},
 		{
-			name:      "dml",
-			statement: "INSERT INTO t VALUES(1)",
-			wantType:  base.DML,
+			name:          "dml",
+			statement:     "INSERT INTO t VALUES(1)",
+			wantType:      base.DML,
+			wantResources: []base.ColumnResource{{Database: "db", Table: "t"}},
 		},
 		{
 			name:      "system_select",
@@ -565,9 +570,10 @@ func TestOmniQuerySpanScenarioBatch1_RootAndQueryTypeCoverage(t *testing.T) {
 				wantType:  base.Select,
 			},
 			{
-				name:      "explain_analyze_insert",
-				statement: "EXPLAIN ANALYZE INSERT INTO t VALUES(1, 2, 3)",
-				wantType:  base.DML,
+				name:          "explain_analyze_insert",
+				statement:     "EXPLAIN ANALYZE INSERT INTO t VALUES(1, 2, 3)",
+				wantType:      base.DML,
+				wantResources: []base.ColumnResource{{Database: "db", Table: "t"}},
 			},
 		}
 		for _, tc := range tests {

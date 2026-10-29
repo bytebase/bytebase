@@ -1,0 +1,76 @@
+{
+  "sql": "EXPLAIN (DISTSQL) SELECT customer_id, sum(total) FROM orders WHERE total \u003e 880 GROUP BY customer_id",
+  "nodeNames": ["1"],
+  "processors": [
+    {
+      "nodeIdx": 0,
+      "inputs": [],
+      "core": {
+        "title": "TableReader/0",
+        "details": [
+          "orders@orders_pkey",
+          "Columns: customer_id, total",
+          "Spans: -"
+        ]
+      },
+      "outputs": [],
+      "stage": 1,
+      "processorID": 0
+    },
+    {
+      "nodeIdx": 0,
+      "inputs": [],
+      "core": {
+        "title": "Filterer/1",
+        "details": ["Filter: @2 \u003e 880:::INT8"]
+      },
+      "outputs": [],
+      "stage": 2,
+      "processorID": 1
+    },
+    {
+      "nodeIdx": 0,
+      "inputs": [],
+      "core": {
+        "title": "Aggregator/2",
+        "details": ["@1", "ANY_NOT_NULL(@1)", "SUM(@2)"]
+      },
+      "outputs": [],
+      "stage": 3,
+      "processorID": 2
+    },
+    {
+      "nodeIdx": 0,
+      "inputs": [],
+      "core": { "title": "Response", "details": [] },
+      "outputs": [],
+      "stage": 0,
+      "processorID": -1
+    }
+  ],
+  "edges": [
+    {
+      "sourceProc": 0,
+      "sourceOutput": 0,
+      "destProc": 1,
+      "destInput": 0,
+      "streamID": 0
+    },
+    {
+      "sourceProc": 1,
+      "sourceOutput": 0,
+      "destProc": 2,
+      "destInput": 0,
+      "streamID": 1
+    },
+    {
+      "sourceProc": 2,
+      "sourceOutput": 0,
+      "destProc": 3,
+      "destInput": 0,
+      "streamID": 0
+    }
+  ],
+  "flow_id": "a6c7cbb4-51a8-4efe-a974-f81a2db05a29",
+  "flags": { "ShowInputTypes": false, "MakeDeterministic": false }
+}

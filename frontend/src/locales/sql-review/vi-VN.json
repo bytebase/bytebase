@@ -1,6 +1,34 @@
 {
   "add-or-remove-rules": "Thêm hoặc xóa quy tắc",
   "add-rules": "Thêm quy tắc",
+  "ai-review": {
+    "ai-off": "AI đang tắt trong không gian làm việc nên không có lần đánh giá bằng AI nào được chạy.",
+    "description": "Một mô hình AI đánh giá SQL của issue để tìm các rủi ro mà quy tắc tiêu chuẩn không phát hiện được.",
+    "enable": {
+      "description": "Mỗi lần đánh giá sẽ gửi nguyên văn các câu lệnh tới nhà cung cấp AI, và có thể gửi lược đồ của các cơ sở dữ liệu đích cùng số liệu thống kê bảng của chúng. Tính năng này không đọc bất kỳ hàng dữ liệu nào trong cơ sở dữ liệu.",
+      "self": "Đánh giá thay đổi bằng AI"
+    },
+    "policy": {
+      "cannot-clear": "Vai trò của bạn không thể xóa chính sách, nên không thể để trống chính sách này.",
+      "description": "Chính sách này xác định những gì AI kiểm tra khi đánh giá thay đổi cơ sở dữ liệu. Nó áp dụng cho mọi dự án trong không gian làm việc và mỗi dự án có thể thêm chính sách riêng.",
+      "load-failed": "Không thể tải chính sách đánh giá.",
+      "none": "Chưa có chính sách đánh giá.",
+      "paused": "Chính sách này đang tạm dừng nên tính năng đánh giá bằng AI không sử dụng chính sách này.",
+      "placeholder": "Ví dụ:\nBáo cáo thay đổi lược đồ chặn ghi trên bảng có hơn 1 triệu hàng.\nMọi khóa ngoại đều cần chỉ mục trên các cột của nó.\nBảng mới cần có cột created_at và updated_at.",
+      "project-description": "Chính sách tùy chọn dành riêng cho dự án. Chính sách này được thêm vào chính sách không gian làm việc và được ưu tiên khi có xung đột.",
+      "project-none": "Chưa có chính sách dự án.",
+      "project-placeholder": "Ví dụ:\nKhông bao giờ xóa hàng khỏi bảng payments hoặc ledger.\nLưu số tiền trong cột DECIMAL, không dùng FLOAT hoặc DOUBLE.\nCột mới trên bảng users phải cho phép NULL hoặc có giá trị mặc định.",
+      "project-self": "Chính sách bổ sung của dự án",
+      "remove-only": "Bạn có thể xóa chính sách này nhưng không thể thay đổi nó. Hãy xóa hết nội dung để xóa chính sách.",
+      "self": "Chính sách đánh giá",
+      "too-large": "Chính sách có dung lượng {{size}} byte, vượt quá giới hạn {{limit}} byte. Hãy rút gọn để lưu."
+    },
+    "project-description": "Tính năng đánh giá bằng AI được cấu hình cho không gian làm việc. Hãy thêm chính sách tùy chọn dành riêng cho dự án bên dưới.",
+    "self": "Đánh giá bằng AI",
+    "set-for-workspace": "Được quản lý ở cấp không gian làm việc.",
+    "turn-on-ai": "Bật AI",
+    "view-workspace-setting": "Xem thiết lập AI của không gian làm việc"
+  },
   "attach-resource": {
     "change-resources": "Thay đổi tài nguyên đính kèm",
     "label": "Bạn có thể áp dụng chính sách đánh giá SQL cho môi trường hoặc dự án. Cơ sở dữ liệu sẽ sử dụng chính sách cấp dự án nếu có, hoặc quay lại chính sách cấp môi trường.",
@@ -731,7 +759,7 @@
   "select-review-rules": "Chọn quy tắc đánh giá SQL",
   "standard-rules": {
     "customize": {
-      "description": "Khi tắt, dự án này tuân theo các quy tắc tiêu chuẩn của không gian làm việc.",
+      "description": "Khi bị vô hiệu hóa, dự án này tuân theo các quy tắc tiêu chuẩn của không gian làm việc.",
       "self": "Tùy chỉnh cho dự án này",
       "view-workspace-rules": "Xem quy tắc của không gian làm việc"
     },
@@ -743,53 +771,53 @@
     "retry": "Thử lại",
     "rule": {
       "disallow-drop-constraint": {
-        "description": "Đánh dấu việc xóa ràng buộc PRIMARY KEY, FOREIGN KEY, UNIQUE hoặc CHECK.",
+        "description": "Báo cáo thao tác xóa ràng buộc PRIMARY KEY, FOREIGN KEY, UNIQUE hoặc CHECK.",
         "title": "Xóa ràng buộc"
       },
       "disallow-drop-object": {
-        "description": "Đánh dấu DROP TABLE, COLUMN, SCHEMA hoặc DATABASE.",
+        "description": "Báo cáo thao tác xóa bất kỳ đối tượng nào, như bảng, cột, view, chỉ mục, schema hoặc cơ sở dữ liệu. Việc xóa ràng buộc được kiểm tra riêng.",
         "title": "Xóa đối tượng"
       },
       "disallow-rename": {
-        "description": "Đánh dấu việc đổi tên bảng hoặc cột.",
+        "description": "Báo cáo thao tác đổi tên bảng, view hoặc cột.",
         "title": "Đổi tên"
       },
       "disallow-truncate": {
-        "description": "Đánh dấu TRUNCATE.",
+        "description": "Báo cáo các câu lệnh TRUNCATE.",
         "title": "Làm trống bảng"
       },
       "online-migration": {
-        "description": "Đánh dấu thay đổi yêu cầu di chuyển trực tuyến nhưng không đủ điều kiện.",
+        "description": "Báo cáo thay đổi yêu cầu di chuyển trực tuyến nhưng không đủ điều kiện.",
         "title": "Điều kiện di chuyển trực tuyến"
       },
       "prior-backup": {
-        "description": "Đánh dấu thay đổi bật sao lưu trước khi không thể thực hiện sao lưu.",
+        "description": "Báo cáo thay đổi bật sao lưu trước nhưng không thể thực hiện sao lưu.",
         "title": "Khả năng sao lưu trước"
       },
       "require-is-null": {
-        "description": "Đánh dấu = NULL hoặc <> NULL trong vị từ, vốn không bao giờ đúng. Hãy dùng IS NULL hoặc IS NOT NULL.",
+        "description": "Báo cáo = NULL hoặc <> NULL trong vị từ. Các so sánh này không bao giờ đúng. Hãy dùng IS NULL hoặc IS NOT NULL.",
         "title": "So sánh NULL"
       },
       "require-primary-key": {
-        "description": "Đánh dấu bảng được thay đổi tạo ra mà không có khóa chính, hoặc khóa chính bị xóa mà không được thêm lại.",
+        "description": "Báo cáo thay đổi tạo bảng không có khóa chính hoặc xóa khóa chính mà không thêm lại.",
         "title": "Khóa chính"
       },
       "require-where": {
-        "description": "Đánh dấu UPDATE hoặc DELETE không có mệnh đề WHERE.",
+        "description": "Báo cáo các câu lệnh UPDATE hoặc DELETE không có mệnh đề WHERE.",
         "title": "Mệnh đề WHERE"
       },
       "syntax": {
-        "description": "Đánh dấu các câu lệnh mà công cụ cơ sở dữ liệu không phân tích được. Các quy tắc khác chỉ kiểm tra SQL phân tích được, vì vậy tắt quy tắc này sẽ tắt mọi quy tắc tiêu chuẩn.",
+        "description": "Báo cáo các câu lệnh mà công cụ cơ sở dữ liệu không phân tích được. Các quy tắc khác chỉ kiểm tra SQL phân tích được, vì vậy tắt quy tắc này sẽ tắt mọi quy tắc tiêu chuẩn.",
         "title": "Cú pháp"
       },
       "walk-through": {
-        "description": "Đánh dấu các câu lệnh thất bại trên schema đã đồng bộ, chẳng hạn bảng hoặc cột không tồn tại, đối tượng trùng lặp hoặc tham chiếu không hợp lệ.",
+        "description": "Báo cáo các câu lệnh không hợp lệ với schema đã đồng bộ, chẳng hạn như tham chiếu đến bảng hoặc cột không tồn tại, đối tượng trùng lặp hoặc tham chiếu không hợp lệ.",
         "title": "Mô phỏng schema"
       }
     },
-    "running": "{{on}} trên {{total}} quy tắc đang chạy",
+    "running": "Đã bật {{on}} trên {{total}} quy tắc",
     "self": "Quy tắc tiêu chuẩn",
-    "syntax-off": "Cú pháp đang tắt nên không quy tắc tiêu chuẩn nào được chạy. Hãy bật Cú pháp để đánh giá các thay đổi.",
+    "syntax-off": "Tính năng kiểm tra cú pháp đang bị tắt nên không quy tắc tiêu chuẩn nào chạy. Hãy bật tính năng này để đánh giá các thay đổi.",
     "workspace-rules-hidden": "Bạn không có quyền xem các quy tắc của không gian làm việc mà dự án này tuân theo."
   },
   "template": {

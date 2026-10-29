@@ -344,30 +344,3 @@ console.log(`Generated ${OUTPUT_FILE}`);
 console.log(
   `  Endpoints: ${endpoints.length}, Schemas: ${schemaCount} (${objectCount} objects, ${enumCount} enums)`
 );
-
-// Validate service directory coverage in the prompt
-const PROMPT_FILE = path.join(__dirname, "../src/modules/agent/logic/prompt.ts");
-if (fs.existsSync(PROMPT_FILE)) {
-  const promptContent = fs.readFileSync(PROMPT_FILE, "utf8");
-  const specServices = new Set(endpoints.map((ep) => ep.service));
-  const missing = [];
-  for (const svc of specServices) {
-    if (!promptContent.includes(svc)) {
-      missing.push(svc);
-    }
-  }
-  if (missing.length > 0) {
-    console.warn(
-      `  ⚠ Services not reflected in prompt.ts serviceDirectory: ${missing.join(", ")}`
-    );
-    console.warn(
-      "    Review frontend/src/modules/agent/AGENTS.md and manually update the serviceDirectory block in prompt.ts"
-    );
-  } else {
-    console.log(`  ✓ Prompt service directory covers all ${specServices.size} services`);
-  }
-} else {
-  console.warn(
-    "  ⚠ No prompt.ts found. Review frontend/src/modules/agent/AGENTS.md and restore or recreate the serviceDirectory block"
-  );
-}

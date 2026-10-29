@@ -86,6 +86,22 @@ func TestGroupReviewUnits(t *testing.T) {
 	require.Equal(t, []string{"instances/pg/databases/c"}, targetNames(units[2]))
 }
 
+func TestMarkOtherSpecs(t *testing.T) {
+	t.Parallel()
+	shared1 := target("spec-1", "instances/pg/databases/a", storepb.Engine_POSTGRES, false)
+	own := target("spec-1", "instances/pg/databases/b", storepb.Engine_POSTGRES, false)
+	shared2 := target("spec-2", "instances/pg/databases/a", storepb.Engine_POSTGRES, false)
+	repeated1 := target("spec-3", "instances/pg/databases/c", storepb.Engine_POSTGRES, false)
+	repeated2 := target("spec-3", "instances/pg/databases/c", storepb.Engine_POSTGRES, false)
+	markOtherSpecs([]*reviewTarget{shared1, own, shared2, repeated1, repeated2})
+
+	require.True(t, shared1.Input.OtherSpecs)
+	require.True(t, shared2.Input.OtherSpecs)
+	require.False(t, own.Input.OtherSpecs)
+	require.False(t, repeated1.Input.OtherSpecs, "one spec naming a database twice is still one spec")
+	require.False(t, repeated2.Input.OtherSpecs)
+}
+
 func targetNames(unit *reviewUnit) []string {
 	var names []string
 	for _, target := range unit.Targets {
@@ -191,9 +207,9 @@ func TestAggregateUnitErrors(t *testing.T) {
 	require.EqualError(t, err, "4 of 5 review units failed: a; b; c (+1 more)")
 
 	unit := groupReviewUnits(nil, []*reviewTarget{
-		target("spec-1", "instances/pg/databases/a", storepb.Engine_POSTGRES, false),
-		target("spec-1", "instances/pg/databases/b", storepb.Engine_POSTGRES, false),
+		target("spec-1", "instances/ch/databases/a", storepb.Engine_CLICKHOUSE, false),
+		target("spec-1", "instances/ch/databases/b", storepb.Engine_CLICKHOUSE, false),
 	})[0]
-	err = aggregateUnitErrors(2, unit.failures(errors.New("engine POSTGRES has no standard rule reviewer")))
-	require.EqualError(t, err, "2 of 2 review units failed: instances/pg/databases/a: engine POSTGRES has no standard rule reviewer; instances/pg/databases/b: engine POSTGRES has no standard rule reviewer")
+	err = aggregateUnitErrors(2, unit.failures(errors.New("engine CLICKHOUSE has no standard rule reviewer")))
+	require.EqualError(t, err, "2 of 2 review units failed: instances/ch/databases/a: engine CLICKHOUSE has no standard rule reviewer; instances/ch/databases/b: engine CLICKHOUSE has no standard rule reviewer")
 }

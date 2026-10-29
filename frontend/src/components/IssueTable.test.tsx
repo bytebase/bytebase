@@ -123,6 +123,12 @@ describe("IssueListItem", () => {
         onOpenIssue={onOpenIssue}
       />
     );
+    expect(
+      screen.getByTestId("issue-list-item").querySelector("[data-slot='issue-status-icon']")
+    ).toBeTruthy();
+    expect(
+      screen.getByTestId("issue-list-item").querySelector("[data-slot='issue-summary']")
+    ).toBeTruthy();
 
     fireEvent.click(screen.getByTestId("issue-list-item"));
     expect(onOpenIssue).toHaveBeenCalledOnce();

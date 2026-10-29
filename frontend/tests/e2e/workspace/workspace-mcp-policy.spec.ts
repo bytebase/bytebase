@@ -151,15 +151,19 @@ test.describe("MCP access policy capability ladder", () => {
     // The chip names the policy without an "In force" label, and the audit
     // fact belongs to the section description rather than to the current state.
     await expect(page.getByText("In force")).toHaveCount(0);
+    await expect(page.getByText(COPY.policy.audit)).toHaveCount(1);
     await expect(
-      page.getByText(/^MCP policy denials are streamed to stdout/)
-    ).toHaveCount(0);
-    await expect(page.getByText(COPY.policy.description)).toBeVisible();
+      page.getByText(
+        COPY.policy.description
+          .replace("{{bound}}", COPY.policy.bound)
+          .replace("{{audit}}", COPY.policy.audit)
+      )
+    ).toBeVisible();
     // Pinned as a literal, not read from the locale: this description carries
     // the page's only audit disclosure, so the claim has to survive a copy edit
     // that keeps the sentence and drops the clause.
     await expect(
-      page.getByText(/policy refusals are streamed to stdout when audit logging/)
+      page.getByText(/MCP operations are recorded in Bytebase audit logs/)
     ).toBeVisible();
 
     // Connect a client carries the authentication clause; nothing repeats it
@@ -199,7 +203,7 @@ test.describe("MCP access policy capability ladder", () => {
     await expect(page.getByText(COPY.ladder.stops.write)).toBeVisible();
     await expect(page.getByText(COPY.ladder.floor.text)).toBeVisible();
 
-    // One second-level control for all eight rows, not eight expanders.
+    // One second-level control for all the rows, not one expander per row.
     await expect(page.getByText(EXPORT_DETAILS)).toHaveCount(0);
     await page.getByRole("button", { name: "Show details" }).click();
     await expect(page.getByText(EXPORT_DETAILS)).toBeVisible();
@@ -270,5 +274,36 @@ test.describe("MCP access policy capability ladder", () => {
         row(page, title).getByText(COPY.ladder.tier.write, { exact: true })
       ).toBeVisible();
     }
+  });
+});
+
+// #21527 retired the "Ignore masking exemptions" toggle from the access policy:
+// an MCP session applies the caller's own masking provisioning exactly as the
+// console does, so the editor holds nothing but the mode cards.
+test.describe("The policy editor holds only the mode cards (X4)", () => {
+  test("Edit policy offers the three modes and no masking control", async ({
+    page,
+  }) => {
+    await setCapability("READ_ONLY");
+    await gotoMCPPage(page);
+    await page.getByRole("button", { name: COPY.policy.edit }).click();
+
+    await expect(
+      page.getByRole("radiogroup", { name: "Access policy" })
+    ).toBeVisible();
+    for (const mode of ["disabled", "read-only", "read-write"] as const) {
+      await expect(
+        page.getByRole("radio", { name: new RegExp(`^${COPY.policy.mode[mode].title}`) })
+      ).toBeVisible();
+    }
+    await expect(page.getByRole("switch")).toHaveCount(0);
+    await expect(page.getByRole("checkbox")).toHaveCount(0);
+    await expect(page.getByText(/masking exemption/i)).toHaveCount(0);
+    // Nothing to save until a different mode is picked.
+    await expect(
+      page.getByRole("button", { name: COPY.policy.save })
+    ).toBeDisabled();
+    await page.getByRole("button", { name: "Cancel", exact: true }).click();
+    await expect(chip(page, "Read-only")).toBeVisible();
   });
 });

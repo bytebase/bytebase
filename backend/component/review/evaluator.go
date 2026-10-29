@@ -763,18 +763,7 @@ func buildCELVariablesForDatabaseChange(ctx context.Context, stores *store.Store
 		}
 
 		report := result.GetSqlSummaryReport()
-
-		// Calculate table rows from changed resources
-		var tableRows int64
-		var tableNames []string
-		for _, db := range report.GetChangedResources().GetDatabases() {
-			for _, sc := range db.GetSchemas() {
-				for _, tb := range sc.GetTables() {
-					tableRows += tb.GetTableRows()
-					tableNames = append(tableNames, tb.Name)
-				}
-			}
-		}
+		tableNames, tableRows := changedTables(report)
 
 		celVars[common.CELAttributeStatementAffectedRows] = report.AffectedRows
 		celVars[common.CELAttributeStatementTableRows] = tableRows
@@ -864,15 +853,6 @@ func buildCELVariablesForRoleGrant(ctx context.Context, stores *store.Store, iss
 }
 
 // buildCELVariablesForAccessGrant builds CEL variables for ACCESS_GRANT issues.
-//
-// Emits one CEL variable map per (target database, schema, table) referenced
-// by the grant's query, so REQUEST_ACCESS rules can key on
-// `resource.db_engine / resource.database_name / resource.schema_name /
-// resource.table_name` attributes.
-//
-// Statement parsing failures fall back to per-target vars without
-// schema/table info — rules keyed on db_engine / database_name / env
-// still evaluate.
 func buildCELVariablesForAccessGrant(ctx context.Context, stores *store.Store, issue *store.IssueMessage) ([]map[string]any, bool, error) {
 	payload := issue.Payload
 	if payload.AccessGrantId == "" {
@@ -887,16 +867,48 @@ func buildCELVariablesForAccessGrant(ctx context.Context, stores *store.Store, i
 	if accessGrant == nil {
 		return nil, false, errors.Errorf("access grant %s not found", accessGrantID)
 	}
+	celVarsList, err := buildCELVariablesForAccessGrantPayload(ctx, stores, issue.ProjectID, accessGrant.Payload)
+	if err != nil {
+		return nil, false, err
+	}
+	return celVarsList, true, nil
+}
 
+// EvaluateAccessGrantApproval returns the approval finding an access grant
+// request gets, from the request itself, so the caller can decide before any row
+// is written. Unlike the workflow, it skips the FEATURE_APPROVAL_WORKFLOW check:
+// its caller requires FEATURE_JIT, which plan.yaml grants only with that feature.
+func EvaluateAccessGrantApproval(ctx context.Context, stores *store.Store, project *store.ProjectMessage, grant *storepb.AccessGrantPayload) (*storepb.IssuePayloadApproval, storepb.RiskLevel, error) {
+	finding := &storepb.IssuePayloadApproval{ApprovalFindingDone: true}
+	approvalSetting, err := stores.GetWorkspaceApprovalSetting(ctx, project.Workspace)
+	if err != nil {
+		return nil, storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, errors.Wrap(err, "failed to get workspace approval setting")
+	}
+	celVarsList, err := buildCELVariablesForAccessGrantPayload(ctx, stores, project.ResourceID, grant)
+	if err != nil {
+		return nil, storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, errors.Wrap(err, "failed to build CEL variables for access grant")
+	}
+	finding.ApprovalTemplate, err = getApprovalTemplate(approvalSetting, storepb.WorkspaceApprovalSetting_Rule_REQUEST_ACCESS, celVarsList)
+	if err != nil {
+		return nil, storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to get approval template for source: %v", storepb.WorkspaceApprovalSetting_Rule_REQUEST_ACCESS)
+	}
+	return finding, calculateRiskLevelFromCELVars(celVarsList), nil
+}
+
+// buildCELVariablesForAccessGrantPayload emits one CEL variable map per target
+// database, schema and table the query reads. A statement that does not parse
+// yields one map per target, so rules on its engine, database or environment
+// still evaluate.
+func buildCELVariablesForAccessGrantPayload(ctx context.Context, stores *store.Store, projectID string, grant *storepb.AccessGrantPayload) ([]map[string]any, error) {
 	baseVars := map[string]any{
-		common.CELAttributeResourceProjectID: issue.ProjectID,
-		common.CELAttributeRequestUnmask:     accessGrant.Payload.Unmask,
-		common.CELAttributeRequestExport:     accessGrant.Payload.Export,
+		common.CELAttributeResourceProjectID: projectID,
+		common.CELAttributeRequestUnmask:     grant.Unmask,
+		common.CELAttributeRequestExport:     grant.Export,
 	}
 
-	targets := accessGrant.Payload.Targets
+	targets := grant.Targets
 	if len(targets) == 0 {
-		return []map[string]any{baseVars}, true, nil
+		return []map[string]any{baseVars}, nil
 	}
 
 	type databaseKey struct {
@@ -913,10 +925,10 @@ func buildCELVariablesForAccessGrant(ctx context.Context, stores *store.Store, i
 	for _, target := range targets {
 		targetProjectID, instanceID, databaseName, err := common.GetDatabaseResourceName(target)
 		if err != nil {
-			return nil, false, errors.Wrapf(err, "failed to parse target %q", target)
+			return nil, errors.Wrapf(err, "failed to parse target %q", target)
 		}
-		if targetProjectID != nil && *targetProjectID != issue.ProjectID {
-			return nil, false, errors.Errorf("target %q does not belong to project %q", target, issue.ProjectID)
+		if targetProjectID != nil && *targetProjectID != projectID {
+			return nil, errors.Errorf("target %q does not belong to project %q", target, projectID)
 		}
 		key := databaseKey{instanceID: instanceID, databaseName: databaseName}
 		parsedTargets = append(parsedTargets, parsedTarget{name: target, key: key})
@@ -926,16 +938,16 @@ func buildCELVariablesForAccessGrant(ctx context.Context, stores *store.Store, i
 
 	instanceByID, err := getActiveTargetInstances(ctx, stores, instanceTargets)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	databases, err := stores.ListDatabases(ctx, &store.FindDatabaseMessage{
 		Workspace: workspaceID,
-		ProjectID: &issue.ProjectID,
+		ProjectID: &projectID,
 	})
 	if err != nil {
-		return nil, false, errors.Wrapf(err, "failed to list databases for project %q", issue.ProjectID)
+		return nil, errors.Wrapf(err, "failed to list databases for project %q", projectID)
 	}
 	databaseByKey := make(map[databaseKey]*store.DatabaseMessage, len(requestedDatabases))
 	for _, database := range databases {
@@ -955,7 +967,7 @@ func buildCELVariablesForAccessGrant(ctx context.Context, stores *store.Store, i
 			continue
 		}
 		if database.ResourceName() != target.name {
-			return nil, false, errors.Errorf("database target %q is not canonical for its instance", target.name)
+			return nil, errors.Errorf("database target %q is not canonical for its instance", target.name)
 		}
 		resolvedTargets = append(resolvedTargets, struct {
 			name     string
@@ -963,7 +975,7 @@ func buildCELVariablesForAccessGrant(ctx context.Context, stores *store.Store, i
 		}{name: target.name, database: database})
 	}
 
-	statement := accessGrant.Payload.Query
+	statement := grant.Query
 	var celVarsList []map[string]any
 
 	for _, target := range resolvedTargets {
@@ -1027,7 +1039,7 @@ func buildCELVariablesForAccessGrant(ctx context.Context, stores *store.Store, i
 		celVarsList = append(celVarsList, baseVars)
 	}
 
-	return celVarsList, true, nil
+	return celVarsList, nil
 }
 
 // getDatabasesForRoleGrant fetches database messages for the given database identifiers.
@@ -1157,6 +1169,22 @@ func statementTypesFromParser(engine storepb.Engine, statement string) []storepb
 	return statementTypes
 }
 
+// changedTables returns the names of the tables a summary report changes and their
+// total row count.
+func changedTables(report *storepb.PlanCheckRunResult_Result_SqlSummaryReport) ([]string, int64) {
+	var names []string
+	var rows int64
+	for _, db := range report.GetChangedResources().GetDatabases() {
+		for _, sc := range db.GetSchemas() {
+			for _, tb := range sc.GetTables() {
+				rows += tb.GetTableRows()
+				names = append(names, tb.Name)
+			}
+		}
+	}
+	return names, rows
+}
+
 // expandCELVars creates CEL variable maps for each combination of statement types and table names.
 func expandCELVars(base map[string]any, statementTypes []storepb.StatementType, tableNames []string) []map[string]any {
 	if len(statementTypes) == 0 {
@@ -1214,10 +1242,26 @@ func collectStatementTypes(celVarsList []map[string]any) []string {
 	return result
 }
 
-// getApproversForRole retrieves the list of users who have the specified role
-// for the given project. It queries both project and workspace IAM policies.
-// Only returns END_USER type principals (excludes service accounts, system bots, etc).
+// getApproversForRole returns the people who hold the role, for a notification
+// to mention. On an error it still returns the people who resolved.
 func getApproversForRole(ctx context.Context, stores *store.Store, projectID string, role string) ([]webhook.User, error) {
+	people, err := activeRoleHolders(ctx, stores, projectID, role)
+	approvers := make([]webhook.User, 0, len(people))
+	for _, person := range people {
+		approvers = append(approvers, webhook.User{
+			Name:  person.Name,
+			Email: person.Email,
+			Phone: person.Phone,
+		})
+	}
+	return approvers, err
+}
+
+// activeRoleHolders returns the people who hold the role in the project or
+// workspace IAM policy. Service accounts and workload identities can approve but
+// are not people; a deactivated account keeps its bindings but cannot sign in.
+// After a failed member lookup it returns the people who resolved and the error.
+func activeRoleHolders(ctx context.Context, stores *store.Store, projectID string, role string) ([]*store.UserMessage, error) {
 	// Get project to determine workspace
 	project, err := stores.GetProjectByResourceID(ctx, projectID)
 	if err != nil {
@@ -1240,7 +1284,7 @@ func getApproversForRole(ctx context.Context, stores *store.Store, projectID str
 	}
 
 	// Get all users with the specified role
-	users := utils.GetUsersByRoleInIAMPolicy(
+	users, lookupErr := utils.UsersByRoleInIAMPolicy(
 		ctx,
 		stores,
 		project.Workspace,
@@ -1252,21 +1296,14 @@ func getApproversForRole(ctx context.Context, stores *store.Store, projectID str
 		workspaceIAM.Policy,
 	)
 
-	// Convert to webhook.User format, filtering by END_USER principal type
-	approvers := make([]webhook.User, 0, len(users))
+	people := make([]*store.UserMessage, 0, len(users))
 	for _, user := range users {
-		// Only include END_USER principals as approvers
-		if user.Type != storepb.PrincipalType_END_USER {
+		if user.Type != storepb.PrincipalType_END_USER || user.MemberDeleted {
 			continue
 		}
-		approvers = append(approvers, webhook.User{
-			Name:  user.Name,
-			Email: user.Email,
-			Phone: user.Phone,
-		})
+		people = append(people, user)
 	}
-
-	return approvers, nil
+	return people, lookupErr
 }
 
 // NotifyApprovalRequested sends the ISSUE_APPROVAL_REQUESTED webhook event for the next pending approval stage.
@@ -1291,8 +1328,7 @@ func NotifyApprovalRequested(ctx context.Context, stores *store.Store, webhookMa
 	// Get approvers for this role
 	approvers, err := getApproversForRole(ctx, stores, issue.ProjectID, role)
 	if err != nil {
-		slog.Warn("failed to get approvers", log.BBError(err))
-		approvers = []webhook.User{} // Continue with empty list
+		slog.Warn("failed to get every approver", log.BBError(err))
 	}
 	if !project.Setting.GetAllowLastPlanEditorApproval() && issue.Type == storepb.Issue_DATABASE_CHANGE && issue.PlanUID != nil {
 		plan, err := stores.GetPlan(ctx, &store.FindPlanMessage{ProjectID: issue.ProjectID, UID: issue.PlanUID})
@@ -1325,6 +1361,64 @@ func NotifyApprovalRequested(ctx context.Context, stores *store.Store, webhookMa
 			Approvers: approvers,
 		},
 	})
+}
+
+// UnapprovableStep is a remaining approval step that no person can approve.
+type UnapprovableStep struct {
+	// Position counts the steps of the approval flow from 1.
+	Position int
+	// Role is the role the step requires, e.g. "roles/projectOwner".
+	Role string
+	// CreatorHoldsRole is set when the issue's creator holds the role and the
+	// project refuses self-approval.
+	CreatorHoldsRole bool
+}
+
+// FindUnapprovableStep returns the first remaining step of the issue's approval
+// flow that no active person can approve, or nil. People are found as approval
+// notifications find them. One with no workspace binding still counts, since
+// sign-in can add one (self-hosted login, workspace SSO).
+func FindUnapprovableStep(ctx context.Context, stores *store.Store, workspace, issueName string) (*UnapprovableStep, error) {
+	projectID, issueUID, err := common.GetProjectIDIssueUID(issueName)
+	if err != nil {
+		return nil, err
+	}
+	project, err := stores.GetProject(ctx, &store.FindProjectMessage{Workspace: workspace, ResourceID: &projectID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get project %s", projectID)
+	}
+	if project == nil {
+		return nil, errors.Errorf("project %s not found", projectID)
+	}
+	issue, err := stores.GetIssue(ctx, &store.FindIssueMessage{Workspace: workspace, ProjectIDs: []string{projectID}, UID: &issueUID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get issue %s", issueName)
+	}
+	if issue == nil {
+		return nil, errors.Errorf("issue %s not found", issueName)
+	}
+	approval := issue.Payload.GetApproval()
+	roles := approval.GetApprovalTemplate().GetFlow().GetRoles()
+	for i := len(approval.GetApprovers()); i < len(roles); i++ {
+		people, err := activeRoleHolders(ctx, stores, projectID, roles[i])
+		if err != nil {
+			return nil, err
+		}
+		approvable, creatorHoldsRole := false, false
+		for _, person := range people {
+			if person.Email == issue.CreatorEmail {
+				creatorHoldsRole = true
+			}
+			if !refusesSelfApproval(project, issue.CreatorEmail, person.Email) {
+				approvable = true
+			}
+		}
+		if approvable {
+			continue
+		}
+		return &UnapprovableStep{Position: i + 1, Role: roles[i], CreatorHoldsRole: creatorHoldsRole}, nil
+	}
+	return nil, nil
 }
 
 // NotifyIssueApproved sends the ISSUE_APPROVED webhook event when all approval steps complete.

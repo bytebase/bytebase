@@ -1,48 +1,70 @@
 import { render } from "@testing-library/react";
-import { beforeEach, describe, expect, test, vi } from "vitest";
-import { AUTH_SIGNIN_MODULE } from "@/app/router/handles";
-import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
-import { SplashLayout } from "./SplashLayout";
+import { describe, expect, test, vi } from "vitest";
+import { AUTH_SETUP_MODULE, AUTH_SIGNIN_MODULE } from "@/app/router/handles";
+import { SplashLayout, SplashPanel } from "./SplashLayout";
 
-const storeState = vi.hoisted(() => ({
-  currentPlan: 0,
-  isTrialing: false,
-}));
+const routeState = vi.hoisted(() => ({ routeName: "" }));
 
+// The routed page, which may put a panel of its own in the left column.
 vi.mock("react-router", () => ({
-  Outlet: () => <div data-testid="auth-page" />,
-  useMatches: () => [{ handle: { name: AUTH_SIGNIN_MODULE } }],
+  Outlet: () => (
+    <div data-testid="auth-page">
+      <SplashPanel>
+        <p>the page's own panel</p>
+      </SplashPanel>
+    </div>
+  ),
+  useMatches: () => [{ handle: { name: routeState.routeName } }],
 }));
 
-vi.mock("@/stores/app", () => {
-  type MockState = {
-    currentPlan: () => number;
-    isTrialing: () => boolean;
-  };
-  const state = {
-    currentPlan: () => storeState.currentPlan,
-    isTrialing: () => storeState.isTrialing,
-  } satisfies MockState;
-  const useAppStore = (selector: (state: MockState) => unknown) =>
-    selector(state);
-  useAppStore.getState = () => state;
-  return { useAppStore };
-});
+// jsdom has no matchMedia; `wide` is whether the viewport is at least lg.
+function renderLayout(routeName: string, { wide = true } = {}) {
+  routeState.routeName = routeName;
+  window.matchMedia = ((query: string) => ({
+    matches: wide,
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => true,
+  })) as unknown as typeof window.matchMedia;
+  return render(<SplashLayout />);
+}
 
 describe("SplashLayout", () => {
-  beforeEach(() => {
-    storeState.currentPlan = PlanType.FREE;
-    storeState.isTrialing = false;
+  test("renders a page alone in one full-width column, whatever panel the page offers", () => {
+    const { container, getByTestId, queryByText } = renderLayout(
+      AUTH_SIGNIN_MODULE
+    );
+
+    const columns = container.firstElementChild?.children ?? [];
+    expect(columns).toHaveLength(1);
+    expect(columns[0]).toContainElement(getByTestId("auth-page"));
+    expect(columns[0]).not.toHaveClass("lg:w-1/2");
+    expect(columns[0]).not.toHaveClass("lg:flex-none");
+    expect(queryByText("the page's own panel")).not.toBeInTheDocument();
   });
 
-  test("keeps the mounted auth layout stable when subscription loads during login", () => {
-    const { container, rerender } = render(<SplashLayout />);
+  test("gives the left column to the setup wizard's panel from lg", () => {
+    const { container, getByText, getByTestId } =
+      renderLayout(AUTH_SETUP_MODULE);
 
-    expect(container.querySelector("img")).toBeInTheDocument();
+    const panel = getByText("the page's own panel");
+    const [leftColumn, rightColumn] = container.firstElementChild?.children ?? [];
+    expect(leftColumn).toContainElement(panel);
+    expect(rightColumn).toContainElement(getByTestId("auth-page"));
+    expect(rightColumn).not.toContainElement(panel);
+    expect(rightColumn).toHaveClass("lg:w-1/2", "lg:flex-none");
+  });
 
-    storeState.currentPlan = PlanType.ENTERPRISE;
-    rerender(<SplashLayout />);
+  test("gives the setup page no slot below lg, where the left column is hidden", () => {
+    const { getByTestId, queryByText } = renderLayout(AUTH_SETUP_MODULE, {
+      wide: false,
+    });
 
-    expect(container.querySelector("img")).toBeInTheDocument();
+    expect(getByTestId("auth-page")).toBeInTheDocument();
+    expect(queryByText("the page's own panel")).not.toBeInTheDocument();
   });
 });

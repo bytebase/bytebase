@@ -603,6 +603,7 @@ func TestOmniQuerySpan_UnresolvedColumnErrors(t *testing.T) {
 		{"select_list", "SELECT no_such_col FROM t"},
 		{"qualified_select_list", "SELECT t.no_such_col FROM t"},
 		{"where_predicate", "SELECT a FROM t WHERE no_such_col = 1"},
+		{"join_condition", "SELECT t.a FROM t JOIN t1 ON t1.no_such_col = t.a"},
 		{"window_partition", "SELECT SUM(a) OVER (PARTITION BY no_such_col) FROM t"},
 		{"window_order", "SELECT SUM(a) OVER (ORDER BY no_such_col) FROM t"},
 		{"within_group_order", "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY no_such_col) FROM t"},

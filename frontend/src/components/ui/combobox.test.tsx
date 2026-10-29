@@ -80,7 +80,10 @@ describe("Combobox", () => {
     const option = Array.from(dropdown?.querySelectorAll("button") ?? []).find(
       (button) => button.textContent?.includes("Alpha")
     );
-    expect(option?.parentElement?.parentElement?.className).toContain("px-2");
+    // The option sits in a group inside the listbox, inside the padded body.
+    expect(option?.closest("[role='listbox']")?.parentElement?.className).toContain(
+      "px-2"
+    );
 
     act(() => {
       root.unmount();

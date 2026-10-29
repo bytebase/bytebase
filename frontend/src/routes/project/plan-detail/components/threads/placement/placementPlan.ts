@@ -8,12 +8,12 @@ import {
 import type { PlacementBudgets } from "./budgets";
 import {
   anchorId,
+  anchorLineRange,
   type PairAnchor,
   type Placement,
   trivialPlacement,
   UNAVAILABLE,
   UNAVAILABLE_SIZE_LIMIT,
-  wholeLineRange,
 } from "./place";
 
 // One saved/current sheet pair to diff, with the anchors that map through it.
@@ -105,7 +105,7 @@ export function planPlacements(input: PlacementPlanInput): PlacementPlan {
       return;
     }
     // `trivialPlacement` returned undefined, so both are present.
-    const range = wholeLineRange(anchor);
+    const range = anchorLineRange(anchor);
     if (!range || !targetSha256) return;
     const key = pairKey(anchor.spec, anchor.sheetSha256, targetSha256);
     let candidate = candidates.get(key);

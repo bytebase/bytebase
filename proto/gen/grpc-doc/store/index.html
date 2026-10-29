@@ -1650,6 +1650,14 @@ The server computes expire_time from this value at activation time. </p></td>
                   <td><p>The container name to execute the query against, used for CosmosDB only. </p></td>
                 </tr>
               
+                <tr>
+                  <td>query_hash</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Lowercase hex SHA-256 of query after trimming boundary space, tab, LF, CR,
+vertical tab, and form feed. Derived by the store for grant matching. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -5792,7 +5800,7 @@ Missing from persisted payloads means false. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The role being requested for the user.
-Format: roles/EXPORTER. </p></td>
+Format: roles/{role}. </p></td>
                 </tr>
               
                 <tr>
@@ -6246,6 +6254,14 @@ instances/prod/databases/db1, db2, db3 (&#43;497 more)&#34;. Written by the
 executor or by the reaper. </p></td>
                 </tr>
               
+                <tr>
+                  <td>approval_input_version</td>
+                  <td><a href="#int64">int64</a></td>
+                  <td></td>
+                  <td><p>The plan&#39;s PlanConfig.approval_input_version when the slot was reset: the
+version of the plan&#39;s SQL this run reviews. Completion keeps it. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -6537,7 +6553,7 @@ change. </p></td>
         
       
         <h3 id="bytebase.store.IssueCommentPayload.ReviewMetadata">IssueCommentPayload.ReviewMetadata</h3>
-        <p>ReviewMetadata is what a review result carries beyond its text: which</p><p>reviewer posted it, what it was judged against, its priority, and the</p><p>databases it applies to. Results from the same reviewer are superseded</p><p>together: when a run completes, it resolves every OPEN root of its type</p><p>in the transaction that posts the new results.</p>
+        <p>ReviewMetadata is what a review result carries beyond its text: which</p><p>reviewer posted it, what it was judged against, its priority, and the</p><p>databases it applies to. Results from the same reviewer are superseded</p><p>together: when a run completes, it resolves every OPEN root of its type</p><p>and marks every earlier root of its type superseded, in the transaction</p><p>that posts the new results.</p>
 
         
           <table class="field-table">
@@ -6576,6 +6592,15 @@ them. </p></td>
                   <td><p>Every database the result applies to, sorted. Always complete; the
 renderer collapses it when it equals the spec&#39;s target set.
 Format: instances/{instance}/databases/{database} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>superseded</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>A later run of the same reviewer has completed, so the result is not
+from the latest review. Set by that run whatever the thread state, and
+never cleared. </p></td>
                 </tr>
               
             </tbody>
@@ -7416,14 +7441,6 @@ resource.instance_id == &#34;local&#34; &amp;&amp; resource.database_name == &#3
             <tbody>
               
                 <tr>
-                  <td>disable_export</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>workspace-level policy
-Disable exporting data in the SQL editor. </p></td>
-                </tr>
-              
-                <tr>
                   <td>maximum_result_rows</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
@@ -7815,8 +7832,9 @@ If enabled, the issue will be created with the prepend &#34;set role &lt;db_owne
                   <td>ci_sampling_size</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>The maximum number of databases to sample during CI data validation.
-If not specified, sampling is disabled, resulting in a full validation. </p></td>
+                  <td><p>The maximum number of databases to sample during CI data validation and
+AI review. If not specified, sampling is disabled, resulting in a full
+validation. </p></td>
                 </tr>
               
                 <tr>
@@ -9685,6 +9703,15 @@ is deleted or transferred, degrading to &#34;no database&#34; in the UI. </p></t
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sql_review_enabled</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether the AI SQL review may run. It is a consent of its own beside
+`enabled`, because a review sends the statements of a change to the
+provider and can send the schema of its target databases. </p></td>
                 </tr>
               
             </tbody>

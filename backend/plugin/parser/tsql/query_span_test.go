@@ -102,6 +102,54 @@ func buildMockDatabaseMetadataGetter(databaseMetadata []*metadatapb.DatabaseSche
 		}
 }
 
+func TestGetQuerySpanUnsyncedDatabase(t *testing.T) {
+	synced := &metadatapb.DatabaseSchemaMetadata{
+		Name: "db",
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "dbo",
+			Tables: []*metadatapb.TableMetadata{{Name: "t", Columns: []*metadatapb.ColumnMetadata{{Name: "a"}}}},
+		}},
+	}
+	syncedGetter, _ := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{synced})
+	gCtx := base.GetQuerySpanContext{
+		GetDatabaseMetadataFunc: func(ctx context.Context, instanceID, databaseName string) (string, *model.DatabaseMetadata, error) {
+			if databaseName == "appdb" {
+				return "", nil, nil
+			}
+			return syncedGetter(ctx, instanceID, databaseName)
+		},
+		ListDatabaseNamesFunc: func(context.Context, string) ([]string, error) {
+			return []string{"db", "appdb"}, nil
+		},
+		TempTables: make(map[string]*base.PhysicalTable),
+	}
+	const notSynced = `database metadata for database "appdb" not found (database not synced)`
+
+	tests := []struct {
+		name            string
+		statement       string
+		defaultDatabase string
+		wantErr         string
+		wantNotFound    bool
+	}{
+		{name: "table in the unsynced connected database", statement: "SELECT * FROM t", defaultDatabase: "appdb", wantErr: notSynced},
+		{name: "cross-database reference to an unsynced database", statement: "SELECT * FROM appdb.dbo.t", defaultDatabase: "db", wantErr: notSynced},
+		{name: "statement that reads no table", statement: "SELECT 1", defaultDatabase: "appdb"},
+		{name: "table missing from a synced database", statement: "SELECT * FROM missing", defaultDatabase: "db", wantNotFound: true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: tc.statement}, tc.defaultDatabase, "dbo", true)
+			if tc.wantErr != "" {
+				require.ErrorContains(t, err, tc.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tc.wantNotFound, span.NotFoundError != nil)
+		})
+	}
+}
+
 func TestGetQuerySpanCyclicViewReference(t *testing.T) {
 	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
@@ -124,4 +172,54 @@ func TestGetQuerySpanCyclicViewReference(t *testing.T) {
 	}, base.Statement{Text: "SELECT * FROM v1"}, "db", "dbo", true)
 	require.Error(t, err)
 	require.ErrorContains(t, err, "cyclic view reference")
+}
+
+// TestGetQuerySpanMarksPlanOutput pins which statements of a batch return a
+// plan: a SET that names SHOWPLAN_* or STATISTICS XML or PROFILE, and every
+// statement while one is on, comments and option lists included. Each option
+// stays on until its own OFF.
+func TestGetQuerySpanMarksPlanOutput(t *testing.T) {
+	getter, lister := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{{Name: "db"}})
+	type want struct {
+		statement      string
+		queryType      base.QueryType
+		explainAnalyze bool
+	}
+	cases := []want{
+		{"SELECT 1", base.Select, false},
+		{"SET /* x */ STATISTICS XML ON -- y", base.Select, true},
+		{"SELECT 2", base.Select, true},
+		{"SET NOCOUNT ON", base.Select, true},
+		{"DELETE FROM t", base.DML, true},
+		{"SET STATISTICS PROFILE OFF", base.Select, true},
+		{"SELECT 8", base.Select, true},
+		{"SET STATISTICS XML OFF", base.Select, true},
+		{"SELECT 3", base.Select, false},
+		{"SET STATISTICS IO ON", base.Select, false},
+		{"SELECT 4", base.Select, false},
+		{"set statistics io, profile on", base.Select, true},
+		{"SELECT 5", base.Select, true},
+		{"SET STATISTICS PROFILE OFF", base.Select, true},
+		{"SET SHOWPLAN_TEXT ON -- z", base.Explain, false},
+		{"SET NOCOUNT OFF", base.Explain, false},
+		{"SET SHOWPLAN_ALL OFF", base.Explain, false},
+		{"SELECT 6", base.Explain, false},
+		{"SET SHOWPLAN_TEXT OFF", base.Explain, false},
+		{"SELECT 7", base.Select, false},
+	}
+	var statements []base.Statement
+	for _, c := range cases {
+		statements = append(statements, base.Statement{Text: c.statement})
+	}
+
+	spans, err := base.GetQuerySpan(context.Background(), base.GetQuerySpanContext{
+		GetDatabaseMetadataFunc: getter,
+		ListDatabaseNamesFunc:   lister,
+	}, storepb.Engine_MSSQL, statements, "db", "dbo", true)
+	require.NoError(t, err)
+	require.Len(t, spans, len(cases))
+	for i, c := range cases {
+		require.Equal(t, c.queryType, spans[i].Type, c.statement)
+		require.Equal(t, c.explainAnalyze, spans[i].ExplainAnalyze, c.statement)
+	}
 }

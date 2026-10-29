@@ -1,34 +1,70 @@
 import { v4 as uuidv4 } from "uuid";
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
+import { getResourceId, workspaceNamePrefix } from "@/lib/resourceName";
+import {
+  getNameParentTokens,
+  projectNamePrefix,
+} from "@/stores/modules/v1/common";
+import type { LandingStarterId } from "../logic/landingStarters";
+import {
+  formatResourceMention,
+  getMentionTriggerRange,
+  insertResourceMention,
+  isResourceMentionRange,
+  normalizeAgentResourceMentions,
+  normalizeAgentResourceReference,
+  normalizeAgentResourceReferences,
+} from "../logic/resourceMention";
 import type {
   AgentAskUserResponse,
   AgentChat,
   AgentChatSnapshot,
   AgentChatStatus,
+  AgentDraft,
+  AgentInterruptionReason,
+  AgentMentionRange,
   AgentMessage,
   AgentPendingAsk,
+  AgentResourceReference,
+  AgentRunMode,
   Message,
   ToolCall,
 } from "../logic/types";
-import {
-  clampAgentWindowPosition,
-  getDefaultAgentWindowState,
-} from "../window";
+import { getDefaultAgentWindowState } from "../window";
 
 export const AGENT_STATE_KEY = "bb-agent-state-v2";
 export const AGENT_WINDOW_KEY = "bb-agent-window";
-export const AGENT_WINDOW_LAYOUT_VERSION = 3;
+export const AGENT_WINDOW_LAYOUT_VERSION = 4;
+
+const getWorkspaceStorageKey = (key: string, workspaceName: string) => {
+  const workspaceId = getResourceId(workspaceName, workspaceNamePrefix);
+  return workspaceId ? `${key}.${workspaceId}` : null;
+};
+
+export const getAgentStateKey = (workspaceName: string) =>
+  getWorkspaceStorageKey(AGENT_STATE_KEY, workspaceName) ?? AGENT_STATE_KEY;
+
+export const getAgentWindowKey = (workspaceName: string) =>
+  getWorkspaceStorageKey(AGENT_WINDOW_KEY, workspaceName) ?? AGENT_WINDOW_KEY;
+
+// This key was used briefly while workspace-scoped persistence was introduced.
+// Read it as a migration source so those chats remain recoverable.
+const UNASSIGNED_LEGACY_AGENT_STATE_KEY = `${AGENT_STATE_KEY}.legacy`;
 
 interface PersistedAgentState {
   currentChatId: string | null;
   chats: AgentChat[];
   messagesByChatId: Record<string, AgentMessage[]>;
   pendingAskByChatId: Record<string, AgentPendingAsk>;
+  draftsByChatId: Record<string, AgentDraft>;
+  queuedUserMessage: QueuedUserMessage | null;
 }
 
 interface CreateChatOptions {
   page?: AgentChatSnapshot;
+  context?: string;
+  workspaceName?: string;
   select?: boolean;
   title?: string;
   archived?: boolean;
@@ -39,7 +75,47 @@ interface AddMessageOptions extends Message {
   metadata?: AgentMessage["metadata"];
 }
 
+export interface QueuedUserMessage {
+  id: string;
+  chatId: string;
+  text: string;
+  page: AgentChatSnapshot;
+  runMode?: AgentRunMode;
+  starterId?: LandingStarterId;
+  resourceReference?: AgentResourceReference;
+  resourceReferences?: AgentResourceReference[];
+}
+
+type QueueUserMessageInput = Omit<QueuedUserMessage, "id">;
+
 const DEFAULT_CHAT_STATUS: AgentChatStatus = "idle";
+const DRAFT_PERSIST_DELAY_MS = 250;
+
+const normalizeInterruptionReason = (
+  value: unknown
+): AgentInterruptionReason | undefined =>
+  value === "user" || value === "unexpected" ? value : undefined;
+
+const setLastUserInterruptionReason = (
+  messages: AgentMessage[],
+  reason?: AgentInterruptionReason
+) => {
+  const lastUserMessage = messages.findLast(
+    (message) => message.role === "user"
+  );
+  if (!lastUserMessage) return;
+  if (reason) {
+    lastUserMessage.metadata = {
+      ...lastUserMessage.metadata,
+      interruptionReason: reason,
+    };
+  } else if (lastUserMessage.metadata?.interruptionReason) {
+    const { interruptionReason: _, ...metadata } = lastUserMessage.metadata;
+    lastUserMessage.metadata = Object.keys(metadata).length
+      ? metadata
+      : undefined;
+  }
+};
 
 // --- Pure helper functions ---
 
@@ -48,6 +124,8 @@ const createChatRecord = (options: CreateChatOptions = {}): AgentChat => {
   return {
     id: uuidv4(),
     title: options.title ?? "",
+    context: options.context,
+    workspaceName: options.workspaceName,
     createdTs: now,
     updatedTs: now,
     status: DEFAULT_CHAT_STATUS,
@@ -74,7 +152,137 @@ const getChatTitleFromMessage = (content?: string) => {
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> => {
-  return typeof value === "object" && value !== null;
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+};
+
+const normalizeDraft = (raw: unknown): AgentDraft | null => {
+  if (!isRecord(raw) || typeof raw.text !== "string") return null;
+  if (raw.mentions !== undefined) {
+    const mentions = normalizeAgentResourceMentions(raw.text, raw.mentions);
+    return {
+      text: raw.text,
+      ...(mentions.length > 0 ? { mentions } : {}),
+    };
+  }
+  const project = isRecord(raw.project) ? raw.project : {};
+  const projectName =
+    typeof project.name === "string" ? project.name.trim() : "";
+  const projectTitle =
+    typeof project.title === "string" ? project.title.trim() : "";
+  const normalizedProject =
+    projectTitle && getNameParentTokens(projectName, [projectNamePrefix]).length
+      ? { name: projectName, title: projectTitle }
+      : undefined;
+  const normalizedResource = normalizeAgentResourceReference(raw.resource);
+  const resource =
+    normalizedResource &&
+    (!normalizedProject ||
+      normalizedProject.name === normalizedResource.project)
+      ? normalizedResource
+      : normalizedProject
+        ? {
+            kind: "project" as const,
+            name: normalizedProject.name,
+            project: normalizedProject.name,
+            label: normalizedProject.title,
+          }
+        : undefined;
+  if (!resource) return { text: raw.text };
+
+  let text = raw.text;
+  let mention: AgentMentionRange | null = null;
+  if (isRecord(raw.mention)) {
+    const { start, end } = raw.mention;
+    if (typeof start === "number" && typeof end === "number") {
+      const candidate = { start, end };
+      if (isResourceMentionRange(text, candidate, resource.label)) {
+        mention = candidate;
+      }
+    }
+    if (!mention) return { text };
+  } else if (raw.mention !== undefined) {
+    return { text };
+  } else {
+    const token = formatResourceMention(resource.label);
+    let start = text.lastIndexOf(token);
+    while (start >= 0) {
+      const candidate = { start, end: start + token.length };
+      if (isResourceMentionRange(text, candidate, resource.label)) {
+        mention = candidate;
+        break;
+      }
+      if (start === 0) break;
+      start = text.lastIndexOf(token, start - 1);
+    }
+    if (!mention) {
+      const trigger = getMentionTriggerRange(text, text.length);
+      const prefix = trigger
+        ? text
+        : text && !/\s$/u.test(text)
+          ? `${text} @`
+          : `${text}@`;
+      const inserted = insertResourceMention(
+        prefix,
+        trigger ?? getMentionTriggerRange(prefix, prefix.length),
+        resource.label
+      );
+      if (!inserted) return { text: raw.text };
+      text = inserted.text;
+      mention = inserted.mention;
+    }
+  }
+  if (!mention) return { text };
+
+  return {
+    text,
+    ...(normalizedProject ? { project: normalizedProject } : {}),
+    resource,
+    mention,
+  };
+};
+
+const normalizeQueuedUserMessage = (
+  raw: unknown,
+  chatIds: Set<string>
+): QueuedUserMessage | null => {
+  if (
+    !isRecord(raw) ||
+    typeof raw.id !== "string" ||
+    !raw.id ||
+    typeof raw.chatId !== "string" ||
+    !chatIds.has(raw.chatId) ||
+    typeof raw.text !== "string" ||
+    !raw.text.trim() ||
+    !isRecord(raw.page) ||
+    typeof raw.page.path !== "string" ||
+    typeof raw.page.title !== "string"
+  ) {
+    return null;
+  }
+  const resourceReferences = normalizeAgentResourceReferences(
+    raw.resourceReferences,
+    raw.resourceReference
+  );
+  return {
+    id: raw.id,
+    chatId: raw.chatId,
+    text: raw.text,
+    page: { path: raw.page.path, title: raw.page.title },
+    runMode:
+      raw.runMode === "default" || raw.runMode === "read-only"
+        ? raw.runMode
+        : undefined,
+    starterId:
+      typeof raw.starterId === "string"
+        ? (raw.starterId as LandingStarterId)
+        : undefined,
+    ...(raw.resourceReferences === undefined && resourceReferences[0]
+      ? { resourceReference: resourceReferences[0] }
+      : {}),
+    ...(raw.resourceReferences !== undefined && resourceReferences.length > 0
+      ? { resourceReferences }
+      : {}),
+  };
 };
 
 const normalizeMessage = (
@@ -83,6 +291,13 @@ const normalizeMessage = (
   fallbackTs: number
 ): AgentMessage => {
   const message = isRecord(raw) ? raw : {};
+  const metadata = isRecord(message.metadata) ? message.metadata : null;
+  const resourceReferences = metadata
+    ? normalizeAgentResourceReferences(
+        metadata.resourceReferences,
+        metadata.resourceReference
+      )
+    : [];
   return {
     id: typeof message.id === "string" ? message.id : uuidv4(),
     chatId:
@@ -105,8 +320,22 @@ const normalizeMessage = (
       : undefined,
     toolCallId:
       typeof message.toolCallId === "string" ? message.toolCallId : undefined,
-    metadata: isRecord(message.metadata)
-      ? { ...(message.metadata as AgentMessage["metadata"]) }
+    metadata: metadata
+      ? {
+          ...(metadata as AgentMessage["metadata"]),
+          interruptionReason: normalizeInterruptionReason(
+            metadata.interruptionReason
+          ),
+          resourceReference:
+            metadata.resourceReferences === undefined
+              ? resourceReferences[0]
+              : undefined,
+          resourceReferences:
+            metadata.resourceReferences !== undefined &&
+            resourceReferences.length > 0
+              ? resourceReferences
+              : undefined,
+        }
       : undefined,
   };
 };
@@ -161,6 +390,17 @@ const normalizePendingAsk = (raw: unknown): AgentPendingAsk | null => {
     toolCallId: pendingAsk.toolCallId,
     prompt: pendingAsk.prompt,
     kind,
+    ...(kind === "confirm" &&
+    isRecord(pendingAsk.apiPermission) &&
+    typeof pendingAsk.apiPermission.actionId === "string" &&
+    typeof pendingAsk.apiPermission.operationId === "string"
+      ? {
+          apiPermission: {
+            actionId: pendingAsk.apiPermission.actionId,
+            operationId: pendingAsk.apiPermission.operationId,
+          },
+        }
+      : {}),
     defaultValue:
       typeof pendingAsk.defaultValue === "string"
         ? pendingAsk.defaultValue
@@ -189,6 +429,14 @@ const normalizeChat = (raw: unknown): AgentChat => {
   return {
     id: typeof chat.id === "string" ? chat.id : uuidv4(),
     title: typeof chat.title === "string" ? chat.title : "",
+    context:
+      typeof chat.context === "string" && chat.context.trim()
+        ? chat.context
+        : undefined,
+    workspaceName:
+      typeof chat.workspaceName === "string" && chat.workspaceName.trim()
+        ? chat.workspaceName
+        : undefined,
     createdTs: typeof chat.createdTs === "number" ? chat.createdTs : now,
     updatedTs: typeof chat.updatedTs === "number" ? chat.updatedTs : now,
     status,
@@ -216,7 +464,14 @@ const normalizeChat = (raw: unknown): AgentChat => {
           : null,
     requiresAIConfiguration: Boolean(chat.requiresAIConfiguration),
     interrupted: Boolean(chat.interrupted),
+    interruptionReason: chat.interrupted
+      ? (normalizeInterruptionReason(chat.interruptionReason) ?? "unexpected")
+      : undefined,
     runId: typeof chat.runId === "string" ? chat.runId : null,
+    runMode:
+      chat.runMode === "read-only" || chat.runMode === "default"
+        ? chat.runMode
+        : undefined,
   };
 };
 
@@ -230,6 +485,8 @@ const createEmptyPersistedState = (): PersistedAgentState => ({
   chats: [],
   messagesByChatId: {},
   pendingAskByChatId: {},
+  draftsByChatId: {},
+  queuedUserMessage: null,
 });
 
 const normalizePersistedState = (raw: unknown): PersistedAgentState => {
@@ -252,10 +509,14 @@ const normalizePersistedState = (raw: unknown): PersistedAgentState => {
     : isRecord(raw.pendingAskByThreadId)
       ? raw.pendingAskByThreadId
       : {};
+  const rawDraftsByChatId = isRecord(raw.draftsByChatId)
+    ? raw.draftsByChatId
+    : {};
 
   const chats = rawChats.map((chat) => normalizeChat(chat));
   const messagesByChatId: Record<string, AgentMessage[]> = {};
   const pendingAskByChatId: Record<string, AgentPendingAsk> = {};
+  const draftsByChatId: Record<string, AgentDraft> = {};
 
   for (const chat of chats) {
     const rawMessages: unknown[] = Array.isArray(rawMessagesByChatId[chat.id])
@@ -281,8 +542,15 @@ const normalizePersistedState = (raw: unknown): PersistedAgentState => {
     if (chat.status === "running") {
       chat.status = DEFAULT_CHAT_STATUS;
       chat.interrupted = true;
+      chat.interruptionReason = "unexpected";
       chat.lastError = null;
       chat.requiresAIConfiguration = false;
+    }
+    if (chat.interrupted) {
+      setLastUserInterruptionReason(
+        messages,
+        chat.interruptionReason ?? "unexpected"
+      );
     }
 
     const pendingAsk = normalizePendingAsk(rawPendingAskByChatId[chat.id]);
@@ -295,7 +563,19 @@ const normalizePersistedState = (raw: unknown): PersistedAgentState => {
     }
 
     messagesByChatId[chat.id] = messages;
+    const draft = normalizeDraft(rawDraftsByChatId[chat.id]);
+    if (
+      draft &&
+      (draft.text || draft.project || draft.resource || draft.mentions)
+    ) {
+      draftsByChatId[chat.id] = draft;
+    }
   }
+
+  const queuedUserMessage = normalizeQueuedUserMessage(
+    raw.queuedUserMessage,
+    new Set(chats.map((chat) => chat.id))
+  );
 
   const hasCurrentChatId = Object.prototype.hasOwnProperty.call(
     raw,
@@ -323,6 +603,8 @@ const normalizePersistedState = (raw: unknown): PersistedAgentState => {
     chats,
     messagesByChatId,
     pendingAskByChatId,
+    draftsByChatId,
+    queuedUserMessage,
   };
 };
 
@@ -331,29 +613,55 @@ const normalizePersistedState = (raw: unknown): PersistedAgentState => {
 export interface AgentState {
   // Window state
   visible: boolean;
-  position: { x: number; y: number };
   size: { width: number; height: number };
   sidebarWidth: number;
   minimized: boolean;
 
   // Chat state
+  workspaceName: string | null;
   chats: AgentChat[];
   messagesByChatId: Record<string, AgentMessage[]>;
   pendingAskByChatId: Record<string, AgentPendingAsk>;
+  draftsByChatId: Record<string, AgentDraft>;
   currentChatId: string | null;
   abortControllersByChatId: Record<string, AbortController>;
+  queuedUserMessage: QueuedUserMessage | null;
+  queuedUserMessageInFlight: boolean;
 
   // UI actions
+  open: () => void;
   toggle: () => void;
   minimize: () => void;
   restore: () => void;
-  setPosition: (x: number, y: number) => void;
   setSize: (width: number, height: number) => void;
   setSidebarWidth: (width: number) => void;
 
   // Chat CRUD
   createChat: (options?: CreateChatOptions) => AgentChat;
-  ensureCurrentChat: (page?: AgentChatSnapshot) => AgentChat;
+  queueUserMessage: (message: QueueUserMessageInput) => void;
+  takeQueuedUserMessage: (chatId: string) => QueuedUserMessage | null;
+  finishQueuedUserMessage: (chatId: string) => void;
+  commitQueuedUserMessage: (
+    chatId: string
+  ) => { queued: QueuedUserMessage; message: AgentMessage } | null;
+  getDraft: (chatId?: string | null) => AgentDraft;
+  setDraft: (chatId: string, draft: AgentDraft) => void;
+  clearDraft: (chatId: string) => void;
+  ensureCurrentChat: (
+    page?: AgentChatSnapshot,
+    context?: string,
+    workspaceName?: string
+  ) => AgentChat;
+  selectChatContext: (
+    context: string,
+    page?: AgentChatSnapshot,
+    workspaceName?: string
+  ) => AgentChat | null;
+  selectOrCreateChatForContext: (
+    context: string,
+    page?: AgentChatSnapshot,
+    workspaceName?: string
+  ) => AgentChat | null;
   setCurrentChat: (chatId: string) => void;
   clearCurrentChat: () => void;
   updateChatPage: (chatId: string, page: AgentChatSnapshot) => AgentChat | null;
@@ -383,6 +691,7 @@ export interface AgentState {
     status: AgentChatStatus,
     options?: {
       interrupted?: boolean;
+      interruptionReason?: AgentInterruptionReason;
       lastError?: string | null;
       requiresAIConfiguration?: boolean;
       page?: AgentChatSnapshot;
@@ -391,7 +700,7 @@ export interface AgentState {
   startChatRun: (
     chatId: string,
     page?: AgentChatSnapshot,
-    options?: { runId?: string }
+    options?: { runId?: string; runMode?: AgentRunMode }
   ) => void;
   finishChatRun: (
     chatId: string,
@@ -401,7 +710,11 @@ export interface AgentState {
       requiresAIConfiguration?: boolean;
     }
   ) => void;
-  interruptChatRun: (chatId: string, page?: AgentChatSnapshot) => void;
+  interruptChatRun: (
+    chatId: string,
+    page?: AgentChatSnapshot,
+    reason?: AgentInterruptionReason
+  ) => void;
 
   // Pending ask
   setPendingAsk: (
@@ -410,6 +723,7 @@ export interface AgentState {
   ) => AgentPendingAsk;
   clearPendingAsk: (chatId?: string | null) => void;
   awaitUser: (chatId: string, pendingAsk: AgentPendingAsk) => AgentPendingAsk;
+  cancelPendingAsk: (chatId?: string | null) => boolean;
   answerPendingAsk: (
     chatId: string,
     response: AgentAskUserResponse,
@@ -428,12 +742,13 @@ export interface AgentState {
     controller: AbortController | null
   ) => AbortController | null;
   getAbortController: (chatId?: string | null) => AbortController | null;
-  cancel: (chatId?: string | null) => void;
+  cancel: (chatId?: string | null, reason?: AgentInterruptionReason) => void;
 
   // Error
   clearError: (chatId?: string | null) => void;
 
   // Persistence
+  setWorkspaceName: (workspaceName?: string) => boolean;
   saveWindowState: () => void;
   loadWindowState: () => void;
   saveState: () => void;
@@ -518,7 +833,6 @@ const getSafeStorage = (): Storage | null => {
 const getInitialWindowState = () => {
   if (typeof window === "undefined") {
     return {
-      position: { x: 0, y: 0 },
       size: { width: 480, height: 540 },
       sidebarWidth: 200,
     };
@@ -527,52 +841,194 @@ const getInitialWindowState = () => {
   return getDefaultAgentWindowState(window.innerWidth, window.innerHeight);
 };
 
-const loadInitialState = (): {
-  chats: AgentChat[];
-  messagesByChatId: Record<string, AgentMessage[]>;
-  pendingAskByChatId: Record<string, AgentPendingAsk>;
-  currentChatId: string | null;
-} => {
-  const storage = getSafeStorage();
-  const saved = storage?.getItem(AGENT_STATE_KEY);
-  let state: PersistedAgentState | null = null;
-
-  if (saved) {
-    try {
-      state = normalizePersistedState(JSON.parse(saved));
-    } catch {
-      storage?.removeItem(AGENT_STATE_KEY);
-    }
-  }
-
+const ensureCurrentChat = (state: PersistedAgentState): PersistedAgentState => {
   if (
-    state &&
-    (state.currentChatId === null
+    state.currentChatId === null
       ? state.chats.length > 0
-      : state.chats.some((c) => c.id === state.currentChatId))
+      : state.chats.some((chat) => chat.id === state.currentChatId)
   ) {
     return state;
   }
 
-  // Need a default chat
-  const chats = state?.chats ?? [];
-  const messagesByChatId = state?.messagesByChatId ?? {};
-  const pendingAskByChatId = state?.pendingAskByChatId ?? {};
   const defaultChat = createChatRecord();
-  chats.push(defaultChat);
-  messagesByChatId[defaultChat.id] = [];
-
   return {
+    ...state,
+    chats: [...state.chats, defaultChat],
+    messagesByChatId: {
+      ...state.messagesByChatId,
+      [defaultChat.id]: [],
+    },
+    currentChatId: defaultChat.id,
+  };
+};
+
+const readPersistedState = (
+  storage: Storage | null,
+  key: string
+): PersistedAgentState | null => {
+  const saved = storage?.getItem(key);
+  if (!saved) return null;
+  try {
+    return normalizePersistedState(JSON.parse(saved));
+  } catch {
+    storage?.removeItem(key);
+    return null;
+  }
+};
+
+const getPersistedState = (storage: Storage | null, key: string) =>
+  ensureCurrentChat(
+    readPersistedState(storage, key) ?? createEmptyPersistedState()
+  );
+
+const getPersistedStateForChats = (
+  state: PersistedAgentState,
+  chats: AgentChat[]
+): PersistedAgentState => {
+  const chatIds = new Set(chats.map((chat) => chat.id));
+  return {
+    currentChatId: chatIds.has(state.currentChatId ?? "")
+      ? state.currentChatId
+      : (chats[0]?.id ?? null),
+    chats,
+    messagesByChatId: Object.fromEntries(
+      chats.map((chat) => [chat.id, state.messagesByChatId[chat.id] ?? []])
+    ),
+    pendingAskByChatId: Object.fromEntries(
+      chats.flatMap((chat) => {
+        const pendingAsk = state.pendingAskByChatId[chat.id];
+        return pendingAsk ? [[chat.id, pendingAsk]] : [];
+      })
+    ),
+    draftsByChatId: Object.fromEntries(
+      chats.flatMap((chat) => {
+        const draft = state.draftsByChatId[chat.id];
+        return draft ? [[chat.id, draft]] : [];
+      })
+    ),
+    queuedUserMessage: chatIds.has(state.queuedUserMessage?.chatId ?? "")
+      ? state.queuedUserMessage
+      : null,
+  };
+};
+
+const mergePersistedStates = (
+  existing: PersistedAgentState | null,
+  incoming: PersistedAgentState
+) => {
+  if (!existing) return incoming;
+  const chatsById = new Map(existing.chats.map((chat) => [chat.id, chat]));
+  for (const chat of incoming.chats) {
+    const current = chatsById.get(chat.id);
+    if (!current || current.updatedTs < chat.updatedTs) {
+      chatsById.set(chat.id, chat);
+    }
+  }
+  const chats = [...chatsById.values()];
+  const messagesByChatId = {
+    ...existing.messagesByChatId,
+    ...incoming.messagesByChatId,
+  };
+  const pendingAskByChatId = {
+    ...existing.pendingAskByChatId,
+    ...incoming.pendingAskByChatId,
+  };
+  const draftsByChatId = {
+    ...existing.draftsByChatId,
+    ...incoming.draftsByChatId,
+  };
+  const queuedUserMessage =
+    existing.queuedUserMessage ?? incoming.queuedUserMessage;
+  return {
+    currentChatId:
+      existing.currentChatId && chatsById.has(existing.currentChatId)
+        ? existing.currentChatId
+        : incoming.currentChatId,
     chats,
     messagesByChatId,
     pendingAskByChatId,
-    currentChatId: defaultChat.id,
+    draftsByChatId,
+    queuedUserMessage,
   };
+};
+
+const migrateLegacyState = (
+  storage: Storage | null,
+  fallbackWorkspaceName: string
+) => {
+  if (!storage) return;
+  const sourceKeys = [AGENT_STATE_KEY, UNASSIGNED_LEGACY_AGENT_STATE_KEY];
+  const legacyState = sourceKeys
+    .map((key) => readPersistedState(storage, key))
+    .reduce<PersistedAgentState | null>(
+      (state, next) => (next ? mergePersistedStates(state, next) : state),
+      null
+    );
+  if (!legacyState) return;
+
+  const chatsByWorkspace = new Map<string, AgentChat[]>();
+  for (const chat of legacyState.chats) {
+    const key = chat.workspaceName
+      ? getWorkspaceStorageKey(AGENT_STATE_KEY, chat.workspaceName)
+      : null;
+    if (!key) {
+      const fallbackKey = getWorkspaceStorageKey(
+        AGENT_STATE_KEY,
+        fallbackWorkspaceName
+      );
+      if (!fallbackKey) return;
+      const chats = chatsByWorkspace.get(fallbackKey) ?? [];
+      // Legacy state has no trustworthy project-to-workspace association.
+      chats.push({
+        ...chat,
+        workspaceName: fallbackWorkspaceName,
+        context: fallbackWorkspaceName,
+      });
+      chatsByWorkspace.set(fallbackKey, chats);
+    } else {
+      const chats = chatsByWorkspace.get(key) ?? [];
+      chats.push(chat);
+      chatsByWorkspace.set(key, chats);
+    }
+  }
+
+  try {
+    for (const [key, chats] of chatsByWorkspace) {
+      const incoming = getPersistedStateForChats(legacyState, chats);
+      const existing = readPersistedState(storage, key);
+      storage.setItem(
+        key,
+        JSON.stringify(mergePersistedStates(existing, incoming))
+      );
+    }
+    for (const key of sourceKeys) storage.removeItem(key);
+  } catch {
+    // Keep the source cache until every target cache has been written.
+  }
+};
+
+const loadInitialState = (): {
+  chats: AgentChat[];
+  messagesByChatId: Record<string, AgentMessage[]>;
+  pendingAskByChatId: Record<string, AgentPendingAsk>;
+  draftsByChatId: Record<string, AgentDraft>;
+  queuedUserMessage: QueuedUserMessage | null;
+  currentChatId: string | null;
+} => {
+  return ensureCurrentChat(createEmptyPersistedState());
 };
 
 export const createAgentStore = () => {
   const initial = loadInitialState();
   const initialWindowState = getInitialWindowState();
+  const lastSerializedByWorkspace = new Map<string, string>();
+  let draftPersistTimer: ReturnType<typeof setTimeout> | null = null;
+  const clearDraftPersistTimer = () => {
+    if (draftPersistTimer !== null) {
+      clearTimeout(draftPersistTimer);
+      draftPersistTimer = null;
+    }
+  };
 
   const store = create<AgentState>()(
     immer((set, get) => {
@@ -598,33 +1054,32 @@ export const createAgentStore = () => {
       return {
         // Window state
         visible: false,
-        position: initialWindowState.position,
         size: initialWindowState.size,
         sidebarWidth: initialWindowState.sidebarWidth,
         minimized: false,
 
         // Chat state (from persisted/initial)
+        workspaceName: null,
         chats: initial.chats,
         messagesByChatId: initial.messagesByChatId,
         pendingAskByChatId: initial.pendingAskByChatId,
+        draftsByChatId: initial.draftsByChatId,
         currentChatId: initial.currentChatId,
         abortControllersByChatId: {},
+        queuedUserMessage: initial.queuedUserMessage,
+        queuedUserMessageInFlight: false,
 
         // UI actions
+        open: () =>
+          set((state) => {
+            state.visible = true;
+            state.minimized = false;
+          }),
         toggle: () =>
           set((state) => {
             state.visible = !state.visible;
             if (state.visible) {
               state.minimized = false;
-              if (typeof window !== "undefined") {
-                state.position = clampAgentWindowPosition(
-                  window.innerWidth,
-                  window.innerHeight,
-                  state.size.width,
-                  state.size.height,
-                  state.position
-                );
-              }
             }
           }),
         minimize: () =>
@@ -634,10 +1089,6 @@ export const createAgentStore = () => {
         restore: () =>
           set((state) => {
             state.minimized = false;
-          }),
-        setPosition: (x, y) =>
-          set((state) => {
-            state.position = { x, y };
           }),
         setSize: (width, height) =>
           set((state) => {
@@ -661,6 +1112,34 @@ export const createAgentStore = () => {
           if (!id) return null;
           return get().pendingAskByChatId[id] ?? null;
         },
+
+        getDraft: (chatId) => {
+          const id = chatId ?? get().currentChatId;
+          return (id ? get().draftsByChatId[id] : undefined) ?? { text: "" };
+        },
+
+        setDraft: (chatId, draft) => {
+          if (!_getChat(chatId)) return;
+          const normalized = normalizeDraft(draft);
+          if (!normalized) return;
+          set((state) => {
+            if (
+              normalized.text ||
+              normalized.project ||
+              normalized.resource ||
+              normalized.mentions
+            ) {
+              state.draftsByChatId[chatId] = normalized;
+            } else {
+              delete state.draftsByChatId[chatId];
+            }
+          });
+        },
+
+        clearDraft: (chatId) =>
+          set((state) => {
+            delete state.draftsByChatId[chatId];
+          }),
 
         getAbortController: (chatId) => {
           if (!chatId) return null;
@@ -719,21 +1198,216 @@ export const createAgentStore = () => {
           return chat;
         },
 
-        ensureCurrentChat: (page) => {
+        queueUserMessage: (message) => {
+          const { resourceReference, resourceReferences, ...rest } = message;
+          const normalizedReferences = normalizeAgentResourceReferences(
+            resourceReferences,
+            resourceReference
+          );
+          set((state) => {
+            state.queuedUserMessage = {
+              ...rest,
+              id: uuidv4(),
+              ...(resourceReferences === undefined && normalizedReferences[0]
+                ? { resourceReference: normalizedReferences[0] }
+                : {}),
+              ...(resourceReferences !== undefined &&
+              normalizedReferences.length > 0
+                ? { resourceReferences: normalizedReferences }
+                : {}),
+            };
+            state.queuedUserMessageInFlight = false;
+          });
+        },
+
+        takeQueuedUserMessage: (chatId) => {
+          const message = get().queuedUserMessage;
+          if (message?.chatId !== chatId || get().queuedUserMessageInFlight) {
+            return null;
+          }
+          set((state) => {
+            state.queuedUserMessageInFlight = true;
+          });
+          return message;
+        },
+
+        finishQueuedUserMessage: (chatId) =>
+          set((state) => {
+            if (state.queuedUserMessage?.chatId !== chatId) return;
+            state.queuedUserMessage = null;
+            state.queuedUserMessageInFlight = false;
+          }),
+
+        commitQueuedUserMessage: (chatId) => {
+          const queued = get().queuedUserMessage;
+          if (!queued || queued.chatId !== chatId || !_getChat(chatId)) {
+            return null;
+          }
+
+          let message: AgentMessage | null = null;
+          set((state) => {
+            const queued = state.queuedUserMessage;
+            if (!queued || queued.chatId !== chatId) return;
+            const chatMessages = state.messagesByChatId[chatId] ?? [];
+            state.messagesByChatId[chatId] = chatMessages;
+            const existing = chatMessages.find(
+              (candidate) => candidate.id === queued.id
+            );
+            if (existing) {
+              if (existing.role !== "user") return;
+              message = { ...existing } as AgentMessage;
+            } else {
+              const committed: AgentMessage = {
+                id: queued.id,
+                chatId,
+                createdTs: Date.now(),
+                role: "user",
+                content: queued.text,
+                metadata: queued.resourceReferences
+                  ? { resourceReferences: queued.resourceReferences }
+                  : queued.resourceReference
+                    ? { resourceReference: queued.resourceReference }
+                    : undefined,
+              };
+              chatMessages.push(committed);
+              message = committed;
+              const chat = state.chats.find(
+                (candidate) => candidate.id === chatId
+              );
+              if (chat) {
+                if (!chat.title)
+                  chat.title = getChatTitleFromMessage(queued.text);
+                chat.lastError = null;
+                chat.requiresAIConfiguration = false;
+                chat.interrupted = false;
+                chat.interruptionReason = undefined;
+                chat.updatedTs = committed.createdTs;
+              }
+            }
+            state.queuedUserMessageInFlight = true;
+          });
+          return message ? { queued, message } : null;
+        },
+
+        ensureCurrentChat: (page, context, workspaceName) => {
           const existing = _getChat(get().currentChatId);
           if (existing) {
-            if (page && !existing.page) {
+            const canBindContext =
+              Boolean(context) &&
+              !existing.context &&
+              get().getMessages(existing.id).length === 0;
+            if ((page && !existing.page) || canBindContext) {
               set((state) => {
                 const chat = state.chats.find((c) => c.id === existing.id);
                 if (chat) {
-                  chat.page = page;
+                  if (page && !chat.page) chat.page = page;
+                  if (canBindContext && context) {
+                    chat.context = context;
+                    chat.workspaceName = workspaceName;
+                  }
                   _touchChatInDraft(state.chats, chat.id);
                 }
               });
             }
             return _getChat(existing.id)!;
           }
-          return get().createChat({ page });
+          return get().createChat({ page, context, workspaceName });
+        },
+
+        selectChatContext: (context, page, workspaceName) => {
+          if (!context) return null;
+          if (
+            workspaceName &&
+            get().workspaceName !== workspaceName &&
+            !get().setWorkspaceName(workspaceName)
+          ) {
+            return null;
+          }
+          if (_hasRunningChat()) return null;
+          const current = _getChat(get().currentChatId);
+          if (!current)
+            return get().createChat({ page, context, workspaceName });
+          if (
+            current.context === context &&
+            current.workspaceName === workspaceName
+          ) {
+            return current;
+          }
+          if (get().getPendingAsk(current.id)) return null;
+          set((state) => {
+            const chat = state.chats.find((c) => c.id === current.id);
+            if (chat) {
+              chat.context = context;
+              chat.workspaceName = workspaceName;
+              _touchChatInDraft(state.chats, chat.id);
+            }
+          });
+          return _getChat(current.id);
+        },
+
+        selectOrCreateChatForContext: (context, page, workspaceName) => {
+          if (!context || _hasRunningChat() || get().queuedUserMessage) {
+            return null;
+          }
+          if (
+            workspaceName &&
+            get().workspaceName !== workspaceName &&
+            !get().setWorkspaceName(workspaceName)
+          ) {
+            return null;
+          }
+
+          const isReusable = (chat: AgentChat) =>
+            !chat.archived &&
+            chat.status === "idle" &&
+            !get().getPendingAsk(chat.id);
+          const current = _getChat(get().currentChatId);
+          const matchingChat =
+            current?.context === context &&
+            current.workspaceName === workspaceName &&
+            isReusable(current)
+              ? current
+              : [...get().chats]
+                  .filter(
+                    (chat) =>
+                      chat.context === context &&
+                      chat.workspaceName === workspaceName &&
+                      isReusable(chat)
+                  )
+                  .sort(
+                    (a, b) =>
+                      b.updatedTs - a.updatedTs || b.createdTs - a.createdTs
+                  )[0];
+
+          if (matchingChat) {
+            set((state) => {
+              const chat = state.chats.find((c) => c.id === matchingChat.id);
+              if (!chat) return;
+              if (page) chat.page = page;
+              state.currentChatId = chat.id;
+              _touchChatInDraft(state.chats, chat.id);
+            });
+            return _getChat(matchingChat.id);
+          }
+
+          if (
+            current &&
+            !current.context &&
+            isReusable(current) &&
+            get().getMessages(current.id).length === 0
+          ) {
+            set((state) => {
+              const chat = state.chats.find((c) => c.id === current.id);
+              if (!chat) return;
+              chat.context = context;
+              chat.workspaceName = workspaceName;
+              if (page) chat.page = page;
+              _touchChatInDraft(state.chats, chat.id);
+            });
+            return _getChat(current.id);
+          }
+
+          return get().createChat({ context, page, workspaceName });
         },
 
         setCurrentChat: (chatId) => {
@@ -852,7 +1526,12 @@ export const createAgentStore = () => {
             state.chats = state.chats.filter((c) => c.id !== chatId);
             delete state.messagesByChatId[chatId];
             delete state.pendingAskByChatId[chatId];
+            delete state.draftsByChatId[chatId];
             delete state.abortControllersByChatId[chatId];
+            if (state.queuedUserMessage?.chatId === chatId) {
+              state.queuedUserMessage = null;
+              state.queuedUserMessageInFlight = false;
+            }
             if (state.currentChatId === chatId) {
               // Select next available chat
               const ordered = [...state.chats].sort((a, b) => {
@@ -894,7 +1573,16 @@ export const createAgentStore = () => {
             for (const chatId of deletedChatIds) {
               delete state.messagesByChatId[chatId];
               delete state.pendingAskByChatId[chatId];
+              delete state.draftsByChatId[chatId];
               delete state.abortControllersByChatId[chatId];
+            }
+
+            if (
+              state.queuedUserMessage &&
+              deletedChatIds.has(state.queuedUserMessage.chatId)
+            ) {
+              state.queuedUserMessage = null;
+              state.queuedUserMessageInFlight = false;
             }
 
             state.chats = state.chats.filter(
@@ -936,7 +1624,10 @@ export const createAgentStore = () => {
               }
               chat.lastError = null;
               chat.requiresAIConfiguration = false;
-              chat.interrupted = false;
+              if (message.role === "user") {
+                chat.interrupted = false;
+                chat.interruptionReason = undefined;
+              }
               chat.updatedTs = createdTs;
             }
           });
@@ -986,6 +1677,9 @@ export const createAgentStore = () => {
             if (chat) {
               chat.status = status;
               chat.interrupted = options.interrupted ?? false;
+              chat.interruptionReason = chat.interrupted
+                ? (options.interruptionReason ?? "unexpected")
+                : undefined;
               chat.lastError = options.lastError ?? null;
               chat.requiresAIConfiguration =
                 options.requiresAIConfiguration ?? false;
@@ -994,6 +1688,19 @@ export const createAgentStore = () => {
               }
               if (status !== "awaiting_user") {
                 delete state.pendingAskByChatId[chatId];
+              }
+              if (
+                status !== "running" &&
+                status !== "awaiting_user" &&
+                state.queuedUserMessage?.chatId === chatId &&
+                state.messagesByChatId[chatId]?.some(
+                  (message) =>
+                    message.id === state.queuedUserMessage?.id &&
+                    message.role === "user"
+                )
+              ) {
+                state.queuedUserMessage = null;
+                state.queuedUserMessageInFlight = false;
               }
               _touchChatInDraft(state.chats, chatId);
             }
@@ -1007,6 +1714,10 @@ export const createAgentStore = () => {
             const chat = state.chats.find((c) => c.id === chatId);
             if (chat) {
               chat.runId = options.runId ?? chat.runId ?? null;
+              chat.runMode = options.runMode;
+              setLastUserInterruptionReason(
+                state.messagesByChatId[chatId] ?? []
+              );
             }
           });
         },
@@ -1021,14 +1732,26 @@ export const createAgentStore = () => {
             const chat = state.chats.find((c) => c.id === chatId);
             if (chat) {
               chat.runId = null;
+              chat.runMode = undefined;
             }
           });
         },
 
-        interruptChatRun: (chatId, page) => {
+        interruptChatRun: (chatId, page, reason) => {
+          const interruptionReason =
+            reason === "user" || _getChat(chatId)?.interruptionReason === "user"
+              ? "user"
+              : "unexpected";
           get().setChatStatus(chatId, DEFAULT_CHAT_STATUS, {
             interrupted: true,
+            interruptionReason,
             page,
+          });
+          set((state) => {
+            setLastUserInterruptionReason(
+              state.messagesByChatId[chatId] ?? [],
+              interruptionReason
+            );
           });
         },
 
@@ -1036,6 +1759,19 @@ export const createAgentStore = () => {
         setPendingAsk: (chatId, pendingAsk) => {
           set((state) => {
             state.pendingAskByChatId[chatId] = pendingAsk;
+            if (
+              state.chats.find((chat) => chat.id === chatId)?.status ===
+                "awaiting_user" &&
+              state.queuedUserMessage?.chatId === chatId &&
+              state.messagesByChatId[chatId]?.some(
+                (message) =>
+                  message.id === state.queuedUserMessage?.id &&
+                  message.role === "user"
+              )
+            ) {
+              state.queuedUserMessage = null;
+              state.queuedUserMessageInFlight = false;
+            }
             _touchChatInDraft(state.chats, chatId);
           });
           return pendingAsk;
@@ -1053,6 +1789,47 @@ export const createAgentStore = () => {
         awaitUser: (chatId, pendingAsk) => {
           get().setChatStatus(chatId, "awaiting_user");
           return get().setPendingAsk(chatId, pendingAsk);
+        },
+
+        cancelPendingAsk: (chatId) => {
+          const id = chatId ?? get().currentChatId;
+          const chat = _getChat(id);
+          const pendingAsk = id ? get().pendingAskByChatId[id] : undefined;
+          if (
+            !id ||
+            chat?.status !== "awaiting_user" ||
+            !pendingAsk ||
+            pendingAsk.apiPermission
+          ) {
+            return false;
+          }
+          const toolMessage: AgentMessage = {
+            id: uuidv4(),
+            chatId: id,
+            createdTs: Date.now(),
+            role: "tool",
+            toolCallId: pendingAsk.toolCallId,
+            content: JSON.stringify({ kind: "cancelled", reason: "user" }),
+            metadata: chat.runId ? { runId: chat.runId } : undefined,
+          };
+          set((state) => {
+            const currentChat = state.chats.find(
+              (candidate) => candidate.id === id
+            );
+            if (!currentChat) return;
+            delete state.pendingAskByChatId[id];
+            state.messagesByChatId[id] ??= [];
+            state.messagesByChatId[id].push(toolMessage);
+            currentChat.status = DEFAULT_CHAT_STATUS;
+            currentChat.runId = null;
+            currentChat.runMode = undefined;
+            currentChat.interrupted = false;
+            currentChat.interruptionReason = undefined;
+            currentChat.lastError = null;
+            setLastUserInterruptionReason(state.messagesByChatId[id] ?? []);
+            _touchChatInDraft(state.chats, id);
+          });
+          return true;
         },
 
         answerPendingAsk: (chatId, response, metadata) => {
@@ -1083,13 +1860,13 @@ export const createAgentStore = () => {
         },
 
         // Abort / cancel
-        cancel: (chatId) => {
+        cancel: (chatId, reason) => {
           const id = chatId ?? get().currentChatId;
           if (!id) return;
           get().getAbortController(id)?.abort();
           get().setAbortController(id, null);
           if (get().isChatRunning(id)) {
-            get().interruptChatRun(id);
+            get().interruptChatRun(id, undefined, reason);
           }
         },
 
@@ -1104,6 +1881,7 @@ export const createAgentStore = () => {
               c.lastError = null;
               c.requiresAIConfiguration = false;
               c.interrupted = false;
+              c.interruptionReason = undefined;
               c.runId = null;
               if (c.status === "error") {
                 c.status = DEFAULT_CHAT_STATUS;
@@ -1114,15 +1892,50 @@ export const createAgentStore = () => {
         },
 
         // Persistence
+        setWorkspaceName: (workspaceName) => {
+          if (!workspaceName || get().workspaceName === workspaceName) {
+            return Boolean(workspaceName);
+          }
+          if (_hasRunningChat() || get().queuedUserMessage) {
+            return false;
+          }
+          const stateKey = getWorkspaceStorageKey(
+            AGENT_STATE_KEY,
+            workspaceName
+          );
+          if (!stateKey) return false;
+
+          get().saveState();
+          const storage = getSafeStorage();
+          migrateLegacyState(storage, workspaceName);
+          const persistedState = getPersistedState(storage, stateKey);
+          set((draft) => {
+            draft.workspaceName = workspaceName;
+            draft.chats = persistedState.chats;
+            draft.messagesByChatId = persistedState.messagesByChatId;
+            draft.pendingAskByChatId = persistedState.pendingAskByChatId;
+            draft.draftsByChatId = persistedState.draftsByChatId;
+            draft.currentChatId = persistedState.currentChatId;
+            draft.abortControllersByChatId = {};
+            draft.queuedUserMessage = persistedState.queuedUserMessage;
+            draft.queuedUserMessageInFlight = false;
+          });
+          get().loadWindowState();
+          return true;
+        },
+
         saveWindowState: () => {
           const storage = getSafeStorage();
-          if (!storage) return;
+          const workspaceName = get().workspaceName;
+          const key = workspaceName
+            ? getWorkspaceStorageKey(AGENT_WINDOW_KEY, workspaceName)
+            : null;
+          if (!storage || !key) return;
           const state = get();
           storage.setItem(
-            AGENT_WINDOW_KEY,
+            key,
             JSON.stringify({
               layoutVersion: AGENT_WINDOW_LAYOUT_VERSION,
-              position: state.position,
               size: state.size,
               sidebarWidth: state.sidebarWidth,
             })
@@ -1131,29 +1944,33 @@ export const createAgentStore = () => {
 
         loadWindowState: () => {
           const storage = getSafeStorage();
-          const saved = storage?.getItem(AGENT_WINDOW_KEY);
-          if (!saved) return;
+          const workspaceName = get().workspaceName;
+          const key = workspaceName
+            ? getWorkspaceStorageKey(AGENT_WINDOW_KEY, workspaceName)
+            : null;
+          if (!key) return;
+          const saved =
+            storage?.getItem(key) ?? storage?.getItem(AGENT_WINDOW_KEY);
+          if (!saved) {
+            const defaultWindowState = getInitialWindowState();
+            set((draft) => {
+              draft.size = defaultWindowState.size;
+              draft.sidebarWidth = defaultWindowState.sidebarWidth;
+            });
+            return;
+          }
           try {
             const state = JSON.parse(saved) as {
               layoutVersion?: number;
-              position?: { x?: number; y?: number };
+              position?: unknown;
               size?: { width?: number; height?: number };
               sidebarWidth?: number;
             };
             const isCurrentLayout =
               state.layoutVersion === AGENT_WINDOW_LAYOUT_VERSION;
+            const hasLegacyPosition = state.position !== undefined;
             const defaultWindowState = getInitialWindowState();
             set((draft) => {
-              if (
-                isCurrentLayout &&
-                typeof state.position?.x === "number" &&
-                typeof state.position?.y === "number"
-              ) {
-                draft.position = {
-                  x: state.position.x,
-                  y: state.position.y,
-                };
-              }
               if (
                 isCurrentLayout &&
                 typeof state.size?.width === "number" &&
@@ -1164,75 +1981,75 @@ export const createAgentStore = () => {
                   height: state.size.height,
                 };
               } else if (!isCurrentLayout) {
-                draft.position = defaultWindowState.position;
                 draft.size = defaultWindowState.size;
               }
               if (typeof state.sidebarWidth === "number") {
                 draft.sidebarWidth = state.sidebarWidth;
               }
             });
-            if (!isCurrentLayout) get().saveWindowState();
+            if (
+              !isCurrentLayout ||
+              !storage?.getItem(key) ||
+              hasLegacyPosition
+            ) {
+              get().saveWindowState();
+            }
           } catch {
-            storage?.removeItem(AGENT_WINDOW_KEY);
+            storage?.removeItem(key);
           }
         },
 
         saveState: () => {
+          clearDraftPersistTimer();
           const storage = getSafeStorage();
-          if (!storage) return;
+          const workspaceName = get().workspaceName;
+          const key = workspaceName
+            ? getWorkspaceStorageKey(AGENT_STATE_KEY, workspaceName)
+            : null;
+          if (!storage || !key) return;
           const state = get();
           const persistedState: PersistedAgentState = {
             currentChatId: state.currentChatId,
             chats: state.chats,
             messagesByChatId: state.messagesByChatId,
             pendingAskByChatId: state.pendingAskByChatId,
+            draftsByChatId: state.draftsByChatId,
+            queuedUserMessage: state.queuedUserMessage,
           };
-          storage.setItem(AGENT_STATE_KEY, JSON.stringify(persistedState));
+          const serialized = JSON.stringify(persistedState);
+          lastSerializedByWorkspace.set(key, serialized);
+          storage.setItem(key, serialized);
         },
 
         loadState: () => {
           const storage = getSafeStorage();
-          const saved = storage?.getItem(AGENT_STATE_KEY);
-          if (saved) {
-            try {
-              const state = normalizePersistedState(JSON.parse(saved));
-              set((draft) => {
-                draft.chats = state.chats;
-                draft.messagesByChatId = state.messagesByChatId;
-                draft.pendingAskByChatId = state.pendingAskByChatId;
-                draft.currentChatId = state.currentChatId;
-              });
-            } catch {
-              storage?.removeItem(AGENT_STATE_KEY);
-            }
-          }
-
-          const s = get();
-          if (
-            s.chats.length === 0 ||
-            (s.currentChatId !== null &&
-              !s.chats.some((c) => c.id === s.currentChatId))
-          ) {
-            const chat = createChatRecord();
-            set((draft) => {
-              draft.chats.push(chat);
-              draft.messagesByChatId[chat.id] = [];
-              draft.currentChatId = chat.id;
-            });
-          }
+          const workspaceName = get().workspaceName;
+          const key = workspaceName
+            ? getWorkspaceStorageKey(AGENT_STATE_KEY, workspaceName)
+            : null;
+          if (!key) return;
+          const state = getPersistedState(storage, key);
+          set((draft) => {
+            draft.chats = state.chats;
+            draft.messagesByChatId = state.messagesByChatId;
+            draft.pendingAskByChatId = state.pendingAskByChatId;
+            draft.draftsByChatId = state.draftsByChatId;
+            draft.currentChatId = state.currentChatId;
+            draft.queuedUserMessage = state.queuedUserMessage;
+            draft.queuedUserMessageInFlight = false;
+          });
         },
       };
     })
   );
 
-  // Auto-persist on state changes
-  // Auto-persist only the chat state slice (not UI/window state).
-  // Uses a serialization check to avoid redundant writes during
-  // drag/resize operations that only change position/size.
-  let lastSerialized = "";
-  store.subscribe((state) => {
+  const persistState = (state: AgentState) => {
     const storage = getSafeStorage();
-    if (!storage) {
+    const workspaceName = state.workspaceName;
+    const key = workspaceName
+      ? getWorkspaceStorageKey(AGENT_STATE_KEY, workspaceName)
+      : null;
+    if (!storage || !key) {
       return;
     }
     const persistedState: PersistedAgentState = {
@@ -1240,16 +2057,37 @@ export const createAgentStore = () => {
       chats: state.chats,
       messagesByChatId: state.messagesByChatId,
       pendingAskByChatId: state.pendingAskByChatId,
+      draftsByChatId: state.draftsByChatId,
+      queuedUserMessage: state.queuedUserMessage,
     };
     const serialized = JSON.stringify(persistedState);
-    if (serialized !== lastSerialized) {
-      lastSerialized = serialized;
-      storage.setItem(AGENT_STATE_KEY, serialized);
+    if (serialized !== lastSerializedByWorkspace.get(key)) {
+      lastSerializedByWorkspace.set(key, serialized);
+      storage.setItem(key, serialized);
+    }
+  };
+
+  store.subscribe((state, previousState) => {
+    const nonDraftStateChanged =
+      state.workspaceName !== previousState.workspaceName ||
+      state.currentChatId !== previousState.currentChatId ||
+      state.chats !== previousState.chats ||
+      state.messagesByChatId !== previousState.messagesByChatId ||
+      state.pendingAskByChatId !== previousState.pendingAskByChatId ||
+      state.queuedUserMessage !== previousState.queuedUserMessage;
+    const draftChanged = state.draftsByChatId !== previousState.draftsByChatId;
+    if (!nonDraftStateChanged && !draftChanged) return;
+
+    clearDraftPersistTimer();
+    if (!nonDraftStateChanged && draftChanged) {
+      draftPersistTimer = setTimeout(() => {
+        draftPersistTimer = null;
+        persistState(store.getState());
+      }, DRAFT_PERSIST_DELAY_MS);
+    } else {
+      persistState(state);
     }
   });
-
-  // Load persisted window state (position, size, sidebar width) on creation.
-  store.getState().loadWindowState();
 
   return store;
 };
@@ -1259,3 +2097,9 @@ export const createAgentStore = () => {
 // useAgentStore(selector) to subscribe React components to state slices.
 // Also callable outside React via useAgentStore.getState().
 export const useAgentStore = createAgentStore();
+
+if (typeof window !== "undefined") {
+  window.addEventListener("pagehide", () =>
+    useAgentStore.getState().saveState()
+  );
+}

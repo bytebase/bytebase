@@ -182,6 +182,7 @@
     - [CreateIssueCommentRequest](#bytebase-v1-CreateIssueCommentRequest)
     - [CreateIssueRequest](#bytebase-v1-CreateIssueRequest)
     - [GetIssueRequest](#bytebase-v1-GetIssueRequest)
+    - [GetReviewRunRequest](#bytebase-v1-GetReviewRunRequest)
     - [Issue](#bytebase-v1-Issue)
     - [Issue.Approver](#bytebase-v1-Issue-Approver)
     - [IssueComment](#bytebase-v1-IssueComment)
@@ -292,6 +293,7 @@
     - [AIChatUsage](#bytebase-v1-AIChatUsage)
   
     - [AIChatMessageRole](#bytebase-v1-AIChatMessageRole)
+    - [AIChatResponse.StopReason](#bytebase-v1-AIChatResponse-StopReason)
   
     - [AIService](#bytebase-v1-AIService)
   
@@ -546,6 +548,8 @@
     - [PackageMetadata](#bytebase-v1-PackageMetadata)
     - [ProcedureMetadata](#bytebase-v1-ProcedureMetadata)
     - [SchemaMetadata](#bytebase-v1-SchemaMetadata)
+    - [SearchDatabasesRequest](#bytebase-v1-SearchDatabasesRequest)
+    - [SearchDatabasesResponse](#bytebase-v1-SearchDatabasesResponse)
     - [SequenceMetadata](#bytebase-v1-SequenceMetadata)
     - [SpatialIndexConfig](#bytebase-v1-SpatialIndexConfig)
     - [StorageConfig](#bytebase-v1-StorageConfig)
@@ -867,7 +871,7 @@ is worse than a bare refusal, because it is the thing the next reader trusts
 
 One enum covers both refused classes, and every value belongs to exactly one
 of them: values 1-8 name a mechanism that breaks the MCP boundary, which is
-what FORBIDDEN means, and values 9-13 name a scope decision this phase took,
+what FORBIDDEN means, and values 9-14 name a scope decision this phase took,
 which is what EXCLUDED means. The distinction is real and lives on the class
 annotation — a FORBIDDEN mechanism is a durable never, an EXCLUDED scope
 decision is what a future admin-capable ceiling would argue with, one
@@ -887,14 +891,15 @@ already keeps for the wording.
 | ENDS_MEMBERSHIP | 5 | Destroys the caller&#39;s own workspace membership and mints a plain workspace token on the way out. |
 | MINTS_CREDENTIAL_FOR_OTHERS | 6 | Leaves someone holding a principal the caller is not — by issuing its credential, carrying an existing one out to a host the caller named, choosing what will later be trusted to mint one, or redirecting where one gets delivered. |
 | REWRITES_SESSION_BOUNDARY | 7 | Rewrites the workspace configuration that governs the session making the call — the MCP switch itself, the sign-in and SSO settings, the mail relay that carries credential resets, and the AI endpoint the stored API key is sent to. A session that can widen its own ceiling is not bounded by it. |
-| DRIVES_THE_APPROVAL_DECISION | 8 | Works the human approval step that gates the change: recording the review decision, or re-running the finding that sets it and can clear the issue outright. An agent composes a change; it does not move its own change through the gate. |
-| ADMINISTERS_THE_WORKSPACE | 9 | Administers the workspace rather than doing database work: identity, credentials, access control, governance policy, billing, workspace and instance configuration, project lifecycle, and the operator&#39;s own audit trail. Reading is administration too where the read returns the privilege topology or a stored secret rather than the state of a database. |
+| DRIVES_THE_APPROVAL_DECISION | 8 | Can let a change or an access request pass its approval without an approver deciding it: re-running the finding that sets the approval, which can clear the issue outright, or activating an access grant directly. |
+| ADMINISTERS_THE_WORKSPACE | 9 | Administers the workspace rather than doing database work: identity, credentials, access control, governance policy, billing, workspace and instance configuration, project lifecycle, and the operator&#39;s own audit trail. |
 | READS_OTHER_USERS_SQL | 10 | Returns SQL that other people wrote. The permission gating it reads as an ordinary list permission, so the exclusion is per method rather than per permission: these methods span the workspace or ignore the per-object sharing that keeps a saved query private. |
 | OPENS_AN_ADMIN_CONNECTION | 11 | Opens an admin-credentialed connection to the customer&#39;s database and returns live session state from it — including other sessions&#39; in-flight, unmasked SQL. It shares a plain read permission with sibling methods that only read Bytebase&#39;s own store. |
 | SENDS_DATA_TO_A_THIRD_PARTY | 12 | Spends a stored workspace credential on an outbound call to a third party, which puts whatever the caller passes outside the product. |
 | RETURNS_A_STORED_SECRET | 13 | Returns a stored secret in its response body today. These are ordinary reads that belong in a serving class on their merits, and each is here because of a leak that a redaction on the read path would close — the product already redacts the same values elsewhere. This reason is therefore the one that is meant to go away: fixing the leak moves the method to READ, as a reviewed widening, rather than leaving a quiet exposure the moment the ceiling starts serving.
 
 No method carries it. The three leaks it was written for — project webhook URLs, the MySQL-family grant text, and the MFA enrollment secrets — are redacted on the read path, and their eight methods are READ. The value stays because the category is real and the next read found leaking should carry it rather than an invented one, and because retiring an enum value costs a reserved number for nothing. |
+| REDRAWS_GOVERNANCE_BOUNDARY | 14 | Changes which rules govern a database, or which databases a change that targets a database group runs on. Approval, SQL review and access rules key on a database&#39;s project and environment, and so do the masking rules that decide what a query returns. A database group selects databases by an expression that can read their environment and labels, and a change that targets a group runs on whichever databases the group selects when its rollout tasks are created. An agent that could redraw these would choose the checks on its own changes. |
 
 
 
@@ -920,7 +925,7 @@ product promises as well as what it serves.
 | READ | 1 | Served to a read-only MCP session and above. |
 | WRITE | 2 | Served to a read-write MCP session only. This is a serving mode, not a verb: a method that only reads still belongs here when a read-only session has no business calling it — taking a copy of data out of the product, or generating migration DDL from a schema the caller supplied. |
 | FORBIDDEN | 3 | Never reachable by an MCP session, whatever the caller&#39;s own permissions are. These methods escape the MCP boundary rather than merely exercising a permission: a human with the permission uses the console; an agent acting for them does not get to. |
-| EXCLUDED | 4 | Served by no MCP capability ceiling this phase ships, and not a durable never. These are workspace administration, plus the handful of methods that do something materially worse than the plain read permission they share suggests.
+| EXCLUDED | 4 | Served by no MCP capability ceiling this phase ships, and not a durable never. These are workspace administration, the writes that change which rules govern a database, and the handful of methods that do something materially worse than the plain read permission they share suggests.
 
 The line against FORBIDDEN is reversibility. An admin-capable ceiling, if one is ever built, could legitimately serve an EXCLUDED method — that is a product decision nobody has made. It could never serve a FORBIDDEN one, because FORBIDDEN names a mechanism that breaks the MCP boundary itself. Keeping them apart is what stops a future widening from having to re-litigate the credential-minting set alongside the ordinary admin API. |
 
@@ -965,7 +970,7 @@ The line against FORBIDDEN is reversibility. An admin-capable ceiling, if one is
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the access grant, generated by the server. Format: projects/{project}/accessGrants/{access_grant} The {access_grant} segment is a server-generated unique ID. |
-| creator | [string](#string) |  | The creator of the access grant. Format: users/{email} |
+| creator | [string](#string) |  | The creator of the access grant, the caller who requested it. Format: users/{email} |
 | status | [AccessGrant.Status](#bytebase-v1-AccessGrant-Status) |  | The status of the access grant. An ACTIVE grant with `expire_time` in the past is effectively expired and no longer authorizes access. Use `expire_time` to determine whether an ACTIVE grant has expired. |
 | expire_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The expiration time of the access grant. |
 | ttl | [google.protobuf.Duration](#google-protobuf-Duration) |  | Input only. The time-to-live duration for the access grant. The server computes `expire_time` from this value at activation time. |
@@ -976,7 +981,7 @@ The line against FORBIDDEN is reversibility. An admin-capable ceiling, if one is
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | reason | [string](#string) |  |  |
-| export | [bool](#bool) |  | Whether export the query result. |
+| export | [bool](#bool) |  | Whether the grant allows exporting the query result. An active grant with export=true grants bb.sql.export for this query until the grant expires. |
 | schema | [string](#string) |  | The default schema to execute the query. |
 | container | [string](#string) |  | The container name to execute the query against, used for CosmosDB only. |
 
@@ -1042,7 +1047,7 @@ The line against FORBIDDEN is reversibility. An admin-capable ceiling, if one is
 | parent | [string](#string) |  | The parent project of the access grants. Format: projects/{project} |
 | page_size | [int32](#int32) |  | The maximum number of access grants to return. |
 | page_token | [string](#string) |  | A page token from a previous ListAccessGrants call. |
-| filter | [string](#string) |  | Filter expression using AIP-160 syntax. Supported fields: - name: the fullname in &#34;projects/{project}/accessGrants/{access_grant}&#34; format, support &#34;==&#34; operator. - creator: the creator name in &#34;users/{email}&#34; format, support &#34;==&#34; operator. - status: the access status, support &#34;==&#34; and &#34;in&#34; operator. - issue: the access issue fullname, support &#34;==&#34; operator. - expire_time: the access expire time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34;, &#34;&gt;&#34;, &#34;&lt;=&#34; and &#34;&lt;&#34; operator. - create_time: the access creation time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34;, &#34;&gt;&#34;, &#34;&lt;=&#34; and &#34;&lt;&#34; operator. - query: the access query, support &#34;==&#34; and &#34;.contains(xx)&#34; operator - target: the target database fullname, support &#34;==&#34; operator. - unmask: whether the grant allows unmasking sensitive data, support &#34;==&#34; operator with a boolean literal. - export: whether the grant allows exporting the query result, support &#34;==&#34; operator with a boolean literal.
+| filter | [string](#string) |  | Filter expression using AIP-160 syntax. Supported fields: - name: the fullname in &#34;projects/{project}/accessGrants/{access_grant}&#34; format, support &#34;==&#34; operator. - creator: the creator name in &#34;users/{email}&#34; format, support &#34;==&#34; operator. - status: the access status, support &#34;==&#34; and &#34;in&#34; operator. - issue: the access issue fullname, support &#34;==&#34; operator. - expire_time: the access expire time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34;, &#34;&gt;&#34;, &#34;&lt;=&#34; and &#34;&lt;&#34; operator. - create_time: the access creation time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34;, &#34;&gt;&#34;, &#34;&lt;=&#34; and &#34;&lt;&#34; operator. - query: the access query, support &#34;==&#34; and &#34;.contains(xx)&#34; operator. Equality trims only boundary ASCII space, tab, LF, CR, vertical tab, and form feed. - query_hash: supports &#34;==&#34; with a lowercase hexadecimal SHA-256 digest of the UTF-8 query after the same boundary trim. Internal whitespace and Unicode remain unchanged. - schema: execution schema, supports &#34;==&#34;; empty matches only empty or absent values. - container: execution container, supports &#34;==&#34;; empty matches only empty or absent values. - target: the target database fullname, support &#34;==&#34; operator. - unmask: whether the grant allows unmasking sensitive data, support &#34;==&#34; operator with a boolean literal. - export: whether the grant allows exporting the query result, support &#34;==&#34; operator with a boolean literal.
 
 Examples: - creator == &#34;users/dev@example.com&#34; - status == &#34;ACTIVE&#34; - status in [&#34;ACTIVE&#34;, &#34;PENDING&#34;] - creator == &#34;users/dev@example.com&#34; &amp;&amp; status == &#34;ACTIVE&#34; - issue == &#34;projects/x/issues/123&#34; - status == &#34;ACTIVE&#34; &amp;&amp; expire_time &gt; &#34;2024-02-01T00:00:00Z&#34; - target == &#34;instances/sample/databases/employee&#34; - unmask == true - export == true &amp;&amp; status == &#34;ACTIVE&#34; |
 | order_by | [string](#string) |  | The order by of access grants. Support creator, expire_time, create_time. The default sorting order is ascending. For example: - order_by = &#34;creator&#34; - order_by = &#34;expire_time desc&#34; - order_by = &#34;expire_time asc, create_time desc&#34; |
@@ -2714,13 +2719,14 @@ for field description.
 <a name="bytebase-v1-QueryResult-QueryPlan"></a>
 
 ### QueryResult.QueryPlan
-A query plan held in the result&#39;s rows.
+A query plan the result carries: in its rows, or beside them.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | format | [QueryOption.ExplainFormat](#bytebase-v1-QueryOption-ExplainFormat) |  |  |
 | executed | [bool](#bool) |  | Whether producing the plan executed the statement, as EXPLAIN ANALYZE does. |
+| content | [string](#string) |  | The plan itself, where the engine states it beside the result rather than in the result&#39;s rows. BigQuery reports the stages its job ran in the job&#39;s own statistics, so one result carries the query&#39;s data and the plan of the run that produced it. Empty when the plan is the rows, which is every other engine. Omitted from the audit log, as the rows are: the statement is what an audit reads. |
 
 
 
@@ -2922,7 +2928,7 @@ SQLService executes SQL queries and manages query operations.
 | SearchQueryHistories | [SearchQueryHistoriesRequest](#bytebase-v1-SearchQueryHistoriesRequest) | [SearchQueryHistoriesResponse](#bytebase-v1-SearchQueryHistoriesResponse) | Deprecated: use QueryHistoryService.SearchQueryHistories instead. Delegating alias kept for upgrade transition; will be removed in a future release. No HTTP binding: the REST route is served by QueryHistoryService. Permissions required: None (only returns caller&#39;s own query histories) |
 | ListQueryHistories | [ListQueryHistoriesRequest](#bytebase-v1-ListQueryHistoriesRequest) | [ListQueryHistoriesResponse](#bytebase-v1-ListQueryHistoriesResponse) | Deprecated: use QueryHistoryService.ListQueryHistories instead. Delegating alias kept for upgrade transition; will be removed in a future release. No HTTP binding: the REST route is served by QueryHistoryService. Permissions required: bb.queryHistories.list |
 | GetQueryHistory | [GetQueryHistoryRequest](#bytebase-v1-GetQueryHistoryRequest) | [QueryHistory](#bytebase-v1-QueryHistory) | Deprecated: use QueryHistoryService.GetQueryHistory instead. Delegating alias kept for upgrade transition; will be removed in a future release. No HTTP binding: the REST route is served by QueryHistoryService. Permissions required: None (only returns the caller&#39;s own query history) |
-| Export | [ExportRequest](#bytebase-v1-ExportRequest) | [ExportResponse](#bytebase-v1-ExportResponse) | Exports query results to a file format. Permissions required: bb.databases.get |
+| Export | [ExportRequest](#bytebase-v1-ExportRequest) | [ExportResponse](#bytebase-v1-ExportResponse) | Exports query results to a file format. Permissions required: bb.databases.get, and bb.sql.export on the data the statement reads. An active access grant with export=true for the statement satisfies bb.sql.export on its target databases. |
 
  
 
@@ -3021,9 +3027,9 @@ SQLService executes SQL queries and manages query operations.
 When paginating, all other parameters provided to `ListPlans` must match the call that provided the page token. |
 | filter | [string](#string) |  | Filter is used to filter plans returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
-Supported filters: - creator: the plan creator full name in &#34;users/{email or id}&#34; format, support &#34;==&#34; operator. - create_time: the plan create time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34; or &#34;&lt;=&#34; operator. - has_rollout: whether the plan has rollout, support &#34;==&#34; operator, the value should be &#34;true&#34; or &#34;false&#34;. - title: the plan title, support &#34;==&#34; operator for exact match and &#34;.contains()&#34; operator for case-insensitive substring match. - spec_type: the plan spec config type, support &#34;==&#34; operator, the value should be &#34;create_database_config&#34; or &#34;change_database_config&#34;. - state: the plan state, support &#34;==&#34; operator, the value should be &#34;ACTIVE&#34; or &#34;DELETED&#34;.
+Supported filters: - creator: the plan creator full name in &#34;users/{email or id}&#34; format, support &#34;==&#34; operator. - create_time: the plan create time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34; or &#34;&lt;=&#34; operator. - has_rollout: whether the plan has rollout, support &#34;==&#34; operator, the value should be &#34;true&#34; or &#34;false&#34;. - title: the plan title, support &#34;==&#34; operator for exact match and &#34;.contains()&#34; operator for case-insensitive substring match. - spec_type: the plan spec config type, support &#34;==&#34; operator, the value should be &#34;create_database_config&#34; or &#34;change_database_config&#34;. - state: the plan state, support &#34;==&#34; operator, the value should be &#34;ACTIVE&#34; or &#34;DELETED&#34;. - has_release: whether a spec references a release, support &#34;==&#34; operator, the value should be &#34;true&#34; or &#34;false&#34;. - release: the release a spec references, in &#34;projects/{project}/releases/{release}&#34; format, support &#34;==&#34; operator. - task_status: the current status of any task in the plan, support &#34;in&#34; operator, the values should be Task.Status values except STATUS_UNSPECIFIED.
 
-For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; create_time &gt;= &#34;2025-01-02T15:04:05Z07:00&#34; title == &#34;My Plan&#34; title.contains(&#34;database migration&#34;) spec_type == &#34;change_database_config&#34; state == &#34;ACTIVE&#34; |
+For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; create_time &gt;= &#34;2025-01-02T15:04:05Z07:00&#34; title == &#34;My Plan&#34; title.contains(&#34;database migration&#34;) spec_type == &#34;change_database_config&#34; state == &#34;ACTIVE&#34; has_release == true &amp;&amp; task_status in [&#34;FAILED&#34;, &#34;RUNNING&#34;] release == &#34;projects/my-project/releases/release_20260115-RC00&#34; |
 
 
 
@@ -3382,10 +3388,10 @@ needs a person&#39;s acceptance, not that it is forbidden.
 | PRIOR_BACKUP | 4 | P0: the change enables prior backup but the backup cannot be taken. |
 | REQUIRE_IS_NULL | 5 | P0: = NULL or &lt;&gt; NULL in a predicate, which is always false. Test for NULL with IS NULL or IS NOT NULL. |
 | REQUIRE_WHERE | 6 | P1: UPDATE or DELETE without WHERE. |
-| DISALLOW_DROP_OBJECT | 7 | P1: DROP TABLE, COLUMN, SCHEMA, or DATABASE. |
+| DISALLOW_DROP_OBJECT | 7 | P1: dropping any object, such as a table, column, view, index, sequence, schema, database, or function. Dropping a constraint is DISALLOW_DROP_CONSTRAINT. |
 | DISALLOW_TRUNCATE | 8 | P1: TRUNCATE. |
 | DISALLOW_DROP_CONSTRAINT | 9 | P1: dropping a PRIMARY KEY, FOREIGN KEY, UNIQUE, or CHECK constraint. |
-| DISALLOW_RENAME | 10 | P1: renaming a table or column. |
+| DISALLOW_RENAME | 10 | P1: renaming a table, foreign table, view, materialized view, or column. |
 | REQUIRE_PRIMARY_KEY | 11 | P1: the change creates a table without a primary key, or drops a primary key without adding one back. A table that already lacked a primary key before the change is not reported. |
 
 
@@ -3522,6 +3528,21 @@ needs a person&#39;s acceptance, not that it is forbidden.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the issue to retrieve. Format: projects/{project}/issues/{issue} |
 | force | [bool](#bool) |  | If set to true, bypass cache and fetch the latest data. |
+
+
+
+
+
+
+<a name="bytebase-v1-GetReviewRunRequest"></a>
+
+### GetReviewRunRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the review run to retrieve. Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun} |
 
 
 
@@ -3669,6 +3690,7 @@ What a review result carries beyond its text.
 | rule_type | [ReviewRuleType](#bytebase-v1-ReviewRuleType) |  | The rule judged against. Set if and only if run_type is RULE. |
 | priority | [IssueComment.ReviewMetadata.Priority](#bytebase-v1-IssueComment-ReviewMetadata-Priority) |  |  |
 | targets | [string](#string) | repeated | Every database the result applies to, sorted. Format: instances/{instance}/databases/{database} |
+| superseded | [bool](#bool) |  | A later run of the same reviewer has completed, so the result is not from the latest review, whatever its thread state. |
 
 
 
@@ -3824,6 +3846,7 @@ For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; status in [&#
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the current run was triggered. Reset on every re-run. |
 | end_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the run reached a terminal status. Unset while AVAILABLE or RUNNING. |
 | error | [string](#string) |  | Fatal execution error, set if and only if status is FAILED: the review failed to execute (a platform problem, never the SQL — SQL problems are review results on a DONE run). |
+| outdated | [bool](#bool) |  | Whether the plan&#39;s SQL changed after this run started, so the run reviews an earlier version of it. The server starts a new run before it creates the rollout automatically. |
 
 
 
@@ -3838,7 +3861,7 @@ For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; status in [&#
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| role | [string](#string) |  | The requested role. Format: roles/EXPORTER. |
+| role | [string](#string) |  | The requested role. Format: roles/{role}. |
 | user | [string](#string) |  | The user to be granted. Format: users/{email}. |
 | condition | [google.type.Expr](#google-type-Expr) |  | The condition for the role. Same as the condition in IAM Binding message. |
 | expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for which the grant is valid. |
@@ -4042,7 +4065,7 @@ completion transaction, so re-running supersedes instead of canceling).
 | STATUS_UNSPECIFIED | 0 |  |
 | AVAILABLE | 1 | Created and claimable by any replica. |
 | RUNNING | 2 |  |
-| DONE | 3 | Every (spec, target) unit was evaluated. DONE does not mean the review passed: whether problems remain is judged from open comments. |
+| DONE | 3 | Every (spec, target) unit in the reviewer&#39;s scope was evaluated. RULE&#39;s scope is every target. AI&#39;s scope is the project&#39;s CI sample, the first ci_sampling_size targets of each spec, or every target when ci_sampling_size is 0. DONE does not mean the review passed: whether problems remain is judged from open comments. |
 | FAILED | 4 | At least one unit was not evaluated; the cause is in `error`. |
 
 
@@ -4084,7 +4107,8 @@ IssueService manages issues for tracking database changes and tasks.
 | RejectIssue | [RejectIssueRequest](#bytebase-v1-RejectIssueRequest) | [Issue](#bytebase-v1-Issue) | Rejects an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step. Permissions required: None (determined by approval flow) |
 | RequestIssue | [RequestIssueRequest](#bytebase-v1-RequestIssueRequest) | [Issue](#bytebase-v1-Issue) | Requests changes on an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step. Permissions required: None (determined by approval flow) |
 | RetryIssueApproval | [RetryIssueApprovalRequest](#bytebase-v1-RetryIssueApprovalRequest) | [Issue](#bytebase-v1-Issue) | Re-runs approval-template finding for an issue stuck in CHECKING. Useful when the synchronous post-create finding errored (e.g. against a malformed workspace approval rule) and the operator has since corrected it — without this, the issue would remain in CHECKING indefinitely because there is no other retry path for non-DATABASE_CHANGE issue types. Idempotent: returns the existing issue unchanged when approval-finding has already completed. Permissions required: None (caller must be the issue creator; mirrors RequestIssue&#39;s authorization model). |
-| RunReview | [RunReviewRequest](#bytebase-v1-RunReviewRequest) | [ReviewRun](#bytebase-v1-ReviewRun) | Triggers a review run. The slot is reset unconditionally: a RUNNING execution is superseded (its completion is fenced off), the attempt number is bumped, and the returned run is AVAILABLE. Review results are not returned by this RPC and have no read RPC yet: findings will surface as issue comments once the review comment integration lands. The returned run carries execution status only. The audit log is the only record of who triggered a run. Permissions required: bb.reviewRuns.run |
+| GetReviewRun | [GetReviewRunRequest](#bytebase-v1-GetReviewRunRequest) | [ReviewRun](#bytebase-v1-ReviewRun) | Gets the current run of one reviewer on an issue. The run carries execution status only; review results are issue comments. A reviewer that has never run on the issue is NOT_FOUND. Permissions required: bb.reviewRuns.get |
+| RunReview | [RunReviewRequest](#bytebase-v1-RunReviewRequest) | [ReviewRun](#bytebase-v1-ReviewRun) | Triggers a review run. The slot is reset unconditionally: a RUNNING execution is superseded (its completion is fenced off), the attempt number is bumped, and the returned run is AVAILABLE. Review results are not returned by this RPC: they are posted as issue comments. The returned run carries execution status only, and GetReviewRun reads it back. The audit log is the only record of who triggered a run. Permissions required: bb.reviewRuns.run |
 
  
 
@@ -4111,6 +4135,7 @@ IssueService manages issues for tracking database changes and tasks.
 | api_key | [string](#string) |  |  |
 | model | [string](#string) |  |  |
 | version | [string](#string) |  |  |
+| sql_review_enabled | [bool](#bool) |  | Whether the AI SQL review may run. It is off by default and is a consent of its own beside `enabled`: a review sends the statements of a change to the provider, and can send the schema of its target databases and their table statistics. |
 
 
 
@@ -5067,6 +5092,8 @@ Actuator concept is similar to the Spring Boot Actuator.
 | active_vcs_user_count | [int32](#int32) |  | The number of active VCS users seen in the active window. |
 | sample | [SampleInfo](#bytebase-v1-SampleInfo) |  | Sample setup availability and provisioned resources. |
 | mcp_setting | [MCPSetting](#bytebase-v1-MCPSetting) |  | The MCP (Model Context Protocol) setting in the current workspace. |
+| ai_enabled | [bool](#bool) |  | Whether the workspace AI setting enables the AI agent. |
+| ai_sql_review_enabled | [bool](#bool) |  | Whether the workspace AI setting switches the AI SQL review on. A review also needs `ai_enabled`. |
 
 
 
@@ -5186,6 +5213,7 @@ Response message for AIService.Chat.
 | content | [string](#string) | optional | The text content of the AI response. Optional when the response only contains tool calls. |
 | tool_calls | [AIChatToolCall](#bytebase-v1-AIChatToolCall) | repeated | Tool calls the AI wants to make. |
 | usage | [AIChatUsage](#bytebase-v1-AIChatUsage) | optional | Token usage for this provider call, when available. |
+| stop_reason | [AIChatResponse.StopReason](#bytebase-v1-AIChatResponse-StopReason) |  | Why the model stopped. A truncated or blocked response can still carry content. |
 
 
 
@@ -5258,6 +5286,22 @@ Role of a chat message.
 | AI_CHAT_MESSAGE_ROLE_TOOL | 4 | Tool result message. |
 
 
+
+<a name="bytebase-v1-AIChatResponse-StopReason"></a>
+
+### AIChatResponse.StopReason
+Why the model stopped generating a response.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STOP_REASON_UNSPECIFIED | 0 | The provider did not report why the model stopped. |
+| TURN_COMPLETED | 1 | The model completed its turn with an answer or with tool calls. |
+| TOKEN_LIMIT | 2 | The response was truncated at a token limit and is incomplete. |
+| BLOCKED | 3 | The provider blocked the request or the response, or the model refused to answer. |
+| MALFORMED_TOOL_CALL | 4 | The model generated a tool call that the provider could not parse. |
+| OTHER | 5 | The model stopped for a reason that no other value names. |
+
+
  
 
  
@@ -5295,7 +5339,7 @@ Binding associates members with a role and optional conditions.
 | members | [string](#string) | repeated | Specifies the principals requesting access for a Bytebase resource. For users, the member should be: user:{email} For groups, the member should be: group:{email} For service accounts, the member should be: serviceAccount:{email} For workload identities, the member should be: workloadIdentity:{email} |
 | condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this binding, only used in the project IAM policy. If the condition evaluates to true, then this binding applies to the current request. If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
-Support variables: resource.database: the canonical database full name in &#34;instances/{instance}/databases/{database}&#34; or &#34;projects/{project}/instances/{instance}/databases/{database}&#34; format, used by any role with SQL Editor read (e.g. &#34;roles/sqlEditorUser&#34;, &#34;roles/sqlEditorReadUser&#34;) or write (bb.sql.ddl / bb.sql.dml) access, support &#34;==&#34; operator. resource.schema_name: the schema name, used by any role with SQL Editor read or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support &#34;==&#34; operator. resource.table_name: the table name, used by any role with SQL Editor read or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support &#34;==&#34; operator. resource.environment_id: the environment to allow the DDL/DML operation in the SQL Editor, only works for the role with bb.sql.ddl or bb.sql.dml permissions. Support &#34;in&#34; operator. request.time: the expiration. Only support &#34;&lt;&#34; operation in `request.time &lt; timestamp(&#34;{ISO datetime string format}&#34;)`.
+Support variables: resource.database: the canonical database full name in &#34;instances/{instance}/databases/{database}&#34; or &#34;projects/{project}/instances/{instance}/databases/{database}&#34; format, used by any role with SQL Editor read (e.g. &#34;roles/sqlEditorUser&#34;, &#34;roles/sqlEditorReadUser&#34;), export (bb.sql.export, e.g. &#34;roles/sqlEditorExporter&#34;) or write (bb.sql.ddl / bb.sql.dml) access, support &#34;==&#34; operator. resource.schema_name: the schema name, used by any role with SQL Editor read, export (bb.sql.export) or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support &#34;==&#34; operator. resource.table_name: the table name, used by any role with SQL Editor read, export (bb.sql.export) or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support &#34;==&#34; operator. resource.environment_id: the environment to allow the DDL/DML operation in the SQL Editor, only works for the role with bb.sql.ddl or bb.sql.dml permissions. Support &#34;in&#34; operator. request.time: the expiration. Only support &#34;&lt;&#34; operation in `request.time &lt; timestamp(&#34;{ISO datetime string format}&#34;)`.
 
 Known limitations of table/schema-scoped DDL/DML grants: - The scope only gates the write target, not the read sources of a write: e.g. `INSERT INTO granted_table SELECT * FROM other_table` may read `other_table` without a grant on it, so a table-scoped write grant is not an exfiltration boundary. - It must be paired with a database/project-level read grant: a table-scoped grant alone does not satisfy the SQL Editor query method permission (bb.databases.get). - A resource.schema_name-scoped grant only authorizes a write whose schema is unambiguous — qualify the table (schema.table) or select the schema for the SQL Editor session. An unqualified write whose effective schema cannot be determined ahead of execution is denied (qualify it, or use a table-only grant). - Multi-statement batches are authorized at the database level: an earlier statement can rebind the session&#39;s default schema or database mid-batch, so per-table/schema scoping is dropped and a table/schema-scoped grant requires a database-level grant. The database-level check is still per target database — a qualified cross-database write is gated by a grant on its own database, not the request database — but an unqualified write whose session default is rebound mid-batch is evaluated against the database it literally names, so qualify cross-database writes or run them as single statements. - A write target in a different project than the SQL-Editor session&#39;s database is denied: the per-target check evaluates the session project&#39;s IAM policy, so a cross-project write is failed closed (to write it, open the SQL Editor on a database in the target project). - Enforcement is on the statement&#39;s literal write target; writes routed elsewhere by a view/synonym, or into a temporary schema (e.g. pg_temp), are evaluated against what the statement names, not the ultimate base object. - Write-target gating uses an ALLOWLIST of statement types the resolver models. It does NOT cover every syntactically-identifiable cross-database write; statement types off the allowlist are authorized against the request database. The allowlist is: - Modeled table/data writes (per-table/schema-scopable): INSERT/UPDATE/DELETE/TRUNCATE/MERGE, LOAD DATA, IMPORT INTO, CREATE TABLE AS / SELECT INTO, and table-level CREATE/DROP/ALTER/RENAME/index. - Modeled non-table object DDL (gated at the DATABASE level by the object&#39;s own explicit database/schema qualifier; an unqualified name keeps the request-database check): CREATE/ALTER/DROP of view, procedure/function/routine, trigger, sequence, synonym, type, and (Oracle) package and cluster; plus Oracle ALTER/DROP MATERIALIZED VIEW (Oracle CREATE MATERIALIZED VIEW is not modeled — see below). NOT modeled (these fall back to the request-database check, so a qualified cross-database one is authorized against the request database): MySQL CREATE TRIGGER and CREATE/ALTER/DROP EVENT (bare-string AST names); MSSQL ALTER of view/procedure/function/trigger (no ALTER node in the grammar); Oracle CREATE MATERIALIZED VIEW and the niche object DDL — dimension, attribute dimension, hierarchy, analytic view, JSON duality view, materialized zonemap, operator, in-memory join group, property graph, vector index, index type, domain; COPY ... FROM; and engine-specific bulk-load / deprecated text writes. A structural &#34;write-target object database&#34; extraction layer to remove this allowlist dependence is tracked as a follow-up. - Out of scope (read sources / indirect effects): the tables a write READS (INSERT … SELECT, MERGE … USING, CREATE TABLE AS … SELECT) and objects reached indirectly via views/synonyms/function bodies/triggers are NOT gated. Invariant: for a statement ON the modeled allowlist that explicitly names a different database as its write target, the ACL uses that target database, not the request database. Statement types OFF the allowlist are authorized against the request database.
 
@@ -9009,7 +9053,7 @@ IndexMetadata is the metadata for indexes.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | - projects/{project}: list databases in a project, require &#34;bb.projects.get&#34; permission. - workspaces/{id}: list databases in the workspace, require &#34;bb.databases.list&#34; permission. - instances/{instance}: list databases in an instance, require &#34;bb.instances.get&#34; permission. - projects/{project}/instances/{instance}: list databases in a project instance, require &#34;bb.instances.get&#34; permission. |
+| parent | [string](#string) |  | - projects/{project}: list databases in a project, require &#34;bb.databases.list&#34; permission. - workspaces/{id}: list databases in the workspace, require &#34;bb.databases.list&#34; permission. - instances/{instance}: list databases in an instance, require &#34;bb.instances.get&#34; permission. - projects/{project}/instances/{instance}: list databases in a project instance, require &#34;bb.instances.get&#34; permission. |
 | page_size | [int32](#int32) |  | The maximum number of databases to return. The service may return fewer than this value. If unspecified, at most 10 databases will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | A page token, received from a previous `ListDatabases` call. Provide this to retrieve the subsequent page.
 
@@ -9131,6 +9175,43 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | skip_dump | [bool](#bool) |  | Whether to skip this schema during schema dump operations. |
 | comment | [string](#string) |  | The comment is the comment of a schema. |
 | composite_types | [CompositeTypeMetadata](#bytebase-v1-CompositeTypeMetadata) | repeated | The composite_types is the list of user-defined composite types in a schema (PostgreSQL family, CREATE TYPE ... AS). Excludes table/view row types and derived types. |
+
+
+
+
+
+
+<a name="bytebase-v1-SearchDatabasesRequest"></a>
+
+### SearchDatabasesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| page_size | [int32](#int32) |  | The maximum number of databases to return. The service may return fewer than this value. If unspecified, at most 10 databases will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `SearchDatabases` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `SearchDatabases` must match the call that provided the page token. |
+| filter | [string](#string) |  | Filter is used to filter databases returned in the list. It supports the same fields and operators as `ListDatabasesRequest.filter`.
+
+For example: project == &#34;projects/{project resource id}&#34; name.contains(&#34;database name&#34;) &amp;&amp; engine == &#34;POSTGRES&#34; |
+
+
+
+
+
+
+<a name="bytebase-v1-SearchDatabasesResponse"></a>
+
+### SearchDatabasesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| databases | [Database](#bytebase-v1-Database) | repeated | The databases from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
 
 
 
@@ -9568,7 +9649,8 @@ DatabaseService manages databases and their schemas.
 | ----------- | ------------ | ------------- | ------------|
 | GetDatabase | [GetDatabaseRequest](#bytebase-v1-GetDatabaseRequest) | [Database](#bytebase-v1-Database) | Retrieves a database by name. Permissions required: bb.databases.get |
 | BatchGetDatabases | [BatchGetDatabasesRequest](#bytebase-v1-BatchGetDatabasesRequest) | [BatchGetDatabasesResponse](#bytebase-v1-BatchGetDatabasesResponse) | Retrieves multiple databases by their names. One resource per requested name, in request order. The first name that does not resolve fails the whole call (AIP-231: no partial response). Permissions required: bb.databases.get (on each named database&#39;s project) |
-| ListDatabases | [ListDatabasesRequest](#bytebase-v1-ListDatabasesRequest) | [ListDatabasesResponse](#bytebase-v1-ListDatabasesResponse) | Lists databases in a project, instance, or workspace. Permissions required: bb.projects.get (for project parent), bb.databases.list (for workspace parent), or bb.instances.get (for instance parent) |
+| ListDatabases | [ListDatabasesRequest](#bytebase-v1-ListDatabasesRequest) | [ListDatabasesResponse](#bytebase-v1-ListDatabasesResponse) | Lists databases in a project, instance, or workspace. Permissions required: bb.databases.list (for project or workspace parent), or bb.instances.get (for instance parent) |
+| SearchDatabases | [SearchDatabasesRequest](#bytebase-v1-SearchDatabasesRequest) | [SearchDatabasesResponse](#bytebase-v1-SearchDatabasesResponse) | Searches for databases in every active project where the caller has the bb.databases.get permission, filtered by the specified filter. Permissions required: bb.databases.get (checked in each project) |
 | UpdateDatabase | [UpdateDatabaseRequest](#bytebase-v1-UpdateDatabaseRequest) | [Database](#bytebase-v1-Database) | Updates database properties such as labels and project assignment. Permissions required: bb.databases.update |
 | BatchUpdateDatabases | [BatchUpdateDatabasesRequest](#bytebase-v1-BatchUpdateDatabasesRequest) | [BatchUpdateDatabasesResponse](#bytebase-v1-BatchUpdateDatabasesResponse) | Updates multiple databases in a single batch operation. Permissions required: bb.databases.update |
 | SyncDatabase | [SyncDatabaseRequest](#bytebase-v1-SyncDatabaseRequest) | [SyncDatabaseResponse](#bytebase-v1-SyncDatabaseResponse) | Synchronizes database schema from the instance. Permissions required: bb.databases.sync |
@@ -9994,7 +10076,7 @@ QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | maximum_result_rows | [int32](#int32) |  | Support both project-level and workspace-level. The maximum number of rows to return in the SQL editor. The default value &lt;= 0, means no limit. |
-| disable_export | [bool](#bool) |  | workspace-level policy Disable data export in the SQL editor. |
+| disable_export | [bool](#bool) |  | **Deprecated.** Deprecated: export is controlled by the bb.sql.export permission. Always false; setting it to true is rejected. |
 | disable_copy_data | [bool](#bool) |  | workspace-level policy Disable copying query results in the SQL editor. |
 | allow_admin_data_source | [bool](#bool) |  | workspace-level policy Allow using the admin data source to query in the SQL editor. If true, users can select the admin data source or read-only data source If false, 1. when read-only data source is configured, users&#39;re force to use the read-only data source 2. otherwise fallback to use the admin data source. |
 
@@ -10368,7 +10450,7 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 | postgres_database_tenant_mode | [bool](#bool) |  | Whether to enable database tenant mode for PostgreSQL. If enabled, issues will include &#34;set role &lt;db_owner&gt;&#34; statement. |
 | allow_self_approval | [bool](#bool) |  | Whether to allow issue creators to self-approve their own issues. |
 | execution_retry_policy | [Project.ExecutionRetryPolicy](#bytebase-v1-Project-ExecutionRetryPolicy) |  | Execution retry policy for task runs. |
-| ci_sampling_size | [int32](#int32) |  | The maximum number of database rows to sample during CI data validation. Without specification, sampling is disabled, resulting in full validation. |
+| ci_sampling_size | [int32](#int32) |  | The maximum number of databases to sample during CI data validation and AI review. Without specification, sampling is disabled, resulting in full validation. |
 | parallel_tasks_per_rollout | [int32](#int32) |  | The maximum number of parallel tasks allowed during rollout execution. |
 | labels | [Project.LabelsEntry](#bytebase-v1-Project-LabelsEntry) | repeated | Labels are key-value pairs that can be attached to the project. For example, { &#34;environment&#34;: &#34;production&#34;, &#34;team&#34;: &#34;backend&#34; } |
 | enforce_sql_review | [bool](#bool) |  | Whether to enforce SQL review checks to pass before issue creation. If enabled, issues cannot be created when SQL review finds errors. |

@@ -7,28 +7,28 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-// TestDiagnoseBYT10010CustomerStatement verifies the MBBank statement from
-// BYT-10010 passes SQL Review diagnosis end to end after the omni
-// constraint_state fix.
-func TestDiagnoseBYT10010CustomerStatement(t *testing.T) {
-	stmt := `CREATE TABLE DATA.RC_FT_ADJ_CONFIG
+// TestDiagnoseBYT10010UsingIndexLocal verifies that an interval-partitioned
+// table whose primary key uses USING INDEX LOCAL (BYT-10010) passes SQL Review
+// diagnosis end to end after the omni constraint_state fix.
+func TestDiagnoseBYT10010UsingIndexLocal(t *testing.T) {
+	stmt := `CREATE TABLE APP.ORDER_EVENT
 (
-    RC_FT_ADJ_CODE        VARCHAR2(250) NOT NULL,
-    RC_CODE               VARCHAR2(150),
-    DATE_REPORT           DATE,
-    IS_CHECK              VARCHAR2(255),
-    IS_ACTION             VARCHAR2(255),
+    EVENT_CODE            VARCHAR2(250) NOT NULL,
+    ORDER_CODE            VARCHAR2(150),
+    EVENT_DATE            DATE,
+    IS_VERIFIED           VARCHAR2(255),
+    IS_ARCHIVED           VARCHAR2(255),
     CREATE_DATE           DATE DEFAULT SYSDATE NOT NULL,
-    CREATE_USER           VARCHAR2(50) DEFAULT 'ETL_USER',
+    CREATE_USER           VARCHAR2(50) DEFAULT 'APP_USER',
     UPDATE_DATE           DATE DEFAULT SYSDATE,
-    UPDATE_USER           VARCHAR2(50) DEFAULT 'ETL_USER',
+    UPDATE_USER           VARCHAR2(50) DEFAULT 'APP_USER',
     TYPE                  VARCHAR2(50),
-    RC_FT_ADJ_STATUS      VARCHAR2(255),
-    PARENT_RC_FT_ADJ_CODE VARCHAR2(250),
-    E_STATUS              NUMBER,
+    EVENT_STATUS          VARCHAR2(255),
+    PARENT_EVENT_CODE     VARCHAR2(250),
+    RETRY_COUNT           NUMBER,
 
-    CONSTRAINT PK_RC_FT_ADJ_CONFIG
-        PRIMARY KEY (RC_FT_ADJ_CODE, CREATE_DATE) USING INDEX LOCAL
+    CONSTRAINT PK_ORDER_EVENT
+        PRIMARY KEY (EVENT_CODE, CREATE_DATE) USING INDEX LOCAL
 )
 PARTITION BY RANGE (CREATE_DATE)
 INTERVAL (NUMTOYMINTERVAL(1, 'MONTH'))

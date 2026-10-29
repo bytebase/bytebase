@@ -121,10 +121,8 @@ message IamPolicy {
 message QueryDataPolicy {
   reserved 6;
   reserved 1, 3;
-
-  // workspace-level policy
-  // Disable exporting data in the SQL editor.
-  bool disable_export = 2;
+  reserved 2;
+  reserved "disable_export";
 
   // Support both project-level and workspace-level.
   // The maximum number of rows to return in the SQL editor.

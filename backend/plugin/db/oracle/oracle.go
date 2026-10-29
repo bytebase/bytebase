@@ -4,11 +4,15 @@ package oracle
 import (
 	"context"
 	"crypto/rand"
+	"crypto/tls"
 	"database/sql"
+	"database/sql/driver"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"math/big"
 	"strconv"
+	"strings"
 	"time"
 
 	// Import go-ora Oracle driver.
@@ -58,22 +62,18 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 	if err != nil {
 		return nil, errors.Errorf("invalid port %q", config.DataSource.Port)
 	}
-	options := make(map[string]string)
-	options["CONNECTION TIMEOUT"] = "0"
-	if config.DataSource.GetSid() != "" {
-		options["SID"] = config.DataSource.GetSid()
-	}
-	for key, value := range config.DataSource.GetExtraConnectionParameters() {
-		options[key] = value
-	}
-	dsn := goora.BuildUrl(config.DataSource.Host, port, config.DataSource.GetServiceName(), config.DataSource.Username, config.Password, options)
-	db, err := sql.Open("oracle", dsn)
+	tlsConfig, err := getTLSConfig(config.DataSource)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to build TLS configuration")
 	}
+	options := connectionOptions(config.DataSource.GetSid(), config.DataSource.GetExtraConnectionParameters(), tlsConfig != nil)
+	dsn := goora.BuildUrl(config.DataSource.Host, port, config.DataSource.GetServiceName(), config.DataSource.Username, config.Password, options)
+	db := sql.OpenDB(&connector{dsn: dsn, tlsConfig: tlsConfig, currentSchema: config.ConnectionContext.DatabaseName})
 	if config.ConnectionContext.DatabaseName != "" {
-		if _, err := db.ExecContext(ctx, fmt.Sprintf("ALTER SESSION SET CURRENT_SCHEMA = \"%s\"", config.ConnectionContext.DatabaseName)); err != nil {
-			return nil, errors.Wrapf(err, "failed to set current schema to %q", config.ConnectionContext.DatabaseName)
+		// Connect now so that a schema the session can't switch to fails Open, not the first statement.
+		if err := db.PingContext(ctx); err != nil {
+			_ = db.Close()
+			return nil, err
 		}
 	}
 	d.db = db
@@ -81,6 +81,99 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 	d.serviceName = config.DataSource.GetServiceName()
 	d.connectionCtx = config.ConnectionContext
 	return d, nil
+}
+
+// getTLSConfig returns the TLS configuration for the data source's TLS section, or nil when TLS
+// is off. It leaves the name check to crypto/tls instead of util.GetTLSConfig's verifier, which
+// checks Hostname: go-ora sets ServerName to each server it dials, so a SERVER address or a
+// listener redirect is checked against its own name.
+func getTLSConfig(dataSource *storepb.DataSource) (*tls.Config, error) {
+	config, err := util.GetTLSConfig(dataSource)
+	if err != nil || config == nil {
+		return config, err
+	}
+	config.InsecureSkipVerify = !dataSource.GetVerifyTlsCertificate()
+	config.VerifyPeerCertificate = nil
+	return config, nil
+}
+
+// connector opens each connection through go-ora's default driver, as sql.Open("oracle") does,
+// with its own copy of the TLS configuration: go-ora sets ServerName on the configuration it is
+// given, so connections opened in parallel can't share one.
+//
+// It also sets currentSchema on every session it opens, because the pool opens a new session
+// whenever none is idle or one goes bad. go-ora's AddSessionParam can't do this: it stores the
+// parameter on the default driver, which every Bytebase Oracle connection shares.
+type connector struct {
+	dsn           string
+	tlsConfig     *tls.Config
+	currentSchema string
+}
+
+func (c *connector) Connect(ctx context.Context) (driver.Conn, error) {
+	oracleConnector, err := goora.GetDefaultDriver().OpenConnector(c.dsn)
+	if err != nil {
+		return nil, err
+	}
+	oracleConnector.(*goora.OracleConnector).WithTLSConfig(c.tlsConfig.Clone())
+	conn, err := oracleConnector.Connect(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if c.currentSchema == "" {
+		return conn, nil
+	}
+	if _, err := conn.(driver.ExecerContext).ExecContext(ctx, fmt.Sprintf("ALTER SESSION SET CURRENT_SCHEMA = \"%s\"", c.currentSchema), nil); err != nil {
+		_ = conn.Close()
+		return nil, errors.Wrapf(err, "failed to set current schema to %q", c.currentSchema)
+	}
+	return conn, nil
+}
+
+func (*connector) Driver() driver.Driver {
+	return goora.GetDefaultDriver()
+}
+
+const (
+	sidOption              = "SID"
+	sslOption              = "SSL"
+	dialTimeoutOption      = "CONNECTION TIMEOUT"
+	dialTimeoutOptionAlias = "CONNECT TIMEOUT"
+	// defaultDialTimeoutSeconds bounds the wait for one address to accept a connection, DNS
+	// lookup included, so an unreachable address fails over in seconds. It does not limit
+	// how long a statement runs.
+	defaultDialTimeoutSeconds = "10"
+)
+
+// connectionOptions returns the go-ora URL options for a data source: the extra connection
+// parameters as typed, the SID field and the default dial timeout unless an extra parameter
+// sets the same option, and SSL=TRUE when TLS is on.
+//
+// go-ora upper-cases option keys and reads CONNECT TIMEOUT as CONNECTION TIMEOUT. A Bytebase
+// key sent next to a user key for the same option would leave the winner to go-ora's map
+// iteration order, so only one is sent: the user's key for SID and the dial timeout, and
+// Bytebase's SSL, which the TLS section decides.
+func connectionOptions(sid string, extraParameters map[string]string, useTLS bool) map[string]string {
+	options := make(map[string]string, len(extraParameters)+3)
+	userOptions := make(map[string]bool, len(extraParameters))
+	for key, value := range extraParameters {
+		option := strings.ToUpper(key)
+		if useTLS && option == sslOption {
+			continue
+		}
+		options[key] = value
+		userOptions[option] = true
+	}
+	if sid != "" && !userOptions[sidOption] {
+		options[sidOption] = sid
+	}
+	if !userOptions[dialTimeoutOption] && !userOptions[dialTimeoutOptionAlias] {
+		options[dialTimeoutOption] = defaultDialTimeoutSeconds
+	}
+	if useTLS {
+		options[sslOption] = "TRUE"
+	}
+	return options
 }
 
 // Close closes the driver.
@@ -246,6 +339,7 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 	var results []*v1pb.QueryResult
 	for _, singleSQL := range singleSQLs {
 		statement := singleSQL.Text
+		planAsJSON := false
 		if queryContext.Explain {
 			startTime := time.Now()
 			randNum, err := rand.Int(rand.Reader, big.NewInt(999))
@@ -257,7 +351,12 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 			if _, err := conn.ExecContext(ctx, fmt.Sprintf("EXPLAIN PLAN SET STATEMENT_ID = '%s' FOR %s", randomID, statement)); err != nil {
 				return nil, err
 			}
-			statement = fmt.Sprintf(`SELECT LPAD(' ', LEVEL-1) || OPERATION || ' (' || OPTIONS || ')' "Operation", OBJECT_NAME "Object", OPTIMIZER "Optimizer", COST "Cost", CARDINALITY "Cardinality", BYTES "Bytes", PARTITION_START "Partition Start", PARTITION_ID "Partition ID", ACCESS_PREDICATES "Access Predicates" FROM PLAN_TABLE START WITH ID = 0 AND statement_id = '%s' CONNECT BY PRIOR ID=PARENT_ID AND statement_id = '%s' ORDER BY id`, randomID, randomID)
+			planAsJSON = db.ExplainFormat(queryContext.Option.GetExplainFormat()) == base.ExplainFormatJSON
+			if planAsJSON {
+				statement = fmt.Sprintf(planStepsQuery, randomID)
+			} else {
+				statement = fmt.Sprintf(`SELECT LPAD(' ', LEVEL-1) || OPERATION || ' (' || OPTIONS || ')' "Operation", OBJECT_NAME "Object", OPTIMIZER "Optimizer", COST "Cost", CARDINALITY "Cardinality", BYTES "Bytes", PARTITION_START "Partition Start", PARTITION_ID "Partition ID", ACCESS_PREDICATES "Access Predicates" FROM PLAN_TABLE START WITH ID = 0 AND statement_id = '%s' CONNECT BY PRIOR ID=PARENT_ID AND statement_id = '%s' ORDER BY id`, randomID, randomID)
+			}
 		}
 
 		if !queryContext.Explain && queryContext.Limit > 0 {
@@ -270,6 +369,9 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 		}
 		startTime := time.Now()
 		queryResult, err := func() (*v1pb.QueryResult, error) {
+			if planAsJSON {
+				return queryPlanSteps(ctx, conn, statement)
+			}
 			if allQuery {
 				rows, err := conn.QueryContext(ctx, statement)
 				if err != nil {
@@ -313,4 +415,99 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 	}
 
 	return results, nil
+}
+
+// planStepsQuery reads the plan Oracle recorded for one EXPLAIN PLAN: a row per
+// operator, each naming its parent, which is how Oracle states a plan. The
+// columns are what the query-plan viewer reads — the tree's shape, what each
+// step does, the object it reads, and what the optimizer expects it to cost.
+const planStepsQuery = `SELECT id, parent_id, position, operation, options, object_owner, object_name, object_type, optimizer, cost, cardinality, bytes, partition_start, partition_stop, access_predicates, filter_predicates FROM plan_table WHERE statement_id = '%s' ORDER BY id`
+
+// queryPlanSteps returns those rows as one JSON array, which is the form the
+// query-plan viewer parses; the viewer rebuilds the tree from the parent links.
+//
+// Oracle renders a plan as rows rather than as a document, and no EXPLAIN option
+// renders it as one, so this is where the rendering happens. It is built here
+// rather than with Oracle's own JSON_ARRAYAGG so that it works on releases older
+// than 12.2, which do not have those functions. A tab-separated grid would not
+// do: a predicate can hold a tab or a newline, and nothing downstream could tell
+// that apart from the next column or the next row.
+func queryPlanSteps(ctx context.Context, conn *sql.Conn, query string) (*v1pb.QueryResult, error) {
+	rows, err := conn.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	columns, err := rows.Columns()
+	if err != nil {
+		return nil, err
+	}
+	var steps [][]any
+	for rows.Next() {
+		values := make([]any, len(columns))
+		scan := make([]any, len(columns))
+		for i := range values {
+			scan[i] = &values[i]
+		}
+		if err := rows.Scan(scan...); err != nil {
+			return nil, err
+		}
+		steps = append(steps, values)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	payload, err := renderPlanSteps(columns, steps)
+	if err != nil {
+		return nil, err
+	}
+	return &v1pb.QueryResult{
+		ColumnNames:     []string{"PLAN"},
+		ColumnTypeNames: []string{"CLOB"},
+		Rows: []*v1pb.QueryRow{{Values: []*v1pb.RowValue{
+			{Kind: &v1pb.RowValue_StringValue{StringValue: payload}},
+		}}},
+	}, nil
+}
+
+// renderPlanSteps writes the scanned plan rows as a JSON array, one object per
+// operator keyed by the lower-cased column names.
+//
+// A column the optimizer had nothing to say about is left out rather than
+// carried as a null, so a reader of the plan sees only what Oracle stated.
+func renderPlanSteps(columns []string, rows [][]any) (string, error) {
+	steps := make([]map[string]any, 0, len(rows))
+	for _, row := range rows {
+		step := make(map[string]any, len(columns))
+		for i, column := range columns {
+			if i >= len(row) {
+				break
+			}
+			if value := jsonValue(row[i]); value != nil {
+				step[strings.ToLower(column)] = value
+			}
+		}
+		steps = append(steps, step)
+	}
+	payload, err := json.Marshal(steps)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to render the query plan")
+	}
+	return string(payload), nil
+}
+
+// jsonValue renders one scanned column, or nil where the row has no value for
+// it. The driver hands back text as bytes, which JSON would otherwise encode as
+// base64.
+func jsonValue(value any) any {
+	switch typed := value.(type) {
+	case nil:
+		return nil
+	case []byte:
+		return string(typed)
+	default:
+		return typed
+	}
 }

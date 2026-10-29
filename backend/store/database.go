@@ -76,6 +76,7 @@ type FindDatabaseMessage struct {
 	// Empty string skips filtering (for cross-workspace queries like runners).
 	Workspace              string
 	ProjectID              *string
+	ProjectIDs             *[]string
 	EffectiveEnvironmentID *string
 	InstanceID             *string
 	DatabaseName           *string
@@ -151,6 +152,11 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 	}
 	if v := find.ProjectID; v != nil {
 		where.And("db.project = ?", *v)
+	}
+	if v := find.ProjectIDs; v != nil {
+		// Applied even when empty: an empty set must match no database, since
+		// it is how a caller who can read no project is listed.
+		where.And("db.project = ANY(?)", *v)
 	}
 	if v := find.EffectiveEnvironmentID; v != nil {
 		where.And(`COALESCE(
@@ -318,17 +324,31 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 		if err != nil {
 			return err
 		}
+		// The SET overwrites project, environment and metadata; the WHERE keeps
+		// a row in its own project and must stay in the statement so the refusal
+		// is atomic with the write. A soft-deleted row is held too, not exempted:
+		// `deleted` also marks a live database the instance's sync allowlist
+		// excluded, which the store cannot tell from a freed name. The only
+		// caller is the create-database task.
 		query, args, err := qb.Q().Space(`INSERT INTO db (instance, project, environment, name, deleted, metadata)
 			VALUES (?, ?, ?, ?, ?, ?)
 			ON CONFLICT (instance, name) DO UPDATE SET
 				project = EXCLUDED.project, environment = EXCLUDED.environment,
-				name = EXCLUDED.name, metadata = EXCLUDED.metadata`,
+				name = EXCLUDED.name, metadata = EXCLUDED.metadata
+			WHERE db.project = EXCLUDED.project
+			RETURNING name`,
 			create.InstanceID, projectID, environment, create.DatabaseName, create.Deleted, metadata).ToSQL()
 		if err != nil {
 			return errors.Wrap(err, "failed to build sql")
 		}
-		_, err = tx.ExecContext(ctx, query, args...)
-		return err
+		var name string
+		if err := tx.QueryRowContext(ctx, query, args...).Scan(&name); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return common.Errorf(common.Invalid, "a database with this name already belongs to another project on this instance")
+			}
+			return err
+		}
+		return nil
 	})
 	if err != nil {
 		return nil, err

@@ -87,8 +87,8 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 
 	// Resolve the statement type up front so non-SELECT statements short-circuit
 	// the way the legacy plugin did. EXPLAIN ANALYZE classifies as base.Select.
-	file, errs := parser.Parse(single)
-	if len(errs) > 0 || file == nil || len(file.Stmts) == 0 {
+	file, err := parser.Parse(single)
+	if err != nil || file == nil || len(file.Stmts) == 0 {
 		return nil, errors.Errorf("failed to parse Trino statement: %s", single)
 	}
 	node := file.Stmts[0]

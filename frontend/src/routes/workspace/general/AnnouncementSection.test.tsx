@@ -105,6 +105,18 @@ beforeEach(async () => {
 });
 
 describe("AnnouncementSection", () => {
+  test("uses the default field rhythm for the theme selector", () => {
+    const { container, unmount } = renderIntoContainer(
+      <AnnouncementSection title="Announcement" onDirtyChange={() => {}} />
+    );
+
+    const themeField = container.querySelector('[data-slot="form-field"]');
+
+    expect(themeField?.className).not.toContain("gap-y-3");
+
+    unmount();
+  });
+
   test("keeps announcement sections as peers for consistent field group spacing", () => {
     const { container, unmount } = renderIntoContainer(
       <AnnouncementSection title="Announcement" onDirtyChange={() => {}} />

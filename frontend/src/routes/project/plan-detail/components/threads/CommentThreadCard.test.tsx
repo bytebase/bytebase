@@ -6,17 +6,25 @@ import { MonacoViewZoneRevealContext } from "@/components/monaco/MonacoViewZone"
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { shownTimestampInstants } from "@/test-utils/humanizeTs";
 import {
+  IssueComment_ReviewMetadata_Priority,
+  IssueComment_ReviewMetadataSchema,
   IssueComment_ThreadState,
   IssueCommentSchema,
   IssueSchema,
+  ReviewRun_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 
 const mocks = vi.hoisted(() => ({
+  sqlReviewV2: false,
   createIssueComment: vi.fn(),
   notify: vi.fn(),
   updateIssueComment: vi.fn(),
   hasPermission: vi.fn((_project: unknown, _permission: unknown) => true),
+}));
+
+vi.mock("@/utils/featureGates", () => ({
+  sqlReviewV2Enabled: () => mocks.sqlReviewV2,
 }));
 
 vi.mock("react-i18next", () => ({
@@ -69,11 +77,14 @@ vi.mock("@/components/MarkdownEditor", () => ({
 
 vi.mock("@/hooks/useAppState", () => ({
   useCurrentUser: () => ({ email: "me@example.com", title: "Me" }),
-  useUserByIdentifier: (principal: string) => ({
-    name: principal,
-    email: principal.replace(/^users\//, ""),
-    title: principal.replace(/^users\//, "").split("@")[0],
-  }),
+  useUserByIdentifier: (principal: string | undefined) =>
+    principal
+      ? {
+          name: principal,
+          email: principal.replace(/^users\//, ""),
+          title: principal.replace(/^users\//, "").split("@")[0],
+        }
+      : undefined,
 }));
 
 vi.mock("@/stores", () => ({
@@ -148,6 +159,7 @@ let container: HTMLDivElement;
 let root: Root;
 
 beforeEach(() => {
+  mocks.sqlReviewV2 = false;
   HTMLElement.prototype.scrollIntoView = vi.fn();
   vi.clearAllMocks();
   mocks.hasPermission.mockReturnValue(true);
@@ -210,6 +222,13 @@ describe("CommentThreadCard", () => {
     submitReply();
     await act(async () => {});
     expect(mocks.createIssueComment).toHaveBeenCalledExactlyOnceWith({ issueName: ISSUE, comment: "New reply", root: rootName });
+  });
+
+  test("under SQL Review V2 a draft takes replies", () => {
+    mocks.sqlReviewV2 = true;
+    const [thread] = groupThreads([comment("root", "Root question")]);
+    render(<CommentThreadCard project={project} thread={thread} issue={create(IssueSchema, { ...issue, draft: true })} />);
+    expect(buttonByText("plan.review.thread.reply-placeholder")).toBeDefined();
   });
 
   test("places statement context above the root author as a separate full-width region", () => {
@@ -291,6 +310,28 @@ describe("CommentThreadCard", () => {
     ).toHaveLength(2);
     expect(buttonByText("common.reopen")).toBeDefined();
     expect(buttonByText("plan.review.thread.resolve")).toBeUndefined();
+  });
+
+  test("a resolved review result summarizes as its reviewer", () => {
+    const root = comment("root", "Missing WHERE clause.", {
+      creator: "",
+      resolved: true,
+    });
+    root.reviewMetadata = create(IssueComment_ReviewMetadataSchema, {
+      runType: ReviewRun_Type.AI,
+      priority: IssueComment_ReviewMetadata_Priority.P1,
+    });
+    render(
+      <CommentThreadCard
+        issue={issue}
+        project={project}
+        thread={groupThreads([root])[0]}
+      />
+    );
+    const summary = buttonByText("plan.review.thread.resolved");
+    expect(summary?.textContent).toContain("sql-review.ai-review.self");
+    expect(summary?.querySelector("[data-testid='review-priority']")?.textContent).toBe("P1");
+    expect(summary?.textContent).not.toContain("common.unknown");
   });
 
   test("a resolved anchored thread collapses from its context header", () => {

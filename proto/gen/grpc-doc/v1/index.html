@@ -867,6 +867,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.GetReviewRunRequest"><span class="badge">M</span>GetReviewRunRequest</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.Issue"><span class="badge">M</span>Issue</a>
                 </li>
               
@@ -1290,6 +1294,10 @@
               
                 <li>
                   <a href="#bytebase.v1.AIChatMessageRole"><span class="badge">E</span>AIChatMessageRole</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.AIChatResponse.StopReason"><span class="badge">E</span>AIChatResponse.StopReason</a>
                 </li>
               
               
@@ -2269,6 +2277,14 @@
               
                 <li>
                   <a href="#bytebase.v1.SchemaMetadata"><span class="badge">M</span>SchemaMetadata</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.SearchDatabasesRequest"><span class="badge">M</span>SearchDatabasesRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.SearchDatabasesResponse"><span class="badge">M</span>SearchDatabasesResponse</a>
                 </li>
               
                 <li>
@@ -3369,7 +3385,7 @@ Unlike SENSITIVE it says nothing about the API contract.</p></td>
         </table>
       
         <h3 id="bytebase.v1.MCPDenialReason">MCPDenialReason</h3>
-        <p>Why an MCP session may not call an RPC. The mechanism, not the wording: each</p><p>value names what its methods actually do, and the serving side turns that</p><p>into a sentence. A denial whose stated reason has drifted from the mechanism</p><p>is worse than a bare refusal, because it is the thing the next reader trusts</p><p>— so a method changing what it does changes its reason here.</p><p>One enum covers both refused classes, and every value belongs to exactly one</p><p>of them: values 1-8 name a mechanism that breaks the MCP boundary, which is</p><p>what FORBIDDEN means, and values 9-13 name a scope decision this phase took,</p><p>which is what EXCLUDED means. The distinction is real and lives on the class</p><p>annotation — a FORBIDDEN mechanism is a durable never, an EXCLUDED scope</p><p>decision is what a future admin-capable ceiling would argue with, one</p><p>population at a time. Splitting it across two enums as well only made the</p><p>nonsense states representable: a method could carry both, or carry the kind</p><p>that contradicts its class. Neither is expressible now, and the one check</p><p>left — the reason belongs to the class it is used on — is a table the gate</p><p>already keeps for the wording.</p>
+        <p>Why an MCP session may not call an RPC. The mechanism, not the wording: each</p><p>value names what its methods actually do, and the serving side turns that</p><p>into a sentence. A denial whose stated reason has drifted from the mechanism</p><p>is worse than a bare refusal, because it is the thing the next reader trusts</p><p>— so a method changing what it does changes its reason here.</p><p>One enum covers both refused classes, and every value belongs to exactly one</p><p>of them: values 1-8 name a mechanism that breaks the MCP boundary, which is</p><p>what FORBIDDEN means, and values 9-14 name a scope decision this phase took,</p><p>which is what EXCLUDED means. The distinction is real and lives on the class</p><p>annotation — a FORBIDDEN mechanism is a durable never, an EXCLUDED scope</p><p>decision is what a future admin-capable ceiling would argue with, one</p><p>population at a time. Splitting it across two enums as well only made the</p><p>nonsense states representable: a method could carry both, or carry the kind</p><p>that contradicts its class. Neither is expressible now, and the one check</p><p>left — the reason belongs to the class it is used on — is a table the gate</p><p>already keeps for the wording.</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -3439,10 +3455,9 @@ by it.</p></td>
               <tr>
                 <td>DRIVES_THE_APPROVAL_DECISION</td>
                 <td>8</td>
-                <td><p>Works the human approval step that gates the change: recording the review
-decision, or re-running the finding that sets it and can clear the issue
-outright. An agent composes a change; it does not move its own change
-through the gate.</p></td>
+                <td><p>Can let a change or an access request pass its approval without an
+approver deciding it: re-running the finding that sets the approval, which
+can clear the issue outright, or activating an access grant directly.</p></td>
               </tr>
             
               <tr>
@@ -3451,8 +3466,7 @@ through the gate.</p></td>
                 <td><p>Administers the workspace rather than doing database work: identity,
 credentials, access control, governance policy, billing, workspace and
 instance configuration, project lifecycle, and the operator&#39;s own audit
-trail. Reading is administration too where the read returns the privilege
-topology or a stored secret rather than the state of a database.</p></td>
+trail.</p></td>
               </tr>
             
               <tr>
@@ -3497,6 +3511,19 @@ secrets — are redacted on the read path, and their eight methods are
 READ. The value stays because the category is real and the next read
 found leaking should carry it rather than an invented one, and because
 retiring an enum value costs a reserved number for nothing.</p></td>
+              </tr>
+            
+              <tr>
+                <td>REDRAWS_GOVERNANCE_BOUNDARY</td>
+                <td>14</td>
+                <td><p>Changes which rules govern a database, or which databases a change that
+targets a database group runs on. Approval, SQL review and access rules
+key on a database&#39;s project and environment, and so do the masking rules
+that decide what a query returns. A database group selects databases by
+an expression that can read their environment and labels, and a change
+that targets a group runs on whichever databases the group selects when
+its rollout tasks are created. An agent that could redraw these would
+choose the checks on its own changes.</p></td>
               </tr>
             
           </tbody>
@@ -3547,9 +3574,9 @@ console; an agent acting for them does not get to.</p></td>
                 <td>EXCLUDED</td>
                 <td>4</td>
                 <td><p>Served by no MCP capability ceiling this phase ships, and not a durable
-never. These are workspace administration, plus the handful of methods
-that do something materially worse than the plain read permission they
-share suggests.
+never. These are workspace administration, the writes that change which
+rules govern a database, and the handful of methods that do something
+materially worse than the plain read permission they share suggests.
 
 The line against FORBIDDEN is reversibility. An admin-capable ceiling, if
 one is ever built, could legitimately serve an EXCLUDED method — that is a
@@ -3673,7 +3700,7 @@ The {access_grant} segment is a server-generated unique ID. </p></td>
                   <td>creator</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The creator of the access grant.
+                  <td><p>The creator of the access grant, the caller who requested it.
 Format: users/{email} </p></td>
                 </tr>
               
@@ -3758,7 +3785,8 @@ Format: instances/{instance}/databases/{database} or projects/{project}/instance
                   <td>export</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>Whether export the query result. </p></td>
+                  <td><p>Whether the grant allows exporting the query result.
+An active grant with export=true grants bb.sql.export for this query until the grant expires. </p></td>
                 </tr>
               
                 <tr>
@@ -3908,7 +3936,13 @@ Supported fields:
 - issue: the access issue fullname, support &#34;==&#34; operator.
 - expire_time: the access expire time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34;, &#34;&gt;&#34;, &#34;&lt;=&#34; and &#34;&lt;&#34; operator.
 - create_time: the access creation time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34;, &#34;&gt;&#34;, &#34;&lt;=&#34; and &#34;&lt;&#34; operator.
-- query: the access query, support &#34;==&#34; and &#34;.contains(xx)&#34; operator
+- query: the access query, support &#34;==&#34; and &#34;.contains(xx)&#34; operator.
+  Equality trims only boundary ASCII space, tab, LF, CR, vertical tab, and form feed.
+- query_hash: supports &#34;==&#34; with a lowercase hexadecimal SHA-256 digest of
+  the UTF-8 query after the same boundary trim. Internal whitespace and Unicode
+  remain unchanged.
+- schema: execution schema, supports &#34;==&#34;; empty matches only empty or absent values.
+- container: execution container, supports &#34;==&#34;; empty matches only empty or absent values.
 - target: the target database fullname, support &#34;==&#34; operator.
 - unmask: whether the grant allows unmasking sensitive data, support &#34;==&#34; operator with a boolean literal.
 - export: whether the grant allows exporting the query result, support &#34;==&#34; operator with a boolean literal.
@@ -8532,7 +8566,7 @@ Examples include PostgreSQL&#39;s RAISE NOTICE, MSSQL&#39;s PRINT, or Oracle&#39
         
       
         <h3 id="bytebase.v1.QueryResult.QueryPlan">QueryResult.QueryPlan</h3>
-        <p>A query plan held in the result's rows.</p>
+        <p>A query plan the result carries: in its rows, or beside them.</p>
 
         
           <table class="field-table">
@@ -8554,6 +8588,18 @@ Examples include PostgreSQL&#39;s RAISE NOTICE, MSSQL&#39;s PRINT, or Oracle&#39
                   <td></td>
                   <td><p>Whether producing the plan executed the statement, as EXPLAIN ANALYZE
 does. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>content</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The plan itself, where the engine states it beside the result rather
+than in the result&#39;s rows. BigQuery reports the stages its job ran in
+the job&#39;s own statistics, so one result carries the query&#39;s data and
+the plan of the run that produced it. Empty when the plan is the rows,
+which is every other engine. Omitted from the audit log, as the rows
+are: the statement is what an audit reads. </p></td>
                 </tr>
               
             </tbody>
@@ -9097,7 +9143,8 @@ Permissions required: None (only returns the caller&#39;s own query history)</p>
                 <td><a href="#bytebase.v1.ExportRequest">ExportRequest</a></td>
                 <td><a href="#bytebase.v1.ExportResponse">ExportResponse</a></td>
                 <td><p>Exports query results to a file format.
-Permissions required: bb.databases.get</p></td>
+Permissions required: bb.databases.get, and bb.sql.export on the data the statement reads.
+An active access grant with export=true for the statement satisfies bb.sql.export on its target databases.</p></td>
               </tr>
             
           </tbody>
@@ -9373,13 +9420,18 @@ Supported filters:
 - title: the plan title, support &#34;==&#34; operator for exact match and &#34;.contains()&#34; operator for case-insensitive substring match.
 - spec_type: the plan spec config type, support &#34;==&#34; operator, the value should be &#34;create_database_config&#34; or &#34;change_database_config&#34;.
 - state: the plan state, support &#34;==&#34; operator, the value should be &#34;ACTIVE&#34; or &#34;DELETED&#34;.
+- has_release: whether a spec references a release, support &#34;==&#34; operator, the value should be &#34;true&#34; or &#34;false&#34;.
+- release: the release a spec references, in &#34;projects/{project}/releases/{release}&#34; format, support &#34;==&#34; operator.
+- task_status: the current status of any task in the plan, support &#34;in&#34; operator, the values should be Task.Status values except STATUS_UNSPECIFIED.
 
 For example:
 creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; create_time &gt;= &#34;2025-01-02T15:04:05Z07:00&#34;
 title == &#34;My Plan&#34;
 title.contains(&#34;database migration&#34;)
 spec_type == &#34;change_database_config&#34;
-state == &#34;ACTIVE&#34; </p></td>
+state == &#34;ACTIVE&#34;
+has_release == true &amp;&amp; task_status in [&#34;FAILED&#34;, &#34;RUNNING&#34;]
+release == &#34;projects/my-project/releases/release_20260115-RC00&#34; </p></td>
                 </tr>
               
             </tbody>
@@ -10390,7 +10442,9 @@ NULL with IS NULL or IS NOT NULL.</p></td>
               <tr>
                 <td>DISALLOW_DROP_OBJECT</td>
                 <td>7</td>
-                <td><p>P1: DROP TABLE, COLUMN, SCHEMA, or DATABASE.</p></td>
+                <td><p>P1: dropping any object, such as a table, column, view, index, sequence,
+schema, database, or function. Dropping a constraint is
+DISALLOW_DROP_CONSTRAINT.</p></td>
               </tr>
             
               <tr>
@@ -10408,7 +10462,7 @@ NULL with IS NULL or IS NOT NULL.</p></td>
               <tr>
                 <td>DISALLOW_RENAME</td>
                 <td>10</td>
-                <td><p>P1: renaming a table or column.</p></td>
+                <td><p>P1: renaming a table, foreign table, view, materialized view, or column.</p></td>
               </tr>
             
               <tr>
@@ -10671,6 +10725,31 @@ Format: projects/{project}/issues/{issue} </p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>If set to true, bypass cache and fetch the latest data. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.GetReviewRunRequest">GetReviewRunRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the review run to retrieve.
+Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun} </p></td>
                 </tr>
               
             </tbody>
@@ -11142,6 +11221,14 @@ Never accepted on create or update. </p></td>
 Format: instances/{instance}/databases/{database} </p></td>
                 </tr>
               
+                <tr>
+                  <td>superseded</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>A later run of the same reviewer has completed, so the result is not
+from the latest review, whatever its thread state. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -11513,6 +11600,15 @@ failed to execute (a platform problem, never the SQL — SQL problems are
 review results on a DONE run). </p></td>
                 </tr>
               
+                <tr>
+                  <td>outdated</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether the plan&#39;s SQL changed after this run started, so the run
+reviews an earlier version of it. The server starts a new run before it
+creates the rollout automatically. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -11535,7 +11631,7 @@ review results on a DONE run). </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The requested role.
-Format: roles/EXPORTER. </p></td>
+Format: roles/{role}. </p></td>
                 </tr>
               
                 <tr>
@@ -12038,8 +12134,11 @@ In this situation, `update_mask` is ignored. </p></td>
               <tr>
                 <td>DONE</td>
                 <td>3</td>
-                <td><p>Every (spec, target) unit was evaluated. DONE does not mean the
-review passed: whether problems remain is judged from open comments.</p></td>
+                <td><p>Every (spec, target) unit in the reviewer&#39;s scope was evaluated. RULE&#39;s
+scope is every target. AI&#39;s scope is the project&#39;s CI sample, the first
+ci_sampling_size targets of each spec, or every target when
+ci_sampling_size is 0. DONE does not mean the review passed: whether
+problems remain is judged from open comments.</p></td>
               </tr>
             
               <tr>
@@ -12205,15 +12304,25 @@ mirrors RequestIssue&#39;s authorization model).</p></td>
               </tr>
             
               <tr>
+                <td>GetReviewRun</td>
+                <td><a href="#bytebase.v1.GetReviewRunRequest">GetReviewRunRequest</a></td>
+                <td><a href="#bytebase.v1.ReviewRun">ReviewRun</a></td>
+                <td><p>Gets the current run of one reviewer on an issue. The run carries
+execution status only; review results are issue comments. A reviewer
+that has never run on the issue is NOT_FOUND.
+Permissions required: bb.reviewRuns.get</p></td>
+              </tr>
+            
+              <tr>
                 <td>RunReview</td>
                 <td><a href="#bytebase.v1.RunReviewRequest">RunReviewRequest</a></td>
                 <td><a href="#bytebase.v1.ReviewRun">ReviewRun</a></td>
                 <td><p>Triggers a review run. The slot is reset unconditionally: a RUNNING
 execution is superseded (its completion is fenced off), the attempt
 number is bumped, and the returned run is AVAILABLE.
-Review results are not returned by this RPC and have no read RPC yet:
-findings will surface as issue comments once the review comment
-integration lands. The returned run carries execution status only.
+Review results are not returned by this RPC: they are posted as issue
+comments. The returned run carries execution status only, and
+GetReviewRun reads it back.
 The audit log is the only record of who triggered a run.
 Permissions required: bb.reviewRuns.run</p></td>
               </tr>
@@ -12369,6 +12478,16 @@ Permissions required: bb.reviewRuns.run</p></td>
               
               
               <tr>
+                <td>GetReviewRun</td>
+                <td>GET</td>
+                <td>/v1/{name=projects/*/issues/*/reviewRuns/*}</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
                 <td>RunReview</td>
                 <td>POST</td>
                 <td>/v1/{name=projects/*/issues/*/reviewRuns/*}:run</td>
@@ -12438,6 +12557,16 @@ Permissions required: bb.reviewRuns.run</p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sql_review_enabled</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether the AI SQL review may run. It is off by default and is a consent
+of its own beside `enabled`: a review sends the statements of a change to
+the provider, and can send the schema of its target databases and their
+table statistics. </p></td>
                 </tr>
               
             </tbody>
@@ -14823,6 +14952,21 @@ Format: projects/{id} </p></td>
                   <td><p>The MCP (Model Context Protocol) setting in the current workspace. </p></td>
                 </tr>
               
+                <tr>
+                  <td>ai_enabled</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether the workspace AI setting enables the AI agent. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ai_sql_review_enabled</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether the workspace AI setting switches the AI SQL review on. A review
+also needs `ai_enabled`. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -15070,6 +15214,13 @@ Permissions required: None (authentication required)</p></td>
                   <td><p>Token usage for this provider call, when available. </p></td>
                 </tr>
               
+                <tr>
+                  <td>stop_reason</td>
+                  <td><a href="#bytebase.v1.AIChatResponse.StopReason">AIChatResponse.StopReason</a></td>
+                  <td></td>
+                  <td><p>Why the model stopped. A truncated or blocked response can still carry content. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -15228,6 +15379,53 @@ Frontend must echo this back unchanged when sending tool results. </p></td>
           </tbody>
         </table>
       
+        <h3 id="bytebase.v1.AIChatResponse.StopReason">AIChatResponse.StopReason</h3>
+        <p>Why the model stopped generating a response.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>STOP_REASON_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p>The provider did not report why the model stopped.</p></td>
+              </tr>
+            
+              <tr>
+                <td>TURN_COMPLETED</td>
+                <td>1</td>
+                <td><p>The model completed its turn with an answer or with tool calls.</p></td>
+              </tr>
+            
+              <tr>
+                <td>TOKEN_LIMIT</td>
+                <td>2</td>
+                <td><p>The response was truncated at a token limit and is incomplete.</p></td>
+              </tr>
+            
+              <tr>
+                <td>BLOCKED</td>
+                <td>3</td>
+                <td><p>The provider blocked the request or the response, or the model refused to answer.</p></td>
+              </tr>
+            
+              <tr>
+                <td>MALFORMED_TOOL_CALL</td>
+                <td>4</td>
+                <td><p>The model generated a tool call that the provider could not parse.</p></td>
+              </tr>
+            
+              <tr>
+                <td>OTHER</td>
+                <td>5</td>
+                <td><p>The model stopped for a reason that no other value names.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
 
       
 
@@ -15327,9 +15525,9 @@ If the condition evaluates to false, then this binding does not apply to the cur
 The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
 Support variables:
-resource.database: the canonical database full name in &#34;instances/{instance}/databases/{database}&#34; or &#34;projects/{project}/instances/{instance}/databases/{database}&#34; format, used by any role with SQL Editor read (e.g. &#34;roles/sqlEditorUser&#34;, &#34;roles/sqlEditorReadUser&#34;) or write (bb.sql.ddl / bb.sql.dml) access, support &#34;==&#34; operator.
-resource.schema_name: the schema name, used by any role with SQL Editor read or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support &#34;==&#34; operator.
-resource.table_name: the table name, used by any role with SQL Editor read or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support &#34;==&#34; operator.
+resource.database: the canonical database full name in &#34;instances/{instance}/databases/{database}&#34; or &#34;projects/{project}/instances/{instance}/databases/{database}&#34; format, used by any role with SQL Editor read (e.g. &#34;roles/sqlEditorUser&#34;, &#34;roles/sqlEditorReadUser&#34;), export (bb.sql.export, e.g. &#34;roles/sqlEditorExporter&#34;) or write (bb.sql.ddl / bb.sql.dml) access, support &#34;==&#34; operator.
+resource.schema_name: the schema name, used by any role with SQL Editor read, export (bb.sql.export) or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support &#34;==&#34; operator.
+resource.table_name: the table name, used by any role with SQL Editor read, export (bb.sql.export) or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support &#34;==&#34; operator.
 resource.environment_id: the environment to allow the DDL/DML operation in the SQL Editor, only works for the role with bb.sql.ddl or bb.sql.dml permissions. Support &#34;in&#34; operator.
 request.time: the expiration. Only support &#34;&lt;&#34; operation in `request.time &lt; timestamp(&#34;{ISO datetime string format}&#34;)`.
 
@@ -25355,7 +25553,7 @@ Name of the operator class for each column. (PostgreSQL specific). </p></td>
                   <td>parent</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>- projects/{project}: list databases in a project, require &#34;bb.projects.get&#34; permission.
+                  <td><p>- projects/{project}: list databases in a project, require &#34;bb.databases.list&#34; permission.
 - workspaces/{id}: list databases in the workspace, require &#34;bb.databases.list&#34; permission.
 - instances/{instance}: list databases in an instance, require &#34;bb.instances.get&#34; permission.
 - projects/{project}/instances/{instance}: list databases in a project instance, require &#34;bb.instances.get&#34; permission. </p></td>
@@ -25789,6 +25987,88 @@ Snowflake. </p></td>
                   <td><p>The composite_types is the list of user-defined composite types in a
 schema (PostgreSQL family, CREATE TYPE ... AS). Excludes table/view row
 types and derived types. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.SearchDatabasesRequest">SearchDatabasesRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>page_size</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The maximum number of databases to return. The service may return fewer
+than this value.
+If unspecified, at most 10 databases will be returned.
+The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A page token, received from a previous `SearchDatabases` call.
+Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `SearchDatabases` must
+match the call that provided the page token. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>filter</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Filter is used to filter databases returned in the list.
+It supports the same fields and operators as `ListDatabasesRequest.filter`.
+
+For example:
+project == &#34;projects/{project resource id}&#34;
+name.contains(&#34;database name&#34;) &amp;&amp; engine == &#34;POSTGRES&#34; </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.SearchDatabasesResponse">SearchDatabasesResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>databases</td>
+                  <td><a href="#bytebase.v1.Database">Database</a></td>
+                  <td>repeated</td>
+                  <td><p>The databases from the specified request. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>next_page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A token, which can be sent as `page_token` to retrieve the next page.
+If this field is omitted, there are no subsequent pages. </p></td>
                 </tr>
               
             </tbody>
@@ -27114,7 +27394,15 @@ Permissions required: bb.databases.get (on each named database&#39;s project)</p
                 <td><a href="#bytebase.v1.ListDatabasesRequest">ListDatabasesRequest</a></td>
                 <td><a href="#bytebase.v1.ListDatabasesResponse">ListDatabasesResponse</a></td>
                 <td><p>Lists databases in a project, instance, or workspace.
-Permissions required: bb.projects.get (for project parent), bb.databases.list (for workspace parent), or bb.instances.get (for instance parent)</p></td>
+Permissions required: bb.databases.list (for project or workspace parent), or bb.instances.get (for instance parent)</p></td>
+              </tr>
+            
+              <tr>
+                <td>SearchDatabases</td>
+                <td><a href="#bytebase.v1.SearchDatabasesRequest">SearchDatabasesRequest</a></td>
+                <td><a href="#bytebase.v1.SearchDatabasesResponse">SearchDatabasesResponse</a></td>
+                <td><p>Searches for databases in every active project where the caller has the bb.databases.get permission, filtered by the specified filter.
+Permissions required: bb.databases.get (checked in each project)</p></td>
               </tr>
             
               <tr>
@@ -27285,6 +27573,16 @@ Permissions required: bb.databases.getSchema</p></td>
                 <td>GET</td>
                 <td>/v1/{parent=projects/*/instances/*}/databases</td>
                 <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>SearchDatabases</td>
+                <td>POST</td>
+                <td>/v1/databases:search</td>
+                <td>*</td>
               </tr>
               
             
@@ -28469,8 +28767,7 @@ The default value &lt;= 0, means no limit. </p></td>
                   <td>disable_export</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>workspace-level policy
-Disable data export in the SQL editor. </p></td>
+                  <td><p><strong>Deprecated.</strong> Deprecated: export is controlled by the bb.sql.export permission. Always false; setting it to true is rejected. </p></td>
                 </tr>
               
                 <tr>
@@ -28496,6 +28793,27 @@ If false,
             </tbody>
           </table>
 
+          
+            
+            
+            <h4>Fields with deprecated option</h4>
+            <table>
+              <thead>
+                <tr>
+                  <td>Name</td>
+                  <td>Option</td>
+                </tr>
+              </thead>
+              <tbody>
+              
+                <tr>
+                  <td>disable_export</td>
+                  <td><p>true</p></td>
+                </tr>
+              
+              </tbody>
+            </table>
+            
           
 
         
@@ -29428,8 +29746,9 @@ If enabled, issues will include &#34;set role &lt;db_owner&gt;&#34; statement. <
                   <td>ci_sampling_size</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>The maximum number of database rows to sample during CI data validation.
-Without specification, sampling is disabled, resulting in full validation. </p></td>
+                  <td><p>The maximum number of databases to sample during CI data validation and
+AI review. Without specification, sampling is disabled, resulting in full
+validation. </p></td>
                 </tr>
               
                 <tr>

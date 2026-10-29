@@ -4,15 +4,22 @@ import (
 	"context"
 	"strings"
 	"testing"
+	"time"
 
 	"connectrpc.com/connect"
+	metadatapb "github.com/bytebase/omni/metadata"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/permission"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
+	"github.com/bytebase/bytebase/backend/component/iam"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 func TestSQLIAMDatabaseResourceUsesCanonicalInstanceScope(t *testing.T) {
@@ -355,17 +362,39 @@ func TestValidateExplainFormat(t *testing.T) {
 		{name: "spanner json", engine: storepb.Engine_SPANNER, format: v1pb.QueryOption_JSON},
 		{name: "spanner has no text plan", engine: storepb.Engine_SPANNER, format: v1pb.QueryOption_TEXT, wantErr: true},
 		{name: "mysql text", engine: storepb.Engine_MYSQL, format: v1pb.QueryOption_TEXT},
-		{name: "mysql json is not implemented yet", engine: storepb.Engine_MYSQL, format: v1pb.QueryOption_JSON, wantErr: true},
+		{name: "mysql json", engine: storepb.Engine_MYSQL, format: v1pb.QueryOption_JSON},
+		{name: "mysql has no xml plan", engine: storepb.Engine_MYSQL, format: v1pb.QueryOption_XML, wantErr: true},
+		{name: "mariadb json", engine: storepb.Engine_MARIADB, format: v1pb.QueryOption_JSON},
+		{name: "tidb json", engine: storepb.Engine_TIDB, format: v1pb.QueryOption_JSON},
+		{name: "oceanbase json", engine: storepb.Engine_OCEANBASE, format: v1pb.QueryOption_JSON},
+		{name: "oracle json", engine: storepb.Engine_ORACLE, format: v1pb.QueryOption_JSON},
 		{name: "oracle xml is not implemented yet", engine: storepb.Engine_ORACLE, format: v1pb.QueryOption_XML, wantErr: true},
+		{name: "clickhouse json", engine: storepb.Engine_CLICKHOUSE, format: v1pb.QueryOption_JSON},
+		{name: "trino json", engine: storepb.Engine_TRINO, format: v1pb.QueryOption_JSON},
+		// CockroachDB's own EXPLAIN takes no JSON — the plan the driver reads is
+		// the one encoded in the diagram EXPLAIN (DISTSQL) links to.
+		{name: "cockroachdb json", engine: storepb.Engine_COCKROACHDB, format: v1pb.QueryOption_JSON},
+		{name: "starrocks json is a syntax error on the engine", engine: storepb.Engine_STARROCKS, format: v1pb.QueryOption_JSON, wantErr: true},
+		{name: "doris text", engine: storepb.Engine_DORIS, format: v1pb.QueryOption_TEXT},
+		{name: "doris json is a syntax error on the engine too", engine: storepb.Engine_DORIS, format: v1pb.QueryOption_JSON, wantErr: true},
+		{name: "hive json", engine: storepb.Engine_HIVE, format: v1pb.QueryOption_JSON},
 		{name: "redis explains nothing at all", engine: storepb.Engine_REDIS, format: v1pb.QueryOption_TEXT, wantErr: true},
-		{name: "mongodb explains nothing at all", engine: storepb.Engine_MONGODB, format: v1pb.QueryOption_JSON, wantErr: true},
+		{name: "mongodb json", engine: storepb.Engine_MONGODB, format: v1pb.QueryOption_JSON},
+		{name: "mongodb has no text plan", engine: storepb.Engine_MONGODB, format: v1pb.QueryOption_TEXT, wantErr: true},
 		// A driver that ignores the explain flag runs the statement instead, and
 		// the explain path skips the read-only validation, so an unspecified
 		// format must be refused here too rather than reaching the driver.
 		{name: "cassandra refuses even an unspecified format", engine: storepb.Engine_CASSANDRA, format: v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, wantErr: true},
 		{name: "cosmosdb refuses even an unspecified format", engine: storepb.Engine_COSMOSDB, format: v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, wantErr: true},
-		{name: "databricks refuses even an unspecified format", engine: storepb.Engine_DATABRICKS, format: v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, wantErr: true},
-		{name: "elasticsearch refuses even an unspecified format", engine: storepb.Engine_ELASTICSEARCH, format: v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, wantErr: true},
+		// Databricks plans a statement through Spark's own EXPLAIN, whose only
+		// plan is text.
+		{name: "databricks text", engine: storepb.Engine_DATABRICKS, format: v1pb.QueryOption_TEXT},
+		{name: "databricks json has no reader", engine: storepb.Engine_DATABRICKS, format: v1pb.QueryOption_JSON, wantErr: true},
+		// Elasticsearch states one plan, its profile, which it answers with only
+		// for a search it ran; the driver refuses to profile anything else.
+		{name: "elasticsearch default", engine: storepb.Engine_ELASTICSEARCH, format: v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED},
+		{name: "elasticsearch json", engine: storepb.Engine_ELASTICSEARCH, format: v1pb.QueryOption_JSON},
+		{name: "elasticsearch has no text plan", engine: storepb.Engine_ELASTICSEARCH, format: v1pb.QueryOption_TEXT, wantErr: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -386,12 +415,48 @@ func TestValidateExplainFormat(t *testing.T) {
 // The engine parsers are registered for the whole v1 test binary by blank imports
 // elsewhere in the package, so each call below returns that engine's real verdict
 // rather than a no-parser default.
+//
+// Databricks prefixes EXPLAIN too and is left out: it is the one SQL engine with
+// no read-only validator registered, so the gate has nothing to classify the
+// planned form with — for an ordinary query as much as for an explain. What
+// keeps a write from running there is Spark's EXPLAIN, which compiles a
+// statement without executing it, and the planner reading the caller's comments
+// as Databricks does, so a write behind one is planned rather than preserved.
+// See TestExplainGateOnlyPlansOnDatabricks.
 var explainPrefixEngines = []storepb.Engine{
 	storepb.Engine_POSTGRES, storepb.Engine_MYSQL, storepb.Engine_MARIADB,
 	storepb.Engine_OCEANBASE, storepb.Engine_TIDB, storepb.Engine_REDSHIFT,
 	storepb.Engine_COCKROACHDB, storepb.Engine_SNOWFLAKE, storepb.Engine_CLICKHOUSE,
 	storepb.Engine_STARROCKS, storepb.Engine_DORIS, storepb.Engine_HIVE,
 	storepb.Engine_TRINO,
+}
+
+// TestExplainGateOnlyPlansOnDatabricks locks what stands in for the smuggle
+// defense on the one engine whose planned form the gate cannot classify: every
+// statement an explain request reaches the driver with begins with EXPLAIN, so
+// Spark compiles it rather than running it. A write the caller sends is planned,
+// not executed.
+func TestExplainGateOnlyPlansOnDatabricks(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name      string
+		statement string
+		want      string
+	}{
+		{name: "a write is planned", statement: "DELETE FROM t WHERE id = 1", want: "EXPLAIN FORMATTED DELETE FROM t WHERE id = 1"},
+		{name: "ANALYZE DELETE is planned", statement: "ANALYZE DELETE FROM t", want: "EXPLAIN FORMATTED ANALYZE DELETE FROM t"},
+		// Databricks block comments nest, so the EXPLAIN here is inside one and
+		// the statement is the delete.
+		{name: "a write behind a nested comment", statement: "/* outer /* inner */\nEXPLAIN\n*/\nDELETE FROM t", want: "EXPLAIN FORMATTED /* outer /* inner */\nEXPLAIN\n*/\nDELETE FROM t"},
+		{name: "a plan the caller asked for", statement: "EXPLAIN SELECT 1", want: "EXPLAIN SELECT 1"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			planned, err := parserbase.ExplainStatement(storepb.Engine_DATABRICKS, tc.statement, parserbase.ExplainFormatDefault)
+			require.NoError(t, err)
+			require.Equal(t, tc.want, planned)
+		})
+	}
 }
 
 // TestExplainGateRejectsSmuggledWrite locks the smuggle defense. An explain
@@ -486,4 +551,204 @@ func TestExplainGateAllowsPlans(t *testing.T) {
 		require.Errorf(t, validateExplainStatements(instance, "SELECT 1; ANALYZE DELETE FROM t", v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED), "%s: smuggle after a read", engine)
 		require.Errorf(t, validateExplainStatements(instance, "ANALYZE DELETE FROM t; SELECT 1", v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED), "%s: smuggle before a read", engine)
 	}
+}
+
+// explainAccessFixture is one instance holding a database of project A and a
+// database of project B, with users whose explain and select rights differ
+// between the two projects.
+type explainAccessFixture struct {
+	service  *SQLService
+	instance *store.InstanceMessage
+	database *store.DatabaseMessage
+}
+
+func newExplainAccessFixture(ctx context.Context, t *testing.T, engine storepb.Engine) *explainAccessFixture {
+	t.Helper()
+	db, stores, _ := testcontainer.NewMetadataDB(t)
+	_, err := db.ExecContext(ctx, `
+    INSERT INTO workspace (resource_id) VALUES ('default');
+    INSERT INTO principal (name, email, password_hash) VALUES
+      ('explain-a', 'explain-a@example.com', 'unused'),
+      ('explain-ab', 'explain-ab@example.com', 'unused'),
+      ('select-a', 'select-a@example.com', 'unused'),
+      ('both-a', 'both-a@example.com', 'unused');
+    INSERT INTO project (resource_id, workspace, name) VALUES ('project-a', 'default', 'A'), ('project-b', 'default', 'B');`)
+	require.NoError(t, err)
+	for _, role := range []struct {
+		id   string
+		perm permission.Permission
+	}{
+		{id: "explainer", perm: permission.SQLExplain},
+		{id: "selector", perm: permission.SQLSelect},
+	} {
+		_, err = stores.CreateRole(ctx, &store.RoleMessage{
+			ResourceID: role.id, Workspace: "default", Name: role.id,
+			Permissions: map[permission.Permission]bool{role.perm: true},
+		})
+		require.NoError(t, err)
+	}
+	for _, binding := range []struct {
+		project string
+		role    string
+		members []string
+	}{
+		{project: "project-a", role: "explainer", members: []string{"explain-a@example.com", "explain-ab@example.com", "both-a@example.com"}},
+		{project: "project-a", role: "selector", members: []string{"select-a@example.com", "both-a@example.com"}},
+		{project: "project-b", role: "explainer", members: []string{"explain-ab@example.com"}},
+	} {
+		members := make([]string, 0, len(binding.members))
+		for _, member := range binding.members {
+			members = append(members, common.FormatUserEmail(member))
+		}
+		_, err = stores.PatchIamPolicy(ctx, "default", storepb.Policy_PROJECT, common.FormatProject(binding.project), func(policy *storepb.IamPolicy) error {
+			policy.Bindings = append(policy.Bindings, &storepb.Binding{Role: "roles/" + binding.role, Members: members})
+			return nil
+		})
+		require.NoError(t, err)
+	}
+	instance, err := stores.CreateInstance(ctx, &store.InstanceMessage{
+		ResourceID: "test", Workspace: "default",
+		// lower_case_table_names=1 makes the instance fold case, so DB_B names db_b.
+		Metadata: &storepb.Instance{Engine: engine, Activation: true, MysqlLowerCaseTableNames: 1, DataSources: []*storepb.DataSource{{Id: "admin", Type: storepb.DataSourceType_ADMIN}}},
+	})
+	require.NoError(t, err)
+	var connected *store.DatabaseMessage
+	for name, project := range map[string]string{"db_a": "project-a", "db_b": "project-b"} {
+		database, err := stores.UpsertDatabase(ctx, &store.DatabaseMessage{
+			InstanceID: "test", DatabaseName: name, ProjectID: project, Metadata: &storepb.DatabaseMetadata{},
+		})
+		require.NoError(t, err)
+		if name == "db_a" {
+			connected = database
+		}
+	}
+	iamManager, err := iam.NewManager(stores, nil, false)
+	require.NoError(t, err)
+	return &explainAccessFixture{
+		service:  &SQLService{store: stores, iamManager: iamManager},
+		instance: instance,
+		database: connected,
+	}
+}
+
+func (f *explainAccessFixture) check(ctx context.Context, email string, isExplain bool, statement string, span *parserbase.QuerySpan) error {
+	user := &store.UserMessage{Email: email}
+	return f.service.accessCheckWithGrantedTargets(ctx, f.instance, f.database, user, []*parserbase.QuerySpan{span}, isExplain, []parserbase.Statement{{Text: statement}}, nil, false, "", false)
+}
+
+func reads(databases ...string) parserbase.SourceColumnSet {
+	columns := parserbase.SourceColumnSet{}
+	for _, database := range databases {
+		columns[parserbase.ColumnResource{Database: database, Table: "t"}] = true
+	}
+	return columns
+}
+
+func requireExplainDenied(t *testing.T, err error, perm permission.Permission, resources ...string) {
+	t.Helper()
+	var denied *queryError
+	require.ErrorAs(t, err, &denied)
+	require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(denied.err))
+	require.Equal(t, perm, denied.permission)
+	require.Equal(t, resources, denied.resources)
+}
+
+// TestExplainRequiresEachReferencedDatabase pins the plan boundary: a plan
+// describes every database its statement references, a database in another
+// project fails closed as it does for a write, and a typed EXPLAIN ANALYZE
+// needs the statement's permission as well as explain.
+func TestExplainRequiresEachReferencedDatabase(t *testing.T) {
+	t.Parallel()
+	ctx := context.WithValue(context.Background(), common.WorkspaceIDContextKey, "default")
+	f := newExplainAccessFixture(ctx, t, storepb.Engine_MYSQL)
+	const dbB = "instances/test/databases/db_b"
+
+	t.Run("explain request", func(t *testing.T) {
+		t.Parallel()
+		crossRead := &parserbase.QuerySpan{Type: parserbase.Select, SourceColumns: reads("db_a", "db_b")}
+		require.NoError(t, f.check(ctx, "explain-a@example.com", true, "SELECT 1", &parserbase.QuerySpan{Type: parserbase.Select, SourceColumns: reads("db_a")}))
+		requireExplainDenied(t, f.check(ctx, "explain-a@example.com", true, "SELECT 1", crossRead), permission.SQLExplain, dbB)
+		requireExplainDenied(t, f.check(ctx, "explain-ab@example.com", true, "SELECT 1", crossRead), permission.SQLExplain, dbB)
+		requireExplainDenied(t, f.check(ctx, "select-a@example.com", true, "SELECT 1", crossRead), permission.SQLExplain, "instances/test/databases/db_a", dbB)
+		require.NoError(t, f.check(ctx, "explain-a@example.com", true, "SELECT 1", &parserbase.QuerySpan{Type: parserbase.Select, SourceColumns: reads("db_a", "SYS")}), "an untracked database is left to the connected database's check")
+	})
+
+	t.Run("typed EXPLAIN", func(t *testing.T) {
+		t.Parallel()
+		crossRead := &parserbase.QuerySpan{Type: parserbase.Explain, SourceColumns: reads("db_a", "db_b")}
+		requireExplainDenied(t, f.check(ctx, "explain-a@example.com", false, "EXPLAIN SELECT 1", crossRead), permission.SQLExplain, dbB)
+		requireExplainDenied(t, f.check(ctx, "explain-a@example.com", false, "EXPLAIN SELECT 1", &parserbase.QuerySpan{Type: parserbase.Explain, SourceColumns: reads("DB_B")}), permission.SQLExplain, dbB)
+		require.NoError(t, f.check(ctx, "explain-a@example.com", false, "EXPLAIN SELECT 1", &parserbase.QuerySpan{Type: parserbase.Explain, SourceColumns: reads("db_a")}))
+	})
+
+	t.Run("typed EXPLAIN ANALYZE", func(t *testing.T) {
+		t.Parallel()
+		analyze := &parserbase.QuerySpan{Type: parserbase.Select, ExplainAnalyze: true, SourceColumns: reads("db_a")}
+		requireExplainDenied(t, f.check(ctx, "explain-a@example.com", false, "EXPLAIN ANALYZE SELECT 1", analyze), permission.SQLSelect, "instances/test/databases/db_a/tables/t")
+		requireExplainDenied(t, f.check(ctx, "select-a@example.com", false, "EXPLAIN ANALYZE SELECT 1", analyze), permission.SQLExplain, "instances/test/databases/db_a")
+		require.NoError(t, f.check(ctx, "both-a@example.com", false, "EXPLAIN ANALYZE SELECT 1", analyze))
+	})
+}
+
+// TestExplainOfAWriteNamesItsTables pins explain over DML: the databases its
+// tables live in are checked like a read's, and a write that names no table,
+// such as a procedure call, is checked on the connected database alone.
+func TestExplainOfAWriteNamesItsTables(t *testing.T) {
+	t.Parallel()
+	ctx := context.WithValue(context.Background(), common.WorkspaceIDContextKey, "default")
+	f := newExplainAccessFixture(ctx, t, storepb.Engine_MYSQL)
+	require.NoError(t, f.check(ctx, "explain-a@example.com", true, "DELETE FROM t", &parserbase.QuerySpan{Type: parserbase.DML, SourceColumns: reads("db_a")}))
+	crossRead := &parserbase.QuerySpan{Type: parserbase.DML, SourceColumns: reads("db_a", "db_b")}
+	requireExplainDenied(t, f.check(ctx, "explain-a@example.com", true, "INSERT INTO t SELECT * FROM db_b.t", crossRead), permission.SQLExplain, "instances/test/databases/db_b")
+	call := &parserbase.QuerySpan{Type: parserbase.DML, SourceColumns: parserbase.SourceColumnSet{}}
+	require.NoError(t, f.check(ctx, "explain-a@example.com", true, "CALL p()", call))
+	requireExplainDenied(t, f.check(ctx, "select-a@example.com", true, "CALL p()", call), permission.SQLExplain, "instances/test/databases/db_a")
+}
+
+func TestRemapBackupTableColumns(t *testing.T) {
+	dbMeta := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Name: "db",
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   common.BackupDatabaseNameOfEngine(storepb.Engine_POSTGRES),
+			Tables: []*metadatapb.TableMetadata{{Name: "bak_t", Comment: "bytebase, source table (public, t)"}},
+		}},
+	}, []byte{}, &storepb.DatabaseConfig{}, storepb.Engine_POSTGRES, true /* caseSensitive */)
+	backup := parserbase.ColumnResource{Database: "db", Schema: common.BackupDatabaseNameOfEngine(storepb.Engine_POSTGRES), Table: "bak_t", Column: "secret"}
+	source := parserbase.ColumnResource{Database: "db", Schema: "public", Table: "t", Column: "secret"}
+	span := &parserbase.QuerySpan{
+		SourceColumns:    parserbase.SourceColumnSet{backup: true},
+		PredicateColumns: parserbase.SourceColumnSet{backup: true},
+		Results:          []parserbase.QuerySpanResult{{Name: "secret", SourceColumns: parserbase.SourceColumnSet{backup: true}}},
+	}
+
+	remapBackupTableColumns(storepb.Engine_POSTGRES, span, getSchemaMetadata(storepb.Engine_POSTGRES, dbMeta))
+
+	want := parserbase.SourceColumnSet{source: true}
+	require.Equal(t, want, span.SourceColumns)
+	require.Equal(t, want, span.PredicateColumns)
+	require.Equal(t, want, span.Results[0].SourceColumns)
+}
+
+func TestResultForTimeoutNamesTheStatementItCutOff(t *testing.T) {
+	t.Parallel()
+	results := resultForTimeout("SELECT * FROM t", &queryTimeoutError{timeout: 30 * time.Second})
+	require.Len(t, results, 1)
+	require.Equal(t, "SELECT * FROM t", results[0].Statement)
+	require.Equal(t, "timeout reached: 30s", results[0].Error)
+}
+
+func TestResultForTimeoutLeavesAnEngineErrorAlone(t *testing.T) {
+	t.Parallel()
+	// Only a run the server cut off has no result of its own; an engine error
+	// already reaches the editor as the driver reported it.
+	require.Nil(t, resultForTimeout("SELECT * FROM t", errors.New("syntax error")))
+	require.Nil(t, resultForTimeout("SELECT * FROM t", nil))
+}
+
+func TestResultForTimeoutUnwrapsAWrappedTimeout(t *testing.T) {
+	t.Parallel()
+	err := errors.Wrap(&queryTimeoutError{timeout: time.Second}, "failed to query")
+	results := resultForTimeout("SELECT 1", err)
+	require.Len(t, results, 1)
+	require.Equal(t, "SELECT 1", results[0].Statement)
 }

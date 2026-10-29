@@ -34,6 +34,8 @@ export interface ExemptionGrant {
   description: string;
   expirationTimestamp?: number;
   rawExpression: string;
+  // Undefined when the CEL scope cannot be summarized; an empty list covers
+  // all databases.
   databaseResources?: DatabaseResource[];
   // The condition portion of the CEL expression, excluding request.time.
   // Used as fallback display when databaseResources can't be parsed.

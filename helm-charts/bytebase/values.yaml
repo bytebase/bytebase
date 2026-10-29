@@ -65,6 +65,13 @@ bytebase:
   #      cpu: 1000m
   #      memory: 1Gi
 
+  # -- Timing of the readiness probe on /healthz. Accepts any probe timing field:
+  # initialDelaySeconds, periodSeconds, timeoutSeconds, failureThreshold, successThreshold.
+  readinessProbe:
+    periodSeconds: 10
+    timeoutSeconds: 10
+    failureThreshold: 3
+
   # -- Annotations added to the Bytebase pod. Useful for metrics scrapers and
   # other tooling that discovers pods by annotation.
   podAnnotations: {}

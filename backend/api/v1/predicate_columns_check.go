@@ -2,7 +2,10 @@ package v1
 
 import (
 	"context"
+	"slices"
+	"strings"
 
+	"connectrpc.com/connect"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -10,6 +13,32 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
 )
+
+// sensitivePredicateRefusal returns the message to report for statements whose
+// conditions read a column masked for user, or "" if none do. The database
+// evaluates conditions on unmasked values, so the rows it returns, their
+// count, and the time it takes would reveal them.
+func sensitivePredicateRefusal(ctx context.Context, stores *store.Store, spans []*base.QuerySpan, instance *store.InstanceMessage, user *store.UserMessage) (string, error) {
+	if !isPredicateColumnsCheckEnabled(instance.Metadata.GetEngine()) {
+		return "", nil
+	}
+	sensitiveColumns, err := NewQueryResultMasker(stores).ExtractSensitivePredicateColumns(ctx, spans, instance, user)
+	if err != nil {
+		return "", connect.NewError(connect.CodeInternal, errors.New(err.Error()))
+	}
+	for _, columns := range sensitiveColumns {
+		if len(columns) == 0 {
+			continue
+		}
+		names := make([]string, 0, len(columns))
+		for _, column := range columns {
+			names = append(names, column.String())
+		}
+		slices.Sort(names)
+		return "Using sensitive columns in query conditions is not allowed: " + strings.Join(names, ", "), nil
+	}
+	return "", nil
+}
 
 func (s *QueryResultMasker) ExtractSensitivePredicateColumns(ctx context.Context, spans []*base.QuerySpan, instance *store.InstanceMessage, user *store.UserMessage) ([][]base.ColumnResource, error) {
 	var result [][]base.ColumnResource
@@ -118,5 +147,5 @@ func (m *maskingLevelEvaluator) isSensitiveColumn(database *store.DatabaseMessag
 }
 
 func isPredicateColumnsCheckEnabled(engine storepb.Engine) bool {
-	return engine == storepb.Engine_MSSQL
+	return engine == storepb.Engine_MSSQL || engine == storepb.Engine_POSTGRES
 }

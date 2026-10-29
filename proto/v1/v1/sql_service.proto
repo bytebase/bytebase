@@ -85,7 +85,8 @@ service SQLService {
   }
 
   // Exports query results to a file format.
-  // Permissions required: bb.databases.get
+  // Permissions required: bb.databases.get, and bb.sql.export on the data the statement reads.
+  // An active access grant with export=true for the statement satisfies bb.sql.export on its target databases.
   rpc Export(ExportRequest) returns (ExportResponse) {
     option (google.api.http) = {
       post: "/v1/{name=instances/*/databases/*}:export"
@@ -318,13 +319,21 @@ message QueryResult {
   // Masking reasons for each column (empty for non-masked columns).
   repeated MaskingReason masked = 12;
 
-  // A query plan held in the result's rows.
+  // A query plan the result carries: in its rows, or beside them.
   message QueryPlan {
     QueryOption.ExplainFormat format = 1;
 
     // Whether producing the plan executed the statement, as EXPLAIN ANALYZE
     // does.
     bool executed = 2;
+
+    // The plan itself, where the engine states it beside the result rather
+    // than in the result's rows. BigQuery reports the stages its job ran in
+    // the job's own statistics, so one result carries the query's data and
+    // the plan of the run that produced it. Empty when the plan is the rows,
+    // which is every other engine. Omitted from the audit log, as the rows
+    // are: the statement is what an audit reads.
+    string content = 3 [(bytebase.v1.audit_behavior) = OMIT];
   }
 
   // Set when the result is a query plan. Unset for any other result.

@@ -57,6 +57,8 @@ linters:
     revive:
       enable-all-rules: true
       rules:
+        - name: multiline-if-init
+          disabled: true
         - name: file-header
           disabled: true
         - name: line-length-limit

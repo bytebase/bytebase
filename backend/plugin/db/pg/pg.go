@@ -94,12 +94,8 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 		}
 		d.sshClient = sshClient
 
-		pgxConnConfig.DialFunc = func(_ context.Context, network, addr string) (net.Conn, error) {
-			conn, err := sshClient.Dial(network, addr)
-			if err != nil {
-				return nil, err
-			}
-			return &util.NoDeadlineConn{Conn: conn}, nil
+		pgxConnConfig.DialFunc = func(ctx context.Context, network, addr string) (net.Conn, error) {
+			return util.DialSSHTunnel(ctx, sshClient, network, addr)
 		}
 	}
 
@@ -843,7 +839,7 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 					return nil, err
 				}
 				if !queryContext.Explain {
-					r.QueryPlan = typedExplainPlan(statement)
+					r.QueryPlan = db.TypedExplainPlan(pgparser.DescribeExplain(statement))
 				}
 				return r, nil
 			}
@@ -876,17 +872,6 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 	}
 
 	return results, nil
-}
-
-func typedExplainPlan(statement string) *v1pb.QueryResult_QueryPlan {
-	format, executed, ok := pgparser.DescribeExplain(statement)
-	if !ok {
-		return nil
-	}
-	return &v1pb.QueryResult_QueryPlan{
-		Format:   v1pb.QueryOption_ExplainFormat(v1pb.QueryOption_ExplainFormat_value[strings.ToUpper(format)]),
-		Executed: executed,
-	}
 }
 
 func getPgError(e error) *v1pb.QueryResult_PostgresError_ {

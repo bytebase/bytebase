@@ -32,6 +32,7 @@ const (
 	IssueService_RejectIssue_FullMethodName             = "/bytebase.v1.IssueService/RejectIssue"
 	IssueService_RequestIssue_FullMethodName            = "/bytebase.v1.IssueService/RequestIssue"
 	IssueService_RetryIssueApproval_FullMethodName      = "/bytebase.v1.IssueService/RetryIssueApproval"
+	IssueService_GetReviewRun_FullMethodName            = "/bytebase.v1.IssueService/GetReviewRun"
 	IssueService_RunReview_FullMethodName               = "/bytebase.v1.IssueService/RunReview"
 )
 
@@ -87,12 +88,17 @@ type IssueServiceClient interface {
 	// Permissions required: None (caller must be the issue creator;
 	// mirrors RequestIssue's authorization model).
 	RetryIssueApproval(ctx context.Context, in *RetryIssueApprovalRequest, opts ...grpc.CallOption) (*Issue, error)
+	// Gets the current run of one reviewer on an issue. The run carries
+	// execution status only; review results are issue comments. A reviewer
+	// that has never run on the issue is NOT_FOUND.
+	// Permissions required: bb.reviewRuns.get
+	GetReviewRun(ctx context.Context, in *GetReviewRunRequest, opts ...grpc.CallOption) (*ReviewRun, error)
 	// Triggers a review run. The slot is reset unconditionally: a RUNNING
 	// execution is superseded (its completion is fenced off), the attempt
 	// number is bumped, and the returned run is AVAILABLE.
-	// Review results are not returned by this RPC and have no read RPC yet:
-	// findings will surface as issue comments once the review comment
-	// integration lands. The returned run carries execution status only.
+	// Review results are not returned by this RPC: they are posted as issue
+	// comments. The returned run carries execution status only, and
+	// GetReviewRun reads it back.
 	// The audit log is the only record of who triggered a run.
 	// Permissions required: bb.reviewRuns.run
 	RunReview(ctx context.Context, in *RunReviewRequest, opts ...grpc.CallOption) (*ReviewRun, error)
@@ -236,6 +242,16 @@ func (c *issueServiceClient) RetryIssueApproval(ctx context.Context, in *RetryIs
 	return out, nil
 }
 
+func (c *issueServiceClient) GetReviewRun(ctx context.Context, in *GetReviewRunRequest, opts ...grpc.CallOption) (*ReviewRun, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ReviewRun)
+	err := c.cc.Invoke(ctx, IssueService_GetReviewRun_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *issueServiceClient) RunReview(ctx context.Context, in *RunReviewRequest, opts ...grpc.CallOption) (*ReviewRun, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ReviewRun)
@@ -298,12 +314,17 @@ type IssueServiceServer interface {
 	// Permissions required: None (caller must be the issue creator;
 	// mirrors RequestIssue's authorization model).
 	RetryIssueApproval(context.Context, *RetryIssueApprovalRequest) (*Issue, error)
+	// Gets the current run of one reviewer on an issue. The run carries
+	// execution status only; review results are issue comments. A reviewer
+	// that has never run on the issue is NOT_FOUND.
+	// Permissions required: bb.reviewRuns.get
+	GetReviewRun(context.Context, *GetReviewRunRequest) (*ReviewRun, error)
 	// Triggers a review run. The slot is reset unconditionally: a RUNNING
 	// execution is superseded (its completion is fenced off), the attempt
 	// number is bumped, and the returned run is AVAILABLE.
-	// Review results are not returned by this RPC and have no read RPC yet:
-	// findings will surface as issue comments once the review comment
-	// integration lands. The returned run carries execution status only.
+	// Review results are not returned by this RPC: they are posted as issue
+	// comments. The returned run carries execution status only, and
+	// GetReviewRun reads it back.
 	// The audit log is the only record of who triggered a run.
 	// Permissions required: bb.reviewRuns.run
 	RunReview(context.Context, *RunReviewRequest) (*ReviewRun, error)
@@ -355,6 +376,9 @@ func (UnimplementedIssueServiceServer) RequestIssue(context.Context, *RequestIss
 }
 func (UnimplementedIssueServiceServer) RetryIssueApproval(context.Context, *RetryIssueApprovalRequest) (*Issue, error) {
 	return nil, status.Error(codes.Unimplemented, "method RetryIssueApproval not implemented")
+}
+func (UnimplementedIssueServiceServer) GetReviewRun(context.Context, *GetReviewRunRequest) (*ReviewRun, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetReviewRun not implemented")
 }
 func (UnimplementedIssueServiceServer) RunReview(context.Context, *RunReviewRequest) (*ReviewRun, error) {
 	return nil, status.Error(codes.Unimplemented, "method RunReview not implemented")
@@ -614,6 +638,24 @@ func _IssueService_RetryIssueApproval_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _IssueService_GetReviewRun_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetReviewRunRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IssueServiceServer).GetReviewRun(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: IssueService_GetReviewRun_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IssueServiceServer).GetReviewRun(ctx, req.(*GetReviewRunRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _IssueService_RunReview_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RunReviewRequest)
 	if err := dec(in); err != nil {
@@ -690,6 +732,10 @@ var IssueService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RetryIssueApproval",
 			Handler:    _IssueService_RetryIssueApproval_Handler,
+		},
+		{
+			MethodName: "GetReviewRun",
+			Handler:    _IssueService_GetReviewRun_Handler,
 		},
 		{
 			MethodName: "RunReview",

@@ -110,6 +110,24 @@ func databaseOf(tables ...*metadatapb.TableMetadata) *model.DatabaseMetadata {
 	}, nil, &storepb.DatabaseConfig{}, storepb.Engine_MYSQL, true)
 }
 
+func TestDiffMigrationEventWithoutDefinition(t *testing.T) {
+	oceanBaseDatabaseOf := func(events ...*metadatapb.EventMetadata) *model.DatabaseMetadata {
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+			Name:    "db",
+			Schemas: []*metadatapb.SchemaMetadata{{Name: "", Events: events}},
+		}, nil, &storepb.DatabaseConfig{}, storepb.Engine_OCEANBASE, true)
+	}
+	withEvent := oceanBaseDatabaseOf(&metadatapb.EventMetadata{Name: "e"})
+
+	migration, err := schema.DiffMigration(storepb.Engine_OCEANBASE, oceanBaseDatabaseOf(), withEvent)
+	require.NoError(t, err)
+	require.Empty(t, migration)
+
+	migration, err = schema.DiffMigration(storepb.Engine_OCEANBASE, withEvent, oceanBaseDatabaseOf())
+	require.NoError(t, err)
+	require.Equal(t, "DROP EVENT IF EXISTS `e`;\n\n", migration)
+}
+
 func TestDiffMigrationPartitionedTableEmittedOnce(t *testing.T) {
 	for _, partitionCount := range []int{0, 1, 3, 180} {
 		t.Run(fmt.Sprintf("partitions=%d", partitionCount), func(t *testing.T) {
@@ -235,4 +253,49 @@ func TestDiffMigrationPartitionAliasDoesNotMaskTableExistence(t *testing.T) {
 		a.NoError(err)
 		a.Equal(schema.MetadataDiffActionCreate, tableAction(diff, "archive"))
 	})
+}
+
+// A MariaDB table that loses WITH SYSTEM VERSIONING silently stops keeping history, and
+// explicit ROW START/ROW END columns are rejected (4125) without both that option and a
+// PERIOD FOR SYSTEM_TIME element.
+func TestDiffMigrationKeepsSystemVersioning(t *testing.T) {
+	a := require.New(t)
+	implicit := &metadatapb.TableMetadata{
+		Name:          "history",
+		Engine:        "InnoDB",
+		CreateOptions: "WITH SYSTEM VERSIONING",
+		Columns:       []*metadatapb.ColumnMetadata{{Name: "id", Type: "int", Nullable: false}},
+		Indexes: []*metadatapb.IndexMetadata{
+			{Name: "PRIMARY", Expressions: []string{"id"}, Primary: true, Unique: true, Visible: true, Type: "BTREE"},
+		},
+	}
+	explicit := &metadatapb.TableMetadata{
+		Name:          "explicit_period",
+		Engine:        "InnoDB",
+		CreateOptions: "WITH SYSTEM VERSIONING",
+		Columns: []*metadatapb.ColumnMetadata{
+			{Name: "id", Type: "int", Nullable: true},
+			{Name: "valid_from", Type: "timestamp(6)", Generation: &metadatapb.GenerationMetadata{Type: metadatapb.GenerationMetadata_TYPE_STORED, Expression: "ROW START"}},
+			{Name: "valid_to", Type: "timestamp(6)", Generation: &metadatapb.GenerationMetadata{Type: metadatapb.GenerationMetadata_TYPE_STORED, Expression: "ROW END"}},
+		},
+	}
+
+	migration, err := schema.DiffMigration(storepb.Engine_MYSQL, databaseOf(), databaseOf(implicit, explicit))
+	a.NoError(err)
+	a.Equal("CREATE TABLE IF NOT EXISTS `explicit_period` (\n"+
+		"  `id` int,\n"+
+		"  `valid_from` timestamp(6) GENERATED ALWAYS AS ROW START NOT NULL,\n"+
+		"  `valid_to` timestamp(6) GENERATED ALWAYS AS ROW END NOT NULL,\n"+
+		"  PERIOD FOR SYSTEM_TIME (`valid_from`, `valid_to`)\n"+
+		") ENGINE=InnoDB WITH SYSTEM VERSIONING;\n"+
+		"\n"+
+		"CREATE TABLE IF NOT EXISTS `history` (\n"+
+		"  `id` int NOT NULL,\n"+
+		"  PRIMARY KEY (`id`)\n"+
+		") ENGINE=InnoDB WITH SYSTEM VERSIONING;\n"+
+		"\n", migration)
+
+	migration, err = schema.DiffMigration(storepb.Engine_MYSQL, databaseOf(implicit, explicit), databaseOf(implicit, explicit))
+	a.NoError(err)
+	a.Empty(migration)
 }

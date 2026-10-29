@@ -16,11 +16,11 @@ func init() {
 	base.RegisterExplainStatementFunc(storepb.Engine_OCEANBASE, explainStatement)
 }
 
-// explainStatement implements base.ExplainStatement. MySQL returns one plan
-// format here whatever the caller asked for: FORMAT=JSON and FORMAT=TREE are
-// plans of their own shape that nothing downstream reads (the driver capability
-// table offers this engine the default plan only).
-func explainStatement(statement string, _ base.ExplainFormat) (string, error) {
+// explainStatement implements base.ExplainStatement. MySQL and MariaDB both
+// spell their structured plan FORMAT=JSON; any other format the caller names
+// gets the engine's default plan, since FORMAT=TREE is a shape of its own that
+// nothing downstream reads (the driver capability table refuses the rest).
+func explainStatement(statement string, format base.ExplainFormat) (string, error) {
 	node, err := singleStatement(statement)
 	if err != nil {
 		return "", err
@@ -39,7 +39,41 @@ func explainStatement(statement string, _ base.ExplainFormat) (string, error) {
 			return statement, nil
 		}
 	}
+	if format == base.ExplainFormatJSON {
+		return "EXPLAIN FORMAT=JSON " + planned, nil
+	}
 	return "EXPLAIN " + planned, nil
+}
+
+// DescribeExplain returns the output format of an EXPLAIN statement and whether
+// it executes the statement it plans. It is not an explain at all unless it
+// plans a statement: EXPLAIN tbl_name and DESCRIBE tbl_name parse here too and
+// describe a table's columns, which is a result like any other.
+//
+// An omitted FORMAT is not text: from MySQL 8.0.32 it follows the session's
+// explain_format, which the statement alone does not reveal. It is reported as
+// no format at all, which the caller reads as unknown.
+func DescribeExplain(statement string) (format string, executed bool, ok bool) {
+	node, err := singleStatement(statement)
+	if err != nil {
+		return "", false, false
+	}
+	explain, ok := node.(*ast.ExplainStmt)
+	if !ok {
+		return "", false, false
+	}
+	if _, plans := explainedStart(explain.Stmt); !plans {
+		return "", false, false
+	}
+	switch {
+	case strings.EqualFold(explain.Format, "json"):
+		return "json", explain.Analyze, true
+	case explain.Format == "":
+		return "", explain.Analyze, true
+	default:
+		// TRADITIONAL is a table and TREE a tree of lines; both are text.
+		return "text", explain.Analyze, true
+	}
 }
 
 // singleStatement returns the one statement in text. An explain request plans one
@@ -62,8 +96,8 @@ func singleStatement(text string) (ast.Node, error) {
 // explainedText returns the text within text of the statement explain plans, and
 // whether it could be located.
 func explainedText(explain *ast.ExplainStmt, text string) (string, bool) {
-	// An executable comment moves every location after it, because the lexer
-	// parses the comment's body with its markers spliced out of the text.
+	// The parser reads the body of an executable comment, so a location can fall
+	// inside one and the slice would leave the comment unclosed.
 	if strings.Contains(text, "/*!") || strings.Contains(text, "/*M!") {
 		return "", false
 	}

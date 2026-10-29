@@ -194,6 +194,10 @@ func GetProcedureDefinition(_ string, procedure *metadatapb.ProcedureMetadata) (
 }
 
 func writeEvent(out io.Writer, event *metadatapb.EventMetadata) error {
+	// An event synced without its CREATE EVENT, as on OceanBase, has nothing faithful to write.
+	if event.Definition == "" {
+		return nil
+	}
 	// Header.
 	if _, err := io.WriteString(out, emptyCommentLine); err != nil {
 		return err
@@ -556,6 +560,7 @@ func writeTable(out *strings.Builder, table *metadatapb.TableMetadata) error {
 			return err
 		}
 	}
+	writeSystemTimePeriod(out, table)
 
 	if err := printPrimaryKeyClause(out, table.Indexes); err != nil {
 		return err
@@ -608,6 +613,8 @@ func writeTable(out *strings.Builder, table *metadatapb.TableMetadata) error {
 			return err
 		}
 	}
+
+	writeSystemVersioningOption(out, table)
 
 	if len(table.Partitions) > 0 {
 		if err := printPartitionClause(out, table.Partitions, table.Engine); err != nil {
@@ -1214,7 +1221,9 @@ func printColumnClause(buf *strings.Builder, column *metadatapb.ColumnMetadata, 
 		}
 	}
 
-	if column.Generation != nil && column.Generation.Expression != "" {
+	if isSystemTimeColumn(column) {
+		writeSystemTimeColumnAttribute(buf, column)
+	} else if column.Generation != nil && column.Generation.Expression != "" {
 		if _, err := fmt.Fprintf(buf, " GENERATED ALWAYS AS (%s) ", column.Generation.Expression); err != nil {
 			return err
 		}
@@ -1710,6 +1719,7 @@ func writeTableSDL(buf *strings.Builder, table *metadatapb.TableMetadata) error 
 			return err
 		}
 	}
+	writeSystemTimePeriod(buf, table)
 
 	if err := printPrimaryKeyClause(buf, table.Indexes); err != nil {
 		return err
@@ -1782,6 +1792,7 @@ func writeTableSDL(buf *strings.Builder, table *metadatapb.TableMetadata) error 
 			return err
 		}
 	}
+	writeSystemVersioningOption(buf, table)
 
 	// Partitioning is a table-level clause that follows the table options. The omni
 	// loader accepts the version-gated /*!50100 PARTITION BY … */ executable comment
@@ -1812,7 +1823,8 @@ func filterCreateOptions(createOptions string) string {
 		return ""
 	}
 	kept := make([]string, 0, 4)
-	for _, tok := range strings.Fields(createOptions) {
+	// The system-versioning marker is written separately by writeSystemVersioningOption.
+	for _, tok := range strings.Fields(strings.Replace(createOptions, systemVersioningOption, "", 1)) {
 		if strings.EqualFold(tok, "partitioned") {
 			continue
 		}

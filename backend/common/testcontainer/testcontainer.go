@@ -15,9 +15,12 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
+	goora "github.com/sijms/go-ora/v2"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -45,8 +48,8 @@ func (c *Container) GetPassword() string { return c.password }
 // GetDB is the admin connection, nil for an engine with no database/sql driver.
 func (c *Container) GetDB() *sql.DB { return c.db }
 
-// GetTLSCAPath returns the CA certificate path for a TLS-enabled PostgreSQL
-// container.
+// GetTLSCAPath returns the path of the CA that signed the server certificate
+// of the TLS PostgreSQL or the SQL Server container.
 func (c *Container) GetTLSCAPath() string { return c.tlsCAPath }
 
 func (c *Container) Close(ctx context.Context) {
@@ -189,7 +192,7 @@ func getPg17Container(ctx context.Context) (*Container, error) {
 // connecting with sslmode=verify-full and the CA at GetTLSCAPath. The admin
 // handle stays on plaintext.
 func getTLSPgContainer(ctx context.Context) (retC *Container, retErr error) {
-	tlsDir, ca, certificate, key, err := createPostgreSQLTLSMaterial()
+	tlsDir, ca, certificate, key, err := createTLSMaterial(net.ParseIP("127.0.0.1"), net.ParseIP("::1"))
 	if err != nil {
 		return nil, err
 	}
@@ -242,14 +245,63 @@ func GetMySQLContainer(ctx context.Context) (*Container, error) {
 	})
 }
 
-func getMSSQLContainer(ctx context.Context) (*Container, error) {
+// mariaDBStarter starts the MariaDB image, whose root password is root-password.
+func mariaDBStarter(image string) func(context.Context) (*Container, error) {
+	return func(ctx context.Context) (*Container, error) {
+		const user, password = "root", "root-password"
+		return start(ctx, testcontainers.ContainerRequest{
+			Image:      image,
+			Env:        map[string]string{"MARIADB_ROOT_PASSWORD": password},
+			WaitingFor: wait.ForLog("ready for connections").WithOccurrence(2).WithStartupTimeout(5 * time.Minute),
+		}, spec{
+			port:     "3306/tcp",
+			username: user,
+			password: password,
+			driver:   "mysql",
+			dsn: func(c *Container) string {
+				return fmt.Sprintf("%s:%s@tcp(%s:%s)/?multiStatements=true", c.username, c.password, c.host, c.port)
+			},
+		})
+	}
+}
+
+// mssqlTLSConf points SQL Server at the certificate getMSSQLContainer copies in,
+// leaving encryption up to the client.
+const mssqlTLSConf = `[network]
+tlscert = /var/opt/mssql/tls/server.crt
+tlskey = /var/opt/mssql/tls/server.key
+tlsprotocols = 1.2
+forceencryption = 0
+`
+
+// getMSSQLContainer starts SQL Server with a certificate from the CA at
+// GetTLSCAPath. The certificate names localhost and no IP address, so a client
+// that verifies it through 127.0.0.1 fails the host name check. The admin
+// handle does not verify.
+func getMSSQLContainer(ctx context.Context) (retC *Container, retErr error) {
 	const user, password = "sa", "Test123!"
-	return start(ctx, testcontainers.ContainerRequest{
+	tlsDir, ca, certificate, key, err := createTLSMaterial()
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if retErr != nil {
+			_ = os.RemoveAll(tlsDir)
+		}
+	}()
+
+	c, err := start(ctx, testcontainers.ContainerRequest{
 		Image: "mcr.microsoft.com/mssql/server:2022-latest",
 		Env: map[string]string{
 			"ACCEPT_EULA": "Y",
 			"SA_PASSWORD": password,
 			"MSSQL_PID":   "Express",
+		},
+		// Copied in as root while SQL Server runs as mssql, so the key must be world-readable.
+		Files: []testcontainers.ContainerFile{
+			{Reader: bytes.NewReader(certificate), ContainerFilePath: "/var/opt/mssql/tls/server.crt", FileMode: 0o644},
+			{Reader: bytes.NewReader(key), ContainerFilePath: "/var/opt/mssql/tls/server.key", FileMode: 0o644},
+			{Reader: strings.NewReader(mssqlTLSConf), ContainerFilePath: "/var/opt/mssql/mssql.conf", FileMode: 0o644},
 		},
 		WaitingFor: wait.ForLog("SQL Server is now ready for client connections").
 			WithStartupTimeout(3 * time.Minute),
@@ -262,6 +314,11 @@ func getMSSQLContainer(ctx context.Context) (*Container, error) {
 			return fmt.Sprintf("sqlserver://%s:%s@%s:%s?database=master", c.username, c.password, c.host, c.port)
 		},
 	})
+	if err != nil {
+		return nil, err
+	}
+	c.tlsDir, c.tlsCAPath = tlsDir, ca
+	return c, nil
 }
 
 // getTiDBContainer starts TiDB, which speaks the MySQL protocol with no
@@ -298,8 +355,41 @@ func getMongoDBContainer(ctx context.Context) (*Container, error) {
 	})
 }
 
-func createPostgreSQLTLSMaterial() (string, string, []byte, []byte, error) {
-	tlsDir, err := os.MkdirTemp("", "bytebase-postgres-tls-*")
+// OracleServiceName is the pluggable database the Oracle container serves.
+// OracleServiceName is the pluggable database the Oracle container's tests
+// connect to.
+const OracleServiceName = "FREEPDB1"
+
+// getOracleContainer starts Oracle Database Free. Its admin handle signs in as
+// SYSTEM, which may create users and objects in any schema; the caller's test
+// binary must link go-ora, which registers the "oracle" driver. The connect
+// timeout makes a listener that never answers fail each ping instead of
+// hanging it.
+func getOracleContainer(ctx context.Context) (*Container, error) {
+	const password = "test-Passw0rd"
+	return start(ctx, testcontainers.ContainerRequest{
+		Image:      "gvenzl/oracle-free:23.26.3-slim-faststart",
+		Env:        map[string]string{"ORACLE_PASSWORD": password},
+		WaitingFor: wait.ForLog("DATABASE IS READY TO USE!").WithStartupTimeout(5 * time.Minute),
+	}, spec{
+		port:     "1521/tcp",
+		username: "system",
+		password: password,
+		driver:   "oracle",
+		dsn: func(c *Container) string {
+			port, err := strconv.Atoi(c.port)
+			if err != nil {
+				return ""
+			}
+			return goora.BuildUrl(c.host, port, OracleServiceName, c.username, c.password, map[string]string{"CONNECTION TIMEOUT": "10"})
+		},
+	})
+}
+
+// createTLSMaterial issues a server certificate for localhost and ips from a
+// fresh CA, and writes the CA to a temporary directory the caller removes.
+func createTLSMaterial(ips ...net.IP) (string, string, []byte, []byte, error) {
+	tlsDir, err := os.MkdirTemp("", "bytebase-tls-*")
 	if err != nil {
 		return "", "", nil, nil, err
 	}
@@ -319,7 +409,7 @@ func createPostgreSQLTLSMaterial() (string, string, []byte, []byte, error) {
 	now := time.Now()
 	caTemplate := x509.Certificate{
 		SerialNumber:          serial,
-		Subject:               pkix.Name{CommonName: "Bytebase PostgreSQL Test CA"},
+		Subject:               pkix.Name{CommonName: "Bytebase Test CA"},
 		NotBefore:             now.Add(-time.Minute),
 		NotAfter:              now.Add(24 * time.Hour),
 		IsCA:                  true,
@@ -346,7 +436,7 @@ func createPostgreSQLTLSMaterial() (string, string, []byte, []byte, error) {
 		SerialNumber: serial,
 		Subject:      pkix.Name{CommonName: "localhost"},
 		DNSNames:     []string{"localhost"},
-		IPAddresses:  []net.IP{net.ParseIP("127.0.0.1"), net.ParseIP("::1")},
+		IPAddresses:  ips,
 		NotBefore:    now.Add(-time.Minute),
 		NotAfter:     now.Add(24 * time.Hour),
 		KeyUsage:     x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,

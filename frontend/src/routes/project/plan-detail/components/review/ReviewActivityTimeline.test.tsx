@@ -6,10 +6,12 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import { shownTimestampModes } from "@/test-utils/humanizeTs";
 import { PositionSchema } from "@/types/proto-es/v1/common_pb";
 import {
+  IssueComment_ReviewMetadataSchema,
   IssueComment_ReviewSubmissionSchema,
   IssueComment_ThreadState,
   IssueCommentSchema,
   IssueSchema,
+  ReviewRun_Type,
   StatementAnchorSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
@@ -19,6 +21,8 @@ import {
 } from "@/types/proto-es/v1/plan_service_pb";
 
 const mocks = vi.hoisted(() => ({
+  activityFocus: undefined as { commentName: string; nonce: number } | undefined,
+  clearActivityFocus: vi.fn(),
   requestThreadFocus: vi.fn(),
   expandPhase: vi.fn(),
   placements: new Map<string, unknown>(),
@@ -39,11 +43,13 @@ vi.mock("@/components/issue-activity/IssueCommentActivity", () => ({
   ActivityRowFrame: ({
     children,
     icon,
+    id,
   }: {
     children: ReactNode;
     icon: ReactNode;
+    id?: string;
   }) => (
-    <li data-testid="thread-row">
+    <li data-testid="thread-row" id={id}>
       {icon}
       {children}
     </li>
@@ -94,6 +100,14 @@ vi.mock("@/hooks/useProjectByName", () => ({
   useProjectByName: () => undefined,
 }));
 
+vi.mock("@/hooks/usePrincipal", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/hooks/usePrincipal")>()),
+  usePrincipal: (identifier?: string) =>
+    identifier
+      ? { email: "submitter@example.com", title: "Submitter" }
+      : undefined,
+}));
+
 vi.mock("@/stores/app", () => ({
   useAppStore: Object.assign(
     (selector: (state: unknown) => unknown) =>
@@ -116,26 +130,32 @@ vi.mock("@/app/router", () => ({
 vi.mock("../../shared/stores/usePlanDetailStore", () => ({
   usePlanDetailStore: (selector: (state: unknown) => unknown) =>
     selector({
-      selectedSpecId: "spec-1",
       placements: mocks.placements,
       placementTargets: mocks.placementTargets,
+      activityFocus: mocks.activityFocus,
+      clearActivityFocus: mocks.clearActivityFocus,
     }),
   usePlanDetailStoreApi: () => ({
-    getState: () => ({ requestThreadFocus: mocks.requestThreadFocus }),
+    getState: () => ({
+      requestThreadFocus: mocks.requestThreadFocus,
+    }),
   }),
 }));
 
 vi.mock("../threads/CommentThreadCard", () => ({
   CommentThreadCard: ({
     renderContext,
+    spec,
     thread,
   }: {
     renderContext?: (onCollapse?: () => void) => ReactNode;
+    spec?: { id: string };
     thread: { root: { name: string }; replies: { name: string }[] };
   }) => (
     <div
       data-replies={thread.replies.length}
       data-root={thread.root.name}
+      data-spec={spec?.id}
       data-testid="thread-card"
     >
       {renderContext?.()}
@@ -180,6 +200,7 @@ vi.mock("../../shell/PlanDetailContext", () => ({
   usePlanDetailContext: () => ({
     projectId: "p1",
     planId: "1",
+    plan: { specs: [{ id: "spec-1" }] },
     expandPhase: mocks.expandPhase,
   }),
 }));
@@ -211,6 +232,7 @@ const reviewSubmission = (name: string) =>
 describe("ReviewActivityTimeline", () => {
   afterEach(() => {
     vi.clearAllMocks();
+    mocks.activityFocus = undefined;
     mocks.placements.clear();
     mocks.placementTargets.clear();
   });
@@ -274,6 +296,142 @@ describe("ReviewActivityTimeline", () => {
       lineNumber: expectedLine,
     });
     expect(mocks.expandPhase).toHaveBeenCalledWith("changes");
+    act(() => root.unmount());
+  });
+
+  test("a run's line shows and hides its finding cards in place", () => {
+    const sha = "c".repeat(64);
+    const plan = create(PlanSchema, {
+      name: "projects/p1/plans/1",
+      specs: [
+        create(Plan_SpecSchema, {
+          id: "spec-1",
+          config: {
+            case: "changeDatabaseConfig",
+            value: create(Plan_ChangeDatabaseConfigSchema, {
+              sheet: `projects/p1/sheets/${sha}`,
+            }),
+          },
+        }),
+      ],
+    });
+    const finding = (id: string, ms: number, superseded: boolean) =>
+      create(IssueCommentSchema, {
+        name: `projects/p1/issues/1/issueComments/${id}`,
+        comment: "No WHERE clause",
+        threadState: superseded
+          ? IssueComment_ThreadState.RESOLVED
+          : IssueComment_ThreadState.OPEN,
+        createTime: timestampFromMs(ms),
+        statementAnchor: create(StatementAnchorSchema, {
+          spec: "spec-1",
+          sheetSha256: sha,
+          startPosition: create(PositionSchema, { line: 1, column: 0 }),
+          endPosition: create(PositionSchema, { line: 1, column: 0 }),
+        }),
+        reviewMetadata: create(IssueComment_ReviewMetadataSchema, {
+          runType: ReviewRun_Type.RULE,
+          superseded,
+        }),
+      });
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    act(() => {
+      root.render(
+        <ReviewActivityTimeline
+          comments={[finding("old", 0, true), finding("new", 60_000, false)]}
+          issue={create(IssueSchema, { name: "projects/p1/issues/1" })}
+          plan={plan}
+        />
+      );
+    });
+    const cards = () =>
+      [...container.querySelectorAll("[data-testid='thread-card']")].map(
+        (card) => card.getAttribute("data-root")?.split("/").pop()
+      );
+    const runButtons = () =>
+      [...container.querySelectorAll("button[aria-expanded]")];
+    expect(cards()).toEqual(["new"]);
+    expect(runButtons().map((button) => button.textContent)).toEqual([
+      "common.show",
+      "common.hide",
+    ]);
+
+    act(() => (runButtons()[0] as HTMLButtonElement).click());
+    expect(cards()).toEqual(["old", "new"]);
+
+    act(() => (runButtons()[1] as HTMLButtonElement).click());
+    expect(cards()).toEqual(["old"]);
+    expect(mocks.requestThreadFocus).not.toHaveBeenCalled();
+    act(() => root.unmount());
+  });
+
+  test("unfolds the timeline to reach a card asked for from elsewhere", () => {
+    const name = (i: number) => `projects/p1/issues/1/issueComments/t${i}`;
+    const comments = Array.from({ length: 12 }, (_, i) =>
+      create(IssueCommentSchema, {
+        name: name(i),
+        comment: `thread ${i}`,
+        threadState: IssueComment_ThreadState.OPEN,
+        createTime: timestampFromMs(i * 1000),
+      })
+    );
+    const scrollIntoView = vi.fn();
+    const original = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = scrollIntoView;
+    mocks.activityFocus = { commentName: name(6), nonce: 4 };
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    act(() => {
+      root.render(
+        <ReviewActivityTimeline
+          comments={comments}
+          issue={create(IssueSchema, { name: "projects/p1/issues/1" })}
+          plan={create(PlanSchema, { name: "projects/p1/plans/1" })}
+        />
+      );
+    });
+    const card = document.getElementById(name(6));
+    expect(card).not.toBeNull();
+    expect(scrollIntoView.mock.contexts).toContain(card);
+    expect(mocks.clearActivityFocus).toHaveBeenCalledWith(4);
+    act(() => root.unmount());
+    container.remove();
+    Element.prototype.scrollIntoView = original;
+  });
+
+  test("hands a thread card the plan spec its anchor names, and none for a spec the plan lacks", () => {
+    const plan = create(PlanSchema, {
+      name: "projects/p1/plans/1",
+      specs: [create(Plan_SpecSchema, { id: "spec-1" })],
+    });
+    const thread = (id: string, spec: string) =>
+      create(IssueCommentSchema, {
+        name: `projects/p1/issues/1/issueComments/${id}`,
+        comment: "Review this line",
+        threadState: IssueComment_ThreadState.OPEN,
+        statementAnchor: create(StatementAnchorSchema, { spec }),
+      });
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    act(() => {
+      root.render(
+        <ReviewActivityTimeline
+          comments={[thread("kept", "spec-1"), thread("gone", "spec-gone")]}
+          issue={create(IssueSchema, { name: "projects/p1/issues/1" })}
+          plan={plan}
+        />
+      );
+    });
+    const cardOf = (id: string) =>
+      container.querySelector(
+        `[data-root='projects/p1/issues/1/issueComments/${id}']`
+      );
+    expect(cardOf("kept")).not.toBeNull();
+    expect(cardOf("gone")).not.toBeNull();
+    expect(cardOf("kept")?.getAttribute("data-spec")).toBe("spec-1");
+    expect(cardOf("gone")?.hasAttribute("data-spec")).toBe(false);
     act(() => root.unmount());
   });
 

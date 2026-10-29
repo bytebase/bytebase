@@ -271,12 +271,9 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, req *connect.Reques
 	if err != nil {
 		return nil, err
 	}
-	limitPlusOne := offset.limit + 1
 
 	find := &store.FindDatabaseMessage{
 		Workspace:   common.GetWorkspaceIDFromContext(ctx),
-		Limit:       &limitPlusOne,
-		Offset:      &offset.offset,
 		ShowDeleted: req.Msg.ShowDeleted,
 	}
 
@@ -315,12 +312,12 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, req *connect.Reques
 		if project == nil || project.Deleted {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", req.Msg.Parent))
 		}
-		ok, err := s.iamManager.CheckPermission(ctx, permission.ProjectsGet, user, common.GetWorkspaceIDFromContext(ctx), projectID)
+		ok, err := s.iamManager.CheckPermission(ctx, permission.DatabasesList, user, common.GetWorkspaceIDFromContext(ctx), projectID)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err))
 		}
 		if !ok {
-			return nil, permissionDeniedError(ctx, errors.Errorf("user does not have permission %q in %q", permission.ProjectsGet, req.Msg.Parent))
+			return nil, permissionDeniedError(ctx, errors.Errorf("user does not have permission %q in %q", permission.DatabasesList, req.Msg.Parent))
 		}
 		find.ProjectID = &projectID
 	} else if _, err := common.GetWorkspaceID(req.Msg.Parent); err == nil {
@@ -347,30 +344,84 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, req *connect.Reques
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid parent %q", req.Msg.Parent))
 	}
 
+	databases, nextPageToken, err := s.listDatabasePage(ctx, find, offset)
+	if err != nil {
+		return nil, err
+	}
+	return connect.NewResponse(&v1pb.ListDatabasesResponse{
+		Databases:     databases,
+		NextPageToken: nextPageToken,
+	}), nil
+}
+
+// SearchDatabases searches the databases of every project where the caller holds bb.databases.get.
+func (s *DatabaseService) SearchDatabases(ctx context.Context, req *connect.Request[v1pb.SearchDatabasesRequest]) (*connect.Response[v1pb.SearchDatabasesResponse], error) {
+	user, ok := GetUserFromContext(ctx)
+	if !ok {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
+	}
+
+	offset, err := parseLimitAndOffset(&pageSize{
+		token:   req.Msg.PageToken,
+		limit:   int(req.Msg.PageSize),
+		maximum: 1000,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	filterQ, err := store.GetListDatabaseFilter(common.GetWorkspaceIDFromContext(ctx), req.Msg.Filter)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
+	// A search filters by the get permission, as Google's projects.search does, while ListDatabases checks bb.databases.list on its parent.
+	projectIDs, err := getProjectIDsSearchFilter(ctx, user, permission.DatabasesGet, s.iamManager, s.store)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get projectIDs"))
+	}
+
+	databases, nextPageToken, err := s.listDatabasePage(ctx, &store.FindDatabaseMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
+		FilterQ:    filterQ,
+		ProjectIDs: projectIDs,
+	}, offset)
+	if err != nil {
+		return nil, err
+	}
+	return connect.NewResponse(&v1pb.SearchDatabasesResponse{
+		Databases:     databases,
+		NextPageToken: nextPageToken,
+	}), nil
+}
+
+// listDatabasePage lists the page of find that offset names and converts it.
+func (s *DatabaseService) listDatabasePage(ctx context.Context, find *store.FindDatabaseMessage, offset *pageOffset) ([]*v1pb.Database, string, error) {
+	limitPlusOne := offset.limit + 1
+	find.Limit = &limitPlusOne
+	find.Offset = &offset.offset
 	databaseMessages, err := s.store.ListDatabases(ctx, find)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("%v", err.Error()))
+		return nil, "", connect.NewError(connect.CodeInternal, errors.Errorf("%v", err.Error()))
 	}
 
 	nextPageToken := ""
 	if len(databaseMessages) == limitPlusOne {
 		databaseMessages = databaseMessages[:offset.limit]
 		if nextPageToken, err = offset.getNextPageToken(); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to marshal next page token"))
+			return nil, "", connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to marshal next page token"))
 		}
 	}
 
-	response := &v1pb.ListDatabasesResponse{
-		NextPageToken: nextPageToken,
-	}
+	var databases []*v1pb.Database
 	for _, databaseMessage := range databaseMessages {
 		database, err := s.convertToDatabase(ctx, databaseMessage)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert database"))
+			return nil, "", connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert database"))
 		}
-		response.Databases = append(response.Databases, database)
+		databases = append(databases, database)
 	}
-	return connect.NewResponse(response), nil
+	return databases, nextPageToken, nil
 }
 
 // UpdateDatabase updates a database.

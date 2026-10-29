@@ -60,19 +60,19 @@ const DYNAMIC_PREFIXES = [
   // Role-grant expiration presets, rendered via t(preset.labelKey) in
   // MembersPage.tsx (EXPIRATION_PRESETS), not as literal t("…") calls.
   "project.members.expiration-presets.",
-  // Scenario option, sample, and guide outcome keys are stored in typed
-  // definitions and translated through those definitions at render time.
-  "settings.profile.enable-sample-databases",
-  "settings.profile.setup-scenario.create-database-change.",
-  "settings.profile.setup-scenario.mark-sensitive-data.",
-  "settings.profile.setup-scenario.query-data.",
-  "settings.profile.setup-scenario.workspace-usage.",
   // Workspace setup guide step definitions store label and description keys;
   // the presentation translates them via t(step.definition.<key>).
   "workspace-setup-guide.descriptions.",
   "workspace-setup-guide.generic.",
   "workspace-setup-guide.scenarios.",
   "workspace-setup-guide.steps.",
+  // Landing starter IDs are ranked in a pure helper and translated by the
+  // shared selector using the selected ID.
+  "agent.landing-starters.",
+  // Attention result labels use the Issue relation returned by a bounded
+  // read-only lookup to choose the corresponding translation key.
+  "agent.project-attention.issue-",
+  "agent.workspace-attention.issue-",
   // MCP mode cards and the broken-ceiling banner, rendered via
   // t(`settings.mcp.policy.mode.${key}.title`) and a ternary over two key
   // strings in MCPAccessPolicySection.tsx, not as literal t("…") calls.
@@ -468,21 +468,11 @@ for (const locale of LOCALES) {
 // ---------------------------------------------------------------------------
 // Check 7: linked wording
 // ---------------------------------------------------------------------------
-// The data-export setting's description quotes the "Request export" button
-// label so admins can connect the policy to what users see; the label has
-// been renamed before (#21081, #21200). The unmask capability is a different
-// mechanism from the Masking Exemptions feature, so its strings must not
-// reuse the feature's name (zh once shipped 脱敏豁免 on the unmask button).
+// The unmask capability is a different mechanism from the Masking Exemptions
+// feature, so its strings must not reuse the feature's name (zh once shipped
+// 脱敏豁免 on the unmask button).
 for (const locale of LOCALES) {
   const values = localeValues(locale);
-  const label = values["sql-editor.request-export"] ?? "";
-  const description =
-    values["settings.general.workspace.data-export.description"] ?? "";
-  if (!label || !description.includes(label)) {
-    error(
-      `${locale}: settings.general.workspace.data-export.description must quote sql-editor.request-export (${JSON.stringify(label)})`
-    );
-  }
   const featureName = values["project.masking-exemption.self"] ?? "";
   for (const key of ["sql-editor.request-unmask", "sql-editor.grant-type-unmask"]) {
     const value = values[key] ?? "";

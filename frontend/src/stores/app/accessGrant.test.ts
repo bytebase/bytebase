@@ -80,9 +80,9 @@ describe("buildAccessGrantFilter", () => {
     );
   });
 
-  test("statementExact trims boundary whitespace", () => {
+  test("statementExact leaves normalization to the server", () => {
     expect(buildAccessGrantFilter({ statementExact: "\n  SELECT 1\n" })).toBe(
-      `query == "SELECT 1"`
+      `query == "\\n  SELECT 1\\n"`
     );
   });
 
@@ -126,4 +126,18 @@ describe("buildAccessGrantFilter", () => {
       })
     ).toBe(false);
   });
+});
+
+test("query hashes and empty execution context share one CEL filter", () => {
+  expect(
+    buildAccessGrantFilter({
+      queryHash: "ab".repeat(32),
+      schema: "",
+      container: "items",
+      target: "instances/i/databases/d",
+      export: true,
+    })
+  ).toBe(
+    `query_hash == "${"ab".repeat(32)}" && schema == "" && container == "items" && target == "instances/i/databases/d" && export == true`
+  );
 });

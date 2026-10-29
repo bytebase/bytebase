@@ -2,6 +2,7 @@ package store_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -246,4 +247,123 @@ func TestCompleteReviewRunPostsResults(t *testing.T) {
 		}
 		require.Equal(t, "RESOLVED", c.ThreadState, c.Comment)
 	}
+}
+
+type supersession struct {
+	Comment     string
+	ThreadState string
+	Superseded  bool
+}
+
+func listSupersession(t *testing.T, fixture *storePostgresFixture, projectID string) ([]supersession, map[string]time.Time) {
+	t.Helper()
+	rows, err := fixture.db.QueryContext(fixture.ctx, `
+		SELECT payload->>'comment', thread_state,
+		       COALESCE((payload->'reviewMetadata'->>'superseded')::boolean, false), updated_at
+		FROM issue_comment
+		WHERE project = $1 AND issue_id = $2 AND payload ? 'reviewMetadata'
+		ORDER BY created_at, resource_id
+	`, projectID, reviewResultIssue)
+	require.NoError(t, err)
+	defer rows.Close()
+	var out []supersession
+	updatedAt := make(map[string]time.Time)
+	for rows.Next() {
+		var s supersession
+		var at time.Time
+		require.NoError(t, rows.Scan(&s.Comment, &s.ThreadState, &s.Superseded, &at))
+		out = append(out, s)
+		updatedAt[s.Comment] = at
+	}
+	require.NoError(t, rows.Err())
+	return out, updatedAt
+}
+
+// TestCompleteReviewRunSupersedesEarlierResults pins what tells the latest
+// review apart: a DONE completion marks every earlier result of its reviewer
+// on its issue superseded, whatever its thread state, without touching
+// updated_at; a FAILED completion marks nothing; another reviewer's results
+// and the colliding issue in another project keep theirs.
+func TestCompleteReviewRunSupersedesEarlierResults(t *testing.T) {
+	t.Parallel()
+	fixture := newStorePostgresFixture(t, `
+		INSERT INTO project (resource_id, workspace, name) VALUES ('other', 'default', 'Other');
+		INSERT INTO issue (id, creator, project, name, status, type)
+		VALUES (301, 'admin@example.com', 'default', 'Issue Default', 'OPEN', 'DATABASE_CHANGE');
+		INSERT INTO issue (id, creator, project, name, status, type)
+		VALUES (301, 'admin@example.com', 'other', 'Issue Other', 'OPEN', 'DATABASE_CHANGE');
+	`)
+	ctx, s := fixture.ctx, fixture.store
+	const issueUID = reviewResultIssue
+	complete := func(projectID, reviewType string, status storepb.ReviewRun_Status, results ...*store.IssueCommentMessage) {
+		t.Helper()
+		_, err := s.CreateReviewRun(ctx, projectID, issueUID, reviewType)
+		require.NoError(t, err)
+		claimed, err := s.ClaimAvailableReviewRuns(ctx, "replica-1")
+		require.NoError(t, err)
+		require.Len(t, claimed, 1)
+		updated, err := s.CompleteReviewRun(ctx, claimed[0], "replica-1", status, &storepb.ReviewRunPayload{}, results)
+		require.NoError(t, err)
+		require.True(t, updated)
+	}
+	setThreadState := func(comment string, state store.ThreadState) {
+		t.Helper()
+		roots, err := s.ListIssueComment(ctx, &store.FindIssueCommentMessage{ProjectID: "default", IssueUID: &[]int64{issueUID}[0]})
+		require.NoError(t, err)
+		for _, root := range roots {
+			if root.Payload.Comment == comment {
+				require.NoError(t, s.UpdateIssueComment(ctx, &store.UpdateIssueCommentMessage{ProjectID: "default", ResourceID: root.ResourceID, ThreadState: &state}))
+				return
+			}
+		}
+		t.Fatalf("no comment %q", comment)
+	}
+	aiResult := reviewResult("default", "ai", storepb.ReviewRuleType_REVIEW_RULE_TYPE_UNSPECIFIED)
+	aiResult.Payload.ReviewMetadata.RunType = storepb.ReviewRun_AI
+
+	complete("default", store.ReviewRunTypeAI, storepb.ReviewRun_DONE, aiResult)
+	complete("other", store.ReviewRunTypeRule, storepb.ReviewRun_DONE, reviewResult("other", "other first", storepb.ReviewRuleType_REQUIRE_WHERE))
+	complete("default", store.ReviewRunTypeRule, storepb.ReviewRun_DONE,
+		reviewResult("default", "first", storepb.ReviewRuleType_REQUIRE_WHERE),
+		reviewResult("default", "dismissed", storepb.ReviewRuleType_DISALLOW_TRUNCATE),
+	)
+	// A person resolves one result of the run, as a false positive.
+	setThreadState("dismissed", store.ThreadStateResolved)
+	_, updatedBefore := listSupersession(t, fixture, "default")
+
+	complete("default", store.ReviewRunTypeRule, storepb.ReviewRun_DONE, reviewResult("default", "second", storepb.ReviewRuleType_REQUIRE_WHERE))
+	got, updatedAfter := listSupersession(t, fixture, "default")
+	require.Equal(t, []supersession{
+		{Comment: "ai", ThreadState: "OPEN"},
+		{Comment: "first", ThreadState: "RESOLVED", Superseded: true},
+		{Comment: "dismissed", ThreadState: "RESOLVED", Superseded: true},
+		{Comment: "second", ThreadState: "OPEN"},
+	}, got)
+	for _, comment := range []string{"first", "dismissed"} {
+		require.Equal(t, updatedBefore[comment], updatedAfter[comment], "superseding %q is no content edit", comment)
+	}
+	other, _ := listSupersession(t, fixture, "other")
+	require.Equal(t, []supersession{{Comment: "other first", ThreadState: "OPEN"}}, other, "the colliding issue in the other project is untouched")
+
+	// A FAILED run supersedes nothing: the latest review is still the last DONE.
+	setThreadState("first", store.ThreadStateOpen)
+	complete("default", store.ReviewRunTypeRule, storepb.ReviewRun_FAILED)
+	afterFailure, _ := listSupersession(t, fixture, "default")
+	require.Equal(t, []supersession{
+		{Comment: "ai", ThreadState: "OPEN"},
+		{Comment: "first", ThreadState: "OPEN", Superseded: true},
+		{Comment: "dismissed", ThreadState: "RESOLVED", Superseded: true},
+		{Comment: "second", ThreadState: "OPEN"},
+	}, afterFailure)
+
+	// The next DONE, here with no findings, supersedes the rest and resolves
+	// the reopened result again.
+	complete("default", store.ReviewRunTypeRule, storepb.ReviewRun_DONE)
+	final, _ := listSupersession(t, fixture, "default")
+	require.Equal(t, []supersession{
+		{Comment: "ai", ThreadState: "OPEN"},
+		{Comment: "first", ThreadState: "RESOLVED", Superseded: true},
+		{Comment: "dismissed", ThreadState: "RESOLVED", Superseded: true},
+		{Comment: "second", ThreadState: "RESOLVED", Superseded: true},
+	}, final)
 }

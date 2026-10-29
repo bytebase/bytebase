@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/bcrypt"
+	"google.golang.org/genproto/googleapis/type/expr"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 
@@ -158,6 +159,24 @@ func TestResetUserPassword(t *testing.T) {
 
 		require.NoError(t, err)
 		require.True(t, proto.Equal(profile.PasswordRestriction, restriction))
+	})
+
+	t.Run("reads the email as sign-in does", func(t *testing.T) {
+		const (
+			workspaceID = "recovery-reset-padded-email"
+			email       = "padded-email@example.com"
+		)
+		createRecoveryWorkspace(ctx, t, stores, workspaceID, email, recoveryProfile())
+		createRecoveryUser(ctx, t, stores, email, "OriginalPassword1!", false, nil, nil)
+
+		result, err := service.ResetUserPassword(ctx, recovery.ResetUserPasswordRequest{
+			WorkspaceID: workspaceID,
+			Email:       " Padded-Email@Example.com\n",
+			Password:    []byte("ReplacementPassword1!"),
+		})
+
+		require.NoError(t, err)
+		require.Equal(t, email, result.Email)
 	})
 
 	t.Run("resets an existing user password and only password metadata", func(t *testing.T) {
@@ -382,7 +401,10 @@ func TestResetUserPassword(t *testing.T) {
 		password    string
 		createUser  bool
 		deleted     bool
-		wantError   string
+		// matchedAccount is set when the error comes after the email matched
+		// an account, the only errors that may repeat it.
+		matchedAccount bool
+		wantError      string
 	}{
 		{
 			name:        "missing user",
@@ -393,14 +415,23 @@ func TestResetUserPassword(t *testing.T) {
 			wantError:   "does not exist",
 		},
 		{
-			name:        "deleted user",
-			workspaceID: "recovery-reset-deleted",
-			email:       "deleted-admin@example.com",
+			name:        "password given as the email",
+			workspaceID: "recovery-reset-swapped",
+			email:       "Welcome@2024",
 			profile:     recoveryProfile(),
-			password:    "ReplacementPassword1!",
-			createUser:  true,
-			deleted:     true,
-			wantError:   "not an active end user",
+			password:    "Admin1@example.com",
+			wantError:   "does not exist",
+		},
+		{
+			name:           "deleted user",
+			workspaceID:    "recovery-reset-deleted",
+			email:          "deleted-admin@example.com",
+			profile:        recoveryProfile(),
+			password:       "ReplacementPassword1!",
+			createUser:     true,
+			deleted:        true,
+			matchedAccount: true,
+			wantError:      "not an active end user",
 		},
 		{
 			name:        "outside enforced domain",
@@ -437,6 +468,11 @@ func TestResetUserPassword(t *testing.T) {
 				Password:    []byte(tc.password),
 			})
 			require.ErrorContains(t, err, tc.wantError)
+			if !tc.matchedAccount {
+				// Until the email matches an account, it can be a password given
+				// in the wrong flag, so the error must not repeat it.
+				require.NotContains(t, strings.ToLower(err.Error()), strings.ToLower(tc.email))
+			}
 			require.Nil(t, result)
 			user, getErr := stores.GetUserByEmail(ctx, tc.email)
 			require.NoError(t, getErr)
@@ -539,6 +575,40 @@ func TestAddUserToWorkspace(t *testing.T) {
 		}
 	})
 
+	t.Run("restores a role whose only binding has expired", func(t *testing.T) {
+		const (
+			workspaceID = "recovery-add-expired-role"
+			email       = "expired-admin@example.com"
+		)
+		createRecoveryWorkspace(ctx, t, stores, workspaceID, "admin-expired-role@example.com", recoveryProfile())
+		createRecoveryUser(ctx, t, stores, email, "OriginalPassword1!", false, nil, nil)
+		_, err := stores.PatchIamPolicy(ctx, workspaceID, storepb.Policy_WORKSPACE, common.FormatWorkspace(workspaceID),
+			func(policy *storepb.IamPolicy) error {
+				policy.Bindings = append(policy.Bindings, &storepb.Binding{
+					Role:      "roles/workspaceAdmin",
+					Members:   []string{common.FormatUserEmail(email)},
+					Condition: &expr.Expr{Expression: `request.time < timestamp("2020-01-01T00:00:00Z")`},
+				})
+				return nil
+			})
+		require.NoError(t, err)
+		member, err := service.IsUserInWorkspace(ctx, workspaceID, email)
+		require.NoError(t, err)
+		require.False(t, member)
+
+		result, err := service.AddUserToWorkspace(ctx, recovery.AddUserToWorkspaceRequest{
+			WorkspaceID: workspaceID,
+			Email:       email,
+			Role:        "roles/workspaceAdmin",
+		})
+
+		require.NoError(t, err)
+		require.True(t, result.Changed)
+		member, err = service.IsUserInWorkspace(ctx, workspaceID, email)
+		require.NoError(t, err)
+		require.True(t, member)
+	})
+
 	t.Run("rejects an unknown role", func(t *testing.T) {
 		const (
 			workspaceID = "recovery-add-unknown-role"
@@ -573,6 +643,7 @@ func TestAddUserToWorkspace(t *testing.T) {
 			Role:        "roles/workspaceMember",
 		})
 		require.ErrorContains(t, err, "allowed domains")
+		require.NotContains(t, err.Error(), email)
 		require.Nil(t, result)
 	})
 
@@ -621,6 +692,149 @@ func TestAddUserToWorkspace(t *testing.T) {
 			require.Nil(t, result)
 		})
 	}
+}
+
+// Each case renames a table in its own database to make the step after the
+// save fail.
+func TestRecoveryReturnsItsResultWhenAStepAfterTheSaveFails(t *testing.T) {
+	ctx := context.Background()
+	const (
+		workspaceID = "recovery-partial"
+		email       = "partial-user@example.com"
+		password    = "OriginalPassword1!"
+	)
+	setup := func(t *testing.T, brokenTable string) (*store.Store, *recovery.Service) {
+		t.Helper()
+		db, stores, _ := testcontainer.NewMetadataDB(t)
+		createRecoveryWorkspace(ctx, t, stores, workspaceID, email, recoveryProfile())
+		createRecoveryUser(ctx, t, stores, email, password, false, nil, nil)
+		_, err := db.ExecContext(ctx, "ALTER TABLE "+brokenTable+" RENAME TO "+brokenTable+"_unavailable")
+		require.NoError(t, err)
+		return stores, recovery.NewService(stores)
+	}
+
+	t.Run("enable-password-signin when the audit record fails", func(t *testing.T) {
+		stores, service := setup(t, "audit_log")
+
+		result, err := service.EnablePasswordSignin(ctx, workspaceID)
+
+		require.ErrorContains(t, err, "password sign-in was enabled, but failed to create the recovery audit log")
+		require.NotNil(t, result)
+		profile, err := stores.GetWorkspaceProfileSetting(ctx, workspaceID)
+		require.NoError(t, err)
+		require.False(t, profile.DisallowPasswordSignin)
+	})
+
+	t.Run("add-user-to-workspace when the audit record fails", func(t *testing.T) {
+		stores, service := setup(t, "audit_log")
+
+		result, err := service.AddUserToWorkspace(ctx, recovery.AddUserToWorkspaceRequest{
+			WorkspaceID: workspaceID,
+			Email:       email,
+			Role:        "roles/workspaceDBA",
+		})
+
+		require.ErrorContains(t, err, "user was added to the workspace, but failed to create the recovery audit log")
+		require.NotNil(t, result)
+		require.True(t, result.Changed)
+		policy, err := stores.GetWorkspaceIamPolicy(ctx, workspaceID)
+		require.NoError(t, err)
+		require.True(t, bindingContains(policy.Policy, "roles/workspaceDBA", common.FormatUserEmail(email)))
+	})
+
+	for _, tc := range []struct {
+		name        string
+		brokenTable string
+		newPassword string
+		wantErr     string
+		wantChanged bool
+	}{
+		{
+			name:        "when the audit record fails",
+			brokenTable: "audit_log",
+			newPassword: "RecoveredPassword1!",
+			wantErr:     "user password reset completed, but failed to create the recovery audit log",
+			wantChanged: true,
+		},
+		{
+			name:        "when clearing the lockout fails",
+			brokenTable: "login_attempt",
+			newPassword: "RecoveredPassword1!",
+			wantErr:     "password was reset, but failed to clear the login attempt counter",
+			wantChanged: true,
+		},
+		{
+			name:        "with the same password when clearing the lockout fails",
+			brokenTable: "login_attempt",
+			newPassword: password,
+			wantErr:     "failed to clear the login attempt counter",
+		},
+	} {
+		t.Run("reset-password "+tc.name, func(t *testing.T) {
+			stores, service := setup(t, tc.brokenTable)
+
+			result, err := service.ResetUserPassword(ctx, recovery.ResetUserPasswordRequest{
+				WorkspaceID: workspaceID,
+				Email:       email,
+				Password:    []byte(tc.newPassword),
+			})
+
+			require.ErrorContains(t, err, tc.wantErr)
+			require.NotNil(t, result)
+			require.Equal(t, tc.wantChanged, result.Changed)
+			user, err := stores.GetUserByEmail(ctx, email)
+			require.NoError(t, err)
+			require.NoError(t, bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(tc.newPassword)))
+			if tc.brokenTable != "audit_log" {
+				logs, err := stores.SearchAuditLogs(ctx, &store.AuditLogFind{Workspace: workspaceID})
+				require.NoError(t, err)
+				require.Len(t, logs, 1, "the stored reset must be audited even though a later step failed")
+				require.Equal(t, "/bytebase.cli.Recovery/ResetUserPassword", logs[0].Payload.Method)
+			}
+		})
+	}
+}
+
+// The service's store has its caches on and has already cached the IAM
+// policy, so it misses a role that another server grants afterwards. Adding a
+// role must keep that grant, which needs the policy read inside the write's
+// lock rather than from the cache.
+func TestAddUserToWorkspaceKeepsARoleAnotherServerGranted(t *testing.T) {
+	ctx := context.Background()
+	_, stores, dsn := testcontainer.NewMetadataDBWithCache(t, true)
+	server, err := store.New(ctx, dsn, false)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, server.Close()) })
+	service := recovery.NewService(stores)
+
+	const (
+		workspaceID = "recovery-add-user-concurrent"
+		email       = "concurrent-user@example.com"
+	)
+	createRecoveryWorkspace(ctx, t, stores, workspaceID, "admin-concurrent@example.com", recoveryProfile())
+	createRecoveryUser(ctx, t, stores, email, "OriginalPassword1!", false, nil, nil)
+	_, err = stores.GetWorkspaceIamPolicy(ctx, workspaceID)
+	require.NoError(t, err)
+
+	_, err = server.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
+		Workspace: workspaceID,
+		Member:    common.FormatUserEmail(email),
+		Roles:     []string{"roles/workspaceDBA"},
+	})
+	require.NoError(t, err)
+
+	result, err := service.AddUserToWorkspace(ctx, recovery.AddUserToWorkspaceRequest{
+		WorkspaceID: workspaceID,
+		Email:       email,
+		Role:        "roles/workspaceMember",
+	})
+	require.NoError(t, err)
+	require.True(t, result.Changed)
+
+	policy, err := server.GetWorkspaceIamPolicy(ctx, workspaceID)
+	require.NoError(t, err)
+	require.True(t, bindingContains(policy.Policy, "roles/workspaceDBA", common.FormatUserEmail(email)))
+	require.True(t, bindingContains(policy.Policy, "roles/workspaceMember", common.FormatUserEmail(email)))
 }
 
 func setupRecoveryStore(_ context.Context, t *testing.T) *store.Store {

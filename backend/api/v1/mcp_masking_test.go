@@ -2,17 +2,18 @@ package v1
 
 import (
 	"context"
+	"maps"
+	"slices"
 	"testing"
 
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
 
-	"github.com/bytebase/bytebase/backend/api/mcp"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/masker"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
-	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 )
 
 // mcpSessionContext is a request as the gate hands it to a handler: a
@@ -142,10 +143,21 @@ func TestMaskedWriteGuardIsWiredIntoTheGate(t *testing.T) {
 	}
 
 	// A door added to the table but not exercised here ships wired to nothing,
-	// and the unit test above would still pass. CreateIssue is the one entry in
-	// mcpRequestShapeRefusals that is not a masked-write door.
-	require.Len(t, doors, len(mcpRequestShapeRefusals)-1,
-		"every masked-write door in the refusal table needs a row here")
+	// and the unit test above would still pass. These are the entries in
+	// mcpRequestShapeRefusals that are not masked-write doors.
+	notDoors := []string{
+		v1connect.IssueServiceCreateIssueProcedure,
+		v1connect.IssueServiceApproveIssueProcedure,
+		v1connect.IssueServiceRejectIssueProcedure,
+		v1connect.ProjectServiceUpdateProjectProcedure,
+		v1connect.OrgPolicyServiceUpdatePolicyProcedure,
+	}
+	listed := slices.Clone(notDoors)
+	for _, door := range doors {
+		listed = append(listed, door.procedure)
+	}
+	require.ElementsMatch(t, slices.Collect(maps.Keys(mcpRequestShapeRefusals)), listed,
+		"every entry in the refusal table needs a row here, or a place in notDoors")
 
 	for _, door := range doors {
 		t.Run(door.procedure, func(t *testing.T) {
@@ -162,6 +174,7 @@ func TestMaskedWriteGuardIsWiredIntoTheGate(t *testing.T) {
 			require.False(t, got.dispatched, "the refusal must land before anything is written")
 			require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got.err))
 			require.Contains(t, got.err.Error(), masker.DefaultFullMaskSubstitution)
+			require.Contains(t, got.err.Error(), mcpConsoleWayOut)
 			require.True(t, got.auditMarked, "every policy denial is an audited outcome")
 		})
 	}
@@ -205,80 +218,6 @@ func TestMaskedWriteGuardCoversTheExecutionDoor(t *testing.T) {
 	require.Error(t, exported.err)
 	require.False(t, exported.dispatched)
 	require.Contains(t, exported.err.Error(), masker.DefaultFullMaskSubstitution)
-}
-
-// TestMCPRefusalsNameThemselvesToTheQueryTool is a contract between two
-// processes that meet only over an error body.
-//
-// query_database drops its own "request the SQL Editor role" advice when it
-// recognizes an MCP policy refusal, because no project role lifts a workspace
-// setting. It recognizes one by wording, so every producer's wording has to stay
-// inside the list the consumer keys on — including the masked-write guard, which
-// is the newest producer and the one whose refusal names a literal rather than a
-// policy.
-func TestMCPRefusalsNameThemselvesToTheQueryTool(t *testing.T) {
-	readWrite := readWriteCeiling()
-	maskedWrite := "UPDATE employee SET secret = '" + masker.DefaultFullMaskSubstitution + "'"
-
-	for _, row := range []struct {
-		name    string
-		stores  mcpGateStore
-		class   v1pb.MCPMethodClass
-		request connect.AnyRequest
-	}{
-		{
-			name:    "the masked-write guard",
-			stores:  readWrite,
-			class:   v1pb.MCPMethodClass_READ,
-			request: connect.NewRequest(&v1pb.QueryRequest{Statement: maskedWrite}),
-		},
-		{
-			name:    "the ceiling gate",
-			stores:  mcpGateStore{ceiling: storepb.MCPSetting_READ_ONLY},
-			class:   v1pb.MCPMethodClass_WRITE,
-			request: connect.NewRequest(&v1pb.QueryRequest{}),
-		},
-		{
-			name:    "an unclassified method",
-			stores:  readWrite,
-			class:   v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED,
-			request: connect.NewRequest(&v1pb.QueryRequest{}),
-		},
-	} {
-		t.Run(row.name, func(t *testing.T) {
-			got := invokeMCPGate(t, row.stores, &common.AuthContext{
-				MCPMethodClass: row.class,
-				DelegatedGrant: &common.DelegatedGrant{},
-			}, "/bytebase.v1.SQLService/Query", row.request)
-
-			require.Error(t, got.err)
-			require.True(t, mcp.IsPolicyRefusal(got.err.Error()),
-				"query_database would append project-role advice to %q", got.err.Error())
-		})
-	}
-
-	// Each producer that refuses outside the gate turns on a fact the request
-	// shape cannot carry, so each is checked on its own message.
-	clamped := refuseNonReadOnlyStatement(storepb.Engine_POSTGRES, "UPDATE employee SET id = 1")
-	require.Error(t, clamped)
-	require.True(t, mcp.IsPolicyRefusal(clamped.Error()))
-
-	mcpCtx := contextWithAuth(&common.AuthContext{DelegatedGrant: &common.DelegatedGrant{}})
-	grantIssue := rejectMCPOriginatedGrantIssue(mcpCtx, v1pb.Issue_ROLE_GRANT)
-	require.Error(t, grantIssue)
-	require.True(t, mcp.IsPolicyRefusal(grantIssue.Error()))
-
-	tokenMint := (&AuthService{}).rejectMCPOriginatedTokenMint(mcpCtx, nil, "switch workspaces")
-	require.Error(t, tokenMint)
-	require.True(t, mcp.IsPolicyRefusal(tokenMint.Error()))
-
-	approvalProject := &store.ProjectMessage{
-		ResourceID: "p",
-		Setting:    &storepb.Project{RequireIssueApproval: true},
-	}
-	issueless := rejectMCPOriginatedIssuelessRollout(mcpCtx, approvalProject, nil, "create a rollout")
-	require.Error(t, issueless)
-	require.True(t, mcp.IsPolicyRefusal(issueless.Error()))
 }
 
 // TestMaskPlaceholderMatchIsDeliberatelyBroad records which side of the trade

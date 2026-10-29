@@ -135,7 +135,8 @@ func addBatchSampleDML(summary *base.ChangeSummary, ast base.AST) {
 		summary.DMLCount++
 		return
 	}
-	// omni positions the text after an executable comment as if the comment's markers were removed.
+	// The parser reads the body of an executable comment, so the DML's location can fall inside one
+	// and the slice would leave the comment unclosed.
 	if strings.Contains(omniAST.Text, "/*!") || strings.Contains(omniAST.Text, "/*T!") || strings.Contains(omniAST.Text, "/*M!") {
 		summary.DMLCount++
 		return

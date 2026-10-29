@@ -110,5 +110,11 @@ func (x *ActuatorInfo) Equal(y *ActuatorInfo) bool {
 	if !x.McpSetting.Equal(y.McpSetting) {
 		return false
 	}
+	if x.AiEnabled != y.AiEnabled {
+		return false
+	}
+	if x.AiSqlReviewEnabled != y.AiSqlReviewEnabled {
+		return false
+	}
 	return true
 }

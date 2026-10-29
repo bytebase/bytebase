@@ -2,7 +2,10 @@ import { create as createProto } from "@bufbuild/protobuf";
 import { TimestampSchema } from "@bufbuild/protobuf/wkt";
 import { Code, ConnectError } from "@connectrpc/connect";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { silentContextKey } from "@/api/context-key";
+import {
+  silentContextKey,
+  skipErrorNotificationContextKey,
+} from "@/api/context-key";
 import { isValidDatabaseGroupName, UNKNOWN_PROJECT_NAME } from "@/types";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import {
@@ -1257,12 +1260,10 @@ describe("useAppStore", () => {
 
     expect(result).toBe(userA);
     expect(mocks.getUser).not.toHaveBeenCalled();
-    expect(mocks.updateUser).toHaveBeenCalledWith(
-      expect.objectContaining({
-        user: userA,
-        allowMissing: true,
-      })
-    );
+    expect(mocks.updateUser.mock.calls[0][0]).toMatchObject({
+      user: userA,
+      allowMissing: true,
+    });
     expect(store.getState().usersByName[userA.name]).toBe(userA);
   });
 
@@ -2384,6 +2385,64 @@ describe("useAppStore", () => {
     expect(store.getState().projectsByName[projectA.name]).toBe(projectA);
   });
 
+  test.each([
+    { reportedBy: "the caller, on request", report: { byCaller: true } },
+    { reportedBy: "the shared error toast, by default", report: undefined },
+  ])(
+    "leaves a failed write to be reported by $reportedBy",
+    async ({ report }) => {
+      const policy = createProto(IamPolicySchema, {});
+      const workspace = createProto(WorkspaceSchema, {
+        name: "workspaces/default",
+      });
+      mocks.updateUser.mockResolvedValue(userA);
+      mocks.updateWorkspace.mockResolvedValue(workspace);
+      mocks.createProject.mockResolvedValue(projectA);
+      mocks.getIamPolicy.mockResolvedValue(policy);
+      mocks.setProjectIamPolicy.mockResolvedValue(policy);
+      mocks.setIamPolicy.mockResolvedValue(policy);
+      const store = createAppStore();
+      const state = store.getState();
+
+      await state.updateUser(
+        createProto(UpdateUserRequestSchema, {
+          user: userA,
+          allowMissing: true,
+        }),
+        report
+      );
+      await state.updateWorkspace(workspace, ["title"], report);
+      await state.createProject("A", "a", report);
+      await state.updateProjectIamPolicy(projectA.name, policy, report);
+      await state.fetchWorkspaceIamPolicy(false, report);
+      await state.patchWorkspaceIamPolicy(
+        [{ member: "user:bob@example.com", roles: ["roles/workspaceMember"] }],
+        report
+      );
+
+      const writes = {
+        updateUser: mocks.updateUser,
+        updateWorkspace: mocks.updateWorkspace,
+        createProject: mocks.createProject,
+        setProjectIamPolicy: mocks.setProjectIamPolicy,
+        getWorkspaceIamPolicy: mocks.getIamPolicy,
+        setWorkspaceIamPolicy: mocks.setIamPolicy,
+      };
+      expect(
+        Object.fromEntries(
+          Object.entries(writes).map(([name, write]) => [
+            name,
+            write.mock.calls[0][1]?.contextValues.get(
+              skipErrorNotificationContextKey
+            ) ?? false,
+          ])
+        )
+      ).toEqual(
+        Object.fromEntries(Object.keys(writes).map((name) => [name, !!report]))
+      );
+    }
+  );
+
   test("checks workspace permission through user, groups, and roles", () => {
     const store = createAppStore();
     store.setState({
@@ -2914,11 +2973,38 @@ describe("useAppStore", () => {
 
     expect(mocks.getProjectIamPolicy).toHaveBeenCalledTimes(1);
     expect(
+      mocks.getProjectIamPolicy.mock.calls[0][1]?.contextValues?.get(
+        silentContextKey
+      ) ?? false
+    ).toBe(false);
+    expect(
       store.getState().hasProjectPermission(projectA, "bb.projects.update")
     ).toBe(true);
     expect(
       store.getState().hasProjectPermission(projectA, "bb.projects.delete")
     ).toBe(false);
+  });
+
+  test("loads project IAM policy silently when requested", async () => {
+    mocks.getCurrentUser.mockResolvedValue(user);
+    mocks.getActuatorInfo.mockResolvedValue({
+      workspace: "workspaces/default",
+    });
+    mocks.getWorkspace.mockResolvedValue({ name: "workspaces/default" });
+    mocks.listRoles.mockResolvedValue({ roles: [] });
+    mocks.getIamPolicy.mockResolvedValue(createProto(IamPolicySchema, {}));
+    mocks.getProjectIamPolicy.mockResolvedValue(
+      createProto(IamPolicySchema, {})
+    );
+    const store = createAppStore();
+
+    await store.getState().loadProjectIamPolicy(projectA.name, true);
+
+    expect(
+      mocks.getProjectIamPolicy.mock.calls[0][1]?.contextValues.get(
+        silentContextKey
+      )
+    ).toBe(true);
   });
 
   test("caches instances by resource name", async () => {

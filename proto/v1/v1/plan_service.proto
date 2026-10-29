@@ -50,9 +50,9 @@ service PlanService {
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
     // This is the step that produces the issueless plan — it creates a plan
-    // and links no issue. It stays WRITE and needs no rule of its own: the
-    // rule the gate PR owes belongs at execution, not here, since a plan that
-    // is never rolled out changes nothing. See RolloutService/CreateRollout.
+    // and links no issue. It stays WRITE and needs no rule of its own: a plan
+    // that is never rolled out changes nothing, so the rule sits at execution
+    // (rejectMCPOriginatedIssuelessRollout; see RolloutService/CreateRollout).
     option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
@@ -151,6 +151,9 @@ message ListPlansRequest {
   // - title: the plan title, support "==" operator for exact match and ".contains()" operator for case-insensitive substring match.
   // - spec_type: the plan spec config type, support "==" operator, the value should be "create_database_config" or "change_database_config".
   // - state: the plan state, support "==" operator, the value should be "ACTIVE" or "DELETED".
+  // - has_release: whether a spec references a release, support "==" operator, the value should be "true" or "false".
+  // - release: the release a spec references, in "projects/{project}/releases/{release}" format, support "==" operator.
+  // - task_status: the current status of any task in the plan, support "in" operator, the values should be Task.Status values except STATUS_UNSPECIFIED.
   //
   // For example:
   // creator == "users/ed@bytebase.com" && create_time >= "2025-01-02T15:04:05Z07:00"
@@ -158,6 +161,8 @@ message ListPlansRequest {
   // title.contains("database migration")
   // spec_type == "change_database_config"
   // state == "ACTIVE"
+  // has_release == true && task_status in ["FAILED", "RUNNING"]
+  // release == "projects/my-project/releases/release_20260115-RC00"
   string filter = 4;
 }
 

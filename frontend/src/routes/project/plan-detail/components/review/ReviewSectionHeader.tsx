@@ -28,7 +28,7 @@ export function PlanReviewSectionHeader({ issue }: { issue: Issue }) {
         <RiskChip riskLevel={issue.riskLevel} />
         {/* Static label, not a link: for change plans the issue route redirects
             back to this Plan Detail page (BYT-9721), so a link would be a no-op. */}
-        <span className="inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-xs text-control">
+        <span className="inline-flex shrink-0 items-center rounded-xs border px-1.5 py-0.5 text-xs text-control">
           {t("common.issue")} #{issueUID}
         </span>
       </div>
@@ -47,7 +47,7 @@ function RiskChip({ riskLevel }: { riskLevel: RiskLevel }) {
         : t("issue.risk-level.high");
   const Icon = riskLevel === RiskLevel.LOW ? ShieldCheck : ShieldAlert;
   return (
-    <span className="inline-flex shrink-0 items-center gap-x-1 rounded-full border px-2 py-0.5 text-xs text-control">
+    <span className="inline-flex shrink-0 items-center gap-x-1 rounded-xs border px-1.5 py-0.5 text-xs text-control">
       <Icon
         className={
           riskLevel === RiskLevel.LOW

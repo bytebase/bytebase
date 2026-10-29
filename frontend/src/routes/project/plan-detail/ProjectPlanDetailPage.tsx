@@ -1,4 +1,4 @@
-import { Code2, Loader2, MessageSquareMore, Rocket } from "lucide-react";
+import { Check, Code2, Loader2, MessageSquareMore, Rocket } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -13,37 +13,41 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useOnKeyChange } from "@/hooks/useOnKeyChange";
 import { cn } from "@/lib/utils";
-import { IssueStatus } from "@/types/proto-es/v1/common_pb";
+import { useAppStore } from "@/stores/app";
+import { ApprovalStatus, IssueStatus } from "@/types/proto-es/v1/common_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { getRolloutStatus } from "@/utils";
+import { sqlReviewV2Enabled } from "@/utils/featureGates";
 import { getReviewBadge } from "../utils/reviewBadge";
 import { DeployBranch } from "./components/deploy/DeployBranch";
 import { PlanDetailChangesBranch } from "./components/PlanDetailChangesBranch";
 import { PlanDetailDeployFuture } from "./components/PlanDetailDeployFuture";
+import { PlanDetailDeployWaiting } from "./components/PlanDetailDeployWaiting";
 import { PlanDetailHeader } from "./components/PlanDetailHeader";
 import { PlanDetailHeaderDetails } from "./components/PlanDetailHeaderDetails";
 import { PlanReviewSection } from "./components/review/PlanReviewSection";
 import { useUnresolvedThreadTotal } from "./components/threads/useUnresolvedThreadCounts";
 import { useIssueCommentThreadsSync } from "./hooks/useIssueCommentThreadsSync";
 import { usePlacementSync } from "./hooks/usePlacementSync";
+import { usePlanReviewState } from "./hooks/usePlanReviewState";
+import { SqlReviewV2Provider } from "./hooks/useSqlReviewV2";
 import { PlanDetailStoreProvider } from "./shared/stores/PlanDetailStoreProvider";
 import { planPhaseAnchorId } from "./shell/focusPhase";
 import { usePlanDetailPage } from "./shell/hooks/usePlanDetailPage";
-import { PlanDetailProvider } from "./shell/PlanDetailContext";
+import {
+  PlanDetailProvider,
+  usePlanDetailContext,
+} from "./shell/PlanDetailContext";
 import {
   buildChangesSummary,
   buildDeploySummary,
   buildReviewSummary,
+  buildReviewSummaryV2,
 } from "./utils/phaseSummary";
+import { rowNeedsAttention } from "./utils/planGates";
 import { isReleaseBackedPlan } from "./utils/spec";
 
 type PhaseStatus = "completed" | "closed" | "active" | "future";
-
-function phaseLineClass(from: PhaseStatus, to: PhaseStatus): string {
-  if (from === "completed" && (to === "completed" || to === "active"))
-    return "bg-success";
-  return "bg-control-border";
-}
 
 export function ProjectPlanDetailPage(props: {
   projectId: string;
@@ -109,14 +113,127 @@ function ProjectPlanDetailPageInner({
     stageId,
     taskId,
   });
-  useIssueCommentThreadsSync(page.issue);
-  const unresolvedThreads = useUnresolvedThreadTotal(page.issue?.name);
+  useIssueCommentThreadsSync(page.issue, page.aiReviewRun);
   usePlacementSync({
     issueName: page.issue?.name,
     projectId,
     ready: page.ready,
     specs: page.plan.specs,
   });
+  const setViewedPlan = useAppStore((s) => s.setViewedPlan);
+  const isReleaseBacked = isReleaseBackedPlan(page.plan.specs);
+  useEffect(() => {
+    if (!page.ready) return;
+    setViewedPlan({ name: page.plan.name, isReleaseBacked });
+  }, [page.ready, page.plan.name, isReleaseBacked, setViewedPlan]);
+  // Route-driven spec changes reset during render, so the first paint after a
+  // Back/Forward or tab navigation already shows the destination spec. The
+  // keyed provider remounts this subtree when the plan itself changes.
+  useOnKeyChange(`${page.pageKey}:${specId ?? ""}`, () => {
+    if (!page.isCreating && specId) {
+      setSelectedSpecId(specId);
+    }
+  });
+
+  // A create route has no persisted spec resource in its URL. Derive the
+  // initial selection during render so the first ready paint already shows the
+  // first client-local spec, without a placeholder route or a follow-up effect.
+  const effectiveSelectedSpecId =
+    selectedSpecId || page.plan.specs[0]?.id || "";
+
+  return (
+    <PlanDetailProvider value={page}>
+      <SqlReviewV2Provider>
+        <div
+          ref={setPageHost}
+          data-testid="plan-detail-page"
+          className="relative min-h-full overflow-x-clip bg-control-bg/50"
+        >
+          <div
+            className={cn(
+              "flex min-h-full flex-col",
+              page.ready ? "" : "invisible pointer-events-none"
+            )}
+          >
+            {/* Only the title/action row is sticky (GitHub issue-header pattern);
+              the description + metadata below scroll away beneath it. The
+              dashboard main pane is the scroll container, so top-0 pins to it;
+              z-20 keeps it above the phase rail nodes (z-10). The border appears
+              only when stuck, so the row is flat at the top. */}
+            <header
+              className={cn(
+                "sticky top-0 z-20 shrink-0 bg-background",
+                headerStuck && "border-b"
+              )}
+            >
+              <PlanDetailHeader />
+            </header>
+            <PlanDetailHeaderDetails />
+
+            <main className="min-h-[calc(100vh-4rem)] min-w-0 flex-1">
+              <PlanPhaseRail
+                onSelectedSpecIdChange={setSelectedSpecId}
+                selectedSpecId={effectiveSelectedSpecId}
+              />
+            </main>
+          </div>
+
+          {!page.ready && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-y-3 bg-background">
+              <Loader2 className="h-8 w-8 animate-spin text-accent" />
+              <div className="text-sm text-control-light">
+                {t("common.loading")}
+              </div>
+            </div>
+          )}
+
+          <AlertDialog
+            open={page.pendingLeaveConfirm}
+            onOpenChange={(open) => {
+              if (!open) {
+                page.resolveLeaveConfirm(false);
+              }
+            }}
+          >
+            <AlertDialogContent>
+              <AlertDialogTitle>
+                {t("common.leave-without-saving")}
+              </AlertDialogTitle>
+              <AlertDialogFooter>
+                <Button
+                  appearance="outline"
+                  onClick={() => page.resolveLeaveConfirm(false)}
+                >
+                  {t("common.cancel")}
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => page.resolveLeaveConfirm(true)}
+                >
+                  {t("common.discard-changes")}
+                </Button>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </SqlReviewV2Provider>
+    </PlanDetailProvider>
+  );
+}
+
+// The three phases. Before the rollout exists, Changes and Review form one
+// loop and Deploy lists what the rollout waits on; afterwards Deploy leads.
+function PlanPhaseRail({
+  onSelectedSpecIdChange,
+  selectedSpecId,
+}: {
+  onSelectedSpecIdChange: (specId: string) => void;
+  selectedSpecId: string;
+}) {
+  const { t } = useTranslation();
+  const page = usePlanDetailContext();
+  const unresolvedThreads = useUnresolvedThreadTotal(page.issue?.name);
+  const reviewState = usePlanReviewState();
   const isGitOpsPlan = useMemo(
     () => isReleaseBackedPlan(page.plan.specs),
     [page.plan.specs]
@@ -126,6 +243,9 @@ function ProjectPlanDetailPageInner({
   // release-backed plans, which bypass review entirely, hide it.
   const reviewVisible = !isGitOpsPlan;
   const selectPhase = page.expandPhase;
+  // The machine reviews run on drafts too, so under SQL Review V2 Review is
+  // open from the first save of an issue.
+  const reviewFromDraft = !!reviewState;
 
   const phaseConfigs = useMemo(() => {
     const hasIssue = !!page.issue;
@@ -147,7 +267,7 @@ function ProjectPlanDetailPageInner({
       );
 
     let review: PhaseStatus = "future";
-    if (hasSubmittedIssue) {
+    if (hasSubmittedIssue || (reviewFromDraft && hasIssue)) {
       if (page.issue?.status === IssueStatus.CANCELED) {
         review = "closed";
       } else {
@@ -182,12 +302,18 @@ function ProjectPlanDetailPageInner({
       hasRollout,
       approvalStatus: page.issue?.approvalStatus,
     });
-    const reviewBadge = rawReviewBadge
-      ? {
-          label: t(rawReviewBadge.labelKey),
-          variant: rawReviewBadge.variant,
-        }
-      : undefined;
+    // "Skipped" names the approval outcome, not the review; under SQL Review
+    // V2 the summary says "No approval required" instead.
+    const reviewBadge =
+      rawReviewBadge &&
+      !(
+        reviewFromDraft && page.issue?.approvalStatus === ApprovalStatus.SKIPPED
+      )
+        ? {
+            label: t(rawReviewBadge.labelKey),
+            variant: rawReviewBadge.variant,
+          }
+        : undefined;
     const deployBadge = (() => {
       if (deployStatus !== "active" || !effectiveRollout) return undefined;
       const rolloutStatus = getRolloutStatus(effectiveRollout);
@@ -224,189 +350,127 @@ function ProjectPlanDetailPageInner({
     })();
 
     return {
-      changes: {
-        status: changesStatus,
-        badge: changesBadge,
-        lineClass: phaseLineClass(
-          changesStatus,
-          reviewVisible ? review : deployStatus
-        ),
-      },
-      review: {
-        status: review,
-        badge: reviewBadge,
-        lineClass: phaseLineClass(review, deployStatus),
-      },
-      deploy: {
-        status: deployStatus,
-        badge: deployBadge,
-      },
+      changes: { status: changesStatus, badge: changesBadge },
+      review: { status: review, badge: reviewBadge },
+      deploy: { status: deployStatus, badge: deployBadge },
     };
-  }, [page.isCreating, page.issue, page.rollout, reviewVisible, t]);
+  }, [
+    page.isCreating,
+    page.issue,
+    page.rollout,
+    reviewFromDraft,
+    reviewVisible,
+    t,
+  ]);
 
-  // Route-driven spec changes reset during render, so the first paint after a
-  // Back/Forward or tab navigation already shows the destination spec. The
-  // keyed provider remounts this subtree when the plan itself changes.
-  useOnKeyChange(`${page.pageKey}:${specId ?? ""}`, () => {
-    if (!page.isCreating && specId) {
-      setSelectedSpecId(specId);
-    }
-  });
+  // A small dot on the Review node marks findings or discussions that need
+  // someone.
+  const reviewNeedsAttention =
+    !!reviewState &&
+    (reviewState.rows.some(rowNeedsAttention) ||
+      reviewState.openDiscussions > 0);
+  const reviewSummary = reviewState
+    ? buildReviewSummaryV2(
+        page.issue,
+        t,
+        reviewState.rows,
+        reviewState.openDiscussions
+      )
+    : buildReviewSummary(page.issue, t, unresolvedThreads);
 
-  // A create route has no persisted spec resource in its URL. Derive the
-  // initial selection during render so the first ready paint already shows the
-  // first client-local spec, without a placeholder route or a follow-up effect.
-  const effectiveSelectedSpecId =
-    selectedSpecId || page.plan.specs[0]?.id || "";
+  let deployFuture: ReactNode;
+  // A closed issue waits on nothing, so Deploy describes the phase instead.
+  if (reviewState && page.issue?.status === IssueStatus.OPEN && !isGitOpsPlan) {
+    deployFuture = (
+      <PlanDetailDeployWaiting
+        issue={page.issue}
+        plan={page.plan}
+        state={reviewState}
+      />
+    );
+  } else if (page.issue?.draft) {
+    deployFuture = (
+      <p className="mt-0.5 text-sm text-control-light">
+        {sqlReviewV2Enabled()
+          ? t("plan.phase.deploy-description-v2")
+          : t("plan.phase.deploy-description")}
+      </p>
+    );
+  } else {
+    deployFuture = <PlanDetailDeployFuture />;
+  }
 
   return (
-    <PlanDetailProvider value={page}>
-      <div
-        ref={setPageHost}
-        data-testid="plan-detail-page"
-        className="relative min-h-full overflow-x-clip bg-control-bg/50"
+    // No row gap here: each PhaseSection's pb-6 carries the spacing, which
+    // the connector line fills so it stays continuous.
+    <div className="flex min-w-0 flex-col pb-6 pl-2 pr-4 pt-4 xl:pr-8 2xl:pr-12">
+      <PhaseSection
+        anchorId={planPhaseAnchorId("changes")}
+        badge={phaseConfigs.changes.badge}
+        expanded={page.activePhases.has("changes")}
+        icon={<Code2 className="size-3 md:size-4" />}
+        label={t("plan.navigator.changes")}
+        onSelect={() => selectPhase("changes")}
+        status={phaseConfigs.changes.status}
+        onToggle={() => page.togglePhase("changes")}
+        summary={buildChangesSummary(page.plan, t, {
+          includeChecks: !reviewState,
+        })}
       >
-        <div
-          className={cn(
-            "flex min-h-full flex-col",
-            page.ready ? "" : "invisible pointer-events-none"
-          )}
+        <PlanDetailChangesBranch
+          onSelectedSpecIdChange={onSelectedSpecIdChange}
+          selectedSpecId={selectedSpecId}
+        />
+      </PhaseSection>
+
+      {reviewVisible && (
+        <PhaseSection
+          anchorId={planPhaseAnchorId("review")}
+          attention={reviewNeedsAttention}
+          badge={phaseConfigs.review.badge}
+          expanded={page.activePhases.has("review")}
+          icon={<MessageSquareMore className="size-3 md:size-4" />}
+          label={t("plan.navigator.review")}
+          onSelect={() => selectPhase("review")}
+          status={phaseConfigs.review.status}
+          onToggle={() => page.togglePhase("review")}
+          summary={reviewSummary}
+          future={
+            <p className="mt-0.5 text-sm text-control-light">
+              {t("plan.phase.review-description")}
+            </p>
+          }
         >
-          {/* Only the title/action row is sticky (GitHub issue-header pattern);
-              the description + metadata below scroll away beneath it. The
-              dashboard main pane is the scroll container, so top-0 pins to it;
-              z-20 keeps it above the phase rail nodes (z-10). The border appears
-              only when stuck, so the row is flat at the top. */}
-          <header
-            className={cn(
-              "sticky top-0 z-20 shrink-0 bg-background",
-              headerStuck && "border-b"
-            )}
-          >
-            <PlanDetailHeader />
-          </header>
-          <PlanDetailHeaderDetails />
+          <PlanReviewSection />
+        </PhaseSection>
+      )}
 
-          <main className="min-h-[calc(100vh-4rem)] min-w-0 flex-1">
-            {/* No row gap here: each PhaseSection's pb-6 carries the spacing,
-                  which the connector line fills so it stays continuous. */}
-            <div className="flex min-w-0 flex-col pb-6 pl-2 pr-4 pt-4 xl:pr-8 2xl:pr-12">
-              <PhaseSection
-                anchorId={planPhaseAnchorId("changes")}
-                badge={phaseConfigs.changes.badge}
-                expanded={page.activePhases.has("changes")}
-                icon={<Code2 className="size-3 md:size-4" />}
-                lineClass={phaseConfigs.changes.lineClass}
-                label={t("plan.navigator.changes")}
-                onSelect={() => selectPhase("changes")}
-                status={phaseConfigs.changes.status}
-                onToggle={() => page.togglePhase("changes")}
-                summary={buildChangesSummary(page.plan, t)}
-              >
-                <PlanDetailChangesBranch
-                  onSelectedSpecIdChange={setSelectedSpecId}
-                  selectedSpecId={effectiveSelectedSpecId}
-                />
-              </PhaseSection>
-
-              {reviewVisible && (
-                <PhaseSection
-                  anchorId={planPhaseAnchorId("review")}
-                  badge={phaseConfigs.review.badge}
-                  expanded={page.activePhases.has("review")}
-                  icon={<MessageSquareMore className="size-3 md:size-4" />}
-                  lineClass={phaseConfigs.review.lineClass}
-                  label={t("plan.navigator.review")}
-                  onSelect={() => selectPhase("review")}
-                  status={phaseConfigs.review.status}
-                  onToggle={() => page.togglePhase("review")}
-                  summary={buildReviewSummary(page.issue, t, unresolvedThreads)}
-                  future={
-                    <p className="mt-0.5 text-sm text-control-placeholder">
-                      {t("plan.phase.review-description")}
-                    </p>
-                  }
-                >
-                  <PlanReviewSection />
-                </PhaseSection>
-              )}
-
-              <PhaseSection
-                anchorId={planPhaseAnchorId("deploy")}
-                badge={phaseConfigs.deploy.badge}
-                expanded={page.activePhases.has("deploy")}
-                icon={<Rocket className="size-3 md:size-4" />}
-                isLast
-                label={t("plan.navigator.deploy")}
-                status={phaseConfigs.deploy.status}
-                onSelect={() => selectPhase("deploy")}
-                onToggle={() => page.togglePhase("deploy")}
-                summary={buildDeploySummary(
-                  page.issue?.draft ? undefined : page.rollout,
-                  t
-                )}
-                future={
-                  page.issue?.draft ? (
-                    <p className="mt-0.5 text-sm text-control-placeholder">
-                      {t("plan.phase.deploy-description")}
-                    </p>
-                  ) : (
-                    <PlanDetailDeployFuture />
-                  )
-                }
-              >
-                <DeployBranch />
-              </PhaseSection>
-            </div>
-          </main>
-        </div>
-
-        {!page.ready && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-y-3 bg-background">
-            <Loader2 className="h-8 w-8 animate-spin text-accent" />
-            <div className="text-sm text-control-light">
-              {t("common.loading")}
-            </div>
-          </div>
+      <PhaseSection
+        anchorId={planPhaseAnchorId("deploy")}
+        badge={phaseConfigs.deploy.badge}
+        expanded={page.activePhases.has("deploy")}
+        icon={<Rocket className="size-3 md:size-4" />}
+        isLast
+        label={t("plan.navigator.deploy")}
+        status={phaseConfigs.deploy.status}
+        onSelect={() => selectPhase("deploy")}
+        onToggle={() => page.togglePhase("deploy")}
+        summary={buildDeploySummary(
+          page.issue?.draft ? undefined : page.rollout,
+          t
         )}
-
-        <AlertDialog
-          open={page.pendingLeaveConfirm}
-          onOpenChange={(open) => {
-            if (!open) {
-              page.resolveLeaveConfirm(false);
-            }
-          }}
-        >
-          <AlertDialogContent>
-            <AlertDialogTitle>
-              {t("common.leave-without-saving")}
-            </AlertDialogTitle>
-            <AlertDialogFooter>
-              <Button
-                appearance="outline"
-                onClick={() => page.resolveLeaveConfirm(false)}
-              >
-                {t("common.cancel")}
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={() => page.resolveLeaveConfirm(true)}
-              >
-                {t("common.discard-changes")}
-              </Button>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
-    </PlanDetailProvider>
+        future={deployFuture}
+      >
+        <DeployBranch />
+      </PhaseSection>
+    </div>
   );
 }
 
 function PhaseSection({
+  attention = false,
   badge,
   label,
-  lineClass,
   icon,
   future,
   isLast = false,
@@ -418,12 +482,12 @@ function PhaseSection({
   onSelect,
   anchorId,
 }: {
+  attention?: boolean;
   badge?: {
     label: string;
     variant: "default" | "secondary" | "warning" | "success" | "destructive";
   };
   label: string;
-  lineClass?: string;
   icon: ReactNode;
   future?: ReactNode;
   isLast?: boolean;
@@ -436,14 +500,16 @@ function PhaseSection({
   anchorId?: string;
 }) {
   const { t } = useTranslation();
+  // Finished is quiet, in progress is outlined, and only something that needs
+  // a person gets saturated color: the attention dot.
   const dotClass =
     status === "completed"
-      ? "bg-success text-accent-text ring-[3px] ring-success/15 md:ring-4"
+      ? "bg-control-bg text-control-light"
       : status === "closed"
         ? "bg-control-placeholder text-accent-text"
         : status === "active"
-          ? "bg-accent text-accent-text ring-[3px] ring-accent/15 md:ring-4"
-          : "border-2 border-dashed border-control-border text-control-placeholder";
+          ? "border-2 border-accent bg-background text-accent"
+          : "border-2 border-dashed border-control-border bg-control-bg text-control-light";
 
   return (
     <div className={cn("flex scroll-mt-16", isLast && "mb-48")} id={anchorId}>
@@ -458,25 +524,34 @@ function PhaseSection({
               dotClass
             )}
           >
-            {icon}
+            {status === "completed" ? (
+              <Check className="size-3 md:size-4" />
+            ) : (
+              icon
+            )}
           </div>
+          {attention && (
+            <span
+              aria-hidden="true"
+              className="absolute -top-0.5 -right-0.5 size-2.5 rounded-full border-2 border-background bg-warning"
+              data-testid="phase-attention"
+            />
+          )}
         </div>
-        {/* -mt-1 tucks the rail under the node's halo so it reads as connected. */}
+        {/* -mt-1 tucks the rail under the node so it reads as connected. */}
         {!isLast && (
-          <div className={cn("-mt-1 w-0.5 flex-1 min-h-[20px]", lineClass)} />
+          <div className="-mt-1 min-h-[20px] w-0.5 flex-1 bg-block-border" />
         )}
       </div>
 
       <div className="min-w-0 flex-1 pb-6">
         {status === "future" ? (
           <div className="py-0.5">
-            <span className="textlabel uppercase text-control-placeholder">
+            <span className="textlabel uppercase text-control-light">
               {label}
             </span>
             {future ?? (
-              <div className="mt-0.5 text-sm text-control-placeholder">
-                {summary}
-              </div>
+              <div className="mt-0.5 text-sm text-control-light">{summary}</div>
             )}
           </div>
         ) : !expanded ? (
@@ -485,7 +560,7 @@ function PhaseSection({
               <span className="textlabel uppercase">{label}</span>
               {badge && <Badge variant={badge.variant}>{badge.label}</Badge>}
               <div className="flex-1" />
-              <span className="shrink-0 text-xs text-control-placeholder">
+              <span className="shrink-0 text-xs text-control-light">
                 {t("plan.phase.show-details")}
               </span>
             </div>
@@ -496,11 +571,11 @@ function PhaseSection({
         ) : (
           <div className="flex flex-col">
             <div className="flex items-center gap-2 py-0.5">
-              <span className="textlabel uppercase text-accent">{label}</span>
+              <span className="textlabel uppercase text-main">{label}</span>
               {badge && <Badge variant={badge.variant}>{badge.label}</Badge>}
               <div className="flex-1" />
               <span
-                className="shrink-0 cursor-pointer text-xs text-control-placeholder hover:text-control"
+                className="shrink-0 cursor-pointer text-xs text-control-light hover:text-control"
                 onClick={onToggle}
               >
                 {t("plan.phase.hide-details")}

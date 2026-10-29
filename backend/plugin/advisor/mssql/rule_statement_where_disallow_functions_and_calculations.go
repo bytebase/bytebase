@@ -150,41 +150,13 @@ func (r *disallowFuncAndCalcOmniRule) checkMerge(n *ast.MergeStmt) {
 	if ref, ok := n.Target.(*ast.TableRef); ok {
 		addTableRef(r, tables, ref)
 	}
-	// Extract source tables (can be TableRef, SubqueryExpr, JoinClause, etc.).
+	// The source is one FROM item carrying its own alias: a table, a derived
+	// table, or a join. Its nested SELECTs are checked in their own scope.
 	if n.Source != nil {
-		if ref, ok := n.Source.(*ast.TableRef); ok {
-			// Bare table source: honor SourceAlias if set, otherwise use the ref's own alias/object.
-			if n.SourceAlias != "" {
-				tables[r.normalizeIdent(n.SourceAlias)] = tableRef{database: ref.Database, schema: ref.Schema, object: ref.Object}
-			} else {
-				addTableRef(r, tables, ref)
-			}
-		} else {
-			// Non-TableRef source (subquery, join, etc.). Recurse into the inner SELECT
-			// in its own scope. When SourceAlias is set, register it as an opaque entry
-			// so qualified refs like `src.col` resolve to no indexed columns (safely
-			// returning false) rather than falling through to cross-table matches.
-			if n.SourceAlias != "" {
-				tables[r.normalizeIdent(n.SourceAlias)] = tableRef{}
-			}
-			ast.Inspect(n.Source, func(m ast.Node) bool {
-				if sub, ok := m.(*ast.SelectStmt); ok {
-					r.checkSelect(sub)
-					return false
-				}
-				if _, ok := m.(*ast.SubqueryExpr); ok {
-					return true
-				}
-				// When there's a SourceAlias, don't leak inner TableRefs into outer scope.
-				if _, ok := m.(*ast.TableRef); ok {
-					if n.SourceAlias == "" {
-						addTableRef(r, tables, m.(*ast.TableRef))
-					}
-					return false
-				}
-				return true
-			})
+		for alias, ref := range r.collectTableNamesFromList(&ast.List{Items: []ast.Node{n.Source}}) {
+			tables[alias] = ref
 		}
+		r.recurseIntoNestedSelectsInNode(n.Source, nil)
 	}
 	r.checkWhere(n.OnCondition, tables)
 	if n.WhenClauses != nil {

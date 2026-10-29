@@ -1,0 +1,62 @@
+{
+  "query_block": {
+    "union_result": {
+      "using_temporary_table": true,
+      "select_id": 3,
+      "table_name": "<union1,2>",
+      "access_type": "ALL",
+      "query_specifications": [
+        {
+          "dependent": false,
+          "cacheable": true,
+          "query_block": {
+            "select_id": 1,
+            "cost_info": {
+              "query_cost": "4829.75"
+            },
+            "table": {
+              "table_name": "orders",
+              "access_type": "ALL",
+              "rows_examined_per_scan": 47895,
+              "rows_produced_per_join": 15963,
+              "filtered": "33.33",
+              "cost_info": {
+                "read_cost": "3233.41",
+                "eval_cost": "1596.34",
+                "prefix_cost": "4829.75",
+                "data_read_per_join": "1M"
+              },
+              "used_columns": ["id", "total"],
+              "attached_condition": "(`qp`.`orders`.`total` > 900)"
+            }
+          }
+        },
+        {
+          "dependent": false,
+          "cacheable": true,
+          "query_block": {
+            "select_id": 2,
+            "cost_info": {
+              "query_cost": "503.75"
+            },
+            "table": {
+              "table_name": "customers",
+              "access_type": "ALL",
+              "rows_examined_per_scan": 5000,
+              "rows_produced_per_join": 500,
+              "filtered": "10.00",
+              "cost_info": {
+                "read_cost": "453.75",
+                "eval_cost": "50.00",
+                "prefix_cost": "503.75",
+                "data_read_per_join": "195K"
+              },
+              "used_columns": ["id", "country"],
+              "attached_condition": "(`qp`.`customers`.`country` = 'JP')"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

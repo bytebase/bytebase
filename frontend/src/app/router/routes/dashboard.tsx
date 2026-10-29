@@ -1,4 +1,4 @@
-import { Navigate, type RouteObject, redirect } from "react-router";
+import { type RouteObject, redirect } from "react-router";
 import { BodyLayout } from "@/app/layouts/BodyLayout";
 import { DashboardLayout } from "@/app/layouts/DashboardLayout";
 import { RouteErrorPage } from "@/app/RouteErrorPage";
@@ -81,6 +81,7 @@ import { issueDetailRedirectLoader } from "@/app/router/issueDetailRedirect";
 import { lazyPage } from "@/app/router/lazyPage";
 import { ProjectRouteGate } from "@/app/router/ProjectRouteGate";
 import { RouteGroupOutlet } from "@/app/router/RouteGroupOutlet";
+import { releaseDetailRedirectLoader } from "@/app/router/releaseDetailRedirect";
 import type { Permission } from "@/types";
 import { sqlReviewV2Enabled } from "@/utils/featureGates";
 
@@ -573,9 +574,10 @@ const projectV1Routes: RouteObject[] = [
       {
         index: true,
         handle: { name: PROJECT_V1_ROUTE_DETAIL },
-        // The project root has no page of its own — redirect to the Issues
-        // tab. `issues` is relative to the parent `projects/:projectId`.
-        element: <Navigate to="issues" replace />,
+        lazy: lazyPage(
+          () => import("@/routes/project/ProjectHomePage"),
+          (m) => m.ProjectHomePage
+        ),
       },
       {
         path: "instances/new",
@@ -905,7 +907,7 @@ const projectV1Routes: RouteObject[] = [
             index: true,
             handle: {
               name: PROJECT_V1_ROUTE_RELEASES,
-              requiredPermissionList: (): Permission[] => ["bb.releases.list"],
+              requiredPermissionList: (): Permission[] => ["bb.plans.list"],
             },
             lazy: lazyPage(
               () => import("@/routes/project/ProjectReleaseDashboardPage"),
@@ -916,12 +918,9 @@ const projectV1Routes: RouteObject[] = [
             path: ":releaseId",
             handle: {
               name: PROJECT_V1_ROUTE_RELEASE_DETAIL,
-              requiredPermissionList: (): Permission[] => ["bb.releases.get"],
+              requiredPermissionList: (): Permission[] => ["bb.plans.list"],
             },
-            lazy: lazyPage(
-              () => import("@/routes/project/ProjectReleaseDetailPage"),
-              (m) => m.ProjectReleaseDetailPage
-            ),
+            loader: releaseDetailRedirectLoader,
           },
         ],
       },

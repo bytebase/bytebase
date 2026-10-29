@@ -22,39 +22,136 @@
     }
   },
   "agent": {
-    "active-only-chats": "Ver chats activos",
     "ai-not-configured": {
       "configure": "Configurar",
       "contact-admin": "Contacte al administrador de su espacio de trabajo para configurar la IA.",
       "description": "La IA no está configurada para este espacio de trabajo.",
       "title": "IA no configurada"
     },
+    "api-permission-allow": "Permitir una vez",
+    "api-permission-deny": "Denegar",
+    "api-permission-dismiss": "Descartar",
+    "api-permission-expired": "Esta solicitud ya no está disponible. Pídele al asistente que la prepare de nuevo.",
+    "api-permission-expired-title": "Solicitud de permiso caducada",
+    "api-permission-expires-in": "Caduca en {{time}}",
+    "api-permission-request": "¿Permitir que el asistente ejecute esta solicitud de API?",
+    "api-permission-title": "Solicitar permiso",
     "archive-all-chats": "Archivar todos los chats",
     "archive-chat": "Archivar chat",
     "archived-only-chats": "Ver chats archivados",
     "args": "Argumentos",
     "assistant-title": "Asistente de IA",
     "cancel": "Cancelar",
+    "cancel-request": "Cancelar solicitud",
     "chat-archived-label": "Archivado",
     "chat-default-title": "Nuevo chat",
     "chat-list-label": "Chats",
     "chat-total-tokens": "Tokens totales: {{count}}",
     "close": "Cerrar",
     "confirm": "Confirmar",
+    "context": "Contexto",
+    "context-no-projects": "No hay proyectos accesibles",
+    "context-select": "Seleccionar contexto",
+    "context-workspace": "Espacio de trabajo",
+    "database-reference-unavailable": "Esta base de datos ya no está disponible o no tienes acceso a ella.",
     "delete-all-chats": "Eliminar todos los chats",
     "delete-all-chats-confirmation": "¿Está seguro de que desea eliminar todos los chats archivados? Esta acción no se puede deshacer.",
     "delete-chat": "Eliminar chat",
     "delete-chat-confirmation": "¿Está seguro de que desea eliminar este chat? Esta acción no se puede deshacer.",
-    "input-placeholder": "Pregunta algo a la IA...",
+    "empty-chat": {
+      "project-heading": "¿Cómo puedo ayudar con este proyecto?",
+      "suggestions": "Preguntas sugeridas",
+      "workspace-heading": "¿Cómo puedo ayudar con este espacio de trabajo?"
+    },
+    "evidence": {
+      "database": "base de datos",
+      "issue": "issue",
+      "references": "Evidencia"
+    },
+    "input-keyboard-hint": "Enter para enviar · Shift+Enter para un salto de línea",
+    "input-placeholder": "Pregunta a la IA o escribe @ para seleccionar un recurso",
     "interrupted": "Interrumpido",
     "interrupted-retry-hint": "La conversación fue interrumpida. Puede reintentar o enviar un nuevo mensaje.",
+    "issue-reference-unavailable": "Esta incidencia ya no está disponible o no tienes acceso a ella.",
+    "landing-starters": {
+      "menu": "Sugerencias",
+      "more": "Más sugerencias",
+      "project-access": "¿Qué debo configurar antes de colaborar en este Proyecto?",
+      "project-collaborate": "¿Cómo invito a compañeros de equipo a este Proyecto?",
+      "project-connect": "¿Cómo conecto una base de datos a este proyecto?",
+      "project-next": "¿Qué puedo hacer a continuación?",
+      "project-open-blockers": "¿Qué necesita mi atención en este Proyecto?",
+      "project-open-recent": "¿Qué cambió recientemente en este Proyecto?",
+      "project-organize": "¿Cómo debo organizar las bases de datos y los entornos de este Proyecto?",
+      "project-propose-change": "¿Cómo propongo un cambio de base de datos?",
+      "project-review": "¿Cómo se revisan los cambios de base de datos en este Proyecto?",
+      "workspace-attention": "¿Qué requiere mi atención?",
+      "workspace-concepts": "Ayúdame a entender Proyectos, Instancias y Bases de datos",
+      "workspace-governance": "¿Cómo gobierna Bytebase los cambios de base de datos?",
+      "workspace-recent": "¿Qué cambió recientemente en este espacio de trabajo?",
+      "workspace-setup-first": "¿Qué debería configurar primero?"
+    },
     "minimize": "Minimizar",
     "new-chat": "Nuevo chat",
+    "other-chats": "Otros chats",
     "pending-choose-hint": "Seleccione una opción arriba",
     "pending-confirm-hint": "Confirme o cancele arriba",
     "pending-input-hint": "Proporcione la entrada arriba",
+    "permission": {
+      "issue-approval": "Esta aprobación lleva la incidencia al siguiente paso de revisión. Aún no crea un despliegue.",
+      "issue-approval-access-grant": "Este es el último paso de aprobación. La aprobación puede activar de inmediato el acceso solicitado, sin un despliegue.",
+      "issue-approval-final": "Esto completa la decisión de aprobación, pero no garantiza por sí solo la creación de un despliegue ni la ejecución de las tareas.",
+      "issue-approval-role-grant": "Este es el último paso de aprobación. La aprobación puede conceder de inmediato el rol de proyecto solicitado, sin un despliegue.",
+      "issue-approval-rollout": "Este es el último paso de aprobación. La aprobación puede crear un despliegue después de las comprobaciones y revisiones necesarias; no garantiza la ejecución de las tareas.",
+      "issue-rejection": "Rechazar esta incidencia detiene su flujo de aprobación actual. Hay que resolver el rechazo antes de continuar con la aprobación."
+    },
+    "project-attention": {
+      "checking": "Comprobando los elementos que necesitan tu atención...",
+      "empty": "No tienes issues abiertos que requieran tu atención en este proyecto.",
+      "issue-created": "- {{title}} (creado por ti)",
+      "issue-review": "- {{title}} (esperando tu aprobación)",
+      "more": "Hay más issues abiertos que requieren tu atención en este proyecto.",
+      "partial": "No se pudieron comprobar todos los issues abiertos que requieren tu atención en este proyecto.",
+      "summary": "Estos issues requieren tu atención en este proyecto:",
+      "unavailable": "No se pueden cargar los elementos que necesitan tu atención en este proyecto."
+    },
+    "project-reference-unavailable": "Este proyecto ya no está disponible o no tienes acceso a él.",
+    "query-result": {
+      "returned-rows": "Filas devueltas: {{count}}",
+      "showing-columns": "Mostrando {{shown}} de {{total}} columnas",
+      "showing-results": "Mostrando {{shown}} de {{total}} conjuntos de resultados",
+      "showing-rows": "Mostrando {{shown}} de {{total}} filas devueltas"
+    },
+    "recent-activity": {
+      "checking": "Comprobando la actividad reciente...",
+      "empty": "No se registró actividad importante en los últimos 3 días.",
+      "event": "{{actor}} {{action}} {{resource}} a las {{time}}",
+      "more": "Hay más actividad reciente disponible.",
+      "summary": "Actividad reciente de los últimos 3 días:",
+      "unavailable": "No se puede cargar la actividad reciente.",
+      "unknown-time": "una hora desconocida"
+    },
     "rename-chat-placeholder": "Ingrese el nombre del chat",
     "reply": "Responder",
+    "request-stopped-by-user": "Solicitud detenida por el usuario",
+    "request-stopped-retry-hint": "Una acción ya enviada puede completarse igualmente. Compruebe su estado antes de reintentar.",
+    "resource-picker": {
+      "add-context": "Añadir contexto",
+      "databases": "Bases de datos",
+      "issues": "Incidencias",
+      "load-databases-error": "No se pudieron cargar las bases de datos.",
+      "load-error": "No se pudieron cargar los proyectos.",
+      "load-issues-error": "No se pudieron cargar las incidencias.",
+      "no-databases": "No se encontraron bases de datos accesibles",
+      "no-issues": "No se encontraron incidencias accesibles",
+      "no-projects": "No se encontraron proyectos accesibles",
+      "projects": "Proyectos",
+      "reference-limit": "Puedes referenciar un proyecto y una de sus bases de datos o incidencias por mensaje. Si usas ambos, selecciona primero el proyecto. Pregunta por otros recursos en otro mensaje.",
+      "retry": "Reintentar",
+      "search-databases": "Buscar bases de datos",
+      "search-issues": "Buscar incidencias",
+      "search-projects": "Buscar proyectos"
+    },
     "result": "Resultado",
     "retry-last-chat-turn": "Reintentar",
     "self": "Asistente",
@@ -70,10 +167,21 @@
     "tool-failed": "Fallido",
     "tool-options": "Opciones",
     "tool-prompt": "Indicación",
+    "tool-request-canceled": "Solicitud cancelada",
     "tool-response-submitted": "Respuesta enviada",
     "tool-value": "Valor",
     "unarchive-all-chats": "Desarchivar todos los chats",
-    "unarchive-chat": "Desarchivar chat"
+    "unarchive-chat": "Desarchivar chat",
+    "workspace-attention": {
+      "checking": "Comprobando los elementos que necesitan tu atención...",
+      "empty": "No tienes issues abiertos que requieran tu atención.",
+      "issue-created": "- {{title}} (creado por ti)",
+      "issue-review": "- {{title}} (esperando tu aprobación)",
+      "more": "Hay más issues abiertos que requieren tu atención.",
+      "partial": "No se pudieron comprobar todos los issues abiertos que requieren tu atención.",
+      "summary": "Estos issues requieren tu atención:",
+      "unavailable": "No se pueden cargar los elementos que necesitan tu atención."
+    }
   },
   "audit-log": {
     "advanced-search": {
@@ -354,6 +462,7 @@
     "google-chat": "Google Chat",
     "group": "Grupo",
     "groups": "Grupos",
+    "hide": "Ocultar",
     "history": "Historial",
     "home": "Inicio",
     "id": "ID",
@@ -468,6 +577,7 @@
     "sensitive-placeholder": "Sensible - solo escritura",
     "settings": "Configuraciones",
     "share": "Compartir",
+    "show": "Mostrar",
     "show-less": "Mostrar menos",
     "show-more": "Mostrar más",
     "sign-in": "Iniciar sesión",
@@ -642,7 +752,9 @@
     "direct-connection": "Conexión directa",
     "extra-params": {
       "description": "Parámetros adicionales para la cadena de conexión de la base de datos",
-      "self": "Parámetros adicionales"
+      "overridden-by-tls": "Anulado por la sección TLS.",
+      "self": "Parámetros adicionales",
+      "wallet-overridden-by-tls": "Solo se usa su contraseña almacenada. La sección TLS proporciona los certificados."
     },
     "no-read-only-data-source": "Sin fuente de datos de solo lectura",
     "private-key-passphrase": "Frase de contraseña de clave privada",
@@ -920,6 +1032,7 @@
     "password-optional": "Cifrar con contraseña (opcional)"
   },
   "gitops": {
+    "back-to-releases": "Volver a Lanzamientos",
     "checklist": {
       "database-group-recommendation": "Para bases de datos con el mismo esquema, un grupo de bases de datos permite migrarlas juntas en un solo cambio. Defina el grupo una vez y reutilícelo en las migraciones sin tener que seleccionar bases de datos individuales cada vez.",
       "external-url": "URL externa",
@@ -935,7 +1048,6 @@
       "description-git": "El esquema de su base de datos se almacena en Git junto con el código de su aplicación. Las pull requests activan la revisión de SQL, y la fusión en la rama de destino crea automáticamente los despliegues.",
       "title": "Qué es GitOps"
     },
-    "self": "GitOps",
     "test-setup": {
       "description": "Verifique que el flujo de trabajo funciona de extremo a extremo con un archivo de migración de ejemplo.",
       "naming-convention": "Los archivos de migración se aplican en orden lexicográfico. Use un prefijo de marca de tiempo o secuencia, p. ej. 20240101000000_create_table.sql. Agregue _ddl o _dml para indicar el tipo de cambio.",
@@ -1307,7 +1419,11 @@
           "template": "A continuación se muestra un ejemplo para crear el usuario '{{user}}' con la contraseña {{password}} y otorgar al usuario los privilegios necesarios. Primero debe habilitar el flujo de trabajo impulsado por SQL de ClickHouse {{link}} y luego ejecutar la siguiente consulta para crear el usuario."
         },
         "mysql": {
-          "template": "A continuación se muestra un ejemplo para crear el usuario {{user}}@% con la contraseña {{password}} y otorgarle al usuario los privilegios necesarios."
+          "template": "A continuación se muestra un ejemplo para crear el usuario {{user}}@% con la contraseña {{password}} y otorgarle al usuario los privilegios necesarios.",
+          "warn": "Para que Bytebase pueda ejecutar cambios que asignan DEFINER a otra cuenta, otorga también SET_USER_ID en MySQL 8.0 o SET_ANY_DEFINER en MySQL 8.4 y versiones posteriores. Algunos proveedores de nube restringen estos privilegios."
+        },
+        "oracle": {
+          "warn": "GRANT ALL PRIVILEGES no funciona en Amazon RDS for Oracle."
         },
         "postgresql": {
           "template": "A continuación se muestra un ejemplo para crear el usuario '{{user}}' con la contraseña {{password}} y otorgar al usuario los privilegios necesarios. Si la instancia de conexión está alojada por ti mismo, puedes otorgar SUPERUSER.",
@@ -1533,8 +1649,11 @@
       "all-databases": "todas las bases de datos",
       "all-databases-tip": "Todas las bases de datos actuales y futuras de este proyecto.",
       "details": "Detalles de la concesión de rol",
+      "direct-execution-suffix": "{{kind}} sin aprobación en {{environments}}",
       "expired-at": "Expiró el",
+      "grantee": "Beneficiario",
       "manually-select": "selección manual",
+      "requested-by": "Solicitado por {{creator}}",
       "use-cel": "Usar expresión CEL"
     },
     "sort": {
@@ -1592,14 +1711,26 @@
     }
   },
   "landing": {
+    "ai-placeholder": "Pregunta sobre este espacio de trabajo o escribe @ para seleccionar un recurso",
+    "ai-setup": {
+      "action": "Configurar IA",
+      "description": "Configura un proveedor y un modelo para usar la IA en este espacio de trabajo.",
+      "title": "Configurar el asistente de IA"
+    },
     "changelog-for-version": "Registro de cambios para {{version}}",
     "last-visit": "Última visita",
+    "onboarding": {
+      "completed-progress": "{{completed}} de {{total}} completados",
+      "connect-action": "Conectar una instancia",
+      "connect-description": "Conecta un servidor de bases de datos a {{project}}."
+    },
     "quick-link": {
       "manage": "Administrar enlace rápido",
-      "self": "Enlace rápido",
       "visit-issues": "Problemas de visita",
-      "visit-prjects": "Visitar Proyectos"
-    }
+      "visit-prjects": "Visitar Proyectos",
+      "yours": "Tus enlaces rápidos"
+    },
+    "workspace": "Espacio de trabajo"
   },
   "masking": {
     "reason": {
@@ -1672,6 +1803,57 @@
   "plan": {
     "add-spec": "Agregar cambio",
     "add-spec-pending-draft": "Guarda o descarta el cambio pendiente antes de agregar otro",
+    "ai-review": {
+      "failed-to-run": "No se pudo iniciar la revisión con IA",
+      "run": "Ejecutar revisión con IA",
+      "run-again-description": "Cada ejecución llama al modelo por cada base de datos revisada y puede encontrar problemas distintos. Sus hallazgos sustituyen a los de la ejecución anterior, incluidos los que ya se resolvieron.",
+      "run-again-title": "¿Ejecutar de nuevo la revisión con IA?",
+      "save-first": "Guarda o descarta tus cambios para ejecutar la revisión con IA."
+    },
+    "automated-review": {
+      "checks": "Comprobación del plan",
+      "details": "Detalles",
+      "failed": "No se pudo ejecutar",
+      "failed-to-rerun": "No se pudo iniciar la revisión",
+      "ghost": "Simulación de migración en línea",
+      "n-databases_one": "{{count}} base de datos",
+      "n-databases_other": "{{count}} bases de datos",
+      "n-errors_one": "{{count}} error",
+      "n-errors_other": "{{count}} errores",
+      "n-open": "{{count}} abiertos",
+      "n-warnings_one": "{{count}} advertencia",
+      "n-warnings_other": "{{count}} advertencias",
+      "needs-attention": "{{count}} de {{total}} requieren atención",
+      "no-findings": "Sin hallazgos",
+      "not-run": "Aún no se ha ejecutado",
+      "nothing-needs-attention": "Nada requiere atención",
+      "opens-in-sql": "Haz clic para recorrerlos en el SQL.",
+      "out-of-date": "desactualizado",
+      "outdated": "El SQL cambió después de esta ejecución",
+      "passed": "aprobado",
+      "passed-on_one": "Aprobado en {{count}} base de datos",
+      "passed-on_other": "Aprobado en {{count}} bases de datos",
+      "policy": "Política de revisión",
+      "project-rules": "Reglas del proyecto: {{on}} de {{total}} activas",
+      "report": "Informe de sentencias",
+      "rerun": "Volver a ejecutar",
+      "rerun-all": "Volver a ejecutar todo",
+      "rerun-all-description_one": "Se vuelven a ejecutar las comprobaciones del plan y Standard rules. {{count}} hallazgo ya resuelto de Standard rules volverá a quedar abierto.",
+      "rerun-all-description_other": "Se vuelven a ejecutar las comprobaciones del plan y Standard rules. {{count}} hallazgos ya resueltos de Standard rules volverán a quedar abiertos.",
+      "rerun-all-title": "¿Volver a ejecutar todas las comprobaciones?",
+      "rerun-reopens_one": "{{count}} hallazgo ya resuelto volverá a quedar abierto y habrá que resolverlo de nuevo.",
+      "rerun-reopens_other": "{{count}} hallazgos ya resueltos volverán a quedar abiertos y habrá que resolverlos de nuevo.",
+      "rerun-rule-title": "¿Volver a ejecutar Standard rules?",
+      "retry": "Reintentar",
+      "running": "En ejecución",
+      "sampled": "una muestra de {{count}} de {{total}} bases de datos",
+      "scope": "Se revisó {{databases}}",
+      "scope-label": "Qué cubrió esta revisión",
+      "scope-with-engines": "Se revisó {{databases}} ({{engines}})",
+      "self": "Revisión automática",
+      "summary-part": "{{reviewer}}: {{status}}",
+      "workspace-rules": "Reglas del espacio de trabajo: {{on}} de {{total}} activas"
+    },
     "blocker": {
       "clears-on-its-own": "Se resuelve solo"
     },
@@ -1685,12 +1867,49 @@
       "started": "Se iniciaron las verificaciones del plan"
     },
     "create-plan": "Crear plan",
+    "deploy-waiting": {
+      "approval": "Aprobación",
+      "approval-from": "Aprobación de {{role}}",
+      "approval-rejected": "Aprobación rechazada",
+      "auto-create": "Bytebase crea el despliegue cuando todo esto se cumple.",
+      "creating-rollout": "Todo aprobado; creando el despliegue…",
+      "manual-rollout": "Bytebase no crea automáticamente el despliegue de este plan; despliégalo cuando todo esto se cumpla.",
+      "open-discussions_one": "{{count}} conversación abierta",
+      "open-discussions_other": "{{count}} conversaciones abiertas",
+      "overridden_one": "{{count}} hallazgo P0 de {{reviewer}} se resolvió sin cambios",
+      "overridden_other": "{{count}} hallazgos P0 de {{reviewer}} se resolvieron sin cambios",
+      "ready-to-deploy": "Todo superado; listo para desplegar.",
+      "reviewer-failed": "{{reviewer}} no se pudo ejecutar",
+      "reviewer-findings": "{{reviewer}}: {{findings}}",
+      "reviewer-not-run": "{{reviewer}} aún no se ha ejecutado",
+      "reviewer-outdated": "El SQL cambió después de ejecutar {{reviewer}}",
+      "reviewer-running": "{{reviewer}} en ejecución",
+      "show": "Mostrar",
+      "submit": "Enviar a revisión",
+      "waiting-on": "En espera de",
+      "worth-a-look": "No detiene el despliegue, pero conviene revisarlo"
+    },
     "description": {
       "placeholder": "Agregar descripción"
     },
     "draft-update-permission-required": "Puedes ver este borrador, pero necesitas bb.issues.update para editar etiquetas de problema o enviarlo a revisión.",
     "editor": {
       "save-changes-before-continuing": "Guarde o cancele sus cambios antes de continuar."
+    },
+    "findings": {
+      "n-more": "{{count}} más",
+      "n-overridden": "{{count}} P0 resueltos sin cambios",
+      "n-priority": "{{count}} {{priority}}",
+      "n-resolved": "{{count}} resueltos",
+      "name-at-line": "{{name}} (L{{line}})",
+      "name-times": "{{name}} ×{{count}}",
+      "separator": ", ",
+      "set": {
+        "earlier": "ejecuciones anteriores",
+        "open": "abiertos",
+        "overridden": "P0 resueltos sin cambios",
+        "resolved": "resueltos"
+      }
     },
     "ghost": {
       "configure": "Configurar",
@@ -1714,15 +1933,18 @@
       "checking": "Comprobando…",
       "checks-failing": "Comprobaciones fallidas",
       "deployed": "Desplegado",
+      "gate-automated-review-passed": "La revisión automática se aprobó",
       "gate-checks-failed": "Algunas comprobaciones fallaron",
       "gate-checks-failed-sub": "{{failing}} con errores, {{passed}} correctas",
       "gate-checks-passed": "Todas las comprobaciones correctas",
       "gate-checks-passed-sub": "{{count}} correctas",
       "gate-checks-running": "Comprobaciones en curso",
       "gate-checks-running-sub": "{{running}} en curso, {{passed}} correctas",
+      "gate-no-open-discussions": "No hay conversaciones abiertas",
       "gate-review-approved": "Cambios aprobados",
       "gate-review-pending": "Revisión en curso",
       "gate-review-rejected": "Cambios solicitados",
+      "gate-threads-open-sub": "Resuelve todos los hilos para crear el rollout",
       "incomplete": "Incompleto",
       "preparing-rollout": "Preparando despliegue…",
       "rejected": "Rechazado",
@@ -1730,6 +1952,7 @@
       "review-waiting": "Esperando a {{role}}",
       "run": "Ejecutar"
     },
+    "list-description": "Solicitudes de cambio creadas en la interfaz y su progreso de despliegue.",
     "meta": {
       "created-by": "Creado por {{user}}"
     },
@@ -1753,6 +1976,7 @@
       "create-rollout-action": "Crear rollout manualmente",
       "deploy-description": "Bytebase creará automáticamente el rollout cuando todas las comprobaciones pasen y el issue esté aprobado.",
       "deploy-description-gitops": "Este plan está listo para implementarse. Crea un rollout para desplegar la versión vinculada.",
+      "deploy-description-v2": "Bytebase creará automáticamente el rollout cuando todas las comprobaciones pasen, todos los hilos estén resueltos y el issue esté aprobado.",
       "hide-details": "Ocultar detalles",
       "review-description": "Envíe para revisión para continuar",
       "show-details": "Mostrar detalles"
@@ -1768,11 +1992,15 @@
         "add-a-comment": "Añadir un comentario...",
         "created-this-plan": "creó este plan",
         "marked-ready-for-review": "marcó este plan como listo para revisión",
+        "n-findings_one": "{{count}} hallazgo",
+        "n-findings_other": "{{count}} hallazgos",
         "n-hidden-events_one": "{{count}} evento oculto",
         "n-hidden-events_other": "{{count}} eventos ocultos",
+        "reviewed-the-sql": "revisó el SQL",
         "self": "Actividad",
         "show-all": "Mostrar todo"
       },
+      "approval-after-submit": "La aprobación empieza cuando envías a revisión.",
       "approval-flow": {
         "and-n-more_one": "y {{count}} más",
         "and-n-more_other": "y {{count}} más",
@@ -1790,6 +2018,7 @@
       "footer": {
         "all-gates-passed": "Todos los requisitos cumplidos",
         "approved-but-checks-failed": "Revisión aprobada, pero las comprobaciones del plan fallaron",
+        "approved-but-threads-open": "Revisión aprobada, pero hay hilos sin resolver",
         "auto-rollout-after-approval": "el despliegue se crea automáticamente tras la aprobación",
         "blocked-by-rejection": "Bloqueado por la revisión rechazada — atiende los comentarios de arriba para continuar",
         "bypass-and-deploy": "Omitir y desplegar",
@@ -1800,6 +2029,10 @@
         "confirm-checks-running": "Comprobaciones del plan en ejecución",
         "confirm-review-not-approved": "Revisión aún no aprobada",
         "confirm-review-rejected": "Revisión rechazada",
+        "confirm-rule-review-unknown": "Estado de la revisión SQL desconocido",
+        "confirm-threads-unknown": "Estado de los hilos desconocido",
+        "confirm-unresolved-threads_one": "{{count}} hilo sin resolver",
+        "confirm-unresolved-threads_other": "{{count}} hilos sin resolver",
         "creating-rollout-automatically": "creando el despliegue automáticamente...",
         "errors-passed-not-created_one": "{{count}} error, {{passed}} superadas. El despliegue no se creó automáticamente.",
         "errors-passed-not-created_other": "{{count}} errores, {{passed}} superadas. El despliegue no se creó automáticamente.",
@@ -1813,6 +2046,8 @@
         "rollout-auto-creates": "El despliegue se crea automáticamente tras la aprobación",
         "rollout-blocked-by-failed-checks": "el despliegue no se creará automáticamente hasta que las comprobaciones pasen",
         "rollout-not-created": "El despliegue no se creó automáticamente",
+        "threads-open-not-created_one": "{{count}} hilo sin resolver. El despliegue no se creó automáticamente.",
+        "threads-open-not-created_other": "{{count}} hilos sin resolver. El despliegue no se creó automáticamente.",
         "waiting-on-review": "Esperando revisión"
       },
       "last-plan-editor-cannot-approve": "No puedes aprobar este issue porque fuiste la última persona en modificar su plan. Otra persona debe aprobarlo.",
@@ -1835,11 +2070,18 @@
           "unavailable-change": "Cambio eliminado",
           "view-in-statement": "Ver en la sentencia"
         },
+        "applies-to": "Se aplica a",
         "comment-on-lines": "Comentar las líneas",
         "n-replies-hidden_one": "{{count}} respuesta oculta",
         "n-replies-hidden_other": "{{count}} respuestas ocultas",
         "n-replies_one": "{{count}} respuesta",
         "n-replies_other": "{{count}} respuestas",
+        "open": "Abierto",
+        "priority": {
+          "p0": "El SQL es incorrecto y debe cambiar.",
+          "p1": "Peligroso pero legítimo. Una persona debe aceptarlo.",
+          "p2": "Solo informativo."
+        },
         "publish": "Publicar",
         "reopen-thread": "Reabrir hilo",
         "reply": "Responder",
@@ -1848,11 +2090,14 @@
         "resolve": "Resolver",
         "resolve-thread": "Resolver hilo",
         "resolved": "Resuelto",
+        "rule": "Regla",
         "threads-on-line_one": "{{count}} hilo en esta línea",
         "threads-on-line_other": "{{count}} hilos en esta línea",
         "walker": {
+          "clear-filter": "Recorrer todos los hilos abiertos",
           "count_one": "{{count}} hilo sin resolver en esta versión",
           "count_other": "{{count}} hilos sin resolver en esta versión",
+          "filter": "{{reviewer}} · {{state}}",
           "next": "Siguiente hilo sin resolver",
           "position": "Hilo {{index}} de {{count}}",
           "previous": "Hilo sin resolver anterior",
@@ -1891,9 +2136,17 @@
       "reopen-confirm": "¿Reabrir este plan?",
       "reopen-review-confirm": "¿Reabrir esta revisión?"
     },
+    "statement-summary": {
+      "affected-rows_one": "~{{count}} fila afectada",
+      "affected-rows_other": "~{{count}} filas afectadas"
+    },
+    "status-scope": {
+      "description": "Filtrar por el estado actual de las tareas del plan",
+      "waiting": "En espera"
+    },
     "submit-review-anyway": "Enviar de todos modos",
-    "subtitle": "Redactar cambios en la base de datos y ejecutar comprobaciones previas antes de crear un problema para su aprobación.",
     "summary": {
+      "approved-by": "Aprobado por {{names}}",
       "last-approved-by": "Última aprobación por {{name}}",
       "n-changes": "{{n}} cambios",
       "n-database-groups": "{{n}} grupos de bases de datos",
@@ -1904,7 +2157,8 @@
       "n-passed": "{{n}} aprobadas",
       "n-unresolved-threads_one": "{{count}} hilo sin resolver",
       "n-unresolved-threads_other": "{{count}} hilos sin resolver",
-      "n-warning": "{{n}} advertencia"
+      "n-warning": "{{n}} advertencia",
+      "no-approval-required": "No requiere aprobación"
     },
     "targets": {
       "no-targets-found": "No se encontraron objetivos",
@@ -1994,6 +2248,39 @@
       "success-prompt": "Proyecto {{name}} creado exitosamente."
     },
     "filter-projects": "Filtrar proyectos",
+    "home": {
+      "active-issues": "Tus solicitudes activas",
+      "active-issues-unavailable": "No puedes ver las solicitudes de este proyecto.",
+      "ai-placeholder": "Pregunta sobre este proyecto o escribe @ para seleccionar un recurso",
+      "archived-description": "Este proyecto está archivado y es de solo lectura.",
+      "change-database": "Cambiar una base de datos",
+      "change-database-description": "Planifica un cambio de base de datos controlado en este proyecto.",
+      "connect": "Conectar una instancia",
+      "connect-description": "Conecta un servidor de bases de datos a este proyecto.",
+      "create-database": "Crear una base de datos",
+      "create-database-description": "Crea la primera base de datos en una instancia conectada.",
+      "created-by-you": "Creado por ti",
+      "customize": "Personalizar",
+      "databases": "Bases de datos",
+      "databases-load-error": "No se pudieron cargar las bases de datos.",
+      "databases-unavailable": "Las bases de datos de este proyecto no están disponibles para ti.",
+      "members": "Administrar miembros",
+      "members-optional-description": "Opcional: concede acceso a tus compañeros para colaborar y revisar.",
+      "needs-review": "Necesita tu revisión",
+      "next-step": "Siguiente paso",
+      "no-active-issues": "No hay solicitudes abiertas creadas por ti ni pendientes de tu revisión en este proyecto.",
+      "no-databases": "Aún no hay bases de datos accesibles.",
+      "no-databases-create-description": "Crea una base de datos en una instancia conectada para comenzar.",
+      "no-databases-description": "Conecta una instancia para incorporar bases de datos a este proyecto.",
+      "no-databases-prerequisite": "Se debe conectar una instancia antes de que aparezcan bases de datos aquí.",
+      "no-databases-transfer-description": "Transfiere una base de datos sin asignar a este proyecto o crea una nueva.",
+      "query-database": "Consultar una base de datos",
+      "query-database-description": "Explora las bases de datos de este proyecto en el Editor SQL.",
+      "transfer-databases": "Transferir bases de datos",
+      "transfer-databases-description": "Mueve una base de datos sin asignar a este proyecto.",
+      "view-all": "Ver todas",
+      "view-issues": "Ver solicitudes"
+    },
     "masking-exemption": {
       "advanced-search": {
         "scope": {
@@ -2007,20 +2294,36 @@
       "expires-in-days_other": "Expira en {{days}} días",
       "expires-today": "Expira hoy",
       "grant-exemption": "Conceder Exención",
+      "hide-raw-cel-condition": "Ocultar condición CEL sin procesar",
       "level": "nivel",
+      "n-databases_one": "{{n}} base de datos",
+      "n-databases_other": "{{n}} bases de datos",
       "n-exemptions_one": "{{n}} exención",
       "n-exemptions_other": "{{n}} exenciones",
       "no-exemptions": "Aún no se han concedido exenciones de enmascaramiento",
       "no-reason": "No se proporcionó motivo",
       "revoke-exemption-title": "¿Eliminar la exención de enmascaramiento para {{member}}?",
-      "self": "Exenciones de Enmascaramiento"
+      "self": "Exenciones de Enmascaramiento",
+      "show-raw-cel-condition": "Mostrar condición CEL sin procesar"
     },
     "members": {
-      "ddl-current-all": "Las sentencias {{kind}} pueden ejecutarse directamente en el editor SQL en TODOS los entornos sin aprobación.",
-      "ddl-current-none": "Las sentencias {{kind}} requieren aprobación antes de ejecutarse en el editor SQL.",
-      "ddl-current-some": "Las sentencias {{kind}} pueden ejecutarse directamente en el editor SQL en los entornos listados sin aprobación.",
-      "ddl-warning": "En los entornos seleccionados, las sentencias {{kind}} pueden ejecutarse directamente en el editor SQL sin aprobación.",
       "description": "Los miembros del proyecto determinan el permiso para operar la base de datos y los problemas dentro del proyecto. El propietario del proyecto, el administrador del espacio de trabajo y el DBA del espacio de trabajo tienen permisos completos para el proyecto.",
+      "direct-execution": {
+        "all": "Puede ejecutar {{kind}} en el editor SQL en todos los entornos sin aprobación.",
+        "environment-required": "Se requiere al menos un entorno.",
+        "in-environments": "En estos entornos",
+        "lead-approver": "Al aprobar, {{grantee}} podrá ejecutar {{kind}} en el editor SQL sin aprobación en:",
+        "lead-binding": "Puede ejecutar {{kind}} en el editor SQL sin aprobación en:",
+        "lead-grant": "Los miembros con este rol pueden ejecutar {{kind}} en el editor SQL sin aprobación en:",
+        "lead-request": "Una vez aprobado, podrás ejecutar {{kind}} en el editor SQL sin aprobación en:",
+        "none": "{{kind}} no puede ejecutarse en el editor SQL sin aprobación.",
+        "protected-tag": "Entorno de producción",
+        "protected_one": "{{environments}} es un entorno de producción.",
+        "protected_other": "{{environments}} son entornos de producción.",
+        "select-environments": "Seleccionar entornos",
+        "switch-label": "Permitir ejecutar {{kind}} en el editor SQL sin aprobación",
+        "title": "Ejecución directa de {{kind}}"
+      },
       "edit-member": "Editar miembro - {{member}}",
       "expiration-presets": {
         "one-month": "1 mes",
@@ -2191,17 +2494,24 @@
   "release": {
     "and-n-more-files": "y {{count}} archivos más",
     "change-tip": "Este cambio está vinculado a un artefacto de versión.",
-    "file": "Archivo de lanzamiento",
+    "empty": {
+      "description": "Los cambios que tu pipeline de CI publica en Bytebase aparecen aquí con su progreso de despliegue.",
+      "read-guide": "Leer la guía de GitOps",
+      "set-up": "Configurar GitOps",
+      "title": "Aún no hay cambios de GitOps"
+    },
     "file-type": {
       "declarative": "Declarativo",
       "unspecified": "Sin especificar",
       "versioned": "Versionado"
     },
     "files": "Archivos",
+    "gitops-setup": "Configuración de GitOps",
+    "list-description": "Cambios publicados mediante GitOps y su progreso de despliegue.",
     "not-found": "Versión no encontrada",
     "releases": "Lanzamientos",
-    "total-files": "Total de {{}} archivos",
-    "usage-description": "Un lanzamiento es un artefacto de aplicación versionado cuyo despliegue a un entorno es activado por un flujo de trabajo GitOps.",
+    "self": "Lanzamiento",
+    "source": "Origen",
     "vcs-source": "Origen de VCS",
     "vcs-type": {
       "unspecified": "VCS desconocido"
@@ -2273,12 +2583,16 @@
       "description-placeholder": "Ingrese la descripción del rol",
       "title-placeholder": "Ingrese el título del rol"
     },
+    "sql-editor-exporter": {
+      "description": "Consultar bases de datos y exportar resultados, sin acceso DDL o DML.",
+      "self": "Exportador del editor SQL"
+    },
     "sql-editor-read-user": {
       "description": "Permisos de solo lectura para consultar datos de la base de datos, sin acceso DDL o DML.",
       "self": "Usuario de solo lectura del editor SQL"
     },
     "sql-editor-user": {
-      "description": "El consultor del proyecto tiene todos los permisos dentro del proyecto, excepto la gestión de miembros del proyecto.",
+      "description": "Consulta datos y ejecuta DDL/DML en los entornos permitidos.",
       "self": "Usuario del editor SQL"
     },
     "title": "Título",
@@ -2452,9 +2766,9 @@
             "placeholder": "Una clave de API generalmente comienza con sk-*****",
             "self": "Clave de API"
           },
+          "available-in-saas": "El Asistente de IA está disponible en este espacio de trabajo y lo administra Bytebase.",
           "description": "Utilice AI para ayudar en las tareas de desarrollo de bases de datos.",
           "enable-ai-assistant": "Habilitar el Asistente de IA",
-          "enabled-in-saas": "Gemini AI se habilita automáticamente en el modo SaaS.",
           "endpoint": {
             "description": "Introduzca el endpoint de API para el modelo personalizado.",
             "openai-description": "Use un endpoint /responses para la API Responses o /chat/completions para la API Chat Completions.",
@@ -2475,7 +2789,8 @@
             "open_ai": "OpenAI",
             "self": "Proveedor de IA"
           },
-          "self": "Asistente de AI"
+          "self": "Asistente de AI",
+          "unavailable-in-saas": "El Asistente de IA no está disponible en este espacio de trabajo. Contacte con su administrador de Bytebase."
         },
         "allow-admin-data-source": {
           "description": "Cuando está habilitado, los usuarios pueden elegir entre fuentes de datos de administración y de solo lectura. Cuando está deshabilitado, los usuarios se ven obligados a usar fuentes de datos de solo lectura si están configuradas; de lo contrario, vuelven a usar fuentes de datos de administración.",
@@ -2532,10 +2847,6 @@
           "exiting": "Saliendo..."
         },
         "data-copy": "Habilitar la copia de datos",
-        "data-export": {
-          "description": "Si está deshabilitado, los usuarios no pueden exportar directamente los resultados de las consultas. En los proyectos que permiten concesiones de acceso, aún pueden pulsar \"Solicitar exportación\" para enviar una solicitud de concesión de acceso y exportar tras la aprobación.",
-          "self": "Permitir la exportación de datos sin aprobación"
-        },
         "default-landing-page": {
           "default-view-changed-to-sql-editor": "La vista predeterminada del espacio de trabajo se ha cambiado al Editor SQL.",
           "go-to-sql-editor": "Ir al Editor SQL",
@@ -2696,7 +3007,7 @@
         "disabled": "No se permite nada; ninguna sesión MCP puede conectarse.",
         "floor": {
           "label": "Nunca, en ningún modo:",
-          "text": "aprobar issues, administrar el espacio de trabajo, manejar credenciales, abrir una sesión de modo Admin ni leer el historial de consultas de otra persona."
+          "text": "administrar el espacio de trabajo, manejar credenciales, abrir una sesión de modo Admin ni leer el historial de consultas de otra persona."
         },
         "heading": "{{mode}} permite",
         "hide-details": "Ocultar detalles",
@@ -2705,17 +3016,29 @@
           "refused": "No permitido"
         },
         "row": {
+          "approve": {
+            "details": "Cada decisión se confirma en el cliente MCP del usuario antes de tomarse · Las solicitudes de rol se deciden en la consola · Se aplican las reglas de aprobación y la configuración de autoaprobación del proyecto, como en la consola",
+            "title": "Aprobar o rechazar issues"
+          },
           "export": {
             "details": "Descargar resultados como archivo. Los datos salen de Bytebase.",
             "title": "Exportar resultados de consulta"
           },
           "manage": {
-            "details": "Sincronizar instancias y bases de datos · Configuración y etiquetas de bases de datos · Mover bases de datos entre proyectos · Grupos de bases de datos · Consultas guardadas",
+            "details": "Sincronizar instancias y bases de datos · Consultas guardadas",
             "title": "Gestionar el mantenimiento de bases de datos"
           },
+          "masking-exemptions": {
+            "details": "Eximir a un miembro del enmascaramiento para una base de datos, un esquema, una tabla o una columna, o para todas las bases de datos de un proyecto, con vencimiento opcional · Cada exención y cada retirada se confirma en el cliente MCP del usuario antes de aplicarse · Los datos exentos se muestran sin enmascarar en los resultados de consultas y exportaciones",
+            "title": "Conceder o revocar exenciones de enmascaramiento"
+          },
           "propose": {
-            "details": "Crear hojas · Crear y editar plans e issues · Ejecutar comprobaciones de plan y revisiones · Crear, eliminar y restaurar versiones · Crear y eliminar revisiones · Generar diferencias de esquema. Un agente nunca aprueba su propio cambio; la política de aprobación del proyecto decide si una persona debe hacerlo",
+            "details": "Crear hojas · Crear y editar plans e issues · Ejecutar comprobaciones de plan y revisiones · Crear, eliminar y restaurar versiones · Crear y eliminar revisiones · Generar diferencias de esquema. La política de aprobación del proyecto decide si un cambio necesita aprobación",
             "title": "Proponer cambios"
+          },
+          "read-access": {
+            "details": "Quién tiene cada rol en el espacio de trabajo y sus proyectos · Grupos y sus miembros · Roles y sus permisos · Reglas y exenciones de enmascaramiento · Políticas de implementación, de consulta de datos, de etiquetas y de revisión · Concesiones de acceso, incluidas las solicitudes pendientes",
+            "title": "Leer miembros, roles y políticas"
           },
           "read-data": {
             "details": "Ejecutar consultas de solo lectura · En Solo lectura, una solicitud se rechaza por completo salvo que cada sentencia se demuestre ser una lectura que devuelve datos; la profundidad de esa comprobación depende del motor y, en algunos motores, ninguna sentencia puede demostrarse que sea una lectura · Su propio historial de consultas · Consultas guardadas y hojas a las que tiene acceso",
@@ -2728,6 +3051,10 @@
           "read-workflow": {
             "details": "Issues y comentarios · Plans y comprobaciones de plan · Despliegues, ejecuciones de tareas y registros · Versiones · Vistas previas de reversión",
             "title": "Leer el flujo de cambios"
+          },
+          "request-access": {
+            "details": "Pedir una concesión con límite de tiempo para ejecutar una sentencia concreta, opcionalmente con resultados sin enmascarar o exportados; la sentencia debe ser una lectura hasta donde el motor pueda comprobarlo · La concesión solo empieza después de ser aprobada, y se rechaza una solicitud que no necesitaría la aprobación de nadie · Una concesión solo se aplica donde el proyecto permite concesiones de acceso · Revocar una concesión activa · Activar o desactivar \"Permitir concesiones de acceso\" de un proyecto, después de que el usuario lo confirme",
+            "title": "Solicitar concesiones de acceso"
           },
           "run-rollouts": {
             "details": "Crear un despliegue · Ejecutar, omitir o cancelar sus tareas, bajo la política de aprobación del proyecto",
@@ -2744,8 +3071,8 @@
           "write": "Lectura y escritura termina aquí"
         },
         "summary": {
-          "read-only": "Leer esquemas, datos y el flujo de cambios; una solicitud que lleve algo que no pueda demostrarse que es una lectura se rechaza, y no se exporta nada",
-          "read-write": "Leer esquemas, datos y el flujo de cambios; proponer, ejecutar, exportar y gestionar"
+          "read-only": "Leer esquemas, datos, el flujo de cambios, miembros, roles y políticas; una solicitud que lleve algo que no pueda demostrarse que es una lectura se rechaza, y no se exporta nada",
+          "read-write": "Leer esquemas, datos, el flujo de cambios, miembros, roles y políticas; proponer, solicitar y revocar acceso, conceder exenciones de enmascaramiento, aprobar, ejecutar, exportar y gestionar"
         },
         "tier": {
           "read": "lectura",
@@ -2919,59 +3246,16 @@
       "workload-identity-tag-hint": "Dejar vacío para permitir todas las etiquetas"
     },
     "profile": {
-      "default-project-name": "Nuevo proyecto",
       "display-name": "Su nombre",
       "display-name-placeholder": "Ingrese su nombre",
       "email": "Correo electrónico",
-      "enable-sample-databases": "Habilitar bases de datos de ejemplo",
-      "enable-sample-databases-create-change": "Habilitar bases de datos de ejemplo como destino seguro para el cambio",
-      "enable-sample-databases-mark-sensitive-data": "Habilitar bases de datos de ejemplo para probar el enmascaramiento de datos de inmediato",
-      "enable-sample-databases-query-data": "Habilitar bases de datos de ejemplo para empezar a consultar de inmediato",
       "password": "Contraseña",
       "password-confirm": "Confirmar contraseña",
       "password-confirm-placeholder": "Confirmar nueva contraseña",
       "password-hint": "La contraseña debe seguir la configuración de restricción",
       "password-mismatch": "Nueva contraseña no coincide",
       "phone": "Número de móvil",
-      "phone-tips": "Asegúrese de incluir el código del país +1xxxxxx",
-      "setup-failed": "Error al actualizar el perfil.",
-      "setup-first-project": "Configurar el primer proyecto",
-      "setup-scenario": {
-        "continue": "Continuar",
-        "create-database-change": {
-          "description": "Defina un cambio y cree una incidencia rastreable.",
-          "title": "Crear un cambio de base de datos"
-        },
-        "mark-sensitive-data": {
-          "description": "Identifica columnas sensibles y aplica enmascaramiento de datos.",
-          "title": "Marcar datos sensibles"
-        },
-        "outcome-title": "¿Qué le gustaría hacer con Bytebase?",
-        "query-data": {
-          "description": "Abra SQL Editor y ejecute una sentencia en una base de datos.",
-          "title": "Consultar datos"
-        },
-        "workspace-usage": {
-          "solo": {
-            "description": "Usaré Bytebase por mi cuenta.",
-            "title": "Solo yo"
-          },
-          "team": {
-            "description": "Trabajaré con otras personas.",
-            "title": "Mi equipo"
-          },
-          "title": "¿Quién usará Bytebase con usted?"
-        }
-      },
-      "setup-skip": "Lo haré después",
-      "setup-steps": {
-        "scenario": "Elegir un objetivo",
-        "workspace": "Configurar espacio de trabajo"
-      },
-      "setup-submit": "Configurar mi espacio de trabajo",
-      "setup-success": "Perfil actualizado.",
-      "workspace-name": "Nombre del espacio de trabajo",
-      "workspace-name-placeholder": "Ingrese el nombre del espacio de trabajo"
+      "phone-tips": "Asegúrese de incluir el código del país +1xxxxxx"
     },
     "sensitive-data": {
       "algorithms": {
@@ -3269,6 +3553,7 @@
     "data-explorer-sql-filter-placeholder": "Introduce un predicado de consulta, p. ej. WHERE id = 1",
     "ddl-dml-requires-data-change-plan": "Para ejecutar sentencias DDL/DML en <environment></environment>, envíe un Plan de Cambio de Datos para su aprobación.",
     "download-as-file": "Descargar como {{file}}",
+    "dry-run": "Simulación",
     "duration-day": "{{days}} día",
     "duration-days": "{{days}} días",
     "duration-hour": "{{hours}} hora",
@@ -3278,10 +3563,15 @@
     "expire-at": "Expira el {{time}}",
     "expire-in": "Expira en {{time}}",
     "expired": "Expirado",
+    "explain": "Explicar",
+    "explain-hint": "Muestra el plan sin ejecutar la consulta",
     "explore-data": "Explorar datos",
     "export-available-via-issue": "Exportación disponible vía issue \"{{title}}\"",
     "export-available-via-n-grants": "Exportación disponible vía {{count}} concesiones de acceso:",
     "export-enabled-by-grant": "Exportación habilitada por la concesión de acceso",
+    "export-grant-lookup-failed": "No se pudo comprobar el acceso de exportación.",
+    "export-grant-lookup-loading": "Comprobando el acceso de exportación…",
+    "export-grant-lookup-retry": "Reintentar",
     "format": "Formato",
     "format-default": "Predeterminado",
     "format-sql": "Formatear SQL",
@@ -3312,23 +3602,28 @@
     "open-in-new-tab": "Abrir en nueva pestaña",
     "opened-from-link": "Abierto desde enlace",
     "pending-query": "Consulta pendiente",
+    "plan-cost-share": "{{share}} del coste estimado del script",
+    "plan-estimated": "Estimado",
+    "plan-view": "Plan",
     "previous-row": "Fila anterior",
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "No se permite realizar consultas a la fuente de datos del administrador."
     },
     "query-history-not-found": "Historial de consultas no encontrado o ya no accesible",
+    "query-plan-estimated": "Un plan nuevo, calculado ahora mismo. Puede diferir del plan que se ejecutó.",
     "query-plan-load-failed": "No se pudo cargar el plan de consulta",
+    "query-plan-requires-explain": "Requiere el permiso bb.sql.explain en este proyecto",
     "query-plan-viewer": {
       "copy": {
         "copied": "Copiado",
         "failed": "Error al copiar",
-        "plan": "Copiar plan",
-        "query": "Copiar consulta"
+        "plan": "Copiar plan"
       },
       "details": {
         "select-node": "Selecciona un nodo para ver sus detalles."
       },
       "diagram": {
+        "actual-rows": "filas reales {{count}}",
         "collapse": "Contraer {{count}} nodos bajo {{node}}",
         "cost": "coste {{cost}}",
         "estimated-rows": "{{count}} filas estimadas",
@@ -3336,31 +3631,80 @@
         "fit": "Ajustar a la vista",
         "nodes-hidden": "{{count}} nodos ocultos",
         "plan-cost-share": "{{share}} del coste del plan",
+        "plan-time-share": "{{share}} del tiempo del plan",
         "rows": "filas {{count}}",
+        "time": "tiempo {{time}} ms",
         "zoom-in": "Acercar",
         "zoom-out": "Alejar"
       },
       "error": {
+        "bigquery-empty": "BigQuery no devolvió ningún plan de consulta para esta sentencia.",
+        "bigquery-invalid": "El plan de consulta no es JSON válido. Se esperan las etapas de un trabajo de BigQuery.",
+        "bigquery-no-plan": "El plan de consulta no contiene ninguna etapa por la que empezar.",
+        "clickhouse-empty": "ClickHouse no devolvió ningún plan de consulta para esta sentencia.",
+        "clickhouse-invalid": "El plan de consulta no es JSON válido. Se espera la salida de EXPLAIN json = 1.",
+        "clickhouse-no-plan": "El JSON del plan de consulta de ClickHouse no contiene un objeto \"Plan\".",
+        "cockroachdb-empty": "CockroachDB no devolvió ningún plan de consulta para esta sentencia.",
+        "cockroachdb-invalid": "El plan de consulta no es JSON válido. Se espera el diagrama que codifica EXPLAIN (DISTSQL).",
+        "cockroachdb-no-plan": "El JSON del plan de consulta no contiene \"processors\" que dibujar.",
+        "databricks-empty": "Databricks no devolvió ningún plan de consulta para esta sentencia.",
+        "databricks-no-plan": "El plan de consulta no contiene un plan físico. Se espera la salida de EXPLAIN FORMATTED.",
+        "elasticsearch-empty": "Elasticsearch no devolvió ningún plan de consulta para esta sentencia.",
+        "elasticsearch-invalid": "El plan de consulta no es JSON válido. Se espera un perfil de Elasticsearch.",
+        "elasticsearch-no-plan": "El perfil no contiene ningún fragmento por el que empezar. Elasticsearch perfila una búsqueda que ejecutó.",
+        "hive-empty": "Hive no devolvió ningún plan de consulta para esta sentencia.",
+        "hive-invalid": "El plan de consulta no es JSON válido. Se espera la salida de EXPLAIN FORMATTED de Hive.",
+        "hive-no-plan": "El plan de consulta no tiene un plan de CBO que dibujar. Hive solo lo indica cuando su optimizador basado en costes planificó la sentencia.",
+        "mongodb-empty": "MongoDB no devolvió ningún plan de consulta para esta sentencia.",
+        "mongodb-invalid": "El plan de consulta no es JSON válido. Se espera la salida de explain() de MongoDB.",
+        "mongodb-no-plan": "El JSON del plan de consulta no tiene ni \"queryPlanner\" ni una tubería \"stages\" que dibujar.",
         "mssql-empty": "SQL Server no devolvió ningún plan de consulta para esta sentencia.",
         "mssql-invalid": "El plan de consulta no es XML válido. Se espera la salida de SHOWPLAN_XML.",
         "mssql-no-plan": "El XML del plan de consulta no es un showplan de SQL Server con al menos una sentencia.",
+        "mysql-empty": "No se devolvió ningún plan de consulta para esta sentencia.",
+        "mysql-invalid": "El plan de consulta no es JSON válido. Se espera la salida de EXPLAIN FORMAT=JSON.",
+        "mysql-no-plan": "El JSON del plan de consulta no contiene un objeto \"query_block\".",
+        "oceanbase-empty": "OceanBase no devolvió ningún plan de consulta para esta sentencia.",
+        "oceanbase-invalid": "El plan de consulta no es JSON válido. Se espera la salida de EXPLAIN FORMAT=JSON de OceanBase.",
+        "oceanbase-no-plan": "El JSON del plan de consulta no nombra ningún operador, así que no hay nada que dibujar.",
+        "oracle-empty": "Oracle no devolvió ningún plan de consulta para esta sentencia.",
+        "oracle-invalid": "El plan de consulta no es JSON válido. Se espera la tabla de planes de Oracle, tal como la representa el servidor.",
+        "oracle-no-plan": "El plan de consulta no tiene ningún paso sin padre, así que no hay un operador por el que empezar.",
         "postgres-empty": "PostgreSQL no devolvió ningún plan de consulta para esta sentencia.",
         "postgres-invalid": "El plan de consulta no es JSON válido. Se espera la salida de EXPLAIN (FORMAT JSON).",
         "postgres-no-plan": "El JSON del plan de consulta no contiene un objeto \"Plan\".",
+        "redshift-empty": "Redshift no devolvió ningún plan de consulta para esta sentencia.",
+        "redshift-no-plan": "El plan de consulta no contiene ningún operador: un plan de Redshift indica un coste para cada uno.",
+        "snowflake-empty": "Snowflake no devolvió ningún plan de consulta para esta sentencia.",
+        "snowflake-invalid": "El plan de consulta no es JSON válido. Se espera la salida de EXPLAIN USING JSON de Snowflake.",
+        "snowflake-no-plan": "El JSON del plan de consulta no contiene ninguna operación por la que empezar.",
         "spanner-empty": "Spanner no devolvió ningún plan de consulta para esta sentencia.",
         "spanner-emulator": "Spanner no devolvió ningún plan de consulta para esta sentencia. El emulador de Spanner no devuelve ninguno para ninguna sentencia; explíquela en una instancia de Spanner para ver uno.",
         "spanner-invalid": "El plan de consulta no es JSON válido. Se espera un plan de consulta de Spanner.",
         "spanner-no-plan": "El JSON del plan de consulta no contiene una lista \"planNodes\" con un operador en la raíz.",
+        "starrocks-empty": "La sentencia no produjo ningún plan de consulta que dibujar.",
+        "starrocks-no-plan": "El plan de consulta no tiene ningún operador numerado en ninguno de sus fragmentos.",
+        "tidb-empty": "TiDB no devolvió ningún plan de consulta para esta sentencia.",
+        "tidb-invalid": "El plan de consulta no es JSON válido. Se espera la salida de EXPLAIN FORMAT=tidb_json.",
+        "tidb-no-plan": "El JSON del plan de consulta no contiene un operador en la raíz.",
         "too-deep": "El plan de consulta está demasiado anidado para que este visualizador pueda dibujarlo.",
+        "too-many-nodes": "El plan de consulta tiene más operadores de los que este visualizador dibuja, así que se muestra como texto.",
+        "trino-empty": "Trino no devolvió ningún plan de consulta para esta sentencia.",
+        "trino-invalid": "El plan de consulta no es JSON válido. Se espera la salida de EXPLAIN (FORMAT JSON) de Trino.",
+        "trino-no-plan": "El JSON del plan de consulta no contiene ningún fragmento por el que empezar.",
         "unreadable": "No se pudo leer este plan de consulta"
       },
       "grid": {
+        "actual-rows": "Filas reales",
+        "actual-rows-hint": "Filas que el operador devolvió realmente, sumando todas sus ejecuciones",
         "added-cost": "Coste añadido",
         "added-cost-hint": "Coste que este nodo añade sobre sus hijos; algunos motores también cuentan aquí las repeticiones de una entrada, como bajo un bucle anidado. La barra muestra este coste como parte del plan.",
         "caption": "Nodos del plan en el orden en que el planificador los anida, con los padres antes que los hijos.",
         "estimated-rows": "Filas estimadas",
         "node": "Nodo",
         "rows": "Filas",
+        "self-time": "Tiempo propio",
+        "self-time-hint": "Milisegundos que este nodo tardó por encima de sus hijos, sumando todas sus ejecuciones. La barra muestra ese tiempo como parte del plan.",
         "total-cost": "Coste total",
         "width": "Anchura",
         "width-hint": "Anchura estimada de la fila en bytes"
@@ -3372,51 +3716,70 @@
         "off": "Desactivado",
         "off-hint": "Dejar todas las tarjetas de nodo sin sombrear",
         "rows": "Filas",
-        "rows-hint": "Sombrear según el número estimado de filas"
+        "rows-hint": "Sombrear según el número estimado de filas",
+        "time": "Tiempo",
+        "time-hint": "Sombrear según el tiempo que un nodo tardó por encima de sus hijos"
       },
       "legend": {
         "cost": "la barra de cada tarjeta indica la parte del coste estimado del plan correspondiente a ese nodo",
-        "rows": "una arista se hace más gruesa según las filas que se estima que devolverá su nodo hijo"
+        "rows": "una arista se hace más gruesa según las filas que se estima que devolverá su nodo hijo",
+        "time": "la barra de cada tarjeta indica la parte del tiempo medido del plan correspondiente a ese nodo"
       },
       "metric": {
+        "actual-rows": "Filas reales",
+        "actual-time": "Tiempo real",
         "added-cost": "Coste añadido",
         "bytes": "{{count}} bytes",
         "estimated-rows": "Filas estimadas",
+        "loops": "Ejecuciones",
+        "milliseconds": "{{count}} ms",
         "row-width": "Anchura de fila",
+        "rows-none": "No devolvió ninguna fila, aunque el planificador esperaba algunas.",
+        "rows-over": "Devolvió {{factor}}× más filas de las que estimó el planificador.",
+        "rows-under": "Devolvió {{factor}}× menos filas de las que estimó el planificador.",
         "startup-cost": "Coste inicial",
         "total-cost": "Coste total"
       },
-      "query": {
-        "missing": "La sentencia no se guardó con este plan."
-      },
       "summary": {
-        "added-cost": "Coste añadido",
-        "cost-by-operation": "Coste por operación",
-        "cost-by-operation-description": "Cada tipo de nodo del plan y su coste total.",
-        "cost-ranges": "Rangos de coste",
-        "cost-ranges-description": "Cada nodo abarca desde su coste inicial —el coste antes de su primera fila— hasta su coste total; ambos incluyen todo lo que hay debajo. Los intervalos más oscuros contienen más coste del plan. Los costes no son un calendario: dos entradas de una unión se solapan aquí, pero se ejecutan una tras otra.",
-        "costliest": "Operadores más costosos",
-        "costliest-description": "Ordenados por el coste que un nodo añade sobre sus hijos. Cuando una entrada se ejecuta repetidamente, como bajo un bucle anidado, algunos motores cuentan las repeticiones en el nodo que la vuelve a ejecutar y no en la propia entrada.",
-        "count": "Cantidad",
-        "estimate-note": "La sentencia se planificó, pero no se ejecutó, por lo que todas las cifras son estimaciones del optimizador y no mediciones. Las unidades de coste son arbitrarias y solo comparables dentro de este plan.",
-        "estimated-rows-returned": "Filas devueltas estimadas",
+        "costliest": "Más costosos según el coste estimado",
         "no-added-cost": "Ningún nodo de este plan añade un coste estimado propio.",
-        "nodes": "Nodos",
-        "operation": "Operación",
-        "share": "Proporción",
-        "timeline-node": "{{name}}, coste de {{startup}} a {{total}}, {{share}} del coste del plan",
-        "total-estimated-cost": "Coste total estimado"
+        "no-added-time": "Ningún nodo de este plan consumió un tiempo propio medible.",
+        "no-ranking": "Este plan no indica coste ni tiempo, así que sus operadores no se pueden ordenar.",
+        "slowest-measured": "Más lentos según el tiempo medido",
+        "warning-operators": "{{count}} operadores",
+        "warnings": "Avisos"
       },
       "tab": {
         "diagram": "Diagrama",
-        "grid": "Cuadrícula",
-        "query": "Consulta",
-        "summary": "Resumen",
+        "grid": "Tabla",
         "text": "Texto"
+      },
+      "table": {
+        "heading": "Tabla",
+        "indexes": "Índices",
+        "no-indexes": "Esta tabla no tiene índices.",
+        "primary": "primaria",
+        "rows": "{{count}} filas en la última sincronización",
+        "unique": "único"
       },
       "totals": {
         "estimated-cost": "coste estimado {{cost}}",
+        "measured-time": "tiempo medido {{time}} ms",
         "nodes": "{{count}} nodos"
+      },
+      "warning": {
+        "data-redistribution": {
+          "detail": "Esta unión mueve filas entre segmentos antes de poder emparejarlas. Distribuir ambas tablas por su columna de unión, o hacer ALL la más pequeña, permite que la unión se ejecute donde ya están las filas.",
+          "title": "Redistribución de datos"
+        },
+        "full-index-scan": {
+          "detail": "Lee todas las entradas de este índice. Si la consulta solo necesita unas pocas, una condición sobre las columnas iniciales del índice evitaría la lectura completa.",
+          "title": "Exploración completa del índice"
+        },
+        "full-table-scan": {
+          "detail": "Lee todas las filas de esta tabla. Si la consulta solo necesita unas pocas, un índice sobre las columnas filtradas evitaría la lectura completa.",
+          "title": "Exploración completa de la tabla"
+        }
       }
     },
     "query-time": "Tiempo de consulta",
@@ -3537,6 +3900,7 @@
       "manage-license": "Administrar licencia",
       "missing-license-attention": "Debe asignar una licencia a la instancia para habilitar esta función.",
       "n-license-remain": "permanecer {{n}}",
+      "project-instance-hint": "Esta lista solo incluye instancias del espacio de trabajo. Para administrar la licencia de una instancia de proyecto, abra su página de detalles.",
       "require-license": "Requerir licencia de instancia",
       "success-notification": "Actualizar correctamente la asignación de licencia",
       "used-and-total-instance": "Límite de instancias activas/totales",
@@ -3818,6 +4182,123 @@
       "copy-succeed": "Secreto copiado al portapapeles. Péguelo en su aplicación.",
       "description": "Copie el código e ingréselo manualmente en su aplicación TOTP.",
       "self": "Su secreto de dos factores"
+    }
+  },
+  "workspace-setup": {
+    "continue": "Continuar",
+    "elsewhere": {
+      "continue": "Continuar aquí",
+      "ended": "Esta configuración terminó en otra pestaña",
+      "saved": "Esta configuración continuó en otra pestaña",
+      "workspace": "Ir al espacio de trabajo"
+    },
+    "goal": {
+      "change": {
+        "description": "Escriba un cambio de esquema o una corrección de datos, deje que la revisión de SQL lo compruebe y despliéguelo en la base de datos.",
+        "finish-line": "Meta: un cambio que superó la revisión de SQL y se desplegó",
+        "title": "Planificar, revisar y desplegar un cambio de base de datos"
+      },
+      "description": "Elija lo que le trajo aquí. Se lo sugeriremos primero al terminar la configuración.",
+      "explore": {
+        "description": "Le sugeriremos una consulta rápida para empezar. Elija un rumbo más adelante.",
+        "title": "Aún no lo sé, solo estoy explorando"
+      },
+      "query": {
+        "description": "Ejecute SQL en la base de datos desde el editor, con cada sentencia registrada en el historial de consultas.",
+        "finish-line": "Meta: un resultado de consulta de la base de datos",
+        "title": "Consultar datos con protecciones"
+      },
+      "required": "Elija una opción para continuar",
+      "title": "¿Qué quiere hacer primero?"
+    },
+    "optional": "opcional",
+    "panel": {
+      "connected-after-setup": "Se conecta tras la configuración",
+      "own-databases": "Sus bases de datos",
+      "own-instance": "Su instancia",
+      "sample-database": "Base de datos de ejemplo",
+      "sample-instance": "Instancia de proyecto de muestra",
+      "workspace": "Espacio de trabajo"
+    },
+    "project": {
+      "database-title": "Base de datos para {{project}}",
+      "description": "Bytebase necesita una base de datos para funcionar. Dé nombre al proyecto que la contendrá y elija de dónde viene la primera.",
+      "exists": "Este proyecto ya existe. Cámbiele el nombre en su configuración.",
+      "name": "Nombre del proyecto",
+      "name-hint": "Un proyecto agrupa las bases de datos en las que trabaja un equipo, con sus miembros y políticas. Cada cambio y cada consulta ocurre dentro de uno.",
+      "name-optional-note": "Déjelo vacío para crear un proyecto más tarde.",
+      "name-placeholder": "Pagos, Plataforma de datos, Herramientas internas",
+      "name-required": "Introduzca un nombre de proyecto",
+      "own": {
+        "description": "Una instancia es su servidor de base de datos. La configuración termina primero; después la conecta desde {{project}}.",
+        "title": "Conectar mi propia instancia después de la configuración"
+      },
+      "sample": {
+        "description": "Una base de datos PostgreSQL con datos de ejemplo de empleados, alojada por Bytebase Cloud. Sin instalar nada; disponible durante 7 días.",
+        "description-self-host": "Una base de datos PostgreSQL con datos de ejemplo de empleados, que se ejecuta en este servidor. Sin instalar nada.",
+        "prepared": "La base de datos de ejemplo está lista en este proyecto.",
+        "recommended": "Recomendado",
+        "title": "Empezar con la base de datos de ejemplo",
+        "unavailable": "La base de datos de ejemplo no está disponible en este servidor.",
+        "used": "Este espacio de trabajo ya ha usado su base de datos de ejemplo."
+      },
+      "skip": "Lo haré después",
+      "title": "Cree un proyecto y elija su base de datos",
+      "your-project": "su proyecto"
+    },
+    "steps": {
+      "goal": "Objetivo",
+      "project": "Proyecto",
+      "team": "Equipo",
+      "workspace": "Espacio de trabajo"
+    },
+    "team": {
+      "address-invalid": "No es una dirección de correo",
+      "address-own": "Su propia dirección",
+      "address-placeholder": "nombre@empresa.com",
+      "address-placeholder-more": "Otra dirección",
+      "description": "Una pregunta antes de terminar.",
+      "failed": {
+        "invitees": "No se pudo añadir a las personas indicadas.",
+        "names": "No se pudieron guardar su nombre y el nombre del espacio de trabajo.",
+        "project": "No se pudo crear {{project}}.",
+        "sample": "No se pudo preparar la base de datos de ejemplo."
+      },
+      "finish": "Finalizar",
+      "finish-invite_one": "Enviar {{count}} invitación y finalizar",
+      "finish-invite_other": "Enviar {{count}} invitaciones y finalizar",
+      "finish-without-sample": "Finalizar sin la base de datos de ejemplo",
+      "finishing": "Configurando…",
+      "invite-teammates": "Invitar a compañeros",
+      "members-enter": "Pulse Intro después de cada dirección.",
+      "members-own": "Sus bases de datos aparecerán cuando conecte su instancia.",
+      "members-role": "Se unen como miembros que pueden consultar y proponer cambios en {{project}}.",
+      "members-roles-later": "Cambie los roles cuando quiera en Miembros.",
+      "progress": "Creando {{project}}…",
+      "progress-sample": "Creando {{project}} y su base de datos de ejemplo…",
+      "remove-address": "Quitar {{email}}",
+      "size": "¿Cuántas personas usarán Bytebase?",
+      "size-required": "Elija un tamaño de equipo para finalizar",
+      "sizes": {
+        "11-50": "11–50",
+        "2-10": "2–10",
+        "200-plus": "200+",
+        "51-200": "51–200",
+        "just-me": "Solo yo"
+      },
+      "title": "Su equipo",
+      "try-again": "Reintentar"
+    },
+    "workspace": {
+      "default-name": "Espacio de trabajo de {{name}}",
+      "default-name-anonymous": "Mi espacio de trabajo",
+      "description": "Bytebase está listo cuando tiene un espacio de trabajo, un proyecto y una base de datos.",
+      "name-placeholder": "Introduzca su nombre",
+      "title": "Configure su espacio de trabajo",
+      "workspace-name": "Nombre del espacio de trabajo",
+      "workspace-name-hint": "Todas las personas que añada se unirán a este espacio de trabajo.",
+      "workspace-name-placeholder": "Normalmente su empresa",
+      "workspace-name-required": "Introduzca un nombre para el espacio de trabajo"
     }
   },
   "workspace-setup-guide": {

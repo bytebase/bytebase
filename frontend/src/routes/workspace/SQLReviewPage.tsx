@@ -35,6 +35,11 @@ import type { SQLReviewPolicy } from "@/types";
 import { hasWorkspacePermissionV2, sqlReviewPolicySlug } from "@/utils";
 import { sqlReviewV2Enabled } from "@/utils/featureGates";
 import {
+  SQLReviewAIReviewSection,
+  useWorkspaceAIReview,
+  useWorkspaceReviewAIPolicy,
+} from "./SQLReviewAIReviewSection";
+import {
   SQLReviewStandardRulesSection,
   useWorkspaceStandardRules,
 } from "./SQLReviewStandardRulesSection";
@@ -252,10 +257,6 @@ function PolicyTable({
 // SQLReviewPage (exported)
 // ============================================================
 
-// The standard rules read as one centered column, and the footer lines its
-// actions up with it.
-const STANDARD_RULES_COLUMN = "mx-auto w-full max-w-3xl";
-
 export function SQLReviewPage() {
   const { t } = useTranslation();
   const sqlReviewStore = useSQLReviewStore();
@@ -263,7 +264,19 @@ export function SQLReviewPage() {
   // With SQL Review V2 the standard rules replace the v1 review policies.
   const sqlReviewV2 = sqlReviewV2Enabled();
   const standardRules = useWorkspaceStandardRules(sqlReviewV2);
-  useUnsavedChangesGuard(standardRules.isDirty);
+  const aiReview = useWorkspaceAIReview();
+  const aiReviewPolicy = useWorkspaceReviewAIPolicy(sqlReviewV2);
+  const aiReviewPolicyVisible = aiReview.aiEnabled && aiReview.enabled;
+  const formParts = [standardRules, aiReview, aiReviewPolicy];
+  const saveParts = [
+    standardRules,
+    aiReview,
+    ...(aiReviewPolicyVisible ? [aiReviewPolicy] : []),
+  ];
+  const isDirty = formParts.some((part) => part.isDirty);
+  const saving = formParts.some((part) => part.saving);
+  const hasSaveableChanges = saveParts.some((part) => part.isDirty);
+  useUnsavedChangesGuard(isDirty);
 
   useEffect(() => {
     if (sqlReviewV2) return;
@@ -301,19 +314,20 @@ export function SQLReviewPage() {
   return (
     <WorkspacePageLayout className="gap-y-4">
       {sqlReviewV2 ? (
-        <div className={STANDARD_RULES_COLUMN}>
+        <>
           <SQLReviewStandardRulesSection standardRules={standardRules} />
-        </div>
+          <SQLReviewAIReviewSection
+            aiReview={aiReview}
+            policy={aiReviewPolicy}
+          />
+        </>
       ) : (
         <>
           <WorkspacePageInfo
             description={
               <>
                 {t("sql-review.description")}{" "}
-                <LearnMoreLink
-                  href="https://docs.bytebase.com/sql-review/review-rules?source=console"
-                  className="text-accent"
-                />
+                <LearnMoreLink href="https://docs.bytebase.com/sql-review/review-rules?source=console" />
               </>
             }
           />
@@ -343,34 +357,46 @@ export function SQLReviewPage() {
           ) : (
             <div className="py-12 border rounded-sm flex flex-col items-center justify-center gap-y-3 text-control-light">
               <span>{t("common.no-data")}</span>
-              {hasCreatePermission && (
-                <Button size="sm" onClick={navigateToCreate}>
-                  <Plus className="w-4 h-4 mr-1" />
-                  {t("common.create")}
-                </Button>
-              )}
             </div>
           )}
         </>
       )}
 
-      {standardRules.isDirty && (
+      {isDirty && (
         <StickyActionFooter
           contentPadding={false}
-          contentClassName={STANDARD_RULES_COLUMN}
           left={
             <Button
               appearance="outline"
-              disabled={standardRules.saving}
-              onClick={standardRules.revert}
+              disabled={saving}
+              onClick={() => {
+                for (const part of formParts) part.revert();
+              }}
             >
               {t("common.cancel")}
             </Button>
           }
           right={
             <Button
-              disabled={standardRules.saving}
-              onClick={() => void standardRules.save()}
+              disabled={
+                saving ||
+                !hasSaveableChanges ||
+                (aiReviewPolicyVisible && aiReviewPolicy.error !== undefined)
+              }
+              onClick={async () => {
+                const saves = saveParts
+                  .filter((part) => part.isDirty)
+                  .map((part) => part.save());
+                // One click reports one update, and only when every changed
+                // part saved.
+                if ((await Promise.all(saves)).every(Boolean)) {
+                  pushNotification({
+                    module: "bytebase",
+                    style: "SUCCESS",
+                    title: t("common.updated"),
+                  });
+                }
+              }}
             >
               {t("common.update")}
             </Button>
