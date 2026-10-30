@@ -4,6 +4,11 @@ import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { ReactRoute } from "@/app/router";
 import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
+import {
+  type RequestRoleDraft,
+  saveAccessGrantDraft,
+  wasDeniedQueryRequestDraftDelivered,
+} from "@/modules/sql-editor/model/accessGrantDraft";
 import type { SQLEditorTab } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
@@ -51,6 +56,12 @@ const mocks = vi.hoisted(() => {
       async (project: string) => project
     ),
     setAsidePanelTab: vi.fn(),
+    openAccessGrantDrawer: vi.fn(),
+    openRequestRoleSheet: vi.fn(),
+    notify: vi.fn(),
+    getOrFetchProjectByName: vi.fn(),
+    hasInstanceFeature: vi.fn(),
+    roleList: [] as Array<{ name: string; permissions: string[] }>,
     cleanupLegacyPouchDatabases: vi.fn(async () => undefined),
     permissionState: {
       missedBasicPermissions: [] as string[],
@@ -151,6 +162,10 @@ vi.mock("@/app/router", async (importOriginal) => ({
 vi.mock("@/stores/app", () => ({
   useAppStore: {
     getState: () => ({
+      notify: mocks.notify,
+      getOrFetchProjectByName: mocks.getOrFetchProjectByName,
+      hasInstanceFeature: mocks.hasInstanceFeature,
+      roleList: mocks.roleList,
       getOrFetchDatabaseByName: mocks.getOrFetchDatabaseByName,
       getOrFetchDatabaseMetadata: mocks.getOrFetchDatabaseMetadata,
       fetchInstance: mocks.fetchInstance,
@@ -162,6 +177,13 @@ vi.mock("@/stores/app", () => ({
       },
     }),
   },
+}));
+
+vi.mock("./RequestDrawerHost", () => ({
+  useRequestDrawerHost: () => ({
+    openAccessGrantDrawer: mocks.openAccessGrantDrawer,
+    openRequestRoleSheet: mocks.openRequestRoleSheet,
+  }),
 }));
 
 vi.mock("@/modules/sql-editor/store", () => ({
@@ -230,9 +252,20 @@ const renderShell = () => {
 beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
+  sessionStorage.clear();
   mocks.maybeSwitchProject.mockImplementation(
     async (project: string) => project
   );
+  mocks.getOrFetchProjectByName.mockResolvedValue({
+    name: "projects/proj1",
+    allowRequestRole: true,
+  });
+  mocks.hasInstanceFeature.mockReturnValue(false);
+  mocks.roleList = [
+    { name: "roles/sqlEditorReadUser", permissions: ["bb.sql.select"] },
+  ];
+  mocks.openAccessGrantDrawer.mockReturnValue(true);
+  mocks.openRequestRoleSheet.mockReturnValue(true);
   mocks.tabsState.addTab.mockImplementation(
     (payload: Partial<SQLEditorTab> = {}) => {
       const tab = {
@@ -322,6 +355,242 @@ beforeEach(() => {
 });
 
 describe("SQLEditorRouteShell", () => {
+  test("opens a prefilled Access Grant draft after the database route is ready", async () => {
+    const draft = {
+      project: "projects/proj1",
+      sourceDatabase: "instances/inst1/databases/db1",
+      targets: ["instances/inst1/databases/db1"],
+      statement: "SELECT id FROM users",
+      schema: "public",
+    };
+    const accessGrantDraftKey = saveAccessGrantDraft(draft);
+    mocks.renderRoute = {
+      ...mocks.renderRoute,
+      query: { accessGrantDraftKey },
+    };
+    mocks.currentRoute = mocks.renderRoute;
+
+    const { unmount } = renderShell();
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.openAccessGrantDrawer).toHaveBeenCalledOnce();
+    expect(mocks.openAccessGrantDrawer).toHaveBeenCalledWith({
+      query: draft.statement,
+      targets: draft.targets,
+      schema: draft.schema,
+    });
+    expect(sessionStorage.getItem(accessGrantDraftKey)).toBeNull();
+    expect(wasDeniedQueryRequestDraftDelivered(accessGrantDraftKey)).toBe(true);
+    expect(mocks.navigateReplace).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "sql-editor.database",
+        query: {},
+      })
+    );
+    unmount();
+  });
+
+  test("opens a project instance draft when workspace IDs collide", async () => {
+    const sourceDatabase =
+      "projects/proj1/instances/inst1/databases/db1";
+    const accessGrantDraftKey = saveAccessGrantDraft({
+      project: "projects/proj1",
+      sourceDatabase,
+      targets: [sourceDatabase],
+      statement: "SELECT id FROM users",
+    });
+    mocks.renderRoute = {
+      ...mocks.renderRoute,
+      query: {
+        parent: "projects/proj1/instances/inst1",
+        accessGrantDraftKey,
+      },
+    };
+    mocks.currentRoute = mocks.renderRoute;
+
+    const { unmount } = renderShell();
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.getOrFetchDatabaseByName).toHaveBeenCalledWith(sourceDatabase);
+    expect(mocks.getOrFetchDatabaseByName).not.toHaveBeenCalledWith(
+      "instances/inst1/databases/db1"
+    );
+    expect(mocks.openAccessGrantDrawer).toHaveBeenCalledWith({
+      query: "SELECT id FROM users",
+      targets: [sourceDatabase],
+    });
+    expect(wasDeniedQueryRequestDraftDelivered(accessGrantDraftKey)).toBe(true);
+    unmount();
+  });
+
+  test("opens a draft when an already mounted editor receives a database route", async () => {
+    const { rerender, unmount } = renderShell();
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    mocks.openAccessGrantDrawer.mockClear();
+    mocks.tabsState.addTab.mockClear();
+    const accessGrantDraftKey = saveAccessGrantDraft({
+      project: "projects/proj1",
+      sourceDatabase: "instances/inst1/databases/db1",
+      targets: ["instances/inst1/databases/db1"],
+      statement: "SELECT id FROM users",
+    });
+    mocks.renderRoute = {
+      ...mocks.renderRoute,
+      query: { accessGrantDraftKey },
+    };
+    mocks.currentRoute = mocks.renderRoute;
+    rerender();
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.openAccessGrantDrawer).toHaveBeenCalledOnce();
+    expect(mocks.openAccessGrantDrawer).toHaveBeenCalledWith({
+      query: "SELECT id FROM users",
+      targets: ["instances/inst1/databases/db1"],
+    });
+    expect(mocks.navigateReplace).toHaveBeenCalledWith(
+      expect.objectContaining({ query: {} })
+    );
+    unmount();
+  });
+
+  test("opens a prefilled Request Role sheet for a non-JIT denied query", async () => {
+    const draft: RequestRoleDraft = {
+      kind: "requestRole",
+      project: "projects/proj1",
+      sourceDatabase: "instances/inst1/databases/db1",
+      targets: ["instances/inst1/databases/db1"],
+      resources: [
+        "instances/inst1/databases/db1/schemas/public/tables/users",
+      ],
+      statement: "SELECT id FROM users",
+      requiredPermissions: ["bb.sql.select"],
+    };
+    const accessGrantDraftKey = saveAccessGrantDraft(draft);
+    mocks.renderRoute = {
+      ...mocks.renderRoute,
+      query: { accessGrantDraftKey },
+    };
+    mocks.currentRoute = mocks.renderRoute;
+
+    const { unmount } = renderShell();
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.openAccessGrantDrawer).not.toHaveBeenCalled();
+    expect(mocks.openRequestRoleSheet).toHaveBeenCalledOnce();
+    expect(mocks.openRequestRoleSheet).toHaveBeenCalledWith({
+      project: expect.objectContaining({ name: "projects/proj1" }),
+      requiredPermissions: ["bb.sql.select"],
+      initialRole: "roles/sqlEditorReadUser",
+      initialDatabaseResources: [
+        expect.objectContaining({
+          databaseFullName: "instances/inst1/databases/db1",
+          schema: "public",
+          table: "users",
+        }),
+      ],
+    });
+    expect(sessionStorage.getItem(accessGrantDraftKey)).toBeNull();
+    expect(wasDeniedQueryRequestDraftDelivered(accessGrantDraftKey)).toBe(true);
+    unmount();
+  });
+
+  test("does not mark a draft delivered when another request drawer stays open", async () => {
+    const accessGrantDraftKey = saveAccessGrantDraft({
+      project: "projects/proj1",
+      sourceDatabase: "instances/inst1/databases/db1",
+      targets: ["instances/inst1/databases/db1"],
+      statement: "SELECT 1",
+    });
+    mocks.openAccessGrantDrawer.mockReturnValue(false);
+    mocks.renderRoute = {
+      ...mocks.renderRoute,
+      query: { accessGrantDraftKey },
+    };
+    mocks.currentRoute = mocks.renderRoute;
+    const { unmount } = renderShell();
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(wasDeniedQueryRequestDraftDelivered(accessGrantDraftKey)).toBe(false);
+    expect(mocks.notify).toHaveBeenCalledWith(
+      expect.objectContaining({ style: "CRITICAL" })
+    );
+    unmount();
+  });
+
+  test("warns when a draft link has expired", async () => {
+    mocks.renderRoute = {
+      ...mocks.renderRoute,
+      query: { accessGrantDraftKey: "missing" },
+    };
+    mocks.currentRoute = mocks.renderRoute;
+    const { unmount } = renderShell();
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.openAccessGrantDrawer).not.toHaveBeenCalled();
+    expect(mocks.notify).toHaveBeenCalledWith(
+      expect.objectContaining({
+        style: "CRITICAL",
+        title: "sql-editor.access-request-draft-unavailable",
+      })
+    );
+    unmount();
+  });
+
+  test("does not open a draft for a different database than the route", async () => {
+    const accessGrantDraftKey = saveAccessGrantDraft({
+      project: "projects/proj1",
+      sourceDatabase: "instances/inst1/databases/other",
+      targets: ["instances/inst1/databases/other"],
+      statement: "SELECT 1",
+    });
+    mocks.renderRoute = {
+      ...mocks.renderRoute,
+      query: { accessGrantDraftKey },
+    };
+    mocks.currentRoute = mocks.renderRoute;
+
+    const { unmount } = renderShell();
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.openAccessGrantDrawer).not.toHaveBeenCalled();
+    expect(mocks.notify).toHaveBeenCalledWith(
+      expect.objectContaining({ style: "CRITICAL" })
+    );
+    unmount();
+  });
   test("waits for bootstrap before rendering the project selector", async () => {
     let finishCleanup: (value: undefined) => void;
     const cleanup = new Promise<undefined>((resolve) => {

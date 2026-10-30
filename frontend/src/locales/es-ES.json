@@ -22,6 +22,11 @@
     }
   },
   "agent": {
+    "access-grant-draft": {
+      "open": "Open access request draft",
+      "storage-failed": "Couldn't prepare the access request. Try again.",
+      "unavailable": "Couldn't open the access request. The database or access settings may have changed."
+    },
     "ai-not-configured": {
       "configure": "Configurar",
       "contact-admin": "Contacte al administrador de su espacio de trabajo para configurar la IA.",
@@ -53,6 +58,19 @@
     "context-no-projects": "No hay proyectos accesibles",
     "context-select": "Seleccionar contexto",
     "context-workspace": "Espacio de trabajo",
+    "contextual-start": {
+      "active-request": "Termina la solicitud activa antes de iniciar otro chat.",
+      "continue-chat": "Continuar el chat actual",
+      "database-heading": "Preguntar sobre esta base de datos",
+      "database-recent": "¿Qué cambió recientemente en esta base de datos?",
+      "database-schema": "¿Qué tablas hay en esta base de datos?",
+      "issue-changes": "¿Qué cambios implica esta solicitud?",
+      "issue-heading": "Preguntar sobre esta solicitud",
+      "issue-security": "¿Hay algún problema de seguridad relacionado con esta solicitud?",
+      "issue-summary": "Resume esta solicitud y su estado",
+      "project-heading": "Preguntar sobre este proyecto",
+      "resource-unavailable": "Este recurso no está disponible para referenciarlo."
+    },
     "database-reference-unavailable": "Esta base de datos ya no está disponible o no tienes acceso a ella.",
     "delete-all-chats": "Eliminar todos los chats",
     "delete-all-chats-confirmation": "¿Está seguro de que desea eliminar todos los chats archivados? Esta acción no se puede deshacer.",
@@ -68,10 +86,31 @@
       "issue": "issue",
       "references": "Evidencia"
     },
+    "follow-up": {
+      "ask-next": "Siguiente pregunta"
+    },
+    "handoff": {
+      "open-issue": "Abrir incidencia",
+      "open-project-instances": "Abrir instancias del proyecto",
+      "review-database-changes": "Revisar cambios de base de datos",
+      "review-issue-plan": "Revisar plan",
+      "review-project-issues": "Revisar incidencias del proyecto",
+      "review-workspace-issues": "Revisar mis incidencias",
+      "view-failed-task": "Ver tarea fallida",
+      "view-failed-tasks": "Ver tareas fallidas"
+    },
     "input-keyboard-hint": "Enter para enviar · Shift+Enter para un salto de línea",
     "input-placeholder": "Pregunta a la IA o escribe @ para seleccionar un recurso",
     "interrupted": "Interrumpido",
     "interrupted-retry-hint": "La conversación fue interrumpida. Puede reintentar o enviar un nuevo mensaje.",
+    "issue-comment-draft": {
+      "existing": "This issue already has an unsent comment. Review it before opening another draft.",
+      "open": "Draft review comment",
+      "permission-denied": "You don't have permission to comment on this issue.",
+      "preview": "Preview comment",
+      "storage-failed": "Couldn't prepare the comment draft. Try again.",
+      "unavailable": "Couldn't open the comment draft. The issue may have changed."
+    },
     "issue-reference-unavailable": "Esta incidencia ya no está disponible o no tienes acceso a ella.",
     "landing-starters": {
       "menu": "Sugerencias",
@@ -104,6 +143,11 @@
       "issue-approval-role-grant": "Este es el último paso de aprobación. La aprobación puede conceder de inmediato el rol de proyecto solicitado, sin un despliegue.",
       "issue-approval-rollout": "Este es el último paso de aprobación. La aprobación puede crear un despliegue después de las comprobaciones y revisiones necesarias; no garantiza la ejecución de las tareas.",
       "issue-rejection": "Rechazar esta incidencia detiene su flujo de aprobación actual. Hay que resolver el rechazo antes de continuar con la aprobación."
+    },
+    "plan-draft": {
+      "default-title": "Cambio de base de datos propuesto",
+      "open": "Abrir borrador del plan",
+      "unavailable": "No se pudo abrir el borrador del plan. Es posible que la base de datos o el SQL hayan cambiado. Pide al agente que lo genere de nuevo."
     },
     "project-attention": {
       "checking": "Comprobando los elementos que necesitan tu atención...",
@@ -163,6 +207,7 @@
     "tool-ask-user-confirm": "Confirmar acción",
     "tool-ask-user-input": "Proporcionar entrada",
     "tool-completed": "Completado",
+    "tool-completed-with-warnings": "Completado con advertencias",
     "tool-default-value": "Predeterminado",
     "tool-failed": "Fallido",
     "tool-options": "Opciones",
@@ -3479,6 +3524,7 @@
   },
   "sql-editor": {
     "access-grants": "Concesiones de acceso",
+    "access-request-draft-unavailable": "The access request draft is no longer available. Please ask the Agent to prepare it again.",
     "access-search": {
       "scope": {
         "database": {

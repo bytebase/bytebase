@@ -13,9 +13,7 @@ import { useTranslation } from "react-i18next";
 import { rolloutServiceClientConnect } from "@/api";
 import { silentContextKey } from "@/api/context-key";
 import {
-  DATABASE_ROUTE_DASHBOARD,
   PROJECT_V1_ROUTE_DATABASES,
-  PROJECT_V1_ROUTE_INSTANCE_CREATE,
   PROJECT_V1_ROUTE_ISSUES,
   PROJECT_V1_ROUTE_MEMBERS,
   SQL_EDITOR_PROJECT_MODULE,
@@ -29,12 +27,7 @@ import { ProjectPageLayout } from "@/components/ProjectPageLayout";
 import { RouterLink } from "@/components/RouterLink";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { usePlanFeature } from "@/hooks/useAppState";
-import {
-  PREPARE_DATABASE_PRODUCT_INTRO,
-  PREPARE_DATABASE_TRANSFER_TIP,
-  PRODUCT_INTRO_QUERY_KEY,
-  PRODUCT_INTRO_TIP_QUERY_KEY,
-} from "@/lib/productIntro";
+import { projectSetupTarget } from "@/lib/projectSetupTarget";
 import { LandingAgentComposer } from "@/modules/agent/components/LandingAgentComposer";
 import { getLandingStarterIds } from "@/modules/agent/logic/landingStarters";
 import { readSelectedGuideScenarioId } from "@/modules/workspace-setup-guide/selection";
@@ -92,22 +85,9 @@ function nextStepTarget(step: ProjectHomeNextStep, projectId: string) {
   const params = { projectId };
   switch (step) {
     case "connect":
-      return { name: PROJECT_V1_ROUTE_INSTANCE_CREATE, params };
     case "transferDatabases":
-      return {
-        name: DATABASE_ROUTE_DASHBOARD,
-        query: {
-          [PRODUCT_INTRO_QUERY_KEY]: PREPARE_DATABASE_PRODUCT_INTRO,
-          [PRODUCT_INTRO_TIP_QUERY_KEY]: PREPARE_DATABASE_TRANSFER_TIP,
-          targetProject: `projects/${projectId}`,
-        },
-      };
     case "createDatabase":
-      return {
-        name: PROJECT_V1_ROUTE_DATABASES,
-        params,
-        query: { createDatabase: "1" },
-      };
+      return projectSetupTarget(step, projectId);
     case "changeDatabase":
       return buildPlanCreateRoute(projectId, {});
     case "queryDatabase":

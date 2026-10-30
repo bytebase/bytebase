@@ -137,6 +137,11 @@ message QueryDataPolicy {
   // Allow using the admin data source to query in the SQL editor.
   bool allow_admin_data_source = 9;
 
+  // workspace-level policy
+  // Disable the Download export destination. Exports can still go to a
+  // configured storage destination such as SharePoint.
+  bool disable_download = 10;
+
   // ================
   // Deprecate following fields.
   // Disallow running DDL statements in the SQL editor.

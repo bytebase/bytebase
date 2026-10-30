@@ -495,6 +495,15 @@ message Project {
 
   // Whether to allow the last Plan editor to approve a database change issue.
   bool allow_last_plan_editor_approval = 24;
+
+  // Export configuration for this project.
+  ExportSetting export_setting = 25;
+
+  // Destinations offered for this project's exports, at most one per provider.
+  message ExportSetting {
+    // Unset when the project has no SharePoint destination.
+    SharePointDestination sharepoint = 1;
+  }
 }
 
 message AddWebhookRequest {
@@ -545,6 +554,13 @@ message TestWebhookRequest {
 message TestWebhookResponse {
   // The result of the test, empty if the test is successful.
   string error = 1;
+}
+
+// A SharePoint document library root or folder that receives exports.
+message SharePointDestination {
+  // The URL of the library root or folder. Normalized to its canonical form
+  // and resolved with the workspace credentials on save.
+  string url = 1;
 }
 
 message Webhook {

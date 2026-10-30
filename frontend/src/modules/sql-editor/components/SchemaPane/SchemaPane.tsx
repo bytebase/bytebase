@@ -14,7 +14,6 @@ import { TableSchemaViewer } from "@/components/TableSchemaViewer";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { SearchInput } from "@/components/ui/search-input";
 import { Tree, type TreeDataNode } from "@/components/ui/tree";
-import { countVisibleRows } from "@/components/ui/tree-utils";
 import { cn } from "@/lib/utils";
 import { useConnectionOfCurrentSQLEditorTab } from "@/modules/sql-editor/hooks/useSQLEditorState";
 import {
@@ -268,23 +267,9 @@ function SchemaPaneInner() {
     return tree.map(toTreeData);
   }, [tree]);
 
-  const expandedKeySet = useMemo(() => new Set(expandedKeys), [expandedKeys]);
   const searchKeyword = searchPattern.trim();
-  const visibleRowCount = useMemo(() => {
-    if (!tree) return 0;
-    return tree.reduce(
-      (sum, root) =>
-        sum +
-        countVisibleRows(
-          root,
-          expandedKeySet,
-          searchKeyword,
-          schemaNodeMatch,
-          true
-        ),
-      0
-    );
-  }, [tree, expandedKeySet, searchKeyword]);
+  const { ref: treeContainerRef, height: treeContainerHeight } =
+    useContainerHeight();
 
   // ---- Click discriminator (single vs double) -----------------------------
   const { selectAllFromTableOrView } = useSchemaActionsForClick();
@@ -434,7 +419,10 @@ function SchemaPaneInner() {
         </div>
       </div>
 
-      <div className="schema-tree flex-1 px-1 pb-1 text-sm overflow-auto select-none">
+      <div
+        ref={treeContainerRef}
+        className="schema-tree min-h-0 flex-1 px-1 pb-1 text-sm overflow-hidden select-none"
+      >
         {isFetching ? (
           <div className="flex items-center justify-center mt-16 text-control-light">
             <Loader2 className="size-5 animate-spin" />
@@ -463,10 +451,7 @@ function SchemaPaneInner() {
                 else next.add(id);
                 setExpandedKeys([...next]);
               }}
-              height={
-                Math.max(visibleRowCount, 1) * ROW_HEIGHT ||
-                TREE_FALLBACK_HEIGHT
-              }
+              height={treeContainerHeight}
               rowHeight={ROW_HEIGHT}
               indent={10}
               renderNode={({ node, style }) => (
@@ -551,11 +536,6 @@ const searchMatch = (
   return label.toLowerCase().includes(term.toLowerCase());
 };
 
-const schemaNodeMatch = (node: SchemaTreeNode, term: string): boolean => {
-  const label = node.label ?? "";
-  return label.toLowerCase().includes(term.toLowerCase());
-};
-
 function defaultExpandedKeys(tree: SchemaTreeNode[]): string[] {
   if (tree.length === 0) return [];
   const keys: string[] = [];
@@ -575,6 +555,24 @@ function defaultExpandedKeys(tree: SchemaTreeNode[]): string[] {
   };
   walk(tree[0]);
   return keys;
+}
+
+function useContainerHeight() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState(TREE_FALLBACK_HEIGHT);
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    const observer = new ResizeObserver(([entry]) => {
+      const next = Math.round(entry?.contentRect.height ?? 0);
+      if (next > 0) setHeight(next);
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  return { ref, height };
 }
 
 /**

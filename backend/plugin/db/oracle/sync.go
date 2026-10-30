@@ -130,6 +130,14 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMe
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get materialized views from database %q", d.databaseName)
 	}
+	synonyms, err := getSynonyms(txn, d.databaseName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get synonyms from database %q", d.databaseName)
+	}
+	publicSynonyms, err := getSynonyms(txn, publicSchema)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get public synonyms")
+	}
 
 	if err := txn.Commit(); err != nil {
 		return nil, err
@@ -139,6 +147,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMe
 		Name:            d.databaseName,
 		ServiceName:     d.serviceName,
 		LinkedDatabases: dbLinks,
+		PublicSynonyms:  publicSynonyms,
 	}
 	databaseMetadata.Schemas = append(databaseMetadata.Schemas, &metadatapb.SchemaMetadata{
 		Name:              "",
@@ -149,6 +158,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMe
 		Functions:         functions,
 		Procedures:        procedures,
 		Packages:          packages,
+		Synonyms:          synonyms,
 	})
 	// Deep-sanitize every string field (names, definitions, defaults, …), not
 	// just comments: the go-ora driver returns wholly-unconverted raw bytes
@@ -157,6 +167,41 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMe
 	// entire database metadata (BYT-9916).
 	common.SanitizeUTF8Message(databaseMetadata)
 	return databaseMetadata, nil
+}
+
+// publicSchema owns the public synonyms. No user can take its name (ORA-01920).
+const publicSchema = "PUBLIC"
+
+func getSynonyms(txn *sql.Tx, owner string) ([]*metadatapb.SynonymMetadata, error) {
+	query := `
+		SELECT SYNONYM_NAME, TABLE_OWNER, TABLE_NAME, DB_LINK
+		FROM ALL_SYNONYMS
+		WHERE OWNER = :1
+		ORDER BY SYNONYM_NAME`
+	rows, err := txn.Query(query, owner)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	defer rows.Close()
+
+	var synonyms []*metadatapb.SynonymMetadata
+	for rows.Next() {
+		var name string
+		var targetSchema, targetName, targetDBLink sql.NullString
+		if err := rows.Scan(&name, &targetSchema, &targetName, &targetDBLink); err != nil {
+			return nil, err
+		}
+		synonyms = append(synonyms, &metadatapb.SynonymMetadata{
+			Name:         name,
+			TargetSchema: targetSchema.String,
+			TargetName:   targetName.String,
+			TargetDbLink: targetDBLink.String,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	return synonyms, nil
 }
 
 func getDBLinks(txn *sql.Tx) ([]*metadatapb.LinkedDatabaseMetadata, error) {

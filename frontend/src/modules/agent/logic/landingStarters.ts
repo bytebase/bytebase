@@ -81,8 +81,6 @@ const workspaceAttentionStarters: LandingStarterId[] = [
   "workspace-recent",
 ];
 
-const projectGeneralStarters: LandingStarterId[] = ["project-next"];
-
 function rankProjectStarterGroups(
   groups: LandingStarterId[][]
 ): LandingStarterId[] {
@@ -134,7 +132,6 @@ export function getLandingStarterIds(
     groups.push(["project-collaborate", "project-access", "project-review"]);
   }
 
-  return groups.length > 0
-    ? rankProjectStarterGroups(groups)
-    : projectGeneralStarters;
+  const ranked = rankProjectStarterGroups(groups);
+  return ranked.includes("project-next") ? ranked : [...ranked, "project-next"];
 }

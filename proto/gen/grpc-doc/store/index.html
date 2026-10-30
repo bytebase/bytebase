@@ -892,7 +892,15 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.Project.ExportSetting"><span class="badge">M</span>Project.ExportSetting</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.Project.LabelsEntry"><span class="badge">M</span>Project.LabelsEntry</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.Project.SharePointDestination"><span class="badge">M</span>Project.SharePointDestination</a>
                 </li>
               
               
@@ -1210,6 +1218,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.ExportSetting"><span class="badge">M</span>ExportSetting</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.MCPSetting"><span class="badge">M</span>MCPSetting</a>
                 </li>
               
@@ -1227,6 +1239,10 @@
               
                 <li>
                   <a href="#bytebase.store.SemanticTypeSetting.SemanticType"><span class="badge">M</span>SemanticTypeSetting.SemanticType</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.SharePointSetting"><span class="badge">M</span>SharePointSetting</a>
                 </li>
               
                 <li>
@@ -7466,6 +7482,15 @@ Allow using the admin data source to query in the SQL editor. </p></td>
                 </tr>
               
                 <tr>
+                  <td>disable_download</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>workspace-level policy
+Disable the Download export destination. Exports can still go to a
+configured storage destination such as SharePoint. </p></td>
+                </tr>
+              
+                <tr>
                   <td>disallow_ddl</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
@@ -7902,6 +7927,13 @@ If enabled, issues cannot be created when SQL review finds errors. </p></td>
                   <td><p>Whether to allow the last Plan editor to approve a database change issue. </p></td>
                 </tr>
               
+                <tr>
+                  <td>export_setting</td>
+                  <td><a href="#bytebase.store.Project.ExportSetting">Project.ExportSetting</a></td>
+                  <td></td>
+                  <td><p>Destinations offered for this project&#39;s exports. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -7933,6 +7965,30 @@ If enabled, issues cannot be created when SQL review finds errors. </p></td>
 
         
       
+        <h3 id="bytebase.store.Project.ExportSetting">Project.ExportSetting</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>sharepoint</td>
+                  <td><a href="#bytebase.store.Project.SharePointDestination">Project.SharePointDestination</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.Project.LabelsEntry">Project.LabelsEntry</h3>
         <p></p>
 
@@ -7955,6 +8011,30 @@ If enabled, issues cannot be created when SQL review finds errors. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.Project.SharePointDestination">Project.SharePointDestination</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>url</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The canonical URL of a SharePoint document library root or folder. </p></td>
                 </tr>
               
             </tbody>
@@ -10600,6 +10680,30 @@ are /[a-z][0-9]-/. </p></td>
 
         
       
+        <h3 id="bytebase.store.ExportSetting">ExportSetting</h3>
+        <p>ExportSetting holds each export destination provider's credentials.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>sharepoint</td>
+                  <td><a href="#bytebase.store.SharePointSetting">SharePointSetting</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.MCPSetting">MCPSetting</h3>
         <p>MCPSetting is what an MCP (Model Context Protocol) session may do in this</p><p>workspace. It is its own setting rather than a field of the workspace profile</p><p>because the set grows, and because the /mcp kill switch reads it on every</p><p>request and should not share a row — or a parse failure — with branding and</p><p>sign-in configuration.</p>
 
@@ -10772,6 +10876,44 @@ it only reads. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>icon is the icon for semantic type, it can be emoji or base64 encoded image. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.SharePointSetting">SharePointSetting</h3>
+        <p>SharePointSetting is the Microsoft Entra application that uploads exports to</p><p>SharePoint.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>tenant_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>client_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>client_secret</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -11474,6 +11616,12 @@ frontend-only concept that seeds these colors; the store only holds them. </p></
               <tr>
                 <td>MCP</td>
                 <td>10</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>EXPORT</td>
+                <td>11</td>
                 <td><p></p></td>
               </tr>
             

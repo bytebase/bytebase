@@ -125,8 +125,10 @@ type Project struct {
 	AllowJustInTimeAccess bool `protobuf:"varint,19,opt,name=allow_just_in_time_access,json=allowJustInTimeAccess,proto3" json:"allow_just_in_time_access,omitempty"`
 	// Whether to allow the last Plan editor to approve a database change issue.
 	AllowLastPlanEditorApproval bool `protobuf:"varint,20,opt,name=allow_last_plan_editor_approval,json=allowLastPlanEditorApproval,proto3" json:"allow_last_plan_editor_approval,omitempty"`
-	unknownFields               protoimpl.UnknownFields
-	sizeCache                   protoimpl.SizeCache
+	// Destinations offered for this project's exports.
+	ExportSetting *Project_ExportSetting `protobuf:"bytes,21,opt,name=export_setting,json=exportSetting,proto3" json:"export_setting,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Project) Reset() {
@@ -271,6 +273,13 @@ func (x *Project) GetAllowLastPlanEditorApproval() bool {
 	return false
 }
 
+func (x *Project) GetExportSetting() *Project_ExportSetting {
+	if x != nil {
+		return x.ExportSetting
+	}
+	return nil
+}
+
 // ExecutionRetryPolicy defines retry behavior for failed task executions.
 type Project_ExecutionRetryPolicy struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -317,6 +326,95 @@ func (x *Project_ExecutionRetryPolicy) GetMaximumRetries() int32 {
 	return 0
 }
 
+type Project_ExportSetting struct {
+	state         protoimpl.MessageState         `protogen:"open.v1"`
+	Sharepoint    *Project_SharePointDestination `protobuf:"bytes,1,opt,name=sharepoint,proto3" json:"sharepoint,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Project_ExportSetting) Reset() {
+	*x = Project_ExportSetting{}
+	mi := &file_store_project_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Project_ExportSetting) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Project_ExportSetting) ProtoMessage() {}
+
+func (x *Project_ExportSetting) ProtoReflect() protoreflect.Message {
+	mi := &file_store_project_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Project_ExportSetting.ProtoReflect.Descriptor instead.
+func (*Project_ExportSetting) Descriptor() ([]byte, []int) {
+	return file_store_project_proto_rawDescGZIP(), []int{1, 2}
+}
+
+func (x *Project_ExportSetting) GetSharepoint() *Project_SharePointDestination {
+	if x != nil {
+		return x.Sharepoint
+	}
+	return nil
+}
+
+type Project_SharePointDestination struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The canonical URL of a SharePoint document library root or folder.
+	Url           string `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Project_SharePointDestination) Reset() {
+	*x = Project_SharePointDestination{}
+	mi := &file_store_project_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Project_SharePointDestination) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Project_SharePointDestination) ProtoMessage() {}
+
+func (x *Project_SharePointDestination) ProtoReflect() protoreflect.Message {
+	mi := &file_store_project_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Project_SharePointDestination.ProtoReflect.Descriptor instead.
+func (*Project_SharePointDestination) Descriptor() ([]byte, []int) {
+	return file_store_project_proto_rawDescGZIP(), []int{1, 3}
+}
+
+func (x *Project_SharePointDestination) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
 var File_store_project_proto protoreflect.FileDescriptor
 
 const file_store_project_proto_rawDesc = "" +
@@ -325,7 +423,8 @@ const file_store_project_proto_rawDesc = "" +
 	"\x05Label\x12\x14\n" +
 	"\x05value\x18\x01 \x01(\tR\x05value\x12(\n" +
 	"\x05color\x18\x02 \x01(\v2\x12.google.type.ColorR\x05color\x12\x14\n" +
-	"\x05group\x18\x03 \x01(\tR\x05group\"\xb7\b\n" +
+	"\x05group\x18\x03 \x01(\tR\x05group\"\x90\n" +
+	"\n" +
 	"\aProject\x128\n" +
 	"\fissue_labels\x18\x01 \x03(\v2\x15.bytebase.store.LabelR\vissueLabels\x12,\n" +
 	"\x12force_issue_labels\x18\x02 \x01(\bR\x10forceIssueLabels\x12.\n" +
@@ -343,12 +442,19 @@ const file_store_project_proto_rawDesc = "" +
 	"\x12allow_request_role\x18\x11 \x01(\bR\x10allowRequestRole\x12A\n" +
 	"\x1ddata_classification_config_id\x18\x12 \x01(\tR\x1adataClassificationConfigId\x128\n" +
 	"\x19allow_just_in_time_access\x18\x13 \x01(\bR\x15allowJustInTimeAccess\x12D\n" +
-	"\x1fallow_last_plan_editor_approval\x18\x14 \x01(\bR\x1ballowLastPlanEditorApproval\x1a?\n" +
+	"\x1fallow_last_plan_editor_approval\x18\x14 \x01(\bR\x1ballowLastPlanEditorApproval\x12L\n" +
+	"\x0eexport_setting\x18\x15 \x01(\v2%.bytebase.store.Project.ExportSettingR\rexportSetting\x1a?\n" +
 	"\x14ExecutionRetryPolicy\x12'\n" +
 	"\x0fmaximum_retries\x18\x01 \x01(\x05R\x0emaximumRetries\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01J\x04\b\x03\x10\x05J\x04\b\x06\x10\bB\x8f\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a^\n" +
+	"\rExportSetting\x12M\n" +
+	"\n" +
+	"sharepoint\x18\x01 \x01(\v2-.bytebase.store.Project.SharePointDestinationR\n" +
+	"sharepoint\x1a)\n" +
+	"\x15SharePointDestination\x12\x10\n" +
+	"\x03url\x18\x01 \x01(\tR\x03urlJ\x04\b\x03\x10\x05J\x04\b\x06\x10\bB\x8f\x01\n" +
 	"\x12com.bytebase.storeB\fProjectProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
@@ -363,24 +469,28 @@ func file_store_project_proto_rawDescGZIP() []byte {
 	return file_store_project_proto_rawDescData
 }
 
-var file_store_project_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_store_project_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_store_project_proto_goTypes = []any{
-	(*Label)(nil),                        // 0: bytebase.store.Label
-	(*Project)(nil),                      // 1: bytebase.store.Project
-	(*Project_ExecutionRetryPolicy)(nil), // 2: bytebase.store.Project.ExecutionRetryPolicy
-	nil,                                  // 3: bytebase.store.Project.LabelsEntry
-	(*color.Color)(nil),                  // 4: google.type.Color
+	(*Label)(nil),                         // 0: bytebase.store.Label
+	(*Project)(nil),                       // 1: bytebase.store.Project
+	(*Project_ExecutionRetryPolicy)(nil),  // 2: bytebase.store.Project.ExecutionRetryPolicy
+	nil,                                   // 3: bytebase.store.Project.LabelsEntry
+	(*Project_ExportSetting)(nil),         // 4: bytebase.store.Project.ExportSetting
+	(*Project_SharePointDestination)(nil), // 5: bytebase.store.Project.SharePointDestination
+	(*color.Color)(nil),                   // 6: google.type.Color
 }
 var file_store_project_proto_depIdxs = []int32{
-	4, // 0: bytebase.store.Label.color:type_name -> google.type.Color
+	6, // 0: bytebase.store.Label.color:type_name -> google.type.Color
 	0, // 1: bytebase.store.Project.issue_labels:type_name -> bytebase.store.Label
 	2, // 2: bytebase.store.Project.execution_retry_policy:type_name -> bytebase.store.Project.ExecutionRetryPolicy
 	3, // 3: bytebase.store.Project.labels:type_name -> bytebase.store.Project.LabelsEntry
-	4, // [4:4] is the sub-list for method output_type
-	4, // [4:4] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	4, // 4: bytebase.store.Project.export_setting:type_name -> bytebase.store.Project.ExportSetting
+	5, // 5: bytebase.store.Project.ExportSetting.sharepoint:type_name -> bytebase.store.Project.SharePointDestination
+	6, // [6:6] is the sub-list for method output_type
+	6, // [6:6] is the sub-list for method input_type
+	6, // [6:6] is the sub-list for extension type_name
+	6, // [6:6] is the sub-list for extension extendee
+	0, // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_store_project_proto_init() }
@@ -394,7 +504,7 @@ func file_store_project_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_project_proto_rawDesc), len(file_store_project_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   4,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
