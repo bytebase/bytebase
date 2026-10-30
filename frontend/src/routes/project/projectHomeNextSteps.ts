@@ -1,7 +1,12 @@
+import {
+  getProjectSetupSteps,
+  type ProjectSetupState,
+  type ResourceAvailability,
+} from "@/lib/projectSetup";
 import { leadsWithQuery } from "@/modules/workspace-setup-guide/scenarios";
 import type { GuideScenarioId } from "@/modules/workspace-setup-guide/types";
 
-export type ResourceAvailability = "loading" | "present" | "empty" | "unknown";
+export type { ResourceAvailability } from "@/lib/projectSetup";
 
 export type ProjectHomeNextStep =
   | "connect"
@@ -11,16 +16,10 @@ export type ProjectHomeNextStep =
   | "queryDatabase"
   | "members";
 
-export type ProjectHomeNextStepInput = {
+export type ProjectHomeNextStepInput = ProjectSetupState & {
   database: ResourceAvailability;
-  instance: ResourceAvailability;
-  transferableDatabase: ResourceAvailability;
   change: "loading" | "not-started" | "proposed" | "rolled-out" | "unknown";
   membership: "unknown" | "solo" | "has-collaborators";
-  isDefault: boolean;
-  canConnectInstance: boolean;
-  canTransferDatabases: boolean;
-  canCreateDatabase: boolean;
   canCreateChange: boolean;
   canQueryDatabase: boolean;
   canManageMembers: boolean;
@@ -31,10 +30,6 @@ export type ProjectHomeNextStepInput = {
 export function getProjectHomeNextSteps(
   input: ProjectHomeNextStepInput
 ): ProjectHomeNextStep[] {
-  const canOfferTransfer =
-    input.database === "empty" &&
-    input.canTransferDatabases &&
-    input.transferableDatabase === "present";
   if (
     input.isDefault ||
     input.change === "rolled-out" ||
@@ -45,23 +40,8 @@ export function getProjectHomeNextSteps(
   }
 
   const steps: ProjectHomeNextStep[] = [];
-  const transferIsLoading =
-    input.canTransferDatabases && input.transferableDatabase === "loading";
-  if (input.database === "empty" && !transferIsLoading) {
-    if (canOfferTransfer) {
-      steps.push("transferDatabases");
-    }
-    if (
-      input.instance === "empty" &&
-      !canOfferTransfer &&
-      input.canConnectInstance
-    ) {
-      steps.push("connect");
-    } else if (input.instance === "present") {
-      if (input.canCreateDatabase) {
-        steps.push("createDatabase");
-      }
-    }
+  if (input.database === "empty") {
+    steps.push(...getProjectSetupSteps(input));
   } else if (
     input.database === "present" &&
     (input.change === "not-started" || input.change === "unknown") &&

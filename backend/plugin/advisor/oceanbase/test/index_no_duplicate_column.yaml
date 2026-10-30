@@ -1,0 +1,131 @@
+- statement: CREATE TABLE t (a int, PRIMARY KEY (a));
+- statement: |-
+    CREATE TABLE t (
+      a int,
+      PRIMARY KEY (a, a)
+    );
+  want:
+    - status: 2
+      code: 812
+      title: INDEX_NO_DUPLICATE_COLUMN
+      content: PRIMARY KEY `` has duplicate column `t`.`a`
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t1 (
+      a int,
+      PRIMARY KEY (a)
+    );
+    CREATE TABLE t2 (
+      a int,
+      FOREIGN KEY fk1 (a) REFERENCES t1(a)
+    );
+    CREATE TABLE t3 (
+      a int,
+      FOREIGN KEY fk1 (a, a) REFERENCES t1(a, a)
+    );
+  want:
+    - status: 2
+      code: 812
+      title: INDEX_NO_DUPLICATE_COLUMN
+      content: FOREIGN KEY `fk1` has duplicate column `t3`.`a`
+      startposition:
+        line: 11
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t (
+      a int,
+      INDEX idx_a (a, a)
+    );
+  want:
+    - status: 2
+      code: 812
+      title: INDEX_NO_DUPLICATE_COLUMN
+      content: INDEX `idx_a` has duplicate column `t`.`a`
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(a int);
+    CREATE INDEX idx ON t(a);
+    CREATE INDEX idx_a ON t(a, a);
+  want:
+    - status: 2
+      code: 812
+      title: INDEX_NO_DUPLICATE_COLUMN
+      content: INDEX `idx_a` has duplicate column `t`.`a`
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(a int);
+    CREATE UNIQUE INDEX idx ON t(a);
+    CREATE UNIQUE INDEX idx_a ON t(a, a);
+  want:
+    - status: 2
+      code: 812
+      title: INDEX_NO_DUPLICATE_COLUMN
+      content: UNIQUE INDEX `idx_a` has duplicate column `t`.`a`
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(a int);
+    ALTER TABLE t ADD INDEX idx (a);
+    ALTER TABLE t ADD INDEX idx_a (a, a);
+  want:
+    - status: 2
+      code: 812
+      title: INDEX_NO_DUPLICATE_COLUMN
+      content: INDEX `idx_a` has duplicate column `t`.`a`
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(a int);
+    ALTER TABLE t ADD PRIMARY KEY pk_a (a, a);
+  want:
+    - status: 2
+      code: 812
+      title: INDEX_NO_DUPLICATE_COLUMN
+      content: PRIMARY KEY `pk_a` has duplicate column `t`.`a`
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(a int);
+    ALTER TABLE t ADD PRIMARY KEY pk_a (a);
+- statement: |-
+    CREATE TABLE t(a int);
+    ALTER TABLE t ADD UNIQUE KEY uk (a);
+    ALTER TABLE t ADD UNIQUE KEY uk_a (a, a);
+  want:
+    - status: 2
+      code: 812
+      title: INDEX_NO_DUPLICATE_COLUMN
+      content: UNIQUE KEY `uk_a` has duplicate column `t`.`a`
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(a int);
+    ALTER TABLE t ADD FOREIGN KEY fk (a) REFERENCES t1(a);
+    ALTER TABLE t ADD FOREIGN KEY fk_a (a, a) REFERENCES t1(a, b);
+  want:
+    - status: 2
+      code: 812
+      title: INDEX_NO_DUPLICATE_COLUMN
+      content: FOREIGN KEY `fk_a` has duplicate column `t`.`a`
+      startposition:
+        line: 3
+        column: 0
+      endposition: null

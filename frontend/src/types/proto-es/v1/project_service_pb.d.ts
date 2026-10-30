@@ -590,6 +590,13 @@ export declare type Project = Message<"bytebase.v1.Project"> & {
    * @generated from field: bool allow_last_plan_editor_approval = 24;
    */
   allowLastPlanEditorApproval: boolean;
+
+  /**
+   * Export configuration for this project.
+   *
+   * @generated from field: bytebase.v1.Project.ExportSetting export_setting = 25;
+   */
+  exportSetting?: Project_ExportSetting | undefined;
 };
 
 /**
@@ -617,6 +624,26 @@ export declare type Project_ExecutionRetryPolicy = Message<"bytebase.v1.Project.
  * Use `create(Project_ExecutionRetryPolicySchema)` to create a new message.
  */
 export declare const Project_ExecutionRetryPolicySchema: GenMessage<Project_ExecutionRetryPolicy>;
+
+/**
+ * Destinations offered for this project's exports, at most one per provider.
+ *
+ * @generated from message bytebase.v1.Project.ExportSetting
+ */
+export declare type Project_ExportSetting = Message<"bytebase.v1.Project.ExportSetting"> & {
+  /**
+   * Unset when the project has no SharePoint destination.
+   *
+   * @generated from field: bytebase.v1.SharePointDestination sharepoint = 1;
+   */
+  sharepoint?: SharePointDestination | undefined;
+};
+
+/**
+ * Describes the message bytebase.v1.Project.ExportSetting.
+ * Use `create(Project_ExportSettingSchema)` to create a new message.
+ */
+export declare const Project_ExportSettingSchema: GenMessage<Project_ExportSetting>;
 
 /**
  * @generated from message bytebase.v1.AddWebhookRequest
@@ -742,6 +769,27 @@ export declare type TestWebhookResponse = Message<"bytebase.v1.TestWebhookRespon
  * Use `create(TestWebhookResponseSchema)` to create a new message.
  */
 export declare const TestWebhookResponseSchema: GenMessage<TestWebhookResponse>;
+
+/**
+ * A SharePoint document library root or folder that receives exports.
+ *
+ * @generated from message bytebase.v1.SharePointDestination
+ */
+export declare type SharePointDestination = Message<"bytebase.v1.SharePointDestination"> & {
+  /**
+   * The URL of the library root or folder. Normalized to its canonical form
+   * and resolved with the workspace credentials on save.
+   *
+   * @generated from field: string url = 1;
+   */
+  url: string;
+};
+
+/**
+ * Describes the message bytebase.v1.SharePointDestination.
+ * Use `create(SharePointDestinationSchema)` to create a new message.
+ */
+export declare const SharePointDestinationSchema: GenMessage<SharePointDestination>;
 
 /**
  * @generated from message bytebase.v1.Webhook

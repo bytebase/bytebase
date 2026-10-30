@@ -5,7 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	oceanbaseparser "github.com/bytebase/bytebase/backend/plugin/parser/oceanbase"
 )
 
 // getEstimatedRowsFromJSON extracts the estimated row count from an OceanBase
@@ -32,5 +32,5 @@ func getEstimatedRowsFromJSON(res []any) (int64, error) {
 			}
 		}
 	}
-	return mysqlparser.EstimateAffectedRowsFromOceanBaseExplainJSON(plan.String())
+	return oceanbaseparser.EstimateAffectedRowsFromExplainJSON(plan.String())
 }

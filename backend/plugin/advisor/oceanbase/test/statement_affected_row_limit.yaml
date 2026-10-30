@@ -1,0 +1,2 @@
+- statement: DELETE FROM tech_book WHERE a > 1;
+- statement: UPDATE tech_book SET id = 1;

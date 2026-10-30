@@ -20,7 +20,6 @@ var (
 func init() {
 	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_INDEX_KEY_NUMBER_LIMIT, &IndexKeyNumberLimitAdvisor{})
 	advisor.Register(storepb.Engine_MARIADB, storepb.SQLReviewRule_INDEX_KEY_NUMBER_LIMIT, &IndexKeyNumberLimitAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, storepb.SQLReviewRule_INDEX_KEY_NUMBER_LIMIT, &IndexKeyNumberLimitAdvisor{})
 }
 
 // IndexKeyNumberLimitAdvisor is the advisor checking for index key number limit.
@@ -113,7 +112,7 @@ func (r *indexKeyNumberLimitOmniRule) handleConstraint(tableName string, constra
 		return
 	}
 
-	indexName := constraint.Name
+	indexName := omniConstraintName(constraint)
 	if indexName == "" && constraint.Type == ast.ConstrPrimaryKey {
 		indexName = extractPKNameFromText(r.StmtText)
 	}

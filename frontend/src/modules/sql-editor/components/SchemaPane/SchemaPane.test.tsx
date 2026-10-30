@@ -6,8 +6,12 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
+let resizeObserverCallbacks: ResizeObserverCallback[] = [];
+
 class StubResizeObserver implements ResizeObserver {
-  constructor(_cb: ResizeObserverCallback) {}
+  constructor(callback: ResizeObserverCallback) {
+    resizeObserverCallbacks.push(callback);
+  }
   observe(): void {}
   unobserve(): void {}
   disconnect(): void {}
@@ -256,11 +260,9 @@ vi.mock("@/components/ui/layer", () => ({
 }));
 
 vi.mock("@/components/ui/tree", () => ({
-  Tree: () => <div data-testid="tree" />,
-}));
-
-vi.mock("@/components/ui/tree-utils", () => ({
-  countVisibleRows: () => 0,
+  Tree: ({ height }: { height: number }) => (
+    <div data-testid="tree" data-height={height} />
+  ),
 }));
 
 let SchemaPane: typeof import("./SchemaPane").SchemaPane;
@@ -282,6 +284,7 @@ const renderInto = (element: ReactElement) => {
 
 beforeEach(async () => {
   vi.clearAllMocks();
+  resizeObserverCallbacks = [];
   mocks.databaseRefValue = { name: "" };
   mocks.currentTab = null;
   mocks.currentTabId = "";
@@ -316,6 +319,75 @@ describe("SchemaPane shell", () => {
     expect(input?.className).not.toContain("h-8");
 
     unmount();
+  });
+
+  test("leaves schema scrolling to the virtualized tree", async () => {
+    const requestAnimationFrame = vi
+      .spyOn(window, "requestAnimationFrame")
+      .mockImplementation((callback) => {
+        callback(0);
+        return 1;
+      });
+    const database = "instances/i/databases/db";
+    mocks.isValidDatabaseName.mockReturnValue(true);
+    mocks.databaseRefValue = { name: database };
+    mocks.databaseMetadata = {
+      schemas: [
+        {
+          name: "",
+          tables: [
+            {
+              name: "users",
+              columns: [],
+              indexes: [],
+              foreignKeys: [],
+              triggers: [],
+              checkConstraints: [],
+              partitions: [],
+            },
+          ],
+          externalTables: [],
+          views: [],
+          procedures: [],
+          packages: [],
+          functions: [],
+          sequences: [],
+        },
+      ],
+    };
+    mocks.currentTabId = "editor";
+    mocks.currentTab = {
+      id: "editor",
+      connection: { database, schema: "" },
+      treeState: { database, keys: [] },
+      viewState: { view: "CODE" },
+    };
+    const { container, render, unmount } = renderInto(<SchemaPane />);
+    render();
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+    await act(async () => {
+      for (const callback of resizeObserverCallbacks) {
+        callback(
+          [{ contentRect: { height: 480 } } as ResizeObserverEntry],
+          {} as ResizeObserver
+        );
+      }
+    });
+
+    const treeContainer = container.querySelector(".schema-tree");
+    expect(treeContainer?.className).toContain("overflow-hidden");
+    expect(treeContainer?.className).not.toContain("overflow-auto");
+    expect(
+      container
+        .querySelector("[data-testid='tree']")
+        ?.getAttribute("data-height")
+    ).toBe("480");
+
+    unmount();
+    requestAnimationFrame.mockRestore();
   });
 
   test("does not call getOrFetchDatabaseMetadata when database name is invalid", () => {

@@ -206,32 +206,12 @@ func (s *Server) handleChange(ctx context.Context, req *mcp.CallToolRequest, inp
 	// When input.Project is set, the resolver already filtered by it.
 	project := resolved.project
 
-	// Step 4: Create sheet.
-	sheetName, err := s.createSheet(ctx, project, input.SQL)
-	if err != nil {
-		return formatChangeStepError(err, "SHEET_CREATE_FAILED", nil), nil, nil
+	// Steps 4-7: Create the sheet, the plan and the issue.
+	filed, failed := s.fileChange(ctx, project, resolved.resourceName, input.SQL, input.Title, reason)
+	if failed != nil {
+		return failed, nil, nil
 	}
-
-	// Step 5: Create plan.
-	planName, err := s.createPlan(ctx, project, input.Title, resolved.resourceName, sheetName)
-	if err != nil {
-		return formatChangeStepError(err, "PLAN_CREATE_FAILED", map[string]string{"sheet": sheetName}), nil, nil
-	}
-
-	// Step 6: Run plan checks (hybrid async, 10s budget).
-	planChecks := s.runPlanChecks(ctx, planName)
-
-	// Step 7: Create issue.
-	issueName, approvalStatus, err := s.createIssue(ctx, project, input.Title, planName, reason)
-	if err != nil {
-		partialRefs := map[string]string{"sheet": sheetName, "plan": planName}
-		// If plan checks had errors, enforceSqlReview may have blocked issue creation.
-		suggestion := ""
-		if planChecks != nil && planChecks.Status == planCheckDone && planChecks.Summary != nil && planChecks.Summary.Error > 0 {
-			suggestion = "plan checks must pass before issue creation; fix SQL and retry"
-		}
-		return formatChangeStepErrorWithHint(err, "ISSUE_CREATE_FAILED", partialRefs, suggestion), nil, nil
-	}
+	sheetName, planName, planChecks, issueName, approvalStatus := filed.sheet, filed.plan, filed.planChecks, filed.issue, filed.approvalStatus
 
 	// Step 8: Determine nextAction from approvalStatus.
 	nextAction := deriveNextAction(approvalStatus)
@@ -241,6 +221,7 @@ func (s *Server) handleChange(ctx context.Context, req *mcp.CallToolRequest, inp
 	rolloutName := ""
 	rolloutDeferredReason := ""
 
+	var err error
 	switch {
 	case !input.CreateRollout:
 		rolloutDeferredReason = rolloutNotRequested
@@ -296,6 +277,34 @@ func (s *Server) handleChange(ctx context.Context, req *mcp.CallToolRequest, inp
 	return &mcp.CallToolResult{
 		Content: []mcp.Content{&mcp.TextContent{Text: text}},
 	}, output, nil
+}
+
+type filedChange struct {
+	sheet          string
+	plan           string
+	planChecks     *PlanCheckInfo
+	issue          string
+	approvalStatus string
+}
+
+// fileChange files sql against database as a change issue: a sheet, a plan
+// whose checks run within the poll budget, and the issue. A step that fails
+// returns its error result, which names what the steps before it created.
+func (s *Server) fileChange(ctx context.Context, project, database, sql, title, reason string) (*filedChange, *mcp.CallToolResult) {
+	sheetName, err := s.createSheet(ctx, project, sql)
+	if err != nil {
+		return nil, formatChangeStepError(err, "SHEET_CREATE_FAILED", nil)
+	}
+	planName, err := s.createPlan(ctx, project, title, database, sheetName)
+	if err != nil {
+		return nil, formatChangeStepError(err, "PLAN_CREATE_FAILED", map[string]string{"sheet": sheetName})
+	}
+	planChecks := s.runPlanChecks(ctx, planName)
+	issueName, approvalStatus, err := s.createIssue(ctx, project, title, planName, reason)
+	if err != nil {
+		return nil, formatChangeStepError(err, "ISSUE_CREATE_FAILED", map[string]string{"sheet": sheetName, "plan": planName})
+	}
+	return &filedChange{sheet: sheetName, plan: planName, planChecks: planChecks, issue: issueName, approvalStatus: approvalStatus}, nil
 }
 
 // createSheet creates a sheet with base64-encoded SQL content.
@@ -583,30 +592,18 @@ func formatChangeError(err *changeError) *mcp.CallToolResult {
 // formatChangeStepError formats a step failure into an MCP error result.
 // It detects permission errors and wraps them appropriately.
 func formatChangeStepError(err error, defaultCode string, partialRefs map[string]string) *mcp.CallToolResult {
-	return formatChangeStepErrorWithHint(err, defaultCode, partialRefs, "")
-}
-
-// formatChangeStepErrorWithHint is like formatChangeStepError but replaces the
-// default suggestion with hint when non-empty, keeping the JSON shape intact.
-func formatChangeStepErrorWithHint(err error, defaultCode string, partialRefs map[string]string, hint string) *mcp.CallToolResult {
 	var te *toolError
 	if errors.As(err, &te) && te.Code == "PERMISSION_DENIED" {
-		// A permission denial keeps its code and the server's words; the step's
-		// hint is about something else.
 		return formatChangeError(&changeError{
 			Code:        "PERMISSION_DENIED",
 			Message:     te.Message,
 			PartialRefs: partialRefs,
 		})
 	}
-	suggestion := "check the error and retry"
-	if hint != "" {
-		suggestion = hint
-	}
 	return formatChangeError(&changeError{
 		Code:        defaultCode,
 		Message:     err.Error(),
-		Suggestion:  suggestion,
+		Suggestion:  "check the error and retry",
 		PartialRefs: partialRefs,
 	})
 }

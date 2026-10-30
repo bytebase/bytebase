@@ -22,6 +22,11 @@
     }
   },
   "agent": {
+    "access-grant-draft": {
+      "open": "Open access request draft",
+      "storage-failed": "Couldn't prepare the access request. Try again.",
+      "unavailable": "Couldn't open the access request. The database or access settings may have changed."
+    },
     "ai-not-configured": {
       "configure": "Configure",
       "contact-admin": "Contact your workspace admin to configure AI.",
@@ -53,6 +58,19 @@
     "context-no-projects": "No accessible projects",
     "context-select": "Select context",
     "context-workspace": "Workspace",
+    "contextual-start": {
+      "active-request": "Finish the active request before starting another chat.",
+      "continue-chat": "Continue current chat",
+      "database-heading": "Ask about this database",
+      "database-recent": "What changed recently in this database?",
+      "database-schema": "What tables are in this database?",
+      "issue-changes": "What changes does this issue involve?",
+      "issue-heading": "Ask about this issue",
+      "issue-security": "Are there any security concerns with this issue?",
+      "issue-summary": "Summarize this issue and its status",
+      "project-heading": "Ask about this project",
+      "resource-unavailable": "This resource is not available to reference."
+    },
     "database-reference-unavailable": "This database is no longer available or you do not have access to it.",
     "delete-all-chats": "Delete all chats",
     "delete-all-chats-confirmation": "Are you sure you want to delete all archived chats? This action cannot be undone.",
@@ -68,10 +86,31 @@
       "issue": "issue",
       "references": "Evidence"
     },
+    "follow-up": {
+      "ask-next": "Ask next"
+    },
+    "handoff": {
+      "open-issue": "Open issue",
+      "open-project-instances": "Open project instances",
+      "review-database-changes": "Review database changes",
+      "review-issue-plan": "Review plan",
+      "review-project-issues": "Review project issues",
+      "review-workspace-issues": "Review my issues",
+      "view-failed-task": "View failed task",
+      "view-failed-tasks": "View failed tasks"
+    },
     "input-keyboard-hint": "Enter to send · Shift+Enter for a new line",
     "input-placeholder": "Ask AI anything or type @ to select a resource",
     "interrupted": "Interrupted",
     "interrupted-retry-hint": "The conversation was interrupted. You can retry or send a new message.",
+    "issue-comment-draft": {
+      "existing": "This issue already has an unsent comment. Review it before opening another draft.",
+      "open": "Draft review comment",
+      "permission-denied": "You don't have permission to comment on this issue.",
+      "preview": "Preview comment",
+      "storage-failed": "Couldn't prepare the comment draft. Try again.",
+      "unavailable": "Couldn't open the comment draft. The issue may have changed."
+    },
     "issue-reference-unavailable": "This issue is no longer available or you do not have access to it.",
     "landing-starters": {
       "menu": "Suggestions",
@@ -104,6 +143,11 @@
       "issue-approval-role-grant": "This is the final approval step. Approval may immediately grant the requested project role, without a rollout.",
       "issue-approval-rollout": "This is the final approval step. Approval may create a rollout after required checks and reviews pass; it does not guarantee task execution.",
       "issue-rejection": "Rejecting this issue stops its current approval flow. The rejection must be addressed before approval can continue."
+    },
+    "plan-draft": {
+      "default-title": "Proposed database change",
+      "open": "Open Plan draft",
+      "unavailable": "Couldn't open the Plan draft. The database or SQL may have changed. Ask the Agent to generate it again."
     },
     "project-attention": {
       "checking": "Checking items needing your attention...",
@@ -163,6 +207,7 @@
     "tool-ask-user-confirm": "Confirm action",
     "tool-ask-user-input": "Provide input",
     "tool-completed": "Completed",
+    "tool-completed-with-warnings": "Completed with warnings",
     "tool-default-value": "Default",
     "tool-failed": "Failed",
     "tool-options": "Options",
@@ -2753,7 +2798,7 @@
     "general": {
       "workspace": {
         "access-token-duration": {
-          "description": "How long access tokens remain valid before requiring refresh. Shorter durations improve security.",
+          "description": "How long an access token stays valid before it must be refreshed. Shorter durations are more secure.",
           "hours": "Hour(s)",
           "minutes": "Minute(s)",
           "self": "Access token duration"
@@ -2798,8 +2843,8 @@
         },
         "allow-email-code-signin": {
           "description": "Users can sign in or sign up by entering a 6-digit code delivered to their email address.",
-          "enable": "Allow signin with email code",
-          "require-email-setting": "An email (SMTP) setting must be configured first before enabling this."
+          "enable": "Allow sign-in with email code",
+          "require-email-setting": "Configure an email (SMTP) setting before enabling this."
         },
         "announcement": {
           "self": "Announcement"
@@ -2862,12 +2907,12 @@
           }
         },
         "disallow-password-signin": {
-          "description": "Users cannot sign in with email & password, only SSO is allowed.",
-          "enable": "Disallow signin with email & password",
-          "require-sso-setup": "A functional SSO must be created first, or users won't be able to log in."
+          "description": "Users can sign in only with SSO.",
+          "enable": "Disallow sign-in with email and password",
+          "require-sso-setup": "Set up a working SSO provider first, or users won't be able to sign in."
         },
         "disallow-signup": {
-          "description": "Users cannot self-service signup and can only be invited by the workspace admin.",
+          "description": "Users cannot sign up on their own and can only be invited by a workspace admin.",
           "enable": "Disallow self-service signup"
         },
         "domain-restriction": {
@@ -2896,7 +2941,7 @@
         "id": "Workspace ID",
         "id-description": "The unique, read-only workspace id.",
         "inactive-session-timeout": {
-          "description": "The session expiration time if no activity is detected for the user. The users will be forced to log out when they reach the limit.",
+          "description": "How long a session can stay inactive before it expires. Users are signed out when they reach this limit.",
           "hours": "Hour(s)",
           "self": "Inactive session timeout"
         },
@@ -2928,16 +2973,16 @@
             "self": "Maximum SQL result size"
           }
         },
-        "no-limit": "No limit when the value <= 0",
+        "no-limit": "A value of 0 or less means no limit.",
         "password-restriction": {
-          "min-length": "Minimum length for password should no less than {{min}} characters",
-          "password-rotation": "Require users reset their password every {{day}} days",
-          "require-letter": "The password must contain at least one letter, regardless of upper case or lower case",
-          "require-number": "The password must contain at least one number",
-          "require-reset-password-for-first-login": "Require users reset their password after the 1st time login",
-          "require-special-character": "The password must contain at least one special character",
-          "require-uppercase-letter": "The password must contain at least one upper case letter",
-          "self": "Password Restriction"
+          "min-length": "Password must be at least {{min}} characters long",
+          "password-rotation": "Require users to change their password every {{day}} days",
+          "require-letter": "Password must contain at least one letter (uppercase or lowercase)",
+          "require-number": "Password must contain at least one number",
+          "require-reset-password-for-first-login": "Require users to change their password after their first login",
+          "require-special-character": "Password must contain at least one special character",
+          "require-uppercase-letter": "Password must contain at least one uppercase letter",
+          "self": "Password restrictions"
         },
         "product-improvement": {
           "description": "Help improve Bytebase by sharing anonymous usage data",
@@ -2953,12 +2998,12 @@
         },
         "refresh-token-duration": {
           "days": "Day(s)",
-          "description": "How often users must fully reauthenticate. Configuration updates require users to sign in again for changes to take effect.",
+          "description": "How often users must fully reauthenticate. Changes take effect the next time users sign in.",
           "hours": "Hour(s)",
           "self": "Refresh token duration"
         },
         "require-2fa": {
-          "description": "Users who do not have two-factor authentication enabled for their personal accounts will be forced to configure.",
+          "description": "Users who have not enabled two-factor authentication will be required to set it up.",
           "enable": "Require two-factor authentication for all users"
         },
         "security": "Security",
@@ -3479,6 +3524,7 @@
   },
   "sql-editor": {
     "access-grants": "Access Grants",
+    "access-request-draft-unavailable": "The access request draft is no longer available. Please ask the Agent to prepare it again.",
     "access-search": {
       "scope": {
         "database": {

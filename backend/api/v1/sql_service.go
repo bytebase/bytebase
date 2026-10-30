@@ -355,6 +355,12 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 			return nil, err
 		}
 	}
+	mcpWrite := !clamped && mcpSession(ctx) && !mcpStatementIsRead(ctx, instance.Metadata.GetEngine(), statement)
+	// query_database takes no explain, so an explain of a possible write cannot
+	// be confirmed.
+	if mcpWrite && request.Explain {
+		return nil, permissionDeniedError(ctx, errors.Errorf("an MCP session explains only statements Bytebase can show are reads. %s", mcpConsoleWayOut))
+	}
 
 	queryRestriction := getEffectiveQueryDataPolicy(
 		ctx,
@@ -363,7 +369,12 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		request.Limit,
 		database.ProjectID,
 	)
-	resolvedDataSourceID, err := resolveDataSourceID(ctx, instance, request.DataSourceId, statement, queryRestriction.AllowAdminDataSource)
+	var resolvedDataSourceID string
+	if mcpWrite {
+		resolvedDataSourceID, err = mcpWriteDataSourceID(instance, request.DataSourceId, queryRestriction.AllowAdminDataSource)
+	} else {
+		resolvedDataSourceID, err = resolveDataSourceID(ctx, instance, request.DataSourceId, statement, queryRestriction.AllowAdminDataSource)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -371,6 +382,11 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 	dataSource, err := checkAndGetDataSourceQueriable(ctx, s.store, s.licenseService, database, resolvedDataSourceID)
 	if err != nil {
 		return nil, err
+	}
+	// After the data source checks, so a request they refuse is refused before
+	// the user is asked.
+	if mcpWrite && !mcpWriteConfirmed(ctx, request) {
+		return nil, mcpConfirmationRequired(database, request.GetSchema())
 	}
 	driver, err := s.dbFactory.GetDataSourceDriver(ctx, instance, dataSource, db.ConnectionContext{
 		DatabaseName: database.DatabaseName,
@@ -1223,11 +1239,17 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 	// grant via slice order (PR #20491 bot review).
 	accessGrant := s.preCheckAccess(ctx, request.Statement, instance, database, request.Schema, request.GetContainer(), true /* requireExport */)
 
+	// The validation below admits a write on MySQL and on an engine with no
+	// validator, and the driver runs it.
+	if mcpSession(ctx) && !mcpStatementIsRead(ctx, instance.Metadata.GetEngine(), statement) {
+		return nil, permissionDeniedError(ctx, errors.Errorf("an MCP session exports only statements Bytebase can show are reads. %s", mcpConsoleWayOut))
+	}
+
 	// Validate the request.
 	// New query ACL experience.
 	if instance.Metadata.GetEngine() != storepb.Engine_MYSQL {
 		if err := validateQueryRequest(instance, statement); err != nil {
-			return nil, err
+			return nil, exportConnectError(err)
 		}
 	}
 
@@ -1267,8 +1289,9 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 }
 
 // exportConnectError returns the connect error Export answers with. A refusal
-// from the access check arrives as a queryError, which errors.As cannot see
-// through, so its own connect error (such as PERMISSION_DENIED) is returned.
+// from the read-only or access check arrives as a queryError, which errors.As
+// cannot see through, so its own connect error (such as PERMISSION_DENIED) is
+// returned.
 func exportConnectError(err error) *connect.Error {
 	var connectErr *connect.Error
 	var qe *queryError
@@ -1372,7 +1395,7 @@ func doExport(
 		}
 
 		if err := exportResultToZip(ctx, zipw, stores, instance, database, result, request, i+1); err != nil {
-			return nil, duration, errors.Errorf("failed to export result to zip with error: %v", result.GetError())
+			return nil, duration, errors.Wrap(err, "failed to export result to zip")
 		}
 
 		exportCount++
@@ -2490,7 +2513,15 @@ func resolveDataSourceID(ctx context.Context, instance *store.InstanceMessage, d
 	if dataSourceID != "" {
 		return dataSourceID, nil
 	}
+	return routeDataSource(instance, allowAdminDataSource, func() bool {
+		return requiresAdminDataSource(ctx, instance.Metadata.GetEngine(), statement)
+	})
+}
 
+var errMultipleReadOnlyDataSources = errors.New("instance has multiple read-only data sources, please specify data_source_id explicitly")
+
+// routeDataSource picks the data source for a request that names none.
+func routeDataSource(instance *store.InstanceMessage, allowAdminDataSource bool, needsAdmin func() bool) (string, error) {
 	var adminDataSourceID string
 	var readOnlyDataSourceID string
 	readOnlyCount := 0
@@ -2505,7 +2536,7 @@ func resolveDataSourceID(ctx context.Context, instance *store.InstanceMessage, d
 		}
 	}
 
-	if allowAdminDataSource && adminDataSourceID != "" && requiresAdminDataSource(ctx, instance.Metadata.GetEngine(), statement) {
+	if allowAdminDataSource && adminDataSourceID != "" && needsAdmin() {
 		return adminDataSourceID, nil
 	}
 
@@ -2513,7 +2544,7 @@ func resolveDataSourceID(ctx context.Context, instance *store.InstanceMessage, d
 	case readOnlyCount == 1:
 		return readOnlyDataSourceID, nil
 	case readOnlyCount > 1:
-		return "", connect.NewError(connect.CodeFailedPrecondition, errors.New("instance has multiple read-only data sources, please specify data_source_id explicitly"))
+		return "", connect.NewError(connect.CodeFailedPrecondition, errMultipleReadOnlyDataSources)
 	case adminDataSourceID != "":
 		return adminDataSourceID, nil
 	default:

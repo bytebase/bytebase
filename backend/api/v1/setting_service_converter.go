@@ -192,6 +192,8 @@ func convertStoreSettingNameToV1(storeName storepb.SettingName) v1pb.Setting_Set
 		return v1pb.Setting_MCP
 	case storepb.SettingName_SYSTEM:
 		// Backend-only setting, not exposed in v1 API
+	case storepb.SettingName_EXPORT:
+		// Not served until its value conversion exists.
 	default:
 	}
 	return v1pb.Setting_SETTING_NAME_UNSPECIFIED
@@ -221,6 +223,9 @@ func convertV1SettingNameToStore(v1Name v1pb.Setting_SettingName) storepb.Settin
 		return storepb.SettingName_EMAIL
 	case v1pb.Setting_MCP:
 		return storepb.SettingName_MCP
+	case v1pb.Setting_EXPORT:
+		// Not served until its value conversion exists.
+		return storepb.SettingName_SETTING_NAME_UNSPECIFIED
 	default:
 		return storepb.SettingName_SETTING_NAME_UNSPECIFIED
 	}

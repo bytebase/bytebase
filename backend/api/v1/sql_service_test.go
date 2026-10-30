@@ -77,6 +77,14 @@ func TestExportRejectsRetiredRolloutNames(t *testing.T) {
 	}
 }
 
+func TestRequiresAdminDataSourceForSQLServer(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	require.False(t, requiresAdminDataSource(ctx, storepb.Engine_MSSQL, "SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED\nSELECT id FROM t"))
+	require.True(t, requiresAdminDataSource(ctx, storepb.Engine_MSSQL, "SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED\nDELETE FROM t"))
+	require.True(t, requiresAdminDataSource(ctx, storepb.Engine_MSSQL, "DECLARE @n int = 1; SELECT @n"))
+}
+
 // TestSelectBestAccessGrantPrefersUnmask covers the Unmask-only ranking:
 // Export plays no role (Export callers already filtered the pool via the
 // `requireExport` CEL filter, and Query never reads `Payload.Export`).

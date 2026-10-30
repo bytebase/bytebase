@@ -1,0 +1,43 @@
+- description: Test Case Insensitive
+  statement: SELECT * FROM T;
+  defaultDatabase: db
+  ignoreCaseSensitive: true
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: a
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: a
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: ""
+          table: T
+          column: ""
+    predicatecolumns: []

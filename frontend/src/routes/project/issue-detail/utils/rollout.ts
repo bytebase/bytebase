@@ -1,9 +1,13 @@
+import type { RouteTarget } from "@/app/router";
+import { buildPlanDeployRouteFromRolloutName } from "@/app/router/routeHelpers";
+import { shouldStayOnPlanDetailPage } from "@/lib/plan/workflow";
 import { useAppStore } from "@/stores/app";
 import { roleNamePrefix } from "@/stores/modules/v1/common";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
+import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
+import type { Rollout, Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import {
@@ -124,4 +128,18 @@ export const preloadRolloutPermissionContext = async ({
     environment,
     policyResults[0]?.status === "fulfilled" ? "loaded" : "unavailable"
   );
+};
+
+// The route to open once the Rollout action has created a rollout, or
+// undefined to stay on Issue Detail. A create-database issue keeps its rollout
+// on Issue Detail and Plan Detail redirects it straight back, so leaving would
+// only flash Plan Detail and add a history entry.
+export const routeAfterRolloutCreated = (
+  plan: Plan,
+  rollout: Rollout
+): RouteTarget | undefined => {
+  if (rollout.stages.length === 0 || !shouldStayOnPlanDetailPage(plan)) {
+    return undefined;
+  }
+  return buildPlanDeployRouteFromRolloutName(rollout.name);
 };

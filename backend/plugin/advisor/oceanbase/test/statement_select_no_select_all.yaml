@@ -1,0 +1,105 @@
+- statement: SELECT * FROM t;
+  want:
+    - status: 2
+      code: 203
+      title: STATEMENT_SELECT_NO_SELECT_ALL
+      content: '"SELECT * FROM t;" uses SELECT all'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: SELECT a, b FROM t;
+- statement: |
+    SELECT a, b FROM t;
+    SELECT * FROM t;
+    SELECT a, b FROM (SELECT * from t1 JOIN t2) t;
+  want:
+    - status: 2
+      code: 203
+      title: STATEMENT_SELECT_NO_SELECT_ALL
+      content: '"SELECT * FROM t;" uses SELECT all'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 203
+      title: STATEMENT_SELECT_NO_SELECT_ALL
+      content: '"SELECT a, b FROM (SELECT * from t1 JOIN t2) t;" uses SELECT all'
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: |-
+    SELECT a, b FROM t;
+    SELECT * FROM t1
+    UNION
+    SELECT * FROM t2;
+  want:
+    - status: 2
+      code: 203
+      title: STATEMENT_SELECT_NO_SELECT_ALL
+      content: |-
+        "SELECT * FROM t1
+        UNION
+        SELECT * FROM t2;" uses SELECT all
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 203
+      title: STATEMENT_SELECT_NO_SELECT_ALL
+      content: |-
+        "SELECT * FROM t1
+        UNION
+        SELECT * FROM t2;" uses SELECT all
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: |-
+    SELECT a, b FROM t;
+    WITH cte AS (
+      SELECT * FROM a
+    ) SELECT * FROM cte;
+  want:
+    - status: 2
+      code: 203
+      title: STATEMENT_SELECT_NO_SELECT_ALL
+      content: |-
+        "WITH cte AS (
+          SELECT * FROM a
+        ) SELECT * FROM cte;" uses SELECT all
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+    - status: 2
+      code: 203
+      title: STATEMENT_SELECT_NO_SELECT_ALL
+      content: |-
+        "WITH cte AS (
+          SELECT * FROM a
+        ) SELECT * FROM cte;" uses SELECT all
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: |-
+    SELECT a, b FROM t;
+    SELECT *
+    FROM a
+    INNER JOIN b USING(id);
+  want:
+    - status: 2
+      code: 203
+      title: STATEMENT_SELECT_NO_SELECT_ALL
+      content: |-
+        "SELECT *
+        FROM a
+        INNER JOIN b USING(id);" uses SELECT all
+      startposition:
+        line: 2
+        column: 0
+      endposition: null

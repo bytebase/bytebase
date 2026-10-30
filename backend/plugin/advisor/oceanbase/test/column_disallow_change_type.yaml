@@ -1,0 +1,56 @@
+- statement: |-
+    ALTER TABLE tech_book MODIFY id int;
+    ALTER TABLE tech_book MODIFY id INT;
+    ALTER TABLE tech_book MODIFY id INTEGER;
+    ALTER TABLE tech_book MODIFY id INTEGER UNSIGNED;
+  want:
+    - status: 2
+      code: 403
+      title: COLUMN_DISALLOW_CHANGE_TYPE
+      content: '"ALTER TABLE tech_book MODIFY id INTEGER UNSIGNED;" changes column type'
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE tech_book MODIFY id int;
+    ALTER TABLE tech_book MODIFY id int(4);
+  want:
+    - status: 2
+      code: 403
+      title: COLUMN_DISALLOW_CHANGE_TYPE
+      content: '"ALTER TABLE tech_book MODIFY id int(4);" changes column type'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE tech_book MODIFY id bigint;
+    ALTER TABLE tech_book MODIFY id smallint;
+  want:
+    - status: 2
+      code: 403
+      title: COLUMN_DISALLOW_CHANGE_TYPE
+      content: '"ALTER TABLE tech_book MODIFY id bigint;" changes column type'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 403
+      title: COLUMN_DISALLOW_CHANGE_TYPE
+      content: '"ALTER TABLE tech_book MODIFY id smallint;" changes column type'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: ALTER TABLE tech_book CHANGE name uname varchar(20);
+  want:
+    - status: 2
+      code: 403
+      title: COLUMN_DISALLOW_CHANGE_TYPE
+      content: '"ALTER TABLE tech_book CHANGE name uname varchar(20);" changes column type'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

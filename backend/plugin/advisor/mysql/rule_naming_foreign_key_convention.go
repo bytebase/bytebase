@@ -21,7 +21,6 @@ var (
 func init() {
 	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_NAMING_INDEX_FK, &NamingFKConventionAdvisor{})
 	advisor.Register(storepb.Engine_MARIADB, storepb.SQLReviewRule_NAMING_INDEX_FK, &NamingFKConventionAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, storepb.SQLReviewRule_NAMING_INDEX_FK, &NamingFKConventionAdvisor{})
 }
 
 // NamingFKConventionAdvisor is the advisor checking for foreign key naming convention.
@@ -171,7 +170,7 @@ func (*namingFKOmniRule) handleConstraint(tableName string, constraint *ast.Cons
 		return nil
 	}
 
-	indexName := constraint.Name
+	indexName := omniConstraintName(constraint)
 
 	referencingColumnList := constraint.Columns
 	referencedTable := ""

@@ -190,6 +190,15 @@ func omniConstraintsByType(constraints []*ast.Constraint, typ ast.ConstraintType
 	return result
 }
 
+// omniConstraintName returns the CONSTRAINT symbol, else the name written after
+// FOREIGN KEY, which omni keeps in IndexName.
+func omniConstraintName(c *ast.Constraint) string {
+	if c.Name != "" {
+		return c.Name
+	}
+	return c.IndexName
+}
+
 // omniDataTypeNameCompact returns a compact, lowercase type name string.
 func omniDataTypeNameCompact(dt *ast.DataType) string {
 	if dt == nil {

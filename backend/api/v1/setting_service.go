@@ -1028,7 +1028,7 @@ func (s *SettingService) preflightWorkspaceProfilePaths(ctx context.Context, wor
 				return connect.NewError(connect.CodePermissionDenied, err)
 			}
 			if payload.PasswordRestriction != nil && payload.PasswordRestriction.MinLength < 8 {
-				return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid password minimum length, should no less than 8"))
+				return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid password minimum length: must be at least 8"))
 			}
 		default:
 			// Unknown paths are rejected by the merge pass.

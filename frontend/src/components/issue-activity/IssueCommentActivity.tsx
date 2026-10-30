@@ -30,6 +30,7 @@ import {
   diffPlanSpecsForEvent,
   type SpecDiffEntry,
 } from "@/lib/plan/diffPlanSpecs";
+import { shouldStayOnPlanDetailPage } from "@/lib/plan/workflow";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/app";
 import {
@@ -517,13 +518,17 @@ function IssueCommentActionSentence({
     if (fromStatus !== undefined && toStatus !== undefined) {
       if (toStatus === IssueStatus.DONE) {
         if (isDoneRolloutComment(issue, plan, comment)) {
-          // On the plan-detail timeline (linkless) the rollout is for the plan
-          // you're already viewing, so drop the "for plan #id" link entirely.
-          const planUID = linkless || !plan ? "" : extractPlanUID(plan.name);
-          const planRoute =
-            linkless || !plan
-              ? undefined
-              : buildPlanRolloutRouteFromPlanName(plan.name);
+          // Drop the "for plan #id" link on the plan-detail timeline (linkless),
+          // where the rollout is for the plan being viewed, and for a
+          // create-database plan, whose rollout lives on Issue Detail itself.
+          const linkedPlan =
+            !linkless && plan && shouldStayOnPlanDetailPage(plan)
+              ? plan
+              : undefined;
+          const planUID = linkedPlan ? extractPlanUID(linkedPlan.name) : "";
+          const planRoute = linkedPlan
+            ? buildPlanRolloutRouteFromPlanName(linkedPlan.name)
+            : undefined;
           const sentence =
             issue?.approvalStatus === ApprovalStatus.APPROVED
               ? planUID

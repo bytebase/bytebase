@@ -27,6 +27,7 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/mariadb"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/mongodb"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/oceanbase"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/partiql"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
@@ -166,6 +167,13 @@ func TestMCPClampRefusesWhatItCannotShowIsARead(t *testing.T) {
 			statement: "SET SESSION TRANSACTION READ WRITE; SELECT 1",
 			refused:   true,
 			reason:    "rewrites the session it runs on",
+		},
+		{
+			name:      "a SQL Server session option ahead of a read is refused",
+			engine:    storepb.Engine_MSSQL,
+			statement: "SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED; SELECT 1",
+			refused:   true,
+			reason:    "statement 1 of 2 returns no data",
 		},
 		{
 			// A single well-formed statement the server executes as a

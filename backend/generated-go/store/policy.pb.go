@@ -585,6 +585,10 @@ type QueryDataPolicy struct {
 	// workspace-level policy
 	// Allow using the admin data source to query in the SQL editor.
 	AllowAdminDataSource bool `protobuf:"varint,9,opt,name=allow_admin_data_source,json=allowAdminDataSource,proto3" json:"allow_admin_data_source,omitempty"`
+	// workspace-level policy
+	// Disable the Download export destination. Exports can still go to a
+	// configured storage destination such as SharePoint.
+	DisableDownload bool `protobuf:"varint,10,opt,name=disable_download,json=disableDownload,proto3" json:"disable_download,omitempty"`
 	// ================
 	// Deprecate following fields.
 	// Disallow running DDL statements in the SQL editor.
@@ -642,6 +646,13 @@ func (x *QueryDataPolicy) GetDisableCopyData() bool {
 func (x *QueryDataPolicy) GetAllowAdminDataSource() bool {
 	if x != nil {
 		return x.AllowAdminDataSource
+	}
+	return false
+}
+
+func (x *QueryDataPolicy) GetDisableDownload() bool {
+	if x != nil {
+		return x.DisableDownload
 	}
 	return false
 }
@@ -844,11 +855,13 @@ const file_store_policy_proto_rawDesc = "" +
 	"\amembers\x18\x02 \x03(\tR\amembers\x12/\n" +
 	"\tcondition\x18\x03 \x01(\v2\x11.google.type.ExprR\tcondition\"@\n" +
 	"\tIamPolicy\x123\n" +
-	"\bbindings\x18\x01 \x03(\v2\x17.bytebase.store.BindingR\bbindings\"\x92\x02\n" +
+	"\bbindings\x18\x01 \x03(\v2\x17.bytebase.store.BindingR\bbindings\"\xbd\x02\n" +
 	"\x0fQueryDataPolicy\x12.\n" +
 	"\x13maximum_result_rows\x18\x04 \x01(\x05R\x11maximumResultRows\x12*\n" +
 	"\x11disable_copy_data\x18\x05 \x01(\bR\x0fdisableCopyData\x125\n" +
-	"\x17allow_admin_data_source\x18\t \x01(\bR\x14allowAdminDataSource\x12!\n" +
+	"\x17allow_admin_data_source\x18\t \x01(\bR\x14allowAdminDataSource\x12)\n" +
+	"\x10disable_download\x18\n" +
+	" \x01(\bR\x0fdisableDownload\x12!\n" +
 	"\fdisallow_ddl\x18\a \x01(\bR\vdisallowDdl\x12!\n" +
 	"\fdisallow_dml\x18\b \x01(\bR\vdisallowDmlJ\x04\b\x06\x10\aJ\x04\b\x01\x10\x02J\x04\b\x03\x10\x04J\x04\b\x02\x10\x03R\x0edisable_exportB\x8e\x01\n" +
 	"\x12com.bytebase.storeB\vPolicyProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"

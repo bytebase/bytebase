@@ -1,0 +1,1 @@
+{"query_block":{"select_id":1,"table":{"delete":true,"table_name":"target_table","access_type":"ALL","rows_examined_per_scan":10,"filtered":"100.00"}}}

@@ -421,9 +421,9 @@ func TestRecoveryCommandContract(t *testing.T) {
 		require.Contains(t, output.String(), "At least one letter")
 		require.Contains(t, output.String(), "At least one uppercase letter")
 		require.Contains(t, output.String(), "At least one special character")
-		require.Contains(t, output.String(), "password length should no less than 12 characters")
+		require.Contains(t, output.String(), "password must be at least 12 characters long")
 		require.Less(t, strings.Index(output.String(), "User email"), strings.Index(output.String(), "Password requirements:"))
-		require.Less(t, strings.Index(output.String(), "password length should no less than 12 characters"), strings.Index(output.String(), "Confirm new password:"))
+		require.Less(t, strings.Index(output.String(), "password must be at least 12 characters long"), strings.Index(output.String(), "Confirm new password:"))
 		require.Equal(t, 1, strings.Count(output.String(), "Confirm new password:"))
 		require.Equal(t, []string{"acme"}, runner.restrictionWorkspaces)
 		require.Equal(t, 3, readCount)
@@ -794,8 +794,8 @@ func TestRecoverySubcommands(t *testing.T) {
 		{
 			name:    "reset-password with a password the workspace restriction refuses",
 			args:    resetArgs,
-			runner:  &fakeRecoveryRunner{resetErr: errors.New("password does not satisfy the workspace restriction: password length should no less than 16 characters")},
-			wantErr: "password does not satisfy the workspace restriction: password length should no less than 16 characters",
+			runner:  &fakeRecoveryRunner{resetErr: errors.New("password does not satisfy the workspace restriction: password must be at least 16 characters long")},
+			wantErr: "password does not satisfy the workspace restriction: password must be at least 16 characters long",
 		},
 		{
 			name:    "reset-password for an email outside the allowed domains",

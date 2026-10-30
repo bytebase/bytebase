@@ -1,0 +1,70 @@
+- statement: |-
+    UPDATE items,
+       (SELECT id FROM items
+        WHERE id IN
+            (SELECT id FROM items
+             WHERE retail / wholesale >= 1.3 AND quantity < 100))
+        AS discounted
+    SET items.retail = items.retail * 0.9
+    WHERE items.id = discounted.id;
+  want:
+    - UPDATE
+- statement: |-
+    INSERT INTO tbl_temp2 (fld_id)
+    SELECT tbl_temp1.fld_order_id
+    FROM tbl_temp1 WHERE tbl_temp1.fld_order_id > 100;
+  want:
+    - INSERT
+- statement: |-
+    CREATE FUNCTION hello (s CHAR(20))
+    RETURNS CHAR(50) DETERMINISTIC
+    RETURN CONCAT('Hello, ',s,'!');
+  want:
+    - CREATE_FUNCTION
+- statement: |-
+    CREATE PROCEDURE citycount (IN country CHAR(3), OUT cities INT)
+       BEGIN
+         SELECT COUNT(*) INTO cities FROM world.city
+         WHERE CountryCode = country;
+       END;
+  want:
+    - CREATE_PROCEDURE
+- statement: CREATE TABLE t1 (a INT);
+  want:
+    - CREATE_TABLE
+- statement: CREATE TABLE t2 LIKE t1;
+  want:
+    - CREATE_TABLE
+- statement: CREATE TABLE t2 SELECT * FROM t1;
+  want:
+    - CREATE_TABLE
+- statement: DROP TABLE t2;
+  want:
+    - DROP_TABLE
+- statement: CREATE VIEW v1 AS SELECT * FROM t1;
+  want:
+    - CREATE_VIEW
+- statement: DROP VIEW v1;
+  want:
+    - DROP_VIEW
+- statement: |-
+    CREATE EVENT myevent
+    ON SCHEDULE AT CURRENT_TIMESTAMP + INTERVAL 1 HOUR
+    DO
+      UPDATE myschema.mytable SET mycol = mycol + 1;
+  want:
+    - CREATE_EVENT
+- statement: DROP EVENT myevent;
+  want:
+    - DROP_EVENT
+- statement: |-
+    CREATE PROCEDURE citycount (IN country CHAR(3), OUT cities INT)
+       BEGIN
+         SELECT COUNT(*) INTO cities FROM world.city
+         WHERE CountryCode = country;
+       END;
+  want:
+    - CREATE_PROCEDURE
+- statement: DROP PROCEDURE citycount;
+  want:
+    - DROP_PROCEDURE

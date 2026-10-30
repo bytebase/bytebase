@@ -7,13 +7,13 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/omni/mysql/ast"
+	"github.com/bytebase/omni/oceanbase/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	oceanbaseparser "github.com/bytebase/bytebase/backend/plugin/parser/oceanbase"
 )
 
 var (
@@ -52,7 +52,7 @@ func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Contex
 		if stmt.AST == nil {
 			continue
 		}
-		node, ok := mysqlparser.GetOmniNode(stmt.AST)
+		node, ok := oceanbaseparser.GetOmniNode(stmt.AST)
 		if !ok {
 			continue
 		}

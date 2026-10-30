@@ -5,13 +5,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common/permission"
+	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 )
 
 const (
@@ -34,6 +37,8 @@ type QueryInput struct {
 	Schema string `json:"schema,omitempty"`
 	// Container is the CosmosDB container to query.
 	Container string `json:"container,omitempty"`
+	// IssueTitle titles the issue when the user files a possible write as one.
+	IssueTitle string `json:"issueTitle,omitempty"`
 	// Limit is the maximum number of rows to return (default: 100, max: 1000).
 	Limit int `json:"limit,omitempty"`
 }
@@ -75,13 +80,17 @@ const queryDatabaseDescription = `Execute a SQL query against a Bytebase databas
 | schema    | No       | Default schema for unqualified names (Postgres search path). An access grant applies only when this equals the grant's schema |
 | container | No       | CosmosDB container (required for CosmosDB). An access grant applies only when this equals the grant's container |
 | limit     | No       | Max rows (default: 100, max: 1000) |
+| issueTitle | No      | For a statement that may write: the issue's title if the user chooses Create an issue. The form shows it in that choice. Say what the change does, without data values. Without it, the form does not offer Create an issue |
 
 **Examples:**
 query_database(database="employee_db", statement="SELECT * FROM users LIMIT 10")
 query_database(database="employee", instance="prod-pg", statement="SELECT count(*) FROM orders")
 query_database(database="employee", instance="projects/hr/instances/prod-pg", statement="SELECT count(*) FROM orders")
+query_database(database="employee_db", statement="UPDATE employee SET active = false WHERE id = 42", issueTitle="Deactivate an employee")
 
 **Notes:**
+- Show the user the statement each answer came from, so they can check it read what they asked about.
+- When the user asks for an issue or a review of a change, call propose_database_change instead. It takes no schema, so when the request named one, qualify each name with it.
 - Masked data: masking replaces a value fully (by default "******"), partly (e.g. "**rn**"), or with a hash. maskedColumns in the result names each masked column and why (not reported for MongoDB, CosmosDB or Elasticsearch). A masked value is a placeholder, not a value anything holds, so never write it back and never filter on it. Any statement containing "******" is refused. When showing a partly masked value, wrap it in backticks: "**rn**" renders as bold Markdown.
 - Seeing masked values: the user can ask a project owner for a masking exemption, or, if the project allows just-in-time access, request an access grant with Unmask for this exact statement, schema and container. In a Read-write session, file the request with request_access_grant; otherwise the user requests it in the SQL Editor. Once it is approved, find the grant among the user's access grants, then rerun the granted statement unchanged with the grant's schema and container. appliedAccessGrant in the result names the grant that applied.
 `
@@ -110,18 +119,76 @@ func (s *Server) handleQueryDatabase(ctx context.Context, req *mcp.CallToolReque
 		limit = maxQueryLimit
 	}
 
+	// An answer that acts on nothing is reported before the database is
+	// resolved again, which may have changed while the user was asked.
+	choice, answerState := "", ""
+	if canShowConfirmation(req) {
+		if response, state, answered := confirmationAnswer(req); answered {
+			var result *mcp.CallToolResult
+			if choice, result = answeredChoice(response); result != nil {
+				return result, nil, nil
+			}
+			answerState = state
+		}
+	}
+
 	// Resolve database.
 	resolved, resolveResult := s.resolveTarget(ctx, req, input.Database, input.Instance, input.Project)
 	if resolveResult != nil {
+		if choice != "" && len(resolveResult.InputRequests) > 0 {
+			return staleAnswer("the databases that match changed after the user was asked"), nil, nil
+		}
 		return resolveResult, nil, nil
+	}
+
+	// A statement Query cannot show is a read runs once the user chooses Run
+	// now, or at once when the client cannot show the form.
+	confirmation := runConfirmation{database: resolved.resourceName}
+	digest := auth.MCPStatementDigest(input.Statement, resolved.resourceName, input.Schema, input.Container)
+	// Create an issue files under the agent's title: one Bytebase generated would
+	// pass in a project that requires a manual title, since the server refuses
+	// only an empty one. A plan carries no schema, so an issue's rollout would
+	// run with the database's default one.
+	var issueTitle string
+	if input.Schema == "" {
+		issueTitle = strings.TrimSpace(input.IssueTitle)
+	}
+	asked := askedDigest(digest, issueTitle)
+	var confirmed []byte
+	if !canShowConfirmation(req) {
+		confirmed = digest
+	} else if reply, answered := s.signedReply(ctx, req, confirmation, asked); answered {
+		if why := reply.staleReason("the request changed after the user was asked"); why != "" {
+			return staleAnswer(why), nil, nil
+		}
+		if choice == runChoiceIssue {
+			if issueTitle == "" {
+				return noOfferedChoice(), nil, nil
+			}
+			return s.fileAsIssue(ctx, resolved, input.Statement, issueTitle), nil, nil
+		}
+		confirmed = digest
+	} else if choice != "" && answerState != "" {
+		// The answer was signed for another database.
+		return staleAnswer("the database that matches changed after the user was asked"), nil, nil
 	}
 
 	// Execute query.
 	queryCtx, queryCancel := context.WithTimeout(ctx, queryTimeout)
 	defer queryCancel()
 
-	output, err := s.executeQuery(queryCtx, resolved, input, limit)
+	output, err := s.executeQuery(queryCtx, resolved, input, limit, confirmed)
+	var required *confirmationRequired
+	// A confirmed call that Query still refuses reports the refusal: asking
+	// again in the same call would send a second form.
+	if errors.As(err, &required) && confirmed == nil {
+		return s.askToRun(ctx, req, confirmation, asked, input.Statement, input.Container, required, issueTitle), nil, nil
+	}
 	if err != nil {
+		var qe *queryError
+		if errors.As(err, &qe) {
+			return formatQueryError(qe), nil, nil
+		}
 		return formatToolError(err), nil, nil
 	}
 
@@ -215,8 +282,9 @@ type queryRow struct {
 	Values []json.RawMessage `json:"values"`
 }
 
-// executeQuery executes a SQL query against the resolved database.
-func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, input QueryInput, limit int) (*QueryOutput, error) {
+// executeQuery executes a SQL query against the resolved database. confirmed is
+// the digest the confirmation marker carries, or nil for an unconfirmed request.
+func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, input QueryInput, limit int, confirmed []byte) (*QueryOutput, error) {
 	body := map[string]any{
 		"name":         resolved.resourceName,
 		"dataSourceId": resolved.dataSourceID,
@@ -228,24 +296,41 @@ func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, i
 	if input.Container != "" {
 		body["container"] = input.Container
 	}
-	resp, err := s.apiRequest(ctx, "/bytebase.v1.SQLService/Query", body)
+	if confirmed != nil {
+		ctx = auth.WithMCPConfirmedDecision(ctx, auth.MCPConfirmedDecision{
+			Procedure: v1connect.SQLServiceQueryProcedure,
+			Resource:  resolved.resourceName,
+			Digest:    confirmed,
+		})
+	}
+	resp, err := s.apiRequest(ctx, v1connect.SQLServiceQueryProcedure, body)
 	if err != nil {
+		// The call can end partway through a batch, as when queryTimeout passes.
 		return nil, &toolError{
 			Code:       "QUERY_ERROR",
 			Message:    fmt.Sprintf("query request failed: %s", err.Error()),
-			Suggestion: "check network connectivity and try again",
+			Suggestion: whatRanUnknown,
 		}
 	}
 	if resp.Status >= 400 {
+		if required := confirmationRequiredIn(resp.Body); required != nil {
+			return nil, required
+		}
 		errMsg := parseError(resp.Body)
 		if errMsg == "" {
 			errMsg = fmt.Sprintf("HTTP %d", resp.Status)
 		}
-		// A refusal at this level gets no advice: no access grant lifts a
-		// missing bb.databases.get, which the ACL checks first, or an MCP policy.
 		suggestion := ""
-		if resp.Status != http.StatusForbidden && resp.Status != http.StatusUnauthorized {
+		switch {
+		case resp.Status >= http.StatusInternalServerError:
+			// A 5xx can follow statements that ran, as when a SQL Server batch
+			// fails partway: its driver then returns no result.
+			suggestion = whatRanUnknown
+		case resp.Status != http.StatusForbidden && resp.Status != http.StatusUnauthorized:
 			suggestion = "check your SQL syntax and try again"
+		default:
+			// A refusal at this level gets no advice: no access grant lifts a
+			// missing bb.databases.get, which the ACL checks first, or an MCP policy.
 		}
 		return nil, &toolError{
 			Code:       "QUERY_ERROR",
@@ -267,22 +352,10 @@ func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, i
 		}, nil
 	}
 
-	result := qr.Results[0]
-	if result.Error != "" {
-		suggestion := "check your SQL syntax and try again"
-		if result.PermissionDenied != nil {
-			// MCP sessions cannot file role requests, so the only advice is a grant.
-			suggestion = ""
-			if denied := result.PermissionDenied; grantLifts(denied.RequiredPermissions) && withinDatabase(denied.Resources, resolved.resourceName) {
-				suggestion = grantAdvice(input.Statement, result.Statement)
-			}
-		}
-		return nil, &toolError{
-			Code:       "QUERY_ERROR",
-			Message:    result.Error,
-			Suggestion: suggestion,
-		}
+	if failed := failedResult(qr.Results); failed >= 0 {
+		return nil, queryFailure(qr.Results, failed, resolved.resourceName)
 	}
+	result := qr.Results[0]
 
 	// Flatten rows.
 	rows := make([][]any, 0, len(result.Rows))
@@ -310,6 +383,81 @@ func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, i
 		MaskedColumns:      maskedColumns(result.ColumnNames, result.Masked),
 		AppliedAccessGrant: qr.AppliedAccessGrant,
 	}, nil
+}
+
+const whatRanUnknown = "Bytebase cannot always tell which statements of a failed request ran; if it held a write, check the data before you retry"
+
+// queryError is a failed query_database request.
+type queryError struct {
+	Code       string `json:"code"`
+	Message    string `json:"message"`
+	Suggestion string `json:"suggestion,omitempty"`
+	// FailedStatement is what Bytebase reported as failed: one statement, or
+	// the whole request where Query runs it as one unit, as on SQL Server.
+	FailedStatement string `json:"failedStatement,omitempty"`
+	// Ran can name FailedStatement too, when its error came after it ran. It
+	// names a SQL Server procedure call once per result set the call returned:
+	// the driver gives each later set the call's statement.
+	Ran []string `json:"ran,omitempty"`
+}
+
+func (e *queryError) Error() string {
+	return fmt.Sprintf("%s: %s", e.Code, e.Message)
+}
+
+// formatQueryError formats a queryError into an MCP error result.
+func formatQueryError(err *queryError) *mcp.CallToolResult {
+	jsonBytes, _ := json.MarshalIndent(err, "", "  ")
+	return &mcp.CallToolResult{
+		Content: []mcp.Content{&mcp.TextContent{Text: string(jsonBytes)}},
+		IsError: true,
+	}
+}
+
+// ran reports whether the result's statement ran. A result with column names
+// came from a result set, so its statement ran even when an error follows, as
+// when the size limit cuts it short or masking withholds its rows.
+func (r queryResult) ran() bool {
+	return r.Error == "" || len(r.ColumnNames) > 0
+}
+
+// failedResult returns the index of the result to report as failed: the first
+// whose statement did not run, else the first with an error, or -1.
+func failedResult(results []queryResult) int {
+	if i := slices.IndexFunc(results, func(r queryResult) bool { return !r.ran() }); i >= 0 {
+		return i
+	}
+	return slices.IndexFunc(results, func(r queryResult) bool { return r.Error != "" })
+}
+
+// queryFailure reports a request whose failed result is results[failed].
+func queryFailure(results []queryResult, failed int, database string) *queryError {
+	qe := &queryError{
+		Code:            "QUERY_ERROR",
+		Message:         results[failed].Error,
+		FailedStatement: strings.TrimSpace(results[failed].Statement),
+	}
+	for _, r := range results {
+		if r.ran() {
+			qe.Ran = append(qe.Ran, strings.TrimSpace(r.Statement))
+		}
+	}
+	denied := results[failed].PermissionDenied
+	// The access check refuses a statement before it runs, so a denial with
+	// nothing in ran changed nothing and gets no caution.
+	var advice []string
+	if len(qe.Ran) > 0 {
+		advice = append(advice, "Bytebase ran the statements in ran, in a session that has since closed; check the data before you retry")
+	} else if denied == nil {
+		advice = append(advice, whatRanUnknown)
+	}
+	// MCP sessions cannot file role requests, so a grant is the only access
+	// advice a denial gets.
+	if denied != nil && grantLifts(denied.RequiredPermissions) && withinDatabase(denied.Resources, database) {
+		advice = append(advice, grantAdvice)
+	}
+	qe.Suggestion = strings.Join(advice, "; ")
+	return qe
 }
 
 // maskedColumns pairs each masked column with its reason. Query aligns masked
@@ -442,16 +590,7 @@ func withinDatabase(resources []string, database string) bool {
 	return true
 }
 
-// grantAdvice names the refused statement when the input was a batch. Query
-// runs a batch one statement at a time and stops at the first refusal
-// (queryRetryStopOnError), and a grant applies only to the exact read-only
-// statement it names (hashAccessGrantQuery).
-func grantAdvice(input, refused string) string {
-	const howTo = "(the project must allow just-in-time access); otherwise the user requests access in the SQL Editor"
-	refused = strings.TrimSpace(refused)
-	if refused == "" || refused == strings.TrimSpace(input) {
-		return "in a Read-write session, request an access grant for this statement with request_access_grant " + howTo
-	}
-	return fmt.Sprintf("the batch stopped at %q: in a Read-write session, request an access grant for that statement alone "+
-		"with request_access_grant and, once approved, run it by itself %s", refused, howTo)
-}
+// grantAdvice advises on a refusal an access grant lifts. A grant applies only
+// to the exact read-only statement it names (hashAccessGrantQuery).
+const grantAdvice = "in a Read-write session, request an access grant for failedStatement with request_access_grant and, " +
+	"once approved, run it by itself (the project must allow just-in-time access); otherwise the user requests access in the SQL Editor"

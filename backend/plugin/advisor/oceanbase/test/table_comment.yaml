@@ -1,0 +1,36 @@
+- statement: |-
+    CREATE TABLE a(b INT) COMMENT 'table';
+    CREATE TABLE t(a int) COMMENT 'some comments';
+  want:
+    - status: 2
+      code: 1301
+      title: TABLE_COMMENT
+      content: The length of table `t` comment should be within 10 characters
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE a(b INT) COMMENT 'table';
+    CREATE TABLE t(a int);
+  want:
+    - status: 2
+      code: 1032
+      title: TABLE_COMMENT
+      content: Table `t` requires comments
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE a(b INT) COMMENT 'table';
+    CREATE TABLE t(a int) COMMENT 'sdlfkjalkseblkjduafelbnlsdfkljayue';
+  want:
+    - status: 2
+      code: 1301
+      title: TABLE_COMMENT
+      content: The length of table `t` comment should be within 10 characters
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
