@@ -114,12 +114,8 @@ func runAnswer(choice any) *mcp.ElicitResult {
 	return &mcp.ElicitResult{Action: "accept", Content: map[string]any{runChoiceField: choice}}
 }
 
-func queryParams(statement, schema string) *mcp.CallToolParams {
-	arguments := map[string]any{"database": "employee_db", "statement": statement}
-	if schema != "" {
-		arguments["schema"] = schema
-	}
-	return &mcp.CallToolParams{Name: "query_database", Arguments: arguments}
+func queryParams(statement string) *mcp.CallToolParams {
+	return &mcp.CallToolParams{Name: "query_database", Arguments: map[string]any{"database": "employee_db", "statement": statement}}
 }
 
 func callQuery(t *testing.T, session *mcp.ClientSession, params *mcp.CallToolParams) *mcp.CallToolResult {
@@ -201,7 +197,7 @@ func TestQueryDatabaseRunsNothingUnlessTheUserRuns(t *testing.T) {
 			user := &asker{answer: row.answer}
 			session := connectLegacy(t, endpoint, token, &mcp.ClientOptions{ElicitationHandler: user.handle})
 
-			res := callQuery(t, session, queryParams("INSERT INTO employee VALUES (1)", ""))
+			res := callQuery(t, session, queryParams("INSERT INTO employee VALUES (1)"))
 			require.False(t, res.IsError)
 			require.Equal(t, row.text, resultText(t, res))
 			require.Nil(t, res.StructuredContent, "a client shows text alone to the model whole")
@@ -215,7 +211,7 @@ func TestQueryDatabaseRunsAtOnceWhenTheClientCannotAsk(t *testing.T) {
 	_, endpoint, token := newQueryConfirmServer(t, mock)
 	session := connectLegacy(t, endpoint, token, nil)
 
-	res := callQuery(t, session, queryParams("INSERT INTO employee VALUES (1)", ""))
+	res := callQuery(t, session, queryParams("INSERT INTO employee VALUES (1)"))
 	require.False(t, res.IsError, resultText(t, res))
 	require.Equal(t, []queryCall{{Statement: "INSERT INTO employee VALUES (1)", Confirmed: true}}, mock.calls())
 }
@@ -227,7 +223,7 @@ func TestQueryDatabaseDoesNotAskAgainAfterARefusedConfirmation(t *testing.T) {
 	user := &asker{answer: runAnswer(runChoiceRun)}
 	session := connectLegacy(t, endpoint, token, &mcp.ClientOptions{ElicitationHandler: user.handle})
 
-	res := callQuery(t, session, queryParams("INSERT INTO employee VALUES (1)", ""))
+	res := callQuery(t, session, queryParams("INSERT INTO employee VALUES (1)"))
 	require.True(t, res.IsError)
 	require.Equal(t, "Bytebase refused this statement's confirmation, so nothing ran; asking the user again will not help", resultText(t, res))
 	require.EqualValues(t, 1, user.asked.Load())
@@ -239,7 +235,7 @@ func TestQueryDatabaseReadsWithoutAsking(t *testing.T) {
 	user := &asker{answer: runAnswer(runChoiceRun)}
 	session := connectLegacy(t, endpoint, token, &mcp.ClientOptions{ElicitationHandler: user.handle})
 
-	res := callQuery(t, session, queryParams("SELECT id FROM employee", ""))
+	res := callQuery(t, session, queryParams("SELECT id FROM employee"))
 	require.False(t, res.IsError, resultText(t, res))
 	require.Zero(t, user.asked.Load())
 	require.Equal(t, []queryCall{{Statement: "SELECT id FROM employee"}}, mock.calls())
@@ -266,7 +262,7 @@ func TestQueryDatabaseFormFitsClaudeCode(t *testing.T) {
 			user := &asker{answer: runAnswer(runChoiceChange)}
 			session := connectLegacy(t, endpoint, token, &mcp.ClientOptions{ElicitationHandler: user.handle})
 
-			callQuery(t, session, queryParams(row.statement, ""))
+			callQuery(t, session, queryParams(row.statement))
 			asked := user.lastParams(t)
 			schema, err := json.Marshal(asked.RequestedSchema)
 			require.NoError(t, err)
@@ -365,7 +361,7 @@ func TestQueryDatabaseAsksOnceACall(t *testing.T) {
 			session := connectLegacy(t, endpoint, token, &mcp.ClientOptions{ElicitationHandler: user.handle})
 
 			const insert = "INSERT INTO employee VALUES (1)"
-			res := callQuery(t, session, queryParams(insert, ""))
+			res := callQuery(t, session, queryParams(insert))
 			require.False(t, res.IsError)
 			require.Equal(t, "Not run: this statement may write, so the user confirms it in a form, and this call already asked which database to use. "+
 				fmt.Sprintf("Call query_database again with database \"employee_db\" and instance %q to ask the user.", row.instance), resultText(t, res))
@@ -389,7 +385,7 @@ func TestQueryDatabaseConfirmationUnderMRTRClient(t *testing.T) {
 	s, _, token := newQueryConfirmServer(t, mock)
 	session := connectMRTR(t, mrtrEndpoint(t, s), token)
 	call := func(statement string, responses mcp.InputResponseMap, state string) *mcp.CallToolResult {
-		params := queryParams(statement, "")
+		params := queryParams(statement)
 		params.InputResponses = responses
 		params.RequestState = state
 		return callQuery(t, session, params)
@@ -434,7 +430,7 @@ func TestQueryDatabaseReportsAnAnswerThatRunsNothingBeforeAStaleOne(t *testing.T
 	alice := withOAuth2ClientID(withUserEmail(withWorkspaceID(context.Background(), "ws-test"), "alice@example.com"), "client-A")
 	old := s.signConfirmationState(alice, runConfirmation{database: database}, auth.MCPStatementDigest(insert, database, "", ""), time.Now().Add(-11*time.Minute))
 	call := func(answer *mcp.ElicitResult) *mcp.CallToolResult {
-		params := queryParams(insert, "")
+		params := queryParams(insert)
 		params.InputResponses = mcp.InputResponseMap{confirmDecisionRequestID: answer}
 		params.RequestState = old
 		return callQuery(t, session, params)
