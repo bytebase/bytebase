@@ -187,7 +187,7 @@ func TestQueryDatabaseAsksBeforeAWrite(t *testing.T) {
 		}, environment: "prod", header: `Run in environment "prod" on database "employee_db",` + "\n" + `instance "prod-pg":`, choices: withIssue},
 		{name: "no environment", databases: employeeDatabase(),
 			header: `Run on database "employee_db",` + "\n" + `instance "prod-pg":`, choices: withIssue},
-		{name: "a CosmosDB container", databases: employeeDatabase(), environment: "prod", container: "orders",
+		{name: "a container", databases: employeeDatabase(), environment: "prod", container: "orders",
 			header: `Run in environment "prod" on database "employee_db",` + "\n" + `instance "prod-pg", container "orders":`, choices: withIssue},
 	} {
 		t.Run(row.name, func(t *testing.T) {
@@ -626,6 +626,8 @@ func TestQueryDatabaseReportsPlanChecksThatHoldTheRollout(t *testing.T) {
 		{name: "a failed run", run: map[string]any{"status": "FAILED"},
 			text: filed + " Its plan checks did not pass, so Bytebase will not create its rollout on its own."},
 		{name: "a warning", run: map[string]any{"status": "DONE", "results": []any{warning}}, text: filed},
+		{name: "checks still running", run: map[string]any{"status": "RUNNING"},
+			text: filed + " Its plan checks are still running; the issue page shows their result."},
 	} {
 		t.Run(row.name, func(t *testing.T) {
 			mock := newConfirmingQueryMock(employeeDatabase())

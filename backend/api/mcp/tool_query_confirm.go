@@ -267,9 +267,12 @@ func (s *Server) fileAsIssue(ctx context.Context, resolved *resolvedDatabase, st
 		filed.issue, s.consoleLink(ctx, filed.issue), planCheckNote(filed.planChecks)))
 }
 
-// planCheckNote reports plan checks that keep Bytebase from creating the
-// rollout once the issue is approved.
+// planCheckNote reports plan checks that may hold the rollout: Bytebase creates
+// it on its own only once they are done with no error.
 func planCheckNote(checks *PlanCheckInfo) string {
+	if checks != nil && checks.Status == planCheckRunning {
+		return " Its plan checks are still running; the issue page shows their result."
+	}
 	if !planChecksHaveErrors(checks) {
 		return ""
 	}
