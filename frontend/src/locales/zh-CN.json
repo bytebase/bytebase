@@ -177,6 +177,7 @@
     },
     "rename-chat-placeholder": "输入对话名称",
     "reply": "回复",
+    "request-failed": "助手未能完成此请求。",
     "request-stopped-by-user": "用户已停止请求",
     "request-stopped-retry-hint": "已发送的操作仍可能完成。重试前请先检查其状态。",
     "resource-picker": {

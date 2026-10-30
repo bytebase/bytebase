@@ -177,6 +177,7 @@
     },
     "rename-chat-placeholder": "Ingrese el nombre del chat",
     "reply": "Responder",
+    "request-failed": "El asistente no pudo completar esta solicitud.",
     "request-stopped-by-user": "Solicitud detenida por el usuario",
     "request-stopped-retry-hint": "Una acción ya enviada puede completarse igualmente. Compruebe su estado antes de reintentar.",
     "resource-picker": {

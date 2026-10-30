@@ -336,14 +336,14 @@ call_api(operationId="SQLService/Query", body={"name": "instances/i/databases/db
     },
     {
       name: "navigate",
-      description: `Navigate to a page in Bytebase, or list all available routes.
+      description: `Navigate to a page in Bytebase, or list a bounded set of valid routes.
 
 | Mode | Parameters | Result |
 |------|------------|--------|
 | Navigate | path="/projects" | Navigates to the page |
-| List | list=true | Returns all valid route patterns |
+| List | list=true, query="database" | Returns up to 30 matching route patterns, plus the total and whether results were truncated |
 
-**Always call with list=true first if you are unsure about the exact path.** Do not guess paths — a wrong path causes a 404.`,
+Use list=true only when the exact path is unclear. Pass a focused query to avoid broad route discovery. Do not guess paths — a wrong path causes a 404.`,
       parametersSchema: {
         type: "object",
         properties: {
@@ -355,7 +355,12 @@ call_api(operationId="SQLService/Query", body={"name": "instances/i/databases/db
           list: {
             type: "boolean",
             description:
-              "Set to true to list all available route patterns instead of navigating.",
+              "Set to true to list up to 30 matching route patterns instead of navigating.",
+          },
+          query: {
+            type: "string",
+            description:
+              "Optional case-insensitive substring filter for route patterns when list is true.",
           },
         },
       },
