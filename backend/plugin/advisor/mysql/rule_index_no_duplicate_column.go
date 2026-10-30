@@ -146,7 +146,7 @@ func (r *indexNoDuplicateColumnOmniRule) handleConstraint(tableName string, cons
 		return
 	}
 
-	indexName := constraint.Name
+	indexName := omniConstraintName(constraint)
 	// Workaround: omni parser doesn't capture PRIMARY KEY constraint names.
 	// Extract from statement text as a fallback.
 	if indexName == "" && constraint.Type == ast.ConstrPrimaryKey {

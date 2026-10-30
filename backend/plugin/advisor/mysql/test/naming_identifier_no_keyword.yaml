@@ -63,3 +63,23 @@
       endposition: null
 - statement: CREATE TABLE master_server_id(id int);
 - statement: CREATE TABLE master_compression_algorithm(id int);
+- statement: CREATE TABLE t(a int, CONSTRAINT fk_t_a FOREIGN KEY `execute` (a) REFERENCES p (id))
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "execute" is a keyword and should be avoided
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE t ADD FOREIGN KEY `execute` (a) REFERENCES p (id)
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "execute" is a keyword and should be avoided
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
