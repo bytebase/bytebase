@@ -599,7 +599,7 @@ func tokenForWorkspace(t *testing.T, secret, workspaceID string) string {
 	return tokenStr
 }
 
-func listToolsOverRoute(t *testing.T) (*mcp.ClientSession, []*mcp.Tool) {
+func listToolsOverRoute(t *testing.T) []*mcp.Tool {
 	t.Helper()
 	endpoint, _, _ := newProbeServer(t)
 	token := mintMCPToken(t, "test@example.com", "client-A", "ws-test", "mcp:read-only", time.Hour)
@@ -608,16 +608,27 @@ func listToolsOverRoute(t *testing.T) (*mcp.ClientSession, []*mcp.Tool) {
 	defer cancel()
 	listed, err := session.ListTools(ctx, nil)
 	require.NoError(t, err)
-	return session, listed.Tools
+	return listed.Tools
 }
 
 func TestInitializeServesInstructions(t *testing.T) {
-	session, tools := listToolsOverRoute(t)
-
-	require.Equal(t, `This session acts as the Bytebase account test@example.com: every tool call runs with its permissions, `+
-		`and "you" in tool results means it. The user may have other accounts with other emails, such as the client's own sign-in.`+
-		"\n\n"+serverInstructions,
-		session.InitializeResult().Instructions)
+	const account = `This session acts as the Bytebase account test@example.com: every tool call runs with its permissions, ` +
+		`and "you" in tool results means it. The user may have other accounts with other emails, such as the client's own sign-in.`
+	tools := listToolsOverRoute(t)
+	for _, row := range []struct {
+		name         string
+		options      *mcp.ClientOptions
+		instructions string
+	}{
+		{name: "a client without the form", instructions: account + "\n\n" + serverInstructions + "\n\n" + askInChatInstructions},
+		{name: "a client with the form", options: &mcp.ClientOptions{ElicitationHandler: (&asker{}).handle}, instructions: account + "\n\n" + serverInstructions},
+	} {
+		t.Run(row.name, func(t *testing.T) {
+			endpoint, _, _ := newProbeServer(t)
+			session := connectLegacy(t, endpoint, mintMCPToken(t, "test@example.com", "client-A", "ws-test", "mcp:read-only", time.Hour), row.options)
+			require.Equal(t, row.instructions, session.InitializeResult().Instructions)
+		})
+	}
 	for _, name := range []string{"query_database", "get_schema", "propose_database_change", "search_api", "call_api"} {
 		require.Contains(t, serverInstructions, name)
 	}
@@ -672,12 +683,12 @@ func TestServerInstructionsFitClientLimit(t *testing.T) {
 }
 
 func TestToolGuidanceNamesOnlyServedToolsAndOperations(t *testing.T) {
-	_, tools := listToolsOverRoute(t)
+	tools := listToolsOverRoute(t)
 	idx, err := NewOpenAPIIndex()
 	require.NoError(t, err)
 
 	registered := make(map[string]bool, len(tools))
-	guidance := map[string]string{"server instructions": serverInstructions}
+	guidance := map[string]string{"server instructions": serverInstructions, "ask-in-chat instructions": askInChatInstructions}
 	for _, tool := range tools {
 		registered[tool.Name] = true
 		guidance[tool.Name+" description"] = tool.Description

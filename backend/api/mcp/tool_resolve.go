@@ -344,7 +344,12 @@ func acceptedDatabaseLabel(response mcp.InputResponse) (string, bool) {
 }
 
 func clientSupportsElicitation(session *mcp.ServerSession) bool {
-	params := session.InitializeParams()
+	return declaresFormElicitation(session.InitializeParams())
+}
+
+// declaresFormElicitation reports whether params declare the form elicitation
+// a confirmation needs.
+func declaresFormElicitation(params *mcp.InitializeParams) bool {
 	if params == nil || params.Capabilities == nil || params.Capabilities.Elicitation == nil {
 		return false
 	}

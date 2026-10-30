@@ -154,6 +154,7 @@ func newServerWithStore(stores serverStore, profile *config.Profile, secret stri
 	mcpServer.AddReceivingMiddleware(negotiateLegacyProtocol)
 	mcpServer.AddReceivingMiddleware(liveRequestMetadata)
 	mcpServer.AddReceivingMiddleware(nameSignedInAccount)
+	mcpServer.AddReceivingMiddleware(askInChatWithoutForm)
 
 	// Pin each session to the identity it was opened with. The SDK captures
 	// TokenInfo.UserID when a session is created and rejects later requests
@@ -217,6 +218,20 @@ func nameSignedInAccount(next mcp.MethodHandler) mcp.MethodHandler {
 		if initialized, ok := result.(*mcp.InitializeResult); ok && initialized != nil {
 			account := fmt.Sprintf(`This session acts as the Bytebase account %s: every tool call runs with its permissions, and "you" in tool results means it. The user may have other accounts with other emails, such as the client's own sign-in.`, getUserEmail(ctx))
 			initialized.Instructions = account + "\n\n" + initialized.Instructions
+		}
+		return result, err
+	}
+}
+
+// askInChatWithoutForm ends the instructions of a session whose client declared
+// no form with askInChatInstructions: query_database then runs a write without
+// asking the user (canShowConfirmation).
+func askInChatWithoutForm(next mcp.MethodHandler) mcp.MethodHandler {
+	return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
+		result, err := next(ctx, method, req)
+		params, isInitialize := req.GetParams().(*mcp.InitializeParams)
+		if initialized, ok := result.(*mcp.InitializeResult); ok && initialized != nil && isInitialize && !declaresFormElicitation(params) {
+			initialized.Instructions += "\n\n" + askInChatInstructions
 		}
 		return result, err
 	}
@@ -292,11 +307,13 @@ Choose the tool by task:
 - Read data: query_database. Before you write SQL for a database, read its schema with get_schema.
 - Inspect a schema: get_schema.
 - Change a database: propose_database_change, the easiest way into the governed workflow. It creates the plan and the issue and runs the plan checks; approval and rollout follow the project's policy. ` + singleDatabaseLimit + `
-- Anything else: search_api to find the operation and its request schema, then call_api.
+- Anything else: a tool whose description covers the task; failing that, search_api to find the operation and its request schema, then call_api.
 
-When the workspace's MCP access policy is Read-write, query_database can also run DML and DDL. They take effect at once, without an issue or approval, as far as the engine and the account's permissions allow. Before you run one, through query_database or call_api, show the user the exact statement, tell them it takes effect at once without an issue or approval, and ask them to confirm. On an instance with a read-only data source, query_database runs every statement through that data source, so make changes there with propose_database_change. Use propose_database_change for any change that should be reviewed.
+When the workspace's MCP access policy is Read-write, query_database can also run DML and DDL, as far as the engine and the account's permissions allow; call_api refuses them. They take effect at once, without an issue or approval. Use propose_database_change for any change that should be reviewed, or when a write fails on a read-only data source.
 
 When Bytebase refuses a call, the error states the reason and may name a next step, such as a tool to use.`
+
+const askInChatInstructions = `This client cannot show Bytebase's confirmation form, so under Read-write query_database runs DML and DDL without asking. Before you run one, show the user the exact statement, say it takes effect at once without an issue or approval, and ask them to confirm.`
 
 // authMiddleware validates OAuth2 bearer tokens for MCP requests.
 //
