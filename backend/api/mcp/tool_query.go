@@ -322,7 +322,9 @@ type queryError struct {
 	// FailedStatement is what Bytebase reported as failed: one statement, or
 	// the whole request where Query runs it as one unit, as on SQL Server.
 	FailedStatement string `json:"failedStatement,omitempty"`
-	// Ran can name FailedStatement too, when its error came after it ran.
+	// Ran can name FailedStatement too, when its error came after it ran. It
+	// names a SQL Server procedure call once per result set the call returned:
+	// the driver gives each later set the call's statement.
 	Ran []string `json:"ran,omitempty"`
 }
 
@@ -340,8 +342,8 @@ func formatQueryError(err *queryError) *mcp.CallToolResult {
 }
 
 // ran reports whether the result's statement ran. A result with column names
-// came from a result set, so its statement ran even when an error follows: the
-// size limit and the rows masking withholds on SQL Server set it afterward.
+// came from a result set, so its statement ran even when an error follows, as
+// when the size limit cuts it short or masking withholds its rows.
 func (r queryResult) ran() bool {
 	return r.Error == "" || len(r.ColumnNames) > 0
 }

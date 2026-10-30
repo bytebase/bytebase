@@ -861,6 +861,7 @@ func TestQueryDatabase_FailureReportsWhatRan(t *testing.T) {
 	const (
 		ranAdvice     = "Bytebase ran the statements in ran, in a session that has since closed; check the data before you retry"
 		unknownAdvice = "Bytebase cannot always tell which statements of a failed request ran; if it held a write, check the data before you retry"
+		withheld      = "Rows returned by a procedure call or an OUTPUT clause are hidden because data masking can't be applied to them."
 		wantGrant     = "in a Read-write session, request an access grant for failedStatement with request_access_grant and, " +
 			"once approved, run it by itself (the project must allow just-in-time access); otherwise the user requests access in the SQL Editor"
 	)
@@ -953,6 +954,21 @@ func TestQueryDatabase_FailureReportsWhatRan(t *testing.T) {
 			wantMessage:    "Rows returned by a procedure call or an OUTPUT clause are hidden because data masking can't be applied to them.",
 			wantFailed:     "INSERT INTO t OUTPUT inserted.id VALUES (1);",
 			wantRan:        []string{"INSERT INTO t OUTPUT inserted.id VALUES (1);", "UPDATE t SET a = 1;"},
+			wantSuggestion: ranAdvice,
+		},
+		"a procedure call that returned two result sets is named once per set": {
+			statement: "EXEC dbo.two_sets;\nGO\nUPDATE dbo.t SET id = id OUTPUT inserted.id;\nSELECT id FROM dbo.t WHERE id = 1;",
+			results: []map[string]any{
+				{"columnNames": []string{"id"}, "error": withheld, "statement": "EXEC dbo.two_sets;"},
+				{"columnNames": []string{"id"}, "error": withheld, "statement": "UPDATE dbo.t SET id = id OUTPUT inserted.id;"},
+				{"columnNames": []string{"id"}, "statement": "SELECT id FROM dbo.t WHERE id = 1;"},
+				{"columnNames": []string{"s"}, "error": withheld, "statement": "EXEC dbo.two_sets;"},
+			},
+			wantMessage: withheld,
+			wantFailed:  "EXEC dbo.two_sets;",
+			wantRan: []string{
+				"EXEC dbo.two_sets;", "UPDATE dbo.t SET id = id OUTPUT inserted.id;", "SELECT id FROM dbo.t WHERE id = 1;", "EXEC dbo.two_sets;",
+			},
 			wantSuggestion: ranAdvice,
 		},
 	} {
