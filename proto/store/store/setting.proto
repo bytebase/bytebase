@@ -23,6 +23,20 @@ enum SettingName {
   ENVIRONMENT = 8;
   EMAIL = 9;
   MCP = 10;
+  EXPORT = 11;
+}
+
+// ExportSetting holds each export destination provider's credentials.
+message ExportSetting {
+  SharePointSetting sharepoint = 1;
+}
+
+// SharePointSetting is the Microsoft Entra application that uploads exports to
+// SharePoint.
+message SharePointSetting {
+  string tenant_id = 1;
+  string client_id = 2;
+  string client_secret = 3;
 }
 
 message SystemSetting {
