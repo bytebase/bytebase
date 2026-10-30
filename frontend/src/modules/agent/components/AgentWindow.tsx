@@ -57,12 +57,17 @@ import {
   getCurrentAgentPageResource,
   getCurrentChatContext,
 } from "../logic/chatContext";
-import type { LandingStarterId } from "../logic/landingStarters";
+import {
+  getLandingStarterIdForText,
+  type LandingStarterId,
+} from "../logic/landingStarters";
 import {
   formatResourceMention,
   getDatabaseMentionLabel,
   normalizeAgentResourceReference,
+  normalizeAgentResourceReferences,
 } from "../logic/resourceMention";
+import { normalizeAgentResponseActions } from "../logic/responseActions";
 import type {
   AgentChat as AgentChatRecord,
   AgentResourceReference,
@@ -174,6 +179,7 @@ export function AgentWindow() {
   const orderedChats = useAgentStore(selectOrderedChats);
   const currentChat = useAgentStore(selectCurrentChat);
   const currentChatId = useAgentStore((s) => s.currentChatId);
+  const queuedChatId = useAgentStore((s) => s.queuedUserMessage?.chatId);
   const hasRunningChat = useAgentStore(selectHasRunningChat);
   const getOrFetchSettingByName = useAppStore((s) => s.getOrFetchSettingByName);
   const batchFetchProjects = useAppStore((s) => s.batchFetchProjects);
@@ -248,19 +254,28 @@ export function AgentWindow() {
 
   useEffect(() => {
     const isOpen = visible && !minimized;
+    const hasQueuedChat = Boolean(
+      queuedChatId && queuedChatId === currentChatId
+    );
     if (isOpen && !openingRef.current) {
-      const pageResource = getCurrentAgentPageResource();
+      const pageResource = hasQueuedChat
+        ? undefined
+        : getCurrentAgentPageResource();
       setContextualStart(pageResource ?? null);
       setContextualReference(undefined);
       setContextualLoading(false);
-      if (pageResource) {
+      if (pageResource || hasQueuedChat) {
         setShowArchivedOnly(false);
         setIsRenamingCurrentChat(false);
         setMobileScreen("conversation");
       }
+    } else if (isOpen && hasQueuedChat) {
+      setContextualStart(null);
+      setShowArchivedOnly(false);
+      setMobileScreen("conversation");
     }
     openingRef.current = isOpen;
-  }, [minimized, visible]);
+  }, [currentChatId, minimized, queuedChatId, visible]);
 
   useEffect(() => {
     if (
@@ -865,12 +880,12 @@ export function AgentWindow() {
   const resizeCleanupRef = useRef<(() => void) | null>(null);
   const retryLastTurnRef = useRef<(() => void) | null>(null);
   const retryLastTurn = useCallback(() => retryLastTurnRef.current?.(), []);
-  const focusInputRef = useRef<(() => void) | null>(null);
+  const focusInputRef = useRef<((atEnd?: boolean) => void) | null>(null);
   const focusContextualDraftRef = useRef(false);
   useEffect(() => {
     if (contextualStart || !focusContextualDraftRef.current) return;
     focusContextualDraftRef.current = false;
-    focusInputRef.current?.();
+    focusInputRef.current?.(true);
   }, [contextualStart, currentChatId]);
   const selectEmptyChatSuggestion = useCallback(
     (starterId: LandingStarterId) => {
@@ -880,50 +895,118 @@ export function AgentWindow() {
         !chat ||
         chat.status !== "idle" ||
         store.getMessages(chat.id).length ||
-        store.getDraft(chat.id).text.trim()
+        store.getDraft(chat.id).text.trim() ||
+        store.queuedUserMessage
       ) {
         return;
       }
-      store.setDraft(chat.id, {
+      store.queueUserMessage({
+        chatId: chat.id,
         text: t(`agent.landing-starters.${starterId}`),
+        page: getCurrentPageSnapshot(),
+        runMode: "read-only",
+        starterId,
+      });
+    },
+    [getCurrentPageSnapshot, t]
+  );
+  const continueResponseAction = useCallback(
+    (chatId: string, prompt: string, references: AgentResourceReference[]) => {
+      const store = useAgentStore.getState();
+      const chat = store.getChat(chatId);
+      if (
+        store.currentChatId !== chatId ||
+        !chat ||
+        chat.status !== "idle" ||
+        chat.archived ||
+        store.getDraft(chatId).text.trim()
+      ) {
+        return;
+      }
+      const action = normalizeAgentResponseActions([
+        { kind: "continue", prompt },
+      ])[0];
+      if (action?.kind !== "continue") return;
+      const boundReferences = normalizeAgentResourceReferences(references);
+      if (boundReferences.length !== references.length) return;
+
+      let offset = 0;
+      const mentions = boundReferences.map((resource) => {
+        const start = offset;
+        const end = start + formatResourceMention(resource.label).length;
+        offset = end + 1;
+        return {
+          resource,
+          range: { start, end },
+        };
+      });
+      const prefix = boundReferences
+        .map((reference) => formatResourceMention(reference.label))
+        .join(" ");
+      store.setDraft(chatId, {
+        text: `${prefix}${prefix ? " " : ""}${action.prompt}`,
+        ...(mentions.length > 0 ? { mentions } : {}),
       });
       focusInputRef.current?.();
     },
-    [t]
+    []
   );
   const startContextualChat = useCallback(
     (prompt: string, reference?: AgentResourceReference) => {
       if (
         !contextualStart ||
-        useAgentStore.getState().chats.some((chat) => chat.status === "running")
+        useAgentStore
+          .getState()
+          .chats.some((chat) => chat.status === "running") ||
+        useAgentStore.getState().queuedUserMessage
       ) {
         return;
       }
       if (contextualStart.kind !== "project" && !reference) return;
       const store = useAgentStore.getState();
+      const page = getCurrentPageSnapshot();
       const chat = store.createChat({
-        page: getCurrentPageSnapshot(),
+        page,
         context: contextualStart.project,
         workspaceName: workspace?.name,
       });
       if (useAgentStore.getState().currentChatId !== chat.id) return;
       const mention = reference ? formatResourceMention(reference.label) : "";
-      store.setDraft(chat.id, {
-        text: mention ? `${mention}${prompt ? ` ${prompt}` : " "}` : prompt,
-        ...(reference
-          ? {
-              mentions: [
-                {
-                  resource: reference,
-                  range: { start: 0, end: mention.length },
-                },
-              ],
-            }
-          : {}),
-      });
+      if (prompt) {
+        store.queueUserMessage({
+          chatId: chat.id,
+          text: mention ? `${mention} ${prompt}` : prompt,
+          page,
+          runMode: "read-only",
+          ...(reference ? { resourceReference: reference } : {}),
+          ...(!reference
+            ? {
+                starterId: getLandingStarterIdForText({
+                  context: contextualStart.project,
+                  text: prompt,
+                  translate: t,
+                }),
+              }
+            : {}),
+        });
+      } else {
+        store.setDraft(chat.id, {
+          text: `${mention} `,
+          ...(reference
+            ? {
+                mentions: [
+                  {
+                    resource: reference,
+                    range: { start: 0, end: mention.length },
+                  },
+                ],
+              }
+            : {}),
+        });
+        focusContextualDraftRef.current = true;
+      }
       setChatGroupOpen(contextualStart.project, true, false);
       setShowArchivedOnly(false);
-      focusContextualDraftRef.current = true;
       setContextualStart(null);
       if (isCompactWindow) setCompactPanel(null);
       if (isMobileWindow) setMobileScreen("conversation");
@@ -934,6 +1017,7 @@ export function AgentWindow() {
       isCompactWindow,
       isMobileWindow,
       setChatGroupOpen,
+      t,
       workspace?.name,
     ]
   );
@@ -1237,6 +1321,7 @@ export function AgentWindow() {
           }
           onRetry={retryLastTurn}
           onSelectSuggestion={selectEmptyChatSuggestion}
+          onContinueAction={continueResponseAction}
         />
         <AgentInput
           retryActionRef={retryLastTurnRef}

@@ -17,6 +17,7 @@ import {
   normalizeAgentResourceReference,
   normalizeAgentResourceReferences,
 } from "../logic/resourceMention";
+import { normalizeAgentResponseActions } from "../logic/responseActions";
 import type {
   AgentAskUserResponse,
   AgentChat,
@@ -28,6 +29,7 @@ import type {
   AgentMessage,
   AgentPendingAsk,
   AgentResourceReference,
+  AgentResponseAction,
   AgentRunMode,
   Message,
   ToolCall,
@@ -299,6 +301,7 @@ const normalizeMessage = (
         metadata.resourceReference
       )
     : [];
+  const actions = normalizeAgentResponseActions(metadata?.actions);
   return {
     id: typeof message.id === "string" ? message.id : uuidv4(),
     chatId:
@@ -328,6 +331,7 @@ const normalizeMessage = (
             metadata.interruptionReason
           ),
           handoff: normalizeAgentHandoff(metadata.handoff),
+          actions: actions.length > 0 ? actions : undefined,
           resourceReference:
             metadata.resourceReferences === undefined
               ? resourceReferences[0]
@@ -685,6 +689,12 @@ export interface AgentState {
     chatId: string,
     messageId: string,
     toolCall: ToolCall
+  ) => AgentMessage | null;
+  appendContinueActions: (
+    chatId: string,
+    messageId: string,
+    actions: Extract<AgentResponseAction, { kind: "continue" }>[],
+    references: AgentResourceReference[]
   ) => AgentMessage | null;
 
   // Status
@@ -1669,6 +1679,36 @@ export const createAgentStore = () => {
               .getMessages(chatId)
               .find((m) => m.id === messageId) ?? null
           );
+        },
+
+        appendContinueActions: (chatId, messageId, newActions, references) => {
+          const messages = get().messagesByChatId[chatId];
+          const message = messages?.at(-1);
+          if (
+            !_getChat(chatId) ||
+            message?.id !== messageId ||
+            message.role !== "assistant"
+          ) {
+            return null;
+          }
+          const existingActions = message.metadata?.actions ?? [];
+          const actions = normalizeAgentResponseActions([
+            ...existingActions,
+            ...newActions,
+          ]);
+          if (actions.length <= existingActions.length) return null;
+          set((state) => {
+            const current = state.messagesByChatId[chatId]?.at(-1);
+            if (current?.id !== messageId) return;
+            current.metadata = {
+              ...current.metadata,
+              actions,
+              ...(references.length > 0
+                ? { resourceReferences: references }
+                : {}),
+            };
+          });
+          return get().messagesByChatId[chatId]?.at(-1) ?? null;
         },
 
         // Status

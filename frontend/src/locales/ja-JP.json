@@ -22,6 +22,11 @@
     }
   },
   "agent": {
+    "access-grant-draft": {
+      "open": "Open access request draft",
+      "storage-failed": "Couldn't prepare the access request. Try again.",
+      "unavailable": "Couldn't open the access request. The database or access settings may have changed."
+    },
     "ai-not-configured": {
       "configure": "設定",
       "contact-admin": "ワークスペース管理者に AI の設定を依頼してください。",
@@ -81,17 +86,31 @@
       "issue": "issue",
       "references": "根拠"
     },
+    "follow-up": {
+      "ask-next": "次の質問"
+    },
     "handoff": {
+      "open-issue": "課題を開く",
       "open-project-instances": "プロジェクトのインスタンスを開く",
       "review-database-changes": "データベース変更を確認",
+      "review-issue-plan": "プランを確認",
       "review-project-issues": "プロジェクトの課題を確認",
       "review-workspace-issues": "自分の課題を確認",
+      "view-failed-task": "失敗したタスクを表示",
       "view-failed-tasks": "失敗したタスクを表示"
     },
     "input-keyboard-hint": "Enter で送信・Shift+Enter で改行",
     "input-placeholder": "AI に質問するか、@ でリソースを選択",
     "interrupted": "中断",
     "interrupted-retry-hint": "会話が中断されました。再試行するか、新しいメッセージを送信できます。",
+    "issue-comment-draft": {
+      "existing": "This issue already has an unsent comment. Review it before opening another draft.",
+      "open": "Draft review comment",
+      "permission-denied": "You don't have permission to comment on this issue.",
+      "preview": "Preview comment",
+      "storage-failed": "Couldn't prepare the comment draft. Try again.",
+      "unavailable": "Couldn't open the comment draft. The issue may have changed."
+    },
     "issue-reference-unavailable": "このイシューは利用できないか、アクセス権がありません。",
     "landing-starters": {
       "menu": "候補",
@@ -124,6 +143,11 @@
       "issue-approval-role-grant": "これは最終承認です。承認によって、ロールアウトなしで申請されたプロジェクトロールが直ちに付与される場合があります。",
       "issue-approval-rollout": "これは最終承認です。必要なチェックとレビューを通過するとロールアウトが作成される場合がありますが、タスクの実行は保証されません。",
       "issue-rejection": "このイシューを却下すると、現在の承認フローは停止します。承認を再開するには却下理由への対応が必要です。"
+    },
+    "plan-draft": {
+      "default-title": "提案されたデータベース変更",
+      "open": "プランの下書きを開く",
+      "unavailable": "プランの下書きを開けませんでした。データベースまたは SQL が変更された可能性があります。エージェントに再生成を依頼してください。"
     },
     "project-attention": {
       "checking": "対応が必要な項目を確認しています...",
@@ -3500,6 +3524,7 @@
   },
   "sql-editor": {
     "access-grants": "アクセス付与",
+    "access-request-draft-unavailable": "The access request draft is no longer available. Please ask the Agent to prepare it again.",
     "access-search": {
       "scope": {
         "database": {

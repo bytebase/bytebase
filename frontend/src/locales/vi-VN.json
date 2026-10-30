@@ -22,6 +22,11 @@
     }
   },
   "agent": {
+    "access-grant-draft": {
+      "open": "Open access request draft",
+      "storage-failed": "Couldn't prepare the access request. Try again.",
+      "unavailable": "Couldn't open the access request. The database or access settings may have changed."
+    },
     "ai-not-configured": {
       "configure": "Cấu hình",
       "contact-admin": "Liên hệ quản trị viên không gian làm việc để cấu hình AI.",
@@ -81,17 +86,31 @@
       "issue": "issue",
       "references": "Bằng chứng"
     },
+    "follow-up": {
+      "ask-next": "Câu hỏi tiếp theo"
+    },
     "handoff": {
+      "open-issue": "Mở vấn đề",
       "open-project-instances": "Mở các phiên bản của dự án",
       "review-database-changes": "Xem các thay đổi cơ sở dữ liệu",
+      "review-issue-plan": "Xem xét kế hoạch",
       "review-project-issues": "Xem các vấn đề của dự án",
       "review-workspace-issues": "Xem các vấn đề của tôi",
+      "view-failed-task": "Xem tác vụ thất bại",
       "view-failed-tasks": "Xem các tác vụ thất bại"
     },
     "input-keyboard-hint": "Enter để gửi · Shift+Enter để xuống dòng",
     "input-placeholder": "Hỏi AI hoặc nhập @ để chọn tài nguyên",
     "interrupted": "Bị gián đoạn",
     "interrupted-retry-hint": "Cuộc trò chuyện đã bị gián đoạn. Bạn có thể thử lại hoặc gửi tin nhắn mới.",
+    "issue-comment-draft": {
+      "existing": "This issue already has an unsent comment. Review it before opening another draft.",
+      "open": "Draft review comment",
+      "permission-denied": "You don't have permission to comment on this issue.",
+      "preview": "Preview comment",
+      "storage-failed": "Couldn't prepare the comment draft. Try again.",
+      "unavailable": "Couldn't open the comment draft. The issue may have changed."
+    },
     "issue-reference-unavailable": "Vấn đề này không còn khả dụng hoặc bạn không có quyền truy cập.",
     "landing-starters": {
       "menu": "Gợi ý",
@@ -124,6 +143,11 @@
       "issue-approval-role-grant": "Đây là bước phê duyệt cuối cùng. Việc phê duyệt có thể cấp vai trò dự án được yêu cầu ngay lập tức, không cần đợt triển khai.",
       "issue-approval-rollout": "Đây là bước phê duyệt cuối cùng. Việc phê duyệt có thể tạo đợt triển khai sau khi các kiểm tra và đánh giá bắt buộc đạt yêu cầu; không đảm bảo các tác vụ sẽ được thực thi.",
       "issue-rejection": "Từ chối vấn đề này sẽ dừng quy trình phê duyệt hiện tại. Cần xử lý lý do từ chối trước khi tiếp tục phê duyệt."
+    },
+    "plan-draft": {
+      "default-title": "Thay đổi cơ sở dữ liệu được đề xuất",
+      "open": "Mở bản nháp Plan",
+      "unavailable": "Không thể mở bản nháp Plan. Cơ sở dữ liệu hoặc SQL có thể đã thay đổi. Hãy yêu cầu Agent tạo lại."
     },
     "project-attention": {
       "checking": "Đang kiểm tra các mục cần bạn chú ý...",
@@ -3500,6 +3524,7 @@
   },
   "sql-editor": {
     "access-grants": "Cấp quyền truy cập",
+    "access-request-draft-unavailable": "The access request draft is no longer available. Please ask the Agent to prepare it again.",
     "access-search": {
       "scope": {
         "database": {

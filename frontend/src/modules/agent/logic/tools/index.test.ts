@@ -185,7 +185,7 @@ describe("done tool", () => {
       (tool) => tool.name === "done"
     );
     expect(definition?.parametersSchema).toMatchObject({
-      required: ["text", "success"],
+      required: ["text", "success", "actions"],
     });
 
     const executeTool = createToolExecutor({} as AppRouterInstance);
@@ -1841,7 +1841,7 @@ describe("agent tools ask_user", () => {
     });
   });
 
-  test("accepts a proposed typed handoff on done", async () => {
+  test("accepts a legacy typed handoff on done", async () => {
     const executeTool = createToolExecutor({} as AppRouterInstance);
     await expect(
       executeTool(
@@ -1864,7 +1864,160 @@ describe("agent tools ask_user", () => {
     });
   });
 
-  test("drops a malformed proposed handoff", async () => {
+  test("accepts typed Open and Continue proposals on done", async () => {
+    const definition = getToolDefinitions().find(
+      (tool) => tool.name === "done"
+    );
+    expect(definition?.description).toContain(
+      "2-3 distinct, contextual Continue questions"
+    );
+    expect(definition?.parametersSchema).toMatchObject({
+      properties: { actions: { type: "array", maxItems: 4 } },
+      required: ["text", "success", "actions"],
+    });
+    const executeTool = createToolExecutor({} as AppRouterInstance);
+    await expect(
+      executeTool(
+        "done",
+        {
+          text: "Review the issue queue.",
+          success: true,
+          actions: [
+            {
+              kind: "open",
+              target: {
+                kind: "review-project-issues",
+                project: "projects/sample",
+              },
+            },
+            { kind: "continue", prompt: "  What is blocked?  " },
+            { kind: "continue", prompt: "Who should review it?" },
+            { kind: "continue", prompt: "How can I verify it?" },
+          ],
+        },
+        "done-actions"
+      )
+    ).resolves.toEqual({
+      kind: "done",
+      text: "Review the issue queue.",
+      success: true,
+      actions: [
+        {
+          kind: "open",
+          target: {
+            kind: "review-project-issues",
+            project: "projects/sample",
+          },
+        },
+        { kind: "continue", prompt: "What is blocked?" },
+        { kind: "continue", prompt: "Who should review it?" },
+        { kind: "continue", prompt: "How can I verify it?" },
+      ],
+    });
+  });
+
+  test("exposes exact Issue, Plan, and failed Task Open targets", () => {
+    const definition = getToolDefinitions().find(
+      (tool) => tool.name === "done"
+    );
+    expect(definition?.parametersSchema).toMatchObject({
+      properties: {
+        actions: {
+          items: {
+            properties: {
+              target: {
+                properties: {
+                  kind: {
+                    enum: expect.arrayContaining([
+                      "open-issue",
+                      "review-issue-plan",
+                      "view-failed-task",
+                    ]),
+                  },
+                  issue: { type: "string" },
+                  plan: { type: "string" },
+                  task: { type: "string" },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+  });
+
+  test("offers a typed draft Plan action without putting SQL in the action", async () => {
+    const definition = getToolDefinitions().find(
+      (tool) => tool.name === "done"
+    );
+    expect(definition?.parametersSchema).toMatchObject({
+      properties: {
+        actions: {
+          items: {
+            properties: {
+              kind: {
+                enum: ["open", "draft-plan", "draft-issue-comment", "continue"],
+              },
+              project: { type: "string" },
+              database: { type: "string" },
+            },
+          },
+        },
+      },
+    });
+    expect(definition?.parametersSchema).not.toHaveProperty(
+      "properties.actions.items.properties.sql"
+    );
+
+    const executeTool = createToolExecutor({} as AppRouterInstance);
+    await expect(
+      executeTool(
+        "done",
+        {
+          text: "```sql\nCREATE TABLE audit_log (id INT);\n```",
+          success: true,
+          actions: [
+            {
+              kind: "draft-plan",
+              project: "projects/sample",
+              database: "instances/prod/databases/app",
+            },
+          ],
+        },
+        "done-plan-draft"
+      )
+    ).resolves.toMatchObject({
+      kind: "done",
+      success: true,
+      actions: [
+        {
+          kind: "draft-plan",
+          project: "projects/sample",
+          database: "instances/prod/databases/app",
+        },
+      ],
+    });
+  });
+
+  test("exposes an unsent Issue comment draft action", () => {
+    const definition = getToolDefinitions().find(
+      (tool) => tool.name === "done"
+    );
+    expect(definition?.parametersSchema).toMatchObject({
+      properties: {
+        actions: {
+          items: {
+            properties: {
+              issue: { type: "string" },
+              comment: { type: "string" },
+            },
+          },
+        },
+      },
+    });
+  });
+
+  test("drops a malformed legacy handoff", async () => {
     const executeTool = createToolExecutor({} as AppRouterInstance);
     await expect(
       executeTool(

@@ -23,7 +23,13 @@ import {
 import { extractSavedQueryConnection } from "@/lib/sqlEditorConnection";
 import { useClampResultRowsLimitToPolicy } from "@/modules/sql-editor/hooks/useSQLEditorState";
 import { cleanupLegacyPouchDatabases } from "@/modules/sql-editor/legacy/migration";
+import {
+  ACCESS_GRANT_DRAFT_QUERY_KEY,
+  consumeAccessGrantDraft,
+  markDeniedQueryRequestDraftDelivered,
+} from "@/modules/sql-editor/model/accessGrantDraft";
 import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
+import { getDefaultQueryRole } from "@/modules/sql-editor/model/requestQueryRole";
 import type { AsidePanelTab } from "@/modules/sql-editor/store";
 import { useSQLEditorStore } from "@/modules/sql-editor/store";
 import {
@@ -42,6 +48,7 @@ import {
   isValidProjectName,
   type SQLEditorConnection,
 } from "@/types";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   autoSQLEditorDatabaseRoute,
   extractDatabaseResourceName,
@@ -54,7 +61,9 @@ import {
   isSavedQueryReadableV1,
   storageKeySqlEditorSidebarTab,
 } from "@/utils";
+import { parseStringToResource } from "@/utils/v1/databaseResource";
 import { queryHistoryTabTitle } from "@/utils/v1/queryHistory";
+import { useRequestDrawerHost } from "./RequestDrawerHost";
 import { SQLEditorHomePage } from "./SQLEditorHomePage";
 
 // Route-name set for the unsaved-changes leave guard. `router.beforeEach`
@@ -111,10 +120,12 @@ export function SQLEditorRouteShell() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const route = useCurrentRoute();
+  const requestDrawerHost = useRequestDrawerHost();
   const guidedQueryRequested =
     route.name === SQL_EDITOR_DATABASE_MODULE &&
     route.query[PRODUCT_INTRO_QUERY_KEY] === RUN_QUERY_PRODUCT_INTRO;
   const previousGuidedQueryRequestedRef = useRef(guidedQueryRequested);
+  const handledAccessGrantDraftKeyRef = useRef<string | null>(null);
   const setAsidePanelTab = useSQLEditorStore((s) => s.setAsidePanelTab);
   const maybeSwitchProject = useSQLEditorStore((s) => s.maybeSwitchProject);
 
@@ -273,17 +284,24 @@ export function SQLEditorRouteShell() {
 
     const databaseId = route.params.database;
     if (typeof databaseId !== "string" || !databaseId) return false;
+    const workspaceParent = `instances/${instanceId}`;
+    const projectParent = `projects/${projectId}/instances/${instanceId}`;
+    const workspaceDatabase = `${workspaceParent}/databases/${databaseId}`;
+    const projectDatabase = `${projectParent}/databases/${databaseId}`;
+    const parent = route.query.parent;
+    const candidateNames =
+      parent === workspaceParent
+        ? [workspaceDatabase]
+        : parent === projectParent
+          ? [projectDatabase]
+          : [workspaceDatabase, projectDatabase];
     let database = await useAppStore
       .getState()
-      .getOrFetchDatabaseByName(
-        `instances/${instanceId}/databases/${databaseId}`
-      );
-    if (!isValidDatabaseName(database.name)) {
+      .getOrFetchDatabaseByName(candidateNames[0]);
+    if (!isValidDatabaseName(database.name) && candidateNames.length > 1) {
       database = await useAppStore
         .getState()
-        .getOrFetchDatabaseByName(
-          `projects/${projectId}/instances/${instanceId}/databases/${databaseId}`
-        );
+        .getOrFetchDatabaseByName(candidateNames[1]);
     }
     if (!isValidDatabaseName(database.name)) return false;
     if (
@@ -436,8 +454,119 @@ export function SQLEditorRouteShell() {
   const initializeConnectionFromQuery = async () => {
     if (await prepareQueryHistory()) return;
     if (await prepareSheet()) return;
-    if (await prepareConnectionParams()) return;
+    const connectionReady = await prepareConnectionParams();
+    const key = route.query[ACCESS_GRANT_DRAFT_QUERY_KEY];
+    if (route.name === SQL_EDITOR_DATABASE_MODULE && typeof key === "string") {
+      handledAccessGrantDraftKeyRef.current = key;
+      await openAccessGrantDraft(key, connectionReady);
+      clearAccessGrantDraftKey(key);
+    }
   };
+
+  const clearAccessGrantDraftKey = (key: string) => {
+    const currentRoute = router.currentRoute.value;
+    if (currentRoute.query[ACCESS_GRANT_DRAFT_QUERY_KEY] !== key) return;
+    void navigate.replace({
+      name: currentRoute.name,
+      params: currentRoute.params,
+      query: omit(currentRoute.query, ACCESS_GRANT_DRAFT_QUERY_KEY),
+    });
+  };
+
+  const openAccessGrantDraft = async (
+    key: string,
+    connectionReady: boolean
+  ) => {
+    let draft;
+    try {
+      draft = consumeAccessGrantDraft(key);
+    } catch {
+      draft = undefined;
+    }
+    const tabsState = getSQLEditorTabsState();
+    const database = tabsState.tabsById.get(tabsState.currentTabId)?.connection
+      .database;
+    if (
+      !connectionReady ||
+      !draft ||
+      draft.project !== getSQLEditorEditorState().project ||
+      draft.sourceDatabase !== database ||
+      !requestDrawerHost
+    ) {
+      useAppStore.getState().notify({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("sql-editor.access-request-draft-unavailable"),
+      });
+      return;
+    }
+    let opened = false;
+    if (draft.kind === "requestRole") {
+      const project = await useAppStore
+        .getState()
+        .getOrFetchProjectByName(draft.project)
+        .catch(() => undefined);
+      const resources = draft.resources.map(parseStringToResource);
+      if (
+        project?.name === draft.project &&
+        project.allowRequestRole &&
+        !project.allowJustInTimeAccess &&
+        resources.every((resource) => resource?.databaseFullName) &&
+        router.currentRoute.value.query[ACCESS_GRANT_DRAFT_QUERY_KEY] === key
+      ) {
+        const app = useAppStore.getState();
+        opened = requestDrawerHost.openRequestRoleSheet({
+          project,
+          requiredPermissions: draft.requiredPermissions,
+          initialRole: getDefaultQueryRole(
+            app.roleList,
+            draft.requiredPermissions,
+            app.hasInstanceFeature(PlanFeature.FEATURE_CUSTOM_ROLES)
+          ),
+          initialDatabaseResources: resources as NonNullable<
+            (typeof resources)[number]
+          >[],
+        });
+      }
+    } else {
+      opened = requestDrawerHost.openAccessGrantDrawer({
+        query: draft.statement,
+        targets: draft.targets,
+        ...(draft.schema ? { schema: draft.schema } : {}),
+        ...(draft.container ? { container: draft.container } : {}),
+      });
+    }
+    if (opened) {
+      markDeniedQueryRequestDraftDelivered(key);
+    } else {
+      useAppStore.getState().notify({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("sql-editor.access-request-draft-unavailable"),
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (!bootstrapDone || route.name !== SQL_EDITOR_DATABASE_MODULE) return;
+    const key = route.query[ACCESS_GRANT_DRAFT_QUERY_KEY];
+    if (
+      typeof key !== "string" ||
+      key === handledAccessGrantDraftKeyRef.current
+    ) {
+      return;
+    }
+    handledAccessGrantDraftKeyRef.current = key;
+    void (async () => {
+      const connectionReady = await prepareConnectionParams();
+      if (
+        router.currentRoute.value.query[ACCESS_GRANT_DRAFT_QUERY_KEY] === key
+      ) {
+        await openAccessGrantDraft(key, connectionReady);
+        clearAccessGrantDraftKey(key);
+      }
+    })();
+  }, [bootstrapDone, route.name, route.query[ACCESS_GRANT_DRAFT_QUERY_KEY]]);
 
   useEffect(() => {
     if (!bootstrapDone) return;
@@ -500,7 +629,8 @@ export function SQLEditorRouteShell() {
       "schema",
       "database",
       "table",
-      "panel"
+      "panel",
+      ACCESS_GRANT_DRAFT_QUERY_KEY
     ) as Record<string, string>;
 
     const tabsState = getSQLEditorTabsState();

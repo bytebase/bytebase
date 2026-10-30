@@ -4,8 +4,11 @@ import {
   PROJECT_V1_ROUTE_DATABASES,
   PROJECT_V1_ROUTE_INSTANCE_CREATE,
   PROJECT_V1_ROUTE_INSTANCES,
+  PROJECT_V1_ROUTE_ISSUE_DETAIL,
   PROJECT_V1_ROUTE_ISSUES,
+  PROJECT_V1_ROUTE_PLAN_DETAIL,
   PROJECT_V1_ROUTE_PLAN_ROLLOUT,
+  PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
   WORKSPACE_ROUTE_MY_ISSUES,
 } from "@/app/router/handles";
 import {
@@ -89,30 +92,91 @@ describe("collectAgentHandoffs", () => {
     ).toEqual([]);
   });
 
-  test("requires a failed Task Run in the observed Rollout", () => {
+  test("opens an available exact Issue and its verified linked Plan", () => {
     expect(
       collectAgentHandoffs(
         "get_issue_overview",
         JSON.stringify({
           project,
-          plan: { status: "available", name: "projects/sample/plans/1" },
-          rollout: {
+          issue: { status: "available", name: "projects/sample/issues/9" },
+          plan: {
             status: "available",
-            name: "projects/sample/plans/1/rollout",
-          },
-          taskRuns: {
-            status: "available",
-            taskRuns: [
-              {
-                name: "projects/other/plans/1/rollout/stages/1/tasks/1/taskRuns/1",
-                status: "FAILED",
-              },
-            ],
+            name: "projects/sample/plans/1",
+            reviewOnPlan: true,
           },
         }),
         { projectName: project }
       )
-    ).toEqual([]);
+    ).toEqual([
+      { kind: "open-issue", issue: "projects/sample/issues/9" },
+      { kind: "review-issue-plan", plan: "projects/sample/plans/1" },
+    ]);
+  });
+
+  test("keeps the Issue link when the linked Plan redirects to Issue detail", () => {
+    expect(
+      collectAgentHandoffs(
+        "get_issue_overview",
+        JSON.stringify({
+          project,
+          issue: { status: "available", name: "projects/sample/issues/9" },
+          plan: {
+            status: "available",
+            name: "projects/sample/plans/1",
+            reviewOnPlan: false,
+          },
+          rollout: {
+            status: "available",
+            name: "projects/sample/plans/1/rollout",
+            failedTasks: ["projects/sample/plans/1/rollout/stages/-/tasks/t1"],
+          },
+        }),
+        { projectName: project }
+      )
+    ).toEqual([{ kind: "open-issue", issue: "projects/sample/issues/9" }]);
+  });
+
+  test("does not offer exact links from unavailable or out-of-scope facets", () => {
+    for (const payload of [
+      {
+        project,
+        issue: { status: "unavailable", name: "projects/sample/issues/9" },
+      },
+      {
+        project,
+        issue: { status: "available", name: "projects/other/issues/9" },
+      },
+      {
+        project,
+        issue: { status: "available", name: "projects/sample/issues/-" },
+      },
+    ]) {
+      expect(
+        collectAgentHandoffs("get_issue_overview", JSON.stringify(payload), {
+          projectName: project,
+        })
+      ).toEqual([]);
+    }
+  });
+
+  test("does not offer an unrelated or malformed linked Plan", () => {
+    for (const planName of [
+      "projects/other/plans/1",
+      "projects/sample/plans/-",
+      "projects/sample/plans/1/rollout",
+    ]) {
+      expect(
+        collectAgentHandoffs(
+          "get_issue_overview",
+          JSON.stringify({
+            project,
+            issue: { status: "available", name: "projects/sample/issues/9" },
+            plan: { status: "available", name: planName },
+          }),
+          { projectName: project }
+        )
+      ).toEqual([{ kind: "open-issue", issue: "projects/sample/issues/9" }]);
+    }
   });
 
   test("collects project review and database-change queues from fresh results", () => {
@@ -144,7 +208,7 @@ describe("collectAgentHandoffs", () => {
     ]);
   });
 
-  test("prefers an eligible database transfer for an empty project", () => {
+  test("offers transfer and connect when both are eligible for an empty project", () => {
     expect(
       collectAgentHandoffs(
         "get_project_overview",
@@ -162,17 +226,78 @@ describe("collectAgentHandoffs", () => {
         }),
         { projectName: project }
       )
-    ).toEqual([{ kind: "transfer-project-databases", project }]);
+    ).toEqual([
+      { kind: "transfer-project-databases", project },
+      { kind: "connect-project-instance", project },
+    ]);
+  });
+
+  test("offers both transfer and create when both setup flows are available", () => {
+    expect(
+      collectAgentHandoffs(
+        "get_project_overview",
+        JSON.stringify({
+          project,
+          databases: { status: "available", partial: false, databases: [] },
+          setup: {
+            isDefault: false,
+            instance: "present",
+            transferableDatabase: "present",
+            canConnectInstance: true,
+            canTransferDatabases: true,
+            canCreateDatabase: true,
+          },
+        }),
+        { projectName: project }
+      )
+    ).toEqual([
+      { kind: "transfer-project-databases", project },
+      { kind: "create-project-database", project },
+      { kind: "connect-project-instance", project },
+    ]);
+  });
+
+  test("offers eligible setup flows for an established project", () => {
+    expect(
+      collectAgentHandoffs(
+        "get_project_overview",
+        JSON.stringify({
+          project,
+          databases: {
+            status: "available",
+            partial: true,
+            databases: [{ name: "instances/shared/databases/orders" }],
+          },
+          setup: {
+            isDefault: false,
+            instance: "present",
+            transferableDatabase: "present",
+            canConnectInstance: true,
+            canTransferDatabases: true,
+            canCreateDatabase: true,
+          },
+        }),
+        { projectName: project }
+      )
+    ).toEqual([
+      { kind: "transfer-project-databases", project },
+      { kind: "create-project-database", project },
+      { kind: "connect-project-instance", project },
+    ]);
   });
 
   test.each([
-    ["empty", "empty", "connect-project-instance"],
-    ["present", "empty", "create-project-database"],
-    ["unknown", "empty", undefined],
-    ["empty", "unknown", "connect-project-instance"],
+    ["empty", "empty", ["connect-project-instance"]],
+    [
+      "present",
+      "empty",
+      ["create-project-database", "connect-project-instance"],
+    ],
+    ["unknown", "empty", ["connect-project-instance"]],
+    ["empty", "unknown", ["connect-project-instance"]],
   ] as const)(
     "chooses setup from instance %s and transfer %s",
-    (instance, transferableDatabase, expectedKind) => {
+    (instance, transferableDatabase, expectedKinds) => {
       const result = collectAgentHandoffs(
         "get_project_overview",
         JSON.stringify({
@@ -189,13 +314,11 @@ describe("collectAgentHandoffs", () => {
         }),
         { projectName: project }
       );
-      expect(result).toEqual(
-        expectedKind ? [{ kind: expectedKind, project }] : []
-      );
+      expect(result).toEqual(expectedKinds.map((kind) => ({ kind, project })));
     }
   );
 
-  test("does not infer setup without complete empty-project evidence", () => {
+  test("does not infer setup from invalid or inaccessible state", () => {
     const overview = {
       project,
       databases: { status: "available", partial: false, databases: [] },
@@ -209,7 +332,6 @@ describe("collectAgentHandoffs", () => {
       },
     };
     for (const payload of [
-      { ...overview, databases: { ...overview.databases, partial: true } },
       { ...overview, databases: { status: "unavailable" } },
       { ...overview, setup: undefined },
       { ...overview, setup: { ...overview.setup, isDefault: true } },
@@ -236,7 +358,12 @@ describe("collectAgentHandoffs", () => {
         "get_issue_overview",
         JSON.stringify({
           project,
-          plan: { status: "available", name: "projects/sample/plans/1" },
+          issue: { status: "available", name: "projects/sample/issues/9" },
+          plan: {
+            status: "available",
+            name: "projects/sample/plans/1",
+            reviewOnPlan: true,
+          },
           rollout: { status: "unavailable" },
           taskRuns: {
             status: "available",
@@ -245,25 +372,36 @@ describe("collectAgentHandoffs", () => {
         }),
         { projectName: project }
       )
-    ).toEqual([]);
+    ).toEqual([
+      { kind: "open-issue", issue: "projects/sample/issues/9" },
+      { kind: "review-issue-plan", plan: "projects/sample/plans/1" },
+    ]);
   });
 
-  test("collects a Plan rollout only for an observed failed Task Run", () => {
+  test("offers an exact failed Task and broad Rollout only from current task status", () => {
     expect(
       collectAgentHandoffs(
         "get_issue_overview",
         JSON.stringify({
           project,
-          plan: { status: "available", name: "projects/sample/plans/1" },
+          issue: { status: "available", name: "projects/sample/issues/9" },
+          plan: {
+            status: "available",
+            name: "projects/sample/plans/1",
+            reviewOnPlan: true,
+          },
           rollout: {
             status: "available",
             name: "projects/sample/plans/1/rollout",
+            failedTasks: [
+              "projects/sample/plans/1/rollout/stages/prod/tasks/t1",
+            ],
           },
           taskRuns: {
             status: "available",
             taskRuns: [
               {
-                name: "projects/sample/plans/1/rollout/stages/1/tasks/1/taskRuns/1",
+                name: "projects/sample/plans/1/rollout/stages/prod/tasks/t1/taskRuns/run-1",
                 status: "FAILED",
               },
             ],
@@ -271,7 +409,108 @@ describe("collectAgentHandoffs", () => {
         }),
         { projectName: project }
       )
-    ).toEqual([{ kind: "view-failed-tasks", plan: "projects/sample/plans/1" }]);
+    ).toEqual([
+      { kind: "open-issue", issue: "projects/sample/issues/9" },
+      { kind: "review-issue-plan", plan: "projects/sample/plans/1" },
+      {
+        kind: "view-failed-task",
+        task: "projects/sample/plans/1/rollout/stages/prod/tasks/t1",
+      },
+      { kind: "view-failed-tasks", plan: "projects/sample/plans/1" },
+    ]);
+  });
+
+  test("historical failed Task Runs do not produce failed-task links", () => {
+    expect(
+      collectAgentHandoffs(
+        "get_issue_overview",
+        JSON.stringify({
+          project,
+          issue: { status: "available", name: "projects/sample/issues/9" },
+          plan: {
+            status: "available",
+            name: "projects/sample/plans/1",
+            reviewOnPlan: true,
+          },
+          rollout: {
+            status: "available",
+            name: "projects/sample/plans/1/rollout",
+            failedTasks: [],
+          },
+          taskRuns: {
+            status: "available",
+            taskRuns: [
+              {
+                name: "projects/sample/plans/1/rollout/stages/prod/tasks/t1/taskRuns/old",
+                status: "FAILED",
+              },
+            ],
+          },
+        }),
+        { projectName: project }
+      )
+    ).toEqual([
+      { kind: "open-issue", issue: "projects/sample/issues/9" },
+      { kind: "review-issue-plan", plan: "projects/sample/plans/1" },
+    ]);
+  });
+
+  test("accepts a canonical failed Task under the default Rollout stage", () => {
+    expect(
+      collectAgentHandoffs(
+        "get_issue_overview",
+        JSON.stringify({
+          project,
+          issue: { status: "available", name: "projects/sample/issues/9" },
+          plan: {
+            status: "available",
+            name: "projects/sample/plans/1",
+            reviewOnPlan: true,
+          },
+          rollout: {
+            status: "available",
+            name: "projects/sample/plans/1/rollout",
+            failedTasks: ["projects/sample/plans/1/rollout/stages/-/tasks/t1"],
+          },
+        }),
+        { projectName: project }
+      )
+    ).toContainEqual({
+      kind: "view-failed-task",
+      task: "projects/sample/plans/1/rollout/stages/-/tasks/t1",
+    });
+  });
+
+  test("ignores failed-task names outside the verified Rollout", () => {
+    const malformed = [
+      "projects/other/plans/1/rollout/stages/prod/tasks/t1",
+      "projects/sample/plans/other/rollout/stages/prod/tasks/t1",
+      "projects/sample/plans/1/rollout/stages/prod/tasks/-",
+      "projects/sample/plans/1/rollout/stages/prod/tasks/t1/taskRuns/r1",
+    ];
+    expect(
+      collectAgentHandoffs(
+        "get_issue_overview",
+        JSON.stringify({
+          project,
+          issue: { status: "available", name: "projects/sample/issues/9" },
+          plan: {
+            status: "available",
+            name: "projects/sample/plans/1",
+            reviewOnPlan: true,
+          },
+          rollout: {
+            status: "available",
+            name: "projects/sample/plans/1/rollout",
+            failedTasks: malformed,
+          },
+        }),
+        { projectName: project }
+      )
+    ).toEqual([
+      { kind: "open-issue", issue: "projects/sample/issues/9" },
+      { kind: "review-issue-plan", plan: "projects/sample/plans/1" },
+    ]);
   });
 });
 
@@ -297,6 +536,26 @@ describe("acceptAgentHandoff", () => {
           project,
           href: "https://example.com",
         },
+        observed
+      )
+    ).toBeUndefined();
+  });
+
+  test("does not accept unobserved exact Issue, Plan, or Task links", () => {
+    const issue = "projects/sample/issues/9";
+    const plan = "projects/sample/plans/7";
+    const task = `${plan}/rollout/stages/-/tasks/t1`;
+    const observed = [
+      { kind: "open-issue" as const, issue },
+      { kind: "review-issue-plan" as const, plan },
+      { kind: "view-failed-task" as const, task },
+    ];
+    for (const target of observed) {
+      expect(acceptAgentHandoff(target, observed)).toEqual(target);
+    }
+    expect(
+      acceptAgentHandoff(
+        { kind: "view-failed-task", task: `${plan}/rollout/stages/-/tasks/t2` },
         observed
       )
     ).toBeUndefined();
@@ -348,10 +607,53 @@ describe("resolveAgentHandoffRoute", () => {
     });
     expect(
       resolveAgentHandoffRoute({
+        kind: "open-issue",
+        issue: "projects/sample/issues/9",
+      })
+    ).toEqual({
+      name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+      params: { projectId: "sample", issueId: "9" },
+    });
+    expect(
+      resolveAgentHandoffRoute({
+        kind: "review-issue-plan",
+        plan: "projects/sample/plans/7",
+      })
+    ).toEqual({
+      name: PROJECT_V1_ROUTE_PLAN_DETAIL,
+      params: { projectId: "sample", planId: "7" },
+      query: { phase: "review" },
+    });
+    expect(
+      resolveAgentHandoffRoute({
+        kind: "view-failed-task",
+        task: "projects/sample/plans/7/rollout/stages/-/tasks/t1",
+      })
+    ).toEqual({
+      name: PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
+      params: {
+        projectId: "sample",
+        planId: "7",
+        stageId: "-",
+        taskId: "t1",
+      },
+    });
+    expect(
+      resolveAgentHandoffRoute({
         kind: "review-database-changes",
         project: "projects/-",
       })
     ).toBeUndefined();
+    for (const invalid of [
+      { kind: "open-issue", issue: "projects/-/issues/9" },
+      { kind: "review-issue-plan", plan: "projects/sample/plans/-" },
+      {
+        kind: "view-failed-task",
+        task: "projects/sample/plans/7/rollout/stages/prod/tasks/-",
+      },
+    ]) {
+      expect(resolveAgentHandoffRoute(invalid)).toBeUndefined();
+    }
   });
 
   test("uses the Issue page's q filter for open Database Changes", () => {

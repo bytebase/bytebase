@@ -1,13 +1,16 @@
 import type { RouteTarget } from "@/app/router";
 import {
   PROJECT_V1_ROUTE_INSTANCES,
+  PROJECT_V1_ROUTE_ISSUE_DETAIL,
   PROJECT_V1_ROUTE_ISSUES,
+  PROJECT_V1_ROUTE_PLAN_DETAIL,
   PROJECT_V1_ROUTE_PLAN_ROLLOUT,
+  PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
   WORKSPACE_ROUTE_MY_ISSUES,
 } from "@/app/router/handles";
 import {
-  getProjectSetupSteps,
   type ProjectSetupState,
+  type ProjectSetupStep,
 } from "@/lib/projectSetup";
 import { projectSetupTarget } from "@/lib/projectSetupTarget";
 import { buildSearchTextBySearchParams } from "@/utils";
@@ -33,6 +36,38 @@ const planIds = (
   );
   if (!match || match[1] === "-" || match[2] === "-") return undefined;
   return { projectId: match[1], planId: match[2] };
+};
+
+const issueIds = (
+  name: unknown
+): { projectId: string; issueId: string } | undefined => {
+  if (typeof name !== "string") return undefined;
+  const match = /^projects\/([A-Za-z0-9_-]+)\/issues\/([A-Za-z0-9_-]+)$/.exec(
+    name
+  );
+  if (!match || match[1] === "-" || match[2] === "-") return undefined;
+  return { projectId: match[1], issueId: match[2] };
+};
+
+const taskIds = (
+  name: unknown
+):
+  | { projectId: string; planId: string; stageId: string; taskId: string }
+  | undefined => {
+  if (typeof name !== "string") return undefined;
+  const match =
+    /^projects\/([A-Za-z0-9_-]+)\/plans\/([A-Za-z0-9_-]+)\/rollout\/stages\/([A-Za-z0-9_-]+)\/tasks\/([A-Za-z0-9_-]+)$/.exec(
+      name
+    );
+  if (!match || match[1] === "-" || match[2] === "-" || match[4] === "-") {
+    return undefined;
+  }
+  return {
+    projectId: match[1],
+    planId: match[2],
+    stageId: match[3],
+    taskId: match[4],
+  };
 };
 
 const hasIssues = (
@@ -68,6 +103,21 @@ const setupHandoffKinds = {
   connect: "connect-project-instance",
   createDatabase: "create-project-database",
 } as const;
+
+const getAgentSetupSteps = (setup: ProjectSetupState): ProjectSetupStep[] => {
+  if (setup.isDefault) return [];
+  const steps: ProjectSetupStep[] = [];
+  if (setup.canTransferDatabases && setup.transferableDatabase === "present") {
+    steps.push("transferDatabases");
+  }
+  if (setup.canCreateDatabase && setup.instance === "present") {
+    steps.push("createDatabase");
+  }
+  if (setup.canConnectInstance) {
+    steps.push("connect");
+  }
+  return steps;
+};
 
 export function collectAgentHandoffs(
   toolName: string,
@@ -136,45 +186,66 @@ export function collectAgentHandoffs(
     }
     if (
       isRecord(payload.databases) &&
-      payload.databases.status === "available" &&
-      payload.databases.partial !== true &&
-      Array.isArray(payload.databases.databases) &&
-      payload.databases.databases.length === 0
+      payload.databases.status === "available"
     ) {
       const setup = payload.setup;
       if (isProjectSetupState(setup)) {
-        const primaryStep = getProjectSetupSteps(setup)[0];
-        if (primaryStep) {
-          result.push({ kind: setupHandoffKinds[primaryStep], project });
+        for (const step of getAgentSetupSteps(setup)) {
+          result.push({ kind: setupHandoffKinds[step], project });
         }
       }
     }
     return result;
   }
   if (toolName === "get_issue_overview") {
-    const rollout = payload.rollout;
+    if (
+      !isRecord(payload.issue) ||
+      payload.issue.status !== "available" ||
+      !issueIds(payload.issue.name) ||
+      !String(payload.issue.name).startsWith(`${project}/`)
+    ) {
+      return [];
+    }
+    const result: AgentHandoff[] = [
+      { kind: "open-issue", issue: payload.issue.name as string },
+    ];
     if (
       !isRecord(payload.plan) ||
       payload.plan.status !== "available" ||
       !planIds(payload.plan.name) ||
-      !String(payload.plan.name).startsWith(`${project}/`) ||
+      !String(payload.plan.name).startsWith(`${project}/`)
+    ) {
+      return result;
+    }
+    const planName = payload.plan.name as string;
+    if (payload.plan.reviewOnPlan !== true) {
+      return result;
+    }
+    result.push({ kind: "review-issue-plan", plan: planName });
+    const rollout = payload.rollout;
+    if (
       !isRecord(rollout) ||
       rollout.status !== "available" ||
-      rollout.name !== `${payload.plan.name}/rollout` ||
-      !isRecord(payload.taskRuns) ||
-      payload.taskRuns.status !== "available" ||
-      !Array.isArray(payload.taskRuns.taskRuns) ||
-      !payload.taskRuns.taskRuns.some(
-        (taskRun) =>
-          isRecord(taskRun) &&
-          taskRun.status === "FAILED" &&
-          typeof taskRun.name === "string" &&
-          taskRun.name.startsWith(`${rollout.name}/stages/`)
-      )
+      rollout.name !== `${planName}/rollout` ||
+      !Array.isArray(rollout.failedTasks)
     ) {
-      return [];
+      return result;
     }
-    return [{ kind: "view-failed-tasks", plan: payload.plan.name as string }];
+    const failedTasks = new Set(
+      rollout.failedTasks.filter(
+        (name): name is string =>
+          typeof name === "string" &&
+          Boolean(taskIds(name)) &&
+          name.startsWith(`${rollout.name}/stages/`)
+      )
+    );
+    for (const task of failedTasks) {
+      result.push({ kind: "view-failed-task", task });
+    }
+    if (failedTasks.size > 0) {
+      result.push({ kind: "view-failed-tasks", plan: planName });
+    }
+    return result;
   }
   return [];
 }
@@ -201,6 +272,21 @@ export function normalizeAgentHandoff(raw: unknown): AgentHandoff | undefined {
   if (raw.kind === "view-failed-tasks") {
     return planIds(raw.plan)
       ? { kind: raw.kind, plan: raw.plan as string }
+      : undefined;
+  }
+  if (raw.kind === "open-issue") {
+    return issueIds(raw.issue)
+      ? { kind: raw.kind, issue: raw.issue as string }
+      : undefined;
+  }
+  if (raw.kind === "review-issue-plan") {
+    return planIds(raw.plan)
+      ? { kind: raw.kind, plan: raw.plan as string }
+      : undefined;
+  }
+  if (raw.kind === "view-failed-task") {
+    return taskIds(raw.task)
+      ? { kind: raw.kind, task: raw.task as string }
       : undefined;
   }
   return undefined;
@@ -230,6 +316,25 @@ export function resolveAgentHandoffRoute(
   if (handoff.kind === "view-failed-tasks") {
     const ids = planIds(handoff.plan)!;
     return { name: PROJECT_V1_ROUTE_PLAN_ROLLOUT, params: ids };
+  }
+  if (handoff.kind === "open-issue") {
+    return {
+      name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+      params: issueIds(handoff.issue)!,
+    };
+  }
+  if (handoff.kind === "review-issue-plan") {
+    return {
+      name: PROJECT_V1_ROUTE_PLAN_DETAIL,
+      params: planIds(handoff.plan)!,
+      query: { phase: "review" },
+    };
+  }
+  if (handoff.kind === "view-failed-task") {
+    return {
+      name: PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
+      params: taskIds(handoff.task)!,
+    };
   }
   const projectId = resourceId(handoff.project, "projects")!;
   if (handoff.kind === "open-project-instances") {

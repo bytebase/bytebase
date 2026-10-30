@@ -18,6 +18,7 @@ import { GetIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { GetProjectRequestSchema } from "@/types/proto-es/v1/project_service_pb";
 import { getSkill, type GetSkillArgs } from "../skills";
 import { normalizeAgentHandoff } from "../handoff";
+import { normalizeAgentResponseActions } from "../responseActions";
 import type {
   AgentAskUserKind,
   AgentAskUserOption,
@@ -120,11 +121,15 @@ const parseDoneArgs = (args: Record<string, unknown>): ToolExecutionResult => {
   const handoff = args.success
     ? normalizeAgentHandoff(args.handoff)
     : undefined;
+  const actions = args.success
+    ? normalizeAgentResponseActions(args.actions)
+    : [];
   return {
     kind: "done",
     text: args.text,
     success: args.success,
     ...(handoff ? { handoff } : {}),
+    ...(actions.length > 0 ? { actions } : {}),
   };
 };
 
@@ -379,7 +384,7 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
     },
     {
       name: "get_project_overview",
-      description: `Get a bounded snapshot of ${projectScope}. The result includes the current member's relevant open Issues, open database-change Issues, and accessible databases, with partial or unavailable facets made explicit. For a confirmed empty project it also includes instance availability, eligible unassigned database availability, and setup permissions. Use this before recommending what to do next or describing current project readiness. Answer the member's actual question from the returned evidence, rather than listing generic capabilities. This tool has no parameters. ${projectScopeRestriction}`,
+      description: `Get a bounded snapshot of ${projectScope}. The result includes the current member's relevant open Issues, open database-change Issues, and accessible databases, with partial or unavailable facets made explicit. It also includes instance availability, eligible unassigned database availability, and setup permissions when the project is accessible. A recommended setup step is provided only when the project is confirmed empty. Use this before recommending what to do next or describing current project readiness. Answer the member's actual question from the returned evidence, rather than listing generic capabilities. This tool has no parameters. ${projectScopeRestriction}`,
       parametersSchema: {
         type: "object",
         properties: {},
@@ -395,7 +400,7 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
     },
     {
       name: "get_issue_overview",
-      description: `Get a bounded, read-only overview of one Issue in ${projectScope}. It includes the Issue's approval state, linked Plan and plan-check state, rule and AI review-run state, plus Rollout and up to ten task-run statuses when available. Pass a canonical Issue name from this project. Each facet explicitly reports whether it is available, not configured, not started, or unavailable. A review run marked not started has no recorded run; this does not establish whether that review is configured or applicable. ${projectScopeRestriction} This tool cannot take action.`,
+      description: `Get a bounded, read-only overview of one Issue in ${projectScope}. It includes the Issue's approval state, linked Plan and plan-check state, rule and AI review-run state, plus Rollout, up to ten currently failed Tasks, and up to ten task-run statuses when available. A failed Task Run can be historical; use the Rollout's failedTasks for current failures. Pass a canonical Issue name from this project. Each facet explicitly reports whether it is available, not configured, not started, or unavailable. A review run marked not started has no recorded run; this does not establish whether that review is configured or applicable. ${projectScopeRestriction} This tool cannot take action.`,
       parametersSchema: {
         type: "object",
         properties: {
@@ -601,7 +606,7 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
     {
       name: "done",
       description:
-        "Complete the current task explicitly. Provide the final user-visible text and whether the task succeeded. Optionally propose one evidence-backed, member-clicked handoff; the runtime validates it against this turn's tool results.",
+        "Complete the current task explicitly. Provide final user-visible text, success, and actions. For a successful answer, propose at most one primary action: Open for an evidenced next step, or draft-plan for generated DDL grounded in this turn's selected @Database. A draft-plan action names only its project and database; put the SQL in exactly one fenced `sql` block in text, never in the action. Normally include 2-3 distinct, contextual Continue questions in English, with or without a primary action. Include fewer or none when no further meaningful questions exist; do not invent filler. Use actions: [] for a failed answer or when no useful action exists. Actions require a member click; the runtime validates their targets.",
       parametersSchema: {
         type: "object",
         properties: {
@@ -614,31 +619,76 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
             description:
               "Set to false when the task could not be completed successfully.",
           },
-          handoff: {
-            type: "object",
+          actions: {
+            type: "array",
             description:
-              "Optional single next-step destination observed in a current-turn overview. Never provide a URL or invent a resource name.",
-            properties: {
-              kind: {
-                type: "string",
-                enum: [
-                  "review-workspace-issues",
-                  "review-project-issues",
-                  "review-database-changes",
-                  "transfer-project-databases",
-                  "connect-project-instance",
-                  "create-project-database",
-                  "view-failed-tasks",
-                ],
+              "Optional member-clicked actions. Use at most one primary Open, draft-plan, or draft-issue-comment, plus up to three distinct Continue questions. Open uses a current-turn observed destination, never a URL or invented resource. draft-plan opens a populated, unsaved Plan. draft-issue-comment opens an unsent review comment for an Issue observed in this turn; it never posts automatically. Continue fills the composer without sending. Do not include API requests, SQL, or resource @ mentions in an action.",
+            maxItems: 4,
+            items: {
+              type: "object",
+              properties: {
+                kind: {
+                  type: "string",
+                  enum: [
+                    "open",
+                    "draft-plan",
+                    "draft-issue-comment",
+                    "continue",
+                  ],
+                },
+                target: {
+                  type: "object",
+                  properties: {
+                    kind: {
+                      type: "string",
+                      enum: [
+                        "review-workspace-issues",
+                        "review-project-issues",
+                        "review-database-changes",
+                        "transfer-project-databases",
+                        "connect-project-instance",
+                        "create-project-database",
+                        "view-failed-tasks",
+                        "open-issue",
+                        "review-issue-plan",
+                        "view-failed-task",
+                      ],
+                    },
+                    workspace: { type: "string" },
+                    project: { type: "string" },
+                    plan: { type: "string" },
+                    issue: { type: "string" },
+                    task: { type: "string" },
+                  },
+                  required: ["kind"],
+                },
+                project: {
+                  type: "string",
+                  description:
+                    "For draft-plan, the exact owning project of this turn's selected @Database.",
+                },
+                database: {
+                  type: "string",
+                  description:
+                    "For draft-plan, the exact canonical name of this turn's selected @Database.",
+                },
+                issue: {
+                  type: "string",
+                  description:
+                    "For draft-issue-comment, the exact canonical name of this turn's observed Issue.",
+                },
+                comment: {
+                  type: "string",
+                  description:
+                    "For draft-issue-comment, the review comment to place in the Issue editor without posting.",
+                },
+                prompt: { type: "string" },
               },
-              workspace: { type: "string" },
-              project: { type: "string" },
-              plan: { type: "string" },
+              required: ["kind"],
             },
-            required: ["kind"],
           },
         },
-        required: ["text", "success"],
+        required: ["text", "success", "actions"],
       },
     },
   ];

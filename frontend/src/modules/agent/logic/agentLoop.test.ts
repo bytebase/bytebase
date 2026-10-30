@@ -236,6 +236,36 @@ describe("runAgentLoop", () => {
     expect(onText).toHaveBeenCalledWith("Review the queue", handoff);
   });
 
+  test("forwards response actions only for a successful final answer", async () => {
+    vi.mocked(aiServiceClientConnect.chat).mockResolvedValue({
+      content: "",
+      toolCalls: [
+        { id: "done-1", name: "done", arguments: "{}", metadata: "" },
+      ],
+    } as never);
+    const actions = [
+      {
+        kind: "open" as const,
+        target: {
+          kind: "review-project-issues" as const,
+          project: "projects/sample",
+        },
+      },
+      { kind: "continue" as const, prompt: "What should I check next?" },
+    ];
+    const outcome = await runAgentLoop(
+      [{ role: "system", content: "system" }],
+      [],
+      vi.fn(async () => ({
+        kind: "done" as const,
+        text: "Review the queue",
+        success: true,
+        actions,
+      }))
+    );
+    expect(outcome).toMatchObject({ kind: "completed", actions });
+  });
+
   test("drops a proposed handoff when the final answer fails", async () => {
     vi.mocked(aiServiceClientConnect.chat).mockResolvedValue({
       content: "",
@@ -445,7 +475,7 @@ describe("runAgentLoop", () => {
       throw new Error(`Expected error outcome, got ${outcome.kind}`);
     }
     expect(outcome.error.message).toBe(
-      "Agent must finish with done({ text, success }) or ask_user(...), not plain assistant text."
+      "Agent must finish with done({ text, success, actions }) or ask_user(...), not plain assistant text."
     );
     expect(outcome.totalTokensUsed).toBe(0);
     expect(onError).toHaveBeenCalledWith(outcome.error);

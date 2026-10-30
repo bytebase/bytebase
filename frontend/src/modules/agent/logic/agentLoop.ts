@@ -328,10 +328,12 @@ export async function runAgentLoop(
 
           const { text, success } = executionResult;
           const handoff = success ? executionResult.handoff : undefined;
+          const actions = success ? executionResult.actions : undefined;
           const doneResult = JSON.stringify({
             text,
             success,
             ...(handoff ? { handoff } : {}),
+            ...(actions?.length ? { actions } : {}),
             ...(success && apiAttempts.failedApiCallCount > 0
               ? { failedApiCallCount: apiAttempts.failedApiCallCount }
               : {}),
@@ -348,6 +350,7 @@ export async function runAgentLoop(
               text,
               success,
               ...(handoff ? { handoff } : {}),
+              ...(actions?.length ? { actions } : {}),
               totalTokensUsed,
             },
             blockedBy: {
@@ -399,8 +402,8 @@ export async function runAgentLoop(
         conversation.push({
           role: "user",
           content: text
-            ? "Finalize your preceding answer by calling done({ text, success }), or call ask_user if input is required. Do not call any other tools or start another task."
-            : "Your previous response was empty. Answer the user's request by calling done({ text, success }), or call ask_user if input is required. Do not call any other tools or start another task.",
+            ? "Finalize your preceding answer by calling done({ text, success, actions }), using actions: [] when none apply, or call ask_user if input is required. Do not call any other tools or start another task."
+            : "Your previous response was empty. Answer the user's request by calling done({ text, success, actions }), using actions: [] when none apply, or call ask_user if input is required. Do not call any other tools or start another task.",
         });
         awaitingTerminalCall = true;
         continue;
@@ -412,7 +415,7 @@ export async function runAgentLoop(
       }
 
       const error = new Error(
-        "Agent must finish with done({ text, success }) or ask_user(...), not plain assistant text."
+        "Agent must finish with done({ text, success, actions }) or ask_user(...), not plain assistant text."
       );
       callbacks?.onError?.(error);
       return {

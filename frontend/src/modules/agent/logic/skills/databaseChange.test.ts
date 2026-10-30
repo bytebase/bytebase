@@ -2,6 +2,17 @@ import { describe, expect, test } from "vitest";
 import { skill } from "./databaseChange";
 
 describe("database-change skill", () => {
+  test("keeps DDL generation separate from persisting a Plan", () => {
+    expect(skill.content).toContain(
+      "schema change request on a selected @Database"
+    );
+    expect(skill.content).toContain("DatabaseService/GetDatabaseSchema");
+    expect(skill.content).toContain("`draft-plan` action");
+    expect(skill.content).toContain(
+      "Do not call CreateSheet, CreatePlan, or CreateIssue"
+    );
+  });
+
   test("finds project databases through SearchDatabases", () => {
     expect(skill.content).toContain("SearchDatabases");
     expect(skill.content).toContain('project == "projects/{project-id}"');

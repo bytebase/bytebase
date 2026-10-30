@@ -8,6 +8,7 @@ import jaJP from "@/locales/ja-JP.json";
 import viVN from "@/locales/vi-VN.json";
 import zhCN from "@/locales/zh-CN.json";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
+import { AIChatResponse_StopReason } from "@/types/proto-es/v1/ai_service_pb";
 import type { DomRefSuggestion } from "../dom";
 import { createAgentStore, useAgentStore } from "../store/agent";
 
@@ -16,6 +17,7 @@ import { createAgentStore, useAgentStore } from "../store/agent";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
+  aiChat: vi.fn(),
   useTranslation: vi.fn(() => ({
     t: (key: string) => key,
     i18n: { language: "en-US" },
@@ -33,6 +35,7 @@ const mocks = vi.hoisted(() => ({
   getToolDefinitions: vi.fn(() => []),
   getPendingApiCallPreview: vi.fn(),
   resolvePendingApiCall: vi.fn(),
+  resolveDeniedQueryAccessDraft: vi.fn(),
   getRecentActivity: vi.fn(),
   getWorkspaceAttention: vi.fn(),
   getProjectAttention: vi.fn(),
@@ -64,6 +67,11 @@ const mocks = vi.hoisted(() => ({
   workspace: { name: "workspaces/demo", title: "Demo workspace" },
   currentContext: "projects/orders" as string | undefined,
   currentPath: "/demo",
+}));
+
+vi.mock("@/api", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/api")>()),
+  aiServiceClientConnect: { chat: mocks.aiChat },
 }));
 
 let AgentInput: typeof import("./AgentInput").AgentInput;
@@ -221,6 +229,10 @@ vi.mock("../logic/tools/pendingApiCall", () => ({
   resolvePendingApiCall: mocks.resolvePendingApiCall,
 }));
 
+vi.mock("../logic/deniedQueryAccess", () => ({
+  resolveDeniedQueryAccessDraft: mocks.resolveDeniedQueryAccessDraft,
+}));
+
 const renderIntoContainer = (element: ReactElement) => {
   const container = document.createElement("div");
   document.body.appendChild(container);
@@ -264,6 +276,7 @@ beforeEach(async () => {
   });
 
   mocks.useTranslation.mockReset();
+  mocks.aiChat.mockReset();
   mocks.useTranslation.mockReturnValue({
     t: (key: string) => key,
     i18n: { language: "en-US" },
@@ -280,6 +293,7 @@ beforeEach(async () => {
   mocks.buildSystemPrompt.mockReturnValue("system");
   mocks.createToolExecutor.mockReset();
   mocks.executeTool.mockReset();
+  mocks.resolveDeniedQueryAccessDraft.mockReset();
   mocks.executeTool.mockResolvedValue({
     kind: "tool_result",
     result: JSON.stringify({
@@ -365,15 +379,16 @@ beforeEach(async () => {
 
 afterEach(() => {
   vi.useRealTimers();
+  vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
 
 describe("AgentInput", () => {
-  test("focuses the composer after an empty-chat suggestion fills its draft", () => {
+  test("focuses the end of a prefilled composer draft", () => {
     const chat = useAgentStore.getState().createChat({
       context: "projects/orders",
     });
-    const focusActionRef = createRef<(() => void) | null>();
+    const focusActionRef = createRef<((atEnd?: boolean) => void) | null>();
     const view = renderIntoContainer(
       <AgentInput focusActionRef={focusActionRef} />
     );
@@ -381,14 +396,24 @@ describe("AgentInput", () => {
 
     act(() => {
       useAgentStore.getState().setDraft(chat.id, {
-        text: "What needs my attention in this project?",
+        text: "@app (Primary) ",
       });
-      focusActionRef.current?.();
+    });
+    const textarea = view.container.querySelector("textarea") as HTMLTextAreaElement;
+    act(() => {
+      textarea.setSelectionRange(0, 0);
+      focusActionRef.current?.(true);
     });
 
-    const textarea = view.container.querySelector("textarea") as HTMLTextAreaElement;
-    expect(textarea.value).toBe("What needs my attention in this project?");
+    expect(textarea.value).toBe("@app (Primary) ");
     expect(document.activeElement).toBe(textarea);
+    expect(textarea.selectionStart).toBe(textarea.value.length);
+    expect(textarea.selectionEnd).toBe(textarea.value.length);
+    act(() => {
+      textarea.setSelectionRange(3, 3);
+      focusActionRef.current?.();
+    });
+    expect(textarea.selectionStart).toBe(3);
     expect(useAgentStore.getState().getMessages(chat.id)).toEqual([]);
     view.unmount();
   });
@@ -759,6 +784,1033 @@ describe("AgentInput", () => {
     view.unmount();
   });
 
+  test("generates three contextual questions for an accepted action without Continue", async () => {
+    mocks.aiChat.mockResolvedValue({
+      content: JSON.stringify([
+        "What information do I need to connect a new instance?",
+        "Which databases can I transfer?",
+        "How do I verify the transfer?",
+      ]),
+      toolCalls: [],
+      stopReason: AIChatResponse_StopReason.TURN_COMPLETED,
+      usage: { totalTokens: 7 },
+    });
+    mocks.runAgentLoop.mockImplementation(
+      async (_history, _tools, _executor, callbacks) => {
+        callbacks.onAssistantMessage({
+          toolCalls: [{ id: "overview-1", name: "get_project_overview", arguments: "{}" }],
+        });
+        callbacks.onToolResult(
+          "overview-1",
+          JSON.stringify({
+            project: "projects/orders",
+            databases: { status: "available", partial: false, databases: [] },
+            setup: {
+              isDefault: false,
+              instance: "present",
+              transferableDatabase: "present",
+              canConnectInstance: true,
+              canTransferDatabases: true,
+              canCreateDatabase: true,
+            },
+          })
+        );
+        callbacks.onText("Transfer an existing database.", {
+          kind: "transfer-project-databases",
+          project: "projects/orders",
+        });
+        return { kind: "completed", success: true, totalTokensUsed: 0 };
+      }
+    );
+    const page = { path: "/projects/orders", title: "Orders" };
+    const chat = useAgentStore.getState().createChat({ context: "projects/orders", page });
+    useAgentStore.getState().queueUserMessage({
+      chatId: chat.id,
+      text: "How do I connect a database to this project?",
+      page,
+    });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => {
+      await vi.waitFor(() =>
+        expect(
+          useAgentStore
+            .getState()
+            .getMessages(chat.id)
+            .some((message) => message.content === "Transfer an existing database.")
+        ).toBe(true)
+      );
+    });
+    const answer = useAgentStore
+      .getState()
+      .getMessages(chat.id)
+      .find((message) => message.content === "Transfer an existing database.");
+    expect(answer?.metadata?.handoff).toEqual({
+      kind: "transfer-project-databases",
+      project: "projects/orders",
+    });
+    expect(answer?.metadata?.actions).toEqual([
+      { kind: "continue", prompt: "What information do I need to connect a new instance?" },
+      { kind: "continue", prompt: "Which databases can I transfer?" },
+      { kind: "continue", prompt: "How do I verify the transfer?" },
+    ]);
+    expect(mocks.aiChat).toHaveBeenCalledOnce();
+    expect(useAgentStore.getState().getChat(chat.id)?.totalTokensUsed).toBe(7);
+    view.unmount();
+  });
+
+  test("generates follow-up questions for a successful answer without a primary action", async () => {
+    mocks.aiChat.mockResolvedValue({
+      content: JSON.stringify([
+        "Which change should I review first?",
+        "How can I check the rollout status?",
+      ]),
+      toolCalls: [],
+      stopReason: AIChatResponse_StopReason.TURN_COMPLETED,
+      usage: { totalTokens: 5 },
+    });
+    mocks.runAgentLoop.mockImplementation(
+      async (_history, _tools, _executor, callbacks) => {
+        callbacks.onText("Two changes need your review.");
+        return { kind: "completed", success: true, totalTokensUsed: 0 };
+      }
+    );
+    const page = { path: "/projects/orders", title: "Orders" };
+    const chat = useAgentStore.getState().createChat({ context: "projects/orders", page });
+    useAgentStore.getState().queueUserMessage({ chatId: chat.id, text: "What needs my attention?", page });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => {
+      await vi.waitFor(() =>
+        expect(
+          useAgentStore.getState().getMessages(chat.id).find((message) =>
+            message.content === "Two changes need your review."
+          )?.metadata?.actions
+        ).toHaveLength(2)
+      );
+    });
+    expect(mocks.aiChat).toHaveBeenCalledOnce();
+    expect(useAgentStore.getState().getChat(chat.id)?.totalTokensUsed).toBe(5);
+    view.unmount();
+  });
+
+  test("keeps a completed answer when optional follow-up generation is canceled", async () => {
+    let resolveFollowUp!: (value: unknown) => void;
+    mocks.aiChat.mockImplementation(
+      () => new Promise((resolve) => (resolveFollowUp = resolve))
+    );
+    mocks.runAgentLoop.mockImplementation(
+      async (_history, _tools, _executor, callbacks) => {
+        callbacks.onAssistantMessage({
+          toolCalls: [
+            { id: "overview-1", name: "get_project_overview", arguments: "{}" },
+          ],
+        });
+        callbacks.onToolResult(
+          "overview-1",
+          JSON.stringify({
+            project: "projects/orders",
+            personalIssues: {
+              status: "available",
+              issues: [
+                { name: "projects/orders/issues/42", relation: "review" },
+              ],
+            },
+          })
+        );
+        callbacks.onText("Review this issue.", {
+          kind: "review-project-issues",
+          project: "projects/orders",
+        });
+        return { kind: "completed", success: true, totalTokensUsed: 0 };
+      }
+    );
+    const page = { path: "/projects/orders", title: "Orders" };
+    const chat = useAgentStore
+      .getState()
+      .createChat({ context: "projects/orders", page });
+    useAgentStore.getState().queueUserMessage({
+      chatId: chat.id,
+      text: "What should I review?",
+      page,
+    });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => {
+      await vi.waitFor(() => expect(mocks.aiChat).toHaveBeenCalledOnce());
+    });
+
+    const completedAnswer = useAgentStore
+      .getState()
+      .getMessages(chat.id)
+      .find((message) => message.content === "Review this issue.");
+    expect(completedAnswer?.metadata?.handoff).toEqual({
+      kind: "review-project-issues",
+      project: "projects/orders",
+    });
+    expect(useAgentStore.getState().getChat(chat.id)?.status).toBe("idle");
+
+    act(() => useAgentStore.getState().cancel(chat.id, "user"));
+    await act(async () => {
+      resolveFollowUp({
+        content: '["What should I check on the issue?"]',
+        toolCalls: [],
+        stopReason: AIChatResponse_StopReason.TURN_COMPLETED,
+      });
+    });
+
+    expect(
+      useAgentStore
+        .getState()
+        .getMessages(chat.id)
+        .find((message) => message.id === completedAnswer?.id)?.metadata?.actions
+    ).toBeUndefined();
+    expect(useAgentStore.getState().getChat(chat.id)?.interrupted).toBe(false);
+    view.unmount();
+  });
+
+  test("counts a late suggestion call without attaching it to an older turn", async () => {
+    let resolveFollowUp!: (value: unknown) => void;
+    mocks.aiChat.mockImplementation(
+      () => new Promise((resolve) => (resolveFollowUp = resolve))
+    );
+    mocks.runAgentLoop
+      .mockImplementationOnce(async (_history, _tools, _executor, callbacks) => {
+        callbacks.onAssistantMessage({
+          toolCalls: [
+            { id: "overview-1", name: "get_project_overview", arguments: "{}" },
+          ],
+        });
+        callbacks.onToolResult(
+          "overview-1",
+          JSON.stringify({
+            project: "projects/orders",
+            personalIssues: {
+              status: "available",
+              issues: [
+                { name: "projects/orders/issues/42", relation: "review" },
+              ],
+            },
+          })
+        );
+        callbacks.onText("Review this issue.", {
+          kind: "review-project-issues",
+          project: "projects/orders",
+        });
+        return { kind: "completed", success: true, totalTokensUsed: 0 };
+      })
+      .mockImplementationOnce(async (_history, _tools, _executor, callbacks) => {
+        callbacks.onText("Second answer.");
+        return { kind: "completed", success: true, totalTokensUsed: 0 };
+      });
+    const page = { path: "/projects/orders", title: "Orders" };
+    const chat = useAgentStore
+      .getState()
+      .createChat({ context: "projects/orders", page });
+    useAgentStore.getState().queueUserMessage({
+      chatId: chat.id,
+      text: "What should I review?",
+      page,
+    });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => {
+      await vi.waitFor(() => expect(mocks.aiChat).toHaveBeenCalledOnce());
+    });
+
+    act(() => {
+      useAgentStore.getState().queueUserMessage({
+        chatId: chat.id,
+        text: "What changed?",
+        page,
+      });
+    });
+    await act(async () => {
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledTimes(2));
+    });
+    await act(async () => {
+      resolveFollowUp({
+        content: '["What else should I review?"]',
+        toolCalls: [],
+        stopReason: AIChatResponse_StopReason.TURN_COMPLETED,
+        usage: { totalTokens: 7 },
+      });
+    });
+
+    expect(useAgentStore.getState().getChat(chat.id)?.totalTokensUsed).toBe(7);
+    expect(
+      useAgentStore
+        .getState()
+        .getMessages(chat.id)
+        .find((message) => message.content === "Review this issue.")?.metadata
+        ?.actions
+    ).toBeUndefined();
+    expect(
+      useAgentStore
+        .getState()
+        .getMessages(chat.id)
+        .some((message) => message.content === "Second answer.")
+    ).toBe(true);
+    view.unmount();
+  });
+
+  test("tops up an existing question when Open matches current-turn evidence", async () => {
+    mocks.aiChat.mockResolvedValue({
+      content: JSON.stringify([
+        "What should I configure first?",
+        "How can I test the connection?",
+        "How do I assign a database afterward?",
+      ]),
+      toolCalls: [],
+      stopReason: AIChatResponse_StopReason.TURN_COMPLETED,
+    });
+    mocks.executeTool.mockResolvedValue({
+      kind: "tool_result",
+      result: JSON.stringify({ project: "projects/orders" }),
+    });
+    mocks.runAgentLoop.mockImplementation(
+      async (_history, _tools, _executor, callbacks) => {
+        callbacks.onAssistantMessage({
+          toolCalls: [
+            { id: "overview-1", name: "get_project_overview", arguments: "{}" },
+          ],
+        });
+        callbacks.onToolResult(
+          "overview-1",
+          JSON.stringify({
+            project: "projects/orders",
+            databases: { status: "available", partial: false, databases: [] },
+            setup: {
+              isDefault: false,
+              instance: "empty",
+              transferableDatabase: "empty",
+              canConnectInstance: true,
+              canTransferDatabases: true,
+              canCreateDatabase: true,
+            },
+          })
+        );
+        callbacks.onText("Set up an instance.");
+        return {
+          kind: "completed",
+          text: "Set up an instance.",
+          success: true,
+          actions: [
+            {
+              kind: "open",
+              target: {
+                kind: "connect-project-instance",
+                project: "projects/orders",
+              },
+            },
+            { kind: "continue", prompt: "What should I configure first?" },
+          ],
+          totalTokensUsed: 0,
+        };
+      }
+    );
+    const page = { path: "/projects/orders", title: "Orders" };
+    const chat = useAgentStore.getState().createChat({
+      context: "projects/orders",
+      page,
+    });
+    useAgentStore.getState().queueUserMessage({
+      chatId: chat.id,
+      text: "@Orders what should I set up next?",
+      page,
+      resourceReference: {
+        kind: "project",
+        name: "projects/orders",
+        project: "projects/orders",
+        label: "Orders",
+      },
+    });
+
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => {
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+    });
+    expect(
+      useAgentStore
+        .getState()
+        .getMessages(chat.id)
+        .find((message) => message.content === "Set up an instance.")?.metadata
+        ?.actions
+    ).toEqual([
+      {
+        kind: "open",
+        target: {
+          kind: "connect-project-instance",
+          project: "projects/orders",
+        },
+      },
+      { kind: "continue", prompt: "What should I configure first?" },
+      { kind: "continue", prompt: "How can I test the connection?" },
+      { kind: "continue", prompt: "How do I assign a database afterward?" },
+    ]);
+    expect(mocks.aiChat).toHaveBeenCalledOnce();
+    expect(
+      useAgentStore
+        .getState()
+        .getMessages(chat.id)
+        .find((message) => message.content === "Set up an instance.")?.metadata
+        ?.resourceReferences
+    ).toEqual([
+      {
+        kind: "project",
+        name: "projects/orders",
+        project: "projects/orders",
+        label: "Orders",
+      },
+    ]);
+    view.unmount();
+  });
+
+  test("attaches a Plan draft for verified DDL even when the Agent omits its action", async () => {
+    const database = "instances/prod/databases/orders";
+    const project = "projects/orders";
+    const answer = "Proposed change:\n\n```sql\nCREATE TABLE audit_log (id INT PRIMARY KEY);\n```";
+    mocks.executeTool.mockImplementation(async (name) => ({
+      kind: "tool_result",
+      result: JSON.stringify(
+        name === "call_api"
+          ? { status: 200, response: { schema: "CREATE TABLE orders (id INT);" } }
+          : {
+              project,
+              database: { status: "available", name: database, state: "ACTIVE" },
+              evidence: { project, references: [{ kind: "database", name: database }] },
+            }
+      ),
+    }));
+    mocks.runAgentLoop.mockImplementation(async (_history, _tools, executor, callbacks) => {
+      await executor(
+        "call_api",
+        {
+          operationId: "DatabaseService/GetDatabaseSchema",
+          body: { name: `${database}/schema` },
+        },
+        "schema-1"
+      );
+      callbacks.onText(answer);
+      return {
+        kind: "completed",
+        text: answer,
+        success: true,
+        actions: [],
+        totalTokensUsed: 0,
+      };
+    });
+    const page = { path: "/projects/orders", title: "Orders" };
+    const chat = useAgentStore.getState().createChat({ context: project, page });
+    useAgentStore.getState().queueUserMessage({
+      chatId: chat.id,
+      text: "@orders Create an audit table",
+      page,
+      resourceReference: {
+        kind: "database",
+        name: database,
+        project,
+        label: "orders",
+      },
+    });
+
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => {
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+    });
+    expect(mocks.executeTool).toHaveBeenCalledWith(
+      "get_database_overview",
+      { databaseName: database },
+      expect.any(String)
+    );
+    expect(mocks.executeTool).toHaveBeenCalledWith(
+      "call_api",
+      {
+        operationId: "DatabaseService/GetDatabaseSchema",
+        body: { name: `${database}/schema` },
+      },
+      "schema-1"
+    );
+    await act(async () => {
+      await vi.waitFor(() => {
+        expect(
+          useAgentStore.getState().getMessages(chat.id).find((message) => message.content === answer)?.metadata?.actions
+        ).toEqual([{ kind: "draft-plan", project, database }]);
+      });
+    });
+    view.unmount();
+  });
+
+  test("keeps the Plan draft action after a schema read and clarification reply", async () => {
+    const database = "instances/prod/databases/orders";
+    const project = "projects/orders";
+    const answer = "Proposed change:\n\n```sql\nCREATE TABLE audit_log (id INT PRIMARY KEY);\n```";
+    mocks.executeTool.mockImplementation(async (name) => ({
+      kind: "tool_result",
+      result: JSON.stringify(
+        name === "call_api"
+          ? { status: 200, response: { schema: "CREATE TABLE orders (id INT);" } }
+          : {
+              project,
+              database: { status: "available", name: database, state: "ACTIVE" },
+            }
+      ),
+    }));
+    mocks.runAgentLoop
+      .mockImplementationOnce(async (_history, _tools, executor, callbacks) => {
+        const args = {
+          operationId: "DatabaseService/GetDatabaseSchema",
+          body: { name: `${database}/schema` },
+        };
+        callbacks.onAssistantMessage({
+          role: "assistant",
+          toolCalls: [
+            { id: "schema-1", name: "call_api", arguments: JSON.stringify(args) },
+          ],
+        });
+        const result = await executor("call_api", args, "schema-1");
+        callbacks.onToolResult("schema-1", result.result);
+        return {
+          kind: "awaiting_user",
+          ask: { toolCallId: "ask-1", prompt: "What should the table be named?", kind: "input" },
+          totalTokensUsed: 0,
+        };
+      })
+      .mockImplementationOnce(async (_history, _tools, _executor, callbacks) => {
+        callbacks.onText(answer);
+        return {
+          kind: "completed",
+          text: answer,
+          success: true,
+          actions: [{ kind: "draft-plan", project, database }],
+          totalTokensUsed: 0,
+        };
+      });
+    const page = { path: "/projects/orders", title: "Orders" };
+    const chat = useAgentStore.getState().createChat({ context: project, page });
+    useAgentStore.getState().queueUserMessage({
+      chatId: chat.id,
+      text: "@orders Create an audit table",
+      page,
+      resourceReference: { kind: "database", name: database, project, label: "orders" },
+    });
+
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => {
+      await vi.waitFor(() =>
+        expect(useAgentStore.getState().getChat(chat.id)?.status).toBe("awaiting_user")
+      );
+    });
+    const textarea = view.container.querySelector("textarea") as HTMLTextAreaElement;
+    await act(async () => {
+      setTextareaValue(textarea, "audit_log");
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+      (view.container.querySelector("[data-agent-send]") as HTMLButtonElement).click();
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledTimes(2));
+    });
+    expect(
+      useAgentStore.getState().getMessages(chat.id).find((message) => message.content === answer)
+        ?.metadata?.actions
+    ).toEqual([{ kind: "draft-plan", project, database }]);
+    view.unmount();
+  });
+
+  test("does not restore Plan draft evidence after an intervening write", async () => {
+    const database = "instances/prod/databases/orders";
+    const project = "projects/orders";
+    const answer = "```sql\nALTER TABLE orders ADD COLUMN note TEXT;\n```";
+    mocks.executeTool.mockImplementation(async (name) => ({
+      kind: "tool_result",
+      result: JSON.stringify(
+        name === "call_api"
+          ? { status: 200, response: {} }
+          : {
+              project,
+              database: { status: "available", name: database, state: "ACTIVE" },
+            }
+      ),
+    }));
+    mocks.runAgentLoop
+      .mockImplementationOnce(async (_history, _tools, executor, callbacks) => {
+        for (const [id, args] of [
+          ["schema-1", {
+            operationId: "DatabaseService/GetDatabaseSchema",
+            body: { name: `${database}/schema` },
+          }],
+          ["write-1", { operationId: "PlanService/CreatePlan", body: {} }],
+        ] as const) {
+          callbacks.onAssistantMessage({
+            role: "assistant",
+            toolCalls: [{ id, name: "call_api", arguments: JSON.stringify(args) }],
+          });
+          const result = await executor("call_api", args, id);
+          callbacks.onToolResult(id, result.result);
+        }
+        return {
+          kind: "awaiting_user",
+          ask: { toolCallId: "ask-1", prompt: "Continue?", kind: "input" },
+          totalTokensUsed: 0,
+        };
+      })
+      .mockImplementationOnce(async (_history, _tools, _executor, callbacks) => {
+        callbacks.onText(answer);
+        return {
+          kind: "completed",
+          text: answer,
+          success: true,
+          actions: [{ kind: "draft-plan", project, database }],
+          totalTokensUsed: 0,
+        };
+      });
+    const page = { path: "/projects/orders", title: "Orders" };
+    const chat = useAgentStore.getState().createChat({ context: project, page });
+    useAgentStore.getState().queueUserMessage({
+      chatId: chat.id,
+      text: "@orders Add a note column",
+      page,
+      resourceReference: { kind: "database", name: database, project, label: "orders" },
+    });
+
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => {
+      await vi.waitFor(() =>
+        expect(useAgentStore.getState().getChat(chat.id)?.status).toBe("awaiting_user")
+      );
+    });
+    const textarea = view.container.querySelector("textarea") as HTMLTextAreaElement;
+    await act(async () => {
+      setTextareaValue(textarea, "Yes");
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+      (view.container.querySelector("[data-agent-send]") as HTMLButtonElement).click();
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledTimes(2));
+    });
+    expect(
+      useAgentStore.getState().getMessages(chat.id).find((message) => message.content === answer)
+        ?.metadata?.actions
+    ).toBeUndefined();
+    view.unmount();
+  });
+
+  test("does not offer a Plan draft when schema retrieval fails", async () => {
+    mocks.aiChat.mockResolvedValue({
+      content: "[]",
+      toolCalls: [],
+      stopReason: AIChatResponse_StopReason.TURN_COMPLETED,
+    });
+    const database = "instances/prod/databases/orders";
+    const project = "projects/orders";
+    const answer = "```sql\nALTER TABLE orders ADD COLUMN note TEXT;\n```";
+    mocks.executeTool.mockImplementation(async (name) => ({
+      kind: "tool_result",
+      result: JSON.stringify(
+        name === "call_api"
+          ? { status: 403, error: "permission denied" }
+          : {
+              project,
+              database: { status: "available", name: database, state: "ACTIVE" },
+            }
+      ),
+    }));
+    mocks.runAgentLoop.mockImplementation(async (_history, _tools, executor, callbacks) => {
+      await executor(
+        "call_api",
+        {
+          operationId: "DatabaseService/GetDatabaseSchema",
+          body: { name: `${database}/schema` },
+        },
+        "schema-1"
+      );
+      callbacks.onText(answer);
+      return {
+        kind: "completed",
+        text: answer,
+        success: true,
+        actions: [{ kind: "draft-plan", project, database }],
+        totalTokensUsed: 0,
+      };
+    });
+    const page = { path: "/projects/orders", title: "Orders" };
+    const chat = useAgentStore.getState().createChat({ context: project, page });
+    useAgentStore.getState().queueUserMessage({
+      chatId: chat.id,
+      text: "@orders Add note",
+      page,
+      resourceReference: { kind: "database", name: database, project, label: "orders" },
+    });
+
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => {
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+    });
+    expect(
+      useAgentStore.getState().getMessages(chat.id).find((message) => message.content === answer)?.metadata?.actions
+    ).toBeUndefined();
+    expect(mocks.aiChat).toHaveBeenCalledOnce();
+    view.unmount();
+  });
+
+  test("drops the Plan draft action after a write invalidates database evidence", async () => {
+    const database = "instances/prod/databases/orders";
+    const project = "projects/orders";
+    const answer = "```sql\nALTER TABLE orders ADD COLUMN audit_id INT;\n```";
+    mocks.executeTool.mockResolvedValue({
+      kind: "tool_result",
+      result: JSON.stringify({
+        project,
+        database: { status: "available", name: database, state: "ACTIVE" },
+      }),
+    });
+    mocks.runAgentLoop.mockImplementation(async (_history, _tools, executor, callbacks) => {
+      await executor("call_api", { operationId: "PlanService/CreatePlan" }, "write-1");
+      callbacks.onText(answer);
+      return {
+        kind: "completed",
+        text: answer,
+        success: true,
+        actions: [{ kind: "draft-plan", project, database }],
+        totalTokensUsed: 0,
+      };
+    });
+    const page = { path: "/projects/orders", title: "Orders" };
+    const chat = useAgentStore.getState().createChat({ context: project, page });
+    useAgentStore.getState().queueUserMessage({
+      chatId: chat.id,
+      text: "@orders Add audit_id",
+      page,
+      resourceReference: {
+        kind: "database",
+        name: database,
+        project,
+        label: "orders",
+      },
+    });
+
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => {
+      await vi.waitFor(() => {
+        expect(
+          useAgentStore.getState().getMessages(chat.id).find((message) => message.content === answer)
+        ).toBeDefined();
+      });
+    });
+    expect(
+      useAgentStore.getState().getMessages(chat.id).find((message) => message.content === answer)?.metadata?.actions
+    ).toBeUndefined();
+    view.unmount();
+  });
+
+  test("does not attach response actions to a failed answer", async () => {
+    mocks.runAgentLoop.mockImplementation(
+      async (_history, _tools, _executor, callbacks) => {
+        callbacks.onText("The request failed.");
+        return {
+          kind: "completed",
+          text: "The request failed.",
+          success: false,
+          actions: [
+            { kind: "continue", prompt: "Try the request again?" },
+          ],
+          totalTokensUsed: 0,
+        };
+      }
+    );
+    const page = { path: "/projects/orders", title: "Orders" };
+    const chat = useAgentStore.getState().createChat({
+      context: "projects/orders",
+      page,
+    });
+    useAgentStore.getState().queueUserMessage({
+      chatId: chat.id,
+      text: "Make a change",
+      page,
+    });
+
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => {
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+    });
+    expect(
+      useAgentStore
+        .getState()
+        .getMessages(chat.id)
+        .find((message) => message.content === "The request failed.")?.metadata
+        ?.actions
+    ).toBeUndefined();
+    view.unmount();
+  });
+
+  test("offers an Access Grant draft only after one actual denied Query", async () => {
+    const args = {
+      operationId: "SQLService/Query",
+      body: {
+        name: "instances/prod/databases/app",
+        statement: "SELECT * FROM orders",
+      },
+    };
+    const result = JSON.stringify({
+      status: 200,
+      response: {
+        results: [
+          {
+            error: "Permission denied",
+            permissionDenied: {
+              requiredPermissions: ["bb.sql.select"],
+              resources: ["instances/prod/databases/app"],
+            },
+          },
+        ],
+      },
+    });
+    const draft = {
+      project: "projects/orders",
+      sourceDatabase: "instances/prod/databases/app",
+      targets: ["instances/prod/databases/app"],
+      statement: "SELECT * FROM orders",
+    };
+    mocks.executeTool.mockResolvedValue({ kind: "tool_result", result });
+    mocks.resolveDeniedQueryAccessDraft.mockResolvedValue(draft);
+    mocks.runAgentLoop.mockImplementation(
+      async (_history, _tools, executeTool, callbacks) => {
+        callbacks.onAssistantMessage({
+          role: "assistant",
+          toolCalls: [
+            {
+              id: "query-1",
+              name: "call_api",
+              arguments: JSON.stringify(args),
+            },
+          ],
+        });
+        const execution = await executeTool("call_api", args, "query-1");
+        if (execution.kind === "tool_result") {
+          callbacks.onToolResult("query-1", execution.result);
+        }
+        callbacks.onText("The API denied the query.");
+        return {
+          kind: "completed",
+          success: false,
+          actions: [],
+          totalTokensUsed: 0,
+        };
+      }
+    );
+    const page = { path: "/projects/orders", title: "Orders" };
+    const chat = useAgentStore.getState().createChat({
+      context: "projects/orders",
+      page,
+    });
+    useAgentStore.getState().queueUserMessage({
+      chatId: chat.id,
+      text: "Query the orders table",
+      page,
+    });
+
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => {
+      await vi.waitFor(() =>
+        expect(
+          useAgentStore
+            .getState()
+            .getMessages(chat.id)
+            .find((message) => message.content === "The API denied the query.")
+        ).toBeDefined()
+      );
+    });
+    expect(mocks.resolveDeniedQueryAccessDraft).toHaveBeenCalledWith(
+      args,
+      result
+    );
+    expect(
+      useAgentStore
+        .getState()
+        .getMessages(chat.id)
+        .find((message) => message.content === "The API denied the query.")
+        ?.metadata?.accessRequestDraft
+    ).toEqual(draft);
+    view.unmount();
+  });
+
+  test("offers an Access Grant draft when an approved Query is denied", async () => {
+    const store = useAgentStore.getState();
+    const chatId = store.currentChatId!;
+    const args = {
+      operationId: "SQLService/Query",
+      body: {
+        name: "instances/prod/databases/app",
+        statement: "SELECT * FROM orders",
+      },
+    };
+    const result = JSON.stringify({
+      status: 200,
+      response: {
+        results: [
+          {
+            error: "Permission denied",
+            permissionDenied: {
+              requiredPermissions: ["bb.sql.select"],
+              resources: [
+                "instances/prod/databases/app/schemas/public/tables/orders",
+              ],
+            },
+          },
+        ],
+      },
+    });
+    const draft = {
+      project: "projects/orders",
+      sourceDatabase: "instances/prod/databases/app",
+      targets: ["instances/prod/databases/app"],
+      statement: "SELECT * FROM orders",
+    };
+    store.addMessage({ chatId, role: "user", content: "Query orders" });
+    store.addMessage({
+      chatId,
+      role: "assistant",
+      toolCalls: [
+        { id: "query-1", name: "call_api", arguments: JSON.stringify(args) },
+      ],
+    });
+    useAgentStore.setState({
+      chats: store.chats.map((chat) =>
+        chat.id === chatId ? { ...chat, status: "awaiting_user" } : chat
+      ),
+      pendingAskByChatId: {
+        [chatId]: {
+          toolCallId: "query-1",
+          prompt: "SQLService/Query",
+          kind: "confirm",
+          apiPermission: {
+            actionId: "action-1",
+            operationId: "SQLService/Query",
+          },
+        },
+      },
+    });
+    mocks.getPendingApiCallPreview.mockReturnValue({
+      operationId: "SQLService/Query",
+      body: JSON.stringify(args.body),
+      expiresAt: Date.now() + 60_000,
+    });
+    mocks.resolvePendingApiCall.mockResolvedValue(result);
+    mocks.resolveDeniedQueryAccessDraft.mockResolvedValue(draft);
+    mocks.runAgentLoop.mockImplementation(async (_history, _tools, _executeTool, callbacks) => {
+      callbacks.onText("The API denied the query.");
+      return {
+        kind: "completed",
+        success: false,
+        actions: [],
+        totalTokensUsed: 0,
+      };
+    });
+
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => {
+      const allow = [...view.container.querySelectorAll("button")].find(
+        (button) => button.textContent === "agent.api-permission-allow"
+      );
+      allow?.click();
+      await vi.waitFor(() =>
+        expect(
+          useAgentStore
+            .getState()
+            .getMessages(chatId)
+            .find((message) => message.content === "The API denied the query.")
+        ).toBeDefined()
+      );
+    });
+
+    expect(
+      useAgentStore
+        .getState()
+        .getMessages(chatId)
+        .find((message) => message.content === "The API denied the query.")
+        ?.metadata?.accessRequestDraft
+    ).toEqual(draft);
+    expect(mocks.resolveDeniedQueryAccessDraft).toHaveBeenCalledWith(
+      args,
+      result
+    );
+    view.unmount();
+  });
+
+  test("does not offer access when another Query was attempted in the turn", async () => {
+    const args = {
+      operationId: "SQLService/Query",
+      body: {
+        name: "instances/prod/databases/app",
+        statement: "SELECT * FROM orders",
+      },
+    };
+    mocks.executeTool.mockResolvedValue({
+      kind: "tool_result",
+      result: '{"status":200,"response":{"results":[]}}',
+    });
+    mocks.runAgentLoop.mockImplementation(
+      async (_history, _tools, executeTool, callbacks) => {
+        for (const id of ["query-1", "query-2"]) {
+          callbacks.onAssistantMessage({
+            role: "assistant",
+            toolCalls: [
+              { id, name: "call_api", arguments: JSON.stringify(args) },
+            ],
+          });
+          const execution = await executeTool("call_api", args, id);
+          if (execution.kind === "tool_result") {
+            callbacks.onToolResult(id, execution.result);
+          }
+        }
+        callbacks.onText("The query failed.");
+        return {
+          kind: "completed",
+          success: false,
+          actions: [],
+          totalTokensUsed: 0,
+        };
+      }
+    );
+    const page = { path: "/projects/orders", title: "Orders" };
+    const chat = useAgentStore.getState().createChat({
+      context: "projects/orders",
+      page,
+    });
+    useAgentStore.getState().queueUserMessage({
+      chatId: chat.id,
+      text: "Query orders",
+      page,
+    });
+
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => {
+      await vi.waitFor(() =>
+        expect(
+          useAgentStore
+            .getState()
+            .getMessages(chat.id)
+            .find((message) => message.content === "The query failed.")
+        ).toBeDefined()
+      );
+    });
+    expect(mocks.resolveDeniedQueryAccessDraft).not.toHaveBeenCalled();
+    expect(
+      useAgentStore
+        .getState()
+        .getMessages(chat.id)
+        .find((message) => message.content === "The query failed.")
+        ?.metadata?.accessRequestDraft
+    ).toBeUndefined();
+    view.unmount();
+  });
+
   test("does not attach a setup handoff from before a mutating API call", async () => {
     mocks.executeTool.mockResolvedValue({
       kind: "tool_result",
@@ -795,7 +1847,20 @@ describe("AgentInput", () => {
           kind: "connect-project-instance",
           project: "projects/orders",
         });
-        return { kind: "completed", success: true, totalTokensUsed: 0 };
+        return {
+          kind: "completed",
+          success: true,
+          actions: [
+            {
+              kind: "open",
+              target: {
+                kind: "connect-project-instance",
+                project: "projects/orders",
+              },
+            },
+          ],
+          totalTokensUsed: 0,
+        };
       }
     );
     const page = { path: "/projects/orders", title: "Orders" };
@@ -811,13 +1876,13 @@ describe("AgentInput", () => {
     await act(async () => {
       await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
     });
-    expect(
-      useAgentStore
-        .getState()
-        .getMessages(chat.id)
-        .find((message) => message.content === "The database is ready.")
-        ?.metadata?.handoff
-    ).toBeUndefined();
+    const metadata = useAgentStore
+      .getState()
+      .getMessages(chat.id)
+      .find((message) => message.content === "The database is ready.")
+      ?.metadata;
+    expect(metadata?.handoff).toBeUndefined();
+    expect(metadata?.actions).toBeUndefined();
     view.unmount();
   });
 
@@ -1199,6 +2264,126 @@ describe("AgentInput", () => {
         },
       ],
     });
+    view.unmount();
+  });
+
+  test("accepts an exact failed Task link from the selected Issue overview", async () => {
+    const issueName = "projects/orders/issues/42";
+    const task =
+      "projects/orders/plans/plan-1/rollout/stages/prod/tasks/task-1";
+    mocks.executeTool.mockResolvedValueOnce({
+      kind: "tool_result",
+      result: JSON.stringify({
+        project: "projects/orders",
+        issue: { status: "available", name: issueName },
+        plan: {
+          status: "available",
+          name: "projects/orders/plans/plan-1",
+          reviewOnPlan: true,
+        },
+        rollout: {
+          status: "available",
+          name: "projects/orders/plans/plan-1/rollout",
+          failedTasks: [task],
+          failedTasksPartial: false,
+        },
+      }),
+    });
+    mocks.runAgentLoop.mockImplementation(async (_history, _tools, _executor, callbacks) => {
+      callbacks.onText("The production task failed.");
+      return {
+        kind: "completed",
+        text: "The production task failed.",
+        success: true,
+        actions: [
+          { kind: "open", target: { kind: "view-failed-task", task } },
+          { kind: "continue", prompt: "What caused the failure?" },
+        ],
+        totalTokensUsed: 0,
+      };
+    });
+    const page = { path: "/projects/orders/issues/42", title: "Issue" };
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/orders", page });
+    store.queueUserMessage({
+      chatId: chat.id,
+      text: "@Change why did this rollout fail?",
+      page,
+      resourceReference: {
+        kind: "issue",
+        name: issueName,
+        project: "projects/orders",
+        label: "Change",
+      },
+    });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => {
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+    });
+    expect(
+      store.getMessages(chat.id).find((message) => message.content === "The production task failed.")
+        ?.metadata?.actions
+    ).toContainEqual({ kind: "open", target: { kind: "view-failed-task", task } });
+    view.unmount();
+  });
+
+  test("attaches an unsent review comment only for the selected Issue", async () => {
+    const issueName = "projects/orders/issues/42";
+    const action = {
+      kind: "draft-issue-comment",
+      issue: issueName,
+      comment: "Please verify this column is masked before rollout.",
+    };
+    mocks.executeTool.mockResolvedValueOnce({
+      kind: "tool_result",
+      result: JSON.stringify({
+        project: "projects/orders",
+        issue: { status: "available", name: issueName },
+      }),
+    });
+    mocks.runAgentLoop.mockImplementation(
+      async (_history, _tools, _executor, callbacks) => {
+        callbacks.onText("I found a masking concern.");
+        return {
+          kind: "completed",
+          success: true,
+          actions: [action],
+          totalTokensUsed: 0,
+        };
+      }
+    );
+    const page = { path: "/projects/orders/issues/42", title: "Issue" };
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/orders", page });
+    store.queueUserMessage({
+      chatId: chat.id,
+      text: "@Change any security concern?",
+      page,
+      resourceReference: {
+        kind: "issue",
+        name: issueName,
+        project: "projects/orders",
+        label: "Change",
+      },
+    });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => {
+      await vi.waitFor(() =>
+        expect(
+          store
+            .getMessages(chat.id)
+            .find((message) => message.content === "I found a masking concern.")
+        ).toBeDefined()
+      );
+    });
+    expect(
+      store
+        .getMessages(chat.id)
+        .find((message) => message.content === "I found a masking concern.")
+        ?.metadata?.actions
+    ).toContainEqual(action);
     view.unmount();
   });
 

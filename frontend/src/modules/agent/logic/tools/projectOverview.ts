@@ -310,14 +310,16 @@ export async function collectProjectOverview(
       : unavailableFacet<"issues", DatabaseChange[]>();
   const setupState =
     databases.status === "available" &&
-    !databases.partial &&
-    databases.databases.length === 0 &&
     useAppStore.getState().projectsByName[projectName]?.state !== State.DELETED
       ? await collectProjectSetup(projectName)
       : undefined;
-  const recommendedStep = setupState
-    ? getProjectSetupSteps(setupState)[0]
-    : undefined;
+  const recommendedStep =
+    setupState &&
+    databases.status === "available" &&
+    !databases.partial &&
+    databases.databases.length === 0
+      ? getProjectSetupSteps(setupState)[0]
+      : undefined;
 
   return {
     project: projectName,

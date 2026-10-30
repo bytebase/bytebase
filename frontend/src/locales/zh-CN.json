@@ -22,6 +22,11 @@
     }
   },
   "agent": {
+    "access-grant-draft": {
+      "open": "Open access request draft",
+      "storage-failed": "Couldn't prepare the access request. Try again.",
+      "unavailable": "Couldn't open the access request. The database or access settings may have changed."
+    },
     "ai-not-configured": {
       "configure": "配置",
       "contact-admin": "请联系工作区管理员配置 AI。",
@@ -81,17 +86,31 @@
       "issue": "issue",
       "references": "依据"
     },
+    "follow-up": {
+      "ask-next": "接着问"
+    },
     "handoff": {
+      "open-issue": "打开工单",
       "open-project-instances": "打开项目实例",
       "review-database-changes": "查看数据库变更",
+      "review-issue-plan": "审核计划",
       "review-project-issues": "查看项目工单",
       "review-workspace-issues": "查看我的工单",
+      "view-failed-task": "查看失败任务",
       "view-failed-tasks": "查看失败的任务"
     },
     "input-keyboard-hint": "按 Enter 发送 · 按 Shift+Enter 换行",
     "input-placeholder": "向 AI 提问，或输入 @ 选择资源",
     "interrupted": "已中断",
     "interrupted-retry-hint": "对话已中断。您可以重试或发送新消息。",
+    "issue-comment-draft": {
+      "existing": "This issue already has an unsent comment. Review it before opening another draft.",
+      "open": "Draft review comment",
+      "permission-denied": "You don't have permission to comment on this issue.",
+      "preview": "Preview comment",
+      "storage-failed": "Couldn't prepare the comment draft. Try again.",
+      "unavailable": "Couldn't open the comment draft. The issue may have changed."
+    },
     "issue-reference-unavailable": "此工单已不可用，或你没有访问权限。",
     "landing-starters": {
       "menu": "建议",
@@ -124,6 +143,11 @@
       "issue-approval-role-grant": "这是最后一步审批。批准后可能立即授予所请求的项目角色，无需部署。",
       "issue-approval-rollout": "这是最后一步审批。通过所需检查和审核后，此次审批可能创建部署，但不保证任务会执行。",
       "issue-rejection": "拒绝此工单会停止当前审批流程。处理拒绝原因后才能继续审批。"
+    },
+    "plan-draft": {
+      "default-title": "建议的数据库变更",
+      "open": "打开计划草稿",
+      "unavailable": "无法打开计划草稿。数据库或 SQL 可能已更改。请让 Agent 重新生成。"
     },
     "project-attention": {
       "checking": "正在检查需要你关注的事项...",
@@ -3500,6 +3524,7 @@
   },
   "sql-editor": {
     "access-grants": "访问授权",
+    "access-request-draft-unavailable": "The access request draft is no longer available. Please ask the Agent to prepare it again.",
     "access-search": {
       "scope": {
         "database": {

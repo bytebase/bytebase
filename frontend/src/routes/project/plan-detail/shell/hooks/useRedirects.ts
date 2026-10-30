@@ -3,18 +3,9 @@ import { router } from "@/app/router";
 import { type Issue } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import { getIssueRoute } from "@/utils";
+import { shouldRedirectToIssueDetail } from "@/utils/v1/issue/plan";
 
-export const shouldRedirectToIssueDetail = (plan: Plan, issue?: Issue) => {
-  if (!issue?.name || issue.draft) {
-    return false;
-  }
-  if (plan.specs.length === 0) {
-    return false;
-  }
-  return plan.specs.every((spec) => {
-    return spec.config?.case === "createDatabaseConfig";
-  });
-};
+export { shouldRedirectToIssueDetail } from "@/utils/v1/issue/plan";
 
 export function useRedirects(params: {
   ready: boolean;
