@@ -538,6 +538,12 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 	return updatedInstance, instanceMeta.Databases, newDatabases, nil
 }
 
+// instanceSchemaSyncer is implemented by a driver whose engine has a schema
+// that no database owns (Oracle's PUBLIC).
+type instanceSchemaSyncer interface {
+	SyncInstanceSchema(ctx context.Context) (*metadatapb.SchemaMetadata, error)
+}
+
 // doSyncDatabaseSchema is the core implementation that syncs the schema for a database and optionally creates a sync history record.
 func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.DatabaseMessage, createSyncHistory bool) (syncHistoryResourceID string, retErr error) {
 	if database == nil {
@@ -573,6 +579,15 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 	syncedDatabaseMetadata, err := driver.SyncDBSchema(deadlineCtx)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to sync database schema for database %q", database.DatabaseName)
+	}
+	// A change to any database of the instance can create or drop what the
+	// instance schema holds, so every database sync refreshes it.
+	var instanceSchema *metadatapb.SchemaMetadata
+	if syncer, ok := driver.(instanceSchemaSyncer); ok {
+		instanceSchema, err = syncer.SyncInstanceSchema(deadlineCtx)
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to sync the instance schema of instance %q", database.InstanceID)
+		}
 	}
 	var schemaBuf bytes.Buffer
 	if err := driver.Dump(deadlineCtx, &schemaBuf, syncedDatabaseMetadata); err != nil {
@@ -630,6 +645,11 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 			}
 		}
 		return "", errors.Wrapf(err, "failed to upsert database schema for database %q", database.DatabaseName)
+	}
+	if instanceSchema != nil {
+		if err := s.store.UpsertInstanceSchema(ctx, database.InstanceID, instanceSchema); err != nil {
+			return "", err
+		}
 	}
 
 	// Create sync history if requested

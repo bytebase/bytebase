@@ -591,6 +591,14 @@ CREATE TABLE db_schema (
     CONSTRAINT db_schema_instance_db_name_fkey FOREIGN KEY(instance, db_name) REFERENCES db(instance, name)
 );
 
+-- instance_schema stores the schema that no database of an instance owns:
+-- Oracle's PUBLIC, which holds the public synonyms.
+CREATE TABLE instance_schema (
+    instance text PRIMARY KEY REFERENCES instance(resource_id),
+    -- Stored as SchemaMetadata (github.com/bytebase/omni/metadata)
+    metadata jsonb NOT NULL DEFAULT '{}'
+);
+
 CREATE TABLE revision (
     -- global unique
     resource_id text PRIMARY KEY DEFAULT gen_random_uuid()::text,

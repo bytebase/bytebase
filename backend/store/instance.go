@@ -924,6 +924,17 @@ func (s *Store) DeleteInstance(ctx context.Context, workspace string, resourceID
 		return errors.Wrapf(err, "failed to delete databases for instance %s", resourceID)
 	}
 
+	q = qb.Q().Space(`
+		DELETE FROM instance_schema WHERE instance = ?
+	`, resourceID)
+	query, args, err = q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+		return errors.Wrapf(err, "failed to delete instance_schema for instance %s", resourceID)
+	}
+
 	// Lock the instance while checking the required deleted state.
 	var deleted bool
 	if err := tx.QueryRowContext(ctx, `

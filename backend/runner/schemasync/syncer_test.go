@@ -15,8 +15,11 @@ import (
 
 	"github.com/bytebase/bytebase/backend/component/productmetrics"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/db/oracle"
 	"github.com/bytebase/bytebase/backend/store"
 )
+
+var _ instanceSchemaSyncer = (*oracle.Driver)(nil)
 
 func TestSyncCyclesRecordEmptySuccess(t *testing.T) {
 	ctx := context.Background()

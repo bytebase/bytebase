@@ -155,6 +155,7 @@ PostgreSQL holds row locks until a transaction ends. Transactions that acquire t
    - `changelog -> sync_history -> db -> instance -> project`
    - `revision -> db -> instance -> project`
    - `db_schema -> db -> instance -> project`
+   - `instance_schema -> instance -> project`
 
    These workflow chains are writer-to-writer correctness invariants. The
    best-effort lifecycle policy below does not relax them; in particular,

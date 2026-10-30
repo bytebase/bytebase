@@ -597,7 +597,8 @@ func (s *Store) DeleteProjects(ctx context.Context, workspace string, resourceID
 		}
 	}
 
-	// Purge the databases and database-scoped history of project instances.
+	// Purge the databases, database-scoped history, and instance schemas of
+	// project instances.
 	// Workspace instances remain shared infrastructure, so their databases are
 	// reassigned to the default project below instead.
 	for _, statement := range []struct {
@@ -612,6 +613,7 @@ func (s *Store) DeleteProjects(ctx context.Context, workspace string, resourceID
 		{"revision", "DELETE FROM revision WHERE instance IN (SELECT resource_id FROM instance WHERE project = ANY(?))"},
 		{"db_schema", "DELETE FROM db_schema WHERE instance IN (SELECT resource_id FROM instance WHERE project = ANY(?))"},
 		{"database", "DELETE FROM db WHERE instance IN (SELECT resource_id FROM instance WHERE project = ANY(?))"},
+		{"instance_schema", "DELETE FROM instance_schema WHERE instance IN (SELECT resource_id FROM instance WHERE project = ANY(?))"},
 	} {
 		if statement.name == "revision deleter" {
 			q = qb.Q().Space(statement.sql, resourceIDs, workspace, resourceIDs, workspace)
