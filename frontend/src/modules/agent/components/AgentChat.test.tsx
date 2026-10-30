@@ -5,8 +5,11 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import {
   PROJECT_V1_ROUTE_DATABASE_DETAIL,
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
+  PROJECT_V1_ROUTE_ISSUES,
+  PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
 } from "@/app/router/handles";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
+import type { RequestRoleDraft } from "../logic/deniedQueryAccess";
 import { createAgentStore, useAgentStore } from "../store/agent";
 
 (
@@ -20,7 +23,14 @@ const mocks = vi.hoisted(() => ({
   })),
   hasWorkspacePermissionV2: vi.fn(() => true),
   routerPush: vi.fn(),
+  currentPath: "/initial",
   getSettingByName: vi.fn(),
+  notify: vi.fn(),
+  prepareAgentPlanDraftRoute: vi.fn(),
+  prepareAgentDeniedQueryRequestRoute: vi.fn(),
+  prepareIssueCommentDraftRoute: vi.fn(),
+  wasDeniedQueryRequestDraftDelivered: vi.fn(),
+  wasIssueCommentDraftDelivered: vi.fn(),
 }));
 
 let AgentChat: typeof import("./AgentChat").AgentChat;
@@ -76,21 +86,60 @@ vi.mock("@/app/router", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/app/router")>()),
   router: {
     push: mocks.routerPush,
-    resolve: (to: unknown) => ({ href: JSON.stringify(to) }),
+    resolve: (to: unknown) => {
+      const fullPath =
+        typeof to === "object" &&
+        to !== null &&
+        "fullPath" in to &&
+        typeof to.fullPath === "string"
+          ? to.fullPath
+          : JSON.stringify(to);
+      return { href: fullPath, fullPath };
+    },
+    get currentRoute() {
+      return { value: { fullPath: mocks.currentPath } };
+    },
   },
 }));
 
-vi.mock("@/utils", () => ({
+vi.mock("@/utils", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/utils")>()),
   hasWorkspacePermissionV2: mocks.hasWorkspacePermissionV2,
 }));
 
 vi.mock("@/stores/app", () => {
-  const state = { getSettingByName: mocks.getSettingByName };
+  const state = {
+    getSettingByName: mocks.getSettingByName,
+    notify: mocks.notify,
+  };
   const useAppStore = <T,>(selector: (value: typeof state) => T) =>
     selector(state);
   useAppStore.getState = () => state;
   return { useAppStore };
 });
+
+vi.mock("../logic/planDraft", () => ({
+  prepareAgentPlanDraftRoute: mocks.prepareAgentPlanDraftRoute,
+  PlanDraftStorageError: class PlanDraftStorageError extends Error {},
+}));
+
+vi.mock("../logic/deniedQueryAccess", () => ({
+  prepareAgentDeniedQueryRequestRoute: mocks.prepareAgentDeniedQueryRequestRoute,
+  DeniedQueryRequestDraftStorageError: class DeniedQueryRequestDraftStorageError extends Error {},
+}));
+
+vi.mock("@/modules/sql-editor/model/accessGrantDraft", () => ({
+  ACCESS_GRANT_DRAFT_QUERY_KEY: "accessGrantDraftKey",
+  wasDeniedQueryRequestDraftDelivered:
+    mocks.wasDeniedQueryRequestDraftDelivered,
+}));
+
+vi.mock("@/lib/issueCommentDraft", () => ({
+  prepareIssueCommentDraftRoute: mocks.prepareIssueCommentDraftRoute,
+  wasIssueCommentDraftDelivered: mocks.wasIssueCommentDraftDelivered,
+  ExistingIssueCommentDraftError: class ExistingIssueCommentDraftError extends Error {},
+  IssueCommentDraftStorageError: class IssueCommentDraftStorageError extends Error {},
+}));
 
 const renderIntoContainer = (element: ReactElement) => {
   const container = document.createElement("div");
@@ -134,8 +183,17 @@ beforeEach(async () => {
   mocks.hasWorkspacePermissionV2.mockReset();
   mocks.hasWorkspacePermissionV2.mockReturnValue(true);
   mocks.routerPush.mockReset();
+  mocks.currentPath = "/initial";
   mocks.getSettingByName.mockReset();
   mocks.getSettingByName.mockReturnValue(undefined);
+  mocks.notify.mockReset();
+  mocks.prepareAgentPlanDraftRoute.mockReset();
+  mocks.prepareAgentDeniedQueryRequestRoute.mockReset();
+  mocks.prepareIssueCommentDraftRoute.mockReset();
+  mocks.wasDeniedQueryRequestDraftDelivered.mockReset();
+  mocks.wasDeniedQueryRequestDraftDelivered.mockReturnValue(true);
+  mocks.wasIssueCommentDraftDelivered.mockReset();
+  mocks.wasIssueCommentDraftDelivered.mockReturnValue(true);
 
   ({ AgentChat } = await import("./AgentChat"));
 });
@@ -145,6 +203,727 @@ afterEach(() => {
 });
 
 describe("AgentChat", () => {
+  test("opens a denied Query as an unsent Access Grant draft", async () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/sample" });
+    const draft = {
+      project: "projects/sample",
+      sourceDatabase: "instances/prod/databases/app",
+      targets: ["instances/prod/databases/app"],
+      statement: "SELECT * FROM orders",
+    };
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "The API denied this query.",
+      metadata: { accessRequestDraft: draft },
+    });
+    const route = {
+      fullPath:
+        "/sql-editor/sample/prod/app?accessGrantDraftKey=draft-1",
+      query: { accessGrantDraftKey: "draft-1" },
+    };
+    mocks.prepareAgentDeniedQueryRequestRoute.mockResolvedValue(route);
+    mocks.routerPush.mockImplementation(async () => {
+      mocks.currentPath = "/sql-editor/sample/prod/app";
+    });
+    useAgentStore.setState({ visible: true, minimized: false });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+
+    const button = container.querySelector<HTMLButtonElement>(
+      "[data-agent-action-request-access]"
+    );
+    expect(button?.textContent).toContain("agent.access-grant-draft.open");
+    expect(mocks.prepareAgentDeniedQueryRequestRoute).not.toHaveBeenCalled();
+    await act(async () => button?.click());
+    expect(mocks.prepareAgentDeniedQueryRequestRoute).toHaveBeenCalledWith(draft);
+    expect(mocks.routerPush).toHaveBeenCalledWith(route);
+    expect(useAgentStore.getState().minimized).toBe(true);
+    unmount();
+  });
+
+  test("opens a denied Query as an unsent Request Role draft", async () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/sample" });
+    const draft: RequestRoleDraft = {
+      kind: "requestRole",
+      project: "projects/sample",
+      sourceDatabase: "instances/prod/databases/app",
+      targets: ["instances/prod/databases/app"],
+      resources: ["instances/prod/databases/app/schemas/public/tables/orders"],
+      statement: "SELECT * FROM orders",
+      requiredPermissions: ["bb.sql.select"],
+    };
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "The API denied this query.",
+      metadata: { accessRequestDraft: draft },
+    });
+    const route = {
+      fullPath: "/sql-editor/sample/prod/app?accessGrantDraftKey=role-1",
+      query: { accessGrantDraftKey: "role-1" },
+    };
+    mocks.prepareAgentDeniedQueryRequestRoute.mockResolvedValue(route);
+    mocks.routerPush.mockImplementation(async () => {
+      mocks.currentPath = "/sql-editor/sample/prod/app";
+    });
+    useAgentStore.setState({ visible: true, minimized: false });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+
+    await act(async () => {
+      container
+        .querySelector<HTMLButtonElement>("[data-agent-action-request-access]")
+        ?.click();
+    });
+
+    expect(mocks.prepareAgentDeniedQueryRequestRoute).toHaveBeenCalledWith(
+      draft
+    );
+    expect(mocks.routerPush).toHaveBeenCalledWith(route);
+    expect(useAgentStore.getState().minimized).toBe(true);
+    unmount();
+  });
+
+  test("keeps the Agent visible when an existing access drawer rejects the draft", async () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/sample" });
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "The API denied this query.",
+      metadata: {
+        accessRequestDraft: {
+          project: "projects/sample",
+          sourceDatabase: "instances/prod/databases/app",
+          targets: ["instances/prod/databases/app"],
+          statement: "SELECT * FROM orders",
+        },
+      },
+    });
+    const route = {
+      fullPath: "/sql-editor/sample/prod/app?accessGrantDraftKey=draft-2",
+      query: { accessGrantDraftKey: "draft-2" },
+    };
+    mocks.prepareAgentDeniedQueryRequestRoute.mockResolvedValue(route);
+    mocks.routerPush.mockImplementation(async () => {
+      mocks.currentPath = "/sql-editor/sample/prod/app";
+    });
+    mocks.wasDeniedQueryRequestDraftDelivered.mockReturnValue(false);
+    useAgentStore.setState({ visible: true, minimized: false });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+
+    await act(async () => {
+      container
+        .querySelector<HTMLButtonElement>("[data-agent-action-request-access]")
+        ?.click();
+      await vi.waitFor(
+        () =>
+          expect(mocks.notify).toHaveBeenCalledWith(
+            expect.objectContaining({
+              style: "CRITICAL",
+              title: "agent.access-grant-draft.unavailable",
+            })
+          ),
+        { timeout: 5000 }
+      );
+    });
+
+    expect(mocks.routerPush).toHaveBeenCalledWith(route);
+    expect(useAgentStore.getState().minimized).toBe(false);
+    expect(mocks.notify).toHaveBeenCalledWith(
+      expect.objectContaining({
+        style: "CRITICAL",
+        title: "agent.access-grant-draft.unavailable",
+      })
+    );
+    unmount();
+  });
+
+  test("opens an Issue review comment draft without posting it", async () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/sample" });
+    const action = {
+      kind: "draft-issue-comment" as const,
+      issue: "projects/sample/issues/7",
+      comment: "Please check exposure of the new column.",
+    };
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "The change may expose personal data.",
+      metadata: { actions: [action] },
+    });
+    const route = {
+      name: "issue-detail",
+      params: { issueId: "7" },
+      query: { agentCommentDraft: "draft-7" },
+    };
+    mocks.prepareIssueCommentDraftRoute.mockReturnValue(route);
+    mocks.routerPush.mockImplementation(async () => {
+      mocks.currentPath = JSON.stringify(route);
+    });
+    useAgentStore.setState({ visible: true, minimized: false });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+
+    const button = container.querySelector<HTMLButtonElement>(
+      "[data-agent-action-draft-issue-comment]"
+    );
+    expect(button?.textContent).toContain("agent.issue-comment-draft.open");
+    await act(async () => button?.click());
+    expect(mocks.prepareIssueCommentDraftRoute).toHaveBeenCalledWith(
+      action.issue,
+      action.comment
+    );
+    expect(mocks.routerPush).toHaveBeenCalledWith(route);
+    expect(mocks.wasIssueCommentDraftDelivered).toHaveBeenCalledWith("draft-7");
+    expect(useAgentStore.getState().minimized).toBe(true);
+    unmount();
+  });
+
+  test("minimizes after the Issue draft redirects to its Plan review", async () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/sample" });
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "Review the proposed change.",
+      metadata: {
+        actions: [{
+          kind: "draft-issue-comment",
+          issue: "projects/sample/issues/7",
+          comment: "Please check exposure of the new column.",
+        }],
+      },
+    });
+    const route = {
+      fullPath:
+        "/projects/sample/issues/7?phase=review&agentCommentDraft=draft-7#issue-comment-editor",
+      query: { agentCommentDraft: "draft-7" },
+    };
+    mocks.prepareIssueCommentDraftRoute.mockReturnValue(route);
+    mocks.routerPush.mockImplementation(async () => {
+      mocks.currentPath =
+        "/projects/sample/plans/9?phase=review&agentCommentDraft=draft-7";
+    });
+    useAgentStore.setState({ visible: true, minimized: false });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+
+    await act(async () => {
+      container
+        .querySelector<HTMLButtonElement>(
+          "[data-agent-action-draft-issue-comment]"
+        )
+        ?.click();
+    });
+
+    expect(useAgentStore.getState().minimized).toBe(true);
+    unmount();
+  });
+
+  test("keeps the Agent visible when the Issue comment editor never receives the draft", async () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/sample" });
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "Review this Issue.",
+      metadata: {
+        actions: [{
+          kind: "draft-issue-comment",
+          issue: "projects/sample/issues/7",
+          comment: "Check the security boundary.",
+        }],
+      },
+    });
+    const route = {
+      fullPath: "/projects/sample/issues/7?agentCommentDraft=draft-7",
+      query: { agentCommentDraft: "draft-7" },
+    };
+    mocks.prepareIssueCommentDraftRoute.mockReturnValue(route);
+    mocks.routerPush.mockImplementation(async () => {
+      mocks.currentPath = route.fullPath;
+    });
+    mocks.wasIssueCommentDraftDelivered.mockReturnValue(false);
+    useAgentStore.setState({ visible: true, minimized: false });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+
+    await act(async () => {
+      container
+        .querySelector<HTMLButtonElement>("[data-agent-action-draft-issue-comment]")
+        ?.click();
+      await vi.waitFor(
+        () =>
+          expect(mocks.notify).toHaveBeenCalledWith(
+            expect.objectContaining({
+              style: "CRITICAL",
+              title: "agent.issue-comment-draft.unavailable",
+            })
+          ),
+        { timeout: 5000 }
+      );
+    });
+
+    expect(useAgentStore.getState().minimized).toBe(false);
+    expect(mocks.wasIssueCommentDraftDelivered).toHaveBeenCalledWith("draft-7");
+    unmount();
+  });
+
+  test("opens a populated Plan draft only after the member clicks its answer action", async () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/sample" });
+    const content = "Review this DDL:\n\n```sql\nCREATE TABLE notes (id INT);\n```";
+    const action = {
+      kind: "draft-plan" as const,
+      project: "projects/sample",
+      database: "instances/prod/databases/app",
+    };
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content,
+      metadata: { actions: [action] },
+    });
+    const route = { name: "plan-create", params: { projectId: "sample" } };
+    mocks.prepareAgentPlanDraftRoute.mockResolvedValue(route);
+    mocks.routerPush.mockImplementation(async () => {
+      mocks.currentPath = JSON.stringify(route);
+    });
+    useAgentStore.setState({ visible: true, minimized: false });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+
+    const button = container.querySelector<HTMLButtonElement>(
+      "[data-agent-action-draft-plan]"
+    );
+    expect(button?.textContent).toContain("agent.plan-draft.open");
+    expect(mocks.prepareAgentPlanDraftRoute).not.toHaveBeenCalled();
+    await act(async () => button?.click());
+    expect(mocks.prepareAgentPlanDraftRoute).toHaveBeenCalledWith(
+      action,
+      content,
+      "agent.plan-draft.default-title"
+    );
+    expect(mocks.routerPush).toHaveBeenCalledWith(route);
+    expect(useAgentStore.getState().minimized).toBe(true);
+    unmount();
+  });
+
+  test("keeps the Agent open when navigation to the Plan draft is blocked", async () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/sample" });
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "```sql\nCREATE TABLE notes (id INT);\n```",
+      metadata: {
+        actions: [{
+          kind: "draft-plan",
+          project: "projects/sample",
+          database: "instances/prod/databases/app",
+        }],
+      },
+    });
+    mocks.prepareAgentPlanDraftRoute.mockResolvedValue({ name: "plan-create" });
+    mocks.routerPush.mockResolvedValue(undefined);
+    useAgentStore.setState({ visible: true, minimized: false });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>("[data-agent-action-draft-plan]")?.click();
+    });
+
+    expect(mocks.routerPush).toHaveBeenCalledOnce();
+    expect(useAgentStore.getState().minimized).toBe(false);
+    unmount();
+  });
+
+  test("does not navigate when the Plan draft can no longer be prepared", async () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/sample" });
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "```sql\nCREATE TABLE notes (id INT);\n```",
+      metadata: {
+        actions: [{
+          kind: "draft-plan",
+          project: "projects/sample",
+          database: "instances/prod/databases/app",
+        }],
+      },
+    });
+    mocks.prepareAgentPlanDraftRoute.mockRejectedValue(new Error("moved"));
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+    const button = container.querySelector<HTMLButtonElement>(
+      "[data-agent-action-draft-plan]"
+    );
+    await act(async () => button?.click());
+    expect(mocks.routerPush).not.toHaveBeenCalled();
+    expect(mocks.notify).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "agent.plan-draft.unavailable" })
+    );
+    expect(button?.disabled).toBe(false);
+    unmount();
+  });
+
+  test("keeps a draft-only follow-up separate from the answer action", () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/sample" });
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "Review the issue, then check its impact.",
+      metadata: {
+        actions: [
+          {
+            kind: "open",
+            target: { kind: "review-project-issues", project: "projects/sample" },
+          },
+          { kind: "continue", prompt: "What is the impact of these issues?" },
+        ],
+      },
+    });
+    const onContinueAction = vi.fn();
+    const { container, render, unmount } = renderIntoContainer(
+      <AgentChat onContinueAction={onContinueAction} />
+    );
+    render();
+
+    const open = container.querySelector<HTMLAnchorElement>("[data-agent-action-open]");
+    expect(open?.getAttribute("href")).toContain(PROJECT_V1_ROUTE_ISSUES);
+    expect(mocks.routerPush).not.toHaveBeenCalled();
+    const answer = container.querySelector("[data-agent-answer]");
+    const followUpRow = container.querySelector("[data-agent-follow-up]");
+    expect(answer?.contains(open)).toBe(true);
+    expect(answer?.contains(followUpRow)).toBe(false);
+    expect(followUpRow?.textContent).toContain("agent.follow-up.ask-next");
+    expect(followUpRow?.textContent).toContain("What is the impact of these issues?");
+    const followUp = followUpRow?.querySelector<HTMLButtonElement>(
+      "[data-agent-action-continue]"
+    );
+    expect(followUp?.textContent).toContain("What is the impact of these issues?");
+    expect(followUpRow?.textContent).not.toContain("agent.follow-up.add-to-message");
+    expect(followUp?.className).not.toContain("border");
+    const question = followUpRow?.querySelector<HTMLElement>(
+      "[data-agent-follow-up-question]"
+    );
+    expect(question?.closest("button")).toBe(followUp);
+    act(() => followUp?.click());
+    expect(onContinueAction).toHaveBeenCalledWith(
+      chat.id,
+      "What is the impact of these issues?",
+      []
+    );
+    expect(store.getMessages(chat.id)).toHaveLength(1);
+    unmount();
+  });
+
+  test("renders an exact failed Task Open action", () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/sample" });
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "The production task failed.",
+      metadata: {
+        actions: [
+          {
+            kind: "open",
+            target: {
+              kind: "view-failed-task",
+              task: "projects/sample/plans/7/rollout/stages/prod/tasks/t1",
+            },
+          },
+        ],
+      },
+    });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+    const link = container.querySelector<HTMLAnchorElement>(
+      "[data-agent-action-open]"
+    );
+    expect(link?.textContent).toContain("agent.handoff.view-failed-task");
+    expect(JSON.parse(link?.getAttribute("href") ?? "null")).toEqual({
+      name: PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
+      params: {
+        projectId: "sample",
+        planId: "7",
+        stageId: "prod",
+        taskId: "t1",
+      },
+    });
+    unmount();
+  });
+
+  test("shows three follow-up questions below the answer timestamp and selects one without sending", () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/sample" });
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "The plan is ready for review.",
+      metadata: {
+        actions: [
+          { kind: "continue", prompt: "What will this change affect?" },
+          { kind: "continue", prompt: "How should I validate it?" },
+          { kind: "continue", prompt: "What are the rollback options?" },
+        ],
+      },
+    });
+    const onContinueAction = vi.fn();
+    const { container, render, unmount } = renderIntoContainer(
+      <AgentChat onContinueAction={onContinueAction} />
+    );
+    render();
+
+    const followUp = container.querySelector("[data-agent-follow-up]");
+    const timestamp = container.querySelector("[data-agent-message-timestamp]");
+    const choices = Array.from(
+      followUp?.querySelectorAll<HTMLButtonElement>("[data-agent-action-continue]") ?? []
+    );
+    expect(followUp?.previousElementSibling).toBe(timestamp);
+    expect(choices.map((choice) => choice.textContent?.trim())).toEqual([
+      "What will this change affect?",
+      "How should I validate it?",
+      "What are the rollback options?",
+    ]);
+    act(() => choices[1]?.click());
+    expect(onContinueAction).toHaveBeenCalledWith(
+      chat.id,
+      "How should I validate it?",
+      []
+    );
+    expect(store.getMessages(chat.id)).toHaveLength(1);
+    unmount();
+  });
+
+  test("reveals a question added to the latest answer after completion", () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/sample" });
+    const message = store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "Transfer a database.",
+      metadata: {
+        actions: [{
+          kind: "open",
+          target: { kind: "transfer-project-databases", project: "projects/sample" },
+        }],
+      },
+    });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+    const scrollContainer = container.firstElementChild as HTMLElement;
+    Object.defineProperty(scrollContainer, "scrollHeight", { value: 1100 });
+    Object.defineProperty(scrollContainer, "clientHeight", { value: 500 });
+    scrollContainer.scrollTop = 500;
+
+    act(() => {
+      store.appendContinueActions(
+        chat.id,
+        message.id,
+        [{ kind: "continue", prompt: "How do I connect a new instance?" }],
+        []
+      );
+    });
+
+    expect(container.querySelector("[data-agent-follow-up]")?.textContent).toContain(
+      "How do I connect a new instance?"
+    );
+    expect(scrollContainer.scrollTop).toBe(1100);
+    unmount();
+  });
+
+  test("reveals additional follow-up questions after the first one arrives", () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/sample" });
+    const message = store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "Review the proposed change.",
+      metadata: {
+        actions: [{ kind: "continue", prompt: "What will this change affect?" }],
+      },
+    });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+    const scrollContainer = container.firstElementChild as HTMLElement;
+    Object.defineProperty(scrollContainer, "scrollHeight", { value: 1100 });
+    Object.defineProperty(scrollContainer, "clientHeight", { value: 500 });
+    scrollContainer.scrollTop = 500;
+
+    act(() => {
+      useAgentStore.setState((state) => ({
+        messagesByChatId: {
+          ...state.messagesByChatId,
+          [chat.id]: [
+            {
+              ...message,
+              metadata: {
+                ...message.metadata,
+                actions: [
+                  { kind: "continue", prompt: "What will this change affect?" },
+                  { kind: "continue", prompt: "How should I validate it?" },
+                ],
+              },
+            },
+          ],
+        },
+      }));
+    });
+
+    expect(scrollContainer.scrollTop).toBe(1100);
+    unmount();
+  });
+
+  test("disables the follow-up question when a draft would be replaced", () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/sample" });
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "Review the issue.",
+      metadata: {
+        actions: [{ kind: "continue", prompt: "What is the impact?" }],
+      },
+    });
+    store.setDraft(chat.id, { text: "My own question" });
+    const onContinueAction = vi.fn();
+    const { container, render, unmount } = renderIntoContainer(
+      <AgentChat onContinueAction={onContinueAction} />
+    );
+    render();
+
+    const question = container.querySelector<HTMLButtonElement>(
+      "[data-agent-action-continue]"
+    );
+    expect(question?.textContent).toContain("What is the impact?");
+    expect(question?.disabled).toBe(true);
+    act(() => question?.click());
+    expect(onContinueAction).not.toHaveBeenCalled();
+    unmount();
+  });
+
+  test("renders a member-clicked handoff only on a final answer", () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/sample" });
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "Review the current change queue.",
+      metadata: {
+        handoff: { kind: "review-database-changes", project: "projects/sample" },
+      },
+    });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+    const link = container.querySelector<HTMLAnchorElement>("[data-agent-handoff]");
+    expect(link?.textContent).toContain("agent.handoff.review-database-changes");
+    expect(link?.getAttribute("href")).toContain(PROJECT_V1_ROUTE_ISSUES);
+    expect(mocks.routerPush).not.toHaveBeenCalled();
+    unmount();
+  });
+
+  test("uses the same setup action label as Project Home", () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/sample" });
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "Transfer an eligible database.",
+      metadata: {
+        handoff: { kind: "transfer-project-databases", project: "projects/sample" },
+      },
+    });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+    expect(container.querySelector("[data-agent-handoff]")?.textContent).toContain(
+      "project.home.transfer-databases"
+    );
+    expect(container.querySelector("[data-agent-follow-up]")).toBeNull();
+    unmount();
+  });
+
+  test.each([
+    "transfer-project-databases",
+    "connect-project-instance",
+    "create-project-database",
+  ] as const)("opens %s in front of the Agent window", async (kind) => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/sample" });
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "Continue project setup.",
+      metadata: { handoff: { kind, project: "projects/sample" } },
+    });
+    mocks.routerPush.mockImplementation(async (to) => {
+      mocks.currentPath = JSON.stringify(to);
+    });
+    useAgentStore.setState({ visible: true, minimized: false });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+
+    const button = container.querySelector<HTMLButtonElement>(
+      "button[data-agent-handoff]"
+    );
+    await act(async () => button?.click());
+
+    expect(button).not.toBeNull();
+    expect(mocks.routerPush).toHaveBeenCalledOnce();
+    expect(useAgentStore.getState().minimized).toBe(true);
+    unmount();
+  });
+
+  test("keeps the Agent visible when a setup route does not open", async () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/sample" });
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "Connect an instance.",
+      metadata: {
+        handoff: {
+          kind: "connect-project-instance",
+          project: "projects/sample",
+        },
+      },
+    });
+    mocks.routerPush.mockResolvedValue(undefined);
+    useAgentStore.setState({ visible: true, minimized: false });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>("button[data-agent-handoff]")?.click();
+    });
+
+    expect(mocks.routerPush).toHaveBeenCalledOnce();
+    expect(useAgentStore.getState().minimized).toBe(false);
+    unmount();
+  });
+
+  test("does not render a handoff from pending, errored, or malformed messages", () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/sample" });
+    const handoff = { kind: "review-project-issues" as const, project: "projects/sample" };
+    store.addMessage({ chatId: chat.id, role: "assistant", content: "Loading", metadata: { pending: true, handoff } });
+    store.addMessage({ chatId: chat.id, role: "assistant", content: "Failed", metadata: { error: "failed", handoff } });
+    store.addMessage({ chatId: chat.id, role: "assistant", content: "Old", metadata: { handoff: { kind: "review-project-issues", project: "projects/-" } } });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+    expect(container.querySelectorAll("[data-agent-handoff]")).toHaveLength(0);
+    unmount();
+  });
   test("shows project landing prompts in an empty project chat and prefills without sending", () => {
     const store = useAgentStore.getState();
     const chat = store.createChat({ context: "projects/sample" });
@@ -167,6 +946,7 @@ describe("AgentChat", () => {
       "project-open-blockers",
       "project-open-recent",
       "project-propose-change",
+      "project-next",
     ]);
 
     act(() => {

@@ -21,13 +21,16 @@ import {
 import {
   GetRolloutRequestSchema,
   ListTaskRunsRequestSchema,
+  Task_Status,
   TaskRun_Status,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { getRolloutFromPlan } from "@/utils";
+import { shouldRedirectToIssueDetail } from "@/utils/v1/issue/plan";
 import type { AgentEvidence } from "../types";
 
 const TASK_RUN_PAGE_SIZE = 10;
+const MAX_FAILED_TASKS = 10;
 
 type Available<T> = { status: "available" } & T;
 type Unavailable = { status: "unavailable" };
@@ -52,7 +55,12 @@ type IssueOverview = {
       }>
     | Unavailable;
   plan:
-    | Available<{ name: string; title: string; hasRollout: boolean }>
+    | Available<{
+        name: string;
+        title: string;
+        hasRollout: boolean;
+        reviewOnPlan: boolean;
+      }>
     | Unavailable
     | NotConfigured;
   planCheck:
@@ -65,7 +73,12 @@ type IssueOverview = {
     | NotStarted;
   reviews: { rule: ReviewFacet; ai: ReviewFacet };
   rollout:
-    | Available<{ name: string; stageCount: number }>
+    | Available<{
+        name: string;
+        stageCount: number;
+        failedTasks: string[];
+        failedTasksPartial: boolean;
+      }>
     | Unavailable
     | NotStarted;
   taskRuns:
@@ -124,6 +137,20 @@ function isPlanNameInProject(projectName: string, planName: string): boolean {
     Boolean(planId) &&
     remainingSegments.length === 0
   );
+}
+
+function isTaskNameInStage(
+  rolloutName: string,
+  stageName: string,
+  taskName: string
+): boolean {
+  const stagePrefix = `${rolloutName}/stages/`;
+  if (!stageName.startsWith(stagePrefix)) return false;
+  const stageId = stageName.slice(stagePrefix.length);
+  if (!/^(?:[A-Za-z0-9_][A-Za-z0-9_-]*|-)$/.test(stageId)) return false;
+  const taskPrefix = `${stageName}/tasks/`;
+  if (!taskName.startsWith(taskPrefix)) return false;
+  return /^[A-Za-z0-9_][A-Za-z0-9_-]*$/.test(taskName.slice(taskPrefix.length));
 }
 
 function enumName(values: Record<number, string | number>, value: number) {
@@ -293,6 +320,7 @@ export async function collectIssueOverview(
           name: planResult.value.name,
           title: planResult.value.title,
           hasRollout: planResult.value.hasRollout,
+          reviewOnPlan: !shouldRedirectToIssueDetail(planResult.value, issue),
         }
       : { status: "unavailable" as const };
   const planCheck =
@@ -365,6 +393,24 @@ export async function collectIssueOverview(
   }
 
   const rollout = rolloutResult[0].value;
+  const failedTasks: string[] = [];
+  let failedTasksPartial = false;
+  for (const stage of rollout.stages) {
+    for (const task of stage.tasks) {
+      if (
+        task.status !== Task_Status.FAILED ||
+        !isTaskNameInStage(rollout.name, stage.name, task.name)
+      ) {
+        continue;
+      }
+      if (failedTasks.length === MAX_FAILED_TASKS) {
+        failedTasksPartial = true;
+        break;
+      }
+      failedTasks.push(task.name);
+    }
+    if (failedTasksPartial) break;
+  }
   const taskRunsResult = await Promise.allSettled([
     rolloutServiceClientConnect.listTaskRuns(
       create(ListTaskRunsRequestSchema, {
@@ -400,6 +446,8 @@ export async function collectIssueOverview(
       status: "available",
       name: rollout.name,
       stageCount: rollout.stages.length,
+      failedTasks,
+      failedTasksPartial,
     },
     taskRuns,
     evidence,

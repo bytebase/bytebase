@@ -3,6 +3,13 @@ import { create } from "@bufbuild/protobuf";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { AppRouterInstance } from "@/app/router";
 import {
+  ConstantSchema,
+  type Expr,
+  Expr_CallSchema,
+  Expr_IdentSchema,
+  ExprSchema,
+} from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
+import {
   ApprovalStatus,
   IssueStatus,
   State,
@@ -17,11 +24,14 @@ import {
 const projectApi = vi.hoisted(() => ({ getProject: vi.fn() }));
 const issueApi = vi.hoisted(() => ({ getIssue: vi.fn() }));
 const databaseApi = vi.hoisted(() => ({ getDatabase: vi.fn() }));
+const celApi = vi.hoisted(() => ({ batchParse: vi.fn() }));
+const resourceChoiceApi = vi.hoisted(() => ({ validate: vi.fn() }));
 
 vi.mock("@/api", () => ({
   projectServiceClientConnect: { getProject: projectApi.getProject },
   issueServiceClientConnect: { getIssue: issueApi.getIssue },
   databaseServiceClientConnect: { getDatabase: databaseApi.getDatabase },
+  celServiceClientConnect: { batchParse: celApi.batchParse },
 }));
 
 vi.mock("../skills", () => ({
@@ -33,6 +43,9 @@ vi.mock("./callApi", async (importOriginal) => ({
 }));
 vi.mock("./apiPermissionPreflight", () => ({
   checkPreparedApiPermission: vi.fn(async () => ({ kind: "allowed" })),
+}));
+vi.mock("./resourceChoices", () => ({
+  validateResourceChoices: resourceChoiceApi.validate,
 }));
 vi.mock("./databaseCount", () => ({
   createDatabaseCountTool: vi.fn(() => vi.fn(async () => "database_count")),
@@ -108,6 +121,7 @@ import { createWorkspaceOverviewTool } from "./workspaceOverview";
 import { createWorkspaceRecentActivityTool } from "./workspaceRecentActivity";
 
 beforeEach(() => {
+  resourceChoiceApi.validate.mockReset();
   vi.mocked(checkPreparedApiPermission).mockReset();
   vi.mocked(checkPreparedApiPermission).mockResolvedValue({ kind: "allowed" });
   projectApi.getProject.mockReset();
@@ -135,6 +149,60 @@ beforeEach(() => {
     name: "instances/prod/databases/app",
     project: "projects/referenced",
     state: State.ACTIVE,
+  });
+  celApi.batchParse.mockReset();
+});
+
+const ident = (name: string): Expr =>
+  create(ExprSchema, {
+    exprKind: {
+      case: "identExpr",
+      value: create(Expr_IdentSchema, { name }),
+    },
+  });
+const literal = (value: string): Expr =>
+  create(ExprSchema, {
+    exprKind: {
+      case: "constExpr",
+      value: create(ConstantSchema, {
+        constantKind: { case: "stringValue", value },
+      }),
+    },
+  });
+const call = (fn: string, ...args: Expr[]): Expr =>
+  create(ExprSchema, {
+    exprKind: {
+      case: "callExpr",
+      value: create(Expr_CallSchema, { function: fn, args }),
+    },
+  });
+const projectFilter = (project: string): Expr =>
+  call("_==_", ident("project"), literal(project));
+
+describe("done tool", () => {
+  test("requires an explicit task success value", async () => {
+    const definition = getToolDefinitions().find(
+      (tool) => tool.name === "done"
+    );
+    expect(definition?.parametersSchema).toMatchObject({
+      required: ["text", "success", "actions"],
+    });
+
+    const executeTool = createToolExecutor({} as AppRouterInstance);
+    await expect(
+      executeTool("done", { text: "Finished" }, "tool-done")
+    ).rejects.toThrow(/success/i);
+    await expect(
+      executeTool(
+        "done",
+        { text: "Could not finish", success: false },
+        "tool-done"
+      )
+    ).resolves.toEqual({
+      kind: "done",
+      text: "Could not finish",
+      success: false,
+    });
   });
 });
 
@@ -509,6 +577,245 @@ describe("agent tools referenced project", () => {
       }),
     });
     expect(issueApi.getIssue).not.toHaveBeenCalled();
+    expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
+  });
+
+  test("does not call an API for another project even when the selected Project is accessible", async () => {
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      referencedProject: "projects/referenced",
+    });
+
+    const result = await executor(
+      "call_api",
+      {
+        operationId: "IssueService/GetIssue",
+        body: { name: "projects/other/issues/34" },
+      },
+      "tool-other-issue"
+    );
+
+    expect(result.kind).toBe("tool_result");
+    if (result.kind === "tool_result") {
+      expect(JSON.parse(result.result).error).toMatch(/referenced project/i);
+    }
+    expect(projectApi.getProject).toHaveBeenCalledTimes(1);
+    expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
+  });
+
+  test("does not let selected Database access bypass the API target scope", async () => {
+    projectApi.getProject.mockRejectedValue(new Error("permission denied"));
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      referencedProject: "projects/referenced",
+      referencedDatabase: "instances/prod/databases/app",
+    });
+
+    const result = await executor(
+      "call_api",
+      {
+        operationId: "IssueService/GetIssue",
+        body: { name: "projects/other/issues/34" },
+      },
+      "tool-other-issue"
+    );
+
+    expect(result.kind).toBe("tool_result");
+    if (result.kind === "tool_result") {
+      expect(JSON.parse(result.result).error).toMatch(/referenced project/i);
+    }
+    expect(databaseApi.getDatabase).toHaveBeenCalledTimes(1);
+    expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
+  });
+
+  test("scopes batch Issue status updates by Issue names, not an ignored parent", async () => {
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      chatId: "chat-issue",
+      userName: "users/me@example.com",
+      referencedProject: "projects/referenced",
+    });
+
+    const result = await executor(
+      "call_api",
+      {
+        operationId: "IssueService/BatchUpdateIssuesStatus",
+        body: {
+          parent: "projects/other",
+          issues: ["projects/referenced/issues/12"],
+          status: "OPEN",
+        },
+      },
+      "tool-update-status"
+    );
+
+    expect(result).toMatchObject({
+      kind: "ask_user",
+      ask: {
+        apiPermission: {
+          operationId: "bytebase.v1.IssueService.BatchUpdateIssuesStatus",
+        },
+      },
+    });
+  });
+
+  test("rejects a batch Issue status update targeting another Project", async () => {
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      chatId: "chat-issue",
+      userName: "users/me@example.com",
+      referencedProject: "projects/referenced",
+    });
+
+    const result = await executor(
+      "call_api",
+      {
+        operationId: "IssueService/BatchUpdateIssuesStatus",
+        body: {
+          parent: "projects/referenced",
+          issues: ["projects/other/issues/34"],
+          status: "OPEN",
+        },
+      },
+      "tool-other-status"
+    );
+
+    expect(result.kind).toBe("tool_result");
+    if (result.kind === "tool_result") {
+      expect(JSON.parse(result.result).error).toMatch(/referenced project/i);
+    }
+    expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
+  });
+
+  test("does not run a cross-project database search for a selected Project", async () => {
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      referencedProject: "projects/referenced",
+    });
+
+    const result = await executor(
+      "call_api",
+      {
+        operationId: "DatabaseService/SearchDatabases",
+        body: { pageSize: 25 },
+      },
+      "tool-search-databases"
+    );
+
+    expect(result.kind).toBe("tool_result");
+    if (result.kind === "tool_result") {
+      expect(JSON.parse(result.result).error).toMatch(/referenced project/i);
+    }
+    expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
+  });
+
+  test("allows a database search constrained to the selected Project", async () => {
+    celApi.batchParse.mockResolvedValue({
+      expressions: [
+        call(
+          "_&&_",
+          projectFilter("projects/referenced"),
+          call("_==_", ident("engine"), literal("MYSQL"))
+        ),
+      ],
+    });
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      referencedProject: "projects/referenced",
+    });
+
+    expect(
+      await executor(
+        "call_api",
+        {
+          operationId: "DatabaseService/SearchDatabases",
+          body: {
+            filter: 'project == "projects/referenced" && engine == "MYSQL"',
+          },
+        },
+        "tool-project-search"
+      )
+    ).toEqual({ kind: "tool_result", result: "call_api" });
+    expect(celApi.batchParse).toHaveBeenCalledTimes(1);
+    expect(dispatchPreparedApiCall).toHaveBeenCalledTimes(1);
+  });
+
+  test("does not accept a database search whose filter can include another Project", async () => {
+    celApi.batchParse.mockResolvedValue({
+      expressions: [
+        call(
+          "_||_",
+          projectFilter("projects/referenced"),
+          projectFilter("projects/other")
+        ),
+      ],
+    });
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      referencedProject: "projects/referenced",
+    });
+
+    const result = await executor(
+      "call_api",
+      {
+        operationId: "DatabaseService/SearchDatabases",
+        body: {
+          filter:
+            'project == "projects/referenced" || project == "projects/other"',
+        },
+      },
+      "tool-other-search"
+    );
+
+    expect(result.kind).toBe("tool_result");
+    if (result.kind === "tool_result") {
+      expect(JSON.parse(result.result).error).toMatch(/referenced project/i);
+    }
+    expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
+  });
+
+  test("does not run a database search when its project filter cannot be verified", async () => {
+    celApi.batchParse.mockRejectedValue(new Error("parser unavailable"));
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      referencedProject: "projects/referenced",
+    });
+
+    const result = await executor(
+      "call_api",
+      {
+        operationId: "DatabaseService/SearchDatabases",
+        body: { filter: 'project == "projects/referenced"' },
+      },
+      "tool-unverified-search"
+    );
+
+    expect(result.kind).toBe("tool_result");
+    if (result.kind === "tool_result") {
+      expect(JSON.parse(result.result).error).toMatch(/referenced project/i);
+    }
+    expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
+  });
+
+  test("does not call a database API for a database in another Project", async () => {
+    databaseApi.getDatabase.mockResolvedValue({
+      name: "instances/prod/databases/app",
+      project: "projects/other",
+      state: State.ACTIVE,
+    });
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      referencedProject: "projects/referenced",
+    });
+
+    const result = await executor(
+      "call_api",
+      {
+        operationId: "SQLService/Query",
+        body: {
+          name: "instances/prod/databases/app",
+          statement: "SELECT 1",
+        },
+      },
+      "tool-other-database"
+    );
+
+    expect(result.kind).toBe("tool_result");
+    if (result.kind === "tool_result") {
+      expect(JSON.parse(result.result).error).toMatch(/referenced project/i);
+    }
+    expect(databaseApi.getDatabase).toHaveBeenCalledTimes(1);
     expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
   });
 
@@ -1411,6 +1718,328 @@ describe("agent tools read-only mode", () => {
 });
 
 describe("agent tools ask_user", () => {
+  test("replaces model labels with verified resource choices", async () => {
+    resourceChoiceApi.validate.mockResolvedValue([
+      {
+        label: "orders (Production)",
+        value: "instances/prod/databases/orders",
+      },
+    ]);
+    const executeTool = createToolExecutor({} as AppRouterInstance, {
+      context: "projects/sample",
+      workspaceName: "workspaces/example",
+    });
+    const result = await executeTool(
+      "ask_user",
+      {
+        kind: "choose",
+        resourceKind: "database",
+        prompt: "Which database?",
+        options: [
+          { label: "Forged label", value: "instances/prod/databases/orders" },
+        ],
+      },
+      "choose-1"
+    );
+    expect(resourceChoiceApi.validate).toHaveBeenCalledWith(
+      "database",
+      ["instances/prod/databases/orders"],
+      "projects/sample",
+      "workspaces/example"
+    );
+    expect(result).toEqual({
+      kind: "ask_user",
+      ask: {
+        toolCallId: "choose-1",
+        prompt: "Which database?",
+        kind: "choose",
+        options: [
+          {
+            label: "orders (Production)",
+            value: "instances/prod/databases/orders",
+          },
+        ],
+      },
+    });
+  });
+
+  test("asks for a Project before offering database choices", async () => {
+    const executeTool = createToolExecutor({} as AppRouterInstance, {
+      context: "workspaces/example",
+      workspaceName: "workspaces/example",
+    });
+    const result = await executeTool(
+      "ask_user",
+      {
+        kind: "choose",
+        resourceKind: "database",
+        prompt: "Which database?",
+        options: [{ value: "instances/prod/databases/orders" }],
+      },
+      "choose-1"
+    );
+    expect(result.kind).toBe("tool_result");
+    expect(result).toEqual({
+      kind: "tool_result",
+      result: expect.stringContaining("A Project is required"),
+    });
+    expect(resourceChoiceApi.validate).not.toHaveBeenCalled();
+  });
+
+  test("does not offer a dedicated environment resource choice", async () => {
+    const askUser = getToolDefinitions().find(
+      (tool) => tool.name === "ask_user"
+    );
+    expect(askUser?.parametersSchema).toEqual(
+      expect.objectContaining({
+        properties: expect.objectContaining({
+          resourceKind: expect.objectContaining({ enum: ["database"] }),
+        }),
+      })
+    );
+
+    const executeTool = createToolExecutor({} as AppRouterInstance, {
+      context: "projects/sample",
+      workspaceName: "workspaces/example",
+    });
+    const result = await executeTool(
+      "ask_user",
+      {
+        kind: "choose",
+        resourceKind: "environment",
+        prompt: "Which environment?",
+        options: [{ value: "environments/test" }],
+      },
+      "choose-environment"
+    );
+    expect(result).toEqual({
+      kind: "tool_result",
+      result: expect.stringContaining("Unsupported resource choice kind"),
+    });
+    expect(resourceChoiceApi.validate).not.toHaveBeenCalled();
+  });
+
+  test("does not pause for unverified resource options", async () => {
+    resourceChoiceApi.validate.mockResolvedValue(undefined);
+    const executeTool = createToolExecutor({} as AppRouterInstance, {
+      context: "projects/sample",
+      workspaceName: "workspaces/example",
+    });
+    const result = await executeTool(
+      "ask_user",
+      {
+        kind: "choose",
+        resourceKind: "database",
+        prompt: "Which database?",
+        options: [{ value: "instances/prod/databases/orders" }],
+      },
+      "choose-1"
+    );
+    expect(result).toEqual({
+      kind: "tool_result",
+      result: expect.stringContaining("could not be verified"),
+    });
+  });
+
+  test("accepts a legacy typed handoff on done", async () => {
+    const executeTool = createToolExecutor({} as AppRouterInstance);
+    await expect(
+      executeTool(
+        "done",
+        {
+          text: "Review the issue queue.",
+          success: true,
+          handoff: {
+            kind: "review-project-issues",
+            project: "projects/sample",
+          },
+        },
+        "done-1"
+      )
+    ).resolves.toEqual({
+      kind: "done",
+      text: "Review the issue queue.",
+      success: true,
+      handoff: { kind: "review-project-issues", project: "projects/sample" },
+    });
+  });
+
+  test("accepts typed Open and Continue proposals on done", async () => {
+    const definition = getToolDefinitions().find(
+      (tool) => tool.name === "done"
+    );
+    expect(definition?.description).toContain(
+      "2-3 distinct, contextual Continue questions"
+    );
+    expect(definition?.parametersSchema).toMatchObject({
+      properties: { actions: { type: "array", maxItems: 4 } },
+      required: ["text", "success", "actions"],
+    });
+    const executeTool = createToolExecutor({} as AppRouterInstance);
+    await expect(
+      executeTool(
+        "done",
+        {
+          text: "Review the issue queue.",
+          success: true,
+          actions: [
+            {
+              kind: "open",
+              target: {
+                kind: "review-project-issues",
+                project: "projects/sample",
+              },
+            },
+            { kind: "continue", prompt: "  What is blocked?  " },
+            { kind: "continue", prompt: "Who should review it?" },
+            { kind: "continue", prompt: "How can I verify it?" },
+          ],
+        },
+        "done-actions"
+      )
+    ).resolves.toEqual({
+      kind: "done",
+      text: "Review the issue queue.",
+      success: true,
+      actions: [
+        {
+          kind: "open",
+          target: {
+            kind: "review-project-issues",
+            project: "projects/sample",
+          },
+        },
+        { kind: "continue", prompt: "What is blocked?" },
+        { kind: "continue", prompt: "Who should review it?" },
+        { kind: "continue", prompt: "How can I verify it?" },
+      ],
+    });
+  });
+
+  test("exposes exact Issue, Plan, and failed Task Open targets", () => {
+    const definition = getToolDefinitions().find(
+      (tool) => tool.name === "done"
+    );
+    expect(definition?.parametersSchema).toMatchObject({
+      properties: {
+        actions: {
+          items: {
+            properties: {
+              target: {
+                properties: {
+                  kind: {
+                    enum: expect.arrayContaining([
+                      "open-issue",
+                      "review-issue-plan",
+                      "view-failed-task",
+                    ]),
+                  },
+                  issue: { type: "string" },
+                  plan: { type: "string" },
+                  task: { type: "string" },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+  });
+
+  test("offers a typed draft Plan action without putting SQL in the action", async () => {
+    const definition = getToolDefinitions().find(
+      (tool) => tool.name === "done"
+    );
+    expect(definition?.parametersSchema).toMatchObject({
+      properties: {
+        actions: {
+          items: {
+            properties: {
+              kind: {
+                enum: ["open", "draft-plan", "draft-issue-comment", "continue"],
+              },
+              project: { type: "string" },
+              database: { type: "string" },
+            },
+          },
+        },
+      },
+    });
+    expect(definition?.parametersSchema).not.toHaveProperty(
+      "properties.actions.items.properties.sql"
+    );
+
+    const executeTool = createToolExecutor({} as AppRouterInstance);
+    await expect(
+      executeTool(
+        "done",
+        {
+          text: "```sql\nCREATE TABLE audit_log (id INT);\n```",
+          success: true,
+          actions: [
+            {
+              kind: "draft-plan",
+              project: "projects/sample",
+              database: "instances/prod/databases/app",
+            },
+          ],
+        },
+        "done-plan-draft"
+      )
+    ).resolves.toMatchObject({
+      kind: "done",
+      success: true,
+      actions: [
+        {
+          kind: "draft-plan",
+          project: "projects/sample",
+          database: "instances/prod/databases/app",
+        },
+      ],
+    });
+  });
+
+  test("exposes an unsent Issue comment draft action", () => {
+    const definition = getToolDefinitions().find(
+      (tool) => tool.name === "done"
+    );
+    expect(definition?.parametersSchema).toMatchObject({
+      properties: {
+        actions: {
+          items: {
+            properties: {
+              issue: { type: "string" },
+              comment: { type: "string" },
+            },
+          },
+        },
+      },
+    });
+  });
+
+  test("drops a malformed legacy handoff", async () => {
+    const executeTool = createToolExecutor({} as AppRouterInstance);
+    await expect(
+      executeTool(
+        "done",
+        {
+          text: "Open the project.",
+          success: true,
+          handoff: {
+            kind: "open-project-instances",
+            project: "projects/sample",
+            href: "https://example.com",
+          },
+        },
+        "done-1"
+      )
+    ).resolves.toEqual({
+      kind: "done",
+      text: "Open the project.",
+      success: true,
+    });
+  });
+
   test("exposes choose in the ask_user schema", () => {
     const askUser = getToolDefinitions().find(
       (tool) => tool.name === "ask_user"

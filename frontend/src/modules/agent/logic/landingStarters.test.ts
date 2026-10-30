@@ -33,6 +33,37 @@ describe("getLandingStarterIdForText", () => {
 });
 
 describe("getLandingStarterIds", () => {
+  test.each([
+    {
+      activeWork: "present",
+      database: "empty",
+      change: "not-started",
+      membership: "solo",
+    },
+    {
+      activeWork: "empty",
+      database: "present",
+      change: "rolled-out",
+      membership: "has-collaborators",
+    },
+    {
+      activeWork: "unknown",
+      database: "unknown",
+      change: "unknown",
+      membership: "unknown",
+    },
+  ] as const)("always offers project-next for project state %#", (state) => {
+    expect(
+      getLandingStarterIds({
+        scope: "project",
+        ...state,
+        canConnectInstance: true,
+        canCreateChange: true,
+        canViewRecentActivity: true,
+      })
+    ).toContain("project-next");
+  });
+
   test("offers setup guidance in a workspace without setup resources", () => {
     expect(
       getLandingStarterIds({
@@ -100,6 +131,7 @@ describe("getLandingStarterIds", () => {
       "project-organize",
       "project-access",
       "project-review",
+      "project-next",
     ]);
   });
 
@@ -169,7 +201,7 @@ describe("getLandingStarterIds", () => {
         canCreateChange: true,
         canViewRecentActivity: true,
       })
-    ).toEqual(["project-open-blockers", "project-open-recent"]);
+    ).toEqual(["project-open-blockers", "project-open-recent", "project-next"]);
   });
 
   test("offers connection guidance only when the member can connect an instance", () => {
@@ -184,7 +216,7 @@ describe("getLandingStarterIds", () => {
         canCreateChange: false,
         canViewRecentActivity: true,
       })
-    ).toEqual(["project-organize"]);
+    ).toEqual(["project-organize", "project-next"]);
   });
 
   test("offers collaboration prompts to a solo project member", () => {
@@ -199,7 +231,12 @@ describe("getLandingStarterIds", () => {
         canCreateChange: true,
         canViewRecentActivity: true,
       })
-    ).toEqual(["project-collaborate", "project-access", "project-review"]);
+    ).toEqual([
+      "project-collaborate",
+      "project-access",
+      "project-review",
+      "project-next",
+    ]);
   });
 
   test.each(["loading", "unknown"] as const)(
@@ -232,6 +269,6 @@ describe("getLandingStarterIds", () => {
         canCreateChange: false,
         canViewRecentActivity: false,
       })
-    ).toEqual(["project-open-blockers"]);
+    ).toEqual(["project-open-blockers", "project-next"]);
   });
 });

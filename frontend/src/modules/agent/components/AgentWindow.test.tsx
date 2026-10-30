@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { getLayerRoot } from "@/components/ui/layer";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { createAgentStore, useAgentStore } from "../store/agent";
+import type { AgentPageResource } from "../logic/chatContext";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -19,6 +20,10 @@ const mocks = vi.hoisted(() => ({
   batchFetchProjects: vi.fn(),
   projectErrorsByName: {} as Record<string, Error | undefined>,
   currentContext: "projects/orders" as string | undefined,
+  pageResource: undefined as AgentPageResource | undefined,
+  getOrFetchDatabaseByName: vi.fn(),
+  getIssue: vi.fn(),
+  canListReferences: true,
   projectsByName: {
     "projects/orders": { title: "Order service" },
     "projects/analytics": { title: "Analytics" },
@@ -65,6 +70,9 @@ vi.mock("@/stores/app", () => {
     get projectErrorsByName() {
       return mocks.projectErrorsByName;
     },
+    getOrFetchDatabaseByName: mocks.getOrFetchDatabaseByName,
+    hasWorkspacePermission: () => mocks.canListReferences,
+    hasProjectPermission: () => mocks.canListReferences,
     get workspace() {
       return mocks.workspace;
     },
@@ -77,21 +85,68 @@ vi.mock("@/stores/app", () => {
 
 vi.mock("../logic/chatContext", () => ({
   getCurrentChatContext: () => mocks.currentContext,
+  getCurrentAgentPageResource: () => mocks.pageResource,
 }));
+
+vi.mock("@/api", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/api")>();
+  return {
+    ...actual,
+    issueServiceClientConnect: {
+      ...actual.issueServiceClientConnect,
+      getIssue: mocks.getIssue,
+    },
+  };
+});
 
 vi.mock("./AgentChat", () => ({
   AgentChat: ({
     contextLabel,
     onSelectSuggestion,
+    onContinueAction,
   }: {
     contextLabel?: string;
     onSelectSuggestion?: (starterId: "project-open-blockers") => void;
+    onContinueAction?: (
+      chatId: string,
+      prompt: string,
+      references: { kind: "project"; name: string; project: string; label: string }[]
+    ) => void;
   }) => (
     <div data-testid="agent-chat" data-context-label={contextLabel}>
       <button
         type="button"
         data-testid="agent-empty-suggestion"
         onClick={() => onSelectSuggestion?.("project-open-blockers")}
+      />
+      <button
+        type="button"
+        data-testid="agent-continue-action"
+        onClick={() =>
+          onContinueAction?.(
+            useAgentStore.getState().currentChatId ?? "",
+            "What should I review next?",
+            []
+          )
+        }
+      />
+      <button
+        type="button"
+        data-testid="agent-continue-with-project"
+        onClick={() =>
+          onContinueAction?.(
+            useAgentStore.getState().currentChatId ?? "",
+            "What should I review next?",
+            [
+              {
+                kind: "project",
+                name: "projects/orders",
+                project: "projects/orders",
+                label: "Orders",
+              },
+            ]
+          )
+        }
       />
     </div>
   ),
@@ -161,6 +216,8 @@ beforeEach(async () => {
     pendingAskByChatId: initialState.pendingAskByChatId,
     currentChatId: initialState.currentChatId,
     abortControllersByChatId: {},
+    queuedUserMessage: null,
+    queuedUserMessageInFlight: false,
   });
   useAgentStore.getState().setWorkspaceName(mocks.workspace.name);
   useAgentStore.setState({
@@ -185,6 +242,10 @@ beforeEach(async () => {
   };
   mocks.projectErrorsByName = {};
   mocks.currentContext = "projects/orders";
+  mocks.pageResource = undefined;
+  mocks.getOrFetchDatabaseByName.mockReset();
+  mocks.getIssue.mockReset();
+  mocks.canListReferences = true;
 
   ({ AgentWindow } = await import("./AgentWindow"));
 });
@@ -196,7 +257,352 @@ afterEach(() => {
 });
 
 describe("AgentWindow", () => {
-  test("prefills a landing prompt for the current context without sending it", () => {
+  test("shows a chat queued from the page composer instead of the contextual start", () => {
+    const store = useAgentStore.getState();
+    const page = { path: "/projects/orders", title: "Order service" };
+    const chat = store.selectOrCreateChatForContext(
+      "projects/orders",
+      page,
+      mocks.workspace.name
+    );
+    expect(chat).not.toBeNull();
+    mocks.pageResource = {
+      kind: "project",
+      name: "projects/orders",
+      project: "projects/orders",
+    };
+    useAgentStore.setState({ visible: false });
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    act(() => {
+      store.queueUserMessage({
+        chatId: chat!.id,
+        text: "What should I do next?",
+        page,
+      });
+      store.open();
+    });
+
+    expect(document.body.querySelector("[data-agent-contextual-start]")).toBeNull();
+    expect(document.body.querySelector('[data-testid="agent-chat"]')).toBeInstanceOf(HTMLElement);
+    expect(document.body.querySelector('[data-testid="agent-input"]')).toBeInstanceOf(HTMLElement);
+    expect(useAgentStore.getState().currentChatId).toBe(chat!.id);
+    unmount();
+  });
+
+  test("shows the project start view first without replacing the selected draft", () => {
+    const store = useAgentStore.getState();
+    const existing = store.createChat({ context: "projects/analytics" });
+    store.setDraft(existing.id, { text: "Unfinished analytics question" });
+    const count = useAgentStore.getState().chats.length;
+    mocks.pageResource = {
+      kind: "project",
+      name: "projects/orders",
+      project: "projects/orders",
+    };
+
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    expect(document.body.querySelector('[data-agent-contextual-start="project"]')).toBeInstanceOf(HTMLElement);
+    expect(document.body.querySelector('[data-testid="agent-input"]')).toBeNull();
+    expect(useAgentStore.getState().currentChatId).toBe(existing.id);
+    expect(useAgentStore.getState().chats).toHaveLength(count);
+    expect(store.getDraft(existing.id).text).toBe("Unfinished analytics question");
+    expect(
+      document.body.querySelector(
+        `[data-agent-chat-row="${existing.id}"] [aria-current]`
+      )
+    ).toBeNull();
+
+    act(() => {
+      (document.body.querySelector('[data-agent-contextual-suggestion]') as HTMLButtonElement).click();
+    });
+    const next = store.getChat(useAgentStore.getState().currentChatId);
+    expect(next?.id).not.toBe(existing.id);
+    expect(next?.context).toBe("projects/orders");
+    expect(store.getDraft(next?.id).text).toBe("");
+    expect(useAgentStore.getState().queuedUserMessage).toMatchObject({
+      chatId: next?.id,
+      text: "agent.landing-starters.project-next",
+      runMode: "read-only",
+    });
+    expect(store.getDraft(existing.id).text).toBe("Unfinished analytics question");
+    expect(document.body.querySelector('[data-testid="agent-input"]')).toBeInstanceOf(HTMLElement);
+    unmount();
+  });
+
+  test("sends a contextual project starter through its direct read-only path", () => {
+    mocks.pageResource = {
+      kind: "project",
+      name: "projects/orders",
+      project: "projects/orders",
+    };
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    const suggestions = document.body.querySelectorAll<HTMLButtonElement>(
+      "[data-agent-contextual-suggestion]"
+    );
+    act(() => suggestions[1].click());
+
+    expect(useAgentStore.getState().queuedUserMessage).toMatchObject({
+      chatId: useAgentStore.getState().currentChatId,
+      text: "agent.landing-starters.project-open-blockers",
+      runMode: "read-only",
+      starterId: "project-open-blockers",
+    });
+    unmount();
+  });
+
+  test("prefills a bound database mention from the detail page", async () => {
+    mocks.pageResource = {
+      kind: "database",
+      project: "projects/orders",
+      names: ["projects/orders/instances/primary/databases/app"],
+    };
+    mocks.getOrFetchDatabaseByName.mockResolvedValue({
+      name: "projects/orders/instances/primary/databases/app",
+      project: "projects/orders",
+      instanceResource: { title: "Primary" },
+    });
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    await act(async () => {
+      render();
+      await Promise.resolve();
+    });
+
+    const mentionButton = document.body.querySelector('[data-agent-contextual-mention]') as HTMLButtonElement;
+    expect(mentionButton).toBeInstanceOf(HTMLButtonElement);
+    expect(mentionButton.disabled).toBe(false);
+    act(() => mentionButton.click());
+
+    const store = useAgentStore.getState();
+    const chat = store.getChat(useAgentStore.getState().currentChatId);
+    expect(chat?.context).toBe("projects/orders");
+    expect(store.getDraft(chat?.id)).toEqual({
+      text: "@app (Primary) ",
+      mentions: [{
+        resource: {
+          kind: "database",
+          name: "projects/orders/instances/primary/databases/app",
+          project: "projects/orders",
+          label: "app (Primary)",
+        },
+        range: { start: 0, end: 14 },
+      }],
+    });
+    expect(store.getMessages(chat?.id)).toEqual([]);
+    unmount();
+  });
+
+  test("does not offer a database mention without list permission", () => {
+    mocks.canListReferences = false;
+    mocks.pageResource = {
+      kind: "database",
+      project: "projects/orders",
+      names: ["instances/primary/databases/app"],
+    };
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    expect(document.body.querySelector('[data-agent-contextual-mention]')).toBeNull();
+    expect(mocks.getOrFetchDatabaseByName).not.toHaveBeenCalled();
+    expect(document.body.querySelector('[data-agent-contextual-start="database"]')?.textContent).toContain(
+      "agent.contextual-start.resource-unavailable"
+    );
+    unmount();
+  });
+
+  test("prefills a bound issue mention and returns to the previous chat", async () => {
+    const store = useAgentStore.getState();
+    const existing = store.createChat({ context: "projects/analytics" });
+    mocks.pageResource = {
+      kind: "issue",
+      name: "projects/orders/issues/42",
+      project: "projects/orders",
+    };
+    mocks.getIssue.mockResolvedValue({
+      name: "projects/orders/issues/42",
+      title: "Review database change",
+    });
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    await act(async () => {
+      render();
+      await Promise.resolve();
+    });
+    expect(
+      Array.from(document.body.querySelectorAll("[data-agent-contextual-suggestion]"), (element) =>
+        element.textContent
+      )
+    ).toEqual([
+      "agent.contextual-start.issue-summary",
+      "agent.contextual-start.issue-changes",
+      "agent.contextual-start.issue-security",
+    ]);
+
+    act(() => {
+      (document.body.querySelector('[data-agent-contextual-continue]') as HTMLButtonElement).click();
+    });
+    expect(useAgentStore.getState().currentChatId).toBe(existing.id);
+    expect(document.body.querySelector('[data-testid="agent-input"]')).toBeInstanceOf(HTMLElement);
+
+    act(() => useAgentStore.getState().toggle());
+    act(() => useAgentStore.getState().toggle());
+    await act(async () => Promise.resolve());
+    const suggestion = document.body.querySelector('[data-agent-contextual-suggestion]') as HTMLButtonElement;
+    act(() => suggestion.click());
+    const chat = store.getChat(useAgentStore.getState().currentChatId);
+    expect(chat?.context).toBe("projects/orders");
+    expect(store.getDraft(chat?.id).text).toBe(
+      ""
+    );
+    expect(useAgentStore.getState().queuedUserMessage).toMatchObject({
+      chatId: chat?.id,
+      text: "@Review database change agent.contextual-start.issue-summary",
+      runMode: "read-only",
+      resourceReference: {
+        kind: "issue",
+        name: "projects/orders/issues/42",
+      },
+    });
+    unmount();
+  });
+
+  test("does not continue an archived selection from the active chat list", () => {
+    const store = useAgentStore.getState();
+    const active = store.createChat({ context: "projects/orders" });
+    const archived = store.createChat({
+      context: "projects/orders",
+      archived: true,
+    });
+    mocks.pageResource = {
+      kind: "project",
+      name: "projects/orders",
+      project: "projects/orders",
+    };
+
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    try {
+      render();
+      expect(useAgentStore.getState().currentChatId).toBe(archived.id);
+      expect(
+        document.body.querySelector(`[data-agent-chat-row="${archived.id}"]`)
+      ).toBeNull();
+      expect(
+        document.body.querySelector("[data-agent-contextual-continue]")
+      ).toBeNull();
+
+      act(() => {
+        (
+          document.body.querySelector(
+            `[data-agent-chat-row="${active.id}"] button`
+          ) as HTMLButtonElement
+        ).click();
+      });
+      expect(useAgentStore.getState().currentChatId).toBe(active.id);
+      expect(
+        document.body.querySelector("[data-agent-contextual-start]")
+      ).toBeNull();
+      expect(
+        document.body.querySelector('[data-testid="agent-input"]')
+      ).toBeInstanceOf(HTMLElement);
+    } finally {
+      unmount();
+    }
+  });
+
+  test("does not offer Continue chat when no active chat can be selected", () => {
+    const store = useAgentStore.getState();
+    const archived = store.createChat({ archived: true });
+    store.archiveAllActiveChats();
+    mocks.pageResource = {
+      kind: "project",
+      name: "projects/orders",
+      project: "projects/orders",
+    };
+
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    try {
+      render();
+      expect(useAgentStore.getState().currentChatId).toBe(archived.id);
+      expect(
+        document.body.querySelector("[data-agent-contextual-continue]")
+      ).toBeNull();
+    } finally {
+      unmount();
+    }
+  });
+
+  test("does not replace the start view while the Agent stays open", () => {
+    mocks.pageResource = {
+      kind: "project",
+      name: "projects/orders",
+      project: "projects/orders",
+    };
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+    mocks.pageResource = {
+      kind: "project",
+      name: "projects/analytics",
+      project: "projects/analytics",
+    };
+    render();
+
+    expect(document.body.querySelector('[data-agent-contextual-start="project"]')?.textContent).toContain("Order service");
+    expect(document.body.querySelector('[data-agent-contextual-start="project"]')?.textContent).not.toContain("Analytics");
+
+    act(() => useAgentStore.getState().toggle());
+    act(() => useAgentStore.getState().toggle());
+    expect(document.body.querySelector('[data-agent-contextual-start="project"]')?.textContent).toContain("Analytics");
+    unmount();
+  });
+
+  test("opens the selected sidebar chat without entering rename mode", () => {
+    const chat = useAgentStore.getState().createChat({
+      context: "projects/analytics",
+    });
+    mocks.pageResource = {
+      kind: "project",
+      name: "projects/orders",
+      project: "projects/orders",
+    };
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    act(() => {
+      (
+        document.body.querySelector(
+          `[data-agent-chat-row="${chat.id}"] button`
+        ) as HTMLButtonElement
+      ).click();
+    });
+    expect(document.body.querySelector("[data-agent-contextual-start]")).toBeNull();
+    expect(document.body.querySelector("[data-agent-inline-rename-input]")).toBeNull();
+    expect(useAgentStore.getState().currentChatId).toBe(chat.id);
+    unmount();
+  });
+
+  test("keeps a running chat selected and disables contextual actions", () => {
+    const store = useAgentStore.getState();
+    const running = store.createChat({ context: "projects/analytics" });
+    store.setChatStatus(running.id, "running");
+    mocks.pageResource = {
+      kind: "project",
+      name: "projects/orders",
+      project: "projects/orders",
+    };
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    expect(document.body.querySelector('[data-agent-contextual-start="project"]')).toBeInstanceOf(HTMLElement);
+    expect((document.body.querySelector('[data-agent-contextual-suggestion]') as HTMLButtonElement).disabled).toBe(true);
+    expect(useAgentStore.getState().currentChatId).toBe(running.id);
+    unmount();
+  });
+
+  test("sends an empty-chat suggestion for the current context", () => {
     const chat = useAgentStore.getState().ensureCurrentChat(
       undefined,
       "projects/orders"
@@ -210,9 +616,13 @@ describe("AgentWindow", () => {
     act(() => {
       (document.body.querySelector('[data-testid="agent-empty-suggestion"]') as HTMLButtonElement).click();
     });
-    expect(useAgentStore.getState().getDraft(chat.id).text).toBe(
-      "agent.landing-starters.project-open-blockers"
-    );
+    expect(useAgentStore.getState().getDraft(chat.id).text).toBe("");
+    expect(useAgentStore.getState().queuedUserMessage).toMatchObject({
+      chatId: chat.id,
+      text: "agent.landing-starters.project-open-blockers",
+      runMode: "read-only",
+      starterId: "project-open-blockers",
+    });
     expect(useAgentStore.getState().getMessages(chat.id)).toEqual([]);
     unmount();
   });
@@ -226,6 +636,71 @@ describe("AgentWindow", () => {
 
     act(() => {
       (document.body.querySelector('[data-testid="agent-empty-suggestion"]') as HTMLButtonElement).click();
+    });
+    expect(store.getDraft(chat.id).text).toBe("Unfinished question");
+    unmount();
+  });
+
+  test("prefills a response follow-up without sending it", () => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat(undefined, "projects/orders");
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    act(() => {
+      document.body
+        .querySelector<HTMLButtonElement>('[data-testid="agent-continue-action"]')
+        ?.click();
+    });
+    expect(store.getDraft(chat.id).text).toBe("What should I review next?");
+    expect(store.getMessages(chat.id)).toEqual([]);
+    unmount();
+  });
+
+  test("keeps the referenced project bound in a follow-up draft", () => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat(undefined, "projects/orders");
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    act(() => {
+      document.body
+        .querySelector<HTMLButtonElement>(
+          '[data-testid="agent-continue-with-project"]'
+        )
+        ?.click();
+    });
+    expect(store.getDraft(chat.id)).toEqual({
+      text: "@Orders What should I review next?",
+      mentions: [
+        {
+          resource: {
+            kind: "project",
+            name: "projects/orders",
+            project: "projects/orders",
+            label: "Orders",
+          },
+          range: { start: 0, end: 7 },
+        },
+      ],
+    });
+    expect(store.getMessages(chat.id)).toEqual([]);
+    unmount();
+  });
+
+  test("does not replace an existing draft with a response follow-up", () => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat(undefined, "projects/orders");
+    store.setDraft(chat.id, { text: "Unfinished question" });
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    act(() => {
+      document.body
+        .querySelector<HTMLButtonElement>(
+          '[data-testid="agent-continue-action"]'
+        )
+        ?.click();
     });
     expect(store.getDraft(chat.id).text).toBe("Unfinished question");
     unmount();
@@ -1089,6 +1564,62 @@ describe("AgentWindow", () => {
       expect(
         document.body.querySelector("[data-agent-mobile-chat-list]")
       ).toBeInstanceOf(HTMLDivElement);
+    } finally {
+      unmount();
+    }
+  });
+
+  test("shows a new contextual start after restoring the mobile chat list", () => {
+    useAgentStore.setState({ size: { width: 479, height: 450 } });
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    try {
+      render();
+
+      const back = document.body.querySelector(
+        '[aria-label="agent.chat-list-label"]'
+      ) as HTMLButtonElement;
+      act(() => back.click());
+      expect(
+        document.body.querySelector("[data-agent-mobile-chat-list]")
+      ).toBeInstanceOf(HTMLDivElement);
+
+      mocks.pageResource = {
+        kind: "project",
+        name: "projects/orders",
+        project: "projects/orders",
+      };
+      act(() => useAgentStore.getState().minimize());
+      act(() => useAgentStore.getState().restore());
+      expect(
+        document.body.querySelector('[data-agent-contextual-start="project"]')
+      ).toBeInstanceOf(HTMLElement);
+      expect(
+        document.body.querySelector("[data-agent-mobile-conversation]")
+      ).toBeInstanceOf(HTMLDivElement);
+    } finally {
+      unmount();
+    }
+  });
+
+  test("restores the mobile chat list when there is no contextual resource", () => {
+    useAgentStore.setState({ size: { width: 479, height: 450 } });
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    try {
+      render();
+
+      const back = document.body.querySelector(
+        '[aria-label="agent.chat-list-label"]'
+      ) as HTMLButtonElement;
+      act(() => back.click());
+      act(() => useAgentStore.getState().minimize());
+      act(() => useAgentStore.getState().restore());
+
+      expect(
+        document.body.querySelector("[data-agent-mobile-chat-list]")
+      ).toBeInstanceOf(HTMLDivElement);
+      expect(
+        document.body.querySelector("[data-agent-contextual-start]")
+      ).toBeNull();
     } finally {
       unmount();
     }

@@ -1,3 +1,5 @@
+import type { DeniedQueryRequestDraft } from "@/modules/sql-editor/model/accessGrantDraft";
+
 export interface ToolDefinition {
   name: string;
   description: string;
@@ -48,6 +50,29 @@ export interface AgentEvidence {
 
 export type AgentAnswerEvidence = AgentEvidence | AgentEvidence[];
 
+export type AgentHandoff =
+  | { kind: "review-workspace-issues"; workspace: string }
+  | {
+      kind:
+        | "review-project-issues"
+        | "review-database-changes"
+        | "open-project-instances"
+        | "transfer-project-databases"
+        | "connect-project-instance"
+        | "create-project-database";
+      project: string;
+    }
+  | { kind: "view-failed-tasks"; plan: string }
+  | { kind: "open-issue"; issue: string }
+  | { kind: "review-issue-plan"; plan: string }
+  | { kind: "view-failed-task"; task: string };
+
+export type AgentResponseAction =
+  | { kind: "open"; target: AgentHandoff }
+  | { kind: "draft-plan"; project: string; database: string }
+  | { kind: "draft-issue-comment"; issue: string; comment: string }
+  | { kind: "continue"; prompt: string };
+
 export interface AgentResourceReference {
   kind: "project" | "database" | "issue";
   name: string;
@@ -84,6 +109,9 @@ export interface AgentMessageMetadata {
   runId?: string;
   interruptionReason?: AgentInterruptionReason;
   evidence?: AgentAnswerEvidence;
+  handoff?: AgentHandoff;
+  actions?: AgentResponseAction[];
+  accessRequestDraft?: DeniedQueryRequestDraft;
   resourceReference?: AgentResourceReference;
   resourceReferences?: AgentResourceReference[];
 }
@@ -161,6 +189,8 @@ export type ToolExecutionResult =
       kind: "done";
       text: string;
       success: boolean;
+      handoff?: AgentHandoff;
+      actions?: AgentResponseAction[];
     }
   | {
       kind: "ask_user";
@@ -176,6 +206,8 @@ export type AgentLoopOutcome =
       kind: "completed";
       text: string;
       success: boolean;
+      handoff?: AgentHandoff;
+      actions?: AgentResponseAction[];
     } & AgentLoopUsage)
   | ({
       kind: "awaiting_user";

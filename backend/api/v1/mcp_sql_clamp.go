@@ -43,12 +43,22 @@ func mcpReadOnlyClampApplies(ctx context.Context) (bool, error) {
 	return settings.Capability == storepb.MCPSetting_READ_ONLY, nil
 }
 
-// refuseNonReadOnlyStatement classifies a request fail-closed. Nothing here
-// calls base.ValidateSQLForEditor bare: it answers "read-only" for an engine
-// with no registered validator, which suits a caller that only routes on the
-// verdict and admits every write for one that must refuse a write.
+// refuseNonReadOnlyStatement refuses a request nonReadReason does not show to be
+// a read.
+func refuseNonReadOnlyStatement(engine storepb.Engine, statement string) error {
+	if reason := nonReadReason(engine, statement); reason != "" {
+		return refuseClampedStatement(reason)
+	}
+	return nil
+}
+
+// nonReadReason classifies a request fail-closed: it says why the request is not
+// shown to be a read, or returns "" when every statement the driver would run is
+// one. Nothing here calls base.ValidateSQLForEditor bare: it answers "read-only"
+// for an engine with no registered validator, which suits a caller that only
+// routes on the verdict and admits every write for one that must refuse a write.
 //
-// A statement that returns no data is refused as well as one that is not a
+// A statement that returns no data fails as well as one that is not a
 // read. Every unit of a request runs on one connection, and Postgres applies a
 // changed default_transaction_read_only to the next transaction, so
 // "SET default_transaction_read_only = off" followed by a classifier-admitted
@@ -60,28 +70,26 @@ func mcpReadOnlyClampApplies(ctx context.Context) (bool, error) {
 //
 // Not closed: a structurally-reading statement can still call a function that
 // rewrites the same setting (set_config, BOT-88).
-func refuseNonReadOnlyStatement(engine storepb.Engine, statement string) error {
+func nonReadReason(engine storepb.Engine, statement string) string {
 	if !parserbase.HasQueryValidator(engine) {
-		return refuseClampedStatement(fmt.Sprintf(
-			"Bytebase has no read-only classifier for %v, so no statement on this engine can be shown to be a read", engine))
+		return fmt.Sprintf("Bytebase has no read-only classifier for %v, so no statement on this engine can be shown to be a read", engine)
 	}
 	units := mcpClampUnits(engine, statement)
 	for i, unit := range units {
 		readOnly, allQuery, err := parserbase.ValidateSQLForEditor(engine, unit)
 		if err != nil {
-			return refuseClampedStatement(fmt.Sprintf(
-				"%s could not be parsed, so it cannot be shown to be a read: %v", describeClampUnit(i, len(units)), err))
+			return fmt.Sprintf("%s could not be parsed, so it cannot be shown to be a read: %v", describeClampUnit(i, len(units)), err)
 		}
 		if !readOnly {
-			return refuseClampedStatement(fmt.Sprintf("%s is not a read", describeClampUnit(i, len(units))))
+			return fmt.Sprintf("%s is not a read", describeClampUnit(i, len(units)))
 		}
 		if !allQuery {
-			return refuseClampedStatement(fmt.Sprintf(
+			return fmt.Sprintf(
 				"%s returns no data, so it either rewrites the session it runs on, which can switch off the read-only session the rest of the request depends on, or runs the query to measure it. A read-only ceiling serves statements that only read",
-				describeClampUnit(i, len(units))))
+				describeClampUnit(i, len(units)))
 		}
 	}
-	return nil
+	return ""
 }
 
 // mcpClampUnits splits a request the way queryRetryStopOnError does, including

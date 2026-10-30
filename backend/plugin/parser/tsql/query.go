@@ -12,8 +12,9 @@ func init() {
 }
 
 // ValidateSQLForEditor validates that every statement in the SQL is a read-only
-// SELECT (no SELECT INTO). Returns (valid, allAlike, err). For MSSQL the two
-// booleans move together — we reject on the first non-SELECT.
+// SELECT (no SELECT INTO) or sets read-only session options. Returns (valid,
+// allQuery, err); a session option returns no data, so it clears allQuery.
+// DECLARE and SET @variable are refused (BOT-166).
 func ValidateSQLForEditor(statement string) (bool, bool, error) {
 	stmts, err := ParseTSQL(statement)
 	if err != nil {
@@ -23,15 +24,42 @@ func ValidateSQLForEditor(statement string) (bool, bool, error) {
 		return false, false, nil
 	}
 
+	allQuery := true
 	for _, s := range stmts {
 		if s.Empty() {
 			continue
 		}
-		if !isReadOnlySelect(s.AST) {
+		if isReadOnlySelect(s.AST) {
+			continue
+		}
+		if !isReadOnlySessionOption(s.AST) {
 			return false, false, nil
 		}
+		allQuery = false
 	}
-	return true, true, nil
+	return true, allQuery, nil
+}
+
+// readOnlySessionOptions are the SET options a read-only request may carry: they
+// write nothing and add no result set, unlike SET STATISTICS XML.
+var readOnlySessionOptions = map[string]bool{
+	"TRANSACTION ISOLATION LEVEL": true,
+	"NOCOUNT":                     true,
+}
+
+// isReadOnlySessionOption reports whether node is a SET whose options are all
+// read-only session options. One SET can name several, as in SET NOCOUNT, FMTONLY ON.
+func isReadOnlySessionOption(node ast.Node) bool {
+	set, ok := node.(*ast.SetOptionStmt)
+	if !ok {
+		return false
+	}
+	for _, option := range set.Options {
+		if !readOnlySessionOptions[option] {
+			return false
+		}
+	}
+	return true
 }
 
 // isReadOnlySelect returns true for SELECT statements without an INTO target.

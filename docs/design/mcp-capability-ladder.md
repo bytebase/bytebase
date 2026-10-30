@@ -77,7 +77,7 @@ the product.
 | write | Approve or reject issues | Each decision is confirmed in the user's MCP client before it is made · Role requests are decided in the console · The approval rules and the project's self-approval setting apply, as in the console | 2 WRITE methods: `ApproveIssue`, `RejectIssue`, served only through the `decide_issue` tool, which asks the user to confirm each decision and refuses role requests |
 | write | Run rollouts and tasks | Create a rollout · Run, skip or cancel its tasks, under the project's approval policy | 4 WRITE methods: `CreateRollout`, `BatchRunTasks`, `BatchSkipTasks`, `BatchCancelTaskRuns` |
 | write | Run DML and DDL statements | INSERT, UPDATE, DELETE, CREATE, ALTER, DROP through queries, as far as the engine and the user's own permissions allow | Not a method: the statement clamp in `mcp_sql_clamp.go`, which Read-write lifts |
-| write | Export query results | Export results as files. Data leaves Bytebase | 1 WRITE method: `SQLService/Export`, which requires the user's own `bb.sql.export` on the data it reads, from a role or a matching export grant |
+| write | Export query results | Export results as files. Data leaves Bytebase | 1 WRITE method: `SQLService/Export`, which requires the user's own `bb.sql.export` on the data it reads, from a role or a matching export grant, and runs only statements Bytebase can show are reads |
 | write | Manage database housekeeping | Sync instances and databases · Saved queries | 9 WRITE methods: sync, saved-query writes |
 | — | *Read-write stops here* | | 111 methods |
 | floor | Never, in any mode: administer the workspace, handle credentials, open an Admin mode session, or read anyone else's query history. | | 109 methods: 34 FORBIDDEN, 75 EXCLUDED |
@@ -562,13 +562,12 @@ to live in the bound line there (D10), not in a row's sub-items.
 
 - A custom access policy. When it comes, the rows become checkboxes, the cards become preset
   buttons that select a prefix, and a policy matching no prefix shows a Custom chip; the backend
-  row table is what the gate would read. The ladder needs no redesign. One precondition before
-  rows become independently selectable: `SQLService/Export` must be clamped to read statements.
-  On MySQL it skips statement validation and the driver executes non-query statements, and the
-  clamp today lives only in `SQLService/Query`. Under the presets Export is served only alongside
-  the DML/DDL row, so there is no exposure until then. That clamp is an MCP implementation change,
-  tracked separately from this doc. The same split is why the consent card's Read-write bound names
-  the operation as well as the engine (the method axis in The rows).
+  row table is what the gate would read. The ladder needs no redesign. The one precondition before
+  rows become independently selectable is met: `SQLService/Export` runs only statements Bytebase
+  can show are reads for an MCP session (`mcp_sql_write.go`). Export needed its own check because
+  it skips statement validation on MySQL, and the driver executes non-query statements. The same
+  split is why the consent card's Read-write bound names the operation as well as the engine (the
+  method axis in The rows).
 - A docs page listing the methods per row, generated from the inventory. Worth doing; not linked
   from the card until it exists.
 - Making the collapsed list findable by the browser's find-in-page. Base UI unmounts a closed panel,
