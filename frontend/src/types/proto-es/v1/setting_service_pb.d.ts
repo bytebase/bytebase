@@ -203,6 +203,11 @@ export enum Setting_SettingName {
    * @generated from enum value: MCP = 9;
    */
   MCP = 9,
+
+  /**
+   * @generated from enum value: EXPORT = 10;
+   */
+  EXPORT = 10,
 }
 
 /**
@@ -273,6 +278,12 @@ export declare type SettingValue = Message<"bytebase.v1.SettingValue"> & {
      */
     value: MCPSetting;
     case: "mcp";
+  } | {
+    /**
+     * @generated from field: bytebase.v1.ExportSetting export = 10;
+     */
+    value: ExportSetting;
+    case: "export";
   } | { case: undefined; value?: undefined };
 };
 
@@ -281,6 +292,69 @@ export declare type SettingValue = Message<"bytebase.v1.SettingValue"> & {
  * Use `create(SettingValueSchema)` to create a new message.
  */
 export declare const SettingValueSchema: GenMessage<SettingValue>;
+
+/**
+ * ExportSetting holds each export destination provider's credentials.
+ *
+ * @generated from message bytebase.v1.ExportSetting
+ */
+export declare type ExportSetting = Message<"bytebase.v1.ExportSetting"> & {
+  /**
+   * Unset when SharePoint is not configured.
+   *
+   * @generated from field: bytebase.v1.SharePointSetting sharepoint = 1;
+   */
+  sharepoint?: SharePointSetting | undefined;
+};
+
+/**
+ * Describes the message bytebase.v1.ExportSetting.
+ * Use `create(ExportSettingSchema)` to create a new message.
+ */
+export declare const ExportSettingSchema: GenMessage<ExportSetting>;
+
+/**
+ * SharePointSetting is the Microsoft Entra application that uploads exports to
+ * SharePoint. It is granted access per library by the customer's SharePoint
+ * administrators.
+ *
+ * @generated from message bytebase.v1.SharePointSetting
+ */
+export declare type SharePointSetting = Message<"bytebase.v1.SharePointSetting"> & {
+  /**
+   * The Microsoft Entra tenant (directory) ID.
+   *
+   * @generated from field: string tenant_id = 1;
+   */
+  tenantId: string;
+
+  /**
+   * The application (client) ID.
+   *
+   * @generated from field: string client_id = 2;
+   */
+  clientId: string;
+
+  /**
+   * The client secret. It is never returned.
+   *
+   * @generated from field: string client_secret = 3;
+   */
+  clientSecret: string;
+
+  /**
+   * Whether a client secret is stored.
+   *
+   * @generated from field: bool client_secret_set = 4;
+   */
+  clientSecretSet: boolean;
+};
+
+/**
+ * Describes the message bytebase.v1.SharePointSetting.
+ * Use `create(SharePointSettingSchema)` to create a new message.
+ */
+export declare const SharePointSettingSchema: GenMessage<SharePointSetting>;
 
 /**
  * @generated from message bytebase.v1.AppIMSetting
@@ -690,49 +764,49 @@ export declare const WorkspaceProfileSettingSchema: GenMessage<WorkspaceProfileS
  */
 export declare type WorkspaceProfileSetting_PasswordRestriction = Message<"bytebase.v1.WorkspaceProfileSetting.PasswordRestriction"> & {
   /**
-   * min_length is the minimum password length. It must be at least 8.
+   * min_length is the minimum length for password, should no less than 8.
    *
    * @generated from field: int32 min_length = 1;
    */
   minLength: number;
 
   /**
-   * require_number requires the password to contain at least one number.
+   * require_number requires the password must contains at least one number.
    *
    * @generated from field: bool require_number = 2;
    */
   requireNumber: boolean;
 
   /**
-   * require_letter requires the password to contain at least one letter, either uppercase or lowercase.
+   * require_letter requires the password must contains at least one letter, regardless of upper case or lower case
    *
    * @generated from field: bool require_letter = 3;
    */
   requireLetter: boolean;
 
   /**
-   * require_uppercase_letter requires the password to contain at least one uppercase letter.
+   * require_uppercase_letter requires the password must contains at least one upper case letter.
    *
    * @generated from field: bool require_uppercase_letter = 4;
    */
   requireUppercaseLetter: boolean;
 
   /**
-   * require_special_character requires the password to contain at least one special character.
+   * require_special_character requires the password must contains at least one special character.
    *
    * @generated from field: bool require_special_character = 5;
    */
   requireSpecialCharacter: boolean;
 
   /**
-   * require_reset_password_for_first_login requires users to change their password after their first login.
+   * require_reset_password_for_first_login requires users to reset their password after the 1st login.
    *
    * @generated from field: bool require_reset_password_for_first_login = 6;
    */
   requireResetPasswordForFirstLogin: boolean;
 
   /**
-   * password_rotation requires users to change their password after the duration.
+   * password_rotation requires users to reset their password after the duration.
    *
    * @generated from field: google.protobuf.Duration password_rotation = 7;
    */

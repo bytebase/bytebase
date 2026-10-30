@@ -310,6 +310,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.ExportDestination"><span class="badge">E</span>ExportDestination</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.ExportFormat"><span class="badge">E</span>ExportFormat</a>
                 </li>
               
@@ -1114,6 +1118,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.ExportSetting"><span class="badge">M</span>ExportSetting</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.GetSettingRequest"><span class="badge">M</span>GetSettingRequest</a>
                 </li>
               
@@ -1155,6 +1163,10 @@
               
                 <li>
                   <a href="#bytebase.v1.SettingValue"><span class="badge">M</span>SettingValue</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.SharePointSetting"><span class="badge">M</span>SharePointSetting</a>
                 </li>
               
                 <li>
@@ -2494,6 +2506,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.QueryDataPolicy.ExportDestinationPolicy"><span class="badge">M</span>QueryDataPolicy.ExportDestinationPolicy</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.ReviewAIPolicy"><span class="badge">M</span>ReviewAIPolicy</a>
                 </li>
               
@@ -2593,6 +2609,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.Project.ExportSetting"><span class="badge">M</span>Project.ExportSetting</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.Project.LabelsEntry"><span class="badge">M</span>Project.LabelsEntry</a>
                 </li>
               
@@ -2606,6 +2626,10 @@
               
                 <li>
                   <a href="#bytebase.v1.SearchProjectsResponse"><span class="badge">M</span>SearchProjectsResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.SharePointDestination"><span class="badge">M</span>SharePointDestination</a>
                 </li>
               
                 <li>
@@ -4617,6 +4641,35 @@ Examples:
                 <td>CASSANDRA</td>
                 <td>25</td>
                 <td><p>Apache Cassandra NoSQL database.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.ExportDestination">ExportDestination</h3>
+        <p>Where an export goes. Values are added as destinations are supported.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>EXPORT_DESTINATION_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p>Treated as DOWNLOAD.</p></td>
+              </tr>
+            
+              <tr>
+                <td>DOWNLOAD</td>
+                <td>1</td>
+                <td><p>Return the export in the response.</p></td>
+              </tr>
+            
+              <tr>
+                <td>SHAREPOINT</td>
+                <td>2</td>
+                <td><p>Upload the export to the project&#39;s SharePoint export destination.</p></td>
               </tr>
             
           </tbody>
@@ -8001,6 +8054,14 @@ Oracle and search path in Postgres. </p></td>
 CosmosDB only. </p></td>
                 </tr>
               
+                <tr>
+                  <td>destination</td>
+                  <td><a href="#bytebase.v1.ExportDestination">ExportDestination</a></td>
+                  <td></td>
+                  <td><p>Where the export goes. A destination the workspace query data policy
+does not allow is rejected with FAILED_PRECONDITION. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -8032,6 +8093,15 @@ CosmosDB only. </p></td>
                   <td><p>The just-in-time access grant applied to this export, if any.
 Format: projects/{project}/accessGrants/{accessGrant}.
 Empty when the user was authorized through normal ACL rather than a grant. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>uri</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Set when the export was sent to an export destination: the absolute
+location of the folder or key prefix created for this export, for example
+https://… for SharePoint or s3://bucket/prefix for S3. content is then empty. </p></td>
                 </tr>
               
             </tbody>
@@ -13526,6 +13596,30 @@ are /[a-z][0-9]-/. </p></td>
 
         
       
+        <h3 id="bytebase.v1.ExportSetting">ExportSetting</h3>
+        <p>ExportSetting holds each export destination provider's credentials.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>sharepoint</td>
+                  <td><a href="#bytebase.v1.SharePointSetting">SharePointSetting</a></td>
+                  <td></td>
+                  <td><p>Unset when SharePoint is not configured. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.GetSettingRequest">GetSettingRequest</h3>
         <p>The request message for getting a setting.</p>
 
@@ -13890,6 +13984,58 @@ Example: &#34;settings/SEMANTIC_TYPES&#34; </p></td>
                   <td><a href="#bytebase.v1.MCPSetting">MCPSetting</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>export</td>
+                  <td><a href="#bytebase.v1.ExportSetting">ExportSetting</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.SharePointSetting">SharePointSetting</h3>
+        <p>SharePointSetting is the Microsoft Entra application that uploads exports to</p><p>SharePoint. It is granted access per library by the customer's SharePoint</p><p>administrators.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>tenant_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The Microsoft Entra tenant (directory) ID. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>client_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The application (client) ID. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>client_secret</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The client secret. It is never returned. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>client_secret_set</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether a client secret is stored. </p></td>
                 </tr>
               
             </tbody>
@@ -14310,49 +14456,49 @@ offering &#34;generate&#34; and &#34;regenerate&#34;. </p></td>
                   <td>min_length</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>min_length is the minimum password length. It must be at least 8. </p></td>
+                  <td><p>min_length is the minimum length for password, should no less than 8. </p></td>
                 </tr>
               
                 <tr>
                   <td>require_number</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>require_number requires the password to contain at least one number. </p></td>
+                  <td><p>require_number requires the password must contains at least one number. </p></td>
                 </tr>
               
                 <tr>
                   <td>require_letter</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>require_letter requires the password to contain at least one letter, either uppercase or lowercase. </p></td>
+                  <td><p>require_letter requires the password must contains at least one letter, regardless of upper case or lower case </p></td>
                 </tr>
               
                 <tr>
                   <td>require_uppercase_letter</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>require_uppercase_letter requires the password to contain at least one uppercase letter. </p></td>
+                  <td><p>require_uppercase_letter requires the password must contains at least one upper case letter. </p></td>
                 </tr>
               
                 <tr>
                   <td>require_special_character</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>require_special_character requires the password to contain at least one special character. </p></td>
+                  <td><p>require_special_character requires the password must contains at least one special character. </p></td>
                 </tr>
               
                 <tr>
                   <td>require_reset_password_for_first_login</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>require_reset_password_for_first_login requires users to change their password after their first login. </p></td>
+                  <td><p>require_reset_password_for_first_login requires users to reset their password after the 1st login. </p></td>
                 </tr>
               
                 <tr>
                   <td>password_rotation</td>
                   <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
                   <td></td>
-                  <td><p>password_rotation requires users to change their password after the duration. </p></td>
+                  <td><p>password_rotation requires users to reset their password after the duration. </p></td>
                 </tr>
               
             </tbody>
@@ -14667,6 +14813,12 @@ database session is opened read-only as well.</p></td>
               <tr>
                 <td>MCP</td>
                 <td>9</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>EXPORT</td>
+                <td>10</td>
                 <td><p></p></td>
               </tr>
             
@@ -28790,6 +28942,16 @@ If false,
 2. otherwise fallback to use the admin data source. </p></td>
                 </tr>
               
+                <tr>
+                  <td>export_destination_policy</td>
+                  <td><a href="#bytebase.v1.QueryDataPolicy.ExportDestinationPolicy">QueryDataPolicy.ExportDestinationPolicy</a></td>
+                  <td></td>
+                  <td><p>workspace-level policy
+Where SQLService.Export may send results. When the stored policy has
+none, only DOWNLOAD is allowed, and reads return that default. An update
+that omits it keeps the stored value. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -28814,6 +28976,33 @@ If false,
               </tbody>
             </table>
             
+          
+
+        
+      
+        <h3 id="bytebase.v1.QueryDataPolicy.ExportDestinationPolicy">QueryDataPolicy.ExportDestinationPolicy</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>allowed_destinations</td>
+                  <td><a href="#bytebase.v1.ExportDestination">ExportDestination</a></td>
+                  <td>repeated</td>
+                  <td><p>The allowed destinations, without duplicates or
+EXPORT_DESTINATION_UNSPECIFIED. An empty list turns off export, even
+for an approved export access grant. A destination added to
+ExportDestination later is not allowed until it is listed here. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
           
 
         
@@ -29809,6 +29998,13 @@ If enabled, issues cannot be created when SQL review finds errors. </p></td>
                   <td><p>Whether to allow the last Plan editor to approve a database change issue. </p></td>
                 </tr>
               
+                <tr>
+                  <td>export_setting</td>
+                  <td><a href="#bytebase.v1.Project.ExportSetting">Project.ExportSetting</a></td>
+                  <td></td>
+                  <td><p>Export configuration for this project. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -29831,6 +30027,30 @@ If enabled, issues cannot be created when SQL review finds errors. </p></td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
                   <td><p>The maximum number of retries for lock timeout errors. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Project.ExportSetting">Project.ExportSetting</h3>
+        <p>Destinations offered for this project's exports, at most one per provider.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>sharepoint</td>
+                  <td><a href="#bytebase.v1.SharePointDestination">SharePointDestination</a></td>
+                  <td></td>
+                  <td><p>Unset when the project has no SharePoint destination. </p></td>
                 </tr>
               
             </tbody>
@@ -30005,6 +30225,31 @@ For example:
                   <td></td>
                   <td><p>A token, which can be sent as `page_token` to retrieve the next page.
 If this field is omitted, there are no subsequent pages. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.SharePointDestination">SharePointDestination</h3>
+        <p>A SharePoint document library root or folder that receives exports.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>url</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The URL of the library root or folder. Normalized to its canonical form
+and resolved with the workspace credentials on save. </p></td>
                 </tr>
               
             </tbody>
@@ -36528,6 +36773,12 @@ the response that produced it was redacted. </p></td>
                 <td>FEATURE_DEDICATED_SUPPORT_WITH_SLA</td>
                 <td>71</td>
                 <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>FEATURE_SHAREPOINT_EXPORT</td>
+                <td>72</td>
+                <td><p>Upload exports to SharePoint.</p></td>
               </tr>
             
           </tbody>

@@ -841,6 +841,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.QueryDataPolicy.ExportDestinationPolicy"><span class="badge">M</span>QueryDataPolicy.ExportDestinationPolicy</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.ReviewAIPolicy"><span class="badge">M</span>ReviewAIPolicy</a>
                 </li>
               
@@ -860,6 +864,10 @@
                   <a href="#bytebase.store.TagPolicy.TagsEntry"><span class="badge">M</span>TagPolicy.TagsEntry</a>
                 </li>
               
+              
+                <li>
+                  <a href="#bytebase.store.ExportDestination"><span class="badge">E</span>ExportDestination</a>
+                </li>
               
                 <li>
                   <a href="#bytebase.store.Policy.Resource"><span class="badge">E</span>Policy.Resource</a>
@@ -892,7 +900,15 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.Project.ExportSetting"><span class="badge">M</span>Project.ExportSetting</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.Project.LabelsEntry"><span class="badge">M</span>Project.LabelsEntry</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.Project.SharePointDestination"><span class="badge">M</span>Project.SharePointDestination</a>
                 </li>
               
               
@@ -1210,6 +1226,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.ExportSetting"><span class="badge">M</span>ExportSetting</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.MCPSetting"><span class="badge">M</span>MCPSetting</a>
                 </li>
               
@@ -1227,6 +1247,10 @@
               
                 <li>
                   <a href="#bytebase.store.SemanticTypeSetting.SemanticType"><span class="badge">M</span>SemanticTypeSetting.SemanticType</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.SharePointSetting"><span class="badge">M</span>SharePointSetting</a>
                 </li>
               
                 <li>
@@ -7466,6 +7490,14 @@ Allow using the admin data source to query in the SQL editor. </p></td>
                 </tr>
               
                 <tr>
+                  <td>export_destination_policy</td>
+                  <td><a href="#bytebase.store.QueryDataPolicy.ExportDestinationPolicy">QueryDataPolicy.ExportDestinationPolicy</a></td>
+                  <td></td>
+                  <td><p>workspace-level policy
+Where exports may go. Unset allows DOWNLOAD only; an empty list allows none. </p></td>
+                </tr>
+              
+                <tr>
                   <td>disallow_ddl</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
@@ -7479,6 +7511,30 @@ Disallow running DDL statements in the SQL editor. </p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>Disallow running DML statements in the SQL editor. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.QueryDataPolicy.ExportDestinationPolicy">QueryDataPolicy.ExportDestinationPolicy</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>allowed_destinations</td>
+                  <td><a href="#bytebase.store.ExportDestination">ExportDestination</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -7624,6 +7680,35 @@ For example, the environment resource can have the SQL review config tag, such a
         
       
 
+      
+        <h3 id="bytebase.store.ExportDestination">ExportDestination</h3>
+        <p>Where an export goes.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>EXPORT_DESTINATION_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DOWNLOAD</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SHAREPOINT</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
       
         <h3 id="bytebase.store.Policy.Resource">Policy.Resource</h3>
         <p></p>
@@ -7902,6 +7987,13 @@ If enabled, issues cannot be created when SQL review finds errors. </p></td>
                   <td><p>Whether to allow the last Plan editor to approve a database change issue. </p></td>
                 </tr>
               
+                <tr>
+                  <td>export_setting</td>
+                  <td><a href="#bytebase.store.Project.ExportSetting">Project.ExportSetting</a></td>
+                  <td></td>
+                  <td><p>Destinations offered for this project&#39;s exports. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -7933,6 +8025,30 @@ If enabled, issues cannot be created when SQL review finds errors. </p></td>
 
         
       
+        <h3 id="bytebase.store.Project.ExportSetting">Project.ExportSetting</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>sharepoint</td>
+                  <td><a href="#bytebase.store.Project.SharePointDestination">Project.SharePointDestination</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.Project.LabelsEntry">Project.LabelsEntry</h3>
         <p></p>
 
@@ -7955,6 +8071,30 @@ If enabled, issues cannot be created when SQL review finds errors. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.Project.SharePointDestination">Project.SharePointDestination</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>url</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The canonical URL of a SharePoint document library root or folder. </p></td>
                 </tr>
               
             </tbody>
@@ -10600,6 +10740,30 @@ are /[a-z][0-9]-/. </p></td>
 
         
       
+        <h3 id="bytebase.store.ExportSetting">ExportSetting</h3>
+        <p>ExportSetting holds each export destination provider's credentials.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>sharepoint</td>
+                  <td><a href="#bytebase.store.SharePointSetting">SharePointSetting</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.MCPSetting">MCPSetting</h3>
         <p>MCPSetting is what an MCP (Model Context Protocol) session may do in this</p><p>workspace. It is its own setting rather than a field of the workspace profile</p><p>because the set grows, and because the /mcp kill switch reads it on every</p><p>request and should not share a row — or a parse failure — with branding and</p><p>sign-in configuration.</p>
 
@@ -10772,6 +10936,44 @@ it only reads. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>icon is the icon for semantic type, it can be emoji or base64 encoded image. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.SharePointSetting">SharePointSetting</h3>
+        <p>SharePointSetting is the Microsoft Entra application that uploads exports to</p><p>SharePoint.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>tenant_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>client_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>client_secret</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -11145,49 +11347,49 @@ frontend-only concept that seeds these colors; the store only holds them. </p></
                   <td>min_length</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>min_length is the minimum password length. It must be at least 8. </p></td>
+                  <td><p>min_length is the minimum length for password, should be no less than 8. </p></td>
                 </tr>
               
                 <tr>
                   <td>require_number</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>require_number requires the password to contain at least one number. </p></td>
+                  <td><p>require_number requires the password must contain at least one number. </p></td>
                 </tr>
               
                 <tr>
                   <td>require_letter</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>require_letter requires the password to contain at least one letter, either uppercase or lowercase. </p></td>
+                  <td><p>require_letter requires the password must contain at least one letter, regardless of upper case or lower case </p></td>
                 </tr>
               
                 <tr>
                   <td>require_uppercase_letter</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>require_uppercase_letter requires the password to contain at least one uppercase letter. </p></td>
+                  <td><p>require_uppercase_letter requires the password must contain at least one upper case letter. </p></td>
                 </tr>
               
                 <tr>
                   <td>require_special_character</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>require_special_character requires the password to contain at least one special character. </p></td>
+                  <td><p>require_special_character requires the password must contain at least one special character. </p></td>
                 </tr>
               
                 <tr>
                   <td>require_reset_password_for_first_login</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>require_reset_password_for_first_login requires users to change their password after their first login. </p></td>
+                  <td><p>require_reset_password_for_first_login requires users to reset their password after the 1st login. </p></td>
                 </tr>
               
                 <tr>
                   <td>password_rotation</td>
                   <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
                   <td></td>
-                  <td><p>password_rotation requires users to change their password after the duration. </p></td>
+                  <td><p>password_rotation requires users to reset their password after the duration. </p></td>
                 </tr>
               
             </tbody>
@@ -11474,6 +11676,12 @@ frontend-only concept that seeds these colors; the store only holds them. </p></
               <tr>
                 <td>MCP</td>
                 <td>10</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>EXPORT</td>
+                <td>11</td>
                 <td><p></p></td>
               </tr>
             

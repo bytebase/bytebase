@@ -885,8 +885,13 @@ type QueryDataPolicy struct {
 	// 1. when read-only data source is configured, users're force to use the read-only data source
 	// 2. otherwise fallback to use the admin data source.
 	AllowAdminDataSource bool `protobuf:"varint,4,opt,name=allow_admin_data_source,json=allowAdminDataSource,proto3" json:"allow_admin_data_source,omitempty"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	// workspace-level policy
+	// Where SQLService.Export may send results. When the stored policy has
+	// none, only DOWNLOAD is allowed, and reads return that default. An update
+	// that omits it keeps the stored value.
+	ExportDestinationPolicy *QueryDataPolicy_ExportDestinationPolicy `protobuf:"bytes,5,opt,name=export_destination_policy,json=exportDestinationPolicy,proto3" json:"export_destination_policy,omitempty"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
 }
 
 func (x *QueryDataPolicy) Reset() {
@@ -946,6 +951,13 @@ func (x *QueryDataPolicy) GetAllowAdminDataSource() bool {
 		return x.AllowAdminDataSource
 	}
 	return false
+}
+
+func (x *QueryDataPolicy) GetExportDestinationPolicy() *QueryDataPolicy_ExportDestinationPolicy {
+	if x != nil {
+		return x.ExportDestinationPolicy
+	}
+	return nil
 }
 
 // MaskingExemptionPolicy is the allowlist of users who can access sensitive data.
@@ -1086,6 +1098,54 @@ func (x *TagPolicy) GetTags() map[string]string {
 	return nil
 }
 
+type QueryDataPolicy_ExportDestinationPolicy struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The allowed destinations, without duplicates or
+	// EXPORT_DESTINATION_UNSPECIFIED. An empty list turns off export, even
+	// for an approved export access grant. A destination added to
+	// ExportDestination later is not allowed until it is listed here.
+	AllowedDestinations []ExportDestination `protobuf:"varint,1,rep,packed,name=allowed_destinations,json=allowedDestinations,proto3,enum=bytebase.v1.ExportDestination" json:"allowed_destinations,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *QueryDataPolicy_ExportDestinationPolicy) Reset() {
+	*x = QueryDataPolicy_ExportDestinationPolicy{}
+	mi := &file_v1_org_policy_service_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QueryDataPolicy_ExportDestinationPolicy) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryDataPolicy_ExportDestinationPolicy) ProtoMessage() {}
+
+func (x *QueryDataPolicy_ExportDestinationPolicy) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_org_policy_service_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QueryDataPolicy_ExportDestinationPolicy.ProtoReflect.Descriptor instead.
+func (*QueryDataPolicy_ExportDestinationPolicy) Descriptor() ([]byte, []int) {
+	return file_v1_org_policy_service_proto_rawDescGZIP(), []int{10, 0}
+}
+
+func (x *QueryDataPolicy_ExportDestinationPolicy) GetAllowedDestinations() []ExportDestination {
+	if x != nil {
+		return x.AllowedDestinations
+	}
+	return nil
+}
+
 type MaskingExemptionPolicy_Exemption struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Specifies the principals who are exempt from masking.
@@ -1117,7 +1177,7 @@ type MaskingExemptionPolicy_Exemption struct {
 
 func (x *MaskingExemptionPolicy_Exemption) Reset() {
 	*x = MaskingExemptionPolicy_Exemption{}
-	mi := &file_v1_org_policy_service_proto_msgTypes[14]
+	mi := &file_v1_org_policy_service_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1129,7 +1189,7 @@ func (x *MaskingExemptionPolicy_Exemption) String() string {
 func (*MaskingExemptionPolicy_Exemption) ProtoMessage() {}
 
 func (x *MaskingExemptionPolicy_Exemption) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_org_policy_service_proto_msgTypes[14]
+	mi := &file_v1_org_policy_service_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1197,7 +1257,7 @@ type MaskingRulePolicy_MaskingRule struct {
 
 func (x *MaskingRulePolicy_MaskingRule) Reset() {
 	*x = MaskingRulePolicy_MaskingRule{}
-	mi := &file_v1_org_policy_service_proto_msgTypes[15]
+	mi := &file_v1_org_policy_service_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1209,7 +1269,7 @@ func (x *MaskingRulePolicy_MaskingRule) String() string {
 func (*MaskingRulePolicy_MaskingRule) ProtoMessage() {}
 
 func (x *MaskingRulePolicy_MaskingRule) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_org_policy_service_proto_msgTypes[15]
+	mi := &file_v1_org_policy_service_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1250,7 +1310,7 @@ var File_v1_org_policy_service_proto protoreflect.FileDescriptor
 
 const file_v1_org_policy_service_proto_rawDesc = "" +
 	"\n" +
-	"\x1bv1/org_policy_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x16google/type/expr.proto\x1a\x13v1/annotation.proto\x1a\x14v1/review_rule.proto\"\xa9\x01\n" +
+	"\x1bv1/org_policy_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x16google/type/expr.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x14v1/review_rule.proto\"\xa9\x01\n" +
 	"\x13CreatePolicyRequest\x123\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1b\xe0A\x02\xfaA\x15\x12\x13bytebase.com/PolicyR\x06parent\x120\n" +
 	"\x06policy\x18\x02 \x01(\v2\x13.bytebase.v1.PolicyB\x03\xe0A\x02R\x06policy\x12+\n" +
@@ -1297,12 +1357,15 @@ const file_v1_org_policy_service_proto_rawDesc = "" +
 	"\acontent\x18\x01 \x01(\tR\acontent\"C\n" +
 	"\rRolloutPolicy\x12\x1c\n" +
 	"\tautomatic\x18\x01 \x01(\bR\tautomatic\x12\x14\n" +
-	"\x05roles\x18\x02 \x03(\tR\x05roles\"\xcf\x01\n" +
+	"\x05roles\x18\x02 \x03(\tR\x05roles\"\xaf\x03\n" +
 	"\x0fQueryDataPolicy\x12.\n" +
 	"\x13maximum_result_rows\x18\x01 \x01(\x05R\x11maximumResultRows\x12)\n" +
 	"\x0edisable_export\x18\x02 \x01(\bB\x02\x18\x01R\rdisableExport\x12*\n" +
 	"\x11disable_copy_data\x18\x03 \x01(\bR\x0fdisableCopyData\x125\n" +
-	"\x17allow_admin_data_source\x18\x04 \x01(\bR\x14allowAdminDataSource\"\xbf\x01\n" +
+	"\x17allow_admin_data_source\x18\x04 \x01(\bR\x14allowAdminDataSource\x12p\n" +
+	"\x19export_destination_policy\x18\x05 \x01(\v24.bytebase.v1.QueryDataPolicy.ExportDestinationPolicyR\x17exportDestinationPolicy\x1al\n" +
+	"\x17ExportDestinationPolicy\x12Q\n" +
+	"\x14allowed_destinations\x18\x01 \x03(\x0e2\x1e.bytebase.v1.ExportDestinationR\x13allowedDestinations\"\xbf\x01\n" +
 	"\x16MaskingExemptionPolicy\x12M\n" +
 	"\n" +
 	"exemptions\x18\x01 \x03(\v2-.bytebase.v1.MaskingExemptionPolicy.ExemptionR\n" +
@@ -1359,37 +1422,39 @@ func file_v1_org_policy_service_proto_rawDescGZIP() []byte {
 }
 
 var file_v1_org_policy_service_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_v1_org_policy_service_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
+var file_v1_org_policy_service_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
 var file_v1_org_policy_service_proto_goTypes = []any{
-	(PolicyType)(0),                          // 0: bytebase.v1.PolicyType
-	(PolicyResourceType)(0),                  // 1: bytebase.v1.PolicyResourceType
-	(*CreatePolicyRequest)(nil),              // 2: bytebase.v1.CreatePolicyRequest
-	(*UpdatePolicyRequest)(nil),              // 3: bytebase.v1.UpdatePolicyRequest
-	(*DeletePolicyRequest)(nil),              // 4: bytebase.v1.DeletePolicyRequest
-	(*GetPolicyRequest)(nil),                 // 5: bytebase.v1.GetPolicyRequest
-	(*ListPoliciesRequest)(nil),              // 6: bytebase.v1.ListPoliciesRequest
-	(*ListPoliciesResponse)(nil),             // 7: bytebase.v1.ListPoliciesResponse
-	(*Policy)(nil),                           // 8: bytebase.v1.Policy
-	(*ReviewRulePolicy)(nil),                 // 9: bytebase.v1.ReviewRulePolicy
-	(*ReviewAIPolicy)(nil),                   // 10: bytebase.v1.ReviewAIPolicy
-	(*RolloutPolicy)(nil),                    // 11: bytebase.v1.RolloutPolicy
-	(*QueryDataPolicy)(nil),                  // 12: bytebase.v1.QueryDataPolicy
-	(*MaskingExemptionPolicy)(nil),           // 13: bytebase.v1.MaskingExemptionPolicy
-	(*MaskingRulePolicy)(nil),                // 14: bytebase.v1.MaskingRulePolicy
-	(*TagPolicy)(nil),                        // 15: bytebase.v1.TagPolicy
-	(*MaskingExemptionPolicy_Exemption)(nil), // 16: bytebase.v1.MaskingExemptionPolicy.Exemption
-	(*MaskingRulePolicy_MaskingRule)(nil),    // 17: bytebase.v1.MaskingRulePolicy.MaskingRule
-	nil,                                      // 18: bytebase.v1.TagPolicy.TagsEntry
-	(*fieldmaskpb.FieldMask)(nil),            // 19: google.protobuf.FieldMask
-	(ReviewRuleType)(0),                      // 20: bytebase.v1.ReviewRuleType
-	(*expr.Expr)(nil),                        // 21: google.type.Expr
-	(*emptypb.Empty)(nil),                    // 22: google.protobuf.Empty
+	(PolicyType)(0),                                 // 0: bytebase.v1.PolicyType
+	(PolicyResourceType)(0),                         // 1: bytebase.v1.PolicyResourceType
+	(*CreatePolicyRequest)(nil),                     // 2: bytebase.v1.CreatePolicyRequest
+	(*UpdatePolicyRequest)(nil),                     // 3: bytebase.v1.UpdatePolicyRequest
+	(*DeletePolicyRequest)(nil),                     // 4: bytebase.v1.DeletePolicyRequest
+	(*GetPolicyRequest)(nil),                        // 5: bytebase.v1.GetPolicyRequest
+	(*ListPoliciesRequest)(nil),                     // 6: bytebase.v1.ListPoliciesRequest
+	(*ListPoliciesResponse)(nil),                    // 7: bytebase.v1.ListPoliciesResponse
+	(*Policy)(nil),                                  // 8: bytebase.v1.Policy
+	(*ReviewRulePolicy)(nil),                        // 9: bytebase.v1.ReviewRulePolicy
+	(*ReviewAIPolicy)(nil),                          // 10: bytebase.v1.ReviewAIPolicy
+	(*RolloutPolicy)(nil),                           // 11: bytebase.v1.RolloutPolicy
+	(*QueryDataPolicy)(nil),                         // 12: bytebase.v1.QueryDataPolicy
+	(*MaskingExemptionPolicy)(nil),                  // 13: bytebase.v1.MaskingExemptionPolicy
+	(*MaskingRulePolicy)(nil),                       // 14: bytebase.v1.MaskingRulePolicy
+	(*TagPolicy)(nil),                               // 15: bytebase.v1.TagPolicy
+	(*QueryDataPolicy_ExportDestinationPolicy)(nil), // 16: bytebase.v1.QueryDataPolicy.ExportDestinationPolicy
+	(*MaskingExemptionPolicy_Exemption)(nil),        // 17: bytebase.v1.MaskingExemptionPolicy.Exemption
+	(*MaskingRulePolicy_MaskingRule)(nil),           // 18: bytebase.v1.MaskingRulePolicy.MaskingRule
+	nil,                                             // 19: bytebase.v1.TagPolicy.TagsEntry
+	(*fieldmaskpb.FieldMask)(nil),                   // 20: google.protobuf.FieldMask
+	(ReviewRuleType)(0),                             // 21: bytebase.v1.ReviewRuleType
+	(ExportDestination)(0),                          // 22: bytebase.v1.ExportDestination
+	(*expr.Expr)(nil),                               // 23: google.type.Expr
+	(*emptypb.Empty)(nil),                           // 24: google.protobuf.Empty
 }
 var file_v1_org_policy_service_proto_depIdxs = []int32{
 	8,  // 0: bytebase.v1.CreatePolicyRequest.policy:type_name -> bytebase.v1.Policy
 	0,  // 1: bytebase.v1.CreatePolicyRequest.type:type_name -> bytebase.v1.PolicyType
 	8,  // 2: bytebase.v1.UpdatePolicyRequest.policy:type_name -> bytebase.v1.Policy
-	19, // 3: bytebase.v1.UpdatePolicyRequest.update_mask:type_name -> google.protobuf.FieldMask
+	20, // 3: bytebase.v1.UpdatePolicyRequest.update_mask:type_name -> google.protobuf.FieldMask
 	0,  // 4: bytebase.v1.ListPoliciesRequest.policy_type:type_name -> bytebase.v1.PolicyType
 	8,  // 5: bytebase.v1.ListPoliciesResponse.policies:type_name -> bytebase.v1.Policy
 	0,  // 6: bytebase.v1.Policy.type:type_name -> bytebase.v1.PolicyType
@@ -1401,27 +1466,29 @@ var file_v1_org_policy_service_proto_depIdxs = []int32{
 	9,  // 12: bytebase.v1.Policy.review_rule_policy:type_name -> bytebase.v1.ReviewRulePolicy
 	10, // 13: bytebase.v1.Policy.review_ai_policy:type_name -> bytebase.v1.ReviewAIPolicy
 	1,  // 14: bytebase.v1.Policy.resource_type:type_name -> bytebase.v1.PolicyResourceType
-	20, // 15: bytebase.v1.ReviewRulePolicy.rules:type_name -> bytebase.v1.ReviewRuleType
-	16, // 16: bytebase.v1.MaskingExemptionPolicy.exemptions:type_name -> bytebase.v1.MaskingExemptionPolicy.Exemption
-	17, // 17: bytebase.v1.MaskingRulePolicy.rules:type_name -> bytebase.v1.MaskingRulePolicy.MaskingRule
-	18, // 18: bytebase.v1.TagPolicy.tags:type_name -> bytebase.v1.TagPolicy.TagsEntry
-	21, // 19: bytebase.v1.MaskingExemptionPolicy.Exemption.condition:type_name -> google.type.Expr
-	21, // 20: bytebase.v1.MaskingRulePolicy.MaskingRule.condition:type_name -> google.type.Expr
-	5,  // 21: bytebase.v1.OrgPolicyService.GetPolicy:input_type -> bytebase.v1.GetPolicyRequest
-	6,  // 22: bytebase.v1.OrgPolicyService.ListPolicies:input_type -> bytebase.v1.ListPoliciesRequest
-	2,  // 23: bytebase.v1.OrgPolicyService.CreatePolicy:input_type -> bytebase.v1.CreatePolicyRequest
-	3,  // 24: bytebase.v1.OrgPolicyService.UpdatePolicy:input_type -> bytebase.v1.UpdatePolicyRequest
-	4,  // 25: bytebase.v1.OrgPolicyService.DeletePolicy:input_type -> bytebase.v1.DeletePolicyRequest
-	8,  // 26: bytebase.v1.OrgPolicyService.GetPolicy:output_type -> bytebase.v1.Policy
-	7,  // 27: bytebase.v1.OrgPolicyService.ListPolicies:output_type -> bytebase.v1.ListPoliciesResponse
-	8,  // 28: bytebase.v1.OrgPolicyService.CreatePolicy:output_type -> bytebase.v1.Policy
-	8,  // 29: bytebase.v1.OrgPolicyService.UpdatePolicy:output_type -> bytebase.v1.Policy
-	22, // 30: bytebase.v1.OrgPolicyService.DeletePolicy:output_type -> google.protobuf.Empty
-	26, // [26:31] is the sub-list for method output_type
-	21, // [21:26] is the sub-list for method input_type
-	21, // [21:21] is the sub-list for extension type_name
-	21, // [21:21] is the sub-list for extension extendee
-	0,  // [0:21] is the sub-list for field type_name
+	21, // 15: bytebase.v1.ReviewRulePolicy.rules:type_name -> bytebase.v1.ReviewRuleType
+	16, // 16: bytebase.v1.QueryDataPolicy.export_destination_policy:type_name -> bytebase.v1.QueryDataPolicy.ExportDestinationPolicy
+	17, // 17: bytebase.v1.MaskingExemptionPolicy.exemptions:type_name -> bytebase.v1.MaskingExemptionPolicy.Exemption
+	18, // 18: bytebase.v1.MaskingRulePolicy.rules:type_name -> bytebase.v1.MaskingRulePolicy.MaskingRule
+	19, // 19: bytebase.v1.TagPolicy.tags:type_name -> bytebase.v1.TagPolicy.TagsEntry
+	22, // 20: bytebase.v1.QueryDataPolicy.ExportDestinationPolicy.allowed_destinations:type_name -> bytebase.v1.ExportDestination
+	23, // 21: bytebase.v1.MaskingExemptionPolicy.Exemption.condition:type_name -> google.type.Expr
+	23, // 22: bytebase.v1.MaskingRulePolicy.MaskingRule.condition:type_name -> google.type.Expr
+	5,  // 23: bytebase.v1.OrgPolicyService.GetPolicy:input_type -> bytebase.v1.GetPolicyRequest
+	6,  // 24: bytebase.v1.OrgPolicyService.ListPolicies:input_type -> bytebase.v1.ListPoliciesRequest
+	2,  // 25: bytebase.v1.OrgPolicyService.CreatePolicy:input_type -> bytebase.v1.CreatePolicyRequest
+	3,  // 26: bytebase.v1.OrgPolicyService.UpdatePolicy:input_type -> bytebase.v1.UpdatePolicyRequest
+	4,  // 27: bytebase.v1.OrgPolicyService.DeletePolicy:input_type -> bytebase.v1.DeletePolicyRequest
+	8,  // 28: bytebase.v1.OrgPolicyService.GetPolicy:output_type -> bytebase.v1.Policy
+	7,  // 29: bytebase.v1.OrgPolicyService.ListPolicies:output_type -> bytebase.v1.ListPoliciesResponse
+	8,  // 30: bytebase.v1.OrgPolicyService.CreatePolicy:output_type -> bytebase.v1.Policy
+	8,  // 31: bytebase.v1.OrgPolicyService.UpdatePolicy:output_type -> bytebase.v1.Policy
+	24, // 32: bytebase.v1.OrgPolicyService.DeletePolicy:output_type -> google.protobuf.Empty
+	28, // [28:33] is the sub-list for method output_type
+	23, // [23:28] is the sub-list for method input_type
+	23, // [23:23] is the sub-list for extension type_name
+	23, // [23:23] is the sub-list for extension extendee
+	0,  // [0:23] is the sub-list for field type_name
 }
 
 func init() { file_v1_org_policy_service_proto_init() }
@@ -1430,6 +1497,7 @@ func file_v1_org_policy_service_proto_init() {
 		return
 	}
 	file_v1_annotation_proto_init()
+	file_v1_common_proto_init()
 	file_v1_review_rule_proto_init()
 	file_v1_org_policy_service_proto_msgTypes[4].OneofWrappers = []any{}
 	file_v1_org_policy_service_proto_msgTypes[6].OneofWrappers = []any{
@@ -1447,7 +1515,7 @@ func file_v1_org_policy_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_org_policy_service_proto_rawDesc), len(file_v1_org_policy_service_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   17,
+			NumMessages:   18,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

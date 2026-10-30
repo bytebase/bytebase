@@ -371,6 +371,8 @@ enum PlanFeature {
   FEATURE_COMMUNITY_SUPPORT = 69;
   FEATURE_EMAIL_SUPPORT = 70;
   FEATURE_DEDICATED_SUPPORT_WITH_SLA = 71;
+  // Upload exports to SharePoint.
+  FEATURE_SHAREPOINT_EXPORT = 72;
 }
 
 // PlanConfig represents the configuration for all plans loaded from plan.yaml

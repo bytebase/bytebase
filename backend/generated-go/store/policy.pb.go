@@ -22,6 +22,56 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Where an export goes.
+type ExportDestination int32
+
+const (
+	ExportDestination_EXPORT_DESTINATION_UNSPECIFIED ExportDestination = 0
+	ExportDestination_DOWNLOAD                       ExportDestination = 1
+	ExportDestination_SHAREPOINT                     ExportDestination = 2
+)
+
+// Enum value maps for ExportDestination.
+var (
+	ExportDestination_name = map[int32]string{
+		0: "EXPORT_DESTINATION_UNSPECIFIED",
+		1: "DOWNLOAD",
+		2: "SHAREPOINT",
+	}
+	ExportDestination_value = map[string]int32{
+		"EXPORT_DESTINATION_UNSPECIFIED": 0,
+		"DOWNLOAD":                       1,
+		"SHAREPOINT":                     2,
+	}
+)
+
+func (x ExportDestination) Enum() *ExportDestination {
+	p := new(ExportDestination)
+	*p = x
+	return p
+}
+
+func (x ExportDestination) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ExportDestination) Descriptor() protoreflect.EnumDescriptor {
+	return file_store_policy_proto_enumTypes[0].Descriptor()
+}
+
+func (ExportDestination) Type() protoreflect.EnumType {
+	return &file_store_policy_proto_enumTypes[0]
+}
+
+func (x ExportDestination) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ExportDestination.Descriptor instead.
+func (ExportDestination) EnumDescriptor() ([]byte, []int) {
+	return file_store_policy_proto_rawDescGZIP(), []int{0}
+}
+
 type Policy_Type int32
 
 const (
@@ -73,11 +123,11 @@ func (x Policy_Type) String() string {
 }
 
 func (Policy_Type) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_policy_proto_enumTypes[0].Descriptor()
+	return file_store_policy_proto_enumTypes[1].Descriptor()
 }
 
 func (Policy_Type) Type() protoreflect.EnumType {
-	return &file_store_policy_proto_enumTypes[0]
+	return &file_store_policy_proto_enumTypes[1]
 }
 
 func (x Policy_Type) Number() protoreflect.EnumNumber {
@@ -125,11 +175,11 @@ func (x Policy_Resource) String() string {
 }
 
 func (Policy_Resource) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_policy_proto_enumTypes[1].Descriptor()
+	return file_store_policy_proto_enumTypes[2].Descriptor()
 }
 
 func (Policy_Resource) Type() protoreflect.EnumType {
-	return &file_store_policy_proto_enumTypes[1]
+	return &file_store_policy_proto_enumTypes[2]
 }
 
 func (x Policy_Resource) Number() protoreflect.EnumNumber {
@@ -585,6 +635,9 @@ type QueryDataPolicy struct {
 	// workspace-level policy
 	// Allow using the admin data source to query in the SQL editor.
 	AllowAdminDataSource bool `protobuf:"varint,9,opt,name=allow_admin_data_source,json=allowAdminDataSource,proto3" json:"allow_admin_data_source,omitempty"`
+	// workspace-level policy
+	// Where exports may go. Unset allows DOWNLOAD only; an empty list allows none.
+	ExportDestinationPolicy *QueryDataPolicy_ExportDestinationPolicy `protobuf:"bytes,10,opt,name=export_destination_policy,json=exportDestinationPolicy,proto3" json:"export_destination_policy,omitempty"`
 	// ================
 	// Deprecate following fields.
 	// Disallow running DDL statements in the SQL editor.
@@ -644,6 +697,13 @@ func (x *QueryDataPolicy) GetAllowAdminDataSource() bool {
 		return x.AllowAdminDataSource
 	}
 	return false
+}
+
+func (x *QueryDataPolicy) GetExportDestinationPolicy() *QueryDataPolicy_ExportDestinationPolicy {
+	if x != nil {
+		return x.ExportDestinationPolicy
+	}
+	return nil
 }
 
 func (x *QueryDataPolicy) GetDisallowDdl() bool {
@@ -792,6 +852,50 @@ func (x *MaskingRulePolicy_MaskingRule) GetSemanticType() string {
 	return ""
 }
 
+type QueryDataPolicy_ExportDestinationPolicy struct {
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	AllowedDestinations []ExportDestination    `protobuf:"varint,1,rep,packed,name=allowed_destinations,json=allowedDestinations,proto3,enum=bytebase.store.ExportDestination" json:"allowed_destinations,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *QueryDataPolicy_ExportDestinationPolicy) Reset() {
+	*x = QueryDataPolicy_ExportDestinationPolicy{}
+	mi := &file_store_policy_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QueryDataPolicy_ExportDestinationPolicy) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryDataPolicy_ExportDestinationPolicy) ProtoMessage() {}
+
+func (x *QueryDataPolicy_ExportDestinationPolicy) ProtoReflect() protoreflect.Message {
+	mi := &file_store_policy_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QueryDataPolicy_ExportDestinationPolicy.ProtoReflect.Descriptor instead.
+func (*QueryDataPolicy_ExportDestinationPolicy) Descriptor() ([]byte, []int) {
+	return file_store_policy_proto_rawDescGZIP(), []int{9, 0}
+}
+
+func (x *QueryDataPolicy_ExportDestinationPolicy) GetAllowedDestinations() []ExportDestination {
+	if x != nil {
+		return x.AllowedDestinations
+	}
+	return nil
+}
+
 var File_store_policy_proto protoreflect.FileDescriptor
 
 const file_store_policy_proto_rawDesc = "" +
@@ -844,13 +948,22 @@ const file_store_policy_proto_rawDesc = "" +
 	"\amembers\x18\x02 \x03(\tR\amembers\x12/\n" +
 	"\tcondition\x18\x03 \x01(\v2\x11.google.type.ExprR\tcondition\"@\n" +
 	"\tIamPolicy\x123\n" +
-	"\bbindings\x18\x01 \x03(\v2\x17.bytebase.store.BindingR\bbindings\"\x92\x02\n" +
+	"\bbindings\x18\x01 \x03(\v2\x17.bytebase.store.BindingR\bbindings\"\xf8\x03\n" +
 	"\x0fQueryDataPolicy\x12.\n" +
 	"\x13maximum_result_rows\x18\x04 \x01(\x05R\x11maximumResultRows\x12*\n" +
 	"\x11disable_copy_data\x18\x05 \x01(\bR\x0fdisableCopyData\x125\n" +
-	"\x17allow_admin_data_source\x18\t \x01(\bR\x14allowAdminDataSource\x12!\n" +
+	"\x17allow_admin_data_source\x18\t \x01(\bR\x14allowAdminDataSource\x12s\n" +
+	"\x19export_destination_policy\x18\n" +
+	" \x01(\v27.bytebase.store.QueryDataPolicy.ExportDestinationPolicyR\x17exportDestinationPolicy\x12!\n" +
 	"\fdisallow_ddl\x18\a \x01(\bR\vdisallowDdl\x12!\n" +
-	"\fdisallow_dml\x18\b \x01(\bR\vdisallowDmlJ\x04\b\x06\x10\aJ\x04\b\x01\x10\x02J\x04\b\x03\x10\x04J\x04\b\x02\x10\x03R\x0edisable_exportB\x8e\x01\n" +
+	"\fdisallow_dml\x18\b \x01(\bR\vdisallowDml\x1ao\n" +
+	"\x17ExportDestinationPolicy\x12T\n" +
+	"\x14allowed_destinations\x18\x01 \x03(\x0e2!.bytebase.store.ExportDestinationR\x13allowedDestinationsJ\x04\b\x06\x10\aJ\x04\b\x01\x10\x02J\x04\b\x03\x10\x04J\x04\b\x02\x10\x03R\x0edisable_export*U\n" +
+	"\x11ExportDestination\x12\"\n" +
+	"\x1eEXPORT_DESTINATION_UNSPECIFIED\x10\x00\x12\f\n" +
+	"\bDOWNLOAD\x10\x01\x12\x0e\n" +
+	"\n" +
+	"SHAREPOINT\x10\x02B\x8e\x01\n" +
 	"\x12com.bytebase.storeB\vPolicyProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
@@ -865,41 +978,45 @@ func file_store_policy_proto_rawDescGZIP() []byte {
 	return file_store_policy_proto_rawDescData
 }
 
-var file_store_policy_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_store_policy_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_store_policy_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_store_policy_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_store_policy_proto_goTypes = []any{
-	(Policy_Type)(0),                         // 0: bytebase.store.Policy.Type
-	(Policy_Resource)(0),                     // 1: bytebase.store.Policy.Resource
-	(*Policy)(nil),                           // 2: bytebase.store.Policy
-	(*ReviewRulePolicy)(nil),                 // 3: bytebase.store.ReviewRulePolicy
-	(*ReviewAIPolicy)(nil),                   // 4: bytebase.store.ReviewAIPolicy
-	(*RolloutPolicy)(nil),                    // 5: bytebase.store.RolloutPolicy
-	(*MaskingExemptionPolicy)(nil),           // 6: bytebase.store.MaskingExemptionPolicy
-	(*MaskingRulePolicy)(nil),                // 7: bytebase.store.MaskingRulePolicy
-	(*TagPolicy)(nil),                        // 8: bytebase.store.TagPolicy
-	(*Binding)(nil),                          // 9: bytebase.store.Binding
-	(*IamPolicy)(nil),                        // 10: bytebase.store.IamPolicy
-	(*QueryDataPolicy)(nil),                  // 11: bytebase.store.QueryDataPolicy
-	(*MaskingExemptionPolicy_Exemption)(nil), // 12: bytebase.store.MaskingExemptionPolicy.Exemption
-	(*MaskingRulePolicy_MaskingRule)(nil),    // 13: bytebase.store.MaskingRulePolicy.MaskingRule
-	nil,                                      // 14: bytebase.store.TagPolicy.TagsEntry
-	(ReviewRuleType)(0),                      // 15: bytebase.store.ReviewRuleType
-	(*expr.Expr)(nil),                        // 16: google.type.Expr
+	(ExportDestination)(0),                          // 0: bytebase.store.ExportDestination
+	(Policy_Type)(0),                                // 1: bytebase.store.Policy.Type
+	(Policy_Resource)(0),                            // 2: bytebase.store.Policy.Resource
+	(*Policy)(nil),                                  // 3: bytebase.store.Policy
+	(*ReviewRulePolicy)(nil),                        // 4: bytebase.store.ReviewRulePolicy
+	(*ReviewAIPolicy)(nil),                          // 5: bytebase.store.ReviewAIPolicy
+	(*RolloutPolicy)(nil),                           // 6: bytebase.store.RolloutPolicy
+	(*MaskingExemptionPolicy)(nil),                  // 7: bytebase.store.MaskingExemptionPolicy
+	(*MaskingRulePolicy)(nil),                       // 8: bytebase.store.MaskingRulePolicy
+	(*TagPolicy)(nil),                               // 9: bytebase.store.TagPolicy
+	(*Binding)(nil),                                 // 10: bytebase.store.Binding
+	(*IamPolicy)(nil),                               // 11: bytebase.store.IamPolicy
+	(*QueryDataPolicy)(nil),                         // 12: bytebase.store.QueryDataPolicy
+	(*MaskingExemptionPolicy_Exemption)(nil),        // 13: bytebase.store.MaskingExemptionPolicy.Exemption
+	(*MaskingRulePolicy_MaskingRule)(nil),           // 14: bytebase.store.MaskingRulePolicy.MaskingRule
+	nil,                                             // 15: bytebase.store.TagPolicy.TagsEntry
+	(*QueryDataPolicy_ExportDestinationPolicy)(nil), // 16: bytebase.store.QueryDataPolicy.ExportDestinationPolicy
+	(ReviewRuleType)(0),                             // 17: bytebase.store.ReviewRuleType
+	(*expr.Expr)(nil),                               // 18: google.type.Expr
 }
 var file_store_policy_proto_depIdxs = []int32{
-	15, // 0: bytebase.store.ReviewRulePolicy.rules:type_name -> bytebase.store.ReviewRuleType
-	12, // 1: bytebase.store.MaskingExemptionPolicy.exemptions:type_name -> bytebase.store.MaskingExemptionPolicy.Exemption
-	13, // 2: bytebase.store.MaskingRulePolicy.rules:type_name -> bytebase.store.MaskingRulePolicy.MaskingRule
-	14, // 3: bytebase.store.TagPolicy.tags:type_name -> bytebase.store.TagPolicy.TagsEntry
-	16, // 4: bytebase.store.Binding.condition:type_name -> google.type.Expr
-	9,  // 5: bytebase.store.IamPolicy.bindings:type_name -> bytebase.store.Binding
-	16, // 6: bytebase.store.MaskingExemptionPolicy.Exemption.condition:type_name -> google.type.Expr
-	16, // 7: bytebase.store.MaskingRulePolicy.MaskingRule.condition:type_name -> google.type.Expr
-	8,  // [8:8] is the sub-list for method output_type
-	8,  // [8:8] is the sub-list for method input_type
-	8,  // [8:8] is the sub-list for extension type_name
-	8,  // [8:8] is the sub-list for extension extendee
-	0,  // [0:8] is the sub-list for field type_name
+	17, // 0: bytebase.store.ReviewRulePolicy.rules:type_name -> bytebase.store.ReviewRuleType
+	13, // 1: bytebase.store.MaskingExemptionPolicy.exemptions:type_name -> bytebase.store.MaskingExemptionPolicy.Exemption
+	14, // 2: bytebase.store.MaskingRulePolicy.rules:type_name -> bytebase.store.MaskingRulePolicy.MaskingRule
+	15, // 3: bytebase.store.TagPolicy.tags:type_name -> bytebase.store.TagPolicy.TagsEntry
+	18, // 4: bytebase.store.Binding.condition:type_name -> google.type.Expr
+	10, // 5: bytebase.store.IamPolicy.bindings:type_name -> bytebase.store.Binding
+	16, // 6: bytebase.store.QueryDataPolicy.export_destination_policy:type_name -> bytebase.store.QueryDataPolicy.ExportDestinationPolicy
+	18, // 7: bytebase.store.MaskingExemptionPolicy.Exemption.condition:type_name -> google.type.Expr
+	18, // 8: bytebase.store.MaskingRulePolicy.MaskingRule.condition:type_name -> google.type.Expr
+	0,  // 9: bytebase.store.QueryDataPolicy.ExportDestinationPolicy.allowed_destinations:type_name -> bytebase.store.ExportDestination
+	10, // [10:10] is the sub-list for method output_type
+	10, // [10:10] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_store_policy_proto_init() }
@@ -913,8 +1030,8 @@ func file_store_policy_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_policy_proto_rawDesc), len(file_store_policy_proto_rawDesc)),
-			NumEnums:      2,
-			NumMessages:   13,
+			NumEnums:      3,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

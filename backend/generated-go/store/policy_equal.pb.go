@@ -216,6 +216,24 @@ func (x *IamPolicy) Equal(y *IamPolicy) bool {
 	return true
 }
 
+func (x *QueryDataPolicy_ExportDestinationPolicy) Equal(y *QueryDataPolicy_ExportDestinationPolicy) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if len(x.AllowedDestinations) != len(y.AllowedDestinations) {
+		return false
+	}
+	for i := 0; i < len(x.AllowedDestinations); i++ {
+		if x.AllowedDestinations[i] != y.AllowedDestinations[i] {
+			return false
+		}
+	}
+	return true
+}
+
 func (x *QueryDataPolicy) Equal(y *QueryDataPolicy) bool {
 	if x == y {
 		return true
@@ -230,6 +248,9 @@ func (x *QueryDataPolicy) Equal(y *QueryDataPolicy) bool {
 		return false
 	}
 	if x.AllowAdminDataSource != y.AllowAdminDataSource {
+		return false
+	}
+	if !x.ExportDestinationPolicy.Equal(y.ExportDestinationPolicy) {
 		return false
 	}
 	if x.DisallowDdl != y.DisallowDdl {
