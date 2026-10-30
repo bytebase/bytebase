@@ -94,8 +94,8 @@ func TestOmniQuerySpanScaffold_QueryTypesAndAccessTables(t *testing.T) {
 			require.Equal(t, sourceColumnSetFromResources(tc.wantResources), span.SourceColumns)
 			if tc.wantType != base.Select {
 				require.Empty(t, span.Results)
+				require.Empty(t, span.PredicateColumns)
 			}
-			require.Empty(t, span.PredicateColumns)
 		})
 	}
 }
@@ -818,12 +818,17 @@ func TestOmniQuerySpanScenarioBatch2_FromJoinAndScopeCoverage(t *testing.T) {
 			"SELECT * FROM t1 NATURAL LEFT JOIN t2",
 			"SELECT * FROM t1 NATURAL RIGHT JOIN t2",
 		}
+		// A NATURAL join merges each shared column, which holds both sides' value.
 		want := []base.QuerySpanResult{
+			{Name: "a", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t1", Column: "a"}, {Database: "db", Table: "t2", Column: "a"}}), IsPlainField: true},
+			{Name: "b", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t1", Column: "b"}, {Database: "db", Table: "t2", Column: "b"}}), IsPlainField: true},
+			{Name: "c", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t1", Column: "c"}, {Database: "db", Table: "t2", Column: "c"}}), IsPlainField: true},
+		}
+		wantNonNatural := []base.QuerySpanResult{
 			{Name: "a", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t1", Column: "a"}}), IsPlainField: true},
 			{Name: "b", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t1", Column: "b"}}), IsPlainField: true},
 			{Name: "c", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t1", Column: "c"}}), IsPlainField: true},
 		}
-		wantNonNatural := append([]base.QuerySpanResult{}, want...)
 		wantNonNatural = append(wantNonNatural,
 			base.QuerySpanResult{Name: "a", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t2", Column: "a"}}), IsPlainField: true},
 			base.QuerySpanResult{Name: "b", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t2", Column: "b"}}), IsPlainField: true},
@@ -1041,17 +1046,17 @@ func TestOmniQuerySpanScenarioBatch2_SubqueryCTEAndSetCoverage(t *testing.T) {
 				},
 			},
 			{
-				name:      "unqualified_inner_column_uses_legacy_resolution_order",
+				name:      "unqualified_inner_column_resolves_in_the_subquery_first",
 				statement: "SELECT (SELECT a FROM t2) AS inner_a FROM t1",
 				want: []base.QuerySpanResult{
-					{Name: "inner_a", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t1", Column: "a"}}), IsPlainField: true},
+					{Name: "inner_a", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t2", Column: "a"}}), IsPlainField: true},
 				},
 			},
 			{
-				name:      "inner_alias_shadow_keeps_legacy_outer_first_lookup",
+				name:      "inner_alias_shadows_the_outer_alias",
 				statement: "SELECT (SELECT x.a FROM t2 AS x) AS inner_a FROM t1 AS x",
 				want: []base.QuerySpanResult{
-					{Name: "inner_a", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t1", Column: "a"}}), IsPlainField: true},
+					{Name: "inner_a", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t2", Column: "a"}}), IsPlainField: true},
 				},
 			},
 			{
