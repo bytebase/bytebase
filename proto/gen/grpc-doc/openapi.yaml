@@ -26242,33 +26242,16 @@ components:
              If false,
              1. when read-only data source is configured, users're force to use the read-only data source
              2. otherwise fallback to use the admin data source.
-        exportDestinationPolicy:
-          allOf:
-            - $ref: '#/components/schemas/bytebase.v1.QueryDataPolicy.ExportDestinationPolicy'
-          title: export_destination_policy
+        disableDownload:
+          type: boolean
+          title: disable_download
           description: |-
             workspace-level policy
-             Where SQLService.Export may send results. When the stored policy has
-             none, only DOWNLOAD is allowed, and reads return that default. An update
-             that omits it keeps the stored value.
+             Disable the Download export destination. Exports can still go to a
+             configured storage destination such as SharePoint.
       title: QueryDataPolicy
       additionalProperties: false
       description: QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
-    bytebase.v1.QueryDataPolicy.ExportDestinationPolicy:
-      type: object
-      properties:
-        allowedDestinations:
-          type: array
-          items:
-            $ref: '#/components/schemas/bytebase.v1.ExportDestination'
-          title: allowed_destinations
-          description: |-
-            The allowed destinations, without duplicates or
-             EXPORT_DESTINATION_UNSPECIFIED. An empty list turns off export, even
-             for an approved export access grant. A destination added to
-             ExportDestination later is not allowed until it is listed here.
-      title: ExportDestinationPolicy
-      additionalProperties: false
     bytebase.v1.QueryHistory:
       type: object
       properties:
