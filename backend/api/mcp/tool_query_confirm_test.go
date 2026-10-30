@@ -47,6 +47,7 @@ type confirmingQueryMock struct {
 	projectStatus int
 	mu            sync.Mutex
 	queries       []queryCall
+	projectReads  []string
 }
 
 func newConfirmingQueryMock(databases []map[string]any) *confirmingQueryMock {
@@ -60,6 +61,13 @@ func newConfirmingQueryMock(databases []map[string]any) *confirmingQueryMock {
 
 func (m *confirmingQueryMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if strings.HasSuffix(r.URL.Path, "ProjectService/GetProject") {
+		var body struct {
+			Name string `json:"name"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		m.mu.Lock()
+		m.projectReads = append(m.projectReads, body.Name)
+		m.mu.Unlock()
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(m.projectStatus)
 		_ = json.NewEncoder(w).Encode(m.project)
@@ -113,6 +121,12 @@ func (m *confirmingQueryMock) calls() []queryCall {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	return append([]queryCall(nil), m.queries...)
+}
+
+func (m *confirmingQueryMock) projectsRead() []string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return append([]string(nil), m.projectReads...)
 }
 
 // confirmationRequiredError is SQLService/Query's refusal of an unconfirmed
@@ -592,6 +606,7 @@ func TestQueryDatabaseLeavesAManualTitleToTheUser(t *testing.T) {
 	require.False(t, res.IsError, resultText(t, res))
 	require.Equal(t, "Not run: the user chose Create an issue, and project projects/hr requires a manual title, so Bytebase files nothing until the user writes one. "+
 		"Ask the user for the issue title, then call propose_database_change with this statement and that title as written.", resultText(t, res))
+	require.Equal(t, []string{"projects/hr"}, mock.projectsRead())
 	require.Equal(t, []queryCall{{Statement: insert}}, mock.calls())
 	require.Nil(t, mock.changes.getCapturedSheet())
 }
