@@ -1,9 +1,10 @@
-// Package sharepoint delivers export files to a SharePoint document library
+// Package sharepoint uploads export files to a SharePoint document library
 // through Microsoft Graph, authenticating as a workspace's Entra application.
 package sharepoint
 
 import (
 	"context"
+	"sync"
 
 	"github.com/pkg/errors"
 )
@@ -19,12 +20,7 @@ type Config struct {
 type Location struct {
 	DriveID string
 	ItemID  string
-	// SiteName and LibraryName are display names.
-	SiteName    string
-	LibraryName string
-	// FolderPath is the path within the library; empty for the library root.
-	FolderPath string
-	WebURL     string
+	WebURL  string
 }
 
 // File is one file of an export.
@@ -33,10 +29,10 @@ type File struct {
 	Content []byte
 }
 
-// Delivery is the folder an export was delivered into.
-type Delivery struct {
-	FolderName string
-	WebURL     string
+// Folder is the folder an export was uploaded into.
+type Folder struct {
+	Name   string
+	WebURL string
 }
 
 var (
@@ -45,32 +41,56 @@ var (
 	ErrNotFoundOrNoAccess = errors.New("the SharePoint destination does not exist or Bytebase cannot access it")
 	// ErrCredential means Entra rejected the application's credentials.
 	ErrCredential = errors.New("Microsoft Entra rejected the SharePoint application credentials")
-	// ErrUnconfirmed means delivery could not be confirmed after retries and
+	// ErrUnconfirmed means an upload could not be confirmed after retries and
 	// reconciliation; some files may exist in SharePoint.
-	ErrUnconfirmed = errors.New("delivery to SharePoint could not be confirmed; files may exist in the destination")
-	// ErrNothingDelivered marks a Deliver failure before any file was
+	ErrUnconfirmed = errors.New("the upload to SharePoint could not be confirmed; files may exist in the destination")
+	// ErrNothingUploaded marks an Upload failure before any file was
 	// uploaded. It wraps the cause, so errors.Is still matches the cause.
-	ErrNothingDelivered = errors.New("nothing was delivered to SharePoint")
+	ErrNothingUploaded = errors.New("nothing was uploaded to SharePoint")
 )
 
-type nothingDeliveredError struct{ err error }
+type nothingUploadedError struct{ err error }
 
-func (e *nothingDeliveredError) Error() string      { return e.err.Error() }
-func (e *nothingDeliveredError) Unwrap() error      { return e.err }
-func (*nothingDeliveredError) Is(target error) bool { return target == ErrNothingDelivered }
+func (e *nothingUploadedError) Error() string      { return e.err.Error() }
+func (e *nothingUploadedError) Unwrap() error      { return e.err }
+func (*nothingUploadedError) Is(target error) bool { return target == ErrNothingUploaded }
 
-// Client resolves destinations and delivers exports.
+// Client resolves destinations and uploads exports.
 type Client interface {
 	// Resolve resolves a canonical URL from NormalizeURL to a library root or
 	// folder. Resolving proves only that the destination is readable.
 	Resolve(ctx context.Context, canonicalURL string) (*Location, error)
-	// Deliver creates folderName under loc and uploads files into it. Retrying
-	// Deliver with the same arguments reuses the folder and files already
-	// delivered by the application instead of creating copies.
-	Deliver(ctx context.Context, loc *Location, folderName string, files []File) (*Delivery, error)
+	// Upload creates folderName under loc and uploads files into it. Retrying
+	// Upload with the same arguments reuses the folder and files already
+	// uploaded by the application instead of creating copies.
+	Upload(ctx context.Context, loc *Location, folderName string, files []File) (*Folder, error)
 }
 
-// NewClient returns a Client for the Microsoft global commercial cloud.
+type cachedClient struct {
+	cfg    Config
+	client Client
+}
+
+var (
+	clientsMu sync.Mutex
+	// clients holds one client per Entra application, so exports reuse its
+	// cached access token.
+	clients = map[string]cachedClient{}
+)
+
+// NewClient returns a Client for the Microsoft global commercial cloud. It
+// returns the same Client for the same Config until the Config changes.
 func NewClient(cfg Config) (Client, error) {
-	return newGraphClient(cfg)
+	key := cfg.TenantID + "/" + cfg.ClientID
+	clientsMu.Lock()
+	defer clientsMu.Unlock()
+	if cached, ok := clients[key]; ok && cached.cfg == cfg {
+		return cached.client, nil
+	}
+	client, err := newGraphClient(cfg)
+	if err != nil {
+		return nil, err
+	}
+	clients[key] = cachedClient{cfg: cfg, client: client}
+	return client, nil
 }

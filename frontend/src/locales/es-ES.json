@@ -1033,15 +1033,20 @@
     "export-format": "Formato de exportación",
     "export-rows": "Exportar filas",
     "generate-password": "Generar contraseña",
+    "no-destination": "No hay destinos de exportación disponibles",
     "password-info": "Proporcione una contraseña para cifrar el archivo de exportación.",
     "password-optional": "Cifrar con contraseña (opcional)",
+    "progress": {
+      "databases": "{{done}} de {{total}} bases de datos exportadas",
+      "download": "Exportando…",
+      "sharepoint": "Exportando a SharePoint…"
+    },
     "sharepoint": {
-      "access-note": "Los permisos de SharePoint deciden quién puede abrir los archivos entregados.",
-      "delivered-title": "Exportación entregada en SharePoint",
+      "exported-title": "Exportado a SharePoint",
       "open": "Abrir en SharePoint",
       "result-title": "Resultados de la exportación a SharePoint",
       "status": {
-        "delivered": "Entregado",
+        "exported": "Exportado",
         "failed": "Error",
         "unconfirmed": "Sin confirmar"
       }
@@ -2367,9 +2372,9 @@
       "confirm-archive-project": "Archivar \"{{name}}\" lo hará de solo lectura y lo ocultará de las listas de proyectos activos. Se conservarán todos los issues, bases de datos y configuraciones. Puede restaurarlo más tarde desde la lista de proyectos archivados.",
       "confirm-delete-project": "Eliminar \"{{name}}\" eliminará permanentemente el proyecto y todos los datos asociados, incluidos issues, configuraciones e historial. Todas las bases de datos de este proyecto se moverán al proyecto predeterminado. Esta acción no se puede deshacer.",
       "export-destination": {
-        "description": "La URL de SharePoint de una biblioteca de documentos o de una carpeta dentro de ella. Las exportaciones de este proyecto se suben allí, y los permisos de SharePoint deciden quién puede abrirlas.",
-        "placeholder": "https://contoso.sharepoint.com/sites/Finance/Shared Documents/Exports",
-        "self": "Destino de exportación",
+        "description": "Dónde se suben las exportaciones de este proyecto.",
+        "self": "Destinos de exportación",
+        "sharepoint-placeholder": "https://contoso.sharepoint.com/sites/Finance/Shared Documents/Exports",
         "update-failed": "No se guardó el destino de exportación"
       },
       "issue-related": {
@@ -2906,10 +2911,10 @@
           "enable": "Habilitar el nivel de registro de depuración para el servicio backend"
         },
         "export-destination": {
-          "description": "Dónde pueden enviar los usuarios los resultados exportados. Al menos un destino debe permanecer permitido. Una concesión de acceso de exportación aprobada no habilita un destino desactivado aquí.",
+          "description": "Dónde pueden enviar los usuarios los resultados exportados. Si se desactivan todos, la exportación queda desactivada, incluso con una concesión de acceso de exportación aprobada.",
           "download": "Descarga",
           "self": "Destinos de exportación",
-          "sharepoint": "Destino de SharePoint del proyecto"
+          "sharepoint": "SharePoint"
         },
         "external-url": {
           "cannot-edit-flag": "La URL externa no se puede cambiar porque está configurada mediante el parámetro de línea de comandos --external-url",
@@ -3380,7 +3385,7 @@
       "client-secret": "Secreto de cliente",
       "client-secret-description": "El secreto de cliente de la aplicación de Microsoft Entra. No se puede volver a leer después de guardarlo.",
       "client-secret-saved": "Hay un secreto de cliente guardado. Introduzca uno nuevo para reemplazarlo.",
-      "description": "Bytebase entrega las exportaciones del Editor SQL a SharePoint con esta aplicación de Microsoft Entra. Concédale acceso de escritura a cada biblioteca de destino en SharePoint. Bytebase no gestiona los permisos, la retención ni la eliminación en SharePoint.",
+      "description": "Bytebase sube las exportaciones del Editor SQL a SharePoint con esta aplicación de Microsoft Entra. Concédale acceso de escritura a cada biblioteca de destino en SharePoint. Bytebase no gestiona los permisos, la retención ni la eliminación en SharePoint.",
       "tenant-id": "ID de inquilino"
     },
     "sidebar": {

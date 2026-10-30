@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestLiveSharePoint delivers a small export into a new subfolder of a real
+// TestLiveSharePoint uploads a small export into a new subfolder of a real
 // destination. The application needs write access to that destination.
 func TestLiveSharePoint(t *testing.T) {
 	cfg := Config{
@@ -28,18 +28,18 @@ func TestLiveSharePoint(t *testing.T) {
 	require.NoError(t, err)
 	loc, err := client.Resolve(ctx, canonical)
 	require.NoError(t, err)
-	t.Logf("resolved site %q, library %q, folder %q", loc.SiteName, loc.LibraryName, loc.FolderPath)
+	t.Logf("resolved %s", loc.WebURL)
 
 	folderName := "bytebase-live-test " + time.Now().UTC().Format("20060102T150405Z")
 	files := []File{
 		{Name: "statement.sql", Content: []byte("SELECT 1;\n")},
 		{Name: "result.csv", Content: bytes.Repeat([]byte("a,b\n"), uploadChunkSize/4+1)},
 	}
-	delivery, err := client.Deliver(ctx, loc, folderName, files)
+	folder, err := client.Upload(ctx, loc, folderName, files)
 	require.NoError(t, err)
-	t.Logf("delivered to %s", delivery.WebURL)
+	t.Logf("uploaded to %s", folder.WebURL)
 
-	again, err := client.Deliver(ctx, loc, folderName, files)
+	again, err := client.Upload(ctx, loc, folderName, files)
 	require.NoError(t, err)
-	require.Equal(t, delivery, again)
+	require.Equal(t, folder, again)
 }

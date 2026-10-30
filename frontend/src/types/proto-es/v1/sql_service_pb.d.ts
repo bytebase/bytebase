@@ -1180,7 +1180,7 @@ export declare type ExportResponse = Message<"bytebase.v1.ExportResponse"> & {
   appliedAccessGrant: string;
 
   /**
-   * Set when the export was delivered to an export destination: the absolute
+   * Set when the export was sent to an export destination: the absolute
    * location of the folder or key prefix created for this export, for example
    * https://… for SharePoint or s3://bucket/prefix for S3. content is then empty.
    *

@@ -342,7 +342,7 @@ describe("ResultView", () => {
     );
   });
 
-  test("offers neither Export nor Request export when no destination is offered", () => {
+  test("keeps Export but hides Request export when no destination is offered", () => {
     exportDestination.destinations = [];
     exportDestination.sharepointUrl = undefined;
     exportAccess.databasesWithExport = [database.name];
@@ -353,9 +353,7 @@ describe("ResultView", () => {
         resultSet={queryResult}
       />
     );
-    expect(
-      screen.queryByRole("button", { name: "export" })
-    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "export" })).toBeInTheDocument();
     unmount();
 
     exportAccess.databasesWithExport = [];
@@ -384,7 +382,7 @@ describe("ResultView", () => {
     expect(screen.getByRole("button", { name: "export" })).toBeInTheDocument();
   });
 
-  test("resolves a SharePoint export with its delivered folder", async () => {
+  test("resolves a SharePoint export with its exported folder", async () => {
     exportAccess.databasesWithExport = [database.name];
     exportRequest.destination = ExportDestination.SHAREPOINT;
     exportData.mockResolvedValue({
@@ -406,7 +404,7 @@ describe("ResultView", () => {
         sharepoint: [
           {
             database: "main",
-            status: "DELIVERED",
+            status: "EXPORTED",
             uri: "https://contoso.sharepoint.com/sites/x/Exports/20261022-main",
           },
         ],
@@ -417,7 +415,7 @@ describe("ResultView", () => {
     );
   });
 
-  test("reports an unconfirmed SharePoint delivery instead of rejecting", async () => {
+  test("reports an unconfirmed SharePoint export instead of rejecting", async () => {
     exportAccess.databasesWithExport = [database.name];
     exportRequest.destination = ExportDestination.SHAREPOINT;
     exportData.mockRejectedValue(

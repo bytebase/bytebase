@@ -3,12 +3,7 @@ import { ExternalLink } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 // SharePoint URLs arrive percent-encoded; show them as people typed them.
 export function formatSharePointUrl(url: string): string {
@@ -19,28 +14,28 @@ export function formatSharePointUrl(url: string): string {
   }
 }
 
-export type SharePointDeliveryResult = {
+export type SharePointExportResult = {
   database: string;
 } & (
-  | { status: "DELIVERED"; uri: string }
+  | { status: "EXPORTED"; uri: string }
   | { status: "FAILED" | "UNCONFIRMED"; reason: string }
 );
 
 // `uri` is the folder created for this export; falls back to the destination
 // URL when the response omits it.
-export function toDeliveredSharePointResult(
+export function toExportedSharePointResult(
   database: string,
   uri: string,
   destinationUrl: string
-): SharePointDeliveryResult {
-  return { database, status: "DELIVERED", uri: uri || destinationUrl };
+): SharePointExportResult {
+  return { database, status: "EXPORTED", uri: uri || destinationUrl };
 }
 
-// The Export API reports a delivery it could not confirm as UNAVAILABLE.
-export function toFailedSharePointDelivery(
+// The Export API reports an upload it could not confirm as UNAVAILABLE.
+export function toFailedSharePointExport(
   database: string,
   error: unknown
-): SharePointDeliveryResult {
+): SharePointExportResult {
   if (error instanceof ConnectError) {
     return {
       database,
@@ -52,13 +47,13 @@ export function toFailedSharePointDelivery(
 }
 
 interface Props {
-  results: SharePointDeliveryResult[];
+  results: SharePointExportResult[];
   onClose: () => void;
 }
 
-export function SharePointDeliveryResultDialog({ results, onClose }: Props) {
+export function SharePointExportResultDialog({ results, onClose }: Props) {
   const { t } = useTranslation();
-  const allDelivered = results.every((r) => r.status === "DELIVERED");
+  const allExported = results.every((r) => r.status === "EXPORTED");
 
   return (
     <Dialog
@@ -69,16 +64,11 @@ export function SharePointDeliveryResultDialog({ results, onClose }: Props) {
     >
       <DialogContent className="max-w-lg">
         <div className="flex flex-col gap-y-4">
-          <div className="flex flex-col gap-y-1">
-            <DialogTitle>
-              {allDelivered
-                ? t("export-data.sharepoint.delivered-title")
-                : t("export-data.sharepoint.result-title")}
-            </DialogTitle>
-            <DialogDescription>
-              {t("export-data.sharepoint.access-note")}
-            </DialogDescription>
-          </div>
+          <DialogTitle>
+            {allExported
+              ? t("export-data.sharepoint.exported-title")
+              : t("export-data.sharepoint.result-title")}
+          </DialogTitle>
           <ul className="flex flex-col divide-y divide-block-border rounded-sm border border-block-border">
             {results.map((result) => (
               <li
@@ -89,9 +79,9 @@ export function SharePointDeliveryResultDialog({ results, onClose }: Props) {
                   <span className="truncate font-medium">
                     {result.database}
                   </span>
-                  <DeliveryStatusBadge status={result.status} />
+                  <ExportStatusBadge status={result.status} />
                 </div>
-                {result.status === "DELIVERED" ? (
+                {result.status === "EXPORTED" ? (
                   result.uri && (
                     <>
                       <span className="break-all text-control-light">
@@ -125,17 +115,17 @@ export function SharePointDeliveryResultDialog({ results, onClose }: Props) {
   );
 }
 
-function DeliveryStatusBadge({
+function ExportStatusBadge({
   status,
 }: {
-  status: SharePointDeliveryResult["status"];
+  status: SharePointExportResult["status"];
 }) {
   const { t } = useTranslation();
   switch (status) {
-    case "DELIVERED":
+    case "EXPORTED":
       return (
         <Badge variant="success">
-          {t("export-data.sharepoint.status.delivered")}
+          {t("export-data.sharepoint.status.exported")}
         </Badge>
       );
     case "UNCONFIRMED":

@@ -570,7 +570,7 @@ func (x *ExportSetting) GetSharepoint() *SharePointSetting {
 	return nil
 }
 
-// SharePointSetting is the Microsoft Entra application that delivers exports to
+// SharePointSetting is the Microsoft Entra application that uploads exports to
 // SharePoint.
 type SharePointSetting struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`

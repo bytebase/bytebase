@@ -20,7 +20,7 @@ describe("ProjectExportDestinationField", () => {
       />
     );
     expect(
-      screen.getByLabelText("project.settings.export-destination.self")
+      screen.getByLabelText("export-data.destination.sharepoint")
     ).toHaveValue(savedUrl);
     expect(screen.queryByRole("link")).not.toBeInTheDocument();
   });
@@ -39,7 +39,7 @@ describe("ProjectExportDestinationField", () => {
       "does not exist or Bytebase cannot access it"
     );
     expect(
-      screen.getByLabelText("project.settings.export-destination.self")
+      screen.getByLabelText("export-data.destination.sharepoint")
     ).toHaveAttribute("aria-invalid", "true");
   });
 
@@ -57,6 +57,20 @@ describe("ProjectExportDestinationField", () => {
     expect(onChange).toHaveBeenCalledWith("");
   });
 
+  test("hides the clear button when there is nothing to clear", () => {
+    render(
+      <ProjectExportDestinationField
+        value=""
+        onChange={vi.fn()}
+        disabled={false}
+        canClear
+      />
+    );
+    expect(
+      screen.queryByRole("button", { name: "common.clear" })
+    ).not.toBeInTheDocument();
+  });
+
   test("can clear a destination after the license lapses", () => {
     const onChange = vi.fn();
     render(
@@ -68,7 +82,7 @@ describe("ProjectExportDestinationField", () => {
       />
     );
     expect(
-      screen.getByLabelText("project.settings.export-destination.self")
+      screen.getByLabelText("export-data.destination.sharepoint")
     ).toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: "common.clear" }));
     expect(onChange).toHaveBeenCalledWith("");

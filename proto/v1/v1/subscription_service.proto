@@ -371,7 +371,7 @@ enum PlanFeature {
   FEATURE_COMMUNITY_SUPPORT = 69;
   FEATURE_EMAIL_SUPPORT = 70;
   FEATURE_DEDICATED_SUPPORT_WITH_SLA = 71;
-  // Deliver exports to SharePoint.
+  // Upload exports to SharePoint.
   FEATURE_SHAREPOINT_EXPORT = 72;
 }
 

@@ -31,7 +31,7 @@ message ExportSetting {
   SharePointSetting sharepoint = 1;
 }
 
-// SharePointSetting is the Microsoft Entra application that delivers exports to
+// SharePointSetting is the Microsoft Entra application that uploads exports to
 // SharePoint.
 message SharePointSetting {
   string tenant_id = 1;

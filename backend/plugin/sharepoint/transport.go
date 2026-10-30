@@ -121,6 +121,21 @@ func (c *graphClient) graphJSON(ctx context.Context, method, path string, in, ou
 	return nil
 }
 
+// graphRaw calls a Graph API path with a binary body and ignores a successful
+// response's body.
+func (c *graphClient) graphRaw(ctx context.Context, method, path string, body []byte) error {
+	header := http.Header{}
+	header.Set("Content-Type", "application/octet-stream")
+	resp, err := c.send(ctx, method, c.baseURL+path, body, header, true)
+	if err != nil {
+		return err
+	}
+	if resp.status < 200 || resp.status >= 300 {
+		return newGraphError(resp)
+	}
+	return nil
+}
+
 // send sends a request, retrying throttling, unavailability, and transport
 // errors. If any attempt's outcome is unknown and the retries do not produce a
 // response, the error is an *unknownOutcomeError.

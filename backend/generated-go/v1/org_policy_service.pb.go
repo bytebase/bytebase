@@ -1100,9 +1100,10 @@ func (x *TagPolicy) GetTags() map[string]string {
 
 type QueryDataPolicy_ExportDestinationPolicy struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The allowed destinations: at least one, without duplicates or
-	// EXPORT_DESTINATION_UNSPECIFIED. A destination added to ExportDestination
-	// later is not allowed until it is listed here.
+	// The allowed destinations, without duplicates or
+	// EXPORT_DESTINATION_UNSPECIFIED. An empty list turns off export, even
+	// for an approved export access grant. A destination added to
+	// ExportDestination later is not allowed until it is listed here.
 	AllowedDestinations []ExportDestination `protobuf:"varint,1,rep,packed,name=allowed_destinations,json=allowedDestinations,proto3,enum=bytebase.v1.ExportDestination" json:"allowed_destinations,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache

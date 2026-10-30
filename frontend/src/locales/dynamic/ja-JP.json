@@ -274,7 +274,7 @@
         "title": "SCIM"
       },
       "FEATURE_SHAREPOINT_EXPORT": {
-        "desc": "SQL エディターのエクスポートを SharePoint ドキュメントライブラリに配信します。",
+        "desc": "SQL エディターのエクスポートを SharePoint ドキュメントライブラリにアップロードします。",
         "title": "SharePoint エクスポート"
       },
       "FEATURE_SQL_EDITOR_ADMIN_MODE": {

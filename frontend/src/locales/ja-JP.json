@@ -1033,15 +1033,20 @@
     "export-format": "エクスポート形式",
     "export-rows": "エクスポート行数",
     "generate-password": "パスワードを生成",
+    "no-destination": "利用可能なエクスポート先がありません",
     "password-info": "エクスポートされたファイルを暗号化するためのパスワードを入力します",
     "password-optional": "パスワード暗号化の設定 (オプション)",
+    "progress": {
+      "databases": "{{total}} 件中 {{done}} 件のデータベースをエクスポートしました",
+      "download": "エクスポートしています…",
+      "sharepoint": "SharePoint にエクスポートしています…"
+    },
     "sharepoint": {
-      "access-note": "配信されたファイルを開けるユーザーは SharePoint の権限で決まります。",
-      "delivered-title": "エクスポートを SharePoint に配信しました",
+      "exported-title": "SharePoint にエクスポートしました",
       "open": "SharePoint で開く",
       "result-title": "SharePoint エクスポートの結果",
       "status": {
-        "delivered": "配信済み",
+        "exported": "エクスポート済み",
         "failed": "失敗",
         "unconfirmed": "未確認"
       }
@@ -2367,9 +2372,9 @@
       "confirm-archive-project": "\"{{name}}\" をアーカイブすると、読み取り専用になり、アクティブなプロジェクト一覧から非表示になります。すべての Issue、データベース、設定は保持されます。後でアーカイブ済みプロジェクト一覧から復元できます。",
       "confirm-delete-project": "\"{{name}}\" を削除すると、Issue、設定、履歴を含むプロジェクトとそれに関連するすべてのデータが完全に削除されます。このプロジェクト内のすべてのデータベースはデフォルトプロジェクトに移動されます。この操作は元に戻せません。",
       "export-destination": {
-        "description": "SharePoint ドキュメントライブラリ、またはその中のフォルダーの URL です。このプロジェクトのエクスポートはここにアップロードされ、開けるユーザーは SharePoint の権限で決まります。",
-        "placeholder": "https://contoso.sharepoint.com/sites/Finance/Shared Documents/Exports",
+        "description": "このプロジェクトのエクスポートのアップロード先です。",
         "self": "エクスポート先",
+        "sharepoint-placeholder": "https://contoso.sharepoint.com/sites/Finance/Shared Documents/Exports",
         "update-failed": "エクスポート先は保存されませんでした"
       },
       "issue-related": {
@@ -2906,10 +2911,10 @@
           "enable": "バックエンドサービスのデバッグレベルのログを有効にする"
         },
         "export-destination": {
-          "description": "ユーザーがエクスポートしたクエリ結果を送信できる場所です。少なくとも 1 つは許可したままにする必要があります。承認済みのエクスポートアクセス許可があっても、ここでオフにしたエクスポート先は使用できません。",
+          "description": "ユーザーがエクスポートしたクエリ結果を送信できる場所です。すべてオフにするとエクスポートは無効になり、承認済みのエクスポートアクセス許可があってもエクスポートできません。",
           "download": "ダウンロード",
           "self": "エクスポート先",
-          "sharepoint": "プロジェクトの SharePoint エクスポート先"
+          "sharepoint": "SharePoint"
         },
         "external-url": {
           "cannot-edit-flag": "外部URLは --external-url コマンドラインフラグで設定されているため変更できません",
@@ -3380,7 +3385,7 @@
       "client-secret": "クライアントシークレット",
       "client-secret-description": "Microsoft Entra アプリケーションのクライアントシークレットです。保存後は読み取れません。",
       "client-secret-saved": "クライアントシークレットは保存済みです。置き換えるには新しい値を入力してください。",
-      "description": "Bytebase はこの Microsoft Entra アプリケーションを使用して、SQL エディターのエクスポートを SharePoint に配信します。SharePoint で各配信先ライブラリへの書き込み権限をこのアプリケーションに付与してください。Bytebase は SharePoint の権限、保持、削除を管理しません。",
+      "description": "Bytebase はこの Microsoft Entra アプリケーションを使用して、SQL エディターのエクスポートを SharePoint にアップロードします。SharePoint で各アップロード先ライブラリへの書き込み権限をこのアプリケーションに付与してください。Bytebase は SharePoint の権限、保持、削除を管理しません。",
       "tenant-id": "テナント ID"
     },
     "sidebar": {

@@ -1033,15 +1033,20 @@
     "export-format": "Export format",
     "export-rows": "Export rows",
     "generate-password": "Generate password",
+    "no-destination": "No available export destinations",
     "password-info": "Provide a password to encrypt the export file.",
     "password-optional": "Encrypt with password (Optional)",
+    "progress": {
+      "databases": "Exported {{done}} of {{total}} databases",
+      "download": "Exporting…",
+      "sharepoint": "Exporting to SharePoint…"
+    },
     "sharepoint": {
-      "access-note": "SharePoint permissions decide who can open the delivered files.",
-      "delivered-title": "Export delivered to SharePoint",
+      "exported-title": "Exported to SharePoint",
       "open": "Open in SharePoint",
       "result-title": "SharePoint export results",
       "status": {
-        "delivered": "Delivered",
+        "exported": "Exported",
         "failed": "Failed",
         "unconfirmed": "Not confirmed"
       }
@@ -2367,9 +2372,9 @@
       "confirm-archive-project": "Archiving \"{{name}}\" will make it read-only and hide it from active project lists. All issues, databases, and settings will be preserved. You can restore it later from the archived projects list.",
       "confirm-delete-project": "Deleting \"{{name}}\" will permanently remove the project and all associated data including issues, configurations, and history. All databases in this project will be moved to the default project. This action cannot be undone.",
       "export-destination": {
-        "description": "The SharePoint URL of a document library or a folder in one. Exports from this project are uploaded there, and SharePoint permissions decide who can open them.",
-        "placeholder": "https://contoso.sharepoint.com/sites/Finance/Shared Documents/Exports",
-        "self": "Export destination",
+        "description": "Where exports from this project are uploaded.",
+        "self": "Export destinations",
+        "sharepoint-placeholder": "https://contoso.sharepoint.com/sites/Finance/Shared Documents/Exports",
         "update-failed": "The export destination was not saved"
       },
       "issue-related": {
@@ -2906,10 +2911,10 @@
           "enable": "Enable debug level log for the backend service"
         },
         "export-destination": {
-          "description": "Where users can send exported query results. At least one must stay allowed. An approved export access grant does not allow a destination turned off here.",
+          "description": "Where users can send exported query results. Turning all of them off turns off export, even for an approved export access grant.",
           "download": "Download",
           "self": "Export destinations",
-          "sharepoint": "Project SharePoint destination"
+          "sharepoint": "SharePoint"
         },
         "external-url": {
           "cannot-edit-flag": "External URL cannot be changed because it is set via --external-url command-line flag",
@@ -3380,7 +3385,7 @@
       "client-secret": "Client secret",
       "client-secret-description": "The client secret of the Microsoft Entra application. It cannot be read back after saving.",
       "client-secret-saved": "A client secret is saved. Enter a new one to replace it.",
-      "description": "Bytebase delivers SQL Editor exports to SharePoint with this Microsoft Entra application. Grant it write access to each destination library in SharePoint. Bytebase does not manage SharePoint permissions, retention, or deletion.",
+      "description": "Bytebase uploads SQL Editor exports to SharePoint with this Microsoft Entra application. Grant it write access to each destination library in SharePoint. Bytebase does not manage SharePoint permissions, retention, or deletion.",
       "tenant-id": "Tenant ID"
     },
     "sidebar": {

@@ -209,7 +209,7 @@ const (
 	PlanFeature_FEATURE_COMMUNITY_SUPPORT          PlanFeature = 69
 	PlanFeature_FEATURE_EMAIL_SUPPORT              PlanFeature = 70
 	PlanFeature_FEATURE_DEDICATED_SUPPORT_WITH_SLA PlanFeature = 71
-	// Deliver exports to SharePoint.
+	// Upload exports to SharePoint.
 	PlanFeature_FEATURE_SHAREPOINT_EXPORT PlanFeature = 72
 )
 

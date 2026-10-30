@@ -138,7 +138,7 @@ message QueryDataPolicy {
   bool allow_admin_data_source = 9;
 
   // workspace-level policy
-  // Where exports may go. Unset allows DOWNLOAD only.
+  // Where exports may go. Unset allows DOWNLOAD only; an empty list allows none.
   ExportDestinationPolicy export_destination_policy = 10;
 
   message ExportDestinationPolicy {

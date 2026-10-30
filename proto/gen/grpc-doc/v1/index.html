@@ -8099,7 +8099,7 @@ Empty when the user was authorized through normal ACL rather than a grant. </p><
                   <td>uri</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Set when the export was delivered to an export destination: the absolute
+                  <td><p>Set when the export was sent to an export destination: the absolute
 location of the folder or key prefix created for this export, for example
 https://… for SharePoint or s3://bucket/prefix for S3. content is then empty. </p></td>
                 </tr>
@@ -14001,7 +14001,7 @@ Example: &#34;settings/SEMANTIC_TYPES&#34; </p></td>
         
       
         <h3 id="bytebase.v1.SharePointSetting">SharePointSetting</h3>
-        <p>SharePointSetting is the Microsoft Entra application that delivers exports to</p><p>SharePoint. It is granted access per library by the customer's SharePoint</p><p>administrators.</p>
+        <p>SharePointSetting is the Microsoft Entra application that uploads exports to</p><p>SharePoint. It is granted access per library by the customer's SharePoint</p><p>administrators.</p>
 
         
           <table class="field-table">
@@ -28994,9 +28994,10 @@ that omits it keeps the stored value. </p></td>
                   <td>allowed_destinations</td>
                   <td><a href="#bytebase.v1.ExportDestination">ExportDestination</a></td>
                   <td>repeated</td>
-                  <td><p>The allowed destinations: at least one, without duplicates or
-EXPORT_DESTINATION_UNSPECIFIED. A destination added to ExportDestination
-later is not allowed until it is listed here. </p></td>
+                  <td><p>The allowed destinations, without duplicates or
+EXPORT_DESTINATION_UNSPECIFIED. An empty list turns off export, even
+for an approved export access grant. A destination added to
+ExportDestination later is not allowed until it is listed here. </p></td>
                 </tr>
               
             </tbody>
@@ -36777,7 +36778,7 @@ the response that produced it was redacted. </p></td>
               <tr>
                 <td>FEATURE_SHAREPOINT_EXPORT</td>
                 <td>72</td>
-                <td><p>Deliver exports to SharePoint.</p></td>
+                <td><p>Upload exports to SharePoint.</p></td>
               </tr>
             
           </tbody>

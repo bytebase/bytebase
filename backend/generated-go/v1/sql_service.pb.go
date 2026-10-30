@@ -1590,7 +1590,7 @@ type ExportResponse struct {
 	// Format: projects/{project}/accessGrants/{accessGrant}.
 	// Empty when the user was authorized through normal ACL rather than a grant.
 	AppliedAccessGrant string `protobuf:"bytes,2,opt,name=applied_access_grant,json=appliedAccessGrant,proto3" json:"applied_access_grant,omitempty"`
-	// Set when the export was delivered to an export destination: the absolute
+	// Set when the export was sent to an export destination: the absolute
 	// location of the folder or key prefix created for this export, for example
 	// https://… for SharePoint or s3://bucket/prefix for S3. content is then empty.
 	Uri           string `protobuf:"bytes,3,opt,name=uri,proto3" json:"uri,omitempty"`

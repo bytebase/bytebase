@@ -7,6 +7,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -72,7 +73,7 @@ func TestConvertToQueryDataPolicyPayloadExportDestinationPolicy(t *testing.T) {
 		wantErr string
 	}{
 		{name: "download and sharepoint", allowed: []v1pb.ExportDestination{v1pb.ExportDestination_SHAREPOINT, v1pb.ExportDestination_DOWNLOAD}, want: []storepb.ExportDestination{storepb.ExportDestination_SHAREPOINT, storepb.ExportDestination_DOWNLOAD}},
-		{name: "empty", wantErr: "must allow at least one destination"},
+		{name: "empty turns off export"},
 		{name: "unspecified", allowed: []v1pb.ExportDestination{v1pb.ExportDestination_EXPORT_DESTINATION_UNSPECIFIED}, wantErr: "unsupported export destination"},
 		{name: "duplicate", allowed: []v1pb.ExportDestination{v1pb.ExportDestination_DOWNLOAD, v1pb.ExportDestination_DOWNLOAD}, wantErr: "more than once"},
 	} {
@@ -87,6 +88,7 @@ func TestConvertToQueryDataPolicyPayloadExportDestinationPolicy(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
+			require.NotNil(t, payload.GetExportDestinationPolicy())
 			require.Equal(t, tc.want, payload.GetExportDestinationPolicy().GetAllowedDestinations())
 		})
 	}
@@ -94,6 +96,12 @@ func TestConvertToQueryDataPolicyPayloadExportDestinationPolicy(t *testing.T) {
 	payload, err := convertToQueryDataPolicyPayload(&v1pb.QueryDataPolicy{MaximumResultRows: 10})
 	require.NoError(t, err)
 	require.Nil(t, payload.GetExportDestinationPolicy(), "an omitted export destination policy stays unset")
+
+	payload, err = convertToQueryDataPolicyPayload(&v1pb.QueryDataPolicy{ExportDestinationPolicy: &v1pb.QueryDataPolicy_ExportDestinationPolicy{}})
+	require.NoError(t, err)
+	data, err := protojson.Marshal(payload)
+	require.NoError(t, err)
+	require.JSONEq(t, `{"exportDestinationPolicy":{}}`, string(data), "an empty list is stored, so it does not read back as the default")
 }
 
 func TestConvertToPolicyQueryDataExportDestinationDefault(t *testing.T) {
@@ -115,6 +123,12 @@ func TestConvertToPolicyQueryDataExportDestinationDefault(t *testing.T) {
 			resourceType: storepb.Policy_WORKSPACE,
 			payload:      `{"exportDestinationPolicy":{"allowedDestinations":["SHAREPOINT"]}}`,
 			want:         &v1pb.QueryDataPolicy_ExportDestinationPolicy{AllowedDestinations: []v1pb.ExportDestination{v1pb.ExportDestination_SHAREPOINT}},
+		},
+		{
+			name:         "workspace with no allowed destination reads none",
+			resourceType: storepb.Policy_WORKSPACE,
+			payload:      `{"exportDestinationPolicy":{}}`,
+			want:         &v1pb.QueryDataPolicy_ExportDestinationPolicy{},
 		},
 		{
 			name:         "project has none",

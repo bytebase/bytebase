@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { ExportDestination, ExportFormat } from "@/types/proto-es/v1/common_pb";
 import { type DataExportRequest, DataExportButton } from "./DataExportButton";
@@ -57,12 +63,12 @@ describe("DataExportButton destination", () => {
     ).toBeInTheDocument();
   });
 
-  test("shows the delivered folder instead of downloading", async () => {
+  test("shows the exported folder instead of downloading", async () => {
     onExport.mockImplementation(({ options, resolve }) => {
       expect(options.destination).toBe(ExportDestination.SHAREPOINT);
       expect(options.password).toBe("");
       resolve({
-        sharepoint: [{ database: "main", status: "DELIVERED", uri: folderUri }],
+        sharepoint: [{ database: "main", status: "EXPORTED", uri: folderUri }],
       });
     });
     renderButton([ExportDestination.SHAREPOINT]);
@@ -76,7 +82,7 @@ describe("DataExportButton destination", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText("export-data.sharepoint.delivered-title")
+        screen.getByText("export-data.sharepoint.exported-title")
       ).toBeInTheDocument();
     });
     expect(screen.getByText(decodeURI(folderUri))).toBeInTheDocument();
@@ -103,5 +109,32 @@ describe("DataExportButton destination", () => {
     expect(
       screen.getByRole("button", { name: "common.export" })
     ).toBeDisabled();
+  });
+
+  test("shows progress while the export runs", async () => {
+    let finish: (() => void) | undefined;
+    let reportProgress: DataExportRequest["onProgress"];
+    onExport.mockImplementation(({ resolve, onProgress }) => {
+      reportProgress = onProgress;
+      finish = () => resolve({ sharepoint: [] });
+    });
+    renderButton([ExportDestination.SHAREPOINT]);
+    openDrawer();
+    fireEvent.click(screen.getByRole("button", { name: "common.confirm" }));
+
+    expect(screen.getByRole("progressbar")).toHaveAccessibleName(
+      "export-data.progress.sharepoint"
+    );
+    act(() => reportProgress?.(1, 3));
+    expect(screen.getByRole("progressbar")).toHaveAttribute(
+      "aria-valuenow",
+      "1"
+    );
+    expect(screen.getByRole("progressbar")).toHaveAccessibleName(
+      "export-data.progress.databases"
+    );
+
+    await act(async () => finish?.());
+    expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
   });
 });

@@ -12,15 +12,15 @@ import {
 } from "@/components/DataExportButton";
 import { DatabaseTableView } from "@/components/database";
 import {
-  type SharePointDeliveryResult,
-  toDeliveredSharePointResult,
-  toFailedSharePointDelivery,
-} from "@/components/SharePointDeliveryResultDialog";
+  type SharePointExportResult,
+  toExportedSharePointResult,
+  toFailedSharePointExport,
+} from "@/components/SharePointExportResultDialog";
 import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { RequestExportButton } from "@/modules/sql-editor/components/RequestExportButton";
-import { sharePointDeliveryDatabaseLabel } from "@/modules/sql-editor/components/sharePointDeliveryLabel";
+import { sharePointExportDatabaseLabel } from "@/modules/sql-editor/components/sharePointExportLabel";
 import { useExportDestination } from "@/modules/sql-editor/components/useExportDestination";
 import { useExportGrantBypass } from "@/modules/sql-editor/components/useExportGrantBypass";
 import {
@@ -225,11 +225,12 @@ export function BatchQuerySelect({
     [exportableDatabaseNames, getDatabaseByName]
   );
   const hasDestination = exportDestination.destinations.length > 0;
-  const showExport = hasDestination && exportableDatabaseNames.length > 0;
+  // With no destination offered, Export stays visible but disabled.
+  const showExport = exportableDatabaseNames.length > 0;
   // Visible alongside Export in the partial-coverage case (e.g. 2 of 5
   // covered) so users can request grants for the missing ones without
   // losing the immediate export of the covered set. A grant never adds a
-  // destination, so neither button shows when no destination is offered.
+  // destination, so this hides when no destination is offered.
   const showRequestExport = hasDestination && unmatchedDatabases.length > 0;
   // Partial-coverage flag: some matched, some not. Drives the Export
   // button label change from "Batch export" to "Partial batch export"
@@ -291,25 +292,32 @@ export function BatchQuerySelect({
   const validateExport = () =>
     selectedDatabaseNames.size > 0 && selectedDatabaseNames.size <= MAX_EXPORT;
 
-  const handleExport = ({ options, resolve }: DataExportRequest) => {
+  const handleExport = ({
+    options,
+    resolve,
+    onProgress,
+  }: DataExportRequest) => {
     void (async () => {
       // === Prod path: per-database backend Export RPC ===
       const toSharePoint = options.destination === ExportDestination.SHAREPOINT;
       const contents: DownloadContent[] = [];
-      const deliveries: SharePointDeliveryResult[] = [];
+      const sharePointResults: SharePointExportResult[] = [];
       const tabsState = getSQLEditorTabsState();
       const tab = tabsState.tabsById.get(tabsState.currentTabId);
       // Defensive intersect — the drawer already filters to authorized
       // DBs, but if a stale name lingers in `selectedDatabaseNames` we skip it here rather
       // than firing a doomed backend call.
       const exportableSet = new Set(exportableDatabaseNames);
-      for (const databaseName of Array.from(selectedDatabaseNames)) {
-        if (!exportableSet.has(databaseName)) continue;
+      const targets = Array.from(selectedDatabaseNames).filter((name) =>
+        exportableSet.has(name)
+      );
+      for (const [index, databaseName] of targets.entries()) {
+        onProgress?.(index, targets.length);
         const database = getDatabaseByName(databaseName);
         const { databaseName: shortName } = extractDatabaseResourceName(
           database.name
         );
-        const label = sharePointDeliveryDatabaseLabel(database);
+        const label = sharePointExportDatabaseLabel(database);
         const context = head(tab?.databaseQueryContexts?.get(databaseName));
         if (!context) continue;
         try {
@@ -330,8 +338,8 @@ export function BatchQuerySelect({
             })
           );
           if (toSharePoint) {
-            deliveries.push(
-              toDeliveredSharePointResult(
+            sharePointResults.push(
+              toExportedSharePointResult(
                 label,
                 uri,
                 exportDestination.sharepointUrl ?? ""
@@ -345,7 +353,7 @@ export function BatchQuerySelect({
           });
         } catch (e) {
           if (toSharePoint) {
-            deliveries.push(toFailedSharePointDelivery(label, e));
+            sharePointResults.push(toFailedSharePointExport(label, e));
             continue;
           }
           useAppStore.getState().notify({
@@ -358,7 +366,7 @@ export function BatchQuerySelect({
           });
         }
       }
-      resolve(toSharePoint ? { sharepoint: deliveries } : contents);
+      resolve(toSharePoint ? { sharepoint: sharePointResults } : contents);
       setSelectedDatabaseNames(new Set());
     })();
   };

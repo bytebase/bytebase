@@ -10,9 +10,9 @@ import {
   type DataExportRequest,
 } from "@/components/DataExportButton";
 import {
-  toDeliveredSharePointResult,
-  toFailedSharePointDelivery,
-} from "@/components/SharePointDeliveryResultDialog";
+  toExportedSharePointResult,
+  toFailedSharePointExport,
+} from "@/components/SharePointExportResultDialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsPanel, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -20,7 +20,7 @@ import { isDisallowChangeDatabaseError } from "@/hooks/useExecuteSQL";
 import { cn } from "@/lib/utils";
 import { RequestExportButton } from "@/modules/sql-editor/components/RequestExportButton";
 import { RequestQueryButton } from "@/modules/sql-editor/components/RequestQueryButton";
-import { sharePointDeliveryDatabaseLabel } from "@/modules/sql-editor/components/sharePointDeliveryLabel";
+import { sharePointExportDatabaseLabel } from "@/modules/sql-editor/components/sharePointExportLabel";
 import { useExportDestination } from "@/modules/sql-editor/components/useExportDestination";
 import { useExportGrantBypass } from "@/modules/sql-editor/components/useExportGrantBypass";
 import {
@@ -170,11 +170,11 @@ export function ResultView({
     ],
   });
 
-  // A grant never adds a destination, so neither Export nor Request export shows
-  // when no destination is offered.
+  // With no destination offered, Export stays visible but disabled to explain
+  // why, and Request export hides because a grant never adds a destination.
   const exportDestination = useExportDestination(database.project);
   const hasDestination = exportDestination.destinations.length > 0;
-  const showExport = hasDestination && (allowExport || !!exportGrantName);
+  const showExport = allowExport || !!exportGrantName;
 
   // When direct export is unavailable, offer a "Request export" affordance that
   // opens the access-grant drawer (pre-filled with this database, statement,
@@ -251,8 +251,8 @@ export function ResultView({
       if (toSharePoint) {
         resolve({
           sharepoint: [
-            toDeliveredSharePointResult(
-              sharePointDeliveryDatabaseLabel(database),
+            toExportedSharePointResult(
+              sharePointExportDatabaseLabel(database),
               uri,
               exportDestination.sharepointUrl ?? ""
             ),
@@ -270,8 +270,8 @@ export function ResultView({
       if (toSharePoint) {
         resolve({
           sharepoint: [
-            toFailedSharePointDelivery(
-              sharePointDeliveryDatabaseLabel(database),
+            toFailedSharePointExport(
+              sharePointExportDatabaseLabel(database),
               e
             ),
           ],

@@ -429,12 +429,34 @@ describe("SQLEditorSection query data policy toggles", () => {
     });
   });
 
-  test("allows only download by default and keeps the last allowed destination on", () => {
+  test("allows only download by default", () => {
     render(<SQLEditorSection title="SQL Editor" onDirtyChange={() => {}} />);
 
     expect(settingSwitch(DOWNLOAD)).toHaveAttribute("aria-checked", "true");
-    expect(settingSwitch(DOWNLOAD)).toHaveAttribute("data-disabled");
     expect(settingSwitch(SHAREPOINT)).toHaveAttribute("aria-checked", "false");
+  });
+
+  test("turning off every destination saves an empty list", async () => {
+    const ref = createRef<SectionHandle>();
+    render(
+      <SQLEditorSection ref={ref} title="SQL Editor" onDirtyChange={() => {}} />
+    );
+    act(() => {
+      settingSwitch(DOWNLOAD).click();
+    });
+    expect(settingSwitch(DOWNLOAD)).toHaveAttribute("aria-checked", "false");
+
+    await act(async () => {
+      await ref.current?.update();
+    });
+
+    expect(mocks.upsertPolicy.mock.calls[0][0]).toMatchObject({
+      policy: {
+        policy: {
+          value: { exportDestinationPolicy: { allowedDestinations: [] } },
+        },
+      },
+    });
   });
 
   test("allowing SharePoint saves both destinations", async () => {
@@ -445,7 +467,6 @@ describe("SQLEditorSection query data policy toggles", () => {
     act(() => {
       settingSwitch(SHAREPOINT).click();
     });
-    expect(settingSwitch(DOWNLOAD)).not.toHaveAttribute("data-disabled");
     expect(ref.current?.isDirty()).toBe(true);
 
     await act(async () => {
@@ -479,7 +500,6 @@ describe("SQLEditorSection query data policy toggles", () => {
 
     expect(settingSwitch(DOWNLOAD)).toHaveAttribute("aria-checked", "false");
     expect(settingSwitch(SHAREPOINT)).toHaveAttribute("aria-checked", "true");
-    expect(settingSwitch(SHAREPOINT)).toHaveAttribute("data-disabled");
     expect(ref.current?.isDirty()).toBe(false);
   });
 });

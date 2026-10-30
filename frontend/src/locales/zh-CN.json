@@ -1033,15 +1033,20 @@
     "export-format": "导出格式",
     "export-rows": "导出行数",
     "generate-password": "生成密码",
+    "no-destination": "没有可用的导出目标",
     "password-info": "提供密码来对导出的文件进行加密",
     "password-optional": "设置密码加密（可选）",
+    "progress": {
+      "databases": "已导出 {{done}}/{{total}} 个数据库",
+      "download": "正在导出…",
+      "sharepoint": "正在导出到 SharePoint…"
+    },
     "sharepoint": {
-      "access-note": "由 SharePoint 权限决定谁可以打开已发送的文件。",
-      "delivered-title": "导出文件已发送到 SharePoint",
+      "exported-title": "已导出到 SharePoint",
       "open": "在 SharePoint 中打开",
       "result-title": "SharePoint 导出结果",
       "status": {
-        "delivered": "已发送",
+        "exported": "已导出",
         "failed": "失败",
         "unconfirmed": "未确认"
       }
@@ -2367,9 +2372,9 @@
       "confirm-archive-project": "归档「{{name}}」将使其变为只读并从活跃项目列表中隐藏。所有工单、数据库和设置将被保留。您可以稍后从已归档项目列表中恢复。",
       "confirm-delete-project": "删除「{{name}}」将永久移除该项目及所有关联数据，包括工单、配置和历史记录。该项目中的所有数据库将被移至默认项目。此操作无法撤销。",
       "export-destination": {
-        "description": "SharePoint 文档库或其中某个文件夹的 URL。此项目的导出文件会上传到这里，由 SharePoint 权限决定谁可以打开。",
-        "placeholder": "https://contoso.sharepoint.com/sites/Finance/Shared Documents/Exports",
+        "description": "此项目的导出文件上传到的位置。",
         "self": "导出目标",
+        "sharepoint-placeholder": "https://contoso.sharepoint.com/sites/Finance/Shared Documents/Exports",
         "update-failed": "导出目标未保存"
       },
       "issue-related": {
@@ -2906,10 +2911,10 @@
           "enable": "启用后端服务的调试级别日志"
         },
         "export-destination": {
-          "description": "用户可以将导出的查询结果发送到的位置。至少需要保留一项。已批准的导出访问授权也无法使用此处关闭的导出目标。",
+          "description": "用户可以将导出的查询结果发送到的位置。全部关闭即关闭导出，已批准的导出访问授权也无法导出。",
           "download": "下载",
           "self": "导出目标",
-          "sharepoint": "项目的 SharePoint 目标位置"
+          "sharepoint": "SharePoint"
         },
         "external-url": {
           "cannot-edit-flag": "外部 URL 无法更改，因为它是通过 --external-url 命令行参数设置的",
@@ -3380,7 +3385,7 @@
       "client-secret": "客户端密钥",
       "client-secret-description": "Microsoft Entra 应用的客户端密钥。保存后无法读取。",
       "client-secret-saved": "已保存客户端密钥。输入新密钥即可替换。",
-      "description": "Bytebase 使用此 Microsoft Entra 应用将 SQL 编辑器的导出文件发送到 SharePoint。请在 SharePoint 中为每个目标文档库授予该应用写入权限。Bytebase 不管理 SharePoint 的权限、保留或删除。",
+      "description": "Bytebase 使用此 Microsoft Entra 应用将 SQL 编辑器的导出文件上传到 SharePoint。请在 SharePoint 中为每个目标文档库授予该应用写入权限。Bytebase 不管理 SharePoint 的权限、保留或删除。",
       "tenant-id": "租户 ID"
     },
     "sidebar": {

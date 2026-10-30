@@ -471,7 +471,6 @@ export const SQLEditorSection = forwardRef<
   return (
     <FormSection id="security" title={title}>
       <FormFieldGroup>
-        {/* Export destination toggles; at least one stays on */}
         <PermissionGuard permissions={["bb.policies.update"]} display="block">
           <FormField
             title={
@@ -489,8 +488,6 @@ export const SQLEditorSection = forwardRef<
                 ({ destination, label, feature }) => {
                   const checked =
                     state.allowedExportDestinations.includes(destination);
-                  const isLastAllowed =
-                    checked && state.allowedExportDestinations.length === 1;
                   return (
                     <span
                       key={destination}
@@ -499,11 +496,7 @@ export const SQLEditorSection = forwardRef<
                       <Switch
                         aria-label={label}
                         checked={checked}
-                        disabled={
-                          !canUpdatePolicy ||
-                          !hasQueryPolicyFeature ||
-                          isLastAllowed
-                        }
+                        disabled={!canUpdatePolicy || !hasQueryPolicyFeature}
                         onCheckedChange={(next) =>
                           handleToggleExportDestination(destination, next)
                         }

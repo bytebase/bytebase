@@ -2,19 +2,19 @@ import { Code, ConnectError } from "@connectrpc/connect";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
 import {
-  SharePointDeliveryResultDialog,
-  toDeliveredSharePointResult,
-  toFailedSharePointDelivery,
-} from "./SharePointDeliveryResultDialog";
+  SharePointExportResultDialog,
+  toExportedSharePointResult,
+  toFailedSharePointExport,
+} from "./SharePointExportResultDialog";
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 
-describe("toFailedSharePointDelivery", () => {
-  test("treats UNAVAILABLE as a delivery that could not be confirmed", () => {
+describe("toFailedSharePointExport", () => {
+  test("treats UNAVAILABLE as an upload that could not be confirmed", () => {
     expect(
-      toFailedSharePointDelivery(
+      toFailedSharePointExport(
         "db",
         new ConnectError("files may exist", Code.Unavailable)
       )
@@ -23,12 +23,12 @@ describe("toFailedSharePointDelivery", () => {
 
   test("treats other errors as failures", () => {
     expect(
-      toFailedSharePointDelivery(
+      toFailedSharePointExport(
         "db",
         new ConnectError("not found", Code.FailedPrecondition)
       )
     ).toEqual({ database: "db", status: "FAILED", reason: "not found" });
-    expect(toFailedSharePointDelivery("db", new Error("boom"))).toEqual({
+    expect(toFailedSharePointExport("db", new Error("boom"))).toEqual({
       database: "db",
       status: "FAILED",
       reason: "Error: boom",
@@ -36,36 +36,36 @@ describe("toFailedSharePointDelivery", () => {
   });
 });
 
-describe("toDeliveredSharePointResult", () => {
-  test("uses the delivered folder URI", () => {
+describe("toExportedSharePointResult", () => {
+  test("uses the exported folder URI", () => {
     expect(
-      toDeliveredSharePointResult("db", "https://folder", "https://destination")
+      toExportedSharePointResult("db", "https://folder", "https://destination")
     ).toEqual({
       database: "db",
-      status: "DELIVERED",
+      status: "EXPORTED",
       uri: "https://folder",
     });
   });
 
   test("links to the destination when the response has no URI", () => {
     expect(
-      toDeliveredSharePointResult("db", "", "https://destination")
+      toExportedSharePointResult("db", "", "https://destination")
     ).toEqual({
       database: "db",
-      status: "DELIVERED",
+      status: "EXPORTED",
       uri: "https://destination",
     });
   });
 });
 
-describe("SharePointDeliveryResultDialog", () => {
-  test("shows delivered, failed, and unconfirmed databases separately", () => {
+describe("SharePointExportResultDialog", () => {
+  test("shows exported, failed, and unconfirmed databases separately", () => {
     render(
-      <SharePointDeliveryResultDialog
+      <SharePointExportResultDialog
         results={[
           {
             database: "a",
-            status: "DELIVERED",
+            status: "EXPORTED",
             uri: "https://contoso.sharepoint.com/Exports/20261022-a",
           },
           { database: "b", status: "FAILED", reason: "not found" },
@@ -94,17 +94,17 @@ describe("SharePointDeliveryResultDialog", () => {
     ).toBeInTheDocument();
   });
 
-  test("titles an all-delivered result as delivered", () => {
+  test("titles an all-exported result as exported", () => {
     render(
-      <SharePointDeliveryResultDialog
+      <SharePointExportResultDialog
         results={[
-          { database: "a", status: "DELIVERED", uri: "https://a" },
+          { database: "a", status: "EXPORTED", uri: "https://a" },
         ]}
         onClose={vi.fn()}
       />
     );
     expect(
-      screen.getByText("export-data.sharepoint.delivered-title")
+      screen.getByText("export-data.sharepoint.exported-title")
     ).toBeInTheDocument();
   });
 });

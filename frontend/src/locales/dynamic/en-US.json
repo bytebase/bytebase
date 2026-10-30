@@ -274,7 +274,7 @@
         "title": "SCIM"
       },
       "FEATURE_SHAREPOINT_EXPORT": {
-        "desc": "Deliver SQL Editor exports to SharePoint document libraries.",
+        "desc": "Upload SQL Editor exports to SharePoint document libraries.",
         "title": "SharePoint export"
       },
       "FEATURE_SQL_EDITOR_ADMIN_MODE": {

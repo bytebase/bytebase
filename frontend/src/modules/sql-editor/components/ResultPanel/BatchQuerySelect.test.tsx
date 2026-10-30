@@ -27,6 +27,7 @@ const mocks = vi.hoisted(() => ({
   destinations: [] as number[],
   exportData: vi.fn(),
   resolveExport: vi.fn(),
+  reportProgress: vi.fn(),
 }));
 
 vi.mock("react-i18next", () => ({
@@ -60,6 +61,7 @@ vi.mock("@/components/DataExportButton", () => ({
             },
             resolve: mocks.resolveExport,
             reject: vi.fn(),
+            onProgress: mocks.reportProgress,
           })
         }
       />
@@ -361,17 +363,17 @@ describe("BatchQuerySelect", () => {
     );
   });
 
-  it("hides Export and Request export when no destination is offered", () => {
+  it("keeps Export but hides Request export when no destination is offered", () => {
     mocks.destinations = [];
     mocks.databasesWithExport = [cellA.name];
     grantLookup([], [cellB.name]);
     render();
 
-    expect(testId("batch-export")).toBeNull();
+    expect(testId("batch-export")).not.toBeNull();
     expect(testId("request-export")).toBeNull();
   });
 
-  it("reports each database's SharePoint delivery separately", async () => {
+  it("reports each database's SharePoint export separately", async () => {
     mocks.databasesWithExport = [cellA.name, cellB.name];
     mocks.destinations = [ExportDestination.SHAREPOINT];
     mocks.exportData
@@ -400,7 +402,7 @@ describe("BatchQuerySelect", () => {
         sharepoint: [
           {
             database: "cell-a/linear",
-            status: "DELIVERED",
+            status: "EXPORTED",
             uri: "https://contoso.sharepoint.com/sites/x/Exports/folder-a",
           },
           {
@@ -414,5 +416,9 @@ describe("BatchQuerySelect", () => {
     expect(mocks.exportData).toHaveBeenCalledWith(
       expect.objectContaining({ destination: ExportDestination.SHAREPOINT })
     );
+    expect(mocks.reportProgress.mock.calls).toEqual([
+      [0, 2],
+      [1, 2],
+    ]);
   });
 });

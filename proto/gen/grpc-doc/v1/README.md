@@ -2561,7 +2561,7 @@ QueryHistoryService manages query history records of SQL Editor queries and expo
 | ----- | ---- | ----- | ----------- |
 | content | [bytes](#bytes) |  | The export file content. |
 | applied_access_grant | [string](#string) |  | The just-in-time access grant applied to this export, if any. Format: projects/{project}/accessGrants/{accessGrant}. Empty when the user was authorized through normal ACL rather than a grant. |
-| uri | [string](#string) |  | Set when the export was delivered to an export destination: the absolute location of the folder or key prefix created for this export, for example https://… for SharePoint or s3://bucket/prefix for S3. content is then empty. |
+| uri | [string](#string) |  | Set when the export was sent to an export destination: the absolute location of the folder or key prefix created for this export, for example https://… for SharePoint or s3://bucket/prefix for S3. content is then empty. |
 
 
 
@@ -4795,7 +4795,7 @@ The data in setting value.
 <a name="bytebase-v1-SharePointSetting"></a>
 
 ### SharePointSetting
-SharePointSetting is the Microsoft Entra application that delivers exports to
+SharePointSetting is the Microsoft Entra application that uploads exports to
 SharePoint. It is granted access per library by the customer&#39;s SharePoint
 administrators.
 
@@ -10152,7 +10152,7 @@ QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| allowed_destinations | [ExportDestination](#bytebase-v1-ExportDestination) | repeated | The allowed destinations: at least one, without duplicates or EXPORT_DESTINATION_UNSPECIFIED. A destination added to ExportDestination later is not allowed until it is listed here. |
+| allowed_destinations | [ExportDestination](#bytebase-v1-ExportDestination) | repeated | The allowed destinations, without duplicates or EXPORT_DESTINATION_UNSPECIFIED. An empty list turns off export, even for an approved export access grant. A destination added to ExportDestination later is not allowed until it is listed here. |
 
 
 
@@ -12952,7 +12952,7 @@ PlanFeature represents the available features in Bytebase
 | FEATURE_COMMUNITY_SUPPORT | 69 |  |
 | FEATURE_EMAIL_SUPPORT | 70 |  |
 | FEATURE_DEDICATED_SUPPORT_WITH_SLA | 71 |  |
-| FEATURE_SHAREPOINT_EXPORT | 72 | Deliver exports to SharePoint. |
+| FEATURE_SHAREPOINT_EXPORT | 72 | Upload exports to SharePoint. |
 
 
 

@@ -274,7 +274,7 @@
         "title": "SCIM"
       },
       "FEATURE_SHAREPOINT_EXPORT": {
-        "desc": "Gửi các bản xuất từ SQL Editor đến thư viện tài liệu SharePoint.",
+        "desc": "Tải các bản xuất từ SQL Editor lên thư viện tài liệu SharePoint.",
         "title": "Xuất sang SharePoint"
       },
       "FEATURE_SQL_EDITOR_ADMIN_MODE": {

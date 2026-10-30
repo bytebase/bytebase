@@ -261,12 +261,12 @@ func readZip(t *testing.T, content []byte, password string) []zipEntry {
 type exportSharePointClient struct {
 	location   *sharepoint.Location
 	resolveErr error
-	deliverErr error
+	uploadErr  error
 
-	resolvedURL     string
-	deliveredTo     *sharepoint.Location
-	deliveredFolder string
-	deliveredFiles  []sharepoint.File
+	resolvedURL    string
+	uploadedTo     *sharepoint.Location
+	uploadedFolder string
+	uploadedFiles  []sharepoint.File
 }
 
 func (c *exportSharePointClient) Resolve(_ context.Context, canonicalURL string) (*sharepoint.Location, error) {
@@ -277,15 +277,15 @@ func (c *exportSharePointClient) Resolve(_ context.Context, canonicalURL string)
 	return c.location, nil
 }
 
-func (c *exportSharePointClient) Deliver(_ context.Context, loc *sharepoint.Location, folderName string, files []sharepoint.File) (*sharepoint.Delivery, error) {
-	c.deliveredTo, c.deliveredFolder, c.deliveredFiles = loc, folderName, files
-	if c.deliverErr != nil {
-		return nil, c.deliverErr
+func (c *exportSharePointClient) Upload(_ context.Context, loc *sharepoint.Location, folderName string, files []sharepoint.File) (*sharepoint.Folder, error) {
+	c.uploadedTo, c.uploadedFolder, c.uploadedFiles = loc, folderName, files
+	if c.uploadErr != nil {
+		return nil, c.uploadErr
 	}
-	return &sharepoint.Delivery{FolderName: folderName, WebURL: loc.WebURL + "/" + folderName}, nil
+	return &sharepoint.Folder{Name: folderName, WebURL: loc.WebURL + "/" + folderName}, nil
 }
 
-func TestSharePointExportDeliversToCapturedTarget(t *testing.T) {
+func TestSharePointExportUploadsToCapturedTarget(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	client := &exportSharePointClient{location: &sharepoint.Location{DriveID: "drive", ItemID: "item", WebURL: "https://contoso.sharepoint.com/sites/data/Exports"}}
@@ -307,21 +307,21 @@ func TestSharePointExportDeliversToCapturedTarget(t *testing.T) {
 	user := &store.UserMessage{Email: "alice@example.com"}
 	database := &store.DatabaseMessage{InstanceID: "prod", DatabaseName: "hr"}
 	exportTime := time.Date(2026, 10, 22, 1, 5, 7, 0, time.UTC)
-	resp, err := deliverExport(ctx, target, user, database, files, &v1pb.ExportRequest{Format: v1pb.ExportFormat_CSV}, exportTime)
+	resp, err := sendExport(ctx, target, user, database, files, &v1pb.ExportRequest{Format: v1pb.ExportFormat_CSV}, exportTime)
 	require.NoError(t, err)
 	require.Empty(t, resp.Content)
-	require.Equal(t, "https://contoso.sharepoint.com/sites/data/Exports/"+client.deliveredFolder, resp.Uri)
-	require.Same(t, client.location, client.deliveredTo)
-	require.Regexp(t, regexp.MustCompile("^20261022T010507Z-alice@example.com-hr-[0-9a-f]{8}$"), client.deliveredFolder)
-	require.Equal(t, files, client.deliveredFiles)
+	require.Equal(t, "https://contoso.sharepoint.com/sites/data/Exports/"+client.uploadedFolder, resp.Uri)
+	require.Same(t, client.location, client.uploadedTo)
+	require.Regexp(t, regexp.MustCompile("^20261022T010507Z-alice@example.com-hr-[0-9a-f]{8}$"), client.uploadedFolder)
+	require.Equal(t, files, client.uploadedFiles)
 }
 
-// nothingDeliveredError stands in for the SharePoint client's marking of a
-// delivery that failed before any upload.
-type nothingDeliveredError struct{ error }
+// nothingUploadedError stands in for the SharePoint client's marking of an
+// upload that failed before any file was uploaded.
+type nothingUploadedError struct{ error }
 
-func (e nothingDeliveredError) Unwrap() error      { return e.error }
-func (nothingDeliveredError) Is(target error) bool { return target == sharepoint.ErrNothingDelivered }
+func (e nothingUploadedError) Unwrap() error      { return e.error }
+func (nothingUploadedError) Is(target error) bool { return target == sharepoint.ErrNothingUploaded }
 
 func TestSharePointExportErrors(t *testing.T) {
 	t.Parallel()
@@ -330,7 +330,7 @@ func TestSharePointExportErrors(t *testing.T) {
 	for _, tc := range []struct {
 		name         string
 		resolveErr   error
-		deliverErr   error
+		uploadErr    error
 		wantCode     connect.Code
 		wantInMsg    []string
 		wantNotInMsg []string
@@ -338,15 +338,15 @@ func TestSharePointExportErrors(t *testing.T) {
 		{name: "resolve not found", resolveErr: errors.Wrap(sharepoint.ErrNotFoundOrNoAccess, "graph"), wantCode: connect.CodeFailedPrecondition},
 		{name: "resolve credential", resolveErr: sharepoint.ErrCredential, wantCode: connect.CodeFailedPrecondition},
 		{name: "resolve other", resolveErr: errors.New("boom"), wantCode: connect.CodeInternal},
-		{name: "deliver not found", deliverErr: sharepoint.ErrNotFoundOrNoAccess, wantCode: connect.CodeFailedPrecondition, wantInMsg: []string{"may already exist", "20261022T010507Z-alice@example.com-hr-0a1b2c3d"}},
-		{name: "folder not created", deliverErr: nothingDeliveredError{sharepoint.ErrNotFoundOrNoAccess}, wantCode: connect.CodeFailedPrecondition, wantInMsg: []string{"nothing was delivered"}, wantNotInMsg: []string{"may already exist", "20261022T010507Z-alice@example.com-hr-0a1b2c3d"}},
-		{name: "deliver credential", deliverErr: errors.Wrap(sharepoint.ErrCredential, "token"), wantCode: connect.CodeFailedPrecondition, wantInMsg: []string{"may already exist", "20261022T010507Z-alice@example.com-hr-0a1b2c3d"}},
-		{name: "deliver unconfirmed", deliverErr: errors.Wrap(sharepoint.ErrUnconfirmed, "upload"), wantCode: connect.CodeUnavailable, wantInMsg: []string{"could not be confirmed", "20261022T010507Z-alice@example.com-hr-0a1b2c3d"}},
-		{name: "deliver failed after some files", deliverErr: errors.New("upload statement-1.result.csv: 507 insufficientStorage"), wantCode: connect.CodeInternal, wantInMsg: []string{"delivery to SharePoint failed", "may already exist", "insufficientStorage", "20261022T010507Z-alice@example.com-hr-0a1b2c3d"}},
+		{name: "upload not found", uploadErr: sharepoint.ErrNotFoundOrNoAccess, wantCode: connect.CodeFailedPrecondition, wantInMsg: []string{"may already exist", "20261022T010507Z-alice@example.com-hr-0a1b2c3d"}},
+		{name: "folder not created", uploadErr: nothingUploadedError{sharepoint.ErrNotFoundOrNoAccess}, wantCode: connect.CodeFailedPrecondition, wantInMsg: []string{"nothing was uploaded"}, wantNotInMsg: []string{"may already exist", "20261022T010507Z-alice@example.com-hr-0a1b2c3d"}},
+		{name: "upload credential", uploadErr: errors.Wrap(sharepoint.ErrCredential, "token"), wantCode: connect.CodeFailedPrecondition, wantInMsg: []string{"may already exist", "20261022T010507Z-alice@example.com-hr-0a1b2c3d"}},
+		{name: "upload unconfirmed", uploadErr: errors.Wrap(sharepoint.ErrUnconfirmed, "upload"), wantCode: connect.CodeUnavailable, wantInMsg: []string{"could not be confirmed", "20261022T010507Z-alice@example.com-hr-0a1b2c3d"}},
+		{name: "upload failed after some files", uploadErr: errors.New("upload statement-1.result.csv: 507 insufficientStorage"), wantCode: connect.CodeInternal, wantInMsg: []string{"the upload to SharePoint failed", "may already exist", "insufficientStorage", "20261022T010507Z-alice@example.com-hr-0a1b2c3d"}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			client := &exportSharePointClient{location: &sharepoint.Location{WebURL: "https://contoso.sharepoint.com/sites/data/Exports"}, resolveErr: tc.resolveErr, deliverErr: tc.deliverErr}
+			client := &exportSharePointClient{location: &sharepoint.Location{WebURL: "https://contoso.sharepoint.com/sites/data/Exports"}, resolveErr: tc.resolveErr, uploadErr: tc.uploadErr}
 			newClient := func(sharepoint.Config) (sharepoint.Client, error) { return client, nil }
 			target, err := resolveSharePointExportTarget(ctx, newClient, setting, "https://contoso.sharepoint.com/sites/data/Exports")
 			if tc.resolveErr != nil {
@@ -354,7 +354,7 @@ func TestSharePointExportErrors(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			_, err = deliverSharePointExport(ctx, target, "20261022T010507Z-alice@example.com-hr-0a1b2c3d", nil)
+			_, err = uploadSharePointExport(ctx, target, "20261022T010507Z-alice@example.com-hr-0a1b2c3d", nil)
 			require.Equal(t, tc.wantCode, connect.CodeOf(err))
 			for _, want := range tc.wantInMsg {
 				require.Contains(t, err.Error(), want)

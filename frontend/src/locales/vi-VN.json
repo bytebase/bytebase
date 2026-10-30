@@ -1033,15 +1033,20 @@
     "export-format": "Định dạng xuất",
     "export-rows": "Xuất số dòng",
     "generate-password": "Tạo mật khẩu",
+    "no-destination": "Không có đích xuất khả dụng",
     "password-info": "Cung cấp mật khẩu để mã hóa tệp xuất.",
     "password-optional": "Mã hóa bằng mật khẩu (Tùy chọn)",
+    "progress": {
+      "databases": "Đã xuất {{done}}/{{total}} cơ sở dữ liệu",
+      "download": "Đang xuất…",
+      "sharepoint": "Đang xuất sang SharePoint…"
+    },
     "sharepoint": {
-      "access-note": "Quyền SharePoint quyết định ai có thể mở các tệp đã gửi.",
-      "delivered-title": "Đã gửi bản xuất đến SharePoint",
+      "exported-title": "Đã xuất sang SharePoint",
       "open": "Mở trong SharePoint",
       "result-title": "Kết quả xuất sang SharePoint",
       "status": {
-        "delivered": "Đã gửi",
+        "exported": "Đã xuất",
         "failed": "Thất bại",
         "unconfirmed": "Chưa xác nhận"
       }
@@ -2367,9 +2372,9 @@
       "confirm-archive-project": "Việc lưu trữ \"{{name}}\" sẽ khiến nó trở thành chỉ đọc và ẩn khỏi danh sách dự án đang hoạt động. Tất cả issue, cơ sở dữ liệu và cài đặt sẽ được giữ lại. Bạn có thể khôi phục lại sau từ danh sách dự án đã lưu trữ.",
       "confirm-delete-project": "Việc xóa \"{{name}}\" sẽ xóa vĩnh viễn dự án và tất cả dữ liệu liên quan bao gồm issue, cấu hình và lịch sử. Tất cả cơ sở dữ liệu trong dự án này sẽ được chuyển sang dự án mặc định. Hành động này không thể hoàn tác.",
       "export-destination": {
-        "description": "URL SharePoint của một thư viện tài liệu hoặc một thư mục trong đó. Bản xuất của dự án này được tải lên đó, và quyền SharePoint quyết định ai có thể mở chúng.",
-        "placeholder": "https://contoso.sharepoint.com/sites/Finance/Shared Documents/Exports",
+        "description": "Nơi tải lên các bản xuất của dự án này.",
         "self": "Đích xuất",
+        "sharepoint-placeholder": "https://contoso.sharepoint.com/sites/Finance/Shared Documents/Exports",
         "update-failed": "Chưa lưu đích xuất"
       },
       "issue-related": {
@@ -2906,10 +2911,10 @@
           "enable": "Bật nhật ký cấp độ gỡ lỗi cho dịch vụ backend"
         },
         "export-destination": {
-          "description": "Nơi người dùng có thể gửi kết quả truy vấn đã xuất. Phải cho phép ít nhất một đích. Quyền truy cập xuất đã được phê duyệt không cho phép dùng đích đã tắt ở đây.",
+          "description": "Nơi người dùng có thể gửi kết quả truy vấn đã xuất. Tắt tất cả sẽ tắt tính năng xuất, kể cả với quyền truy cập xuất đã được phê duyệt.",
           "download": "Tải xuống",
           "self": "Đích xuất dữ liệu",
-          "sharepoint": "Đích SharePoint của dự án"
+          "sharepoint": "SharePoint"
         },
         "external-url": {
           "cannot-edit-flag": "Không thể thay đổi URL bên ngoài vì nó được đặt thông qua tham số dòng lệnh --external-url",
@@ -3380,7 +3385,7 @@
       "client-secret": "Client secret",
       "client-secret-description": "Client secret của ứng dụng Microsoft Entra. Không thể đọc lại sau khi lưu.",
       "client-secret-saved": "Đã lưu client secret. Nhập giá trị mới để thay thế.",
-      "description": "Bytebase gửi các bản xuất từ SQL Editor đến SharePoint bằng ứng dụng Microsoft Entra này. Hãy cấp cho ứng dụng quyền ghi vào từng thư viện đích trong SharePoint. Bytebase không quản lý quyền, lưu giữ hay xóa trong SharePoint.",
+      "description": "Bytebase tải các bản xuất từ SQL Editor lên SharePoint bằng ứng dụng Microsoft Entra này. Hãy cấp cho ứng dụng quyền ghi vào từng thư viện đích trong SharePoint. Bytebase không quản lý quyền, lưu giữ hay xóa trong SharePoint.",
       "tenant-id": "ID tenant"
     },
     "sidebar": {

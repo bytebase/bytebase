@@ -15,6 +15,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -22,8 +23,12 @@ const (
 	graphScope   = "https://graph.microsoft.com/.default"
 	// Graph requires upload chunks to be multiples of 320 KiB.
 	uploadChunkSize = 16 * 320 * 1024
-	maxAttempts     = 5
-	requestTimeout  = 5 * time.Minute
+	// Files up to this size upload in one request; larger files use a
+	// resumable upload session.
+	simpleUploadMaxSize  = 4 << 20
+	maxConcurrentUploads = 4
+	maxAttempts          = 5
+	requestTimeout       = 5 * time.Minute
 )
 
 var aadstsPattern = regexp.MustCompile(`AADSTS\d+`)
@@ -31,13 +36,15 @@ var aadstsPattern = regexp.MustCompile(`AADSTS\d+`)
 type tokenSource func(ctx context.Context) (string, error)
 
 type graphClient struct {
-	baseURL     string
-	clientID    string
-	token       tokenSource
-	httpClient  *http.Client
-	chunkSize   int
-	maxAttempts int
-	wait        func(ctx context.Context, d time.Duration) error
+	baseURL              string
+	clientID             string
+	token                tokenSource
+	httpClient           *http.Client
+	chunkSize            int
+	simpleUploadMaxSize  int
+	maxConcurrentUploads int
+	maxAttempts          int
+	wait                 func(ctx context.Context, d time.Duration) error
 }
 
 func newGraphClient(cfg Config) (Client, error) {
@@ -49,13 +56,15 @@ func newGraphClient(cfg Config) (Client, error) {
 		return nil, errors.Wrapf(ErrCredential, "invalid application configuration: %v", err)
 	}
 	return &graphClient{
-		baseURL:     graphBaseURL,
-		clientID:    cfg.ClientID,
-		token:       credentialTokenSource(cred),
-		httpClient:  &http.Client{Timeout: requestTimeout},
-		chunkSize:   uploadChunkSize,
-		maxAttempts: maxAttempts,
-		wait:        sleepContext,
+		baseURL:              graphBaseURL,
+		clientID:             cfg.ClientID,
+		token:                credentialTokenSource(cred),
+		httpClient:           &http.Client{Timeout: requestTimeout},
+		chunkSize:            uploadChunkSize,
+		simpleUploadMaxSize:  simpleUploadMaxSize,
+		maxConcurrentUploads: maxConcurrentUploads,
+		maxAttempts:          maxAttempts,
+		wait:                 sleepContext,
 	}, nil
 }
 
@@ -90,7 +99,6 @@ func sleepContext(ctx context.Context, d time.Duration) error {
 
 type driveItem struct {
 	ID     string    `json:"id"`
-	Name   string    `json:"name"`
 	WebURL string    `json:"webUrl"`
 	Size   int64     `json:"size"`
 	Folder *struct{} `json:"folder"`
@@ -98,8 +106,6 @@ type driveItem struct {
 
 	ParentReference struct {
 		DriveID string `json:"driveId"`
-		SiteID  string `json:"siteId"`
-		Path    string `json:"path"`
 	} `json:"parentReference"`
 	CreatedBy struct {
 		Application *struct {
@@ -120,65 +126,19 @@ func (c *graphClient) Resolve(ctx context.Context, canonicalURL string) (*Locati
 	// /shares accepts the URL with unescaped spaces.
 	shareID := "u!" + base64.RawURLEncoding.EncodeToString([]byte("https://"+u.Host+u.Path))
 	var item driveItem
-	if err := c.graphJSON(ctx, http.MethodGet, "/shares/"+shareID+"/driveItem?$select=id,name,webUrl,folder,root,parentReference", nil, &item); err != nil {
+	if err := c.graphJSON(ctx, http.MethodGet, "/shares/"+shareID+"/driveItem?$select=id,webUrl,folder,root,parentReference", nil, &item); err != nil {
 		return nil, errors.Wrapf(err, "failed to resolve %s", canonical)
 	}
 	if item.Folder == nil && item.Root == nil {
 		return nil, errors.Errorf("%s is a file; use a document library or folder", canonical)
 	}
-	driveID := item.ParentReference.DriveID
-	if item.ID == "" || driveID == "" {
+	if item.ID == "" || item.ParentReference.DriveID == "" {
 		return nil, errors.Errorf("Microsoft Graph did not return the document library of %s", canonical)
 	}
-
-	var drive struct {
-		Name          string `json:"name"`
-		SharePointIDs struct {
-			SiteID string `json:"siteId"`
-			WebID  string `json:"webId"`
-		} `json:"sharePointIds"`
-	}
-	if err := c.graphJSON(ctx, http.MethodGet, "/drives/"+escapeSegment(driveID)+"?$select=name,sharePointIds", nil, &drive); err != nil {
-		return nil, errors.Wrapf(err, "failed to get the document library of %s", canonical)
-	}
-	siteID := item.ParentReference.SiteID
-	if siteID == "" && drive.SharePointIDs.SiteID != "" && drive.SharePointIDs.WebID != "" {
-		siteID = u.Host + "," + drive.SharePointIDs.SiteID + "," + drive.SharePointIDs.WebID
-	}
-	if siteID == "" {
-		return nil, errors.Errorf("Microsoft Graph did not return the site of %s", canonical)
-	}
-	var site struct {
-		DisplayName string `json:"displayName"`
-	}
-	if err := c.graphJSON(ctx, http.MethodGet, "/sites/"+escapeSiteID(siteID)+"?$select=displayName", nil, &site); err != nil {
-		return nil, errors.Wrapf(err, "failed to get the site of %s", canonical)
-	}
-
-	location := &Location{
-		DriveID:     driveID,
-		ItemID:      item.ID,
-		SiteName:    site.DisplayName,
-		LibraryName: drive.Name,
-		WebURL:      item.WebURL,
-	}
-	if item.Root == nil {
-		location.FolderPath = folderPath(item.ParentReference.Path, item.Name)
-	}
-	return location, nil
+	return &Location{DriveID: item.ParentReference.DriveID, ItemID: item.ID, WebURL: item.WebURL}, nil
 }
 
-// folderPath returns the path of an item within its library from its parent
-// path, such as /drives/{id}/root:/a/b.
-func folderPath(parentPath, name string) string {
-	_, parent, _ := strings.Cut(parentPath, "root:")
-	if unescaped, err := url.PathUnescape(parent); err == nil {
-		parent = unescaped
-	}
-	return strings.Trim(parent+"/"+name, "/")
-}
-
-func (c *graphClient) Deliver(ctx context.Context, loc *Location, folderName string, files []File) (*Delivery, error) {
+func (c *graphClient) Upload(ctx context.Context, loc *Location, folderName string, files []File) (*Folder, error) {
 	if loc == nil || loc.DriveID == "" || loc.ItemID == "" {
 		return nil, errors.New("the SharePoint destination is not resolved")
 	}
@@ -196,14 +156,19 @@ func (c *graphClient) Deliver(ctx context.Context, loc *Location, folderName str
 
 	folder, err := c.ensureFolder(ctx, loc, folderName)
 	if err != nil {
-		return nil, &nothingDeliveredError{err: err}
+		return nil, &nothingUploadedError{err: err}
 	}
+	g, gctx := errgroup.WithContext(ctx)
+	g.SetLimit(max(c.maxConcurrentUploads, 1))
 	for _, file := range files {
-		if err := c.uploadFile(ctx, loc.DriveID, folder.ID, file); err != nil {
-			return nil, err
-		}
+		g.Go(func() error {
+			return c.uploadFile(gctx, loc.DriveID, folder.ID, file)
+		})
 	}
-	return &Delivery{FolderName: folderName, WebURL: folder.WebURL}, nil
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+	return &Folder{Name: folderName, WebURL: folder.WebURL}, nil
 }
 
 func (c *graphClient) ensureFolder(ctx context.Context, loc *Location, folderName string) (*driveItem, error) {
@@ -232,7 +197,7 @@ func (c *graphClient) ensureFolder(ctx context.Context, loc *Location, folderNam
 }
 
 func (c *graphClient) uploadFile(ctx context.Context, driveID, folderID string, file File) error {
-	err := c.upload(ctx, driveID, folderID, file)
+	err := c.putFile(ctx, driveID, folderID, file)
 	if err == nil {
 		return nil
 	}
@@ -246,11 +211,10 @@ func (c *graphClient) uploadFile(ctx context.Context, driveID, folderID string, 
 	return errors.Wrapf(err, "failed to upload %q", file.Name)
 }
 
-func (c *graphClient) upload(ctx context.Context, driveID, folderID string, file File) error {
+func (c *graphClient) putFile(ctx context.Context, driveID, folderID string, file File) error {
 	target := itemPath(driveID, folderID) + ":/" + escapeSegment(file.Name) + ":"
-	if len(file.Content) == 0 {
-		// Upload sessions cannot upload empty files.
-		return c.graphJSON(ctx, http.MethodPut, target+"/content?@microsoft.graph.conflictBehavior=fail", nil, nil)
+	if len(file.Content) <= c.simpleUploadMaxSize {
+		return c.graphRaw(ctx, http.MethodPut, target+"/content?@microsoft.graph.conflictBehavior=fail", file.Content)
 	}
 	body := map[string]any{"item": map[string]any{"@microsoft.graph.conflictBehavior": "fail"}}
 	var session struct {
@@ -339,7 +303,7 @@ func nextExpectedOffset(body []byte, fallback int) (int, error) {
 	return offset, nil
 }
 
-// reconcile accepts an existing file as delivered only if this application
+// reconcile accepts an existing file as uploaded only if this application
 // created it with the same size; export folder names are unique per export.
 func (c *graphClient) reconcile(ctx context.Context, driveID, folderID string, file File, outcomeUnknown bool) error {
 	var item driveItem
@@ -366,14 +330,4 @@ func itemPath(driveID, itemID string) string {
 // path-based addressing, so it is escaped too.
 func escapeSegment(s string) string {
 	return strings.ReplaceAll(url.PathEscape(s), ":", "%3A")
-}
-
-// escapeSiteID escapes a site ID such as "host,siteGUID,webGUID", keeping the
-// commas Graph uses to separate its parts.
-func escapeSiteID(s string) string {
-	parts := strings.Split(s, ",")
-	for i, part := range parts {
-		parts[i] = escapeSegment(part)
-	}
-	return strings.Join(parts, ",")
 }

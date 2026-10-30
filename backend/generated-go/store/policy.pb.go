@@ -636,7 +636,7 @@ type QueryDataPolicy struct {
 	// Allow using the admin data source to query in the SQL editor.
 	AllowAdminDataSource bool `protobuf:"varint,9,opt,name=allow_admin_data_source,json=allowAdminDataSource,proto3" json:"allow_admin_data_source,omitempty"`
 	// workspace-level policy
-	// Where exports may go. Unset allows DOWNLOAD only.
+	// Where exports may go. Unset allows DOWNLOAD only; an empty list allows none.
 	ExportDestinationPolicy *QueryDataPolicy_ExportDestinationPolicy `protobuf:"bytes,10,opt,name=export_destination_policy,json=exportDestinationPolicy,proto3" json:"export_destination_policy,omitempty"`
 	// ================
 	// Deprecate following fields.

@@ -1054,8 +1054,7 @@ export type SQLSlice = {
 };
 
 // For an export to a storage destination such as SharePoint, `uri` locates the
-// delivered folder and
-// `content` is empty.
+// exported folder and `content` is empty.
 export type ExportDataResult = {
   content: Uint8Array;
   uri: string;

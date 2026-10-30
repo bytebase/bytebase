@@ -322,9 +322,10 @@ message QueryDataPolicy {
   ExportDestinationPolicy export_destination_policy = 5;
 
   message ExportDestinationPolicy {
-    // The allowed destinations: at least one, without duplicates or
-    // EXPORT_DESTINATION_UNSPECIFIED. A destination added to ExportDestination
-    // later is not allowed until it is listed here.
+    // The allowed destinations, without duplicates or
+    // EXPORT_DESTINATION_UNSPECIFIED. An empty list turns off export, even
+    // for an approved export access grant. A destination added to
+    // ExportDestination later is not allowed until it is listed here.
     repeated ExportDestination allowed_destinations = 1;
   }
 }

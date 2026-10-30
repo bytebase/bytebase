@@ -142,25 +142,25 @@ func resolveSharePointExportTarget(ctx context.Context, newClient func(sharepoin
 	return &sharePointExportTarget{client: client, location: location}, nil
 }
 
-// deliverSharePointExport uploads files into folderName under the captured
+// uploadSharePointExport uploads files into folderName under the captured
 // destination and returns the folder's web URL. A failure may leave some files
-// delivered, so every error names the folder.
-func deliverSharePointExport(ctx context.Context, target *sharePointExportTarget, folderName string, files []sharepoint.File) (string, error) {
-	delivery, err := target.client.Deliver(ctx, target.location, folderName, files)
+// uploaded, so every error names the folder.
+func uploadSharePointExport(ctx context.Context, target *sharePointExportTarget, folderName string, files []sharepoint.File) (string, error) {
+	folder, err := target.client.Upload(ctx, target.location, folderName, files)
 	if err != nil {
 		if errors.Is(err, sharepoint.ErrUnconfirmed) {
-			return "", connect.NewError(connect.CodeUnavailable, errors.Errorf("delivery to SharePoint could not be confirmed; files may exist in folder %q", folderName))
+			return "", connect.NewError(connect.CodeUnavailable, errors.Errorf("the upload to SharePoint could not be confirmed; files may exist in folder %q", folderName))
 		}
 		code := connect.CodeInternal
 		if errors.Is(err, sharepoint.ErrNotFoundOrNoAccess) || errors.Is(err, sharepoint.ErrCredential) {
 			code = connect.CodeFailedPrecondition
 		}
-		if errors.Is(err, sharepoint.ErrNothingDelivered) {
-			return "", connect.NewError(code, errors.Wrap(err, "delivery to SharePoint failed; nothing was delivered"))
+		if errors.Is(err, sharepoint.ErrNothingUploaded) {
+			return "", connect.NewError(code, errors.Wrap(err, "the upload to SharePoint failed; nothing was uploaded"))
 		}
-		return "", connect.NewError(code, errors.Wrapf(err, "delivery to SharePoint failed; some files may already exist in folder %q", folderName))
+		return "", connect.NewError(code, errors.Wrapf(err, "the upload to SharePoint failed; some files may already exist in folder %q", folderName))
 	}
-	return delivery.WebURL, nil
+	return folder.WebURL, nil
 }
 
 const (
@@ -246,9 +246,9 @@ func zipExportFiles(database *store.DatabaseMessage, files []sharepoint.File, pa
 	return buf.Bytes(), nil
 }
 
-// deliverExport hands the export's files to their destination: a zip in the
+// sendExport hands the export's files to their destination: a zip in the
 // response for download, or an upload to the captured SharePoint target.
-func deliverExport(ctx context.Context, target *sharePointExportTarget, user *store.UserMessage, database *store.DatabaseMessage, files []sharepoint.File, request *v1pb.ExportRequest, exportTime time.Time) (*v1pb.ExportResponse, error) {
+func sendExport(ctx context.Context, target *sharePointExportTarget, user *store.UserMessage, database *store.DatabaseMessage, files []sharepoint.File, request *v1pb.ExportRequest, exportTime time.Time) (*v1pb.ExportResponse, error) {
 	if target == nil {
 		content, err := zipExportFiles(database, files, request.GetPassword())
 		if err != nil {
@@ -262,7 +262,7 @@ func deliverExport(ctx context.Context, target *sharePointExportTarget, user *st
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	folderName := sharePointExportFolderName(exportTime, user.Email, database.DatabaseName, exportID)
-	uri, err := deliverSharePointExport(ctx, target, folderName, files)
+	uri, err := uploadSharePointExport(ctx, target, folderName, files)
 	if err != nil {
 		return nil, err
 	}

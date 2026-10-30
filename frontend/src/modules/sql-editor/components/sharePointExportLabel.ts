@@ -6,7 +6,7 @@ import {
 
 // Labels a database by its instance title, which tells same-named databases
 // apart in a batch.
-export function sharePointDeliveryDatabaseLabel(database: Database): string {
+export function sharePointExportDatabaseLabel(database: Database): string {
   const { instanceName, databaseName } = extractDatabaseResourceName(
     database.name
   );

@@ -40,7 +40,7 @@ describe("exportData", () => {
     expect(contextValuesOfLastCall().get(silentContextKey)).toBe(false);
   });
 
-  test("returns the delivered folder URI and leaves failures to the export result", async () => {
+  test("returns the exported folder URI and leaves failures to the export result", async () => {
     const uri = "https://contoso.sharepoint.com/sites/Finance/Exports/20261022";
     mocks.export.mockResolvedValue(create(ExportResponseSchema, { uri }));
 

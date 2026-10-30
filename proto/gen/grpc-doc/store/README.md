@@ -2745,7 +2745,7 @@ QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 | maximum_result_rows | [int32](#int32) |  | Support both project-level and workspace-level. The maximum number of rows to return in the SQL editor. The default value &lt;= 0, means no limit. |
 | disable_copy_data | [bool](#bool) |  | workspace-level policy Disable copying data. |
 | allow_admin_data_source | [bool](#bool) |  | workspace-level policy Allow using the admin data source to query in the SQL editor. |
-| export_destination_policy | [QueryDataPolicy.ExportDestinationPolicy](#bytebase-store-QueryDataPolicy-ExportDestinationPolicy) |  | workspace-level policy Where exports may go. Unset allows DOWNLOAD only. |
+| export_destination_policy | [QueryDataPolicy.ExportDestinationPolicy](#bytebase-store-QueryDataPolicy-ExportDestinationPolicy) |  | workspace-level policy Where exports may go. Unset allows DOWNLOAD only; an empty list allows none. |
 | disallow_ddl | [bool](#bool) |  | ================ Deprecate following fields. Disallow running DDL statements in the SQL editor. |
 | disallow_dml | [bool](#bool) |  | Disallow running DML statements in the SQL editor. |
 
@@ -4236,7 +4236,7 @@ sign-in configuration.
 <a name="bytebase-store-SharePointSetting"></a>
 
 ### SharePointSetting
-SharePointSetting is the Microsoft Entra application that delivers exports to
+SharePointSetting is the Microsoft Entra application that uploads exports to
 SharePoint.
 
 

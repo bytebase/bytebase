@@ -27,6 +27,7 @@ import {
   FormLabel,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
@@ -51,9 +52,9 @@ import { ExportDestination, ExportFormat } from "@/types/proto-es/v1/common_pb";
 import { MaxRowCountSelect } from "./MaxRowCountSelect";
 import {
   formatSharePointUrl,
-  type SharePointDeliveryResult,
-  SharePointDeliveryResultDialog,
-} from "./SharePointDeliveryResultDialog";
+  type SharePointExportResult,
+  SharePointExportResultDialog,
+} from "./SharePointExportResultDialog";
 
 export type DownloadContent = {
   content: Uint8Array;
@@ -69,15 +70,17 @@ export interface ExportOption {
 }
 
 // Downloads resolve with the files to save; SharePoint exports resolve with
-// each database's delivery result.
+// each database's export result.
 export type ExportOutcome =
   | DownloadContent[]
-  | { sharepoint: SharePointDeliveryResult[] };
+  | { sharepoint: SharePointExportResult[] };
 
 export type DataExportRequest = {
   options: ExportOption;
   resolve: (outcome: ExportOutcome) => void;
   reject: (reason?: unknown) => void;
+  // Reports progress of an export that covers several databases.
+  onProgress?: (done: number, total: number) => void;
 };
 
 type Size = "tiny" | "sm" | "md" | "lg";
@@ -227,10 +230,14 @@ export function DataExportButton({
   const [isRequesting, setIsRequesting] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
-  const [deliveryResults, setDeliveryResults] = useState<
-    SharePointDeliveryResult[]
+  const [progress, setProgress] = useState<{ done: number; total: number }>();
+  const [sharePointResults, setSharePointResults] = useState<
+    SharePointExportResult[]
   >([]);
   const exportUnavailable = destinations.length === 0;
+  const triggerTooltip = exportUnavailable
+    ? t("export-data.no-destination")
+    : tooltip;
 
   const presetMax = useMemo(
     () => computeMaximumPreset(maximumExportCount),
@@ -297,14 +304,20 @@ export function DataExportButton({
   const doExport = useCallback(() => {
     if (isRequesting) return;
     setIsRequesting(true);
+    setProgress(undefined);
     const options: ExportOption = { ...currentOption };
 
     new Promise<ExportOutcome>((resolve, reject) => {
-      onExport({ options, resolve, reject });
+      onExport({
+        options,
+        resolve,
+        reject,
+        onProgress: (done, total) => setProgress({ done, total }),
+      });
     })
       .then(async (outcome) => {
         if (!Array.isArray(outcome)) {
-          setDeliveryResults(outcome.sharepoint);
+          setSharePointResults(outcome.sharepoint);
           return;
         }
         await downloadAll(outcome, options.format);
@@ -325,6 +338,7 @@ export function DataExportButton({
       })
       .finally(() => {
         setIsRequesting(false);
+        setProgress(undefined);
         setShowDrawer(false);
         setShowPasswordDialog(false);
       });
@@ -401,7 +415,7 @@ export function DataExportButton({
 
   const dropdownTrigger = (
     <DropdownMenu>
-      <Tooltip content={tooltip} side="bottom">
+      <Tooltip content={triggerTooltip} side="bottom">
         <DropdownMenuTrigger
           render={
             <Button
@@ -438,7 +452,7 @@ export function DataExportButton({
       {viewMode === "DROPDOWN" ? (
         dropdownTrigger
       ) : (
-        <Tooltip content={tooltip} side="bottom">
+        <Tooltip content={triggerTooltip} side="bottom">
           {triggerButton}
         </Tooltip>
       )}
@@ -561,6 +575,24 @@ export function DataExportButton({
               </FormFieldGroup>
             </SheetBody>
             <SheetFooter>
+              {isRequesting && (
+                <div className="min-w-0 flex-1">
+                  <Progress
+                    className="max-w-80"
+                    value={
+                      progress && progress.total > 1 ? progress.done : null
+                    }
+                    max={progress?.total}
+                    label={
+                      progress && progress.total > 1
+                        ? t("export-data.progress.databases", progress)
+                        : isDownload
+                          ? t("export-data.progress.download")
+                          : t("export-data.progress.sharepoint")
+                    }
+                  />
+                </div>
+              )}
               <Button appearance="outline" onClick={() => setShowDrawer(false)}>
                 {t("common.cancel")}
               </Button>
@@ -613,9 +645,9 @@ export function DataExportButton({
         </Dialog>
       )}
 
-      <SharePointDeliveryResultDialog
-        results={deliveryResults}
-        onClose={() => setDeliveryResults([])}
+      <SharePointExportResultDialog
+        results={sharePointResults}
+        onClose={() => setSharePointResults([])}
       />
     </>
   );

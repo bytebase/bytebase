@@ -21070,7 +21070,7 @@ components:
           type: string
           title: uri
           description: |-
-            Set when the export was delivered to an export destination: the absolute
+            Set when the export was sent to an export destination: the absolute
              location of the folder or key prefix created for this export, for example
              https://… for SharePoint or s3://bucket/prefix for S3. content is then empty.
       title: ExportResponse
@@ -26263,9 +26263,10 @@ components:
             $ref: '#/components/schemas/bytebase.v1.ExportDestination'
           title: allowed_destinations
           description: |-
-            The allowed destinations: at least one, without duplicates or
-             EXPORT_DESTINATION_UNSPECIFIED. A destination added to ExportDestination
-             later is not allowed until it is listed here.
+            The allowed destinations, without duplicates or
+             EXPORT_DESTINATION_UNSPECIFIED. An empty list turns off export, even
+             for an approved export access grant. A destination added to
+             ExportDestination later is not allowed until it is listed here.
       title: ExportDestinationPolicy
       additionalProperties: false
     bytebase.v1.QueryHistory:
@@ -29190,7 +29191,7 @@ components:
       title: SharePointSetting
       additionalProperties: false
       description: |-
-        SharePointSetting is the Microsoft Entra application that delivers exports to
+        SharePointSetting is the Microsoft Entra application that uploads exports to
          SharePoint. It is granted access per library by the customer's SharePoint
          administrators.
     bytebase.v1.Sheet:

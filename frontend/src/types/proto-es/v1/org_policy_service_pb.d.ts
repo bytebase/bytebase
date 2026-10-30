@@ -420,9 +420,10 @@ export declare const QueryDataPolicySchema: GenMessage<QueryDataPolicy>;
  */
 export declare type QueryDataPolicy_ExportDestinationPolicy = Message<"bytebase.v1.QueryDataPolicy.ExportDestinationPolicy"> & {
   /**
-   * The allowed destinations: at least one, without duplicates or
-   * EXPORT_DESTINATION_UNSPECIFIED. A destination added to ExportDestination
-   * later is not allowed until it is listed here.
+   * The allowed destinations, without duplicates or
+   * EXPORT_DESTINATION_UNSPECIFIED. An empty list turns off export, even
+   * for an approved export access grant. A destination added to
+   * ExportDestination later is not allowed until it is listed here.
    *
    * @generated from field: repeated bytebase.v1.ExportDestination allowed_destinations = 1;
    */

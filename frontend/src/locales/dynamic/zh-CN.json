@@ -274,7 +274,7 @@
         "title": "SCIM"
       },
       "FEATURE_SHAREPOINT_EXPORT": {
-        "desc": "将 SQL 编辑器的导出文件发送到 SharePoint 文档库。",
+        "desc": "将 SQL 编辑器的导出文件上传到 SharePoint 文档库。",
         "title": "SharePoint 导出"
       },
       "FEATURE_SQL_EDITOR_ADMIN_MODE": {

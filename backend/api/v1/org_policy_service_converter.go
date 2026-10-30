@@ -211,12 +211,9 @@ func convertToQueryDataPolicyPayload(policy *v1pb.QueryDataPolicy) (*storepb.Que
 	return payload, nil
 }
 
-// convertToStoreAllowedExportDestinations rejects an empty list: who may export
-// is controlled by bb.sql.export, so the policy only chooses where exports go.
+// convertToStoreAllowedExportDestinations accepts an empty list, which turns
+// off export for everyone, including holders of bb.sql.export or an export grant.
 func convertToStoreAllowedExportDestinations(destinations []v1pb.ExportDestination) ([]storepb.ExportDestination, error) {
-	if len(destinations) == 0 {
-		return nil, errors.New("export_destination_policy.allowed_destinations must allow at least one destination")
-	}
 	var allowed []storepb.ExportDestination
 	for _, destination := range destinations {
 		storeDestination, err := convertToStoreExportDestination(destination)

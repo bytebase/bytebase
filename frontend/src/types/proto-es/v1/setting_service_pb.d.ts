@@ -314,7 +314,7 @@ export declare type ExportSetting = Message<"bytebase.v1.ExportSetting"> & {
 export declare const ExportSettingSchema: GenMessage<ExportSetting>;
 
 /**
- * SharePointSetting is the Microsoft Entra application that delivers exports to
+ * SharePointSetting is the Microsoft Entra application that uploads exports to
  * SharePoint. It is granted access per library by the customer's SharePoint
  * administrators.
  *

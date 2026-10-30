@@ -1263,7 +1263,7 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 		return nil, exportConnectError(exportErr)
 	}
 
-	exportResponse, err := deliverExport(ctx, sharePointTarget, user, database, files, request, exportTime)
+	exportResponse, err := sendExport(ctx, sharePointTarget, user, database, files, request, exportTime)
 	if err != nil {
 		return nil, err
 	}
