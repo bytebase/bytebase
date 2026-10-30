@@ -68,6 +68,10 @@
       "issue-heading": "询问此工单",
       "issue-security": "此工单是否存在安全隐患？",
       "issue-summary": "总结此工单及其当前状态",
+      "plan-changes": "此计划拟进行哪些数据库变更？",
+      "plan-heading": "询问此计划",
+      "plan-risks": "此计划是否存在审核或部署风险？",
+      "plan-status": "当前的审核和发布状态是什么？",
       "project-heading": "询问此项目",
       "resource-unavailable": "此资源不可引用。"
     },
@@ -149,6 +153,7 @@
       "open": "打开计划草稿",
       "unavailable": "无法打开计划草稿。数据库或 SQL 可能已更改。请让 Agent 重新生成。"
     },
+    "plan-reference-unavailable": "此计划已不可用，或你没有访问权限。",
     "project-attention": {
       "checking": "正在检查需要你关注的事项...",
       "empty": "此项目中没有需要你关注的开放 issue。",
@@ -186,14 +191,18 @@
       "load-databases-error": "无法加载数据库。",
       "load-error": "无法加载项目。",
       "load-issues-error": "无法加载工单。",
+      "load-plans-error": "无法加载计划。",
       "no-databases": "未找到可访问的数据库",
       "no-issues": "未找到可访问的工单",
+      "no-plans": "未找到可访问的计划",
       "no-projects": "未找到可访问的项目",
+      "plans": "计划",
       "projects": "项目",
-      "reference-limit": "每条消息可引用一个项目及该项目的一个数据库或工单。如需同时引用两者，请先选择项目。如需询问其他资源，请另发消息。",
+      "reference-limit": "每条消息可引用一个项目及该项目的一个数据库、工单或计划。如需同时引用两者，请先选择项目。如需询问其他资源，请另发消息。",
       "retry": "重试",
       "search-databases": "搜索数据库",
       "search-issues": "搜索工单",
+      "search-plans": "搜索计划",
       "search-projects": "搜索项目"
     },
     "result": "结果",

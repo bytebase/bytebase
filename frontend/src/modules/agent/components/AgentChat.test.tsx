@@ -173,6 +173,8 @@ beforeEach(async () => {
     draftsByChatId: initialState.draftsByChatId,
     currentChatId: initialState.currentChatId,
     abortControllersByChatId: {},
+    queuedUserMessagesByChatId: {},
+    queuedUserMessageInFlightByChatId: {},
   });
 
   mocks.useTranslation.mockReset();
@@ -575,7 +577,7 @@ describe("AgentChat", () => {
     unmount();
   });
 
-  test("keeps a draft-only follow-up separate from the answer action", () => {
+  test("keeps an Ask next prompt separate from the answer action", () => {
     const store = useAgentStore.getState();
     const chat = store.createChat({ context: "projects/sample" });
     store.addMessage({
@@ -624,6 +626,14 @@ describe("AgentChat", () => {
       []
     );
     expect(store.getMessages(chat.id)).toHaveLength(1);
+    act(() => {
+      store.queueUserMessage({
+        chatId: chat.id,
+        text: "What is the impact of these issues?",
+        page: { path: "/projects/sample", title: "Sample" },
+      });
+    });
+    expect(followUp?.disabled).toBe(true);
     unmount();
   });
 
@@ -664,7 +674,7 @@ describe("AgentChat", () => {
     unmount();
   });
 
-  test("shows three follow-up questions below the answer timestamp and selects one without sending", () => {
+  test("shows three Ask next questions below the answer timestamp", () => {
     const store = useAgentStore.getState();
     const chat = store.createChat({ context: "projects/sample" });
     store.addMessage({
@@ -730,7 +740,7 @@ describe("AgentChat", () => {
     act(() => {
       store.appendContinueActions(
         chat.id,
-        message.id,
+        message!.id,
         [{ kind: "continue", prompt: "How do I connect a new instance?" }],
         []
       );
@@ -767,9 +777,9 @@ describe("AgentChat", () => {
           ...state.messagesByChatId,
           [chat.id]: [
             {
-              ...message,
+              ...message!,
               metadata: {
-                ...message.metadata,
+                ...message!.metadata,
                 actions: [
                   { kind: "continue", prompt: "What will this change affect?" },
                   { kind: "continue", prompt: "How should I validate it?" },
@@ -1784,8 +1794,8 @@ describe("AgentChat", () => {
     ) as HTMLTimeElement[];
     expect(timestamps).toHaveLength(2);
     expect(timestamps.map((timestamp) => timestamp.dateTime)).toEqual([
-      new Date(userMessage.createdTs).toISOString(),
-      new Date(assistantMessage.createdTs).toISOString(),
+      new Date(userMessage!.createdTs).toISOString(),
+      new Date(assistantMessage!.createdTs).toISOString(),
     ]);
     expect(timestamps[1]?.parentElement?.className).not.toContain("gap-y-2");
     expect(timestamps[1]?.previousElementSibling?.className).toContain(
@@ -1948,7 +1958,7 @@ describe("AgentChat", () => {
       }
     });
 
-    expect(assistantMessage.toolCalls).toHaveLength(2);
+    expect(assistantMessage!.toolCalls).toHaveLength(2);
     expect(container.textContent).toContain("first-result");
     expect(container.textContent).toContain("second-result");
 

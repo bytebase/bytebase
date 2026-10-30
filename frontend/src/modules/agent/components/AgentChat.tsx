@@ -654,6 +654,9 @@ export function AgentChat({
     selectCurrentChatRequiresAIConfiguration
   );
   const currentChatId = useAgentStore((s) => s.currentChatId);
+  const queuedUserMessage = useAgentStore((s) =>
+    s.currentChatId ? s.queuedUserMessagesByChatId[s.currentChatId] : undefined
+  );
   const latestContinuePrompts = messages
     .at(-1)
     ?.metadata?.actions?.filter((action) => action.kind === "continue")
@@ -1096,7 +1099,8 @@ export function AgentChat({
                             !onContinueAction ||
                             currentChat?.status !== "idle" ||
                             currentChat.archived ||
-                            Boolean(draftText?.trim())
+                            Boolean(draftText?.trim()) ||
+                            Boolean(queuedUserMessage)
                           }
                           onClick={() =>
                             onContinueAction?.(

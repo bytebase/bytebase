@@ -67,6 +67,7 @@ export const sanitizeOutboundHistory = (
           (reference) =>
             reference.kind === "database" ||
             reference.kind === "issue" ||
+            reference.kind === "plan" ||
             reference.project !== chatContext
         );
     }

@@ -756,7 +756,7 @@ describe("LandingPage", () => {
     expect(screen.queryByRole("textbox", { name: "landing.ai-placeholder" })).not.toBeInTheDocument();
   });
 
-  test("does not send an empty prompt or queue behind another Agent run", () => {
+  test("keeps an empty prompt disabled but sends while another chat runs", () => {
     const { rerender } = render(<LandingPage />);
     const send = screen.getByRole("button", { name: "agent.send" });
     expect(send).toBeDisabled();
@@ -768,9 +768,12 @@ describe("LandingPage", () => {
 
     mocks.chatRunning = true;
     rerender(<LandingPage />);
-    expect(send).toBeDisabled();
+    expect(send).toBeEnabled();
     fireEvent.submit(send.closest("form")!);
-    expect(mocks.selectOrCreateChatForContext).not.toHaveBeenCalled();
+    expect(mocks.selectOrCreateChatForContext).toHaveBeenCalledOnce();
+    expect(mocks.queueUserMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ text: "What is configured?" })
+    );
   });
 
   test("keeps Last visit beside the shortcuts title", async () => {

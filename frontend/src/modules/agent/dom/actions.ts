@@ -18,6 +18,12 @@ export interface DomActionResult {
   message: string;
 }
 
+export const BACKGROUND_PAGE_ACTION_RESULT: DomActionResult = {
+  success: false,
+  message:
+    "This chat is not selected. Return to it before using the current page.",
+};
+
 function getCenter(el: Element): { x: number; y: number } {
   const rect = el.getBoundingClientRect();
   return {
@@ -126,10 +132,12 @@ async function handleClick(el: Element): Promise<DomActionResult> {
 
 async function handleInput(
   el: Element,
-  value: string
+  value: string,
+  canUseCurrentPage?: () => boolean
 ): Promise<DomActionResult> {
   // Monaco editor
   const monacoEditor = await findMonacoEditor(el);
+  if (canUseCurrentPage?.() === false) return BACKGROUND_PAGE_ACTION_RESULT;
   if (monacoEditor) {
     const normalizedValue = normalizeMultilineValue(value);
     monacoEditor.setValue(normalizedValue);
@@ -180,9 +188,13 @@ async function handleSelect(
   };
 }
 
-async function handleRead(el: Element): Promise<DomActionResult> {
+async function handleRead(
+  el: Element,
+  canUseCurrentPage?: () => boolean
+): Promise<DomActionResult> {
   // Monaco editor — read full content via API
   const monacoEditor = await findMonacoEditor(el);
+  if (canUseCurrentPage?.() === false) return BACKGROUND_PAGE_ACTION_RESULT;
   if (monacoEditor) {
     return { success: true, message: monacoEditor.getValue() };
   }
@@ -208,17 +220,19 @@ async function handleScroll(el: Element): Promise<DomActionResult> {
 
 export async function executeDomAction(
   params: DomActionParams,
-  element: Element
+  element: Element,
+  canUseCurrentPage?: () => boolean
 ): Promise<DomActionResult> {
+  if (canUseCurrentPage?.() === false) return BACKGROUND_PAGE_ACTION_RESULT;
   switch (params.type) {
     case "click":
       return handleClick(element);
     case "input":
-      return handleInput(element, params.value ?? "");
+      return handleInput(element, params.value ?? "", canUseCurrentPage);
     case "select":
       return handleSelect(element, params.value ?? "");
     case "read":
-      return handleRead(element);
+      return handleRead(element, canUseCurrentPage);
     case "scroll":
       return handleScroll(element);
     default:

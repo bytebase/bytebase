@@ -68,6 +68,10 @@
       "issue-heading": "Ask about this issue",
       "issue-security": "Are there any security concerns with this issue?",
       "issue-summary": "Summarize this issue and its status",
+      "plan-changes": "What database changes does this plan propose?",
+      "plan-heading": "Ask about this plan",
+      "plan-risks": "Are there any review or deployment risks in this plan?",
+      "plan-status": "What is the current review and rollout status?",
       "project-heading": "Ask about this project",
       "resource-unavailable": "This resource is not available to reference."
     },
@@ -149,6 +153,7 @@
       "open": "Open Plan draft",
       "unavailable": "Couldn't open the Plan draft. The database or SQL may have changed. Ask the Agent to generate it again."
     },
+    "plan-reference-unavailable": "This plan is no longer available or you do not have access to it.",
     "project-attention": {
       "checking": "Checking items needing your attention...",
       "empty": "You have no open issues needing attention in this project.",
@@ -186,14 +191,18 @@
       "load-databases-error": "Could not load databases.",
       "load-error": "Could not load projects.",
       "load-issues-error": "Could not load issues.",
+      "load-plans-error": "Could not load plans.",
       "no-databases": "No accessible databases found",
       "no-issues": "No accessible issues found",
+      "no-plans": "No accessible plans found",
       "no-projects": "No accessible projects found",
+      "plans": "Plans",
       "projects": "Projects",
-      "reference-limit": "You can reference one project and one of its databases or issues per message. To use both, select the project first. Ask about another resource in a separate message.",
+      "reference-limit": "You can reference one project and one of its databases, issues, or plans per message. To use both, select the project first. Ask about another resource in a separate message.",
       "retry": "Retry",
       "search-databases": "Search databases",
       "search-issues": "Search issues",
+      "search-plans": "Search plans",
       "search-projects": "Search projects"
     },
     "result": "Result",

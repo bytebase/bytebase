@@ -7,6 +7,7 @@ test("a saved Agent handoff opens the matching filtered Issue queue only after c
   const env = loadTestEnv();
   await env.api.login(env.adminEmail, env.adminPassword);
   const { workspace } = await env.api.getActuatorInfo();
+  const workspaceId = workspace.split("/").at(-1)!;
   const projectId = env.project.split("/").at(-1)!;
   const chatId = "agent-guided-handoff-e2e";
   const now = Date.now();
@@ -63,7 +64,7 @@ test("a saved Agent handoff opens the matching filtered Issue queue only after c
       sessionStorage.setItem("agent-guided-handoff-seeded", "1");
     },
     {
-      key: `bb-agent-state-v2.${workspace.split("/").at(-1)}`,
+      key: `bb-agent-state-v2.${workspaceId.length}:${workspaceId}.${env.adminEmail}`,
       chatId,
       now,
       workspace,

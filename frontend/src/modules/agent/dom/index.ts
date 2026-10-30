@@ -61,7 +61,8 @@ function getElementRef(params: DomActionParams): string | undefined {
 
 export async function lazyExecuteDomAction(
   params: DomActionParams,
-  router?: AppRouterInstance
+  router?: AppRouterInstance,
+  canUseCurrentPage?: () => boolean
 ): Promise<DomActionResult> {
   const elementRef = getElementRef(params);
   if (!elementRef) {
@@ -76,6 +77,9 @@ export async function lazyExecuteDomAction(
   }
 
   const m = await ensureLoaded();
+  if (canUseCurrentPage?.() === false) {
+    return m.BACKGROUND_PAGE_ACTION_RESULT;
+  }
   const entry = m.getElementByRef(elementRef);
   if (!entry) {
     return formatRefreshError(`Element [${elementRef}] was not found.`);
@@ -96,7 +100,7 @@ export async function lazyExecuteDomAction(
     }
   }
 
-  return m.executeDomAction(params, entry.element);
+  return m.executeDomAction(params, entry.element, canUseCurrentPage);
 }
 
 export type { DomActionParams, DomActionResult, DomRefSuggestion };

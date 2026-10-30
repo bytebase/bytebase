@@ -1,10 +1,12 @@
 import { create } from "@bufbuild/protobuf";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { State } from "@/types/proto-es/v1/common_pb";
 import { DatabaseSchema$ } from "@/types/proto-es/v1/database_service_pb";
 import { InstanceResourceSchema } from "@/types/proto-es/v1/instance_service_pb";
 import { IssueSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { ProjectSchema } from "@/types/proto-es/v1/project_service_pb";
+import { PlanSchema } from "@/types/proto-es/v1/plan_service_pb";
 
 const mocks = vi.hoisted(() => ({
   canListWorkspaceProjects: true,
@@ -17,6 +19,7 @@ const mocks = vi.hoisted(() => ({
   searchAgentProjects: vi.fn(),
   searchAgentDatabases: vi.fn(),
   searchAgentIssues: vi.fn(),
+  searchAgentPlans: vi.fn(),
   selectOrCreateChatForContext: vi.fn(() => ({ id: "chat-1" })),
   queueUserMessage: vi.fn(),
   openAgent: vi.fn(),
@@ -31,9 +34,11 @@ vi.mock("react-i18next", async (importOriginal) => ({
         "agent.resource-picker.projects": "Projects",
         "agent.resource-picker.databases": "Databases",
         "agent.resource-picker.issues": "Issues",
+        "agent.resource-picker.plans": "Plans",
         "agent.resource-picker.search-projects": "Search projects",
         "agent.resource-picker.search-databases": "Search databases",
         "agent.resource-picker.search-issues": "Search issues",
+        "agent.resource-picker.search-plans": "Search plans",
         "agent.resource-picker.no-projects": "No projects found",
         "agent.resource-picker.no-databases": "No databases found",
         "agent.resource-picker.no-issues": "No issues found",
@@ -47,6 +52,7 @@ vi.mock("../logic/resourceSearch", () => ({
   searchAgentProjects: mocks.searchAgentProjects,
   searchAgentDatabases: mocks.searchAgentDatabases,
   searchAgentIssues: mocks.searchAgentIssues,
+  searchAgentPlans: mocks.searchAgentPlans,
 }));
 
 vi.mock("@/stores/app", () => ({
@@ -79,16 +85,15 @@ vi.mock("@/stores/app", () => ({
 }));
 
 vi.mock("../store/agent", () => ({
-  selectHasRunningChat: () => false,
   useAgentStore: Object.assign(
     (selector: (state: object) => unknown) =>
-      selector({ queuedUserMessage: null }),
+      selector({ queuedUserMessagesByChatId: {} }),
     {
       getState: () => ({
         selectOrCreateChatForContext: mocks.selectOrCreateChatForContext,
         queueUserMessage: mocks.queueUserMessage,
         open: mocks.openAgent,
-        queuedUserMessage: null,
+        queuedUserMessagesByChatId: {},
       }),
     }
   ),
@@ -115,6 +120,11 @@ const database = create(DatabaseSchema$, {
 const issue = create(IssueSchema, {
   name: "projects/orders/issues/42",
   title: "Update orders schema",
+});
+const plan = create(PlanSchema, {
+  name: "projects/orders/plans/7",
+  title: "Add orders index",
+  state: State.ACTIVE,
 });
 
 function renderComposer(contextName: string) {
@@ -151,6 +161,7 @@ beforeEach(() => {
   mocks.searchAgentProjects.mockReset();
   mocks.searchAgentDatabases.mockReset();
   mocks.searchAgentIssues.mockReset();
+  mocks.searchAgentPlans.mockReset();
   mocks.selectOrCreateChatForContext.mockClear();
   mocks.queueUserMessage.mockClear();
   mocks.openAgent.mockClear();
@@ -166,11 +177,47 @@ beforeEach(() => {
     items: [issue],
     nextPageToken: "",
   });
+  mocks.searchAgentPlans.mockResolvedValue({
+    items: [plan],
+    nextPageToken: "",
+  });
 });
 
 afterEach(cleanup);
 
 describe("LandingAgentComposer", () => {
+  test("queues a selected Plan from a project landing composer", async () => {
+    renderComposer(project.name);
+    triggerMention("@");
+    fireEvent.click(screen.getByRole("button", { name: "Plans" }));
+    await waitFor(() =>
+      expect(mocks.searchAgentPlans).toHaveBeenCalledWith(
+        project.name,
+        "",
+        "",
+        expect.any(AbortSignal)
+      )
+    );
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: /Add orders index.*#7/,
+      })
+    );
+    fireEvent.click(screen.getByRole("button", { name: "agent.send" }));
+
+    expect(mocks.queueUserMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        text: `@${plan.title} (#7)`,
+        resourceReference: {
+          kind: "plan",
+          name: plan.name,
+          project: project.name,
+          label: `${plan.title} (#7)`,
+        },
+      })
+    );
+  });
+
   test("removes an unfinished @ trigger when the picker is canceled", () => {
     renderComposer(workspaceName);
     const prompt = triggerMention("Check @");

@@ -3,6 +3,7 @@ import { createContextValues } from "@connectrpc/connect";
 import {
   databaseServiceClientConnect,
   issueServiceClientConnect,
+  planServiceClientConnect,
   projectServiceClientConnect,
 } from "@/api";
 import type { AppRouterInstance } from "@/app/router";
@@ -10,11 +11,13 @@ import { silentContextKey } from "@/api/context-key";
 import {
   getNameParentTokens,
   issueNamePrefix,
+  planNamePrefix,
   projectNamePrefix,
 } from "@/stores/modules/v1/common";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { GetDatabaseRequestSchema } from "@/types/proto-es/v1/database_service_pb";
 import { GetIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
+import { GetPlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { GetProjectRequestSchema } from "@/types/proto-es/v1/project_service_pb";
 import { getSkill, type GetSkillArgs } from "../skills";
 import { normalizeAgentHandoff } from "../handoff";
@@ -43,6 +46,7 @@ import { prepareIssueDecisionPermission } from "./issueDecisionPermission";
 import { createNavigateTool } from "./navigate";
 import { createPageStateTool, type PageStateArgs } from "./pageState";
 import { createPendingApiCall } from "./pendingApiCall";
+import { createPlanOverviewTool } from "./planOverview";
 import { createProjectOpenIssuesTool } from "./projectOpenIssues";
 import { createProjectGovernanceOverviewTool } from "./projectGovernanceOverview";
 import { createProjectRecentActivityTool } from "./projectRecentActivity";
@@ -172,6 +176,7 @@ const READ_ONLY_TOOL_NAMES = new Set([
   "get_project_overview",
   "get_project_governance_overview",
   "get_issue_overview",
+  "get_plan_overview",
   "get_database_overview",
   "get_database_count",
   "get_workspace_overview",
@@ -198,6 +203,7 @@ const PROJECT_SCOPED_TOOL_NAMES = new Set([
   "get_project_overview",
   "get_project_governance_overview",
   "get_issue_overview",
+  "get_plan_overview",
   "get_database_overview",
   "get_database_count",
   "get_project_open_issues",
@@ -249,6 +255,22 @@ const targetsSelectedIssue = (
     );
   }
   return false;
+};
+
+const targetsSelectedPlan = (
+  args: Record<string, unknown>,
+  referencedPlan: string
+): boolean => {
+  if (
+    !/^(?:bytebase\.v1\.)?PlanService[/.]GetPlan$/.test(
+      String(args.operationId ?? "")
+    ) ||
+    !args.body ||
+    typeof args.body !== "object"
+  ) {
+    return false;
+  }
+  return (args.body as Record<string, unknown>).name === referencedPlan;
 };
 
 export function getToolDefinitions(
@@ -410,6 +432,20 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
           },
         },
         required: ["issueName"],
+      },
+    },
+    {
+      name: "get_plan_overview",
+      description: `Get a bounded, read-only overview of one Plan in ${projectScope}. It includes the Plan's title, description, linked Issue status, plan-check counts, rollout summary, and up to ten Specs with bounded targets. It does not read Sheet SQL or Release contents. Pass the exact canonical Plan name. ${projectScopeRestriction} This tool cannot take action.`,
+      parametersSchema: {
+        type: "object",
+        properties: {
+          planName: {
+            type: "string",
+            description: `Canonical Plan resource name in ${projectScope}, for example projects/my-project/plans/123.`,
+          },
+        },
+        required: ["planName"],
       },
     },
     {
@@ -711,17 +747,27 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
 
 interface CreateToolExecutorOptions {
   chatId?: string;
+  canUseCurrentPage?: () => boolean;
   userName?: string;
   context?: string;
   workspaceName?: string;
   referencedProject?: string;
   referencedDatabase?: string;
   referencedIssue?: string;
+  referencedPlan?: string;
   onNavigate?: () => void;
   runMode?: AgentRunMode;
 }
 
 const PAGE_MUTATION_TOOL_NAMES = new Set(["navigate", "dom_action"]);
+const PAGE_BOUND_TOOL_NAMES = new Set([
+  "get_page_state",
+  ...PAGE_MUTATION_TOOL_NAMES,
+]);
+const BACKGROUND_PAGE_TOOL_ERROR = JSON.stringify({
+  error:
+    "This chat is not selected. Return to it before using tools that inspect or change the current page.",
+});
 let pageMutationChatId: string | null = null;
 
 const withPageMutationLock = async <T>(
@@ -766,10 +812,24 @@ export function createToolExecutor(
       ? options.referencedIssue
       : undefined;
   const referencedDatabase = options.referencedDatabase;
+  const referencedPlanTokens = getNameParentTokens(
+    options.referencedPlan ?? "",
+    [projectNamePrefix, planNamePrefix]
+  );
+  const referencedPlan =
+    referencedProject &&
+    !referencedDatabase &&
+    !referencedIssue &&
+    referencedPlanTokens.length === 2 &&
+    referencedPlanTokens[0] !== "-" &&
+    referencedPlanTokens[1] !== "-" &&
+    `${projectNamePrefix}${referencedPlanTokens[0]}` === referencedProject
+      ? options.referencedPlan
+      : undefined;
   const projectName = referencedProject ?? options.context;
   const navigateTool = createNavigateTool(router);
   const pageStateTool = createPageStateTool(router);
-  const domActionTool = createDomActionTool(router);
+  const domActionTool = createDomActionTool(router, options.canUseCurrentPage);
   const projectOpenIssuesTool = createProjectOpenIssuesTool({
     projectName,
   });
@@ -780,6 +840,9 @@ export function createToolExecutor(
     projectName,
   });
   const issueOverviewTool = createIssueOverviewTool({
+    projectName,
+  });
+  const planOverviewTool = createPlanOverviewTool({
     projectName,
   });
   const databaseOverviewTool = createDatabaseOverviewTool({
@@ -809,6 +872,7 @@ export function createToolExecutor(
   let referencedProjectAccess: Promise<boolean> | undefined;
   let referencedDatabaseAccess: Promise<boolean> | undefined;
   let referencedIssueAccess: Promise<boolean> | undefined;
+  let referencedPlanAccess: Promise<boolean> | undefined;
   const hasReferencedProjectAccess = (): Promise<boolean> => {
     if (!referencedProject) return Promise.resolve(true);
     referencedProjectAccess ??= projectServiceClientConnect
@@ -851,6 +915,18 @@ export function createToolExecutor(
       .catch(() => false);
     return referencedIssueAccess;
   };
+  const hasReferencedPlanAccess = (): Promise<boolean> => {
+    if (!referencedPlan) return Promise.resolve(false);
+    referencedPlanAccess ??= planServiceClientConnect
+      .getPlan(create(GetPlanRequestSchema, { name: referencedPlan }), {
+        contextValues: createContextValues().set(silentContextKey, true),
+      })
+      .then(
+        (plan) => plan.name === referencedPlan && plan.state === State.ACTIVE
+      )
+      .catch(() => false);
+    return referencedPlanAccess;
+  };
 
   const canUseIssueAccess = (
     name: string,
@@ -868,12 +944,25 @@ export function createToolExecutor(
       args.databaseName === referencedDatabase) ||
       name === "get_database_count" ||
       name === "call_api");
+  const canUsePlanAccess = (
+    name: string,
+    args: Record<string, unknown>
+  ): boolean =>
+    !!referencedPlan &&
+    ((name === "get_plan_overview" && args.planName === referencedPlan) ||
+      (name === "call_api" && targetsSelectedPlan(args, referencedPlan)));
 
   return async (
     name: string,
     args: Record<string, unknown>,
     toolCallId: string
   ): Promise<ToolExecutionResult> => {
+    if (
+      PAGE_BOUND_TOOL_NAMES.has(name) &&
+      options.canUseCurrentPage?.() === false
+    ) {
+      return toToolResult(BACKGROUND_PAGE_TOOL_ERROR);
+    }
     const allowedTools = referencedProject
       ? REFERENCED_PROJECT_TOOL_NAMES
       : READ_ONLY_TOOL_NAMES;
@@ -897,7 +986,8 @@ export function createToolExecutor(
         (await hasReferencedDatabaseAccess())
       ) &&
       !(await hasReferencedProjectAccess()) &&
-      !(canUseIssueAccess(name, args) && (await hasReferencedIssueAccess()))
+      !(canUseIssueAccess(name, args) && (await hasReferencedIssueAccess())) &&
+      !(canUsePlanAccess(name, args) && (await hasReferencedPlanAccess()))
     ) {
       return toToolResult(
         JSON.stringify({
@@ -992,14 +1082,22 @@ export function createToolExecutor(
         }
         return toToolResult(result);
       }
-      case "get_page_state":
-        return toToolResult(await pageStateTool(args as PageStateArgs));
+      case "get_page_state": {
+        const result = await pageStateTool(args as PageStateArgs);
+        return toToolResult(
+          options.canUseCurrentPage?.() === false
+            ? BACKGROUND_PAGE_TOOL_ERROR
+            : result
+        );
+      }
       case "get_project_overview":
         return toToolResult(await projectOverviewTool());
       case "get_project_governance_overview":
         return toToolResult(await projectGovernanceOverviewTool());
       case "get_issue_overview":
         return toToolResult(await issueOverviewTool(args));
+      case "get_plan_overview":
+        return toToolResult(await planOverviewTool(args));
       case "get_database_overview":
         return toToolResult(await databaseOverviewTool(args));
       case "get_database_count":

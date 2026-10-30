@@ -335,6 +335,35 @@ describe("buildOutboundHistory", () => {
     ).toEqual(["system", "What needs attention?"]);
   });
 
+  test("keeps an unqualified project follow-up free of a selected Plan in that project", () => {
+    const planTurn = [
+      {
+        ...userMessage({
+          resourceReference: {
+            kind: "plan" as const,
+            name: "projects/orders/plans/12",
+            project: "projects/orders",
+            label: "Change orders schema",
+          },
+        }),
+        content: "Review @Change orders schema",
+      },
+      {
+        ...userMessage(),
+        id: "answer-1",
+        role: "assistant" as const,
+        content: "The Plan includes a schema change.",
+      },
+      { ...userMessage(), id: "turn-2", content: "What needs attention?" },
+    ];
+
+    expect(
+      buildOutboundHistory("system", planTurn, "projects/orders").map(
+        (message) => message.content
+      )
+    ).toEqual(["system", "What needs attention?"]);
+  });
+
   test("keeps an unqualified workspace follow-up free of a selected project and issue", () => {
     const issueTurn = [
       userMessage({

@@ -7,9 +7,12 @@ export interface DomActionArgs {
   value?: string;
 }
 
-export function createDomActionTool(router: AppRouterInstance) {
+export function createDomActionTool(
+  router: AppRouterInstance,
+  canUseCurrentPage?: () => boolean
+) {
   return async (args: DomActionArgs): Promise<string> => {
-    const result = await lazyExecuteDomAction(args, router);
+    const result = await lazyExecuteDomAction(args, router, canUseCurrentPage);
     return JSON.stringify(result);
   };
 }

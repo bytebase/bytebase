@@ -1,7 +1,11 @@
 // @vitest-environment node
 import { create } from "@bufbuild/protobuf";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { databaseServiceClientConnect, issueServiceClientConnect } from "@/api";
+import {
+  databaseServiceClientConnect,
+  issueServiceClientConnect,
+  planServiceClientConnect,
+} from "@/api";
 import { silentContextKey } from "@/api/context-key";
 import { State } from "@/types/proto-es/v1/common_pb";
 import {
@@ -12,6 +16,10 @@ import {
   IssueSchema,
   SearchIssuesRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  ListPlansRequestSchema,
+  PlanSchema,
+} from "@/types/proto-es/v1/plan_service_pb";
 import { ProjectSchema } from "@/types/proto-es/v1/project_service_pb";
 
 const mocks = vi.hoisted(() => ({
@@ -19,6 +27,7 @@ const mocks = vi.hoisted(() => ({
   listDatabases: vi.fn(),
   searchDatabases: vi.fn(),
   searchIssues: vi.fn(),
+  listPlans: vi.fn(),
   batchGetOrFetchUsers: vi.fn(),
 }));
 
@@ -28,6 +37,7 @@ vi.mock("@/api", () => ({
     searchDatabases: mocks.searchDatabases,
   },
   issueServiceClientConnect: { searchIssues: mocks.searchIssues },
+  planServiceClientConnect: { listPlans: mocks.listPlans },
 }));
 
 vi.mock("@/stores/app", () => ({
@@ -44,6 +54,7 @@ vi.mock("@/utils/pagination", () => ({ getDefaultPagination: () => 17 }));
 import {
   searchAgentDatabases,
   searchAgentIssues,
+  searchAgentPlans,
   searchAgentProjects,
 } from "./resourceSearch";
 
@@ -406,5 +417,83 @@ describe("searchAgentIssues", () => {
       searchAgentIssues("projects/orders", "", "", controller.signal)
     ).rejects.toMatchObject({ name: "AbortError" });
     expect(mocks.searchIssues).not.toHaveBeenCalled();
+  });
+});
+
+describe("searchAgentPlans", () => {
+  const plan = create(PlanSchema, {
+    name: "projects/orders/plans/42",
+    title: "Add an orders index",
+  });
+
+  beforeEach(() => {
+    mocks.listPlans.mockReset();
+  });
+
+  test("searches active plans within one project with escaped title and pagination", async () => {
+    const controller = new AbortController();
+    mocks.listPlans.mockResolvedValueOnce({
+      plans: [plan],
+      nextPageToken: "next-page",
+    });
+
+    await expect(
+      searchAgentPlans(
+        "projects/orders",
+        ' index"name ',
+        "previous-page",
+        controller.signal
+      )
+    ).resolves.toEqual({ items: [plan], nextPageToken: "next-page" });
+    expect(planServiceClientConnect.listPlans).toHaveBeenCalledExactlyOnceWith(
+      create(ListPlansRequestSchema, {
+        parent: "projects/orders",
+        pageSize: 17,
+        pageToken: "previous-page",
+        filter: 'state == "ACTIVE" && title.contains("index\\"name")',
+      }),
+      expect.objectContaining({
+        signal: controller.signal,
+        contextValues: expect.anything(),
+      })
+    );
+    expect(
+      mocks.listPlans.mock.calls[0][1]?.contextValues.get(silentContextKey)
+    ).toBe(true);
+  });
+
+  test("rejects wildcard and non-project parents before requesting plans", async () => {
+    for (const parent of [
+      "projects/-",
+      "workspaces/default",
+      "projects/orders/plans/42",
+    ]) {
+      await expect(
+        searchAgentPlans(parent, "", "", new AbortController().signal)
+      ).rejects.toThrow("canonical project");
+    }
+    expect(mocks.listPlans).not.toHaveBeenCalled();
+  });
+
+  test("does not start an aborted search", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    await expect(
+      searchAgentPlans("projects/orders", "", "", controller.signal)
+    ).rejects.toMatchObject({ name: "AbortError" });
+    expect(mocks.listPlans).not.toHaveBeenCalled();
+  });
+
+  test("normalizes an exhausted page and propagates API failures", async () => {
+    const controller = new AbortController();
+    mocks.listPlans.mockResolvedValueOnce({ plans: [] });
+    await expect(
+      searchAgentPlans("projects/orders", "", "", controller.signal)
+    ).resolves.toEqual({ items: [], nextPageToken: "" });
+    const failure = new Error("plans unavailable");
+    mocks.listPlans.mockRejectedValueOnce(failure);
+    await expect(
+      searchAgentPlans("projects/orders", "", "", controller.signal)
+    ).rejects.toBe(failure);
   });
 });

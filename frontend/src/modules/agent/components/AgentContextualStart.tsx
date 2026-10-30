@@ -1,6 +1,7 @@
 import {
   ArrowUpRight,
   CircleDot,
+  ClipboardList,
   Database,
   Folder,
   LoaderCircle,
@@ -37,13 +38,17 @@ export function AgentContextualStart({
       ? Folder
       : page.kind === "database"
         ? Database
-        : CircleDot;
+        : page.kind === "plan"
+          ? ClipboardList
+          : CircleDot;
   const heading =
     page.kind === "project"
       ? t("agent.contextual-start.project-heading")
       : page.kind === "database"
         ? t("agent.contextual-start.database-heading")
-        : t("agent.contextual-start.issue-heading");
+        : page.kind === "plan"
+          ? t("agent.contextual-start.plan-heading")
+          : t("agent.contextual-start.issue-heading");
   const suggestions =
     page.kind === "project"
       ? [
@@ -56,11 +61,17 @@ export function AgentContextualStart({
             t("agent.contextual-start.database-schema"),
             t("agent.contextual-start.database-recent"),
           ]
-        : [
-            t("agent.contextual-start.issue-summary"),
-            t("agent.contextual-start.issue-changes"),
-            t("agent.contextual-start.issue-security"),
-          ];
+        : page.kind === "plan"
+          ? [
+              t("agent.contextual-start.plan-changes"),
+              t("agent.contextual-start.plan-risks"),
+              t("agent.contextual-start.plan-status"),
+            ]
+          : [
+              t("agent.contextual-start.issue-summary"),
+              t("agent.contextual-start.issue-changes"),
+              t("agent.contextual-start.issue-security"),
+            ];
 
   return (
     <div
