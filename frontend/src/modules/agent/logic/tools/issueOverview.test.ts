@@ -541,5 +541,29 @@ describe("issueOverview", () => {
         })
       )
     ).toBeUndefined();
+    expect(
+      extractIssueOverviewEvidence(
+        JSON.stringify({
+          evidence: {
+            project: "projects/orders",
+            references: [
+              { kind: "issue", name: issueName, title: "Add customer table" },
+              { kind: "plan", name: planName, title: "Add customer table" },
+              {
+                kind: "plan",
+                name: "projects/other/plans/plan-2",
+                title: "Other project",
+              },
+            ],
+          },
+        })
+      )
+    ).toEqual({
+      project: "projects/orders",
+      references: [
+        { kind: "issue", name: issueName, title: "Add customer table" },
+        { kind: "plan", name: planName, title: "Add customer table" },
+      ],
+    });
   });
 });

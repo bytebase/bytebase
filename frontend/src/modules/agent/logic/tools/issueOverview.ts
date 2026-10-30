@@ -27,7 +27,7 @@ import {
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { getRolloutFromPlan } from "@/utils";
 import { shouldRedirectToIssueDetail } from "@/utils/v1/issue/plan";
-import type { AgentEvidence } from "../types";
+import type { AgentEvidence, AgentEvidenceReference } from "../types";
 
 const TASK_RUN_PAGE_SIZE = 10;
 const MAX_FAILED_TASKS = 10;
@@ -484,24 +484,29 @@ export function extractIssueOverviewEvidence(
       return undefined;
     }
 
-    const references = evidence.references.flatMap((reference) => {
-      if (!reference || typeof reference !== "object") return [];
-      const value = reference as Record<string, unknown>;
-      if (typeof value.name !== "string" || typeof value.title !== "string") {
+    const references = evidence.references.flatMap<AgentEvidenceReference>(
+      (reference) => {
+        if (!reference || typeof reference !== "object") return [];
+        const value = reference as Record<string, unknown>;
+        if (typeof value.name !== "string" || typeof value.title !== "string") {
+          return [];
+        }
+        if (
+          value.kind === "issue" &&
+          isIssueNameInProject(project, value.name)
+        ) {
+          return [
+            { kind: "issue" as const, name: value.name, title: value.title },
+          ];
+        }
+        if (value.kind === "plan" && isPlanNameInProject(project, value.name)) {
+          return [
+            { kind: "plan" as const, name: value.name, title: value.title },
+          ];
+        }
         return [];
       }
-      if (value.kind === "issue" && isIssueNameInProject(project, value.name)) {
-        return [
-          { kind: "issue" as const, name: value.name, title: value.title },
-        ];
-      }
-      if (value.kind === "plan" && isPlanNameInProject(project, value.name)) {
-        return [
-          { kind: "plan" as const, name: value.name, title: value.title },
-        ];
-      }
-      return [];
-    });
+    );
 
     return references.length > 0 ? { project, references } : undefined;
   } catch {
