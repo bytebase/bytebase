@@ -1,12 +1,28 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { silentContextKey } from "@/api/context-key";
-import { ApprovalStatus, IssueStatus } from "@/types/proto-es/v1/common_pb";
+import { getProjectSetupSteps } from "@/lib/projectSetup";
+import {
+  ApprovalStatus,
+  IssueStatus,
+  State,
+} from "@/types/proto-es/v1/common_pb";
 import { type Issue, Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 
 const state = {
   currentUser: { name: "users/ed@bytebase.com" },
+  serverInfo: { defaultProject: "projects/default" },
+  workspacePolicy: { bindings: [] },
+  projectPoliciesByName: { "projects/sample": { bindings: [] } },
+  projectsByName: {} as Record<string, { state: number }>,
+  roles: [{ name: "roles/example" }],
+  workspaceResourceName: () => "workspaces/example",
+  loadWorkspacePermissionState: vi.fn(),
+  loadProjectIamPolicy: vi.fn(),
+  hasWorkspacePermission: vi.fn(),
+  hasProjectPermission: vi.fn(),
   fetchDatabases: vi.fn(),
+  fetchInstanceList: vi.fn(),
   listIssues: vi.fn(),
 };
 
@@ -44,9 +60,236 @@ const issue = (values: Partial<Issue>): Issue =>
 
 describe("projectOverview", () => {
   beforeEach(() => {
+    state.roles = [{ name: "roles/example" }];
+    state.serverInfo.defaultProject = "projects/default";
+    state.projectsByName = {};
     state.listIssues.mockReset();
     state.fetchDatabases.mockReset();
+    state.fetchInstanceList.mockReset();
+    state.loadWorkspacePermissionState.mockReset().mockResolvedValue(undefined);
+    state.loadProjectIamPolicy.mockReset().mockResolvedValue(undefined);
+    state.hasWorkspacePermission.mockReset().mockReturnValue(true);
+    state.hasProjectPermission.mockReset().mockReturnValue(true);
+    state.fetchInstanceList.mockResolvedValue({ instances: [] });
     mocks.searchIssues.mockReset();
+  });
+
+  test("discovers an eligible default-project database for an empty project", async () => {
+    mocks.searchIssues.mockResolvedValue({ nextPageToken: "", issues: [] });
+    state.fetchDatabases.mockImplementation(async ({ parent }) => ({
+      nextPageToken: "",
+      databases:
+        parent === "workspaces/example"
+          ? [{ name: "instances/example/databases/unassigned" }]
+          : [],
+    }));
+
+    const overview = await collectProjectOverview("projects/sample");
+
+    expect(state.fetchDatabases).toHaveBeenCalledWith({
+      parent: "workspaces/example",
+      pageSize: 1,
+      filter: { project: "projects/default" },
+      silent: true,
+    });
+    expect(overview?.setup).toMatchObject({
+      instance: "empty",
+      transferableDatabase: "present",
+      canTransferDatabases: true,
+      recommendedStep: "transferDatabases",
+    });
+  });
+
+  test("uses an existing workspace instance when no transferable database exists", async () => {
+    mocks.searchIssues.mockResolvedValue({ nextPageToken: "", issues: [] });
+    state.fetchDatabases.mockResolvedValue({
+      nextPageToken: "",
+      databases: [],
+    });
+    state.fetchInstanceList.mockImplementation(async ({ parent }) => ({
+      instances: parent ? [] : [{ name: "instances/shared" }],
+    }));
+
+    const overview = await collectProjectOverview("projects/sample");
+
+    expect(state.fetchInstanceList).toHaveBeenCalledWith({
+      parent: "projects/sample",
+      pageSize: 1,
+      filter: { state: expect.any(Number) },
+      silent: true,
+    });
+    expect(state.fetchInstanceList).toHaveBeenCalledWith({
+      parent: undefined,
+      pageSize: 1,
+      filter: { state: expect.any(Number) },
+      silent: true,
+    });
+    expect(overview?.setup).toMatchObject({
+      instance: "present",
+      transferableDatabase: "empty",
+      recommendedStep: "createDatabase",
+    });
+  });
+
+  test("retains both eligible setup flows while recommending transfer first", async () => {
+    mocks.searchIssues.mockResolvedValue({ nextPageToken: "", issues: [] });
+    state.fetchDatabases.mockImplementation(async ({ parent }) => ({
+      nextPageToken: "",
+      databases:
+        parent === "workspaces/example"
+          ? [{ name: "instances/example/databases/unassigned" }]
+          : [],
+    }));
+    state.fetchInstanceList.mockResolvedValue({
+      instances: [{ name: "instances/shared" }],
+    });
+
+    const overview = await collectProjectOverview("projects/sample");
+
+    expect(overview?.setup?.recommendedStep).toBe("transferDatabases");
+    expect(overview?.setup && getProjectSetupSteps(overview.setup)).toEqual([
+      "transferDatabases",
+      "createDatabase",
+    ]);
+  });
+
+  test("discovers setup flows for a project that already has databases", async () => {
+    mocks.searchIssues.mockResolvedValue({ nextPageToken: "", issues: [] });
+    state.fetchDatabases.mockImplementation(async ({ parent }) => ({
+      nextPageToken: "",
+      databases:
+        parent === "projects/sample"
+          ? [{ name: "instances/shared/databases/orders" }]
+          : [{ name: "instances/shared/databases/unassigned" }],
+    }));
+    state.fetchInstanceList.mockResolvedValue({
+      instances: [{ name: "instances/shared" }],
+    });
+
+    const overview = await collectProjectOverview("projects/sample");
+
+    expect(overview?.setup).toMatchObject({
+      instance: "present",
+      transferableDatabase: "present",
+      canConnectInstance: true,
+      canTransferDatabases: true,
+      canCreateDatabase: true,
+    });
+    expect(overview?.setup?.recommendedStep).toBeUndefined();
+  });
+
+  test("does not offer setup actions when known permissions deny them", async () => {
+    mocks.searchIssues.mockResolvedValue({ nextPageToken: "", issues: [] });
+    state.fetchDatabases.mockResolvedValue({
+      nextPageToken: "",
+      databases: [],
+    });
+    state.hasProjectPermission.mockReturnValue(false);
+    state.hasWorkspacePermission.mockReturnValue(false);
+
+    const overview = await collectProjectOverview("projects/sample");
+
+    expect(overview?.setup).toMatchObject({
+      instance: "unknown",
+      transferableDatabase: "empty",
+      canConnectInstance: false,
+      canTransferDatabases: false,
+      canCreateDatabase: false,
+    });
+    expect(state.fetchInstanceList).not.toHaveBeenCalled();
+    expect(state.fetchDatabases).toHaveBeenCalledTimes(1);
+  });
+
+  test("does not turn unavailable IAM data into a false permission denial", async () => {
+    state.roles = [];
+    mocks.searchIssues.mockResolvedValue({ nextPageToken: "", issues: [] });
+    state.fetchDatabases.mockResolvedValue({
+      nextPageToken: "",
+      databases: [],
+    });
+    state.hasProjectPermission.mockReturnValue(false);
+    state.hasWorkspacePermission.mockReturnValue(false);
+
+    const overview = await collectProjectOverview("projects/sample");
+
+    expect(overview?.setup).toMatchObject({
+      canConnectInstance: true,
+      canTransferDatabases: true,
+      canCreateDatabase: true,
+    });
+  });
+
+  test("preserves unknown availability when setup reads fail", async () => {
+    mocks.searchIssues.mockResolvedValue({ nextPageToken: "", issues: [] });
+    state.fetchDatabases.mockImplementation(async ({ parent }) => {
+      if (parent === "workspaces/example") throw new Error("unavailable");
+      return { nextPageToken: "", databases: [] };
+    });
+    state.fetchInstanceList.mockRejectedValue(new Error("unavailable"));
+
+    const overview = await collectProjectOverview("projects/sample");
+
+    expect(overview?.setup).toMatchObject({
+      instance: "unknown",
+      transferableDatabase: "unknown",
+    });
+  });
+
+  test("does not suggest setup for an archived project", async () => {
+    state.projectsByName = { "projects/sample": { state: State.DELETED } };
+    mocks.searchIssues.mockResolvedValue({ nextPageToken: "", issues: [] });
+    state.fetchDatabases.mockResolvedValue({
+      nextPageToken: "",
+      databases: [],
+    });
+
+    const overview = await collectProjectOverview("projects/sample");
+
+    expect(overview?.setup).toBeUndefined();
+    expect(state.fetchInstanceList).not.toHaveBeenCalled();
+  });
+
+  test("does not recommend empty-project setup from a partial database page", async () => {
+    mocks.searchIssues.mockResolvedValue({ nextPageToken: "", issues: [] });
+    state.fetchDatabases.mockResolvedValue({
+      nextPageToken: "more",
+      databases: [],
+    });
+
+    const overview = await collectProjectOverview("projects/sample");
+
+    expect(overview?.setup?.recommendedStep).toBeUndefined();
+    expect(overview?.setup?.canConnectInstance).toBe(true);
+  });
+
+  test("does not inspect setup resources for the default project", async () => {
+    state.serverInfo.defaultProject = "projects/sample";
+    mocks.searchIssues.mockResolvedValue({ nextPageToken: "", issues: [] });
+    state.fetchDatabases.mockResolvedValue({
+      nextPageToken: "",
+      databases: [],
+    });
+
+    const overview = await collectProjectOverview("projects/sample");
+
+    expect(overview?.setup).toMatchObject({ isDefault: true });
+    expect(overview?.setup?.recommendedStep).toBeUndefined();
+    expect(state.fetchDatabases).toHaveBeenCalledTimes(1);
+    expect(state.fetchInstanceList).not.toHaveBeenCalled();
+  });
+
+  test("does not guess a setup action before the default project is known", async () => {
+    state.serverInfo.defaultProject = "";
+    mocks.searchIssues.mockResolvedValue({ nextPageToken: "", issues: [] });
+    state.fetchDatabases.mockResolvedValue({
+      nextPageToken: "",
+      databases: [],
+    });
+
+    const overview = await collectProjectOverview("projects/sample");
+
+    expect(overview?.setup?.recommendedStep).toBeUndefined();
+    expect(state.fetchInstanceList).not.toHaveBeenCalled();
   });
 
   test("uses silent unhydrated issue searches for every issue facet", async () => {
@@ -187,6 +430,14 @@ describe("projectOverview", () => {
             name: "projects/sample/instances/prod/databases/orders",
           },
         ],
+      },
+      setup: {
+        isDefault: false,
+        instance: "empty",
+        transferableDatabase: "present",
+        canConnectInstance: true,
+        canTransferDatabases: true,
+        canCreateDatabase: true,
       },
       openDatabaseChanges: {
         status: "available",

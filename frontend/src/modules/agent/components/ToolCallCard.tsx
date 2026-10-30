@@ -480,7 +480,15 @@ export function ToolCallCard({ toolCall, result }: Props) {
     }
     return true;
   }, [parsedArguments, parsedResult]);
-
+  const doneHasApiWarnings =
+    doneSuccess &&
+    typeof parsedResult === "object" &&
+    parsedResult !== null &&
+    !Array.isArray(parsedResult) &&
+    typeof (parsedResult as Record<string, unknown>).failedApiCallCount ===
+      "number" &&
+    ((parsedResult as Record<string, unknown>).failedApiCallCount as number) >
+      0;
   const renderStatus = () => {
     if (hasErrorResult || callApiError) {
       return <span className="text-error">{t("agent.tool-failed")}</span>;
@@ -502,6 +510,13 @@ export function ToolCallCard({ toolCall, result }: Props) {
       );
     }
     if (isDone) {
+      if (doneHasApiWarnings) {
+        return (
+          <span className="text-warning">
+            {t("agent.tool-completed-with-warnings")}
+          </span>
+        );
+      }
       return (
         <span className={doneSuccess ? "text-success" : "text-error"}>
           {doneSuccess ? t("agent.tool-completed") : t("agent.tool-failed")}

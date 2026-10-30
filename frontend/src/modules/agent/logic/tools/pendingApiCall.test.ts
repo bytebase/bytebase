@@ -288,6 +288,11 @@ describe("pendingApiCall", () => {
     expect(mocks.validateIssueDecisionPermission).toHaveBeenCalledWith(
       issueDecision
     );
+    expect(
+      mocks.checkPreparedApiPermission.mock.invocationCallOrder[0]
+    ).toBeLessThan(
+      mocks.validateIssueDecisionPermission.mock.invocationCallOrder[0]
+    );
   });
 
   test("dispatches a current Issue decision once and does not revalidate denial", async () => {
@@ -395,7 +400,9 @@ describe("pendingApiCall", () => {
       approved: true,
       signal: controller.signal,
     });
-    expect(mocks.validateIssueDecisionPermission).toHaveBeenCalledOnce();
+    await vi.waitFor(() =>
+      expect(mocks.validateIssueDecisionPermission).toHaveBeenCalledOnce()
+    );
     controller.abort();
     finishValidation(true);
 

@@ -69,6 +69,8 @@ const DYNAMIC_PREFIXES = [
   // Landing starter IDs are ranked in a pure helper and translated by the
   // shared selector using the selected ID.
   "agent.landing-starters.",
+  // Handoff labels are selected by the validated intent kind.
+  "agent.handoff.",
   // Attention result labels use the Issue relation returned by a bounded
   // read-only lookup to choose the corresponding translation key.
   "agent.project-attention.issue-",

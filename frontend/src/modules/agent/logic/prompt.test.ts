@@ -3,6 +3,52 @@ import { describe, expect, test } from "vitest";
 import { buildSystemPrompt } from "./prompt";
 
 describe("buildSystemPrompt", () => {
+  test("requests up to three useful English follow-up questions without auto-sending", () => {
+    const prompt = buildSystemPrompt({ path: "/landing", title: "Workspace" });
+    expect(prompt).toContain(
+      "one primary action: Open, draft-plan, or draft-issue-comment"
+    );
+    expect(prompt).toContain("current-turn overview evidence");
+    expect(prompt).toContain("2-3 distinct, contextual Continue questions");
+    expect(prompt).toContain("For a successful answer");
+    expect(prompt).toContain("English");
+    expect(prompt).toContain("Do not add filler questions");
+    expect(prompt).toContain("does not send or execute anything");
+  });
+
+  test("offers only evidenced exact Issue links without taking a review action", () => {
+    const prompt = buildSystemPrompt({
+      path: "/projects/orders/issues/123",
+      title: "Issue",
+      context: "projects/orders",
+      referencedProject: "projects/orders",
+      referencedIssue: "projects/orders/issues/123",
+    });
+    expect(prompt).toContain("open-issue");
+    expect(prompt).toContain("review-issue-plan");
+    expect(prompt).toContain("view-failed-task");
+    expect(prompt).toContain("current failed Task");
+    expect(prompt).toContain("never approves, retries, or executes");
+  });
+
+  test("uses empty-project setup evidence in the same priority as Project Home", () => {
+    const prompt = buildSystemPrompt({
+      path: "/projects/sample",
+      title: "Sample",
+    });
+    expect(prompt).toContain("transfer an eligible unassigned database first");
+    expect(prompt).toContain("connect an instance directly");
+    expect(prompt).toContain("create a database on an available instance");
+    expect(prompt).toContain("transfer-project-databases");
+    expect(prompt).toContain("specific setup request in any active project");
+  });
+  test("requests fresh validation only for database choices", () => {
+    const prompt = buildSystemPrompt({ path: "/landing", title: "Workspace" });
+    expect(prompt).toContain("resourceKind");
+    expect(prompt).toContain("canonical option values");
+    expect(prompt).toContain("Ask which Project first");
+    expect(prompt).not.toContain('resourceKind="environment"');
+  });
   test("requires a failed completion when an API request is rejected", () => {
     const prompt = buildSystemPrompt({
       path: "/projects/orders/issues",
@@ -13,8 +59,9 @@ describe("buildSystemPrompt", () => {
     expect(prompt).toContain(
       "If call_api returns an error or HTTP status 400 or higher"
     );
-    expect(prompt).toContain("done({ text, success: false })");
-    expect(prompt).toContain("Do not claim the change succeeded");
+    expect(prompt).toContain("done({ text, success: false, actions: [] })");
+    expect(prompt).toContain("Do not claim the query or change succeeded");
+    expect(prompt).toContain("Query result contains permissionDenied");
   });
 
   test("uses a selected project for one turn without narrowing normal API calls", () => {
@@ -78,6 +125,34 @@ describe("buildSystemPrompt", () => {
     expect(prompt).not.toContain("Referenced project for this turn");
   });
 
+  test("offers an unsaved Plan draft only for generated DDL grounded in this turn's selected database", () => {
+    const selectedPrompt = buildSystemPrompt({
+      path: "/projects/orders",
+      title: "Orders",
+      context: "projects/orders",
+      referencedProject: "projects/billing",
+      referencedDatabase: "instances/prod/databases/billing",
+    });
+    const unselectedPrompt = buildSystemPrompt({
+      path: "/projects/orders",
+      title: "Orders",
+      context: "projects/orders",
+    });
+
+    expect(selectedPrompt).toContain("draft-plan");
+    expect(selectedPrompt).toContain('"create a table"');
+    expect(selectedPrompt).toContain("DatabaseService/GetDatabaseSchema");
+    expect(selectedPrompt).toContain("instances/prod/databases/billing/schema");
+    expect(selectedPrompt).toContain("generated DDL");
+    expect(selectedPrompt).toContain("exactly one fenced `sql` code block");
+    expect(selectedPrompt).toContain("opens a populated, unsaved Plan");
+    expect(selectedPrompt).toContain("does not create or execute the Plan");
+    expect(selectedPrompt).toContain(
+      "one primary action: Open, draft-plan, or draft-issue-comment"
+    );
+    expect(unselectedPrompt).not.toContain("generated DDL");
+  });
+
   test("grounds a selected issue and its approval consequence in fresh state", () => {
     const prompt = buildSystemPrompt({
       path: "/projects/orders",
@@ -102,6 +177,21 @@ describe("buildSystemPrompt", () => {
       "After an approved decision request, re-read the Issue"
     );
     expect(prompt).not.toContain("Referenced project for this turn");
+  });
+
+  test("offers only a reviewed and unsent Issue comment draft", () => {
+    const prompt = buildSystemPrompt({
+      path: "/projects/orders/issues/42",
+      title: "Issue",
+      context: "projects/orders",
+      referencedProject: "projects/orders",
+      referencedIssue: "projects/orders/issues/42",
+    });
+    expect(prompt).toContain("security review of an Issue");
+    expect(prompt).toContain("draft-issue-comment");
+    expect(prompt).toContain("exact observed Issue name");
+    expect(prompt).toContain("unsent editor draft");
+    expect(prompt).toContain("Do not include speculative findings");
   });
 
   test("names the chat context separately from the live page", () => {

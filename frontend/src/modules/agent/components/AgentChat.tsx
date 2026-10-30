@@ -1,9 +1,16 @@
-import { ArrowUpRight, Building2, ChevronRight, Folder } from "lucide-react";
+import {
+  ArrowUpRight,
+  Building2,
+  ChevronRight,
+  Folder,
+  Loader2,
+} from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { router } from "@/app/router";
 import {
   PROJECT_V1_ROUTE_DATABASE_DETAIL,
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
@@ -19,26 +26,50 @@ import {
 } from "@/components/ui/collapsible";
 import { Table } from "@/components/ui/table";
 import {
+  ExistingIssueCommentDraftError,
+  IssueCommentDraftPermissionError,
+  IssueCommentDraftStorageError,
+  prepareIssueCommentDraftRoute,
+  wasIssueCommentDraftDelivered,
+} from "@/lib/issueCommentDraft";
+import {
   AI_ASSISTANT_PRODUCT_INTRO,
   PRODUCT_INTRO_QUERY_KEY,
 } from "@/lib/productIntro";
 import { projectNamePrefix } from "@/lib/resourceName";
+import {
+  ACCESS_GRANT_DRAFT_QUERY_KEY,
+  wasDeniedQueryRequestDraftDelivered,
+} from "@/modules/sql-editor/model/accessGrantDraft";
 import { useAppStore } from "@/stores/app";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { getAgentAIConfigurationEnabled } from "../logic/aiConfiguration";
+import {
+  type DeniedQueryRequestDraft,
+  DeniedQueryRequestDraftStorageError,
+  prepareAgentDeniedQueryRequestRoute,
+} from "../logic/deniedQueryAccess";
+import { resolveAgentHandoffRoute } from "../logic/handoff";
 import type { LandingStarterId } from "../logic/landingStarters";
+import {
+  PlanDraftStorageError,
+  prepareAgentPlanDraftRoute,
+} from "../logic/planDraft";
 import {
   formatResourceMention,
   isResourceMentionRange,
   normalizeAgentResourceReferences,
 } from "../logic/resourceMention";
+import { normalizeAgentResponseActions } from "../logic/responseActions";
 import type {
   AgentAnswerEvidence,
   AgentEvidence,
   AgentEvidenceReference,
+  AgentHandoff,
   AgentMessage,
   AgentResourceReference,
+  AgentResponseAction,
   ToolCall,
 } from "../logic/types";
 import {
@@ -56,6 +87,11 @@ interface AgentChatProps {
   contextLabel?: string;
   onRetry?: () => void;
   onSelectSuggestion?: (starterId: LandingStarterId) => void;
+  onContinueAction?: (
+    chatId: string,
+    prompt: string,
+    references: AgentResourceReference[]
+  ) => void;
 }
 
 const EMPTY_CHAT_STARTERS: Record<"workspace" | "project", LandingStarterId[]> =
@@ -69,6 +105,7 @@ const EMPTY_CHAT_STARTERS: Record<"workspace" | "project", LandingStarterId[]> =
       "project-open-blockers",
       "project-open-recent",
       "project-propose-change",
+      "project-next",
     ],
   };
 
@@ -215,6 +252,335 @@ function EvidenceReferences({ evidence }: { evidence?: AgentAnswerEvidence }) {
   );
 }
 
+function HandoffLink({ handoff }: { handoff?: AgentHandoff }) {
+  const { t } = useTranslation();
+  const [loading, setLoading] = useState(false);
+  const to = resolveAgentHandoffRoute(handoff);
+  if (!to || !handoff) return null;
+  const labelKey =
+    handoff.kind === "transfer-project-databases"
+      ? "project.home.transfer-databases"
+      : handoff.kind === "connect-project-instance"
+        ? "project.home.connect"
+        : handoff.kind === "create-project-database"
+          ? "project.home.create-database"
+          : `agent.handoff.${handoff.kind}`;
+  if (
+    handoff.kind === "transfer-project-databases" ||
+    handoff.kind === "connect-project-instance" ||
+    handoff.kind === "create-project-database"
+  ) {
+    const openSetup = async () => {
+      if (loading) return;
+      setLoading(true);
+      try {
+        const targetPath = router.resolve(to).fullPath;
+        await router.push(to);
+        const currentPath = router.currentRoute.value.fullPath;
+        if (
+          (currentPath === targetPath ||
+            sameRoutePathname(currentPath, targetPath)) &&
+          useAgentStore.getState().visible
+        ) {
+          useAgentStore.getState().minimize();
+        }
+      } catch {
+        useAppStore.getState().notify({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: t("common.failed"),
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    return (
+      <Button
+        appearance="link"
+        className="h-auto px-0 py-0"
+        data-agent-handoff
+        data-agent-action-open
+        disabled={loading}
+        onClick={() => void openSetup()}
+        size="sm"
+      >
+        {t(labelKey)}
+        <ArrowUpRight className="size-3.5" aria-hidden="true" />
+      </Button>
+    );
+  }
+  return (
+    <RouterLink
+      data-agent-handoff
+      data-agent-action-open
+      to={to}
+      className="inline-flex items-center gap-1 text-sm text-accent hover:underline"
+    >
+      {t(labelKey)}
+      <ArrowUpRight className="size-3.5" aria-hidden="true" />
+    </RouterLink>
+  );
+}
+
+function reachedIssueCommentDraftRoute(
+  currentPath: string,
+  targetPath: string
+): boolean {
+  if (currentPath === targetPath) return true;
+  if (!targetPath.startsWith("/") || !currentPath.startsWith("/")) return false;
+  const target = new URL(targetPath, "https://bytebase.invalid");
+  const current = new URL(currentPath, "https://bytebase.invalid");
+  const targetIssue = /^\/projects\/([^/]+)\/issues\/[^/]+$/.exec(
+    target.pathname
+  );
+  const draftKey = target.searchParams.get("agentCommentDraft");
+  return Boolean(
+    targetIssue &&
+      draftKey &&
+      current.searchParams.get("agentCommentDraft") === draftKey &&
+      current.pathname.startsWith(`/projects/${targetIssue[1]}/plans/`)
+  );
+}
+
+function sameRoutePathname(currentPath: string, targetPath: string): boolean {
+  if (!currentPath.startsWith("/") || !targetPath.startsWith("/")) return false;
+  return (
+    new URL(currentPath, "https://bytebase.invalid").pathname ===
+    new URL(targetPath, "https://bytebase.invalid").pathname
+  );
+}
+
+async function waitForDeliveredAccessDraft(key: string): Promise<boolean> {
+  for (let attempt = 0; attempt < 60; attempt++) {
+    if (wasDeniedQueryRequestDraftDelivered(key)) return true;
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  return false;
+}
+
+async function waitForDeliveredIssueCommentDraft(
+  key: string
+): Promise<boolean> {
+  for (let attempt = 0; attempt < 60; attempt++) {
+    if (wasIssueCommentDraftDelivered(key)) return true;
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  return false;
+}
+
+function PlanDraftButton({
+  action,
+  answer,
+}: {
+  action: Extract<AgentResponseAction, { kind: "draft-plan" }>;
+  answer: string;
+}) {
+  const { t } = useTranslation();
+  const [loading, setLoading] = useState(false);
+  const openDraft = async () => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      const route = await prepareAgentPlanDraftRoute(
+        action,
+        answer,
+        t("agent.plan-draft.default-title")
+      );
+      const targetPath = router.resolve(route).fullPath;
+      await router.push(route);
+      if (
+        router.currentRoute.value.fullPath === targetPath &&
+        useAgentStore.getState().visible
+      ) {
+        useAgentStore.getState().minimize();
+      }
+    } catch (error) {
+      const title =
+        error instanceof PlanDraftStorageError
+          ? t("plan.initial-sql-storage-failed")
+          : t("agent.plan-draft.unavailable");
+      useAppStore.getState().notify({
+        module: "bytebase",
+        style: "CRITICAL",
+        title,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Button
+      appearance="link"
+      size="sm"
+      className="h-auto px-0 py-0"
+      data-agent-action-draft-plan
+      disabled={loading}
+      onClick={() => void openDraft()}
+    >
+      {loading ? (
+        <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+      ) : (
+        <ArrowUpRight className="size-3.5" aria-hidden="true" />
+      )}
+      {t("agent.plan-draft.open")}
+    </Button>
+  );
+}
+
+function AccessRequestDraftButton({
+  draft,
+}: {
+  draft: DeniedQueryRequestDraft;
+}) {
+  const { t } = useTranslation();
+  const [loading, setLoading] = useState(false);
+  const openDraft = async () => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      const route = await prepareAgentDeniedQueryRequestRoute(draft);
+      const targetPath = router.resolve(route).fullPath;
+      await router.push(route);
+      const key =
+        typeof route === "string"
+          ? undefined
+          : route.query?.[ACCESS_GRANT_DRAFT_QUERY_KEY];
+      const delivered =
+        typeof key === "string" &&
+        sameRoutePathname(router.currentRoute.value.fullPath, targetPath) &&
+        (await waitForDeliveredAccessDraft(key));
+      if (!delivered) {
+        useAppStore.getState().notify({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: t("agent.access-grant-draft.unavailable"),
+        });
+      } else if (useAgentStore.getState().visible) {
+        useAgentStore.getState().minimize();
+      }
+    } catch (error) {
+      useAppStore.getState().notify({
+        module: "bytebase",
+        style: "CRITICAL",
+        title:
+          error instanceof DeniedQueryRequestDraftStorageError
+            ? t("agent.access-grant-draft.storage-failed")
+            : t("agent.access-grant-draft.unavailable"),
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Button
+      appearance="link"
+      size="sm"
+      className="h-auto px-0 py-0"
+      data-agent-action-request-access
+      disabled={loading}
+      onClick={() => void openDraft()}
+    >
+      {loading ? (
+        <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+      ) : (
+        <ArrowUpRight className="size-3.5" aria-hidden="true" />
+      )}
+      {t("agent.access-grant-draft.open")}
+    </Button>
+  );
+}
+
+function IssueCommentDraftButton({
+  action,
+}: {
+  action: Extract<AgentResponseAction, { kind: "draft-issue-comment" }>;
+}) {
+  const { t } = useTranslation();
+  const [loading, setLoading] = useState(false);
+  const openDraft = async () => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      const route = prepareIssueCommentDraftRoute(action.issue, action.comment);
+      const targetPath = router.resolve(route).fullPath;
+      await router.push(route);
+      const draftKey = route.query?.agentCommentDraft;
+      if (
+        typeof draftKey !== "string" ||
+        !reachedIssueCommentDraftRoute(
+          router.currentRoute.value.fullPath,
+          targetPath
+        )
+      ) {
+        return;
+      }
+      if (!(await waitForDeliveredIssueCommentDraft(draftKey))) {
+        useAppStore.getState().notify({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: t("agent.issue-comment-draft.unavailable"),
+        });
+        return;
+      }
+      if (
+        reachedIssueCommentDraftRoute(
+          router.currentRoute.value.fullPath,
+          targetPath
+        ) &&
+        useAgentStore.getState().visible
+      ) {
+        useAgentStore.getState().minimize();
+      }
+    } catch (error) {
+      const title =
+        error instanceof ExistingIssueCommentDraftError
+          ? t("agent.issue-comment-draft.existing")
+          : error instanceof IssueCommentDraftPermissionError
+            ? t("agent.issue-comment-draft.permission-denied")
+            : error instanceof IssueCommentDraftStorageError
+              ? t("agent.issue-comment-draft.storage-failed")
+              : t("agent.issue-comment-draft.unavailable");
+      useAppStore.getState().notify({
+        module: "bytebase",
+        style: "CRITICAL",
+        title,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div>
+      <Button
+        appearance="link"
+        size="sm"
+        className="h-auto px-0 py-0"
+        data-agent-action-draft-issue-comment
+        disabled={loading}
+        onClick={() => void openDraft()}
+      >
+        {loading ? (
+          <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+        ) : (
+          <ArrowUpRight className="size-3.5" aria-hidden="true" />
+        )}
+        {t("agent.issue-comment-draft.open")}
+      </Button>
+      <details className="mt-1 text-xs text-control-light">
+        <summary className="cursor-pointer">
+          {t("agent.issue-comment-draft.preview")}
+        </summary>
+        <p className="mt-1 max-h-48 overflow-auto whitespace-pre-wrap text-main">
+          {action.comment}
+        </p>
+      </details>
+    </div>
+  );
+}
+
 function renderBoundMentions(
   content: string,
   references: AgentResourceReference[]
@@ -271,6 +637,7 @@ export function AgentChat({
   contextLabel,
   onRetry,
   onSelectSuggestion,
+  onContinueAction,
 }: AgentChatProps) {
   const { t } = useTranslation();
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -287,6 +654,15 @@ export function AgentChat({
     selectCurrentChatRequiresAIConfiguration
   );
   const currentChatId = useAgentStore((s) => s.currentChatId);
+  const latestContinuePrompts = messages
+    .at(-1)
+    ?.metadata?.actions?.filter((action) => action.kind === "continue")
+    .map((action) => action.prompt)
+    .join("\0");
+  const previousFollowUp = useRef<{
+    chatId: string | null;
+    prompts?: string;
+  }>({ chatId: null });
   const draftText = useAgentStore((s) =>
     currentChatId ? s.draftsByChatId[currentChatId]?.text : undefined
   );
@@ -418,6 +794,29 @@ export function AgentChat({
   }, [currentChatId, currentChat?.interrupted, messages.length, showEmptyChat]);
 
   useEffect(() => {
+    const previous = previousFollowUp.current;
+    previousFollowUp.current = {
+      chatId: currentChatId,
+      prompts: latestContinuePrompts,
+    };
+    if (
+      previous.chatId !== currentChatId ||
+      !latestContinuePrompts ||
+      previous.prompts === latestContinuePrompts
+    ) {
+      return;
+    }
+    const container = chatContainerRef.current;
+    if (
+      container &&
+      container.scrollHeight - container.scrollTop - container.clientHeight <=
+        160
+    ) {
+      container.scrollTop = container.scrollHeight;
+    }
+  }, [currentChatId, latestContinuePrompts]);
+
+  useEffect(() => {
     setAIConfigurationRecoveryDismissed(false);
   }, [aiConfigurationEnabled, currentChatId]);
 
@@ -482,13 +881,22 @@ export function AgentChat({
           !loading &&
           onRetry;
         const isPending = msg.metadata?.pending === true;
-        const references =
-          msg.role === "user"
-            ? normalizeAgentResourceReferences(
-                msg.metadata?.resourceReferences,
-                msg.metadata?.resourceReference
-              )
-            : [];
+        const actions = normalizeAgentResponseActions(msg.metadata?.actions);
+        const openAction = actions.find((action) => action.kind === "open");
+        const planDraftAction = actions.find(
+          (action) => action.kind === "draft-plan"
+        );
+        const issueCommentDraftAction = actions.find(
+          (action) => action.kind === "draft-issue-comment"
+        );
+        const boundReferences = normalizeAgentResourceReferences(
+          msg.metadata?.resourceReferences,
+          msg.metadata?.resourceReference
+        );
+        const continueActions = actions.filter(
+          (action) => action.kind === "continue"
+        );
+        const references = msg.role === "user" ? boundReferences : [];
         const content = msg.content ?? "";
         const projectReference = references.find(
           (reference) => reference.kind === "project"
@@ -541,7 +949,10 @@ export function AgentChat({
                       {msg.content}
                     </div>
                   ) : msg.content ? (
-                    <div className="w-fit max-w-full rounded-sm bg-control-bg px-3 py-2 text-sm">
+                    <div
+                      className="w-fit max-w-full rounded-sm bg-control-bg px-3 py-2 text-sm"
+                      data-agent-answer
+                    >
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
                         components={{
@@ -615,6 +1026,36 @@ export function AgentChat({
                         {msg.content}
                       </ReactMarkdown>
                       <EvidenceReferences evidence={msg.metadata?.evidence} />
+                      {!msg.metadata?.pending &&
+                        !msg.metadata?.error &&
+                        (openAction ||
+                          planDraftAction ||
+                          issueCommentDraftAction ||
+                          msg.metadata?.accessRequestDraft ||
+                          msg.metadata?.handoff) && (
+                          <div className="mt-2">
+                            {planDraftAction ? (
+                              <PlanDraftButton
+                                action={planDraftAction}
+                                answer={msg.content}
+                              />
+                            ) : issueCommentDraftAction ? (
+                              <IssueCommentDraftButton
+                                action={issueCommentDraftAction}
+                              />
+                            ) : msg.metadata?.accessRequestDraft ? (
+                              <AccessRequestDraftButton
+                                draft={msg.metadata.accessRequestDraft}
+                              />
+                            ) : (
+                              <HandoffLink
+                                handoff={
+                                  openAction?.target ?? msg.metadata?.handoff
+                                }
+                              />
+                            )}
+                          </div>
+                        )}
                     </div>
                   ) : null}
                   {msg.toolCalls?.map((toolCall, index, toolCalls) => (
@@ -630,6 +1071,51 @@ export function AgentChat({
                   ))}
                 </div>
                 {showTimestamp && timestamp}
+                {msg.content &&
+                  !msg.metadata?.pending &&
+                  !msg.metadata?.error &&
+                  continueActions.length > 0 && (
+                    <div
+                      className="mt-3 flex max-w-full flex-col items-start gap-2"
+                      role="group"
+                      aria-label={t("agent.follow-up.ask-next")}
+                      data-agent-follow-up
+                    >
+                      <div className="text-xs font-medium text-control-light">
+                        {t("agent.follow-up.ask-next")}
+                      </div>
+                      {continueActions.map((action) => (
+                        <Button
+                          key={action.prompt}
+                          type="button"
+                          appearance="secondary"
+                          size="md"
+                          className="h-auto max-w-full justify-start bg-control-bg px-3 py-2 text-left whitespace-normal text-main hover:bg-control-bg-hover"
+                          data-agent-action-continue
+                          disabled={
+                            !onContinueAction ||
+                            currentChat?.status !== "idle" ||
+                            currentChat.archived ||
+                            Boolean(draftText?.trim())
+                          }
+                          onClick={() =>
+                            onContinueAction?.(
+                              msg.chatId,
+                              action.prompt,
+                              boundReferences
+                            )
+                          }
+                        >
+                          <span
+                            className="min-w-0 break-words"
+                            data-agent-follow-up-question
+                          >
+                            {action.prompt}
+                          </span>
+                        </Button>
+                      ))}
+                    </div>
+                  )}
               </div>
             )}
             {interruption && (

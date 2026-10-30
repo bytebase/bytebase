@@ -13,6 +13,7 @@ import {
 } from "@/types/proto-es/v1/ai_service_pb";
 import { parseCallApiResult } from "./callApiResult";
 import type {
+  AgentHandoff,
   AgentLoopOutcome,
   Message,
   ToolCall,
@@ -96,7 +97,7 @@ export interface AgentCallbacks {
     message: Pick<Message, "content" | "toolCalls">
   ) => void;
   onToolResult?: (toolCallId: string, result: string) => void;
-  onText?: (text: string) => void;
+  onText?: (text: string, handoff?: AgentHandoff) => void;
   onError?: (error: Error) => void;
 }
 
@@ -116,47 +117,6 @@ function createSkippedToolResult(blockedBy: {
   });
 }
 
-function canonicalizeJson(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(canonicalizeJson);
-  if (value && typeof value === "object") {
-    return Object.fromEntries(
-      Object.entries(value)
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([key, entry]) => [key, canonicalizeJson(entry)])
-    );
-  }
-  return value;
-}
-
-function getCallApiRequestKey(argumentsJson: string): string {
-  try {
-    const args: unknown = JSON.parse(argumentsJson);
-    if (args && typeof args === "object" && !Array.isArray(args)) {
-      const { operationId, body } = args as Record<string, unknown>;
-      if (
-        typeof operationId === "string" &&
-        body &&
-        typeof body === "object" &&
-        !Array.isArray(body)
-      ) {
-        if (/IssueService[/.]BatchUpdateIssuesStatus$/.test(operationId)) {
-          // The backend identifies this operation by its issues and status, not parent.
-          const { parent: _parent, ...requestBody } = body as Record<
-            string,
-            unknown
-          >;
-          return JSON.stringify(
-            canonicalizeJson({ ...args, body: requestBody })
-          );
-        }
-      }
-    }
-    return JSON.stringify(canonicalizeJson(args));
-  } catch {
-    return argumentsJson;
-  }
-}
-
 function getCallApiOperationId(argumentsJson: string): string | undefined {
   try {
     const args: unknown = JSON.parse(argumentsJson);
@@ -170,30 +130,32 @@ function getCallApiOperationId(argumentsJson: string): string | undefined {
   return undefined;
 }
 
-function updateCallApiErrors(
-  errors: Map<string, string>,
+interface ApiAttemptSummary {
+  failedApiCallCount: number;
+  lastApiError?: string;
+}
+
+function recordCallApiResult(
+  summary: ApiAttemptSummary,
   toolCall: ToolCall,
   result: string
 ): void {
-  const requestKey = getCallApiRequestKey(toolCall.arguments);
   const outcome = parseCallApiResult(
     result,
     getCallApiOperationId(toolCall.arguments)
   );
   if (outcome.error) {
-    errors.delete(requestKey);
-    errors.set(requestKey, outcome.error);
-  } else if (outcome.succeeded) {
-    errors.delete(requestKey);
+    summary.failedApiCallCount++;
   }
+  summary.lastApiError = outcome.error;
 }
 
-function getCurrentTurnCallApiErrors(messages: Message[]): Map<string, string> {
-  const errors = new Map<string, string>();
+function getCurrentTurnApiAttempts(messages: Message[]): ApiAttemptSummary {
+  const summary: ApiAttemptSummary = { failedApiCallCount: 0 };
   const userIndex = messages.findLastIndex(
     (message) => message.role === "user"
   );
-  if (userIndex < 0) return errors;
+  if (userIndex < 0) return summary;
 
   const toolCalls = new Map<string, ToolCall>();
   for (const message of messages.slice(userIndex + 1)) {
@@ -204,11 +166,11 @@ function getCurrentTurnCallApiErrors(messages: Message[]): Map<string, string> {
     } else if (message.role === "tool" && message.toolCallId) {
       const toolCall = toolCalls.get(message.toolCallId);
       if (toolCall?.name === "call_api") {
-        updateCallApiErrors(errors, toolCall, message.content ?? "");
+        recordCallApiResult(summary, toolCall, message.content ?? "");
       }
     }
   }
-  return errors;
+  return summary;
 }
 
 export async function runAgentLoop(
@@ -226,8 +188,7 @@ export async function runAgentLoop(
   );
   let totalTokensUsed = 0;
   let awaitingTerminalCall = false;
-  const callApiErrors = getCurrentTurnCallApiErrors(messages);
-  const latestCallApiError = () => Array.from(callApiErrors.values()).at(-1);
+  const apiAttempts = getCurrentTurnApiAttempts(messages);
 
   const completeWithApiError = (error: string): AgentLoopOutcome => {
     callbacks?.onText?.(error);
@@ -339,7 +300,7 @@ export async function runAgentLoop(
 
           if (executionResult.kind === "tool_result") {
             if (tc.name === "call_api") {
-              updateCallApiErrors(callApiErrors, tc, executionResult.result);
+              recordCallApiResult(apiAttempts, tc, executionResult.result);
             }
             callbacks?.onToolResult?.(tc.id, executionResult.result);
             conversation.push({
@@ -365,13 +326,18 @@ export async function runAgentLoop(
             continue;
           }
 
-          const apiError = latestCallApiError();
-          const text =
-            executionResult.success && apiError
-              ? apiError
-              : executionResult.text;
-          const success = executionResult.success && !apiError;
-          const doneResult = JSON.stringify({ text, success });
+          const { text, success } = executionResult;
+          const handoff = success ? executionResult.handoff : undefined;
+          const actions = success ? executionResult.actions : undefined;
+          const doneResult = JSON.stringify({
+            text,
+            success,
+            ...(handoff ? { handoff } : {}),
+            ...(actions?.length ? { actions } : {}),
+            ...(success && apiAttempts.failedApiCallCount > 0
+              ? { failedApiCallCount: apiAttempts.failedApiCallCount }
+              : {}),
+          });
           callbacks?.onToolResult?.(tc.id, doneResult);
           conversation.push({
             role: "tool",
@@ -383,6 +349,8 @@ export async function runAgentLoop(
               kind: "completed",
               text,
               success,
+              ...(handoff ? { handoff } : {}),
+              ...(actions?.length ? { actions } : {}),
               totalTokensUsed,
             },
             blockedBy: {
@@ -394,7 +362,14 @@ export async function runAgentLoop(
 
         if (terminalState) {
           if (terminalState.outcome.kind === "completed") {
-            callbacks?.onText?.(terminalState.outcome.text);
+            if (terminalState.outcome.handoff) {
+              callbacks?.onText?.(
+                terminalState.outcome.text,
+                terminalState.outcome.handoff
+              );
+            } else {
+              callbacks?.onText?.(terminalState.outcome.text);
+            }
           }
           return terminalState.outcome;
         }
@@ -404,7 +379,7 @@ export async function runAgentLoop(
 
       const text = response.content?.trim() ?? "";
       if (options.allowPlainTextCompletion && text) {
-        const apiError = latestCallApiError();
+        const apiError = apiAttempts.lastApiError;
         if (apiError) {
           return completeWithApiError(apiError);
         }
@@ -427,20 +402,20 @@ export async function runAgentLoop(
         conversation.push({
           role: "user",
           content: text
-            ? "Finalize your preceding answer by calling done({ text, success }), or call ask_user if input is required. Do not call any other tools or start another task."
-            : "Your previous response was empty. Answer the user's request by calling done({ text, success }), or call ask_user if input is required. Do not call any other tools or start another task.",
+            ? "Finalize your preceding answer by calling done({ text, success, actions }), using actions: [] when none apply, or call ask_user if input is required. Do not call any other tools or start another task."
+            : "Your previous response was empty. Answer the user's request by calling done({ text, success, actions }), using actions: [] when none apply, or call ask_user if input is required. Do not call any other tools or start another task.",
         });
         awaitingTerminalCall = true;
         continue;
       }
 
-      const apiError = latestCallApiError();
+      const apiError = apiAttempts.lastApiError;
       if (apiError && (awaitingTerminalCall || !text)) {
         return completeWithApiError(apiError);
       }
 
       const error = new Error(
-        "Agent must finish with done({ text, success }) or ask_user(...), not plain assistant text."
+        "Agent must finish with done({ text, success, actions }) or ask_user(...), not plain assistant text."
       );
       callbacks?.onError?.(error);
       return {

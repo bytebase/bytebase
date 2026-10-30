@@ -8,6 +8,8 @@ export const skill = {
 
 Create database changes (DDL/DML) through Bytebase's review workflow. Supports single database or batch changes across multiple databases.
 
+For a schema change request on a selected @Database, including "create a table" or "rename a column", default to a reviewable DDL draft unless the member explicitly asks you to create a Plan or Issue. Before producing any DDL, you must use search_api to inspect DatabaseService/GetDatabaseSchema, then call_api with \`name\` set to the exact database name plus \`/schema\` to read the latest synced schema, even if the change seems independent of existing objects. get_database_overview does not include schema. If the read succeeds, return the proposed SQL in exactly one fenced \`sql\` block and offer a \`draft-plan\` action so the member can open an unsaved Plan with that SQL and database already filled in. If the read fails, explain that instead of offering a draft. Do not call CreateSheet, CreatePlan, or CreateIssue for this request; the member reviews the draft and chooses when to create it. Follow the persisted workflow below only when the member explicitly asks you to create those resources.
+
 ## Prerequisites
 
 - Have \`bb.plans.create\` and \`bb.issues.create\` permissions to propose a change; manual deployment also requires \`bb.rollouts.create\`

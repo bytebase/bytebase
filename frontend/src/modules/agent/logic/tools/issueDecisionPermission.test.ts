@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { create } from "@bufbuild/protobuf";
+import { TimestampSchema } from "@bufbuild/protobuf/wkt";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { ApprovalStatus, IssueStatus } from "@/types/proto-es/v1/common_pb";
 import {
@@ -34,6 +35,10 @@ const makeIssue = () =>
     approvalStatus: ApprovalStatus.PENDING,
     approvalTemplate,
     plan: "projects/demo/plans/12",
+    updateTime: create(TimestampSchema, {
+      seconds: BigInt(Date.parse("2026-10-13T08:00:00Z") / 1000),
+      nanos: 123456789,
+    }),
   });
 
 const makeCall = (
@@ -134,6 +139,21 @@ describe("issueDecisionPermission", () => {
     ).resolves.toBe(false);
   });
 
+  test("invalidates approval when only the Issue update time changes", async () => {
+    const result = await prepareIssueDecisionPermission(makeCall());
+    if (result.kind !== "issue-decision") {
+      throw new Error("Expected decision");
+    }
+
+    const changedIssue = makeIssue();
+    changedIssue.updateTime = create(TimestampSchema, {
+      seconds: changedIssue.updateTime!.seconds + 1n,
+    });
+    issueApi.getIssue.mockResolvedValueOnce(changedIssue);
+    await expect(
+      validateIssueDecisionPermission(result.decision)
+    ).resolves.toBe(false);
+  });
   test("does not alter unrelated generic API calls", async () => {
     expect(
       await prepareIssueDecisionPermission({

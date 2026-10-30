@@ -25,6 +25,12 @@ import { Button } from "@/components/ui/button";
 import { useCurrentUser } from "@/hooks/useAppState";
 import { principalLabel, usePrincipal } from "@/hooks/usePrincipal";
 import { useProjectByName } from "@/hooks/useProjectByName";
+import {
+  consumePreparedIssueCommentDraft,
+  markIssueCommentDraftDelivered,
+  persistIssueCommentDraftBestEffort,
+  restoreIssueCommentDraft,
+} from "@/lib/issueCommentDraft";
 import { collectPlanUpdateSpecs } from "@/lib/plan/diffPlanSpecs";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
@@ -88,7 +94,12 @@ export function IssueDetailCommentList() {
     (state) => state.batchGetOrFetchUsers
   );
   const currentUser = useCurrentUser();
-  const routeHash = useCurrentRoute().hash;
+  const route = useCurrentRoute();
+  const routeHash = route.hash;
+  const agentDraftKey =
+    typeof route.query.agentCommentDraft === "string"
+      ? route.query.agentCommentDraft
+      : undefined;
   const projectName = `${projectNamePrefix}${page.projectId}`;
   const project = useProjectByName(projectName);
   void projectsByName;
@@ -129,6 +140,27 @@ export function IssueDetailCommentList() {
   const allowCreateComment = Boolean(
     project && hasProjectPermissionV2(project, "bb.issueComments.create")
   );
+  useEffect(() => {
+    if (!issueName || !allowCreateComment) return;
+    setNewComment(restoreIssueCommentDraft(issueName, agentDraftKey));
+  }, [agentDraftKey, allowCreateComment, issueName]);
+  useEffect(() => {
+    if (
+      agentDraftKey &&
+      issueName &&
+      allowCreateComment &&
+      !activeCommentName &&
+      newComment
+    ) {
+      markIssueCommentDraftDelivered(agentDraftKey, issueName, newComment);
+    }
+  }, [
+    activeCommentName,
+    agentDraftKey,
+    allowCreateComment,
+    issueName,
+    newComment,
+  ]);
   const activeComment = useMemo(
     () => issueComments.find((comment) => comment.name === activeCommentName),
     [activeCommentName, issueComments]
@@ -237,6 +269,10 @@ export function IssueDetailCommentList() {
       issueName,
       comment: newComment,
     });
+    if (agentDraftKey) {
+      consumePreparedIssueCommentDraft(agentDraftKey, issueName);
+    }
+    persistIssueCommentDraftBestEffort(issueName, "");
     setNewComment("");
     await refreshIssueComments();
   };
@@ -313,13 +349,15 @@ export function IssueDetailCommentList() {
                 title={currentUser.title || currentUser.email}
               />
             </div>
-            <div className="min-w-0 flex-1">
-              <h3 className="sr-only" id="issue-comment-editor">
-                {t("common.comment")}
-              </h3>
+            <div className="min-w-0 flex-1" id="issue-comment-editor">
+              <h3 className="sr-only">{t("common.comment")}</h3>
               <MarkdownEditor
+                autoFocus={Boolean(agentDraftKey && newComment)}
                 content={newComment}
-                onChange={setNewComment}
+                onChange={(value) => {
+                  setNewComment(value);
+                  persistIssueCommentDraftBestEffort(issueName, value);
+                }}
                 onSubmit={() => {
                   void createComment();
                 }}

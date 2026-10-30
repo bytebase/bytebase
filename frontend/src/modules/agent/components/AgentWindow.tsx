@@ -1,4 +1,5 @@
 import { Dialog as BaseDialog } from "@base-ui/react/dialog";
+import { create } from "@bufbuild/protobuf";
 import {
   Archive,
   ChevronLeft,
@@ -28,6 +29,7 @@ import {
   type PanelImperativeHandle,
   Separator as PanelResizeHandle,
 } from "react-resizable-panels";
+import { issueServiceClientConnect } from "@/api";
 import { Button } from "@/components/ui/button";
 import {
   Collapsible,
@@ -46,11 +48,30 @@ import {
 } from "@/lib/resourceName";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/app";
+import { GetIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
+import { extractDatabaseResourceName } from "@/utils/v1/database";
 import { getAgentAIConfigurationEnabled } from "../logic/aiConfiguration";
-import { getCurrentChatContext } from "../logic/chatContext";
-import type { LandingStarterId } from "../logic/landingStarters";
-import type { AgentChat as AgentChatRecord } from "../logic/types";
+import {
+  type AgentPageResource,
+  getCurrentAgentPageResource,
+  getCurrentChatContext,
+} from "../logic/chatContext";
+import {
+  getLandingStarterIdForText,
+  type LandingStarterId,
+} from "../logic/landingStarters";
+import {
+  formatResourceMention,
+  getDatabaseMentionLabel,
+  normalizeAgentResourceReference,
+  normalizeAgentResourceReferences,
+} from "../logic/resourceMention";
+import { normalizeAgentResponseActions } from "../logic/responseActions";
+import type {
+  AgentChat as AgentChatRecord,
+  AgentResourceReference,
+} from "../logic/types";
 import {
   selectCurrentChat,
   selectHasRunningChat,
@@ -64,6 +85,7 @@ import {
   WINDOW_MARGIN,
 } from "../window";
 import { AgentChat } from "./AgentChat";
+import { AgentContextualStart } from "./AgentContextualStart";
 import { AgentInput } from "./AgentInput";
 import {
   RESIZE_POINTER_MEDIA_QUERY,
@@ -157,6 +179,7 @@ export function AgentWindow() {
   const orderedChats = useAgentStore(selectOrderedChats);
   const currentChat = useAgentStore(selectCurrentChat);
   const currentChatId = useAgentStore((s) => s.currentChatId);
+  const queuedChatId = useAgentStore((s) => s.queuedUserMessage?.chatId);
   const hasRunningChat = useAgentStore(selectHasRunningChat);
   const getOrFetchSettingByName = useAppStore((s) => s.getOrFetchSettingByName);
   const batchFetchProjects = useAppStore((s) => s.batchFetchProjects);
@@ -184,6 +207,32 @@ export function AgentWindow() {
   const viewportResizeFrameRef = useRef(0);
 
   const [showArchivedOnly, setShowArchivedOnly] = useState(false);
+  const [contextualStart, setContextualStart] =
+    useState<AgentPageResource | null>(null);
+  const [contextualReference, setContextualReference] = useState<
+    AgentResourceReference | undefined
+  >();
+  const [contextualLoading, setContextualLoading] = useState(false);
+  const canReferenceContextualResource = useAppStore((state) => {
+    if (!contextualStart || contextualStart.kind === "project") return true;
+    const project = state.projectsByName[contextualStart.project];
+    const permission =
+      contextualStart.kind === "database"
+        ? "bb.databases.list"
+        : "bb.issues.list";
+    const canList =
+      state.hasWorkspacePermission(permission) ||
+      Boolean(project && state.hasProjectPermission(project, permission));
+    if (contextualStart.kind === "issue") return canList;
+    return (
+      canList &&
+      (state.hasWorkspacePermission("bb.projects.get") ||
+        Boolean(
+          project && state.hasProjectPermission(project, "bb.projects.get")
+        ))
+    );
+  });
+  const openingRef = useRef(false);
   const [compactPanel, setCompactPanel] = useState<"chats" | "archived" | null>(
     null
   );
@@ -202,6 +251,91 @@ export function AgentWindow() {
     setIsDeleteAllArchivedChatsDialogOpen,
   ] = useState(false);
   const [renamingTitle, setRenamingTitle] = useState("");
+
+  useEffect(() => {
+    const isOpen = visible && !minimized;
+    const hasQueuedChat = Boolean(
+      queuedChatId && queuedChatId === currentChatId
+    );
+    if (isOpen && !openingRef.current) {
+      const pageResource = hasQueuedChat
+        ? undefined
+        : getCurrentAgentPageResource();
+      setContextualStart(pageResource ?? null);
+      setContextualReference(undefined);
+      setContextualLoading(false);
+      if (pageResource || hasQueuedChat) {
+        setShowArchivedOnly(false);
+        setIsRenamingCurrentChat(false);
+        setMobileScreen("conversation");
+      }
+    } else if (isOpen && hasQueuedChat) {
+      setContextualStart(null);
+      setShowArchivedOnly(false);
+      setMobileScreen("conversation");
+    }
+    openingRef.current = isOpen;
+  }, [currentChatId, minimized, queuedChatId, visible]);
+
+  useEffect(() => {
+    if (
+      !contextualStart ||
+      contextualStart.kind === "project" ||
+      !canReferenceContextualResource
+    ) {
+      return;
+    }
+    let cancelled = false;
+    setContextualReference(undefined);
+    setContextualLoading(true);
+    const load = async () => {
+      if (contextualStart.kind === "issue") {
+        const issue = await issueServiceClientConnect.getIssue(
+          create(GetIssueRequestSchema, { name: contextualStart.name })
+        );
+        return normalizeAgentResourceReference({
+          kind: "issue",
+          name: issue.name,
+          project: contextualStart.project,
+          label: issue.title,
+        });
+      }
+      for (const name of contextualStart.names) {
+        const database = await useAppStore
+          .getState()
+          .getOrFetchDatabaseByName(name, true);
+        if (
+          database.name !== name ||
+          database.project !== contextualStart.project
+        ) {
+          continue;
+        }
+        return normalizeAgentResourceReference({
+          kind: "database",
+          name: database.name,
+          project: database.project,
+          label: getDatabaseMentionLabel(database),
+        });
+      }
+      return undefined;
+    };
+    void load()
+      .then((reference) => {
+        if (!cancelled) {
+          setContextualReference(reference);
+          setContextualLoading(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setContextualReference(undefined);
+          setContextualLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [canReferenceContextualResource, contextualStart]);
 
   // Refs for resize intermediate values (avoid re-renders)
   const isResizingRef = useRef(false);
@@ -344,6 +478,10 @@ export function AgentWindow() {
     () => orderedChats.filter((chat) => !chat.archived),
     [orderedChats]
   );
+  const canContinueCurrentChat =
+    !!currentChat &&
+    !currentChat.archived &&
+    useAgentStore.getState().canSelectChat(currentChat.id);
   const archivedChats = useMemo(
     () => orderedChats.filter((chat) => chat.archived),
     [orderedChats]
@@ -407,6 +545,15 @@ export function AgentWindow() {
     },
     [projectsByName, workspace]
   );
+
+  const contextualTitle = contextualStart
+    ? contextualStart.kind === "project"
+      ? getContextLabel(contextualStart.project)
+      : (contextualReference?.label ??
+        (contextualStart.kind === "database"
+          ? extractDatabaseResourceName(contextualStart.names[0]).databaseName
+          : `#${contextualStart.name.split("/").at(-1)}`))
+    : "";
 
   const selectFirstDisplayedChat = useCallback(() => {
     const store = useAgentStore.getState();
@@ -566,6 +713,7 @@ export function AgentWindow() {
 
   const createChat = useCallback(() => {
     if (isChatCreationDisabled) return;
+    setContextualStart(null);
     const context = getCurrentChatContext();
     setChatGroupOpen(context, true, false);
     useAgentStore.getState().createChat({
@@ -586,6 +734,7 @@ export function AgentWindow() {
   const createChatForContext = useCallback(
     (context: string) => {
       if (isChatCreationDisabled) return;
+      setContextualStart(null);
       setChatGroupOpen(context, true, false);
       useAgentStore.getState().createChat({
         page: getCurrentPageSnapshot(),
@@ -605,6 +754,10 @@ export function AgentWindow() {
 
   const handleChatRowClick = useCallback(
     (chatId: string) => {
+      if (contextualStart) {
+        setContextualStart(null);
+        if (chatId === useAgentStore.getState().currentChatId) return;
+      }
       if (chatId === useAgentStore.getState().currentChatId) {
         if (!isRenamingCurrentChat) {
           beginRenameCurrentChat();
@@ -619,6 +772,7 @@ export function AgentWindow() {
     },
     [
       isCompactWindow,
+      contextualStart,
       isRenamingCurrentChat,
       beginRenameCurrentChat,
       cancelRenameCurrentChat,
@@ -726,7 +880,13 @@ export function AgentWindow() {
   const resizeCleanupRef = useRef<(() => void) | null>(null);
   const retryLastTurnRef = useRef<(() => void) | null>(null);
   const retryLastTurn = useCallback(() => retryLastTurnRef.current?.(), []);
-  const focusInputRef = useRef<(() => void) | null>(null);
+  const focusInputRef = useRef<((atEnd?: boolean) => void) | null>(null);
+  const focusContextualDraftRef = useRef(false);
+  useEffect(() => {
+    if (contextualStart || !focusContextualDraftRef.current) return;
+    focusContextualDraftRef.current = false;
+    focusInputRef.current?.(true);
+  }, [contextualStart, currentChatId]);
   const selectEmptyChatSuggestion = useCallback(
     (starterId: LandingStarterId) => {
       const store = useAgentStore.getState();
@@ -735,17 +895,140 @@ export function AgentWindow() {
         !chat ||
         chat.status !== "idle" ||
         store.getMessages(chat.id).length ||
-        store.getDraft(chat.id).text.trim()
+        store.getDraft(chat.id).text.trim() ||
+        store.queuedUserMessage
       ) {
         return;
       }
-      store.setDraft(chat.id, {
+      store.queueUserMessage({
+        chatId: chat.id,
         text: t(`agent.landing-starters.${starterId}`),
+        page: getCurrentPageSnapshot(),
+        runMode: "read-only",
+        starterId,
+      });
+    },
+    [getCurrentPageSnapshot, t]
+  );
+  const continueResponseAction = useCallback(
+    (chatId: string, prompt: string, references: AgentResourceReference[]) => {
+      const store = useAgentStore.getState();
+      const chat = store.getChat(chatId);
+      if (
+        store.currentChatId !== chatId ||
+        !chat ||
+        chat.status !== "idle" ||
+        chat.archived ||
+        store.getDraft(chatId).text.trim()
+      ) {
+        return;
+      }
+      const action = normalizeAgentResponseActions([
+        { kind: "continue", prompt },
+      ])[0];
+      if (action?.kind !== "continue") return;
+      const boundReferences = normalizeAgentResourceReferences(references);
+      if (boundReferences.length !== references.length) return;
+
+      let offset = 0;
+      const mentions = boundReferences.map((resource) => {
+        const start = offset;
+        const end = start + formatResourceMention(resource.label).length;
+        offset = end + 1;
+        return {
+          resource,
+          range: { start, end },
+        };
+      });
+      const prefix = boundReferences
+        .map((reference) => formatResourceMention(reference.label))
+        .join(" ");
+      store.setDraft(chatId, {
+        text: `${prefix}${prefix ? " " : ""}${action.prompt}`,
+        ...(mentions.length > 0 ? { mentions } : {}),
       });
       focusInputRef.current?.();
     },
-    [t]
+    []
   );
+  const startContextualChat = useCallback(
+    (prompt: string, reference?: AgentResourceReference) => {
+      if (
+        !contextualStart ||
+        useAgentStore
+          .getState()
+          .chats.some((chat) => chat.status === "running") ||
+        useAgentStore.getState().queuedUserMessage
+      ) {
+        return;
+      }
+      if (contextualStart.kind !== "project" && !reference) return;
+      const store = useAgentStore.getState();
+      const page = getCurrentPageSnapshot();
+      const chat = store.createChat({
+        page,
+        context: contextualStart.project,
+        workspaceName: workspace?.name,
+      });
+      if (useAgentStore.getState().currentChatId !== chat.id) return;
+      const mention = reference ? formatResourceMention(reference.label) : "";
+      if (prompt) {
+        store.queueUserMessage({
+          chatId: chat.id,
+          text: mention ? `${mention} ${prompt}` : prompt,
+          page,
+          runMode: "read-only",
+          ...(reference ? { resourceReference: reference } : {}),
+          ...(!reference
+            ? {
+                starterId: getLandingStarterIdForText({
+                  context: contextualStart.project,
+                  text: prompt,
+                  translate: t,
+                }),
+              }
+            : {}),
+        });
+      } else {
+        store.setDraft(chat.id, {
+          text: `${mention} `,
+          ...(reference
+            ? {
+                mentions: [
+                  {
+                    resource: reference,
+                    range: { start: 0, end: mention.length },
+                  },
+                ],
+              }
+            : {}),
+        });
+        focusContextualDraftRef.current = true;
+      }
+      setChatGroupOpen(contextualStart.project, true, false);
+      setShowArchivedOnly(false);
+      setContextualStart(null);
+      if (isCompactWindow) setCompactPanel(null);
+      if (isMobileWindow) setMobileScreen("conversation");
+    },
+    [
+      contextualStart,
+      getCurrentPageSnapshot,
+      isCompactWindow,
+      isMobileWindow,
+      setChatGroupOpen,
+      t,
+      workspace?.name,
+    ]
+  );
+
+  const continueCurrentChat = useCallback(() => {
+    const store = useAgentStore.getState();
+    const current = store.getChat(store.currentChatId);
+    if (!current || current.archived || !store.canSelectChat(current.id))
+      return;
+    setContextualStart(null);
+  }, []);
 
   // Cleanup resize listeners on unmount.
   useEffect(() => {
@@ -946,7 +1229,7 @@ export function AgentWindow() {
   }, [clampSidebarWidth]);
 
   useEffect(() => {
-    if (!visible || !currentChatId) return;
+    if (!visible || !currentChatId || getCurrentAgentPageResource()) return;
     useAgentStore
       .getState()
       .ensureCurrentChat(
@@ -1006,11 +1289,46 @@ export function AgentWindow() {
     (chatId: string) => {
       if (!useAgentStore.getState().canSelectChat(chatId)) return;
       cancelRenameCurrentChat();
+      setContextualStart(null);
       useAgentStore.getState().setCurrentChat(chatId);
       setMobileScreen("conversation");
     },
     [cancelRenameCurrentChat]
   );
+
+  const renderConversation = () =>
+    contextualStart ? (
+      <AgentContextualStart
+        page={contextualStart}
+        title={contextualTitle}
+        reference={
+          canReferenceContextualResource ? contextualReference : undefined
+        }
+        loading={canReferenceContextualResource && contextualLoading}
+        canStart={!isChatCreationDisabled}
+        hasCurrentChat={canContinueCurrentChat}
+        onStart={startContextualChat}
+        onContinue={continueCurrentChat}
+      />
+    ) : (
+      <>
+        <AgentChat
+          className="min-h-0 flex-1"
+          contextLabel={
+            currentChat?.context
+              ? getContextLabel(currentChat.context)
+              : workspace?.title || t("agent.context-workspace")
+          }
+          onRetry={retryLastTurn}
+          onSelectSuggestion={selectEmptyChatSuggestion}
+          onContinueAction={continueResponseAction}
+        />
+        <AgentInput
+          retryActionRef={retryLastTurnRef}
+          focusActionRef={focusInputRef}
+        />
+      </>
+    );
 
   const renderRail = () => (
     <nav
@@ -1321,20 +1639,7 @@ export function AgentWindow() {
                   className="flex size-full flex-col bg-background"
                   data-agent-mobile-conversation
                 >
-                  <AgentChat
-                    className="min-h-0 flex-1"
-                    contextLabel={
-                      currentChat?.context
-                        ? getContextLabel(currentChat.context)
-                        : workspace?.title || t("agent.context-workspace")
-                    }
-                    onRetry={retryLastTurn}
-                    onSelectSuggestion={selectEmptyChatSuggestion}
-                  />
-                  <AgentInput
-                    retryActionRef={retryLastTurnRef}
-                    focusActionRef={focusInputRef}
-                  />
+                  {renderConversation()}
                 </div>
               ) : (
                 <div
@@ -1428,7 +1733,7 @@ export function AgentWindow() {
                                 key={chat.id}
                                 className={cn(
                                   "flex w-full items-center gap-x-2 py-2 pr-3 pl-5 text-sm transition-colors",
-                                  chat.id === currentChatId
+                                  !contextualStart && chat.id === currentChatId
                                     ? "bg-accent/10 text-accent"
                                     : "text-control hover:bg-control-bg-hover"
                                 )}
@@ -1446,6 +1751,7 @@ export function AgentWindow() {
                                       .canSelectChat(chat.id)
                                   }
                                   aria-current={
+                                    !contextualStart &&
                                     chat.id === currentChatId
                                       ? "true"
                                       : undefined
@@ -1753,13 +2059,15 @@ export function AgentWindow() {
                                           key={chat.id}
                                           className={cn(
                                             "group w-full py-2 pr-3 pl-5 text-left text-sm transition-colors",
-                                            chat.id === currentChatId
+                                            !contextualStart &&
+                                              chat.id === currentChatId
                                               ? "bg-accent/10 text-accent"
                                               : "text-control hover:bg-control-bg-hover"
                                           )}
                                           data-agent-chat-row={chat.id}
                                         >
-                                          {chat.id === currentChatId &&
+                                          {!contextualStart &&
+                                          chat.id === currentChatId &&
                                           isRenamingCurrentChat ? (
                                             <Input
                                               ref={renameInputRef}
@@ -1794,6 +2102,7 @@ export function AgentWindow() {
                                                     .canSelectChat(chat.id)
                                                 }
                                                 aria-current={
+                                                  !contextualStart &&
                                                   chat.id === currentChatId
                                                     ? "true"
                                                     : undefined
@@ -1908,20 +2217,7 @@ export function AgentWindow() {
                   {/* Main panel */}
                   <Panel id="agent-chat-main" minSize={minMainPanelWidth}>
                     <div className="relative flex size-full min-w-0 flex-col">
-                      <AgentChat
-                        className="min-h-0 flex-1"
-                        contextLabel={
-                          currentChat?.context
-                            ? getContextLabel(currentChat.context)
-                            : workspace?.title || t("agent.context-workspace")
-                        }
-                        onRetry={retryLastTurn}
-                        onSelectSuggestion={selectEmptyChatSuggestion}
-                      />
-                      <AgentInput
-                        retryActionRef={retryLastTurnRef}
-                        focusActionRef={focusInputRef}
-                      />
+                      {renderConversation()}
                     </div>
                   </Panel>
                 </PanelGroup>
