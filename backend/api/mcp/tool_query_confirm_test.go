@@ -275,6 +275,54 @@ func TestQueryDatabaseFormFitsClaudeCode(t *testing.T) {
 	}
 }
 
+func TestQueryDatabaseShowsLongNamesWhole(t *testing.T) {
+	// The longest PostgreSQL database name.
+	longName := "payroll_" + strings.Repeat("x", 55)
+	const runsAtOnce = "Run now runs it at once, with no issue or approval."
+	for _, row := range []struct {
+		name        string
+		schema      string
+		statement   string
+		message     []string
+		description string
+	}{
+		{name: "one line left for the request", statement: "INSERT INTO employee VALUES (1)",
+			message:     []string{`Run in environment "prod":`, fmt.Sprintf("Database %q", longName), `Instance "prod-pg"`, "INSERT INTO employee VALUES (1)"},
+			description: runsAtOnce},
+		{name: "a request longer than the line left", statement: "INSERT INTO employee\nVALUES (1)",
+			message:     []string{`Run in environment "prod":`, fmt.Sprintf("Database %q", longName), `Instance "prod-pg"`, "The request is under the choice (31 characters)."},
+			description: "INSERT INTO employee\nVALUES (1)\n\n" + runsAtOnce},
+		{name: "no line left", schema: "app", statement: "INSERT INTO employee VALUES (1)",
+			message:     []string{`Run in environment "prod":`, fmt.Sprintf("Database %q", longName), `Instance "prod-pg"`, `Schema "app"`},
+			description: "INSERT INTO employee VALUES (1)\n\n" + runsAtOnce},
+	} {
+		t.Run(row.name, func(t *testing.T) {
+			mock := newConfirmingQueryMock([]map[string]any{
+				makeDatabase("instances/prod-pg/databases/"+longName, "instances/prod-pg", "projects/hr", "POSTGRES", "ds-1"),
+			})
+			_, endpoint, token := newQueryConfirmServer(t, mock)
+			user := &asker{answer: runAnswer(runChoiceChange)}
+			session := connectLegacy(t, endpoint, token, &mcp.ClientOptions{ElicitationHandler: user.handle})
+
+			arguments := map[string]any{"database": longName, "statement": row.statement}
+			if row.schema != "" {
+				arguments["schema"] = row.schema
+			}
+			callQuery(t, session, &mcp.CallToolParams{Name: "query_database", Arguments: arguments})
+			asked := user.lastParams(t)
+			require.Equal(t, strings.Join(row.message, "\n"), asked.Message)
+			schema, err := json.Marshal(asked.RequestedSchema)
+			require.NoError(t, err)
+			description, err := json.Marshal(row.description)
+			require.NoError(t, err)
+			require.Contains(t, string(schema), `"description":`+string(description))
+			for _, line := range claudeCodeView(asked.Message, 80) {
+				require.NotContains(t, line, "…", "an 80-column terminal cuts a line of the message")
+			}
+		})
+	}
+}
+
 func TestQueryDatabaseAsksOnceACall(t *testing.T) {
 	const projectDatabase = "projects/hr/instances/prod-pg/databases/employee_db"
 	for _, row := range []struct {

@@ -100,23 +100,17 @@ func (s *Server) askToRun(ctx context.Context, req *mcp.CallToolRequest, confirm
 			"Not run: this statement may write, so the user confirms it in a form, and this call already asked which database to use. "+
 				"Call query_database again with database %q and instance %q to ask the user.", database, instanceName))
 	}
-	// The environment comes before the database, so a long database name cannot
-	// hide it.
-	where := fmt.Sprintf("Run on database %q,", database)
-	if required.environment != "" {
-		where = fmt.Sprintf("Run in environment %q on database %q,", required.environment, database)
-	}
-	scope := fmt.Sprintf("instance %q", instance)
-	if required.schema != "" {
-		scope += fmt.Sprintf(", schema %q", required.schema)
-	}
-	header := []string{where, scope + ":"}
+	header := headerLines(required, database, instance)
 	const runsAtOnce = "Run now runs it at once, with no issue or approval."
 	request := strings.Split(strings.TrimSpace(statement), "\n")
 	description := runsAtOnce
 	if len(header)+len(request) > messageLines || !fitsMessageLines(request) {
-		request = []string{fmt.Sprintf("The request is under the choice (%d characters).", utf8.RuneCountInString(statement)), runsAtOnce}
+		notes := []string{fmt.Sprintf("The request is under the choice (%d characters).", utf8.RuneCountInString(statement)), runsAtOnce}
+		request = notes[:min(len(notes), messageLines-len(header))]
 		description = statement
+		if len(request) < len(notes) {
+			description += "\n\n" + runsAtOnce
+		}
 	}
 	message := strings.Join(append(header, request...), "\n")
 	return s.askWithForm(ctx, confirmation, digest, message, map[string]any{
@@ -135,6 +129,34 @@ func (s *Server) askToRun(ctx context.Context, req *mcp.CallToolRequest, confirm
 		},
 		"required": []string{runChoiceField},
 	})
+}
+
+// headerLines names where the request runs, the environment before the
+// database so a long database name cannot hide it. Names too long for two lines
+// get a line each: "Database " and "Instance " leave room for a 63-character ID
+// or PostgreSQL database name in the 74 columns an 80-column terminal shows. A
+// longer name on another engine is still cut.
+func headerLines(required *confirmationRequired, database, instance string) []string {
+	where := fmt.Sprintf("Run on database %q,", database)
+	if required.environment != "" {
+		where = fmt.Sprintf("Run in environment %q on database %q,", required.environment, database)
+	}
+	scope := fmt.Sprintf("instance %q", instance)
+	if required.schema != "" {
+		scope += fmt.Sprintf(", schema %q", required.schema)
+	}
+	if header := []string{where, scope + ":"}; fitsMessageLines(header) {
+		return header
+	}
+	var lines []string
+	if required.environment != "" {
+		lines = append(lines, fmt.Sprintf("Run in environment %q:", required.environment))
+	}
+	lines = append(lines, fmt.Sprintf("Database %q", database), fmt.Sprintf("Instance %q", instance))
+	if required.schema != "" {
+		lines = append(lines, fmt.Sprintf("Schema %q", required.schema))
+	}
+	return lines
 }
 
 // fitsMessageLines reports whether every line is at most messageLineWidth
