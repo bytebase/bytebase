@@ -86,7 +86,7 @@ query_database(database="employee", instance="projects/hr/instances/prod-pg", st
 
 **Notes:**
 - Show the user the statement each answer came from, so they can check it read what they asked about.
-- When the user asks for an issue or a review of a change, call propose_database_change instead.
+- When the user asks for an issue or a review of a change, call propose_database_change instead. It takes no schema, so when the request named one, qualify each name with it.
 - Masked data: masking replaces a value fully (by default "******"), partly (e.g. "**rn**"), or with a hash. maskedColumns in the result names each masked column and why (not reported for MongoDB, CosmosDB or Elasticsearch). A masked value is a placeholder, not a value anything holds, so never write it back and never filter on it. Any statement containing "******" is refused. When showing a partly masked value, wrap it in backticks: "**rn**" renders as bold Markdown.
 - Seeing masked values: the user can ask a project owner for a masking exemption, or, if the project allows just-in-time access, request an access grant with Unmask for this exact statement, schema and container. In a Read-write session, file the request with request_access_grant; otherwise the user requests it in the SQL Editor. Once it is approved, find the grant among the user's access grants, then rerun the granted statement unchanged with the grant's schema and container. appliedAccessGrant in the result names the grant that applied.
 `
@@ -141,7 +141,9 @@ func (s *Server) handleQueryDatabase(ctx context.Context, req *mcp.CallToolReque
 	// now, or at once when the client cannot show the form.
 	confirmation := runConfirmation{database: resolved.resourceName}
 	digest := auth.MCPStatementDigest(input.Statement, resolved.resourceName, input.Schema, input.Container)
-	offerIssue := offersIssue(input.Schema, resolved.engine)
+	// A plan carries no schema, so an issue's rollout would run with the
+	// database's default one.
+	offerIssue := input.Schema == ""
 	var confirmed []byte
 	if !canShowConfirmation(req) {
 		confirmed = digest

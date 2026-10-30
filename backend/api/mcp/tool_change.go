@@ -274,7 +274,6 @@ func (s *Server) handleChange(ctx context.Context, req *mcp.CallToolRequest, inp
 	}, output, nil
 }
 
-// filedChange is what fileChange creates.
 type filedChange struct {
 	sheet          string
 	plan           string
@@ -298,13 +297,7 @@ func (s *Server) fileChange(ctx context.Context, project, database, sql, title, 
 	planChecks := s.runPlanChecks(ctx, planName)
 	issueName, approvalStatus, err := s.createIssue(ctx, project, title, planName, reason)
 	if err != nil {
-		partialRefs := map[string]string{"sheet": sheetName, "plan": planName}
-		// If plan checks had errors, enforceSqlReview may have blocked issue creation.
-		suggestion := ""
-		if planChecks != nil && planChecks.Status == planCheckDone && planChecks.Summary != nil && planChecks.Summary.Error > 0 {
-			suggestion = "plan checks must pass before issue creation; fix SQL and retry"
-		}
-		return nil, formatChangeStepErrorWithHint(err, "ISSUE_CREATE_FAILED", partialRefs, suggestion)
+		return nil, formatChangeStepError(err, "ISSUE_CREATE_FAILED", map[string]string{"sheet": sheetName, "plan": planName})
 	}
 	return &filedChange{sheet: sheetName, plan: planName, planChecks: planChecks, issue: issueName, approvalStatus: approvalStatus}, nil
 }
@@ -594,30 +587,18 @@ func formatChangeError(err *changeError) *mcp.CallToolResult {
 // formatChangeStepError formats a step failure into an MCP error result.
 // It detects permission errors and wraps them appropriately.
 func formatChangeStepError(err error, defaultCode string, partialRefs map[string]string) *mcp.CallToolResult {
-	return formatChangeStepErrorWithHint(err, defaultCode, partialRefs, "")
-}
-
-// formatChangeStepErrorWithHint is like formatChangeStepError but replaces the
-// default suggestion with hint when non-empty, keeping the JSON shape intact.
-func formatChangeStepErrorWithHint(err error, defaultCode string, partialRefs map[string]string, hint string) *mcp.CallToolResult {
 	var te *toolError
 	if errors.As(err, &te) && te.Code == "PERMISSION_DENIED" {
-		// A permission denial keeps its code and the server's words; the step's
-		// hint is about something else.
 		return formatChangeError(&changeError{
 			Code:        "PERMISSION_DENIED",
 			Message:     te.Message,
 			PartialRefs: partialRefs,
 		})
 	}
-	suggestion := "check the error and retry"
-	if hint != "" {
-		suggestion = hint
-	}
 	return formatChangeError(&changeError{
 		Code:        defaultCode,
 		Message:     err.Error(),
-		Suggestion:  suggestion,
+		Suggestion:  "check the error and retry",
 		PartialRefs: partialRefs,
 	})
 }

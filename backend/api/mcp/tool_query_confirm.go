@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"time"
 	"unicode"
 	"unicode/utf8"
 
@@ -17,7 +16,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 )
 
@@ -84,13 +82,6 @@ func confirmationRequiredIn(body json.RawMessage) *confirmationRequired {
 		return &confirmationRequired{environment: info.GetMetadata()["environment"], schema: info.GetMetadata()["schema"]}
 	}
 	return nil
-}
-
-// offersIssue reports whether the form offers to file the request as an issue.
-// A plan carries no schema, so its rollout would run with the database's
-// default one, and CosmosDB's driver runs no changes.
-func offersIssue(schema, engine string) bool {
-	return schema == "" && engine != storepb.Engine_COSMOSDB.String()
 }
 
 // askToRun returns the form that asks the user to run statement. A call that
@@ -253,17 +244,46 @@ func (s *Server) fileAsIssue(ctx context.Context, resolved *resolvedDatabase, st
 	if err != nil {
 		return formatToolError(err)
 	}
-	filed, failed := s.fileChange(ctx, resolved.project, resolved.resourceName, statement, issueTitle(database, time.Now()), "")
+	var project struct {
+		EnforceIssueTitle bool `json:"enforceIssueTitle"`
+	}
+	if err := s.readResource(ctx, "/bytebase.v1.ProjectService/GetProject", resolved.project, "get projects", "bb.projects.get", &project); err != nil {
+		return formatToolError(err)
+	}
+	// The server refuses only an empty title, so a generated one would pass in a
+	// project that requires a manual title; the console leaves it to the user
+	// there (frontend/src/lib/plan/title.ts).
+	if project.EnforceIssueTitle {
+		return textResult(fmt.Sprintf("Not run: the user chose Create an issue, and project %s requires a manual title, so Bytebase files nothing until the user writes one. "+
+			"Ask the user for the issue title, then call propose_database_change with this statement and that title as written.", resolved.project))
+	}
+	// The title the console's AI agent gives a change it drafts
+	// (agent.plan-draft.default-title).
+	filed, failed := s.fileChange(ctx, resolved.project, resolved.resourceName, statement, fmt.Sprintf("[%s] Proposed database change", database), "")
 	if failed != nil {
 		return failed
 	}
-	return textResult(fmt.Sprintf("Not run: the user chose Create an issue, so the request is filed as issue %s (%s). The issue page shows its approval status.",
-		filed.issue, s.consoleLink(ctx, filed.issue)))
+	return textResult(fmt.Sprintf("Not run: the user chose Create an issue, so the request is filed as issue %s (%s). The issue page shows its approval status.%s",
+		filed.issue, s.consoleLink(ctx, filed.issue), planCheckNote(filed.planChecks)))
 }
 
-// issueTitle is the console's default title for a change to one database.
-func issueTitle(database string, now time.Time) string {
-	return fmt.Sprintf("[%s] Change database %s", database, now.Format("@01-02 15:04 UTC-0700"))
+// planCheckNote reports plan checks that keep Bytebase from creating the
+// rollout once the issue is approved.
+func planCheckNote(checks *PlanCheckInfo) string {
+	if !planChecksHaveErrors(checks) {
+		return ""
+	}
+	var errs []string
+	for _, result := range checks.Results {
+		if result.Type == "ERROR" {
+			errs = append(errs, result.Message)
+		}
+	}
+	note := " Its plan checks did not pass, so Bytebase will not create its rollout on its own"
+	if len(errs) > 0 {
+		note += ": " + strings.Join(errs, "; ")
+	}
+	return note + "."
 }
 
 // textResult carries text alone, which a client shows the model whole.

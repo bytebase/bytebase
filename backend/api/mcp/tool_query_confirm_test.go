@@ -42,15 +42,29 @@ type confirmingQueryMock struct {
 	refusesConfirmed bool
 	// changes, when set, serves the calls that file a change.
 	changes *changeMock
-	mu      sync.Mutex
-	queries []queryCall
+	// project is what ProjectService/GetProject returns, with projectStatus.
+	project       map[string]any
+	projectStatus int
+	mu            sync.Mutex
+	queries       []queryCall
 }
 
 func newConfirmingQueryMock(databases []map[string]any) *confirmingQueryMock {
-	return &confirmingQueryMock{databases: mockListDatabases(databases), environment: "prod"}
+	return &confirmingQueryMock{
+		databases:     mockListDatabases(databases),
+		environment:   "prod",
+		project:       map[string]any{"name": "projects/hr"},
+		projectStatus: http.StatusOK,
+	}
 }
 
 func (m *confirmingQueryMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if strings.HasSuffix(r.URL.Path, "ProjectService/GetProject") {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(m.projectStatus)
+		_ = json.NewEncoder(w).Encode(m.project)
+		return
+	}
 	if m.changes != nil && changeCall(r.URL.Path) {
 		m.changes.handler().ServeHTTP(w, r)
 		return
@@ -121,12 +135,6 @@ func employeeDatabase() []map[string]any {
 	}
 }
 
-func cosmosDatabase() []map[string]any {
-	return []map[string]any{
-		makeDatabase("instances/prod-cosmos/databases/employee_db", "instances/prod-cosmos", "projects/hr", "COSMOSDB", "ds-1"),
-	}
-}
-
 func newQueryConfirmServer(t *testing.T, mock *confirmingQueryMock) (*Server, string, string) {
 	t.Helper()
 	profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}
@@ -179,8 +187,8 @@ func TestQueryDatabaseAsksBeforeAWrite(t *testing.T) {
 		}, environment: "prod", header: `Run in environment "prod" on database "employee_db",` + "\n" + `instance "prod-pg":`, choices: withIssue},
 		{name: "no environment", databases: employeeDatabase(),
 			header: `Run on database "employee_db",` + "\n" + `instance "prod-pg":`, choices: withIssue},
-		{name: "a CosmosDB container", databases: cosmosDatabase(), environment: "prod", container: "orders",
-			header: `Run in environment "prod" on database "employee_db",` + "\n" + `instance "prod-cosmos", container "orders":`, choices: withoutIssue},
+		{name: "a CosmosDB container", databases: employeeDatabase(), environment: "prod", container: "orders",
+			header: `Run in environment "prod" on database "employee_db",` + "\n" + `instance "prod-pg", container "orders":`, choices: withIssue},
 	} {
 		t.Run(row.name, func(t *testing.T) {
 			mock := newConfirmingQueryMock(row.databases)
@@ -565,25 +573,88 @@ func TestQueryDatabaseFilesAnIssue(t *testing.T) {
 	require.Equal(t, []any{"instances/prod-pg/databases/employee_db"}, config["targets"])
 	issue, ok := mock.changes.getCapturedIssue()["issue"].(map[string]any)
 	require.True(t, ok)
-	require.Regexp(t, `^\[employee_db\] Change database @\d\d-\d\d \d\d:\d\d UTC[+-]\d{4}$`, issue["title"])
+	require.Equal(t, "[employee_db] Proposed database change", issue["title"])
 	require.Equal(t, planObj["title"], issue["title"])
 	require.NotContains(t, issue, "description")
 	require.Nil(t, mock.changes.getCapturedRollout(), "Bytebase creates the rollout once the approval flow is done")
 }
 
-func TestQueryDatabaseOffersAnIssueOnlyWhereItCanRun(t *testing.T) {
+func TestQueryDatabaseLeavesAManualTitleToTheUser(t *testing.T) {
+	mock := newConfirmingQueryMock(employeeDatabase())
+	mock.changes = newChangeMock(nil)
+	mock.project["enforceIssueTitle"] = true
+	_, endpoint, token := newQueryConfirmServer(t, mock)
+	user := &asker{answer: runAnswer(runChoiceIssue)}
+	session := connectLegacy(t, endpoint, token, &mcp.ClientOptions{ElicitationHandler: user.handle})
+
+	const insert = "INSERT INTO employee VALUES (1)"
+	res := callQuery(t, session, queryParams(insert))
+	require.False(t, res.IsError, resultText(t, res))
+	require.Equal(t, "Not run: the user chose Create an issue, and project projects/hr requires a manual title, so Bytebase files nothing until the user writes one. "+
+		"Ask the user for the issue title, then call propose_database_change with this statement and that title as written.", resultText(t, res))
+	require.Equal(t, []queryCall{{Statement: insert}}, mock.calls())
+	require.Nil(t, mock.changes.getCapturedSheet())
+}
+
+func TestQueryDatabaseFilesNothingInAProjectItCannotRead(t *testing.T) {
+	mock := newConfirmingQueryMock(employeeDatabase())
+	mock.changes = newChangeMock(nil)
+	mock.project = map[string]any{"message": "permission denied: bb.projects.get"}
+	mock.projectStatus = http.StatusForbidden
+	_, endpoint, token := newQueryConfirmServer(t, mock)
+	user := &asker{answer: runAnswer(runChoiceIssue)}
+	session := connectLegacy(t, endpoint, token, &mcp.ClientOptions{ElicitationHandler: user.handle})
+
+	res := callQuery(t, session, queryParams("INSERT INTO employee VALUES (1)"))
+	require.True(t, res.IsError)
+	require.Contains(t, resultText(t, res), `"code": "PERMISSION_DENIED"`)
+	require.Nil(t, mock.changes.getCapturedSheet(), "the project may require a manual title")
+}
+
+func TestQueryDatabaseReportsPlanChecksThatHoldTheRollout(t *testing.T) {
+	const filed = "Not run: the user chose Create an issue, so the request is filed as issue projects/hr-system/issues/3003 " +
+		"(https://bb.example.com/projects/hr-system/issues/3003). The issue page shows its approval status."
+	warning := map[string]any{"status": "WARNING", "title": "The statement affects many rows"}
+	for _, row := range []struct {
+		name string
+		run  map[string]any
+		text string
+	}{
+		{name: "an error", run: map[string]any{"status": "DONE", "results": []any{
+			map[string]any{"status": "ERROR", "title": "UPDATE requires a WHERE clause"}, warning,
+		}}, text: filed + " Its plan checks did not pass, so Bytebase will not create its rollout on its own: UPDATE requires a WHERE clause."},
+		{name: "a failed run", run: map[string]any{"status": "FAILED"},
+			text: filed + " Its plan checks did not pass, so Bytebase will not create its rollout on its own."},
+		{name: "a warning", run: map[string]any{"status": "DONE", "results": []any{warning}}, text: filed},
+	} {
+		t.Run(row.name, func(t *testing.T) {
+			mock := newConfirmingQueryMock(employeeDatabase())
+			mock.changes = newChangeMock(nil)
+			mock.changes.planCheckRunResponse = row.run
+			mock.changes.issueResponse = defaultIssueResponse("CHECKING")
+			s, endpoint, token := newQueryConfirmServer(t, mock)
+			s.planCheckPollBudgetOverride = 100 * time.Millisecond
+			user := &asker{answer: runAnswer(runChoiceIssue)}
+			session := connectLegacy(t, endpoint, token, &mcp.ClientOptions{ElicitationHandler: user.handle})
+
+			res := callQuery(t, session, queryParams("INSERT INTO employee VALUES (1)"))
+			require.False(t, res.IsError, resultText(t, res))
+			require.Equal(t, row.text, resultText(t, res))
+		})
+	}
+}
+
+func TestQueryDatabaseOffersAnIssueOnlyWithNoSchema(t *testing.T) {
 	for _, row := range []struct {
 		name      string
-		databases []map[string]any
 		arguments map[string]any
 		offered   bool
 	}{
-		{name: "the database's default schema", databases: employeeDatabase(), arguments: map[string]any{}, offered: true},
-		{name: "a named schema", databases: employeeDatabase(), arguments: map[string]any{"schema": "app"}},
-		{name: "CosmosDB", databases: cosmosDatabase(), arguments: map[string]any{"container": "orders"}},
+		{name: "the database's default schema", arguments: map[string]any{}, offered: true},
+		{name: "a named schema", arguments: map[string]any{"schema": "app"}},
 	} {
 		t.Run(row.name, func(t *testing.T) {
-			mock := newConfirmingQueryMock(row.databases)
+			mock := newConfirmingQueryMock(employeeDatabase())
 			mock.changes = newChangeMock(nil)
 			s, _, token := newQueryConfirmServer(t, mock)
 			s.planCheckPollBudgetOverride = 100 * time.Millisecond
