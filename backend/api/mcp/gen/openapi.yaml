@@ -24619,32 +24619,32 @@ components:
           type: integer
           title: min_length
           format: int32
-          description: min_length is the minimum length for password, should no less than 8.
+          description: min_length is the minimum password length. It must be at least 8.
         requireNumber:
           type: boolean
           title: require_number
-          description: require_number requires the password must contains at least one number.
+          description: require_number requires the password to contain at least one number.
         requireLetter:
           type: boolean
           title: require_letter
-          description: require_letter requires the password must contains at least one letter, regardless of upper case or lower case
+          description: require_letter requires the password to contain at least one letter, either uppercase or lowercase.
         requireUppercaseLetter:
           type: boolean
           title: require_uppercase_letter
-          description: require_uppercase_letter requires the password must contains at least one upper case letter.
+          description: require_uppercase_letter requires the password to contain at least one uppercase letter.
         requireSpecialCharacter:
           type: boolean
           title: require_special_character
-          description: require_special_character requires the password must contains at least one special character.
+          description: require_special_character requires the password to contain at least one special character.
         requireResetPasswordForFirstLogin:
           type: boolean
           title: require_reset_password_for_first_login
-          description: require_reset_password_for_first_login requires users to reset their password after the 1st login.
+          description: require_reset_password_for_first_login requires users to change their password after their first login.
         passwordRotation:
           allOf:
             - $ref: '#/components/schemas/google.protobuf.Duration'
           title: password_rotation
-          description: password_rotation requires users to reset their password after the duration.
+          description: password_rotation requires users to change their password after the duration.
       title: PasswordRestriction
       additionalProperties: false
     connect-protocol-version:
