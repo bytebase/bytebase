@@ -41,8 +41,11 @@ type querySpanExtractor struct {
 	selectItems []base.QuerySpanResult
 	groupBy     []ast.ExprNode
 	inAggregate bool
-	// inCondition hides an EXISTS subquery's output, which decides nothing.
-	inCondition bool
+	// inCondition and outputInCondition hide an EXISTS subquery's output,
+	// which decides nothing: inCondition within a condition of this SELECT,
+	// outputInCondition when this query's own output feeds a condition.
+	inCondition       bool
+	outputInCondition bool
 
 	// predicateColumns is shared with the extractors of nested queries.
 	predicateColumns base.SourceColumnSet
@@ -1000,6 +1003,7 @@ func (q *omniQuerySpanExtractor) cloneOmniWithScope(scope outerScope) *omniQuery
 			outerScopes:         outerScopes,
 			tableSourceFrom:     []base.TableSource{},
 			ignoreCaseSensitive: q.ignoreCaseSensitive,
+			outputInCondition:   q.inCondition || q.outputInCondition,
 			predicateColumns:    q.predicateColumns,
 			ctePredicateColumns: q.ctePredicateColumns,
 			accessTables:        q.accessTables,
@@ -1168,7 +1172,7 @@ func (q *omniQuerySpanExtractor) extractOmniExpr(expr ast.ExprNode) (base.QueryS
 		if err != nil {
 			return base.QuerySpanResult{}, err
 		}
-		if q.inCondition {
+		if q.inCondition || q.outputInCondition {
 			// EXISTS reports whether a row comes back, not what the row holds.
 			sourceColumns = base.SourceColumnSet{}
 		}
