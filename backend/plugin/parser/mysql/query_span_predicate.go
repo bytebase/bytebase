@@ -179,6 +179,15 @@ func (q *omniQuerySpanExtractor) collectTrailingClauses(orderBy []*ast.OrderByIt
 	}
 }
 
+// collectExplainedQueryColumns records the predicate columns of the query
+// EXPLAIN ANALYZE runs, whose plan reports the rows each condition kept. The
+// plan is not a result set, so the query's lineage is dropped.
+func (q *omniQuerySpanExtractor) collectExplainedQueryColumns(stmt ast.StmtNode) {
+	if _, err := q.extractOmniSelectRoot(stmt); err != nil {
+		q.recordColumnsNamedIn(stmt)
+	}
+}
+
 func (q *omniQuerySpanExtractor) recordJoinedColumn(table base.TableSource, name string) {
 	if field, ok := querySpanResultNamed(table.GetQuerySpanResult(), name); ok {
 		mergeSourceColumnSetInto(q.predicateColumns, field.SourceColumns)

@@ -501,6 +501,9 @@ func (q *omniQuerySpanExtractor) extractOmniSelectRoot(root ast.Node) (*base.Pse
 	case *ast.SelectStmt:
 		return q.extractOmniSelectStmt(n)
 	case *ast.ExplainStmt:
+		if n.Analyze {
+			q.collectExplainedQueryColumns(n.Stmt)
+		}
 		return &base.PseudoTable{}, nil
 	case *ast.TableStmt:
 		return q.extractOmniTableStmt(n)

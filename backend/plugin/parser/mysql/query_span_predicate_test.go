@@ -54,8 +54,9 @@ type predicateCase struct {
 }
 
 var (
-	noMariaDBLateral      = map[string]string{"mariadb": "MariaDB has no LATERAL"}
-	mariaDBReadsUnusedCTE = map[string]string{"mariadb": "MariaDB checks privileges in a CTE it never runs"}
+	noMariaDBLateral        = map[string]string{"mariadb": "MariaDB has no LATERAL"}
+	mariaDBReadsUnusedCTE   = map[string]string{"mariadb": "MariaDB checks privileges in a CTE it never runs"}
+	noMariaDBExplainAnalyze = map[string]string{"mariadb": "MariaDB spells it ANALYZE SELECT"}
 )
 
 var predicateCases = []predicateCase{
@@ -191,6 +192,11 @@ var predicateCases = []predicateCase{
 	{name: "exists over a qualified star", statement: "SELECT a FROM t WHERE EXISTS (SELECT t1.* FROM t1 WHERE t1.a = t.a)", want: []string{"t.a", "t1.a"}},
 	{name: "derived table in a subquery sees the outer query", statement: "SELECT a FROM t WHERE EXISTS (SELECT 1 FROM (SELECT b FROM t1 WHERE t1.a = t.a) d)", want: []string{"t.a", "t1.a"}, skip: map[string]string{"mariadb": "MariaDB refuses an outer reference in a derived table"}},
 	{name: "subquery two levels down sees an alias", statement: "SELECT c AS x, (SELECT (SELECT x + 1)) AS s FROM u", want: []string{}, results: [][]string{{"u.c"}, {"u.c"}}},
+
+	// EXPLAIN ANALYZE runs the query and reports the rows each step returns.
+	{name: "explain analyze condition", statement: "EXPLAIN ANALYZE SELECT 1 FROM t WHERE b = 123", want: []string{"t.b"}, skip: noMariaDBExplainAnalyze},
+	{name: "explain analyze having alias", statement: "EXPLAIN ANALYZE SELECT c AS b FROM t HAVING b > 150", want: []string{"t.c"}, skip: noMariaDBExplainAnalyze},
+	{name: "explain analyze nested condition", statement: "EXPLAIN ANALYZE SELECT a FROM t WHERE a IN (SELECT a FROM t1 WHERE c = 0)", want: []string{"t.a", "t1.a", "t1.c"}, skip: noMariaDBExplainAnalyze},
 
 	// A view's own conditions are not the caller's; its columns trace to the
 	// table. The engines check a view's privileges on the view, so they skip it.
