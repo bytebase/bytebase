@@ -74,6 +74,9 @@ type Driver struct {
 
 	// Called upon driver.Open() finishes.
 	openCleanUp []func()
+	// cloudSQLDialer is the Cloud SQL connector dialer, owned by this driver.
+	// It runs a background certificate refresh until it is closed.
+	cloudSQLDialer io.Closer
 }
 
 func newDriver() db.Driver {
@@ -92,7 +95,7 @@ func (d *Driver) Open(ctx context.Context, dbType storepb.Engine, connCfg db.Con
 	var err error
 	switch connCfg.DataSource.GetAuthenticationType() {
 	case storepb.DataSource_GOOGLE_CLOUD_SQL_IAM:
-		dsn, err = getCloudSQLConnection(ctx, connCfg)
+		dsn, d.cloudSQLDialer, err = getCloudSQLConnection(ctx, connCfg)
 	case storepb.DataSource_AWS_RDS_IAM:
 		dsn, err = d.getRDSConnection(ctx, connCfg)
 	default:
@@ -104,6 +107,10 @@ func (d *Driver) Open(ctx context.Context, dbType storepb.Engine, connCfg db.Con
 
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
+		// The caller does not Close a driver whose Open failed.
+		if d.cloudSQLDialer != nil {
+			_ = d.cloudSQLDialer.Close()
+		}
 		return nil, err
 	}
 	d.dbType = dbType
@@ -330,19 +337,23 @@ func (d *Driver) getRDSConnection(ctx context.Context, connCfg db.ConnectionConf
 	), nil
 }
 
-func getCloudSQLConnection(ctx context.Context, connCfg db.ConnectionConfig) (string, error) {
+// The returned dialer must be closed by the caller once the connection is no longer used.
+func getCloudSQLConnection(ctx context.Context, connCfg db.ConnectionConfig) (string, io.Closer, error) {
 	d, err := util.GetGCPConnectionConfig(ctx, connCfg)
 	if err != nil {
-		return "", errors.Wrap(err, "load gcp config failed")
+		return "", nil, errors.Wrap(err, "load gcp config failed")
 	}
 
-	mysql.RegisterDialContext("cloudsqlconn",
+	// Register the dialer under a unique network name, so that closing the dialer of one
+	// driver does not affect the connections of other drivers.
+	network := "cloudsqlconn-" + uuid.NewString()[:8]
+	mysql.RegisterDialContext(network,
 		func(ctx context.Context, _ string) (net.Conn, error) {
 			return d.Dial(ctx, connCfg.DataSource.Host)
 		})
 
-	return fmt.Sprintf("%s:empty@cloudsqlconn(localhost:3306)/%s?parseTime=true&multiStatements=true&maxAllowedPacket=0",
-		connCfg.DataSource.Username, connCfg.ConnectionContext.DatabaseName), nil
+	return fmt.Sprintf("%s:empty@%s(localhost:3306)/%s?parseTime=true&multiStatements=true&maxAllowedPacket=0",
+		connCfg.DataSource.Username, network, connCfg.ConnectionContext.DatabaseName), d, nil
 }
 
 // Close closes the driver.
@@ -351,6 +362,9 @@ func (d *Driver) Close(context.Context) error {
 	err = multierr.Append(err, d.db.Close())
 	if d.sshClient != nil {
 		err = multierr.Append(err, d.sshClient.Close())
+	}
+	if d.cloudSQLDialer != nil {
+		err = multierr.Append(err, d.cloudSQLDialer.Close())
 	}
 	return err
 }
