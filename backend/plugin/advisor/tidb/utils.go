@@ -516,13 +516,22 @@ func omniConstraintAdviceName(c *omniast.Constraint) string {
 	if c == nil {
 		return ""
 	}
-	if c.Name != "" {
-		return c.Name
+	if name := omniConstraintName(c); name != "" {
+		return name
 	}
 	if c.Type == omniast.ConstrPrimaryKey {
 		return "PRIMARY"
 	}
 	return ""
+}
+
+// omniConstraintName returns the CONSTRAINT symbol, else the name written after
+// FOREIGN KEY, which omni keeps in IndexName.
+func omniConstraintName(c *omniast.Constraint) string {
+	if c.Name != "" {
+		return c.Name
+	}
+	return c.IndexName
 }
 
 // omniDataTypeNameCompact returns a compact, lowercase type-name string

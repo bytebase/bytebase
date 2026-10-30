@@ -298,7 +298,7 @@ func local_request_ServiceAccountService_ListServiceAccounts_1(ctx context.Conte
 	return msg, metadata, err
 }
 
-var filter_ServiceAccountService_UpdateServiceAccount_0 = &utilities.DoubleArray{Encoding: map[string]int{"service_account": 0, "name": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 2, 2, 3}}
+var filter_ServiceAccountService_UpdateServiceAccount_0 = &utilities.DoubleArray{Encoding: map[string]int{"service_account": 0, "name": 1}, Base: []int{1, 2, 1, 0, 0}, Check: []int{0, 1, 2, 3, 2}}
 
 func request_ServiceAccountService_UpdateServiceAccount_0(ctx context.Context, marshaler runtime.Marshaler, client ServiceAccountServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (

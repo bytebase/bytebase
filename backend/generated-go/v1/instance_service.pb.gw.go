@@ -346,7 +346,7 @@ func local_request_InstanceService_PrepareSampleProjectInstance_0(ctx context.Co
 	return msg, metadata, err
 }
 
-var filter_InstanceService_UpdateInstance_0 = &utilities.DoubleArray{Encoding: map[string]int{"instance": 0, "name": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 2, 2, 3}}
+var filter_InstanceService_UpdateInstance_0 = &utilities.DoubleArray{Encoding: map[string]int{"instance": 0, "name": 1}, Base: []int{1, 2, 1, 0, 0}, Check: []int{0, 1, 2, 3, 2}}
 
 func request_InstanceService_UpdateInstance_0(ctx context.Context, marshaler runtime.Marshaler, client InstanceServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
@@ -427,7 +427,7 @@ func local_request_InstanceService_UpdateInstance_0(ctx context.Context, marshal
 	return msg, metadata, err
 }
 
-var filter_InstanceService_UpdateInstance_1 = &utilities.DoubleArray{Encoding: map[string]int{"instance": 0, "name": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 2, 2, 3}}
+var filter_InstanceService_UpdateInstance_1 = &utilities.DoubleArray{Encoding: map[string]int{"instance": 0, "name": 1}, Base: []int{1, 2, 1, 0, 0}, Check: []int{0, 1, 2, 3, 2}}
 
 func request_InstanceService_UpdateInstance_1(ctx context.Context, marshaler runtime.Marshaler, client InstanceServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (

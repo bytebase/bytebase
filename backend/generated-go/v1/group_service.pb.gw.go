@@ -185,7 +185,7 @@ func local_request_GroupService_CreateGroup_0(ctx context.Context, marshaler run
 	return msg, metadata, err
 }
 
-var filter_GroupService_UpdateGroup_0 = &utilities.DoubleArray{Encoding: map[string]int{"group": 0, "name": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 2, 2, 3}}
+var filter_GroupService_UpdateGroup_0 = &utilities.DoubleArray{Encoding: map[string]int{"group": 0, "name": 1}, Base: []int{1, 2, 1, 0, 0}, Check: []int{0, 1, 2, 3, 2}}
 
 func request_GroupService_UpdateGroup_0(ctx context.Context, marshaler runtime.Marshaler, client GroupServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (

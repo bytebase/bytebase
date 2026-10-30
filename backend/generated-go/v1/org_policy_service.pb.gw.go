@@ -488,7 +488,7 @@ func local_request_OrgPolicyService_CreatePolicy_2(ctx context.Context, marshale
 	return msg, metadata, err
 }
 
-var filter_OrgPolicyService_UpdatePolicy_0 = &utilities.DoubleArray{Encoding: map[string]int{"policy": 0, "name": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 2, 2, 3}}
+var filter_OrgPolicyService_UpdatePolicy_0 = &utilities.DoubleArray{Encoding: map[string]int{"policy": 0, "name": 1}, Base: []int{1, 2, 1, 0, 0}, Check: []int{0, 1, 2, 3, 2}}
 
 func request_OrgPolicyService_UpdatePolicy_0(ctx context.Context, marshaler runtime.Marshaler, client OrgPolicyServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
@@ -569,7 +569,7 @@ func local_request_OrgPolicyService_UpdatePolicy_0(ctx context.Context, marshale
 	return msg, metadata, err
 }
 
-var filter_OrgPolicyService_UpdatePolicy_1 = &utilities.DoubleArray{Encoding: map[string]int{"policy": 0, "name": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 2, 2, 3}}
+var filter_OrgPolicyService_UpdatePolicy_1 = &utilities.DoubleArray{Encoding: map[string]int{"policy": 0, "name": 1}, Base: []int{1, 2, 1, 0, 0}, Check: []int{0, 1, 2, 3, 2}}
 
 func request_OrgPolicyService_UpdatePolicy_1(ctx context.Context, marshaler runtime.Marshaler, client OrgPolicyServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
@@ -650,7 +650,7 @@ func local_request_OrgPolicyService_UpdatePolicy_1(ctx context.Context, marshale
 	return msg, metadata, err
 }
 
-var filter_OrgPolicyService_UpdatePolicy_2 = &utilities.DoubleArray{Encoding: map[string]int{"policy": 0, "name": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 2, 2, 3}}
+var filter_OrgPolicyService_UpdatePolicy_2 = &utilities.DoubleArray{Encoding: map[string]int{"policy": 0, "name": 1}, Base: []int{1, 2, 1, 0, 0}, Check: []int{0, 1, 2, 3, 2}}
 
 func request_OrgPolicyService_UpdatePolicy_2(ctx context.Context, marshaler runtime.Marshaler, client OrgPolicyServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (

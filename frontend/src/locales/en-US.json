@@ -2780,7 +2780,7 @@
     "general": {
       "workspace": {
         "access-token-duration": {
-          "description": "How long access tokens remain valid before requiring refresh. Shorter durations improve security.",
+          "description": "How long an access token stays valid before it must be refreshed. Shorter durations are more secure.",
           "hours": "Hour(s)",
           "minutes": "Minute(s)",
           "self": "Access token duration"
@@ -2825,8 +2825,8 @@
         },
         "allow-email-code-signin": {
           "description": "Users can sign in or sign up by entering a 6-digit code delivered to their email address.",
-          "enable": "Allow signin with email code",
-          "require-email-setting": "An email (SMTP) setting must be configured first before enabling this."
+          "enable": "Allow sign-in with email code",
+          "require-email-setting": "Configure an email (SMTP) setting before enabling this."
         },
         "announcement": {
           "self": "Announcement"
@@ -2889,12 +2889,12 @@
           }
         },
         "disallow-password-signin": {
-          "description": "Users cannot sign in with email & password, only SSO is allowed.",
-          "enable": "Disallow signin with email & password",
-          "require-sso-setup": "A functional SSO must be created first, or users won't be able to log in."
+          "description": "Users can sign in only with SSO.",
+          "enable": "Disallow sign-in with email and password",
+          "require-sso-setup": "Set up a working SSO provider first, or users won't be able to sign in."
         },
         "disallow-signup": {
-          "description": "Users cannot self-service signup and can only be invited by the workspace admin.",
+          "description": "Users cannot sign up on their own and can only be invited by a workspace admin.",
           "enable": "Disallow self-service signup"
         },
         "domain-restriction": {
@@ -2929,7 +2929,7 @@
         "id": "Workspace ID",
         "id-description": "The unique, read-only workspace id.",
         "inactive-session-timeout": {
-          "description": "The session expiration time if no activity is detected for the user. The users will be forced to log out when they reach the limit.",
+          "description": "How long a session can stay inactive before it expires. Users are signed out when they reach this limit.",
           "hours": "Hour(s)",
           "self": "Inactive session timeout"
         },
@@ -2961,16 +2961,16 @@
             "self": "Maximum SQL result size"
           }
         },
-        "no-limit": "No limit when the value <= 0",
+        "no-limit": "A value of 0 or less means no limit.",
         "password-restriction": {
-          "min-length": "Minimum length for password should no less than {{min}} characters",
-          "password-rotation": "Require users reset their password every {{day}} days",
-          "require-letter": "The password must contain at least one letter, regardless of upper case or lower case",
-          "require-number": "The password must contain at least one number",
-          "require-reset-password-for-first-login": "Require users reset their password after the 1st time login",
-          "require-special-character": "The password must contain at least one special character",
-          "require-uppercase-letter": "The password must contain at least one upper case letter",
-          "self": "Password Restriction"
+          "min-length": "Password must be at least {{min}} characters long",
+          "password-rotation": "Require users to change their password every {{day}} days",
+          "require-letter": "Password must contain at least one letter (uppercase or lowercase)",
+          "require-number": "Password must contain at least one number",
+          "require-reset-password-for-first-login": "Require users to change their password after their first login",
+          "require-special-character": "Password must contain at least one special character",
+          "require-uppercase-letter": "Password must contain at least one uppercase letter",
+          "self": "Password restrictions"
         },
         "product-improvement": {
           "description": "Help improve Bytebase by sharing anonymous usage data",
@@ -2986,12 +2986,12 @@
         },
         "refresh-token-duration": {
           "days": "Day(s)",
-          "description": "How often users must fully reauthenticate. Configuration updates require users to sign in again for changes to take effect.",
+          "description": "How often users must fully reauthenticate. Changes take effect the next time users sign in.",
           "hours": "Hour(s)",
           "self": "Refresh token duration"
         },
         "require-2fa": {
-          "description": "Users who do not have two-factor authentication enabled for their personal accounts will be forced to configure.",
+          "description": "Users who have not enabled two-factor authentication will be required to set it up.",
           "enable": "Require two-factor authentication for all users"
         },
         "security": "Security",

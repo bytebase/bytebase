@@ -454,7 +454,7 @@ func TestResetUserPassword(t *testing.T) {
 			profile:     recoveryProfile(),
 			password:    "too-short",
 			createUser:  true,
-			wantError:   "password length",
+			wantError:   "password must be at least 12 characters long",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

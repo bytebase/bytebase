@@ -171,7 +171,7 @@ func (*namingFKOmniRule) handleConstraint(tableName string, constraint *ast.Cons
 		return nil
 	}
 
-	indexName := constraint.Name
+	indexName := omniConstraintName(constraint)
 
 	referencingColumnList := constraint.Columns
 	referencedTable := ""

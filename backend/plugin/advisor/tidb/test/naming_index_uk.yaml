@@ -95,3 +95,5 @@
         line: 1
         column: 0
       endposition: null
+- statement: ALTER TABLE tech_book ADD CONSTRAINT uk_tech_book_id_name UNIQUE KEY uk1 (id, name)
+  changeType: 1

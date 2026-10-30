@@ -136,7 +136,7 @@ func local_request_RoleService_CreateRole_0(ctx context.Context, marshaler runti
 	return msg, metadata, err
 }
 
-var filter_RoleService_UpdateRole_0 = &utilities.DoubleArray{Encoding: map[string]int{"role": 0, "name": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 2, 2, 3}}
+var filter_RoleService_UpdateRole_0 = &utilities.DoubleArray{Encoding: map[string]int{"role": 0, "name": 1}, Base: []int{1, 2, 1, 0, 0}, Check: []int{0, 1, 2, 3, 2}}
 
 func request_RoleService_UpdateRole_0(ctx context.Context, marshaler runtime.Marshaler, client RoleServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
