@@ -1268,6 +1268,10 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 		skipMasking = accessGrant.Payload.Unmask
 	}
 	files, duration, exportErr := doExport(ctx, s.store, s.dbFactory, s.licenseService, request, user, instance, database, optionalAccessCheck, s.schemaSyncer, dataSource, skipMasking)
+	var exportResponse *v1pb.ExportResponse
+	if exportErr == nil {
+		exportResponse, exportErr = sendExport(ctx, sharePointTarget, user, database, files, request, exportTime)
+	}
 
 	s.createQueryHistory(instance, database, store.QueryHistoryTypeExport, statement, user.Email, duration, exportErr)
 
@@ -1275,10 +1279,6 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 		return nil, exportConnectError(exportErr)
 	}
 
-	exportResponse, err := sendExport(ctx, sharePointTarget, user, database, files, request, exportTime)
-	if err != nil {
-		return nil, err
-	}
 	if accessGrant != nil {
 		exportResponse.AppliedAccessGrant = common.FormatAccessGrant(accessGrant.ProjectID, accessGrant.ID)
 	}
