@@ -3106,7 +3106,7 @@
             "title": "执行部署和任务"
           },
           "run-statements": {
-            "details": "通过查询执行 INSERT、UPDATE、DELETE、CREATE、ALTER、DROP，以引擎和该用户自身权限允许的范围为限",
+            "details": "通过查询执行 INSERT、UPDATE、DELETE、CREATE、ALTER、DROP，以引擎和该用户自身权限允许的范围为限 · 如果用户的 MCP 客户端支持确认，在引擎能检查的范围内不属于读取的语句，只有在用户确认后才会执行 · 在其他客户端中，此类语句可能不经询问就执行",
             "title": "执行 DML 和 DDL 语句"
           }
         },

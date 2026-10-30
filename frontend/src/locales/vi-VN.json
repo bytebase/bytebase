@@ -3106,7 +3106,7 @@
             "title": "Chạy triển khai và tác vụ"
           },
           "run-statements": {
-            "details": "INSERT, UPDATE, DELETE, CREATE, ALTER, DROP qua truy vấn, trong phạm vi engine và quyền của chính người dùng cho phép",
+            "details": "INSERT, UPDATE, DELETE, CREATE, ALTER, DROP qua truy vấn, trong phạm vi engine và quyền của chính người dùng cho phép · Nếu ứng dụng MCP của người dùng hỗ trợ xác nhận, câu lệnh không phải lệnh đọc trong phạm vi engine kiểm tra được chỉ chạy sau khi người dùng xác nhận · Ở các ứng dụng khác, câu lệnh như vậy có thể chạy mà không cần hỏi",
             "title": "Chạy câu lệnh DML và DDL"
           }
         },
