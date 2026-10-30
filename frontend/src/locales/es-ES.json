@@ -3106,7 +3106,7 @@
             "title": "Ejecutar despliegues y tareas"
           },
           "run-statements": {
-            "details": "INSERT, UPDATE, DELETE, CREATE, ALTER, DROP a través de consultas, hasta donde el motor y los permisos del propio usuario lo permitan",
+            "details": "INSERT, UPDATE, DELETE, CREATE, ALTER, DROP a través de consultas, hasta donde el motor y los permisos del propio usuario lo permitan · Si el cliente MCP del usuario admite confirmaciones, una consulta que no es una lectura hasta donde el motor pueda comprobarlo solo se ejecuta después de que el usuario la confirme · En otros clientes, una consulta así puede ejecutarse sin preguntar",
             "title": "Ejecutar sentencias DML y DDL"
           }
         },
