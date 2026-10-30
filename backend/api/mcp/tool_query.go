@@ -114,9 +114,24 @@ func (s *Server) handleQueryDatabase(ctx context.Context, req *mcp.CallToolReque
 		limit = maxQueryLimit
 	}
 
+	// An answer that runs nothing is reported before the database is resolved
+	// again, which may have changed while the user was asked.
+	answeredRun, answerState := false, ""
+	if canShowConfirmation(req) {
+		if response, state, answered := confirmationAnswer(req); answered {
+			if result := unrunAnswer(response); result != nil {
+				return result, nil, nil
+			}
+			answeredRun, answerState = true, state
+		}
+	}
+
 	// Resolve database.
 	resolved, resolveResult := s.resolveTarget(ctx, req, input.Database, input.Instance, input.Project)
 	if resolveResult != nil {
+		if answeredRun && len(resolveResult.InputRequests) > 0 {
+			return staleRun("the databases that match changed after the user was asked"), nil, nil
+		}
 		return resolveResult, nil, nil
 	}
 
@@ -128,10 +143,13 @@ func (s *Server) handleQueryDatabase(ctx context.Context, req *mcp.CallToolReque
 	if !canShowConfirmation(req) {
 		confirmed = digest
 	} else if reply, answered := s.signedReply(ctx, req, confirmation, digest); answered {
-		if result := unrunResult(reply); result != nil {
-			return result, nil, nil
+		if why := reply.staleReason("the request changed after the user was asked"); why != "" {
+			return staleRun(why), nil, nil
 		}
 		confirmed = digest
+	} else if answeredRun && answerState != "" {
+		// The answer was signed for another database.
+		return staleRun("the database that matches changed after the user was asked"), nil, nil
 	}
 
 	// Execute query.

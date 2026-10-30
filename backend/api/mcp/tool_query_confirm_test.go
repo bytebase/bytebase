@@ -49,7 +49,10 @@ func newConfirmingQueryMock(databases []map[string]any) *confirmingQueryMock {
 
 func (m *confirmingQueryMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if !strings.HasSuffix(r.URL.Path, "SQLService/Query") {
-		m.databases.ServeHTTP(w, r)
+		m.mu.Lock()
+		databases := m.databases
+		m.mu.Unlock()
+		databases.ServeHTTP(w, r)
 		return
 	}
 	var body struct {
@@ -70,6 +73,13 @@ func (m *confirmingQueryMock) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	}
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(makeQueryResponse([]string{"id"}, []string{"int4"}, [][]any{{"1"}}, "0.001s"))
+}
+
+// setDatabases changes the databases the list calls return.
+func (m *confirmingQueryMock) setDatabases(databases []map[string]any) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.databases = mockListDatabases(databases)
 }
 
 func (m *confirmingQueryMock) calls() []queryCall {
@@ -383,6 +393,39 @@ func TestQueryDatabaseAsksOnceACall(t *testing.T) {
 			require.EqualValues(t, 2, user.asked.Load())
 			require.True(t, strings.HasPrefix(user.lastParams(t).Message, `Run in environment "prod" on database "employee_db",`),
 				"the call the text names asks to run, not which database: %q", user.lastParams(t).Message)
+		})
+	}
+}
+
+func TestQueryDatabaseReportsATargetThatChangedWhileAsked(t *testing.T) {
+	another := ambiguousDatabases()
+	moved := []map[string]any{
+		makeDatabase("instances/other-pg/databases/employee_db", "instances/other-pg", "projects/hr", "POSTGRES", "ds-3"),
+	}
+	for _, row := range []struct {
+		name      string
+		databases []map[string]any
+		answer    *mcp.ElicitResult
+		text      string
+	}{
+		{name: "another match, Run now", databases: another, answer: runAnswer(runChoiceRun), text: "STALE_CONFIRMATION"},
+		{name: "another match, cancel", databases: another, answer: &mcp.ElicitResult{Action: "cancel"}, text: "Not run: the user cancelled"},
+		{name: "a different database, Run now", databases: moved, answer: runAnswer(runChoiceRun), text: "STALE_CONFIRMATION"},
+		{name: "a different database, cancel", databases: moved, answer: &mcp.ElicitResult{Action: "cancel"}, text: "Not run: the user cancelled"},
+	} {
+		t.Run(row.name, func(t *testing.T) {
+			mock := newConfirmingQueryMock(employeeDatabase())
+			_, endpoint, token := newQueryConfirmServer(t, mock)
+			user := &asker{answer: row.answer, whileAsked: func() { mock.setDatabases(row.databases) }}
+			session := connectLegacy(t, endpoint, token, &mcp.ClientOptions{ElicitationHandler: user.handle})
+
+			res := callQuery(t, session, queryParams("INSERT INTO employee VALUES (1)"))
+			require.NotEmpty(t, res.Content, "an older client answers one form per call, so a second form leaves the result empty")
+			require.Contains(t, resultText(t, res), row.text)
+			require.EqualValues(t, 1, user.asked.Load())
+			for _, query := range mock.calls() {
+				require.False(t, query.Confirmed)
+			}
 		})
 	}
 }

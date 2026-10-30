@@ -197,29 +197,32 @@ func lineColumns(line string) int {
 	return columns
 }
 
-// unrunResult returns the result for an answer that runs nothing, or nil when
-// the user chose Run now. Only Run now is checked for staleness, so a user who
-// said no or asked for a change is not asked again.
-func unrunResult(reply *confirmationReply) *mcp.CallToolResult {
-	content, accepted, why := acceptedForm(reply.response)
+// unrunAnswer returns the result for an answer that runs nothing, or nil when
+// the user chose Run now. It reads no target or signed state, so a request
+// that changed while the user was asked cannot turn a decline into a form.
+func unrunAnswer(response mcp.InputResponse) *mcp.CallToolResult {
+	content, accepted, why := acceptedForm(response)
 	if !accepted {
 		return textResult(fmt.Sprintf("Not run: %s, so nothing changed. Do not retry unless the user asks.", why))
 	}
 	switch content[runChoiceField] {
 	case runChoiceRun:
-		if why := reply.staleReason("the request changed after the user was asked"); why != "" {
-			return formatToolError(&toolError{
-				Code:       "STALE_CONFIRMATION",
-				Message:    fmt.Sprintf("%s, so nothing ran", why),
-				Suggestion: "call query_database again to ask the user about the request as it is now",
-			})
-		}
 		return nil
 	case runChoiceChange:
 		return textResult("Not run: the user wants to change this request. Ask them what to change, then call query_database with the revised request.")
 	default:
 		return textResult("Not run: the answer chose neither option, so nothing changed.")
 	}
+}
+
+// staleRun reports a Run now answer that no longer fits the request. It asks
+// nothing: an older client answers one form per call.
+func staleRun(why string) *mcp.CallToolResult {
+	return formatToolError(&toolError{
+		Code:       "STALE_CONFIRMATION",
+		Message:    fmt.Sprintf("%s, so nothing ran", why),
+		Suggestion: "call query_database again to ask the user about the request as it is now",
+	})
 }
 
 // textResult carries text alone, which a client shows the model whole.
