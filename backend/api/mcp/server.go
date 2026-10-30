@@ -91,7 +91,7 @@ func newServerWithStore(stores serverStore, profile *config.Profile, secret stri
 	mcpServer := mcp.NewServer(&mcp.Implementation{
 		Name:    "bytebase",
 		Version: profile.Version,
-	}, nil)
+	}, &mcp.ServerOptions{Instructions: serverInstructions})
 
 	// Load OpenAPI index for API discovery and execution (embedded)
 	openAPIIndex, err := NewOpenAPIIndex()
@@ -154,6 +154,7 @@ func newServerWithStore(stores serverStore, profile *config.Profile, secret stri
 	mcpServer.AddReceivingMiddleware(negotiateLegacyProtocol)
 	mcpServer.AddReceivingMiddleware(liveRequestMetadata)
 	mcpServer.AddReceivingMiddleware(nameSignedInAccount)
+	mcpServer.AddReceivingMiddleware(askInChatWithoutForm)
 
 	// Pin each session to the identity it was opened with. The SDK captures
 	// TokenInfo.UserID when a session is created and rejects later requests
@@ -216,7 +217,21 @@ func nameSignedInAccount(next mcp.MethodHandler) mcp.MethodHandler {
 		// and a panic here would end the process.
 		if initialized, ok := result.(*mcp.InitializeResult); ok && initialized != nil {
 			account := fmt.Sprintf(`This session acts as the Bytebase account %s: every tool call runs with its permissions, and "you" in tool results means it. The user may have other accounts with other emails, such as the client's own sign-in.`, getUserEmail(ctx))
-			initialized.Instructions = strings.TrimSpace(account + "\n\n" + initialized.Instructions)
+			initialized.Instructions = account + "\n\n" + initialized.Instructions
+		}
+		return result, err
+	}
+}
+
+// askInChatWithoutForm ends the instructions of a session whose client declared
+// no form with askInChatInstructions: query_database then runs a write without
+// asking the user (canShowConfirmation).
+func askInChatWithoutForm(next mcp.MethodHandler) mcp.MethodHandler {
+	return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
+		result, err := next(ctx, method, req)
+		params, isInitialize := req.GetParams().(*mcp.InitializeParams)
+		if initialized, ok := result.(*mcp.InitializeResult); ok && initialized != nil && isInitialize && !declaresFormElicitation(params) {
+			initialized.Instructions += "\n\n" + askInChatInstructions
 		}
 		return result, err
 	}
@@ -260,7 +275,6 @@ func refuseSessionlessProtocol(next http.Handler) http.Handler {
 func (s *Server) registerTools() {
 	s.registerSearchTool()
 	s.registerCallTool()
-	s.registerSkillTool()
 	s.registerQueryTool()
 	s.registerSchemaTool()
 	s.registerChangeTool()
@@ -280,6 +294,26 @@ func (s *Server) registerTools() {
 func requiresUserInteraction() mcp.Meta {
 	return mcp.Meta{"anthropic/requiresUserInteraction": true}
 }
+
+// serverInstructions route an agent to the right tool. A client may add them
+// to the model's prompt for the whole session (MCP InitializeResult
+// instructions). One server serves every workspace, and an admin can change a
+// workspace's MCP access policy at any time, so they name no workspace and
+// assume no mode.
+const serverInstructions = `Bytebase governs access to databases and changes to them. Every call is also limited by the workspace's MCP access policy.
+
+Choose the tool by task:
+- Find a database: call_api(operationId="DatabaseService/SearchDatabases") lists the databases you can view.
+- Read data: query_database. Before you write SQL for a database, read its schema with get_schema.
+- Inspect a schema: get_schema.
+- Change a database: propose_database_change, the easiest way into the governed workflow. It creates the plan and the issue and runs the plan checks; approval and rollout follow the project's policy. ` + singleDatabaseLimit + `
+- Anything else: a tool whose description covers the task; failing that, search_api to find the operation and its request schema, then call_api.
+
+When the workspace's MCP access policy is Read-write, query_database can also run DML and DDL, as far as the engine and the account's permissions allow; call_api refuses them. They take effect at once, without an issue or approval. Use propose_database_change for any change that should be reviewed, or when a write fails on a read-only data source.
+
+When Bytebase refuses a call, the error states the reason and may name a next step, such as a tool to use.`
+
+const askInChatInstructions = `This client cannot show Bytebase's confirmation form, so under Read-write query_database runs any statement that may write without asking. Before you run one, show the user the exact statement, say it runs at once with no issue or approval, and ask them to confirm.`
 
 // authMiddleware validates OAuth2 bearer tokens for MCP requests.
 //

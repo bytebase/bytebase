@@ -5,13 +5,16 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	"connectrpc.com/connect"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v5"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
@@ -596,14 +599,42 @@ func tokenForWorkspace(t *testing.T, secret, workspaceID string) string {
 	return tokenStr
 }
 
-func TestInitializeNamesTheSignedInAccount(t *testing.T) {
+func listToolsOverRoute(t *testing.T) []*mcp.Tool {
+	t.Helper()
 	endpoint, _, _ := newProbeServer(t)
-	token := mintMCPToken(t, "jordan@example.com", "client-A", "ws-test", "mcp:read-write", time.Hour)
-
+	token := mintMCPToken(t, "test@example.com", "client-A", "ws-test", "mcp:read-only", time.Hour)
 	session := connectLegacy(t, endpoint, token, nil)
-	require.Equal(t, `This session acts as the Bytebase account jordan@example.com: every tool call runs with its permissions, `+
-		`and "you" in tool results means it. The user may have other accounts with other emails, such as the client's own sign-in.`,
-		session.InitializeResult().Instructions)
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	listed, err := session.ListTools(ctx, nil)
+	require.NoError(t, err)
+	return listed.Tools
+}
+
+func TestInitializeServesInstructions(t *testing.T) {
+	const account = `This session acts as the Bytebase account test@example.com: every tool call runs with its permissions, ` +
+		`and "you" in tool results means it. The user may have other accounts with other emails, such as the client's own sign-in.`
+	tools := listToolsOverRoute(t)
+	for _, row := range []struct {
+		name         string
+		options      *mcp.ClientOptions
+		instructions string
+	}{
+		{name: "a client without the form", instructions: account + "\n\n" + serverInstructions + "\n\n" + askInChatInstructions},
+		{name: "a client with the form", options: &mcp.ClientOptions{ElicitationHandler: (&asker{}).handle}, instructions: account + "\n\n" + serverInstructions},
+	} {
+		t.Run(row.name, func(t *testing.T) {
+			endpoint, _, _ := newProbeServer(t)
+			session := connectLegacy(t, endpoint, mintMCPToken(t, "test@example.com", "client-A", "ws-test", "mcp:read-only", time.Hour), row.options)
+			require.Equal(t, row.instructions, session.InitializeResult().Instructions)
+		})
+	}
+	for _, name := range []string{"query_database", "get_schema", "propose_database_change", "search_api", "call_api"} {
+		require.Contains(t, serverInstructions, name)
+	}
+	for _, tool := range tools {
+		require.NotEqual(t, "get_skill", tool.Name)
+	}
 }
 
 // A second initialize on an open session is refused by the SDK with no result,
@@ -633,4 +664,54 @@ func TestDuplicateInitializeIsRefusedAndTheServerKeepsServing(t *testing.T) {
 	defer cancel()
 	_, err = session.ListTools(ctx, nil)
 	require.NoError(t, err, "the session must keep serving after the refused initialize")
+}
+
+func TestServerInstructionsFitClientLimit(t *testing.T) {
+	// No deliverable address is longer than 254 characters: RFC 5321
+	// §4.5.3.1.3 caps a path at 256 octets, angle brackets included.
+	email := strings.Repeat("a", 242) + "@example.com"
+	endpoint, _, _ := newProbeServer(t)
+	session := connectLegacy(t, endpoint, mintMCPToken(t, email, "client-A", "ws-test", "mcp:read-write", time.Hour), nil)
+	instructions := session.InitializeResult().Instructions
+	require.Contains(t, instructions, email)
+
+	// Claude Code cuts server instructions at 4,096 characters, and before
+	// v2.1.296 at 2,048 (code.claude.com/docs/en/mcp). Holding the older limit
+	// keeps the confirmation sentence near the end on those versions too.
+	require.LessOrEqual(t, utf8.RuneCountInString(instructions), 2048)
+	require.Contains(t, instructions, "ask them to confirm")
+}
+
+func TestToolGuidanceNamesOnlyServedToolsAndOperations(t *testing.T) {
+	tools := listToolsOverRoute(t)
+	idx, err := NewOpenAPIIndex()
+	require.NoError(t, err)
+
+	registered := make(map[string]bool, len(tools))
+	guidance := map[string]string{"server instructions": serverInstructions, "ask-in-chat instructions": askInChatInstructions}
+	for _, tool := range tools {
+		registered[tool.Name] = true
+		guidance[tool.Name+" description"] = tool.Description
+	}
+	// Quoted strings are example values, such as a database named "employee_db".
+	quoted := regexp.MustCompile(`"[^"]*"`)
+	snakeCase := regexp.MustCompile(`\b[a-z]+(?:_[a-z]+)+\b`)
+	// Any ID with a letter is checked, so a malformed one fails rather than
+	// going unmatched; the operationId="..." placeholder has none.
+	operationID := regexp.MustCompile(`operationId="([^"]*[A-Za-z][^"]*)"`)
+	// The check sees only that spelling, so the instructions must write the
+	// operation they route to as a call.
+	require.NotEmpty(t, operationID.FindString(serverInstructions), "server instructions name no operationId=\"...\" call to check")
+	for source, text := range guidance {
+		for _, name := range snakeCase.FindAllString(quoted.ReplaceAllString(text, ""), -1) {
+			require.True(t, registered[name], "%s names %q, which is not a registered tool", source, name)
+		}
+		for _, match := range operationID.FindAllStringSubmatch(text, -1) {
+			endpoint, ok := idx.GetEndpoint(match[1])
+			require.True(t, ok, "%s names operation %q, which call_api cannot resolve", source, match[1])
+			class, err := auth.MCPMethodClassOfProcedure(endpoint.Path)
+			require.NoError(t, err)
+			require.False(t, auth.MCPClassIsRefused(class), "%s names operation %q, which is %v: no MCP session can call it", source, match[1], class)
+		}
+	}
 }

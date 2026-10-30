@@ -355,7 +355,7 @@ func TestOnlyTheGrantingToolsRequireUserInteraction(t *testing.T) {
 	}
 	slices.Sort(names)
 	require.Equal(t, []string{
-		"call_api", "decide_issue", "get_schema", "get_skill", "grant_masking_exemption", "propose_database_change",
+		"call_api", "decide_issue", "get_schema", "grant_masking_exemption", "propose_database_change",
 		"query_database", "reauthorize", "request_access_grant", "revoke_masking_exemption", "search_api", "set_just_in_time_access",
 	}, names)
 	require.ElementsMatch(t, []string{"request_access_grant", "grant_masking_exemption"}, flagged)
