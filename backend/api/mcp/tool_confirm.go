@@ -84,7 +84,7 @@ func (s *Server) askWithForm(ctx context.Context, w confirmableWrite, digest []b
 // confirmationAnswer returns the answer and request state a call carries, if
 // it answers a confirmation.
 func confirmationAnswer(req *mcp.CallToolRequest) (mcp.InputResponse, string, bool) {
-	if req == nil || req.Params == nil {
+	if req.Params == nil {
 		return nil, "", false
 	}
 	response, answered := req.Params.InputResponses[confirmDecisionRequestID]

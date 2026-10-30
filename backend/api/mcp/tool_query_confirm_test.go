@@ -209,8 +209,6 @@ func TestQueryDatabaseRunsAtOnceWhenTheClientCannotAsk(t *testing.T) {
 	require.Equal(t, []queryCall{{Statement: "INSERT INTO employee VALUES (1)", Confirmed: true}}, mock.calls())
 }
 
-// A confirmed call that Query still refuses reports the refusal: asking again
-// in the same call would send a second form.
 func TestQueryDatabaseDoesNotAskAgainAfterARefusedConfirmation(t *testing.T) {
 	mock := newConfirmingQueryMock(employeeDatabase())
 	mock.refusesConfirmed = true
@@ -220,7 +218,7 @@ func TestQueryDatabaseDoesNotAskAgainAfterARefusedConfirmation(t *testing.T) {
 
 	res := callQuery(t, session, queryParams("INSERT INTO employee VALUES (1)", ""))
 	require.True(t, res.IsError)
-	require.Equal(t, "the user has not confirmed this statement, so nothing ran", resultText(t, res))
+	require.Equal(t, "Bytebase refused this statement's confirmation, so nothing ran; asking the user again will not help", resultText(t, res))
 	require.EqualValues(t, 1, user.asked.Load())
 }
 
@@ -351,6 +349,34 @@ func TestQueryDatabaseConfirmationUnderMRTRClient(t *testing.T) {
 		{Statement: insert},
 		{Statement: insert, Confirmed: true},
 	}, mock.calls(), "only the answer signed for this request runs it")
+}
+
+func TestQueryDatabaseReportsAnAnswerThatRunsNothingBeforeAStaleOne(t *testing.T) {
+	mock := newConfirmingQueryMock(employeeDatabase())
+	s, _, token := newQueryConfirmServer(t, mock)
+	session := connectMRTR(t, mrtrEndpoint(t, s), token)
+	const insert = "INSERT INTO employee VALUES (1)"
+	const database = "instances/prod-pg/databases/employee_db"
+	alice := withOAuth2ClientID(withUserEmail(withWorkspaceID(context.Background(), "ws-test"), "alice@example.com"), "client-A")
+	old := s.signConfirmationState(alice, runConfirmation{database: database}, auth.MCPStatementDigest(insert, database, ""), time.Now().Add(-11*time.Minute))
+	call := func(answer *mcp.ElicitResult) *mcp.CallToolResult {
+		params := queryParams(insert, "")
+		params.InputResponses = mcp.InputResponseMap{confirmDecisionRequestID: answer}
+		params.RequestState = old
+		return callQuery(t, session, params)
+	}
+
+	declined := call(&mcp.ElicitResult{Action: "decline"})
+	require.False(t, declined.IsError, resultText(t, declined))
+	require.Contains(t, resultText(t, declined), "Not run: the user declined")
+	changed := call(runAnswer(runChoiceChange))
+	require.False(t, changed.IsError, resultText(t, changed))
+	require.Contains(t, resultText(t, changed), "Not run: the user wants to change this request")
+	ran := call(runAnswer(runChoiceRun))
+	require.True(t, ran.IsError)
+	require.Contains(t, resultText(t, ran), "STALE_CONFIRMATION")
+	require.Contains(t, resultText(t, ran), "the user was asked more than 10 minutes ago")
+	require.Empty(t, mock.calls())
 }
 
 func TestConfirmationRequiredIn(t *testing.T) {

@@ -139,6 +139,8 @@ func (s *Server) handleQueryDatabase(ctx context.Context, req *mcp.CallToolReque
 
 	output, err := s.executeQuery(queryCtx, resolved, input, limit, confirmed)
 	var required *confirmationRequired
+	// A confirmed call that Query still refuses reports the refusal: asking
+	// again in the same call would send a second form.
 	if errors.As(err, &required) && confirmed == nil {
 		return s.askToRun(ctx, req, confirmation, digest, input.Statement, required), nil, nil
 	}

@@ -2,13 +2,13 @@ package mcp
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"strings"
 	"unicode"
 	"unicode/utf8"
 
+	"connectrpc.com/connect"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"golang.org/x/text/width"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
@@ -52,7 +52,7 @@ type confirmationRequired struct {
 }
 
 func (*confirmationRequired) Error() string {
-	return "the user has not confirmed this statement, so nothing ran"
+	return "Bytebase refused this statement's confirmation, so nothing ran; asking the user again will not help"
 }
 
 // confirmationRequiredIn returns the refusal body carries, or nil when body is
@@ -70,8 +70,7 @@ func confirmationRequiredIn(body json.RawMessage) *confirmationRequired {
 		if detail.Type != "google.rpc.ErrorInfo" {
 			continue
 		}
-		// Connect writes the value unpadded, and the protocol lets a peer pad it.
-		value, err := base64.RawStdEncoding.DecodeString(strings.TrimRight(detail.Value, "="))
+		value, err := connect.DecodeBinaryHeader(detail.Value)
 		if err != nil {
 			continue
 		}
@@ -166,22 +165,22 @@ func lineColumns(line string) int {
 }
 
 // unrunResult returns the result for an answer that runs nothing, or nil when
-// the user chose Run now. A decline is reported before a stale answer, so a
-// user who said no is not asked again.
+// the user chose Run now. Only Run now is checked for staleness, so a user who
+// said no or asked for a change is not asked again.
 func unrunResult(reply *confirmationReply) *mcp.CallToolResult {
 	content, accepted, why := acceptedForm(reply.response)
 	if !accepted {
 		return textResult(fmt.Sprintf("Not run: %s, so nothing changed. Do not retry unless the user asks.", why))
 	}
-	if why := reply.staleReason("the request changed after the user was asked"); why != "" {
-		return formatToolError(&toolError{
-			Code:       "STALE_CONFIRMATION",
-			Message:    fmt.Sprintf("%s, so nothing ran", why),
-			Suggestion: "call query_database again to ask the user about the request as it is now",
-		})
-	}
 	switch content[runChoiceField] {
 	case runChoiceRun:
+		if why := reply.staleReason("the request changed after the user was asked"); why != "" {
+			return formatToolError(&toolError{
+				Code:       "STALE_CONFIRMATION",
+				Message:    fmt.Sprintf("%s, so nothing ran", why),
+				Suggestion: "call query_database again to ask the user about the request as it is now",
+			})
+		}
 		return nil
 	case runChoiceChange:
 		return textResult("Not run: the user wants to change this request. Ask them what to change, then call query_database with the revised request.")
