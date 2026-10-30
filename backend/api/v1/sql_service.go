@@ -355,6 +355,12 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 			return nil, err
 		}
 	}
+	mcpWrite := !clamped && mcpSession(ctx) && !mcpStatementIsRead(ctx, instance.Metadata.GetEngine(), statement)
+	// query_database takes no explain, so an explain of a possible write cannot
+	// be confirmed.
+	if mcpWrite && request.Explain {
+		return nil, permissionDeniedError(ctx, errors.Errorf("an MCP session explains only statements Bytebase can show are reads. %s", mcpConsoleWayOut))
+	}
 
 	queryRestriction := getEffectiveQueryDataPolicy(
 		ctx,
@@ -363,9 +369,8 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		request.Limit,
 		database.ProjectID,
 	)
-	routeAsWrite := !clamped && queryDatabaseRequest(ctx, request.Name) && !mcpStatementIsRead(ctx, instance.Metadata.GetEngine(), statement)
 	var resolvedDataSourceID string
-	if routeAsWrite {
+	if mcpWrite {
 		resolvedDataSourceID, err = mcpWriteDataSourceID(instance, request.DataSourceId, queryRestriction.AllowAdminDataSource)
 	} else {
 		resolvedDataSourceID, err = resolveDataSourceID(ctx, instance, request.DataSourceId, statement, queryRestriction.AllowAdminDataSource)
@@ -377,6 +382,11 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 	dataSource, err := checkAndGetDataSourceQueriable(ctx, s.store, s.licenseService, database, resolvedDataSourceID)
 	if err != nil {
 		return nil, err
+	}
+	// After the data source checks, so a request they refuse is refused before
+	// the user is asked.
+	if mcpWrite && !mcpWriteConfirmed(ctx, request) {
+		return nil, mcpConfirmationRequired(database, request.GetSchema())
 	}
 	driver, err := s.dbFactory.GetDataSourceDriver(ctx, instance, dataSource, db.ConnectionContext{
 		DatabaseName: database.DatabaseName,

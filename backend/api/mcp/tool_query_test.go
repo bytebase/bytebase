@@ -844,7 +844,7 @@ func TestQueryDatabase_Timeout(t *testing.T) {
 		resourceName: "instances/prod-pg/databases/employee_db",
 		dataSourceID: "ds-admin-1",
 	}
-	_, err := s.executeQuery(ctx, resolved, QueryInput{Statement: "SELECT 1"}, 100)
+	_, err := s.executeQuery(ctx, resolved, QueryInput{Statement: "SELECT 1"}, 100, nil)
 	var te *toolError
 	require.ErrorAs(t, err, &te)
 	require.Equal(t, "QUERY_ERROR", te.Code)

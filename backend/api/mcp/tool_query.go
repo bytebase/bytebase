@@ -85,6 +85,7 @@ query_database(database="employee", instance="prod-pg", statement="SELECT count(
 query_database(database="employee", instance="projects/hr/instances/prod-pg", statement="SELECT count(*) FROM orders")
 
 **Notes:**
+- Show the user the statement each answer came from, so they can check it read what they asked about.
 - Masked data: masking replaces a value fully (by default "******"), partly (e.g. "**rn**"), or with a hash. maskedColumns in the result names each masked column and why (not reported for MongoDB, CosmosDB or Elasticsearch). A masked value is a placeholder, not a value anything holds, so never write it back and never filter on it. Any statement containing "******" is refused. When showing a partly masked value, wrap it in backticks: "**rn**" renders as bold Markdown.
 - Seeing masked values: the user can ask a project owner for a masking exemption, or, if the project allows just-in-time access, request an access grant with Unmask for this exact statement, schema and container. In a Read-write session, file the request with request_access_grant; otherwise the user requests it in the SQL Editor. Once it is approved, find the grant among the user's access grants, then rerun the granted statement unchanged with the grant's schema and container. appliedAccessGrant in the result names the grant that applied.
 `
@@ -113,17 +114,55 @@ func (s *Server) handleQueryDatabase(ctx context.Context, req *mcp.CallToolReque
 		limit = maxQueryLimit
 	}
 
+	// An answer that runs nothing is reported before the database is resolved
+	// again, which may have changed while the user was asked.
+	answeredRun, answerState := false, ""
+	if canShowConfirmation(req) {
+		if response, state, answered := confirmationAnswer(req); answered {
+			if result := unrunAnswer(response); result != nil {
+				return result, nil, nil
+			}
+			answeredRun, answerState = true, state
+		}
+	}
+
 	// Resolve database.
 	resolved, resolveResult := s.resolveTarget(ctx, req, input.Database, input.Instance, input.Project)
 	if resolveResult != nil {
+		if answeredRun && len(resolveResult.InputRequests) > 0 {
+			return staleRun("the databases that match changed after the user was asked"), nil, nil
+		}
 		return resolveResult, nil, nil
+	}
+
+	// A statement Query cannot show is a read runs once the user chooses Run
+	// now, or at once when the client cannot show the form.
+	confirmation := runConfirmation{database: resolved.resourceName}
+	digest := auth.MCPStatementDigest(input.Statement, resolved.resourceName, input.Schema, input.Container)
+	var confirmed []byte
+	if !canShowConfirmation(req) {
+		confirmed = digest
+	} else if reply, answered := s.signedReply(ctx, req, confirmation, digest); answered {
+		if why := reply.staleReason("the request changed after the user was asked"); why != "" {
+			return staleRun(why), nil, nil
+		}
+		confirmed = digest
+	} else if answeredRun && answerState != "" {
+		// The answer was signed for another database.
+		return staleRun("the database that matches changed after the user was asked"), nil, nil
 	}
 
 	// Execute query.
 	queryCtx, queryCancel := context.WithTimeout(ctx, queryTimeout)
 	defer queryCancel()
 
-	output, err := s.executeQuery(queryCtx, resolved, input, limit)
+	output, err := s.executeQuery(queryCtx, resolved, input, limit, confirmed)
+	var required *confirmationRequired
+	// A confirmed call that Query still refuses reports the refusal: asking
+	// again in the same call would send a second form.
+	if errors.As(err, &required) && confirmed == nil {
+		return s.askToRun(ctx, req, confirmation, digest, input.Statement, input.Container, required), nil, nil
+	}
 	if err != nil {
 		var qe *queryError
 		if errors.As(err, &qe) {
@@ -222,8 +261,9 @@ type queryRow struct {
 	Values []json.RawMessage `json:"values"`
 }
 
-// executeQuery executes a SQL query against the resolved database.
-func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, input QueryInput, limit int) (*QueryOutput, error) {
+// executeQuery executes a SQL query against the resolved database. confirmed is
+// the digest the confirmation marker carries, or nil for an unconfirmed request.
+func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, input QueryInput, limit int, confirmed []byte) (*QueryOutput, error) {
 	body := map[string]any{
 		"name":         resolved.resourceName,
 		"dataSourceId": resolved.dataSourceID,
@@ -235,12 +275,13 @@ func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, i
 	if input.Container != "" {
 		body["container"] = input.Container
 	}
-	// Query routes a statement that may write as a write only for a request this
-	// mark names.
-	ctx = auth.WithMCPConfirmedDecision(ctx, auth.MCPConfirmedDecision{
-		Procedure: v1connect.SQLServiceQueryProcedure,
-		Resource:  resolved.resourceName,
-	})
+	if confirmed != nil {
+		ctx = auth.WithMCPConfirmedDecision(ctx, auth.MCPConfirmedDecision{
+			Procedure: v1connect.SQLServiceQueryProcedure,
+			Resource:  resolved.resourceName,
+			Digest:    confirmed,
+		})
+	}
 	resp, err := s.apiRequest(ctx, v1connect.SQLServiceQueryProcedure, body)
 	if err != nil {
 		// The call can end partway through a batch, as when queryTimeout passes.
@@ -251,6 +292,9 @@ func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, i
 		}
 	}
 	if resp.Status >= 400 {
+		if required := confirmationRequiredIn(resp.Body); required != nil {
+			return nil, required
+		}
 		errMsg := parseError(resp.Body)
 		if errMsg == "" {
 			errMsg = fmt.Sprintf("HTTP %d", resp.Status)
