@@ -456,6 +456,36 @@ func TestQueryDatabaseReportsATargetThatChangedWhileAsked(t *testing.T) {
 	}
 }
 
+func TestQueryDatabaseReportsATitleThatChangedWhileAsked(t *testing.T) {
+	for _, row := range []struct {
+		name          string
+		asked, answer string
+	}{
+		{name: "a title added after a form without Create an issue", answer: agentIssueTitle},
+		{name: "another title", asked: agentIssueTitle, answer: "Remove an employee"},
+	} {
+		t.Run(row.name, func(t *testing.T) {
+			mock := newConfirmingQueryMock(employeeDatabase())
+			mock.changes = newChangeMock(nil)
+			s, _, token := newQueryConfirmServer(t, mock)
+			session := connectMRTR(t, mrtrEndpoint(t, s), token)
+			const insert = "INSERT INTO employee VALUES (1)"
+			params := &mcp.CallToolParams{Name: "query_database", Arguments: map[string]any{"database": "employee_db", "statement": insert, "issueTitle": row.asked}}
+
+			first := callQuery(t, session, params)
+			require.True(t, first.NeedsInput())
+			params.Arguments = map[string]any{"database": "employee_db", "statement": insert, "issueTitle": row.answer}
+			params.InputResponses = mcp.InputResponseMap{confirmDecisionRequestID: runAnswer(runChoiceIssue)}
+			params.RequestState = first.RequestState
+			res := callQuery(t, session, params)
+			require.True(t, res.IsError)
+			require.Contains(t, resultText(t, res), "STALE_CONFIRMATION")
+			require.Nil(t, mock.changes.getCapturedSheet())
+			require.Equal(t, []queryCall{{Statement: insert}}, mock.calls())
+		})
+	}
+}
+
 func TestQueryDatabaseConfirmationUnderMRTRClient(t *testing.T) {
 	mock := newConfirmingQueryMock(employeeDatabase())
 	s, _, token := newQueryConfirmServer(t, mock)
@@ -480,7 +510,7 @@ func TestQueryDatabaseConfirmationUnderMRTRClient(t *testing.T) {
 	require.True(t, changed.IsError)
 	require.Contains(t, resultText(t, changed), "STALE_CONFIRMATION")
 
-	moved := &mcp.CallToolParams{Name: "query_database", Arguments: map[string]any{"database": "employee_db", "statement": insert, "container": "orders"}}
+	moved := &mcp.CallToolParams{Name: "query_database", Arguments: map[string]any{"database": "employee_db", "statement": insert, "issueTitle": agentIssueTitle, "container": "orders"}}
 	moved.InputResponses = run
 	moved.RequestState = first.RequestState
 	require.Contains(t, resultText(t, callQuery(t, session, moved)), "STALE_CONFIRMATION", "a confirmation is for one container")
@@ -505,7 +535,7 @@ func TestQueryDatabaseReportsAnAnswerThatRunsNothingBeforeAStaleOne(t *testing.T
 	const insert = "INSERT INTO employee VALUES (1)"
 	const database = "instances/prod-pg/databases/employee_db"
 	alice := withOAuth2ClientID(withUserEmail(withWorkspaceID(context.Background(), "ws-test"), "alice@example.com"), "client-A")
-	old := s.signConfirmationState(alice, runConfirmation{database: database}, auth.MCPStatementDigest(insert, database, "", ""), time.Now().Add(-11*time.Minute))
+	old := s.signConfirmationState(alice, runConfirmation{database: database}, askedDigest(auth.MCPStatementDigest(insert, database, "", ""), agentIssueTitle), time.Now().Add(-11*time.Minute))
 	call := func(answer *mcp.ElicitResult) *mcp.CallToolResult {
 		params := queryParams(insert)
 		params.InputResponses = mcp.InputResponseMap{confirmDecisionRequestID: answer}

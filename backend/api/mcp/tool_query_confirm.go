@@ -2,6 +2,7 @@ package mcp
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -82,6 +83,17 @@ func confirmationRequiredIn(body json.RawMessage) *confirmationRequired {
 		return &confirmationRequired{environment: info.GetMetadata()["environment"], schema: info.GetMetadata()["schema"]}
 	}
 	return nil
+}
+
+// askedDigest is what the form's state binds: the request's digest and the
+// issue title, which decides whether the form offers Create an issue and what
+// it files. Query checks the request's digest alone, since it never sees the
+// title.
+func askedDigest(digest []byte, issueTitle string) []byte {
+	h := sha256.New()
+	_, _ = h.Write(digest)
+	_, _ = h.Write([]byte(issueTitle))
+	return h.Sum(nil)
 }
 
 // askToRun returns the form that asks the user to run statement. A call that

@@ -151,10 +151,11 @@ func (s *Server) handleQueryDatabase(ctx context.Context, req *mcp.CallToolReque
 	// run with the database's default one.
 	issueTitle := strings.TrimSpace(input.IssueTitle)
 	offerIssue := issueTitle != "" && input.Schema == ""
+	asked := askedDigest(digest, issueTitle)
 	var confirmed []byte
 	if !canShowConfirmation(req) {
 		confirmed = digest
-	} else if reply, answered := s.signedReply(ctx, req, confirmation, digest); answered {
+	} else if reply, answered := s.signedReply(ctx, req, confirmation, asked); answered {
 		if why := reply.staleReason("the request changed after the user was asked"); why != "" {
 			return staleAnswer(why), nil, nil
 		}
@@ -179,7 +180,7 @@ func (s *Server) handleQueryDatabase(ctx context.Context, req *mcp.CallToolReque
 	// A confirmed call that Query still refuses reports the refusal: asking
 	// again in the same call would send a second form.
 	if errors.As(err, &required) && confirmed == nil {
-		return s.askToRun(ctx, req, confirmation, digest, input.Statement, input.Container, required, offerIssue), nil, nil
+		return s.askToRun(ctx, req, confirmation, asked, input.Statement, input.Container, required, offerIssue), nil, nil
 	}
 	if err != nil {
 		var qe *queryError
