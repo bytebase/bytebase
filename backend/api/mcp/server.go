@@ -313,7 +313,7 @@ When the workspace's MCP access policy is Read-write, query_database can also ru
 
 When Bytebase refuses a call, the error states the reason and may name a next step, such as a tool to use.`
 
-const askInChatInstructions = `This client cannot show Bytebase's confirmation form, so under Read-write query_database runs DML and DDL without asking. Before you run one, show the user the exact statement, say it takes effect at once without an issue or approval, and ask them to confirm.`
+const askInChatInstructions = `This client cannot show Bytebase's confirmation form, so under Read-write query_database runs any statement that may write without asking. Before you run one, show the user the exact statement, say it runs at once with no issue or approval, and ask them to confirm.`
 
 // authMiddleware validates OAuth2 bearer tokens for MCP requests.
 //
