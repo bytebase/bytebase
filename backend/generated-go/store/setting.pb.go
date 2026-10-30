@@ -1647,19 +1647,19 @@ func (x *WorkspaceProfileSetting_Announcement) GetTheme() *WorkspaceProfileSetti
 
 type WorkspaceProfileSetting_PasswordRestriction struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// min_length is the minimum length for password, should be no less than 8.
+	// min_length is the minimum password length. It must be at least 8.
 	MinLength int32 `protobuf:"varint,1,opt,name=min_length,json=minLength,proto3" json:"min_length,omitempty"`
-	// require_number requires the password must contain at least one number.
+	// require_number requires the password to contain at least one number.
 	RequireNumber bool `protobuf:"varint,2,opt,name=require_number,json=requireNumber,proto3" json:"require_number,omitempty"`
-	// require_letter requires the password must contain at least one letter, regardless of upper case or lower case
+	// require_letter requires the password to contain at least one letter, either uppercase or lowercase.
 	RequireLetter bool `protobuf:"varint,3,opt,name=require_letter,json=requireLetter,proto3" json:"require_letter,omitempty"`
-	// require_uppercase_letter requires the password must contain at least one upper case letter.
+	// require_uppercase_letter requires the password to contain at least one uppercase letter.
 	RequireUppercaseLetter bool `protobuf:"varint,4,opt,name=require_uppercase_letter,json=requireUppercaseLetter,proto3" json:"require_uppercase_letter,omitempty"`
-	// require_special_character requires the password must contain at least one special character.
+	// require_special_character requires the password to contain at least one special character.
 	RequireSpecialCharacter bool `protobuf:"varint,5,opt,name=require_special_character,json=requireSpecialCharacter,proto3" json:"require_special_character,omitempty"`
-	// require_reset_password_for_first_login requires users to reset their password after the 1st login.
+	// require_reset_password_for_first_login requires users to change their password after their first login.
 	RequireResetPasswordForFirstLogin bool `protobuf:"varint,6,opt,name=require_reset_password_for_first_login,json=requireResetPasswordForFirstLogin,proto3" json:"require_reset_password_for_first_login,omitempty"`
-	// password_rotation requires users to reset their password after the duration.
+	// password_rotation requires users to change their password after the duration.
 	PasswordRotation *durationpb.Duration `protobuf:"bytes,7,opt,name=password_rotation,json=passwordRotation,proto3" json:"password_rotation,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache

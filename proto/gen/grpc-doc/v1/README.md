@@ -4948,13 +4948,13 @@ For examples: resource.environment_id == &#34;prod&#34; &amp;&amp; statement.aff
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| min_length | [int32](#int32) |  | min_length is the minimum length for password, should no less than 8. |
-| require_number | [bool](#bool) |  | require_number requires the password must contains at least one number. |
-| require_letter | [bool](#bool) |  | require_letter requires the password must contains at least one letter, regardless of upper case or lower case |
-| require_uppercase_letter | [bool](#bool) |  | require_uppercase_letter requires the password must contains at least one upper case letter. |
-| require_special_character | [bool](#bool) |  | require_special_character requires the password must contains at least one special character. |
-| require_reset_password_for_first_login | [bool](#bool) |  | require_reset_password_for_first_login requires users to reset their password after the 1st login. |
-| password_rotation | [google.protobuf.Duration](#google-protobuf-Duration) |  | password_rotation requires users to reset their password after the duration. |
+| min_length | [int32](#int32) |  | min_length is the minimum password length. It must be at least 8. |
+| require_number | [bool](#bool) |  | require_number requires the password to contain at least one number. |
+| require_letter | [bool](#bool) |  | require_letter requires the password to contain at least one letter, either uppercase or lowercase. |
+| require_uppercase_letter | [bool](#bool) |  | require_uppercase_letter requires the password to contain at least one uppercase letter. |
+| require_special_character | [bool](#bool) |  | require_special_character requires the password to contain at least one special character. |
+| require_reset_password_for_first_login | [bool](#bool) |  | require_reset_password_for_first_login requires users to change their password after their first login. |
+| password_rotation | [google.protobuf.Duration](#google-protobuf-Duration) |  | password_rotation requires users to change their password after the duration. |
 
 
 
