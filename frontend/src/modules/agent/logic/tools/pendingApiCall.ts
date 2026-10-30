@@ -156,6 +156,15 @@ export async function resolvePendingApiCall({
       error: "Request stopped before the API call was sent.",
     });
   }
+  const access = await checkPreparedApiPermission(pending.call);
+  if (signal?.aborted) {
+    return JSON.stringify({
+      error: "Request stopped before the API call was sent.",
+    });
+  }
+  if (access.kind === "denied") {
+    return access.result;
+  }
   if (pending.issueDecision) {
     const valid = await validateIssueDecisionPermission(pending.issueDecision);
     if (signal?.aborted) {
@@ -169,15 +178,6 @@ export async function resolvePendingApiCall({
           "The Issue changed or became unavailable since permission was requested. Refresh and retry the decision.",
       });
     }
-  }
-  const access = await checkPreparedApiPermission(pending.call);
-  if (signal?.aborted) {
-    return JSON.stringify({
-      error: "Request stopped before the API call was sent.",
-    });
-  }
-  if (access.kind === "denied") {
-    return access.result;
   }
   return dispatchPreparedApiCall(pending.call);
 }

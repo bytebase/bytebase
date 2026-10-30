@@ -121,6 +121,7 @@ message Setting {
     ENVIRONMENT = 7;
     EMAIL = 8;
     MCP = 9;
+    EXPORT = 10;
   }
 
   // The resource name of the setting.
@@ -144,7 +145,34 @@ message SettingValue {
     EnvironmentSetting environment = 7;
     EmailSetting email = 8;
     MCPSetting mcp = 9;
+    ExportSetting export = 10;
   }
+}
+
+// ExportSetting holds each export destination provider's credentials.
+message ExportSetting {
+  // Unset when SharePoint is not configured.
+  SharePointSetting sharepoint = 1;
+}
+
+// SharePointSetting is the Microsoft Entra application that uploads exports to
+// SharePoint. It is granted access per library by the customer's SharePoint
+// administrators.
+message SharePointSetting {
+  // The Microsoft Entra tenant (directory) ID.
+  string tenant_id = 1;
+
+  // The application (client) ID.
+  string client_id = 2;
+
+  // The client secret. It is never returned.
+  string client_secret = 3 [
+    (google.api.field_behavior) = INPUT_ONLY,
+    (bytebase.v1.audit_behavior) = SENSITIVE
+  ];
+
+  // Whether a client secret is stored.
+  bool client_secret_set = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 message AppIMSetting {

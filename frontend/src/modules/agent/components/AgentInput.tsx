@@ -27,6 +27,9 @@ import {
   isAgentAIConfigurationError,
 } from "../logic/aiConfiguration";
 import { getCurrentChatContext } from "../logic/chatContext";
+import { resolveDeniedQueryAccessDraft } from "../logic/deniedQueryAccess";
+import { generateFollowUpQuestion } from "../logic/generateFollowUpQuestion";
+import { acceptAgentHandoff, collectAgentHandoffs } from "../logic/handoff";
 import type { IssueDecisionImpact } from "../logic/issueDecisionImpact";
 import {
   getLandingStarterIdForText,
@@ -45,7 +48,9 @@ import {
   removeMentionTrigger,
   updateDraftResourceMentions,
 } from "../logic/resourceMention";
+import { acceptAgentResponseActions } from "../logic/responseActions";
 import { createToolExecutor, getToolDefinitions } from "../logic/tools";
+import { apiCallNeedsConfirmation } from "../logic/tools/apiMethodClass";
 import { extractDatabaseOverviewEvidence } from "../logic/tools/databaseOverview";
 import { extractIssueOverviewEvidence } from "../logic/tools/issueOverview";
 import {
@@ -55,15 +60,19 @@ import {
 import { createProjectOpenIssuesTool } from "../logic/tools/projectOpenIssues";
 import { extractProjectOverviewEvidence } from "../logic/tools/projectOverview";
 import { getRecentActivity } from "../logic/tools/recentActivity";
+import { getEndpointPath } from "../logic/tools/searchApi";
 import { createWorkspaceAttentionTool } from "../logic/tools/workspaceAttention";
 import { extractWorkspaceOverviewEvidence } from "../logic/tools/workspaceOverview";
 import type {
   AgentAnswerEvidence,
   AgentAskUserOption,
   AgentEvidence,
+  AgentHandoff,
+  AgentMessage,
   AgentResourceReference,
   AgentRunMode,
   Message,
+  ToolExecutionResult,
 } from "../logic/types";
 import {
   selectCurrentChat,
@@ -85,6 +94,145 @@ const tokenFormatter = new Intl.NumberFormat();
 const formatPermissionTime = (expiresAt: number): string => {
   const seconds = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+};
+
+const isSuccessfulDatabaseSchemaRead = (
+  args: Record<string, unknown>,
+  result: ToolExecutionResult,
+  databaseName: string
+): boolean => {
+  if (
+    typeof args.operationId !== "string" ||
+    getEndpointPath(args.operationId) !==
+      "/bytebase.v1.DatabaseService/GetDatabaseSchema" ||
+    typeof args.body !== "object" ||
+    args.body === null ||
+    Array.isArray(args.body) ||
+    (args.body as Record<string, unknown>).name !== `${databaseName}/schema` ||
+    result.kind !== "tool_result"
+  ) {
+    return false;
+  }
+  try {
+    const response = JSON.parse(result.result) as {
+      status?: unknown;
+      error?: unknown;
+      response?: unknown;
+    };
+    return (
+      typeof response.status === "number" &&
+      response.status >= 200 &&
+      response.status < 300 &&
+      !response.error &&
+      typeof response.response === "object" &&
+      response.response !== null &&
+      !Array.isArray(response.response)
+    );
+  } catch {
+    return false;
+  }
+};
+
+const invalidatesPlanDraftEvidence = (
+  name: string,
+  args: Record<string, unknown>
+): boolean =>
+  (name === "call_api" &&
+    (typeof args.operationId !== "string" ||
+      apiCallNeedsConfirmation(args.operationId))) ||
+  (name === "dom_action" && args.type !== "read" && args.type !== "scroll");
+
+const hasCurrentTurnDatabaseSchemaRead = (
+  messages: AgentMessage[],
+  databaseName: string
+): boolean => {
+  const lastUserIndex = messages.findLastIndex(
+    (message) => message.role === "user"
+  );
+  if (lastUserIndex < 0) return false;
+
+  let mutation = 0;
+  let schemaRead = false;
+  const calls = new Map<
+    string,
+    { name: string; args: Record<string, unknown>; mutation: number }
+  >();
+  for (const message of messages.slice(lastUserIndex + 1)) {
+    if (message.role === "assistant") {
+      for (const call of message.toolCalls ?? []) {
+        let args: Record<string, unknown> = {};
+        try {
+          const parsed: unknown = JSON.parse(call.arguments);
+          if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+            args = parsed as Record<string, unknown>;
+          }
+        } catch {
+          // Malformed calls cannot establish schema-read evidence.
+        }
+        if (invalidatesPlanDraftEvidence(call.name, args)) {
+          mutation++;
+          schemaRead = false;
+        }
+        calls.set(call.id, { name: call.name, args, mutation });
+      }
+    } else if (message.role === "tool" && message.toolCallId) {
+      const call = calls.get(message.toolCallId);
+      if (
+        call?.name === "call_api" &&
+        call.mutation === mutation &&
+        isSuccessfulDatabaseSchemaRead(
+          call.args,
+          { kind: "tool_result", result: message.content ?? "" },
+          databaseName
+        )
+      ) {
+        schemaRead = true;
+      }
+    }
+  }
+  return schemaRead;
+};
+
+const getCurrentTurnQueryCalls = (
+  messages: AgentMessage[]
+): { args: Record<string, unknown>; result?: string }[] => {
+  const lastUserIndex = messages.findLastIndex(
+    (message) => message.role === "user"
+  );
+  if (lastUserIndex < 0) return [];
+
+  const queryCalls: { args: Record<string, unknown>; result?: string }[] = [];
+  const callsById = new Map<string, (typeof queryCalls)[number]>();
+  for (const message of messages.slice(lastUserIndex + 1)) {
+    if (message.role === "assistant") {
+      for (const call of message.toolCalls ?? []) {
+        if (call.name !== "call_api") continue;
+        let args: Record<string, unknown>;
+        try {
+          const parsed: unknown = JSON.parse(call.arguments);
+          if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+            continue;
+          }
+          args = parsed as Record<string, unknown>;
+        } catch {
+          continue;
+        }
+        if (
+          args.operationId !== "SQLService/Query" &&
+          args.operationId !== "bytebase.v1.SQLService.Query"
+        ) {
+          continue;
+        }
+        const queryCall: (typeof queryCalls)[number] = { args };
+        queryCalls.push(queryCall);
+        callsById.set(call.id, queryCall);
+      }
+    } else if (message.role === "tool" && message.toolCallId) {
+      const queryCall = callsById.get(message.toolCallId);
+      if (queryCall) queryCall.result = message.content;
+    }
+  }
+  return queryCalls;
 };
 
 // ---------------------------------------------------------------------------
@@ -231,7 +379,7 @@ export function AgentInput({
   focusActionRef,
 }: {
   retryActionRef?: RefObject<(() => void) | null>;
-  focusActionRef?: RefObject<(() => void) | null>;
+  focusActionRef?: RefObject<((atEnd?: boolean) => void) | null>;
 }) {
   const { t, i18n } = useTranslation();
   // Zustand selectors
@@ -366,7 +514,17 @@ export function AgentInput({
 
   useEffect(() => {
     if (!focusActionRef) return;
-    const focus = () => textareaRef.current?.focus();
+    const focus = (atEnd = false) => {
+      const textarea = textareaRef.current;
+      if (!textarea) return;
+      textarea.focus();
+      if (atEnd) {
+        textarea.setSelectionRange(
+          textarea.value.length,
+          textarea.value.length
+        );
+      }
+    };
     focusActionRef.current = focus;
     return () => {
       if (focusActionRef.current === focus) focusActionRef.current = null;
@@ -784,6 +942,7 @@ export function AgentInput({
       const referencedIssue = issueReference?.name;
       const controller = new AbortController();
       const runToken = (runTokens.get(chatId) ?? 0) + 1;
+      const runWorkspaceName = store.workspaceName;
       runTokens.set(chatId, runToken);
       store.setAbortController(chatId, controller);
 
@@ -800,6 +959,7 @@ export function AgentInput({
         chatId,
         userName: useAppStore.getState().currentUser?.name,
         context: store.getChat(chatId)?.context,
+        workspaceName: workspace?.name,
         referencedProject,
         referencedDatabase,
         referencedIssue,
@@ -812,6 +972,30 @@ export function AgentInput({
       });
       const toolNamesByCallId = new Map<string, string>();
       let overviewEvidence: AgentAnswerEvidence | undefined;
+      let verifiedDatabase: { name: string; project: string } | undefined;
+      let readDatabaseSchema = referencedDatabase
+        ? hasCurrentTurnDatabaseSchemaRead(
+            store.getMessages(chatId),
+            referencedDatabase
+          )
+        : false;
+      const handoffCandidates: AgentHandoff[] = [];
+      const chatContext = store.getChat(chatId)?.context;
+      const handoffScope = {
+        workspaceName: chatContext?.startsWith("workspaces/")
+          ? chatContext
+          : workspace?.name,
+        projectName:
+          referencedProject ??
+          (chatContext?.startsWith(projectNamePrefix)
+            ? chatContext
+            : undefined),
+      };
+      const observeHandoffs = (name: string, result: string) => {
+        handoffCandidates.push(
+          ...collectAgentHandoffs(name, result, handoffScope)
+        );
+      };
 
       try {
         const history = buildChatHistory(chatId, systemPrompt);
@@ -861,6 +1045,7 @@ export function AgentInput({
             return;
           }
           prefetchedProjectOverview = overviewResult;
+          observeHandoffs("get_project_overview", overviewResult);
           history.push(
             {
               role: "assistant",
@@ -928,6 +1113,7 @@ export function AgentInput({
             overviewEvidence,
             extractIssueOverviewEvidence(overviewResult)
           );
+          observeHandoffs("get_issue_overview", overviewResult);
           history.push(
             {
               role: "assistant",
@@ -996,6 +1182,10 @@ export function AgentInput({
             useAgentStore.getState().finishChatRun(chatId);
             return;
           }
+          verifiedDatabase = {
+            name: referencedDatabase,
+            project: referencedProject,
+          };
           overviewEvidence = mergeOverviewEvidence(
             overviewEvidence,
             extractDatabaseOverviewEvidence(overviewResult)
@@ -1018,16 +1208,41 @@ export function AgentInput({
             }
           );
         }
+        let finalText: string | undefined;
+        let finalHandoffProposal: AgentHandoff | undefined;
         const outcome = await runAgentLoop(
           history,
           tools,
-          (name, args, toolCallId) =>
-            name === "get_project_overview" && prefetchedProjectOverview
-              ? Promise.resolve({
-                  kind: "tool_result" as const,
-                  result: prefetchedProjectOverview,
-                })
-              : executor(name, args, toolCallId),
+          (name, args, toolCallId) => {
+            if (invalidatesPlanDraftEvidence(name, args)) {
+              handoffCandidates.length = 0;
+              prefetchedProjectOverview = undefined;
+              overviewEvidence = undefined;
+              verifiedDatabase = undefined;
+              readDatabaseSchema = false;
+            }
+            const execution =
+              name === "get_project_overview" && prefetchedProjectOverview
+                ? Promise.resolve({
+                    kind: "tool_result" as const,
+                    result: prefetchedProjectOverview,
+                  })
+                : executor(name, args, toolCallId);
+            return execution.then((result) => {
+              if (
+                name === "call_api" &&
+                verifiedDatabase &&
+                isSuccessfulDatabaseSchemaRead(
+                  args,
+                  result,
+                  verifiedDatabase.name
+                )
+              ) {
+                readDatabaseSchema = true;
+              }
+              return result;
+            });
+          },
           {
             onAssistantMessage: (message) => {
               for (const toolCall of message.toolCalls ?? []) {
@@ -1044,6 +1259,7 @@ export function AgentInput({
             },
             onToolResult: (toolCallId, result) => {
               const toolName = toolNamesByCallId.get(toolCallId);
+              if (toolName) observeHandoffs(toolName, result);
               if (toolName === "get_project_overview") {
                 overviewEvidence = mergeOverviewEvidence(
                   overviewEvidence,
@@ -1073,18 +1289,10 @@ export function AgentInput({
                 metadata: { route: page.path, runId },
               });
             },
-            onText: (text) => {
+            onText: (text, proposedHandoff) => {
               if (!text) return;
-              useAgentStore.getState().addMessage({
-                chatId,
-                role: "assistant",
-                content: text,
-                metadata: {
-                  route: page.path,
-                  runId,
-                  ...(overviewEvidence ? { evidence: overviewEvidence } : {}),
-                },
-              });
+              finalText = text;
+              finalHandoffProposal = proposedHandoff;
             },
           },
           controller.signal,
@@ -1097,7 +1305,106 @@ export function AgentInput({
 
         if (runToken !== runTokens.get(chatId)) return;
 
+        const queryCalls = getCurrentTurnQueryCalls(
+          useAgentStore.getState().getMessages(chatId)
+        );
+        const accessRequestDraft =
+          outcome.kind === "completed" &&
+          !outcome.success &&
+          queryCalls.length === 1 &&
+          queryCalls[0].result !== undefined
+            ? await resolveDeniedQueryAccessDraft(
+                queryCalls[0].args,
+                queryCalls[0].result
+              ).catch(() => undefined)
+            : undefined;
+        if (controller.signal.aborted || runToken !== runTokens.get(chatId)) {
+          return;
+        }
+
+        let followUpRequest:
+          | {
+              messageId: string;
+              context: Parameters<typeof generateFollowUpQuestion>[2];
+            }
+          | undefined;
+        if (finalText && outcome.kind === "completed") {
+          const handoff = outcome.success
+            ? acceptAgentHandoff(finalHandoffProposal, handoffCandidates)
+            : undefined;
+          const actions = outcome.success
+            ? acceptAgentResponseActions(
+                outcome.actions,
+                handoffCandidates,
+                verifiedDatabase && readDatabaseSchema
+                  ? { verifiedDatabase, answer: finalText }
+                  : undefined
+              )
+            : [];
+          const primaryAction = actions.find(
+            (action) => action.kind !== "continue"
+          );
+          const nextAction = primaryAction ?? handoff;
+          const existingQuestions = actions.flatMap((action) =>
+            action.kind === "continue" ? [action.prompt] : []
+          );
+          const finalMessage = useAgentStore.getState().addMessage({
+            chatId,
+            role: "assistant",
+            content: finalText,
+            metadata: {
+              route: page.path,
+              runId,
+              ...(overviewEvidence ? { evidence: overviewEvidence } : {}),
+              ...(handoff ? { handoff } : {}),
+              ...(actions.length > 0 ? { actions } : {}),
+              ...(accessRequestDraft ? { accessRequestDraft } : {}),
+              ...(actions.some((action) => action.kind === "continue") &&
+              references.length > 0
+                ? { resourceReferences: references }
+                : {}),
+            },
+          });
+          if (
+            outcome.success &&
+            !controller.signal.aborted &&
+            existingQuestions.length < 2
+          ) {
+            followUpRequest = {
+              messageId: finalMessage.id,
+              context: { action: nextAction, existingQuestions },
+            };
+          }
+        }
+
         handleOutcome(chatId, page, "Error: ", outcome);
+        if (followUpRequest && finalText) {
+          const followUp = await generateFollowUpQuestion(
+            lastUserMessage?.content ?? "",
+            finalText,
+            followUpRequest.context,
+            controller.signal
+          );
+          if (useAgentStore.getState().workspaceName !== runWorkspaceName) {
+            return;
+          }
+          useAgentStore
+            .getState()
+            .incrementChatTotalTokens(chatId, followUp.totalTokensUsed);
+          if (controller.signal.aborted || runToken !== runTokens.get(chatId)) {
+            return;
+          }
+          if (followUp.actions.length > 0) {
+            useAgentStore
+              .getState()
+              .appendContinueActions(
+                chatId,
+                followUpRequest.messageId,
+                followUp.actions,
+                references
+              );
+          }
+        }
       } finally {
         if (
           useAgentStore.getState().getAbortController(chatId) === controller
@@ -1106,7 +1413,7 @@ export function AgentInput({
         }
       }
     },
-    [buildChatHistory, handleOutcome, t]
+    [buildChatHistory, handleOutcome, t, workspace?.name]
   );
 
   const runRecentActivityStarter = useCallback(
@@ -1195,7 +1502,13 @@ export function AgentInput({
           chatId,
           role: "assistant",
           content: formatWorkspaceAttention(result),
-          metadata: { route: page.path, runId },
+          metadata: {
+            route: page.path,
+            runId,
+            handoff: collectAgentHandoffs("get_workspace_attention", result, {
+              workspaceName: store.getChat(chatId)?.context,
+            })[0],
+          },
         });
         store.finishChatRun(chatId);
       } catch {
@@ -1251,7 +1564,13 @@ export function AgentInput({
           chatId,
           role: "assistant",
           content: formatProjectAttention(result),
-          metadata: { route: page.path, runId },
+          metadata: {
+            route: page.path,
+            runId,
+            handoff: collectAgentHandoffs("get_project_open_issues", result, {
+              projectName: store.getChat(chatId)?.context,
+            })[0],
+          },
         });
         store.finishChatRun(chatId);
       } catch {

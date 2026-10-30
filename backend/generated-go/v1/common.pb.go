@@ -768,6 +768,59 @@ func (StatementType) EnumDescriptor() ([]byte, []int) {
 	return file_v1_common_proto_rawDescGZIP(), []int{8}
 }
 
+// Where an export goes. Values are added as destinations are supported.
+type ExportDestination int32
+
+const (
+	// Treated as DOWNLOAD.
+	ExportDestination_EXPORT_DESTINATION_UNSPECIFIED ExportDestination = 0
+	// Return the export in the response.
+	ExportDestination_DOWNLOAD ExportDestination = 1
+	// Upload the export to the project's SharePoint export destination.
+	ExportDestination_SHAREPOINT ExportDestination = 2
+)
+
+// Enum value maps for ExportDestination.
+var (
+	ExportDestination_name = map[int32]string{
+		0: "EXPORT_DESTINATION_UNSPECIFIED",
+		1: "DOWNLOAD",
+		2: "SHAREPOINT",
+	}
+	ExportDestination_value = map[string]int32{
+		"EXPORT_DESTINATION_UNSPECIFIED": 0,
+		"DOWNLOAD":                       1,
+		"SHAREPOINT":                     2,
+	}
+)
+
+func (x ExportDestination) Enum() *ExportDestination {
+	p := new(ExportDestination)
+	*p = x
+	return p
+}
+
+func (x ExportDestination) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ExportDestination) Descriptor() protoreflect.EnumDescriptor {
+	return file_v1_common_proto_enumTypes[9].Descriptor()
+}
+
+func (ExportDestination) Type() protoreflect.EnumType {
+	return &file_v1_common_proto_enumTypes[9]
+}
+
+func (x ExportDestination) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ExportDestination.Descriptor instead.
+func (ExportDestination) EnumDescriptor() ([]byte, []int) {
+	return file_v1_common_proto_rawDescGZIP(), []int{9}
+}
+
 // Position in a text expressed as one-based line and one-based column.
 // We use 1-based numbering to match the majority of industry standards:
 // - Monaco Editor uses 1-based (https://microsoft.github.io/monaco-editor/typedoc/interfaces/IPosition.html)
@@ -1111,7 +1164,12 @@ const file_v1_common_proto_rawDesc = "" +
 	"\x06UPDATE\x10=\x12\n" +
 	"\n" +
 	"\x06DELETE\x10>\x12\t\n" +
-	"\x05MERGE\x10?\"\x04\b\r\x10\x13\"\x04\b \x10'\"\x04\b/\x101\"\x04\b8\x10;B\xa1\x01\n" +
+	"\x05MERGE\x10?\"\x04\b\r\x10\x13\"\x04\b \x10'\"\x04\b/\x101\"\x04\b8\x10;*U\n" +
+	"\x11ExportDestination\x12\"\n" +
+	"\x1eEXPORT_DESTINATION_UNSPECIFIED\x10\x00\x12\f\n" +
+	"\bDOWNLOAD\x10\x01\x12\x0e\n" +
+	"\n" +
+	"SHAREPOINT\x10\x02B\xa1\x01\n" +
 	"\x0fcom.bytebase.v1B\vCommonProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (
@@ -1126,7 +1184,7 @@ func file_v1_common_proto_rawDescGZIP() []byte {
 	return file_v1_common_proto_rawDescData
 }
 
-var file_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 9)
+var file_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 10)
 var file_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_v1_common_proto_goTypes = []any{
 	(State)(0),                     // 0: bytebase.v1.State
@@ -1138,9 +1196,10 @@ var file_v1_common_proto_goTypes = []any{
 	(RiskLevel)(0),                 // 6: bytebase.v1.RiskLevel
 	(WebhookType)(0),               // 7: bytebase.v1.WebhookType
 	(StatementType)(0),             // 8: bytebase.v1.StatementType
-	(*Position)(nil),               // 9: bytebase.v1.Position
-	(*Range)(nil),                  // 10: bytebase.v1.Range
-	(*PermissionDeniedDetail)(nil), // 11: bytebase.v1.PermissionDeniedDetail
+	(ExportDestination)(0),         // 9: bytebase.v1.ExportDestination
+	(*Position)(nil),               // 10: bytebase.v1.Position
+	(*Range)(nil),                  // 11: bytebase.v1.Range
+	(*PermissionDeniedDetail)(nil), // 12: bytebase.v1.PermissionDeniedDetail
 }
 var file_v1_common_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
@@ -1160,7 +1219,7 @@ func file_v1_common_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_common_proto_rawDesc), len(file_v1_common_proto_rawDesc)),
-			NumEnums:      9,
+			NumEnums:      10,
 			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,

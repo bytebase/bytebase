@@ -5,7 +5,7 @@
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { Duration, NullValue, Timestamp, Value } from "@bufbuild/protobuf/wkt";
-import type { ExportFormat, PermissionDeniedDetail, Position } from "./common_pb";
+import type { ExportDestination, ExportFormat, PermissionDeniedDetail, Position } from "./common_pb";
 import type { GetQueryHistoryRequestSchema, ListQueryHistoriesRequestSchema, ListQueryHistoriesResponseSchema, QueryHistorySchema, SearchQueryHistoriesRequestSchema, SearchQueryHistoriesResponseSchema } from "./query_history_service_pb";
 
 /**
@@ -1143,6 +1143,14 @@ export declare type ExportRequest = Message<"bytebase.v1.ExportRequest"> & {
    * @generated from field: optional string container = 9;
    */
   container?: string | undefined;
+
+  /**
+   * Where the export goes. A destination the workspace query data policy
+   * does not allow is rejected with FAILED_PRECONDITION.
+   *
+   * @generated from field: bytebase.v1.ExportDestination destination = 10;
+   */
+  destination: ExportDestination;
 };
 
 /**
@@ -1170,6 +1178,15 @@ export declare type ExportResponse = Message<"bytebase.v1.ExportResponse"> & {
    * @generated from field: string applied_access_grant = 2;
    */
   appliedAccessGrant: string;
+
+  /**
+   * Set when the export was sent to an export destination: the absolute
+   * location of the folder or key prefix created for this export, for example
+   * https://… for SharePoint or s3://bucket/prefix for S3. content is then empty.
+   *
+   * @generated from field: string uri = 3;
+   */
+  uri: string;
 };
 
 /**

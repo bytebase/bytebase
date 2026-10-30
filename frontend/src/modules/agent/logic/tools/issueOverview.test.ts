@@ -9,7 +9,10 @@ import {
   ReviewRun_Status,
 } from "@/types/proto-es/v1/issue_service_pb";
 import { PlanCheckRun_Status } from "@/types/proto-es/v1/plan_service_pb";
-import { TaskRun_Status } from "@/types/proto-es/v1/rollout_service_pb";
+import {
+  Task_Status,
+  TaskRun_Status,
+} from "@/types/proto-es/v1/rollout_service_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 
 const mocks = vi.hoisted(() => ({
@@ -84,13 +87,28 @@ describe("issueOverview", () => {
     );
     mocks.getRollout.mockResolvedValue({
       name: `${planName}/rollout`,
-      stages: [{}, {}],
+      stages: [
+        {
+          name: `${planName}/rollout/stages/prod`,
+          tasks: [
+            {
+              name: `${planName}/rollout/stages/prod/tasks/task-1`,
+              status: Task_Status.DONE,
+            },
+            {
+              name: `${planName}/rollout/stages/prod/tasks/task-2`,
+              status: Task_Status.FAILED,
+            },
+          ],
+        },
+        { name: `${planName}/rollout/stages/test`, tasks: [] },
+      ],
     });
     mocks.listTaskRuns.mockResolvedValue({
       taskRuns: [
         {
           name: `${planName}/rollout/stages/prod/tasks/task-1/taskRuns/run-1`,
-          status: TaskRun_Status.DONE,
+          status: TaskRun_Status.FAILED,
         },
         {
           name: `${planName}/rollout/stages/prod/tasks/task-2/taskRuns/run-2`,
@@ -117,6 +135,7 @@ describe("issueOverview", () => {
         name: planName,
         title: "Add customer table",
         hasRollout: true,
+        reviewOnPlan: true,
       },
       planCheck: {
         status: "available",
@@ -131,6 +150,8 @@ describe("issueOverview", () => {
         status: "available",
         name: `${planName}/rollout`,
         stageCount: 2,
+        failedTasks: [`${planName}/rollout/stages/prod/tasks/task-2`],
+        failedTasksPartial: false,
       },
       taskRuns: {
         status: "available",
@@ -138,7 +159,7 @@ describe("issueOverview", () => {
         taskRuns: [
           {
             name: `${planName}/rollout/stages/prod/tasks/task-1/taskRuns/run-1`,
-            status: "DONE",
+            status: "FAILED",
           },
           {
             name: `${planName}/rollout/stages/prod/tasks/task-2/taskRuns/run-2`,
@@ -189,6 +210,73 @@ describe("issueOverview", () => {
       }),
       expect.anything()
     );
+  });
+
+  test("bounds current failed Tasks and excludes malformed or unrelated names", async () => {
+    mocks.getIssue.mockResolvedValue({
+      name: issueName,
+      title: "Add customer table",
+      type: Issue_Type.DATABASE_CHANGE,
+      status: IssueStatus.OPEN,
+      approvalStatus: ApprovalStatus.PENDING,
+      plan: planName,
+    });
+    mocks.getPlan.mockResolvedValue({
+      name: planName,
+      title: "Add customer table",
+      hasRollout: true,
+    });
+    mocks.getPlanCheckRun.mockRejectedValue(new Error("unavailable"));
+    mocks.getReviewRun.mockRejectedValue(new Error("unavailable"));
+    mocks.getRollout.mockResolvedValue({
+      name: `${planName}/rollout`,
+      stages: [
+        {
+          name: `${planName}/rollout/stages/-`,
+          tasks: [
+            {
+              name: `${planName}/rollout/stages/-/tasks/-`,
+              status: Task_Status.FAILED,
+            },
+            {
+              name: `${planName}/rollout/stages/-/tasks/bad/id`,
+              status: Task_Status.FAILED,
+            },
+            {
+              name: "projects/other/plans/1/rollout/stages/-/tasks/task-12",
+              status: Task_Status.FAILED,
+            },
+            ...Array.from({ length: 11 }, (_, index) => ({
+              name: `${planName}/rollout/stages/-/tasks/task-${index + 1}`,
+              status: Task_Status.FAILED,
+            })),
+          ],
+        },
+        {
+          name: `${planName}/rollout/stages/prod`,
+          tasks: [
+            {
+              name: `${planName}/rollout/stages/prod/tasks/task-13`,
+              status: Task_Status.DONE,
+            },
+          ],
+        },
+      ],
+    });
+    mocks.listTaskRuns.mockResolvedValue({ taskRuns: [] });
+
+    await expect(
+      collectIssueOverview("projects/orders", issueName)
+    ).resolves.toMatchObject({
+      rollout: {
+        status: "available",
+        failedTasks: Array.from(
+          { length: 10 },
+          (_, index) => `${planName}/rollout/stages/-/tasks/task-${index + 1}`
+        ),
+        failedTasksPartial: true,
+      },
+    });
   });
 
   test("keeps independent Issue facets explicit when a read is unavailable", async () => {
@@ -255,6 +343,36 @@ describe("issueOverview", () => {
       taskRuns: { status: "not_started" },
     });
   });
+
+  test.each([
+    { draft: false, reviewOnPlan: false },
+    { draft: true, reviewOnPlan: true },
+  ])(
+    "marks the canonical review page for a create-database Plan linked to a draft=$draft Issue",
+    async ({ draft, reviewOnPlan }) => {
+      mocks.getIssue.mockResolvedValue({
+        name: issueName,
+        title: "Create test database",
+        type: Issue_Type.DATABASE_CHANGE,
+        draft,
+        plan: planName,
+      });
+      mocks.getPlan.mockResolvedValue({
+        name: planName,
+        title: "Create test database",
+        hasRollout: false,
+        specs: [{ config: { case: "createDatabaseConfig", value: {} } }],
+      });
+      mocks.getPlanCheckRun.mockRejectedValue(new Error("unavailable"));
+      mocks.getReviewRun.mockRejectedValue(new Error("unavailable"));
+
+      await expect(
+        collectIssueOverview("projects/orders", issueName)
+      ).resolves.toMatchObject({
+        plan: { status: "available", reviewOnPlan },
+      });
+    }
+  );
 
   test("does not expose a mismatched dependent resource", async () => {
     mocks.getIssue.mockResolvedValue({

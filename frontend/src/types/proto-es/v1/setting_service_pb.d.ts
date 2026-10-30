@@ -203,6 +203,11 @@ export enum Setting_SettingName {
    * @generated from enum value: MCP = 9;
    */
   MCP = 9,
+
+  /**
+   * @generated from enum value: EXPORT = 10;
+   */
+  EXPORT = 10,
 }
 
 /**
@@ -273,6 +278,12 @@ export declare type SettingValue = Message<"bytebase.v1.SettingValue"> & {
      */
     value: MCPSetting;
     case: "mcp";
+  } | {
+    /**
+     * @generated from field: bytebase.v1.ExportSetting export = 10;
+     */
+    value: ExportSetting;
+    case: "export";
   } | { case: undefined; value?: undefined };
 };
 
@@ -281,6 +292,69 @@ export declare type SettingValue = Message<"bytebase.v1.SettingValue"> & {
  * Use `create(SettingValueSchema)` to create a new message.
  */
 export declare const SettingValueSchema: GenMessage<SettingValue>;
+
+/**
+ * ExportSetting holds each export destination provider's credentials.
+ *
+ * @generated from message bytebase.v1.ExportSetting
+ */
+export declare type ExportSetting = Message<"bytebase.v1.ExportSetting"> & {
+  /**
+   * Unset when SharePoint is not configured.
+   *
+   * @generated from field: bytebase.v1.SharePointSetting sharepoint = 1;
+   */
+  sharepoint?: SharePointSetting | undefined;
+};
+
+/**
+ * Describes the message bytebase.v1.ExportSetting.
+ * Use `create(ExportSettingSchema)` to create a new message.
+ */
+export declare const ExportSettingSchema: GenMessage<ExportSetting>;
+
+/**
+ * SharePointSetting is the Microsoft Entra application that uploads exports to
+ * SharePoint. It is granted access per library by the customer's SharePoint
+ * administrators.
+ *
+ * @generated from message bytebase.v1.SharePointSetting
+ */
+export declare type SharePointSetting = Message<"bytebase.v1.SharePointSetting"> & {
+  /**
+   * The Microsoft Entra tenant (directory) ID.
+   *
+   * @generated from field: string tenant_id = 1;
+   */
+  tenantId: string;
+
+  /**
+   * The application (client) ID.
+   *
+   * @generated from field: string client_id = 2;
+   */
+  clientId: string;
+
+  /**
+   * The client secret. It is never returned.
+   *
+   * @generated from field: string client_secret = 3;
+   */
+  clientSecret: string;
+
+  /**
+   * Whether a client secret is stored.
+   *
+   * @generated from field: bool client_secret_set = 4;
+   */
+  clientSecretSet: boolean;
+};
+
+/**
+ * Describes the message bytebase.v1.SharePointSetting.
+ * Use `create(SharePointSettingSchema)` to create a new message.
+ */
+export declare const SharePointSettingSchema: GenMessage<SharePointSetting>;
 
 /**
  * @generated from message bytebase.v1.AppIMSetting

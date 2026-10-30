@@ -9,6 +9,38 @@ import (
 	proto "google.golang.org/protobuf/proto"
 )
 
+func (x *ExportSetting) Equal(y *ExportSetting) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if !x.Sharepoint.Equal(y.Sharepoint) {
+		return false
+	}
+	return true
+}
+
+func (x *SharePointSetting) Equal(y *SharePointSetting) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.TenantId != y.TenantId {
+		return false
+	}
+	if x.ClientId != y.ClientId {
+		return false
+	}
+	if x.ClientSecret != y.ClientSecret {
+		return false
+	}
+	return true
+}
+
 func (x *SystemSetting) Equal(y *SystemSetting) bool {
 	if x == y {
 		return true

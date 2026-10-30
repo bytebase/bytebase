@@ -313,6 +313,11 @@ message QueryDataPolicy {
   // 1. when read-only data source is configured, users're force to use the read-only data source
   // 2. otherwise fallback to use the admin data source.
   bool allow_admin_data_source = 4;
+
+  // workspace-level policy
+  // Disable the Download export destination. Exports can still go to a
+  // configured storage destination such as SharePoint.
+  bool disable_download = 5;
 }
 
 // MaskingExemptionPolicy is the allowlist of users who can access sensitive data.

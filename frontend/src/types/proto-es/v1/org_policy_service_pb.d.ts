@@ -396,6 +396,15 @@ export declare type QueryDataPolicy = Message<"bytebase.v1.QueryDataPolicy"> & {
    * @generated from field: bool allow_admin_data_source = 4;
    */
   allowAdminDataSource: boolean;
+
+  /**
+   * workspace-level policy
+   * Disable the Download export destination. Exports can still go to a
+   * configured storage destination such as SharePoint.
+   *
+   * @generated from field: bool disable_download = 5;
+   */
+  disableDownload: boolean;
 };
 
 /**
