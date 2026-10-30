@@ -1,0 +1,1443 @@
+- description: Test For JSON TABLE and JSON ARRAYAGG
+  statement: |-
+    SELECT
+      product_info,
+      JSON_ARRAYAGG(
+        REPLACE(
+          JSON_UNQUTED(product_name),
+          'G',
+          'GN'
+        )
+      )
+    FROM products,
+    JSON_TABLE(product_info,
+        '$' COLUMNS (
+            product_id INT PATH '$.id',
+            product_name VARCHAR(50) PATH '$.name',
+            product_price DECIMAL(10, 2) PATH '$.price'
+        )
+    ) AS jt;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "products",
+              "columns":  [
+                {
+                  "name":  "product_info"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: product_info
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: products
+              column: product_info
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: |-
+            JSON_ARRAYAGG(
+                REPLACE(
+                  JSON_UNQUTED(product_name),
+                  'G',
+                  'GN'
+                )
+              )
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: products
+              column: product_info
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: ""
+          table: products
+          column: ""
+    predicatecolumns: []
+- description: Test For json table
+  statement: |-
+    SELECT *
+    FROM products,
+    JSON_TABLE(product_info,
+        '$' COLUMNS (
+            product_id INT PATH '$.id',
+            product_name VARCHAR(50) PATH '$.name',
+            product_price DECIMAL(10, 2) PATH '$.price'
+        )
+    ) AS jt;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "products",
+              "columns":  [
+                {
+                  "name":  "product_info"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: product_info
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: products
+              column: product_info
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: product_id
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: products
+              column: product_info
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: product_name
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: products
+              column: product_info
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: product_price
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: products
+              column: product_info
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: ""
+          table: products
+          column: ""
+    predicatecolumns: []
+- description: Test For alias.* with join
+  statement: SELECT t1.*, t2.* FROM t t1 JOIN (select * from t) t2 ON t1.a = t2.a;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: a
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: a
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: a
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: a
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: ""
+          table: t
+          column: ""
+    predicatecolumns: []
+- description: Test For Explain statements
+  statement: EXPLAIN SELECT 1;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 2
+    results: []
+    sourcecolumns: []
+    predicatecolumns: []
+- description: Test for simple select const
+  statement: SELECT 1;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: "1"
+          sourcecolumns: []
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns: []
+    predicatecolumns: []
+- description: Test asterisk and column
+  statement: SELECT *, a FROM t;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                },
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: a
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: a
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: b
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: b
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: c
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: c
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: d
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: d
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: a
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: a
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: ""
+          table: t
+          column: ""
+    predicatecolumns: []
+- description: Happy path for a simple select statement
+  statement: SELECT * FROM t
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                },
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: a
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: a
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: b
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: b
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: c
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: c
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: d
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: d
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: ""
+          table: t
+          column: ""
+    predicatecolumns: []
+- description: Referenced table fields by different format
+  statement: SELECT a, t.b, t.c, db.t.d FROM t;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                },
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: a
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: a
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: b
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: b
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: c
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: c
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: d
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: d
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: ""
+          table: t
+          column: ""
+    predicatecolumns: []
+- description: Scalar subquery in select fields
+  statement: SELECT 1 AS col_1, (SELECT(2)) AS col_2, (SELECT AVG(a + b * c) FROM t) AS avg_a_b_c FROM t;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                },
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: col_1
+          sourcecolumns: []
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: col_2
+          sourcecolumns: []
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: avg_a_b_c
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: a
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: b
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: c
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: ""
+          table: t
+          column: ""
+    predicatecolumns: []
+- description: Multiple-Row subquery in where clause
+  statement: SELECT 1 FROM t WHERE a IN (SELECT a FROM t);
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                },
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: "1"
+          sourcecolumns: []
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: ""
+          table: t
+          column: ""
+    predicatecolumns: []
+- description: Correlated subquery in the target field clause.
+  statement: SELECT city, (SELECT COUNT(*) FROM paintings p WHERE g.id = p.gallery_id) AS total_paintings FROM galleries g;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "galleries",
+              "columns":  [
+                {
+                  "name":  "id"
+                },
+                {
+                  "name":  "city"
+                }
+              ]
+            },
+            {
+              "name":  "paintings",
+              "columns":  [
+                {
+                  "name":  "gallery_id"
+                },
+                {
+                  "name":  "artist_id"
+                },
+                {
+                  "name":  "title"
+                },
+                {
+                  "name":  "price"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: city
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: galleries
+              column: city
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: total_paintings
+          sourcecolumns: []
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: ""
+          table: galleries
+          column: ""
+        - server: ""
+          database: db
+          schema: ""
+          table: paintings
+          column: ""
+    predicatecolumns: []
+- description: Test for functions
+  statement: SELECT max(a), a-b AS c1, a=b AS c2, a>b, b in (a, c, d) from (SELECT * FROM t) result;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                },
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: max(a)
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: a
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: c1
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: a
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: b
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: c2
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: a
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: b
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: a>b
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: a
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: b
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: b in (a, c, d)
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: a
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: b
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: c
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: d
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: ""
+          table: t
+          column: ""
+    predicatecolumns: []
+- description: Test for SELECT partial FROM JOIN clause
+  statement: SELECT t1.*, t2.c, 0 FROM t1 JOIN t2 ON 1 = 1;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "t1",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                }
+              ]
+            },
+            {
+              "name":  "t2",
+              "columns":  [
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: a
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t1
+              column: a
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: b
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t1
+              column: b
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: c
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t2
+              column: c
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: "0"
+          sourcecolumns: []
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: ""
+          table: t1
+          column: ""
+        - server: ""
+          database: db
+          schema: ""
+          table: t2
+          column: ""
+    predicatecolumns: []
+- description: Test for JOIN with USING clause
+  statement: SELECT * FROM t AS t1 JOIN t AS t2 USING(a);
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                },
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: a
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: a
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: b
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: b
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: c
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: c
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: d
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: d
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: b
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: b
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: c
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: c
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: d
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: d
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: ""
+          table: t
+          column: ""
+    predicatecolumns: []
+- description: Simple CTE
+  statement: WITH t1 AS (SELECT * FROM t) SELECT * FROM t1;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                },
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: a
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: a
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: b
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: b
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: c
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: c
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: d
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: d
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: ""
+          table: t
+          column: ""
+        - server: ""
+          database: db
+          schema: ""
+          table: t1
+          column: ""
+    predicatecolumns: []
+- description: Multi-level CTE
+  statement: WITH tt2 AS (WITH tt2 AS (SELECT * FROM t) SELECT MAX(a) FROM tt2) SELECT * FROM tt2;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                },
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: MAX(a)
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: a
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: ""
+          table: t
+          column: ""
+        - server: ""
+          database: db
+          schema: ""
+          table: tt2
+          column: ""
+    predicatecolumns: []
+- description: Test for CTE rename fields name
+  statement: WITH t1(d, c, b, a) AS (SELECT * FROM t) SELECT * FROM t1;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                },
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: d
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: a
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: c
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: b
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: b
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: c
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: a
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: d
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: ""
+          table: t
+          column: ""
+        - server: ""
+          database: db
+          schema: ""
+          table: t1
+          column: ""
+    predicatecolumns: []
+- description: Test for Recursive Common Table Expression dependent closures
+  statement: WITH RECURSIVE t1(cc1, cc2, cc3, n) AS (SELECT a AS c1, b AS c2, c AS c3, 1 AS n FROM t UNION SELECT cc1*cc2, cc2 + cc1, cc3 * cc2, n+1 FROM t1 WHERE n < 10) SELECT * FROM t1;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                },
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: cc1
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: a
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: b
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: cc2
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: a
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: b
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: cc3
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: a
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: b
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: c
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: "n"
+          sourcecolumns: []
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: ""
+          table: t
+          column: ""
+        - server: ""
+          database: db
+          schema: ""
+          table: t1
+          column: ""
+    predicatecolumns: []
+- description: Test for Non-Recursive Common Table Expression with RECURSIVE key words
+  statement: WITH RECURSIVE t1 AS (SELECT 1 AS c1, 2 AS c2, 3 AS c3, 4 AS c4 UNION SELECT a, b, d, c FROM t) SELECT * FROM t1;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                },
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: c1
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: a
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: c2
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: b
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: c3
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: d
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: c4
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: c
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: ""
+          table: t
+          column: ""
+        - server: ""
+          database: db
+          schema: ""
+          table: t1
+          column: ""
+    predicatecolumns: []

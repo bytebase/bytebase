@@ -1,0 +1,1481 @@
+package oceanbase
+
+import (
+	"bytes"
+	"context"
+	"database/sql"
+	"encoding/hex"
+	"fmt"
+	"log/slog"
+	"regexp"
+	"slices"
+	"strconv"
+	"strings"
+	"unicode"
+	"unicode/utf8"
+
+	metadatapb "github.com/bytebase/omni/metadata"
+	"golang.org/x/text/encoding/charmap"
+	"golang.org/x/text/transform"
+	"google.golang.org/protobuf/proto"
+
+	"github.com/blang/semver/v4"
+	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
+)
+
+const (
+	autoIncrementSymbol    = "AUTO_INCREMENT"
+	autoRandSymbol         = "AUTO_RANDOM"
+	pkAutoRandomBitsSymbol = "PK_AUTO_RANDOM_BITS"
+	virtualGenerated       = "VIRTUAL GENERATED"
+	storedGenerated        = "STORED GENERATED"
+)
+
+var (
+	systemDatabases = map[string]bool{
+		"information_schema": true,
+		"mysql":              true,
+		"performance_schema": true,
+		"sys":                true,
+		// OceanBase only
+		"oceanbase":  true,
+		"SYS":        true,
+		"LBACSYS":    true,
+		"ORAAUDITOR": true,
+		"__public":   true,
+	}
+	systemDatabaseClause = func() string {
+		var l []string
+		for k := range systemDatabases {
+			l = append(l, fmt.Sprintf("'%s'", k))
+		}
+		return strings.Join(l, ", ")
+	}()
+
+	// Matches SHOW CREATE VIEW output: optional `db`. qualifier on the view name and an
+	// optional explicit column list, which MySQL prints comma-separated: (`a`,`b`,`c`).
+	// Column-list identifiers are rendered with embedded backticks doubled (`a``b`), so
+	// each list segment matches doubling-aware atoms rather than [^`]+ — an identifier
+	// containing a backtick (or ", ") must not mis-split the list.
+	viewDefMatcher = regexp.MustCompile("CREATE ALGORITHM=(UNDEFINED|MERGE|TEMPTABLE) DEFINER=`([^`]+)`@`([^`]+)` SQL SECURITY (DEFINER|INVOKER) VIEW `([^`]+)`(?:\\.`([^`]+)`)?( \\(`(?:[^`]|``)+`(?:, ?`(?:[^`]|``)+`)*\\))? AS (?P<def>.+)")
+)
+
+// isStockMySQL reports whether the version suffix returned by getVersion (the text
+// after the numeric version, e.g. "-MariaDB", "-OceanBase-v4.2", "-TiDB-v7.5") denotes
+// a stock MySQL server. MySQL-compatible engines registered as MYSQL report MySQL-like
+// version numbers but do not implement every stock information_schema feature, so any
+// stock-only query or decode (SRS_ID column select, binary default encodings, column
+// INVISIBLE capture) must be gated on this single predicate.
+func isStockMySQL(versionSuffix string) bool {
+	return !strings.Contains(versionSuffix, "MariaDB") &&
+		!strings.Contains(versionSuffix, "OceanBase") &&
+		!strings.Contains(versionSuffix, "TiDB")
+}
+
+// SyncInstance syncs the instance.
+func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
+	version, _, err := d.getVersion(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var lowerCaseTableNames int32
+	lowerCaseTableNamesText, err := d.getServerVariable(ctx, "lower_case_table_names")
+	if err != nil {
+		slog.Debug("failed to get lower_case_table_names variable", log.BBError(err))
+	} else {
+		v, err := strconv.ParseInt(lowerCaseTableNamesText, 10, 32)
+		if err != nil {
+			slog.Debug("failed to parse lower_case_table_names variable", log.BBError(err))
+		} else {
+			lowerCaseTableNames = int32(v)
+		}
+	}
+
+	instanceRoles := d.getInstanceRoles(ctx)
+
+	// Query db info
+	where := fmt.Sprintf("LOWER(SCHEMA_NAME) NOT IN (%s)", systemDatabaseClause)
+	query := `
+		SELECT
+			SCHEMA_NAME,
+			DEFAULT_CHARACTER_SET_NAME,
+			DEFAULT_COLLATION_NAME
+		FROM information_schema.SCHEMATA
+		WHERE ` + where
+	rows, err := d.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	defer rows.Close()
+
+	var databases []*metadatapb.DatabaseSchemaMetadata
+	for rows.Next() {
+		database := &metadatapb.DatabaseSchemaMetadata{}
+		if err := rows.Scan(
+			&database.Name,
+			&database.CharacterSet,
+			&database.Collation,
+		); err != nil {
+			return nil, err
+		}
+		databases = append(databases, database)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return &db.InstanceMetadata{
+		Version:   version,
+		Databases: databases,
+		Metadata: &storepb.Instance{
+			MysqlLowerCaseTableNames: lowerCaseTableNames,
+			Roles:                    instanceRoles,
+		},
+	}, nil
+}
+
+func (d *Driver) getServerVariable(ctx context.Context, varName string) (string, error) {
+	db := d.GetDB()
+	query := fmt.Sprintf("SHOW VARIABLES LIKE '%s'", varName)
+	var varNameFound, value string
+	if err := db.QueryRowContext(ctx, query).Scan(&varNameFound, &value); err != nil {
+		if err == sql.ErrNoRows {
+			return "", common.FormatDBErrorEmptyRowWithQuery(query)
+		}
+		return "", util.FormatErrorWithQuery(err, query)
+	}
+	if varName != varNameFound {
+		return "", errors.Errorf("expecting variable %s, but got %s", varName, varNameFound)
+	}
+	return value, nil
+}
+
+func containsInvisibleChars(data []byte) bool {
+	// Iterate over the byte slice as runes
+	for len(data) > 0 {
+		r, size := utf8.DecodeRune(data)
+		if r == utf8.RuneError && size == 1 {
+			// If the byte slice contains invalid UTF-8 characters, treat it as invisible
+			return true
+		}
+		// Check if the rune is not printable
+		if !unicode.IsPrint(r) {
+			return true
+		}
+		// Move to the next rune
+		data = data[size:]
+	}
+	return false
+}
+
+func utf8ToISO88591(utf8Str string) (string, error) {
+	// Create a transformer that encodes UTF-8 to ISO-8859-1
+	encoder := charmap.ISO8859_1.NewEncoder()
+
+	// Transform the input UTF-8 string into ISO-8859-1
+	isoBytes, _, err := transform.String(encoder, utf8Str)
+	if err != nil {
+		return "", err
+	}
+
+	return isoBytes, nil
+}
+
+// SyncDBSchema syncs a single database schema.
+func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
+	schemaMetadata := &metadatapb.SchemaMetadata{
+		Name: "",
+	}
+
+	// Query MySQL version
+	version, rest, err := d.getVersion(ctx)
+	if err != nil {
+		return nil, err
+	}
+	semVersion, err := semver.Make(version)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parse MySQL version %s to semantic version", version)
+	}
+	atLeast800 := semVersion.GE(semver.MustParse("8.0.0"))
+	atLeast803 := semVersion.GE(semver.MustParse("8.0.3"))
+	atLeast8_0_13 := semVersion.GE(semver.MustParse("8.0.13"))
+	atLeast8_0_16 := semVersion.GE(semver.MustParse("8.0.16"))
+	atLeast5_7_0 := semVersion.GE(semver.MustParse("5.7.0"))
+	isMariaDB := strings.Contains(rest, "MariaDB")
+	// Some information_schema features exist only on stock MySQL: compatible engines
+	// (MariaDB, OceanBase, TiDB) registered as MYSQL report MySQL-like versions but
+	// lack them, so every stock-only query/decode must share this one predicate.
+	stockMySQL := isStockMySQL(rest)
+	// Binary-family (binary charset) literal defaults are reported by
+	// information_schema.COLUMNS in version-specific encodings that must be decoded to
+	// the canonical dump form (see canonicalBinaryDefault). The conventions are verified
+	// for stock MySQL only; MariaDB, OceanBase, and TiDB keep the legacy verbatim path.
+	binaryDefaultFmt := binaryDefaultVerbatim
+	if stockMySQL {
+		if atLeast800 {
+			binaryDefaultFmt = binaryDefaultHexNotation
+		} else {
+			binaryDefaultFmt = binaryDefaultRawBytes
+		}
+	}
+
+	// Query index info.
+	indexMap := make(map[db.TableKey]map[string]*metadatapb.IndexMetadata)
+	indexQuery := `
+		SELECT
+			TABLE_NAME,
+			INDEX_NAME,
+			COLUMN_NAME,
+			COLLATION,
+			IFNULL(SUB_PART, -1),
+			'',
+			SEQ_IN_INDEX,
+			INDEX_TYPE,
+			NON_UNIQUE,
+			1,
+			INDEX_COMMENT
+		FROM information_schema.STATISTICS
+		WHERE TABLE_SCHEMA = ?
+		ORDER BY TABLE_NAME, INDEX_NAME, SEQ_IN_INDEX`
+	// MySQL 8.0.13 introduced the EXPRESSION column in the INFORMATION_SCHEMA.STATISTICS table.
+	// https://dev.mysql.com/doc/refman/8.0/en/information-schema-statistics-table.html
+	// MariaDB doesn't have the EXPRESSION column.
+	// https://mariadb.com/docs/server/ref/mdb/information-schema/STATISTICS
+	if atLeast8_0_13 && !isMariaDB {
+		indexQuery = `
+			SELECT
+				TABLE_NAME,
+				INDEX_NAME,
+				COLUMN_NAME,
+				COLLATION,
+				IFNULL(SUB_PART, -1),
+				EXPRESSION,
+				SEQ_IN_INDEX,
+				INDEX_TYPE,
+				NON_UNIQUE,
+				CASE IS_VISIBLE WHEN 'YES' THEN 1 ELSE 0 END,
+				INDEX_COMMENT
+			FROM information_schema.STATISTICS
+			WHERE TABLE_SCHEMA = ?
+			ORDER BY TABLE_NAME, INDEX_NAME, SEQ_IN_INDEX`
+	}
+	indexRows, err := d.db.QueryContext(ctx, indexQuery, d.databaseName)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, indexQuery)
+	}
+	defer indexRows.Close()
+	for indexRows.Next() {
+		var tableName, indexName, indexType, comment, expression string
+		var columnName sql.NullString
+		var expressionName sql.NullString
+		var collation sql.NullString
+		var position int
+		var subPart int64
+		var nonUnique, visible bool
+		if err := indexRows.Scan(
+			&tableName,
+			&indexName,
+			&columnName,
+			&collation,
+			&subPart,
+			&expressionName,
+			&position,
+			&indexType,
+			&nonUnique,
+			&visible,
+			&comment,
+		); err != nil {
+			return nil, err
+		}
+		if columnName.Valid {
+			expression = columnName.String
+		} else if expressionName.Valid {
+			// It's a bit late or not necessary to differentiate the column name or expression.
+			// We add parentheses around expression.
+			expression = fmt.Sprintf("(%s)", expressionName.String)
+		}
+
+		desc := false
+		if collation.Valid && collation.String == "D" {
+			desc = true
+		}
+
+		key := db.TableKey{Schema: "", Table: tableName}
+		if _, ok := indexMap[key]; !ok {
+			indexMap[key] = make(map[string]*metadatapb.IndexMetadata)
+		}
+		if _, ok := indexMap[key][indexName]; !ok {
+			indexMap[key][indexName] = &metadatapb.IndexMetadata{
+				Name:    indexName,
+				Type:    indexType,
+				Unique:  !nonUnique,
+				Primary: indexName == "PRIMARY",
+				Visible: visible,
+				Comment: comment,
+			}
+		}
+		indexMap[key][indexName].Expressions = append(indexMap[key][indexName].Expressions, expression)
+		indexMap[key][indexName].KeyLength = append(indexMap[key][indexName].KeyLength, subPart)
+		indexMap[key][indexName].Descending = append(indexMap[key][indexName].Descending, desc)
+	}
+	if err := indexRows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, indexQuery)
+	}
+
+	// Query column info.
+	// SRS_ID (spatial reference id) was added to information_schema.COLUMNS in stock
+	// MySQL 8.0.3 (the same version encoded by the /*!80003 SRID */ renderer). Stock
+	// 8.0.0–8.0.2 lack it, as do 5.7/5.6, MariaDB, OceanBase, and TiDB (which may report
+	// an 8.x MySQL-compat version), so selecting it there would fail the whole sync —
+	// they select NULL instead.
+	columnMap := make(map[db.TableKey][]*metadatapb.ColumnMetadata)
+	sridSelect := "NULL"
+	if atLeast803 && stockMySQL {
+		sridSelect = "SRS_ID"
+	}
+	columnQuery := fmt.Sprintf(`
+		SELECT
+			TABLE_NAME,
+			IFNULL(COLUMN_NAME, ''),
+			ORDINAL_POSITION,
+			CASE WHEN COLUMN_DEFAULT is NULL THEN NULL ELSE QUOTE(COLUMN_DEFAULT) END,
+			IS_NULLABLE,
+			COLUMN_TYPE,
+			IFNULL(CHARACTER_SET_NAME, ''),
+			IFNULL(COLLATION_NAME, ''),
+			QUOTE(COLUMN_COMMENT),
+			convert(GENERATION_EXPRESSION using BINARY),
+			EXTRA,
+			%s
+		FROM information_schema.COLUMNS
+		WHERE TABLE_SCHEMA = ?
+		ORDER BY TABLE_NAME, ORDINAL_POSITION`, sridSelect)
+	if !atLeast5_7_0 {
+		// GENERATION_EXPRESSION does not exist in MySQL 5.6.
+		columnQuery = fmt.Sprintf(`
+		SELECT
+			TABLE_NAME,
+			IFNULL(COLUMN_NAME, ''),
+			ORDINAL_POSITION,
+			CASE WHEN COLUMN_DEFAULT is NULL THEN NULL ELSE QUOTE(COLUMN_DEFAULT) END,
+			IS_NULLABLE,
+			COLUMN_TYPE,
+			IFNULL(CHARACTER_SET_NAME, ''),
+			IFNULL(COLLATION_NAME, ''),
+			QUOTE(COLUMN_COMMENT),
+			NULL,
+			EXTRA,
+			%s
+		FROM information_schema.COLUMNS
+		WHERE TABLE_SCHEMA = ?
+		ORDER BY TABLE_NAME, ORDINAL_POSITION`, sridSelect)
+	}
+	columnRows, err := d.db.QueryContext(ctx, columnQuery, d.databaseName)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, columnQuery)
+	}
+	defer columnRows.Close()
+	for columnRows.Next() {
+		column := &metadatapb.ColumnMetadata{}
+		var tableName, nullable, extra, tp string
+		var defaultStr sql.NullString
+		var generationExpr []byte
+		var srid sql.NullInt64
+		if err := columnRows.Scan(
+			&tableName,
+			&column.Name,
+			&column.Position,
+			&defaultStr,
+			&nullable,
+			&tp,
+			&column.CharacterSet,
+			&column.Collation,
+			&column.Comment,
+			&generationExpr,
+			&extra,
+			&srid,
+		); err != nil {
+			return nil, err
+		}
+		// Quoted string has a single quote around it and is escaped by QUOTE().
+		column.Comment = stripSingleQuote(column.Comment)
+		nullableBool, err := util.ConvertYesNo(nullable)
+		if err != nil {
+			return nil, err
+		}
+		column.Type = GetColumnTypeCanonicalSynonym(tp)
+		column.Nullable = nullableBool
+		setColumnMetadataDefault(column, defaultStr, nullableBool, extra, binaryDefaultFmt)
+		// SRID presence tracks SRS_ID being non-NULL: spatial columns with an explicit
+		// SRID (MySQL 8.0), INCLUDING the valid SRID 0. SRS_IDs are unsigned 32-bit, so
+		// the value must not be squeezed through int32 (custom SRSs may be >= 2^31).
+		if srid.Valid {
+			v := uint32(srid.Int64)
+			column.Srid = &v
+		}
+		// A user-declared INVISIBLE column surfaces as the INVISIBLE token in EXTRA
+		// (MySQL 8.0.23+). Captured on stock MySQL only: MariaDB 10.3+ also reports
+		// INVISIBLE in EXTRA, but the writers emit the MySQL-versioned
+		// /*!80023 INVISIBLE */ form, which MariaDB ignores — capturing there would
+		// yield a permanently non-converging diff. On stock MySQL the dumper re-emits
+		// the attribute and the declarative diff stays a no-op.
+		if stockMySQL && isInvisibleColumnExtra(extra) {
+			column.IsInvisible = true
+		}
+		key := db.TableKey{Schema: "", Table: tableName}
+		columnMap[key] = append(columnMap[key], column)
+		invisible := containsInvisibleChars(generationExpr)
+		iso88591Text, convertedErr := utf8ToISO88591(string(generationExpr))
+		text := string(generationExpr)
+		if invisible && convertedErr == nil {
+			text = iso88591Text
+		}
+		// MySQL server returns the generation expression with an escaped single quote.
+		// I have no idea why it does that. But we need to unescape it. -_-
+		text = strings.ReplaceAll(text, `\'`, `'`)
+		if extra != "" && strings.Contains(strings.ToUpper(extra), virtualGenerated) && len(generationExpr) != 0 {
+			column.Generation = &metadatapb.GenerationMetadata{
+				Type:       metadatapb.GenerationMetadata_TYPE_VIRTUAL,
+				Expression: text,
+			}
+		} else if extra != "" && strings.Contains(strings.ToUpper(extra), storedGenerated) && len(generationExpr) != 0 {
+			column.Generation = &metadatapb.GenerationMetadata{
+				Type:       metadatapb.GenerationMetadata_TYPE_STORED,
+				Expression: text,
+			}
+		}
+	}
+	if err := columnRows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, columnQuery)
+	}
+
+	// Check constraints info.
+	checkMap := make(map[db.TableKey][]*metadatapb.CheckConstraintMetadata)
+	if atLeast8_0_16 {
+		checkQuery := getCheckConstraintQuery(isMariaDB)
+		checkRows, err := d.db.QueryContext(ctx, checkQuery, d.databaseName)
+		if err != nil {
+			return nil, util.FormatErrorWithQuery(err, checkQuery)
+		}
+		defer checkRows.Close()
+		for checkRows.Next() {
+			check := &metadatapb.CheckConstraintMetadata{}
+			var tableName string
+			if err := checkRows.Scan(
+				&tableName,
+				&check.Name,
+				&check.Expression,
+			); err != nil {
+				return nil, err
+			}
+			check.Expression = unescapeCheckClause(check.Expression)
+			key := db.TableKey{Schema: "", Table: tableName}
+			checkMap[key] = append(checkMap[key], check)
+		}
+		if err := checkRows.Err(); err != nil {
+			return nil, util.FormatErrorWithQuery(err, checkQuery)
+		}
+	}
+
+	// Query view info.
+	viewMap := make(map[db.TableKey]*metadatapb.ViewMetadata)
+	viewQuery := `
+		SELECT
+			TABLE_NAME,
+			VIEW_DEFINITION
+		FROM information_schema.VIEWS
+		WHERE TABLE_SCHEMA = ?`
+	viewRows, err := d.db.QueryContext(ctx, viewQuery, d.databaseName)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, viewQuery)
+	}
+	defer viewRows.Close()
+	for viewRows.Next() {
+		view := &metadatapb.ViewMetadata{}
+		if err := viewRows.Scan(
+			&view.Name,
+			&view.Definition,
+		); err != nil {
+			return nil, err
+		}
+		// Note: MySQL's information_schema.VIEWS doesn't have a comment column
+		// View comments are not supported in MySQL
+		view.Comment = ""
+		key := db.TableKey{Schema: "", Table: view.Name}
+		view.Columns = columnMap[key]
+		viewMap[key] = view
+	}
+	if err := viewRows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, viewQuery)
+	}
+	for key := range viewMap {
+		def, err := d.reconcileViewDefinition(ctx, d.databaseName, key.Table)
+		if err != nil {
+			return nil, err
+		}
+		if def != "" {
+			viewMap[key].Definition = def
+		}
+	}
+
+	// Query triggers.
+	triggerMap, err := d.getTriggerList(ctx, d.databaseName)
+	if err != nil {
+		return nil, err
+	}
+
+	// Query events.
+	eventList, err := d.getEventList(ctx, d.databaseName)
+	if err != nil {
+		return nil, err
+	}
+	schemaMetadata.Events = eventList
+
+	// Query foreign key info.
+	foreignKeysMap, err := d.getForeignKeyList(ctx, d.databaseName)
+	if err != nil {
+		return nil, err
+	}
+
+	// OceanBase's information_schema.PARTITIONS does not describe its partitions in the
+	// shape SHOW CREATE TABLE prints, so the sync claims none.
+	partitionTables := make(map[db.TableKey][]*metadatapb.TablePartitionMetadata)
+
+	functions, procedures, err := d.syncRoutines(ctx, d.databaseName)
+	if err != nil {
+		return nil, err
+	}
+	schemaMetadata.Functions = functions
+	schemaMetadata.Procedures = procedures
+
+	// Query table info.
+	tableQuery := `
+		SELECT
+			TABLES.TABLE_NAME,
+			TABLES.TABLE_TYPE,
+			IFNULL(TABLES.ENGINE, ''),
+			IFNULL(TABLES.TABLE_COLLATION, ''),
+			IFNULL(TABLES.TABLE_ROWS, 0),
+			IFNULL(TABLES.DATA_LENGTH, 0),
+			IFNULL(TABLES.INDEX_LENGTH, 0),
+			IFNULL(TABLES.DATA_FREE, 0),
+			IFNULL(TABLES.CREATE_OPTIONS, ''),
+			QUOTE(IFNULL(TABLES.TABLE_COMMENT, '')),
+			IFNULL(CCSA.CHARACTER_SET_NAME, '')
+		FROM information_schema.TABLES TABLES
+		LEFT JOIN information_schema.COLLATION_CHARACTER_SET_APPLICABILITY CCSA
+		ON TABLES.TABLE_COLLATION = CCSA.COLLATION_NAME
+		WHERE TABLE_SCHEMA = ?
+		ORDER BY TABLE_NAME`
+	tableRows, err := d.db.QueryContext(ctx, tableQuery, d.databaseName)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, tableQuery)
+	}
+	defer tableRows.Close()
+	for tableRows.Next() {
+		var tableName, tableType, engine, collation, createOptions, comment, charset string
+		var rowCount, dataSize, indexSize, dataFree int64
+		// Workaround TiDB bug https://github.com/pingcap/tidb/issues/27970
+		var tableCollation sql.NullString
+		if err := tableRows.Scan(
+			&tableName,
+			&tableType,
+			&engine,
+			&collation,
+			&rowCount,
+			&dataSize,
+			&indexSize,
+			&dataFree,
+			&createOptions,
+			&comment,
+			&charset,
+		); err != nil {
+			return nil, err
+		}
+		// Quoted string has a single quote around it and is escaped by QUOTE().
+		comment = stripSingleQuote(comment)
+
+		// Note: We should NOT skip partitioned tables here.
+		// The CREATE_OPTIONS might contain 'partitioned' for partitioned tables,
+		// but we still need to include them in the table list.
+		// The partition details are fetched separately by listPartitionTables.
+
+		key := db.TableKey{Schema: "", Table: tableName}
+		switch tableType {
+		case baseTableType:
+			columns := columnMap[key]
+			tableMetadata := &metadatapb.TableMetadata{
+				Name:             tableName,
+				Columns:          columns,
+				ForeignKeys:      foreignKeysMap[key],
+				Engine:           engine,
+				Collation:        collation,
+				RowCount:         rowCount,
+				DataSize:         dataSize,
+				IndexSize:        indexSize,
+				DataFree:         dataFree,
+				CreateOptions:    createOptions,
+				Comment:          comment,
+				Partitions:       partitionTables[key],
+				CheckConstraints: checkMap[key],
+				Charset:          charset,
+				Triggers:         triggerMap[key],
+			}
+			if tableCollation.Valid {
+				tableMetadata.Collation = tableCollation.String
+			}
+			var indexNames []string
+			if indexes, ok := indexMap[key]; ok {
+				for indexName := range indexes {
+					indexNames = append(indexNames, indexName)
+				}
+				slices.Sort(indexNames)
+				for _, indexName := range indexNames {
+					tableMetadata.Indexes = append(tableMetadata.Indexes, indexes[indexName])
+				}
+			}
+
+			schemaMetadata.Tables = append(schemaMetadata.Tables, tableMetadata)
+		case viewTableType:
+			if view, ok := viewMap[key]; ok {
+				schemaMetadata.Views = append(schemaMetadata.Views, view)
+			}
+		case externalTableType:
+			schemaMetadata.ExternalTables = append(schemaMetadata.ExternalTables, &metadatapb.ExternalTableMetadata{
+				Name:    tableName,
+				Columns: columnMap[key],
+			})
+		default:
+			// Unknown table type, skip
+		}
+	}
+	if err := tableRows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, tableQuery)
+	}
+	materializedViews, err := d.listMaterializedViews(ctx, d.databaseName, schemaMetadata.Tables)
+	if err != nil {
+		return nil, err
+	}
+	schemaMetadata.MaterializedViews = materializedViews
+
+	databaseMetadata := &metadatapb.DatabaseSchemaMetadata{
+		Name:    d.databaseName,
+		Schemas: []*metadatapb.SchemaMetadata{schemaMetadata},
+	}
+	// Query db info.
+	databaseQuery := `
+		SELECT
+			DEFAULT_CHARACTER_SET_NAME,
+			DEFAULT_COLLATION_NAME
+		FROM information_schema.SCHEMATA
+		WHERE SCHEMA_NAME = ?`
+	if err := d.db.QueryRowContext(ctx, databaseQuery, d.databaseName).Scan(
+		&databaseMetadata.CharacterSet,
+		&databaseMetadata.Collation,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.Errorf(common.NotFound, "database %q not found", d.databaseName)
+		}
+		return nil, err
+	}
+
+	return databaseMetadata, err
+}
+
+// listMaterializedViews reads the database's materialized views. OceanBase lists one
+// in neither information_schema.TABLES nor VIEWS, only its storage table __mv_container_<id>,
+// which carries the view's comment and indexes and stays synced as a table. A failed read, such
+// as one without SELECT on the oceanbase database, leaves the list empty; a caller can tell,
+// because a container table is then synced without its materialized view.
+func (d *Driver) listMaterializedViews(ctx context.Context, databaseName string, tables []*metadatapb.TableMetadata) ([]*metadatapb.MaterializedViewMetadata, error) {
+	query := `
+		SELECT MVIEW_NAME, CONTAINER_NAME, QUERY
+		FROM oceanbase.DBA_MVIEWS
+		WHERE OWNER = ?
+		ORDER BY MVIEW_NAME`
+	rows, err := d.db.QueryContext(ctx, query, databaseName)
+	if err != nil {
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
+		slog.Warn("failed to list OceanBase materialized views", slog.String("database", databaseName), log.BBError(err))
+		return nil, nil
+	}
+	defer rows.Close()
+	containers := make(map[string]*metadatapb.TableMetadata, len(tables))
+	for _, table := range tables {
+		containers[table.Name] = table
+	}
+	var views []*metadatapb.MaterializedViewMetadata
+	for rows.Next() {
+		var name, containerName, definition string
+		if err := rows.Scan(&name, &containerName, &definition); err != nil {
+			return nil, err
+		}
+		view := &metadatapb.MaterializedViewMetadata{
+			Name:       name,
+			Definition: definition,
+			// No MySQL-family DDL writer renders OceanBase's CREATE MATERIALIZED VIEW.
+			SkipDump: true,
+		}
+		if container, ok := containers[containerName]; ok {
+			view.Comment = container.Comment
+			for _, index := range container.Indexes {
+				view.Indexes = append(view.Indexes, proto.CloneOf(index))
+			}
+		}
+		views = append(views, view)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	return views, nil
+}
+
+// getEventList lists the database's events by name only. OceanBase rejects SHOW CREATE
+// EVENT, and information_schema.EVENTS cannot rebuild it: it shows the schedule in the session
+// time zone, flattens a BEGIN...END body, and does not record the creating session's time zone,
+// SQL mode, or character set. The definition stays empty, so the DDL writers in
+// backend/plugin/schema/mysql skip the event.
+//
+// A database created under a dropped one's name also lists the dropped one's events, which
+// information_schema cannot tell from its own; DISTINCT lists a name both have once.
+func (d *Driver) getEventList(ctx context.Context, databaseName string) ([]*metadatapb.EventMetadata, error) {
+	query := `
+		SELECT DISTINCT EVENT_NAME
+		FROM information_schema.EVENTS
+		WHERE EVENT_SCHEMA = ?
+		ORDER BY EVENT_NAME`
+	rows, err := d.db.QueryContext(ctx, query, databaseName)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	defer rows.Close()
+	var events []*metadatapb.EventMetadata
+	for rows.Next() {
+		event := &metadatapb.EventMetadata{}
+		if err := rows.Scan(&event.Name); err != nil {
+			return nil, err
+		}
+		events = append(events, event)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	return events, nil
+}
+
+func (d *Driver) getTriggerList(ctx context.Context, databaseName string) (map[db.TableKey][]*metadatapb.TriggerMetadata, error) {
+	// Prune to a single database on MariaDB: filter by EVENT_OBJECT_SCHEMA (the
+	// trigger's table schema), not TRIGGER_SCHEMA, which scans every database's
+	// table metadata. A trigger lives in its table's schema, so they are equivalent.
+	triggersQuery := `
+	SELECT 
+		TRIGGER_NAME,
+		EVENT_OBJECT_TABLE,
+		EVENT_MANIPULATION,
+		ACTION_TIMING,
+		ACTION_STATEMENT,
+		SQL_MODE,
+		CHARACTER_SET_CLIENT,
+		COLLATION_CONNECTION
+	FROM INFORMATION_SCHEMA.TRIGGERS
+	WHERE EVENT_OBJECT_SCHEMA = ?
+	ORDER BY EVENT_OBJECT_TABLE ASC, EVENT_MANIPULATION ASC, ACTION_TIMING ASC, ACTION_ORDER ASC;
+	`
+	triggerRows, err := d.db.QueryContext(ctx, triggersQuery, databaseName)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, triggersQuery)
+	}
+	defer triggerRows.Close()
+	triggerMap := make(map[db.TableKey][]*metadatapb.TriggerMetadata)
+	for triggerRows.Next() {
+		var name, table, event, timing, statement, sqlMode, charsetClient, collationConnection string
+		if err := triggerRows.Scan(
+			&name,
+			&table,
+			&event,
+			&timing,
+			&statement,
+			&sqlMode,
+			&charsetClient,
+			&collationConnection,
+		); err != nil {
+			return nil, err
+		}
+		trigger := &metadatapb.TriggerMetadata{
+			Name:                name,
+			Event:               event,
+			Timing:              timing,
+			Body:                statement,
+			SqlMode:             sqlMode,
+			CharacterSetClient:  charsetClient,
+			CollationConnection: collationConnection,
+			Comment:             "", // MySQL doesn't support trigger comments via information_schema
+		}
+		tableKey := db.TableKey{Schema: "", Table: table}
+		triggerMap[tableKey] = append(triggerMap[tableKey], trigger)
+	}
+	if err := triggerRows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, triggersQuery)
+	}
+	return triggerMap, nil
+}
+
+func (d *Driver) syncRoutines(ctx context.Context, databaseName string) ([]*metadatapb.FunctionMetadata, []*metadatapb.ProcedureMetadata, error) {
+	// Query functions and procedure info.
+	routinesQuery := `
+		SELECT
+			ROUTINE_NAME,
+			ROUTINE_TYPE,
+			SQL_MODE,
+			CHARACTER_SET_CLIENT,
+			COLLATION_CONNECTION,
+			DATABASE_COLLATION,
+			IFNULL(ROUTINE_COMMENT, '')
+		FROM
+			INFORMATION_SCHEMA.ROUTINES
+		WHERE ROUTINE_SCHEMA = ? AND ROUTINE_TYPE IN ('FUNCTION', 'PROCEDURE')
+		ORDER BY ROUTINE_TYPE, ROUTINE_NAME;
+	`
+	routineRows, err := d.db.QueryContext(ctx, routinesQuery, d.databaseName)
+	if err != nil {
+		return nil, nil, util.FormatErrorWithQuery(err, routinesQuery)
+	}
+	defer routineRows.Close()
+	var functions []*metadatapb.FunctionMetadata
+	var procedures []*metadatapb.ProcedureMetadata
+	for routineRows.Next() {
+		var name, routineType, routineComment string
+		var sqlMode, charsetClient, collationConnection, databaseCollation sql.NullString
+		if err := routineRows.Scan(
+			&name,
+			&routineType,
+			&sqlMode,
+			&charsetClient,
+			&collationConnection,
+			&databaseCollation,
+			&routineComment,
+		); err != nil {
+			return nil, nil, err
+		}
+		if strings.EqualFold(routineType, "PROCEDURE") {
+			procedureDef, err := d.getCreateProcedureStmt(ctx, databaseName, name)
+			if err != nil {
+				return nil, nil, err
+			}
+			procedures = append(procedures, &metadatapb.ProcedureMetadata{
+				Name:                name,
+				Definition:          procedureDef,
+				SqlMode:             sqlMode.String,
+				CharacterSetClient:  charsetClient.String,
+				CollationConnection: collationConnection.String,
+				DatabaseCollation:   databaseCollation.String,
+				Comment:             routineComment,
+			})
+		} else {
+			functionDef, err := d.getCreateFunctionStmt(ctx, databaseName, name)
+			if err != nil {
+				return nil, nil, err
+			}
+			functions = append(functions, &metadatapb.FunctionMetadata{
+				Name:                name,
+				Definition:          functionDef,
+				SqlMode:             sqlMode.String,
+				CharacterSetClient:  charsetClient.String,
+				CollationConnection: collationConnection.String,
+				DatabaseCollation:   databaseCollation.String,
+				Comment:             routineComment,
+			})
+		}
+	}
+	if err := routineRows.Err(); err != nil {
+		return nil, nil, util.FormatErrorWithQuery(err, routinesQuery)
+	}
+
+	return functions, procedures, nil
+}
+
+func (d *Driver) getCreateFunctionStmt(ctx context.Context, databaseName, functionName string) (string, error) {
+	query := fmt.Sprintf("SHOW CREATE FUNCTION `%s`.`%s`", databaseName, functionName)
+	rows, err := d.db.QueryContext(ctx, query)
+	if err != nil {
+		return "", util.FormatErrorWithQuery(err, query)
+	}
+	defer rows.Close()
+
+	var createFunction sql.NullString
+
+	columns, err := rows.Columns()
+	if err != nil {
+		return "", err
+	}
+	defIdx := -1
+	for i, column := range columns {
+		if strings.EqualFold(column, "Create Function") {
+			defIdx = i
+			break
+		}
+	}
+
+	if defIdx == -1 {
+		return "", errors.Errorf("failed to find column Create Function")
+	}
+
+	for rows.Next() {
+		dests := make([]any, len(columns))
+		for i := 0; i < len(columns); i++ {
+			if i == defIdx {
+				dests[i] = &createFunction
+				continue
+			}
+			dests[i] = new(string)
+		}
+
+		if err := rows.Scan(dests...); err != nil {
+			return "", err
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return "", err
+	}
+
+	if createFunction.Valid {
+		f := createFunction.String
+
+		functionSymbolIdx := strings.Index(f, " FUNCTION ")
+		if functionSymbolIdx >= 0 {
+			f = fmt.Sprintf("CREATE%s", f[functionSymbolIdx:])
+		}
+
+		f = stripReturnsCharset(f)
+
+		return f, nil
+	}
+	return "", nil
+}
+
+// unescapeCheckClause unescapes the check constraint clause stored in
+// information_schema.CHECK_CONSTRAINTS.CHECK_CLAUSE, which escapes single
+// quotes as \' (e.g. (`type` = _utf8mb4\'A\')). The escaped form is not valid
+// SQL and must be unescaped before being written back into DDL.
+func unescapeCheckClause(clause string) string {
+	return strings.ReplaceAll(clause, `\'`, `'`)
+}
+
+func getCheckConstraintQuery(isMariaDB bool) string {
+	if isMariaDB {
+		// MariaDB includes TABLE_NAME in CHECK_CONSTRAINTS. Joining TABLE_CONSTRAINTS
+		// by constraint name/schema is both slower and incorrect because MariaDB check
+		// names are scoped to a table, not the whole schema.
+		return `
+			SELECT
+				TABLE_NAME,
+				CONSTRAINT_NAME,
+				CHECK_CLAUSE
+			FROM information_schema.CHECK_CONSTRAINTS
+			WHERE CONSTRAINT_SCHEMA = ?
+		`
+	}
+
+	return `
+			SELECT
+				tc.TABLE_NAME,
+				cc.CONSTRAINT_NAME,
+				cc.CHECK_CLAUSE
+			FROM information_schema.CHECK_CONSTRAINTS cc
+				JOIN information_schema.TABLE_CONSTRAINTS tc
+					ON cc.CONSTRAINT_NAME = tc.CONSTRAINT_NAME
+					AND cc.CONSTRAINT_SCHEMA = tc.CONSTRAINT_SCHEMA
+			WHERE tc.CONSTRAINT_TYPE = 'CHECK' AND tc.TABLE_SCHEMA = ?
+		`
+}
+
+// stripReturnsCharset removes the " CHARSET ... [COLLATE ...]" attributes that
+// SHOW CREATE FUNCTION appends to the RETURNS clause. The search is anchored to
+// the RETURNS line because the parameter list is preserved verbatim from the
+// original definition: it can span multiple lines and may itself contain
+// CHARSET attributes.
+func stripReturnsCharset(def string) string {
+	returnsIdx := strings.Index(def, " RETURNS ")
+	if returnsIdx == -1 {
+		return def
+	}
+	lineEnd := strings.Index(def[returnsIdx:], "\n")
+	if lineEnd == -1 {
+		return def
+	}
+	charsetIdx := strings.Index(def[returnsIdx:returnsIdx+lineEnd], " CHARSET ")
+	if charsetIdx == -1 {
+		return def
+	}
+	return def[:returnsIdx+charsetIdx] + def[returnsIdx+lineEnd:]
+}
+
+func (d *Driver) getCreateProcedureStmt(ctx context.Context, databaseName, functionName string) (string, error) {
+	query := fmt.Sprintf("SHOW CREATE PROCEDURE `%s`.`%s`", databaseName, functionName)
+	rows, err := d.db.QueryContext(ctx, query)
+	if err != nil {
+		return "", util.FormatErrorWithQuery(err, query)
+	}
+	defer rows.Close()
+
+	var createProcedure sql.NullString
+
+	columns, err := rows.Columns()
+	if err != nil {
+		return "", err
+	}
+	defIdx := -1
+	for i, column := range columns {
+		if strings.EqualFold(column, "Create Procedure") {
+			defIdx = i
+			break
+		}
+	}
+
+	if defIdx == -1 {
+		return "", errors.Errorf("failed to find column Create Procedure")
+	}
+
+	for rows.Next() {
+		dests := make([]any, len(columns))
+		for i := 0; i < len(columns); i++ {
+			if i == defIdx {
+				dests[i] = &createProcedure
+				continue
+			}
+			dests[i] = new(string)
+		}
+
+		if err := rows.Scan(dests...); err != nil {
+			return "", err
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return "", err
+	}
+
+	if createProcedure.Valid {
+		p := createProcedure.String
+
+		procedureSymbolIdx := strings.Index(p, " PROCEDURE ")
+		if procedureSymbolIdx >= 0 {
+			p = fmt.Sprintf("CREATE%s", p[procedureSymbolIdx:])
+		}
+
+		return p, nil
+	}
+	return "", nil
+}
+
+// binaryDefaultFormat says how the connected server reports binary-family (binary
+// charset) literal column defaults in information_schema.COLUMNS.COLUMN_DEFAULT.
+// Verified live against MySQL 5.7.25 and 8.0.32; SHOW CREATE TABLE on both versions
+// prints the full raw value as a quoted string, but information_schema does not.
+type binaryDefaultFormat int
+
+const (
+	// binaryDefaultVerbatim keeps the legacy verbatim static-default path. Used for
+	// MariaDB and OceanBase, whose information_schema conventions are not verified.
+	binaryDefaultVerbatim binaryDefaultFormat = iota
+	// binaryDefaultRawBytes: MySQL < 8.0 reports the raw value bytes — padded with
+	// trailing NULs to the declared length for binary(N), and truncated at the first
+	// byte that does not convert to the information_schema character set (e.g. 0xFF).
+	binaryDefaultRawBytes
+	// binaryDefaultHexNotation: MySQL >= 8.0 reports hexadecimal notation text
+	// ("0xABCD"), built from the value truncated at its first NUL byte (which also
+	// strips binary(N) padding).
+	binaryDefaultHexNotation
+)
+
+func setColumnMetadataDefault(column *metadatapb.ColumnMetadata, defaultStr sql.NullString, nullableBool bool, extra string, binaryFormat binaryDefaultFormat) {
+	if defaultStr.Valid {
+		// MySQL handles these defaults differently:
+		// 1. CURRENT_TIMESTAMP functions - stored as function names, need QUOTE() unescaping only
+		// 2. Expression defaults - stored as escaped expression strings, need double unescaping
+		// 3. Binary-family literal defaults - version-specific information_schema encodings,
+		//    decoded to one canonical form (never CURRENT_TIMESTAMP: binary types do not
+		//    support it, so raw bytes that merely spell it stay a literal)
+		// 4. Static defaults - stored as literal values, keep quoted for mysqldump compatibility
+
+		// First, remove QUOTE() escaping that was added by our SQL query
+		unquotedDefault := UnquoteMySQLString(defaultStr.String)
+		isBinaryDefault := binaryFormat != binaryDefaultVerbatim && isBinaryFamilyColumnType(column.Type)
+		switch {
+		case IsCurrentTimestampLike(unquotedDefault) && !isBinaryDefault:
+			// CURRENT_TIMESTAMP, CURRENT_DATE, etc. - these are function names, not expressions
+			// MySQL stores them without quotes in the catalog, so we just need QUOTE() unescaping
+			column.Default = unquotedDefault
+		case strings.Contains(extra, "DEFAULT_GENERATED"):
+			// Expression defaults like DEFAULT (UUID()) or DEFAULT (JSON_OBJECT('key', value))
+			// MySQL stores the expression as an escaped string in the catalog, then QUOTE() adds another layer
+			// We need both QUOTE() unescaping and catalog storage unescaping
+			unescapedDefault := UnescapeExpressionDefault(unquotedDefault)
+			column.Default = fmt.Sprintf("(%s)", unescapedDefault)
+		case isBinaryDefault:
+			if canonical, ok := canonicalBinaryDefault(unquotedDefault, column.Type, binaryFormat); ok {
+				column.Default = canonical
+			} else {
+				// Unexpected shape for this server version — keep the legacy verbatim form.
+				column.Default = defaultStr.String
+			}
+		default:
+			// Static defaults like DEFAULT 'hello' or DEFAULT 42
+			// MySQL evaluates these at DDL time and stores them as literal values
+			// Preserve quotes for mysqldump compatibility (mysqldump expects quoted literals)
+			column.Default = defaultStr.String
+		}
+	} else if strings.Contains(strings.ToUpper(extra), autoIncrementSymbol) {
+		// TODO(zp): refactor column default value.
+		// Use the upper case to consistent with MySQL Dump.
+		column.Default = autoIncrementSymbol
+	} else if nullableBool {
+		// This is NULL if the column has an explicit default of NULL,
+		// or if the column definition includes no DEFAULT clause.
+		// https://dev.mysql.com/doc/refman/8.0/en/information-schema-columns-table.html
+		column.Default = "NULL"
+	}
+
+	if strings.Contains(extra, "on update CURRENT_TIMESTAMP") {
+		re := regexp.MustCompile(`CURRENT_TIMESTAMP\((\d+)\)`)
+		match := re.FindStringSubmatch(extra)
+		if len(match) > 0 {
+			digits := match[1]
+			column.OnUpdate = fmt.Sprintf("CURRENT_TIMESTAMP(%s)", digits)
+		} else {
+			column.OnUpdate = "CURRENT_TIMESTAMP"
+		}
+	}
+}
+
+// isBinaryFamilyColumnType reports whether an information_schema COLUMN_TYPE spelling
+// denotes a binary-charset string type (binary / varbinary / blob family), whose
+// literal defaults information_schema reports in version-specific encodings.
+func isBinaryFamilyColumnType(columnType string) bool {
+	lower := strings.ToLower(strings.TrimSpace(columnType))
+	switch {
+	case lower == "binary" || strings.HasPrefix(lower, "binary("):
+		return true
+	case lower == "varbinary" || strings.HasPrefix(lower, "varbinary("):
+		return true
+	case lower == "tinyblob" || lower == "mediumblob" || lower == "longblob":
+		return true
+	case lower == "blob" || strings.HasPrefix(lower, "blob("):
+		return true
+	default:
+		return false
+	}
+}
+
+// isFixedBinaryColumnType reports whether COLUMN_TYPE is the fixed-length binary(N)
+// type, whose values (including the stored default on 5.7) are right-padded with NUL
+// bytes to the declared length. The padding is not part of the declared default.
+func isFixedBinaryColumnType(columnType string) bool {
+	lower := strings.ToLower(strings.TrimSpace(columnType))
+	return lower == "binary" || strings.HasPrefix(lower, "binary(")
+}
+
+// canonicalBinaryDefault decodes a binary-family literal column default from the
+// version-specific information_schema encoding (see binaryDefaultFormat) and renders
+// it in the one canonical dump form shared by every version:
+//
+//   - an empty string literal (two single quotes) for the empty value (SHOW CREATE
+//     prints binary(N) defaults NUL-padded; the padding is dropped because it is
+//     reapplied on write and NUL bytes cannot live in the UTF-8 metadata/SDL text),
+//   - the SHOW CREATE-style quoted string ('ab', with QUOTE()-style backslash escaping
+//     of \ and ') when the bytes are clean printable text,
+//   - an unquoted hex literal (0x610062) otherwise — value-equivalent input syntax that
+//     both versions accept and that stays representable in UTF-8.
+//
+// Without this, 8.0's hex NOTATION text was re-quoted as a string (DEFAULT '0x6162'),
+// which never converges: cross-version diffs phantom-MODIFY every binary default and
+// re-applying a dump double-encodes it ('0x6162' -> '0x307836313632').
+//
+// The ok result is false when the text does not match the declared encoding (not hex
+// notation on a >= 8.0 server); the caller falls back to the legacy verbatim form.
+func canonicalBinaryDefault(unquoted, columnType string, format binaryDefaultFormat) (string, bool) {
+	var value []byte
+	switch {
+	case format == binaryDefaultHexNotation && unquoted == "":
+		// varbinary DEFAULT '' is reported as an empty string, not as "0x".
+		value = nil
+	case format == binaryDefaultHexNotation:
+		if len(unquoted) < 2 || unquoted[0] != '0' || (unquoted[1] != 'x' && unquoted[1] != 'X') {
+			return "", false
+		}
+		decoded, err := hex.DecodeString(unquoted[2:])
+		if err != nil {
+			return "", false
+		}
+		value = decoded
+	default:
+		value = []byte(unquoted)
+	}
+	if isFixedBinaryColumnType(columnType) {
+		value = bytes.TrimRight(value, "\x00")
+	}
+	if len(value) == 0 {
+		return "''", true
+	}
+	if isCleanDefaultText(value) {
+		escaped := strings.ReplaceAll(string(value), `\`, `\\`)
+		escaped = strings.ReplaceAll(escaped, `'`, `\'`)
+		return "'" + escaped + "'", true
+	}
+	return "0x" + hex.EncodeToString(value), true
+}
+
+// isCleanDefaultText reports whether value can be embedded as a plain quoted string in
+// UTF-8 SDL text: valid UTF-8 with no control bytes (NUL bytes in particular — the
+// information_schema encodings differ on them and SDL must stay NUL-free).
+func isCleanDefaultText(value []byte) bool {
+	if !utf8.Valid(value) {
+		return false
+	}
+	for _, b := range value {
+		if b < 0x20 || b == 0x7F {
+			return false
+		}
+	}
+	return true
+}
+
+// isInvisibleColumnExtra reports whether the information_schema.COLUMNS.EXTRA value
+// carries the standalone INVISIBLE token (MySQL 8.0.23+; MariaDB 10.3+ reports the
+// same token, but the capture site gates on isStockMySQL — see SyncDBSchema). EXTRA
+// can hold several space-separated tokens (e.g. "VIRTUAL GENERATED INVISIBLE" or
+// "DEFAULT_GENERATED on update CURRENT_TIMESTAMP INVISIBLE"), so the token is matched
+// as a whole field rather than a substring.
+func isInvisibleColumnExtra(extra string) bool {
+	for _, tok := range strings.Fields(extra) {
+		if strings.EqualFold(tok, "INVISIBLE") {
+			return true
+		}
+	}
+	return false
+}
+
+// UnescapeExpressionDefault unescapes the default expression for MySQL.
+// This handles the second layer of escaping that MySQL applies when storing
+// expression defaults (like DEFAULT (UUID())) in system catalogs.
+// MySQL stores expressions as escaped strings internally, separate from QUOTE() escaping.
+func UnescapeExpressionDefault(s string) string {
+	s = strings.ReplaceAll(s, `\'`, `'`) // unescape single quote
+	s = strings.ReplaceAll(s, `\\`, `\`) // unescape backslash
+	return s
+}
+
+func IsCurrentTimestampLike(s string) bool {
+	upper := strings.ToUpper(s)
+	if strings.HasPrefix(upper, "CURRENT_TIMESTAMP") {
+		return true
+	}
+	if strings.HasPrefix(upper, "CURRENT_DATE") {
+		return true
+	}
+	return false
+}
+
+func (d *Driver) reconcileViewDefinition(ctx context.Context, databaseName, viewName string) (string, error) {
+	query := fmt.Sprintf("SHOW CREATE VIEW `%s`.`%s`", databaseName, viewName)
+	var createStmt, unused string
+	if err := d.db.QueryRowContext(ctx, query).Scan(&unused, &createStmt, &unused, &unused); err != nil {
+		if noRows := errors.Is(err, sql.ErrNoRows); noRows {
+			slog.Warn("no rows return for query show create view", slog.String("viewName", viewName), slog.String("databaseName", databaseName))
+			return "", nil
+		}
+		return "", errors.Wrapf(err, "failed to scan row for query: %s", query)
+	}
+
+	def, err := getViewDefFromCreateView(createStmt)
+	if err != nil {
+		slog.Warn("failed to get view definition", slog.String("viewName", viewName), slog.String("databaseName", databaseName), log.BBError(err))
+		return "", nil
+	}
+
+	return def, nil
+}
+
+func getViewDefFromCreateView(createView string) (string, error) {
+	viewDefMatching := viewDefMatcher.FindStringSubmatch(createView)
+	if len(viewDefMatching) == 0 {
+		return "", errors.Errorf("failed to match view definition, %s", createView)
+	}
+	for i, name := range viewDefMatcher.SubexpNames() {
+		if name == "def" && i < len(viewDefMatching) {
+			return viewDefMatching[i], nil
+		}
+	}
+	return "", errors.Errorf("failed to match view definition, %s", createView)
+}
+
+func (d *Driver) getForeignKeyList(ctx context.Context, databaseName string) (map[db.TableKey][]*metadatapb.ForeignKeyMetadata, error) {
+	// Prune to a single database on MariaDB instead of opening every database's
+	// table metadata (Error 1969 on large instances). REFERENTIAL_CONSTRAINTS prunes
+	// on CONSTRAINT_SCHEMA; KEY_COLUMN_USAGE prunes only on TABLE_SCHEMA. A foreign
+	// key lives in its table's schema, so the predicates are equivalent. Never wrap
+	// the column in LOWER() -- it defeats the pruning.
+	fkQuery := `
+		SELECT
+			TABLE_NAME,
+			CONSTRAINT_NAME,
+			REFERENCED_TABLE_NAME,
+			DELETE_RULE,
+			UPDATE_RULE,
+			MATCH_OPTION
+		FROM INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS
+		WHERE CONSTRAINT_SCHEMA = ?;
+	`
+
+	kcuQuery := `
+		SELECT
+			TABLE_NAME,
+			CONSTRAINT_NAME,
+			COLUMN_NAME,
+			REFERENCED_COLUMN_NAME
+		FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+		WHERE POSITION_IN_UNIQUE_CONSTRAINT IS NOT NULL AND TABLE_SCHEMA = ?
+		ORDER BY TABLE_NAME, CONSTRAINT_NAME, ORDINAL_POSITION;
+	`
+
+	fkRows, err := d.db.QueryContext(ctx, fkQuery, databaseName)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, fkQuery)
+	}
+	defer fkRows.Close()
+	fkMap := make(map[db.IndexKey]*metadatapb.ForeignKeyMetadata)
+	for fkRows.Next() {
+		var tableName string
+		var fk metadatapb.ForeignKeyMetadata
+		if err := fkRows.Scan(
+			&tableName,
+			&fk.Name,
+			&fk.ReferencedTable,
+			&fk.OnDelete,
+			&fk.OnUpdate,
+			&fk.MatchType,
+		); err != nil {
+			return nil, err
+		}
+		key := db.IndexKey{Schema: "", Table: tableName, Index: fk.Name}
+		fkMap[key] = &fk
+	}
+	if err := fkRows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, fkQuery)
+	}
+
+	kcuQueryRows, err := d.db.QueryContext(ctx, kcuQuery, databaseName)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, kcuQuery)
+	}
+	defer kcuQueryRows.Close()
+	for kcuQueryRows.Next() {
+		var tableName, fkName, column, referencedColumn string
+		if err := kcuQueryRows.Scan(
+			&tableName,
+			&fkName,
+			&column,
+			&referencedColumn,
+		); err != nil {
+			return nil, err
+		}
+		key := db.IndexKey{Schema: "", Table: tableName, Index: fkName}
+		if fk, ok := fkMap[key]; ok {
+			fk.Columns = append(fk.Columns, column)
+			fk.ReferencedColumns = append(fk.ReferencedColumns, referencedColumn)
+		}
+	}
+	if err := kcuQueryRows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, kcuQuery)
+	}
+	unordered := make(map[db.TableKey][]*metadatapb.ForeignKeyMetadata)
+	for key, fk := range fkMap {
+		tableKey := db.TableKey{Schema: "", Table: key.Table}
+		unordered[tableKey] = append(unordered[tableKey], fk)
+	}
+
+	orderedResult := make(map[db.TableKey][]*metadatapb.ForeignKeyMetadata)
+	for key, fks := range unordered {
+		slices.SortFunc(fks, func(x, y *metadatapb.ForeignKeyMetadata) int {
+			if x.Name < y.Name {
+				return -1
+			} else if x.Name > y.Name {
+				return 1
+			}
+			return 0
+		})
+		orderedResult[key] = fks
+	}
+	return orderedResult, nil
+}
+
+func stripSingleQuote(s string) string {
+	if len(s) >= 2 && s[0] == '\'' && s[len(s)-1] == '\'' {
+		return s[1 : len(s)-1]
+	}
+	return s
+}
+
+// UnquoteMySQLString unescapes a string that was escaped by MySQL's QUOTE() function.
+// MySQL's QUOTE() function escapes:
+// - \ → \\
+// - ' → \'
+// - ASCII NUL (0x00) → \0
+// - Control-Z (0x1A) → \Z
+func UnquoteMySQLString(s string) string {
+	if len(s) == 0 {
+		return s
+	}
+
+	// First remove surrounding quotes if present
+	s = stripSingleQuote(s)
+
+	// Now unescape the content
+	result := make([]byte, 0, len(s))
+	for i := 0; i < len(s); i++ {
+		if s[i] == '\\' && i+1 < len(s) {
+			switch s[i+1] {
+			case '\\':
+				result = append(result, '\\')
+				i++ // skip next character
+			case '\'':
+				result = append(result, '\'')
+				i++ // skip next character
+			case '0':
+				result = append(result, 0) // ASCII NUL
+				i++                        // skip next character
+			case 'Z':
+				result = append(result, 0x1A) // Control-Z
+				i++                           // skip next character
+			case 'n':
+				result = append(result, '\n') // newline
+				i++                           // skip next character
+			case 't':
+				result = append(result, '\t') // tab
+				i++                           // skip next character
+			case 'r':
+				result = append(result, '\r') // carriage return
+				i++                           // skip next character
+			case 'b':
+				result = append(result, '\b') // backspace
+				i++                           // skip next character
+			default:
+				// Unknown escape sequence, keep the backslash
+				result = append(result, s[i])
+			}
+		} else {
+			result = append(result, s[i])
+		}
+	}
+	return string(result)
+}

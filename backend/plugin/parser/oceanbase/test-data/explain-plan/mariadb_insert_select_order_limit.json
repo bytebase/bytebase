@@ -1,0 +1,1 @@
+{"query_block":{"select_id":1,"cost":0.1764192,"nested_loop":[{"read_sorted_file":{"filesort":{"sort_key":"t.d","table":{"table_name":"t","access_type":"ALL","loops":1,"rows":1000,"cost":0.1764192,"filtered":100}}}}]}}

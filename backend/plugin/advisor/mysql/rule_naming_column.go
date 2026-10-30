@@ -19,7 +19,6 @@ var _ advisor.Advisor = (*NamingColumnConventionAdvisor)(nil)
 func init() {
 	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_NAMING_COLUMN, &NamingColumnConventionAdvisor{})
 	advisor.Register(storepb.Engine_MARIADB, storepb.SQLReviewRule_NAMING_COLUMN, &NamingColumnConventionAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, storepb.SQLReviewRule_NAMING_COLUMN, &NamingColumnConventionAdvisor{})
 }
 
 // NamingColumnConventionAdvisor is the advisor checking for column naming convention.

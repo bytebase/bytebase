@@ -17,7 +17,6 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_OCEANBASE, storepb.SQLReviewRule_COLUMN_DISALLOW_DROP, &ColumnDisallowDropAdvisor{})
 }
 
 // ColumnDisallowDropAdvisor is the advisor checking for disallow DROP COLUMN statement.

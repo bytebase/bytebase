@@ -76,7 +76,7 @@ func TestParseStatementsSyntaxErrorColumnOnSharedLine(t *testing.T) {
 }
 
 func TestParseMySQLStatementsRejectsMariaDBSyntax(t *testing.T) {
-	for _, engine := range []storepb.Engine{storepb.Engine_MYSQL, storepb.Engine_OCEANBASE} {
+	for _, engine := range []storepb.Engine{storepb.Engine_MYSQL} {
 		_, err := base.ParseStatements(engine, "CREATE OR REPLACE TABLE t (a INT);")
 
 		var syntaxErr *base.SyntaxError

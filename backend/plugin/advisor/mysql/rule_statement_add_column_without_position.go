@@ -17,7 +17,6 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_OCEANBASE, storepb.SQLReviewRule_STATEMENT_ADD_COLUMN_WITHOUT_POSITION, &StatementAddColumnWithoutPositionAdvisor{})
 }
 
 // StatementAddColumnWithoutPositionAdvisor is the advisor checking for no position in ADD COLUMN clause.
