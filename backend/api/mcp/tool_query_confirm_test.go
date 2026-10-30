@@ -56,10 +56,11 @@ func (m *confirmingQueryMock) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		Name      string `json:"name"`
 		Statement string `json:"statement"`
 		Schema    string `json:"schema"`
+		Container string `json:"container"`
 	}
 	_ = json.NewDecoder(r.Body).Decode(&body)
 	marker, marked := auth.MCPConfirmedDecisionFromContext(r.Context())
-	confirmed := marked && bytes.Equal(marker.Digest, auth.MCPStatementDigest(body.Statement, body.Name, body.Schema))
+	confirmed := marked && bytes.Equal(marker.Digest, auth.MCPStatementDigest(body.Statement, body.Name, body.Schema, body.Container))
 	m.mu.Lock()
 	m.queries = append(m.queries, queryCall{Statement: body.Statement, Confirmed: confirmed})
 	m.mu.Unlock()
@@ -136,6 +137,7 @@ func TestQueryDatabaseAsksBeforeAWrite(t *testing.T) {
 		databases   []map[string]any
 		environment string
 		schema      string
+		container   string
 		header      string
 	}{
 		{name: "the database's default schema", databases: employeeDatabase(), environment: "prod",
@@ -147,6 +149,8 @@ func TestQueryDatabaseAsksBeforeAWrite(t *testing.T) {
 		}, environment: "prod", header: `Run in environment "prod" on database "employee_db",` + "\n" + `instance "prod-pg":`},
 		{name: "no environment", databases: employeeDatabase(),
 			header: `Run on database "employee_db",` + "\n" + `instance "prod-pg":`},
+		{name: "a CosmosDB container", databases: employeeDatabase(), environment: "prod", container: "orders",
+			header: `Run in environment "prod" on database "employee_db",` + "\n" + `instance "prod-pg", container "orders":`},
 	} {
 		t.Run(row.name, func(t *testing.T) {
 			mock := newConfirmingQueryMock(row.databases)
@@ -156,7 +160,14 @@ func TestQueryDatabaseAsksBeforeAWrite(t *testing.T) {
 			session := connectLegacy(t, endpoint, token, &mcp.ClientOptions{ElicitationHandler: user.handle})
 
 			const insert = "INSERT INTO employee VALUES (1)"
-			res := callQuery(t, session, queryParams(insert, row.schema))
+			arguments := map[string]any{"database": "employee_db", "statement": insert}
+			if row.schema != "" {
+				arguments["schema"] = row.schema
+			}
+			if row.container != "" {
+				arguments["container"] = row.container
+			}
+			res := callQuery(t, session, &mcp.CallToolParams{Name: "query_database", Arguments: arguments})
 			require.False(t, res.IsError, resultText(t, res))
 			require.EqualValues(t, 1, user.asked.Load())
 			asked := user.lastParams(t)
@@ -397,6 +408,11 @@ func TestQueryDatabaseConfirmationUnderMRTRClient(t *testing.T) {
 	require.True(t, changed.IsError)
 	require.Contains(t, resultText(t, changed), "STALE_CONFIRMATION")
 
+	moved := &mcp.CallToolParams{Name: "query_database", Arguments: map[string]any{"database": "employee_db", "statement": insert, "container": "orders"}}
+	moved.InputResponses = run
+	moved.RequestState = first.RequestState
+	require.Contains(t, resultText(t, callQuery(t, session, moved)), "STALE_CONFIRMATION", "a confirmation is for one container")
+
 	unknown := call(insert, mcp.InputResponseMap{confirmDecisionRequestID: runAnswer("skip")}, first.RequestState)
 	require.Equal(t, "Not run: the answer chose neither option, so nothing changed.", resultText(t, unknown))
 
@@ -416,7 +432,7 @@ func TestQueryDatabaseReportsAnAnswerThatRunsNothingBeforeAStaleOne(t *testing.T
 	const insert = "INSERT INTO employee VALUES (1)"
 	const database = "instances/prod-pg/databases/employee_db"
 	alice := withOAuth2ClientID(withUserEmail(withWorkspaceID(context.Background(), "ws-test"), "alice@example.com"), "client-A")
-	old := s.signConfirmationState(alice, runConfirmation{database: database}, auth.MCPStatementDigest(insert, database, ""), time.Now().Add(-11*time.Minute))
+	old := s.signConfirmationState(alice, runConfirmation{database: database}, auth.MCPStatementDigest(insert, database, "", ""), time.Now().Add(-11*time.Minute))
 	call := func(answer *mcp.ElicitResult) *mcp.CallToolResult {
 		params := queryParams(insert, "")
 		params.InputResponses = mcp.InputResponseMap{confirmDecisionRequestID: answer}

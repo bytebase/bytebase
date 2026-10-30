@@ -123,7 +123,7 @@ func (s *Server) handleQueryDatabase(ctx context.Context, req *mcp.CallToolReque
 	// A statement Query cannot show is a read runs once the user chooses Run
 	// now, or at once when the client cannot show the form.
 	confirmation := runConfirmation{database: resolved.resourceName}
-	digest := auth.MCPStatementDigest(input.Statement, resolved.resourceName, input.Schema)
+	digest := auth.MCPStatementDigest(input.Statement, resolved.resourceName, input.Schema, input.Container)
 	var confirmed []byte
 	if !canShowConfirmation(req) {
 		confirmed = digest
@@ -143,7 +143,7 @@ func (s *Server) handleQueryDatabase(ctx context.Context, req *mcp.CallToolReque
 	// A confirmed call that Query still refuses reports the refusal: asking
 	// again in the same call would send a second form.
 	if errors.As(err, &required) && confirmed == nil {
-		return s.askToRun(ctx, req, confirmation, digest, input.Statement, required), nil, nil
+		return s.askToRun(ctx, req, confirmation, digest, input.Statement, input.Container, required), nil, nil
 	}
 	if err != nil {
 		var qe *queryError

@@ -32,7 +32,7 @@ func mcpStatementIsRead(ctx context.Context, engine storepb.Engine, statement st
 func mcpWriteConfirmed(ctx context.Context, request *v1pb.QueryRequest) bool {
 	marker, ok := auth.MCPConfirmedDecisionFromContext(ctx)
 	return ok && marker.Procedure == v1connect.SQLServiceQueryProcedure &&
-		bytes.Equal(marker.Digest, auth.MCPStatementDigest(request.Statement, request.Name, request.GetSchema()))
+		bytes.Equal(marker.Digest, auth.MCPStatementDigest(request.Statement, request.Name, request.GetSchema(), request.GetContainer()))
 }
 
 // mcpConfirmationRequired refuses an MCP request that may write and that the

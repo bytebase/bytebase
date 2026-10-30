@@ -42,7 +42,7 @@ func TestMCPStatementIsRead(t *testing.T) {
 func TestMCPWriteConfirmed(t *testing.T) {
 	const database = "instances/prod/databases/hr"
 	request := &v1pb.QueryRequest{Name: database, Statement: "DELETE FROM employee", Schema: new("app")}
-	digest := auth.MCPStatementDigest("DELETE FROM employee", database, "app")
+	digest := auth.MCPStatementDigest("DELETE FROM employee", database, "app", "")
 	mark := func(procedure, resource string, digest []byte) context.Context {
 		return auth.WithMCPConfirmedDecision(context.Background(), auth.MCPConfirmedDecision{Procedure: procedure, Resource: resource, Digest: digest})
 	}
@@ -54,16 +54,21 @@ func TestMCPWriteConfirmed(t *testing.T) {
 		{name: "no mark", ctx: context.Background()},
 		{name: "the confirmed request", ctx: mark(v1connect.SQLServiceQueryProcedure, database, digest), confirmed: true},
 		{name: "a mark with no digest", ctx: mark(v1connect.SQLServiceQueryProcedure, database, nil)},
-		{name: "another statement", ctx: mark(v1connect.SQLServiceQueryProcedure, database, auth.MCPStatementDigest("DELETE FROM salary", database, "app"))},
-		{name: "another schema", ctx: mark(v1connect.SQLServiceQueryProcedure, database, auth.MCPStatementDigest("DELETE FROM employee", database, ""))},
+		{name: "another statement", ctx: mark(v1connect.SQLServiceQueryProcedure, database, auth.MCPStatementDigest("DELETE FROM salary", database, "app", ""))},
+		{name: "another schema", ctx: mark(v1connect.SQLServiceQueryProcedure, database, auth.MCPStatementDigest("DELETE FROM employee", database, "", ""))},
+		{name: "another container", ctx: mark(v1connect.SQLServiceQueryProcedure, database, auth.MCPStatementDigest("DELETE FROM employee", database, "app", "orders"))},
 		{name: "another database", ctx: mark(v1connect.SQLServiceQueryProcedure, "instances/prod/databases/payroll",
-			auth.MCPStatementDigest("DELETE FROM employee", "instances/prod/databases/payroll", "app"))},
+			auth.MCPStatementDigest("DELETE FROM employee", "instances/prod/databases/payroll", "app", ""))},
 		{name: "another procedure", ctx: mark(v1connect.IssueServiceApproveIssueProcedure, database, digest)},
 	} {
 		t.Run(row.name, func(t *testing.T) {
 			require.Equal(t, row.confirmed, mcpWriteConfirmed(row.ctx, request))
 		})
 	}
+	t.Run("a request for a container the mark does not name", func(t *testing.T) {
+		inContainer := &v1pb.QueryRequest{Name: database, Statement: "DELETE FROM employee", Schema: new("app"), Container: new("orders")}
+		require.False(t, mcpWriteConfirmed(mark(v1connect.SQLServiceQueryProcedure, database, digest), inContainer))
+	})
 }
 
 func TestMCPConfirmationRequired(t *testing.T) {

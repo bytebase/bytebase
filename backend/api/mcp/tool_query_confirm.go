@@ -86,7 +86,7 @@ func confirmationRequiredIn(body json.RawMessage) *confirmationRequired {
 // askToRun returns the form that asks the user to run statement. A call that
 // already asked which database to use gets a result that has the agent call
 // again instead: an older client answers one form per call.
-func (s *Server) askToRun(ctx context.Context, req *mcp.CallToolRequest, confirmation runConfirmation, digest []byte, statement string, required *confirmationRequired) *mcp.CallToolResult {
+func (s *Server) askToRun(ctx context.Context, req *mcp.CallToolRequest, confirmation runConfirmation, digest []byte, statement, container string, required *confirmationRequired) *mcp.CallToolResult {
 	project, instance, database, err := common.GetDatabaseResourceName(confirmation.database)
 	if err != nil {
 		return formatToolError(err)
@@ -100,7 +100,7 @@ func (s *Server) askToRun(ctx context.Context, req *mcp.CallToolRequest, confirm
 			"Not run: this statement may write, so the user confirms it in a form, and this call already asked which database to use. "+
 				"Call query_database again with database %q and instance %q to ask the user.", database, instanceName))
 	}
-	header := headerLines(required, database, instance)
+	header := headerLines(required, database, instance, container)
 	const runsAtOnce = "Run now runs it at once, with no issue or approval."
 	request := strings.Split(strings.TrimSpace(statement), "\n")
 	description := runsAtOnce
@@ -135,7 +135,7 @@ func (s *Server) askToRun(ctx context.Context, req *mcp.CallToolRequest, confirm
 // database so a long database name cannot hide it. Names too long for two lines
 // get a line each, whose labels leave room for a 63-character ID or PostgreSQL
 // database name in the 74 columns an 80-column terminal shows.
-func headerLines(required *confirmationRequired, database, instance string) []string {
+func headerLines(required *confirmationRequired, database, instance, container string) []string {
 	where := fmt.Sprintf("Run on database %q,", database)
 	if required.environment != "" {
 		where = fmt.Sprintf("Run in environment %q on database %q,", required.environment, database)
@@ -143,6 +143,9 @@ func headerLines(required *confirmationRequired, database, instance string) []st
 	scope := fmt.Sprintf("instance %q", instance)
 	if required.schema != "" {
 		scope += fmt.Sprintf(", schema %q", required.schema)
+	}
+	if container != "" {
+		scope += fmt.Sprintf(", container %q", container)
 	}
 	if header := []string{where, scope + ":"}; fitsMessageLines(header) {
 		return header
@@ -154,6 +157,9 @@ func headerLines(required *confirmationRequired, database, instance string) []st
 	lines = append(lines, fmt.Sprintf("Database %q", database), fmt.Sprintf("Instance %q", instance))
 	if required.schema != "" {
 		lines = append(lines, fmt.Sprintf("Schema %q", required.schema))
+	}
+	if container != "" {
+		lines = append(lines, fmt.Sprintf("Container %q", container))
 	}
 	return lines
 }

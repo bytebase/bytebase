@@ -37,11 +37,12 @@ const (
 )
 
 // MCPStatementDigest identifies the SQL request a user confirms: the statement
-// exactly as sent, the database and the default schema. Each field is length
-// prefixed, so no two requests share a digest by moving text between fields.
-func MCPStatementDigest(statement, database, schema string) []byte {
+// exactly as sent, the database, the default schema and the CosmosDB container.
+// Each field is length prefixed, so no two requests share a digest by moving
+// text between fields.
+func MCPStatementDigest(statement, database, schema, container string) []byte {
 	h := sha256.New()
-	for _, field := range []string{statement, database, schema} {
+	for _, field := range []string{statement, database, schema, container} {
 		_, _ = h.Write(binary.BigEndian.AppendUint64(nil, uint64(len(field))))
 		_, _ = h.Write([]byte(field))
 	}
