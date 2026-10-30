@@ -358,8 +358,6 @@ describe("SQLEditorSection theme", () => {
   });
 });
 
-// The bb.sql.export permission controls who may export; the export destination
-// switches control only where exports go.
 describe("SQLEditorSection query data policy toggles", () => {
   beforeEach(() => {
     mocks.policy.exportDestinationPolicy = undefined;
