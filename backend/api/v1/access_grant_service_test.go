@@ -135,6 +135,28 @@ func TestIsReadOnlyStatementForAccessGrantAllowsDocumentEngineReadStatements(t *
 	}
 }
 
+func TestIsReadOnlyStatementForAccessGrantOnSQLServer(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		statement string
+		readOnly  bool
+	}{
+		{statement: "SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED\nSELECT id FROM t", readOnly: true},
+		{statement: "SET NOCOUNT ON; SELECT id FROM t", readOnly: true},
+		{statement: "SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED\nDELETE FROM t"},
+		{statement: "DECLARE @n int = 1; SELECT @n"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.statement, func(t *testing.T) {
+			t.Parallel()
+			readOnly, err := isReadOnlyStatementForAccessGrant(context.Background(), storepb.Engine_MSSQL, tc.statement)
+			require.NoError(t, err)
+			require.Equal(t, tc.readOnly, readOnly)
+		})
+	}
+}
+
 func TestIsReadOnlyStatementForAccessGrantRejectsDocumentEngineInvalidStatements(t *testing.T) {
 	t.Parallel()
 	readOnly, err := isReadOnlyStatementForAccessGrant(context.Background(), storepb.Engine_ELASTICSEARCH, `db.users.find({})`)

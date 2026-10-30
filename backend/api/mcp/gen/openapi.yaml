@@ -13464,6 +13464,14 @@ components:
       title: ExportAuditLogsResponse
       additionalProperties: false
       description: Response message for exporting audit logs.
+    bytebase.v1.ExportDestination:
+      type: string
+      title: ExportDestination
+      enum:
+        - EXPORT_DESTINATION_UNSPECIFIED
+        - DOWNLOAD
+        - SHAREPOINT
+      description: Where an export goes. Values are added as destinations are supported.
     bytebase.v1.ExportFormat:
       type: string
       title: ExportFormat
@@ -13533,6 +13541,13 @@ components:
           description: |-
             Container is the container name to execute the query against, used for
              CosmosDB only.
+        destination:
+          allOf:
+            - $ref: '#/components/schemas/bytebase.v1.ExportDestination'
+          title: destination
+          description: |-
+            Where the export goes. A destination the workspace query data policy
+             does not allow is rejected with FAILED_PRECONDITION.
       title: ExportRequest
       required:
         - name
@@ -13552,8 +13567,26 @@ components:
             The just-in-time access grant applied to this export, if any.
              Format: projects/{project}/accessGrants/{accessGrant}.
              Empty when the user was authorized through normal ACL rather than a grant.
+        uri:
+          type: string
+          title: uri
+          description: |-
+            Set when the export was sent to an export destination: the absolute
+             location of the folder or key prefix created for this export, for example
+             https://… for SharePoint or s3://bucket/prefix for S3. content is then empty.
       title: ExportResponse
       additionalProperties: false
+    bytebase.v1.ExportSetting:
+      type: object
+      properties:
+        sharepoint:
+          allOf:
+            - $ref: '#/components/schemas/bytebase.v1.SharePointSetting'
+          title: sharepoint
+          description: Unset when SharePoint is not configured.
+      title: ExportSetting
+      additionalProperties: false
+      description: ExportSetting holds each export destination provider's credentials.
     bytebase.v1.ExportVCSProviderUsersRequest:
       type: object
       title: ExportVCSProviderUsersRequest
@@ -18153,6 +18186,7 @@ components:
         - FEATURE_COMMUNITY_SUPPORT
         - FEATURE_EMAIL_SUPPORT
         - FEATURE_DEDICATED_SUPPORT_WITH_SLA
+        - FEATURE_SHAREPOINT_EXPORT
       description: PlanFeature represents the available features in Bytebase
     bytebase.v1.PlanLimitConfig:
       type: object
@@ -18544,6 +18578,11 @@ components:
           type: boolean
           title: allow_last_plan_editor_approval
           description: Whether to allow the last Plan editor to approve a database change issue.
+        exportSetting:
+          allOf:
+            - $ref: '#/components/schemas/bytebase.v1.Project.ExportSetting'
+          title: export_setting
+          description: Export configuration for this project.
       title: Project
       additionalProperties: false
     bytebase.v1.Project.ExecutionRetryPolicy:
@@ -18557,6 +18596,17 @@ components:
       title: ExecutionRetryPolicy
       additionalProperties: false
       description: Execution retry policy configuration.
+    bytebase.v1.Project.ExportSetting:
+      type: object
+      properties:
+        sharepoint:
+          allOf:
+            - $ref: '#/components/schemas/bytebase.v1.SharePointDestination'
+          title: sharepoint
+          description: Unset when the project has no SharePoint destination.
+      title: ExportSetting
+      additionalProperties: false
+      description: Destinations offered for this project's exports, at most one per provider.
     bytebase.v1.PurchaseBillingMethod:
       type: object
       properties:
@@ -18693,6 +18743,13 @@ components:
              If false,
              1. when read-only data source is configured, users're force to use the read-only data source
              2. otherwise fallback to use the admin data source.
+        disableDownload:
+          type: boolean
+          title: disable_download
+          description: |-
+            workspace-level policy
+             Disable the Download export destination. Exports can still go to a
+             configured storage destination such as SharePoint.
       title: QueryDataPolicy
       additionalProperties: false
       description: QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
@@ -21460,6 +21517,7 @@ components:
         - ENVIRONMENT
         - EMAIL
         - MCP
+        - EXPORT
     bytebase.v1.SettingValue:
       type: object
       anyOf:
@@ -21498,6 +21556,13 @@ components:
                 - $ref: '#/components/schemas/bytebase.v1.EnvironmentSetting'
               title: environment
           title: environment
+        - type: object
+          properties:
+            export:
+              allOf:
+                - $ref: '#/components/schemas/bytebase.v1.ExportSetting'
+              title: export
+          title: export
         - type: object
           properties:
             mcp:
@@ -21541,6 +21606,8 @@ components:
               - required:
                   - environment
               - required:
+                  - export
+              - required:
                   - mcp
               - required:
                   - semanticType
@@ -21561,6 +21628,8 @@ components:
                 - required:
                     - environment
                 - required:
+                    - export
+                - required:
                     - mcp
                 - required:
                     - semanticType
@@ -21570,6 +21639,45 @@ components:
                     - workspaceProfile
       title: SettingValue
       description: The data in setting value.
+    bytebase.v1.SharePointDestination:
+      type: object
+      properties:
+        url:
+          type: string
+          title: url
+          description: |-
+            The URL of the library root or folder. Normalized to its canonical form
+             and resolved with the workspace credentials on save.
+      title: SharePointDestination
+      additionalProperties: false
+      description: A SharePoint document library root or folder that receives exports.
+    bytebase.v1.SharePointSetting:
+      type: object
+      properties:
+        tenantId:
+          type: string
+          title: tenant_id
+          description: The Microsoft Entra tenant (directory) ID.
+        clientId:
+          type: string
+          title: client_id
+          description: The application (client) ID.
+        clientSecret:
+          type: string
+          title: client_secret
+          description: The client secret. It is never returned.
+          writeOnly: true
+        clientSecretSet:
+          type: boolean
+          title: client_secret_set
+          description: Whether a client secret is stored.
+          readOnly: true
+      title: SharePointSetting
+      additionalProperties: false
+      description: |-
+        SharePointSetting is the Microsoft Entra application that uploads exports to
+         SharePoint. It is granted access per library by the customer's SharePoint
+         administrators.
     bytebase.v1.Sheet:
       type: object
       properties:
@@ -24619,32 +24727,32 @@ components:
           type: integer
           title: min_length
           format: int32
-          description: min_length is the minimum length for password, should no less than 8.
+          description: min_length is the minimum password length. It must be at least 8.
         requireNumber:
           type: boolean
           title: require_number
-          description: require_number requires the password must contains at least one number.
+          description: require_number requires the password to contain at least one number.
         requireLetter:
           type: boolean
           title: require_letter
-          description: require_letter requires the password must contains at least one letter, regardless of upper case or lower case
+          description: require_letter requires the password to contain at least one letter, either uppercase or lowercase.
         requireUppercaseLetter:
           type: boolean
           title: require_uppercase_letter
-          description: require_uppercase_letter requires the password must contains at least one upper case letter.
+          description: require_uppercase_letter requires the password to contain at least one uppercase letter.
         requireSpecialCharacter:
           type: boolean
           title: require_special_character
-          description: require_special_character requires the password must contains at least one special character.
+          description: require_special_character requires the password to contain at least one special character.
         requireResetPasswordForFirstLogin:
           type: boolean
           title: require_reset_password_for_first_login
-          description: require_reset_password_for_first_login requires users to reset their password after the 1st login.
+          description: require_reset_password_for_first_login requires users to change their password after their first login.
         passwordRotation:
           allOf:
             - $ref: '#/components/schemas/google.protobuf.Duration'
           title: password_rotation
-          description: password_rotation requires users to reset their password after the duration.
+          description: password_rotation requires users to change their password after the duration.
       title: PasswordRestriction
       additionalProperties: false
     connect-protocol-version:
@@ -25305,10 +25413,15 @@ components:
       enum:
         - NULL_VALUE
       description: |-
-        `NullValue` is a singleton enumeration to represent the null value for the
-         `Value` type union.
+        Represents a JSON `null`.
 
-         The JSON representation for `NullValue` is JSON `null`.
+         `NullValue` is a sentinel, using an enum with only one value to represent
+         the null value for the `Value` type union.
+
+         A field of type `NullValue` with any value other than `0` is considered
+         invalid. Most ProtoJSON serializers will emit a `Value` with a `null_value`
+         set as a JSON `null` regardless of the integer value, and so will round trip
+         to a `0` value.
     google.protobuf.Struct:
       type: object
       additionalProperties:

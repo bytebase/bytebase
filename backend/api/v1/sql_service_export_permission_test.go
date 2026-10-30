@@ -14,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -192,4 +193,28 @@ func TestExportRefusalIsPermissionDenied(t *testing.T) {
 
 	require.Equal(t, connect.CodeNotFound, exportConnectError(connect.NewError(connect.CodeNotFound, errors.New("missing"))).Code())
 	require.Equal(t, connect.CodeInternal, exportConnectError(errors.New("driver failed")).Code())
+}
+
+func TestExportRefusesNonReadOnlyStatementWithInvalidArgument(t *testing.T) {
+	t.Parallel()
+	ctx := context.WithValue(context.Background(), common.WorkspaceIDContextKey, "default")
+	f := newExportAccessFixture(ctx, t)
+	_, err := f.service.store.CreateInstance(ctx, &store.InstanceMessage{
+		ResourceID: "mssql", Workspace: "default",
+		Metadata: &storepb.Instance{Engine: storepb.Engine_MSSQL, Activation: true, DataSources: []*storepb.DataSource{{Id: "admin", Type: storepb.DataSourceType_ADMIN}}},
+	})
+	require.NoError(t, err)
+	_, err = f.service.store.UpsertDatabase(ctx, &store.DatabaseMessage{
+		InstanceID: "mssql", DatabaseName: "db", ProjectID: "project-a", Metadata: &storepb.DatabaseMetadata{},
+	})
+	require.NoError(t, err)
+
+	ctx = context.WithValue(ctx, common.UserContextKey, &store.UserMessage{Email: "exporter@example.com"})
+	_, err = f.service.Export(ctx, connect.NewRequest(&v1pb.ExportRequest{
+		Name:      "instances/mssql/databases/db",
+		Statement: "DECLARE @n int = 1; SELECT @n",
+		Format:    v1pb.ExportFormat_CSV,
+	}))
+	require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+	require.ErrorContains(t, err, "Support read-only command statements only")
 }

@@ -170,7 +170,8 @@ validator are an existing exception: on Databricks, a write produces no spans an
 database-level select check through both `Query` and `Export` today
 (`docs/design/mcp-capability-ladder.md:160`). Under this design `Export` checks `bb.sql.export`
 there, so an export-only custom role can run such a write through `Export`, as a select role can
-today. The read-only clamp on `Export` that the ladder doc tracks closes it for both.
+today. For an MCP session, `Export` refuses every statement Bytebase cannot show is a read,
+Databricks included (`mcp_sql_write.go`). The console keeps the exception.
 
 The CEL input is unchanged: database, schema and table per source column (`sql_service.go:1756`),
 and the database-level fallback. `hasDatabaseAccessRights` strips the environment condition for

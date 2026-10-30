@@ -23,6 +23,20 @@ enum SettingName {
   ENVIRONMENT = 8;
   EMAIL = 9;
   MCP = 10;
+  EXPORT = 11;
+}
+
+// ExportSetting holds each export destination provider's credentials.
+message ExportSetting {
+  SharePointSetting sharepoint = 1;
+}
+
+// SharePointSetting is the Microsoft Entra application that uploads exports to
+// SharePoint.
+message SharePointSetting {
+  string tenant_id = 1;
+  string client_id = 2;
+  string client_secret = 3;
 }
 
 message SystemSetting {
@@ -117,19 +131,19 @@ message WorkspaceProfileSetting {
   reserved 16;
 
   message PasswordRestriction {
-    // min_length is the minimum length for password, should be no less than 8.
+    // min_length is the minimum password length. It must be at least 8.
     int32 min_length = 1;
-    // require_number requires the password must contain at least one number.
+    // require_number requires the password to contain at least one number.
     bool require_number = 2;
-    // require_letter requires the password must contain at least one letter, regardless of upper case or lower case
+    // require_letter requires the password to contain at least one letter, either uppercase or lowercase.
     bool require_letter = 3;
-    // require_uppercase_letter requires the password must contain at least one upper case letter.
+    // require_uppercase_letter requires the password to contain at least one uppercase letter.
     bool require_uppercase_letter = 4;
-    // require_special_character requires the password must contain at least one special character.
+    // require_special_character requires the password to contain at least one special character.
     bool require_special_character = 5;
-    // require_reset_password_for_first_login requires users to reset their password after the 1st login.
+    // require_reset_password_for_first_login requires users to change their password after their first login.
     bool require_reset_password_for_first_login = 6;
-    // password_rotation requires users to reset their password after the duration.
+    // password_rotation requires users to change their password after the duration.
     google.protobuf.Duration password_rotation = 7;
   }
 

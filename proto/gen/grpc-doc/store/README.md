@@ -182,7 +182,9 @@
     - [Label](#bytebase-store-Label)
     - [Project](#bytebase-store-Project)
     - [Project.ExecutionRetryPolicy](#bytebase-store-Project-ExecutionRetryPolicy)
+    - [Project.ExportSetting](#bytebase-store-Project-ExportSetting)
     - [Project.LabelsEntry](#bytebase-store-Project-LabelsEntry)
+    - [Project.SharePointDestination](#bytebase-store-Project-SharePointDestination)
   
 - [store/project_webhook.proto](#store_project_webhook-proto)
     - [Activity](#bytebase-store-Activity)
@@ -257,11 +259,13 @@
     - [EnvironmentSetting](#bytebase-store-EnvironmentSetting)
     - [EnvironmentSetting.Environment](#bytebase-store-EnvironmentSetting-Environment)
     - [EnvironmentSetting.Environment.TagsEntry](#bytebase-store-EnvironmentSetting-Environment-TagsEntry)
+    - [ExportSetting](#bytebase-store-ExportSetting)
     - [MCPSetting](#bytebase-store-MCPSetting)
     - [SQLEditorThemeSetting](#bytebase-store-SQLEditorThemeSetting)
     - [SQLEditorThemeSetting.TokensEntry](#bytebase-store-SQLEditorThemeSetting-TokensEntry)
     - [SemanticTypeSetting](#bytebase-store-SemanticTypeSetting)
     - [SemanticTypeSetting.SemanticType](#bytebase-store-SemanticTypeSetting-SemanticType)
+    - [SharePointSetting](#bytebase-store-SharePointSetting)
     - [SystemSetting](#bytebase-store-SystemSetting)
     - [WorkspaceApprovalSetting](#bytebase-store-WorkspaceApprovalSetting)
     - [WorkspaceApprovalSetting.Rule](#bytebase-store-WorkspaceApprovalSetting-Rule)
@@ -2739,6 +2743,7 @@ QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 | maximum_result_rows | [int32](#int32) |  | Support both project-level and workspace-level. The maximum number of rows to return in the SQL editor. The default value &lt;= 0, means no limit. |
 | disable_copy_data | [bool](#bool) |  | workspace-level policy Disable copying data. |
 | allow_admin_data_source | [bool](#bool) |  | workspace-level policy Allow using the admin data source to query in the SQL editor. |
+| disable_download | [bool](#bool) |  | workspace-level policy Disable the Download export destination. Exports can still go to a configured storage destination such as SharePoint. |
 | disallow_ddl | [bool](#bool) |  | ================ Deprecate following fields. Disallow running DDL statements in the SQL editor. |
 | disallow_dml | [bool](#bool) |  | Disallow running DML statements in the SQL editor. |
 
@@ -2918,6 +2923,7 @@ Project contains settings and configuration for a Bytebase project.
 | data_classification_config_id | [string](#string) |  | The data classification configuration ID for the project. |
 | allow_just_in_time_access | [bool](#bool) |  | Once enabled, users can request and use the just-in-time access in the SQL Editor. |
 | allow_last_plan_editor_approval | [bool](#bool) |  | Whether to allow the last Plan editor to approve a database change issue. |
+| export_setting | [Project.ExportSetting](#bytebase-store-Project-ExportSetting) |  | Destinations offered for this project&#39;s exports. |
 
 
 
@@ -2939,6 +2945,21 @@ ExecutionRetryPolicy defines retry behavior for failed task executions.
 
 
 
+<a name="bytebase-store-Project-ExportSetting"></a>
+
+### Project.ExportSetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sharepoint | [Project.SharePointDestination](#bytebase-store-Project-SharePointDestination) |  |  |
+
+
+
+
+
+
 <a name="bytebase-store-Project-LabelsEntry"></a>
 
 ### Project.LabelsEntry
@@ -2949,6 +2970,21 @@ ExecutionRetryPolicy defines retry behavior for failed task executions.
 | ----- | ---- | ----- | ----------- |
 | key | [string](#string) |  |  |
 | value | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-Project-SharePointDestination"></a>
+
+### Project.SharePointDestination
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| url | [string](#string) |  | The canonical URL of a SharePoint document library root or folder. |
 
 
 
@@ -4065,6 +4101,21 @@ All other settings live in per-workspace WORKSPACE_PROFILE.
 
 
 
+<a name="bytebase-store-ExportSetting"></a>
+
+### ExportSetting
+ExportSetting holds each export destination provider&#39;s credentials.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sharepoint | [SharePointSetting](#bytebase-store-SharePointSetting) |  |  |
+
+
+
+
+
+
 <a name="bytebase-store-MCPSetting"></a>
 
 ### MCPSetting
@@ -4146,6 +4197,24 @@ sign-in configuration.
 | description | [string](#string) |  | the description of the semantic type, it can be empty. |
 | algorithm | [Algorithm](#bytebase-store-Algorithm) |  |  |
 | icon | [string](#string) |  | icon is the icon for semantic type, it can be emoji or base64 encoded image. |
+
+
+
+
+
+
+<a name="bytebase-store-SharePointSetting"></a>
+
+### SharePointSetting
+SharePointSetting is the Microsoft Entra application that uploads exports to
+SharePoint.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| tenant_id | [string](#string) |  |  |
+| client_id | [string](#string) |  |  |
+| client_secret | [string](#string) |  |  |
 
 
 
@@ -4278,13 +4347,13 @@ sign-in configuration.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| min_length | [int32](#int32) |  | min_length is the minimum length for password, should be no less than 8. |
-| require_number | [bool](#bool) |  | require_number requires the password must contain at least one number. |
-| require_letter | [bool](#bool) |  | require_letter requires the password must contain at least one letter, regardless of upper case or lower case |
-| require_uppercase_letter | [bool](#bool) |  | require_uppercase_letter requires the password must contain at least one upper case letter. |
-| require_special_character | [bool](#bool) |  | require_special_character requires the password must contain at least one special character. |
-| require_reset_password_for_first_login | [bool](#bool) |  | require_reset_password_for_first_login requires users to reset their password after the 1st login. |
-| password_rotation | [google.protobuf.Duration](#google-protobuf-Duration) |  | password_rotation requires users to reset their password after the duration. |
+| min_length | [int32](#int32) |  | min_length is the minimum password length. It must be at least 8. |
+| require_number | [bool](#bool) |  | require_number requires the password to contain at least one number. |
+| require_letter | [bool](#bool) |  | require_letter requires the password to contain at least one letter, either uppercase or lowercase. |
+| require_uppercase_letter | [bool](#bool) |  | require_uppercase_letter requires the password to contain at least one uppercase letter. |
+| require_special_character | [bool](#bool) |  | require_special_character requires the password to contain at least one special character. |
+| require_reset_password_for_first_login | [bool](#bool) |  | require_reset_password_for_first_login requires users to change their password after their first login. |
+| password_rotation | [google.protobuf.Duration](#google-protobuf-Duration) |  | password_rotation requires users to change their password after the duration. |
 
 
 
@@ -4394,6 +4463,7 @@ Capability is the ceiling: a session runs at this level or lower.
 | ENVIRONMENT | 8 |  |
 | EMAIL | 9 |  |
 | MCP | 10 |  |
+| EXPORT | 11 |  |
 
 
 
