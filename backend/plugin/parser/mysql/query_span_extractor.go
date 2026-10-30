@@ -941,10 +941,11 @@ func (q *omniQuerySpanExtractor) extractOmniSubquery(expr *ast.SubqueryExpr) (*b
 		return &base.PseudoTable{}, nil
 	}
 	// A derived table cannot see the FROM clause it sits in unless it is
-	// LATERAL, and then only the items before it.
+	// LATERAL, and then only the items before it: earlier FROM items, and the
+	// operands extractOmniJoin has already added for the join it is in.
 	scope := outerScope{}
 	if expr.Lateral {
-		scope.tables = slices.Clone(q.priorTableInFrom)
+		scope.tables = slices.Concat(q.tableSourceFrom, q.priorTableInFrom)
 	}
 	subqueryExtractor := q.cloneOmniWithScope(scope)
 	tableSource, err := subqueryExtractor.extractOmniSelectStmt(expr.Select)
