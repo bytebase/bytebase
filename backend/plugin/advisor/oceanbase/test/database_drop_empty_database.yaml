@@ -1,0 +1,10 @@
+- statement: DROP DATABASE IF EXISTS test;
+  want:
+    - status: 2
+      code: 701
+      title: DATABASE_DROP_EMPTY_DATABASE
+      content: Database `test` is not allowed to drop if not empty
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

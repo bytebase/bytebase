@@ -1,0 +1,227 @@
+- statement: |
+    CREATE TABLE userTable(
+      id INT NOT NULL,
+      name VARCHAR(255) CHARSET ascii,
+      roomId INT,
+      time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',
+      time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',
+      content BLOB NOT NULL COMMENT 'comment',
+      json_content JSON NOT NULL COMMENT 'comment',
+      INDEX idx1(name),
+      UNIQUE KEY uk1(id, name),
+      FOREIGN KEY fk1(roomId) REFERENCES room(id),
+      INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin;
+  want:
+    - status: 2
+      code: 1032
+      title: COLUMN_COMMENT
+      content: Column `userTable`.`id` requires comments
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 1032
+      title: COLUMN_COMMENT
+      content: Column `userTable`.`name` requires comments
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+    - status: 2
+      code: 1032
+      title: COLUMN_COMMENT
+      content: Column `userTable`.`roomId` requires comments
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: |
+    CREATE TABLE user(
+      id INT PRIMARY KEY COMMENT 'comment',
+      name VARCHAR(255) NOT NULL DEFAULT '' COMMENT 'comment',
+      room_id INT NOT NULL DEFAULT 0 COMMENT 'comment',
+      creator_id INT NOT NULL DEFAULT 0 COMMENT 'comment',
+      created_ts TIMESTAMP NOT NULL DEFAULT NOW() COMMENT 'comment',
+      updater_id INT NOT NULL DEFAULT 0 COMMENT 'comment',
+      updated_ts TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',
+      INDEX idx_user_name(name),
+      UNIQUE KEY uk_user_id_name(id, name)
+    ) ENGINE = INNODB COMMENT 'comment';
+- statement: CREATE TABLE t(a int COMMENT 'comments');
+- statement: |-
+    CREATE TABLE t(
+      a int COMMENT 'some comments',
+      b int,
+      c int
+    );
+  want:
+    - status: 2
+      code: 1301
+      title: COLUMN_COMMENT
+      content: The length of column `t`.`a` comment should be within 10 characters
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 1032
+      title: COLUMN_COMMENT
+      content: Column `t`.`b` requires comments
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+    - status: 2
+      code: 1032
+      title: COLUMN_COMMENT
+      content: Column `t`.`c` requires comments
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(a int COMMENT 'comment');
+    ALTER TABLE t ADD COLUMN b int;
+  want:
+    - status: 2
+      code: 1032
+      title: COLUMN_COMMENT
+      content: Column `t`.`b` requires comments
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(a int COMMENT 'comment');
+    ALTER TABLE t ADD COLUMN (b int, c int);
+  want:
+    - status: 2
+      code: 1032
+      title: COLUMN_COMMENT
+      content: Column `t`.`b` requires comments
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 1032
+      title: COLUMN_COMMENT
+      content: Column `t`.`c` requires comments
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(a int COMMENT 'this is comment');
+    ALTER TABLE t CHANGE COLUMN a b int;
+  want:
+    - status: 2
+      code: 1301
+      title: COLUMN_COMMENT
+      content: The length of column `t`.`a` comment should be within 10 characters
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 1032
+      title: COLUMN_COMMENT
+      content: Column `t`.`b` requires comments
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(b int COMMENT 'It is comment');
+    ALTER TABLE t MODIFY COLUMN b int;
+  want:
+    - status: 2
+      code: 1301
+      title: COLUMN_COMMENT
+      content: The length of column `t`.`b` comment should be within 10 characters
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 1032
+      title: COLUMN_COMMENT
+      content: Column `t`.`b` requires comments
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(b int COMMENT 'It is COMMENT');
+    ALTER TABLE t MODIFY COLUMN b int COMMENT 'abcdefghiakljhakljdsfalugelkhnabsdguelkadf';
+  want:
+    - status: 2
+      code: 1301
+      title: COLUMN_COMMENT
+      content: The length of column `t`.`b` comment should be within 10 characters
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 1301
+      title: COLUMN_COMMENT
+      content: The length of column `t`.`b` comment should be within 10 characters
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE users (
+      id INT AUTO_INCREMENT PRIMARY KEY COMMENT 'ID',
+      first_name VARCHAR(60) NOT NULL COMMENT 'First',
+      last_name VARCHAR(60) NOT NULL COMMENT 'Last',
+      full_name VARCHAR(120) GENERATED ALWAYS AS (CONCAT(first_name, ' ', last_name)) VIRTUAL COMMENT 'Full'
+    );
+- statement: |-
+    CREATE TABLE t(
+      a int COMMENT 'comment',
+      b int GENERATED ALWAYS AS (a * 2) VIRTUAL COMMENT 'comment'
+    );
+- statement: |-
+    CREATE TABLE t(
+      a int COMMENT 'comment',
+      b int GENERATED ALWAYS AS (a * 2) STORED COMMENT 'comment'
+    );
+- statement: |-
+    CREATE TABLE t(
+      a int COMMENT 'comment',
+      b int GENERATED ALWAYS AS (a * 2) VIRTUAL
+    );
+  want:
+    - status: 2
+      code: 1032
+      title: COLUMN_COMMENT
+      content: Column `t`.`b` requires comments
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(
+      a int,
+      b int GENERATED ALWAYS AS (a * 2) VIRTUAL
+    );
+  want:
+    - status: 2
+      code: 1032
+      title: COLUMN_COMMENT
+      content: Column `t`.`a` requires comments
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 1032
+      title: COLUMN_COMMENT
+      content: Column `t`.`b` requires comments
+      startposition:
+        line: 3
+        column: 0
+      endposition: null

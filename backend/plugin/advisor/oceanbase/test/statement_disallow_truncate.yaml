@@ -1,0 +1,218 @@
+# SQL review rule: STATEMENT_DISALLOW_TRUNCATE (MySQL / MariaDB / OceanBase)
+#
+# Detection targets:
+#   * top-level TruncateStmt  -> table-variant advice (one per target table)
+#   * AlterTableStmt with ATTruncatePartition commands -> partition-variant
+#     advice (one per partition; AllPartitions flag emits a single
+#     "ALL PARTITIONS" advice)
+#
+# MySQL TRUNCATE auto-commits, bypasses triggers, resets AUTO_INCREMENT, and
+# the prior-backup pipeline classifies it as DDL (no row-level snapshot).
+
+# --- Positive cases: top-level TRUNCATE ---
+
+# Test: bare TRUNCATE TABLE
+- statement: TRUNCATE TABLE techbook;
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "techbook" is not allowed: TRUNCATE auto-commits (breaking surrounding transactional work), bypasses triggers, and resets AUTO_INCREMENT. Prior-backup treats this as DDL and does not produce row-level snapshots.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: TABLE keyword omitted (MySQL legal)
+- statement: TRUNCATE techbook;
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "techbook" is not allowed: TRUNCATE auto-commits (breaking surrounding transactional work), bypasses triggers, and resets AUTO_INCREMENT. Prior-backup treats this as DDL and does not produce row-level snapshots.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: schema-qualified
+- statement: TRUNCATE TABLE db.techbook;
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "db.techbook" is not allowed: TRUNCATE auto-commits (breaking surrounding transactional work), bypasses triggers, and resets AUTO_INCREMENT. Prior-backup treats this as DDL and does not produce row-level snapshots.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: backtick-quoted identifier resolves to unquoted name
+- statement: TRUNCATE TABLE `tech book`;
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "tech book" is not allowed: TRUNCATE auto-commits (breaking surrounding transactional work), bypasses triggers, and resets AUTO_INCREMENT. Prior-backup treats this as DDL and does not produce row-level snapshots.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: lowercase keywords
+- statement: truncate table techbook;
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "techbook" is not allowed: TRUNCATE auto-commits (breaking surrounding transactional work), bypasses triggers, and resets AUTO_INCREMENT. Prior-backup treats this as DDL and does not produce row-level snapshots.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# --- Positive cases: ALTER TABLE ... TRUNCATE PARTITION ---
+
+# Test: single partition
+- statement: ALTER TABLE sales TRUNCATE PARTITION p_2024_q4;
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'ALTER TABLE "sales" TRUNCATE PARTITION "p_2024_q4" is not allowed: partition truncate shares the auto-commit and prior-backup gaps of TRUNCATE TABLE on MySQL.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: multiple partitions — advice order follows the omni parser's
+# PartitionNames slice (reverse of source order for comma-separated list).
+- statement: ALTER TABLE sales TRUNCATE PARTITION p_jan, p_feb;
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'ALTER TABLE "sales" TRUNCATE PARTITION "p_feb" is not allowed: partition truncate shares the auto-commit and prior-backup gaps of TRUNCATE TABLE on MySQL.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'ALTER TABLE "sales" TRUNCATE PARTITION "p_jan" is not allowed: partition truncate shares the auto-commit and prior-backup gaps of TRUNCATE TABLE on MySQL.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: ALL PARTITIONS form — surfaces as AllPartitions=true, one advice
+- statement: ALTER TABLE sales TRUNCATE PARTITION ALL;
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'ALTER TABLE "sales" TRUNCATE PARTITION "ALL PARTITIONS" is not allowed: partition truncate shares the auto-commit and prior-backup gaps of TRUNCATE TABLE on MySQL.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: schema-qualified table with partition truncate
+- statement: ALTER TABLE db.sales TRUNCATE PARTITION p_2024_q4;
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'ALTER TABLE "db.sales" TRUNCATE PARTITION "p_2024_q4" is not allowed: partition truncate shares the auto-commit and prior-backup gaps of TRUNCATE TABLE on MySQL.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: multi-command ALTER TABLE — advice line points to the TRUNCATE
+# PARTITION command (line 3), not the ALTER TABLE statement head (line 1).
+- statement: |-
+    ALTER TABLE sales
+      ADD COLUMN region VARCHAR(32),
+      TRUNCATE PARTITION p_2024_q4;
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'ALTER TABLE "sales" TRUNCATE PARTITION "p_2024_q4" is not allowed: partition truncate shares the auto-commit and prior-backup gaps of TRUNCATE TABLE on MySQL.'
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+
+# Test: multi-statement — advice line must point to the TRUNCATE, not stmt 1
+- statement: |-
+    CREATE TABLE tech_book(id int);
+    TRUNCATE TABLE tech_book;
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "tech_book" is not allowed: TRUNCATE auto-commits (breaking surrounding transactional work), bypasses triggers, and resets AUTO_INCREMENT. Prior-backup treats this as DDL and does not produce row-level snapshots.'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+
+# Test: multiple TRUNCATE statements in one script, line positions independent
+- statement: |-
+    TRUNCATE TABLE a;
+    INSERT INTO a VALUES (1);
+    TRUNCATE TABLE b;
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "a" is not allowed: TRUNCATE auto-commits (breaking surrounding transactional work), bypasses triggers, and resets AUTO_INCREMENT. Prior-backup treats this as DDL and does not produce row-level snapshots.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "b" is not allowed: TRUNCATE auto-commits (breaking surrounding transactional work), bypasses triggers, and resets AUTO_INCREMENT. Prior-backup treats this as DDL and does not produce row-level snapshots.'
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+
+# --- Negative cases ---
+
+# Test: DELETE is not TRUNCATE
+- statement: DELETE FROM techbook WHERE id = 1;
+  changeType: 1
+
+# Test: TRUNCATE as string literal in SELECT
+- statement: SELECT 'TRUNCATE foo' AS x;
+  changeType: 1
+
+# Test: ALTER TABLE with unrelated command
+- statement: ALTER TABLE sales ADD COLUMN region VARCHAR(32);
+  changeType: 1
+
+# Test: ALTER TABLE DROP PARTITION is NOT truncate partition
+- statement: ALTER TABLE sales DROP PARTITION p_2024_q4;
+  changeType: 1
+
+# Test: DROP TABLE is a different statement type
+- statement: DROP TABLE techbook;
+  changeType: 1

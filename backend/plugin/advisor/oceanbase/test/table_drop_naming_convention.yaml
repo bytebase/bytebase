@@ -1,0 +1,30 @@
+- statement: |-
+    CREATE TABLE foo(a INT);
+    RENAME TABLE foo to foo_delete;
+    DROP TABLE IF EXISTS foo_delete;
+- statement: |-
+    CREATE TABLE foo(a INT);
+    DROP TABLE IF EXISTS foo;
+  want:
+    - status: 2
+      code: 603
+      title: TABLE_DROP_NAMING_CONVENTION
+      content: '`foo` mismatches drop table naming convention, naming format should be "_delete$"'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE foo(a INT);
+    RENAME TABLE foo to foo_delete;
+    CREATE TABLE bar(a INT);
+    DROP TABLE IF EXISTS foo_delete, bar;
+  want:
+    - status: 2
+      code: 603
+      title: TABLE_DROP_NAMING_CONVENTION
+      content: '`bar` mismatches drop table naming convention, naming format should be "_delete$"'
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
