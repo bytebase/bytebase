@@ -1239,7 +1239,7 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 	// New query ACL experience.
 	if instance.Metadata.GetEngine() != storepb.Engine_MYSQL {
 		if err := validateQueryRequest(instance, statement); err != nil {
-			return nil, err
+			return nil, exportConnectError(err)
 		}
 	}
 
@@ -1279,8 +1279,9 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 }
 
 // exportConnectError returns the connect error Export answers with. A refusal
-// from the access check arrives as a queryError, which errors.As cannot see
-// through, so its own connect error (such as PERMISSION_DENIED) is returned.
+// from the read-only or access check arrives as a queryError, which errors.As
+// cannot see through, so its own connect error (such as PERMISSION_DENIED) is
+// returned.
 func exportConnectError(err error) *connect.Error {
 	var connectErr *connect.Error
 	var qe *queryError
@@ -1384,7 +1385,7 @@ func doExport(
 		}
 
 		if err := exportResultToZip(ctx, zipw, stores, instance, database, result, request, i+1); err != nil {
-			return nil, duration, errors.Errorf("failed to export result to zip with error: %v", result.GetError())
+			return nil, duration, errors.Wrap(err, "failed to export result to zip")
 		}
 
 		exportCount++

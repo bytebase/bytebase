@@ -168,6 +168,13 @@ func TestMCPClampRefusesWhatItCannotShowIsARead(t *testing.T) {
 			reason:    "rewrites the session it runs on",
 		},
 		{
+			name:      "a SQL Server session option ahead of a read is refused",
+			engine:    storepb.Engine_MSSQL,
+			statement: "SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED; SELECT 1",
+			refused:   true,
+			reason:    "statement 1 of 2 returns no data",
+		},
+		{
 			// A single well-formed statement the server executes as a
 			// server-side file write. The MySQL family has no read-only
 			// driver session, so the classifier is the whole guarantee here.
