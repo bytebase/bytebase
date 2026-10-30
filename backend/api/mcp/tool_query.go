@@ -37,6 +37,8 @@ type QueryInput struct {
 	Schema string `json:"schema,omitempty"`
 	// Container is the CosmosDB container to query.
 	Container string `json:"container,omitempty"`
+	// IssueTitle titles the issue when the user files a possible write as one.
+	IssueTitle string `json:"issueTitle,omitempty"`
 	// Limit is the maximum number of rows to return (default: 100, max: 1000).
 	Limit int `json:"limit,omitempty"`
 }
@@ -78,11 +80,13 @@ const queryDatabaseDescription = `Execute a SQL query against a Bytebase databas
 | schema    | No       | Default schema for unqualified names (Postgres search path). An access grant applies only when this equals the grant's schema |
 | container | No       | CosmosDB container (required for CosmosDB). An access grant applies only when this equals the grant's container |
 | limit     | No       | Max rows (default: 100, max: 1000) |
+| issueTitle | No      | For a statement that may write: the issue's title if the user chooses Create an issue. Say what the change does, without data values. Without it, the form does not offer Create an issue |
 
 **Examples:**
 query_database(database="employee_db", statement="SELECT * FROM users LIMIT 10")
 query_database(database="employee", instance="prod-pg", statement="SELECT count(*) FROM orders")
 query_database(database="employee", instance="projects/hr/instances/prod-pg", statement="SELECT count(*) FROM orders")
+query_database(database="employee_db", statement="UPDATE employee SET active = false WHERE id = 42", issueTitle="Deactivate an employee")
 
 **Notes:**
 - Show the user the statement each answer came from, so they can check it read what they asked about.
@@ -141,9 +145,12 @@ func (s *Server) handleQueryDatabase(ctx context.Context, req *mcp.CallToolReque
 	// now, or at once when the client cannot show the form.
 	confirmation := runConfirmation{database: resolved.resourceName}
 	digest := auth.MCPStatementDigest(input.Statement, resolved.resourceName, input.Schema, input.Container)
-	// A plan carries no schema, so an issue's rollout would run with the
-	// database's default one.
-	offerIssue := input.Schema == ""
+	// Create an issue files under the agent's title: one Bytebase generated would
+	// pass in a project that requires a manual title, since the server refuses
+	// only an empty one. A plan carries no schema, so an issue's rollout would
+	// run with the database's default one.
+	issueTitle := strings.TrimSpace(input.IssueTitle)
+	offerIssue := issueTitle != "" && input.Schema == ""
 	var confirmed []byte
 	if !canShowConfirmation(req) {
 		confirmed = digest
@@ -155,7 +162,7 @@ func (s *Server) handleQueryDatabase(ctx context.Context, req *mcp.CallToolReque
 			if !offerIssue {
 				return noOfferedChoice(), nil, nil
 			}
-			return s.fileAsIssue(ctx, resolved, input.Statement), nil, nil
+			return s.fileAsIssue(ctx, resolved, input.Statement, issueTitle), nil, nil
 		}
 		confirmed = digest
 	} else if choice != "" && answerState != "" {

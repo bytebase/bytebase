@@ -236,30 +236,11 @@ func staleAnswer(why string) *mcp.CallToolResult {
 	})
 }
 
-// fileAsIssue files statement against the database as a change issue, with
-// propose_database_change's steps but no rollout: Bytebase creates the rollout
-// once the issue is approved and its plan checks pass.
-func (s *Server) fileAsIssue(ctx context.Context, resolved *resolvedDatabase, statement string) *mcp.CallToolResult {
-	_, _, database, err := common.GetDatabaseResourceName(resolved.resourceName)
-	if err != nil {
-		return formatToolError(err)
-	}
-	var project struct {
-		EnforceIssueTitle bool `json:"enforceIssueTitle"`
-	}
-	if err := s.readResource(ctx, "/bytebase.v1.ProjectService/GetProject", resolved.project, "get projects", "bb.projects.get", &project); err != nil {
-		return formatToolError(err)
-	}
-	// The server refuses only an empty title, so a generated one would pass in a
-	// project that requires a manual title; the console leaves it to the user
-	// there (frontend/src/lib/plan/title.ts).
-	if project.EnforceIssueTitle {
-		return textResult(fmt.Sprintf("Not run: the user chose Create an issue, and project %s requires a manual title, so Bytebase files nothing until the user writes one. "+
-			"Ask the user for the issue title, then call propose_database_change with this statement and that title as written.", resolved.project))
-	}
-	// The title the console's AI agent gives a change it drafts
-	// (agent.plan-draft.default-title).
-	filed, failed := s.fileChange(ctx, resolved.project, resolved.resourceName, statement, fmt.Sprintf("[%s] Proposed database change", database), "")
+// fileAsIssue files statement against the database as a change issue titled
+// title, with propose_database_change's steps but no rollout: Bytebase creates
+// the rollout once the issue is approved and its plan checks pass.
+func (s *Server) fileAsIssue(ctx context.Context, resolved *resolvedDatabase, statement, title string) *mcp.CallToolResult {
+	filed, failed := s.fileChange(ctx, resolved.project, resolved.resourceName, statement, title, "")
 	if failed != nil {
 		return failed
 	}

@@ -42,37 +42,15 @@ type confirmingQueryMock struct {
 	refusesConfirmed bool
 	// changes, when set, serves the calls that file a change.
 	changes *changeMock
-	// project is what ProjectService/GetProject returns, with projectStatus.
-	project       map[string]any
-	projectStatus int
-	mu            sync.Mutex
-	queries       []queryCall
-	projectReads  []string
+	mu      sync.Mutex
+	queries []queryCall
 }
 
 func newConfirmingQueryMock(databases []map[string]any) *confirmingQueryMock {
-	return &confirmingQueryMock{
-		databases:     mockListDatabases(databases),
-		environment:   "prod",
-		project:       map[string]any{"name": "projects/hr"},
-		projectStatus: http.StatusOK,
-	}
+	return &confirmingQueryMock{databases: mockListDatabases(databases), environment: "prod"}
 }
 
 func (m *confirmingQueryMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if strings.HasSuffix(r.URL.Path, "ProjectService/GetProject") {
-		var body struct {
-			Name string `json:"name"`
-		}
-		_ = json.NewDecoder(r.Body).Decode(&body)
-		m.mu.Lock()
-		m.projectReads = append(m.projectReads, body.Name)
-		m.mu.Unlock()
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(m.projectStatus)
-		_ = json.NewEncoder(w).Encode(m.project)
-		return
-	}
 	if m.changes != nil && changeCall(r.URL.Path) {
 		m.changes.handler().ServeHTTP(w, r)
 		return
@@ -123,12 +101,6 @@ func (m *confirmingQueryMock) calls() []queryCall {
 	return append([]queryCall(nil), m.queries...)
 }
 
-func (m *confirmingQueryMock) projectsRead() []string {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	return append([]string(nil), m.projectReads...)
-}
-
 // confirmationRequiredError is SQLService/Query's refusal of an unconfirmed
 // possible write.
 func confirmationRequiredError(environment, schema string) error {
@@ -165,8 +137,12 @@ func runAnswer(choice any) *mcp.ElicitResult {
 	return &mcp.ElicitResult{Action: "accept", Content: map[string]any{runChoiceField: choice}}
 }
 
+// agentIssueTitle is the title the agent sends with a request it may file as
+// an issue.
+const agentIssueTitle = "Add an employee"
+
 func queryParams(statement string) *mcp.CallToolParams {
-	return &mcp.CallToolParams{Name: "query_database", Arguments: map[string]any{"database": "employee_db", "statement": statement}}
+	return &mcp.CallToolParams{Name: "query_database", Arguments: map[string]any{"database": "employee_db", "statement": statement, "issueTitle": agentIssueTitle}}
 }
 
 func callQuery(t *testing.T, session *mcp.ClientSession, params *mcp.CallToolParams) *mcp.CallToolResult {
@@ -212,7 +188,7 @@ func TestQueryDatabaseAsksBeforeAWrite(t *testing.T) {
 			session := connectLegacy(t, endpoint, token, &mcp.ClientOptions{ElicitationHandler: user.handle})
 
 			const insert = "INSERT INTO employee VALUES (1)"
-			arguments := map[string]any{"database": "employee_db", "statement": insert}
+			arguments := map[string]any{"database": "employee_db", "statement": insert, "issueTitle": agentIssueTitle}
 			if row.schema != "" {
 				arguments["schema"] = row.schema
 			}
@@ -587,43 +563,10 @@ func TestQueryDatabaseFilesAnIssue(t *testing.T) {
 	require.Equal(t, []any{"instances/prod-pg/databases/employee_db"}, config["targets"])
 	issue, ok := mock.changes.getCapturedIssue()["issue"].(map[string]any)
 	require.True(t, ok)
-	require.Equal(t, "[employee_db] Proposed database change", issue["title"])
+	require.Equal(t, agentIssueTitle, issue["title"])
 	require.Equal(t, planObj["title"], issue["title"])
 	require.NotContains(t, issue, "description")
 	require.Nil(t, mock.changes.getCapturedRollout(), "Bytebase creates the rollout once the approval flow is done")
-}
-
-func TestQueryDatabaseLeavesAManualTitleToTheUser(t *testing.T) {
-	mock := newConfirmingQueryMock(employeeDatabase())
-	mock.changes = newChangeMock(nil)
-	mock.project["enforceIssueTitle"] = true
-	_, endpoint, token := newQueryConfirmServer(t, mock)
-	user := &asker{answer: runAnswer(runChoiceIssue)}
-	session := connectLegacy(t, endpoint, token, &mcp.ClientOptions{ElicitationHandler: user.handle})
-
-	const insert = "INSERT INTO employee VALUES (1)"
-	res := callQuery(t, session, queryParams(insert))
-	require.False(t, res.IsError, resultText(t, res))
-	require.Equal(t, "Not run: the user chose Create an issue, and project projects/hr requires a manual title, so Bytebase files nothing until the user writes one. "+
-		"Ask the user for the issue title, then call propose_database_change with this statement and that title as written.", resultText(t, res))
-	require.Equal(t, []string{"projects/hr"}, mock.projectsRead())
-	require.Equal(t, []queryCall{{Statement: insert}}, mock.calls())
-	require.Nil(t, mock.changes.getCapturedSheet())
-}
-
-func TestQueryDatabaseFilesNothingInAProjectItCannotRead(t *testing.T) {
-	mock := newConfirmingQueryMock(employeeDatabase())
-	mock.changes = newChangeMock(nil)
-	mock.project = map[string]any{"message": "permission denied: bb.projects.get"}
-	mock.projectStatus = http.StatusForbidden
-	_, endpoint, token := newQueryConfirmServer(t, mock)
-	user := &asker{answer: runAnswer(runChoiceIssue)}
-	session := connectLegacy(t, endpoint, token, &mcp.ClientOptions{ElicitationHandler: user.handle})
-
-	res := callQuery(t, session, queryParams("INSERT INTO employee VALUES (1)"))
-	require.True(t, res.IsError)
-	require.Contains(t, resultText(t, res), `"code": "PERMISSION_DENIED"`)
-	require.Nil(t, mock.changes.getCapturedSheet(), "the project may require a manual title")
 }
 
 func TestQueryDatabaseReportsPlanChecksThatHoldTheRollout(t *testing.T) {
@@ -661,14 +604,16 @@ func TestQueryDatabaseReportsPlanChecksThatHoldTheRollout(t *testing.T) {
 	}
 }
 
-func TestQueryDatabaseOffersAnIssueOnlyWithNoSchema(t *testing.T) {
+func TestQueryDatabaseOffersAnIssueOnlyWithATitleAndNoSchema(t *testing.T) {
 	for _, row := range []struct {
 		name      string
 		arguments map[string]any
 		offered   bool
 	}{
-		{name: "the database's default schema", arguments: map[string]any{}, offered: true},
-		{name: "a named schema", arguments: map[string]any{"schema": "app"}},
+		{name: "a title and the database's default schema", arguments: map[string]any{"issueTitle": agentIssueTitle}, offered: true},
+		{name: "a named schema", arguments: map[string]any{"issueTitle": agentIssueTitle, "schema": "app"}},
+		{name: "no title", arguments: map[string]any{}},
+		{name: "a blank title", arguments: map[string]any{"issueTitle": " "}},
 	} {
 		t.Run(row.name, func(t *testing.T) {
 			mock := newConfirmingQueryMock(employeeDatabase())
