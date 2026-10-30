@@ -70,7 +70,7 @@ func classifyStmtType(node ast.Node) (stmtType, error) {
 
 	case *ast.BulkInsertStmt, *ast.InsertBulkStmt, *ast.CopyIntoStmt,
 		*ast.ReadtextStmt, *ast.WritetextStmt, *ast.UpdatetextStmt,
-		*ast.ReceiveStmt, *ast.PredictStmt:
+		*ast.ReceiveStmt:
 		return stmtTypeRowCountGenerating, nil
 
 	case *ast.ExecStmt:
