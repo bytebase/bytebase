@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"cloud.google.com/go/cloudsqlconn"
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/require"
 
@@ -530,4 +531,88 @@ func resultsContainValue(results []*v1pb.QueryResult, want string) bool {
 		}
 	}
 	return false
+}
+
+// cloudSQLIAMConnectionConfig returns a Google Cloud SQL IAM data source that
+// cloudsqlconn accepts offline. The credential is an authorized_user document so
+// that building the connector needs neither a key nor a network round trip; it
+// is never good enough to dial with.
+const cloudSQLTestInstance = "example-project:us-central1:example-instance"
+
+func cloudSQLIAMConnectionConfig(instance string) db.ConnectionConfig {
+	return db.ConnectionConfig{
+		DataSource: &storepb.DataSource{
+			Type:               storepb.DataSourceType_ADMIN,
+			Host:               instance,
+			Username:           "bytebase@example-project.iam",
+			AuthenticationType: storepb.DataSource_GOOGLE_CLOUD_SQL_IAM,
+			IamExtension: &storepb.DataSource_GcpCredential{
+				GcpCredential: &storepb.DataSource_GCPCredential{
+					Content: `{"type":"authorized_user","client_id":"not-a-real-client","client_secret":"not-a-real-secret","refresh_token":"not-a-real-token"}`,
+				},
+			},
+		},
+		ConnectionContext: db.ConnectionContext{DatabaseName: "postgres"},
+	}
+}
+
+func TestCloudSQLIAMDialerClosesWithDriver(t *testing.T) {
+	ctx := context.Background()
+
+	driver := &Driver{}
+	opened, err := driver.Open(ctx, storepb.Engine_POSTGRES, cloudSQLIAMConnectionConfig(cloudSQLTestInstance))
+	require.NoError(t, err)
+	require.Same(t, driver, opened)
+	require.NotNil(t, driver.cloudSQLDialer)
+
+	dialer := driver.cloudSQLDialer
+	require.NoError(t, driver.Close(ctx))
+
+	// The connector keeps refreshing its ephemeral certificate until it is
+	// closed, so a driver that leaves it open leaks it for the life of the
+	// process, once per connection opened.
+	_, err = dialer.Dial(ctx, cloudSQLTestInstance)
+	require.ErrorIs(t, err, cloudsqlconn.ErrDialerClosed)
+}
+
+func TestCloudSQLIAMDialerClosesWhenOpenFails(t *testing.T) {
+	ctx := context.Background()
+
+	config := cloudSQLIAMConnectionConfig(cloudSQLTestInstance)
+	// A username that does not survive the keyword/value DSN fails Open after the
+	// connector has been built.
+	config.DataSource.Username = "bytebase service account"
+
+	driver := &Driver{}
+	_, err := driver.Open(ctx, storepb.Engine_POSTGRES, config)
+	require.Error(t, err)
+
+	// A driver whose Open fails is discarded without a Close, so Open has to have
+	// closed the connector itself.
+	require.NotNil(t, driver.cloudSQLDialer)
+	_, err = driver.cloudSQLDialer.Dial(ctx, cloudSQLTestInstance)
+	require.ErrorIs(t, err, cloudsqlconn.ErrDialerClosed)
+}
+
+func TestOpenFailureReleasesConnectionPool(t *testing.T) {
+	ctx := context.Background()
+
+	driver := &Driver{}
+	// Tenant mode looks up the database owner, so Open fails against a dead port
+	// only after it has built the connection pool.
+	_, err := driver.Open(ctx, storepb.Engine_POSTGRES, db.ConnectionConfig{
+		DataSource: &storepb.DataSource{
+			Type:     storepb.DataSourceType_ADMIN,
+			Host:     "127.0.0.1",
+			Port:     "1",
+			Username: "bytebase",
+		},
+		ConnectionContext: db.ConnectionContext{DatabaseName: "postgres", TenantMode: true},
+	})
+	require.Error(t, err)
+
+	// A driver whose Open fails is discarded without a Close, so the pool has to
+	// be closed already. database/sql reports that only by message.
+	require.NotNil(t, driver.db)
+	require.ErrorContains(t, driver.db.PingContext(ctx), "database is closed")
 }

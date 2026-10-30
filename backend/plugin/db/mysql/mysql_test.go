@@ -8,6 +8,7 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"database/sql"
 	"encoding/pem"
 	"math/big"
 	"net/http"
@@ -18,10 +19,13 @@ import (
 	"testing"
 	"time"
 
+	"cloud.google.com/go/cloudsqlconn"
+	"github.com/go-sql-driver/mysql"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
@@ -494,4 +498,110 @@ func TestRDSCertPoolLeaderCancellationDoesNotFailWaiter(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		require.Fail(t, "waiter never completed after leader cancellation")
 	}
+}
+
+// cloudSQLIAMConnectionConfig returns a Google Cloud SQL IAM data source that
+// cloudsqlconn accepts offline. The credential is an authorized_user document so
+// that building the connector needs neither a key nor a network round trip; it
+// is never good enough to dial with.
+const cloudSQLTestInstance = "example-project:us-central1:example-instance"
+
+func cloudSQLIAMConnectionConfig(instance string) db.ConnectionConfig {
+	return db.ConnectionConfig{
+		DataSource: &storepb.DataSource{
+			Type:               storepb.DataSourceType_ADMIN,
+			Host:               instance,
+			Username:           "bytebase@example-project.iam",
+			AuthenticationType: storepb.DataSource_GOOGLE_CLOUD_SQL_IAM,
+			IamExtension: &storepb.DataSource_GcpCredential{
+				GcpCredential: &storepb.DataSource_GCPCredential{
+					Content: `{"type":"authorized_user","client_id":"not-a-real-client","client_secret":"not-a-real-secret","refresh_token":"not-a-real-token"}`,
+				},
+			},
+		},
+		ConnectionContext: db.ConnectionContext{DatabaseName: "example"},
+	}
+}
+
+func TestCloudSQLIAMDialerClosesWithDriver(t *testing.T) {
+	ctx := context.Background()
+
+	driver := &Driver{}
+	opened, err := driver.Open(ctx, storepb.Engine_MYSQL, cloudSQLIAMConnectionConfig(cloudSQLTestInstance))
+	require.NoError(t, err)
+	require.Same(t, driver, opened)
+	require.NotNil(t, driver.cloudSQLDialer)
+	require.NotEmpty(t, driver.cloudSQLProtocol)
+
+	dialer := driver.cloudSQLDialer
+	require.NoError(t, driver.Close(ctx))
+
+	// The connector keeps refreshing its ephemeral certificate until it is
+	// closed, so a driver that leaves it open leaks it for the life of the
+	// process, once per connection opened.
+	_, err = dialer.Dial(ctx, cloudSQLTestInstance)
+	require.ErrorIs(t, err, cloudsqlconn.ErrDialerClosed)
+}
+
+func TestCloudSQLIAMDialerClosesWhenOpenFails(t *testing.T) {
+	ctx := context.Background()
+
+	config := cloudSQLIAMConnectionConfig(cloudSQLTestInstance)
+	// A database name that does not survive the DSN fails Open after the
+	// connector has been built.
+	config.ConnectionContext.DatabaseName = "example/db"
+
+	driver := &Driver{}
+	_, err := driver.Open(ctx, storepb.Engine_MYSQL, config)
+	require.Error(t, err)
+
+	// A driver whose Open fails is discarded without a Close, so Open has to have
+	// closed the connector itself.
+	require.NotNil(t, driver.cloudSQLDialer)
+	_, err = driver.cloudSQLDialer.Dial(ctx, cloudSQLTestInstance)
+	require.ErrorIs(t, err, cloudsqlconn.ErrDialerClosed)
+}
+
+func TestCloudSQLIAMNetworkNameIsPerDriver(t *testing.T) {
+	ctx := context.Background()
+
+	first := &Driver{}
+	firstDSN, err := first.getCloudSQLConnection(ctx, cloudSQLIAMConnectionConfig("example-project:us-central1:first"))
+	require.NoError(t, err)
+	defer func() { require.NoError(t, first.closeCloudSQL()) }()
+
+	second := &Driver{}
+	secondDSN, err := second.getCloudSQLConnection(ctx, cloudSQLIAMConnectionConfig("example-project:us-central1:second"))
+	require.NoError(t, err)
+	defer func() { require.NoError(t, second.closeCloudSQL()) }()
+
+	// The network name keys a process-wide registry. Sharing one name let the
+	// second driver take over the first driver's pool and dial its own instance.
+	require.NotEqual(t, first.cloudSQLProtocol, second.cloudSQLProtocol)
+
+	firstConfig, err := mysql.ParseDSN(firstDSN)
+	require.NoError(t, err)
+	require.Equal(t, first.cloudSQLProtocol, firstConfig.Net)
+
+	secondConfig, err := mysql.ParseDSN(secondDSN)
+	require.NoError(t, err)
+	require.Equal(t, second.cloudSQLProtocol, secondConfig.Net)
+}
+
+func TestCloudSQLIAMNetworkNameDeregisteredOnClose(t *testing.T) {
+	ctx := context.Background()
+
+	driver := &Driver{}
+	dsn, err := driver.getCloudSQLConnection(ctx, cloudSQLIAMConnectionConfig(cloudSQLTestInstance))
+	require.NoError(t, err)
+	require.NoError(t, driver.closeCloudSQL())
+
+	// The registration would otherwise pin the closed connector in the MySQL
+	// driver's process-wide map, one entry per driver ever opened.
+	pool, err := sql.Open("mysql", dsn)
+	require.NoError(t, err)
+	defer pool.Close()
+	err = pool.PingContext(ctx)
+	require.Error(t, err)
+	require.NotErrorIs(t, err, cloudsqlconn.ErrDialerClosed)
 }
