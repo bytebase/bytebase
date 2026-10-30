@@ -279,7 +279,7 @@ func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, i
 		}, nil
 	}
 
-	if failed := slices.IndexFunc(qr.Results, func(r queryResult) bool { return r.Error != "" }); failed >= 0 {
+	if failed := failedResult(qr.Results); failed >= 0 {
 		return nil, queryFailure(qr.Results, failed, resolved.resourceName)
 	}
 	result := qr.Results[0]
@@ -321,8 +321,9 @@ type queryError struct {
 	Suggestion string `json:"suggestion,omitempty"`
 	// FailedStatement is what Bytebase reported as failed: one statement, or
 	// the whole request where Query runs it as one unit, as on SQL Server.
-	FailedStatement string   `json:"failedStatement,omitempty"`
-	Ran             []string `json:"ran,omitempty"`
+	FailedStatement string `json:"failedStatement,omitempty"`
+	// Ran can name FailedStatement too, when its error came after it ran.
+	Ran []string `json:"ran,omitempty"`
 }
 
 func (e *queryError) Error() string {
@@ -338,7 +339,23 @@ func formatQueryError(err *queryError) *mcp.CallToolResult {
 	}
 }
 
-// queryFailure reports a request whose first failed result is results[failed].
+// ran reports whether the result's statement ran. A result with column names
+// came from a result set, so its statement ran even when an error follows: the
+// size limit and the rows masking withholds on SQL Server set it afterward.
+func (r queryResult) ran() bool {
+	return r.Error == "" || len(r.ColumnNames) > 0
+}
+
+// failedResult returns the index of the result to report as failed: the first
+// whose statement did not run, else the first with an error, or -1.
+func failedResult(results []queryResult) int {
+	if i := slices.IndexFunc(results, func(r queryResult) bool { return !r.ran() }); i >= 0 {
+		return i
+	}
+	return slices.IndexFunc(results, func(r queryResult) bool { return r.Error != "" })
+}
+
+// queryFailure reports a request whose failed result is results[failed].
 func queryFailure(results []queryResult, failed int, database string) *queryError {
 	qe := &queryError{
 		Code:            "QUERY_ERROR",
@@ -346,7 +363,7 @@ func queryFailure(results []queryResult, failed int, database string) *queryErro
 		FailedStatement: strings.TrimSpace(results[failed].Statement),
 	}
 	for _, r := range results {
-		if r.Error == "" {
+		if r.ran() {
 			qe.Ran = append(qe.Ran, strings.TrimSpace(r.Statement))
 		}
 	}

@@ -867,6 +867,7 @@ func TestQueryDatabase_FailureReportsWhatRan(t *testing.T) {
 	for name, tt := range map[string]struct {
 		statement      string
 		results        []map[string]any
+		wantMessage    string
 		wantFailed     string
 		wantRan        []string
 		wantSuggestion string
@@ -929,6 +930,31 @@ func TestQueryDatabase_FailureReportsWhatRan(t *testing.T) {
 			wantRan:        []string{"INSERT INTO t VALUES (1);"},
 			wantSuggestion: ranAdvice,
 		},
+		"a read over the size limit before a failed statement": {
+			statement: "SELECT * FROM big; INSERT INTO t VALUES (1), (3);",
+			results: []map[string]any{
+				{"columnNames": []string{"id"}, "error": "Output of query exceeds max allowed output size of 10MB", "statement": "SELECT * FROM big;"},
+				{"error": `duplicate key value violates unique constraint "t_pkey"`, "statement": " INSERT INTO t VALUES (1), (3);"},
+			},
+			wantFailed:     "INSERT INTO t VALUES (1), (3);",
+			wantRan:        []string{"SELECT * FROM big;"},
+			wantSuggestion: ranAdvice,
+		},
+		"rows withheld from a write that ran": {
+			statement: "INSERT INTO t OUTPUT inserted.id VALUES (1); UPDATE t SET a = 1;",
+			results: []map[string]any{
+				{
+					"columnNames": []string{"id"},
+					"error":       "Rows returned by a procedure call or an OUTPUT clause are hidden because data masking can't be applied to them.",
+					"statement":   "INSERT INTO t OUTPUT inserted.id VALUES (1);",
+				},
+				{"columnNames": []string{"Affected Rows"}, "statement": " UPDATE t SET a = 1;"},
+			},
+			wantMessage:    "Rows returned by a procedure call or an OUTPUT clause are hidden because data masking can't be applied to them.",
+			wantFailed:     "INSERT INTO t OUTPUT inserted.id VALUES (1);",
+			wantRan:        []string{"INSERT INTO t OUTPUT inserted.id VALUES (1);", "UPDATE t SET a = 1;"},
+			wantSuggestion: ranAdvice,
+		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			s := newTestServerWithMock(t, mockQueryServer(databases, map[string]any{"results": tt.results}))
@@ -941,7 +967,11 @@ func TestQueryDatabase_FailureReportsWhatRan(t *testing.T) {
 			require.True(t, result.IsError)
 			var failure queryError
 			require.NoError(t, json.Unmarshal([]byte(result.Content[0].(*mcpsdk.TextContent).Text), &failure))
-			require.Equal(t, tt.results[len(tt.results)-1]["error"], failure.Message)
+			wantMessage := tt.wantMessage
+			if wantMessage == "" {
+				wantMessage = fmt.Sprint(tt.results[len(tt.results)-1]["error"])
+			}
+			require.Equal(t, wantMessage, failure.Message)
 			require.Equal(t, tt.wantFailed, failure.FailedStatement)
 			require.Equal(t, tt.wantRan, failure.Ran)
 			require.Equal(t, tt.wantSuggestion, failure.Suggestion)
