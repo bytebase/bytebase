@@ -13,6 +13,7 @@ import (
 	"time"
 	"unicode"
 
+	"cloud.google.com/go/cloudsqlconn"
 	"github.com/aws/aws-sdk-go-v2/feature/rds/auth"
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/jackc/pgx/v5"
@@ -51,6 +52,9 @@ type Driver struct {
 
 	db        *sql.DB
 	sshClient *ssh.Client
+	// cloudSQLDialer refreshes its ephemeral certificate in the background until
+	// closed, so it lives and dies with the driver.
+	cloudSQLDialer *cloudsqlconn.Dialer
 	// connectionString is the connection string registered by pgx.
 	// Unregister connectionString if we don't need it.
 	connectionString string
@@ -64,12 +68,21 @@ func newDriver() db.Driver {
 
 // Open opens a Postgres driver.
 func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
+	// A driver whose Open fails is discarded without a Close, so Open releases
+	// what it acquired itself.
+	opened := false
+	defer func() {
+		if !opened {
+			_ = d.Close(ctx)
+		}
+	}()
+
 	var pgxConnConfig *pgx.ConnConfig
 	var err error
 
 	switch config.DataSource.GetAuthenticationType() {
 	case storepb.DataSource_GOOGLE_CLOUD_SQL_IAM:
-		pgxConnConfig, err = getCloudSQLConnectionConfig(ctx, config)
+		pgxConnConfig, err = d.getCloudSQLConnectionConfig(ctx, config)
 	case storepb.DataSource_AWS_RDS_IAM:
 		pgxConnConfig, err = getRDSConnectionConfig(ctx, config)
 	default:
@@ -127,6 +140,7 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 		}
 	}
 	d.connectionCtx = config.ConnectionContext
+	opened = true
 	return d, nil
 }
 
@@ -271,11 +285,12 @@ func getRDSConnectionConfig(ctx context.Context, conf db.ConnectionConfig) (*pgx
 // refs:
 // https://cloud.google.com/sql/docs/postgres/connect-connectors
 // https://github.com/GoogleCloudPlatform/golang-samples/blob/main/cloudsql/postgres/database-sql/cloudsql.go
-func getCloudSQLConnectionConfig(ctx context.Context, conf db.ConnectionConfig) (*pgx.ConnConfig, error) {
-	d, err := util.GetGCPConnectionConfig(ctx, conf)
+func (d *Driver) getCloudSQLConnectionConfig(ctx context.Context, conf db.ConnectionConfig) (*pgx.ConnConfig, error) {
+	dialer, err := util.GetGCPConnectionConfig(ctx, conf)
 	if err != nil {
 		return nil, errors.Wrap(err, "load gcp config failed")
 	}
+	d.cloudSQLDialer = dialer
 
 	dsn := fmt.Sprintf("user=%s", conf.DataSource.Username)
 	config, err := pgx.ParseConfig(dsn)
@@ -283,7 +298,7 @@ func getCloudSQLConnectionConfig(ctx context.Context, conf db.ConnectionConfig) 
 		return nil, err
 	}
 	config.DialFunc = func(ctx context.Context, _, _ string) (net.Conn, error) {
-		return d.Dial(ctx, conf.DataSource.Host)
+		return dialer.Dial(ctx, conf.DataSource.Host)
 	}
 
 	config.DefaultQueryExecMode = pgx.QueryExecModeExec
@@ -295,9 +310,14 @@ func getCloudSQLConnectionConfig(ctx context.Context, conf db.ConnectionConfig) 
 func (d *Driver) Close(context.Context) error {
 	stdlib.UnregisterConnConfig(d.connectionString)
 	var err error
-	err = multierr.Append(err, d.db.Close())
+	if d.db != nil {
+		err = multierr.Append(err, d.db.Close())
+	}
 	if d.sshClient != nil {
 		err = multierr.Append(err, d.sshClient.Close())
+	}
+	if d.cloudSQLDialer != nil {
+		err = multierr.Append(err, d.cloudSQLDialer.Close())
 	}
 	return err
 }
