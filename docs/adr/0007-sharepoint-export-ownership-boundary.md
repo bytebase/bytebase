@@ -61,10 +61,12 @@ today, more destinations later. A destination is offered only when the list
 allows it and, for a storage destination, the project has one configured. Every
 workspace starts with Download only, and a destination added later stays off
 until an administrator lists it, so an upgrade never opens a new destination.
-The list cannot be empty: the Export
-Permission (`bb.sql.export`, ADR 0006) decides who may export, and this policy decides only
-where exports go. An approved export access grant satisfies the Export Permission
-but never adds a destination. A list of disabled destinations was rejected because a
+The Export Permission (`bb.sql.export`, ADR 0006) decides who may export, and
+this policy decides where exports may go. An approved export access grant
+satisfies the Export Permission but never adds a destination. An empty list
+turns off export in the workspace, for grant holders too; this is the one
+workspace-wide export switch, and it exists because the list already overrides
+grants one destination at a time. A list of disabled destinations was rejected because a
 destination added later would be on in every workspace that had turned
 destinations off; one switch per destination was rejected because each new
 destination would need a new policy field. The Export API enforces the list for
