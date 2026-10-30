@@ -138,12 +138,9 @@ message QueryDataPolicy {
   bool allow_admin_data_source = 9;
 
   // workspace-level policy
-  // Where exports may go. Unset allows DOWNLOAD only; an empty list allows none.
-  ExportDestinationPolicy export_destination_policy = 10;
-
-  message ExportDestinationPolicy {
-    repeated ExportDestination allowed_destinations = 1;
-  }
+  // Disable the Download export destination. Exports can still go to a
+  // configured storage destination such as SharePoint.
+  bool disable_download = 10;
 
   // ================
   // Deprecate following fields.
@@ -151,11 +148,4 @@ message QueryDataPolicy {
   bool disallow_ddl = 7;
   // Disallow running DML statements in the SQL editor.
   bool disallow_dml = 8;
-}
-
-// Where an export goes.
-enum ExportDestination {
-  EXPORT_DESTINATION_UNSPECIFIED = 0;
-  DOWNLOAD = 1;
-  SHAREPOINT = 2;
 }

@@ -10,7 +10,6 @@ import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/type/expr.proto";
 import "v1/annotation.proto";
-import "v1/common.proto";
 import "v1/review_rule.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
@@ -316,18 +315,9 @@ message QueryDataPolicy {
   bool allow_admin_data_source = 4;
 
   // workspace-level policy
-  // Where SQLService.Export may send results. When the stored policy has
-  // none, only DOWNLOAD is allowed, and reads return that default. An update
-  // that omits it keeps the stored value.
-  ExportDestinationPolicy export_destination_policy = 5;
-
-  message ExportDestinationPolicy {
-    // The allowed destinations, without duplicates or
-    // EXPORT_DESTINATION_UNSPECIFIED. An empty list turns off export, even
-    // for an approved export access grant. A destination added to
-    // ExportDestination later is not allowed until it is listed here.
-    repeated ExportDestination allowed_destinations = 1;
-  }
+  // Disable the Download export destination. Exports can still go to a
+  // configured storage destination such as SharePoint.
+  bool disable_download = 5;
 }
 
 // MaskingExemptionPolicy is the allowlist of users who can access sensitive data.

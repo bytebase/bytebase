@@ -2506,10 +2506,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.QueryDataPolicy.ExportDestinationPolicy"><span class="badge">M</span>QueryDataPolicy.ExportDestinationPolicy</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.ReviewAIPolicy"><span class="badge">M</span>ReviewAIPolicy</a>
                 </li>
               
@@ -28943,13 +28939,12 @@ If false,
                 </tr>
               
                 <tr>
-                  <td>export_destination_policy</td>
-                  <td><a href="#bytebase.v1.QueryDataPolicy.ExportDestinationPolicy">QueryDataPolicy.ExportDestinationPolicy</a></td>
+                  <td>disable_download</td>
+                  <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>workspace-level policy
-Where SQLService.Export may send results. When the stored policy has
-none, only DOWNLOAD is allowed, and reads return that default. An update
-that omits it keeps the stored value. </p></td>
+Disable the Download export destination. Exports can still go to a
+configured storage destination such as SharePoint. </p></td>
                 </tr>
               
             </tbody>
@@ -28976,33 +28971,6 @@ that omits it keeps the stored value. </p></td>
               </tbody>
             </table>
             
-          
-
-        
-      
-        <h3 id="bytebase.v1.QueryDataPolicy.ExportDestinationPolicy">QueryDataPolicy.ExportDestinationPolicy</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>allowed_destinations</td>
-                  <td><a href="#bytebase.v1.ExportDestination">ExportDestination</a></td>
-                  <td>repeated</td>
-                  <td><p>The allowed destinations, without duplicates or
-EXPORT_DESTINATION_UNSPECIFIED. An empty list turns off export, even
-for an approved export access grant. A destination added to
-ExportDestination later is not allowed until it is listed here. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
           
 
         

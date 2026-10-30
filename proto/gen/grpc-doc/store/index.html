@@ -841,10 +841,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.QueryDataPolicy.ExportDestinationPolicy"><span class="badge">M</span>QueryDataPolicy.ExportDestinationPolicy</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.store.ReviewAIPolicy"><span class="badge">M</span>ReviewAIPolicy</a>
                 </li>
               
@@ -864,10 +860,6 @@
                   <a href="#bytebase.store.TagPolicy.TagsEntry"><span class="badge">M</span>TagPolicy.TagsEntry</a>
                 </li>
               
-              
-                <li>
-                  <a href="#bytebase.store.ExportDestination"><span class="badge">E</span>ExportDestination</a>
-                </li>
               
                 <li>
                   <a href="#bytebase.store.Policy.Resource"><span class="badge">E</span>Policy.Resource</a>
@@ -7490,11 +7482,12 @@ Allow using the admin data source to query in the SQL editor. </p></td>
                 </tr>
               
                 <tr>
-                  <td>export_destination_policy</td>
-                  <td><a href="#bytebase.store.QueryDataPolicy.ExportDestinationPolicy">QueryDataPolicy.ExportDestinationPolicy</a></td>
+                  <td>disable_download</td>
+                  <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>workspace-level policy
-Where exports may go. Unset allows DOWNLOAD only; an empty list allows none. </p></td>
+Disable the Download export destination. Exports can still go to a
+configured storage destination such as SharePoint. </p></td>
                 </tr>
               
                 <tr>
@@ -7511,30 +7504,6 @@ Disallow running DDL statements in the SQL editor. </p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>Disallow running DML statements in the SQL editor. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.QueryDataPolicy.ExportDestinationPolicy">QueryDataPolicy.ExportDestinationPolicy</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>allowed_destinations</td>
-                  <td><a href="#bytebase.store.ExportDestination">ExportDestination</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -7680,35 +7649,6 @@ For example, the environment resource can have the SQL review config tag, such a
         
       
 
-      
-        <h3 id="bytebase.store.ExportDestination">ExportDestination</h3>
-        <p>Where an export goes.</p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>EXPORT_DESTINATION_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DOWNLOAD</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>SHAREPOINT</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
       
         <h3 id="bytebase.store.Policy.Resource">Policy.Resource</h3>
         <p></p>

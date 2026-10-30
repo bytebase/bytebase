@@ -6,7 +6,6 @@ import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobu
 import type { Message } from "@bufbuild/protobuf";
 import type { EmptySchema, FieldMask } from "@bufbuild/protobuf/wkt";
 import type { ReviewRuleType } from "./review_rule_pb";
-import type { ExportDestination } from "./common_pb";
 import type { Expr } from "../google/type/expr_pb";
 
 /**
@@ -400,13 +399,12 @@ export declare type QueryDataPolicy = Message<"bytebase.v1.QueryDataPolicy"> & {
 
   /**
    * workspace-level policy
-   * Where SQLService.Export may send results. When the stored policy has
-   * none, only DOWNLOAD is allowed, and reads return that default. An update
-   * that omits it keeps the stored value.
+   * Disable the Download export destination. Exports can still go to a
+   * configured storage destination such as SharePoint.
    *
-   * @generated from field: bytebase.v1.QueryDataPolicy.ExportDestinationPolicy export_destination_policy = 5;
+   * @generated from field: bool disable_download = 5;
    */
-  exportDestinationPolicy?: QueryDataPolicy_ExportDestinationPolicy | undefined;
+  disableDownload: boolean;
 };
 
 /**
@@ -414,27 +412,6 @@ export declare type QueryDataPolicy = Message<"bytebase.v1.QueryDataPolicy"> & {
  * Use `create(QueryDataPolicySchema)` to create a new message.
  */
 export declare const QueryDataPolicySchema: GenMessage<QueryDataPolicy>;
-
-/**
- * @generated from message bytebase.v1.QueryDataPolicy.ExportDestinationPolicy
- */
-export declare type QueryDataPolicy_ExportDestinationPolicy = Message<"bytebase.v1.QueryDataPolicy.ExportDestinationPolicy"> & {
-  /**
-   * The allowed destinations, without duplicates or
-   * EXPORT_DESTINATION_UNSPECIFIED. An empty list turns off export, even
-   * for an approved export access grant. A destination added to
-   * ExportDestination later is not allowed until it is listed here.
-   *
-   * @generated from field: repeated bytebase.v1.ExportDestination allowed_destinations = 1;
-   */
-  allowedDestinations: ExportDestination[];
-};
-
-/**
- * Describes the message bytebase.v1.QueryDataPolicy.ExportDestinationPolicy.
- * Use `create(QueryDataPolicy_ExportDestinationPolicySchema)` to create a new message.
- */
-export declare const QueryDataPolicy_ExportDestinationPolicySchema: GenMessage<QueryDataPolicy_ExportDestinationPolicy>;
 
 /**
  * MaskingExemptionPolicy is the allowlist of users who can access sensitive data.

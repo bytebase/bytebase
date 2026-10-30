@@ -607,7 +607,6 @@
     - [MaskingRulePolicy.MaskingRule](#bytebase-v1-MaskingRulePolicy-MaskingRule)
     - [Policy](#bytebase-v1-Policy)
     - [QueryDataPolicy](#bytebase-v1-QueryDataPolicy)
-    - [QueryDataPolicy.ExportDestinationPolicy](#bytebase-v1-QueryDataPolicy-ExportDestinationPolicy)
     - [ReviewAIPolicy](#bytebase-v1-ReviewAIPolicy)
     - [ReviewRulePolicy](#bytebase-v1-ReviewRulePolicy)
     - [RolloutPolicy](#bytebase-v1-RolloutPolicy)
@@ -10137,22 +10136,7 @@ QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 | disable_export | [bool](#bool) |  | **Deprecated.** Deprecated: export is controlled by the bb.sql.export permission. Always false; setting it to true is rejected. |
 | disable_copy_data | [bool](#bool) |  | workspace-level policy Disable copying query results in the SQL editor. |
 | allow_admin_data_source | [bool](#bool) |  | workspace-level policy Allow using the admin data source to query in the SQL editor. If true, users can select the admin data source or read-only data source If false, 1. when read-only data source is configured, users&#39;re force to use the read-only data source 2. otherwise fallback to use the admin data source. |
-| export_destination_policy | [QueryDataPolicy.ExportDestinationPolicy](#bytebase-v1-QueryDataPolicy-ExportDestinationPolicy) |  | workspace-level policy Where SQLService.Export may send results. When the stored policy has none, only DOWNLOAD is allowed, and reads return that default. An update that omits it keeps the stored value. |
-
-
-
-
-
-
-<a name="bytebase-v1-QueryDataPolicy-ExportDestinationPolicy"></a>
-
-### QueryDataPolicy.ExportDestinationPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| allowed_destinations | [ExportDestination](#bytebase-v1-ExportDestination) | repeated | The allowed destinations, without duplicates or EXPORT_DESTINATION_UNSPECIFIED. An empty list turns off export, even for an approved export access grant. A destination added to ExportDestination later is not allowed until it is listed here. |
+| disable_download | [bool](#bool) |  | workspace-level policy Disable the Download export destination. Exports can still go to a configured storage destination such as SharePoint. |
 
 
 
