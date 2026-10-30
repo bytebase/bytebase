@@ -155,11 +155,17 @@ func headerLines(required *confirmationRequired, database, instance, container s
 		lines = append(lines, fmt.Sprintf("Run in %q:", required.environment))
 	}
 	lines = append(lines, fmt.Sprintf("Database %q", database), fmt.Sprintf("Instance %q", instance))
+	// The schema and the container share a line, so the names never take more
+	// than the four lines Claude Code shows.
+	var scopes []string
 	if required.schema != "" {
-		lines = append(lines, fmt.Sprintf("Schema %q", required.schema))
+		scopes = append(scopes, fmt.Sprintf("schema %q", required.schema))
 	}
 	if container != "" {
-		lines = append(lines, fmt.Sprintf("Container %q", container))
+		scopes = append(scopes, fmt.Sprintf("container %q", container))
+	}
+	if len(scopes) > 0 {
+		lines = append(lines, capitalize(strings.Join(scopes, ", ")))
 	}
 	return lines
 }

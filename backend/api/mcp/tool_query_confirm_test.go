@@ -292,6 +292,7 @@ func TestQueryDatabaseShowsLongNamesWhole(t *testing.T) {
 		database    string
 		environment string
 		schema      string
+		container   string
 		statement   string
 		message     []string
 		description string
@@ -311,6 +312,9 @@ func TestQueryDatabaseShowsLongNamesWhole(t *testing.T) {
 		{name: "no environment", database: longName, statement: "INSERT INTO employee VALUES (1)",
 			message:     []string{fmt.Sprintf("Database %q", longName), `Instance "prod-pg"`, "INSERT INTO employee VALUES (1)"},
 			description: runsAtOnce},
+		{name: "a schema and a container", database: longName, environment: "prod", schema: "app", container: "orders", statement: "INSERT INTO employee VALUES (1)",
+			message:     []string{`Run in "prod":`, fmt.Sprintf("Database %q", longName), `Instance "prod-pg"`, `Schema "app", container "orders"`},
+			description: "INSERT INTO employee VALUES (1)\n\n" + runsAtOnce},
 	} {
 		t.Run(row.name, func(t *testing.T) {
 			mock := newConfirmingQueryMock([]map[string]any{
@@ -324,6 +328,9 @@ func TestQueryDatabaseShowsLongNamesWhole(t *testing.T) {
 			arguments := map[string]any{"database": row.database, "statement": row.statement}
 			if row.schema != "" {
 				arguments["schema"] = row.schema
+			}
+			if row.container != "" {
+				arguments["container"] = row.container
 			}
 			callQuery(t, session, &mcp.CallToolParams{Name: "query_database", Arguments: arguments})
 			asked := user.lastParams(t)
