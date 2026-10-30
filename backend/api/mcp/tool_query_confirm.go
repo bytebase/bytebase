@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 	"unicode"
 	"unicode/utf8"
 
@@ -16,6 +17,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 )
 
@@ -24,6 +26,7 @@ import (
 const (
 	runChoiceField  = "choice"
 	runChoiceRun    = "run"
+	runChoiceIssue  = "issue"
 	runChoiceChange = "change"
 )
 
@@ -83,10 +86,17 @@ func confirmationRequiredIn(body json.RawMessage) *confirmationRequired {
 	return nil
 }
 
+// offersIssue reports whether the form offers to file the request as an issue.
+// A plan carries no schema, so its rollout would run with the database's
+// default one, and CosmosDB's driver runs no changes.
+func offersIssue(schema, engine string) bool {
+	return schema == "" && engine != storepb.Engine_COSMOSDB.String()
+}
+
 // askToRun returns the form that asks the user to run statement. A call that
 // already asked which database to use gets a result that has the agent call
 // again instead: an older client answers one form per call.
-func (s *Server) askToRun(ctx context.Context, req *mcp.CallToolRequest, confirmation runConfirmation, digest []byte, statement, container string, required *confirmationRequired) *mcp.CallToolResult {
+func (s *Server) askToRun(ctx context.Context, req *mcp.CallToolRequest, confirmation runConfirmation, digest []byte, statement, container string, required *confirmationRequired, offerIssue bool) *mcp.CallToolResult {
 	project, instance, database, err := common.GetDatabaseResourceName(confirmation.database)
 	if err != nil {
 		return formatToolError(err)
@@ -113,6 +123,11 @@ func (s *Server) askToRun(ctx context.Context, req *mcp.CallToolRequest, confirm
 		}
 	}
 	message := strings.Join(append(header, request...), "\n")
+	choices := []any{map[string]any{"const": runChoiceRun, "title": "Run now"}}
+	if offerIssue {
+		choices = append(choices, map[string]any{"const": runChoiceIssue, "title": "Create an issue"})
+	}
+	choices = append(choices, map[string]any{"const": runChoiceChange, "title": "Change it in chat"})
 	return s.askWithForm(ctx, confirmation, digest, message, map[string]any{
 		"type": "object",
 		"properties": map[string]any{
@@ -120,11 +135,8 @@ func (s *Server) askToRun(ctx context.Context, req *mcp.CallToolRequest, confirm
 				"type":        "string",
 				"title":       "Run this request?",
 				"description": description,
-				"oneOf": []any{
-					map[string]any{"const": runChoiceRun, "title": "Run now"},
-					map[string]any{"const": runChoiceChange, "title": "Change it in chat"},
-				},
-				"default": runChoiceRun,
+				"oneOf":       choices,
+				"default":     runChoiceRun,
 			},
 		},
 		"required": []string{runChoiceField},
@@ -197,32 +209,59 @@ func lineColumns(line string) int {
 	return columns
 }
 
-// unrunAnswer returns the result for an answer that runs nothing, or nil when
-// the user chose Run now. It reads no target or signed state, so a request
-// that changed while the user was asked cannot turn a decline into a form.
-func unrunAnswer(response mcp.InputResponse) *mcp.CallToolResult {
+// answeredChoice returns the choice an answer acts on, Run now or Create an
+// issue, or else the result for an answer that acts on nothing. It reads no
+// target or signed state, so a request that changed while the user was asked
+// cannot turn a decline into a form.
+func answeredChoice(response mcp.InputResponse) (string, *mcp.CallToolResult) {
 	content, accepted, why := acceptedForm(response)
 	if !accepted {
-		return textResult(fmt.Sprintf("Not run: %s, so nothing changed. Do not retry unless the user asks.", why))
+		return "", textResult(fmt.Sprintf("Not run: %s, so nothing changed. Do not retry unless the user asks.", why))
 	}
-	switch content[runChoiceField] {
-	case runChoiceRun:
-		return nil
+	switch choice, _ := content[runChoiceField].(string); choice {
+	case runChoiceRun, runChoiceIssue:
+		return choice, nil
 	case runChoiceChange:
-		return textResult("Not run: the user wants to change this request. Ask them what to change, then call query_database with the revised request.")
+		return "", textResult("Not run: the user wants to change this request. Ask them what to change, then call query_database with the revised request.")
 	default:
-		return textResult("Not run: the answer chose neither option, so nothing changed.")
+		return "", noOfferedChoice()
 	}
 }
 
-// staleRun reports a Run now answer that no longer fits the request. It asks
-// nothing: an older client answers one form per call.
-func staleRun(why string) *mcp.CallToolResult {
+// noOfferedChoice reports an answer that chose none of the form's choices.
+func noOfferedChoice() *mcp.CallToolResult {
+	return textResult("Not run: the answer chose none of the form's choices, so nothing changed.")
+}
+
+// staleAnswer reports a Run now or Create an issue answer that no longer fits
+// the request. It asks nothing: an older client answers one form per call.
+func staleAnswer(why string) *mcp.CallToolResult {
 	return formatToolError(&toolError{
 		Code:       "STALE_CONFIRMATION",
-		Message:    fmt.Sprintf("%s, so nothing ran", why),
+		Message:    fmt.Sprintf("%s, so nothing ran and no issue was filed", why),
 		Suggestion: "call query_database again to ask the user about the request as it is now",
 	})
+}
+
+// fileAsIssue files statement against the database as a change issue, with
+// propose_database_change's steps but no rollout: Bytebase creates the rollout
+// once the issue is approved and its plan checks pass.
+func (s *Server) fileAsIssue(ctx context.Context, resolved *resolvedDatabase, statement string) *mcp.CallToolResult {
+	_, _, database, err := common.GetDatabaseResourceName(resolved.resourceName)
+	if err != nil {
+		return formatToolError(err)
+	}
+	filed, failed := s.fileChange(ctx, resolved.project, resolved.resourceName, statement, issueTitle(database, time.Now()), "")
+	if failed != nil {
+		return failed
+	}
+	return textResult(fmt.Sprintf("Not run: the user chose Create an issue, so the request is filed as issue %s (%s). The issue page shows its approval status.",
+		filed.issue, s.consoleLink(ctx, filed.issue)))
+}
+
+// issueTitle is the console's default title for a change to one database.
+func issueTitle(database string, now time.Time) string {
+	return fmt.Sprintf("[%s] Change database %s", database, now.Format("@01-02 15:04 UTC-0700"))
 }
 
 // textResult carries text alone, which a client shows the model whole.

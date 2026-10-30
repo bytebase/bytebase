@@ -86,6 +86,7 @@ query_database(database="employee", instance="projects/hr/instances/prod-pg", st
 
 **Notes:**
 - Show the user the statement each answer came from, so they can check it read what they asked about.
+- When the user asks for an issue or a review of a change, call propose_database_change instead.
 - Masked data: masking replaces a value fully (by default "******"), partly (e.g. "**rn**"), or with a hash. maskedColumns in the result names each masked column and why (not reported for MongoDB, CosmosDB or Elasticsearch). A masked value is a placeholder, not a value anything holds, so never write it back and never filter on it. Any statement containing "******" is refused. When showing a partly masked value, wrap it in backticks: "**rn**" renders as bold Markdown.
 - Seeing masked values: the user can ask a project owner for a masking exemption, or, if the project allows just-in-time access, request an access grant with Unmask for this exact statement, schema and container. In a Read-write session, file the request with request_access_grant; otherwise the user requests it in the SQL Editor. Once it is approved, find the grant among the user's access grants, then rerun the granted statement unchanged with the grant's schema and container. appliedAccessGrant in the result names the grant that applied.
 `
@@ -114,23 +115,24 @@ func (s *Server) handleQueryDatabase(ctx context.Context, req *mcp.CallToolReque
 		limit = maxQueryLimit
 	}
 
-	// An answer that runs nothing is reported before the database is resolved
-	// again, which may have changed while the user was asked.
-	answeredRun, answerState := false, ""
+	// An answer that acts on nothing is reported before the database is
+	// resolved again, which may have changed while the user was asked.
+	choice, answerState := "", ""
 	if canShowConfirmation(req) {
 		if response, state, answered := confirmationAnswer(req); answered {
-			if result := unrunAnswer(response); result != nil {
+			var result *mcp.CallToolResult
+			if choice, result = answeredChoice(response); result != nil {
 				return result, nil, nil
 			}
-			answeredRun, answerState = true, state
+			answerState = state
 		}
 	}
 
 	// Resolve database.
 	resolved, resolveResult := s.resolveTarget(ctx, req, input.Database, input.Instance, input.Project)
 	if resolveResult != nil {
-		if answeredRun && len(resolveResult.InputRequests) > 0 {
-			return staleRun("the databases that match changed after the user was asked"), nil, nil
+		if choice != "" && len(resolveResult.InputRequests) > 0 {
+			return staleAnswer("the databases that match changed after the user was asked"), nil, nil
 		}
 		return resolveResult, nil, nil
 	}
@@ -139,17 +141,24 @@ func (s *Server) handleQueryDatabase(ctx context.Context, req *mcp.CallToolReque
 	// now, or at once when the client cannot show the form.
 	confirmation := runConfirmation{database: resolved.resourceName}
 	digest := auth.MCPStatementDigest(input.Statement, resolved.resourceName, input.Schema, input.Container)
+	offerIssue := offersIssue(input.Schema, resolved.engine)
 	var confirmed []byte
 	if !canShowConfirmation(req) {
 		confirmed = digest
 	} else if reply, answered := s.signedReply(ctx, req, confirmation, digest); answered {
 		if why := reply.staleReason("the request changed after the user was asked"); why != "" {
-			return staleRun(why), nil, nil
+			return staleAnswer(why), nil, nil
+		}
+		if choice == runChoiceIssue {
+			if !offerIssue {
+				return noOfferedChoice(), nil, nil
+			}
+			return s.fileAsIssue(ctx, resolved, input.Statement), nil, nil
 		}
 		confirmed = digest
-	} else if answeredRun && answerState != "" {
+	} else if choice != "" && answerState != "" {
 		// The answer was signed for another database.
-		return staleRun("the database that matches changed after the user was asked"), nil, nil
+		return staleAnswer("the database that matches changed after the user was asked"), nil, nil
 	}
 
 	// Execute query.
@@ -161,7 +170,7 @@ func (s *Server) handleQueryDatabase(ctx context.Context, req *mcp.CallToolReque
 	// A confirmed call that Query still refuses reports the refusal: asking
 	// again in the same call would send a second form.
 	if errors.As(err, &required) && confirmed == nil {
-		return s.askToRun(ctx, req, confirmation, digest, input.Statement, input.Container, required), nil, nil
+		return s.askToRun(ctx, req, confirmation, digest, input.Statement, input.Container, required, offerIssue), nil, nil
 	}
 	if err != nil {
 		var qe *queryError
