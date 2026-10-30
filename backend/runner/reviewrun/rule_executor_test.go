@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
 
@@ -158,4 +159,96 @@ func TestRuleExecutorSkipsAnEngineWithoutAReviewer(t *testing.T) {
 
 	require.NoError(t, runOn("dynamo", storepb.Engine_DYNAMODB))
 	require.NoError(t, runOn("clickhouse", storepb.Engine_CLICKHOUSE))
+}
+
+// TestRuleExecutorPassesTheSyncedDefaultSchema pins that SQL Server's walk
+// judges an unqualified name in the default schema the sync read: with it,
+// CREATE TABLE of a name the schema holds is a finding; without it, the walk
+// cannot place the name.
+func TestRuleExecutorPassesTheSyncedDefaultSchema(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	db, stores, _ := testcontainer.NewMetadataDB(t)
+	_, err := db.ExecContext(ctx, `
+		INSERT INTO workspace (resource_id) VALUES ('ws');
+		INSERT INTO principal (name, email, password_hash) VALUES ('creator', 'creator@example.com', 'unused');
+		INSERT INTO project (resource_id, workspace, name) VALUES ('p', 'ws', 'P');
+	`)
+	require.NoError(t, err)
+	payload, err := protojson.Marshal(&storepb.ReviewRulePolicy{Rules: []storepb.ReviewRuleType{storepb.ReviewRuleType_SYNTAX, storepb.ReviewRuleType_WALK_THROUGH}})
+	require.NoError(t, err)
+	_, err = stores.CreatePolicy(ctx, &store.PolicyMessage{
+		Workspace:    "ws",
+		ResourceType: storepb.Policy_PROJECT,
+		Resource:     common.FormatProject("p"),
+		Type:         storepb.Policy_REVIEW_RULE,
+		Payload:      string(payload),
+		Enforce:      true,
+	})
+	require.NoError(t, err)
+	sheets, err := stores.CreateSheets(ctx, "p", &store.SheetMessage{Statement: "CREATE TABLE t (a int);"})
+	require.NoError(t, err)
+
+	review := func(instanceID, defaultSchema string) []string {
+		t.Helper()
+		_, err := stores.CreateInstance(ctx, &store.InstanceMessage{
+			ResourceID: instanceID,
+			Workspace:  "ws",
+			Metadata: &storepb.Instance{
+				Engine:      storepb.Engine_MSSQL,
+				DataSources: []*storepb.DataSource{{Id: "admin", Type: storepb.DataSourceType_ADMIN}},
+			},
+		})
+		require.NoError(t, err)
+		_, err = stores.UpsertDatabase(ctx, &store.DatabaseMessage{
+			ProjectID:    "p",
+			InstanceID:   instanceID,
+			DatabaseName: "app",
+			Metadata:     &storepb.DatabaseMetadata{},
+		})
+		require.NoError(t, err)
+		require.NoError(t, stores.UpsertDBSchema(ctx, instanceID, "app", &metadatapb.DatabaseSchemaMetadata{
+			Name:          "app",
+			DefaultSchema: defaultSchema,
+			Schemas: []*metadatapb.SchemaMetadata{{
+				Name:   "dbo",
+				Tables: []*metadatapb.TableMetadata{{Name: "t", Columns: []*metadatapb.ColumnMetadata{{Name: "a"}}}},
+			}},
+		}, &storepb.DatabaseConfig{}, nil))
+		plan, err := stores.CreatePlan(ctx, &store.PlanMessage{
+			ProjectID: "p",
+			Name:      "plan",
+			Config: &storepb.PlanConfig{
+				Specs: []*storepb.PlanConfig_Spec{{
+					Id: "spec-1",
+					Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+						ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
+							Targets:     []string{"instances/" + instanceID + "/databases/app"},
+							SheetSha256: sheets[0].Sha256,
+						},
+					},
+				}},
+			},
+		}, "creator@example.com")
+		require.NoError(t, err)
+		issue, err := stores.CreateIssue(ctx, &store.IssueMessage{
+			ProjectID:    "p",
+			CreatorEmail: "creator@example.com",
+			Title:        "issue",
+			Type:         storepb.Issue_DATABASE_CHANGE,
+			Payload:      &storepb.Issue{},
+			PlanUID:      &plan.UID,
+		})
+		require.NoError(t, err)
+		comments, err := NewRuleExecutor(stores).RunOnce(ctx, "p", issue.UID)
+		require.NoError(t, err)
+		var messages []string
+		for _, comment := range comments {
+			messages = append(messages, comment.Payload.GetComment())
+		}
+		return messages
+	}
+
+	require.Equal(t, []string{"an object named t already exists"}, review("synced", "dbo"))
+	require.Empty(t, review("unsynced", ""))
 }

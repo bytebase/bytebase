@@ -183,6 +183,7 @@ func (e *RuleExecutor) resolveReviewTarget(ctx context.Context, project *store.P
 			BackupDatabaseExists: backupDatabaseExists,
 			SessionUser:          sessionUser(project, instance, schema.GetOwner()),
 			LowerCaseTableNames:  int(instance.Metadata.GetMysqlLowerCaseTableNames()),
+			DefaultSchema:        schema.GetDefaultSchema(),
 		},
 	}, nil
 }
