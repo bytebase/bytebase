@@ -218,9 +218,11 @@ func answeredChoice(response mcp.InputResponse) (string, *mcp.CallToolResult) {
 	if !accepted {
 		return "", textResult(fmt.Sprintf("Not run: %s, so nothing changed. Do not retry unless the user asks.", why))
 	}
-	switch choice, _ := content[runChoiceField].(string); choice {
-	case runChoiceRun, runChoiceIssue:
-		return choice, nil
+	switch content[runChoiceField] {
+	case runChoiceRun:
+		return runChoiceRun, nil
+	case runChoiceIssue:
+		return runChoiceIssue, nil
 	case runChoiceChange:
 		return "", textResult("Not run: the user wants to change this request. Ask them what to change, then call query_database with the revised request.")
 	default:
