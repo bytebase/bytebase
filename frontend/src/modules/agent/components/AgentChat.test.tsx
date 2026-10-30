@@ -6,6 +6,7 @@ import {
   PROJECT_V1_ROUTE_DATABASE_DETAIL,
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
   PROJECT_V1_ROUTE_ISSUES,
+  PROJECT_V1_ROUTE_PLAN_DETAIL,
   PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
 } from "@/app/router/handles";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
@@ -1476,6 +1477,11 @@ describe("AgentChat", () => {
               kind: "database",
               name: "projects/orders/instances/prod/databases/orders",
             },
+            {
+              kind: "plan",
+              name: "projects/orders/plans/123",
+              title: "Update orders",
+            },
           ],
         },
       },
@@ -1501,8 +1507,12 @@ describe("AgentChat", () => {
     const databaseLink = Array.from(container.querySelectorAll("a")).find(
       (link) => link.textContent === "orders"
     );
+    const planLink = Array.from(container.querySelectorAll("a")).find(
+      (link) => link.textContent === "Update orders"
+    );
     expect(issueLink).toBeInstanceOf(HTMLElement);
     expect(databaseLink).toBeInstanceOf(HTMLElement);
+    expect(planLink).toBeInstanceOf(HTMLElement);
 
     act(() => {
       issueLink?.dispatchEvent(
@@ -1527,6 +1537,16 @@ describe("AgentChat", () => {
         databaseName: "orders",
       },
       query: { parent: "projects/orders/instances/prod" },
+    });
+
+    act(() => {
+      planLink?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, cancelable: true })
+      );
+    });
+    expect(mocks.routerPush).toHaveBeenCalledWith({
+      name: PROJECT_V1_ROUTE_PLAN_DETAIL,
+      params: { projectId: "orders", planId: "123" },
     });
 
     unmount();

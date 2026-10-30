@@ -38,6 +38,11 @@ export type AgentEvidenceReference =
       title: string;
     }
   | {
+      kind: "plan";
+      name: string;
+      title: string;
+    }
+  | {
       kind: "database";
       name: string;
     };

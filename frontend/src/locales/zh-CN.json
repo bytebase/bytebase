@@ -88,6 +88,7 @@
     "evidence": {
       "database": "数据库",
       "issue": "issue",
+      "plan": "计划",
       "references": "依据"
     },
     "follow-up": {

@@ -47,6 +47,10 @@ const mocks = vi.hoisted(() => ({
     const payload = JSON.parse(result) as { evidence?: unknown };
     return payload.evidence;
   }),
+  extractPlanOverviewEvidence: vi.fn((result: string) => {
+    const payload = JSON.parse(result) as { evidence?: unknown };
+    return payload.evidence;
+  }),
   extractDatabaseOverviewEvidence: vi.fn((result: string) => {
     const payload = JSON.parse(result) as { evidence?: unknown };
     return payload.evidence;
@@ -222,6 +226,10 @@ vi.mock("../logic/tools/issueOverview", () => ({
   extractIssueOverviewEvidence: mocks.extractIssueOverviewEvidence,
 }));
 
+vi.mock("../logic/tools/planOverview", () => ({
+  extractPlanOverviewEvidence: mocks.extractPlanOverviewEvidence,
+}));
+
 vi.mock("../logic/tools/databaseOverview", () => ({
   extractDatabaseOverviewEvidence: mocks.extractDatabaseOverviewEvidence,
 }));
@@ -322,6 +330,11 @@ beforeEach(async () => {
   mocks.getProjectAttention.mockReset();
   mocks.extractIssueOverviewEvidence.mockReset();
   mocks.extractIssueOverviewEvidence.mockImplementation((result: string) => {
+    const payload = JSON.parse(result) as { evidence?: unknown };
+    return payload.evidence;
+  });
+  mocks.extractPlanOverviewEvidence.mockReset();
+  mocks.extractPlanOverviewEvidence.mockImplementation((result: string) => {
     const payload = JSON.parse(result) as { evidence?: unknown };
     return payload.evidence;
   });
@@ -4213,9 +4226,20 @@ describe("AgentInput", () => {
         title: "Change orders schema",
         state: "ACTIVE",
       },
+      evidence: {
+        project: "projects/orders",
+        references: [
+          { kind: "plan", name: planName, title: "Change orders schema" },
+        ],
+      },
     });
     mocks.executeTool.mockResolvedValueOnce({ kind: "tool_result", result: overview });
-    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+    mocks.runAgentLoop.mockImplementation(
+      async (_history, _tools, _executor, callbacks) => {
+        callbacks.onText("Plan overview response");
+        return { kind: "completed", success: true, totalTokensUsed: 0 };
+      }
+    );
     const store = useAgentStore.getState();
     const chat = store.createChat({ context: "projects/orders" });
     const view = renderIntoContainer(<AgentInput />);
@@ -4251,6 +4275,7 @@ describe("AgentInput", () => {
     expect(store.getMessages(chat.id)[0].metadata?.resourceReference).toEqual({
       kind: "plan", name: planName, project: "projects/orders", label: "Change orders schema (#7)",
     });
+    expect(mocks.extractPlanOverviewEvidence).toHaveBeenCalledWith(overview);
     expect(mocks.executeTool).toHaveBeenCalledWith(
       "get_plan_overview", { planName }, expect.any(String)
     );
@@ -4271,6 +4296,17 @@ describe("AgentInput", () => {
       { role: "assistant", toolCalls: [{ name: "get_plan_overview", arguments: JSON.stringify({ planName }) }] },
       { role: "tool", content: overview },
     ]);
+    expect(
+      store
+        .getMessages(chat.id)
+        .find((message) => message.content === "Plan overview response")
+        ?.metadata?.evidence
+    ).toEqual({
+      project: "projects/orders",
+      references: [
+        { kind: "plan", name: planName, title: "Change orders schema" },
+      ],
+    });
 
     await act(async () => {
       setTextareaValue(textarea, "How many Plans here?");

@@ -256,7 +256,7 @@ export async function collectIssueOverview(
     issueStatus: enumName(IssueStatus, issue.status),
     approvalStatus: enumName(ApprovalStatus, issue.approvalStatus),
   };
-  const evidence: AgentEvidence = {
+  let evidence: AgentEvidence = {
     project: projectName,
     references: [{ kind: "issue", name: issue.name, title: issue.title }],
   };
@@ -323,6 +323,15 @@ export async function collectIssueOverview(
           reviewOnPlan: !shouldRedirectToIssueDetail(planResult.value, issue),
         }
       : { status: "unavailable" as const };
+  if (plan.status === "available") {
+    evidence = {
+      ...evidence,
+      references: [
+        ...evidence.references,
+        { kind: "plan", name: plan.name, title: plan.title },
+      ],
+    };
+  }
   const planCheck =
     planCheckResult.status === "fulfilled"
       ? planCheckResult.value.name === `${plan.name}/planCheckRun`
@@ -478,21 +487,20 @@ export function extractIssueOverviewEvidence(
     const references = evidence.references.flatMap((reference) => {
       if (!reference || typeof reference !== "object") return [];
       const value = reference as Record<string, unknown>;
-      if (
-        value.kind !== "issue" ||
-        typeof value.name !== "string" ||
-        !isIssueNameInProject(project, value.name) ||
-        typeof value.title !== "string"
-      ) {
+      if (typeof value.name !== "string" || typeof value.title !== "string") {
         return [];
       }
-      return [
-        {
-          kind: "issue" as const,
-          name: value.name as string,
-          title: value.title,
-        },
-      ];
+      if (value.kind === "issue" && isIssueNameInProject(project, value.name)) {
+        return [
+          { kind: "issue" as const, name: value.name, title: value.title },
+        ];
+      }
+      if (value.kind === "plan" && isPlanNameInProject(project, value.name)) {
+        return [
+          { kind: "plan" as const, name: value.name, title: value.title },
+        ];
+      }
+      return [];
     });
 
     return references.length > 0 ? { project, references } : undefined;

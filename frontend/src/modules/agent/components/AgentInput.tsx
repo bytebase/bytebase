@@ -61,6 +61,7 @@ import {
   getPendingApiCallPreview,
   resolvePendingApiCall,
 } from "../logic/tools/pendingApiCall";
+import { extractPlanOverviewEvidence } from "../logic/tools/planOverview";
 import { createProjectOpenIssuesTool } from "../logic/tools/projectOpenIssues";
 import { extractProjectOverviewEvidence } from "../logic/tools/projectOverview";
 import { getRecentActivity } from "../logic/tools/recentActivity";
@@ -1156,6 +1157,10 @@ export function AgentInput({
             useAgentStore.getState().finishChatRun(chatId);
             return;
           }
+          overviewEvidence = mergeOverviewEvidence(
+            overviewEvidence,
+            extractPlanOverviewEvidence(overviewResult)
+          );
           history.push(
             {
               role: "assistant",
@@ -1379,6 +1384,11 @@ export function AgentInput({
                 overviewEvidence = mergeOverviewEvidence(
                   overviewEvidence,
                   extractIssueOverviewEvidence(result)
+                );
+              } else if (toolName === "get_plan_overview") {
+                overviewEvidence = mergeOverviewEvidence(
+                  overviewEvidence,
+                  extractPlanOverviewEvidence(result)
                 );
               } else if (toolName === "get_database_overview") {
                 overviewEvidence = mergeOverviewEvidence(

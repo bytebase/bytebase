@@ -18,6 +18,7 @@ import {
   type Plan_Spec,
 } from "@/types/proto-es/v1/plan_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
+import type { AgentEvidence } from "../types";
 
 const MAX_SPECS = 10;
 const MAX_TARGETS = 10;
@@ -26,6 +27,7 @@ const MAX_DESCRIPTION_LENGTH = 2000;
 
 type PlanOverview = {
   project: string;
+  evidence?: AgentEvidence;
   plan:
     | { status: "unavailable" }
     | {
@@ -151,12 +153,79 @@ export async function collectPlanOverview(
       { contextValues: createContextValues().set(silentContextKey, true) }
     );
     if (plan.name === planName && plan.state === State.ACTIVE) {
-      return { project: projectName, plan: summarizePlan(plan) };
+      return {
+        project: projectName,
+        plan: summarizePlan(plan),
+        evidence: {
+          project: projectName,
+          references: [{ kind: "plan", name: plan.name, title: plan.title }],
+        },
+      };
     }
   } catch {
     // An unavailable Plan does not establish that it does not exist.
   }
   return { project: projectName, plan: { status: "unavailable" } };
+}
+
+export function extractPlanOverviewEvidence(
+  result: string
+): AgentEvidence | undefined {
+  try {
+    const payload = JSON.parse(result) as {
+      plan?: unknown;
+      evidence?: unknown;
+    };
+    if (
+      !payload.evidence ||
+      typeof payload.evidence !== "object" ||
+      !payload.plan ||
+      typeof payload.plan !== "object"
+    ) {
+      return undefined;
+    }
+    const plan = payload.plan as Record<string, unknown>;
+    const evidence = payload.evidence as {
+      project?: unknown;
+      references?: unknown;
+    };
+    const project = evidence.project;
+    if (
+      typeof project !== "string" ||
+      !/^projects\/[^/]+$/.test(project) ||
+      !Array.isArray(evidence.references)
+    ) {
+      return undefined;
+    }
+
+    const references = evidence.references.flatMap((reference) => {
+      if (!reference || typeof reference !== "object") return [];
+      const value = reference as Record<string, unknown>;
+      if (
+        value.kind !== "plan" ||
+        typeof value.name !== "string" ||
+        !isPlanNameInProject(project, value.name) ||
+        typeof value.title !== "string" ||
+        !value.title ||
+        plan.status !== "available" ||
+        plan.name !== value.name ||
+        plan.title !== value.title
+      ) {
+        return [];
+      }
+      return [
+        {
+          kind: "plan" as const,
+          name: value.name,
+          title: value.title,
+        },
+      ];
+    });
+
+    return references.length > 0 ? { project, references } : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export function createPlanOverviewTool({

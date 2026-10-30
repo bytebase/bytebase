@@ -171,6 +171,7 @@ describe("issueOverview", () => {
         project: "projects/orders",
         references: [
           { kind: "issue", name: issueName, title: "Add customer table" },
+          { kind: "plan", name: planName, title: "Add customer table" },
         ],
       },
     });

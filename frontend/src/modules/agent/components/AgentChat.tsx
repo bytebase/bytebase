@@ -14,6 +14,7 @@ import { router } from "@/app/router";
 import {
   PROJECT_V1_ROUTE_DATABASE_DETAIL,
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
+  PROJECT_V1_ROUTE_PLAN_DETAIL,
   SETTING_ROUTE_WORKSPACE_GENERAL,
 } from "@/app/router/handles";
 import { HumanizeTs } from "@/components/HumanizeTs";
@@ -110,6 +111,7 @@ const EMPTY_CHAT_STARTERS: Record<"workspace" | "project", LandingStarterId[]> =
   };
 
 const ISSUE_NAME_PATTERN = /^projects\/([^/]+)\/issues\/([^/]+)$/;
+const PLAN_NAME_PATTERN = /^projects\/([^/]+)\/plans\/([^/]+)$/;
 const DATABASE_NAME_PATTERN =
   /^(?:projects\/([^/]+)\/)?instances\/([^/]+)\/databases\/([^/]+)$/;
 
@@ -120,6 +122,10 @@ type ResolvedEvidenceReference = {
     | {
         name: typeof PROJECT_V1_ROUTE_ISSUE_DETAIL;
         params: { projectId: string; issueId: string };
+      }
+    | {
+        name: typeof PROJECT_V1_ROUTE_PLAN_DETAIL;
+        params: { projectId: string; planId: string };
       }
     | {
         name: typeof PROJECT_V1_ROUTE_DATABASE_DETAIL;
@@ -168,6 +174,27 @@ function resolveScopedEvidenceReferences(
         to: {
           name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
           params: { projectId: match[1], issueId: match[2] },
+        },
+      });
+      continue;
+    }
+
+    if (reference.kind === "plan") {
+      if (
+        !projectId ||
+        typeof reference.title !== "string" ||
+        !reference.title
+      ) {
+        continue;
+      }
+      const match = reference.name.match(PLAN_NAME_PATTERN);
+      if (!match || match[1] !== projectId) continue;
+      resolved.push({
+        reference,
+        label: reference.title,
+        to: {
+          name: PROJECT_V1_ROUTE_PLAN_DETAIL,
+          params: { projectId: match[1], planId: match[2] },
         },
       });
       continue;
@@ -224,6 +251,7 @@ function EvidenceReferences({ evidence }: { evidence?: AgentAnswerEvidence }) {
   const references = resolveEvidenceReferences(evidence);
   const labels = {
     issue: t("agent.evidence.issue"),
+    plan: t("agent.evidence.plan"),
     database: t("agent.evidence.database"),
   };
   if (references.length === 0) return null;

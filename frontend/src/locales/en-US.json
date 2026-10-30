@@ -88,6 +88,7 @@
     "evidence": {
       "database": "database",
       "issue": "issue",
+      "plan": "Plan",
       "references": "Evidence"
     },
     "follow-up": {

@@ -15,7 +15,11 @@ vi.mock("@/api", () => ({
   planServiceClientConnect: { getPlan: mocks.getPlan },
 }));
 
-import { collectPlanOverview, createPlanOverviewTool } from "./planOverview";
+import {
+  collectPlanOverview,
+  createPlanOverviewTool,
+  extractPlanOverviewEvidence,
+} from "./planOverview";
 
 const projectName = "projects/orders";
 const planName = `${projectName}/plans/123`;
@@ -74,6 +78,10 @@ describe("planOverview", () => {
     const overview = await collectPlanOverview(projectName, planName);
     expect(overview).toMatchObject({
       project: projectName,
+      evidence: {
+        project: projectName,
+        references: [{ kind: "plan", name: planName, title: "Update orders" }],
+      },
       plan: {
         status: "available",
         name: planName,
@@ -117,6 +125,52 @@ describe("planOverview", () => {
     expect(
       mocks.getPlan.mock.calls[0][1].contextValues.get(silentContextKey)
     ).toBe(true);
+  });
+
+  test("extracts only canonical Plan evidence from its owning project", () => {
+    expect(
+      extractPlanOverviewEvidence(
+        JSON.stringify({
+          plan: {
+            status: "available",
+            name: planName,
+            title: "Update orders",
+          },
+          evidence: {
+            project: projectName,
+            references: [
+              { kind: "plan", name: planName, title: "Update orders" },
+              {
+                kind: "plan",
+                name: "projects/other/plans/456",
+                title: "Other project",
+              },
+              {
+                kind: "issue",
+                name: `${projectName}/issues/2`,
+                title: "Issue",
+              },
+            ],
+          },
+        })
+      )
+    ).toEqual({
+      project: projectName,
+      references: [{ kind: "plan", name: planName, title: "Update orders" }],
+    });
+    expect(
+      extractPlanOverviewEvidence(
+        JSON.stringify({
+          plan: { status: "unavailable" },
+          evidence: {
+            project: projectName,
+            references: [
+              { kind: "plan", name: planName, title: "Update orders" },
+            ],
+          },
+        })
+      )
+    ).toBeUndefined();
   });
 
   test("does not expose inaccessible, deleted, or mismatched Plans", async () => {
