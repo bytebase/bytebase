@@ -11287,49 +11287,49 @@ frontend-only concept that seeds these colors; the store only holds them. </p></
                   <td>min_length</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>min_length is the minimum length for password, should be no less than 8. </p></td>
+                  <td><p>min_length is the minimum password length. It must be at least 8. </p></td>
                 </tr>
               
                 <tr>
                   <td>require_number</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>require_number requires the password must contain at least one number. </p></td>
+                  <td><p>require_number requires the password to contain at least one number. </p></td>
                 </tr>
               
                 <tr>
                   <td>require_letter</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>require_letter requires the password must contain at least one letter, regardless of upper case or lower case </p></td>
+                  <td><p>require_letter requires the password to contain at least one letter, either uppercase or lowercase. </p></td>
                 </tr>
               
                 <tr>
                   <td>require_uppercase_letter</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>require_uppercase_letter requires the password must contain at least one upper case letter. </p></td>
+                  <td><p>require_uppercase_letter requires the password to contain at least one uppercase letter. </p></td>
                 </tr>
               
                 <tr>
                   <td>require_special_character</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>require_special_character requires the password must contain at least one special character. </p></td>
+                  <td><p>require_special_character requires the password to contain at least one special character. </p></td>
                 </tr>
               
                 <tr>
                   <td>require_reset_password_for_first_login</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>require_reset_password_for_first_login requires users to reset their password after the 1st login. </p></td>
+                  <td><p>require_reset_password_for_first_login requires users to change their password after their first login. </p></td>
                 </tr>
               
                 <tr>
                   <td>password_rotation</td>
                   <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
                   <td></td>
-                  <td><p>password_rotation requires users to reset their password after the duration. </p></td>
+                  <td><p>password_rotation requires users to change their password after the duration. </p></td>
                 </tr>
               
             </tbody>
