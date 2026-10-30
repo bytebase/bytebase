@@ -147,6 +147,19 @@ func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, erro
 				},
 			},
 		}, nil
+	case storepb.SettingName_EXPORT:
+		storeValue, ok := setting.Value.(*storepb.ExportSetting)
+		if !ok {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("invalid setting value type for %s", setting.Name))
+		}
+		return &v1pb.Setting{
+			Name: settingName,
+			Value: &v1pb.SettingValue{
+				Value: &v1pb.SettingValue_Export{
+					Export: convertToExportSetting(storeValue),
+				},
+			},
+		}, nil
 	default:
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("unsupported setting %v", setting.Name))
 	}
@@ -190,10 +203,10 @@ func convertStoreSettingNameToV1(storeName storepb.SettingName) v1pb.Setting_Set
 		return v1pb.Setting_EMAIL
 	case storepb.SettingName_MCP:
 		return v1pb.Setting_MCP
+	case storepb.SettingName_EXPORT:
+		return v1pb.Setting_EXPORT
 	case storepb.SettingName_SYSTEM:
 		// Backend-only setting, not exposed in v1 API
-	case storepb.SettingName_EXPORT:
-		// Not served until its value conversion exists.
 	default:
 	}
 	return v1pb.Setting_SETTING_NAME_UNSPECIFIED
@@ -224,8 +237,7 @@ func convertV1SettingNameToStore(v1Name v1pb.Setting_SettingName) storepb.Settin
 	case v1pb.Setting_MCP:
 		return storepb.SettingName_MCP
 	case v1pb.Setting_EXPORT:
-		// Not served until its value conversion exists.
-		return storepb.SettingName_SETTING_NAME_UNSPECIFIED
+		return storepb.SettingName_EXPORT
 	default:
 		return storepb.SettingName_SETTING_NAME_UNSPECIFIED
 	}
@@ -871,6 +883,36 @@ func convertToAISetting(storeSetting *storepb.AISetting) *v1pb.AISetting {
 		Model:            storeSetting.Model,
 		Version:          storeSetting.Version,
 		SqlReviewEnabled: storeSetting.SqlReviewEnabled,
+	}
+}
+
+func convertExportSetting(v1Setting *v1pb.ExportSetting) *storepb.ExportSetting {
+	return &storepb.ExportSetting{Sharepoint: convertSharePointSetting(v1Setting.GetSharepoint())}
+}
+
+func convertToExportSetting(storeSetting *storepb.ExportSetting) *v1pb.ExportSetting {
+	return &v1pb.ExportSetting{Sharepoint: convertToSharePointSetting(storeSetting.GetSharepoint())}
+}
+
+func convertSharePointSetting(v1Setting *v1pb.SharePointSetting) *storepb.SharePointSetting {
+	if v1Setting == nil {
+		return nil
+	}
+	return &storepb.SharePointSetting{
+		TenantId:     v1Setting.GetTenantId(),
+		ClientId:     v1Setting.GetClientId(),
+		ClientSecret: v1Setting.GetClientSecret(),
+	}
+}
+
+func convertToSharePointSetting(storeSetting *storepb.SharePointSetting) *v1pb.SharePointSetting {
+	if storeSetting == nil {
+		return nil
+	}
+	return &v1pb.SharePointSetting{
+		TenantId:        storeSetting.GetTenantId(),
+		ClientId:        storeSetting.GetClientId(),
+		ClientSecretSet: storeSetting.GetClientSecret() != "",
 	}
 }
 

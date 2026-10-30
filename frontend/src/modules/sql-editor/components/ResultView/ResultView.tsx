@@ -9,6 +9,10 @@ import {
   DataExportButton,
   type DataExportRequest,
 } from "@/components/DataExportButton";
+import {
+  toExportedSharePointResult,
+  toFailedSharePointExport,
+} from "@/components/SharePointExportResultDialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsPanel, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -16,6 +20,8 @@ import { isDisallowChangeDatabaseError } from "@/hooks/useExecuteSQL";
 import { cn } from "@/lib/utils";
 import { RequestExportButton } from "@/modules/sql-editor/components/RequestExportButton";
 import { RequestQueryButton } from "@/modules/sql-editor/components/RequestQueryButton";
+import { sharePointExportDatabaseLabel } from "@/modules/sql-editor/components/sharePointExportLabel";
+import { useExportDestination } from "@/modules/sql-editor/components/useExportDestination";
 import { useExportGrantBypass } from "@/modules/sql-editor/components/useExportGrantBypass";
 import {
   useSQLEditorDatabasesWithExport,
@@ -27,6 +33,7 @@ import { useAppStore } from "@/stores/app";
 import type { SQLEditorQueryParams, SQLResultSetV1 } from "@/types";
 import { isValidDatabaseName } from "@/types";
 import {
+  ExportDestination,
   ExportFormat,
   type PermissionDeniedDetail,
 } from "@/types/proto-es/v1/common_pb";
@@ -163,6 +170,10 @@ export function ResultView({
     ],
   });
 
+  // With no destination offered, Export stays visible but disabled to explain
+  // why, and Request export hides because a grant never adds a destination.
+  const exportDestination = useExportDestination(database.project);
+  const hasDestination = exportDestination.destinations.length > 0;
   const showExport = allowExport || !!exportGrantName;
 
   // When direct export is unavailable, offer a "Request export" affordance that
@@ -176,7 +187,7 @@ export function ResultView({
         failed={failedDatabases.length > 0}
         onRetry={retry}
       />
-    ) : executeParams && unmatchedDatabases.length > 0 ? (
+    ) : hasDestination && executeParams && unmatchedDatabases.length > 0 ? (
       <RequestExportButton
         statement={executeParams.statement}
         targets={[database.name]}
@@ -213,13 +224,15 @@ export function ResultView({
     req: DataExportRequest & { statement: string }
   ) => {
     const { options, resolve, reject, statement } = req;
+    const { databaseName } = extractDatabaseResourceName(database.name);
+    const toSharePoint = options.destination === ExportDestination.SHAREPOINT;
 
     // === Prod path: backend Export RPC ===
     const tabsState = getSQLEditorTabsState();
     const admin =
       tabsState.tabsById.get(tabsState.currentTabId)?.mode === "ADMIN";
     try {
-      const content = await useAppStore.getState().exportData(
+      const { content, uri } = await useAppStore.getState().exportData(
         create(ExportRequestSchema, {
           name: database.name,
           ...(executeParams.connection.dataSourceId
@@ -232,15 +245,39 @@ export function ResultView({
           password: options.password,
           schema: executeParams.connection.schema,
           container: executeParams.connection.table,
+          destination: options.destination,
         })
       );
+      if (toSharePoint) {
+        resolve({
+          sharepoint: [
+            toExportedSharePointResult(
+              sharePointExportDatabaseLabel(database),
+              uri,
+              exportDestination.sharepointUrl ?? ""
+            ),
+          ],
+        });
+        return;
+      }
       resolve([
         {
           content,
-          filename: `${extractDatabaseResourceName(database.name).databaseName}.${dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss")}.zip`,
+          filename: `${databaseName}.${dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss")}.zip`,
         },
       ]);
     } catch (e) {
+      if (toSharePoint) {
+        resolve({
+          sharepoint: [
+            toFailedSharePointExport(
+              sharePointExportDatabaseLabel(database),
+              e
+            ),
+          ],
+        });
+        return;
+      }
       reject(e);
     }
   };
@@ -289,11 +326,10 @@ export function ResultView({
                 result={resultSet.results[0]}
                 showExport={showExport}
                 exportTooltip={exportTooltip}
+                exportDestination={exportDestination}
                 maximumExportCount={queryDataPolicy?.maximumResultRows}
                 onExport={handleExport}
-                requestExportSlot={
-                  !showExport ? requestExportButton : undefined
-                }
+                requestExportSlot={requestExportButton}
                 compact={compact}
                 presentation={presentation}
               />
@@ -344,8 +380,8 @@ export function ResultView({
                     );
                   })}
                 </TabsList>
-                {showExport ? (
-                  <div className="mb-1">
+                <div className="mb-1 flex items-center gap-x-2">
+                  {showExport && (
                     <DataExportButton
                       size="sm"
                       disabled={false}
@@ -353,6 +389,8 @@ export function ResultView({
                       viewMode="DRAWER"
                       supportPassword
                       tooltip={exportTooltip}
+                      destinations={exportDestination.destinations}
+                      sharepointUrl={exportDestination.sharepointUrl}
                       maximumExportCount={queryDataPolicy?.maximumResultRows}
                       onExport={(req) =>
                         handleExport({
@@ -361,10 +399,9 @@ export function ResultView({
                         })
                       }
                     />
-                  </div>
-                ) : (
-                  <div className="mb-1">{requestExportButton}</div>
-                )}
+                  )}
+                  {requestExportButton}
+                </div>
               </div>
               {filteredResults.map((result, i) => (
                 <TabsPanel

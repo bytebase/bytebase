@@ -1070,11 +1070,32 @@
     "unexpected-error-description": "Se produjo un error inesperado al mostrar esta página. Actualizar suele solucionarlo; si persiste, informa el problema a tu administrador."
   },
   "export-data": {
+    "destination": {
+      "download": "Descarga",
+      "self": "Destino",
+      "sharepoint": "SharePoint"
+    },
     "export-format": "Formato de exportación",
     "export-rows": "Exportar filas",
     "generate-password": "Generar contraseña",
+    "no-destination": "No hay destinos de exportación disponibles",
     "password-info": "Proporcione una contraseña para cifrar el archivo de exportación.",
-    "password-optional": "Cifrar con contraseña (opcional)"
+    "password-optional": "Cifrar con contraseña (opcional)",
+    "progress": {
+      "databases": "{{done}} de {{total}} bases de datos exportadas",
+      "download": "Exportando…",
+      "sharepoint": "Exportando a SharePoint…"
+    },
+    "sharepoint": {
+      "exported-title": "Exportado a SharePoint",
+      "open": "Abrir en SharePoint",
+      "result-title": "Resultados de la exportación a SharePoint",
+      "status": {
+        "exported": "Exportado",
+        "failed": "Error",
+        "unconfirmed": "Sin confirmar"
+      }
+    }
   },
   "gitops": {
     "back-to-releases": "Volver a Lanzamientos",
@@ -2395,6 +2416,12 @@
     "settings": {
       "confirm-archive-project": "Archivar \"{{name}}\" lo hará de solo lectura y lo ocultará de las listas de proyectos activos. Se conservarán todos los issues, bases de datos y configuraciones. Puede restaurarlo más tarde desde la lista de proyectos archivados.",
       "confirm-delete-project": "Eliminar \"{{name}}\" eliminará permanentemente el proyecto y todos los datos asociados, incluidos issues, configuraciones e historial. Todas las bases de datos de este proyecto se moverán al proyecto predeterminado. Esta acción no se puede deshacer.",
+      "export-destination": {
+        "description": "Dónde se suben las exportaciones de este proyecto.",
+        "self": "Destinos de exportación",
+        "sharepoint-placeholder": "https://contoso.sharepoint.com/sites/Finance/Shared Documents/Exports",
+        "update-failed": "No se guardó el destino de exportación"
+      },
       "issue-related": {
         "allow-access-grants": {
           "description": "Permite a los miembros del proyecto solicitar concesiones de acceso con límite de tiempo para sentencias específicas de solo lectura. Las concesiones también pueden incluir la exportación de resultados y la visualización de datos sin enmascarar.",
@@ -2841,6 +2868,10 @@
           "description": "Cuando está habilitado, los usuarios pueden elegir entre fuentes de datos de administración y de solo lectura. Cuando está deshabilitado, los usuarios se ven obligados a usar fuentes de datos de solo lectura si están configuradas; de lo contrario, vuelven a usar fuentes de datos de administración.",
           "self": "Permitir consultar la fuente de datos de administración"
         },
+        "allow-download": {
+          "description": "Si se desactiva, las exportaciones solo pueden ir a un destino de almacenamiento configurado para el proyecto, como SharePoint, incluso con una concesión de acceso de exportación aprobada.",
+          "self": "Permitir descarga"
+        },
         "allow-email-code-signin": {
           "description": "Los usuarios pueden iniciar sesión o registrarse introduciendo un código de 6 dígitos enviado a su correo electrónico.",
           "enable": "Permitir inicio de sesión con código por email",
@@ -3066,7 +3097,7 @@
             "title": "Aprobar o rechazar issues"
           },
           "export": {
-            "details": "Descargar resultados como archivo. Los datos salen de Bytebase.",
+            "details": "Exportar resultados como archivos. Los datos salen de Bytebase.",
             "title": "Exportar resultados de consulta"
           },
           "manage": {
@@ -3392,6 +3423,14 @@
         }
       }
     },
+    "sharepoint": {
+      "client-id": "ID de cliente",
+      "client-secret": "Secreto de cliente",
+      "client-secret-description": "El secreto de cliente de la aplicación de Microsoft Entra. No se puede volver a leer después de guardarlo.",
+      "client-secret-saved": "Hay un secreto de cliente guardado. Introduzca uno nuevo para reemplazarlo.",
+      "description": "Bytebase sube las exportaciones del Editor SQL a SharePoint con esta aplicación de Microsoft Entra. Concédale acceso de escritura a cada biblioteca de destino en SharePoint. Bytebase no gestiona los permisos, la retención ni la eliminación en SharePoint.",
+      "tenant-id": "ID de inquilino"
+    },
     "sidebar": {
       "audit-log": "Registros de auditoría",
       "custom-roles": "Roles personalizados",
@@ -3407,6 +3446,7 @@
       "members-and-groups": "Miembros y grupos",
       "profile": "Perfil",
       "security-and-policy": "Seguridad y Política",
+      "sharepoint": "SharePoint",
       "sso": "SSO",
       "subscription": "Suscripción",
       "users-and-groups": "Usuarios y grupos"

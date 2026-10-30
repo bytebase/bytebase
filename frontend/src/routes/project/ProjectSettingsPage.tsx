@@ -1,4 +1,5 @@
 import { create } from "@bufbuild/protobuf";
+import { ConnectError } from "@connectrpc/connect";
 import { cloneDeep, isEqual } from "lodash-es";
 import { ShieldCheck, TriangleAlert, X } from "lucide-react";
 import {
@@ -55,6 +56,7 @@ import type { Label } from "@/types/proto-es/v1/project_service_pb";
 import {
   LabelSchema,
   Project_ExecutionRetryPolicySchema,
+  Project_ExportSettingSchema,
 } from "@/types/proto-es/v1/project_service_pb";
 import { WorkspaceApprovalSetting_Rule_Source } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
@@ -69,6 +71,7 @@ import {
   sqlReviewPolicySlug,
 } from "@/utils";
 import { sqlReviewV2Enabled } from "@/utils/featureGates";
+import { ProjectExportDestinationField } from "./ProjectExportDestinationField";
 
 // ---------------------------------------------------------------------------
 // ApprovalFlowIndicator
@@ -212,6 +215,23 @@ export function ProjectSettingsPage() {
   const hasQueryPolicyFeature = useAppStore((s) =>
     s.hasInstanceFeature(PlanFeature.FEATURE_QUERY_POLICY)
   );
+  const hasSharePointExportFeature = useAppStore((s) =>
+    s.hasFeature(PlanFeature.FEATURE_SHAREPOINT_EXPORT)
+  );
+
+  // -----------------------------------------------------------------------
+  // Export destination state
+  // -----------------------------------------------------------------------
+  const savedExportDestinationUrl =
+    project?.exportSetting?.sharepoint?.url ?? "";
+  const [exportDestinationUrl, setExportDestinationUrl] = useState(
+    savedExportDestinationUrl
+  );
+  const [exportDestinationError, setExportDestinationError] = useState("");
+  const handleExportDestinationChange = useCallback((value: string) => {
+    setExportDestinationUrl(value);
+    setExportDestinationError("");
+  }, []);
 
   // -----------------------------------------------------------------------
   // Issue-related state
@@ -335,6 +355,7 @@ export function ProjectSettingsPage() {
       (parallelTasksPerRollout ?? 0) !== (project.parallelTasksPerRollout ?? 0)
     )
       return true;
+    if (exportDestinationUrl.trim() !== savedExportDestinationUrl) return true;
     return false;
   }, [
     project,
@@ -359,6 +380,8 @@ export function ProjectSettingsPage() {
     maxRetries,
     ciSamplingSize,
     parallelTasksPerRollout,
+    exportDestinationUrl,
+    savedExportDestinationUrl,
   ]);
 
   useUnsavedChangesGuard(isDirty);
@@ -387,7 +410,14 @@ export function ProjectSettingsPage() {
     setMaxRetries(project.executionRetryPolicy?.maximumRetries ?? 0);
     setCiSamplingSize(project.ciSamplingSize);
     setParallelTasksPerRollout(project.parallelTasksPerRollout);
-  }, [project, currentReviewPolicy, getInitialMaxRows]);
+    setExportDestinationUrl(savedExportDestinationUrl);
+    setExportDestinationError("");
+  }, [
+    project,
+    currentReviewPolicy,
+    getInitialMaxRows,
+    savedExportDestinationUrl,
+  ]);
 
   // -----------------------------------------------------------------------
   // Save
@@ -531,6 +561,40 @@ export function ProjectSettingsPage() {
         }
       }
 
+      // Saved on its own so a URL that does not resolve is reported beside the
+      // field without discarding the other changes.
+      const nextExportDestinationUrl = exportDestinationUrl.trim();
+      if (nextExportDestinationUrl !== savedExportDestinationUrl) {
+        try {
+          const destinationPatch = cloneDeep(project);
+          // An unset sharepoint clears the destination.
+          destinationPatch.exportSetting = create(
+            Project_ExportSettingSchema,
+            nextExportDestinationUrl
+              ? { sharepoint: { url: nextExportDestinationUrl } }
+              : {}
+          );
+          const updatedProject = await useAppStore
+            .getState()
+            .updateProject(destinationPatch, ["export_setting"], {
+              byCaller: true,
+            });
+          setExportDestinationUrl(
+            updatedProject.exportSetting?.sharepoint?.url ?? ""
+          );
+        } catch (error) {
+          setExportDestinationError(
+            error instanceof ConnectError ? error.rawMessage : String(error)
+          );
+          pushNotification({
+            module: "bytebase",
+            style: "WARN",
+            title: t("project.settings.export-destination.update-failed"),
+          });
+          return;
+        }
+      }
+
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
@@ -571,6 +635,8 @@ export function ProjectSettingsPage() {
     maxRetries,
     ciSamplingSize,
     parallelTasksPerRollout,
+    exportDestinationUrl,
+    savedExportDestinationUrl,
     t,
   ]);
 
@@ -824,6 +890,14 @@ export function ProjectSettingsPage() {
                 </FormField>
               </>
             )}
+
+            <ProjectExportDestinationField
+              value={exportDestinationUrl}
+              onChange={handleExportDestinationChange}
+              disabled={!canUpdateProject || !hasSharePointExportFeature}
+              canClear={canUpdateProject}
+              error={exportDestinationError}
+            />
 
             {/* Allow Request Role */}
             <ToggleRow

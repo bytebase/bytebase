@@ -273,6 +273,10 @@
         "desc": "跨域身份管理系统支持。",
         "title": "SCIM"
       },
+      "FEATURE_SHAREPOINT_EXPORT": {
+        "desc": "将 SQL 编辑器的导出文件上传到 SharePoint 文档库。",
+        "title": "SharePoint 导出"
+      },
       "FEATURE_SQL_EDITOR_ADMIN_MODE": {
         "desc": "在 SQL 编辑器中访问管理功能。",
         "title": "SQL 编辑器管理员模式"

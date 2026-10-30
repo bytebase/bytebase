@@ -25,6 +25,7 @@ const mocks = vi.hoisted(() => {
       disableCopyData: false,
       allowAdminDataSource: false,
       maximumResultRows: 0n,
+      disableDownload: false,
     },
     updateWorkspaceProfile: vi.fn(
       async (_params: {
@@ -354,20 +355,39 @@ describe("SQLEditorSection theme", () => {
   });
 });
 
-// Export is controlled by the bb.sql.export permission, so the query data
-// policy toggles cover only copying and the admin data source.
 describe("SQLEditorSection query data policy toggles", () => {
+  beforeEach(() => {
+    mocks.policy.disableDownload = false;
+  });
+
   // The theme preview renders switches of its own; keep the settings ones.
-  function settingSwitchLabels(): string[] {
-    return Array.from(container.querySelectorAll('[role="switch"]'))
-      .map((control) => control.parentElement?.textContent ?? "")
-      .filter((label) => label.startsWith("settings.general.workspace."));
+  function settingSwitches(): HTMLElement[] {
+    return Array.from(
+      container.querySelectorAll<HTMLElement>('[role="switch"]')
+    ).filter((control) =>
+      (control.parentElement?.textContent ?? "").startsWith(
+        "settings.general.workspace."
+      )
+    );
   }
 
-  test("offers no workspace export setting", () => {
+  function settingSwitch(label: string): HTMLElement {
+    const control = settingSwitches().find(
+      (candidate) => candidate.parentElement?.textContent === label
+    );
+    expect(control).toBeTruthy();
+    return control as HTMLElement;
+  }
+
+  const ALLOW_DOWNLOAD = "settings.general.workspace.allow-download.self";
+
+  test("offers a download switch beside the copy and admin data source switches", () => {
     render(<SQLEditorSection title="SQL Editor" onDirtyChange={() => {}} />);
 
-    expect(settingSwitchLabels()).toEqual([
+    expect(
+      settingSwitches().map((control) => control.parentElement?.textContent)
+    ).toEqual([
+      ALLOW_DOWNLOAD,
       "settings.general.workspace.data-copy",
       "settings.general.workspace.allow-admin-data-source.self",
     ]);
@@ -378,9 +398,8 @@ describe("SQLEditorSection query data policy toggles", () => {
     render(
       <SQLEditorSection ref={ref} title="SQL Editor" onDirtyChange={() => {}} />
     );
-    const copySwitch = container.querySelector<HTMLElement>('[role="switch"]');
     act(() => {
-      copySwitch!.click();
+      settingSwitch("settings.general.workspace.data-copy").click();
     });
     expect(ref.current?.isDirty()).toBe(true);
 
@@ -393,9 +412,63 @@ describe("SQLEditorSection query data policy toggles", () => {
       policy: {
         policy: {
           case: "queryDataPolicy",
-          value: { disableCopyData: true, allowAdminDataSource: false },
+          value: {
+            disableCopyData: true,
+            disableDownload: false,
+            allowAdminDataSource: false,
+          },
         },
       },
     });
+  });
+
+  test("allows download by default", () => {
+    render(<SQLEditorSection title="SQL Editor" onDirtyChange={() => {}} />);
+
+    expect(settingSwitch(ALLOW_DOWNLOAD)).toHaveAttribute(
+      "aria-checked",
+      "true"
+    );
+  });
+
+  test("turning off download saves disable_download", async () => {
+    const ref = createRef<SectionHandle>();
+    render(
+      <SQLEditorSection ref={ref} title="SQL Editor" onDirtyChange={() => {}} />
+    );
+    act(() => {
+      settingSwitch(ALLOW_DOWNLOAD).click();
+    });
+    expect(settingSwitch(ALLOW_DOWNLOAD)).toHaveAttribute(
+      "aria-checked",
+      "false"
+    );
+    expect(ref.current?.isDirty()).toBe(true);
+
+    await act(async () => {
+      await ref.current?.update();
+    });
+
+    expect(mocks.upsertPolicy.mock.calls[0][0]).toMatchObject({
+      policy: {
+        policy: {
+          value: { disableDownload: true },
+        },
+      },
+    });
+  });
+
+  test("reads the stored setting", () => {
+    mocks.policy.disableDownload = true;
+    const ref = createRef<SectionHandle>();
+    render(
+      <SQLEditorSection ref={ref} title="SQL Editor" onDirtyChange={() => {}} />
+    );
+
+    expect(settingSwitch(ALLOW_DOWNLOAD)).toHaveAttribute(
+      "aria-checked",
+      "false"
+    );
+    expect(ref.current?.isDirty()).toBe(false);
   });
 });

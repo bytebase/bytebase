@@ -37,6 +37,7 @@ import {
   WORKSPACE_ROUTE_ROLES,
   WORKSPACE_ROUTE_SEMANTIC_TYPES,
   WORKSPACE_ROUTE_SERVICE_ACCOUNTS,
+  WORKSPACE_ROUTE_SHAREPOINT,
   WORKSPACE_ROUTE_SQL_REVIEW,
   WORKSPACE_ROUTE_USERS,
   WORKSPACE_ROUTE_WORKLOAD_IDENTITIES,
@@ -225,6 +226,11 @@ function useSidebarItems(): SidebarItem[] {
           {
             title: t("settings.sidebar.mcp"),
             name: WORKSPACE_ROUTE_MCP,
+            type: "route",
+          },
+          {
+            title: t("settings.sidebar.sharepoint"),
+            name: WORKSPACE_ROUTE_SHAREPOINT,
             type: "route",
           },
         ],

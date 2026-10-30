@@ -71,6 +71,7 @@ import {
   WORKSPACE_ROUTE_ROLES,
   WORKSPACE_ROUTE_SEMANTIC_TYPES,
   WORKSPACE_ROUTE_SERVICE_ACCOUNTS,
+  WORKSPACE_ROUTE_SHAREPOINT,
   WORKSPACE_ROUTE_SQL_REVIEW,
   WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
   WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
@@ -429,6 +430,17 @@ const workspaceLevelRoutes: RouteObject[] = [
         lazy: lazyPage(
           () => import("@/routes/workspace/MCPPage"),
           (m) => m.MCPPage
+        ),
+      },
+      {
+        path: "sharepoint",
+        handle: {
+          name: WORKSPACE_ROUTE_SHAREPOINT,
+          requiredPermissionList: (): Permission[] => ["bb.settings.get"],
+        },
+        lazy: lazyPage(
+          () => import("@/routes/workspace/SharePointPage"),
+          (m) => m.SharePointPage
         ),
       },
     ],

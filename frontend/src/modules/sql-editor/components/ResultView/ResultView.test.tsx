@@ -1,8 +1,13 @@
 import { create } from "@bufbuild/protobuf";
+import { Code, ConnectError } from "@connectrpc/connect";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { SQLEditorQueryParams } from "@/types";
-import { Engine, ExportFormat } from "@/types/proto-es/v1/common_pb";
+import {
+  Engine,
+  ExportDestination,
+  ExportFormat,
+} from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
   QueryResult_QueryPlanSchema,
@@ -12,9 +17,24 @@ import {
 } from "@/types/proto-es/v1/sql_service_pb";
 import { ResultView } from "./ResultView";
 
-const { exportData, exportAccess, useExportGrantBypass } = vi.hoisted(() => ({
+const {
+  exportData,
+  exportAccess,
+  exportDestination,
+  exportRequest,
+  useExportGrantBypass,
+} = vi.hoisted(() => ({
   exportData: vi.fn(),
   exportAccess: { databasesWithExport: [] as string[] },
+  exportDestination: {
+    destinations: [] as number[],
+    sharepointUrl: undefined as string | undefined,
+  },
+  exportRequest: {
+    destination: 1,
+    resolve: (_outcome: unknown) => {},
+    reject: (_reason: unknown) => {},
+  },
   useExportGrantBypass: vi.fn(),
 }));
 
@@ -42,6 +62,10 @@ vi.mock("@/modules/sql-editor/components/RequestQueryButton", () => ({
 
 vi.mock("@/modules/sql-editor/components/useExportGrantBypass", () => ({
   useExportGrantBypass,
+}));
+
+vi.mock("@/modules/sql-editor/components/useExportDestination", () => ({
+  useExportDestination: () => exportDestination,
 }));
 
 vi.mock("@/modules/sql-editor/hooks/useSQLEditorState", () => ({
@@ -119,9 +143,14 @@ vi.mock("./SingleResultView", () => ({
         type="button"
         onClick={() =>
           onExport({
-            options: { format: ExportFormat.CSV, limit: 100, password: "" },
-            resolve: vi.fn(),
-            reject: vi.fn(),
+            options: {
+              format: ExportFormat.CSV,
+              limit: 100,
+              password: "",
+              destination: exportRequest.destination,
+            },
+            resolve: exportRequest.resolve,
+            reject: exportRequest.reject,
             statement: "SELECT * FROM c",
           })
         }
@@ -167,8 +196,14 @@ const grantLookup = ({
 describe("ResultView", () => {
   beforeEach(() => {
     exportData.mockReset();
-    exportData.mockResolvedValue(new Uint8Array());
+    exportData.mockResolvedValue({ content: new Uint8Array(), uri: "" });
     exportAccess.databasesWithExport = [];
+    exportDestination.destinations = [ExportDestination.SHAREPOINT, ExportDestination.DOWNLOAD];
+    exportDestination.sharepointUrl =
+      "https://contoso.sharepoint.com/sites/x/Exports";
+    exportRequest.destination = ExportDestination.DOWNLOAD;
+    exportRequest.resolve = vi.fn();
+    exportRequest.reject = vi.fn();
     grantLookup({});
   });
 
@@ -305,6 +340,109 @@ describe("ResultView", () => {
         targets: [expect.objectContaining({ database: other.name })],
       })
     );
+  });
+
+  test("keeps Export but hides Request export when no destination is offered", () => {
+    exportDestination.destinations = [];
+    exportDestination.sharepointUrl = undefined;
+    exportAccess.databasesWithExport = [database.name];
+    const { unmount } = render(
+      <ResultView
+        executeParams={executeParams}
+        database={database}
+        resultSet={queryResult}
+      />
+    );
+    expect(screen.getByRole("button", { name: "export" })).toBeInTheDocument();
+    unmount();
+
+    exportAccess.databasesWithExport = [];
+    grantLookup({ unmatchedDatabases: [database.name] });
+    render(
+      <ResultView
+        executeParams={executeParams}
+        database={database}
+        resultSet={queryResult}
+      />
+    );
+    expect(screen.queryByTestId("request-export")).not.toBeInTheDocument();
+  });
+
+  test("offers Export when only SharePoint is offered", () => {
+    exportDestination.destinations = [ExportDestination.SHAREPOINT];
+    exportAccess.databasesWithExport = [database.name];
+    render(
+      <ResultView
+        executeParams={executeParams}
+        database={database}
+        resultSet={queryResult}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: "export" })).toBeInTheDocument();
+  });
+
+  test("resolves a SharePoint export with its exported folder", async () => {
+    exportAccess.databasesWithExport = [database.name];
+    exportRequest.destination = ExportDestination.SHAREPOINT;
+    exportData.mockResolvedValue({
+      content: new Uint8Array(),
+      uri: "https://contoso.sharepoint.com/sites/x/Exports/20261022-main",
+    });
+    render(
+      <ResultView
+        executeParams={executeParams}
+        database={database}
+        resultSet={queryResult}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "export" }));
+
+    await waitFor(() => {
+      expect(exportRequest.resolve).toHaveBeenCalledWith({
+        sharepoint: [
+          {
+            database: "main",
+            status: "EXPORTED",
+            uri: "https://contoso.sharepoint.com/sites/x/Exports/20261022-main",
+          },
+        ],
+      });
+    });
+    expect(exportData).toHaveBeenCalledWith(
+      expect.objectContaining({ destination: ExportDestination.SHAREPOINT })
+    );
+  });
+
+  test("reports an unconfirmed SharePoint export instead of rejecting", async () => {
+    exportAccess.databasesWithExport = [database.name];
+    exportRequest.destination = ExportDestination.SHAREPOINT;
+    exportData.mockRejectedValue(
+      new ConnectError("could not be confirmed", Code.Unavailable)
+    );
+    render(
+      <ResultView
+        executeParams={executeParams}
+        database={database}
+        resultSet={queryResult}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "export" }));
+
+    await waitFor(() => {
+      expect(exportRequest.resolve).toHaveBeenCalledWith({
+        sharepoint: [
+          {
+            database: "main",
+            status: "UNCONFIRMED",
+            reason: "could not be confirmed",
+          },
+        ],
+      });
+    });
+    expect(exportRequest.reject).not.toHaveBeenCalled();
   });
 
   /** A PostgreSQL plan result whose root costs `totalCost`. */

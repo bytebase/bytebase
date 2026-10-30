@@ -49,6 +49,7 @@ import {
   WORKSPACE_ROUTE_ROLES,
   WORKSPACE_ROUTE_SEMANTIC_TYPES,
   WORKSPACE_ROUTE_SERVICE_ACCOUNTS,
+  WORKSPACE_ROUTE_SHAREPOINT,
   WORKSPACE_ROUTE_SQL_REVIEW,
   WORKSPACE_ROUTE_USERS,
   WORKSPACE_ROUTE_WORKLOAD_IDENTITIES,
@@ -238,6 +239,11 @@ function useFullQuickLinkList(): QuickLinkDef[] {
       {
         id: WORKSPACE_ROUTE_MCP,
         titleKey: "settings.sidebar.mcp",
+        icon: Link,
+      },
+      {
+        id: WORKSPACE_ROUTE_SHAREPOINT,
+        titleKey: "settings.sidebar.sharepoint",
         icon: Link,
       },
       // Settings

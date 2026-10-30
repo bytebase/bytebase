@@ -39,6 +39,7 @@ import { useAppDatabaseMetadata } from "@/hooks/useAppDatabaseMetadata";
 import { useExecuteSQL } from "@/hooks/useExecuteSQL";
 import { writeTextToClipboard } from "@/lib/clipboard";
 import { cn } from "@/lib/utils";
+import type { ExportDestinationState } from "@/modules/sql-editor/components/useExportDestination";
 import { useSQLEditorQueryDataPolicy } from "@/modules/sql-editor/hooks/useSQLEditorState";
 import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
 import { useSQLEditorTabState } from "@/modules/sql-editor/store/tab";
@@ -123,10 +124,11 @@ export interface SingleResultViewProps {
   // Optional tooltip shown on the export button — used to explain when the
   // export is enabled by a JIT access grant rather than bb.sql.export.
   exportTooltip?: ReactNode;
+  exportDestination?: ExportDestinationState;
   maximumExportCount?: number;
   onExport?: (req: DataExportRequest & { statement: string }) => void;
-  // Rendered in the toolbar when `showExport` is false — e.g. a
-  // "Request export" affordance when the user lacks bb.sql.export.
+  // Rendered in the toolbar after the export button — e.g. a "Request export"
+  // affordance when the user lacks bb.sql.export.
   requestExportSlot?: ReactNode;
   // Compact layout (fixed-height, non-growing body) used by the terminal /
   // admin result panel. Defaults to the flex-grow saved query layout.
@@ -307,6 +309,7 @@ function SingleResultViewInner({
   resultIndex = 0,
   showExport,
   exportTooltip,
+  exportDestination,
   maximumExportCount,
   onExport,
   requestExportSlot,
@@ -782,7 +785,7 @@ function SingleResultViewInner({
               {!disallowCopyingData && rows.length > 0 && !isJSONView && (
                 <CopyAllButton />
               )}
-              {showExport ? (
+              {showExport && (
                 <DataExportButton
                   size="sm"
                   disabled={!result || isEmpty(result)}
@@ -790,13 +793,14 @@ function SingleResultViewInner({
                   viewMode="DRAWER"
                   supportPassword
                   tooltip={exportTooltip}
+                  destinations={exportDestination?.destinations}
+                  sharepointUrl={exportDestination?.sharepointUrl}
                   maximumExportCount={maximumExportCount}
                   formContent={<DatabaseInfo database={database} />}
                   onExport={handleExport}
                 />
-              ) : (
-                requestExportSlot
               )}
+              {requestExportSlot}
             </div>
             {!isJSONView && <SelectionCopyTooltips />}
           </div>
