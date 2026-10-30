@@ -12,15 +12,13 @@ import { resolveExportDestination } from "./useExportDestination";
 
 const url = "https://contoso.sharepoint.com/sites/Finance/Shared%20Documents";
 
-const both = [ExportDestination.DOWNLOAD, ExportDestination.SHAREPOINT];
-
 describe("resolveExportDestination", () => {
   test("defaults to SharePoint and keeps download as the alternative", () => {
     expect(
       resolveExportDestination({
         hasSharePointFeature: true,
         sharepointUrl: url,
-        allowedDestinations: both,
+        disableDownload: false,
       })
     ).toEqual({
       destinations: [ExportDestination.SHAREPOINT, ExportDestination.DOWNLOAD],
@@ -28,27 +26,17 @@ describe("resolveExportDestination", () => {
     });
   });
 
-  test("offers only SharePoint when the policy allows only SharePoint", () => {
+  test("offers only SharePoint when download is disabled", () => {
     expect(
       resolveExportDestination({
         hasSharePointFeature: true,
         sharepointUrl: url,
-        allowedDestinations: [ExportDestination.SHAREPOINT],
+        disableDownload: true,
       })
     ).toEqual({
       destinations: [ExportDestination.SHAREPOINT],
       sharepointUrl: url,
     });
-  });
-
-  test("offers only download when the policy allows only download", () => {
-    expect(
-      resolveExportDestination({
-        hasSharePointFeature: true,
-        sharepointUrl: url,
-        allowedDestinations: [ExportDestination.DOWNLOAD],
-      })
-    ).toEqual({ destinations: [ExportDestination.DOWNLOAD] });
   });
 
   test("offers only download without a SharePoint destination or the feature", () => {
@@ -57,21 +45,18 @@ describe("resolveExportDestination", () => {
       { hasSharePointFeature: false, sharepointUrl: url },
     ]) {
       expect(
-        resolveExportDestination({ ...input, allowedDestinations: both })
+        resolveExportDestination({ ...input, disableDownload: false })
       ).toEqual({ destinations: [ExportDestination.DOWNLOAD] });
     }
   });
 
-  test("offers nothing when the policy allows only SharePoint and it is not configured", () => {
+  test("offers nothing when download is disabled and SharePoint is not available", () => {
     for (const input of [
       { hasSharePointFeature: true, sharepointUrl: "" },
       { hasSharePointFeature: false, sharepointUrl: url },
     ]) {
       expect(
-        resolveExportDestination({
-          ...input,
-          allowedDestinations: [ExportDestination.SHAREPOINT],
-        })
+        resolveExportDestination({ ...input, disableDownload: true })
       ).toEqual({ destinations: [] });
     }
   });

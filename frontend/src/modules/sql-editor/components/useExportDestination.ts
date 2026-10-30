@@ -14,27 +14,24 @@ export interface ExportDestinationAvailability {
   sharepointUrl?: string;
 }
 
-// An export access grant never adds a destination: a destination is offered
-// only when the workspace query data policy allows it and, for SharePoint, the
-// project has one configured.
+// An export access grant never adds a destination: Download is offered unless
+// the workspace disables it, and SharePoint only when the project has a
+// SharePoint folder.
 export function resolveExportDestination({
   hasSharePointFeature,
   sharepointUrl,
-  allowedDestinations,
+  disableDownload,
 }: {
   hasSharePointFeature: boolean;
   sharepointUrl: string;
-  allowedDestinations: readonly ExportDestination[];
+  disableDownload: boolean;
 }): ExportDestinationAvailability {
   const destinations: ExportDestination[] = [];
-  const offersSharePoint =
-    allowedDestinations.includes(ExportDestination.SHAREPOINT) &&
-    hasSharePointFeature &&
-    sharepointUrl !== "";
+  const offersSharePoint = hasSharePointFeature && sharepointUrl !== "";
   if (offersSharePoint) {
     destinations.push(ExportDestination.SHAREPOINT);
   }
-  if (allowedDestinations.includes(ExportDestination.DOWNLOAD)) {
+  if (!disableDownload) {
     destinations.push(ExportDestination.DOWNLOAD);
   }
   return offersSharePoint ? { destinations, sharepointUrl } : { destinations };
@@ -45,10 +42,9 @@ export function useExportDestination(projectName: string) {
   const hasSharePointFeature = usePlanFeature(
     PlanFeature.FEATURE_SHAREPOINT_EXPORT
   );
-  // The server enforces the allowed destinations without a license check, so
-  // they are read regardless of FEATURE_QUERY_POLICY.
-  const { allowedExportDestinations } =
-    useSQLEditorQueryDataPolicy(projectName);
+  // The server enforces disable_download without a license check, so it is
+  // read regardless of FEATURE_QUERY_POLICY.
+  const { disableDownload } = useSQLEditorQueryDataPolicy(projectName);
 
   useEffect(() => {
     if (!projectName) return;
@@ -61,7 +57,7 @@ export function useExportDestination(projectName: string) {
   return resolveExportDestination({
     hasSharePointFeature,
     sharepointUrl: project.exportSetting?.sharepoint?.url ?? "",
-    allowedDestinations: allowedExportDestinations,
+    disableDownload,
   });
 }
 

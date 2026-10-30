@@ -2823,6 +2823,10 @@
           "description": "When enabled, users can choose between admin and read-only data sources. When disabled, users are forced to use read-only data sources if configured, otherwise fall back to admin data sources.",
           "self": "Allow querying the admin data source"
         },
+        "allow-download": {
+          "description": "When off, exports can go only to a storage destination configured for the project, such as SharePoint, even with an approved export access grant.",
+          "self": "Allow download"
+        },
         "allow-email-code-signin": {
           "description": "Users can sign in or sign up by entering a 6-digit code delivered to their email address.",
           "enable": "Allow sign-in with email code",
@@ -2909,12 +2913,6 @@
         "drag-logo": "or drag here",
         "enable-debug": {
           "enable": "Enable debug level log for the backend service"
-        },
-        "export-destination": {
-          "description": "Where users can send exported query results. Turning all of them off turns off export, even for an approved export access grant.",
-          "download": "Download",
-          "self": "Export destinations",
-          "sharepoint": "SharePoint"
         },
         "external-url": {
           "cannot-edit-flag": "External URL cannot be changed because it is set via --external-url command-line flag",

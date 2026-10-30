@@ -5,10 +5,8 @@ import (
 	"testing"
 
 	"connectrpc.com/connect"
-	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/testing/protocmp"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -64,112 +62,21 @@ func TestConvertToPolicyQueryDataIgnoresStoredDisableExport(t *testing.T) {
 	require.True(t, queryData.GetDisableCopyData())
 }
 
-func TestConvertToQueryDataPolicyPayloadExportDestinationPolicy(t *testing.T) {
+func TestQueryDataPolicyDisableDownloadRoundTrip(t *testing.T) {
 	t.Parallel()
-	for _, tc := range []struct {
-		name    string
-		allowed []v1pb.ExportDestination
-		want    []storepb.ExportDestination
-		wantErr string
-	}{
-		{name: "download and sharepoint", allowed: []v1pb.ExportDestination{v1pb.ExportDestination_SHAREPOINT, v1pb.ExportDestination_DOWNLOAD}, want: []storepb.ExportDestination{storepb.ExportDestination_SHAREPOINT, storepb.ExportDestination_DOWNLOAD}},
-		{name: "empty turns off export"},
-		{name: "unspecified", allowed: []v1pb.ExportDestination{v1pb.ExportDestination_EXPORT_DESTINATION_UNSPECIFIED}, wantErr: "unsupported export destination"},
-		{name: "duplicate", allowed: []v1pb.ExportDestination{v1pb.ExportDestination_DOWNLOAD, v1pb.ExportDestination_DOWNLOAD}, wantErr: "more than once"},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			payload, err := convertToQueryDataPolicyPayload(&v1pb.QueryDataPolicy{
-				ExportDestinationPolicy: &v1pb.QueryDataPolicy_ExportDestinationPolicy{AllowedDestinations: tc.allowed},
-			})
-			if tc.wantErr != "" {
-				require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
-				require.ErrorContains(t, err, tc.wantErr)
-				return
-			}
-			require.NoError(t, err)
-			require.NotNil(t, payload.GetExportDestinationPolicy())
-			require.Equal(t, tc.want, payload.GetExportDestinationPolicy().GetAllowedDestinations())
-		})
-	}
-
-	payload, err := convertToQueryDataPolicyPayload(&v1pb.QueryDataPolicy{MaximumResultRows: 10})
-	require.NoError(t, err)
-	require.Nil(t, payload.GetExportDestinationPolicy(), "an omitted export destination policy stays unset")
-
-	payload, err = convertToQueryDataPolicyPayload(&v1pb.QueryDataPolicy{ExportDestinationPolicy: &v1pb.QueryDataPolicy_ExportDestinationPolicy{}})
+	payload, err := convertToQueryDataPolicyPayload(&v1pb.QueryDataPolicy{DisableDownload: true})
 	require.NoError(t, err)
 	data, err := protojson.Marshal(payload)
 	require.NoError(t, err)
-	require.JSONEq(t, `{"exportDestinationPolicy":{}}`, string(data), "an empty list is stored, so it does not read back as the default")
-}
+	require.JSONEq(t, `{"disableDownload":true}`, string(data))
 
-func TestConvertToPolicyQueryDataExportDestinationDefault(t *testing.T) {
-	t.Parallel()
-	for _, tc := range []struct {
-		name         string
-		resourceType storepb.Policy_Resource
-		payload      string
-		want         *v1pb.QueryDataPolicy_ExportDestinationPolicy
-	}{
-		{
-			name:         "workspace without the field reads the default",
-			resourceType: storepb.Policy_WORKSPACE,
-			payload:      `{"maximumResultRows":10}`,
-			want:         &v1pb.QueryDataPolicy_ExportDestinationPolicy{AllowedDestinations: []v1pb.ExportDestination{v1pb.ExportDestination_DOWNLOAD}},
-		},
-		{
-			name:         "workspace with the field reads it",
-			resourceType: storepb.Policy_WORKSPACE,
-			payload:      `{"exportDestinationPolicy":{"allowedDestinations":["SHAREPOINT"]}}`,
-			want:         &v1pb.QueryDataPolicy_ExportDestinationPolicy{AllowedDestinations: []v1pb.ExportDestination{v1pb.ExportDestination_SHAREPOINT}},
-		},
-		{
-			name:         "workspace with no allowed destination reads none",
-			resourceType: storepb.Policy_WORKSPACE,
-			payload:      `{"exportDestinationPolicy":{}}`,
-			want:         &v1pb.QueryDataPolicy_ExportDestinationPolicy{},
-		},
-		{
-			name:         "project has none",
-			resourceType: storepb.Policy_PROJECT,
-			payload:      `{"maximumResultRows":10}`,
-		},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			policy, err := convertToPolicy(&store.PolicyMessage{
-				Resource:     "workspaces/example",
-				ResourceType: tc.resourceType,
-				Type:         storepb.Policy_QUERY_DATA,
-				Payload:      tc.payload,
-				Enforce:      true,
-			})
-			require.NoError(t, err)
-			require.Empty(t, cmp.Diff(tc.want, policy.GetQueryDataPolicy().GetExportDestinationPolicy(), protocmp.Transform()))
-		})
-	}
-}
-
-func TestKeepStoredExportDestinationPolicy(t *testing.T) {
-	t.Parallel()
-	const stored = `{"maximumResultRows":5,"exportDestinationPolicy":{"allowedDestinations":["DOWNLOAD","SHAREPOINT"]}}`
-
-	got, err := keepStoredExportDestinationPolicy(`{"maximumResultRows":10}`, stored)
+	policy, err := convertToPolicy(&store.PolicyMessage{
+		Resource:     "workspaces/example",
+		ResourceType: storepb.Policy_WORKSPACE,
+		Type:         storepb.Policy_QUERY_DATA,
+		Payload:      string(data),
+		Enforce:      true,
+	})
 	require.NoError(t, err)
-	require.JSONEq(t, `{"maximumResultRows":10,"exportDestinationPolicy":{"allowedDestinations":["DOWNLOAD","SHAREPOINT"]}}`, got, "an update that omits it keeps the stored value")
-
-	got, err = keepStoredExportDestinationPolicy(`{"exportDestinationPolicy":{"allowedDestinations":["SHAREPOINT"]}}`, stored)
-	require.NoError(t, err)
-	require.JSONEq(t, `{"exportDestinationPolicy":{"allowedDestinations":["SHAREPOINT"]}}`, got, "an update that sets it replaces the stored value")
-}
-
-func TestValidateQueryDataPolicyResource(t *testing.T) {
-	t.Parallel()
-	policy := &v1pb.Policy{Policy: &v1pb.Policy_QueryDataPolicy{QueryDataPolicy: &v1pb.QueryDataPolicy{
-		ExportDestinationPolicy: &v1pb.QueryDataPolicy_ExportDestinationPolicy{AllowedDestinations: []v1pb.ExportDestination{v1pb.ExportDestination_DOWNLOAD}},
-	}}}
-	require.NoError(t, validateQueryDataPolicyResource(storepb.Policy_WORKSPACE, policy))
-	require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(validateQueryDataPolicyResource(storepb.Policy_PROJECT, policy)))
-	require.NoError(t, validateQueryDataPolicyResource(storepb.Policy_PROJECT, &v1pb.Policy{Policy: &v1pb.Policy_QueryDataPolicy{QueryDataPolicy: &v1pb.QueryDataPolicy{MaximumResultRows: 10}}}))
+	require.True(t, policy.GetQueryDataPolicy().GetDisableDownload())
 }

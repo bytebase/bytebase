@@ -46,11 +46,9 @@ import type {
 import { resolveWorkspaceTheme } from "@/modules/sql-editor/components/theme/useWorkspaceSQLEditorTheme";
 import { DEFAULT_MAX_RESULT_SIZE_IN_MB } from "@/stores";
 import { useAppStore } from "@/stores/app";
-import { ExportDestination } from "@/types/proto-es/v1/common_pb";
 import {
   PolicyResourceType,
   PolicyType,
-  QueryDataPolicy_ExportDestinationPolicySchema,
   QueryDataPolicySchema,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import { SQLEditorThemeSettingSchema } from "@/types/proto-es/v1/setting_service_pb";
@@ -61,10 +59,6 @@ import { ThemePreview } from "./sql-editor-theme/ThemePreview";
 import type { SectionHandle } from "./useSettingSection";
 
 const CUSTOM_THEME_OPTION = "__custom__";
-
-// Sorted so that dirty checks do not depend on the stored order.
-const sortedDestinations = (destinations: readonly ExportDestination[]) =>
-  [...destinations].sort((a, b) => a - b);
 
 const toSQLEditorThemeSettingPayload = (theme: SQLEditorTheme) => ({
   id: theme.id,
@@ -82,7 +76,7 @@ interface SQLEditorSectionProps {
 
 interface LocalState {
   disableCopyData: boolean;
-  allowedExportDestinations: ExportDestination[];
+  disableDownload: boolean;
   allowAdminDataSource: boolean;
   // `null` represents an empty input while the user is typing; coerced to a
   // number on save.
@@ -156,11 +150,7 @@ export const SQLEditorSection = forwardRef<
     }
     return {
       disableCopyData: policyPayload.disableCopyData,
-      allowedExportDestinations: sortedDestinations(
-        policyPayload.exportDestinationPolicy?.allowedDestinations ?? [
-          ExportDestination.DOWNLOAD,
-        ]
-      ),
+      disableDownload: policyPayload.disableDownload,
       allowAdminDataSource: policyPayload.allowAdminDataSource,
       maximumResultSize: Math.round(Number(size) / 1024 / 1024),
       maximumResultRows: rows,
@@ -302,10 +292,7 @@ export const SQLEditorSection = forwardRef<
     const maximumResultRows = state.maximumResultRows ?? 0;
     return (
       init.disableCopyData !== state.disableCopyData ||
-      !isEqual(
-        init.allowedExportDestinations,
-        state.allowedExportDestinations
-      ) ||
+      init.disableDownload !== state.disableDownload ||
       init.allowAdminDataSource !== state.allowAdminDataSource ||
       init.maximumResultRows !== maximumResultRows
     );
@@ -370,10 +357,7 @@ export const SQLEditorSection = forwardRef<
             value: create(QueryDataPolicySchema, {
               ...policyPayload,
               disableCopyData: state.disableCopyData,
-              exportDestinationPolicy: create(
-                QueryDataPolicy_ExportDestinationPolicySchema,
-                { allowedDestinations: state.allowedExportDestinations }
-              ),
+              disableDownload: state.disableDownload,
               allowAdminDataSource: state.allowAdminDataSource,
               maximumResultRows,
             }),
@@ -422,43 +406,10 @@ export const SQLEditorSection = forwardRef<
   }, [state, selectedThemeId, customDraft, onDirtyChange]);
 
   const handleToggle = (
-    field: "disableCopyData" | "allowAdminDataSource",
+    field: "disableCopyData" | "disableDownload" | "allowAdminDataSource",
     value: boolean
   ) => {
     setState((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const exportDestinationOptions: {
-    destination: ExportDestination;
-    label: string;
-    feature?: PlanFeature;
-  }[] = [
-    {
-      destination: ExportDestination.DOWNLOAD,
-      label: t("settings.general.workspace.export-destination.download"),
-    },
-    {
-      destination: ExportDestination.SHAREPOINT,
-      label: t("settings.general.workspace.export-destination.sharepoint"),
-      feature: PlanFeature.FEATURE_SHAREPOINT_EXPORT,
-    },
-  ];
-
-  const handleToggleExportDestination = (
-    destination: ExportDestination,
-    allowed: boolean
-  ) => {
-    setState((prev) => {
-      const others = prev.allowedExportDestinations.filter(
-        (d) => d !== destination
-      );
-      return {
-        ...prev,
-        allowedExportDestinations: sortedDestinations(
-          allowed ? [...others, destination] : others
-        ),
-      };
-    });
   };
 
   const handleNumberInput = (
@@ -471,46 +422,26 @@ export const SQLEditorSection = forwardRef<
   return (
     <FormSection id="security" title={title}>
       <FormFieldGroup>
+        {/* Allow Download toggle */}
         <PermissionGuard permissions={["bb.policies.update"]} display="block">
           <FormField
             title={
-              <span className="flex flex-row justify-start items-center gap-x-2">
-                {t("settings.general.workspace.export-destination.self")}
+              <span className="w-full inline-flex items-center gap-x-2">
+                <Switch
+                  checked={!state.disableDownload}
+                  disabled={!canUpdatePolicy || !hasQueryPolicyFeature}
+                  onCheckedChange={(checked) =>
+                    handleToggle("disableDownload", !checked)
+                  }
+                />
+                {t("settings.general.workspace.allow-download.self")}
                 <FeatureBadge feature={PlanFeature.FEATURE_QUERY_POLICY} />
               </span>
             }
             description={t(
-              "settings.general.workspace.export-destination.description"
+              "settings.general.workspace.allow-download.description"
             )}
-          >
-            <div className="flex flex-col gap-y-2">
-              {exportDestinationOptions.map(
-                ({ destination, label, feature }) => {
-                  const checked =
-                    state.allowedExportDestinations.includes(destination);
-                  return (
-                    <span
-                      key={destination}
-                      className="inline-flex items-center gap-x-2"
-                    >
-                      <Switch
-                        aria-label={label}
-                        checked={checked}
-                        disabled={!canUpdatePolicy || !hasQueryPolicyFeature}
-                        onCheckedChange={(next) =>
-                          handleToggleExportDestination(destination, next)
-                        }
-                      />
-                      {label}
-                      {feature !== undefined && (
-                        <FeatureBadge feature={feature} />
-                      )}
-                    </span>
-                  );
-                }
-              )}
-            </div>
-          </FormField>
+          />
         </PermissionGuard>
 
         {/* Data Copy toggle */}

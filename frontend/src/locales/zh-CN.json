@@ -2823,6 +2823,10 @@
           "description": "启用时，用户可以在主数据源和只读数据源之间进行选择。禁用时，如果配置了只读数据源，则强制用户使用只读数据源，否则回退到使用主数据源。",
           "self": "允许查询主数据源"
         },
+        "allow-download": {
+          "description": "关闭后，导出只能发送到项目配置的存储目标（如 SharePoint），已批准的导出访问授权也不能下载。",
+          "self": "允许下载"
+        },
         "allow-email-code-signin": {
           "description": "用户可以通过输入发送到邮箱的 6 位验证码进行登录或注册。",
           "enable": "允许使用邮箱验证码登录",
@@ -2909,12 +2913,6 @@
         "drag-logo": "或拖拽文件",
         "enable-debug": {
           "enable": "启用后端服务的调试级别日志"
-        },
-        "export-destination": {
-          "description": "用户可以将导出的查询结果发送到的位置。全部关闭即关闭导出，已批准的导出访问授权也无法导出。",
-          "download": "下载",
-          "self": "导出目标",
-          "sharepoint": "SharePoint"
         },
         "external-url": {
           "cannot-edit-flag": "外部 URL 无法更改，因为它是通过 --external-url 命令行参数设置的",

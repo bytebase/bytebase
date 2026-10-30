@@ -434,26 +434,6 @@ func (s *Store) GetEffectiveQueryDataPolicy(ctx context.Context, workspaceID str
 	}, nil
 }
 
-// GetDefaultWorkspaceQueryDataPolicy returns the workspace query data policy a
-// new workspace starts with: download is the only allowed export destination.
-func GetDefaultWorkspaceQueryDataPolicy() *storepb.QueryDataPolicy {
-	return &storepb.QueryDataPolicy{
-		ExportDestinationPolicy: &storepb.QueryDataPolicy_ExportDestinationPolicy{
-			AllowedDestinations: []storepb.ExportDestination{storepb.ExportDestination_DOWNLOAD},
-		},
-	}
-}
-
-// GetAllowedExportDestinations returns the export destinations a workspace query
-// data policy allows. A policy without an export destination policy allows the
-// default.
-func GetAllowedExportDestinations(policy *storepb.QueryDataPolicy) []storepb.ExportDestination {
-	if exportDestinationPolicy := policy.GetExportDestinationPolicy(); exportDestinationPolicy != nil {
-		return exportDestinationPolicy.GetAllowedDestinations()
-	}
-	return GetDefaultWorkspaceQueryDataPolicy().GetExportDestinationPolicy().GetAllowedDestinations()
-}
-
 // GetWorkspaceQueryDataPolicy gets the workspace-level query data policy as
 // stored, without the project policy or the license applied.
 func (s *Store) GetWorkspaceQueryDataPolicy(ctx context.Context, workspaceID string) (*storepb.QueryDataPolicy, error) {

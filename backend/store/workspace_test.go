@@ -71,10 +71,6 @@ func TestCreateWorkspaceInitializesDefaults(t *testing.T) {
 	project, err := stores.GetProject(ctx, &store.FindProjectMessage{Workspace: workspaceID, ResourceID: &defaultProjectID})
 	require.NoError(t, err)
 	require.NotNil(t, project)
-
-	queryDataPolicy, err := stores.GetWorkspaceQueryDataPolicy(ctx, workspaceID)
-	require.NoError(t, err)
-	require.Equal(t, []storepb.ExportDestination{storepb.ExportDestination_DOWNLOAD}, queryDataPolicy.GetExportDestinationPolicy().GetAllowedDestinations())
 }
 
 // TestCreateWorkspaceSwitchesEveryReviewRuleOn pins that a new workspace has

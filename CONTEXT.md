@@ -5,7 +5,7 @@ Bytebase is a governed database development workspace. It turns proposed databas
 ## Language
 
 **Export Destination**:
-Where an export goes: Download to the caller's machine, or a configured storage location such as the Project Export Destination. The workspace query data policy lists the allowed destinations, and an empty list turns off export; the Export Permission decides who may export, and an export access grant never adds a destination.
+Where an export goes: Download to the caller's machine, or a configured storage location such as the Project Export Destination. Download is available unless the workspace query data policy disables it, and configuring a storage location approves exports to it; the Export Permission decides who may export, and an export access grant never adds a destination.
 _Avoid_: Export delivery, export target, download location
 
 **Project Export Destination**:

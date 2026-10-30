@@ -6,7 +6,6 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	"slices"
 	"strings"
 	"time"
 
@@ -25,9 +24,8 @@ import (
 // exportDestinationInput holds the state an export's destination is decided on.
 // The SharePoint fields are read only for the SharePoint destination.
 type exportDestinationInput struct {
-	destination v1pb.ExportDestination
-	// allowedDestinations is the workspace query data policy's allow list.
-	allowedDestinations      []storepb.ExportDestination
+	destination              v1pb.ExportDestination
+	disableDownload          bool
 	password                 string
 	sharePointFeatureEnabled bool
 	destinationURL           string
@@ -35,22 +33,21 @@ type exportDestinationInput struct {
 }
 
 // decideExportDestination returns DOWNLOAD or SHAREPOINT. Nothing unlocks a
-// destination the policy does not allow: not an export grant, admin mode, or a
-// lapsed license.
+// disabled Download: not an export grant, admin mode, or a lapsed license.
 func decideExportDestination(in exportDestinationInput) (v1pb.ExportDestination, error) {
 	destination := in.destination
 	if destination == v1pb.ExportDestination_EXPORT_DESTINATION_UNSPECIFIED {
 		destination = v1pb.ExportDestination_DOWNLOAD
 	}
-	storeDestination, err := convertToStoreExportDestination(destination)
-	if err != nil {
-		return 0, connect.NewError(connect.CodeInvalidArgument, err)
-	}
-	if !slices.Contains(in.allowedDestinations, storeDestination) {
-		return 0, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("export destination %s is not allowed by the workspace query data policy", destination))
-	}
-	if destination == v1pb.ExportDestination_DOWNLOAD {
+	switch destination {
+	case v1pb.ExportDestination_DOWNLOAD:
+		if in.disableDownload {
+			return 0, connect.NewError(connect.CodeFailedPrecondition, errors.New("the Download export destination is disabled by the workspace query data policy"))
+		}
 		return v1pb.ExportDestination_DOWNLOAD, nil
+	case v1pb.ExportDestination_SHAREPOINT:
+	default:
+		return 0, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported export destination %v", destination))
 	}
 	if !in.sharePointFeatureEnabled {
 		return 0, connect.NewError(connect.CodePermissionDenied, errors.Errorf("SharePoint export requires the %s feature", v1pb.PlanFeature_FEATURE_SHAREPOINT_EXPORT))
@@ -85,9 +82,9 @@ func (s *SQLService) prepareExportDestination(ctx context.Context, request *v1pb
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get the workspace query data policy"))
 	}
 	in := exportDestinationInput{
-		destination:         request.GetDestination(),
-		allowedDestinations: store.GetAllowedExportDestinations(policy),
-		password:            request.GetPassword(),
+		destination:     request.GetDestination(),
+		disableDownload: policy.GetDisableDownload(),
+		password:        request.GetPassword(),
 	}
 	if in.destination == v1pb.ExportDestination_SHAREPOINT {
 		in.sharePointFeatureEnabled = s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_SHAREPOINT_EXPORT) == nil

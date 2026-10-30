@@ -205,18 +205,6 @@ func (s *Store) CreateWorkspace(ctx context.Context, create *WorkspaceMessage, a
 		return nil, errors.Wrap(err, "failed to create workspace review rule policy")
 	}
 
-	queryDataPayload, err := protojson.Marshal(GetDefaultWorkspaceQueryDataPolicy())
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to marshal query data policy")
-	}
-	if _, err := tx.ExecContext(ctx,
-		`INSERT INTO policy (workspace, resource_type, resource, type, payload, inherit_from_parent, enforce)
-		 VALUES ($1, 'WORKSPACE', 'workspaces/' || $1, 'QUERY_DATA', $2, FALSE, TRUE)`,
-		create.ResourceID, string(queryDataPayload),
-	); err != nil {
-		return nil, errors.Wrap(err, "failed to create workspace query data policy")
-	}
-
 	// Create default project — used by schema sync to hold unassigned databases.
 	if _, err := tx.ExecContext(ctx,
 		`INSERT INTO project (resource_id, workspace, name, setting) VALUES ($1, $2, 'Default', '{}')`,

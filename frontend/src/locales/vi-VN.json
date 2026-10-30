@@ -2823,6 +2823,10 @@
           "description": "Khi được bật, người dùng có thể chọn giữa nguồn dữ liệu quản trị và nguồn dữ liệu chỉ đọc. Khi bị tắt, người dùng buộc phải sử dụng nguồn dữ liệu chỉ đọc nếu được cấu hình, nếu không sẽ quay lại sử dụng nguồn dữ liệu quản trị.",
           "self": "Cho phép truy vấn nguồn dữ liệu quản trị"
         },
+        "allow-download": {
+          "description": "Khi tắt, dữ liệu xuất chỉ có thể được gửi đến đích lưu trữ đã cấu hình cho dự án, chẳng hạn như SharePoint, kể cả với quyền truy cập xuất đã được phê duyệt.",
+          "self": "Cho phép tải xuống"
+        },
         "allow-email-code-signin": {
           "description": "Người dùng có thể đăng nhập hoặc đăng ký bằng cách nhập mã 6 chữ số được gửi đến email của họ.",
           "enable": "Cho phép đăng nhập bằng mã qua email",
@@ -2909,12 +2913,6 @@
         "drag-logo": "hoặc kéo vào đây",
         "enable-debug": {
           "enable": "Bật nhật ký cấp độ gỡ lỗi cho dịch vụ backend"
-        },
-        "export-destination": {
-          "description": "Nơi người dùng có thể gửi kết quả truy vấn đã xuất. Tắt tất cả sẽ tắt tính năng xuất, kể cả với quyền truy cập xuất đã được phê duyệt.",
-          "download": "Tải xuống",
-          "self": "Đích xuất dữ liệu",
-          "sharepoint": "SharePoint"
         },
         "external-url": {
           "cannot-edit-flag": "Không thể thay đổi URL bên ngoài vì nó được đặt thông qua tham số dòng lệnh --external-url",

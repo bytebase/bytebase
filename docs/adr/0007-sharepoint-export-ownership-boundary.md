@@ -54,23 +54,19 @@ Bytebase does not select a different destination based on the exporting user.
 Multiple Microsoft tenants or independently configured application identities are not
 implied by support for multiple sites.
 
-Configuring SharePoint does not by itself allow exports to it or disable
-Download. The workspace query data policy lists the allowed Export Destinations
-(`export_destination_policy.allowed_destinations`): Download and SharePoint
-today, more destinations later. A destination is offered only when the list
-allows it and, for a storage destination, the project has one configured. Every
-workspace starts with Download only, and a destination added later stays off
-until an administrator lists it, so an upgrade never opens a new destination.
-The Export Permission (`bb.sql.export`, ADR 0006) decides who may export, and
-this policy decides where exports may go. An approved export access grant
-satisfies the Export Permission but never adds a destination. An empty list
-turns off export in the workspace, for grant holders too; this is the one
-workspace-wide export switch, and it exists because the list already overrides
-grants one destination at a time. A list of disabled destinations was rejected because a
-destination added later would be on in every workspace that had turned
-destinations off; one switch per destination was rejected because each new
-destination would need a new policy field. The Export API enforces the list for
-every caller, including MCP; hiding the UI is not enforcement. The list stays in
+Configuring a storage destination approves exports to it. SharePoint is
+offered when the workspace has the SharePoint plan feature and SharePoint
+credentials and the project has a SharePoint folder. Download is the only
+Export Destination with a policy switch: the workspace query data policy's
+`disable_download` turns it off. It defaults to false, so an upgrade keeps
+Download. A separate SharePoint switch was dropped because configuring a
+storage destination is itself the approval. The Export Permission
+(`bb.sql.export`, ADR 0006) decides who may export, and the available
+destinations decide where exports may go. An approved export access grant
+satisfies the Export Permission but never adds a destination, so with Download
+disabled and no project SharePoint folder, export is refused for everyone,
+grant holders too. The Export API enforces `disable_download` for every
+caller, including MCP; hiding the UI is not enforcement. The setting stays in
 effect if the workspace license lapses; only changing it requires the license.
 
 Bytebase is neutral about how customers isolate projects. It uses whatever
@@ -115,9 +111,9 @@ the same export file names. If delivery remains uncertain, Bytebase reports that
 delivery could not be confirmed and files may exist in SharePoint. It does
 not claim that no file was created.
 
-Bytebase checks the allowed destinations once, before the query runs. A change
-made while an export is running applies to the next export. A rejected
-destination is never redirected to another one.
+Bytebase checks the destination once, before the query runs. A change made
+while an export is running applies to the next export. A rejected destination
+is never redirected to another one.
 
 Internal upload retries reuse the generated files, file names, and captured
 destination without rerunning the query. A new Export action starts a new export
@@ -152,8 +148,8 @@ can replace the secret without changing project mappings; Bytebase does not
 create or renew Entra credentials.
 
 When both destinations are available, Export defaults to SharePoint and offers
-Download as an explicit alternative. Removing Download from the allowed
-destinations removes that alternative.
+Download as an explicit alternative. Disabling Download removes that
+alternative.
 
 Destination validation in the initial release only resolves the configured URL.
 A destination that resolves is accepted, not verified: the application can read a library root it

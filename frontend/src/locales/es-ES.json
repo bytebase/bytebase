@@ -2823,6 +2823,10 @@
           "description": "Cuando está habilitado, los usuarios pueden elegir entre fuentes de datos de administración y de solo lectura. Cuando está deshabilitado, los usuarios se ven obligados a usar fuentes de datos de solo lectura si están configuradas; de lo contrario, vuelven a usar fuentes de datos de administración.",
           "self": "Permitir consultar la fuente de datos de administración"
         },
+        "allow-download": {
+          "description": "Si se desactiva, las exportaciones solo pueden ir a un destino de almacenamiento configurado para el proyecto, como SharePoint, incluso con una concesión de acceso de exportación aprobada.",
+          "self": "Permitir descarga"
+        },
         "allow-email-code-signin": {
           "description": "Los usuarios pueden iniciar sesión o registrarse introduciendo un código de 6 dígitos enviado a su correo electrónico.",
           "enable": "Permitir inicio de sesión con código por email",
@@ -2909,12 +2913,6 @@
         "drag-logo": "o arrastrar aquí",
         "enable-debug": {
           "enable": "Habilitar el nivel de registro de depuración para el servicio backend"
-        },
-        "export-destination": {
-          "description": "Dónde pueden enviar los usuarios los resultados exportados. Si se desactivan todos, la exportación queda desactivada, incluso con una concesión de acceso de exportación aprobada.",
-          "download": "Descarga",
-          "self": "Destinos de exportación",
-          "sharepoint": "SharePoint"
         },
         "external-url": {
           "cannot-edit-flag": "La URL externa no se puede cambiar porque está configurada mediante el parámetro de línea de comandos --external-url",

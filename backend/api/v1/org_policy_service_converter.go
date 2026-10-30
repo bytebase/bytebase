@@ -1,17 +1,13 @@
 package v1
 
 import (
-	"slices"
-
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
 	"google.golang.org/genproto/googleapis/type/expr"
-	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
-	"github.com/bytebase/bytebase/backend/store"
 )
 
 // ConvertToV1PBSQLReviewRules converts store SQL review rules to v1 API format.
@@ -168,26 +164,19 @@ func convertToStorePBRolloutPolicy(policy *v1pb.RolloutPolicy) *storepb.RolloutP
 	}
 }
 
-// convertToV1PBQueryDataPolicy returns the stored policy, with the default
-// export destination policy on a workspace policy that has none.
-func convertToV1PBQueryDataPolicy(payloadStr string, resourceType storepb.Policy_Resource) (*v1pb.Policy_QueryDataPolicy, error) {
+func convertToV1PBQueryDataPolicy(payloadStr string) (*v1pb.Policy_QueryDataPolicy, error) {
 	payload := &storepb.QueryDataPolicy{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(payloadStr), payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal query data policy payload")
 	}
-	policy := &v1pb.QueryDataPolicy{
-		MaximumResultRows:    payload.MaximumResultRows,
-		DisableCopyData:      payload.DisableCopyData,
-		AllowAdminDataSource: payload.AllowAdminDataSource,
-	}
-	if resourceType == storepb.Policy_WORKSPACE {
-		var allowed []v1pb.ExportDestination
-		for _, destination := range store.GetAllowedExportDestinations(payload) {
-			allowed = append(allowed, convertToV1ExportDestination(destination))
-		}
-		policy.ExportDestinationPolicy = &v1pb.QueryDataPolicy_ExportDestinationPolicy{AllowedDestinations: allowed}
-	}
-	return &v1pb.Policy_QueryDataPolicy{QueryDataPolicy: policy}, nil
+	return &v1pb.Policy_QueryDataPolicy{
+		QueryDataPolicy: &v1pb.QueryDataPolicy{
+			MaximumResultRows:    payload.MaximumResultRows,
+			DisableCopyData:      payload.DisableCopyData,
+			AllowAdminDataSource: payload.AllowAdminDataSource,
+			DisableDownload:      payload.DisableDownload,
+		},
+	}, nil
 }
 
 // convertToQueryDataPolicyPayload rejects disable_export=true so stale configs learn the
@@ -196,85 +185,12 @@ func convertToQueryDataPolicyPayload(policy *v1pb.QueryDataPolicy) (*storepb.Que
 	if policy.GetDisableExport() { //nolint:staticcheck // The deprecated field is read only to reject it.
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("disable_export is removed. Export requires the bb.sql.export permission; to require approval for export, assign roles without it.")) //nolint:revive // The message is an API contract.
 	}
-	payload := &storepb.QueryDataPolicy{
+	return &storepb.QueryDataPolicy{
 		MaximumResultRows:    policy.GetMaximumResultRows(),
 		DisableCopyData:      policy.GetDisableCopyData(),
 		AllowAdminDataSource: policy.GetAllowAdminDataSource(),
-	}
-	if exportDestinationPolicy := policy.GetExportDestinationPolicy(); exportDestinationPolicy != nil {
-		allowed, err := convertToStoreAllowedExportDestinations(exportDestinationPolicy.GetAllowedDestinations())
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, err)
-		}
-		payload.ExportDestinationPolicy = &storepb.QueryDataPolicy_ExportDestinationPolicy{AllowedDestinations: allowed}
-	}
-	return payload, nil
-}
-
-// convertToStoreAllowedExportDestinations converts the allowed destinations. An
-// empty list turns off export for everyone, including holders of bb.sql.export
-// or an export grant.
-func convertToStoreAllowedExportDestinations(destinations []v1pb.ExportDestination) ([]storepb.ExportDestination, error) {
-	var allowed []storepb.ExportDestination
-	for _, destination := range destinations {
-		storeDestination, err := convertToStoreExportDestination(destination)
-		if err != nil {
-			return nil, err
-		}
-		if slices.Contains(allowed, storeDestination) {
-			return nil, errors.Errorf("export_destination_policy.allowed_destinations lists %s more than once", destination)
-		}
-		allowed = append(allowed, storeDestination)
-	}
-	return allowed, nil
-}
-
-func convertToStoreExportDestination(destination v1pb.ExportDestination) (storepb.ExportDestination, error) {
-	switch destination {
-	case v1pb.ExportDestination_DOWNLOAD:
-		return storepb.ExportDestination_DOWNLOAD, nil
-	case v1pb.ExportDestination_SHAREPOINT:
-		return storepb.ExportDestination_SHAREPOINT, nil
-	default:
-		return storepb.ExportDestination_EXPORT_DESTINATION_UNSPECIFIED, errors.Errorf("unsupported export destination %v", destination)
-	}
-}
-
-func convertToV1ExportDestination(destination storepb.ExportDestination) v1pb.ExportDestination {
-	switch destination {
-	case storepb.ExportDestination_DOWNLOAD:
-		return v1pb.ExportDestination_DOWNLOAD
-	case storepb.ExportDestination_SHAREPOINT:
-		return v1pb.ExportDestination_SHAREPOINT
-	default:
-		return v1pb.ExportDestination_EXPORT_DESTINATION_UNSPECIFIED
-	}
-}
-
-// keepStoredExportDestinationPolicy carries the stored export destination
-// policy into an updated query data policy that omits it, so a client that does
-// not know the field cannot clear it.
-func keepStoredExportDestinationPolicy(payloadStr, storedPayloadStr string) (string, error) {
-	payload := &storepb.QueryDataPolicy{}
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(payloadStr), payload); err != nil {
-		return "", errors.Wrap(err, "failed to unmarshal query data policy payload")
-	}
-	if payload.ExportDestinationPolicy != nil {
-		return payloadStr, nil
-	}
-	stored := &storepb.QueryDataPolicy{}
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(storedPayloadStr), stored); err != nil {
-		return "", errors.Wrap(err, "failed to unmarshal stored query data policy payload")
-	}
-	if stored.ExportDestinationPolicy == nil {
-		return payloadStr, nil
-	}
-	payload.ExportDestinationPolicy = stored.ExportDestinationPolicy
-	payloadBytes, err := protojson.Marshal(payload)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to marshal query data policy payload")
-	}
-	return string(payloadBytes), nil
+		DisableDownload:      policy.GetDisableDownload(),
+	}, nil
 }
 
 func convertToV1PBReviewRulePolicy(payloadStr string) (*v1pb.Policy_ReviewRulePolicy, error) {

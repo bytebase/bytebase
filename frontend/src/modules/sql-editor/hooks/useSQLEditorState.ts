@@ -9,7 +9,6 @@ import { useAppStore } from "@/stores/app";
 import type { SQLEditorConnection } from "@/types";
 import { isValidDatabaseName, isValidProjectName } from "@/types";
 import type { Permission } from "@/types/iam";
-import { ExportDestination } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { InstanceResource } from "@/types/proto-es/v1/instance_service_pb";
 import {
@@ -47,9 +46,8 @@ export const useSQLEditorFeature = (feature: PlanFeature): boolean => {
 // policy limits.
 type FormattedQueryDataPolicy = {
   disableCopyData: boolean;
-  // Workspace-level only. Matches the server's default when the policy has
-  // no export destination policy or has not loaded.
-  allowedExportDestinations: ExportDestination[];
+  // Workspace-level only.
+  disableDownload: boolean;
   allowAdminDataSource: boolean;
   maximumResultRows: number;
 };
@@ -60,8 +58,7 @@ const formatQueryDataPolicy = (
   const max = policy?.maximumResultRows ?? -1;
   return {
     disableCopyData: policy?.disableCopyData ?? false,
-    allowedExportDestinations: policy?.exportDestinationPolicy
-      ?.allowedDestinations ?? [ExportDestination.DOWNLOAD],
+    disableDownload: policy?.disableDownload ?? false,
     allowAdminDataSource: policy?.allowAdminDataSource ?? false,
     maximumResultRows: max <= 0 ? Number.MAX_VALUE : max,
   };
