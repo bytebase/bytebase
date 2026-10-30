@@ -20,8 +20,8 @@ type OmniAST struct {
 	StartPosition *storepb.Position
 }
 
-// ASTSource returns the statement's own text, which consumers shared with the other
-// MySQL-family engines read to re-derive a node.
+// ASTSource returns the statement's own text, which the schema walk-through reads
+// when it needs the statement as written.
 func (a *OmniAST) ASTSource() string {
 	return a.Text
 }
