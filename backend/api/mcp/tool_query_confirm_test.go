@@ -391,9 +391,14 @@ func TestConfirmationRequiredIn(t *testing.T) {
 	require.Equal(t, &confirmationRequired{environment: "prod", schema: "app"}, confirmationRequiredIn(body(confirmationRequiredError("prod", "app"))))
 	require.Nil(t, confirmationRequiredIn(body(connect.NewError(connect.CodeFailedPrecondition, errors.New("another refusal")))))
 
-	other := connect.NewError(connect.CodeFailedPrecondition, errors.New("another reason"))
-	detail, err := connect.NewErrorDetail(&errdetails.ErrorInfo{Reason: "OTHER", Domain: auth.MCPConfirmationDomain})
-	require.NoError(t, err)
-	other.AddDetail(detail)
-	require.Nil(t, confirmationRequiredIn(body(other)))
+	for _, info := range []*errdetails.ErrorInfo{
+		{Reason: "OTHER", Domain: auth.MCPConfirmationDomain},
+		{Reason: auth.MCPConfirmationReason, Domain: "example.com"},
+	} {
+		other := connect.NewError(connect.CodeFailedPrecondition, errors.New("another refusal"))
+		detail, err := connect.NewErrorDetail(info)
+		require.NoError(t, err)
+		other.AddDetail(detail)
+		require.Nil(t, confirmationRequiredIn(body(other)), "%s from %s", info.GetReason(), info.GetDomain())
+	}
 }

@@ -238,6 +238,13 @@ func TestMCPQueryDatabaseAsksBeforeAWrite(t *testing.T) {
 	})
 	a.Equal(http.StatusForbidden, explained.Status, explained.Error)
 	a.Contains(explained.Error, "explains only statements Bytebase can show are reads")
+	a.Contains(explained.Error, "signed in to the Bytebase console")
+	explainedRead := callAPIOnSession(ctx, t, running, "SQLService/Query", map[string]any{
+		"name":      f.database,
+		"statement": "SELECT name FROM employee",
+		"explain":   true,
+	})
+	a.Equal(http.StatusOK, explainedRead.Status, explainedRead.Error)
 }
 
 // Export skips statement validation on MySQL, and the driver runs a statement

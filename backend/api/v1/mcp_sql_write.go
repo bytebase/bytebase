@@ -31,7 +31,7 @@ func mcpStatementIsRead(ctx context.Context, engine storepb.Engine, statement st
 // call_api passes its context on unchanged, so it cannot.
 func mcpWriteConfirmed(ctx context.Context, request *v1pb.QueryRequest) bool {
 	marker, ok := auth.MCPConfirmedDecisionFromContext(ctx)
-	return ok && marker.Procedure == v1connect.SQLServiceQueryProcedure && marker.Resource == request.Name &&
+	return ok && marker.Procedure == v1connect.SQLServiceQueryProcedure &&
 		bytes.Equal(marker.Digest, auth.MCPStatementDigest(request.Statement, request.Name, request.GetSchema()))
 }
 

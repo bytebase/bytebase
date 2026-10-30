@@ -56,7 +56,8 @@ func TestMCPWriteConfirmed(t *testing.T) {
 		{name: "a mark with no digest", ctx: mark(v1connect.SQLServiceQueryProcedure, database, nil)},
 		{name: "another statement", ctx: mark(v1connect.SQLServiceQueryProcedure, database, auth.MCPStatementDigest("DELETE FROM salary", database, "app"))},
 		{name: "another schema", ctx: mark(v1connect.SQLServiceQueryProcedure, database, auth.MCPStatementDigest("DELETE FROM employee", database, ""))},
-		{name: "another database", ctx: mark(v1connect.SQLServiceQueryProcedure, "instances/prod/databases/payroll", digest)},
+		{name: "another database", ctx: mark(v1connect.SQLServiceQueryProcedure, "instances/prod/databases/payroll",
+			auth.MCPStatementDigest("DELETE FROM employee", "instances/prod/databases/payroll", "app"))},
 		{name: "another procedure", ctx: mark(v1connect.IssueServiceApproveIssueProcedure, database, digest)},
 	} {
 		t.Run(row.name, func(t *testing.T) {
@@ -66,19 +67,30 @@ func TestMCPWriteConfirmed(t *testing.T) {
 }
 
 func TestMCPConfirmationRequired(t *testing.T) {
-	err := mcpConfirmationRequired(&store.DatabaseMessage{EffectiveEnvironmentID: new("prod")}, "app")
-	require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
-	require.Contains(t, err.Error(), "query_database")
-	var connectErr *connect.Error
-	require.ErrorAs(t, err, &connectErr)
-	require.Len(t, connectErr.Details(), 1)
-	value, valueErr := connectErr.Details()[0].Value()
-	require.NoError(t, valueErr)
-	info, ok := value.(*errdetails.ErrorInfo)
-	require.True(t, ok)
-	require.Equal(t, auth.MCPConfirmationReason, info.GetReason())
-	require.Equal(t, auth.MCPConfirmationDomain, info.GetDomain())
-	require.Equal(t, map[string]string{"environment": "prod", "schema": "app"}, info.GetMetadata())
+	for _, row := range []struct {
+		name     string
+		database *store.DatabaseMessage
+		metadata map[string]string
+	}{
+		{name: "an environment", database: &store.DatabaseMessage{EffectiveEnvironmentID: new("prod")}, metadata: map[string]string{"environment": "prod", "schema": "app"}},
+		{name: "no environment", database: &store.DatabaseMessage{}, metadata: map[string]string{"environment": "", "schema": "app"}},
+	} {
+		t.Run(row.name, func(t *testing.T) {
+			err := mcpConfirmationRequired(row.database, "app")
+			require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
+			require.Contains(t, err.Error(), "query_database")
+			var connectErr *connect.Error
+			require.ErrorAs(t, err, &connectErr)
+			require.Len(t, connectErr.Details(), 1)
+			value, valueErr := connectErr.Details()[0].Value()
+			require.NoError(t, valueErr)
+			info, ok := value.(*errdetails.ErrorInfo)
+			require.True(t, ok)
+			require.Equal(t, auth.MCPConfirmationReason, info.GetReason())
+			require.Equal(t, auth.MCPConfirmationDomain, info.GetDomain())
+			require.Equal(t, row.metadata, info.GetMetadata())
+		})
+	}
 }
 
 func TestMCPWriteDataSourceID(t *testing.T) {
