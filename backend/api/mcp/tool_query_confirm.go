@@ -86,9 +86,9 @@ func confirmationRequiredIn(body json.RawMessage) *confirmationRequired {
 }
 
 // askedDigest is what the form's state binds: the request's digest and the
-// issue title, which decides whether the form offers Create an issue and what
-// it files. Query checks the request's digest alone, since it never sees the
-// title.
+// issue title, which decides whether the form offers Create an issue and is
+// what that choice shows and files. Query checks the request's digest alone,
+// since it never sees the title.
 func askedDigest(digest []byte, issueTitle string) []byte {
 	h := sha256.New()
 	_, _ = h.Write(digest)
@@ -96,10 +96,11 @@ func askedDigest(digest []byte, issueTitle string) []byte {
 	return h.Sum(nil)
 }
 
-// askToRun returns the form that asks the user to run statement. A call that
+// askToRun returns the form that asks the user to run statement, and offers to
+// file it as an issue titled issueTitle unless issueTitle is empty. A call that
 // already asked which database to use gets a result that has the agent call
 // again instead: an older client answers one form per call.
-func (s *Server) askToRun(ctx context.Context, req *mcp.CallToolRequest, confirmation runConfirmation, digest []byte, statement, container string, required *confirmationRequired, offerIssue bool) *mcp.CallToolResult {
+func (s *Server) askToRun(ctx context.Context, req *mcp.CallToolRequest, confirmation runConfirmation, digest []byte, statement, container string, required *confirmationRequired, issueTitle string) *mcp.CallToolResult {
 	project, instance, database, err := common.GetDatabaseResourceName(confirmation.database)
 	if err != nil {
 		return formatToolError(err)
@@ -127,8 +128,8 @@ func (s *Server) askToRun(ctx context.Context, req *mcp.CallToolRequest, confirm
 	}
 	message := strings.Join(append(header, request...), "\n")
 	choices := []any{map[string]any{"const": runChoiceRun, "title": "Run now"}}
-	if offerIssue {
-		choices = append(choices, map[string]any{"const": runChoiceIssue, "title": "Create an issue"})
+	if issueTitle != "" {
+		choices = append(choices, map[string]any{"const": runChoiceIssue, "title": fmt.Sprintf("Create an issue titled %q", issueTitle)})
 	}
 	choices = append(choices, map[string]any{"const": runChoiceChange, "title": "Change it in chat"})
 	return s.askWithForm(ctx, confirmation, digest, message, map[string]any{

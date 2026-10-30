@@ -80,7 +80,7 @@ const queryDatabaseDescription = `Execute a SQL query against a Bytebase databas
 | schema    | No       | Default schema for unqualified names (Postgres search path). An access grant applies only when this equals the grant's schema |
 | container | No       | CosmosDB container (required for CosmosDB). An access grant applies only when this equals the grant's container |
 | limit     | No       | Max rows (default: 100, max: 1000) |
-| issueTitle | No      | For a statement that may write: the issue's title if the user chooses Create an issue. Say what the change does, without data values. Without it, the form does not offer Create an issue |
+| issueTitle | No      | For a statement that may write: the issue's title if the user chooses Create an issue. The form shows it in that choice. Say what the change does, without data values. Without it, the form does not offer Create an issue |
 
 **Examples:**
 query_database(database="employee_db", statement="SELECT * FROM users LIMIT 10")
@@ -149,8 +149,10 @@ func (s *Server) handleQueryDatabase(ctx context.Context, req *mcp.CallToolReque
 	// pass in a project that requires a manual title, since the server refuses
 	// only an empty one. A plan carries no schema, so an issue's rollout would
 	// run with the database's default one.
-	issueTitle := strings.TrimSpace(input.IssueTitle)
-	offerIssue := issueTitle != "" && input.Schema == ""
+	var issueTitle string
+	if input.Schema == "" {
+		issueTitle = strings.TrimSpace(input.IssueTitle)
+	}
 	asked := askedDigest(digest, issueTitle)
 	var confirmed []byte
 	if !canShowConfirmation(req) {
@@ -160,7 +162,7 @@ func (s *Server) handleQueryDatabase(ctx context.Context, req *mcp.CallToolReque
 			return staleAnswer(why), nil, nil
 		}
 		if choice == runChoiceIssue {
-			if !offerIssue {
+			if issueTitle == "" {
 				return noOfferedChoice(), nil, nil
 			}
 			return s.fileAsIssue(ctx, resolved, input.Statement, issueTitle), nil, nil
@@ -180,7 +182,7 @@ func (s *Server) handleQueryDatabase(ctx context.Context, req *mcp.CallToolReque
 	// A confirmed call that Query still refuses reports the refusal: asking
 	// again in the same call would send a second form.
 	if errors.As(err, &required) && confirmed == nil {
-		return s.askToRun(ctx, req, confirmation, asked, input.Statement, input.Container, required, offerIssue), nil, nil
+		return s.askToRun(ctx, req, confirmation, asked, input.Statement, input.Container, required, issueTitle), nil, nil
 	}
 	if err != nil {
 		var qe *queryError

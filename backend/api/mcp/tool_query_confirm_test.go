@@ -156,7 +156,7 @@ func callQuery(t *testing.T, session *mcp.ClientSession, params *mcp.CallToolPar
 
 func TestQueryDatabaseAsksBeforeAWrite(t *testing.T) {
 	const (
-		withIssue    = `"oneOf":[{"const":"run","title":"Run now"},{"const":"issue","title":"Create an issue"},{"const":"change","title":"Change it in chat"}]`
+		withIssue    = `"oneOf":[{"const":"run","title":"Run now"},{"const":"issue","title":"Create an issue titled \"Add an employee\""},{"const":"change","title":"Change it in chat"}]`
 		withoutIssue = `"oneOf":[{"const":"run","title":"Run now"},{"const":"change","title":"Change it in chat"}]`
 	)
 	for _, row := range []struct {
@@ -659,7 +659,7 @@ func TestQueryDatabaseOffersAnIssueOnlyWithATitleAndNoSchema(t *testing.T) {
 			require.True(t, first.NeedsInput())
 			form, err := json.Marshal(first.InputRequests[confirmDecisionRequestID])
 			require.NoError(t, err)
-			require.Equal(t, row.offered, strings.Contains(string(form), `{"const":"issue","title":"Create an issue"}`))
+			require.Equal(t, row.offered, strings.Contains(string(form), `"const":"issue"`))
 
 			params.InputResponses = mcp.InputResponseMap{confirmDecisionRequestID: runAnswer(runChoiceIssue)}
 			params.RequestState = first.RequestState
