@@ -23,10 +23,7 @@ import {
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL,
 } from "@/app/router/handles";
-import {
-  buildPlanDeployRouteFromRolloutName,
-  buildPlanRolloutRouteFromPlanName,
-} from "@/app/router/routeHelpers";
+import { buildPlanRolloutRouteFromPlanName } from "@/app/router/routeHelpers";
 import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { RouterLink } from "@/components/RouterLink";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -77,6 +74,7 @@ import {
 } from "../utils/actionRegistry";
 import { isApprovalCompleted } from "../utils/approval";
 import { refreshIssueDetailState } from "../utils/refreshIssueDetailState";
+import { routeAfterRolloutCreated } from "../utils/rollout";
 import { IssueDetailTaskRolloutActionPanel } from "./IssueDetailTaskRolloutActionPanel";
 
 export function IssueDetailActionBar() {
@@ -230,12 +228,13 @@ export function IssueDetailActionBar() {
 
   const handleCreateRollout = useCallback(
     async (options?: { runAllTasks?: boolean }) => {
-      if (!page.plan) {
+      const plan = page.plan;
+      if (!plan) {
         return;
       }
       const createdRollout = await rolloutServiceClientConnect.createRollout(
         create(CreateRolloutRequestSchema, {
-          parent: page.plan.name,
+          parent: plan.name,
         })
       );
 
@@ -252,10 +251,9 @@ export function IssueDetailActionBar() {
 
       await handleRefreshIssueDetailState();
 
-      if (createdRollout.stages.length > 0) {
-        void router.push(
-          buildPlanDeployRouteFromRolloutName(createdRollout.name)
-        );
+      const nextRoute = routeAfterRolloutCreated(plan, createdRollout);
+      if (nextRoute) {
+        void router.push(nextRoute);
       }
     },
     [handleRefreshIssueDetailState, page.plan]
