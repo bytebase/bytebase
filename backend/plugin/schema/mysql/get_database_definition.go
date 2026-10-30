@@ -52,19 +52,14 @@ const (
 
 func init() {
 	schema.RegisterGetDatabaseDefinition(storepb.Engine_MYSQL, GetDatabaseDefinition)
-	schema.RegisterGetDatabaseDefinition(storepb.Engine_OCEANBASE, GetDatabaseDefinition)
 
 	schema.RegisterGetTableDefinition(storepb.Engine_MYSQL, GetTableDefinition)
-	schema.RegisterGetTableDefinition(storepb.Engine_OCEANBASE, GetTableDefinition)
 
 	schema.RegisterGetViewDefinition(storepb.Engine_MYSQL, GetViewDefinition)
-	schema.RegisterGetViewDefinition(storepb.Engine_OCEANBASE, GetViewDefinition)
 
 	schema.RegisterGetFunctionDefinition(storepb.Engine_MYSQL, GetFunctionDefinition)
-	schema.RegisterGetFunctionDefinition(storepb.Engine_OCEANBASE, GetFunctionDefinition)
 
 	schema.RegisterGetProcedureDefinition(storepb.Engine_MYSQL, GetProcedureDefinition)
-	schema.RegisterGetProcedureDefinition(storepb.Engine_OCEANBASE, GetProcedureDefinition)
 }
 
 func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *metadatapb.DatabaseSchemaMetadata) (string, error) {

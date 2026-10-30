@@ -23,7 +23,6 @@ import (
 func init() {
 	schema.RegisterWalkThroughWithContext(storepb.Engine_MYSQL, WalkThroughWithContext)
 	schema.RegisterWalkThroughWithContext(storepb.Engine_MARIADB, WalkThroughWithContext)
-	schema.RegisterWalkThroughWithContext(storepb.Engine_OCEANBASE, WalkThroughWithContext)
 }
 
 // WalkThroughWithContext performs DDL simulation using the omni MySQL catalog.
@@ -240,34 +239,11 @@ func precheckMySQLRawWalkThrough(d *model.DatabaseMetadata, rawSQL string, asts 
 	return mySQLWalkThroughAdvice{}
 }
 
-// walkThroughOmniNode returns the MySQL AST node for a statement this walk-through is
-// asked to inspect. OceanBase registers this walk-through but parses to
-// omni/oceanbase/ast, which mysqlparser.GetOmniNode rejects, so an OceanBase statement
-// is re-parsed from its own text here. That keeps the AST-driven steps — the precheck
-// and the cross-database RENAME targets — working as they did before OceanBase had its
-// own parser, and it is why a schema/oceanbase fork (pending omni/oceanbase/catalog)
-// should replace this. A statement only OceanBase's grammar accepts does not re-parse,
-// and its auxiliary check is skipped rather than reported.
-func walkThroughOmniNode(a base.AST) (ast.Node, bool) {
-	if node, ok := mysqlparser.GetOmniNode(a); ok {
-		return node, true
-	}
-	source, ok := a.(interface{ ASTSource() string })
-	if !ok {
-		return nil, false
-	}
-	list, err := mysqlparser.ParseMySQL(source.ASTSource())
-	if err != nil || list == nil || len(list.Items) != 1 {
-		return nil, false
-	}
-	return list.Items[0], true
-}
-
 func mySQLOmniASTSkipsCreateTableAsAdvice(d *model.DatabaseMetadata, asts []base.AST, index int) bool {
 	if index >= len(asts) {
 		return false
 	}
-	node, ok := walkThroughOmniNode(asts[index])
+	node, ok := mysqlparser.GetOmniNode(asts[index])
 	if !ok {
 		return false
 	}
@@ -367,7 +343,7 @@ func isMySQLIdentifierChar(ch byte) bool {
 
 func precheckMySQLOmniWalkThrough(d *model.DatabaseMetadata, asts []base.AST) mySQLWalkThroughAdvice {
 	for i, unifiedAST := range asts {
-		node, ok := walkThroughOmniNode(unifiedAST)
+		node, ok := mysqlparser.GetOmniNode(unifiedAST)
 		if !ok {
 			continue
 		}
@@ -475,7 +451,7 @@ func mysqlRenameTargetDatabases(d *model.DatabaseMetadata, asts []base.AST) []st
 		targets = append(targets, targetTable.Schema)
 	}
 	for _, unifiedAST := range asts {
-		node, ok := walkThroughOmniNode(unifiedAST)
+		node, ok := mysqlparser.GetOmniNode(unifiedAST)
 		if !ok {
 			continue
 		}

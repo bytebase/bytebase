@@ -14,6 +14,7 @@ import (
 
 	// Register walk-through implementations
 	_ "github.com/bytebase/bytebase/backend/plugin/schema/mysql"
+	_ "github.com/bytebase/bytebase/backend/plugin/schema/oceanbase"
 	_ "github.com/bytebase/bytebase/backend/plugin/schema/pg"
 	_ "github.com/bytebase/bytebase/backend/plugin/schema/tidb"
 )
