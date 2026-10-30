@@ -3106,7 +3106,7 @@
             "title": "Run rollouts and tasks"
           },
           "run-statements": {
-            "details": "INSERT, UPDATE, DELETE, CREATE, ALTER, DROP through queries, as far as the engine and the user's own permissions allow · Where the user's MCP client supports confirmations, a statement that is not a read as far as the engine can check it runs only after the user confirms it · In other clients such a statement can run without asking",
+            "details": "INSERT, UPDATE, DELETE, CREATE, ALTER, DROP through queries, as far as the engine and the user's own permissions allow · Where the user's MCP client supports confirmations, a query that is not a read as far as the engine can check it runs only after the user confirms it · In other clients such a query can run without asking",
             "title": "Run DML and DDL statements"
           }
         },
