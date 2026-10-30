@@ -84,6 +84,8 @@ query_database(database="employee", instance="prod-pg", statement="SELECT count(
 query_database(database="employee", instance="projects/hr/instances/prod-pg", statement="SELECT count(*) FROM orders")
 
 **Notes:**
+- Writes: a statement Bytebase cannot show is a read, such as INSERT, UPDATE, DELETE, DDL or SET, runs only after the user chooses Run now in a form this tool shows, when the client can show one. The form is the question, so do not ask in chat first. Change it in chat runs nothing: ask the user what to change, then call again with the revised statement. call_api refuses such a statement.
+- Show the user the statement each answer came from, so they can check it read what they asked about.
 - Masked data: masking replaces a value fully (by default "******"), partly (e.g. "**rn**"), or with a hash. maskedColumns in the result names each masked column and why (not reported for MongoDB, CosmosDB or Elasticsearch). A masked value is a placeholder, not a value anything holds, so never write it back and never filter on it. Any statement containing "******" is refused. When showing a partly masked value, wrap it in backticks: "**rn**" renders as bold Markdown.
 - Seeing masked values: the user can ask a project owner for a masking exemption, or, if the project allows just-in-time access, request an access grant with Unmask for this exact statement, schema and container. In a Read-write session, file the request with request_access_grant; otherwise the user requests it in the SQL Editor. Once it is approved, find the grant among the user's access grants, then rerun the granted statement unchanged with the grant's schema and container. appliedAccessGrant in the result names the grant that applied.
 `
@@ -118,11 +120,29 @@ func (s *Server) handleQueryDatabase(ctx context.Context, req *mcp.CallToolReque
 		return resolveResult, nil, nil
 	}
 
+	// A statement Query cannot show is a read runs once the user chooses Run
+	// now, or at once when the client cannot show the form.
+	confirmation := runConfirmation{database: resolved.resourceName}
+	digest := auth.MCPStatementDigest(input.Statement, resolved.resourceName, input.Schema)
+	var confirmed []byte
+	if !canShowConfirmation(req) {
+		confirmed = digest
+	} else if reply, answered := s.signedReply(ctx, req, confirmation, digest); answered {
+		if result := unrunResult(reply); result != nil {
+			return result, nil, nil
+		}
+		confirmed = digest
+	}
+
 	// Execute query.
 	queryCtx, queryCancel := context.WithTimeout(ctx, queryTimeout)
 	defer queryCancel()
 
-	output, err := s.executeQuery(queryCtx, resolved, input, limit)
+	output, err := s.executeQuery(queryCtx, resolved, input, limit, confirmed)
+	var required *confirmationRequired
+	if errors.As(err, &required) && confirmed == nil {
+		return s.askToRun(ctx, req, confirmation, digest, input.Statement, required), nil, nil
+	}
 	if err != nil {
 		return formatToolError(err), nil, nil
 	}
@@ -217,8 +237,9 @@ type queryRow struct {
 	Values []json.RawMessage `json:"values"`
 }
 
-// executeQuery executes a SQL query against the resolved database.
-func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, input QueryInput, limit int) (*QueryOutput, error) {
+// executeQuery executes a SQL query against the resolved database. confirmed is
+// the digest the confirmation marker carries, or nil for an unconfirmed request.
+func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, input QueryInput, limit int, confirmed []byte) (*QueryOutput, error) {
 	body := map[string]any{
 		"name":         resolved.resourceName,
 		"dataSourceId": resolved.dataSourceID,
@@ -230,12 +251,13 @@ func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, i
 	if input.Container != "" {
 		body["container"] = input.Container
 	}
-	// Query routes a statement that may write as a write only for a request this
-	// mark names.
-	ctx = auth.WithMCPConfirmedDecision(ctx, auth.MCPConfirmedDecision{
-		Procedure: v1connect.SQLServiceQueryProcedure,
-		Resource:  resolved.resourceName,
-	})
+	if confirmed != nil {
+		ctx = auth.WithMCPConfirmedDecision(ctx, auth.MCPConfirmedDecision{
+			Procedure: v1connect.SQLServiceQueryProcedure,
+			Resource:  resolved.resourceName,
+			Digest:    confirmed,
+		})
+	}
 	resp, err := s.apiRequest(ctx, v1connect.SQLServiceQueryProcedure, body)
 	if err != nil {
 		return nil, &toolError{
@@ -245,6 +267,9 @@ func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, i
 		}
 	}
 	if resp.Status >= 400 {
+		if required := confirmationRequiredIn(resp.Body); required != nil {
+			return nil, required
+		}
 		errMsg := parseError(resp.Body)
 		if errMsg == "" {
 			errMsg = fmt.Sprintf("HTTP %d", resp.Status)

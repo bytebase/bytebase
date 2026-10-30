@@ -3,14 +3,21 @@ package tests
 import (
 	"context"
 	"database/sql"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
+	"sync"
 	"testing"
 
 	"connectrpc.com/connect"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
+	"google.golang.org/protobuf/proto"
 
+	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
@@ -118,19 +125,119 @@ func TestMCPQueryDatabaseRoutesWritesAsWrites(t *testing.T) {
 	routed := queryDatabaseOnSession(ctx, t, session, databaseName, setsTheSession)
 	a.False(routed.isError, routed.text)
 	a.Equal([][]any{{"postgres"}}, routed.output.Rows, "the verdict routes the request to ADMIN")
-	named := callAPIOnSession(ctx, t, session, "SQLService/Query", map[string]any{
+	refused := callAPIOnSession(ctx, t, session, "SQLService/Query", map[string]any{
 		"name":         database,
 		"dataSourceId": "readonly",
 		"statement":    setsTheSession,
 	})
-	a.Equal(http.StatusOK, named.Status, named.Error)
-	var namedResponse v1pb.QueryResponse
-	a.NoError(common.ProtojsonUnmarshaler.Unmarshal([]byte(named.RawResponse), &namedResponse))
-	a.Equal("mcp_write_ro", namedResponse.Results[0].Rows[0].Values[0].GetStringValue(), "call_api keeps the data source it names")
+	a.Equal(http.StatusBadRequest, refused.Status, refused.Error)
+	a.Equal(auth.MCPConfirmationReason, confirmationErrorInfo(t, refused.RawResponse).GetReason(), "call_api cannot confirm a possible write")
 
 	written := queryDatabaseOnSession(ctx, t, session, databaseName, "INSERT INTO employee VALUES (2, 'query_database')")
 	a.False(written.isError, "query_database writes on ADMIN, though it sends the read-only data source: %s", written.text)
 	a.Equal(2, countRows(ctx, t, ctl, database, "employee"))
+}
+
+// confirmationErrorInfo decodes the ErrorInfo a refused request's body carries,
+// as query_database does.
+func confirmationErrorInfo(t *testing.T, raw string) *errdetails.ErrorInfo {
+	t.Helper()
+	var body struct {
+		Details []struct {
+			Type  string `json:"type"`
+			Value string `json:"value"`
+		} `json:"details"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(raw), &body))
+	require.Len(t, body.Details, 1)
+	require.Equal(t, "google.rpc.ErrorInfo", body.Details[0].Type)
+	value, err := base64.RawStdEncoding.DecodeString(body.Details[0].Value)
+	require.NoError(t, err)
+	var info errdetails.ErrorInfo
+	require.NoError(t, proto.Unmarshal(value, &info))
+	return &info
+}
+
+// formAnswerer is a client that answers every form the same way and keeps the
+// messages it was shown.
+type formAnswerer struct {
+	answer   *mcp.ElicitResult
+	mu       sync.Mutex
+	messages []string
+}
+
+func (f *formAnswerer) handle(_ context.Context, req *mcp.ElicitRequest) (*mcp.ElicitResult, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.messages = append(f.messages, req.Params.Message)
+	return f.answer, nil
+}
+
+func (f *formAnswerer) asked() []string {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return append([]string(nil), f.messages...)
+}
+
+// A Read-write session whose client shows forms: the user's answer decides
+// whether a statement Bytebase cannot show is a read runs.
+func TestMCPQueryDatabaseAsksBeforeAWrite(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctl, ctx := startWorkspace(context.Background(), t)
+	f := setupMCPClampFixture(ctx, t, ctl)
+	a.NoError(ctl.setMCPCapability(ctx, v1pb.MCPSetting_READ_WRITE))
+	token, _ := mintMCPOAuthToken(t, ctl, ctl.authInterceptor.token)
+	answering := func(answer *mcp.ElicitResult) (*mcp.ClientSession, *formAnswerer) {
+		user := &formAnswerer{answer: answer}
+		session := openMCPSessionWithOptions(ctx, t, ctl, token, &mcp.ClientOptions{ElicitationHandler: user.handle})
+		t.Cleanup(func() { session.Close() })
+		return session, user
+	}
+	const insert = "INSERT INTO employee VALUES (2, 'agent')"
+
+	changing, changeUser := answering(&mcp.ElicitResult{Action: "accept", Content: map[string]any{"choice": "change"}})
+	changed := queryDatabaseOnSession(ctx, t, changing, f.name, insert)
+	a.False(changed.isError, changed.text)
+	a.Contains(changed.text, "Not run: the user wants to change this request")
+	a.Len(changeUser.asked(), 1)
+	instanceID, _, err := common.GetInstanceDatabaseID(f.database)
+	a.NoError(err)
+	a.Equal(fmt.Sprintf("Run on database %q (instance %q, environment \"prod\"):\n%s", f.name, instanceID, insert), changeUser.asked()[0])
+	a.Equal(1, f.employeeCount(t))
+
+	declining, _ := answering(&mcp.ElicitResult{Action: "decline"})
+	declined := queryDatabaseOnSession(ctx, t, declining, f.name, insert)
+	a.Contains(declined.text, "Not run: the user declined")
+	a.Equal(1, f.employeeCount(t))
+
+	running, runUser := answering(&mcp.ElicitResult{Action: "accept", Content: map[string]any{"choice": "run"}})
+	read := queryDatabaseOnSession(ctx, t, running, f.name, "SELECT name FROM employee")
+	a.False(read.isError, read.text)
+	a.Empty(runUser.asked(), "a read runs without asking")
+	ran := queryDatabaseOnSession(ctx, t, running, f.name, insert)
+	a.False(ran.isError, ran.text)
+	a.Len(runUser.asked(), 1)
+	a.Equal(2, f.employeeCount(t))
+
+	direct := callAPIOnSession(ctx, t, running, "SQLService/Query", map[string]any{
+		"name":      f.database,
+		"statement": "INSERT INTO employee VALUES (3, 'call_api')",
+	})
+	a.Equal(http.StatusBadRequest, direct.Status, direct.Error)
+	a.Contains(direct.Error, "query_database")
+	info := confirmationErrorInfo(t, direct.RawResponse)
+	a.Equal(auth.MCPConfirmationReason, info.GetReason())
+	a.Equal(map[string]string{"environment": "prod", "schema": ""}, info.GetMetadata())
+	a.Equal(2, f.employeeCount(t))
+
+	explained := callAPIOnSession(ctx, t, running, "SQLService/Query", map[string]any{
+		"name":      f.database,
+		"statement": "INSERT INTO employee VALUES (4, 'explain')",
+		"explain":   true,
+	})
+	a.Equal(http.StatusForbidden, explained.Status, explained.Error)
+	a.Contains(explained.Error, "explains only statements Bytebase can show are reads")
 }
 
 // Export skips statement validation on MySQL, and the driver runs a statement

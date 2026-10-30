@@ -2,14 +2,16 @@ package auth
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/binary"
 	"time"
 )
 
 // MCPConfirmedDecision is the user's decision, confirmed in their MCP client, to
 // make one write. The MCP gate serves the procedures that need one only to a
 // request whose context carries one naming that procedure and the resource the
-// request changes. query_database attaches one for SQLService/Query without
-// asking, until the form that asks lands (BYT-9292).
+// request changes; SQLService/Query checks its own. query_database also
+// attaches one, without asking, when the client cannot show the form.
 type MCPConfirmedDecision struct {
 	// Procedure is the connect procedure confirmed, such as
 	// /bytebase.v1.IssueService/ApproveIssue.
@@ -21,6 +23,29 @@ type MCPConfirmedDecision struct {
 	// user confirmed. The review workflow refuses the decision when it no longer
 	// matches.
 	IssueUpdateTime time.Time
+	// Digest is, for a SQL request, MCPStatementDigest of the request the user
+	// confirmed.
+	Digest []byte
+}
+
+// MCPConfirmationReason and MCPConfirmationDomain name the ErrorInfo
+// SQLService/Query returns for an MCP request that may write and that the user
+// has not confirmed. query_database asks the user when it receives one.
+const (
+	MCPConfirmationReason = "CONFIRMATION_REQUIRED"
+	MCPConfirmationDomain = "bytebase.com"
+)
+
+// MCPStatementDigest identifies the SQL request a user confirms: the statement
+// exactly as sent, the database and the default schema. Each field is length
+// prefixed, so no two requests share a digest by moving text between fields.
+func MCPStatementDigest(statement, database, schema string) []byte {
+	h := sha256.New()
+	for _, field := range []string{statement, database, schema} {
+		_, _ = h.Write(binary.BigEndian.AppendUint64(nil, uint64(len(field))))
+		_, _ = h.Write([]byte(field))
+	}
+	return h.Sum(nil)
 }
 
 // mcpConfirmedDecisionKey is unexported so that only code in this process can
