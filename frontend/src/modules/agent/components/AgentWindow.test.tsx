@@ -660,7 +660,7 @@ describe("AgentWindow", () => {
     unmount();
   });
 
-  test("does not offer a Plan mention without list permission", () => {
+  test("offers a page-detected Plan mention with get permission only", async () => {
     mocks.planPermissions = {
       workspaceList: false,
       workspaceGet: true,
@@ -672,20 +672,27 @@ describe("AgentWindow", () => {
       name: "projects/orders/plans/42",
       project: "projects/orders",
     };
+    mocks.getPlan.mockResolvedValue({
+      name: "projects/orders/plans/42",
+      title: "Review schema",
+      state: State.ACTIVE,
+    });
     const { render, unmount } = renderIntoContainer(<AgentWindow />);
-    render();
+    await act(async () => {
+      render();
+      await Promise.resolve();
+    });
 
-    expect(document.body.querySelector('[data-agent-contextual-mention]')).toBeNull();
-    expect(mocks.getPlan).not.toHaveBeenCalled();
-    expect(document.body.querySelector('[data-agent-contextual-start="plan"]')?.textContent).toContain(
-      "agent.contextual-start.resource-unavailable"
-    );
+    expect(mocks.getPlan).toHaveBeenCalledOnce();
+    expect(document.body.querySelector('[data-agent-contextual-mention]')).toBeInstanceOf(HTMLButtonElement);
     unmount();
   });
 
-  test("offers a Plan mention with project-only list and get permission", async () => {
+  test("offers a page-detected Plan mention with project-only get permission", async () => {
     mocks.planPermissions.workspaceList = false;
     mocks.planPermissions.workspaceGet = false;
+    mocks.planPermissions.projectList = false;
+    mocks.planPermissions.projectGet = true;
     mocks.pageResource = {
       kind: "plan",
       name: "projects/orders/plans/42",

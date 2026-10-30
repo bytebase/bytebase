@@ -234,10 +234,7 @@ export function AgentWindow() {
   const canReferenceContextualResource = useAppStore((state) => {
     if (!contextualStart || contextualStart.kind === "project") return true;
     if (contextualStart.kind === "plan") {
-      if (
-        state.hasWorkspacePermission("bb.plans.list") &&
-        state.hasWorkspacePermission("bb.plans.get")
-      ) {
+      if (state.hasWorkspacePermission("bb.plans.get")) {
         return true;
       }
       if (
@@ -251,10 +248,7 @@ export function AgentWindow() {
       const project =
         state.projectsByName[contextualStart.project] ??
         create(ProjectSchema, { name: contextualStart.project });
-      return (
-        state.hasProjectPermission(project, "bb.plans.list") &&
-        state.hasProjectPermission(project, "bb.plans.get")
-      );
+      return state.hasProjectPermission(project, "bb.plans.get");
     }
     const project = state.projectsByName[contextualStart.project];
     const permission =
