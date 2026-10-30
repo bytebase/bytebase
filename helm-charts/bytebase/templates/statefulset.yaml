@@ -6,6 +6,8 @@
 {{- $data := .Values.bytebase.option.data -}}
 {{- $external_url := index .Values.bytebase.option "external-url" -}}
 {{- $enableJSONLogging := index .Values.bytebase.option "enable-json-logging" -}}
+{{- $ha := .Values.bytebase.option.ha -}}
+{{- $metricsRemoteAccess := index .Values.bytebase.option "metrics-remote-access" -}}
 # bytebase.option.externalPg
 {{- $externalPgURL := .Values.bytebase.option.externalPg.url -}}
 {{- $externalPgExistingPgURLSecret := .Values.bytebase.option.externalPg.existingPgURLSecret -}}
@@ -172,6 +174,12 @@ spec:
               {{ $external_url | quote }} \
               {{- if $enableJSONLogging }}
               --enable-json-logging \
+              {{- end }}
+              {{- if $ha }}
+              --ha \
+              {{- end }}
+              {{- if $metricsRemoteAccess }}
+              --metrics-remote-access \
               {{- end }}
           ports:
             - containerPort: {{ $port }}
