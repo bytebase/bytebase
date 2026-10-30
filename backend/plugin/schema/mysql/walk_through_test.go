@@ -20,6 +20,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/oceanbase"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -135,6 +136,22 @@ func TestWalkThroughSkipsMariaDBOnlyStatements(t *testing.T) {
 	advice := WalkThroughWithContext(context.Background(), schema.WalkThroughContext{RawSQL: statement}, state, base.ExtractASTs(stmts))
 	require.Nil(t, advice)
 	require.Empty(t, state.GetProto().GetSchemas())
+}
+
+// TestWalkThroughCrossDatabaseRenameOnOceanBase pins that this shared walk-through still
+// reads an OceanBase statement. OceanBase parses to omni/oceanbase/ast, which
+// mysqlparser.GetOmniNode rejects, so without walkThroughOmniNode's re-parse
+// mysqlRenameTargetDatabases would collect no target and the simulation would fail a
+// cross-database RENAME that the server accepts.
+func TestWalkThroughCrossDatabaseRenameOnOceanBase(t *testing.T) {
+	state := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Name: "test"}, nil, nil, storepb.Engine_OCEANBASE, true)
+	statement := "CREATE TABLE `test`.`t1` (a INT);\nRENAME TABLE `test`.`t1` TO `other`.`t1`;"
+	sm := sheet.NewManager()
+	stmts, advices := sm.GetStatementsForChecks(storepb.Engine_OCEANBASE, statement)
+	require.Empty(t, advices)
+
+	advice := WalkThroughWithContext(context.Background(), schema.WalkThroughContext{RawSQL: statement}, state, base.ExtractASTs(stmts))
+	require.Nil(t, advice, "a cross-database RENAME the server accepts must not fail the simulation")
 }
 
 // TestWalkThroughSRIDInvisible verifies the omni catalog -> metadatapb.ColumnMetadata
