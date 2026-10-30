@@ -25,6 +25,7 @@ var (
 	sharedTiDB     = startOnce(getTiDBContainer)
 	sharedMongo    = startOnce(getMongoDBContainer)
 	sharedOracle   = startOnce(getOracleContainer)
+	sharedMySQL    = startOnce(GetMySQLContainer)
 	sharedMariaDB  = startOnce(mariaDBStarter("mariadb:11.8.8"))
 	// 10.7 is the oldest MariaDB release Bytebase supports.
 	sharedMariaDB107 = startOnce(mariaDBStarter("mariadb:10.7.8"))
@@ -113,6 +114,10 @@ func SharedMongoDBContainer(t testing.TB) *Container { return shared(t, sharedMo
 // user is a DBA.
 func SharedOracleContainer(t testing.TB) *Container { return shared(t, sharedOracle) }
 
+// SharedMySQLContainer is SharedPgContainer for MySQL 8.0; tests take a
+// database each with NewMySQLDatabase.
+func SharedMySQLContainer(t testing.TB) *Container { return shared(t, sharedMySQL) }
+
 // SharedMariaDBContainer is SharedPgContainer for MariaDB 11.8; tests take a
 // database each with NewMariaDBDatabase.
 func SharedMariaDBContainer(t testing.TB) *Container { return shared(t, sharedMariaDB) }
@@ -158,6 +163,13 @@ func createPgDatabase(t testing.TB, container *Container) (string, *sql.DB) {
 func NewTiDBDatabase(t testing.TB) (*Container, string) {
 	t.Helper()
 	return createMySQLProtocolDatabase(t, SharedTiDBContainer(t))
+}
+
+// NewMySQLDatabase creates an empty database for the test on the shared MySQL
+// container and returns the container with the database's name.
+func NewMySQLDatabase(t testing.TB) (*Container, string) {
+	t.Helper()
+	return createMySQLProtocolDatabase(t, SharedMySQLContainer(t))
 }
 
 // NewMariaDBDatabase creates an empty database for the test on the shared

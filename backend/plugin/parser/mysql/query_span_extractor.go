@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"context"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -25,14 +26,34 @@ type querySpanExtractor struct {
 	// ctes records common table expressions visible to the current select scope.
 	ctes []*base.PseudoTable
 
-	// outerTableSources resolves correlated subquery column references.
-	outerTableSources []base.TableSource
+	// outerScopes resolves correlated subquery column references, innermost last.
+	outerScopes []outerScope
 
 	// tableSourceFrom is the set of table sources visible from the current FROM clause.
 	tableSourceFrom []base.TableSource
 
 	// priorTableInFrom resolves JSON_TABLE document expressions against preceding FROM items.
 	priorTableInFrom []base.TableSource
+
+	// clause, selectItems, groupBy, and inAggregate are the position in the
+	// current SELECT that decides how an unqualified name resolves.
+	clause      clause
+	selectItems []base.QuerySpanResult
+	groupBy     []ast.ExprNode
+	inAggregate bool
+	// inCondition and outputInCondition hide an EXISTS subquery's output,
+	// which decides nothing: inCondition within a condition of this SELECT,
+	// outputInCondition when this query's own output feeds a condition.
+	inCondition       bool
+	outputInCondition bool
+
+	// predicateColumns is shared with the extractors of nested queries.
+	predicateColumns base.SourceColumnSet
+	// ctePredicateColumns holds each CTE's predicate columns until a query
+	// reads the CTE; MySQL never evaluates an unreferenced CTE.
+	ctePredicateColumns map[*base.PseudoTable]base.SourceColumnSet
+	// accessTables are the tables the statement reads, for the name fallback.
+	accessTables base.SourceColumnSet
 
 	viewResolutionStack map[string]bool
 }
@@ -42,6 +63,8 @@ func newQuerySpanExtractor(defaultDatabase string, gCtx base.GetQuerySpanContext
 		defaultDatabase:     defaultDatabase,
 		gCtx:                gCtx,
 		ignoreCaseSensitive: ignoreCaseSensitive,
+		predicateColumns:    make(base.SourceColumnSet),
+		ctePredicateColumns: make(map[*base.PseudoTable]base.SourceColumnSet),
 	}
 }
 
@@ -63,127 +86,95 @@ const (
 	NaturalRightOuterJoin
 )
 
+// joinTableSources returns the columns a join exposes. A column merged by
+// USING or NATURAL is COALESCE(left, right), and in matched rows both sides
+// hold its value, so it carries both sides' sources.
 func joinTableSources(l, r base.TableSource, tp joinType, using []string) base.TableSource {
 	switch tp {
-	case Join, InnerJoin, CrossJoin, StraightJoin, LeftOuterJoin, RightOuterJoin:
-		var columns []base.QuerySpanResult
-		rightFieldsMap := make(map[string]bool)
-		for _, field := range r.GetQuerySpanResult() {
-			rightFieldsMap[strings.ToLower(field.Name)] = true
-		}
-		lowercaseUsingFields := make(map[string]bool)
-		for _, field := range using {
-			lowercaseUsingFields[strings.ToLower(field)] = true
-		}
-		for _, field := range l.GetQuerySpanResult() {
-			columns = append(columns, field)
-			if _, ok := lowercaseUsingFields[strings.ToLower(field.Name)]; ok {
-				delete(rightFieldsMap, strings.ToLower(field.Name))
-			}
-		}
-		for _, field := range r.GetQuerySpanResult() {
-			if _, ok := rightFieldsMap[strings.ToLower(field.Name)]; ok {
-				columns = append(columns, field)
-			}
-		}
-		return &base.PseudoTable{
-			Columns: columns,
-		}
-	case NaturalInnerJoin, NaturalLeftOuterJoin, NaturalRightOuterJoin:
-		rightFieldsMap := make(map[string]bool)
-		for _, field := range r.GetQuerySpanResult() {
-			rightFieldsMap[strings.ToLower(field.Name)] = true
-		}
-		var columns []base.QuerySpanResult
-		for _, field := range l.GetQuerySpanResult() {
-			columns = append(columns, field)
-			delete(rightFieldsMap, strings.ToLower(field.Name))
-		}
-		for _, field := range r.GetQuerySpanResult() {
-			if _, ok := rightFieldsMap[strings.ToLower(field.Name)]; ok {
-				columns = append(columns, field)
-			}
-		}
-		return &base.PseudoTable{
-			Columns: columns,
-		}
+	case Join, InnerJoin, CrossJoin, StraightJoin, LeftOuterJoin, RightOuterJoin,
+		NaturalInnerJoin, NaturalLeftOuterJoin, NaturalRightOuterJoin:
 	default:
 		return nil
 	}
+	joined := make(map[string]bool)
+	for _, name := range joinedColumnNames(l, r, tp, using) {
+		joined[strings.ToLower(name)] = true
+	}
+	rightColumns := r.GetQuerySpanResult()
+	var columns []base.QuerySpanResult
+	for _, field := range l.GetQuerySpanResult() {
+		if joined[strings.ToLower(field.Name)] {
+			if rightField, ok := querySpanResultNamed(rightColumns, field.Name); ok {
+				field.SourceColumns, _ = base.MergeSourceColumnSet(field.SourceColumns, rightField.SourceColumns)
+			}
+		}
+		columns = append(columns, field)
+	}
+	for _, field := range rightColumns {
+		if !joined[strings.ToLower(field.Name)] {
+			columns = append(columns, field)
+		}
+	}
+	return &base.PseudoTable{
+		Columns: columns,
+	}
+}
+
+// joinedColumnNames returns the columns a join merges: the USING list, or for
+// a NATURAL join every column name both sides share.
+func joinedColumnNames(l, r base.TableSource, tp joinType, using []string) []string {
+	switch tp {
+	case NaturalInnerJoin, NaturalLeftOuterJoin, NaturalRightOuterJoin:
+		var names []string
+		rightColumns := r.GetQuerySpanResult()
+		for _, field := range l.GetQuerySpanResult() {
+			if _, ok := querySpanResultNamed(rightColumns, field.Name); ok {
+				names = append(names, field.Name)
+			}
+		}
+		return names
+	default:
+		return using
+	}
+}
+
+func querySpanResultNamed(results []base.QuerySpanResult, name string) (base.QuerySpanResult, bool) {
+	for _, result := range results {
+		if strings.EqualFold(result.Name, name) {
+			return result, true
+		}
+	}
+	return base.QuerySpanResult{}, false
 }
 
 func (q *querySpanExtractor) getAllTableColumnSources(databaseName, tableName string) ([]base.QuerySpanResult, bool) {
-	findInTableSource := func(tableSource base.TableSource) ([]base.QuerySpanResult, bool) {
-		if q.ignoreCaseSensitive {
-			if databaseName != "" && !strings.EqualFold(databaseName, tableSource.GetDatabaseName()) {
-				return nil, false
+	for _, tables := range q.tableScopes() {
+		for i := len(tables) - 1; i >= 0; i-- {
+			if q.tableSourceMatches(tables[i], databaseName, tableName) {
+				return tables[i].GetQuerySpanResult(), true
 			}
-			if tableName != "" && !strings.EqualFold(tableName, tableSource.GetTableName()) {
-				return nil, false
-			}
-		} else {
-			if databaseName != "" && databaseName != tableSource.GetDatabaseName() {
-				return nil, false
-			}
-			if tableName != "" && tableName != tableSource.GetTableName() {
-				return nil, false
-			}
-		}
-		return tableSource.GetQuerySpanResult(), true
-	}
-
-	for i := len(q.outerTableSources) - 1; i >= 0; i-- {
-		if querySpanResult, ok := findInTableSource(q.outerTableSources[i]); ok {
-			return querySpanResult, true
-		}
-	}
-	for i := len(q.tableSourceFrom) - 1; i >= 0; i-- {
-		if querySpanResult, ok := findInTableSource(q.tableSourceFrom[i]); ok {
-			return querySpanResult, true
 		}
 	}
 	return nil, false
 }
 
+// getFieldColumnSource resolves a column reference as MySQL does: the current
+// SELECT first, by the rules of the clause the reference is in, then each
+// enclosing SELECT outward, its tables before the select list it exposes.
 func (q *querySpanExtractor) getFieldColumnSource(databaseName, tableName, fieldName string) (base.SourceColumnSet, error) {
 	databaseName = q.filterClusterName(databaseName)
-	findInTableSource := func(tableSource base.TableSource) (base.SourceColumnSet, bool) {
-		if q.ignoreCaseSensitive {
-			if databaseName != "" && !strings.EqualFold(databaseName, tableSource.GetDatabaseName()) {
-				return nil, false
-			}
-			if tableName != "" && !strings.EqualFold(tableName, tableSource.GetTableName()) {
-				return nil, false
-			}
-		} else {
-			if databaseName != "" && databaseName != tableSource.GetDatabaseName() {
-				return nil, false
-			}
-			if tableName != "" && tableName != tableSource.GetTableName() {
-				return nil, false
-			}
-		}
-		for _, column := range tableSource.GetQuerySpanResult() {
-			if strings.EqualFold(column.Name, fieldName) {
-				return column.SourceColumns, true
-			}
-		}
-		return nil, false
+	if sourceColumnSet, ok := q.resolveInCurrentSelect(databaseName, tableName, fieldName); ok {
+		return sourceColumnSet, nil
 	}
-
-	for i := len(q.outerTableSources) - 1; i >= 0; i-- {
-		if sourceColumnSet, ok := findInTableSource(q.outerTableSources[i]); ok {
+	for i := len(q.outerScopes) - 1; i >= 0; i-- {
+		scope := q.outerScopes[i]
+		if sourceColumnSet, ok := q.findColumnInTables(scope.tables, databaseName, tableName, fieldName); ok {
 			return sourceColumnSet, nil
 		}
-	}
-	for i := len(q.tableSourceFrom) - 1; i >= 0; i-- {
-		if sourceColumnSet, ok := findInTableSource(q.tableSourceFrom[i]); ok {
-			return sourceColumnSet, nil
-		}
-	}
-	for i := len(q.priorTableInFrom) - 1; i >= 0; i-- {
-		if sourceColumnSet, ok := findInTableSource(q.priorTableInFrom[i]); ok {
-			return sourceColumnSet, nil
+		if databaseName == "" && tableName == "" {
+			if sourceColumnSet, ok := selectItemsNamed(scope.items, fieldName); ok {
+				return sourceColumnSet, nil
+			}
 		}
 	}
 
@@ -192,6 +183,50 @@ func (q *querySpanExtractor) getFieldColumnSource(databaseName, tableName, field
 		Table:    &tableName,
 		Column:   &fieldName,
 	}
+}
+
+// tableScopes returns the table sources a name can resolve to, nearest first.
+func (q *querySpanExtractor) tableScopes() [][]base.TableSource {
+	scopes := [][]base.TableSource{q.tableSourceFrom, q.priorTableInFrom}
+	for i := len(q.outerScopes) - 1; i >= 0; i-- {
+		scopes = append(scopes, q.outerScopes[i].tables)
+	}
+	return scopes
+}
+
+func (q *querySpanExtractor) tableSourceMatches(tableSource base.TableSource, databaseName, tableName string) bool {
+	if q.ignoreCaseSensitive {
+		if databaseName != "" && !strings.EqualFold(databaseName, tableSource.GetDatabaseName()) {
+			return false
+		}
+		if tableName != "" && !strings.EqualFold(tableName, tableSource.GetTableName()) {
+			return false
+		}
+		return true
+	}
+	if databaseName != "" && databaseName != tableSource.GetDatabaseName() {
+		return false
+	}
+	if tableName != "" && tableName != tableSource.GetTableName() {
+		return false
+	}
+	return true
+}
+
+// findColumnInTables searches tables last to first, so a join's merged
+// columns, appended after its operands, win for an unqualified name.
+func (q *querySpanExtractor) findColumnInTables(tables []base.TableSource, databaseName, tableName, fieldName string) (base.SourceColumnSet, bool) {
+	for i := len(tables) - 1; i >= 0; i-- {
+		if !q.tableSourceMatches(tables[i], databaseName, tableName) {
+			continue
+		}
+		for _, column := range tables[i].GetQuerySpanResult() {
+			if strings.EqualFold(column.Name, fieldName) {
+				return column.SourceColumns, true
+			}
+		}
+	}
+	return nil, false
 }
 
 func (q *querySpanExtractor) filterClusterName(databaseName string) string {
@@ -209,6 +244,7 @@ func (q *querySpanExtractor) findTableSchema(databaseName, tableName string) (ba
 		for i := len(q.ctes) - 1; i >= 0; i-- {
 			table := q.ctes[i]
 			if table.Name == tableName {
+				mergeSourceColumnSetInto(q.predicateColumns, q.ctePredicateColumns[table])
 				return table, nil
 			}
 		}
@@ -434,7 +470,9 @@ func (q *omniQuerySpanExtractor) getOmniQuerySpan(ctx context.Context, statement
 	explainAnalyze := isExplain && explain.Analyze
 
 	var results []base.QuerySpanResult
+	predicateColumns := base.SourceColumnSet{}
 	if queryType == base.Select {
+		q.accessTables = accessTables
 		tableSource, err := q.extractOmniSelectRoot(root)
 		if err != nil {
 			var resourceNotFound *base.ResourceNotFoundError
@@ -443,20 +481,21 @@ func (q *omniQuerySpanExtractor) getOmniQuerySpan(ctx context.Context, statement
 					Type:             base.Select,
 					SourceColumns:    accessTables,
 					Results:          []base.QuerySpanResult{},
-					PredicateColumns: base.SourceColumnSet{},
+					PredicateColumns: q.predicateColumns,
 					NotFoundError:    resourceNotFound,
 				}, nil
 			}
 			return nil, err
 		}
 		results = tableSource.GetQuerySpanResult()
+		predicateColumns = q.predicateColumns
 	}
 	return &base.QuerySpan{
 		Type:             queryType,
 		ExplainAnalyze:   explainAnalyze,
 		SourceColumns:    accessTables,
 		Results:          results,
-		PredicateColumns: base.SourceColumnSet{},
+		PredicateColumns: predicateColumns,
 	}, nil
 }
 
@@ -465,6 +504,9 @@ func (q *omniQuerySpanExtractor) extractOmniSelectRoot(root ast.Node) (*base.Pse
 	case *ast.SelectStmt:
 		return q.extractOmniSelectStmt(n)
 	case *ast.ExplainStmt:
+		if n.Analyze {
+			q.collectExplainedQueryColumns(n.Stmt)
+		}
 		return &base.PseudoTable{}, nil
 	case *ast.TableStmt:
 		return q.extractOmniTableStmt(n)
@@ -486,38 +528,74 @@ func (q *omniQuerySpanExtractor) extractOmniSelectStmt(stmt *ast.SelectStmt) (*b
 	originalTableSourceFrom := q.tableSourceFrom
 	originalPriorLength := len(q.priorTableInFrom)
 	originalCTELength := len(q.ctes)
+	originalPosition := q.position()
 	defer func() {
 		q.tableSourceFrom = originalTableSourceFrom
 		q.priorTableInFrom = q.priorTableInFrom[:originalPriorLength]
 		q.ctes = q.ctes[:originalCTELength]
+		q.setPosition(originalPosition)
 	}()
+	q.setPosition(selectPosition{})
 
 	if err := q.processOmniCTEs(stmt.CTEs); err != nil {
 		return nil, err
 	}
-	if inner := stmt.ParenSource; inner != nil {
-		return q.extractOmniSelectStmt(inner)
+	var table *base.PseudoTable
+	var err error
+	switch {
+	case stmt.ParenSource != nil:
+		table, err = q.extractOmniSelectStmt(stmt.ParenSource)
+	case stmt.TableSource != nil:
+		table, err = q.extractOmniTableStmt(stmt.TableSource)
+	case stmt.ValuesSource != nil:
+		table, err = q.extractOmniValuesStmt(stmt.ValuesSource)
+	case stmt.SetOp != ast.SetOpNone:
+		table, err = q.extractOmniSetOp(stmt)
+	default:
+		return q.extractOmniQuerySpecification(stmt)
 	}
-	if tableStmt := stmt.TableSource; tableStmt != nil {
-		return q.extractOmniTableStmt(tableStmt)
+	if err != nil {
+		return nil, err
 	}
-	if valuesStmt := stmt.ValuesSource; valuesStmt != nil {
-		return q.extractOmniValuesStmt(valuesStmt)
-	}
-	if stmt.SetOp != ast.SetOpNone {
-		return q.extractOmniSetOp(stmt)
-	}
+	// The ORDER BY and LIMIT written after a parenthesized query, a TABLE or
+	// VALUES primary, or a set operation belong to the wrapper.
+	q.selectItems = table.GetQuerySpanResult()
+	q.collectTrailingClauses(stmt.OrderBy, stmt.Limit)
+	return table, nil
+}
 
+// extractOmniQuerySpecification extracts a SELECT ... FROM ... block,
+// recording the columns its conditions read as it resolves each clause.
+func (q *omniQuerySpanExtractor) extractOmniQuerySpecification(stmt *ast.SelectStmt) (*base.PseudoTable, error) {
+	q.clause = clauseFrom
 	fromSources, err := q.extractOmniTableSources(stmt.From)
 	if err != nil {
 		return nil, err
 	}
 	q.tableSourceFrom = append(q.tableSourceFrom, fromSources...)
 
+	q.clause = clauseWhere
+	q.collectConditionColumns(stmt.Where)
+
+	q.clause = clauseSelectList
 	results, err := q.extractOmniTargetList(stmt.TargetList, fromSources)
 	if err != nil {
 		return nil, err
 	}
+	q.selectItems = results
+
+	q.groupBy = stmt.GroupBy
+	q.clause = clauseGroupBy
+	for _, expr := range stmt.GroupBy {
+		q.collectNestedQueryColumns(expr)
+	}
+	q.clause = clauseHaving
+	q.collectConditionColumns(stmt.Having)
+	q.clause = clauseOrderBy
+	for _, window := range stmt.WindowClause {
+		q.collectNestedQueryColumns(window)
+	}
+	q.collectTrailingClauses(stmt.OrderBy, stmt.Limit)
 	return &base.PseudoTable{
 		Columns: results,
 	}, nil
@@ -534,21 +612,36 @@ func (q *omniQuerySpanExtractor) extractOmniTableStmt(stmt *ast.TableStmt) (*bas
 	if err != nil {
 		return nil, err
 	}
+	q.selectItems = tableSource.GetQuerySpanResult()
+	q.collectTrailingClauses(stmt.OrderBy, stmt.Limit)
 	return &base.PseudoTable{Columns: tableSource.GetQuerySpanResult()}, nil
 }
 
+// extractOmniValuesStmt merges every row into its column, since each row is
+// returned.
 func (q *omniQuerySpanExtractor) extractOmniValuesStmt(stmt *ast.ValuesStmt) (*base.PseudoTable, error) {
 	if stmt == nil || len(stmt.Rows) == 0 {
 		return &base.PseudoTable{}, nil
 	}
 	var columns []base.QuerySpanResult
-	for _, expr := range stmt.Rows[0] {
-		field, err := q.extractOmniExpr(expr)
-		if err != nil {
-			return nil, err
+	for i, row := range stmt.Rows {
+		for j, expr := range row {
+			field, err := q.extractOmniExpr(expr)
+			if err != nil {
+				return nil, err
+			}
+			if i == 0 {
+				columns = append(columns, field)
+				continue
+			}
+			if j < len(columns) {
+				columns[j].SourceColumns, _ = base.MergeSourceColumnSet(columns[j].SourceColumns, field.SourceColumns)
+				columns[j].IsPlainField = columns[j].IsPlainField && field.IsPlainField
+			}
 		}
-		columns = append(columns, field)
 	}
+	q.selectItems = columns
+	q.collectTrailingClauses(stmt.OrderBy, stmt.Limit)
 	return &base.PseudoTable{Columns: columns}, nil
 }
 
@@ -569,9 +662,15 @@ func (q *omniQuerySpanExtractor) extractOmniSetOp(stmt *ast.SelectStmt) (*base.P
 	if len(leftResults) != len(rightResults) {
 		return nil, errors.Errorf("MySQL UNION operator left has %d fields, right has %d fields", len(leftResults), len(rightResults))
 	}
+	// INTERSECT and EXCEPT keep a row by whether the other branch has it, so
+	// both branches' output decides which rows come back.
+	filters := stmt.SetOp == ast.SetOpIntersect || stmt.SetOp == ast.SetOpExcept
 	results := make([]base.QuerySpanResult, 0, len(leftResults))
 	for i := range leftResults {
 		sourceColumns, _ := base.MergeSourceColumnSet(leftResults[i].SourceColumns, rightResults[i].SourceColumns)
+		if filters {
+			mergeSourceColumnSetInto(q.predicateColumns, sourceColumns)
+		}
 		results = append(results, base.QuerySpanResult{
 			Name:          leftResults[i].Name,
 			SourceColumns: sourceColumns,
@@ -581,13 +680,20 @@ func (q *omniQuerySpanExtractor) extractOmniSetOp(stmt *ast.SelectStmt) (*base.P
 	return &base.PseudoTable{Columns: results}, nil
 }
 
+// processOmniCTEs extracts each CTE into its own predicate set, which
+// findTableSchema merges into the reading query's.
 func (q *omniQuerySpanExtractor) processOmniCTEs(ctes []*ast.CommonTableExpr) error {
 	for _, cte := range ctes {
+		readerPredicateColumns := q.predicateColumns
+		q.predicateColumns = make(base.SourceColumnSet)
 		tableSource, err := q.extractOmniCTE(cte)
+		ctePredicateColumns := q.predicateColumns
+		q.predicateColumns = readerPredicateColumns
 		if err != nil {
 			return err
 		}
 		if tableSource != nil {
+			q.ctePredicateColumns[tableSource] = ctePredicateColumns
 			q.ctes = append(q.ctes, tableSource)
 		}
 	}
@@ -743,6 +849,8 @@ func (q *omniQuerySpanExtractor) extractOmniJSONTable(expr *ast.JsonTableExpr) (
 	if err != nil {
 		return nil, err
 	}
+	// JSON_TABLE returns a row per match in the document.
+	mergeSourceColumnSetInto(q.predicateColumns, field.SourceColumns)
 	var columns []base.QuerySpanResult
 	for _, column := range flattenOmniJSONTableColumns(expr.Columns) {
 		columns = append(columns, base.QuerySpanResult{
@@ -789,10 +897,26 @@ func (q *omniQuerySpanExtractor) extractOmniJoin(join *ast.JoinClause) (base.Tab
 	}
 
 	var using []string
-	if condition, ok := join.Condition.(*ast.UsingCondition); ok && condition != nil {
-		using = condition.Columns
+	switch condition := join.Condition.(type) {
+	case *ast.OnCondition:
+		if condition != nil {
+			q.collectConditionColumns(condition.Expr)
+		}
+	case *ast.UsingCondition:
+		if condition != nil {
+			using = condition.Columns
+		}
+	default:
 	}
-	return joinTableSources(left, right, omniJoinType(join.Type), using), nil
+	tp := omniJoinType(join.Type)
+	if left != nil && right != nil {
+		// USING and NATURAL compare the joined columns of both sides.
+		for _, name := range joinedColumnNames(left, right, tp, using) {
+			q.recordJoinedColumn(left, name)
+			q.recordJoinedColumn(right, name)
+		}
+	}
+	return joinTableSources(left, right, tp, using), nil
 }
 
 func omniJoinType(joinType ast.JoinType) joinType {
@@ -822,10 +946,14 @@ func (q *omniQuerySpanExtractor) extractOmniSubquery(expr *ast.SubqueryExpr) (*b
 	if expr == nil {
 		return &base.PseudoTable{}, nil
 	}
-	subqueryExtractor := q.cloneOmniForSubquery()
+	// A derived table cannot see the FROM clause it sits in unless it is
+	// LATERAL, and then only the items before it: earlier FROM items, and the
+	// operands extractOmniJoin has already added for the join it is in.
+	scope := outerScope{}
 	if expr.Lateral {
-		subqueryExtractor.outerTableSources = append(subqueryExtractor.outerTableSources, q.priorTableInFrom...)
+		scope.tables = slices.Concat(q.tableSourceFrom, q.priorTableInFrom)
 	}
+	subqueryExtractor := q.cloneOmniWithScope(scope)
 	tableSource, err := subqueryExtractor.extractOmniSelectStmt(expr.Select)
 	if err != nil {
 		return nil, err
@@ -848,16 +976,37 @@ func (q *omniQuerySpanExtractor) extractOmniSubquery(expr *ast.SubqueryExpr) (*b
 	}, nil
 }
 
+// cloneOmniForSubquery returns the extractor for a query nested in an
+// expression of the current SELECT, which sees its tables and, where MySQL
+// allows, its select list.
 func (q *omniQuerySpanExtractor) cloneOmniForSubquery() *omniQuerySpanExtractor {
+	return q.cloneOmniWithScope(outerScope{
+		tables: slices.Concat(q.tableSourceFrom, q.priorTableInFrom),
+		items:  q.selectItemsVisibleToSubquery(),
+	})
+}
+
+// cloneOmniWithScope returns an extractor for a nested query that sees scope
+// as its nearest enclosing SELECT. The nested query records its predicate
+// columns into the same set.
+func (q *omniQuerySpanExtractor) cloneOmniWithScope(scope outerScope) *omniQuerySpanExtractor {
+	outerScopes := slices.Clone(q.outerScopes)
+	if len(scope.tables) > 0 || len(scope.items) > 0 {
+		outerScopes = append(outerScopes, scope)
+	}
 	return &omniQuerySpanExtractor{
 		querySpanExtractor: &querySpanExtractor{
 			ctx:                 q.ctx,
 			defaultDatabase:     q.defaultDatabase,
 			gCtx:                q.gCtx,
 			ctes:                q.ctes,
-			outerTableSources:   append(q.outerTableSources, q.tableSourceFrom...),
+			outerScopes:         outerScopes,
 			tableSourceFrom:     []base.TableSource{},
 			ignoreCaseSensitive: q.ignoreCaseSensitive,
+			outputInCondition:   q.inCondition || q.outputInCondition,
+			predicateColumns:    q.predicateColumns,
+			ctePredicateColumns: q.ctePredicateColumns,
+			accessTables:        q.accessTables,
 			viewResolutionStack: cloneViewResolutionStack(q.viewResolutionStack),
 		},
 		source: q.source,
@@ -904,6 +1053,8 @@ func (q *omniQuerySpanExtractor) extractOmniTargetList(targets []ast.ExprNode, f
 		default:
 		}
 
+		// A subquery in this item can name the items before it.
+		q.selectItems = result
 		field, err := q.extractOmniTarget(target)
 		if err != nil {
 			return nil, err
@@ -999,7 +1150,13 @@ func (q *omniQuerySpanExtractor) extractOmniExpr(expr ast.ExprNode) (base.QueryS
 				}
 			}
 		}
+		// HAVING resolves the arguments of an aggregate like a GROUP BY name.
+		inAggregate := q.inAggregate
+		if q.clause == clauseHaving && e.Over == nil && isAggregateFunction(e.Name) {
+			q.inAggregate = true
+		}
 		sourceColumns, err := q.mergeOmniExprSources(exprs...)
+		q.inAggregate = inAggregate
 		if err != nil {
 			return base.QuerySpanResult{}, err
 		}
@@ -1014,6 +1171,10 @@ func (q *omniQuerySpanExtractor) extractOmniExpr(expr ast.ExprNode) (base.QueryS
 		sourceColumns, _, err := q.extractOmniSelectSourceColumns(e.Select)
 		if err != nil {
 			return base.QuerySpanResult{}, err
+		}
+		if q.inCondition || q.outputInCondition {
+			// EXISTS reports whether a row comes back, not what the row holds.
+			sourceColumns = base.SourceColumnSet{}
 		}
 		return base.QuerySpanResult{Name: q.omniExprName(e), SourceColumns: sourceColumns, IsPlainField: false}, nil
 	case *ast.CaseExpr:
