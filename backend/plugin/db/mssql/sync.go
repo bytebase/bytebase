@@ -96,6 +96,16 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMe
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get triggers from database %q", d.databaseName)
 	}
+	synonymMap, err := getSynonyms(txn)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get synonyms from database %q", d.databaseName)
+	}
+	// Changes run as the user that syncs, so this is where their unqualified
+	// names land.
+	var defaultSchema string
+	if err := txn.QueryRow("SELECT SCHEMA_NAME()").Scan(&defaultSchema); err != nil {
+		return nil, errors.Wrapf(err, "failed to get the default schema of database %q", d.databaseName)
+	}
 	for schemaName, tables := range tableMap {
 		for i := range tables {
 			table := tables[i]
@@ -118,7 +128,8 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMe
 	}
 
 	databaseMetadata := &metadatapb.DatabaseSchemaMetadata{
-		Name: d.databaseName,
+		Name:          d.databaseName,
+		DefaultSchema: defaultSchema,
 	}
 	for _, schemaName := range schemaNames {
 		databaseMetadata.Schemas = append(databaseMetadata.Schemas, &metadatapb.SchemaMetadata{
@@ -128,9 +139,50 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMe
 			Sequences:  sequenceMap[schemaName],
 			Functions:  functionMap[schemaName],
 			Procedures: procedureMap[schemaName],
+			Synonyms:   synonymMap[schemaName],
 		})
 	}
 	return databaseMetadata, nil
+}
+
+// getSynonyms gets the synonyms of a database by schema, with the parts of
+// the name each stands for.
+func getSynonyms(txn *sql.Tx) (map[string][]*metadatapb.SynonymMetadata, error) {
+	query := `
+		SELECT
+			SCHEMA_NAME(schema_id),
+			name,
+			PARSENAME(base_object_name, 4),
+			PARSENAME(base_object_name, 3),
+			PARSENAME(base_object_name, 2),
+			PARSENAME(base_object_name, 1)
+		FROM sys.synonyms
+		ORDER BY SCHEMA_NAME(schema_id), name`
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	defer rows.Close()
+
+	synonymMap := make(map[string][]*metadatapb.SynonymMetadata)
+	for rows.Next() {
+		var schemaName, name string
+		var server, database, targetSchema, targetName sql.NullString
+		if err := rows.Scan(&schemaName, &name, &server, &database, &targetSchema, &targetName); err != nil {
+			return nil, err
+		}
+		synonymMap[schemaName] = append(synonymMap[schemaName], &metadatapb.SynonymMetadata{
+			Name:           name,
+			TargetServer:   server.String,
+			TargetDatabase: database.String,
+			TargetSchema:   targetSchema.String,
+			TargetName:     targetName.String,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	return synonymMap, nil
 }
 
 func getSchemas(txn *sql.Tx) ([]string, error) {

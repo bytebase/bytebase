@@ -7,11 +7,14 @@ import (
 
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	_ "github.com/microsoft/go-mssqldb"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
 // TestSyncUniqueIndex covers which synced indexes carry Unique. SQL Server
@@ -570,4 +573,59 @@ func requireGridLevels(t *testing.T, index *metadatapb.IndexMetadata, level1, le
 		densities[level.Level] = level.Density
 	}
 	require.Equal(t, map[int32]string{1: level1, 2: level2, 3: level3, 4: level4}, densities)
+}
+
+func TestSyncDefaultSchemaAndSynonyms(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	container := testcontainer.SharedMSSQLContainer(t)
+
+	driver := newSyncTestDatabase(ctx, t, container)
+	executeBatches(ctx, t, driver, `
+CREATE SCHEMA app;
+GO
+CREATE SYNONYM dbo.s1 FOR obj3;
+CREATE SYNONYM dbo.s4 FOR srv1.db1.sch1.obj1;
+CREATE SYNONYM app.s2 FOR sch2.obj2;
+GO
+`)
+
+	metadata, err := driver.SyncDBSchema(ctx)
+	require.NoError(t, err)
+	require.Equal(t, "dbo", metadata.DefaultSchema)
+	synonyms := make(map[string][]*metadatapb.SynonymMetadata)
+	for _, schema := range metadata.Schemas {
+		synonyms[schema.Name] = schema.Synonyms
+	}
+	require.Empty(t, cmp.Diff(map[string][]*metadatapb.SynonymMetadata{
+		"dbo": {
+			{Name: "s1", TargetName: "obj3"},
+			{Name: "s4", TargetServer: "srv1", TargetDatabase: "db1", TargetSchema: "sch1", TargetName: "obj1"},
+		},
+		"app": {{Name: "s2", TargetSchema: "sch2", TargetName: "obj2"}},
+	}, synonyms, protocmp.Transform(), cmpopts.EquateEmpty()))
+
+	// A user that is not sysadmin syncs its own default schema.
+	login := driver.databaseName + "_login"
+	const password = "Test123!login"
+	_, err = container.GetDB().ExecContext(ctx, "CREATE LOGIN ["+login+"] WITH PASSWORD = '"+password+"', CHECK_POLICY = OFF")
+	require.NoError(t, err)
+	t.Cleanup(func() { _, _ = container.GetDB().ExecContext(context.Background(), "DROP LOGIN ["+login+"]") })
+	executeBatches(ctx, t, driver, "CREATE USER ["+login+"] FOR LOGIN ["+login+"] WITH DEFAULT_SCHEMA = app;\nALTER ROLE db_owner ADD MEMBER ["+login+"];")
+	opened, err := (&Driver{}).Open(ctx, storepb.Engine_MSSQL, db.ConnectionConfig{
+		DataSource: &storepb.DataSource{
+			Type:     storepb.DataSourceType_ADMIN,
+			Username: login,
+			Host:     container.GetHost(),
+			Port:     container.GetPort(),
+			Database: driver.databaseName,
+		},
+		Password:          password,
+		ConnectionContext: db.ConnectionContext{DatabaseName: driver.databaseName},
+	})
+	require.NoError(t, err)
+	defer opened.Close(ctx)
+	metadata, err = opened.SyncDBSchema(ctx)
+	require.NoError(t, err)
+	require.Equal(t, "app", metadata.DefaultSchema)
 }
