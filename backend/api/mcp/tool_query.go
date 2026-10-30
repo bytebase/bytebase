@@ -12,7 +12,9 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common/permission"
+	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 )
 
 const (
@@ -233,7 +235,13 @@ func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, i
 	if input.Container != "" {
 		body["container"] = input.Container
 	}
-	resp, err := s.apiRequest(ctx, "/bytebase.v1.SQLService/Query", body)
+	// Query routes a statement that may write as a write only for a request this
+	// mark names.
+	ctx = auth.WithMCPConfirmedDecision(ctx, auth.MCPConfirmedDecision{
+		Procedure: v1connect.SQLServiceQueryProcedure,
+		Resource:  resolved.resourceName,
+	})
+	resp, err := s.apiRequest(ctx, v1connect.SQLServiceQueryProcedure, body)
 	if err != nil {
 		// The call can end partway through a batch, as when queryTimeout passes.
 		return nil, &toolError{

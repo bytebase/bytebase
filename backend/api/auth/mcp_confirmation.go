@@ -8,7 +8,8 @@ import (
 // MCPConfirmedDecision is the user's decision, confirmed in their MCP client, to
 // make one write. The MCP gate serves the procedures that need one only to a
 // request whose context carries one naming that procedure and the resource the
-// request changes.
+// request changes. query_database attaches one for SQLService/Query without
+// asking, until the form that asks lands (BYT-9292).
 type MCPConfirmedDecision struct {
 	// Procedure is the connect procedure confirmed, such as
 	// /bytebase.v1.IssueService/ApproveIssue.
@@ -26,7 +27,7 @@ type MCPConfirmedDecision struct {
 // set the value; nothing a request carries can.
 type mcpConfirmedDecisionKey struct{}
 
-// WithMCPConfirmedDecision marks ctx as carrying a decision the user confirmed.
+// WithMCPConfirmedDecision marks ctx as carrying decision.
 func WithMCPConfirmedDecision(ctx context.Context, decision MCPConfirmedDecision) context.Context {
 	return context.WithValue(ctx, mcpConfirmedDecisionKey{}, decision)
 }
