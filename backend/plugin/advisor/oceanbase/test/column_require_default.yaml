@@ -1,0 +1,105 @@
+- statement: |-
+    CREATE TABLE t(
+      a bigint(20) unsigned not null,
+      b varchar(50) not null unique,
+      primary key (a)
+    );
+  want:
+    - status: 2
+      code: 420
+      title: COLUMN_REQUIRE_DEFAULT
+      content: Column `t`.`b` doesn't have DEFAULT.
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(
+      a int auto_increment primary key,
+      b int default 1,
+      c varchar(255) default 'default value',
+      d blob,
+      e json,
+      f geometry
+    );
+- statement: |-
+    CREATE TABLE t(
+      a geometry,
+      b point,
+      c linestring,
+      d polygon,
+      e multipoint,
+      f multilinestring,
+      g multipolygon,
+      h geometrycollection
+    );
+- statement: |-
+    CREATE TABLE t1(
+      a int primary key
+    );
+    CREATE TABLE t2(
+      a int auto_increment primary key
+    );
+- statement: |-
+    CREATE TABLE t(
+      a int,
+      b int default 1
+    )
+  want:
+    - status: 2
+      code: 420
+      title: COLUMN_REQUIRE_DEFAULT
+      content: Column `t`.`a` doesn't have DEFAULT.
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE tech_book ADD COLUMN a BLOB;
+    ALTER TABLE tech_book ADD COLUMN b timestamp;
+    ALTER TABLE tech_book MODIFY COLUMN a varchar(220);
+  want:
+    - status: 2
+      code: 420
+      title: COLUMN_REQUIRE_DEFAULT
+      content: Column `tech_book`.`b` doesn't have DEFAULT.
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 420
+      title: COLUMN_REQUIRE_DEFAULT
+      content: Column `tech_book`.`a` doesn't have DEFAULT.
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: ALTER TABLE tech_book ADD COLUMN (a BLOB, b timestamp);
+  want:
+    - status: 2
+      code: 420
+      title: COLUMN_REQUIRE_DEFAULT
+      content: Column `tech_book`.`b` doesn't have DEFAULT.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE tech_book ADD COLUMN a VARCHAR(255) DEFAULT 'default value';
+    ALTER TABLE tech_book MODIFY COLUMN a char(25) DEFAULT 'default';
+    ALTER TABLE tech_book CHANGE COLUMN a b int;
+  want:
+    - status: 2
+      code: 420
+      title: COLUMN_REQUIRE_DEFAULT
+      content: Column `tech_book`.`b` doesn't have DEFAULT.
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(
+      id int,
+      PRIMARY KEY (id)
+    )

@@ -1,0 +1,28 @@
+- statement: CREATE TABLE t(a int);
+- statement: CREATE TABLE t(a int auto_increment) auto_increment = 20;
+- statement: |-
+    CREATE TABLE t1(a int auto_increment) auto_increment = 20;
+    CREATE TABLE t2(a int auto_increment) auto_increment = 2;
+  want:
+    - status: 2
+      code: 416
+      title: COLUMN_AUTO_INCREMENT_INITIAL_VALUE
+      content: The initial auto-increment value in table `t2` is 2, which doesn't equal 20
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(a int auto_increment) auto_increment = 20;
+    ALTER TABLE t COMMENT 'table t';
+    ALTER TABLE t AUTO_INCREMENT = 20;
+    ALTER TABLE t AUTO_INCREMENT = 100;
+  want:
+    - status: 2
+      code: 416
+      title: COLUMN_AUTO_INCREMENT_INITIAL_VALUE
+      content: The initial auto-increment value in table `t` is 100, which doesn't equal 20
+      startposition:
+        line: 4
+        column: 0
+      endposition: null

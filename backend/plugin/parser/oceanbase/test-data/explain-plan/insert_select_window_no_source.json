@@ -1,0 +1,1 @@
+{"query_block":{"select_id":1,"cost_info":{"query_cost":"145.26"},"table":{"insert":true,"select_id":1,"table_name":"t2","access_type":"ALL"}}}

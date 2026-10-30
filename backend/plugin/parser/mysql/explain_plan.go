@@ -171,47 +171,6 @@ func CapAffectedRowsByLimit(stmt ast.Node, rows float64) int64 {
 	return count
 }
 
-// EstimateAffectedRowsFromOceanBaseExplainJSON returns the EST.ROWS estimate from OceanBase
-// `EXPLAIN FORMAT=JSON` output: the root operator's, or the largest child operator's when the
-// root has no operator.
-func EstimateAffectedRowsFromOceanBaseExplainJSON(plan string) (int64, error) {
-	var root map[string]any
-	if err := json.Unmarshal([]byte(plan), &root); err != nil {
-		return 0, errors.Wrap(err, "failed to parse EXPLAIN FORMAT=JSON output")
-	}
-	if operator, ok := root["OPERATOR"].(string); ok && operator != "" {
-		rows, ok := planNumber(root["EST.ROWS"])
-		if !ok {
-			return 0, errors.Errorf("operator %q has no EST.ROWS", operator)
-		}
-		return common.RoundRows(rows), nil
-	}
-	var maxRows float64
-	found := false
-	for key, value := range root {
-		child, ok := value.(map[string]any)
-		if !ok || !strings.HasPrefix(key, "CHILD_") {
-			continue
-		}
-		operator, ok := child["OPERATOR"].(string)
-		if !ok || operator == "" {
-			continue
-		}
-		rows, ok := planNumber(child["EST.ROWS"])
-		if !ok {
-			return 0, errors.Errorf("operator %q has no EST.ROWS", operator)
-		}
-		if !found || rows > maxRows {
-			maxRows = rows
-			found = true
-		}
-	}
-	if !found {
-		return 0, errors.New("the plan has no operator")
-	}
-	return common.RoundRows(maxRows), nil
-}
-
 // queryBlockRows returns the planner's estimate of the rows a query block produces. A UNION sums its
 // branches, an INTERSECT takes the fewest, and an EXCEPT, or a parenthesized query with its own
 // ORDER BY or LIMIT, takes its first.

@@ -1,0 +1,25 @@
+- statement: INSERT INTO tech_book VALUES(1, "a");
+- statement: |-
+    INSERT INTO tech_book VALUES(1, "a");
+    INSERT INTO tech_book SELECT * FROM tech_book ORDER BY rand();
+  want:
+    - status: 2
+      code: 1108
+      title: STATEMENT_INSERT_DISALLOW_ORDER_BY_RAND
+      content: '"INSERT INTO tech_book SELECT * FROM tech_book ORDER BY rand();" uses ORDER BY RAND in the INSERT statement'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    INSERT INTO tech_book VALUES(1, "a");
+    INSERT INTO tech_book SELECT * FROM tech_book ORDER BY RAND() LIMIT 1;
+  want:
+    - status: 2
+      code: 1108
+      title: STATEMENT_INSERT_DISALLOW_ORDER_BY_RAND
+      content: '"INSERT INTO tech_book SELECT * FROM tech_book ORDER BY RAND() LIMIT 1;" uses ORDER BY RAND in the INSERT statement'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null

@@ -14,7 +14,6 @@ import (
 
 func init() {
 	base.RegisterDiagnoseFunc(storepb.Engine_MYSQL, Diagnose)
-	base.RegisterDiagnoseFunc(storepb.Engine_OCEANBASE, Diagnose)
 	base.RegisterDiagnoseFunc(storepb.Engine_CLICKHOUSE, Diagnose)
 }
 

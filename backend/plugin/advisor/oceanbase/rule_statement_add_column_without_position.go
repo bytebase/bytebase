@@ -1,10 +1,10 @@
-package mysql
+package oceanbase
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/bytebase/omni/mysql/ast"
+	"github.com/bytebase/omni/oceanbase/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"

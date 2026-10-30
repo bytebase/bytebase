@@ -1,0 +1,51 @@
+- statement: |-
+    CREATE TABLE t(a int);
+    ALTER TABLE t MODIFY COLUMN a int;
+- statement: |-
+    CREATE TABLE t(a int);
+    ALTER TABLE t MODIFY COLUMN a int FIRST;
+  want:
+    - status: 2
+      code: 407
+      title: COLUMN_DISALLOW_CHANGING_ORDER
+      content: '"ALTER TABLE t MODIFY COLUMN a int FIRST;" changes column order'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(b int, a1 int);
+    ALTER TABLE t CHANGE COLUMN a1 a int FIRST;
+  want:
+    - status: 2
+      code: 407
+      title: COLUMN_DISALLOW_CHANGING_ORDER
+      content: '"ALTER TABLE t CHANGE COLUMN a1 a int FIRST;" changes column order'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(a int, b int);
+    ALTER TABLE t MODIFY COLUMN a int AFTER b;
+  want:
+    - status: 2
+      code: 407
+      title: COLUMN_DISALLOW_CHANGING_ORDER
+      content: '"ALTER TABLE t MODIFY COLUMN a int AFTER b;" changes column order'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(a1 int, b int);
+    ALTER TABLE t CHANGE COLUMN a1 a int AFTER b;
+  want:
+    - status: 2
+      code: 407
+      title: COLUMN_DISALLOW_CHANGING_ORDER
+      content: '"ALTER TABLE t CHANGE COLUMN a1 a int AFTER b;" changes column order'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null

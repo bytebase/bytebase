@@ -1,0 +1,72 @@
+- statement: CREATE TABLE t(a int);
+- statement: |-
+    CREATE TABLE b(a INT);
+    CREATE TABLE t(a int) PARTITION BY RANGE (a) (
+            PARTITION p0 VALUES LESS THAN (6),
+            PARTITION p1 VALUES LESS THAN (11)
+          );
+  want:
+    - status: 2
+      code: 608
+      title: TABLE_DISALLOW_PARTITION
+      content: |-
+        Table partition is forbidden, but "CREATE TABLE t(a int) PARTITION BY RANGE (a) (
+                PARTITION p0 VALUES LESS THAN (6),
+                PARTITION p1 VALUES LESS THAN (11)
+              );" creates
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE tech_book PARTITION BY RANGE (a) (
+            PARTITION p0 VALUES LESS THAN (6),
+            PARTITION p1 VALUES LESS THAN (11)
+          );
+  want:
+    - status: 2
+      code: 608
+      title: TABLE_DISALLOW_PARTITION
+      content: |-
+        Table partition is forbidden, but "ALTER TABLE tech_book PARTITION BY RANGE (a) (
+                PARTITION p0 VALUES LESS THAN (6),
+                PARTITION p1 VALUES LESS THAN (11)
+              );" creates
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(a int) PARTITION BY RANGE (a) (
+            PARTITION p0 VALUES LESS THAN (6),
+            PARTITION p1 VALUES LESS THAN (11)
+          );
+    ALTER TABLE tech_book PARTITION BY RANGE (a) (
+            PARTITION p0 VALUES LESS THAN (6),
+            PARTITION p1 VALUES LESS THAN (11)
+          );
+  want:
+    - status: 2
+      code: 608
+      title: TABLE_DISALLOW_PARTITION
+      content: |-
+        Table partition is forbidden, but "CREATE TABLE t(a int) PARTITION BY RANGE (a) (
+                PARTITION p0 VALUES LESS THAN (6),
+                PARTITION p1 VALUES LESS THAN (11)
+              );" creates
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 608
+      title: TABLE_DISALLOW_PARTITION
+      content: |-
+        Table partition is forbidden, but "ALTER TABLE tech_book PARTITION BY RANGE (a) (
+                PARTITION p0 VALUES LESS THAN (6),
+                PARTITION p1 VALUES LESS THAN (11)
+              );" creates
+      startposition:
+        line: 5
+        column: 0
+      endposition: null

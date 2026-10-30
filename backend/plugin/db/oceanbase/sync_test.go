@@ -1,4 +1,4 @@
-package mysql
+package oceanbase
 
 import (
 	"context"
@@ -50,9 +50,9 @@ func newOceanBaseTestServer(t *testing.T) oceanBaseTestServer {
 	return oceanBaseTestServer{host: host, port: port, user: cfg.User, password: cfg.Passwd, tenant: tenant}
 }
 
-func (s oceanBaseTestServer) open(ctx context.Context, t *testing.T, engine storepb.Engine, user, password, database string) *Driver {
+func (s oceanBaseTestServer) open(ctx context.Context, t *testing.T, user, password, database string) *Driver {
 	t.Helper()
-	d, err := newDriver().Open(ctx, engine, db.ConnectionConfig{
+	d, err := newDriver().Open(ctx, storepb.Engine_OCEANBASE, db.ConnectionConfig{
 		DataSource: &storepb.DataSource{
 			Type:     storepb.DataSourceType_ADMIN,
 			Username: user,
@@ -69,17 +69,17 @@ func (s oceanBaseTestServer) open(ctx context.Context, t *testing.T, engine stor
 	return driver
 }
 
-// TestSyncOceanBaseTableNamespace covers the OceanBase objects that share the table namespace
+// TestSyncTableNamespace covers the OceanBase objects that share the table namespace
 // with base tables. A consumer can only conclude that a table name is free if sync lists every
 // one of them.
-func TestSyncOceanBaseTableNamespace(t *testing.T) {
+func TestSyncTableNamespace(t *testing.T) {
 	server := newOceanBaseTestServer(t)
 	ctx := context.Background()
 	startNano := time.Now().UnixNano()
 	database := fmt.Sprintf("sync_namespace_%d", startNano)
 	reader := fmt.Sprintf("sync_reader_%d", startNano)
 
-	admin := server.open(ctx, t, storepb.Engine_OCEANBASE, server.user, server.password, "")
+	admin := server.open(ctx, t, server.user, server.password, "")
 	_, err := admin.db.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s`", database))
 	require.NoError(t, err)
 	t.Cleanup(func() {
@@ -89,7 +89,7 @@ func TestSyncOceanBaseTableNamespace(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	driver := server.open(ctx, t, storepb.Engine_OCEANBASE, server.user, server.password, database)
+	driver := server.open(ctx, t, server.user, server.password, database)
 	for _, statement := range []string{
 		"CREATE TABLE t (id INT PRIMARY KEY, a INT) COMMENT 'base'",
 		"CREATE VIEW v AS SELECT id, a FROM t",
@@ -153,27 +153,19 @@ func TestSyncOceanBaseTableNamespace(t *testing.T) {
 	require.NoError(t, err)
 	_, err = admin.db.ExecContext(ctx, fmt.Sprintf("GRANT SELECT, SHOW VIEW ON `%s`.* TO '%s'@'%%'", database, reader))
 	require.NoError(t, err)
-	asReader := server.open(ctx, t, storepb.Engine_OCEANBASE, reader+"@"+server.tenant, "Reader_pw1", database)
+	asReader := server.open(ctx, t, reader+"@"+server.tenant, "Reader_pw1", database)
 	metadata, err = asReader.SyncDBSchema(ctx)
 	require.NoError(t, err)
 	require.Empty(t, metadata.Schemas[0].MaterializedViews)
 	require.ElementsMatch(t, []string{"t", "v", "ext", "mlog$_t", container}, syncedRelationNames(metadata.Schemas[0]))
-
-	// The same server registered as a MySQL instance keeps the MySQL sync result.
-	asMySQL := server.open(ctx, t, storepb.Engine_MYSQL, server.user, server.password, database)
-	metadata, err = asMySQL.SyncDBSchema(ctx)
-	require.NoError(t, err)
-	require.Empty(t, metadata.Schemas[0].ExternalTables)
-	require.Empty(t, metadata.Schemas[0].MaterializedViews)
-	require.ElementsMatch(t, []string{"t", "v", "mlog$_t", container}, syncedRelationNames(metadata.Schemas[0]))
 }
 
-func TestSyncOceanBaseEvents(t *testing.T) {
+func TestSyncEvents(t *testing.T) {
 	server := newOceanBaseTestServer(t)
 	ctx := context.Background()
 	database := fmt.Sprintf("sync_events_%d", time.Now().UnixNano())
 
-	admin := server.open(ctx, t, storepb.Engine_OCEANBASE, server.user, server.password, "")
+	admin := server.open(ctx, t, server.user, server.password, "")
 	_, err := admin.db.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s`", database))
 	require.NoError(t, err)
 	t.Cleanup(func() {
@@ -181,7 +173,7 @@ func TestSyncOceanBaseEvents(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	driver := server.open(ctx, t, storepb.Engine_OCEANBASE, server.user, server.password, database)
+	driver := server.open(ctx, t, server.user, server.password, database)
 	for _, statement := range []string{
 		"CREATE TABLE t (id INT)",
 		"CREATE EVENT e_every ON SCHEDULE EVERY 1 DAY STARTS '2030-01-01 00:00:00' ON COMPLETION PRESERVE DISABLE DO INSERT INTO t VALUES (1)",
@@ -199,22 +191,16 @@ func TestSyncOceanBaseEvents(t *testing.T) {
 		{Name: "e_at"},
 		{Name: "e_every"},
 	}, schema.Events, protocmp.Transform()))
-
-	// The same server registered as a MySQL instance keeps the MySQL event sync, which cannot
-	// read OceanBase's events.
-	asMySQL := server.open(ctx, t, storepb.Engine_MYSQL, server.user, server.password, database)
-	_, err = asMySQL.SyncDBSchema(ctx)
-	require.ErrorContains(t, err, "CHARACTER_SET_CLIENT")
 }
 
 // OceanBase keeps listing a dropped database's events under its name, so a database created
 // again under that name lists an event created again twice.
-func TestSyncOceanBaseEventsOfRecreatedDatabase(t *testing.T) {
+func TestSyncEventsOfRecreatedDatabase(t *testing.T) {
 	server := newOceanBaseTestServer(t)
 	ctx := context.Background()
 	database := fmt.Sprintf("sync_recreated_%d", time.Now().UnixNano())
 
-	admin := server.open(ctx, t, storepb.Engine_OCEANBASE, server.user, server.password, "")
+	admin := server.open(ctx, t, server.user, server.password, "")
 	t.Cleanup(func() {
 		_, err := admin.db.ExecContext(ctx, fmt.Sprintf("DROP DATABASE IF EXISTS `%s`", database))
 		require.NoError(t, err)
@@ -225,7 +211,7 @@ func TestSyncOceanBaseEventsOfRecreatedDatabase(t *testing.T) {
 		require.NoError(t, err)
 		_, err = admin.db.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s`", database))
 		require.NoError(t, err)
-		driver := server.open(ctx, t, storepb.Engine_OCEANBASE, server.user, server.password, database)
+		driver := server.open(ctx, t, server.user, server.password, database)
 		for _, statement := range []string{
 			"CREATE TABLE t (id INT)",
 			"CREATE EVENT e ON SCHEDULE EVERY 1 DAY STARTS '2030-01-01 00:00:00' DO DELETE FROM t",
@@ -331,10 +317,10 @@ func newTestOceanBaseMViewDriver(t *testing.T, rows [][]driver.Value, queryErr e
 	db, err := sql.Open("test_oceanbase_mviews", "")
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = db.Close() })
-	return &Driver{dbType: storepb.Engine_OCEANBASE, db: db}
+	return &Driver{db: db}
 }
 
-func TestListOceanBaseMaterializedViews(t *testing.T) {
+func TestListMaterializedViews(t *testing.T) {
 	ctx := context.Background()
 	containerIndex := &metadatapb.IndexMetadata{Name: "idx_a", Type: "BTREE", Expressions: []string{"a"}, KeyLength: []int64{-1}, Descending: []bool{false}, Visible: true}
 	tables := []*metadatapb.TableMetadata{
@@ -346,7 +332,7 @@ func TestListOceanBaseMaterializedViews(t *testing.T) {
 		{"mv", "__mv_container_500006", "select `db`.`t`.`a` AS `a` from `db`.`t`"},
 		{"mv_unlisted_container", "__mv_container_500009", "select 1 AS `1`"},
 	}, nil)
-	views, err := d.listOceanBaseMaterializedViews(ctx, "db", tables)
+	views, err := d.listMaterializedViews(ctx, "db", tables)
 	require.NoError(t, err)
 	require.Empty(t, cmp.Diff([]*metadatapb.MaterializedViewMetadata{
 		{Name: "mv", Definition: "select `db`.`t`.`a` AS `a` from `db`.`t`", Comment: "materialized", Indexes: []*metadatapb.IndexMetadata{containerIndex}, SkipDump: true},
@@ -356,12 +342,12 @@ func TestListOceanBaseMaterializedViews(t *testing.T) {
 
 	// A failed read, such as one without SELECT on the oceanbase database, does not fail the sync.
 	d = newTestOceanBaseMViewDriver(t, nil, &mysql.MySQLError{Number: 1142, Message: "SELECT command denied to user 'reader'@'%' for table 'dba_mviews'"})
-	views, err = d.listOceanBaseMaterializedViews(ctx, "db", tables)
+	views, err = d.listMaterializedViews(ctx, "db", tables)
 	require.NoError(t, err)
 	require.Empty(t, views)
 
 	canceled, cancel := context.WithCancel(ctx)
 	cancel()
-	_, err = d.listOceanBaseMaterializedViews(canceled, "db", tables)
+	_, err = d.listMaterializedViews(canceled, "db", tables)
 	require.ErrorIs(t, err, context.Canceled)
 }

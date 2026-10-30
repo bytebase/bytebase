@@ -1,0 +1,53 @@
+- statement: CREATE TABLE book(id int AUTO_INCREMENT);
+- statement: CREATE TABLE book(a int AUTO_INCREMENT);
+  want:
+    - status: 2
+      code: 307
+      title: NAMING_COLUMN_AUTO_INCREMENT
+      content: '`book`.`a` mismatches auto_increment column naming convention, naming format should be "^id$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE tech_book ADD COLUMN a int AUTO_INCREMENT;
+  want:
+    - status: 2
+      code: 307
+      title: NAMING_COLUMN_AUTO_INCREMENT
+      content: '`tech_book`.`a` mismatches auto_increment column naming convention, naming format should be "^id$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE tech_book CHANGE COLUMN id a int AUTO_INCREMENT;
+  want:
+    - status: 2
+      code: 307
+      title: NAMING_COLUMN_AUTO_INCREMENT
+      content: '`tech_book`.`a` mismatches auto_increment column naming convention, naming format should be "^id$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE tech_book MODIFY COLUMN name int AUTO_INCREMENT;
+  want:
+    - status: 2
+      code: 307
+      title: NAMING_COLUMN_AUTO_INCREMENT
+      content: '`tech_book`.`name` mismatches auto_increment column naming convention, naming format should be "^id$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |
+    CREATE TABLE book(id int);
+    ALTER TABLE tech_book MODIFY COLUMN id int AUTO_INCREMENT;
+- statement: |
+    CREATE TABLE book(name VARCHAR(255));
+    ALTER TABLE book ADD COLUMN id int AUTO_INCREMENT;
+- statement: |
+    CREATE TABLE book(a INT, name VARCHAR(255));
+    ALTER TABLE book CHANGE COLUMN a id int AUTO_INCREMENT;
+- statement: |
+    CREATE TABLE book(name VARCHAR(255));
+    ALTER TABLE book ADD COLUMN (id int AUTO_INCREMENT, a int, b int, c int, d int);

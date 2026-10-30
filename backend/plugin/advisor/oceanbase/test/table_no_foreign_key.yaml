@@ -1,0 +1,24 @@
+- statement: |-
+    CREATE TABLE book(id INT);
+    ALTER TABLE tech_book ADD CONSTRAINT fk_tech_book_author_id_author_id FOREIGN KEY (author_id) REFERENCES author (id);
+  want:
+    - status: 2
+      code: 602
+      title: TABLE_NO_FOREIGN_KEY
+      content: Foreign key is not allowed in the table `tech_book`
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t1 (id INT);
+    CREATE TABLE book(id INT, author_id INT, FOREIGN KEY fk_book_author_id_author_id (author_id) REFERENCES author (id));
+  want:
+    - status: 2
+      code: 602
+      title: TABLE_NO_FOREIGN_KEY
+      content: Foreign key is not allowed in the table `book`
+      startposition:
+        line: 2
+        column: 0
+      endposition: null

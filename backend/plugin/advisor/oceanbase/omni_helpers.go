@@ -1,19 +1,19 @@
 package oceanbase
 
 import (
-	"github.com/bytebase/omni/mysql/ast"
+	"github.com/bytebase/omni/oceanbase/ast"
 
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	oceanbaseparser "github.com/bytebase/bytebase/backend/plugin/parser/oceanbase"
 )
 
 func omniLine(baseLine int, text string, loc ast.Loc) int {
 	if loc.Start < 0 {
 		return baseLine + 1
 	}
-	return baseLine + int(mysqlparser.ByteOffsetToRunePosition(text, loc.Start).Line)
+	return baseLine + int(oceanbaseparser.ByteOffsetToRunePosition(text, loc.Start).Line)
 }
 
-func omniTableName(table *ast.TableRef) (string, string) {
+func omniTableSchemaAndName(table *ast.TableRef) (string, string) {
 	if table == nil {
 		return "", ""
 	}
