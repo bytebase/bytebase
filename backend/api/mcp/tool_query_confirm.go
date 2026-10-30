@@ -133,9 +133,8 @@ func (s *Server) askToRun(ctx context.Context, req *mcp.CallToolRequest, confirm
 
 // headerLines names where the request runs, the environment before the
 // database so a long database name cannot hide it. Names too long for two lines
-// get a line each: "Database " and "Instance " leave room for a 63-character ID
-// or PostgreSQL database name in the 74 columns an 80-column terminal shows. A
-// longer name on another engine is still cut.
+// get a line each, whose labels leave room for a 63-character ID or PostgreSQL
+// database name in the 74 columns an 80-column terminal shows.
 func headerLines(required *confirmationRequired, database, instance string) []string {
 	where := fmt.Sprintf("Run on database %q,", database)
 	if required.environment != "" {
@@ -150,7 +149,7 @@ func headerLines(required *confirmationRequired, database, instance string) []st
 	}
 	var lines []string
 	if required.environment != "" {
-		lines = append(lines, fmt.Sprintf("Run in environment %q:", required.environment))
+		lines = append(lines, fmt.Sprintf("Run in %q:", required.environment))
 	}
 	lines = append(lines, fmt.Sprintf("Database %q", database), fmt.Sprintf("Instance %q", instance))
 	if required.schema != "" {

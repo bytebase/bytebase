@@ -276,35 +276,45 @@ func TestQueryDatabaseFormFitsClaudeCode(t *testing.T) {
 }
 
 func TestQueryDatabaseShowsLongNamesWhole(t *testing.T) {
-	// The longest PostgreSQL database name.
+	// The longest PostgreSQL database name, and the longest resource ID.
 	longName := "payroll_" + strings.Repeat("x", 55)
+	longEnvironment := "prod-" + strings.Repeat("x", 58)
 	const runsAtOnce = "Run now runs it at once, with no issue or approval."
 	for _, row := range []struct {
 		name        string
+		database    string
+		environment string
 		schema      string
 		statement   string
 		message     []string
 		description string
 	}{
-		{name: "one line left for the request", statement: "INSERT INTO employee VALUES (1)",
-			message:     []string{`Run in environment "prod":`, fmt.Sprintf("Database %q", longName), `Instance "prod-pg"`, "INSERT INTO employee VALUES (1)"},
+		{name: "one line left for the request", database: longName, environment: "prod", statement: "INSERT INTO employee VALUES (1)",
+			message:     []string{`Run in "prod":`, fmt.Sprintf("Database %q", longName), `Instance "prod-pg"`, "INSERT INTO employee VALUES (1)"},
 			description: runsAtOnce},
-		{name: "a request longer than the line left", statement: "INSERT INTO employee\nVALUES (1)",
-			message:     []string{`Run in environment "prod":`, fmt.Sprintf("Database %q", longName), `Instance "prod-pg"`, "The request is under the choice (31 characters)."},
+		{name: "a request longer than the line left", database: longName, environment: "prod", statement: "INSERT INTO employee\nVALUES (1)",
+			message:     []string{`Run in "prod":`, fmt.Sprintf("Database %q", longName), `Instance "prod-pg"`, "The request is under the choice (31 characters)."},
 			description: "INSERT INTO employee\nVALUES (1)\n\n" + runsAtOnce},
-		{name: "no line left", schema: "app", statement: "INSERT INTO employee VALUES (1)",
-			message:     []string{`Run in environment "prod":`, fmt.Sprintf("Database %q", longName), `Instance "prod-pg"`, `Schema "app"`},
+		{name: "no line left", database: longName, environment: "prod", schema: "app", statement: "INSERT INTO employee VALUES (1)",
+			message:     []string{`Run in "prod":`, fmt.Sprintf("Database %q", longName), `Instance "prod-pg"`, `Schema "app"`},
 			description: "INSERT INTO employee VALUES (1)\n\n" + runsAtOnce},
+		{name: "the longest environment ID", database: "employee_db", environment: longEnvironment, statement: "INSERT INTO employee VALUES (1)",
+			message:     []string{fmt.Sprintf("Run in %q:", longEnvironment), `Database "employee_db"`, `Instance "prod-pg"`, "INSERT INTO employee VALUES (1)"},
+			description: runsAtOnce},
+		{name: "no environment", database: longName, statement: "INSERT INTO employee VALUES (1)",
+			message:     []string{fmt.Sprintf("Database %q", longName), `Instance "prod-pg"`, "INSERT INTO employee VALUES (1)"},
+			description: runsAtOnce},
 	} {
 		t.Run(row.name, func(t *testing.T) {
 			mock := newConfirmingQueryMock([]map[string]any{
-				makeDatabase("instances/prod-pg/databases/"+longName, "instances/prod-pg", "projects/hr", "POSTGRES", "ds-1"),
+				makeDatabase("instances/prod-pg/databases/"+row.database, "instances/prod-pg", "projects/hr", "POSTGRES", "ds-1"),
 			})
+			mock.environment = row.environment
 			_, endpoint, token := newQueryConfirmServer(t, mock)
 			user := &asker{answer: runAnswer(runChoiceChange)}
 			session := connectLegacy(t, endpoint, token, &mcp.ClientOptions{ElicitationHandler: user.handle})
 
-			arguments := map[string]any{"database": longName, "statement": row.statement}
+			arguments := map[string]any{"database": row.database, "statement": row.statement}
 			if row.schema != "" {
 				arguments["schema"] = row.schema
 			}
