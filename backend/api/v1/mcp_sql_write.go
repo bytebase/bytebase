@@ -39,7 +39,7 @@ func mcpWriteConfirmed(ctx context.Context, request *v1pb.QueryRequest) bool {
 // user has not confirmed. Its ErrorInfo carries what the form shows.
 func mcpConfirmationRequired(database *store.DatabaseMessage, schema string) error {
 	err := connect.NewError(connect.CodeFailedPrecondition, errors.New(
-		"this statement may write, so the user confirms it first: run it with the query_database tool, which asks them"))
+		"this statement may write, and call_api cannot confirm it: run it with the query_database tool"))
 	environment := ""
 	if database.EffectiveEnvironmentID != nil {
 		environment = *database.EffectiveEnvironmentID

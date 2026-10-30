@@ -1,6 +1,6 @@
 ---
 name: query
-description: Use when running SQL queries, executing SELECT/INSERT/UPDATE/DELETE statements, or fetching data from databases
+description: Use when running SQL queries or fetching data from databases
 ---
 
 # Execute SQL
@@ -61,6 +61,7 @@ Run SQL queries against databases managed by Bytebase.
 
 ## Notes
 
+- Run a statement that may write, such as INSERT, UPDATE, DELETE or DDL, with the `query_database` tool. `call_api` refuses it.
 - Query results may contain masked values due to data masking policies. Do not remove or modify masked values.
   - Full mask: `******`
   - Partial mask: `**rn**` (only "rn" visible)
