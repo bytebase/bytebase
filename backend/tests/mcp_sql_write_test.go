@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 
@@ -201,9 +202,8 @@ func TestMCPQueryDatabaseAsksBeforeAWrite(t *testing.T) {
 	a.False(changed.isError, changed.text)
 	a.Contains(changed.text, "Not run: the user wants to change this request")
 	a.Len(changeUser.asked(), 1)
-	instanceID, _, err := common.GetInstanceDatabaseID(f.database)
-	a.NoError(err)
-	a.Equal(fmt.Sprintf("Run on database %q (instance %q, environment \"prod\"):\n%s", f.name, instanceID, insert), changeUser.asked()[0])
+	instanceID := strings.Split(f.database, "/")[1]
+	a.Equal(fmt.Sprintf("Run in environment \"prod\" on database %q,\ninstance %q:\n%s", f.name, instanceID, insert), changeUser.asked()[0])
 	a.Equal(1, f.employeeCount(t))
 
 	declining, _ := answering(&mcp.ElicitResult{Action: "decline"})

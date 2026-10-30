@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"sync"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	"connectrpc.com/connect"
 	"github.com/labstack/echo/v5"
@@ -33,7 +35,8 @@ type queryCall struct {
 // INSERT, as SQLService/Query refuses a possible write, until the request
 // carries the confirmation of that exact request.
 type confirmingQueryMock struct {
-	databases http.Handler
+	databases   http.Handler
+	environment string
 	// refusesConfirmed has Query refuse an INSERT even when it is confirmed.
 	refusesConfirmed bool
 	mu               sync.Mutex
@@ -41,7 +44,7 @@ type confirmingQueryMock struct {
 }
 
 func newConfirmingQueryMock(databases []map[string]any) *confirmingQueryMock {
-	return &confirmingQueryMock{databases: mockListDatabases(databases)}
+	return &confirmingQueryMock{databases: mockListDatabases(databases), environment: "prod"}
 }
 
 func (m *confirmingQueryMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -61,7 +64,7 @@ func (m *confirmingQueryMock) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	m.queries = append(m.queries, queryCall{Statement: body.Statement, Confirmed: confirmed})
 	m.mu.Unlock()
 	if (!confirmed || m.refusesConfirmed) && strings.HasPrefix(body.Statement, "INSERT") {
-		_ = connect.NewErrorWriter().Write(w, r, confirmationRequiredError(body.Schema))
+		_ = connect.NewErrorWriter().Write(w, r, confirmationRequiredError(m.environment, body.Schema))
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -76,12 +79,12 @@ func (m *confirmingQueryMock) calls() []queryCall {
 
 // confirmationRequiredError is SQLService/Query's refusal of an unconfirmed
 // possible write.
-func confirmationRequiredError(schema string) error {
+func confirmationRequiredError(environment, schema string) error {
 	err := connect.NewError(connect.CodeFailedPrecondition, errors.New("this statement may write"))
 	if detail, detailErr := connect.NewErrorDetail(&errdetails.ErrorInfo{
 		Reason:   auth.MCPConfirmationReason,
 		Domain:   auth.MCPConfirmationDomain,
-		Metadata: map[string]string{"environment": "prod", "schema": schema},
+		Metadata: map[string]string{"environment": environment, "schema": schema},
 	}); detailErr == nil {
 		err.AddDetail(detail)
 	}
@@ -129,15 +132,25 @@ func callQuery(t *testing.T, session *mcp.ClientSession, params *mcp.CallToolPar
 
 func TestQueryDatabaseAsksBeforeAWrite(t *testing.T) {
 	for _, row := range []struct {
-		name    string
-		schema  string
-		message string
+		name        string
+		databases   []map[string]any
+		environment string
+		schema      string
+		header      string
 	}{
-		{name: "the database's default schema", message: `Run on database "employee_db" (instance "prod-pg", environment "prod"):`},
-		{name: "a named schema", schema: "app", message: `Run on database "employee_db" (instance "prod-pg", environment "prod", schema "app"):`},
+		{name: "the database's default schema", databases: employeeDatabase(), environment: "prod",
+			header: `Run in environment "prod" on database "employee_db",` + "\n" + `instance "prod-pg":`},
+		{name: "a named schema", databases: employeeDatabase(), environment: "prod", schema: "app",
+			header: `Run in environment "prod" on database "employee_db",` + "\n" + `instance "prod-pg", schema "app":`},
+		{name: "a project instance", databases: []map[string]any{
+			makeDatabase("projects/hr/instances/prod-pg/databases/employee_db", "projects/hr/instances/prod-pg", "projects/hr", "POSTGRES", "ds-1"),
+		}, environment: "prod", header: `Run in environment "prod" on database "employee_db",` + "\n" + `instance "prod-pg":`},
+		{name: "no environment", databases: employeeDatabase(),
+			header: `Run on database "employee_db",` + "\n" + `instance "prod-pg":`},
 	} {
 		t.Run(row.name, func(t *testing.T) {
-			mock := newConfirmingQueryMock(employeeDatabase())
+			mock := newConfirmingQueryMock(row.databases)
+			mock.environment = row.environment
 			_, endpoint, token := newQueryConfirmServer(t, mock)
 			user := &asker{answer: runAnswer(runChoiceRun)}
 			session := connectLegacy(t, endpoint, token, &mcp.ClientOptions{ElicitationHandler: user.handle})
@@ -147,7 +160,7 @@ func TestQueryDatabaseAsksBeforeAWrite(t *testing.T) {
 			require.False(t, res.IsError, resultText(t, res))
 			require.EqualValues(t, 1, user.asked.Load())
 			asked := user.lastParams(t)
-			require.Equal(t, row.message+"\n"+insert, asked.Message)
+			require.Equal(t, row.header+"\n"+insert, asked.Message)
 			schema, err := json.Marshal(asked.RequestedSchema)
 			require.NoError(t, err)
 			require.Contains(t, string(schema), `"default":"run"`)
@@ -223,38 +236,85 @@ func TestQueryDatabaseReadsWithoutAsking(t *testing.T) {
 	require.Equal(t, []queryCall{{Statement: "SELECT id FROM employee"}}, mock.calls())
 }
 
-func TestQueryDatabaseShowsALongRequestUnderTheChoice(t *testing.T) {
-	mock := newConfirmingQueryMock(employeeDatabase())
-	_, endpoint, token := newQueryConfirmServer(t, mock)
-	user := &asker{answer: runAnswer(runChoiceChange)}
-	session := connectLegacy(t, endpoint, token, &mcp.ClientOptions{ElicitationHandler: user.handle})
+func TestQueryDatabaseFormFitsClaudeCode(t *testing.T) {
+	const header = `Run in environment "prod" on database "employee_db",` + "\n" + `instance "prod-pg":`
+	const insert = "INSERT INTO employee VALUES (1, '"
+	for _, row := range []struct {
+		name      string
+		statement string
+		inMessage bool
+	}{
+		{name: "a line at the width", statement: insert + strings.Repeat("a", 35) + "')", inMessage: true},
+		{name: "a line past the width", statement: insert + strings.Repeat("a", 36) + "')"},
+		{name: "two lines at the width", statement: insert + strings.Repeat("a", 35) + "')\n" + insert + "b')", inMessage: true},
+		{name: "three lines", statement: "INSERT INTO employee\nVALUES\n(1)"},
+		{name: "wide characters past the width", statement: insert + strings.Repeat("名", 18) + "')"},
+		{name: "four lines", statement: "INSERT INTO employee (id, name)\nVALUES\n  (1, 'Alice'),\n  (2, 'Bob')"},
+	} {
+		t.Run(row.name, func(t *testing.T) {
+			mock := newConfirmingQueryMock(employeeDatabase())
+			_, endpoint, token := newQueryConfirmServer(t, mock)
+			user := &asker{answer: runAnswer(runChoiceChange)}
+			session := connectLegacy(t, endpoint, token, &mcp.ClientOptions{ElicitationHandler: user.handle})
 
-	insert := "INSERT INTO employee (id, name)\nVALUES\n  (1, 'Alice'),\n  (2, 'Bob')"
-	callQuery(t, session, queryParams(insert, ""))
-	asked := user.lastParams(t)
-	require.Equal(t, `Run on database "employee_db" (instance "prod-pg", environment "prod"):`+
-		"\nThe request runs to 4 lines, shown in full below.\nRun now runs it at once, with no issue or approval.", asked.Message)
-	schema, err := json.Marshal(asked.RequestedSchema)
-	require.NoError(t, err)
-	description, err := json.Marshal(insert)
-	require.NoError(t, err)
-	require.Contains(t, string(schema), `"description":`+string(description))
+			callQuery(t, session, queryParams(row.statement, ""))
+			asked := user.lastParams(t)
+			schema, err := json.Marshal(asked.RequestedSchema)
+			require.NoError(t, err)
+			if row.inMessage {
+				require.Equal(t, header+"\n"+row.statement, asked.Message)
+			} else {
+				require.Equal(t, header+fmt.Sprintf("\nThe request is under the choice (%d characters).", utf8.RuneCountInString(row.statement))+
+					"\nRun now runs it at once, with no issue or approval.", asked.Message)
+				description, err := json.Marshal(row.statement)
+				require.NoError(t, err)
+				require.Contains(t, string(schema), `"description":`+string(description))
+			}
+			for _, line := range claudeCodeView(asked.Message, 80) {
+				require.NotContains(t, line, "…", "an 80-column terminal cuts a line of the message")
+			}
+		})
+	}
 }
 
-// The call asked which database to use, so it cannot ask again: an older client
-// answers one form per call.
 func TestQueryDatabaseAsksOnceACall(t *testing.T) {
-	mock := newConfirmingQueryMock(ambiguousDatabases())
-	_, endpoint, token := newQueryConfirmServer(t, mock)
-	user := &asker{answer: &mcp.ElicitResult{Action: "accept", Content: map[string]any{databaseChoiceField: prodLabel}}}
-	session := connectLegacy(t, endpoint, token, &mcp.ClientOptions{ElicitationHandler: user.handle})
+	const projectDatabase = "projects/hr/instances/prod-pg/databases/employee_db"
+	for _, row := range []struct {
+		name      string
+		databases []map[string]any
+		label     string
+		instance  string
+	}{
+		{name: "a workspace instance", databases: ambiguousDatabases(), label: prodLabel, instance: "prod-pg"},
+		{name: "a project instance", databases: []map[string]any{
+			makeDatabase(projectDatabase, "projects/hr/instances/prod-pg", "projects/hr", "POSTGRES", "ds-1"),
+			makeDatabase("instances/staging-pg/databases/employee_db", "instances/staging-pg", "projects/hr", "POSTGRES", "ds-2"),
+		}, label: projectDatabase + " (prod-pg, POSTGRES)", instance: "projects/hr/instances/prod-pg"},
+	} {
+		t.Run(row.name, func(t *testing.T) {
+			mock := newConfirmingQueryMock(row.databases)
+			_, endpoint, token := newQueryConfirmServer(t, mock)
+			user := &asker{answer: &mcp.ElicitResult{Action: "accept", Content: map[string]any{databaseChoiceField: row.label}}}
+			session := connectLegacy(t, endpoint, token, &mcp.ClientOptions{ElicitationHandler: user.handle})
 
-	res := callQuery(t, session, queryParams("INSERT INTO employee VALUES (1)", ""))
-	require.False(t, res.IsError)
-	require.Equal(t, "Not run: this statement may write, so the user confirms it in a form, and this call already asked which database to use. "+
-		`Call query_database again with database "employee_db" and instance "prod-pg" to ask the user.`, resultText(t, res))
-	require.EqualValues(t, 1, user.asked.Load())
-	require.Equal(t, []queryCall{{Statement: "INSERT INTO employee VALUES (1)"}}, mock.calls())
+			const insert = "INSERT INTO employee VALUES (1)"
+			res := callQuery(t, session, queryParams(insert, ""))
+			require.False(t, res.IsError)
+			require.Equal(t, "Not run: this statement may write, so the user confirms it in a form, and this call already asked which database to use. "+
+				fmt.Sprintf("Call query_database again with database \"employee_db\" and instance %q to ask the user.", row.instance), resultText(t, res))
+			require.EqualValues(t, 1, user.asked.Load())
+			require.Equal(t, []queryCall{{Statement: insert}}, mock.calls())
+
+			user.answer = runAnswer(runChoiceChange)
+			again := callQuery(t, session, &mcp.CallToolParams{Name: "query_database", Arguments: map[string]any{
+				"database": "employee_db", "instance": row.instance, "statement": insert,
+			}})
+			require.Contains(t, resultText(t, again), "the user wants to change this request")
+			require.EqualValues(t, 2, user.asked.Load())
+			require.True(t, strings.HasPrefix(user.lastParams(t).Message, `Run in environment "prod" on database "employee_db",`),
+				"the call the text names asks to run, not which database: %q", user.lastParams(t).Message)
+		})
+	}
 }
 
 func TestQueryDatabaseConfirmationUnderMRTRClient(t *testing.T) {
@@ -302,7 +362,7 @@ func TestConfirmationRequiredIn(t *testing.T) {
 		require.NoError(t, connect.NewErrorWriter().Write(recorder, req, err))
 		return recorder.Body.Bytes()
 	}
-	require.Equal(t, &confirmationRequired{environment: "prod", schema: "app"}, confirmationRequiredIn(body(confirmationRequiredError("app"))))
+	require.Equal(t, &confirmationRequired{environment: "prod", schema: "app"}, confirmationRequiredIn(body(confirmationRequiredError("prod", "app"))))
 	require.Nil(t, confirmationRequiredIn(body(connect.NewError(connect.CodeFailedPrecondition, errors.New("another refusal")))))
 
 	other := connect.NewError(connect.CodeFailedPrecondition, errors.New("another reason"))

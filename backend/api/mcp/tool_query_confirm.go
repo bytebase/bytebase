@@ -6,9 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"unicode"
 	"unicode/utf8"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"golang.org/x/text/width"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/protobuf/proto"
 
@@ -25,12 +27,12 @@ const (
 	runChoiceChange = "change"
 )
 
-// Claude Code shows four lines of a form's message, so a request that wraps
-// into at most three 70-character lines goes under the line that names the
-// database; an 80-column terminal shows those whole.
+// Claude Code shows four lines of a form's message and cuts each line six
+// columns short of the terminal width. A request goes in the message only when
+// it fits under the header in lines of at most 70 columns.
 const (
-	messageRequestLines = 3
-	messageLineWidth    = 70
+	messageLines     = 4
+	messageLineWidth = 70
 )
 
 // runConfirmation is a statement query_database asks the user to run.
@@ -86,31 +88,38 @@ func confirmationRequiredIn(body json.RawMessage) *confirmationRequired {
 // already asked which database to use gets a result that has the agent call
 // again instead: an older client answers one form per call.
 func (s *Server) askToRun(ctx context.Context, req *mcp.CallToolRequest, confirmation runConfirmation, digest []byte, statement string, required *confirmationRequired) *mcp.CallToolResult {
-	instance, database, err := common.GetInstanceDatabaseID(confirmation.database)
+	project, instance, database, err := common.GetDatabaseResourceName(confirmation.database)
 	if err != nil {
-		instance, database = "", confirmation.database
+		return formatToolError(err)
 	}
 	if _, answered := elicitedDatabaseChoice(req); answered {
+		instanceName := instance
+		if project != nil {
+			instanceName = common.FormatProjectInstance(*project, instance)
+		}
 		return textResult(fmt.Sprintf(
 			"Not run: this statement may write, so the user confirms it in a form, and this call already asked which database to use. "+
-				"Call query_database again with database %q and instance %q to ask the user.", database, instance))
+				"Call query_database again with database %q and instance %q to ask the user.", database, instanceName))
 	}
-	names := []string{fmt.Sprintf("instance %q", instance)}
+	// The environment comes before the database, so a long database name cannot
+	// hide it.
+	where := fmt.Sprintf("Run on database %q,", database)
 	if required.environment != "" {
-		names = append(names, fmt.Sprintf("environment %q", required.environment))
+		where = fmt.Sprintf("Run in environment %q on database %q,", required.environment, database)
 	}
+	scope := fmt.Sprintf("instance %q", instance)
 	if required.schema != "" {
-		names = append(names, fmt.Sprintf("schema %q", required.schema))
+		scope += fmt.Sprintf(", schema %q", required.schema)
 	}
-	message := fmt.Sprintf("Run on database %q (%s):", database, strings.Join(names, ", "))
+	header := []string{where, scope + ":"}
 	const runsAtOnce = "Run now runs it at once, with no issue or approval."
+	request := strings.Split(strings.TrimSpace(statement), "\n")
 	description := runsAtOnce
-	if lines := wrappedLines(statement); lines <= messageRequestLines {
-		message += "\n" + strings.TrimSpace(statement)
-	} else {
-		message += fmt.Sprintf("\nThe request runs to %d lines, shown in full below.\n%s", lines, runsAtOnce)
+	if len(header)+len(request) > messageLines || !fitsMessageLines(request) {
+		request = []string{fmt.Sprintf("The request is under the choice (%d characters).", utf8.RuneCountInString(statement)), runsAtOnce}
 		description = statement
 	}
+	message := strings.Join(append(header, request...), "\n")
 	return s.askWithForm(ctx, confirmation, digest, message, map[string]any{
 		"type": "object",
 		"properties": map[string]any{
@@ -129,13 +138,31 @@ func (s *Server) askToRun(ctx context.Context, req *mcp.CallToolRequest, confirm
 	})
 }
 
-// wrappedLines counts the lines statement takes at messageLineWidth.
-func wrappedLines(statement string) int {
-	lines := 0
-	for _, line := range strings.Split(strings.TrimSpace(statement), "\n") {
-		lines += max(1, (utf8.RuneCountInString(line)+messageLineWidth-1)/messageLineWidth)
+// fitsMessageLines reports whether every line is at most messageLineWidth
+// columns wide.
+func fitsMessageLines(lines []string) bool {
+	for _, line := range lines {
+		if lineColumns(line) > messageLineWidth {
+			return false
+		}
 	}
-	return lines
+	return true
+}
+
+// lineColumns counts the columns Claude Code gives line: two for a wide
+// character, none for a combining mark.
+func lineColumns(line string) int {
+	columns := 0
+	for _, r := range line {
+		if unicode.Is(unicode.Mn, r) {
+			continue
+		}
+		columns++
+		if kind := width.LookupRune(r).Kind(); kind == width.EastAsianWide || kind == width.EastAsianFullwidth {
+			columns++
+		}
+	}
+	return columns
 }
 
 // unrunResult returns the result for an answer that runs nothing, or nil when
