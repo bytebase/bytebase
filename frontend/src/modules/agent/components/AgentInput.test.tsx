@@ -1546,6 +1546,46 @@ describe("AgentInput", () => {
     view.unmount();
   });
 
+  test("stores a failed provider request once instead of duplicating it in chat history", async () => {
+    const providerError = new Error(
+      'OpenAI API error: {"error":{"message":"API key not valid. Please pass a valid API key."}}'
+    );
+    mocks.runAgentLoop.mockResolvedValue({
+      kind: "error",
+      error: providerError,
+      totalTokensUsed: 0,
+    });
+    const page = { path: "/projects/orders", title: "Orders" };
+    const chat = useAgentStore.getState().createChat({
+      context: "projects/orders",
+      page,
+    });
+    useAgentStore.getState().queueUserMessage({
+      chatId: chat.id,
+      text: "Check the API configuration",
+      page,
+    });
+
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => {
+      await vi.waitFor(() =>
+        expect(useAgentStore.getState().getChat(chat.id)?.status).toBe("error")
+      );
+    });
+
+    expect(useAgentStore.getState().getChat(chat.id)?.lastError).toBe(
+      providerError.message
+    );
+    expect(
+      useAgentStore
+        .getState()
+        .getMessages(chat.id)
+        .filter((message) => message.role === "assistant")
+    ).toHaveLength(0);
+    view.unmount();
+  });
+
   test("offers an Access Grant draft only after one actual denied Query", async () => {
     const args = {
       operationId: "SQLService/Query",

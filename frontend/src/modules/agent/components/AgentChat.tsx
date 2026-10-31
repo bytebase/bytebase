@@ -50,6 +50,7 @@ import {
   DeniedQueryRequestDraftStorageError,
   prepareAgentDeniedQueryRequestRoute,
 } from "../logic/deniedQueryAccess";
+import { getAgentErrorSummary } from "../logic/errorDisplay";
 import { resolveAgentHandoffRoute } from "../logic/handoff";
 import type { LandingStarterId } from "../logic/landingStarters";
 import {
@@ -682,9 +683,14 @@ export function AgentChat({
     () =>
       messages.filter(
         (message): message is AgentMessage =>
-          message.role === "user" || message.role === "assistant"
+          (message.role === "user" || message.role === "assistant") &&
+          !(
+            message.role === "assistant" &&
+            error &&
+            message.metadata?.error === error
+          )
       ),
-    [messages]
+    [error, messages]
   );
   const emptyChatScope = currentChat?.context?.startsWith(projectNamePrefix)
     ? "project"
@@ -1194,8 +1200,27 @@ export function AgentChat({
         </div>
       ) : (
         error && (
-          <div className="rounded-sm bg-error/10 px-3 py-2 text-sm text-error">
-            {error}
+          <div
+            className="rounded-sm bg-error/10 px-3 py-2 text-sm text-error"
+            role="alert"
+          >
+            <div data-agent-error-summary>
+              {getAgentErrorSummary(error) ?? t("agent.request-failed")}
+            </div>
+            <Collapsible className="mt-1">
+              <CollapsibleTrigger
+                className="w-fit text-xs underline decoration-dotted underline-offset-2"
+                data-agent-error-details
+              >
+                <ChevronRight className="size-3" />
+                {t("error-page.error-details")}
+              </CollapsibleTrigger>
+              <CollapsiblePanel className="pt-1">
+                <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-words font-mono text-xs">
+                  {error}
+                </pre>
+              </CollapsiblePanel>
+            </Collapsible>
           </div>
         )
       )}

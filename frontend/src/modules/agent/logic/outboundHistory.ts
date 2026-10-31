@@ -47,7 +47,7 @@ export const sanitizeOutboundHistory = (
   let omitTurn = false;
   let omitInterruptedTurnMessages = false;
 
-  return messages.flatMap((message) => {
+  const outboundMessages = messages.flatMap((message): Message[] => {
     const references =
       message.role === "user"
         ? normalizeAgentResourceReferences(
@@ -100,6 +100,21 @@ export const sanitizeOutboundHistory = (
       }
     }
     return [outbound];
+  });
+
+  const currentTurnStart = outboundMessages.findLastIndex(
+    (message) => message.role === "user"
+  );
+  const historyEnd =
+    currentTurnStart < 0 ? outboundMessages.length : currentTurnStart;
+
+  return outboundMessages.flatMap((message, index) => {
+    if (index >= historyEnd) return [message];
+    if (message.role === "tool") return [];
+    if (message.role === "assistant" && message.toolCalls?.length) {
+      return message.content ? [{ ...message, toolCalls: undefined }] : [];
+    }
+    return [message];
   });
 };
 

@@ -868,12 +868,7 @@ export function AgentInput({
   );
 
   const handleOutcome = useCallback(
-    (
-      chatId: string,
-      page: { path: string; title: string },
-      errorPrefix: string,
-      outcome: Awaited<ReturnType<typeof runAgentLoop>>
-    ) => {
+    (chatId: string, outcome: Awaited<ReturnType<typeof runAgentLoop>>) => {
       const store = useAgentStore.getState();
       switch (outcome.kind) {
         case "completed":
@@ -886,17 +881,6 @@ export function AgentInput({
           store.interruptChatRun(chatId, getCurrentPageSnapshot());
           return;
         case "error": {
-          if (!isAgentAIConfigurationError(outcome.error)) {
-            store.addMessage({
-              chatId,
-              role: "assistant",
-              content: `${errorPrefix}${outcome.error.message}`,
-              metadata: {
-                route: page.path,
-                error: outcome.error.message,
-              },
-            });
-          }
           store.finishChatRun(chatId, {
             status: "error",
             lastError: outcome.error.message,
@@ -1377,7 +1361,7 @@ export function AgentInput({
           }
         }
 
-        handleOutcome(chatId, page, "Error: ", outcome);
+        handleOutcome(chatId, outcome);
         if (followUpRequest && finalText) {
           const followUp = await generateFollowUpQuestion(
             lastUserMessage?.content ?? "",

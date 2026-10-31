@@ -15,6 +15,44 @@ const userMessage = (metadata?: AgentMessage["metadata"]): AgentMessage => ({
 });
 
 describe("sanitizeOutboundHistory", () => {
+  test("keeps prior user-visible turns but omits their tool transcript", () => {
+    const history = sanitizeOutboundHistory([
+      { ...userMessage(), content: "Inspect the orders database" },
+      {
+        ...userMessage(),
+        id: "call-1",
+        role: "assistant",
+        content: "I will inspect it.",
+        toolCalls: [
+          { id: "tool-1", name: "get_database_overview", arguments: "{}" },
+        ],
+      },
+      {
+        ...userMessage(),
+        id: "result-1",
+        role: "tool",
+        toolCallId: "tool-1",
+        content: '{"schema":"large result"}',
+      },
+      {
+        ...userMessage(),
+        id: "answer-1",
+        role: "assistant",
+        content: "The database has three tables.",
+      },
+      { ...userMessage(), id: "turn-2", content: "List those tables" },
+    ]);
+
+    expect(history.map(({ role, content }) => [role, content])).toEqual([
+      ["user", "Inspect the orders database"],
+      ["assistant", "I will inspect it."],
+      ["assistant", "The database has three tables."],
+      ["user", "List those tables"],
+    ]);
+    expect(history.some((message) => message.role === "tool")).toBe(false);
+    expect(history.some((message) => message.toolCalls?.length)).toBe(false);
+  });
+
   test("adds one-turn Project reference without changing the chat question or later turns", () => {
     const message = userMessage({
       resourceReference: {
@@ -448,8 +486,10 @@ describe("buildOutboundHistory", () => {
       "projects/billing"
     );
 
-    expect(history).toHaveLength(projectTurn.length + 2);
+    expect(history).toHaveLength(4);
     expect(history[1].content).toContain('"name":"projects/billing"');
+    expect(history[1].content).toContain("How many databases?");
+    expect(history[2].content).toBe("Billing has one database.");
     expect(history.at(-1)?.content).toBe("How many instances?");
   });
 
@@ -465,8 +505,10 @@ describe("buildOutboundHistory", () => {
       "workspaces/default"
     );
 
-    expect(history).toHaveLength(projectTurn.length + 2);
+    expect(history).toHaveLength(4);
     expect(history[1].content).toContain('"name":"projects/billing"');
+    expect(history[1].content).toContain("How many databases?");
+    expect(history[2].content).toBe("Billing has one database.");
     expect(history.at(-1)?.content).toContain('"name":"projects/orders"');
   });
 

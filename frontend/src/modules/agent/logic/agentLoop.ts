@@ -21,18 +21,29 @@ import type {
   ToolExecutor,
 } from "./types";
 
-const MAX_ITERATIONS = 1000;
+const MAX_PROVIDER_CALLS = 12;
+const MAX_TOTAL_TOKENS = 60_000;
+const MAX_REQUEST_BYTES = 256 * 1024;
 const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 1000;
+const COMPACTION_NOTE =
+  "Earlier tool calls and results were omitted to fit the context limit. Re-fetch any state you need and verify it before repeating an action.";
+
+class ProviderCallLimitError extends Error {}
 
 async function callWithRetry<T>(
   fn: () => Promise<T>,
-  signal?: AbortSignal
+  signal: AbortSignal | undefined,
+  reserveProviderCall: () => boolean
 ): Promise<T> {
   let lastError: Error | undefined;
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     if (signal?.aborted) {
       throw new DOMException("Agent loop aborted", "AbortError");
+    }
+    if (!reserveProviderCall()) {
+      if (lastError) throw lastError;
+      throw new ProviderCallLimitError("Agent provider call limit reached.");
     }
     try {
       return await fn();
@@ -54,6 +65,61 @@ async function callWithRetry<T>(
     }
   }
   throw lastError!;
+}
+
+function serializedRequestSize(
+  messages: AIChatMessage[],
+  toolDefinitions: AIChatToolDefinition[]
+): number {
+  return new TextEncoder().encode(JSON.stringify({ messages, toolDefinitions }))
+    .byteLength;
+}
+
+function removeOldestCompletedToolCallGroup(messages: Message[]): boolean {
+  for (let index = 0; index < messages.length; index++) {
+    const message = messages[index];
+    if (message?.role !== "assistant" || !message.toolCalls?.length) continue;
+
+    const callIds = new Set(message.toolCalls.map((toolCall) => toolCall.id));
+    const groupEnd = messages.findIndex(
+      (candidate, candidateIndex) =>
+        candidateIndex > index && candidate.role === "assistant"
+    );
+    const end = groupEnd < 0 ? messages.length : groupEnd;
+    const completedIds = new Set<string>();
+    for (const candidate of messages.slice(index + 1, end)) {
+      if (
+        candidate.role === "tool" &&
+        candidate.toolCallId &&
+        callIds.has(candidate.toolCallId)
+      ) {
+        completedIds.add(candidate.toolCallId);
+      }
+    }
+    if (![...callIds].every((id) => completedIds.has(id))) continue;
+
+    for (let current = end - 1; current >= index; current--) {
+      const candidate = messages[current];
+      if (
+        current === index ||
+        (candidate?.role === "tool" &&
+          candidate.toolCallId &&
+          callIds.has(candidate.toolCallId))
+      ) {
+        messages.splice(current, 1);
+      }
+    }
+    return true;
+  }
+  return false;
+}
+
+function addCompactionNote(messages: Message[]): void {
+  const insertAt = messages.findIndex((message) => message.role !== "system");
+  messages.splice(insertAt < 0 ? messages.length : insertAt, 0, {
+    role: "system",
+    content: COMPACTION_NOTE,
+  });
 }
 
 const ROLE_MAP: Record<Message["role"], AIChatMessageRole> = {
@@ -187,6 +253,8 @@ export async function runAgentLoop(
     (tool) => tool.name === "done" || tool.name === "ask_user"
   );
   let totalTokensUsed = 0;
+  let providerCallCount = 0;
+  let contextCompacted = false;
   let awaitingTerminalCall = false;
   const apiAttempts = getCurrentTurnApiAttempts(messages);
 
@@ -195,29 +263,70 @@ export async function runAgentLoop(
     return { kind: "completed", text: error, success: false, totalTokensUsed };
   };
 
+  const completeWithRunLimit = (): AgentLoopOutcome => {
+    const text =
+      "I stopped before making another AI request because this run reached its usage limit. Earlier actions may already have completed; check their status before asking me to retry.";
+    callbacks?.onText?.(text);
+    return { kind: "completed", text, success: false, totalTokensUsed };
+  };
+
+  const completeWithRequestLimit = (): AgentLoopOutcome => {
+    const text =
+      "This request is too large to send safely, even after removing earlier tool results. Start a new chat or shorten the request.";
+    callbacks?.onText?.(text);
+    return { kind: "completed", text, success: false, totalTokensUsed };
+  };
+
   try {
-    for (let i = 0; i < MAX_ITERATIONS; i++) {
+    for (;;) {
       if (signal?.aborted) {
         return { kind: "aborted", totalTokensUsed };
       }
+      if (
+        totalTokensUsed >= MAX_TOTAL_TOKENS ||
+        providerCallCount >= MAX_PROVIDER_CALLS
+      ) {
+        return completeWithRunLimit();
+      }
 
-      const protoMessages = conversation.map(messageToProto);
+      const toolDefinitions = awaitingTerminalCall ? terminalTools : protoTools;
+      let protoMessages = conversation.map(messageToProto);
+      while (
+        serializedRequestSize(protoMessages, toolDefinitions) >
+          MAX_REQUEST_BYTES &&
+        removeOldestCompletedToolCallGroup(conversation)
+      ) {
+        if (!contextCompacted) {
+          addCompactionNote(conversation);
+          contextCompacted = true;
+        }
+        protoMessages = conversation.map(messageToProto);
+      }
+      if (
+        serializedRequestSize(protoMessages, toolDefinitions) >
+        MAX_REQUEST_BYTES
+      ) {
+        return completeWithRequestLimit();
+      }
 
       const response = await callWithRetry(
         () =>
           aiServiceClientConnect.chat(
             {
               messages: protoMessages,
-              toolDefinitions: awaitingTerminalCall
-                ? terminalTools
-                : protoTools,
+              toolDefinitions,
             },
             {
               signal,
               contextValues: createContextValues().set(silentContextKey, true),
             }
           ),
-        signal
+        signal,
+        () => {
+          if (providerCallCount >= MAX_PROVIDER_CALLS) return false;
+          providerCallCount++;
+          return true;
+        }
       );
 
       if (signal?.aborted) {
@@ -424,16 +533,13 @@ export async function runAgentLoop(
         totalTokensUsed,
       };
     }
-
-    return {
-      kind: "error",
-      error: new Error("Agent loop exceeded maximum iterations"),
-      totalTokensUsed,
-    };
   } catch (err) {
     const error = err instanceof Error ? err : new Error(String(err));
     if (signal?.aborted || error.name === "AbortError") {
       return { kind: "aborted", totalTokensUsed };
+    }
+    if (error instanceof ProviderCallLimitError) {
+      return completeWithRunLimit();
     }
     return {
       kind: "error",

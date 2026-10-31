@@ -177,6 +177,7 @@
     },
     "rename-chat-placeholder": "チャット名を入力",
     "reply": "返信",
+    "request-failed": "アシスタントはこのリクエストを完了できませんでした。",
     "request-stopped-by-user": "ユーザーがリクエストを停止しました",
     "request-stopped-retry-hint": "送信済みの操作は完了する可能性があります。再試行する前に状態を確認してください。",
     "resource-picker": {

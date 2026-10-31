@@ -2044,4 +2044,36 @@ describe("AgentChat", () => {
 
     unmount();
   });
+
+  test("shows one concise provider error and reveals its raw detail on demand", () => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat();
+    const rawError =
+      'OpenAI API error: {"error":{"message":"API key not valid. Please pass a valid API key."}}';
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: `Error: ${rawError}`,
+      metadata: { error: rawError },
+    });
+    store.finishChatRun(chat.id, { status: "error", lastError: rawError });
+
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+
+    expect(container.querySelectorAll("[data-agent-error-summary]")).toHaveLength(1);
+    expect(container.querySelector("[data-agent-error-summary]")?.textContent).toBe(
+      "API key not valid. Please pass a valid API key."
+    );
+    expect(container.textContent).not.toContain("OpenAI API error:");
+
+    const details = container.querySelector<HTMLButtonElement>(
+      "[data-agent-error-details]"
+    );
+    expect(details?.getAttribute("aria-expanded")).toBe("false");
+    act(() => details?.click());
+    expect(container.textContent).toContain(rawError);
+
+    unmount();
+  });
 });

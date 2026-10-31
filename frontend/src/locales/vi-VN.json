@@ -177,6 +177,7 @@
     },
     "rename-chat-placeholder": "Nhập tên cuộc trò chuyện",
     "reply": "Trả lời",
+    "request-failed": "Trợ lý không thể hoàn tất yêu cầu này.",
     "request-stopped-by-user": "Yêu cầu đã được người dùng dừng",
     "request-stopped-retry-hint": "Thao tác đã gửi vẫn có thể hoàn tất. Hãy kiểm tra trạng thái trước khi thử lại.",
     "resource-picker": {

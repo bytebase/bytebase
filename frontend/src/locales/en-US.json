@@ -177,6 +177,7 @@
     },
     "rename-chat-placeholder": "Enter chat name",
     "reply": "Reply",
+    "request-failed": "The assistant couldn't complete this request.",
     "request-stopped-by-user": "Request stopped by user",
     "request-stopped-retry-hint": "An action already sent may still complete. Check its status before retrying.",
     "resource-picker": {

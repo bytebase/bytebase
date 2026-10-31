@@ -359,6 +359,134 @@ describe("runAgentLoop", () => {
     });
   });
 
+  test("stops after cumulative provider usage reaches the run budget", async () => {
+    vi.mocked(aiServiceClientConnect.chat)
+      .mockResolvedValueOnce({
+        content: "",
+        toolCalls: [
+          {
+            id: "tool-1",
+            name: "lookup",
+            arguments: "{}",
+            metadata: "",
+          },
+        ],
+        usage: { totalTokens: 60_000 },
+      } as never)
+      .mockResolvedValueOnce({
+        content: "",
+        toolCalls: [
+          {
+            id: "done-1",
+            name: "done",
+            arguments: JSON.stringify({ text: "Done", success: true }),
+            metadata: "",
+          },
+        ],
+      } as never);
+
+    const outcome = await runAgentLoop(
+      [
+        { role: "system", content: "system" },
+        { role: "user", content: "Inspect" },
+      ],
+      [{ name: "lookup", description: "Lookup", parametersSchema: {} }],
+      vi.fn(async (name, args) =>
+        name === "done"
+          ? { kind: "done" as const, text: String(args.text), success: true }
+          : { kind: "tool_result" as const, result: "ok" }
+      )
+    );
+
+    expect(outcome.kind).toBe("completed");
+    expect(outcome).toMatchObject({ success: false, totalTokensUsed: 60_000 });
+    expect(aiServiceClientConnect.chat).toHaveBeenCalledOnce();
+  });
+
+  test("refuses a request that exceeds the serialized payload budget", async () => {
+    const outcome = await runAgentLoop(
+      [
+        { role: "system", content: "s".repeat(300_000) },
+        { role: "user", content: "Inspect" },
+      ],
+      [],
+      vi.fn()
+    );
+
+    expect(outcome).toMatchObject({ kind: "completed", success: false });
+    expect(aiServiceClientConnect.chat).not.toHaveBeenCalled();
+  });
+
+  test("prunes completed tool output while retaining the current question", async () => {
+    vi.mocked(aiServiceClientConnect.chat).mockResolvedValueOnce({
+      content: "",
+      toolCalls: [
+        {
+          id: "done-1",
+          name: "done",
+          arguments: JSON.stringify({ text: "Finished", success: true }),
+          metadata: "",
+        },
+      ],
+    } as never);
+    const largeResult = "schema".repeat(50_000);
+    const outcome = await runAgentLoop(
+      [
+        { role: "system", content: "system" },
+        { role: "user", content: "Inspect the schema" },
+        {
+          role: "assistant",
+          content: "Reading schema",
+          toolCalls: [{ id: "old-tool", name: "get_schema", arguments: "{}" }],
+        },
+        { role: "tool", toolCallId: "old-tool", content: largeResult },
+        { role: "user", content: "Now summarize it" },
+      ],
+      [],
+      vi.fn(async () => ({
+        kind: "done" as const,
+        text: "Finished",
+        success: true,
+      }))
+    );
+
+    expect(outcome).toMatchObject({ kind: "completed", success: true });
+    const request = vi.mocked(aiServiceClientConnect.chat).mock.calls[0]?.[0];
+    const sentMessages = request?.messages?.map((message) => message.content);
+    expect(sentMessages).toContain("Now summarize it");
+    expect(sentMessages?.join(" ")).toContain(
+      "omitted to fit the context limit"
+    );
+    expect(sentMessages?.join(" ")).not.toContain(largeResult);
+  });
+
+  test("limits provider attempts within one agent run", async () => {
+    vi.mocked(aiServiceClientConnect.chat).mockImplementation(async () => {
+      const callNumber = vi.mocked(aiServiceClientConnect.chat).mock.calls
+        .length;
+      return {
+        content: "",
+        toolCalls: [
+          {
+            id: `tool-${callNumber}`,
+            name: "lookup",
+            arguments: "{}",
+            metadata: "",
+          },
+        ],
+      } as never;
+    });
+
+    const outcome = await runAgentLoop(
+      [{ role: "user", content: "Inspect" }],
+      [{ name: "lookup", description: "Lookup", parametersSchema: {} }],
+      vi.fn(async () => ({ kind: "tool_result" as const, result: "ok" }))
+    );
+
+    expect(outcome).toMatchObject({ kind: "completed", success: false });
+    expect(aiServiceClientConnect.chat).toHaveBeenCalledTimes(12);
+  });
+
   test("replays completed tool flows with matched tool results", async () => {
     vi.mocked(aiServiceClientConnect.chat)
       .mockResolvedValueOnce({
