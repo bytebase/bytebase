@@ -53,7 +53,7 @@ func TestReviewLiveClaude(t *testing.T) {
 	require.NoError(t, err)
 	t.Logf("model calls: %d, tokens: %d, tool calls: %v", result.Calls, result.TotalTokens, tools.calls)
 	for _, finding := range result.Findings {
-		t.Logf("%s line %d: %s\n  rule: %s\n  evidence: %s\n  fix: %s", finding.Severity, finding.Line, finding.Title, finding.Rule, finding.Evidence, finding.Fix)
+		t.Logf("%s line %d: %s\n  rule: %s\n  reason: %s\n  evidence: %q\n  fix: %s", finding.Severity, finding.Line, finding.Title, finding.Rule, finding.Reason, finding.Evidence, finding.Fix)
 	}
 	for _, note := range result.Notes {
 		t.Logf("note: %s", note)
