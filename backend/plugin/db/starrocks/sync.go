@@ -24,15 +24,10 @@ const (
 )
 
 // systemDatabaseExclusion returns the quoted, comma-joined system databases to
-// exclude from instance discovery, per the driver's engine. StarRocks adds its
-// read-only `sys` metadatabase (Doris has no sys), matching the parser-side
-// system-database classification.
-func (d *Driver) systemDatabaseExclusion() string {
-	dbs := []string{"'information_schema'", "'_statistics_'"}
-	if d.dbType == storepb.Engine_STARROCKS {
-		dbs = append(dbs, "'sys'")
-	}
-	return strings.Join(dbs, ", ")
+// exclude from instance discovery, matching the parser-side system-database
+// classification. `sys` is StarRocks's read-only metadatabase, not a user database.
+func systemDatabaseExclusion() string {
+	return strings.Join([]string{"'information_schema'", "'_statistics_'", "'sys'"}, ", ")
 }
 
 // SyncInstance syncs the instance.
@@ -56,7 +51,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	}
 
 	// Query db info
-	where := fmt.Sprintf("LOWER(SCHEMA_NAME) NOT IN (%s)", d.systemDatabaseExclusion())
+	where := fmt.Sprintf("LOWER(SCHEMA_NAME) NOT IN (%s)", systemDatabaseExclusion())
 	query := `
 		SELECT
 			SCHEMA_NAME,
@@ -80,10 +75,8 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		); err != nil {
 			return nil, err
 		}
-		if d.dbType == storepb.Engine_DORIS || d.dbType == storepb.Engine_STARROCKS {
-			database.CharacterSet = ""
-			database.Collation = ""
-		}
+		database.CharacterSet = ""
+		database.Collation = ""
 		databases = append(databases, database)
 	}
 	if err := rows.Err(); err != nil {
@@ -127,9 +120,8 @@ func isSyncRollup(refreshType string) bool {
 
 // isMaterializedView reports whether a table row is a materialized view, based on its
 // table type and membership in the materialized-view set. StarRocks reports
-// materialized views with TABLE_TYPE='VIEW', Doris with 'BASE TABLE', and some setups
-// with 'MATERIALIZED VIEW'; in every case, presence in materializedViewMap is the
-// authoritative signal.
+// materialized views with TABLE_TYPE='VIEW', and some setups with 'MATERIALIZED VIEW';
+// in either case, presence in materializedViewMap is the authoritative signal.
 func isMaterializedView(tableType string, key db.TableKey, materializedViewMap map[db.TableKey]*metadatapb.MaterializedViewMetadata) bool {
 	if _, ok := materializedViewMap[key]; !ok {
 		return false
@@ -143,26 +135,15 @@ func isMaterializedView(tableType string, key db.TableKey, materializedViewMap m
 }
 
 // getMaterializedViews returns the materialized views of the current database keyed by
-// table name. Doris and StarRocks expose them through different catalogs, so the query
-// and projection are engine-specific. The query is best-effort: an engine/version that
-// does not support it is logged and yields an empty set rather than failing the sync.
+// table name. The query is best-effort: a version that does not support it is logged
+// and yields an empty set rather than failing the sync.
 func (d *Driver) getMaterializedViews(ctx context.Context) (map[db.TableKey]*metadatapb.MaterializedViewMetadata, error) {
 	materializedViewMap := make(map[db.TableKey]*metadatapb.MaterializedViewMetadata)
 
-	var query string
-	switch d.dbType {
-	case storepb.Engine_DORIS:
-		// Doris exposes materialized views via the mv_infos() table-valued function.
-		// https://doris.apache.org/docs/sql-manual/sql-functions/table-valued-functions/mv_infos
-		query = fmt.Sprintf(`SELECT Name, QuerySql FROM mv_infos("database"="%s")`, d.databaseName)
-	case storepb.Engine_STARROCKS:
-		// StarRocks exposes materialized views via information_schema.materialized_views.
-		// REFRESH_TYPE separates async MVs from synchronous rollups, which are excluded.
-		// IFNULL guards the bare-string scans below: database/sql errors on a NULL->string scan.
-		query = fmt.Sprintf(`SELECT TABLE_NAME, IFNULL(REFRESH_TYPE, ''), IFNULL(MATERIALIZED_VIEW_DEFINITION, '') FROM information_schema.materialized_views WHERE TABLE_SCHEMA = '%s'`, d.databaseName)
-	default:
-		return materializedViewMap, nil
-	}
+	// StarRocks exposes materialized views via information_schema.materialized_views.
+	// REFRESH_TYPE separates async MVs from synchronous rollups, which are excluded.
+	// IFNULL guards the bare-string scans below: database/sql errors on a NULL->string scan.
+	query := fmt.Sprintf(`SELECT TABLE_NAME, IFNULL(REFRESH_TYPE, ''), IFNULL(MATERIALIZED_VIEW_DEFINITION, '') FROM information_schema.materialized_views WHERE TABLE_SCHEMA = '%s'`, d.databaseName)
 
 	rows, err := d.db.QueryContext(ctx, query)
 	if err != nil {
@@ -174,16 +155,12 @@ func (d *Driver) getMaterializedViews(ctx context.Context) (map[db.TableKey]*met
 
 	for rows.Next() {
 		materializedView := &metadatapb.MaterializedViewMetadata{}
-		if d.dbType == storepb.Engine_STARROCKS {
-			var refreshType string
-			if err := rows.Scan(&materializedView.Name, &refreshType, &materializedView.Definition); err != nil {
-				return nil, err
-			}
-			if isSyncRollup(refreshType) {
-				continue
-			}
-		} else if err := rows.Scan(&materializedView.Name, &materializedView.Definition); err != nil {
+		var refreshType string
+		if err := rows.Scan(&materializedView.Name, &refreshType, &materializedView.Definition); err != nil {
 			return nil, err
+		}
+		if isSyncRollup(refreshType) {
+			continue
 		}
 		key := db.TableKey{Schema: "", Table: materializedView.Name}
 		materializedViewMap[key] = materializedView
@@ -354,7 +331,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMe
 		}
 
 		key := db.TableKey{Schema: "", Table: tableName}
-		// StarRocks reports materialized views as TABLE_TYPE='VIEW', Doris as 'BASE TABLE';
+		// StarRocks reports materialized views as TABLE_TYPE='VIEW';
 		// route any row whose name is in the materialized-view set to MaterializedViews.
 		if isMaterializedView(tableType, key, materializedViewMap) {
 			materializedView := materializedViewMap[key]
@@ -418,10 +395,8 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMe
 	}
 	// "characterSet":"utf8\u0000", "collation":"utf8_general_ci\u0000".
 	// ERROR: unsupported Unicode escape sequence (SQLSTATE 22P05).
-	if d.dbType == storepb.Engine_DORIS || d.dbType == storepb.Engine_STARROCKS {
-		databaseMetadata.CharacterSet = ""
-		databaseMetadata.Collation = ""
-	}
+	databaseMetadata.CharacterSet = ""
+	databaseMetadata.Collation = ""
 
 	return databaseMetadata, err
 }

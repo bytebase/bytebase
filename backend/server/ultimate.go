@@ -8,6 +8,7 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/db/cockroachdb"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/cosmosdb"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/databricks"
+	_ "github.com/bytebase/bytebase/backend/plugin/db/doris"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/dynamodb"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/elasticsearch"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/hive"

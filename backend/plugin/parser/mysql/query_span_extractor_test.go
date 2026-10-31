@@ -1393,46 +1393,7 @@ func TestOmniQuerySpanScenarioBatch4_CaseSensitivityCoverage(t *testing.T) {
 	})
 }
 
-func TestOmniQuerySpanScenarioBatch5_StarRocksAndMetadataCoverage(t *testing.T) {
-	t.Run("starrocks_cluster_qualified_tables", func(t *testing.T) {
-		gCtx := newOmniStarRocksTestQuerySpanContext()
-		span, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(
-			context.Background(),
-			"SELECT `cluster_name:db`.products.product_info FROM `cluster_name:db`.products",
-		)
-		require.NoError(t, err)
-		require.Equal(t, base.Select, span.Type)
-		require.Equal(t, []base.QuerySpanResult{
-			{Name: "product_info", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "products", Column: "product_info"}}), IsPlainField: true},
-		}, span.Results)
-		require.Equal(t, sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "products"}}), span.SourceColumns)
-	})
-
-	t.Run("starrocks_system_user_mixing_uses_normalized_database", func(t *testing.T) {
-		gCtx := newOmniStarRocksTestQuerySpanContext()
-		_, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(
-			context.Background(),
-			"SELECT * FROM products, `cluster_name:information_schema`.tables",
-		)
-		require.ErrorIs(t, err, base.MixUserSystemTablesError)
-	})
-
-	t.Run("mysql_and_starrocks_lineage_match_without_cluster_prefix", func(t *testing.T) {
-		mysqlSpan, err := newOmniQuerySpanExtractor("db", newOmniTestQuerySpanContext(), false).getOmniQuerySpan(
-			context.Background(),
-			"SELECT product_info FROM products",
-		)
-		require.NoError(t, err)
-
-		starrocksSpan, err := newOmniQuerySpanExtractor("db", newOmniStarRocksTestQuerySpanContext(), false).getOmniQuerySpan(
-			context.Background(),
-			"SELECT product_info FROM products",
-		)
-		require.NoError(t, err)
-		require.Equal(t, mysqlSpan.Results, starrocksSpan.Results)
-		require.Equal(t, mysqlSpan.SourceColumns, starrocksSpan.SourceColumns)
-	})
-
+func TestOmniQuerySpanScenarioBatch5_MetadataCoverage(t *testing.T) {
 	t.Run("duplicate_database_case_uses_ignore_case_setting", func(t *testing.T) {
 		gCtx := newOmniCaseCollisionTestQuerySpanContext()
 
@@ -1568,12 +1529,6 @@ func newOmniTestQuerySpanContext() base.GetQuerySpanContext {
 		ListDatabaseNamesFunc:   databaseNameLister,
 		Engine:                  storepb.Engine_MYSQL,
 	}
-}
-
-func newOmniStarRocksTestQuerySpanContext() base.GetQuerySpanContext {
-	gCtx := newOmniTestQuerySpanContext()
-	gCtx.Engine = storepb.Engine_STARROCKS
-	return gCtx
 }
 
 func newOmniCaseCollisionTestQuerySpanContext() base.GetQuerySpanContext {

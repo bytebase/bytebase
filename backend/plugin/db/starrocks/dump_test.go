@@ -14,17 +14,17 @@ func TestGetTemporaryView(t *testing.T) {
 }
 
 // BYT-9689: the dump path re-tags materialized-view rows so it emits
-// SHOW CREATE MATERIALIZED VIEW for them. Doris reports MVs as 'BASE TABLE',
-// StarRocks as 'VIEW'; both must become 'MATERIALIZED VIEW' when the name is a known
-// MV, while regular tables and views are left untouched.
+// SHOW CREATE MATERIALIZED VIEW for them. StarRocks reports MVs as 'VIEW', and some
+// setups as 'BASE TABLE'; either must become 'MATERIALIZED VIEW' when the name is a
+// known MV, while regular tables and views are left untouched.
 func TestMarkMaterializedViews(t *testing.T) {
 	tables := []*TableSchema{
-		{Name: "mv_doris", TableType: baseTableType},     // Doris MV reported as BASE TABLE
-		{Name: "mv_starrocks", TableType: viewTableType}, // StarRocks MV reported as VIEW
-		{Name: "v_regular", TableType: viewTableType},    // regular view (not an MV)
-		{Name: "t_plain", TableType: baseTableType},      // plain table
+		{Name: "mv_view", TableType: viewTableType}, // MV reported as VIEW
+		{Name: "mv_base", TableType: baseTableType}, // MV reported as BASE TABLE
+		{Name: "v_regular", TableType: viewTableType},
+		{Name: "t_plain", TableType: baseTableType},
 	}
-	markMaterializedViews(tables, map[string]bool{"mv_doris": true, "mv_starrocks": true})
+	markMaterializedViews(tables, map[string]bool{"mv_view": true, "mv_base": true})
 
 	require.Equal(t, materializedViewType, tables[0].TableType)
 	require.Equal(t, materializedViewType, tables[1].TableType)
