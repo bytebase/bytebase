@@ -143,6 +143,60 @@ func TestValidateQuery(t *testing.T) {
 			description: "EXPLAIN over nested parens is read-only",
 		},
 		{
+			// Plain EXPLAIN only plans, so it stays read-only over DML (the
+			// cases above). EXPLAIN ANALYZE runs the statement instead, which
+			// over DML writes: StarRocks aborts the INSERT transaction but the
+			// run still creates any partitions the rows need.
+			statement:   "EXPLAIN ANALYZE SELECT a FROM t",
+			valid:       true,
+			description: "EXPLAIN ANALYZE over a SELECT is read-only",
+		},
+		{
+			statement:   "EXPLAIN ANALYZE (SELECT 1)",
+			valid:       true,
+			description: "EXPLAIN ANALYZE over a parenthesized query is read-only",
+		},
+		{
+			statement:   "EXPLAIN ANALYZE ((SELECT 1))",
+			valid:       true,
+			description: "EXPLAIN ANALYZE over nested parens is read-only",
+		},
+		{
+			statement:   "EXPLAIN ANALYZE SELECT 1 UNION SELECT 2",
+			valid:       true,
+			description: "EXPLAIN ANALYZE over a set operation is read-only",
+		},
+		{
+			statement:   "EXPLAIN VERBOSE INSERT INTO users (id, name) VALUES (1, 'test')",
+			valid:       true,
+			description: "a plan-only modifier stays read-only over DML",
+		},
+		{
+			statement:   "EXPLAIN ANALYZE INSERT INTO users (id, name) VALUES (1, 'test')",
+			valid:       false,
+			description: "EXPLAIN ANALYZE over INSERT must be rejected",
+		},
+		{
+			statement:   "EXPLAIN ANALYZE INSERT INTO users SELECT id, name FROM other",
+			valid:       false,
+			description: "EXPLAIN ANALYZE over INSERT ... SELECT must be rejected",
+		},
+		{
+			statement:   "EXPLAIN ANALYZE UPDATE users SET name = 'test' WHERE id = 1",
+			valid:       false,
+			description: "EXPLAIN ANALYZE over UPDATE must be rejected",
+		},
+		{
+			statement:   "EXPLAIN ANALYZE DELETE FROM users WHERE id = 1",
+			valid:       false,
+			description: "EXPLAIN ANALYZE over DELETE must be rejected",
+		},
+		{
+			statement:   "EXPLAIN ANALYZE TRUNCATE TABLE users",
+			valid:       false,
+			description: "EXPLAIN ANALYZE over TRUNCATE must be rejected",
+		},
+		{
 			statement:   "SELECT EXTRACT(YEAR FROM MONTHS_ADD(NOW(), -1))",
 			valid:       true,
 			description: "EXTRACT(unit FROM expr) is read-only",

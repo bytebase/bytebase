@@ -2,7 +2,6 @@ package doris
 
 import (
 	"github.com/bytebase/omni/doris/ast"
-	"github.com/bytebase/omni/doris/parser"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -20,6 +19,12 @@ func init() {
 // alone would mis-accept CTE-prefixed DML such as `WITH x AS (...) UPDATE ...`,
 // which Classify would tag as SELECT because `WITH` is its first token.
 //
+// A query that carries INTO OUTFILE is refused: it writes its result set to
+// S3 or HDFS, so the data leaves the database past masking and past the
+// export gate. That is read off the tree (isReadOnlyAST), which it could not
+// be until omni's Doris grammar grew the clause — before then this function
+// matched an OUTFILE keyword token in the statement text instead (BOT-92).
+//
 // Syntax errors are surfaced up; that lets validateQueryRequest reject
 // malformed read-only SQL before execution.
 //
@@ -28,14 +33,6 @@ func init() {
 // false once a statement needs executing rather than reading, which is how the
 // driver decides between QueryContext and ExecContext.
 func validateQuery(statement string) (bool, bool, error) {
-	// INTO OUTFILE exports to S3 or HDFS, past masking and the export gate.
-	// Matched on text because omni's Doris grammar has no INTO node: it parses
-	// to a bare SelectStmt identical to one without the clause (BOT-92).
-	// Replace with an AST check, as starrocks/query.go does, once it has one.
-	//
-	if mentionsFileExport(statement) {
-		return false, false, nil
-	}
 	parsed, err := parseDorisSQL(statement)
 	if err != nil {
 		return false, false, err
@@ -84,12 +81,17 @@ func needsExecute(node ast.Node) bool {
 // SQL after parseDorisSQL succeeds.
 func isReadOnlyAST(node ast.Node) bool {
 	switch n := node.(type) {
-	case *ast.SelectStmt, *ast.SetOpStmt:
-		return true
+	case *ast.SelectStmt:
+		// INTO OUTFILE exports to S3 or HDFS, past masking and the export gate.
+		return n.Into == nil
+	case *ast.SetOpStmt:
+		return n.Into == nil
 	case *ast.GroupedQuery:
 		// A repeated trailing clause group or a parenthesized WITH group —
 		// (SELECT 1 LIMIT 1) LIMIT 2 — wraps a query; classify by the query.
-		return isReadOnlyAST(n.Query)
+		// The export gate applies to the group as well, since the clause
+		// attaches to whichever node is the statement's outermost query.
+		return n.Into == nil && isReadOnlyAST(n.Query)
 	case *ast.ShowStmt:
 		// Reject bare `SHOW` (Type is empty when the parser took the stub path
 		// without seeing a recognised variant keyword).
@@ -116,51 +118,25 @@ func isReadOnlyAST(node ast.Node) bool {
 // isExplainableInner reports whether `node` is a shape that EXPLAIN can
 // legitimately wrap (SELECT family or DML). DDL inside EXPLAIN is rejected:
 // Doris only supports EXPLAIN on query and DML statements.
+//
+// An export stays refused under EXPLAIN. The engine does not treat
+// `EXPLAIN SELECT ... INTO OUTFILE ...` as a plain plan: it fails with the
+// same "Please specify BROKER properties or check your local file path" as
+// the bare export, where `EXPLAIN SELECT 1` returns a plan (container-
+// verified). So the clause is not inert here, and the gate holds.
 func isExplainableInner(node ast.Node) bool {
 	switch n := node.(type) {
-	case *ast.SelectStmt, *ast.SetOpStmt:
-		return true
+	case *ast.SelectStmt:
+		return n.Into == nil
+	case *ast.SetOpStmt:
+		return n.Into == nil
 	case *ast.GroupedQuery:
 		// EXPLAIN (SELECT 1 LIMIT 1) LIMIT 2 — engine-verified accept;
 		// classify by the wrapped query.
-		return isExplainableInner(n.Query)
+		return n.Into == nil && isExplainableInner(n.Query)
 	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt,
 		*ast.MergeStmt, *ast.TruncateTableStmt:
 		return true
 	}
 	return false
 }
-
-// mentionsFileExport reports whether the statement carries an OUTFILE keyword
-// token. Doris only; see validateQuery for why the AST cannot answer this.
-//
-// The lexer decides, not the text, so OUTFILE inside a string literal, a
-// backtick-quoted identifier or a plain comment yields no keyword and the
-// statement serves. Reading an audit log for attempted exports stays a
-// servable query.
-//
-// Nested block comments are the exception, and they fail closed rather than
-// being understood: this lexer ends a comment at the first "*/", so
-// "/* a /* b */ OUTFILE */" leaks its tail back into the token stream and the
-// keyword is seen. Doris itself nests, so the two disagree about what such a
-// statement even is (BOT-93). The disagreement is one-directional here: what
-// leaks is extra tokens, so a write Doris would run cannot go unseen.
-//
-// A statement that will not lex fails closed as well: an unterminated string
-// or comment is exactly where a keyword could be hiding.
-func mentionsFileExport(statement string) bool {
-	tokens, lexErrors := parser.Tokenize(statement)
-	if len(lexErrors) > 0 {
-		return true
-	}
-	for _, token := range tokens {
-		if token.Kind == outfileTokenKind {
-			return true
-		}
-	}
-	return false
-}
-
-// outfileTokenKind is resolved from the keyword table rather than hardcoded.
-// DUMPFILE is deliberately absent: it is MySQL syntax, not a Doris keyword.
-var outfileTokenKind, _ = parser.KeywordToken("outfile")

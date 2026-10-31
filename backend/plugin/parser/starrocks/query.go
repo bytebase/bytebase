@@ -97,9 +97,20 @@ func isReadOnlyAST(node ast.Node) bool {
 		return n.Target != nil
 	case *ast.ExplainStmt:
 		// EXPLAIN requires an inner query; the inner query must itself be a
-		// shape EXPLAIN is meaningful for (SELECT/DML/Show). This blocks
+		// shape EXPLAIN is meaningful for (SELECT family or DML). This blocks
 		// inputs like `EXPLAIN`, `EXPLAIN DROP TABLE t`, etc.
-		return n.Query != nil && isExplainableInner(n.Query)
+		if n.Query == nil || !isExplainableInner(n.Query) {
+			return false
+		}
+		// EXPLAIN ANALYZE runs the statement rather than only planning it, so
+		// over DML it writes. StarRocks aborts the INSERT transaction by
+		// default, but the run still creates any partitions the rows need and
+		// those outlive the abort. The plan-only modifiers never execute, so
+		// they stay readable over DML.
+		if n.Type == "ANALYZE" {
+			return isReadInner(n.Query)
+		}
+		return true
 	case *ast.HelpStmt:
 		return true
 	default:
@@ -109,18 +120,30 @@ func isReadOnlyAST(node ast.Node) bool {
 
 // isExplainableInner reports whether `node` is a shape that EXPLAIN can
 // legitimately wrap (SELECT family or DML). DDL inside EXPLAIN is rejected:
-// Doris only supports EXPLAIN on query and DML statements.
+// StarRocks only supports EXPLAIN on query and DML statements.
 func isExplainableInner(node ast.Node) bool {
+	if isReadInner(node) {
+		return true
+	}
+	switch node.(type) {
+	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt,
+		*ast.MergeStmt, *ast.TruncateTableStmt:
+		return true
+	}
+	return false
+}
+
+// isReadInner reports whether `node` is a SELECT-family query, which reads and
+// never writes. EXPLAIN ANALYZE is read-only only over these.
+func isReadInner(node ast.Node) bool {
 	switch n := node.(type) {
 	case *ast.SelectStmt, *ast.SetOpStmt:
 		return true
 	case *ast.ParenSelect:
 		// EXPLAIN (SELECT ...) / EXPLAIN ((SELECT ...)) — engine-verified
-		// accepts; classify by the wrapped query.
-		return isExplainableInner(n.Sel)
-	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt,
-		*ast.MergeStmt, *ast.TruncateTableStmt:
-		return true
+		// accepts; classify by the wrapped query. ParenSelect only ever wraps
+		// a SELECT, SetOpStmt or another ParenSelect, so no DML hides here.
+		return isReadInner(n.Sel)
 	}
 	return false
 }

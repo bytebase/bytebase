@@ -269,15 +269,18 @@ func TestMCPClampRefusesWhatItCannotShowIsARead(t *testing.T) {
 			reason:    "the statement is not a read",
 		},
 		{
-			// Doris nests block comments; the shared stripper stops at the
-			// first "*/", so stripping first would leave text between INTO
-			// and OUTFILE and lose a keyword-pair match. The guard reads the
-			// raw statement for that reason.
+			// Doris nests block comments and omni's Doris lexer does not: it
+			// ends one at the first "*/", so the tail leaks back into the
+			// token stream. What leaks is not a clause, so the statement does
+			// not parse and is refused as a syntax error rather than reaching
+			// the export gate. Doris, which nests, reads the same text as an
+			// export, so the two disagree about what this statement is and it
+			// is refused either way (BOT-93).
 			name:      "a nested comment cannot hide a Doris export",
 			engine:    storepb.Engine_DORIS,
 			statement: "SELECT * FROM employee\nINTO /* outer /* inner */ tail */ OUTFILE \"s3://bucket/export/\"\nFORMAT AS PARQUET",
 			refused:   true,
-			reason:    "the statement is not a read",
+			reason:    "the statement could not be parsed",
 		},
 		{
 			name:      "nor can a line comment",
@@ -287,11 +290,16 @@ func TestMCPClampRefusesWhatItCannotShowIsARead(t *testing.T) {
 			reason:    "the statement is not a read",
 		},
 		{
+			// An unterminated literal means there is no tree to classify, so
+			// the clamp refuses it as the syntax error it is. It was refused
+			// as "not a read" while a token scan stood in for the export
+			// gate, since that scan treated any lex error as a possible
+			// hidden keyword.
 			name:      "an unlexable Doris statement fails closed",
 			engine:    storepb.Engine_DORIS,
 			statement: "SELECT * FROM t WHERE a = 'unterminated",
 			refused:   true,
-			reason:    "the statement is not a read",
+			reason:    "the statement could not be parsed",
 		},
 		{
 			// USE rebinds the connection's catalog and schema, so an
@@ -349,16 +357,17 @@ func TestMCPClampRefusesWhatItCannotShowIsARead(t *testing.T) {
 		},
 		{
 			// Not "inside a comment" for a NESTED one: omni's Doris lexer ends
-			// a comment at the first "*/", so the tail leaks back into the
-			// token stream and the keyword is seen. Doris itself nests, so
-			// this query is a plain SELECT 1 there and Bytebase refuses it
-			// anyway (BOT-93). Pinned as the cost of failing closed on a
-			// disagreement rather than guessing which lexer is right.
+			// a comment at the first "*/", so "OUTFILE */" leaks back into the
+			// token stream, where it parses as nothing and the statement is
+			// refused as a syntax error. Doris itself nests, so this query is
+			// a plain SELECT 1 there (BOT-93). Pinned as the cost of failing
+			// closed on a disagreement rather than guessing which lexer is
+			// right.
 			name:      "a nested comment holding the keyword refuses, though Doris would not",
 			engine:    storepb.Engine_DORIS,
 			statement: "SELECT 1 /* outer /* inner */ OUTFILE */",
 			refused:   true,
-			reason:    "the statement is not a read",
+			reason:    "the statement could not be parsed",
 		},
 		{
 			name:      "a read on an engine with no splitter is still classified",
