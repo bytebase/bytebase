@@ -6,6 +6,7 @@ import {
   PROJECT_V1_ROUTE_DATABASE_DETAIL,
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
   PROJECT_V1_ROUTE_ISSUES,
+  PROJECT_V1_ROUTE_PLAN_DETAIL,
   PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
 } from "@/app/router/handles";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
@@ -173,6 +174,8 @@ beforeEach(async () => {
     draftsByChatId: initialState.draftsByChatId,
     currentChatId: initialState.currentChatId,
     abortControllersByChatId: {},
+    queuedUserMessagesByChatId: {},
+    queuedUserMessageInFlightByChatId: {},
   });
 
   mocks.useTranslation.mockReset();
@@ -575,7 +578,7 @@ describe("AgentChat", () => {
     unmount();
   });
 
-  test("keeps a draft-only follow-up separate from the answer action", () => {
+  test("keeps an Ask next prompt separate from the answer action", () => {
     const store = useAgentStore.getState();
     const chat = store.createChat({ context: "projects/sample" });
     store.addMessage({
@@ -624,6 +627,14 @@ describe("AgentChat", () => {
       []
     );
     expect(store.getMessages(chat.id)).toHaveLength(1);
+    act(() => {
+      store.queueUserMessage({
+        chatId: chat.id,
+        text: "What is the impact of these issues?",
+        page: { path: "/projects/sample", title: "Sample" },
+      });
+    });
+    expect(followUp?.disabled).toBe(true);
     unmount();
   });
 
@@ -664,7 +675,7 @@ describe("AgentChat", () => {
     unmount();
   });
 
-  test("shows three follow-up questions below the answer timestamp and selects one without sending", () => {
+  test("shows three Ask next questions below the answer timestamp", () => {
     const store = useAgentStore.getState();
     const chat = store.createChat({ context: "projects/sample" });
     store.addMessage({
@@ -730,7 +741,7 @@ describe("AgentChat", () => {
     act(() => {
       store.appendContinueActions(
         chat.id,
-        message.id,
+        message!.id,
         [{ kind: "continue", prompt: "How do I connect a new instance?" }],
         []
       );
@@ -767,9 +778,9 @@ describe("AgentChat", () => {
           ...state.messagesByChatId,
           [chat.id]: [
             {
-              ...message,
+              ...message!,
               metadata: {
-                ...message.metadata,
+                ...message!.metadata,
                 actions: [
                   { kind: "continue", prompt: "What will this change affect?" },
                   { kind: "continue", prompt: "How should I validate it?" },
@@ -1466,6 +1477,11 @@ describe("AgentChat", () => {
               kind: "database",
               name: "projects/orders/instances/prod/databases/orders",
             },
+            {
+              kind: "plan",
+              name: "projects/orders/plans/123",
+              title: "Update orders",
+            },
           ],
         },
       },
@@ -1491,8 +1507,12 @@ describe("AgentChat", () => {
     const databaseLink = Array.from(container.querySelectorAll("a")).find(
       (link) => link.textContent === "orders"
     );
+    const planLink = Array.from(container.querySelectorAll("a")).find(
+      (link) => link.textContent === "Update orders"
+    );
     expect(issueLink).toBeInstanceOf(HTMLElement);
     expect(databaseLink).toBeInstanceOf(HTMLElement);
+    expect(planLink).toBeInstanceOf(HTMLElement);
 
     act(() => {
       issueLink?.dispatchEvent(
@@ -1517,6 +1537,16 @@ describe("AgentChat", () => {
         databaseName: "orders",
       },
       query: { parent: "projects/orders/instances/prod" },
+    });
+
+    act(() => {
+      planLink?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, cancelable: true })
+      );
+    });
+    expect(mocks.routerPush).toHaveBeenCalledWith({
+      name: PROJECT_V1_ROUTE_PLAN_DETAIL,
+      params: { projectId: "orders", planId: "123" },
     });
 
     unmount();
@@ -1784,8 +1814,8 @@ describe("AgentChat", () => {
     ) as HTMLTimeElement[];
     expect(timestamps).toHaveLength(2);
     expect(timestamps.map((timestamp) => timestamp.dateTime)).toEqual([
-      new Date(userMessage.createdTs).toISOString(),
-      new Date(assistantMessage.createdTs).toISOString(),
+      new Date(userMessage!.createdTs).toISOString(),
+      new Date(assistantMessage!.createdTs).toISOString(),
     ]);
     expect(timestamps[1]?.parentElement?.className).not.toContain("gap-y-2");
     expect(timestamps[1]?.previousElementSibling?.className).toContain(
@@ -1948,7 +1978,7 @@ describe("AgentChat", () => {
       }
     });
 
-    expect(assistantMessage.toolCalls).toHaveLength(2);
+    expect(assistantMessage!.toolCalls).toHaveLength(2);
     expect(container.textContent).toContain("first-result");
     expect(container.textContent).toContain("second-result");
 

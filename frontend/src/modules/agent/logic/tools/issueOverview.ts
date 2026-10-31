@@ -27,7 +27,7 @@ import {
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { getRolloutFromPlan } from "@/utils";
 import { shouldRedirectToIssueDetail } from "@/utils/v1/issue/plan";
-import type { AgentEvidence } from "../types";
+import type { AgentEvidence, AgentEvidenceReference } from "../types";
 
 const TASK_RUN_PAGE_SIZE = 10;
 const MAX_FAILED_TASKS = 10;
@@ -256,7 +256,7 @@ export async function collectIssueOverview(
     issueStatus: enumName(IssueStatus, issue.status),
     approvalStatus: enumName(ApprovalStatus, issue.approvalStatus),
   };
-  const evidence: AgentEvidence = {
+  let evidence: AgentEvidence = {
     project: projectName,
     references: [{ kind: "issue", name: issue.name, title: issue.title }],
   };
@@ -323,6 +323,15 @@ export async function collectIssueOverview(
           reviewOnPlan: !shouldRedirectToIssueDetail(planResult.value, issue),
         }
       : { status: "unavailable" as const };
+  if (plan.status === "available") {
+    evidence = {
+      ...evidence,
+      references: [
+        ...evidence.references,
+        { kind: "plan", name: plan.name, title: plan.title },
+      ],
+    };
+  }
   const planCheck =
     planCheckResult.status === "fulfilled"
       ? planCheckResult.value.name === `${plan.name}/planCheckRun`
@@ -475,25 +484,29 @@ export function extractIssueOverviewEvidence(
       return undefined;
     }
 
-    const references = evidence.references.flatMap((reference) => {
-      if (!reference || typeof reference !== "object") return [];
-      const value = reference as Record<string, unknown>;
-      if (
-        value.kind !== "issue" ||
-        typeof value.name !== "string" ||
-        !isIssueNameInProject(project, value.name) ||
-        typeof value.title !== "string"
-      ) {
+    const references = evidence.references.flatMap<AgentEvidenceReference>(
+      (reference) => {
+        if (!reference || typeof reference !== "object") return [];
+        const value = reference as Record<string, unknown>;
+        if (typeof value.name !== "string" || typeof value.title !== "string") {
+          return [];
+        }
+        if (
+          value.kind === "issue" &&
+          isIssueNameInProject(project, value.name)
+        ) {
+          return [
+            { kind: "issue" as const, name: value.name, title: value.title },
+          ];
+        }
+        if (value.kind === "plan" && isPlanNameInProject(project, value.name)) {
+          return [
+            { kind: "plan" as const, name: value.name, title: value.title },
+          ];
+        }
         return [];
       }
-      return [
-        {
-          kind: "issue" as const,
-          name: value.name as string,
-          title: value.title,
-        },
-      ];
-    });
+    );
 
     return references.length > 0 ? { project, references } : undefined;
   } catch {

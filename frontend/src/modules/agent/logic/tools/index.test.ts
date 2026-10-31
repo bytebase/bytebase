@@ -23,6 +23,7 @@ import {
 
 const projectApi = vi.hoisted(() => ({ getProject: vi.fn() }));
 const issueApi = vi.hoisted(() => ({ getIssue: vi.fn() }));
+const planApi = vi.hoisted(() => ({ getPlan: vi.fn() }));
 const databaseApi = vi.hoisted(() => ({ getDatabase: vi.fn() }));
 const celApi = vi.hoisted(() => ({ batchParse: vi.fn() }));
 const resourceChoiceApi = vi.hoisted(() => ({ validate: vi.fn() }));
@@ -30,6 +31,7 @@ const resourceChoiceApi = vi.hoisted(() => ({ validate: vi.fn() }));
 vi.mock("@/api", () => ({
   projectServiceClientConnect: { getProject: projectApi.getProject },
   issueServiceClientConnect: { getIssue: issueApi.getIssue },
+  planServiceClientConnect: { getPlan: planApi.getPlan },
   databaseServiceClientConnect: { getDatabase: databaseApi.getDatabase },
   celServiceClientConnect: { batchParse: celApi.batchParse },
 }));
@@ -78,6 +80,9 @@ vi.mock("./projectGovernanceOverview", () => ({
 vi.mock("./issueOverview", () => ({
   createIssueOverviewTool: vi.fn(() => vi.fn(async () => "issue_overview")),
 }));
+vi.mock("./planOverview", () => ({
+  createPlanOverviewTool: vi.fn(() => vi.fn(async () => "plan_overview")),
+}));
 vi.mock("./workspaceOverview", () => ({
   createWorkspaceOverviewTool: vi.fn(() =>
     vi.fn(async () => "workspace_overview")
@@ -111,7 +116,9 @@ import { createDatabaseOverviewTool } from "./databaseOverview";
 import { createDomActionTool } from "./domAction";
 import { createIssueOverviewTool } from "./issueOverview";
 import { createNavigateTool } from "./navigate";
+import { createPageStateTool } from "./pageState";
 import { getPendingApiCallPreview } from "./pendingApiCall";
+import { createPlanOverviewTool } from "./planOverview";
 import { createProjectGovernanceOverviewTool } from "./projectGovernanceOverview";
 import { createProjectOpenIssuesTool } from "./projectOpenIssues";
 import { createProjectOverviewTool } from "./projectOverview";
@@ -145,6 +152,11 @@ beforeEach(() => {
     })
   );
   databaseApi.getDatabase.mockReset();
+  planApi.getPlan.mockReset();
+  planApi.getPlan.mockResolvedValue({
+    name: "projects/referenced/plans/12",
+    state: State.ACTIVE,
+  });
   databaseApi.getDatabase.mockResolvedValue({
     name: "instances/prod/databases/app",
     project: "projects/referenced",
@@ -228,6 +240,11 @@ describe("agent tools referenced project", () => {
       "tool-issue"
     );
     await referencedExecutor(
+      "get_plan_overview",
+      { planName: "projects/referenced/plans/123" },
+      "tool-plan"
+    );
+    await referencedExecutor(
       "get_database_overview",
       { databaseName: "projects/referenced/instances/prod/databases/app" },
       "tool-database"
@@ -245,6 +262,7 @@ describe("agent tools referenced project", () => {
       createProjectOpenIssuesTool,
       createProjectRecentActivityTool,
       createIssueOverviewTool,
+      createPlanOverviewTool,
       createDatabaseOverviewTool,
     ]) {
       expect(factory).toHaveBeenCalledWith({
@@ -342,6 +360,121 @@ describe("agent tools referenced project", () => {
     expect(overview).toHaveBeenCalledWith({
       issueName: "projects/referenced/issues/12",
     });
+  });
+
+  test("allows an exact selected Plan read without Project access", async () => {
+    projectApi.getProject.mockRejectedValue(new Error("permission denied"));
+    const overview = vi.fn(async () => "plan_overview");
+    vi.mocked(createPlanOverviewTool).mockReturnValueOnce(overview);
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      context: "workspaces/demo",
+      referencedProject: "projects/referenced",
+      referencedPlan: "projects/referenced/plans/12",
+    });
+
+    expect(
+      await executor(
+        "get_plan_overview",
+        { planName: "projects/referenced/plans/12" },
+        "tool-plan"
+      )
+    ).toEqual({ kind: "tool_result", result: "plan_overview" });
+    expect(overview).toHaveBeenCalledWith({
+      planName: "projects/referenced/plans/12",
+    });
+    expect(planApi.getPlan).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "projects/referenced/plans/12" }),
+      expect.anything()
+    );
+
+    expect(
+      await executor(
+        "call_api",
+        {
+          operationId: "PlanService/GetPlan",
+          body: { name: "projects/referenced/plans/12" },
+        },
+        "tool-api"
+      )
+    ).toEqual({ kind: "tool_result", result: "call_api" });
+    expect(dispatchPreparedApiCall).toHaveBeenCalledTimes(1);
+  });
+
+  test("selected Plan access cannot read other Plans or use project-wide APIs", async () => {
+    projectApi.getProject.mockRejectedValue(new Error("permission denied"));
+    const overview = vi.fn(async () => "must not run");
+    vi.mocked(createPlanOverviewTool).mockReturnValueOnce(overview);
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      referencedProject: "projects/referenced",
+      referencedPlan: "projects/referenced/plans/12",
+    });
+
+    for (const [name, args] of [
+      ["get_plan_overview", { planName: "projects/referenced/plans/other" }],
+      ["get_project_overview", {}],
+      [
+        "call_api",
+        {
+          operationId: "PlanService/GetPlan",
+          body: { name: "projects/referenced/plans/other" },
+        },
+      ],
+      [
+        "call_api",
+        {
+          operationId: "PlanService/UpdatePlan",
+          body: { plan: { name: "projects/referenced/plans/12" } },
+        },
+      ],
+      [
+        "call_api",
+        {
+          operationId: "PlanService/ListPlans",
+          body: { parent: "projects/referenced" },
+        },
+      ],
+    ] as const) {
+      expect(await executor(name, args, `tool-${name}`)).toEqual({
+        kind: "tool_result",
+        result: JSON.stringify({
+          error:
+            "The referenced project is unavailable or you do not have access.",
+        }),
+      });
+    }
+    expect(overview).not.toHaveBeenCalled();
+    expect(planApi.getPlan).not.toHaveBeenCalled();
+    expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
+  });
+
+  test("does not accept a deleted or mismatched Plan as access proof", async () => {
+    projectApi.getProject.mockRejectedValue(new Error("permission denied"));
+    const overview = vi.fn(async () => "must not run");
+    vi.mocked(createPlanOverviewTool).mockReturnValueOnce(overview);
+    for (const plan of [
+      { name: "projects/referenced/plans/12", state: State.DELETED },
+      { name: "projects/referenced/plans/other", state: State.ACTIVE },
+    ]) {
+      planApi.getPlan.mockResolvedValueOnce(plan);
+      const executor = createToolExecutor({} as AppRouterInstance, {
+        referencedProject: "projects/referenced",
+        referencedPlan: "projects/referenced/plans/12",
+      });
+      expect(
+        await executor(
+          "get_plan_overview",
+          { planName: "projects/referenced/plans/12" },
+          "tool-plan"
+        )
+      ).toEqual({
+        kind: "tool_result",
+        result: JSON.stringify({
+          error:
+            "The referenced project is unavailable or you do not have access.",
+        }),
+      });
+    }
+    expect(overview).not.toHaveBeenCalled();
   });
 
   test("allows a selected Issue decision to request permission without Project access", async () => {
@@ -1368,6 +1501,7 @@ describe("agent tools read-only mode", () => {
       "get_project_overview",
       "get_project_governance_overview",
       "get_issue_overview",
+      "get_plan_overview",
       "get_database_overview",
       "get_database_count",
       "get_workspace_overview",
@@ -1399,6 +1533,9 @@ describe("agent tools read-only mode", () => {
     );
     expect(getToolDefinitions().map((tool) => tool.name)).toContain(
       "get_issue_overview"
+    );
+    expect(getToolDefinitions().map((tool) => tool.name)).toContain(
+      "get_plan_overview"
     );
     expect(getToolDefinitions().map((tool) => tool.name)).toContain(
       "get_database_overview"
@@ -2176,6 +2313,94 @@ describe("agent tools search_api", () => {
 });
 
 describe("agent tools concurrency guard", () => {
+  test.each(["get_page_state", "navigate", "dom_action"])(
+    "does not use the live page for background %s calls",
+    async (name) => {
+      const pageState = vi.fn(async () => "page_state");
+      const navigate = vi.fn(async () => "navigate");
+      const domAction = vi.fn(async () => "dom_action");
+      vi.mocked(createPageStateTool).mockReturnValue(pageState);
+      vi.mocked(createNavigateTool).mockReturnValue(navigate);
+      vi.mocked(createDomActionTool).mockReturnValue(domAction);
+
+      const executeTool = createToolExecutor({} as AppRouterInstance, {
+        chatId: "background-chat",
+        canUseCurrentPage: () => false,
+      });
+      const result = await executeTool(name, {}, `tool-${name}`);
+
+      expect(result).toMatchObject({
+        kind: "tool_result",
+        result: expect.stringContaining("not selected"),
+      });
+      expect(pageState).not.toHaveBeenCalled();
+      expect(navigate).not.toHaveBeenCalled();
+      expect(domAction).not.toHaveBeenCalled();
+    }
+  );
+
+  test("resumes page tools after reselecting a chat without blocking resource tools", async () => {
+    let selected = false;
+    const canUseCurrentPage = () => selected;
+    const executeTool = createToolExecutor({} as AppRouterInstance, {
+      chatId: "background-chat",
+      canUseCurrentPage,
+    });
+    expect(createDomActionTool).toHaveBeenLastCalledWith(
+      expect.anything(),
+      canUseCurrentPage
+    );
+
+    expect(
+      await executeTool("get_project_overview", {}, "tool-overview")
+    ).toEqual({
+      kind: "tool_result",
+      result: "project_overview",
+    });
+    expect(await executeTool("search_api", {}, "tool-search")).toEqual({
+      kind: "tool_result",
+      result: "search_api",
+    });
+    expect(
+      await executeTool("get_page_state", {}, "tool-page-1")
+    ).toMatchObject({
+      kind: "tool_result",
+      result: expect.stringContaining("not selected"),
+    });
+
+    selected = true;
+    expect(await executeTool("get_page_state", {}, "tool-page-2")).toEqual({
+      kind: "tool_result",
+      result: "page_state",
+    });
+  });
+
+  test("discards a page-state result if its chat is backgrounded during the read", async () => {
+    let selected = true;
+    let resolveRead: ((result: string) => void) | undefined;
+    const pageState = vi.fn(
+      () =>
+        new Promise<string>((resolve) => {
+          resolveRead = resolve;
+        })
+    );
+    vi.mocked(createPageStateTool).mockReturnValue(pageState);
+    const executeTool = createToolExecutor({} as AppRouterInstance, {
+      chatId: "background-chat",
+      canUseCurrentPage: () => selected,
+    });
+
+    const result = executeTool("get_page_state", {}, "tool-page");
+    expect(pageState).toHaveBeenCalledTimes(1);
+    selected = false;
+    resolveRead?.("another chat's page");
+
+    await expect(result).resolves.toMatchObject({
+      kind: "tool_result",
+      result: expect.stringContaining("not selected"),
+    });
+  });
+
   test("blocks concurrent page-changing tools across threads", async () => {
     let releaseNavigation: (() => void) | undefined;
     vi.mocked(createNavigateTool).mockImplementation(() => {

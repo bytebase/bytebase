@@ -4,20 +4,24 @@ import { useRef, useState } from "react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { getLayerRoot } from "@/components/ui/layer";
 import { DEBOUNCE_SEARCH_DELAY } from "@/types/common";
+import { State } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { DatabaseSchema$ } from "@/types/proto-es/v1/database_service_pb";
 import { type Issue, IssueSchema } from "@/types/proto-es/v1/issue_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { ProjectSchema } from "@/types/proto-es/v1/project_service_pb";
+import { PlanSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { InstanceResourceSchema } from "@/types/proto-es/v1/instance_service_pb";
 
 const mocks = vi.hoisted(() => ({
   searchAgentProjects: vi.fn(),
   searchAgentDatabases: vi.fn(),
   searchAgentIssues: vi.fn(),
+  searchAgentPlans: vi.fn(),
   onSelectProject: vi.fn(),
   onSelectDatabase: vi.fn(),
   onSelectIssue: vi.fn(),
+  onSelectPlan: vi.fn(),
   onOpenChange: vi.fn(),
   fetchProject: vi.fn(),
   loadProjectIamPolicy: vi.fn(),
@@ -25,9 +29,13 @@ const mocks = vi.hoisted(() => ({
   canListWorkspaceDatabases: true,
   canGetWorkspaceDatabases: undefined as boolean | undefined,
   canGetWorkspaceProjects: true,
+  canListWorkspacePlans: true,
+  canGetWorkspacePlans: true,
   projectGetPermissions: {} as Record<string, boolean>,
   projectDatabaseListPermissions: {} as Record<string, boolean>,
   projectDatabaseGetPermissions: {} as Record<string, boolean>,
+  projectPlanListPermissions: {} as Record<string, boolean>,
+  projectPlanGetPermissions: {} as Record<string, boolean>,
   projectsByName: {} as Record<string, Project>,
   projectPoliciesByName: {} as Record<string, object>,
   permissionDataReady: true,
@@ -37,6 +45,7 @@ vi.mock("../logic/resourceSearch", () => ({
   searchAgentProjects: mocks.searchAgentProjects,
   searchAgentDatabases: mocks.searchAgentDatabases,
   searchAgentIssues: mocks.searchAgentIssues,
+  searchAgentPlans: mocks.searchAgentPlans,
 }));
 
 vi.mock("@/stores/app", () => ({
@@ -58,7 +67,9 @@ vi.mock("@/stores/app", () => ({
         (permission === "bb.databases.list" && mocks.canListWorkspaceDatabases) ||
         (permission === "bb.databases.get" &&
           (mocks.canGetWorkspaceDatabases ?? mocks.canListWorkspaceDatabases)) ||
-        (permission === "bb.projects.get" && mocks.canGetWorkspaceProjects),
+        (permission === "bb.projects.get" && mocks.canGetWorkspaceProjects) ||
+        (permission === "bb.plans.list" && mocks.canListWorkspacePlans) ||
+        (permission === "bb.plans.get" && mocks.canGetWorkspacePlans),
       hasProjectPermission: (project, permission) =>
         Boolean(mocks.projectPoliciesByName[project.name]) &&
         ((permission === "bb.databases.list" &&
@@ -67,7 +78,11 @@ vi.mock("@/stores/app", () => ({
             (mocks.projectDatabaseGetPermissions[project.name] ??
               mocks.projectDatabaseListPermissions[project.name]) === true) ||
           (permission === "bb.projects.get" &&
-            mocks.projectGetPermissions[project.name] === true)),
+            mocks.projectGetPermissions[project.name] === true) ||
+          (permission === "bb.plans.list" &&
+            mocks.projectPlanListPermissions[project.name] === true) ||
+          (permission === "bb.plans.get" &&
+            mocks.projectPlanGetPermissions[project.name] === true)),
       projectsByName: mocks.projectsByName,
       projectPoliciesByName: mocks.projectPoliciesByName,
       currentUser: mocks.permissionDataReady ? {} : undefined,
@@ -88,18 +103,22 @@ vi.mock("react-i18next", async (importOriginal) => ({
         "agent.resource-picker.projects": "Projects",
         "agent.resource-picker.databases": "Databases",
         "agent.resource-picker.issues": "Issues",
+        "agent.resource-picker.plans": "Plans",
         "agent.resource-picker.search-projects": "Search projects",
         "agent.resource-picker.search-databases": "Search databases",
         "agent.resource-picker.search-issues": "Search issues",
+        "agent.resource-picker.search-plans": "Search plans",
         "agent.resource-picker.no-projects": "No projects found",
         "agent.resource-picker.no-databases": "No databases found",
         "agent.resource-picker.no-issues": "No issues found",
+        "agent.resource-picker.no-plans": "No plans found",
         "agent.resource-picker.load-error": "Could not load projects",
         "agent.resource-picker.load-databases-error": "Could not load databases",
         "agent.resource-picker.load-issues-error": "Could not load issues",
+        "agent.resource-picker.load-plans-error": "Could not load plans",
         "agent.resource-picker.retry": "Retry",
         "agent.resource-picker.reference-limit":
-          "You can reference one project and one of its databases per message. To use both, select the project first. Ask about another resource in a separate message.",
+          "You can reference one project and one of its databases, issues, or plans per message. To use both, select the project first. Ask about another resource in a separate message.",
         "common.back": "Back",
         "common.close": "Close",
         "common.loading": "Loading",
@@ -137,6 +156,16 @@ const secondIssue = create(IssueSchema, {
 const otherProjectIssue = create(IssueSchema, {
   name: "projects/payments/issues/125",
   title: "Review payment changes",
+});
+const plan = create(PlanSchema, {
+  name: "projects/orders/plans/42",
+  title: "Add an orders index",
+  state: State.ACTIVE,
+});
+const secondPlan = create(PlanSchema, {
+  name: "projects/orders/plans/43",
+  title: "Review query access",
+  state: State.ACTIVE,
 });
 
 function deferredPage() {
@@ -177,6 +206,7 @@ function PickerHarness({
         onSelectProject={mocks.onSelectProject}
         onSelectDatabase={mocks.onSelectDatabase}
         onSelectIssue={mocks.onSelectIssue}
+        onSelectPlan={mocks.onSelectPlan}
       />
     </>
   );
@@ -186,9 +216,11 @@ beforeEach(() => {
   mocks.searchAgentProjects.mockReset();
   mocks.searchAgentDatabases.mockReset();
   mocks.searchAgentIssues.mockReset();
+  mocks.searchAgentPlans.mockReset();
   mocks.onSelectProject.mockReset();
   mocks.onSelectDatabase.mockReset();
   mocks.onSelectIssue.mockReset();
+  mocks.onSelectPlan.mockReset();
   mocks.onOpenChange.mockReset();
   mocks.fetchProject.mockReset();
   mocks.loadProjectIamPolicy.mockReset();
@@ -196,6 +228,8 @@ beforeEach(() => {
   mocks.canListWorkspaceDatabases = true;
   mocks.canGetWorkspaceDatabases = undefined;
   mocks.canGetWorkspaceProjects = true;
+  mocks.canListWorkspacePlans = true;
+  mocks.canGetWorkspacePlans = true;
   mocks.projectGetPermissions = {
     [project.name]: true,
     [secondProject.name]: true,
@@ -205,6 +239,14 @@ beforeEach(() => {
     [secondProject.name]: true,
   };
   mocks.projectDatabaseGetPermissions = {};
+  mocks.projectPlanListPermissions = {
+    [project.name]: true,
+    [secondProject.name]: true,
+  };
+  mocks.projectPlanGetPermissions = {
+    [project.name]: true,
+    [secondProject.name]: true,
+  };
   mocks.projectsByName = {
     [project.name]: project,
     [secondProject.name]: secondProject,
@@ -227,6 +269,146 @@ afterEach(() => {
 });
 
 describe("AgentResourcePicker", () => {
+  test("offers Plans only after a concrete project is in context or mentioned", () => {
+    const { rerender } = render(<PickerHarness />);
+    expect(screen.queryByRole("button", { name: "Plans" })).toBeNull();
+    rerender(<PickerHarness projectName="projects/-" />);
+    expect(screen.queryByRole("button", { name: "Plans" })).toBeNull();
+    rerender(<PickerHarness projectName={project.name} />);
+    expect(screen.getByRole("button", { name: "Plans" })).toBeInTheDocument();
+    rerender(<PickerHarness selectedProjectName={secondProject.name} />);
+    expect(screen.getByRole("button", { name: "Plans" })).toBeInTheDocument();
+    expect(mocks.searchAgentPlans).not.toHaveBeenCalled();
+  });
+
+  test("hides Plans when either required project permission is known denied", () => {
+    mocks.canListWorkspacePlans = false;
+    mocks.canGetWorkspacePlans = false;
+    mocks.projectPlanListPermissions[project.name] = false;
+    const { rerender } = render(<PickerHarness projectName={project.name} />);
+    expect(screen.queryByRole("button", { name: "Plans" })).toBeNull();
+
+    mocks.projectPlanListPermissions[project.name] = true;
+    mocks.projectPlanGetPermissions[project.name] = false;
+    rerender(<PickerHarness projectName={project.name} />);
+    expect(screen.queryByRole("button", { name: "Plans" })).toBeNull();
+    expect(mocks.searchAgentPlans).not.toHaveBeenCalled();
+  });
+
+  test("lets the API decide when project Plan permissions are unavailable", async () => {
+    mocks.canListWorkspacePlans = false;
+    mocks.canGetWorkspacePlans = false;
+    mocks.projectPoliciesByName = {};
+    const { rerender } = render(<PickerHarness projectName={project.name} />);
+    expect(screen.getByRole("button", { name: "Plans" })).toBeInTheDocument();
+    await waitFor(() =>
+      expect(mocks.loadProjectIamPolicy).toHaveBeenCalledWith(
+        project.name,
+        true
+      )
+    );
+    mocks.projectPoliciesByName = { [project.name]: {} };
+    rerender(<PickerHarness projectName={project.name} />);
+    expect(screen.getByRole("button", { name: "Plans" })).toBeInTheDocument();
+  });
+
+  test("searches and selects Plans in an inline project, not the chat project", async () => {
+    mocks.searchAgentPlans.mockResolvedValueOnce({
+      items: [plan],
+      nextPageToken: "",
+    });
+    render(
+      <PickerHarness
+        projectName={secondProject.name}
+        selectedProjectName={project.name}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Plans" }));
+    const row = await screen.findByRole("button", {
+      name: /Add an orders index.*#42/,
+    });
+    expect(mocks.searchAgentPlans).toHaveBeenCalledExactlyOnceWith(
+      project.name,
+      "",
+      "",
+      expect.any(AbortSignal)
+    );
+    fireEvent.click(row);
+    expect(mocks.onSelectPlan).toHaveBeenCalledExactlyOnceWith(plan);
+    expect(mocks.onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  test("filters malformed, inactive, and other-project Plans from results", async () => {
+    mocks.searchAgentPlans.mockResolvedValueOnce({
+      items: [
+        create(PlanSchema, {
+          name: "projects/payments/plans/42",
+          title: "Other project",
+          state: State.ACTIVE,
+        }),
+        create(PlanSchema, {
+          name: "projects/orders/plans/not-an-id",
+          title: "Malformed",
+          state: State.ACTIVE,
+        }),
+        create(PlanSchema, {
+          name: "projects/orders/plans/44",
+          title: "Deleted",
+          state: State.DELETED,
+        }),
+      ],
+      nextPageToken: "",
+    });
+    render(<PickerHarness projectName={project.name} />);
+    fireEvent.click(screen.getByRole("button", { name: "Plans" }));
+    expect(await screen.findByText("No plans found")).toBeInTheDocument();
+    expect(mocks.onSelectPlan).not.toHaveBeenCalled();
+  });
+
+  test("paginates Plan results and selects the active keyboard row", async () => {
+    mocks.searchAgentPlans
+      .mockResolvedValueOnce({ items: [plan], nextPageToken: "next" })
+      .mockResolvedValueOnce({ items: [secondPlan], nextPageToken: "" });
+    render(<PickerHarness projectName={project.name} />);
+    fireEvent.click(screen.getByRole("button", { name: "Plans" }));
+    const first = await screen.findByRole("button", {
+      name: /Add an orders index.*#42/,
+    });
+    const search = screen.getByRole("textbox", { name: "Search plans" });
+    fireEvent.keyDown(search, { key: "ArrowDown" });
+    expect(first).toHaveFocus();
+    fireEvent.click(screen.getByRole("button", { name: "Load more" }));
+    const second = await screen.findByRole("button", {
+      name: /Review query access.*#43/,
+    });
+    expect(mocks.searchAgentPlans).toHaveBeenLastCalledWith(
+      project.name,
+      "",
+      "next",
+      expect.any(AbortSignal)
+    );
+    fireEvent.keyDown(first, { key: "ArrowDown" });
+    expect(second).toHaveFocus();
+    fireEvent.keyDown(second, { key: "Enter" });
+    expect(mocks.onSelectPlan).toHaveBeenCalledExactlyOnceWith(secondPlan);
+  });
+
+  test("keeps a failed Plan search retryable instead of showing an empty state", async () => {
+    mocks.searchAgentPlans
+      .mockRejectedValueOnce(new Error("offline"))
+      .mockResolvedValueOnce({ items: [plan], nextPageToken: "" });
+    render(<PickerHarness projectName={project.name} />);
+    fireEvent.click(screen.getByRole("button", { name: "Plans" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Could not load plans"
+    );
+    expect(screen.queryByText("No plans found")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    expect(
+      await screen.findByRole("button", { name: /Add an orders index.*#42/ })
+    ).toBeInTheDocument();
+  });
+
   test("moves the active category to the hovered option", async () => {
     render(<PickerHarness />);
 
@@ -702,7 +884,7 @@ describe("AgentResourcePicker", () => {
     render(<PickerHarness hasSelectedReference />);
 
     expect(screen.getByRole("status")).toHaveTextContent(
-      "You can reference one project and one of its databases per message. To use both, select the project first. Ask about another resource in a separate message."
+      "You can reference one project and one of its databases, issues, or plans per message. To use both, select the project first. Ask about another resource in a separate message."
     );
     expect(screen.queryByRole("button", { name: "Projects" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Databases" })).toBeNull();
@@ -719,7 +901,7 @@ describe("AgentResourcePicker", () => {
     render(<PickerHarness selectedProjectName={project.name} hasSelectedReference />);
 
     expect(screen.getByRole("status")).toHaveTextContent(
-      "You can reference one project and one of its databases per message. To use both, select the project first. Ask about another resource in a separate message."
+      "You can reference one project and one of its databases, issues, or plans per message. To use both, select the project first. Ask about another resource in a separate message."
     );
     expect(screen.queryByRole("button", { name: "Projects" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Databases" })).toBeNull();

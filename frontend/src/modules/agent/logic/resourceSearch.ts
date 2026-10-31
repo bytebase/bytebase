@@ -1,6 +1,10 @@
 import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
-import { databaseServiceClientConnect, issueServiceClientConnect } from "@/api";
+import {
+  databaseServiceClientConnect,
+  issueServiceClientConnect,
+  planServiceClientConnect,
+} from "@/api";
 import { silentContextKey } from "@/api/context-key";
 import { useAppStore } from "@/stores/app";
 import {
@@ -17,6 +21,10 @@ import {
   type Issue,
   SearchIssuesRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  ListPlansRequestSchema,
+  type Plan,
+} from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { getDefaultPagination } from "@/utils/pagination";
 import { celString } from "@/utils/v1/celLiteral";
@@ -125,6 +133,47 @@ export async function searchAgentIssues(
   signal.throwIfAborted();
   return {
     items: response.issues,
+    nextPageToken: response.nextPageToken ?? "",
+  };
+}
+
+export async function searchAgentPlans(
+  parent: string,
+  query: string,
+  pageToken: string,
+  signal: AbortSignal
+): Promise<{ items: Plan[]; nextPageToken: string }> {
+  const tokens = getNameParentTokens(parent, [projectNamePrefix]);
+  if (
+    tokens.length !== 1 ||
+    tokens[0] === "-" ||
+    parent !== `${projectNamePrefix}${tokens[0]}`
+  ) {
+    throw new Error("A canonical project is required to search plans.");
+  }
+  signal.throwIfAborted();
+  const keyword = query.trim().toLowerCase();
+  const filter = [
+    'state == "ACTIVE"',
+    keyword ? `title.contains(${celString(keyword)})` : "",
+  ]
+    .filter(Boolean)
+    .join(" && ");
+  const response = await planServiceClientConnect.listPlans(
+    create(ListPlansRequestSchema, {
+      parent,
+      pageSize: getDefaultPagination(),
+      pageToken,
+      filter,
+    }),
+    {
+      signal,
+      contextValues: createContextValues().set(silentContextKey, true),
+    }
+  );
+  signal.throwIfAborted();
+  return {
+    items: response.plans,
     nextPageToken: response.nextPageToken ?? "",
   };
 }

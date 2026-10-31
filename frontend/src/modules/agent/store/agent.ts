@@ -39,21 +39,23 @@ import { getDefaultAgentWindowState } from "../window";
 export const AGENT_STATE_KEY = "bb-agent-state-v2";
 export const AGENT_WINDOW_KEY = "bb-agent-window";
 export const AGENT_WINDOW_LAYOUT_VERSION = 4;
+const LEGACY_AGENT_STATE_KEY = `${AGENT_STATE_KEY}.legacy`;
+const LEGACY_AGENT_OWNER_KEY = `${AGENT_STATE_KEY}-migration-owner`;
 
 const getWorkspaceStorageKey = (key: string, workspaceName: string) => {
   const workspaceId = getResourceId(workspaceName, workspaceNamePrefix);
   return workspaceId ? `${key}.${workspaceId}` : null;
 };
 
-export const getAgentStateKey = (workspaceName: string) =>
-  getWorkspaceStorageKey(AGENT_STATE_KEY, workspaceName) ?? AGENT_STATE_KEY;
+export const getAgentStateKey = (workspaceName: string, userEmail: string) => {
+  const workspaceId = getResourceId(workspaceName, workspaceNamePrefix);
+  return workspaceId && userEmail
+    ? `${AGENT_STATE_KEY}.${workspaceId.length}:${workspaceId}.${userEmail}`
+    : null;
+};
 
 export const getAgentWindowKey = (workspaceName: string) =>
   getWorkspaceStorageKey(AGENT_WINDOW_KEY, workspaceName) ?? AGENT_WINDOW_KEY;
-
-// This key was used briefly while workspace-scoped persistence was introduced.
-// Read it as a migration source so those chats remain recoverable.
-const UNASSIGNED_LEGACY_AGENT_STATE_KEY = `${AGENT_STATE_KEY}.legacy`;
 
 interface PersistedAgentState {
   currentChatId: string | null;
@@ -61,7 +63,7 @@ interface PersistedAgentState {
   messagesByChatId: Record<string, AgentMessage[]>;
   pendingAskByChatId: Record<string, AgentPendingAsk>;
   draftsByChatId: Record<string, AgentDraft>;
-  queuedUserMessage: QueuedUserMessage | null;
+  queuedUserMessagesByChatId: Record<string, QueuedUserMessage>;
 }
 
 interface CreateChatOptions {
@@ -492,7 +494,7 @@ const createEmptyPersistedState = (): PersistedAgentState => ({
   messagesByChatId: {},
   pendingAskByChatId: {},
   draftsByChatId: {},
-  queuedUserMessage: null,
+  queuedUserMessagesByChatId: {},
 });
 
 const normalizePersistedState = (raw: unknown): PersistedAgentState => {
@@ -578,10 +580,26 @@ const normalizePersistedState = (raw: unknown): PersistedAgentState => {
     }
   }
 
-  const queuedUserMessage = normalizeQueuedUserMessage(
+  const chatIds = new Set(chats.map((chat) => chat.id));
+  const queuedUserMessagesByChatId: Record<string, QueuedUserMessage> = {};
+  if (isRecord(raw.queuedUserMessagesByChatId)) {
+    for (const [chatId, value] of Object.entries(
+      raw.queuedUserMessagesByChatId
+    )) {
+      const message = normalizeQueuedUserMessage(value, chatIds);
+      if (message?.chatId === chatId) {
+        queuedUserMessagesByChatId[chatId] = message;
+      }
+    }
+  }
+  const legacyQueuedMessage = normalizeQueuedUserMessage(
     raw.queuedUserMessage,
-    new Set(chats.map((chat) => chat.id))
+    chatIds
   );
+  if (legacyQueuedMessage) {
+    queuedUserMessagesByChatId[legacyQueuedMessage.chatId] ??=
+      legacyQueuedMessage;
+  }
 
   const hasCurrentChatId = Object.prototype.hasOwnProperty.call(
     raw,
@@ -610,7 +628,7 @@ const normalizePersistedState = (raw: unknown): PersistedAgentState => {
     messagesByChatId,
     pendingAskByChatId,
     draftsByChatId,
-    queuedUserMessage,
+    queuedUserMessagesByChatId,
   };
 };
 
@@ -625,14 +643,15 @@ export interface AgentState {
 
   // Chat state
   workspaceName: string | null;
+  userEmail: string | null;
   chats: AgentChat[];
   messagesByChatId: Record<string, AgentMessage[]>;
   pendingAskByChatId: Record<string, AgentPendingAsk>;
   draftsByChatId: Record<string, AgentDraft>;
   currentChatId: string | null;
   abortControllersByChatId: Record<string, AbortController>;
-  queuedUserMessage: QueuedUserMessage | null;
-  queuedUserMessageInFlight: boolean;
+  queuedUserMessagesByChatId: Record<string, QueuedUserMessage>;
+  queuedUserMessageInFlightByChatId: Record<string, boolean>;
 
   // UI actions
   open: () => void;
@@ -680,7 +699,7 @@ export interface AgentState {
   deleteAllArchivedChats: () => number;
 
   // Messages
-  addMessage: (message: AddMessageOptions) => AgentMessage;
+  addMessage: (message: AddMessageOptions) => AgentMessage | null;
   removeMessagesByRunId: (
     chatId: string,
     runId?: string | null
@@ -760,7 +779,7 @@ export interface AgentState {
   clearError: (chatId?: string | null) => void;
 
   // Persistence
-  setWorkspaceName: (workspaceName?: string) => boolean;
+  setWorkspaceName: (workspaceName?: string, userEmail?: string) => boolean;
   saveWindowState: () => void;
   loadWindowState: () => void;
   saveState: () => void;
@@ -893,13 +912,13 @@ const getPersistedState = (storage: Storage | null, key: string) =>
     readPersistedState(storage, key) ?? createEmptyPersistedState()
   );
 
-const getPersistedStateForChats = (
+const selectPersistedChats = (
   state: PersistedAgentState,
   chats: AgentChat[]
 ): PersistedAgentState => {
-  const chatIds = new Set(chats.map((chat) => chat.id));
+  const ids = new Set(chats.map((chat) => chat.id));
   return {
-    currentChatId: chatIds.has(state.currentChatId ?? "")
+    currentChatId: ids.has(state.currentChatId ?? "")
       ? state.currentChatId
       : (chats[0]?.id ?? null),
     chats,
@@ -908,8 +927,8 @@ const getPersistedStateForChats = (
     ),
     pendingAskByChatId: Object.fromEntries(
       chats.flatMap((chat) => {
-        const pendingAsk = state.pendingAskByChatId[chat.id];
-        return pendingAsk ? [[chat.id, pendingAsk]] : [];
+        const ask = state.pendingAskByChatId[chat.id];
+        return ask ? [[chat.id, ask]] : [];
       })
     ),
     draftsByChatId: Object.fromEntries(
@@ -918,104 +937,173 @@ const getPersistedStateForChats = (
         return draft ? [[chat.id, draft]] : [];
       })
     ),
-    queuedUserMessage: chatIds.has(state.queuedUserMessage?.chatId ?? "")
-      ? state.queuedUserMessage
-      : null,
+    queuedUserMessagesByChatId: Object.fromEntries(
+      chats.flatMap((chat) => {
+        const message = state.queuedUserMessagesByChatId[chat.id];
+        return message ? [[chat.id, message]] : [];
+      })
+    ),
   };
 };
 
 const mergePersistedStates = (
   existing: PersistedAgentState | null,
   incoming: PersistedAgentState
-) => {
+): PersistedAgentState => {
   if (!existing) return incoming;
-  const chatsById = new Map(existing.chats.map((chat) => [chat.id, chat]));
-  for (const chat of incoming.chats) {
-    const current = chatsById.get(chat.id);
-    if (!current || current.updatedTs < chat.updatedTs) {
-      chatsById.set(chat.id, chat);
+  const byId = new Map(
+    incoming.chats.map((chat) => [chat.id, { chat, state: incoming }])
+  );
+  for (const chat of existing.chats) {
+    const previous = byId.get(chat.id);
+    if (!previous || previous.chat.updatedTs <= chat.updatedTs) {
+      byId.set(chat.id, { chat, state: existing });
     }
   }
-  const chats = [...chatsById.values()];
-  const messagesByChatId = {
-    ...existing.messagesByChatId,
-    ...incoming.messagesByChatId,
-  };
-  const pendingAskByChatId = {
-    ...existing.pendingAskByChatId,
-    ...incoming.pendingAskByChatId,
-  };
-  const draftsByChatId = {
-    ...existing.draftsByChatId,
-    ...incoming.draftsByChatId,
-  };
-  const queuedUserMessage =
-    existing.queuedUserMessage ?? incoming.queuedUserMessage;
-  return {
+  const chats = [...byId.values()].map(({ chat }) => chat);
+  const merged: PersistedAgentState = {
     currentChatId:
-      existing.currentChatId && chatsById.has(existing.currentChatId)
+      existing.currentChatId && byId.has(existing.currentChatId)
         ? existing.currentChatId
         : incoming.currentChatId,
     chats,
-    messagesByChatId,
-    pendingAskByChatId,
-    draftsByChatId,
-    queuedUserMessage,
+    messagesByChatId: {},
+    pendingAskByChatId: {},
+    draftsByChatId: {},
+    queuedUserMessagesByChatId: {},
   };
+  for (const [id, { state }] of byId) {
+    merged.messagesByChatId[id] = state.messagesByChatId[id] ?? [];
+    if (state.pendingAskByChatId[id]) {
+      merged.pendingAskByChatId[id] = state.pendingAskByChatId[id];
+    }
+    if (state.draftsByChatId[id]) {
+      merged.draftsByChatId[id] = state.draftsByChatId[id];
+    }
+    if (state.queuedUserMessagesByChatId[id]) {
+      merged.queuedUserMessagesByChatId[id] =
+        state.queuedUserMessagesByChatId[id];
+    }
+  }
+  return merged;
+};
+
+const hasOnlyEmptyChat = (state: PersistedAgentState | null) => {
+  if (!state || state.chats.length === 0) return true;
+  if (
+    state.chats.length !== 1 ||
+    Object.keys(state.queuedUserMessagesByChatId).length > 0
+  )
+    return false;
+  const chat = state.chats[0];
+  return (
+    !state.messagesByChatId[chat.id]?.length &&
+    !state.pendingAskByChatId[chat.id] &&
+    !state.draftsByChatId[chat.id]
+  );
+};
+
+const isScopedAgentStateKey = (key: string) => {
+  const suffix = key.slice(`${AGENT_STATE_KEY}.`.length);
+  const separator = suffix.indexOf(":");
+  if (separator < 1) return false;
+  const workspaceIdLength = Number(suffix.slice(0, separator));
+  if (!Number.isSafeInteger(workspaceIdLength) || workspaceIdLength < 1)
+    return false;
+  const remainder = suffix.slice(separator + 1);
+  return (
+    remainder[workspaceIdLength] === "." &&
+    remainder.slice(workspaceIdLength + 1).includes("@")
+  );
 };
 
 const migrateLegacyState = (
   storage: Storage | null,
-  fallbackWorkspaceName: string
+  workspaceName: string,
+  userEmail: string
 ) => {
-  if (!storage) return;
-  const sourceKeys = [AGENT_STATE_KEY, UNASSIGNED_LEGACY_AGENT_STATE_KEY];
-  const legacyState = sourceKeys
-    .map((key) => readPersistedState(storage, key))
-    .reduce<PersistedAgentState | null>(
-      (state, next) => (next ? mergePersistedStates(state, next) : state),
-      null
-    );
-  if (!legacyState) return;
-
-  const chatsByWorkspace = new Map<string, AgentChat[]>();
-  for (const chat of legacyState.chats) {
-    const key = chat.workspaceName
-      ? getWorkspaceStorageKey(AGENT_STATE_KEY, chat.workspaceName)
-      : null;
-    if (!key) {
-      const fallbackKey = getWorkspaceStorageKey(
-        AGENT_STATE_KEY,
-        fallbackWorkspaceName
-      );
-      if (!fallbackKey) return;
-      const chats = chatsByWorkspace.get(fallbackKey) ?? [];
-      // Legacy state has no trustworthy project-to-workspace association.
-      chats.push({
-        ...chat,
-        workspaceName: fallbackWorkspaceName,
-        context: fallbackWorkspaceName,
-      });
-      chatsByWorkspace.set(fallbackKey, chats);
-    } else {
-      const chats = chatsByWorkspace.get(key) ?? [];
-      chats.push(chat);
-      chatsByWorkspace.set(key, chats);
-    }
-  }
-
+  if (!storage || !getAgentStateKey(workspaceName, userEmail)) return;
   try {
-    for (const [key, chats] of chatsByWorkspace) {
-      const incoming = getPersistedStateForChats(legacyState, chats);
-      const existing = readPersistedState(storage, key);
-      storage.setItem(
-        key,
-        JSON.stringify(mergePersistedStates(existing, incoming))
-      );
+    const prefix = `${AGENT_STATE_KEY}.`;
+    const keys = Array.from({ length: storage.length }, (_, index) =>
+      storage.key(index)
+    ).filter((key): key is string => Boolean(key));
+    const sources = keys.flatMap((key) => {
+      const globalSource =
+        key === AGENT_STATE_KEY || key === LEGACY_AGENT_STATE_KEY;
+      if (
+        !globalSource &&
+        (!key.startsWith(prefix) || isScopedAgentStateKey(key))
+      ) {
+        return [];
+      }
+      const saved = storage.getItem(key);
+      if (!saved) return [];
+      try {
+        const raw = JSON.parse(saved);
+        if (
+          !isRecord(raw) ||
+          (!Array.isArray(raw.chats) && !Array.isArray(raw.threads))
+        ) {
+          return [];
+        }
+        return [
+          {
+            key,
+            workspaceName: globalSource
+              ? null
+              : `${workspaceNamePrefix}${key.slice(prefix.length)}`,
+            state: normalizePersistedState(raw),
+          },
+        ];
+      } catch {
+        return [];
+      }
+    });
+    if (sources.length === 0) return;
+
+    const owner = storage.getItem(LEGACY_AGENT_OWNER_KEY);
+    if (owner !== null && owner !== userEmail) return;
+    if (owner === null) storage.setItem(LEGACY_AGENT_OWNER_KEY, userEmail);
+
+    const incomingByWorkspace = new Map<string, PersistedAgentState>();
+    for (const source of sources) {
+      const chatsByWorkspace = new Map<string, AgentChat[]>();
+      for (const chat of source.state.chats) {
+        const chatWorkspaceName =
+          source.workspaceName ??
+          (chat.workspaceName?.startsWith(workspaceNamePrefix)
+            ? chat.workspaceName
+            : chat.context?.startsWith(workspaceNamePrefix)
+              ? chat.context
+              : workspaceName);
+        const chats = chatsByWorkspace.get(chatWorkspaceName) ?? [];
+        chats.push({ ...chat, workspaceName: chatWorkspaceName });
+        chatsByWorkspace.set(chatWorkspaceName, chats);
+      }
+      for (const [name, chats] of chatsByWorkspace) {
+        const incoming = selectPersistedChats(source.state, chats);
+        incomingByWorkspace.set(
+          name,
+          mergePersistedStates(incomingByWorkspace.get(name) ?? null, incoming)
+        );
+      }
     }
-    for (const key of sourceKeys) storage.removeItem(key);
+
+    // Write every account cache before removing any ownerless source.
+    for (const [name, incoming] of incomingByWorkspace) {
+      const key = getAgentStateKey(name, userEmail);
+      if (!key) throw new Error("Invalid legacy workspace");
+      const existing = readPersistedState(storage, key);
+      const merged = mergePersistedStates(existing, incoming);
+      if (hasOnlyEmptyChat(existing)) {
+        merged.currentChatId = incoming.currentChatId;
+      }
+      storage.setItem(key, JSON.stringify(merged));
+    }
+    for (const { key } of sources) storage.removeItem(key);
   } catch {
-    // Keep the source cache until every target cache has been written.
+    // The owner marker prevents another account from claiming a partial migration.
   }
 };
 
@@ -1024,7 +1112,7 @@ const loadInitialState = (): {
   messagesByChatId: Record<string, AgentMessage[]>;
   pendingAskByChatId: Record<string, AgentPendingAsk>;
   draftsByChatId: Record<string, AgentDraft>;
-  queuedUserMessage: QueuedUserMessage | null;
+  queuedUserMessagesByChatId: Record<string, QueuedUserMessage>;
   currentChatId: string | null;
 } => {
   return ensureCurrentChat(createEmptyPersistedState());
@@ -1033,7 +1121,7 @@ const loadInitialState = (): {
 export const createAgentStore = () => {
   const initial = loadInitialState();
   const initialWindowState = getInitialWindowState();
-  const lastSerializedByWorkspace = new Map<string, string>();
+  const lastSerializedByScope = new Map<string, string>();
   let draftPersistTimer: ReturnType<typeof setTimeout> | null = null;
   const clearDraftPersistTimer = () => {
     if (draftPersistTimer !== null) {
@@ -1072,14 +1160,15 @@ export const createAgentStore = () => {
 
         // Chat state (from persisted/initial)
         workspaceName: null,
+        userEmail: null,
         chats: initial.chats,
         messagesByChatId: initial.messagesByChatId,
         pendingAskByChatId: initial.pendingAskByChatId,
         draftsByChatId: initial.draftsByChatId,
         currentChatId: initial.currentChatId,
         abortControllersByChatId: {},
-        queuedUserMessage: initial.queuedUserMessage,
-        queuedUserMessageInFlight: false,
+        queuedUserMessagesByChatId: initial.queuedUserMessagesByChatId,
+        queuedUserMessageInFlightByChatId: {},
 
         // UI actions
         open: () =>
@@ -1161,8 +1250,7 @@ export const createAgentStore = () => {
         isChatRunning: (chatId) => _getChat(chatId)?.status === "running",
 
         canSelectChat: (chatId) => {
-          if (!chatId || !_getChat(chatId)) return false;
-          return !_hasRunningChat() || get().currentChatId === chatId;
+          return Boolean(chatId && _getChat(chatId));
         },
 
         touchChat: (chatId) => {
@@ -1197,13 +1285,10 @@ export const createAgentStore = () => {
         // Chat CRUD
         createChat: (options = {}) => {
           const chat = createChatRecord(options);
-          const shouldSelect =
-            (options.select ?? true) &&
-            (!_hasRunningChat() || get().currentChatId === null);
           set((state) => {
             state.chats.push(chat);
             state.messagesByChatId[chat.id] = [];
-            if (shouldSelect) {
+            if (options.select ?? true) {
               state.currentChatId = chat.id;
             }
           });
@@ -1211,13 +1296,19 @@ export const createAgentStore = () => {
         },
 
         queueUserMessage: (message) => {
+          if (
+            _getChat(message.chatId)?.status !== "idle" ||
+            get().queuedUserMessagesByChatId[message.chatId]
+          ) {
+            return;
+          }
           const { resourceReference, resourceReferences, ...rest } = message;
           const normalizedReferences = normalizeAgentResourceReferences(
             resourceReferences,
             resourceReference
           );
           set((state) => {
-            state.queuedUserMessage = {
+            state.queuedUserMessagesByChatId[message.chatId] = {
               ...rest,
               id: uuidv4(),
               ...(resourceReferences === undefined && normalizedReferences[0]
@@ -1228,38 +1319,37 @@ export const createAgentStore = () => {
                 ? { resourceReferences: normalizedReferences }
                 : {}),
             };
-            state.queuedUserMessageInFlight = false;
+            delete state.queuedUserMessageInFlightByChatId[message.chatId];
           });
         },
 
         takeQueuedUserMessage: (chatId) => {
-          const message = get().queuedUserMessage;
-          if (message?.chatId !== chatId || get().queuedUserMessageInFlight) {
+          const message = get().queuedUserMessagesByChatId[chatId];
+          if (!message || get().queuedUserMessageInFlightByChatId[chatId]) {
             return null;
           }
           set((state) => {
-            state.queuedUserMessageInFlight = true;
+            state.queuedUserMessageInFlightByChatId[chatId] = true;
           });
           return message;
         },
 
         finishQueuedUserMessage: (chatId) =>
           set((state) => {
-            if (state.queuedUserMessage?.chatId !== chatId) return;
-            state.queuedUserMessage = null;
-            state.queuedUserMessageInFlight = false;
+            delete state.queuedUserMessagesByChatId[chatId];
+            delete state.queuedUserMessageInFlightByChatId[chatId];
           }),
 
         commitQueuedUserMessage: (chatId) => {
-          const queued = get().queuedUserMessage;
-          if (!queued || queued.chatId !== chatId || !_getChat(chatId)) {
+          const queued = get().queuedUserMessagesByChatId[chatId];
+          if (!queued || !_getChat(chatId)) {
             return null;
           }
 
           let message: AgentMessage | null = null;
           set((state) => {
-            const queued = state.queuedUserMessage;
-            if (!queued || queued.chatId !== chatId) return;
+            const queued = state.queuedUserMessagesByChatId[chatId];
+            if (!queued) return;
             const chatMessages = state.messagesByChatId[chatId] ?? [];
             state.messagesByChatId[chatId] = chatMessages;
             const existing = chatMessages.find(
@@ -1296,7 +1386,7 @@ export const createAgentStore = () => {
                 chat.updatedTs = committed.createdTs;
               }
             }
-            state.queuedUserMessageInFlight = true;
+            state.queuedUserMessageInFlightByChatId[chatId] = true;
           });
           return message ? { queued, message } : null;
         },
@@ -1335,7 +1425,6 @@ export const createAgentStore = () => {
           ) {
             return null;
           }
-          if (_hasRunningChat()) return null;
           const current = _getChat(get().currentChatId);
           if (!current)
             return get().createChat({ page, context, workspaceName });
@@ -1345,7 +1434,13 @@ export const createAgentStore = () => {
           ) {
             return current;
           }
-          if (get().getPendingAsk(current.id)) return null;
+          if (
+            current.status === "running" ||
+            get().getPendingAsk(current.id) ||
+            get().queuedUserMessagesByChatId[current.id]
+          ) {
+            return get().createChat({ page, context, workspaceName });
+          }
           set((state) => {
             const chat = state.chats.find((c) => c.id === current.id);
             if (chat) {
@@ -1358,7 +1453,7 @@ export const createAgentStore = () => {
         },
 
         selectOrCreateChatForContext: (context, page, workspaceName) => {
-          if (!context || _hasRunningChat() || get().queuedUserMessage) {
+          if (!context) {
             return null;
           }
           if (
@@ -1372,7 +1467,8 @@ export const createAgentStore = () => {
           const isReusable = (chat: AgentChat) =>
             !chat.archived &&
             chat.status === "idle" &&
-            !get().getPendingAsk(chat.id);
+            !get().getPendingAsk(chat.id) &&
+            !get().queuedUserMessagesByChatId[chat.id];
           const current = _getChat(get().currentChatId);
           const matchingChat =
             current?.context === context &&
@@ -1540,10 +1636,8 @@ export const createAgentStore = () => {
             delete state.pendingAskByChatId[chatId];
             delete state.draftsByChatId[chatId];
             delete state.abortControllersByChatId[chatId];
-            if (state.queuedUserMessage?.chatId === chatId) {
-              state.queuedUserMessage = null;
-              state.queuedUserMessageInFlight = false;
-            }
+            delete state.queuedUserMessagesByChatId[chatId];
+            delete state.queuedUserMessageInFlightByChatId[chatId];
             if (state.currentChatId === chatId) {
               // Select next available chat
               const ordered = [...state.chats].sort((a, b) => {
@@ -1589,12 +1683,9 @@ export const createAgentStore = () => {
               delete state.abortControllersByChatId[chatId];
             }
 
-            if (
-              state.queuedUserMessage &&
-              deletedChatIds.has(state.queuedUserMessage.chatId)
-            ) {
-              state.queuedUserMessage = null;
-              state.queuedUserMessageInFlight = false;
+            for (const chatId of deletedChatIds) {
+              delete state.queuedUserMessagesByChatId[chatId];
+              delete state.queuedUserMessageInFlightByChatId[chatId];
             }
 
             state.chats = state.chats.filter(
@@ -1612,10 +1703,8 @@ export const createAgentStore = () => {
 
         // Messages
         addMessage: (message) => {
-          const chatId =
-            message.chatId && _getChat(message.chatId)
-              ? message.chatId
-              : get().ensureCurrentChat().id;
+          if (message.chatId && !_getChat(message.chatId)) return null;
+          const chatId = message.chatId ?? get().ensureCurrentChat().id;
           const createdTs = Date.now();
           const agentMessage: AgentMessage = {
             ...message,
@@ -1734,15 +1823,16 @@ export const createAgentStore = () => {
               if (
                 status !== "running" &&
                 status !== "awaiting_user" &&
-                state.queuedUserMessage?.chatId === chatId &&
+                state.queuedUserMessagesByChatId[chatId] &&
                 state.messagesByChatId[chatId]?.some(
                   (message) =>
-                    message.id === state.queuedUserMessage?.id &&
+                    message.id ===
+                      state.queuedUserMessagesByChatId[chatId]?.id &&
                     message.role === "user"
                 )
               ) {
-                state.queuedUserMessage = null;
-                state.queuedUserMessageInFlight = false;
+                delete state.queuedUserMessagesByChatId[chatId];
+                delete state.queuedUserMessageInFlightByChatId[chatId];
               }
               _touchChatInDraft(state.chats, chatId);
             }
@@ -1804,15 +1894,15 @@ export const createAgentStore = () => {
             if (
               state.chats.find((chat) => chat.id === chatId)?.status ===
                 "awaiting_user" &&
-              state.queuedUserMessage?.chatId === chatId &&
+              state.queuedUserMessagesByChatId[chatId] &&
               state.messagesByChatId[chatId]?.some(
                 (message) =>
-                  message.id === state.queuedUserMessage?.id &&
+                  message.id === state.queuedUserMessagesByChatId[chatId]?.id &&
                   message.role === "user"
               )
             ) {
-              state.queuedUserMessage = null;
-              state.queuedUserMessageInFlight = false;
+              delete state.queuedUserMessagesByChatId[chatId];
+              delete state.queuedUserMessageInFlightByChatId[chatId];
             }
             _touchChatInDraft(state.chats, chatId);
           });
@@ -1934,33 +2024,72 @@ export const createAgentStore = () => {
         },
 
         // Persistence
-        setWorkspaceName: (workspaceName) => {
-          if (!workspaceName || get().workspaceName === workspaceName) {
-            return Boolean(workspaceName);
-          }
-          if (_hasRunningChat() || get().queuedUserMessage) {
+        setWorkspaceName: (workspaceName, userEmail) => {
+          const nextUserEmail = userEmail ?? get().userEmail ?? "";
+          const stateKey = workspaceName
+            ? getAgentStateKey(workspaceName, nextUserEmail)
+            : null;
+          const identityChanged = get().userEmail !== nextUserEmail;
+          if (!workspaceName || !stateKey) {
+            if (!get().workspaceName && !get().userEmail) return false;
+            get().saveState();
+            for (const controller of Object.values(
+              get().abortControllersByChatId
+            )) {
+              controller.abort();
+            }
+            const empty = ensureCurrentChat(createEmptyPersistedState());
+            set((draft) => {
+              draft.workspaceName = null;
+              draft.userEmail = null;
+              draft.chats = empty.chats;
+              draft.messagesByChatId = empty.messagesByChatId;
+              draft.pendingAskByChatId = empty.pendingAskByChatId;
+              draft.draftsByChatId = empty.draftsByChatId;
+              draft.currentChatId = empty.currentChatId;
+              draft.abortControllersByChatId = {};
+              draft.queuedUserMessagesByChatId = {};
+              draft.queuedUserMessageInFlightByChatId = {};
+            });
             return false;
           }
-          const stateKey = getWorkspaceStorageKey(
-            AGENT_STATE_KEY,
-            workspaceName
-          );
-          if (!stateKey) return false;
+          if (
+            get().workspaceName === workspaceName &&
+            get().userEmail === nextUserEmail
+          ) {
+            return true;
+          }
+          if (
+            !identityChanged &&
+            (_hasRunningChat() ||
+              Object.keys(get().queuedUserMessagesByChatId).length > 0)
+          ) {
+            return false;
+          }
 
           get().saveState();
+          if (identityChanged) {
+            for (const controller of Object.values(
+              get().abortControllersByChatId
+            )) {
+              controller.abort();
+            }
+          }
           const storage = getSafeStorage();
-          migrateLegacyState(storage, workspaceName);
+          migrateLegacyState(storage, workspaceName, nextUserEmail);
           const persistedState = getPersistedState(storage, stateKey);
           set((draft) => {
             draft.workspaceName = workspaceName;
+            draft.userEmail = nextUserEmail;
             draft.chats = persistedState.chats;
             draft.messagesByChatId = persistedState.messagesByChatId;
             draft.pendingAskByChatId = persistedState.pendingAskByChatId;
             draft.draftsByChatId = persistedState.draftsByChatId;
             draft.currentChatId = persistedState.currentChatId;
             draft.abortControllersByChatId = {};
-            draft.queuedUserMessage = persistedState.queuedUserMessage;
-            draft.queuedUserMessageInFlight = false;
+            draft.queuedUserMessagesByChatId =
+              persistedState.queuedUserMessagesByChatId;
+            draft.queuedUserMessageInFlightByChatId = {};
           });
           get().loadWindowState();
           return true;
@@ -2045,9 +2174,11 @@ export const createAgentStore = () => {
           clearDraftPersistTimer();
           const storage = getSafeStorage();
           const workspaceName = get().workspaceName;
-          const key = workspaceName
-            ? getWorkspaceStorageKey(AGENT_STATE_KEY, workspaceName)
-            : null;
+          const userEmail = get().userEmail;
+          const key =
+            workspaceName && userEmail
+              ? getAgentStateKey(workspaceName, userEmail)
+              : null;
           if (!storage || !key) return;
           const state = get();
           const persistedState: PersistedAgentState = {
@@ -2056,19 +2187,21 @@ export const createAgentStore = () => {
             messagesByChatId: state.messagesByChatId,
             pendingAskByChatId: state.pendingAskByChatId,
             draftsByChatId: state.draftsByChatId,
-            queuedUserMessage: state.queuedUserMessage,
+            queuedUserMessagesByChatId: state.queuedUserMessagesByChatId,
           };
           const serialized = JSON.stringify(persistedState);
-          lastSerializedByWorkspace.set(key, serialized);
+          lastSerializedByScope.set(key, serialized);
           storage.setItem(key, serialized);
         },
 
         loadState: () => {
           const storage = getSafeStorage();
           const workspaceName = get().workspaceName;
-          const key = workspaceName
-            ? getWorkspaceStorageKey(AGENT_STATE_KEY, workspaceName)
-            : null;
+          const userEmail = get().userEmail;
+          const key =
+            workspaceName && userEmail
+              ? getAgentStateKey(workspaceName, userEmail)
+              : null;
           if (!key) return;
           const state = getPersistedState(storage, key);
           set((draft) => {
@@ -2077,8 +2210,8 @@ export const createAgentStore = () => {
             draft.pendingAskByChatId = state.pendingAskByChatId;
             draft.draftsByChatId = state.draftsByChatId;
             draft.currentChatId = state.currentChatId;
-            draft.queuedUserMessage = state.queuedUserMessage;
-            draft.queuedUserMessageInFlight = false;
+            draft.queuedUserMessagesByChatId = state.queuedUserMessagesByChatId;
+            draft.queuedUserMessageInFlightByChatId = {};
           });
         },
       };
@@ -2088,9 +2221,11 @@ export const createAgentStore = () => {
   const persistState = (state: AgentState) => {
     const storage = getSafeStorage();
     const workspaceName = state.workspaceName;
-    const key = workspaceName
-      ? getWorkspaceStorageKey(AGENT_STATE_KEY, workspaceName)
-      : null;
+    const userEmail = state.userEmail;
+    const key =
+      workspaceName && userEmail
+        ? getAgentStateKey(workspaceName, userEmail)
+        : null;
     if (!storage || !key) {
       return;
     }
@@ -2100,11 +2235,11 @@ export const createAgentStore = () => {
       messagesByChatId: state.messagesByChatId,
       pendingAskByChatId: state.pendingAskByChatId,
       draftsByChatId: state.draftsByChatId,
-      queuedUserMessage: state.queuedUserMessage,
+      queuedUserMessagesByChatId: state.queuedUserMessagesByChatId,
     };
     const serialized = JSON.stringify(persistedState);
-    if (serialized !== lastSerializedByWorkspace.get(key)) {
-      lastSerializedByWorkspace.set(key, serialized);
+    if (serialized !== lastSerializedByScope.get(key)) {
+      lastSerializedByScope.set(key, serialized);
       storage.setItem(key, serialized);
     }
   };
@@ -2112,11 +2247,13 @@ export const createAgentStore = () => {
   store.subscribe((state, previousState) => {
     const nonDraftStateChanged =
       state.workspaceName !== previousState.workspaceName ||
+      state.userEmail !== previousState.userEmail ||
       state.currentChatId !== previousState.currentChatId ||
       state.chats !== previousState.chats ||
       state.messagesByChatId !== previousState.messagesByChatId ||
       state.pendingAskByChatId !== previousState.pendingAskByChatId ||
-      state.queuedUserMessage !== previousState.queuedUserMessage;
+      state.queuedUserMessagesByChatId !==
+        previousState.queuedUserMessagesByChatId;
     const draftChanged = state.draftsByChatId !== previousState.draftsByChatId;
     if (!nonDraftStateChanged && !draftChanged) return;
 

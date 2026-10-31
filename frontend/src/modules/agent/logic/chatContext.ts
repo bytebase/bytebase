@@ -1,10 +1,12 @@
 import { type ReactRoute, router } from "@/app/router";
 import {
+  isPlanDetailResourceRoute,
   PROJECT_V1_ROUTE_DASHBOARD,
   PROJECT_V1_ROUTE_DATABASE_CHANGELOG_DETAIL,
   PROJECT_V1_ROUTE_DATABASE_DETAIL,
   PROJECT_V1_ROUTE_DATABASE_REVISION_DETAIL,
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
+  PROJECT_V1_ROUTE_PLAN_DETAIL,
 } from "@/app/router/handles";
 import { projectNamePrefix, workspaceNamePrefix } from "@/lib/resourceName";
 import { useAppStore } from "@/stores/app";
@@ -34,6 +36,7 @@ export function getCurrentChatContext(): string | undefined {
 
 export type AgentPageResource =
   | { kind: "project"; name: string; project: string }
+  | { kind: "plan"; name: string; project: string }
   | {
       kind: "database";
       project: string;
@@ -44,7 +47,7 @@ export type AgentPageResource =
 export function resolveAgentPageResource(
   route: ReactRoute
 ): AgentPageResource | undefined {
-  const { projectId, instanceId, databaseName, issueId } = route.params;
+  const { projectId, instanceId, databaseName, issueId, planId } = route.params;
   if (typeof projectId !== "string" || !projectId || projectId === "-") {
     return undefined;
   }
@@ -53,6 +56,23 @@ export function resolveAgentPageResource(
     return typeof issueId === "string" && issueId && issueId !== "-"
       ? { kind: "issue", name: `${project}/issues/${issueId}`, project }
       : undefined;
+  }
+  if (
+    route.name === PROJECT_V1_ROUTE_PLAN_DETAIL ||
+    isPlanDetailResourceRoute(route.name)
+  ) {
+    if (
+      typeof planId === "string" &&
+      planId &&
+      planId !== "-" &&
+      planId.toLowerCase() !== "create"
+    ) {
+      return {
+        kind: "plan",
+        name: `${project}/plans/${planId}`,
+        project,
+      };
+    }
   }
   if (
     route.name === PROJECT_V1_ROUTE_DATABASE_DETAIL ||

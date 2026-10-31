@@ -68,6 +68,10 @@
       "issue-heading": "Preguntar sobre esta solicitud",
       "issue-security": "¿Hay algún problema de seguridad relacionado con esta solicitud?",
       "issue-summary": "Resume esta solicitud y su estado",
+      "plan-changes": "¿Qué cambios de base de datos propone este plan?",
+      "plan-heading": "Preguntar sobre este plan",
+      "plan-risks": "¿Hay riesgos de revisión o despliegue en este plan?",
+      "plan-status": "¿Cuál es el estado actual de revisión y despliegue?",
       "project-heading": "Preguntar sobre este proyecto",
       "resource-unavailable": "Este recurso no está disponible para referenciarlo."
     },
@@ -84,6 +88,7 @@
     "evidence": {
       "database": "base de datos",
       "issue": "issue",
+      "plan": "Plan",
       "references": "Evidencia"
     },
     "follow-up": {
@@ -149,6 +154,7 @@
       "open": "Abrir borrador del plan",
       "unavailable": "No se pudo abrir el borrador del plan. Es posible que la base de datos o el SQL hayan cambiado. Pide al agente que lo genere de nuevo."
     },
+    "plan-reference-unavailable": "Este plan ya no está disponible o no tienes acceso a él.",
     "project-attention": {
       "checking": "Comprobando los elementos que necesitan tu atención...",
       "empty": "No tienes issues abiertos que requieran tu atención en este proyecto.",
@@ -187,14 +193,18 @@
       "load-databases-error": "No se pudieron cargar las bases de datos.",
       "load-error": "No se pudieron cargar los proyectos.",
       "load-issues-error": "No se pudieron cargar las incidencias.",
+      "load-plans-error": "No se pudieron cargar los planes.",
       "no-databases": "No se encontraron bases de datos accesibles",
       "no-issues": "No se encontraron incidencias accesibles",
+      "no-plans": "No se encontraron planes accesibles",
       "no-projects": "No se encontraron proyectos accesibles",
+      "plans": "Planes",
       "projects": "Proyectos",
-      "reference-limit": "Puedes referenciar un proyecto y una de sus bases de datos o incidencias por mensaje. Si usas ambos, selecciona primero el proyecto. Pregunta por otros recursos en otro mensaje.",
+      "reference-limit": "Puedes referenciar un proyecto y una de sus bases de datos, incidencias o planes por mensaje. Si usas ambos, selecciona primero el proyecto. Pregunta por otros recursos en otro mensaje.",
       "retry": "Reintentar",
       "search-databases": "Buscar bases de datos",
       "search-issues": "Buscar incidencias",
+      "search-plans": "Buscar planes",
       "search-projects": "Buscar proyectos"
     },
     "result": "Resultado",

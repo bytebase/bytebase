@@ -68,6 +68,10 @@
       "issue-heading": "Hỏi về yêu cầu này",
       "issue-security": "Yêu cầu này có vấn đề bảo mật nào cần lưu ý không?",
       "issue-summary": "Tóm tắt yêu cầu này và trạng thái của nó",
+      "plan-changes": "Kế hoạch này đề xuất những thay đổi cơ sở dữ liệu nào?",
+      "plan-heading": "Hỏi về kế hoạch này",
+      "plan-risks": "Kế hoạch này có rủi ro nào về xét duyệt hoặc triển khai không?",
+      "plan-status": "Trạng thái xét duyệt và triển khai hiện tại là gì?",
       "project-heading": "Hỏi về dự án này",
       "resource-unavailable": "Không thể tham chiếu tài nguyên này."
     },
@@ -84,6 +88,7 @@
     "evidence": {
       "database": "cơ sở dữ liệu",
       "issue": "issue",
+      "plan": "Kế hoạch",
       "references": "Bằng chứng"
     },
     "follow-up": {
@@ -149,6 +154,7 @@
       "open": "Mở bản nháp Plan",
       "unavailable": "Không thể mở bản nháp Plan. Cơ sở dữ liệu hoặc SQL có thể đã thay đổi. Hãy yêu cầu Agent tạo lại."
     },
+    "plan-reference-unavailable": "Kế hoạch này không còn khả dụng hoặc bạn không có quyền truy cập.",
     "project-attention": {
       "checking": "Đang kiểm tra các mục cần bạn chú ý...",
       "empty": "Bạn không có issue mở nào cần chú ý trong dự án này.",
@@ -187,14 +193,18 @@
       "load-databases-error": "Không thể tải cơ sở dữ liệu.",
       "load-error": "Không thể tải dự án.",
       "load-issues-error": "Không thể tải vấn đề.",
+      "load-plans-error": "Không thể tải kế hoạch.",
       "no-databases": "Không tìm thấy cơ sở dữ liệu có thể truy cập",
       "no-issues": "Không tìm thấy vấn đề có thể truy cập",
+      "no-plans": "Không tìm thấy kế hoạch có thể truy cập",
       "no-projects": "Không tìm thấy dự án có thể truy cập",
+      "plans": "Kế hoạch",
       "projects": "Dự án",
-      "reference-limit": "Mỗi tin nhắn có thể tham chiếu một dự án và một cơ sở dữ liệu hoặc vấn đề thuộc dự án đó. Để dùng cả hai, hãy chọn dự án trước. Gửi tin nhắn riêng để hỏi về tài nguyên khác.",
+      "reference-limit": "Mỗi tin nhắn có thể tham chiếu một dự án và một cơ sở dữ liệu, vấn đề hoặc kế hoạch thuộc dự án đó. Để dùng cả hai, hãy chọn dự án trước. Gửi tin nhắn riêng để hỏi về tài nguyên khác.",
       "retry": "Thử lại",
       "search-databases": "Tìm cơ sở dữ liệu",
       "search-issues": "Tìm vấn đề",
+      "search-plans": "Tìm kế hoạch",
       "search-projects": "Tìm dự án"
     },
     "result": "Kết quả",

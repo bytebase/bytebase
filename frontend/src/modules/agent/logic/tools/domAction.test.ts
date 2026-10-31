@@ -18,8 +18,23 @@ describe("createDomActionTool", () => {
 
     expect(lazyExecuteDomAction).toHaveBeenCalledWith(
       { type: "read", ref: "e3" },
-      router
+      router,
+      undefined
     );
     expect(result).toBe(JSON.stringify({ success: true, message: "done" }));
+  });
+
+  test("forwards the current-page predicate", async () => {
+    const router = { push: vi.fn() } as unknown as AppRouterInstance;
+    const canUseCurrentPage = vi.fn(() => false);
+    const tool = createDomActionTool(router, canUseCurrentPage);
+
+    await tool({ type: "click", ref: "e1" });
+
+    expect(lazyExecuteDomAction).toHaveBeenCalledWith(
+      { type: "click", ref: "e1" },
+      router,
+      canUseCurrentPage
+    );
   });
 });
