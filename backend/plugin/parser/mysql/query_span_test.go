@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 	"os"
-	"strings"
 	"testing"
 
 	metadatapb "github.com/bytebase/omni/metadata"
@@ -37,16 +36,12 @@ func TestGetQuerySpan(t *testing.T) {
 			"test-data/query-span/query_type.yaml",
 			"test-data/query-span/standard.yaml",
 			"test-data/query-span/case_insensitive.yaml",
-			"test-data/query-span/starrocks.yaml",
 		}
 	)
 
 	a := require.New(t)
 	for _, testDataPath := range testDataPaths {
 		engine := storepb.Engine_MYSQL
-		if strings.Contains(testDataPath, "starrocks") {
-			engine = storepb.Engine_STARROCKS
-		}
 
 		testDataPath := testDataPath
 
@@ -175,7 +170,7 @@ func TestExtractTableRefs(t *testing.T) {
 		require.NoError(t, err, "failed to parse statement: %s", test.statement)
 		require.Len(t, parseResult.Items, 1, "expected one parse result for statement: %s", test.statement)
 
-		sourceColumns := collectOmniAccessTables(parseResult.Items[0], "db", false)
+		sourceColumns := collectOmniAccessTables(parseResult.Items[0], "db")
 		var resources []base.SchemaResource
 		for resource := range sourceColumns {
 			resources = append(resources, base.SchemaResource{
