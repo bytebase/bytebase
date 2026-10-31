@@ -75,15 +75,8 @@ func needsExecute(node ast.Node) bool {
 // SQL after parseStarRocksSQL succeeds.
 func isReadOnlyAST(node ast.Node) bool {
 	switch n := node.(type) {
-	case *ast.SelectStmt:
-		// INTO OUTFILE exports to S3 or HDFS, past masking and the export gate.
-		return n.Into == nil
-	case *ast.SetOpStmt:
-		return !setOpWritesOutfile(n)
-	case *ast.ParenSelect:
-		// (SELECT ...) at the top level — classify by the inner query so the
-		// INTO OUTFILE gate still applies inside the parens.
-		return isReadOnlyAST(n.Sel)
+	case *ast.SelectStmt, *ast.SetOpStmt, *ast.ParenSelect:
+		return isReadOnlyQuery(node)
 	case *ast.ShowStmt:
 		// Reject bare `SHOW` (Type is empty when the parser took the stub path
 		// without seeing a recognised variant keyword).
@@ -97,9 +90,20 @@ func isReadOnlyAST(node ast.Node) bool {
 		return n.Target != nil
 	case *ast.ExplainStmt:
 		// EXPLAIN requires an inner query; the inner query must itself be a
-		// shape EXPLAIN is meaningful for (SELECT/DML/Show). This blocks
+		// shape EXPLAIN is meaningful for (SELECT family or DML). This blocks
 		// inputs like `EXPLAIN`, `EXPLAIN DROP TABLE t`, etc.
-		return n.Query != nil && isExplainableInner(n.Query)
+		if n.Query == nil || !isExplainableInner(n.Query) {
+			return false
+		}
+		// EXPLAIN ANALYZE runs the statement rather than only planning it, so
+		// over DML it writes. StarRocks aborts the INSERT transaction by
+		// default, but the run still creates any partitions the rows need and
+		// those outlive the abort. The plan-only modifiers never execute, so
+		// they stay readable over DML.
+		if n.Type == "ANALYZE" {
+			return isReadOnlyQuery(n.Query)
+		}
+		return true
 	case *ast.HelpStmt:
 		return true
 	default:
@@ -109,18 +113,43 @@ func isReadOnlyAST(node ast.Node) bool {
 
 // isExplainableInner reports whether `node` is a shape that EXPLAIN can
 // legitimately wrap (SELECT family or DML). DDL inside EXPLAIN is rejected:
-// Doris only supports EXPLAIN on query and DML statements.
+// StarRocks only supports EXPLAIN on query and DML statements.
+//
+// An export stays refused under EXPLAIN, because the read gate it goes
+// through is the same one the bare statement goes through: the editor must not
+// accept by way of EXPLAIN what it refuses when asked directly.
 func isExplainableInner(node ast.Node) bool {
-	switch n := node.(type) {
-	case *ast.SelectStmt, *ast.SetOpStmt:
+	if isReadOnlyQuery(node) {
 		return true
-	case *ast.ParenSelect:
-		// EXPLAIN (SELECT ...) / EXPLAIN ((SELECT ...)) — engine-verified
-		// accepts; classify by the wrapped query.
-		return isExplainableInner(n.Sel)
+	}
+	switch node.(type) {
 	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt,
 		*ast.MergeStmt, *ast.TruncateTableStmt:
 		return true
+	}
+	return false
+}
+
+// isReadOnlyQuery reports whether `node` is a SELECT-family query that reads
+// and never writes. INTO OUTFILE exports to S3 or HDFS, past masking and past
+// the export gate, so a query carrying one is not a read.
+//
+// This is the single export gate for the SELECT family. Both the top level
+// (isReadOnlyAST) and the EXPLAIN path (isExplainableInner) go through it, so
+// neither can drift from the other: a type-only second copy on the EXPLAIN
+// path let every EXPLAIN shape launder an export past this gate.
+func isReadOnlyQuery(node ast.Node) bool {
+	switch n := node.(type) {
+	case *ast.SelectStmt:
+		return n.Into == nil
+	case *ast.SetOpStmt:
+		// The parser attaches INTO to an arm rather than the set operation.
+		return !setOpWritesOutfile(n)
+	case *ast.ParenSelect:
+		// (SELECT ...) / ((SELECT ...)) — classify by the wrapped query so the
+		// gate still applies inside the parens. ParenSelect only ever wraps a
+		// SELECT, SetOpStmt or another ParenSelect, so no DML hides here.
+		return isReadOnlyQuery(n.Sel)
 	}
 	return false
 }
