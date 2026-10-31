@@ -13,7 +13,7 @@ func init() {
 
 // validateQuery validates the SQL statement for SQL editor.
 // Only SELECT, EXPLAIN, SHOW, SET, and DESCRIBE are allowed in read-only mode.
-// EXPLAIN ANALYZE is treated as non-read-only since it actually executes the query.
+// EXPLAIN ANALYZE executes what it wraps, so it is allowed only over a read.
 func validateQuery(statement string) (bool, bool, error) {
 	stmts, err := ParseOceanBase(statement)
 	if err != nil {
@@ -36,7 +36,7 @@ func validateQuery(statement string) (bool, bool, error) {
 				hasExecute = true
 			}
 		case *ast.ExplainStmt:
-			if stmt.Analyze {
+			if stmt.Analyze && !explainAnalyzeReads(stmt.Stmt) {
 				readOnly = false
 			}
 		case *ast.ShowStmt:
@@ -75,4 +75,21 @@ func selectIntoTargets(n *ast.SelectStmt) (writesFile, assignsVariables bool) {
 		return true
 	})
 	return writesFile, assignsVariables
+}
+
+// explainAnalyzeReads reports whether EXPLAIN ANALYZE over stmt only reads.
+//
+// A plain EXPLAIN just plans, so it is always a read. EXPLAIN ANALYZE runs the
+// statement to report actual row counts and timings, so it is a read exactly
+// when what it wraps is one: a SELECT that writes no file and assigns no
+// variable. Postgres gates its own EXPLAIN ANALYZE the same way. Anything else
+// is refused, which matters most for DML — EXPLAIN ANALYZE DELETE really
+// deletes, and a plain EXPLAIN of the same statement does not.
+func explainAnalyzeReads(stmt ast.StmtNode) bool {
+	sel, ok := stmt.(*ast.SelectStmt)
+	if !ok {
+		return false
+	}
+	writesFile, assignsVariables := selectIntoTargets(sel)
+	return !writesFile && !assignsVariables
 }

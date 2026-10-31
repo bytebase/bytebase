@@ -43,7 +43,7 @@ func validateQuery(statement string) (bool, bool, error) {
 			hasExecute = true
 		case *ast.ShowStmt:
 		case *ast.ExplainStmt:
-			if stmt.Analyze {
+			if stmt.Analyze && !explainAnalyzeReads(stmt.Stmt) {
 				readOnly = false
 			}
 		default:
@@ -244,4 +244,24 @@ func unfoldSelectList(list *ast.SetOprSelectList, unfoldList *ast.SetOprSelectLi
 		default:
 		}
 	}
+}
+
+// explainAnalyzeReads reports whether EXPLAIN ANALYZE over stmt only reads.
+//
+// A plain EXPLAIN just plans, so it is always a read. EXPLAIN ANALYZE runs the
+// statement to report actual row counts and timings, so it is a read exactly
+// when what it wraps is one, by the same test the top-level arms apply: a
+// SELECT with no INTO, or a set operation. Postgres gates its own EXPLAIN
+// ANALYZE the same way. Anything else is refused, which matters most for DML —
+// EXPLAIN ANALYZE DELETE really deletes, and a plain EXPLAIN does not. A nil
+// Stmt is refused too: EXPLAIN ANALYZE of a plan digest names no statement
+// this can vouch for.
+func explainAnalyzeReads(stmt ast.StmtNode) bool {
+	switch inner := stmt.(type) {
+	case *ast.SelectStmt:
+		return inner.SelectIntoOpt == nil
+	case *ast.SetOprStmt:
+		return true
+	}
+	return false
 }
