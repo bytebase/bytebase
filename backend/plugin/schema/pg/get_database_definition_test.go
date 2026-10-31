@@ -3507,3 +3507,52 @@ func TestExtractIdentifierFromQualifiedName(t *testing.T) {
 		})
 	}
 }
+
+func procedureTestMetadata() *metadatapb.DatabaseSchemaMetadata {
+	return &metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
+			{
+				Name: "public",
+				Procedures: []*metadatapb.ProcedureMetadata{
+					{
+						Name:       "p_my_procedure",
+						Signature:  "p_my_procedure()",
+						Definition: "CREATE OR REPLACE PROCEDURE \"public\".\"p_my_procedure\"()\n LANGUAGE plpgsql\nAS $procedure$\nBEGIN\nEND\n$procedure$\n",
+						Comment:    "proc comment",
+					},
+				},
+			},
+		},
+	}
+}
+
+func TestGetDatabaseDefinitionProcedureMetadata(t *testing.T) {
+	metadata := procedureTestMetadata()
+
+	sdl, err := GetDatabaseDefinition(schema.GetDefinitionContext{SDLFormat: true}, metadata)
+	require.NoError(t, err)
+	assert.Contains(t, sdl, "CREATE OR REPLACE PROCEDURE")
+	assert.Contains(t, sdl, "COMMENT ON PROCEDURE")
+	assert.Contains(t, sdl, "proc comment")
+
+	normal, err := GetDatabaseDefinition(schema.GetDefinitionContext{}, metadata)
+	require.NoError(t, err)
+	assert.Contains(t, normal, "CREATE OR REPLACE PROCEDURE")
+	assert.Contains(t, normal, "COMMENT ON PROCEDURE")
+	assert.Contains(t, normal, "proc comment")
+}
+
+func TestGetMultiFileDatabaseDefinitionProcedureMetadata(t *testing.T) {
+	result, err := GetMultiFileDatabaseDefinition(schema.GetDefinitionContext{SDLFormat: true}, procedureTestMetadata())
+	require.NoError(t, err)
+
+	var found bool
+	for _, file := range result.Files {
+		if strings.Contains(file.Name, "procedures/") {
+			found = true
+			assert.Contains(t, file.Content, "CREATE OR REPLACE PROCEDURE")
+			assert.Contains(t, file.Content, "COMMENT ON PROCEDURE")
+		}
+	}
+	assert.True(t, found, "procedure file should be generated under procedures/")
+}
