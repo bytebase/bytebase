@@ -49,6 +49,19 @@ describe("generateMemberScopeSummary", () => {
 });
 
 describe("resourceCoversDatabase", () => {
+  test("matches a parsed database scope on a project instance", () => {
+    expect(
+      resourceCoversDatabase(
+        {
+          databaseFullName: "instances/prod/databases/hr",
+          instanceResourceId: "prod",
+          databaseResourceId: "hr",
+        },
+        "projects/payroll/instances/prod/databases/hr"
+      )
+    ).toBe(true);
+  });
+
   test("matches global and instance-scoped resources", () => {
     expect(
       resourceCoversDatabase(

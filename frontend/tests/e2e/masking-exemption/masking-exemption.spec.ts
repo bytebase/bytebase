@@ -764,11 +764,6 @@ test.describe("Filtering by database keeps every exemption written for it (K2)",
   });
 
   test("the database's own exemption stays and another database's goes", async () => {
-    // The suite's sample instance is project-owned, so the filter's value is
-    // projects/<p>/instances/<i>/databases/<d>, while the parser names an
-    // instance_id + database_name scope instances/<i>/databases/<d> and the
-    // filter compares the two names exactly (BYT-10359).
-    test.fail();
     const listPage = new MaskingExemptionPage(page, env.baseURL);
     await listPage.goto(projectId);
     await expect(listPage.getMemberItem(DBA_EMAIL)).toBeVisible();
