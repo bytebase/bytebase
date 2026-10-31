@@ -197,6 +197,40 @@ func TestValidateQuery(t *testing.T) {
 			description: "EXPLAIN ANALYZE over TRUNCATE must be rejected",
 		},
 		{
+			// EXPLAIN went through a type-only copy of the export gate, so
+			// every EXPLAIN shape laundered an INTO OUTFILE past it while the
+			// bare statement was refused. Under ANALYZE, which executes, that
+			// was a live export through the read-only editor.
+			statement:   `EXPLAIN SELECT a FROM t INTO OUTFILE "s3://b/x"`,
+			valid:       false,
+			description: "EXPLAIN must not launder an export past the gate",
+		},
+		{
+			statement:   `EXPLAIN VERBOSE SELECT a FROM t INTO OUTFILE "s3://b/x"`,
+			valid:       false,
+			description: "a plan-only modifier must not launder an export either",
+		},
+		{
+			statement:   `EXPLAIN ANALYZE SELECT a FROM t INTO OUTFILE "s3://b/x"`,
+			valid:       false,
+			description: "EXPLAIN ANALYZE over an export must be rejected",
+		},
+		{
+			statement:   `EXPLAIN ANALYZE (SELECT a FROM t INTO OUTFILE "s3://b/x")`,
+			valid:       false,
+			description: "EXPLAIN ANALYZE over a parenthesized export must be rejected",
+		},
+		{
+			statement:   `EXPLAIN ANALYZE ((SELECT a FROM t INTO OUTFILE "s3://b/x"))`,
+			valid:       false,
+			description: "EXPLAIN ANALYZE over a nested parenthesized export must be rejected",
+		},
+		{
+			statement:   `EXPLAIN ANALYZE SELECT 1 UNION SELECT a FROM t INTO OUTFILE "s3://b/x"`,
+			valid:       false,
+			description: "EXPLAIN ANALYZE over an export in a set-operation arm must be rejected",
+		},
+		{
 			statement:   "SELECT EXTRACT(YEAR FROM MONTHS_ADD(NOW(), -1))",
 			valid:       true,
 			description: "EXTRACT(unit FROM expr) is read-only",
