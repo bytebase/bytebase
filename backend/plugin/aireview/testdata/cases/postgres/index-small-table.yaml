@@ -1,0 +1,82 @@
+description: >-
+  The change of index-large-table on a table of 2,400 rows. The SHARE lock
+  lasts as long as the build, which here takes milliseconds, so there is
+  nothing to fix. Only the row count tells the two cases apart.
+engine: POSTGRES
+version: "16.0.4"
+environment: prod
+statement: |
+  -- Speed up the order history page.
+  CREATE INDEX idx_orders_customer_id ON orders (customer_id);
+schema:
+  name: shop
+  character_set: UTF8
+  collation: en_US.UTF-8
+  owner: shop_owner
+  search_path: '"$user", public'
+  schemas:
+    - name: public
+      owner: pg_database_owner
+      comment: standard public schema
+      tables:
+        - name: orders
+          owner: shop_owner
+          row_count: 2400
+          data_size: 417792
+          index_size: 147456
+          columns:
+            - {name: id, position: 1, type: bigint, default: "nextval('public.orders_id_seq'::regclass)"}
+            - {name: customer_id, position: 2, type: bigint}
+            - {name: status, position: 3, type: text}
+            - {name: total, position: 4, type: "numeric(12,2)"}
+            - {name: created_at, position: 5, type: timestamp(6) with time zone, default: "now()"}
+          indexes:
+            - name: orders_pkey
+              expressions: [id]
+              type: btree
+              unique: true
+              primary: true
+              is_constraint: true
+              definition: CREATE UNIQUE INDEX orders_pkey ON public.orders USING btree (id);
+            - name: idx_orders_created_at
+              expressions: [created_at]
+              type: btree
+              definition: CREATE INDEX idx_orders_created_at ON public.orders USING btree (created_at);
+          foreign_keys:
+            - name: orders_customer_id_fkey
+              columns: [customer_id]
+              referenced_schema: public
+              referenced_table: customers
+              referenced_columns: [id]
+              on_delete: NO ACTION
+              on_update: NO ACTION
+              match_type: SIMPLE
+        - name: customers
+          owner: shop_owner
+          row_count: 310
+          data_size: 49152
+          index_size: 32768
+          columns:
+            - {name: id, position: 1, type: bigint, default: "nextval('public.customers_id_seq'::regclass)"}
+            - {name: email, position: 2, type: text}
+            - {name: created_at, position: 3, type: timestamp(6) with time zone, default: "now()"}
+          indexes:
+            - name: customers_pkey
+              expressions: [id]
+              type: btree
+              unique: true
+              primary: true
+              is_constraint: true
+              definition: CREATE UNIQUE INDEX customers_pkey ON public.customers USING btree (id);
+            - name: customers_email_key
+              expressions: [email]
+              type: btree
+              unique: true
+              is_constraint: true
+              definition: CREATE UNIQUE INDEX customers_email_key ON public.customers USING btree (email);
+      sequences:
+        - {name: orders_id_seq, data_type: bigint, start: "1", increment: "1", min_value: "1", max_value: "9223372036854775807", cache_size: "1", owner_table: orders, owner_column: id}
+        - {name: customers_id_seq, data_type: bigint, start: "1", increment: "1", min_value: "1", max_value: "9223372036854775807", cache_size: "1", owner_table: customers, owner_column: id}
+expect:
+  not_flag:
+    - line: 2

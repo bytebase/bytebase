@@ -1,0 +1,54 @@
+description: >-
+  The workspace policy requires utf8mb4. The new table names no character
+  set, so it takes the database default, which is latin1 on this legacy
+  database. Only the target's default character set shows that the policy is
+  broken; the existing tables were each created with utf8mb4 explicitly.
+engine: MYSQL
+version: "8.0.36"
+environment: prod
+workspace_policy: |
+  Every table must use the utf8mb4 character set.
+statement: |
+  -- Store the notes support agents leave on a refund.
+  CREATE TABLE refund_notes (id BIGINT AUTO_INCREMENT PRIMARY KEY, refund_id BIGINT NOT NULL, note TEXT NOT NULL, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, KEY idx_refund_notes_refund_id (refund_id)) ENGINE=InnoDB;
+schema:
+  name: support
+  character_set: latin1
+  collation: latin1_swedish_ci
+  schemas:
+    - name: ""
+      tables:
+        - name: refunds
+          engine: InnoDB
+          charset: utf8mb4
+          collation: utf8mb4_0900_ai_ci
+          row_count: 240000
+          data_size: 34095104
+          index_size: 9437184
+          columns:
+            - {name: id, position: 1, type: bigint, default: AUTO_INCREMENT}
+            - {name: order_id, position: 2, type: bigint}
+            - {name: amount, position: 3, type: "decimal(12,2)"}
+            - {name: reason, position: 4, type: varchar(255), character_set: utf8mb4, collation: utf8mb4_0900_ai_ci}
+            - {name: created_at, position: 5, type: datetime, default: CURRENT_TIMESTAMP}
+          indexes:
+            - {name: PRIMARY, expressions: [id], key_length: [-1], descending: [false], type: BTREE, unique: true, primary: true, visible: true}
+            - {name: idx_refunds_order_id, expressions: [order_id], key_length: [-1], descending: [false], type: BTREE, visible: true}
+        - name: tickets
+          engine: InnoDB
+          charset: utf8mb4
+          collation: utf8mb4_0900_ai_ci
+          row_count: 1800000
+          data_size: 1258291200
+          index_size: 157286400
+          columns:
+            - {name: id, position: 1, type: bigint, default: AUTO_INCREMENT}
+            - {name: subject, position: 2, type: varchar(255), character_set: utf8mb4, collation: utf8mb4_0900_ai_ci}
+            - {name: body, position: 3, type: text, character_set: utf8mb4, collation: utf8mb4_0900_ai_ci}
+            - {name: created_at, position: 4, type: datetime, default: CURRENT_TIMESTAMP}
+          indexes:
+            - {name: PRIMARY, expressions: [id], key_length: [-1], descending: [false], type: BTREE, unique: true, primary: true, visible: true}
+expect:
+  find:
+    - line: 2
+      keywords: [utf8mb4, latin1, charset, character set]
