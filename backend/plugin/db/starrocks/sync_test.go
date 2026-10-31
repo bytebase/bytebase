@@ -6,25 +6,22 @@ import (
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
 // BYT-9689: StarRocks reports materialized views in information_schema.tables with
 // TABLE_TYPE='VIEW' and omits them from information_schema.views (verified on a live
-// 3.4.10 BE-alive smoke test), while Doris reports them as 'BASE TABLE'. The shared
-// driver previously only matched Doris's 'BASE TABLE' rows, so StarRocks MVs were
-// dropped. Membership in the materialized-view set is the authoritative signal.
+// 3.4.10 BE-alive smoke test), so the table type alone cannot identify one. Membership
+// in the materialized-view set is the authoritative signal, whatever type the row carries.
 func TestIsMaterializedView(t *testing.T) {
 	mvMap := map[db.TableKey]*metadatapb.MaterializedViewMetadata{
 		{Schema: "", Table: "mv_async"}: {Name: "mv_async"},
 	}
 	mvKey := db.TableKey{Schema: "", Table: "mv_async"}
 
-	// StarRocks reports the MV as VIEW; Doris as BASE TABLE; both map to an MV.
 	require.True(t, isMaterializedView(viewTableType, mvKey, mvMap))
-	require.True(t, isMaterializedView(baseTableType, mvKey, mvMap))
 	require.True(t, isMaterializedView(materializedViewType, mvKey, mvMap))
+	require.True(t, isMaterializedView(baseTableType, mvKey, mvMap))
 
 	// A name absent from the MV set is never a materialized view.
 	require.False(t, isMaterializedView(viewTableType, db.TableKey{Table: "v_regular"}, mvMap))
@@ -45,17 +42,12 @@ func TestIsSyncRollup(t *testing.T) {
 	require.False(t, isSyncRollup("")) // IFNULL-coalesced NULL or a genuinely empty type.
 }
 
-// #20566 review (P2): SyncInstance's system-database exclusion must match the
-// parser's per-engine system set — StarRocks's read-only `sys` metadatabase
-// must be excluded so it isn't imported as a user database. Doris has no `sys`,
-// so excluding it there would risk hiding a user db named sys (engine-aware).
+// #20566 review (P2): SyncInstance's system-database exclusion must match the parser's
+// system set. `sys` is StarRocks's read-only metadatabase and must be excluded so it
+// isn't imported as a user database.
 func TestSystemDatabaseExclusion(t *testing.T) {
-	sr := (&Driver{dbType: storepb.Engine_STARROCKS}).systemDatabaseExclusion()
-	require.Contains(t, sr, "'sys'", "StarRocks sync must exclude the sys metadatabase")
-	require.Contains(t, sr, "'information_schema'")
-	require.Contains(t, sr, "'_statistics_'")
-
-	doris := (&Driver{dbType: storepb.Engine_DORIS}).systemDatabaseExclusion()
-	require.NotContains(t, doris, "'sys'", "Doris must not exclude sys (StarRocks-only)")
-	require.Contains(t, doris, "'information_schema'")
+	got := systemDatabaseExclusion()
+	require.Contains(t, got, "'information_schema'")
+	require.Contains(t, got, "'_statistics_'")
+	require.Contains(t, got, "'sys'")
 }

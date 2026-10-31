@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	mysqlomni "github.com/bytebase/omni/mysql/parser"
+	starrocksomni "github.com/bytebase/omni/starrocks/parser"
 	"github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -28,9 +28,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 
-	// Register how these engines plan a statement, for base.ExplainStatement below.
-	// This driver serves both.
-	_ "github.com/bytebase/bytebase/backend/plugin/parser/doris"
+	// Register how StarRocks plans a statement, for base.ExplainStatement below.
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/starrocks"
 )
 
@@ -44,10 +42,9 @@ var (
 
 func init() {
 	db.Register(storepb.Engine_STARROCKS, newDriver)
-	db.Register(storepb.Engine_DORIS, newDriver)
 }
 
-// Driver is the MySQL driver.
+// Driver is the StarRocks driver.
 type Driver struct {
 	dbType       storepb.Engine
 	db           *sql.DB
@@ -62,7 +59,7 @@ func newDriver() db.Driver {
 	return &Driver{}
 }
 
-// Open opens a MySQL driver.
+// Open opens a StarRocks driver.
 func (d *Driver) Open(_ context.Context, dbType storepb.Engine, connCfg db.ConnectionConfig) (db.Driver, error) {
 	defer func() {
 		for _, f := range d.openCleanUp {
@@ -74,10 +71,7 @@ func (d *Driver) Open(_ context.Context, dbType storepb.Engine, connCfg db.Conne
 	if strings.HasPrefix(connCfg.DataSource.Host, "/") {
 		protocol = "unix"
 	}
-	params := []string{"multiStatements=true", "maxAllowedPacket=0"}
-	if dbType == storepb.Engine_DORIS || dbType == storepb.Engine_STARROCKS {
-		params = append(params, "interpolateParams=true")
-	}
+	params := []string{"multiStatements=true", "maxAllowedPacket=0", "interpolateParams=true"}
 	if connCfg.DataSource.GetSshHost() != "" {
 		sshClient, err := util.GetSSHClient(connCfg.DataSource)
 		if err != nil {
@@ -177,7 +171,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	// Only preprocess when DELIMITER directives are present; normal
 	// StarRocks SQL passes through unchanged.
 	if containsDelimiterDirective(statement) {
-		segments := mysqlomni.Split(statement)
+		segments := starrocksomni.Split(statement)
 		var buf strings.Builder
 		for i, seg := range segments {
 			if i > 0 {
