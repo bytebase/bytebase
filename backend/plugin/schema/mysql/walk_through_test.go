@@ -125,38 +125,6 @@ func TestWalkThroughCreateTableIfNotExistsCTASExistingTable(t *testing.T) {
 	require.NotNil(t, state.GetSchemaMetadata("").GetTable("t1"))
 }
 
-// TestWalkThroughMariaDBSkipsMariaDBOnlyStatements pins what the MariaDB
-// registration has to keep doing: omni's MariaDB catalog has no metadata loader,
-// so MariaDB walks through omni's MySQL catalog, and a statement that catalog
-// cannot parse leaves the whole script unsimulated rather than checking the rest
-// against a schema missing its effect.
-func TestWalkThroughMariaDBSkipsMariaDBOnlyStatements(t *testing.T) {
-	state := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Name: "test"}, nil, nil, storepb.Engine_MARIADB, true)
-	statement := "CREATE OR REPLACE TABLE t (a INT);\nALTER TABLE t ADD COLUMN b INT;"
-	sm := sheet.NewManager()
-	stmts, advices := sm.GetStatementsForChecks(storepb.Engine_MARIADB, statement)
-	require.Empty(t, advices)
-
-	advice := walkThroughMariaDB(context.Background(), schema.WalkThroughContext{RawSQL: statement}, state, base.ExtractASTs(stmts))
-	require.Nil(t, advice)
-	require.Empty(t, state.GetProto().GetSchemas())
-}
-
-// TestWalkThroughMariaDBSimulatesSharedStatements is the other half: a script
-// omni's MySQL catalog can read is simulated for MariaDB as it always was,
-// through the MariaDB registration rather than the MySQL one.
-func TestWalkThroughMariaDBSimulatesSharedStatements(t *testing.T) {
-	state := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Name: "test"}, nil, nil, storepb.Engine_MARIADB, true)
-	statement := "CREATE TABLE t (a INT);\nALTER TABLE t ADD COLUMN b INT;"
-	sm := sheet.NewManager()
-	stmts, advices := sm.GetStatementsForChecks(storepb.Engine_MARIADB, statement)
-	require.Empty(t, advices)
-
-	advice := walkThroughMariaDB(context.Background(), schema.WalkThroughContext{RawSQL: statement}, state, base.ExtractASTs(stmts))
-	require.Nil(t, advice)
-	require.NotNil(t, state.GetSchemaMetadata("").GetTable("t").GetColumn("b"))
-}
-
 // TestWalkThroughSRIDInvisible verifies the omni catalog -> metadatapb.ColumnMetadata
 // conversion (tableToProto) carries the spatial SRID (presence + value, including the
 // valid explicit SRID 0) and the INVISIBLE flag. Without this the WalkThroughWithContext

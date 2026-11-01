@@ -37,10 +37,12 @@ independent AST, so one implementation cannot walk two of them.
   (`fix(mysql,mariadb): ...`). This mirrors omni's own rule for parser forks.
 - Inherited facts need re-verifying per engine even where inherited code is
   correct. StarRocks took Doris's EXPLAIN modifier list and was wrong about it.
-- A fork is partial where omni's tree is. MariaDB has no `schema/mariadb`
-  because omni's `mariadb/catalog` has no `LoadMetadata`, `Diff` or
-  `GenerateMigration`; it walks `schema/mysql` instead. Check the engine's omni
-  tree before assuming a layer can fork.
+- A fork is partial where omni's tree is. `schema/mariadb` registers MariaDB but
+  owns no catalog work, because omni's `mariadb/catalog` has `New`, `Exec` and
+  `LoadSQL` and none of the `LoadMetadata`, `Diff`, `GenerateMigration` or
+  version handling `schema/mysql` needs; it simulates on omni's MySQL catalog
+  instead. Check the engine's omni tree before assuming a layer can fork, and
+  keep the engine's own package even when it only holds that decision.
 
 ## Customer information
 

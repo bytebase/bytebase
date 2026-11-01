@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"slices"
+	"strings"
 	"testing"
 
 	metadatapb "github.com/bytebase/omni/metadata"
@@ -229,4 +230,47 @@ func buildFixedMockDatabaseMetadataGetterAndLister() (base.GetDatabaseMetadataFu
 		}, func(_ context.Context, _ string) ([]string, error) {
 			return []string{"db", "db1", "db2"}, nil
 		}
+}
+
+// TestTransformDMLToSelectStripsReturning covers a clause MySQL has no grammar
+// for, so the transform this was forked from never had to drop it. RETURNING is
+// the last clause of a single-table MariaDB DELETE and means nothing in a
+// SELECT: copying through to the statement end emitted
+// `SELECT `test`.* FROM test WHERE b1 = 1 RETURNING b1`, which the server
+// rejects when the backup runs — after the change had already passed review.
+func TestTransformDMLToSelectStripsReturning(t *testing.T) {
+	for _, statement := range []string{
+		"DELETE FROM test WHERE b1 = 1 RETURNING b1;",
+		"DELETE FROM test WHERE b1 = 1 RETURNING b1, c1;",
+		"DELETE FROM test WHERE b1 = 1 RETURNING *;",
+		"DELETE FROM test WHERE b1 = 1 ORDER BY b1 LIMIT 1 RETURNING b1;",
+	} {
+		getter, lister := buildFixedMockDatabaseMetadataGetterAndLister()
+		result, err := TransformDMLToSelect(context.Background(), base.TransformContext{
+			GetDatabaseMetadataFunc: getter,
+			ListDatabaseNamesFunc:   lister,
+			IsCaseSensitive:         false,
+		}, statement, "db", "backupDB", "_rollback")
+		require.NoError(t, err, statement)
+		require.NotEmpty(t, result, statement)
+		for _, bs := range result {
+			require.NotContains(t, strings.ToUpper(bs.Statement), "RETURNING", statement)
+			require.Contains(t, bs.Statement, "WHERE b1 = 1", statement)
+		}
+	}
+}
+
+// TestTransformDMLToSelectKeepsTheRestOfTheSuffix guards the cut from taking the
+// clauses before RETURNING with it.
+func TestTransformDMLToSelectKeepsTheRestOfTheSuffix(t *testing.T) {
+	getter, lister := buildFixedMockDatabaseMetadataGetterAndLister()
+	result, err := TransformDMLToSelect(context.Background(), base.TransformContext{
+		GetDatabaseMetadataFunc: getter,
+		ListDatabaseNamesFunc:   lister,
+		IsCaseSensitive:         false,
+	}, "DELETE FROM test WHERE b1 = 1 ORDER BY b1 LIMIT 1 RETURNING b1;", "db", "backupDB", "_rollback")
+	require.NoError(t, err)
+	require.Len(t, result, 1)
+	require.Contains(t, result[0].Statement, "ORDER BY b1")
+	require.Contains(t, result[0].Statement, "LIMIT 1")
 }

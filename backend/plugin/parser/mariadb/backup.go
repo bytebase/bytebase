@@ -410,30 +410,63 @@ func writeUpdateSuffix(buf *strings.Builder, n *ast.UpdateStmt, sql string) erro
 func writeDeleteSuffix(buf *strings.Builder, n *ast.DeleteStmt, sql string) error {
 	// For single-table DELETE: everything from the table ref to statement end.
 	// For multi-table DELETE: everything from the USING/reference table list to end.
-	if len(n.Using) > 0 {
-		start := nodeLocStart(n.Using[0])
-		end := n.Loc.End
-		if end <= 0 || end > len(sql) {
-			end = len(sql)
-		}
-		if start >= 0 && end > start {
-			if _, err := buf.WriteString(strings.TrimSpace(sql[start:end])); err != nil {
-				return err
-			}
-		}
-	} else if len(n.Tables) > 0 {
-		start := nodeLocStart(n.Tables[0])
-		end := n.Loc.End
-		if end <= 0 || end > len(sql) {
-			end = len(sql)
-		}
-		if start >= 0 && end > start {
-			if _, err := buf.WriteString(strings.TrimSpace(sql[start:end])); err != nil {
-				return err
-			}
-		}
+	end, err := deleteSuffixEnd(n, sql)
+	if err != nil {
+		return err
 	}
-	return nil
+	var start int
+	switch {
+	case len(n.Using) > 0:
+		start = nodeLocStart(n.Using[0])
+	case len(n.Tables) > 0:
+		start = nodeLocStart(n.Tables[0])
+	default:
+		return nil
+	}
+	if start < 0 || end <= start {
+		return nil
+	}
+	_, err = buf.WriteString(strings.TrimSpace(sql[start:end]))
+	return err
+}
+
+// deleteSuffixEnd returns where the text copied into the backup SELECT must stop.
+//
+// MariaDB allows RETURNING only as the last clause of a single-table DELETE, and
+// it has no meaning in a SELECT: copying through to the statement end would emit
+// `SELECT t.* FROM t WHERE a = 1 RETURNING a`, which the server rejects when the
+// backup runs. Everything from the keyword onward is therefore dropped. If the
+// keyword cannot be located the transformation fails rather than emit a statement
+// that is invalid, because a backup that errors at execution time is worse than
+// one the change never passes review with.
+func deleteSuffixEnd(n *ast.DeleteStmt, sql string) (int, error) {
+	end := n.Loc.End
+	if end <= 0 || end > len(sql) {
+		end = len(sql)
+	}
+	if len(n.Returning) == 0 {
+		return end, nil
+	}
+	var first int
+	switch e := n.Returning[0].(type) {
+	case *ast.ColumnRef:
+		first = e.Loc.Start
+	case *ast.ResTarget:
+		first = e.Loc.Start
+	case *ast.StarExpr:
+		first = e.Loc.Start
+	default:
+		return 0, errors.Errorf("cannot locate RETURNING of a DELETE from %T", n.Returning[0])
+	}
+	if first <= 0 || first > end {
+		return 0, errors.New("cannot locate RETURNING of a DELETE")
+	}
+	// Only the keyword and whitespace sit between the clause start and its first item.
+	kw := strings.LastIndex(strings.ToUpper(sql[:first]), "RETURNING")
+	if kw < 0 {
+		return 0, errors.New("cannot locate RETURNING of a DELETE")
+	}
+	return kw, nil
 }
 
 func nodeLocStart(expr ast.TableExpr) int {

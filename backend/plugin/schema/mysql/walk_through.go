@@ -21,21 +21,6 @@ import (
 
 func init() {
 	schema.RegisterWalkThroughWithContext(storepb.Engine_MYSQL, WalkThroughWithContext)
-	schema.RegisterWalkThroughWithContext(storepb.Engine_MARIADB, walkThroughMariaDB)
-}
-
-// walkThroughMariaDB simulates MariaDB DDL on omni's MySQL catalog, which is the
-// only catalog that can: omni's MariaDB catalog has no metadata loader, so there
-// is nothing to install the synced schema into. The MariaDB parser's nodes are
-// therefore re-read with omni's MySQL parser, and a statement it rejects — one
-// only MariaDB accepts — leaves the script unsimulated, because the MySQL catalog
-// would check the statements after it against a schema missing that one's effect.
-func walkThroughMariaDB(ctx context.Context, wtCtx schema.WalkThroughContext, d *model.DatabaseMetadata, _ []base.AST) *storepb.Advice {
-	parsed, err := base.ParseStatements(storepb.Engine_MYSQL, wtCtx.RawSQL)
-	if err != nil {
-		return nil
-	}
-	return WalkThroughWithContext(ctx, wtCtx, d, base.ExtractASTs(parsed))
 }
 
 // WalkThroughWithContext performs DDL simulation using the omni MySQL catalog.

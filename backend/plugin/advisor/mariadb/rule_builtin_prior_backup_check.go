@@ -149,7 +149,10 @@ func isOmniDDL(node ast.Node) bool {
 		*ast.DropTableStmt, *ast.DropDatabaseStmt, *ast.DropIndexStmt,
 		*ast.DropViewStmt, *ast.DropTriggerStmt, *ast.DropEventStmt,
 		*ast.DropRoutineStmt,
-		*ast.RenameTableStmt, *ast.TruncateStmt:
+		*ast.RenameTableStmt, *ast.TruncateStmt,
+		// MariaDB has sequences; MySQL does not, so the list this was forked
+		// from omits them and a mixed script would pass the guard below.
+		*ast.CreateSequenceStmt, *ast.AlterSequenceStmt, *ast.DropSequenceStmt:
 		return true
 	default:
 		return false

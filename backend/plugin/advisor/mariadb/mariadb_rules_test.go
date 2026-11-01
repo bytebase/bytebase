@@ -354,6 +354,33 @@ func TestMariaDBPriorBackupCheckAdvisorReadsMariaDBOnlyStatements(t *testing.T) 
 	require.Empty(t, adviceList)
 }
 
+// TestMariaDBPriorBackupCheckAdvisorCountsSequenceDDL covers statements MySQL has
+// no grammar for, so the DDL list this was forked from omits them. Without the
+// sequence cases the script below passed a guard that promises to reject mixed
+// DDL and DML, and the backup silently covered only the DELETE.
+func TestMariaDBPriorBackupCheckAdvisorCountsSequenceDDL(t *testing.T) {
+	for _, ddl := range []string{
+		"CREATE SEQUENCE s START WITH 1",
+		"ALTER SEQUENCE s RESTART",
+		"DROP SEQUENCE s",
+	} {
+		sm := sheet.NewManager()
+		adviceList, err := advisor.SQLReviewCheck(context.Background(), sm, ddl+";\nDELETE FROM test WHERE b1 = 1;", nil, advisor.Context{
+			DBType:            storepb.Engine_MARIADB,
+			DBSchema:          advisor.MockMySQLDatabase,
+			EnablePriorBackup: true,
+			InstanceID:        "instance",
+			ListDatabaseNamesFunc: func(context.Context, string) ([]string, error) {
+				return []string{"bbdataarchive"}, nil
+			},
+		})
+		require.NoError(t, err, ddl)
+		require.NotEmpty(t, adviceList, ddl)
+		require.Equal(t, storepb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK.String(), adviceList[0].Title, ddl)
+		require.Contains(t, adviceList[0].Content, "mixed DDL and DML", ddl)
+	}
+}
+
 // TestMariaDBSQLReviewReviewsMariaDBOnlyStatements pins the other half: a rule
 // now fires on a statement only MariaDB accepts, where the review used to walk
 // straight past it.

@@ -63,6 +63,7 @@ import (
 
 	// Schema designer.
 	_ "github.com/bytebase/bytebase/backend/plugin/schema/clickhouse"
+	_ "github.com/bytebase/bytebase/backend/plugin/schema/mariadb"
 	_ "github.com/bytebase/bytebase/backend/plugin/schema/mssql"
 	_ "github.com/bytebase/bytebase/backend/plugin/schema/mysql"
 	_ "github.com/bytebase/bytebase/backend/plugin/schema/oceanbase"
