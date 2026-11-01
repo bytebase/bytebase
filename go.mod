@@ -15,7 +15,7 @@ require (
 	cloud.google.com/go/spanner v1.95.0
 	connectrpc.com/connect v1.20.0
 	connectrpc.com/cors v0.1.0
-	connectrpc.com/grpcreflect v1.3.0
+	connectrpc.com/grpcreflect v1.3.1
 	connectrpc.com/validate v0.6.0
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.23.3
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.15.0
