@@ -1,0 +1,76 @@
+- statement: |
+    CREATE TABLE userTable(
+      id INT NOT NULL,
+      name VARCHAR(255) CHARSET ascii,
+      roomId INT,
+      time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',
+      time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',
+      content BLOB NOT NULL COMMENT 'comment',
+      json_content JSON NOT NULL COMMENT 'comment',
+      INDEX idx1(name),
+      UNIQUE KEY uk1(id, name),
+      FOREIGN KEY fk1(roomId) REFERENCES room(id),
+      INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin;
+  want:
+    - status: 2
+      code: 419
+      title: COLUMN_CURRENT_TIME_COUNT_LIMIT
+      content: Table `userTable` has 2 ON UPDATE CURRENT_TIMESTAMP() columns. The count greater than 1.
+      startposition:
+        line: 6
+        column: 0
+      endposition: null
+- statement: |
+    CREATE TABLE user(
+      id INT PRIMARY KEY COMMENT 'comment',
+      name VARCHAR(255) NOT NULL DEFAULT '' COMMENT 'comment',
+      room_id INT NOT NULL DEFAULT 0 COMMENT 'comment',
+      creator_id INT NOT NULL DEFAULT 0 COMMENT 'comment',
+      created_ts TIMESTAMP NOT NULL DEFAULT NOW() COMMENT 'comment',
+      updater_id INT NOT NULL DEFAULT 0 COMMENT 'comment',
+      updated_ts TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',
+      INDEX idx_user_name(name),
+      UNIQUE KEY uk_user_id_name(id, name)
+    ) ENGINE = INNODB COMMENT 'comment';
+- statement: CREATE TABLE t(a timestamp, b timestamp)
+- statement: |-
+    CREATE TABLE t(
+      a timestamp default now(),
+      b timestamp default current_timestamp(),
+      c timestamp default localtime
+    );
+  want:
+    - status: 2
+      code: 418
+      title: COLUMN_CURRENT_TIME_COUNT_LIMIT
+      content: Table `t` has 3 DEFAULT CURRENT_TIMESTAMP() columns. The count greater than 2.
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(
+      a timestamp default now() on update localtime,
+      b timestamp default current_timestamp() on update localtimestamp()
+    );
+  want:
+    - status: 2
+      code: 419
+      title: COLUMN_CURRENT_TIME_COUNT_LIMIT
+      content: Table `t` has 2 ON UPDATE CURRENT_TIMESTAMP() columns. The count greater than 1.
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE tech_book ADD COLUMN a timestamp default now() on update localtime;
+    ALTER TABLE tech_book ADD COLUMN b timestamp default current_timestamp() on update localtimestamp();
+  want:
+    - status: 2
+      code: 419
+      title: COLUMN_CURRENT_TIME_COUNT_LIMIT
+      content: Table `tech_book` has 2 ON UPDATE CURRENT_TIMESTAMP() columns. The count greater than 1.
+      startposition:
+        line: 2
+        column: 0
+      endposition: null

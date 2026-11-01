@@ -1,0 +1,121 @@
+- description: explain analyze query
+  statement: explain analyze select * from t
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 1
+    results: []
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: ""
+          table: t
+          column: ""
+    predicatecolumns: []
+- description: Treat set statement as select
+  statement: SET CHARSET DEFAULT;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 1
+    results: []
+    sourcecolumns: []
+    predicatecolumns: []
+- description: system query
+  statement: select * from mysql.user
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 3
+    results: []
+    sourcecolumns: []
+    predicatecolumns: []
+- description: show query
+  statement: show databases
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 3
+    results: []
+    sourcecolumns: []
+    predicatecolumns: []
+- description: explain query
+  statement: explain select * from t
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 2
+    results: []
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: ""
+          table: t
+          column: ""
+    predicatecolumns: []
+- description: standard query
+  statement: select * from t where a > 0
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 1
+    results: []
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: ""
+          table: t
+          column: ""
+    predicatecolumns: []
+- description: ddl
+  statement: create table t(a int);
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 4
+    results: []
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: ""
+          table: t
+          column: ""
+    predicatecolumns: []
+- description: dml
+  statement: insert into t values(1);
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 5
+    results: []
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: ""
+          table: t
+          column: ""
+    predicatecolumns: []

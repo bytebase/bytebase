@@ -1,0 +1,23 @@
+- statement: CREATE TABLE t(name varchar(225));
+- statement: CREATE TABLE t1(name varchar(3000));
+  want:
+    - status: 2
+      code: 422
+      title: COLUMN_MAXIMUM_VARCHAR_LENGTH
+      content: The length of the VARCHAR column `t1.name` is bigger than 2560
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE tech_book ADD COLUMN name_1 char(20);
+    ALTER TABLE tech_book ADD COLUMN name_2 varchar(3000);
+  want:
+    - status: 2
+      code: 422
+      title: COLUMN_MAXIMUM_VARCHAR_LENGTH
+      content: The length of the VARCHAR column `tech_book.name_2` is bigger than 2560
+      startposition:
+        line: 2
+        column: 0
+      endposition: null

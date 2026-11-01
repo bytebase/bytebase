@@ -12,7 +12,6 @@ import (
 
 func init() {
 	base.RegisterExplainStatementFunc(storepb.Engine_MYSQL, explainStatement)
-	base.RegisterExplainStatementFunc(storepb.Engine_MARIADB, explainStatement)
 }
 
 // explainStatement implements base.ExplainStatement. MySQL and MariaDB both
