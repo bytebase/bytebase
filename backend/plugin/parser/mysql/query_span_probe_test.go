@@ -30,7 +30,6 @@ var mysqlOmniProbeFixturePaths = []string{
 	"test-data/query-span/query_type.yaml",
 	"test-data/query-span/standard.yaml",
 	"test-data/query-span/case_insensitive.yaml",
-	"test-data/query-span/starrocks.yaml",
 }
 
 func probeMySQLOmniFixtureParseCoverage(t *testing.T) {

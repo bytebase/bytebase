@@ -26,7 +26,6 @@ var (
 	getSequenceDefinitions          = make(map[storepb.Engine]getSequenceDefinition)
 	getDatabaseMetadataMap          = make(map[storepb.Engine]getDatabaseMetadata)
 	generateMigrations              = make(map[storepb.Engine]generateMigration)
-	getSDLDiffs                     = make(map[storepb.Engine]getSDLDiff)
 	sdlDropAdvicesFns               = make(map[storepb.Engine]sdlDropAdvices)
 	diffSDLMigrations               = make(map[storepb.Engine]diffSDLMigration)
 	diffMetadataMigrations          = make(map[storepb.Engine]diffMetadataMigration)
@@ -46,7 +45,6 @@ type getProcedureDefinition func(string, *metadatapb.ProcedureMetadata) (string,
 type getSequenceDefinition func(string, *metadatapb.SequenceMetadata) (string, error)
 type getDatabaseMetadata func(string) (*metadatapb.DatabaseSchemaMetadata, error)
 type generateMigration func(*MetadataDiff) (string, error)
-type getSDLDiff func(currentSDLText, previousUserSDLText string, currentSchema *model.DatabaseMetadata) (*MetadataDiff, error)
 type sdlDropAdvices func(userSDLText string, currentSchema *model.DatabaseMetadata, engineVersion string) ([]*storepb.Advice, error)
 
 // diffSDLMigration computes migration SQL between two SDL texts. engineVersion is the
@@ -264,23 +262,6 @@ func GenerateMigration(engine storepb.Engine, diff *MetadataDiff) (string, error
 		return "", errors.Errorf("engine %s is not supported", engine)
 	}
 	return f(diff)
-}
-
-func RegisterGetSDLDiff(engine storepb.Engine, f getSDLDiff) {
-	mux.Lock()
-	defer mux.Unlock()
-	if _, dup := getSDLDiffs[engine]; dup {
-		panic(fmt.Sprintf("Register called twice %s", engine))
-	}
-	getSDLDiffs[engine] = f
-}
-
-func GetSDLDiff(engine storepb.Engine, currentSDLText, previousUserSDLText string, currentSchema *model.DatabaseMetadata) (*MetadataDiff, error) {
-	f, ok := getSDLDiffs[engine]
-	if !ok {
-		return nil, errors.Errorf("engine %s is not supported", engine)
-	}
-	return f(currentSDLText, previousUserSDLText, currentSchema)
 }
 
 // SDLSessionContext is the session state a routine/trigger/event was created under, as

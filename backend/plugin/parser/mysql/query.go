@@ -10,7 +10,6 @@ import (
 func init() {
 	base.RegisterQueryValidator(storepb.Engine_MYSQL, validateQuery)
 	base.RegisterQueryValidator(storepb.Engine_MARIADB, validateQuery)
-	base.RegisterQueryValidator(storepb.Engine_OCEANBASE, validateQuery)
 }
 
 // validateQuery validates the SQL statement for SQL editor.

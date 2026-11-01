@@ -147,5 +147,10 @@ func (m *maskingLevelEvaluator) isSensitiveColumn(database *store.DatabaseMessag
 }
 
 func isPredicateColumnsCheckEnabled(engine storepb.Engine) bool {
-	return engine == storepb.Engine_MSSQL || engine == storepb.Engine_POSTGRES
+	switch engine {
+	case storepb.Engine_MSSQL, storepb.Engine_POSTGRES, storepb.Engine_MYSQL, storepb.Engine_MARIADB:
+		return true
+	default:
+		return false
+	}
 }

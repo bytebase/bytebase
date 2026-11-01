@@ -15,13 +15,11 @@ import (
 func init() {
 	base.RegisterParseStatementsFunc(storepb.Engine_MYSQL, parseMySQLStatements)
 	base.RegisterParseStatementsFunc(storepb.Engine_MARIADB, parseMariaDBStatements)
-	base.RegisterParseStatementsFunc(storepb.Engine_OCEANBASE, parseMySQLStatements)
 	base.RegisterGetStatementTypes(storepb.Engine_MYSQL, GetStatementTypes)
 	base.RegisterGetStatementTypes(storepb.Engine_MARIADB, GetStatementTypes)
-	base.RegisterGetStatementTypes(storepb.Engine_OCEANBASE, GetStatementTypes)
 }
 
-// parseMySQLStatements is the ParseStatementsFunc for MySQL and OceanBase.
+// parseMySQLStatements is the ParseStatementsFunc for MySQL.
 // Returns []ParsedStatement with both text and AST populated.
 func parseMySQLStatements(statement string) ([]base.ParsedStatement, error) {
 	return parseStatements(statement, false /* mariaDBFallback */)

@@ -18,11 +18,10 @@ import (
 func init() {
 	base.RegisterResultLimitFunc(storepb.Engine_MYSQL, statementWithResultLimit)
 	base.RegisterResultLimitFunc(storepb.Engine_MARIADB, statementWithResultLimit)
-	base.RegisterResultLimitFunc(storepb.Engine_OCEANBASE, statementWithResultLimit)
 }
 
-// statementWithResultLimit implements base.ResultLimitFunc for MySQL, MariaDB
-// and OceanBase, which share this grammar. None takes an engineVersion.
+// statementWithResultLimit implements base.ResultLimitFunc for MySQL and MariaDB,
+// which share this grammar. Neither takes an engineVersion.
 func statementWithResultLimit(statement string, limit int, _ string) string {
 	stmt, err := statementWithResultLimitInline(statement, limit)
 	if err != nil {

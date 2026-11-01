@@ -23,7 +23,6 @@ import (
 func init() {
 	schema.RegisterWalkThroughWithContext(storepb.Engine_MYSQL, WalkThroughWithContext)
 	schema.RegisterWalkThroughWithContext(storepb.Engine_MARIADB, WalkThroughWithContext)
-	schema.RegisterWalkThroughWithContext(storepb.Engine_OCEANBASE, WalkThroughWithContext)
 }
 
 // WalkThroughWithContext performs DDL simulation using the omni MySQL catalog.
@@ -349,8 +348,8 @@ func precheckMySQLOmniWalkThrough(d *model.DatabaseMetadata, asts []base.AST) my
 			continue
 		}
 		text := ""
-		if omniAST, ok := unifiedAST.(*mysqlparser.OmniAST); ok {
-			text = strings.TrimSpace(omniAST.Text)
+		if source, ok := unifiedAST.(interface{ ASTSource() string }); ok {
+			text = strings.TrimSpace(source.ASTSource())
 		}
 		if advice := precheckMySQLOmniNode(d, node, text); advice != nil {
 			advice.StartPosition = mySQLStatementStartPosition(unifiedAST.ASTStartPosition())

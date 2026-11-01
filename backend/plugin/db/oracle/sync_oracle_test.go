@@ -9,7 +9,9 @@ import (
 	"time"
 
 	metadatapb "github.com/bytebase/omni/metadata"
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -213,4 +215,37 @@ func TestSyncLeavesOutTriggersOnOtherSchemasTables(t *testing.T) {
 
 	synced := syncedSchema(ctx, t, driver)
 	require.Equal(t, []string{"ON_OWN"}, names(tableByName(t, synced, "T").Triggers))
+}
+
+func TestSyncListsSynonyms(t *testing.T) {
+	t.Parallel()
+	ctx := syncTestContext(t)
+	driver, admin, s := newSyncTarget(ctx, t)
+	_, other := testcontainer.NewOracleSchema(t)
+	public := s + "_PUB"
+	execAll(ctx, t, admin,
+		fmt.Sprintf(`CREATE TABLE %s.T (A NUMBER)`, s),
+		fmt.Sprintf(`CREATE TABLE %s.OT (A NUMBER)`, other),
+		fmt.Sprintf(`CREATE SYNONYM %[1]s.S_OWN FOR %[1]s.T`, s),
+		fmt.Sprintf(`CREATE SYNONYM %s.S_OTHER FOR %s.OT`, s, other),
+		// ALL_SYNONYMS leaves out a synonym whose object does not exist.
+		fmt.Sprintf(`CREATE SYNONYM %[1]s.S_GONE FOR %[1]s.NOSUCH`, s),
+		fmt.Sprintf(`CREATE PUBLIC SYNONYM %s FOR %s.T`, public, s),
+	)
+	t.Cleanup(func() { _, _ = admin.ExecContext(context.Background(), "DROP PUBLIC SYNONYM "+public) })
+
+	metadata, err := driver.SyncDBSchema(ctx)
+	require.NoError(t, err)
+	require.Len(t, metadata.Schemas, 1)
+	require.Empty(t, cmp.Diff([]*metadatapb.SynonymMetadata{
+		{Name: "S_OTHER", TargetSchema: other, TargetName: "OT"},
+		{Name: "S_OWN", TargetSchema: s, TargetName: "T"},
+	}, metadata.Schemas[0].Synonyms, protocmp.Transform()))
+
+	byName := map[string]*metadatapb.SynonymMetadata{}
+	for _, synonym := range metadata.PublicSynonyms {
+		byName[synonym.Name] = synonym
+	}
+	require.Empty(t, cmp.Diff(&metadatapb.SynonymMetadata{Name: public, TargetSchema: s, TargetName: "T"}, byName[public], protocmp.Transform()))
+	require.Empty(t, cmp.Diff(&metadatapb.SynonymMetadata{Name: "DUAL", TargetSchema: "SYS", TargetName: "DUAL"}, byName["DUAL"], protocmp.Transform()))
 }

@@ -183,6 +183,7 @@
     },
     "rename-chat-placeholder": "チャット名を入力",
     "reply": "返信",
+    "request-failed": "アシスタントはこのリクエストを完了できませんでした。",
     "request-stopped-by-user": "ユーザーがリクエストを停止しました",
     "request-stopped-retry-hint": "送信済みの操作は完了する可能性があります。再試行する前に状態を確認してください。",
     "resource-picker": {
@@ -3116,7 +3117,7 @@
             "title": "ロールアウトとタスクを実行する"
           },
           "run-statements": {
-            "details": "クエリを通じた INSERT・UPDATE・DELETE・CREATE・ALTER・DROP。エンジンとそのユーザー自身の権限が許す範囲で行われます",
+            "details": "クエリを通じた INSERT・UPDATE・DELETE・CREATE・ALTER・DROP。エンジンとそのユーザー自身の権限が許す範囲で行われます · ユーザーの MCP クライアントが確認に対応している場合、エンジンが確認できる範囲で読み取りではないクエリは、ユーザーが確認した後にのみ実行されます · それ以外のクライアントでは、そのようなクエリは確認を求めずに実行されることがあります",
             "title": "DML と DDL のステートメントを実行する"
           }
         },

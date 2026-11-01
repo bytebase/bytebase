@@ -15,7 +15,7 @@ func init() {
 // suitable for the SQL editor / data-query path.
 //
 // Decision is AST-based: each parsed top-level statement must be a SELECT,
-// SHOW, DESCRIBE, EXPLAIN, or HELP. Relying on leading-keyword classification
+// SHOW, DESCRIBE, EXPLAIN, HELP, or a session SET. Relying on leading-keyword classification
 // alone would mis-accept CTE-prefixed DML such as `WITH x AS (...) UPDATE ...`,
 // which Classify would tag as SELECT because `WITH` is its first token.
 //
@@ -23,18 +23,41 @@ func init() {
 // malformed read-only SQL before execution.
 //
 // The (bool, bool, error) return shape matches the bytebase QueryValidator
-// contract: (isReadOnly, isExplicitReadOnly, syntaxError).
+// contract: (isReadOnly, isExplicitReadOnly, syntaxError). isExplicitReadOnly is
+// false once a statement needs executing rather than reading, which is how the
+// driver decides between QueryContext and ExecContext.
 func validateQuery(statement string) (bool, bool, error) {
 	parsed, err := parseStarRocksSQL(statement)
 	if err != nil {
 		return false, false, err
 	}
+	var hasExecute bool
 	for _, p := range parsed {
-		if !isReadOnlyAST(p.Node()) {
+		switch {
+		case isReadOnlyAST(p.Node()):
+		case needsExecute(p.Node()):
+			hasExecute = true
+		default:
 			return false, false, nil
 		}
 	}
-	return true, true, nil
+	return true, !hasExecute, nil
+}
+
+// needsExecute reports whether a statement is allowed in the editor but is not a
+// read. A session variable assignment returns no rows, so the driver has to run it
+// with ExecContext rather than read a result set; validateQuery signals that through
+// its second return value. MySQL and Postgres gate SET the same way.
+//
+// Only variable assignment qualifies. SET PASSWORD and SET DEFAULT STORAGE VAULT are
+// separate nodes and stay refused, as they are for Postgres: they administer the
+// server rather than prepare a read.
+func needsExecute(node ast.Node) bool {
+	switch node.(type) {
+	case *ast.SetStmt, *ast.UnsetStmt:
+		return true
+	}
+	return false
 }
 
 // isReadOnlyAST returns true when the given top-level AST node represents a

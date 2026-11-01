@@ -183,6 +183,7 @@
     },
     "rename-chat-placeholder": "Nhập tên cuộc trò chuyện",
     "reply": "Trả lời",
+    "request-failed": "Trợ lý không thể hoàn tất yêu cầu này.",
     "request-stopped-by-user": "Yêu cầu đã được người dùng dừng",
     "request-stopped-retry-hint": "Thao tác đã gửi vẫn có thể hoàn tất. Hãy kiểm tra trạng thái trước khi thử lại.",
     "resource-picker": {
@@ -3116,7 +3117,7 @@
             "title": "Chạy triển khai và tác vụ"
           },
           "run-statements": {
-            "details": "INSERT, UPDATE, DELETE, CREATE, ALTER, DROP qua truy vấn, trong phạm vi engine và quyền của chính người dùng cho phép",
+            "details": "INSERT, UPDATE, DELETE, CREATE, ALTER, DROP qua truy vấn, trong phạm vi engine và quyền của chính người dùng cho phép · Nếu ứng dụng MCP của người dùng hỗ trợ xác nhận, truy vấn không phải lệnh đọc trong phạm vi engine kiểm tra được chỉ chạy sau khi người dùng xác nhận · Ở các ứng dụng khác, truy vấn như vậy có thể chạy mà không cần hỏi",
             "title": "Chạy câu lệnh DML và DDL"
           }
         },

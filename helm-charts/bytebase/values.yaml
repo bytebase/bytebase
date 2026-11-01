@@ -28,6 +28,16 @@ bytebase:
     external-url: "https://docs.bytebase.com/get-started/self-host/external-url"
     # Enable JSON formatted logging output for integration with log aggregators (Splunk, ELK, Datadog, Loki).
     enable-json-logging: false
+    # Run in HA mode. Required on every replica once more than one Bytebase server
+    # shares an external PostgreSQL: it turns off the in-process metadata cache, so a
+    # replica never serves another replica's stale writes. This chart renders
+    # replicas: 1, so set it only when further replicas run outside the chart.
+    ha: false
+    # Let non-loopback clients scrape /metrics, which answers loopback only by
+    # default. The endpoint is unauthenticated, so enable it only where the port is
+    # protected by a gateway, firewall, or NetworkPolicy; an Ingress or HTTPRoute
+    # matching / publishes /metrics along with the rest of the app.
+    metrics-remote-access: false
     externalPg:
       url: ""
       # If users need to read the pgURL from a secret, they can specify the secret name and key here.
@@ -73,7 +83,9 @@ bytebase:
     failureThreshold: 3
 
   # -- Annotations added to the Bytebase pod. Useful for metrics scrapers and
-  # other tooling that discovers pods by annotation.
+  # other tooling that discovers pods by annotation. Annotations alone do not open
+  # /metrics: a scraper also needs bytebase.option.metrics-remote-access, and
+  # prometheus.io/port must match bytebase.option.port.
   podAnnotations: {}
   #    prometheus.io/scrape: "true"
   #    prometheus.io/port: "8080"

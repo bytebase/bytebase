@@ -19,8 +19,8 @@ type statementTypeTest struct {
 }
 
 // TestGetStatementType runs the fixture under every engine this package
-// registers the classifier for, so MariaDB and OceanBase cannot silently
-// diverge from MySQL (BYT-10136).
+// registers the classifier for, so MariaDB cannot silently diverge from MySQL
+// (BYT-10136).
 func TestGetStatementType(t *testing.T) {
 	tests := []statementTypeTest{}
 
@@ -44,7 +44,6 @@ func TestGetStatementType(t *testing.T) {
 	engines := []storepb.Engine{
 		storepb.Engine_MYSQL,
 		storepb.Engine_MARIADB,
-		storepb.Engine_OCEANBASE,
 	}
 	for _, engine := range engines {
 		t.Run(engine.String(), func(t *testing.T) {

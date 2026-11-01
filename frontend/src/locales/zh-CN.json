@@ -183,6 +183,7 @@
     },
     "rename-chat-placeholder": "输入对话名称",
     "reply": "回复",
+    "request-failed": "助手未能完成此请求。",
     "request-stopped-by-user": "用户已停止请求",
     "request-stopped-retry-hint": "已发送的操作仍可能完成。重试前请先检查其状态。",
     "resource-picker": {
@@ -3116,7 +3117,7 @@
             "title": "执行部署和任务"
           },
           "run-statements": {
-            "details": "通过查询执行 INSERT、UPDATE、DELETE、CREATE、ALTER、DROP，以引擎和该用户自身权限允许的范围为限",
+            "details": "通过查询执行 INSERT、UPDATE、DELETE、CREATE、ALTER、DROP，以引擎和该用户自身权限允许的范围为限 · 如果用户的 MCP 客户端支持确认，在引擎能检查的范围内不属于读取的查询，只有在用户确认后才会执行 · 在其他客户端中，此类查询可能不经询问就执行",
             "title": "执行 DML 和 DDL 语句"
           }
         },

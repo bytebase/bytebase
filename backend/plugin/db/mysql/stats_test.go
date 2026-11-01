@@ -15,8 +15,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
-var testOceanBaseExplainRows [][]driver.Value
-
 var (
 	// testMySQLExplainJSON is the plan the fake MySQL server returns for EXPLAIN FORMAT=JSON.
 	testMySQLExplainJSON string
@@ -36,32 +34,7 @@ type testMySQLStatement struct {
 }
 
 func init() {
-	sql.Register("test_oceanbase_explain", testOceanBaseExplainDriver{})
 	sql.Register("test_mysql_explain", testMySQLExplainDriver{})
-}
-
-type testOceanBaseExplainDriver struct{}
-
-func (testOceanBaseExplainDriver) Open(string) (driver.Conn, error) {
-	return testOceanBaseExplainConn{}, nil
-}
-
-type testOceanBaseExplainConn struct{}
-
-func (testOceanBaseExplainConn) Prepare(string) (driver.Stmt, error) {
-	return nil, driver.ErrSkip
-}
-
-func (testOceanBaseExplainConn) Close() error {
-	return nil
-}
-
-func (testOceanBaseExplainConn) Begin() (driver.Tx, error) {
-	return nil, driver.ErrSkip
-}
-
-func (testOceanBaseExplainConn) QueryContext(context.Context, string, []driver.NamedValue) (driver.Rows, error) {
-	return &testExplainResultRows{rows: testOceanBaseExplainRows}, nil
 }
 
 type testMySQLExplainDriver struct{}
@@ -344,42 +317,4 @@ func TestCountAffectedRowsReportsUninterpretablePlan(t *testing.T) {
 	d := newTestMySQLDriver(t, `{"query_block":{"select_id":1,"table":{"insert":true,"select_id":1,"table_name":"t2","access_type":"ALL"}}}`)
 	_, err := d.CountAffectedRows(context.Background(), "INSERT INTO t2 SELECT id, ROW_NUMBER() OVER () FROM t;")
 	require.ErrorContains(t, err, `table "t2" in the plan has no row estimate`)
-}
-
-func TestCountAffectedRowsForOceanBase(t *testing.T) {
-	db, err := sql.Open("test_oceanbase_explain", "")
-	require.NoError(t, err)
-	defer db.Close()
-	d := &Driver{dbType: storepb.Engine_OCEANBASE, db: db}
-
-	// OceanBase splits the JSON plan across rows.
-	testOceanBaseExplainRows = [][]driver.Value{
-		{`{`},
-		{`  "ID":0,`},
-		{`  "OPERATOR":"UPDATE",`},
-		{`  "NAME":"",`},
-		{`  "EST.ROWS":1000,`},
-		{`  "EST.TIME(us)":7680,`},
-		{`  "output":"",`},
-		{`  "CHILD_1": {`},
-		{`    "ID":1,`},
-		{`    "OPERATOR":"TABLE RANGE SCAN",`},
-		{`    "NAME":"dba_test_1",`},
-		{`    "EST.ROWS":1000,`},
-		{`    "EST.TIME(us)":91,`},
-		{`    "output":"output([dba_test_1.id], [dba_test_1.log_id])"`},
-		{`  }`},
-		{`}`},
-	}
-	got, err := d.CountAffectedRows(context.Background(), "update dba_test_1 set log_id=1 where id < 1000;")
-	require.NoError(t, err)
-	require.Equal(t, int64(1000), got)
-
-	testOceanBaseExplainRows = [][]driver.Value{{`{"ID":0,"OPERATOR":"UPDATE","NAME":""}`}}
-	_, err = d.CountAffectedRows(context.Background(), "update dba_test_1 set log_id=1 where id < 1000;")
-	require.ErrorContains(t, err, `operator "UPDATE" has no EST.ROWS`)
-
-	testOceanBaseExplainRows = nil
-	_, err = d.CountAffectedRows(context.Background(), "update dba_test_1 set log_id=1 where id < 1000;")
-	require.Error(t, err)
 }

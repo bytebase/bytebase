@@ -13,7 +13,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common/log"
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -23,19 +22,6 @@ const erUnknownSystemVariable = 1193
 // CountAffectedRows returns the planner's estimate of the rows the INSERT, UPDATE, or DELETE
 // statement modifies.
 func (d *Driver) CountAffectedRows(ctx context.Context, statement string) (int64, error) {
-	if d.dbType == storepb.Engine_OCEANBASE {
-		rows, err := d.db.QueryContext(ctx, "EXPLAIN FORMAT=JSON "+statement)
-		if err != nil {
-			return 0, err
-		}
-		defer rows.Close()
-		plan, err := readExplainJSON(rows)
-		if err != nil {
-			return 0, err
-		}
-		return mysqlparser.EstimateAffectedRowsFromOceanBaseExplainJSON(plan)
-	}
-
 	list, err := mysqlparser.ParseMySQL(statement)
 	if err != nil {
 		return 0, errors.Wrap(err, "failed to parse statement")
@@ -150,7 +136,7 @@ func ExplainJSON(ctx context.Context, db *sql.DB, statement string) (string, err
 	return readExplainJSON(rows)
 }
 
-// readExplainJSON concatenates the plan rows; OceanBase splits its JSON plan across rows.
+// readExplainJSON concatenates the plan rows into one JSON document.
 func readExplainJSON(rows *sql.Rows) (string, error) {
 	var plan strings.Builder
 	for rows.Next() {

@@ -284,3 +284,38 @@ func TestValidateQuery(t *testing.T) {
 		})
 	}
 }
+
+// A session SET is permitted but is not a read: validateQuery accepts it while
+// reporting isExplicitReadOnly false, which is how the driver knows to run it with
+// ExecContext instead of reading a result set. StarRocks had no case for *ast.SetStmt, so
+// `SET time_zone = 'UTC'` was refused outright with "Support read-only command
+// statements only" while MySQL, Postgres and TiDB all allowed it.
+func TestValidateQuerySetStatements(t *testing.T) {
+	for _, tc := range []struct {
+		name             string
+		statement        string
+		wantValid        bool
+		wantExplicitRead bool
+	}{
+		{"a session variable", "SET time_zone = 'UTC'", true, false},
+		{"the @@ spelling", "SET @@time_zone = 'UTC'", true, false},
+		{"an explicit session scope", "SET SESSION time_zone = 'UTC'", true, false},
+		// Global scope is permitted here as it is for MySQL and Postgres: this is not
+		// the permission gate, it only picks the execution path.
+		{"a global scope", "SET GLOBAL time_zone = 'UTC'", true, false},
+		{"SET NAMES", "SET NAMES utf8mb4", true, false},
+		{"UNSET VARIABLE", "UNSET VARIABLE time_zone", true, false},
+		{"a read stays explicitly read-only", "SELECT 1", true, true},
+		{"a SET anywhere in a script needs executing", "SELECT 1; SET time_zone = 'UTC'", true, false},
+		{"a SET does not launder a DDL beside it", "SET time_zone = 'UTC'; DROP TABLE t", false, false},
+		{"SET PASSWORD administers the server", "SET PASSWORD FOR 'u' = 'x'", false, false},
+		{"SET DEFAULT STORAGE VAULT administers the server", "SET DEFAULT STORAGE VAULT v", false, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			valid, explicitReadOnly, err := validateQuery(tc.statement)
+			require.NoError(t, err)
+			require.Equal(t, tc.wantValid, valid)
+			require.Equal(t, tc.wantExplicitRead, explicitReadOnly)
+		})
+	}
+}

@@ -19,7 +19,6 @@ var (
 func init() {
 	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_TABLE_COMMENT, &TableCommentConventionAdvisor{})
 	advisor.Register(storepb.Engine_MARIADB, storepb.SQLReviewRule_TABLE_COMMENT, &TableCommentConventionAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, storepb.SQLReviewRule_TABLE_COMMENT, &TableCommentConventionAdvisor{})
 }
 
 // TableCommentConventionAdvisor is the advisor checking for table comment convention.
