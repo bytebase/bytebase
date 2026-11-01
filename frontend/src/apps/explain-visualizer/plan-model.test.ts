@@ -422,7 +422,7 @@ describe("planRevealNode", () => {
       "0.1.1"
     );
 
-    expect([...revealed].sort()).toEqual(["0.0"]);
+    expect([...revealed].sort((a, b) => a.localeCompare(b))).toEqual(["0.0"]);
   });
 
   test("leaves a collapsed node folded when it is the node asked for", () => {

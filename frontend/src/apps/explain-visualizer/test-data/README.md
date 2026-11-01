@@ -13,12 +13,12 @@ capturing it.
 `EXPLAIN (FORMAT JSON)` output captured from PostgreSQL 17 against a seeded
 schema: `customers` (5,000 rows) and `orders` (50,000 rows).
 
-| File | Shape it covers |
-| --- | --- |
-| `seq-scan-filter.json` | A single node with a filter — the smallest real plan |
-| `bitmap-index-scan.json` | An index path: bitmap heap scan over a bitmap index scan |
-| `hash-join-aggregate-sort.json` | Hash join under a hashed aggregate under a sort |
-| `cte-nested-loop-initplan.json` | A CTE, a nested loop, an InitPlan subquery and a limit |
+| File                            | Shape it covers                                          |
+| ------------------------------- | -------------------------------------------------------- |
+| `seq-scan-filter.json`          | A single node with a filter — the smallest real plan     |
+| `bitmap-index-scan.json`        | An index path: bitmap heap scan over a bitmap index scan |
+| `hash-join-aggregate-sort.json` | Hash join under a hashed aggregate under a sort          |
+| `cte-nested-loop-initplan.json` | A CTE, a nested loop, an InitPlan subquery and a limit   |
 
 To add one:
 
@@ -38,20 +38,20 @@ published: `Cursors/cursor2.sqlplan` from
 (MIT License). SQL Server 2016 gives each statement of a batch its own
 `<Statements>` block, which SQL Server 2022 no longer does.
 
-| File | Shape it covers |
-| --- | --- |
-| `index-seek-key-lookup.xml` | Nested loops over an index seek and a key lookup |
-| `hash-join-aggregate-sort.xml` | Merge join, stream and hash aggregates, and a sort |
-| `missing-index.xml` | A missing-index suggestion and a full scan of `orders` |
-| `implicit-conversion-warning.xml` | Statement-level type conversion warnings |
-| `no-join-predicate.xml` | An operator warning on a join without a condition |
-| `if-else.xml` | An `IF` with its condition, `THEN` and `ELSE` |
-| `procedure-two-statements.xml` | A procedure call holding two statements |
-| `two-statement-batch.xml` | Two statements in one plan, under a batch |
-| `static-cursor.xml` | A cursor's population and fetch queries |
-| `scalar-udf.xml` | A call to a scalar function SQL Server doesn't inline, with the function's own statements |
-| `unmatched-filtered-index.xml` | A procedure whose parameter keeps SQL Server from using a filtered index |
-| `split-statements-batch.xml` | A batch of cursor statements, each in its own `<Statements>` block |
+| File                              | Shape it covers                                                                           |
+| --------------------------------- | ----------------------------------------------------------------------------------------- |
+| `index-seek-key-lookup.xml`       | Nested loops over an index seek and a key lookup                                          |
+| `hash-join-aggregate-sort.xml`    | Merge join, stream and hash aggregates, and a sort                                        |
+| `missing-index.xml`               | A missing-index suggestion and a full scan of `orders`                                    |
+| `implicit-conversion-warning.xml` | Statement-level type conversion warnings                                                  |
+| `no-join-predicate.xml`           | An operator warning on a join without a condition                                         |
+| `if-else.xml`                     | An `IF` with its condition, `THEN` and `ELSE`                                             |
+| `procedure-two-statements.xml`    | A procedure call holding two statements                                                   |
+| `two-statement-batch.xml`         | Two statements in one plan, under a batch                                                 |
+| `static-cursor.xml`               | A cursor's population and fetch queries                                                   |
+| `scalar-udf.xml`                  | A call to a scalar function SQL Server doesn't inline, with the function's own statements |
+| `unmatched-filtered-index.xml`    | A procedure whose parameter keeps SQL Server from using a filtered index                  |
+| `split-statements-batch.xml`      | A batch of cursor statements, each in its own `<Statements>` block                        |
 
 To add one, run the statement in `sqlcmd` and keep the `<ShowPlanXML>` document
 from its output:
@@ -68,11 +68,11 @@ plan, decoded by the driver, captured from CockroachDB 24.3. Processors with
 the streams between them, and no estimate of any kind — the row counts are in
 the text plan, not in the link.
 
-| File | Shape it covers |
-| --- | --- |
-| `scan-filter-group.json` | A read, a filter and an aggregator in one chain |
-| `index-join.json` | A bounded index read feeding a lookup join, each naming its own table |
-| `sort-limit.json` | A top-K sorter over a read whose spans cover everything |
+| File                     | Shape it covers                                                       |
+| ------------------------ | --------------------------------------------------------------------- |
+| `scan-filter-group.json` | A read, a filter and an aggregator in one chain                       |
+| `index-join.json`        | A bounded index read feeding a lookup join, each naming its own table |
+| `sort-limit.json`        | A top-K sorter over a read whose spans cover everything               |
 
 To add one, run `EXPLAIN (DISTSQL) <query>` through the driver with
 `QueryContext{Explain: true}` and `ExplainFormat_JSON`, which is what decodes
@@ -88,18 +88,18 @@ anything meaningful — these are verbatim.
 MongoDB's planner publishes no estimate at all, so the plans carry shape and
 index usage; only `executionStats` adds numbers, and only by running the query.
 
-| File | Shape it covers |
-| --- | --- |
-| `collection-scan.json` | A `COLLSCAN` with a filter — a query with no index to use |
-| `index-scan-sort.json` | `SORT` over `FETCH` over `IXSCAN`, with the index bounds |
-| `aggregate-group.json` | An aggregation's `stages` pipeline, whose `$cursor` holds the read's own plan |
-| `measured-collection-scan.json` | `explain("executionStats")`: the same tree with rows returned and documents examined |
-| `measured-aggregate-group.json` | A measured pipeline, where each stage states its rows and its spill counters beside itself rather than in its body |
-| `slot-based-index-scan.json` | The slot-based engine's shape: the tree under `winningPlan.queryPlan`, beside the plan it compiled for itself |
-| `sharded-index-scan.json` | A sharded collection: each shard's own plan under the `SHARD_MERGE` that reads them, each naming its shard and namespace |
-| `measured-sharded-index-scan.json` | The same query run, where a shard's entry holds `executionStages` and states no namespace |
-| `measured-slot-based-join.json` | A measured slot-based plan, whose `nlj` holds its two sides under `outerStage` and `innerStage` |
-| `sharded-aggregate-group.json` | A pipeline split across shards: no `stages` of its own, each shard's part under `shards` and the merger's under `splitPipeline` |
+| File                               | Shape it covers                                                                                                                 |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `collection-scan.json`             | A `COLLSCAN` with a filter — a query with no index to use                                                                       |
+| `index-scan-sort.json`             | `SORT` over `FETCH` over `IXSCAN`, with the index bounds                                                                        |
+| `aggregate-group.json`             | An aggregation's `stages` pipeline, whose `$cursor` holds the read's own plan                                                   |
+| `measured-collection-scan.json`    | `explain("executionStats")`: the same tree with rows returned and documents examined                                            |
+| `measured-aggregate-group.json`    | A measured pipeline, where each stage states its rows and its spill counters beside itself rather than in its body              |
+| `slot-based-index-scan.json`       | The slot-based engine's shape: the tree under `winningPlan.queryPlan`, beside the plan it compiled for itself                   |
+| `sharded-index-scan.json`          | A sharded collection: each shard's own plan under the `SHARD_MERGE` that reads them, each naming its shard and namespace        |
+| `measured-sharded-index-scan.json` | The same query run, where a shard's entry holds `executionStages` and states no namespace                                       |
+| `measured-slot-based-join.json`    | A measured slot-based plan, whose `nlj` holds its two sides under `outerStage` and `innerStage`                                 |
+| `sharded-aggregate-group.json`     | A pipeline split across shards: no `stages` of its own, each shard's part under `shards` and the merger's under `splitPipeline` |
 
 The slot-based one is from MongoDB 7, which runs the classic engine by
 default; `db.adminCommand({ setParameter: 1, internalQueryFrameworkControl:
@@ -121,16 +121,16 @@ db.orders.find({ total: { $gt: 880 } }).explain()
 MySQL 8.0 and MariaDB 11.8 put the same shape under different keys, so one
 parser reads both and the `mariadb-` files are the second dialect's.
 
-| File | Server | Shape it covers |
-| --- | --- | --- |
-| `full-scan-filter.json` | MySQL | A query block over one scan — the smallest real plan |
-| `group-sort-join.json` | MySQL | An ordering over a grouping over a two-table join |
-| `derived-table.json` | MySQL | A derived table materialized from its own query block |
-| `attached-subquery.json` | MySQL | A real table's scan carrying a subquery's operators under `attached_subqueries`, which a derived table's `materialized_from_subquery` is not |
-| `ordering-filesort.json` | MySQL | A filesort, whose `sort_cost` is the sort's alone where the block's `query_cost` is the whole |
-| `union-distinct.json` | MySQL | A union result over two query specifications |
-| `mariadb-sort-temporary-join.json` | MariaDB | `filesort` and `temporary_table` where MySQL says `ordering_operation` and `grouping_operation` |
-| `mariadb-block-nl-join.json` | MariaDB | `block-nl-join`, a join wrapper holding the table it buffers |
+| File                               | Server  | Shape it covers                                                                                                                              |
+| ---------------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `full-scan-filter.json`            | MySQL   | A query block over one scan — the smallest real plan                                                                                         |
+| `group-sort-join.json`             | MySQL   | An ordering over a grouping over a two-table join                                                                                            |
+| `derived-table.json`               | MySQL   | A derived table materialized from its own query block                                                                                        |
+| `attached-subquery.json`           | MySQL   | A real table's scan carrying a subquery's operators under `attached_subqueries`, which a derived table's `materialized_from_subquery` is not |
+| `ordering-filesort.json`           | MySQL   | A filesort, whose `sort_cost` is the sort's alone where the block's `query_cost` is the whole                                                |
+| `union-distinct.json`              | MySQL   | A union result over two query specifications                                                                                                 |
+| `mariadb-sort-temporary-join.json` | MariaDB | `filesort` and `temporary_table` where MySQL says `ordering_operation` and `grouping_operation`                                              |
+| `mariadb-block-nl-join.json`       | MariaDB | `block-nl-join`, a join wrapper holding the table it buffers                                                                                 |
 
 To add one:
 
@@ -151,12 +151,12 @@ drawn in a branch behind a bar.
 scans alone, but it is a different plan from the one a plain EXPLAIN returns,
 and the editor asks for the plain one.
 
-| File | Shape it covers |
-| --- | --- |
-| `single-scan.txt` | Two fragments: a scan sending to the exchange that reads it |
-| `scan-aggregate.txt` | A partial and a final aggregate either side of an exchange |
-| `join-exchange.txt` | A join whose two inputs each arrive over their own exchange |
-| `nested-join-branch.txt` | A join drawn inside another's `|----` branch, bars and all |
+| File                     | Shape it covers                                             |
+| ------------------------ | ----------------------------------------------------------- |
+| `single-scan.txt`        | Two fragments: a scan sending to the exchange that reads it |
+| `scan-aggregate.txt`     | A partial and a final aggregate either side of an exchange  |
+| `join-exchange.txt`      | A join whose two inputs each arrive over their own exchange |
+| `nested-join-branch.txt` | A join drawn inside another's `                             | ----` branch, bars and all |
 
 To add one:
 
@@ -177,12 +177,12 @@ operators with `V`, prints its own plan node id after the name, packs an
 operator's numbers onto one line, qualifies a scanned table with its database,
 and prints the statistics it planned from under a rule of equals signs.
 
-| File | Shape it covers |
-| --- | --- |
-| `single-scan.txt` | Two fragments, and the `avgRowSize=0.0` Doris prints with no column statistics |
-| `analyzed-join.txt` | The same tables once Doris had analyzed them, so it states rows and width — and groups a standalone cardinality by thousands |
-| `scan-aggregate.txt` | A partial and a final aggregate either side of an exchange |
-| `join-exchange.txt` | A broadcast join, and the statistics that follow the operator printed last |
+| File                 | Shape it covers                                                                                                              |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `single-scan.txt`    | Two fragments, and the `avgRowSize=0.0` Doris prints with no column statistics                                               |
+| `analyzed-join.txt`  | The same tables once Doris had analyzed them, so it states rows and width — and groups a standalone cardinality by thousands |
+| `scan-aggregate.txt` | A partial and a final aggregate either side of an exchange                                                                   |
+| `join-exchange.txt`  | A broadcast join, and the statistics that follow the operator printed last                                                   |
 
 To add one, the same client as above against a Doris frontend.
 
@@ -193,12 +193,12 @@ reports no cost in this format or any other the editor can ask for, so these
 plans carry rows alone. It has printed these same keys since it added the
 format in v6.5.0, so one capture stands for every release that answers at all.
 
-| File | Shape it covers |
-| --- | --- |
-| `table-reader-selection.json` | A reader over a coprocessor selection over a full scan |
-| `index-hash-join.json` | A join's build and probe sides, and an index lookup's own two reads |
-| `union-hash-agg.json` | A union under a hash aggregate |
-| `measured-hash-join.json` | `EXPLAIN ANALYZE`: actual rows, and the `executeInfo` string the parser does not read timings from |
+| File                          | Shape it covers                                                                                    |
+| ----------------------------- | -------------------------------------------------------------------------------------------------- |
+| `table-reader-selection.json` | A reader over a coprocessor selection over a full scan                                             |
+| `index-hash-join.json`        | A join's build and probe sides, and an index lookup's own two reads                                |
+| `union-hash-agg.json`         | A union under a hash aggregate                                                                     |
+| `measured-hash-join.json`     | `EXPLAIN ANALYZE`: actual rows, and the `executeInfo` string the parser does not read timings from |
 
 To add one, `EXPLAIN FORMAT=tidb_json` through the same client as above.
 
@@ -211,12 +211,12 @@ Oracle Free 23ai against the same schema, with `orders_customer_id_idx` on
 `orders(customer_id)` and the schema analyzed. Numbers arrive as strings
 because that is how the Oracle driver returns `NUMBER`.
 
-| File | Shape it covers |
-| --- | --- |
-| `full-scan-filter.json` | A statement over one full scan — the smallest real plan |
+| File                        | Shape it covers                                                                                                |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `full-scan-filter.json`     | A statement over one full scan — the smallest real plan                                                        |
 | `hash-join-group-sort.json` | An adaptive join: a hash join beside the nested loops and statistics collector Oracle keeps as the alternative |
-| `index-range-scan.json` | A table read by rowid from an index range scan |
-| `union-distinct.json` | `UNION-ALL` under the `HASH UNIQUE` that makes it distinct |
+| `index-range-scan.json`     | A table read by rowid from an index range scan                                                                 |
+| `union-distinct.json`       | `UNION-ALL` under the `HASH UNIQUE` that makes it distinct                                                     |
 
 To add one, `EXPLAIN PLAN SET STATEMENT_ID = '<id>' FOR <query>` and then select
 the columns `planStepsQuery` lists (see `backend/plugin/db/oracle/oracle.go`)
@@ -229,11 +229,11 @@ table of 50,000 rows. ClickHouse publishes no cost or row estimate in any
 EXPLAIN it offers, so these plans carry shape, descriptions and index
 accounting alone.
 
-| File | Shape it covers |
-| --- | --- |
-| `read-filter-aggregate.json` | The pipeline from a read up through an aggregate, a sort and a limit |
-| `primary-key-range.json` | A read whose primary-key index entry reports the parts and granules it kept |
-| `join-two-tables.json` | A join over a table read and a table function, which names no table |
+| File                         | Shape it covers                                                             |
+| ---------------------------- | --------------------------------------------------------------------------- |
+| `read-filter-aggregate.json` | The pipeline from a read up through an aggregate, a sort and a limit        |
+| `primary-key-range.json`     | A read whose primary-key index entry reports the parts and granules it kept |
+| `join-two-tables.json`       | A join over a table read and a table function, which names no table         |
 
 To add one:
 
@@ -253,11 +253,11 @@ newlines into a TSV cell, which is not what the driver hands the viewer.
 would distribute, keyed by number, so these files are objects rather than
 trees; the parser splices them at each `RemoteSource`.
 
-| File | Shape it covers |
-| --- | --- |
-| `scan-filter-project.json` | A single fragment whose one operator fuses a scan, a filter and a projection, each with its own estimate |
-| `join-aggregate-fragments.json` | Three fragments: a partial and a final aggregate either side of a join |
-| `sort-limit.json` | Two fragments of partial top-N under a final one |
+| File                            | Shape it covers                                                                                          |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `scan-filter-project.json`      | A single fragment whose one operator fuses a scan, a filter and a projection, each with its own estimate |
+| `join-aggregate-fragments.json` | Three fragments: a partial and a final aggregate either side of a join                                   |
+| `sort-limit.json`               | Two fragments of partial top-N under a final one                                                         |
 
 To add one:
 
@@ -275,12 +275,12 @@ with `orders_customer_id_idx` on `orders(customer_id)`. Each operator names its
 children under `CHILD_1`, `CHILD_2`, and `EST.TIME(us)` covers an operator and
 everything below it.
 
-| File | Shape it covers |
-| --- | --- |
-| `full-scan-filter.json` | One operator — the smallest real plan |
-| `hash-join-group-sort.json` | A sort over a group-by over a two-table hash join |
-| `index-lookup.json` | A range scan, which is not a read of a whole table |
-| `union-distinct.json` | A merge union with its two branches |
+| File                        | Shape it covers                                    |
+| --------------------------- | -------------------------------------------------- |
+| `full-scan-filter.json`     | One operator — the smallest real plan              |
+| `hash-join-group-sort.json` | A sort over a group-by over a two-table hash join  |
+| `index-lookup.json`         | A range scan, which is not a read of a whole table |
+| `union-distinct.json`       | A merge union with its two branches                |
 
 To add one, `EXPLAIN FORMAT=JSON <query>` through `obclient -N -B -r`.
 
@@ -298,13 +298,13 @@ plan captured from a real PostgreSQL 17 server exercises the same indentation,
 the same cost tuple and the same attribute lines — which is what checks the
 grammar against output a server actually produced.
 
-| File | Server | Shape it covers |
-| --- | --- | --- |
-| `hash-join-broadcast.txt` | Redshift (AWS docs) | A broadcast join over two scans, the whole plan indented one space |
-| `three-way-join.txt` | Redshift (AWS docs) | A merge join under a hash join, with both distribution strategies |
-| `hash-aggregate.txt` | Redshift (AWS docs) | An aggregate over a scan |
-| `scan-filter.txt` | Redshift (AWS docs) | One scan and its filter |
-| `postgres-same-grammar.txt` | PostgreSQL 17 | The same grammar without the `XN` prefix, captured here |
+| File                        | Server              | Shape it covers                                                    |
+| --------------------------- | ------------------- | ------------------------------------------------------------------ |
+| `hash-join-broadcast.txt`   | Redshift (AWS docs) | A broadcast join over two scans, the whole plan indented one space |
+| `three-way-join.txt`        | Redshift (AWS docs) | A merge join under a hash join, with both distribution strategies  |
+| `hash-aggregate.txt`        | Redshift (AWS docs) | An aggregate over a scan                                           |
+| `scan-filter.txt`           | Redshift (AWS docs) | One scan and its filter                                            |
+| `postgres-same-grammar.txt` | PostgreSQL 17       | The same grammar without the `XN` prefix, captured here            |
 
 To add a PostgreSQL one:
 
@@ -320,12 +320,12 @@ plans from [spanner-cli's test data](https://github.com/cloudspannerecosystem/sp
 each file holds the JSON Bytebase returns for that plan. Biome re-indents it,
 as it does every JSON file here.
 
-| File | Source | Shape it covers |
-| --- | --- | --- |
-| `hash-join.json` | `hash_join.input.json` | Build and probe inputs, full table and index scans |
-| `filter-limit.json` | `filter.input.json` | Global and local limits, a seek condition |
-| `scalar-subquery.json` | `scalar_subquery_with_filter_scan.input.json` | A scalar subquery with its own aggregates |
-| `nested-array-subqueries.json` | `array_subqueries_with_compute_struct.input.json` | An array subquery inside another |
+| File                           | Source                                            | Shape it covers                                    |
+| ------------------------------ | ------------------------------------------------- | -------------------------------------------------- |
+| `hash-join.json`               | `hash_join.input.json`                            | Build and probe inputs, full table and index scans |
+| `filter-limit.json`            | `filter.input.json`                               | Global and local limits, a seek condition          |
+| `scalar-subquery.json`         | `scalar_subquery_with_filter_scan.input.json`     | A scalar subquery with its own aggregates          |
+| `nested-array-subqueries.json` | `array_subqueries_with_compute_struct.input.json` | An array subquery inside another                   |
 
 ## `snowflake/`
 
@@ -336,8 +336,8 @@ nowhere but Snowflake. What the driver hands over is the same single JSON value,
 the one cell the statement returns. Snowflake estimates neither cost nor rows;
 what it states is how much of each table the query would read.
 
-| File | Shape it covers |
-| --- | --- |
+| File              | Shape it covers                                                                                                                        |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | `inner-join.json` | A join and its filter over two scans, each reporting the partitions and bytes assigned to it, with the query's totals in `GlobalStats` |
 
 To add one, run `EXPLAIN USING JSON <statement>` on a Snowflake warehouse and
@@ -350,17 +350,17 @@ are written inline in the test, which is where a plan no server emitted belongs.
 `EXPLAIN FORMATTED` output from Hive 4.0.0, HiveServer2 with its embedded
 metastore, against `customers` and `orders`. The repository's formatter indents
 the outer object; the plan the parser reads stays one escaped line within it,
-the `CBOPlan` *string*, which is how Hive answers. It states that string only
+the `CBOPlan` _string_, which is how Hive answers. It states that string only
 where its cost-based optimizer planned the statement.
 
-| File | Shape it covers |
-| --- | --- |
-| `single-scan.json` | A scan under a filter under a project — the chain Calcite writes by leaving `inputs` out |
-| `join-aggregate.json` | A join naming both of its inputs, under an aggregate, on tables nothing had analyzed |
-| `analyzed-join.json` | The same query once the tables held rows and `ANALYZE TABLE … COMPUTE STATISTICS FOR COLUMNS` had run, so every operator states rows and the scans state a row width |
-| `union-all.json` | A union reading two branches |
-| `order-limit.json` | A sort with a fetch |
-| `no-cbo-plan.json` | `hive.cbo.enable=false`: the Tez stages alone, with no `CBOPlan`, which the viewer shows as text |
+| File                  | Shape it covers                                                                                                                                                      |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `single-scan.json`    | A scan under a filter under a project — the chain Calcite writes by leaving `inputs` out                                                                             |
+| `join-aggregate.json` | A join naming both of its inputs, under an aggregate, on tables nothing had analyzed                                                                                 |
+| `analyzed-join.json`  | The same query once the tables held rows and `ANALYZE TABLE … COMPUTE STATISTICS FOR COLUMNS` had run, so every operator states rows and the scans state a row width |
+| `union-all.json`      | A union reading two branches                                                                                                                                         |
+| `order-limit.json`    | A sort with a fetch                                                                                                                                                  |
+| `no-cbo-plan.json`    | `hive.cbo.enable=false`: the Tez stages alone, with no `CBOPlan`, which the viewer shows as text                                                                     |
 
 To add one, `EXPLAIN FORMATTED` through the same client.
 
@@ -374,8 +374,8 @@ the shape a job reports — regenerate it from there rather than editing it. Eve
 plan here is measured, being the record of a run; BigQuery states none for a
 statement it has not run.
 
-| File | Shape it covers |
-| --- | --- |
+| File                      | Shape it covers                                                                                                                     |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | `filtered-aggregate.json` | Two stages: the input reads a table, aggregates and writes a shuffle, and the output reads that shuffle and writes the query's rows |
 
 ## `databricks/`
@@ -387,14 +387,14 @@ layout is Spark's own, though a Databricks runtime may name operators these
 fixtures do not show. The plan states neither cost nor rows: `EXPLAIN COST`
 reports those, and only for the logical plan.
 
-| File | Shape it covers |
-| --- | --- |
-| `single-scan.txt` | A filter over a read, with the predicate pushed into it |
-| `broadcast-join.txt` | A broadcast hash join under two aggregates and an exchange, with the build side's own exchange |
-| `union-all.txt` | A union of two reads, the one tree with two branches |
-| `sort-limit.txt` | A sort with its fetch, as `TakeOrderedAndProject` |
-| `partition-filter.txt` | A read of a partitioned table, stating the partitions it skipped |
-| `exists-subquery.txt` | An EXISTS turned into a left semi join |
+| File                   | Shape it covers                                                                                |
+| ---------------------- | ---------------------------------------------------------------------------------------------- |
+| `single-scan.txt`      | A filter over a read, with the predicate pushed into it                                        |
+| `broadcast-join.txt`   | A broadcast hash join under two aggregates and an exchange, with the build side's own exchange |
+| `union-all.txt`        | A union of two reads, the one tree with two branches                                           |
+| `sort-limit.txt`       | A sort with its fetch, as `TakeOrderedAndProject`                                              |
+| `partition-filter.txt` | A read of a partitioned table, stating the partitions it skipped                               |
+| `exists-subquery.txt`  | An EXISTS turned into a left semi join                                                         |
 
 To add one, `EXPLAIN FORMATTED <statement>` through the same client. Spark
 suffixes each column with the expression id of the session that planned it, so
@@ -408,13 +408,12 @@ own `took` beside its `profile`, which is what the driver hands over once it has
 taken the profile out of the rows. Captured against an index of 60 documents and
 a three-shard index of 30, both created for the capture.
 
-| File | Shape it covers |
-| --- | --- |
+| File                    | Shape it covers                                                                                                                                                      |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `bool-aggregation.json` | One shard: a boolean query over a term and a range, the collectors that gathered it, a terms aggregation with an average nested inside, and the fetch's three phases |
-| `multi-shard.json` | The same search across three shards, each profiled on its own |
+| `multi-shard.json`      | The same search across three shards, each profiled on its own                                                                                                        |
 
 To add one, send a search with `"profile": true` and keep the response's `took`
 and `profile`. Every node is timed in nanoseconds and covers its own
 subtree, so a re-capture renumbers every timing, and the tests that assert them
 against this capture would need updating with it.
-

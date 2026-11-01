@@ -23,7 +23,7 @@ function getRouteMap(router: AppRouterInstance): string[] {
     paths.add(path);
   }
 
-  return [...paths].sort();
+  return [...paths].sort((a, b) => a.localeCompare(b));
 }
 
 export function createNavigateTool(router: AppRouterInstance) {
