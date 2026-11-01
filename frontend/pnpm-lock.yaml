@@ -223,8 +223,8 @@ importers:
         specifier: ^1.59.1
         version: 1.62.1
       '@rollup/plugin-yaml':
-        specifier: 5.0.0
-        version: 5.0.0(rollup@4.62.2)
+        specifier: 5.0.1
+        version: 5.0.1(rollup@4.62.2)
       '@stylexjs/unplugin':
         specifier: ^0.19.0
         version: 0.19.0(supports-color@7.2.0)(unplugin@2.3.11)
@@ -1501,8 +1501,8 @@ packages:
   '@rolldown/pluginutils@1.0.1':
     resolution: {integrity: sha512-2j9bGt5Jh8hj+vPtgzPtl72j0yRxHAyumoo6TNfAjsLB04UtpSvPbPcDcBMxz7n+9CYB0c1GxQFxYRg2jimqGw==}
 
-  '@rollup/plugin-yaml@5.0.0':
-    resolution: {integrity: sha512-9XOiRGYJjDwmEwR15kuxw+RytZFKtEWshoXuITrtS6+57BVMQMzDfhmSO/xfQOAY5psQv1IrxhQTUqPNppe4lQ==}
+  '@rollup/plugin-yaml@5.0.1':
+    resolution: {integrity: sha512-oslHUtWi3Zepyx0IiZ3BBwc4PI1B1PUbkpBom+0w91UHuY0EVUIrGkrHfwW1reHzVOsTtkGj5z/Dx7jhguzP2g==}
     engines: {node: '>=14.0.0'}
     peerDependencies:
       rollup: ^2.78.0||^3.0.0||^4.0.0
@@ -4971,7 +4971,7 @@ snapshots:
 
   '@rolldown/pluginutils@1.0.1': {}
 
-  '@rollup/plugin-yaml@5.0.0(rollup@4.62.2)':
+  '@rollup/plugin-yaml@5.0.1(rollup@4.62.2)':
     dependencies:
       '@rollup/pluginutils': 5.4.0(rollup@4.62.2)
       js-yaml: 4.3.0
