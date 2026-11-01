@@ -430,9 +430,8 @@ func writeDeleteSuffix(buf *strings.Builder, n *ast.DeleteStmt, sql string) erro
 	return err
 }
 
-// deleteSuffixEnd returns where the text copied into the backup SELECT must stop:
-// short of RETURNING, which is not a SELECT clause. Failing beats emitting a
-// backup that the server rejects when it runs, after the change has passed review.
+// deleteSuffixEnd returns where the text copied into the backup SELECT must
+// stop: short of RETURNING, which is not a SELECT clause.
 func deleteSuffixEnd(n *ast.DeleteStmt, sql string) (int, error) {
 	return endBeforeReturning(n.Returning, sql, n.Loc.End)
 }

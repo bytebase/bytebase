@@ -235,9 +235,8 @@ func buildFixedMockDatabaseMetadataGetterAndLister() (base.GetDatabaseMetadataFu
 // TestTransformDMLToSelectStripsReturning covers a clause MySQL has no grammar
 // for, so the transform this was forked from never had to drop it. RETURNING is
 // the last clause of a single-table MariaDB DELETE and means nothing in a
-// SELECT: copying through to the statement end emitted
-// `SELECT `test`.* FROM test WHERE b1 = 1 RETURNING b1`, which the server
-// rejects when the backup runs — after the change had already passed review.
+// SELECT, so copying through to the statement end yields a backup the server
+// rejects when it runs.
 func TestTransformDMLToSelectStripsReturning(t *testing.T) {
 	for _, statement := range []string{
 		"DELETE FROM test WHERE b1 = 1 RETURNING b1;",

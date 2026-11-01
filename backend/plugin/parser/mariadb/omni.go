@@ -77,20 +77,17 @@ func ByteOffsetToRunePosition(sql string, byteOffset int) *storepb.Position {
 	}
 }
 
-// endBeforeReturning clamps end to just before the RETURNING clause of a DML
-// statement, or returns end unchanged when there is none.
+// endBeforeReturning clamps end to just before a DML statement's RETURNING
+// clause, or returns end unchanged when there is none.
 //
-// RETURNING is MariaDB's, not MySQL's, and it is the last clause of the
-// statements that take it. Every transformation here that rewrites a DML into a
-// SELECT by copying its text through to the statement end has to stop short of
-// it, because RETURNING means nothing in a SELECT and the server rejects the
-// result. Both callers go through this one function: the first version of the
-// backup fix had its own copy of the search, and a second copy in the
-// affected-rows estimator is exactly the bug that copy was meant to fix.
+// RETURNING is MariaDB's and is the last clause of the statements that take it.
+// Every rewrite here that turns a DML into a SELECT by copying its text through
+// to the statement end must stop short of it: RETURNING means nothing in a
+// SELECT and the server rejects the result. Route a new rewrite through this
+// function rather than repeating the search.
 //
-// An error means the keyword is there but could not be located, which the
-// callers answer by declining to transform rather than emitting SQL that will
-// fail when it runs.
+// An error means the clause is present but its keyword could not be located.
+// Callers decline to transform rather than emit SQL that fails when it runs.
 func endBeforeReturning(returning []ast.Node, sql string, end int) (int, error) {
 	if end <= 0 || end > len(sql) {
 		end = len(sql)
@@ -112,12 +109,10 @@ func endBeforeReturning(returning []ast.Node, sql string, end int) (int, error) 
 	if first <= 0 || first > end {
 		return 0, errors.New("cannot locate RETURNING")
 	}
-	// The keyword is the token before the clause's first item. Searching the text
-	// for it instead matches the word inside a comment or a string literal, both
-	// of which can sit in or beside the clause — `RETURNING /* RETURNING */ b1`
-	// cut at the comment and left the statement invalid. The lexer skips comments
-	// and gives a quoted RETURNING a different token, so neither can be mistaken
-	// for the keyword here.
+	// The keyword is the token before the clause's first item. A text search will
+	// not do: a comment or string literal in or beside the clause may carry the
+	// word, as in `RETURNING /* RETURNING */ b1`. The lexer skips comments and
+	// gives a quoted RETURNING a token of its own, so neither is mistaken for it.
 	tokens := mariadbparser.Tokenize(sql)
 	for i, tok := range tokens {
 		if tok.Loc != first {
