@@ -166,3 +166,38 @@ func TestValidateQueryExplainAnalyze(t *testing.T) {
 		})
 	}
 }
+
+// An export under EXPLAIN is still an export request: the editor must not label
+// as a read what it refuses when asked directly. The reads beneath keep the
+// gate from being satisfied by refusing every EXPLAIN.
+func TestValidateQueryExportGate(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		statement string
+		wantValid bool
+	}{
+		{"a bare export", "SELECT a FROM t INTO OUTFILE '/tmp/x'", false},
+		{"a bare dump", "SELECT a FROM t INTO DUMPFILE '/tmp/x'", false},
+		{"an export on the second arm", "SELECT 1 UNION SELECT a FROM t INTO OUTFILE '/tmp/x'", false},
+		{"an export in a braced arm", "(SELECT a FROM t INTO OUTFILE '/tmp/x') UNION (SELECT 1)", false},
+		{"an export inside a subquery", "SELECT * FROM (SELECT a FROM t INTO OUTFILE '/tmp/x') y", false},
+		{"an export under a plain EXPLAIN", "EXPLAIN SELECT a FROM t INTO OUTFILE '/tmp/x'", false},
+		{"a dump under a plain EXPLAIN", "EXPLAIN SELECT a FROM t INTO DUMPFILE '/tmp/x'", false},
+		{"an export on an arm under a plain EXPLAIN", "EXPLAIN SELECT 1 UNION SELECT a FROM t INTO OUTFILE '/tmp/x'", false},
+		{"an export under EXPLAIN ANALYZE", "EXPLAIN ANALYZE SELECT a FROM t INTO OUTFILE '/tmp/x'", false},
+
+		{"a set operation that exports nothing", "SELECT 1 UNION SELECT 2", true},
+		{"EXPLAIN ANALYZE over a set operation", "EXPLAIN ANALYZE SELECT 1 UNION SELECT 2", true},
+		{"a variable assignment writes no file", "SELECT a FROM t INTO @v", true},
+		{"a variable assignment under a plain EXPLAIN only plans", "EXPLAIN SELECT a FROM t INTO @v", true},
+		{"a variable assignment under EXPLAIN ANALYZE really assigns", "EXPLAIN ANALYZE SELECT a FROM t INTO @v", false},
+		{"a variable assignment on an arm under EXPLAIN ANALYZE", "EXPLAIN ANALYZE SELECT 1 UNION SELECT a FROM t INTO @v", false},
+		{"the clause named in a string literal", "SELECT 'INTO OUTFILE' FROM t", true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			gotValid, _, err := validateQuery(tc.statement)
+			require.NoError(t, err)
+			require.Equal(t, tc.wantValid, gotValid, tc.statement)
+		})
+	}
+}

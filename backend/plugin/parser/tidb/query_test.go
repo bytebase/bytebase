@@ -163,3 +163,39 @@ func TestValidateQueryExplainAnalyze(t *testing.T) {
 		})
 	}
 }
+
+// A set operation carries INTO on an arm, not on the node the validator holds,
+// so classifying by the top-level node alone let a union launder an export past
+// the gate. Every shape below must be refused, and the reads beneath them must
+// stay reads so the gate cannot be satisfied by refusing everything.
+func TestValidateQueryExportGate(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		statement string
+		wantValid bool
+	}{
+		{"a bare export", "SELECT a FROM t INTO OUTFILE '/tmp/x'", false},
+		{"an export on the second arm", "SELECT 1 UNION SELECT a FROM t INTO OUTFILE '/tmp/x'", false},
+		{"an export on the first arm", "SELECT a FROM t INTO OUTFILE '/tmp/x' UNION SELECT 1", false},
+		{"an export in a braced arm", "(SELECT a FROM t INTO OUTFILE '/tmp/x') UNION (SELECT 1)", false},
+		{"an export in a nested set operation", "SELECT 1 UNION (SELECT 2 UNION SELECT a FROM t INTO OUTFILE '/tmp/x')", false},
+		{"an export on the third arm", "SELECT 1 UNION SELECT 2 UNION SELECT a FROM t INTO OUTFILE '/tmp/x'", false},
+		{"an export reached through a CTE", "WITH c AS (SELECT 1) SELECT 1 UNION SELECT a FROM c INTO OUTFILE '/tmp/x'", false},
+		{"an export inside a subquery", "SELECT * FROM (SELECT a FROM t INTO OUTFILE '/tmp/x') y", false},
+		{"an export under a plain EXPLAIN", "EXPLAIN SELECT a FROM t INTO OUTFILE '/tmp/x'", false},
+		{"an export on an arm under a plain EXPLAIN", "EXPLAIN SELECT 1 UNION SELECT a FROM t INTO OUTFILE '/tmp/x'", false},
+		{"an export on an arm under EXPLAIN ANALYZE", "EXPLAIN ANALYZE SELECT 1 UNION SELECT a FROM t INTO OUTFILE '/tmp/x'", false},
+
+		{"a set operation that exports nothing", "SELECT 1 UNION SELECT 2", true},
+		{"a derived table", "SELECT * FROM (SELECT a FROM t) x", true},
+		{"a CTE", "WITH c AS (SELECT a FROM t) SELECT * FROM c", true},
+		{"EXPLAIN ANALYZE over a set operation", "EXPLAIN ANALYZE SELECT 1 UNION SELECT 2", true},
+		{"the clause named in a string literal", "SELECT 'INTO OUTFILE' FROM t", true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			gotValid, _, err := validateQuery(tc.statement)
+			require.NoError(t, err)
+			require.Equal(t, tc.wantValid, gotValid, tc.statement)
+		})
+	}
+}

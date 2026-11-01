@@ -37,7 +37,7 @@ func validateQuery(statement string) (bool, bool, error) {
 				hasExecute = true
 			}
 		case *ast.ExplainStmt:
-			if stmt.Analyze && !explainAnalyzeReads(stmt.Stmt) {
+			if !explainReads(stmt) {
 				readOnly = false
 			}
 		case *ast.ShowStmt:
@@ -78,14 +78,33 @@ func selectIntoTargets(n *ast.SelectStmt) (writesFile, assignsVariables bool) {
 	return writesFile, assignsVariables
 }
 
+// explainReads reports whether an EXPLAIN is a read.
+//
+// A plain EXPLAIN only plans, so it reads whatever it wraps, DML included — the
+// editor has always allowed that. An export is the exception: INTO OUTFILE
+// under EXPLAIN is still a request to write a file on the server, and the
+// editor must not label as a read what it refuses when asked directly.
+// EXPLAIN ANALYZE runs what it wraps, so there the wrapped statement has to be
+// a read in full.
+func explainReads(explain *ast.ExplainStmt) bool {
+	if sel, ok := explain.Stmt.(*ast.SelectStmt); ok {
+		if writesFile, _ := selectIntoTargets(sel); writesFile {
+			return false
+		}
+	}
+	if explain.Analyze {
+		return explainAnalyzeReads(explain.Stmt)
+	}
+	return true
+}
+
 // explainAnalyzeReads reports whether EXPLAIN ANALYZE over stmt only reads.
 //
-// A plain EXPLAIN just plans, so it is always a read. EXPLAIN ANALYZE runs the
-// statement to report actual row counts and timings, so it is a read exactly
-// when what it wraps is one: a SELECT that writes no file and assigns no
-// variable. Postgres gates its own EXPLAIN ANALYZE the same way. Anything else
-// is refused, which matters most for DML — EXPLAIN ANALYZE DELETE really
-// deletes, and a plain EXPLAIN of the same statement does not.
+// EXPLAIN ANALYZE runs the statement to report actual row counts and timings,
+// so it is a read exactly when what it wraps is one: a SELECT that writes no
+// file and assigns no variable. Postgres gates its own EXPLAIN ANALYZE the
+// same way. Anything else is refused, which matters most for DML — EXPLAIN
+// ANALYZE DELETE really deletes, and a plain EXPLAIN does not.
 func explainAnalyzeReads(stmt ast.StmtNode) bool {
 	sel, ok := stmt.(*ast.SelectStmt)
 	if !ok {
