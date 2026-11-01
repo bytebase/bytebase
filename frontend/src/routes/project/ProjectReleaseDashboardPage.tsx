@@ -377,7 +377,9 @@ const resolveReleasePlanUrl = (plan: Plan, projectId: string): string =>
 function useFetchReleases(releaseNames: string[]) {
   const fetchRelease = useAppStore((s) => s.fetchRelease);
   const [failed] = useState(() => new Set<string>());
-  const key = [...new Set(releaseNames)].sort().join(",");
+  const key = [...new Set(releaseNames)]
+    .sort((a, b) => a.localeCompare(b))
+    .join(",");
   useEffect(() => {
     if (!key) return;
     const { releasesByName } = useAppStore.getState();

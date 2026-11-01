@@ -10,7 +10,11 @@ import { instanceV1AllowsExplain } from "./v1/instance";
 
 describe("isVisualizerEngine", () => {
   test("covers the engines the viewer has a parser for", () => {
-    expect(Object.keys(VISUALIZER_EXPLAIN_FORMATS).map(Number).sort()).toEqual(
+    expect(
+      Object.keys(VISUALIZER_EXPLAIN_FORMATS)
+        .map(Number)
+        .sort((a, b) => a - b)
+    ).toEqual(
       [
         Engine.POSTGRES,
         Engine.MSSQL,
@@ -32,7 +36,7 @@ describe("isVisualizerEngine", () => {
         Engine.STARROCKS,
         Engine.DORIS,
         Engine.DATABRICKS,
-      ].sort()
+      ].sort((a, b) => a - b)
     );
     expect(isVisualizerEngine(Engine.POSTGRES)).toBe(true);
     expect(isVisualizerEngine(Engine.MYSQL)).toBe(true);
