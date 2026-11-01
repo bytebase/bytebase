@@ -44,7 +44,9 @@ func extractChangedResources(currentDatabase string, _ string, dbMetadata *model
 		case *ast.CreateTableStmt:
 			if n.Table != nil {
 				db, table := omniTableRef(n.Table, currentDatabase)
-				changedResources.AddTable(db, "", &storepb.ChangedResourceTable{Name: table}, false)
+				// CREATE OR REPLACE drops the existing table first, so its rows go
+				// with it and have to be counted. A plain CREATE affects none.
+				changedResources.AddTable(db, "", &storepb.ChangedResourceTable{Name: table}, n.OrReplace)
 			}
 
 		case *ast.DropTableStmt:

@@ -3,6 +3,7 @@ package mariadb
 import (
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -118,7 +119,8 @@ func TestExtractChangedResourcesMariaDBOnlyStatements(t *testing.T) {
 	DELETE FROM d WHERE a = 1 RETURNING a;`
 
 	want := model.NewChangedResources(nil /* dbMetadata */)
-	want.AddTable("other_db", "", &storepb.ChangedResourceTable{Name: "u"}, false)
+	// CREATE OR REPLACE drops the existing table, so u's rows are affected.
+	want.AddTable("other_db", "", &storepb.ChangedResourceTable{Name: "u"}, true)
 	want.AddTable("db", "", &storepb.ChangedResourceTable{Name: "t"}, true)
 	want.AddTable("db", "", &storepb.ChangedResourceTable{Name: "d"}, false)
 
@@ -141,4 +143,34 @@ func TestExtractChangedResourcesRejectsForeignAST(t *testing.T) {
 	require.NoError(t, err)
 	_, err = extractChangedResources("db", "", nil /* dbMetadata */, base.ExtractASTs(stmts), "CREATE TABLE t (a INT);")
 	require.ErrorContains(t, err, "expected OmniAST for MariaDB")
+}
+
+// TestExtractChangedResourcesCreateOrReplaceCountsExistingRows covers a form
+// MySQL has no grammar for, so the extractor this was forked from had no reason
+// to look at the flag. CREATE OR REPLACE TABLE drops the existing table first,
+// so its rows are affected and the summary must count them; approval rules read
+// that count as statement.affected_rows.
+func TestExtractChangedResourcesCreateOrReplaceCountsExistingRows(t *testing.T) {
+	dbMetadata := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Name: "db",
+		Schemas: []*metadatapb.SchemaMetadata{
+			{Name: "", Tables: []*metadatapb.TableMetadata{{Name: "t", RowCount: 1000}}},
+		},
+	}, nil, nil, storepb.Engine_MARIADB, false)
+
+	for _, tc := range []struct {
+		statement string
+		wantRows  int64
+	}{
+		{"CREATE TABLE t (a INT);", 0},
+		{"CREATE OR REPLACE TABLE t (a INT);", 1000},
+		{"CREATE OR REPLACE TABLE t LIKE s;", 1000},
+		{"CREATE OR REPLACE TABLE t AS SELECT * FROM s;", 1000},
+	} {
+		stmts, err := base.ParseStatements(storepb.Engine_MARIADB, tc.statement)
+		require.NoError(t, err, tc.statement)
+		got, err := extractChangedResources("db", "", dbMetadata, base.ExtractASTs(stmts), tc.statement)
+		require.NoError(t, err, tc.statement)
+		require.Equal(t, tc.wantRows, got.ChangedResources.CountAffectedTableRows(), tc.statement)
+	}
 }

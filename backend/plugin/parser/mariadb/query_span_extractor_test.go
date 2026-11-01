@@ -226,11 +226,10 @@ func TestOmniQuerySpanPhase2_ExpressionSourceMerging(t *testing.T) {
 }
 
 // TestOmniQuerySpanTemporalUnitSelector pins the lineage of TIMESTAMPDIFF,
-// TIMESTAMPADD and GET_FORMAT. omni/mariadb parsed each unit selector as a
-// column reference until omni#578 gave it a KeywordArg node, so resolving the
-// unit failed, the span came back empty with a ResourceNotFoundError, and
-// masking refused the query rather than returning it unmasked. The unit is a
-// keyword and carries no lineage of its own; the columns beside it do.
+// TIMESTAMPADD and GET_FORMAT: the unit is a keyword and carries no lineage of
+// its own, while the columns beside it do. Resolving the unit as a column
+// instead leaves the span empty with a ResourceNotFoundError, and masking then
+// refuses the query rather than returning it unmasked.
 func TestOmniQuerySpanTemporalUnitSelector(t *testing.T) {
 	for _, tc := range []struct {
 		statement string
