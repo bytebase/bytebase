@@ -82,7 +82,7 @@ jobs:
         uses: golangci/golangci-lint-action@v9
         with:
           # renovate: datasource=github-releases depName=golangci/golangci-lint
-          version: v2.14.0
+          version: v2.15.0
           install-only: true
           skip-cache: true
       - name: Verify Go version compatibility
