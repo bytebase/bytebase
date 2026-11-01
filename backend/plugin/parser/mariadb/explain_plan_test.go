@@ -126,6 +126,33 @@ func TestAffectedRowsQuery(t *testing.T) {
 			statement: "INSERT INTO t2 SELECT * FROM t WHERE d = 3;",
 			want:      "INSERT INTO t2 SELECT * FROM t WHERE d = 3;",
 		},
+		{
+			// RETURNING is MariaDB's and would make the synthesized query invalid,
+			// so the advisor would report a failed dry run instead of a row count.
+			name:      "delete with RETURNING",
+			statement: "DELETE FROM t WHERE c < 10 RETURNING c;",
+			want:      "SELECT 1 FROM t WHERE c < 10",
+		},
+		{
+			name:      "delete with RETURNING of several columns",
+			statement: "DELETE FROM t WHERE c < 10 RETURNING c, v;",
+			want:      "SELECT 1 FROM t WHERE c < 10",
+		},
+		{
+			name:      "delete with RETURNING *",
+			statement: "DELETE FROM t WHERE c < 10 RETURNING *;",
+			want:      "SELECT 1 FROM t WHERE c < 10",
+		},
+		{
+			name:      "delete with order, limit and RETURNING",
+			statement: "DELETE FROM t WHERE c < 10 ORDER BY id LIMIT 3 RETURNING c;",
+			want:      "SELECT 1 FROM t WHERE c < 10 ORDER BY id LIMIT 3",
+		},
+		{
+			name:      "delete of every row with RETURNING",
+			statement: "DELETE FROM t RETURNING c;",
+			want:      "SELECT 1 FROM t",
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			require.Equal(t, tc.want, AffectedRowsQuery(parseSingleStatement(t, tc.statement), tc.statement))

@@ -34,6 +34,13 @@ func AffectedRowsQuery(stmt ast.Node, statement string) string {
 			return statement
 		}
 		loc, clausesStart = s.Loc, table.Loc.End
+		// RETURNING would land in the synthesized SELECT, which the server then
+		// rejects — the advisor reports a failed dry run instead of a row count.
+		end, err := endBeforeReturning(s.Returning, statement, loc.End)
+		if err != nil {
+			return statement
+		}
+		loc.End = end
 	default:
 		return statement
 	}

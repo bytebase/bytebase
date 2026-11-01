@@ -1,10 +1,12 @@
 package mariadb
 
 import (
+	"strings"
 	"unicode/utf8"
 
 	"github.com/bytebase/omni/mariadb/ast"
 	mariadbparser "github.com/bytebase/omni/mariadb/parser"
+	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -73,4 +75,47 @@ func ByteOffsetToRunePosition(sql string, byteOffset int) *storepb.Position {
 		Line:   line,
 		Column: runeCol + 1, // convert to 1-based
 	}
+}
+
+// endBeforeReturning clamps end to just before the RETURNING clause of a DML
+// statement, or returns end unchanged when there is none.
+//
+// RETURNING is MariaDB's, not MySQL's, and it is the last clause of the
+// statements that take it. Every transformation here that rewrites a DML into a
+// SELECT by copying its text through to the statement end has to stop short of
+// it, because RETURNING means nothing in a SELECT and the server rejects the
+// result. Both callers go through this one function: the first version of the
+// backup fix had its own copy of the search, and a second copy in the
+// affected-rows estimator is exactly the bug that copy was meant to fix.
+//
+// An error means the keyword is there but could not be located, which the
+// callers answer by declining to transform rather than emitting SQL that will
+// fail when it runs.
+func endBeforeReturning(returning []ast.Node, sql string, end int) (int, error) {
+	if end <= 0 || end > len(sql) {
+		end = len(sql)
+	}
+	if len(returning) == 0 {
+		return end, nil
+	}
+	var first int
+	switch e := returning[0].(type) {
+	case *ast.ColumnRef:
+		first = e.Loc.Start
+	case *ast.ResTarget:
+		first = e.Loc.Start
+	case *ast.StarExpr:
+		first = e.Loc.Start
+	default:
+		return 0, errors.Errorf("cannot locate RETURNING from %T", returning[0])
+	}
+	if first <= 0 || first > end {
+		return 0, errors.New("cannot locate RETURNING")
+	}
+	// Only the keyword and whitespace sit between the clause start and its first item.
+	kw := strings.LastIndex(strings.ToUpper(sql[:first]), "RETURNING")
+	if kw < 0 {
+		return 0, errors.New("cannot locate RETURNING")
+	}
+	return kw, nil
 }

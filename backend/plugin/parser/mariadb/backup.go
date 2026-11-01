@@ -430,43 +430,11 @@ func writeDeleteSuffix(buf *strings.Builder, n *ast.DeleteStmt, sql string) erro
 	return err
 }
 
-// deleteSuffixEnd returns where the text copied into the backup SELECT must stop.
-//
-// MariaDB allows RETURNING only as the last clause of a single-table DELETE, and
-// it has no meaning in a SELECT: copying through to the statement end would emit
-// `SELECT t.* FROM t WHERE a = 1 RETURNING a`, which the server rejects when the
-// backup runs. Everything from the keyword onward is therefore dropped. If the
-// keyword cannot be located the transformation fails rather than emit a statement
-// that is invalid, because a backup that errors at execution time is worse than
-// one the change never passes review with.
+// deleteSuffixEnd returns where the text copied into the backup SELECT must stop:
+// short of RETURNING, which is not a SELECT clause. Failing beats emitting a
+// backup that the server rejects when it runs, after the change has passed review.
 func deleteSuffixEnd(n *ast.DeleteStmt, sql string) (int, error) {
-	end := n.Loc.End
-	if end <= 0 || end > len(sql) {
-		end = len(sql)
-	}
-	if len(n.Returning) == 0 {
-		return end, nil
-	}
-	var first int
-	switch e := n.Returning[0].(type) {
-	case *ast.ColumnRef:
-		first = e.Loc.Start
-	case *ast.ResTarget:
-		first = e.Loc.Start
-	case *ast.StarExpr:
-		first = e.Loc.Start
-	default:
-		return 0, errors.Errorf("cannot locate RETURNING of a DELETE from %T", n.Returning[0])
-	}
-	if first <= 0 || first > end {
-		return 0, errors.New("cannot locate RETURNING of a DELETE")
-	}
-	// Only the keyword and whitespace sit between the clause start and its first item.
-	kw := strings.LastIndex(strings.ToUpper(sql[:first]), "RETURNING")
-	if kw < 0 {
-		return 0, errors.New("cannot locate RETURNING of a DELETE")
-	}
-	return kw, nil
+	return endBeforeReturning(n.Returning, sql, n.Loc.End)
 }
 
 func nodeLocStart(expr ast.TableExpr) int {

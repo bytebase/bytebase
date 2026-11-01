@@ -18,6 +18,23 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
+// querySpanGoldenFixturePaths is the YAML corpus the harness below compares
+// Bytebase's query span against.
+var querySpanGoldenFixturePaths = []string{
+	"test-data/query-span/query_type.yaml",
+	"test-data/query-span/standard.yaml",
+	"test-data/query-span/case_insensitive.yaml",
+}
+
+// firstLineOf shortens a statement for a failure message.
+func firstLineOf(s string) string {
+	s = strings.TrimSpace(s)
+	if i := strings.IndexByte(s, '\n'); i >= 0 {
+		return s[:i] + " ..."
+	}
+	return s
+}
+
 // TestMySQLOmniQuerySpanGoldenHarness is the strict cutover guard. It compares
 // the package-internal omni path against the existing YAML corpus instead of
 // comparing GetQuerySpan to itself after the production cutover.
@@ -41,7 +58,7 @@ func TestMySQLOmniQuerySpanGoldenHarness(t *testing.T) {
 
 	var diffs []diff
 	total := 0
-	for _, testDataPath := range mysqlOmniProbeFixturePaths {
+	for _, testDataPath := range querySpanGoldenFixturePaths {
 		engine := storepb.Engine_MARIADB
 
 		yamlFile, err := os.Open(testDataPath)
@@ -96,7 +113,7 @@ func TestMySQLOmniQuerySpanGoldenHarness(t *testing.T) {
 			t.Logf("... %d more diffs omitted", len(diffs)-i)
 			break
 		}
-		t.Logf("[%s case %d %q] %s\n  SQL: %s", d.fixture, d.index, d.description, d.details, firstMySQLOmniProbeLine(d.statement))
+		t.Logf("[%s case %d %q] %s\n  SQL: %s", d.fixture, d.index, d.description, d.details, firstLineOf(d.statement))
 	}
 	require.Empty(t, diffs)
 }
