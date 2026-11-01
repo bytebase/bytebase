@@ -35,9 +35,10 @@ func firstLineOf(s string) string {
 	return s
 }
 
-// TestMySQLOmniQuerySpanGoldenHarness is the strict cutover guard. It compares
-// the package-internal omni path against the existing YAML corpus instead of
-// comparing GetQuerySpan to itself after the production cutover.
+// TestMySQLOmniQuerySpanGoldenHarness holds this package's query span to the
+// shared YAML corpus. It drives the extractor directly rather than through
+// GetQuerySpan, so a span is compared against the fixture's expectation and not
+// against itself.
 func TestMySQLOmniQuerySpanGoldenHarness(t *testing.T) {
 	type testCase struct {
 		Description        string              `yaml:"description,omitempty"`

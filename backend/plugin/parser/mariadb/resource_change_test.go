@@ -146,10 +146,10 @@ func TestExtractChangedResourcesRejectsForeignAST(t *testing.T) {
 }
 
 // TestExtractChangedResourcesCreateOrReplaceCountsExistingRows covers a form
-// MySQL has no grammar for, so the extractor this was forked from had no reason
-// to look at the flag. CREATE OR REPLACE TABLE drops the existing table first,
-// so its rows are affected and the summary must count them; approval rules read
-// that count as statement.affected_rows.
+// MySQL has no grammar for, so an extractor written for MySQL has no flag to
+// read. CREATE OR REPLACE TABLE drops the existing table first, so its rows are
+// affected and the summary must count them; approval rules read that count as
+// statement.affected_rows.
 func TestExtractChangedResourcesCreateOrReplaceCountsExistingRows(t *testing.T) {
 	dbMetadata := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
 		Name: "db",

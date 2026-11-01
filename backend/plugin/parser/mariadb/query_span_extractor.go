@@ -420,8 +420,8 @@ func newOmniQuerySpanExtractor(defaultDatabase string, gCtx base.GetQuerySpanCon
 	}
 }
 
-// getOmniQuerySpan is the package-internal omni entry point used by migration
-// tests and the production MySQL query-span path after cutover.
+// getOmniQuerySpan is the package-internal entry point behind GetQuerySpan, and
+// what the golden harness drives directly.
 func (q *omniQuerySpanExtractor) getOmniQuerySpan(ctx context.Context, statement string) (*base.QuerySpan, error) {
 	q.ctx = ctx
 	q.source = statement

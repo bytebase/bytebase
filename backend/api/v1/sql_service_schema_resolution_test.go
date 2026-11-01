@@ -80,9 +80,9 @@ func TestUnresolvedSchemaSentinelIsImpossible(t *testing.T) {
 	require.Contains(t, unresolvedSchemaSentinel, "\x00")
 }
 
-// TestWriteTargetsFromChangeSummaryRefusesSkippedStatements covers the refusal
-// on its own. Nothing sets SkippedStatements since MariaDB stopped reading omni's
-// MySQL AST, so the summary is built here rather than extracted.
+// TestWriteTargetsFromChangeSummaryRefusesSkippedStatements covers the refusal on
+// its own. No engine sets SkippedStatements, so the summary is built here rather
+// than extracted from a statement.
 func TestWriteTargetsFromChangeSummaryRefusesSkippedStatements(t *testing.T) {
 	t.Parallel()
 	changedResources := model.NewChangedResources(nil /* dbMetadata */)
@@ -99,9 +99,9 @@ func TestWriteTargetsFromChangeSummaryRefusesSkippedStatements(t *testing.T) {
 }
 
 // TestWriteTargetsFromChangeSummaryReadsMariaDBOnlyStatements pins the write
-// target a MariaDB-only statement now resolves to. While MariaDB read omni's
-// MySQL AST the statement counted as skipped, and a skipped statement may write
-// any table, so the whole sheet fell back to the database-level check.
+// target a MariaDB-only statement resolves to. A statement the extractor cannot
+// read counts as skipped, and a skipped statement may write any table, which
+// falls the whole sheet back to the database-level check.
 func TestWriteTargetsFromChangeSummaryReadsMariaDBOnlyStatements(t *testing.T) {
 	t.Parallel()
 	extract := func(statement string) *parserbase.ChangeSummary {

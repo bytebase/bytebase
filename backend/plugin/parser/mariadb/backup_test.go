@@ -233,7 +233,7 @@ func buildFixedMockDatabaseMetadataGetterAndLister() (base.GetDatabaseMetadataFu
 }
 
 // TestTransformDMLToSelectStripsReturning covers a clause MySQL has no grammar
-// for, so the transform this was forked from never had to drop it. RETURNING is
+// for, so a transform written for MySQL has no reason to drop it. RETURNING is
 // the last clause of a single-table MariaDB DELETE and means nothing in a
 // SELECT, so copying through to the statement end yields a backup the server
 // rejects when it runs.

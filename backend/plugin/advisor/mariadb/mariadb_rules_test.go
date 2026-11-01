@@ -334,9 +334,9 @@ func TestMariaDBPriorBackupCheckAdvisor(t *testing.T) {
 }
 
 // TestMariaDBPriorBackupCheckAdvisorReadsMariaDBOnlyStatements pins a change this
-// package makes. The backup transform parses with omni's MariaDB parser now, so
-// MariaDB-only DML no longer draws "Prior backup cannot handle MariaDB-specific
-// syntax" — the whole statement list is backed up as asked.
+// package makes: the backup transform reads MariaDB-only DML, so the whole
+// statement list is backed up as asked rather than drawing "Prior backup cannot
+// handle MariaDB-specific syntax".
 func TestMariaDBPriorBackupCheckAdvisorReadsMariaDBOnlyStatements(t *testing.T) {
 	sm := sheet.NewManager()
 
@@ -355,9 +355,9 @@ func TestMariaDBPriorBackupCheckAdvisorReadsMariaDBOnlyStatements(t *testing.T) 
 }
 
 // TestMariaDBPriorBackupCheckAdvisorCountsSequenceDDL covers statements MySQL has
-// no grammar for, so the DDL list this was forked from omits them. Without the
-// sequence cases the script below passed a guard that promises to reject mixed
-// DDL and DML, and the backup silently covered only the DELETE.
+// no grammar for, which a DDL list written for MySQL has to name explicitly.
+// Without them the script below passes a guard that promises to reject mixed DDL
+// and DML, and the backup covers only the DELETE.
 func TestMariaDBPriorBackupCheckAdvisorCountsSequenceDDL(t *testing.T) {
 	for _, ddl := range []string{
 		"CREATE SEQUENCE s START WITH 1",
@@ -382,7 +382,7 @@ func TestMariaDBPriorBackupCheckAdvisorCountsSequenceDDL(t *testing.T) {
 }
 
 // TestMariaDBSQLReviewReviewsMariaDBOnlyStatements pins the other half: a rule
-// now fires on a statement only MariaDB accepts, where the review used to walk
+// fires on a statement only MariaDB accepts, rather than the review walking
 // straight past it.
 func TestMariaDBSQLReviewReviewsMariaDBOnlyStatements(t *testing.T) {
 	sm := sheet.NewManager()

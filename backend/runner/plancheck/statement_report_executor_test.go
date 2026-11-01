@@ -420,11 +420,10 @@ func TestSummaryStatementTypesRejectsEngineWithoutClassifier(t *testing.T) {
 	require.Error(t, err)
 }
 
-// TestBuildSQLSummaryReportReportsMariaDBOnlyStatements is the plan check this
-// change exists for. While MariaDB read omni's MySQL AST, a statement that
-// parser rejected counted as skipped, and one skipped statement withholds the
-// whole report — so MariaDB got no changed resources and no affected-rows
-// estimate for every sheet containing MariaDB-only syntax.
+// TestBuildSQLSummaryReportReportsMariaDBOnlyStatements pins the report a sheet
+// of MariaDB-only syntax gets. A statement the extractor cannot read counts as
+// skipped, and one skipped statement withholds the whole report: no changed
+// resources and no affected-rows estimate for the sheet.
 func TestBuildSQLSummaryReportReportsMariaDBOnlyStatements(t *testing.T) {
 	for _, tc := range []struct {
 		name      string
@@ -452,8 +451,8 @@ func TestBuildSQLSummaryReportReportsMariaDBOnlyStatements(t *testing.T) {
 }
 
 // TestBuildSQLSummaryReportOmitsReportWithSkippedStatements covers the refusal on
-// its own. Nothing sets SkippedStatements since MariaDB stopped reading omni's
-// MySQL AST, so the summary is built here rather than extracted.
+// its own. No engine sets SkippedStatements, so the summary is built here rather
+// than extracted from a statement.
 func TestBuildSQLSummaryReportOmitsReportWithSkippedStatements(t *testing.T) {
 	explains := 0
 	explain := func(context.Context, string) (int64, error) {

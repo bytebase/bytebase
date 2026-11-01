@@ -67,8 +67,8 @@ func TestGetStatementType(t *testing.T) {
 }
 
 // TestGetStatementTypesClassifiesMariaDBOnlyStatements pins that a statement
-// only MariaDB accepts is classified rather than left unspecified, which is
-// what it was while MariaDB read omni's MySQL AST.
+// only MariaDB accepts is classified rather than left unspecified: an
+// unspecified type silently drops every statement.sql_type approval rule.
 func TestGetStatementTypesClassifiesMariaDBOnlyStatements(t *testing.T) {
 	stmts, err := base.ParseStatements(storepb.Engine_MARIADB, "CREATE TABLE t (a INT);\nCREATE OR REPLACE TABLE u (a INT);\nALTER TABLE t DROP COLUMN IF EXISTS b;")
 	require.NoError(t, err)
