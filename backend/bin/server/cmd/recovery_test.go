@@ -666,8 +666,7 @@ func TestRecoveryCommandContract(t *testing.T) {
 			require.Equal(t, 1, *closeCount)
 		case <-time.After(time.Second):
 			close(input.release)
-			<-done
-			t.Fatal("recovery did not exit while the menu read was blocked")
+			t.Fatalf("recovery did not exit while the menu read was blocked; it returned %v", <-done)
 		}
 	})
 }
