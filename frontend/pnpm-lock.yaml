@@ -520,7 +520,7 @@ importers:
         version: 9.3.2
       ws:
         specifier: ^8.20.0
-        version: 8.21.3
+        version: 8.22.1
 
 packages:
 
@@ -3934,8 +3934,8 @@ packages:
     resolution: {integrity: sha512-YVGIj2kamLSTxw6NsZjoBxfSwsn0ycdesmc4p+Q21c5zPuZ1pl+NfxVdxPtdHvmNVOQ6XSYG4AUtyt/Fi7D16Q==}
     engines: {node: '>=10'}
 
-  ws@8.21.3:
-    resolution: {integrity: sha512-201TZ/kPWxoPr/OKWjquZR1SWKXcvxdH+e1xrx89b3YbmzLMFCLfnaG1HFIgWzJOEWZ7MvpK++odZufgYR50Rw==}
+  ws@8.22.1:
+    resolution: {integrity: sha512-oyL6OPYme/CmiFvNuGzeoxCJ4nOrZE2O1FwM9MWM1AsGri6nLXB2pg+lNA8aLeXMSav0J6eIVS1j6vUPzUtK9g==}
     engines: {node: '>=10.0.0'}
     peerDependencies:
       bufferutil: ^4.0.1
@@ -4767,7 +4767,7 @@ snapshots:
       chalk: 4.1.1
       launch-ide: 1.4.9
       portfinder: 1.0.38(supports-color@7.2.0)
-      ws: 8.21.3
+      ws: 8.22.1
     optionalDependencies:
       node-pty: 1.1.0
     transitivePeerDependencies:
@@ -7530,7 +7530,7 @@ snapshots:
       string-width: 4.2.3
       strip-ansi: 6.0.1
 
-  ws@8.21.3: {}
+  ws@8.22.1: {}
 
   xml-name-validator@5.0.0: {}
 
