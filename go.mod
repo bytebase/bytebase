@@ -36,7 +36,7 @@ require (
 	github.com/bmatcuk/doublestar/v4 v4.10.0
 	github.com/bytebase/gomongo v0.0.0-20260730033313-67ba6e249735
 	github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0
-	github.com/bytebase/omni v0.0.0-20261031165939-b698d1687d33
+	github.com/bytebase/omni v0.0.0-20261031171950-0d36648c17d4
 	github.com/caarlos0/env/v11 v11.4.1
 	github.com/cenkalti/backoff/v7 v7.0.0
 	github.com/cockroachdb/cockroach-go/v2 v2.4.3
@@ -110,8 +110,8 @@ require (
 	golang.org/x/text v0.41.0
 	google.golang.org/api v0.290.0
 	google.golang.org/genproto v0.0.0-20260723164925-7274b71286bd
-	google.golang.org/genproto/googleapis/api v0.0.0-20261012220534-4341edf3f941
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20261012220534-4341edf3f941
+	google.golang.org/genproto/googleapis/api v0.0.0-20261026165753-2ffab32bce7e
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20261026165753-2ffab32bce7e
 	google.golang.org/grpc v1.83.2
 	google.golang.org/protobuf v1.36.12
 	gopkg.in/inf.v0 v0.9.1
