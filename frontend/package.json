@@ -61,7 +61,7 @@
     "normalize-wheel": "^1.0.1",
     "posthog-js": "^1.406.2",
     "qrcode.react": "^4.2.0",
-    "qs": "6.16.0",
+    "qs": "6.17.1",
     "react": "^19.2.6",
     "react-arborist": "^3.5.0",
     "react-day-picker": "^10.0.1",
