@@ -44,7 +44,7 @@ import (
 
 // unclassifiedEngineWrites are the engines with no registered read-only
 // classifier, each with a statement that writes on it. Every one fails closed
-// under the clamp rather than gaining a validator in this change.
+// under the clamp rather than gaining a validator.
 //
 // One map rather than a list beside a lookup table: two copies of this set
 // could disagree about which engines the test is even about.

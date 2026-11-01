@@ -21,9 +21,8 @@ func init() {
 //
 // A query that carries INTO OUTFILE is refused: it writes its result set to
 // S3 or HDFS, so the data leaves the database past masking and past the
-// export gate. That is read off the tree (isReadOnlyAST), which it could not
-// be until omni's Doris grammar grew the clause — before then this function
-// matched an OUTFILE keyword token in the statement text instead (BOT-92).
+// export gate. isReadOnlyAST reads the clause off the tree, so the words in a
+// comment or a quoted identifier are not mistaken for one (BOT-92).
 //
 // Syntax errors are surfaced up; that lets validateQueryRequest reject
 // malformed read-only SQL before execution.
