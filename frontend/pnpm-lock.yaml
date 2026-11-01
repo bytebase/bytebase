@@ -463,7 +463,7 @@ importers:
         version: 10.5.4(postcss@8.5.23)
       code-inspector-plugin:
         specifier: ^2.0.0
-        version: 2.0.8(supports-color@7.2.0)
+        version: 2.0.9(supports-color@7.2.0)
       dotenv:
         specifier: ^17.4.2
         version: 17.4.2
@@ -1157,8 +1157,8 @@ packages:
   '@bufbuild/protobuf@2.13.0':
     resolution: {integrity: sha512-acq7c49vxfm1ggJ95P70TX7ABDM0vxr1SYD3BB0o0jnBLB4OAqeHyKuN+cD3w80gXEDQ2zxHpR6CUeA+O/aU9g==}
 
-  '@code-inspector/core@2.0.8':
-    resolution: {integrity: sha512-RIGPzE5YGRThjFWvW9coAsg2H02ByJWI1yviOm/mJ6qQVFRliTG9rLwSU4gRzLsMu5V8VF+8hypMp6xSOFH5uQ==}
+  '@code-inspector/core@2.0.9':
+    resolution: {integrity: sha512-7WkUlXfpwM95+KY5ra3KyivQGy0fUBq9dFcoI481LJKKnZNzwRW6kUkQF2hVP7zTj8TDy5esCMw8YuOwI8HhsQ==}
     peerDependencies:
       '@anthropic-ai/claude-agent-sdk': ^0.2.29
       '@openai/codex-sdk': ^0.106.0
@@ -1171,20 +1171,20 @@ packages:
       '@opencode-ai/sdk':
         optional: true
 
-  '@code-inspector/esbuild@2.0.8':
-    resolution: {integrity: sha512-xnfpBiBKrIOGN0j9IZ+k2p6aGq8TOIeHndGY+W8mxeODhO5KbM9rym0FSgVe3tEm6JcUk3kHP9h/EG61mnqDuw==}
+  '@code-inspector/esbuild@2.0.9':
+    resolution: {integrity: sha512-uiddojMyD4HUtJ8pVq4/Iu0AgILaRZoe/zXJUK2ibqWdP6XtjIWCTLfvDL8IO9tOOxuEi+0SsRwr/Y8CEN5sTQ==}
 
-  '@code-inspector/mako@2.0.8':
-    resolution: {integrity: sha512-l243SWfGr4sUACVOCd5NbkjuFRobACnmpWXA2IyDFkedYFeGbYYpjZUwP88lxrVHt1PHZyB81HMiScE24P0ONw==}
+  '@code-inspector/mako@2.0.9':
+    resolution: {integrity: sha512-HGb8oHXEj2fGnD5AtdUzFhMXkuRAXenKT1iCV53B8gFgiV5ddSrln+/mPQZt3v3FTu3TyQNd3aaHtPpSW+B0vg==}
 
-  '@code-inspector/turbopack@2.0.8':
-    resolution: {integrity: sha512-iLbGsojN6MwcqClTUQrqTHZHKUgbHBXSyDc4CAicmPytr5EcSYCCyICPrAY238ny+CdmzxGLaobZTA/YpScNiA==}
+  '@code-inspector/turbopack@2.0.9':
+    resolution: {integrity: sha512-uNTPCkDxS+4htXOKTJf+yEjYqKDFLIczILQ41dMqD5z9rbSDJkU/bvMs+8RcGUks0f7cB+TtRQyQCfwoFW1atA==}
 
-  '@code-inspector/vite@2.0.8':
-    resolution: {integrity: sha512-qj8lOiA6Q1cZ8iJI2zGSdEd85yok/8EFa0G2KiSrY1PaD3pLZquayRgzWMCLTC2pmLSWGM4L1UbTyDM2c8joDg==}
+  '@code-inspector/vite@2.0.9':
+    resolution: {integrity: sha512-XXwb3Cyz70Y8OqP7H7umKVM1RrfmWtKBZ7JrrtlwraEaRRefo70+guuQZr6vuNm8lOT2VHgsG1bH9wqs7WrrXw==}
 
-  '@code-inspector/webpack@2.0.8':
-    resolution: {integrity: sha512-lz6LvkugtibrKbA+t/jFBkdSThveFEcLe1zutr4MUUOJh4XXWo1MYAjFHkUKnSy/+KqMC9MfBnDDtObYICBUmA==}
+  '@code-inspector/webpack@2.0.9':
+    resolution: {integrity: sha512-sauXo+GD6QIlqSymNtDTQOyrQid8er71Kr3Jh07viUKd1+U10//EML/tb/IpOzutwauizJeQslKqAvDV+Nqc9w==}
 
   '@codingame/monaco-vscode-api@38.1.3':
     resolution: {integrity: sha512-nFOPIF3X3827Cqm//pqWD+vSzCVhV4GHu4/ROTAId8mXPZ9iD7j3avMz0qsYApDVmLmBa7a/zHIM4v0AdCM++w==}
@@ -2412,8 +2412,8 @@ packages:
     resolution: {integrity: sha512-eYm0QWBtUrBWZWG0d386OGAw16Z995PiOVo2B7bjWSbHedGl5e0ZWaq65kOGgUSNesEIDkB9ISbTg/JK9dhCZA==}
     engines: {node: '>=6'}
 
-  code-inspector-plugin@2.0.8:
-    resolution: {integrity: sha512-Ig7pHNGdlVprf6zRFLhSFI28D4PrKG72YkqNQ0uxYZHEomvKvD6FwK1DrYypbthz+N7c7g9v/uvAFM7tJn3ntw==}
+  code-inspector-plugin@2.0.9:
+    resolution: {integrity: sha512-0CApBNHqPTrcbOL/1n4JJS0Wy0CGYTRmJVWY8qI0wkYmmeT/LhaQZ1EIGQNuHLepZn4SA/XWd+4No+8gshpRNA==}
 
   color-convert@2.0.1:
     resolution: {integrity: sha512-RRECPsj7iu/xb5oKYcsFHSppFNnsj/52OVTRKb4zP5onXwVF3zVmmToNcOfGC+CRDpfK/U584fMg38ZHCaElKQ==}
@@ -2843,8 +2843,8 @@ packages:
   jszip@3.10.2:
     resolution: {integrity: sha512-3l+rb15IOWtUhU0H5MFqES/T6Kh7abYwjosBey/vD6hDt8zoEffkSC5Ws5SGtgVw3gBx2NEbhTeSW1+kWkpyTQ==}
 
-  launch-ide@1.4.9:
-    resolution: {integrity: sha512-M67fqPmkMQQuiFnMtsgtMvHuB2a+8KLxEwH9ccftpy0f3CJQNoRCebZvKSn/ujxR42cMDOIBstuC/KXR/IgXeQ==}
+  launch-ide@1.4.10:
+    resolution: {integrity: sha512-MqkYz5/dYDtBkvcDmz6tr2uFWU8AqRnrI+kLwcVmV83QZ/uhN0yns9GUQyLZJ5CJ5pglm8xko65JGcyzyI3dBQ==}
 
   lie@3.3.0:
     resolution: {integrity: sha512-UaiMJzeWRlEujzAuw5LokY1L5ecNQYZKfmyZ9L7wDHb/p5etKaxXhohBcrw0EYby+G/NA52vRSN4N39dxHAIwQ==}
@@ -4788,11 +4788,11 @@ snapshots:
 
   '@bufbuild/protobuf@2.13.0': {}
 
-  '@code-inspector/core@2.0.8(supports-color@7.2.0)':
+  '@code-inspector/core@2.0.9(supports-color@7.2.0)':
     dependencies:
       '@vue/compiler-dom': 3.5.42
       chalk: 4.1.1
-      launch-ide: 1.4.9
+      launch-ide: 1.4.10
       portfinder: 1.0.38(supports-color@7.2.0)
       ws: 8.22.1
     optionalDependencies:
@@ -4802,9 +4802,9 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@code-inspector/esbuild@2.0.8(supports-color@7.2.0)':
+  '@code-inspector/esbuild@2.0.9(supports-color@7.2.0)':
     dependencies:
-      '@code-inspector/core': 2.0.8(supports-color@7.2.0)
+      '@code-inspector/core': 2.0.9(supports-color@7.2.0)
     transitivePeerDependencies:
       - '@anthropic-ai/claude-agent-sdk'
       - '@openai/codex-sdk'
@@ -4813,9 +4813,9 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@code-inspector/mako@2.0.8(supports-color@7.2.0)':
+  '@code-inspector/mako@2.0.9(supports-color@7.2.0)':
     dependencies:
-      '@code-inspector/core': 2.0.8(supports-color@7.2.0)
+      '@code-inspector/core': 2.0.9(supports-color@7.2.0)
     transitivePeerDependencies:
       - '@anthropic-ai/claude-agent-sdk'
       - '@openai/codex-sdk'
@@ -4824,10 +4824,10 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@code-inspector/turbopack@2.0.8(supports-color@7.2.0)':
+  '@code-inspector/turbopack@2.0.9(supports-color@7.2.0)':
     dependencies:
-      '@code-inspector/core': 2.0.8(supports-color@7.2.0)
-      '@code-inspector/webpack': 2.0.8(supports-color@7.2.0)
+      '@code-inspector/core': 2.0.9(supports-color@7.2.0)
+      '@code-inspector/webpack': 2.0.9(supports-color@7.2.0)
     transitivePeerDependencies:
       - '@anthropic-ai/claude-agent-sdk'
       - '@openai/codex-sdk'
@@ -4836,9 +4836,9 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@code-inspector/vite@2.0.8(supports-color@7.2.0)':
+  '@code-inspector/vite@2.0.9(supports-color@7.2.0)':
     dependencies:
-      '@code-inspector/core': 2.0.8(supports-color@7.2.0)
+      '@code-inspector/core': 2.0.9(supports-color@7.2.0)
       chalk: 4.1.1
     transitivePeerDependencies:
       - '@anthropic-ai/claude-agent-sdk'
@@ -4848,9 +4848,9 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@code-inspector/webpack@2.0.8(supports-color@7.2.0)':
+  '@code-inspector/webpack@2.0.9(supports-color@7.2.0)':
     dependencies:
-      '@code-inspector/core': 2.0.8(supports-color@7.2.0)
+      '@code-inspector/core': 2.0.9(supports-color@7.2.0)
     transitivePeerDependencies:
       - '@anthropic-ai/claude-agent-sdk'
       - '@openai/codex-sdk'
@@ -5867,14 +5867,14 @@ snapshots:
 
   clsx@2.1.1: {}
 
-  code-inspector-plugin@2.0.8(supports-color@7.2.0):
+  code-inspector-plugin@2.0.9(supports-color@7.2.0):
     dependencies:
-      '@code-inspector/core': 2.0.8(supports-color@7.2.0)
-      '@code-inspector/esbuild': 2.0.8(supports-color@7.2.0)
-      '@code-inspector/mako': 2.0.8(supports-color@7.2.0)
-      '@code-inspector/turbopack': 2.0.8(supports-color@7.2.0)
-      '@code-inspector/vite': 2.0.8(supports-color@7.2.0)
-      '@code-inspector/webpack': 2.0.8(supports-color@7.2.0)
+      '@code-inspector/core': 2.0.9(supports-color@7.2.0)
+      '@code-inspector/esbuild': 2.0.9(supports-color@7.2.0)
+      '@code-inspector/mako': 2.0.9(supports-color@7.2.0)
+      '@code-inspector/turbopack': 2.0.9(supports-color@7.2.0)
+      '@code-inspector/vite': 2.0.9(supports-color@7.2.0)
+      '@code-inspector/webpack': 2.0.9(supports-color@7.2.0)
       chalk: 4.1.1
     transitivePeerDependencies:
       - '@anthropic-ai/claude-agent-sdk'
@@ -6275,7 +6275,7 @@ snapshots:
       readable-stream: 2.3.8
       setimmediate: 1.0.5
 
-  launch-ide@1.4.9:
+  launch-ide@1.4.10:
     dependencies:
       chalk: 4.1.1
       dotenv: 16.6.1
