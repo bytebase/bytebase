@@ -372,7 +372,7 @@ importers:
         version: 3.5.0
       zustand:
         specifier: ^5.0.13
-        version: 5.0.14(@types/react@19.2.17)(immer@11.2.9)(react@19.2.8)(use-sync-external-store@1.7.0(react@19.2.8))
+        version: 5.0.16(@types/react@19.2.17)(immer@11.2.9)(react@19.2.8)(use-sync-external-store@1.7.0(react@19.2.8))
     devDependencies:
       '@biomejs/biome':
         specifier: 2.5.12
@@ -3995,8 +3995,8 @@ packages:
     resolution: {integrity: sha512-7dSzzRQ++CKnNI/krKnYRV7JKKPUXMEh61soaHKg9mrWEhzFWhFnxPxGl+69cD1Ou63C13NUPCnmIcrvqCuM6w==}
     engines: {node: '>=12'}
 
-  zustand@5.0.14:
-    resolution: {integrity: sha512-/8tAspM5LMPr28b3fwLYrtdj77ECpfZviaP75CMTnwO8ISyaE4GDIG/9rDDYq/cH9D2Xw2A2RXglLInmVBQB/g==}
+  zustand@5.0.16:
+    resolution: {integrity: sha512-Uv7e327ihlCfayfja3hDc0M64Upev1LWBKpRobdK4NyovDDPeeX4imWXc/wzC1yc6fkYPoAY/ncKVPAs2jrtQw==}
     engines: {node: '>=12.20.0'}
     peerDependencies:
       '@types/react': '>=18.0.0'
@@ -7598,7 +7598,7 @@ snapshots:
       y18n: 5.0.8
       yargs-parser: 21.1.1
 
-  zustand@5.0.14(@types/react@19.2.17)(immer@11.2.9)(react@19.2.8)(use-sync-external-store@1.7.0(react@19.2.8)):
+  zustand@5.0.16(@types/react@19.2.17)(immer@11.2.9)(react@19.2.8)(use-sync-external-store@1.7.0(react@19.2.8)):
     optionalDependencies:
       '@types/react': 19.2.17
       immer: 11.2.9
