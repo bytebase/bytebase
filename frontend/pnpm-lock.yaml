@@ -359,8 +359,8 @@ importers:
         specifier: ^3.4.0
         version: 3.6.0
       uuid:
-        specifier: 14.0.1
-        version: 14.0.1
+        specifier: 14.0.3
+        version: 14.0.3
       vscode:
         specifier: npm:@codingame/monaco-vscode-extension-api@38.1.3
         version: '@codingame/monaco-vscode-extension-api@38.1.3'
@@ -3792,8 +3792,8 @@ packages:
   util-deprecate@1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
 
-  uuid@14.0.1:
-    resolution: {integrity: sha512-6ZxzVpzDXDa3bJWaHilVayA+BH/1zmxCJoVgvmqJnid/gPoKHxUrS/aC/T6LGQtNHT+XHG9fXPJB4d+IrU30Ew==}
+  uuid@14.0.3:
+    resolution: {integrity: sha512-Sc5u1VVln93y1Xnz4R+CunOZc7R9LUcTmhj7Rc7Eg3HVcf7rVn2FOoa812fe0W8p3jD7xeoGSYbfqCGGH2B6xw==}
     hasBin: true
 
   vfile-message@4.0.2:
@@ -7435,7 +7435,7 @@ snapshots:
 
   util-deprecate@1.0.2: {}
 
-  uuid@14.0.1: {}
+  uuid@14.0.3: {}
 
   vfile-message@4.0.2:
     dependencies:
