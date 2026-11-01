@@ -197,10 +197,9 @@ func TestValidateQuery(t *testing.T) {
 			description: "EXPLAIN ANALYZE over TRUNCATE must be rejected",
 		},
 		{
-			// EXPLAIN went through a type-only copy of the export gate, so
-			// every EXPLAIN shape laundered an INTO OUTFILE past it while the
-			// bare statement was refused. Under ANALYZE, which executes, that
-			// was a live export through the read-only editor.
+			// Plain EXPLAIN does not execute, but the editor must refuse by way
+			// of EXPLAIN what it refuses when asked directly — and under ANALYZE,
+			// which does execute, the export would be live.
 			statement:   `EXPLAIN SELECT a FROM t INTO OUTFILE "s3://b/x"`,
 			valid:       false,
 			description: "EXPLAIN must not launder an export past the gate",

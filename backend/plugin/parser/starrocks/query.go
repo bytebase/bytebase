@@ -113,11 +113,8 @@ func isReadOnlyAST(node ast.Node) bool {
 
 // isExplainableInner reports whether `node` is a shape that EXPLAIN can
 // legitimately wrap (SELECT family or DML). DDL inside EXPLAIN is rejected:
-// StarRocks only supports EXPLAIN on query and DML statements.
-//
-// An export stays refused under EXPLAIN, because the read gate it goes
-// through is the same one the bare statement goes through: the editor must not
-// accept by way of EXPLAIN what it refuses when asked directly.
+// StarRocks only supports EXPLAIN on query and DML statements. Queries are
+// classified by isReadOnlyQuery, the one export gate.
 func isExplainableInner(node ast.Node) bool {
 	if isReadOnlyQuery(node) {
 		return true
@@ -136,8 +133,8 @@ func isExplainableInner(node ast.Node) bool {
 //
 // This is the single export gate for the SELECT family. Both the top level
 // (isReadOnlyAST) and the EXPLAIN path (isExplainableInner) go through it, so
-// neither can drift from the other: a type-only second copy on the EXPLAIN
-// path let every EXPLAIN shape launder an export past this gate.
+// the editor cannot accept by way of EXPLAIN what it refuses when asked
+// directly.
 func isReadOnlyQuery(node ast.Node) bool {
 	switch n := node.(type) {
 	case *ast.SelectStmt:
