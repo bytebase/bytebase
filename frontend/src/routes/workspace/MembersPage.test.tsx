@@ -19,6 +19,8 @@ const {
   maximumRequestExpirationSeconds,
   accountSelectProps,
   roleList,
+  memberBindingList,
+  conditionByExpression,
 } = vi.hoisted(() => ({
   mockUseProductIntro: vi.fn(),
   mockPushNotification: vi.fn(),
@@ -32,6 +34,10 @@ const {
       permissions: string[];
     }>,
   },
+  memberBindingList: { value: [] as unknown[] },
+  // What convertFromExpr reads from a binding's parsed condition, keyed by
+  // the condition's expression.
+  conditionByExpression: { value: {} as Record<string, unknown> },
 }));
 
 vi.mock("@/components/AccountMultiSelect", () => ({
@@ -218,6 +224,8 @@ vi.mock("@/components/ui/tabs", () => ({
 vi.mock("@/components/ui/tooltip", () => ({
   Tooltip: ({ children }: { children: ReactNode }) =>
     createElement("span", {}, children),
+  BlockTooltip: ({ children }: { children: ReactNode }) =>
+    createElement("span", {}, children),
 }));
 
 vi.mock("@/hooks/useEscapeKey", () => ({
@@ -295,13 +303,14 @@ vi.mock("@/utils/cel-attributes", () => ({
 
 vi.mock("@/utils/issue/cel", () => ({
   buildConditionExpr: (args: Record<string, unknown>) => ({ ...args }),
-  convertFromExpr: () => ({}),
+  convertFromExpr: (expr?: { expression?: string }) =>
+    conditionByExpression.value[expr?.expression ?? ""] ?? {},
   readableCondition: () => ({}),
   stringifyConditionExpression: () => "",
 }));
 
 vi.mock("@/lib/memberBindings", () => ({
-  getMemberBindings: () => [],
+  getMemberBindings: () => memberBindingList.value,
   groupProjectRoleBindings: () => [],
 }));
 
@@ -314,7 +323,7 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 
-const projectIamPolicy = { bindings: [] };
+const projectIamPolicy = { bindings: [] as unknown[] };
 
 vi.mock("@/stores", () => ({
   pushNotification: mockPushNotification,
@@ -380,6 +389,11 @@ vi.mock("./MemberDatabaseResourceName", () => ({
   MemberDatabaseResourceName: () => null,
 }));
 
+vi.mock("@/components/HumanizeTs", () => ({
+  HumanizeTs: ({ tsMs }: { tsMs: number }) =>
+    createElement("time", {}, new Date(tsMs).toISOString()),
+}));
+
 vi.mock("@/modules/access-control/RequestRoleSheet", () => ({
   RequestRoleSheet: () => null,
 }));
@@ -402,6 +416,8 @@ beforeEach(() => {
   maximumRequestExpirationSeconds.value = undefined;
   accountSelectProps.value = undefined;
   roleList.value = [{ name: "roles/sqlEditorUser", permissions: [] }];
+  memberBindingList.value = [];
+  conditionByExpression.value = {};
   projectIamPolicy.bindings = [];
   container = document.createElement("div");
   document.body.appendChild(container);
@@ -794,5 +810,62 @@ describe("MembersPage workspace role grant drawer", () => {
     expect(container.textContent).toContain("common.permissions");
     expect(container.textContent).toContain("bb.instances.get");
     expect(container.textContent).toContain("bb.instances.list");
+  });
+});
+
+describe("MembersPage member drawer", () => {
+  const member = "user:dev1@example.com";
+
+  async function openMemberDrawer(): Promise<void> {
+    memberBindingList.value = [
+      {
+        type: "users",
+        title: "Dev One",
+        binding: member,
+        user: { email: "dev1@example.com", name: "users/dev1@example.com" },
+        workspaceLevelRoles: new Set(),
+        projectRoleBindings: projectIamPolicy.bindings,
+      },
+    ];
+    await renderPage();
+    const editButton = container.querySelector(
+      "button[aria-label='common.edit']"
+    ) as HTMLButtonElement;
+    await act(async () => {
+      editButton.click();
+    });
+    await flush();
+  }
+
+  it("shows each binding's expiration once, in its card header, not as a column", async () => {
+    projectIamPolicy.bindings = [
+      { role: "roles/projectDeveloper", members: [member] },
+      {
+        role: "roles/sqlEditorUser",
+        members: [member],
+        parsedExpr: { expression: "scoped" },
+      },
+    ];
+    conditionByExpression.value = {
+      scoped: {
+        expiredTime: "2099-01-01T00:00:00.000Z",
+        databaseResources: [
+          { databaseFullName: "instances/prod/databases/hr", table: "a" },
+          { databaseFullName: "instances/prod/databases/hr", table: "b" },
+        ],
+      },
+    };
+    await openMemberDrawer();
+
+    const headers = [...container.querySelectorAll("th")].map(
+      (th) => th.textContent
+    );
+    expect(headers).not.toContain("common.expiration");
+    expect(container.textContent).toContain(
+      "common.expirationproject.members.never-expires"
+    );
+    expect(
+      container.textContent?.split("2099-01-01T00:00:00.000Z").length
+    ).toBe(2);
   });
 });

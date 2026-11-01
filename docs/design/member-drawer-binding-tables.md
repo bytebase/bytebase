@@ -50,8 +50,8 @@ every card to state held by the drawer for no task the drawer serves.
 
 **D3 · A cut name shows in full on hover.** Schema and Table cells use `EllipsisText`, which adds
 the tooltip only when the value is cut. The Database cell keeps its engine icon, instance title and
-database name, each name cut on its own so the database name stays partly visible beside a long
-instance title; when either is cut, hovering the cell shows `instance › database` in full. `*`
+database name, each an `EllipsisText` of its own, as `DatabaseTargetDisplay` does, so the database
+name stays partly visible beside a long instance title and hovering either shows it in full. `*`
 (every database, schema or table) never needs a tooltip.
 
 **D4 · Expiration goes to the card header.** The header row reads: role title, the Expired badge
@@ -87,7 +87,7 @@ width, and a card whose minimum widths don't fit scrolls sideways.
 | File | Change |
 |---|---|
 | `frontend/src/routes/workspace/MemberBindingResourceTable.tsx` | New: one card's table (D1–D3). |
-| `frontend/src/routes/workspace/MemberDatabaseResourceName.tsx` | Tooltip when the instance or database name is cut (D3). |
+| `frontend/src/routes/workspace/MemberDatabaseResourceName.tsx` | A tooltip on the instance title or database name when it is cut (D3). |
 | `frontend/src/routes/workspace/MembersPage.tsx` | Uses the new table, moves expiration to the header (D4), sheet `wide` (D5). |
 
 Tests:
@@ -95,8 +95,8 @@ Tests:
 - `MemberBindingResourceTable.test.tsx`: Database, Schema and Table headers and no Expiration; a
   row per resource and `*` for an unscoped binding; dragging a column in one table leaves another
   table's widths unchanged.
-- `MemberDatabaseResourceName.test.tsx`: the full `instance › database` tooltip when a name is cut,
-  none when it fits.
+- `MemberDatabaseResourceName.test.tsx`: the full instance title or database name on hover when it
+  is cut, no tooltip when it fits.
 - `MembersPage.test.tsx`: each card's header shows its expiration once, "Never" or the time.
 - `tests/e2e/project-members/project-members.spec.ts`: with a long schema and table name, every
   card's columns line up and stay inside the card on open, hovering a cut table name shows it in
