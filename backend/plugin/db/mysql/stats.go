@@ -8,11 +8,14 @@ import (
 	"strconv"
 	"strings"
 
+	mariadbast "github.com/bytebase/omni/mariadb/ast"
 	"github.com/bytebase/omni/mysql/ast"
 	"github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common/log"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	mariadbparser "github.com/bytebase/bytebase/backend/plugin/parser/mariadb"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -22,6 +25,9 @@ const erUnknownSystemVariable = 1193
 // CountAffectedRows returns the planner's estimate of the rows the INSERT, UPDATE, or DELETE
 // statement modifies.
 func (d *Driver) CountAffectedRows(ctx context.Context, statement string) (int64, error) {
+	if d.dbType == storepb.Engine_MARIADB {
+		return d.countAffectedRowsMariaDB(ctx, statement)
+	}
 	list, err := mysqlparser.ParseMySQL(statement)
 	if err != nil {
 		return 0, errors.Wrap(err, "failed to parse statement")
@@ -35,6 +41,43 @@ func (d *Driver) CountAffectedRows(ctx context.Context, statement string) (int64
 		return 0, err
 	}
 	return EstimateAffectedRows(ctx, d.db, list.Items[0], query, plan)
+}
+
+// countAffectedRowsMariaDB reads the statement with omni's MariaDB parser.
+// MariaDB keeps this driver because it speaks the MySQL wire protocol, but its
+// grammar is its own: ParseMySQL rejects RETURNING and the other MariaDB-only
+// forms, and the summary would then report no rows for a statement that changes
+// many.
+func (d *Driver) countAffectedRowsMariaDB(ctx context.Context, statement string) (int64, error) {
+	list, err := mariadbparser.ParseMariaDB(statement)
+	if err != nil {
+		return 0, errors.Wrap(err, "failed to parse statement")
+	}
+	if list == nil || len(list.Items) != 1 {
+		return 0, errors.New("expected exactly one statement")
+	}
+	query := mariadbparser.AffectedRowsQuery(list.Items[0], statement)
+	plan, err := ExplainJSON(ctx, d.db, query)
+	if err != nil {
+		return 0, err
+	}
+	return EstimateAffectedRowsMariaDB(ctx, d.db, list.Items[0], query, plan)
+}
+
+// EstimateAffectedRowsMariaDB is EstimateAffectedRows for an omni MariaDB node.
+// Only the plan reader differs: ExplainTabularEstimate reads no AST, so MariaDB
+// shares it along with the driver.
+func EstimateAffectedRowsMariaDB(ctx context.Context, db *sql.DB, stmt mariadbast.Node, query string, plan string) (int64, error) {
+	count, err := mariadbparser.EstimateAffectedRowsFromExplainJSON(stmt, plan)
+	if err == nil {
+		return count, nil
+	}
+	rows, tables, ok := ExplainTabularEstimate(ctx, db, query)
+	if !ok {
+		return 0, err
+	}
+	// A multi-table UPDATE or DELETE can change a row of each target for every row its join produces.
+	return mariadbparser.CapAffectedRowsByLimit(stmt, rows*float64(mariadbparser.DMLTargetCount(stmt, tables))), nil
 }
 
 // EstimateAffectedRows returns the rows stmt modifies according to plan, the ExplainJSON output for
@@ -56,8 +99,8 @@ func EstimateAffectedRows(ctx context.Context, db *sql.DB, stmt ast.Node, query 
 
 // ExplainTabularEstimate returns the rows that the first query block of the tabular EXPLAIN of query
 // produces, and how many tables it joins: the product, over those tables, of the rows each reads
-// scaled by its filtered percentage where the server prints one. It reads no AST, so MariaDB's
-// advisor composes it with its own plan reader rather than EstimateAffectedRows, which takes an
+// scaled by its filtered percentage where the server prints one. It reads no AST, so
+// EstimateAffectedRowsMariaDB shares it: only EstimateAffectedRows's plan reader is specific to an
 // omni MySQL node.
 func ExplainTabularEstimate(ctx context.Context, db *sql.DB, query string) (float64, int, bool) {
 	// MySQL 9 prints a plain EXPLAIN in the TREE format.

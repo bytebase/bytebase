@@ -82,7 +82,7 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 			})
 			continue
 		}
-		rowCount, err := estimateAffectedRows(ctx, driver, node, query, plan)
+		rowCount, err := mysqldriver.EstimateAffectedRowsMariaDB(ctx, driver, node, query, plan)
 		if err != nil {
 			advice = append(advice, &storepb.Advice{
 				Status:        level,

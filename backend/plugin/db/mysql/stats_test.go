@@ -116,6 +116,16 @@ func (r *testExplainResultRows) Next(dest []driver.Value) error {
 // connections, so statements that do not share a pinned connection land on different ones.
 func newTestMySQLDriver(t *testing.T, plan string) *Driver {
 	t.Helper()
+	return newTestDriver(t, storepb.Engine_MYSQL, plan)
+}
+
+func newTestMariaDBDriver(t *testing.T, plan string) *Driver {
+	t.Helper()
+	return newTestDriver(t, storepb.Engine_MARIADB, plan)
+}
+
+func newTestDriver(t *testing.T, engine storepb.Engine, plan string) *Driver {
+	t.Helper()
 	testMySQLExplainJSON = plan
 	testMySQLExplainTable = nil
 	testMySQLSetErr = nil
@@ -124,7 +134,7 @@ func newTestMySQLDriver(t *testing.T, plan string) *Driver {
 	require.NoError(t, err)
 	db.SetMaxIdleConns(0)
 	t.Cleanup(func() { _ = db.Close() })
-	return &Driver{dbType: storepb.Engine_MYSQL, db: db}
+	return &Driver{dbType: engine, db: db}
 }
 
 const (
@@ -317,4 +327,54 @@ func TestCountAffectedRowsReportsUninterpretablePlan(t *testing.T) {
 	d := newTestMySQLDriver(t, `{"query_block":{"select_id":1,"table":{"insert":true,"select_id":1,"table_name":"t2","access_type":"ALL"}}}`)
 	_, err := d.CountAffectedRows(context.Background(), "INSERT INTO t2 SELECT id, ROW_NUMBER() OVER () FROM t;")
 	require.ErrorContains(t, err, `table "t2" in the plan has no row estimate`)
+}
+
+// TestCountAffectedRowsReadsMariaDBSyntax covers the engine the driver is shared
+// with but the parser is not. ParseMySQL rejects RETURNING, so a MariaDB DELETE
+// carrying one never reached an EXPLAIN and the summary reported no affected rows
+// for a statement that deletes many; approval rules read that count.
+func TestCountAffectedRowsReadsMariaDBSyntax(t *testing.T) {
+	const filteredScanPlan = `{"query_block":{"select_id":1,"table":{"table_name":"td","access_type":"ALL","rows_examined_per_scan":1000,"rows_produced_per_join":100,"filtered":"10.00"}}}`
+	for _, tc := range []struct {
+		name      string
+		statement string
+		explained string
+		want      int64
+	}{
+		{
+			name:      "delete with RETURNING",
+			statement: "DELETE FROM td WHERE d = 0 RETURNING c;",
+			explained: "SELECT 1 FROM td WHERE d = 0",
+			want:      100,
+		},
+		{
+			name:      "delete with RETURNING after ORDER BY and LIMIT",
+			statement: "DELETE FROM td WHERE d = 0 ORDER BY id LIMIT 20 RETURNING c;",
+			explained: "SELECT 1 FROM td WHERE d = 0 ORDER BY id LIMIT 20",
+			want:      20,
+		},
+		{
+			name:      "a form both grammars share still estimates",
+			statement: "UPDATE td SET c = 1 WHERE d = 0;",
+			explained: "SELECT 1 FROM td WHERE d = 0",
+			want:      100,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			d := newTestMariaDBDriver(t, filteredScanPlan)
+			got, err := d.CountAffectedRows(context.Background(), tc.statement)
+			require.NoError(t, err)
+			require.Equal(t, tc.want, got)
+			require.Equal(t, "EXPLAIN FORMAT=JSON "+tc.explained, testMySQLStatements[1].query)
+		})
+	}
+}
+
+// TestCountAffectedRowsRejectsMariaDBSyntaxOnMySQL is the other side: the same
+// statement is not MySQL, and the MySQL path must still refuse it rather than
+// quietly estimate something.
+func TestCountAffectedRowsRejectsMariaDBSyntaxOnMySQL(t *testing.T) {
+	d := newTestMySQLDriver(t, `{"query_block":{"select_id":1}}`)
+	_, err := d.CountAffectedRows(context.Background(), "DELETE FROM td WHERE d = 0 RETURNING c;")
+	require.Error(t, err)
 }
