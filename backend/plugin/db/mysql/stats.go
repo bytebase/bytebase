@@ -46,7 +46,7 @@ func EstimateAffectedRows(ctx context.Context, db *sql.DB, stmt ast.Node, query 
 	if err == nil {
 		return count, nil
 	}
-	rows, tables, ok := explainTabularEstimate(ctx, db, query)
+	rows, tables, ok := ExplainTabularEstimate(ctx, db, query)
 	if !ok {
 		return 0, err
 	}
@@ -54,10 +54,12 @@ func EstimateAffectedRows(ctx context.Context, db *sql.DB, stmt ast.Node, query 
 	return mysqlparser.CapAffectedRowsByLimit(stmt, rows*float64(mysqlparser.DMLTargetCount(stmt, tables))), nil
 }
 
-// explainTabularEstimate returns the rows that the first query block of the tabular EXPLAIN of query
+// ExplainTabularEstimate returns the rows that the first query block of the tabular EXPLAIN of query
 // produces, and how many tables it joins: the product, over those tables, of the rows each reads
-// scaled by its filtered percentage where the server prints one.
-func explainTabularEstimate(ctx context.Context, db *sql.DB, query string) (float64, int, bool) {
+// scaled by its filtered percentage where the server prints one. It reads no AST, so MariaDB's
+// advisor composes it with its own plan reader rather than EstimateAffectedRows, which takes an
+// omni MySQL node.
+func ExplainTabularEstimate(ctx context.Context, db *sql.DB, query string) (float64, int, bool) {
 	// MySQL 9 prints a plain EXPLAIN in the TREE format.
 	rows, err := db.QueryContext(ctx, "EXPLAIN FORMAT=TRADITIONAL "+query)
 	if err != nil {

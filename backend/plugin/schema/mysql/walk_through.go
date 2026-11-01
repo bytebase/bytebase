@@ -14,7 +14,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/plugin/parser/mariadb"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -22,7 +21,21 @@ import (
 
 func init() {
 	schema.RegisterWalkThroughWithContext(storepb.Engine_MYSQL, WalkThroughWithContext)
-	schema.RegisterWalkThroughWithContext(storepb.Engine_MARIADB, WalkThroughWithContext)
+	schema.RegisterWalkThroughWithContext(storepb.Engine_MARIADB, walkThroughMariaDB)
+}
+
+// walkThroughMariaDB simulates MariaDB DDL on omni's MySQL catalog, which is the
+// only catalog that can: omni's MariaDB catalog has no metadata loader, so there
+// is nothing to install the synced schema into. The MariaDB parser's nodes are
+// therefore re-read with omni's MySQL parser, and a statement it rejects — one
+// only MariaDB accepts — leaves the script unsimulated, because the MySQL catalog
+// would check the statements after it against a schema missing that one's effect.
+func walkThroughMariaDB(ctx context.Context, wtCtx schema.WalkThroughContext, d *model.DatabaseMetadata, _ []base.AST) *storepb.Advice {
+	parsed, err := base.ParseStatements(storepb.Engine_MYSQL, wtCtx.RawSQL)
+	if err != nil {
+		return nil
+	}
+	return WalkThroughWithContext(ctx, wtCtx, d, base.ExtractASTs(parsed))
 }
 
 // WalkThroughWithContext performs DDL simulation using the omni MySQL catalog.
@@ -36,14 +49,6 @@ func WalkThroughWithContext(ctx context.Context, wtCtx schema.WalkThroughContext
 	if wtCtx.RawSQL == "" {
 		return nil
 	}
-	// omni's MySQL catalog rejects a statement only MariaDB accepts, and
-	// simulating the others without it would check them against the wrong schema.
-	for _, a := range asts {
-		if _, ok := a.(*mariadb.OmniAST); ok {
-			return nil
-		}
-	}
-
 	dbName := d.GetProto().GetName()
 	precheck := firstMySQLWalkThroughAdvice(
 		precheckMySQLOmniWalkThrough(d, asts),

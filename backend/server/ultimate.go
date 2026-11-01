@@ -51,6 +51,7 @@ import (
 
 	// Advisors.
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/bigquery"
+	_ "github.com/bytebase/bytebase/backend/plugin/advisor/mariadb"
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/mssql"
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/mysql"
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/oceanbase"

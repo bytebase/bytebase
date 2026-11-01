@@ -1,0 +1,79 @@
+package mariadb
+
+import (
+	"io"
+	"os"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v3"
+
+	"github.com/bytebase/bytebase/backend/common/yamltest"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+)
+
+type statementTypeTest struct {
+	Statement string
+	Want      []string
+}
+
+// TestGetStatementType runs the same fixture MySQL's copy does, so the two
+// classifiers cannot silently diverge now that each reads its own AST
+// (BYT-10136).
+func TestGetStatementType(t *testing.T) {
+	tests := []statementTypeTest{}
+
+	const (
+		record = false
+	)
+
+	var (
+		filepath = "test-data/test_statement_type.yaml"
+	)
+
+	a := require.New(t)
+	yamlFile, err := os.Open(filepath)
+	a.NoError(err)
+
+	byteValue, err := io.ReadAll(yamlFile)
+	a.NoError(yamlFile.Close())
+	a.NoError(err)
+	a.NoError(yaml.Unmarshal(byteValue, &tests))
+
+	for i, test := range tests {
+		stmts, err := base.ParseStatements(storepb.Engine_MARIADB, test.Statement)
+		a.NoError(err)
+		asts := base.ExtractASTs(stmts)
+
+		sqlType, err := GetStatementTypes(asts)
+		a.NoError(err)
+
+		// Convert enum to string for comparison
+		sqlTypeStrings := make([]string, len(sqlType))
+		for j, t := range sqlType {
+			sqlTypeStrings[j] = t.String()
+		}
+
+		if record {
+			tests[i].Want = sqlTypeStrings
+		} else {
+			a.Equal(test.Want, sqlTypeStrings)
+		}
+	}
+	if record {
+		yamltest.Record(t, filepath, tests)
+	}
+}
+
+// TestGetStatementTypesClassifiesMariaDBOnlyStatements pins that a statement
+// only MariaDB accepts is classified rather than left unspecified, which is
+// what it was while MariaDB read omni's MySQL AST.
+func TestGetStatementTypesClassifiesMariaDBOnlyStatements(t *testing.T) {
+	stmts, err := base.ParseStatements(storepb.Engine_MARIADB, "CREATE TABLE t (a INT);\nCREATE OR REPLACE TABLE u (a INT);\nALTER TABLE t DROP COLUMN IF EXISTS b;")
+	require.NoError(t, err)
+
+	got, err := base.GetStatementTypes(storepb.Engine_MARIADB, base.ExtractASTs(stmts))
+	require.NoError(t, err)
+	require.ElementsMatch(t, []storepb.StatementType{storepb.StatementType_CREATE_TABLE, storepb.StatementType_ALTER_TABLE}, got)
+}

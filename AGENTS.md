@@ -25,6 +25,23 @@ Bytebase is the standard for database development. Every product and engineering
 - Use American English. Avoid collection names ending in `List`.
 - Annotating an RPC `mcp_method_class = READ` or `WRITE` also changes what the MCP Access policy page promises, and nothing enforces that. Before changing one, read [mcp-capability-ladder.md](docs/design/mcp-capability-ladder.md#keeping-the-rows-true).
 
+## Forked engine packages
+
+Some engines have their own copy of a package rather than sharing MySQL's or
+Postgres's: `mariadb` and `oceanbase` are forks of `mysql`, `starrocks` of
+`doris`, `redshift` of `pg`. A fork exists because omni gives each engine an
+independent AST, so one implementation cannot walk two of them.
+
+- A fix to a rule, parser or validator in a parent usually applies to its forks.
+  Check each one, port it in the same PR, and name every engine in the subject
+  (`fix(mysql,mariadb): ...`). This mirrors omni's own rule for parser forks.
+- Inherited facts need re-verifying per engine even where inherited code is
+  correct. StarRocks took Doris's EXPLAIN modifier list and was wrong about it.
+- A fork is partial where omni's tree is. MariaDB has no `schema/mariadb`
+  because omni's `mariadb/catalog` has no `LoadMetadata`, `Diff` or
+  `GenerateMigration`; it walks `schema/mysql` instead. Check the engine's omni
+  tree before assuming a layer can fork.
+
 ## Customer information
 
 The repository and its pull requests are public. Never identify a Bytebase customer or user in code, comments, test fixtures, docs, commit messages, or PR titles, bodies, and screenshots. That covers company names, their employees' names and emails, their domains, and the instance, database, and host names, schemas, SQL, or data copied from their environments. Describe the case generically, such as "a customer with 10k databases", and reference the Linear issue for details. Use placeholders such as `example.com` in fixtures, and redact screenshots.

@@ -80,7 +80,29 @@ func TestUnresolvedSchemaSentinelIsImpossible(t *testing.T) {
 	require.Contains(t, unresolvedSchemaSentinel, "\x00")
 }
 
+// TestWriteTargetsFromChangeSummaryRefusesSkippedStatements covers the refusal
+// on its own. Nothing sets SkippedStatements since MariaDB stopped reading omni's
+// MySQL AST, so the summary is built here rather than extracted.
 func TestWriteTargetsFromChangeSummaryRefusesSkippedStatements(t *testing.T) {
+	t.Parallel()
+	changedResources := model.NewChangedResources(nil /* dbMetadata */)
+	changedResources.AddTable("db", "", &storepb.ChangedResourceTable{Name: "t"}, false)
+
+	require.Equal(t,
+		[]writeTargetResource{{database: "db", table: "t"}},
+		writeTargetsFromChangeSummary(&parserbase.ChangeSummary{ChangedResources: changedResources}),
+	)
+	require.Nil(t, writeTargetsFromChangeSummary(&parserbase.ChangeSummary{
+		ChangedResources:  changedResources,
+		SkippedStatements: 1,
+	}))
+}
+
+// TestWriteTargetsFromChangeSummaryReadsMariaDBOnlyStatements pins the write
+// target a MariaDB-only statement now resolves to. While MariaDB read omni's
+// MySQL AST the statement counted as skipped, and a skipped statement may write
+// any table, so the whole sheet fell back to the database-level check.
+func TestWriteTargetsFromChangeSummaryReadsMariaDBOnlyStatements(t *testing.T) {
 	t.Parallel()
 	extract := func(statement string) *parserbase.ChangeSummary {
 		stmts, err := parserbase.ParseStatements(storepb.Engine_MARIADB, statement)
@@ -94,7 +116,10 @@ func TestWriteTargetsFromChangeSummaryRefusesSkippedStatements(t *testing.T) {
 		[]writeTargetResource{{database: "db", table: "t"}},
 		writeTargetsFromChangeSummary(extract("CREATE TABLE t (a INT);")),
 	)
-	require.Nil(t, writeTargetsFromChangeSummary(extract("CREATE OR REPLACE TABLE other_db.t (a INT);")))
+	require.Equal(t,
+		[]writeTargetResource{{database: "other_db", table: "t"}},
+		writeTargetsFromChangeSummary(extract("CREATE OR REPLACE TABLE other_db.t (a INT);")),
+	)
 }
 
 func TestMSSQLDMLWriteTargetGrantConditions(t *testing.T) {

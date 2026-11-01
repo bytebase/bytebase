@@ -7,6 +7,7 @@ import (
 	mariadbparser "github.com/bytebase/omni/mariadb/parser"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 // OmniAST wraps an omni MariaDB AST node and implements the base.AST interface.
@@ -18,6 +19,12 @@ type OmniAST struct {
 	StartPosition *storepb.Position
 }
 
+// ASTSource returns the statement's own text, which the schema walk-through reads
+// when it needs the statement as written.
+func (a *OmniAST) ASTSource() string {
+	return a.Text
+}
+
 // ASTStartPosition implements base.AST.
 func (a *OmniAST) ASTStartPosition() *storepb.Position {
 	return a.StartPosition
@@ -26,6 +33,19 @@ func (a *OmniAST) ASTStartPosition() *storepb.Position {
 // ParseMariaDB parses SQL using omni's MariaDB parser and returns an ast.List.
 func ParseMariaDB(sql string) (*ast.List, error) {
 	return mariadbparser.Parse(sql)
+}
+
+// GetOmniNode extracts the omni AST node from a base.AST interface.
+// Returns the node and true if it is an OmniAST, nil and false otherwise.
+func GetOmniNode(a base.AST) (ast.Node, bool) {
+	if a == nil {
+		return nil, false
+	}
+	omniAST, ok := a.(*OmniAST)
+	if !ok {
+		return nil, false
+	}
+	return omniAST.Node, true
 }
 
 // ByteOffsetToRunePosition converts a byte offset in sql to a 1-based line:column

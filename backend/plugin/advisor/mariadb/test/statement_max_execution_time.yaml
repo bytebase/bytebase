@@ -1,0 +1,28 @@
+# MariaDB spells MySQL's max_execution_time max_statement_time, so this fixture
+# diverges from advisor/mysql's copy of it.
+- statement: SET MAX_STATEMENT_TIME = 1000; SELECT * FROM employee;
+- statement: SET GLOBAL max_statement_time = 10; SELECT * FROM employee;
+- statement: SELECT * FROM employee; SET max_statement_time = 1000;
+  want:
+    - status: 2
+      code: 235
+      title: STATEMENT_MAX_EXECUTION_TIME
+      content: The max_statement_time is not set
+      startposition: null
+      endposition: null
+- statement: SELECT * FROM t;
+  want:
+    - status: 2
+      code: 235
+      title: STATEMENT_MAX_EXECUTION_TIME
+      content: The max_statement_time is not set
+      startposition: null
+      endposition: null
+- statement: SET MAX_EXECUTION_TIME = 1000; SELECT * FROM employee;
+  want:
+    - status: 2
+      code: 235
+      title: STATEMENT_MAX_EXECUTION_TIME
+      content: The max_statement_time is not set
+      startposition: null
+      endposition: null

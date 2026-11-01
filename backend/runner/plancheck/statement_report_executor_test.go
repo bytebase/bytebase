@@ -420,37 +420,55 @@ func TestSummaryStatementTypesRejectsEngineWithoutClassifier(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestBuildSQLSummaryReportOmitsReportWithSkippedStatements(t *testing.T) {
+// TestBuildSQLSummaryReportReportsMariaDBOnlyStatements is the plan check this
+// change exists for. While MariaDB read omni's MySQL AST, a statement that
+// parser rejected counted as skipped, and one skipped statement withholds the
+// whole report — so MariaDB got no changed resources and no affected-rows
+// estimate for every sheet containing MariaDB-only syntax.
+func TestBuildSQLSummaryReportReportsMariaDBOnlyStatements(t *testing.T) {
 	for _, tc := range []struct {
-		name       string
-		statement  string
-		wantReport bool
+		name      string
+		statement string
+		wantRows  int64
 	}{
-		{name: "mysql_parsable_sheet", statement: "UPDATE t SET a = 1 WHERE id = 1;", wantReport: true},
-		{name: "mariadb_only_dml", statement: "UPDATE t SET a = 1 WHERE id = 1;\nDELETE FROM t WHERE id = 2 RETURNING id;"},
+		{name: "mysql_parsable_sheet", statement: "UPDATE t SET a = 1 WHERE id = 1;", wantRows: 7},
+		{name: "mariadb_only_dml", statement: "UPDATE t SET a = 1 WHERE id = 1;\nDELETE FROM t WHERE id = 2 RETURNING id;", wantRows: 14},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			stmts, err := parserbase.ParseStatements(storepb.Engine_MARIADB, tc.statement)
 			require.NoError(t, err)
 			changeSummary, err := parserbase.ExtractChangedResources(storepb.Engine_MARIADB, "db", "", nil /* dbMetadata */, parserbase.ExtractASTs(stmts), tc.statement)
 			require.NoError(t, err)
-			explains := 0
-			explain := func(context.Context, string) (int64, error) {
-				explains++
-				return 7, nil
-			}
+			explain := func(context.Context, string) (int64, error) { return 7, nil }
 
 			report, warning := buildSQLSummaryReport(context.Background(), storepb.Engine_MARIADB, nil /* sqlTypes */, changeSummary, explain)
 
-			if tc.wantReport {
-				require.NotNil(t, report)
-				require.Equal(t, int64(7), report.AffectedRows)
-				require.Empty(t, warning)
-				return
-			}
-			require.Nil(t, report)
-			require.Equal(t, "Affected rows and changed resources are not reported because 1 of the statements could not be read.", warning)
-			require.Zero(t, explains)
+			require.NotNil(t, report)
+			require.Equal(t, tc.wantRows, report.AffectedRows)
+			require.NotNil(t, report.ChangedResources)
+			require.Empty(t, warning)
 		})
 	}
+}
+
+// TestBuildSQLSummaryReportOmitsReportWithSkippedStatements covers the refusal on
+// its own. Nothing sets SkippedStatements since MariaDB stopped reading omni's
+// MySQL AST, so the summary is built here rather than extracted.
+func TestBuildSQLSummaryReportOmitsReportWithSkippedStatements(t *testing.T) {
+	explains := 0
+	explain := func(context.Context, string) (int64, error) {
+		explains++
+		return 7, nil
+	}
+
+	report, warning := buildSQLSummaryReport(context.Background(), storepb.Engine_MARIADB, nil /* sqlTypes */, &parserbase.ChangeSummary{
+		ChangedResources:  model.NewChangedResources(nil /* dbMetadata */),
+		DMLStatements:     []string{"UPDATE t SET a = 1 WHERE id = 1;"},
+		DMLCount:          1,
+		SkippedStatements: 1,
+	}, explain)
+
+	require.Nil(t, report)
+	require.Equal(t, "Affected rows and changed resources are not reported because 1 of the statements could not be read.", warning)
+	require.Zero(t, explains)
 }

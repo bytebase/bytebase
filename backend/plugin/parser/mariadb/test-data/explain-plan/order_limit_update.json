@@ -1,0 +1,1 @@
+{"query_block":{"select_id":1,"ordering_operation":{"using_filesort":true,"table":{"update":true,"table_name":"target_table","access_type":"range","possible_keys":["idx_join_key"],"key":"idx_join_key","used_key_parts":["join_key"],"key_length":"4","ref":["const"],"rows_examined_per_scan":200,"filtered":"100.00","attached_condition":"(`test`.`target_table`.`join_key` < 50)"}}}}
