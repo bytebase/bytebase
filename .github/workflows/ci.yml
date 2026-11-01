@@ -122,7 +122,7 @@ jobs:
           # The runner's pnpm store persists between runs, so the Actions
           # cache adds nothing and downloading it is slow.
           cache: ''
-      - uses: pnpm/setup@v2
+      - uses: pnpm/setup@v3
         with:
           version: '12.16.1'
       - name: Install dependencies
