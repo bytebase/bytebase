@@ -153,6 +153,17 @@ func TestAffectedRowsQuery(t *testing.T) {
 			statement: "DELETE FROM t RETURNING c;",
 			want:      "SELECT 1 FROM t",
 		},
+		{
+			// Located by token, so the word inside a comment is not the keyword.
+			name:      "delete with a comment inside RETURNING",
+			statement: "DELETE FROM t WHERE c < 10 RETURNING /* RETURNING */ c;",
+			want:      "SELECT 1 FROM t WHERE c < 10",
+		},
+		{
+			name:      "delete with a quoted RETURNING in the filter",
+			statement: "DELETE FROM t WHERE v = 'RETURNING' RETURNING c;",
+			want:      "SELECT 1 FROM t WHERE v = 'RETURNING'",
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			require.Equal(t, tc.want, AffectedRowsQuery(parseSingleStatement(t, tc.statement), tc.statement))

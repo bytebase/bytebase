@@ -244,6 +244,11 @@ func TestTransformDMLToSelectStripsReturning(t *testing.T) {
 		"DELETE FROM test WHERE b1 = 1 RETURNING b1, c1;",
 		"DELETE FROM test WHERE b1 = 1 RETURNING *;",
 		"DELETE FROM test WHERE b1 = 1 ORDER BY b1 LIMIT 1 RETURNING b1;",
+		// The keyword is found by token, not by text: a comment or a quoted
+		// string can carry the word and must not be mistaken for the clause.
+		"DELETE FROM test WHERE b1 = 1 RETURNING /* RETURNING */ b1;",
+		"DELETE FROM test WHERE b1 = 1 RETURNING\n-- RETURNING\n b1;",
+		"DELETE FROM test WHERE b1 = 1 RETURNING # RETURNING\n b1;",
 	} {
 		getter, lister := buildFixedMockDatabaseMetadataGetterAndLister()
 		result, err := TransformDMLToSelect(context.Background(), base.TransformContext{
@@ -273,4 +278,20 @@ func TestTransformDMLToSelectKeepsTheRestOfTheSuffix(t *testing.T) {
 	require.Len(t, result, 1)
 	require.Contains(t, result[0].Statement, "ORDER BY b1")
 	require.Contains(t, result[0].Statement, "LIMIT 1")
+}
+
+// TestTransformDMLToSelectKeepsAQuotedReturning holds the other half of locating
+// the clause by token: the word inside a string literal belongs to the WHERE and
+// must stay, or the backup would copy the wrong rows.
+func TestTransformDMLToSelectKeepsAQuotedReturning(t *testing.T) {
+	getter, lister := buildFixedMockDatabaseMetadataGetterAndLister()
+	result, err := TransformDMLToSelect(context.Background(), base.TransformContext{
+		GetDatabaseMetadataFunc: getter,
+		ListDatabaseNamesFunc:   lister,
+		IsCaseSensitive:         false,
+	}, "DELETE FROM test WHERE v1 = 'RETURNING' RETURNING b1;", "db", "backupDB", "_rollback")
+	require.NoError(t, err)
+	require.Len(t, result, 1)
+	require.Contains(t, result[0].Statement, "WHERE v1 = 'RETURNING'")
+	require.NotContains(t, strings.ToUpper(result[0].Statement), "RETURNING B1")
 }

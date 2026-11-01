@@ -112,10 +112,24 @@ func endBeforeReturning(returning []ast.Node, sql string, end int) (int, error) 
 	if first <= 0 || first > end {
 		return 0, errors.New("cannot locate RETURNING")
 	}
-	// Only the keyword and whitespace sit between the clause start and its first item.
-	kw := strings.LastIndex(strings.ToUpper(sql[:first]), "RETURNING")
-	if kw < 0 {
-		return 0, errors.New("cannot locate RETURNING")
+	// The keyword is the token before the clause's first item. Searching the text
+	// for it instead matches the word inside a comment or a string literal, both
+	// of which can sit in or beside the clause — `RETURNING /* RETURNING */ b1`
+	// cut at the comment and left the statement invalid. The lexer skips comments
+	// and gives a quoted RETURNING a different token, so neither can be mistaken
+	// for the keyword here.
+	tokens := mariadbparser.Tokenize(sql)
+	for i, tok := range tokens {
+		if tok.Loc != first {
+			continue
+		}
+		if i == 0 {
+			break
+		}
+		if prev := tokens[i-1]; strings.EqualFold(prev.Str, "RETURNING") {
+			return prev.Loc, nil
+		}
+		break
 	}
-	return kw, nil
+	return 0, errors.New("cannot locate the RETURNING keyword")
 }
