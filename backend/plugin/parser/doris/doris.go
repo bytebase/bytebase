@@ -19,6 +19,7 @@ func init() {
 // omniAST wraps an omni AST node to implement the base.AST interface.
 type omniAST struct {
 	node     ast.Node
+	text     string
 	startPos *storepb.Position
 }
 
@@ -67,6 +68,7 @@ func parseDorisStatements(statement string) ([]base.ParsedStatement, error) {
 		}
 		ps.AST = &omniAST{
 			node:     node,
+			text:     stmt.Text,
 			startPos: stmt.Start,
 		}
 		result = append(result, ps)
@@ -103,6 +105,7 @@ func parseDorisSQL(statement string) ([]*omniAST, error) {
 		}
 		result = append(result, &omniAST{
 			node:     node,
+			text:     stmt.Text,
 			startPos: stmt.Start,
 		})
 	}

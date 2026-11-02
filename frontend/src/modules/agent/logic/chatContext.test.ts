@@ -9,6 +9,11 @@ import {
   PROJECT_V1_ROUTE_DETAIL,
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
   PROJECT_V1_ROUTE_ISSUES,
+  PROJECT_V1_ROUTE_PLAN_DETAIL,
+  PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
+  PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
+  PROJECT_V1_ROUTE_PLAN_ROLLOUT,
+  PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE,
   PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
   PROJECT_V1_ROUTE_PLANS,
   PROJECT_V1_ROUTE_SETTINGS,
@@ -64,7 +69,6 @@ describe("resolveAgentPageResource", () => {
     PROJECT_V1_ROUTE_DATABASES,
     PROJECT_V1_ROUTE_ISSUES,
     PROJECT_V1_ROUTE_PLANS,
-    PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
     PROJECT_V1_ROUTE_SETTINGS,
   ])("uses the project start on %s", (name) => {
     expect(
@@ -101,6 +105,43 @@ describe("resolveAgentPageResource", () => {
       project: "projects/orders",
     });
   });
+
+  test.each([
+    PROJECT_V1_ROUTE_PLAN_DETAIL,
+    PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
+    PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
+    PROJECT_V1_ROUTE_PLAN_ROLLOUT,
+    PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE,
+    PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
+  ])("uses the Plan on %s", (name) => {
+    expect(
+      resolveAgentPageResource(
+        detailRoute(name, { projectId: "orders", planId: "42" })
+      )
+    ).toEqual({
+      kind: "plan",
+      name: "projects/orders/plans/42",
+      project: "projects/orders",
+    });
+  });
+
+  test.each(["create", "CREATE", "-"])(
+    "does not reference a Plan for the %s route parameter",
+    (planId) => {
+      expect(
+        resolveAgentPageResource(
+          detailRoute(PROJECT_V1_ROUTE_PLAN_DETAIL, {
+            projectId: "orders",
+            planId,
+          })
+        )
+      ).toEqual({
+        kind: "project",
+        name: "projects/orders",
+        project: "projects/orders",
+      });
+    }
+  );
 
   test("uses the canonical database parent when present", () => {
     expect(

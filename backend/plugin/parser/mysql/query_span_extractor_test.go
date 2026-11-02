@@ -94,8 +94,8 @@ func TestOmniQuerySpanScaffold_QueryTypesAndAccessTables(t *testing.T) {
 			require.Equal(t, sourceColumnSetFromResources(tc.wantResources), span.SourceColumns)
 			if tc.wantType != base.Select {
 				require.Empty(t, span.Results)
+				require.Empty(t, span.PredicateColumns)
 			}
-			require.Empty(t, span.PredicateColumns)
 		})
 	}
 }
@@ -818,12 +818,17 @@ func TestOmniQuerySpanScenarioBatch2_FromJoinAndScopeCoverage(t *testing.T) {
 			"SELECT * FROM t1 NATURAL LEFT JOIN t2",
 			"SELECT * FROM t1 NATURAL RIGHT JOIN t2",
 		}
+		// A NATURAL join merges each shared column, which holds both sides' value.
 		want := []base.QuerySpanResult{
+			{Name: "a", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t1", Column: "a"}, {Database: "db", Table: "t2", Column: "a"}}), IsPlainField: true},
+			{Name: "b", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t1", Column: "b"}, {Database: "db", Table: "t2", Column: "b"}}), IsPlainField: true},
+			{Name: "c", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t1", Column: "c"}, {Database: "db", Table: "t2", Column: "c"}}), IsPlainField: true},
+		}
+		wantNonNatural := []base.QuerySpanResult{
 			{Name: "a", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t1", Column: "a"}}), IsPlainField: true},
 			{Name: "b", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t1", Column: "b"}}), IsPlainField: true},
 			{Name: "c", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t1", Column: "c"}}), IsPlainField: true},
 		}
-		wantNonNatural := append([]base.QuerySpanResult{}, want...)
 		wantNonNatural = append(wantNonNatural,
 			base.QuerySpanResult{Name: "a", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t2", Column: "a"}}), IsPlainField: true},
 			base.QuerySpanResult{Name: "b", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t2", Column: "b"}}), IsPlainField: true},
@@ -1041,17 +1046,17 @@ func TestOmniQuerySpanScenarioBatch2_SubqueryCTEAndSetCoverage(t *testing.T) {
 				},
 			},
 			{
-				name:      "unqualified_inner_column_uses_legacy_resolution_order",
+				name:      "unqualified_inner_column_resolves_in_the_subquery_first",
 				statement: "SELECT (SELECT a FROM t2) AS inner_a FROM t1",
 				want: []base.QuerySpanResult{
-					{Name: "inner_a", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t1", Column: "a"}}), IsPlainField: true},
+					{Name: "inner_a", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t2", Column: "a"}}), IsPlainField: true},
 				},
 			},
 			{
-				name:      "inner_alias_shadow_keeps_legacy_outer_first_lookup",
+				name:      "inner_alias_shadows_the_outer_alias",
 				statement: "SELECT (SELECT x.a FROM t2 AS x) AS inner_a FROM t1 AS x",
 				want: []base.QuerySpanResult{
-					{Name: "inner_a", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t1", Column: "a"}}), IsPlainField: true},
+					{Name: "inner_a", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t2", Column: "a"}}), IsPlainField: true},
 				},
 			},
 			{
@@ -1388,46 +1393,7 @@ func TestOmniQuerySpanScenarioBatch4_CaseSensitivityCoverage(t *testing.T) {
 	})
 }
 
-func TestOmniQuerySpanScenarioBatch5_StarRocksAndMetadataCoverage(t *testing.T) {
-	t.Run("starrocks_cluster_qualified_tables", func(t *testing.T) {
-		gCtx := newOmniStarRocksTestQuerySpanContext()
-		span, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(
-			context.Background(),
-			"SELECT `cluster_name:db`.products.product_info FROM `cluster_name:db`.products",
-		)
-		require.NoError(t, err)
-		require.Equal(t, base.Select, span.Type)
-		require.Equal(t, []base.QuerySpanResult{
-			{Name: "product_info", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "products", Column: "product_info"}}), IsPlainField: true},
-		}, span.Results)
-		require.Equal(t, sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "products"}}), span.SourceColumns)
-	})
-
-	t.Run("starrocks_system_user_mixing_uses_normalized_database", func(t *testing.T) {
-		gCtx := newOmniStarRocksTestQuerySpanContext()
-		_, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(
-			context.Background(),
-			"SELECT * FROM products, `cluster_name:information_schema`.tables",
-		)
-		require.ErrorIs(t, err, base.MixUserSystemTablesError)
-	})
-
-	t.Run("mysql_and_starrocks_lineage_match_without_cluster_prefix", func(t *testing.T) {
-		mysqlSpan, err := newOmniQuerySpanExtractor("db", newOmniTestQuerySpanContext(), false).getOmniQuerySpan(
-			context.Background(),
-			"SELECT product_info FROM products",
-		)
-		require.NoError(t, err)
-
-		starrocksSpan, err := newOmniQuerySpanExtractor("db", newOmniStarRocksTestQuerySpanContext(), false).getOmniQuerySpan(
-			context.Background(),
-			"SELECT product_info FROM products",
-		)
-		require.NoError(t, err)
-		require.Equal(t, mysqlSpan.Results, starrocksSpan.Results)
-		require.Equal(t, mysqlSpan.SourceColumns, starrocksSpan.SourceColumns)
-	})
-
+func TestOmniQuerySpanScenarioBatch5_MetadataCoverage(t *testing.T) {
 	t.Run("duplicate_database_case_uses_ignore_case_setting", func(t *testing.T) {
 		gCtx := newOmniCaseCollisionTestQuerySpanContext()
 
@@ -1563,12 +1529,6 @@ func newOmniTestQuerySpanContext() base.GetQuerySpanContext {
 		ListDatabaseNamesFunc:   databaseNameLister,
 		Engine:                  storepb.Engine_MYSQL,
 	}
-}
-
-func newOmniStarRocksTestQuerySpanContext() base.GetQuerySpanContext {
-	gCtx := newOmniTestQuerySpanContext()
-	gCtx.Engine = storepb.Engine_STARROCKS
-	return gCtx
 }
 
 func newOmniCaseCollisionTestQuerySpanContext() base.GetQuerySpanContext {

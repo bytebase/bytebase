@@ -75,6 +75,77 @@ describe("lazyExecuteDomAction", () => {
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 
+  test("does not dispatch a DOM action after its chat loses the foreground", async () => {
+    vi.stubGlobal(
+      "MouseEvent",
+      class extends Event {
+        constructor(type: string, init?: EventInit) {
+          super(type, init);
+        }
+      }
+    );
+    document.body.innerHTML = `<button>Save</button>`;
+    await lazyExtractDomTree();
+    const onClick = vi.fn();
+    document.querySelector("button")?.addEventListener("click", onClick);
+    let selected = true;
+
+    const action = lazyExecuteDomAction(
+      { type: "click", ref: "e1" },
+      undefined,
+      () => selected
+    );
+    selected = false;
+
+    await expect(action).resolves.toMatchObject({
+      success: false,
+      message: expect.stringContaining("not selected"),
+    });
+    expect(onClick).not.toHaveBeenCalled();
+  });
+
+  test("does not navigate through a DOM link after its chat loses the foreground", async () => {
+    document.body.innerHTML = `<a href="/projects/demo">Project</a>`;
+    await lazyExtractDomTree();
+    const router = {
+      push: vi.fn().mockResolvedValue(undefined),
+    } as unknown as AppRouterInstance;
+    let selected = true;
+
+    const action = lazyExecuteDomAction(
+      { type: "click", ref: "e1" },
+      router,
+      () => selected
+    );
+    selected = false;
+
+    await expect(action).resolves.toMatchObject({
+      success: false,
+      message: expect.stringContaining("not selected"),
+    });
+    expect(router.push).not.toHaveBeenCalled();
+  });
+
+  test("does not update an input after losing the foreground during editor lookup", async () => {
+    document.body.innerHTML = `<input value="original" />`;
+    await lazyExtractDomTree();
+    let guardCalls = 0;
+
+    const result = await lazyExecuteDomAction(
+      { type: "input", ref: "e1", value: "changed" },
+      undefined,
+      () => ++guardCalls === 1
+    );
+
+    expect(result).toMatchObject({
+      success: false,
+      message: expect.stringContaining("not selected"),
+    });
+    expect((document.querySelector("input") as HTMLInputElement).value).toBe(
+      "original"
+    );
+  });
+
   test("returns only the top-level ref for inherited pointer-cursor wrappers", async () => {
     document.body.innerHTML = `
       <div style="cursor: pointer">

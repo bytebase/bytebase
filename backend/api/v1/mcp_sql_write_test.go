@@ -6,9 +6,11 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -37,23 +39,61 @@ func TestMCPStatementIsRead(t *testing.T) {
 	}
 }
 
-func TestQueryDatabaseRequest(t *testing.T) {
+func TestMCPWriteConfirmed(t *testing.T) {
 	const database = "instances/prod/databases/hr"
-	mark := func(procedure, resource string) context.Context {
-		return auth.WithMCPConfirmedDecision(context.Background(), auth.MCPConfirmedDecision{Procedure: procedure, Resource: resource})
+	request := &v1pb.QueryRequest{Name: database, Statement: "DELETE FROM employee", Schema: new("app")}
+	digest := auth.MCPStatementDigest("DELETE FROM employee", database, "app", "")
+	mark := func(procedure, resource string, digest []byte) context.Context {
+		return auth.WithMCPConfirmedDecision(context.Background(), auth.MCPConfirmedDecision{Procedure: procedure, Resource: resource, Digest: digest})
 	}
 	for _, row := range []struct {
-		name   string
-		ctx    context.Context
-		marked bool
+		name      string
+		ctx       context.Context
+		confirmed bool
 	}{
 		{name: "no mark", ctx: context.Background()},
-		{name: "query_database's mark", ctx: mark(v1connect.SQLServiceQueryProcedure, database), marked: true},
-		{name: "a mark for another database", ctx: mark(v1connect.SQLServiceQueryProcedure, "instances/prod/databases/payroll")},
-		{name: "a mark for another procedure", ctx: mark(v1connect.IssueServiceApproveIssueProcedure, database)},
+		{name: "the confirmed request", ctx: mark(v1connect.SQLServiceQueryProcedure, database, digest), confirmed: true},
+		{name: "a mark with no digest", ctx: mark(v1connect.SQLServiceQueryProcedure, database, nil)},
+		{name: "another statement", ctx: mark(v1connect.SQLServiceQueryProcedure, database, auth.MCPStatementDigest("DELETE FROM salary", database, "app", ""))},
+		{name: "another schema", ctx: mark(v1connect.SQLServiceQueryProcedure, database, auth.MCPStatementDigest("DELETE FROM employee", database, "", ""))},
+		{name: "another container", ctx: mark(v1connect.SQLServiceQueryProcedure, database, auth.MCPStatementDigest("DELETE FROM employee", database, "app", "orders"))},
+		{name: "another database", ctx: mark(v1connect.SQLServiceQueryProcedure, "instances/prod/databases/payroll",
+			auth.MCPStatementDigest("DELETE FROM employee", "instances/prod/databases/payroll", "app", ""))},
+		{name: "another procedure", ctx: mark(v1connect.IssueServiceApproveIssueProcedure, database, digest)},
 	} {
 		t.Run(row.name, func(t *testing.T) {
-			require.Equal(t, row.marked, queryDatabaseRequest(row.ctx, database))
+			require.Equal(t, row.confirmed, mcpWriteConfirmed(row.ctx, request))
+		})
+	}
+	t.Run("a request for a container the mark does not name", func(t *testing.T) {
+		inContainer := &v1pb.QueryRequest{Name: database, Statement: "DELETE FROM employee", Schema: new("app"), Container: new("orders")}
+		require.False(t, mcpWriteConfirmed(mark(v1connect.SQLServiceQueryProcedure, database, digest), inContainer))
+	})
+}
+
+func TestMCPConfirmationRequired(t *testing.T) {
+	for _, row := range []struct {
+		name     string
+		database *store.DatabaseMessage
+		metadata map[string]string
+	}{
+		{name: "an environment", database: &store.DatabaseMessage{EffectiveEnvironmentID: new("prod")}, metadata: map[string]string{"environment": "prod", "schema": "app"}},
+		{name: "no environment", database: &store.DatabaseMessage{}, metadata: map[string]string{"environment": "", "schema": "app"}},
+	} {
+		t.Run(row.name, func(t *testing.T) {
+			err := mcpConfirmationRequired(row.database, "app")
+			require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
+			require.Contains(t, err.Error(), "query_database")
+			var connectErr *connect.Error
+			require.ErrorAs(t, err, &connectErr)
+			require.Len(t, connectErr.Details(), 1)
+			value, valueErr := connectErr.Details()[0].Value()
+			require.NoError(t, valueErr)
+			info, ok := value.(*errdetails.ErrorInfo)
+			require.True(t, ok)
+			require.Equal(t, auth.MCPConfirmationReason, info.GetReason())
+			require.Equal(t, auth.MCPConfirmationDomain, info.GetDomain())
+			require.Equal(t, row.metadata, info.GetMetadata())
 		})
 	}
 }

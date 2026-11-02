@@ -3,11 +3,9 @@ package tests
 
 import (
 	"context"
-	"crypto/tls"
 	"database/sql"
 	_ "embed"
 	"fmt"
-	"net"
 	"net/http"
 	"sync"
 	"testing"
@@ -17,7 +15,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/multierr"
-	"golang.org/x/net/http2"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
@@ -340,14 +337,13 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 		}
 	}()
 
-	// initialize controller clients.
+	// initialize controller clients. The server serves HTTP/2 without TLS, so
+	// the transport carries UnencryptedHTTP2 and not HTTP1: with both set it
+	// picks HTTP/1.1 for an http:// URL, which the streaming RPCs cannot use.
+	protocols := new(http.Protocols)
+	protocols.SetUnencryptedHTTP2(true)
 	ctl.client = &http.Client{
-		Transport: &http2.Transport{
-			AllowHTTP: true,
-			DialTLSContext: func(_ context.Context, network, addr string, _ *tls.Config) (net.Conn, error) {
-				return net.Dial(network, addr)
-			},
-		},
+		Transport: &http.Transport{Protocols: protocols},
 	}
 
 	ctl.newClients()

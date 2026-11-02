@@ -204,7 +204,7 @@ export function ProjectWebhookForm({
         const idx = types.indexOf(type);
         if (idx >= 0) types.splice(idx, 1);
       }
-      types.sort();
+      types.sort((a, b) => a - b);
       return clone(WebhookSchema, { ...prev, notificationTypes: types });
     });
   }, []);

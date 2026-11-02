@@ -12,13 +12,13 @@ import type { LandingStarterId } from "../logic/landingStarters";
 
 interface LandingStarterSelectorProps {
   starterIds: LandingStarterId[];
-  disabled: boolean;
+  disabled?: boolean;
   onSelect: (starterId: LandingStarterId) => void;
 }
 
 export function LandingStarterSelector({
   starterIds,
-  disabled,
+  disabled = false,
   onSelect,
 }: LandingStarterSelectorProps) {
   const { t } = useTranslation();

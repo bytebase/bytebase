@@ -61,7 +61,7 @@ export function LabelEditorSheet({
 
   const allKeys = Array.from(
     new Set(labelsList.flatMap((labels) => Object.keys(labels)))
-  ).sort();
+  ).sort((a, b) => a.localeCompare(b));
 
   const getDisplayValue = (key: string): { value: string; mixed: boolean } => {
     const values = new Set(

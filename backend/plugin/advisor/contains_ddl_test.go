@@ -11,6 +11,7 @@ import (
 
 	// Register parsers and statement type getters via init().
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/oceanbase"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/tidb"

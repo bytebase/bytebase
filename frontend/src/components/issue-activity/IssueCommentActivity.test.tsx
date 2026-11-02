@@ -16,6 +16,7 @@ import {
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
   Plan_ChangeDatabaseConfigSchema,
+  Plan_CreateDatabaseConfigSchema,
   Plan_SpecSchema,
   PlanSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
@@ -130,6 +131,18 @@ const changeSpec = ({
     },
   });
 
+// The issue-update comment the server writes when a rollout is created.
+const rolloutCreatedComment = create(IssueCommentSchema, {
+  creator: "users/alice@example.com",
+  event: {
+    case: "issueUpdate",
+    value: {
+      fromStatus: IssueStatus.OPEN,
+      toStatus: IssueStatus.DONE,
+    },
+  },
+});
+
 describe("canEditIssueComment", () => {
   const project = { name: "projects/p1" } as Parameters<typeof canEditIssueComment>[1];
   const own = create(IssueCommentSchema, {
@@ -226,6 +239,59 @@ describe("IssueCommentRow", () => {
     expect(
       screen.getByText("activity.sentence.review-skipped-rollout-created")
     ).toBeInTheDocument();
+  });
+
+  test("links the rollout of a change plan from Issue Detail", () => {
+    const { container } = render(
+      <IssueCommentRow
+        comment={rolloutCreatedComment}
+        isLast
+        issue={create(IssueSchema, { type: Issue_Type.DATABASE_CHANGE })}
+        plan={create(PlanSchema, {
+          name: "projects/p1/plans/677",
+          hasRollout: true,
+          specs: [changeSpec({ sheet: "s1", target: "db1" })],
+        })}
+      />
+    );
+
+    expect(
+      screen.getByText(
+        "activity.sentence.review-skipped-rollout-created-for-plan"
+      )
+    ).toBeInTheDocument();
+    expect(container.querySelector("a")?.textContent).toBe("#677");
+  });
+
+  test("a create-database rollout lives on Issue Detail, so no plan link", () => {
+    const { container } = render(
+      <IssueCommentRow
+        comment={rolloutCreatedComment}
+        isLast
+        issue={create(IssueSchema, { type: Issue_Type.DATABASE_CHANGE })}
+        plan={create(PlanSchema, {
+          name: "projects/p1/plans/677",
+          hasRollout: true,
+          specs: [
+            create(Plan_SpecSchema, {
+              id: "spec-1",
+              config: {
+                case: "createDatabaseConfig",
+                value: create(Plan_CreateDatabaseConfigSchema, {
+                  target: "instances/i1",
+                  database: "db1",
+                }),
+              },
+            }),
+          ],
+        })}
+      />
+    );
+
+    expect(
+      screen.getByText("activity.sentence.review-skipped-rollout-created")
+    ).toBeInTheDocument();
+    expect(container.querySelector("a")).toBeNull();
   });
 
   test("names the service account that approved and marks its account type", () => {

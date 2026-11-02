@@ -103,5 +103,5 @@ func TestGetQuerySpan_Error(t *testing.T) {
 	// New behavior: returns error
 	require.Error(t, err)
 	require.Nil(t, span)
-	require.Contains(t, err.Error(), "Syntax error")
+	require.Contains(t, err.Error(), "syntax error at line 0, column 3")
 }

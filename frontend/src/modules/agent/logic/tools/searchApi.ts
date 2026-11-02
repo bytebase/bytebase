@@ -51,7 +51,7 @@ class OpenAPIIndex {
       serviceSet.add(ep.service);
     }
 
-    this.services = Array.from(serviceSet).sort();
+    this.services = Array.from(serviceSet).sort((a, b) => a.localeCompare(b));
   }
 
   // Resolve operationId, supporting short format "SQLService/Query".

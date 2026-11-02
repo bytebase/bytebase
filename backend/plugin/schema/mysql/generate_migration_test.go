@@ -110,24 +110,6 @@ func databaseOf(tables ...*metadatapb.TableMetadata) *model.DatabaseMetadata {
 	}, nil, &storepb.DatabaseConfig{}, storepb.Engine_MYSQL, true)
 }
 
-func TestDiffMigrationEventWithoutDefinition(t *testing.T) {
-	oceanBaseDatabaseOf := func(events ...*metadatapb.EventMetadata) *model.DatabaseMetadata {
-		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
-			Name:    "db",
-			Schemas: []*metadatapb.SchemaMetadata{{Name: "", Events: events}},
-		}, nil, &storepb.DatabaseConfig{}, storepb.Engine_OCEANBASE, true)
-	}
-	withEvent := oceanBaseDatabaseOf(&metadatapb.EventMetadata{Name: "e"})
-
-	migration, err := schema.DiffMigration(storepb.Engine_OCEANBASE, oceanBaseDatabaseOf(), withEvent)
-	require.NoError(t, err)
-	require.Empty(t, migration)
-
-	migration, err = schema.DiffMigration(storepb.Engine_OCEANBASE, withEvent, oceanBaseDatabaseOf())
-	require.NoError(t, err)
-	require.Equal(t, "DROP EVENT IF EXISTS `e`;\n\n", migration)
-}
-
 func TestDiffMigrationPartitionedTableEmittedOnce(t *testing.T) {
 	for _, partitionCount := range []int{0, 1, 3, 180} {
 		t.Run(fmt.Sprintf("partitions=%d", partitionCount), func(t *testing.T) {

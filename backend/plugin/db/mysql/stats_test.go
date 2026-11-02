@@ -15,8 +15,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
-var testOceanBaseExplainRows [][]driver.Value
-
 var (
 	// testMySQLExplainJSON is the plan the fake MySQL server returns for EXPLAIN FORMAT=JSON.
 	testMySQLExplainJSON string
@@ -36,32 +34,7 @@ type testMySQLStatement struct {
 }
 
 func init() {
-	sql.Register("test_oceanbase_explain", testOceanBaseExplainDriver{})
 	sql.Register("test_mysql_explain", testMySQLExplainDriver{})
-}
-
-type testOceanBaseExplainDriver struct{}
-
-func (testOceanBaseExplainDriver) Open(string) (driver.Conn, error) {
-	return testOceanBaseExplainConn{}, nil
-}
-
-type testOceanBaseExplainConn struct{}
-
-func (testOceanBaseExplainConn) Prepare(string) (driver.Stmt, error) {
-	return nil, driver.ErrSkip
-}
-
-func (testOceanBaseExplainConn) Close() error {
-	return nil
-}
-
-func (testOceanBaseExplainConn) Begin() (driver.Tx, error) {
-	return nil, driver.ErrSkip
-}
-
-func (testOceanBaseExplainConn) QueryContext(context.Context, string, []driver.NamedValue) (driver.Rows, error) {
-	return &testExplainResultRows{rows: testOceanBaseExplainRows}, nil
 }
 
 type testMySQLExplainDriver struct{}
@@ -143,6 +116,16 @@ func (r *testExplainResultRows) Next(dest []driver.Value) error {
 // connections, so statements that do not share a pinned connection land on different ones.
 func newTestMySQLDriver(t *testing.T, plan string) *Driver {
 	t.Helper()
+	return newTestDriver(t, storepb.Engine_MYSQL, plan)
+}
+
+func newTestMariaDBDriver(t *testing.T, plan string) *Driver {
+	t.Helper()
+	return newTestDriver(t, storepb.Engine_MARIADB, plan)
+}
+
+func newTestDriver(t *testing.T, engine storepb.Engine, plan string) *Driver {
+	t.Helper()
 	testMySQLExplainJSON = plan
 	testMySQLExplainTable = nil
 	testMySQLSetErr = nil
@@ -151,7 +134,7 @@ func newTestMySQLDriver(t *testing.T, plan string) *Driver {
 	require.NoError(t, err)
 	db.SetMaxIdleConns(0)
 	t.Cleanup(func() { _ = db.Close() })
-	return &Driver{dbType: storepb.Engine_MYSQL, db: db}
+	return &Driver{dbType: engine, db: db}
 }
 
 const (
@@ -346,40 +329,52 @@ func TestCountAffectedRowsReportsUninterpretablePlan(t *testing.T) {
 	require.ErrorContains(t, err, `table "t2" in the plan has no row estimate`)
 }
 
-func TestCountAffectedRowsForOceanBase(t *testing.T) {
-	db, err := sql.Open("test_oceanbase_explain", "")
-	require.NoError(t, err)
-	defer db.Close()
-	d := &Driver{dbType: storepb.Engine_OCEANBASE, db: db}
-
-	// OceanBase splits the JSON plan across rows.
-	testOceanBaseExplainRows = [][]driver.Value{
-		{`{`},
-		{`  "ID":0,`},
-		{`  "OPERATOR":"UPDATE",`},
-		{`  "NAME":"",`},
-		{`  "EST.ROWS":1000,`},
-		{`  "EST.TIME(us)":7680,`},
-		{`  "output":"",`},
-		{`  "CHILD_1": {`},
-		{`    "ID":1,`},
-		{`    "OPERATOR":"TABLE RANGE SCAN",`},
-		{`    "NAME":"dba_test_1",`},
-		{`    "EST.ROWS":1000,`},
-		{`    "EST.TIME(us)":91,`},
-		{`    "output":"output([dba_test_1.id], [dba_test_1.log_id])"`},
-		{`  }`},
-		{`}`},
+// TestCountAffectedRowsReadsMariaDBSyntax covers the engine the driver is shared
+// with but the parser is not. ParseMySQL rejects RETURNING, so a MariaDB DELETE
+// carrying one never reached an EXPLAIN and the summary reported no affected rows
+// for a statement that deletes many; approval rules read that count.
+func TestCountAffectedRowsReadsMariaDBSyntax(t *testing.T) {
+	const filteredScanPlan = `{"query_block":{"select_id":1,"table":{"table_name":"td","access_type":"ALL","rows_examined_per_scan":1000,"rows_produced_per_join":100,"filtered":"10.00"}}}`
+	for _, tc := range []struct {
+		name      string
+		statement string
+		explained string
+		want      int64
+	}{
+		{
+			name:      "delete with RETURNING",
+			statement: "DELETE FROM td WHERE d = 0 RETURNING c;",
+			explained: "SELECT 1 FROM td WHERE d = 0",
+			want:      100,
+		},
+		{
+			name:      "delete with RETURNING after ORDER BY and LIMIT",
+			statement: "DELETE FROM td WHERE d = 0 ORDER BY id LIMIT 20 RETURNING c;",
+			explained: "SELECT 1 FROM td WHERE d = 0 ORDER BY id LIMIT 20",
+			want:      20,
+		},
+		{
+			name:      "a form both grammars share still estimates",
+			statement: "UPDATE td SET c = 1 WHERE d = 0;",
+			explained: "SELECT 1 FROM td WHERE d = 0",
+			want:      100,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			d := newTestMariaDBDriver(t, filteredScanPlan)
+			got, err := d.CountAffectedRows(context.Background(), tc.statement)
+			require.NoError(t, err)
+			require.Equal(t, tc.want, got)
+			require.Equal(t, "EXPLAIN FORMAT=JSON "+tc.explained, testMySQLStatements[1].query)
+		})
 	}
-	got, err := d.CountAffectedRows(context.Background(), "update dba_test_1 set log_id=1 where id < 1000;")
-	require.NoError(t, err)
-	require.Equal(t, int64(1000), got)
+}
 
-	testOceanBaseExplainRows = [][]driver.Value{{`{"ID":0,"OPERATOR":"UPDATE","NAME":""}`}}
-	_, err = d.CountAffectedRows(context.Background(), "update dba_test_1 set log_id=1 where id < 1000;")
-	require.ErrorContains(t, err, `operator "UPDATE" has no EST.ROWS`)
-
-	testOceanBaseExplainRows = nil
-	_, err = d.CountAffectedRows(context.Background(), "update dba_test_1 set log_id=1 where id < 1000;")
+// TestCountAffectedRowsRejectsMariaDBSyntaxOnMySQL is the other side: the same
+// statement is not MySQL, and the MySQL path must still refuse it rather than
+// quietly estimate something.
+func TestCountAffectedRowsRejectsMariaDBSyntaxOnMySQL(t *testing.T) {
+	d := newTestMySQLDriver(t, `{"query_block":{"select_id":1}}`)
+	_, err := d.CountAffectedRows(context.Background(), "DELETE FROM td WHERE d = 0 RETURNING c;")
 	require.Error(t, err)
 }

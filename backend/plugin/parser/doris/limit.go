@@ -42,14 +42,21 @@ func statementWithResultLimit(statement string, limit int, _ string) string {
 	return stmt
 }
 
-// The Doris AST cannot represent INTO OUTFILE. Keep this top-level clause outside
-// the query while capping it, including when a set operation needs wrapping.
+// splitOutfileClause cuts a top-level INTO OUTFILE clause off the end of the
+// statement, so the clause stays outside the query while it is capped,
+// including when a set operation needs wrapping.
+//
+// This reads tokens rather than the tree the clause now has (omni's
+// doris/ast.IntoOutfileClause) because it has to answer for text that does
+// not parse: a statement whose parse fails still reaches the caller's
+// CTE-wrap fallback, which needs the clause held back from the wrap.
 func splitOutfileClause(statement string) (string, string) {
 	tokens, errs := parser.Tokenize(statement)
 	if len(errs) > 0 {
 		return statement, ""
 	}
 	intoKind, _ := parser.KeywordToken("into")
+	outfileKind, _ := parser.KeywordToken("outfile")
 	depth := 0
 	for i, token := range tokens {
 		switch token.Kind {
@@ -60,7 +67,7 @@ func splitOutfileClause(statement string) (string, string) {
 		case ';':
 			return statement, ""
 		case intoKind:
-			if depth == 0 && i+1 < len(tokens) && tokens[i+1].Kind == outfileTokenKind {
+			if depth == 0 && i+1 < len(tokens) && tokens[i+1].Kind == outfileKind {
 				return statement[:token.Loc.Start], statement[token.Loc.Start:]
 			}
 		default:

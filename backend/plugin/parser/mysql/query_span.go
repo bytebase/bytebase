@@ -9,8 +9,6 @@ import (
 
 func init() {
 	base.RegisterGetQuerySpan(storepb.Engine_MYSQL, GetQuerySpan)
-	base.RegisterGetQuerySpan(storepb.Engine_MARIADB, GetQuerySpan)
-	base.RegisterGetQuerySpan(storepb.Engine_OCEANBASE, GetQuerySpan)
 }
 
 // GetQuerySpan returns the query span for the given statement.

@@ -8,12 +8,14 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/db/cockroachdb"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/cosmosdb"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/databricks"
+	_ "github.com/bytebase/bytebase/backend/plugin/db/doris"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/dynamodb"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/elasticsearch"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/hive"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/mongodb"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/mssql"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/mysql"
+	_ "github.com/bytebase/bytebase/backend/plugin/db/oceanbase"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/oracle"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/redis"
@@ -33,6 +35,7 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/mariadb"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/mongodb"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/oceanbase"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/partiql"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
@@ -48,6 +51,7 @@ import (
 
 	// Advisors.
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/bigquery"
+	_ "github.com/bytebase/bytebase/backend/plugin/advisor/mariadb"
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/mssql"
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/mysql"
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/oceanbase"
@@ -59,8 +63,10 @@ import (
 
 	// Schema designer.
 	_ "github.com/bytebase/bytebase/backend/plugin/schema/clickhouse"
+	_ "github.com/bytebase/bytebase/backend/plugin/schema/mariadb"
 	_ "github.com/bytebase/bytebase/backend/plugin/schema/mssql"
 	_ "github.com/bytebase/bytebase/backend/plugin/schema/mysql"
+	_ "github.com/bytebase/bytebase/backend/plugin/schema/oceanbase"
 	_ "github.com/bytebase/bytebase/backend/plugin/schema/oracle"
 	_ "github.com/bytebase/bytebase/backend/plugin/schema/pg"
 	_ "github.com/bytebase/bytebase/backend/plugin/schema/redshift"

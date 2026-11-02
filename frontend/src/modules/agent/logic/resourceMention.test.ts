@@ -4,6 +4,7 @@ import {
   deleteResourceMention,
   getDraftResourceMentions,
   getMentionTriggerRange,
+  getPlanMentionLabel,
   hasAdditionalResourceMention,
   hasUnboundResourceMention,
   insertResourceMention,
@@ -32,6 +33,26 @@ const issueReference = {
   project: "projects/orders",
   label: "Update orders table",
 };
+const planReference = {
+  kind: "plan" as const,
+  name: "projects/orders/plans/456",
+  project: "projects/orders",
+  label: "Add order indexes",
+};
+
+describe("getPlanMentionLabel", () => {
+  test("keeps the Plan ID visible when titles are shared", () => {
+    expect(
+      getPlanMentionLabel({
+        name: "projects/orders/plans/456",
+        title: "Add order indexes",
+      })
+    ).toBe("Add order indexes (#456)");
+    expect(
+      getPlanMentionLabel({ name: "projects/orders/plans/457", title: "" })
+    ).toBe("Plan #457");
+  });
+});
 
 describe("getMentionTriggerRange", () => {
   test("recognizes a mention at the caret after a word boundary", () => {
@@ -281,6 +302,24 @@ describe("normalizeAgentResourceReference", () => {
     ).toBeUndefined();
   });
 
+  test("accepts a Plan only under its owning Project", () => {
+    expect(normalizeAgentResourceReference(planReference)).toEqual(
+      planReference
+    );
+    expect(
+      normalizeAgentResourceReference({
+        ...planReference,
+        project: "projects/billing",
+      })
+    ).toBeUndefined();
+    expect(
+      normalizeAgentResourceReference({
+        ...planReference,
+        name: "projects/orders/plans/-",
+      })
+    ).toBeUndefined();
+  });
+
   test("accepts workspace- and project-instance Database names", () => {
     expect(
       normalizeAgentResourceReference({
@@ -377,6 +416,40 @@ describe("paired resource mentions", () => {
         projectReference
       )
     ).toBe(true);
+  });
+
+  test("accepts a Plan alone or paired with its Project", () => {
+    expect(normalizeAgentResourceReferences([planReference])).toEqual([
+      planReference,
+    ]);
+    expect(
+      normalizeAgentResourceReferences([planReference, projectReference])
+    ).toEqual([projectReference, planReference]);
+    expect(
+      canAddResourceMention(
+        [{ resource: projectReference, range: { start: 0, end: 7 } }],
+        planReference
+      )
+    ).toBe(true);
+  });
+
+  test("rejects a Plan paired with another child or another Project", () => {
+    expect(
+      normalizeAgentResourceReferences([planReference, issueReference])
+    ).toEqual([]);
+    expect(
+      normalizeAgentResourceReferences([planReference, databaseReference])
+    ).toEqual([]);
+    expect(
+      normalizeAgentResourceReferences([
+        planReference,
+        {
+          ...projectReference,
+          name: "projects/billing",
+          project: "projects/billing",
+        },
+      ])
+    ).toEqual([]);
   });
 
   test("rejects an Issue with a Database, another Project, or a duplicate", () => {

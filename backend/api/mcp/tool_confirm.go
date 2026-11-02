@@ -54,23 +54,28 @@ func canShowConfirmation(req *mcp.CallToolRequest) bool {
 // elicitDatabaseChoice. A client on the 2026-07-28 protocol answers and echoes
 // the state itself.
 func (s *Server) askToConfirm(ctx context.Context, w confirmableWrite, digest []byte, message, title, description string) *mcp.CallToolResult {
+	return s.askWithForm(ctx, w, digest, message, map[string]any{
+		"type": "object",
+		"properties": map[string]any{
+			confirmDecisionField: map[string]any{
+				"type":        "boolean",
+				"title":       title,
+				"description": description,
+			},
+		},
+		"required": []string{confirmDecisionField},
+	})
+}
+
+// askWithForm is askToConfirm with a form the caller builds.
+func (s *Server) askWithForm(ctx context.Context, w confirmableWrite, digest []byte, message string, schema map[string]any) *mcp.CallToolResult {
 	return &mcp.CallToolResult{
 		RequestState: s.signConfirmationState(ctx, w, digest, time.Now()),
 		InputRequests: mcp.InputRequestMap{
 			confirmDecisionRequestID: &mcp.ElicitParams{
-				Mode:    "form",
-				Message: message,
-				RequestedSchema: map[string]any{
-					"type": "object",
-					"properties": map[string]any{
-						confirmDecisionField: map[string]any{
-							"type":        "boolean",
-							"title":       title,
-							"description": description,
-						},
-					},
-					"required": []string{confirmDecisionField},
-				},
+				Mode:            "form",
+				Message:         message,
+				RequestedSchema: schema,
 			},
 		},
 	}
@@ -133,22 +138,32 @@ func (r *confirmationReply) staleReason(mismatch string) string {
 // confirmationOutcome reports whether the answer confirms the write, and if
 // not, why, in words the result can carry.
 func confirmationOutcome(response mcp.InputResponse) (bool, string) {
+	content, accepted, why := acceptedForm(response)
+	if !accepted {
+		return false, why
+	}
+	if confirmed, ok := content[confirmDecisionField].(bool); ok && confirmed {
+		return true, ""
+	}
+	return false, "the form was submitted without the confirmation checked"
+}
+
+// acceptedForm returns what an accepted form holds, or why the answer accepts
+// nothing.
+func acceptedForm(response mcp.InputResponse) (map[string]any, bool, string) {
 	elicited, ok := response.(*mcp.ElicitResult)
 	if !ok || elicited == nil {
-		return false, "the confirmation answer could not be read"
+		return nil, false, "the confirmation answer could not be read"
 	}
 	switch elicited.Action {
 	case "accept":
-		if confirmed, ok := elicited.Content[confirmDecisionField].(bool); ok && confirmed {
-			return true, ""
-		}
-		return false, "the form was submitted without the confirmation checked"
+		return elicited.Content, true, ""
 	case "decline":
-		return false, "the user declined"
+		return nil, false, "the user declined"
 	case "cancel":
-		return false, "the user cancelled"
+		return nil, false, "the user cancelled"
 	default:
-		return false, fmt.Sprintf("the confirmation answer %q is not one Bytebase acts on", elicited.Action)
+		return nil, false, fmt.Sprintf("the confirmation answer %q is not one Bytebase acts on", elicited.Action)
 	}
 }
 

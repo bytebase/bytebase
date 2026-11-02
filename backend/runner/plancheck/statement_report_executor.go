@@ -17,6 +17,7 @@ import (
 	cockroachdbdriver "github.com/bytebase/bytebase/backend/plugin/db/cockroachdb"
 	mssqldriver "github.com/bytebase/bytebase/backend/plugin/db/mssql"
 	mysqldriver "github.com/bytebase/bytebase/backend/plugin/db/mysql"
+	oceanbasedriver "github.com/bytebase/bytebase/backend/plugin/db/oceanbase"
 	oracledriver "github.com/bytebase/bytebase/backend/plugin/db/oracle"
 	pgdriver "github.com/bytebase/bytebase/backend/plugin/db/pg"
 	redshiftdriver "github.com/bytebase/bytebase/backend/plugin/db/redshift"
@@ -196,12 +197,19 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 		explainCalculator = cd.CountAffectedRows
 		// Empty so the extractor resolves names with the database's synced search_path, as for PostgreSQL.
 		defaultSchema = ""
-	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
+	case storepb.Engine_MYSQL, storepb.Engine_MARIADB:
 		md, ok := driver.(*mysqldriver.Driver)
 		if !ok {
 			return nil, "", errors.Errorf("invalid mysql driver type")
 		}
 		explainCalculator = md.CountAffectedRows
+		defaultSchema = ""
+	case storepb.Engine_OCEANBASE:
+		od, ok := driver.(*oceanbasedriver.Driver)
+		if !ok {
+			return nil, "", errors.Errorf("invalid oceanbase driver type")
+		}
+		explainCalculator = od.CountAffectedRows
 		defaultSchema = ""
 	case storepb.Engine_TIDB:
 		md, ok := driver.(*tidbdriver.Driver)

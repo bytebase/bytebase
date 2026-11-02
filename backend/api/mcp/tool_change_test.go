@@ -913,7 +913,7 @@ func TestChange_IssueCreateFailed(t *testing.T) {
 	require.Contains(t, text, "plans/2002")  // partialRefs
 }
 
-func TestChange_IssueCreateFailed_SqlReview(t *testing.T) {
+func TestChange_IssueCreateFailed_LabelsRequired(t *testing.T) {
 	mock := newChangeMock(employeeDB())
 	mock.planCheckRunResponse = map[string]any{
 		"status": "DONE",
@@ -922,7 +922,7 @@ func TestChange_IssueCreateFailed_SqlReview(t *testing.T) {
 		},
 	}
 	mock.issueStatus = http.StatusBadRequest
-	mock.issueResponse = map[string]any{"message": "enforceSqlReview: checks failed"}
+	mock.issueResponse = map[string]any{"message": "require issue labels"}
 	s := newChangeTestServer(t, mock)
 
 	result, _, err := s.handleChange(testContext(), nil, ChangeInput{
@@ -933,14 +933,11 @@ func TestChange_IssueCreateFailed_SqlReview(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, result.IsError)
 
-	text := result.Content[0].(*mcpsdk.TextContent).Text
-	require.Contains(t, text, "ISSUE_CREATE_FAILED")
-	require.Contains(t, text, "plan checks must pass")
-	// Verify the output is valid JSON (guidance folded into suggestion, not appended as raw text).
 	var parsed changeError
-	require.NoError(t, json.Unmarshal([]byte(text), &parsed))
+	require.NoError(t, json.Unmarshal([]byte(result.Content[0].(*mcpsdk.TextContent).Text), &parsed))
 	require.Equal(t, "ISSUE_CREATE_FAILED", parsed.Code)
-	require.Contains(t, parsed.Suggestion, "plan checks must pass")
+	require.Contains(t, parsed.Message, "require issue labels")
+	require.Equal(t, "check the error and retry", parsed.Suggestion, "CreateIssue refuses no issue for its plan checks")
 }
 
 // --- Permission tests ---

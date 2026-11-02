@@ -3,9 +3,11 @@ import {
   getNameParentTokens,
   instanceNamePrefix,
   issueNamePrefix,
+  planNamePrefix,
   projectNamePrefix,
 } from "@/stores/modules/v1/common";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import { extractDatabaseResourceName } from "@/utils/v1/database";
 import type {
   AgentDraft,
@@ -26,6 +28,17 @@ export const getDatabaseMentionLabel = (database: Database): string => {
   const instanceTitle =
     database.instanceResource?.title?.trim() || instanceName;
   return instanceTitle ? `${databaseName} (${instanceTitle})` : databaseName;
+};
+
+export const getPlanMentionLabel = (
+  plan: Pick<Plan, "name" | "title">
+): string => {
+  const [, planId] = getNameParentTokens(plan.name, [
+    projectNamePrefix,
+    planNamePrefix,
+  ]);
+  const title = plan.title.trim();
+  return title ? `${title} (#${planId})` : `Plan #${planId}`;
 };
 
 export const isResourceMentionRange = (
@@ -209,7 +222,12 @@ export const normalizeAgentResourceReference = (
   }
   const candidate = raw as Record<string, unknown>;
   const { kind } = candidate;
-  if (kind !== "project" && kind !== "database" && kind !== "issue") {
+  if (
+    kind !== "project" &&
+    kind !== "database" &&
+    kind !== "issue" &&
+    kind !== "plan"
+  ) {
     return undefined;
   }
   if (
@@ -231,12 +249,16 @@ export const normalizeAgentResourceReference = (
     if (name !== project) {
       return undefined;
     }
-  } else if (kind === "issue") {
+  } else if (kind === "issue" || kind === "plan") {
     const tokens = getNameParentTokens(name, [
       projectNamePrefix,
-      issueNamePrefix,
+      kind === "issue" ? issueNamePrefix : planNamePrefix,
     ]);
-    if (!tokens.length || tokens[0] !== projectTokens[0]) {
+    if (
+      !tokens.length ||
+      tokens[0] !== projectTokens[0] ||
+      (kind === "plan" && (tokens[0] === "-" || tokens[1] === "-"))
+    ) {
       return undefined;
     }
   } else {
@@ -279,7 +301,10 @@ export const normalizeAgentResourceReferences = (
   }
   const project = references.find((reference) => reference?.kind === "project");
   const child = references.find(
-    (reference) => reference?.kind === "database" || reference?.kind === "issue"
+    (reference) =>
+      reference?.kind === "database" ||
+      reference?.kind === "issue" ||
+      reference?.kind === "plan"
   );
   return project && child && child.project === project.name
     ? [project, child]

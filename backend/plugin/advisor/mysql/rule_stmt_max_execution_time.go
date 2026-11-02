@@ -20,7 +20,6 @@ var (
 
 func init() {
 	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_STATEMENT_MAX_EXECUTION_TIME, &MaxExecutionTimeAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, storepb.SQLReviewRule_STATEMENT_MAX_EXECUTION_TIME, &MaxExecutionTimeAdvisor{})
 }
 
 // MaxExecutionTimeAdvisor is the advisor checking for the max execution time.
@@ -33,10 +32,7 @@ func (*MaxExecutionTimeAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 		return nil, err
 	}
 
-	systemVariable := "max_execution_time"
-	if checkCtx.Rule.Engine == storepb.Engine_MARIADB {
-		systemVariable = "max_statement_time"
-	}
+	const systemVariable = "max_execution_time"
 
 	hasSet := false
 	var allAdvice []*storepb.Advice
