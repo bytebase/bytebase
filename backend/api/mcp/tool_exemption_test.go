@@ -158,7 +158,7 @@ func TestGrantMaskingExemptionCreatesTheFirstExemption(t *testing.T) {
 		`Exempt "user:bob@example.com" from masking, as alice@example.com?`,
 		`Instance "prod"`,
 		`Database "hr", column "salary" in "public"."employee"`,
-		`Unmasked in query and export results until "2026-10-27T00:00:00.000Z". Reason: "payroll audit"`,
+		`Bypasses masking here until "2026-10-27T00:00:00.000Z"; adds no masking. Reason: "payroll audit"`,
 	}, "\n"), user.lastParams(t).Message)
 
 	calls := mock.calls()
@@ -293,7 +293,7 @@ func TestGrantMaskingExemptionForEveryDatabaseIsExplicit(t *testing.T) {
 		`Exempt "user:bob@example.com" from masking, as alice@example.com?`,
 		`Project "hr"`,
 		`Scope: all databases in the project, current and future`,
-		`Unmasked in query and export results, with no expiry.`,
+		`Bypasses masking here, with no expiry; adds no masking.`,
 	}, "\n"), user.lastParams(t).Message)
 	calls := mock.calls()
 	require.Len(t, calls, 1)
@@ -504,7 +504,7 @@ func TestRevokeMaskingExemptionRemovesTheMemberFromEveryMatch(t *testing.T) {
 		`Revoke masking exemption: "user:bob@example.com", as alice@example.com?`,
 		`Project "hr"`,
 		`Condition (2 entries) "(resource.instance_id == \"prod\" && resource.database_name == \"hr\")"`,
-		`Masked again in their results unless another exemption covers the data.`,
+		`Masking applies to them again unless another exemption covers the data.`,
 	}, "\n"), user.lastParams(t).Message)
 	calls := mock.calls()
 	require.Len(t, calls, 1)
@@ -627,7 +627,7 @@ func TestMaskingExemptionFormsShowTheScopeInClaudeCodesDialog(t *testing.T) {
 			require.True(t, strings.HasPrefix(view[0], fmt.Sprintf("Exempt %q", member)), "a %d-character member shows whole, its project included: %q", len(member), view)
 			require.Equal(t, fmt.Sprintf("Instance %q", longest), view[1], "the longest instance ID shows whole")
 			require.True(t, strings.HasPrefix(view[2], `Database "`+longest), "the longest PostgreSQL database name shows whole, and the narrowing after it is cut: %q", view)
-			require.True(t, strings.HasPrefix(view[3], "Unmasked in query and export results"), "%q", view)
+			require.True(t, strings.HasPrefix(view[3], "Bypasses masking here"), "%q", view)
 
 			west := grantView(&exemptionGrant{member: "user:bob@example.com", database: "d", instanceID: "production-analytics-platform-west", databaseName: "hr"}, columns)
 			east := grantView(&exemptionGrant{member: "user:bob@example.com", database: "d", instanceID: "production-analytics-platform-east", databaseName: "hr"}, columns)
@@ -640,7 +640,7 @@ func TestMaskingExemptionFormsShowTheScopeInClaudeCodesDialog(t *testing.T) {
 			require.Len(t, all, 4, "%q", all)
 			require.Equal(t, fmt.Sprintf("Project %q", longest), all[1])
 			require.Equal(t, "Scope: all databases in the project, current and future", all[2])
-			require.True(t, strings.HasPrefix(all[3], `Unmasked in query and export results until "2026-10-27T00:00:00.000Z".`), "the expiry shows before the reason is cut: %q", all)
+			require.True(t, strings.HasPrefix(all[3], `Bypasses masking here until "2026-10-27T00:00:00.000Z"; adds no masking.`), "the expiry and the no-setup clause show before the reason is cut: %q", all)
 
 			revoke := claudeCodeView(describeExemptionRevoke(ctx, RevokeMaskingExemptionInput{Project: "projects/" + longest, Member: "user:bob@example.com", Condition: strings.Repeat("c", 200)}, 3), columns)
 			require.Len(t, revoke, 4, "%q", revoke)
