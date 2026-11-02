@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/trinodb/trino-go-client/trino"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -23,6 +24,10 @@ func makeValueByTypeName(typeName string, _ *sql.ColumnType) any {
 		return new(sql.NullFloat64)
 	case "VARBINARY", "BINARY":
 		return new([]byte)
+	// The driver hands a VARIANT column a trino.Variant, which the default
+	// *sql.NullString below cannot hold, failing the whole query.
+	case "VARIANT":
+		return new(trino.Variant)
 	default:
 		return new(sql.NullString)
 	}
@@ -80,6 +85,16 @@ func convertValue(typeName string, _ *sql.ColumnType, value any) *v1pb.RowValue 
 			return &v1pb.RowValue{
 				Kind: &v1pb.RowValue_DoubleValue{
 					DoubleValue: raw.Float64,
+				},
+			}
+		}
+	case *trino.Variant:
+		// String is the JSON text the server returns for CAST(v AS JSON). A
+		// VARIANT null is valid and renders as "null", unlike a SQL NULL.
+		if raw.Valid {
+			return &v1pb.RowValue{
+				Kind: &v1pb.RowValue_StringValue{
+					StringValue: raw.String(),
 				},
 			}
 		}
