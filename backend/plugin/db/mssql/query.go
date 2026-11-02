@@ -115,7 +115,7 @@ func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.
 			if columnType.DatabaseTypeName() == "TIME" {
 				return &v1pb.RowValue{
 					Kind: &v1pb.RowValue_StringValue{
-						StringValue: raw.Time.Format(time.TimeOnly),
+						StringValue: util.FormatTimeOnly(raw.Time),
 					},
 				}
 			}

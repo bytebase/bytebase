@@ -54,6 +54,10 @@ func str(v string) *v1pb.RowValue {
 // hands DATE and TIME a time.Time: before they had a destination of their own,
 // Go rendered them through *sql.NullString as RFC3339Nano, so a date read back
 // as "2026-01-02T00:00:00Z" and a time as "0000-01-01T12:34:56Z".
+//
+// The fractions are the ones PostgreSQL produces for the same values. A layout
+// that trimmed trailing zeros instead read a TIME(3) of 12:34:56.700 back as
+// 12:34:56.7, which is neither what PostgreSQL shows nor what Trino prints.
 func TestQueryResultRendersTrinoTypes(t *testing.T) {
 	ctx := context.Background()
 	c := testcontainer.SharedTrinoContainer(t)
@@ -71,9 +75,12 @@ func TestQueryResultRendersTrinoTypes(t *testing.T) {
 	}{
 		{"date", "DATE '2026-01-02'", "DATE", str("2026-01-02")},
 		{"time", "TIME '12:34:56'", "TIME", str("12:34:56")},
-		{"time with precision", "CAST('12:34:56.789' AS TIME(3))", "TIME", str("12:34:56.789")},
+		{"time with precision", "CAST('12:34:56.789' AS TIME(3))", "TIME", str("12:34:56.789000")},
+		{"time with trailing zeros", "CAST('12:34:56.700' AS TIME(3))", "TIME", str("12:34:56.700000")},
+		{"time whose precision outruns its value", "CAST('12:34:56.000' AS TIME(3))", "TIME", str("12:34:56")},
 		{"zoned time", "TIME '12:34:56 +02:00'", "TIME WITH TIME ZONE", str("12:34:56+02:00")},
-		{"zoned time with precision", "TIME '12:34:56.789 +02:00'", "TIME WITH TIME ZONE", str("12:34:56.789+02:00")},
+		{"zoned time with precision", "TIME '12:34:56.789 +02:00'", "TIME WITH TIME ZONE", str("12:34:56.789000+02:00")},
+		{"zoned time with trailing zeros", "TIME '12:34:56.700 +02:00'", "TIME WITH TIME ZONE", str("12:34:56.700000+02:00")},
 		{"timestamp", "TIMESTAMP '2026-01-02 12:34:56'", "TIMESTAMP", &v1pb.RowValue{
 			Kind: &v1pb.RowValue_TimestampValue{TimestampValue: &v1pb.RowValue_Timestamp{
 				GoogleTimestamp: timestamppb.New(time.Date(2026, 1, 2, 12, 34, 56, 0, time.UTC)),

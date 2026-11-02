@@ -1,11 +1,19 @@
 package pg
 
 import (
+	"context"
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/testing/protocmp"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
 func TestBuildTimestamptzRowValue(t *testing.T) {
@@ -144,5 +152,67 @@ func TestPadZeroes(t *testing.T) {
 	for _, test := range tests {
 		got := padZeroes(test.rawStr, test.acc)
 		require.Equal(t, test.expected, got)
+	}
+}
+
+func str(v string) *v1pb.RowValue {
+	return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: v}}
+}
+
+func stamp(t time.Time, accuracy int32) *v1pb.RowValue {
+	return &v1pb.RowValue{Kind: &v1pb.RowValue_TimestampValue{TimestampValue: &v1pb.RowValue_Timestamp{
+		GoogleTimestamp: timestamppb.New(t),
+		Accuracy:        accuracy,
+	}}}
+}
+
+// TestQueryResultRendersPGTypes pins how a real PostgreSQL renders a DATE, a
+// TIME and a TIMESTAMP. This is the standard the other drivers are held to, so
+// it is pinned here rather than only described: a date is date-only, a TIME is
+// time-only and keeps its fraction, and a TIMESTAMP is a timestamp_value, never
+// an RFC3339 string with a T and a Z.
+func TestQueryResultRendersPGTypes(t *testing.T) {
+	ctx := context.Background()
+	_, db := testcontainer.NewPgDatabase(t)
+
+	noonMillis := time.Date(2026, 1, 2, 12, 34, 56, 789000000, time.UTC)
+
+	tests := []struct {
+		name     string
+		expr     string
+		wantType string
+		want     *v1pb.RowValue
+	}{
+		{"date", "DATE '2026-01-02'", "DATE", str("2026-01-02")},
+		{"time", "TIME '12:34:56'", "TIME", str("12:34:56")},
+		{"time with three digits", "TIME '12:34:56.789'", "TIME", str("12:34:56.789000")},
+		{"time with trailing zeros", "CAST('12:34:56.700' AS TIME(3))", "TIME", str("12:34:56.700000")},
+		{"time whose scale outruns its value", "CAST('12:34:56' AS TIME(3))", "TIME", str("12:34:56")},
+		{"timestamp", "TIMESTAMP '2026-01-02 12:34:56.789'", "TIMESTAMP", stamp(noonMillis, 6)},
+		{"timestamptz", "TIMESTAMPTZ '2026-01-02 12:34:56.789+02:00'", "TIMESTAMPTZ", &v1pb.RowValue{
+			Kind: &v1pb.RowValue_TimestampTzValue{TimestampTzValue: &v1pb.RowValue_TimestampTZ{
+				GoogleTimestamp: timestamppb.New(time.Date(2026, 1, 2, 10, 34, 56, 789000000, time.UTC)),
+				Zone:            "UTC",
+				Accuracy:        6,
+			}},
+		}},
+		{"null date", "CAST(NULL AS DATE)", "DATE", util.NullRowValue},
+		{"null time", "CAST(NULL AS TIME)", "TIME", util.NullRowValue},
+		{"text", "'hi'::text", "TEXT", str("hi")},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			rows, err := db.QueryContext(ctx, "SELECT "+tc.expr)
+			require.NoError(t, err)
+			defer rows.Close()
+
+			result, err := util.RowsToQueryResult(rows, makeValueByTypeName, convertValue, 1<<20)
+			require.NoError(t, err)
+			require.NoError(t, rows.Err())
+			require.Len(t, result.Rows, 1)
+			require.Equal(t, tc.wantType, result.ColumnTypeNames[0])
+			require.Empty(t, cmp.Diff(tc.want, result.Rows[0].Values[0], protocmp.Transform()))
+		})
 	}
 }

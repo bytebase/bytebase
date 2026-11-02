@@ -321,8 +321,40 @@ func getMSSQLContainer(ctx context.Context) (retC *Container, retErr error) {
 	return c, nil
 }
 
-// getTiDBContainer starts TiDB, which speaks the MySQL protocol with no
-// password on root.
+// clickHouseConsoleConf sends the server log to stdout, which the container
+// request waits on. The image logs to a file inside the container by default,
+// so without this there is nothing for wait.ForLog to read.
+const clickHouseConsoleConf = `<clickhouse>
+    <logger>
+        <console>1</console>
+    </logger>
+</clickhouse>
+`
+
+// getClickHouseContainer starts ClickHouse on its native protocol. The image
+// refuses network access to the default user unless credentials are given, so
+// the environment names a user of its own. driver is left unset so this package
+// does not link the ClickHouse client for every suite that imports it; a test
+// opens its own connection from the host, port and credentials.
+func getClickHouseContainer(ctx context.Context) (*Container, error) {
+	const user, password = "bytebase", "root-password"
+	return start(ctx, testcontainers.ContainerRequest{
+		Image: "clickhouse/clickhouse-server:24.8",
+		Env: map[string]string{
+			"CLICKHOUSE_USER":     user,
+			"CLICKHOUSE_PASSWORD": password,
+		},
+		Files: []testcontainers.ContainerFile{
+			{Reader: strings.NewReader(clickHouseConsoleConf), ContainerFilePath: "/etc/clickhouse-server/config.d/console.xml", FileMode: 0o644},
+		},
+		WaitingFor: wait.ForLog("Ready for connections").WithStartupTimeout(3 * time.Minute),
+	}, spec{
+		port:     "9000/tcp",
+		username: user,
+		password: password,
+	})
+}
+
 // getTrinoContainer starts Trino with its built-in memory connector, which needs
 // no catalog files. driver is left unset so this package does not link the Trino
 // client for every suite that imports it; a test opens its own connection from
@@ -337,6 +369,8 @@ func getTrinoContainer(ctx context.Context) (*Container, error) {
 	})
 }
 
+// getTiDBContainer starts TiDB, which speaks the MySQL protocol with no
+// password on root.
 func getTiDBContainer(ctx context.Context) (*Container, error) {
 	return start(ctx, testcontainers.ContainerRequest{
 		Image:      "pingcap/tidb:v8.5.0",

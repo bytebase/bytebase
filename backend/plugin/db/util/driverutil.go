@@ -57,6 +57,40 @@ func BuildStringRowValue(value string) *v1pb.RowValue {
 	}
 }
 
+// FormatTimeOnly renders a time of day the way PostgreSQL renders one: no
+// fraction when the value has none, and at least six digits when it has one,
+// keeping any further digits rather than rounding them away. So 12:34:56 stays
+// as it is, while a TIME(3) of 12:34:56.700 reads 12:34:56.700000 and not the
+// 12:34:56.7 a trailing-zero-trimming layout would give.
+//
+// This is for a driver whose TIME arrives as a time.Time. A driver that gets the
+// server's own text instead passes it through, since the server has already
+// chosen the digits.
+func FormatTimeOnly(t time.Time) string {
+	return t.Format(timeOnlyLayout(t))
+}
+
+// FormatTimeOnlyTZ is FormatTimeOnly for a TIME that carries a zone, whose
+// offset is kept because dropping it would move the instant.
+func FormatTimeOnlyTZ(t time.Time) string {
+	return t.Format(timeOnlyLayout(t) + "-07:00")
+}
+
+// timeOnlyLayout counts the value's significant fractional digits so that
+// Format neither trims a trailing zero nor invents a fraction.
+func timeOnlyLayout(t time.Time) string {
+	nanos := t.Nanosecond()
+	if nanos == 0 {
+		return time.TimeOnly
+	}
+	digits := 9
+	for nanos%10 == 0 {
+		nanos /= 10
+		digits--
+	}
+	return time.TimeOnly + "." + strings.Repeat("0", max(digits, 6))
+}
+
 func BuildTimestampOrStringRowValue(value string, scale int64) *v1pb.RowValue {
 	t, err := parseSQLTimestamp(value)
 	if err != nil {

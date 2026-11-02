@@ -17,17 +17,18 @@ import (
 // is per package. Starting lazily is what keeps `go test -run` over the tests
 // that need no engine from paying for a container they never open.
 var (
-	sharedPg       = startOnce(GetPgContainer)
-	sharedTargetPg = startOnce(GetPgContainer)
-	sharedPg17     = startOnce(getPg17Container)
-	sharedTLSPg    = startOnce(getTLSPgContainer)
-	sharedMSSQL    = startOnce(getMSSQLContainer)
-	sharedTiDB     = startOnce(getTiDBContainer)
-	sharedMongo    = startOnce(getMongoDBContainer)
-	sharedOracle   = startOnce(getOracleContainer)
-	sharedMySQL    = startOnce(GetMySQLContainer)
-	sharedTrino    = startOnce(getTrinoContainer)
-	sharedMariaDB  = startOnce(mariaDBStarter("mariadb:11.8.8"))
+	sharedPg         = startOnce(GetPgContainer)
+	sharedTargetPg   = startOnce(GetPgContainer)
+	sharedPg17       = startOnce(getPg17Container)
+	sharedTLSPg      = startOnce(getTLSPgContainer)
+	sharedMSSQL      = startOnce(getMSSQLContainer)
+	sharedTiDB       = startOnce(getTiDBContainer)
+	sharedMongo      = startOnce(getMongoDBContainer)
+	sharedOracle     = startOnce(getOracleContainer)
+	sharedMySQL      = startOnce(GetMySQLContainer)
+	sharedTrino      = startOnce(getTrinoContainer)
+	sharedClickHouse = startOnce(getClickHouseContainer)
+	sharedMariaDB    = startOnce(mariaDBStarter("mariadb:11.8.8"))
 	// 10.7 is the oldest MariaDB release Bytebase supports.
 	sharedMariaDB107 = startOnce(mariaDBStarter("mariadb:10.7.8"))
 
@@ -101,6 +102,11 @@ func SharedTLSPgContainer(t testing.TB) *Container { return shared(t, sharedTLSP
 // SharedTrinoContainer is SharedPgContainer for Trino. It carries no *sql.DB,
 // so a test builds its own DSN from GetHost, GetPort and GetUsername.
 func SharedTrinoContainer(t testing.TB) *Container { return shared(t, sharedTrino) }
+
+// SharedClickHouseContainer is SharedPgContainer for ClickHouse. It carries no
+// *sql.DB, so a test builds its own connection from GetHost, GetPort,
+// GetUsername and GetPassword.
+func SharedClickHouseContainer(t testing.TB) *Container { return shared(t, sharedClickHouse) }
 
 // SharedMSSQLContainer is SharedPgContainer for SQL Server; tests take a database each.
 // Its certificate is signed by the CA at GetTLSCAPath.

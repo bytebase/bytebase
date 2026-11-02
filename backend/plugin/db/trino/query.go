@@ -12,18 +12,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
-// trinoTimeLayout renders a TIME the way Trino and PostgreSQL print one, which
-// is what a SQL client shows: the fraction when the column's type carries one,
-// and nothing when it does not. The nines trim trailing zeros and take the
-// decimal point with them, so TIME keeps 12:34:56 while TIME(3) keeps
-// 12:34:56.789 instead of losing it.
-//
-// A zoned time keeps its offset as well, since dropping it moves the instant.
-const (
-	trinoTimeLayout   = "15:04:05.999999999"
-	trinoTimeTZLayout = trinoTimeLayout + "-07:00"
-)
-
 func makeValueByTypeName(typeName string, _ *sql.ColumnType) any {
 	switch typeName {
 	case "VARCHAR", "TEXT", "CHAR", "TIMESTAMP", "TIMESTAMP WITH TIME ZONE", "TIMESTAMP WITHOUT TIME ZONE":
@@ -107,17 +95,9 @@ func convertValue(typeName string, _ *sql.ColumnType, value any) *v1pb.RowValue 
 		}
 	case *sql.NullTime:
 		if raw.Valid {
-			layout := trinoTimeLayout
-			switch typeName {
-			case "DATE":
-				layout = time.DateOnly
-			case "TIME WITH TIME ZONE":
-				layout = trinoTimeTZLayout
-			default:
-			}
 			return &v1pb.RowValue{
 				Kind: &v1pb.RowValue_StringValue{
-					StringValue: raw.Time.Format(layout),
+					StringValue: formatDateOrTime(typeName, raw.Time),
 				},
 			}
 		}
@@ -134,4 +114,18 @@ func convertValue(typeName string, _ *sql.ColumnType, value any) *v1pb.RowValue 
 	default:
 	}
 	return util.NullRowValue
+}
+
+// formatDateOrTime renders the time.Time the driver decoded a DATE or a TIME
+// into. The fraction follows util.FormatTimeOnly, so a TIME(3) of 12:34:56.700
+// reads 12:34:56.700000 as it does on PostgreSQL and SQL Server.
+func formatDateOrTime(typeName string, t time.Time) string {
+	switch typeName {
+	case "DATE":
+		return t.Format(time.DateOnly)
+	case "TIME WITH TIME ZONE":
+		return util.FormatTimeOnlyTZ(t)
+	default:
+		return util.FormatTimeOnly(t)
+	}
 }

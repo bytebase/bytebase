@@ -19,6 +19,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/shopspring/decimal"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -130,7 +131,7 @@ func makeValueByTypeName(typeName string, columnType *sql.ColumnType) any {
 	return reflect.New(columnType.ScanType()).Interface()
 }
 
-func convertValue(_ string, _ *sql.ColumnType, value any) *v1pb.RowValue {
+func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.RowValue {
 	// handle TUPLE ARRAY MAP JSON
 	if v, ok := value.(*any); ok && v != nil {
 		value, err := json.Marshal(v)
@@ -185,7 +186,7 @@ func convertValue(_ string, _ *sql.ColumnType, value any) *v1pb.RowValue {
 		return &v1pb.RowValue{Kind: &v1pb.RowValue_BoolValue{BoolValue: *v}}
 	}
 	if v, ok := value.(*time.Time); ok && v != nil {
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: v.Format(time.RFC3339Nano)}}
+		return convertClickHouseTime(typeName, columnType, *v)
 	}
 	if v, ok := value.(*big.Int); ok && v != nil {
 		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: v.String()}}
@@ -253,7 +254,7 @@ func convertValue(_ string, _ *sql.ColumnType, value any) *v1pb.RowValue {
 		return &v1pb.RowValue{Kind: &v1pb.RowValue_BoolValue{BoolValue: **v}}
 	}
 	if v, ok := value.(**time.Time); ok && *v != nil {
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: (*v).Format(time.RFC3339Nano)}}
+		return convertClickHouseTime(typeName, columnType, **v)
 	}
 	if v, ok := value.(**big.Int); ok && *v != nil {
 		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: (*v).String()}}
@@ -265,4 +266,44 @@ func convertValue(_ string, _ *sql.ColumnType, value any) *v1pb.RowValue {
 		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: (*v).String()}}
 	}
 	return util.NullRowValue
+}
+
+// convertClickHouseTime renders the time.Time the driver decoded a Date,
+// Date32, DateTime or DateTime64 column into. Every one of them used to be
+// formatted as RFC3339Nano, so a date read back as 2026-01-02T00:00:00Z and a
+// DateTime as 2026-01-02T12:34:56Z rather than as the values ClickHouse prints.
+//
+// A DateTime keeps the wall clock and drops the zone, as MySQL, PostgreSQL and
+// Oracle already do here: the driver returns the time in the column's timezone,
+// so dropping it shows the value the server would print whatever zone it runs
+// in. There is no TIME case because the ClickHouse release the tests run
+// against has no time-of-day type: its TIME names an Int64, TIMESTAMP a DateTime.
+func convertClickHouseTime(typeName string, columnType *sql.ColumnType, t time.Time) *v1pb.RowValue {
+	if isClickHouseDate(typeName) {
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: t.Format(time.DateOnly)}}
+	}
+	// DecimalSize reports a DateTime64's fractional digits as its precision and
+	// leaves the scale at 0, unlike the engines that take Accuracy from scale.
+	digits, _, _ := columnType.DecimalSize()
+	stripped := time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second(), t.Nanosecond(), time.UTC)
+	return &v1pb.RowValue{
+		Kind: &v1pb.RowValue_TimestampValue{
+			TimestampValue: &v1pb.RowValue_Timestamp{
+				GoogleTimestamp: timestamppb.New(stripped),
+				Accuracy:        int32(digits),
+			},
+		},
+	}
+}
+
+// isClickHouseDate reports whether a column decoded to a time.Time holds a
+// calendar date rather than a point in time. A nullable column is named
+// Nullable(Date) and a zoned one DateTime('Europe/Paris'), so this reads the
+// base name out of the wrapper and the arguments; comparing a prefix would not
+// do, since DateTime starts with Date.
+func isClickHouseDate(typeName string) bool {
+	base := strings.TrimPrefix(typeName, "NULLABLE(")
+	base, _, _ = strings.Cut(base, "(")
+	base = strings.TrimSuffix(base, ")")
+	return base == "DATE" || base == "DATE32"
 }
