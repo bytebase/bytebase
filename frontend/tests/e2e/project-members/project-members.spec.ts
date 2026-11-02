@@ -9,6 +9,7 @@
 import {
   type BrowserContext,
   expect,
+  type Locator,
   type Page,
   test,
 } from "@playwright/test";
@@ -223,6 +224,76 @@ test.describe("member list", () => {
     await expect(members.sheet).toContainText(
       "Can run DDL/DML in SQL Editor in every environment without approval.",
     );
+  });
+});
+
+test.describe("edit member drawer", () => {
+  const LONG_SCHEMA = "a_really_long_schema_name_for_reporting_and_settlement";
+  const TABLE_V2 = "monthly_settlement_reconciliation_report_for_finance_v2";
+  const TABLE_V3 = "monthly_settlement_reconciliation_report_for_finance_v3";
+
+  test("long names stay inside each card, are shown on hover, and a drag moves one card only", async ({ page }) => {
+    // The grantee keeps Project Developer (no condition) from beforeAll, so
+    // the drawer shows a short card beside the long one.
+    await setGranteeSqlEditorUser(
+      `(resource.database == "${env.database}" && resource.schema_name == "${LONG_SCHEMA}" && resource.table_name in ["${TABLE_V2}", "${TABLE_V3}"]) && request.time < timestamp("2099-01-01T00:00:00.000Z")`,
+    );
+    const members = new ProjectMembersPage(page, env.baseURL);
+    await members.goto(projectId);
+    await members.openMember(GRANTEE.email);
+
+    const tables = members.sheet.getByRole("table");
+    await expect(tables).toHaveCount(2);
+    const longTable = tables.filter({ hasText: TABLE_V2 });
+    const shortTable = tables.filter({ hasNotText: TABLE_V2 });
+    await expect(members.sheet.getByRole("columnheader", { name: "Expiration" })).toHaveCount(0);
+
+    const box = async (locator: Locator) => {
+      const b = await locator.boundingBox();
+      if (!b) throw new Error("element has no box");
+      return b;
+    };
+    // Soft, so one run reports every broken decision: the wide sheet tier,
+    // columns fitted to each card, and the hover on each cut column.
+    expect.soft((await box(members.sheet)).width).toBe(832);
+    for (const table of [longTable, shortTable]) {
+      const fit = await table.evaluate((el) => {
+        const scroller = el.parentElement as HTMLElement;
+        return {
+          table: el.getBoundingClientRect().width,
+          visible: scroller.clientWidth,
+          content: scroller.scrollWidth,
+        };
+      });
+      expect.soft(Math.abs(fit.table - fit.visible)).toBeLessThanOrEqual(1);
+      expect.soft(fit.content).toBeLessThanOrEqual(fit.visible);
+    }
+    const tableHeaderX = async (table: Locator) =>
+      (await box(table.getByRole("columnheader", { name: "Table", exact: true }))).x;
+    const shortTableX = await tableHeaderX(shortTable);
+    expect(await tableHeaderX(longTable)).toBe(shortTableX);
+
+    // The cell holds the cut name; hovering adds the tooltip's copy.
+    const v2Row = longTable.getByRole("row").filter({ hasText: TABLE_V2 });
+    const fullTable = page.getByText(TABLE_V2, { exact: true });
+    await expect(fullTable).toHaveCount(1);
+    await v2Row.getByText(TABLE_V2, { exact: true }).hover();
+    await expect.soft(fullTable).toHaveCount(2);
+    // The schema shows on both rows, so its tooltip makes a third copy.
+    const fullSchema = page.getByText(LONG_SCHEMA, { exact: true });
+    await expect(fullSchema).toHaveCount(2);
+    await v2Row.getByText(LONG_SCHEMA, { exact: true }).hover();
+    await expect.soft(fullSchema).toHaveCount(3);
+
+    const schemaHeader = await box(longTable.getByRole("columnheader", { name: "Schema", exact: true }));
+    const handleX = schemaHeader.x + schemaHeader.width - 3;
+    const handleY = schemaHeader.y + schemaHeader.height / 2;
+    await page.mouse.move(handleX, handleY);
+    await page.mouse.down();
+    await page.mouse.move(handleX + 80, handleY, { steps: 8 });
+    await page.mouse.up();
+    expect(await tableHeaderX(longTable)).toBeGreaterThan(shortTableX + 60);
+    expect(await tableHeaderX(shortTable)).toBe(shortTableX);
   });
 });
 

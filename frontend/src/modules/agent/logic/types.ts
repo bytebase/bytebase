@@ -38,6 +38,11 @@ export type AgentEvidenceReference =
       title: string;
     }
   | {
+      kind: "plan";
+      name: string;
+      title: string;
+    }
+  | {
       kind: "database";
       name: string;
     };
@@ -74,7 +79,7 @@ export type AgentResponseAction =
   | { kind: "continue"; prompt: string };
 
 export interface AgentResourceReference {
-  kind: "project" | "database" | "issue";
+  kind: "project" | "database" | "issue" | "plan";
   name: string;
   project: string;
   label: string;

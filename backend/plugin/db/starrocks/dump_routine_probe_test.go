@@ -19,28 +19,23 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
-// BYT-10211: neither Doris nor StarRocks has MySQL stored routines or events, and Doris
-// kernels that dropped the PL/SQL grammar (SelectDB 4.0.12+/4.1.8+/5.0.5+, apache/doris#58700)
-// reject `SHOW FUNCTION STATUS` outright, which aborted the whole schema sync. The dump must
-// complete without ever sending the MySQL routine or event probes.
+// BYT-10211: StarRocks has no MySQL stored routines or events, and a kernel that rejects
+// `SHOW FUNCTION STATUS` outright aborted the whole schema sync. The dump must complete
+// without ever sending the MySQL routine or event probes.
 func TestDumpSendsNoRoutineOrEventProbe(t *testing.T) {
-	for _, engine := range []storepb.Engine{storepb.Engine_DORIS, storepb.Engine_STARROCKS} {
-		t.Run(engine.String(), func(t *testing.T) {
-			dumpRecorder.reset(plsqlStrippedCatalog(engine))
-			sqlDB, err := sql.Open(dumpRecorderDriverName, "")
-			require.NoError(t, err)
-			defer sqlDB.Close()
+	dumpRecorder.reset(plsqlStrippedCatalog())
+	sqlDB, err := sql.Open(dumpRecorderDriverName, "")
+	require.NoError(t, err)
+	defer sqlDB.Close()
 
-			d := &Driver{dbType: engine, db: sqlDB, databaseName: "prod_tg"}
-			var out bytes.Buffer
-			require.NoError(t, d.Dump(context.Background(), &out, nil))
+	d := &Driver{dbType: storepb.Engine_STARROCKS, db: sqlDB, databaseName: "analytics"}
+	var out bytes.Buffer
+	require.NoError(t, d.Dump(context.Background(), &out, nil))
 
-			require.Contains(t, out.String(), "CREATE TABLE `orders`")
-			require.Contains(t, out.String(), "CREATE VIEW `v_orders` AS SELECT `id` FROM `orders`")
-			for _, q := range dumpRecorder.recorded() {
-				require.NotRegexp(t, forbiddenProbe, q)
-			}
-		})
+	require.Contains(t, out.String(), "CREATE TABLE `orders`")
+	require.Contains(t, out.String(), "CREATE VIEW `v_orders` AS SELECT `id` FROM `orders`")
+	for _, q := range dumpRecorder.recorded() {
+		require.NotRegexp(t, forbiddenProbe, q)
 	}
 }
 
@@ -50,17 +45,15 @@ var (
 )
 
 // plsqlStrippedCatalog answers the dump's table and view queries with the column shapes a
-// live Doris 4.1.3 returns (and the StarRocks materialized-view catalog in its own shape),
-// and rejects the routine probes with the exact error a PL/SQL-stripped kernel returns.
-func plsqlStrippedCatalog(engine storepb.Engine) func(string) ([]string, [][]driver.Value, error) {
+// live StarRocks returns, and rejects the routine probes with the exact error a kernel
+// without the routine grammar returns.
+func plsqlStrippedCatalog() func(string) ([]string, [][]driver.Value, error) {
 	return func(query string) ([]string, [][]driver.Value, error) {
 		switch {
 		case routineStatusProbe.MatchString(query):
 			return nil, nil, &mysql.MySQLError{Number: 1105, SQLState: [5]byte{'H', 'Y', '0', '0', '0'}, Message: "errCode = 2, detailMessage = no viable alternative at input 'SHOW FUNCTION'(line 1, pos 5)"}
 		case strings.Contains(query, "information_schema.TABLES"):
 			return []string{"TABLE_NAME", "TABLE_TYPE"}, [][]driver.Value{{"orders", "BASE TABLE"}, {"v_orders", "VIEW"}}, nil
-		case strings.Contains(query, "mv_infos("):
-			return []string{"Name"}, nil, nil
 		case strings.Contains(query, "information_schema.materialized_views"):
 			return []string{"TABLE_NAME", "REFRESH_TYPE"}, nil, nil
 		case strings.HasPrefix(query, "SHOW CREATE TABLE"):
@@ -70,7 +63,7 @@ func plsqlStrippedCatalog(engine storepb.Engine) func(string) ([]string, [][]dri
 		case strings.HasPrefix(query, "SHOW COLUMNS FROM"):
 			return []string{"Field", "Type", "Null", "Key", "Default", "Extra"}, [][]driver.Value{{"id", "int", "YES", "", nil, ""}}, nil
 		}
-		return nil, nil, errors.Errorf("unexpected statement for %s: %q", engine, query)
+		return nil, nil, errors.Errorf("unexpected statement: %q", query)
 	}
 }
 

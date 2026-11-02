@@ -1,0 +1,67 @@
+- statement: CREATE TABLE t(a int);
+- statement: CREATE TABLE t(a JSON, b BLOB, c TEXT);
+  want:
+    - status: 2
+      code: 411
+      title: COLUMN_TYPE_DISALLOW_LIST
+      content: Disallow column type JSON but column `t`.`a` is
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(d int);
+    ALTER TABLE t add COLUMN (a JSON, b BLOB, c TEXT);
+  want:
+    - status: 2
+      code: 411
+      title: COLUMN_TYPE_DISALLOW_LIST
+      content: Disallow column type JSON but column `t`.`a` is
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(d int);
+    ALTER TABLE t ADD COLUMN (a JSON, b JSON);
+  want:
+    - status: 2
+      code: 411
+      title: COLUMN_TYPE_DISALLOW_LIST
+      content: Disallow column type JSON but column `t`.`a` is
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 411
+      title: COLUMN_TYPE_DISALLOW_LIST
+      content: Disallow column type JSON but column `t`.`b` is
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(c int, b int);
+    ALTER TABLE t CHANGE COLUMN c a JSON, MODIFY b BLOB;
+  want:
+    - status: 2
+      code: 411
+      title: COLUMN_TYPE_DISALLOW_LIST
+      content: Disallow column type JSON but column `t`.`a` is
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(c int, b int);
+    ALTER TABLE t MODIFY COLUMN c JSON;
+  want:
+    - status: 2
+      code: 411
+      title: COLUMN_TYPE_DISALLOW_LIST
+      content: Disallow column type JSON but column `t`.`c` is
+      startposition:
+        line: 2
+        column: 0
+      endposition: null

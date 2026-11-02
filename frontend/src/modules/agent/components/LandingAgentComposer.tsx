@@ -6,9 +6,11 @@ import { projectNamePrefix } from "@/lib/resourceName";
 import {
   getNameParentTokens,
   issueNamePrefix,
+  planNamePrefix,
 } from "@/stores/modules/v1/common";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
+import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { LandingStarterId } from "../logic/landingStarters";
 import {
@@ -16,6 +18,7 @@ import {
   canAddResourceMention,
   getDatabaseMentionLabel,
   getMentionTriggerRange,
+  getPlanMentionLabel,
   hasUnboundResourceMention,
   insertResourceMention,
   normalizeAgentResourceReferences,
@@ -26,7 +29,7 @@ import type {
   AgentResourceMention,
   AgentResourceReference,
 } from "../logic/types";
-import { selectHasRunningChat, useAgentStore } from "../store/agent";
+import { useAgentStore } from "../store/agent";
 import { AgentMentionTextarea } from "./AgentMentionTextarea";
 import { AgentResourcePicker } from "./AgentResourcePicker";
 import { LandingStarterSelector } from "./LandingStarterSelector";
@@ -55,10 +58,6 @@ export function LandingAgentComposer({
   const mentionRangeRef = useRef<AgentMentionRange | null>(null);
   const pendingCaretRef = useRef<number | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const hasRunningChat = useAgentStore(selectHasRunningChat);
-  const hasQueuedMessage = useAgentStore(
-    (state) => state.queuedUserMessage !== null
-  );
 
   useEffect(() => {
     if (pendingCaretRef.current === null) return;
@@ -119,6 +118,20 @@ export function LandingAgentComposer({
     });
   };
 
+  const selectMentionPlan = (plan: Plan) => {
+    const [projectId, planId] = getNameParentTokens(plan.name, [
+      projectNamePrefix,
+      planNamePrefix,
+    ]);
+    if (!projectId || !planId) return;
+    selectMentionResource({
+      kind: "plan",
+      name: plan.name,
+      project: `${projectNamePrefix}${projectId}`,
+      label: getPlanMentionLabel(plan),
+    });
+  };
+
   const handleResourcePickerOpenChange = (nextOpen: boolean) => {
     setResourcePickerOpen(nextOpen);
     if (nextOpen) return;
@@ -142,7 +155,6 @@ export function LandingAgentComposer({
 
   const selectChat = () => {
     const store = useAgentStore.getState();
-    if (selectHasRunningChat(store) || store.queuedUserMessage) return;
     const page = {
       path: `${window.location.pathname}${window.location.search}${window.location.hash}`,
       title: document.title,
@@ -202,7 +214,6 @@ export function LandingAgentComposer({
       <div className="px-3 pt-2">
         <LandingStarterSelector
           starterIds={starterIds}
-          disabled={hasRunningChat || hasQueuedMessage}
           onSelect={sendStarter}
         />
       </div>
@@ -297,6 +308,7 @@ export function LandingAgentComposer({
           onSelectProject={selectMentionProject}
           onSelectDatabase={selectMentionDatabase}
           onSelectIssue={selectMentionIssue}
+          onSelectPlan={selectMentionPlan}
         />
       </div>
       <div className="flex flex-wrap items-end justify-between gap-2 px-3 pb-3">
@@ -308,12 +320,7 @@ export function LandingAgentComposer({
         <Button
           type="submit"
           size="sm"
-          disabled={
-            !prompt.trim() ||
-            hasRunningChat ||
-            hasQueuedMessage ||
-            hasAdditionalMention
-          }
+          disabled={!prompt.trim() || hasAdditionalMention}
         >
           <Send className="size-4" />
           {t("agent.send")}

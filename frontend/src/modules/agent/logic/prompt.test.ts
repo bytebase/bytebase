@@ -3,7 +3,7 @@ import { describe, expect, test } from "vitest";
 import { buildSystemPrompt } from "./prompt";
 
 describe("buildSystemPrompt", () => {
-  test("requests up to three useful English follow-up questions without auto-sending", () => {
+  test("requests useful English follow-up questions that send on click", () => {
     const prompt = buildSystemPrompt({ path: "/landing", title: "Workspace" });
     expect(prompt).toContain(
       "one primary action: Open, draft-plan, or draft-issue-comment"
@@ -13,7 +13,8 @@ describe("buildSystemPrompt", () => {
     expect(prompt).toContain("For a successful answer");
     expect(prompt).toContain("English");
     expect(prompt).toContain("Do not add filler questions");
-    expect(prompt).toContain("does not send or execute anything");
+    expect(prompt).toContain("sends it as a new user message");
+    expect(prompt).toContain("does not itself approve or execute a change");
   });
 
   test("offers only evidenced exact Issue links without taking a review action", () => {
@@ -122,6 +123,30 @@ describe("buildSystemPrompt", () => {
     );
     expect(prompt).toContain("inspect one page");
     expect(prompt).toContain("report only a lower bound, not a total");
+    expect(prompt).not.toContain("Referenced project for this turn");
+  });
+
+  test("grounds a selected Plan in a fresh overview for only this turn", () => {
+    const prompt = buildSystemPrompt({
+      path: "/projects/orders/plans",
+      title: "Plans",
+      context: "projects/orders",
+      referencedProject: "projects/billing",
+      referencedPlan: "projects/billing/plans/7",
+      runMode: "read-only",
+    });
+
+    expect(prompt).toContain(
+      "Selected Plan for this turn: projects/billing/plans/7"
+    );
+    expect(prompt).toContain("fresh get_plan_overview result");
+    expect(prompt).toContain("owning project must match projects/billing");
+    expect(prompt).toContain("does not include Sheet or Release SQL");
+    expect(prompt).toContain("corresponding Sheet or Release read API");
+    expect(prompt).toContain("does not change the chat context");
+    expect(prompt).toContain(
+      "only make changes when the member explicitly asks"
+    );
     expect(prompt).not.toContain("Referenced project for this turn");
   });
 

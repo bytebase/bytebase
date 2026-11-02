@@ -1,0 +1,57 @@
+- statement: ALTER TABLE tech_book ADD COLUMN a int;
+- statement: |-
+    ALTER TABLE tech_book ADD COLUMN a int;
+    ALTER TABLE tech_book CHANGE COLUMN a c int;
+  want:
+    - status: 2
+      code: 207
+      title: STATEMENT_MERGE_ALTER_TABLE
+      content: There are 2 statements to modify table `tech_book`
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(a int);
+    ALTER TABLE tech_book ADD COLUMN b int;
+    ALTER TABLE t ADD COLUMN b int;
+    ALTER TABLE tech_book MODIFY COLUMN b varchar(255);
+  want:
+    - status: 2
+      code: 207
+      title: STATEMENT_MERGE_ALTER_TABLE
+      content: There are 2 statements to modify table `t`
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+    - status: 2
+      code: 207
+      title: STATEMENT_MERGE_ALTER_TABLE
+      content: There are 2 statements to modify table `tech_book`
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(a int);
+    ALTER TABLE tech_book ADD COLUMN a int;
+    ALTER TABLE tech_book ADD COLUMN b int;
+    ALTER TABLE t ADD COLUMN b int;
+  want:
+    - status: 2
+      code: 207
+      title: STATEMENT_MERGE_ALTER_TABLE
+      content: There are 2 statements to modify table `tech_book`
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+    - status: 2
+      code: 207
+      title: STATEMENT_MERGE_ALTER_TABLE
+      content: There are 2 statements to modify table `t`
+      startposition:
+        line: 4
+        column: 0
+      endposition: null

@@ -3,6 +3,7 @@ package mcp
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -39,8 +40,10 @@ type confirmingQueryMock struct {
 	environment string
 	// refusesConfirmed has Query refuse an INSERT even when it is confirmed.
 	refusesConfirmed bool
-	mu               sync.Mutex
-	queries          []queryCall
+	// changes, when set, serves the calls that file a change.
+	changes *changeMock
+	mu      sync.Mutex
+	queries []queryCall
 }
 
 func newConfirmingQueryMock(databases []map[string]any) *confirmingQueryMock {
@@ -48,6 +51,10 @@ func newConfirmingQueryMock(databases []map[string]any) *confirmingQueryMock {
 }
 
 func (m *confirmingQueryMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if m.changes != nil && changeCall(r.URL.Path) {
+		m.changes.handler().ServeHTTP(w, r)
+		return
+	}
 	if !strings.HasSuffix(r.URL.Path, "SQLService/Query") {
 		m.mu.Lock()
 		databases := m.databases
@@ -73,6 +80,12 @@ func (m *confirmingQueryMock) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	}
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(makeQueryResponse([]string{"id"}, []string{"int4"}, [][]any{{"1"}}, "0.001s"))
+}
+
+// changeCall reports whether path is a call that files a change.
+func changeCall(path string) bool {
+	return strings.Contains(path, "SheetService/") || strings.Contains(path, "PlanService/") ||
+		strings.Contains(path, "IssueService/") || strings.Contains(path, "RolloutService/")
 }
 
 // setDatabases changes the databases the list calls return.
@@ -124,8 +137,12 @@ func runAnswer(choice any) *mcp.ElicitResult {
 	return &mcp.ElicitResult{Action: "accept", Content: map[string]any{runChoiceField: choice}}
 }
 
+// agentIssueTitle is the title the agent sends with a request it may file as
+// an issue.
+const agentIssueTitle = "Add an employee"
+
 func queryParams(statement string) *mcp.CallToolParams {
-	return &mcp.CallToolParams{Name: "query_database", Arguments: map[string]any{"database": "employee_db", "statement": statement}}
+	return &mcp.CallToolParams{Name: "query_database", Arguments: map[string]any{"database": "employee_db", "statement": statement, "issueTitle": agentIssueTitle}}
 }
 
 func callQuery(t *testing.T, session *mcp.ClientSession, params *mcp.CallToolParams) *mcp.CallToolResult {
@@ -138,6 +155,10 @@ func callQuery(t *testing.T, session *mcp.ClientSession, params *mcp.CallToolPar
 }
 
 func TestQueryDatabaseAsksBeforeAWrite(t *testing.T) {
+	const (
+		withIssue    = `"oneOf":[{"const":"run","title":"Run now"},{"const":"issue","title":"Create an issue titled \"Add an employee\""},{"const":"change","title":"Change it in chat"}]`
+		withoutIssue = `"oneOf":[{"const":"run","title":"Run now"},{"const":"change","title":"Change it in chat"}]`
+	)
 	for _, row := range []struct {
 		name        string
 		databases   []map[string]any
@@ -145,18 +166,19 @@ func TestQueryDatabaseAsksBeforeAWrite(t *testing.T) {
 		schema      string
 		container   string
 		header      string
+		choices     string
 	}{
 		{name: "the database's default schema", databases: employeeDatabase(), environment: "prod",
-			header: `Run in environment "prod" on database "employee_db",` + "\n" + `instance "prod-pg":`},
+			header: `Run in environment "prod" on database "employee_db",` + "\n" + `instance "prod-pg":`, choices: withIssue},
 		{name: "a named schema", databases: employeeDatabase(), environment: "prod", schema: "app",
-			header: `Run in environment "prod" on database "employee_db",` + "\n" + `instance "prod-pg", schema "app":`},
+			header: `Run in environment "prod" on database "employee_db",` + "\n" + `instance "prod-pg", schema "app":`, choices: withoutIssue},
 		{name: "a project instance", databases: []map[string]any{
 			makeDatabase("projects/hr/instances/prod-pg/databases/employee_db", "projects/hr/instances/prod-pg", "projects/hr", "POSTGRES", "ds-1"),
-		}, environment: "prod", header: `Run in environment "prod" on database "employee_db",` + "\n" + `instance "prod-pg":`},
+		}, environment: "prod", header: `Run in environment "prod" on database "employee_db",` + "\n" + `instance "prod-pg":`, choices: withIssue},
 		{name: "no environment", databases: employeeDatabase(),
-			header: `Run on database "employee_db",` + "\n" + `instance "prod-pg":`},
-		{name: "a CosmosDB container", databases: employeeDatabase(), environment: "prod", container: "orders",
-			header: `Run in environment "prod" on database "employee_db",` + "\n" + `instance "prod-pg", container "orders":`},
+			header: `Run on database "employee_db",` + "\n" + `instance "prod-pg":`, choices: withIssue},
+		{name: "a container", databases: employeeDatabase(), environment: "prod", container: "orders",
+			header: `Run in environment "prod" on database "employee_db",` + "\n" + `instance "prod-pg", container "orders":`, choices: withIssue},
 	} {
 		t.Run(row.name, func(t *testing.T) {
 			mock := newConfirmingQueryMock(row.databases)
@@ -166,7 +188,7 @@ func TestQueryDatabaseAsksBeforeAWrite(t *testing.T) {
 			session := connectLegacy(t, endpoint, token, &mcp.ClientOptions{ElicitationHandler: user.handle})
 
 			const insert = "INSERT INTO employee VALUES (1)"
-			arguments := map[string]any{"database": "employee_db", "statement": insert}
+			arguments := map[string]any{"database": "employee_db", "statement": insert, "issueTitle": agentIssueTitle}
 			if row.schema != "" {
 				arguments["schema"] = row.schema
 			}
@@ -181,7 +203,7 @@ func TestQueryDatabaseAsksBeforeAWrite(t *testing.T) {
 			schema, err := json.Marshal(asked.RequestedSchema)
 			require.NoError(t, err)
 			require.Contains(t, string(schema), `"default":"run"`)
-			require.Contains(t, string(schema), `"oneOf":[{"const":"run","title":"Run now"},{"const":"change","title":"Change it in chat"}]`)
+			require.Contains(t, string(schema), row.choices)
 			require.Contains(t, string(schema), `"description":"Run now runs it at once, with no issue or approval."`)
 			require.Equal(t, []queryCall{{Statement: insert}, {Statement: insert, Confirmed: true}}, mock.calls())
 		})
@@ -412,9 +434,12 @@ func TestQueryDatabaseReportsATargetThatChangedWhileAsked(t *testing.T) {
 		{name: "another match, cancel", databases: another, answer: &mcp.ElicitResult{Action: "cancel"}, text: "Not run: the user cancelled"},
 		{name: "a different database, Run now", databases: moved, answer: runAnswer(runChoiceRun), text: "STALE_CONFIRMATION"},
 		{name: "a different database, cancel", databases: moved, answer: &mcp.ElicitResult{Action: "cancel"}, text: "Not run: the user cancelled"},
+		{name: "another match, Create an issue", databases: another, answer: runAnswer(runChoiceIssue), text: "STALE_CONFIRMATION"},
+		{name: "a different database, Create an issue", databases: moved, answer: runAnswer(runChoiceIssue), text: "STALE_CONFIRMATION"},
 	} {
 		t.Run(row.name, func(t *testing.T) {
 			mock := newConfirmingQueryMock(employeeDatabase())
+			mock.changes = newChangeMock(nil)
 			_, endpoint, token := newQueryConfirmServer(t, mock)
 			user := &asker{answer: row.answer, whileAsked: func() { mock.setDatabases(row.databases) }}
 			session := connectLegacy(t, endpoint, token, &mcp.ClientOptions{ElicitationHandler: user.handle})
@@ -426,6 +451,37 @@ func TestQueryDatabaseReportsATargetThatChangedWhileAsked(t *testing.T) {
 			for _, query := range mock.calls() {
 				require.False(t, query.Confirmed)
 			}
+			require.Nil(t, mock.changes.getCapturedSheet(), "a stale answer files nothing")
+		})
+	}
+}
+
+func TestQueryDatabaseReportsATitleThatChangedWhileAsked(t *testing.T) {
+	for _, row := range []struct {
+		name          string
+		asked, answer string
+	}{
+		{name: "a title added after a form without Create an issue", answer: agentIssueTitle},
+		{name: "another title", asked: agentIssueTitle, answer: "Remove an employee"},
+	} {
+		t.Run(row.name, func(t *testing.T) {
+			mock := newConfirmingQueryMock(employeeDatabase())
+			mock.changes = newChangeMock(nil)
+			s, _, token := newQueryConfirmServer(t, mock)
+			session := connectMRTR(t, mrtrEndpoint(t, s), token)
+			const insert = "INSERT INTO employee VALUES (1)"
+			params := &mcp.CallToolParams{Name: "query_database", Arguments: map[string]any{"database": "employee_db", "statement": insert, "issueTitle": row.asked}}
+
+			first := callQuery(t, session, params)
+			require.True(t, first.NeedsInput())
+			params.Arguments = map[string]any{"database": "employee_db", "statement": insert, "issueTitle": row.answer}
+			params.InputResponses = mcp.InputResponseMap{confirmDecisionRequestID: runAnswer(runChoiceIssue)}
+			params.RequestState = first.RequestState
+			res := callQuery(t, session, params)
+			require.True(t, res.IsError)
+			require.Contains(t, resultText(t, res), "STALE_CONFIRMATION")
+			require.Nil(t, mock.changes.getCapturedSheet())
+			require.Equal(t, []queryCall{{Statement: insert}}, mock.calls())
 		})
 	}
 }
@@ -454,13 +510,13 @@ func TestQueryDatabaseConfirmationUnderMRTRClient(t *testing.T) {
 	require.True(t, changed.IsError)
 	require.Contains(t, resultText(t, changed), "STALE_CONFIRMATION")
 
-	moved := &mcp.CallToolParams{Name: "query_database", Arguments: map[string]any{"database": "employee_db", "statement": insert, "container": "orders"}}
+	moved := &mcp.CallToolParams{Name: "query_database", Arguments: map[string]any{"database": "employee_db", "statement": insert, "issueTitle": agentIssueTitle, "container": "orders"}}
 	moved.InputResponses = run
 	moved.RequestState = first.RequestState
 	require.Contains(t, resultText(t, callQuery(t, session, moved)), "STALE_CONFIRMATION", "a confirmation is for one container")
 
 	unknown := call(insert, mcp.InputResponseMap{confirmDecisionRequestID: runAnswer("skip")}, first.RequestState)
-	require.Equal(t, "Not run: the answer chose neither option, so nothing changed.", resultText(t, unknown))
+	require.Equal(t, "Not run: the answer chose none of the form's choices, so nothing changed.", resultText(t, unknown))
 
 	ran := call(insert, run, first.RequestState)
 	require.False(t, ran.IsError, resultText(t, ran))
@@ -473,12 +529,13 @@ func TestQueryDatabaseConfirmationUnderMRTRClient(t *testing.T) {
 
 func TestQueryDatabaseReportsAnAnswerThatRunsNothingBeforeAStaleOne(t *testing.T) {
 	mock := newConfirmingQueryMock(employeeDatabase())
+	mock.changes = newChangeMock(nil)
 	s, _, token := newQueryConfirmServer(t, mock)
 	session := connectMRTR(t, mrtrEndpoint(t, s), token)
 	const insert = "INSERT INTO employee VALUES (1)"
 	const database = "instances/prod-pg/databases/employee_db"
 	alice := withOAuth2ClientID(withUserEmail(withWorkspaceID(context.Background(), "ws-test"), "alice@example.com"), "client-A")
-	old := s.signConfirmationState(alice, runConfirmation{database: database}, auth.MCPStatementDigest(insert, database, "", ""), time.Now().Add(-11*time.Minute))
+	old := s.signConfirmationState(alice, runConfirmation{database: database}, askedDigest(auth.MCPStatementDigest(insert, database, "", ""), agentIssueTitle), time.Now().Add(-11*time.Minute))
 	call := func(answer *mcp.ElicitResult) *mcp.CallToolResult {
 		params := queryParams(insert)
 		params.InputResponses = mcp.InputResponseMap{confirmDecisionRequestID: answer}
@@ -496,7 +553,146 @@ func TestQueryDatabaseReportsAnAnswerThatRunsNothingBeforeAStaleOne(t *testing.T
 	require.True(t, ran.IsError)
 	require.Contains(t, resultText(t, ran), "STALE_CONFIRMATION")
 	require.Contains(t, resultText(t, ran), "the user was asked more than 10 minutes ago")
+	filed := call(runAnswer(runChoiceIssue))
+	require.True(t, filed.IsError)
+	require.Contains(t, resultText(t, filed), "the user was asked more than 10 minutes ago, so nothing ran and no issue was filed")
 	require.Empty(t, mock.calls())
+	require.Nil(t, mock.changes.getCapturedSheet())
+}
+
+func TestQueryDatabaseFilesAnIssue(t *testing.T) {
+	mock := newConfirmingQueryMock(employeeDatabase())
+	mock.changes = newChangeMock(nil)
+	mock.changes.issueResponse = defaultIssueResponse("CHECKING")
+	s, endpoint, token := newQueryConfirmServer(t, mock)
+	s.planCheckPollBudgetOverride = 100 * time.Millisecond
+	user := &asker{answer: runAnswer(runChoiceIssue)}
+	session := connectLegacy(t, endpoint, token, &mcp.ClientOptions{ElicitationHandler: user.handle})
+
+	const insert = "INSERT INTO employee VALUES (1)"
+	res := callQuery(t, session, queryParams(insert))
+	require.False(t, res.IsError, resultText(t, res))
+	require.Equal(t, "Not run: the user chose Create an issue, so the request is filed as issue projects/hr-system/issues/3003 "+
+		"(https://bb.example.com/projects/hr-system/issues/3003). The issue page shows its approval status.", resultText(t, res))
+	require.Nil(t, res.StructuredContent, "a client shows text alone to the model whole")
+	require.Equal(t, []queryCall{{Statement: insert}}, mock.calls(), "filing an issue runs nothing")
+
+	sheet, ok := mock.changes.getCapturedSheet()["sheet"].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, base64.StdEncoding.EncodeToString([]byte(insert)), sheet["content"])
+	plan := mock.changes.getCapturedPlan()
+	require.Equal(t, "projects/hr", plan["parent"])
+	planObj, ok := plan["plan"].(map[string]any)
+	require.True(t, ok)
+	specs, ok := planObj["specs"].([]any)
+	require.True(t, ok)
+	spec, ok := specs[0].(map[string]any)
+	require.True(t, ok)
+	config, ok := spec["changeDatabaseConfig"].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, []any{"instances/prod-pg/databases/employee_db"}, config["targets"])
+	issue, ok := mock.changes.getCapturedIssue()["issue"].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, agentIssueTitle, issue["title"])
+	require.Equal(t, planObj["title"], issue["title"])
+	require.NotContains(t, issue, "description")
+	require.Nil(t, mock.changes.getCapturedRollout(), "Bytebase creates the rollout once the approval flow is done")
+}
+
+func TestQueryDatabaseReportsPlanChecksThatHoldTheRollout(t *testing.T) {
+	const filed = "Not run: the user chose Create an issue, so the request is filed as issue projects/hr-system/issues/3003 " +
+		"(https://bb.example.com/projects/hr-system/issues/3003). The issue page shows its approval status."
+	warning := map[string]any{"status": "WARNING", "title": "The statement affects many rows"}
+	for _, row := range []struct {
+		name string
+		run  map[string]any
+		text string
+	}{
+		{name: "an error", run: map[string]any{"status": "DONE", "results": []any{
+			map[string]any{"status": "ERROR", "title": "UPDATE requires a WHERE clause"}, warning,
+		}}, text: filed + " Its plan checks did not pass, so Bytebase will not create its rollout on its own: UPDATE requires a WHERE clause."},
+		{name: "a failed run", run: map[string]any{"status": "FAILED"},
+			text: filed + " Its plan checks did not pass, so Bytebase will not create its rollout on its own."},
+		{name: "a warning", run: map[string]any{"status": "DONE", "results": []any{warning}}, text: filed},
+		{name: "checks still running", run: map[string]any{"status": "RUNNING"},
+			text: filed + " Its plan checks are still running; the issue page shows their result."},
+	} {
+		t.Run(row.name, func(t *testing.T) {
+			mock := newConfirmingQueryMock(employeeDatabase())
+			mock.changes = newChangeMock(nil)
+			mock.changes.planCheckRunResponse = row.run
+			mock.changes.issueResponse = defaultIssueResponse("CHECKING")
+			s, endpoint, token := newQueryConfirmServer(t, mock)
+			s.planCheckPollBudgetOverride = 100 * time.Millisecond
+			user := &asker{answer: runAnswer(runChoiceIssue)}
+			session := connectLegacy(t, endpoint, token, &mcp.ClientOptions{ElicitationHandler: user.handle})
+
+			res := callQuery(t, session, queryParams("INSERT INTO employee VALUES (1)"))
+			require.False(t, res.IsError, resultText(t, res))
+			require.Equal(t, row.text, resultText(t, res))
+		})
+	}
+}
+
+func TestQueryDatabaseOffersAnIssueOnlyWithATitleAndNoSchema(t *testing.T) {
+	for _, row := range []struct {
+		name      string
+		arguments map[string]any
+		offered   bool
+	}{
+		{name: "a title and the database's default schema", arguments: map[string]any{"issueTitle": agentIssueTitle}, offered: true},
+		{name: "a named schema", arguments: map[string]any{"issueTitle": agentIssueTitle, "schema": "app"}},
+		{name: "no title", arguments: map[string]any{}},
+		{name: "a blank title", arguments: map[string]any{"issueTitle": " "}},
+	} {
+		t.Run(row.name, func(t *testing.T) {
+			mock := newConfirmingQueryMock(employeeDatabase())
+			mock.changes = newChangeMock(nil)
+			s, _, token := newQueryConfirmServer(t, mock)
+			s.planCheckPollBudgetOverride = 100 * time.Millisecond
+			session := connectMRTR(t, mrtrEndpoint(t, s), token)
+			params := &mcp.CallToolParams{Name: "query_database", Arguments: row.arguments}
+			row.arguments["database"] = "employee_db"
+			row.arguments["statement"] = "INSERT INTO employee VALUES (1)"
+
+			first := callQuery(t, session, params)
+			require.True(t, first.NeedsInput())
+			form, err := json.Marshal(first.InputRequests[confirmDecisionRequestID])
+			require.NoError(t, err)
+			require.Equal(t, row.offered, strings.Contains(string(form), `"const":"issue"`))
+
+			params.InputResponses = mcp.InputResponseMap{confirmDecisionRequestID: runAnswer(runChoiceIssue)}
+			params.RequestState = first.RequestState
+			res := callQuery(t, session, params)
+			if row.offered {
+				require.Contains(t, resultText(t, res), "Not run: the user chose Create an issue")
+				require.NotNil(t, mock.changes.getCapturedIssue())
+				return
+			}
+			require.Equal(t, "Not run: the answer chose none of the form's choices, so nothing changed.", resultText(t, res))
+			require.Nil(t, mock.changes.getCapturedSheet())
+		})
+	}
+}
+
+func TestQueryDatabaseReportsAnIssueThatCouldNotBeFiled(t *testing.T) {
+	mock := newConfirmingQueryMock(employeeDatabase())
+	mock.changes = newChangeMock(nil)
+	mock.changes.issueStatus = http.StatusForbidden
+	mock.changes.issueResponse = map[string]any{"message": "permission denied: bb.issues.create"}
+	s, endpoint, token := newQueryConfirmServer(t, mock)
+	s.planCheckPollBudgetOverride = 100 * time.Millisecond
+	user := &asker{answer: runAnswer(runChoiceIssue)}
+	session := connectLegacy(t, endpoint, token, &mcp.ClientOptions{ElicitationHandler: user.handle})
+
+	const insert = "INSERT INTO employee VALUES (1)"
+	res := callQuery(t, session, queryParams(insert))
+	require.True(t, res.IsError)
+	text := resultText(t, res)
+	require.Contains(t, text, `"code": "PERMISSION_DENIED"`)
+	require.Contains(t, text, `"plan": "projects/hr-system/plans/2002"`, "the result names what the earlier steps created")
+	require.Equal(t, []queryCall{{Statement: insert}}, mock.calls())
+	require.Nil(t, mock.changes.getCapturedRollout())
 }
 
 func TestConfirmationRequiredIn(t *testing.T) {

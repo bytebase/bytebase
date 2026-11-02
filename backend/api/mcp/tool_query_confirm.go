@@ -2,6 +2,7 @@ package mcp
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -24,6 +25,7 @@ import (
 const (
 	runChoiceField  = "choice"
 	runChoiceRun    = "run"
+	runChoiceIssue  = "issue"
 	runChoiceChange = "change"
 )
 
@@ -83,10 +85,22 @@ func confirmationRequiredIn(body json.RawMessage) *confirmationRequired {
 	return nil
 }
 
-// askToRun returns the form that asks the user to run statement. A call that
+// askedDigest is what the form's state binds: the request's digest and the
+// issue title, which decides whether the form offers Create an issue and is
+// what that choice shows and files. Query checks the request's digest alone,
+// since it never sees the title.
+func askedDigest(digest []byte, issueTitle string) []byte {
+	h := sha256.New()
+	_, _ = h.Write(digest)
+	_, _ = h.Write([]byte(issueTitle))
+	return h.Sum(nil)
+}
+
+// askToRun returns the form that asks the user to run statement, and offers to
+// file it as an issue titled issueTitle unless issueTitle is empty. A call that
 // already asked which database to use gets a result that has the agent call
 // again instead: an older client answers one form per call.
-func (s *Server) askToRun(ctx context.Context, req *mcp.CallToolRequest, confirmation runConfirmation, digest []byte, statement, container string, required *confirmationRequired) *mcp.CallToolResult {
+func (s *Server) askToRun(ctx context.Context, req *mcp.CallToolRequest, confirmation runConfirmation, digest []byte, statement, container string, required *confirmationRequired, issueTitle string) *mcp.CallToolResult {
 	project, instance, database, err := common.GetDatabaseResourceName(confirmation.database)
 	if err != nil {
 		return formatToolError(err)
@@ -113,6 +127,11 @@ func (s *Server) askToRun(ctx context.Context, req *mcp.CallToolRequest, confirm
 		}
 	}
 	message := strings.Join(append(header, request...), "\n")
+	choices := []any{map[string]any{"const": runChoiceRun, "title": "Run now"}}
+	if issueTitle != "" {
+		choices = append(choices, map[string]any{"const": runChoiceIssue, "title": fmt.Sprintf("Create an issue titled %q", issueTitle)})
+	}
+	choices = append(choices, map[string]any{"const": runChoiceChange, "title": "Change it in chat"})
 	return s.askWithForm(ctx, confirmation, digest, message, map[string]any{
 		"type": "object",
 		"properties": map[string]any{
@@ -120,11 +139,8 @@ func (s *Server) askToRun(ctx context.Context, req *mcp.CallToolRequest, confirm
 				"type":        "string",
 				"title":       "Run this request?",
 				"description": description,
-				"oneOf": []any{
-					map[string]any{"const": runChoiceRun, "title": "Run now"},
-					map[string]any{"const": runChoiceChange, "title": "Change it in chat"},
-				},
-				"default": runChoiceRun,
+				"oneOf":       choices,
+				"default":     runChoiceRun,
 			},
 		},
 		"required": []string{runChoiceField},
@@ -197,32 +213,74 @@ func lineColumns(line string) int {
 	return columns
 }
 
-// unrunAnswer returns the result for an answer that runs nothing, or nil when
-// the user chose Run now. It reads no target or signed state, so a request
-// that changed while the user was asked cannot turn a decline into a form.
-func unrunAnswer(response mcp.InputResponse) *mcp.CallToolResult {
+// answeredChoice returns the choice an answer acts on, Run now or Create an
+// issue, or else the result for an answer that acts on nothing. It reads no
+// target or signed state, so a request that changed while the user was asked
+// cannot turn a decline into a form.
+func answeredChoice(response mcp.InputResponse) (string, *mcp.CallToolResult) {
 	content, accepted, why := acceptedForm(response)
 	if !accepted {
-		return textResult(fmt.Sprintf("Not run: %s, so nothing changed. Do not retry unless the user asks.", why))
+		return "", textResult(fmt.Sprintf("Not run: %s, so nothing changed. Do not retry unless the user asks.", why))
 	}
 	switch content[runChoiceField] {
 	case runChoiceRun:
-		return nil
+		return runChoiceRun, nil
+	case runChoiceIssue:
+		return runChoiceIssue, nil
 	case runChoiceChange:
-		return textResult("Not run: the user wants to change this request. Ask them what to change, then call query_database with the revised request.")
+		return "", textResult("Not run: the user wants to change this request. Ask them what to change, then call query_database with the revised request.")
 	default:
-		return textResult("Not run: the answer chose neither option, so nothing changed.")
+		return "", noOfferedChoice()
 	}
 }
 
-// staleRun reports a Run now answer that no longer fits the request. It asks
-// nothing: an older client answers one form per call.
-func staleRun(why string) *mcp.CallToolResult {
+// noOfferedChoice reports an answer that chose none of the form's choices.
+func noOfferedChoice() *mcp.CallToolResult {
+	return textResult("Not run: the answer chose none of the form's choices, so nothing changed.")
+}
+
+// staleAnswer reports a Run now or Create an issue answer that no longer fits
+// the request. It asks nothing: an older client answers one form per call.
+func staleAnswer(why string) *mcp.CallToolResult {
 	return formatToolError(&toolError{
 		Code:       "STALE_CONFIRMATION",
-		Message:    fmt.Sprintf("%s, so nothing ran", why),
+		Message:    fmt.Sprintf("%s, so nothing ran and no issue was filed", why),
 		Suggestion: "call query_database again to ask the user about the request as it is now",
 	})
+}
+
+// fileAsIssue files statement against the database as a change issue titled
+// title, with propose_database_change's steps but no rollout: Bytebase creates
+// the rollout once the issue is approved and its plan checks pass.
+func (s *Server) fileAsIssue(ctx context.Context, resolved *resolvedDatabase, statement, title string) *mcp.CallToolResult {
+	filed, failed := s.fileChange(ctx, resolved.project, resolved.resourceName, statement, title, "")
+	if failed != nil {
+		return failed
+	}
+	return textResult(fmt.Sprintf("Not run: the user chose Create an issue, so the request is filed as issue %s (%s). The issue page shows its approval status.%s",
+		filed.issue, s.consoleLink(ctx, filed.issue), planCheckNote(filed.planChecks)))
+}
+
+// planCheckNote reports plan checks that may hold the rollout: Bytebase creates
+// it on its own only once they are done with no error.
+func planCheckNote(checks *PlanCheckInfo) string {
+	if checks != nil && checks.Status == planCheckRunning {
+		return " Its plan checks are still running; the issue page shows their result."
+	}
+	if !planChecksHaveErrors(checks) {
+		return ""
+	}
+	var errs []string
+	for _, result := range checks.Results {
+		if result.Type == "ERROR" {
+			errs = append(errs, result.Message)
+		}
+	}
+	note := " Its plan checks did not pass, so Bytebase will not create its rollout on its own"
+	if len(errs) > 0 {
+		note += ": " + strings.Join(errs, "; ")
+	}
+	return note + "."
 }
 
 // textResult carries text alone, which a client shows the model whole.

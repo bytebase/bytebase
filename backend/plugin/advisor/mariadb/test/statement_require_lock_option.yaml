@@ -1,0 +1,28 @@
+- statement: |
+    CREATE TABLE t(b int);
+    ALTER TABLE t ADD COLUMN c INT, ALGORITHM=INSTANT, LOCK=NONE;
+- statement: |
+    CREATE TABLE t(b int);
+    ALTER TABLE t ADD COLUMN c INT;
+  want:
+    - status: 2
+      code: 237
+      title: STATEMENT_REQUIRE_LOCK_OPTION
+      content: ALTER TABLE statement should include LOCK option
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |
+    CREATE TABLE t(b int);
+    ALTER TABLE t ADD COLUMN c INT, LOCK=NONE;
+    ALTER TABLE t ADD COLUMN d INT;
+  want:
+    - status: 2
+      code: 237
+      title: STATEMENT_REQUIRE_LOCK_OPTION
+      content: ALTER TABLE statement should include LOCK option
+      startposition:
+        line: 3
+        column: 0
+      endposition: null

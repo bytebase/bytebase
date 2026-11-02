@@ -4,6 +4,7 @@ import (
 	mariadbreview "github.com/bytebase/omni/mariadb/review"
 	mssqlreview "github.com/bytebase/omni/mssql/review"
 	mysqlreview "github.com/bytebase/omni/mysql/review"
+	oceanbasereview "github.com/bytebase/omni/oceanbase/review"
 	oraclereview "github.com/bytebase/omni/oracle/review"
 	pgreview "github.com/bytebase/omni/pg/review"
 	"github.com/bytebase/omni/review"
@@ -20,7 +21,7 @@ import (
 var reviewFuncs = map[storepb.Engine]review.ReviewFunc{
 	storepb.Engine_POSTGRES:  pgreview.Review,
 	storepb.Engine_MYSQL:     mysqlreview.Review,
-	storepb.Engine_OCEANBASE: mysqlreview.ReviewOceanBase,
+	storepb.Engine_OCEANBASE: oceanbasereview.ReviewOceanBase,
 	storepb.Engine_MARIADB:   mariadbreview.Review,
 	storepb.Engine_TIDB:      tidbreview.Review,
 	storepb.Engine_MSSQL:     mssqlreview.Review,

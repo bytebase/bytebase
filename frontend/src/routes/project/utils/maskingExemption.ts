@@ -7,16 +7,18 @@ export const resourceCoversDatabase = (
   resource: DatabaseResource,
   databaseFullName: string
 ): boolean => {
-  if (resource.databaseFullName) {
-    return resource.databaseFullName === databaseFullName;
-  }
   const { instanceName, databaseName } =
     extractDatabaseResourceName(databaseFullName);
+  if (resource.instanceResourceId || resource.databaseResourceId) {
+    return (
+      (!resource.instanceResourceId ||
+        resource.instanceResourceId === instanceName) &&
+      (!resource.databaseResourceId ||
+        resource.databaseResourceId === databaseName)
+    );
+  }
   return (
-    (!resource.instanceResourceId ||
-      resource.instanceResourceId === instanceName) &&
-    (!resource.databaseResourceId ||
-      resource.databaseResourceId === databaseName)
+    !resource.databaseFullName || resource.databaseFullName === databaseFullName
   );
 };
 

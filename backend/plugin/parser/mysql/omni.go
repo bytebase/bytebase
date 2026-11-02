@@ -20,6 +20,12 @@ type OmniAST struct {
 	StartPosition *storepb.Position
 }
 
+// ASTSource returns the statement's own text, which the schema walk-through reads
+// when it needs the statement as written.
+func (a *OmniAST) ASTSource() string {
+	return a.Text
+}
+
 // ASTStartPosition implements base.AST.
 func (a *OmniAST) ASTStartPosition() *storepb.Position {
 	return a.StartPosition

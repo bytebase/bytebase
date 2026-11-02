@@ -8,22 +8,17 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/plugin/parser/mariadb"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_MYSQL, extractChangedResources)
-	base.RegisterExtractChangedResourcesFunc(storepb.Engine_MARIADB, extractChangedResources)
-	base.RegisterExtractChangedResourcesFunc(storepb.Engine_OCEANBASE, extractChangedResources)
-	base.RegisterExtractChangedResourcesFunc(storepb.Engine_STARROCKS, extractChangedResources)
-	base.RegisterExtractChangedResourcesFunc(storepb.Engine_DORIS, extractChangedResources)
 }
 
 func extractChangedResources(currentDatabase string, _ string, dbMetadata *model.DatabaseMetadata, asts []base.AST, _ string) (*base.ChangeSummary, error) {
 	changedResources := model.NewChangedResources(dbMetadata)
 
-	var dmlCount, insertCount, skippedStatements int
+	var dmlCount, insertCount int
 	var dmlStatements []string
 
 	// addObjectDatabase records a database-only write target for a non-table object DDL
@@ -37,10 +32,6 @@ func extractChangedResources(currentDatabase string, _ string, dbMetadata *model
 	}
 
 	for _, unifiedAST := range asts {
-		if _, ok := unifiedAST.(*mariadb.OmniAST); ok {
-			skippedStatements++
-			continue
-		}
 		omniAST, ok := unifiedAST.(*OmniAST)
 		if !ok {
 			return nil, errors.New("expected OmniAST for MySQL")
@@ -163,11 +154,10 @@ func extractChangedResources(currentDatabase string, _ string, dbMetadata *model
 	}
 
 	return &base.ChangeSummary{
-		ChangedResources:  changedResources,
-		DMLStatements:     dmlStatements,
-		DMLCount:          dmlCount,
-		InsertCount:       insertCount,
-		SkippedStatements: skippedStatements,
+		ChangedResources: changedResources,
+		DMLStatements:    dmlStatements,
+		DMLCount:         dmlCount,
+		InsertCount:      insertCount,
 	}, nil
 }
 

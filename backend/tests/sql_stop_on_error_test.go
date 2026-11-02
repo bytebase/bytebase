@@ -88,7 +88,7 @@ func TestSQLQueryStopOnError(t *testing.T) {
 			instance := pgInstance
 			databaseOwner := "postgres"
 
-			err = ctl.createDatabase(ctx, ctl.project, instance, nil, tt.databaseName, databaseOwner)
+			err := ctl.createDatabase(ctx, ctl.project, instance, nil, tt.databaseName, databaseOwner)
 			a.NoError(err)
 
 			databaseResp, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{
@@ -206,7 +206,7 @@ func TestSQLAdminExecuteStopOnError(t *testing.T) {
 			instance := pgInstance
 			databaseOwner := "postgres"
 
-			err = ctl.createDatabase(ctx, ctl.project, instance, nil, tt.databaseName, databaseOwner)
+			err := ctl.createDatabase(ctx, ctl.project, instance, nil, tt.databaseName, databaseOwner)
 			a.NoError(err)
 
 			databaseResp, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{

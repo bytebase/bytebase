@@ -1,0 +1,15 @@
+- statement: |-
+    CREATE TABLE t(b int);
+    ALTER TABLE t ADD COLUMN a int;
+- statement: |-
+    CREATE TABLE t(b int);
+    ALTER TABLE t CHANGE COLUMN b a int;
+  want:
+    - status: 2
+      code: 406
+      title: COLUMN_DISALLOW_CHANGE
+      content: '"ALTER TABLE t CHANGE COLUMN b a int;" contains CHANGE COLUMN statement'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null

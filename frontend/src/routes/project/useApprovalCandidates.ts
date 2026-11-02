@@ -97,7 +97,9 @@ export function useApprovalCandidates(
         }
       }
     }
-    return JSON.stringify([...new Set(names)].sort());
+    return JSON.stringify(
+      [...new Set(names)].sort((a, b) => a.localeCompare(b))
+    );
   }, [projectIamPolicy, role]);
 
   useEffect(() => {
@@ -115,7 +117,9 @@ export function useApprovalCandidates(
       role,
       getGroupByIdentifier
     );
-    return JSON.stringify([...memberMap.keys()].sort());
+    return JSON.stringify(
+      [...memberMap.keys()].sort((a, b) => a.localeCompare(b))
+    );
   }, [projectIamPolicy, role, getGroupByIdentifier]);
 
   useEffect(() => {

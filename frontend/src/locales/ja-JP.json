@@ -68,6 +68,10 @@
       "issue-heading": "このイシューについて質問する",
       "issue-security": "このイシューにセキュリティ上の懸念はありますか？",
       "issue-summary": "このイシューと現在の状態を要約して",
+      "plan-changes": "このプランではどのようなデータベース変更を提案していますか？",
+      "plan-heading": "このプランについて質問する",
+      "plan-risks": "このプランにレビューやデプロイ上のリスクはありますか？",
+      "plan-status": "現在のレビューとロールアウトの状態は？",
       "project-heading": "このプロジェクトについて質問する",
       "resource-unavailable": "このリソースは参照できません。"
     },
@@ -84,6 +88,7 @@
     "evidence": {
       "database": "データベース",
       "issue": "issue",
+      "plan": "プラン",
       "references": "根拠"
     },
     "follow-up": {
@@ -149,6 +154,7 @@
       "open": "プランの下書きを開く",
       "unavailable": "プランの下書きを開けませんでした。データベースまたは SQL が変更された可能性があります。エージェントに再生成を依頼してください。"
     },
+    "plan-reference-unavailable": "このプランは利用できないか、アクセス権がありません。",
     "project-attention": {
       "checking": "対応が必要な項目を確認しています...",
       "empty": "このプロジェクトに対応が必要なオープン issue はありません。",
@@ -177,6 +183,7 @@
     },
     "rename-chat-placeholder": "チャット名を入力",
     "reply": "返信",
+    "request-failed": "アシスタントはこのリクエストを完了できませんでした。",
     "request-stopped-by-user": "ユーザーがリクエストを停止しました",
     "request-stopped-retry-hint": "送信済みの操作は完了する可能性があります。再試行する前に状態を確認してください。",
     "resource-picker": {
@@ -186,14 +193,18 @@
       "load-databases-error": "データベースを読み込めませんでした。",
       "load-error": "プロジェクトを読み込めませんでした。",
       "load-issues-error": "イシューを読み込めませんでした。",
+      "load-plans-error": "プランを読み込めませんでした。",
       "no-databases": "アクセス可能なデータベースが見つかりません",
       "no-issues": "アクセス可能なイシューが見つかりません",
+      "no-plans": "アクセス可能なプランが見つかりません",
       "no-projects": "アクセス可能なプロジェクトが見つかりません",
+      "plans": "プラン",
       "projects": "プロジェクト",
-      "reference-limit": "1 つのメッセージでは、プロジェクト 1 件と、そのデータベースまたはイシュー 1 件を参照できます。両方を参照する場合は、先にプロジェクトを選択してください。別のリソースは別のメッセージで質問してください。",
+      "reference-limit": "1 つのメッセージでは、プロジェクト 1 件と、そのデータベース、イシュー、またはプラン 1 件を参照できます。両方を参照する場合は、先にプロジェクトを選択してください。別のリソースは別のメッセージで質問してください。",
       "retry": "再試行",
       "search-databases": "データベースを検索",
       "search-issues": "イシューを検索",
+      "search-plans": "プランを検索",
       "search-projects": "プロジェクトを検索"
     },
     "result": "結果",
@@ -3106,7 +3117,7 @@
             "title": "ロールアウトとタスクを実行する"
           },
           "run-statements": {
-            "details": "クエリを通じた INSERT・UPDATE・DELETE・CREATE・ALTER・DROP。エンジンとそのユーザー自身の権限が許す範囲で行われます",
+            "details": "クエリを通じた INSERT・UPDATE・DELETE・CREATE・ALTER・DROP。エンジンとそのユーザー自身の権限が許す範囲で行われます · ユーザーの MCP クライアントが確認に対応している場合、エンジンが確認できる範囲で読み取りではないクエリは、ユーザーが確認した後にのみ実行されます · それ以外のクライアントでは、そのようなクエリは確認を求めずに実行されることがあります",
             "title": "DML と DDL のステートメントを実行する"
           }
         },

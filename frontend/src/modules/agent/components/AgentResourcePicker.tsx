@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   ChevronRight,
   CircleDot,
+  ClipboardList,
   Database as DatabaseIcon,
   FolderKanban,
   LoaderCircle,
@@ -29,10 +30,13 @@ import { useAppStore } from "@/stores/app";
 import {
   getNameParentTokens,
   issueNamePrefix,
+  planNamePrefix,
   projectNamePrefix,
 } from "@/stores/modules/v1/common";
+import { State } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
+import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import {
   type Project,
   ProjectSchema,
@@ -42,6 +46,7 @@ import { normalizeAgentResourceReference } from "../logic/resourceMention";
 import {
   searchAgentDatabases,
   searchAgentIssues,
+  searchAgentPlans,
   searchAgentProjects,
 } from "../logic/resourceSearch";
 
@@ -56,9 +61,10 @@ interface AgentResourcePickerProps {
   onSelectProject: (project: Project) => void;
   onSelectDatabase: (database: Database) => void;
   onSelectIssue: (issue: Issue) => void;
+  onSelectPlan: (plan: Plan) => void;
 }
 
-type PickerView = "categories" | "projects" | "databases" | "issues";
+type PickerView = "categories" | "projects" | "databases" | "issues" | "plans";
 type SearchStatus =
   | "idle"
   | "loading"
@@ -101,6 +107,20 @@ const isSelectableIssue = (issue: Issue, parent: string): boolean => {
   );
 };
 
+const isSelectablePlan = (plan: Plan, parent: string): boolean => {
+  const tokens = getNameParentTokens(plan.name, [
+    projectNamePrefix,
+    planNamePrefix,
+  ]);
+  return (
+    plan.state === State.ACTIVE &&
+    tokens.length === 2 &&
+    tokens[0] !== "-" &&
+    /^\d+$/.test(tokens[1]) &&
+    plan.name === `${parent}/${planNamePrefix}${tokens[1]}`
+  );
+};
+
 export function AgentResourcePicker({
   open,
   onOpenChange,
@@ -112,6 +132,7 @@ export function AgentResourcePicker({
   onSelectProject,
   onSelectDatabase,
   onSelectIssue,
+  onSelectPlan,
 }: AgentResourcePickerProps) {
   const { t } = useTranslation();
   const canListWorkspaceProjects = useAppStore((state) =>
@@ -120,11 +141,18 @@ export function AgentResourcePicker({
   const canSearchWorkspaceDatabases = useAppStore((state) =>
     state.hasWorkspacePermission("bb.databases.get")
   );
+  const canListWorkspacePlans = useAppStore((state) =>
+    state.hasWorkspacePermission("bb.plans.list")
+  );
+  const canGetWorkspacePlans = useAppStore((state) =>
+    state.hasWorkspacePermission("bb.plans.get")
+  );
   const [view, setView] = useState<PickerView>("categories");
   const [query, setQuery] = useState("");
   const [projects, setProjects] = useState<Project[]>([]);
   const [databases, setDatabases] = useState<Database[]>([]);
   const [issues, setIssues] = useState<Issue[]>([]);
+  const [plans, setPlans] = useState<Plan[]>([]);
   const [nextPageToken, setNextPageToken] = useState("");
   const [status, setStatus] = useState<SearchStatus>("idle");
   const requestGeneration = useRef(0);
@@ -133,6 +161,7 @@ export function AgentResourcePicker({
   const categoryRef = useRef<HTMLButtonElement>(null);
   const databaseCategoryRef = useRef<HTMLButtonElement>(null);
   const issueCategoryRef = useRef<HTMLButtonElement>(null);
+  const planCategoryRef = useRef<HTMLButtonElement>(null);
   const popupRef = useRef<HTMLDivElement>(null);
   const categoryTopOffsetRef = useRef<number | null>(null);
   const noticeRef = useRef<HTMLButtonElement>(null);
@@ -141,6 +170,15 @@ export function AgentResourcePicker({
   const databaseProjectName =
     selectedProjectName ??
     (projectName && projectName !== "projects/-" ? projectName : undefined);
+  const planProjectTokens = getNameParentTokens(databaseProjectName ?? "", [
+    projectNamePrefix,
+  ]);
+  const planProjectName =
+    planProjectTokens.length === 1 &&
+    planProjectTokens[0] !== "-" &&
+    databaseProjectName === `${projectNamePrefix}${planProjectTokens[0]}`
+      ? databaseProjectName
+      : undefined;
   const loadProjectIamPolicy = useAppStore(
     (state) => state.loadProjectIamPolicy
   );
@@ -165,9 +203,29 @@ export function AgentResourcePicker({
       create(ProjectSchema, { name: databaseProjectName });
     return state.hasProjectPermission(project, "bb.databases.get");
   });
+  const canSearchPlans = useAppStore((state) => {
+    if (!planProjectName) return false;
+    if (canListWorkspacePlans && canGetWorkspacePlans) return true;
+    if (
+      !state.projectPoliciesByName[planProjectName] ||
+      !state.currentUser ||
+      state.roles.length === 0 ||
+      !state.workspacePolicy
+    ) {
+      return true;
+    }
+    const project =
+      state.projectsByName[planProjectName] ??
+      create(ProjectSchema, { name: planProjectName });
+    return (
+      state.hasProjectPermission(project, "bb.plans.list") &&
+      state.hasProjectPermission(project, "bb.plans.get")
+    );
+  });
   const databaseParent = databaseProjectName ?? workspaceName;
   const isDatabaseView = view === "databases";
   const isIssueView = view === "issues";
+  const isPlanView = view === "plans";
   const candidateIssueProjectName = selectedProjectName ?? projectName;
   const projectTokens = getNameParentTokens(candidateIssueProjectName ?? "", [
     projectNamePrefix,
@@ -178,35 +236,50 @@ export function AgentResourcePicker({
       : projectTokens.length === 1 && projectTokens[0] !== "-"
         ? candidateIssueProjectName
         : undefined;
-  const results = isIssueView ? issues : isDatabaseView ? databases : projects;
+  const results = isPlanView
+    ? plans
+    : isIssueView
+      ? issues
+      : isDatabaseView
+        ? databases
+        : projects;
   const showProjectCategory = !selectedProjectName && canListWorkspaceProjects;
   const showDatabaseCategory = canSearchDatabases;
+  const showPlanCategory = canSearchPlans;
   const firstCategoryRef = showProjectCategory
     ? categoryRef
     : showDatabaseCategory
       ? databaseCategoryRef
-      : issueCategoryRef;
+      : issueParent
+        ? issueCategoryRef
+        : planCategoryRef;
 
   useEffect(() => {
     if (
       !open ||
       !databaseProjectName ||
-      canSearchWorkspaceDatabases ||
+      (canSearchWorkspaceDatabases &&
+        (!planProjectName ||
+          (canListWorkspacePlans && canGetWorkspacePlans))) ||
       projectPolicyIsCached
     )
       return;
     void loadProjectIamPolicy(databaseProjectName, true).catch(() => undefined);
   }, [
     canSearchWorkspaceDatabases,
+    canListWorkspacePlans,
+    canGetWorkspacePlans,
     databaseProjectName,
     loadProjectIamPolicy,
     open,
+    planProjectName,
     projectPolicyIsCached,
   ]);
 
   const loadPage = useCallback(
     async (pageToken: string, append: boolean) => {
       if (view === "issues" && !issueParent) return;
+      if (view === "plans" && !canSearchPlans) return;
       if (view === "projects" && !canListWorkspaceProjects) return;
       if (view === "databases" && !canSearchDatabases) return;
       requestController.current?.abort();
@@ -219,6 +292,7 @@ export function AgentResourcePicker({
         setProjects([]);
         setDatabases([]);
         setIssues([]);
+        setPlans([]);
         setNextPageToken("");
         setStatus("loading");
       }
@@ -245,14 +319,24 @@ export function AgentResourcePicker({
                     controller.signal
                   ),
                 }
-              : {
-                  kind: "projects" as const,
-                  result: await searchAgentProjects(
-                    query,
-                    pageToken,
-                    controller.signal
-                  ),
-                };
+              : view === "plans" && planProjectName
+                ? {
+                    kind: "plans" as const,
+                    result: await searchAgentPlans(
+                      planProjectName,
+                      query,
+                      pageToken,
+                      controller.signal
+                    ),
+                  }
+                : {
+                    kind: "projects" as const,
+                    result: await searchAgentProjects(
+                      query,
+                      pageToken,
+                      controller.signal
+                    ),
+                  };
         if (
           controller.signal.aborted ||
           generation !== requestGeneration.current
@@ -270,6 +354,11 @@ export function AgentResourcePicker({
             isSelectableIssue(issue, issueParent ?? "")
           );
           setIssues((previous) => (append ? [...previous, ...items] : items));
+        } else if (page.kind === "plans") {
+          const items = page.result.items.filter((plan) =>
+            isSelectablePlan(plan, planProjectName ?? "")
+          );
+          setPlans((previous) => (append ? [...previous, ...items] : items));
         } else {
           setProjects((previous) =>
             append ? [...previous, ...page.result.items] : page.result.items
@@ -288,10 +377,12 @@ export function AgentResourcePicker({
     },
     [
       canSearchDatabases,
+      canSearchPlans,
       canListWorkspaceProjects,
       databaseParent,
       databaseProjectName,
       issueParent,
+      planProjectName,
       query,
       view,
     ]
@@ -300,7 +391,8 @@ export function AgentResourcePicker({
   useLayoutEffect(() => {
     if (
       (view !== "projects" || canListWorkspaceProjects) &&
-      (view !== "databases" || canSearchDatabases)
+      (view !== "databases" || canSearchDatabases) &&
+      (view !== "plans" || canSearchPlans)
     ) {
       return;
     }
@@ -310,9 +402,10 @@ export function AgentResourcePicker({
     setQuery("");
     setProjects([]);
     setDatabases([]);
+    setPlans([]);
     setNextPageToken("");
     setStatus("idle");
-  }, [canSearchDatabases, canListWorkspaceProjects, view]);
+  }, [canSearchDatabases, canSearchPlans, canListWorkspaceProjects, view]);
 
   useLayoutEffect(() => {
     if (previousWorkspaceName.current === workspaceName) return;
@@ -342,6 +435,7 @@ export function AgentResourcePicker({
     if (!open || view === "categories" || hasSelectedReference) return;
     if (view === "projects" && !canListWorkspaceProjects) return;
     if (view === "databases" && !canSearchDatabases) return;
+    if (view === "plans" && !canSearchPlans) return;
     if (view === "issues" && !issueParent) return;
     void loadPage("", false);
     return () => {
@@ -350,6 +444,7 @@ export function AgentResourcePicker({
     };
   }, [
     canSearchDatabases,
+    canSearchPlans,
     canListWorkspaceProjects,
     databaseParent,
     hasSelectedReference,
@@ -367,6 +462,7 @@ export function AgentResourcePicker({
     setProjects([]);
     setDatabases([]);
     setIssues([]);
+    setPlans([]);
     setNextPageToken("");
     setStatus("idle");
   }, [open]);
@@ -408,6 +504,19 @@ export function AgentResourcePicker({
     onOpenChange(false);
   };
 
+  const selectPlan = (plan: Plan) => {
+    if (
+      hasSelectedReference ||
+      !canSearchPlans ||
+      !planProjectName ||
+      !isSelectablePlan(plan, planProjectName)
+    ) {
+      return;
+    }
+    onSelectPlan(plan);
+    onOpenChange(false);
+  };
+
   const showView = (nextView: PickerView) => {
     const anchorTop = anchorRef.current?.getBoundingClientRect().top;
     const popupTop = popupRef.current?.getBoundingClientRect().top;
@@ -431,6 +540,7 @@ export function AgentResourcePicker({
       event.preventDefault();
       if (isDatabaseView) selectDatabase(databases[0]);
       else if (isIssueView) selectIssue(issues[0]);
+      else if (isPlanView) selectPlan(plans[0]);
       else selectProject(projects[0]);
     }
   };
@@ -451,6 +561,7 @@ export function AgentResourcePicker({
       event.preventDefault();
       if (isDatabaseView) selectDatabase(databases[index]);
       else if (isIssueView) selectIssue(issues[index]);
+      else if (isPlanView) selectPlan(plans[index]);
       else selectProject(projects[index]);
     }
   };
@@ -606,6 +717,12 @@ export function AgentResourcePicker({
                           ? databaseCategoryRef
                           : categoryRef
                         ).current?.focus();
+                      } else if (
+                        event.key === "ArrowDown" &&
+                        showPlanCategory
+                      ) {
+                        event.preventDefault();
+                        planCategoryRef.current?.focus();
                       } else if (event.key === "Enter") {
                         event.preventDefault();
                         showView("issues");
@@ -616,6 +733,38 @@ export function AgentResourcePicker({
                     <CircleDot className="size-4 shrink-0" />
                     <span className="min-w-0 flex-1 truncate">
                       {t("agent.resource-picker.issues")}
+                    </span>
+                    <ChevronRight className="size-4 shrink-0" />
+                  </Button>
+                )}
+                {showPlanCategory && (
+                  <Button
+                    ref={planCategoryRef}
+                    appearance="secondary"
+                    size="sm"
+                    className="h-auto w-full justify-start gap-2 px-2 py-2 text-left focus:ring-2 focus:ring-accent focus:ring-offset-2"
+                    data-agent-resource-category="plan"
+                    onMouseEnter={focusHoveredOption}
+                    onKeyDown={(event) => {
+                      if (event.nativeEvent.isComposing) return;
+                      if (event.key === "ArrowUp") {
+                        event.preventDefault();
+                        (issueParent
+                          ? issueCategoryRef
+                          : showDatabaseCategory
+                            ? databaseCategoryRef
+                            : categoryRef
+                        ).current?.focus();
+                      } else if (event.key === "Enter") {
+                        event.preventDefault();
+                        showView("plans");
+                      }
+                    }}
+                    onClick={() => showView("plans")}
+                  >
+                    <ClipboardList className="size-4 shrink-0" />
+                    <span className="min-w-0 flex-1 truncate">
+                      {t("agent.resource-picker.plans")}
                     </span>
                     <ChevronRight className="size-4 shrink-0" />
                   </Button>
@@ -650,6 +799,7 @@ export function AgentResourcePicker({
                     setProjects([]);
                     setDatabases([]);
                     setIssues([]);
+                    setPlans([]);
                     setNextPageToken("");
                     setStatus("loading");
                   }}
@@ -659,22 +809,25 @@ export function AgentResourcePicker({
                       ? t("agent.resource-picker.search-databases")
                       : isIssueView
                         ? t("agent.resource-picker.search-issues")
-                        : t("agent.resource-picker.search-projects")
+                        : isPlanView
+                          ? t("agent.resource-picker.search-plans")
+                          : t("agent.resource-picker.search-projects")
                   }
                   aria-label={
                     isDatabaseView
                       ? t("agent.resource-picker.search-databases")
                       : isIssueView
                         ? t("agent.resource-picker.search-issues")
-                        : t("agent.resource-picker.search-projects")
+                        : isPlanView
+                          ? t("agent.resource-picker.search-plans")
+                          : t("agent.resource-picker.search-projects")
                   }
                 />
                 <div
                   className="min-h-0 overflow-y-auto p-1"
                   data-agent-resource-results
                 >
-                  {!isDatabaseView &&
-                    !isIssueView &&
+                  {view === "projects" &&
                     projects.map((project, index) => (
                       <Button
                         key={project.name}
@@ -766,6 +919,30 @@ export function AgentResourcePicker({
                         </Button>
                       );
                     })}
+                  {isPlanView &&
+                    plans.map((plan, index) => (
+                      <Button
+                        key={plan.name}
+                        ref={(element) => {
+                          resultRefs.current[index] = element;
+                        }}
+                        appearance="secondary"
+                        size="sm"
+                        className="h-auto w-full justify-start gap-2 px-2 py-2 text-left focus:bg-control-bg focus:ring-2 focus:ring-accent focus:ring-offset-2"
+                        data-agent-resource-plan={plan.name}
+                        onMouseEnter={focusHoveredOption}
+                        onKeyDown={(event) => handleResultKeyDown(event, index)}
+                        onClick={() => selectPlan(plan)}
+                      >
+                        <ClipboardList className="size-4 shrink-0" />
+                        <span className="min-w-0 flex-1 truncate">
+                          {plan.title || t("common.untitled")}
+                        </span>
+                        <span className="shrink-0 text-xs text-control-light">
+                          #{plan.name.slice(plan.name.lastIndexOf("/") + 1)}
+                        </span>
+                      </Button>
+                    ))}
                   {status === "loading" ? (
                     <p
                       className="flex items-center gap-2 px-2 py-2 text-xs text-control-light"
@@ -786,7 +963,9 @@ export function AgentResourcePicker({
                         ? t("agent.resource-picker.no-databases")
                         : isIssueView
                           ? t("agent.resource-picker.no-issues")
-                          : t("agent.resource-picker.no-projects")}
+                          : isPlanView
+                            ? t("agent.resource-picker.no-plans")
+                            : t("agent.resource-picker.no-projects")}
                     </p>
                   ) : null}
                   {status === "error" || status === "more-error" ? (
@@ -796,7 +975,9 @@ export function AgentResourcePicker({
                           ? t("agent.resource-picker.load-databases-error")
                           : isIssueView
                             ? t("agent.resource-picker.load-issues-error")
-                            : t("agent.resource-picker.load-error")}
+                            : isPlanView
+                              ? t("agent.resource-picker.load-plans-error")
+                              : t("agent.resource-picker.load-error")}
                       </p>
                       <Button
                         appearance="secondary"

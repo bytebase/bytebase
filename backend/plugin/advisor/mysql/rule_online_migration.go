@@ -23,7 +23,6 @@ var (
 
 func init() {
 	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_ADVICE_ONLINE_MIGRATION, &OnlineMigrationAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, storepb.SQLReviewRule_ADVICE_ONLINE_MIGRATION, &OnlineMigrationAdvisor{})
 }
 
 // OnlineMigrationAdvisor is the advisor checking for using gh-ost to migrate large tables.

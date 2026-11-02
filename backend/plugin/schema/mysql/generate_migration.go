@@ -22,7 +22,6 @@ type tableDrop struct {
 
 func init() {
 	schema.RegisterGenerateMigration(storepb.Engine_MYSQL, generateMigration)
-	schema.RegisterGenerateMigration(storepb.Engine_OCEANBASE, generateMigration)
 }
 
 func generateMigration(diff *schema.MetadataDiff) (string, error) {

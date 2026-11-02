@@ -82,7 +82,7 @@ jobs:
         uses: golangci/golangci-lint-action@v9
         with:
           # renovate: datasource=github-releases depName=golangci/golangci-lint
-          version: v2.14.0
+          version: v2.15.0
           install-only: true
           skip-cache: true
       - name: Verify Go version compatibility
@@ -122,9 +122,9 @@ jobs:
           # The runner's pnpm store persists between runs, so the Actions
           # cache adds nothing and downloading it is slow.
           cache: ''
-      - uses: pnpm/setup@v2
+      - uses: pnpm/setup@v3
         with:
-          version: '11.17.0'
+          version: '12.16.1'
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
         working-directory: frontend

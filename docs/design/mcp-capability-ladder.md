@@ -76,7 +76,7 @@ the product.
 | write | Grant or revoke masking exemptions | Exempt one member from masking for a database, a schema, a table or a column, or for every database in a project, with an optional expiry · Each exemption and each removal is confirmed in the user's MCP client before it is made · Exempted data shows unmasked in query and export results | 1 WRITE method: `OrgPolicyService/UpdatePolicy`, served only through the `grant_masking_exemption` and `revoke_masking_exemption` tools, which ask the user to confirm, then add one exemption entry or remove one member from the entries whose condition matches exactly; other policy types and `CreatePolicy` and `DeletePolicy` stay refused |
 | write | Approve or reject issues | Each decision is confirmed in the user's MCP client before it is made · Role requests are decided in the console · The approval rules and the project's self-approval setting apply, as in the console | 2 WRITE methods: `ApproveIssue`, `RejectIssue`, served only through the `decide_issue` tool, which asks the user to confirm each decision and refuses role requests |
 | write | Run rollouts and tasks | Create a rollout · Run, skip or cancel its tasks, under the project's approval policy | 4 WRITE methods: `CreateRollout`, `BatchRunTasks`, `BatchSkipTasks`, `BatchCancelTaskRuns` |
-| write | Run DML and DDL statements | INSERT, UPDATE, DELETE, CREATE, ALTER, DROP through queries, as far as the engine and the user's own permissions allow | Not a method: the statement clamp in `mcp_sql_clamp.go`, which Read-write lifts. A statement Bytebase cannot show is a read runs only through the `query_database` tool, which asks the user to confirm it when the client can show the form (`mcp_sql_write.go`) |
+| write | Run DML and DDL statements | INSERT, UPDATE, DELETE, CREATE, ALTER, DROP through queries, as far as the engine and the user's own permissions allow · Where the user's MCP client supports confirmations, a query that is not a read as far as the engine can check it runs only after the user confirms it · In other clients such a query can run without asking | Not a method: the statement clamp in `mcp_sql_clamp.go`, which Read-write lifts. A statement Bytebase cannot show is a read runs only through the `query_database` tool, which asks the user to confirm it when the client can show the form (`mcp_sql_write.go`) |
 | write | Export query results | Download results as a file. Data leaves Bytebase | 1 WRITE method: `SQLService/Export`, which requires the user's own `bb.sql.export` on the data it reads, from a role or a matching export grant, and runs only statements Bytebase can show are reads |
 | write | Manage database housekeeping | Sync instances and databases · Saved queries | 9 WRITE methods: sync, saved-query writes |
 | — | *Read-write stops here* | | 111 methods |
@@ -221,6 +221,12 @@ active goes through an approver: in the console, or through `decide_issue` with 
 the client. Activating a grant directly stays FORBIDDEN to the session. The approver can be the
 requester where the project allows self-approval; the rows promise an approval, not a second
 person.
+
+The DML and DDL row states its confirmation with a condition, because it works unlike the confirmed
+tools: `query_database` asks before a query that may write only in a client that can show the form,
+and runs it at once in one that cannot, where `decide_issue` and the other confirmed tools refuse.
+The confirmation covers queries only. A statement filed as an issue runs as a rollout task, under
+the project's approval policy, as the rollouts row says.
 
 The members row shows who holds which role, the groups and their members, each role's permissions
 and every policy type, so an agent can tell which people an approval step waits on. Two choices in
