@@ -30,7 +30,7 @@
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
-    "@markdoc/markdoc": "0.5.8",
+    "@markdoc/markdoc": "0.5.11",
     "@stylexjs/stylex": "^0.19.0",
     "@tanstack/react-virtual": "^3.13.24",
     "class-variance-authority": "^0.7.1",
