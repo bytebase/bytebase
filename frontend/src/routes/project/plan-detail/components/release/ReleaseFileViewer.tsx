@@ -368,9 +368,33 @@ export function ReleaseFileViewerProvider({
   );
 }
 
-// Whether a file is open, for the page to make room for the docked column.
-export const useReleaseFileViewerOpen = () =>
-  Boolean(useContext(OpenedFileContext)?.opened);
+// Wraps the plan and, while a file is open on a docked page, splits it with
+// the viewer column on the right half (D8). The wrapper is the same element
+// open or closed, so the plan never remounts and keeps its state.
+export function ReleaseFileViewerDock({
+  columnStyle,
+  children,
+}: {
+  columnStyle?: CSSProperties;
+  children: ReactNode;
+}) {
+  const state = useContext(OpenedFileContext);
+  const split = Boolean(state?.docked && state.opened);
+  return (
+    <div
+      className={cn("min-w-0 flex-1", split ? "grid" : "flex flex-col")}
+      style={
+        split
+          ? { gridTemplateColumns: "minmax(0, 1fr) minmax(0, 50%)" }
+          : undefined
+      }
+      data-testid="release-file-viewer-dock"
+    >
+      {children}
+      <ReleaseFileViewerColumn style={columnStyle} />
+    </div>
+  );
+}
 
 // The viewer docked on the page's right; `style` places it under the page's
 // sticky title row.

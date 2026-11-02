@@ -73,8 +73,7 @@ vi.mock("@/lib/utils", () => ({
 
 vi.mock("./components/release/ReleaseFileViewer", () => ({
   ReleaseFileViewerProvider: ({ children }: { children: ReactNode }) => children,
-  ReleaseFileViewerColumn: () => null,
-  useReleaseFileViewerOpen: () => false,
+  ReleaseFileViewerDock: ({ children }: { children: ReactNode }) => children,
   VIEWER_DOCK_MIN_WIDTH: 1280,
   useOpenReleaseFile: () => undefined,
 }));

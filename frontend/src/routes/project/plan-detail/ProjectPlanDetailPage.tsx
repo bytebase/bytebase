@@ -1,5 +1,5 @@
 import { Check, Code2, Loader2, MessageSquareMore, Rocket } from "lucide-react";
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { router } from "@/app/router";
@@ -27,9 +27,8 @@ import { PlanDetailDeployWaiting } from "./components/PlanDetailDeployWaiting";
 import { PlanDetailHeader } from "./components/PlanDetailHeader";
 import { PlanDetailHeaderDetails } from "./components/PlanDetailHeaderDetails";
 import {
-  ReleaseFileViewerColumn,
+  ReleaseFileViewerDock,
   ReleaseFileViewerProvider,
-  useReleaseFileViewerOpen,
   VIEWER_DOCK_MIN_WIDTH,
 } from "./components/release/ReleaseFileViewer";
 import { PlanReviewSection } from "./components/review/PlanReviewSection";
@@ -242,8 +241,7 @@ function ProjectPlanDetailPageInner({
               </header>
               <PlanDetailHeaderDetails />
 
-              <PlanDetailBody
-                docked={viewerDocked}
+              <ReleaseFileViewerDock
                 columnStyle={{
                   top: layoutSize.header,
                   height: Math.max(layoutSize.pane - layoutSize.header, 0),
@@ -255,7 +253,7 @@ function ProjectPlanDetailPageInner({
                     selectedSpecId={effectiveSelectedSpecId}
                   />
                 </main>
-              </PlanDetailBody>
+              </ReleaseFileViewerDock>
             </div>
 
             {!page.ready && (
@@ -683,30 +681,6 @@ function PhaseSection({
           </div>
         )}
       </div>
-    </div>
-  );
-}
-
-// While a file is open on a wide page, the plan narrows to the left and the
-// viewer docks on the right half (D8).
-function PlanDetailBody({
-  docked,
-  columnStyle,
-  children,
-}: {
-  docked: boolean;
-  columnStyle: CSSProperties;
-  children: ReactNode;
-}) {
-  const open = useReleaseFileViewerOpen();
-  if (!docked || !open) return <>{children}</>;
-  return (
-    <div
-      className="grid min-w-0 flex-1"
-      style={{ gridTemplateColumns: "minmax(0, 1fr) minmax(0, 50%)" }}
-    >
-      {children}
-      <ReleaseFileViewerColumn style={columnStyle} />
     </div>
   );
 }
