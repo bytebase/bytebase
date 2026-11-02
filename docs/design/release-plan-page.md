@@ -104,7 +104,8 @@ once more than 12 rows show it also offers "Show fewer", which returns the group
 and keeps the row under the pointer. "Load all" is one click, so an accidental "Show fewer" costs
 one click to undo. A 535-file release therefore opens as
 one day group with its files and about eight month headers. A row shows the version and the file's
-path as stored in the release. Opened, the section keeps today's spec tab and Targets on top; only
+path as stored in the release, in body text (14 px) like the section's count line and group
+headers, since the list is the section's content; the task's file list stays at the log's 12 px. Opened, the section keeps today's spec tab and Targets on top; only
 the release card under them is replaced by this list. Collapsed and declarative forms are in States.
 Rejected: naming the files added since the previous release first. It needs a lookup of an earlier
 release and a definition of "previous" (by creation time, of the same type, in the same project)
@@ -340,14 +341,20 @@ opens at the top with the error above the editor. Opened from an applied section
 files applied earlier, one line under the header says what this database did with the version
 ("applied by this run", "applied earlier; this run passed over it"). Opened from Changes there is no
 database and no line. Drivers log one command per statement, so the diagnostic lands on the
-statement; a PL/SQL block is one command, so there the diagnostic covers the block. The container
-follows the viewport through the `useMediaQuery` hook (`frontend/src/hooks/useMediaQuery.ts`), as
-`ProjectPlanDashboardPage.tsx` does with its `MOBILE_MEDIA_QUERY` constant; the breakpoints are in
-States. The container is the standard-width sheet the task's run history uses. One body component
-either way. Rejected: a modal dialog (reading a statement next to the row that failed, or clicking
-through files in Changes, should not open and close a modal each time); keeping the release page as
-the place to read a file (D12); a panel taking about 62% of the window on wide screens, which covers
-most of the page and reads as a drawer; the path as the title, whose length outweighs the version.
+statement; a PL/SQL block is one command, so there the diagnostic covers the block. When the page
+is at least 1280 px wide, the viewer is a column docked on the page's right: the page body becomes a
+two-column grid, the plan narrowing on the left, the column 704 px wide and at most half the page,
+sticky at the top, the window's height below the header, and scrolling on its own, with Close in its
+header. This is the layout the task detail panel had until #20785 replaced it with inline task
+cards; that change removed the panel because it repeated the stage's task list, not because of the
+column. The width is the page's, measured with a `ResizeObserver` as that panel did, since the
+sidebar takes part of the window. Narrower, the viewer is the standard-width sheet the task's run
+history uses, over a scrim. One body component either way. Rejected: a modal dialog (reading a
+statement next to the row that failed, or clicking through files in Changes, should not open and
+close a modal each time); keeping the release page as the place to read a file (D12); a sheet over
+the page on wide screens, even without a scrim, which covers the plan it is read beside; the 1024 px
+threshold and half-page column of the old task panel, which leave the task cards 512 px; the path
+as the title, whose length outweighs the version.
 
 **D9 · The source row lives on `Release.VCSSource`, filled by the action from the CI environment and
 explicit flags.** The details block's Source row (D10) renders the fields it has in a fixed order:
@@ -489,11 +496,11 @@ Changes:
 | Started or finished | Collapsed: the targets per stage (the release facts are in the details block, D10); opens on click to the same content |
 | Declarative release | One line: the schema folder at its version, with Open |
 
-The viewer, by viewport:
+The viewer, by the page's width:
 
-| Viewport | Container | Behavior |
+| Page width | Container | Behavior |
 |---|---|---|
-| 1280 px and wider | Standard-width sheet beside the page, no scrim | Page stays interactive; another file swaps the content; Esc closes |
+| 1280 px and wider | Column docked on the right, 704 px and at most half the page | The plan narrows beside it and stays interactive; another file swaps the content; Close or Esc closes |
 | 640 to 1279 px | Standard-width sheet over a scrim | Same body |
 | Below 640 px | Full-width sheet | Lines wrap |
 
@@ -576,8 +583,8 @@ Tests to write, per the placement rules in `AGENTS.md`:
 - Viewer tests: the diagnostic placed from a byte range on a multi-byte statement, opened from the
   failed section; opening at the top with the error when there
   is no range; the per-database line when opened from a section and none from Changes; the
-  file-at-commit link per platform and none on an unknown one; the container chosen per viewport
-  through a mocked `matchMedia`; swapping files in the side panel; Esc.
+  file-at-commit link per platform and none on an unknown one; the container chosen
+  by the page's width; swapping files in the docked column; Close and Esc.
 - Source row tests: each row of the States table from a `VCSSource` with that subset; a squash-merge
   title ending in `(#N)` rendered with the number once; the 72-character truncation and tooltip; a
   title with markdown and control characters rendered as text; the parse of `repo@sha` from each
