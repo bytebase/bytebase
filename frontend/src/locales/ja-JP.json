@@ -2833,6 +2833,12 @@
       "self": "アカウント設定",
       "update-password": "パスワードを更新"
     },
+    "export-destinations": {
+      "configured": "設定済み",
+      "description": "SQLエディタのエクスポートをアップロードできる場所です。各プロジェクトはプロジェクト設定で保存先フォルダーを選択します。",
+      "not-configured": "未設定",
+      "provider": "プロバイダー"
+    },
     "general": {
       "workspace": {
         "access-token-duration": {
@@ -3435,11 +3441,21 @@
       }
     },
     "sharepoint": {
+      "caption": "Microsoft Entra アプリケーション",
       "client-id": "クライアント ID",
       "client-secret": "クライアントシークレット",
       "client-secret-description": "Microsoft Entra アプリケーションのクライアントシークレットです。保存後は読み取れません。",
       "client-secret-saved": "クライアントシークレットは保存済みです。置き換えるには新しい値を入力してください。",
-      "description": "Bytebase はこの Microsoft Entra アプリケーションを使用して、SQL エディターのエクスポートを SharePoint にアップロードします。SharePoint で各アップロード先ライブラリへの書き込み権限をこのアプリケーションに付与してください。Bytebase は SharePoint の権限、保持、削除を管理しません。",
+      "remove": {
+        "description": "アプリケーションの資格情報が削除されます。プロジェクトの SharePoint フォルダー設定は残りますが、アプリケーションを再設定するまで SharePoint へのエクスポートは失敗します。",
+        "title": "SharePoint を削除しますか？"
+      },
+      "setup": {
+        "grant": "各保存先ライブラリへの書き込みアクセスをアプリケーションに付与します。Bytebase は SharePoint の権限、保持、削除を管理しません。",
+        "project": "各プロジェクトの保存先フォルダーはプロジェクト設定で指定します。",
+        "register": "Microsoft Entra ID にアプリケーションを登録して Lists.SelectedOperations.Selected アプリケーション権限を付与し、クライアントシークレットを作成します。",
+        "title": "始める前に"
+      },
       "tenant-id": "テナント ID"
     },
     "sidebar": {
@@ -3447,6 +3463,7 @@
       "custom-roles": "カスタムロール",
       "data-access": "データアクセス",
       "data-classification": "データ分類",
+      "export-destinations": "エクスポート先",
       "general": "全般",
       "global-masking": "グローバルマスキング",
       "iam-and-admin": "IAM と管理",
@@ -3457,7 +3474,6 @@
       "members-and-groups": "メンバーとグループ",
       "profile": "プロフィール",
       "security-and-policy": "セキュリティポリシー",
-      "sharepoint": "SharePoint",
       "sso": "SSO",
       "subscription": "サブスクリプション",
       "users-and-groups": "ユーザーとグループ"

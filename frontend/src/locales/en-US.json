@@ -2833,6 +2833,12 @@
       "self": "Account settings",
       "update-password": "Update password"
     },
+    "export-destinations": {
+      "configured": "Configured",
+      "description": "Where SQL Editor exports can be uploaded. Each project chooses its destination folder in Project Settings.",
+      "not-configured": "Not configured",
+      "provider": "Provider"
+    },
     "general": {
       "workspace": {
         "access-token-duration": {
@@ -3435,11 +3441,21 @@
       }
     },
     "sharepoint": {
+      "caption": "Microsoft Entra application",
       "client-id": "Client ID",
       "client-secret": "Client secret",
       "client-secret-description": "The client secret of the Microsoft Entra application. It cannot be read back after saving.",
       "client-secret-saved": "A client secret is saved. Enter a new one to replace it.",
-      "description": "Bytebase uploads SQL Editor exports to SharePoint with this Microsoft Entra application. Grant it write access to each destination library in SharePoint. Bytebase does not manage SharePoint permissions, retention, or deletion.",
+      "remove": {
+        "description": "The application credentials are deleted. Projects keep their SharePoint folders, but exports to SharePoint fail until an application is configured again.",
+        "title": "Remove SharePoint?"
+      },
+      "setup": {
+        "grant": "Grant the application write access to each destination library. Bytebase does not manage SharePoint permissions, retention, or deletion.",
+        "project": "Set each project's destination folder in Project Settings.",
+        "register": "Register an application in Microsoft Entra ID with the Lists.SelectedOperations.Selected application permission, and create a client secret.",
+        "title": "Before you start"
+      },
       "tenant-id": "Tenant ID"
     },
     "sidebar": {
@@ -3447,6 +3463,7 @@
       "custom-roles": "Custom Roles",
       "data-access": "Data Access",
       "data-classification": "Data Classification",
+      "export-destinations": "Export Destinations",
       "general": "General",
       "global-masking": "Global Masking",
       "iam-and-admin": "IAM & Admin",
@@ -3457,7 +3474,6 @@
       "members-and-groups": "Members & Groups",
       "profile": "Profile",
       "security-and-policy": "Security & Policy",
-      "sharepoint": "SharePoint",
       "sso": "SSO",
       "subscription": "Subscription",
       "users-and-groups": "Users & Groups"

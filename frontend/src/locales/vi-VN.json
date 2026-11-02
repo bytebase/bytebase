@@ -2833,6 +2833,12 @@
       "self": "Cài đặt tài khoản",
       "update-password": "Cập nhật mật khẩu"
     },
+    "export-destinations": {
+      "configured": "Đã cấu hình",
+      "description": "Nơi có thể tải lên các bản xuất từ Trình soạn thảo SQL. Mỗi dự án chọn thư mục đích trong Cài đặt dự án.",
+      "not-configured": "Chưa cấu hình",
+      "provider": "Nhà cung cấp"
+    },
     "general": {
       "workspace": {
         "access-token-duration": {
@@ -3435,11 +3441,21 @@
       }
     },
     "sharepoint": {
+      "caption": "Ứng dụng Microsoft Entra",
       "client-id": "ID client",
       "client-secret": "Client secret",
       "client-secret-description": "Client secret của ứng dụng Microsoft Entra. Không thể đọc lại sau khi lưu.",
       "client-secret-saved": "Đã lưu client secret. Nhập giá trị mới để thay thế.",
-      "description": "Bytebase tải các bản xuất từ SQL Editor lên SharePoint bằng ứng dụng Microsoft Entra này. Hãy cấp cho ứng dụng quyền ghi vào từng thư viện đích trong SharePoint. Bytebase không quản lý quyền, lưu giữ hay xóa trong SharePoint.",
+      "remove": {
+        "description": "Thông tin xác thực của ứng dụng sẽ bị xóa. Các dự án vẫn giữ thư mục SharePoint, nhưng việc xuất sang SharePoint sẽ thất bại cho đến khi ứng dụng được cấu hình lại.",
+        "title": "Gỡ bỏ SharePoint?"
+      },
+      "setup": {
+        "grant": "Cấp cho ứng dụng quyền ghi vào từng thư viện đích. Bytebase không quản lý quyền, lưu giữ hoặc xóa trong SharePoint.",
+        "project": "Đặt thư mục đích của từng dự án trong Cài đặt dự án.",
+        "register": "Đăng ký một ứng dụng trong Microsoft Entra ID với quyền ứng dụng Lists.SelectedOperations.Selected và tạo client secret.",
+        "title": "Trước khi bắt đầu"
+      },
       "tenant-id": "ID tenant"
     },
     "sidebar": {
@@ -3447,6 +3463,7 @@
       "custom-roles": "Vai trò tùy chỉnh",
       "data-access": "Truy cập dữ liệu",
       "data-classification": "Phân loại dữ liệu",
+      "export-destinations": "Đích xuất",
       "general": "Chung",
       "global-masking": "Che giấu toàn cục",
       "iam-and-admin": "IAM & Quản trị",
@@ -3457,7 +3474,6 @@
       "members-and-groups": "Thành viên & Nhóm",
       "profile": "Hồ sơ",
       "security-and-policy": "Bảo mật & Chính sách",
-      "sharepoint": "SharePoint",
       "sso": "SSO",
       "subscription": "Gói đăng ký",
       "users-and-groups": "Người dùng & Nhóm"

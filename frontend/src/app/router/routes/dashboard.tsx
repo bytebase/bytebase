@@ -58,6 +58,7 @@ import {
   WORKSPACE_ROUTE_AUDIT_LOG,
   WORKSPACE_ROUTE_CUSTOM_APPROVAL,
   WORKSPACE_ROUTE_DATA_CLASSIFICATION,
+  WORKSPACE_ROUTE_EXPORT_DESTINATIONS,
   WORKSPACE_ROUTE_GLOBAL_MASKING,
   WORKSPACE_ROUTE_GROUPS,
   WORKSPACE_ROUTE_IDENTITY_PROVIDER_DETAIL,
@@ -71,7 +72,6 @@ import {
   WORKSPACE_ROUTE_ROLES,
   WORKSPACE_ROUTE_SEMANTIC_TYPES,
   WORKSPACE_ROUTE_SERVICE_ACCOUNTS,
-  WORKSPACE_ROUTE_SHAREPOINT,
   WORKSPACE_ROUTE_SQL_REVIEW,
   WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
   WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
@@ -433,14 +433,17 @@ const workspaceLevelRoutes: RouteObject[] = [
         ),
       },
       {
-        path: "sharepoint",
+        path: "export-destinations",
         handle: {
-          name: WORKSPACE_ROUTE_SHAREPOINT,
+          name: WORKSPACE_ROUTE_EXPORT_DESTINATIONS,
           requiredPermissionList: (): Permission[] => ["bb.settings.get"],
         },
         lazy: lazyPage(
-          () => import("@/routes/workspace/SharePointPage"),
-          (m) => m.SharePointPage
+          () =>
+            import(
+              "@/routes/workspace/export-destinations/ExportDestinationsPage"
+            ),
+          (m) => m.ExportDestinationsPage
         ),
       },
     ],

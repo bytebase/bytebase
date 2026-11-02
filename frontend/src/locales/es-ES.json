@@ -2833,6 +2833,12 @@
       "self": "Configuración de la cuenta",
       "update-password": "Actualizar contraseña"
     },
+    "export-destinations": {
+      "configured": "Configurado",
+      "description": "Dónde se pueden subir las exportaciones del Editor de SQL. Cada proyecto elige su carpeta de destino en la configuración del proyecto.",
+      "not-configured": "Sin configurar",
+      "provider": "Proveedor"
+    },
     "general": {
       "workspace": {
         "access-token-duration": {
@@ -3435,11 +3441,21 @@
       }
     },
     "sharepoint": {
+      "caption": "Aplicación de Microsoft Entra",
       "client-id": "ID de cliente",
       "client-secret": "Secreto de cliente",
       "client-secret-description": "El secreto de cliente de la aplicación de Microsoft Entra. No se puede volver a leer después de guardarlo.",
       "client-secret-saved": "Hay un secreto de cliente guardado. Introduzca uno nuevo para reemplazarlo.",
-      "description": "Bytebase sube las exportaciones del Editor SQL a SharePoint con esta aplicación de Microsoft Entra. Concédale acceso de escritura a cada biblioteca de destino en SharePoint. Bytebase no gestiona los permisos, la retención ni la eliminación en SharePoint.",
+      "remove": {
+        "description": "Se eliminan las credenciales de la aplicación. Los proyectos conservan sus carpetas de SharePoint, pero las exportaciones a SharePoint fallarán hasta que se vuelva a configurar una aplicación.",
+        "title": "¿Eliminar SharePoint?"
+      },
+      "setup": {
+        "grant": "Conceda a la aplicación acceso de escritura a cada biblioteca de destino. Bytebase no administra los permisos, la retención ni la eliminación en SharePoint.",
+        "project": "Configure la carpeta de destino de cada proyecto en la configuración del proyecto.",
+        "register": "Registre una aplicación en Microsoft Entra ID con el permiso de aplicación Lists.SelectedOperations.Selected y cree un secreto de cliente.",
+        "title": "Antes de empezar"
+      },
       "tenant-id": "ID de inquilino"
     },
     "sidebar": {
@@ -3447,6 +3463,7 @@
       "custom-roles": "Roles personalizados",
       "data-access": "Acceso a datos",
       "data-classification": "Clasificación de datos",
+      "export-destinations": "Destinos de exportación",
       "general": "General",
       "global-masking": "Enmascaramiento Global",
       "iam-and-admin": "IAM y administración",
@@ -3457,7 +3474,6 @@
       "members-and-groups": "Miembros y grupos",
       "profile": "Perfil",
       "security-and-policy": "Seguridad y Política",
-      "sharepoint": "SharePoint",
       "sso": "SSO",
       "subscription": "Suscripción",
       "users-and-groups": "Usuarios y grupos"
