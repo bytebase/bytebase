@@ -219,8 +219,8 @@ func nameSignedInAccount(next mcp.MethodHandler) mcp.MethodHandler {
 		// The SDK refuses a second initialize on a session with a nil result,
 		// and a panic here would end the process.
 		if initialized, ok := result.(*mcp.InitializeResult); ok && initialized != nil {
-			account := fmt.Sprintf(`This session acts as the Bytebase account %s in %s: tool calls run with its permissions, and "you" in tool results means it. The user may have other accounts, such as the client's sign-in.`,
-				getUserEmail(ctx), common.FormatWorkspace(getWorkspaceID(ctx)))
+			account := fmt.Sprintf(`In %s, this session acts as the Bytebase account %s, with its permissions. "You" in tool results means it, not another account such as the client's sign-in.`,
+				common.FormatWorkspace(getWorkspaceID(ctx)), getUserEmail(ctx))
 			initialized.Instructions = account + "\n\n" + initialized.Instructions
 		}
 		return result, err
