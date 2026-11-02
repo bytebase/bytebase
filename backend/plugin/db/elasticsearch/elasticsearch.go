@@ -15,9 +15,9 @@ import (
 	"time"
 
 	"github.com/elastic/go-elasticsearch/v7"
-	opensearch "github.com/opensearch-project/opensearch-go/v4"
-	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
-	"github.com/opensearch-project/opensearch-go/v4/signer/awsv2"
+	opensearch "github.com/opensearch-project/opensearch-go/v5"
+	"github.com/opensearch-project/opensearch-go/v5/opensearchapi"
+	"github.com/opensearch-project/opensearch-go/v5/signer/awsv2"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/durationpb"
 
@@ -234,6 +234,13 @@ func openWithOpenSearchClient(ctx context.Context, config db.ConnectionConfig, a
 	osConfig := opensearch.Config{
 		Addresses: []string{address},
 		Transport: baseTransport,
+		// A managed domain fronts its nodes behind one endpoint, so the
+		// addresses the cluster publishes are not reachable from here and
+		// SigV4 is bound to the host we were configured with. Left to its
+		// default the client discovers nodes and routes to those published
+		// addresses instead, abandoning the endpoint.
+		DiscoverNodesOnStart:  new(false),
+		DiscoverNodesInterval: -1,
 	}
 
 	// Configure authentication

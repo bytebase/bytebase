@@ -73,7 +73,7 @@ require (
 	github.com/modelcontextprotocol/go-sdk v1.8.0
 	github.com/nyaruka/phonenumbers/v2 v2.0.16
 	github.com/openark/golib v0.0.0-20210531070646-355f37940af8
-	github.com/opensearch-project/opensearch-go/v4 v4.8.1
+	github.com/opensearch-project/opensearch-go/v5 v5.1.3
 	github.com/paulmach/orb v0.14.0
 	github.com/pb33f/libopenapi v0.42.3
 	github.com/pingcap/tidb v1.1.0-beta.0.20241125141335-ec8b81b98edc
@@ -307,6 +307,7 @@ require (
 	github.com/richardlehane/mscfb v1.0.9 // indirect
 	github.com/richardlehane/msoleps v1.0.6 // indirect
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
+	github.com/rs/dnscache v0.0.0-20230804202142-fc85eb664529 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/sasha-s/go-deadlock v0.3.5 // indirect
 	github.com/segmentio/asm v1.2.1 // indirect
