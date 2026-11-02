@@ -4,6 +4,18 @@ Bytebase is a governed database development workspace. It turns proposed databas
 
 ## Language
 
+**Export Destination**:
+Where an export goes: Download to the caller's machine, or a configured storage location such as the Project Export Destination. Download is available unless the workspace query data policy disables it, and configuring a storage location approves exports to it; the Export Permission decides who may export, and an export access grant never adds a destination.
+_Avoid_: Export delivery, export target, download location
+
+**Project Export Destination**:
+The single configured storage location for a project's exports, which receives them directly from Bytebase. Its readers and retention are governed by the customer's storage administrators, independently of who initiates an export.
+_Avoid_: User export folder
+
+**Download**:
+The Export Destination that returns an exported file from Bytebase to the caller's machine. It is distinct from viewing query results in SQL Editor or opening a file already sent to a Project Export Destination.
+_Avoid_: Local export, local export download, query access
+
 **Workspace**:
 The top-level collaboration boundary that contains projects, database connections, environments, users, and policies.
 _Avoid_: Project, organization
@@ -95,11 +107,3 @@ _Avoid_: Exporter role, export right, export approval
 **Access Grant**:
 An approved, time-limited permission for one user to run one specific query on its target databases. A grant that includes export satisfies the Export Permission for that query.
 _Avoid_: JIT access, temporary role, export ticket
-
-**Export Destination**:
-A place exported query results may go. Local Export is the only destination today.
-_Avoid_: Export target, export format
-
-**Local Export**:
-An export whose results are returned to the requester as a file.
-_Avoid_: Download, data export

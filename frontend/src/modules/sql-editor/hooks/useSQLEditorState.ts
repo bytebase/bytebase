@@ -46,6 +46,8 @@ export const useSQLEditorFeature = (feature: PlanFeature): boolean => {
 // policy limits.
 type FormattedQueryDataPolicy = {
   disableCopyData: boolean;
+  // Workspace-level only.
+  disableDownload: boolean;
   allowAdminDataSource: boolean;
   maximumResultRows: number;
 };
@@ -56,6 +58,7 @@ const formatQueryDataPolicy = (
   const max = policy?.maximumResultRows ?? -1;
   return {
     disableCopyData: policy?.disableCopyData ?? false,
+    disableDownload: policy?.disableDownload ?? false,
     allowAdminDataSource: policy?.allowAdminDataSource ?? false,
     maximumResultRows: max <= 0 ? Number.MAX_VALUE : max,
   };

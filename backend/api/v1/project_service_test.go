@@ -607,7 +607,7 @@ func TestProjectPurgeCleansSampleBeforeDeletingMetadata(t *testing.T) {
 		}
 		return nil
 	}
-	projectService := NewProjectService(stores, nil, nil, manager)
+	projectService := NewProjectService(stores, nil, nil, manager, nil)
 	projectName := common.FormatProject(projectID)
 
 	_, err := projectService.DeleteProject(ctx, connect.NewRequest(&v1pb.DeleteProjectRequest{Name: projectName}))
@@ -671,7 +671,7 @@ func TestProjectPurgeRemovesSelfHostSample(t *testing.T) {
 		nil,
 		sample.ManagerOptions{ReplicaID: replicaID},
 	)
-	projectService := NewProjectService(stores, nil, nil, manager)
+	projectService := NewProjectService(stores, nil, nil, manager, nil)
 	projectName := common.FormatProject(projectID)
 
 	_, err = projectService.DeleteProject(ctx, connect.NewRequest(&v1pb.DeleteProjectRequest{Name: projectName}))

@@ -303,6 +303,17 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 		AllowRequestRole:            projectMessage.Setting.AllowRequestRole,
 		AllowJustInTimeAccess:       projectMessage.Setting.AllowJustInTimeAccess,
 		AllowLastPlanEditorApproval: projectMessage.Setting.AllowLastPlanEditorApproval,
+		ExportSetting:               convertToV1ProjectExportSetting(projectMessage.Setting.GetExportSetting()),
+	}
+}
+
+func convertToV1ProjectExportSetting(setting *storepb.Project_ExportSetting) *v1pb.Project_ExportSetting {
+	url := setting.GetSharepoint().GetUrl()
+	if url == "" {
+		return nil
+	}
+	return &v1pb.Project_ExportSetting{
+		Sharepoint: &v1pb.SharePointDestination{Url: url},
 	}
 }
 

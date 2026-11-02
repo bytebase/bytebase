@@ -447,7 +447,11 @@ export type ProjectSlice = {
     resourceId: string,
     report?: ErrorReport
   ) => Promise<Project>;
-  updateProject: (project: Project, updateMask: string[]) => Promise<Project>;
+  updateProject: (
+    project: Project,
+    updateMask: string[],
+    report?: ErrorReport
+  ) => Promise<Project>;
   archiveProject: (project: Project) => Promise<void>;
   restoreProject: (project: Project) => Promise<void>;
   deleteProject: (project: string) => Promise<void>;
@@ -1046,7 +1050,14 @@ export type IssueSlice = {
 // permission-denied / silent context conventions.
 export type SQLSlice = {
   query: (params: QueryRequest, signal: AbortSignal) => Promise<SQLResultSetV1>;
-  exportData: (params: ExportRequest) => Promise<Uint8Array>;
+  exportData: (params: ExportRequest) => Promise<ExportDataResult>;
+};
+
+// For an export to a storage destination such as SharePoint, `uri` locates the
+// exported folder and `content` is empty.
+export type ExportDataResult = {
+  content: Uint8Array;
+  uri: string;
 };
 
 export interface GetOrFetchDatabaseMetadataParams {

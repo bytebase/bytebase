@@ -1,7 +1,8 @@
+import { Code, ConnectError } from "@connectrpc/connect";
 import { act, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { Engine } from "@/types/proto-es/v1/common_pb";
+import { Engine, ExportDestination } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { BatchQuerySelect } from "./BatchQuerySelect";
 
@@ -23,6 +24,10 @@ const mocks = vi.hoisted(() => ({
   deleteDatabaseQueryContext: vi.fn(),
   databasesWithExport: [] as string[],
   useExportGrantBypass: vi.fn(),
+  destinations: [] as number[],
+  exportData: vi.fn(),
+  resolveExport: vi.fn(),
+  reportProgress: vi.fn(),
 }));
 
 vi.mock("react-i18next", () => ({
@@ -34,21 +39,53 @@ vi.mock("@/components/DataExportButton", () => ({
   DataExportButton: ({
     formContent,
     text,
+    onExport,
   }: {
     formContent: ReactNode;
     text: string;
+    onExport: (request: unknown) => void;
   }) => (
     <div data-testid="batch-export">
       <span>{text}</span>
       {formContent}
+      <button
+        type="button"
+        data-testid="batch-export-submit"
+        onClick={() =>
+          onExport({
+            options: {
+              format: 1,
+              limit: 100,
+              password: "",
+              destination: 2,
+            },
+            resolve: mocks.resolveExport,
+            reject: vi.fn(),
+            onProgress: mocks.reportProgress,
+          })
+        }
+      />
     </div>
   ),
 }));
 
 vi.mock("@/components/database", () => ({
-  DatabaseTableView: ({ databases }: { databases: Database[] }) => (
+  DatabaseTableView: ({
+    databases,
+    onSelectedNamesChange,
+  }: {
+    databases: Database[];
+    onSelectedNamesChange: (names: Set<string>) => void;
+  }) => (
     <span data-testid="exportable">
       {databases.map((database) => database.name).join(",")}
+      <button
+        type="button"
+        data-testid="select-all"
+        onClick={() =>
+          onSelectedNamesChange(new Set(databases.map((db) => db.name)))
+        }
+      />
     </span>
   ),
 }));
@@ -85,6 +122,13 @@ vi.mock("@/modules/sql-editor/components/RequestExportButton", () => ({
 
 vi.mock("@/modules/sql-editor/components/useExportGrantBypass", () => ({
   useExportGrantBypass: mocks.useExportGrantBypass,
+}));
+
+vi.mock("@/modules/sql-editor/components/useExportDestination", () => ({
+  useExportDestination: () => ({
+    destinations: mocks.destinations,
+    sharepointUrl: "https://contoso.sharepoint.com/sites/x/Exports",
+  }),
 }));
 
 vi.mock("@/modules/sql-editor/hooks/useSQLEditorState", () => ({
@@ -132,9 +176,10 @@ vi.mock("@/stores/app", () => {
   const state = () => ({
     databasesByName: mocks.databasesByName,
     environmentList: [mocks.environment],
-    exportData: vi.fn(),
+    exportData: mocks.exportData,
     getDatabaseByName: (name: string) => mocks.databasesByName[name],
     getEnvironmentByName: () => mocks.environment,
+    notify: vi.fn(),
   });
   return {
     useAppStore: Object.assign(
@@ -171,6 +216,7 @@ describe("BatchQuerySelect", () => {
     document.body.append(container);
     root = createRoot(container);
     mocks.databasesWithExport = [];
+    mocks.destinations = [ExportDestination.DOWNLOAD];
     grantLookup([], []);
 
     cellA = {
@@ -315,5 +361,64 @@ describe("BatchQuerySelect", () => {
     expect(testId("request-export")?.textContent).toBe(
       `${cellA.name},${cellB.name}`
     );
+  });
+
+  it("keeps Export but hides Request export when no destination is offered", () => {
+    mocks.destinations = [];
+    mocks.databasesWithExport = [cellA.name];
+    grantLookup([], [cellB.name]);
+    render();
+
+    expect(testId("batch-export")).not.toBeNull();
+    expect(testId("request-export")).toBeNull();
+  });
+
+  it("reports each database's SharePoint export separately", async () => {
+    mocks.databasesWithExport = [cellA.name, cellB.name];
+    mocks.destinations = [ExportDestination.SHAREPOINT];
+    mocks.exportData
+      .mockResolvedValueOnce({
+        content: new Uint8Array(),
+        uri: "https://contoso.sharepoint.com/sites/x/Exports/folder-a",
+      })
+      .mockRejectedValueOnce(
+        new ConnectError("destination not found", Code.FailedPrecondition)
+      );
+    render();
+
+    act(() => {
+      container
+        .querySelector<HTMLButtonElement>('[data-testid="select-all"]')
+        ?.click();
+    });
+    await act(async () => {
+      container
+        .querySelector<HTMLButtonElement>('[data-testid="batch-export-submit"]')
+        ?.click();
+    });
+
+    await vi.waitFor(() => {
+      expect(mocks.resolveExport).toHaveBeenCalledWith({
+        sharepoint: [
+          {
+            database: "cell-a/linear",
+            status: "EXPORTED",
+            uri: "https://contoso.sharepoint.com/sites/x/Exports/folder-a",
+          },
+          {
+            database: "cell-b/linear",
+            status: "FAILED",
+            reason: "destination not found",
+          },
+        ],
+      });
+    });
+    expect(mocks.exportData).toHaveBeenCalledWith(
+      expect.objectContaining({ destination: ExportDestination.SHAREPOINT })
+    );
+    expect(mocks.reportProgress.mock.calls).toEqual([
+      [0, 2],
+      [1, 2],
+    ]);
   });
 });

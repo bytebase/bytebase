@@ -11,10 +11,17 @@ import {
   type DownloadContent,
 } from "@/components/DataExportButton";
 import { DatabaseTableView } from "@/components/database";
+import {
+  type SharePointExportResult,
+  toExportedSharePointResult,
+  toFailedSharePointExport,
+} from "@/components/SharePointExportResultDialog";
 import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { RequestExportButton } from "@/modules/sql-editor/components/RequestExportButton";
+import { sharePointExportDatabaseLabel } from "@/modules/sql-editor/components/sharePointExportLabel";
+import { useExportDestination } from "@/modules/sql-editor/components/useExportDestination";
 import { useExportGrantBypass } from "@/modules/sql-editor/components/useExportGrantBypass";
 import {
   useSQLEditorDatabasesWithExport,
@@ -27,7 +34,7 @@ import {
   useSQLEditorTabState,
 } from "@/modules/sql-editor/store/tab";
 import { useAppStore } from "@/stores/app";
-import { ExportFormat } from "@/types/proto-es/v1/common_pb";
+import { ExportDestination, ExportFormat } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { ExportRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
 import type { SQLEditorDatabaseQueryContext } from "@/types/sqlEditor/tab";
@@ -86,6 +93,7 @@ export function BatchQuerySelect({
   const currentTab = useCurrentSQLEditorTab();
   const project = useSQLEditorEditorState((s) => s.project);
   const queryDataPolicy = useSQLEditorQueryDataPolicy(project);
+  const exportDestination = useExportDestination(project);
 
   const [showEmpty, setShowEmpty] = useState(true);
   const [selectedDatabaseNames, setSelectedDatabaseNames] = useState<
@@ -216,13 +224,14 @@ export function BatchQuerySelect({
     () => exportableDatabaseNames.map((name) => getDatabaseByName(name)),
     [exportableDatabaseNames, getDatabaseByName]
   );
-
+  const hasDestination = exportDestination.destinations.length > 0;
+  // With no destination offered, Export stays visible but disabled.
   const showExport = exportableDatabaseNames.length > 0;
-  // Surface "Request Export" whenever the batch contains uncovered DBs.
   // Visible alongside Export in the partial-coverage case (e.g. 2 of 5
   // covered) so users can request grants for the missing ones without
-  // losing the immediate export of the covered set.
-  const showRequestExport = unmatchedDatabases.length > 0;
+  // losing the immediate export of the covered set. A grant never adds a
+  // destination, so this hides when no destination is offered.
+  const showRequestExport = hasDestination && unmatchedDatabases.length > 0;
   // Partial-coverage flag: some matched, some not. Drives the Export
   // button label change from "Batch export" to "Partial batch export"
   // so the user knows up-front the action operates on a strict subset.
@@ -283,24 +292,36 @@ export function BatchQuerySelect({
   const validateExport = () =>
     selectedDatabaseNames.size > 0 && selectedDatabaseNames.size <= MAX_EXPORT;
 
-  const handleExport = ({ options, resolve }: DataExportRequest) => {
+  const handleExport = ({
+    options,
+    resolve,
+    onProgress,
+  }: DataExportRequest) => {
     void (async () => {
       // === Prod path: per-database backend Export RPC ===
+      const toSharePoint = options.destination === ExportDestination.SHAREPOINT;
       const contents: DownloadContent[] = [];
+      const sharePointResults: SharePointExportResult[] = [];
       const tabsState = getSQLEditorTabsState();
       const tab = tabsState.tabsById.get(tabsState.currentTabId);
       // Defensive intersect — the drawer already filters to authorized
-      // DBs, but if a stale name lingers in `selectedDatabaseNames` we
-      // skip it here rather than firing a doomed backend call that
-      // would produce a "failed for db" toast.
+      // DBs, but if a stale name lingers in `selectedDatabaseNames` we skip it here rather
+      // than firing a doomed backend call.
       const exportableSet = new Set(exportableDatabaseNames);
-      for (const databaseName of Array.from(selectedDatabaseNames)) {
-        if (!exportableSet.has(databaseName)) continue;
+      const targets = Array.from(selectedDatabaseNames).filter((name) =>
+        exportableSet.has(name)
+      );
+      for (const [index, databaseName] of targets.entries()) {
+        onProgress?.(index, targets.length);
         const database = getDatabaseByName(databaseName);
+        const { databaseName: shortName } = extractDatabaseResourceName(
+          database.name
+        );
+        const label = sharePointExportDatabaseLabel(database);
         const context = head(tab?.databaseQueryContexts?.get(databaseName));
         if (!context) continue;
         try {
-          const content = await exportData(
+          const { content, uri } = await exportData(
             create(ExportRequestSchema, {
               name: databaseName,
               ...(context.params.connection.dataSourceId
@@ -313,15 +334,28 @@ export function BatchQuerySelect({
               password: options.password,
               schema: context.params.connection.schema,
               container: context.params.connection.table,
+              destination: options.destination,
             })
           );
+          if (toSharePoint) {
+            sharePointResults.push(
+              toExportedSharePointResult(
+                label,
+                uri,
+                exportDestination.sharepointUrl ?? ""
+              )
+            );
+            continue;
+          }
           contents.push({
             content,
-            filename: `${
-              extractDatabaseResourceName(database.name).databaseName
-            }.${dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss")}.zip`,
+            filename: `${shortName}.${dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss")}.zip`,
           });
         } catch (e) {
+          if (toSharePoint) {
+            sharePointResults.push(toFailedSharePointExport(label, e));
+            continue;
+          }
           useAppStore.getState().notify({
             module: "bytebase",
             style: "CRITICAL",
@@ -332,7 +366,7 @@ export function BatchQuerySelect({
           });
         }
       }
-      resolve(contents);
+      resolve(toSharePoint ? { sharepoint: sharePointResults } : contents);
       setSelectedDatabaseNames(new Set());
     })();
   };
@@ -390,15 +424,16 @@ export function BatchQuerySelect({
                 ? t("sql-editor.batch-export.partial")
                 : t("sql-editor.batch-export.self")
             }
-            // Surface the grant-bypass explanation when the export is
-            // only available because of a JIT grant; otherwise keep the
-            // long-standing "select at most N databases" hint.
+            // Surface the grant explanation when one matched; otherwise keep
+            // the long-standing "select at most N databases" hint.
             tooltip={
               exportTooltip ??
               t("sql-editor.batch-export.tooltip", { max: MAX_EXPORT })
             }
             validate={validateExport}
             maximumExportCount={queryDataPolicy.maximumResultRows}
+            destinations={exportDestination.destinations}
+            sharepointUrl={exportDestination.sharepointUrl}
             onExport={handleExport}
             formContent={
               <div className="w-full flex flex-col gap-y-2">
@@ -412,9 +447,9 @@ export function BatchQuerySelect({
                   </span>
                 </div>
                 {/*
-                  Filtered to `exportableDatabaseList` so users can only
-                  check authorized DBs. Unauthorized ones are routed to
-                  the Request Export button next to this one.
+                  Filtered to `exportableDatabaseList` so users can only check authorized DBs.
+                  Unauthorized ones are routed to the Request Export button
+                  next to this one.
                 */}
                 <DatabaseTableView
                   databases={exportableDatabaseList}
