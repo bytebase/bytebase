@@ -30,8 +30,9 @@ import type { Release_VCSSource } from "@/types/proto-es/v1/release_service_pb";
 import type { Sheet as SheetMessage } from "@/types/proto-es/v1/sheet_service_pb";
 import { fileAtCommitUrl, parseRepoCommit, platformName } from "./vcsSource";
 
-// At this width the viewer is a side panel and the page stays usable beside
-// it; below, it is a sheet over a scrim (full width on a phone).
+// At this width the viewer sits beside the page with no scrim and the page
+// stays usable; below, it is the same sheet over a scrim (full width on a
+// phone).
 const SIDE_PANEL_MEDIA_QUERY = "(min-width: 1280px)";
 
 export interface ReleaseFileViewerTarget {
@@ -165,7 +166,7 @@ export function ReleaseFileViewer({
       onOpenChange={(open) => !open && onClose()}
     >
       <SheetContent
-        width={sidePanel ? "split" : "standard"}
+        width="standard"
         scrim={!sidePanel}
         data-testid="release-file-viewer"
         data-layout={sidePanel ? "side-panel" : "sheet"}
@@ -182,12 +183,15 @@ export function ReleaseFileViewer({
                   </div>
                 ) : null}
                 <div className="flex min-w-0 items-center gap-x-2">
-                  <span className="shrink-0 tabular-nums text-control-light">
+                  <SheetTitle className="shrink-0 tabular-nums">
                     {target.file.version}
-                  </span>
-                  <SheetTitle className="truncate font-mono">
-                    {target.file.path}
                   </SheetTitle>
+                  <span
+                    className="min-w-0 truncate font-mono text-sm text-control"
+                    data-testid="release-file-path"
+                  >
+                    {target.file.path}
+                  </span>
                   <CopyButton content={target.file.path} />
                 </div>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-control-light">

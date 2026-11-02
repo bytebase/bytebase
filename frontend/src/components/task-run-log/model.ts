@@ -24,8 +24,12 @@ import type {
   Section,
   SectionStatus,
   SpineFileSection,
+  SpineFileStatus,
   SpineItem,
+  SpineLoadKey,
+  SpineLoads,
   SpineStepSection,
+  SpineWindowItem,
 } from "./types";
 
 const STATUS_CONFIG: Record<
@@ -945,9 +949,7 @@ export const buildReleaseSpine = ({
     revisionDeleted: deletedNote(file.version),
   });
   const foldOf = (applied: ReleaseSpineFile[]): SpineItem[] =>
-    applied.length > 0
-      ? [{ kind: "applied-fold", files: [...applied].reverse() }]
-      : [];
+    applied.length > 0 ? [{ kind: "applied-earlier", files: applied }] : [];
 
   if (!run) {
     if (!state) return { items: [] };
@@ -1043,8 +1045,10 @@ export const buildReleaseSpine = ({
   return { items };
 };
 
-export const SPINE_SECTION_LIMIT = 24;
-export const APPLIED_FOLD_PAGE_SIZE = 5;
+// The file sections a spine shows before its load rows.
+export const SPINE_SECTION_CAP = 20;
+// Rows one "Load N more" adds when a stretch is longer than it.
+export const SPINE_LOAD_STEP = 20;
 
 export const isSpineItemOpenByDefault = (item: SpineItem): boolean => {
   switch (item.kind) {
@@ -1064,59 +1068,123 @@ export const isSpineItemOpenByDefault = (item: SpineItem): boolean => {
   }
 };
 
-// Keeps at most `limit` file sections in view. The running and failed
-// sections always stay; the oldest applied sections fold into one row and the
-// planned tail into another, each expanding in place.
-export const limitSpineSections = (
+const PINNED_STATUSES: ReadonlySet<SpineFileStatus> = new Set([
+  "running",
+  "failed",
+  "canceled",
+]);
+
+// The spine as drawn: the first `cap` file sections in version order, the
+// running, failed or canceled section wherever it falls, and each hidden
+// stretch as one load row named by what it holds. `loads` counts the rows the
+// reader loaded per stretch; a stretch holds one state, since a pinned section
+// separates the applied files from the pending ones.
+export const windowSpine = (
   items: SpineItem[],
-  limit = SPINE_SECTION_LIMIT
-): SpineItem[] => {
-  const sections = items.filter(
-    (item): item is SpineFileSection => item.kind === "file"
-  );
-  if (sections.length <= limit) return items;
+  loads: SpineLoads,
+  cap = SPINE_SECTION_CAP
+): SpineWindowItem[] => {
+  const out: SpineWindowItem[] = [];
+  const shown = new Set<SpineLoadKey>();
+  let fileIndex = 0;
+  let stretch: SpineFileSection[] = [];
 
-  const applied = sections.filter((s) => s.status === "applied");
-  const pending = sections.filter((s) => s.status === "pending");
-  const budget = Math.max(
-    limit - (sections.length - applied.length - pending.length),
-    0
-  );
-  const appliedKeep = Math.min(
-    applied.length,
-    budget - Math.min(pending.length, Math.floor(budget / 2))
-  );
-  const pendingKeep = Math.min(pending.length, budget - appliedKeep);
-  const foldedApplied = new Set(applied.slice(0, applied.length - appliedKeep));
-  const foldedPending = new Set(pending.slice(pendingKeep));
+  const show = (section: SpineFileSection) => {
+    out.push(section);
+    shown.add(section.status === "pending" ? "pending" : "applied");
+  };
+  const flush = () => {
+    if (stretch.length === 0) return;
+    const first = stretch[0].status;
+    const key: SpineLoadKey =
+      (first === "applied" || first === "pending") &&
+      stretch.every((section) => section.status === first)
+        ? first
+        : "files";
+    const revealed = Math.min(loads[key] ?? 0, stretch.length);
+    for (const section of stretch.slice(0, revealed)) show(section);
+    const count = stretch.length - revealed;
+    if (count > 0) {
+      out.push({
+        kind: "load",
+        key,
+        count,
+        more: key === "files" ? out.length > 0 : shown.has(key),
+      });
+    }
+    stretch = [];
+  };
 
-  const result: SpineItem[] = [];
   for (const item of items) {
-    if (item.kind === "file" && foldedApplied.has(item)) {
-      const last = result.at(-1);
-      if (last?.kind === "applied-sections") last.sections.push(item);
-      else
-        result.push({
-          kind: "applied-sections",
-          id: "applied-sections",
-          sections: [item],
+    if (item.kind === "applied-earlier") {
+      const revealed = Math.min(
+        loads["applied-earlier"] ?? 0,
+        item.files.length
+      );
+      for (const file of item.files.slice(0, revealed)) {
+        out.push({ kind: "applied-earlier-file", file });
+      }
+      const count = item.files.length - revealed;
+      if (count > 0) {
+        out.push({
+          kind: "load",
+          key: "applied-earlier",
+          count,
+          more: revealed > 0,
         });
+      }
       continue;
     }
-    if (item.kind === "file" && foldedPending.has(item)) {
-      const last = result.at(-1);
-      if (last?.kind === "pending-sections") last.sections.push(item);
-      else
-        result.push({
-          kind: "pending-sections",
-          id: "pending-sections",
-          sections: [item],
-        });
+    if (item.kind === "file") {
+      if (fileIndex < cap || PINNED_STATUSES.has(item.status)) {
+        flush();
+        show(item);
+      } else {
+        stretch.push(item);
+      }
+      fileIndex++;
       continue;
     }
-    result.push(item);
+    flush();
+    out.push(item);
   }
-  return result;
+  flush();
+  return out;
+};
+
+export interface SpineCounts {
+  files: number;
+  applied: number;
+  running: number;
+  failed: number;
+  canceled: number;
+  pending: number;
+  appliedEarlier: number;
+}
+
+// The count line's numbers: every file section by state, and the files
+// applied before this rollout.
+export const countSpine = (
+  items: SpineItem[],
+  totalFiles: number
+): SpineCounts => {
+  const counts: SpineCounts = {
+    files: totalFiles,
+    applied: 0,
+    running: 0,
+    failed: 0,
+    canceled: 0,
+    pending: 0,
+    appliedEarlier: 0,
+  };
+  for (const item of items) {
+    if (item.kind === "applied-earlier") {
+      counts.appliedEarlier += item.files.length;
+    } else if (item.kind === "file") {
+      counts[item.status]++;
+    }
+  }
+  return counts;
 };
 
 // The span from the first entry's start to the last entry's end.

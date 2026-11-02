@@ -139,9 +139,10 @@ export interface SpineStepSection {
   entries: TaskRunLogEntry[];
 }
 
-// The release's versions the database already had, newest first.
-export interface SpineAppliedFold {
-  kind: "applied-fold";
+// The release's versions the database had before this rollout, in version
+// order.
+export interface SpineAppliedEarlier {
+  kind: "applied-earlier";
   files: ReleaseSpineFile[];
 }
 
@@ -151,20 +152,26 @@ export interface SpineRunFailed {
   error: string;
 }
 
-// Past the section limit: the oldest applied sections, or the planned tail.
-export interface SpineSectionFold {
-  kind: "applied-sections" | "pending-sections";
-  id: string;
-  sections: SpineFileSection[];
-}
-
 export type SpineItem =
-  | SpineAppliedFold
+  | SpineAppliedEarlier
   | SpineFileSection
   | SpineStepSection
-  | SpineRunFailed
-  | SpineSectionFold;
+  | SpineRunFailed;
 
 export interface ReleaseSpine {
   items: SpineItem[];
 }
+
+// What a hidden stretch holds, which names its load row.
+export type SpineLoadKey = "applied" | "pending" | "applied-earlier" | "files";
+
+// How many rows of each stretch the reader has loaded.
+export type SpineLoads = Partial<Record<SpineLoadKey, number>>;
+
+export type SpineWindowItem =
+  | SpineFileSection
+  | SpineStepSection
+  | SpineRunFailed
+  | { kind: "applied-earlier-file"; file: ReleaseSpineFile }
+  // `more`: a shown row above holds the same state.
+  | { kind: "load"; key: SpineLoadKey; count: number; more: boolean };

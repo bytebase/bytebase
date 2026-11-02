@@ -418,7 +418,10 @@ reason in the change; do not select one only to avoid responsive design.
 | `xlarge` | 1120px | Dense rule or table editor |
 | `huge` | 95vw | Maximized editor surface that retains a scrim anchor |
 | `workspace` | Responsive, capped at 960px | Workspace-like editor with phone and tablet behavior |
-| `split` | 62vw | Non-modal reading panel beside the page, which keeps about 38% and stays usable (`SheetContent scrim={false}`); below 1280px use a standard sheet |
+
+A reading panel the page stays usable beside, such as the release file
+viewer on wide screens, is a non-modal `Sheet` (`modal={false}`) whose
+`SheetContent` passes `scrim={false}`; it keeps a width tier above.
 
 Consumers MUST use the `width` variant. Do not apply `w-*`, `min-w-*`, or
 `max-w-*` to `SheetContent`. Add or change a tier only when the shared contract

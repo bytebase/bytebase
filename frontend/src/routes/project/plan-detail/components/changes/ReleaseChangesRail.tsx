@@ -1,5 +1,5 @@
 import { ChevronRight } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
@@ -7,6 +7,7 @@ import {
   CollapsiblePanel,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { useKeepEndInPlace } from "@/hooks/useKeepEndInPlace";
 import { cn } from "@/lib/utils";
 import {
   type Release,
@@ -111,9 +112,13 @@ function ChangeGroup({
   const { t } = useTranslation();
   const [open, setOpen] = useState(defaultOpen);
   const [shown, setShown] = useState(CHANGES_ROW_LIMIT);
-  const remaining = group.files.length - shown;
+  const listRef = useRef<HTMLDivElement>(null);
+  const keepEndInPlace = useKeepEndInPlace(listRef);
+  const remaining = Math.max(group.files.length - shown, 0);
+  const extended =
+    shown > CHANGES_ROW_LIMIT && group.files.length > CHANGES_ROW_LIMIT;
   const rows = (
-    <div className="flex flex-col">
+    <div ref={listRef} className="flex flex-col">
       {group.files.slice(0, shown).map((file) => (
         <div
           key={file.version}
@@ -141,17 +146,46 @@ function ChangeGroup({
           )}
         </div>
       ))}
-      {remaining > 0 ? (
-        <div className="px-3 py-1">
-          <Button
-            type="button"
-            appearance="link"
-            size="sm"
-            className="h-auto p-0 text-xs"
-            onClick={() => setShown((n) => n + CHANGES_ROW_LIMIT)}
-          >
-            {t("release.changes.n-more", { count: remaining })}
-          </Button>
+      {remaining > 0 || extended ? (
+        <div
+          className="flex items-center gap-x-4 px-3 py-1"
+          data-testid="release-change-load"
+        >
+          {remaining > 0 ? (
+            <Button
+              type="button"
+              appearance="link"
+              size="sm"
+              className="h-auto p-0 text-xs"
+              onClick={() => setShown((n) => n + CHANGES_ROW_LIMIT)}
+            >
+              {t("release.changes.load-more", {
+                count: Math.min(remaining, CHANGES_ROW_LIMIT),
+              })}
+            </Button>
+          ) : null}
+          {remaining > CHANGES_ROW_LIMIT ? (
+            <Button
+              type="button"
+              appearance="link"
+              size="sm"
+              className="h-auto p-0 text-xs"
+              onClick={() => setShown(group.files.length)}
+            >
+              {t("release.changes.load-all", { count: remaining })}
+            </Button>
+          ) : null}
+          {extended ? (
+            <Button
+              type="button"
+              appearance="link"
+              size="sm"
+              className="h-auto p-0 text-xs"
+              onClick={() => keepEndInPlace(() => setShown(CHANGES_ROW_LIMIT))}
+            >
+              {t("release.changes.show-fewer")}
+            </Button>
+          ) : null}
         </div>
       ) : null}
     </div>

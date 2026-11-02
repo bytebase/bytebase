@@ -1,5 +1,5 @@
 import { create } from "@bufbuild/protobuf";
-import { act, cleanup, fireEvent, render, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, waitFor, within } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 import { AGENT_PLAN_DRAFT_EVENT } from "@/lib/plan/agentDraftHandoff";
 import type { AgentPlanDraftEventDetail } from "@/lib/plan/agentDraftHandoff";
@@ -536,12 +536,21 @@ test("timestamp versions group by day for the newest group and by month for the 
   expect(rowVersions(view)).toContain("202609200900");
 });
 
-test("a group shows 12 rows, then N more extends it in place", async () => {
+test("a group shows 12 rows, loads 12 more or all in place, and Show fewer returns to 12", async () => {
   const versions = Array.from({ length: 30 }, (_, i) => String(i + 1).padStart(3, "0"));
   const view = await renderRail(versions.map((v) => fileOf(v)));
+  const load = within(view.getByTestId("release-change-load"));
   expect(rowVersions(view)).toHaveLength(12);
-  fireEvent.click(view.getByRole("button", { name: "release.changes.n-more" }));
-  expect(rowVersions(view).length).toBeGreaterThan(12);
+  expect(view.queryByRole("button", { name: "release.changes.show-fewer" })).toBeNull();
+  fireEvent.click(load.getByRole("button", { name: "release.changes.load-more" }));
+  expect(rowVersions(view)).toHaveLength(24);
+  // Six left: "Load 6 more" covers them, so there is no Load all.
+  expect(view.queryByRole("button", { name: "release.changes.load-all" })).toBeNull();
+  fireEvent.click(view.getByRole("button", { name: "release.changes.show-fewer" }));
+  expect(rowVersions(view)).toHaveLength(12);
+  fireEvent.click(view.getByRole("button", { name: "release.changes.load-all" }));
+  expect(rowVersions(view)).toHaveLength(30);
+  expect(view.queryByRole("button", { name: "release.changes.load-more" })).toBeNull();
 });
 
 test("counters past a hundred fall into buckets of a hundred, the newest open", async () => {

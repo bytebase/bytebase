@@ -2649,11 +2649,12 @@
     "and-n-more-files": "他 {{count}} 件のファイル",
     "change-tip": "この変更はリリースアーティファクトにリンクされています。",
     "changes": {
+      "load-all": "すべて読み込む（{{count}}）",
+      "load-more": "さらに {{count}} 件読み込む",
       "manifest_one": "{{count}} ファイル · 最新 {{version}}",
       "manifest_other": "{{count}} ファイル · 最新 {{version}}",
-      "n-more_one": "ほか {{count}} 件",
-      "n-more_other": "ほか {{count}} 件",
-      "schema": "スキーマ"
+      "schema": "スキーマ",
+      "show-fewer": "表示を減らす"
     },
     "empty": {
       "description": "CI パイプラインが Bytebase にリリースした変更が、デプロイ進捗とともにここに表示されます。",
@@ -4350,16 +4351,36 @@
     },
     "run-number": "実行 #{{number}}",
     "spine": {
-      "already-applied": "{{count}} 件適用済み",
-      "applied-sections": "{{count}} 件適用済み",
       "as-of": "ロールアウト作成時点（{{time}}）の状態です。実行時にデータベースを再確認します。",
+      "count": {
+        "applied": "{{count}} 件適用済み",
+        "applied-earlier": "{{count}} 件は以前に適用済み",
+        "canceled": "{{count}} 件キャンセル済み",
+        "failed": "{{count}} 件失敗",
+        "files_one": "{{count}} ファイル",
+        "files_other": "{{count}} ファイル",
+        "pending": "{{count}} 件保留中",
+        "running": "{{count}} 件実行中"
+      },
+      "load": {
+        "all": "すべて読み込む（{{count}}）",
+        "applied": "適用済み {{count}} 件を読み込む",
+        "applied-earlier": "以前に適用済みの {{count}} 件を読み込む",
+        "files": "{{count}} ファイルを読み込む",
+        "more-applied": "適用済みをさらに {{count}} 件読み込む",
+        "more-applied-earlier": "以前に適用済みをさらに {{count}} 件読み込む",
+        "more-files": "さらに {{count}} ファイルを読み込む",
+        "more-pending": "保留中をさらに {{count}} 件読み込む",
+        "pending": "保留中 {{count}} 件を読み込む"
+      },
       "no-statement": "このエラーに対応するステートメントを特定できませんでした。",
-      "pending-sections": "ほか {{count}} 件、適用予定",
       "revision-deleted": "{{date}} に {{user}} がリビジョンを削除",
       "revisions-on": "{{database}} のリビジョン",
       "run-failed": "実行失敗",
+      "show-fewer": "表示を減らす",
       "status": {
         "applied": "適用済み",
+        "applied-earlier": "以前に適用済み",
         "canceled": "キャンセル済み",
         "failed": "失敗",
         "running": "実行中"

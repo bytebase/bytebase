@@ -2649,11 +2649,12 @@
     "and-n-more-files": "y {{count}} archivos más",
     "change-tip": "Este cambio está vinculado a un artefacto de versión.",
     "changes": {
+      "load-all": "Cargar todos ({{count}})",
+      "load-more": "Cargar {{count}} más",
       "manifest_one": "{{count}} archivo · más reciente {{version}}",
       "manifest_other": "{{count}} archivos · más reciente {{version}}",
-      "n-more_one": "{{count}} más",
-      "n-more_other": "{{count}} más",
-      "schema": "Esquema"
+      "schema": "Esquema",
+      "show-fewer": "Mostrar menos"
     },
     "empty": {
       "description": "Los cambios que tu pipeline de CI publica en Bytebase aparecen aquí con su progreso de despliegue.",
@@ -4350,16 +4351,36 @@
     },
     "run-number": "Ejecución n.º {{number}}",
     "spine": {
-      "already-applied": "{{count}} ya aplicados",
-      "applied-sections": "{{count}} aplicados",
       "as-of": "Según la creación del despliegue, {{time}}; la ejecución vuelve a comprobar la base de datos.",
+      "count": {
+        "applied": "{{count}} aplicados",
+        "applied-earlier": "{{count}} aplicados antes",
+        "canceled": "{{count}} cancelados",
+        "failed": "{{count}} fallidos",
+        "files_one": "{{count}} archivo",
+        "files_other": "{{count}} archivos",
+        "pending": "{{count}} pendientes",
+        "running": "{{count}} en ejecución"
+      },
+      "load": {
+        "all": "Cargar todos ({{count}})",
+        "applied": "Cargar {{count}} aplicados",
+        "applied-earlier": "Cargar {{count}} aplicados antes",
+        "files": "Cargar {{count}} archivos",
+        "more-applied": "Cargar {{count}} aplicados más",
+        "more-applied-earlier": "Cargar {{count}} más aplicados antes",
+        "more-files": "Cargar {{count}} archivos más",
+        "more-pending": "Cargar {{count}} pendientes más",
+        "pending": "Cargar {{count}} pendientes"
+      },
       "no-statement": "No se identificó ninguna sentencia para este error.",
-      "pending-sections": "{{count}} más, se aplicarán",
       "revision-deleted": "Revisión eliminada el {{date}} por {{user}}",
       "revisions-on": "Revisiones en {{database}}",
       "run-failed": "Ejecución fallida",
+      "show-fewer": "Mostrar menos",
       "status": {
         "applied": "Aplicado",
+        "applied-earlier": "Aplicado antes",
         "canceled": "Cancelado",
         "failed": "Fallido",
         "running": "En ejecución"

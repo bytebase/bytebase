@@ -1,0 +1,88 @@
+import { create } from "@bufbuild/protobuf";
+import { within } from "@testing-library/react";
+import { act, createElement } from "react";
+import { createRoot } from "react-dom/client";
+import { beforeAll, expect, test } from "vitest";
+import i18n from "@/lib/i18n";
+import { Task_ReleaseStateSchema } from "@/types/proto-es/v1/rollout_service_pb";
+import { ReleaseSpineView } from "./ReleaseSpineView";
+
+(
+  globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
+
+beforeAll(async () => {
+  await i18n.changeLanguage("en-US");
+  Object.defineProperty(window, "matchMedia", {
+    configurable: true,
+    writable: true,
+    value: (query: string) =>
+      ({
+        matches: false,
+        media: query,
+        addEventListener: () => {},
+        removeEventListener: () => {},
+      }) as unknown as MediaQueryList,
+  });
+});
+
+const sixty = Array.from({ length: 60 }, (_, i) => ({
+  version: String(i + 1).padStart(3, "0"),
+  path: `migrations/${String(i + 1).padStart(3, "0")}.sql`,
+}));
+
+const renderNotRun = () => {
+  const container = document.createElement("div");
+  document.body.appendChild(container);
+  const root = createRoot(container);
+  act(() =>
+    root.render(
+      createElement(ReleaseSpineView, {
+        files: sixty,
+        entries: [],
+        state: create(Task_ReleaseStateSchema, {
+          pendingVersions: sixty.map((f) => ({ version: f.version })),
+        }),
+        getSectionLabel: () => "",
+      })
+    )
+  );
+  return {
+    container,
+    unmount: () => {
+      act(() => root.unmount());
+      container.remove();
+    },
+  };
+};
+
+const fileRows = (container: HTMLElement) =>
+  within(container).queryAllByTestId(/^spine-file-\d+$/).length;
+const click = (container: HTMLElement, name: RegExp) =>
+  act(() => within(container).getByRole("button", { name }).click());
+
+test("a long stretch offers Load 20 more and Load all, a short one a single row, and Show fewer returns to the first 20", () => {
+  const view = renderNotRun();
+  const { container } = view;
+  expect(within(container).getByTestId("spine-count").textContent).toBe(
+    "60 files · 60 pending"
+  );
+  expect(fileRows(container)).toBe(20);
+  expect(
+    within(container).getByRole("button", { name: "Load all (40)" })
+  ).toBeDefined();
+  expect(within(container).queryByTestId("spine-show-fewer")).toBeNull();
+
+  click(container, /^Load 20 more pending$/);
+  expect(fileRows(container)).toBe(40);
+  // 20 left: one row loads them all.
+  expect(within(container).queryByRole("button", { name: /Load all/ })).toBeNull();
+
+  click(container, /^Load 20 more pending$/);
+  expect(fileRows(container)).toBe(60);
+  expect(within(container).queryByTestId("spine-load-pending")).toBeNull();
+
+  act(() => within(container).getByTestId("spine-show-fewer").click());
+  expect(fileRows(container)).toBe(20);
+  view.unmount();
+});

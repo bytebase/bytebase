@@ -198,7 +198,8 @@ test("before the run, Changes lists the release newest first and the task shows 
 
   await changes.getByRole("button", { name: `migrations/${version(2)}_orders.sql` }).click();
   const viewer = page.getByTestId("release-file-viewer");
-  await expect(viewer).toContainText(`migrations/${version(2)}_orders.sql`);
+  await expect(viewer.getByRole("heading", { name: version(2), exact: true })).toBeVisible();
+  await expect(viewer.getByTestId("release-file-path")).toHaveText(`migrations/${version(2)}_orders.sql`);
   await expect(viewer.locator(".view-lines")).toContainText("CREATE TABLE");
   await expect(viewer.getByRole("link", { name: /Open in GitHub at 0a1b2c3/ })).toBeVisible();
   await page.keyboard.press("Escape");
@@ -211,7 +212,8 @@ test("before the run, Changes lists the release newest first and the task shows 
   await taskCard(page).click();
   const spine = page.getByTestId("release-spine");
   await expect(spine).toBeVisible();
-  await expect(spine.getByRole("button", { name: /1 already applied/ })).toBeVisible();
+  await expect(spine.getByTestId("spine-count")).toHaveText("3 files · 2 pending · 1 applied earlier");
+  await expect(spine.getByRole("button", { name: "Load 1 applied earlier" })).toBeVisible();
   await expect(spine.getByTestId(`spine-file-${version(2)}`)).toContainText("Will apply");
   await expect(spine.getByTestId(`spine-file-${version(3)}`)).toContainText("Will apply");
   await expect(page.getByText(/As of rollout creation/)).toBeVisible();
@@ -219,7 +221,7 @@ test("before the run, Changes lists the release newest first and the task shows 
   await page.context().close();
 });
 
-test("after the run, the task folds the version it passed over and links to the database's revisions", async ({ browser }) => {
+test("after the run, the task lists the version it passed over as applied earlier and links to the database's revisions", async ({ browser }) => {
   await runAndWait(successPlan.name, "DONE");
   const page = await developerPage(browser);
   await page.goto(`${env.baseURL}/projects/${projectId}/plans/${successPlan.id}`);
@@ -227,10 +229,9 @@ test("after the run, the task folds the version it passed over and links to the 
   await expect(page.getByTestId("folded-description").first()).toHaveText(/All 3 applied/);
   await taskCard(page).click();
   const spine = page.getByTestId("release-spine");
-  const fold = spine.getByRole("button", { name: /1 already applied/ });
-  await expect(fold).toHaveAttribute("aria-expanded", "false");
-  await fold.click();
-  await expect(spine.getByTestId("spine-applied-row")).toHaveText([`migrations/${version(1)}_orders.sql`]);
+  await expect(spine.getByTestId("spine-count")).toHaveText("3 files · 2 applied · 1 applied earlier");
+  await spine.getByRole("button", { name: "Load 1 applied earlier" }).click();
+  await expect(spine.getByTestId("spine-applied-earlier-row")).toContainText(`migrations/${version(1)}_orders.sql`);
   await expect(spine.getByTestId(`spine-file-${version(2)}`)).toContainText("Applied");
   await expect(spine.getByTestId(`spine-file-${version(3)}`)).toContainText("Applied");
   await screenshot(page, "release-done-spine");

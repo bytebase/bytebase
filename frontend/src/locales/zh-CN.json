@@ -2649,11 +2649,12 @@
     "and-n-more-files": "以及另外 {{count}} 个文件",
     "change-tip": "该变更关联到了一个发布包。",
     "changes": {
+      "load-all": "全部加载（{{count}}）",
+      "load-more": "再加载 {{count}} 个",
       "manifest_one": "{{count}} 个文件 · 最新 {{version}}",
       "manifest_other": "{{count}} 个文件 · 最新 {{version}}",
-      "n-more_one": "还有 {{count}} 个",
-      "n-more_other": "还有 {{count}} 个",
-      "schema": "Schema"
+      "schema": "Schema",
+      "show-fewer": "收起"
     },
     "empty": {
       "description": "CI 流水线发布到 Bytebase 的变更会连同部署进度显示在这里。",
@@ -4350,16 +4351,36 @@
     },
     "run-number": "第 {{number}} 次运行",
     "spine": {
-      "already-applied": "{{count}} 个已应用",
-      "applied-sections": "{{count}} 个已应用",
       "as-of": "截至部署创建时（{{time}}）；运行时会重新检查数据库。",
+      "count": {
+        "applied": "{{count}} 个已应用",
+        "applied-earlier": "{{count}} 个此前已应用",
+        "canceled": "{{count}} 个已取消",
+        "failed": "{{count}} 个失败",
+        "files_one": "{{count}} 个文件",
+        "files_other": "{{count}} 个文件",
+        "pending": "{{count}} 个待应用",
+        "running": "{{count}} 个运行中"
+      },
+      "load": {
+        "all": "全部加载（{{count}}）",
+        "applied": "加载 {{count}} 个已应用",
+        "applied-earlier": "加载 {{count}} 个此前已应用",
+        "files": "加载 {{count}} 个文件",
+        "more-applied": "再加载 {{count}} 个已应用",
+        "more-applied-earlier": "再加载 {{count}} 个此前已应用",
+        "more-files": "再加载 {{count}} 个文件",
+        "more-pending": "再加载 {{count}} 个待应用",
+        "pending": "加载 {{count}} 个待应用"
+      },
       "no-statement": "未能确定此错误对应的语句。",
-      "pending-sections": "还有 {{count}} 个，将应用",
       "revision-deleted": "修订已于 {{date}} 被 {{user}} 删除",
       "revisions-on": "{{database}} 上的修订",
       "run-failed": "运行失败",
+      "show-fewer": "收起",
       "status": {
         "applied": "已应用",
+        "applied-earlier": "此前已应用",
         "canceled": "已取消",
         "failed": "失败",
         "running": "运行中"

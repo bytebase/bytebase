@@ -943,31 +943,33 @@ describe("TaskRunLogViewer release spine", () => {
     view.unmount();
   });
 
-  test("the already-applied fold is folded, opens newest first and shows five rows at a time", () => {
+  test("the files applied earlier load in place in version order, open the viewer, and Show fewer hides them again", () => {
     failedRun();
     const onOpenFile = vi.fn();
     const view = renderViewer({ taskRunStatus: TaskRun_Status.FAILED, runError: failedError, onOpenFile });
-    const fold = button(view.container, /6 already applied/);
-    expect(fold.getAttribute("aria-expanded")).toBe("false");
-    expect(fold.textContent).toContain("001");
-    expect(fold.textContent).toContain("006");
-    act(() => fold.click());
+    expect(within(view.container).getByTestId("spine-count").textContent).toContain("6 applied earlier");
     const rows = () =>
-      within(view.container).getAllByTestId("spine-applied-row").map((row) => row.textContent);
+      within(view.container)
+        .queryAllByTestId("spine-applied-earlier-row")
+        .map((row) => row.textContent?.match(/migrations\/\d+_change\.sql/)?.[0]);
+    expect(rows()).toEqual([]);
+    act(() => button(view.container, /Load 6 applied earlier/).click());
     expect(rows()).toEqual([
-      "migrations/006_change.sql",
-      "migrations/005_change.sql",
-      "migrations/004_change.sql",
-      "migrations/003_change.sql",
+      "migrations/001_change.sql",
       "migrations/002_change.sql",
+      "migrations/003_change.sql",
+      "migrations/004_change.sql",
+      "migrations/005_change.sql",
+      "migrations/006_change.sql",
     ]);
-    act(() => button(view.container, /Show more/).click());
-    expect(rows()).toHaveLength(6);
     act(() => button(view.container, /migrations\/001_change\.sql/).click());
     expect(onOpenFile).toHaveBeenCalledWith(
       { version: "001", path: "migrations/001_change.sql" },
       { kind: "already-applied", run: true }
     );
+    act(() => within(view.container).getByTestId("spine-show-fewer").click());
+    expect(rows()).toEqual([]);
+    expect(button(view.container, /Load 6 applied earlier/)).toBeDefined();
     view.unmount();
   });
 
@@ -997,7 +999,7 @@ describe("TaskRunLogViewer release spine", () => {
     useRelease([marker(1, "007"), run(2, ""), marker(4, "008"), run(5, "boom")]);
     const view = renderViewer({ taskRunStatus: TaskRun_Status.DONE });
     expect(within(view.container).getByTestId("spine-file-008").getAttribute("aria-expanded")).toBe("false");
-    expect(button(view.container, /6 already applied/)).toBeDefined();
+    expect(button(view.container, /Load 6 applied earlier/)).toBeDefined();
     view.unmount();
   });
 
