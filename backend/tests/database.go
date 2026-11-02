@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"strings"
 	"sync"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
@@ -232,4 +234,44 @@ func (ctl *controller) waitDatabaseRegistered(ctx context.Context, instance *v1p
 		}
 	}
 	return errors.Wrapf(last, "database %s is not registered after %d instance syncs", name, instanceSyncAttempts)
+}
+
+// waitSchemaDump returns the database's schema dump once it reports want, a
+// string the change just applied to the database puts in the dump.
+//
+// A completed rollout does not make that dump current. createDatabase registers
+// the database, and the instance sync that registration runs queues an
+// asynchronous schema sync for it; that queued sync can read the database
+// before a later migration and write its dump after the migration's own sync
+// wrote one, and db_schema keeps the last write, so the dump reverts to the
+// pre-migration schema. Syncing once per round makes the dump current and
+// outlasts such a write.
+func (ctl *controller) waitSchemaDump(ctx context.Context, databaseName, want string) (string, error) {
+	ticker := time.NewTicker(pollInterval)
+	defer ticker.Stop()
+	timeout := time.After(30 * time.Second)
+
+	for {
+		if _, err := ctl.databaseServiceClient.SyncDatabase(ctx, connect.NewRequest(&v1pb.SyncDatabaseRequest{
+			Name: databaseName,
+		})); err != nil {
+			return "", err
+		}
+		resp, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, connect.NewRequest(&v1pb.GetDatabaseSchemaRequest{
+			Name: fmt.Sprintf("%s/schema", databaseName),
+		}))
+		if err != nil {
+			return "", err
+		}
+		dump := resp.Msg.Schema
+		if strings.Contains(dump, want) {
+			return dump, nil
+		}
+
+		select {
+		case <-timeout:
+			return "", errors.Errorf("timeout waiting for the schema dump of %s to report %q, last dump:\n%s", databaseName, want, dump)
+		case <-ticker.C:
+		}
+	}
 }
