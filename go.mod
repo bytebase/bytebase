@@ -11,7 +11,7 @@ require (
 	buf.build/go/protovalidate v1.4.0
 	cloud.google.com/go/bigquery v1.85.0
 	cloud.google.com/go/cloudsqlconn v1.25.2
-	cloud.google.com/go/secretmanager v1.21.0
+	cloud.google.com/go/secretmanager v1.23.1
 	cloud.google.com/go/spanner v1.96.1
 	connectrpc.com/connect v1.21.1
 	connectrpc.com/cors v0.1.0
