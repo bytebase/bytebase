@@ -64,7 +64,7 @@ require (
 	github.com/hashicorp/vault/api/auth/approle v0.12.0
 	github.com/jackc/pgconn v1.14.3
 	github.com/jackc/pgtype v1.14.4
-	github.com/jackc/pgx/v5 v5.11.0
+	github.com/jackc/pgx/v5 v5.12.0
 	github.com/labstack/echo-contrib/v5 v5.0.1
 	github.com/labstack/echo/v5 v5.4.4
 	github.com/lib/pq v1.12.3
@@ -378,7 +378,7 @@ replace (
 	// Other fixes.
 	github.com/github/gh-ost => github.com/bytebase/gh-ost2 v1.1.7-0.20260512035759-ca2794d6ebea
 
-	github.com/jackc/pgx/v5 => github.com/bytebase/pgx/v5 v5.0.0-20250212161523-96ff8aed8767
+	github.com/jackc/pgx/v5 => github.com/bytebase/pgx/v5 v5.0.0-20261102115508-d3c6cddaeb96
 
 	github.com/mattn/go-oci8 => github.com/bytebase/go-obo v0.0.0-20231026081615-705a7fffbfd2
 
