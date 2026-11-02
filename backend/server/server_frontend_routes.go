@@ -3,8 +3,6 @@ package server
 import (
 	"io/fs"
 	"net/http"
-	"net/url"
-	"path"
 	"strings"
 
 	"github.com/labstack/echo/v5"
@@ -35,17 +33,28 @@ func registerFrontendRoutes(e *echo.Echo, distFS fs.FS) {
 	}
 	cacheImmutable := func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c *echo.Context) error {
-			// Only mark an asset immutable once we've confirmed it exists. In an HA
-			// rolling deploy, an older replica can 404 a new hashed asset briefly;
-			// we must not let browsers or CDNs cache "does not exist" for a year.
-			p := c.Param("*")
-			if unescaped, err := url.PathUnescape(p); err == nil {
-				p = unescaped
+			// Mark an asset immutable only once the response is known to be a
+			// success. In an HA rolling deploy an older replica can 404 a new
+			// hashed asset briefly, and the static handler rejects a path with a
+			// dot or empty segment outright, so a year of cached "does not exist"
+			// has to be impossible. Reading the status rather than re-deriving the
+			// file from the path also leaves echo's path rules to echo: deciding
+			// from a cleaned path is what put the header on those 404s.
+			//
+			// 304 keeps the directive so a revalidating CDN does not shorten its
+			// TTL; WriteHeader sets Status before it runs these hooks.
+			res, err := echo.UnwrapResponse(c.Response())
+			if err != nil {
+				// Without echo's response the status is not observable, and guessing
+				// from the path is exactly what put immutable on those 404s. Serve
+				// the asset uncached instead.
+				return next(c)
 			}
-			name := path.Clean(strings.TrimPrefix(p, "/"))
-			if info, err := fs.Stat(assetsFS, name); err == nil && !info.IsDir() {
-				c.Response().Header().Set(echo.HeaderCacheControl, "public, max-age=31536000, immutable")
-			}
+			res.Before(func() {
+				if res.Status == http.StatusOK || res.Status == http.StatusNotModified {
+					res.Header().Set(echo.HeaderCacheControl, "public, max-age=31536000, immutable")
+				}
+			})
 			return next(c)
 		}
 	}
