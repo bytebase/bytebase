@@ -23,6 +23,7 @@ import (
 	"github.com/pkg/errors"
 	goora "github.com/sijms/go-ora/v2"
 	"github.com/testcontainers/testcontainers-go"
+	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -530,9 +531,10 @@ func getRedisClusterContainer(ctx context.Context) (retC *Container, retErr erro
 }
 
 // redisCLI runs redis-cli inside the container, which keeps the cluster
-// bootstrap off the host and out of this package's dependencies.
+// bootstrap off the host and out of this package's dependencies. Exec output is
+// a multiplexed Docker stream, so Multiplexed decodes it into plain text.
 func redisCLI(ctx context.Context, c *Container, args ...string) (string, error) {
-	code, reader, err := c.container.Exec(ctx, append([]string{"redis-cli"}, args...))
+	code, reader, err := c.container.Exec(ctx, append([]string{"redis-cli"}, args...), tcexec.Multiplexed())
 	if err != nil {
 		return "", errors.Wrapf(err, "exec redis-cli %s", strings.Join(args, " "))
 	}
