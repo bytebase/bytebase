@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
+  dev: { value: true },
   sqlReviewV2: { value: true },
   fetchReviewPolicyList: vi.fn(),
   standardRules: {
@@ -46,6 +47,10 @@ vi.mock("./SQLReviewStandardRulesSection", () => ({
   useWorkspaceStandardRules: () => mocks.standardRules,
 }));
 
+vi.mock("./SQLReviewVersionSwitch", () => ({
+  SQLReviewVersionSwitch: () => <div>version-switch</div>,
+}));
+
 vi.mock("./SQLReviewAIReviewSection", () => ({
   SQLReviewAIReviewSection: () => <div>ai-review-section</div>,
   useWorkspaceAIReview: () => mocks.aiReview,
@@ -78,6 +83,7 @@ vi.mock("@/hooks/useUnsavedChangesGuard", () => ({
 vi.mock("@/stores", () => ({ pushNotification: mocks.pushNotification }));
 vi.mock("@/utils", () => ({
   hasWorkspacePermissionV2: () => true,
+  isDev: () => mocks.dev.value,
   sqlReviewPolicySlug: () => "slug",
 }));
 
@@ -101,6 +107,7 @@ describe("SQLReviewPage", () => {
       part.revert.mockReset();
       part.save.mockReset().mockResolvedValue(true);
     }
+    mocks.dev.value = true;
     mocks.aiReviewPolicy.error = undefined;
     mocks.aiReview.aiEnabled = true;
     mocks.aiReview.enabled = true;
@@ -148,6 +155,24 @@ describe("SQLReviewPage", () => {
     expect(screen.getAllByText("common.create").length).toBeGreaterThan(0);
     expect(mocks.fetchReviewPolicyList).toHaveBeenCalledTimes(1);
     expect(mocks.aiReviewPolicyEnabled).toHaveBeenLastCalledWith(false);
+  });
+
+  test.each([
+    true,
+    false,
+  ])("offers the SQL Review version switch on a dev build (V2: %s)", (v2) => {
+    mocks.sqlReviewV2.value = v2;
+    render(<SQLReviewPage />);
+
+    expect(screen.getByText("version-switch")).toBeInTheDocument();
+  });
+
+  test("leaves the SQL Review version switch out of a release build", () => {
+    mocks.dev.value = false;
+    mocks.sqlReviewV2.value = false;
+    render(<SQLReviewPage />);
+
+    expect(screen.queryByText("version-switch")).not.toBeInTheDocument();
   });
 
   test("keeps the review policy draft mounted while AI is unavailable", () => {

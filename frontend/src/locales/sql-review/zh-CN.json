@@ -835,5 +835,19 @@
     "number-positive": "请为 {{rule}} 输入一个正数。",
     "rule-required": "请选择至少一条规则。",
     "string-array-required": "请为 {{rule}} 添加至少一个值。"
+  },
+  "version-switch": {
+    "description": "仅限 dev 构建。标准规则全部关闭的项目，服务端运行 V1，其余运行 V2。此浏览器显示所选版本的页面。",
+    "self": "SQL 审核版本",
+    "to-v1": {
+      "confirm": "切换到 V1",
+      "description": "这会关闭工作空间的全部标准规则，计划检查改为运行 V1 SQL 审核。自定义了标准规则的项目保持不变。",
+      "title": "切换到 SQL 审核 V1？"
+    },
+    "to-v2": {
+      "confirm": "切换到 V2",
+      "description": "这会开启工作空间的全部标准规则，由标准规则审核取代 V1 SQL 审核。",
+      "title": "切换到 SQL 审核 V2？"
+    }
   }
 }

@@ -46,6 +46,7 @@ export const STORAGE_KEY_SQL_EDITOR_DETAIL_LINE_WRAP =
 export const STORAGE_KEY_SQL_EDITOR_NOSQL_TABLE_VIEW =
   "bb.sql-editor.es-table-view";
 export const STORAGE_KEY_MY_ISSUES_TAB = "bb.components.MY_ISSUES.id";
+export const STORAGE_KEY_SQL_REVIEW_VERSION = "bb.sql-review.version";
 
 // --- User-scoped (cleaned on logout) ---
 // Workspace-scoped: holds route paths / project names that are workspace-local.

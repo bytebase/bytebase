@@ -1,5 +1,8 @@
-// @vitest-environment node
-import { expect, test, vi } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
+
+afterEach(() => {
+  localStorage.clear();
+});
 
 test("the gate follows the dev build flag", async () => {
   vi.resetModules();
@@ -22,5 +25,18 @@ test("the gate follows the dev build flag", async () => {
 test("the suite runs with the gate on, matching the dev server", async () => {
   const { sqlReviewV2Enabled } = await import("./featureGates");
   expect(import.meta.env.DEV).toBe(true);
+  expect(sqlReviewV2Enabled()).toBe(true);
+});
+
+test("a dev browser switched to V1 turns the gate off until it switches back", async () => {
+  const { devSqlReviewVersion, setDevSqlReviewVersion, sqlReviewV2Enabled } =
+    await import("./featureGates");
+  expect(devSqlReviewVersion()).toBe("v2");
+
+  setDevSqlReviewVersion("v1");
+  expect(devSqlReviewVersion()).toBe("v1");
+  expect(sqlReviewV2Enabled()).toBe(false);
+
+  setDevSqlReviewVersion("v2");
   expect(sqlReviewV2Enabled()).toBe(true);
 });
