@@ -174,10 +174,10 @@ importers:
         version: 1.9.0(@date-fns/tz@1.5.0)(@types/react@19.3.0)(date-fns@4.4.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@buf/googleapis_googleapis.bufbuild_es':
         specifier: 2.13.0-20261015202054-8ac61b9e5023.1
-        version: 2.13.0-20261015202054-8ac61b9e5023.1(@bufbuild/protobuf@2.13.0)
+        version: 2.13.0-20261015202054-8ac61b9e5023.1(@bufbuild/protobuf@2.16.0)
       '@bufbuild/protobuf':
-        specifier: 2.13.0
-        version: 2.13.0
+        specifier: 2.16.0
+        version: 2.16.0
       '@codingame/monaco-vscode-api':
         specifier: 38.1.3
         version: 38.1.3
@@ -201,10 +201,10 @@ importers:
         version: 38.1.3
       '@connectrpc/connect':
         specifier: ^2.1.2
-        version: 2.3.0(@bufbuild/protobuf@2.13.0)
+        version: 2.3.0(@bufbuild/protobuf@2.16.0)
       '@connectrpc/connect-web':
         specifier: ^2.1.2
-        version: 2.3.0(@bufbuild/protobuf@2.13.0)(@connectrpc/connect@2.3.0(@bufbuild/protobuf@2.13.0))
+        version: 2.3.0(@bufbuild/protobuf@2.16.0)(@connectrpc/connect@2.3.0(@bufbuild/protobuf@2.16.0))
       '@dnd-kit/core':
         specifier: ^6.3.1
         version: 6.3.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -1166,8 +1166,8 @@ packages:
     peerDependencies:
       '@bufbuild/protobuf': ^2.13.0
 
-  '@bufbuild/protobuf@2.13.0':
-    resolution: {integrity: sha512-acq7c49vxfm1ggJ95P70TX7ABDM0vxr1SYD3BB0o0jnBLB4OAqeHyKuN+cD3w80gXEDQ2zxHpR6CUeA+O/aU9g==}
+  '@bufbuild/protobuf@2.16.0':
+    resolution: {integrity: sha512-FWa0sPlqYGJgpTs6OxBRcL/AW4JT0OIO+W1ajerluoTVh8CV0B7XM1qsNCRgnkSCkRCgOICKHRQlY17jrsm0+Q==}
 
   '@code-inspector/core@2.0.9':
     resolution: {integrity: sha512-7WkUlXfpwM95+KY5ra3KyivQGy0fUBq9dFcoI481LJKKnZNzwRW6kUkQF2hVP7zTj8TDy5esCMw8YuOwI8HhsQ==}
@@ -4778,11 +4778,11 @@ snapshots:
     dependencies:
       css-tree: 3.2.1
 
-  '@buf/googleapis_googleapis.bufbuild_es@2.13.0-20261015202054-8ac61b9e5023.1(@bufbuild/protobuf@2.13.0)':
+  '@buf/googleapis_googleapis.bufbuild_es@2.13.0-20261015202054-8ac61b9e5023.1(@bufbuild/protobuf@2.16.0)':
     dependencies:
-      '@bufbuild/protobuf': 2.13.0
+      '@bufbuild/protobuf': 2.16.0
 
-  '@bufbuild/protobuf@2.13.0': {}
+  '@bufbuild/protobuf@2.16.0': {}
 
   '@code-inspector/core@2.0.9(supports-color@7.2.0)':
     dependencies:
@@ -4935,14 +4935,14 @@ snapshots:
       '@codingame/monaco-vscode-api': 38.1.3
       '@codingame/monaco-vscode-files-service-override': 38.1.3
 
-  '@connectrpc/connect-web@2.3.0(@bufbuild/protobuf@2.13.0)(@connectrpc/connect@2.3.0(@bufbuild/protobuf@2.13.0))':
+  '@connectrpc/connect-web@2.3.0(@bufbuild/protobuf@2.16.0)(@connectrpc/connect@2.3.0(@bufbuild/protobuf@2.16.0))':
     dependencies:
-      '@bufbuild/protobuf': 2.13.0
-      '@connectrpc/connect': 2.3.0(@bufbuild/protobuf@2.13.0)
+      '@bufbuild/protobuf': 2.16.0
+      '@connectrpc/connect': 2.3.0(@bufbuild/protobuf@2.16.0)
 
-  '@connectrpc/connect@2.3.0(@bufbuild/protobuf@2.13.0)':
+  '@connectrpc/connect@2.3.0(@bufbuild/protobuf@2.16.0)':
     dependencies:
-      '@bufbuild/protobuf': 2.13.0
+      '@bufbuild/protobuf': 2.16.0
 
   '@csstools/color-helpers@6.1.0': {}
 
