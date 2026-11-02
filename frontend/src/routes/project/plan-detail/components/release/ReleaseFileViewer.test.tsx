@@ -1,4 +1,5 @@
 import { create } from "@bufbuild/protobuf";
+import { useState } from "react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 import i18n from "@/lib/i18n";
@@ -7,6 +8,7 @@ import { Release_VCSSourceSchema } from "@/types/proto-es/v1/release_service_pb"
 import {
   ReleaseFileViewer,
   ReleaseFileViewerColumn,
+  ReleaseFileViewerDock,
   ReleaseFileViewerProvider,
   type ReleaseFileViewerTarget,
   useOpenReleaseFile,
@@ -234,6 +236,38 @@ describe("ReleaseFileViewer", () => {
     await flush();
     fireEvent.keyDown(document, { key: "Escape" });
     expect(screen.queryByTestId("release-file-viewer")).toBeNull();
+  });
+
+  test("opening, swapping and closing the docked column keeps the plan's state", async () => {
+    // Stands in for the plan: a row count the reader loaded.
+    const Plan = () => {
+      const [loaded, setLoaded] = useState(0);
+      return (
+        <button type="button" onClick={() => setLoaded((n) => n + 1)}>
+          {`loaded ${loaded}`}
+        </button>
+      );
+    };
+    render(
+      <ReleaseFileViewerProvider docked>
+        <ReleaseFileViewerDock>
+          <Plan />
+          <FileOpener path="a.sql" />
+          <FileOpener path="b.sql" />
+        </ReleaseFileViewerDock>
+      </ReleaseFileViewerProvider>
+    );
+    fireEvent.click(screen.getByRole("button", { name: "loaded 0" }));
+    fireEvent.click(screen.getByRole("button", { name: "open a.sql" }));
+    await flush();
+    expect(screen.getByTestId("release-file-viewer").getAttribute("data-layout")).toBe("side-panel");
+    expect(screen.getByRole("button", { name: "loaded 1" })).toBeDefined();
+    fireEvent.click(screen.getByRole("button", { name: "open b.sql" }));
+    await flush();
+    expect(screen.getByRole("button", { name: "loaded 1" })).toBeDefined();
+    fireEvent.click(screen.getByRole("button", { name: /Close/ }));
+    expect(screen.queryByTestId("release-file-viewer")).toBeNull();
+    expect(screen.getByRole("button", { name: "loaded 1" })).toBeDefined();
   });
 
   test("on a narrower page it is a sheet at the run history's standard width", async () => {
