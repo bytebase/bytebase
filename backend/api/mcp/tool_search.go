@@ -178,8 +178,13 @@ func endpointNote(ep *EndpointInfo) string {
 	if ep.Path != v1connect.SettingServiceGetSettingProcedure {
 		return ""
 	}
+	// Masking adds the built-in types to the saved ones
+	// (getSemanticTypesSettingWithBuiltins, backend/api/v1/semantic_type.go).
 	return fmt.Sprintf("MCP sessions read only these settings: %s. The user's own Bytebase permissions still apply. "+
-		"Semantic types come back without the MD5 masking salt.", strings.Join(auth.MCPReadableSettingNames(), ", "))
+		"A setting the workspace has never saved returns \"setting <NAME> not found\". "+
+		"SEMANTIC_TYPES lists the saved types only, without the MD5 masking salt. "+
+		"The built-in types bb.default (full mask) and bb.default-partial (partial mask) always exist as well, "+
+		"so \"not found\" for SEMANTIC_TYPES means only that no custom types are saved.", strings.Join(auth.MCPReadableSettingNames(), ", "))
 }
 
 func (*Server) formatEndpoints(endpoints []*EndpointInfo, limit int) string {

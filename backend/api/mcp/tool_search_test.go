@@ -342,6 +342,8 @@ func TestSearchAPINamesWhatMCPCannotDo(t *testing.T) {
 		require.Contains(t, served, "SettingService/GetSetting")
 		require.Contains(t, served, readable)
 		require.Contains(t, served, "own Bytebase permissions still apply")
+		require.Contains(t, served, `returns "setting <NAME> not found"`)
+		require.Contains(t, served, "bb.default (full mask) and bb.default-partial (partial mask) always exist")
 		for _, method := range []string{"ListSettings", "UpdateSetting", "TestEmailSetting"} {
 			require.Contains(t, unavailable, "SettingService/"+method)
 		}
