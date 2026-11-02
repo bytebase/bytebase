@@ -378,7 +378,7 @@ replace (
 	// Other fixes.
 	github.com/github/gh-ost => github.com/bytebase/gh-ost2 v1.1.7-0.20260512035759-ca2794d6ebea
 
-	github.com/jackc/pgx/v5 => github.com/bytebase/pgx/v5 v5.0.0-20250212161523-96ff8aed8767
+	github.com/jackc/pgx/v5 => github.com/bytebase/pgx/v5 v5.0.0-20261102115508-d3c6cddaeb96
 
 	github.com/mattn/go-oci8 => github.com/bytebase/go-obo v0.0.0-20231026081615-705a7fffbfd2
 
