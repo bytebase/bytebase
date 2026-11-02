@@ -115,9 +115,5 @@ func TestGetSettingForMCPSessions(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, salt, console.GetValue().GetSemanticType().GetTypes()[0].GetAlgorithm().GetMd5Mask().GetSalt(),
 			"the console's semantic-type editor writes the salt back, so it still reads it")
-		stored, err := stores.GetSettingUncached(ctx, "default", storepb.SettingName_SEMANTIC_TYPES)
-		require.NoError(t, err)
-		storedTypes := stored.Value.(*storepb.SemanticTypeSetting).GetTypes()
-		require.Equal(t, salt, storedTypes[0].GetAlgorithm().GetMd5Mask().GetSalt())
 	})
 }

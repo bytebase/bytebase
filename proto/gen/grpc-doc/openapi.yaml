@@ -14737,7 +14737,7 @@ paths:
       summary: GetSetting
       description: |-
         Retrieves a workspace setting by name.
-         Permissions required: bb.settings.get
+         Permissions required: bb.settings.getEnvironment for settings/ENVIRONMENT, bb.settings.getWorkspaceProfile for settings/WORKSPACE_PROFILE, bb.settings.get for the others
       operationId: SettingService_GetSetting
       parameters:
         - name: setting

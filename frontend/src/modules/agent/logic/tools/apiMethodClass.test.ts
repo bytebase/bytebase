@@ -85,4 +85,11 @@ describe("apiCallNeedsConfirmation", () => {
     expect(getApiMethodClass("SQLService/Query")).toBe(MCPMethodClass.READ);
     expect(apiCallNeedsConfirmation("SQLService/Query")).toBe(true);
   });
+
+  it("requires confirmation for SettingService/GetSetting despite its READ class", () => {
+    expect(getApiMethodClass("SettingService/GetSetting")).toBe(
+      MCPMethodClass.READ
+    );
+    expect(apiCallNeedsConfirmation("SettingService/GetSetting")).toBe(true);
+  });
 });
