@@ -202,8 +202,19 @@ test("before the run, Changes lists the release newest first and the task shows 
   await expect(viewer.getByTestId("release-file-path")).toHaveText(`migrations/${version(2)}_orders.sql`);
   await expect(viewer.locator(".view-lines")).toContainText("CREATE TABLE");
   await expect(viewer.getByRole("link", { name: /Open in GitHub at 0a1b2c3/ })).toBeVisible();
+  await expect(viewer).toHaveAttribute("data-layout", "sheet");
   await page.keyboard.press("Escape");
   await expect(viewer).toHaveCount(0);
+
+  // A page at least 1280 px wide docks the viewer as a column beside the plan.
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await changes.getByRole("button", { name: `migrations/${version(2)}_orders.sql` }).click();
+  await expect(viewer).toHaveAttribute("data-layout", "side-panel");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await screenshot(page, "release-viewer-docked");
+  await viewer.getByRole("button", { name: "Close" }).click();
+  await expect(viewer).toHaveCount(0);
+  await page.setViewportSize({ width: 1280, height: 720 });
 
   // The folded card: what this database will get, before any log exists.
   await expect(page.getByTestId("folded-description").first()).toHaveText(

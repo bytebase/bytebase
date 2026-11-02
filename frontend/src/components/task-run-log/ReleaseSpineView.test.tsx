@@ -61,7 +61,7 @@ const fileRows = (container: HTMLElement) =>
 const click = (container: HTMLElement, name: RegExp) =>
   act(() => within(container).getByRole("button", { name }).click());
 
-test("a long stretch offers Load 20 more and Load all, a short one a single row, and Show fewer returns to the first 20", () => {
+test("a long stretch offers Load 20 more and Load all, a short one a single row, and loading is one way", () => {
   const view = renderNotRun();
   const { container } = view;
   expect(within(container).getByTestId("spine-count").textContent).toBe(
@@ -82,7 +82,7 @@ test("a long stretch offers Load 20 more and Load all, a short one a single row,
   expect(fileRows(container)).toBe(60);
   expect(within(container).queryByTestId("spine-load-pending")).toBeNull();
 
-  act(() => within(container).getByTestId("spine-show-fewer").click());
-  expect(fileRows(container)).toBe(20);
+  // As in the UIOps log, nothing folds the loaded rows away again.
+  expect(within(container).queryByTestId("spine-show-fewer")).toBeNull();
   view.unmount();
 });

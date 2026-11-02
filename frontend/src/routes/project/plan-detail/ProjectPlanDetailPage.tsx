@@ -1,5 +1,5 @@
 import { Check, Code2, Loader2, MessageSquareMore, Rocket } from "lucide-react";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { router } from "@/app/router";
@@ -26,7 +26,12 @@ import { PlanDetailDeployFuture } from "./components/PlanDetailDeployFuture";
 import { PlanDetailDeployWaiting } from "./components/PlanDetailDeployWaiting";
 import { PlanDetailHeader } from "./components/PlanDetailHeader";
 import { PlanDetailHeaderDetails } from "./components/PlanDetailHeaderDetails";
-import { ReleaseFileViewerProvider } from "./components/release/ReleaseFileViewer";
+import {
+  ReleaseFileViewerColumn,
+  ReleaseFileViewerProvider,
+  useReleaseFileViewerOpen,
+  VIEWER_DOCK_MIN_WIDTH,
+} from "./components/release/ReleaseFileViewer";
 import { PlanReviewSection } from "./components/review/PlanReviewSection";
 import { useUnresolvedThreadTotal } from "./components/threads/useUnresolvedThreadCounts";
 import { useIssueCommentThreadsSync } from "./hooks/useIssueCommentThreadsSync";
@@ -105,6 +110,41 @@ function ProjectPlanDetailPageInner({
     scrollHost.addEventListener("scroll", onScroll, { passive: true });
     return () => scrollHost.removeEventListener("scroll", onScroll);
   }, [pageHost]);
+  // The page's width decides whether the file viewer docks as a column (D8);
+  // the title row's height and the scroll pane's height place that column.
+  const [header, setHeader] = useState<HTMLElement | null>(null);
+  const [layoutSize, setLayoutSize] = useState({
+    page: 0,
+    header: 0,
+    pane: 0,
+  });
+  useEffect(() => {
+    if (!pageHost) return;
+    const scrollHost = pageHost.closest<HTMLElement>(
+      `[data-scroll-restoration-id="${MAIN_SCROLL_RESTORATION_ID}"]`
+    );
+    const measure = () => {
+      const next = {
+        page: pageHost.clientWidth,
+        header: header?.offsetHeight ?? 0,
+        pane: scrollHost?.clientHeight ?? window.innerHeight,
+      };
+      setLayoutSize((prev) =>
+        prev.page === next.page &&
+        prev.header === next.header &&
+        prev.pane === next.pane
+          ? prev
+          : next
+      );
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(pageHost);
+    if (header) observer.observe(header);
+    if (scrollHost) observer.observe(scrollHost);
+    return () => observer.disconnect();
+  }, [pageHost, header]);
+  const viewerDocked = layoutSize.page >= VIEWER_DOCK_MIN_WIDTH;
   const [selectedSpecId, setSelectedSpecId] = useState(specId ?? "");
   const page = usePlanDetailPage({
     projectId,
@@ -173,7 +213,7 @@ function ProjectPlanDetailPageInner({
 
   return (
     <PlanDetailProvider value={page}>
-      <ReleaseFileViewerProvider>
+      <ReleaseFileViewerProvider docked={viewerDocked}>
         <SqlReviewV2Provider>
           <div
             ref={setPageHost}
@@ -192,6 +232,7 @@ function ProjectPlanDetailPageInner({
               z-20 keeps it above the phase rail nodes (z-10). The border appears
               only when stuck, so the row is flat at the top. */}
               <header
+                ref={setHeader}
                 className={cn(
                   "sticky top-0 z-20 shrink-0 bg-background",
                   headerStuck && "border-b"
@@ -201,12 +242,20 @@ function ProjectPlanDetailPageInner({
               </header>
               <PlanDetailHeaderDetails />
 
-              <main className="min-h-[calc(100vh-4rem)] min-w-0 flex-1">
-                <PlanPhaseRail
-                  onSelectedSpecIdChange={setSelectedSpecId}
-                  selectedSpecId={effectiveSelectedSpecId}
-                />
-              </main>
+              <PlanDetailBody
+                docked={viewerDocked}
+                columnStyle={{
+                  top: layoutSize.header,
+                  height: Math.max(layoutSize.pane - layoutSize.header, 0),
+                }}
+              >
+                <main className="min-h-[calc(100vh-4rem)] min-w-0 flex-1">
+                  <PlanPhaseRail
+                    onSelectedSpecIdChange={setSelectedSpecId}
+                    selectedSpecId={effectiveSelectedSpecId}
+                  />
+                </main>
+              </PlanDetailBody>
             </div>
 
             {!page.ready && (
@@ -634,6 +683,30 @@ function PhaseSection({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// While a file is open on a wide page, the plan narrows to the left and the
+// viewer docks on the right half (D8).
+function PlanDetailBody({
+  docked,
+  columnStyle,
+  children,
+}: {
+  docked: boolean;
+  columnStyle: CSSProperties;
+  children: ReactNode;
+}) {
+  const open = useReleaseFileViewerOpen();
+  if (!docked || !open) return <>{children}</>;
+  return (
+    <div
+      className="grid min-w-0 flex-1"
+      style={{ gridTemplateColumns: "minmax(0, 1fr) minmax(0, 50%)" }}
+    >
+      {children}
+      <ReleaseFileViewerColumn style={columnStyle} />
     </div>
   );
 }
