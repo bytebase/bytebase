@@ -64,7 +64,7 @@ require (
 	github.com/hashicorp/vault/api/auth/approle v0.12.0
 	github.com/jackc/pgconn v1.14.3
 	github.com/jackc/pgtype v1.14.4
-	github.com/jackc/pgx/v5 v5.11.0
+	github.com/jackc/pgx/v5 v5.12.0
 	github.com/labstack/echo-contrib/v5 v5.0.1
 	github.com/labstack/echo/v5 v5.4.4
 	github.com/lib/pq v1.12.3
