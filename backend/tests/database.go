@@ -239,13 +239,9 @@ func (ctl *controller) waitDatabaseRegistered(ctx context.Context, instance *v1p
 // waitSchemaDump returns the database's schema dump once it reports want, a
 // string the change just applied to the database puts in the dump.
 //
-// A completed rollout does not make that dump current. createDatabase registers
-// the database, and the instance sync that registration runs queues an
-// asynchronous schema sync for it; that queued sync can read the database
-// before a later migration and write its dump after the migration's own sync
-// wrote one, and db_schema keeps the last write, so the dump reverts to the
-// pre-migration schema. Syncing once per round makes the dump current and
-// outlasts such a write.
+// A completed rollout does not make that dump current: the task's own
+// post-migration sync is reported through the changelog, and a failed dump does
+// not fail the task. Syncing once per round makes the dump current.
 func (ctl *controller) waitSchemaDump(ctx context.Context, databaseName, want string) (string, error) {
 	ticker := time.NewTicker(pollInterval)
 	defer ticker.Stop()

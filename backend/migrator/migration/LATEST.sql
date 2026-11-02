@@ -587,6 +587,11 @@ CREATE TABLE db_schema (
     raw_dump text NOT NULL DEFAULT '',
     -- Stored as DatabaseConfig (proto/store/store/database.proto)
     config jsonb NOT NULL DEFAULT '{}',
+    -- When the sync that produced metadata and raw_dump read the live database.
+    -- A sync whose read predates this value is refused, so a slow sync cannot
+    -- revert the projection to an older schema. NULL means never stamped, which
+    -- every sync is allowed to overwrite.
+    synced_at timestamptz,
     PRIMARY KEY (instance, db_name),
     CONSTRAINT db_schema_instance_db_name_fkey FOREIGN KEY(instance, db_name) REFERENCES db(instance, name)
 );
