@@ -80,7 +80,7 @@ func TestSearchAPIByServiceNotFound(t *testing.T) {
 	require.Len(t, result.Content, 1)
 
 	text := result.Content[0].(*mcpsdk.TextContent).Text
-	require.Contains(t, text, "Unknown service: NonExistentService. Bytebase has no service by that name.")
+	require.Contains(t, text, "Unknown service: NonExistentService")
 	require.Contains(t, text, "Available Services")
 }
 
@@ -153,7 +153,7 @@ func TestSearchAPIDetailModeNotFound(t *testing.T) {
 	require.Len(t, result.Content, 1)
 
 	text := result.Content[0].(*mcpsdk.TextContent).Text
-	require.Contains(t, text, "Unknown operationId: unknown.operation.id. Bytebase has no operation by that name.")
+	require.Contains(t, text, "Unknown operationId: unknown.operation.id")
 }
 
 func TestSearchAPIServiceShowsAll(t *testing.T) {
@@ -293,19 +293,22 @@ func TestSearchAPINamesWhatMCPCannotDo(t *testing.T) {
 	t.Run("the service list names each unavailable service, why, and the console", func(t *testing.T) {
 		_, unavailable, ok := strings.Cut(searchText(t, s, SearchInput{}), "## Not available over MCP")
 		require.True(t, ok)
-		require.Contains(t, unavailable, "- **WorkloadIdentityService**: manages workload identities for external CI/CD integrations.")
-		require.Contains(t, unavailable, "Refused because "+mintsForOthers+".")
-		require.Contains(t, unavailable, "Refused because "+administers+".")
 		require.Contains(t, unavailable, "whatever the user's permissions")
 		require.Contains(t, unavailable, "Bytebase console")
 		require.NotContains(t, unavailable, "Request Body")
+		_, block, ok := strings.Cut(unavailable, "- **WorkloadIdentityService**")
+		require.True(t, ok)
+		block, _, _ = strings.Cut(block, "\n- **")
+		require.Equal(t, ": manages workload identities for external CI/CD integrations.\n"+
+			"  - Refused because "+mintsForOthers+".\n"+
+			"  - Refused because "+administers+".\n", block, "the service's reasons sit under it")
 	})
 
 	t.Run("a service MCP cannot call is not reported as missing", func(t *testing.T) {
 		text := searchText(t, s, SearchInput{Service: "WorkloadIdentityService"})
 		require.Contains(t, text, "WorkloadIdentityService is not available over MCP")
-		require.Contains(t, text, "WorkloadIdentityService/CreateWorkloadIdentity")
-		require.Contains(t, text, "refused because "+mintsForOthers)
+		require.Contains(t, text, "- WorkloadIdentityService/CreateWorkloadIdentity, WorkloadIdentityService/UpdateWorkloadIdentity: refused because "+mintsForOthers+".\n",
+			"operations refused for one reason share one line")
 		require.NotContains(t, text, "Unknown service")
 		require.NotContains(t, text, "Request Body")
 	})
@@ -317,7 +320,7 @@ func TestSearchAPINamesWhatMCPCannotDo(t *testing.T) {
 		require.Contains(t, served, "InstanceService/GetInstance")
 		require.NotContains(t, served, "InstanceService/CreateInstance")
 		require.Contains(t, unavailable, "InstanceService/CreateInstance")
-		require.Contains(t, unavailable, "refused because "+administers)
+		require.Equal(t, 1, strings.Count(unavailable, "refused because "+administers), "one line per reason")
 	})
 
 	t.Run("detail mode gives the refusal, not the schema", func(t *testing.T) {
@@ -370,13 +373,11 @@ func TestSearchAPINamesEveryRefusedMethod(t *testing.T) {
 					continue
 				}
 				procedure := fmt.Sprintf("/%s/%s", sd.FullName(), sd.Methods().Get(j).Name())
-				class, err := auth.MCPMethodClassOfProcedure(procedure)
+				class, reason, err := auth.MCPAnnotationsOfProcedure(procedure)
 				require.NoError(t, err)
 				if !auth.MCPClassIsRefused(class) {
 					continue
 				}
-				reason, err := auth.MCPDenialReasonOfProcedure(procedure)
-				require.NoError(t, err)
 				refused = append(refused, refusedMethod{string(sd.Name()), string(sd.Methods().Get(j).Name()), auth.MCPDenialSentence(class, reason)})
 			}
 		}

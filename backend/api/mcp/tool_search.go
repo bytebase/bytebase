@@ -38,7 +38,7 @@ const searchAPIDescription = `Discover Bytebase API endpoints. **Always call bef
 
 **Workflow:** search_api() → search_api(service="...") → search_api(operationId="...") → call_api(...)
 
-The results also name what MCP sessions cannot do, and why: those are done in the Bytebase console.`
+The results also name what no MCP session can do, whatever the workspace's MCP mode and the user's permissions, and why: those are done in the Bytebase console.`
 
 func (s *Server) registerSearchTool() {
 	mcp.AddTool(s.mcpServer, &mcp.Tool{
@@ -81,11 +81,7 @@ func (s *Server) formatServiceList() string {
 
 	for _, svc := range services {
 		endpoints := s.openAPIIndex.GetServiceEndpoints(svc)
-		fmt.Fprintf(&sb, "- **%s** (%d endpoints", svc, len(endpoints))
-		if unavailable := len(s.openAPIIndex.GetUnavailableEndpoints(svc)); unavailable > 0 {
-			fmt.Fprintf(&sb, "; %d not available over MCP", unavailable)
-		}
-		sb.WriteString(")\n")
+		fmt.Fprintf(&sb, "- **%s** (%d endpoints)\n", svc, len(endpoints))
 	}
 
 	fmt.Fprintf(&sb, "\nTotal: %d services\n", len(services))
@@ -135,7 +131,7 @@ func (s *Server) formatService(service string) string {
 		sb.WriteString(formatRefusals(unavailable))
 		return sb.String()
 	default:
-		return fmt.Sprintf("Unknown service: %s. Bytebase has no service by that name.\n\n%s", service, s.formatServiceList())
+		return fmt.Sprintf("Unknown service: %s\n\n%s", service, s.formatServiceList())
 	}
 }
 
@@ -181,12 +177,8 @@ func endpointNote(ep *EndpointInfo) string {
 	if ep.Path != v1connect.SettingServiceGetSettingProcedure {
 		return ""
 	}
-	var readable []string
-	for _, setting := range auth.MCPReadableSettings() {
-		readable = append(readable, common.SettingNamePrefix+setting.String())
-	}
 	return fmt.Sprintf("MCP sessions read only these settings: %s. The user's own Bytebase permissions still apply. "+
-		"Semantic types come back without the MD5 masking salt.", strings.Join(readable, ", "))
+		"Semantic types come back without the MD5 masking salt.", strings.Join(auth.MCPReadableSettingNames(), ", "))
 }
 
 func (*Server) formatEndpoints(endpoints []*EndpointInfo, limit int) string {
@@ -218,7 +210,7 @@ func (*Server) formatEndpoints(endpoints []*EndpointInfo, limit int) string {
 func (s *Server) formatEndpointDetail(operationID string) string {
 	ep, ok := s.openAPIIndex.GetEndpoint(operationID)
 	if !ok {
-		return fmt.Sprintf("Unknown operationId: %s. Bytebase has no operation by that name.\n\nUse search_api(service=\"...\") to browse endpoints.", operationID)
+		return fmt.Sprintf("Unknown operationId: %s\n\nUse search_api(service=\"...\") to browse endpoints.", operationID)
 	}
 
 	var sb strings.Builder

@@ -75,21 +75,15 @@ type OpenAPIIndex struct {
 	// endpoints holds every endpoint an MCP session may be offered. Discovery
 	// walks this slice, so anything in it is advertisable by construction.
 	endpoints []EndpointInfo
-	// hiddenEndpoints holds every endpoint no MCP capability ceiling serves —
-	// FORBIDDEN and EXCLUDED alike. Discovery names them as unavailable, with
-	// the gate's reason, and never offers their schema; byOperation still
-	// resolves them, so a direct call gets the gate's actionable denial. A
-	// service whose every method is refused moves from Services() to
-	// UnavailableServices().
-	hiddenEndpoints []EndpointInfo
-	// hiddenByService lets discovery say what MCP cannot do in a service, and
-	// why, without offering the request schema.
-	hiddenByService     map[string][]*EndpointInfo
-	byOperation         map[string]*EndpointInfo
-	byService           map[string][]*EndpointInfo
-	services            []string
-	serviceDescriptions map[string]string
-	keywords            map[string][]*EndpointInfo
+	// unavailableEndpoints holds every endpoint no MCP capability ceiling
+	// serves; parseSpec says how discovery treats them.
+	unavailableEndpoints []EndpointInfo
+	unavailableByService map[string][]*EndpointInfo
+	byOperation          map[string]*EndpointInfo
+	byService            map[string][]*EndpointInfo
+	services             []string
+	serviceDescriptions  map[string]string
+	keywords             map[string][]*EndpointInfo
 }
 
 // NewOpenAPIIndex creates a new OpenAPI index from the embedded spec.
@@ -105,12 +99,12 @@ func NewOpenAPIIndex() (*OpenAPIIndex, error) {
 	}
 
 	idx := &OpenAPIIndex{
-		doc:                 model,
-		hiddenByService:     make(map[string][]*EndpointInfo),
-		byOperation:         make(map[string]*EndpointInfo),
-		byService:           make(map[string][]*EndpointInfo),
-		serviceDescriptions: make(map[string]string),
-		keywords:            make(map[string][]*EndpointInfo),
+		doc:                  model,
+		unavailableByService: make(map[string][]*EndpointInfo),
+		byOperation:          make(map[string]*EndpointInfo),
+		byService:            make(map[string][]*EndpointInfo),
+		serviceDescriptions:  make(map[string]string),
+		keywords:             make(map[string][]*EndpointInfo),
 	}
 
 	idx.parseSpec()
@@ -181,11 +175,12 @@ func (idx *OpenAPIIndex) parseSpec() {
 		// An endpoint an MCP session can never call is not offered: it stays
 		// out of the served listings and the keyword index, so the agent is not
 		// offered work that will only ever come back refused. It lands in
-		// hiddenEndpoints rather than endpoints — every path that offers work
+		// unavailableEndpoints rather than endpoints — every path that offers work
 		// walks the latter, so keeping it out of that slice is what makes this
 		// hold for search paths added later, not just today's. Discovery still
-		// names it, with the gate's reason and without its schema, so the agent
-		// sends the user to the console instead of guessing.
+		// names it with the gate's reason, in the service listings and in
+		// detail mode, never with its schema, so the agent sends the user to
+		// the console instead of guessing.
 		//
 		// It stays resolvable by operation ID on purpose: an agent that calls it
 		// anyway (from memory, or from a skill written before the
@@ -193,10 +188,10 @@ func (idx *OpenAPIIndex) parseSpec() {
 		// "unknown operation".
 		if refusal, refused := mcpRefusal(path); refused {
 			endpoint.Refusal = refusal
-			idx.hiddenEndpoints = append(idx.hiddenEndpoints, endpoint)
-			ptr := &idx.hiddenEndpoints[len(idx.hiddenEndpoints)-1]
+			idx.unavailableEndpoints = append(idx.unavailableEndpoints, endpoint)
+			ptr := &idx.unavailableEndpoints[len(idx.unavailableEndpoints)-1]
 			idx.byOperation[endpoint.OperationID] = ptr
-			idx.hiddenByService[service] = append(idx.hiddenByService[service], ptr)
+			idx.unavailableByService[service] = append(idx.unavailableByService[service], ptr)
 			continue
 		}
 
@@ -232,12 +227,10 @@ func (idx *OpenAPIIndex) parseSpec() {
 // lookup failed would be the worse failure — enforcement is the interceptor's
 // job and reads the annotation itself.
 func mcpRefusal(path string) (string, bool) {
-	class, err := auth.MCPMethodClassOfProcedure(path)
+	class, reason, err := auth.MCPAnnotationsOfProcedure(path)
 	if err != nil || !auth.MCPClassIsRefused(class) {
 		return "", false
 	}
-	// An unreadable reason leaves the class's fallback sentence, as at the gate.
-	reason, _ := auth.MCPDenialReasonOfProcedure(path)
 	return auth.MCPDenialSentence(class, reason), true
 }
 
@@ -395,14 +388,14 @@ func (idx *OpenAPIIndex) GetServiceEndpoints(service string) []*EndpointInfo {
 // GetUnavailableEndpoints returns the endpoints of a service that no MCP
 // session can call.
 func (idx *OpenAPIIndex) GetUnavailableEndpoints(service string) []*EndpointInfo {
-	return idx.hiddenByService[service]
+	return idx.unavailableByService[service]
 }
 
 // UnavailableServices returns the services no MCP session can call any
 // endpoint of, sorted by name.
 func (idx *OpenAPIIndex) UnavailableServices() []string {
 	var services []string
-	for service := range idx.hiddenByService {
+	for service := range idx.unavailableByService {
 		if len(idx.byService[service]) == 0 {
 			services = append(services, service)
 		}

@@ -376,10 +376,10 @@ func TestLintEveryClassHasAServingDecision(t *testing.T) {
 
 // TestLintRefusedClassesMatchTheServingTable is what lets a second package
 // decide what to advertise without carrying a copy of the serving rules. The
-// MCP OpenAPI index hides an endpoint no ceiling serves, and it asks
+// MCP OpenAPI index never offers an endpoint no ceiling serves, and it asks
 // auth.MCPClassIsRefused, which cannot see this table. This holds the two
 // against each other over the whole class vocabulary, so a mode that starts
-// serving a class cannot leave discovery hiding it — or the reverse, which is
+// serving a class cannot leave discovery withholding it — or the reverse, which is
 // the one that would offer an agent work it can never do.
 func TestLintRefusedClassesMatchTheServingTable(t *testing.T) {
 	t.Parallel()
@@ -739,7 +739,10 @@ func TestMCPGateServesOnlyTheReadableSettings(t *testing.T) {
 	readable := []v1pb.Setting_SettingName{
 		v1pb.Setting_WORKSPACE_APPROVAL, v1pb.Setting_ENVIRONMENT, v1pb.Setting_SEMANTIC_TYPES, v1pb.Setting_DATA_CLASSIFICATION,
 	}
-	require.Equal(t, readable, auth.MCPReadableSettings(), "the settings an MCP session reads are a decision, recorded here as well as in auth")
+	for _, setting := range v1pb.Setting_SettingName_value {
+		require.Equal(t, slices.Contains(readable, v1pb.Setting_SettingName(setting)), auth.MCPCanReadSetting(v1pb.Setting_SettingName(setting)),
+			"the settings an MCP session reads are a decision, recorded here as well as in auth")
+	}
 	read := classContext(v1pb.MCPMethodClass_READ)
 	get := func(name string) connect.AnyRequest {
 		return connect.NewRequest(&v1pb.GetSettingRequest{Name: name})
@@ -1252,7 +1255,7 @@ func TestMCPGateFallsBackToGenericWording(t *testing.T) {
 		}, v1connect.AuthServiceLoginProcedure, connect.NewRequest(&v1pb.LoginRequest{}))
 		require.Error(t, got.err)
 		require.False(t, got.dispatched)
-		require.Contains(t, got.err.Error(), auth.MCPDenialSentence(v1pb.MCPMethodClass_FORBIDDEN, v1pb.MCPDenialReason(9999)))
+		require.Contains(t, got.err.Error(), "it is not reachable by an AI agent session")
 	})
 
 	t.Run("excluded", func(t *testing.T) {
@@ -1262,7 +1265,7 @@ func TestMCPGateFallsBackToGenericWording(t *testing.T) {
 		}, v1connect.UserServiceListUsersProcedure, connect.NewRequest(&v1pb.ListUsersRequest{}))
 		require.Error(t, got.err)
 		require.False(t, got.dispatched)
-		require.Contains(t, got.err.Error(), auth.MCPDenialSentence(v1pb.MCPMethodClass_EXCLUDED, v1pb.MCPDenialReason(9999)))
+		require.Contains(t, got.err.Error(), "no MCP mode this release ships serves it")
 	})
 }
 

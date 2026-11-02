@@ -427,9 +427,6 @@ func refuseUnreadableSetting(_ context.Context, msg any) string {
 			return ""
 		}
 	}
-	var readable []string
-	for _, setting := range auth.MCPReadableSettings() {
-		readable = append(readable, common.SettingNamePrefix+setting.String())
-	}
-	return fmt.Sprintf("%q is not one of the settings an MCP session reads (%s)", request.GetName(), strings.Join(readable, ", "))
+	return fmt.Sprintf("%q is not one of the settings an MCP session reads (%s)",
+		request.GetName(), strings.Join(auth.MCPReadableSettingNames(), ", "))
 }

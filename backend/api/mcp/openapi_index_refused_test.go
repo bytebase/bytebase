@@ -7,10 +7,11 @@ import (
 )
 
 // TestRefusedEndpointsAreNotAdvertised pins the two halves of how the index
-// treats an RPC no MCP ceiling serves: invisible to every discovery path an
-// agent has, and still resolvable by operation ID so a call that arrives anyway
-// meets the gate's actionable denial rather than "unknown operation, use
-// search_api".
+// treats an RPC no MCP ceiling serves: never offered (absent from the served
+// listings and the keyword index, never shown with a schema; discovery names it
+// as unavailable instead), and still resolvable by operation ID so a call that
+// arrives anyway meets the gate's actionable denial rather than "unknown
+// operation, use search_api".
 //
 // The predicate is "refused under every ceiling", not "FORBIDDEN". Both refused
 // classes are covered because the gate refuses both, and an agent offered work
@@ -44,12 +45,13 @@ func TestRefusedEndpointsAreNotAdvertised(t *testing.T) {
 		require.Equal(t, "bytebase.v1.AuthService.GetAuthenticationInfo", endpoints[0].OperationID)
 	})
 
-	t.Run("a service whose every method is refused is not listed at all", func(t *testing.T) {
+	t.Run("a service whose every method is refused is not on the served list", func(t *testing.T) {
 		// Every identity-provider method is refused: the writes choose what
 		// will later be trusted to mint a credential, and the reads are
-		// workspace administration. Nothing about the service is offered.
+		// workspace administration.
 		require.NotContains(t, idx.Services(), "IdentityProviderService")
 		require.Empty(t, idx.GetServiceEndpoints("IdentityProviderService"))
+		require.Contains(t, idx.UnavailableServices(), "IdentityProviderService")
 	})
 
 	t.Run("a service keeps only the methods a ceiling serves", func(t *testing.T) {

@@ -534,53 +534,46 @@ func MCPClassIsRefused(class v1pb.MCPMethodClass) bool {
 // enforcement path must not — it reads the class off the AuthContext, which
 // fails the request outright when the annotation cannot be resolved.
 func MCPMethodClassOfProcedure(procedure string) (v1pb.MCPMethodClass, error) {
-	md, err := methodOptionsOfProcedure(procedure)
-	if err != nil {
-		return v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED, err
-	}
-	class, ok := proto.GetExtension(md, v1pb.E_McpMethodClass).(v1pb.MCPMethodClass)
-	if !ok {
-		return v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED, errs.Errorf("invalid MCP method class extension for procedure %q", procedure)
-	}
-	return class, nil
+	class, _, err := MCPAnnotationsOfProcedure(procedure)
+	return class, err
 }
 
-// MCPDenialReasonOfProcedure resolves the recorded MCP denial reason for a
-// connect procedure path, as MCPMethodClassOfProcedure resolves the class.
-func MCPDenialReasonOfProcedure(procedure string) (v1pb.MCPDenialReason, error) {
-	md, err := methodOptionsOfProcedure(procedure)
-	if err != nil {
-		return v1pb.MCPDenialReason_MCP_DENIAL_REASON_UNSPECIFIED, err
+// MCPAnnotationsOfProcedure resolves both MCP annotations of a procedure, its
+// class and its recorded denial reason, under the same caveat as
+// MCPMethodClassOfProcedure.
+func MCPAnnotationsOfProcedure(procedure string) (v1pb.MCPMethodClass, v1pb.MCPDenialReason, error) {
+	unresolved := func(err error) (v1pb.MCPMethodClass, v1pb.MCPDenialReason, error) {
+		return v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED, v1pb.MCPDenialReason_MCP_DENIAL_REASON_UNSPECIFIED, err
 	}
-	reason, ok := proto.GetExtension(md, v1pb.E_McpDenialReason).(v1pb.MCPDenialReason)
-	if !ok {
-		return v1pb.MCPDenialReason_MCP_DENIAL_REASON_UNSPECIFIED, errs.Errorf("invalid MCP denial reason extension for procedure %q", procedure)
-	}
-	return reason, nil
-}
-
-func methodOptionsOfProcedure(procedure string) (*descriptorpb.MethodOptions, error) {
 	tokens := strings.Split(procedure, "/")
 	if len(tokens) != 3 {
-		return nil, errs.Errorf("invalid procedure name %q", procedure)
+		return unresolved(errs.Errorf("invalid procedure name %q", procedure))
 	}
 	rd, err := protoregistry.GlobalFiles.FindDescriptorByName(protoreflect.FullName(tokens[1]))
 	if err != nil {
-		return nil, errs.Wrapf(err, "invalid service descriptor for procedure %q", procedure)
+		return unresolved(errs.Wrapf(err, "invalid service descriptor for procedure %q", procedure))
 	}
 	sd, ok := rd.(protoreflect.ServiceDescriptor)
 	if !ok {
-		return nil, errs.Errorf("invalid service descriptor for procedure %q", procedure)
+		return unresolved(errs.Errorf("invalid service descriptor for procedure %q", procedure))
 	}
 	method := sd.Methods().ByName(protoreflect.Name(tokens[2]))
 	if method == nil {
-		return nil, errs.Errorf("unknown method for procedure %q", procedure)
+		return unresolved(errs.Errorf("unknown method for procedure %q", procedure))
 	}
 	md, ok := method.Options().(*descriptorpb.MethodOptions)
 	if !ok {
-		return nil, errs.Errorf("invalid method options for procedure %q", procedure)
+		return unresolved(errs.Errorf("invalid method options for procedure %q", procedure))
 	}
-	return md, nil
+	class, ok := proto.GetExtension(md, v1pb.E_McpMethodClass).(v1pb.MCPMethodClass)
+	if !ok {
+		return unresolved(errs.Errorf("invalid MCP method class extension for procedure %q", procedure))
+	}
+	reason, ok := proto.GetExtension(md, v1pb.E_McpDenialReason).(v1pb.MCPDenialReason)
+	if !ok {
+		return unresolved(errs.Errorf("invalid MCP denial reason extension for procedure %q", procedure))
+	}
+	return class, reason, nil
 }
 
 // mcpReadableSettings are the settings an MCP session may read through
@@ -598,10 +591,14 @@ var mcpReadableSettings = []v1pb.Setting_SettingName{
 	v1pb.Setting_DATA_CLASSIFICATION,
 }
 
-// MCPReadableSettings returns the settings an MCP session may read, in a fixed
-// order.
-func MCPReadableSettings() []v1pb.Setting_SettingName {
-	return slices.Clone(mcpReadableSettings)
+// MCPReadableSettingNames returns the settings an MCP session may read as
+// resource names, such as "settings/ENVIRONMENT", in a fixed order.
+func MCPReadableSettingNames() []string {
+	names := make([]string, 0, len(mcpReadableSettings))
+	for _, setting := range mcpReadableSettings {
+		names = append(names, common.SettingNamePrefix+setting.String())
+	}
+	return names
 }
 
 // MCPCanReadSetting reports whether an MCP session may read the setting.
