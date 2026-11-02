@@ -115,7 +115,7 @@
     "@vitejs/plugin-legacy": "~7.2.1",
     "autoprefixer": "10.6.2",
     "code-inspector-plugin": "^2.0.0",
-    "dotenv": "^17.4.2",
+    "dotenv": "^18.0.0",
     "esbuild": "0.28.2",
     "jsdom": "29.1.1",
     "micromark-util-sanitize-uri": "^2.0.1",
