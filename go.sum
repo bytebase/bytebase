@@ -773,6 +773,7 @@ github.com/opencontainers/image-spec v1.1.1/go.mod h1:qpqAh3Dmcf36wStyyWU+kCeDgr
 github.com/opencontainers/runc v1.0.0-rc9/go.mod h1:qT5XzbpPznkRYVz/mWwUaVBUv2rmF59PVA73FjuZG0U=
 github.com/opensearch-project/opensearch-go/v4 v4.8.1 h1:9r9x+pt5QG49EZfG0bqQgCexFcQkeMkVGM54dpX0b9Q=
 github.com/opensearch-project/opensearch-go/v4 v4.8.1/go.mod h1:OEBTtFm2ZeJ8G/ZbE3ITbKuKlT+9ujruJF3Vj5LBMqo=
+github.com/opensearch-project/opensearch-go/v5 v5.1.3/go.mod h1:VKWkTG+A9Kjq5mqkxb/IlN+6rWH8C46rwzw9dHRti+U=
 github.com/opentracing/basictracer-go v1.1.0 h1:Oa1fTSBvAl8pa3U+IJYqrKm0NALwH9OsgwOqDv4xJW0=
 github.com/opentracing/basictracer-go v1.1.0/go.mod h1:V2HZueSJEp879yv285Aap1BS69fQMD+MNP1mRs6mBQc=
 github.com/opentracing/opentracing-go v1.1.0/go.mod h1:UkNAQd3GIcIGf0SeVgPpRdFStlNbqXla1AfSYxPUl2o=

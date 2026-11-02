@@ -74,6 +74,7 @@ require (
 	github.com/nyaruka/phonenumbers/v2 v2.0.16
 	github.com/openark/golib v0.0.0-20210531070646-355f37940af8
 	github.com/opensearch-project/opensearch-go/v4 v4.8.1
+	github.com/opensearch-project/opensearch-go/v5 v5.1.3
 	github.com/paulmach/orb v0.14.0
 	github.com/pb33f/libopenapi v0.42.3
 	github.com/pingcap/tidb v1.1.0-beta.0.20241125141335-ec8b81b98edc
