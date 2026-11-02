@@ -229,7 +229,7 @@ func checkEveryMethodIsClassified(rows []mcpClassification) []string {
 // practice, only added the states where a method carried both or carried the
 // kind that contradicted its class — states this clause used to spend four of
 // its six branches policing. What is left is the one thing that was ever real.
-func checkReasonsMatchTheClass(rows []mcpClassification, wording map[v1pb.MCPDenialReason]mcpDenialWording) []string {
+func checkReasonsMatchTheClass(rows []mcpClassification, wording map[v1pb.MCPDenialReason]auth.MCPDenialWording) []string {
 	var violations []string
 	for _, row := range rows {
 		refused := row.class == v1pb.MCPMethodClass_FORBIDDEN || row.class == v1pb.MCPMethodClass_EXCLUDED
@@ -242,9 +242,9 @@ func checkReasonsMatchTheClass(rows []mcpClassification, wording map[v1pb.MCPDen
 			switch {
 			case !ok:
 				violations = append(violations, fmt.Sprintf("%s: is refused for %v, which has no sentence to say so", row.procedure, row.reason))
-			case recorded.class != row.class:
+			case recorded.Class != row.class:
 				violations = append(violations, fmt.Sprintf("%s: is %v but records %v, which is a %v reason",
-					row.procedure, row.class, row.reason, recorded.class))
+					row.procedure, row.class, row.reason, recorded.Class))
 			default:
 			}
 		case hasReason:
@@ -355,7 +355,7 @@ func TestLintEveryMethodIsClassified(t *testing.T) {
 
 func TestLintReasonsMatchTheClass(t *testing.T) {
 	t.Parallel()
-	require.Empty(t, checkReasonsMatchTheClass(mcpClassificationsFromDescriptors(t), mcpDenialReasons))
+	require.Empty(t, checkReasonsMatchTheClass(mcpClassificationsFromDescriptors(t), auth.MCPDenialReasons()))
 }
 
 // mcpEnums reads the two enums the serving decision spans out of the compiled
@@ -468,7 +468,7 @@ func TestLintClausesFireWhenBroken(t *testing.T) {
 		require.Equal(t, []string{
 			"/p: is FORBIDDEN and records no mcp_denial_reason",
 			"/q: is EXCLUDED and records no mcp_denial_reason",
-		}, checkReasonsMatchTheClass(broken, mcpDenialReasons))
+		}, checkReasonsMatchTheClass(broken, auth.MCPDenialReasons()))
 	})
 
 	t.Run("a reason with no wording fails", func(t *testing.T) {
@@ -478,7 +478,7 @@ func TestLintClausesFireWhenBroken(t *testing.T) {
 			reason:    v1pb.MCPDenialReason(9999),
 		}}
 		require.Equal(t, []string{"/p: is refused for 9999, which has no sentence to say so"},
-			checkReasonsMatchTheClass(broken, mcpDenialReasons))
+			checkReasonsMatchTheClass(broken, auth.MCPDenialReasons()))
 	})
 
 	t.Run("a reason belonging to the other refused class fails", func(t *testing.T) {
@@ -494,7 +494,7 @@ func TestLintClausesFireWhenBroken(t *testing.T) {
 		require.Equal(t, []string{
 			"/p: is FORBIDDEN but records ADMINISTERS_THE_WORKSPACE, which is a EXCLUDED reason",
 			"/q: is EXCLUDED but records MINTS_CREDENTIAL, which is a FORBIDDEN reason",
-		}, checkReasonsMatchTheClass(broken, mcpDenialReasons))
+		}, checkReasonsMatchTheClass(broken, auth.MCPDenialReasons()))
 	})
 
 	t.Run("a served method carrying a denial reason fails", func(t *testing.T) {
@@ -505,7 +505,7 @@ func TestLintClausesFireWhenBroken(t *testing.T) {
 		require.Equal(t, []string{
 			"/p: records MINTS_CREDENTIAL, a denial reason, but is not refused",
 			"/q: records ADMINISTERS_THE_WORKSPACE, a denial reason, but is not refused",
-		}, checkReasonsMatchTheClass(broken, mcpDenialReasons))
+		}, checkReasonsMatchTheClass(broken, auth.MCPDenialReasons()))
 	})
 
 	// The serving-decision clause is over the vocabulary, so its mutations are
@@ -1065,7 +1065,7 @@ func TestMCPGateRefusesTheDeniedClasses(t *testing.T) {
 		if row.class != v1pb.MCPMethodClass_FORBIDDEN && row.class != v1pb.MCPMethodClass_EXCLUDED {
 			continue
 		}
-		wantReason := mcpDenialReasons[row.reason].sentence
+		wantReason := auth.MCPDenialReasons()[row.reason].Sentence
 		t.Run(row.procedure, func(t *testing.T) {
 			got := invokeMCPGate(t, readWriteCeiling(), &common.AuthContext{
 				MCPMethodClass:  row.class,
@@ -1252,7 +1252,7 @@ func TestMCPGateFallsBackToGenericWording(t *testing.T) {
 		}, v1connect.AuthServiceLoginProcedure, connect.NewRequest(&v1pb.LoginRequest{}))
 		require.Error(t, got.err)
 		require.False(t, got.dispatched)
-		require.Contains(t, got.err.Error(), reasonForbiddenClass)
+		require.Contains(t, got.err.Error(), auth.MCPDenialSentence(v1pb.MCPMethodClass_FORBIDDEN, v1pb.MCPDenialReason(9999)))
 	})
 
 	t.Run("excluded", func(t *testing.T) {
@@ -1262,7 +1262,7 @@ func TestMCPGateFallsBackToGenericWording(t *testing.T) {
 		}, v1connect.UserServiceListUsersProcedure, connect.NewRequest(&v1pb.ListUsersRequest{}))
 		require.Error(t, got.err)
 		require.False(t, got.dispatched)
-		require.Contains(t, got.err.Error(), reasonExcludedClass)
+		require.Contains(t, got.err.Error(), auth.MCPDenialSentence(v1pb.MCPMethodClass_EXCLUDED, v1pb.MCPDenialReason(9999)))
 	})
 }
 

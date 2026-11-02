@@ -3,11 +3,14 @@ package mcp
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
+	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 )
 
 // SearchInput is the input for the search_api tool.
@@ -33,7 +36,9 @@ const searchAPIDescription = `Discover Bytebase API endpoints. **Always call bef
 | Details | operationId="SQLService/Query" | Request/response schema |
 | Schema | schema="Instance" | Message type definition |
 
-**Workflow:** search_api() → search_api(service="...") → search_api(operationId="...") → call_api(...)`
+**Workflow:** search_api() → search_api(service="...") → search_api(operationId="...") → call_api(...)
+
+The results also name what MCP sessions cannot do, and why: those are done in the Bytebase console.`
 
 func (s *Server) registerSearchTool() {
 	mcp.AddTool(s.mcpServer, &mcp.Tool{
@@ -59,14 +64,7 @@ func (s *Server) handleSearchAPI(_ context.Context, _ *mcp.CallToolRequest, inpu
 		text = s.formatServiceList()
 
 	default:
-		// List all endpoints in a service (no limit)
-		endpoints := s.openAPIIndex.GetServiceEndpoints(input.Service)
-		if len(endpoints) == 0 {
-			text = fmt.Sprintf("No endpoints found for service: %s\n\nAvailable services:\n%s",
-				input.Service, s.formatServiceList())
-		} else {
-			text = s.formatEndpoints(endpoints, 0)
-		}
+		text = s.formatService(input.Service)
 	}
 
 	return &mcp.CallToolResult{
@@ -83,11 +81,112 @@ func (s *Server) formatServiceList() string {
 
 	for _, svc := range services {
 		endpoints := s.openAPIIndex.GetServiceEndpoints(svc)
-		fmt.Fprintf(&sb, "- **%s** (%d endpoints)\n", svc, len(endpoints))
+		fmt.Fprintf(&sb, "- **%s** (%d endpoints", svc, len(endpoints))
+		if unavailable := len(s.openAPIIndex.GetUnavailableEndpoints(svc)); unavailable > 0 {
+			fmt.Fprintf(&sb, "; %d not available over MCP", unavailable)
+		}
+		sb.WriteString(")\n")
 	}
 
 	fmt.Fprintf(&sb, "\nTotal: %d services\n", len(services))
+
+	unavailable := s.openAPIIndex.UnavailableServices()
+	if len(unavailable) == 0 {
+		return sb.String()
+	}
+	sb.WriteString("\n## Not available over MCP\n\n")
+	sb.WriteString("These services exist in Bytebase, but no MCP session can call them, whatever the user's permissions. " +
+		mcpUnavailableWayOut + " `search_api(service=\"...\")` lists each operation and why.\n\n")
+	for _, svc := range unavailable {
+		fmt.Fprintf(&sb, "- **%s**", svc)
+		if description := s.describeService(svc); description != "" {
+			fmt.Fprintf(&sb, ": %s", description)
+		}
+		sb.WriteString("\n")
+		for _, reason := range refusalReasons(s.openAPIIndex.GetUnavailableEndpoints(svc)) {
+			fmt.Fprintf(&sb, "  - Refused because %s.\n", reason)
+		}
+	}
 	return sb.String()
+}
+
+// mcpUnavailableWayOut is where the user does what MCP refuses.
+const mcpUnavailableWayOut = "Do this work signed in to the Bytebase console."
+
+// formatService lists a service's endpoints and the ones MCP cannot call, and
+// tells a service MCP cannot call at all apart from one Bytebase does not have.
+func (s *Server) formatService(service string) string {
+	endpoints := s.openAPIIndex.GetServiceEndpoints(service)
+	unavailable := s.openAPIIndex.GetUnavailableEndpoints(service)
+	switch {
+	case len(endpoints) > 0 && len(unavailable) > 0:
+		return s.formatEndpoints(endpoints, 0) + "## Not available over MCP\n\n" +
+			"These exist in Bytebase, but no MCP session can call them, whatever the user's permissions. " +
+			mcpUnavailableWayOut + "\n\n" + formatRefusals(unavailable)
+	case len(endpoints) > 0:
+		return s.formatEndpoints(endpoints, 0)
+	case len(unavailable) > 0:
+		var sb strings.Builder
+		fmt.Fprintf(&sb, "%s is not available over MCP: no MCP session can call its operations, whatever the user's permissions. %s\n\n",
+			service, mcpUnavailableWayOut)
+		if description := s.describeService(service); description != "" {
+			fmt.Fprintf(&sb, "%s: %s\n\n", service, description)
+		}
+		sb.WriteString(formatRefusals(unavailable))
+		return sb.String()
+	default:
+		return fmt.Sprintf("Unknown service: %s. Bytebase has no service by that name.\n\n%s", service, s.formatServiceList())
+	}
+}
+
+// describeService is the service's spec description without its leading name:
+// "WorkloadIdentityService manages workload identities" becomes "manages
+// workload identities".
+func (s *Server) describeService(service string) string {
+	description := strings.TrimSpace(s.openAPIIndex.ServiceDescription(service))
+	return strings.TrimPrefix(description, service+" ")
+}
+
+// refusalReasons returns the distinct reasons MCP refuses these endpoints, in
+// the order they first appear.
+func refusalReasons(endpoints []*EndpointInfo) []string {
+	var reasons []string
+	for _, ep := range endpoints {
+		if !slices.Contains(reasons, ep.Refusal) {
+			reasons = append(reasons, ep.Refusal)
+		}
+	}
+	return reasons
+}
+
+// formatRefusals lists endpoints MCP cannot call, grouped by the reason.
+func formatRefusals(endpoints []*EndpointInfo) string {
+	var sb strings.Builder
+	for _, reason := range refusalReasons(endpoints) {
+		var operations []string
+		for _, ep := range endpoints {
+			if ep.Refusal == reason {
+				operations = append(operations, ep.Service+"/"+ep.Method)
+			}
+		}
+		slices.Sort(operations)
+		fmt.Fprintf(&sb, "- %s: refused because %s.\n", strings.Join(operations, ", "), reason)
+	}
+	return sb.String()
+}
+
+// endpointNote is what an agent must know about an endpoint that MCP serves
+// only in part.
+func endpointNote(ep *EndpointInfo) string {
+	if ep.Path != v1connect.SettingServiceGetSettingProcedure {
+		return ""
+	}
+	var readable []string
+	for _, setting := range auth.MCPReadableSettings() {
+		readable = append(readable, common.SettingNamePrefix+setting.String())
+	}
+	return fmt.Sprintf("MCP sessions read only these settings: %s. The user's own Bytebase permissions still apply. "+
+		"Semantic types come back without the MD5 masking salt.", strings.Join(readable, ", "))
 }
 
 func (*Server) formatEndpoints(endpoints []*EndpointInfo, limit int) string {
@@ -107,6 +206,9 @@ func (*Server) formatEndpoints(endpoints []*EndpointInfo, limit int) string {
 		if len(ep.Permissions) > 0 {
 			fmt.Fprintf(&sb, "Permissions: `%s`\n", strings.Join(ep.Permissions, "`, `"))
 		}
+		if note := endpointNote(ep); note != "" {
+			fmt.Fprintf(&sb, "%s\n", note)
+		}
 		sb.WriteString("\n")
 	}
 
@@ -116,7 +218,7 @@ func (*Server) formatEndpoints(endpoints []*EndpointInfo, limit int) string {
 func (s *Server) formatEndpointDetail(operationID string) string {
 	ep, ok := s.openAPIIndex.GetEndpoint(operationID)
 	if !ok {
-		return fmt.Sprintf("Unknown operationId: %s\n\nUse search_api(service=\"...\") to browse endpoints.", operationID)
+		return fmt.Sprintf("Unknown operationId: %s. Bytebase has no operation by that name.\n\nUse search_api(service=\"...\") to browse endpoints.", operationID)
 	}
 
 	var sb strings.Builder
@@ -124,8 +226,17 @@ func (s *Server) formatEndpointDetail(operationID string) string {
 	fmt.Fprintf(&sb, "## %s/%s\n\n", ep.Service, ep.Method)
 	fmt.Fprintf(&sb, "%s\n\n", ep.Summary)
 
+	if ep.Refusal != "" {
+		fmt.Fprintf(&sb, "Not available over MCP: no MCP session can call this operation, whatever the user's permissions, because %s. %s\n",
+			ep.Refusal, mcpUnavailableWayOut)
+		return sb.String()
+	}
+
 	if len(ep.Permissions) > 0 {
 		fmt.Fprintf(&sb, "**Permissions:** `%s`\n\n", strings.Join(ep.Permissions, "`, `"))
+	}
+	if note := endpointNote(ep); note != "" {
+		fmt.Fprintf(&sb, "%s\n\n", note)
 	}
 
 	// Request schema

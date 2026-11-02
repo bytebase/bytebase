@@ -534,25 +534,9 @@ func MCPClassIsRefused(class v1pb.MCPMethodClass) bool {
 // enforcement path must not — it reads the class off the AuthContext, which
 // fails the request outright when the annotation cannot be resolved.
 func MCPMethodClassOfProcedure(procedure string) (v1pb.MCPMethodClass, error) {
-	tokens := strings.Split(procedure, "/")
-	if len(tokens) != 3 {
-		return v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED, errs.Errorf("invalid procedure name %q", procedure)
-	}
-	rd, err := protoregistry.GlobalFiles.FindDescriptorByName(protoreflect.FullName(tokens[1]))
+	md, err := methodOptionsOfProcedure(procedure)
 	if err != nil {
-		return v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED, errs.Wrapf(err, "invalid service descriptor for procedure %q", procedure)
-	}
-	sd, ok := rd.(protoreflect.ServiceDescriptor)
-	if !ok {
-		return v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED, errs.Errorf("invalid service descriptor for procedure %q", procedure)
-	}
-	method := sd.Methods().ByName(protoreflect.Name(tokens[2]))
-	if method == nil {
-		return v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED, errs.Errorf("unknown method for procedure %q", procedure)
-	}
-	md, ok := method.Options().(*descriptorpb.MethodOptions)
-	if !ok {
-		return v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED, errs.Errorf("invalid method options for procedure %q", procedure)
+		return v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED, err
 	}
 	class, ok := proto.GetExtension(md, v1pb.E_McpMethodClass).(v1pb.MCPMethodClass)
 	if !ok {
@@ -561,9 +545,48 @@ func MCPMethodClassOfProcedure(procedure string) (v1pb.MCPMethodClass, error) {
 	return class, nil
 }
 
+// MCPDenialReasonOfProcedure resolves the recorded MCP denial reason for a
+// connect procedure path, as MCPMethodClassOfProcedure resolves the class.
+func MCPDenialReasonOfProcedure(procedure string) (v1pb.MCPDenialReason, error) {
+	md, err := methodOptionsOfProcedure(procedure)
+	if err != nil {
+		return v1pb.MCPDenialReason_MCP_DENIAL_REASON_UNSPECIFIED, err
+	}
+	reason, ok := proto.GetExtension(md, v1pb.E_McpDenialReason).(v1pb.MCPDenialReason)
+	if !ok {
+		return v1pb.MCPDenialReason_MCP_DENIAL_REASON_UNSPECIFIED, errs.Errorf("invalid MCP denial reason extension for procedure %q", procedure)
+	}
+	return reason, nil
+}
+
+func methodOptionsOfProcedure(procedure string) (*descriptorpb.MethodOptions, error) {
+	tokens := strings.Split(procedure, "/")
+	if len(tokens) != 3 {
+		return nil, errs.Errorf("invalid procedure name %q", procedure)
+	}
+	rd, err := protoregistry.GlobalFiles.FindDescriptorByName(protoreflect.FullName(tokens[1]))
+	if err != nil {
+		return nil, errs.Wrapf(err, "invalid service descriptor for procedure %q", procedure)
+	}
+	sd, ok := rd.(protoreflect.ServiceDescriptor)
+	if !ok {
+		return nil, errs.Errorf("invalid service descriptor for procedure %q", procedure)
+	}
+	method := sd.Methods().ByName(protoreflect.Name(tokens[2]))
+	if method == nil {
+		return nil, errs.Errorf("unknown method for procedure %q", procedure)
+	}
+	md, ok := method.Options().(*descriptorpb.MethodOptions)
+	if !ok {
+		return nil, errs.Errorf("invalid method options for procedure %q", procedure)
+	}
+	return md, nil
+}
+
 // mcpReadableSettings are the settings an MCP session may read through
 // SettingService/GetSetting, which is READ for these alone: the MCP gate refuses
-// every other name.
+// every other name, and MCP discovery names these. It lives here, like
+// MCPClassIsRefused, so the two cannot disagree.
 //
 // A setting joins only when its read returns nothing an agent must not hold.
 // SEMANTIC_TYPES qualifies because GetSetting strips the MD5 masking salt for MCP

@@ -22,11 +22,11 @@ func TestRefusedEndpointsAreNotAdvertised(t *testing.T) {
 
 	const forbidden = "bytebase.v1.AuthService.Login"
 	const forbiddenPath = "/bytebase.v1.AuthService/Login"
-	require.True(t, refusedToMCP(forbiddenPath), "precondition: Login is annotated FORBIDDEN")
+	require.True(t, refused(forbiddenPath), "precondition: Login is annotated FORBIDDEN")
 
 	const excluded = "bytebase.v1.UserService.ListUsers"
 	const excludedPath = "/bytebase.v1.UserService/ListUsers"
-	require.True(t, refusedToMCP(excludedPath), "precondition: ListUsers is annotated EXCLUDED")
+	require.True(t, refused(excludedPath), "precondition: ListUsers is annotated EXCLUDED")
 
 	t.Run("still resolvable by operation ID", func(t *testing.T) {
 		for operation, path := range map[string]string{forbidden: forbiddenPath, excluded: excludedPath} {
@@ -77,7 +77,7 @@ func TestRefusedEndpointsAreNotAdvertised(t *testing.T) {
 	t.Run("absent from search", func(t *testing.T) {
 		for _, query := range []string{"login", "password", "workspace", "project", "user", "instance"} {
 			for _, hit := range idx.Search(query) {
-				require.False(t, refusedToMCP(hit.Path),
+				require.False(t, refused(hit.Path),
 					"search %q offered %s, which an MCP session can never call", query, hit.Path)
 			}
 		}
@@ -89,4 +89,9 @@ func TestRefusedEndpointsAreNotAdvertised(t *testing.T) {
 		require.Contains(t, idx.Services(), "DatabaseService")
 		require.NotEmpty(t, idx.Search("database"))
 	})
+}
+
+func refused(path string) bool {
+	_, ok := mcpRefusal(path)
+	return ok
 }
