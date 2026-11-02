@@ -45,7 +45,7 @@ require (
 	github.com/databricks/databricks-sdk-go v0.192.0
 	github.com/elastic/go-elasticsearch/v7 v7.13.1
 	github.com/fsnotify/fsnotify v1.10.1
-	github.com/github/gh-ost v1.1.10
+	github.com/github/gh-ost v1.1.11
 	github.com/go-ego/gse v1.3.1
 	github.com/go-jose/go-jose/v4 v4.1.7
 	github.com/go-ldap/ldap/v3 v3.4.15
@@ -77,7 +77,7 @@ require (
 	github.com/paulmach/orb v0.14.0
 	github.com/pb33f/libopenapi v0.42.3
 	github.com/pingcap/tidb v1.1.0-beta.0.20241125141335-ec8b81b98edc
-	github.com/pingcap/tidb/pkg/parser v0.0.0-20241125141335-ec8b81b98edc
+	github.com/pingcap/tidb/pkg/parser v0.0.0-20260504140133-511dba1dbe17
 	github.com/pkg/errors v0.9.1
 	github.com/pquerna/otp v1.5.0
 	github.com/prometheus/client_golang v1.25.0
@@ -140,13 +140,13 @@ require (
 	github.com/Azure/go-ansiterm v0.0.0-20261006220739-8c912ac31dd4 // indirect
 	github.com/Azure/go-ntlmssp v0.1.1 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.10.1 // indirect
-	github.com/BurntSushi/toml v1.5.0 // indirect
+	github.com/BurntSushi/toml v1.6.0 // indirect
 	github.com/ClickHouse/ch-go v0.74.0 // indirect
+	github.com/DataDog/datadog-go/v5 v5.8.3 // indirect
 	github.com/GoogleCloudPlatform/grpc-gcp-go/grpcgcp v1.6.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.35.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.60.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.62.0 // indirect
-	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/andybalholm/brotli v1.2.6 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
@@ -213,7 +213,7 @@ require (
 	github.com/go-ini/ini v1.67.0 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/go-mysql-org/go-mysql v1.11.0 // indirect
+	github.com/go-mysql-org/go-mysql v1.15.0 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/goccy/go-json v0.10.6 // indirect
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
@@ -293,10 +293,10 @@ require (
 	github.com/petermattis/goid v0.0.0-20250813065127-a731cc31b4fe // indirect
 	github.com/pierrec/lz4/v4 v4.1.33 // indirect
 	github.com/pierrre/geohash v1.0.0 // indirect
-	github.com/pingcap/errors v0.11.5-0.20250523034308-74f78ae071ee // indirect
-	github.com/pingcap/failpoint v0.0.0-20240528011301-b51a646c7c86 // indirect
+	github.com/pingcap/errors v0.11.5-0.20260310054046-9c8b3586e4b2 // indirect
+	github.com/pingcap/failpoint v0.0.0-20260406204437-bbc9d102c19e // indirect
 	github.com/pingcap/kvproto v0.0.0-20251023055424-e9d10f5dcd23 // indirect
-	github.com/pingcap/log v1.1.1-0.20250917021125-19901e015dc9 // indirect
+	github.com/pingcap/log v1.1.1-0.20260227082333-572e590d08f1 // indirect
 	github.com/pingcap/sysutil v1.0.1-0.20240311050922-ae81ee01f3a5 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
@@ -315,7 +315,6 @@ require (
 	github.com/shirou/gopsutil/v3 v3.24.5 // indirect
 	github.com/shirou/gopsutil/v4 v4.26.6 // indirect
 	github.com/shoenig/go-m1cpu v0.1.7 // indirect
-	github.com/siddontang/go-log v0.0.0-20190221022429-1e957dd83bed // indirect
 	github.com/sirupsen/logrus v1.9.4 // indirect
 	github.com/spf13/pflag v1.0.9 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.8.1 // indirect
@@ -376,7 +375,7 @@ replace (
 	// fix potential security issue(CVE-2020-26160) introduced by indirect dependency.
 	github.com/dgrijalva/jwt-go => github.com/form3tech-oss/jwt-go v3.2.6-0.20210809144907-32ab6a8243d7+incompatible
 	// Other fixes.
-	github.com/github/gh-ost => github.com/bytebase/gh-ost2 v1.1.7-0.20260512035759-ca2794d6ebea
+	github.com/github/gh-ost => github.com/bytebase/gh-ost2 v1.1.7-0.20261102125703-6ff100bb26d5
 
 	github.com/jackc/pgx/v5 => github.com/bytebase/pgx/v5 v5.0.0-20261102115508-d3c6cddaeb96
 
