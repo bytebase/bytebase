@@ -29037,18 +29037,15 @@ configured storage destination such as SharePoint. </p></td>
                   <td>automatic</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>Whether this environment&#39;s rollout tasks start on their own, without
-someone running them. </p></td>
+                  <td><p>Whether the environment&#39;s rollout tasks start on their own, with no one running them. </p></td>
                 </tr>
               
                 <tr>
                   <td>roles</td>
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
-                  <td><p>The roles that can run, skip or cancel this environment&#39;s rollout tasks,
-besides anyone who holds bb.taskRuns.create. It does not decide who
-approves a change: the workspace approval rules (the WORKSPACE_APPROVAL
-setting) do. </p></td>
+                  <td><p>Who can run, skip or cancel the environment&#39;s rollout tasks; WORKSPACE_APPROVAL sets approvers.
+Anyone with bb.taskRuns.create can too. </p></td>
                 </tr>
               
             </tbody>

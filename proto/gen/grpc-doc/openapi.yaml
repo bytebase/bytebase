@@ -27406,19 +27406,15 @@ components:
         automatic:
           type: boolean
           title: automatic
-          description: |-
-            Whether this environment's rollout tasks start on their own, without
-             someone running them.
+          description: Whether the environment's rollout tasks start on their own, with no one running them.
         roles:
           type: array
           items:
             type: string
           title: roles
           description: |-
-            The roles that can run, skip or cancel this environment's rollout tasks,
-             besides anyone who holds bb.taskRuns.create. It does not decide who
-             approves a change: the workspace approval rules (the WORKSPACE_APPROVAL
-             setting) do.
+            Who can run, skip or cancel the environment's rollout tasks; WORKSPACE_APPROVAL sets approvers.
+             Anyone with bb.taskRuns.create can too.
       title: RolloutPolicy
       additionalProperties: false
       description: Rollout policy configuration.

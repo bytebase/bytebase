@@ -504,7 +504,7 @@ func TestRevokeMaskingExemptionRemovesTheMemberFromEveryMatch(t *testing.T) {
 		`Revoke masking exemption: "user:bob@example.com", as alice@example.com?`,
 		`Project "hr"`,
 		`Condition (2 entries) "(resource.instance_id == \"prod\" && resource.database_name == \"hr\")"`,
-		`Masking applies to them again unless another exemption covers the data.`,
+		`Ends their bypass of any masking here, unless another exemption covers it.`,
 	}, "\n"), user.lastParams(t).Message)
 	calls := mock.calls()
 	require.Len(t, calls, 1)

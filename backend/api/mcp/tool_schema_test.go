@@ -386,6 +386,7 @@ func TestGetSchema_TableImpliesDetails(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.False(t, result.IsError)
+	require.Contains(t, result.Content[0].(*mcpsdk.TextContent).Text, "Table: orders (row count estimate 182394, ")
 
 	output, ok := structured.(*SchemaOutput)
 	require.True(t, ok)

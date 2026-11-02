@@ -812,13 +812,10 @@ func (x *ReviewAIPolicy) GetContent() string {
 // Rollout policy configuration.
 type RolloutPolicy struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Whether this environment's rollout tasks start on their own, without
-	// someone running them.
+	// Whether the environment's rollout tasks start on their own, with no one running them.
 	Automatic bool `protobuf:"varint,1,opt,name=automatic,proto3" json:"automatic,omitempty"`
-	// The roles that can run, skip or cancel this environment's rollout tasks,
-	// besides anyone who holds bb.taskRuns.create. It does not decide who
-	// approves a change: the workspace approval rules (the WORKSPACE_APPROVAL
-	// setting) do.
+	// Who can run, skip or cancel the environment's rollout tasks; WORKSPACE_APPROVAL sets approvers.
+	// Anyone with bb.taskRuns.create can too.
 	Roles         []string `protobuf:"bytes,2,rep,name=roles,proto3" json:"roles,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
