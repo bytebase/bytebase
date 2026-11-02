@@ -459,8 +459,8 @@ importers:
         specifier: ~7.2.1
         version: 7.2.1(supports-color@7.2.0)(terser@5.39.0)(vite@8.3.5(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.39.0))
       autoprefixer:
-        specifier: 10.5.4
-        version: 10.5.4(postcss@8.5.32)
+        specifier: 10.6.2
+        version: 10.6.2(postcss@8.5.32)
       code-inspector-plugin:
         specifier: ^2.0.0
         version: 2.0.9(supports-color@7.2.0)
@@ -2299,8 +2299,8 @@ packages:
   async@3.2.6:
     resolution: {integrity: sha512-htCUDlxyyCLMgaM3xXg0C0LW2xqfuQ6p05pCEIsXuyQ+a1koYKTuBMzRNwmybfLgvJDMd0r1LTn4+E0Ti6C2AA==}
 
-  autoprefixer@10.5.4:
-    resolution: {integrity: sha512-MaU0U/za7N3r6brxD4YB/l4NSrFzLPlANv6wEuQVaIPlD3L4W9rFcQPbL/EilY9BHhHvhfcz3gInDLrEtWT4EA==}
+  autoprefixer@10.6.2:
+    resolution: {integrity: sha512-VOw9/yGTGwPPgzFcODtcv6zhEPIeIWkRSe10L2ri2f5vZ7ID7lCt6jZzRF5/ubgOZ+szYydmEF5AYsA5jxX1tA==}
     engines: {node: ^10 || ^12 || >=14}
     hasBin: true
     peerDependencies:
@@ -5725,7 +5725,7 @@ snapshots:
 
   async@3.2.6: {}
 
-  autoprefixer@10.5.4(postcss@8.5.32):
+  autoprefixer@10.6.2(postcss@8.5.32):
     dependencies:
       browserslist: 4.29.5
       caniuse-lite: 1.0.30001820
