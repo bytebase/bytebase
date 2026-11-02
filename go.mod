@@ -69,7 +69,7 @@ require (
 	github.com/labstack/echo/v5 v5.3.1
 	github.com/lib/pq v1.12.3
 	github.com/lor00x/goldap v0.0.0-20240304151906-8d785c64d1c8
-	github.com/microsoft/go-mssqldb v1.11.0
+	github.com/microsoft/go-mssqldb v1.11.2
 	github.com/modelcontextprotocol/go-sdk v1.8.0
 	github.com/nyaruka/phonenumbers/v2 v2.0.16
 	github.com/openark/golib v0.0.0-20210531070646-355f37940af8
