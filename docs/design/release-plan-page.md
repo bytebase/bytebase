@@ -98,8 +98,11 @@ on top whether versions are timestamps such as `202610051500` or counters such a
 grouping level, derived from the version string: a timestamp-like version (a first segment of 8 to
 14 digits starting with a plausible year) groups by day for the newest group and by month for the
 rest, with the newest group open and the others collapsed with a count; counters and anything else
-get no date groups: flat up to the row limit, then buckets of a hundred. An open group shows at most
-12 rows and then "N more", which extends the group in place. A 535-file release therefore opens as
+get no date groups: flat up to the row limit, then buckets of a hundred. An open group shows its
+first 12 rows; one row below them offers "Load 12 more" and "Load all (N)", which load in place, and
+once more than 12 rows show it also offers "Show fewer", which returns the group to its first 12
+and keeps the row under the pointer. "Load all" is one click, so an accidental "Show fewer" costs
+one click to undo. A 535-file release therefore opens as
 one day group with its files and about eight month headers. A row shows the version and the file's
 path as stored in the release. Opened, the section keeps today's spec tab and Targets on top; only
 the release card under them is replaced by this list. Collapsed and declarative forms are in States.
@@ -134,8 +137,8 @@ While a run is in progress, the files it has not reached show below it as "Will 
 stored state. The log decides every version up to its newest marker and the stored state covers the
 rest, because the executor writes a marker before each file it runs and writes nothing for a file it
 passes over: a version the stored state listed as "Will apply" that has no marker below a newer one
-was found applied, and moves into the already-applied fold; a version it counted as applied that
-gets a marker (its revision was deleted after the rollout was created) leaves the fold and becomes a
+was found applied, and joins the files applied earlier; a version it counted as applied that
+gets a marker (its revision was deleted after the rollout was created) leaves them and becomes a
 section in its place. Once the run ends, done, failed or canceled, the spine shows only what ran:
 the executor syncs the database after every run, and a file after the failure did not run in it. The
 release's full file list stays in Changes. The stored state also keeps the "revision deleted
@@ -180,8 +183,8 @@ statement kind is DDL, DML or Mixed from the plan check's `statement_types`, who
 that way. A database sync that failed after the files applied leaves the task Done (the executor
 logs the error and goes on); the error reaches only the log, so it shows in the opened task's
 Database sync section as today, not on the folded card. The word "skipped" is reserved for the user
-action (D7); versions the executor passes over are "applied earlier" on the card and "already
-applied" in the fold.
+action (D7); versions the executor passes over are "applied earlier" on the card and in the
+spine.
 
 A file section header carries the version, the file's path as a link to the viewer (D8) with a copy
 control for the path, a status chip and the duration; the chevron toggles, the path opens the file.
@@ -205,15 +208,27 @@ On load, a URL that names a stage or task wins and opens that task; otherwise th
 stage holding the latest failed task, else the running one, else the last stage, and opens no task.
 Opening a failed task opens its failed section and failed row, the others collapsed.
 
-The spine shows at most 24 file sections. Beyond that, the oldest applied sections fold into one "N
-applied" row and the planned tail folds into "N more, will apply"; both expand in place, and the
-running section and a failed section are always shown and open. The already-applied fold ("N
-already applied", with the version range) is folded by default and opens newest first, five rows
-at a time with "Show more"; each row is the path, opening the viewer. Inside a section the log's
+A long spine follows the UIOps log (`SectionContent.tsx`): rows keep their order, a cap bounds
+what renders, a row loads what is hidden in place, and the row that explains the outcome is never
+hidden. The spine opens with a count line naming the states present, "60 files · 29 applied · 1
+running · 30 pending" (applied, running, failed, canceled, pending, applied earlier). It then shows
+the first 20 file sections in version order, and the running, failed or canceled section wherever
+it falls, open. Each hidden stretch is one row that names what it loads: "Load 9 more applied",
+"Load 30 pending", "Load 60 applied earlier". "More" appears only when a section of the same state
+shows above the row; there is no version range, because the rows around it show where the stretch
+starts and ends. A stretch longer than 20 offers "Load 20 more …" and "Load all (N)". Once anything
+is loaded, the spine ends with "Show fewer", which returns to the first view. The files applied
+earlier are one such row at the top, before the first section; loaded, each is a row with the
+version, an "Applied earlier" chip and the path, which opens the viewer. Inside a section the log's
 existing "Load more" paging stays. A done task ends with a "Revisions on `<database>`" link to the
 database page's Revisions tab. A UIOps task is the same component with one implicit section for its
 statement. The revision page, which embeds the same viewer for the revision's task run
-(`RevisionDetailPanel.tsx`), renders the log-only form (States).
+(`RevisionDetailPanel.tsx`), renders the log-only form (States). Rejected: folding the stretches
+into "N applied" and "N more, will apply" rows, which read as rows of the list and unfold their
+files at the level of their own header; loading the earliest files at the top of a run, which
+reverses the reading order; the UIOps cap of 50, whose rows sit in a box ten rows tall, while file
+sections open their own log boxes, so they sit in the page and the cap bounds the page height;
+"to apply" on a load row, which reads as an instruction ("Load 30 to apply").
 
 Rejected: a ledger table of files and statuses above the log, which repeats every file the log
 already names and leaves two places to read the same error; a separate error alert; a stepper of
@@ -271,7 +286,7 @@ or before any marker at all (the driver cannot connect, the revisions cannot be 
 boundary is the newest marker, not the failure. A done run's unmarked versions are all applied,
 since Done means every version was found applied at the run's start or applied by it, marker or not. A run that ended any other way
 takes the versions above its newest marker, or all of them when it wrote none, from the stored state
-(D4): its applied versions join the already-applied fold and its to-apply versions are not listed,
+(D4): its applied versions join the files applied earlier and its to-apply versions are not listed,
 as nothing after a stop is (D3). A task without a stored state, whose run predates this change,
 shows only the versions below its newest marker. While a run is in progress the stored state gives
 the files not yet reached in the same way. The executor does not change: its skips stay in the
@@ -311,8 +326,9 @@ recording a revision on Skip, which would claim the version applied, which is wh
 on the database page is for.
 
 **D8 · A file opens in a read-only viewer: a side panel on wide screens, a sheet below.** Opened
-from any file path: in Changes, in a spine section header or the already-applied fold. The body is
-`ReleaseFileDetailPanel.tsx`'s content: version, path with a copy control, size, the sheet's
+from any file path: in Changes, in a spine section header or a file applied earlier. The body is
+`ReleaseFileDetailPanel.tsx`'s content: the version as the title, the path as plain text with a copy
+control, size, the sheet's
 statement in the read-only editor with its copy control, and a link to the file at the commit, "Open
 in `<platform>` at `<short sha>`", built from the D9 template when the platform is known. On a
 failed file the link is the header's main action: the next step after reading the error on its
@@ -321,15 +337,17 @@ and draws the error on that statement as an inline diagnostic, from the command'
 (`CommandExecute.range`, byte offsets into the sheet) and the error in its response, placed once the
 log arrives; the header says "Failed on `<stage>`". With no command range (the drivers above) it
 opens at the top with the error above the editor. Opened from an applied section or the
-already-applied fold, one line under the header says what this database did with the version
-("applied by this run", "already applied; this run passed over it"). Opened from Changes there is no
+files applied earlier, one line under the header says what this database did with the version
+("applied by this run", "applied earlier; this run passed over it"). Opened from Changes there is no
 database and no line. Drivers log one command per statement, so the diagnostic lands on the
 statement; a PL/SQL block is one command, so there the diagnostic covers the block. The container
 follows the viewport through the `useMediaQuery` hook (`frontend/src/hooks/useMediaQuery.ts`), as
 `ProjectPlanDashboardPage.tsx` does with its `MOBILE_MEDIA_QUERY` constant; the breakpoints are in
-States. One body component either way. Rejected: a modal dialog (reading a statement next to the row
-that failed, or clicking through files in Changes, should not open and close a modal each time);
-keeping the release page as the place to read a file (D12).
+States. The container is the standard-width sheet the task's run history uses. One body component
+either way. Rejected: a modal dialog (reading a statement next to the row that failed, or clicking
+through files in Changes, should not open and close a modal each time); keeping the release page as
+the place to read a file (D12); a panel taking about 62% of the window on wide screens, which covers
+most of the page and reads as a drawer; the path as the title, whose length outweighs the version.
 
 **D9 · The source row lives on `Release.VCSSource`, filled by the action from the CI environment and
 explicit flags.** The details block's Source row (D10) renders the fields it has in a fixed order:
@@ -379,7 +397,9 @@ and a proto field.
 
 **D10 · A details block under the title, for release and UIOps plans; the title stays the release
 id.** Short facts about the plan sit as labeled rows in one block in the page's flow, between the
-title row and the description:
+title row and the description. The rows are body text (14 px), the size of the Progress row's stage
+cells, with muted labels; the caption size (12 px) is for secondary text, and these are the page's
+main facts:
 
 | Row | Release-backed plan | UIOps plan |
 |---|---|---|
@@ -436,14 +456,17 @@ The spine, per task status:
 
 | Task | Sources | Sections, top to bottom |
 |---|---|---|
-| Not started, pending | Stored state, caption "As of rollout creation, `<time ago>`; the run re-checks the database.", the age from the stored computation time | "N already applied" folded with the version range; one "Will apply" section per file to apply, in version order, no children and no caret; "Will apply again · revision deleted `<date>` by `<who>`" where a revision was deleted |
-| Running | The live log, the release's file list, and the stored state for files not reached | Already-applied fold; reached files (applied collapsed, the current one open with a running indicator); unreached files below as "Will apply"; the boundary moves down |
-| Done | The log and the release's file list | Already-applied fold (the files without a marker); every file section Applied; task-level steps as siblings; "Revisions on `<database>`" at the end |
-| Failed | The log and the release's file list | Already-applied fold; applied sections collapsed; the failed section open, its failed row open with the error on the line and the statement block under it (folded below 640 px); task-level steps as siblings; nothing for the files after the failed one. An error that names no file or step (D3) ends the spine with an open "Run failed" section instead, after the already-applied fold and any applied sections |
+| Not started, pending | Stored state, caption "As of rollout creation, `<time ago>`; the run re-checks the database.", the age from the stored computation time | "Load N applied earlier"; one "Will apply" section per file to apply, in version order, no children and no caret; "Will apply again · revision deleted `<date>` by `<who>`" where a revision was deleted |
+| Running | The live log, the release's file list, and the stored state for files not reached | "Load N applied earlier"; reached files (applied collapsed, the current one open with a running indicator); unreached files below as "Will apply"; the boundary moves down |
+| Done | The log and the release's file list | "Load N applied earlier" (the files without a marker); every file section Applied; task-level steps as siblings; "Revisions on `<database>`" at the end |
+| Failed | The log and the release's file list | "Load N applied earlier"; applied sections collapsed; the failed section open, its failed row open with the error on the line and the statement block under it (folded below 640 px); task-level steps as siblings; nothing for the files after the failed one. An error that names no file or step (D3) ends the spine with an open "Run failed" section instead, after the files applied earlier and any applied sections |
 | Canceled | The log and the release's file list | As Failed, with the section the cancel interrupted marked Canceled |
 | Skipped, after a run | As Failed | "Skipped by `<user>` · `<time>` · `<reason>`", then the last run as Failed |
 | Skipped, never run | Stored state | "Skipped by `<user>` · `<time>` · `<reason>`", then the planned list, collapsed |
 | Revision page, any run | The log and the release's file list | The sections of that run with the open and closed defaults of the run's status; no stored state, no Revisions link |
+
+Every row starts with the count line and follows the long-list rule (D3): at most 20 file sections
+plus the running, failed or canceled one, the rest behind load rows.
 
 The folded card's description, per task state (D3):
 
@@ -462,7 +485,7 @@ Changes:
 
 | Rollout | Rail |
 |---|---|
-| Not started | Open: today's spec tab and Targets, then the manifest line, groups, 12 rows then "N more" |
+| Not started | Open: today's spec tab and Targets, then the manifest line, groups, 12 rows then "Load 12 more" and "Load all (N)", "Show fewer" once extended |
 | Started or finished | Collapsed: the targets per stage (the release facts are in the details block, D10); opens on click to the same content |
 | Declarative release | One line: the schema folder at its version, with Open |
 
@@ -470,8 +493,8 @@ The viewer, by viewport:
 
 | Viewport | Container | Behavior |
 |---|---|---|
-| 1280 px and wider | Side panel, page keeps about 38% | Page stays interactive; another file swaps the content; Esc closes |
-| 640 to 1279 px | `Sheet` over a scrim | Standard width, same body |
+| 1280 px and wider | Standard-width sheet beside the page, no scrim | Page stays interactive; another file swaps the content; Esc closes |
+| 640 to 1279 px | Standard-width sheet over a scrim | Same body |
 | Below 640 px | Full-width sheet | Lines wrap |
 
 The details block's Source row:
@@ -512,20 +535,22 @@ task runs, logs, revisions and the release's sheets today; the read path adds no
 Tests to write, per the placement rules in `AGENTS.md`:
 
 - `model.test.ts`: a file group ending at a database-sync entry (today's fixture puts the sync under
-  the last file; the new one proves it is a sibling); the already-applied fold derived for a done
+  the last file; the new one proves it is a sibling); the files applied earlier derived for a done
   task (every file without a marker) and for a failed task (the files below the newest marker
-  without a marker), and its paging of five; a running task listing the files it has not reached as
+  without a marker); a running task listing the files it has not reached as
   "Will apply" from the stored state, the boundary at the current file; a stored "Will apply"
-  version the run passed over moving into the fold, and a stored applied version that gets a marker
-  leaving it; a failed task listing nothing after the failed file; a failed run with no marker at
+  version the run passed over joining the files applied earlier, and a stored applied version that
+  gets a marker leaving them; a failed task listing nothing after the failed file; a failed run with no marker at
   all (the driver cannot connect) and one that failed loading the second file's statement after one
   marker, each taking the versions above its newest marker from the stored state and ending with an
   open "Run failed" section holding the full error, and the same run without a stored state listing
   only the versions below it; a revision-write failure after a file ran, the file's section applied
   and the error in "Run failed"; a file-prefixed error on the newest file's section, with "no
   statement identified" when it has no failed command; a done run with no marker, all applied;
-  a collapsed failed section carrying the error's first line; the 24-section fold with a failed
-  section past the limit still shown and the fold expanding in place; a prior backup as a sibling
+  a collapsed failed section carrying the error's first line; the count line per task state; the
+  cap of 20 with the running and a failed section past it still shown, each hidden stretch's load
+  row named by its state with "more" only after a shown section of that state, "Load 20 more" and
+  "Load all" on a stretch over 20, and "Show fewer" back to the first view; a prior backup as a sibling
   and a gh-ost migration inside its file's section; a run with no command response carrying the
   run's error on the header; the log-only form without a task keeping the run's defaults.
 - `useTaskRunLogData.test.tsx`: a run that reached two files of a 500-file release fetches two
@@ -546,7 +571,7 @@ Tests to write, per the placement rules in `AGENTS.md`:
 - Release list tests: Archive on an active row with its confirmation, "Show archived" listing
   archived releases through `show_deleted`, and Restore on an archived row.
 - Changes rail tests: descending order over timestamp, counter and dotted versions; the grouping per
-  shape with the newest group open; 12 rows then "N more"; a backfilled low version landing in its
+  shape with the newest group open; 12 rows, "Load 12 more", "Load all" and "Show fewer"; a backfilled low version landing in its
   old group; the collapsed line; the declarative one-liner.
 - Viewer tests: the diagnostic placed from a byte range on a multi-byte statement, opened from the
   failed section; opening at the top with the error when there
@@ -576,7 +601,7 @@ Tests to write, per the placement rules in `AGENTS.md`:
 - `frontend/tests/e2e/plan-detail`: a release-backed plan created through the API against the shared
   server with a target that already carries one version, read as a project Developer: the Changes
   rail newest first with the viewer opening from a file path; the planned spine before the run;
-  after the run the already-applied fold with its row and the applied section with the Revisions
+  after the run the applied-earlier load row with its row and the applied section with the Revisions
   link; a failing second of three files showing the error on the row and in the viewer, nothing
   listed for the third, and the error on the folded card; as a project Owner, Skip refusing an
   empty reason, the task then showing the skip line over the failed run, and the header reading
