@@ -343,7 +343,8 @@ database and no line. Drivers log one command per statement, so the diagnostic l
 statement; a PL/SQL block is one command, so there the diagnostic covers the block. When the page
 is at least 1280 px wide, the viewer is a column docked on the page's right: the page body becomes a
 two-column grid, the plan on the left half and the column on the right half, sticky at the top, the window's height below the header, and scrolling on its own, with Close in its
-header. This is the layout the task detail panel had until #20785 replaced it with inline task
+header. Opening, swapping or closing a file changes only the grid's columns: the plan stays mounted,
+so loaded rows, open tasks and sections, and fetched logs keep their state. This is the layout the task detail panel had until #20785 replaced it with inline task
 cards; that change removed the panel because it repeated the stage's task list, not because of the
 column. The width is the page's, measured with a `ResizeObserver` as that panel did, since the
 sidebar takes part of the window. Narrower, the viewer is the standard-width sheet the task's run
@@ -582,7 +583,8 @@ Tests to write, per the placement rules in `AGENTS.md`:
   failed section; opening at the top with the error when there
   is no range; the per-database line when opened from a section and none from Changes; the
   file-at-commit link per platform and none on an unknown one; the container chosen
-  by the page's width; swapping files in the docked column; Close and Esc.
+  by the page's width; swapping files in the docked column; Close and Esc; the plan's state, such
+  as loaded rows, kept when the column opens and closes.
 - Source row tests: each row of the States table from a `VCSSource` with that subset; a squash-merge
   title ending in `(#N)` rendered with the number once; the 72-character truncation and tooltip; a
   title with markdown and control characters rendered as text; the parse of `repo@sha` from each
