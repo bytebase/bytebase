@@ -26,6 +26,7 @@ var (
 	sharedMongo    = startOnce(getMongoDBContainer)
 	sharedOracle   = startOnce(getOracleContainer)
 	sharedMySQL    = startOnce(GetMySQLContainer)
+	sharedTrino    = startOnce(getTrinoContainer)
 	sharedMariaDB  = startOnce(mariaDBStarter("mariadb:11.8.8"))
 	// 10.7 is the oldest MariaDB release Bytebase supports.
 	sharedMariaDB107 = startOnce(mariaDBStarter("mariadb:10.7.8"))
@@ -96,6 +97,10 @@ func SharedPg17Container(t testing.TB) *Container { return shared(t, sharedPg17)
 // SharedTLSPgContainer is SharedPgContainer for the TLS-enabled PostgreSQL that
 // tests reach with sslmode=verify-full and GetTLSCAPath.
 func SharedTLSPgContainer(t testing.TB) *Container { return shared(t, sharedTLSPg) }
+
+// SharedTrinoContainer is SharedPgContainer for Trino. It carries no *sql.DB,
+// so a test builds its own DSN from GetHost, GetPort and GetUsername.
+func SharedTrinoContainer(t testing.TB) *Container { return shared(t, sharedTrino) }
 
 // SharedMSSQLContainer is SharedPgContainer for SQL Server; tests take a database each.
 // Its certificate is signed by the CA at GetTLSCAPath.
