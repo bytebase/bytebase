@@ -76,6 +76,11 @@ func (d *Driver) Open(_ context.Context, dbType storepb.Engine, config db.Connec
 func buildSnowflakeDSN(config db.ConnectionConfig) (string, string, error) {
 	snowConfig := &snow.Config{
 		User: config.DataSource.Username,
+		// gosnowflake v2.3.0 turned OCSP off unless a caller opts in; before it,
+		// DSN() always wrote ocspFailOpen=true. Leaving the field unset would
+		// silently drop certificate revocation checking, so set it explicitly to
+		// keep the fail-open checking this driver has always done.
+		OCSPFailOpen: snow.OCSPFailOpenTrue,
 	}
 	if config.ConnectionContext.DatabaseName != "" {
 		snowConfig.Database = fmt.Sprintf(`"%s"`, config.ConnectionContext.DatabaseName)
