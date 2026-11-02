@@ -114,6 +114,8 @@ func TestMigration3_25_1_DBSchemaSyncedAtBackfill(t *testing.T) {
 			('prod', 'synced', '{"lastSyncTime":"2026-10-28T04:05:06.123456789Z","syncStatus":"SYNC_STATUS_OK"}'),
 			('prod', 'whole-second', '{"lastSyncTime":"2026-10-28T04:05:06Z"}'),
 			('prod', 'never-synced', '{"syncStatus":"SYNC_STATUS_OK"}'),
+			-- A clock that ran ahead, so the recorded time is in the future.
+			('prod', 'clock-ahead', '{"lastSyncTime":"2099-01-01T00:00:00Z"}'),
 			-- Same database name in another instance: db_schema is keyed by
 			-- (instance, db_name) and the backfill joins on the whole key.
 			('staging', 'synced', '{"lastSyncTime":"2026-10-20T01:02:03Z"}');
@@ -121,6 +123,7 @@ func TestMigration3_25_1_DBSchemaSyncedAtBackfill(t *testing.T) {
 			('prod', 'synced', 'prod dump'),
 			('prod', 'whole-second', 'whole second dump'),
 			('prod', 'never-synced', 'unstamped dump'),
+			('prod', 'clock-ahead', 'clock ahead dump'),
 			('staging', 'synced', 'staging dump');
 	`)
 	require.NoError(t, err)
@@ -134,22 +137,29 @@ func TestMigration3_25_1_DBSchemaSyncedAtBackfill(t *testing.T) {
 		instance     string
 		databaseName string
 		want         string
+		wantClamped  bool
 	}{
-		{"prod", "synced", "2026-10-28T04:05:06.123457Z"},
-		{"prod", "whole-second", "2026-10-28T04:05:06Z"},
-		{"prod", "never-synced", ""},
-		{"staging", "synced", "2026-10-20T01:02:03Z"},
+		{instance: "prod", databaseName: "synced", want: "2026-10-28T04:05:06.123457Z"},
+		{instance: "prod", databaseName: "whole-second", want: "2026-10-28T04:05:06Z"},
+		{instance: "prod", databaseName: "never-synced"},
+		{instance: "prod", databaseName: "clock-ahead", wantClamped: true},
+		{instance: "staging", databaseName: "synced", want: "2026-10-20T01:02:03Z"},
 	} {
 		var syncedAt sql.NullTime
 		require.NoError(t, db.QueryRowContext(ctx,
 			`SELECT synced_at FROM db_schema WHERE instance = $1 AND db_name = $2`,
 			tc.instance, tc.databaseName).Scan(&syncedAt))
-		if tc.want == "" {
+		switch {
+		case tc.wantClamped:
+			// A stamp in the future would refuse every sync until wall clock passed it.
+			require.True(t, syncedAt.Valid, "%s/%s", tc.instance, tc.databaseName)
+			require.WithinDuration(t, time.Now(), syncedAt.Time, time.Hour, "%s/%s", tc.instance, tc.databaseName)
+		case tc.want == "":
 			require.False(t, syncedAt.Valid, "%s/%s", tc.instance, tc.databaseName)
-			continue
+		default:
+			require.True(t, syncedAt.Valid, "%s/%s", tc.instance, tc.databaseName)
+			require.Equal(t, tc.want, syncedAt.Time.UTC().Format(time.RFC3339Nano), "%s/%s", tc.instance, tc.databaseName)
 		}
-		require.True(t, syncedAt.Valid, "%s/%s", tc.instance, tc.databaseName)
-		require.Equal(t, tc.want, syncedAt.Time.UTC().Format(time.RFC3339Nano), "%s/%s", tc.instance, tc.databaseName)
 	}
 }
 

@@ -4,11 +4,12 @@ ALTER TABLE db_schema ADD COLUMN synced_at timestamptz;
 -- db.metadata's lastSyncTime is the closest available value: when the database
 -- last finished a sync, so later than the dump's read by that sync's duration,
 -- and from a different sync than the one that wrote the dump where the two
--- raced. It is a past timestamp at migration time, so every read after the
--- upgrade is still newer and stores normally. A database that never recorded a
--- sync keeps NULL, which every sync is allowed to overwrite.
+-- raced. Being late is harmless only while the stamp stays in the past, which
+-- LEAST enforces: lastSyncTime is whatever the clock said, and a stamp in the
+-- future would refuse every sync until wall clock passed it. A database that
+-- never recorded a sync keeps NULL, which every sync is allowed to overwrite.
 UPDATE db_schema
-SET synced_at = (db.metadata ->> 'lastSyncTime')::timestamptz
+SET synced_at = LEAST((db.metadata ->> 'lastSyncTime')::timestamptz, now())
 FROM db
 WHERE db.instance = db_schema.instance
   AND db.name = db_schema.db_name
