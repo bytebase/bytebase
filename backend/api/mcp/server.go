@@ -19,6 +19,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/audit"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -208,15 +209,18 @@ func negotiateLegacyProtocol(next mcp.MethodHandler) mcp.MethodHandler {
 }
 
 // nameSignedInAccount opens the initialize instructions with the session's
-// Bytebase account: clients also show the model other accounts, such as their
-// own sign-in. It goes first, so a client that cuts long instructions keeps it.
+// Bytebase account and workspace: clients also show the model other accounts,
+// such as their own sign-in, and an agent that needs a workspace name should
+// not have to guess one. It goes first, so a client that cuts long
+// instructions keeps it.
 func nameSignedInAccount(next mcp.MethodHandler) mcp.MethodHandler {
 	return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
 		result, err := next(ctx, method, req)
 		// The SDK refuses a second initialize on a session with a nil result,
 		// and a panic here would end the process.
 		if initialized, ok := result.(*mcp.InitializeResult); ok && initialized != nil {
-			account := fmt.Sprintf(`This session acts as the Bytebase account %s: every tool call runs with its permissions, and "you" in tool results means it. The user may have other accounts with other emails, such as the client's own sign-in.`, getUserEmail(ctx))
+			account := fmt.Sprintf(`This session acts as the Bytebase account %s in %s: tool calls run with its permissions, and "you" in tool results means it. The user may have other accounts, such as the client's sign-in.`,
+				getUserEmail(ctx), common.FormatWorkspace(getWorkspaceID(ctx)))
 			initialized.Instructions = account + "\n\n" + initialized.Instructions
 		}
 		return result, err
