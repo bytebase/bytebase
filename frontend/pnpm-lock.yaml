@@ -314,8 +314,8 @@ importers:
         specifier: ^19.2.6
         version: 19.3.1
       react-arborist:
-        specifier: ^3.5.0
-        version: 3.16.0(@types/node@24.19.2)(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        specifier: ^4.0.0
+        version: 4.0.1(react-dnd-html5-backend@16.0.1)(react-dnd@16.0.1(@types/node@24.19.2)(@types/react@19.3.0)(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       react-day-picker:
         specifier: ^10.0.1
         version: 10.0.2(@types/react@19.3.0)(react@19.3.1)
@@ -1546,14 +1546,14 @@ packages:
   '@posthog/types@1.419.0':
     resolution: {integrity: sha512-XX7zRYt/vK8AzaD6V+oDquAzacZf5exJv971dja9En8Qf6g84Qvc3rpT0w6hDYYLWrjaSSkdjFfvvoXI0ouJDg==}
 
-  '@react-dnd/asap@4.0.1':
-    resolution: {integrity: sha512-kLy0PJDDwvwwTXxqTFNAAllPHD73AycE9ypWeln/IguoGBEbvFcPDbCV03G52bEcC5E+YgupBE0VzHGdC8SIXg==}
+  '@react-dnd/asap@5.0.2':
+    resolution: {integrity: sha512-WLyfoHvxhs0V9U+GTsGilGgf2QsPl6ZZ44fnv0/b8T3nQyvzxidxsg/ZltbWssbsRDlYW8UKSQMTGotuTotZ6A==}
 
-  '@react-dnd/invariant@2.0.0':
-    resolution: {integrity: sha512-xL4RCQBCBDJ+GRwKTFhGUW8GXa4yoDfJrPbLblc3U09ciS+9ZJXJ3Qrcs/x2IODOdIE5kQxvMmE2UKyqUictUw==}
+  '@react-dnd/invariant@4.0.2':
+    resolution: {integrity: sha512-xKCTqAK/FFauOM9Ta2pswIyT3D8AQlfrYdOi/toTPEhqCuAs1v5tcJ3Y08Izh1cJ5Jchwy9SeAXmMg6zrKs2iw==}
 
-  '@react-dnd/shallowequal@2.0.0':
-    resolution: {integrity: sha512-Pc/AFTdwZwEKJxFJvlxrSmGe/di+aAOBn60sremrpLo6VI/6cmiUYNNwlI5KNYttg7uypzA3ILPMPgxB2GYZEg==}
+  '@react-dnd/shallowequal@4.0.2':
+    resolution: {integrity: sha512-/RVXdLvJxLg4QKvMoM5WlwNR9ViO9z8B/qPcc+C0Sa/teJY7QG7kJ441DwzOjMYEY7GmU4dj5EcGHIkKZiQZCA==}
 
   '@remix-run/route-pattern@0.22.1':
     resolution: {integrity: sha512-czdGJWh09Lapvcqt7Vb09KlrU2PhRJ8xQaI+AItTuD9aDJ5MAgxnS38lnys6Ll+6RJEqPiaUqTwIQhVLwFvv+w==}
@@ -2045,6 +2045,9 @@ packages:
     peerDependencies:
       '@types/react': ^19.3.0
 
+  '@types/react-window@1.8.8':
+    resolution: {integrity: sha512-8Ls660bHR1AUA2kuRvVG9D/4XpRC6wjAaPT9dil7Ckc76eP9TKWZwwmgfq8Q1LANX3QNDnoU4Zp48A3w+zK69Q==}
+
   '@types/react@19.3.0':
     resolution: {integrity: sha512-N0rFCuH9YoxG9/m61l9MfpJKfmLOVU0em7ipIz6TRgSSkvReLB9vL85GB+yr8Bs5leqpvg96JSwF4ZS1s4viQg==}
 
@@ -2485,8 +2488,8 @@ packages:
   discontinuous-range@1.0.0:
     resolution: {integrity: sha512-c68LpLbO+7kP/b1Hr1qs8/BJ09F5khZGTxqxZuhzxpmwJKOgRFHJWIb9/KmqnqHhLdO55aOxFH/EGBvUQbL/RQ==}
 
-  dnd-core@14.0.1:
-    resolution: {integrity: sha512-+PVS2VPTgKFPYWo3vAFEA8WPbTf7/xo43TifH9G8S1KqnrQu0o77A3unrF5yOugy4mIz7K5wAVFHUcha7wsz6A==}
+  dnd-core@16.0.1:
+    resolution: {integrity: sha512-HK294sl7tbw6F6IeuK16YSBUoorvHpY8RHO+9yFfaJyCDVb6n7PRcezrOEOa2SBCqiYpemh5Jx20ZcjKdFAVng==}
 
   dom-accessibility-api@0.5.16:
     resolution: {integrity: sha512-X7BJ2yElsnOJ30pZF4uIIDfBEVgF4XEBxL9Bxhy6dnrm5hkzqmsWHGTiHqRiITNhMyFLyAiWndIJP7Z1NTteDg==}
@@ -3316,11 +3319,14 @@ packages:
     resolution: {integrity: sha512-80WNmd9DA0tmZrw9qQa62GPPWfuXJknrmVmLcxvq4uZBdYqb1wYoKTmnlGUchvVWe0XiLupYkBoXVOxz3C8DYQ==}
     engines: {node: '>=0.12'}
 
-  react-arborist@3.16.0:
-    resolution: {integrity: sha512-Pp1TQXETKMeg/0yAMGBFIwze7IfZaghDScX4vekJ4Ge8/t7uYifbDBhEGUSOYaDuahE1f8fyBIrlN2pLD4ysTA==}
+  react-arborist@4.0.1:
+    resolution: {integrity: sha512-rhpgQjVL6SRCOpg9cmaxn08y2Qtc1zrd+eVO4R9IvdRLF9Pz619HLr10NKV5AmC9QkGvM2dRTHglevdugQEHSw==}
+    engines: {node: '>=22.12'}
     peerDependencies:
-      react: '>= 16.14'
-      react-dom: '>= 16.14'
+      react: '>= 18'
+      react-dnd: ^16
+      react-dnd-html5-backend: ^16
+      react-dom: '>= 18'
 
   react-day-picker@10.0.2:
     resolution: {integrity: sha512-QetiKtZWE9Uaw/pM/SYNv6WPYOTRnSJ2puL0GgwkmUFMIwiY0dtjH1W4B7DOVXVNQM0ZOClGpH/heOfBSzWeiA==}
@@ -3332,11 +3338,11 @@ packages:
       '@types/react':
         optional: true
 
-  react-dnd-html5-backend@14.1.0:
-    resolution: {integrity: sha512-6ONeqEC3XKVf4eVmMTe0oPds+c5B9Foyj8p/ZKLb7kL2qh9COYxiBHv3szd6gztqi/efkmriywLUVlPotqoJyw==}
+  react-dnd-html5-backend@16.0.1:
+    resolution: {integrity: sha512-Wu3dw5aDJmOGw8WjH1I1/yTH+vlXEL4vmjk5p+MHxP8HuHJS1lAGeIdG/hze1AvNeXWo/JgULV87LyQOr+r5jw==}
 
-  react-dnd@14.0.5:
-    resolution: {integrity: sha512-9i1jSgbyVw0ELlEVt/NkCUkxy1hmhJOkePoCH713u75vzHGyXhPDm28oLfc2NMSBjZRM1Y+wRjHXJT3sPrTy+A==}
+  react-dnd@16.0.1:
+    resolution: {integrity: sha512-QeoM/i73HHu2XF9aKksIUuamHPDvRglEwdHL4jsp784BgUuWcg6mzfxT0QDdQz8Wj0qyRKx2eMg8iZtWvU4E2Q==}
     peerDependencies:
       '@types/hoist-non-react-statics': '>= 3.3.1'
       '@types/node': '>= 12'
@@ -5110,11 +5116,11 @@ snapshots:
 
   '@posthog/types@1.419.0': {}
 
-  '@react-dnd/asap@4.0.1': {}
+  '@react-dnd/asap@5.0.2': {}
 
-  '@react-dnd/invariant@2.0.0': {}
+  '@react-dnd/invariant@4.0.2': {}
 
-  '@react-dnd/shallowequal@2.0.0': {}
+  '@react-dnd/shallowequal@4.0.2': {}
 
   '@remix-run/route-pattern@0.22.1': {}
 
@@ -5479,6 +5485,10 @@ snapshots:
   '@types/qs@6.15.1': {}
 
   '@types/react-dom@19.3.0(@types/react@19.3.0)':
+    dependencies:
+      '@types/react': 19.3.0
+
+  '@types/react-window@1.8.8':
     dependencies:
       '@types/react': 19.3.0
 
@@ -5848,10 +5858,10 @@ snapshots:
 
   discontinuous-range@1.0.0: {}
 
-  dnd-core@14.0.1:
+  dnd-core@16.0.1:
     dependencies:
-      '@react-dnd/asap': 4.0.1
-      '@react-dnd/invariant': 2.0.0
+      '@react-dnd/asap': 5.0.2
+      '@react-dnd/invariant': 4.0.2
       redux: 4.2.1
 
   dom-accessibility-api@0.5.16: {}
@@ -6812,19 +6822,15 @@ snapshots:
       discontinuous-range: 1.0.0
       ret: 0.1.15
 
-  react-arborist@3.16.0(@types/node@24.19.2)(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1):
+  react-arborist@4.0.1(react-dnd-html5-backend@16.0.1)(react-dnd@16.0.1(@types/node@24.19.2)(@types/react@19.3.0)(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1):
     dependencies:
+      '@types/react-window': 1.8.8
       react: 19.3.1
-      react-dnd: 14.0.5(@types/node@24.19.2)(@types/react@19.3.0)(react@19.3.1)
-      react-dnd-html5-backend: 14.1.0
+      react-dnd: 16.0.1(@types/node@24.19.2)(@types/react@19.3.0)(react@19.3.1)
+      react-dnd-html5-backend: 16.0.1
       react-dom: 19.3.1(react@19.3.1)
       react-window: 1.8.11(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       redux: 5.0.1
-      use-sync-external-store: 1.7.0(react@19.3.1)
-    transitivePeerDependencies:
-      - '@types/hoist-non-react-statics'
-      - '@types/node'
-      - '@types/react'
 
   react-day-picker@10.0.2(@types/react@19.3.0)(react@19.3.1):
     dependencies:
@@ -6834,15 +6840,15 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.3.0
 
-  react-dnd-html5-backend@14.1.0:
+  react-dnd-html5-backend@16.0.1:
     dependencies:
-      dnd-core: 14.0.1
+      dnd-core: 16.0.1
 
-  react-dnd@14.0.5(@types/node@24.19.2)(@types/react@19.3.0)(react@19.3.1):
+  react-dnd@16.0.1(@types/node@24.19.2)(@types/react@19.3.0)(react@19.3.1):
     dependencies:
-      '@react-dnd/invariant': 2.0.0
-      '@react-dnd/shallowequal': 2.0.0
-      dnd-core: 14.0.1
+      '@react-dnd/invariant': 4.0.2
+      '@react-dnd/shallowequal': 4.0.2
+      dnd-core: 16.0.1
       fast-deep-equal: 3.1.3
       hoist-non-react-statics: 3.3.2
       react: 19.3.1
