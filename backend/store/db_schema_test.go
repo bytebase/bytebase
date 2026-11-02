@@ -69,8 +69,10 @@ func TestUpsertDBSchemaRefusesOlderRead(t *testing.T) {
 }
 
 // TestUpsertDBSchemaStoresOverUnstampedRow covers the rows that predate the stamp:
-// an upgraded deployment has synced_at NULL everywhere, and the first sync of each
-// database has to win however old its read is.
+// an upgraded deployment has synced_at NULL everywhere, so the first sync of each
+// database wins however old its read is, and the guard orders every write after it.
+// An unstamped row is why no backfill is needed - one write is enough to order the
+// pair, whichever of the two lands on the NULL.
 func TestUpsertDBSchemaStoresOverUnstampedRow(t *testing.T) {
 	t.Parallel()
 	fixture := newStorePostgresFixture(t, `
@@ -90,11 +92,25 @@ func TestUpsertDBSchemaStoresOverUnstampedRow(t *testing.T) {
 		"instance-a", "db", `{"name":"db"}`, "before")
 	require.NoError(t, err)
 
-	readAt := time.Now().Add(-time.Hour)
-	stored, err := s.UpsertDBSchema(ctx, "instance-a", "db", schemaWithTable("after"), []byte("after"), readAt)
+	// The older of two syncs racing across the upgrade reaches the NULL row first.
+	olderRead := time.Now().Add(-time.Hour)
+	stored, err := s.UpsertDBSchema(ctx, "instance-a", "db", schemaWithTable("older"), []byte("older"), olderRead)
 	require.NoError(t, err)
 	require.True(t, stored)
-	requireStoredSchema(ctx, t, fixture, "instance-a", "db", "after", readAt)
+	requireStoredSchema(ctx, t, fixture, "instance-a", "db", "older", olderRead)
+
+	// Its stamp is enough to order the newer sync behind it, and the next older read
+	// behind that, so the window the NULL leaves open is one write wide.
+	newerRead := olderRead.Add(time.Minute)
+	stored, err = s.UpsertDBSchema(ctx, "instance-a", "db", schemaWithTable("newer"), []byte("newer"), newerRead)
+	require.NoError(t, err)
+	require.True(t, stored)
+	requireStoredSchema(ctx, t, fixture, "instance-a", "db", "newer", newerRead)
+
+	stored, err = s.UpsertDBSchema(ctx, "instance-a", "db", schemaWithTable("older"), []byte("older"), olderRead)
+	require.NoError(t, err)
+	require.False(t, stored)
+	requireStoredSchema(ctx, t, fixture, "instance-a", "db", "newer", newerRead)
 }
 
 // TestUpsertDBSchemaRefusesOlderReadBlockedOnRowLock is the same ordering with the
