@@ -123,7 +123,7 @@
     "pretty-print-json": "^3.0.6",
     "remark-gfm": "^4.0.1",
     "remark-parse": "^11.0.0",
-    "rollup": "4.67.2",
+    "rollup": "4.67.3",
     "tailwindcss": "4.3.3",
     "typescript": "7.0.2",
     "typescript-6": "npm:typescript@6.0.3",
