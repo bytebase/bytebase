@@ -10,18 +10,18 @@ import {
 } from "@/types/proto-es/v1/rollout_service_pb";
 import { type Sheet, SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
 import {
-  APPLIED_FOLD_PAGE_SIZE,
   assignEntryKeys,
   type BuildSectionsOptions,
   buildReleaseFileGroups,
   buildReleaseSpine,
   buildRowsFromEntries,
   collectLeafSections,
+  countSpine,
   groupEntriesByReleaseFile,
   hasReleaseFileMarkers,
   isSpineItemOpenByDefault,
-  limitSpineSections,
   type TaskRunLogDetailText,
+  windowSpine,
 } from "./model";
 import {
   begin,
@@ -34,7 +34,13 @@ import {
   retry,
   rollback,
 } from "./taskRunLogEntries";
-import type { AttemptGroup, LogRow, Section } from "./types";
+import type {
+  AttemptGroup,
+  LogRow,
+  Section,
+  SpineItem,
+  SpineWindowItem,
+} from "./types";
 import {
   buildReleaseSheetFetchResult,
   buildSheetFetchStateForMissingTask,
@@ -1015,16 +1021,14 @@ const stateOf = (pending: string[], deleted: Record<string, string> = {}) =>
 const shape = (spine: ReturnType<typeof buildReleaseSpine>) =>
   spine.items.map((item) => {
     switch (item.kind) {
-      case "applied-fold":
-        return ["fold", item.files.map((f) => f.version).join(",")];
+      case "applied-earlier":
+        return ["earlier", item.files.map((f) => f.version).join(",")];
       case "file":
         return ["file", item.version, item.status];
       case "step":
         return ["step", String(item.type)];
       case "run-failed":
         return ["run-failed"];
-      default:
-        return [item.kind, item.sections.map((f) => f.version).join(",")];
     }
   });
 const SYNC = String(TaskRunLogEntry_Type.DATABASE_SYNC);
@@ -1032,14 +1036,14 @@ const FILE_ERROR = (version: string, message: string) =>
   `failed to execute release file ${version}.sql (version ${version}): ${message}`;
 
 describe("release spine", () => {
-  test("before the first run it lists the stored state: the applied fold, then what will apply", () => {
+  test("before the first run it lists the stored state: the files applied earlier, then what will apply", () => {
     const spine = buildReleaseSpine({
       files: FILES,
       entries: [],
       state: stateOf(["004", "005"], { "004": "users/alex@example.com" }),
     });
     expect(shape(spine)).toEqual([
-      ["fold", "003,002,001"],
+      ["earlier", "001,002,003"],
       ["file", "004", "pending"],
       ["file", "005", "pending"],
     ]);
@@ -1051,7 +1055,7 @@ describe("release spine", () => {
     });
   });
 
-  test("a done run folds every file without a marker and applies every marked file", () => {
+  test("a done run counts every file without a marker as applied earlier and applies every marked file", () => {
     const spine = buildReleaseSpine({
       files: FILES,
       entries: [
@@ -1064,7 +1068,7 @@ describe("release spine", () => {
       run: { status: TaskRun_Status.DONE, error: "" },
     });
     expect(shape(spine)).toEqual([
-      ["fold", "003,002,001"],
+      ["earlier", "001,002,003"],
       ["file", "004", "applied"],
       ["file", "005", "applied"],
       ["step", SYNC],
@@ -1078,12 +1082,12 @@ describe("release spine", () => {
       run: { status: TaskRun_Status.DONE, error: "" },
     });
     expect(shape(spine)).toEqual([
-      ["fold", "005,004,003,002,001"],
+      ["earlier", "001,002,003,004,005"],
       ["step", SYNC],
     ]);
   });
 
-  test("a failed run folds the unmarked files below its newest marker and lists nothing after the failed file", () => {
+  test("a failed run counts the unmarked files below its newest marker as applied earlier and lists nothing after the failed file", () => {
     const spine = buildReleaseSpine({
       files: FILES,
       entries: [
@@ -1103,7 +1107,7 @@ describe("release spine", () => {
       state: stateOf(["002", "003", "004", "005"]),
     });
     expect(shape(spine)).toEqual([
-      ["fold", "001"],
+      ["earlier", "001"],
       ["file", "002", "applied"],
       ["file", "003", "failed"],
       ["step", SYNC],
@@ -1126,7 +1130,7 @@ describe("release spine", () => {
       state: stateOf(["002", "003", "004", "005"]),
     });
     expect(shape(spine)).toEqual([
-      ["fold", "001"],
+      ["earlier", "001"],
       ["file", "002", "applied"],
       ["file", "003", "running"],
       ["file", "004", "pending"],
@@ -1134,7 +1138,7 @@ describe("release spine", () => {
     ]);
   });
 
-  test("a stored will-apply version the run passed over moves into the fold, and a stored applied version with a marker leaves it", () => {
+  test("a stored will-apply version the run passed over joins the files applied earlier, and a stored applied version with a marker leaves them", () => {
     // The state said 002 and 004 would apply; 002 had been applied by another
     // plan, and 003's revision was deleted after the rollout was created.
     const spine = buildReleaseSpine({
@@ -1149,7 +1153,7 @@ describe("release spine", () => {
       state: stateOf(["002", "004"]),
     });
     expect(shape(spine)).toEqual([
-      ["fold", "005,002,001"],
+      ["earlier", "001,002,005"],
       ["file", "003", "applied"],
       ["file", "004", "running"],
     ]);
@@ -1164,7 +1168,10 @@ describe("release spine", () => {
       run: { status: TaskRun_Status.FAILED, error },
       state: stateOf(["004", "005"]),
     });
-    expect(shape(withState)).toEqual([["fold", "003,002,001"], ["run-failed"]]);
+    expect(shape(withState)).toEqual([
+      ["earlier", "001,002,003"],
+      ["run-failed"],
+    ]);
     expect(withState.items.at(-1)).toMatchObject({ kind: "run-failed", error });
 
     const withoutState = buildReleaseSpine({
@@ -1191,13 +1198,13 @@ describe("release spine", () => {
         })
       )
     ).toEqual([
-      ["fold", "003,002,001"],
+      ["earlier", "001,002,003"],
       ["file", "004", "applied"],
       ["run-failed"],
     ]);
     // Without a stored state only the versions below the newest marker are known.
     expect(shape(buildReleaseSpine({ files: FILES, entries, run }))).toEqual([
-      ["fold", "003,002,001"],
+      ["earlier", "001,002,003"],
       ["file", "004", "applied"],
       ["run-failed"],
     ]);
@@ -1214,7 +1221,7 @@ describe("release spine", () => {
       state: stateOf(["005"]),
     });
     expect(shape(spine)).toEqual([
-      ["fold", "004,003,002,001"],
+      ["earlier", "001,002,003,004"],
       ["file", "005", "applied"],
       ["run-failed"],
     ]);
@@ -1258,7 +1265,7 @@ describe("release spine", () => {
       state: stateOf(["005"]),
     });
     expect(shape(spine)).toEqual([
-      ["fold", "004,003,002,001"],
+      ["earlier", "001,002,003,004"],
       ["step", String(TaskRunLogEntry_Type.PRIOR_BACKUP)],
     ]);
   });
@@ -1276,7 +1283,7 @@ describe("release spine", () => {
       state: stateOf(["004", "005"]),
     });
     expect(shape(spine)).toEqual([
-      ["fold", "003,002,001"],
+      ["earlier", "001,002,003"],
       ["file", "004", "applied"],
       ["file", "005", "canceled"],
     ]);
@@ -1303,62 +1310,87 @@ describe("release spine limits and defaults", () => {
     path: `${String(i + 1).padStart(3, "0")}.sql`,
   }));
 
-  test("past 24 sections the oldest applied fold into one row and the planned tail into another, keeping the running section", () => {
-    // A new database: 39 files applied, the 40th running, 40 more to apply.
-    const files = Array.from({ length: 80 }, (_, i) => ({
-      version: String(i + 1).padStart(3, "0"),
-      path: `${String(i + 1).padStart(3, "0")}.sql`,
-    }));
-    const entries = files
-      .slice(0, 40)
-      .flatMap((file, i) => [
-        releaseFile(i * 3 + 1, file.version),
-        command(i * 3 + 2, i === 39 ? {} : { error: "" }),
-      ]);
-    const spine = buildReleaseSpine({
-      files,
-      entries,
+  // The drawn spine as compact rows: "030:running", "load:applied:9:more",
+  // "earlier:001".
+  const windowShape = (items: SpineWindowItem[]) =>
+    items.map((item) => {
+      switch (item.kind) {
+        case "file":
+          return `${item.version}:${item.status}`;
+        case "load":
+          return `load:${item.key}:${item.count}${item.more ? ":more" : ""}`;
+        case "applied-earlier-file":
+          return `earlier:${item.file.version}`;
+        default:
+          return item.kind;
+      }
+    });
+  const sixty = Array.from({ length: 60 }, (_, i) => ({
+    version: String(i + 1).padStart(3, "0"),
+    path: `${String(i + 1).padStart(3, "0")}.sql`,
+  }));
+  // A new database running the 30th of 60 files.
+  const runningAt30 = () =>
+    buildReleaseSpine({
+      files: sixty,
+      entries: sixty
+        .slice(0, 30)
+        .flatMap((file, i) => [
+          releaseFile(i * 3 + 1, file.version),
+          command(i * 3 + 2, i === 29 ? {} : { error: "" }),
+        ]),
       run: { status: TaskRun_Status.RUNNING, error: "" },
       state: create(Task_ReleaseStateSchema, {
-        pendingVersions: files.map((f) => ({ version: f.version })),
+        pendingVersions: sixty.map((f) => ({ version: f.version })),
       }),
     });
-    const limited = limitSpineSections(spine.items, 24);
-    const sections = limited.filter((item) => item.kind === "file");
-    expect(sections).toHaveLength(24);
-    expect(
-      sections.some((s) => s.kind === "file" && s.status === "running")
-    ).toBe(true);
-    const appliedFold = limited.find(
-      (item) => item.kind === "applied-sections"
+  const range = (from: number, to: number, status: string) =>
+    Array.from(
+      { length: to - from + 1 },
+      (_, i) => `${String(from + i).padStart(3, "0")}:${status}`
     );
-    const pendingFold = limited.find(
-      (item) => item.kind === "pending-sections"
-    );
-    expect(
-      appliedFold?.kind === "applied-sections" &&
-        appliedFold.sections[0]?.version
-    ).toBe("001");
-    expect(
-      pendingFold?.kind === "pending-sections" &&
-        pendingFold.sections.at(-1)?.version
-    ).toBe("080");
-    // Expanding the folds in place restores every section, in order.
-    const restored = limited.flatMap((item) =>
-      item.kind === "applied-sections" || item.kind === "pending-sections"
-        ? item.sections
-        : [item]
-    );
-    expect(
-      restored.map((item) => (item.kind === "file" ? item.version : item.kind))
-    ).toEqual(
-      spine.items.map((item) =>
-        item.kind === "file" ? item.version : item.kind
-      )
-    );
+
+  test("running at file 30 of 60: the first 20, a load row for the hidden applied, the running file, a load row for the pending", () => {
+    expect(windowShape(windowSpine(runningAt30().items, {}))).toEqual([
+      ...range(1, 20, "applied"),
+      "load:applied:9:more",
+      "030:running",
+      "load:pending:30",
+    ]);
   });
 
-  test("a failed section past the limit is still shown", () => {
+  test("a load row reveals its stretch in place, partly or all of it", () => {
+    const spine = runningAt30();
+    expect(
+      windowShape(
+        windowSpine(spine.items, {
+          applied: Number.POSITIVE_INFINITY,
+          pending: 20,
+        })
+      )
+    ).toEqual([
+      ...range(1, 29, "applied"),
+      "030:running",
+      ...range(31, 50, "pending"),
+      "load:pending:10:more",
+    ]);
+  });
+
+  test("before the first run the first 20 will apply and the rest load", () => {
+    const spine = buildReleaseSpine({
+      files: sixty,
+      entries: [],
+      state: create(Task_ReleaseStateSchema, {
+        pendingVersions: sixty.map((f) => ({ version: f.version })),
+      }),
+    });
+    expect(windowShape(windowSpine(spine.items, {}))).toEqual([
+      ...range(1, 20, "pending"),
+      "load:pending:40:more",
+    ]);
+  });
+
+  test("a failed section past the cap is still shown, after the hidden applied files", () => {
     const entries = many.flatMap((file, i) => [
       releaseFile(i * 3 + 1, file.version),
       command(i * 3 + 2, { error: i === 39 ? "boom" : "" }),
@@ -1368,17 +1400,72 @@ describe("release spine limits and defaults", () => {
       entries,
       run: { status: TaskRun_Status.FAILED, error: FILE_ERROR("040", "boom") },
     });
-    const limited = limitSpineSections(spine.items, 24);
-    expect(limited.at(-1)).toMatchObject({
-      kind: "file",
-      version: "040",
-      status: "failed",
-    });
-    expect(limited.filter((item) => item.kind === "file")).toHaveLength(24);
+    expect(windowShape(windowSpine(spine.items, {}))).toEqual([
+      ...range(1, 20, "applied"),
+      "load:applied:19:more",
+      "040:failed",
+    ]);
   });
 
-  test("the already-applied fold pages five rows at a time", () => {
-    expect(APPLIED_FOLD_PAGE_SIZE).toBe(5);
+  test("the files applied earlier are one load row at the top, in version order once loaded", () => {
+    const spine = buildReleaseSpine({
+      files: sixty,
+      entries: [],
+      state: create(Task_ReleaseStateSchema, {
+        appliedCount: 50,
+        pendingVersions: sixty.slice(50).map((f) => ({ version: f.version })),
+      }),
+    });
+    expect(windowShape(windowSpine(spine.items, {}))).toEqual([
+      "load:applied-earlier:50",
+      ...range(51, 60, "pending"),
+    ]);
+    const loaded = windowShape(
+      windowSpine(spine.items, { "applied-earlier": 20 })
+    );
+    expect(loaded.slice(0, 2)).toEqual(["earlier:001", "earlier:002"]);
+    expect(loaded[20]).toBe("load:applied-earlier:30:more");
+  });
+
+  test("a stretch that mixes states loads as files", () => {
+    const items: SpineItem[] = [
+      ...range(1, 3, "applied").map((row) => {
+        const [version] = row.split(":");
+        return {
+          kind: "file" as const,
+          id: `file-${version}`,
+          version,
+          path: "",
+          status: "applied" as const,
+          entries: [],
+        };
+      }),
+      {
+        kind: "file",
+        id: "file-004",
+        version: "004",
+        path: "",
+        status: "pending",
+        entries: [],
+      },
+    ];
+    expect(windowShape(windowSpine(items, {}, 2))).toEqual([
+      "001:applied",
+      "002:applied",
+      "load:files:2:more",
+    ]);
+  });
+
+  test("the count line counts every file section by state and the files applied earlier", () => {
+    expect(countSpine(runningAt30().items, 60)).toEqual({
+      files: 60,
+      applied: 29,
+      running: 1,
+      failed: 0,
+      canceled: 0,
+      pending: 30,
+      appliedEarlier: 0,
+    });
   });
 
   test("failed, running and Run failed sections open by default; applied, pending and steps do not", () => {
@@ -1396,7 +1483,7 @@ describe("release spine limits and defaults", () => {
     expect(
       spine.items.map((item) => [item.kind, isSpineItemOpenByDefault(item)])
     ).toEqual([
-      ["applied-fold", false],
+      ["applied-earlier", false],
       ["file", false],
       ["file", true],
       ["step", false],

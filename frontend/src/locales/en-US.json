@@ -2726,11 +2726,12 @@
     "and-n-more-files": "and {{count}} more files",
     "change-tip": "This change is linked to a release artifact.",
     "changes": {
+      "load-all": "Load all ({{count}})",
+      "load-more": "Load {{count}} more",
       "manifest_one": "{{count}} file · newest {{version}}",
       "manifest_other": "{{count}} files · newest {{version}}",
-      "n-more_one": "{{count}} more",
-      "n-more_other": "{{count}} more",
-      "schema": "Schema"
+      "schema": "Schema",
+      "show-fewer": "Show fewer"
     },
     "empty": {
       "description": "Changes your CI pipeline releases to Bytebase appear here with their deploy progress.",
@@ -2756,8 +2757,8 @@
     },
     "view-all-files": "View all files",
     "viewer": {
-      "already-applied": "Already applied; this run passed over it",
-      "already-applied-before-run": "Already applied before this rollout",
+      "already-applied": "Applied earlier; this run passed over it",
+      "already-applied-before-run": "Applied before this rollout",
       "applied-by-run": "Applied by this run",
       "failed-on": "Failed on {{stage}}",
       "open-at-commit": "Open in {{platform}} at {{sha}}",
@@ -4452,16 +4453,36 @@
     },
     "run-number": "Run #{{number}}",
     "spine": {
-      "already-applied": "{{count}} already applied",
-      "applied-sections": "{{count}} applied",
       "as-of": "As of rollout creation, {{time}}; the run re-checks the database.",
+      "count": {
+        "applied": "{{count}} applied",
+        "applied-earlier": "{{count}} applied earlier",
+        "canceled": "{{count}} canceled",
+        "failed": "{{count}} failed",
+        "files_one": "{{count}} file",
+        "files_other": "{{count}} files",
+        "pending": "{{count}} pending",
+        "running": "{{count}} running"
+      },
+      "load": {
+        "all": "Load all ({{count}})",
+        "applied": "Load {{count}} applied",
+        "applied-earlier": "Load {{count}} applied earlier",
+        "files": "Load {{count}} files",
+        "more-applied": "Load {{count}} more applied",
+        "more-applied-earlier": "Load {{count}} more applied earlier",
+        "more-files": "Load {{count}} more files",
+        "more-pending": "Load {{count}} more pending",
+        "pending": "Load {{count}} pending"
+      },
       "no-statement": "No statement was identified for this error.",
-      "pending-sections": "{{count}} more, will apply",
       "revision-deleted": "Revision deleted {{date}} by {{user}}",
       "revisions-on": "Revisions on {{database}}",
       "run-failed": "Run failed",
+      "show-fewer": "Show fewer",
       "status": {
         "applied": "Applied",
+        "applied-earlier": "Applied earlier",
         "canceled": "Canceled",
         "failed": "Failed",
         "running": "Running"

@@ -2726,11 +2726,12 @@
     "and-n-more-files": "và {{count}} tệp khác",
     "change-tip": "Thay đổi này được liên kết với một artifact phát hành.",
     "changes": {
+      "load-all": "Tải tất cả ({{count}})",
+      "load-more": "Tải thêm {{count}}",
       "manifest_one": "{{count}} tệp · mới nhất {{version}}",
       "manifest_other": "{{count}} tệp · mới nhất {{version}}",
-      "n-more_one": "Thêm {{count}}",
-      "n-more_other": "Thêm {{count}}",
-      "schema": "Schema"
+      "schema": "Schema",
+      "show-fewer": "Thu gọn"
     },
     "empty": {
       "description": "Các thay đổi mà pipeline CI của bạn phát hành lên Bytebase sẽ hiển thị ở đây cùng tiến độ triển khai.",
@@ -4452,16 +4453,36 @@
     },
     "run-number": "Lần chạy #{{number}}",
     "spine": {
-      "already-applied": "{{count}} đã áp dụng",
-      "applied-sections": "{{count}} đã áp dụng",
       "as-of": "Tính đến lúc tạo triển khai, {{time}}; lần chạy sẽ kiểm tra lại cơ sở dữ liệu.",
+      "count": {
+        "applied": "{{count}} đã áp dụng",
+        "applied-earlier": "{{count}} đã áp dụng trước đó",
+        "canceled": "{{count}} đã hủy",
+        "failed": "{{count}} thất bại",
+        "files_one": "{{count}} tệp",
+        "files_other": "{{count}} tệp",
+        "pending": "{{count}} đang chờ",
+        "running": "{{count}} đang chạy"
+      },
+      "load": {
+        "all": "Tải tất cả ({{count}})",
+        "applied": "Tải {{count}} đã áp dụng",
+        "applied-earlier": "Tải {{count}} đã áp dụng trước đó",
+        "files": "Tải {{count}} tệp",
+        "more-applied": "Tải thêm {{count}} đã áp dụng",
+        "more-applied-earlier": "Tải thêm {{count}} đã áp dụng trước đó",
+        "more-files": "Tải thêm {{count}} tệp",
+        "more-pending": "Tải thêm {{count}} đang chờ",
+        "pending": "Tải {{count}} đang chờ"
+      },
       "no-statement": "Không xác định được câu lệnh cho lỗi này.",
-      "pending-sections": "Thêm {{count}}, sẽ áp dụng",
       "revision-deleted": "Bản sửa đổi đã bị {{user}} xóa vào {{date}}",
       "revisions-on": "Các bản sửa đổi trên {{database}}",
       "run-failed": "Chạy thất bại",
+      "show-fewer": "Thu gọn",
       "status": {
         "applied": "Đã áp dụng",
+        "applied-earlier": "Đã áp dụng trước đó",
         "canceled": "Đã hủy",
         "failed": "Thất bại",
         "running": "Đang chạy"

@@ -216,7 +216,7 @@ export function PlanDetailMeta() {
     <Collapsible
       open={detailsOpen}
       onOpenChange={setDetailsOpen}
-      className="mt-1 flex flex-col gap-y-1 text-xs"
+      className="mt-1 flex flex-col gap-y-1 text-sm"
       data-testid="plan-details"
     >
       {!detailsOpen && (

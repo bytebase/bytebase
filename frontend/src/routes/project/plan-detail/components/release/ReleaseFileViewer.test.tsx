@@ -164,7 +164,7 @@ describe("ReleaseFileViewer", () => {
       <ReleaseFileViewer target={target({ context: { kind: "already-applied", run: true } })} onClose={() => {}} />
     );
     expect(screen.getByTestId("release-file-database-line").textContent).toBe(
-      "Already applied; this run passed over it"
+      "Applied earlier; this run passed over it"
     );
     rerender(<ReleaseFileViewer target={target()} onClose={() => {}} />);
     expect(screen.queryByTestId("release-file-database-line")).toBeNull();
@@ -204,11 +204,20 @@ describe("ReleaseFileViewer", () => {
     [1440, "side-panel"],
     [1024, "sheet"],
     [390, "sheet"],
-  ])("at %i px it opens as a %s", async (width, layout) => {
+  ])("at %i px it opens as a %s at the run history's standard width", async (width, layout) => {
     setViewport(width);
     render(<ReleaseFileViewer target={target()} onClose={() => {}} />);
     await flush();
-    expect(screen.getByTestId("release-file-viewer").getAttribute("data-layout")).toBe(layout);
+    const viewer = screen.getByTestId("release-file-viewer");
+    expect(viewer.getAttribute("data-layout")).toBe(layout);
+    expect(viewer.className).toContain("w-[44rem]");
+  });
+
+  test("the version is the title and the path is plain text beside it", async () => {
+    render(<ReleaseFileViewer target={target()} onClose={() => {}} />);
+    await flush();
+    expect(screen.getByRole("dialog", { name: "002" })).toBeDefined();
+    expect(screen.getByTestId("release-file-path").textContent).toBe("migrations/002_orders.sql");
   });
 
   test("another file swaps the side panel's content", async () => {
@@ -238,7 +247,7 @@ describe("ReleaseFileViewer", () => {
     render(<ReleaseFileViewer target={target({ context: { kind: "already-applied", run: false } })} onClose={() => {}} />);
     await flush();
     expect(screen.getByTestId("release-file-database-line").textContent).toBe(
-      "Already applied before this rollout"
+      "Applied before this rollout"
     );
   });
 

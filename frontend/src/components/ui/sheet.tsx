@@ -77,9 +77,6 @@ const sheetContentVariants = cva(
         // screens cap at a fixed width.
         workspace:
           "w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] sm:w-[calc(100vw-8rem)] sm:max-w-[calc(100vw-8rem)] lg:w-240",
-        // A non-modal reading panel beside the page, which keeps about 38% of
-        // the width and stays interactive (the release file viewer).
-        split: "w-[62vw]",
       },
     },
     defaultVariants: {

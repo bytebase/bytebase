@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { type ReactNode, useMemo, useState } from "react";
+import { type ReactNode, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { CopyButton } from "@/components/ui/copy-button";
+import { useKeepEndInPlace } from "@/hooks/useKeepEndInPlace";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { cn } from "@/lib/utils";
 import {
@@ -21,25 +22,29 @@ import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import { formatAbsoluteDateTime } from "@/utils";
 import { LogRows, ROW_DIVIDER } from "./LogRows";
 import {
-  APPLIED_FOLD_PAGE_SIZE,
   assignEntryKeys,
   buildReleaseSpine,
   buildRowsFromEntries,
   collectLeafSections,
+  countSpine,
   findFailedCommand,
   firstLineOf,
   formatEntriesDuration,
   isSpineItemOpenByDefault,
-  limitSpineSections,
+  SPINE_LOAD_STEP,
+  type SpineCounts,
   type TaskRunLogDetailText,
+  windowSpine,
 } from "./model";
 import type {
   LogRow,
   ReleaseSpineFile,
-  SpineAppliedFold,
   SpineFileSection,
   SpineFileStatus,
   SpineItem,
+  SpineLoadKey,
+  SpineLoads,
+  SpineWindowItem,
 } from "./types";
 
 // What a file path knows about the file when it opens the viewer.
@@ -84,10 +89,10 @@ const STATUS_VARIANT: Record<
   canceled: "default",
 };
 
-// One task's per-database file state: the already-applied fold, a section per
-// file the run reached, task-level steps as siblings, the files a running or
-// pending task will apply, and a Run failed section for an error no section
-// owns.
+// One task's per-database file state: a count line, the files applied before
+// this rollout, a section per file the run reached, task-level steps as
+// siblings, the files a running or pending task will apply, and a Run failed
+// section for an error no section owns. Long stretches load on demand.
 export function ReleaseSpineView({
   files,
   entries,
@@ -103,7 +108,17 @@ export function ReleaseSpineView({
     () => buildReleaseSpine({ files, entries, run, state }),
     [files, entries, run, state]
   );
-  const items = useMemo(() => limitSpineSections(spine.items), [spine]);
+  const [loads, setLoads] = useState<SpineLoads>({});
+  const items = useMemo(() => windowSpine(spine.items, loads), [spine, loads]);
+  const counts = useMemo(
+    () => countSpine(spine.items, files.length),
+    [spine, files.length]
+  );
+  const listRef = useRef<HTMLDivElement>(null);
+  const keepEndInPlace = useKeepEndInPlace(listRef);
+  const load = (key: SpineLoadKey, rows: number) =>
+    setLoads((prev) => ({ ...prev, [key]: (prev[key] ?? 0) + rows }));
+  const anyLoaded = Object.values(loads).some((rows) => (rows ?? 0) > 0);
   const entryKeys = useMemo(() => assignEntryKeys(entries), [entries]);
   // Below 640px the failed row opens with its statement block folded.
   const narrow = useMediaQuery(NARROW_MEDIA_QUERY);
@@ -112,12 +127,7 @@ export function ReleaseSpineView({
   // Each section's rows, built once per log change rather than per render.
   const rowsById = useMemo(() => {
     const byId = new Map<string, LogRow[]>();
-    const sections = items.flatMap((item) =>
-      item.kind === "applied-sections" || item.kind === "pending-sections"
-        ? item.sections
-        : [item]
-    );
-    for (const item of sections) {
+    for (const item of items) {
       if (item.kind !== "file" && item.kind !== "step") continue;
       if (item.entries.length === 0) continue;
       byId.set(
@@ -369,17 +379,47 @@ export function ReleaseSpineView({
     );
   };
 
-  const renderItem = (item: SpineItem): ReactNode => {
+  const renderItem = (item: SpineWindowItem): ReactNode => {
     switch (item.kind) {
-      case "applied-fold":
+      case "applied-earlier-file": {
+        const { file } = item;
         return (
-          <AppliedFold
-            key="applied-fold"
-            fold={item}
-            open={isOpen("applied-fold", item)}
-            onToggle={() => toggle("applied-fold", item)}
-            onOpenFile={onOpenFile}
-            hasRun={run !== undefined}
+          <div
+            key={`earlier-${file.version}`}
+            className={cn(ROW_DIVIDER, "flex items-center gap-x-2 px-3 py-1.5")}
+            data-testid="spine-applied-earlier-row"
+          >
+            <span className="w-3.5 shrink-0" />
+            <span className="shrink-0 tabular-nums text-control-light">
+              {file.version}
+            </span>
+            <Badge>{t("task-run.spine.status.applied-earlier")}</Badge>
+            <span className="flex min-w-0 items-center gap-x-1">
+              <FilePath
+                label={file.path || file.version}
+                onOpen={
+                  onOpenFile
+                    ? () =>
+                        onOpenFile(file, {
+                          kind: "already-applied",
+                          run: run !== undefined,
+                        })
+                    : undefined
+                }
+              />
+              {file.path ? <CopyButton content={file.path} /> : null}
+            </span>
+          </div>
+        );
+      }
+      case "load":
+        return (
+          <LoadRow
+            key={`load-${item.key}`}
+            labelFor={(rows) => loadLabel(item.key, item.more, rows)}
+            count={item.count}
+            loadKey={item.key}
+            onLoad={(rows) => load(item.key, rows)}
           />
         );
       case "file":
@@ -415,34 +455,150 @@ export function ReleaseSpineView({
             </div>
           </div>
         );
-      case "applied-sections":
-        return fold(
-          item.id,
-          t("task-run.spine.applied-sections", { count: item.sections.length }),
-          item.sections.map(renderFile),
-          item
-        );
-      case "pending-sections":
-        return fold(
-          item.id,
-          t("task-run.spine.pending-sections", { count: item.sections.length }),
-          item.sections.map(renderFile),
-          item
-        );
+    }
+  };
+
+  // Literal keys, so the locale scanner sees each one.
+  const loadLabel = (key: SpineLoadKey, more: boolean, count: number) => {
+    switch (key) {
+      case "applied":
+        return more
+          ? t("task-run.spine.load.more-applied", { count })
+          : t("task-run.spine.load.applied", { count });
+      case "pending":
+        return more
+          ? t("task-run.spine.load.more-pending", { count })
+          : t("task-run.spine.load.pending", { count });
+      case "applied-earlier":
+        return more
+          ? t("task-run.spine.load.more-applied-earlier", { count })
+          : t("task-run.spine.load.applied-earlier", { count });
+      case "files":
+        return more
+          ? t("task-run.spine.load.more-files", { count })
+          : t("task-run.spine.load.files", { count });
     }
   };
 
   if (items.length === 0) return null;
   return (
-    <div className="w-full font-mono text-xs" data-testid="release-spine">
-      <div className="w-full overflow-hidden rounded-sm border border-block-border bg-control-bg/50">
+    <div
+      className="flex w-full flex-col gap-y-1.5 text-xs"
+      data-testid="release-spine"
+    >
+      <div className="text-control-light" data-testid="spine-count">
+        {countLine(counts, t)}
+      </div>
+      <div
+        ref={listRef}
+        className="w-full overflow-hidden rounded-sm border border-block-border bg-control-bg/50 font-mono"
+      >
         {items.map(renderItem)}
+        {anyLoaded ? (
+          <Button
+            type="button"
+            appearance="secondary"
+            size="sm"
+            className={cn(LOAD_ROW, "font-sans")}
+            data-testid="spine-show-fewer"
+            onClick={() => keepEndInPlace(() => setLoads({}))}
+          >
+            {t("task-run.spine.show-fewer")}
+          </Button>
+        ) : null}
       </div>
     </div>
   );
 }
 
+// "60 files · 29 applied · 1 running · 30 pending": only the states present.
+function countLine(
+  counts: SpineCounts,
+  t: ReturnType<typeof useTranslation>["t"]
+): string {
+  const parts = [t("task-run.spine.count.files", { count: counts.files })];
+  if (counts.applied > 0)
+    parts.push(t("task-run.spine.count.applied", { count: counts.applied }));
+  if (counts.running > 0)
+    parts.push(t("task-run.spine.count.running", { count: counts.running }));
+  if (counts.failed > 0)
+    parts.push(t("task-run.spine.count.failed", { count: counts.failed }));
+  if (counts.canceled > 0)
+    parts.push(t("task-run.spine.count.canceled", { count: counts.canceled }));
+  if (counts.pending > 0)
+    parts.push(t("task-run.spine.count.pending", { count: counts.pending }));
+  if (counts.appliedEarlier > 0)
+    parts.push(
+      t("task-run.spine.count.applied-earlier", {
+        count: counts.appliedEarlier,
+      })
+    );
+  return parts.join(" · ");
+}
+
+// A hidden stretch: one row that loads it, or past SPINE_LOAD_STEP rows, a
+// row with "Load N more" and "Load all".
+function LoadRow({
+  labelFor,
+  count,
+  loadKey,
+  onLoad,
+}: {
+  labelFor: (rows: number) => string;
+  count: number;
+  loadKey: SpineLoadKey;
+  onLoad: (rows: number) => void;
+}) {
+  const { t } = useTranslation();
+  if (count <= SPINE_LOAD_STEP) {
+    return (
+      <Button
+        type="button"
+        appearance="secondary"
+        size="sm"
+        className={cn(LOAD_ROW, "font-sans")}
+        data-testid={`spine-load-${loadKey}`}
+        onClick={() => onLoad(count)}
+      >
+        {labelFor(count)}
+      </Button>
+    );
+  }
+  return (
+    <div
+      className={cn(
+        LOAD_ROW,
+        "flex items-center justify-center gap-x-4 font-sans"
+      )}
+      data-testid={`spine-load-${loadKey}`}
+    >
+      <Button
+        type="button"
+        appearance="link"
+        size="sm"
+        className="h-auto p-0 text-xs"
+        onClick={() => onLoad(SPINE_LOAD_STEP)}
+      >
+        {labelFor(SPINE_LOAD_STEP)}
+      </Button>
+      <Button
+        type="button"
+        appearance="link"
+        size="sm"
+        className="h-auto p-0 text-xs"
+        onClick={() => onLoad(count)}
+      >
+        {t("task-run.spine.load.all", { count })}
+      </Button>
+    </div>
+  );
+}
+
 const NARROW_MEDIA_QUERY = "(max-width: 639px)";
+const LOAD_ROW = cn(
+  ROW_DIVIDER,
+  "h-auto w-full rounded-none py-1.5 text-xs text-accent hover:bg-control-bg-hover"
+);
 const TRIGGER_ROW =
   "w-full justify-start bg-background px-3 py-1.5 text-control-light hover:bg-control-bg";
 
@@ -472,70 +628,5 @@ function Chevron({ open }: { open: boolean }) {
         open && "rotate-90"
       )}
     />
-  );
-}
-
-function AppliedFold({
-  fold,
-  open,
-  onToggle,
-  onOpenFile,
-  hasRun,
-}: {
-  fold: SpineAppliedFold;
-  open: boolean;
-  onToggle: () => void;
-  onOpenFile?: OpenReleaseFile;
-  hasRun: boolean;
-}) {
-  const { t } = useTranslation();
-  const [shown, setShown] = useState(APPLIED_FOLD_PAGE_SIZE);
-  const newest = fold.files[0]?.version ?? "";
-  const oldest = fold.files.at(-1)?.version ?? "";
-  return (
-    <Collapsible open={open} onOpenChange={onToggle} className={ROW_DIVIDER}>
-      <CollapsibleTrigger className={TRIGGER_ROW}>
-        <Chevron open={open} />
-        <span>
-          {t("task-run.spine.already-applied", { count: fold.files.length })}
-        </span>
-        <span className="tabular-nums text-control-placeholder">
-          {oldest === newest ? newest : `${oldest} – ${newest}`}
-        </span>
-      </CollapsibleTrigger>
-      <CollapsiblePanel>
-        <div className="flex flex-col py-1 pl-9">
-          {fold.files.slice(0, shown).map((file) => (
-            <div key={file.version} data-testid="spine-applied-row">
-              <FilePath
-                label={file.path || file.version}
-                onOpen={
-                  onOpenFile
-                    ? () =>
-                        onOpenFile(file, {
-                          kind: "already-applied",
-                          run: hasRun,
-                        })
-                    : undefined
-                }
-              />
-            </div>
-          ))}
-          {shown < fold.files.length ? (
-            <div>
-              <Button
-                type="button"
-                appearance="link"
-                size="sm"
-                className="h-auto p-0 text-xs"
-                onClick={() => setShown((n) => n + APPLIED_FOLD_PAGE_SIZE)}
-              >
-                {t("common.show-more")}
-              </Button>
-            </div>
-          ) : null}
-        </div>
-      </CollapsiblePanel>
-    </Collapsible>
   );
 }
