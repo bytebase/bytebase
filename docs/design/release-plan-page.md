@@ -104,8 +104,7 @@ once more than 12 rows show it also offers "Show fewer", which returns the group
 and keeps the row under the pointer. "Load all" is one click, so an accidental "Show fewer" costs
 one click to undo. A 535-file release therefore opens as
 one day group with its files and about eight month headers. A row shows the version and the file's
-path as stored in the release, in body text (14 px) like the section's count line and group
-headers, since the list is the section's content; the task's file list stays at the log's 12 px. Opened, the section keeps today's spec tab and Targets on top; only
+path as stored in the release. Opened, the section keeps today's spec tab and Targets on top; only
 the release card under them is replaced by this list. Collapsed and declarative forms are in States.
 Rejected: naming the files added since the previous release first. It needs a lookup of an earlier
 release and a definition of "previous" (by creation time, of the same type, in the same project)
@@ -217,10 +216,10 @@ the first 20 file sections in version order, and the running, failed or canceled
 it falls, open. Each hidden stretch is one row that names what it loads: "Load 9 more applied",
 "Load 30 pending", "Load 60 applied earlier". "More" appears only when a section of the same state
 shows above the row; there is no version range, because the rows around it show where the stretch
-starts and ends. A stretch longer than 20 offers "Load 20 more …" and "Load all (N)". Once anything
-is loaded, the spine ends with "Show fewer", which returns to the first view. The files applied
-earlier are one such row at the top, before the first section; loaded, each is a row with the
-version, an "Applied earlier" chip and the path, which opens the viewer. Inside a section the log's
+starts and ends. A stretch longer than 20 offers "Load 20 more …" and "Load all (N)". Loading is
+one way, as in the UIOps log: there is no "Show fewer", which would sit below the task-level steps.
+The files applied earlier are one such row at the top, before the first section; loaded, each is a
+row with the version, an "Applied earlier" chip and the path, which opens the viewer. Inside a section the log's
 existing "Load more" paging stays. A done task ends with a "Revisions on `<database>`" link to the
 database page's Revisions tab. A UIOps task is the same component with one implicit section for its
 statement. The revision page, which embeds the same viewer for the revision's task run
@@ -343,8 +342,7 @@ files applied earlier, one line under the header says what this database did wit
 database and no line. Drivers log one command per statement, so the diagnostic lands on the
 statement; a PL/SQL block is one command, so there the diagnostic covers the block. When the page
 is at least 1280 px wide, the viewer is a column docked on the page's right: the page body becomes a
-two-column grid, the plan narrowing on the left, the column 704 px wide and at most half the page,
-sticky at the top, the window's height below the header, and scrolling on its own, with Close in its
+two-column grid, the plan on the left half and the column on the right half, sticky at the top, the window's height below the header, and scrolling on its own, with Close in its
 header. This is the layout the task detail panel had until #20785 replaced it with inline task
 cards; that change removed the panel because it repeated the stage's task list, not because of the
 column. The width is the page's, measured with a `ResizeObserver` as that panel did, since the
@@ -352,9 +350,9 @@ sidebar takes part of the window. Narrower, the viewer is the standard-width she
 history uses, over a scrim. One body component either way. Rejected: a modal dialog (reading a
 statement next to the row that failed, or clicking through files in Changes, should not open and
 close a modal each time); keeping the release page as the place to read a file (D12); a sheet over
-the page on wide screens, even without a scrim, which covers the plan it is read beside; the 1024 px
-threshold and half-page column of the old task panel, which leave the task cards 512 px; the path
-as the title, whose length outweighs the version.
+the page on wide screens, even without a scrim, which covers the plan it is read beside; the old
+task panel's 1024 px threshold, which leaves the task cards 512 px; the path as the title, whose
+length outweighs the version.
 
 **D9 · The source row lives on `Release.VCSSource`, filled by the action from the CI environment and
 explicit flags.** The details block's Source row (D10) renders the fields it has in a fixed order:
@@ -500,7 +498,7 @@ The viewer, by the page's width:
 
 | Page width | Container | Behavior |
 |---|---|---|
-| 1280 px and wider | Column docked on the right, 704 px and at most half the page | The plan narrows beside it and stays interactive; another file swaps the content; Close or Esc closes |
+| 1280 px and wider | Column docked on the right half of the page | The plan narrows to the left half and stays interactive; another file swaps the content; Close or Esc closes |
 | 640 to 1279 px | Standard-width sheet over a scrim | Same body |
 | Below 640 px | Full-width sheet | Lines wrap |
 
@@ -556,8 +554,8 @@ Tests to write, per the placement rules in `AGENTS.md`:
   statement identified" when it has no failed command; a done run with no marker, all applied;
   a collapsed failed section carrying the error's first line; the count line per task state; the
   cap of 20 with the running and a failed section past it still shown, each hidden stretch's load
-  row named by its state with "more" only after a shown section of that state, "Load 20 more" and
-  "Load all" on a stretch over 20, and "Show fewer" back to the first view; a prior backup as a sibling
+  row named by its state with "more" only after a shown section of that state, and "Load 20 more"
+  and "Load all" on a stretch over 20; a prior backup as a sibling
   and a gh-ost migration inside its file's section; a run with no command response carrying the
   run's error on the header; the log-only form without a task keeping the run's defaults.
 - `useTaskRunLogData.test.tsx`: a run that reached two files of a 500-file release fetches two

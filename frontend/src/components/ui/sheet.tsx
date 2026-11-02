@@ -87,16 +87,12 @@ const sheetContentVariants = cva(
 
 interface SheetContentProps
   extends ComponentProps<typeof BaseDialog.Popup>,
-    VariantProps<typeof sheetContentVariants> {
-  // False for a non-modal panel the page stays usable beside.
-  scrim?: boolean;
-}
+    VariantProps<typeof sheetContentVariants> {}
 
 function SheetContent({
   className,
   children,
   width,
-  scrim = true,
   ref,
   ...props
 }: SheetContentProps) {
@@ -104,7 +100,7 @@ function SheetContent({
 
   return (
     <BaseDialog.Portal container={getLayerRoot("overlay")}>
-      {scrim ? <SheetOverlay /> : null}
+      <SheetOverlay />
       <BaseDialog.Popup
         ref={ref}
         className={cn(
