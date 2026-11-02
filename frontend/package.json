@@ -81,7 +81,7 @@
     "uuid": "14.0.3",
     "vscode": "npm:@codingame/monaco-vscode-extension-api@38.1.3",
     "vscode-languageclient": "9.0.1",
-    "vscode-ws-jsonrpc": "3.5.0",
+    "vscode-ws-jsonrpc": "4.0.3",
     "zustand": "^5.0.13"
   },
   "devDependencies": {

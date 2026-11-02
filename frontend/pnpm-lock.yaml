@@ -368,8 +368,8 @@ importers:
         specifier: 9.0.1
         version: 9.0.1
       vscode-ws-jsonrpc:
-        specifier: 3.5.0
-        version: 3.5.0
+        specifier: 4.0.3
+        version: 4.0.3
       zustand:
         specifier: ^5.0.13
         version: 5.0.16(@types/react@19.3.0)(immer@11.2.9)(react@19.3.1)(use-sync-external-store@1.7.0(react@19.3.1))
@@ -3862,8 +3862,8 @@ packages:
     resolution: {integrity: sha512-C+r0eKJUIfiDIfwJhria30+TYWPtuHJXHtI7J0YlOmKAo7ogxP20T0zxB7HZQIFhIyvoBPwWskjxrvAtfjyZfA==}
     engines: {node: '>=14.0.0'}
 
-  vscode-jsonrpc@8.2.1:
-    resolution: {integrity: sha512-kdjOSJ2lLIn7r1rtrMbbNCHjyMPfRnowdKjBQ+mGq6NAW5QY2bEZC/khaC5OR8svbbjvLEaIXkOq45e2X9BIbQ==}
+  vscode-jsonrpc@9.0.3:
+    resolution: {integrity: sha512-qETYf9PCl1lVfwR+oBmMfc4vP2nqLNA35ABxorw3j06+xlKRgDVxbLgKm4Y/xPL0YWdeDjLoI4ImICIT3nB0zQ==}
     engines: {node: '>=14.0.0'}
 
   vscode-languageclient@9.0.1:
@@ -3882,9 +3882,9 @@ packages:
   vscode-textmate@9.3.2:
     resolution: {integrity: sha512-n2uGbUcrjhUEBH16uGA0TvUfhWwliFZ1e3+pTjrkim1Mt7ydB41lV08aUvsi70OlzDWp6X7Bx3w/x3fAXIsN0Q==}
 
-  vscode-ws-jsonrpc@3.5.0:
-    resolution: {integrity: sha512-13ZDy7Od4AfEPK2HIfY3DtyRi4FVsvFql1yobVJrpIoHOKGGJpIjVvIJpMxkrHzCZzWlYlg+WEu2hrYkCTvM0Q==}
-    engines: {node: '>=20.10.0', npm: '>=10.2.3'}
+  vscode-ws-jsonrpc@4.0.3:
+    resolution: {integrity: sha512-5I/iEtSq05icgwXJxYtU6mQNQgVZpxcuae6qXEIi7DKlIdah3dAbTB5r9ikTtmmQcudXbD451lty8F+/Ga6Bqg==}
+    engines: {node: '>=22', npm: '>=10'}
 
   w3c-xmlserializer@6.0.0:
     resolution: {integrity: sha512-4Nsy8K5Tr6SPDH9jhKJOHf7ChDrc1zufZTVSF7x72hwuEXBqxqk9G6cK+K2NRUtB3iELRJqjXb4JPDMBjMTl2Q==}
@@ -7389,7 +7389,7 @@ snapshots:
 
   vscode-jsonrpc@8.2.0: {}
 
-  vscode-jsonrpc@8.2.1: {}
+  vscode-jsonrpc@9.0.3: {}
 
   vscode-languageclient@9.0.1:
     dependencies:
@@ -7408,9 +7408,9 @@ snapshots:
 
   vscode-textmate@9.3.2: {}
 
-  vscode-ws-jsonrpc@3.5.0:
+  vscode-ws-jsonrpc@4.0.3:
     dependencies:
-      vscode-jsonrpc: 8.2.1
+      vscode-jsonrpc: 9.0.3
 
   w3c-xmlserializer@6.0.0:
     dependencies:
