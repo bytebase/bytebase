@@ -472,8 +472,12 @@ describe("parseMssqlPlan", () => {
     expect(result.ok && result.tree.nodes).toHaveLength(101);
   });
 
-  test("rejects a plan nested deeper than the walks over it can go", () => {
-    expect(parseMssqlPlan(nestedPlan(2000))).toEqual({
+  // 600 levels where the JSON parsers use 2000: this is the only parser that
+  // builds a DOM, and jsdom's XML parse is quadratic in nesting depth, so 2000
+  // levels cost two seconds before any of our code runs. Any depth past
+  // PLAN_MAX_DEPTH reaches the same guard.
+  test("refuses a plan deeper than the viewer draws", () => {
+    expect(parseMssqlPlan(nestedPlan(600))).toEqual({
       ok: false,
       message: PLAN_TOO_DEEP_MESSAGE,
     });

@@ -439,27 +439,63 @@ describe("ToolCallCard", () => {
     unmount();
   });
 
-  test("labels row, column, and result-set previews when truncated", () => {
-    const columns = Array.from({ length: 21 }, (_, i) => `column_${i}`);
-    const resultSet = {
-      columnNames: columns,
-      rows: Array.from({ length: 101 }, () => ({
-        values: columns.map((column) => ({ stringValue: column })),
+  // Each case takes one dimension past its cap and leaves the others small.
+  // What survives truncation is what renders, and the virtualizer stub above
+  // draws every row, so one fixture past all three caps at once renders 3 x 100
+  // x 20 cells and costs over a second. parseAgentQueryResult's own test covers
+  // the three caps together.
+  const truncatedQueryResult = (results: unknown[]) =>
+    JSON.stringify({ status: 200, response: { results } });
+
+  const resultSet = (rows: number, columns: number) => {
+    const columnNames = Array.from({ length: columns }, (_, i) => `column_${i}`);
+    return {
+      columnNames,
+      rows: Array.from({ length: rows }, () => ({
+        values: columnNames.map((column) => ({ stringValue: column })),
       })),
     };
+  };
+
+  test("labels a row preview truncated past the row cap", () => {
     const { container, unmount } = renderCard(
       "SQLService/Query",
-      JSON.stringify({
-        status: 200,
-        response: { results: Array.from({ length: 4 }, () => resultSet) },
-      })
+      truncatedQueryResult([resultSet(101, 1)])
+    );
+
+    expect(container.textContent).toContain("agent.query-result.showing-rows");
+    expect(container.textContent).not.toContain(
+      "agent.query-result.showing-columns"
+    );
+
+    unmount();
+  });
+
+  test("labels a column preview truncated past the column cap", () => {
+    const { container, unmount } = renderCard(
+      "SQLService/Query",
+      truncatedQueryResult([resultSet(1, 21)])
+    );
+
+    expect(container.textContent).toContain(
+      "agent.query-result.showing-columns"
+    );
+    expect(container.textContent).not.toContain(
+      "agent.query-result.showing-rows"
+    );
+
+    unmount();
+  });
+
+  test("draws only the result sets it keeps and labels the rest away", () => {
+    const { container, unmount } = renderCard(
+      "SQLService/Query",
+      truncatedQueryResult(Array.from({ length: 4 }, () => resultSet(1, 1)))
     );
 
     expect(container.querySelectorAll("[data-query-result-table-grid]")).toHaveLength(
       3
     );
-    expect(container.textContent).toContain("agent.query-result.showing-rows");
-    expect(container.textContent).toContain("agent.query-result.showing-columns");
     expect(container.textContent).toContain("agent.query-result.showing-results");
 
     unmount();
