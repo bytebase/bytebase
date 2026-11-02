@@ -1867,7 +1867,7 @@ test.describe("Inline comments open with review submission, plain comments stay 
       await planPage.composerEditor.fill(plainText);
       await planPage.composerSubmitButton.click();
       const timeline = page.locator("#plan-phase-review");
-      const plain = timeline.getByText(plainText, { exact: true });
+      const plain = timeline.getByRole("listitem").getByText(plainText, { exact: true });
       await expect(plain).toBeVisible({ timeout: 15_000 });
       // Not a thread: no card, and no Reply / Resolve on its row.
       await expect(timeline.getByTestId("comment-thread").filter({ hasText: plainText })).toHaveCount(0);
