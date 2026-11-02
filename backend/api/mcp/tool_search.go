@@ -110,7 +110,8 @@ func (s *Server) formatServiceList() string {
 const mcpUnavailableWayOut = "Do this work signed in to the Bytebase console."
 
 // formatService lists a service's endpoints and the ones MCP cannot call, and
-// tells a service MCP cannot call at all apart from one Bytebase does not have.
+// tells a service MCP cannot call at all apart from a name the index does not
+// list.
 func (s *Server) formatService(service string) string {
 	endpoints := s.openAPIIndex.GetServiceEndpoints(service)
 	unavailable := s.openAPIIndex.GetUnavailableEndpoints(service)
