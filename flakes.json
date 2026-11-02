@@ -2,7 +2,8 @@
   "runs": [
     "634bde5",
     "3089436",
-    "3089436"
+    "3089436",
+    "64cc34e"
   ],
   "tests": {
     "sql-editor/sql-editor-schema.spec.ts::every table card lands inside the viewport at default zoom": [
@@ -10,6 +11,9 @@
     ],
     "sql-editor/sql-editor-tabs.spec.ts::horizontal scrollbar is reachable with enough tabs to overflow": [
       "3089436"
+    ],
+    "plan-detail/plan-detail-review.spec.ts::a thread opens with review submission, stays apart from plain comments, and follows statement edits": [
+      "64cc34e"
     ]
   }
 }
