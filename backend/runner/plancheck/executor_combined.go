@@ -2,8 +2,10 @@ package plancheck
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -70,20 +72,32 @@ func (e *CombinedExecutor) RunForTarget(ctx context.Context, target *CheckTarget
 }
 
 // supersededBySQLReviewV2 reports whether the standard rule review replaces
-// the check where SQL Review V2 is on: only the SQL review advice, and only on
-// an engine the rule review covers; V1 keeps advising the others. The gh-ost
-// check stays, since it dry-runs the migration against the instance, which
-// the ONLINE_MIGRATION rule, reading the SQL alone, cannot.
+// the check where SQL Review V2 is on: only the SQL review advice, only on an
+// engine the rule review covers, and only where the project's review rule
+// policy leaves a rule on. V1 advises everywhere else, so a policy with every
+// rule off hands the project back to V1. The gh-ost check stays, since it
+// dry-runs the migration against the instance, which the ONLINE_MIGRATION
+// rule, reading the SQL alone, cannot.
 func (e *CombinedExecutor) supersededBySQLReviewV2(ctx context.Context, target *CheckTarget, checkType storepb.PlanCheckType) bool {
 	if e.ruleReviewCovers == nil || checkType != storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_ADVISE {
 		return false
 	}
-	instance, _, err := ResolveDatabaseTarget(ctx, e.store, target.Target)
+	instance, database, err := ResolveDatabaseTarget(ctx, e.store, target.Target)
 	if err != nil {
 		// The advice runs, and reports the target it cannot resolve.
 		return false
 	}
-	return e.ruleReviewCovers(instance.Metadata.GetEngine())
+	if !e.ruleReviewCovers(instance.Metadata.GetEngine()) {
+		return false
+	}
+	policy, err := e.store.GetEffectiveReviewRulePolicy(ctx, instance.Workspace, database.ProjectID)
+	if err != nil {
+		slog.Warn("failed to get the review rule policy; running the SQL review advice",
+			slog.String("target", target.Target),
+			log.BBError(err))
+		return false
+	}
+	return len(policy.GetRules()) > 0
 }
 
 func (e *CombinedExecutor) runCheck(ctx context.Context, target *CheckTarget, checkType storepb.PlanCheckType) ([]*storepb.PlanCheckRunResult_Result, error) {

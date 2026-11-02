@@ -835,5 +835,19 @@
     "number-positive": "Enter a positive number for {{rule}}.",
     "rule-required": "Select at least one rule.",
     "string-array-required": "Add at least one value for {{rule}}."
+  },
+  "version-switch": {
+    "description": "Dev builds only. The server runs V1 for a project whose standard rules are all off, and V2 otherwise. This browser shows the pages of the version you choose.",
+    "self": "SQL Review version",
+    "to-v1": {
+      "confirm": "Switch to V1",
+      "description": "This turns every workspace standard rule off, so the plan checks run the V1 SQL review. Projects that customize their standard rules keep them.",
+      "title": "Switch to SQL Review V1?"
+    },
+    "to-v2": {
+      "confirm": "Switch to V2",
+      "description": "This turns every workspace standard rule on, so the standard rule review replaces the V1 SQL review.",
+      "title": "Switch to SQL Review V2?"
+    }
   }
 }

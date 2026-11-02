@@ -5,7 +5,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/encoding/protojson"
 
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -54,4 +56,50 @@ func TestCombinedExecutorLeavesSQLReviewToV2(t *testing.T) {
 	results, err := withV2.RunForTarget(ctx, pg)
 	require.NoError(t, err)
 	require.Empty(t, results)
+}
+
+func TestCombinedExecutorHandsSQLReviewToV1WhereEveryRuleIsOff(t *testing.T) {
+	ctx := context.Background()
+	s := setupPlancheckStore(ctx, t)
+	_, err := s.CreateInstance(ctx, &store.InstanceMessage{
+		ResourceID: "pg",
+		Workspace:  "default",
+		Metadata: &storepb.Instance{
+			Engine:      storepb.Engine_POSTGRES,
+			DataSources: []*storepb.DataSource{{Id: "admin", Type: storepb.DataSourceType_ADMIN}},
+		},
+	})
+	require.NoError(t, err)
+	_, err = s.UpsertDatabase(ctx, &store.DatabaseMessage{
+		ProjectID:    "project-a",
+		InstanceID:   "pg",
+		DatabaseName: "app",
+		Metadata:     &storepb.DatabaseMetadata{Labels: map[string]string{}},
+	})
+	require.NoError(t, err)
+	setRules := func(resourceType storepb.Policy_Resource, resource string, rules ...storepb.ReviewRuleType) {
+		payload, err := protojson.Marshal(&storepb.ReviewRulePolicy{Rules: rules})
+		require.NoError(t, err)
+		_, err = s.CreatePolicy(ctx, &store.PolicyMessage{
+			Workspace:    "default",
+			ResourceType: resourceType,
+			Resource:     resource,
+			Type:         storepb.Policy_REVIEW_RULE,
+			Payload:      string(payload),
+			Enforce:      true,
+		})
+		require.NoError(t, err)
+	}
+	executor := NewCombinedExecutor(s, nil, nil, func(storepb.Engine) bool { return true })
+	target := &CheckTarget{Target: "instances/pg/databases/app"}
+	advise := storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_ADVISE
+
+	setRules(storepb.Policy_WORKSPACE, common.FormatWorkspace("default"))
+	require.False(t, executor.supersededBySQLReviewV2(ctx, target, advise))
+
+	setRules(storepb.Policy_PROJECT, common.FormatProject("project-a"), storepb.ReviewRuleType_SYNTAX)
+	require.True(t, executor.supersededBySQLReviewV2(ctx, target, advise), "the project's own policy wins over the workspace's")
+
+	setRules(storepb.Policy_PROJECT, common.FormatProject("project-a"), storepb.ReviewRuleType_REQUIRE_WHERE)
+	require.False(t, executor.supersededBySQLReviewV2(ctx, target, advise), "without SYNTAX no rule runs")
 }
