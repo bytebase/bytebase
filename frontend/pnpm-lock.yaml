@@ -333,7 +333,7 @@ importers:
         version: 4.16.0(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       react-router:
         specifier: ^8.2.0
-        version: 8.3.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 8.5.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       regenerator-runtime:
         specifier: ^0.14.1
         version: 0.14.1
@@ -1564,6 +1564,9 @@ packages:
 
   '@react-dnd/shallowequal@2.0.0':
     resolution: {integrity: sha512-Pc/AFTdwZwEKJxFJvlxrSmGe/di+aAOBn60sremrpLo6VI/6cmiUYNNwlI5KNYttg7uypzA3ILPMPgxB2GYZEg==}
+
+  '@remix-run/route-pattern@0.22.1':
+    resolution: {integrity: sha512-czdGJWh09Lapvcqt7Vb09KlrU2PhRJ8xQaI+AItTuD9aDJ5MAgxnS38lnys6Ll+6RJEqPiaUqTwIQhVLwFvv+w==}
 
   '@rolldown/binding-android-arm-eabi@1.2.16':
     resolution: {integrity: sha512-ia3DwAs0OsMGS7+IConptSiyk9pEXkOx/AbJ2n/lAGxH3QkWQus1t8d7gnAT38FCU2sQu8lUbeR6AiZFv4JxaA==}
@@ -3425,13 +3428,19 @@ packages:
       '@types/react':
         optional: true
 
-  react-router@8.3.0:
-    resolution: {integrity: sha512-qyPMvW83jGIct3yiieisxdk9M745anqhpIMKN5m1t6yBMfgVPpt77aHOqs5fUlEJRMCGffg9BaQLH9oPVOL7xQ==}
+  react-router@8.5.1:
+    resolution: {integrity: sha512-5u1eQ46QjuXjNfEnLwzrnou1Bm5dquO3xjVYkkMYCudtkicD2AQHtx+fvXzPATtPJx8TW6DR1x1TDRqsfHyZBw==}
     engines: {node: '>=22.22.0'}
     peerDependencies:
+      '@types/react': '>=19.2.0'
+      '@types/react-dom': '>=19.2.0'
       react: '>=19.2.7'
       react-dom: '>=19.2.7'
     peerDependenciesMeta:
+      '@types/react':
+        optional: true
+      '@types/react-dom':
+        optional: true
       react-dom:
         optional: true
 
@@ -5158,6 +5167,8 @@ snapshots:
   '@react-dnd/invariant@2.0.0': {}
 
   '@react-dnd/shallowequal@2.0.0': {}
+
+  '@remix-run/route-pattern@0.22.1': {}
 
   '@rolldown/binding-android-arm-eabi@1.2.16':
     optional: true
@@ -6976,11 +6987,14 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.3.0
 
-  react-router@8.3.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1):
+  react-router@8.5.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1):
     dependencies:
+      '@remix-run/route-pattern': 0.22.1
       cookie-es: 3.1.1
       react: 19.3.1
     optionalDependencies:
+      '@types/react': 19.3.0
+      '@types/react-dom': 19.3.0(@types/react@19.3.0)
       react-dom: 19.3.1(react@19.3.1)
 
   react-window@1.8.11(react-dom@19.3.1(react@19.3.1))(react@19.3.1):
