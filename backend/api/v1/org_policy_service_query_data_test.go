@@ -6,6 +6,7 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -59,4 +60,23 @@ func TestConvertToPolicyQueryDataIgnoresStoredDisableExport(t *testing.T) {
 	require.False(t, queryData.GetDisableExport()) //nolint:staticcheck
 	require.Equal(t, int32(10), queryData.GetMaximumResultRows())
 	require.True(t, queryData.GetDisableCopyData())
+}
+
+func TestQueryDataPolicyDisableDownloadRoundTrip(t *testing.T) {
+	t.Parallel()
+	payload, err := convertToQueryDataPolicyPayload(&v1pb.QueryDataPolicy{DisableDownload: true})
+	require.NoError(t, err)
+	data, err := protojson.Marshal(payload)
+	require.NoError(t, err)
+	require.JSONEq(t, `{"disableDownload":true}`, string(data))
+
+	policy, err := convertToPolicy(&store.PolicyMessage{
+		Resource:     "workspaces/example",
+		ResourceType: storepb.Policy_WORKSPACE,
+		Type:         storepb.Policy_QUERY_DATA,
+		Payload:      string(data),
+		Enforce:      true,
+	})
+	require.NoError(t, err)
+	require.True(t, policy.GetQueryDataPolicy().GetDisableDownload())
 }

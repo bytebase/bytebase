@@ -39,6 +39,7 @@ import {
   WORKSPACE_ROUTE_AUDIT_LOG,
   WORKSPACE_ROUTE_CUSTOM_APPROVAL,
   WORKSPACE_ROUTE_DATA_CLASSIFICATION,
+  WORKSPACE_ROUTE_EXPORT_DESTINATIONS,
   WORKSPACE_ROUTE_GLOBAL_MASKING,
   WORKSPACE_ROUTE_IDENTITY_PROVIDERS,
   WORKSPACE_ROUTE_IM,
@@ -238,6 +239,11 @@ function useFullQuickLinkList(): QuickLinkDef[] {
       {
         id: WORKSPACE_ROUTE_MCP,
         titleKey: "settings.sidebar.mcp",
+        icon: Link,
+      },
+      {
+        id: WORKSPACE_ROUTE_EXPORT_DESTINATIONS,
+        titleKey: "settings.sidebar.export-destinations",
         icon: Link,
       },
       // Settings

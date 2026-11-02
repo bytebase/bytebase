@@ -1081,11 +1081,32 @@
     "unexpected-error-description": "显示此页面时发生意外错误。刷新通常可以解决；如果问题持续出现，请联系管理员反馈。"
   },
   "export-data": {
+    "destination": {
+      "download": "下载",
+      "self": "导出目标",
+      "sharepoint": "SharePoint"
+    },
     "export-format": "导出格式",
     "export-rows": "导出行数",
     "generate-password": "生成密码",
+    "no-destination": "没有可用的导出目标",
     "password-info": "提供密码来对导出的文件进行加密",
-    "password-optional": "设置密码加密（可选）"
+    "password-optional": "设置密码加密（可选）",
+    "progress": {
+      "databases": "已导出 {{done}}/{{total}} 个数据库",
+      "download": "正在导出…",
+      "sharepoint": "正在导出到 SharePoint…"
+    },
+    "sharepoint": {
+      "exported-title": "已导出到 SharePoint",
+      "open": "在 SharePoint 中打开",
+      "result-title": "SharePoint 导出结果",
+      "status": {
+        "exported": "已导出",
+        "failed": "失败",
+        "unconfirmed": "未确认"
+      }
+    }
   },
   "gitops": {
     "back-to-releases": "返回发布包",
@@ -2406,6 +2427,12 @@
     "settings": {
       "confirm-archive-project": "归档「{{name}}」将使其变为只读并从活跃项目列表中隐藏。所有工单、数据库和设置将被保留。您可以稍后从已归档项目列表中恢复。",
       "confirm-delete-project": "删除「{{name}}」将永久移除该项目及所有关联数据，包括工单、配置和历史记录。该项目中的所有数据库将被移至默认项目。此操作无法撤销。",
+      "export-destination": {
+        "description": "此项目的导出文件上传到的位置。",
+        "self": "导出目标",
+        "sharepoint-placeholder": "https://contoso.sharepoint.com/sites/Finance/Shared Documents/Exports",
+        "update-failed": "导出目标未保存"
+      },
       "issue-related": {
         "allow-access-grants": {
           "description": "允许项目成员为特定只读语句申请限时访问授权。授权还可包含导出查询结果和查看未脱敏数据。",
@@ -2806,6 +2833,12 @@
       "self": "账号设置",
       "update-password": "更新密码"
     },
+    "export-destinations": {
+      "configured": "已配置",
+      "description": "SQL 编辑器导出文件可上传到的位置。每个项目在项目设置中选择自己的目标文件夹。",
+      "not-configured": "未配置",
+      "provider": "提供方"
+    },
     "general": {
       "workspace": {
         "access-token-duration": {
@@ -2851,6 +2884,10 @@
         "allow-admin-data-source": {
           "description": "启用时，用户可以在主数据源和只读数据源之间进行选择。禁用时，如果配置了只读数据源，则强制用户使用只读数据源，否则回退到使用主数据源。",
           "self": "允许查询主数据源"
+        },
+        "allow-download": {
+          "description": "关闭后，导出只能发送到项目配置的存储目标（如 SharePoint），已批准的导出访问授权也不能下载。",
+          "self": "允许下载"
         },
         "allow-email-code-signin": {
           "description": "用户可以通过输入发送到邮箱的 6 位验证码进行登录或注册。",
@@ -3077,7 +3114,7 @@
             "title": "批准或拒绝工单"
           },
           "export": {
-            "details": "将结果下载为文件。数据会离开 Bytebase。",
+            "details": "将结果导出为文件。数据会离开 Bytebase。",
             "title": "导出查询结果"
           },
           "manage": {
@@ -3403,11 +3440,30 @@
         }
       }
     },
+    "sharepoint": {
+      "caption": "Microsoft Entra 应用",
+      "client-id": "客户端 ID",
+      "client-secret": "客户端密钥",
+      "client-secret-description": "Microsoft Entra 应用的客户端密钥。保存后无法读取。",
+      "client-secret-saved": "已保存客户端密钥。输入新密钥即可替换。",
+      "remove": {
+        "description": "应用凭据将被删除。项目会保留各自的 SharePoint 文件夹，但在重新配置应用之前，导出到 SharePoint 会失败。",
+        "title": "移除 SharePoint？"
+      },
+      "setup": {
+        "grant": "为该应用授予每个目标文档库的写入权限。Bytebase 不管理 SharePoint 的权限、保留或删除。",
+        "project": "在项目设置中为每个项目设置目标文件夹。",
+        "register": "在 Microsoft Entra ID 中注册应用，授予 Lists.SelectedOperations.Selected 应用程序权限，并创建客户端密钥。",
+        "title": "开始之前"
+      },
+      "tenant-id": "租户 ID"
+    },
     "sidebar": {
       "audit-log": "审计日志",
       "custom-roles": "自定义角色",
       "data-access": "数据访问",
       "data-classification": "数据分类",
+      "export-destinations": "导出目标",
       "general": "通用",
       "global-masking": "全局数据脱敏",
       "iam-and-admin": "IAM & 管理",

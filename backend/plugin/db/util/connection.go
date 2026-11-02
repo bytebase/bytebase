@@ -41,7 +41,14 @@ func GetAWSConnectionConfig(ctx context.Context, connCfg db.ConnectionConfig) (a
 
 func GetGCPConnectionConfig(ctx context.Context, connCfg db.ConnectionConfig) (*cloudsqlconn.Dialer, error) {
 	// WithIAMAuthN enables IAM database authentication.
-	opts := []cloudsqlconn.Option{cloudsqlconn.WithIAMAuthN()}
+	opts := []cloudsqlconn.Option{
+		cloudsqlconn.WithIAMAuthN(),
+		// cloudsqlconn v1.26.0 turned built-in metrics on by default, which exports
+		// to Cloud Monitoring with the operator's credentials every minute and needs
+		// IAM and billing they may not have granted. Opt out until it is an explicit
+		// choice.
+		cloudsqlconn.WithBuiltInMetrics(false),
+	}
 	// WithCredentialsJSON provides Cloud SQL Admin API access when a service account key is set.
 	if gcpCredential := connCfg.DataSource.GetGcpCredential(); gcpCredential != nil && len(gcpCredential.Content) > 0 {
 		opts = append(opts, cloudsqlconn.WithCredentialsJSON([]byte(gcpCredential.Content)))

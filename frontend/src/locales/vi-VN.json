@@ -1081,11 +1081,32 @@
     "unexpected-error-description": "Đã xảy ra lỗi không mong muốn khi hiển thị trang này. Tải lại thường sẽ khắc phục được; nếu lỗi tiếp diễn, vui lòng báo cáo cho quản trị viên."
   },
   "export-data": {
+    "destination": {
+      "download": "Tải xuống",
+      "self": "Đích xuất",
+      "sharepoint": "SharePoint"
+    },
     "export-format": "Định dạng xuất",
     "export-rows": "Xuất số dòng",
     "generate-password": "Tạo mật khẩu",
+    "no-destination": "Không có đích xuất khả dụng",
     "password-info": "Cung cấp mật khẩu để mã hóa tệp xuất.",
-    "password-optional": "Mã hóa bằng mật khẩu (Tùy chọn)"
+    "password-optional": "Mã hóa bằng mật khẩu (Tùy chọn)",
+    "progress": {
+      "databases": "Đã xuất {{done}}/{{total}} cơ sở dữ liệu",
+      "download": "Đang xuất…",
+      "sharepoint": "Đang xuất sang SharePoint…"
+    },
+    "sharepoint": {
+      "exported-title": "Đã xuất sang SharePoint",
+      "open": "Mở trong SharePoint",
+      "result-title": "Kết quả xuất sang SharePoint",
+      "status": {
+        "exported": "Đã xuất",
+        "failed": "Thất bại",
+        "unconfirmed": "Chưa xác nhận"
+      }
+    }
   },
   "gitops": {
     "back-to-releases": "Quay lại Bản phát hành",
@@ -2406,6 +2427,12 @@
     "settings": {
       "confirm-archive-project": "Việc lưu trữ \"{{name}}\" sẽ khiến nó trở thành chỉ đọc và ẩn khỏi danh sách dự án đang hoạt động. Tất cả issue, cơ sở dữ liệu và cài đặt sẽ được giữ lại. Bạn có thể khôi phục lại sau từ danh sách dự án đã lưu trữ.",
       "confirm-delete-project": "Việc xóa \"{{name}}\" sẽ xóa vĩnh viễn dự án và tất cả dữ liệu liên quan bao gồm issue, cấu hình và lịch sử. Tất cả cơ sở dữ liệu trong dự án này sẽ được chuyển sang dự án mặc định. Hành động này không thể hoàn tác.",
+      "export-destination": {
+        "description": "Nơi tải lên các bản xuất của dự án này.",
+        "self": "Đích xuất",
+        "sharepoint-placeholder": "https://contoso.sharepoint.com/sites/Finance/Shared Documents/Exports",
+        "update-failed": "Chưa lưu đích xuất"
+      },
       "issue-related": {
         "allow-access-grants": {
           "description": "Cho phép thành viên dự án yêu cầu cấp quyền truy cập có thời hạn cho các câu lệnh chỉ đọc cụ thể. Quyền được cấp cũng có thể bao gồm xuất kết quả và xem dữ liệu chưa che.",
@@ -2806,6 +2833,12 @@
       "self": "Cài đặt tài khoản",
       "update-password": "Cập nhật mật khẩu"
     },
+    "export-destinations": {
+      "configured": "Đã cấu hình",
+      "description": "Nơi có thể tải lên các bản xuất từ Trình soạn thảo SQL. Mỗi dự án chọn thư mục đích trong Cài đặt dự án.",
+      "not-configured": "Chưa cấu hình",
+      "provider": "Nhà cung cấp"
+    },
     "general": {
       "workspace": {
         "access-token-duration": {
@@ -2851,6 +2884,10 @@
         "allow-admin-data-source": {
           "description": "Khi được bật, người dùng có thể chọn giữa nguồn dữ liệu quản trị và nguồn dữ liệu chỉ đọc. Khi bị tắt, người dùng buộc phải sử dụng nguồn dữ liệu chỉ đọc nếu được cấu hình, nếu không sẽ quay lại sử dụng nguồn dữ liệu quản trị.",
           "self": "Cho phép truy vấn nguồn dữ liệu quản trị"
+        },
+        "allow-download": {
+          "description": "Khi tắt, dữ liệu xuất chỉ có thể được gửi đến đích lưu trữ đã cấu hình cho dự án, chẳng hạn như SharePoint, kể cả với quyền truy cập xuất đã được phê duyệt.",
+          "self": "Cho phép tải xuống"
         },
         "allow-email-code-signin": {
           "description": "Người dùng có thể đăng nhập hoặc đăng ký bằng cách nhập mã 6 chữ số được gửi đến email của họ.",
@@ -3077,7 +3114,7 @@
             "title": "Phê duyệt hoặc từ chối Issue"
           },
           "export": {
-            "details": "Tải kết quả về dưới dạng tệp. Dữ liệu rời khỏi Bytebase.",
+            "details": "Xuất kết quả dưới dạng tệp. Dữ liệu rời khỏi Bytebase.",
             "title": "Xuất kết quả truy vấn"
           },
           "manage": {
@@ -3403,11 +3440,30 @@
         }
       }
     },
+    "sharepoint": {
+      "caption": "Ứng dụng Microsoft Entra",
+      "client-id": "ID client",
+      "client-secret": "Client secret",
+      "client-secret-description": "Client secret của ứng dụng Microsoft Entra. Không thể đọc lại sau khi lưu.",
+      "client-secret-saved": "Đã lưu client secret. Nhập giá trị mới để thay thế.",
+      "remove": {
+        "description": "Thông tin xác thực của ứng dụng sẽ bị xóa. Các dự án vẫn giữ thư mục SharePoint, nhưng việc xuất sang SharePoint sẽ thất bại cho đến khi ứng dụng được cấu hình lại.",
+        "title": "Gỡ bỏ SharePoint?"
+      },
+      "setup": {
+        "grant": "Cấp cho ứng dụng quyền ghi vào từng thư viện đích. Bytebase không quản lý quyền, lưu giữ hoặc xóa trong SharePoint.",
+        "project": "Đặt thư mục đích của từng dự án trong Cài đặt dự án.",
+        "register": "Đăng ký một ứng dụng trong Microsoft Entra ID với quyền ứng dụng Lists.SelectedOperations.Selected và tạo client secret.",
+        "title": "Trước khi bắt đầu"
+      },
+      "tenant-id": "ID tenant"
+    },
     "sidebar": {
       "audit-log": "Nhật ký kiểm tra",
       "custom-roles": "Vai trò tùy chỉnh",
       "data-access": "Truy cập dữ liệu",
       "data-classification": "Phân loại dữ liệu",
+      "export-destinations": "Đích xuất",
       "general": "Chung",
       "global-masking": "Che giấu toàn cục",
       "iam-and-admin": "IAM & Quản trị",

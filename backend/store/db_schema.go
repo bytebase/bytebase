@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"time"
 
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
@@ -75,22 +76,27 @@ func (s *Store) GetDBSchemaSnapshot(ctx context.Context, workspaceID string, ins
 	return s.GetDBSchema(ctx, &FindDBSchemaMessage{Workspace: workspaceID, InstanceID: instanceID, DatabaseName: databaseName})
 }
 
-// UpsertDBSchema upserts a database schema.
+// UpsertDBSchema upserts the schema a sync read from the live database at
+// syncedAt. Syncs overlap - a migration task dumps the schema it just changed
+// while the queued syncer is still dumping what it read before the migration -
+// and the projection has no other ordering between them, so a write whose read
+// predates the stored one is refused and reports stored=false. A refused write
+// is an ordinary outcome: the row already holds a newer schema.
+//
+// config belongs to the catalog, not to the sync, so an existing row keeps its
+// own. Writing it back from the value the sync read would revert a catalog
+// update made while the sync was dumping.
 func (s *Store) UpsertDBSchema(
 	ctx context.Context,
 	instanceID,
 	databaseName string,
 	dbMetadata *metadatapb.DatabaseSchemaMetadata,
-	dbConfig *storepb.DatabaseConfig,
 	rawDump []byte,
-) error {
+	syncedAt time.Time,
+) (bool, error) {
 	metadataBytes, err := protojson.Marshal(dbMetadata)
 	if err != nil {
-		return err
-	}
-	configBytes, err := protojson.Marshal(dbConfig)
-	if err != nil {
-		return err
+		return false, err
 	}
 
 	q := qb.Q().Space(`
@@ -99,40 +105,49 @@ func (s *Store) UpsertDBSchema(
 			db_name,
 			metadata,
 			raw_dump,
-			config
+			synced_at
 		)
 		VALUES (?, ?, ?, ?, ?)
 		ON CONFLICT(instance, db_name) DO UPDATE SET
 			metadata = EXCLUDED.metadata,
 			raw_dump = EXCLUDED.raw_dump,
-			config = EXCLUDED.config
-		RETURNING metadata, raw_dump, config`,
+			synced_at = EXCLUDED.synced_at
+		WHERE db_schema.synced_at IS NULL OR db_schema.synced_at <= EXCLUDED.synced_at`,
 		instanceID,
 		databaseName,
 		metadataBytes,
 		// Convert to string because []byte{} is null which violates db schema constraints.
 		string(rawDump),
-		configBytes)
+		syncedAt)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
-		return errors.Wrapf(err, "failed to build sql")
+		return false, errors.Wrapf(err, "failed to build sql")
 	}
 
+	var stored bool
 	err = s.withDatabaseWrite(ctx, instanceID, databaseName, func(tx *sql.Tx) error {
 		_, err := tx.ExecContext(ctx, "SELECT 1 FROM db_schema WHERE instance = $1 AND db_name = $2 FOR UPDATE", instanceID, databaseName)
 		return err
 	}, func(tx *sql.Tx, _ *databaseOwnership) error {
-		var metadata, schema, config []byte
-		return tx.QueryRowContext(ctx, query, args...).Scan(&metadata, &schema, &config)
+		result, err := tx.ExecContext(ctx, query, args...)
+		if err != nil {
+			return err
+		}
+		rows, err := result.RowsAffected()
+		if err != nil {
+			return err
+		}
+		stored = rows > 0
+		return nil
 	})
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	s.dbSchemaCache.Remove(getDBSchemaCacheKey(instanceID, databaseName))
 
-	return nil
+	return stored, nil
 }
 
 // UpdateDBSchema updates a database schema.

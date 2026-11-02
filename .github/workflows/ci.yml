@@ -58,7 +58,11 @@ jobs:
         # go test runs packages in command-line order. backend/tests is the
         # longest package by far, so it goes first instead of after the ~130
         # packages that sort before it alphabetically.
-        run: go test -p=8 -timeout 30m -ldflags "-w -s" -v ./backend/tests ./backend/api/v1 ./backend/... ./action/... | tee test.log; exit ${PIPESTATUS[0]}
+        #
+        # ./... covers the whole module, not just backend and action: a
+        # dependency bump can break any package, and ./scripts was otherwise
+        # reached only by the frontend job, which a Go-only change skips.
+        run: go test -p=8 -timeout 30m -ldflags "-w -s" -v ./backend/tests ./backend/api/v1 ./... | tee test.log; exit ${PIPESTATUS[0]}
       - name: Pretty print tests running time
         # grep: filter out lines like "--- PASS: Test (15.04s)"
         # sed: remove unnecessary characters
@@ -118,7 +122,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: '24.18.1'
+          node-version: '26.13.0'
           # The runner's pnpm store persists between runs, so the Actions
           # cache adds nothing and downloading it is slow.
           cache: ''

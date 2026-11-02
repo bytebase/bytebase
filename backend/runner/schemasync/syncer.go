@@ -28,7 +28,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
-	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 const (
@@ -570,6 +569,9 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 	// Sync database schema
 	deadlineCtx, cancelFunc := context.WithDeadline(ctx, time.Now().Add(syncTimeout))
 	defer cancelFunc()
+	// Everything below describes the database as of this instant, so it is what
+	// orders this sync against the other syncs writing the same projection.
+	readAt := time.Now()
 	syncedDatabaseMetadata, err := driver.SyncDBSchema(deadlineCtx)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to sync database schema for database %q", database.DatabaseName)
@@ -580,56 +582,49 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 	}
 	rawDump := schemaBuf.Bytes()
 
-	dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
-		Workspace:    instance.Workspace,
-		InstanceID:   database.InstanceID,
-		DatabaseName: database.DatabaseName,
-	})
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to get database schema for database %q", database.DatabaseName)
-	}
-	// If the schema does not exist, then we create a new one.
-	// This happens when creating a new database in the test.
-	if dbMetadata == nil {
-		dbMetadata = model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{}, nil, &storepb.DatabaseConfig{}, instance.Metadata.GetEngine(), store.IsObjectCaseSensitive(instance))
-	}
-
-	dbConfig := dbMetadata.GetConfig()
-
 	// Resolve store reads before UpdateDatabase opens its write transaction.
 	// Acquiring another pool connection inside the callback can deadlock sync bursts.
 	backupAvailable := s.databaseBackupAvailable(ctx, instance, syncedDatabaseMetadata)
 
-	// Build metadata updates
-	metadataUpdates := []func(*storepb.DatabaseMetadata){
-		func(md *storepb.DatabaseMetadata) {
-			md.LastSyncTime = timestamppb.Now()
-			md.BackupAvailable = backupAvailable
-			md.Datashare = syncedDatabaseMetadata.Datashare
-			md.SyncStatus = storepb.SyncStatus_SYNC_STATUS_OK
-			md.SyncError = ""
-		},
-	}
-
-	if _, err := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
-		InstanceID:      database.InstanceID,
-		DatabaseName:    database.DatabaseName,
-		Deleted:         new(false),
-		MetadataUpdates: metadataUpdates,
-	}); err != nil {
-		return "", errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
-	}
-
-	if err := s.store.UpsertDBSchema(ctx,
+	stored, err := s.store.UpsertDBSchema(ctx,
 		database.InstanceID, database.DatabaseName,
-		syncedDatabaseMetadata, dbConfig, rawDump,
-	); err != nil {
+		syncedDatabaseMetadata, rawDump, readAt,
+	)
+	if err != nil {
 		if strings.Contains(err.Error(), "escape sequence") || strings.Contains(err.Error(), "invalid byte sequence") {
 			if metadataBytes, err := protojson.Marshal(syncedDatabaseMetadata); err == nil {
 				slog.Error("unsupported Unicode escape sequence", slog.String("metadata", string(metadataBytes)), slog.String("raw_dump", string(rawDump)))
 			}
 		}
 		return "", errors.Wrapf(err, "failed to upsert database schema for database %q", database.DatabaseName)
+	}
+
+	// These values come from the same read, so leave them to the newer sync that won
+	// rather than reporting this read as the database's current state. LastSyncTime
+	// stays a completion time, because the sync interval is measured from it; the
+	// dump's own freshness is db_schema.synced_at.
+	if stored {
+		if _, err := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
+			InstanceID:   database.InstanceID,
+			DatabaseName: database.DatabaseName,
+			Deleted:      new(false),
+			MetadataUpdates: []func(*storepb.DatabaseMetadata){
+				func(md *storepb.DatabaseMetadata) {
+					md.LastSyncTime = timestamppb.Now()
+					md.BackupAvailable = backupAvailable
+					md.Datashare = syncedDatabaseMetadata.Datashare
+					md.SyncStatus = storepb.SyncStatus_SYNC_STATUS_OK
+					md.SyncError = ""
+				},
+			},
+		}); err != nil {
+			return "", errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
+		}
+	} else {
+		slog.Debug("Skipped stale database schema sync",
+			slog.String("instance", database.InstanceID),
+			slog.String("database", database.DatabaseName),
+			slog.Time("readAt", readAt))
 	}
 
 	// Create sync history if requested

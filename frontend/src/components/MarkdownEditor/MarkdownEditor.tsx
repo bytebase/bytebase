@@ -1,7 +1,9 @@
 import DOMPurify from "dompurify";
 import { Bold, Code2, Hash, Heading1, Link2 } from "lucide-react";
-import MarkdownIt from "markdown-it";
-import type Token from "markdown-it/lib/token.mjs";
+import MarkdownIt, {
+  type MarkdownIt as MarkdownItInstance,
+  type Token,
+} from "markdown-it";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -10,10 +12,20 @@ import { Textarea } from "@/components/ui/textarea";
 import "./MarkdownEditor.css";
 import { cn } from "@/lib/utils";
 
-const markdown = new MarkdownIt({
-  html: true,
-  linkify: true,
-});
+// linkify-it leaves fuzzy links off, so a bare host such as www.example.com
+// renders as plain text. Comments and descriptions are written that way, so
+// every renderer here keeps those clickable.
+function linkifyBareHosts(md: MarkdownItInstance): MarkdownItInstance {
+  md.linkify.set({ fuzzyLink: true });
+  return md;
+}
+
+const markdown = linkifyBareHosts(
+  new MarkdownIt({
+    html: true,
+    linkify: true,
+  })
+);
 
 // Displaying untrusted text must not request a remote URL: an image URL
 // derived from SQL or schema text would carry that text to another server
@@ -22,13 +34,15 @@ const markdown = new MarkdownIt({
 // that the reader may choose to follow. Without a source, or inside a link
 // where anchors cannot nest, the label stays plain text. The page turns DNS
 // prefetching off in index.html, so no link resolves its host until clicked.
-const untrustedMarkdown = new MarkdownIt({
-  html: false,
-  linkify: true,
-});
+const untrustedMarkdown = linkifyBareHosts(
+  new MarkdownIt({
+    html: false,
+    linkify: true,
+  })
+);
 untrustedMarkdown.renderer.rules.image = (tokens, idx) => {
   const { escapeHtml } = untrustedMarkdown.utils;
-  const src = tokens[idx].attrGet("src") ?? "";
+  const src = String(tokens[idx].attrGet("src") ?? "");
   const alt = labelText(tokens[idx].children ?? []);
   const linkDepth = tokens
     .slice(0, idx)

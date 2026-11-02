@@ -323,6 +323,20 @@ func getMSSQLContainer(ctx context.Context) (retC *Container, retErr error) {
 
 // getTiDBContainer starts TiDB, which speaks the MySQL protocol with no
 // password on root.
+// getTrinoContainer starts Trino with its built-in memory connector, which needs
+// no catalog files. driver is left unset so this package does not link the Trino
+// client for every suite that imports it; a test opens its own connection from
+// the host, port and user.
+func getTrinoContainer(ctx context.Context) (*Container, error) {
+	return start(ctx, testcontainers.ContainerRequest{
+		Image:      "trinodb/trino:482",
+		WaitingFor: wait.ForLog("SERVER STARTED").WithStartupTimeout(5 * time.Minute),
+	}, spec{
+		port:     "8080/tcp",
+		username: "bytebase",
+	})
+}
+
 func getTiDBContainer(ctx context.Context) (*Container, error) {
 	return start(ctx, testcontainers.ContainerRequest{
 		Image:      "pingcap/tidb:v8.5.0",

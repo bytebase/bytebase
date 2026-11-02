@@ -107,7 +107,7 @@ func configureGrpcRouters(
 	issueService := apiv1.NewIssueService(stores, webhookManager, bus, licenseService, iamManager, profile)
 	orgPolicyService := apiv1.NewOrgPolicyService(stores, licenseService, iamManager)
 	planService := apiv1.NewPlanService(stores, bus, iamManager, webhookManager, licenseService, profile)
-	projectService := apiv1.NewProjectService(stores, profile, iamManager, sampleManager)
+	projectService := apiv1.NewProjectService(stores, profile, iamManager, sampleManager, licenseService)
 	queryHistoryService := apiv1.NewQueryHistoryService(stores)
 	releaseService := apiv1.NewReleaseService(stores, sheetManager, dbFactory, licenseService)
 	reviewConfigService := apiv1.NewReviewConfigService(stores)

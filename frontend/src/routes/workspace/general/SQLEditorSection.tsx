@@ -76,6 +76,7 @@ interface SQLEditorSectionProps {
 
 interface LocalState {
   disableCopyData: boolean;
+  disableDownload: boolean;
   allowAdminDataSource: boolean;
   // `null` represents an empty input while the user is typing; coerced to a
   // number on save.
@@ -149,6 +150,7 @@ export const SQLEditorSection = forwardRef<
     }
     return {
       disableCopyData: policyPayload.disableCopyData,
+      disableDownload: policyPayload.disableDownload,
       allowAdminDataSource: policyPayload.allowAdminDataSource,
       maximumResultSize: Math.round(Number(size) / 1024 / 1024),
       maximumResultRows: rows,
@@ -290,6 +292,7 @@ export const SQLEditorSection = forwardRef<
     const maximumResultRows = state.maximumResultRows ?? 0;
     return (
       init.disableCopyData !== state.disableCopyData ||
+      init.disableDownload !== state.disableDownload ||
       init.allowAdminDataSource !== state.allowAdminDataSource ||
       init.maximumResultRows !== maximumResultRows
     );
@@ -354,6 +357,7 @@ export const SQLEditorSection = forwardRef<
             value: create(QueryDataPolicySchema, {
               ...policyPayload,
               disableCopyData: state.disableCopyData,
+              disableDownload: state.disableDownload,
               allowAdminDataSource: state.allowAdminDataSource,
               maximumResultRows,
             }),
@@ -402,7 +406,7 @@ export const SQLEditorSection = forwardRef<
   }, [state, selectedThemeId, customDraft, onDirtyChange]);
 
   const handleToggle = (
-    field: "disableCopyData" | "allowAdminDataSource",
+    field: "disableCopyData" | "disableDownload" | "allowAdminDataSource",
     value: boolean
   ) => {
     setState((prev) => ({ ...prev, [field]: value }));
@@ -418,6 +422,28 @@ export const SQLEditorSection = forwardRef<
   return (
     <FormSection id="security" title={title}>
       <FormFieldGroup>
+        {/* Allow Download toggle */}
+        <PermissionGuard permissions={["bb.policies.update"]} display="block">
+          <FormField
+            title={
+              <span className="w-full inline-flex items-center gap-x-2">
+                <Switch
+                  checked={!state.disableDownload}
+                  disabled={!canUpdatePolicy || !hasQueryPolicyFeature}
+                  onCheckedChange={(checked) =>
+                    handleToggle("disableDownload", !checked)
+                  }
+                />
+                {t("settings.general.workspace.allow-download.self")}
+                <FeatureBadge feature={PlanFeature.FEATURE_QUERY_POLICY} />
+              </span>
+            }
+            description={t(
+              "settings.general.workspace.allow-download.description"
+            )}
+          />
+        </PermissionGuard>
+
         {/* Data Copy toggle */}
         <PermissionGuard permissions={["bb.policies.update"]} display="block">
           <FormField

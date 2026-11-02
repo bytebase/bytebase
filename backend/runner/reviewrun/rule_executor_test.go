@@ -3,6 +3,7 @@ package reviewrun
 import (
 	"context"
 	"testing"
+	"time"
 
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
@@ -207,14 +208,15 @@ func TestRuleExecutorPassesTheSyncedDefaultSchema(t *testing.T) {
 			Metadata:     &storepb.DatabaseMetadata{},
 		})
 		require.NoError(t, err)
-		require.NoError(t, stores.UpsertDBSchema(ctx, instanceID, "app", &metadatapb.DatabaseSchemaMetadata{
+		_, err = stores.UpsertDBSchema(ctx, instanceID, "app", &metadatapb.DatabaseSchemaMetadata{
 			Name:          "app",
 			DefaultSchema: defaultSchema,
 			Schemas: []*metadatapb.SchemaMetadata{{
 				Name:   "dbo",
 				Tables: []*metadatapb.TableMetadata{{Name: "t", Columns: []*metadatapb.ColumnMetadata{{Name: "a"}}}},
 			}},
-		}, &storepb.DatabaseConfig{}, nil))
+		}, nil, time.Now())
+		require.NoError(t, err)
 		plan, err := stores.CreatePlan(ctx, &store.PlanMessage{
 			ProjectID: "p",
 			Name:      "plan",
