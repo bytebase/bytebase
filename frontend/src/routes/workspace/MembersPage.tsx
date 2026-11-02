@@ -1798,7 +1798,18 @@ function EditMemberRoleDrawer({
                     {t("common.no-data")}
                   </div>
                 )}
-                {liveProjectRoleBindings.map((binding) => {
+                {liveProjectRoleBindings.map((binding, index) => {
+                  // Keyed by role and condition so each card keeps its column
+                  // widths when another card goes; the API can store the same
+                  // pair twice, so repeats are numbered.
+                  const identity = `${binding.role}-${binding.condition?.expression ?? ""}`;
+                  const repeat = liveProjectRoleBindings
+                    .slice(0, index)
+                    .filter(
+                      (b) =>
+                        `${b.role}-${b.condition?.expression ?? ""}` ===
+                        identity
+                    ).length;
                   const { databaseResources, expiration } =
                     getBindingScope(binding);
                   const directExecution = directExecutionOf(
@@ -1808,9 +1819,7 @@ function EditMemberRoleDrawer({
                   const isExpired = isBindingPolicyExpired(binding);
                   return (
                     <div
-                      // A policy holds one binding per role and condition, so
-                      // the pair keeps each card's column widths on its card.
-                      key={`${binding.role}-${binding.condition?.expression ?? ""}`}
+                      key={`${identity}-${repeat}`}
                       className={cn(
                         "border rounded-sm",
                         isExpired && "opacity-60"

@@ -227,8 +227,6 @@ test.describe("member list", () => {
   });
 });
 
-// Each role card's table keeps fixed columns fitted to the card: long names
-// are cut and shown in full on hover, and a dragged column moves that card only.
 test.describe("edit member drawer", () => {
   const LONG_SCHEMA = "a_really_long_schema_name_for_reporting_and_settlement";
   const TABLE_V2 = "monthly_settlement_reconciliation_report_for_finance_v2";
@@ -248,7 +246,6 @@ test.describe("edit member drawer", () => {
     await expect(tables).toHaveCount(2);
     const longTable = tables.filter({ hasText: TABLE_V2 });
     const shortTable = tables.filter({ hasNotText: TABLE_V2 });
-    // Expiration belongs to the binding, so it is in the card header, not a column.
     await expect(members.sheet.getByRole("columnheader", { name: "Expiration" })).toHaveCount(0);
 
     const box = async (locator: Locator) => {
@@ -256,10 +253,20 @@ test.describe("edit member drawer", () => {
       if (!b) throw new Error("element has no box");
       return b;
     };
-    const sheetBox = await box(members.sheet);
+    // Soft, so one run reports every broken decision: the wide sheet tier,
+    // columns fitted to each card, and the hover on each cut column.
+    expect.soft((await box(members.sheet)).width).toBe(832);
     for (const table of [longTable, shortTable]) {
-      const b = await box(table);
-      expect(b.x + b.width).toBeLessThanOrEqual(sheetBox.x + sheetBox.width);
+      const fit = await table.evaluate((el) => {
+        const scroller = el.parentElement as HTMLElement;
+        return {
+          table: el.getBoundingClientRect().width,
+          visible: scroller.clientWidth,
+          content: scroller.scrollWidth,
+        };
+      });
+      expect.soft(Math.abs(fit.table - fit.visible)).toBeLessThanOrEqual(1);
+      expect.soft(fit.content).toBeLessThanOrEqual(fit.visible);
     }
     const tableHeaderX = async (table: Locator) =>
       (await box(table.getByRole("columnheader", { name: "Table", exact: true }))).x;
@@ -267,10 +274,16 @@ test.describe("edit member drawer", () => {
     expect(await tableHeaderX(longTable)).toBe(shortTableX);
 
     // The cell holds the cut name; hovering adds the tooltip's copy.
-    const fullName = page.getByText(TABLE_V2, { exact: true });
-    await expect(fullName).toHaveCount(1);
-    await longTable.getByText(TABLE_V2, { exact: true }).hover();
-    await expect(fullName).toHaveCount(2);
+    const v2Row = longTable.getByRole("row").filter({ hasText: TABLE_V2 });
+    const fullTable = page.getByText(TABLE_V2, { exact: true });
+    await expect(fullTable).toHaveCount(1);
+    await v2Row.getByText(TABLE_V2, { exact: true }).hover();
+    await expect.soft(fullTable).toHaveCount(2);
+    // The schema shows on both rows, so its tooltip makes a third copy.
+    const fullSchema = page.getByText(LONG_SCHEMA, { exact: true });
+    await expect(fullSchema).toHaveCount(2);
+    await v2Row.getByText(LONG_SCHEMA, { exact: true }).hover();
+    await expect.soft(fullSchema).toHaveCount(3);
 
     const schemaHeader = await box(longTable.getByRole("columnheader", { name: "Schema", exact: true }));
     const handleX = schemaHeader.x + schemaHeader.width - 3;

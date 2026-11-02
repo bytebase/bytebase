@@ -868,4 +868,20 @@ describe("MembersPage member drawer", () => {
       container.textContent?.split("2099-01-01T00:00:00.000Z").length
     ).toBe(2);
   });
+
+  it("drops every card of a revoked role, even when the policy holds the same binding twice", async () => {
+    const duplicate = { role: "roles/sqlEditorUser", members: [member] };
+    const kept = { role: "roles/projectDeveloper", members: [member] };
+    projectIamPolicy.bindings = [duplicate, { ...duplicate }, kept];
+    await openMemberDrawer();
+    const cardDeleteButtons = () =>
+      container.querySelectorAll("button[title='common.delete']");
+    expect(cardDeleteButtons()).toHaveLength(3);
+
+    projectIamPolicy.bindings = [kept];
+    await renderPage();
+    await flush();
+
+    expect(cardDeleteButtons()).toHaveLength(1);
+  });
 });
