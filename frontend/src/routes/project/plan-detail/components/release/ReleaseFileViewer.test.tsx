@@ -6,6 +6,7 @@ import { VCSType } from "@/types/proto-es/v1/common_pb";
 import { Release_VCSSourceSchema } from "@/types/proto-es/v1/release_service_pb";
 import {
   ReleaseFileViewer,
+  ReleaseFileViewerColumn,
   ReleaseFileViewerProvider,
   type ReleaseFileViewerTarget,
   useOpenReleaseFile,
@@ -200,17 +201,54 @@ describe("ReleaseFileViewer", () => {
     expect(screen.queryByRole("link")).toBeNull();
   });
 
-  test.each([
-    [1440, "side-panel"],
-    [1024, "sheet"],
-    [390, "sheet"],
-  ])("at %i px it opens as a %s at the run history's standard width", async (width, layout) => {
-    setViewport(width);
-    render(<ReleaseFileViewer target={target()} onClose={() => {}} />);
+  const FileOpener = ({ path }: { path: string }) => {
+    const open = useOpenReleaseFile();
+    return (
+      <button type="button" onClick={() => open?.({ file: { version: path, path, sheet: `projects/p/sheets/${path}` } })}>
+        {`open ${path}`}
+      </button>
+    );
+  };
+
+  test("on a page wide enough to dock it, the viewer is a column with Close, swapping files and closing on Esc", async () => {
+    render(
+      <ReleaseFileViewerProvider docked>
+        <FileOpener path="a.sql" />
+        <FileOpener path="b.sql" />
+        <ReleaseFileViewerColumn />
+      </ReleaseFileViewerProvider>
+    );
+    expect(screen.queryByTestId("release-file-viewer")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "open a.sql" }));
     await flush();
-    const viewer = screen.getByTestId("release-file-viewer");
-    expect(viewer.getAttribute("data-layout")).toBe(layout);
-    expect(viewer.className).toContain("w-[44rem]");
+    const column = screen.getByTestId("release-file-viewer");
+    expect(column.getAttribute("data-layout")).toBe("side-panel");
+    expect(screen.queryByRole("dialog")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "open b.sql" }));
+    await flush();
+    expect(screen.getAllByTestId("release-file-viewer")).toHaveLength(1);
+    expect(screen.getByTestId("release-file-path").textContent).toBe("b.sql");
+    fireEvent.click(screen.getByRole("button", { name: /Close/ }));
+    expect(screen.queryByTestId("release-file-viewer")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "open a.sql" }));
+    await flush();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByTestId("release-file-viewer")).toBeNull();
+  });
+
+  test("on a narrower page it is a sheet at the run history's standard width", async () => {
+    render(
+      <ReleaseFileViewerProvider>
+        <FileOpener path="a.sql" />
+        <ReleaseFileViewerColumn />
+      </ReleaseFileViewerProvider>
+    );
+    fireEvent.click(screen.getByRole("button", { name: "open a.sql" }));
+    await flush();
+    const sheet = screen.getByTestId("release-file-viewer");
+    expect(sheet.getAttribute("data-layout")).toBe("sheet");
+    expect(sheet.className).toContain("w-[44rem]");
+    expect(screen.getAllByTestId("release-file-viewer")).toHaveLength(1);
   });
 
   test("the version is the title and the path is plain text beside it", async () => {
@@ -220,7 +258,7 @@ describe("ReleaseFileViewer", () => {
     expect(screen.getByTestId("release-file-path").textContent).toBe("migrations/002_orders.sql");
   });
 
-  test("another file swaps the side panel's content", async () => {
+  test("another file swaps the viewer's content", async () => {
     const { rerender } = render(<ReleaseFileViewer target={target()} onClose={() => {}} />);
     await flush();
     rerender(
@@ -281,9 +319,10 @@ describe("ReleaseFileViewer", () => {
       );
     };
     render(
-      <ReleaseFileViewerProvider>
+      <ReleaseFileViewerProvider docked>
         <Opener path="a.sql" />
         <Opener path="b.sql" />
+        <ReleaseFileViewerColumn />
       </ReleaseFileViewerProvider>
     );
     fireEvent.click(screen.getByRole("button", { name: "open a.sql" }));
@@ -308,9 +347,10 @@ describe("ReleaseFileViewer", () => {
       );
     };
     render(
-      <ReleaseFileViewerProvider>
+      <ReleaseFileViewerProvider docked>
         <Opener target={failedTarget("a.sql")} />
         <Opener target={failedTarget("b.sql")} />
+        <ReleaseFileViewerColumn />
       </ReleaseFileViewerProvider>
     );
     const drewErrorFor = (path: string) =>
@@ -343,12 +383,13 @@ describe("ReleaseFileViewer", () => {
       );
     };
     render(
-      <ReleaseFileViewerProvider>
+      <ReleaseFileViewerProvider docked>
         <Opener label="from changes" t={{ file }} />
         <Opener
           label="from failed"
           t={{ file, context: { kind: "failed", error: "boom", range: { start: 13, end: 37 } } }}
         />
+        <ReleaseFileViewerColumn />
       </ReleaseFileViewerProvider>
     );
     fireEvent.click(screen.getByRole("button", { name: "from changes" }));

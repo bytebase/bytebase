@@ -943,7 +943,7 @@ describe("TaskRunLogViewer release spine", () => {
     view.unmount();
   });
 
-  test("the files applied earlier load in place in version order, open the viewer, and Show fewer hides them again", () => {
+  test("the files applied earlier load in place in version order and open the viewer", () => {
     failedRun();
     const onOpenFile = vi.fn();
     const view = renderViewer({ taskRunStatus: TaskRun_Status.FAILED, runError: failedError, onOpenFile });
@@ -967,9 +967,6 @@ describe("TaskRunLogViewer release spine", () => {
       { version: "001", path: "migrations/001_change.sql" },
       { kind: "already-applied", run: true }
     );
-    act(() => within(view.container).getByTestId("spine-show-fewer").click());
-    expect(rows()).toEqual([]);
-    expect(button(view.container, /Load 6 applied earlier/)).toBeDefined();
     view.unmount();
   });
 

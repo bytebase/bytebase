@@ -4377,7 +4377,6 @@
       "revision-deleted": "Revision deleted {{date}} by {{user}}",
       "revisions-on": "Revisions on {{database}}",
       "run-failed": "Run failed",
-      "show-fewer": "Show fewer",
       "status": {
         "applied": "Applied",
         "applied-earlier": "Applied earlier",

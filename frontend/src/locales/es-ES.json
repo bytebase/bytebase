@@ -4377,7 +4377,6 @@
       "revision-deleted": "Revisión eliminada el {{date}} por {{user}}",
       "revisions-on": "Revisiones en {{database}}",
       "run-failed": "Ejecución fallida",
-      "show-fewer": "Mostrar menos",
       "status": {
         "applied": "Aplicado",
         "applied-earlier": "Aplicado antes",

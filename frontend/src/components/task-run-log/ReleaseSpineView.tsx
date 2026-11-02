@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { type ReactNode, useMemo, useRef, useState } from "react";
+import { type ReactNode, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,6 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { CopyButton } from "@/components/ui/copy-button";
-import { useKeepEndInPlace } from "@/hooks/useKeepEndInPlace";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { cn } from "@/lib/utils";
 import {
@@ -114,11 +113,8 @@ export function ReleaseSpineView({
     () => countSpine(spine.items, files.length),
     [spine, files.length]
   );
-  const listRef = useRef<HTMLDivElement>(null);
-  const keepEndInPlace = useKeepEndInPlace(listRef);
   const load = (key: SpineLoadKey, rows: number) =>
     setLoads((prev) => ({ ...prev, [key]: (prev[key] ?? 0) + rows }));
-  const anyLoaded = Object.values(loads).some((rows) => (rows ?? 0) > 0);
   const entryKeys = useMemo(() => assignEntryKeys(entries), [entries]);
   // Below 640px the failed row opens with its statement block folded.
   const narrow = useMediaQuery(NARROW_MEDIA_QUERY);
@@ -489,23 +485,8 @@ export function ReleaseSpineView({
       <div className="text-control-light" data-testid="spine-count">
         {countLine(counts, t)}
       </div>
-      <div
-        ref={listRef}
-        className="w-full overflow-hidden rounded-sm border border-block-border bg-control-bg/50 font-mono"
-      >
+      <div className="w-full overflow-hidden rounded-sm border border-block-border bg-control-bg/50 font-mono">
         {items.map(renderItem)}
-        {anyLoaded ? (
-          <Button
-            type="button"
-            appearance="secondary"
-            size="sm"
-            className={cn(LOAD_ROW, "font-sans")}
-            data-testid="spine-show-fewer"
-            onClick={() => keepEndInPlace(() => setLoads({}))}
-          >
-            {t("task-run.spine.show-fewer")}
-          </Button>
-        ) : null}
       </div>
     </div>
   );
