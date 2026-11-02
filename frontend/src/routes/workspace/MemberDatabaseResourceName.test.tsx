@@ -1,5 +1,5 @@
-import { render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, test, vi } from "vitest";
+import { act, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { DatabaseResource } from "@/types";
 import { MemberDatabaseResourceName } from "./MemberDatabaseResourceName";
 
@@ -100,6 +100,58 @@ describe("MemberDatabaseResourceName", () => {
     expect(screen.queryByTestId("engine-icon")).not.toBeInTheDocument();
     expect(screen.getByText("prod")).toBeInTheDocument();
     expect(screen.getByText("hr")).toBeInTheDocument();
+  });
+
+  describe("a name cut by its column", () => {
+    // jsdom lays nothing out, so each test says which names overflow.
+    let cut: string[] = [];
+    beforeEach(() => {
+      cut = [];
+      vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockImplementation(
+        function (this: HTMLElement) {
+          return cut.includes(this.textContent ?? "") ? 200 : 100;
+        }
+      );
+      vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(
+        100
+      );
+    });
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    const focusName = async (name: string) => {
+      await act(async () => {
+        screen
+          .getByText(name)
+          .dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
+      });
+    };
+    const overlayText = () =>
+      document.getElementById("bb-react-layer-overlay")?.textContent ?? "";
+
+    test("shows the full instance title on hover", async () => {
+      cut = ["Production"];
+      render(<MemberDatabaseResourceName resource={resource} />);
+
+      await focusName("Production");
+      expect(overlayText()).toBe("Production");
+    });
+
+    test("shows the full database name on hover", async () => {
+      cut = ["hr"];
+      render(<MemberDatabaseResourceName resource={resource} />);
+
+      await focusName("hr");
+      expect(overlayText()).toBe("hr");
+    });
+
+    test("shows no tooltip for a name that fits", async () => {
+      render(<MemberDatabaseResourceName resource={resource} />);
+
+      await focusName("hr");
+      expect(overlayText()).toBe("");
+    });
   });
 
   test("renders wildcard for unscoped resources", () => {

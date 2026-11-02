@@ -152,7 +152,7 @@ import {
   readableCondition,
   stringifyConditionExpression,
 } from "@/utils/issue/cel";
-import { MemberDatabaseResourceName } from "./MemberDatabaseResourceName";
+import { MemberBindingResourceTable } from "./MemberBindingResourceTable";
 import { getSetIamPolicyPermissionGuardConfig } from "./membersPageActions";
 
 const EMPTY_ROLE_SET = new Set<string>();
@@ -1450,28 +1450,21 @@ function EditMemberRoleDrawer({
   }, [workspaceProfile, form.role]);
 
   // Helpers for project edit mode
-  const getSingleBindingRows = useCallback(
+  const getBindingScope = useCallback(
     (
       binding: Binding
     ): {
-      databaseResource?: DatabaseResource;
+      databaseResources: DatabaseResource[];
       expiration?: Date;
-    }[] => {
-      if (!binding.parsedExpr) return [{}];
+    } => {
+      if (!binding.parsedExpr) return { databaseResources: [] };
       const conditionExpr = convertFromExpr(binding.parsedExpr) ?? {};
-      const base: { expiration?: Date } = {};
-      if (conditionExpr.expiredTime)
-        base.expiration = new Date(conditionExpr.expiredTime);
-      if (
-        conditionExpr.databaseResources &&
-        conditionExpr.databaseResources.length > 0
-      ) {
-        return conditionExpr.databaseResources.map((r) => ({
-          ...base,
-          databaseResource: r,
-        }));
-      }
-      return [base];
+      return {
+        databaseResources: conditionExpr.databaseResources ?? [],
+        expiration: conditionExpr.expiredTime
+          ? new Date(conditionExpr.expiredTime)
+          : undefined,
+      };
     },
     []
   );
@@ -1779,7 +1772,7 @@ function EditMemberRoleDrawer({
     return (
       <>
         <Sheet open onOpenChange={(nextOpen) => !nextOpen && onClose()}>
-          <SheetContent width="medium">
+          <SheetContent width="wide">
             <SheetHeader>
               <div className="flex min-w-0 items-center justify-between gap-x-2">
                 <SheetTitle className="truncate">
@@ -1805,8 +1798,20 @@ function EditMemberRoleDrawer({
                     {t("common.no-data")}
                   </div>
                 )}
-                {liveProjectRoleBindings.map((binding, idx) => {
-                  const rows = getSingleBindingRows(binding);
+                {liveProjectRoleBindings.map((binding, index) => {
+                  // Keyed by role and condition so each card keeps its column
+                  // widths when another card goes; the API can store the same
+                  // pair twice, so repeats are numbered.
+                  const identity = `${binding.role}-${binding.condition?.expression ?? ""}`;
+                  const repeat = liveProjectRoleBindings
+                    .slice(0, index)
+                    .filter(
+                      (b) =>
+                        `${b.role}-${b.condition?.expression ?? ""}` ===
+                        identity
+                    ).length;
+                  const { databaseResources, expiration } =
+                    getBindingScope(binding);
                   const directExecution = directExecutionOf(
                     binding.role,
                     readableCondition(binding.parsedExpr)
@@ -1814,18 +1819,18 @@ function EditMemberRoleDrawer({
                   const isExpired = isBindingPolicyExpired(binding);
                   return (
                     <div
-                      key={`${binding.role}-${idx}`}
+                      key={`${identity}-${repeat}`}
                       className={cn(
                         "border rounded-sm",
                         isExpired && "opacity-60"
                       )}
                     >
                       {/* Role header */}
-                      <div className="flex items-center justify-between px-4 py-3 bg-control-bg border-b">
-                        <div className="flex items-center gap-x-2">
+                      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3 bg-control-bg border-b">
+                        <div className="flex min-w-0 items-center gap-x-2">
                           <span
                             className={cn(
-                              "font-medium text-sm",
+                              "truncate font-medium text-sm",
                               isExpired && "line-through"
                             )}
                           >
@@ -1837,17 +1842,34 @@ function EditMemberRoleDrawer({
                             </Badge>
                           )}
                         </div>
-                        {/* Delete only: the grant form adds a role, so a
-                            pencil here would read as editing this one. */}
-                        <Button
-                          appearance="secondary"
-                          size="sm"
-                          title={t("common.delete")}
-                          disabled={isRequesting}
-                          onClick={() => handleDeleteRole(binding)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center gap-x-4 text-sm">
+                          <div className="flex items-center gap-x-2">
+                            <span className="text-control-light">
+                              {t("common.expiration")}
+                            </span>
+                            <span className="text-main">
+                              {expiration ? (
+                                <HumanizeTs
+                                  mode="operational"
+                                  tsMs={expiration.getTime()}
+                                />
+                              ) : (
+                                t("project.members.never-expires")
+                              )}
+                            </span>
+                          </div>
+                          {/* Delete only: the grant form adds a role, so a
+                              pencil here would read as editing this one. */}
+                          <Button
+                            appearance="secondary"
+                            size="sm"
+                            title={t("common.delete")}
+                            disabled={isRequesting}
+                            onClick={() => handleDeleteRole(binding)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
 
                       {directExecution && (
@@ -1864,43 +1886,9 @@ function EditMemberRoleDrawer({
 
                       {/* Database resources table */}
                       <div className="p-4">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>{t("common.database")}</TableHead>
-                              <TableHead>{t("common.schema")}</TableHead>
-                              <TableHead>{t("common.table")}</TableHead>
-                              <TableHead>{t("common.expiration")}</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {rows.map((row, rowIdx) => (
-                              <TableRow key={rowIdx}>
-                                <TableCell>
-                                  <MemberDatabaseResourceName
-                                    resource={row.databaseResource}
-                                  />
-                                </TableCell>
-                                <TableCell>
-                                  {row.databaseResource?.schema ?? "*"}
-                                </TableCell>
-                                <TableCell>
-                                  {row.databaseResource?.table ?? "*"}
-                                </TableCell>
-                                <TableCell>
-                                  {row.expiration ? (
-                                    <HumanizeTs
-                                      mode="operational"
-                                      tsMs={row.expiration.getTime()}
-                                    />
-                                  ) : (
-                                    t("project.members.never-expires")
-                                  )}
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
+                        <MemberBindingResourceTable
+                          resources={databaseResources}
+                        />
                       </div>
                     </div>
                   );
