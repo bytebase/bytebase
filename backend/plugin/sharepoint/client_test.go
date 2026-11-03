@@ -91,7 +91,7 @@ func TestResolve(t *testing.T) {
 		}))
 		loc, err := client.Resolve(context.Background(), canonical)
 		require.NoError(t, err)
-		require.Equal(t, &Location{DriveID: "d1", ItemID: "root1", WebURL: "https://contoso.sharepoint.com/sites/finance/Shared%20Documents"}, loc)
+		require.Equal(t, &Location{DriveID: "d1", ItemID: "root1", WebURL: "https://contoso.sharepoint.com/sites/finance/Shared%20Documents", url: canonical}, loc)
 	})
 
 	t.Run("folder", func(t *testing.T) {
@@ -100,7 +100,7 @@ func TestResolve(t *testing.T) {
 		}))
 		loc, err := client.Resolve(context.Background(), canonical)
 		require.NoError(t, err)
-		require.Equal(t, &Location{DriveID: "d1", ItemID: "item1", WebURL: canonical}, loc)
+		require.Equal(t, &Location{DriveID: "d1", ItemID: "item1", WebURL: canonical, url: canonical}, loc)
 	})
 
 	t.Run("file", func(t *testing.T) {
@@ -138,8 +138,8 @@ type fakeSession struct {
 type fakeGraph struct {
 	t  *testing.T
 	mu sync.Mutex
-	// folderIDs maps folder IDs to names.
-	folderIDs map[string]string
+	// folders holds the names of the folders under the destination.
+	folders map[string]bool
 	// files is keyed by "folderName/fileName".
 	files         map[string]fakeFile
 	sessions      map[string]*fakeSession
@@ -153,16 +153,7 @@ type fakeGraph struct {
 }
 
 func newFakeGraph(t *testing.T) *fakeGraph {
-	return &fakeGraph{t: t, folderIDs: map[string]string{}, files: map[string]fakeFile{}, sessions: map[string]*fakeSession{}}
-}
-
-func (f *fakeGraph) folderID(name string) string {
-	for id, folderName := range f.folderIDs {
-		if folderName == name {
-			return id
-		}
-	}
-	return ""
+	return &fakeGraph{t: t, folders: map[string]bool{}, files: map[string]fakeFile{}, sessions: map[string]*fakeSession{}}
 }
 
 func (f *fakeGraph) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -177,39 +168,16 @@ func (f *fakeGraph) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	require.Equal(f.t, "Bearer test-token", r.Header.Get("Authorization"))
-	rest, ok := strings.CutPrefix(r.URL.Path, "/drives/d1/items/")
+	// Files are addressed by path under the destination item "dest".
+	rest, ok := strings.CutPrefix(r.URL.Path, "/drives/d1/items/dest:/")
 	if !ok {
 		writeGraphError(w, http.StatusNotFound, "itemNotFound")
 		return
 	}
-	if rest == "dest/children" && r.Method == http.MethodPost {
-		var body map[string]any
-		require.NoError(f.t, json.NewDecoder(r.Body).Decode(&body))
-		require.Equal(f.t, "fail", body["@microsoft.graph.conflictBehavior"])
-		name, ok := body["name"].(string)
-		require.True(f.t, ok)
-		if f.folderID(name) != "" {
-			writeGraphError(w, http.StatusConflict, "nameAlreadyExists")
-			return
-		}
-		id := fmt.Sprintf("folder%d", len(f.folderIDs)+1)
-		f.folderIDs[id] = name
-		writeJSON(w, http.StatusCreated, map[string]any{"id": id, "name": name, "webUrl": "https://sp/" + id, "folder": map[string]any{}})
-		return
-	}
-	itemID, sub, _ := strings.Cut(rest, ":/")
-	if itemID == "dest" && r.Method == http.MethodGet {
-		id := f.folderID(sub)
-		if id == "" {
-			writeGraphError(w, http.StatusNotFound, "itemNotFound")
-			return
-		}
-		writeJSON(w, http.StatusOK, map[string]any{"id": id, "webUrl": "https://sp/" + id, "folder": map[string]any{}})
-		return
-	}
-	folderName, ok := f.folderIDs[itemID]
+	folderName, sub, ok := strings.Cut(rest, "/")
 	if !ok {
-		writeGraphError(w, http.StatusNotFound, "itemNotFound")
+		f.t.Errorf("unexpected request %s %s", r.Method, r.URL.Path)
+		writeGraphError(w, http.StatusBadRequest, "invalidRequest")
 		return
 	}
 	switch {
@@ -219,6 +187,7 @@ func (f *fakeGraph) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			writeGraphError(w, http.StatusConflict, "nameAlreadyExists")
 			return
 		}
+		f.folders[folderName] = true
 		f.sessionCount++
 		id := fmt.Sprint(f.sessionCount)
 		f.sessions[id] = &fakeSession{key: key}
@@ -230,6 +199,7 @@ func (f *fakeGraph) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		data, _ := io.ReadAll(r.Body)
+		f.folders[folderName] = true
 		f.files[key] = fakeFile{content: data, appID: testAppID}
 		writeJSON(w, http.StatusCreated, map[string]any{"id": key})
 	case r.Method == http.MethodGet:
@@ -290,7 +260,7 @@ func (f *fakeGraph) serveUpload(w http.ResponseWriter, r *http.Request) {
 const testFolder = "20261022T010203Z alice@example.com db 42"
 
 var (
-	testLocation = &Location{DriveID: "d1", ItemID: "dest"}
+	testLocation = &Location{DriveID: "d1", ItemID: "dest", WebURL: "https://sp/dest"}
 	testFiles    = []File{
 		{Name: "statement.sql", Content: []byte("SELECT 1;\n")},
 		{Name: "result #1.csv", Content: []byte("a,b\n1,2\n")},
@@ -307,12 +277,14 @@ func requireUploaded(t *testing.T, fake *fakeGraph) {
 	}
 }
 
+const testFolderURL = "https://sp/dest/20261022T010203Z%20alice@example.com%20db%2042"
+
 func TestUpload(t *testing.T) {
 	fake := newFakeGraph(t)
 	client, waits := newTestClient(t, fake)
 	folder, err := client.Upload(context.Background(), testLocation, testFolder, testFiles)
 	require.NoError(t, err)
-	require.Equal(t, &Folder{Name: testFolder, WebURL: "https://sp/folder1"}, folder)
+	require.Equal(t, &Folder{Name: testFolder, WebURL: testFolderURL}, folder)
 	requireUploaded(t, fake)
 	require.Equal(t, []string{
 		"bytes 0-3/10", "bytes 4-7/10", "bytes 8-9/10",
@@ -323,19 +295,9 @@ func TestUpload(t *testing.T) {
 	// Retrying the same export reuses the folder and the uploaded files.
 	folder, err = client.Upload(context.Background(), testLocation, testFolder, testFiles)
 	require.NoError(t, err)
-	require.Equal(t, &Folder{Name: testFolder, WebURL: "https://sp/folder1"}, folder)
-	require.Len(t, fake.folderIDs, 1)
+	require.Equal(t, &Folder{Name: testFolder, WebURL: testFolderURL}, folder)
+	require.Len(t, fake.folders, 1)
 	require.Equal(t, 2, fake.sessionCount)
-}
-
-func TestUploadReusesExistingFolder(t *testing.T) {
-	fake := newFakeGraph(t)
-	fake.folderIDs["existing"] = testFolder
-	client, _ := newTestClient(t, fake)
-	folder, err := client.Upload(context.Background(), testLocation, testFolder, testFiles)
-	require.NoError(t, err)
-	require.Equal(t, "https://sp/existing", folder.WebURL)
-	requireUploaded(t, fake)
 }
 
 func TestUploadFileConflict(t *testing.T) {
@@ -352,7 +314,7 @@ func TestUploadFileConflict(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			fake := newFakeGraph(t)
-			fake.folderIDs["existing"] = testFolder
+			fake.folders[testFolder] = true
 			fake.files[testFolder+"/result.csv"] = tc.existing
 			client, _ := newTestClient(t, fake)
 			_, err := client.Upload(context.Background(), testLocation, testFolder, files)
@@ -368,27 +330,11 @@ func TestUploadFileConflict(t *testing.T) {
 	}
 }
 
-func TestUploadFolderCreationFailureUploadsNothing(t *testing.T) {
-	fake := newFakeGraph(t)
-	fake.override = func(w http.ResponseWriter, r *http.Request) bool {
-		if r.URL.Path != "/drives/d1/items/dest/children" {
-			return false
-		}
-		writeGraphError(w, http.StatusForbidden, "accessDenied")
-		return true
-	}
-	client, _ := newTestClient(t, fake)
-	_, err := client.Upload(context.Background(), testLocation, testFolder, testFiles)
-	require.ErrorIs(t, err, ErrNothingUploaded)
-	require.ErrorIs(t, err, ErrNotFoundOrNoAccess)
-	require.Zero(t, fake.sessionCount)
-}
-
 func TestUploadHonorsRetryAfter(t *testing.T) {
 	fake := newFakeGraph(t)
 	throttled := false
-	fake.override = func(w http.ResponseWriter, r *http.Request) bool {
-		if throttled || r.URL.Path != "/drives/d1/items/dest/children" {
+	fake.override = func(w http.ResponseWriter, _ *http.Request) bool {
+		if throttled {
 			return false
 		}
 		throttled = true
@@ -435,12 +381,118 @@ func TestUploadUnconfirmed(t *testing.T) {
 	require.Equal(t, []time.Duration{time.Second, 2 * time.Second}, *waits)
 }
 
-func TestUploadForbidden(t *testing.T) {
-	client, _ := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+func TestUploadForbiddenUploadsNothing(t *testing.T) {
+	fake := newFakeGraph(t)
+	fake.override = func(w http.ResponseWriter, _ *http.Request) bool {
 		writeGraphError(w, http.StatusForbidden, "accessDenied")
-	}))
+		return true
+	}
+	client, _ := newTestClient(t, fake)
 	_, err := client.Upload(context.Background(), testLocation, testFolder, testFiles)
 	require.ErrorIs(t, err, ErrNotFoundOrNoAccess)
+	require.ErrorIs(t, err, ErrNothingUploaded)
+	require.Empty(t, fake.folders)
+}
+
+// recreatableDestination serves a destination URL that resolves to the item
+// named by current, under drive d1. Only the item "dest" holds files.
+type recreatableDestination struct {
+	fake    *fakeGraph
+	current string
+	resolve int
+}
+
+func newRecreatableDestination(t *testing.T, current string) *recreatableDestination {
+	d := &recreatableDestination{fake: newFakeGraph(t), current: current}
+	d.fake.override = func(w http.ResponseWriter, r *http.Request) bool {
+		if !strings.HasPrefix(r.URL.Path, "/shares/") {
+			return false
+		}
+		d.resolve++
+		if d.current == "" {
+			writeGraphError(w, http.StatusForbidden, "accessDenied")
+			return true
+		}
+		writeJSON(w, http.StatusOK, map[string]any{
+			"id": d.current, "webUrl": "https://sp/" + d.current, "folder": map[string]any{},
+			"parentReference": map[string]any{"driveId": "d1"},
+		})
+		return true
+	}
+	return d
+}
+
+func TestResolveRecent(t *testing.T) {
+	dest := newRecreatableDestination(t, "dest")
+	client, _ := newTestClient(t, dest.fake)
+	now := time.Date(2026, 11, 3, 0, 0, 0, 0, time.UTC)
+	client.now = func() time.Time { return now }
+	ctx := context.Background()
+
+	loc, err := client.ResolveRecent(ctx, resolveShareURL)
+	require.NoError(t, err)
+	require.Equal(t, "dest", loc.ItemID)
+	_, err = client.ResolveRecent(ctx, resolveShareURL)
+	require.NoError(t, err)
+	require.Equal(t, 1, dest.resolve)
+
+	// Resolve always asks Graph.
+	_, err = client.Resolve(ctx, resolveShareURL)
+	require.NoError(t, err)
+	require.Equal(t, 2, dest.resolve)
+
+	now = now.Add(recentResolveTTL)
+	_, err = client.ResolveRecent(ctx, resolveShareURL)
+	require.NoError(t, err)
+	require.Equal(t, 3, dest.resolve)
+}
+
+func TestUploadResolvesReusedDestinationAgain(t *testing.T) {
+	ctx := context.Background()
+	t.Run("recreated destination receives the export", func(t *testing.T) {
+		dest := newRecreatableDestination(t, "deleted")
+		client, _ := newTestClient(t, dest.fake)
+		_, err := client.ResolveRecent(ctx, resolveShareURL)
+		require.NoError(t, err)
+		dest.current = "dest"
+		loc, err := client.ResolveRecent(ctx, resolveShareURL)
+		require.NoError(t, err)
+		require.Equal(t, "deleted", loc.ItemID)
+
+		folder, err := client.Upload(ctx, loc, testFolder, testFiles)
+		require.NoError(t, err)
+		require.Equal(t, testFolderURL, folder.WebURL)
+		requireUploaded(t, dest.fake)
+		require.Equal(t, 2, dest.resolve)
+	})
+	t.Run("deleted destination fails without uploading", func(t *testing.T) {
+		dest := newRecreatableDestination(t, "deleted")
+		client, _ := newTestClient(t, dest.fake)
+		_, err := client.ResolveRecent(ctx, resolveShareURL)
+		require.NoError(t, err)
+		dest.current = ""
+		loc, err := client.ResolveRecent(ctx, resolveShareURL)
+		require.NoError(t, err)
+
+		_, err = client.Upload(ctx, loc, testFolder, testFiles)
+		require.ErrorIs(t, err, ErrNotFoundOrNoAccess)
+		require.ErrorIs(t, err, ErrNothingUploaded)
+		require.Equal(t, 2, dest.resolve)
+	})
+	t.Run("fresh resolution is not resolved again", func(t *testing.T) {
+		dest := newRecreatableDestination(t, "deleted")
+		client, _ := newTestClient(t, dest.fake)
+		loc, err := client.ResolveRecent(ctx, resolveShareURL)
+		require.NoError(t, err)
+
+		_, err = client.Upload(ctx, loc, testFolder, testFiles)
+		require.ErrorIs(t, err, ErrNotFoundOrNoAccess)
+		require.Equal(t, 1, dest.resolve)
+		// The failure drops the resolution, so the next export asks Graph.
+		_, err = client.ResolveRecent(ctx, resolveShareURL)
+		require.NoError(t, err)
+		require.Equal(t, 2, dest.resolve)
+	})
 }
 
 func TestTransportErrorOmitsURL(t *testing.T) {
@@ -460,8 +512,8 @@ func TestUploadSmallFilesInOneRequestEach(t *testing.T) {
 	require.NoError(t, err)
 	requireUploaded(t, fake)
 	require.Zero(t, fake.sessionCount)
-	// One request creates the folder and one uploads each file.
-	require.Equal(t, 1+len(testFiles), fake.requestCount)
+	// One request uploads each file; the first also creates the folder.
+	require.Equal(t, len(testFiles), fake.requestCount)
 }
 
 func TestUploadInParallel(t *testing.T) {
@@ -470,10 +522,6 @@ func TestUploadInParallel(t *testing.T) {
 	inFlight := 0
 	allInFlight := make(chan struct{})
 	client, _ := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost {
-			writeJSON(w, http.StatusCreated, map[string]any{"id": "folder1", "webUrl": "https://sp/folder1", "folder": map[string]any{}})
-			return
-		}
 		mu.Lock()
 		inFlight++
 		if inFlight == len(files) {
