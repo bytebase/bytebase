@@ -6431,7 +6431,9 @@ model.</p></td>
                   <td><a href="#bytebase.store.IssueCommentPayload.StatementAnchor">IssueCommentPayload.StatementAnchor</a></td>
                   <td></td>
                   <td><p>The statement context an inline comment references. Set at creation and
-immutable afterward; never set together with an event. </p></td>
+immutable afterward, except that a later run reporting a review result
+again moves the result to its statement in the SQL that run reviewed.
+Never set together with an event. </p></td>
                 </tr>
               
                 <tr>

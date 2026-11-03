@@ -351,8 +351,8 @@ function ActivityRow({
   );
 }
 
-// One line per completed run: what it found, and how many of the findings it
-// posted are still open. "Show" opens those findings' cards below it.
+// One line per completed run: what it found. "Show" opens the cards of the
+// findings it posted below it.
 function ReviewRunActivityRow({
   isLast,
   onToggle,
@@ -365,28 +365,31 @@ function ReviewRunActivityRow({
   const { t } = useTranslation();
   const { runType, postedCount, keptCount, supersededCount } =
     source.completion;
-  const open = source.findings.filter(
-    (finding) => finding.threadState === IssueComment_ThreadState.OPEN
-  ).length;
-  // A run with nothing earlier to compare reads as a first review; a later
-  // one says what it posted, reported again, and no longer found.
-  const summary =
-    keptCount === 0 && supersededCount === 0
-      ? [
-          postedCount === 0
-            ? t("plan.review.activity.no-findings")
-            : t("plan.review.activity.n-findings", { count: postedCount }),
-        ]
-      : [
-          postedCount > 0 &&
-            t("plan.review.activity.n-new", { count: postedCount }),
-          keptCount > 0 &&
-            t("plan.review.activity.n-still-found", { count: keptCount }),
-          supersededCount > 0 &&
-            t("plan.review.activity.n-no-longer-found", {
-              count: supersededCount,
-            }),
-        ].filter((part) => part !== false);
+  // A run with nothing earlier to compare reads as a first review, with how
+  // many of its findings are still open. A later one says only what changed:
+  // an open count beside "still found" would read as covering those too.
+  const firstReview = keptCount === 0 && supersededCount === 0;
+  const open = firstReview
+    ? source.findings.filter(
+        (finding) => finding.threadState === IssueComment_ThreadState.OPEN
+      ).length
+    : 0;
+  const summary = firstReview
+    ? [
+        postedCount === 0
+          ? t("plan.review.activity.no-findings")
+          : t("plan.review.activity.n-findings", { count: postedCount }),
+      ]
+    : [
+        postedCount > 0 &&
+          t("plan.review.activity.n-new", { count: postedCount }),
+        keptCount > 0 &&
+          t("plan.review.activity.n-still-found", { count: keptCount }),
+        supersededCount > 0 &&
+          t("plan.review.activity.n-no-longer-found", {
+            count: supersededCount,
+          }),
+      ].filter((part) => part !== false);
   if (open > 0)
     summary.push(t("plan.automated-review.n-open", { count: open }));
   return (

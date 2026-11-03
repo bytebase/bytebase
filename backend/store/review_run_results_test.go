@@ -1,6 +1,7 @@
 package store_test
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -282,20 +283,34 @@ func TestCompleteReviewRunKeepsResultsReportedAgain(t *testing.T) {
 	aiResult.Payload.ReviewMetadata.RuleType = storepb.ReviewRuleType_REVIEW_RULE_TYPE_UNSPECIFIED
 	completeReviewRun(t, fixture, "default", store.ReviewRunTypeAI, storepb.ReviewRun_DONE, aiResult)
 
+	// A finding on the whole change has no anchor to move.
+	wholeChange := func(comment string) *store.IssueCommentMessage {
+		r := result("default", comment, "whole")
+		r.Payload.StatementAnchor = nil
+		return r
+	}
 	complete("default",
 		result("default", "open", "open"),
 		result("default", "accepted", "accepted"),
 		result("default", "fixed", "fixed"),
 		result("default", "no fingerprint", ""),
+		wholeChange("whole"),
 	)
 	setReviewThreadState(t, fixture, "accepted", store.ThreadStateResolved)
 	_, updatedBefore := listSupersession(t, fixture, "default")
 
+	// The SQL changed above "open": its statement moved down two lines.
+	movedSheet := strings.Repeat("ab", 32)
+	openAgain := result("default", "open again", "open")
+	openAgain.Payload.StatementAnchor.SheetSha256 = movedSheet
+	openAgain.Payload.StatementAnchor.StartPosition = &storepb.Position{Line: 3}
+	openAgain.Payload.StatementAnchor.EndPosition = &storepb.Position{Line: 3}
 	complete("default",
 		result("default", "new", "new"),
-		result("default", "open again", "open"),
+		openAgain,
 		result("default", "accepted again", "accepted"),
 		result("default", "no fingerprint again", ""),
+		wholeChange("whole again"),
 	)
 	got, updatedAfter := listSupersession(t, fixture, "default")
 	require.Equal(t, []supersession{
@@ -304,16 +319,21 @@ func TestCompleteReviewRunKeepsResultsReportedAgain(t *testing.T) {
 		{Comment: "accepted", ThreadState: "RESOLVED"},
 		{Comment: "fixed", ThreadState: "RESOLVED", Superseded: true},
 		{Comment: "no fingerprint", ThreadState: "RESOLVED", Superseded: true},
+		{Comment: "whole", ThreadState: "OPEN"},
 		{Comment: "new", ThreadState: "OPEN"},
 		{Comment: "no fingerprint again", ThreadState: "OPEN"},
 	}, got)
-	for _, comment := range []string{"open", "accepted"} {
+	for _, comment := range []string{"open", "accepted", "whole"} {
 		require.Equal(t, updatedBefore[comment], updatedAfter[comment], "keeping %q is no content edit", comment)
 	}
+	anchors := reviewResultAnchors(t, fixture, "default")
+	require.Equal(t, movedSheet+"/3", anchors["open"], "a kept result moves to the statement the run found")
+	require.Equal(t, reviewResultSheet+"/1", anchors["accepted"])
+	require.Equal(t, "", anchors["whole"])
 	require.Equal(t, []reviewRunCompletion{
 		{RunType: storepb.ReviewRun_AI, Posted: 1},
-		{RunType: storepb.ReviewRun_RULE, Posted: 4},
-		{RunType: storepb.ReviewRun_RULE, Attempt: 1, Posted: 2, Kept: 2, Superseded: 2},
+		{RunType: storepb.ReviewRun_RULE, Posted: 5},
+		{RunType: storepb.ReviewRun_RULE, Attempt: 1, Posted: 2, Kept: 3, Superseded: 2},
 	}, listReviewRunCompletions(t, fixture, "default"))
 	other, _ := listSupersession(t, fixture, "other")
 	require.Equal(t, []supersession{{Comment: "other", ThreadState: "OPEN"}}, other, "the colliding issue in the other project is untouched")
@@ -329,16 +349,17 @@ func TestCompleteReviewRunKeepsResultsReportedAgain(t *testing.T) {
 		{Comment: "accepted", ThreadState: "RESOLVED", Superseded: true},
 		{Comment: "fixed", ThreadState: "RESOLVED", Superseded: true},
 		{Comment: "no fingerprint", ThreadState: "RESOLVED", Superseded: true},
+		{Comment: "whole", ThreadState: "RESOLVED", Superseded: true},
 		{Comment: "new", ThreadState: "OPEN"},
 		{Comment: "no fingerprint again", ThreadState: "RESOLVED", Superseded: true},
 		{Comment: "fixed again", ThreadState: "OPEN"},
 	}, final)
 	require.Equal(t, map[string]int64{
-		"ai": 0, "open": 0, "accepted": 0, "fixed": 0, "no fingerprint": 0,
+		"ai": 0, "open": 0, "accepted": 0, "fixed": 0, "no fingerprint": 0, "whole": 0,
 		"new": 1, "no fingerprint again": 1, "fixed again": 2,
 	}, reviewResultAttempts(t, fixture, "default"), "a kept result keeps the attempt that posted it")
 	completions := listReviewRunCompletions(t, fixture, "default")
-	require.Equal(t, reviewRunCompletion{RunType: storepb.ReviewRun_RULE, Attempt: 2, Posted: 1, Kept: 1, Superseded: 3}, completions[len(completions)-1])
+	require.Equal(t, reviewRunCompletion{RunType: storepb.ReviewRun_RULE, Attempt: 2, Posted: 1, Kept: 1, Superseded: 4}, completions[len(completions)-1])
 	require.Equal(t, []reviewRunCompletion{{RunType: storepb.ReviewRun_RULE, Posted: 1}}, listReviewRunCompletions(t, fixture, "other"))
 
 	// Fingerprints are unique within a run.
@@ -391,6 +412,28 @@ func listReviewRunCompletions(t *testing.T, fixture *storePostgresFixture, proje
 			RunType: c.GetRunType(), Attempt: c.GetAttempt(),
 			Posted: c.GetPostedCount(), Kept: c.GetKeptCount(), Superseded: c.GetSupersededCount(),
 		})
+	}
+	require.NoError(t, rows.Err())
+	return out
+}
+
+// reviewResultAnchors maps each review result's text to its anchor's sheet and
+// start line, or "" without one.
+func reviewResultAnchors(t *testing.T, fixture *storePostgresFixture, projectID string) map[string]string {
+	t.Helper()
+	rows, err := fixture.db.QueryContext(fixture.ctx, `
+		SELECT payload->>'comment',
+		       COALESCE((payload->'statementAnchor'->>'sheetSha256') || '/' || (payload->'statementAnchor'->'startPosition'->>'line'), '')
+		FROM issue_comment
+		WHERE project = $1 AND issue_id = $2 AND payload ? 'reviewMetadata'
+	`, projectID, reviewResultIssue)
+	require.NoError(t, err)
+	defer rows.Close()
+	out := make(map[string]string)
+	for rows.Next() {
+		var comment, anchor string
+		require.NoError(t, rows.Scan(&comment, &anchor))
+		out[comment] = anchor
 	}
 	require.NoError(t, rows.Err())
 	return out

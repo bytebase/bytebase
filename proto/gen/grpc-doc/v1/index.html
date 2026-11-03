@@ -11077,8 +11077,10 @@ Adding a reply does not reopen a resolved thread. </p></td>
                   <td><a href="#bytebase.v1.StatementAnchor">StatementAnchor</a></td>
                   <td></td>
                   <td><p>Optional source context on a root or reply. A reply&#39;s anchor must share
-the root&#39;s spec and sheet_sha256; it may narrow the range.
-Cannot be set on events. Immutable after creation. </p></td>
+the root&#39;s spec and sheet_sha256 when created; it may narrow the range.
+Cannot be set on events. Immutable after creation, except that a later
+review run reporting a review result again moves the result to its
+statement in the SQL that run reviewed. </p></td>
                 </tr>
               
                 <tr>

@@ -2235,7 +2235,7 @@ new reviewer is a new value, not a migration.
 | plan_update | [IssueCommentPayload.PlanUpdate](#bytebase-store-IssueCommentPayload-PlanUpdate) |  |  |
 | review_submission | [IssueCommentPayload.ReviewSubmission](#bytebase-store-IssueCommentPayload-ReviewSubmission) |  |  |
 | review_run_completion | [IssueCommentPayload.ReviewRunCompletion](#bytebase-store-IssueCommentPayload-ReviewRunCompletion) |  |  |
-| statement_anchor | [IssueCommentPayload.StatementAnchor](#bytebase-store-IssueCommentPayload-StatementAnchor) |  | The statement context an inline comment references. Set at creation and immutable afterward; never set together with an event. |
+| statement_anchor | [IssueCommentPayload.StatementAnchor](#bytebase-store-IssueCommentPayload-StatementAnchor) |  | The statement context an inline comment references. Set at creation and immutable afterward, except that a later run reporting a review result again moves the result to its statement in the SQL that run reviewed. Never set together with an event. |
 | review_metadata | [IssueCommentPayload.ReviewMetadata](#bytebase-store-IssueCommentPayload-ReviewMetadata) |  | Present on review results only, beside the text and never together with an event. Written by the review executor; CreateIssueComment rejects it. The anchor is statement_anchor; a result without one addresses the whole change. |
 
 

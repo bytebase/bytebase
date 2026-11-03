@@ -390,6 +390,8 @@ describe("ReviewActivityTimeline", () => {
     expect(text).toContain("plan.review.activity.n-findings");
     expect(text).toContain("plan.review.activity.n-no-longer-found");
     expect(text).toContain("plan.review.activity.n-still-found");
+    // The re-run posted an open finding, but its line counts only changes.
+    expect(text).not.toContain("plan.automated-review.n-open");
 
     act(() => (runButtons()[0] as HTMLButtonElement).click());
     expect(cards()).toEqual(["old", "new"]);

@@ -998,8 +998,10 @@ export declare type IssueComment = Message<"bytebase.v1.IssueComment"> & {
 
   /**
    * Optional source context on a root or reply. A reply's anchor must share
-   * the root's spec and sheet_sha256; it may narrow the range.
-   * Cannot be set on events. Immutable after creation.
+   * the root's spec and sheet_sha256 when created; it may narrow the range.
+   * Cannot be set on events. Immutable after creation, except that a later
+   * review run reporting a review result again moves the result to its
+   * statement in the SQL that run reviewed.
    *
    * @generated from field: bytebase.v1.StatementAnchor statement_anchor = 16;
    */

@@ -211,14 +211,14 @@ func (s *Store) ClaimAvailableReviewRuns(ctx context.Context, replicaID string) 
 // CompleteReviewRun moves a RUNNING run this replica owns to a terminal
 // status, fenced on the claim's attempt. On DONE it posts the run's results in
 // the same transaction. A current root of the same reviewer on the issue (one
-// no run has superseded) whose fingerprint a result repeats is kept as it is,
-// thread state and replies included, and that result is not posted again.
-// Every other current root of the reviewer is marked superseded and, if OPEN,
-// resolved; the remaining results are inserted as OPEN roots with no creator,
-// carrying the run's attempt; and a ReviewRunCompletion event records the
-// counts. A FAILED run leaves the comments alone and takes no results. False
-// means superseded: the slot was reset or reaped since the claim, and nothing
-// was written.
+// no run has superseded) whose fingerprint a result repeats keeps its thread,
+// state and replies included, and takes the result's anchor; that result is
+// not posted again. Every other current root of the reviewer is marked
+// superseded and, if OPEN, resolved; the remaining results are inserted as
+// OPEN roots with no creator, carrying the run's attempt; and a
+// ReviewRunCompletion event records the counts. A FAILED run leaves the
+// comments alone and takes no results. False means superseded: the slot was
+// reset or reaped since the claim, and nothing was written.
 //
 // Lock order: the issue's review comments, then the run slot, then the issue
 // (the insert's foreign key), the order the project purge deletes them in.
@@ -292,6 +292,29 @@ func (s *Store) CompleteReviewRun(ctx context.Context, claimed *ClaimedReviewRun
 		}
 		if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 			return false, errors.Wrapf(err, "failed to resolve reopened review results")
+		}
+
+		// A kept root moves to its statement in the SQL this run reviewed:
+		// equal fingerprints mean equal statement text, and an anchor left
+		// on an earlier sheet can lose its place in the current one.
+		q = qb.Q().Space(`
+			UPDATE issue_comment kept
+			SET payload = jsonb_set(kept.payload, '{statementAnchor}', r.payload->'statementAnchor')
+			FROM unnest(?::JSONB[]) AS r(payload)
+			WHERE kept.project = ? AND kept.issue_id = ?
+			  AND kept.parent_id IS NULL
+			  AND kept.payload->'reviewMetadata'->>'runType' = ?
+			  AND kept.payload->'reviewMetadata'->'superseded' IS NULL
+			  AND kept.payload->'reviewMetadata'->>'fingerprint' = r.payload->'reviewMetadata'->>'fingerprint'
+			  AND r.payload ?? 'statementAnchor'
+			  AND kept.payload->'statementAnchor' IS DISTINCT FROM r.payload->'statementAnchor'
+		`, resultPayloads, claimed.ProjectID, claimed.IssueUID, claimed.Type)
+		query, args, err = q.ToSQL()
+		if err != nil {
+			return false, errors.Wrapf(err, "failed to build sql")
+		}
+		if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+			return false, errors.Wrapf(err, "failed to move kept review results")
 		}
 	}
 

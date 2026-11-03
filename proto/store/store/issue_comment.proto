@@ -24,7 +24,9 @@ message IssueCommentPayload {
   }
 
   // The statement context an inline comment references. Set at creation and
-  // immutable afterward; never set together with an event.
+  // immutable afterward, except that a later run reporting a review result
+  // again moves the result to its statement in the SQL that run reviewed.
+  // Never set together with an event.
   StatementAnchor statement_anchor = 9;
 
   // Present on review results only, beside the text and never together with

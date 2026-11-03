@@ -1925,8 +1925,10 @@ type IssueComment struct {
 	// Adding a reply does not reopen a resolved thread.
 	ThreadState *IssueComment_ThreadState `protobuf:"varint,15,opt,name=thread_state,json=threadState,proto3,enum=bytebase.v1.IssueComment_ThreadState,oneof" json:"thread_state,omitempty"`
 	// Optional source context on a root or reply. A reply's anchor must share
-	// the root's spec and sheet_sha256; it may narrow the range.
-	// Cannot be set on events. Immutable after creation.
+	// the root's spec and sheet_sha256 when created; it may narrow the range.
+	// Cannot be set on events. Immutable after creation, except that a later
+	// review run reporting a review result again moves the result to its
+	// statement in the SQL that run reviewed.
 	StatementAnchor *StatementAnchor `protobuf:"bytes,16,opt,name=statement_anchor,json=statementAnchor,proto3" json:"statement_anchor,omitempty"`
 	// Present on review results, the comments the review executor posts.
 	// Never accepted on create or update.

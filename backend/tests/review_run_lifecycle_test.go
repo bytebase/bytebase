@@ -443,13 +443,15 @@ func TestRuleReviewKeepsThreadsAcrossRuns(t *testing.T) {
 		}
 		return out
 	}
-	updateSQL := func(statement string) {
+	updateSQL := func(statement string) string {
 		t.Helper()
+		sheet := createSheet(statement)
 		_, err := ctl.planServiceClient.UpdatePlan(ctx, connect.NewRequest(&v1pb.UpdatePlanRequest{
-			Plan:       &v1pb.Plan{Name: plan.Msg.Name, Specs: spec(createSheet(statement))},
+			Plan:       &v1pb.Plan{Name: plan.Msg.Name, Specs: spec(sheet)},
 			UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"specs"}},
 		}))
 		a.NoError(err)
+		return sheet
 	}
 
 	waitAttempt(0)
@@ -478,8 +480,9 @@ func TestRuleReviewKeepsThreadsAcrossRuns(t *testing.T) {
 	a.False(second[threadA.Name].GetReviewMetadata().GetSuperseded())
 	a.False(second[threadB.Name].GetReviewMetadata().GetSuperseded())
 
-	// Dropping keep_a and moving keep_b down a line supersedes A and keeps B.
-	updateSQL("SELECT 1;\nDROP TABLE IF EXISTS keep_b;")
+	// Dropping keep_a and moving keep_b down a line supersedes A and keeps B,
+	// which moves with its statement.
+	moved := updateSQL("SELECT 1;\nDROP TABLE IF EXISTS keep_b;")
 	waitAttempt(2)
 	a.Equal([]int64{2, 0, 1, 1}, counts(lastCompletion()))
 	third := drops()
@@ -488,9 +491,11 @@ func TestRuleReviewKeepsThreadsAcrossRuns(t *testing.T) {
 	a.True(third[threadA.Name].GetReviewMetadata().GetSuperseded())
 	a.Equal(v1pb.IssueComment_RESOLVED, third[threadB.Name].GetThreadState())
 	a.False(third[threadB.Name].GetReviewMetadata().GetSuperseded())
+	a.True(strings.HasSuffix(moved, "/"+third[threadB.Name].GetStatementAnchor().GetSheetSha256()))
+	a.Equal(int32(2), third[threadB.Name].GetStatementAnchor().GetStartPosition().GetLine())
 
 	// Editing B's statement judges it anew.
-	updateSQL("SELECT 1;\nDROP TABLE IF EXISTS keep_b CASCADE;")
+	_ = updateSQL("SELECT 1;\nDROP TABLE IF EXISTS keep_b CASCADE;")
 	waitAttempt(3)
 	a.Equal([]int64{3, 1, 0, 1}, counts(lastCompletion()))
 	fourth := drops()

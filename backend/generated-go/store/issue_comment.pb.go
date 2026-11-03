@@ -92,7 +92,9 @@ type IssueCommentPayload struct {
 	//	*IssueCommentPayload_ReviewRunCompletion_
 	Event isIssueCommentPayload_Event `protobuf_oneof:"event"`
 	// The statement context an inline comment references. Set at creation and
-	// immutable afterward; never set together with an event.
+	// immutable afterward, except that a later run reporting a review result
+	// again moves the result to its statement in the SQL that run reviewed.
+	// Never set together with an event.
 	StatementAnchor *IssueCommentPayload_StatementAnchor `protobuf:"bytes,9,opt,name=statement_anchor,json=statementAnchor,proto3" json:"statement_anchor,omitempty"`
 	// Present on review results only, beside the text and never together with
 	// an event. Written by the review executor; CreateIssueComment rejects it.
