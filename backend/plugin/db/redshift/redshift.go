@@ -401,12 +401,13 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 		startTime := time.Now()
 		queryResult, err := func() (*v1pb.QueryResult, error) {
 			if allQuery {
+				location := util.PgSessionLocation(conn)
 				rows, err := conn.QueryContext(ctx, statement)
 				if err != nil {
 					return nil, err
 				}
 				defer rows.Close()
-				r, err := util.RowsToQueryResult(rows, makeValueByTypeName, convertValue, queryContext.MaximumSQLResultSize)
+				r, err := util.RowsToQueryResult(rows, makeValueByTypeName, convertValueIn(location), queryContext.MaximumSQLResultSize)
 				if err != nil {
 					return nil, err
 				}

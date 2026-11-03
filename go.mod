@@ -369,17 +369,9 @@ require (
 replace (
 	github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos => github.com/bytebase/azure-sdk-for-go/sdk/data/azcosmos v0.0.0-20260424030223-eac0db373bca
 
-	github.com/antlr4-go/antlr/v4 => github.com/bytebase/antlr/v4 v4.0.0-20240827034948-8c385f108920
-
-	// copied from pingcap/tidb
-	// fix potential security issue(CVE-2020-26160) introduced by indirect dependency.
-	github.com/dgrijalva/jwt-go => github.com/form3tech-oss/jwt-go v3.2.6-0.20210809144907-32ab6a8243d7+incompatible
-	// Other fixes.
 	github.com/github/gh-ost => github.com/bytebase/gh-ost2 v1.1.7-0.20261102125703-6ff100bb26d5
 
-	github.com/jackc/pgx/v5 => github.com/bytebase/pgx/v5 v5.0.0-20261103063743-9142dbf56d46
-
-	github.com/mattn/go-oci8 => github.com/bytebase/go-obo v0.0.0-20231026081615-705a7fffbfd2
+	github.com/jackc/pgx/v5 => github.com/bytebase/pgx/v5 v5.0.0-20261103142809-663c807705c4
 
 	github.com/microsoft/go-mssqldb => github.com/bytebase/go-mssqldb v0.0.0-20240801091126-3ff3ca07d898
 
