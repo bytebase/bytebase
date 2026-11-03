@@ -196,7 +196,7 @@ test("before the run, Changes lists the release newest first and the task shows 
   await expect(page.getByTestId("release-change-row").first()).toHaveAttribute("data-version", version(3));
   await screenshot(page, "release-changes");
 
-  await changes.getByRole("button", { name: `migrations/${version(2)}_orders.sql` }).click();
+  await changes.locator(`[data-testid="release-change-row"][data-version="${version(2)}"]`).click();
   const viewer = page.getByTestId("release-file-viewer");
   await expect(viewer.getByRole("heading", { name: version(2), exact: true })).toBeVisible();
   await expect(viewer.getByTestId("release-file-path")).toHaveText(`migrations/${version(2)}_orders.sql`);
@@ -208,7 +208,7 @@ test("before the run, Changes lists the release newest first and the task shows 
 
   // A page at least 1280 px wide docks the viewer as a column beside the plan.
   await page.setViewportSize({ width: 1920, height: 1080 });
-  await changes.getByRole("button", { name: `migrations/${version(2)}_orders.sql` }).click();
+  await changes.locator(`[data-testid="release-change-row"][data-version="${version(2)}"]`).click();
   await expect(viewer).toHaveAttribute("data-layout", "side-panel");
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await screenshot(page, "release-viewer-docked");
