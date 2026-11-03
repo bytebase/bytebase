@@ -17,16 +17,17 @@ export interface ReleaseChangeGroup {
 }
 
 // Versions are digits and dots (model.NewVersion); compare them segment by
-// segment as numbers, the order the executor runs them in.
+// segment as numbers, then the shorter first, the order the executor runs
+// them in (Version.LessThan).
 export const compareVersions = (a: string, b: string): number => {
   const as = a.split(".");
   const bs = b.split(".");
-  for (let i = 0; i < Math.max(as.length, bs.length); i++) {
-    const x = BigInt(as[i] || "0");
-    const y = BigInt(bs[i] || "0");
+  for (let i = 0; i < Math.min(as.length, bs.length); i++) {
+    const x = BigInt(as[i]);
+    const y = BigInt(bs[i]);
     if (x !== y) return x < y ? -1 : 1;
   }
-  return 0;
+  return Math.sign(as.length - bs.length);
 };
 
 // A first segment of 8 to 14 digits starting with a plausible year.

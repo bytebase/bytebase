@@ -513,6 +513,8 @@ test("the Changes list puts the newest version on top whatever its shape", async
     ["202610051200", "202610051400", "202610051530"],
     ["001", "002", "010"],
     ["1.2.9", "1.10.0", "1.10.2"],
+    // The executor's order: equal leading segments, the shorter version first.
+    ["1", "1.0", "1.0.1"],
   ]) {
     const view = await renderRail(versions.map((v) => fileOf(v)));
     expect(rowVersions(view)).toEqual([...versions].reverse());
