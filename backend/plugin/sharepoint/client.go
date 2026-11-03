@@ -10,14 +10,12 @@ import (
 	"regexp"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/pkg/errors"
-	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -244,41 +242,78 @@ func (c *graphClient) Upload(ctx context.Context, loc *Location, folderName stri
 // export folder.
 func (c *graphClient) uploadFiles(ctx context.Context, loc *Location, folderName string, files []File) (*Folder, error) {
 	folderPath := itemPath(loc.DriveID, loc.ItemID) + ":/" + escapeSegment(folderName) + "/"
-	var uploaded atomic.Int32
-	g, gctx := errgroup.WithContext(ctx)
-	g.SetLimit(max(c.maxConcurrentUploads, 1))
+	uploadCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	var (
+		wg       sync.WaitGroup
+		mu       sync.Mutex
+		firstErr error
+		// Graph creates nothing for a request it rejects, the folder included,
+		// so nothing was uploaded when every attempted file was rejected. A
+		// rejection lets the other uploads finish rather than canceling them,
+		// because a canceled upload may have been committed.
+		attempted, rejected int
+	)
+	slots := make(chan struct{}, max(c.maxConcurrentUploads, 1))
 	for _, file := range files {
-		g.Go(func() error {
-			if err := c.uploadFile(gctx, folderPath, file); err != nil {
-				return err
+		slots <- struct{}{}
+		mu.Lock()
+		stop := firstErr != nil || uploadCtx.Err() != nil
+		if !stop {
+			attempted++
+		}
+		mu.Unlock()
+		if stop {
+			<-slots
+			break
+		}
+		wg.Go(func() {
+			defer func() { <-slots }()
+			wasRejected, err := c.uploadFile(uploadCtx, folderPath, file)
+			if err == nil {
+				return
 			}
-			uploaded.Add(1)
-			return nil
+			mu.Lock()
+			defer mu.Unlock()
+			if wasRejected {
+				rejected++
+			} else {
+				cancel()
+			}
+			if firstErr == nil {
+				firstErr = err
+			}
 		})
 	}
-	if err := g.Wait(); err != nil {
-		// Graph creates nothing for a request it rejects, the folder included.
-		if uploaded.Load() == 0 && (errors.Is(err, ErrNotFoundOrNoAccess) || errors.Is(err, ErrCredential)) {
-			return nil, &nothingUploadedError{err: err}
+	wg.Wait()
+	if firstErr != nil {
+		if rejected == attempted {
+			return nil, &nothingUploadedError{err: firstErr}
 		}
-		return nil, err
+		return nil, firstErr
+	}
+	if attempted < len(files) {
+		return nil, ctx.Err()
 	}
 	return &Folder{Name: folderName, WebURL: strings.TrimRight(loc.WebURL, "/") + "/" + url.PathEscape(folderName)}, nil
 }
 
-func (c *graphClient) uploadFile(ctx context.Context, folderPath string, file File) error {
+// uploadFile reports whether Graph rejected the file's upload as unauthorized,
+// forbidden, or not found.
+func (c *graphClient) uploadFile(ctx context.Context, folderPath string, file File) (bool, error) {
 	err := c.putFile(ctx, folderPath, file)
 	if err == nil {
-		return nil
+		return false, nil
 	}
 	if statusOf(err) == http.StatusConflict {
-		return c.reconcile(ctx, folderPath, file, false)
+		return false, c.reconcile(ctx, folderPath, file, false)
 	}
 	var unknown *unknownOutcomeError
 	if errors.As(err, &unknown) {
-		return c.reconcile(ctx, folderPath, file, true)
+		return false, c.reconcile(ctx, folderPath, file, true)
 	}
-	return errors.Wrapf(err, "failed to upload %q", file.Name)
+	rejected := errors.Is(err, ErrNotFoundOrNoAccess) || errors.Is(err, ErrCredential)
+	return rejected, errors.Wrapf(err, "failed to upload %q", file.Name)
 }
 
 func (c *graphClient) putFile(ctx context.Context, folderPath string, file File) error {

@@ -388,10 +388,30 @@ func TestUploadForbiddenUploadsNothing(t *testing.T) {
 		return true
 	}
 	client, _ := newTestClient(t, fake)
+	client.maxConcurrentUploads = len(testFiles)
 	_, err := client.Upload(context.Background(), testLocation, testFolder, testFiles)
 	require.ErrorIs(t, err, ErrNotFoundOrNoAccess)
 	require.ErrorIs(t, err, ErrNothingUploaded)
 	require.Empty(t, fake.folders)
+}
+
+func TestUploadRejectionDoesNotDenyAConcurrentUpload(t *testing.T) {
+	files := []File{{Name: "a.sql", Content: []byte("a")}, {Name: "b.csv", Content: []byte("b")}}
+	rejected := make(chan struct{})
+	client, _ := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "b.csv") {
+			writeGraphError(w, http.StatusForbidden, "accessDenied")
+			close(rejected)
+			return
+		}
+		<-rejected
+		writeJSON(w, http.StatusCreated, map[string]any{"id": "a"})
+	}))
+	client.simpleUploadMaxSize = simpleUploadMaxSize
+	client.maxConcurrentUploads = len(files)
+	_, err := client.Upload(context.Background(), testLocation, testFolder, files)
+	require.ErrorIs(t, err, ErrNotFoundOrNoAccess)
+	require.NotErrorIs(t, err, ErrNothingUploaded)
 }
 
 // recreatableDestination serves a destination URL that resolves to the item
