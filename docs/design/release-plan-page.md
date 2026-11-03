@@ -152,7 +152,11 @@ the executor syncs the database after every run, and a file after the failure di
 release's full file list stays in Changes. The stored state also keeps who deleted the version's earlier revision
 and when, so a re-run version still says why: its applied section reads "Applied again" instead of
 "Applied", and every status of it carries an info icon whose tooltip, also reached by keyboard, reads
-"Earlier revision deleted `<date>` by `<who>`". The icon sits beside the status chip, outside the
+"Earlier revision deleted `<date>` by `<who>`". A version is re-run when its section exists and the
+stored state either noted a deleted revision for it or counted it applied: a revision deleted after
+the rollout was created leaves no note, but the run still applied the version a second time, and its
+tooltip reads "Earlier revision deleted after this rollout was created". A task without a stored
+state cannot tell, and reads "Applied". The icon sits beside the status chip, outside the
 section's toggle. "Earlier" keeps the note from reading as this run's revision. Rejected: the note as
 a line under the section, which under "Applied" reads as if this run's revision was deleted. Which source
 each task state reads, and what it renders, is in States. The log is append-only and untouched; the
@@ -595,7 +599,9 @@ Tests to write, per the placement rules in `AGENTS.md`:
 - Planned spine tests: a version whose revision was deleted reads "Will apply again · revision
   deleted" on its chip, without the date or the deleter, and its info icon names both.
 - Run spine tests: a re-run version's applied section reads "Applied again" with the info icon
-  naming the earlier revision's deleter and time, and no line under the section.
+  naming the earlier revision's deleter and time, and no line under the section; a version the
+  stored state counted applied that the run applied reads "Applied again" with the
+  after-the-rollout tooltip; without a stored state, "Applied".
 - Folded card tests: each cell of the card table in States from the task, its latest run, the
   stored state and the plan check, before any log loads; the executor prefix removed from the
   error's first line; the release's file count on a done release task; DDL, DML and Mixed from the
