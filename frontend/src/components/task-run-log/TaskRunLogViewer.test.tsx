@@ -943,17 +943,24 @@ describe("TaskRunLogViewer release spine", () => {
     view.unmount();
   });
 
-  test("the files applied earlier load in place in version order and open the viewer", () => {
+  test("the files already applied fold under one line, open indented under it in version order, and open the viewer", () => {
     failedRun();
     const onOpenFile = vi.fn();
     const view = renderViewer({ taskRunStatus: TaskRun_Status.FAILED, runError: failedError, onOpenFile });
-    expect(within(view.container).getByTestId("spine-count").textContent).toContain("6 applied earlier");
+    expect(within(view.container).getByTestId("spine-count").textContent).toContain("6 already applied");
+    const trigger = within(view.container).getByTestId("spine-already-applied");
+    expect(trigger.textContent).toBe("6 files already applied to this database");
+    expect(trigger.getAttribute("aria-expanded")).toBe("false");
+    expect(within(view.container).queryByRole("button", { name: /^Load/ })).toBeNull();
     const rows = () =>
       within(view.container)
-        .queryAllByTestId("spine-applied-earlier-row")
+        .queryAllByTestId("spine-already-applied-row")
         .map((row) => row.textContent?.match(/migrations\/\d+_change\.sql/)?.[0]);
     expect(rows()).toEqual([]);
-    act(() => button(view.container, /Load 6 applied earlier/).click());
+    act(() => trigger.click());
+    const panel = within(view.container).getByTestId("spine-already-applied-files");
+    expect(within(panel).getAllByTestId("spine-already-applied-row")).toHaveLength(6);
+    expect(panel.textContent).not.toContain("Applied");
     expect(rows()).toEqual([
       "migrations/001_change.sql",
       "migrations/002_change.sql",
@@ -968,6 +975,36 @@ describe("TaskRunLogViewer release spine", () => {
       { kind: "already-applied", run: true }
     );
     view.unmount();
+  });
+
+  test("the Revisions link shows once the run applied a file, failed or done, and not when it applied none", () => {
+    const revisionsLink = { href: "/projects/p/instances/i/databases/db#revision", database: "db" };
+    const link = (container: HTMLElement) =>
+      within(container).queryByRole("link", { name: "Revisions on db" });
+
+    failedRun();
+    const partial = renderViewer({ taskRunStatus: TaskRun_Status.FAILED, runError: failedError, revisionsLink });
+    expect(link(partial.container)?.getAttribute("href")).toBe(revisionsLink.href);
+    partial.unmount();
+
+    useRelease([marker(1, "007"), run(2, "boom")]);
+    const none = renderViewer({
+      taskRunStatus: TaskRun_Status.FAILED,
+      runError: "failed to execute release file migrations/007_change.sql (version 007): boom",
+      revisionsLink,
+    });
+    expect(link(none.container)).toBeNull();
+    none.unmount();
+
+    useRelease([]);
+    const done = renderViewer({ taskRunStatus: TaskRun_Status.DONE, revisionsLink });
+    expect(link(done.container)).not.toBeNull();
+    done.unmount();
+
+    failedRun();
+    const revisionPage = renderViewer({ taskRunStatus: TaskRun_Status.FAILED, runError: failedError });
+    expect(link(revisionPage.container)).toBeNull();
+    revisionPage.unmount();
   });
 
   test("an error that names no file ends the spine with an open Run failed section holding it", () => {
@@ -996,7 +1033,7 @@ describe("TaskRunLogViewer release spine", () => {
     useRelease([marker(1, "007"), run(2, ""), marker(4, "008"), run(5, "boom")]);
     const view = renderViewer({ taskRunStatus: TaskRun_Status.DONE });
     expect(within(view.container).getByTestId("spine-file-008").getAttribute("aria-expanded")).toBe("false");
-    expect(button(view.container, /Load 6 applied earlier/)).toBeDefined();
+    expect(within(view.container).getByTestId("spine-already-applied").textContent).toBe("6 files already applied to this database");
     view.unmount();
   });
 

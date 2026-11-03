@@ -4,6 +4,7 @@ import { ReadonlyMonaco } from "@/components/monaco";
 import {
   type OpenReleaseFile,
   ReleaseSpineView,
+  type RevisionsLinkTarget,
 } from "@/components/task-run-log/ReleaseSpineView";
 import { useReleaseByName } from "@/hooks/useAppState";
 import { useTimeReading } from "@/hooks/useTimeReading";
@@ -65,7 +66,7 @@ export function DeployTaskBody({
   isTruncated: boolean;
   latestTaskRun?: TaskRun;
   onShowHistory: () => void;
-  // For the Revisions link on a done release task.
+  // For the Revisions link on a release task.
   projectId?: string;
   // The task's stage, for the file viewer's "Failed on" header.
   stageTitle?: string;
@@ -119,12 +120,14 @@ export function DeployTaskBody({
         : undefined,
     [openViewer, release, stageTitle]
   );
-  const target = parseDatabaseTarget(task.target);
-  const databaseName = target?.database ?? "";
-  const revisionsUrl =
-    target && projectId
-      ? `/projects/${projectId}/instances/${target.instance}/databases/${target.database}?parent=${encodeURIComponent(target.parent)}#${PROJECT_DATABASE_DETAIL_TAB_REVISION}`
-      : undefined;
+  const revisionsLink = useMemo<RevisionsLinkTarget | undefined>(() => {
+    const target = parseDatabaseTarget(task.target);
+    if (!isReleaseTask || !target || !projectId) return undefined;
+    return {
+      href: `/projects/${projectId}/instances/${target.instance}/databases/${target.database}?parent=${encodeURIComponent(target.parent)}#${PROJECT_DATABASE_DETAIL_TAB_REVISION}`,
+      database: target.database,
+    };
+  }, [isReleaseTask, task.target, projectId]);
   // The one state line that matters for a waiting task.
   const waitingComment = latestTaskRun
     ? getTaskRunWaitingMessage(latestTaskRun, t)
@@ -204,18 +207,10 @@ export function DeployTaskBody({
           onOpenFile={openFile}
           onShowHistory={onShowHistory}
           releaseState={releaseState}
+          revisionsLink={revisionsLink}
           taskRun={latestTaskRun}
         />
       )}
-
-      {isReleaseTask && task.status === Task_Status.DONE && revisionsUrl ? (
-        <a
-          className="self-start text-sm text-accent hover:underline"
-          href={revisionsUrl}
-        >
-          {t("task-run.spine.revisions-on", { database: databaseName })}
-        </a>
-      ) : null}
     </div>
   );
 }

@@ -139,8 +139,9 @@ export interface SpineStepSection {
   entries: TaskRunLogEntry[];
 }
 
-// The release's versions the database had before this rollout, in version
-// order.
+// The release's versions the database already had, in version order. They are
+// the database's state before the run, not part of it, so they are never
+// windowed.
 export interface SpineAppliedEarlier {
   kind: "applied-earlier";
   files: ReleaseSpineFile[];
@@ -163,15 +164,15 @@ export interface ReleaseSpine {
 }
 
 // What a hidden stretch holds, which names its load row.
-export type SpineLoadKey = "applied" | "pending" | "applied-earlier" | "files";
+export type SpineLoadKey = "applied" | "pending" | "files";
 
 // How many rows of each stretch the reader has loaded.
 export type SpineLoads = Partial<Record<SpineLoadKey, number>>;
 
 export type SpineWindowItem =
+  | SpineAppliedEarlier
   | SpineFileSection
   | SpineStepSection
   | SpineRunFailed
-  | { kind: "applied-earlier-file"; file: ReleaseSpineFile }
   // `more`: a shown row above holds the same state.
   | { kind: "load"; key: SpineLoadKey; count: number; more: boolean };

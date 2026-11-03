@@ -18,7 +18,12 @@ import {
 } from "@/types/proto-es/v1/rollout_service_pb";
 import { LogRows, ROW_DIVIDER } from "./LogRows";
 import { countRetryMarkers, type TaskRunLogDetailText } from "./model";
-import { type OpenReleaseFile, ReleaseSpineView } from "./ReleaseSpineView";
+import {
+  type OpenReleaseFile,
+  ReleaseSpineView,
+  RevisionsLink,
+  type RevisionsLinkTarget,
+} from "./ReleaseSpineView";
 import { SectionContent } from "./SectionContent";
 import { SectionStatusIcon } from "./SectionHeader";
 import type { LogRow } from "./types";
@@ -45,6 +50,9 @@ export interface TaskRunLogViewerProps {
   // The run's error alert. The spine places the error on its section, so the
   // alert shows only when the spine does not render.
   errorAlert?: ReactNode;
+  // The database's revisions, shown once the run applied a file. Without the
+  // spine there are no per-file states, so only a done run shows it.
+  revisionsLink?: RevisionsLinkTarget;
 }
 
 // memo: callers pass scalars and identity-stable objects (the stored state,
@@ -59,6 +67,7 @@ export const TaskRunLogViewer = memo(function TaskRunLogViewer({
   releaseState,
   onOpenFile,
   errorAlert,
+  revisionsLink,
 }: TaskRunLogViewerProps) {
   const { t } = useTranslation();
   const {
@@ -184,11 +193,16 @@ export const TaskRunLogViewer = memo(function TaskRunLogViewer({
   if (!taskRunName) {
     return null;
   }
+  const showRevisions =
+    revisionsLink !== undefined && taskRunStatus === TaskRun_Status.DONE;
   const withAlert = (node: ReactNode) =>
-    errorAlert ? (
+    errorAlert || showRevisions ? (
       <div className="flex flex-col gap-2">
         {errorAlert}
         {node}
+        {showRevisions && revisionsLink ? (
+          <RevisionsLink target={revisionsLink} />
+        ) : null}
       </div>
     ) : (
       node
@@ -215,6 +229,7 @@ export const TaskRunLogViewer = memo(function TaskRunLogViewer({
         getSectionLabel={getSectionLabel}
         detailText={detailText}
         onOpenFile={onOpenFile}
+        revisionsLink={revisionsLink}
       />
     );
   }

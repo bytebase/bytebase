@@ -152,7 +152,7 @@ export function foldedTaskDescription({
       : undefined;
   const pendingCount = state?.pendingVersions.length ?? 0;
   const appliedEarlier =
-    state && t("task.folded.applied-earlier", { count: state.appliedCount });
+    state && t("task.folded.already-applied", { count: state.appliedCount });
   const statementKind = statementSummary
     ? statementKindOf(statementSummary.statementTypes)
     : undefined;

@@ -1109,32 +1109,13 @@ export const windowSpine = (
         kind: "load",
         key,
         count,
-        more: key === "files" ? out.length > 0 : shown.has(key),
+        more: key === "files" ? shown.size > 0 : shown.has(key),
       });
     }
     stretch = [];
   };
 
   for (const item of items) {
-    if (item.kind === "applied-earlier") {
-      const revealed = Math.min(
-        loads["applied-earlier"] ?? 0,
-        item.files.length
-      );
-      for (const file of item.files.slice(0, revealed)) {
-        out.push({ kind: "applied-earlier-file", file });
-      }
-      const count = item.files.length - revealed;
-      if (count > 0) {
-        out.push({
-          kind: "load",
-          key: "applied-earlier",
-          count,
-          more: revealed > 0,
-        });
-      }
-      continue;
-    }
     if (item.kind === "file") {
       if (fileIndex < cap || PINNED_STATUSES.has(item.status)) {
         flush();

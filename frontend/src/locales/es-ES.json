@@ -4247,8 +4247,8 @@
       "about-rows_other": "unas {{rows}} filas",
       "all-applied_one": "{{count}} aplicado",
       "all-applied_other": "Los {{count}} aplicados",
-      "applied-earlier_one": "{{count}} aplicado antes",
-      "applied-earlier_other": "{{count}} aplicados antes",
+      "already-applied_one": "{{count}} ya aplicado",
+      "already-applied_other": "{{count}} ya aplicados",
       "applying_one": "Aplicando {{count}} archivo",
       "applying_other": "Aplicando {{count}} archivos",
       "kind-ddl": "DDL",
@@ -4351,10 +4351,12 @@
     },
     "run-number": "Ejecución n.º {{number}}",
     "spine": {
+      "already-applied_one": "{{count}} archivo ya aplicado a esta base de datos",
+      "already-applied_other": "{{count}} archivos ya aplicados a esta base de datos",
       "as-of": "Según la creación del despliegue, {{time}}; la ejecución vuelve a comprobar la base de datos.",
       "count": {
+        "already-applied": "{{count}} ya aplicados",
         "applied": "{{count}} aplicados",
-        "applied-earlier": "{{count}} aplicados antes",
         "canceled": "{{count}} cancelados",
         "failed": "{{count}} fallidos",
         "files_one": "{{count}} archivo",
@@ -4365,10 +4367,8 @@
       "load": {
         "all": "Cargar todos ({{count}})",
         "applied": "Cargar {{count}} aplicados",
-        "applied-earlier": "Cargar {{count}} aplicados antes",
         "files": "Cargar {{count}} archivos",
         "more-applied": "Cargar {{count}} aplicados más",
-        "more-applied-earlier": "Cargar {{count}} más aplicados antes",
         "more-files": "Cargar {{count}} archivos más",
         "more-pending": "Cargar {{count}} pendientes más",
         "pending": "Cargar {{count}} pendientes"
@@ -4379,7 +4379,6 @@
       "run-failed": "Ejecución fallida",
       "status": {
         "applied": "Aplicado",
-        "applied-earlier": "Aplicado antes",
         "canceled": "Cancelado",
         "failed": "Fallido",
         "running": "En ejecución"
