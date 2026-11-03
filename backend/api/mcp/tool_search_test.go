@@ -344,12 +344,19 @@ func TestSearchAPINamesWhatMCPCannotDo(t *testing.T) {
 		require.Contains(t, served, "own Bytebase permissions still apply")
 		require.Contains(t, served, `returns "setting <NAME> not found"`)
 		require.Contains(t, served, "bb.default (full mask) and bb.default-partial (partial mask) always exist")
-		for _, method := range []string{"ListSettings", "UpdateSetting", "TestEmailSetting"} {
+		for _, method := range []string{"ListSettings", "TestEmailSetting"} {
 			require.Contains(t, unavailable, "SettingService/"+method)
 		}
+		require.Contains(t, served, "SettingService/UpdateSetting")
+		require.Contains(t, served, "change only the approval rules for database changes, through the administer_workspace tool")
+		require.NotContains(t, unavailable, "SettingService/UpdateSetting")
 
 		detail := searchText(t, s, SearchInput{OperationID: "SettingService/GetSetting"})
 		require.Contains(t, detail, readable)
+		require.Contains(t, detail, "Request Body")
+
+		detail = searchText(t, s, SearchInput{OperationID: "SettingService/UpdateSetting"})
+		require.Contains(t, detail, "through the administer_workspace tool")
 		require.Contains(t, detail, "Request Body")
 	})
 }

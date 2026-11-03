@@ -180,7 +180,6 @@ func TestForbiddenClassMembership(t *testing.T) {
 		v1connect.WorkloadIdentityServiceCreateWorkloadIdentityProcedure: v1pb.MCPDenialReason_MINTS_CREDENTIAL_FOR_OTHERS,
 		v1connect.WorkloadIdentityServiceUpdateWorkloadIdentityProcedure: v1pb.MCPDenialReason_MINTS_CREDENTIAL_FOR_OTHERS,
 		v1connect.SettingServiceTestEmailSettingProcedure:                v1pb.MCPDenialReason_MINTS_CREDENTIAL_FOR_OTHERS,
-		v1connect.SettingServiceUpdateSettingProcedure:                   v1pb.MCPDenialReason_REWRITES_SESSION_BOUNDARY,
 		v1connect.InstanceServiceUpdateDataSourceProcedure:               v1pb.MCPDenialReason_MINTS_CREDENTIAL_FOR_OTHERS,
 		v1connect.IssueServiceRetryIssueApprovalProcedure:                v1pb.MCPDenialReason_DRIVES_THE_APPROVAL_DECISION,
 		v1connect.AccessGrantServiceActivateAccessGrantProcedure:         v1pb.MCPDenialReason_DRIVES_THE_APPROVAL_DECISION,

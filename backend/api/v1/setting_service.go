@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"bytes"
 	"context"
 	"log/slog"
 	"regexp"
@@ -14,6 +15,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 
+	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/common/permission"
@@ -270,6 +272,10 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 					Description: rule.Template.Description,
 				},
 			})
+		}
+		if confirmed, ok := auth.MCPConfirmedDecisionFromContext(ctx); ok &&
+			confirmed.Procedure == v1connect.SettingServiceUpdateSettingProcedure && confirmed.Resource == request.Msg.Setting.Name {
+			return s.replaceConfirmedApprovalRules(ctx, workspaceID, payload, confirmed.StoredDigest)
 		}
 		storeSettingValue = payload
 	case storepb.SettingName_APP_IM:
@@ -1494,4 +1500,32 @@ func validateEmailSetting(setting *storepb.EmailSetting) error {
 		return errors.Errorf("unsupported email type: %v", setting.Type)
 	}
 	return nil
+}
+
+// replaceConfirmedApprovalRules writes the approval rules an MCP user confirmed,
+// under the setting's row lock. The stored rules must still be the ones the form
+// showed, or another admin's edit made since would be lost.
+func (s *SettingService) replaceConfirmedApprovalRules(ctx context.Context, workspaceID string, rules *storepb.WorkspaceApprovalSetting, shownDigest []byte) (*connect.Response[v1pb.Setting], error) {
+	setting, err := s.store.UpdateSettingAtomic(ctx, workspaceID, storepb.SettingName_WORKSPACE_APPROVAL, func(current proto.Message) (proto.Message, error) {
+		shown, err := convertToSettingMessage(&store.SettingMessage{Name: storepb.SettingName_WORKSPACE_APPROVAL, Workspace: workspaceID, Value: current})
+		if err != nil {
+			return nil, err
+		}
+		if !bytes.Equal(auth.MCPValueDigest(shown.GetValue().GetWorkspaceApproval()), shownDigest) {
+			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("the approval rules changed after the user was asked to confirm this change"))
+		}
+		return rules, nil
+	}, nil)
+	if err != nil {
+		var connectErr *connect.Error
+		if errors.As(err, &connectErr) {
+			return nil, connectErr
+		}
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to set the approval rules"))
+	}
+	settingMessage, err := convertToSettingMessage(setting)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting message: %v", err))
+	}
+	return connect.NewResponse(settingMessage), nil
 }

@@ -122,27 +122,13 @@ var mcpDenialReasons = map[v1pb.MCPDenialReason]MCPDenialWording{
 	// re-arming, and this mechanism is about issuing. BOT-54.
 	v1pb.MCPDenialReason_MINTS_CREDENTIAL_FOR_OTHERS: {v1pb.MCPMethodClass_FORBIDDEN, "it hands someone control of a principal other than the caller, which revoking this session would not take back"},
 
-	// SettingService/UpdateSetting, refused for the boundary it rewrites
-	// rather than for any credential it hands out. Three mask paths carry it:
-	// value.workspace_profile.mcp_capability IS the MCP ceiling, so a session
-	// that reaches it is not bounded by it; value.email.smtp keeps the
-	// stored password when the request omits it while accepting a new host,
-	// which hands over the relay resolvePreLoginEmailSetting reads to mail
-	// password resets and login codes; and value.ai.endpoint does the same to
-	// the AI key it never names — the stored api_key survives the mask, and the
-	// next AIService/Chat puts it in an auth header to the host just written
-	// (ai_service.go). SaaS refuses AI writes outright (setting_service.go), so
-	// that third one is a self-hosted vector, and the key it carries out is
-	// whatever the operator configured — GEMINI_API_KEY, where it is set, seeds
-	// one key into every workspace created after it (getAdditionalWorkspaceSettings).
-	// TestEmailSetting is the one-shot version of the second; this is the
-	// persisting one. The same method also writes the SSO domain allowlist and
-	// the sign-in switches.
-	//
-	// Classification is per method, so this refuses the whole RPC — including
-	// the settings that have nothing to do with any of them. Splitting the
-	// handler so ordinary configuration stays reachable to an agent is the
-	// follow-up (BOT-53); disallowing first is the deliberate order.
+	// No method carries this now. It was SettingService/UpdateSetting's, which
+	// writes the MCP ceiling (value.mcp.capability), the SMTP relay that mails
+	// password resets, the AI endpoint the stored key is sent to, and the
+	// sign-in switches. UpdateSetting is WRITE, and the gate serves it only with
+	// a confirmation for the setting it names (mcpRequestShapeRefusals), which
+	// administer_workspace attaches for the approval rules alone. The value stays
+	// for the next method that rewrites the session's boundary.
 	v1pb.MCPDenialReason_REWRITES_SESSION_BOUNDARY: {v1pb.MCPMethodClass_FORBIDDEN, "it rewrites the workspace settings that bound this session, including the switch meant to contain it"},
 
 	v1pb.MCPDenialReason_DRIVES_THE_APPROVAL_DECISION: {v1pb.MCPMethodClass_FORBIDDEN, "it can let a change or an access request pass its approval without an approver deciding it"},
