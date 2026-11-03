@@ -1,29 +1,25 @@
 {
-  "run_id": "20261102T002734Z",
-  "sha": "64cc34ee3253485ae57041108c65bc3088d32676",
-  "date": "2026-11-02",
-  "result": "red",
+  "run_id": "20261103T075424Z",
+  "sha": "2f1c7be0ce943e19babcecaa2ee29d4062f99e5d",
+  "date": "2026-11-03",
+  "result": "green",
   "totals": {
-    "tests": 275,
-    "passed": 271,
-    "failed": 1,
-    "flaky": 1,
+    "tests": 276,
+    "passed": 274,
+    "failed": 0,
+    "flaky": 0,
     "lock_flipped": 1,
     "lock_unstable": 0,
     "lock_holding": 1,
     "skipped": 0,
     "not_run": 0,
     "skipped_deliberate": 0,
-    "duration_s": 1610
+    "duration_s": 1217
   },
-  "failed": [
-    "sql-editor/sql-editor-tabs.spec.ts::horizontal scrollbar is reachable with enough tabs to overflow"
-  ],
-  "flaky": [
-    "plan-detail/plan-detail-review.spec.ts::a thread opens with review submission, stays apart from plain comments, and follows statement edits"
-  ],
+  "failed": [],
+  "flaky": [],
   "lock_unstable": [],
   "infra": null,
-  "note": "red: 1 PRODUCT-candidate (sql-editor-tabs:212, spec timing race, framework proposal), 1 SPEC-ROT (plan-detail-review:1848), 1 LOCK-FLIPPED (BYT-10360); PR #21822; no issues filed (filing disabled)",
-  "run_url": "https://claude.ai/code/session_cse_016qZUAub2nHutXxoE9TvsN3"
+  "note": "1 LOCK-FLIPPED (BYT-10360 fixed by #21696) -> adaptation PR #21873; no issues",
+  "run_url": "https://claude.ai/code/session_cse_016qZUAxMbVMR97FU76pcHza"
 }
