@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"slices"
 	"strings"
 
 	"connectrpc.com/connect"
@@ -29,8 +30,8 @@ type AdministerWorkspaceInput struct {
 }
 
 // AdministerWorkspaceOutput is the output for the administer_workspace tool.
-// Message repeats the result's text, since some clients show the model only
-// the structured result.
+// Message repeats the result's text: Claude Code hands the model only the
+// structured result when a result has one (BOT-165).
 type AdministerWorkspaceOutput struct {
 	OperationID string `json:"operationId"`
 	Changed     bool   `json:"changed"`
@@ -45,7 +46,7 @@ const administerWorkspaceDescription = `Make a workspace administration change t
 | operationId | Yes      | The operation, e.g. "SettingService/UpdateSetting" |
 | body        | Yes      | The operation's request body |
 
-It serves one change: the approval rules for database changes. Send SettingService/UpdateSetting with setting.name "settings/WORKSPACE_APPROVAL" and the whole rule list in setting.value.workspaceApproval.rules. Read the stored rules first with call_api SettingService/GetSetting, change only the rules whose source is CHANGE_DATABASE, and send every other rule as stored, in its order. The first rule whose condition matches decides who approves a change.
+It serves one change: the approval rules for database changes. Send SettingService/UpdateSetting with setting.name "settings/WORKSPACE_APPROVAL" and the whole rule list in setting.value.workspaceApproval.rules. Read the stored rules first with call_api SettingService/GetSetting, change only the rules whose source is CHANGE_DATABASE, and send every other rule as stored, in its order. Give each rule you add the source CHANGE_DATABASE. Send a rule's source, condition.expression, template.title, template.description and template.flow.roles; other fields are refused. An approval check tries the CHANGE_DATABASE rules in order, and the first whose condition matches decides who approves a change. When none matches, the rules with no source, such as the Fallback Rule, decide.
 
 The tool shows the user what changes and asks them to confirm in a form. It changes the rules only when they accept; declining or cancelling changes nothing. A change too long for the form is refused, so make it in smaller steps. A client that cannot show the form gets the console page instead. Do not ask in chat first: the form is the question.
 
@@ -59,18 +60,22 @@ func (s *Server) registerAdministerWorkspaceTool() {
 }
 
 const (
-	administerUpdateSetting = "SettingService/UpdateSetting"
-	approvalSettingName     = common.SettingNamePrefix + "WORKSPACE_APPROVAL"
-
 	// The choice field of the form, and its values.
 	adminChoiceField  = "choice"
 	adminChoiceApply  = "apply"
 	adminChoiceChange = "change"
 
-	// approvalRulesApply is the fixed text of the approval form: every rule
-	// change says it, so it fills the lines the change leaves.
-	approvalRulesApply = "Every approval check from now on uses these rules, including the check after a plan edit."
+	// approvalRulesApply is the fixed text of the approval form. It is one line,
+	// so it goes in the message whenever a line is left.
+	approvalRulesApply = "Approval checks from now on use these rules, also after a plan edit."
+
+	// rereadApprovalRules is the next step after the stored rules changed: the
+	// request was built from the old ones, so sending it again would undo the
+	// other change.
+	rereadApprovalRules = "read the rules again with call_api SettingService/GetSetting, make the user's change to them, and call administer_workspace with the result"
 )
+
+var approvalSettingName = common.SettingNamePrefix + v1pb.Setting_WORKSPACE_APPROVAL.String()
 
 // approvalRulesChange is a request to replace the approval rules.
 type approvalRulesChange struct {
@@ -83,16 +88,16 @@ func (*approvalRulesChange) confirmedProcedure() string {
 
 func (*approvalRulesChange) confirmedResource() string { return approvalSettingName }
 
-func (s *Server) handleAdministerWorkspace(ctx context.Context, req *mcp.CallToolRequest, input AdministerWorkspaceInput) (*mcp.CallToolResult, *AdministerWorkspaceOutput, error) {
-	if input.OperationID != administerUpdateSetting {
+func (s *Server) handleAdministerWorkspace(ctx context.Context, req *mcp.CallToolRequest, input AdministerWorkspaceInput) (*mcp.CallToolResult, any, error) {
+	if endpoint, ok := s.openAPIIndex.GetEndpoint(input.OperationID); !ok || endpoint.Path != v1connect.SettingServiceUpdateSettingProcedure {
 		return formatToolError(&toolError{
 			Code:       "UNSUPPORTED_CHANGE",
 			Message:    fmt.Sprintf("administer_workspace does not change %q", input.OperationID),
-			Suggestion: "it changes the approval rules for database changes through " + administerUpdateSetting + "; make other changes signed in to the Bytebase console",
+			Suggestion: "it changes the approval rules for database changes through SettingService/UpdateSetting; make other changes with the tool that serves them, or signed in to the Bytebase console",
 		}), nil, nil
 	}
 	link := s.consoleLink(ctx, "custom-approval")
-	change, err := parseApprovalRulesChange(input.Body)
+	change, err := parseApprovalRulesChange(input.Body, link)
 	if err != nil {
 		return formatToolError(err), nil, nil
 	}
@@ -110,7 +115,7 @@ func (s *Server) handleAdministerWorkspace(ctx context.Context, req *mcp.CallToo
 	if err != nil {
 		return formatToolError(err), nil, nil
 	}
-	diff, err := diffApprovalRules(stored.GetRules(), change.request.GetSetting().GetValue().GetWorkspaceApproval().GetRules())
+	diff, err := diffApprovalRules(stored.GetRules(), change.request.GetSetting().GetValue().GetWorkspaceApproval().GetRules(), link)
 	if err != nil {
 		return formatToolError(err), nil, nil
 	}
@@ -122,12 +127,8 @@ func (s *Server) handleAdministerWorkspace(ctx context.Context, req *mcp.CallToo
 	if err != nil {
 		return formatToolError(err), nil, nil
 	}
-	form, err := approvalRulesForm(ctx, diff, openIssues)
+	form, err := approvalRulesForm(ctx, diff, openIssues, link)
 	if err != nil {
-		var te *toolError
-		if errors.As(err, &te) {
-			te.Suggestion += link
-		}
 		return formatToolError(err), nil, nil
 	}
 	digest := approvalRulesDigest(form.message, stored, change.request)
@@ -162,28 +163,24 @@ func (s *Server) handleAdministerWorkspace(ctx context.Context, req *mcp.CallToo
 	default:
 		return textResult("Not changed: the answer chose none of the form's choices, so the approval rules stay as they are."), nil, nil
 	}
-	if why := reply.staleReason("the approval rules or this request no longer read as they did when the user was asked"); why != "" {
+	if why := reply.staleReason("the approval rules, the user's issues awaiting approval or this request no longer read as they did when the user was asked"); why != "" {
 		return formatToolError(&toolError{
 			Code:       "STALE_CONFIRMATION",
 			Message:    why + ", so the approval rules were not changed",
-			Suggestion: "call administer_workspace again to ask the user about the rules as they are now",
+			Suggestion: rereadApprovalRules,
 		}), nil, nil
 	}
 
 	confirmedCtx := auth.WithMCPConfirmedDecision(ctx, auth.MCPConfirmedDecision{
-		Procedure:    change.confirmedProcedure(),
-		Resource:     change.confirmedResource(),
-		StoredDigest: auth.MCPValueDigest(stored),
+		Procedure: change.confirmedProcedure(),
+		Resource:  change.confirmedResource(),
+		Digest:    auth.MCPValueDigest(stored),
 	})
 	body, err := protojson.Marshal(change.request)
 	if err != nil {
 		return formatToolError(errors.Wrap(err, "failed to build the update")), nil, nil
 	}
-	var bodyMap map[string]any
-	if err := json.Unmarshal(body, &bodyMap); err != nil {
-		return formatToolError(errors.Wrap(err, "failed to build the update")), nil, nil
-	}
-	resp, err := s.apiRequest(confirmedCtx, change.confirmedProcedure(), bodyMap)
+	resp, err := s.apiRequest(confirmedCtx, change.confirmedProcedure(), json.RawMessage(body))
 	if err != nil {
 		return formatToolError(errors.Wrap(err, "failed to update the approval rules")), nil, nil
 	}
@@ -192,12 +189,12 @@ func (s *Server) handleAdministerWorkspace(ctx context.Context, req *mcp.CallToo
 			return formatToolError(&toolError{
 				Code:       "STALE_CONFIRMATION",
 				Message:    "the approval rules changed after the user was asked, so they were not changed",
-				Suggestion: "call administer_workspace again to ask the user about the rules as they are now",
+				Suggestion: rereadApprovalRules,
 			}), nil, nil
 		}
 		return formatToolError(errors.Errorf("failed to update the approval rules: HTTP %d: %s", resp.Status, parseError(resp.Body))), nil, nil
 	}
-	text := fmt.Sprintf("Applied: there are now %d rules for database changes. %s\nApproval rules: %s", len(diff.requested), approvalRulesApply, link)
+	text := fmt.Sprintf("Applied: the approval rules now hold %s for database changes. %s\nApproval rules: %s", countRules(len(diff.requested)), approvalRulesApply, link)
 	return textResult(text), &AdministerWorkspaceOutput{OperationID: input.OperationID, Changed: true, Message: text, Link: link}, nil
 }
 
@@ -205,25 +202,22 @@ func (s *Server) handleAdministerWorkspace(ctx context.Context, req *mcp.CallToo
 // entry takes. A request that sets any other field is refused before the form,
 // since the form could not state it.
 var approvalRequestFields = map[string]bool{
-	"setting":                                                      true,
-	"setting.name":                                                 true,
-	"setting.value":                                                true,
-	"setting.value.workspace_approval":                             true,
-	"setting.value.workspace_approval.rules":                       true,
-	"setting.value.workspace_approval.rules.source":                true,
-	"setting.value.workspace_approval.rules.condition":             true,
-	"setting.value.workspace_approval.rules.condition.expression":  true,
-	"setting.value.workspace_approval.rules.condition.title":       true,
-	"setting.value.workspace_approval.rules.condition.description": true,
-	"setting.value.workspace_approval.rules.condition.location":    true,
-	"setting.value.workspace_approval.rules.template":              true,
-	"setting.value.workspace_approval.rules.template.title":        true,
-	"setting.value.workspace_approval.rules.template.description":  true,
-	"setting.value.workspace_approval.rules.template.flow":         true,
-	"setting.value.workspace_approval.rules.template.flow.roles":   true,
+	"setting":                                                     true,
+	"setting.name":                                                true,
+	"setting.value":                                               true,
+	"setting.value.workspace_approval":                            true,
+	"setting.value.workspace_approval.rules":                      true,
+	"setting.value.workspace_approval.rules.source":               true,
+	"setting.value.workspace_approval.rules.condition":            true,
+	"setting.value.workspace_approval.rules.condition.expression": true,
+	"setting.value.workspace_approval.rules.template":             true,
+	"setting.value.workspace_approval.rules.template.title":       true,
+	"setting.value.workspace_approval.rules.template.description": true,
+	"setting.value.workspace_approval.rules.template.flow":        true,
+	"setting.value.workspace_approval.rules.template.flow.roles":  true,
 }
 
-func parseApprovalRulesChange(body map[string]any) (*approvalRulesChange, error) {
+func parseApprovalRulesChange(body map[string]any, link string) (*approvalRulesChange, error) {
 	encoded, err := json.Marshal(body)
 	if err != nil {
 		return nil, &toolError{Code: "INVALID_REQUEST", Message: "the request body could not be read: " + err.Error()}
@@ -243,7 +237,7 @@ func parseApprovalRulesChange(body map[string]any) (*approvalRulesChange, error)
 		return nil, &toolError{
 			Code:       "FIELD_NOT_SUPPORTED",
 			Message:    fmt.Sprintf("the request sets %s, which administer_workspace does not change", field),
-			Suggestion: "send setting.name and the rule list only",
+			Suggestion: "send setting.name and each rule's source, condition.expression, template.title, template.description and template.flow.roles only, or change the rules signed in to the Bytebase console: " + link,
 		}
 	}
 	return &approvalRulesChange{request: request}, nil
@@ -295,9 +289,6 @@ func (s *Server) readApprovalRules(ctx context.Context) (*v1pb.WorkspaceApproval
 	if err := common.ProtojsonUnmarshaler.Unmarshal(resp.Body, setting); err != nil {
 		return nil, errors.Wrap(err, "failed to parse the approval rules")
 	}
-	if setting.GetValue().GetWorkspaceApproval() == nil {
-		return &v1pb.WorkspaceApprovalSetting{}, nil
-	}
 	return setting.GetValue().GetWorkspaceApproval(), nil
 }
 
@@ -312,15 +303,11 @@ func approvalRulesDigest(message string, stored *v1pb.WorkspaceApprovalSetting, 
 	return h.Sum(nil)
 }
 
-// approvalRuleChange is one line of the approval form: how one rule for
-// database changes differs between the stored list and the request.
-type approvalRuleChange struct {
-	line string
-}
-
 // approvalRulesDiff is how a request changes the approval rules.
 type approvalRulesDiff struct {
-	changes []approvalRuleChange
+	// changes are the form's change lines: the removed rules, then the
+	// requested rules that differ, in the order an approval check tries them.
+	changes []string
 	// requested are the rules for database changes as the request orders them.
 	requested []*v1pb.WorkspaceApprovalSetting_Rule
 }
@@ -330,23 +317,31 @@ type approvalRulesDiff struct {
 // they decide who approves the user's own access and role requests and the
 // form does not show them. The rules for database changes are matched by their
 // condition, the text an approval check evaluates.
-func diffApprovalRules(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule) (*approvalRulesDiff, error) {
+func diffApprovalRules(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule, link string) (*approvalRulesDiff, error) {
 	storedOther, storedDB := splitApprovalRules(stored)
 	requestedOther, requestedDB := splitApprovalRules(requested)
-	if !sameRules(storedOther, requestedOther) {
+	if !slices.EqualFunc(storedOther, requestedOther, func(a, b *v1pb.WorkspaceApprovalSetting_Rule) bool { return proto.Equal(a, b) }) {
 		return nil, &toolError{
 			Code:       "OTHER_RULES_CHANGED",
 			Message:    "the request changes approval rules whose source is not CHANGE_DATABASE, and administer_workspace changes only the rules for database changes",
-			Suggestion: "send every rule of another source as GetSetting returns it, in its order",
+			Suggestion: "give each rule for database changes the source CHANGE_DATABASE, and send every rule of another source as GetSetting returns it, in its order; or change the rules signed in to the Bytebase console: " + link,
 		}
 	}
-	storedByCondition, err := rulesByCondition(storedDB)
-	if err != nil {
-		return nil, err
+	storedByCondition, duplicate := rulesByCondition(storedDB)
+	if duplicate != "" {
+		return nil, &toolError{
+			Code:       "DUPLICATE_CONDITION",
+			Message:    fmt.Sprintf("two stored rules for database changes have the condition %q, so the form could not tell which one changes", duplicate),
+			Suggestion: "change the rules signed in to the Bytebase console: " + link,
+		}
 	}
-	requestedByCondition, err := rulesByCondition(requestedDB)
-	if err != nil {
-		return nil, err
+	requestedByCondition, duplicate := rulesByCondition(requestedDB)
+	if duplicate != "" {
+		return nil, &toolError{
+			Code:       "DUPLICATE_CONDITION",
+			Message:    fmt.Sprintf("two requested rules for database changes have the condition %q, so the form could not tell which one changes", duplicate),
+			Suggestion: "keep one rule per condition",
+		}
 	}
 
 	diff := &approvalRulesDiff{requested: requestedDB}
@@ -357,36 +352,61 @@ func diffApprovalRules(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule) 
 			storedKept = append(storedKept, condition)
 			continue
 		}
-		diff.changes = append(diff.changes, approvalRuleChange{line: fmt.Sprintf("Removed, %s: %q", approvers(rule), condition)})
+		diff.changes = append(diff.changes, fmt.Sprintf("Removed, %s: %q", approvers(rule), condition))
 	}
 	for _, rule := range requestedDB {
-		condition := rule.GetCondition().GetExpression()
-		before, kept := storedByCondition[condition]
-		if !kept {
-			diff.changes = append(diff.changes, approvalRuleChange{line: fmt.Sprintf("Added, %s: %q", approvers(rule), condition)})
-			continue
-		}
-		requestedKept = append(requestedKept, condition)
-		switch {
-		case !proto.Equal(before.GetTemplate().GetFlow(), rule.GetTemplate().GetFlow()):
-			diff.changes = append(diff.changes, approvalRuleChange{line: fmt.Sprintf("Changed, %s to %s: %q", approvers(before), approvers(rule), condition)})
-		case before.GetTemplate().GetTitle() != rule.GetTemplate().GetTitle():
-			diff.changes = append(diff.changes, approvalRuleChange{line: fmt.Sprintf("Renamed to %q: %q", rule.GetTemplate().GetTitle(), condition)})
-		case !proto.Equal(before, rule):
-			diff.changes = append(diff.changes, approvalRuleChange{line: fmt.Sprintf("Changed its description: %q", condition)})
-		default:
+		if condition := rule.GetCondition().GetExpression(); storedByCondition[condition] != nil {
+			requestedKept = append(requestedKept, condition)
 		}
 	}
-	// A rule outside the longest common order moved: the first matching rule
-	// decides, so a move changes which rule decides some changes.
+	// A kept rule outside the longest common order moved: the first matching
+	// rule decides, so a move changes which rule decides some changes.
 	inOrder := longestCommonOrder(storedKept, requestedKept)
-	for i, condition := range requestedKept {
-		if !inOrder[i] {
-			position := 1 + indexOfCondition(requestedDB, condition)
-			diff.changes = append(diff.changes, approvalRuleChange{line: fmt.Sprintf("Moved to rule %d of %d: %q", position, len(requestedDB), condition)})
+	kept := 0
+	for i, rule := range requestedDB {
+		condition := rule.GetCondition().GetExpression()
+		before := storedByCondition[condition]
+		if before == nil {
+			// An added rule decides before every rule after it, so its place
+			// matters unless it is last.
+			if i < len(requestedDB)-1 {
+				diff.changes = append(diff.changes, fmt.Sprintf("Added as rule %d, %s: %q", i+1, approvers(rule), condition))
+			} else {
+				diff.changes = append(diff.changes, fmt.Sprintf("Added, %s: %q", approvers(rule), condition))
+			}
+			continue
+		}
+		moved := !inOrder[kept]
+		kept++
+		if clauses := keptRuleClauses(before, rule, moved, i+1); len(clauses) > 0 {
+			line := strings.Join(clauses, "; ")
+			diff.changes = append(diff.changes, fmt.Sprintf("%s%s: %q", strings.ToUpper(line[:1]), line[1:], condition))
 		}
 	}
 	return diff, nil
+}
+
+// keptRuleClauses states how a kept rule changes, one clause per field the
+// form shows: the approvers, the place, the title and the description.
+func keptRuleClauses(before, rule *v1pb.WorkspaceApprovalSetting_Rule, moved bool, position int) []string {
+	var clauses []string
+	if !proto.Equal(before.GetTemplate().GetFlow(), rule.GetTemplate().GetFlow()) {
+		clauses = append(clauses, fmt.Sprintf("changed, %s to %s", approvers(before), approvers(rule)))
+	}
+	if moved {
+		clauses = append(clauses, fmt.Sprintf("moved to rule %d", position))
+	}
+	if title := rule.GetTemplate().GetTitle(); title != before.GetTemplate().GetTitle() {
+		clauses = append(clauses, "renamed to "+ruleTitle(rule))
+	}
+	if description := rule.GetTemplate().GetDescription(); description != before.GetTemplate().GetDescription() {
+		if description == "" {
+			clauses = append(clauses, "description removed")
+		} else {
+			clauses = append(clauses, fmt.Sprintf("description changed to %q", description))
+		}
+	}
+	return clauses
 }
 
 func splitApprovalRules(rules []*v1pb.WorkspaceApprovalSetting_Rule) (other, database []*v1pb.WorkspaceApprovalSetting_Rule) {
@@ -400,32 +420,18 @@ func splitApprovalRules(rules []*v1pb.WorkspaceApprovalSetting_Rule) (other, dat
 	return other, database
 }
 
-func sameRules(a, b []*v1pb.WorkspaceApprovalSetting_Rule) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if !proto.Equal(a[i], b[i]) {
-			return false
-		}
-	}
-	return true
-}
-
-func rulesByCondition(rules []*v1pb.WorkspaceApprovalSetting_Rule) (map[string]*v1pb.WorkspaceApprovalSetting_Rule, error) {
+// rulesByCondition maps rules by their condition. It returns the first
+// condition two rules share, if any.
+func rulesByCondition(rules []*v1pb.WorkspaceApprovalSetting_Rule) (map[string]*v1pb.WorkspaceApprovalSetting_Rule, string) {
 	byCondition := make(map[string]*v1pb.WorkspaceApprovalSetting_Rule, len(rules))
 	for _, rule := range rules {
 		condition := rule.GetCondition().GetExpression()
 		if _, ok := byCondition[condition]; ok {
-			return nil, &toolError{
-				Code:       "DUPLICATE_CONDITION",
-				Message:    fmt.Sprintf("two rules for database changes have the condition %q, so the form could not tell which one changes", condition),
-				Suggestion: "keep one rule per condition, or change the rules signed in to the Bytebase console",
-			}
+			return nil, condition
 		}
 		byCondition[condition] = rule
 	}
-	return byCondition, nil
+	return byCondition, ""
 }
 
 // longestCommonOrder marks the elements of b that stay in the order a has
@@ -460,15 +466,6 @@ func longestCommonOrder(a, b []string) []bool {
 	return kept
 }
 
-func indexOfCondition(rules []*v1pb.WorkspaceApprovalSetting_Rule, condition string) int {
-	for i, rule := range rules {
-		if rule.GetCondition().GetExpression() == condition {
-			return i
-		}
-	}
-	return -1
-}
-
 // approvers names a rule's approval flow as the console does: each step's role,
 // in order, or "no approval" for an empty flow.
 func approvers(rule *v1pb.WorkspaceApprovalSetting_Rule) string {
@@ -493,38 +490,73 @@ type adminForm struct {
 	description string
 }
 
-// approvalRulesForm builds the approval form. The message states the whole
-// change: the question, a line or more per rule change, and the user's issues
-// whose approval a plan edit would check again under the new rules. The fixed
-// text fills the lines left, and the description holds the full list.
-func approvalRulesForm(ctx context.Context, diff *approvalRulesDiff, openIssues []string) (*adminForm, error) {
+// approvalRulesForm builds the approval form in the lines Claude Code shows.
+// The message states the whole change: the question, a line or more per rule
+// change, and the user's issues whose approval a plan edit would check again
+// under the new rules. A change that does not fit is refused, never cut. The
+// fixed sentence goes in the message when a line is left, and in the
+// description otherwise; the description also lists every rule.
+func approvalRulesForm(ctx context.Context, diff *approvalRulesDiff, openIssues []string, link string) (*adminForm, error) {
 	question := "Change the approval rules for database changes"
-	var changeLines []string
-	for _, change := range diff.changes {
-		changeLines = append(changeLines, wrapMessageLine(change.line)...)
+	if email := getUserEmail(ctx); email != "" {
+		question += ", as " + email
 	}
 	var ownWork []string
 	if len(openIssues) > 0 {
 		ownWork = wrapMessageLine(issuesLine(openIssues))
 	}
-	message, fixed, ok := fitAdminMessage(ctx, question, changeLines, ownWork, wrapMessageLine(approvalRulesApply))
-	if !ok {
-		return nil, &toolError{
+	lines := []string{question + "?"}
+	tooLong := ""
+	for _, change := range diff.changes {
+		changeLines := wrapMessageLine(change)
+		if tooLong == "" && 1+len(changeLines)+len(ownWork) > messageLines {
+			tooLong = change
+		}
+		lines = append(lines, changeLines...)
+	}
+	lines = append(lines, ownWork...)
+	if len(lines) > messageLines {
+		return nil, changeTooLong(len(lines), tooLong, link)
+	}
+
+	var sb strings.Builder
+	if len(diff.requested) == 0 {
+		sb.WriteString("No rule for database changes is left, so the fallback rules decide every database change.")
+	} else {
+		sb.WriteString("The rules for database changes, in the order an approval check tries them:")
+		for i, rule := range diff.requested {
+			fmt.Fprintf(&sb, "\n%d. %s, %s: %q", i+1, ruleTitle(rule), approvers(rule), rule.GetCondition().GetExpression())
+			if description := rule.GetTemplate().GetDescription(); description != "" {
+				fmt.Fprintf(&sb, " (description %q)", description)
+			}
+		}
+		sb.WriteString("\nWhen none of them matches, the fallback rules decide.")
+	}
+	sb.WriteString(" Rules for other sources stay as they are.")
+	if len(lines) < messageLines {
+		lines = append(lines, approvalRulesApply)
+	} else {
+		sb.WriteString("\n" + approvalRulesApply)
+	}
+	return &adminForm{message: strings.Join(lines, "\n"), description: sb.String()}, nil
+}
+
+// changeTooLong refuses a change whose message needs more lines than a form
+// shows. Smaller steps help only when every rule change fits a form alone;
+// tooLong is the first one that does not.
+func changeTooLong(needed int, tooLong, link string) *toolError {
+	if tooLong != "" {
+		return &toolError{
 			Code:       "CHANGE_TOO_LONG",
-			Message:    fmt.Sprintf("this change has %d rule changes, more than one confirmation form can show in full, so the approval rules were not changed", len(diff.changes)),
-			Suggestion: "make the change in smaller steps, one or two rules at a time, or change the rules signed in to the Bytebase console: ",
+			Message:    fmt.Sprintf("the rule change %q needs more lines than the %d one confirmation form shows, so the approval rules were not changed", tooLong, messageLines),
+			Suggestion: "make that change signed in to the Bytebase console: " + link,
 		}
 	}
-	var sb strings.Builder
-	sb.WriteString("The rules for database changes, in the order an approval check tries them:")
-	for i, rule := range diff.requested {
-		fmt.Fprintf(&sb, "\n%d. %s, %s: %q", i+1, ruleTitle(rule), approvers(rule), rule.GetCondition().GetExpression())
+	return &toolError{
+		Code:       "CHANGE_TOO_LONG",
+		Message:    fmt.Sprintf("this change needs %d lines, more than the %d one confirmation form shows, so the approval rules were not changed", needed, messageLines),
+		Suggestion: "make the change in smaller steps, a rule or two at a time, or change the rules signed in to the Bytebase console: " + link,
 	}
-	sb.WriteString("\nRules for other sources stay as they are.")
-	if len(fixed) > 0 {
-		sb.WriteString("\n" + strings.Join(fixed, " "))
-	}
-	return &adminForm{message: message, description: sb.String()}, nil
 }
 
 func ruleTitle(rule *v1pb.WorkspaceApprovalSetting_Rule) string {
@@ -534,54 +566,40 @@ func ruleTitle(rule *v1pb.WorkspaceApprovalSetting_Rule) string {
 	return "untitled"
 }
 
+func countRules(n int) string {
+	if n == 1 {
+		return "1 rule"
+	}
+	return fmt.Sprintf("%d rules", n)
+}
+
 // issuesLine names the user's open issues, as many as one line holds, and
-// counts the rest.
+// counts the rest. It only counts them when the first name alone does not fit.
 func issuesLine(issues []string) string {
 	const lead = "Your issues awaiting approval: "
 	line := lead
 	for i, issue := range issues {
 		name := fmt.Sprintf("%q", issue)
-		rest := len(issues) - i - 1
 		candidate := line + name
 		if i > 0 {
 			candidate = line + ", " + name
 		}
 		suffix := "."
-		if rest > 0 {
+		if rest := len(issues) - i - 1; rest > 0 {
 			suffix = fmt.Sprintf(" and %d more.", rest)
 		}
-		if lineColumns(candidate+suffix) > messageLineWidth && i > 0 {
+		if lineColumns(candidate+suffix) > messageLineWidth {
+			if i == 0 {
+				if len(issues) == 1 {
+					return "You have 1 issue awaiting approval."
+				}
+				return fmt.Sprintf("You have %d issues awaiting approval.", len(issues))
+			}
 			return line + fmt.Sprintf(" and %d more.", len(issues)-i)
 		}
 		line = candidate
 	}
 	return line + "."
-}
-
-// fitAdminMessage lays out a confirmation message in the lines Claude Code
-// shows. The question may lose its end, the account's email, as the other
-// confirmed tools' questions do, so the question without it must fit a line.
-// The change and the user's own work are never cut. Fixed text fills the lines
-// left, and the fixed lines that do not fit are returned for the description.
-// ok is false when the change does not fit.
-func fitAdminMessage(ctx context.Context, question string, change, ownWork, fixed []string) (string, []string, bool) {
-	if lineColumns(question+", as ?") > messageLineWidth {
-		return "", nil, false
-	}
-	first := question
-	if email := getUserEmail(ctx); email != "" {
-		first += ", as " + email
-	}
-	lines := append([]string{first + "?"}, change...)
-	lines = append(lines, ownWork...)
-	if len(lines) > messageLines {
-		return "", nil, false
-	}
-	for len(fixed) > 0 && len(lines) < messageLines {
-		lines = append(lines, fixed[0])
-		fixed = fixed[1:]
-	}
-	return strings.Join(lines, "\n"), fixed, true
 }
 
 // wrapMessageLine breaks line into lines of at most messageLineWidth columns,
@@ -624,7 +642,7 @@ func (s *Server) issuesAwaitingApproval(ctx context.Context) ([]string, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to search the user's issues")
 		}
-		if err := checkAPIResponse(resp, "search issues", "bb.issues.list"); err != nil {
+		if err := checkAPIResponse(resp, "search issues", "bb.issues.get"); err != nil {
 			return nil, err
 		}
 		var found struct {
@@ -644,11 +662,11 @@ func (s *Server) issuesAwaitingApproval(ctx context.Context) ([]string, error) {
 
 // shortIssueName turns projects/{project}/issues/{number} into project#number.
 func shortIssueName(name string) string {
-	project, rest, ok := strings.Cut(strings.TrimPrefix(name, common.ProjectNamePrefix), "/"+common.IssueNamePrefix)
-	if !ok {
+	project, number, err := common.GetProjectIDIssueUID(name)
+	if err != nil {
 		return name
 	}
-	return project + "#" + rest
+	return fmt.Sprintf("%s#%d", project, number)
 }
 
 // connectCodeOf reads the code of a Connect error response body.

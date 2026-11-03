@@ -273,9 +273,9 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 				},
 			})
 		}
-		if confirmed, ok := auth.MCPConfirmedDecisionFromContext(ctx); ok &&
-			confirmed.Procedure == v1connect.SettingServiceUpdateSettingProcedure && confirmed.Resource == request.Msg.Setting.Name {
-			return s.replaceConfirmedApprovalRules(ctx, workspaceID, payload, confirmed.StoredDigest)
+		// The MCP gate has checked that the confirmation names this procedure and setting.
+		if confirmed, ok := auth.MCPConfirmedDecisionFromContext(ctx); ok {
+			return s.replaceConfirmedApprovalRules(ctx, workspaceID, payload, confirmed.Digest)
 		}
 		storeSettingValue = payload
 	case storepb.SettingName_APP_IM:

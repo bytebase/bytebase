@@ -25,13 +25,12 @@ type MCPConfirmedDecision struct {
 	// user confirmed. The review workflow refuses the decision when it no longer
 	// matches.
 	IssueUpdateTime time.Time
-	// Digest is, for a SQL request, MCPStatementDigest of the request the user
-	// confirmed.
+	// Digest is what the procedure's handler checks before it acts. For a SQL
+	// request it is MCPStatementDigest of the request the user confirmed. For
+	// a change that replaces a stored value it is MCPValueDigest of the value
+	// the user saw, and the handler refuses the write when the value it reads
+	// under the write's lock no longer matches.
 	Digest []byte
-	// StoredDigest is, for a change that replaces a stored value,
-	// MCPValueDigest of the value the user saw. The handler refuses the write
-	// when the value it reads under the write's lock no longer matches.
-	StoredDigest []byte
 }
 
 // MCPConfirmationReason and MCPConfirmationDomain name the ErrorInfo
@@ -57,8 +56,7 @@ func MCPStatementDigest(statement, database, schema, container string) []byte {
 
 // MCPValueDigest identifies a stored value as a confirmation shows it. The
 // marshal is deterministic, so the MCP tool and the handler, in one process,
-// get the same digest for equal messages; a value that cannot be marshaled
-// gets none, which matches no digest.
+// get the same digest for equal messages.
 func MCPValueDigest(value proto.Message) []byte {
 	encoded, err := proto.MarshalOptions{Deterministic: true}.Marshal(value)
 	if err != nil {

@@ -122,13 +122,7 @@ var mcpDenialReasons = map[v1pb.MCPDenialReason]MCPDenialWording{
 	// re-arming, and this mechanism is about issuing. BOT-54.
 	v1pb.MCPDenialReason_MINTS_CREDENTIAL_FOR_OTHERS: {v1pb.MCPMethodClass_FORBIDDEN, "it hands someone control of a principal other than the caller, which revoking this session would not take back"},
 
-	// No method carries this now. It was SettingService/UpdateSetting's, which
-	// writes the MCP ceiling (value.mcp.capability), the SMTP relay that mails
-	// password resets, the AI endpoint the stored key is sent to, and the
-	// sign-in switches. UpdateSetting is WRITE, and the gate serves it only with
-	// a confirmation for the setting it names (mcpRequestShapeRefusals), which
-	// administer_workspace attaches for the approval rules alone. The value stays
-	// for the next method that rewrites the session's boundary.
+	// No method carries this one; the enum's comment in annotation.proto says why.
 	v1pb.MCPDenialReason_REWRITES_SESSION_BOUNDARY: {v1pb.MCPMethodClass_FORBIDDEN, "it rewrites the workspace settings that bound this session, including the switch meant to contain it"},
 
 	v1pb.MCPDenialReason_DRIVES_THE_APPROVAL_DECISION: {v1pb.MCPMethodClass_FORBIDDEN, "it can let a change or an access request pass its approval without an approver deciding it"},
@@ -139,7 +133,7 @@ var mcpDenialReasons = map[v1pb.MCPDenialReason]MCPDenialWording{
 	// serves it. A denial that blurred the two would tell an operator the wrong
 	// thing about whether asking is worth it. The class on each row is what
 	// keeps them apart.
-	v1pb.MCPDenialReason_ADMINISTERS_THE_WORKSPACE:   {v1pb.MCPMethodClass_EXCLUDED, "it administers the workspace rather than doing database work, and no MCP mode this release ships covers workspace administration"},
+	v1pb.MCPDenialReason_ADMINISTERS_THE_WORKSPACE:   {v1pb.MCPMethodClass_EXCLUDED, "it administers the workspace rather than doing database work, and no MCP mode this release ships serves it"},
 	v1pb.MCPDenialReason_READS_OTHER_USERS_SQL:       {v1pb.MCPMethodClass_EXCLUDED, "it returns SQL that other people wrote, across the workspace or past the sharing that keeps a saved query private"},
 	v1pb.MCPDenialReason_OPENS_AN_ADMIN_CONNECTION:   {v1pb.MCPMethodClass_EXCLUDED, "it opens an admin-credentialed connection to the database and returns other sessions' live, unmasked SQL"},
 	v1pb.MCPDenialReason_SENDS_DATA_TO_A_THIRD_PARTY: {v1pb.MCPMethodClass_EXCLUDED, "it spends a stored workspace credential to send whatever the caller passes to a third party"},

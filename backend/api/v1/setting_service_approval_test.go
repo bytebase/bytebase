@@ -74,9 +74,9 @@ func TestConfirmedApprovalRulesReplaceOnlyTheRulesShown(t *testing.T) {
 	}}
 	confirm := func(digest []byte) error {
 		confirmedCtx := auth.WithMCPConfirmedDecision(callerCtx, auth.MCPConfirmedDecision{
-			Procedure:    v1connect.SettingServiceUpdateSettingProcedure,
-			Resource:     request.Setting.Name,
-			StoredDigest: digest,
+			Procedure: v1connect.SettingServiceUpdateSettingProcedure,
+			Resource:  request.Setting.Name,
+			Digest:    digest,
 		})
 		_, err := service.UpdateSetting(confirmedCtx, connect.NewRequest(request))
 		return err
