@@ -6,6 +6,7 @@ import {
   SkipForward,
   X,
 } from "lucide-react";
+import type { MouseEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { HumanizeTs } from "@/components/HumanizeTs";
 import { TaskStatusIcon } from "@/components/TaskStatusIcon";
@@ -39,9 +40,10 @@ const TONE_CLASS: Record<FoldedTone, string> = {
 // database.
 const NARROW_MEDIA_QUERY = "(max-width: 639px)";
 
-// The card header: a bulk-select checkbox, the task identity (which toggles the
-// card open/closed), the folded card's one-line description, the per-card
-// actions when expanded, and a caret. DeployTaskItem owns the handlers.
+// The card header: a bulk-select checkbox, the task identity, the folded card's
+// one-line description, the per-card actions when expanded, and a caret. The
+// whole line, the card's padding around it included, toggles the card;
+// DeployTaskItem owns the handlers.
 export function DeployTaskHeader({
   actionItems,
   isExpanded,
@@ -101,20 +103,39 @@ export function DeployTaskHeader({
       ? getTaskRunWaitingMessage(latestTaskRun, t)
       : undefined;
 
+  // Buttons and the checkbox, and the margins around them marked
+  // data-fold-guard, keep their own click, so a near miss does not toggle.
+  const handleLineClick = (event: MouseEvent<HTMLDivElement>) => {
+    const target = event.target as Element;
+    if (target.closest("button, [role='checkbox'], [data-fold-guard]")) return;
+    // A click that ends a drag, e.g. a selection swept across the description.
+    if (!(window.getSelection()?.isCollapsed ?? true)) return;
+    onToggleExpand();
+  };
+
   return (
     <>
-      <div className="flex items-center gap-x-2">
-        <Checkbox
-          aria-label={t("task.select-task")}
-          checked={isSelected}
-          className="shrink-0"
-          disabled={!isSelectable}
-          onCheckedChange={() => onToggleSelect()}
-          onClick={(event) => event.stopPropagation()}
-        />
-        {/* The identity is the toggle. It hugs its content, not the full row,
-            so the hover and hit target track the target — not the empty space
-            out to the caret. */}
+      <div
+        className="flex cursor-pointer items-center gap-x-2 py-2.5 pr-4 pl-3"
+        data-testid="deploy-task-header"
+        onClick={handleLineClick}
+      >
+        {/* Reaches into the card's padding, so the guard spans the line's
+            height and the card's left edge without moving the checkbox. */}
+        <span
+          className="-my-2.5 -mr-1.5 -ml-3 flex cursor-default items-center self-stretch py-2.5 pr-1.5 pl-3"
+          data-fold-guard
+        >
+          <Checkbox
+            aria-label={t("task.select-task")}
+            checked={isSelected}
+            className="shrink-0"
+            disabled={!isSelectable}
+            onCheckedChange={() => onToggleSelect()}
+            onClick={(event) => event.stopPropagation()}
+          />
+        </span>
+        {/* The keyboard toggle; the line around it is the mouse target. */}
         <Button
           appearance="secondary"
           size="md"
@@ -162,9 +183,12 @@ export function DeployTaskHeader({
         {/* Right cluster, pushed to the row's edge: the collapsed duration or
             the expanded actions, then the caret. Actions live in the header —
             consistent with the app, reachable without scrolling the body. */}
-        <div className="ml-auto flex shrink-0 items-center gap-x-2">
+        <div className="ml-auto flex shrink-0 items-center gap-x-2 self-stretch">
           {isExpanded && showActions && (
-            <div className="flex flex-wrap items-center justify-end gap-2">
+            <div
+              className="-my-2.5 -mr-1 -ml-2 flex cursor-default flex-wrap items-center justify-end gap-2 self-stretch py-2.5 pr-1 pl-2"
+              data-fold-guard
+            >
               {actionItems.map((item) => (
                 <Button
                   key={item.key}
