@@ -122,7 +122,23 @@ func (s *SettingService) GetSetting(ctx context.Context, request *connect.Reques
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting message: %v", err))
 	}
+	if mcpSession(ctx) {
+		stripMaskingSalts(settingMessage)
+	}
 	return connect.NewResponse(settingMessage), nil
+}
+
+// stripMaskingSalts blanks the MD5 salt of every semantic type in the setting.
+// The salt keeps MD5-masked values from being enumerated offline, so an MCP
+// session never receives it. The console still does: its semantic-type editor
+// writes the whole setting back, and the read stays as it is until updates carry
+// the stored salt forward (BOT-78).
+func stripMaskingSalts(setting *v1pb.Setting) {
+	for _, semanticType := range setting.GetValue().GetSemanticType().GetTypes() {
+		if md5 := semanticType.GetAlgorithm().GetMd5Mask(); md5 != nil {
+			md5.Salt = ""
+		}
+	}
 }
 
 // SetSetting set the setting by name.

@@ -862,7 +862,6 @@ func TestMCPCredentialMintsLeaveDiscovery(t *testing.T) {
 		{"ServiceAccountService", []string{"CreateServiceAccount", "UpdateServiceAccount", "GetServiceAccount"}},
 		{"IdentityProviderService", []string{"CreateIdentityProvider", "UpdateIdentityProvider", "TestIdentityProvider"}},
 		{"WorkloadIdentityService", []string{"CreateWorkloadIdentity", "UpdateWorkloadIdentity"}},
-		{"SettingService", []string{"TestEmailSetting", "GetSetting"}},
 	} {
 		listing := searchAPIOnSession(ctx, t, session, map[string]any{"service": row.service})
 		a.Contains(listing, "No endpoints found for service: "+row.service,
@@ -896,18 +895,27 @@ func TestMCPCredentialMintsLeaveDiscovery(t *testing.T) {
 			"search_api must not offer UserService/%s, which the session can never call", method)
 	}
 
+	// SettingService hosts TestEmailSetting, a mint, and keeps GetSetting, which
+	// the gate serves for the governance settings alone.
+	settingListing := searchAPIOnSession(ctx, t, session, map[string]any{"service": "SettingService"})
+	a.Contains(settingListing, "SettingService/GetSetting", "the session reads the governance settings")
+	for _, method := range []string{"TestEmailSetting", "UpdateSetting", "ListSettings"} {
+		a.NotContains(settingListing, "SettingService/"+method,
+			"search_api must not offer SettingService/%s, which the session can never call", method)
+	}
+
 	// The service list is the entry point into discovery, and a service whose
 	// every method is refused drops out of it entirely.
 	services := searchAPIOnSession(ctx, t, session, map[string]any{})
 	for _, service := range []string{
 		"ServiceAccountService", "IdentityProviderService", "WorkloadIdentityService",
-		"SettingService",
 	} {
 		a.NotContains(services, service, "%s serves nothing, so it must not be listed", service)
 	}
 	a.Contains(services, "DatabaseService", "positive control: services the ceiling serves stay listed")
 	a.Contains(services, "WorkspaceService", "a service keeping any served method stays listed")
 	a.Contains(services, "UserService", "and so does the one that kept only GetCurrentUser")
+	a.Contains(services, "SettingService", "and the one that kept only GetSetting")
 
 	// Still resolvable by operation ID, and a call still reaches the gate.
 	for _, operation := range []string{

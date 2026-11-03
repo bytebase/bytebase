@@ -1842,7 +1842,7 @@ export declare const SettingService: GenService<{
   },
   /**
    * Retrieves a workspace setting by name.
-   * Permissions required: bb.settings.get
+   * Permissions required: bb.settings.getEnvironment for settings/ENVIRONMENT, bb.settings.getWorkspaceProfile for settings/WORKSPACE_PROFILE, bb.settings.get for the others
    *
    * @generated from rpc bytebase.v1.SettingService.GetSetting
    */

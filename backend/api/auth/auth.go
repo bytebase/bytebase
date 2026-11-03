@@ -560,3 +560,28 @@ func MCPMethodClassOfProcedure(procedure string) (v1pb.MCPMethodClass, error) {
 	}
 	return class, nil
 }
+
+// mcpReadableSettings are the settings an MCP session may read through
+// SettingService/GetSetting, which is READ for these alone: the MCP gate refuses
+// every other name.
+//
+// A setting joins only when its read returns nothing an agent must not hold.
+// SEMANTIC_TYPES qualifies because GetSetting strips the MD5 masking salt for MCP
+// sessions.
+var mcpReadableSettings = []v1pb.Setting_SettingName{
+	v1pb.Setting_WORKSPACE_APPROVAL,
+	v1pb.Setting_ENVIRONMENT,
+	v1pb.Setting_SEMANTIC_TYPES,
+	v1pb.Setting_DATA_CLASSIFICATION,
+}
+
+// MCPReadableSettings returns the settings an MCP session may read, in a fixed
+// order.
+func MCPReadableSettings() []v1pb.Setting_SettingName {
+	return slices.Clone(mcpReadableSettings)
+}
+
+// MCPCanReadSetting reports whether an MCP session may read the setting.
+func MCPCanReadSetting(name v1pb.Setting_SettingName) bool {
+	return slices.Contains(mcpReadableSettings, name)
+}

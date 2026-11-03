@@ -724,9 +724,52 @@ func TestTheApprovalReadsAreServed(t *testing.T) {
 		v1connect.OrgPolicyServiceListPoliciesProcedure,
 		v1connect.AccessGrantServiceGetAccessGrantProcedure,
 		v1connect.AccessGrantServiceListAccessGrantsProcedure,
+		v1connect.SettingServiceGetSettingProcedure,
 	} {
 		require.Equal(t, v1pb.MCPMethodClass_READ, class[procedure],
 			"%s must be READ: an agent working for a user has to name who approves, see the masking rules and exemptions, and see pending access requests (BYT-9292)", procedure)
+	}
+	require.Equal(t, v1pb.MCPMethodClass_EXCLUDED, class[v1connect.SettingServiceListSettingsProcedure],
+		"ListSettings returns every setting, past the per-name rule GetSetting is held to and without stripping the masking salt")
+}
+
+// TestMCPGateServesOnlyTheReadableSettings walks every setting name the API
+// knows, so a setting added later is refused until someone decides otherwise.
+func TestMCPGateServesOnlyTheReadableSettings(t *testing.T) {
+	readable := []v1pb.Setting_SettingName{
+		v1pb.Setting_WORKSPACE_APPROVAL, v1pb.Setting_ENVIRONMENT, v1pb.Setting_SEMANTIC_TYPES, v1pb.Setting_DATA_CLASSIFICATION,
+	}
+	require.Equal(t, readable, auth.MCPReadableSettings(), "the settings an MCP session reads are a decision, recorded here as well as in auth")
+	read := classContext(v1pb.MCPMethodClass_READ)
+	get := func(name string) connect.AnyRequest {
+		return connect.NewRequest(&v1pb.GetSettingRequest{Name: name})
+	}
+	requireRefused := func(t *testing.T, got mcpGateResult, name string) {
+		t.Helper()
+		require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got.err), name)
+		require.False(t, got.dispatched, name)
+		require.True(t, got.auditMarked, name)
+		require.Contains(t, got.err.Error(), fmt.Sprintf("%q", name), "the denial must name the setting it refused")
+		require.Contains(t, got.err.Error(), "settings/WORKSPACE_APPROVAL, settings/ENVIRONMENT, settings/SEMANTIC_TYPES, settings/DATA_CLASSIFICATION",
+			"the denial must name the settings that can be read")
+		require.Contains(t, got.err.Error(), "Bytebase console")
+	}
+
+	for ceilingName, ceiling := range map[string]mcpGateStore{"read-only": readOnlyCeiling(), "read-write": readWriteCeiling()} {
+		t.Run(ceilingName, func(t *testing.T) {
+			for value, name := range v1pb.Setting_SettingName_name {
+				got := invokeMCPGate(t, ceiling, read, v1connect.SettingServiceGetSettingProcedure, get(common.SettingNamePrefix+name))
+				if slices.Contains(readable, v1pb.Setting_SettingName(value)) {
+					require.NoError(t, got.err, name)
+					require.True(t, got.dispatched, name)
+					continue
+				}
+				requireRefused(t, got, common.SettingNamePrefix+name)
+			}
+			for _, name := range []string{"", "settings/", "settings/environment", "ENVIRONMENT", "settings/ENVIRONMENT/x", "workspaces/w/settings/ENVIRONMENT"} {
+				requireRefused(t, invokeMCPGate(t, ceiling, read, v1connect.SettingServiceGetSettingProcedure, get(name)), name)
+			}
+		})
 	}
 }
 

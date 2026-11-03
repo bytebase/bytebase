@@ -484,6 +484,8 @@ var mcpRequestShapeRefusals = map[string]func(ctx context.Context, msg any) (rea
 
 	v1connect.SavedQueryServiceCreateSavedQueryProcedure: inTheConsole(refuseMaskedWriteSavedQuery),
 	v1connect.SavedQueryServiceUpdateSavedQueryProcedure: inTheConsole(refuseMaskedWriteSavedQueryUpdate),
+
+	v1connect.SettingServiceGetSettingProcedure: inTheConsole(refuseUnreadableSetting),
 }
 
 func inTheConsole(refuse func(context.Context, any) string) func(context.Context, any) (string, string) {
@@ -591,4 +593,24 @@ func grantIssueRefusal(issueType v1pb.Issue_Type) (reason, wayOut string) {
 	default:
 		return fmt.Sprintf("MCP sessions create DATABASE_CHANGE issues only, not %v", issueType), mcpConsoleWayOut
 	}
+}
+
+// refuseUnreadableSetting serves GetSetting for the settings
+// auth.MCPCanReadSetting names. It parses the name as the handler does, and
+// checks no permission: the handler checks the caller's own for each setting.
+func refuseUnreadableSetting(_ context.Context, msg any) string {
+	request, ok := msg.(*v1pb.GetSettingRequest)
+	if !ok {
+		return fmt.Sprintf("its request could not be read as a setting read (%T)", msg)
+	}
+	if name, err := common.GetSettingName(request.GetName()); err == nil {
+		if value, ok := v1pb.Setting_SettingName_value[name]; ok && auth.MCPCanReadSetting(v1pb.Setting_SettingName(value)) {
+			return ""
+		}
+	}
+	var readable []string
+	for _, setting := range auth.MCPReadableSettings() {
+		readable = append(readable, common.SettingNamePrefix+setting.String())
+	}
+	return fmt.Sprintf("%q is not one of the settings an MCP session reads (%s)", request.GetName(), strings.Join(readable, ", "))
 }

@@ -3130,7 +3130,7 @@
             "title": "Proponer cambios"
           },
           "read-access": {
-            "details": "Quién tiene cada rol en el espacio de trabajo y sus proyectos · Grupos y sus miembros · Roles y sus permisos · Reglas y exenciones de enmascaramiento · Políticas de implementación, de consulta de datos, de etiquetas y de revisión · Concesiones de acceso, incluidas las solicitudes pendientes",
+            "details": "Quién tiene cada rol en el espacio de trabajo y sus proyectos · Grupos y sus miembros · Roles y sus permisos · Reglas y exenciones de enmascaramiento · Políticas de implementación, de consulta de datos, de etiquetas y de revisión · Reglas de aprobación, entornos, tipos semánticos y clasificación de datos · Concesiones de acceso, incluidas las solicitudes pendientes",
             "title": "Leer miembros, roles y políticas"
           },
           "read-data": {

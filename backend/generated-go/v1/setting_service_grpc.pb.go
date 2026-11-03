@@ -35,7 +35,7 @@ type SettingServiceClient interface {
 	// Permissions required: bb.settings.list
 	ListSettings(ctx context.Context, in *ListSettingsRequest, opts ...grpc.CallOption) (*ListSettingsResponse, error)
 	// Retrieves a workspace setting by name.
-	// Permissions required: bb.settings.get
+	// Permissions required: bb.settings.getEnvironment for settings/ENVIRONMENT, bb.settings.getWorkspaceProfile for settings/WORKSPACE_PROFILE, bb.settings.get for the others
 	GetSetting(ctx context.Context, in *GetSettingRequest, opts ...grpc.CallOption) (*Setting, error)
 	// Updates a workspace setting.
 	// Permissions required: bb.settings.set
@@ -103,7 +103,7 @@ type SettingServiceServer interface {
 	// Permissions required: bb.settings.list
 	ListSettings(context.Context, *ListSettingsRequest) (*ListSettingsResponse, error)
 	// Retrieves a workspace setting by name.
-	// Permissions required: bb.settings.get
+	// Permissions required: bb.settings.getEnvironment for settings/ENVIRONMENT, bb.settings.getWorkspaceProfile for settings/WORKSPACE_PROFILE, bb.settings.get for the others
 	GetSetting(context.Context, *GetSettingRequest) (*Setting, error)
 	// Updates a workspace setting.
 	// Permissions required: bb.settings.set
