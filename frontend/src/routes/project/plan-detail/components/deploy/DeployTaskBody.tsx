@@ -19,25 +19,12 @@ import {
   isReleaseBasedTask,
   releaseNameOfTaskV1,
 } from "@/utils/v1/issue/rollout";
-import { PROJECT_DATABASE_DETAIL_TAB_REVISION } from "../../../database-detail/tabs";
 import { useOpenReleaseFile } from "../release/ReleaseFileViewer";
 import { DeployLatestTaskRunInfo } from "./DeployLatestTaskRunInfo";
 import { DeployTaskSkippedReason } from "./DeployTaskSkippedReason";
+import { revisionsLinkOf } from "./revisionsLink";
 
 const NO_ENTRIES: never[] = [];
-
-// "instances/{i}/databases/{d}", optionally under projects/{p}/. The
-// instance's full name is the database page's `parent`: a project instance
-// is not found under the workspace's instances.
-const parseDatabaseTarget = (target: string) => {
-  const match =
-    /^((?:projects\/[^/]+\/)?instances\/([^/]+))\/databases\/([^/]+)$/.exec(
-      target
-    );
-  return match
-    ? { parent: match[1], instance: match[2], database: match[3] }
-    : undefined;
-};
 
 // The expanded card body: a skipped reason, a waiting note, the SQL statement
 // (or release info), and the latest task run. Only mounts when the card is
@@ -121,12 +108,8 @@ export function DeployTaskBody({
     [openViewer, release, stageTitle]
   );
   const revisionsLink = useMemo<RevisionsLinkTarget | undefined>(() => {
-    const target = parseDatabaseTarget(task.target);
-    if (!isReleaseTask || !target || !projectId) return undefined;
-    return {
-      href: `/projects/${projectId}/instances/${target.instance}/databases/${target.database}?parent=${encodeURIComponent(target.parent)}#${PROJECT_DATABASE_DETAIL_TAB_REVISION}`,
-      database: target.database,
-    };
+    if (!isReleaseTask || !projectId) return undefined;
+    return revisionsLinkOf(task.target, projectId);
   }, [isReleaseTask, task.target, projectId]);
   // The one state line that matters for a waiting task.
   const waitingComment = latestTaskRun
