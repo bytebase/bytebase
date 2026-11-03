@@ -30,7 +30,9 @@ type FindRevisionMessage struct {
 	InstanceID   string
 	ResourceID   *string
 	DatabaseName *string
-	Type         *storepb.SchemaChangeType
+	// Several databases of InstanceID at once.
+	DatabaseNames *[]string
+	Type          *storepb.SchemaChangeType
 
 	Version  *string
 	Versions *[]string
@@ -63,6 +65,9 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 	}
 	if v := find.DatabaseName; v != nil {
 		q.And("db_name = ?", *v)
+	}
+	if v := find.DatabaseNames; v != nil {
+		q.And("db_name = ANY(?)", *v)
 	}
 	if v := find.Type; v != nil {
 		q.And("payload->>'type' = ?", v.String())
