@@ -579,10 +579,24 @@ test("a backfilled low version lands in its own old group, not on top", async ()
   ]);
 });
 
-test("a file path opens the viewer with no database context", async () => {
-  const view = await renderRail(["001", "002"].map((v) => fileOf(v)));
-  fireEvent.click(view.getByRole("button", { name: "migrations/002.sql" }));
-  expect((mocks.openedFile as { file: { path: string } }).file.path).toBe("migrations/002.sql");
+test("a row shows the file name, its folder muted and the version, and opens the viewer from anywhere on it", async () => {
+  const view = await renderRail([
+    fileOf("3.10.0007", "migrations/3.10/3.10.0007_remove_exporter_role.sql"),
+    fileOf("3.10.0008", "3.10.0008_top_level.sql"),
+  ]);
+  const [rootFile, nestedFile] = view.getAllByTestId("release-change-row");
+  const part = (row: HTMLElement, id: string) => within(row).queryByTestId(id)?.textContent;
+  expect(part(nestedFile, "release-change-name")).toBe("3.10.0007_remove_exporter_role.sql");
+  expect(part(nestedFile, "release-change-folder")).toBe("migrations/3.10");
+  expect(part(nestedFile, "release-change-version")).toBe("3.10.0007");
+  // A file at the repository root has no folder to show.
+  expect(part(rootFile, "release-change-name")).toBe("3.10.0008_top_level.sql");
+  expect(part(rootFile, "release-change-folder")).toBeUndefined();
+
+  fireEvent.click(within(nestedFile).getByTestId("release-change-version"));
+  expect((mocks.openedFile as { file: { path: string } }).file.path).toBe(
+    "migrations/3.10/3.10.0007_remove_exporter_role.sql"
+  );
   expect((mocks.openedFile as { context?: unknown }).context).toBeUndefined();
 });
 

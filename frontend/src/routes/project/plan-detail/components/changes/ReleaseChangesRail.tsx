@@ -1,4 +1,4 @@
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, FileText } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -120,35 +120,11 @@ function ChangeGroup({
   const rows = (
     <div ref={listRef} className="flex flex-col">
       {group.files.slice(0, shown).map((file) => (
-        <div
-          key={file.version}
-          className="flex min-w-0 items-center gap-x-3 px-3 py-1"
-          data-testid="release-change-row"
-          data-version={file.version}
-        >
-          <span className="shrink-0 font-mono text-xs tabular-nums text-control-light">
-            {file.version}
-          </span>
-          {onOpen ? (
-            <Button
-              type="button"
-              appearance="link"
-              size="sm"
-              className="h-auto min-w-0 truncate p-0 font-mono text-xs"
-              onClick={() => onOpen(file)}
-            >
-              {file.path}
-            </Button>
-          ) : (
-            <span className="min-w-0 truncate font-mono text-xs">
-              {file.path}
-            </span>
-          )}
-        </div>
+        <ChangeRow key={file.version} file={file} onOpen={onOpen} />
       ))}
       {remaining > 0 || extended ? (
         <div
-          className="flex items-center gap-x-4 px-3 py-1"
+          className="flex items-center gap-x-4 px-3 py-2"
           data-testid="release-change-load"
         >
           {remaining > 0 ? (
@@ -156,7 +132,7 @@ function ChangeGroup({
               type="button"
               appearance="link"
               size="sm"
-              className="h-auto p-0 text-xs"
+              className="h-auto p-0"
               onClick={() => setShown((n) => n + CHANGES_ROW_LIMIT)}
             >
               {t("release.changes.load-more", {
@@ -169,7 +145,7 @@ function ChangeGroup({
               type="button"
               appearance="link"
               size="sm"
-              className="h-auto p-0 text-xs"
+              className="h-auto p-0"
               onClick={() => setShown(group.files.length)}
             >
               {t("release.changes.load-all", { count: remaining })}
@@ -180,7 +156,7 @@ function ChangeGroup({
               type="button"
               appearance="link"
               size="sm"
-              className="h-auto p-0 text-xs"
+              className="h-auto p-0"
               onClick={() => keepEndInPlace(() => setShown(CHANGES_ROW_LIMIT))}
             >
               {t("release.changes.show-fewer")}
@@ -214,5 +190,73 @@ function ChangeGroup({
       </CollapsibleTrigger>
       <CollapsiblePanel>{rows}</CollapsiblePanel>
     </Collapsible>
+  );
+}
+
+const ROW_CLASS =
+  "group flex w-full min-w-0 items-center gap-x-2 border-block-border border-b px-3 py-2 text-left last:border-b-0";
+
+// A row of a repository's file list: the name leads, the folder and the
+// version recede, and the whole row opens the viewer.
+function ChangeRow({
+  file,
+  onOpen,
+}: {
+  file: ReleaseChangeFile;
+  onOpen?: (file: ReleaseChangeFile) => void;
+}) {
+  const slash = file.path.lastIndexOf("/");
+  const name = file.path ? file.path.slice(slash + 1) : file.version;
+  const folder = slash > 0 ? file.path.slice(0, slash) : "";
+  const content = (
+    <>
+      <FileText className="size-4 shrink-0 text-control-placeholder" />
+      <span
+        className={cn(
+          "min-w-0 shrink truncate text-main",
+          onOpen && "group-hover:text-accent group-hover:underline"
+        )}
+        data-testid="release-change-name"
+      >
+        {name}
+      </span>
+      {folder ? (
+        <span
+          className="min-w-0 shrink-[2] truncate text-control-light"
+          data-testid="release-change-folder"
+        >
+          {folder}
+        </span>
+      ) : null}
+      <span
+        className="ml-auto shrink-0 pl-4 tabular-nums text-control-light"
+        data-testid="release-change-version"
+      >
+        {file.version}
+      </span>
+    </>
+  );
+  return onOpen ? (
+    <Button
+      type="button"
+      appearance="secondary"
+      className={cn(
+        ROW_CLASS,
+        "h-auto justify-start rounded-none font-normal focus-visible:ring-inset focus-visible:ring-offset-0"
+      )}
+      data-testid="release-change-row"
+      data-version={file.version}
+      onClick={() => onOpen(file)}
+    >
+      {content}
+    </Button>
+  ) : (
+    <div
+      className={ROW_CLASS}
+      data-testid="release-change-row"
+      data-version={file.version}
+    >
+      {content}
+    </div>
   );
 }
