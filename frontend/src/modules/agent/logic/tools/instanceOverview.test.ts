@@ -35,9 +35,11 @@ describe("instanceOverview", () => {
   test.each([
     "/instances/primary/databases",
     "/instances/create",
+    "/instances/new",
     "/projects/-/instances/primary",
     "/projects/orders/instances/primary/databases",
     "/projects/orders/instances/create",
+    "/projects/orders/instances/new",
     "https://attacker.example/instances/primary",
   ])("does not resolve non-detail instance path %s", (path) => {
     expect(resolveInstanceNameFromPagePath(path)).toBeUndefined();

@@ -582,7 +582,10 @@ export function InstanceFormButtons({
         category={testConnectionFailure.failureCategory}
         className="max-w-3xl"
       />
-      <p className="mt-2 whitespace-pre-wrap break-all text-sm text-error">
+      <p
+        className="mt-2 whitespace-pre-wrap break-all text-sm text-error"
+        data-agent-sensitive
+      >
         {testConnectionFailure.message}
       </p>
       {onAskAgent && (
@@ -611,7 +614,7 @@ export function InstanceFormButtons({
       <Alert
         variant="error"
         title={t("instance.create-failed")}
-        description={createFailure.message}
+        description={<span data-agent-sensitive>{createFailure.message}</span>}
       >
         {onAskAgent && (
           <Button

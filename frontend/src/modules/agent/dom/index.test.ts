@@ -61,6 +61,22 @@ describe("lazyExtractDomRefSuggestions", () => {
       "top-secret"
     );
   });
+
+  test("omits agent-sensitive content from the DOM snapshot and refs", async () => {
+    document.body.innerHTML = `
+      <p data-agent-sensitive>password=top-secret</p>
+      <button data-agent-sensitive>Submit secret</button>
+      <p>Visible status</p>
+    `;
+
+    const { tree } = await lazyExtractDomTree();
+    const suggestions = await lazyExtractDomRefSuggestions();
+
+    expect(tree).toContain("Visible status");
+    expect(tree).not.toContain("top-secret");
+    expect(tree).not.toContain("Submit secret");
+    expect(suggestions).toEqual([]);
+  });
 });
 
 describe("lazyExecuteDomAction", () => {

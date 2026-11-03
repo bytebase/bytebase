@@ -653,6 +653,10 @@ describe("InstanceFormButtons", () => {
       await flushPromises();
     });
 
+    expect(container.querySelector("p.text-error")).toHaveAttribute(
+      "data-agent-sensitive"
+    );
+
     const askAgentButton = Array.from(
       container.querySelectorAll("button")
     ).find((button) =>
@@ -705,6 +709,9 @@ describe("InstanceFormButtons", () => {
     });
 
     expect(container.textContent).toContain("permission denied");
+    expect(
+      container.querySelector('[role="alert"] [data-agent-sensitive]')
+    ).toHaveTextContent("permission denied");
     const askAgentButton = Array.from(
       container.querySelectorAll("button")
     ).find((button) =>

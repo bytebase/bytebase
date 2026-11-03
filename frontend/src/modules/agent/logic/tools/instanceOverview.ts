@@ -29,19 +29,21 @@ type InstanceOverview =
       outOfSyncDatabasesPartial: boolean;
     };
 
+function isResolvableInstanceId(id: string): boolean {
+  return id !== "-" && !["create", "new"].includes(id.toLowerCase());
+}
+
 function isCanonicalInstanceName(name: string): boolean {
   const parts = name.split("/");
   return (
     (parts.length === 2 &&
       parts[0] === "instances" &&
-      parts[1] !== "-" &&
-      parts[1].toLowerCase() !== "create") ||
+      isResolvableInstanceId(parts[1])) ||
     (parts.length === 4 &&
       parts[0] === "projects" &&
       parts[1] !== "-" &&
       parts[2] === "instances" &&
-      parts[3] !== "-" &&
-      parts[3].toLowerCase() !== "create")
+      isResolvableInstanceId(parts[3]))
   );
 }
 
@@ -59,12 +61,12 @@ export function resolveInstanceNameFromPagePath(
     const name =
       parts.length === 2 &&
       parts[0] === "instances" &&
-      parts[1].toLowerCase() !== "create"
+      isResolvableInstanceId(parts[1])
         ? `${parts[0]}/${parts[1]}`
         : parts.length === 4 &&
             parts[0] === "projects" &&
             parts[2] === "instances" &&
-            parts[3].toLowerCase() !== "create"
+            isResolvableInstanceId(parts[3])
           ? `${parts[0]}/${parts[1]}/${parts[2]}/${parts[3]}`
           : undefined;
     return name && isCanonicalInstanceName(name) ? name : undefined;
