@@ -36,6 +36,8 @@ type approvalMock struct {
 	// alice's open change issues in each approval status.
 	pendingIssues  []string
 	checkingIssues []string
+	// morePending, when set, makes the PENDING search answer with a next page.
+	morePending bool
 	// refuse, when set, is the Connect code the update answers with.
 	refuse  string
 	reads   int
@@ -64,11 +66,15 @@ func (m *approvalMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		_ = json.NewDecoder(r.Body).Decode(&request)
 		var names []string
+		nextPageToken := ""
 		if strings.Contains(request.Filter, `creator == "users/alice@example.com"`) &&
 			strings.Contains(request.Filter, `status == "OPEN"`) && strings.Contains(request.Filter, `type == "DATABASE_CHANGE"`) {
 			switch {
 			case strings.Contains(request.Filter, `approval_status == "PENDING"`):
 				names = m.pendingIssues
+				if m.morePending {
+					nextPageToken = "next"
+				}
 			case strings.Contains(request.Filter, `approval_status == "CHECKING"`):
 				names = m.checkingIssues
 			default:
@@ -78,7 +84,7 @@ func (m *approvalMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		for _, name := range names {
 			issues = append(issues, map[string]any{"name": name})
 		}
-		_ = json.NewEncoder(w).Encode(map[string]any{"issues": issues})
+		_ = json.NewEncoder(w).Encode(map[string]any{"issues": issues, "nextPageToken": nextPageToken})
 	case v1connect.SettingServiceUpdateSettingProcedure:
 		call := approvalCall{}
 		_ = json.NewDecoder(r.Body).Decode(&call.body)
@@ -188,7 +194,7 @@ func signedApprovalState(t *testing.T, s *Server, stored *v1pb.WorkspaceApproval
 	diff, err := diffApprovalRules(stored.GetRules(), change.request.GetSetting().GetValue().GetWorkspaceApproval().GetRules(), "")
 	require.NoError(t, err)
 	alice := withOAuth2ClientID(withUserEmail(withWorkspaceID(context.Background(), "ws-test"), "alice@example.com"), "client-A")
-	form, err := approvalRulesForm(alice, diff, nil, "")
+	form, err := approvalRulesForm(alice, diff, "", "")
 	require.NoError(t, err)
 	return s.signConfirmationState(alice, change, approvalRulesDigest(form.message, stored, change.request), askedAt)
 }
@@ -528,23 +534,39 @@ func TestAdministerWorkspaceContinuesALongConditionOnTheNextLine(t *testing.T) {
 }
 
 func TestAdministerWorkspaceNamesTheUserIssuesAwaitingApproval(t *testing.T) {
-	mock := &approvalMock{
-		pendingIssues:  []string{"projects/hr/issues/12"},
-		checkingIssues: []string{"projects/finance/issues/7", "projects/marketing-analytics/issues/1234", "projects/ops/issues/5"},
-	}
-	mock.setStored(fallbackRule())
-	user := &asker{answer: &mcp.ElicitResult{Action: "decline"}}
-	_, session := connectToApprovalServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
+	for name, tc := range map[string]struct {
+		morePending bool
+		want        string
+	}{
+		"every issue read": {want: `Your issues awaiting approval: "hr#12", "finance#7" and 2 more.`},
+		"a search with another page": {morePending: true,
+			want: `Your issues awaiting approval: "hr#12" and at least 3 more.`},
+	} {
+		t.Run(name, func(t *testing.T) {
+			mock := &approvalMock{
+				pendingIssues:  []string{"projects/hr/issues/12"},
+				checkingIssues: []string{"projects/finance/issues/7", "projects/marketing-analytics/issues/1234", "projects/ops/issues/5"},
+				morePending:    tc.morePending,
+			}
+			mock.setStored(fallbackRule())
+			user := &asker{answer: &mcp.ElicitResult{Action: "decline"}}
+			_, session := connectToApprovalServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
 
-	callAdminister(t, session, administerParams(approvalBody(t, fallbackRule(), prodRule)))
-	require.Contains(t, user.lastParams(t).Message, `Your issues awaiting approval: "hr#12", "finance#7" and 2 more.`)
+			callAdminister(t, session, administerParams(approvalBody(t, fallbackRule(), prodRule)))
+			require.Contains(t, user.lastParams(t).Message, tc.want)
+		})
+	}
 }
 
 func TestIssuesLineCountsNamesThatDoNotFit(t *testing.T) {
 	long := "projects/" + strings.Repeat("p", 40) + "/issues/1"
-	require.Equal(t, "You have 1 issue awaiting approval.", issuesLine([]string{shortIssueName(long)}))
-	require.Equal(t, "You have 2 issues awaiting approval.", issuesLine([]string{shortIssueName(long), "hr#1"}))
-	require.Equal(t, `Your issues awaiting approval: "hr#1".`, issuesLine([]string{"hr#1"}))
+	require.Equal(t, "You have 1 issue awaiting approval.", issuesLine([]string{shortIssueName(long)}, false))
+	require.Equal(t, "You have 2 issues awaiting approval.", issuesLine([]string{shortIssueName(long), "hr#1"}, false))
+	require.Equal(t, `Your issues awaiting approval: "hr#1".`, issuesLine([]string{"hr#1"}, false))
+	require.Empty(t, issuesLine(nil, false))
+	// A search that stopped at its page size gives a lower bound.
+	require.Equal(t, "You have at least 2 issues awaiting approval.", issuesLine([]string{shortIssueName(long), "hr#1"}, true))
+	require.Equal(t, `Your issues awaiting approval: "hr#1" and more.`, issuesLine([]string{"hr#1"}, true))
 }
 
 func TestAdministerWorkspaceRefusesAnAnswerToRulesThatChanged(t *testing.T) {
@@ -619,7 +641,7 @@ func TestAdministerWorkspaceDescribesTheRulesLeft(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			diff, err := diffApprovalRules(tc.stored, tc.requested, "")
 			require.NoError(t, err)
-			form, err := approvalRulesForm(withUserEmail(context.Background(), "alice@example.com"), diff, nil, "")
+			form, err := approvalRulesForm(withUserEmail(context.Background(), "alice@example.com"), diff, "", "")
 			require.NoError(t, err)
 			require.Contains(t, form.description, tc.want)
 		})

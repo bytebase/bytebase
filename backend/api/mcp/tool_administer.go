@@ -50,7 +50,7 @@ It serves one change: the approval rules for database changes. Send SettingServi
 
 The tool shows the user what changes and asks them to confirm in a form. It changes the rules only when they accept; declining or cancelling changes nothing. A change too long for the form is refused, and the refusal says whether smaller steps help. A client that cannot show the form gets the console page instead. Do not ask in chat first: the form is the question.
 
-Changing the approval rules needs bb.settings.set, as in the console. call_api refuses SettingService/UpdateSetting.`
+Reading and changing the approval rules needs bb.settings.get and bb.settings.set, as in the console. call_api refuses SettingService/UpdateSetting.`
 
 func (s *Server) registerAdministerWorkspaceTool() {
 	mcp.AddTool(s.mcpServer, &mcp.Tool{
@@ -127,11 +127,11 @@ func (s *Server) handleAdministerWorkspace(ctx context.Context, req *mcp.CallToo
 		text := "Nothing to change: the request holds the approval rules as they are stored.\nApproval rules: " + link
 		return textResult(text), &AdministerWorkspaceOutput{OperationID: input.OperationID, Message: text, Link: link}, nil
 	}
-	openIssues, err := s.issuesAwaitingApproval(ctx)
+	openIssues, more, err := s.issuesAwaitingApproval(ctx)
 	if err != nil {
 		return formatToolError(err), nil, nil
 	}
-	form, err := approvalRulesForm(ctx, diff, openIssues, link)
+	form, err := approvalRulesForm(ctx, diff, issuesLine(openIssues, more), link)
 	if err != nil {
 		return formatToolError(err), nil, nil
 	}
@@ -510,14 +510,14 @@ type adminForm struct {
 // under the new rules. A change that does not fit is refused, never cut. The
 // fixed sentence goes in the message when a line is left, and in the
 // description otherwise; the description also lists every rule.
-func approvalRulesForm(ctx context.Context, diff *approvalRulesDiff, openIssues []string, link string) (*adminForm, error) {
+func approvalRulesForm(ctx context.Context, diff *approvalRulesDiff, issues string, link string) (*adminForm, error) {
 	question := "Change the approval rules for database changes"
 	if email := getUserEmail(ctx); email != "" {
 		question += ", as " + email
 	}
 	var ownWork []string
-	if len(openIssues) > 0 {
-		ownWork = wrapMessageLine(issuesLine(openIssues))
+	if issues != "" {
+		ownWork = wrapMessageLine(issues)
 	}
 	lines := []string{question + "?"}
 	tooLong := ""
@@ -588,32 +588,47 @@ func countRules(n int) string {
 }
 
 // issuesLine names the user's open issues, as many as one line holds, and
-// counts the rest. It only counts them when the first name alone does not fit.
-func issuesLine(issues []string) string {
-	const lead = "Your issues awaiting approval: "
-	line := lead
+// counts the rest; it only counts them when the first name alone does not fit.
+// more means a search stopped at its page size, so a count is a lower bound.
+func issuesLine(issues []string, more bool) string {
+	if len(issues) == 0 {
+		return ""
+	}
+	rest := func(n int) string {
+		switch {
+		case more && n > 0:
+			return fmt.Sprintf(" and at least %d more.", n)
+		case more:
+			return " and more."
+		case n > 0:
+			return fmt.Sprintf(" and %d more.", n)
+		default:
+			return "."
+		}
+	}
+	line := "Your issues awaiting approval: "
 	for i, issue := range issues {
 		name := fmt.Sprintf("%q", issue)
 		candidate := line + name
 		if i > 0 {
 			candidate = line + ", " + name
 		}
-		suffix := "."
-		if rest := len(issues) - i - 1; rest > 0 {
-			suffix = fmt.Sprintf(" and %d more.", rest)
-		}
-		if lineColumns(candidate+suffix) > messageLineWidth {
-			if i == 0 {
-				if len(issues) == 1 {
-					return "You have 1 issue awaiting approval."
-				}
+		if lineColumns(candidate+rest(len(issues)-i-1)) > messageLineWidth {
+			if i > 0 {
+				return line + rest(len(issues)-i)
+			}
+			switch {
+			case more:
+				return fmt.Sprintf("You have at least %d issues awaiting approval.", len(issues))
+			case len(issues) == 1:
+				return "You have 1 issue awaiting approval."
+			default:
 				return fmt.Sprintf("You have %d issues awaiting approval.", len(issues))
 			}
-			return line + fmt.Sprintf(" and %d more.", len(issues)-i)
 		}
 		line = candidate
 	}
-	return line + "."
+	return line + rest(0)
 }
 
 // wrapMessageLine breaks line into lines of at most messageLineWidth columns,
@@ -639,13 +654,15 @@ func wrapMessageLine(line string) []string {
 }
 
 // issuesAwaitingApproval lists the user's open change issues whose approval is
-// pending or still being checked, as "project#number".
-func (s *Server) issuesAwaitingApproval(ctx context.Context) ([]string, error) {
+// pending or still being checked, as "project#number". more reports that a
+// search had another page, which the tool does not read.
+func (s *Server) issuesAwaitingApproval(ctx context.Context) ([]string, bool, error) {
 	email := getUserEmail(ctx)
 	if email == "" {
-		return nil, nil
+		return nil, false, nil
 	}
 	var names []string
+	more := false
 	for _, status := range []string{"PENDING", "CHECKING"} {
 		filter := fmt.Sprintf(`creator == "%s%s" && status == "OPEN" && type == "DATABASE_CHANGE" && approval_status == "%s"`, common.UserNamePrefix, email, status)
 		resp, err := s.apiRequest(ctx, v1connect.IssueServiceSearchIssuesProcedure, map[string]any{
@@ -654,24 +671,26 @@ func (s *Server) issuesAwaitingApproval(ctx context.Context) ([]string, error) {
 			"pageSize": 100,
 		})
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to search the user's issues")
+			return nil, false, errors.Wrap(err, "failed to search the user's issues")
 		}
 		if err := checkAPIResponse(resp, "search issues", "bb.issues.get"); err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		var found struct {
 			Issues []struct {
 				Name string `json:"name"`
 			} `json:"issues"`
+			NextPageToken string `json:"nextPageToken"`
 		}
 		if err := json.Unmarshal(resp.Body, &found); err != nil {
-			return nil, errors.Wrap(err, "failed to parse the user's issues")
+			return nil, false, errors.Wrap(err, "failed to parse the user's issues")
 		}
 		for _, issue := range found.Issues {
 			names = append(names, shortIssueName(issue.Name))
 		}
+		more = more || found.NextPageToken != ""
 	}
-	return names, nil
+	return names, more, nil
 }
 
 // shortIssueName turns projects/{project}/issues/{number} into project#number.
