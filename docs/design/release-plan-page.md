@@ -658,7 +658,15 @@ Tests to write, per the placement rules in `AGENTS.md`:
   the Revisions link; a failing second of three files showing the error on the row and in the viewer, nothing
   listed for the third, and the error on the folded card; as a project Owner, Skip refusing an
   empty reason, the task then showing the skip line over the failed run, and the header reading
-  "Deployed, 1 task skipped"; the release URL redirecting to the plan.
+  "Deployed, 1 task skipped"; the release URL redirecting to the plan. Three journeys that need the
+  real executor's history: a re-run, where one version's revision is deleted before the rollout is
+  created and another's after it, reading "Will apply again · revision deleted" with the deleter on
+  its icon before the run, then "Applied again" on both with their two tooltips and the untouched
+  version still in the fold; a 25-file release failing at its 22nd file, showing the count line, a
+  load row, the failed file and its error past the row limit, and the Revisions link, then a release
+  fixing the file whose fold holds the 21 and whose run finishes; and the header line in a real
+  browser, where a click on its empty space folds and unfolds the card and a click on the margin
+  around the checkbox or an action button does not.
 
 ## Not in this PR
 
