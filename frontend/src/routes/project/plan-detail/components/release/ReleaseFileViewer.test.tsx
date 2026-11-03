@@ -191,6 +191,21 @@ describe("ReleaseFileViewer", () => {
     expect(link.getAttribute("href")).toBe(href);
   });
 
+  test.each([
+    [VCSType.GITHUB, "https://github.com/example/app/commit/0a1b2c3d4e5f", "Open in GitHub at 0a1b2c3", "https://github.com/example/app/blob/0a1b2c3d4e5f/migrations/002%23hotfix%20%26%20undo%3F.sql"],
+    [VCSType.AZURE_DEVOPS, "https://dev.azure.com/example/shop/_git/app/commit/0a1b2c3d4e5f", "Open in Azure DevOps at 0a1b2c3", "https://dev.azure.com/example/shop/_git/app?path=/migrations/002%23hotfix%20%26%20undo%3F.sql&version=GC0a1b2c3d4e5f"],
+  ])("a file name with URL-reserved characters still links to that file on platform %s", async (vcsType, url, label, href) => {
+    render(
+      <ReleaseFileViewer
+        target={target({ file: { version: "002", path: "migrations/002#hotfix & undo?.sql", sheet: "projects/p/sheets/s2" } })}
+        vcsSource={create(Release_VCSSourceSchema, { vcsType, url })}
+        onClose={() => {}}
+      />
+    );
+    await flush();
+    expect(screen.getByRole("link", { name: label }).getAttribute("href")).toBe(href);
+  });
+
   test("an unknown platform gets no link", async () => {
     render(
       <ReleaseFileViewer
