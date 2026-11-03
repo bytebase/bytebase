@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, Info } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { CopyButton } from "@/components/ui/copy-button";
+import { Tooltip } from "@/components/ui/tooltip";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { cn } from "@/lib/utils";
 import {
@@ -292,8 +293,13 @@ export function ReleaseSpineView({
           <span className="flex-1" />
           <Badge>
             {note
-              ? t("task-run.spine.will-apply-again", note)
+              ? t("task-run.spine.will-apply-again")
               : t("task-run.spine.will-apply")}
+            {note ? (
+              <RevisionDeletedInfo
+                text={t("task-run.spine.revision-deleted", note)}
+              />
+            ) : null}
           </Badge>
         </div>
       );
@@ -658,5 +664,26 @@ function Chevron({ open }: { open: boolean }) {
         open && "rotate-90"
       )}
     />
+  );
+}
+
+// Who deleted the revision and when: on hover or keyboard focus, so the chip
+// stays one short line and the path keeps its width.
+function RevisionDeletedInfo({ text }: { text: string }) {
+  return (
+    <Tooltip
+      content={text}
+      render={
+        <span
+          aria-label={text}
+          className="inline-flex cursor-help rounded-xs outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          data-testid="spine-revision-deleted-info"
+          role="img"
+          tabIndex={0}
+        />
+      }
+    >
+      <Info className="size-3.5 text-control-light" />
+    </Tooltip>
   );
 }

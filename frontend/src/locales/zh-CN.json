@@ -4486,7 +4486,7 @@
         "running": "运行中"
       },
       "will-apply": "将应用",
-      "will-apply-again": "将再次应用 · 修订已于 {{date}} 被 {{user}} 删除"
+      "will-apply-again": "将再次应用 · 修订已删除"
     },
     "status": {
       "enqueued": "等待执行。",
