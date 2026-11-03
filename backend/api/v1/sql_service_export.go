@@ -129,7 +129,7 @@ func resolveSharePointExportTarget(ctx context.Context, newClient func(sharepoin
 	if err != nil {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Wrap(err, "invalid SharePoint configuration"))
 	}
-	location, err := client.Resolve(ctx, destinationURL)
+	location, err := client.ResolveRecent(ctx, destinationURL)
 	if err != nil {
 		if errors.Is(err, sharepoint.ErrNotFoundOrNoAccess) || errors.Is(err, sharepoint.ErrCredential) {
 			return nil, connect.NewError(connect.CodeFailedPrecondition, err)

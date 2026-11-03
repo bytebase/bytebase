@@ -9,26 +9,32 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/pkg/errors"
-	"golang.org/x/sync/errgroup"
 )
 
 const (
 	graphBaseURL = "https://graph.microsoft.com/v1.0"
 	graphScope   = "https://graph.microsoft.com/.default"
-	// Graph requires upload chunks to be multiples of 320 KiB.
-	uploadChunkSize = 16 * 320 * 1024
+	// Graph requires upload chunks to be multiples of 320 KiB and smaller than
+	// 60 MiB. Each chunk pays a fixed round trip, so larger chunks upload
+	// faster; chunks above 20 MiB measured no faster and resend more after a
+	// stalled request.
+	uploadChunkSize = 64 * 320 * 1024
 	// Files up to this size upload in one request; larger files use a
 	// resumable upload session.
 	simpleUploadMaxSize  = 4 << 20
 	maxConcurrentUploads = 4
 	maxAttempts          = 5
 	requestTimeout       = 5 * time.Minute
+	// recentResolveTTL bounds how long ResolveRecent reuses a resolution, so a
+	// batch export resolves its destination once.
+	recentResolveTTL = time.Minute
 )
 
 var aadstsPattern = regexp.MustCompile(`AADSTS\d+`)
@@ -45,6 +51,17 @@ type graphClient struct {
 	maxConcurrentUploads int
 	maxAttempts          int
 	wait                 func(ctx context.Context, d time.Duration) error
+	// now is time.Now when nil.
+	now func() time.Time
+
+	recentMu sync.Mutex
+	// recent maps canonical URLs to resolutions made within recentResolveTTL.
+	recent map[string]recentLocation
+}
+
+type recentLocation struct {
+	location Location
+	expires  time.Time
 }
 
 func newGraphClient(cfg Config) (Client, error) {
@@ -119,6 +136,56 @@ func (c *graphClient) Resolve(ctx context.Context, canonicalURL string) (*Locati
 	if err != nil {
 		return nil, err
 	}
+	return c.resolveCanonical(ctx, canonical)
+}
+
+func (c *graphClient) ResolveRecent(ctx context.Context, canonicalURL string) (*Location, error) {
+	canonical, err := NormalizeURL(canonicalURL)
+	if err != nil {
+		return nil, err
+	}
+	c.recentMu.Lock()
+	entry, ok := c.recent[canonical]
+	c.recentMu.Unlock()
+	if ok && c.clock().Before(entry.expires) {
+		loc := entry.location
+		loc.reused = true
+		return &loc, nil
+	}
+	return c.resolveCanonical(ctx, canonical)
+}
+
+// resolveCanonical resolves a URL NormalizeURL returned and records the
+// outcome for ResolveRecent.
+func (c *graphClient) resolveCanonical(ctx context.Context, canonical string) (*Location, error) {
+	loc, err := c.lookup(ctx, canonical)
+	if err != nil {
+		c.forget(canonical)
+		return nil, err
+	}
+	c.recentMu.Lock()
+	if c.recent == nil {
+		c.recent = map[string]recentLocation{}
+	}
+	c.recent[canonical] = recentLocation{location: *loc, expires: c.clock().Add(recentResolveTTL)}
+	c.recentMu.Unlock()
+	return loc, nil
+}
+
+func (c *graphClient) forget(canonical string) {
+	c.recentMu.Lock()
+	defer c.recentMu.Unlock()
+	delete(c.recent, canonical)
+}
+
+func (c *graphClient) clock() time.Time {
+	if c.now != nil {
+		return c.now()
+	}
+	return time.Now()
+}
+
+func (c *graphClient) lookup(ctx context.Context, canonical string) (*Location, error) {
 	u, err := url.Parse(canonical)
 	if err != nil {
 		return nil, errors.Wrap(err, "invalid SharePoint URL")
@@ -135,7 +202,7 @@ func (c *graphClient) Resolve(ctx context.Context, canonicalURL string) (*Locati
 	if item.ID == "" || item.ParentReference.DriveID == "" {
 		return nil, errors.Errorf("Microsoft Graph did not return the document library of %s", canonical)
 	}
-	return &Location{DriveID: item.ParentReference.DriveID, ItemID: item.ID, WebURL: item.WebURL}, nil
+	return &Location{DriveID: item.ParentReference.DriveID, ItemID: item.ID, WebURL: item.WebURL, url: canonical}, nil
 }
 
 func (c *graphClient) Upload(ctx context.Context, loc *Location, folderName string, files []File) (*Folder, error) {
@@ -154,65 +221,104 @@ func (c *graphClient) Upload(ctx context.Context, loc *Location, folderName stri
 		seen[key] = true
 	}
 
-	folder, err := c.ensureFolder(ctx, loc, folderName)
+	folder, err := c.uploadFiles(ctx, loc, folderName, files)
+	if err == nil || !errors.Is(err, ErrNotFoundOrNoAccess) {
+		return folder, err
+	}
+	c.forget(loc.url)
+	if !loc.reused || !errors.Is(err, ErrNothingUploaded) {
+		return nil, err
+	}
+	// The destination may have been deleted or recreated at the same URL since
+	// the reused resolution.
+	fresh, err := c.resolveCanonical(ctx, loc.url)
 	if err != nil {
 		return nil, &nothingUploadedError{err: err}
 	}
-	g, gctx := errgroup.WithContext(ctx)
-	g.SetLimit(max(c.maxConcurrentUploads, 1))
+	return c.uploadFiles(ctx, fresh, folderName, files)
+}
+
+// uploadFiles addresses files by path, so the first file to arrive creates the
+// export folder.
+func (c *graphClient) uploadFiles(ctx context.Context, loc *Location, folderName string, files []File) (*Folder, error) {
+	folderPath := itemPath(loc.DriveID, loc.ItemID) + ":/" + escapeSegment(folderName) + "/"
+	uploadCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	var (
+		wg       sync.WaitGroup
+		mu       sync.Mutex
+		firstErr error
+		// Graph creates nothing for a request it rejects, the folder included,
+		// so nothing was uploaded when every attempted file was rejected. A
+		// rejection lets the other uploads finish rather than canceling them,
+		// because a canceled upload may have been committed.
+		attempted, rejected int
+	)
+	slots := make(chan struct{}, max(c.maxConcurrentUploads, 1))
 	for _, file := range files {
-		g.Go(func() error {
-			return c.uploadFile(gctx, loc.DriveID, folder.ID, file)
+		slots <- struct{}{}
+		mu.Lock()
+		stop := firstErr != nil || uploadCtx.Err() != nil
+		if !stop {
+			attempted++
+		}
+		mu.Unlock()
+		if stop {
+			<-slots
+			break
+		}
+		wg.Go(func() {
+			defer func() { <-slots }()
+			wasRejected, err := c.uploadFile(uploadCtx, folderPath, file)
+			if err == nil {
+				return
+			}
+			mu.Lock()
+			defer mu.Unlock()
+			if wasRejected {
+				rejected++
+			} else {
+				cancel()
+			}
+			if firstErr == nil {
+				firstErr = err
+			}
 		})
 	}
-	if err := g.Wait(); err != nil {
-		return nil, err
-	}
-	return &Folder{Name: folderName, WebURL: folder.WebURL}, nil
-}
-
-func (c *graphClient) ensureFolder(ctx context.Context, loc *Location, folderName string) (*driveItem, error) {
-	parent := itemPath(loc.DriveID, loc.ItemID)
-	body := map[string]any{
-		"name":                              folderName,
-		"folder":                            map[string]any{},
-		"@microsoft.graph.conflictBehavior": "fail",
-	}
-	var folder driveItem
-	err := c.graphJSON(ctx, http.MethodPost, parent+"/children", body, &folder)
-	if statusOf(err) == http.StatusConflict {
-		folder = driveItem{}
-		err = c.graphJSON(ctx, http.MethodGet, parent+":/"+escapeSegment(folderName)+"?$select=id,webUrl,folder", nil, &folder)
-		if err == nil && folder.Folder == nil {
-			return nil, errors.Errorf("a file named %q already exists in the SharePoint destination", folderName)
+	wg.Wait()
+	if firstErr != nil {
+		if rejected == attempted {
+			return nil, &nothingUploadedError{err: firstErr}
 		}
+		return nil, firstErr
 	}
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create SharePoint folder %q", folderName)
+	if attempted < len(files) {
+		return nil, ctx.Err()
 	}
-	if folder.ID == "" {
-		return nil, errors.Errorf("Microsoft Graph did not return SharePoint folder %q", folderName)
-	}
-	return &folder, nil
+	return &Folder{Name: folderName, WebURL: strings.TrimRight(loc.WebURL, "/") + "/" + url.PathEscape(folderName)}, nil
 }
 
-func (c *graphClient) uploadFile(ctx context.Context, driveID, folderID string, file File) error {
-	err := c.putFile(ctx, driveID, folderID, file)
+// uploadFile reports whether Graph rejected the file's upload as unauthorized,
+// forbidden, or not found.
+func (c *graphClient) uploadFile(ctx context.Context, folderPath string, file File) (bool, error) {
+	err := c.putFile(ctx, folderPath, file)
 	if err == nil {
-		return nil
+		return false, nil
 	}
 	if statusOf(err) == http.StatusConflict {
-		return c.reconcile(ctx, driveID, folderID, file, false)
+		return false, c.reconcile(ctx, folderPath, file, false)
 	}
 	var unknown *unknownOutcomeError
-	if errors.As(err, &unknown) {
-		return c.reconcile(ctx, driveID, folderID, file, true)
+	var graphErr *graphError
+	if errors.As(err, &unknown) || (errors.As(err, &graphErr) && graphErr.afterUnknownOutcome) {
+		return false, c.reconcile(ctx, folderPath, file, true)
 	}
-	return errors.Wrapf(err, "failed to upload %q", file.Name)
+	rejected := errors.Is(err, ErrNotFoundOrNoAccess) || errors.Is(err, ErrCredential)
+	return rejected, errors.Wrapf(err, "failed to upload %q", file.Name)
 }
 
-func (c *graphClient) putFile(ctx context.Context, driveID, folderID string, file File) error {
-	target := itemPath(driveID, folderID) + ":/" + escapeSegment(file.Name) + ":"
+func (c *graphClient) putFile(ctx context.Context, folderPath string, file File) error {
+	target := folderPath + escapeSegment(file.Name) + ":"
 	if len(file.Content) <= c.simpleUploadMaxSize {
 		return c.graphRaw(ctx, http.MethodPut, target+"/content?@microsoft.graph.conflictBehavior=fail", file.Content)
 	}
@@ -305,9 +411,9 @@ func nextExpectedOffset(body []byte, fallback int) (int, error) {
 
 // reconcile accepts an existing file as uploaded only if this application
 // created it with the same size; export folder names are unique per export.
-func (c *graphClient) reconcile(ctx context.Context, driveID, folderID string, file File, outcomeUnknown bool) error {
+func (c *graphClient) reconcile(ctx context.Context, folderPath string, file File, outcomeUnknown bool) error {
 	var item driveItem
-	err := c.graphJSON(ctx, http.MethodGet, itemPath(driveID, folderID)+":/"+escapeSegment(file.Name)+"?$select=size,folder,createdBy", nil, &item)
+	err := c.graphJSON(ctx, http.MethodGet, folderPath+escapeSegment(file.Name)+"?$select=size,folder,createdBy", nil, &item)
 	if err == nil && item.Folder == nil && item.Size == int64(len(file.Content)) &&
 		item.CreatedBy.Application != nil && strings.EqualFold(item.CreatedBy.Application.ID, c.clientID) {
 		return nil
