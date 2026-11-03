@@ -85,9 +85,11 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 // written to disk, or empty.
 //
 // go-mssqldb matches parameter keys case-insensitively and accepts each key once, so Extra
-// Parameters merge by lowercased key. They override the app name and tlsmin defaults, never the
-// database or the Azure credential. With TLS mode TLS, the TLS section sets a floor that Extra
-// Parameters may raise but not lower: encrypt=true unless they ask for encrypt=strict, and
+// Parameters merge by lowercased key, and the credentials go in the query rather than the URL's
+// userinfo, which the driver would read as a second value for user id and password. Extra
+// Parameters override the app name, tlsmin and credential defaults, never the database or the
+// Azure credential. With TLS mode TLS, the TLS section sets a floor that Extra Parameters may
+// raise but not lower: encrypt=true unless they ask for encrypt=strict, and
 // TrustServerCertificate=false when Verify server certificate is on or they ask for it. The
 // section's CA replaces a certificate parameter. With TLS mode Disabled, Extra Parameters apply as
 // given over a TrustServerCertificate=true default.
@@ -95,7 +97,9 @@ func connectionDSN(ds *storepb.DataSource, password, database, caFile string) (s
 	params := map[string]string{
 		msdsn.AppName: "bytebase",
 		// Older SQL Server versions offer only TLS 1.0: https://github.com/microsoft/go-mssqldb/issues/33.
-		msdsn.TLSMin: "1.0",
+		msdsn.TLSMin:   "1.0",
+		msdsn.UserID:   ds.Username,
+		msdsn.Password: password,
 	}
 	extra := ds.GetExtraConnectionParameters()
 	// Sorted, so keys that differ only in case resolve the same way every time.
@@ -126,7 +130,6 @@ func connectionDSN(ds *storepb.DataSource, password, database, caFile string) (s
 			params["fedauth"] = azuread.ActiveDirectoryServicePrincipal
 			params[msdsn.UserID] = fmt.Sprintf("%s@%s", credential.ClientId, credential.TenantId)
 			params[msdsn.Password] = credential.ClientSecret
-			password = ""
 		} else {
 			params["fedauth"] = azuread.ActiveDirectoryDefault
 		}
@@ -138,7 +141,6 @@ func connectionDSN(ds *storepb.DataSource, password, database, caFile string) (s
 	}
 	u := &url.URL{
 		Scheme:   "sqlserver",
-		User:     url.UserPassword(ds.Username, password),
 		Host:     fmt.Sprintf("%s:%s", ds.Host, ds.Port),
 		RawQuery: query.Encode(),
 	}
