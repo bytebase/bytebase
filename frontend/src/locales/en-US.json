@@ -2475,7 +2475,7 @@
           "force-issue-labels": {
             "description": "Require at least one label when creating issues.",
             "self": "Require labels for all issues",
-            "warning": "Require at least configured one label"
+            "warning": "Require at least one configured label"
           },
           "placeholder": "Press Enter to add tag",
           "self": "Issue Labels"
