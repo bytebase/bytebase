@@ -3110,7 +3110,7 @@ Activity type enumeration.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | destination | [ExportDestination](#bytebase-store-ExportDestination) |  |  |
-| uri | [string](#string) |  | Set once delivery to a storage destination is confirmed: the location created for this export. |
+| uri | [string](#string) |  | The location created for this export on its storage destination. |
 
 
 

@@ -15,8 +15,7 @@ message QueryHistoryPayload {
 
   message Export {
     ExportDestination destination = 1;
-    // Set once delivery to a storage destination is confirmed: the location
-    // created for this export.
+    // The location created for this export on its storage destination.
     string uri = 2;
   }
 }

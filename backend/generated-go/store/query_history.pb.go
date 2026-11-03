@@ -86,8 +86,7 @@ func (x *QueryHistoryPayload) GetExport() *QueryHistoryPayload_Export {
 type QueryHistoryPayload_Export struct {
 	state       protoimpl.MessageState `protogen:"open.v1"`
 	Destination ExportDestination      `protobuf:"varint,1,opt,name=destination,proto3,enum=bytebase.store.ExportDestination" json:"destination,omitempty"`
-	// Set once delivery to a storage destination is confirmed: the location
-	// created for this export.
+	// The location created for this export on its storage destination.
 	Uri           string `protobuf:"bytes,2,opt,name=uri,proto3" json:"uri,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
