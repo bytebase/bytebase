@@ -709,6 +709,25 @@ export class BytebaseApiClient {
     await this.request("DELETE", `/v1/${releaseName}`);
   }
 
+  // The database's live revision of a version, if any.
+  async findRevision(database: string, version: string): Promise<{ name: string } | undefined> {
+    let pageToken = "";
+    do {
+      const res = await this.request<{
+        revisions?: { name: string; version: string }[];
+        nextPageToken?: string;
+      }>("GET", `/v1/${database}/revisions?pageSize=100&pageToken=${encodeURIComponent(pageToken)}`);
+      const found = res.revisions?.find((r) => r.version === version);
+      if (found) return found;
+      pageToken = res.nextPageToken ?? "";
+    } while (pageToken);
+    return undefined;
+  }
+
+  async deleteRevision(revisionName: string): Promise<void> {
+    await this.request("DELETE", `/v1/${revisionName}`);
+  }
+
   async deleteProject(project: string): Promise<void> {
     await this.request("DELETE", `/v1/${project}`);
   }

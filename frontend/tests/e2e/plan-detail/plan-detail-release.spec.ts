@@ -317,3 +317,125 @@ test("the release URL opens its plan on Deploy with Changes folded", async ({ pa
   await expect(page.getByTestId("release-spine").or(page.getByTestId("folded-description")).first()).toBeVisible();
   await expect(page.getByTestId("release-changes")).toHaveCount(0);
 });
+
+const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+async function openSpine(page: Page, planId: string) {
+  await page.goto(`${env.baseURL}/projects/${projectId}/plans/${planId}`);
+  await taskCard(page).click();
+  const spine = page.getByTestId("release-spine");
+  await expect(spine).toBeVisible();
+  return spine;
+}
+
+test("a version whose revision was deleted before or after the rollout was created reads Will apply again, then Applied again", async ({ browser }) => {
+  const files = [10, 11, 12].map((n) => ({ n, statement: `CREATE TABLE IF NOT EXISTS ${schema}.r${n} (id INT);` }));
+  const base = await createReleasePlan("rerun-base", files);
+  await runAndWait(base.name, "DONE");
+  const deleteRevisionOf = async (n: number) => {
+    const revision = await env.api.findRevision(env.database, version(n));
+    expect(revision, `revision of ${version(n)}`).toBeDefined();
+    await env.api.deleteRevision(revision!.name);
+  };
+  await deleteRevisionOf(10);
+  const rerun = await createReleasePlan("rerun", files);
+  await deleteRevisionOf(11);
+  const byAdmin = new RegExp(`^Earlier revision deleted .+ by ${escapeRegExp(env.adminEmail)}$`);
+
+  // At rollout creation 11 and 12 still had live revisions.
+  const before = await developerPage(browser);
+  let spine = await openSpine(before, rerun.id);
+  await expect(spine.getByTestId("spine-already-applied")).toHaveText("2 files already applied to this database");
+  const planned = spine.getByTestId(`spine-file-${version(10)}`);
+  await expect(planned).toContainText("Will apply again · revision deleted");
+  await expect(planned).not.toContainText(env.adminEmail);
+  await planned.getByTestId("spine-revision-deleted-info").hover();
+  await expect(before.getByText(byAdmin)).toBeVisible();
+  await screenshot(before, "release-rerun-planned");
+  await before.context().close();
+
+  await runAndWait(rerun.name, "DONE");
+  const after = await developerPage(browser);
+  spine = await openSpine(after, rerun.id);
+  await expect(spine.getByTestId("spine-already-applied")).toHaveText("1 file already applied to this database");
+  for (const n of [10, 11]) {
+    await expect(spine.getByTestId(`spine-file-${version(n)}`)).toContainText("Applied again");
+  }
+  const info = (n: number) =>
+    spine.getByTestId(`spine-file-${version(n)}-row`).getByTestId("spine-revision-deleted-info");
+  await expect(info(10)).toHaveAttribute("aria-label", byAdmin);
+  await expect(info(11)).toHaveAttribute("aria-label", "Earlier revision deleted after this rollout was created");
+  await screenshot(after, "release-rerun-done");
+  await after.context().close();
+});
+
+test("a 25-file release failing at its 22nd file shows the failure past the row limit, and the release that fixes it applies the rest", async ({ browser }) => {
+  const ns = Array.from({ length: 25 }, (_, i) => 30 + i);
+  const failing = ns[21];
+  const statementOf = (n: number, broken: boolean) =>
+    broken ? `ALTER TABLE ${schema}.missing_${n} ADD COLUMN c INT;` : `CREATE TABLE ${schema}.l${n} (id INT);`;
+  const broken = await createReleasePlan("long", ns.map((n) => ({ n, statement: statementOf(n, n === failing) })));
+  await runAndWait(broken.name, "FAILED");
+
+  const failedPage = await developerPage(browser);
+  await failedPage.goto(`${env.baseURL}/projects/${projectId}/plans/${broken.id}`);
+  const folded = failedPage.getByTestId("folded-description").first();
+  await expect(folded).toContainText(version(failing));
+  await expect(folded).toContainText("does not exist");
+  await taskCard(failedPage).click();
+  const spine = failedPage.getByTestId("release-spine");
+  await expect(spine.getByTestId("spine-count")).toContainText("21 applied");
+  await expect(spine.getByTestId("spine-count")).toContainText("1 failed");
+  // 21 applied sections exceed the 20-row limit; the failed one stays shown.
+  await expect(spine.getByTestId(/^spine-load-/).first()).toBeVisible();
+  const failed = spine.getByTestId(`spine-file-${version(failing)}`);
+  await expect(failed).toHaveAttribute("aria-expanded", "true");
+  await expect(spine.getByTestId(`spine-file-${version(failing)}-content`)).toContainText("does not exist");
+  await expect(spine.getByTestId(`spine-file-${version(ns[22])}`)).toHaveCount(0);
+  await expect(failedPage.getByRole("link", { name: `Revisions on ${databaseName}` })).toBeVisible();
+  await screenshot(failedPage, "release-long-failed");
+  await failedPage.context().close();
+
+  const fixed = await createReleasePlan("long-fixed", ns.map((n) => ({ n, statement: statementOf(n, false) })));
+  await runAndWait(fixed.name, "DONE");
+  const fixedPage = await developerPage(browser);
+  const fixedSpine = await openSpine(fixedPage, fixed.id);
+  await expect(fixedSpine.getByTestId("spine-count")).toHaveText("25 files · 4 applied · 21 already applied");
+  await expect(fixedSpine.getByTestId("spine-already-applied")).toHaveText("21 files already applied to this database");
+  await expect(fixedSpine.getByTestId(`spine-file-${version(failing)}`)).toContainText("Applied");
+  await screenshot(fixedPage, "release-long-fixed");
+  await fixedPage.context().close();
+});
+
+test("a click on the task header line folds and unfolds the card, and the margins around the checkbox and the buttons do not", async ({ page }) => {
+  const plan = await createReleasePlan("header", [{ n: 60, statement: `CREATE TABLE ${schema}.h60 (id INT);` }]);
+  await page.goto(`${env.baseURL}/projects/${projectId}/plans/${plan.id}`);
+  const header = page.getByTestId("deploy-task-header").first();
+  const name = taskCard(page);
+  // Empty space just right of the task name, short of the right-hand controls.
+  const emptySpace = async () => {
+    const [line, identity] = [await header.boundingBox(), await name.boundingBox()];
+    return { x: identity!.x - line!.x + identity!.width + 16, y: line!.height / 2 };
+  };
+  await expect(name).toHaveAttribute("aria-expanded", "false");
+  await header.click({ position: await emptySpace() });
+  await expect(name).toHaveAttribute("aria-expanded", "true");
+
+  const guards = header.locator("[data-fold-guard]");
+  await expect(guards).toHaveCount(2);
+  for (const guard of await guards.all()) await guard.click({ position: { x: 2, y: 2 } });
+  await expect(name).toHaveAttribute("aria-expanded", "true");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+
+  await header.getByRole("button", { name: "Run", exact: true }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(name).toHaveAttribute("aria-expanded", "true");
+
+  await header.click({ position: await emptySpace() });
+  await expect(name).toHaveAttribute("aria-expanded", "false");
+  await header.getByRole("checkbox").click();
+  await expect(page.getByText("Selected tasks: 1")).toBeVisible();
+  await expect(name).toHaveAttribute("aria-expanded", "false");
+});
