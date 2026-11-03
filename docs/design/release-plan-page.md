@@ -448,7 +448,7 @@ lines up with a row of text; only a row that wraps grows:
 | Source | D9's row: PR or commit title, author, `repo@sha`, branch | none |
 | Triggered / Created | "shop-ci (service account) · Oct 5, 15:02 · 12 minutes ago": the plan's creator by display name, not email, and `create_time` | The creator and time, today's "Created by" line |
 | Labels | none (no issue) | Today's inline issue labels, editable in place, required when the project forces them; absent when the plan has no issue |
-| Release / Changes | "Migration-based · 493 files · update to version `202610051530`", the release's highest version in D1's order, or "State-based · `<schema version>`", from the release's type and files | "DDL", "DML" or "Mixed" on N databases, from the plan check's `statement_types` |
+| Release / Changes | "Migration-based · 493 files · update to version `202610051530`", the release's highest version in D1's order, or "State-based · `<schema version>`", from the release's type and files | "DDL", "DML" or "Mixed" on N databases, from the plan check's `statement_types`; database groups are counted beside the databases, and a kind of target the plan does not have is left out: "DML on 1 database group", "DDL on 2 databases · 1 database group" |
 | Review | none | The issue's approval state, "✓ Approved by alex (DBA) · Oct 5, 14:45", or who is next; absent when the plan has no issue |
 | Progress | The plan list's stage cell (`ProjectPlanDashboardPage.tsx`): each stage's status icon and name, joined by arrows, wrapping when there are many | Same |
 
