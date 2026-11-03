@@ -229,7 +229,7 @@ func parseApprovalRulesChange(body map[string]any) (*approvalRulesChange, error)
 		return nil, &toolError{Code: "INVALID_REQUEST", Message: "the request body could not be read: " + err.Error()}
 	}
 	request := &v1pb.UpdateSettingRequest{}
-	if err := protojson.Unmarshal(encoded, request); err != nil {
+	if err := common.ProtojsonUnmarshaler.Unmarshal(encoded, request); err != nil {
 		return nil, &toolError{Code: "INVALID_REQUEST", Message: "the request body is not an UpdateSettingRequest: " + err.Error()}
 	}
 	if name := request.GetSetting().GetName(); name != approvalSettingName {
@@ -292,7 +292,7 @@ func (s *Server) readApprovalRules(ctx context.Context) (*v1pb.WorkspaceApproval
 		return nil, err
 	}
 	setting := &v1pb.Setting{}
-	if err := (protojson.UnmarshalOptions{DiscardUnknown: true}).Unmarshal(resp.Body, setting); err != nil {
+	if err := common.ProtojsonUnmarshaler.Unmarshal(resp.Body, setting); err != nil {
 		return nil, errors.Wrap(err, "failed to parse the approval rules")
 	}
 	if setting.GetValue().GetWorkspaceApproval() == nil {
@@ -374,6 +374,7 @@ func diffApprovalRules(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule) 
 			diff.changes = append(diff.changes, approvalRuleChange{line: fmt.Sprintf("Renamed to %q: %q", rule.GetTemplate().GetTitle(), condition)})
 		case !proto.Equal(before, rule):
 			diff.changes = append(diff.changes, approvalRuleChange{line: fmt.Sprintf("Changed its description: %q", condition)})
+		default:
 		}
 	}
 	// A rule outside the longest common order moved: the first matching rule

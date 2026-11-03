@@ -123,7 +123,6 @@ func TestForbiddenClassMembership(t *testing.T) {
 		v1connect.WorkloadIdentityServiceUpdateWorkloadIdentityProcedure,
 		v1connect.SettingServiceTestEmailSettingProcedure,
 		v1connect.UserServiceUpdateEmailProcedure,
-		v1connect.SettingServiceUpdateSettingProcedure,
 		v1connect.InstanceServiceUpdateDataSourceProcedure,
 		v1connect.IssueServiceRetryIssueApprovalProcedure,
 		v1connect.AccessGrantServiceActivateAccessGrantProcedure,

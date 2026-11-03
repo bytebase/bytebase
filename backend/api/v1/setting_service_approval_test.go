@@ -33,7 +33,7 @@ func TestConfirmedApprovalRulesReplaceOnlyTheRulesShown(t *testing.T) {
 	require.NoError(t, err)
 	iamManager, err := iam.NewManager(stores, nil, false)
 	require.NoError(t, err)
-	service := &SettingService{store: stores, profile: &config.Profile{}, licenseService: newEnterpriseLicenseService(ctx, t, stores, "default"), iamManager: iamManager}
+	service := &SettingService{store: stores, profile: &config.Profile{}, licenseService: newEnterpriseLicenseService(ctx, t, stores), iamManager: iamManager}
 
 	rule := func(title, expression string) *storepb.WorkspaceApprovalSetting_Rule {
 		return &storepb.WorkspaceApprovalSetting_Rule{

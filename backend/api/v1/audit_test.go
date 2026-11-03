@@ -18,6 +18,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -625,6 +626,7 @@ func TestAuditSinks(t *testing.T) {
 						AuthMethod:     common.AuthMethodCustom,
 						MCPMethodClass: v1pb.MCPMethodClass_WRITE,
 					}
+					ctx := newAuditTestContext(authCtx)
 					var call connect.UnaryFunc
 					if chain == "public" {
 						call = in.WrapUnary(aclIn.WrapUnary(handler(tc.outcome)))
@@ -633,6 +635,8 @@ func TestAuditSinks(t *testing.T) {
 						if tc.outcome == outcomeRefusedByGate {
 							authCtx.MCPMethodClass = v1pb.MCPMethodClass_FORBIDDEN
 						}
+						// The gate serves an MCP setting update only with the user's confirmation.
+						ctx = auth.WithMCPConfirmedDecision(ctx, auth.MCPConfirmedDecision{Procedure: procedure, Resource: settingName})
 						call = in.WrapUnary(gate.WrapUnary(aclIn.WrapUnary(handler(tc.outcome))))
 					}
 					request := &v1pb.UpdateSettingRequest{
@@ -640,7 +644,7 @@ func TestAuditSinks(t *testing.T) {
 						ValidateOnly: tc.validateOnly,
 					}
 					before := len(lines())
-					_, err := call(newAuditTestContext(authCtx), &specRequest{AnyRequest: connect.NewRequest(request), procedure: procedure})
+					_, err := call(ctx, &specRequest{AnyRequest: connect.NewRequest(request), procedure: procedure})
 					if tc.outcome == outcomeOK {
 						require.NoError(t, err)
 					} else {
