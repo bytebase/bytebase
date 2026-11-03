@@ -221,7 +221,7 @@ func TestAdministerWorkspaceAppliesConfirmedApprovalRules(t *testing.T) {
 	require.NoError(t, err)
 	require.JSONEq(t, `{"type":"object","required":["choice"],"properties":{"choice":{"type":"string",
 		"title":"Apply this change?",
-		"description":"The rules for database changes, in the order an approval check tries them:\n1. \"Test\", no approval: \"resource.environment_id == 'test'\"\n2. \"Prod\", \"Workspace DBA\": \"resource.environment_id == 'prod'\"\nWhen none of them matches, the fallback rules decide. Rules for other sources stay as they are.\nApproval checks from now on use these rules, also after a plan edit.",
+		"description":"The rules for database changes, in the order an approval check tries them:\n1. \"Test\", no approval: \"resource.environment_id == 'test'\"\n2. \"Prod\", \"Workspace DBA\": \"resource.environment_id == 'prod'\"\nWhen none of them matches, the fallback rules decide, and a change that no rule matches needs no approval. Rules for other sources stay as they are.\nApproval checks from now on use these rules, also after a plan edit.",
 		"oneOf":[{"const":"apply","title":"Apply"},{"const":"change","title":"Change it in chat"}],
 		"default":"apply"}}}`, string(schema))
 
@@ -316,6 +316,8 @@ func TestAdministerWorkspaceRefusesBeforeAsking(t *testing.T) {
 	withField["validateOnly"] = true
 	annotated := changeRule("Prod", "resource.environment_id == 'prod'", "roles/workspaceDBA")
 	annotated.Condition.Title = "prod"
+	annotatedRoleRule := roleRequestRule("roles/projectOwner")
+	annotatedRoleRule.Condition.Title = "roles"
 	editedRoleRule := roleRequestRule("roles/workspaceDBA")
 	for name, tc := range map[string]struct {
 		stored    []*v1pb.WorkspaceApprovalSetting_Rule
@@ -330,6 +332,12 @@ func TestAdministerWorkspaceRefusesBeforeAsking(t *testing.T) {
 			want: []string{"the request sets validate_only"}},
 		"a condition annotation": {arguments: updateArguments(approvalBody(t, fallbackRule(), annotated)),
 			want: []string{"the request sets setting.value.workspace_approval.rules.condition.title", "https://bb.example.com/custom-approval"}},
+		"a stored condition annotation": {stored: []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), annotated},
+			arguments: updateArguments(approvalBody(t, fallbackRule(), prodRule, testRule)),
+			want:      []string{"a stored approval rule sets setting.value.workspace_approval.rules.condition.title", "https://bb.example.com/custom-approval"}},
+		"a stored annotation on another source's rule": {stored: []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), annotatedRoleRule},
+			arguments: updateArguments(approvalBody(t, fallbackRule(), roleRequestRule("roles/projectOwner"), prodRule)),
+			want:      []string{"FIELD_NOT_SUPPORTED", "a stored approval rule sets", "https://bb.example.com/custom-approval"}},
 		"the fallback removed": {arguments: updateArguments(approvalBody(t, prodRule)),
 			want: []string{"OTHER_RULES_CHANGED", "the source CHANGE_DATABASE", "https://bb.example.com/custom-approval"}},
 		"another source's rule edited in place": {stored: []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), roleRequestRule("roles/projectOwner")},
@@ -465,9 +473,8 @@ func TestAdministerWorkspaceStatesEachKindOfChange(t *testing.T) {
 // get a line or be refused, so a field added to approvalRequestFields cannot
 // reach the write unstated.
 func TestAdministerWorkspaceStatesEveryRuleFieldItTakes(t *testing.T) {
-	const prefix = "setting.value.workspace_approval.rules."
 	for path := range approvalRequestFields {
-		field, ok := strings.CutPrefix(path, prefix)
+		field, ok := strings.CutPrefix(path, approvalRulesPath+".")
 		if !ok {
 			continue
 		}
@@ -570,6 +577,53 @@ func TestAdministerWorkspaceRefusesAnAnswerToAnotherRequest(t *testing.T) {
 	require.True(t, res.IsError)
 	require.Contains(t, resultText(t, res), "STALE_CONFIRMATION")
 	require.Empty(t, mock.calls())
+}
+
+func TestAdministerWorkspaceRefusesAnAnswerOverStoredRulesThatChanged(t *testing.T) {
+	mock := &approvalMock{}
+	mock.setStored(fallbackRule(), changeRule("Old", "resource.environment_id == 'x'"))
+	s, session := connectToApprovalServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{}).handle})
+	body := approvalBody(t, fallbackRule())
+	state := signedApprovalState(t, s, mock.stored, body, time.Now())
+	// Another admin renames the rule the request removes. A Removed line names
+	// no title, so the message stays the same.
+	mock.setStored(fallbackRule(), changeRule("New", "resource.environment_id == 'x'"))
+
+	params := administerParams(body)
+	params.InputResponses = mcp.InputResponseMap{confirmDecisionRequestID: adminAnswer(adminChoiceApply)}
+	params.RequestState = state
+	res := callAdminister(t, session, params)
+	require.True(t, res.IsError)
+	require.Contains(t, resultText(t, res), "STALE_CONFIRMATION")
+	require.Empty(t, mock.calls())
+}
+
+func TestAdministerWorkspaceDescribesTheRulesLeft(t *testing.T) {
+	described := changeRule("Prod", "resource.environment_id == 'prod'", "roles/workspaceDBA")
+	described.Template.Description = "Production"
+	for name, tc := range map[string]struct {
+		stored, requested []*v1pb.WorkspaceApprovalSetting_Rule
+		want              string
+	}{
+		"an added rule's description": {
+			stored:    []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()},
+			requested: []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), described},
+			want:      `1. "Prod", "Workspace DBA": "resource.environment_id == 'prod'" (description "Production")`,
+		},
+		"no rule left": {
+			stored:    []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), prodRule},
+			requested: []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()},
+			want:      "No rule for database changes is left, so the fallback rules decide every database change, and a change that none of them matches needs no approval.",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			diff, err := diffApprovalRules(tc.stored, tc.requested, "")
+			require.NoError(t, err)
+			form, err := approvalRulesForm(withUserEmail(context.Background(), "alice@example.com"), diff, nil, "")
+			require.NoError(t, err)
+			require.Contains(t, form.description, tc.want)
+		})
+	}
 }
 
 func TestAdministerWorkspaceReportsTheLockedWriteRefusal(t *testing.T) {

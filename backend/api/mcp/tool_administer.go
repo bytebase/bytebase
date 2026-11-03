@@ -46,9 +46,9 @@ const administerWorkspaceDescription = `Make a workspace administration change t
 | operationId | Yes      | The operation, e.g. "SettingService/UpdateSetting" |
 | body        | Yes      | The operation's request body |
 
-It serves one change: the approval rules for database changes. Send SettingService/UpdateSetting with setting.name "settings/WORKSPACE_APPROVAL" and the whole rule list in setting.value.workspaceApproval.rules. Read the stored rules first with call_api SettingService/GetSetting, change only the rules whose source is CHANGE_DATABASE, and send every other rule as stored, in its order. Give each rule you add the source CHANGE_DATABASE. Send a rule's source, condition.expression, template.title, template.description and template.flow.roles; other fields are refused. An approval check tries the CHANGE_DATABASE rules in order, and the first whose condition matches decides who approves a change. When none matches, the rules with no source, such as the Fallback Rule, decide.
+It serves one change: the approval rules for database changes. Send SettingService/UpdateSetting with setting.name "settings/WORKSPACE_APPROVAL" and the whole rule list in setting.value.workspaceApproval.rules. Read the stored rules first with call_api SettingService/GetSetting, change only the rules whose source is CHANGE_DATABASE, and send every other rule as stored, in its order. Give each rule you add the source CHANGE_DATABASE. Send a rule's source, condition.expression, template.title, template.description and template.flow.roles; other fields are refused. An approval check tries the CHANGE_DATABASE rules in order, and the first whose condition matches decides who approves a change. When none matches, the rules with no source, such as the Fallback Rule, decide, and a change that no rule matches needs no approval.
 
-The tool shows the user what changes and asks them to confirm in a form. It changes the rules only when they accept; declining or cancelling changes nothing. A change too long for the form is refused, so make it in smaller steps. A client that cannot show the form gets the console page instead. Do not ask in chat first: the form is the question.
+The tool shows the user what changes and asks them to confirm in a form. It changes the rules only when they accept; declining or cancelling changes nothing. A change too long for the form is refused, and the refusal says whether smaller steps help. A client that cannot show the form gets the console page instead. Do not ask in chat first: the form is the question.
 
 Changing the approval rules needs bb.settings.set, as in the console. call_api refuses SettingService/UpdateSetting.`
 
@@ -76,6 +76,10 @@ const (
 )
 
 var approvalSettingName = common.SettingNamePrefix + v1pb.Setting_WORKSPACE_APPROVAL.String()
+
+// approvalRulesPath is where the rules sit in an UpdateSettingRequest, as
+// approvalRequestFields names them.
+const approvalRulesPath = "setting.value.workspace_approval.rules"
 
 // approvalRulesChange is a request to replace the approval rules.
 type approvalRulesChange struct {
@@ -318,6 +322,16 @@ type approvalRulesDiff struct {
 // form does not show them. The rules for database changes are matched by their
 // condition, the text an approval check evaluates.
 func diffApprovalRules(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule, link string) (*approvalRulesDiff, error) {
+	// The request cannot carry such a field, so the write would drop it unstated.
+	for _, rule := range stored {
+		if field := unlistedField(rule.ProtoReflect(), approvalRulesPath, approvalRequestFields); field != "" {
+			return nil, &toolError{
+				Code:       "FIELD_NOT_SUPPORTED",
+				Message:    fmt.Sprintf("a stored approval rule sets %s, which the confirmation form cannot show and the write would drop, so the approval rules were not changed", field),
+				Suggestion: "change the rules signed in to the Bytebase console: " + link,
+			}
+		}
+	}
 	storedOther, storedDB := splitApprovalRules(stored)
 	requestedOther, requestedDB := splitApprovalRules(requested)
 	if !slices.EqualFunc(storedOther, requestedOther, func(a, b *v1pb.WorkspaceApprovalSetting_Rule) bool { return proto.Equal(a, b) }) {
@@ -521,7 +535,7 @@ func approvalRulesForm(ctx context.Context, diff *approvalRulesDiff, openIssues 
 
 	var sb strings.Builder
 	if len(diff.requested) == 0 {
-		sb.WriteString("No rule for database changes is left, so the fallback rules decide every database change.")
+		sb.WriteString("No rule for database changes is left, so the fallback rules decide every database change, and a change that none of them matches needs no approval.")
 	} else {
 		sb.WriteString("The rules for database changes, in the order an approval check tries them:")
 		for i, rule := range diff.requested {
@@ -530,7 +544,7 @@ func approvalRulesForm(ctx context.Context, diff *approvalRulesDiff, openIssues 
 				fmt.Fprintf(&sb, " (description %q)", description)
 			}
 		}
-		sb.WriteString("\nWhen none of them matches, the fallback rules decide.")
+		sb.WriteString("\nWhen none of them matches, the fallback rules decide, and a change that no rule matches needs no approval.")
 	}
 	sb.WriteString(" Rules for other sources stay as they are.")
 	if len(lines) < messageLines {
