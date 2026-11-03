@@ -135,12 +135,25 @@ vi.mock("../ui/button", () => ({
     children,
     disabled,
     onClick,
+    appearance,
+    size,
+    className,
   }: {
     children: React.ReactNode;
     disabled?: boolean;
     onClick?: () => void;
+    appearance?: string;
+    size?: string;
+    className?: string;
   }) => (
-    <button disabled={disabled} type="button" onClick={onClick}>
+    <button
+      data-appearance={appearance}
+      data-size={size}
+      className={className}
+      disabled={disabled}
+      type="button"
+      onClick={onClick}
+    >
       {children}
     </button>
   ),
@@ -620,7 +633,8 @@ describe("InstanceFormButtons", () => {
     };
     context.testConnection.mockResolvedValue({
       success: false,
-      message: "dial tcp private-host.example.com:5432: i/o timeout",
+      message:
+        "dial tcp private-host.example.com:5432: i/o timeout; password=top-secret",
       failureCategory: "network_unreachable",
     });
 
@@ -645,6 +659,13 @@ describe("InstanceFormButtons", () => {
       button.textContent?.includes("instance.ask-agent-about-error")
     );
     expect(askAgentButton).toBeDefined();
+    expect(askAgentButton).toHaveAttribute("data-appearance", "outline");
+    expect(askAgentButton).toHaveAttribute("data-size", "md");
+    expect(askAgentButton).toHaveClass("border-accent", "text-accent");
+    expect(askAgentButton?.querySelector("svg")).toHaveAttribute(
+      "width",
+      "16"
+    );
 
     await act(async () => {
       askAgentButton?.click();
@@ -653,8 +674,9 @@ describe("InstanceFormButtons", () => {
     expect(onAskAgent).toHaveBeenCalledOnce();
     const prompt = onAskAgent.mock.calls[0][0] as string;
     expect(prompt).toContain("network_unreachable");
-    expect(prompt).not.toContain("private-host.example.com");
-    expect(prompt).not.toContain("i/o timeout");
+    expect(prompt).toContain("private-host.example.com:5432: i/o timeout");
+    expect(prompt).toContain("password=[redacted]");
+    expect(prompt).not.toContain("top-secret");
 
     await act(async () => {
       root.unmount();
@@ -698,7 +720,7 @@ describe("InstanceFormButtons", () => {
     const prompt = onAskAgent.mock.calls[0][0] as string;
     expect(prompt).toContain("instance creation");
     expect(prompt).toContain("Server status: PermissionDenied");
-    expect(prompt).not.toContain("permission denied");
+    expect(prompt).toContain("permission denied");
 
     await act(async () => {
       root.unmount();

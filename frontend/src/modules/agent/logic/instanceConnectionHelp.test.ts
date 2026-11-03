@@ -59,18 +59,32 @@ describe("instanceConnectionHelp", () => {
     mocks.route = { fullPath: "/projects/sample/instances/create" };
   });
 
-  test("summarizes connection failures without sharing raw error or form data", () => {
+  test("includes sanitized error details and tells the agent not to ask for them again", () => {
     const prompt = buildInstanceConnectionHelpPrompt({
       engine: "PostgreSQL",
       stage: "connection test",
       failureCategory: "network_unreachable",
+      failureMessage:
+        "dial tcp db.internal.example.com:5432: i/o timeout; password=top-secret; Authorization: Bearer secret-token; mysql://user:dsn-secret@db.internal.example.com:3306/app",
     });
 
     expect(prompt).toContain("PostgreSQL");
     expect(prompt).toContain("database endpoint could not be reached");
+    expect(prompt).toContain(
+      "dial tcp db.internal.example.com:5432: i/o timeout"
+    );
+    expect(prompt).toContain("password=[redacted]");
+    expect(prompt).toContain("Bearer [redacted]");
+    expect(prompt).toContain("[connection string redacted]");
+    expect(prompt).toContain("Do not ask me to paste or repeat the error");
+    expect(prompt).toContain(
+      "inspect the current page's visible non-secret connection settings"
+    );
     expect(prompt).toContain("passwords, tokens, private keys");
-    expect(prompt).not.toContain("host.example.com");
-    expect(prompt).not.toContain("i/o timeout");
+    expect(prompt).not.toContain("top-secret");
+    expect(prompt).not.toContain("secret-token");
+    expect(prompt).not.toContain("dsn-secret");
+    expect(prompt).not.toContain("have not been shared");
   });
 
   test("opens a new read-only Agent chat in the active project context", () => {

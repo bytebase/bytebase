@@ -25,11 +25,36 @@ const connectionFailureSummary: Record<
   unknown: "the connection attempt failed for an unknown reason",
 };
 
+const MAX_FAILURE_MESSAGE_LENGTH = 2000;
+
+function sanitizeFailureMessage(message: string): string {
+  const sanitized = message
+    .replace(
+      /-----BEGIN [A-Z0-9 ]*(?:PRIVATE KEY|CERTIFICATE)-----[\s\S]*?-----END [A-Z0-9 ]*(?:PRIVATE KEY|CERTIFICATE)-----/gi,
+      "[credential material redacted]"
+    )
+    .replace(
+      /\b(?:postgres(?:ql)?|mysql|mariadb|mongodb(?:\+srv)?|mssql|sqlserver|oracle):\/\/[^\s"'<>]+/gi,
+      "[connection string redacted]"
+    )
+    .replace(/\b(Bearer|Basic)\s+[A-Za-z0-9._~+/-]+=*/gi, "$1 [redacted]")
+    .replace(
+      /\b([A-Za-z0-9_-]*(?:password|passwd|pwd|token|secret|credential|private[_-]?key|api[_-]?key|access[_-]?key)[A-Za-z0-9_-]*\s*[:=]\s*)(?:"[^"]*"|'[^']*'|[^\s,;]+)/gi,
+      "$1[redacted]"
+    )
+    .replace(/(\b[^:/\s@]+:)[^@\s]+(@(?:tcp|unix)\()/gi, "$1[redacted]$2");
+
+  return sanitized.length > MAX_FAILURE_MESSAGE_LENGTH
+    ? `${sanitized.slice(0, MAX_FAILURE_MESSAGE_LENGTH)} [truncated]`
+    : sanitized;
+}
+
 export function buildInstanceConnectionHelpPrompt(options: {
   engine: string;
   stage: "connection test" | "instance creation";
   failureCategory?: InstanceConnectionFailureCategory;
   failureCode?: string;
+  failureMessage?: string;
 }): string {
   const summary =
     options.stage === "connection test"
@@ -41,13 +66,17 @@ export function buildInstanceConnectionHelpPrompt(options: {
       : options.failureCode
         ? ` Server status: ${options.failureCode}.`
         : "";
+  const errorDetails = options.failureMessage?.trim()
+    ? `Error details (common credential patterns redacted): ${sanitizeFailureMessage(options.failureMessage)}`
+    : "No detailed error message was available.";
 
   return [
     `I'm creating a ${options.engine} instance. The ${options.stage} failed: ${summary}.${failureDetails}`,
-    "The exact error text and connection settings have not been shared.",
-    "Help me figure out what to check next, one step at a time. Ask for missing non-secret details instead of guessing.",
+    errorDetails,
+    "Use the error details above and inspect the current page's visible non-secret connection settings. Do not ask me to paste or repeat the error.",
+    "Help me figure out what to check next, one step at a time. Ask only for missing non-secret details instead of guessing.",
     "Never ask me to share passwords, tokens, private keys, certificate contents, or full connection strings. Do not run another connection test or submit the instance form.",
-  ].join(" ");
+  ].join("\n");
 }
 
 export function openAgentWithPrompt(text: string): void {

@@ -154,7 +154,8 @@ export function InstanceFormButtons({
   const askAgentAboutFailure = (
     stage: "connection test" | "instance creation",
     failureCategory?: ConnectionFailureCategory,
-    failureCode?: string
+    failureCode?: string,
+    failureMessage?: string
   ) => {
     if (!onAskAgent) return;
     onAskAgent(
@@ -163,6 +164,7 @@ export function InstanceFormButtons({
         stage,
         failureCategory,
         failureCode,
+        failureMessage,
       })
     );
   };
@@ -585,17 +587,19 @@ export function InstanceFormButtons({
       </p>
       {onAskAgent && (
         <Button
-          appearance="secondary"
-          size="sm"
-          className="mt-3"
+          appearance="outline"
+          size="md"
+          className="mt-3 border-accent text-accent"
           onClick={() =>
             askAgentAboutFailure(
               "connection test",
-              testConnectionFailure.failureCategory
+              testConnectionFailure.failureCategory,
+              undefined,
+              testConnectionFailure.message
             )
           }
         >
-          <MessageCircleQuestion />
+          <MessageCircleQuestion size={16} />
           {t("instance.ask-agent-about-error")}
         </Button>
       )}
@@ -611,18 +615,19 @@ export function InstanceFormButtons({
       >
         {onAskAgent && (
           <Button
-            appearance="secondary"
-            size="sm"
-            className="mt-3"
+            appearance="outline"
+            size="md"
+            className="mt-3 border-accent text-accent"
             onClick={() =>
               askAgentAboutFailure(
                 "instance creation",
                 undefined,
-                createFailure.failureCode
+                createFailure.failureCode,
+                createFailure.message
               )
             }
           >
-            <MessageCircleQuestion />
+            <MessageCircleQuestion size={16} />
             {t("instance.ask-agent-about-error")}
           </Button>
         )}
@@ -660,16 +665,20 @@ export function InstanceFormButtons({
         <AlertDialogFooter>
           {onAskAgent && (
             <Button
-              appearance="secondary"
+              appearance="outline"
+              size="md"
+              className="border-accent text-accent"
               onClick={() => {
                 closeConnectionFailureDialog(false);
                 askAgentAboutFailure(
                   "connection test",
-                  connectionFailureDialogState.failureCategory
+                  connectionFailureDialogState.failureCategory,
+                  undefined,
+                  connectionFailureDialogState.message
                 );
               }}
             >
-              <MessageCircleQuestion />
+              <MessageCircleQuestion size={16} />
               {t("instance.ask-agent-about-error")}
             </Button>
           )}
