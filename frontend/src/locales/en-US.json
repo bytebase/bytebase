@@ -348,7 +348,7 @@
     },
     "sign-up": {
       "accept-terms-and-policy": "I accept Bytebase's <terms>Terms of Service</terms> and <policy>Privacy Policy</policy>",
-      "admin-title": "Setup <account>admin account</account>",
+      "admin-title": "Set up an <account>admin account</account>",
       "create-admin-account": "Create admin account",
       "existing-user": "Already have an account?",
       "title": "Register your account"
@@ -358,7 +358,7 @@
       "no-authorization-endpoint": "The identity provider published no authorization endpoint. Check its configuration.",
       "unsupported-provider-type": "This identity provider type does not support SSO redirect."
     },
-    "token-expired-description": "Token has expired, please login again",
+    "token-expired-description": "Your token has expired. Please sign in again.",
     "token-expired-title": "Token expired"
   },
   "banner": {
@@ -370,7 +370,7 @@
   "bbkit": {
     "confirm-button": {
       "cannot-undo": "You cannot undo this action.",
-      "sure-to-delete": "Are you sure to delete?"
+      "sure-to-delete": "Are you sure you want to delete this?"
     }
   },
   "cel": {
@@ -447,7 +447,7 @@
     "confirm": "Confirm",
     "confirm-archive": "Archive Resource?",
     "confirm-delete": "Delete Resource?",
-    "confirm-to-revert": "Confirm to revert your editing?",
+    "confirm-to-revert": "Discard your changes?",
     "continue-anyway": "Continue anyway",
     "copied": "Copied",
     "copy": "Copy",
@@ -506,8 +506,8 @@
     "failed": "Failed",
     "feishu": "Feishu",
     "file-selector": {
-      "size-limit": "File size should less than {{size}} MiB",
-      "type-limit": "Only support {{extension}} file"
+      "size-limit": "File size must be less than {{size}} MiB",
+      "type-limit": "Only {{extension}} files are supported"
     },
     "filter": "Filter",
     "filter-by-name": "Filter by name",
@@ -1068,7 +1068,7 @@
     "views": "Views"
   },
   "environment": {
-    "delete-description": "Delete environment will also remove it from related instances and databases. You cannot undo this action",
+    "delete-description": "Deleting this environment will also remove it from related instances and databases. You cannot undo this action.",
     "reorder": "Reorder Environments",
     "select": "Select environment",
     "successfully-updated-environment": "Successfully updated environment '{{name}}'."
@@ -1173,11 +1173,11 @@
     "advanced-search": {
       "scope": {
         "host": {
-          "description": "Filter by instance host. Please input the value then press the Enter.",
+          "description": "Filter by instance host. Enter a value, then press Enter.",
           "title": "Host"
         },
         "port": {
-          "description": "Filter by instance port. Please input the value then press the Enter.",
+          "description": "Filter by instance port. Enter a value, then press Enter.",
           "title": "Port"
         }
       }
@@ -1314,7 +1314,7 @@
         }
       },
       "vault-secret-engine-name": "Secret engine name",
-      "vault-secret-engine-tips": "Only support KV v2 engine.",
+      "vault-secret-engine-tips": "Only the KV v2 engine is supported.",
       "vault-secret-key": "Secret key",
       "vault-secret-path": "Secret path",
       "vault-tls-config": "Vault TLS Configuration (Optional)",
@@ -1336,9 +1336,9 @@
       "client-secret": "Client Secret",
       "credential-source": "Credential Source",
       "default-credential": {
-        "aws": "Bytebase will read the credential from environment variables <awsAccessKeyId>AWS_ACCESS_KEY_ID</awsAccessKeyId>/<awsSecretAccessKey>AWS_SECRET_ACCESS_KEY</awsSecretAccessKey>/<awsSessionToken>AWS_SESSION_TOKEN</awsSessionToken>, fallback to shared credentials file <awsCredentialsPath>~/.aws/credentials</awsCredentialsPath> or IAM role in AWS ECS",
-        "azure": "Bytebase will read the credential from environment variables <azureClientId>AZURE_CLIENT_ID</azureClientId>/<azureTenantId>AZURE_TENANT_ID</azureTenantId>/<azureClientSecret>AZURE_CLIENT_SECRET</azureClientSecret> or <azureClientCertificatePath>AZURE_CLIENT_CERTIFICATE_PATH</azureClientCertificatePath>, and fallback to attached users in Azure VM",
-        "gcp": "Bytebase will read the credential from environment variable <googleApplicationCredentials>GOOGLE_APPLICATION_CREDENTIALS</googleApplicationCredentials>, fallback to the attached service account in GCP GCE"
+        "aws": "Bytebase will read the credentials from the environment variables <awsAccessKeyId>AWS_ACCESS_KEY_ID</awsAccessKeyId>/<awsSecretAccessKey>AWS_SECRET_ACCESS_KEY</awsSecretAccessKey>/<awsSessionToken>AWS_SESSION_TOKEN</awsSessionToken>, or fall back to the shared credentials file <awsCredentialsPath>~/.aws/credentials</awsCredentialsPath> or an IAM role in AWS ECS",
+        "azure": "Bytebase will read the credentials from the environment variables <azureClientId>AZURE_CLIENT_ID</azureClientId>/<azureTenantId>AZURE_TENANT_ID</azureTenantId>/<azureClientSecret>AZURE_CLIENT_SECRET</azureClientSecret> or <azureClientCertificatePath>AZURE_CLIENT_CERTIFICATE_PATH</azureClientCertificatePath>, and fall back to attached users in Azure VM",
+        "gcp": "Bytebase will read the credentials from the environment variable <googleApplicationCredentials>GOOGLE_APPLICATION_CREDENTIALS</googleApplicationCredentials>, or fall back to the attached service account in GCP GCE"
       },
       "saas-default-credential-restriction": "Default credentials are not available in Bytebase Cloud for security. Please provide specific credentials.",
       "specific-credential": "Specific Credential",
@@ -1477,10 +1477,10 @@
     "sentence": {
       "aws-rds": {
         "mysql": {
-          "template": "Below is an example to create user {{user}}@% and grant the user with the needed privileges."
+          "template": "The following example creates the user {{user}}@% and grants the user the required privileges."
         },
         "postgresql": {
-          "template": "Below is an example to create user '{{user}}' and grant the user with the needed privileges."
+          "template": "The following example creates the user '{{user}}' and grants the user the required privileges."
         }
       },
       "console": {
@@ -1493,24 +1493,24 @@
       "create-user-example": {
         "clickhouse": {
           "sql-driven-workflow": "SQL-driven workflow",
-          "template": "Below is an example to create user '{{user}}' with password {{password}} and grant the user with the needed privileges. First you need to enable ClickHouse SQL-driven workflow {{link}} and then run the following query to create the user."
+          "template": "The following example creates the user '{{user}}' with password {{password}} and grants the user the required privileges. First you need to enable ClickHouse SQL-driven workflow {{link}} and then run the following query to create the user."
         },
         "mysql": {
-          "template": "Below is an example to create user {{user}}@% with password {{password}} and grant the user with the needed privileges.",
+          "template": "The following example creates the user {{user}}@% with password {{password}} and grants the user the required privileges.",
           "warn": "To let Bytebase run changes that set DEFINER to another account, also grant SET_USER_ID on MySQL 8.0 or SET_ANY_DEFINER on MySQL 8.4 and later. Some cloud providers restrict these privileges."
         },
         "oracle": {
           "warn": "GRANT ALL PRIVILEGES doesn't work on Amazon RDS for Oracle."
         },
         "postgresql": {
-          "template": "Below is an example to create user '{{user}}' with password {{password}} and grant the user with the needed privileges. If the connecting instance is self-hosted, then you can grant SUPERUSER.",
+          "template": "The following example creates the user '{{user}}' with password {{password}} and grants the user the required privileges. If the connecting instance is self-hosted, then you can grant SUPERUSER.",
           "warn": "If the connecting instance is managed by the cloud provider, then SUPERUSER is not available and you should create the user via that provider's admin console. The created user will have provider specific semi-SUPERUSER privileges. You should grant Bytebase privileges with 'GRANT role_name TO bytebase;' for all existing roles, otherwise Bytebase may not access existing databases or tables."
         },
         "redis": {
-          "template": "Below is an example to create user {{user}} with password {{password}} and grant the user with the needed privileges."
+          "template": "The following example creates the user {{user}} with password {{password}} and grants the user the required privileges."
         },
         "snowflake": {
-          "template": "Below is an example to create user '{{user}}' with password {{password}} for {{warehouse}} and grant the user with the needed privileges."
+          "template": "The following example creates the user '{{user}}' with password {{password}} for {{warehouse}} and grants the user the required privileges."
         }
       },
       "firewall-info": "Allowlist the Bytebase Cloud IP in your database firewall.",
@@ -1518,10 +1518,10 @@
         "instance-name": "Instance Connection Name",
         "instance-name-tips": "The instance connection name should look like {{instance}}.",
         "mysql": {
-          "template": "Create a service account named {{user}}, then add it in your Google Cloud SQL as IAM user {{user}}@'%'. Grant this user with the needed privileges."
+          "template": "Create a service account named {{user}}, then add it in your Google Cloud SQL as IAM user {{user}}@'%'. Grant this user the required privileges."
         },
         "postgresql": {
-          "template": "Create a service account named {{user}}, then add it in your Google Cloud SQL as IAM user {{user}}@project-id.iam. Grant the user with the needed privileges."
+          "template": "Create a service account named {{user}}, then add it in your Google Cloud SQL as IAM user {{user}}@project-id.iam. Grant the user the required privileges."
         }
       },
       "host": {
@@ -1601,7 +1601,7 @@
       },
       "container": "Container",
       "details": "Access grant details",
-      "duration-after-approval": "{{duration}} after issue approved",
+      "duration-after-approval": "{{duration}} after the issue is approved",
       "expired-at": "Expired at",
       "export-results-to-file": "Export results to a file",
       "this-grant-allows": "This grant allows",
@@ -1900,7 +1900,7 @@
       "n-open": "{{count}} open",
       "n-warnings_one": "{{count}} warning",
       "n-warnings_other": "{{count}} warnings",
-      "needs-attention": "{{count}} of {{total}} needs attention",
+      "needs-attention": "Needs attention: {{count}} of {{total}}",
       "no-findings": "No findings",
       "not-run": "Not run yet",
       "nothing-needs-attention": "Nothing needs attention",
@@ -2228,13 +2228,13 @@
       "n-changes": "{{n}} changes",
       "n-database-groups": "{{n}} database groups",
       "n-databases": "{{n}} databases",
-      "n-error": "{{n}} error",
+      "n-error": "Errors: {{n}}",
       "n-of-m-approved": "{{n}} of {{m}} approved",
       "n-of-m-tasks": "{{n}}/{{m}} tasks",
       "n-passed": "{{n}} passed",
       "n-unresolved-threads_one": "{{count}} unresolved thread",
       "n-unresolved-threads_other": "{{count}} unresolved threads",
-      "n-warning": "{{n}} warning",
+      "n-warning": "Warnings: {{n}}",
       "no-approval-required": "No approval required"
     },
     "targets": {
@@ -2259,7 +2259,7 @@
       "ai-assistant": "AI Assistant",
       "conversation": {
         "delete": "Delete conversation",
-        "history-conversations": "History conversations",
+        "history-conversations": "Conversation history",
         "new-conversation": "Start new conversation",
         "no-message": "No message in this conversation",
         "rename": "Rename conversation",
@@ -2269,7 +2269,7 @@
           "suggest-prompt": "Suggesting prompts..."
         },
         "untitled": "Untitled conversation",
-        "view-history-conversations": "View history conversations"
+        "view-history-conversations": "View conversation history"
       },
       "new-line": "New line",
       "not-configured": {
@@ -2289,7 +2289,7 @@
     },
     "rollout": {
       "auto": "Automatic",
-      "auto-info": "If all check pass, the change will be rolled out and executed automatically.",
+      "auto-info": "If all checks pass, the change will be rolled out and executed automatically.",
       "info": "Tasks can be executed by users with '{{permission}}' permission or the following roles.",
       "name": "Rollout Policy",
       "tip": "The policy is applied to issues retroactively."
@@ -2462,7 +2462,7 @@
           "self": "CI Data Sampling Size"
         },
         "enforce-issue-title": {
-          "description": "Require titles for issues and plans to be created by user instead of auto-generated.",
+          "description": "Require users to enter titles for issues and plans instead of generating them automatically.",
           "self": "Require manual title"
         },
         "enforce-sql-review": {
@@ -2471,25 +2471,25 @@
         },
         "labels": {
           "configure-labels": "Configure labels",
-          "description": "Labels can be attached in the issues for management",
+          "description": "Attach labels to issues to organize them.",
           "force-issue-labels": {
             "description": "Require at least one label when creating issues.",
             "self": "Require labels for all issues",
-            "warning": "Require at least configured one label"
+            "warning": "Require at least one configured label"
           },
           "placeholder": "Press Enter to add tag",
           "self": "Issue Labels"
         },
         "max-retries": {
-          "description": "The maximum retries count for lock timeout when running the task. The default value is 0. Only applicable to Postgres.",
-          "self": "Maximum retries count for lock timeout"
+          "description": "The maximum number of retries after a lock timeout when running a task. The default value is 0. Only applicable to Postgres.",
+          "self": "Maximum retries after a lock timeout"
         },
         "parallel_tasks_per_rollout": {
           "description": "Control the number of parallel tasks per rollout. Setting this to zero disables any throttling.",
           "self": "Parallel tasks per rollout"
         },
         "postgres-database-tenant-mode": {
-          "description": "The tenant mode for Postgres database. If enable, the issue will be run by the database OWNER. Otherwise, the issue will be run by the instance connection user.",
+          "description": "The tenant mode for Postgres databases. If enabled, the issue will be run by the database OWNER. Otherwise, the issue will be run by the instance connection user.",
           "self": "Postgres database tenant mode"
         },
         "require-issue-approval": {
@@ -2544,7 +2544,7 @@
           "title": "Pipeline failed"
         }
       },
-      "activity-support-direct-message": "Support send direct messages to related users",
+      "activity-support-direct-message": "Supports sending direct messages to related users",
       "creation": {
         "desc": "Create the corresponding webhook for the {{destination}} channel receiving the message.",
         "view-doc": "View {{destination}}'s doc"
@@ -2604,9 +2604,9 @@
   "remind": {
     "role-expire": {
       "checkbox": "Do not remind until any updates",
-      "content": "Your following roles are going to expire",
+      "content": "The following roles will expire",
       "go-to-project": "Go to the project page",
-      "title": "Role expiration remind"
+      "title": "Role expiration reminder"
     }
   },
   "resource": {
@@ -2616,7 +2616,7 @@
   },
   "resource-id": {
     "cannot-be-changed-later": "It cannot be changed later.",
-    "description": "The {{resource}} ID is a unique identifier. You cannot change it after created.",
+    "description": "The {{resource}} ID is a unique identifier. You cannot change it after creation.",
     "self": "{{resource}} ID",
     "validation": {
       "duplicated": "The {{resource}} ID already exists. Please choose another one.",
@@ -2662,7 +2662,7 @@
     "select-role": "Select role",
     "self": "Role",
     "setting": {
-      "description": "Defining custom roles. You may apply them to project members and used in custom approval.",
+      "description": "Define custom roles, assign them to project members, and use them in custom approval.",
       "description-placeholder": "Input role description",
       "title-placeholder": "Input role title"
     },
@@ -2706,13 +2706,13 @@
       "title": "Pending Tasks"
     },
     "stage": {
-      "confirm-create": "Confirm to create tasks for this stage?",
+      "confirm-create": "Create tasks for this stage?",
       "self_one": "Stage",
       "self_other": "Stages"
     },
     "task": {
       "no-tasks": "No tasks in this stage",
-      "selected-count": "{{count}} task selected",
+      "selected-count": "Selected tasks: {{count}}",
       "statement-truncated-hint": "Statement truncated due to large size."
     },
     "task-execution-errors": "Task execution errors"
@@ -2773,7 +2773,7 @@
     },
     "index": {
       "columns": "Columns",
-      "dependency-columns": "Depenedent columns",
+      "dependency-columns": "Dependent columns",
       "indexes": "Indexes",
       "primary": "Primary",
       "unique": "Unique"
@@ -2856,7 +2856,7 @@
             "self": "API Key"
           },
           "available-in-saas": "AI Assistant is available in this workspace and managed by Bytebase.",
-          "description": "Use AI to assist the database development tasks.",
+          "description": "Use AI to help with database development tasks.",
           "enable-ai-assistant": "Enable AI Assistant",
           "endpoint": {
             "description": "Enter the API endpoint for the custom model.",
@@ -2950,7 +2950,7 @@
             "self": "SQL Editor"
           },
           "workspace": {
-            "description": "Use issue to request, review, rollout, and version database changes, suitable for teams with access control and CI & CD workflow.",
+            "description": "Use issues to request, review, roll out, and version database changes. Suitable for teams with access control and CI/CD workflows.",
             "self": "Workspace"
           }
         },
@@ -2978,7 +2978,7 @@
         },
         "external-url": {
           "cannot-edit-flag": "External URL cannot be changed because it is set via --external-url command-line flag",
-          "description": "The external URL where user visits Bytebase, must start with http:// or https://.",
+          "description": "The external URL where users access Bytebase. It must start with http:// or https://.",
           "self": "External URL"
         },
         "extra-link": {
@@ -3220,8 +3220,8 @@
     },
     "members": {
       "action": {
-        "deactivate-confirm-title": "Are you sure to deactivate?",
-        "reactivate-confirm-title": "Are you sure to reactivate"
+        "deactivate-confirm-title": "Are you sure you want to deactivate this account?",
+        "reactivate-confirm-title": "Are you sure you want to reactivate this account?"
       },
       "add-member": "Add member",
       "admin": {
@@ -3259,7 +3259,7 @@
         "regenerate-token": "Regenerate token",
         "regenerate-token-warning": "The current token stops working immediately and you will need to update the application provisioning config. Continue?",
         "secret-token": "Secret Token",
-        "secret-token-tip": "The verification token for the endpoint. Please keep it in secret.",
+        "secret-token-tip": "The verification token for the endpoint. Keep it secret.",
         "self": "Sync from SCIM",
         "token-configured": "A token is configured. It cannot be displayed again — regenerate if you no longer have it.",
         "token-not-configured": "No token has been generated yet.",
@@ -3290,8 +3290,8 @@
       "reset-service-key": "Reset Service Key",
       "reset-service-key-alert": "This action cannot be undone. The old key will stop working immediately. Are you sure you want to reset this service key?",
       "revoke-access": "Revoke Access",
-      "revoke-access-alert": "Are you sure to revoke access?",
-      "revoke-allusers-alert": "Revoke \"All users\" will revoke related roles from all other users in your workspace. Are you sure to continue?",
+      "revoke-access-alert": "Are you sure you want to revoke access?",
+      "revoke-allusers-alert": "Revoking \"All users\" will revoke the related roles from all other users in your workspace. Are you sure you want to continue?",
       "revoked": "Revoked",
       "search-member": "Search member",
       "select-account-hint": "You can search for users and groups, or input the entire email to select the service account or workload identity.",
@@ -3343,9 +3343,9 @@
       "display-name-placeholder": "Enter your name",
       "email": "Email",
       "password": "Password",
-      "password-confirm": "Password Confirm",
+      "password-confirm": "Confirm password",
       "password-confirm-placeholder": "Confirm new password",
-      "password-hint": "Password should follow restriction setting",
+      "password-hint": "Your password must meet the password requirements",
       "password-mismatch": "New password mismatch",
       "phone": "Phone",
       "phone-tips": "Be sure to include the country code +1xxxxxx"
@@ -3673,8 +3673,8 @@
     "duration-hours": "{{hours}} hours",
     "execute-query": "Execute query",
     "executing-query": "Executing query",
-    "expire-at": "Expire at {{time}}",
-    "expire-in": "Expire in {{time}}",
+    "expire-at": "Expires at {{time}}",
+    "expire-in": "Expires in {{time}}",
     "expired": "Expired",
     "explain": "Explain",
     "explain-hint": "Show the plan without running the query",
@@ -3709,7 +3709,7 @@
     "no-data-available": "No data available",
     "no-database-selected": "No database selected",
     "no-history-found": "No history found",
-    "no-queriable-database": "No queriable database",
+    "no-queriable-database": "No queryable databases",
     "notify-empty-statement": "Please input your SQL statements in the editor",
     "only-select-allowed": "Only read-only statements are allowed to execute.",
     "open-in-new-tab": "Open in new tab",
@@ -3720,7 +3720,7 @@
     "plan-view": "Plan",
     "previous-row": "Previous Row",
     "query-context": {
-      "admin-data-source-is-disallowed-to-query": "Admin data source is disallowed to query."
+      "admin-data-source-is-disallowed-to-query": "Querying the admin data source is not allowed."
     },
     "query-history-not-found": "Query history not found or no longer accessible",
     "query-plan-estimated": "A new plan, made just now. It may differ from the plan that ran.",
@@ -4015,7 +4015,7 @@
       "n-license-remain": "{{n}} remaining",
       "project-instance-hint": "This list only includes workspace instances. To manage a project instance license, open its instance detail page.",
       "require-license": "Require instance license",
-      "success-notification": "Successfully update license assignment",
+      "success-notification": "License assignment updated successfully",
       "used-and-total-instance": "Active / Total Instance Limit",
       "used-and-total-license": "Assigned / Total Instance License",
       "used-and-total-user": "Active / Total User Limit"
@@ -4094,8 +4094,8 @@
       "total-price": "Total Price",
       "update": "Update Subscription"
     },
-    "request-n-days-trial": "Request {{days}} days trial (no credit card required)",
-    "require-subscription": "This feature requires {{requiredPlan}} subscription, please purchase Bytebase license to unlock it.",
+    "request-n-days-trial": "Request a {{days}}-day trial (no credit card required)",
+    "require-subscription": "This feature requires a subscription to {{requiredPlan}}. Purchase a Bytebase license to unlock it.",
     "required-plan-with-trial": "This feature requires {{requiredPlan}}. {{startTrial}}",
     "trial-for-days": "You can start a free trial for {{days}} days - no credit card required.",
     "trialing": "trialing",
@@ -4106,7 +4106,7 @@
         "title": "Failed to update license"
       },
       "success": {
-        "description": "Premium features in subscription plan unlocked.",
+        "description": "The premium features in your subscription plan are now unlocked.",
         "title": "Successfully updated license"
       }
     },
@@ -4234,7 +4234,7 @@
     "no-blocking-sessions": "No blocking sessions",
     "no-session-found": "No session found",
     "rollback": {
-      "available": "{{count}} rollback available",
+      "available": "Available rollbacks: {{count}}",
       "no-statement-generated": "No statement generated",
       "preview-statement": {
         "description": "Review the generated rollback statements before creating the rollback plan."
@@ -4286,7 +4286,7 @@
           "enter-the-text": "enter the text",
           "self": "Scan the QR code"
         },
-        "self": "Setup authenticator app",
+        "self": "Set up an authenticator app",
         "time-remaining": "Time remaining: {{time}}",
         "verify-code": "Verify the code from the app"
       }

@@ -46,7 +46,7 @@
         "title": "Audit log"
       },
       "FEATURE_AUTOMATIC_BACKUP_BEFORE_DATA_CHANGES": {
-        "desc": "Automatically backup data before making changes.",
+        "desc": "Automatically back up data before making changes.",
         "title": "Automatic backup"
       },
       "FEATURE_AUTO_COMPLETE": {
@@ -130,8 +130,8 @@
         "title": "Directory sync"
       },
       "FEATURE_DISALLOW_PASSWORD_SIGNIN": {
-        "desc": "Require SSO authentication only for user signin.",
-        "title": "Disable password signin"
+        "desc": "Require SSO authentication only for user sign-in.",
+        "title": "Disable password sign-in"
       },
       "FEATURE_DISALLOW_SELF_SERVICE_SIGNUP": {
         "desc": "Require admin invitation for new user registration.",
@@ -202,7 +202,7 @@
         "title": "Natural language to SQL"
       },
       "FEATURE_ONE_CLICK_DATA_ROLLBACK": {
-        "desc": "Quickly rollback data changes with a single click.",
+        "desc": "Quickly roll back data changes with a single click.",
         "title": "One-click data rollback"
       },
       "FEATURE_ONLINE_SCHEMA_CHANGE": {
