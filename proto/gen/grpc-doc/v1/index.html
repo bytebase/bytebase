@@ -7655,6 +7655,7 @@ Supported filter:
 - database: the database full name in &#34;instances/{id}/databases/{name}&#34; or &#34;projects/{project}/instances/{id}/databases/{name}&#34; format, support &#34;==&#34; operator.
 - instance: the instance full name in &#34;instances/{id}&#34; or &#34;projects/{project}/instances/{id}&#34; format, support &#34;==&#34; operator.
 - type: the type, should be &#34;QUERY&#34; or &#34;EXPORT&#34;, support &#34;==&#34; operator.
+- export_destination: the export destination, &#34;DOWNLOAD&#34; or &#34;SHAREPOINT&#34;, support &#34;==&#34; operator.
 - statement: the SQL statement, support &#34;==&#34; and &#34;.contains()&#34; operators.
 
 For example:
@@ -7665,7 +7666,8 @@ type == &#34;QUERY&#34;
 type == &#34;EXPORT&#34;
 statement == &#34;SELECT 1;&#34;
 statement.contains(&#34;select&#34;)
-type == &#34;QUERY&#34; &amp;&amp; statement.contains(&#34;select&#34;) </p></td>
+type == &#34;QUERY&#34; &amp;&amp; statement.contains(&#34;select&#34;)
+type == &#34;QUERY&#34; || export_destination == &#34;SHAREPOINT&#34; </p></td>
                 </tr>
               
             </tbody>

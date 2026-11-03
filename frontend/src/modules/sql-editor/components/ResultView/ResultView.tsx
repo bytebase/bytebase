@@ -28,6 +28,7 @@ import {
   useSQLEditorQueryDataPolicy,
 } from "@/modules/sql-editor/hooks/useSQLEditorState";
 import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
+import { refreshQueryHistory } from "@/modules/sql-editor/store/queryHistoryRefresh";
 import { getSQLEditorTabsState } from "@/modules/sql-editor/store/tab";
 import { useAppStore } from "@/stores/app";
 import type { SQLEditorQueryParams, SQLResultSetV1 } from "@/types";
@@ -279,6 +280,8 @@ export function ResultView({
         return;
       }
       reject(e);
+    } finally {
+      void refreshQueryHistory([database.name]);
     }
   };
 

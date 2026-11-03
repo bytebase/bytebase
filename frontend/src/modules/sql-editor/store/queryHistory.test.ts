@@ -133,6 +133,9 @@ describe("queryHistory slice — request parent scoping", () => {
       const request = call[0] as { parent: string; filter: string };
       expect(request.parent).toBe("projects/p1");
       expect(request.filter).not.toContain("project ==");
+      expect(request.filter).toContain(
+        '(type == "QUERY" || export_destination == "SHAREPOINT") && '
+      );
     }
   });
 

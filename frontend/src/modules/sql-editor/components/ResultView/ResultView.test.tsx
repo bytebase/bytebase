@@ -22,6 +22,7 @@ const {
   exportAccess,
   exportDestination,
   exportRequest,
+  refreshQueryHistory,
   useExportGrantBypass,
 } = vi.hoisted(() => ({
   exportData: vi.fn(),
@@ -35,6 +36,7 @@ const {
     resolve: (_outcome: unknown) => {},
     reject: (_reason: unknown) => {},
   },
+  refreshQueryHistory: vi.fn(),
   useExportGrantBypass: vi.fn(),
 }));
 
@@ -83,6 +85,10 @@ vi.mock("@/modules/sql-editor/store/editor", () => ({
     selector: (state: { project: string }) => unknown
   ) => selector({ project: "projects/prod" }),
   useSQLEditorEditorStore: {},
+}));
+
+vi.mock("@/modules/sql-editor/store/queryHistoryRefresh", () => ({
+  refreshQueryHistory,
 }));
 
 vi.mock("@/modules/sql-editor/store/tab", () => ({
@@ -413,6 +419,7 @@ describe("ResultView", () => {
     expect(exportData).toHaveBeenCalledWith(
       expect.objectContaining({ destination: ExportDestination.SHAREPOINT })
     );
+    expect(refreshQueryHistory).toHaveBeenCalledWith([database.name]);
   });
 
   test("reports an unconfirmed SharePoint export instead of rejecting", async () => {

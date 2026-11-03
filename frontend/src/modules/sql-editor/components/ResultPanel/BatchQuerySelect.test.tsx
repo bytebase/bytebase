@@ -28,6 +28,7 @@ const mocks = vi.hoisted(() => ({
   exportData: vi.fn(),
   resolveExport: vi.fn(),
   reportProgress: vi.fn(),
+  refreshQueryHistory: vi.fn(),
 }));
 
 vi.mock("react-i18next", () => ({
@@ -147,6 +148,10 @@ vi.mock("@/modules/sql-editor/store/editor", () => ({
   useSQLEditorEditorState: (
     selector: (state: { project: string }) => unknown
   ) => selector({ project: "projects/p" }),
+}));
+
+vi.mock("@/modules/sql-editor/store/queryHistoryRefresh", () => ({
+  refreshQueryHistory: mocks.refreshQueryHistory,
 }));
 
 vi.mock("@/modules/sql-editor/store/tab", () => {
@@ -419,6 +424,10 @@ describe("BatchQuerySelect", () => {
     expect(mocks.reportProgress.mock.calls).toEqual([
       [0, 2],
       [1, 2],
+    ]);
+    expect(mocks.refreshQueryHistory).toHaveBeenCalledWith([
+      cellA.name,
+      cellB.name,
     ]);
   });
 });

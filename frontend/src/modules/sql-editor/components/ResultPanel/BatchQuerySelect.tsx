@@ -28,6 +28,7 @@ import {
   useSQLEditorQueryDataPolicy,
 } from "@/modules/sql-editor/hooks/useSQLEditorState";
 import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
+import { refreshQueryHistory } from "@/modules/sql-editor/store/queryHistoryRefresh";
 import {
   getSQLEditorTabsState,
   useCurrentSQLEditorTab,
@@ -368,6 +369,7 @@ export function BatchQuerySelect({
       }
       resolve(toSharePoint ? { sharepoint: sharePointResults } : contents);
       setSelectedDatabaseNames(new Set());
+      void refreshQueryHistory(targets);
     })();
   };
 

@@ -264,6 +264,11 @@ func GetListQueryHistoryFilter(filter string) (*qb.Query, error) {
 			return qb.Q().Space("query_history.database LIKE ? ESCAPE '\\'", escapeLikePattern(prefix)+"%"), nil
 		case "type":
 			return qb.Q().Space("query_history.type = ?", QueryHistoryType(strValue)), nil
+		case "export_destination":
+			if storepb.ExportDestination_value[strValue] <= 0 {
+				return nil, errors.Errorf("invalid export_destination filter %q", strValue)
+			}
+			return qb.Q().Space("query_history.payload->'export'->>'destination' = ?", strValue), nil
 		case "statement":
 			return qb.Q().Space("query_history.statement = ?", strValue), nil
 		default:

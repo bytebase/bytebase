@@ -106,8 +106,10 @@ export function HistoryPane() {
   // list — preserving any pages the user had already loaded.
   useEffect(() => {
     sqlEditorEvents.on("query-executed", bumpRefresh);
+    sqlEditorEvents.on("query-history-updated", bumpRefresh);
     return () => {
       sqlEditorEvents.off("query-executed", bumpRefresh);
+      sqlEditorEvents.off("query-history-updated", bumpRefresh);
     };
   }, []);
 

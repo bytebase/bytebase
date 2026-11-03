@@ -26,7 +26,8 @@ const EMPTY_ENTRY: QueryHistoryEntry = { queryHistories: [] };
 const EMPTY_RESPONSE = create(SearchQueryHistoriesResponseSchema, {});
 
 const getListQueryHistoryFilter = (filter: QueryHistoryFilter) => {
-  const params = [`type == "QUERY"`];
+  // SharePoint exports are listed for their link to the delivered folder.
+  const params = [`(type == "QUERY" || export_destination == "SHAREPOINT")`];
   if (isValidDatabaseName(filter.database)) {
     params.push(`database == ${celString(filter.database)}`);
   }

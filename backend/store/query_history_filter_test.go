@@ -175,6 +175,12 @@ func TestGetListQueryHistoryFilter(t *testing.T) {
 			wantErr:     true,
 			errContains: "unexpected function matches",
 		},
+		{
+			name:        "unknown export destination",
+			filter:      `export_destination == "S3"`,
+			wantErr:     true,
+			errContains: "invalid export_destination filter",
+		},
 	}
 
 	for _, tt := range tests {

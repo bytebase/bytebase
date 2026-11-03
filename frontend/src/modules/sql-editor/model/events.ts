@@ -26,6 +26,9 @@ export type SQLEditorEvents = {
   // reactivity that doesn't reliably propagate the post-exec
   // mutations into React selector subscribers.
   "query-executed": { database: string; project: string };
+  // Fired after the query history cache gains entries outside a query
+  // execution, such as an export. `HistoryPane` re-renders on it.
+  "query-history-updated": undefined;
 };
 
 export const sqlEditorEvents: Emittery<SQLEditorEvents> =
