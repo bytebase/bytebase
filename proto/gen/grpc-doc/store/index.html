@@ -219,6 +219,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.ExportDestination"><span class="badge">E</span>ExportDestination</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.ExportFormat"><span class="badge">E</span>ExportFormat</a>
                 </li>
               
@@ -945,10 +949,6 @@
                   <a href="#bytebase.store.QueryHistoryPayload.Export"><span class="badge">M</span>QueryHistoryPayload.Export</a>
                 </li>
               
-              
-                <li>
-                  <a href="#bytebase.store.QueryHistoryPayload.Export.Destination"><span class="badge">E</span>QueryHistoryPayload.Export.Destination</a>
-                </li>
               
               
               
@@ -2006,6 +2006,35 @@ Examples:
               <tr>
                 <td>CASSANDRA</td>
                 <td>25</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.store.ExportDestination">ExportDestination</h3>
+        <p>ExportDestination is where an export goes.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>EXPORT_DESTINATION_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DOWNLOAD</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SHAREPOINT</td>
+                <td>2</td>
                 <td><p></p></td>
               </tr>
             
@@ -8244,7 +8273,7 @@ IM integration setting should be set for this function to work. </p></td>
               
                 <tr>
                   <td>destination</td>
-                  <td><a href="#bytebase.store.QueryHistoryPayload.Export.Destination">QueryHistoryPayload.Export.Destination</a></td>
+                  <td><a href="#bytebase.store.ExportDestination">ExportDestination</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -8265,35 +8294,6 @@ created for this export. </p></td>
         
       
 
-      
-        <h3 id="bytebase.store.QueryHistoryPayload.Export.Destination">QueryHistoryPayload.Export.Destination</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>DESTINATION_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DOWNLOAD</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>SHAREPOINT</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
       
 
       

@@ -224,11 +224,11 @@ func (s *QueryHistoryService) convertToV1QueryHistory(ctx context.Context, histo
 	}, nil
 }
 
-func convertToV1ExportDestination(destination storepb.QueryHistoryPayload_Export_Destination) v1pb.ExportDestination {
+func convertToV1ExportDestination(destination storepb.ExportDestination) v1pb.ExportDestination {
 	switch destination {
-	case storepb.QueryHistoryPayload_Export_DOWNLOAD:
+	case storepb.ExportDestination_DOWNLOAD:
 		return v1pb.ExportDestination_DOWNLOAD
-	case storepb.QueryHistoryPayload_Export_SHAREPOINT:
+	case storepb.ExportDestination_SHAREPOINT:
 		return v1pb.ExportDestination_SHAREPOINT
 	default:
 		return v1pb.ExportDestination_EXPORT_DESTINATION_UNSPECIFIED

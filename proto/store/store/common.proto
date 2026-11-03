@@ -65,6 +65,13 @@ enum ExportFormat {
   XLSX = 4;
 }
 
+// ExportDestination is where an export goes.
+enum ExportDestination {
+  EXPORT_DESTINATION_UNSPECIFIED = 0;
+  DOWNLOAD = 1;
+  SHAREPOINT = 2;
+}
+
 // RiskLevel represents the assessed risk level of a database operation.
 enum RiskLevel {
   RISK_LEVEL_UNSPECIFIED = 0;

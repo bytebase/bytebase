@@ -15,6 +15,7 @@
     - [Range](#bytebase-store-Range)
   
     - [Engine](#bytebase-store-Engine)
+    - [ExportDestination](#bytebase-store-ExportDestination)
     - [ExportFormat](#bytebase-store-ExportFormat)
     - [RiskLevel](#bytebase-store-RiskLevel)
     - [SchemaChangeType](#bytebase-store-SchemaChangeType)
@@ -195,8 +196,6 @@
 - [store/query_history.proto](#store_query_history-proto)
     - [QueryHistoryPayload](#bytebase-store-QueryHistoryPayload)
     - [QueryHistoryPayload.Export](#bytebase-store-QueryHistoryPayload-Export)
-  
-    - [QueryHistoryPayload.Export.Destination](#bytebase-store-QueryHistoryPayload-Export-Destination)
   
 - [store/release.proto](#store_release-proto)
     - [ReleasePayload](#bytebase-store-ReleasePayload)
@@ -525,6 +524,19 @@ Engine represents the type of database system.
 | COSMOSDB | 23 |  |
 | TRINO | 24 |  |
 | CASSANDRA | 25 |  |
+
+
+
+<a name="bytebase-store-ExportDestination"></a>
+
+### ExportDestination
+ExportDestination is where an export goes.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| EXPORT_DESTINATION_UNSPECIFIED | 0 |  |
+| DOWNLOAD | 1 |  |
+| SHAREPOINT | 2 |  |
 
 
 
@@ -3097,7 +3109,7 @@ Activity type enumeration.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| destination | [QueryHistoryPayload.Export.Destination](#bytebase-store-QueryHistoryPayload-Export-Destination) |  |  |
+| destination | [ExportDestination](#bytebase-store-ExportDestination) |  |  |
 | uri | [string](#string) |  | Set once delivery to a storage destination is confirmed: the location created for this export. |
 
 
@@ -3105,19 +3117,6 @@ Activity type enumeration.
 
 
  
-
-
-<a name="bytebase-store-QueryHistoryPayload-Export-Destination"></a>
-
-### QueryHistoryPayload.Export.Destination
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| DESTINATION_UNSPECIFIED | 0 |  |
-| DOWNLOAD | 1 |  |
-| SHAREPOINT | 2 |  |
-
 
  
 

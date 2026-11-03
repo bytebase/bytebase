@@ -3,6 +3,7 @@ syntax = "proto3";
 package bytebase.store;
 
 import "google/protobuf/duration.proto";
+import "store/common.proto";
 
 option go_package = "generated-go/store";
 
@@ -13,15 +14,9 @@ message QueryHistoryPayload {
   Export export = 3;
 
   message Export {
-    Destination destination = 1;
+    ExportDestination destination = 1;
     // Set once delivery to a storage destination is confirmed: the location
     // created for this export.
     string uri = 2;
-
-    enum Destination {
-      DESTINATION_UNSPECIFIED = 0;
-      DOWNLOAD = 1;
-      SHAREPOINT = 2;
-    }
   }
 }

@@ -1281,11 +1281,11 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 	}
 
 	historyExport := &storepb.QueryHistoryPayload_Export{
-		Destination: storepb.QueryHistoryPayload_Export_DOWNLOAD,
+		Destination: storepb.ExportDestination_DOWNLOAD,
 		Uri:         exportResponse.GetUri(),
 	}
 	if sharePointTarget != nil {
-		historyExport.Destination = storepb.QueryHistoryPayload_Export_SHAREPOINT
+		historyExport.Destination = storepb.ExportDestination_SHAREPOINT
 	}
 	s.createQueryHistory(instance, database, store.QueryHistoryTypeExport, statement, user.Email, duration, exportErr, historyExport)
 

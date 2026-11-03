@@ -22,55 +22,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type QueryHistoryPayload_Export_Destination int32
-
-const (
-	QueryHistoryPayload_Export_DESTINATION_UNSPECIFIED QueryHistoryPayload_Export_Destination = 0
-	QueryHistoryPayload_Export_DOWNLOAD                QueryHistoryPayload_Export_Destination = 1
-	QueryHistoryPayload_Export_SHAREPOINT              QueryHistoryPayload_Export_Destination = 2
-)
-
-// Enum value maps for QueryHistoryPayload_Export_Destination.
-var (
-	QueryHistoryPayload_Export_Destination_name = map[int32]string{
-		0: "DESTINATION_UNSPECIFIED",
-		1: "DOWNLOAD",
-		2: "SHAREPOINT",
-	}
-	QueryHistoryPayload_Export_Destination_value = map[string]int32{
-		"DESTINATION_UNSPECIFIED": 0,
-		"DOWNLOAD":                1,
-		"SHAREPOINT":              2,
-	}
-)
-
-func (x QueryHistoryPayload_Export_Destination) Enum() *QueryHistoryPayload_Export_Destination {
-	p := new(QueryHistoryPayload_Export_Destination)
-	*p = x
-	return p
-}
-
-func (x QueryHistoryPayload_Export_Destination) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (QueryHistoryPayload_Export_Destination) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_query_history_proto_enumTypes[0].Descriptor()
-}
-
-func (QueryHistoryPayload_Export_Destination) Type() protoreflect.EnumType {
-	return &file_store_query_history_proto_enumTypes[0]
-}
-
-func (x QueryHistoryPayload_Export_Destination) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use QueryHistoryPayload_Export_Destination.Descriptor instead.
-func (QueryHistoryPayload_Export_Destination) EnumDescriptor() ([]byte, []int) {
-	return file_store_query_history_proto_rawDescGZIP(), []int{0, 0, 0}
-}
-
 type QueryHistoryPayload struct {
 	state    protoimpl.MessageState `protogen:"open.v1"`
 	Error    *string                `protobuf:"bytes,1,opt,name=error,proto3,oneof" json:"error,omitempty"`
@@ -133,8 +84,8 @@ func (x *QueryHistoryPayload) GetExport() *QueryHistoryPayload_Export {
 }
 
 type QueryHistoryPayload_Export struct {
-	state       protoimpl.MessageState                 `protogen:"open.v1"`
-	Destination QueryHistoryPayload_Export_Destination `protobuf:"varint,1,opt,name=destination,proto3,enum=bytebase.store.QueryHistoryPayload_Export_Destination" json:"destination,omitempty"`
+	state       protoimpl.MessageState `protogen:"open.v1"`
+	Destination ExportDestination      `protobuf:"varint,1,opt,name=destination,proto3,enum=bytebase.store.ExportDestination" json:"destination,omitempty"`
 	// Set once delivery to a storage destination is confirmed: the location
 	// created for this export.
 	Uri           string `protobuf:"bytes,2,opt,name=uri,proto3" json:"uri,omitempty"`
@@ -172,11 +123,11 @@ func (*QueryHistoryPayload_Export) Descriptor() ([]byte, []int) {
 	return file_store_query_history_proto_rawDescGZIP(), []int{0, 0}
 }
 
-func (x *QueryHistoryPayload_Export) GetDestination() QueryHistoryPayload_Export_Destination {
+func (x *QueryHistoryPayload_Export) GetDestination() ExportDestination {
 	if x != nil {
 		return x.Destination
 	}
-	return QueryHistoryPayload_Export_DESTINATION_UNSPECIFIED
+	return ExportDestination_EXPORT_DESTINATION_UNSPECIFIED
 }
 
 func (x *QueryHistoryPayload_Export) GetUri() string {
@@ -190,19 +141,14 @@ var File_store_query_history_proto protoreflect.FileDescriptor
 
 const file_store_query_history_proto_rawDesc = "" +
 	"\n" +
-	"\x19store/query_history.proto\x12\x0ebytebase.store\x1a\x1egoogle/protobuf/duration.proto\"\xf6\x02\n" +
+	"\x19store/query_history.proto\x12\x0ebytebase.store\x1a\x1egoogle/protobuf/duration.proto\x1a\x12store/common.proto\"\x96\x02\n" +
 	"\x13QueryHistoryPayload\x12\x19\n" +
 	"\x05error\x18\x01 \x01(\tH\x00R\x05error\x88\x01\x01\x125\n" +
 	"\bduration\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\bduration\x12B\n" +
-	"\x06export\x18\x03 \x01(\v2*.bytebase.store.QueryHistoryPayload.ExportR\x06export\x1a\xbe\x01\n" +
-	"\x06Export\x12X\n" +
-	"\vdestination\x18\x01 \x01(\x0e26.bytebase.store.QueryHistoryPayload.Export.DestinationR\vdestination\x12\x10\n" +
-	"\x03uri\x18\x02 \x01(\tR\x03uri\"H\n" +
-	"\vDestination\x12\x1b\n" +
-	"\x17DESTINATION_UNSPECIFIED\x10\x00\x12\f\n" +
-	"\bDOWNLOAD\x10\x01\x12\x0e\n" +
-	"\n" +
-	"SHAREPOINT\x10\x02B\b\n" +
+	"\x06export\x18\x03 \x01(\v2*.bytebase.store.QueryHistoryPayload.ExportR\x06export\x1a_\n" +
+	"\x06Export\x12C\n" +
+	"\vdestination\x18\x01 \x01(\x0e2!.bytebase.store.ExportDestinationR\vdestination\x12\x10\n" +
+	"\x03uri\x18\x02 \x01(\tR\x03uriB\b\n" +
 	"\x06_errorB\x94\x01\n" +
 	"\x12com.bytebase.storeB\x11QueryHistoryProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
@@ -218,18 +164,17 @@ func file_store_query_history_proto_rawDescGZIP() []byte {
 	return file_store_query_history_proto_rawDescData
 }
 
-var file_store_query_history_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_store_query_history_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_store_query_history_proto_goTypes = []any{
-	(QueryHistoryPayload_Export_Destination)(0), // 0: bytebase.store.QueryHistoryPayload.Export.Destination
-	(*QueryHistoryPayload)(nil),                 // 1: bytebase.store.QueryHistoryPayload
-	(*QueryHistoryPayload_Export)(nil),          // 2: bytebase.store.QueryHistoryPayload.Export
-	(*durationpb.Duration)(nil),                 // 3: google.protobuf.Duration
+	(*QueryHistoryPayload)(nil),        // 0: bytebase.store.QueryHistoryPayload
+	(*QueryHistoryPayload_Export)(nil), // 1: bytebase.store.QueryHistoryPayload.Export
+	(*durationpb.Duration)(nil),        // 2: google.protobuf.Duration
+	(ExportDestination)(0),             // 3: bytebase.store.ExportDestination
 }
 var file_store_query_history_proto_depIdxs = []int32{
-	3, // 0: bytebase.store.QueryHistoryPayload.duration:type_name -> google.protobuf.Duration
-	2, // 1: bytebase.store.QueryHistoryPayload.export:type_name -> bytebase.store.QueryHistoryPayload.Export
-	0, // 2: bytebase.store.QueryHistoryPayload.Export.destination:type_name -> bytebase.store.QueryHistoryPayload.Export.Destination
+	2, // 0: bytebase.store.QueryHistoryPayload.duration:type_name -> google.protobuf.Duration
+	1, // 1: bytebase.store.QueryHistoryPayload.export:type_name -> bytebase.store.QueryHistoryPayload.Export
+	3, // 2: bytebase.store.QueryHistoryPayload.Export.destination:type_name -> bytebase.store.ExportDestination
 	3, // [3:3] is the sub-list for method output_type
 	3, // [3:3] is the sub-list for method input_type
 	3, // [3:3] is the sub-list for extension type_name
@@ -242,20 +187,20 @@ func file_store_query_history_proto_init() {
 	if File_store_query_history_proto != nil {
 		return
 	}
+	file_store_common_proto_init()
 	file_store_query_history_proto_msgTypes[0].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_query_history_proto_rawDesc), len(file_store_query_history_proto_rawDesc)),
-			NumEnums:      1,
+			NumEnums:      0,
 			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_store_query_history_proto_goTypes,
 		DependencyIndexes: file_store_query_history_proto_depIdxs,
-		EnumInfos:         file_store_query_history_proto_enumTypes,
 		MessageInfos:      file_store_query_history_proto_msgTypes,
 	}.Build()
 	File_store_query_history_proto = out.File
