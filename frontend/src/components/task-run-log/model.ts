@@ -929,10 +929,15 @@ export const buildReleaseSpine = ({
   const pending = new Map(
     (state?.pendingVersions ?? []).map((p) => [p.version, p])
   );
+  // A section exists only for a version the stored state lists as pending or
+  // the run reached; one it counted applied had a live revision then.
   const deletedNote = (version: string) => {
     const p = pending.get(version);
-    return p?.revisionDeleter || p?.revisionDeleteTime
-      ? { time: p.revisionDeleteTime, deleter: p.revisionDeleter }
+    if (p?.revisionDeleter || p?.revisionDeleteTime) {
+      return { time: p.revisionDeleteTime, deleter: p.revisionDeleter };
+    }
+    return state && !p
+      ? { deleter: "", afterRolloutCreation: true }
       : undefined;
   };
   const fileSection = (

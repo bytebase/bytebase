@@ -1106,6 +1106,7 @@ describe("TaskRunLogViewer release spine", () => {
   test("a re-run version reads Applied again, and every outcome names its earlier revision's deleter and time behind an icon", () => {
     const releaseState = create(Task_ReleaseStateSchema, {
       pendingVersions: [
+        { version: "007" },
         { version: "008", revisionDeleter: "users/alex@example.com", revisionDeleteTime: ts(1_790_000_000) },
       ],
     });
@@ -1128,6 +1129,27 @@ describe("TaskRunLogViewer release spine", () => {
     expect(within(failed.container).getByTestId("spine-file-008").textContent).toContain("Failed");
     expect(info(failed.container).getAttribute("aria-label")).toContain("alex@example.com");
     failed.unmount();
+  });
+
+  test("a version the stored state counted applied that the run applied reads Applied again; without a stored state, Applied", () => {
+    const info = (container: HTMLElement) =>
+      within(within(container).getByTestId("spine-file-008-row")).queryByTestId("spine-revision-deleted-info");
+    // At rollout creation 008 had a live revision; it was deleted before the run.
+    const countedApplied = create(Task_ReleaseStateSchema, { pendingVersions: [{ version: "007" }], appliedCount: 1 });
+
+    useRelease([marker(1, "007"), run(2, ""), marker(4, "008"), run(5, "")]);
+    const view = renderViewer({ taskRunStatus: TaskRun_Status.DONE, releaseState: countedApplied });
+    expect(within(view.container).getByTestId("spine-file-008").textContent).toContain("Applied again");
+    expect(info(view.container)?.getAttribute("aria-label")).toBe(
+      "Earlier revision deleted after this rollout was created"
+    );
+    expect(within(view.container).getByTestId("spine-file-007").textContent).not.toContain("again");
+    view.unmount();
+
+    const noState = renderViewer({ taskRunStatus: TaskRun_Status.DONE });
+    expect(within(noState.container).getByTestId("spine-file-008").textContent).not.toContain("again");
+    expect(info(noState.container)).toBeNull();
+    noState.unmount();
   });
 
   test("the spine waits for the log: a run whose log is still loading shows the loading state", () => {

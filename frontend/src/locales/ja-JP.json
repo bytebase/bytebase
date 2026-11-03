@@ -4477,6 +4477,7 @@
       },
       "no-statement": "このエラーに対応するステートメントを特定できませんでした。",
       "revision-deleted": "以前のリビジョンは {{date}} に {{user}} が削除",
+      "revision-deleted-after-rollout": "以前のリビジョンはこのロールアウト作成後に削除",
       "revisions-on": "{{database}} のリビジョン",
       "run-failed": "実行失敗",
       "status": {
