@@ -303,3 +303,79 @@ describe("folded card description", () => {
     expect(text).toBe("混合 · 4.1s");
   });
 });
+
+describe.each([false, true])("header click, expanded: %s", (isExpanded) => {
+  const renderClickable = () => {
+    const onToggleExpand = vi.fn();
+    const onToggleSelect = vi.fn();
+    const onAction = vi.fn();
+    const container = render({
+      scheduledTimeMs: undefined,
+      isExpanded,
+      isSelectable: true,
+      actionItems: [{ key: "RUN", label: "Run" }],
+      onToggleExpand,
+      onToggleSelect,
+      onAction,
+    });
+    const line = container.querySelector<HTMLElement>(
+      "[data-testid='deploy-task-header']"
+    )!;
+    const click = (element: Element | null | undefined) =>
+      act(() => (element as HTMLElement).click());
+    return { container, line, click, onToggleExpand, onToggleSelect, onAction };
+  };
+
+  test("the line's empty space and padding toggle once", () => {
+    const { line, click, onToggleExpand } = renderClickable();
+    click(line);
+    expect(onToggleExpand).toHaveBeenCalledTimes(1);
+  });
+
+  test("the task name and the caret toggle once each, not twice", () => {
+    const { container, click, onToggleExpand } = renderClickable();
+    click(container.querySelector("[aria-expanded]"));
+    expect(onToggleExpand).toHaveBeenCalledTimes(1);
+    click(container.querySelector("button[aria-hidden='true']"));
+    expect(onToggleExpand).toHaveBeenCalledTimes(2);
+  });
+
+  test("the checkbox selects and does not toggle", () => {
+    const { container, click, onToggleExpand, onToggleSelect } =
+      renderClickable();
+    click(container.querySelector("[role='checkbox']"));
+    expect(onToggleSelect).toHaveBeenCalledTimes(1);
+    expect(onToggleExpand).not.toHaveBeenCalled();
+  });
+
+  test("the margin around the checkbox and the buttons does not toggle", () => {
+    const { container, click, onToggleExpand } = renderClickable();
+    const guards = container.querySelectorAll("[data-fold-guard]");
+    // The checkbox's margin always; the actions' margin when they show.
+    expect(guards).toHaveLength(isExpanded ? 2 : 1);
+    for (const guard of guards) click(guard);
+    expect(onToggleExpand).not.toHaveBeenCalled();
+  });
+
+  test("a click that ends a text selection does not toggle", () => {
+    const { line, click, onToggleExpand } = renderClickable();
+    const spy = vi
+      .spyOn(window, "getSelection")
+      .mockReturnValue({ isCollapsed: false } as Selection);
+    click(line);
+    spy.mockRestore();
+    expect(onToggleExpand).not.toHaveBeenCalled();
+  });
+
+  if (isExpanded) {
+    test("an action button acts and does not toggle", () => {
+      const { container, click, onToggleExpand, onAction } = renderClickable();
+      const run = [...container.querySelectorAll("button")].find(
+        (b) => b.textContent === "Run"
+      );
+      click(run);
+      expect(onAction).toHaveBeenCalledWith("RUN");
+      expect(onToggleExpand).not.toHaveBeenCalled();
+    });
+  }
+});

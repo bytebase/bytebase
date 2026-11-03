@@ -2,7 +2,6 @@ import { memo, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useReleaseByName } from "@/hooks/useAppState";
 import { formatTaskRunDuration } from "@/lib/taskRun";
-import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/app";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
@@ -190,15 +189,10 @@ export const DeployTaskItem = memo(function DeployTaskItem({
   return (
     <>
       <div className="group rounded-sm border bg-background" ref={hostRef}>
-        {/* Same padding in both modes: the header row is button-height (h-6)
-            either way, so expanding only reveals content below — nothing
-            above the fold moves. */}
-        <div
-          className={cn(
-            "py-2.5 pl-3 pr-4",
-            isExpanded && "flex flex-col gap-3"
-          )}
-        >
+        {/* The header carries the card's top padding, so clicks there toggle
+            too, and is button-height (h-6) either way: expanding only reveals
+            content below, and nothing above the fold moves. */}
+        <div>
           <DeployTaskHeader
             actionItems={actionItems}
             isExpanded={isExpanded}
@@ -220,20 +214,22 @@ export const DeployTaskItem = memo(function DeployTaskItem({
             timingDisplay={timingDisplay}
           />
           {isExpanded && (
-            <DeployTaskBody
-              active={active}
-              databaseEngine={databaseEngine}
-              historyCount={taskRuns.length}
-              isStatementLoading={isStatementLoading}
-              isTruncated={isTruncated}
-              latestTaskRun={latestTaskRun}
-              onShowHistory={() => setHistoryOpen(true)}
-              projectId={project.name.replace(/^projects\//, "")}
-              stageTitle={stageTitle}
-              statement={statement}
-              task={task}
-              timingDisplay={timingDisplay}
-            />
+            <div className="pt-0.5 pr-4 pb-2.5 pl-3">
+              <DeployTaskBody
+                active={active}
+                databaseEngine={databaseEngine}
+                historyCount={taskRuns.length}
+                isStatementLoading={isStatementLoading}
+                isTruncated={isTruncated}
+                latestTaskRun={latestTaskRun}
+                onShowHistory={() => setHistoryOpen(true)}
+                projectId={project.name.replace(/^projects\//, "")}
+                stageTitle={stageTitle}
+                statement={statement}
+                task={task}
+                timingDisplay={timingDisplay}
+              />
+            </div>
           )}
         </div>
       </div>
