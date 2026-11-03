@@ -39,7 +39,15 @@ func makeValueByTypeName(typeName string, _ *sql.ColumnType) any {
 
 var timeTzOID = fmt.Sprintf("%d", pgtype.TimetzOID)
 
-func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.RowValue {
+// convertValueIn binds the row value converter to the location timestamptz values
+// render in, which the caller reads from the session once per statement.
+func convertValueIn(location *time.Location) func(string, *sql.ColumnType, any) *v1pb.RowValue {
+	return func(typeName string, columnType *sql.ColumnType, value any) *v1pb.RowValue {
+		return convertValue(typeName, columnType, value, location)
+	}
+}
+
+func convertValue(typeName string, columnType *sql.ColumnType, value any, location *time.Location) *v1pb.RowValue {
 	switch raw := value.(type) {
 	case *sql.NullString:
 		if raw.Valid {
@@ -119,7 +127,15 @@ func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.
 			if scale == -1 {
 				scale = 6
 			}
-			return buildTimestamptzRowValue(typeName, raw.Time, int32(scale))
+			// Only timestamptz carries a zone to render. A zone-less timestamp must keep
+			// its wall clock, and buildTimestamptzRowValue formats those fields verbatim
+			// for a date outside the protobuf timestamp range, so converting it there
+			// would move the value rather than relabel it.
+			t := raw.Time
+			if typeName != "TIMESTAMP" {
+				t = t.In(location)
+			}
+			return buildTimestamptzRowValue(typeName, t, int32(scale))
 		}
 	default:
 	}
