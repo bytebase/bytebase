@@ -196,6 +196,24 @@ func TestConnectionDSNCarriesServerAndPort(t *testing.T) {
 			wantPort: 1444,
 		},
 		{
+			name:     "an IPv6 server",
+			ds:       &storepb.DataSource{Host: "db.example.com", Port: "1433", ExtraConnectionParameters: map[string]string{"Server": "2001:db8::1"}},
+			wantHost: "2001:db8::1",
+			wantPort: 1433,
+		},
+		{
+			name:     "an IPv6 server already in brackets",
+			ds:       &storepb.DataSource{Host: "db.example.com", Port: "1433", ExtraConnectionParameters: map[string]string{"Server": "[2001:db8::1]"}},
+			wantHost: "2001:db8::1",
+			wantPort: 1433,
+		},
+		{
+			name:     "an IPv6 host",
+			ds:       &storepb.DataSource{Host: "2001:db8::1", Port: "1433"},
+			wantHost: "2001:db8::1",
+			wantPort: 1433,
+		},
+		{
 			name:         "extra parameters reach a named instance",
 			ds:           &storepb.DataSource{Host: "db.example.com", ExtraConnectionParameters: map[string]string{"Server": `other.example.com\SQLEXPRESS`}},
 			wantHost:     "other.example.com",

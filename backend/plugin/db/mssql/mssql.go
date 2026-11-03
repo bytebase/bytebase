@@ -8,6 +8,7 @@ import (
 	"io"
 	"log/slog"
 	"maps"
+	"net"
 	"net/url"
 	"os"
 	"slices"
@@ -150,6 +151,9 @@ func connectionDSN(ds *storepb.DataSource, password, database, caFile string) (s
 	if before, after, ok := strings.Cut(host, `\`); ok {
 		host, instance = before, after
 	}
+	// net.JoinHostPort brackets an IPv6 literal, which the URL host needs and the driver strips
+	// back off, so a value that already carries brackets must not get a second pair.
+	host = strings.TrimSuffix(strings.TrimPrefix(host, "["), "]")
 
 	query := url.Values{}
 	for key, value := range params {
@@ -157,7 +161,7 @@ func connectionDSN(ds *storepb.DataSource, password, database, caFile string) (s
 	}
 	u := &url.URL{
 		Scheme:   "sqlserver",
-		Host:     fmt.Sprintf("%s:%s", host, port),
+		Host:     net.JoinHostPort(host, port),
 		RawQuery: query.Encode(),
 	}
 	if instance != "" {
