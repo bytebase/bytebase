@@ -403,33 +403,41 @@ export function ReleaseSpineView({
                 count: item.files.length,
               })}
             </CollapsibleTrigger>
-            <CollapsiblePanel data-testid="spine-already-applied-files">
-              {item.files.map((file) => (
-                <div
-                  key={file.version}
-                  className="flex items-center gap-x-2 py-1 pr-3 pl-9"
-                  data-testid="spine-already-applied-row"
-                >
-                  <span className="shrink-0 tabular-nums text-control-light">
-                    {file.version}
-                  </span>
-                  <span className="flex min-w-0 items-center gap-x-1">
-                    <FilePath
-                      label={file.path || file.version}
-                      onOpen={
-                        onOpenFile
-                          ? () =>
-                              onOpenFile(file, {
-                                kind: "already-applied",
-                                run: run !== undefined,
-                              })
-                          : undefined
-                      }
-                    />
-                    {file.path ? <CopyButton content={file.path} /> : null}
-                  </span>
-                </div>
-              ))}
+            {/* A recessed panel with a guide line down from the caret: its
+                edge ends the list, so the first file to apply never reads as
+                one more row of it. */}
+            <CollapsiblePanel
+              className="bg-control-bg py-1"
+              data-testid="spine-already-applied-files"
+            >
+              <div className="ml-4.5 border-l border-control-border">
+                {item.files.map((file) => (
+                  <div
+                    key={file.version}
+                    className="flex items-center gap-x-2 py-1 pr-3 pl-4.5"
+                    data-testid="spine-already-applied-row"
+                  >
+                    <span className="shrink-0 tabular-nums text-control-placeholder">
+                      {file.version}
+                    </span>
+                    <span className="flex min-w-0 items-center gap-x-1">
+                      <FilePath
+                        label={file.path || file.version}
+                        onOpen={
+                          onOpenFile
+                            ? () =>
+                                onOpenFile(file, {
+                                  kind: "already-applied",
+                                  run: run !== undefined,
+                                })
+                            : undefined
+                        }
+                      />
+                      {file.path ? <CopyButton content={file.path} /> : null}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </CollapsiblePanel>
           </Collapsible>
         );
