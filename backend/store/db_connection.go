@@ -11,6 +11,7 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
@@ -284,6 +285,20 @@ func createConnectionWithTracer(ctx context.Context, pgURL string) (*metadataDBC
 	}
 
 	pgxConfig.Tracer = &metadataDBTracer{}
+
+	// Bytebase's own metadata holds instants, and the backend compares and formats them
+	// as UTC. Upstream pgx scans a timestamptz into the server process's zone instead,
+	// which leaves the same instant carrying a different time.Location. dbauth sets no
+	// AfterConnect of its own, and OptionAfterConnect replaces rather than appends.
+	openOptions = append(openOptions, stdlib.OptionAfterConnect(func(_ context.Context, conn *pgx.Conn) error {
+		conn.TypeMap().RegisterType(&pgtype.Type{
+			Name:  "timestamptz",
+			OID:   pgtype.TimestamptzOID,
+			Codec: &pgtype.TimestamptzCodec{ScanLocation: time.UTC},
+		})
+		return nil
+	}))
+
 	db := stdlib.OpenDB(*pgxConfig, openOptions...)
 
 	// Validate connection
