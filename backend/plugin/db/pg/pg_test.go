@@ -153,6 +153,42 @@ func TestGetPGConnectionConfigKeepsEachValueWhole(t *testing.T) {
 		_, err := open(func(ds *storepb.DataSource) { ds.Host = "   " })
 		require.ErrorContains(t, err, "host must be set")
 	})
+	t.Run("a blank port is refused", func(t *testing.T) {
+		_, err := open(func(ds *storepb.DataSource) { ds.Port = "   " })
+		require.ErrorContains(t, err, "port must be set")
+	})
+}
+
+func TestGetRDSConnectionConfigKeepsTheUserWhole(t *testing.T) {
+	// Static credentials sign the token locally; no AWS file or endpoint is read.
+	t.Setenv("AWS_CONFIG_FILE", t.TempDir()+"/config")
+	t.Setenv("AWS_SHARED_CREDENTIALS_FILE", t.TempDir()+"/credentials")
+	t.Setenv("AWS_EC2_METADATA_DISABLED", "true")
+	connConfig, err := getRDSConnectionConfig(context.Background(), db.ConnectionConfig{
+		DataSource: &storepb.DataSource{
+			Host:               "rds.example.com",
+			Port:               "5432",
+			Username:           "dba host=other.example.com",
+			Region:             "us-east-1",
+			AuthenticationType: storepb.DataSource_AWS_RDS_IAM,
+			IamExtension: &storepb.DataSource_AwsCredential{
+				AwsCredential: &storepb.DataSource_AWSCredential{AccessKeyId: "AKIDEXAMPLE", SecretAccessKey: "not-a-real-secret"},
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, "rds.example.com", connConfig.Host)
+	require.Equal(t, "dba host=other.example.com", connConfig.User)
+}
+
+func TestGetCloudSQLConnectionConfigKeepsTheUserWhole(t *testing.T) {
+	config := cloudSQLIAMConnectionConfig(cloudSQLTestInstance)
+	config.DataSource.Username = "bytebase service account"
+	driver := &Driver{}
+	connConfig, err := driver.getCloudSQLConnectionConfig(context.Background(), config)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = driver.cloudSQLDialer.Close() })
+	require.Equal(t, "bytebase service account", connConfig.User)
 }
 
 func TestGetPGConnectionConfigDisablesTLSVerificationForAllHosts(t *testing.T) {

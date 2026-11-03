@@ -123,10 +123,6 @@ func getCockroachConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, 
 		return nil, errors.Errorf("user must be set")
 	}
 
-	if config.DataSource.Port == "" {
-		return nil, errors.Errorf("port must be set")
-	}
-
 	if (config.DataSource.GetSslCert() == "" && config.DataSource.GetSslKey() != "") ||
 		(config.DataSource.GetSslCert() != "" && config.DataSource.GetSslKey() == "") {
 		return nil, errors.Errorf("ssl-cert and ssl-key must be both set or unset")

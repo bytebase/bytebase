@@ -21,11 +21,15 @@ func QuotePGValue(value string) string {
 }
 
 // PGHostPort returns the host and port keywords of a libpq keyword/value
-// connection string, each value quoted. A blank host is refused: pgx gives an
-// empty host its default, a Unix socket directory on this server.
+// connection string, each value quoted. A blank host or port is refused: pgx
+// gives an empty host its default, a Unix socket directory on this server, and
+// an empty port 5432.
 func PGHostPort(host, port string) (string, error) {
 	if strings.TrimSpace(host) == "" {
 		return "", errors.New("host must be set")
+	}
+	if strings.TrimSpace(port) == "" {
+		return "", errors.New("port must be set")
 	}
 	return "host=" + QuotePGValue(host) + " port=" + QuotePGValue(port), nil
 }

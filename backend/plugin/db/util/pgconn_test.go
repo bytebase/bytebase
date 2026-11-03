@@ -49,9 +49,11 @@ func TestPGHostPortKeepsHostListsAddressesAndSockets(t *testing.T) {
 	}
 }
 
-func TestPGHostPortRefusesBlankHost(t *testing.T) {
-	for _, host := range []string{"", "  "} {
-		_, err := PGHostPort(host, "5432")
+func TestPGHostPortRefusesBlankHostOrPort(t *testing.T) {
+	for _, blank := range []string{"", "  "} {
+		_, err := PGHostPort(blank, "5432")
 		require.ErrorContains(t, err, "host must be set")
+		_, err = PGHostPort("db.example.com", blank)
+		require.ErrorContains(t, err, "port must be set")
 	}
 }
