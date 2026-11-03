@@ -59,24 +59,69 @@ func TestConvertToTaskReturnsSkipperAndTime(t *testing.T) {
 	require.Nil(t, v1Task.SkipTime)
 }
 
+type countingRevisionLister struct {
+	finds []*store.FindRevisionMessage
+}
+
+func (c *countingRevisionLister) ListRevisions(_ context.Context, find *store.FindRevisionMessage) ([]*store.RevisionMessage, error) {
+	c.finds = append(c.finds, find)
+	return nil, nil
+}
+
+func TestReleaseStatesReadOneRevisionQueryPerInstance(t *testing.T) {
+	release := &store.ReleaseMessage{Payload: &storepb.ReleasePayload{
+		Type:  storepb.SchemaChangeType_VERSIONED,
+		Files: []*storepb.ReleasePayload_File{{Version: "001"}, {Version: "002"}},
+	}}
+	databases := []*store.DatabaseMessage{
+		{InstanceID: "instance-a", DatabaseName: "db1"},
+		{InstanceID: "instance-a", DatabaseName: "db2"},
+		{InstanceID: "instance-b", DatabaseName: "db1"},
+		{InstanceID: "instance-a", DatabaseName: "db3"},
+	}
+	lister := &countingRevisionLister{}
+	states, err := computeReleaseStates(context.Background(), lister, release, databases)
+	require.NoError(t, err)
+
+	namesOf := map[string][]string{}
+	for _, find := range lister.finds {
+		require.NotNil(t, find.DatabaseNames)
+		namesOf[find.InstanceID] = *find.DatabaseNames
+	}
+	require.Len(t, lister.finds, 2)
+	require.Equal(t, map[string][]string{
+		"instance-a": {"db1", "db2", "db3"},
+		"instance-b": {"db1"},
+	}, namesOf)
+	// With no revisions, every target applies every version.
+	require.Len(t, states, 4)
+	for _, database := range databases {
+		require.Len(t, states[releaseStateKey(database)].GetPendingVersions(), 2)
+	}
+}
+
 // db1 has 001 and 002 live and 003 deleted; its sibling db2 on the same
 // instance has 003 live; db3 is new apart from a declarative revision of 001.
+// instance-b also has a db1, with 003 live, read in the same batch.
 const releaseStateFixtureSQL = `
 	INSERT INTO workspace (resource_id) VALUES ('default');
 	INSERT INTO project (resource_id, workspace, name) VALUES ('project-a', 'default', 'Project A');
 	INSERT INTO instance (resource_id, workspace, environment, metadata)
-		VALUES ('instance-a', 'default', 'test', '{"engine":"POSTGRES"}');
+		VALUES ('instance-a', 'default', 'test', '{"engine":"POSTGRES"}'),
+		       ('instance-b', 'default', 'test', '{"engine":"POSTGRES"}');
 	INSERT INTO db (instance, name, project, environment) VALUES
 		('instance-a', 'db1', 'project-a', 'test'),
 		('instance-a', 'db2', 'project-a', 'test'),
-		('instance-a', 'db3', 'project-a', 'test');
+		('instance-a', 'db3', 'project-a', 'test'),
+		('instance-b', 'db1', 'project-a', 'test');
 	INSERT INTO revision (instance, db_name, version, payload, deleter, deleted_at) VALUES
 		('instance-a', 'db1', '001', '{"type":"VERSIONED"}', NULL, NULL),
 		('instance-a', 'db1', '002', '{"type":"VERSIONED"}', NULL, NULL),
 		('instance-a', 'db1', '003', '{"type":"VERSIONED"}', 'old@example.com', '2026-10-01T08:00:00Z'),
 		('instance-a', 'db1', '003', '{"type":"VERSIONED"}', 'alex@example.com', '2026-10-05T09:30:00Z'),
 		('instance-a', 'db2', '003', '{"type":"VERSIONED"}', NULL, NULL),
-		('instance-a', 'db3', '001', '{"type":"DECLARATIVE"}', NULL, NULL);
+		('instance-a', 'db3', '001', '{"type":"DECLARATIVE"}', NULL, NULL),
+		('instance-b', 'db1', '003', '{"type":"VERSIONED"}', NULL, NULL);
 	INSERT INTO release (project, iteration, release_id, creator, payload) VALUES
 		('project-a', 1, 'r1', 'ci@example.com',
 		 '{"type":"VERSIONED","files":[{"path":"001_init.sql","version":"001"},{"path":"002_orders.sql","version":"002"},{"path":"003_index.sql","version":"003"}]}'),
@@ -101,15 +146,18 @@ func TestRolloutCreationStoresReleaseState(t *testing.T) {
 				"instances/instance-a/databases/db1",
 				"instances/instance-a/databases/db2",
 				"instances/instance-a/databases/db3",
+				"instances/instance-b/databases/db1",
 			},
 			Release: "projects/project-a/releases/r1",
 		}, "project-a")
 	require.NoError(t, err)
-	require.Len(t, tasks, 3)
+	require.Len(t, tasks, 4)
 
 	stateOf := map[string]*storepb.Task_ReleaseState{}
 	for _, task := range tasks {
-		stateOf[*task.DatabaseName] = task.Payload.GetReleaseState()
+		if task.InstanceID == "instance-a" {
+			stateOf[*task.DatabaseName] = task.Payload.GetReleaseState()
+		}
 	}
 	pendingOf := func(state *storepb.Task_ReleaseState) []string {
 		var versions []string
@@ -131,7 +179,7 @@ func TestRolloutCreationStoresReleaseState(t *testing.T) {
 
 	var db1Task *store.TaskMessage
 	for _, task := range tasks {
-		if *task.DatabaseName == "db1" {
+		if task.InstanceID == "instance-a" && *task.DatabaseName == "db1" {
 			db1Task = task
 		}
 	}
@@ -158,6 +206,16 @@ func TestRolloutCreationStoresReleaseState(t *testing.T) {
 	db3 := stateOf["db3"]
 	require.Equal(t, []string{"001", "002", "003"}, pendingOf(db3))
 	require.Equal(t, int32(0), db3.AppliedCount)
+
+	// The other instance's db1 shares the name and the batch, not the state.
+	var otherDB1 *storepb.Task_ReleaseState
+	for _, task := range tasks {
+		if task.InstanceID == "instance-b" && *task.DatabaseName == "db1" {
+			otherDB1 = task.Payload.GetReleaseState()
+		}
+	}
+	require.Equal(t, []string{"001", "002"}, pendingOf(otherDB1))
+	require.Equal(t, int32(1), otherDB1.AppliedCount)
 
 	// A declarative release computes its diff when it runs: no stored state.
 	declarative, err := getTaskCreatesFromChangeDatabaseConfig(ctx, s,

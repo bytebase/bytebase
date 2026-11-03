@@ -212,6 +212,14 @@ func getTaskCreatesFromChangeDatabaseConfig(
 		}
 	}
 
+	var releaseStates map[string]*storepb.Task_ReleaseState
+	if versionedRelease != nil {
+		releaseStates, err = computeReleaseStates(ctx, s, versionedRelease, databases)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	var tasks []*store.TaskMessage
 	for _, database := range databases {
 		if database.EffectiveEnvironmentID == nil {
@@ -234,11 +242,7 @@ func getTaskCreatesFromChangeDatabaseConfig(
 				Release: c.Release,
 			}
 			if versionedRelease != nil {
-				state, err := computeReleaseState(ctx, s, versionedRelease, database)
-				if err != nil {
-					return nil, err
-				}
-				payload.ReleaseState = state
+				payload.ReleaseState = releaseStates[releaseStateKey(database)]
 			}
 		} else {
 			payload.Source = &storepb.Task_SheetSha256{
@@ -283,25 +287,70 @@ func getVersionedRelease(ctx context.Context, s *store.Store, releaseName string
 	return release, nil
 }
 
-// computeReleaseState applies the executor's rule (runVersionedRelease): a
-// version is applied when the database has a live VERSIONED revision with it.
-// One query bounded by the release's file count, not the database's history.
-func computeReleaseState(ctx context.Context, s *store.Store, release *store.ReleaseMessage, database *store.DatabaseMessage) (*storepb.Task_ReleaseState, error) {
+// revisionLister is the one store read the release state needs.
+type revisionLister interface {
+	ListRevisions(ctx context.Context, find *store.FindRevisionMessage) ([]*store.RevisionMessage, error)
+}
+
+func releaseStateKey(database *store.DatabaseMessage) string {
+	return database.InstanceID + "/" + database.DatabaseName
+}
+
+// computeReleaseStates applies the executor's rule (runVersionedRelease) to
+// every target: a version is applied when the database has a live VERSIONED
+// revision with it. One query per instance, bounded by the release's file
+// count and the instance's targets, so a large database group stays one round
+// trip per instance. The states are keyed by releaseStateKey.
+func computeReleaseStates(ctx context.Context, lister revisionLister, release *store.ReleaseMessage, databases []*store.DatabaseMessage) (map[string]*storepb.Task_ReleaseState, error) {
 	versions := make([]string, 0, len(release.Payload.GetFiles()))
 	for _, file := range release.Payload.GetFiles() {
 		versions = append(versions, file.Version)
 	}
-	versioned := storepb.SchemaChangeType_VERSIONED
-	revisions, err := s.ListRevisions(ctx, &store.FindRevisionMessage{
-		InstanceID:   database.InstanceID,
-		DatabaseName: &database.DatabaseName,
-		Type:         &versioned,
-		Versions:     &versions,
-		ShowDeleted:  true,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list revisions of database %q", database.DatabaseName)
+
+	var instances []string
+	namesOf := map[string][]string{}
+	seen := map[string]bool{}
+	for _, database := range databases {
+		key := releaseStateKey(database)
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		if _, ok := namesOf[database.InstanceID]; !ok {
+			instances = append(instances, database.InstanceID)
+		}
+		namesOf[database.InstanceID] = append(namesOf[database.InstanceID], database.DatabaseName)
 	}
+
+	versioned := storepb.SchemaChangeType_VERSIONED
+	revisionsOf := map[string][]*store.RevisionMessage{}
+	for _, instanceID := range instances {
+		names := namesOf[instanceID]
+		revisions, err := lister.ListRevisions(ctx, &store.FindRevisionMessage{
+			InstanceID:    instanceID,
+			DatabaseNames: &names,
+			Type:          &versioned,
+			Versions:      &versions,
+			ShowDeleted:   true,
+		})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to list revisions on instance %q", instanceID)
+		}
+		for _, revision := range revisions {
+			key := revision.InstanceID + "/" + revision.DatabaseName
+			revisionsOf[key] = append(revisionsOf[key], revision)
+		}
+	}
+
+	computeTime := timestamppb.Now()
+	states := map[string]*storepb.Task_ReleaseState{}
+	for key := range seen {
+		states[key] = releaseStateOf(versions, revisionsOf[key], computeTime)
+	}
+	return states, nil
+}
+
+func releaseStateOf(versions []string, revisions []*store.RevisionMessage, computeTime *timestamppb.Timestamp) *storepb.Task_ReleaseState {
 	applied := map[string]bool{}
 	lastDeleted := map[string]*store.RevisionMessage{}
 	for _, revision := range revisions {
@@ -314,7 +363,7 @@ func computeReleaseState(ctx context.Context, s *store.Store, release *store.Rel
 		}
 	}
 
-	state := &storepb.Task_ReleaseState{ComputeTime: timestamppb.Now()}
+	state := &storepb.Task_ReleaseState{ComputeTime: computeTime}
 	for _, version := range versions {
 		if applied[version] {
 			state.AppliedCount++
@@ -329,7 +378,7 @@ func computeReleaseState(ctx context.Context, s *store.Store, release *store.Rel
 		}
 		state.PendingVersions = append(state.PendingVersions, pending)
 	}
-	return state, nil
+	return state
 }
 
 func getDatabaseMessagesByTargets(ctx context.Context, s *store.Store, targets []string) ([]*store.DatabaseMessage, error) {
