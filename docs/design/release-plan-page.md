@@ -105,8 +105,11 @@ first 12 rows; one row below them offers "Load 12 more" and "Load all (N)", whic
 once more than 12 rows show it also offers "Show fewer", which returns the group to its first 12
 and keeps the row under the pointer. "Load all" is one click, so an accidental "Show fewer" costs
 one click to undo. A 535-file release therefore opens as
-one day group with its files and about eight month headers. A row shows the version and the file's
-path as stored in the release. Opened, the section keeps today's spec tab and Targets on top; only
+one day group with its files and about eight month headers. A row reads like a repository's file
+list, not like code: a file icon, the file name in body text, its folder muted after it, and the
+version muted at the row's end, in the body font at body size, with a divider between rows. The
+whole row opens the viewer, and on hover the name takes the link color and an underline. The path
+is as stored in the release; a path with no folder shows the name alone. Opened, the section keeps today's spec tab and Targets on top; only
 the release card under them is replaced by this list. Collapsed and declarative forms are in States.
 Rejected: naming the files added since the previous release first. It needs a lookup of an earlier
 release and a definition of "previous" (by creation time, of the same type, in the same project)
@@ -116,7 +119,8 @@ case the executor applies in that same low position, so the rail and the run agr
 buckets of a hundred files labeled by their version range ("2.23.0–3.3.0005 19"), whose edge marks
 nothing about the files and reads as a category such as "applied before", which Changes cannot say
 (D2); the current four-chip grid, and a sheet listing the files (one click too many for the most common
-visit).
+visit); each row's full path in monospace link color, which reads as source code and makes the folder,
+repeated on every row, as loud as the name.
 
 **D2 · Changes never shows per-database status.** No chips, no "applied" marks, no counts of what
 ran. The aggregate is the Progress row (D10) and the stage chips; the detail is in each task.
@@ -604,7 +608,9 @@ Tests to write, per the placement rules in `AGENTS.md`:
   archived releases through `show_deleted`, and Restore on an archived row.
 - Changes rail tests: descending order over timestamp, counter and dotted versions; the grouping per
   shape with the newest group open, and over a hundred counter or dotted versions as one flat list; 12 rows, "Load 12 more", "Load all" and "Show fewer"; a backfilled low version landing in its
-  old group; the collapsed line; the declarative one-liner.
+  old group; a row's name, folder and version as separate parts, a path with no folder showing the
+  name alone, and a click anywhere on the row opening the viewer; the collapsed line; the
+  declarative one-liner.
 - Viewer tests: the diagnostic placed from a byte range on a multi-byte statement, opened from the
   failed section; opening at the top with the error when there
   is no range; the per-database line when opened from a section and none from Changes; the
