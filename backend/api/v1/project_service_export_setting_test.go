@@ -29,6 +29,10 @@ func (c *fakeSharePointResolver) Resolve(_ context.Context, canonicalURL string)
 	return c.location, c.err
 }
 
+func (*fakeSharePointResolver) ResolveRecent(context.Context, string) (*sharepoint.Location, error) {
+	return nil, errors.New("not used")
+}
+
 func (*fakeSharePointResolver) Upload(context.Context, *sharepoint.Location, string, []sharepoint.File) (*sharepoint.Folder, error) {
 	return nil, errors.New("not used")
 }

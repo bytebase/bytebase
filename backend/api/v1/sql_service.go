@@ -171,11 +171,8 @@ func (s *SQLService) AdminExecute(ctx context.Context, stream *connect.BidiStrea
 }
 
 // buildExportQueryContext assembles the db.QueryContext for an export request.
-// SkipMasking has to be set here, not only checked around the post-execution
-// MaskResults pass: queryRetry reads it off the QueryContext to decide
-// maskingEnabled and whether to extract sensitive predicate columns, and both
-// of those run before the export's own check. See PR #20487 review
-// (RainbowDashy). No driver reads the field.
+// queryRetry reads SkipMasking off the QueryContext to decide whether to mask
+// the results and check sensitive predicate columns. No driver reads the field.
 func buildExportQueryContext(restriction *store.EffectiveQueryDataPolicy, userEmail string, schema *string, container string, skipMasking bool) db.QueryContext {
 	qc := db.QueryContext{
 		Limit:                int(restriction.MaximumResultRows),
@@ -1367,7 +1364,8 @@ func doExport(
 		statements = []parserbase.Statement{{Text: request.Statement}}
 	}
 
-	results, spans, duration, queryErr := queryRetry(
+	// queryRetry masks the results.
+	results, _, duration, queryErr := queryRetry(
 		ctx,
 		stores,
 		user,
@@ -1385,13 +1383,6 @@ func doExport(
 	)
 	if queryErr != nil {
 		return nil, duration, queryErr
-	}
-
-	if !skipMasking && licenseService.IsFeatureEnabledForInstance(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil {
-		masker := NewQueryResultMasker(stores)
-		if err := masker.MaskResults(ctx, spans, results, instance, user); err != nil {
-			return nil, duration, err
-		}
 	}
 
 	files, err := buildExportFiles(ctx, stores, instance, database, results, request)

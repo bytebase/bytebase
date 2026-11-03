@@ -21,6 +21,11 @@ type Location struct {
 	DriveID string
 	ItemID  string
 	WebURL  string
+
+	// url is the canonical URL the location was resolved from.
+	url string
+	// reused reports whether ResolveRecent returned an earlier resolution.
+	reused bool
 }
 
 // File is one file of an export.
@@ -60,9 +65,14 @@ type Client interface {
 	// Resolve resolves a canonical URL from NormalizeURL to a library root or
 	// folder. Resolving proves only that the destination is readable.
 	Resolve(ctx context.Context, canonicalURL string) (*Location, error)
+	// ResolveRecent is Resolve, except that it reuses a resolution of the same
+	// URL made within the last minute.
+	ResolveRecent(ctx context.Context, canonicalURL string) (*Location, error)
 	// Upload creates folderName under loc and uploads files into it. Retrying
 	// Upload with the same arguments reuses the folder and files already
-	// uploaded by the application instead of creating copies.
+	// uploaded by the application instead of creating copies. If loc is a
+	// reused resolution that Graph no longer finds, Upload resolves its URL
+	// again and retries once.
 	Upload(ctx context.Context, loc *Location, folderName string, files []File) (*Folder, error)
 }
 

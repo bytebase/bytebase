@@ -280,6 +280,10 @@ func (c *exportSharePointClient) Resolve(_ context.Context, canonicalURL string)
 	return c.location, nil
 }
 
+func (c *exportSharePointClient) ResolveRecent(ctx context.Context, canonicalURL string) (*sharepoint.Location, error) {
+	return c.Resolve(ctx, canonicalURL)
+}
+
 func (c *exportSharePointClient) Upload(_ context.Context, loc *sharepoint.Location, folderName string, files []sharepoint.File) (*sharepoint.Folder, error) {
 	c.uploadedTo, c.uploadedFolder, c.uploadedFiles = loc, folderName, files
 	if c.uploadErr != nil {

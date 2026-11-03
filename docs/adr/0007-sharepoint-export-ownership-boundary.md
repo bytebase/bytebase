@@ -111,9 +111,10 @@ the same export file names. If delivery remains uncertain, Bytebase reports that
 delivery could not be confirmed and files may exist in SharePoint. It does
 not claim that no file was created.
 
-Bytebase checks the destination once, before the query runs. A change made
-while an export is running applies to the next export. A rejected destination
-is never redirected to another one.
+Bytebase checks the destination once, before the query runs, reusing a check of
+the same URL made within the last minute so a batch export resolves its
+destination once. A change made while an export is running applies to the next
+export. A rejected destination is never redirected to another one.
 
 Internal upload retries reuse the generated files, file names, and captured
 destination without rerunning the query. A new Export action starts a new export
@@ -138,9 +139,13 @@ URL that does not resolve. It stores and returns only the canonical URL; resolve
 names go stale on rename and are not kept. A SharePoint browsing picker is
 outside the initial scope.
 
-Bytebase resolves the stored URL at each export rather than pinning item IDs.
-Renaming or moving the folder makes exports fail as not found; a folder
-recreated at the same URL receives subsequent exports.
+Bytebase resolves the stored URL rather than pinning item IDs, and reuses a
+resolution for at most a minute. Renaming or moving the folder makes exports
+fail as not found, except that an export reusing a resolution from before the
+rename uploads into the renamed folder and returns a link to the old path. When
+SharePoint rejects an upload into a reused resolution as not found, Bytebase
+resolves the URL again and retries once, so a folder recreated at the same URL
+receives that export.
 
 Customers create and rotate Entra client secrets. Expired or invalid credentials
 cause affected exports to fail with a clear credential error. An authorized user
