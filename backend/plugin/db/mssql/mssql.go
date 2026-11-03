@@ -8,6 +8,7 @@ import (
 	"io"
 	"log/slog"
 	"maps"
+	"net"
 	"net/url"
 	"os"
 	"slices"
@@ -85,17 +86,23 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 // written to disk, or empty.
 //
 // go-mssqldb matches parameter keys case-insensitively and accepts each key once, so Extra
-// Parameters merge by lowercased key. They override the app name and tlsmin defaults, never the
-// database or the Azure credential. With TLS mode TLS, the TLS section sets a floor that Extra
-// Parameters may raise but not lower: encrypt=true unless they ask for encrypt=strict, and
-// TrustServerCertificate=false when Verify server certificate is on or they ask for it. The
-// section's CA replaces a certificate parameter. With TLS mode Disabled, Extra Parameters apply as
-// given over a TrustServerCertificate=true default.
+// Parameters merge by lowercased key. The URL form of a DSN already derives user id and password
+// from the userinfo and server and port from the host, and the driver rejects a second value for
+// any of them, so the credentials travel in the query and the server and port in the host, each
+// once. A named instance has to go in the path, because the host cannot hold the backslash of
+// Server=host\instance. Extra Parameters override the app name, tlsmin, credentials, server and
+// port, never the database or the Azure credential. With TLS mode TLS, the TLS section sets a
+// floor that Extra Parameters may raise but not lower: encrypt=true unless they ask for
+// encrypt=strict, and TrustServerCertificate=false when Verify server certificate is on or they
+// ask for it. The section's CA replaces a certificate parameter. With TLS mode Disabled, Extra
+// Parameters apply as given over a TrustServerCertificate=true default.
 func connectionDSN(ds *storepb.DataSource, password, database, caFile string) (string, string) {
 	params := map[string]string{
 		msdsn.AppName: "bytebase",
 		// Older SQL Server versions offer only TLS 1.0: https://github.com/microsoft/go-mssqldb/issues/33.
-		msdsn.TLSMin: "1.0",
+		msdsn.TLSMin:   "1.0",
+		msdsn.UserID:   ds.Username,
+		msdsn.Password: password,
 	}
 	extra := ds.GetExtraConnectionParameters()
 	// Sorted, so keys that differ only in case resolve the same way every time.
@@ -126,11 +133,27 @@ func connectionDSN(ds *storepb.DataSource, password, database, caFile string) (s
 			params["fedauth"] = azuread.ActiveDirectoryServicePrincipal
 			params[msdsn.UserID] = fmt.Sprintf("%s@%s", credential.ClientId, credential.TenantId)
 			params[msdsn.Password] = credential.ClientSecret
-			password = ""
 		} else {
 			params["fedauth"] = azuread.ActiveDirectoryDefault
 		}
 	}
+
+	host, port := ds.Host, ds.Port
+	if server, ok := params[msdsn.Server]; ok {
+		delete(params, msdsn.Server)
+		host = server
+	}
+	if value, ok := params[msdsn.Port]; ok {
+		delete(params, msdsn.Port)
+		port = value
+	}
+	instance := ""
+	if before, after, ok := strings.Cut(host, `\`); ok {
+		host, instance = before, after
+	}
+	// net.JoinHostPort brackets an IPv6 literal, which the URL host needs and the driver strips
+	// back off, so a value that already carries brackets must not get a second pair.
+	host = strings.TrimSuffix(strings.TrimPrefix(host, "["), "]")
 
 	query := url.Values{}
 	for key, value := range params {
@@ -138,9 +161,11 @@ func connectionDSN(ds *storepb.DataSource, password, database, caFile string) (s
 	}
 	u := &url.URL{
 		Scheme:   "sqlserver",
-		User:     url.UserPassword(ds.Username, password),
-		Host:     fmt.Sprintf("%s:%s", ds.Host, ds.Port),
+		Host:     net.JoinHostPort(host, port),
 		RawQuery: query.Encode(),
+	}
+	if instance != "" {
+		u.Path = "/" + instance
 	}
 	return driverName, u.String()
 }

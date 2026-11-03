@@ -38,8 +38,6 @@ func TestConnectionDSNAppliesTLSSettings(t *testing.T) {
 	}
 	sectionCA, sectionPool := writeCA("section.pem")
 	extraCA, extraPool := writeCA("extra.pem")
-	systemPool, err := x509.SystemCertPool()
-	require.NoError(t, err)
 
 	for _, tc := range []struct {
 		name       string
@@ -48,26 +46,29 @@ func TestConnectionDSNAppliesTLSSettings(t *testing.T) {
 		caFile     string
 		extra      map[string]string
 		encryption msdsn.Encryption
-		// roots verify the server certificate; nil means any certificate is accepted.
-		roots *x509.CertPool
+		// roots verify the server certificate; nil means any certificate is accepted,
+		// unless systemRoots asks for the host's trust store, which crypto/tls takes
+		// from an unset RootCAs.
+		roots       *x509.CertPool
+		systemRoots bool
 	}{
 		{name: "disabled", encryption: msdsn.EncryptionOff},
 		{name: "disabled ignores verify", verify: true, encryption: msdsn.EncryptionOff},
 		{name: "tls", useSSL: true, encryption: msdsn.EncryptionRequired},
 		{name: "tls with a CA", useSSL: true, caFile: sectionCA, encryption: msdsn.EncryptionRequired},
 		{name: "tls verified against the CA", useSSL: true, verify: true, caFile: sectionCA, encryption: msdsn.EncryptionRequired, roots: sectionPool},
-		{name: "tls verified against system trust", useSSL: true, verify: true, encryption: msdsn.EncryptionRequired, roots: systemPool},
+		{name: "tls verified against system trust", useSSL: true, verify: true, encryption: msdsn.EncryptionRequired, systemRoots: true},
 
 		{name: "extra parameters cannot turn verification off", useSSL: true, verify: true, caFile: sectionCA, extra: map[string]string{"TrustServerCertificate": "true"}, encryption: msdsn.EncryptionRequired, roots: sectionPool},
 		{name: "extra parameters cannot make encryption optional", useSSL: true, extra: map[string]string{"encrypt": "false"}, encryption: msdsn.EncryptionRequired},
 		{name: "extra parameters cannot disable encryption", useSSL: true, extra: map[string]string{"Encrypt": "DISABLE"}, encryption: msdsn.EncryptionRequired},
-		{name: "extra parameters can require strict encryption", useSSL: true, extra: map[string]string{"Encrypt": "Strict"}, encryption: msdsn.EncryptionStrict, roots: systemPool},
+		{name: "extra parameters can require strict encryption", useSSL: true, extra: map[string]string{"Encrypt": "Strict"}, encryption: msdsn.EncryptionStrict, systemRoots: true},
 		{name: "extra parameters can turn verification on", useSSL: true, caFile: sectionCA, extra: map[string]string{"trustservercertificate": "false"}, encryption: msdsn.EncryptionRequired, roots: sectionPool},
 		{name: "the CA replaces a certificate parameter", useSSL: true, verify: true, caFile: sectionCA, extra: map[string]string{"Certificate": extraCA}, encryption: msdsn.EncryptionRequired, roots: sectionPool},
 		{name: "a certificate parameter replaces system trust", useSSL: true, verify: true, extra: map[string]string{"certificate": extraCA}, encryption: msdsn.EncryptionRequired, roots: extraPool},
 
 		{name: "disabled applies encrypt", extra: map[string]string{"encrypt": "true"}, encryption: msdsn.EncryptionRequired},
-		{name: "disabled applies TrustServerCertificate", extra: map[string]string{"TrustServerCertificate": "false"}, encryption: msdsn.EncryptionOff, roots: systemPool},
+		{name: "disabled applies TrustServerCertificate", extra: map[string]string{"TrustServerCertificate": "false"}, encryption: msdsn.EncryptionOff, systemRoots: true},
 		{name: "disabled applies encrypt=disable", extra: map[string]string{"encrypt": "disable"}, encryption: msdsn.EncryptionDisabled},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -88,9 +89,14 @@ func TestConnectionDSNAppliesTLSSettings(t *testing.T) {
 				require.Nil(t, cfg.TLSConfig)
 				return
 			}
-			require.Equal(t, tc.roots == nil, cfg.TLSConfig.InsecureSkipVerify)
-			if tc.roots != nil {
+			verified := tc.roots != nil || tc.systemRoots
+			require.Equal(t, !verified, cfg.TLSConfig.InsecureSkipVerify)
+			if verified {
 				require.Equal(t, "db.example.com", cfg.TLSConfig.ServerName)
+			}
+			if tc.systemRoots {
+				require.Nil(t, cfg.TLSConfig.RootCAs, "verified against roots other than the host's")
+			} else if tc.roots != nil {
 				require.True(t, tc.roots.Equal(cfg.TLSConfig.RootCAs), "verified against the wrong roots")
 			}
 		})
@@ -112,6 +118,12 @@ func TestConnectionDSNMergesExtraParameters(t *testing.T) {
 			database:   "db1",
 			driverName: "sqlserver",
 			want:       map[string]string{"app name": "bytebase", "tlsmin": "1.0", "database": "db1", "user id": "bytebase", "password": "password"},
+		},
+		{
+			name:       "extra parameters override the credentials",
+			ds:         &storepb.DataSource{Username: "bytebase", ExtraConnectionParameters: map[string]string{"User ID": "other", "Password": "other"}},
+			driverName: "sqlserver",
+			want:       map[string]string{"user id": "other", "password": "other"},
 		},
 		{
 			name:       "extra parameters override the app name and tlsmin",
@@ -157,6 +169,64 @@ func TestConnectionDSNMergesExtraParameters(t *testing.T) {
 			for key, value := range tc.want {
 				require.Equal(t, value, cfg.Parameters[key], key)
 			}
+		})
+	}
+}
+
+// A named instance is only reachable through Extra Parameters, because the Host field has no room
+// for the backslash of Server=host\instance.
+func TestConnectionDSNCarriesServerAndPort(t *testing.T) {
+	for _, tc := range []struct {
+		name         string
+		ds           *storepb.DataSource
+		wantHost     string
+		wantPort     uint64
+		wantInstance string
+	}{
+		{
+			name:     "the server and port come from Bytebase",
+			ds:       &storepb.DataSource{Host: "db.example.com", Port: "1433"},
+			wantHost: "db.example.com",
+			wantPort: 1433,
+		},
+		{
+			name:     "extra parameters override the server and port",
+			ds:       &storepb.DataSource{Host: "db.example.com", Port: "1433", ExtraConnectionParameters: map[string]string{"Server": "other.example.com", "Port": "1444"}},
+			wantHost: "other.example.com",
+			wantPort: 1444,
+		},
+		{
+			name:     "an IPv6 server",
+			ds:       &storepb.DataSource{Host: "db.example.com", Port: "1433", ExtraConnectionParameters: map[string]string{"Server": "2001:db8::1"}},
+			wantHost: "2001:db8::1",
+			wantPort: 1433,
+		},
+		{
+			name:     "an IPv6 server already in brackets",
+			ds:       &storepb.DataSource{Host: "db.example.com", Port: "1433", ExtraConnectionParameters: map[string]string{"Server": "[2001:db8::1]"}},
+			wantHost: "2001:db8::1",
+			wantPort: 1433,
+		},
+		{
+			name:     "an IPv6 host",
+			ds:       &storepb.DataSource{Host: "2001:db8::1", Port: "1433"},
+			wantHost: "2001:db8::1",
+			wantPort: 1433,
+		},
+		{
+			name:         "extra parameters reach a named instance",
+			ds:           &storepb.DataSource{Host: "db.example.com", ExtraConnectionParameters: map[string]string{"Server": `other.example.com\SQLEXPRESS`}},
+			wantHost:     "other.example.com",
+			wantInstance: "SQLEXPRESS",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, dsn := connectionDSN(tc.ds, "password", "", "")
+			cfg, err := msdsn.Parse(dsn)
+			require.NoError(t, err)
+			require.Equal(t, tc.wantHost, cfg.Host)
+			require.Equal(t, tc.wantPort, cfg.Port)
+			require.Equal(t, tc.wantInstance, cfg.Instance)
 		})
 	}
 }
