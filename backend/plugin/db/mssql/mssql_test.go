@@ -173,6 +173,46 @@ func TestConnectionDSNMergesExtraParameters(t *testing.T) {
 	}
 }
 
+// A named instance is only reachable through Extra Parameters, because the Host field has no room
+// for the backslash of Server=host\instance.
+func TestConnectionDSNCarriesServerAndPort(t *testing.T) {
+	for _, tc := range []struct {
+		name         string
+		ds           *storepb.DataSource
+		wantHost     string
+		wantPort     uint64
+		wantInstance string
+	}{
+		{
+			name:     "the server and port come from Bytebase",
+			ds:       &storepb.DataSource{Host: "db.example.com", Port: "1433"},
+			wantHost: "db.example.com",
+			wantPort: 1433,
+		},
+		{
+			name:     "extra parameters override the server and port",
+			ds:       &storepb.DataSource{Host: "db.example.com", Port: "1433", ExtraConnectionParameters: map[string]string{"Server": "other.example.com", "Port": "1444"}},
+			wantHost: "other.example.com",
+			wantPort: 1444,
+		},
+		{
+			name:         "extra parameters reach a named instance",
+			ds:           &storepb.DataSource{Host: "db.example.com", ExtraConnectionParameters: map[string]string{"Server": `other.example.com\SQLEXPRESS`}},
+			wantHost:     "other.example.com",
+			wantInstance: "SQLEXPRESS",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, dsn := connectionDSN(tc.ds, "password", "", "")
+			cfg, err := msdsn.Parse(dsn)
+			require.NoError(t, err)
+			require.Equal(t, tc.wantHost, cfg.Host)
+			require.Equal(t, tc.wantPort, cfg.Port)
+			require.Equal(t, tc.wantInstance, cfg.Instance)
+		})
+	}
+}
+
 func TestOpenAppliesTLSSettings(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

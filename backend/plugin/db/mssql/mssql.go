@@ -85,14 +85,16 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 // written to disk, or empty.
 //
 // go-mssqldb matches parameter keys case-insensitively and accepts each key once, so Extra
-// Parameters merge by lowercased key, and the credentials go in the query rather than the URL's
-// userinfo, which the driver would read as a second value for user id and password. Extra
-// Parameters override the app name, tlsmin and credential defaults, never the database or the
-// Azure credential. With TLS mode TLS, the TLS section sets a floor that Extra Parameters may
-// raise but not lower: encrypt=true unless they ask for encrypt=strict, and
-// TrustServerCertificate=false when Verify server certificate is on or they ask for it. The
-// section's CA replaces a certificate parameter. With TLS mode Disabled, Extra Parameters apply as
-// given over a TrustServerCertificate=true default.
+// Parameters merge by lowercased key. The URL form of a DSN already derives user id and password
+// from the userinfo and server and port from the host, and the driver rejects a second value for
+// any of them, so the credentials travel in the query and the server and port in the host, each
+// once. A named instance has to go in the path, because the host cannot hold the backslash of
+// Server=host\instance. Extra Parameters override the app name, tlsmin, credentials, server and
+// port, never the database or the Azure credential. With TLS mode TLS, the TLS section sets a
+// floor that Extra Parameters may raise but not lower: encrypt=true unless they ask for
+// encrypt=strict, and TrustServerCertificate=false when Verify server certificate is on or they
+// ask for it. The section's CA replaces a certificate parameter. With TLS mode Disabled, Extra
+// Parameters apply as given over a TrustServerCertificate=true default.
 func connectionDSN(ds *storepb.DataSource, password, database, caFile string) (string, string) {
 	params := map[string]string{
 		msdsn.AppName: "bytebase",
@@ -135,14 +137,31 @@ func connectionDSN(ds *storepb.DataSource, password, database, caFile string) (s
 		}
 	}
 
+	host, port := ds.Host, ds.Port
+	if server, ok := params[msdsn.Server]; ok {
+		delete(params, msdsn.Server)
+		host = server
+	}
+	if value, ok := params[msdsn.Port]; ok {
+		delete(params, msdsn.Port)
+		port = value
+	}
+	instance := ""
+	if before, after, ok := strings.Cut(host, `\`); ok {
+		host, instance = before, after
+	}
+
 	query := url.Values{}
 	for key, value := range params {
 		query.Set(key, value)
 	}
 	u := &url.URL{
 		Scheme:   "sqlserver",
-		Host:     fmt.Sprintf("%s:%s", ds.Host, ds.Port),
+		Host:     fmt.Sprintf("%s:%s", host, port),
 		RawQuery: query.Encode(),
+	}
+	if instance != "" {
+		u.Path = "/" + instance
 	}
 	return driverName, u.String()
 }
