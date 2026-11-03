@@ -4476,11 +4476,12 @@
         "pending": "Tải {{count}} đang chờ"
       },
       "no-statement": "Không xác định được câu lệnh cho lỗi này.",
-      "revision-deleted": "Bản sửa đổi đã bị {{user}} xóa vào {{date}}",
+      "revision-deleted": "Bản sửa đổi trước đó đã bị {{user}} xóa vào {{date}}",
       "revisions-on": "Các bản sửa đổi trên {{database}}",
       "run-failed": "Chạy thất bại",
       "status": {
         "applied": "Đã áp dụng",
+        "applied-again": "Đã áp dụng lại",
         "canceled": "Đã hủy",
         "failed": "Thất bại",
         "running": "Đang chạy"

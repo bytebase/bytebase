@@ -4476,11 +4476,12 @@
         "pending": "Cargar {{count}} pendientes"
       },
       "no-statement": "No se identificó ninguna sentencia para este error.",
-      "revision-deleted": "Revisión eliminada el {{date}} por {{user}}",
+      "revision-deleted": "Revisión anterior eliminada el {{date}} por {{user}}",
       "revisions-on": "Revisiones en {{database}}",
       "run-failed": "Ejecución fallida",
       "status": {
         "applied": "Aplicado",
+        "applied-again": "Aplicado de nuevo",
         "canceled": "Cancelado",
         "failed": "Fallido",
         "running": "En ejecución"

@@ -313,7 +313,10 @@ export function ReleaseSpineView({
         onOpenChange={() => toggle(section.id, section)}
         className={ROW_DIVIDER}
       >
-        <div className="flex items-center gap-x-2 px-3 py-1.5">
+        <div
+          className="flex items-center gap-x-2 px-3 py-1.5"
+          data-testid={`spine-file-${section.version}-row`}
+        >
           <CollapsibleTrigger
             className="w-auto shrink-0"
             data-testid={`spine-file-${section.version}`}
@@ -321,9 +324,17 @@ export function ReleaseSpineView({
             <Chevron open={open} />
             <span className="tabular-nums text-control">{section.version}</span>
             <Badge variant={STATUS_VARIANT[section.status]}>
-              {statusLabel(section.status)}
+              {note && section.status === "applied"
+                ? t("task-run.spine.status.applied-again")
+                : statusLabel(section.status)}
             </Badge>
           </CollapsibleTrigger>
+          {/* Outside the toggle: a focusable icon cannot nest in a button. */}
+          {note ? (
+            <RevisionDeletedInfo
+              text={t("task-run.spine.revision-deleted", note)}
+            />
+          ) : null}
           {pathLink}
           <span className="flex-1" />
           {duration ? (
@@ -332,14 +343,6 @@ export function ReleaseSpineView({
             </span>
           ) : null}
         </div>
-        {note ? (
-          <div
-            className="px-9 pb-1 text-control-light"
-            data-testid={`spine-file-${section.version}-note`}
-          >
-            {t("task-run.spine.revision-deleted", note)}
-          </div>
-        ) : null}
         {!open && section.status === "failed" && section.error ? (
           <div
             className="truncate px-9 pb-1.5 text-error"
