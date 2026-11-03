@@ -61,6 +61,12 @@ export type ReleaseFileOpenContext =
   // Running or canceled: no settled outcome on this database.
   | { kind: "unsettled" };
 
+// The database page's Revisions tab, which the plan page links to.
+export interface RevisionsLinkTarget {
+  href: string;
+  database: string;
+}
+
 export type OpenReleaseFile = (
   file: ReleaseSpineFile,
   context: ReleaseFileOpenContext
@@ -76,6 +82,7 @@ export interface ReleaseSpineViewProps {
   getSectionLabel: (type: TaskRunLogEntry_Type) => string;
   detailText?: TaskRunLogDetailText;
   onOpenFile?: OpenReleaseFile;
+  revisionsLink?: RevisionsLinkTarget;
 }
 
 const STATUS_VARIANT: Record<
@@ -88,8 +95,8 @@ const STATUS_VARIANT: Record<
   canceled: "default",
 };
 
-// One task's per-database file state: a count line, the files applied before
-// this rollout, a section per file the run reached, task-level steps as
+// One task's per-database file state: a count line, a fold of the files the
+// database already had, a section per file the run reached, task-level steps as
 // siblings, the files a running or pending task will apply, and a Run failed
 // section for an error no section owns. Long stretches load on demand.
 export function ReleaseSpineView({
@@ -101,6 +108,7 @@ export function ReleaseSpineView({
   getSectionLabel,
   detailText,
   onOpenFile,
+  revisionsLink,
 }: ReleaseSpineViewProps) {
   const { t } = useTranslation();
   const spine = useMemo(
@@ -377,35 +385,53 @@ export function ReleaseSpineView({
 
   const renderItem = (item: SpineWindowItem): ReactNode => {
     switch (item.kind) {
-      case "applied-earlier-file": {
-        const { file } = item;
+      case "applied-earlier": {
+        const open = isOpen(ALREADY_APPLIED_ID, item);
         return (
-          <div
-            key={`earlier-${file.version}`}
-            className={cn(ROW_DIVIDER, "flex items-center gap-x-2 px-3 py-1.5")}
-            data-testid="spine-applied-earlier-row"
+          <Collapsible
+            key={ALREADY_APPLIED_ID}
+            open={open}
+            onOpenChange={() => toggle(ALREADY_APPLIED_ID, item)}
+            className={ROW_DIVIDER}
           >
-            <span className="w-3.5 shrink-0" />
-            <span className="shrink-0 tabular-nums text-control-light">
-              {file.version}
-            </span>
-            <Badge>{t("task-run.spine.status.applied-earlier")}</Badge>
-            <span className="flex min-w-0 items-center gap-x-1">
-              <FilePath
-                label={file.path || file.version}
-                onOpen={
-                  onOpenFile
-                    ? () =>
-                        onOpenFile(file, {
-                          kind: "already-applied",
-                          run: run !== undefined,
-                        })
-                    : undefined
-                }
-              />
-              {file.path ? <CopyButton content={file.path} /> : null}
-            </span>
-          </div>
+            <CollapsibleTrigger
+              className={cn(TRIGGER_ROW, "font-sans")}
+              data-testid="spine-already-applied"
+            >
+              <Chevron open={open} />
+              {t("task-run.spine.already-applied", {
+                count: item.files.length,
+              })}
+            </CollapsibleTrigger>
+            <CollapsiblePanel data-testid="spine-already-applied-files">
+              {item.files.map((file) => (
+                <div
+                  key={file.version}
+                  className="flex items-center gap-x-2 py-1 pr-3 pl-9"
+                  data-testid="spine-already-applied-row"
+                >
+                  <span className="shrink-0 tabular-nums text-control-light">
+                    {file.version}
+                  </span>
+                  <span className="flex min-w-0 items-center gap-x-1">
+                    <FilePath
+                      label={file.path || file.version}
+                      onOpen={
+                        onOpenFile
+                          ? () =>
+                              onOpenFile(file, {
+                                kind: "already-applied",
+                                run: run !== undefined,
+                              })
+                          : undefined
+                      }
+                    />
+                    {file.path ? <CopyButton content={file.path} /> : null}
+                  </span>
+                </div>
+              ))}
+            </CollapsiblePanel>
+          </Collapsible>
         );
       }
       case "load":
@@ -465,10 +491,6 @@ export function ReleaseSpineView({
         return more
           ? t("task-run.spine.load.more-pending", { count })
           : t("task-run.spine.load.pending", { count });
-      case "applied-earlier":
-        return more
-          ? t("task-run.spine.load.more-applied-earlier", { count })
-          : t("task-run.spine.load.applied-earlier", { count });
       case "files":
         return more
           ? t("task-run.spine.load.more-files", { count })
@@ -488,7 +510,25 @@ export function ReleaseSpineView({
       <div className="w-full overflow-hidden rounded-sm border border-block-border bg-control-bg/50 font-mono">
         {items.map(renderItem)}
       </div>
+      {/* Each file writes its revision when it commits, so a run that failed
+          after applying a file already has revisions to show. */}
+      {revisionsLink &&
+      (run?.status === TaskRun_Status.DONE || counts.applied > 0) ? (
+        <RevisionsLink target={revisionsLink} />
+      ) : null}
     </div>
+  );
+}
+
+export function RevisionsLink({ target }: { target: RevisionsLinkTarget }) {
+  const { t } = useTranslation();
+  return (
+    <a
+      className="self-start pt-1.5 text-sm text-accent hover:underline"
+      href={target.href}
+    >
+      {t("task-run.spine.revisions-on", { database: target.database })}
+    </a>
   );
 }
 
@@ -510,7 +550,7 @@ function countLine(
     parts.push(t("task-run.spine.count.pending", { count: counts.pending }));
   if (counts.appliedEarlier > 0)
     parts.push(
-      t("task-run.spine.count.applied-earlier", {
+      t("task-run.spine.count.already-applied", {
         count: counts.appliedEarlier,
       })
     );
@@ -576,6 +616,7 @@ function LoadRow({
 }
 
 const NARROW_MEDIA_QUERY = "(max-width: 639px)";
+const ALREADY_APPLIED_ID = "already-applied";
 const LOAD_ROW = cn(
   ROW_DIVIDER,
   "h-auto w-full rounded-none py-1.5 text-xs text-accent hover:bg-control-bg-hover"

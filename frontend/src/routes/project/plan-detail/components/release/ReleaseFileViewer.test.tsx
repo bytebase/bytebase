@@ -167,7 +167,7 @@ describe("ReleaseFileViewer", () => {
       <ReleaseFileViewer target={target({ context: { kind: "already-applied", run: true } })} onClose={() => {}} />
     );
     expect(screen.getByTestId("release-file-database-line").textContent).toBe(
-      "Applied earlier; this run passed over it"
+      "Already applied; this run passed over it"
     );
     rerender(<ReleaseFileViewer target={target()} onClose={() => {}} />);
     expect(screen.queryByTestId("release-file-database-line")).toBeNull();

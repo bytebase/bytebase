@@ -218,13 +218,14 @@ test("before the run, Changes lists the release newest first and the task shows 
 
   // The folded card: what this database will get, before any log exists.
   await expect(page.getByTestId("folded-description").first()).toHaveText(
-    /2 to apply · 1 applied earlier/,
+    /2 to apply · 1 already applied/,
   );
   await taskCard(page).click();
   const spine = page.getByTestId("release-spine");
   await expect(spine).toBeVisible();
-  await expect(spine.getByTestId("spine-count")).toHaveText("3 files · 2 pending · 1 applied earlier");
-  await expect(spine.getByRole("button", { name: "Load 1 applied earlier" })).toBeVisible();
+  await expect(spine.getByTestId("spine-count")).toHaveText("3 files · 2 pending · 1 already applied");
+  await expect(spine.getByTestId("spine-already-applied")).toHaveText("1 file already applied to this database");
+  await expect(spine.getByTestId("spine-already-applied-row")).toHaveCount(0);
   await expect(spine.getByTestId(`spine-file-${version(2)}`)).toContainText("Will apply");
   await expect(spine.getByTestId(`spine-file-${version(3)}`)).toContainText("Will apply");
   await expect(page.getByText(/As of rollout creation/)).toBeVisible();
@@ -232,7 +233,7 @@ test("before the run, Changes lists the release newest first and the task shows 
   await page.context().close();
 });
 
-test("after the run, the task lists the version it passed over as applied earlier and links to the database's revisions", async ({ browser }) => {
+test("after the run, the task folds the version it passed over as already applied and links to the database's revisions", async ({ browser }) => {
   await runAndWait(successPlan.name, "DONE");
   const page = await developerPage(browser);
   await page.goto(`${env.baseURL}/projects/${projectId}/plans/${successPlan.id}`);
@@ -240,9 +241,11 @@ test("after the run, the task lists the version it passed over as applied earlie
   await expect(page.getByTestId("folded-description").first()).toHaveText(/All 3 applied/);
   await taskCard(page).click();
   const spine = page.getByTestId("release-spine");
-  await expect(spine.getByTestId("spine-count")).toHaveText("3 files · 2 applied · 1 applied earlier");
-  await spine.getByRole("button", { name: "Load 1 applied earlier" }).click();
-  await expect(spine.getByTestId("spine-applied-earlier-row")).toContainText(`migrations/${version(1)}_orders.sql`);
+  await expect(spine.getByTestId("spine-count")).toHaveText("3 files · 2 applied · 1 already applied");
+  await spine.getByTestId("spine-already-applied").click();
+  await expect(
+    spine.getByTestId("spine-already-applied-files").getByTestId("spine-already-applied-row"),
+  ).toContainText(`migrations/${version(1)}_orders.sql`);
   await expect(spine.getByTestId(`spine-file-${version(2)}`)).toContainText("Applied");
   await expect(spine.getByTestId(`spine-file-${version(3)}`)).toContainText("Applied");
   await screenshot(page, "release-done-spine");
@@ -271,6 +274,8 @@ test("a failed file shows its error on the row, in the viewer and on the folded 
   await expect(failed).toContainText("Failed");
   await expect(spine.getByTestId(`spine-file-${version(5)}-content`)).toContainText("does not exist");
   await expect(spine.getByTestId(`spine-file-${version(6)}`)).toHaveCount(0);
+  // The applied file wrote its revision before the failure.
+  await expect(page.getByRole("link", { name: `Revisions on ${databaseName}` })).toBeVisible();
   await screenshot(page, "release-failed-spine");
 
   await spine.getByRole("button", { name: `migrations/${version(5)}_broken.sql` }).click();

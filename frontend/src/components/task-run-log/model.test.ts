@@ -1319,8 +1319,8 @@ describe("release spine limits and defaults", () => {
           return `${item.version}:${item.status}`;
         case "load":
           return `load:${item.key}:${item.count}${item.more ? ":more" : ""}`;
-        case "applied-earlier-file":
-          return `earlier:${item.file.version}`;
+        case "applied-earlier":
+          return `earlier:${item.files.length}`;
         default:
           return item.kind;
       }
@@ -1407,7 +1407,7 @@ describe("release spine limits and defaults", () => {
     ]);
   });
 
-  test("the files applied earlier are one load row at the top, in version order once loaded", () => {
+  test("the files already applied pass through as one fold at the top, in version order, outside the cap", () => {
     const spine = buildReleaseSpine({
       files: sixty,
       entries: [],
@@ -1416,15 +1416,17 @@ describe("release spine limits and defaults", () => {
         pendingVersions: sixty.slice(50).map((f) => ({ version: f.version })),
       }),
     });
-    expect(windowShape(windowSpine(spine.items, {}))).toEqual([
-      "load:applied-earlier:50",
-      ...range(51, 60, "pending"),
+    const drawn = windowSpine(spine.items, {}, 5);
+    expect(windowShape(drawn)).toEqual([
+      "earlier:50",
+      ...range(51, 55, "pending"),
+      "load:pending:5:more",
     ]);
-    const loaded = windowShape(
-      windowSpine(spine.items, { "applied-earlier": 20 })
-    );
-    expect(loaded.slice(0, 2)).toEqual(["earlier:001", "earlier:002"]);
-    expect(loaded[20]).toBe("load:applied-earlier:30:more");
+    const fold = drawn[0];
+    expect(
+      fold.kind === "applied-earlier" &&
+        fold.files.map((f) => f.version).slice(0, 3)
+    ).toEqual(["001", "002", "003"]);
   });
 
   test("a stretch that mixes states loads as files", () => {
@@ -1454,9 +1456,18 @@ describe("release spine limits and defaults", () => {
       "002:applied",
       "load:files:2:more",
     ]);
+    // The fold above is not a section of the stretch's files.
+    const folded: SpineItem[] = [
+      { kind: "applied-earlier", files: sixty.slice(0, 1) },
+      ...items,
+    ];
+    expect(windowShape(windowSpine(folded, {}, 0))).toEqual([
+      "earlier:1",
+      "load:files:4",
+    ]);
   });
 
-  test("the count line counts every file section by state and the files applied earlier", () => {
+  test("the count line counts every file section by state and the files already applied", () => {
     expect(countSpine(runningAt30().items, 60)).toEqual({
       files: 60,
       applied: 29,

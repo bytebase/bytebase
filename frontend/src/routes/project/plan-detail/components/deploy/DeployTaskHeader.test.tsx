@@ -145,12 +145,12 @@ describe("folded card description", () => {
   });
 
   test.each([
-    ["not started", releaseTask(Task_Status.NOT_STARTED, ["202610051500", "202610051510", "202610051530"], 490), undefined, "", "3 to apply · 490 applied earlier"],
-    ["not started, nothing to apply", releaseTask(Task_Status.NOT_STARTED, [], 493), undefined, "", "Nothing to apply · 493 applied earlier"],
+    ["not started", releaseTask(Task_Status.NOT_STARTED, ["202610051500", "202610051510", "202610051530"], 490), undefined, "", "3 to apply · 490 already applied"],
+    ["not started, nothing to apply", releaseTask(Task_Status.NOT_STARTED, [], 493), undefined, "", "Nothing to apply · 493 already applied"],
     ["running", releaseTask(Task_Status.RUNNING, ["a", "b", "c"], 490), runOf(TaskRun_Status.RUNNING), "", "Applying 3 files · started 15:14"],
     ["running, nothing to apply", releaseTask(Task_Status.RUNNING, [], 493), runOf(TaskRun_Status.RUNNING), "", "Running · started 15:14"],
     ["done", releaseTask(Task_Status.DONE, ["a"], 492), runOf(TaskRun_Status.DONE), "4.1s", "All 493 applied · 4.1s"],
-    ["done, nothing new", releaseTask(Task_Status.DONE, [], 493), runOf(TaskRun_Status.DONE), "0.3s", "Nothing new · 493 applied earlier · 0.3s"],
+    ["done, nothing new", releaseTask(Task_Status.DONE, [], 493), runOf(TaskRun_Status.DONE), "0.3s", "Nothing new · 493 already applied · 0.3s"],
   ])("a release task, %s", (_, task, latestTaskRun, timingDisplay, expected) => {
     expect(
       describeFolded({ task, latestTaskRun, timingDisplay, release: VERSIONED })?.textContent
@@ -288,7 +288,7 @@ describe("folded card description", () => {
       latestTaskRun: waiting,
       release: VERSIONED,
     });
-    expect(line?.textContent).toMatch(/^1 to apply · 1 applied earlier · .+/);
+    expect(line?.textContent).toMatch(/^1 to apply · 1 already applied · .+/);
   });
 
   test("Mixed is written in the reader's language", async () => {

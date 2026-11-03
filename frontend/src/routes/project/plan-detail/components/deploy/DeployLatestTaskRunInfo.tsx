@@ -4,7 +4,10 @@ import { useTranslation } from "react-i18next";
 import { HumanizeTs } from "@/components/HumanizeTs";
 import { TaskRunStatusIcon } from "@/components/TaskRunStatusIcon";
 import { TaskRunLogViewer } from "@/components/task-run-log";
-import type { OpenReleaseFile } from "@/components/task-run-log/ReleaseSpineView";
+import type {
+  OpenReleaseFile,
+  RevisionsLinkTarget,
+} from "@/components/task-run-log/ReleaseSpineView";
 import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
 import { executorEmailOfTaskRun } from "@/lib/taskRun";
@@ -35,6 +38,7 @@ export function DeployLatestTaskRunInfo({
   onOpenFile,
   onShowHistory,
   releaseState,
+  revisionsLink,
   taskRun,
 }: {
   // When false, the card's stage is hidden (kept mounted); pause the live log
@@ -46,6 +50,8 @@ export function DeployLatestTaskRunInfo({
   onOpenFile?: OpenReleaseFile;
   onShowHistory: () => void;
   releaseState?: Task_ReleaseState;
+  // Must be stable: the log viewer is memoized.
+  revisionsLink?: RevisionsLinkTarget;
   taskRun: TaskRun;
 }) {
   const { t } = useTranslation();
@@ -132,6 +138,7 @@ export function DeployLatestTaskRunInfo({
         releaseState={releaseState}
         onOpenFile={onOpenFile}
         errorAlert={errorAlert}
+        revisionsLink={revisionsLink}
       />
 
       {showSession && (

@@ -2,7 +2,6 @@
 // first, with one grouping level derived from the version's shape.
 
 export const CHANGES_ROW_LIMIT = 12;
-const BUCKET_SIZE = 100;
 
 export interface ReleaseChangeFile {
   version: string;
@@ -11,8 +10,8 @@ export interface ReleaseChangeFile {
 }
 
 export interface ReleaseChangeGroup {
-  // A day ("2026-10-05"), a month ("2026-10"), a bucket ("0151–0250"), or ""
-  // for the one flat list.
+  // A day ("2026-10-05"), a month ("2026-10"), or "" for the one flat list.
+  // A group names what its files share, never a row count.
   key: string;
   files: ReleaseChangeFile[];
 }
@@ -63,16 +62,5 @@ export const groupReleaseChanges = (
     return groups;
   }
 
-  if (sorted.length <= BUCKET_SIZE) {
-    return [{ key: "", files: sorted }];
-  }
-  const groups: ReleaseChangeGroup[] = [];
-  for (let i = 0; i < sorted.length; i += BUCKET_SIZE) {
-    const bucket = sorted.slice(i, i + BUCKET_SIZE);
-    groups.push({
-      key: `${bucket.at(-1)!.version}–${bucket[0].version}`,
-      files: bucket,
-    });
-  }
-  return groups;
+  return [{ key: "", files: sorted }];
 };

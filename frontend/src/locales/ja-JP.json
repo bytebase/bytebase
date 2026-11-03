@@ -4349,8 +4349,8 @@
       "about-rows_other": "約 {{rows}} 行",
       "all-applied_one": "全 {{count}} 件適用済み",
       "all-applied_other": "全 {{count}} 件適用済み",
-      "applied-earlier_one": "{{count}} 件適用済み",
-      "applied-earlier_other": "{{count}} 件適用済み",
+      "already-applied_one": "{{count}} 件は以前に適用済み",
+      "already-applied_other": "{{count}} 件は以前に適用済み",
       "applying_one": "{{count}} ファイルを適用中",
       "applying_other": "{{count}} ファイルを適用中",
       "kind-ddl": "DDL",
@@ -4453,10 +4453,12 @@
     },
     "run-number": "実行 #{{number}}",
     "spine": {
+      "already-applied_one": "{{count}} ファイルはこのデータベースに適用済み",
+      "already-applied_other": "{{count}} ファイルはこのデータベースに適用済み",
       "as-of": "ロールアウト作成時点（{{time}}）の状態です。実行時にデータベースを再確認します。",
       "count": {
+        "already-applied": "{{count}} 件は以前に適用済み",
         "applied": "{{count}} 件適用済み",
-        "applied-earlier": "{{count}} 件は以前に適用済み",
         "canceled": "{{count}} 件キャンセル済み",
         "failed": "{{count}} 件失敗",
         "files_one": "{{count}} ファイル",
@@ -4467,10 +4469,8 @@
       "load": {
         "all": "すべて読み込む（{{count}}）",
         "applied": "適用済み {{count}} 件を読み込む",
-        "applied-earlier": "以前に適用済みの {{count}} 件を読み込む",
         "files": "{{count}} ファイルを読み込む",
         "more-applied": "適用済みをさらに {{count}} 件読み込む",
-        "more-applied-earlier": "以前に適用済みをさらに {{count}} 件読み込む",
         "more-files": "さらに {{count}} ファイルを読み込む",
         "more-pending": "保留中をさらに {{count}} 件読み込む",
         "pending": "保留中 {{count}} 件を読み込む"
@@ -4481,7 +4481,6 @@
       "run-failed": "実行失敗",
       "status": {
         "applied": "適用済み",
-        "applied-earlier": "以前に適用済み",
         "canceled": "キャンセル済み",
         "failed": "失敗",
         "running": "実行中"

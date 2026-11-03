@@ -553,13 +553,19 @@ test("a group shows 12 rows, loads 12 more or all in place, and Show fewer retur
   expect(view.queryByRole("button", { name: "release.changes.load-more" })).toBeNull();
 });
 
-test("counters past a hundred fall into buckets of a hundred, the newest open", async () => {
-  const versions = Array.from({ length: 250 }, (_, i) => String(i + 1).padStart(4, "0"));
-  const view = await renderRail(versions.map((v) => fileOf(v)));
-  const groups = view.getAllByTestId("release-change-group");
-  expect(groups).toHaveLength(3);
-  expect(groups[0].getAttribute("aria-expanded")).toBe("true");
-  expect(rowVersions(view)[0]).toBe("0250");
+test("over a hundred counter or dotted versions are one flat list with no group headers", async () => {
+  for (const versions of [
+    Array.from({ length: 250 }, (_, i) => String(i + 1).padStart(4, "0")),
+    Array.from({ length: 119 }, (_, i) => `3.${Math.floor(i / 12)}.${String(i % 12).padStart(4, "0")}`),
+  ]) {
+    const view = await renderRail(versions.map((v) => fileOf(v)));
+    expect(view.queryAllByTestId("release-change-group")).toHaveLength(0);
+    expect(rowVersions(view)).toHaveLength(12);
+    expect(rowVersions(view)[0]).toBe(versions.at(-1));
+    fireEvent.click(view.getByRole("button", { name: "release.changes.load-all" }));
+    expect(rowVersions(view)).toHaveLength(versions.length);
+    cleanup();
+  }
 });
 
 test("a backfilled low version lands in its own old group, not on top", async () => {

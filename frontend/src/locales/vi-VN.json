@@ -4349,8 +4349,8 @@
       "about-rows_other": "khoảng {{rows}} hàng",
       "all-applied_one": "Đã áp dụng tất cả {{count}}",
       "all-applied_other": "Đã áp dụng tất cả {{count}}",
-      "applied-earlier_one": "{{count}} đã áp dụng trước đó",
-      "applied-earlier_other": "{{count}} đã áp dụng trước đó",
+      "already-applied_one": "{{count}} đã áp dụng trước đó",
+      "already-applied_other": "{{count}} đã áp dụng trước đó",
       "applying_one": "Đang áp dụng {{count}} tệp",
       "applying_other": "Đang áp dụng {{count}} tệp",
       "kind-ddl": "DDL",
@@ -4453,10 +4453,12 @@
     },
     "run-number": "Lần chạy #{{number}}",
     "spine": {
+      "already-applied_one": "{{count}} tệp đã được áp dụng cho cơ sở dữ liệu này",
+      "already-applied_other": "{{count}} tệp đã được áp dụng cho cơ sở dữ liệu này",
       "as-of": "Tính đến lúc tạo triển khai, {{time}}; lần chạy sẽ kiểm tra lại cơ sở dữ liệu.",
       "count": {
+        "already-applied": "{{count}} đã áp dụng trước đó",
         "applied": "{{count}} đã áp dụng",
-        "applied-earlier": "{{count}} đã áp dụng trước đó",
         "canceled": "{{count}} đã hủy",
         "failed": "{{count}} thất bại",
         "files_one": "{{count}} tệp",
@@ -4467,10 +4469,8 @@
       "load": {
         "all": "Tải tất cả ({{count}})",
         "applied": "Tải {{count}} đã áp dụng",
-        "applied-earlier": "Tải {{count}} đã áp dụng trước đó",
         "files": "Tải {{count}} tệp",
         "more-applied": "Tải thêm {{count}} đã áp dụng",
-        "more-applied-earlier": "Tải thêm {{count}} đã áp dụng trước đó",
         "more-files": "Tải thêm {{count}} tệp",
         "more-pending": "Tải thêm {{count}} đang chờ",
         "pending": "Tải {{count}} đang chờ"
@@ -4481,7 +4481,6 @@
       "run-failed": "Chạy thất bại",
       "status": {
         "applied": "Đã áp dụng",
-        "applied-earlier": "Đã áp dụng trước đó",
         "canceled": "Đã hủy",
         "failed": "Thất bại",
         "running": "Đang chạy"

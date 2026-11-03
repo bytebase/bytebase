@@ -2757,7 +2757,7 @@
     },
     "view-all-files": "View all files",
     "viewer": {
-      "already-applied": "Applied earlier; this run passed over it",
+      "already-applied": "Already applied; this run passed over it",
       "already-applied-before-run": "Applied before this rollout",
       "applied-by-run": "Applied by this run",
       "failed-on": "Failed on {{stage}}",
@@ -4349,8 +4349,8 @@
       "about-rows_other": "about {{rows}} rows",
       "all-applied_one": "All {{count}} applied",
       "all-applied_other": "All {{count}} applied",
-      "applied-earlier_one": "{{count}} applied earlier",
-      "applied-earlier_other": "{{count}} applied earlier",
+      "already-applied_one": "{{count}} already applied",
+      "already-applied_other": "{{count}} already applied",
       "applying_one": "Applying {{count}} file",
       "applying_other": "Applying {{count}} files",
       "kind-ddl": "DDL",
@@ -4453,10 +4453,12 @@
     },
     "run-number": "Run #{{number}}",
     "spine": {
+      "already-applied_one": "{{count}} file already applied to this database",
+      "already-applied_other": "{{count}} files already applied to this database",
       "as-of": "As of rollout creation, {{time}}; the run re-checks the database.",
       "count": {
+        "already-applied": "{{count}} already applied",
         "applied": "{{count}} applied",
-        "applied-earlier": "{{count}} applied earlier",
         "canceled": "{{count}} canceled",
         "failed": "{{count}} failed",
         "files_one": "{{count}} file",
@@ -4467,10 +4469,8 @@
       "load": {
         "all": "Load all ({{count}})",
         "applied": "Load {{count}} applied",
-        "applied-earlier": "Load {{count}} applied earlier",
         "files": "Load {{count}} files",
         "more-applied": "Load {{count}} more applied",
-        "more-applied-earlier": "Load {{count}} more applied earlier",
         "more-files": "Load {{count}} more files",
         "more-pending": "Load {{count}} more pending",
         "pending": "Load {{count}} pending"
@@ -4481,7 +4481,6 @@
       "run-failed": "Run failed",
       "status": {
         "applied": "Applied",
-        "applied-earlier": "Applied earlier",
         "canceled": "Canceled",
         "failed": "Failed",
         "running": "Running"
