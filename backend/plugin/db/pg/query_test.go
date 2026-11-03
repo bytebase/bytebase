@@ -10,6 +10,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
 func TestBuildTimestamptzRowValue(t *testing.T) {
@@ -152,10 +153,11 @@ func TestPadZeroes(t *testing.T) {
 }
 
 // TestConvertValueTimestampFromDriver reads timestamps through the driver rather than
-// from a constructed time.Time, covering the two behaviors Bytebase's pgx fork adds and
-// upstream does not: timestamptz values arrive in the session time zone, and
-// ColumnType.DecimalSize reports the column's fractional-second scale. A pgx upgrade
-// that loses either patch fails here instead of silently changing query results.
+// from a constructed time.Time, exercising the session time zone the way QueryConn does:
+// read once per statement, then applied to every timestamptz in the result. It also
+// covers ColumnType.DecimalSize reporting the column's fractional-second scale, which
+// Bytebase's pgx fork adds and upstream does not, so a pgx upgrade that loses that patch
+// fails here instead of silently changing query results.
 func TestConvertValueTimestampFromDriver(t *testing.T) {
 	const (
 		sessionZone   = "Asia/Shanghai"
@@ -171,6 +173,10 @@ func TestConvertValueTimestampFromDriver(t *testing.T) {
 	defer func() { require.NoError(t, conn.Close()) }()
 	_, err = conn.ExecContext(ctx, "SET TimeZone TO '"+sessionZone+"'")
 	require.NoError(t, err)
+
+	// QueryConn reads the zone once per statement, after any preceding SET.
+	location := util.PgSessionLocation(conn)
+	require.Equal(t, sessionZone, location.String())
 
 	rows, err := conn.QueryContext(ctx, `SELECT
 		'2026-03-04 05:06:07.891234+00'::timestamptz    AS tz_default,
@@ -193,7 +199,7 @@ func TestConvertValueTimestampFromDriver(t *testing.T) {
 
 	values := make(map[string]*v1pb.RowValue, len(columnTypes))
 	for i, columnType := range columnTypes {
-		values[columnType.Name()] = convertValue(columnType.DatabaseTypeName(), columnType, dest[i])
+		values[columnType.Name()] = convertValue(columnType.DatabaseTypeName(), columnType, dest[i], location)
 	}
 
 	tzDefault := values["tz_default"].GetTimestampTzValue()

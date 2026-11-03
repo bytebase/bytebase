@@ -263,8 +263,8 @@ github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0 h1:bJ8NSf2K+
 github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0/go.mod h1:BEWMfiZtqshdmulKJcIsWb45MUaEvDO4CROcgi8dfFg=
 github.com/bytebase/omni v0.0.0-20261102094319-61f070707dc7 h1:3rwQ9dpUCGv19YJJfxUivF9ZwiFFa0QCMLBr/YRP+Jc=
 github.com/bytebase/omni v0.0.0-20261102094319-61f070707dc7/go.mod h1:9XZE1hqtvr09Oc+DdLu1/yCb8MDcoy/EPdA4AONDHlE=
-github.com/bytebase/pgx/v5 v5.0.0-20261103063743-9142dbf56d46 h1:HySG0FEhJefrs8TzW1cGCjReld58q/1YRElukKsKJ6g=
-github.com/bytebase/pgx/v5 v5.0.0-20261103063743-9142dbf56d46/go.mod h1:u2Fi6no03HCSBYE+ZVdLxbwdu3xyi2vU+K/YNJioSds=
+github.com/bytebase/pgx/v5 v5.0.0-20261103142809-663c807705c4 h1:CVgGkwGGV1wLd9Fju0XcY1cac2sf7IKOLA80bWGUwG8=
+github.com/bytebase/pgx/v5 v5.0.0-20261103142809-663c807705c4/go.mod h1:u2Fi6no03HCSBYE+ZVdLxbwdu3xyi2vU+K/YNJioSds=
 github.com/bytebase/pkcs8 v0.0.0-20240612095628-fcd0a7484c94 h1:6PNsuNmSqCuR8Z616uQLzDIvujWCFsKzeVc3ECmVubk=
 github.com/bytebase/pkcs8 v0.0.0-20240612095628-fcd0a7484c94/go.mod h1:SQliXeA7Dhkt//vS29v3zpbEwoa+zb2Cn5xj5uO4K5U=
 github.com/bytebase/tidb v0.0.0-20251104040057-d29df9dd1b3b h1:FIMLXCmledlGHw7NzIT2BGVflB2ZNamudc+QtTNITH0=
