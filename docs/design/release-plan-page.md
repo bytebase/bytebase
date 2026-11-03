@@ -153,7 +153,11 @@ list is a view. Earlier runs stay under history as today.
 Every task is folded on load, release and UIOps alike. A folded card is one line: the status dot,
 the database, one short description, and today's buttons. The description takes a soft tint of the
 task's state (green done, blue running, red failed, gray otherwise) while the dot keeps the full
-color, and below 640 px it moves under the database. Per state, with the full table in States:
+color, and below 640 px it moves under the database. A click anywhere on the header line, the card's
+padding around it included, folds or unfolds the card, so a reader never has to find the live part.
+The checkbox, the buttons and a margin around each keep their own click, and a click that ends a
+text selection does nothing. The task name stays the keyboard toggle. Per state, with the full
+table in States:
 
 - Failed: the error's first line in red, after the failed version for a release task whose error
   names a file. It is the
@@ -584,6 +588,9 @@ Tests to write, per the placement rules in `AGENTS.md`:
   "Running" and "Nothing new" by state, and a declarative task, which has no list, never reading
   "Nothing new"; the description under the database below 640 px; every task folded on load, the stage selected for
   a failed, a running and a deployed plan, and a URL naming a task opening it.
+- Header click tests, folded and open: a click on the line's empty space and on the card padding
+  toggles once; the task name and the caret toggle once, not twice; the checkbox, an action button
+  and the margin around each do not toggle; a click ending a text selection does not toggle.
 - Details block tests: each row for a release plan and a UIOps plan, the rows a plan kind lacks
   absent; Migration-based and State-based; the Progress row's stage cells wrapping at six stages;
   the labels editable in place and required when the project forces them; the description below the
