@@ -249,6 +249,133 @@ func TestCompleteReviewRunPostsResults(t *testing.T) {
 	}
 }
 
+// TestCompleteReviewRunKeepsResultsReportedAgain pins how a run tells the
+// findings it reports again apart: a current root whose fingerprint a result
+// repeats keeps its thread state and updated_at, and the result is not posted
+// twice. A fingerprint matches only a current root of the same reviewer on
+// the same issue: never a superseded root, an AI result, or the colliding
+// issue in another project. A result without one matches nothing.
+func TestCompleteReviewRunKeepsResultsReportedAgain(t *testing.T) {
+	t.Parallel()
+	fixture := newStorePostgresFixture(t, `
+		INSERT INTO project (resource_id, workspace, name) VALUES ('other', 'default', 'Other');
+		INSERT INTO issue (id, creator, project, name, status, type)
+		VALUES (301, 'admin@example.com', 'default', 'Issue Default', 'OPEN', 'DATABASE_CHANGE');
+		INSERT INTO issue (id, creator, project, name, status, type)
+		VALUES (301, 'admin@example.com', 'other', 'Issue Other', 'OPEN', 'DATABASE_CHANGE');
+	`)
+	result := func(projectID, comment, fingerprint string) *store.IssueCommentMessage {
+		r := reviewResult(projectID, comment, storepb.ReviewRuleType_REQUIRE_WHERE)
+		r.Payload.ReviewMetadata.Fingerprint = fingerprint
+		return r
+	}
+	complete := func(projectID string, results ...*store.IssueCommentMessage) {
+		t.Helper()
+		completeReviewRun(t, fixture, projectID, store.ReviewRunTypeRule, storepb.ReviewRun_DONE, results...)
+	}
+
+	// The colliding issue and an AI result hold the fingerprint the second
+	// run reports first.
+	complete("other", result("other", "other", "new"))
+	aiResult := result("default", "ai", "new")
+	aiResult.Payload.ReviewMetadata.RunType = storepb.ReviewRun_AI
+	aiResult.Payload.ReviewMetadata.RuleType = storepb.ReviewRuleType_REVIEW_RULE_TYPE_UNSPECIFIED
+	completeReviewRun(t, fixture, "default", store.ReviewRunTypeAI, storepb.ReviewRun_DONE, aiResult)
+
+	complete("default",
+		result("default", "open", "open"),
+		result("default", "accepted", "accepted"),
+		result("default", "fixed", "fixed"),
+		result("default", "no fingerprint", ""),
+	)
+	setReviewThreadState(t, fixture, "accepted", store.ThreadStateResolved)
+	_, updatedBefore := listSupersession(t, fixture, "default")
+
+	complete("default",
+		result("default", "new", "new"),
+		result("default", "open again", "open"),
+		result("default", "accepted again", "accepted"),
+		result("default", "no fingerprint again", ""),
+	)
+	got, updatedAfter := listSupersession(t, fixture, "default")
+	require.Equal(t, []supersession{
+		{Comment: "ai", ThreadState: "OPEN"},
+		{Comment: "open", ThreadState: "OPEN"},
+		{Comment: "accepted", ThreadState: "RESOLVED"},
+		{Comment: "fixed", ThreadState: "RESOLVED", Superseded: true},
+		{Comment: "no fingerprint", ThreadState: "RESOLVED", Superseded: true},
+		{Comment: "new", ThreadState: "OPEN"},
+		{Comment: "no fingerprint again", ThreadState: "OPEN"},
+	}, got)
+	for _, comment := range []string{"open", "accepted"} {
+		require.Equal(t, updatedBefore[comment], updatedAfter[comment], "keeping %q is no content edit", comment)
+	}
+	require.Equal(t, time.Microsecond, updatedAfter["no fingerprint again"].Sub(updatedAfter["new"]), "the posted results stay a microsecond apart around the kept ones")
+	other, _ := listSupersession(t, fixture, "other")
+	require.Equal(t, []supersession{{Comment: "other", ThreadState: "OPEN"}}, other, "the colliding issue in the other project is untouched")
+
+	// A finding reported again after a run superseded it starts a new thread,
+	// and its superseded root is resolved again though someone reopened it.
+	setReviewThreadState(t, fixture, "fixed", store.ThreadStateOpen)
+	complete("default", result("default", "new again", "new"), result("default", "fixed again", "fixed"))
+	final, _ := listSupersession(t, fixture, "default")
+	require.Equal(t, []supersession{
+		{Comment: "ai", ThreadState: "OPEN"},
+		{Comment: "open", ThreadState: "RESOLVED", Superseded: true},
+		{Comment: "accepted", ThreadState: "RESOLVED", Superseded: true},
+		{Comment: "fixed", ThreadState: "RESOLVED", Superseded: true},
+		{Comment: "no fingerprint", ThreadState: "RESOLVED", Superseded: true},
+		{Comment: "new", ThreadState: "OPEN"},
+		{Comment: "no fingerprint again", ThreadState: "RESOLVED", Superseded: true},
+		{Comment: "fixed again", ThreadState: "OPEN"},
+	}, final)
+
+	// Fingerprints are unique within a run.
+	ctx, s := fixture.ctx, fixture.store
+	_, err := s.CreateReviewRun(ctx, "default", reviewResultIssue, store.ReviewRunTypeRule)
+	require.NoError(t, err)
+	claimed, err := s.ClaimAvailableReviewRuns(ctx, "replica-1")
+	require.NoError(t, err)
+	require.Len(t, claimed, 1)
+	_, err = s.CompleteReviewRun(ctx, claimed[0], "replica-1", storepb.ReviewRun_DONE, nil, []*store.IssueCommentMessage{
+		result("default", "first", "same"),
+		result("default", "second", "same"),
+	})
+	require.Error(t, err)
+	unchanged, _ := listSupersession(t, fixture, "default")
+	require.Equal(t, final, unchanged, "a rejected completion writes nothing")
+}
+
+// completeReviewRun starts, claims, and completes one run on the shared issue.
+func completeReviewRun(t *testing.T, fixture *storePostgresFixture, projectID, reviewType string, status storepb.ReviewRun_Status, results ...*store.IssueCommentMessage) {
+	t.Helper()
+	ctx, s := fixture.ctx, fixture.store
+	_, err := s.CreateReviewRun(ctx, projectID, reviewResultIssue, reviewType)
+	require.NoError(t, err)
+	claimed, err := s.ClaimAvailableReviewRuns(ctx, "replica-1")
+	require.NoError(t, err)
+	require.Len(t, claimed, 1)
+	updated, err := s.CompleteReviewRun(ctx, claimed[0], "replica-1", status, &storepb.ReviewRunPayload{}, results)
+	require.NoError(t, err)
+	require.True(t, updated)
+}
+
+// setReviewThreadState sets the thread state of the default project's root
+// with the given text, as a person would.
+func setReviewThreadState(t *testing.T, fixture *storePostgresFixture, comment string, state store.ThreadState) {
+	t.Helper()
+	ctx, s := fixture.ctx, fixture.store
+	roots, err := s.ListIssueComment(ctx, &store.FindIssueCommentMessage{ProjectID: "default", IssueUID: &[]int64{reviewResultIssue}[0]})
+	require.NoError(t, err)
+	for _, root := range roots {
+		if root.Payload.Comment == comment {
+			require.NoError(t, s.UpdateIssueComment(ctx, &store.UpdateIssueCommentMessage{ProjectID: "default", ResourceID: root.ResourceID, ThreadState: &state}))
+			return
+		}
+	}
+	t.Fatalf("no comment %q", comment)
+}
+
 type supersession struct {
 	Comment     string
 	ThreadState string
@@ -293,30 +420,13 @@ func TestCompleteReviewRunSupersedesEarlierResults(t *testing.T) {
 		INSERT INTO issue (id, creator, project, name, status, type)
 		VALUES (301, 'admin@example.com', 'other', 'Issue Other', 'OPEN', 'DATABASE_CHANGE');
 	`)
-	ctx, s := fixture.ctx, fixture.store
-	const issueUID = reviewResultIssue
 	complete := func(projectID, reviewType string, status storepb.ReviewRun_Status, results ...*store.IssueCommentMessage) {
 		t.Helper()
-		_, err := s.CreateReviewRun(ctx, projectID, issueUID, reviewType)
-		require.NoError(t, err)
-		claimed, err := s.ClaimAvailableReviewRuns(ctx, "replica-1")
-		require.NoError(t, err)
-		require.Len(t, claimed, 1)
-		updated, err := s.CompleteReviewRun(ctx, claimed[0], "replica-1", status, &storepb.ReviewRunPayload{}, results)
-		require.NoError(t, err)
-		require.True(t, updated)
+		completeReviewRun(t, fixture, projectID, reviewType, status, results...)
 	}
 	setThreadState := func(comment string, state store.ThreadState) {
 		t.Helper()
-		roots, err := s.ListIssueComment(ctx, &store.FindIssueCommentMessage{ProjectID: "default", IssueUID: &[]int64{issueUID}[0]})
-		require.NoError(t, err)
-		for _, root := range roots {
-			if root.Payload.Comment == comment {
-				require.NoError(t, s.UpdateIssueComment(ctx, &store.UpdateIssueCommentMessage{ProjectID: "default", ResourceID: root.ResourceID, ThreadState: &state}))
-				return
-			}
-		}
-		t.Fatalf("no comment %q", comment)
+		setReviewThreadState(t, fixture, comment, state)
 	}
 	aiResult := reviewResult("default", "ai", storepb.ReviewRuleType_REVIEW_RULE_TYPE_UNSPECIFIED)
 	aiResult.Payload.ReviewMetadata.RunType = storepb.ReviewRun_AI

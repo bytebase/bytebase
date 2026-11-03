@@ -61,10 +61,11 @@ message IssueCommentPayload {
 
   // ReviewMetadata is what a review result carries beyond its text: which
   // reviewer posted it, what it was judged against, its priority, and the
-  // databases it applies to. Results from the same reviewer are superseded
-  // together: when a run completes, it resolves every OPEN root of its type
-  // and marks every earlier root of its type superseded, in the transaction
-  // that posts the new results.
+  // databases it applies to. When a run completes, an earlier result of its
+  // type whose fingerprint the run reports again keeps its thread, and the
+  // run posts no new result for it; every other earlier root of its type is
+  // resolved and marked superseded, in the transaction that posts the new
+  // results.
   message ReviewMetadata {
     // Priority says what resolving the thread means. It has no bearing on
     // blocking: an OPEN root thread blocks whatever its priority, and a
@@ -92,10 +93,15 @@ message IssueCommentPayload {
     // renderer collapses it when it equals the spec's target set.
     // Format: instances/{instance}/databases/{database}
     repeated string targets = 4;
-    // A later run of the same reviewer has completed, so the result is not
-    // from the latest review. Set by that run whatever the thread state, and
-    // never cleared.
+    // A later run of the same reviewer has completed without reporting the
+    // result again, so the latest review does not hold it. Set by that run
+    // whatever the thread state, and never cleared.
     bool superseded = 5;
+    // Identifies the finding across runs: equal fingerprints are the same
+    // finding on the same SQL. Unique among the results of one run. Empty
+    // when the reviewer cannot tell findings apart across runs, and an empty
+    // fingerprint matches nothing.
+    string fingerprint = 6;
   }
 
   // StatementAnchor records the anchored statement revision and range.

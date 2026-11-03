@@ -175,8 +175,9 @@ vi.mock("@/stores", () => ({
   pushNotification: vi.fn(),
 }));
 
-vi.mock("@/types", () => ({
-  getTimeForPbTimestampProtoEs: () => 0,
+vi.mock("@/types", async () => ({
+  getTimeForPbTimestampProtoEs: (await import("@/types/timestamp"))
+    .getTimeForPbTimestampProtoEs,
   unknownUser: (principal: string) => ({
     name: principal,
     email: principal,

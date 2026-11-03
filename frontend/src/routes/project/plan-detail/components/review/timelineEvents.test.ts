@@ -183,6 +183,29 @@ describe("buildTimelineEntries", () => {
     ]);
   });
 
+  test("keeps a run whole and open while any of its findings is still current", () => {
+    const entries = buildTimelineEntries({
+      comments: [
+        finding("kept", ReviewRun_Type.RULE, false, 10n, 0),
+        finding("fixed", ReviewRun_Type.RULE, true, 10n, 1000),
+        finding("kept-too", ReviewRun_Type.RULE, false, 10n, 2000),
+        finding("gone-1", ReviewRun_Type.RULE, true, 30n, 0),
+        finding("gone-2", ReviewRun_Type.RULE, true, 30n, 1000),
+        finding("new", ReviewRun_Type.RULE, false, 60n),
+      ],
+      keepFindingCard: () => false,
+    });
+    expect(rowsOf(entries)).toEqual([
+      "run:kept+fixed+kept-too",
+      "kept",
+      "fixed",
+      "kept-too",
+      "run:gone-1+gone-2",
+      "run:new",
+      "new",
+    ]);
+  });
+
   test("without the log, every finding stays its own entry", () => {
     const entries = buildTimelineEntries({
       comments: [

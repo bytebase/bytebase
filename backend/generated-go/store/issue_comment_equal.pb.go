@@ -123,6 +123,9 @@ func (x *IssueCommentPayload_ReviewMetadata) Equal(y *IssueCommentPayload_Review
 	if x.Superseded != y.Superseded {
 		return false
 	}
+	if x.Fingerprint != y.Fingerprint {
+		return false
+	}
 	return true
 }
 

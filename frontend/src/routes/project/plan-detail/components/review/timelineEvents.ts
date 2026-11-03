@@ -23,8 +23,39 @@ export type TimelineSource =
       open: boolean;
     };
 
-// A run posts its findings in one batch, a microsecond apart.
-const RUN_BATCH_GAP_MS = 1000;
+// A run posts its findings in one batch, a microsecond apart; two runs of
+// one reviewer complete milliseconds apart at the least.
+const RUN_BATCH_GAP_MS = 1;
+
+// The run that posted a finding. A run that reports an earlier finding again
+// keeps its thread instead of posting it, so one run's findings can be both
+// current and superseded; the run stays current while any of them is.
+interface ReviewRunBatch {
+  id: string;
+  current: boolean;
+}
+
+// Each review result's run, by the result's name.
+function reviewRunBatches(
+  comments: readonly IssueComment[]
+): Map<string, ReviewRunBatch> {
+  const batches = new Map<string, ReviewRunBatch>();
+  const last = new Map<ReviewRun_Type, { at: number; batch: ReviewRunBatch }>();
+  for (const comment of comments) {
+    const review = comment.reviewMetadata;
+    if (!review || !isThreadRoot(comment)) continue;
+    const at = getTimeForPbTimestampProtoEs(comment.createTime, 0);
+    const previous = last.get(review.runType);
+    const batch =
+      previous && at - previous.at <= RUN_BATCH_GAP_MS
+        ? previous.batch
+        : { id: `review-run:${comment.name}`, current: false };
+    batch.current ||= !review.superseded;
+    last.set(review.runType, { at, batch });
+    batches.set(comment.name, batch);
+  }
+  return batches;
+}
 
 export interface TimelineEntry {
   id: string;
@@ -49,7 +80,7 @@ export function buildTimelineEntries(input: {
   // every finding's card; a folded one only those this keeps.
   keepFindingCard?: (root: IssueComment) => boolean;
   // Runs someone opened or folded, by entry id. The rest follow the default:
-  // only each reviewer's latest run is open.
+  // only the runs with a finding still current are open.
   runToggles?: ReadonlyMap<string, boolean>;
 }): TimelineEntry[] {
   const reviewSubmission = input.comments.find(
@@ -76,13 +107,10 @@ export function buildTimelineEntries(input: {
       },
     });
   }
+  const batches = reviewRunBatches(input.comments);
   const runs = new Map<
-    ReviewRun_Type,
-    {
-      at: number;
-      latest: boolean;
-      source: Extract<TimelineSource, { type: "review-run" }>;
-    }
+    ReviewRunBatch,
+    Extract<TimelineSource, { type: "review-run" }>
   >();
   for (const comment of input.comments) {
     // Replies render inside their thread's entry, never as their own row.
@@ -101,37 +129,26 @@ export function buildTimelineEntries(input: {
       continue;
     }
     const review = comment.reviewMetadata;
-    if (input.keepFindingCard && review && isThreadRoot(comment)) {
-      // A completed run supersedes every earlier result of its reviewer, so
-      // the results still current are the latest run's, and a run's results
-      // are never split between the two.
-      const latest = !review.superseded;
-      const time = getTimeForPbTimestampProtoEs(comment.createTime, 0);
-      let run = runs.get(review.runType);
-      if (run && run.latest === latest && time - run.at <= RUN_BATCH_GAP_MS) {
-        run.source.findings.push(comment);
-        run.at = time;
-      } else {
-        const id = `review-run:${comment.name}`;
+    const batch = batches.get(comment.name);
+    if (input.keepFindingCard && review && batch) {
+      let run = runs.get(batch);
+      if (!run) {
         run = {
-          at: time,
-          latest,
-          source: {
-            type: "review-run",
-            runType: review.runType,
-            time: comment.createTime,
-            findings: [comment],
-            open: input.runToggles?.get(id) ?? latest,
-          },
+          type: "review-run",
+          runType: review.runType,
+          time: comment.createTime,
+          findings: [],
+          open: input.runToggles?.get(batch.id) ?? batch.current,
         };
-        runs.set(review.runType, run);
-        entries.push({ id, source: run.source, pinned: run.source.open });
+        runs.set(batch, run);
+        entries.push({ id: batch.id, source: run, pinned: run.open });
       }
-      if (!run.source.open && !input.keepFindingCard(comment)) continue;
+      run.findings.push(comment);
+      if (!run.open && !input.keepFindingCard(comment)) continue;
       entries.push({
         id: comment.name,
         source: { type: "comment", comment },
-        pinned: run.source.open,
+        pinned: run.open,
       });
       continue;
     }

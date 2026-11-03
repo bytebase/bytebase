@@ -463,10 +463,11 @@ func (x *IssueCommentPayload_PlanUpdate) GetToSpecs() []*PlanConfig_Spec {
 
 // ReviewMetadata is what a review result carries beyond its text: which
 // reviewer posted it, what it was judged against, its priority, and the
-// databases it applies to. Results from the same reviewer are superseded
-// together: when a run completes, it resolves every OPEN root of its type
-// and marks every earlier root of its type superseded, in the transaction
-// that posts the new results.
+// databases it applies to. When a run completes, an earlier result of its
+// type whose fingerprint the run reports again keeps its thread, and the
+// run posts no new result for it; every other earlier root of its type is
+// resolved and marked superseded, in the transaction that posts the new
+// results.
 type IssueCommentPayload_ReviewMetadata struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The reviewer slot that posted the result; review_run.type stores the
@@ -481,10 +482,15 @@ type IssueCommentPayload_ReviewMetadata struct {
 	// renderer collapses it when it equals the spec's target set.
 	// Format: instances/{instance}/databases/{database}
 	Targets []string `protobuf:"bytes,4,rep,name=targets,proto3" json:"targets,omitempty"`
-	// A later run of the same reviewer has completed, so the result is not
-	// from the latest review. Set by that run whatever the thread state, and
-	// never cleared.
-	Superseded    bool `protobuf:"varint,5,opt,name=superseded,proto3" json:"superseded,omitempty"`
+	// A later run of the same reviewer has completed without reporting the
+	// result again, so the latest review does not hold it. Set by that run
+	// whatever the thread state, and never cleared.
+	Superseded bool `protobuf:"varint,5,opt,name=superseded,proto3" json:"superseded,omitempty"`
+	// Identifies the finding across runs: equal fingerprints are the same
+	// finding on the same SQL. Unique among the results of one run. Empty
+	// when the reviewer cannot tell findings apart across runs, and an empty
+	// fingerprint matches nothing.
+	Fingerprint   string `protobuf:"bytes,6,opt,name=fingerprint,proto3" json:"fingerprint,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -552,6 +558,13 @@ func (x *IssueCommentPayload_ReviewMetadata) GetSuperseded() bool {
 		return x.Superseded
 	}
 	return false
+}
+
+func (x *IssueCommentPayload_ReviewMetadata) GetFingerprint() string {
+	if x != nil {
+		return x.Fingerprint
+	}
+	return ""
 }
 
 // StatementAnchor records the anchored statement revision and range.
@@ -638,7 +651,7 @@ var File_store_issue_comment_proto protoreflect.FileDescriptor
 
 const file_store_issue_comment_proto_rawDesc = "" +
 	"\n" +
-	"\x19store/issue_comment.proto\x12\x0ebytebase.store\x1a\x14store/approval.proto\x1a\x12store/common.proto\x1a\x11store/issue.proto\x1a\x10store/plan.proto\x1a\x17store/review_rule.proto\x1a\x16store/review_run.proto\"\xcc\x0e\n" +
+	"\x19store/issue_comment.proto\x12\x0ebytebase.store\x1a\x14store/approval.proto\x1a\x12store/common.proto\x1a\x11store/issue.proto\x1a\x10store/plan.proto\x1a\x17store/review_rule.proto\x1a\x16store/review_run.proto\"\xee\x0e\n" +
 	"\x13IssueCommentPayload\x12\x18\n" +
 	"\acomment\x18\x01 \x01(\tR\acomment\x12J\n" +
 	"\bapproval\x18\x02 \x01(\v2,.bytebase.store.IssueCommentPayload.ApprovalH\x00R\bapproval\x12T\n" +
@@ -675,7 +688,7 @@ const file_store_issue_comment_proto_rawDesc = "" +
 	"PlanUpdate\x12>\n" +
 	"\n" +
 	"from_specs\x18\x01 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\tfromSpecs\x12:\n" +
-	"\bto_specs\x18\x02 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\atoSpecs\x1a\xd9\x02\n" +
+	"\bto_specs\x18\x02 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\atoSpecs\x1a\xfb\x02\n" +
 	"\x0eReviewMetadata\x129\n" +
 	"\brun_type\x18\x01 \x01(\x0e2\x1e.bytebase.store.ReviewRun.TypeR\arunType\x12;\n" +
 	"\trule_type\x18\x02 \x01(\x0e2\x1e.bytebase.store.ReviewRuleTypeR\bruleType\x12W\n" +
@@ -683,7 +696,8 @@ const file_store_issue_comment_proto_rawDesc = "" +
 	"\atargets\x18\x04 \x03(\tR\atargets\x12\x1e\n" +
 	"\n" +
 	"superseded\x18\x05 \x01(\bR\n" +
-	"superseded\"<\n" +
+	"superseded\x12 \n" +
+	"\vfingerprint\x18\x06 \x01(\tR\vfingerprint\"<\n" +
 	"\bPriority\x12\x18\n" +
 	"\x14PRIORITY_UNSPECIFIED\x10\x00\x12\x06\n" +
 	"\x02P0\x10\x01\x12\x06\n" +

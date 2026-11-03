@@ -1,6 +1,10 @@
 package reviewrun
 
 import (
+	"crypto/sha256"
+	"encoding/binary"
+	"encoding/hex"
+	"fmt"
 	"slices"
 
 	"github.com/bytebase/omni/review"
@@ -118,11 +122,12 @@ func rulePriority(rule storepb.ReviewRuleType) storepb.IssueCommentPayload_Revie
 
 // reviewResultComments converts a unit's findings into the review result
 // comments to post: one OPEN root per finding, anchored to the finding's
-// range on the spec's sheet, naming the rule, its priority, and every target
-// the finding applies to. A finding for a rule this server does not know is
-// dropped, as the contract says.
+// range on the spec's sheet, naming the rule, its priority, every target the
+// finding applies to, and its fingerprint. A finding for a rule this server
+// does not know is dropped, as the contract says.
 func reviewResultComments(projectID string, issueUID int64, unit *reviewUnit, sql string, result *review.Result) []*store.IssueCommentMessage {
 	text := review.Index(sql)
+	occurrences := make(map[string]int)
 	comments := make([]*store.IssueCommentMessage, 0, len(result.Findings))
 	for _, finding := range result.Findings {
 		rule := storepb.ReviewRuleType(storepb.ReviewRuleType_value[string(finding.Rule)])
@@ -137,6 +142,9 @@ func reviewResultComments(projectID string, issueUID int64, unit *reviewUnit, sq
 			targets = append(targets, unit.Targets[i].Check.Target)
 		}
 		slices.Sort(targets)
+		// Identical statements give equal keys; their order tells them apart.
+		key := findingKey(unit, rule, statementText(sql, result, finding), finding.Message, targets)
+		occurrences[key]++
 		comments = append(comments, &store.IssueCommentMessage{
 			ProjectID: projectID,
 			IssueUID:  issueUID,
@@ -144,15 +152,42 @@ func reviewResultComments(projectID string, issueUID int64, unit *reviewUnit, sq
 				Comment:         finding.Message,
 				StatementAnchor: findingAnchor(text, unit, result, finding),
 				ReviewMetadata: &storepb.IssueCommentPayload_ReviewMetadata{
-					RunType:  storepb.ReviewRun_RULE,
-					RuleType: rule,
-					Priority: rulePriority(rule),
-					Targets:  targets,
+					RunType:     storepb.ReviewRun_RULE,
+					RuleType:    rule,
+					Priority:    rulePriority(rule),
+					Targets:     targets,
+					Fingerprint: fmt.Sprintf("%s/%d", key, occurrences[key]),
 				},
 			},
 		})
 	}
 	return comments
+}
+
+// findingKey identifies a finding by what was judged: the unit, the rule, the
+// text of the statement it addresses, its message, and its databases. The
+// sheet and positions are left out, so an edit elsewhere in the SQL keeps the
+// finding while an edit to its statement makes it a new one.
+func findingKey(unit *reviewUnit, rule storepb.ReviewRuleType, statement, message string, targets []string) string {
+	h := sha256.New()
+	for _, field := range append([]string{unit.SpecID, unit.Engine.String(), rule.String(), statement, message}, targets...) {
+		_, _ = h.Write(binary.BigEndian.AppendUint64(nil, uint64(len(field))))
+		_, _ = h.Write([]byte(field))
+	}
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+// statementText is the SQL of the statement a finding addresses, or empty for
+// a finding on the whole change.
+func statementText(sql string, result *review.Result, finding review.Finding) string {
+	if finding.Statement < 0 || finding.Statement >= len(result.Statements) {
+		return ""
+	}
+	r := result.Statements[finding.Statement]
+	if r.Start < 0 || r.Start > r.End || r.End > len(sql) {
+		return ""
+	}
+	return sql[r.Start:r.End]
 }
 
 // findingAnchor anchors a finding on the spec's sheet: its own range, else

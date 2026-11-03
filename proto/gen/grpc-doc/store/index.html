@@ -6569,7 +6569,7 @@ change. </p></td>
         
       
         <h3 id="bytebase.store.IssueCommentPayload.ReviewMetadata">IssueCommentPayload.ReviewMetadata</h3>
-        <p>ReviewMetadata is what a review result carries beyond its text: which</p><p>reviewer posted it, what it was judged against, its priority, and the</p><p>databases it applies to. Results from the same reviewer are superseded</p><p>together: when a run completes, it resolves every OPEN root of its type</p><p>and marks every earlier root of its type superseded, in the transaction</p><p>that posts the new results.</p>
+        <p>ReviewMetadata is what a review result carries beyond its text: which</p><p>reviewer posted it, what it was judged against, its priority, and the</p><p>databases it applies to. When a run completes, an earlier result of its</p><p>type whose fingerprint the run reports again keeps its thread, and the</p><p>run posts no new result for it; every other earlier root of its type is</p><p>resolved and marked superseded, in the transaction that posts the new</p><p>results.</p>
 
         
           <table class="field-table">
@@ -6614,9 +6614,19 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td>superseded</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>A later run of the same reviewer has completed, so the result is not
-from the latest review. Set by that run whatever the thread state, and
-never cleared. </p></td>
+                  <td><p>A later run of the same reviewer has completed without reporting the
+result again, so the latest review does not hold it. Set by that run
+whatever the thread state, and never cleared. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>fingerprint</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Identifies the finding across runs: equal fingerprints are the same
+finding on the same SQL. Unique among the results of one run. Empty
+when the reviewer cannot tell findings apart across runs, and an empty
+fingerprint matches nothing. </p></td>
                 </tr>
               
             </tbody>

@@ -2302,10 +2302,11 @@ add/remove/update from the snapshot pair.
 ### IssueCommentPayload.ReviewMetadata
 ReviewMetadata is what a review result carries beyond its text: which
 reviewer posted it, what it was judged against, its priority, and the
-databases it applies to. Results from the same reviewer are superseded
-together: when a run completes, it resolves every OPEN root of its type
-and marks every earlier root of its type superseded, in the transaction
-that posts the new results.
+databases it applies to. When a run completes, an earlier result of its
+type whose fingerprint the run reports again keeps its thread, and the
+run posts no new result for it; every other earlier root of its type is
+resolved and marked superseded, in the transaction that posts the new
+results.
 
 
 | Field | Type | Label | Description |
@@ -2314,7 +2315,8 @@ that posts the new results.
 | rule_type | [ReviewRuleType](#bytebase-store-ReviewRuleType) |  | The rule judged against. Set if and only if run_type is RULE. |
 | priority | [IssueCommentPayload.ReviewMetadata.Priority](#bytebase-store-IssueCommentPayload-ReviewMetadata-Priority) |  | A result merged across databases carries the highest priority among them. |
 | targets | [string](#string) | repeated | Every database the result applies to, sorted. Always complete; the renderer collapses it when it equals the spec&#39;s target set. Format: instances/{instance}/databases/{database} |
-| superseded | [bool](#bool) |  | A later run of the same reviewer has completed, so the result is not from the latest review. Set by that run whatever the thread state, and never cleared. |
+| superseded | [bool](#bool) |  | A later run of the same reviewer has completed without reporting the result again, so the latest review does not hold it. Set by that run whatever the thread state, and never cleared. |
+| fingerprint | [string](#string) |  | Identifies the finding across runs: equal fingerprints are the same finding on the same SQL. Unique among the results of one run. Empty when the reviewer cannot tell findings apart across runs, and an empty fingerprint matches nothing. |
 
 
 

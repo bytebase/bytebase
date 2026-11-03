@@ -48,11 +48,11 @@ export type ReviewConclusion =
 // must change, P1 that a person must accept a real risk, P2 is advice.
 export type FindingPriority = "p0" | "p1" | "p2";
 
-// Where a finding stands: open findings by priority, and the latest run's
-// resolved findings, where a P0 resolved without a change stands apart. A
-// run supersedes and resolves everything its reviewer posted before, so a
-// resolved finding of the latest run was resolved by a person on the
-// current SQL.
+// Where a finding stands: open findings by priority, and the resolved
+// findings still current, where a P0 resolved without a change stands apart.
+// A run supersedes and resolves every earlier finding of its reviewer it
+// does not report again, so a resolved finding still current was resolved by
+// a person on SQL the latest run still reports.
 export type FindingSet =
   | FindingPriority
   | "overridden"
@@ -144,7 +144,7 @@ const runTypeOf: Record<"rule" | "ai", ReviewRun_Type> = {
 };
 
 // Open findings count whatever run posted them, since any open thread holds
-// the rollout; resolved ones count for the latest run only.
+// the rollout; resolved ones count while still current.
 export function countFindings(
   comments: readonly IssueComment[],
   reviewer: "rule" | "ai"
