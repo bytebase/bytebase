@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strings"
 	"time"
 
@@ -1244,34 +1245,38 @@ func validateIAMPolicy(
 		return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list roles"))
 	}
 
-	existingBindings := make(map[string]bool)
+	storedMembers := make(map[string]map[string]bool)
 	for _, oldBinding := range oldPolicyMessage.Policy.Bindings {
 		identifier := getBindingIdentifier(oldBinding.Role, oldBinding.Condition)
-		existingBindings[identifier] = true
+		if storedMembers[identifier] == nil {
+			storedMembers[identifier] = make(map[string]bool)
+		}
+		for _, member := range oldBinding.Members {
+			storedMembers[identifier][convertToV1MemberInBinding(member)] = true
+		}
 	}
 
+	// A binding is validated when it gains a member, so a member added to a
+	// stored binding meets the current rules, while a policy sent back as it
+	// was stored still saves.
 	bindings := []*v1pb.Binding{}
 	for _, binding := range msg.Policy.Bindings {
-		if len(binding.Members) == 0 {
-			continue
-		}
-
-		identifier := getBindingIdentifier(binding.Role, binding.Condition)
-		if !existingBindings[identifier] {
-			bindings = append(bindings, binding)
-		}
-	}
-
-	// If allUsers is not allowed in IAM policies, members must be explicitly added.
-	if !allowAllUsers {
-		for _, binding := range bindings {
-			for _, member := range binding.Members {
-				if member == common.AllUsers {
-					return connect.NewError(connect.CodeInvalidArgument,
-						errors.New("allUsers is not allowed in workspace IAM policy in SaaS mode, add members explicitly"))
-				}
+		stored := storedMembers[getBindingIdentifier(binding.Role, binding.Condition)]
+		var added []string
+		for _, member := range binding.Members {
+			if !stored[member] {
+				added = append(added, member)
 			}
 		}
+		if len(added) == 0 {
+			continue
+		}
+		// If allUsers is not allowed in IAM policies, members must be explicitly added.
+		if !allowAllUsers && slices.Contains(added, common.AllUsers) {
+			return connect.NewError(connect.CodeInvalidArgument,
+				errors.New("allUsers is not allowed in workspace IAM policy in SaaS mode, add members explicitly"))
+		}
+		bindings = append(bindings, binding)
 	}
 
 	return validateBindings(msg.Resource, bindings, roleMessages, maximumRoleExpiration)
