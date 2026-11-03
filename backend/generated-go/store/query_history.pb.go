@@ -23,10 +23,9 @@ const (
 )
 
 type QueryHistoryPayload struct {
-	state    protoimpl.MessageState `protogen:"open.v1"`
-	Error    *string                `protobuf:"bytes,1,opt,name=error,proto3,oneof" json:"error,omitempty"`
-	Duration *durationpb.Duration   `protobuf:"bytes,2,opt,name=duration,proto3" json:"duration,omitempty"`
-	// Set on export histories.
+	state         protoimpl.MessageState      `protogen:"open.v1"`
+	Error         *string                     `protobuf:"bytes,1,opt,name=error,proto3,oneof" json:"error,omitempty"`
+	Duration      *durationpb.Duration        `protobuf:"bytes,2,opt,name=duration,proto3" json:"duration,omitempty"`
 	Export        *QueryHistoryPayload_Export `protobuf:"bytes,3,opt,name=export,proto3" json:"export,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -84,10 +83,9 @@ func (x *QueryHistoryPayload) GetExport() *QueryHistoryPayload_Export {
 }
 
 type QueryHistoryPayload_Export struct {
-	state       protoimpl.MessageState `protogen:"open.v1"`
-	Destination ExportDestination      `protobuf:"varint,1,opt,name=destination,proto3,enum=bytebase.store.ExportDestination" json:"destination,omitempty"`
-	// The location created for this export on its storage destination.
-	Uri           string `protobuf:"bytes,2,opt,name=uri,proto3" json:"uri,omitempty"`
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Destination   ExportDestination      `protobuf:"varint,1,opt,name=destination,proto3,enum=bytebase.store.ExportDestination" json:"destination,omitempty"`
+	Uri           string                 `protobuf:"bytes,2,opt,name=uri,proto3" json:"uri,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }

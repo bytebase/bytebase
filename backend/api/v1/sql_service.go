@@ -1454,7 +1454,6 @@ func exportSQLWithContext(
 	return export.SQLToWriter(w, instance.Metadata.GetEngine(), statementPrefix, result)
 }
 
-// createQueryHistory records a query or export. historyExport is nil for queries.
 func (s *SQLService) createQueryHistory(instance *store.InstanceMessage, database *store.DatabaseMessage, queryType store.QueryHistoryType, statement string, userEmail string, duration time.Duration, queryErr error, historyExport *storepb.QueryHistoryPayload_Export) {
 	qh := &store.QueryHistoryMessage{
 		Creator:   userEmail,

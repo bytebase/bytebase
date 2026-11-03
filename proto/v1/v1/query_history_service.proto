@@ -175,12 +175,10 @@ message QueryHistory {
 
   Type type = 8;
 
-  // Where the export went. Unspecified for queries and for exports recorded
-  // before the destination was kept.
+  // Unspecified for exports recorded before this field was added.
   ExportDestination export_destination = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // Set when the export was delivered to an export destination: the absolute
-  // location of the folder created for this export, as returned in
-  // ExportResponse.uri. Bytebase does not check that it still exists.
+  // The export's ExportResponse.uri. Bytebase does not check that it still
+  // exists.
   string export_uri = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

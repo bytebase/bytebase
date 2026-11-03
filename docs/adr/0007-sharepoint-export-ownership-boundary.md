@@ -103,10 +103,8 @@ actual destination.
 
 Delivery is confirmed only when every file of the export is confirmed. Confirmed
 delivery returns the URL of the export subfolder, and the export's query history
-keeps it so the exporter can find the files again without exporting another
-copy. The link records where Bytebase delivered; it does not promise the files
-are still there or readable. Delivery success does not
-imply that the exporting user can read the file; SharePoint
+keeps it. Bytebase does not check that the folder still exists. Delivery
+success does not imply that the exporting user can read the file; SharePoint
 enforces that user's access independently, and Bytebase does not grant access.
 
 If an upload response is lost, Bytebase attempts bounded reconciliation against

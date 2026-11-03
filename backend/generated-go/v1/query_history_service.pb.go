@@ -432,12 +432,10 @@ type QueryHistory struct {
 	Error      *string                `protobuf:"bytes,6,opt,name=error,proto3,oneof" json:"error,omitempty"`
 	Duration   *durationpb.Duration   `protobuf:"bytes,7,opt,name=duration,proto3" json:"duration,omitempty"`
 	Type       QueryHistory_Type      `protobuf:"varint,8,opt,name=type,proto3,enum=bytebase.v1.QueryHistory_Type" json:"type,omitempty"`
-	// Where the export went. Unspecified for queries and for exports recorded
-	// before the destination was kept.
+	// Unspecified for exports recorded before this field was added.
 	ExportDestination ExportDestination `protobuf:"varint,9,opt,name=export_destination,json=exportDestination,proto3,enum=bytebase.v1.ExportDestination" json:"export_destination,omitempty"`
-	// Set when the export was delivered to an export destination: the absolute
-	// location of the folder created for this export, as returned in
-	// ExportResponse.uri. Bytebase does not check that it still exists.
+	// The export's ExportResponse.uri. Bytebase does not check that it still
+	// exists.
 	ExportUri     string `protobuf:"bytes,10,opt,name=export_uri,json=exportUri,proto3" json:"export_uri,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

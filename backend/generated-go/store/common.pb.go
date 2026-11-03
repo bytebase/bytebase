@@ -250,7 +250,6 @@ func (ExportFormat) EnumDescriptor() ([]byte, []int) {
 	return file_store_common_proto_rawDescGZIP(), []int{2}
 }
 
-// ExportDestination is where an export goes.
 type ExportDestination int32
 
 const (

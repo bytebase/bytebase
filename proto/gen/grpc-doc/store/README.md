@@ -530,7 +530,7 @@ Engine represents the type of database system.
 <a name="bytebase-store-ExportDestination"></a>
 
 ### ExportDestination
-ExportDestination is where an export goes.
+
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
@@ -3094,7 +3094,7 @@ Activity type enumeration.
 | ----- | ---- | ----- | ----------- |
 | error | [string](#string) | optional |  |
 | duration | [google.protobuf.Duration](#google-protobuf-Duration) |  |  |
-| export | [QueryHistoryPayload.Export](#bytebase-store-QueryHistoryPayload-Export) |  | Set on export histories. |
+| export | [QueryHistoryPayload.Export](#bytebase-store-QueryHistoryPayload-Export) |  |  |
 
 
 
@@ -3110,7 +3110,7 @@ Activity type enumeration.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | destination | [ExportDestination](#bytebase-store-ExportDestination) |  |  |
-| uri | [string](#string) |  | The location created for this export on its storage destination. |
+| uri | [string](#string) |  |  |
 
 
 

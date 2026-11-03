@@ -18802,17 +18802,14 @@ components:
           allOf:
             - $ref: '#/components/schemas/bytebase.v1.ExportDestination'
           title: export_destination
-          description: |-
-            Where the export went. Unspecified for queries and for exports recorded
-             before the destination was kept.
+          description: Unspecified for exports recorded before this field was added.
           readOnly: true
         exportUri:
           type: string
           title: export_uri
           description: |-
-            Set when the export was delivered to an export destination: the absolute
-             location of the folder created for this export, as returned in
-             ExportResponse.uri. Bytebase does not check that it still exists.
+            The export's ExportResponse.uri. Bytebase does not check that it still
+             exists.
           readOnly: true
       title: QueryHistory
       additionalProperties: false

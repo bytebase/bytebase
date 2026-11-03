@@ -10,12 +10,10 @@ option go_package = "generated-go/store";
 message QueryHistoryPayload {
   optional string error = 1;
   google.protobuf.Duration duration = 2;
-  // Set on export histories.
   Export export = 3;
 
   message Export {
     ExportDestination destination = 1;
-    // The location created for this export on its storage destination.
     string uri = 2;
   }
 }
