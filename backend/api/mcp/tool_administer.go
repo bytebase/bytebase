@@ -46,7 +46,7 @@ const administerWorkspaceDescription = `Make a workspace administration change t
 | operationId | Yes      | The operation, e.g. "SettingService/UpdateSetting" |
 | body        | Yes      | The operation's request body |
 
-It serves one change: the approval rules for database changes. Send SettingService/UpdateSetting with setting.name "settings/WORKSPACE_APPROVAL" and the whole rule list in setting.value.workspaceApproval.rules. Read the stored rules first with call_api SettingService/GetSetting, change only the rules whose source is CHANGE_DATABASE, and send every other rule as stored, in its order. Give each rule you add the source CHANGE_DATABASE. Send a rule's source, condition.expression, template.title, template.description and template.flow.roles; other fields are refused. An approval check tries the CHANGE_DATABASE rules in order, and the first whose condition matches decides who approves a change. When none matches, the rules with no source, such as the Fallback Rule, decide, and a change that no rule matches needs no approval.
+It serves one change: the approval rules for database changes. Send SettingService/UpdateSetting with setting.name "settings/WORKSPACE_APPROVAL" and the whole rule list in setting.value.workspaceApproval.rules. Read the stored rules first with call_api SettingService/GetSetting, change only the rules whose source is CHANGE_DATABASE, and send every other rule as stored, in its order. Give each rule you add the source CHANGE_DATABASE. Send a rule's source, condition.expression, template.title, template.description and template.flow.roles; other fields are refused. Name each approver in template.flow.roles by its role name, such as roles/workspaceDBA. An approval check tries the CHANGE_DATABASE rules in order, and the first whose condition matches decides who approves a change. When none matches, the rules with no source, such as the Fallback Rule, decide, and a change that no rule matches needs no approval.
 
 The tool shows the user what changes and asks them to confirm in a form. It changes the rules only when they accept; declining or cancelling changes nothing. A change too long for the form is refused, and the refusal says whether smaller steps help. A client that cannot show the form gets the console page instead. Do not ask in chat first: the form is the question.
 
@@ -237,6 +237,13 @@ func parseApprovalRulesChange(body map[string]any, link string) (*approvalRulesC
 			Suggestion: "it changes " + approvalSettingName + "; change other settings signed in to the Bytebase console",
 		}
 	}
+	if request.GetSetting().GetValue().GetWorkspaceApproval() == nil {
+		return nil, &toolError{
+			Code:       "INVALID_REQUEST",
+			Message:    "the request has no setting.value.workspaceApproval, so it holds no rule list",
+			Suggestion: "send the whole rule list in setting.value.workspaceApproval.rules: the rules GetSetting returns, with the user's change made",
+		}
+	}
 	if field := unlistedField(request.ProtoReflect(), "", approvalRequestFields); field != "" {
 		return nil, &toolError{
 			Code:       "FIELD_NOT_SUPPORTED",
@@ -381,6 +388,9 @@ func diffApprovalRules(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule, 
 		condition := rule.GetCondition().GetExpression()
 		before := storedByCondition[condition]
 		if before == nil {
+			if err := approverError(rule); err != nil {
+				return nil, err
+			}
 			// An added rule decides before every rule after it, so its place
 			// matters unless it is last.
 			if i < len(requestedDB)-1 {
@@ -389,6 +399,11 @@ func diffApprovalRules(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule, 
 				diff.changes = append(diff.changes, fmt.Sprintf("Added, %s: %q", approvers(rule), condition))
 			}
 			continue
+		}
+		if !proto.Equal(before.GetTemplate().GetFlow(), rule.GetTemplate().GetFlow()) {
+			if err := approverError(rule); err != nil {
+				return nil, err
+			}
 		}
 		moved := !inOrder[kept]
 		kept++
@@ -480,8 +495,9 @@ func longestCommonOrder(a, b []string) []bool {
 	return kept
 }
 
-// approvers names a rule's approval flow as the console does: each step's role,
-// in order, or "no approval" for an empty flow.
+// approvers names a rule's approval flow: each step's role in order, a
+// predefined role by its display name and any other value as written, or "no
+// approval" for an empty flow.
 func approvers(rule *v1pb.WorkspaceApprovalSetting_Rule) string {
 	roles := rule.GetTemplate().GetFlow().GetRoles()
 	if len(roles) == 0 {
@@ -489,13 +505,31 @@ func approvers(rule *v1pb.WorkspaceApprovalSetting_Rule) string {
 	}
 	names := make([]string, 0, len(roles))
 	for _, role := range roles {
-		roleID := strings.TrimPrefix(role, common.RolePrefix)
-		if predefined := store.GetPredefinedRole(roleID); predefined != nil {
-			roleID = predefined.Name
+		name := role
+		if roleID, err := common.GetRoleID(role); err == nil {
+			if predefined := store.GetPredefinedRole(roleID); predefined != nil {
+				name = predefined.Name
+			}
 		}
-		names = append(names, fmt.Sprintf("%q", roleID))
+		names = append(names, fmt.Sprintf("%q", name))
 	}
 	return strings.Join(names, " then ")
+}
+
+// approverError refuses a rule whose approvers include a value that is not a
+// role name. An approval check matches a step's role by its exact name
+// (review.Workflow.canReview), so no one could approve such a step.
+func approverError(rule *v1pb.WorkspaceApprovalSetting_Rule) error {
+	for _, role := range rule.GetTemplate().GetFlow().GetRoles() {
+		if _, err := common.GetRoleID(role); err != nil {
+			return &toolError{
+				Code:       "INVALID_APPROVER",
+				Message:    fmt.Sprintf("the rule for %q names the approver %q, which is not a role name, so no one could approve the changes it matches", rule.GetCondition().GetExpression(), role),
+				Suggestion: "name each approver by its role name, such as roles/workspaceDBA or roles/projectOwner",
+			}
+		}
+	}
+	return nil
 }
 
 // adminForm is the message and the choice description of one confirmation.

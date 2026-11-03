@@ -352,6 +352,15 @@ func TestAdministerWorkspaceRefusesBeforeAsking(t *testing.T) {
 		"two rules of other sources swapped": {stored: []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), roleRequestRule("roles/projectOwner")},
 			arguments: updateArguments(approvalBody(t, roleRequestRule("roles/projectOwner"), fallbackRule(), prodRule)),
 			want:      []string{"OTHER_RULES_CHANGED"}},
+		"no rule list": {stored: []*v1pb.WorkspaceApprovalSetting_Rule{prodRule},
+			arguments: updateArguments(map[string]any{"setting": map[string]any{"name": "settings/WORKSPACE_APPROVAL"}}),
+			want:      []string{"INVALID_REQUEST", "setting.value.workspaceApproval"}},
+		"an added approver that is not a role name": {
+			arguments: updateArguments(approvalBody(t, fallbackRule(), changeRule("Prod", "resource.environment_id == 'prod'", "workspaceDBA"))),
+			want:      []string{"INVALID_APPROVER", "which is not a role name", "roles/workspaceDBA"}},
+		"an approver changed to a bare role ID": {stored: []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), prodRule},
+			arguments: updateArguments(approvalBody(t, fallbackRule(), changeRule("Prod", "resource.environment_id == 'prod'", "workspaceDBA"))),
+			want:      []string{"INVALID_APPROVER"}},
 		"too long for the form": {arguments: updateArguments(approvalBody(t, tooMany...)),
 			want: []string{"CHANGE_TOO_LONG"}},
 		"two requested rules, one condition": {arguments: updateArguments(approvalBody(t, fallbackRule(), prodRule, changeRule("Again", "resource.environment_id == 'prod'"))),
@@ -555,6 +564,22 @@ func TestAdministerWorkspaceNamesTheUserIssuesAwaitingApproval(t *testing.T) {
 			callAdminister(t, session, administerParams(approvalBody(t, fallbackRule(), prodRule)))
 			require.Contains(t, user.lastParams(t).Message, tc.want)
 		})
+	}
+}
+
+func TestApproversNameEachRoleAsWritten(t *testing.T) {
+	for roles, want := range map[string]string{
+		"roles/workspaceDBA":                    `"Workspace DBA"`,
+		"workspaceDBA":                          `"workspaceDBA"`,
+		"roles/custom-dba":                      `"roles/custom-dba"`,
+		"roles/workspaceDBA,roles/projectOwner": `"Workspace DBA" then "Project owner"`,
+		"":                                      "no approval",
+	} {
+		rule := changeRule("Prod", "resource.environment_id == 'prod'")
+		if roles != "" {
+			rule.Template.Flow.Roles = strings.Split(roles, ",")
+		}
+		require.Equal(t, want, approvers(rule), roles)
 	}
 }
 
