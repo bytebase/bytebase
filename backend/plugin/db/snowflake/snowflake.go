@@ -443,9 +443,13 @@ func decodeRSAPrivateKey(key, passphrase string) (*rsa.PrivateKey, error) {
 		}
 		return rsaKey, nil
 	case "ENCRYPTED PRIVATE KEY":
-		// NOTE: As of Jun 2024, Golang's official library does not support passcode-encrypted PKCS8 private key. And
-		// Snowflake do not introduce an external library to achieve this due to the security purposes.
-		// We introduce https://pkg.go.dev/github.com/youmark/pkcs8 to help us to achieve this goal.
+		// crypto/x509 cannot decrypt PKCS#8 keys and gosnowflake does not either, so
+		// youmark/pkcs8 covers the PBES2 scheme. It reads an empty password as "the key
+		// is unencrypted" and would misparse the ciphertext, so reject a missing
+		// passphrase before calling it.
+		if passphrase == "" {
+			return nil, errors.Errorf("private key is encrypted, but no passphrase was provided")
+		}
 		pk, err := pkcs8.ParsePKCS8PrivateKeyRSA(block.Bytes, []byte(passphrase))
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to parse pkcs8 private key to rsa private key with passphrase")

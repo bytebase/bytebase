@@ -265,8 +265,6 @@ github.com/bytebase/omni v0.0.0-20261102094319-61f070707dc7 h1:3rwQ9dpUCGv19YJJf
 github.com/bytebase/omni v0.0.0-20261102094319-61f070707dc7/go.mod h1:9XZE1hqtvr09Oc+DdLu1/yCb8MDcoy/EPdA4AONDHlE=
 github.com/bytebase/pgx/v5 v5.0.0-20261103063743-9142dbf56d46 h1:HySG0FEhJefrs8TzW1cGCjReld58q/1YRElukKsKJ6g=
 github.com/bytebase/pgx/v5 v5.0.0-20261103063743-9142dbf56d46/go.mod h1:u2Fi6no03HCSBYE+ZVdLxbwdu3xyi2vU+K/YNJioSds=
-github.com/bytebase/pkcs8 v0.0.0-20240612095628-fcd0a7484c94 h1:6PNsuNmSqCuR8Z616uQLzDIvujWCFsKzeVc3ECmVubk=
-github.com/bytebase/pkcs8 v0.0.0-20240612095628-fcd0a7484c94/go.mod h1:SQliXeA7Dhkt//vS29v3zpbEwoa+zb2Cn5xj5uO4K5U=
 github.com/bytebase/tidb v0.0.0-20251104040057-d29df9dd1b3b h1:FIMLXCmledlGHw7NzIT2BGVflB2ZNamudc+QtTNITH0=
 github.com/bytebase/tidb v0.0.0-20251104040057-d29df9dd1b3b/go.mod h1:sXlW/IJbfyluk3KFfjOCNpN5CAtQos4/nxmRs2tCyn8=
 github.com/bytebase/tidb/pkg/parser v0.0.0-20251104040057-d29df9dd1b3b h1:TJweAUQzFg8ZqIVk780o7k7nTDkYtKQU/44s4Ukv7vk=
@@ -1033,6 +1031,8 @@ github.com/xyproto/randomstring v1.0.5 h1:YtlWPoRdgMu3NZtP45drfy1GKoojuR7hmRcnhZ
 github.com/xyproto/randomstring v1.0.5/go.mod h1:rgmS5DeNXLivK7YprL0pY+lTuhNQW3iGxZ18UQApw/E=
 github.com/yosida95/uritemplate/v3 v3.0.2 h1:Ed3Oyj9yrmi9087+NczuL5BwkIc4wvTb5zIM+UJPGz4=
 github.com/yosida95/uritemplate/v3 v3.0.2/go.mod h1:ILOh0sOhIJR3+L/8afwt/kE++YT040gmv5BQTMR2HP4=
+github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78 h1:ilQV1hzziu+LLM3zUTJ0trRztfwgjqKnBWNtSRkbmwM=
+github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78/go.mod h1:aL8wCCfTfSfmXjznFBSZNN13rSJjlIOI1fUNAtF7rmI=
 github.com/yterajima/go-sitemap v0.4.0 h1:JVgmfq4ch/XXIfKjSNlGqZudlPTBagNUgE6B9uBurm4=
 github.com/yterajima/go-sitemap v0.4.0/go.mod h1:CRU0eiLdQIFhxLoTQRgXlsPMNbENABe7h/l5+NGFNFw=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
