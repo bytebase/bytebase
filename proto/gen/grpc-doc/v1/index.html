@@ -7583,6 +7583,23 @@ Format: instances/{instance}/databases/{databaseName} or projects/{project}/inst
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>export_destination</td>
+                  <td><a href="#bytebase.v1.ExportDestination">ExportDestination</a></td>
+                  <td></td>
+                  <td><p>Where the export went. Unspecified for queries and for exports recorded
+before the destination was kept. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>export_uri</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Set when the export was delivered to an export destination: the absolute
+location of the folder created for this export, as returned in
+ExportResponse.uri. Bytebase does not check that it still exists. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 

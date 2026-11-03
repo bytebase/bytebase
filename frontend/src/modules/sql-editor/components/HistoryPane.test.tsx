@@ -2,6 +2,7 @@ import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { ExportDestination } from "@/types/proto-es/v1/common_pb";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -19,6 +20,8 @@ const mocks = vi.hoisted(() => ({
       name: string;
       statement: string;
       createTime: { seconds: bigint; nanos: number } | undefined;
+      exportDestination?: ExportDestination;
+      exportUri?: string;
     }>,
     nextPageToken: "" as string | undefined,
   },
@@ -295,6 +298,43 @@ describe("HistoryPane", () => {
     });
 
     expect(mocks.fetchQueryHistoryList).toHaveBeenCalled();
+    unmount();
+  });
+
+  test("SharePoint export row links to its folder without appending the statement", async () => {
+    const folder =
+      "https://example.sharepoint.com/sites/data/Exports/20240115T103000Z-h1";
+    mocks.historyEntry = {
+      queryHistories: [
+        {
+          ...makeHistory("histories/h1", "SELECT * FROM users"),
+          exportDestination: ExportDestination.SHAREPOINT,
+          exportUri: folder,
+        },
+        {
+          ...makeHistory("histories/h2", "SELECT id FROM orders"),
+          exportDestination: ExportDestination.DOWNLOAD,
+        },
+      ],
+      nextPageToken: "",
+    };
+
+    const { container, render, unmount } = renderIntoContainer(<HistoryPane />);
+    render();
+
+    const links = container.querySelectorAll<HTMLAnchorElement>(
+      "[data-export-link]"
+    );
+    expect(links).toHaveLength(1);
+    expect(links[0].getAttribute("href")).toBe(folder);
+    expect(links[0].textContent).toContain("export-data.sharepoint.open");
+
+    await act(async () => {
+      links[0].dispatchEvent(
+        new MouseEvent("click", { bubbles: true, cancelable: true })
+      );
+    });
+    expect(mocks.sqlEditorEventsEmit).not.toHaveBeenCalled();
     unmount();
   });
 

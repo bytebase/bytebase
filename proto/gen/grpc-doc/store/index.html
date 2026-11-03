@@ -941,6 +941,14 @@
                   <a href="#bytebase.store.QueryHistoryPayload"><span class="badge">M</span>QueryHistoryPayload</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.store.QueryHistoryPayload.Export"><span class="badge">M</span>QueryHistoryPayload.Export</a>
+                </li>
+              
+              
+                <li>
+                  <a href="#bytebase.store.QueryHistoryPayload.Export.Destination"><span class="badge">E</span>QueryHistoryPayload.Export.Destination</a>
+                </li>
               
               
               
@@ -8210,6 +8218,45 @@ IM integration setting should be set for this function to work. </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>export</td>
+                  <td><a href="#bytebase.store.QueryHistoryPayload.Export">QueryHistoryPayload.Export</a></td>
+                  <td></td>
+                  <td><p>Set on export histories. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.QueryHistoryPayload.Export">QueryHistoryPayload.Export</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>destination</td>
+                  <td><a href="#bytebase.store.QueryHistoryPayload.Export.Destination">QueryHistoryPayload.Export.Destination</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>uri</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Set once delivery to a storage destination is confirmed: the location
+created for this export. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -8218,6 +8265,35 @@ IM integration setting should be set for this function to work. </p></td>
         
       
 
+      
+        <h3 id="bytebase.store.QueryHistoryPayload.Export.Destination">QueryHistoryPayload.Export.Destination</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>DESTINATION_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DOWNLOAD</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SHAREPOINT</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
       
 
       

@@ -425,13 +425,20 @@ type QueryHistory struct {
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The database name to execute the query.
 	// Format: instances/{instance}/databases/{databaseName} or projects/{project}/instances/{instance}/databases/{databaseName}
-	Database      string                 `protobuf:"bytes,2,opt,name=database,proto3" json:"database,omitempty"`
-	Creator       string                 `protobuf:"bytes,3,opt,name=creator,proto3" json:"creator,omitempty"`
-	CreateTime    *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
-	Statement     string                 `protobuf:"bytes,5,opt,name=statement,proto3" json:"statement,omitempty"`
-	Error         *string                `protobuf:"bytes,6,opt,name=error,proto3,oneof" json:"error,omitempty"`
-	Duration      *durationpb.Duration   `protobuf:"bytes,7,opt,name=duration,proto3" json:"duration,omitempty"`
-	Type          QueryHistory_Type      `protobuf:"varint,8,opt,name=type,proto3,enum=bytebase.v1.QueryHistory_Type" json:"type,omitempty"`
+	Database   string                 `protobuf:"bytes,2,opt,name=database,proto3" json:"database,omitempty"`
+	Creator    string                 `protobuf:"bytes,3,opt,name=creator,proto3" json:"creator,omitempty"`
+	CreateTime *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
+	Statement  string                 `protobuf:"bytes,5,opt,name=statement,proto3" json:"statement,omitempty"`
+	Error      *string                `protobuf:"bytes,6,opt,name=error,proto3,oneof" json:"error,omitempty"`
+	Duration   *durationpb.Duration   `protobuf:"bytes,7,opt,name=duration,proto3" json:"duration,omitempty"`
+	Type       QueryHistory_Type      `protobuf:"varint,8,opt,name=type,proto3,enum=bytebase.v1.QueryHistory_Type" json:"type,omitempty"`
+	// Where the export went. Unspecified for queries and for exports recorded
+	// before the destination was kept.
+	ExportDestination ExportDestination `protobuf:"varint,9,opt,name=export_destination,json=exportDestination,proto3,enum=bytebase.v1.ExportDestination" json:"export_destination,omitempty"`
+	// Set when the export was delivered to an export destination: the absolute
+	// location of the folder created for this export, as returned in
+	// ExportResponse.uri. Bytebase does not check that it still exists.
+	ExportUri     string `protobuf:"bytes,10,opt,name=export_uri,json=exportUri,proto3" json:"export_uri,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -522,11 +529,25 @@ func (x *QueryHistory) GetType() QueryHistory_Type {
 	return QueryHistory_TYPE_UNSPECIFIED
 }
 
+func (x *QueryHistory) GetExportDestination() ExportDestination {
+	if x != nil {
+		return x.ExportDestination
+	}
+	return ExportDestination_EXPORT_DESTINATION_UNSPECIFIED
+}
+
+func (x *QueryHistory) GetExportUri() string {
+	if x != nil {
+		return x.ExportUri
+	}
+	return ""
+}
+
 var File_v1_query_history_service_proto protoreflect.FileDescriptor
 
 const file_v1_query_history_service_proto_rawDesc = "" +
 	"\n" +
-	"\x1ev1/query_history_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"\x8e\x01\n" +
+	"\x1ev1/query_history_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\"\x8e\x01\n" +
 	"\x1bSearchQueryHistoriesRequest\x12\x1b\n" +
 	"\x06parent\x18\x04 \x01(\tB\x03\xe0A\x02R\x06parent\x12\x1b\n" +
 	"\tpage_size\x18\x01 \x01(\x05R\bpageSize\x12\x1d\n" +
@@ -547,7 +568,7 @@ const file_v1_query_history_service_proto_rawDesc = "" +
 	"\x0fquery_histories\x18\x01 \x03(\v2\x19.bytebase.v1.QueryHistoryB\x03\xe0A\x03R\x0equeryHistories\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"1\n" +
 	"\x16GetQueryHistoryRequest\x12\x17\n" +
-	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x02R\x04name\"\x9b\x03\n" +
+	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x02R\x04name\"\x93\x04\n" +
 	"\fQueryHistory\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12\x1f\n" +
 	"\bdatabase\x18\x02 \x01(\tB\x03\xe0A\x03R\bdatabase\x12\x1d\n" +
@@ -557,7 +578,11 @@ const file_v1_query_history_service_proto_rawDesc = "" +
 	"\tstatement\x18\x05 \x01(\tB\x03\xe0A\x03R\tstatement\x12\x1e\n" +
 	"\x05error\x18\x06 \x01(\tB\x03\xe0A\x03H\x00R\x05error\x88\x01\x01\x12:\n" +
 	"\bduration\x18\a \x01(\v2\x19.google.protobuf.DurationB\x03\xe0A\x03R\bduration\x122\n" +
-	"\x04type\x18\b \x01(\x0e2\x1e.bytebase.v1.QueryHistory.TypeR\x04type\"3\n" +
+	"\x04type\x18\b \x01(\x0e2\x1e.bytebase.v1.QueryHistory.TypeR\x04type\x12R\n" +
+	"\x12export_destination\x18\t \x01(\x0e2\x1e.bytebase.v1.ExportDestinationB\x03\xe0A\x03R\x11exportDestination\x12\"\n" +
+	"\n" +
+	"export_uri\x18\n" +
+	" \x01(\tB\x03\xe0A\x03R\texportUri\"3\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05QUERY\x10\x01\x12\n" +
@@ -595,6 +620,7 @@ var file_v1_query_history_service_proto_goTypes = []any{
 	(*QueryHistory)(nil),                 // 6: bytebase.v1.QueryHistory
 	(*timestamppb.Timestamp)(nil),        // 7: google.protobuf.Timestamp
 	(*durationpb.Duration)(nil),          // 8: google.protobuf.Duration
+	(ExportDestination)(0),               // 9: bytebase.v1.ExportDestination
 }
 var file_v1_query_history_service_proto_depIdxs = []int32{
 	6, // 0: bytebase.v1.SearchQueryHistoriesResponse.query_histories:type_name -> bytebase.v1.QueryHistory
@@ -602,17 +628,18 @@ var file_v1_query_history_service_proto_depIdxs = []int32{
 	7, // 2: bytebase.v1.QueryHistory.create_time:type_name -> google.protobuf.Timestamp
 	8, // 3: bytebase.v1.QueryHistory.duration:type_name -> google.protobuf.Duration
 	0, // 4: bytebase.v1.QueryHistory.type:type_name -> bytebase.v1.QueryHistory.Type
-	1, // 5: bytebase.v1.QueryHistoryService.SearchQueryHistories:input_type -> bytebase.v1.SearchQueryHistoriesRequest
-	3, // 6: bytebase.v1.QueryHistoryService.ListQueryHistories:input_type -> bytebase.v1.ListQueryHistoriesRequest
-	5, // 7: bytebase.v1.QueryHistoryService.GetQueryHistory:input_type -> bytebase.v1.GetQueryHistoryRequest
-	2, // 8: bytebase.v1.QueryHistoryService.SearchQueryHistories:output_type -> bytebase.v1.SearchQueryHistoriesResponse
-	4, // 9: bytebase.v1.QueryHistoryService.ListQueryHistories:output_type -> bytebase.v1.ListQueryHistoriesResponse
-	6, // 10: bytebase.v1.QueryHistoryService.GetQueryHistory:output_type -> bytebase.v1.QueryHistory
-	8, // [8:11] is the sub-list for method output_type
-	5, // [5:8] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	9, // 5: bytebase.v1.QueryHistory.export_destination:type_name -> bytebase.v1.ExportDestination
+	1, // 6: bytebase.v1.QueryHistoryService.SearchQueryHistories:input_type -> bytebase.v1.SearchQueryHistoriesRequest
+	3, // 7: bytebase.v1.QueryHistoryService.ListQueryHistories:input_type -> bytebase.v1.ListQueryHistoriesRequest
+	5, // 8: bytebase.v1.QueryHistoryService.GetQueryHistory:input_type -> bytebase.v1.GetQueryHistoryRequest
+	2, // 9: bytebase.v1.QueryHistoryService.SearchQueryHistories:output_type -> bytebase.v1.SearchQueryHistoriesResponse
+	4, // 10: bytebase.v1.QueryHistoryService.ListQueryHistories:output_type -> bytebase.v1.ListQueryHistoriesResponse
+	6, // 11: bytebase.v1.QueryHistoryService.GetQueryHistory:output_type -> bytebase.v1.QueryHistory
+	9, // [9:12] is the sub-list for method output_type
+	6, // [6:9] is the sub-list for method input_type
+	6, // [6:6] is the sub-list for extension type_name
+	6, // [6:6] is the sub-list for extension extendee
+	0, // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_v1_query_history_service_proto_init() }
@@ -621,6 +648,7 @@ func file_v1_query_history_service_proto_init() {
 		return
 	}
 	file_v1_annotation_proto_init()
+	file_v1_common_proto_init()
 	file_v1_query_history_service_proto_msgTypes[5].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

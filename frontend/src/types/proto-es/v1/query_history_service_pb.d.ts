@@ -5,6 +5,7 @@
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { Duration, Timestamp } from "@bufbuild/protobuf/wkt";
+import type { ExportDestination } from "./common_pb";
 
 /**
  * Describes the file v1/query_history_service.proto.
@@ -251,6 +252,23 @@ export declare type QueryHistory = Message<"bytebase.v1.QueryHistory"> & {
    * @generated from field: bytebase.v1.QueryHistory.Type type = 8;
    */
   type: QueryHistory_Type;
+
+  /**
+   * Where the export went. Unspecified for queries and for exports recorded
+   * before the destination was kept.
+   *
+   * @generated from field: bytebase.v1.ExportDestination export_destination = 9;
+   */
+  exportDestination: ExportDestination;
+
+  /**
+   * Set when the export was delivered to an export destination: the absolute
+   * location of the folder created for this export, as returned in
+   * ExportResponse.uri. Bytebase does not check that it still exists.
+   *
+   * @generated from field: string export_uri = 10;
+   */
+  exportUri: string;
 };
 
 /**

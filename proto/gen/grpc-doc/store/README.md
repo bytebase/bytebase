@@ -194,6 +194,9 @@
   
 - [store/query_history.proto](#store_query_history-proto)
     - [QueryHistoryPayload](#bytebase-store-QueryHistoryPayload)
+    - [QueryHistoryPayload.Export](#bytebase-store-QueryHistoryPayload-Export)
+  
+    - [QueryHistoryPayload.Export.Destination](#bytebase-store-QueryHistoryPayload-Export-Destination)
   
 - [store/release.proto](#store_release-proto)
     - [ReleasePayload](#bytebase-store-ReleasePayload)
@@ -3079,12 +3082,42 @@ Activity type enumeration.
 | ----- | ---- | ----- | ----------- |
 | error | [string](#string) | optional |  |
 | duration | [google.protobuf.Duration](#google-protobuf-Duration) |  |  |
+| export | [QueryHistoryPayload.Export](#bytebase-store-QueryHistoryPayload-Export) |  | Set on export histories. |
+
+
+
+
+
+
+<a name="bytebase-store-QueryHistoryPayload-Export"></a>
+
+### QueryHistoryPayload.Export
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| destination | [QueryHistoryPayload.Export.Destination](#bytebase-store-QueryHistoryPayload-Export-Destination) |  |  |
+| uri | [string](#string) |  | Set once delivery to a storage destination is confirmed: the location created for this export. |
 
 
 
 
 
  
+
+
+<a name="bytebase-store-QueryHistoryPayload-Export-Destination"></a>
+
+### QueryHistoryPayload.Export.Destination
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| DESTINATION_UNSPECIFIED | 0 |  |
+| DOWNLOAD | 1 |  |
+| SHAREPOINT | 2 |  |
+
 
  
 

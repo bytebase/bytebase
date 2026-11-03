@@ -26297,6 +26297,22 @@ components:
           allOf:
             - $ref: '#/components/schemas/bytebase.v1.QueryHistory.Type'
           title: type
+        exportDestination:
+          allOf:
+            - $ref: '#/components/schemas/bytebase.v1.ExportDestination'
+          title: export_destination
+          description: |-
+            Where the export went. Unspecified for queries and for exports recorded
+             before the destination was kept.
+          readOnly: true
+        exportUri:
+          type: string
+          title: export_uri
+          description: |-
+            Set when the export was delivered to an export destination: the absolute
+             location of the folder created for this export, as returned in
+             ExportResponse.uri. Bytebase does not check that it still exists.
+          readOnly: true
       title: QueryHistory
       additionalProperties: false
     bytebase.v1.QueryHistory.Type:

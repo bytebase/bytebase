@@ -3,6 +3,22 @@
 
 package store
 
+func (x *QueryHistoryPayload_Export) Equal(y *QueryHistoryPayload_Export) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Destination != y.Destination {
+		return false
+	}
+	if x.Uri != y.Uri {
+		return false
+	}
+	return true
+}
+
 func (x *QueryHistoryPayload) Equal(y *QueryHistoryPayload) bool {
 	if x == y {
 		return true
@@ -14,6 +30,9 @@ func (x *QueryHistoryPayload) Equal(y *QueryHistoryPayload) bool {
 		return false
 	}
 	if p, q := x.Duration, y.Duration; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
+		return false
+	}
+	if !x.Export.Equal(y.Export) {
 		return false
 	}
 	return true

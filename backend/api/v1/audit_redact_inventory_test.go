@@ -765,6 +765,7 @@ var auditRecordedFields = []string{
 	"bytebase.v1.QueryHistory.creator",
 	"bytebase.v1.QueryHistory.database",
 	"bytebase.v1.QueryHistory.error",
+	"bytebase.v1.QueryHistory.export_uri",
 	"bytebase.v1.QueryHistory.name",
 	"bytebase.v1.QueryHistory.statement",
 	"bytebase.v1.QueryRequest.container",

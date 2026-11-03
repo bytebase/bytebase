@@ -151,7 +151,7 @@ func (s *SQLService) AdminExecute(ctx context.Context, stream *connect.BidiStrea
 			queryContext,
 		)
 
-		s.createQueryHistory(instance, database, store.QueryHistoryTypeQuery, request.Statement, user.Email, duration, queryErr)
+		s.createQueryHistory(instance, database, store.QueryHistoryTypeQuery, request.Statement, user.Email, duration, queryErr, nil)
 		response := &v1pb.AdminExecuteResponse{}
 		if queryErr != nil {
 			response.Results = []*v1pb.QueryResult{
@@ -457,7 +457,7 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 	)
 
 	// Update activity.
-	s.createQueryHistory(instance, database, store.QueryHistoryTypeQuery, statement, user.Email, duration, queryErr)
+	s.createQueryHistory(instance, database, store.QueryHistoryTypeQuery, statement, user.Email, duration, queryErr, nil)
 
 	if queryErr != nil {
 		if len(results) == 0 {
@@ -1280,7 +1280,14 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 		exportResponse, exportErr = sendExport(ctx, sharePointTarget, user, database, files, request, exportTime)
 	}
 
-	s.createQueryHistory(instance, database, store.QueryHistoryTypeExport, statement, user.Email, duration, exportErr)
+	historyExport := &storepb.QueryHistoryPayload_Export{
+		Destination: storepb.QueryHistoryPayload_Export_DOWNLOAD,
+		Uri:         exportResponse.GetUri(),
+	}
+	if sharePointTarget != nil {
+		historyExport.Destination = storepb.QueryHistoryPayload_Export_SHAREPOINT
+	}
+	s.createQueryHistory(instance, database, store.QueryHistoryTypeExport, statement, user.Email, duration, exportErr, historyExport)
 
 	if exportErr != nil {
 		return nil, exportConnectError(exportErr)
@@ -1447,7 +1454,8 @@ func exportSQLWithContext(
 	return export.SQLToWriter(w, instance.Metadata.GetEngine(), statementPrefix, result)
 }
 
-func (s *SQLService) createQueryHistory(instance *store.InstanceMessage, database *store.DatabaseMessage, queryType store.QueryHistoryType, statement string, userEmail string, duration time.Duration, queryErr error) {
+// createQueryHistory records a query or export. historyExport is nil for queries.
+func (s *SQLService) createQueryHistory(instance *store.InstanceMessage, database *store.DatabaseMessage, queryType store.QueryHistoryType, statement string, userEmail string, duration time.Duration, queryErr error, historyExport *storepb.QueryHistoryPayload_Export) {
 	qh := &store.QueryHistoryMessage{
 		Creator:   userEmail,
 		Project:   database.ProjectID,
@@ -1457,6 +1465,7 @@ func (s *SQLService) createQueryHistory(instance *store.InstanceMessage, databas
 		Payload: &storepb.QueryHistoryPayload{
 			Error:    nil,
 			Duration: durationpb.New(duration),
+			Export:   historyExport,
 		},
 	}
 	if queryErr != nil {

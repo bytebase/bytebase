@@ -1,4 +1,4 @@
-import { Copy, Link2, Loader2, X } from "lucide-react";
+import { Copy, ExternalLink, Link2, Loader2, X } from "lucide-react";
 import {
   useCallback,
   useEffect,
@@ -28,6 +28,7 @@ import {
 } from "@/modules/sql-editor/store/tab";
 import { useAppStore } from "@/stores/app";
 import { DEBOUNCE_SEARCH_DELAY, getTimeForPbTimestampProtoEs } from "@/types";
+import { ExportDestination } from "@/types/proto-es/v1/common_pb";
 import type { QueryHistory } from "@/types/proto-es/v1/query_history_service_pb";
 import { extractProjectResourceName, extractQueryHistoryUID } from "@/utils";
 import { queryHistoryTabTitle } from "@/utils/v1/queryHistory";
@@ -240,6 +241,20 @@ export function HistoryPane() {
         keyword={searchKeywords}
         className="max-w-full text-xs wrap-break-word font-mono line-clamp-3"
       />
+      {history.exportDestination === ExportDestination.SHAREPOINT &&
+        history.exportUri && (
+          <a
+            href={history.exportUri}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-x-1 text-xs text-accent hover:underline"
+            data-export-link
+            onClick={(e) => e.stopPropagation()}
+          >
+            {t("export-data.sharepoint.open")}
+            <ExternalLink className="size-3" />
+          </a>
+        )}
     </div>
   );
 

@@ -9,6 +9,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 	"github.com/bytebase/bytebase/backend/store"
@@ -210,13 +211,26 @@ func (s *QueryHistoryService) convertToV1QueryHistory(ctx context.Context, histo
 	}
 
 	return &v1pb.QueryHistory{
-		Name:       fmt.Sprintf("%s/queryHistories/%s", common.FormatProject(history.Project), history.ResourceID),
-		Statement:  history.Statement,
-		Error:      history.Payload.Error,
-		Database:   history.Database,
-		Creator:    common.FormatUserEmail(creator.Email),
-		CreateTime: timestamppb.New(history.CreatedAt),
-		Duration:   history.Payload.Duration,
-		Type:       historyType,
+		Name:              fmt.Sprintf("%s/queryHistories/%s", common.FormatProject(history.Project), history.ResourceID),
+		Statement:         history.Statement,
+		Error:             history.Payload.Error,
+		Database:          history.Database,
+		Creator:           common.FormatUserEmail(creator.Email),
+		CreateTime:        timestamppb.New(history.CreatedAt),
+		Duration:          history.Payload.Duration,
+		Type:              historyType,
+		ExportDestination: convertToV1ExportDestination(history.Payload.GetExport().GetDestination()),
+		ExportUri:         history.Payload.GetExport().GetUri(),
 	}, nil
+}
+
+func convertToV1ExportDestination(destination storepb.QueryHistoryPayload_Export_Destination) v1pb.ExportDestination {
+	switch destination {
+	case storepb.QueryHistoryPayload_Export_DOWNLOAD:
+		return v1pb.ExportDestination_DOWNLOAD
+	case storepb.QueryHistoryPayload_Export_SHAREPOINT:
+		return v1pb.ExportDestination_SHAREPOINT
+	default:
+		return v1pb.ExportDestination_EXPORT_DESTINATION_UNSPECIFIED
+	}
 }

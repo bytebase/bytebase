@@ -133,5 +133,11 @@ func (x *QueryHistory) Equal(y *QueryHistory) bool {
 	if x.Type != y.Type {
 		return false
 	}
+	if x.ExportDestination != y.ExportDestination {
+		return false
+	}
+	if x.ExportUri != y.ExportUri {
+		return false
+	}
 	return true
 }

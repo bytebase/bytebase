@@ -2386,6 +2386,8 @@ For example: creator == &#34;users/{email}&#34; |
 | error | [string](#string) | optional |  |
 | duration | [google.protobuf.Duration](#google-protobuf-Duration) |  |  |
 | type | [QueryHistory.Type](#bytebase-v1-QueryHistory-Type) |  |  |
+| export_destination | [ExportDestination](#bytebase-v1-ExportDestination) |  | Where the export went. Unspecified for queries and for exports recorded before the destination was kept. |
+| export_uri | [string](#string) |  | Set when the export was delivered to an export destination: the absolute location of the folder created for this export, as returned in ExportResponse.uri. Bytebase does not check that it still exists. |
 
 
 
