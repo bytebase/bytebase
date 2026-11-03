@@ -488,7 +488,7 @@ The spine, per task status:
 
 | Task | Sources | Sections, top to bottom |
 |---|---|---|
-| Not started, pending | Stored state, caption "As of rollout creation, `<time ago>`; the run re-checks the database.", the age from the stored computation time | "N files already applied to this database", folded; one "Will apply" section per file to apply, in version order, no children and no caret; "Will apply again · revision deleted `<date>` by `<who>`" where a revision was deleted |
+| Not started, pending | Stored state, caption "As of rollout creation, `<time ago>`; the run re-checks the database.", the age from the stored computation time | "N files already applied to this database", folded; one "Will apply" section per file to apply, in version order, no children and no caret; "Will apply again · revision deleted" where a revision was deleted, one short line so the path keeps its width, with an info icon whose tooltip, also reached by keyboard, reads "Revision deleted `<date>` by `<who>`" |
 | Running | The live log, the release's file list, and the stored state for files not reached | "N files already applied to this database", folded; reached files (applied collapsed, the current one open with a running indicator); unreached files below as "Will apply"; the boundary moves down; "Revisions on `<database>`" at the end once a file is applied |
 | Done | The log and the release's file list | "N files already applied to this database", folded (the files without a marker); every file section Applied; task-level steps as siblings; "Revisions on `<database>`" at the end |
 | Failed | The log and the release's file list | "N files already applied to this database", folded; applied sections collapsed; the failed section open, its failed row open with the error on the line and the statement block under it (folded below 640 px); task-level steps as siblings; nothing for the files after the failed one. An error that names no file or step (D3) ends the spine with an open "Run failed" section instead, after the files already applied and any applied sections; "Revisions on `<database>`" at the end when a file was applied |
@@ -588,6 +588,8 @@ Tests to write, per the placement rules in `AGENTS.md`:
   run's error on the header; the log-only form without a task keeping the run's defaults.
 - `useTaskRunLogData.test.tsx`: a run that reached two files of a 500-file release fetches two
   sheets; a re-run version keeps the stored "revision deleted" note on its section.
+- Planned spine tests: a version whose revision was deleted reads "Will apply again · revision
+  deleted" on its chip, without the date or the deleter, and its info icon names both.
 - Folded card tests: each cell of the card table in States from the task, its latest run, the
   stored state and the plan check, before any log loads; the executor prefix removed from the
   error's first line; the release's file count on a done release task; DDL, DML and Mixed from the
