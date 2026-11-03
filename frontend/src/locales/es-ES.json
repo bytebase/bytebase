@@ -3100,7 +3100,7 @@
         "disabled": "No se permite nada; ninguna sesión MCP puede conectarse.",
         "floor": {
           "label": "Nunca, en ningún modo:",
-          "text": "administrar el espacio de trabajo, manejar credenciales, abrir una sesión de modo Admin ni leer el historial de consultas de otra persona."
+          "text": "elevar esta política, crear una clave de cuenta de servicio, cambiar la contraseña, el correo o el MFA de otra persona, mostrar un secreto almacenado, abrir una sesión de modo Admin ni leer el historial de consultas de otra persona."
         },
         "heading": "{{mode}} permite",
         "hide-details": "Ocultar detalles",
@@ -3109,6 +3109,10 @@
           "refused": "No permitido"
         },
         "row": {
+          "approval-rules": {
+            "details": "Añadir, quitar, reordenar o cambiar las reglas que deciden quién aprueba un cambio de base de datos · Cada cambio se confirma en el cliente MCP del usuario antes de hacerse · Las reglas de las solicitudes de acceso y de rol no cambian",
+            "title": "Gestionar las reglas de aprobación de cambios de base de datos"
+          },
           "approve": {
             "details": "Cada decisión se confirma en el cliente MCP del usuario antes de tomarse · Las solicitudes de rol se deciden en la consola · Se aplican las reglas de aprobación y la configuración de autoaprobación del proyecto, como en la consola",
             "title": "Aprobar o rechazar issues"

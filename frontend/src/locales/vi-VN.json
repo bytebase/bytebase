@@ -3100,7 +3100,7 @@
         "disabled": "Không cho phép gì; không phiên MCP nào có thể kết nối.",
         "floor": {
           "label": "Không bao giờ, ở mọi chế độ:",
-          "text": "quản trị không gian làm việc, xử lý thông tin xác thực, mở phiên chế độ Admin, hoặc đọc lịch sử truy vấn của người khác."
+          "text": "nâng chính sách này, tạo khóa tài khoản dịch vụ, đổi mật khẩu, email hoặc MFA của người khác, hiển thị bí mật đã lưu, mở phiên chế độ Admin, hoặc đọc lịch sử truy vấn của người khác."
         },
         "heading": "{{mode}} cho phép",
         "hide-details": "Ẩn chi tiết",
@@ -3109,6 +3109,10 @@
           "refused": "Không được phép"
         },
         "row": {
+          "approval-rules": {
+            "details": "Thêm, xóa, sắp xếp lại hoặc thay đổi các quy tắc quyết định ai phê duyệt một thay đổi cơ sở dữ liệu · Mỗi thay đổi được xác nhận trong ứng dụng MCP của người dùng trước khi được thực hiện · Quy tắc cho yêu cầu truy cập và yêu cầu vai trò giữ nguyên",
+            "title": "Quản lý quy tắc phê duyệt thay đổi cơ sở dữ liệu"
+          },
           "approve": {
             "details": "Mỗi quyết định được xác nhận trong ứng dụng MCP của người dùng trước khi được thực hiện · Yêu cầu vai trò được quyết định trên bảng điều khiển · Các quy tắc phê duyệt và thiết lập tự phê duyệt của dự án vẫn áp dụng, như trên bảng điều khiển",
             "title": "Phê duyệt hoặc từ chối Issue"
