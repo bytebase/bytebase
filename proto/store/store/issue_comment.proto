@@ -20,6 +20,7 @@ message IssueCommentPayload {
     IssueUpdate issue_update = 3;
     PlanUpdate plan_update = 7;
     ReviewSubmission review_submission = 8;
+    ReviewRunCompletion review_run_completion = 11;
   }
 
   // The statement context an inline comment references. Set at creation and
@@ -49,6 +50,22 @@ message IssueCommentPayload {
 
   // ReviewSubmission records that an issue entered review.
   message ReviewSubmission {}
+
+  // ReviewRunCompletion records that a review run completed DONE, and what
+  // it did to the results of its reviewer. Posted with no creator, in the
+  // transaction that posts the run's results.
+  message ReviewRunCompletion {
+    ReviewRun.Type run_type = 1;
+    // The run's review_run.attempt; its new results carry the same
+    // ReviewMetadata.attempt.
+    int64 attempt = 2;
+    // Results the run posted as new threads.
+    int32 posted_count = 3;
+    // Earlier results the run reported again, which kept their threads.
+    int32 kept_count = 4;
+    // Earlier results the run no longer reports, which it superseded.
+    int32 superseded_count = 5;
+  }
 
   // PlanUpdate carries before/after snapshots of plan.config.specs,
   // emitted once per PlanService.UpdatePlan call whose specs branch
@@ -102,6 +119,9 @@ message IssueCommentPayload {
     // when the reviewer cannot tell findings apart across runs, and an empty
     // fingerprint matches nothing.
     string fingerprint = 6;
+    // The review_run.attempt of the run that posted the result. A result
+    // a later run reports again keeps its attempt.
+    int64 attempt = 7;
   }
 
   // StatementAnchor records the anchored statement revision and range.

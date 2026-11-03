@@ -310,7 +310,11 @@ func TestCompleteReviewRunKeepsResultsReportedAgain(t *testing.T) {
 	for _, comment := range []string{"open", "accepted"} {
 		require.Equal(t, updatedBefore[comment], updatedAfter[comment], "keeping %q is no content edit", comment)
 	}
-	require.Equal(t, time.Microsecond, updatedAfter["no fingerprint again"].Sub(updatedAfter["new"]), "the posted results stay a microsecond apart around the kept ones")
+	require.Equal(t, []reviewRunCompletion{
+		{RunType: storepb.ReviewRun_AI, Posted: 1},
+		{RunType: storepb.ReviewRun_RULE, Posted: 4},
+		{RunType: storepb.ReviewRun_RULE, Attempt: 1, Posted: 2, Kept: 2, Superseded: 2},
+	}, listReviewRunCompletions(t, fixture, "default"))
 	other, _ := listSupersession(t, fixture, "other")
 	require.Equal(t, []supersession{{Comment: "other", ThreadState: "OPEN"}}, other, "the colliding issue in the other project is untouched")
 
@@ -329,6 +333,13 @@ func TestCompleteReviewRunKeepsResultsReportedAgain(t *testing.T) {
 		{Comment: "no fingerprint again", ThreadState: "RESOLVED", Superseded: true},
 		{Comment: "fixed again", ThreadState: "OPEN"},
 	}, final)
+	require.Equal(t, map[string]int64{
+		"ai": 0, "open": 0, "accepted": 0, "fixed": 0, "no fingerprint": 0,
+		"new": 1, "no fingerprint again": 1, "fixed again": 2,
+	}, reviewResultAttempts(t, fixture, "default"), "a kept result keeps the attempt that posted it")
+	completions := listReviewRunCompletions(t, fixture, "default")
+	require.Equal(t, reviewRunCompletion{RunType: storepb.ReviewRun_RULE, Attempt: 2, Posted: 1, Kept: 1, Superseded: 3}, completions[len(completions)-1])
+	require.Equal(t, []reviewRunCompletion{{RunType: storepb.ReviewRun_RULE, Posted: 1}}, listReviewRunCompletions(t, fixture, "other"))
 
 	// Fingerprints are unique within a run.
 	ctx, s := fixture.ctx, fixture.store
@@ -344,6 +355,66 @@ func TestCompleteReviewRunKeepsResultsReportedAgain(t *testing.T) {
 	require.Error(t, err)
 	unchanged, _ := listSupersession(t, fixture, "default")
 	require.Equal(t, final, unchanged, "a rejected completion writes nothing")
+	require.Equal(t, completions, listReviewRunCompletions(t, fixture, "default"))
+}
+
+type reviewRunCompletion struct {
+	RunType    storepb.ReviewRun_Type
+	Attempt    int64
+	Posted     int32
+	Kept       int32
+	Superseded int32
+}
+
+// listReviewRunCompletions reads the completion events on the shared issue,
+// oldest first, checking each is a creatorless event row.
+func listReviewRunCompletions(t *testing.T, fixture *storePostgresFixture, projectID string) []reviewRunCompletion {
+	t.Helper()
+	rows, err := fixture.db.QueryContext(fixture.ctx, `
+		SELECT payload, creator IS NULL AND thread_state IS NULL AND parent_id IS NULL
+		FROM issue_comment
+		WHERE project = $1 AND issue_id = $2 AND payload ? 'reviewRunCompletion'
+		ORDER BY created_at, resource_id
+	`, projectID, reviewResultIssue)
+	require.NoError(t, err)
+	defer rows.Close()
+	var out []reviewRunCompletion
+	for rows.Next() {
+		var raw []byte
+		var event bool
+		require.NoError(t, rows.Scan(&raw, &event))
+		require.True(t, event, "a completion is an event with no creator")
+		payload := &storepb.IssueCommentPayload{}
+		require.NoError(t, common.ProtojsonUnmarshaler.Unmarshal(raw, payload))
+		c := payload.GetReviewRunCompletion()
+		out = append(out, reviewRunCompletion{
+			RunType: c.GetRunType(), Attempt: c.GetAttempt(),
+			Posted: c.GetPostedCount(), Kept: c.GetKeptCount(), Superseded: c.GetSupersededCount(),
+		})
+	}
+	require.NoError(t, rows.Err())
+	return out
+}
+
+// reviewResultAttempts maps each review result's text to its attempt.
+func reviewResultAttempts(t *testing.T, fixture *storePostgresFixture, projectID string) map[string]int64 {
+	t.Helper()
+	rows, err := fixture.db.QueryContext(fixture.ctx, `
+		SELECT payload->>'comment', COALESCE((payload->'reviewMetadata'->>'attempt')::BIGINT, 0)
+		FROM issue_comment
+		WHERE project = $1 AND issue_id = $2 AND payload ? 'reviewMetadata'
+	`, projectID, reviewResultIssue)
+	require.NoError(t, err)
+	defer rows.Close()
+	out := make(map[string]int64)
+	for rows.Next() {
+		var comment string
+		var attempt int64
+		require.NoError(t, rows.Scan(&comment, &attempt))
+		out[comment] = attempt
+	}
+	require.NoError(t, rows.Err())
+	return out
 }
 
 // completeReviewRun starts, claims, and completes one run on the shared issue.
@@ -457,7 +528,9 @@ func TestCompleteReviewRunSupersedesEarlierResults(t *testing.T) {
 
 	// A FAILED run supersedes nothing: the latest review is still the last DONE.
 	setThreadState("first", store.ThreadStateOpen)
+	completions := listReviewRunCompletions(t, fixture, "default")
 	complete("default", store.ReviewRunTypeRule, storepb.ReviewRun_FAILED)
+	require.Equal(t, completions, listReviewRunCompletions(t, fixture, "default"), "a FAILED run records no completion")
 	afterFailure, _ := listSupersession(t, fixture, "default")
 	require.Equal(t, []supersession{
 		{Comment: "ai", ThreadState: "OPEN"},
@@ -469,6 +542,9 @@ func TestCompleteReviewRunSupersedesEarlierResults(t *testing.T) {
 	// The next DONE, here with no findings, supersedes the rest and resolves
 	// the reopened result again.
 	complete("default", store.ReviewRunTypeRule, storepb.ReviewRun_DONE)
+	completions = listReviewRunCompletions(t, fixture, "default")
+	require.Equal(t, reviewRunCompletion{RunType: storepb.ReviewRun_RULE, Attempt: 3, Superseded: 1}, completions[len(completions)-1],
+		"only the current result counts as superseded")
 	final, _ := listSupersession(t, fixture, "default")
 	require.Equal(t, []supersession{
 		{Comment: "ai", ThreadState: "OPEN"},

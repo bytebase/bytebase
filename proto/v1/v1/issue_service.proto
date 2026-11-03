@@ -707,9 +707,12 @@ message IssueComment {
     // Every database the result applies to, sorted.
     // Format: instances/{instance}/databases/{database}
     repeated string targets = 4;
-    // A later run of the same reviewer has completed, so the result is not
-    // from the latest review, whatever its thread state.
+    // A later run of the same reviewer has completed without reporting the
+    // result again, whatever its thread state.
     bool superseded = 5;
+    // The ReviewRunCompletion.attempt of the run that posted the result. A
+    // result a later run reports again keeps its thread and its attempt.
+    int64 attempt = 6;
   }
 
   enum ThreadState {
@@ -728,6 +731,8 @@ message IssueComment {
     PlanUpdate plan_update = 12;
     // Review submission event.
     ReviewSubmission review_submission = 13;
+    // Review run completion event.
+    ReviewRunCompletion review_run_completion = 18;
   }
 
   // Approval event information.
@@ -763,6 +768,22 @@ message IssueComment {
 
   // Review submission event information.
   message ReviewSubmission {}
+
+  // A review run completed, and what it did to the results of its reviewer.
+  // Posted by the reviewer, with no creator.
+  message ReviewRunCompletion {
+    // The reviewer that ran.
+    ReviewRun.Type run_type = 1;
+    // Identifies the run among its reviewer's runs on the issue. The results
+    // it posted carry the same ReviewMetadata.attempt.
+    int64 attempt = 2;
+    // Results the run posted as new threads.
+    int32 posted_count = 3;
+    // Earlier results the run reported again, which kept their threads.
+    int32 kept_count = 4;
+    // Earlier results the run no longer reports, now superseded.
+    int32 superseded_count = 5;
+  }
 
   // Plan update event information (snapshot of plan.config.specs before
   // and after a PlanService.UpdatePlan call that mutated specs).

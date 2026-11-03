@@ -8,6 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -212,15 +213,16 @@ func (s *Store) ClaimAvailableReviewRuns(ctx context.Context, replicaID string) 
 // the same transaction. A current root of the same reviewer on the issue (one
 // no run has superseded) whose fingerprint a result repeats is kept as it is,
 // thread state and replies included, and that result is not posted again.
-// Every other earlier root of the reviewer is marked superseded and, if OPEN,
-// resolved; then the remaining results are inserted as OPEN roots with no
-// creator. A FAILED run leaves the comments alone and takes no results. False
+// Every other current root of the reviewer is marked superseded and, if OPEN,
+// resolved; the remaining results are inserted as OPEN roots with no creator,
+// carrying the run's attempt; and a ReviewRunCompletion event records the
+// counts. A FAILED run leaves the comments alone and takes no results. False
 // means superseded: the slot was reset or reaped since the claim, and nothing
 // was written.
 //
 // Lock order: the issue's review comments, then the run slot, then the issue
-// (the result insert's foreign key), the order the project purge deletes them
-// in. The fence therefore runs before the insert.
+// (the insert's foreign key), the order the project purge deletes them in.
+// The fence therefore runs before the inserts.
 func (s *Store) CompleteReviewRun(ctx context.Context, claimed *ClaimedReviewRun, replicaID string, status storepb.ReviewRun_Status, payload *storepb.ReviewRunPayload, results []*IssueCommentMessage) (bool, error) {
 	switch status {
 	case storepb.ReviewRun_DONE:
@@ -249,10 +251,9 @@ func (s *Store) CompleteReviewRun(ctx context.Context, claimed *ClaimedReviewRun
 	}
 	defer tx.Rollback()
 
+	var supersededCount int64
 	if status == storepb.ReviewRun_DONE {
-		// Each earlier root the run does not report again is marked once, and
-		// resolved again if someone reopened it. updated_at marks content
-		// edits, so it is left alone.
+		// updated_at marks content edits, so both updates leave it alone.
 		q := qb.Q().Space(`
 			UPDATE issue_comment
 			SET thread_state = ?,
@@ -260,18 +261,37 @@ func (s *Store) CompleteReviewRun(ctx context.Context, claimed *ClaimedReviewRun
 			WHERE project = ? AND issue_id = ?
 			  AND parent_id IS NULL
 			  AND payload->'reviewMetadata'->>'runType' = ?
-			  AND (thread_state = 'OPEN' OR payload->'reviewMetadata'->'superseded' IS NULL)
-			  AND NOT (
-			    payload->'reviewMetadata'->'superseded' IS NULL
-			    AND COALESCE(payload->'reviewMetadata'->>'fingerprint', '') = ANY(?::TEXT[])
-			  )
+			  AND payload->'reviewMetadata'->'superseded' IS NULL
+			  AND COALESCE(payload->'reviewMetadata'->>'fingerprint', '') <> ALL(?::TEXT[])
 		`, string(ThreadStateResolved), claimed.ProjectID, claimed.IssueUID, claimed.Type, fingerprints)
 		query, args, err := q.ToSQL()
 		if err != nil {
 			return false, errors.Wrapf(err, "failed to build sql")
 		}
+		result, err := tx.ExecContext(ctx, query, args...)
+		if err != nil {
+			return false, errors.Wrapf(err, "failed to supersede previous review results")
+		}
+		if supersededCount, err = result.RowsAffected(); err != nil {
+			return false, errors.Wrapf(err, "failed to get rows affected")
+		}
+
+		// A superseded root someone reopened is resolved again.
+		q = qb.Q().Space(`
+			UPDATE issue_comment
+			SET thread_state = ?
+			WHERE project = ? AND issue_id = ?
+			  AND parent_id IS NULL
+			  AND payload->'reviewMetadata'->>'runType' = ?
+			  AND payload->'reviewMetadata'->'superseded' IS NOT NULL
+			  AND thread_state = 'OPEN'
+		`, string(ThreadStateResolved), claimed.ProjectID, claimed.IssueUID, claimed.Type)
+		query, args, err = q.ToSQL()
+		if err != nil {
+			return false, errors.Wrapf(err, "failed to build sql")
+		}
 		if _, err := tx.ExecContext(ctx, query, args...); err != nil {
-			return false, errors.Wrapf(err, "failed to resolve previous review results")
+			return false, errors.Wrapf(err, "failed to resolve reopened review results")
 		}
 	}
 
@@ -299,37 +319,71 @@ func (s *Store) CompleteReviewRun(ctx context.Context, claimed *ClaimedReviewRun
 		// Superseded: the rollback discards the resolution.
 		return false, nil
 	}
+	if status != storepb.ReviewRun_DONE {
+		if err := tx.Commit(); err != nil {
+			return false, errors.Wrapf(err, "failed to commit tx")
+		}
+		return true, nil
+	}
 
+	var postedCount int64
 	if len(resultPayloads) > 0 {
 		// After the update above, the reviewer's current roots are the kept
 		// ones. created_at is offset by the ordinal for the same reason as in
-		// CreateIssueComments: the batch keeps its order. Only the posted
-		// results are numbered, so they stay a microsecond apart, which is
-		// how the activity timeline tells one run's batch from the next.
+		// CreateIssueComments, starting a microsecond after the completion
+		// event inserted below, so the results sort after it.
 		q := qb.Q().Space(`
 			INSERT INTO issue_comment (creator, project, issue_id, payload, thread_state, created_at, updated_at)
 			SELECT NULL, ?, ?, c.payload, 'OPEN', t.at, t.at
-			FROM (
-				SELECT r.payload, row_number() OVER (ORDER BY r.ordinality) AS ordinality
-				FROM unnest(?::JSONB[]) WITH ORDINALITY AS r(payload, ordinality)
-				WHERE NOT EXISTS (
-					SELECT 1 FROM issue_comment kept
-					WHERE kept.project = ? AND kept.issue_id = ?
-					  AND kept.parent_id IS NULL
-					  AND kept.payload->'reviewMetadata'->>'runType' = ?
-					  AND kept.payload->'reviewMetadata'->'superseded' IS NULL
-					  AND kept.payload->'reviewMetadata'->>'fingerprint' = r.payload->'reviewMetadata'->>'fingerprint'
-				)
-			) AS c,
-			LATERAL (SELECT now() + ((c.ordinality - 1) * interval '1 microsecond')) AS t(at)
+			FROM unnest(?::JSONB[]) WITH ORDINALITY AS c(payload, ordinality),
+			     LATERAL (SELECT now() + (c.ordinality * interval '1 microsecond')) AS t(at)
+			WHERE NOT EXISTS (
+				SELECT 1 FROM issue_comment kept
+				WHERE kept.project = ? AND kept.issue_id = ?
+				  AND kept.parent_id IS NULL
+				  AND kept.payload->'reviewMetadata'->>'runType' = ?
+				  AND kept.payload->'reviewMetadata'->'superseded' IS NULL
+				  AND kept.payload->'reviewMetadata'->>'fingerprint' = c.payload->'reviewMetadata'->>'fingerprint'
+			)
 		`, claimed.ProjectID, claimed.IssueUID, resultPayloads, claimed.ProjectID, claimed.IssueUID, claimed.Type)
 		query, args, err := q.ToSQL()
 		if err != nil {
 			return false, errors.Wrapf(err, "failed to build sql")
 		}
-		if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+		result, err := tx.ExecContext(ctx, query, args...)
+		if err != nil {
 			return false, errors.Wrapf(err, "failed to post review results")
 		}
+		if postedCount, err = result.RowsAffected(); err != nil {
+			return false, errors.Wrapf(err, "failed to get rows affected")
+		}
+	}
+
+	runType := storepb.ReviewRun_Type(storepb.ReviewRun_Type_value[claimed.Type])
+	completion, err := protojson.Marshal(&storepb.IssueCommentPayload{
+		Event: &storepb.IssueCommentPayload_ReviewRunCompletion_{
+			ReviewRunCompletion: &storepb.IssueCommentPayload_ReviewRunCompletion{
+				RunType:         runType,
+				Attempt:         claimed.Attempt,
+				PostedCount:     int32(postedCount),
+				KeptCount:       int32(int64(len(resultPayloads)) - postedCount),
+				SupersededCount: int32(supersededCount),
+			},
+		},
+	})
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to marshal review run completion")
+	}
+	q = qb.Q().Space(`
+		INSERT INTO issue_comment (creator, project, issue_id, payload, created_at, updated_at)
+		VALUES (NULL, ?, ?, ?, now(), now())
+	`, claimed.ProjectID, claimed.IssueUID, string(completion))
+	query, args, err = q.ToSQL()
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to build sql")
+	}
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+		return false, errors.Wrapf(err, "failed to record review run completion")
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -340,9 +394,10 @@ func (s *Store) CompleteReviewRun(ctx context.Context, claimed *ClaimedReviewRun
 
 // marshalReviewResults checks that every result is a current root comment
 // the claimed reviewer posted, with no event, no creator, and a fingerprint
-// no other result repeats, and returns the payloads to insert and their
-// fingerprints. The fingerprints are never nil: = ANY(NULL) is NULL, which
-// would keep every current root from being superseded.
+// no other result repeats, and returns the payloads to insert, stamped with
+// the run's attempt, and their fingerprints. The fingerprints are never nil:
+// <> ALL(NULL) is NULL, which would keep every current root from being
+// superseded.
 func marshalReviewResults(claimed *ClaimedReviewRun, results []*IssueCommentMessage) ([][]byte, []string, error) {
 	payloads := make([][]byte, 0, len(results))
 	fingerprints := make([]string, 0, len(results))
@@ -375,7 +430,9 @@ func marshalReviewResults(claimed *ClaimedReviewRun, results []*IssueCommentMess
 		if err := validateIssueCommentPayload(result.Payload); err != nil {
 			return nil, nil, err
 		}
-		payload, err := protojson.Marshal(result.Payload)
+		stamped := proto.CloneOf(result.Payload)
+		stamped.ReviewMetadata.Attempt = claimed.Attempt
+		payload, err := protojson.Marshal(stamped)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to marshal review result")
 		}

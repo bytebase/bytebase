@@ -70,7 +70,6 @@ import {
   type FindingGroup,
   type FindingPriority,
   findingTitle,
-  resolvedByPeople,
   rowNeedsAttention,
 } from "../../utils/planGates";
 import { openFindingsLabel, reviewerLabel } from "../../utils/reviewLabels";
@@ -107,20 +106,12 @@ export function AutomatedReviewSection({ state }: { state: PlanReviewState }) {
   const { rows } = state;
   const attention = rows.filter(rowNeedsAttention).length;
   const [checksDrawerOpen, setChecksDrawerOpen] = useState(false);
-  const [confirmChecks, setConfirmChecks] = useState(false);
-  const ruleRow = rows.find((row) => row.reviewer === "rule");
-  const ruleResolved = ruleRow ? resolvedByPeople(ruleRow.findings) : 0;
-
-  // Running the checks also starts the rule review on the server, which
-  // posts its findings again and reopens what people resolved.
+  // Running the checks also starts the rule review on the server.
   const rerunAll = async () => {
     await runChecks();
     await ruleReview?.reload();
   };
-  const requestRerunChecks = () => {
-    if (ruleResolved > 0) setConfirmChecks(true);
-    else void rerunAll();
-  };
+  const requestRerunChecks = () => void rerunAll();
 
   if (rows.length === 0) return null;
 
@@ -196,16 +187,6 @@ export function AutomatedReviewSection({ state }: { state: PlanReviewState }) {
         open={checksDrawerOpen}
         planCheckRuns={page.planCheckRuns}
       />
-      <RerunConfirmDialog
-        confirmLabel={t("plan.automated-review.rerun-all")}
-        description={t("plan.automated-review.rerun-all-description", {
-          count: ruleResolved,
-        })}
-        onConfirm={() => void rerunAll()}
-        onOpenChange={setConfirmChecks}
-        open={confirmChecks}
-        title={t("plan.automated-review.rerun-all-title")}
-      />
     </div>
   );
 }
@@ -274,7 +255,7 @@ function ReviewerRow({
   const comments = useAppStore((s) =>
     page.issue ? s.getIssueComments(page.issue.name) : NO_COMMENTS
   );
-  const [confirm, setConfirm] = useState<"rule" | "ai">();
+  const [confirmAI, setConfirmAI] = useState(false);
   const rowRef = useRef<HTMLDivElement>(null);
 
   // Activity's "Show" brings this row into view.
@@ -329,17 +310,12 @@ function ReviewerRow({
       row.conclusion !== "running" &&
       row.conclusion !== "loading"
     ) {
-      // A rerun posts the findings again, reopening what people resolved.
-      const start = () => {
-        if (resolvedByPeople(row.findings) > 0) setConfirm("rule");
-        else void rerunRule.run();
-      };
       actions.push(
         <RunButton
           conclusion={row.conclusion}
           disabled={rerunRule.disabled}
           key="run"
-          onClick={start}
+          onClick={() => void rerunRule.run()}
         />
       );
     }
@@ -363,7 +339,7 @@ function ReviewerRow({
           conclusion={settled ? "passed" : row.conclusion}
           disabled={!ai.canStart}
           label={settled ? undefined : t("plan.ai-review.run")}
-          onClick={() => (settled ? setConfirm("ai") : void ai.runReview())}
+          onClick={() => (settled ? setConfirmAI(true) : void ai.runReview())}
         />
       </Tooltip>
     );
@@ -426,24 +402,12 @@ function ReviewerRow({
       )}
       <RerunConfirmDialog
         confirmLabel={t("plan.automated-review.rerun")}
-        description={
-          confirm === "ai"
-            ? t("plan.ai-review.run-again-description")
-            : t("plan.automated-review.rerun-reopens", {
-                count: resolvedByPeople(row.findings),
-              })
-        }
-        disabled={confirm === "ai" ? !ai.canStart : rerunRule.disabled}
-        onConfirm={() =>
-          confirm === "ai" ? void ai.runReview() : void rerunRule.run()
-        }
-        onOpenChange={(open) => !open && setConfirm(undefined)}
-        open={confirm !== undefined}
-        title={
-          confirm === "ai"
-            ? t("plan.ai-review.run-again-title")
-            : t("plan.automated-review.rerun-rule-title")
-        }
+        description={t("plan.ai-review.run-again-description")}
+        disabled={!ai.canStart}
+        onConfirm={() => void ai.runReview()}
+        onOpenChange={setConfirmAI}
+        open={confirmAI}
+        title={t("plan.ai-review.run-again-title")}
       />
     </div>
   );

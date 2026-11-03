@@ -416,6 +416,24 @@ func TestRuleReviewKeepsThreadsAcrossRuns(t *testing.T) {
 		}
 		return out
 	}
+	// The rule review's latest completion event.
+	lastCompletion := func() *v1pb.IssueComment_ReviewRunCompletion {
+		t.Helper()
+		resp, err := ctl.issueServiceClient.ListIssueComments(ctx, connect.NewRequest(&v1pb.ListIssueCommentsRequest{Parent: issue.Msg.Name}))
+		a.NoError(err)
+		var last *v1pb.IssueComment_ReviewRunCompletion
+		for _, comment := range resp.Msg.IssueComments {
+			if completion := comment.GetReviewRunCompletion(); completion.GetRunType() == v1pb.ReviewRun_RULE {
+				a.Empty(comment.Creator)
+				last = completion
+			}
+		}
+		a.NotNil(last)
+		return last
+	}
+	counts := func(c *v1pb.IssueComment_ReviewRunCompletion) []int64 {
+		return []int64{c.GetAttempt(), int64(c.GetPostedCount()), int64(c.GetKeptCount()), int64(c.GetSupersededCount())}
+	}
 	about := func(threads map[string]*v1pb.IssueComment, table string) []*v1pb.IssueComment {
 		var out []*v1pb.IssueComment
 		for _, thread := range threads {
@@ -435,6 +453,7 @@ func TestRuleReviewKeepsThreadsAcrossRuns(t *testing.T) {
 	}
 
 	waitAttempt(0)
+	a.Equal([]int64{0, 2, 0, 0}, counts(lastCompletion()), "attempt, posted, kept, superseded")
 	first := drops()
 	a.Len(first, 2, "%v", first)
 	a.Len(about(first, "keep_a"), 1)
@@ -451,6 +470,7 @@ func TestRuleReviewKeepsThreadsAcrossRuns(t *testing.T) {
 	_, err = runReview(ctx, ctl, issue.Msg.Name, "rule")
 	a.NoError(err)
 	waitAttempt(1)
+	a.Equal([]int64{1, 0, 2, 0}, counts(lastCompletion()))
 	second := drops()
 	a.Len(second, 2, "%v", second)
 	a.Equal(v1pb.IssueComment_OPEN, second[threadA.Name].GetThreadState())
@@ -461,6 +481,7 @@ func TestRuleReviewKeepsThreadsAcrossRuns(t *testing.T) {
 	// Dropping keep_a and moving keep_b down a line supersedes A and keeps B.
 	updateSQL("SELECT 1;\nDROP TABLE IF EXISTS keep_b;")
 	waitAttempt(2)
+	a.Equal([]int64{2, 0, 1, 1}, counts(lastCompletion()))
 	third := drops()
 	a.Len(third, 2, "%v", third)
 	a.Equal(v1pb.IssueComment_RESOLVED, third[threadA.Name].GetThreadState())
@@ -471,6 +492,7 @@ func TestRuleReviewKeepsThreadsAcrossRuns(t *testing.T) {
 	// Editing B's statement judges it anew.
 	updateSQL("SELECT 1;\nDROP TABLE IF EXISTS keep_b CASCADE;")
 	waitAttempt(3)
+	a.Equal([]int64{3, 1, 0, 1}, counts(lastCompletion()))
 	fourth := drops()
 	a.Len(fourth, 3, "%v", fourth)
 	a.True(fourth[threadB.Name].GetReviewMetadata().GetSuperseded())
@@ -483,4 +505,6 @@ func TestRuleReviewKeepsThreadsAcrossRuns(t *testing.T) {
 	a.Len(current, 1)
 	a.NotEqual(threadB.Name, current[0].Name)
 	a.Equal(v1pb.IssueComment_OPEN, current[0].GetThreadState())
+	a.Equal(int64(3), current[0].GetReviewMetadata().GetAttempt())
+	a.Equal(int64(0), fourth[threadB.Name].GetReviewMetadata().GetAttempt())
 }

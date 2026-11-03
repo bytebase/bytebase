@@ -191,6 +191,7 @@
     - [IssueComment.IssueUpdate](#bytebase-v1-IssueComment-IssueUpdate)
     - [IssueComment.PlanUpdate](#bytebase-v1-IssueComment-PlanUpdate)
     - [IssueComment.ReviewMetadata](#bytebase-v1-IssueComment-ReviewMetadata)
+    - [IssueComment.ReviewRunCompletion](#bytebase-v1-IssueComment-ReviewRunCompletion)
     - [IssueComment.ReviewSubmission](#bytebase-v1-IssueComment-ReviewSubmission)
     - [ListIssueCommentsRequest](#bytebase-v1-ListIssueCommentsRequest)
     - [ListIssueCommentsResponse](#bytebase-v1-ListIssueCommentsResponse)
@@ -3638,6 +3639,7 @@ A comment on an issue.
 | issue_update | [IssueComment.IssueUpdate](#bytebase-v1-IssueComment-IssueUpdate) |  | Issue update event. |
 | plan_update | [IssueComment.PlanUpdate](#bytebase-v1-IssueComment-PlanUpdate) |  | Plan update event. |
 | review_submission | [IssueComment.ReviewSubmission](#bytebase-v1-IssueComment-ReviewSubmission) |  | Review submission event. |
+| review_run_completion | [IssueComment.ReviewRunCompletion](#bytebase-v1-IssueComment-ReviewRunCompletion) |  | Review run completion event. |
 
 
 
@@ -3710,7 +3712,28 @@ What a review result carries beyond its text.
 | rule_type | [ReviewRuleType](#bytebase-v1-ReviewRuleType) |  | The rule judged against. Set if and only if run_type is RULE. |
 | priority | [IssueComment.ReviewMetadata.Priority](#bytebase-v1-IssueComment-ReviewMetadata-Priority) |  |  |
 | targets | [string](#string) | repeated | Every database the result applies to, sorted. Format: instances/{instance}/databases/{database} |
-| superseded | [bool](#bool) |  | A later run of the same reviewer has completed, so the result is not from the latest review, whatever its thread state. |
+| superseded | [bool](#bool) |  | A later run of the same reviewer has completed without reporting the result again, whatever its thread state. |
+| attempt | [int64](#int64) |  | The ReviewRunCompletion.attempt of the run that posted the result. A result a later run reports again keeps its thread and its attempt. |
+
+
+
+
+
+
+<a name="bytebase-v1-IssueComment-ReviewRunCompletion"></a>
+
+### IssueComment.ReviewRunCompletion
+A review run completed, and what it did to the results of its reviewer.
+Posted by the reviewer, with no creator.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| run_type | [ReviewRun.Type](#bytebase-v1-ReviewRun-Type) |  | The reviewer that ran. |
+| attempt | [int64](#int64) |  | Identifies the run among its reviewer&#39;s runs on the issue. The results it posted carry the same ReviewMetadata.attempt. |
+| posted_count | [int32](#int32) |  | Results the run posted as new threads. |
+| kept_count | [int32](#int32) |  | Earlier results the run reported again, which kept their threads. |
+| superseded_count | [int32](#int32) |  | Earlier results the run no longer reports, now superseded. |
 
 
 

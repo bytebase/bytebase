@@ -903,6 +903,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.IssueComment.ReviewRunCompletion"><span class="badge">M</span>IssueComment.ReviewRunCompletion</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.IssueComment.ReviewSubmission"><span class="badge">M</span>IssueComment.ReviewSubmission</a>
                 </li>
               
@@ -11113,6 +11117,13 @@ Never accepted on create or update. </p></td>
                   <td><p>Review submission event. </p></td>
                 </tr>
               
+                <tr>
+                  <td>review_run_completion</td>
+                  <td><a href="#bytebase.v1.IssueComment.ReviewRunCompletion">IssueComment.ReviewRunCompletion</a></td>
+                  <td></td>
+                  <td><p>Review run completion event. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -11291,8 +11302,69 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td>superseded</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>A later run of the same reviewer has completed, so the result is not
-from the latest review, whatever its thread state. </p></td>
+                  <td><p>A later run of the same reviewer has completed without reporting the
+result again, whatever its thread state. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>attempt</td>
+                  <td><a href="#int64">int64</a></td>
+                  <td></td>
+                  <td><p>The ReviewRunCompletion.attempt of the run that posted the result. A
+result a later run reports again keeps its thread and its attempt. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.IssueComment.ReviewRunCompletion">IssueComment.ReviewRunCompletion</h3>
+        <p>A review run completed, and what it did to the results of its reviewer.</p><p>Posted by the reviewer, with no creator.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>run_type</td>
+                  <td><a href="#bytebase.v1.ReviewRun.Type">ReviewRun.Type</a></td>
+                  <td></td>
+                  <td><p>The reviewer that ran. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>attempt</td>
+                  <td><a href="#int64">int64</a></td>
+                  <td></td>
+                  <td><p>Identifies the run among its reviewer&#39;s runs on the issue. The results
+it posted carry the same ReviewMetadata.attempt. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>posted_count</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>Results the run posted as new threads. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>kept_count</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>Earlier results the run reported again, which kept their threads. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>superseded_count</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>Earlier results the run no longer reports, now superseded. </p></td>
                 </tr>
               
             </tbody>
