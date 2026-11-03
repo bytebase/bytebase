@@ -496,9 +496,9 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Reques
 		Policy:       iamPolicy,
 		ExpectedEtag: expectedEtag,
 		// The seat count this change is measured against is the one it replaces,
-		// so it is taken under the same lock. Counting from the read above left
-		// two concurrent writes both passing the guard, and the later one growing
-		// an over-limit workspace -- for an etag-less caller, which the
+		// so it is taken under the same lock. Counted from an unlocked read, two
+		// concurrent writes could both pass the guard and the later one grow an
+		// over-limit workspace -- for an etag-less caller, which the
 		// compare-and-swap does not cover.
 		ValidateReplaced: func(previous *storepb.IamPolicy) error {
 			if err := validateReplaced(previous); err != nil {
