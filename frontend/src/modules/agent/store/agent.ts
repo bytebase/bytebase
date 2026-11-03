@@ -18,6 +18,7 @@ import {
   normalizeAgentResourceReferences,
 } from "../logic/resourceMention";
 import { normalizeAgentResponseActions } from "../logic/responseActions";
+import { normalizeModelCallUsage } from "../logic/tokenUsage";
 import type {
   AgentAskUserResponse,
   AgentChat,
@@ -27,6 +28,7 @@ import type {
   AgentInterruptionReason,
   AgentMentionRange,
   AgentMessage,
+  AgentModelCallUsage,
   AgentPendingAsk,
   AgentResourceReference,
   AgentResponseAction,
@@ -454,6 +456,19 @@ const normalizeChat = (raw: unknown): AgentChat => {
       chat.totalTokensUsed >= 0
         ? chat.totalTokensUsed
         : 0,
+    hasUnreportedUsage: chat.hasUnreportedUsage === true,
+    lastRunUsage:
+      isRecord(chat.lastRunUsage) &&
+      typeof chat.lastRunUsage.runId === "string" &&
+      Array.isArray(chat.lastRunUsage.calls)
+        ? {
+            runId: chat.lastRunUsage.runId,
+            calls: chat.lastRunUsage.calls.flatMap((call) => {
+              const usage = normalizeModelCallUsage(call);
+              return usage ? [usage] : [];
+            }),
+          }
+        : undefined,
     page:
       isRecord(chat.page) &&
       typeof chat.page.path === "string" &&
@@ -766,6 +781,11 @@ export interface AgentState {
     chatId: string,
     totalTokensUsed: number
   ) => AgentChat | null;
+  recordChatModelCallUsage: (
+    chatId: string,
+    runId: string,
+    usage: AgentModelCallUsage
+  ) => void;
 
   // Abort
   setAbortController: (
@@ -1847,6 +1867,9 @@ export const createAgentStore = () => {
             if (chat) {
               chat.runId = options.runId ?? chat.runId ?? null;
               chat.runMode = options.runMode;
+              if (chat.runId && chat.lastRunUsage?.runId !== chat.runId) {
+                chat.lastRunUsage = { runId: chat.runId, calls: [] };
+              }
               setLastUserInterruptionReason(
                 state.messagesByChatId[chatId] ?? []
               );
@@ -1989,6 +2012,23 @@ export const createAgentStore = () => {
             }
           });
           return _getChat(chatId);
+        },
+
+        recordChatModelCallUsage: (chatId, runId, rawUsage) => {
+          const usage = normalizeModelCallUsage(rawUsage);
+          if (!usage || !_getChat(chatId)) return;
+          set((state) => {
+            const chat = state.chats.find(
+              (candidate) => candidate.id === chatId
+            );
+            if (!chat) return;
+            chat.totalTokensUsed += usage.totalTokens ?? 0;
+            if (usage.totalTokens === undefined) chat.hasUnreportedUsage = true;
+            if (chat.lastRunUsage?.runId === runId) {
+              chat.lastRunUsage.calls.push(usage);
+            }
+            _touchChatInDraft(state.chats, chatId);
+          });
         },
 
         // Abort / cancel

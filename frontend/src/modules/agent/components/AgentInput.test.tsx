@@ -480,6 +480,44 @@ describe("AgentInput", () => {
     view.unmount();
   });
 
+  test("shows only a processing placeholder while running and restores the idle hint afterward", () => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat(undefined, "projects/orders");
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+
+    act(() => store.setChatStatus(chat.id, "running"));
+
+    expect(
+      view.container.querySelector("[data-agent-input-placeholder]")?.textContent
+    ).toBe("agent.input-processing-placeholder");
+    expect(view.container.textContent).not.toContain("agent.input-keyboard-hint");
+    expect(view.container.querySelector("textarea")?.disabled).toBe(true);
+    expect(view.container.textContent).toContain("agent.stop");
+
+    act(() => store.setChatStatus(chat.id, "idle"));
+
+    expect(
+      view.container.querySelector("[data-agent-input-placeholder]")?.textContent
+    ).toBe("agent.input-placeholder · agent.input-keyboard-hint");
+    expect(view.container.querySelector("textarea")?.disabled).toBe(false);
+    view.unmount();
+  });
+
+  test("keeps a retained draft visible while running", () => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat(undefined, "projects/orders");
+    store.setDraft(chat.id, { text: "List databases" });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+
+    act(() => store.setChatStatus(chat.id, "running"));
+
+    expect(view.container.querySelector("textarea")?.value).toBe("List databases");
+    expect(view.container.querySelector("[data-agent-input-placeholder]")).toBeNull();
+    view.unmount();
+  });
+
   test("sends a queued Project Home message in its bound chat once", async () => {
     mocks.runAgentLoop.mockResolvedValue({
       kind: "completed",
@@ -998,6 +1036,59 @@ describe("AgentInput", () => {
     ]);
     expect(mocks.aiChat).toHaveBeenCalledOnce();
     expect(useAgentStore.getState().getChat(chat.id)?.totalTokensUsed).toBe(7);
+    view.unmount();
+  });
+
+  test("records each model response once while automatically adding follow-up questions", async () => {
+    mocks.aiChat.mockResolvedValue({
+      content: '["What should I do next?", "How can I verify this?"]',
+      toolCalls: [],
+      stopReason: AIChatResponse_StopReason.TURN_COMPLETED,
+      usage: { totalTokens: 30, inputTokens: 20, outputTokens: 10 },
+    });
+    mocks.runAgentLoop.mockImplementation(async (_history, _tools, _executor, callbacks) => {
+      callbacks.onUsage({ purpose: "agent", toolNames: ["done"], totalTokens: 120, inputTokens: 100, outputTokens: 20 });
+      callbacks.onText("Two changes need your review.");
+      return { kind: "completed", success: true, totalTokensUsed: 120 };
+    });
+    const page = { path: "/projects/orders", title: "Orders" };
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/orders", page });
+    store.queueUserMessage({ chatId: chat.id, text: "What should I review?", page });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => {
+      await vi.waitFor(() => expect(store.getChat(chat.id)?.totalTokensUsed).toBe(150));
+    });
+    expect(store.getChat(chat.id)?.lastRunUsage?.calls).toEqual([
+      { purpose: "agent", toolNames: ["done"], totalTokens: 120, inputTokens: 100, outputTokens: 20 },
+      { purpose: "follow-up", toolNames: [], totalTokens: 30, inputTokens: 20, outputTokens: 10 },
+    ]);
+    expect(store.getMessages(chat.id).find(message => message.content === "Two changes need your review.")?.metadata?.actions).toHaveLength(2);
+    view.unmount();
+  });
+
+  test("records a returned response even when its run was canceled", async () => {
+    let reportUsage!: () => void;
+    let resolveRun!: (result: { kind: "aborted"; totalTokensUsed: number }) => void;
+    mocks.runAgentLoop.mockImplementation((_history, _tools, _executor, callbacks) => {
+      reportUsage = () => callbacks.onUsage({ purpose: "agent", toolNames: [], totalTokens: 40 });
+      return new Promise(resolve => { resolveRun = resolve; });
+    });
+    const page = { path: "/projects/orders", title: "Orders" };
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/orders", page });
+    store.queueUserMessage({ chatId: chat.id, text: "What should I review?", page });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => {
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+      store.cancel(chat.id);
+      reportUsage();
+      resolveRun({ kind: "aborted", totalTokensUsed: 40 });
+    });
+    expect(store.getChat(chat.id)?.totalTokensUsed).toBe(40);
+    expect(store.getChat(chat.id)?.lastRunUsage?.calls).toHaveLength(1);
     view.unmount();
   });
 

@@ -107,6 +107,15 @@ func (x *AIChatUsage) Equal(y *AIChatUsage) bool {
 	if x.TotalTokens != y.TotalTokens {
 		return false
 	}
+	if p, q := x.InputTokens, y.InputTokens; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
+		return false
+	}
+	if p, q := x.OutputTokens, y.OutputTokens; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
+		return false
+	}
+	if p, q := x.CachedInputTokens, y.CachedInputTokens; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
+		return false
+	}
 	return true
 }
 

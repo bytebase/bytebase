@@ -30,6 +30,37 @@ describe("lazyExtractDomRefSuggestions", () => {
       lazyExecuteDomAction({ type: "read", ref: "e1" })
     ).resolves.toEqual({ success: true, message: "Run" });
   });
+
+  test("does not expose password values in snapshots or DOM reads", async () => {
+    document.body.innerHTML = `<label>Password <input type="password" value="top-secret" /></label>`;
+
+    const { tree } = await lazyExtractDomTree();
+    const input = (await lazyExtractDomRefSuggestions()).find(
+      (entry) => entry.tag === "input"
+    );
+
+    expect(tree).not.toContain("top-secret");
+    expect(input).toMatchObject({ value: undefined });
+    expect(
+      await lazyExecuteDomAction({ type: "read", ref: input!.ref })
+    ).toEqual({
+      success: false,
+      message: "Password fields are hidden from the agent.",
+    });
+    expect(
+      await lazyExecuteDomAction({
+        type: "input",
+        ref: input!.ref,
+        value: "new-secret",
+      })
+    ).toEqual({
+      success: false,
+      message: "Password fields are hidden from the agent.",
+    });
+    expect((document.querySelector("input") as HTMLInputElement).value).toBe(
+      "top-secret"
+    );
+  });
 });
 
 describe("lazyExecuteDomAction", () => {

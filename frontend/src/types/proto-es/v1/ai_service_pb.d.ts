@@ -166,6 +166,27 @@ export declare type AIChatUsage = Message<"bytebase.v1.AIChatUsage"> & {
    * @generated from field: int32 total_tokens = 1;
    */
   totalTokens: number;
+
+  /**
+   * Input tokens used by the provider call, including cached input.
+   *
+   * @generated from field: optional int32 input_tokens = 2;
+   */
+  inputTokens?: number | undefined;
+
+  /**
+   * Output tokens used by the provider call, including reasoning tokens.
+   *
+   * @generated from field: optional int32 output_tokens = 3;
+   */
+  outputTokens?: number | undefined;
+
+  /**
+   * Input tokens read from cache. This is a subset of input_tokens.
+   *
+   * @generated from field: optional int32 cached_input_tokens = 4;
+   */
+  cachedInputTokens?: number | undefined;
 };
 
 /**

@@ -434,6 +434,7 @@ function extractValue(el: Element): string | undefined {
     if (el.type === "checkbox" || el.type === "radio") {
       return el.checked ? "checked" : "unchecked";
     }
+    if (el.type === "password") return undefined;
     const value = normalizeTextContent(el.value);
     return value ? truncateText(value, MAX_LABEL_LENGTH) : undefined;
   }

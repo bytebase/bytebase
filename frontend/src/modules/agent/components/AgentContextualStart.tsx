@@ -5,6 +5,7 @@ import {
   Database,
   Folder,
   LoaderCircle,
+  Server,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,8 @@ export function AgentContextualStart({
   onContinue,
 }: AgentContextualStartProps) {
   const { t } = useTranslation();
+  const requiresReference =
+    page.kind === "database" || page.kind === "plan" || page.kind === "issue";
   const Icon =
     page.kind === "project"
       ? Folder
@@ -40,38 +43,59 @@ export function AgentContextualStart({
         ? Database
         : page.kind === "plan"
           ? ClipboardList
-          : CircleDot;
-  const heading =
-    page.kind === "project"
-      ? t("agent.contextual-start.project-heading")
-      : page.kind === "database"
-        ? t("agent.contextual-start.database-heading")
-        : page.kind === "plan"
-          ? t("agent.contextual-start.plan-heading")
-          : t("agent.contextual-start.issue-heading");
-  const suggestions =
-    page.kind === "project"
-      ? [
-          t("agent.landing-starters.project-next"),
-          t("agent.landing-starters.project-open-blockers"),
-          t("agent.landing-starters.project-open-recent"),
-        ]
-      : page.kind === "database"
-        ? [
-            t("agent.contextual-start.database-schema"),
-            t("agent.contextual-start.database-recent"),
-          ]
-        : page.kind === "plan"
-          ? [
-              t("agent.contextual-start.plan-changes"),
-              t("agent.contextual-start.plan-risks"),
-              t("agent.contextual-start.plan-status"),
-            ]
-          : [
-              t("agent.contextual-start.issue-summary"),
-              t("agent.contextual-start.issue-changes"),
-              t("agent.contextual-start.issue-security"),
-            ];
+          : page.kind === "issue"
+            ? CircleDot
+            : Server;
+  let heading = "";
+  let suggestions: string[] = [];
+  switch (page.kind) {
+    case "project":
+      heading = t("agent.contextual-start.project-heading");
+      suggestions = [
+        t("agent.landing-starters.project-next"),
+        t("agent.landing-starters.project-open-blockers"),
+        t("agent.landing-starters.project-open-recent"),
+      ];
+      break;
+    case "database":
+      heading = t("agent.contextual-start.database-heading");
+      suggestions = [
+        t("agent.contextual-start.database-schema"),
+        t("agent.contextual-start.database-recent"),
+      ];
+      break;
+    case "plan":
+      heading = t("agent.contextual-start.plan-heading");
+      suggestions = [
+        t("agent.contextual-start.plan-changes"),
+        t("agent.contextual-start.plan-risks"),
+        t("agent.contextual-start.plan-status"),
+      ];
+      break;
+    case "issue":
+      heading = t("agent.contextual-start.issue-heading");
+      suggestions = [
+        t("agent.contextual-start.issue-summary"),
+        t("agent.contextual-start.issue-changes"),
+        t("agent.contextual-start.issue-security"),
+      ];
+      break;
+    case "instance":
+      heading = t("agent.contextual-start.instance-heading");
+      suggestions = [
+        t("agent.contextual-start.instance-sync"),
+        t("agent.contextual-start.instance-connection-permissions"),
+      ];
+      break;
+    case "instance-create":
+      heading = t("agent.contextual-start.instance-create-heading");
+      suggestions = [
+        t("agent.contextual-start.instance-create-details"),
+        t("agent.contextual-start.instance-create-transport"),
+        t("agent.contextual-start.instance-create-troubleshoot"),
+      ];
+      break;
+  }
 
   return (
     <div
@@ -84,7 +108,7 @@ export function AgentContextualStart({
           <span className="min-w-0 truncate">{title}</span>
         </div>
         <h2 className="mt-3 text-xl font-semibold text-main">{heading}</h2>
-        {page.kind !== "project" && !loading && !reference ? (
+        {requiresReference && !loading && !reference ? (
           <p className="mt-4 text-sm text-control-light">
             {t("agent.contextual-start.resource-unavailable")}
           </p>
@@ -94,7 +118,7 @@ export function AgentContextualStart({
               {t("agent.empty-chat.suggestions")}
             </div>
             <div className="mt-2 divide-y divide-block-border border-y border-block-border">
-              {page.kind !== "project" && (
+              {requiresReference && (
                 <Button
                   appearance="secondary"
                   size="md"
@@ -122,9 +146,7 @@ export function AgentContextualStart({
                   appearance="secondary"
                   size="md"
                   className="h-auto w-full min-w-0 justify-between rounded-xs px-3 py-2 text-left whitespace-normal hover:text-accent"
-                  disabled={
-                    !canStart || (page.kind !== "project" && !reference)
-                  }
+                  disabled={!canStart || (requiresReference && !reference)}
                   onClick={() => onStart(suggestion, reference)}
                   data-agent-contextual-suggestion
                 >

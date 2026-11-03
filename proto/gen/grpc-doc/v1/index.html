@@ -15477,6 +15477,27 @@ Frontend must echo this back unchanged when sending tool results. </p></td>
                   <td><p>Total tokens used by the provider call. </p></td>
                 </tr>
               
+                <tr>
+                  <td>input_tokens</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td>optional</td>
+                  <td><p>Input tokens used by the provider call, including cached input. </p></td>
+                </tr>
+
+                <tr>
+                  <td>output_tokens</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td>optional</td>
+                  <td><p>Output tokens used by the provider call, including reasoning tokens. </p></td>
+                </tr>
+
+                <tr>
+                  <td>cached_input_tokens</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td>optional</td>
+                  <td><p>Input tokens read from cache. This is a subset of input_tokens. </p></td>
+                </tr>
+
             </tbody>
           </table>
 

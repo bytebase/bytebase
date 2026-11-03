@@ -31,6 +31,7 @@ import {
   formSectionContentStyle,
   formSectionDescriptionStyle,
   formSectionHeaderStyle,
+  formSectionHeadingRowStyle,
   formSectionNoPaddingStyle,
   formSectionStyle,
   formSectionTitleStyle,
@@ -311,6 +312,7 @@ function FormFieldGroup({
 interface FormSectionProps extends Omit<ComponentProps<"section">, "title"> {
   title: ReactNode;
   description?: ReactNode;
+  action?: ReactNode;
   /** Removes the section's outer vertical padding when its page layout owns spacing. */
   padding?: "default" | "none";
   /**
@@ -367,6 +369,7 @@ function FormSection({
   style,
   title,
   description,
+  action,
   layout = "default",
   padding = "default",
   ...props
@@ -377,6 +380,7 @@ function FormSection({
     padding === "none" && formSectionNoPaddingStyle()
   );
   const headerStylexProps = stylex.props(styles.header());
+  const headingRowStylexProps = stylex.props(formSectionHeadingRowStyle());
   const titleStylexProps = stylex.props(styles.title());
   const descriptionStylexProps = stylex.props(formSectionDescriptionStyle());
   const contentStylexProps = stylex.props(styles.content());
@@ -394,15 +398,34 @@ function FormSection({
         className={headerStylexProps.className}
         style={headerStylexProps.style}
       >
-        <div
-          role="heading"
-          aria-level={2}
-          data-slot="form-section-title"
-          className={titleStylexProps.className}
-          style={titleStylexProps.style}
-        >
-          {title}
-        </div>
+        {action !== undefined ? (
+          <div
+            data-slot="form-section-heading-row"
+            className={headingRowStylexProps.className}
+            style={headingRowStylexProps.style}
+          >
+            <div
+              role="heading"
+              aria-level={2}
+              data-slot="form-section-title"
+              className={titleStylexProps.className}
+              style={{ ...titleStylexProps.style, width: "fit-content" }}
+            >
+              {title}
+            </div>
+            {action}
+          </div>
+        ) : (
+          <div
+            role="heading"
+            aria-level={2}
+            data-slot="form-section-title"
+            className={titleStylexProps.className}
+            style={titleStylexProps.style}
+          >
+            {title}
+          </div>
+        )}
         {description !== undefined && (
           <div
             data-slot="form-section-description"

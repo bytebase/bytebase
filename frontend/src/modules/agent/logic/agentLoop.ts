@@ -12,9 +12,11 @@ import {
   AIChatToolDefinitionSchema,
 } from "@/types/proto-es/v1/ai_service_pb";
 import { parseCallApiResult } from "./callApiResult";
+import { getModelCallUsage } from "./tokenUsage";
 import type {
   AgentHandoff,
   AgentLoopOutcome,
+  AgentModelCallUsage,
   Message,
   ToolCall,
   ToolDefinition,
@@ -165,6 +167,7 @@ export interface AgentCallbacks {
   onToolResult?: (toolCallId: string, result: string) => void;
   onText?: (text: string, handoff?: AgentHandoff) => void;
   onError?: (error: Error) => void;
+  onUsage?: (usage: AgentModelCallUsage) => void;
 }
 
 export interface AgentLoopOptions {
@@ -329,11 +332,12 @@ export async function runAgentLoop(
         }
       );
 
+      totalTokensUsed += response.usage?.totalTokens ?? 0;
+      callbacks?.onUsage?.(getModelCallUsage("agent", response));
+
       if (signal?.aborted) {
         return { kind: "aborted", totalTokensUsed };
       }
-
-      totalTokensUsed += response.usage?.totalTokens ?? 0;
 
       if (response.toolCalls.length > 0) {
         if (

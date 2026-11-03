@@ -3,7 +3,6 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
-  useMemo,
   useRef,
   useState,
 } from "react";
@@ -74,6 +73,7 @@ import type {
   AgentEvidence,
   AgentHandoff,
   AgentMessage,
+  AgentModelCallUsage,
   AgentResourceReference,
   AgentRunMode,
   Message,
@@ -90,6 +90,7 @@ import {
 import { AgentContextPicker } from "./AgentContextPicker";
 import { AgentMentionTextarea } from "./AgentMentionTextarea";
 import { AgentResourcePicker } from "./AgentResourcePicker";
+import { AgentTokenUsage } from "./AgentTokenUsage";
 
 // Module-level map — survives across renders.
 const runTokens = new Map<string, number>();
@@ -105,8 +106,6 @@ const isCurrentChatScope = (
     current.getChat(chatId) !== null
   );
 };
-
-const tokenFormatter = new Intl.NumberFormat();
 
 const formatPermissionTime = (expiresAt: number): string => {
   const seconds = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
@@ -648,13 +647,6 @@ export function AgentInput({
     isAIConfigurationBlocked ||
     hasAdditionalMention ||
     !input.trim();
-  const currentChatTokenUsageLabel = useMemo(
-    () =>
-      t("agent.chat-total-tokens", {
-        count: tokenFormatter.format(currentChat?.totalTokensUsed ?? 0),
-      }),
-    [currentChat?.totalTokensUsed, t]
-  );
   const contextTitle = projectContext
     ? contextProject?.title || projectContext.slice(projectNamePrefix.length)
     : context === workspace?.name
@@ -967,6 +959,11 @@ export function AgentInput({
       const referencedIssue = issueReference?.name;
       const referencedPlan = planReference?.name;
       const controller = new AbortController();
+      const recordUsage = (usage: AgentModelCallUsage) => {
+        if (isCurrentChatScope(store, chatId)) {
+          store.recordChatModelCallUsage(chatId, runId, usage);
+        }
+      };
       const runToken = (runTokens.get(chatId) ?? 0) + 1;
       runTokens.set(chatId, runToken);
       store.setAbortController(chatId, controller);
@@ -1343,6 +1340,7 @@ export function AgentInput({
             });
           },
           {
+            onUsage: recordUsage,
             onAssistantMessage: (message) => {
               for (const toolCall of message.toolCalls ?? []) {
                 toolNamesByCallId.set(toolCall.id, toolCall.name);
@@ -1410,10 +1408,6 @@ export function AgentInput({
         ) {
           return;
         }
-        useAgentStore
-          .getState()
-          .incrementChatTotalTokens(chatId, outcome.totalTokensUsed ?? 0);
-
         const queryCalls = getCurrentTurnQueryCalls(
           useAgentStore.getState().getMessages(chatId)
         );
@@ -1497,7 +1491,8 @@ export function AgentInput({
             lastUserMessage?.content ?? "",
             finalText,
             followUpRequest.context,
-            controller.signal
+            controller.signal,
+            recordUsage
           );
           if (
             controller.signal.aborted ||
@@ -1506,9 +1501,6 @@ export function AgentInput({
           ) {
             return;
           }
-          useAgentStore
-            .getState()
-            .incrementChatTotalTokens(chatId, followUp.totalTokensUsed);
           if (followUp.actions.length > 0) {
             useAgentStore
               .getState()
@@ -2304,7 +2296,7 @@ export function AgentInput({
       )}
 
       <div
-        className="mb-1 flex items-center justify-between gap-2 text-xs text-control-light"
+        className="mb-1 flex flex-wrap items-center justify-between gap-2 text-xs text-control-light"
         data-agent-input-footer
       >
         <AgentContextPicker
@@ -2314,7 +2306,7 @@ export function AgentInput({
           disabled={loading || Boolean(currentPendingAsk)}
           onSelect={selectContext}
         />
-        <span className="shrink-0">{currentChatTokenUsageLabel}</span>
+        <AgentTokenUsage key={currentChat?.id} chat={currentChat} />
       </div>
 
       {/* Confirm buttons */}
@@ -2376,7 +2368,13 @@ export function AgentInput({
                 className="pointer-events-none absolute inset-x-3 inset-y-0 z-10 flex items-center truncate text-sm leading-5 text-control-light"
                 data-agent-input-placeholder
               >
-                {inputPlaceholder} · {t("agent.input-keyboard-hint")}
+                {isCurrentChatRunning ? (
+                  t("agent.input-processing-placeholder")
+                ) : (
+                  <>
+                    {inputPlaceholder} · {t("agent.input-keyboard-hint")}
+                  </>
+                )}
               </div>
             )}
             <AgentMentionTextarea

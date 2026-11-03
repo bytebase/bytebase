@@ -1,4 +1,5 @@
 import { create } from "@bufbuild/protobuf";
+import { Code, ConnectError } from "@connectrpc/connect";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
@@ -91,6 +92,7 @@ vi.mock("@/utils", () => ({
   calcUpdateMask: () => [],
   convertKVListToLabels: (list: { key: string; value: string }[]) =>
     Object.fromEntries(list.map(({ key, value }) => [key, value])),
+  engineNameV1: () => "PostgreSQL",
   extractInstanceResourceName: (name: string) => name.split("/").at(-1) ?? "",
   isValidSpannerDataSource: (ds: { projectId: string; instanceId: string }) =>
     ds.projectId !== "" && ds.instanceId !== "",
@@ -590,6 +592,119 @@ describe("InstanceFormButtons", () => {
     });
   });
 
+  test("does not render general Agent help in the instance creation footer", async () => {
+    const onAskAgent = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<InstanceFormButtons onAskAgent={onAskAgent} />);
+    });
+
+    expect(
+      Array.from(container.querySelectorAll("button")).some((button) =>
+        button.textContent?.includes("instance.ask-agent")
+      )
+    ).toBe(false);
+    expect(onAskAgent).not.toHaveBeenCalled();
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  test("offers Agent help with safe connection failure context", async () => {
+    const onAskAgent = vi.fn();
+    const context = mocks.context as {
+      testConnection: ReturnType<typeof vi.fn>;
+    };
+    context.testConnection.mockResolvedValue({
+      success: false,
+      message: "dial tcp private-host.example.com:5432: i/o timeout",
+      failureCategory: "network_unreachable",
+    });
+
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<InstanceFormButtons onAskAgent={onAskAgent} />);
+    });
+
+    const testButton = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("instance.test-connection")
+    );
+    await act(async () => {
+      testButton?.click();
+      await flushPromises();
+    });
+
+    const askAgentButton = Array.from(
+      container.querySelectorAll("button")
+    ).find((button) =>
+      button.textContent?.includes("instance.ask-agent-about-error")
+    );
+    expect(askAgentButton).toBeDefined();
+
+    await act(async () => {
+      askAgentButton?.click();
+    });
+
+    expect(onAskAgent).toHaveBeenCalledOnce();
+    const prompt = onAskAgent.mock.calls[0][0] as string;
+    expect(prompt).toContain("network_unreachable");
+    expect(prompt).not.toContain("private-host.example.com");
+    expect(prompt).not.toContain("i/o timeout");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  test("offers Agent help when instance creation fails", async () => {
+    const onAskAgent = vi.fn();
+    mocks.createInstance.mockRejectedValue(
+      new ConnectError("permission denied", Code.PermissionDenied)
+    );
+
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<InstanceFormButtons onAskAgent={onAskAgent} />);
+    });
+
+    const createButton = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("common.create")
+    );
+    await act(async () => {
+      createButton?.click();
+      await flushPromises();
+    });
+
+    expect(container.textContent).toContain("permission denied");
+    const askAgentButton = Array.from(
+      container.querySelectorAll("button")
+    ).find((button) =>
+      button.textContent?.includes("instance.ask-agent-about-error")
+    );
+    expect(askAgentButton).toBeDefined();
+
+    await act(async () => {
+      askAgentButton?.click();
+    });
+
+    expect(onAskAgent).toHaveBeenCalledOnce();
+    const prompt = onAskAgent.mock.calls[0][0] as string;
+    expect(prompt).toContain("instance creation");
+    expect(prompt).toContain("Server status: PermissionDenied");
+    expect(prompt).not.toContain("permission denied");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   test("uses structured recovery category from connection test failures", async () => {
     const context = mocks.context as {
       emitShowConnectionOptions: ReturnType<typeof vi.fn>;
@@ -662,6 +777,52 @@ describe("InstanceFormButtons", () => {
     expect(
       container.querySelector('[data-testid="alert-dialog-content"]')
     ).toHaveClass("max-w-2xl");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  test("opens read-only Agent help instead of continuing after a failed create-time test", async () => {
+    const onAskAgent = vi.fn();
+    const context = mocks.context as {
+      testConnection: ReturnType<typeof vi.fn>;
+    };
+    context.testConnection.mockResolvedValue({
+      success: false,
+      message: "database authentication failed",
+      failureCategory: "auth_failed",
+    });
+
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<InstanceFormButtons onAskAgent={onAskAgent} />);
+    });
+
+    const createButton = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("common.create")
+    );
+    await act(async () => {
+      createButton?.click();
+      await flushPromises();
+    });
+
+    const askAgentButton = Array.from(
+      container.querySelectorAll("button")
+    ).find((button) =>
+      button.textContent?.includes("instance.ask-agent-about-error")
+    );
+    expect(askAgentButton).toBeDefined();
+
+    await act(async () => {
+      askAgentButton?.click();
+    });
+
+    expect(onAskAgent).toHaveBeenCalledOnce();
+    expect(onAskAgent.mock.calls[0][0]).toContain("auth_failed");
+    expect(mocks.createInstance).not.toHaveBeenCalled();
 
     await act(async () => {
       root.unmount();

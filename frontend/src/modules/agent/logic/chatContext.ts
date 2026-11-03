@@ -1,10 +1,14 @@
 import { type ReactRoute, router } from "@/app/router";
 import {
+  INSTANCE_ROUTE_CREATE,
+  INSTANCE_ROUTE_DETAIL,
   isPlanDetailResourceRoute,
   PROJECT_V1_ROUTE_DASHBOARD,
   PROJECT_V1_ROUTE_DATABASE_CHANGELOG_DETAIL,
   PROJECT_V1_ROUTE_DATABASE_DETAIL,
   PROJECT_V1_ROUTE_DATABASE_REVISION_DETAIL,
+  PROJECT_V1_ROUTE_INSTANCE_CREATE,
+  PROJECT_V1_ROUTE_INSTANCE_DETAIL,
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL,
 } from "@/app/router/handles";
@@ -42,16 +46,38 @@ export type AgentPageResource =
       project: string;
       names: string[];
     }
-  | { kind: "issue"; name: string; project: string };
+  | { kind: "issue"; name: string; project: string }
+  | { kind: "instance"; name: string; project?: string }
+  | { kind: "instance-create"; project?: string };
 
 export function resolveAgentPageResource(
   route: ReactRoute
 ): AgentPageResource | undefined {
   const { projectId, instanceId, databaseName, issueId, planId } = route.params;
-  if (typeof projectId !== "string" || !projectId || projectId === "-") {
-    return undefined;
+  const project =
+    typeof projectId === "string" && projectId && projectId !== "-"
+      ? `${projectNamePrefix}${projectId}`
+      : undefined;
+  if (
+    route.name === INSTANCE_ROUTE_CREATE ||
+    (project && route.name === PROJECT_V1_ROUTE_INSTANCE_CREATE)
+  ) {
+    return { kind: "instance-create", ...(project ? { project } : {}) };
   }
-  const project = `${projectNamePrefix}${projectId}`;
+  if (
+    (route.name === INSTANCE_ROUTE_DETAIL ||
+      (project && route.name === PROJECT_V1_ROUTE_INSTANCE_DETAIL)) &&
+    typeof instanceId === "string" &&
+    instanceId &&
+    instanceId !== "-"
+  ) {
+    return {
+      kind: "instance",
+      name: `${project ? `${project}/` : ""}instances/${instanceId}`,
+      ...(project ? { project } : {}),
+    };
+  }
+  if (!project) return undefined;
   if (route.name === PROJECT_V1_ROUTE_ISSUE_DETAIL) {
     return typeof issueId === "string" && issueId && issueId !== "-"
       ? { kind: "issue", name: `${project}/issues/${issueId}`, project }

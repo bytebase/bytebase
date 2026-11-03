@@ -25,11 +25,12 @@ describe("runAgentLoop", () => {
         })
     );
     const controller = new AbortController();
+    const onUsage = vi.fn();
     const run = runAgentLoop(
       [{ role: "user", content: "Check the project" }],
       [],
       vi.fn(),
-      undefined,
+      { onUsage },
       controller.signal
     );
     await vi.waitFor(() =>
@@ -39,6 +40,7 @@ describe("runAgentLoop", () => {
     rejectChat(new Error("Transport closed"));
 
     expect(await run).toEqual({ kind: "aborted", totalTokensUsed: 0 });
+    expect(onUsage).not.toHaveBeenCalled();
   });
 
   test("does not execute tool calls returned after cancellation", async () => {
@@ -54,11 +56,12 @@ describe("runAgentLoop", () => {
     const controller = new AbortController();
     const executeTool = vi.fn();
     const onAssistantMessage = vi.fn();
+    const onUsage = vi.fn();
     const run = runAgentLoop(
       [{ role: "user", content: "Check the project" }],
       [{ name: "test_tool", description: "test", parametersSchema: {} }],
       executeTool,
-      { onAssistantMessage },
+      { onAssistantMessage, onUsage },
       controller.signal
     );
     await vi.waitFor(() =>
@@ -70,9 +73,17 @@ describe("runAgentLoop", () => {
       toolCalls: [
         { id: "tool-1", name: "test_tool", arguments: "{}", metadata: "" },
       ],
+      usage: { totalTokens: 7, inputTokens: 5, outputTokens: 2 },
     } as never);
 
-    expect(await run).toEqual({ kind: "aborted", totalTokensUsed: 0 });
+    expect(await run).toEqual({ kind: "aborted", totalTokensUsed: 7 });
+    expect(onUsage).toHaveBeenCalledExactlyOnceWith({
+      purpose: "agent",
+      toolNames: ["test_tool"],
+      totalTokens: 7,
+      inputTokens: 5,
+      outputTokens: 2,
+    });
     expect(executeTool).not.toHaveBeenCalled();
     expect(onAssistantMessage).not.toHaveBeenCalled();
   });
@@ -311,6 +322,9 @@ describe("runAgentLoop", () => {
         ],
         usage: {
           totalTokens: 11,
+          inputTokens: 9,
+          outputTokens: 2,
+          cachedInputTokens: 3,
         },
       } as never)
       .mockResolvedValueOnce({
@@ -345,10 +359,12 @@ describe("runAgentLoop", () => {
       };
     });
 
+    const onUsage = vi.fn();
     const outcome = await runAgentLoop(
       [{ role: "system", content: "system" }],
       [],
-      executeTool
+      executeTool,
+      { onUsage }
     );
 
     expect(outcome).toEqual({
@@ -357,7 +373,63 @@ describe("runAgentLoop", () => {
       success: true,
       totalTokensUsed: 18,
     });
+    expect(onUsage.mock.calls).toEqual([
+      [
+        {
+          purpose: "agent",
+          toolNames: ["search_api"],
+          totalTokens: 11,
+          inputTokens: 9,
+          outputTokens: 2,
+          cachedInputTokens: 3,
+        },
+      ],
+      [{ purpose: "agent", toolNames: ["done"], totalTokens: 7 }],
+    ]);
   });
+
+  test.each([
+    { usage: undefined, expected: {} },
+    {
+      usage: {
+        totalTokens: 0,
+        inputTokens: 0,
+        outputTokens: 0,
+        cachedInputTokens: 0,
+      },
+      expected: {
+        totalTokens: 0,
+        inputTokens: 0,
+        outputTokens: 0,
+        cachedInputTokens: 0,
+      },
+    },
+  ])(
+    "reports unknown usage separately from explicit zero: $usage",
+    async ({ usage, expected }) => {
+      vi.mocked(aiServiceClientConnect.chat).mockResolvedValue({
+        content: "Done",
+        toolCalls: [],
+        usage,
+      } as never);
+      const onUsage = vi.fn();
+
+      await runAgentLoop(
+        [{ role: "user", content: "ping" }],
+        [],
+        vi.fn(),
+        { onUsage },
+        undefined,
+        { allowPlainTextCompletion: true }
+      );
+
+      expect(onUsage).toHaveBeenCalledExactlyOnceWith({
+        purpose: "agent",
+        toolNames: [],
+        ...expected,
+      });
+    }
+  );
 
   test("stops after cumulative provider usage reaches the run budget", async () => {
     vi.mocked(aiServiceClientConnect.chat)

@@ -197,6 +197,7 @@ export function AgentWindow() {
   const getOrFetchSettingByName = useAppStore((s) => s.getOrFetchSettingByName);
   const batchFetchProjects = useAppStore((s) => s.batchFetchProjects);
   const projectsByName = useAppStore((s) => s.projectsByName);
+  const instancesByName = useAppStore((s) => s.instancesByName);
   const projectErrorsByName = useAppStore((s) => s.projectErrorsByName);
   const workspace = useAppStore((s) => s.workspace);
   const currentUser = useAppStore((s) => s.currentUser);
@@ -232,7 +233,14 @@ export function AgentWindow() {
   >();
   const [contextualLoading, setContextualLoading] = useState(false);
   const canReferenceContextualResource = useAppStore((state) => {
-    if (!contextualStart || contextualStart.kind === "project") return true;
+    if (
+      !contextualStart ||
+      contextualStart.kind === "project" ||
+      contextualStart.kind === "instance" ||
+      contextualStart.kind === "instance-create"
+    ) {
+      return true;
+    }
     if (contextualStart.kind === "plan") {
       if (state.hasWorkspacePermission("bb.plans.get")) {
         return true;
@@ -316,6 +324,8 @@ export function AgentWindow() {
     if (
       !contextualStart ||
       contextualStart.kind === "project" ||
+      contextualStart.kind === "instance" ||
+      contextualStart.kind === "instance-create" ||
       !canReferenceContextualResource
     ) {
       return;
@@ -598,10 +608,17 @@ export function AgentWindow() {
   const contextualTitle = contextualStart
     ? contextualStart.kind === "project"
       ? getContextLabel(contextualStart.project)
-      : (contextualReference?.label ??
-        (contextualStart.kind === "database"
-          ? extractDatabaseResourceName(contextualStart.names[0]).databaseName
-          : `#${contextualStart.name.split("/").at(-1)}`))
+      : contextualStart.kind === "instance-create"
+        ? contextualStart.project
+          ? getContextLabel(contextualStart.project)
+          : t("agent.contextual-start.instance-create-title")
+        : (contextualReference?.label ??
+          (contextualStart.kind === "database"
+            ? extractDatabaseResourceName(contextualStart.names[0]).databaseName
+            : contextualStart.kind === "instance"
+              ? instancesByName?.[contextualStart.name]?.title ||
+                `#${contextualStart.name.split("/").at(-1)}`
+              : `#${contextualStart.name.split("/").at(-1)}`))
     : "";
 
   const selectFirstDisplayedChat = useCallback(() => {
@@ -989,12 +1006,20 @@ export function AgentWindow() {
   const startContextualChat = useCallback(
     (prompt: string, reference?: AgentResourceReference) => {
       if (!contextualStart) return;
-      if (contextualStart.kind !== "project" && !reference) return;
+      const requiresReference =
+        contextualStart.kind === "database" ||
+        contextualStart.kind === "plan" ||
+        contextualStart.kind === "issue";
+      if (requiresReference && !reference) return;
+      const chatContext =
+        ("project" in contextualStart && contextualStart.project) ||
+        getCurrentChatContext();
+      if (!chatContext) return;
       const store = useAgentStore.getState();
       const page = getCurrentPageSnapshot();
       const chat = store.createChat({
         page,
-        context: contextualStart.project,
+        context: chatContext,
         workspaceName: workspace?.name,
       });
       if (useAgentStore.getState().currentChatId !== chat.id) return;
@@ -1006,10 +1031,10 @@ export function AgentWindow() {
           page,
           runMode: "read-only",
           ...(reference ? { resourceReference: reference } : {}),
-          ...(!reference
+          ...(contextualStart.kind === "project"
             ? {
                 starterId: getLandingStarterIdForText({
-                  context: contextualStart.project,
+                  context: chatContext,
                   text: prompt,
                   translate: t,
                 }),
@@ -1032,7 +1057,7 @@ export function AgentWindow() {
         });
         focusContextualDraftRef.current = true;
       }
-      setChatGroupOpen(contextualStart.project, true, false);
+      setChatGroupOpen(chatContext, true, false);
       setShowArchivedOnly(false);
       setContextualStart(null);
       if (isCompactWindow) setCompactPanel(null);

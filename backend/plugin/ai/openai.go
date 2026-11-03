@@ -54,7 +54,14 @@ type chatOpenAIFunctionCallRef struct {
 }
 
 type chatOpenAIUsage struct {
-	TotalTokens int32 `json:"total_tokens"`
+	TotalTokens        *int32             `json:"total_tokens"`
+	PromptTokens       *int32             `json:"prompt_tokens"`
+	CompletionTokens   *int32             `json:"completion_tokens"`
+	PromptTokenDetails openAITokenDetails `json:"prompt_tokens_details"`
+}
+
+type openAITokenDetails struct {
+	CachedTokens *int32 `json:"cached_tokens"`
 }
 
 type chatOpenAIResponse struct {
@@ -316,7 +323,7 @@ func chatOpenAIChatCompletions(ctx context.Context, aiSetting *storepb.AISetting
 
 	result := &v1pb.AIChatResponse{}
 	if resp.Usage != nil {
-		result.Usage = newAIChatUsage(resp.Usage.TotalTokens)
+		result.Usage = newAIChatUsage(resp.Usage.TotalTokens, resp.Usage.PromptTokens, resp.Usage.CompletionTokens, resp.Usage.PromptTokenDetails.CachedTokens)
 	}
 	if len(resp.Choices) > 0 {
 		msg := resp.Choices[0].Message
@@ -361,8 +368,8 @@ type responsesOpenAITool struct {
 }
 
 type responsesOpenAIResponse struct {
-	Output []json.RawMessage `json:"output"`
-	Usage  *chatOpenAIUsage  `json:"usage,omitempty"`
+	Output []json.RawMessage     `json:"output"`
+	Usage  *responsesOpenAIUsage `json:"usage,omitempty"`
 	Error  *struct {
 		Message string `json:"message"`
 	} `json:"error,omitempty"`
@@ -370,6 +377,13 @@ type responsesOpenAIResponse struct {
 	IncompleteDetails *struct {
 		Reason string `json:"reason"`
 	} `json:"incomplete_details,omitempty"`
+}
+
+type responsesOpenAIUsage struct {
+	TotalTokens       *int32             `json:"total_tokens"`
+	InputTokens       *int32             `json:"input_tokens"`
+	OutputTokens      *int32             `json:"output_tokens"`
+	InputTokenDetails openAITokenDetails `json:"input_tokens_details"`
 }
 
 type responsesOpenAIOutputItem struct {
@@ -447,7 +461,7 @@ func chatOpenAIResponses(ctx context.Context, aiSetting *storepb.AISetting, requ
 
 	result := &v1pb.AIChatResponse{StopReason: openAIResponsesStopReason(response.Status)}
 	if response.Usage != nil {
-		result.Usage = newAIChatUsage(response.Usage.TotalTokens)
+		result.Usage = newAIChatUsage(response.Usage.TotalTokens, response.Usage.InputTokens, response.Usage.OutputTokens, response.Usage.InputTokenDetails.CachedTokens)
 	}
 	var content strings.Builder
 	for _, rawOutput := range response.Output {

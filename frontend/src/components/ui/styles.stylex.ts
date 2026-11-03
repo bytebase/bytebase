@@ -297,6 +297,18 @@ const formStyles = stylex.create({
       width: "25%",
     },
   },
+  sectionHeadingRow: {
+    alignItems: "center",
+    columnGap: 16,
+    display: "flex",
+    flexWrap: "wrap",
+    justifyContent: "flex-start",
+    rowGap: 8,
+    width: "100%",
+    "@media (min-width: 640px)": {
+      flexWrap: "nowrap",
+    },
+  },
   sectionTitle: {
     color: "rgb(var(--color-main))",
     fontSize: 24,
@@ -397,6 +409,10 @@ export function formSectionNoPaddingStyle() {
 
 export function formSectionHeaderStyle() {
   return formStyles.sectionHeader;
+}
+
+export function formSectionHeadingRowStyle() {
+  return formStyles.sectionHeadingRow;
 }
 
 export function formSectionTitleStyle() {

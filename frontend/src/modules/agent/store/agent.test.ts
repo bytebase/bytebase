@@ -1546,6 +1546,114 @@ describe("useAgentStore (Zustand)", () => {
     expect(s(rehydratedStore).getChat(chatId)?.totalTokensUsed).toBe(150);
   });
 
+  test("records and persists agent and follow-up usage in the owning chat", () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/acme");
+    const chatId = s(store).currentChatId!;
+    const other = s(store).createChat({ select: false });
+    s(store).startChatRun(chatId, undefined, { runId: "run-1" });
+    const call = {
+      purpose: "agent" as const,
+      toolNames: ["done"],
+      totalTokens: 120,
+      inputTokens: 100,
+      outputTokens: 20,
+      cachedInputTokens: 0,
+    };
+    s(store).recordChatModelCallUsage(chatId, "run-1", call);
+    s(store).finishChatRun(chatId);
+    const followUp = {
+      purpose: "follow-up" as const,
+      toolNames: [],
+      totalTokens: 30,
+      inputTokens: 20,
+      outputTokens: 10,
+    };
+    s(store).recordChatModelCallUsage(chatId, "run-1", followUp);
+
+    expect(s(store).getChat(chatId)?.totalTokensUsed).toBe(150);
+    expect(s(store).getChat(chatId)?.lastRunUsage).toEqual({
+      runId: "run-1",
+      calls: [call, followUp],
+    });
+    expect(s(store).getChat(other.id)?.totalTokensUsed).toBe(0);
+    const reloaded = createAgentStore();
+    s(reloaded).setWorkspaceName("workspaces/acme");
+    expect(s(reloaded).getChat(chatId)?.lastRunUsage).toEqual({
+      runId: "run-1",
+      calls: [call, followUp],
+    });
+  });
+
+  test("keeps stale response totals without replacing the latest run detail", () => {
+    const store = createAgentStore();
+    const chatId = s(store).currentChatId!;
+    s(store).startChatRun(chatId, undefined, { runId: "old-run" });
+    s(store).recordChatModelCallUsage(chatId, "old-run", {
+      purpose: "agent",
+      toolNames: [],
+      totalTokens: 120,
+    });
+    s(store).startChatRun(chatId, undefined, { runId: "new-run" });
+    const unknown = { purpose: "agent" as const, toolNames: [] };
+    s(store).recordChatModelCallUsage(chatId, "new-run", unknown);
+    s(store).recordChatModelCallUsage(chatId, "old-run", {
+      purpose: "follow-up",
+      toolNames: [],
+      totalTokens: 30,
+    });
+
+    expect(s(store).getChat(chatId)?.totalTokensUsed).toBe(150);
+    expect(s(store).getChat(chatId)?.hasUnreportedUsage).toBe(true);
+    expect(s(store).getChat(chatId)?.lastRunUsage).toEqual({
+      runId: "new-run",
+      calls: [unknown],
+    });
+  });
+
+  test("preserves legacy totals and sanitizes cached usage without inventing zeros", () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/acme");
+    const chatId = s(store).currentChatId!;
+    s(store).incrementChatTotalTokens(chatId, 120);
+    const key = getAgentStateKey("workspaces/acme");
+    const raw = JSON.parse(localStorage.getItem(key)!);
+    raw.chats[0].lastRunUsage = {
+      runId: "run-1",
+      calls: [
+        {
+          purpose: "agent",
+          toolNames: ["done", 7],
+          totalTokens: 0,
+          inputTokens: 0,
+          outputTokens: -5,
+        },
+        { purpose: "invalid", toolNames: [], totalTokens: 99 },
+      ],
+    };
+    localStorage.setItem(key, JSON.stringify(raw));
+    const reloaded = createAgentStore();
+    s(reloaded).setWorkspaceName("workspaces/acme");
+    expect(s(reloaded).getChat(chatId)?.totalTokensUsed).toBe(120);
+    expect(s(reloaded).getChat(chatId)?.lastRunUsage).toEqual({
+      runId: "run-1",
+      calls: [
+        {
+          purpose: "agent",
+          toolNames: ["done"],
+          totalTokens: 0,
+          inputTokens: 0,
+        },
+      ],
+    });
+    delete raw.chats[0].lastRunUsage;
+    localStorage.setItem(key, JSON.stringify(raw));
+    const legacy = createAgentStore();
+    s(legacy).setWorkspaceName("workspaces/acme");
+    expect(s(legacy).getChat(chatId)?.totalTokensUsed).toBe(120);
+    expect(s(legacy).getChat(chatId)?.lastRunUsage).toBeUndefined();
+  });
+
   test("updates the chat page to the latest current page when starting a run", () => {
     const store = createAgentStore();
     const chatId = s(store).currentChatId!;

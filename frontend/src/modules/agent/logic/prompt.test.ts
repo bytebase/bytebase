@@ -3,6 +3,96 @@ import { describe, expect, test } from "vitest";
 import { buildSystemPrompt } from "./prompt";
 
 describe("buildSystemPrompt", () => {
+  test("inspects the live page only for page-dependent requests", () => {
+    const prompt = buildSystemPrompt({
+      path: "/landing",
+      title: "Workspace",
+      context: "workspaces/default",
+    });
+
+    expect(prompt).toContain(
+      "Call get_page_state when the request depends on the live page"
+    );
+    expect(prompt).toContain(
+      "skip it for self-contained questions or casual conversation"
+    );
+    expect(prompt).not.toContain("Always call get_page_state first");
+  });
+
+  test("omits project-only workflow details from workspace chats", () => {
+    const prompt = buildSystemPrompt({
+      path: "/projects/other",
+      title: "Other project",
+      context: "workspaces/default",
+    });
+
+    expect(prompt).toContain(
+      "call get_workspace_overview before recommending a next step"
+    );
+    expect(prompt).not.toContain("When get_project_overview confirms");
+    expect(prompt).not.toContain("In a project-bound chat");
+    expect(prompt).not.toContain("A historical failed Task Run");
+  });
+
+  test("keeps project guidance when the selected project differs from the workspace chat", () => {
+    const prompt = buildSystemPrompt({
+      path: "/landing",
+      title: "Workspace",
+      context: "workspaces/default",
+      referencedProject: "projects/orders",
+    });
+
+    expect(prompt).toContain("When get_project_overview confirms");
+    expect(prompt).toContain(
+      "call get_project_governance_overview before describing"
+    );
+    expect(prompt).not.toContain(
+      "In a workspace-bound chat, call get_workspace_overview"
+    );
+  });
+
+  test("does not repeat count workflows for a selected project", () => {
+    const prompt = buildSystemPrompt({
+      path: "/landing",
+      title: "Workspace",
+      context: "workspaces/default",
+      referencedProject: "projects/orders",
+    });
+
+    expect(prompt.match(/precise instance filter/g)).toHaveLength(1);
+  });
+
+  test.each([
+    { runMode: "read-only" as const },
+    { referencedProject: "projects/orders" },
+  ])("omits page-action workflows for restricted turns: %j", (restriction) => {
+    const prompt = buildSystemPrompt({
+      path: "/projects/orders",
+      title: "Orders",
+      context: "projects/orders",
+      ...restriction,
+    });
+
+    expect(prompt).not.toContain("Confirm destructive DOM actions");
+    expect(prompt).not.toContain("DOM interaction workflow");
+    expect(prompt).not.toContain("DOM-first");
+    expect(prompt).not.toContain("navigate(list=true");
+    expect(prompt).toContain("2-3 distinct, contextual Continue questions");
+  });
+
+  test("requires fresh DOM inspection before interacting with the page", () => {
+    const prompt = buildSystemPrompt({
+      path: "/projects/orders",
+      title: "Orders",
+      context: "projects/orders",
+    });
+
+    expect(prompt).toContain(
+      'Before interacting with the page, call get_page_state(mode="dom") for fresh element refs'
+    );
+    expect(prompt).toContain("Confirm destructive DOM actions");
+  });
+
   test("requests useful English follow-up questions that send on click", () => {
     const prompt = buildSystemPrompt({ path: "/landing", title: "Workspace" });
     expect(prompt).toContain(
@@ -36,6 +126,7 @@ describe("buildSystemPrompt", () => {
     const prompt = buildSystemPrompt({
       path: "/projects/sample",
       title: "Sample",
+      context: "projects/sample",
     });
     expect(prompt).toContain("transfer an eligible unassigned database first");
     expect(prompt).toContain("connect an instance directly");
@@ -119,10 +210,12 @@ describe("buildSystemPrompt", () => {
       "A workspace instance may span projects; a project instance remains in its owning project"
     );
     expect(prompt).toContain(
-      "For filtered counts in the referenced Project, use search_api and call_api SearchDatabases with a project filter"
+      "For filtered counts in a Workspace or Project, use search_api and call_api SearchDatabases with a project filter for Project scope"
     );
     expect(prompt).toContain("inspect one page");
-    expect(prompt).toContain("report only a lower bound, not a total");
+    expect(prompt).toContain(
+      'If partial is true, say "at least N" rather than claiming an exact total'
+    );
     expect(prompt).not.toContain("Referenced project for this turn");
   });
 
@@ -302,7 +395,7 @@ describe("buildSystemPrompt", () => {
     );
     expect(referencePrompt).toContain("referenced Project for this turn");
     expect(referencePrompt).toContain(
-      "For filtered counts in the referenced Project, use search_api and call_api SearchDatabases with a project filter"
+      "For filtered counts in a Workspace or Project, use search_api and call_api SearchDatabases with a project filter for Project scope"
     );
   });
 
@@ -324,6 +417,7 @@ describe("buildSystemPrompt", () => {
     const prompt = buildSystemPrompt({
       path: "/projects/orders",
       title: "Order service",
+      context: "projects/orders",
       runMode: "read-only",
     });
 

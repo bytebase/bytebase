@@ -418,9 +418,15 @@ func (x *AIChatRequest) GetToolDefinitions() []*AIChatToolDefinition {
 type AIChatUsage struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Total tokens used by the provider call.
-	TotalTokens   int32 `protobuf:"varint,1,opt,name=total_tokens,json=totalTokens,proto3" json:"total_tokens,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	TotalTokens int32 `protobuf:"varint,1,opt,name=total_tokens,json=totalTokens,proto3" json:"total_tokens,omitempty"`
+	// Input tokens used by the provider call, including cached input.
+	InputTokens *int32 `protobuf:"varint,2,opt,name=input_tokens,json=inputTokens,proto3,oneof" json:"input_tokens,omitempty"`
+	// Output tokens used by the provider call, including reasoning tokens.
+	OutputTokens *int32 `protobuf:"varint,3,opt,name=output_tokens,json=outputTokens,proto3,oneof" json:"output_tokens,omitempty"`
+	// Input tokens read from cache. This is a subset of input_tokens.
+	CachedInputTokens *int32 `protobuf:"varint,4,opt,name=cached_input_tokens,json=cachedInputTokens,proto3,oneof" json:"cached_input_tokens,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *AIChatUsage) Reset() {
@@ -456,6 +462,27 @@ func (*AIChatUsage) Descriptor() ([]byte, []int) {
 func (x *AIChatUsage) GetTotalTokens() int32 {
 	if x != nil {
 		return x.TotalTokens
+	}
+	return 0
+}
+
+func (x *AIChatUsage) GetInputTokens() int32 {
+	if x != nil && x.InputTokens != nil {
+		return *x.InputTokens
+	}
+	return 0
+}
+
+func (x *AIChatUsage) GetOutputTokens() int32 {
+	if x != nil && x.OutputTokens != nil {
+		return *x.OutputTokens
+	}
+	return 0
+}
+
+func (x *AIChatUsage) GetCachedInputTokens() int32 {
+	if x != nil && x.CachedInputTokens != nil {
+		return *x.CachedInputTokens
 	}
 	return 0
 }
@@ -560,9 +587,15 @@ const file_v1_ai_service_proto_rawDesc = "" +
 	"\t_metadata\"\xa1\x01\n" +
 	"\rAIChatRequest\x12<\n" +
 	"\bmessages\x18\x01 \x03(\v2\x1a.bytebase.v1.AIChatMessageB\x04\xd0\xea0\x02R\bmessages\x12R\n" +
-	"\x10tool_definitions\x18\x02 \x03(\v2!.bytebase.v1.AIChatToolDefinitionB\x04\xd0\xea0\x02R\x0ftoolDefinitions\"0\n" +
+	"\x10tool_definitions\x18\x02 \x03(\v2!.bytebase.v1.AIChatToolDefinitionB\x04\xd0\xea0\x02R\x0ftoolDefinitions\"\xf2\x01\n" +
 	"\vAIChatUsage\x12!\n" +
-	"\ftotal_tokens\x18\x01 \x01(\x05R\vtotalTokens\"\x80\x03\n" +
+	"\ftotal_tokens\x18\x01 \x01(\x05R\vtotalTokens\x12&\n" +
+	"\finput_tokens\x18\x02 \x01(\x05H\x00R\vinputTokens\x88\x01\x01\x12(\n" +
+	"\routput_tokens\x18\x03 \x01(\x05H\x01R\foutputTokens\x88\x01\x01\x123\n" +
+	"\x13cached_input_tokens\x18\x04 \x01(\x05H\x02R\x11cachedInputTokens\x88\x01\x01B\x0f\n" +
+	"\r_input_tokensB\x10\n" +
+	"\x0e_output_tokensB\x16\n" +
+	"\x14_cached_input_tokens\"\x80\x03\n" +
 	"\x0eAIChatResponse\x12\x1d\n" +
 	"\acontent\x18\x01 \x01(\tH\x00R\acontent\x88\x01\x01\x12:\n" +
 	"\n" +
@@ -640,6 +673,7 @@ func file_v1_ai_service_proto_init() {
 	file_v1_annotation_proto_init()
 	file_v1_ai_service_proto_msgTypes[0].OneofWrappers = []any{}
 	file_v1_ai_service_proto_msgTypes[2].OneofWrappers = []any{}
+	file_v1_ai_service_proto_msgTypes[4].OneofWrappers = []any{}
 	file_v1_ai_service_proto_msgTypes[5].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

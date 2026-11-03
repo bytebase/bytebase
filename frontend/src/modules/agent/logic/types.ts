@@ -26,6 +26,15 @@ export type AgentInterruptionReason = "user" | "unexpected";
 
 export type AgentRunMode = "default" | "read-only";
 
+export interface AgentModelCallUsage {
+  purpose: "agent" | "follow-up";
+  toolNames: string[];
+  totalTokens?: number;
+  inputTokens?: number;
+  outputTokens?: number;
+  cachedInputTokens?: number;
+}
+
 export interface AgentChatSnapshot {
   path: string;
   title: string;
@@ -137,6 +146,11 @@ export interface AgentChat {
   updatedTs: number;
   status: AgentChatStatus;
   totalTokensUsed: number;
+  lastRunUsage?: {
+    runId: string;
+    calls: AgentModelCallUsage[];
+  };
+  hasUnreportedUsage?: boolean;
   page?: AgentChatSnapshot;
   archived: boolean;
   lastError?: string | null;
