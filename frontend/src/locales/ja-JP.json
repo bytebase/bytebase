@@ -4374,11 +4374,12 @@
         "pending": "保留中 {{count}} 件を読み込む"
       },
       "no-statement": "このエラーに対応するステートメントを特定できませんでした。",
-      "revision-deleted": "{{date}} に {{user}} がリビジョンを削除",
+      "revision-deleted": "以前のリビジョンは {{date}} に {{user}} が削除",
       "revisions-on": "{{database}} のリビジョン",
       "run-failed": "実行失敗",
       "status": {
         "applied": "適用済み",
+        "applied-again": "再適用済み",
         "canceled": "キャンセル済み",
         "failed": "失敗",
         "running": "実行中"

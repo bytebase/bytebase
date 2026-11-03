@@ -4374,11 +4374,12 @@
         "pending": "加载 {{count}} 个待应用"
       },
       "no-statement": "未能确定此错误对应的语句。",
-      "revision-deleted": "修订已于 {{date}} 被 {{user}} 删除",
+      "revision-deleted": "更早的修订已于 {{date}} 被 {{user}} 删除",
       "revisions-on": "{{database}} 上的修订",
       "run-failed": "运行失败",
       "status": {
         "applied": "已应用",
+        "applied-again": "已再次应用",
         "canceled": "已取消",
         "failed": "失败",
         "running": "运行中"

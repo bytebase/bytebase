@@ -1103,23 +1103,31 @@ describe("TaskRunLogViewer release spine", () => {
     view.unmount();
   });
 
-  test("a re-run version's note says when and by whom its revision was deleted, whatever the outcome", () => {
-    failedRun();
-    const view = renderViewer({
-      taskRunStatus: TaskRun_Status.FAILED,
-      runError: failedError,
-      releaseState: create(Task_ReleaseStateSchema, {
-        pendingVersions: [
-          { version: "008", revisionDeleter: "users/alex@example.com", revisionDeleteTime: ts(1_790_000_000) },
-        ],
-      }),
+  test("a re-run version reads Applied again, and every outcome names its earlier revision's deleter and time behind an icon", () => {
+    const releaseState = create(Task_ReleaseStateSchema, {
+      pendingVersions: [
+        { version: "008", revisionDeleter: "users/alex@example.com", revisionDeleteTime: ts(1_790_000_000) },
+      ],
     });
-    const note = within(view.container).getByTestId("spine-file-008-note").textContent ?? "";
-    expect(note).toContain("Revision deleted");
-    expect(note).toContain("alex@example.com");
-    expect(note).toContain("2026");
-    expect(note).not.toContain("Applied");
-    view.unmount();
+    const info = (container: HTMLElement) =>
+      within(within(container).getByTestId("spine-file-008-row")).getByTestId("spine-revision-deleted-info");
+
+    useRelease([marker(1, "007"), run(2, ""), marker(4, "008"), run(5, "")]);
+    const done = renderViewer({ taskRunStatus: TaskRun_Status.DONE, releaseState });
+    expect(within(done.container).getByTestId("spine-file-008").textContent).toContain("Applied again");
+    expect(within(done.container).getByTestId("spine-file-007").textContent).not.toContain("again");
+    expect(info(done.container).getAttribute("aria-label")).toMatch(
+      /^Earlier revision deleted .*2026.* by alex@example\.com$/
+    );
+    // Under "Applied" a line reads as if this run's revision was deleted.
+    expect(done.container.textContent).not.toContain("alex@example.com");
+    done.unmount();
+
+    failedRun();
+    const failed = renderViewer({ taskRunStatus: TaskRun_Status.FAILED, runError: failedError, releaseState });
+    expect(within(failed.container).getByTestId("spine-file-008").textContent).toContain("Failed");
+    expect(info(failed.container).getAttribute("aria-label")).toContain("alex@example.com");
+    failed.unmount();
   });
 
   test("the spine waits for the log: a run whose log is still loading shows the loading state", () => {

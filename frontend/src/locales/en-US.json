@@ -4374,11 +4374,12 @@
         "pending": "Load {{count}} pending"
       },
       "no-statement": "No statement was identified for this error.",
-      "revision-deleted": "Revision deleted {{date}} by {{user}}",
+      "revision-deleted": "Earlier revision deleted {{date}} by {{user}}",
       "revisions-on": "Revisions on {{database}}",
       "run-failed": "Run failed",
       "status": {
         "applied": "Applied",
+        "applied-again": "Applied again",
         "canceled": "Canceled",
         "failed": "Failed",
         "running": "Running"

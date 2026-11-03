@@ -118,7 +118,7 @@ test("a version whose revision was deleted says so on a short chip and names who
   expect(row.textContent).toContain("Will apply again · revision deleted");
   expect(row.textContent).not.toContain("alex@example.com");
   const info = within(row).getByTestId("spine-revision-deleted-info");
-  expect(info.getAttribute("aria-label")).toMatch(/^Revision deleted .*2026.* by alex@example\.com$/);
+  expect(info.getAttribute("aria-label")).toMatch(/^Earlier revision deleted .*2026.* by alex@example\.com$/);
   expect(info.tabIndex).toBe(0);
   expect(within(container).getByTestId("spine-file-001").textContent).toContain("Will apply");
   act(() => root.unmount());
