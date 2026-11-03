@@ -53,7 +53,12 @@ export const fileAtCommitUrl = (
   const commit = parseRepoCommit(source);
   if (!commit || !source || !path) return undefined;
   const { repoUrl, sha } = commit;
-  const relative = path.replace(/^\.?\//, "");
+  // Each segment encoded, so "#", "?" and "&" in a file name stay in the path.
+  const relative = path
+    .replace(/^\.?\//, "")
+    .split("/")
+    .map(encodeURIComponent)
+    .join("/");
   switch (source.vcsType) {
     case VCSType.GITHUB:
       return `${repoUrl}/blob/${sha}/${relative}`;
