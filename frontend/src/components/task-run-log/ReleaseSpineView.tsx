@@ -203,17 +203,20 @@ export function ReleaseSpineView({
         return t("task-run.spine.status.canceled");
     }
   };
-  const deletedNote = (section: SpineFileSection) =>
-    section.revisionDeleted
-      ? {
-          date: section.revisionDeleted.time
-            ? formatAbsoluteDateTime(
-                Number(section.revisionDeleted.time.seconds) * 1000
-              )
-            : "",
-          user: section.revisionDeleted.deleter.replace(/^users\//, ""),
-        }
-      : undefined;
+  // The tooltip naming the deleted revision, for a version that runs again.
+  const deletedNote = (section: SpineFileSection) => {
+    const deleted = section.revisionDeleted;
+    if (!deleted) return undefined;
+    if (deleted.afterRolloutCreation) {
+      return t("task-run.spine.revision-deleted-after-rollout");
+    }
+    return t("task-run.spine.revision-deleted", {
+      date: deleted.time
+        ? formatAbsoluteDateTime(Number(deleted.time.seconds) * 1000)
+        : "",
+      user: deleted.deleter.replace(/^users\//, ""),
+    });
+  };
 
   const renderRows = (id: string) => {
     const rows = rowsById.get(id);
@@ -295,11 +298,7 @@ export function ReleaseSpineView({
             {note
               ? t("task-run.spine.will-apply-again")
               : t("task-run.spine.will-apply")}
-            {note ? (
-              <RevisionDeletedInfo
-                text={t("task-run.spine.revision-deleted", note)}
-              />
-            ) : null}
+            {note ? <RevisionDeletedInfo text={note} /> : null}
           </Badge>
         </div>
       );
@@ -330,11 +329,7 @@ export function ReleaseSpineView({
             </Badge>
           </CollapsibleTrigger>
           {/* Outside the toggle: a focusable icon cannot nest in a button. */}
-          {note ? (
-            <RevisionDeletedInfo
-              text={t("task-run.spine.revision-deleted", note)}
-            />
-          ) : null}
+          {note ? <RevisionDeletedInfo text={note} /> : null}
           {pathLink}
           <span className="flex-1" />
           {duration ? (

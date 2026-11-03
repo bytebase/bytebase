@@ -127,8 +127,14 @@ export interface SpineFileSection {
   error?: string;
   // The failed section has no failed command row to show the error on.
   noStatement?: boolean;
-  // The database had a revision of this version that was deleted.
-  revisionDeleted?: { time?: Timestamp; deleter: string };
+  // The database had a revision of this version that was deleted, so the
+  // version runs again. Noted at rollout creation with who and when; after it,
+  // only the run tells, and neither is known.
+  revisionDeleted?: {
+    time?: Timestamp;
+    deleter: string;
+    afterRolloutCreation?: boolean;
+  };
 }
 
 // A task-level step: prior backup, schema dump, database sync.

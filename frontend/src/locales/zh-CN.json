@@ -4375,6 +4375,7 @@
       },
       "no-statement": "未能确定此错误对应的语句。",
       "revision-deleted": "更早的修订已于 {{date}} 被 {{user}} 删除",
+      "revision-deleted-after-rollout": "更早的修订在此发布创建后被删除",
       "revisions-on": "{{database}} 上的修订",
       "run-failed": "运行失败",
       "status": {

@@ -4375,6 +4375,7 @@
       },
       "no-statement": "Không xác định được câu lệnh cho lỗi này.",
       "revision-deleted": "Bản sửa đổi trước đó đã bị {{user}} xóa vào {{date}}",
+      "revision-deleted-after-rollout": "Bản sửa đổi trước đó đã bị xóa sau khi tạo lượt triển khai này",
       "revisions-on": "Các bản sửa đổi trên {{database}}",
       "run-failed": "Chạy thất bại",
       "status": {

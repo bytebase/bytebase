@@ -4375,6 +4375,7 @@
       },
       "no-statement": "No se identificó ninguna sentencia para este error.",
       "revision-deleted": "Revisión anterior eliminada el {{date}} por {{user}}",
+      "revision-deleted-after-rollout": "Revisión anterior eliminada después de crear este despliegue",
       "revisions-on": "Revisiones en {{database}}",
       "run-failed": "Ejecución fallida",
       "status": {

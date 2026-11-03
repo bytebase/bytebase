@@ -4375,6 +4375,7 @@
       },
       "no-statement": "No statement was identified for this error.",
       "revision-deleted": "Earlier revision deleted {{date}} by {{user}}",
+      "revision-deleted-after-rollout": "Earlier revision deleted after this rollout was created",
       "revisions-on": "Revisions on {{database}}",
       "run-failed": "Run failed",
       "status": {
