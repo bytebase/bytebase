@@ -299,8 +299,13 @@ function DetailRow({
 }) {
   return (
     <div className="contents" data-testid="plan-detail-row" data-row={row}>
-      <dt className="text-control-placeholder">{label}</dt>
-      <dd className="min-w-0 text-control">{children}</dd>
+      {/* One height for every row: the xs controls in the Labels row. */}
+      <dt className="flex min-h-6 items-center text-control-placeholder">
+        {label}
+      </dt>
+      <dd className="flex min-h-6 min-w-0 items-center text-control">
+        <div className="w-full min-w-0">{children}</div>
+      </dd>
     </div>
   );
 }
@@ -413,7 +418,7 @@ function InlineLabels({
     return (
       <span
         key={value}
-        className="inline-flex items-center gap-1 rounded-xs bg-control-bg px-1.5 py-0.5 text-xs text-control"
+        className="inline-flex h-6 items-center gap-1 rounded-xs bg-control-bg px-1.5 text-xs text-control"
       >
         <span
           className="size-2.5 shrink-0 rounded-sm"
