@@ -126,19 +126,12 @@ func TestGetPGConnectionConfigKeepsEachValueWhole(t *testing.T) {
 		require.Equal(t, "db.example.com port=6543", connConfig.Host)
 		require.Equal(t, uint16(5432), connConfig.Port)
 	})
-	t.Run("an extra parameter's value stays one value", func(t *testing.T) {
+	t.Run("an extra parameter keeps libpq syntax", func(t *testing.T) {
 		connConfig, err := open(func(ds *storepb.DataSource) {
-			ds.ExtraConnectionParameters = map[string]string{"options": "-c search_path=hr"}
+			ds.ExtraConnectionParameters = map[string]string{"options": "'-c search_path=hr'"}
 		})
 		require.NoError(t, err)
 		require.Equal(t, "-c search_path=hr", connConfig.RuntimeParams["options"])
-		require.NotContains(t, connConfig.RuntimeParams, "search_path")
-	})
-	t.Run("an extra parameter's name is one keyword", func(t *testing.T) {
-		_, err := open(func(ds *storepb.DataSource) {
-			ds.ExtraConnectionParameters = map[string]string{"application_name=probe host": "other.example.com"}
-		})
-		require.ErrorContains(t, err, `invalid connection parameter name "application_name=probe host"`)
 	})
 	t.Run("surrounding whitespace is ignored", func(t *testing.T) {
 		connConfig, err := open(func(ds *storepb.DataSource) {

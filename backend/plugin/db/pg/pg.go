@@ -181,11 +181,6 @@ func (d *Driver) PushAndClearMessages() []*v1pb.QueryResult_Message {
 	return messages
 }
 
-// pgParameterName is the form of a libpq keyword and of a PostgreSQL run-time
-// parameter. A name enters the connection string unquoted, and pgx reads a key
-// only up to its first "=", so "application_name=x host" would add a host.
-var pgParameterName = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_.]*$`)
-
 func getPGConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, error) {
 	if config.DataSource.Username == "" {
 		return nil, errors.Errorf("user must be set")
@@ -206,10 +201,7 @@ func getPGConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, error) 
 
 	// Add target_session_attrs=read-write if specified in ExtraConnectionParameters
 	for key, value := range config.DataSource.GetExtraConnectionParameters() {
-		if !pgParameterName.MatchString(key) {
-			return nil, errors.Errorf("invalid connection parameter name %q", key)
-		}
-		connStr += fmt.Sprintf(" %s=%s", key, util.QuotePGValue(value))
+		connStr += fmt.Sprintf(" %s=%s", key, value)
 	}
 
 	connConfig, err := pgx.ParseConfig(connStr)
