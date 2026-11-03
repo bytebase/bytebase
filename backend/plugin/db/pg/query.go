@@ -127,7 +127,15 @@ func convertValue(typeName string, columnType *sql.ColumnType, value any, locati
 			if scale == -1 {
 				scale = 6
 			}
-			return buildTimestamptzRowValue(typeName, raw.Time.In(location), int32(scale))
+			// Only timestamptz carries a zone to render. A zone-less timestamp must keep
+			// its wall clock, and buildTimestamptzRowValue formats those fields verbatim
+			// for a date outside the protobuf timestamp range, so converting it there
+			// would move the value rather than relabel it.
+			t := raw.Time
+			if typeName != "TIMESTAMP" {
+				t = t.In(location)
+			}
+			return buildTimestamptzRowValue(typeName, t, int32(scale))
 		}
 	default:
 	}

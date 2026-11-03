@@ -181,13 +181,15 @@ func TestConvertValueTimestampFromDriver(t *testing.T) {
 	rows, err := conn.QueryContext(ctx, `SELECT
 		'2026-03-04 05:06:07.891234+00'::timestamptz    AS tz_default,
 		'2026-03-04 05:06:07.891234+00'::timestamptz(3) AS tz_scale3,
-		'2026-03-04 05:06:07.891234'::timestamp         AS ts_default`)
+		'2026-03-04 05:06:07.891234'::timestamp         AS ts_default,
+		'10000-01-01 00:00:00+00'::timestamptz          AS tz_out_of_range,
+		'10000-01-01 00:00:00'::timestamp               AS ts_out_of_range`)
 	require.NoError(t, err)
 	defer rows.Close()
 
 	columnTypes, err := rows.ColumnTypes()
 	require.NoError(t, err)
-	require.Len(t, columnTypes, 3)
+	require.Len(t, columnTypes, 5)
 
 	require.True(t, rows.Next())
 	dest := make([]any, len(columnTypes))
@@ -222,4 +224,11 @@ func TestConvertValueTimestampFromDriver(t *testing.T) {
 	require.NotNil(t, tsDefault)
 	require.EqualValues(t, 6, tsDefault.Accuracy)
 	require.Equal(t, "2026-03-04T05:06:07.891234Z", tsDefault.GoogleTimestamp.AsTime().Format(time.RFC3339Nano))
+
+	// A date past the protobuf timestamp range falls back to a formatted string built
+	// from wall-clock fields, which is the one path where converting the location moves
+	// the value instead of relabeling it. timestamptz renders in the session zone; a
+	// zone-less timestamp keeps the stored wall clock and gains no offset.
+	require.Equal(t, "10000-01-01 08:00:00+08:00", values["tz_out_of_range"].GetStringValue())
+	require.Equal(t, "10000-01-01 00:00:00", values["ts_out_of_range"].GetStringValue())
 }
