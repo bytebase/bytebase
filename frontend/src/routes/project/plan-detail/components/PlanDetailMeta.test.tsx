@@ -40,7 +40,9 @@ vi.mock("react-i18next", () => ({
     t: (key: string, options?: Record<string, unknown>) =>
       options?.user !== undefined || options?.role !== undefined
         ? `${key}(${[options.user, options.role].filter(Boolean).join(",")})`
-        : key,
+        : options?.targets !== undefined
+          ? `${key}(${options.targets})`
+          : key,
   }),
   initReactI18next: { type: "3rdParty", init: () => {} },
 }));
@@ -575,6 +577,40 @@ test("the Changes row counts databases and database groups apart", () => {
     .getAllByTestId("plan-detail-row")
     .find((row) => row.getAttribute("data-row") === "changes")!;
   expect(changes.textContent).toBe("plan.details.changesplan.details.databases · plan.details.database-groups");
+});
+
+test("a plan on database groups only leaves the database count out of the Changes row", () => {
+  const groupOnly = (planCheckRuns: unknown[]) =>
+    ({
+      ...makePage(),
+      plan: {
+        ...makePage().plan,
+        specs: [
+          {
+            config: {
+              case: "changeDatabaseConfig",
+              value: { targets: ["projects/p1/databaseGroups/g1"] },
+            },
+          },
+        ],
+        rolloutStageSummaries: [],
+      },
+      planCheckRuns,
+    }) as unknown as PlanDetailPageState;
+  const changesRow = () =>
+    screen.getAllByTestId("plan-detail-row").find((row) => row.getAttribute("data-row") === "changes")!
+      .querySelector("dd")!.textContent;
+
+  mocks.page = groupOnly([]);
+  const { unmount } = render(<PlanDetailMeta />);
+  expect(changesRow()).toBe("plan.details.database-groups");
+  unmount();
+
+  mocks.page = groupOnly([
+    { results: [{ report: { case: "sqlSummaryReport", value: { statementTypes: ["DELETE"] } } }] },
+  ]);
+  render(<PlanDetailMeta />);
+  expect(changesRow()).toBe("plan.details.changes-on-targets(plan.details.database-groups)");
 });
 
 test.each([

@@ -92,15 +92,22 @@ export function PlanDetailMeta() {
       )
     );
     const kind = statementKindOf(types);
-    const databases = kind
-      ? t("plan.details.changes-on", {
+    // A kind of target the plan does not have is left out.
+    const parts = [
+      databaseCount > 0 || groupCount === 0
+        ? t("plan.details.databases", { count: databaseCount })
+        : "",
+      groupCount > 0
+        ? t("plan.details.database-groups", { count: groupCount })
+        : "",
+    ].filter(Boolean);
+    const targetsText = parts.join(" · ");
+    return kind
+      ? t("plan.details.changes-on-targets", {
           kind: statementKindLabel(kind, t),
-          count: databaseCount,
+          targets: targetsText,
         })
-      : t("plan.details.databases", { count: databaseCount });
-    return groupCount > 0
-      ? `${databases} · ${t("plan.details.database-groups", { count: groupCount })}`
-      : databases;
+      : targetsText;
   }, [page.plan.specs, page.planCheckRuns, t]);
   // Approvers are recorded in the order of the approval flow's roles.
   const flowRoles = page.issue?.approvalTemplate?.flow?.roles ?? [];
