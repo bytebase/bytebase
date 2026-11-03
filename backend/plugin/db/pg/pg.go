@@ -186,20 +186,15 @@ func getPGConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, error) 
 		return nil, errors.Errorf("user must be set")
 	}
 
-	if config.DataSource.Host == "" {
-		return nil, errors.Errorf("host must be set")
-	}
-
-	if config.DataSource.Port == "" {
-		return nil, errors.Errorf("port must be set")
-	}
-
 	if (config.DataSource.GetSslCert() == "" && config.DataSource.GetSslKey() != "") ||
 		(config.DataSource.GetSslCert() != "" && config.DataSource.GetSslKey() == "") {
 		return nil, errors.Errorf("ssl-cert and ssl-key must be both set or unset")
 	}
 
-	connStr := fmt.Sprintf("host=%s port=%s", config.DataSource.Host, config.DataSource.Port)
+	connStr, err := util.PGHostPort(config.DataSource.Host, config.DataSource.Port)
+	if err != nil {
+		return nil, err
+	}
 	if config.DataSource.GetUseSsl() {
 		connStr += fmt.Sprintf(" sslmode=%s", util.GetPGSSLMode(config.DataSource))
 	}
@@ -269,9 +264,11 @@ func getRDSConnectionConfig(ctx context.Context, conf db.ConnectionConfig) (*pgx
 		return nil, err
 	}
 
-	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s",
-		conf.DataSource.Host, conf.DataSource.Port, conf.DataSource.Username, password,
-	)
+	hostPort, err := util.PGHostPort(conf.DataSource.Host, conf.DataSource.Port)
+	if err != nil {
+		return nil, err
+	}
+	dsn := fmt.Sprintf("%s user=%s password=%s", hostPort, util.QuotePGValue(conf.DataSource.Username), util.QuotePGValue(password))
 	config, err := pgx.ParseConfig(dsn)
 	if err != nil {
 		return nil, err
@@ -292,7 +289,7 @@ func (d *Driver) getCloudSQLConnectionConfig(ctx context.Context, conf db.Connec
 	}
 	d.cloudSQLDialer = dialer
 
-	dsn := fmt.Sprintf("user=%s", conf.DataSource.Username)
+	dsn := fmt.Sprintf("user=%s", util.QuotePGValue(conf.DataSource.Username))
 	config, err := pgx.ParseConfig(dsn)
 	if err != nil {
 		return nil, err
