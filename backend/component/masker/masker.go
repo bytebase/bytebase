@@ -35,6 +35,22 @@ type Masker interface {
 	Equal(other Masker) bool
 }
 
+// MasksValues reports whether m can change a value. A NoneMasker, a range
+// masker with no slice, and an outer masker with no prefix and no suffix
+// return every value unchanged.
+func MasksValues(m Masker) bool {
+	switch m := m.(type) {
+	case *NoneMasker:
+		return false
+	case *RangeMasker:
+		return m.enableMask()
+	case *InnerOuterMasker:
+		return m.maskerType != InnerOuterMaskerTypeOuter || m.prefixLen != 0 || m.suffixLen != 0
+	default:
+		return true
+	}
+}
+
 // NoneMasker is the masker that does not mask the data.
 type NoneMasker struct{}
 

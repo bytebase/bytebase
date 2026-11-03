@@ -14,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/permission"
 	"github.com/bytebase/bytebase/backend/component/iam"
+	"github.com/bytebase/bytebase/backend/component/masker"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -253,6 +254,9 @@ func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, req *connect.Reques
 			if err := validatePolicyPayload(policy.Type, req.Msg.Policy); err != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrap(err, "invalid policy"))
 			}
+			if err := s.validateMaskingRuleTypes(ctx, policy.Type, req.Msg.Policy); err != nil {
+				return nil, err
+			}
 			payloadStr, err := s.convertPolicyPayloadToString(ctx, req.Msg.Policy)
 			if err != nil {
 				return nil, err
@@ -468,6 +472,9 @@ func (s *OrgPolicyService) createPolicyMessage(ctx context.Context, req *connect
 	if err := validatePolicyPayload(policyType, policy); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrap(err, "invalid policy"))
 	}
+	if err := s.validateMaskingRuleTypes(ctx, policyType, policy); err != nil {
+		return nil, err
+	}
 
 	payloadStr, err := s.convertPolicyPayloadToString(ctx, policy)
 	if err != nil {
@@ -563,6 +570,55 @@ func (s *OrgPolicyService) checkPolicyFeatureGuard(ctx context.Context, policyTy
 	return nil
 }
 
+// validateMaskingRuleTypes refuses a masking rule list in which a rule names a
+// semantic type that masks no value.
+func (s *OrgPolicyService) validateMaskingRuleTypes(ctx context.Context, policyType storepb.Policy_Type, policy *v1pb.Policy) error {
+	if policyType != storepb.Policy_MASKING_RULE {
+		return nil
+	}
+	semanticTypes, err := getSemanticTypesSettingWithBuiltins(ctx, s.store)
+	if err != nil {
+		return connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get semantic types"))
+	}
+	if err := maskingRuleTypeError(policy.GetMaskingRulePolicy().GetRules(), semanticTypes.GetTypes()); err != nil {
+		return connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	return nil
+}
+
+// maskingRuleTypeError names the first rule whose semantic type masks no value.
+// The first rule that matches a column decides its masking, so such a rule
+// leaves the columns it matches unmasked and their own semantic type unused.
+// Every rule is checked, not only changed ones: a reorder or a removal ahead of
+// a stored rule changes which columns it decides.
+func maskingRuleTypeError(rules []*v1pb.MaskingRulePolicy_MaskingRule, semanticTypes []*storepb.SemanticTypeSetting_SemanticType) error {
+	byID := make(map[string]*storepb.SemanticTypeSetting_SemanticType, len(semanticTypes))
+	for _, semanticType := range semanticTypes {
+		byID[semanticType.GetId()] = semanticType
+	}
+	for _, rule := range rules {
+		semanticType, ok := byID[rule.GetSemanticType()]
+		if !ok {
+			return errors.Errorf("masking rule %s names semantic type %q, which does not exist", maskingRuleLabel(rule), rule.GetSemanticType())
+		}
+		m, err := semanticTypeMasker(semanticType)
+		if err != nil {
+			return errors.Wrapf(err, "masking rule %s names semantic type %q", maskingRuleLabel(rule), rule.GetSemanticType())
+		}
+		if !masker.MasksValues(m) {
+			return errors.Errorf("masking rule %s names semantic type %q, which masks no value", maskingRuleLabel(rule), rule.GetSemanticType())
+		}
+	}
+	return nil
+}
+
+func maskingRuleLabel(rule *v1pb.MaskingRulePolicy_MaskingRule) string {
+	if title := rule.GetCondition().GetTitle(); title != "" {
+		return fmt.Sprintf("%q (ID %s)", title, rule.GetId())
+	}
+	return fmt.Sprintf("%q", rule.GetId())
+}
+
 func validatePolicyPayload(policyType storepb.Policy_Type, policy *v1pb.Policy) error {
 	switch policyType {
 	case storepb.Policy_MASKING_RULE:
@@ -576,6 +632,9 @@ func validatePolicyPayload(policyType storepb.Policy_Type, policy *v1pb.Policy) 
 		for _, rule := range maskingRulePolicy.MaskingRulePolicy.Rules {
 			if rule.Id == "" {
 				return connect.NewError(connect.CodeInvalidArgument, errors.New("masking rule must have ID set"))
+			}
+			if rule.GetCondition() == nil {
+				return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("masking rule %q must have a condition", rule.Id))
 			}
 			if _, err := common.ValidateMaskingRuleCELExpr(rule.Condition.Expression); err != nil {
 				return connect.NewError(connect.CodeInvalidArgument, errors.Wrap(err, "invalid masking rule expression"))

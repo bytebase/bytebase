@@ -191,17 +191,9 @@ func buildSemanticTypeToMaskerMap(ctx context.Context, stores *store.Store) (map
 	}
 	semanticTypeToMasker := make(map[string]masker.Masker)
 	for _, semanticType := range semanticTypesSetting.GetTypes() {
-		var m masker.Masker
-		switch semanticType.GetId() {
-		case defaultSemanticTypeID:
-			m = masker.NewDefaultFullMasker()
-		case defaultPartialSemanticTypeID:
-			m = masker.NewDefaultRangeMasker()
-		default:
-			m, err = getMaskerByMaskingAlgorithmAndLevel(semanticType.GetAlgorithm())
-			if err != nil {
-				return nil, err
-			}
+		m, err := semanticTypeMasker(semanticType)
+		if err != nil {
+			return nil, err
 		}
 		// Only add semantic types that have actual masking configured (not NoneMasker)
 		if _, isNoneMasker := m.(*masker.NoneMasker); !isNoneMasker {
@@ -210,6 +202,18 @@ func buildSemanticTypeToMaskerMap(ctx context.Context, stores *store.Store) (map
 	}
 
 	return semanticTypeToMasker, nil
+}
+
+// semanticTypeMasker returns the masker that semanticType applies to a column.
+func semanticTypeMasker(semanticType *storepb.SemanticTypeSetting_SemanticType) (masker.Masker, error) {
+	switch semanticType.GetId() {
+	case defaultSemanticTypeID:
+		return masker.NewDefaultFullMasker(), nil
+	case defaultPartialSemanticTypeID:
+		return masker.NewDefaultRangeMasker(), nil
+	default:
+		return getMaskerByMaskingAlgorithmAndLevel(semanticType.GetAlgorithm())
+	}
 }
 
 // maskingDataProvider provides cached access to databases, projects, schemas, and policies.
