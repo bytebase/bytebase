@@ -157,6 +157,9 @@ func TestGetRDSConnectionConfigKeepsTheUserWhole(t *testing.T) {
 	t.Setenv("AWS_CONFIG_FILE", t.TempDir()+"/config")
 	t.Setenv("AWS_SHARED_CREDENTIALS_FILE", t.TempDir()+"/credentials")
 	t.Setenv("AWS_EC2_METADATA_DISABLED", "true")
+	// A set AWS_PROFILE makes the SDK load that profile strictly, and the files
+	// above have none.
+	t.Setenv("AWS_PROFILE", "")
 	connConfig, err := getRDSConnectionConfig(context.Background(), db.ConnectionConfig{
 		DataSource: &storepb.DataSource{
 			Host:               "rds.example.com",
