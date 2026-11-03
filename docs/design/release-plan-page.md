@@ -229,9 +229,12 @@ one way, as in the UIOps log: there is no "Show fewer", which would sit below th
 The files already applied are not part of the run: they are the database's state before it, so
 they are no stretch and get no load row. They are one fold line at the top, before the first section,
 "60 files already applied to this database", closed on load and outside the cap. Opened, it lists
-every one of them in version order, indented one level under the line so they do not read as rows
-of this run, each with its version and its path, which opens the viewer, and no chip, since the line
-names their state. Inside a section the log's existing "Load more" paging stays. A task ends with a
+every one of them in version order as a nested tree: a recessed gray panel, a guide line down from
+the caret, the rows indented right of it and their versions faded. The panel's edge ends the list,
+so the first file to apply never reads as one more row of it, and no added heading repeats the
+count line. Each row has its version and its path, which opens the viewer, and no chip, since the
+line names their state. Rejected: only a heavier divider after the list, which leaves the two kinds
+of row alike; a "N files to apply" heading, which repeats the count line. Inside a section the log's existing "Load more" paging stays. A task ends with a
 "Revisions on `<database>`" link to the database page's Revisions tab once its latest run applied at
 least one file, whether the run is done, failed, canceled or still running, and on every done task:
 each file writes its revision when it commits, so a failed run's applied files are already on the
