@@ -672,11 +672,6 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q has been deleted", req.Msg.Resource))
 	}
 
-	oldIamPolicyMsg, err := s.store.GetProjectIamPolicy(ctx, workspaceID, project.ResourceID)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find project iam policy with error"))
-	}
-
 	// The etag is compared only in the write below, against the locked row.
 	// Comparing it here too would add a second answer to the same question from
 	// a read the write does not hold, and only the locked one decides.
@@ -685,7 +680,8 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, req *connect.Request[
 		return nil, err
 	}
 
-	if err := validateIAMPolicy(ctx, s.store, !s.profile.SaaS, req.Msg, oldIamPolicyMsg); err != nil {
+	validateReplaced, err := validateIAMPolicy(ctx, s.store, !s.profile.SaaS, req.Msg)
+	if err != nil {
 		return nil, err
 	}
 
@@ -695,15 +691,20 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, req *connect.Request[
 	}
 
 	replaced, iamPolicyMessage, err := s.store.SetIamPolicy(ctx, &store.SetIamPolicyMessage{
-		Workspace:    workspaceID,
-		ResourceType: storepb.Policy_PROJECT,
-		Resource:     common.FormatProject(project.ResourceID),
-		Policy:       policy,
-		ExpectedEtag: expectedEtag,
+		Workspace:        workspaceID,
+		ResourceType:     storepb.Policy_PROJECT,
+		Resource:         common.FormatProject(project.ResourceID),
+		Policy:           policy,
+		ExpectedEtag:     expectedEtag,
+		ValidateReplaced: validateReplaced,
 	})
 	if err != nil {
 		if errors.Is(err, store.ErrIamPolicyEtagMismatch) {
 			return nil, connect.NewError(connect.CodeAborted, errors.Errorf("there is concurrent update to the project iam policy, please refresh and try again"))
+		}
+		var connectErr *connect.Error
+		if errors.As(err, &connectErr) {
+			return nil, connectErr
 		}
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -1186,19 +1187,23 @@ func (s *ProjectService) getProjectMessage(ctx context.Context, name string) (*s
 	return project, nil
 }
 
-func getBindingIdentifier(role string, condition *expr.Expr) string {
-	ids := []string{
-		fmt.Sprintf("[role] %s", role),
+// bindingKey identifies a binding by its role and condition. A missing
+// condition and an empty one are the same key, as the IAM policy converters
+// store and return them.
+type bindingKey struct {
+	role        string
+	title       string
+	description string
+	expression  string
+}
+
+func newBindingKey(role string, condition *expr.Expr) bindingKey {
+	return bindingKey{
+		role:        role,
+		title:       condition.GetTitle(),
+		description: condition.GetDescription(),
+		expression:  condition.GetExpression(),
 	}
-	if condition != nil {
-		ids = append(
-			ids,
-			fmt.Sprintf("[title] %s", condition.Title),
-			fmt.Sprintf("[description] %s", condition.Description),
-			fmt.Sprintf("[expression] %s", condition.Expression),
-		)
-	}
-	return strings.Join(ids, ";")
 }
 
 // requestedIamPolicyEtag reads the etag the caller presented. GetIamPolicy
@@ -1217,23 +1222,26 @@ func requestedIamPolicyEtag(msg *v1pb.SetIamPolicyRequest) (string, error) {
 	return policyEtag, nil
 }
 
+// validateIAMPolicy checks what a SetIamPolicy request can be checked against
+// before the write, and returns the check that compares it with the policy it
+// replaces. The write runs that check under its row lock, since a policy read
+// earlier can change before the write lands.
 func validateIAMPolicy(
 	ctx context.Context,
 	stores *store.Store,
 	allowAllUsers bool,
 	msg *v1pb.SetIamPolicyRequest,
-	oldPolicyMessage *store.IamPolicyMessage,
-) error {
+) (func(previous *storepb.IamPolicy) error, error) {
 	if msg.Policy == nil {
-		return connect.NewError(connect.CodeInvalidArgument, errors.New("IAM Policy is required"))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("IAM Policy is required"))
 	}
 	if len(msg.Policy.Bindings) == 0 {
-		return connect.NewError(connect.CodeInvalidArgument, errors.New("IAM Binding is empty"))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("IAM Binding is empty"))
 	}
 
 	workspaceProfileSetting, err := stores.GetWorkspaceProfileSetting(ctx, common.GetWorkspaceIDFromContext(ctx))
 	if err != nil {
-		return connect.NewError(connect.CodeInternal, errors.New("failed to get workspace profile setting"))
+		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to get workspace profile setting"))
 	}
 	var maximumRoleExpiration *durationpb.Duration
 	if workspaceProfileSetting != nil {
@@ -1242,26 +1250,37 @@ func validateIAMPolicy(
 
 	roleMessages, err := stores.ListRoles(ctx, &store.FindRoleMessage{Workspace: common.GetWorkspaceIDFromContext(ctx)})
 	if err != nil {
-		return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list roles"))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list roles"))
 	}
 
-	storedMembers := make(map[string]map[string]bool)
-	for _, oldBinding := range oldPolicyMessage.Policy.Bindings {
-		identifier := getBindingIdentifier(oldBinding.Role, oldBinding.Condition)
-		if storedMembers[identifier] == nil {
-			storedMembers[identifier] = make(map[string]bool)
+	return func(previous *storepb.IamPolicy) error {
+		bindings, err := bindingsGainingMembers(msg.Policy.Bindings, previous, allowAllUsers)
+		if err != nil {
+			return err
 		}
-		for _, member := range oldBinding.Members {
-			storedMembers[identifier][convertToV1MemberInBinding(member)] = true
+		return validateBindings(msg.Resource, bindings, roleMessages, maximumRoleExpiration)
+	}, nil
+}
+
+// bindingsGainingMembers returns the bindings in request that gain a member
+// over previous. A binding that gains none is not validated again, so a policy
+// sent back as it was stored still saves after the rules tighten, and allUsers
+// is refused only where it is added.
+func bindingsGainingMembers(request []*v1pb.Binding, previous *storepb.IamPolicy, allowAllUsers bool) ([]*v1pb.Binding, error) {
+	storedMembers := make(map[bindingKey]map[string]bool)
+	for _, binding := range previous.GetBindings() {
+		key := newBindingKey(binding.Role, binding.Condition)
+		if storedMembers[key] == nil {
+			storedMembers[key] = make(map[string]bool)
+		}
+		for _, member := range binding.Members {
+			storedMembers[key][convertToV1MemberInBinding(member)] = true
 		}
 	}
 
-	// A binding is validated when it gains a member, so a member added to a
-	// stored binding meets the current rules, while a policy sent back as it
-	// was stored still saves.
-	bindings := []*v1pb.Binding{}
-	for _, binding := range msg.Policy.Bindings {
-		stored := storedMembers[getBindingIdentifier(binding.Role, binding.Condition)]
+	var gaining []*v1pb.Binding
+	for _, binding := range request {
+		stored := storedMembers[newBindingKey(binding.Role, binding.Condition)]
 		var added []string
 		for _, member := range binding.Members {
 			if !stored[member] {
@@ -1271,15 +1290,13 @@ func validateIAMPolicy(
 		if len(added) == 0 {
 			continue
 		}
-		// If allUsers is not allowed in IAM policies, members must be explicitly added.
 		if !allowAllUsers && slices.Contains(added, common.AllUsers) {
-			return connect.NewError(connect.CodeInvalidArgument,
+			return nil, connect.NewError(connect.CodeInvalidArgument,
 				errors.New("allUsers is not allowed in workspace IAM policy in SaaS mode, add members explicitly"))
 		}
-		bindings = append(bindings, binding)
+		gaining = append(gaining, binding)
 	}
-
-	return validateBindings(msg.Resource, bindings, roleMessages, maximumRoleExpiration)
+	return gaining, nil
 }
 
 func validateBindings(

@@ -22,7 +22,6 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/sample"
 	"github.com/bytebase/bytebase/backend/component/sample/selfhost"
@@ -693,50 +692,53 @@ func TestProjectPurgeRemovesSelfHostSample(t *testing.T) {
 	require.Nil(t, instances[0].ExpireTime)
 }
 
-func TestValidateIAMPolicyChecksBindingsThatGainMembers(t *testing.T) {
+func TestBindingsGainingMembersAreValidated(t *testing.T) {
 	t.Parallel()
-	ctx := context.WithValue(context.Background(), common.WorkspaceIDContextKey, "default")
-	db, stores, _ := testcontainer.NewMetadataDB(t)
-	_, err := db.ExecContext(ctx, `INSERT INTO workspace (resource_id) VALUES ('default')`)
-	require.NoError(t, err)
-	_, err = stores.UpsertSetting(ctx, &store.SettingMessage{
-		Name:      storepb.SettingName_WORKSPACE_PROFILE,
-		Workspace: "default",
-		Value:     &storepb.WorkspaceProfileSetting{MaximumRoleExpiration: durationpb.New(7 * 24 * time.Hour)},
-	})
-	require.NoError(t, err)
-
 	developer := common.FormatRole(store.ProjectDeveloperRole)
 	member := common.FormatRole(store.WorkspaceMemberRole)
+	maximum := durationpb.New(7 * 24 * time.Hour)
 	// Granted for 30 days, before the 7-day maximum was set.
 	thirtyDays := &expr.Expr{Expression: fmt.Sprintf(`request.time < timestamp("%s")`, time.Now().Add(30*24*time.Hour).UTC().Format(time.RFC3339))}
-	stored := &store.IamPolicyMessage{Policy: &storepb.IamPolicy{Bindings: []*storepb.Binding{
+	// Under a key joined from text, this condition and the next one collided.
+	crafted := &expr.Expr{Title: "a", Description: "b;[expression] x"}
+	collides := &expr.Expr{Title: "a", Description: "b", Expression: "x;[expression] "}
+	stored := &storepb.IamPolicy{Bindings: []*storepb.Binding{
 		{Role: developer, Members: []string{common.FormatUserEmail("alice@example.com"), common.FormatUserEmail("bob@example.com")}, Condition: thirtyDays},
-		{Role: member, Members: []string{common.FormatUserEmail("alice@example.com")}, Condition: &expr.Expr{}},
-	}}}
-	validate := func(resource string, allowAllUsers bool, binding *v1pb.Binding) error {
-		return validateIAMPolicy(ctx, stores, allowAllUsers, &v1pb.SetIamPolicyRequest{
-			Resource: resource,
-			Policy:   &v1pb.IamPolicy{Bindings: []*v1pb.Binding{binding}},
-		}, stored)
+		{Role: developer, Members: []string{common.FormatUserEmail("erin@example.com")}, Condition: &expr.Expr{}},
+		{Role: developer, Members: []string{common.FormatUserEmail("dana@example.com")}, Condition: crafted},
+		{Role: member, Members: []string{common.FormatUserEmail("alice@example.com"), common.AllUsers}, Condition: &expr.Expr{}},
+	}}
+	tests := []struct {
+		name          string
+		resource      string
+		allowAllUsers bool
+		binding       *v1pb.Binding
+		wantErr       string
+	}{
+		{"sent back as stored", "projects/hr", true, &v1pb.Binding{Role: developer, Members: []string{"user:alice@example.com", "user:bob@example.com"}, Condition: thirtyDays}, ""},
+		{"loses a member", "projects/hr", true, &v1pb.Binding{Role: developer, Members: []string{"user:alice@example.com"}, Condition: thirtyDays}, ""},
+		{"gains a member past the maximum", "projects/hr", true, &v1pb.Binding{Role: developer, Members: []string{"user:alice@example.com", "user:bob@example.com", "user:carol@example.com"}, Condition: thirtyDays}, "failed to validate expiration"},
+		{"swaps a member at the same count", "projects/hr", true, &v1pb.Binding{Role: developer, Members: []string{"user:alice@example.com", "user:carol@example.com"}, Condition: thirtyDays}, "failed to validate expiration"},
+		{"gains a member with no expiry under a maximum", "projects/hr", true, &v1pb.Binding{Role: developer, Members: []string{"user:erin@example.com", "user:frank@example.com"}, Condition: &expr.Expr{}}, "request.time is required"},
+		{"keeps allUsers where it is not allowed", "workspaces/default", false, &v1pb.Binding{Role: member, Members: []string{"user:alice@example.com", common.AllUsers}, Condition: &expr.Expr{}}, ""},
+		{"loses a member beside allUsers", "workspaces/default", false, &v1pb.Binding{Role: member, Members: []string{common.AllUsers}, Condition: &expr.Expr{}}, ""},
+		{"gains a member beside allUsers", "workspaces/default", false, &v1pb.Binding{Role: member, Members: []string{"user:alice@example.com", common.AllUsers, "user:bob@example.com"}, Condition: &expr.Expr{}}, ""},
+		{"adds allUsers where it is not allowed", "projects/hr", false, &v1pb.Binding{Role: developer, Members: []string{"user:alice@example.com", "user:bob@example.com", common.AllUsers}, Condition: thirtyDays}, "allUsers is not allowed"},
+		{"a missing condition matches an empty one", "workspaces/default", false, &v1pb.Binding{Role: member, Members: []string{"user:alice@example.com", common.AllUsers}}, ""},
+		{"a condition is matched as a whole", "projects/hr", true, &v1pb.Binding{Role: developer, Members: []string{"user:dana@example.com"}, Condition: collides}, "Syntax error"},
 	}
-
-	t.Run("a stored binding sent back as it was saves", func(t *testing.T) {
-		t.Parallel()
-		require.NoError(t, validate("projects/hr", true, &v1pb.Binding{Role: developer, Members: []string{"user:alice@example.com", "user:bob@example.com"}, Condition: thirtyDays}))
-	})
-	t.Run("a stored binding that loses a member saves", func(t *testing.T) {
-		t.Parallel()
-		require.NoError(t, validate("projects/hr", true, &v1pb.Binding{Role: developer, Members: []string{"user:alice@example.com"}, Condition: thirtyDays}))
-	})
-	t.Run("a member added to a stored binding meets the current maximum", func(t *testing.T) {
-		t.Parallel()
-		err := validate("projects/hr", true, &v1pb.Binding{Role: developer, Members: []string{"user:alice@example.com", "user:bob@example.com", "user:carol@example.com"}, Condition: thirtyDays})
-		require.ErrorContains(t, err, "failed to validate expiration")
-	})
-	t.Run("allUsers added to a stored workspace binding is refused where allUsers is not allowed", func(t *testing.T) {
-		t.Parallel()
-		err := validate("workspaces/default", false, &v1pb.Binding{Role: member, Members: []string{"user:alice@example.com", common.AllUsers}, Condition: &expr.Expr{}})
-		require.ErrorContains(t, err, "allUsers is not allowed")
-	})
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			bindings, err := bindingsGainingMembers([]*v1pb.Binding{tc.binding}, stored, tc.allowAllUsers)
+			if err == nil {
+				err = validateBindings(tc.resource, bindings, store.PredefinedRoles, maximum)
+			}
+			if tc.wantErr == "" {
+				require.NoError(t, err)
+				return
+			}
+			require.ErrorContains(t, err, tc.wantErr)
+		})
+	}
 }
