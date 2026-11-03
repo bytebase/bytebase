@@ -104,6 +104,57 @@ func TestGetPGConnectionConfigPreservesExplicitQueryExecMode(t *testing.T) {
 	require.Equal(t, 128, connConfig.StatementCacheCapacity)
 }
 
+func TestGetPGConnectionConfigKeepsEachValueWhole(t *testing.T) {
+	open := func(edit func(*storepb.DataSource)) (*pgx.ConnConfig, error) {
+		dataSource := &storepb.DataSource{Username: "dba", Host: "db.example.com", Port: "5432"}
+		edit(dataSource)
+		return getPGConnectionConfig(db.ConnectionConfig{DataSource: dataSource})
+	}
+
+	t.Run("a port cannot name another host", func(t *testing.T) {
+		_, err := open(func(ds *storepb.DataSource) { ds.Port = "5432 host=other.example.com" })
+		require.ErrorContains(t, err, "invalid port")
+	})
+	t.Run("a port cannot name a CA file", func(t *testing.T) {
+		missing := t.TempDir() + "/missing-ca.pem"
+		_, err := open(func(ds *storepb.DataSource) { ds.Port = "5432 sslmode=verify-full sslrootcert=" + missing })
+		require.ErrorContains(t, err, "invalid port")
+	})
+	t.Run("a host carrying options stays one host", func(t *testing.T) {
+		connConfig, err := open(func(ds *storepb.DataSource) { ds.Host = "db.example.com port=6543" })
+		require.NoError(t, err)
+		require.Equal(t, "db.example.com port=6543", connConfig.Host)
+		require.Equal(t, uint16(5432), connConfig.Port)
+	})
+	t.Run("an extra parameter's value stays one value", func(t *testing.T) {
+		connConfig, err := open(func(ds *storepb.DataSource) {
+			ds.ExtraConnectionParameters = map[string]string{"options": "-c search_path=hr"}
+		})
+		require.NoError(t, err)
+		require.Equal(t, "-c search_path=hr", connConfig.RuntimeParams["options"])
+		require.NotContains(t, connConfig.RuntimeParams, "search_path")
+	})
+	t.Run("an extra parameter's name is one keyword", func(t *testing.T) {
+		_, err := open(func(ds *storepb.DataSource) {
+			ds.ExtraConnectionParameters = map[string]string{"application_name=probe host": "other.example.com"}
+		})
+		require.ErrorContains(t, err, `invalid connection parameter name "application_name=probe host"`)
+	})
+	t.Run("surrounding whitespace is ignored", func(t *testing.T) {
+		connConfig, err := open(func(ds *storepb.DataSource) {
+			ds.Host = " db.example.com "
+			ds.Port = " 5432 "
+		})
+		require.NoError(t, err)
+		require.Equal(t, "db.example.com", connConfig.Host)
+		require.Equal(t, uint16(5432), connConfig.Port)
+	})
+	t.Run("a blank host is refused", func(t *testing.T) {
+		_, err := open(func(ds *storepb.DataSource) { ds.Host = "   " })
+		require.ErrorContains(t, err, "host must be set")
+	})
+}
+
 func TestGetPGConnectionConfigDisablesTLSVerificationForAllHosts(t *testing.T) {
 	connConfig, err := getPGConnectionConfig(db.ConnectionConfig{
 		DataSource: &storepb.DataSource{
@@ -580,9 +631,9 @@ func TestCloudSQLIAMDialerClosesWhenOpenFails(t *testing.T) {
 	ctx := context.Background()
 
 	config := cloudSQLIAMConnectionConfig(cloudSQLTestInstance)
-	// A username that does not survive the keyword/value DSN fails Open after the
-	// connector has been built.
-	config.DataSource.Username = "bytebase service account"
+	// pgx refuses a NUL byte anywhere in a connection string, so this username
+	// fails Open after the connector has been built.
+	config.DataSource.Username = "bytebase\x00"
 
 	driver := &Driver{}
 	_, err := driver.Open(ctx, storepb.Engine_POSTGRES, config)

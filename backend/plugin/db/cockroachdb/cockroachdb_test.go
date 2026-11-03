@@ -129,6 +129,19 @@ func TestGetCockroachConnectionConfigAddsClientCertificateForAllHosts(t *testing
 	}
 }
 
+func TestGetCockroachConnectionConfigKeepsEachValueWhole(t *testing.T) {
+	_, err := getCockroachConnectionConfig(db.ConnectionConfig{
+		DataSource: &storepb.DataSource{Username: "dba", Host: "crdb.example.com", Port: "26257 host=other.example.com"},
+	})
+	require.ErrorContains(t, err, "invalid port")
+
+	connConfig, err := getCockroachConnectionConfig(db.ConnectionConfig{
+		DataSource: &storepb.DataSource{Username: "dba", Host: "routing-id.aws-us-east-1.cockroachlabs.cloud", Port: "26257"},
+	})
+	require.NoError(t, err)
+	require.Equal(t, "--cluster=routing-id", connConfig.RuntimeParams["options"])
+}
+
 func TestGetCockroachConnectionConfigVerifiesCustomCAForAllHosts(t *testing.T) {
 	hosts := []string{"crdb-1.example.com", "crdb-2.example.com", "crdb-3.example.com"}
 	caPEM, serverCertDERByHost := generateCAAndServerCertificates(t, hosts)

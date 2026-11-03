@@ -181,13 +181,14 @@ func (d *Driver) PushAndClearMessages() []*v1pb.QueryResult_Message {
 	return messages
 }
 
+// pgParameterName is the form of a libpq keyword and of a PostgreSQL run-time
+// parameter. A name enters the connection string unquoted, and pgx reads a key
+// only up to its first "=", so "application_name=x host" would add a host.
+var pgParameterName = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_.]*$`)
+
 func getPGConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, error) {
 	if config.DataSource.Username == "" {
 		return nil, errors.Errorf("user must be set")
-	}
-
-	if config.DataSource.Host == "" {
-		return nil, errors.Errorf("host must be set")
 	}
 
 	if config.DataSource.Port == "" {
@@ -199,14 +200,20 @@ func getPGConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, error) 
 		return nil, errors.Errorf("ssl-cert and ssl-key must be both set or unset")
 	}
 
-	connStr := fmt.Sprintf("host=%s port=%s", config.DataSource.Host, config.DataSource.Port)
+	connStr, err := util.PGHostPort(config.DataSource.Host, config.DataSource.Port)
+	if err != nil {
+		return nil, err
+	}
 	if config.DataSource.GetUseSsl() {
 		connStr += fmt.Sprintf(" sslmode=%s", util.GetPGSSLMode(config.DataSource))
 	}
 
 	// Add target_session_attrs=read-write if specified in ExtraConnectionParameters
 	for key, value := range config.DataSource.GetExtraConnectionParameters() {
-		connStr += fmt.Sprintf(" %s=%s", key, value)
+		if !pgParameterName.MatchString(key) {
+			return nil, errors.Errorf("invalid connection parameter name %q", key)
+		}
+		connStr += fmt.Sprintf(" %s=%s", key, util.QuotePGValue(value))
 	}
 
 	connConfig, err := pgx.ParseConfig(connStr)
@@ -269,9 +276,11 @@ func getRDSConnectionConfig(ctx context.Context, conf db.ConnectionConfig) (*pgx
 		return nil, err
 	}
 
-	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s",
-		conf.DataSource.Host, conf.DataSource.Port, conf.DataSource.Username, password,
-	)
+	hostPort, err := util.PGHostPort(conf.DataSource.Host, conf.DataSource.Port)
+	if err != nil {
+		return nil, err
+	}
+	dsn := fmt.Sprintf("%s user=%s password=%s", hostPort, util.QuotePGValue(conf.DataSource.Username), util.QuotePGValue(password))
 	config, err := pgx.ParseConfig(dsn)
 	if err != nil {
 		return nil, err
@@ -292,7 +301,7 @@ func (d *Driver) getCloudSQLConnectionConfig(ctx context.Context, conf db.Connec
 	}
 	d.cloudSQLDialer = dialer
 
-	dsn := fmt.Sprintf("user=%s", conf.DataSource.Username)
+	dsn := fmt.Sprintf("user=%s", util.QuotePGValue(conf.DataSource.Username))
 	config, err := pgx.ParseConfig(dsn)
 	if err != nil {
 		return nil, err
