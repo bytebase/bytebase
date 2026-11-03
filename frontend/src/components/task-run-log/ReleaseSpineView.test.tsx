@@ -86,3 +86,41 @@ test("a long stretch offers Load 20 more and Load all, a short one a single row,
   expect(within(container).queryByTestId("spine-show-fewer")).toBeNull();
   view.unmount();
 });
+
+test("a version whose revision was deleted says so on a short chip and names who and when behind its info icon", () => {
+  const files = [
+    { version: "001", path: "migrations/001.sql" },
+    { version: "002", path: "migrations/002.sql" },
+  ];
+  const container = document.createElement("div");
+  document.body.appendChild(container);
+  const root = createRoot(container);
+  act(() =>
+    root.render(
+      createElement(ReleaseSpineView, {
+        files,
+        entries: [],
+        state: create(Task_ReleaseStateSchema, {
+          pendingVersions: [
+            { version: "001" },
+            {
+              version: "002",
+              revisionDeleter: "users/alex@example.com",
+              revisionDeleteTime: { seconds: BigInt(Date.UTC(2026, 10, 3, 6, 21) / 1000), nanos: 0 },
+            },
+          ],
+        }),
+        getSectionLabel: () => "",
+      })
+    )
+  );
+  const row = within(container).getByTestId("spine-file-002");
+  expect(row.textContent).toContain("Will apply again · revision deleted");
+  expect(row.textContent).not.toContain("alex@example.com");
+  const info = within(row).getByTestId("spine-revision-deleted-info");
+  expect(info.getAttribute("aria-label")).toMatch(/^Revision deleted .*2026.* by alex@example\.com$/);
+  expect(info.tabIndex).toBe(0);
+  expect(within(container).getByTestId("spine-file-001").textContent).toContain("Will apply");
+  act(() => root.unmount());
+  container.remove();
+});

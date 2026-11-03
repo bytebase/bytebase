@@ -4384,7 +4384,7 @@
         "running": "Running"
       },
       "will-apply": "Will apply",
-      "will-apply-again": "Will apply again · revision deleted {{date}} by {{user}}"
+      "will-apply-again": "Will apply again · revision deleted"
     },
     "status": {
       "enqueued": "Waiting for execution.",

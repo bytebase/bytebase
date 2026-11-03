@@ -4384,7 +4384,7 @@
         "running": "En ejecución"
       },
       "will-apply": "Se aplicará",
-      "will-apply-again": "Se aplicará de nuevo · revisión eliminada el {{date}} por {{user}}"
+      "will-apply-again": "Se aplicará de nuevo · revisión eliminada"
     },
     "status": {
       "enqueued": "Esperando a ser ejecutada.",

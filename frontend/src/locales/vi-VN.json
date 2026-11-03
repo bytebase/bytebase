@@ -4384,7 +4384,7 @@
         "running": "Đang chạy"
       },
       "will-apply": "Sẽ áp dụng",
-      "will-apply-again": "Sẽ áp dụng lại · bản sửa đổi đã bị {{user}} xóa vào {{date}}"
+      "will-apply-again": "Sẽ áp dụng lại · bản sửa đổi đã bị xóa"
     },
     "status": {
       "enqueued": "Đang chờ thực thi.",

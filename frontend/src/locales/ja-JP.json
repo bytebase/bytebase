@@ -4384,7 +4384,7 @@
         "running": "実行中"
       },
       "will-apply": "適用予定",
-      "will-apply-again": "再適用予定 · {{date}} に {{user}} がリビジョンを削除"
+      "will-apply-again": "再適用予定 · リビジョン削除済み"
     },
     "status": {
       "enqueued": "実行を待っています。",
