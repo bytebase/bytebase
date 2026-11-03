@@ -289,9 +289,13 @@ database), each with the deleted revision's time and deleter when one existed, t
 already applied, and the time of the computation; the already-applied set is release files minus
 to-apply, so the large set is never stored. The rule is the executor's: a version is applied when
 the database has a live `VERSIONED` revision with that version; deleted revisions do not count. One
-indexed query per target, through the store's existing `Versions` filter (`version = ANY(?)` in
-`backend/store/revision.go`, which `checkReleaseVersioned` in `release_service_check.go` already
-uses per target), so the cost is bounded by the release's file count, not the database's history.
+indexed query per instance for all of the rollout's targets on it, through the store's `Versions`
+filter (`version = ANY(?)` in `backend/store/revision.go`) and a `DatabaseNames` filter beside it
+(`db_name = ANY(?)`, always with the instance), so a rollout over a 10,000-database group costs one
+round trip per instance rather than one per database, and each query is bounded by the release's
+file count and the instance's targets, not the databases' history. Rejected: one query per target,
+which `checkReleaseVersioned` in `release_service_check.go` uses in the background plan check but
+which would put one uncached round trip per database into the synchronous rollout request.
 `GetRollout` and `ListTasks` already return the task, so the folded card and the planned spine read
 the field with no second request. What a run applies is decided only when it runs: the executor
 reads live revisions at its start, so the field is a preview that can go stale (another plan applies
