@@ -439,7 +439,9 @@ and a proto field.
 id.** Short facts about the plan sit as labeled rows in one block in the page's flow, between the
 title row and the description. The rows are body text (14 px), the size of the Progress row's stage
 cells, with muted labels; the caption size (12 px) is for secondary text, and these are the page's
-main facts:
+main facts. Every row has one height, 24 px, the shared `xs` control height that the label chips,
+their remove button and the add-label button keep, with its content centered, so a row of chips
+lines up with a row of text; only a row that wraps grows:
 
 | Row | Release-backed plan | UIOps plan |
 |---|---|---|
@@ -614,7 +616,8 @@ Tests to write, per the placement rules in `AGENTS.md`:
   and the margin around each do not toggle; a click ending a text selection does not toggle.
 - Details block tests: each row for a release plan and a UIOps plan, the rows a plan kind lacks
   absent; Migration-based and State-based; the Progress row's stage cells wrapping at six stages;
-  the labels editable in place and required when the project forces them; the description below the
+  the labels editable in place and required when the project forces them, and in
+  `plan-detail-lifecycle.spec.ts` every row the same height once a label is set; the description below the
   block clipped at 150 characters or 3 lines; the block unfolded on load, folding to the Progress
   line (after the Source title on a release plan) and back, and unfolded again after a reload or on
   another plan.
