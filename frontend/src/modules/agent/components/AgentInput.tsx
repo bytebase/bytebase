@@ -55,6 +55,7 @@ import { acceptAgentResponseActions } from "../logic/responseActions";
 import { createToolExecutor, getToolDefinitions } from "../logic/tools";
 import { apiCallNeedsConfirmation } from "../logic/tools/apiMethodClass";
 import { extractDatabaseOverviewEvidence } from "../logic/tools/databaseOverview";
+import { resolveInstanceNameFromPagePath } from "../logic/tools/instanceOverview";
 import { extractIssueOverviewEvidence } from "../logic/tools/issueOverview";
 import {
   getPendingApiCallPreview,
@@ -958,6 +959,9 @@ export function AgentInput({
       const referencedDatabase = databaseReference?.name;
       const referencedIssue = issueReference?.name;
       const referencedPlan = planReference?.name;
+      const instanceName = referencedProject
+        ? undefined
+        : resolveInstanceNameFromPagePath(page.path);
       const controller = new AbortController();
       const recordUsage = (usage: AgentModelCallUsage) => {
         if (isCurrentChatScope(store, chatId)) {
@@ -975,15 +979,21 @@ export function AgentInput({
         referencedDatabase,
         referencedIssue,
         referencedPlan,
+        instanceName,
         runMode,
       });
-      const tools = getToolDefinitions({ runMode, referencedProject });
+      const tools = getToolDefinitions({
+        runMode,
+        referencedProject,
+        instanceName,
+      });
       const executor = createToolExecutor(router, {
         chatId,
         userName: useAppStore.getState().currentUser?.name,
         context: store.getChat(chatId)?.context,
         workspaceName: workspace?.name,
         referencedProject,
+        pagePath: page.path,
         referencedDatabase,
         referencedIssue,
         referencedPlan,

@@ -40,6 +40,10 @@ import {
 } from "./callApi";
 import { createDatabaseCountTool } from "./databaseCount";
 import { createDatabaseOverviewTool } from "./databaseOverview";
+import {
+  createInstanceOverviewTool,
+  resolveInstanceNameFromPagePath,
+} from "./instanceOverview";
 import { createDomActionTool, type DomActionArgs } from "./domAction";
 import { createIssueOverviewTool } from "./issueOverview";
 import { prepareIssueDecisionPermission } from "./issueDecisionPermission";
@@ -179,6 +183,7 @@ const READ_ONLY_TOOL_NAMES = new Set([
   "get_plan_overview",
   "get_database_overview",
   "get_database_count",
+  "get_instance_overview",
   "get_workspace_overview",
   "get_project_open_issues",
   "get_project_recent_activity",
@@ -274,7 +279,11 @@ const targetsSelectedPlan = (
 };
 
 export function getToolDefinitions(
-  options: { runMode?: AgentRunMode; referencedProject?: string } = {}
+  options: {
+    runMode?: AgentRunMode;
+    referencedProject?: string;
+    instanceName?: string;
+  } = {}
 ): ToolDefinition[] {
   const referencedProject = isCanonicalProjectName(options.referencedProject)
     ? options.referencedProject
@@ -734,6 +743,18 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
     },
   ];
 
+  if (options.instanceName && !referencedProject) {
+    tools.push({
+      name: "get_instance_overview",
+      description:
+        "Get a bounded, read-only sync-status overview of databases visible to the current member on the current instance detail page. It returns database names and sync statuses from one page only; it does not include sync error text, schema, credentials, or connection settings. The API may omit databases the member cannot access, so never claim there are no out-of-sync databases across the entire instance. If partial is true, the visible results are also incomplete. This tool cannot inspect another instance or take action.",
+      parametersSchema: {
+        type: "object",
+        properties: {},
+      },
+    });
+  }
+
   if (referencedProject) {
     return tools.filter((tool) => REFERENCED_PROJECT_TOOL_NAMES.has(tool.name));
   }
@@ -757,6 +778,7 @@ interface CreateToolExecutorOptions {
   context?: string;
   workspaceName?: string;
   referencedProject?: string;
+  pagePath?: string;
   referencedDatabase?: string;
   referencedIssue?: string;
   referencedPlan?: string;
@@ -767,6 +789,7 @@ interface CreateToolExecutorOptions {
 const PAGE_MUTATION_TOOL_NAMES = new Set(["navigate", "dom_action"]);
 const PAGE_BOUND_TOOL_NAMES = new Set([
   "get_page_state",
+  "get_instance_overview",
   ...PAGE_MUTATION_TOOL_NAMES,
 ]);
 const BACKGROUND_PAGE_TOOL_ERROR = JSON.stringify({
@@ -806,6 +829,9 @@ export function createToolExecutor(
   const referencedProject = isCanonicalProjectName(options.referencedProject)
     ? options.referencedProject
     : undefined;
+  const instanceName = referencedProject
+    ? undefined
+    : resolveInstanceNameFromPagePath(options.pagePath ?? "");
   const referencedIssue =
     referencedProject &&
     !options.referencedDatabase &&
@@ -853,6 +879,7 @@ export function createToolExecutor(
   const databaseOverviewTool = createDatabaseOverviewTool({
     projectName,
   });
+  const instanceOverviewTool = createInstanceOverviewTool(instanceName);
   const databaseCountTool = createDatabaseCountTool({
     scopeName: projectName,
     ...(options.referencedDatabase
@@ -983,6 +1010,13 @@ export function createToolExecutor(
         })
       );
     }
+    if (name === "get_instance_overview" && !instanceName) {
+      return toToolResult(
+        JSON.stringify({
+          error: "This chat is not bound to an instance detail page.",
+        })
+      );
+    }
     if (
       referencedProject &&
       (PROJECT_SCOPED_TOOL_NAMES.has(name) || name === "call_api") &&
@@ -1107,6 +1141,8 @@ export function createToolExecutor(
         return toToolResult(await databaseOverviewTool(args));
       case "get_database_count":
         return toToolResult(await databaseCountTool(args));
+      case "get_instance_overview":
+        return toToolResult(await instanceOverviewTool());
       case "get_workspace_overview":
         return toToolResult(await workspaceOverviewTool());
       case "get_project_open_issues":

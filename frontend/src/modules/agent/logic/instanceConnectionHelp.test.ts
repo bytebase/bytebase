@@ -87,6 +87,22 @@ describe("instanceConnectionHelp", () => {
     expect(prompt).not.toContain("have not been shared");
   });
 
+  test("redacts credentials in HTTPS connection URLs", () => {
+    const prompt = buildInstanceConnectionHelpPrompt({
+      engine: "Trino",
+      stage: "connection test",
+      failureCategory: "ssl_tls_failed",
+      failureMessage:
+        "TLS handshake failed for https://dbadmin:very-secret@trino.example.com:8443/catalog",
+    });
+
+    expect(prompt).toContain(
+      "https://[redacted]@trino.example.com:8443/catalog"
+    );
+    expect(prompt).not.toContain("dbadmin");
+    expect(prompt).not.toContain("very-secret");
+  });
+
   test("opens a new read-only Agent chat in the active project context", () => {
     openAgentWithPrompt("Help with the connection failure.");
 

@@ -27,6 +27,12 @@ const planApi = vi.hoisted(() => ({ getPlan: vi.fn() }));
 const databaseApi = vi.hoisted(() => ({ getDatabase: vi.fn() }));
 const celApi = vi.hoisted(() => ({ batchParse: vi.fn() }));
 const resourceChoiceApi = vi.hoisted(() => ({ validate: vi.fn() }));
+const instanceOverviewApi = vi.hoisted(() => ({
+  create: vi.fn(() => vi.fn(async () => "instance_overview")),
+  resolveName: vi.fn((path: string) =>
+    path === "/instances/primary" ? "instances/primary" : undefined
+  ),
+}));
 
 vi.mock("@/api", () => ({
   projectServiceClientConnect: { getProject: projectApi.getProject },
@@ -56,6 +62,10 @@ vi.mock("./databaseOverview", () => ({
   createDatabaseOverviewTool: vi.fn(() =>
     vi.fn(async () => "database_overview")
   ),
+}));
+vi.mock("./instanceOverview", () => ({
+  createInstanceOverviewTool: instanceOverviewApi.create,
+  resolveInstanceNameFromPagePath: instanceOverviewApi.resolveName,
 }));
 vi.mock("./domAction", () => ({
   createDomActionTool: vi.fn(() => vi.fn(async () => "dom_action")),
@@ -1491,6 +1501,39 @@ describe("agent tools read-only mode", () => {
     expect(tool?.description).toContain("reads one page");
     expect(tool?.description).toContain('report "at least N"');
     expect(tool?.description).not.toContain("follows every");
+  });
+
+  test("exposes instance sync overview only for an instance detail page", async () => {
+    expect(
+      getToolDefinitions({ runMode: "read-only" }).map((tool) => tool.name)
+    ).not.toContain("get_instance_overview");
+    expect(
+      getToolDefinitions({
+        runMode: "read-only",
+        instanceName: "instances/primary",
+      }).map((tool) => tool.name)
+    ).toContain("get_instance_overview");
+
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      runMode: "read-only",
+      pagePath: "/instances/primary",
+    });
+    await expect(
+      executor("get_instance_overview", {}, "tool-instance-overview")
+    ).resolves.toEqual({ kind: "tool_result", result: "instance_overview" });
+
+    const unboundExecutor = createToolExecutor({} as AppRouterInstance, {
+      runMode: "read-only",
+    });
+    const result = await unboundExecutor(
+      "get_instance_overview",
+      {},
+      "tool-unbound-instance-overview"
+    );
+    expect(result.kind).toBe("tool_result");
+    if (result.kind === "tool_result") {
+      expect(JSON.parse(result.result)).toHaveProperty("error");
+    }
   });
 
   test("only exposes page inspection, guidance, and completion", () => {

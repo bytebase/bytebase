@@ -34,6 +34,23 @@ describe("buildSystemPrompt", () => {
     expect(prompt).not.toContain("A historical failed Task Run");
   });
 
+  test("uses the bounded instance overview for instance sync questions", () => {
+    const prompt = buildSystemPrompt({
+      path: "/instances/primary",
+      title: "Primary instance",
+      context: "workspaces/default",
+      instanceName: "instances/primary",
+      runMode: "read-only",
+    });
+
+    expect(prompt).toContain("call get_instance_overview");
+    expect(prompt).toContain("reads one page");
+    expect(prompt).toContain("visible to the member");
+    expect(prompt).toContain(
+      "never claim there are no out-of-sync databases across the entire instance"
+    );
+  });
+
   test("keeps project guidance when the selected project differs from the workspace chat", () => {
     const prompt = buildSystemPrompt({
       path: "/landing",

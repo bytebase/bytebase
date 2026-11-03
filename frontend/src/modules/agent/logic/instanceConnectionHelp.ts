@@ -33,6 +33,7 @@ function sanitizeFailureMessage(message: string): string {
       /-----BEGIN [A-Z0-9 ]*(?:PRIVATE KEY|CERTIFICATE)-----[\s\S]*?-----END [A-Z0-9 ]*(?:PRIVATE KEY|CERTIFICATE)-----/gi,
       "[credential material redacted]"
     )
+    .replace(/(\b[a-z][a-z0-9+.-]*:\/\/)[^/\s"'<>]*@/gi, "$1[redacted]@")
     .replace(
       /\b(?:postgres(?:ql)?|mysql|mariadb|mongodb(?:\+srv)?|mssql|sqlserver|oracle):\/\/[^\s"'<>]+/gi,
       "[connection string redacted]"
