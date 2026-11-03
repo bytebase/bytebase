@@ -30,7 +30,9 @@ describe("MCP_CAPABILITY_CHOICES", () => {
     const selectable = declared.filter(
       (value) => value !== MCPSetting_Capability.CAPABILITY_UNSPECIFIED
     );
-    expect([...MCP_CAPABILITY_CHOICES].sort()).toEqual(selectable.sort());
+    expect([...MCP_CAPABILITY_CHOICES].sort((a, b) => a - b)).toEqual(
+      selectable.sort((a, b) => a - b)
+    );
   });
 });
 

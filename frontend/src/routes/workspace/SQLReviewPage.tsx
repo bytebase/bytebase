@@ -32,7 +32,7 @@ import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { pushNotification } from "@/stores";
 import { useSQLReviewStore } from "@/stores/sqlReview";
 import type { SQLReviewPolicy } from "@/types";
-import { hasWorkspacePermissionV2, sqlReviewPolicySlug } from "@/utils";
+import { hasWorkspacePermissionV2, isDev, sqlReviewPolicySlug } from "@/utils";
 import { sqlReviewV2Enabled } from "@/utils/featureGates";
 import {
   SQLReviewAIReviewSection,
@@ -43,6 +43,7 @@ import {
   SQLReviewStandardRulesSection,
   useWorkspaceStandardRules,
 } from "./SQLReviewStandardRulesSection";
+import { SQLReviewVersionSwitch } from "./SQLReviewVersionSwitch";
 
 // ============================================================
 // PolicyTable
@@ -313,6 +314,7 @@ export function SQLReviewPage() {
 
   return (
     <WorkspacePageLayout className="gap-y-4">
+      {isDev() && <SQLReviewVersionSwitch />}
       {sqlReviewV2 ? (
         <>
           <SQLReviewStandardRulesSection standardRules={standardRules} />

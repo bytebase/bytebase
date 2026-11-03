@@ -361,12 +361,13 @@ export const createProjectSlice: AppSliceCreator<ProjectSlice> = (set, get) => {
       return result;
     },
 
-    updateProject: async (project, updateMask) => {
+    updateProject: async (project, updateMask, report) => {
       const response = await projectServiceClientConnect.updateProject(
         createProto(UpdateProjectRequestSchema, {
           project,
           updateMask: { paths: updateMask },
-        })
+        }),
+        callOptions(report)
       );
       upsertProjects([response]);
       return response;

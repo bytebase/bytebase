@@ -19,9 +19,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 26
 
       # The buf plugin emits a placeholder info block; give the published spec a real title.
       - name: Assemble site
@@ -41,7 +41,7 @@ jobs:
         run: npx --yes wrangler@3 pages project create bytebase-api --production-branch=main || true
 
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

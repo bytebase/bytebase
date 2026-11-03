@@ -11,7 +11,7 @@ import (
 
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/elastic/go-elasticsearch/v7/esapi"
-	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
+	"github.com/opensearch-project/opensearch-go/v5/opensearchapi"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -128,22 +128,21 @@ func (d *Driver) getHiddenIndices(ctx context.Context) (map[string]bool, error) 
 	hiddenIndices := make(map[string]bool)
 
 	if d.isOpenSearch && d.opensearchAPI != nil {
-		resp, err := d.opensearchAPI.Indices.Settings.Get(ctx, &opensearchapi.SettingsGetReq{
-			Indices:  []string{"*"},
-			Settings: []string{"index.hidden"},
-			Params: opensearchapi.SettingsGetParams{
-				ExpandWildcards: "open,hidden",
+		resp, err := d.opensearchAPI.Indices.GetSettings(ctx, &opensearchapi.IndicesGetSettingsReq{
+			Indices: []string{"*"},
+			Name:    []string{"index.hidden"},
+			Params: &opensearchapi.IndicesGetSettingsParams{
+				ExpandWildcards: []string{"open", "hidden"},
 			},
 		})
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get index settings")
 		}
-		for indexName, indexData := range resp.GetIndices() {
-			var settings IndexSettingsResult
-			if err := json.Unmarshal(indexData.Settings, &settings.Settings); err != nil {
+		for indexName, indexState := range resp.Entries {
+			if indexState.Settings == nil || indexState.Settings.Index == nil {
 				continue
 			}
-			if settings.Settings.Index.Hidden == "true" {
+			if hidden := indexState.Settings.Index.Hidden; hidden != nil && *hidden == "true" {
 				hiddenIndices[indexName] = true
 			}
 		}
@@ -218,8 +217,8 @@ func (d *Driver) getIndices(ctx context.Context) ([]*metadatapb.TableMetadata, e
 			return nil, errors.Wrapf(err, "failed to list indices")
 		}
 
-		for _, idx := range resp.Indices {
-			if hiddenIndices[idx.Index] {
+		for _, idx := range resp.Records {
+			if idx.Index == nil || hiddenIndices[*idx.Index] {
 				continue
 			}
 
@@ -233,11 +232,14 @@ func (d *Driver) getIndices(ctx context.Context) ([]*metadatapb.TableMetadata, e
 
 			var docCount int64
 			if idx.DocsCount != nil {
-				docCount = int64(*idx.DocsCount)
+				docCount, err = parseDocCount(*idx.DocsCount)
+				if err != nil {
+					return nil, err
+				}
 			}
 
 			indicesMetadata = append(indicesMetadata, &metadatapb.TableMetadata{
-				Name:     idx.Index,
+				Name:     *idx.Index,
 				DataSize: datasize,
 				RowCount: docCount,
 			})

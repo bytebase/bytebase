@@ -14,7 +14,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/plugin/parser/mariadb"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -22,7 +21,6 @@ import (
 
 func init() {
 	schema.RegisterWalkThroughWithContext(storepb.Engine_MYSQL, WalkThroughWithContext)
-	schema.RegisterWalkThroughWithContext(storepb.Engine_MARIADB, WalkThroughWithContext)
 }
 
 // WalkThroughWithContext performs DDL simulation using the omni MySQL catalog.
@@ -36,14 +34,6 @@ func WalkThroughWithContext(ctx context.Context, wtCtx schema.WalkThroughContext
 	if wtCtx.RawSQL == "" {
 		return nil
 	}
-	// omni's MySQL catalog rejects a statement only MariaDB accepts, and
-	// simulating the others without it would check them against the wrong schema.
-	for _, a := range asts {
-		if _, ok := a.(*mariadb.OmniAST); ok {
-			return nil
-		}
-	}
-
 	dbName := d.GetProto().GetName()
 	precheck := firstMySQLWalkThroughAdvice(
 		precheckMySQLOmniWalkThrough(d, asts),

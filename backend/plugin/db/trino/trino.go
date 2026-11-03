@@ -53,6 +53,13 @@ func (*Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionCon
 	}
 
 	password := config.Password
+	// trino-go-client refuses a password on a plaintext connection, so name the
+	// setting to change instead of surfacing its DSN error. Such a data source
+	// cannot connect either way: the credentials would go over the wire in the
+	// clear.
+	if password != "" && !config.DataSource.UseSsl {
+		return nil, errors.New("trino requires SSL to authenticate with a password: turn on SSL for this data source, or clear the password")
+	}
 
 	// Set host and port
 	host := config.DataSource.Host

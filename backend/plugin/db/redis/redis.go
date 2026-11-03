@@ -9,6 +9,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	metadatapb "github.com/bytebase/omni/metadata"
@@ -68,6 +69,10 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 			Password:  config.Password,
 			TLSConfig: tlscfg,
 			DB:        db,
+			// Pipelines run on the main pool. A driver is opened per request
+			// and runs a single pipeline, so go-redis's dedicated pipeline pool
+			// would only add a connection and its handshake to every request.
+			PipelinePoolSize: -1,
 		}
 		if config.DataSource.GetSshHost() != "" {
 			sshClient, err := util.GetSSHClient(config.DataSource)
@@ -102,6 +107,7 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 			SentinelAddrs:    sentinelAddrs,
 			DB:               db,
 			TLSConfig:        tlscfg,
+			PipelinePoolSize: -1,
 		}
 		if config.DataSource.GetSshHost() != "" {
 			sshClient, err := util.GetSSHClient(config.DataSource)
@@ -128,10 +134,17 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 			addrs = append(addrs, fmt.Sprintf("%s:%s", addr.Host, addr.Port))
 		}
 		options := &redis.ClusterOptions{
-			Addrs:     addrs,
-			Username:  config.DataSource.Username,
-			Password:  config.Password,
-			TLSConfig: tlscfg,
+			Addrs:            addrs,
+			Username:         config.DataSource.Username,
+			Password:         config.Password,
+			TLSConfig:        tlscfg,
+			PipelinePoolSize: -1,
+			// go-redis 9.22.0 raised its own default to a minute. A node that
+			// refuses connections does not trigger a reload, so a failover is
+			// only noticed by this periodic one, and a driver that outlives it
+			// keeps routing to the master it has lost.
+			// https://github.com/redis/go-redis/issues/3979
+			ClusterStateReloadInterval: 10 * time.Second,
 		}
 		if config.DataSource.GetSshHost() != "" {
 			sshClient, err := util.GetSSHClient(config.DataSource)
@@ -279,20 +292,10 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 			return nil, errors.Errorf("expect *redis.ClusterClient, but get %T", d.rdb)
 		}
 
+		// ForEachShard runs the callbacks concurrently and returns once they
+		// have all finished, so the mutex is what orders the appends.
+		var mu sync.Mutex
 		var cmdss [][]*redis.Cmd
-		cmdsChan := make(chan []*redis.Cmd)
-		stopChan := make(chan struct{})
-		go func() {
-			for {
-				select {
-				case cmds := <-cmdsChan:
-					cmdss = append(cmdss, cmds)
-				case <-stopChan:
-					return
-				}
-			}
-		}()
-
 		err := cluster.ForEachShard(ctx, func(ctx context.Context, client *redis.Client) error {
 			var cmds []*redis.Cmd
 			_, _ = client.Pipelined(ctx, func(p redis.Pipeliner) error {
@@ -302,10 +305,11 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 				}
 				return nil
 			})
-			cmdsChan <- cmds
+			mu.Lock()
+			defer mu.Unlock()
+			cmdss = append(cmdss, cmds)
 			return nil
 		})
-		close(stopChan)
 		if err != nil && err != redis.Nil {
 			return nil, errors.Wrapf(err, "failed to query for each shard")
 		}

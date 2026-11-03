@@ -16,9 +16,9 @@ served by no ceiling.
 
 | Class | Methods | Meaning |
 |---|---|---|
-| READ | 69 | served to a read-only session and above |
+| READ | 70 | served to a read-only session and above |
 | WRITE | 42 | served to a read-write session only |
-| EXCLUDED | 75 | served by no ceiling this phase ships |
+| EXCLUDED | 74 | served by no ceiling this phase ships |
 | FORBIDDEN | 34 | never served, whatever the ceiling |
 | MCP_METHOD_CLASS_UNSPECIFIED | 0 | unclassified — CI rejects this, and the gate refuses it |
 | **total** | **220** | |
@@ -198,7 +198,7 @@ served by no ceiling.
 | ServiceAccountService/ListServiceAccounts | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.serviceAccounts.list |
 | ServiceAccountService/UndeleteServiceAccount | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.serviceAccounts.undelete |
 | ServiceAccountService/UpdateServiceAccount | FORBIDDEN | MINTS_CREDENTIAL_FOR_OTHERS | bb.serviceAccounts.update |
-| SettingService/GetSetting | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.settings.get |
+| SettingService/GetSetting | READ | — | bb.settings.get |
 | SettingService/ListSettings | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.settings.list |
 | SettingService/TestEmailSetting | FORBIDDEN | MINTS_CREDENTIAL_FOR_OTHERS | bb.settings.set |
 | SettingService/UpdateSetting | FORBIDDEN | REWRITES_SESSION_BOUNDARY | bb.settings.set |

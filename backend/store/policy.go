@@ -434,6 +434,12 @@ func (s *Store) GetEffectiveQueryDataPolicy(ctx context.Context, workspaceID str
 	}, nil
 }
 
+// GetWorkspaceQueryDataPolicy gets the workspace-level query data policy as
+// stored, without the project policy or the license applied.
+func (s *Store) GetWorkspaceQueryDataPolicy(ctx context.Context, workspaceID string) (*storepb.QueryDataPolicy, error) {
+	return s.getQueryDataPolicy(ctx, workspaceID, common.FormatWorkspace(workspaceID))
+}
+
 func (s *Store) getQueryDataPolicy(ctx context.Context, workspaceID string, resource string) (*storepb.QueryDataPolicy, error) {
 	resourceType, _, err := common.GetPolicyResourceTypeAndResource(resource)
 	if err != nil {

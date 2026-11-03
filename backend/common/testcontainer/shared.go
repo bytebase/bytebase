@@ -26,9 +26,11 @@ var (
 	sharedMongo    = startOnce(getMongoDBContainer)
 	sharedOracle   = startOnce(getOracleContainer)
 	sharedMySQL    = startOnce(GetMySQLContainer)
+	sharedTrino    = startOnce(getTrinoContainer)
 	sharedMariaDB  = startOnce(mariaDBStarter("mariadb:11.8.8"))
 	// 10.7 is the oldest MariaDB release Bytebase supports.
-	sharedMariaDB107 = startOnce(mariaDBStarter("mariadb:10.7.8"))
+	sharedMariaDB107   = startOnce(mariaDBStarter("mariadb:10.7.8"))
+	sharedRedisCluster = startOnce(getRedisClusterContainer)
 
 	startedMu sync.Mutex
 	started   []*Container
@@ -97,6 +99,10 @@ func SharedPg17Container(t testing.TB) *Container { return shared(t, sharedPg17)
 // tests reach with sslmode=verify-full and GetTLSCAPath.
 func SharedTLSPgContainer(t testing.TB) *Container { return shared(t, sharedTLSPg) }
 
+// SharedTrinoContainer is SharedPgContainer for Trino. It carries no *sql.DB,
+// so a test builds its own DSN from GetHost, GetPort and GetUsername.
+func SharedTrinoContainer(t testing.TB) *Container { return shared(t, sharedTrino) }
+
 // SharedMSSQLContainer is SharedPgContainer for SQL Server; tests take a database each.
 // Its certificate is signed by the CA at GetTLSCAPath.
 func SharedMSSQLContainer(t testing.TB) *Container { return shared(t, sharedMSSQL) }
@@ -125,6 +131,10 @@ func SharedMariaDBContainer(t testing.TB) *Container { return shared(t, sharedMa
 // SharedMariaDB107Container is SharedMariaDBContainer for MariaDB 10.7, the
 // oldest supported release; tests take a database each with NewMariaDB107Database.
 func SharedMariaDB107Container(t testing.TB) *Container { return shared(t, sharedMariaDB107) }
+
+// SharedRedisClusterContainer is a one-node Redis cluster that owns every hash
+// slot, for the driver paths that need a *redis.ClusterClient.
+func SharedRedisClusterContainer(t testing.TB) *Container { return shared(t, sharedRedisCluster) }
 
 // NewPgDatabase creates an empty database for the test on the shared
 // PostgreSQL container and returns its name with a superuser handle to it.

@@ -128,11 +128,15 @@ export const getApiMethodClass = (
   return path ? methodClasses.get(path) : undefined;
 };
 
+// GetSetting is READ because the MCP gate serves four settings and the handler
+// strips the masking salt for MCP sessions. This agent calls with the console
+// session, which reaches neither, so it asks first, as it does for Query.
 export const apiCallNeedsConfirmation = (operationId: string): boolean => {
   const path = getEndpointPath(operationId);
   return (
     !path ||
     path === "/bytebase.v1.SQLService/Query" ||
+    path === "/bytebase.v1.SettingService/GetSetting" ||
     methodClasses.get(path) !== MCPMethodClass.READ
   );
 };

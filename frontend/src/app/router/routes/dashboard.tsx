@@ -58,6 +58,7 @@ import {
   WORKSPACE_ROUTE_AUDIT_LOG,
   WORKSPACE_ROUTE_CUSTOM_APPROVAL,
   WORKSPACE_ROUTE_DATA_CLASSIFICATION,
+  WORKSPACE_ROUTE_EXPORT_DESTINATIONS,
   WORKSPACE_ROUTE_GLOBAL_MASKING,
   WORKSPACE_ROUTE_GROUPS,
   WORKSPACE_ROUTE_IDENTITY_PROVIDER_DETAIL,
@@ -429,6 +430,20 @@ const workspaceLevelRoutes: RouteObject[] = [
         lazy: lazyPage(
           () => import("@/routes/workspace/MCPPage"),
           (m) => m.MCPPage
+        ),
+      },
+      {
+        path: "export-destinations",
+        handle: {
+          name: WORKSPACE_ROUTE_EXPORT_DESTINATIONS,
+          requiredPermissionList: (): Permission[] => ["bb.settings.get"],
+        },
+        lazy: lazyPage(
+          () =>
+            import(
+              "@/routes/workspace/export-destinations/ExportDestinationsPage"
+            ),
+          (m) => m.ExportDestinationsPage
         ),
       },
     ],

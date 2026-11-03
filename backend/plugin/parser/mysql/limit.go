@@ -17,7 +17,6 @@ import (
 
 func init() {
 	base.RegisterResultLimitFunc(storepb.Engine_MYSQL, statementWithResultLimit)
-	base.RegisterResultLimitFunc(storepb.Engine_MARIADB, statementWithResultLimit)
 }
 
 // statementWithResultLimit implements base.ResultLimitFunc for MySQL and MariaDB,

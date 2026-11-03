@@ -286,15 +286,7 @@ func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, d
 		ResourceID: changelogID,
 	}
 	if needDump {
-		opts.LogDatabaseSyncStart()
-		syncHistory, err := exec.schemaSyncer.SyncDatabaseSchemaToHistory(ctx, database)
-		if err != nil {
-			opts.LogDatabaseSyncEnd(err.Error())
-			slog.ErrorContext(ctx, "failed to sync database schema", log.BBError(err))
-		} else {
-			opts.LogDatabaseSyncEnd("")
-			update.SyncHistory = &syncHistory
-		}
+		update.SyncHistory = exec.dumpSchemaToHistory(ctx, database, &opts)
 	}
 	if migrationErr == nil {
 		update.Status = new(store.ChangelogStatusDone)
@@ -449,15 +441,7 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 	update := &store.UpdateChangelogMessage{
 		ResourceID: changelogID,
 	}
-	opts.LogDatabaseSyncStart()
-	syncHistory, err := exec.schemaSyncer.SyncDatabaseSchemaToHistory(ctx, database)
-	if err != nil {
-		opts.LogDatabaseSyncEnd(err.Error())
-		slog.ErrorContext(ctx, "failed to sync database schema", log.BBError(err))
-	} else {
-		opts.LogDatabaseSyncEnd("")
-		update.SyncHistory = &syncHistory
-	}
+	update.SyncHistory = exec.dumpSchemaToHistory(ctx, database, &opts)
 	if migrationErr == nil {
 		update.Status = new(store.ChangelogStatusDone)
 	} else {
@@ -605,15 +589,7 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 	update := &store.UpdateChangelogMessage{
 		ResourceID: changelogID,
 	}
-	opts.LogDatabaseSyncStart()
-	syncHistory, err := exec.schemaSyncer.SyncDatabaseSchemaToHistory(ctx, database)
-	if err != nil {
-		opts.LogDatabaseSyncEnd(err.Error())
-		slog.ErrorContext(ctx, "failed to sync database schema", log.BBError(err))
-	} else {
-		opts.LogDatabaseSyncEnd("")
-		update.SyncHistory = &syncHistory
-	}
+	update.SyncHistory = exec.dumpSchemaToHistory(ctx, database, &opts)
 	if migrationErr == nil {
 		update.Status = new(store.ChangelogStatusDone)
 	} else {
@@ -639,6 +615,25 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 	}
 
 	return &storepb.TaskRunResult{}, nil
+}
+
+// dumpSchemaToHistory records the post-migration schema as a sync history row for
+// the changelog to point at, and returns nil when the dump failed. A failed dump
+// does not fail the task: the migration itself already succeeded and there is
+// nothing to roll back. It is reported by the task run log entry and by the
+// changelog having no schema snapshot, and the database is queued for another
+// sync so the stored schema stops lagging the migration it just applied.
+func (exec *DatabaseMigrateExecutor) dumpSchemaToHistory(ctx context.Context, database *store.DatabaseMessage, opts *db.ExecuteOptions) *string {
+	opts.LogDatabaseSyncStart()
+	syncHistory, err := exec.schemaSyncer.SyncDatabaseSchemaToHistory(ctx, database)
+	if err != nil {
+		opts.LogDatabaseSyncEnd(err.Error())
+		slog.ErrorContext(ctx, "failed to sync database schema", log.BBError(err))
+		exec.schemaSyncer.SyncDatabaseAsync(database)
+		return nil
+	}
+	opts.LogDatabaseSyncEnd("")
+	return &syncHistory
 }
 
 func (exec *DatabaseMigrateExecutor) runDeclarativeRelease(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int64, release *store.ReleaseMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, project *store.ProjectMessage) (*storepb.TaskRunResult, error) {
@@ -734,15 +729,7 @@ func (exec *DatabaseMigrateExecutor) runDeclarativeRelease(ctx context.Context, 
 	update := &store.UpdateChangelogMessage{
 		ResourceID: changelogID,
 	}
-	opts.LogDatabaseSyncStart()
-	syncHistory, err := exec.schemaSyncer.SyncDatabaseSchemaToHistory(ctx, database)
-	if err != nil {
-		opts.LogDatabaseSyncEnd(err.Error())
-		slog.ErrorContext(ctx, "failed to sync database schema", log.BBError(err))
-	} else {
-		opts.LogDatabaseSyncEnd("")
-		update.SyncHistory = &syncHistory
-	}
+	update.SyncHistory = exec.dumpSchemaToHistory(ctx, database, &opts)
 	if migrationErr == nil {
 		update.Status = new(store.ChangelogStatusDone)
 	} else {

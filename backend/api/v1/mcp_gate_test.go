@@ -229,7 +229,7 @@ func checkEveryMethodIsClassified(rows []mcpClassification) []string {
 // practice, only added the states where a method carried both or carried the
 // kind that contradicted its class — states this clause used to spend four of
 // its six branches policing. What is left is the one thing that was ever real.
-func checkReasonsMatchTheClass(rows []mcpClassification, wording map[v1pb.MCPDenialReason]mcpDenialWording) []string {
+func checkReasonsMatchTheClass(rows []mcpClassification, wording map[v1pb.MCPDenialReason]auth.MCPDenialWording) []string {
 	var violations []string
 	for _, row := range rows {
 		refused := row.class == v1pb.MCPMethodClass_FORBIDDEN || row.class == v1pb.MCPMethodClass_EXCLUDED
@@ -242,9 +242,9 @@ func checkReasonsMatchTheClass(rows []mcpClassification, wording map[v1pb.MCPDen
 			switch {
 			case !ok:
 				violations = append(violations, fmt.Sprintf("%s: is refused for %v, which has no sentence to say so", row.procedure, row.reason))
-			case recorded.class != row.class:
+			case recorded.Class != row.class:
 				violations = append(violations, fmt.Sprintf("%s: is %v but records %v, which is a %v reason",
-					row.procedure, row.class, row.reason, recorded.class))
+					row.procedure, row.class, row.reason, recorded.Class))
 			default:
 			}
 		case hasReason:
@@ -355,7 +355,7 @@ func TestLintEveryMethodIsClassified(t *testing.T) {
 
 func TestLintReasonsMatchTheClass(t *testing.T) {
 	t.Parallel()
-	require.Empty(t, checkReasonsMatchTheClass(mcpClassificationsFromDescriptors(t), mcpDenialReasons))
+	require.Empty(t, checkReasonsMatchTheClass(mcpClassificationsFromDescriptors(t), auth.MCPDenialReasons()))
 }
 
 // mcpEnums reads the two enums the serving decision spans out of the compiled
@@ -376,10 +376,10 @@ func TestLintEveryClassHasAServingDecision(t *testing.T) {
 
 // TestLintRefusedClassesMatchTheServingTable is what lets a second package
 // decide what to advertise without carrying a copy of the serving rules. The
-// MCP OpenAPI index hides an endpoint no ceiling serves, and it asks
+// MCP OpenAPI index never offers an endpoint no ceiling serves, and it asks
 // auth.MCPClassIsRefused, which cannot see this table. This holds the two
 // against each other over the whole class vocabulary, so a mode that starts
-// serving a class cannot leave discovery hiding it — or the reverse, which is
+// serving a class cannot leave discovery withholding it — or the reverse, which is
 // the one that would offer an agent work it can never do.
 func TestLintRefusedClassesMatchTheServingTable(t *testing.T) {
 	t.Parallel()
@@ -468,7 +468,7 @@ func TestLintClausesFireWhenBroken(t *testing.T) {
 		require.Equal(t, []string{
 			"/p: is FORBIDDEN and records no mcp_denial_reason",
 			"/q: is EXCLUDED and records no mcp_denial_reason",
-		}, checkReasonsMatchTheClass(broken, mcpDenialReasons))
+		}, checkReasonsMatchTheClass(broken, auth.MCPDenialReasons()))
 	})
 
 	t.Run("a reason with no wording fails", func(t *testing.T) {
@@ -478,7 +478,7 @@ func TestLintClausesFireWhenBroken(t *testing.T) {
 			reason:    v1pb.MCPDenialReason(9999),
 		}}
 		require.Equal(t, []string{"/p: is refused for 9999, which has no sentence to say so"},
-			checkReasonsMatchTheClass(broken, mcpDenialReasons))
+			checkReasonsMatchTheClass(broken, auth.MCPDenialReasons()))
 	})
 
 	t.Run("a reason belonging to the other refused class fails", func(t *testing.T) {
@@ -494,7 +494,7 @@ func TestLintClausesFireWhenBroken(t *testing.T) {
 		require.Equal(t, []string{
 			"/p: is FORBIDDEN but records ADMINISTERS_THE_WORKSPACE, which is a EXCLUDED reason",
 			"/q: is EXCLUDED but records MINTS_CREDENTIAL, which is a FORBIDDEN reason",
-		}, checkReasonsMatchTheClass(broken, mcpDenialReasons))
+		}, checkReasonsMatchTheClass(broken, auth.MCPDenialReasons()))
 	})
 
 	t.Run("a served method carrying a denial reason fails", func(t *testing.T) {
@@ -505,7 +505,7 @@ func TestLintClausesFireWhenBroken(t *testing.T) {
 		require.Equal(t, []string{
 			"/p: records MINTS_CREDENTIAL, a denial reason, but is not refused",
 			"/q: records ADMINISTERS_THE_WORKSPACE, a denial reason, but is not refused",
-		}, checkReasonsMatchTheClass(broken, mcpDenialReasons))
+		}, checkReasonsMatchTheClass(broken, auth.MCPDenialReasons()))
 	})
 
 	// The serving-decision clause is over the vocabulary, so its mutations are
@@ -724,9 +724,55 @@ func TestTheApprovalReadsAreServed(t *testing.T) {
 		v1connect.OrgPolicyServiceListPoliciesProcedure,
 		v1connect.AccessGrantServiceGetAccessGrantProcedure,
 		v1connect.AccessGrantServiceListAccessGrantsProcedure,
+		v1connect.SettingServiceGetSettingProcedure,
 	} {
 		require.Equal(t, v1pb.MCPMethodClass_READ, class[procedure],
 			"%s must be READ: an agent working for a user has to name who approves, see the masking rules and exemptions, and see pending access requests (BYT-9292)", procedure)
+	}
+	require.Equal(t, v1pb.MCPMethodClass_EXCLUDED, class[v1connect.SettingServiceListSettingsProcedure],
+		"ListSettings returns every setting, past the per-name rule GetSetting is held to and without stripping the masking salt")
+}
+
+// TestMCPGateServesOnlyTheReadableSettings walks every setting name the API
+// knows, so a setting added later is refused until someone decides otherwise.
+func TestMCPGateServesOnlyTheReadableSettings(t *testing.T) {
+	readable := []v1pb.Setting_SettingName{
+		v1pb.Setting_WORKSPACE_APPROVAL, v1pb.Setting_ENVIRONMENT, v1pb.Setting_SEMANTIC_TYPES, v1pb.Setting_DATA_CLASSIFICATION,
+	}
+	for _, setting := range v1pb.Setting_SettingName_value {
+		require.Equal(t, slices.Contains(readable, v1pb.Setting_SettingName(setting)), auth.MCPCanReadSetting(v1pb.Setting_SettingName(setting)),
+			"the settings an MCP session reads are a decision, recorded here as well as in auth")
+	}
+	read := classContext(v1pb.MCPMethodClass_READ)
+	get := func(name string) connect.AnyRequest {
+		return connect.NewRequest(&v1pb.GetSettingRequest{Name: name})
+	}
+	requireRefused := func(t *testing.T, got mcpGateResult, name string) {
+		t.Helper()
+		require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got.err), name)
+		require.False(t, got.dispatched, name)
+		require.True(t, got.auditMarked, name)
+		require.Contains(t, got.err.Error(), fmt.Sprintf("%q", name), "the denial must name the setting it refused")
+		require.Contains(t, got.err.Error(), "settings/WORKSPACE_APPROVAL, settings/ENVIRONMENT, settings/SEMANTIC_TYPES, settings/DATA_CLASSIFICATION",
+			"the denial must name the settings that can be read")
+		require.Contains(t, got.err.Error(), "Bytebase console")
+	}
+
+	for ceilingName, ceiling := range map[string]mcpGateStore{"read-only": readOnlyCeiling(), "read-write": readWriteCeiling()} {
+		t.Run(ceilingName, func(t *testing.T) {
+			for value, name := range v1pb.Setting_SettingName_name {
+				got := invokeMCPGate(t, ceiling, read, v1connect.SettingServiceGetSettingProcedure, get(common.SettingNamePrefix+name))
+				if slices.Contains(readable, v1pb.Setting_SettingName(value)) {
+					require.NoError(t, got.err, name)
+					require.True(t, got.dispatched, name)
+					continue
+				}
+				requireRefused(t, got, common.SettingNamePrefix+name)
+			}
+			for _, name := range []string{"", "settings/", "settings/environment", "ENVIRONMENT", "settings/ENVIRONMENT/x", "workspaces/w/settings/ENVIRONMENT"} {
+				requireRefused(t, invokeMCPGate(t, ceiling, read, v1connect.SettingServiceGetSettingProcedure, get(name)), name)
+			}
+		})
 	}
 }
 
@@ -1022,7 +1068,7 @@ func TestMCPGateRefusesTheDeniedClasses(t *testing.T) {
 		if row.class != v1pb.MCPMethodClass_FORBIDDEN && row.class != v1pb.MCPMethodClass_EXCLUDED {
 			continue
 		}
-		wantReason := mcpDenialReasons[row.reason].sentence
+		wantReason := auth.MCPDenialReasons()[row.reason].Sentence
 		t.Run(row.procedure, func(t *testing.T) {
 			got := invokeMCPGate(t, readWriteCeiling(), &common.AuthContext{
 				MCPMethodClass:  row.class,
@@ -1209,7 +1255,7 @@ func TestMCPGateFallsBackToGenericWording(t *testing.T) {
 		}, v1connect.AuthServiceLoginProcedure, connect.NewRequest(&v1pb.LoginRequest{}))
 		require.Error(t, got.err)
 		require.False(t, got.dispatched)
-		require.Contains(t, got.err.Error(), reasonForbiddenClass)
+		require.Contains(t, got.err.Error(), "it is not reachable by an AI agent session")
 	})
 
 	t.Run("excluded", func(t *testing.T) {
@@ -1219,7 +1265,7 @@ func TestMCPGateFallsBackToGenericWording(t *testing.T) {
 		}, v1connect.UserServiceListUsersProcedure, connect.NewRequest(&v1pb.ListUsersRequest{}))
 		require.Error(t, got.err)
 		require.False(t, got.dispatched)
-		require.Contains(t, got.err.Error(), reasonExcludedClass)
+		require.Contains(t, got.err.Error(), "no MCP mode this release ships serves it")
 	})
 }
 

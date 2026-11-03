@@ -3,6 +3,7 @@ package parsercontext
 import (
 	"context"
 	"testing"
+	"time"
 
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
@@ -53,11 +54,12 @@ func TestBuildGetLinkedDatabaseMetadataFunc(t *testing.T) {
 				Metadata:     &storepb.DatabaseMetadata{},
 			})
 			require.NoError(t, err)
-			require.NoError(t, s.UpsertDBSchema(ctx, instanceID, name, &metadatapb.DatabaseSchemaMetadata{
+			_, err = s.UpsertDBSchema(ctx, instanceID, name, &metadatapb.DatabaseSchemaMetadata{
 				Name:            name,
 				Schemas:         []*metadatapb.SchemaMetadata{{Name: "", Tables: []*metadatapb.TableMetadata{{Name: "SECRET_T"}}}},
 				LinkedDatabases: links,
-			}, &storepb.DatabaseConfig{}, nil))
+			}, nil, time.Now())
+			require.NoError(t, err)
 		}
 	}
 	// The instance the statements run against; its data source reaches the loopback links.
@@ -141,10 +143,11 @@ func TestBuildGetDatabaseMetadataFunc(t *testing.T) {
 		_, err = s.UpsertDatabase(ctx, &store.DatabaseMessage{ProjectID: "project-a", InstanceID: "mssql", DatabaseName: name, Metadata: &storepb.DatabaseMetadata{}})
 		require.NoError(t, err)
 	}
-	require.NoError(t, s.UpsertDBSchema(ctx, "mssql", "synced", &metadatapb.DatabaseSchemaMetadata{
+	_, err = s.UpsertDBSchema(ctx, "mssql", "synced", &metadatapb.DatabaseSchemaMetadata{
 		Name:    "synced",
 		Schemas: []*metadatapb.SchemaMetadata{{Name: "dbo", Tables: []*metadatapb.TableMetadata{{Name: "t"}}}},
-	}, &storepb.DatabaseConfig{}, nil))
+	}, nil, time.Now())
+	require.NoError(t, err)
 
 	get := BuildGetDatabaseMetadataFunc(s)
 

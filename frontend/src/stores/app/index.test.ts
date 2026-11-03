@@ -1530,10 +1530,11 @@ describe("useAppStore", () => {
     store.setState({ workspacePolicy: policy });
 
     const map = store.getState().workspaceUserMapToRoles();
-    expect([...(map.get("users/alice@example.com") ?? [])].sort()).toEqual([
-      "roles/workspaceAdmin",
-      "roles/workspaceMember",
-    ]);
+    expect(
+      [...(map.get("users/alice@example.com") ?? [])].sort((a, b) =>
+        a.localeCompare(b)
+      )
+    ).toEqual(["roles/workspaceAdmin", "roles/workspaceMember"]);
     expect([...(map.get("users/bob@example.com") ?? [])]).toEqual([
       "roles/workspaceMember",
     ]);

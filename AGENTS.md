@@ -23,7 +23,26 @@ Bytebase is the standard for database development. Every product and engineering
 - Metadata JSONB uses `protojson.Marshal`: keys are camelCase (`taskRun`), not proto snake_case (`task_run`).
 - Follow Google language style guides and AIPs for API/proto design. AIPs take precedence over the proto guide. Enum values use `HELLO`, not `TYPE_HELLO`.
 - Use American English. Avoid collection names ending in `List`.
-- Annotating an RPC `mcp_method_class = READ` or `WRITE` also changes what the MCP Access policy page promises, and nothing enforces that. Before changing one, read [mcp-capability-ladder.md](docs/design/mcp-capability-ladder.md#keeping-the-rows-true).
+- Annotating an RPC `mcp_method_class = READ` or `WRITE` also changes what the MCP Access policy page promises, and nothing enforces that. Before changing one, read [mcp-capability-ladder.md](docs/design/mcp-capability-ladder.md#keeping-the-rows-true). The in-console agent also runs every READ method without asking (`apiCallNeedsConfirmation` in `frontend/src/modules/agent/logic/tools/apiMethodClass.ts`), so a READ method that MCP narrows per request needs an exception there.
+
+## Forked engine packages
+
+Some engines have their own copy of a package rather than sharing MySQL's or
+Postgres's: `mariadb` and `oceanbase` are forks of `mysql`, `starrocks` of
+`doris`, `redshift` of `pg`. A fork exists because omni gives each engine an
+independent AST, so one implementation cannot walk two of them.
+
+- A fix to a rule, parser or validator in a parent usually applies to its forks.
+  Check each one, port it in the same PR, and name every engine in the subject
+  (`fix(mysql,mariadb): ...`). This mirrors omni's own rule for parser forks.
+- Inherited facts need re-verifying per engine even where inherited code is
+  correct. StarRocks took Doris's EXPLAIN modifier list and was wrong about it.
+- A fork is partial where omni's tree is. `schema/mariadb` registers MariaDB but
+  owns no catalog work, because omni's `mariadb/catalog` has `New`, `Exec` and
+  `LoadSQL` and none of the `LoadMetadata`, `Diff`, `GenerateMigration` or
+  version handling `schema/mysql` needs; it simulates on omni's MySQL catalog
+  instead. Check the engine's omni tree before assuming a layer can fork, and
+  keep the engine's own package even when it only holds that decision.
 
 ## Customer information
 

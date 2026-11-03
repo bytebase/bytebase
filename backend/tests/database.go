@@ -4,11 +4,14 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"strings"
 	"sync"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -37,7 +40,7 @@ func (ctl *controller) createDatabase(ctx context.Context, project *v1pb.Project
 			return err
 		}
 	}
-	if err := ctl.registerDatabase(ctx, instance, databaseName); err != nil {
+	if err := ctl.waitDatabaseRegistered(ctx, instance, databaseName); err != nil {
 		return err
 	}
 
@@ -151,49 +154,120 @@ func (ctl *controller) allowJustInTimeAccess(ctx context.Context, project *v1pb.
 	return err
 }
 
-// instanceLocks serializes registerDatabase per instance: parallel subtests
-// share instances, and a sync that reads the list before another subtest's
-// update marks that subtest's database deleted.
+// instanceSyncLists holds, per instance, the sync list registerDatabase has
+// written and the lock that serializes those writes. The list is rebuilt from
+// this record rather than from a read of the instance: the server serves
+// instances from a cache, so a read can miss another subtest's update, and
+// writing the list back without that subtest's database makes the next sync
+// mark it deleted under the test still using it.
 var (
-	instanceLocksMu sync.Mutex
-	instanceLocks   = map[string]*sync.Mutex{}
+	instanceSyncListsMu sync.Mutex
+	instanceSyncLists   = map[string]*instanceSyncList{}
 )
 
-func instanceLock(name string) *sync.Mutex {
-	instanceLocksMu.Lock()
-	defer instanceLocksMu.Unlock()
-	if instanceLocks[name] == nil {
-		instanceLocks[name] = &sync.Mutex{}
+type instanceSyncList struct {
+	mu        sync.Mutex
+	databases []string
+}
+
+func instanceSyncListOf(instance *v1pb.Instance) *instanceSyncList {
+	instanceSyncListsMu.Lock()
+	defer instanceSyncListsMu.Unlock()
+	if instanceSyncLists[instance.Name] == nil {
+		instanceSyncLists[instance.Name] = &instanceSyncList{databases: slices.Clone(instance.GetSyncDatabases().GetDatabases())}
 	}
-	return instanceLocks[name]
+	return instanceSyncLists[instance.Name]
 }
 
 // registerDatabase names a database in the instance's sync list, which an
 // instance on the shared target carries so it never imports another test's
 // databases, and syncs the instance. An instance with a server to itself keeps
-// no list and only syncs.
+// no list and only syncs. The database need not exist yet: the list may name
+// databases the target does not hold, and the sync passes over them.
 func (ctl *controller) registerDatabase(ctx context.Context, instance *v1pb.Instance, databaseName string) error {
-	mu := instanceLock(instance.Name)
-	mu.Lock()
-	defer mu.Unlock()
+	syncList := instanceSyncListOf(instance)
+	syncList.mu.Lock()
+	defer syncList.mu.Unlock()
 
+	if !slices.Contains(syncList.databases, databaseName) {
+		syncList.databases = append(syncList.databases, databaseName)
+	}
 	if instance.GetSyncDatabases() != nil {
-		resp, err := ctl.instanceServiceClient.GetInstance(ctx, connect.NewRequest(&v1pb.GetInstanceRequest{Name: instance.Name}))
-		if err != nil {
+		if _, err := ctl.instanceServiceClient.UpdateInstance(ctx, connect.NewRequest(&v1pb.UpdateInstanceRequest{
+			Instance: &v1pb.Instance{
+				Name:          instance.Name,
+				SyncDatabases: &v1pb.SyncDatabases{Databases: slices.Clone(syncList.databases)},
+			},
+			UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"sync_databases"}},
+		})); err != nil {
 			return err
-		}
-		if databases := resp.Msg.GetSyncDatabases().GetDatabases(); !slices.Contains(databases, databaseName) {
-			if _, err := ctl.instanceServiceClient.UpdateInstance(ctx, connect.NewRequest(&v1pb.UpdateInstanceRequest{
-				Instance: &v1pb.Instance{
-					Name:          instance.Name,
-					SyncDatabases: &v1pb.SyncDatabases{Databases: append(databases, databaseName)},
-				},
-				UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"sync_databases"}},
-			})); err != nil {
-				return err
-			}
 		}
 	}
 	_, err := ctl.instanceServiceClient.SyncInstance(ctx, connect.NewRequest(&v1pb.SyncInstanceRequest{Name: instance.Name}))
 	return err
+}
+
+// instanceSyncAttempts bounds the syncs waitDatabaseRegistered spends on one
+// database.
+const instanceSyncAttempts = 3
+
+// waitDatabaseRegistered registers a database the target already holds and
+// returns once the instance sync has given it an active resource, which the
+// caller needs before it can address the database. One sync can miss it: the
+// sync reads the list through the server's instance cache, which a concurrent
+// read can refill with a copy taken before this database joined it.
+func (ctl *controller) waitDatabaseRegistered(ctx context.Context, instance *v1pb.Instance, databaseName string) error {
+	name := fmt.Sprintf("%s/databases/%s", instance.Name, databaseName)
+	var last error
+	for range instanceSyncAttempts {
+		if err := ctl.registerDatabase(ctx, instance, databaseName); err != nil {
+			return err
+		}
+		resp, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{Name: name}))
+		switch {
+		case err != nil:
+			last = err
+		case resp.Msg.State != v1pb.State_ACTIVE:
+			last = errors.Errorf("database %s is %s", name, resp.Msg.State)
+		default:
+			return nil
+		}
+	}
+	return errors.Wrapf(last, "database %s is not registered after %d instance syncs", name, instanceSyncAttempts)
+}
+
+// waitSchemaDump returns the database's schema dump once it reports want, a
+// string the change just applied to the database puts in the dump.
+//
+// A completed rollout does not make that dump current: the task's own
+// post-migration sync is reported through the changelog, and a failed dump does
+// not fail the task. Syncing once per round makes the dump current.
+func (ctl *controller) waitSchemaDump(ctx context.Context, databaseName, want string) (string, error) {
+	ticker := time.NewTicker(pollInterval)
+	defer ticker.Stop()
+	timeout := time.After(30 * time.Second)
+
+	for {
+		if _, err := ctl.databaseServiceClient.SyncDatabase(ctx, connect.NewRequest(&v1pb.SyncDatabaseRequest{
+			Name: databaseName,
+		})); err != nil {
+			return "", err
+		}
+		resp, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, connect.NewRequest(&v1pb.GetDatabaseSchemaRequest{
+			Name: fmt.Sprintf("%s/schema", databaseName),
+		}))
+		if err != nil {
+			return "", err
+		}
+		dump := resp.Msg.Schema
+		if strings.Contains(dump, want) {
+			return dump, nil
+		}
+
+		select {
+		case <-timeout:
+			return "", errors.Errorf("timeout waiting for the schema dump of %s to report %q, last dump:\n%s", databaseName, want, dump)
+		case <-ticker.C:
+		}
+	}
 }

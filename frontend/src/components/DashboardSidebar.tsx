@@ -26,6 +26,7 @@ import {
   WORKSPACE_ROUTE_AUDIT_LOG,
   WORKSPACE_ROUTE_CUSTOM_APPROVAL,
   WORKSPACE_ROUTE_DATA_CLASSIFICATION,
+  WORKSPACE_ROUTE_EXPORT_DESTINATIONS,
   WORKSPACE_ROUTE_GLOBAL_MASKING,
   WORKSPACE_ROUTE_GROUPS,
   WORKSPACE_ROUTE_IDENTITY_PROVIDERS,
@@ -225,6 +226,11 @@ function useSidebarItems(): SidebarItem[] {
           {
             title: t("settings.sidebar.mcp"),
             name: WORKSPACE_ROUTE_MCP,
+            type: "route",
+          },
+          {
+            title: t("settings.sidebar.export-destinations"),
+            name: WORKSPACE_ROUTE_EXPORT_DESTINATIONS,
             type: "route",
           },
         ],

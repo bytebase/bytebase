@@ -315,3 +315,63 @@ func TestValidateQuerySetStatements(t *testing.T) {
 		})
 	}
 }
+
+// TestValidateQueryFileExport pins the INTO OUTFILE gate. The clause writes
+// the result set to S3 or HDFS, so an export is not a read however it is
+// spelled — and the keyword appearing in a string, a quoted identifier or a
+// comment is not an export at all. Both halves are read off the AST, which
+// is what omni's Doris grammar gained the clause for (BOT-92).
+func TestValidateQueryFileExport(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		statement string
+		wantValid bool
+	}{
+		// Every position the clause can occupy: it attaches to whichever
+		// node is the statement's outermost query.
+		{"plain", "SELECT 1 INTO OUTFILE '/tmp/x'", false},
+		{"s3 with format and properties", `SELECT * FROM t INTO OUTFILE "s3://bucket/export/" FORMAT AS PARQUET PROPERTIES("s3.endpoint" = "example.com")`, false},
+		{"after ORDER BY and LIMIT", "SELECT * FROM t ORDER BY a LIMIT 10 INTO OUTFILE '/tmp/x'", false},
+		{"on a set operation", "SELECT a FROM t1 UNION SELECT a FROM t2 INTO OUTFILE '/tmp/x'", false},
+		{"after parentheses", "(SELECT * FROM t) INTO OUTFILE '/tmp/x'", false},
+		{"on a grouped query", "(SELECT 1 ORDER BY 1) ORDER BY 1 INTO OUTFILE '/tmp/x'", false},
+		{"with a CTE", "WITH c AS (SELECT 1 AS a) SELECT * FROM c INTO OUTFILE '/tmp/x'", false},
+		// The engine fails EXPLAIN of an export with the same broker/path
+		// error as the export itself, so the clause is not inert under it.
+		{"under EXPLAIN", "EXPLAIN SELECT 1 INTO OUTFILE '/tmp/x'", false},
+		{"beside a read in one script", "SELECT 1; SELECT 2 INTO OUTFILE '/tmp/x'", false},
+
+		// The keyword where it is not a clause. A text or token match could
+		// not tell these from the real thing; the tree can.
+		{"in a string literal", `SELECT a FROM t WHERE a = 'into outfile'`, true},
+		{"in a quoted identifier", "SELECT `INTO OUTFILE` FROM t", true},
+		{"in a block comment", "SELECT * FROM t /* INTO OUTFILE */", true},
+		{"in a line comment", "SELECT * FROM t -- INTO OUTFILE 's3://bucket/'", true},
+		{"a plain read", "SELECT * FROM t", true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			valid, _, err := validateQuery(tc.statement)
+			require.NoError(t, err)
+			require.Equal(t, tc.wantValid, valid)
+		})
+	}
+
+	// MySQL's INTO DUMPFILE and INTO @var are not Doris syntax: they never
+	// reach the gate, they fail to parse.
+	for _, statement := range []string{
+		"SELECT 1 INTO DUMPFILE '/tmp/x'",
+		"SELECT 1 INTO @v",
+		// The clause cannot appear inside a query, only after one.
+		"SELECT * FROM (SELECT a FROM t INTO OUTFILE '/tmp/x') x",
+		"SELECT 1 UNION (SELECT a FROM t INTO OUTFILE '/tmp/x')",
+		// A statement that will not lex was refused as a possible export
+		// while the gate read tokens; it is now reported as the syntax
+		// error it is.
+		"SELECT 'unterminated",
+	} {
+		t.Run("syntax error: "+statement, func(t *testing.T) {
+			_, _, err := validateQuery(statement)
+			require.Error(t, err)
+		})
+	}
+}

@@ -107,6 +107,32 @@ describe("MarkdownEditor", () => {
     unmount();
   });
 
+  test.each([{ untrusted: false }, { untrusted: true }])(
+    "links a bare host written without a scheme (untrusted: $untrusted)",
+    ({ untrusted }) => {
+      const { container, render, unmount } = renderIntoContainer(
+        <MarkdownEditor
+          content="see www.example.com/docs and example.com"
+          mode="preview"
+          untrusted={untrusted}
+        />
+      );
+
+      render();
+
+      const links = Array.from(container.querySelectorAll("a")).map((link) => [
+        link.textContent,
+        link.getAttribute("href"),
+      ]);
+      expect(links).toEqual([
+        ["www.example.com/docs", "http://www.example.com/docs"],
+        ["example.com", "http://example.com"],
+      ]);
+
+      unmount();
+    }
+  );
+
   test("renders untrusted images and raw HTML without resource-loading elements or attributes", () => {
     const { container, render, unmount } = renderIntoContainer(
       <MarkdownEditor

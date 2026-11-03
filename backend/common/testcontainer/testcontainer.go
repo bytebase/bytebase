@@ -10,6 +10,7 @@ import (
 	"database/sql"
 	"encoding/pem"
 	"fmt"
+	"io"
 	"log/slog"
 	"math/big"
 	"net"
@@ -22,6 +23,7 @@ import (
 	"github.com/pkg/errors"
 	goora "github.com/sijms/go-ora/v2"
 	"github.com/testcontainers/testcontainers-go"
+	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -323,6 +325,20 @@ func getMSSQLContainer(ctx context.Context) (retC *Container, retErr error) {
 
 // getTiDBContainer starts TiDB, which speaks the MySQL protocol with no
 // password on root.
+// getTrinoContainer starts Trino with its built-in memory connector, which needs
+// no catalog files. driver is left unset so this package does not link the Trino
+// client for every suite that imports it; a test opens its own connection from
+// the host, port and user.
+func getTrinoContainer(ctx context.Context) (*Container, error) {
+	return start(ctx, testcontainers.ContainerRequest{
+		Image:      "trinodb/trino:482",
+		WaitingFor: wait.ForLog("SERVER STARTED").WithStartupTimeout(5 * time.Minute),
+	}, spec{
+		port:     "8080/tcp",
+		username: "bytebase",
+	})
+}
+
 func getTiDBContainer(ctx context.Context) (*Container, error) {
 	return start(ctx, testcontainers.ContainerRequest{
 		Image:      "pingcap/tidb:v8.5.0",
@@ -454,4 +470,80 @@ func createTLSMaterial(ips ...net.IP) (string, string, []byte, []byte, error) {
 		return fail(err)
 	}
 	return tlsDir, caPath, certificate, key, nil
+}
+
+// RedisClusterSlots is the number of hash slots a Redis cluster partitions keys
+// into; the single node getRedisClusterContainer starts owns all of them.
+const RedisClusterSlots = 16384
+
+// getRedisClusterContainer starts a one-node Redis cluster. Cluster clients
+// follow the addresses CLUSTER SLOTS reports, so the node is told to announce
+// the host-mapped address rather than its address inside Docker, which a test
+// outside Docker cannot reach.
+func getRedisClusterContainer(ctx context.Context) (retC *Container, retErr error) {
+	c, err := start(ctx, testcontainers.ContainerRequest{
+		Image: "redis:7.2-alpine",
+		Cmd: []string{
+			"redis-server", "--cluster-enabled", "yes",
+			"--cluster-config-file", "/tmp/nodes.conf", "--cluster-node-timeout", "5000",
+		},
+		WaitingFor: wait.ForLog("Ready to accept connections").WithStartupTimeout(3 * time.Minute),
+	}, spec{port: "6379/tcp"})
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if retErr != nil {
+			c.Close(ctx)
+		}
+	}()
+
+	if _, err := redisCLI(ctx, c, "config", "set", "cluster-announce-ip", c.host); err != nil {
+		return nil, err
+	}
+	if _, err := redisCLI(ctx, c, "config", "set", "cluster-announce-port", c.port); err != nil {
+		return nil, err
+	}
+	if _, err := redisCLI(ctx, c, "cluster", "addslotsrange", "0", strconv.Itoa(RedisClusterSlots-1)); err != nil {
+		return nil, err
+	}
+	// Owning every slot is not enough on its own: the node reports state fail
+	// until its cluster cron has taken the new slots into account.
+	ticker := time.NewTicker(200 * time.Millisecond)
+	defer ticker.Stop()
+	timeout := time.After(2 * time.Minute)
+	for {
+		info, err := redisCLI(ctx, c, "cluster", "info")
+		if err != nil {
+			return nil, err
+		}
+		if strings.Contains(info, "cluster_state:ok") {
+			return c, nil
+		}
+		select {
+		case <-ticker.C:
+		case <-timeout:
+			return nil, errors.Errorf("redis cluster did not reach state ok: %s", info)
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
+	}
+}
+
+// redisCLI runs redis-cli inside the container, which keeps the cluster
+// bootstrap off the host and out of this package's dependencies. Exec output is
+// a multiplexed Docker stream, so Multiplexed decodes it into plain text.
+func redisCLI(ctx context.Context, c *Container, args ...string) (string, error) {
+	code, reader, err := c.container.Exec(ctx, append([]string{"redis-cli"}, args...), tcexec.Multiplexed())
+	if err != nil {
+		return "", errors.Wrapf(err, "exec redis-cli %s", strings.Join(args, " "))
+	}
+	out, err := io.ReadAll(reader)
+	if err != nil {
+		return "", errors.Wrapf(err, "read redis-cli %s output", strings.Join(args, " "))
+	}
+	if code != 0 {
+		return "", errors.Errorf("redis-cli %s exited %d: %s", strings.Join(args, " "), code, out)
+	}
+	return string(out), nil
 }

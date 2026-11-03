@@ -163,7 +163,8 @@ func setupReviewFixture(ctx context.Context, t *testing.T, issueCount int) (*sto
 		})
 		require.NoError(t, err)
 		schema := &metadatapb.DatabaseSchemaMetadata{Name: name, Schemas: []*metadatapb.SchemaMetadata{{Name: "public"}}}
-		require.NoError(t, stores.UpsertDBSchema(ctx, "prod", name, schema, &storepb.DatabaseConfig{}, nil))
+		_, err = stores.UpsertDBSchema(ctx, "prod", name, schema, nil, time.Now())
+		require.NoError(t, err)
 	}
 	_, err = stores.CreateDatabaseGroup(ctx, &store.DatabaseGroupMessage{
 		ProjectID:  "p",
