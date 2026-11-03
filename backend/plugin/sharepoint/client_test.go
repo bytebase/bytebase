@@ -560,3 +560,25 @@ func TestUploadInParallel(t *testing.T) {
 	_, err := client.Upload(context.Background(), testLocation, testFolder, files)
 	require.NoError(t, err)
 }
+
+func TestUploadRejectedAfterLostResponseIsUnconfirmed(t *testing.T) {
+	puts := 0
+	client, _ := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPut {
+			puts++
+			if puts == 1 {
+				// The first attempt is committed but its response is lost.
+				conn, _, err := w.(http.Hijacker).Hijack()
+				require.NoError(t, err)
+				_ = conn.Close()
+				return
+			}
+		}
+		writeGraphError(w, http.StatusForbidden, "accessDenied")
+	}))
+	client.simpleUploadMaxSize = simpleUploadMaxSize
+	_, err := client.Upload(context.Background(), testLocation, testFolder, []File{{Name: "a.sql", Content: []byte("a")}})
+	require.ErrorIs(t, err, ErrUnconfirmed)
+	require.NotErrorIs(t, err, ErrNothingUploaded)
+	require.Equal(t, 2, puts)
+}

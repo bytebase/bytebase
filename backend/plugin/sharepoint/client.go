@@ -309,7 +309,8 @@ func (c *graphClient) uploadFile(ctx context.Context, folderPath string, file Fi
 		return false, c.reconcile(ctx, folderPath, file, false)
 	}
 	var unknown *unknownOutcomeError
-	if errors.As(err, &unknown) {
+	var graphErr *graphError
+	if errors.As(err, &unknown) || (errors.As(err, &graphErr) && graphErr.afterUnknownOutcome) {
 		return false, c.reconcile(ctx, folderPath, file, true)
 	}
 	rejected := errors.Is(err, ErrNotFoundOrNoAccess) || errors.Is(err, ErrCredential)

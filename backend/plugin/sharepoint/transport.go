@@ -24,6 +24,9 @@ type response struct {
 	status int
 	header http.Header
 	body   []byte
+	// afterUnknownOutcome reports that an earlier attempt of the request may
+	// have taken effect.
+	afterUnknownOutcome bool
 }
 
 // unknownOutcomeError means a request may or may not have taken effect.
@@ -43,6 +46,9 @@ type graphError struct {
 	status  int
 	code    string
 	message string
+	// afterUnknownOutcome reports that an earlier attempt of the request may
+	// have taken effect, so the error does not prove the request did nothing.
+	afterUnknownOutcome bool
 }
 
 func newGraphError(resp *response) *graphError {
@@ -53,7 +59,7 @@ func newGraphError(resp *response) *graphError {
 		} `json:"error"`
 	}
 	_ = json.Unmarshal(resp.body, &body)
-	return &graphError{status: resp.status, code: body.Error.Code, message: body.Error.Message}
+	return &graphError{status: resp.status, code: body.Error.Code, message: body.Error.Message, afterUnknownOutcome: resp.afterUnknownOutcome}
 }
 
 func (e *graphError) sentinel() error {
@@ -161,6 +167,7 @@ func (c *graphClient) send(ctx context.Context, method, target string, body []by
 			outcomeUnknown = true
 			lastErr = newGraphError(resp)
 		default:
+			resp.afterUnknownOutcome = outcomeUnknown
 			return resp, nil
 		}
 		if attempt >= c.maxAttempts {
