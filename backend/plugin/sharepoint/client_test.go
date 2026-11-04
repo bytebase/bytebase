@@ -38,6 +38,7 @@ func newTestClient(t *testing.T, handler http.Handler) (*graphClient, *[]time.Du
 		simpleUploadMaxSize:  4,
 		maxConcurrentUploads: 1,
 		maxAttempts:          3,
+		reconcileGrace:       5 * time.Second,
 		wait: func(_ context.Context, d time.Duration) error {
 			mu.Lock()
 			defer mu.Unlock()
@@ -581,4 +582,77 @@ func TestUploadRejectedAfterLostResponseIsUnconfirmed(t *testing.T) {
 	require.ErrorIs(t, err, ErrUnconfirmed)
 	require.NotErrorIs(t, err, ErrNothingUploaded)
 	require.Equal(t, 2, puts)
+}
+
+// cancelOnUpload cancels the export while the server holds an upload, so the
+// client never learns the upload's outcome.
+func cancelOnUpload(t *testing.T, cancel context.CancelFunc) func(r *http.Request) {
+	return func(r *http.Request) {
+		// Reading the body lets the server notice the client going away.
+		_, err := io.ReadAll(r.Body)
+		require.NoError(t, err)
+		cancel()
+		select {
+		case <-r.Context().Done():
+		case <-time.After(5 * time.Second):
+			t.Error("the canceled upload was not abandoned")
+		}
+	}
+}
+
+func TestUploadConfirmsTheFileInFlightWhenCanceled(t *testing.T) {
+	files := []File{{Name: "a.sql", Content: []byte("a")}, {Name: "b.csv", Content: []byte("b")}}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	var (
+		mu       sync.Mutex
+		requests []string
+	)
+	upload := cancelOnUpload(t, cancel)
+	client, _ := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		requests = append(requests, r.Method+" "+r.URL.Path)
+		mu.Unlock()
+		if r.Method == http.MethodPut {
+			upload(r)
+			return
+		}
+		// Graph committed the upload whose response the cancel discarded.
+		writeJSON(w, http.StatusOK, map[string]any{
+			"size":      1,
+			"createdBy": map[string]any{"application": map[string]any{"id": testAppID}},
+		})
+	}))
+	client.simpleUploadMaxSize = simpleUploadMaxSize
+	_, err := client.Upload(ctx, testLocation, testFolder, files)
+	require.ErrorIs(t, err, context.Canceled)
+	require.NotErrorIs(t, err, ErrUnconfirmed)
+	require.NotErrorIs(t, err, ErrNothingUploaded)
+	folderPath := "/drives/d1/items/dest:/" + testFolder + "/"
+	require.Equal(t, []string{
+		"PUT " + folderPath + "a.sql:/content",
+		"GET " + folderPath + "a.sql",
+	}, requests)
+}
+
+func TestUploadReconcileAfterCancelIsBounded(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	upload := cancelOnUpload(t, cancel)
+	client, _ := newTestClient(t, http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPut {
+			upload(r)
+			return
+		}
+		// The lookup never answers.
+		select {
+		case <-r.Context().Done():
+		case <-time.After(5 * time.Second):
+			t.Error("the reconciliation lookup was not bounded")
+		}
+	}))
+	client.simpleUploadMaxSize = simpleUploadMaxSize
+	client.reconcileGrace = 50 * time.Millisecond
+	_, err := client.Upload(ctx, testLocation, testFolder, []File{{Name: "a.sql", Content: []byte("a")}})
+	require.ErrorIs(t, err, ErrUnconfirmed)
 }

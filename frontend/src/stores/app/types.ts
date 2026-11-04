@@ -1050,7 +1050,10 @@ export type IssueSlice = {
 // permission-denied / silent context conventions.
 export type SQLSlice = {
   query: (params: QueryRequest, signal: AbortSignal) => Promise<SQLResultSetV1>;
-  exportData: (params: ExportRequest) => Promise<ExportDataResult>;
+  exportData: (
+    params: ExportRequest,
+    signal?: AbortSignal
+  ) => Promise<ExportDataResult>;
 };
 
 // For an export to a storage destination such as SharePoint, `uri` locates the

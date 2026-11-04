@@ -1174,6 +1174,16 @@ func (e *queryTimeoutError) Error() string {
 	return fmt.Sprintf("timeout reached: %v", e.timeout)
 }
 
+// interruptedQueryError reports why a run stopped when its context ended. A
+// canceled request is the caller giving up, so it is not reported as a
+// timeout; any deadline, the query policy's or the caller's, is.
+func interruptedQueryError(ctxErr error, timeout time.Duration) error {
+	if errors.Is(ctxErr, context.Canceled) {
+		return connect.NewError(connect.CodeCanceled, errors.New("the request was canceled before the query finished"))
+	}
+	return &queryTimeoutError{timeout: timeout}
+}
+
 // resultForTimeout names the statement a timed-out run was cut off in. No
 // driver returns a result for a statement it never finished, so without this
 // the editor has an error and nothing to point at.
@@ -1206,12 +1216,8 @@ func executeWithTimeout(
 
 	start := time.Now()
 	result, err := driver.QueryConn(queryCtx, conn, statement, queryContext)
-	select {
-	case <-queryCtx.Done():
-		// canceled or timed out
-		return nil, time.Since(start), &queryTimeoutError{timeout: timeout}
-	default:
-		// So the select will not block
+	if ctxErr := queryCtx.Err(); ctxErr != nil {
+		return nil, time.Since(start), interruptedQueryError(ctxErr, timeout)
 	}
 	sanitizeResults(result)
 	return result, time.Since(start), err

@@ -223,7 +223,7 @@ export function ResultView({
   const handleExport = async (
     req: DataExportRequest & { statement: string }
   ) => {
-    const { options, resolve, reject, statement } = req;
+    const { options, resolve, reject, signal, statement } = req;
     const { databaseName } = extractDatabaseResourceName(database.name);
     const toSharePoint = options.destination === ExportDestination.SHAREPOINT;
 
@@ -246,7 +246,8 @@ export function ResultView({
           schema: executeParams.connection.schema,
           container: executeParams.connection.table,
           destination: options.destination,
-        })
+        }),
+        signal
       );
       if (toSharePoint) {
         resolve({

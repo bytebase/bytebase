@@ -1122,15 +1122,20 @@
     "progress": {
       "databases": "Đã xuất {{done}}/{{total}} cơ sở dữ liệu",
       "download": "Đang xuất…",
+      "elapsed": "Thời gian đã trôi qua",
       "sharepoint": "Đang xuất sang SharePoint…"
     },
     "sharepoint": {
+      "canceled-description": "Quá trình xuất đã bị hủy khi đang xuất cơ sở dữ liệu này. Có thể đã có tệp trong SharePoint.",
       "exported-title": "Đã xuất sang SharePoint",
+      "not-started-description": "Quá trình xuất đã bị hủy trước khi bắt đầu cơ sở dữ liệu này. Không có gì được xuất.",
       "open": "Mở trong SharePoint",
       "result-title": "Kết quả xuất sang SharePoint",
       "status": {
+        "canceled": "Đã hủy",
         "exported": "Đã xuất",
         "failed": "Thất bại",
+        "not-started": "Chưa xuất",
         "unconfirmed": "Chưa xác nhận"
       }
     }

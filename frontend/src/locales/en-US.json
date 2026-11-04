@@ -1122,15 +1122,20 @@
     "progress": {
       "databases": "Exported {{done}} of {{total}} databases",
       "download": "Exporting…",
+      "elapsed": "Elapsed time",
       "sharepoint": "Exporting to SharePoint…"
     },
     "sharepoint": {
+      "canceled-description": "The export was canceled while this database was exporting. Some files may exist in SharePoint.",
       "exported-title": "Exported to SharePoint",
+      "not-started-description": "The export was canceled before this database started. Nothing was exported.",
       "open": "Open in SharePoint",
       "result-title": "SharePoint export results",
       "status": {
+        "canceled": "Canceled",
         "exported": "Exported",
         "failed": "Failed",
+        "not-started": "Not exported",
         "unconfirmed": "Not confirmed"
       }
     }

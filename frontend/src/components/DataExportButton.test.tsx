@@ -1,3 +1,4 @@
+import { Code, ConnectError } from "@connectrpc/connect";
 import {
   act,
   fireEvent,
@@ -5,7 +6,8 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
-import { beforeEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { pushNotification } from "@/stores";
 import { ExportDestination, ExportFormat } from "@/types/proto-es/v1/common_pb";
 import { type DataExportRequest, DataExportButton } from "./DataExportButton";
 
@@ -40,9 +42,16 @@ const renderButton = (destinations: ExportDestination[]) =>
 const openDrawer = () =>
   fireEvent.click(screen.getByRole("button", { name: "common.export" }));
 
+const confirmExport = () =>
+  fireEvent.click(screen.getByRole("button", { name: "common.confirm" }));
+
+const cancel = () =>
+  fireEvent.click(screen.getByRole("button", { name: "common.cancel" }));
+
 describe("DataExportButton destination", () => {
   beforeEach(() => {
     onExport.mockReset();
+    vi.mocked(pushNotification).mockReset();
   });
 
   test("defaults to SharePoint and hides the zip password for it", () => {
@@ -136,5 +145,96 @@ describe("DataExportButton destination", () => {
 
     await act(async () => finish?.());
     expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+  });
+});
+
+describe("DataExportButton cancel", () => {
+  beforeEach(() => {
+    onExport.mockReset();
+    vi.mocked(pushNotification).mockReset();
+    window.URL.createObjectURL = vi.fn(() => "blob:export");
+    window.URL.revokeObjectURL = vi.fn();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  test("aborts a running download and reports nothing", async () => {
+    let signal: AbortSignal | undefined;
+    onExport.mockImplementation((request) => {
+      signal = request.signal;
+      request.signal.addEventListener("abort", () =>
+        request.reject(new ConnectError("aborted", Code.Canceled))
+      );
+    });
+    renderButton([ExportDestination.DOWNLOAD]);
+    openDrawer();
+    confirmExport();
+    expect(signal?.aborted).toBe(false);
+
+    cancel();
+
+    expect(signal?.aborted).toBe(true);
+    await waitFor(() => {
+      expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+    });
+    expect(pushNotification).not.toHaveBeenCalled();
+  });
+
+  test("saves nothing from a download canceled as it finished", async () => {
+    onExport.mockImplementation((request) => {
+      request.signal.addEventListener("abort", () =>
+        request.resolve([{ content: new Uint8Array([1]), filename: "a.zip" }])
+      );
+    });
+    renderButton([ExportDestination.DOWNLOAD]);
+    openDrawer();
+    confirmExport();
+    cancel();
+
+    await waitFor(() => {
+      expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+    });
+    expect(window.URL.createObjectURL).not.toHaveBeenCalled();
+    expect(pushNotification).not.toHaveBeenCalled();
+  });
+
+  test("shows what a canceled SharePoint export left behind", async () => {
+    onExport.mockImplementation((request) => {
+      request.signal.addEventListener("abort", () =>
+        request.resolve({
+          sharepoint: [{ database: "main", status: "CANCELED" }],
+        })
+      );
+    });
+    renderButton([ExportDestination.SHAREPOINT]);
+    openDrawer();
+    confirmExport();
+    cancel();
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("export-data.sharepoint.canceled-description")
+      ).toBeInTheDocument();
+    });
+    expect(pushNotification).not.toHaveBeenCalled();
+  });
+
+  test("shows the elapsed time beside the progress bar", () => {
+    vi.useFakeTimers();
+    onExport.mockImplementation(() => {});
+    renderButton([ExportDestination.DOWNLOAD]);
+    openDrawer();
+    confirmExport();
+
+    const timer = screen.getByRole("timer", {
+      name: "export-data.progress.elapsed",
+    });
+    expect(timer).toHaveTextContent("0:00");
+    act(() => vi.advanceTimersByTime(65_000));
+    expect(timer).toHaveTextContent("1:05");
+    act(() => vi.advanceTimersByTime(3_600_000));
+    expect(timer).toHaveTextContent("1:01:05");
   });
 });

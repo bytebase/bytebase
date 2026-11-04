@@ -1122,15 +1122,20 @@
     "progress": {
       "databases": "已导出 {{done}}/{{total}} 个数据库",
       "download": "正在导出…",
+      "elapsed": "已用时间",
       "sharepoint": "正在导出到 SharePoint…"
     },
     "sharepoint": {
+      "canceled-description": "导出此数据库时导出已取消。SharePoint 中可能已存在文件。",
       "exported-title": "已导出到 SharePoint",
+      "not-started-description": "导出在此数据库开始前已取消，未导出任何内容。",
       "open": "在 SharePoint 中打开",
       "result-title": "SharePoint 导出结果",
       "status": {
+        "canceled": "已取消",
         "exported": "已导出",
         "failed": "失败",
+        "not-started": "未导出",
         "unconfirmed": "未确认"
       }
     }

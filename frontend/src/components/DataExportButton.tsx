@@ -79,6 +79,9 @@ export type DataExportRequest = {
   options: ExportOption;
   resolve: (outcome: ExportOutcome) => void;
   reject: (reason?: unknown) => void;
+  // Aborted when the user cancels the export. A canceled SharePoint export
+  // still resolves, reporting what each database did.
+  signal: AbortSignal;
   // Reports progress of an export that covers several databases.
   onProgress?: (done: number, total: number) => void;
 };
@@ -202,12 +205,43 @@ const downloadAll = async (
   await downloadZip(contents, format);
 };
 
+const formatElapsed = (milliseconds: number) => {
+  const total = Math.max(0, Math.floor(milliseconds / 1000));
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const seconds = String(total % 60).padStart(2, "0");
+  return hours > 0
+    ? `${hours}:${String(minutes).padStart(2, "0")}:${seconds}`
+    : `${minutes}:${seconds}`;
+};
+
+function ElapsedTime({ since }: { since: number }) {
+  const { t } = useTranslation();
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+  return (
+    <span
+      role="timer"
+      aria-label={t("export-data.progress.elapsed")}
+      className="shrink-0 text-xs tabular-nums text-control-light"
+    >
+      {formatElapsed(now - since)}
+    </span>
+  );
+}
+
 /**
  * - DRAWER view: opens a Sheet with row-count / format / optional password
  *   fields, plus a `formContent` slot for caller-provided fields (e.g. the
  *   batch-export database picker).
  * - DROPDOWN view: a hover dropdown of formats; if `supportPassword` is set,
  *   selecting a format opens a small Dialog to capture an optional password.
+ *
+ * While an export runs, Cancel aborts it. Dismissing the drawer another way
+ * leaves the export running.
  */
 export function DataExportButton({
   size = "sm",
@@ -231,6 +265,8 @@ export function DataExportButton({
   const [showDrawer, setShowDrawer] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number }>();
+  const [startedAt, setStartedAt] = useState<number>();
+  const exportAbortRef = useRef<AbortController | undefined>(undefined);
   const [sharePointResults, setSharePointResults] = useState<
     SharePointExportResult[]
   >([]);
@@ -303,8 +339,11 @@ export function DataExportButton({
 
   const doExport = useCallback(() => {
     if (isRequesting) return;
+    const controller = new AbortController();
+    exportAbortRef.current = controller;
     setIsRequesting(true);
     setProgress(undefined);
+    setStartedAt(Date.now());
     const options: ExportOption = { ...currentOption };
 
     new Promise<ExportOutcome>((resolve, reject) => {
@@ -312,6 +351,7 @@ export function DataExportButton({
         options,
         resolve,
         reject,
+        signal: controller.signal,
         onProgress: (done, total) => setProgress({ done, total }),
       });
     })
@@ -320,6 +360,7 @@ export function DataExportButton({
           setSharePointResults(outcome.sharepoint);
           return;
         }
+        if (controller.signal.aborted) return;
         await downloadAll(outcome, options.format);
         pushNotification({
           module: "bytebase",
@@ -329,6 +370,7 @@ export function DataExportButton({
         });
       })
       .catch((error: unknown) => {
+        if (controller.signal.aborted) return;
         pushNotification({
           module: "bytebase",
           style: "CRITICAL",
@@ -337,12 +379,22 @@ export function DataExportButton({
         });
       })
       .finally(() => {
+        if (exportAbortRef.current === controller) {
+          exportAbortRef.current = undefined;
+        }
         setIsRequesting(false);
         setProgress(undefined);
+        setStartedAt(undefined);
         setShowDrawer(false);
         setShowPasswordDialog(false);
       });
   }, [currentOption, isRequesting, onExport, t]);
+
+  const cancelExport = () => {
+    exportAbortRef.current?.abort();
+    setShowDrawer(false);
+    setShowPasswordDialog(false);
+  };
 
   // Returns true when the clipboard write succeeded — Generate callers
   // gate the password commit on that so the masked input doesn't end up
@@ -576,7 +628,7 @@ export function DataExportButton({
             </SheetBody>
             <SheetFooter>
               {isRequesting && (
-                <div className="min-w-0 flex-1">
+                <div className="flex min-w-0 flex-1 items-end gap-x-2">
                   <Progress
                     className="max-w-80"
                     value={
@@ -591,9 +643,15 @@ export function DataExportButton({
                           : t("export-data.progress.sharepoint")
                     }
                   />
+                  {startedAt !== undefined && <ElapsedTime since={startedAt} />}
                 </div>
               )}
-              <Button appearance="outline" onClick={() => setShowDrawer(false)}>
+              <Button
+                appearance="outline"
+                onClick={
+                  isRequesting ? cancelExport : () => setShowDrawer(false)
+                }
+              >
                 {t("common.cancel")}
               </Button>
               <Button
@@ -627,7 +685,11 @@ export function DataExportButton({
                 <Button
                   appearance="outline"
                   size="sm"
-                  onClick={() => setShowPasswordDialog(false)}
+                  onClick={
+                    isRequesting
+                      ? cancelExport
+                      : () => setShowPasswordDialog(false)
+                  }
                 >
                   {t("common.cancel")}
                 </Button>
