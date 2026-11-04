@@ -57,6 +57,15 @@ untrustedMarkdown.renderer.rules.image = (tokens, idx) => {
   return `<a href="${escapeHtml(src)}">${label}</a>`;
 };
 
+// A Markdown text's first line as plain text, for a one-line summary: markup
+// goes, and code spans, escapes, and entities keep their content. A review
+// finding's message is Markdown, its first line the summary.
+export function markdownSummary(text: string): string {
+  const line = (text.split("\n", 1)[0] ?? "").replace(/^#+\s*/, "");
+  const [inline] = untrustedMarkdown.parseInline(line, {});
+  return labelText(inline?.children ?? []).trim();
+}
+
 // An image label as plain text. Unlike renderInlineAsText, it keeps code
 // spans and the decoded entities and escapes that a label's tokens carry.
 function labelText(tokens: Token[]): string {

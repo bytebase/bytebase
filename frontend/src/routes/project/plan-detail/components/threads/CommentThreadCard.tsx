@@ -18,7 +18,7 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { HumanizeTs } from "@/components/HumanizeTs";
-import { MarkdownEditor } from "@/components/MarkdownEditor";
+import { MarkdownEditor, markdownSummary } from "@/components/MarkdownEditor";
 import { MonacoViewZoneRevealContext } from "@/components/monaco/MonacoViewZone";
 import { UserAvatar } from "@/components/UserAvatar";
 import { Button } from "@/components/ui/button";
@@ -406,7 +406,7 @@ function ThreadSummary({
   const { t } = useTranslation();
   const author = useCommentAuthor(thread.root);
   const review = thread.root.reviewMetadata;
-  const summary = thread.root.comment.split("\n")[0] ?? "";
+  const summary = markdownSummary(thread.root.comment);
   return (
     <Button
       appearance="secondary"
