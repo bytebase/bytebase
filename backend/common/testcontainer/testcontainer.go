@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"database/sql"
@@ -20,6 +21,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
 	"github.com/pkg/errors"
 	goora "github.com/sijms/go-ora/v2"
 	"github.com/testcontainers/testcontainers-go"
@@ -476,6 +479,58 @@ func createTLSMaterial(ips ...net.IP) (string, string, []byte, []byte, error) {
 		return fail(err)
 	}
 	return tlsDir, caPath, certificate, key, nil
+}
+
+// CosmosEmulatorPort is the port the Cosmos emulator serves and advertises.
+// It is published unchanged, so only one emulator can run on a machine.
+const CosmosEmulatorPort = "8081"
+
+// getCosmosContainer starts the classic Cosmos DB emulator. It is the only
+// image that reproduces the gateway refusing to serve a cross-partition query,
+// which is the error the SDK pivots to its query engine on: the vnext-preview
+// emulator answers those queries itself out of PostgreSQL and reports one
+// partition key range whatever the throughput, so a query engine never runs.
+//
+// The emulator names its own endpoint in the database account document and the
+// SDK follows that rather than the endpoint it was configured with. The address
+// override makes it advertise 127.0.0.1, which only reaches the emulator while
+// the host publishes the same port it serves — hence the fixed binding, and one
+// emulator per machine. A second concurrent start fails on that binding instead
+// of sharing the first one's databases.
+//
+// Partition count is the emulator's budget of physical partitions to hand out;
+// a container draws from it in proportion to its provisioned throughput, so 8
+// leaves room for a fixture wide enough to exercise a cross-partition merge.
+func getCosmosContainer(ctx context.Context) (*Container, error) {
+	emulatorPort, err := network.ParsePort(CosmosEmulatorPort + "/tcp")
+	if err != nil {
+		return nil, errors.Wrap(err, "parse the Cosmos emulator port")
+	}
+	return start(ctx, testcontainers.ContainerRequest{
+		Image: "mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:2.14.28",
+		Env: map[string]string{
+			"AZURE_COSMOS_EMULATOR_PARTITION_COUNT":         "8",
+			"AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE": "false",
+			"AZURE_COSMOS_EMULATOR_IP_ADDRESS_OVERRIDE":     "127.0.0.1",
+		},
+		// Readiness is an answer from the gateway rather than a log line: the
+		// emulator logs "Started N/M partitions" per partition before the bare
+		// "Started" that means it is up, and terminates its lines with CRLF.
+		//
+		// Bringing up the partitions takes about half a minute on an idle host and
+		// was measured at 216 s on a loaded one, so the timeout clears the longest
+		// boot seen rather than the typical one.
+		WaitingFor: wait.ForHTTP("/_explorer/emulator.pem").
+			WithPort(CosmosEmulatorPort+"/tcp").
+			WithTLS(true, &tls.Config{
+				MinVersion:         tls.VersionTLS12,
+				InsecureSkipVerify: true, //nolint:gosec // the emulator signs its certificate itself
+			}).
+			WithStartupTimeout(10 * time.Minute),
+		HostConfigModifier: func(hc *container.HostConfig) {
+			hc.PortBindings = network.PortMap{emulatorPort: {{HostPort: CosmosEmulatorPort}}}
+		},
+	}, spec{port: CosmosEmulatorPort + "/tcp"})
 }
 
 // RedisClusterSlots is the number of hash slots a Redis cluster partitions keys
