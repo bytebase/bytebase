@@ -223,10 +223,17 @@ describe("ReleaseFileViewer", () => {
       };
     });
     const { ReleaseFileViewer: Viewer } = await import("./ReleaseFileViewer");
-    const { rerender } = render(<Viewer target={target()} onClose={() => {}} />);
+    const source = create(Release_VCSSourceSchema, {
+      vcsType: VCSType.GITHUB,
+      url: "https://github.com/example/app/commit/0a1b2c3d4e5f",
+    });
+    const { rerender } = render(<Viewer target={target()} vcsSource={source} onClose={() => {}} />);
     await flush();
-    rerender(<Viewer target={undefined} onClose={() => {}} />);
-    expect(screen.getByTestId("release-file-viewer").textContent).toContain("002");
+    // Closing clears both, as the page's provider does.
+    rerender(<Viewer target={undefined} vcsSource={undefined} onClose={() => {}} />);
+    const viewer = screen.getByTestId("release-file-viewer");
+    expect(viewer.textContent).toContain("002");
+    expect(viewer.textContent).toContain("Open in GitHub at 0a1b2c3");
     vi.doUnmock("@/components/ui/sheet");
     vi.resetModules();
   });
