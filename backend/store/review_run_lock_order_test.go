@@ -234,7 +234,7 @@ func TestCompleteReviewRunOverlappingAttempts(t *testing.T) {
 	got, _ := listSupersession(t, fixture, "default")
 	require.Equal(t, []supersession{
 		{Comment: "x", ThreadState: "RESOLVED", Superseded: true},
-		{Comment: "y", ThreadState: "OPEN"},
+		{Comment: "y moved", ThreadState: "OPEN"},
 	}, got)
-	require.Equal(t, reviewResultSheet+"/4", reviewResultAnchors(t, fixture, "default")["y"])
+	require.Equal(t, reviewResultSheet+"/4", reviewResultAnchors(t, fixture, "default")["y moved"])
 }
