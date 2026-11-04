@@ -168,7 +168,8 @@ func TestReviewResultComments(t *testing.T) {
 // comments above it included, or a reworded message keeps its fingerprint;
 // an edit to the statement, another set of databases, or another spec makes
 // it a new finding. Findings of one code in one statement are told apart by
-// where they stand, and identical statements by their order.
+// where they stand, and identical statements by their order. A finding on
+// the whole change is new once any of the SQL changes.
 func TestReviewResultFingerprints(t *testing.T) {
 	t.Parallel()
 	unitOf := func(specID string, names ...string) *reviewUnit {
@@ -224,6 +225,15 @@ func TestReviewResultFingerprints(t *testing.T) {
 	one := reviewOf(unit, nulls)
 	one.Findings = one.Findings[1:]
 	require.Equal(t, both[1:], fingerprintsOf(unit, nulls, one))
+
+	// A finding on the whole change stands on all of the SQL.
+	wholeChange := func(sql string) []string {
+		return fingerprintsOf(unit, sql, &review.Result{Findings: []review.Finding{{
+			Rule: review.PriorBackup, Statement: -1, Codes: []review.FindingCode{review.BackupLocationMissing}, Targets: []int{0},
+		}}})
+	}
+	require.Equal(t, wholeChange(update), wholeChange(update))
+	require.NotEqual(t, wholeChange(update), wholeChange("DELETE FROM orders WHERE id = 2;"), "an edit to the SQL makes a new finding")
 }
 
 // TestBackupDatabaseExistsPostgres reads the PostgreSQL archive schema from

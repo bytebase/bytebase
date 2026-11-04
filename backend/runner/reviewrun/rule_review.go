@@ -186,10 +186,13 @@ func findingKey(unit *reviewUnit, rule storepb.ReviewRuleType, codes []review.Fi
 // range within that body. A body leaves out the blank lines and comments
 // around the statement, so an edit to them, or anywhere else outside the
 // statement, keeps the finding, while an edit to the statement makes it a new
-// one. A finding on the whole change has neither, one on the whole statement
-// no range.
+// one. A finding on the whole change stands on all of the SQL, so any edit to
+// it makes a new one; a finding on the whole statement has no range.
 func findingPlace(sql string, result *review.Result, finding review.Finding) (body, at string) {
-	if finding.Statement < 0 || finding.Statement >= len(result.Bodies) {
+	if finding.Statement < 0 {
+		return sql, ""
+	}
+	if finding.Statement >= len(result.Bodies) {
 		return "", ""
 	}
 	b := result.Bodies[finding.Statement]
