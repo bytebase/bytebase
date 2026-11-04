@@ -14,6 +14,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/aireview"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -58,9 +59,14 @@ func TestAIReviewComments(t *testing.T) {
 		Evidence: "orders_summary selects legacy_status.",
 		Fix:      "Drop the view first.",
 	}
-	dropOnTheOtherDatabase := drop
-	dropOnTheOtherDatabase.Severity = aireview.SeverityP0
-	dropOnTheOtherDatabase.Evidence = "orders_summary and orders_report select legacy_status."
+	dropOnTheSecondDatabase := drop
+	dropOnTheSecondDatabase.Title = "Drop orders_summary and orders_report before legacy_status"
+	dropOnTheSecondDatabase.Severity = aireview.SeverityP0
+	dropOnTheSecondDatabase.Evidence = "orders_summary and orders_report select legacy_status."
+	dropOnTheSecondDatabase.Fix = "Drop both views first."
+	dropOnTheThirdDatabase := drop
+	dropOnTheThirdDatabase.Line = 5
+	dropOnTheThirdDatabase.Evidence = "orders_summary on staging selects legacy_status."
 	index := aireview.Finding{
 		Title:    "Create the index CONCURRENTLY",
 		Severity: aireview.SeverityP2,
@@ -69,34 +75,200 @@ func TestAIReviewComments(t *testing.T) {
 		Evidence: "orders holds 52,000,000 rows.",
 		Fix:      "CREATE INDEX CONCURRENTLY idx_orders_created_at ON orders (created_at);",
 	}
-	comments := aiReviewComments("p", 7, []*aiReviewResult{
-		{Unit: unit("instances/prod-2/databases/db"), Findings: []aireview.Finding{drop}},
-		nil,
-		{Unit: unit("instances/prod-1/databases/db"), Findings: []aireview.Finding{index, dropOnTheOtherDatabase}},
+	comments := aiReviewComments("p", 7, [][]*aiReviewFinding{
+		{
+			{Unit: unit("instances/prod-2/databases/db"), Finding: drop},
+			{Unit: unit("instances/staging/databases/app"), Finding: dropOnTheThirdDatabase},
+			{Unit: unit("instances/prod-1/databases/db"), Finding: dropOnTheSecondDatabase},
+		},
+		{{Unit: unit("instances/prod-1/databases/db"), Finding: index}},
 	})
 	require.Len(t, comments, 2)
 
 	merged := comments[0]
 	require.Equal(t, "p", merged.ProjectID)
 	require.Equal(t, int64(7), merged.IssueUID)
-	require.Equal(t, "Keep legacy_status while orders_summary reads it\n\norders_summary selects legacy_status.\n\nRule: No column is dropped while a view reads it.\n\nSuggested fix: Drop the view first.", merged.Payload.Comment)
+	require.Equal(t, "Drop orders_summary and orders_report before legacy_status"+
+		"\n\nprod-1/db: orders_summary and orders_report select legacy_status."+
+		"\n\nprod-2/db: orders_summary selects legacy_status."+
+		"\n\napp: orders_summary on staging selects legacy_status."+
+		"\n\nRule: No column is dropped while a view reads it."+
+		"\n\nSuggested fix: Drop both views first.", merged.Payload.Comment, "the P0 finding leads, and each database keeps its evidence")
 	anchor := merged.Payload.StatementAnchor
 	require.Equal(t, "spec-1", anchor.SpecId)
 	require.Equal(t, "sha", anchor.SheetSha256)
-	require.Equal(t, int32(4), anchor.StartPosition.Line)
+	require.Equal(t, int32(4), anchor.StartPosition.Line, "the line most of the findings start on")
 	require.Equal(t, int32(4), anchor.EndPosition.Line)
 	metadata := merged.Payload.ReviewMetadata
 	require.Equal(t, storepb.ReviewRun_AI, metadata.RunType)
 	require.Equal(t, storepb.ReviewRuleType_REVIEW_RULE_TYPE_UNSPECIFIED, metadata.RuleType)
-	require.Equal(t, storepb.IssueCommentPayload_ReviewMetadata_P0, metadata.Priority, "the merged finding carries the highest priority among the databases")
-	require.Equal(t, []string{"instances/prod-1/databases/db", "instances/prod-2/databases/db"}, metadata.Targets)
+	require.Equal(t, storepb.IssueCommentPayload_ReviewMetadata_P0, metadata.Priority)
+	require.Equal(t, []string{"instances/prod-1/databases/db", "instances/prod-2/databases/db", "instances/staging/databases/app"}, metadata.Targets)
 
 	single := comments[1]
+	require.Equal(t, "Create the index CONCURRENTLY\n\norders holds 52,000,000 rows.\n\nRule: An index on a table over 1 million rows is created CONCURRENTLY.\n\nSuggested fix: CREATE INDEX CONCURRENTLY idx_orders_created_at ON orders (created_at);", single.Payload.Comment)
 	require.Equal(t, int32(2), single.Payload.StatementAnchor.StartPosition.Line)
 	require.Equal(t, storepb.IssueCommentPayload_ReviewMetadata_P2, single.Payload.ReviewMetadata.Priority)
 	require.Equal(t, []string{"instances/prod-1/databases/db"}, single.Payload.ReviewMetadata.Targets)
 
 	require.Empty(t, aiReviewComments("p", 7, nil))
+}
+
+func TestAIReviewCommentsBreakTies(t *testing.T) {
+	t.Parallel()
+
+	finding := func(target string, line int) *aiReviewFinding {
+		return &aiReviewFinding{
+			Unit:    &aiReviewUnit{Check: &plancheck.CheckTarget{SpecID: "spec-1", Target: target}},
+			Finding: aireview.Finding{Title: target, Severity: aireview.SeverityP1, Line: line, Evidence: "e", Rule: "r", Fix: "f"},
+		}
+	}
+	comments := aiReviewComments("p", 7, [][]*aiReviewFinding{{
+		finding("instances/i/databases/c", 7),
+		finding("instances/i/databases/a", 9),
+		finding("instances/i/databases/b", 7),
+		finding("instances/i/databases/d", 9),
+	}})
+	require.Len(t, comments, 1)
+	require.Equal(t, int32(7), comments[0].Payload.StatementAnchor.StartPosition.Line, "the first line on a tie")
+	require.True(t, strings.HasPrefix(comments[0].Payload.Comment, "instances/i/databases/a\n\na: e\n\nb: e"), "the first database leads on a tie")
+}
+
+// mergeStatement has two statements: a drop on lines 1 and 2, and an index
+// on line 3.
+const mergeStatement = "ALTER TABLE orders\n  DROP COLUMN legacy_status;\nCREATE INDEX idx ON orders (created_at);\n"
+
+func mergeResult(target string, engine storepb.Engine, findings ...aireview.Finding) *aiReviewResult {
+	return &aiReviewResult{
+		Unit: &aiReviewUnit{
+			Check:     &plancheck.CheckTarget{SpecID: "spec-1", SheetSha256: "sha", Target: target},
+			Statement: mergeStatement,
+			Engine:    engine,
+		},
+		Findings: findings,
+	}
+}
+
+func titles(problems [][]*aiReviewFinding) [][]string {
+	var result [][]string
+	for _, problem := range problems {
+		var problemTitles []string
+		for _, finding := range problem {
+			problemTitles = append(problemTitles, finding.Finding.Title)
+		}
+		result = append(result, problemTitles)
+	}
+	return result
+}
+
+// recordingMerge records the merge requests and answers with groups, or
+// with err.
+type recordingMerge struct {
+	requests []*aireview.MergeRequest
+	groups   [][]int
+	err      error
+}
+
+func (m *recordingMerge) merge(_ context.Context, request *aireview.MergeRequest) (*aireview.MergeResult, error) {
+	m.requests = append(m.requests, request)
+	if m.err != nil {
+		return nil, m.err
+	}
+	return &aireview.MergeResult{Groups: m.groups}, nil
+}
+
+func TestMergeAIReviewFindings(t *testing.T) {
+	t.Parallel()
+
+	finding := func(title string, line int) aireview.Finding {
+		return aireview.Finding{Title: title, Severity: aireview.SeverityP1, Line: line}
+	}
+	results := func(engine storepb.Engine) []*aiReviewResult {
+		return []*aiReviewResult{
+			mergeResult("instances/prod/databases/db1", engine, finding("drop on db1", 1), finding("index on db1", 3)),
+			nil,
+			mergeResult("instances/prod/databases/db2", engine, finding("drop on db2", 2)),
+			mergeResult("instances/prod/databases/db3", engine, finding("view on db3", 1)),
+		}
+	}
+
+	t.Run("merges what the model groups", func(t *testing.T) {
+		t.Parallel()
+
+		merge := &recordingMerge{groups: [][]int{{0, 1}, {2}}}
+		problems, err := mergeAIReviewFindings(context.Background(), merge.merge, results(storepb.Engine_POSTGRES))
+		require.NoError(t, err)
+		require.Equal(t, [][]string{{"drop on db1", "drop on db2"}, {"index on db1"}, {"view on db3"}}, titles(problems))
+
+		require.Len(t, merge.requests, 1)
+		request := merge.requests[0]
+		require.Equal(t, mergeStatement, request.Statement)
+		require.Equal(t, []aireview.LineRange{{Start: 1, End: 2}, {Start: 3, End: 3}}, request.Blocks)
+		require.Equal(t, []aireview.MergeCandidate{
+			{Block: 0, Database: "instances/prod/databases/db1", Finding: finding("drop on db1", 1)},
+			{Block: 0, Database: "instances/prod/databases/db2", Finding: finding("drop on db2", 2)},
+			{Block: 0, Database: "instances/prod/databases/db3", Finding: finding("view on db3", 1)},
+		}, request.Candidates, "a statement that one database reported on is not offered")
+	})
+
+	t.Run("posts each finding on its own when the merge fails", func(t *testing.T) {
+		t.Parallel()
+
+		merge := &recordingMerge{err: errors.New("provider down")}
+		problems, err := mergeAIReviewFindings(context.Background(), merge.merge, results(storepb.Engine_POSTGRES))
+		require.NoError(t, err)
+		require.Equal(t, [][]string{{"drop on db1"}, {"index on db1"}, {"drop on db2"}, {"view on db3"}}, titles(problems))
+	})
+
+	t.Run("stops when the run ends", func(t *testing.T) {
+		t.Parallel()
+
+		ctx, cancel := context.WithCancel(context.Background())
+		merge := func(context.Context, *aireview.MergeRequest) (*aireview.MergeResult, error) {
+			cancel()
+			return nil, context.Canceled
+		}
+		_, err := mergeAIReviewFindings(ctx, merge, results(storepb.Engine_POSTGRES))
+		require.ErrorIs(t, err, context.Canceled)
+	})
+
+	t.Run("treats the sheet as one block when the engines differ", func(t *testing.T) {
+		t.Parallel()
+
+		mixed := results(storepb.Engine_POSTGRES)
+		mixed[3].Unit.Engine = storepb.Engine_MYSQL
+		merge := &recordingMerge{groups: [][]int{{0, 2}, {1}, {3}}}
+		problems, err := mergeAIReviewFindings(context.Background(), merge.merge, mixed)
+		require.NoError(t, err)
+		require.Equal(t, [][]string{{"drop on db1", "drop on db2"}, {"index on db1"}, {"view on db3"}}, titles(problems))
+		require.Equal(t, []aireview.LineRange{{Start: 1, End: 4}}, merge.requests[0].Blocks)
+		require.Len(t, merge.requests[0].Candidates, 4)
+	})
+
+	t.Run("calls no model for one database", func(t *testing.T) {
+		t.Parallel()
+
+		merge := &recordingMerge{}
+		problems, err := mergeAIReviewFindings(context.Background(), merge.merge, results(storepb.Engine_POSTGRES)[:1])
+		require.NoError(t, err)
+		require.Equal(t, [][]string{{"drop on db1"}, {"index on db1"}}, titles(problems))
+		require.Empty(t, merge.requests)
+	})
+}
+
+func TestStatementBlocks(t *testing.T) {
+	t.Parallel()
+
+	require.Equal(t, []aireview.LineRange{{Start: 1, End: 2}, {Start: 3, End: 3}}, statementBlocks(storepb.Engine_POSTGRES, mergeStatement))
+	require.Equal(t, []aireview.LineRange{{Start: 1, End: 3}, {Start: 5, End: 6}}, statementBlocks(storepb.Engine_POSTGRES, "-- c\n\nSELECT 1;\n\n-- d\nSELECT 2;"),
+		"a statement keeps its comments and leaves out the blank lines before it")
+	require.Equal(t, []aireview.LineRange{{Start: 1, End: 4}}, statementBlocks(storepb.Engine_ENGINE_UNSPECIFIED, mergeStatement))
+
+	blocks := statementBlocks(storepb.Engine_POSTGRES, "SELECT 1;\n\nSELECT 2;")
+	require.Equal(t, 0, findBlock(&blocks, 1))
+	require.Equal(t, 2, findBlock(&blocks, 2), "a line between statements is a block of its own")
+	require.Equal(t, 2, findBlock(&blocks, 2))
+	require.Equal(t, []aireview.LineRange{{Start: 1, End: 1}, {Start: 3, End: 3}, {Start: 2, End: 2}}, blocks)
 }
 
 func TestUniqueCheckTargets(t *testing.T) {

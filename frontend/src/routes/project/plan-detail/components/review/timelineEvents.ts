@@ -4,9 +4,9 @@
 // so no weight/tier is stored here. Plan check results are never entries.
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { isThreadReply, isThreadRoot } from "@/stores/app/issueComment";
-import { getTimeForPbTimestampProtoEs } from "@/types";
 import type {
   IssueComment,
+  IssueComment_ReviewRunCompletion,
   ReviewRun_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
 
@@ -14,17 +14,18 @@ export type TimelineSource =
   | { type: "plan-created"; creator: string; time?: Timestamp }
   | { type: "ready-for-review"; creator: string; time?: Timestamp }
   | { type: "comment"; comment: IssueComment }
-  // One line for a reviewer's run, which opens to the findings it posted.
+  // One line for a reviewer's completed run, which opens to the findings it
+  // posted.
   | {
       type: "review-run";
-      runType: ReviewRun_Type;
+      completion: IssueComment_ReviewRunCompletion;
       time?: Timestamp;
       findings: IssueComment[];
       open: boolean;
     };
 
-// A run posts its findings in one batch, a microsecond apart.
-const RUN_BATCH_GAP_MS = 1000;
+const runKey = (runType: ReviewRun_Type, attempt: bigint) =>
+  `${runType}/${attempt}`;
 
 export interface TimelineEntry {
   id: string;
@@ -45,11 +46,11 @@ export function buildTimelineEntries(input: {
   issueCreateTime?: Timestamp;
   issueDraft?: boolean;
   comments: IssueComment[];
-  // Under SQL Review V2, findings become one line per run. An open run shows
-  // every finding's card; a folded one only those this keeps.
+  // Under SQL Review V2, findings become one line per completed run. An open
+  // run shows every finding's card; a folded one only those this keeps.
   keepFindingCard?: (root: IssueComment) => boolean;
   // Runs someone opened or folded, by entry id. The rest follow the default:
-  // only each reviewer's latest run is open.
+  // only the runs with a finding still current are open.
   runToggles?: ReadonlyMap<string, boolean>;
 }): TimelineEntry[] {
   const reviewSubmission = input.comments.find(
@@ -76,14 +77,22 @@ export function buildTimelineEntries(input: {
       },
     });
   }
-  const runs = new Map<
-    ReviewRun_Type,
-    {
-      at: number;
-      latest: boolean;
-      source: Extract<TimelineSource, { type: "review-run" }>;
+  // A run's findings follow its completion. A finding a later run reports
+  // again keeps its thread, so stays with the run that posted it.
+  const findingsByRun = new Map<string, IssueComment[]>();
+  const completedRuns = new Set<string>();
+  for (const comment of input.comments) {
+    const review = comment.reviewMetadata;
+    if (review && isThreadRoot(comment)) {
+      const key = runKey(review.runType, review.attempt);
+      const findings = findingsByRun.get(key);
+      if (findings) findings.push(comment);
+      else findingsByRun.set(key, [comment]);
+    } else if (comment.event.case === "reviewRunCompletion") {
+      const { runType, attempt } = comment.event.value;
+      completedRuns.add(runKey(runType, attempt));
     }
-  >();
+  }
   for (const comment of input.comments) {
     // Replies render inside their thread's entry, never as their own row.
     if (isThreadReply(comment)) continue;
@@ -100,39 +109,42 @@ export function buildTimelineEntries(input: {
       }
       continue;
     }
-    const review = comment.reviewMetadata;
-    if (input.keepFindingCard && review && isThreadRoot(comment)) {
-      // A completed run supersedes every earlier result of its reviewer, so
-      // the results still current are the latest run's, and a run's results
-      // are never split between the two.
-      const latest = !review.superseded;
-      const time = getTimeForPbTimestampProtoEs(comment.createTime, 0);
-      let run = runs.get(review.runType);
-      if (run && run.latest === latest && time - run.at <= RUN_BATCH_GAP_MS) {
-        run.source.findings.push(comment);
-        run.at = time;
-      } else {
-        const id = `review-run:${comment.name}`;
-        run = {
-          at: time,
-          latest,
-          source: {
-            type: "review-run",
-            runType: review.runType,
-            time: comment.createTime,
-            findings: [comment],
-            open: input.runToggles?.get(id) ?? latest,
-          },
-        };
-        runs.set(review.runType, run);
-        entries.push({ id, source: run.source, pinned: run.source.open });
-      }
-      if (!run.source.open && !input.keepFindingCard(comment)) continue;
+    if (comment.event.case === "reviewRunCompletion") {
+      if (!input.keepFindingCard) continue;
+      const completion = comment.event.value;
+      const findings =
+        findingsByRun.get(runKey(completion.runType, completion.attempt)) ?? [];
+      const id = `review-run:${comment.name}`;
+      const open =
+        input.runToggles?.get(id) ??
+        findings.some((finding) => !finding.reviewMetadata?.superseded);
       entries.push({
-        id: comment.name,
-        source: { type: "comment", comment },
-        pinned: run.source.open,
+        id,
+        source: {
+          type: "review-run",
+          completion,
+          time: comment.createTime,
+          findings,
+          open,
+        },
+        pinned: open,
       });
+      for (const finding of findings) {
+        if (!open && !input.keepFindingCard(finding)) continue;
+        entries.push({
+          id: finding.name,
+          source: { type: "comment", comment: finding },
+          pinned: open,
+        });
+      }
+      continue;
+    }
+    const review = comment.reviewMetadata;
+    if (
+      input.keepFindingCard &&
+      review &&
+      completedRuns.has(runKey(review.runType, review.attempt))
+    ) {
       continue;
     }
     entries.push({ id: comment.name, source: { type: "comment", comment } });

@@ -1,0 +1,36 @@
+{
+    "partitionedQueryExecutionInfoVersion": 2,
+    "queryInfo": {
+        "distinctType": "None",
+        "top": null,
+        "offset": null,
+        "limit": null,
+        "orderBy": [],
+        "orderByExpressions": [],
+        "groupByExpressions": [
+            "c.country"
+        ],
+        "groupByAliases": [
+            "country",
+            "cityCount"
+        ],
+        "aggregates": [],
+        "groupByAliasToAggregateType": {
+            "cityCount": "Count",
+            "country": null
+        },
+        "rewrittenQuery": "SELECT [{\"item\": c.country}] AS groupByItems, {\"country\": c.country, \"cityCount\": {\"item\": COUNT(1)}} AS payload\nFROM c\nGROUP BY c.country",
+        "hasSelectValue": false,
+        "dCountInfo": null,
+        "hasNonStreamingOrderBy": false
+    },
+    "queryRanges": [
+        {
+            "min": "",
+            "max": "FF",
+            "isMinInclusive": true,
+            "isMaxInclusive": false
+        }
+    ],
+    "hybridSearchQueryInfo": null
+}

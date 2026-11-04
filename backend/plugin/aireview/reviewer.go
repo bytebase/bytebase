@@ -68,19 +68,21 @@ type Result struct {
 	TotalTokens int
 }
 
-// Reviewer runs reviews against one model.
+// Reviewer runs reviews, and merges their findings, against one model.
 type Reviewer struct {
-	model         Model
-	maxModelCalls int
-	timeout       time.Duration
+	model            Model
+	maxModelCalls    int
+	timeout          time.Duration
+	mergePromptBytes int
 }
 
 // NewReviewer creates a Reviewer.
 func NewReviewer(model Model) *Reviewer {
 	return &Reviewer{
-		model:         model,
-		maxModelCalls: defaultMaxModelCalls,
-		timeout:       defaultTimeout,
+		model:            model,
+		maxModelCalls:    defaultMaxModelCalls,
+		timeout:          defaultTimeout,
+		mergePromptBytes: defaultMergePromptBytes,
 	}
 }
 

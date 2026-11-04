@@ -1,0 +1,84 @@
+{
+    "_rid": "S9w7AIGecFs=",
+    "Documents": [
+        {
+            "groupByItems": [
+                {
+                    "item": "AD"
+                }
+            ],
+            "payload": {
+                "country": "AD",
+                "cityCount": {
+                    "item": 3
+                }
+            }
+        },
+        {
+            "groupByItems": [
+                {
+                    "item": "AE"
+                }
+            ],
+            "payload": {
+                "country": "AE",
+                "cityCount": {
+                    "item": 5
+                }
+            }
+        },
+        {
+            "groupByItems": [
+                {
+                    "item": "DE"
+                }
+            ],
+            "payload": {
+                "country": "DE",
+                "cityCount": {
+                    "item": 1
+                }
+            }
+        },
+        {
+            "groupByItems": [
+                {
+                    "item": "GB"
+                }
+            ],
+            "payload": {
+                "country": "GB",
+                "cityCount": {
+                    "item": 3
+                }
+            }
+        },
+        {
+            "groupByItems": [
+                {
+                    "item": "JP"
+                }
+            ],
+            "payload": {
+                "country": "JP",
+                "cityCount": {
+                    "item": 2
+                }
+            }
+        },
+        {
+            "groupByItems": [
+                {
+                    "item": "US"
+                }
+            ],
+            "payload": {
+                "country": "US",
+                "cityCount": {
+                    "item": 4
+                }
+            }
+        }
+    ],
+    "_count": 6
+}

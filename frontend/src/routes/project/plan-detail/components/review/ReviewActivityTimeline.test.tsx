@@ -7,6 +7,7 @@ import { shownTimestampModes } from "@/test-utils/humanizeTs";
 import { PositionSchema } from "@/types/proto-es/v1/common_pb";
 import {
   IssueComment_ReviewMetadataSchema,
+  IssueComment_ReviewRunCompletionSchema,
   IssueComment_ReviewSubmissionSchema,
   IssueComment_ThreadState,
   IssueCommentSchema,
@@ -315,7 +316,28 @@ describe("ReviewActivityTimeline", () => {
         }),
       ],
     });
-    const finding = (id: string, ms: number, superseded: boolean) =>
+    const completion = (
+      id: string,
+      attempt: bigint,
+      counts: { postedCount?: number; keptCount?: number; supersededCount?: number }
+    ) =>
+      create(IssueCommentSchema, {
+        name: `projects/p1/issues/1/issueComments/${id}`,
+        event: {
+          case: "reviewRunCompletion",
+          value: create(IssueComment_ReviewRunCompletionSchema, {
+            runType: ReviewRun_Type.RULE,
+            attempt,
+            ...counts,
+          }),
+        },
+      });
+    const finding = (
+      id: string,
+      ms: number,
+      superseded: boolean,
+      attempt: bigint
+    ) =>
       create(IssueCommentSchema, {
         name: `projects/p1/issues/1/issueComments/${id}`,
         comment: "No WHERE clause",
@@ -332,6 +354,7 @@ describe("ReviewActivityTimeline", () => {
         reviewMetadata: create(IssueComment_ReviewMetadataSchema, {
           runType: ReviewRun_Type.RULE,
           superseded,
+          attempt,
         }),
       });
     const container = document.createElement("div");
@@ -339,7 +362,13 @@ describe("ReviewActivityTimeline", () => {
     act(() => {
       root.render(
         <ReviewActivityTimeline
-          comments={[finding("old", 0, true), finding("new", 60_000, false)]}
+          comments={[
+            completion("c0", 0n, { postedCount: 1 }),
+            finding("old", 0, true, 0n),
+            completion("c1", 1n, { postedCount: 1, supersededCount: 1 }),
+            finding("new", 60_000, false, 1n),
+            completion("c2", 2n, { keptCount: 1 }),
+          ]}
           issue={create(IssueSchema, { name: "projects/p1/issues/1" })}
           plan={plan}
         />
@@ -352,10 +381,17 @@ describe("ReviewActivityTimeline", () => {
     const runButtons = () =>
       [...container.querySelectorAll("button[aria-expanded]")];
     expect(cards()).toEqual(["new"]);
+    // The run that found nothing new has its line but nothing to show.
     expect(runButtons().map((button) => button.textContent)).toEqual([
       "common.show",
       "common.hide",
     ]);
+    const text = container.textContent ?? "";
+    expect(text).toContain("plan.review.activity.n-findings");
+    expect(text).toContain("plan.review.activity.n-no-longer-found");
+    expect(text).toContain("plan.review.activity.n-still-found");
+    // The re-run posted an open finding, but its line counts only changes.
+    expect(text).not.toContain("plan.automated-review.n-open");
 
     act(() => (runButtons()[0] as HTMLButtonElement).click());
     expect(cards()).toEqual(["old", "new"]);

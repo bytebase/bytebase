@@ -19,7 +19,7 @@ require (
 	connectrpc.com/validate v0.9.0
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.23.3
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.15.0
-	github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos v1.5.0
+	github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos v1.6.0-beta.4
 	github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azsecrets v1.5.1
 	github.com/ClickHouse/clickhouse-go/v2 v2.50.0
 	github.com/alexmullins/zip v0.0.0-20180717182244-4affb64b04d0
@@ -36,7 +36,7 @@ require (
 	github.com/bmatcuk/doublestar/v4 v4.10.4
 	github.com/bytebase/gomongo v0.0.0-20260730033313-67ba6e249735
 	github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0
-	github.com/bytebase/omni v0.0.0-20261102094319-61f070707dc7
+	github.com/bytebase/omni v0.0.0-20261104062238-c42b07874f14
 	github.com/caarlos0/env/v11 v11.4.1
 	github.com/cenkalti/backoff/v7 v7.0.3
 	github.com/cockroachdb/cockroach-go/v2 v2.4.3
@@ -70,6 +70,7 @@ require (
 	github.com/lib/pq v1.12.3
 	github.com/lor00x/goldap v0.0.0-20240304151906-8d785c64d1c8
 	github.com/microsoft/go-mssqldb v1.11.2
+	github.com/moby/moby/api v1.56.1
 	github.com/modelcontextprotocol/go-sdk v1.8.0
 	github.com/nyaruka/phonenumbers/v2 v2.0.16
 	github.com/openark/golib v0.0.0-20210531070646-355f37940af8
@@ -270,7 +271,6 @@ require (
 	github.com/mitchellh/mapstructure v1.5.1-0.20220423185008-bf980b35cac4 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/go-archive v0.3.0 // indirect
-	github.com/moby/moby/api v1.56.1 // indirect
 	github.com/moby/moby/client v0.6.2 // indirect
 	github.com/moby/patternmatcher v0.6.1 // indirect
 	github.com/moby/sys/sequential v0.7.0 // indirect
@@ -367,8 +367,6 @@ require (
 )
 
 replace (
-	github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos => github.com/bytebase/azure-sdk-for-go/sdk/data/azcosmos v0.0.0-20260424030223-eac0db373bca
-
 	github.com/github/gh-ost => github.com/bytebase/gh-ost2 v1.1.7-0.20261102125703-6ff100bb26d5
 
 	github.com/jackc/pgx/v5 => github.com/bytebase/pgx/v5 v5.0.0-20261103142809-663c807705c4

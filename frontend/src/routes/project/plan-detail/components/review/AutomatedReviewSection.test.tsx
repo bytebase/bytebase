@@ -388,27 +388,17 @@ describe("AutomatedReviewSection", () => {
     expect(mocks.runReview).toHaveBeenCalledOnce();
   });
 
-  test("a rerun that would reopen resolved findings asks first", async () => {
+  test("a rerun keeps resolved findings, so it does not ask", async () => {
     renderSection([
       row("rule", "open", findings({ open: 1, p1: 1, resolved: 1, overridden: 1 })),
     ]);
-    fireEvent.click(
-      screen.getByRole("button", { name: /plan.automated-review.rerun/ })
-    );
-    expect(mocks.runReview).not.toHaveBeenCalled();
-    expect(
-      screen.getByText("plan.automated-review.rerun-rule-title")
-    ).toBeDefined();
-    expect(
-      screen.getByText("plan.automated-review.rerun-reopens:2")
-    ).toBeDefined();
-    const confirm = screen
-      .getAllByRole("button", { name: "plan.automated-review.rerun" })
-      .at(-1);
     await act(async () => {
-      fireEvent.click(confirm!);
+      fireEvent.click(
+        screen.getByRole("button", { name: /plan.automated-review.rerun/ })
+      );
     });
     expect(mocks.runReview).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 
   test("shows a failed run's error in full", () => {
@@ -448,19 +438,13 @@ describe("AutomatedReviewSection", () => {
     expect(aiState.runReview).toHaveBeenCalledOnce();
   });
 
-  test("Re-run all asks first when it would reopen resolved rule findings", async () => {
+  test("Re-run all reruns the checks and the rule review without asking", async () => {
     renderSection([row("rule", "resolved", findings({ resolved: 3 }))]);
     fireEvent.click(screen.getByRole("button", { name: "common.more" }));
-    fireEvent.click(await screen.findByText("plan.automated-review.rerun-all"));
-    expect(mocks.runChecks).not.toHaveBeenCalled();
-    expect(
-      screen.getByText("plan.automated-review.rerun-all-description:3")
-    ).toBeDefined();
-    const confirm = screen
-      .getAllByRole("button", { name: "plan.automated-review.rerun-all" })
-      .at(-1);
     await act(async () => {
-      fireEvent.click(confirm!);
+      fireEvent.click(
+        await screen.findByText("plan.automated-review.rerun-all")
+      );
     });
     expect(mocks.runChecks).toHaveBeenCalledOnce();
     expect(mocks.reload).toHaveBeenCalledOnce();

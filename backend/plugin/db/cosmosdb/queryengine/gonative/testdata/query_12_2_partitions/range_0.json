@@ -1,0 +1,474 @@
+{
+    "_rid": "S9w7AIGecFs=",
+    "Documents": [
+        {
+            "_rid": "S9w7AIGecFsBAAAAAAAAAA==",
+            "orderByItems": [
+                {
+                    "item": "Al Fujayrah"
+                }
+            ],
+            "payload": {
+                "id": "1",
+                "code": "292878",
+                "country": "AE",
+                "countryRegion": "4",
+                "date": "1/18/12",
+                "latitude": "25.11641",
+                "longitude": "56.34141",
+                "name": "Al Fujayrah",
+                "population": "62415",
+                "region": "Asia/Dubai",
+                "regionCode": "15",
+                "_rid": "S9w7AIGecFsBAAAAAAAAAA==",
+                "_self": "dbs/S9w7AA==/colls/S9w7AIGecFs=/docs/S9w7AIGecFsBAAAAAAAAAA==/",
+                "_etag": "\"350115c8-0000-0100-0000-69df41520000\"",
+                "_attachments": "attachments/",
+                "_ts": 1776238930
+            }
+        },
+        {
+            "_rid": "S9w7AIGecFsGAAAAAAAAAA==",
+            "orderByItems": [
+                {
+                    "item": "Andorra la Vella"
+                }
+            ],
+            "payload": {
+                "code": "290030",
+                "country": "AD",
+                "countryRegion": "4",
+                "date": "6/12/18",
+                "id": "6",
+                "latitude": 42.5078,
+                "longitude": 1.5211,
+                "name": "Andorra la Vella",
+                "population": 22256,
+                "region": "Europe/Andorra",
+                "regionCode": 16,
+                "_rid": "S9w7AIGecFsGAAAAAAAAAA==",
+                "_self": "dbs/S9w7AA==/colls/S9w7AIGecFs=/docs/S9w7AIGecFsGAAAAAAAAAA==/",
+                "_etag": "\"e4008ff4-0000-0100-0000-69de02d20000\"",
+                "_attachments": "attachments/",
+                "_ts": 1776157394
+            }
+        },
+        {
+            "_rid": "S9w7AIGecFsQAAAAAAAAAA==",
+            "orderByItems": [
+                {
+                    "item": "Andorra la Vella"
+                }
+            ],
+            "payload": {
+                "id": "3",
+                "code": "100001",
+                "country": "AD",
+                "countryRegion": "7",
+                "date": "1/18/12",
+                "latitude": "42.5",
+                "longitude": "1.5",
+                "name": "Andorra la Vella",
+                "population": "22256",
+                "region": "Europe/Andorra",
+                "regionCode": "7",
+                "_rid": "S9w7AIGecFsQAAAAAAAAAA==",
+                "_self": "dbs/S9w7AA==/colls/S9w7AIGecFs=/docs/S9w7AIGecFsQAAAAAAAAAA==/",
+                "_etag": "\"3501dcc8-0000-0100-0000-69df41540000\"",
+                "_attachments": "attachments/",
+                "_ts": 1776238932
+            }
+        },
+        {
+            "_rid": "S9w7AIGecFsEAAAAAAAAAA==",
+            "orderByItems": [
+                {
+                    "item": "Ar Ruways"
+                }
+            ],
+            "payload": {
+                "code": "291630",
+                "country": "AE",
+                "countryRegion": "4",
+                "date": "4/22/16",
+                "id": "4",
+                "latitude": 25.3573,
+                "longitude": 55.4033,
+                "name": "Ar Ruways",
+                "population": 15000,
+                "region": "Asia/Dubai",
+                "regionCode": 15,
+                "_rid": "S9w7AIGecFsEAAAAAAAAAA==",
+                "_self": "dbs/S9w7AA==/colls/S9w7AIGecFs=/docs/S9w7AIGecFsEAAAAAAAAAA==/",
+                "_etag": "\"e4007cf4-0000-0100-0000-69de02d10000\"",
+                "_attachments": "attachments/",
+                "_ts": 1776157393
+            }
+        },
+        {
+            "_rid": "S9w7AIGecFsPAAAAAAAAAA==",
+            "orderByItems": [
+                {
+                    "item": "Berlin"
+                }
+            ],
+            "payload": {
+                "code": "600100",
+                "country": "DE",
+                "countryRegion": "2",
+                "date": "3/21/20",
+                "id": "15",
+                "latitude": 52.52,
+                "longitude": 13.405,
+                "name": "Berlin",
+                "population": 3645000,
+                "region": "Europe/Berlin",
+                "regionCode": 4,
+                "_rid": "S9w7AIGecFsPAAAAAAAAAA==",
+                "_self": "dbs/S9w7AA==/colls/S9w7AIGecFs=/docs/S9w7AIGecFsPAAAAAAAAAA==/",
+                "_etag": "\"e400e3f4-0000-0100-0000-69de02d50000\"",
+                "_attachments": "attachments/",
+                "_ts": 1776157397
+            }
+        },
+        {
+            "_rid": "S9w7AIGecFsKAAAAAAAAAA==",
+            "orderByItems": [
+                {
+                    "item": "Chicago"
+                }
+            ],
+            "payload": {
+                "code": "300102",
+                "country": "US",
+                "countryRegion": "1",
+                "date": "10/01/22",
+                "id": "10",
+                "latitude": 41.8781,
+                "longitude": -87.6298,
+                "name": "Chicago",
+                "population": 2693976,
+                "region": "America/Chicago",
+                "regionCode": 2,
+                "_rid": "S9w7AIGecFsKAAAAAAAAAA==",
+                "_self": "dbs/S9w7AA==/colls/S9w7AIGecFs=/docs/S9w7AIGecFsKAAAAAAAAAA==/",
+                "_etag": "\"e400b2f4-0000-0100-0000-69de02d30000\"",
+                "_attachments": "attachments/",
+                "_ts": 1776157395
+            }
+        },
+        {
+            "_rid": "S9w7AIGecFsCAAAAAAAAAA==",
+            "orderByItems": [
+                {
+                    "item": "Dubai"
+                }
+            ],
+            "payload": {
+                "id": "2",
+                "code": "292879",
+                "country": "AE",
+                "countryRegion": "4",
+                "date": "1/18/12",
+                "latitude": "25.27",
+                "longitude": "55.31",
+                "name": "Dubai",
+                "population": "2956587",
+                "region": "Asia/Dubai",
+                "regionCode": "15",
+                "_rid": "S9w7AIGecFsCAAAAAAAAAA==",
+                "_self": "dbs/S9w7AA==/colls/S9w7AIGecFs=/docs/S9w7AIGecFsCAAAAAAAAAA==/",
+                "_etag": "\"350184c8-0000-0100-0000-69df41530000\"",
+                "_attachments": "attachments/",
+                "_ts": 1776238931
+            }
+        },
+        {
+            "_rid": "S9w7AIGecFsDAAAAAAAAAA==",
+            "orderByItems": [
+                {
+                    "item": "Dubai"
+                }
+            ],
+            "payload": {
+                "code": "292968",
+                "country": "AE",
+                "countryRegion": "4",
+                "date": "3/10/15",
+                "id": "3",
+                "latitude": 25.2048,
+                "longitude": 55.2708,
+                "name": "Dubai",
+                "population": 3400800,
+                "region": "Asia/Dubai",
+                "regionCode": 15,
+                "_rid": "S9w7AIGecFsDAAAAAAAAAA==",
+                "_self": "dbs/S9w7AA==/colls/S9w7AIGecFs=/docs/S9w7AIGecFsDAAAAAAAAAA==/",
+                "_etag": "\"e40075f4-0000-0100-0000-69de02d10000\"",
+                "_attachments": "attachments/",
+                "_ts": 1776157393
+            }
+        },
+        {
+            "_rid": "S9w7AIGecFsLAAAAAAAAAA==",
+            "orderByItems": [
+                {
+                    "item": "London"
+                }
+            ],
+            "payload": {
+                "code": "400100",
+                "country": "GB",
+                "countryRegion": "2",
+                "date": "11/11/19",
+                "id": "11",
+                "latitude": 51.5074,
+                "longitude": -0.1278,
+                "name": "London",
+                "population": 8982000,
+                "region": "Europe/London",
+                "regionCode": 3,
+                "_rid": "S9w7AIGecFsLAAAAAAAAAA==",
+                "_self": "dbs/S9w7AA==/colls/S9w7AIGecFs=/docs/S9w7AIGecFsLAAAAAAAAAA==/",
+                "_etag": "\"e400c0f4-0000-0100-0000-69de02d40000\"",
+                "_attachments": "attachments/",
+                "_ts": 1776157396
+            }
+        },
+        {
+            "_rid": "S9w7AIGecFsSAAAAAAAAAA==",
+            "orderByItems": [
+                {
+                    "item": "London"
+                }
+            ],
+            "payload": {
+                "id": "5",
+                "code": "100003",
+                "country": "GB",
+                "countryRegion": "1",
+                "date": "1/18/12",
+                "latitude": "51.50",
+                "longitude": "-0.12",
+                "name": "London",
+                "population": "8982000",
+                "region": "Europe/London",
+                "regionCode": "LND",
+                "_rid": "S9w7AIGecFsSAAAAAAAAAA==",
+                "_self": "dbs/S9w7AA==/colls/S9w7AIGecFs=/docs/S9w7AIGecFsSAAAAAAAAAA==/",
+                "_etag": "\"3501edc9-0000-0100-0000-69df41570000\"",
+                "_attachments": "attachments/",
+                "_ts": 1776238935
+            }
+        },
+        {
+            "_rid": "S9w7AIGecFsJAAAAAAAAAA==",
+            "orderByItems": [
+                {
+                    "item": "Los Angeles"
+                }
+            ],
+            "payload": {
+                "code": "300101",
+                "country": "US",
+                "countryRegion": "1",
+                "date": "9/15/21",
+                "id": "9",
+                "latitude": 34.0522,
+                "longitude": -118.2437,
+                "name": "Los Angeles",
+                "population": 3979576,
+                "region": "America/LosAngeles",
+                "regionCode": 1,
+                "_rid": "S9w7AIGecFsJAAAAAAAAAA==",
+                "_self": "dbs/S9w7AA==/colls/S9w7AIGecFs=/docs/S9w7AIGecFsJAAAAAAAAAA==/",
+                "_etag": "\"e400abf4-0000-0100-0000-69de02d30000\"",
+                "_attachments": "attachments/",
+                "_ts": 1776157395
+            }
+        },
+        {
+            "_rid": "S9w7AIGecFsMAAAAAAAAAA==",
+            "orderByItems": [
+                {
+                    "item": "Manchester"
+                }
+            ],
+            "payload": {
+                "code": "400101",
+                "country": "GB",
+                "countryRegion": "2",
+                "date": "12/25/20",
+                "id": "12",
+                "latitude": 53.4808,
+                "longitude": -2.2426,
+                "name": "Manchester",
+                "population": 553230,
+                "region": "Europe/London",
+                "regionCode": 3,
+                "_rid": "S9w7AIGecFsMAAAAAAAAAA==",
+                "_self": "dbs/S9w7AA==/colls/S9w7AIGecFs=/docs/S9w7AIGecFsMAAAAAAAAAA==/",
+                "_etag": "\"e400c8f4-0000-0100-0000-69de02d40000\"",
+                "_attachments": "attachments/",
+                "_ts": 1776157396
+            }
+        },
+        {
+            "_rid": "S9w7AIGecFsIAAAAAAAAAA==",
+            "orderByItems": [
+                {
+                    "item": "New York"
+                }
+            ],
+            "payload": {
+                "code": "300100",
+                "country": "US",
+                "countryRegion": "1",
+                "date": "8/05/20",
+                "id": "8",
+                "latitude": 40.7128,
+                "longitude": -74.006,
+                "name": "New York",
+                "population": 8336817,
+                "region": "America/NewYork",
+                "regionCode": 1,
+                "_rid": "S9w7AIGecFsIAAAAAAAAAA==",
+                "_self": "dbs/S9w7AA==/colls/S9w7AIGecFs=/docs/S9w7AIGecFsIAAAAAAAAAA==/",
+                "_etag": "\"e400a3f4-0000-0100-0000-69de02d30000\"",
+                "_attachments": "attachments/",
+                "_ts": 1776157395
+            }
+        },
+        {
+            "_rid": "S9w7AIGecFsRAAAAAAAAAA==",
+            "orderByItems": [
+                {
+                    "item": "New York"
+                }
+            ],
+            "payload": {
+                "id": "4",
+                "code": "100002",
+                "country": "US",
+                "countryRegion": "5",
+                "date": "1/18/12",
+                "latitude": "40.71",
+                "longitude": "-74.00",
+                "name": "New York",
+                "population": "8419000",
+                "region": "America/New_York",
+                "regionCode": "NY",
+                "_rid": "S9w7AIGecFsRAAAAAAAAAA==",
+                "_self": "dbs/S9w7AA==/colls/S9w7AIGecFs=/docs/S9w7AIGecFsRAAAAAAAAAA==/",
+                "_etag": "\"35014ec9-0000-0100-0000-69df41560000\"",
+                "_attachments": "attachments/",
+                "_ts": 1776238934
+            }
+        },
+        {
+            "_rid": "S9w7AIGecFsOAAAAAAAAAA==",
+            "orderByItems": [
+                {
+                    "item": "Osaka"
+                }
+            ],
+            "payload": {
+                "code": "500101",
+                "country": "JP",
+                "countryRegion": "3",
+                "date": "2/14/22",
+                "id": "14",
+                "latitude": 34.6937,
+                "longitude": 135.5023,
+                "name": "Osaka",
+                "population": 2753000,
+                "region": "Asia/Tokyo",
+                "regionCode": 5,
+                "_rid": "S9w7AIGecFsOAAAAAAAAAA==",
+                "_self": "dbs/S9w7AA==/colls/S9w7AIGecFs=/docs/S9w7AIGecFsOAAAAAAAAAA==/",
+                "_etag": "\"e400dcf4-0000-0100-0000-69de02d50000\"",
+                "_attachments": "attachments/",
+                "_ts": 1776157397
+            }
+        },
+        {
+            "_rid": "S9w7AIGecFsFAAAAAAAAAA==",
+            "orderByItems": [
+                {
+                    "item": "Sharjah"
+                }
+            ],
+            "payload": {
+                "code": "292672",
+                "country": "AE",
+                "countryRegion": "4",
+                "date": "5/01/17",
+                "id": "5",
+                "latitude": 25.3375,
+                "longitude": 55.5127,
+                "name": "Sharjah",
+                "population": 1274749,
+                "region": "Asia/Dubai",
+                "regionCode": 15,
+                "_rid": "S9w7AIGecFsFAAAAAAAAAA==",
+                "_self": "dbs/S9w7AA==/colls/S9w7AIGecFs=/docs/S9w7AIGecFsFAAAAAAAAAA==/",
+                "_etag": "\"e40080f4-0000-0100-0000-69de02d20000\"",
+                "_attachments": "attachments/",
+                "_ts": 1776157394
+            }
+        },
+        {
+            "_rid": "S9w7AIGecFsNAAAAAAAAAA==",
+            "orderByItems": [
+                {
+                    "item": "Tokyo"
+                }
+            ],
+            "payload": {
+                "code": "500100",
+                "country": "JP",
+                "countryRegion": "3",
+                "date": "1/30/21",
+                "id": "13",
+                "latitude": 35.6762,
+                "longitude": 139.6503,
+                "name": "Tokyo",
+                "population": 13960000,
+                "region": "Asia/Tokyo",
+                "regionCode": 5,
+                "_rid": "S9w7AIGecFsNAAAAAAAAAA==",
+                "_self": "dbs/S9w7AA==/colls/S9w7AIGecFs=/docs/S9w7AIGecFsNAAAAAAAAAA==/",
+                "_etag": "\"e400d0f4-0000-0100-0000-69de02d50000\"",
+                "_attachments": "attachments/",
+                "_ts": 1776157397
+            }
+        },
+        {
+            "_rid": "S9w7AIGecFsHAAAAAAAAAA==",
+            "orderByItems": [
+                {
+                    "item": "Umm Al Qaywayn"
+                }
+            ],
+            "payload": {
+                "code": "290031",
+                "country": "AD",
+                "countryRegion": "4",
+                "date": "7/20/19",
+                "id": "7",
+                "latitude": 42.5,
+                "longitude": 1.5167,
+                "name": "Umm Al Qaywayn",
+                "population": 62000,
+                "region": "Europe/Andorra",
+                "regionCode": 16,
+                "_rid": "S9w7AIGecFsHAAAAAAAAAA==",
+                "_self": "dbs/S9w7AA==/colls/S9w7AIGecFs=/docs/S9w7AIGecFsHAAAAAAAAAA==/",
+                "_etag": "\"e4009af4-0000-0100-0000-69de02d20000\"",
+                "_attachments": "attachments/",
+                "_ts": 1776157394
+            }
+        }
+    ],
+    "_count": 18
+}

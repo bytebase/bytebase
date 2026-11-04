@@ -31,6 +31,7 @@ var (
 	// 10.7 is the oldest MariaDB release Bytebase supports.
 	sharedMariaDB107   = startOnce(mariaDBStarter("mariadb:10.7.8"))
 	sharedRedisCluster = startOnce(getRedisClusterContainer)
+	sharedCosmos       = startOnce(getCosmosContainer)
 
 	startedMu sync.Mutex
 	started   []*Container
@@ -135,6 +136,14 @@ func SharedMariaDB107Container(t testing.TB) *Container { return shared(t, share
 // SharedRedisClusterContainer is a one-node Redis cluster that owns every hash
 // slot, for the driver paths that need a *redis.ClusterClient.
 func SharedRedisClusterContainer(t testing.TB) *Container { return shared(t, sharedRedisCluster) }
+
+// SharedCosmosContainer is SharedPgContainer for the Cosmos DB emulator. It
+// carries no *sql.DB, so a test builds its endpoint from GetHost and GetPort
+// and authenticates with the well-known emulator key. Tests share its
+// databases rather than taking one each: the emulator hands out a fixed budget
+// of physical partitions, and a container wide enough to span several of them
+// spends a large part of that budget.
+func SharedCosmosContainer(t testing.TB) *Container { return shared(t, sharedCosmos) }
 
 // NewPgDatabase creates an empty database for the test on the shared
 // PostgreSQL container and returns its name with a superuser handle to it.

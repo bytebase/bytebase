@@ -44,7 +44,10 @@ vi.mock("@/components/issue-activity/IssueCommentActivity", () => ({
   canEditIssueComment: () => true,
 }));
 
-vi.mock("@/components/MarkdownEditor", () => ({
+vi.mock("@/components/MarkdownEditor", async (importOriginal) => ({
+  markdownSummary: (
+    await importOriginal<typeof import("@/components/MarkdownEditor")>()
+  ).markdownSummary,
   MarkdownEditor: ({
     content,
     autoFocus,

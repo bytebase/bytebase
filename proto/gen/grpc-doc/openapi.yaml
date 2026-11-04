@@ -22548,6 +22548,14 @@ components:
           title: plan_update
         - type: object
           properties:
+            reviewRunCompletion:
+              allOf:
+                - $ref: '#/components/schemas/bytebase.v1.IssueComment.ReviewRunCompletion'
+              title: review_run_completion
+              description: Review run completion event.
+          title: review_run_completion
+        - type: object
+          properties:
             reviewSubmission:
               allOf:
                 - $ref: '#/components/schemas/bytebase.v1.IssueComment.ReviewSubmission'
@@ -22565,6 +22573,8 @@ components:
               - required:
                   - planUpdate
               - required:
+                  - reviewRunCompletion
+              - required:
                   - reviewSubmission
           - not:
               oneOf:
@@ -22574,6 +22584,8 @@ components:
                     - issueUpdate
                 - required:
                     - planUpdate
+                - required:
+                    - reviewRunCompletion
                 - required:
                     - reviewSubmission
       properties:
@@ -22631,8 +22643,10 @@ components:
           title: statement_anchor
           description: |-
             (IMMUTABLE) Optional source context on a root or reply. A reply's anchor must share
-             the root's spec and sheet_sha256; it may narrow the range.
-             Cannot be set on events. Immutable after creation.
+             the root's spec and sheet_sha256 when created; it may narrow the range.
+             Cannot be set on events. Immutable after creation, except that a later
+             review run reporting a review result again moves the result to its
+             statement in the SQL that run reviewed.
         reviewMetadata:
           allOf:
             - $ref: '#/components/schemas/bytebase.v1.IssueComment.ReviewMetadata'
@@ -22756,8 +22770,15 @@ components:
           type: boolean
           title: superseded
           description: |-
-            A later run of the same reviewer has completed, so the result is not
-             from the latest review, whatever its thread state.
+            A later run of the same reviewer has completed without reporting the
+             result again, whatever its thread state.
+        attempt:
+          type: string
+          title: attempt
+          format: int64
+          description: |-
+            The ReviewRunCompletion.attempt of the run that posted the result. A
+             result a later run reports again keeps its thread and its attempt.
       title: ReviewMetadata
       additionalProperties: false
       description: What a review result carries beyond its text.
@@ -22772,6 +22793,41 @@ components:
       description: |-
         Priority says what resolving the thread means. It has no bearing on
          blocking, which thread_state alone decides.
+    bytebase.v1.IssueComment.ReviewRunCompletion:
+      type: object
+      properties:
+        runType:
+          allOf:
+            - $ref: '#/components/schemas/bytebase.v1.ReviewRun.Type'
+          title: run_type
+          description: The reviewer that ran.
+        attempt:
+          type: string
+          title: attempt
+          format: int64
+          description: |-
+            Identifies the run among its reviewer's runs on the issue. The results
+             it posted carry the same ReviewMetadata.attempt.
+        postedCount:
+          type: integer
+          title: posted_count
+          format: int32
+          description: Results the run posted as new threads.
+        keptCount:
+          type: integer
+          title: kept_count
+          format: int32
+          description: Earlier results the run reported again, which kept their threads.
+        supersededCount:
+          type: integer
+          title: superseded_count
+          format: int32
+          description: Earlier results the run no longer reports, now superseded.
+      title: ReviewRunCompletion
+      additionalProperties: false
+      description: |-
+        A review run completed, and what it did to the results of its reviewer.
+         Posted by the reviewer, with no creator.
     bytebase.v1.IssueComment.ReviewSubmission:
       type: object
       title: ReviewSubmission

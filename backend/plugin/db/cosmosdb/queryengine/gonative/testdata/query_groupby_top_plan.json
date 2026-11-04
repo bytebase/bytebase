@@ -1,0 +1,36 @@
+{
+    "partitionedQueryExecutionInfoVersion": 2,
+    "queryInfo": {
+        "distinctType": "None",
+        "top": 3,
+        "offset": null,
+        "limit": null,
+        "orderBy": [],
+        "orderByExpressions": [],
+        "groupByExpressions": [
+            "c.bucket"
+        ],
+        "groupByAliases": [
+            "bucket",
+            "n"
+        ],
+        "aggregates": [],
+        "groupByAliasToAggregateType": {
+            "bucket": null,
+            "n": "Count"
+        },
+        "rewrittenQuery": "SELECT [{\"item\": c.bucket}] AS groupByItems, {\"bucket\": c.bucket, \"n\": {\"item\": COUNT(1)}} AS payload\nFROM c\nGROUP BY c.bucket",
+        "hasSelectValue": false,
+        "dCountInfo": null,
+        "hasNonStreamingOrderBy": false
+    },
+    "queryRanges": [
+        {
+            "min": "",
+            "max": "FF",
+            "isMinInclusive": true,
+            "isMaxInclusive": false
+        }
+    ],
+    "hybridSearchQueryInfo": null
+}
