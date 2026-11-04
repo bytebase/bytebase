@@ -232,8 +232,8 @@ func (p *orderByPipeline) IsComplete() bool {
 
 // Run drives one pipeline turn.
 //  1. Merge whatever the buffered pages make certain, and emit it.
-//  2. Otherwise ask for the next page of every range that has one — the
-//     initial fan-out across all ranges on the first call.
+//  2. Otherwise ask for the next page of every range the merge is waiting on
+//     — the initial fan-out across all ranges on the first call.
 func (p *orderByPipeline) Run() (*queryengine.PipelineResult, error) {
 	p.merge()
 
@@ -245,7 +245,22 @@ func (p *orderByPipeline) Run() (*queryengine.PipelineResult, error) {
 	if p.IsComplete() {
 		return &queryengine.PipelineResult{IsCompleted: true}, nil
 	}
-	return &queryengine.PipelineResult{Requests: p.fanout.requests(p.rewrittenQuery)}, nil
+	return &queryengine.PipelineResult{Requests: p.fanout.requestsWhere(p.rewrittenQuery, p.needsPage)}, nil
+}
+
+// needsPage reports whether the merge can use another page of the named range
+// yet. Only a range whose buffered rows are all consumed can: the merge pops
+// in sort order, so a range that still has a row is never what blocks it, and
+// fetching that range's next page early would buy a page the merge cannot use
+// — a whole range's worth of them, for a query whose ORDER BY puts that
+// range's rows last and whose LIMIT may stop before reaching them.
+func (p *orderByPipeline) needsPage(id string) bool {
+	idx, ok := p.partitionByID[id]
+	if !ok {
+		return false
+	}
+	_, buffered := p.partitions[idx].peek()
+	return !buffered
 }
 
 // ProvideData parses each response and buffers its documents against the

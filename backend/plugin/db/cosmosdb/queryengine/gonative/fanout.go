@@ -8,9 +8,11 @@ import (
 // fanoutRange is one partition key range's paging state.
 type fanoutRange struct {
 	id string
+	// started is false until the range's first request goes out.
+	started bool
 	// next is the continuation token the range's next request must carry.
-	// Empty means there is nothing to ask for: either a response is still
-	// owed for the range, or it has drained.
+	// Empty on a started range means there is nothing to ask for: either a
+	// response is still owed for it, or it has drained.
 	next string
 	// sent is the token the range's last request carried. It guards against a
 	// token that never advances, which would otherwise page forever.
@@ -32,7 +34,6 @@ type fanoutRange struct {
 type rangeFanout struct {
 	ranges []*fanoutRange
 	byID   map[string]*fanoutRange
-	issued bool
 	nextID uint64
 }
 
@@ -54,13 +55,25 @@ func newRangeFanout(rangeIDs []string) rangeFanout {
 // continuation token. It returns nil when every range has either drained or
 // has a response outstanding.
 func (f *rangeFanout) requests(query string) []queryengine.QueryRequest {
-	initial := !f.issued
-	f.issued = true
+	return f.requestsWhere(query, nil)
+}
+
+// requestsWhere is requests narrowed to the ranges want reports true for. An
+// operator that consumes its ranges unevenly uses it to leave a range's next
+// page unread until it can use it: fetching a page early costs request charge
+// and holds the rows in memory, and under a LIMIT the query may never need it
+// at all. A range the predicate skips keeps its token and is offered again on
+// the next turn.
+func (f *rangeFanout) requestsWhere(query string, want func(id string) bool) []queryengine.QueryRequest {
 	var reqs []queryengine.QueryRequest
 	for _, r := range f.ranges {
-		if r.drained || (!initial && r.next == "") {
+		if r.drained || (r.started && r.next == "") {
 			continue
 		}
+		if want != nil && !want(r.id) {
+			continue
+		}
+		r.started = true
 		r.sent = r.next
 		r.next = ""
 		reqs = append(reqs, queryengine.QueryRequest{

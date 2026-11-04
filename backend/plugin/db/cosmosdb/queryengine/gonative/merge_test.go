@@ -471,6 +471,28 @@ func TestOrderByPipeline_OffsetReachesIntoTheNextPage(t *testing.T) {
 	assert.Equal(t, map[string]int{"0": 2}, read)
 }
 
+// Ranges whose sort values do not overlap are consumed one after the other, so
+// the merge must leave the later range's pages unread while it works through
+// the earlier one. Asking every range with a token for its next page every
+// turn buys pages the merge cannot use — here it reads range 1 twice for a
+// LIMIT that never returns one of its rows.
+func TestOrderByPipeline_LeavesAnUnconsumedRangesPagesUnread(t *testing.T) {
+	p := newAscOffsetLimit(t, 0, 2, "0", "1")
+	rows, read := drivePages(t, p, map[string][]page{
+		"0": {
+			{body: mkOrderByBody(t, ordered{ob: `1`, payload: `{"x":1}`}), continuation: "0-page-2"},
+			{body: mkOrderByBody(t, ordered{ob: `2`, payload: `{"x":2}`})},
+		},
+		"1": {
+			{body: mkOrderByBody(t, ordered{ob: `10`, payload: `{"x":10}`}), continuation: "1-page-2"},
+			{body: mkOrderByBody(t, ordered{ob: `11`, payload: `{"x":11}`})},
+		},
+	})
+	assert.Equal(t, []string{`{"x":1}`, `{"x":2}`}, asStrings(rows))
+	assert.Equal(t, map[string]int{"0": 2, "1": 1}, read,
+		"range 1 still had a buffered row, so its second page was never needed")
+}
+
 // asStrings renders emitted rows for comparison against literal fixtures.
 func asStrings(rows [][]byte) []string {
 	out := make([]string, 0, len(rows))

@@ -537,7 +537,7 @@ func seedCrossPartition(endpoint string) (*Driver, int, error) {
 			if err != nil {
 				return nil, 0, errors.Wrap(err, "marshal a fixture city")
 			}
-			if _, err := container.CreateItem(ctx, azcosmos.NewPartitionKeyString(country), item, nil); err != nil && !alreadyExists(err) {
+			if err := seedItem(ctx, container, country, item); err != nil {
 				return nil, 0, errors.Wrapf(err, "seed %s-%d", country, i)
 			}
 		}
@@ -572,6 +572,29 @@ func countContainerRanges(endpoint, container string) (int, error) {
 		return 0, errors.Wrap(err, "parse the partition key range list")
 	}
 	return len(resp.PartitionKeyRanges), nil
+}
+
+// seedItem writes one fixture item, retrying what a loaded emulator does to a
+// write it cannot serve in time: a 408, a 429, a 503, or a dropped connection
+// that surfaces as an EOF. The emulator is slow enough under this repo's own
+// test load that an unretried seeder fails the whole suite on one dropped
+// write, with an error that reads like a query-engine bug. An error that is
+// not transient costs the attempts and then surfaces unchanged.
+func seedItem(ctx context.Context, container *azcosmos.ContainerClient, partitionKey string, item []byte) error {
+	var err error
+	for attempt := range 6 {
+		if attempt > 0 {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(time.Duration(attempt) * 500 * time.Millisecond):
+			}
+		}
+		if _, err = container.CreateItem(ctx, azcosmos.NewPartitionKeyString(partitionKey), item, nil); err == nil || alreadyExists(err) {
+			return nil
+		}
+	}
+	return err
 }
 
 func alreadyExists(err error) bool {
@@ -695,9 +718,9 @@ func seedPaged(driver *Driver) (*azcosmos.ContainerClient, int, error) {
 					Seq:    r.seq,
 				})
 				if err == nil {
-					_, err = container.CreateItem(ctx, azcosmos.NewPartitionKeyString(r.bucket), item, nil)
+					err = seedItem(ctx, container, r.bucket, item)
 				}
-				if err != nil && !alreadyExists(err) {
+				if err != nil {
 					select {
 					case errs <- errors.Wrapf(err, "seed row %d", r.seq):
 					default:
