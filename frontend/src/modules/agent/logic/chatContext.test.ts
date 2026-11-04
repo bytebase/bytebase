@@ -164,7 +164,7 @@ describe("resolveAgentPageResource", () => {
   });
 
   test.each(["create", "CREATE", "-"])(
-    "does not reference a Plan for the %s route parameter",
+    "detects Plan creation context for the %s route parameter",
     (planId) => {
       expect(
         resolveAgentPageResource(
@@ -173,11 +173,15 @@ describe("resolveAgentPageResource", () => {
             planId,
           })
         )
-      ).toEqual({
-        kind: "project",
-        name: "projects/orders",
-        project: "projects/orders",
-      });
+      ).toEqual(
+        planId === "-"
+          ? {
+              kind: "project",
+              name: "projects/orders",
+              project: "projects/orders",
+            }
+          : { kind: "plan-create", project: "projects/orders" }
+      );
     }
   );
 

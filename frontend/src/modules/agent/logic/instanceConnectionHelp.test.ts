@@ -125,4 +125,24 @@ describe("instanceConnectionHelp", () => {
     });
     expect(mocks.open).toHaveBeenCalledOnce();
   });
+
+  test("binds page-launched assistance to its selected resource", () => {
+    const resourceReference = {
+      kind: "plan" as const,
+      name: "projects/sample/plans/123",
+      project: "projects/sample",
+      label: "Add event source tracking",
+    };
+
+    openAgentWithPrompt("Review this Plan.", [resourceReference]);
+
+    expect(mocks.queueUserMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        chatId: "chat-1",
+        text: "Review this Plan.",
+        resourceReferences: [resourceReference],
+        runMode: "read-only",
+      })
+    );
+  });
 });

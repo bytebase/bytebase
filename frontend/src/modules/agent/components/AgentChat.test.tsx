@@ -25,9 +25,13 @@ const mocks = vi.hoisted(() => ({
   hasWorkspacePermissionV2: vi.fn(() => true),
   routerPush: vi.fn(),
   currentPath: "/initial",
+  currentRoute: undefined as
+    | { name?: string; params?: Record<string, string> }
+    | undefined,
   getSettingByName: vi.fn(),
   notify: vi.fn(),
   prepareAgentPlanDraftRoute: vi.fn(),
+  applyPlanDraftToCurrent: vi.fn(),
   prepareAgentDeniedQueryRequestRoute: vi.fn(),
   prepareIssueCommentDraftRoute: vi.fn(),
   wasDeniedQueryRequestDraftDelivered: vi.fn(),
@@ -98,7 +102,9 @@ vi.mock("@/app/router", async (importOriginal) => ({
       return { href: fullPath, fullPath };
     },
     get currentRoute() {
-      return { value: { fullPath: mocks.currentPath } };
+      return {
+        value: { ...mocks.currentRoute, fullPath: mocks.currentPath },
+      };
     },
   },
 }));
@@ -122,6 +128,10 @@ vi.mock("@/stores/app", () => {
 vi.mock("../logic/planDraft", () => ({
   prepareAgentPlanDraftRoute: mocks.prepareAgentPlanDraftRoute,
   PlanDraftStorageError: class PlanDraftStorageError extends Error {},
+}));
+
+vi.mock("@/lib/plan/agentDraftHandoff", () => ({
+  dispatchAgentPlanDraftToCurrentPlan: mocks.applyPlanDraftToCurrent,
 }));
 
 vi.mock("../logic/deniedQueryAccess", () => ({
@@ -186,11 +196,13 @@ beforeEach(async () => {
   mocks.hasWorkspacePermissionV2.mockReset();
   mocks.hasWorkspacePermissionV2.mockReturnValue(true);
   mocks.routerPush.mockReset();
+  mocks.currentRoute = undefined;
   mocks.currentPath = "/initial";
   mocks.getSettingByName.mockReset();
   mocks.getSettingByName.mockReturnValue(undefined);
   mocks.notify.mockReset();
   mocks.prepareAgentPlanDraftRoute.mockReset();
+  mocks.applyPlanDraftToCurrent.mockReset();
   mocks.prepareAgentDeniedQueryRequestRoute.mockReset();
   mocks.prepareIssueCommentDraftRoute.mockReset();
   mocks.wasDeniedQueryRequestDraftDelivered.mockReset();
@@ -515,6 +527,47 @@ describe("AgentChat", () => {
     );
     expect(mocks.routerPush).toHaveBeenCalledWith(route);
     expect(useAgentStore.getState().minimized).toBe(true);
+    unmount();
+  });
+
+  test("applies generated SQL to the open Plan draft without navigating", async () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/sample" });
+    const content = "```sql\nCREATE TABLE notes (id INT);\n```";
+    const action = {
+      kind: "draft-plan" as const,
+      project: "projects/sample",
+      database: "instances/prod/databases/app",
+    };
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content,
+      metadata: { actions: [action] },
+    });
+    mocks.currentRoute = {
+      name: PROJECT_V1_ROUTE_PLAN_DETAIL,
+      params: { projectId: "sample", planId: "create" },
+    };
+    mocks.applyPlanDraftToCurrent.mockReturnValue(true);
+    useAgentStore.setState({ visible: true, minimized: false });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+
+    const button = container.querySelector<HTMLButtonElement>(
+      "[data-agent-action-draft-plan]"
+    );
+    expect(button?.textContent).toContain("agent.plan-draft.apply-to-current-plan");
+    await act(async () => button?.click());
+
+    expect(mocks.applyPlanDraftToCurrent).toHaveBeenCalledWith({
+      project: action.project,
+      database: action.database,
+      sql: "CREATE TABLE notes (id INT);",
+    });
+    expect(mocks.prepareAgentPlanDraftRoute).not.toHaveBeenCalled();
+    expect(mocks.routerPush).not.toHaveBeenCalled();
+    expect(useAgentStore.getState().minimized).toBe(false);
     unmount();
   });
 

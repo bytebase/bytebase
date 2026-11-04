@@ -40,6 +40,7 @@ export function getCurrentChatContext(): string | undefined {
 
 export type AgentPageResource =
   | { kind: "project"; name: string; project: string }
+  | { kind: "plan-create"; project: string }
   | { kind: "plan"; name: string; project: string }
   | {
       kind: "database";
@@ -78,6 +79,13 @@ export function resolveAgentPageResource(
     };
   }
   if (!project) return undefined;
+  if (
+    route.name === PROJECT_V1_ROUTE_PLAN_DETAIL &&
+    typeof planId === "string" &&
+    planId.toLowerCase() === "create"
+  ) {
+    return { kind: "plan-create", project };
+  }
   if (route.name === PROJECT_V1_ROUTE_ISSUE_DETAIL) {
     return typeof issueId === "string" && issueId && issueId !== "-"
       ? { kind: "issue", name: `${project}/issues/${issueId}`, project }

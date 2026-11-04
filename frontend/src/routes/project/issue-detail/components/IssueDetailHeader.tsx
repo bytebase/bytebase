@@ -2,6 +2,9 @@ import { Ban, CheckCircle2, Menu } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { openAgentWithPrompt } from "@/modules/agent/logic/instanceConnectionHelp";
+import { buildIssueReviewPrompt } from "@/modules/agent/logic/planIssueAssistance";
+import { getPlanMentionLabel } from "@/modules/agent/logic/resourceMention";
 import { ApprovalStatus, IssueStatus } from "@/types/proto-es/v1/common_pb";
 import { useIssueDetailContext } from "../context/IssueDetailContext";
 import { IssueDetailActionBar } from "./IssueDetailActionBar";
@@ -21,6 +24,33 @@ export function IssueDetailHeader() {
       ? "success"
       : "default";
   const showMobileSidebarButton = page.sidebarMode === "MOBILE";
+  const issue = page.issue;
+  const issueProject = issue?.name.includes("/issues/")
+    ? issue.name.split("/issues/")[0]
+    : undefined;
+  const openIssueReview = () => {
+    if (!issue || !issueProject || page.isCreating) return;
+    const references = [
+      {
+        kind: "issue" as const,
+        name: issue.name,
+        project: issueProject,
+        label: issue.title || `Issue #${issue.name.split("/").at(-1)}`,
+      },
+      ...(page.plan?.name.startsWith(`${issueProject}/plans/`) &&
+      issue.plan === page.plan.name
+        ? [
+            {
+              kind: "plan" as const,
+              name: page.plan.name,
+              project: issueProject,
+              label: getPlanMentionLabel(page.plan),
+            },
+          ]
+        : []),
+    ];
+    openAgentWithPrompt(buildIssueReviewPrompt(), references);
+  };
 
   return (
     <div className="px-2 py-2 sm:px-4">
@@ -45,6 +75,11 @@ export function IssueDetailHeader() {
         <IssueDetailTitleInput />
 
         <div className="flex flex-row items-center justify-end gap-x-2">
+          {issue && issueProject && !page.isCreating && (
+            <Button onClick={openIssueReview} size="md" appearance="outline">
+              {t("agent.issue-assistance.review")}
+            </Button>
+          )}
           <IssueDetailActionBar />
           {showMobileSidebarButton && (
             <Button

@@ -318,6 +318,18 @@ afterEach(() => {
 });
 
 describe("AgentWindow", () => {
+  test("uses the header bot icon for the minimized launcher", () => {
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    act(() => useAgentStore.getState().minimize());
+
+    expect(
+      document.body.querySelector("[data-agent-window] .lucide-bot")
+    ).toBeInstanceOf(SVGElement);
+    unmount();
+  });
+
   test("hides the Agent window while the authenticated member is unavailable", () => {
     const { render, unmount } = renderIntoContainer(<AgentWindow />);
     render();
@@ -457,6 +469,16 @@ describe("AgentWindow", () => {
   });
 
   test.each([
+    {
+      kind: "plan-create" as const,
+      page: {
+        kind: "plan-create" as const,
+        project: "projects/orders",
+      },
+      context: "projects/orders",
+      heading: "agent.contextual-start.plan-create-heading",
+      suggestions: ["agent.contextual-start.plan-create-sql"],
+    },
     {
       kind: "instance" as const,
       page: { kind: "instance" as const, name: "instances/primary" },

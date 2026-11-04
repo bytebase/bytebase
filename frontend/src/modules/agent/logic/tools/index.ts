@@ -656,7 +656,7 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
     {
       name: "done",
       description:
-        "Complete the current task explicitly. Provide final user-visible text, success, and actions. For a successful answer, propose at most one primary action: Open for an evidenced next step, or draft-plan for generated DDL grounded in this turn's selected @Database. A draft-plan action names only its project and database; put the SQL in exactly one fenced `sql` block in text, never in the action. Normally include 2-3 distinct, contextual Continue questions in English, with or without a primary action. Include fewer or none when no further meaningful questions exist; do not invent filler. Use actions: [] for a failed answer or when no useful action exists. Actions require a member click; the runtime validates their targets.",
+        "Complete the current task explicitly. Provide final user-visible text, success, and actions. For a successful answer, propose at most one primary action: Open for an evidenced next step, or draft-plan for generated DDL grounded in this turn's selected @Database. A draft-plan action names only its project and database; put the SQL in exactly one fenced `sql` block in text, never in the action. If clicked while the member is already on that project's Plan-create page, the runtime applies SQL only to that unsaved Plan when its sole target is the same database, prompting append or replace when SQL already exists. It never persists or executes SQL. Normally include 2-3 distinct, contextual Continue questions in English, with or without a primary action. Include fewer or none when no further meaningful questions exist; do not invent filler. Use actions: [] for a failed answer or when no useful action exists. Actions require a member click; the runtime validates their targets.",
       parametersSchema: {
         type: "object",
         properties: {
@@ -672,7 +672,7 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
           actions: {
             type: "array",
             description:
-              "Optional member-clicked actions. Use at most one primary Open, draft-plan, or draft-issue-comment, plus up to three distinct Continue questions. Open uses a current-turn observed destination, never a URL or invented resource. draft-plan opens a populated, unsaved Plan. draft-issue-comment opens an unsent review comment for an Issue observed in this turn; it never posts automatically. Continue fills the composer without sending. Do not include API requests, SQL, or resource @ mentions in an action.",
+              "Optional member-clicked actions. Use at most one primary Open, draft-plan, or draft-issue-comment, plus up to three distinct Continue questions. Open uses a current-turn observed destination, never a URL or invented resource. draft-plan normally opens a populated, unsaved Plan; on the matching Plan-create page it applies SQL locally and asks before replacing existing SQL. It never persists or executes. draft-issue-comment opens an unsent review comment for an Issue observed in this turn; it never posts automatically. Continue fills the composer without sending. Do not include API requests, SQL, or resource @ mentions in an action.",
             maxItems: 4,
             items: {
               type: "object",

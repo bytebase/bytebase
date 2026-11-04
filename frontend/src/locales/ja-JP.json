@@ -77,6 +77,8 @@
       "issue-security": "このイシューにセキュリティ上の懸念はありますか？",
       "issue-summary": "このイシューと現在の状態を要約して",
       "plan-changes": "このプランではどのようなデータベース変更を提案していますか？",
+      "plan-create-heading": "データベース変更 Plan を作成する",
+      "plan-create-sql": "この Plan のデータベース変更 SQL の作成を手伝ってください。",
       "plan-heading": "このプランについて質問する",
       "plan-risks": "このプランにレビューやデプロイ上のリスクはありますか？",
       "plan-status": "現在のレビューとロールアウトの状態は？",
@@ -117,6 +119,9 @@
     "input-processing-placeholder": "処理中...",
     "interrupted": "中断",
     "interrupted-retry-hint": "会話が中断されました。再試行するか、新しいメッセージを送信できます。",
+    "issue-assistance": {
+      "review": "Agent とレビュー"
+    },
     "issue-comment-draft": {
       "existing": "This issue already has an unsent comment. Review it before opening another draft.",
       "open": "Draft review comment",
@@ -158,9 +163,19 @@
       "issue-approval-rollout": "これは最終承認です。必要なチェックとレビューを通過するとロールアウトが作成される場合がありますが、タスクの実行は保証されません。",
       "issue-rejection": "このイシューを却下すると、現在の承認フローは停止します。承認を再開するには却下理由への対応が必要です。"
     },
+    "plan-assistance": {
+      "ask-draft-sql": "Agent に SQL の作成を依頼",
+      "review": "Agent とレビュー"
+    },
     "plan-draft": {
+      "append-sql": "SQL を追加",
+      "apply-to-current-plan": "この Plan に適用",
+      "current-plan-unavailable": "現在の Plan に SQL を適用できませんでした。対象データベースを確認して、もう一度お試しください。",
       "default-title": "提案されたデータベース変更",
+      "existing-sql-description": "生成した SQL を既存の下書きに追加するか、置き換えるかを選択してください。",
+      "existing-sql-title": "この Plan には SQL が既にあります",
       "open": "プランの下書きを開く",
+      "replace-sql": "SQL を置き換え",
       "unavailable": "プランの下書きを開けませんでした。データベースまたは SQL が変更された可能性があります。エージェントに再生成を依頼してください。"
     },
     "plan-reference-unavailable": "このプランは利用できないか、アクセス権がありません。",

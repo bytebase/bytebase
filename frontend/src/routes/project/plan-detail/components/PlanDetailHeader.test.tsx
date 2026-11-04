@@ -24,6 +24,7 @@ const mocks = vi.hoisted(() => ({
   patchState: vi.fn(),
   permissions: new Set<string>(),
   pushNotification: vi.fn(),
+  openAgentWithPrompt: vi.fn(),
   replaceRoute: vi.fn(),
   setCreationIssueLabels: vi.fn(),
   updateIssue: vi.fn(),
@@ -31,6 +32,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("react-i18next", () => ({
+  initReactI18next: { type: "3rdParty", init: () => {} },
   useTranslation: () => ({
     t: (key: string) => key,
   }),
@@ -70,7 +72,11 @@ vi.mock("@/components/ui/button", () => ({
     appearance?: string;
     size?: string;
     variant?: string;
-  }) => <button {...props}>{children}</button>,
+  }) => (
+    <button {...props} data-button-size={_size}>
+      {children}
+    </button>
+  ),
 }));
 
 vi.mock("@/components/ui/textarea", () => ({
@@ -116,6 +122,10 @@ vi.mock("@/components/ui/dropdown-menu", () => ({
 vi.mock("@/lib/projectPagedDataCache", () => ({
   invalidateProjectPlansPagedDataCache:
     mocks.invalidateProjectPlansPagedDataCache,
+}));
+
+vi.mock("@/modules/agent/logic/instanceConnectionHelp", () => ({
+  openAgentWithPrompt: mocks.openAgentWithPrompt,
 }));
 
 vi.mock("@/lib/utils", () => ({
@@ -263,6 +273,35 @@ beforeEach(() => {
 });
 
 describe("PlanDetailHeader draft ownership", () => {
+  test("opens the Agent with the Plan and linked Issue for a review", async () => {
+    render(<PlanDetailHeader />);
+
+    const reviewButton = screen.getByRole("button", {
+      name: "agent.plan-assistance.review",
+    });
+    expect(reviewButton).toHaveAttribute("data-button-size", "md");
+    expect(reviewButton.querySelector("svg")).toBeNull();
+    fireEvent.click(reviewButton);
+
+    expect(mocks.openAgentWithPrompt).toHaveBeenCalledWith(
+      expect.stringContaining("Review this Plan"),
+      [
+        {
+          kind: "plan",
+          name: "projects/p1/plans/123",
+          project: "projects/p1",
+          label: "Plan title (#123)",
+        },
+        {
+          kind: "issue",
+          name: "projects/p1/issues/456",
+          project: "projects/p1",
+          label: "Stale issue title",
+        },
+      ]
+    );
+  });
+
   test("edits draft title and description through UpdatePlan with plan permission only", async () => {
     render(
       <>

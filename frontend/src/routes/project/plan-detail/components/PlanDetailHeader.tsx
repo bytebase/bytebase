@@ -20,6 +20,9 @@ import {
 } from "@/lib/plan/workflow";
 import { invalidateProjectPlansPagedDataCache } from "@/lib/projectPagedDataCache";
 import { cn } from "@/lib/utils";
+import { openAgentWithPrompt } from "@/modules/agent/logic/instanceConnectionHelp";
+import { buildPlanReviewPrompt } from "@/modules/agent/logic/planIssueAssistance";
+import { getPlanMentionLabel } from "@/modules/agent/logic/resourceMention";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import { IssueStatus, State } from "@/types/proto-es/v1/common_pb";
@@ -89,6 +92,31 @@ export function PlanDetailHeader() {
   const canUpdatePlan =
     page.plan.creator === currentUser.name ||
     hasProjectPermissionV2(project, "bb.plans.update");
+
+  const openPlanReview = () => {
+    if (!project || !page.plan.name || page.isCreating) return;
+    const references = [
+      {
+        kind: "plan" as const,
+        name: page.plan.name,
+        project: project.name,
+        label: getPlanMentionLabel(page.plan),
+      },
+      ...(page.issue?.name.startsWith(`${project.name}/issues/`)
+        ? [
+            {
+              kind: "issue" as const,
+              name: page.issue.name,
+              project: project.name,
+              label:
+                page.issue.title ||
+                `Issue #${page.issue.name.split("/").at(-1)}`,
+            },
+          ]
+        : []),
+    ];
+    openAgentWithPrompt(buildPlanReviewPrompt(), references);
+  };
 
   useEffect(() => {
     setTitle(persistedTitle);
@@ -620,6 +648,11 @@ export function PlanDetailHeader() {
         </div>
 
         <div className="flex shrink-0 items-center gap-x-2">
+          {!page.isCreating && project && page.plan.name && (
+            <Button onClick={openPlanReview} size="md" appearance="outline">
+              {t("agent.plan-assistance.review")}
+            </Button>
+          )}
           {/* Lifecycle slot: one primary advance/status per state. Create and
               ready-for-review stay here (coupled to the title/create flow); all
               other states render through PlanLifecycleSlot. */}

@@ -1,12 +1,21 @@
 import { create } from "@bufbuild/protobuf";
-import { cleanup, fireEvent, render, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, waitFor } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
+import { AGENT_PLAN_DRAFT_EVENT } from "@/lib/plan/agentDraftHandoff";
+import type { AgentPlanDraftEventDetail } from "@/lib/plan/agentDraftHandoff";
+import { openAgentWithPrompt } from "@/modules/agent/logic/instanceConnectionHelp";
 import {
   Plan_ChangeDatabaseConfigSchema,
   Plan_SpecSchema,
   PlanSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
 import { type Sheet, SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
+import { getSheetStatement } from "@/utils/v1/sheet";
+import {
+  getLocalSheetByName,
+  removeLocalSheet,
+  setLocalSheetStatement,
+} from "../utils/localSheet";
 import { PlanDetailStatementSection } from "./PlanDetailStatementSection";
 
 const mocks = vi.hoisted(() => ({
@@ -21,6 +30,8 @@ const mocks = vi.hoisted(() => ({
   scrollIntoView: vi.fn(),
   setSelection: vi.fn(),
   setScrollTop: vi.fn(),
+  openAgentWithPrompt: vi.fn(),
+  localSheetNames: [] as string[],
 }));
 
 vi.mock("react-i18next", () => ({
@@ -32,13 +43,16 @@ vi.mock("@/components/monaco", async () => ({
     "@/components/monaco/viewAnchor"
   )),
   MonacoEditor: ({
+    content,
     onChange,
     onReady,
   }: {
     onChange: (value: string) => void;
     onReady: (monaco: unknown, editor: unknown) => void;
+    content: string;
   }) => (
     <>
+      <div data-testid="editing-statement">{content}</div>
       <button
         onClick={() =>
           onReady({}, {
@@ -88,7 +102,10 @@ vi.mock("@/components/monaco", async () => ({
     </>
   ),
 }));
-vi.mock("@/stores", () => ({ pushNotification: vi.fn() }));
+vi.mock("@/stores", () => ({
+  environmentNamePrefix: "environments/",
+  pushNotification: vi.fn(),
+}));
 vi.mock("@/stores/app", () => ({
   useAppStore: Object.assign(
     (selector: (state: { databasesByName: object }) => unknown) =>
@@ -97,9 +114,13 @@ vi.mock("@/stores/app", () => ({
       getState: () => ({
         getSheetByName: (name: string) => mocks.sheets.get(name),
         getOrFetchSheetByName: vi.fn(),
+      batchGetOrFetchDatabases: vi.fn(),
       }),
     }
   ),
+}));
+vi.mock("@/modules/agent/logic/instanceConnectionHelp", () => ({
+  openAgentWithPrompt: mocks.openAgentWithPrompt,
 }));
 vi.mock("../shared/stores/usePlanDetailStore", () => ({
   usePlanDetailStore: (selector: (state: unknown) => unknown) =>
@@ -112,12 +133,30 @@ vi.mock("../shell/PlanDetailContext", () => ({
   usePlanDetailContext: () => mocks.page,
 }));
 vi.mock("./SchemaEditorSheet", () => ({ SchemaEditorSheet: () => null }));
+vi.mock("@/components/ui/alert-dialog", () => ({
+  AlertDialog: ({ children, open }: { children: React.ReactNode; open: boolean }) =>
+    open ? <div>{children}</div> : null,
+  AlertDialogContent: ({ children }: { children: React.ReactNode }) => (
+    <div role="dialog">{children}</div>
+  ),
+  AlertDialogDescription: ({ children }: { children: React.ReactNode }) => (
+    <p>{children}</p>
+  ),
+  AlertDialogFooter: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  AlertDialogTitle: ({ children }: { children: React.ReactNode }) => (
+    <h2>{children}</h2>
+  ),
+}));
 vi.mock("./threads/StatementThreadsLayer", () => ({
   StatementThreadsLayer: () => null,
 }));
 
 afterEach(() => {
   cleanup();
+  for (const name of mocks.localSheetNames) removeLocalSheet(name);
+  mocks.localSheetNames = [];
   mocks.sheets.clear();
   mocks.threadFocus = undefined;
   vi.clearAllMocks();
@@ -199,6 +238,126 @@ const renderEditableSpec = (statement: string) => {
     rerender: () => view.rerender(<PlanDetailStatementSection spec={spec} />),
   };
 };
+
+const renderPlanCreationSpec = (
+  database: string,
+  initialSQL = "",
+  targets = [database]
+) => {
+  const sheetName = "projects/p/sheets/-agent-draft-test";
+  mocks.localSheetNames.push(sheetName);
+  const sheet = getLocalSheetByName(sheetName);
+  setLocalSheetStatement(sheet, initialSQL);
+  const spec = create(Plan_SpecSchema, {
+    id: "new-spec",
+    config: {
+      case: "changeDatabaseConfig",
+      value: create(Plan_ChangeDatabaseConfigSchema, {
+        sheet: sheetName,
+        targets,
+      }),
+    },
+  });
+  mocks.page = {
+    currentUser: { name: "users/test" },
+    isCreating: true,
+    plan: create(PlanSchema, { specs: [] }),
+    project: { name: "projects/p" },
+    readonly: false,
+    setEditing: vi.fn(),
+  };
+  return {
+    ...render(<PlanDetailStatementSection spec={spec} />),
+    sheet,
+  };
+};
+
+const dispatchPlanDraft = (database: string, sql: string) => {
+  const detail: AgentPlanDraftEventDetail = {
+    project: "projects/p",
+    database,
+    sql,
+    handled: false,
+  };
+  act(() => {
+    window.dispatchEvent(
+      new CustomEvent<AgentPlanDraftEventDetail>(AGENT_PLAN_DRAFT_EVENT, {
+        detail,
+      })
+    );
+  });
+  return detail;
+};
+
+test("opens the Agent for the selected database and applies its DDL to this Plan", () => {
+  const database = "instances/mysql/databases/app";
+  const { sheet, getByRole, getByTestId } = renderPlanCreationSpec(database);
+  const trigger = getByRole("button", {
+    name: "agent.plan-assistance.ask-draft-sql",
+  });
+  expect(trigger.querySelector("svg")).toBeNull();
+
+  fireEvent.click(trigger);
+  expect(openAgentWithPrompt).toHaveBeenCalledWith(
+    expect.stringContaining("current Plan"),
+    [
+      expect.objectContaining({
+        kind: "database",
+        name: database,
+        project: "projects/p",
+      }),
+    ]
+  );
+
+  const event = dispatchPlanDraft(database, "CREATE TABLE notes (id INT);");
+  expect(event.handled).toBe(true);
+  expect(getSheetStatement(sheet)).toBe("CREATE TABLE notes (id INT);");
+  expect(getByTestId("editing-statement").textContent).toBe(
+    "CREATE TABLE notes (id INT);"
+  );
+});
+
+test("requires an explicit append or replace choice when the Plan already has SQL", () => {
+  const database = "instances/mysql/databases/app";
+  const { sheet, getByRole, queryByRole, getByTestId } =
+    renderPlanCreationSpec(database, "SELECT 1;");
+
+  dispatchPlanDraft(database, "CREATE TABLE notes (id INT);");
+  expect(getByRole("dialog")).toBeTruthy();
+  fireEvent.click(getByRole("button", { name: "agent.plan-draft.append-sql" }));
+  expect(getSheetStatement(sheet)).toBe(
+    "SELECT 1;\n\nCREATE TABLE notes (id INT);"
+  );
+  expect(queryByRole("dialog")).toBeNull();
+
+  dispatchPlanDraft(database, "ALTER TABLE notes ADD COLUMN name text;");
+  fireEvent.click(getByRole("button", { name: "agent.plan-draft.replace-sql" }));
+  expect(getSheetStatement(sheet)).toBe(
+    "ALTER TABLE notes ADD COLUMN name text;"
+  );
+  expect(getByTestId("editing-statement").textContent).toBe(
+    "ALTER TABLE notes ADD COLUMN name text;"
+  );
+});
+
+test("does not offer or apply a draft when the Plan has an invalid extra target", () => {
+  const database = "instances/mysql/databases/app";
+  const { sheet, queryByRole } = renderPlanCreationSpec(
+    database,
+    "",
+    [database, ""]
+  );
+
+  expect(
+    queryByRole("button", { name: "agent.plan-assistance.ask-draft-sql" })
+  ).toBeNull();
+  const event = dispatchPlanDraft(database, "CREATE TABLE notes (id INT);");
+  expect(event.handled).toBe(false);
+  expect(getSheetStatement(sheet)).toBe("");
+  expect(
+    queryByRole("button", { name: "agent.plan-draft.replace-sql" })
+  ).toBeNull();
+});
 
 const THREE_LINES = "SELECT 1;\nSELECT 2;\nSELECT 3;";
 

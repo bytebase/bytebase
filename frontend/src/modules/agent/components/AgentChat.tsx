@@ -33,6 +33,7 @@ import {
   prepareIssueCommentDraftRoute,
   wasIssueCommentDraftDelivered,
 } from "@/lib/issueCommentDraft";
+import { dispatchAgentPlanDraftToCurrentPlan } from "@/lib/plan/agentDraftHandoff";
 import {
   AI_ASSISTANT_PRODUCT_INTRO,
   PRODUCT_INTRO_QUERY_KEY,
@@ -63,7 +64,10 @@ import {
   isResourceMentionRange,
   normalizeAgentResourceReferences,
 } from "../logic/resourceMention";
-import { normalizeAgentResponseActions } from "../logic/responseActions";
+import {
+  extractPlanDraftSQL,
+  normalizeAgentResponseActions,
+} from "../logic/responseActions";
 import type {
   AgentAnswerEvidence,
   AgentEvidence,
@@ -406,10 +410,41 @@ function PlanDraftButton({
 }) {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
+  const isCurrentPlanCreate = () => {
+    const route = router.currentRoute.value;
+    const planId = route.params?.planId;
+    const projectId = route.params?.projectId;
+    return (
+      route.name === PROJECT_V1_ROUTE_PLAN_DETAIL &&
+      typeof planId === "string" &&
+      planId.toLowerCase() === "create" &&
+      typeof projectId === "string" &&
+      projectId === action.project.slice("projects/".length)
+    );
+  };
+  const applyToCurrentPlan = isCurrentPlanCreate();
   const openDraft = async () => {
     if (loading) return;
     setLoading(true);
     try {
+      if (isCurrentPlanCreate()) {
+        const sql = extractPlanDraftSQL(answer);
+        const handled =
+          sql &&
+          dispatchAgentPlanDraftToCurrentPlan({
+            project: action.project,
+            database: action.database,
+            sql,
+          });
+        if (!handled) {
+          useAppStore.getState().notify({
+            module: "bytebase",
+            style: "CRITICAL",
+            title: t("agent.plan-draft.current-plan-unavailable"),
+          });
+        }
+        return;
+      }
       const route = await prepareAgentPlanDraftRoute(
         action,
         answer,
@@ -452,7 +487,9 @@ function PlanDraftButton({
       ) : (
         <ArrowUpRight className="size-3.5" aria-hidden="true" />
       )}
-      {t("agent.plan-draft.open")}
+      {applyToCurrentPlan
+        ? t("agent.plan-draft.apply-to-current-plan")
+        : t("agent.plan-draft.open")}
     </Button>
   );
 }

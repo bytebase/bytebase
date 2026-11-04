@@ -3,6 +3,7 @@ import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
 import {
   Archive,
+  Bot,
   ChevronLeft,
   EllipsisVertical,
   Folder,
@@ -236,6 +237,7 @@ export function AgentWindow() {
     if (
       !contextualStart ||
       contextualStart.kind === "project" ||
+      contextualStart.kind === "plan-create" ||
       contextualStart.kind === "instance" ||
       contextualStart.kind === "instance-create"
     ) {
@@ -324,6 +326,7 @@ export function AgentWindow() {
     if (
       !contextualStart ||
       contextualStart.kind === "project" ||
+      contextualStart.kind === "plan-create" ||
       contextualStart.kind === "instance" ||
       contextualStart.kind === "instance-create" ||
       !canReferenceContextualResource
@@ -608,17 +611,20 @@ export function AgentWindow() {
   const contextualTitle = contextualStart
     ? contextualStart.kind === "project"
       ? getContextLabel(contextualStart.project)
-      : contextualStart.kind === "instance-create"
-        ? contextualStart.project
-          ? getContextLabel(contextualStart.project)
-          : t("agent.contextual-start.instance-create-title")
-        : (contextualReference?.label ??
-          (contextualStart.kind === "database"
-            ? extractDatabaseResourceName(contextualStart.names[0]).databaseName
-            : contextualStart.kind === "instance"
-              ? instancesByName?.[contextualStart.name]?.title ||
-                `#${contextualStart.name.split("/").at(-1)}`
-              : `#${contextualStart.name.split("/").at(-1)}`))
+      : contextualStart.kind === "plan-create"
+        ? getContextLabel(contextualStart.project)
+        : contextualStart.kind === "instance-create"
+          ? contextualStart.project
+            ? getContextLabel(contextualStart.project)
+            : t("agent.contextual-start.instance-create-title")
+          : (contextualReference?.label ??
+            (contextualStart.kind === "database"
+              ? extractDatabaseResourceName(contextualStart.names[0])
+                  .databaseName
+              : contextualStart.kind === "instance"
+                ? instancesByName?.[contextualStart.name]?.title ||
+                  `#${contextualStart.name.split("/").at(-1)}`
+                : `#${contextualStart.name.split("/").at(-1)}`))
     : "";
 
   const selectFirstDisplayedChat = useCallback(() => {
@@ -1478,18 +1484,7 @@ export function AgentWindow() {
         className="fixed bottom-4 right-4 flex size-10 cursor-pointer items-center justify-center rounded-full bg-accent text-accent-text shadow-lg hover:bg-accent-hover"
         onClick={() => useAgentStore.getState().restore()}
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="size-5"
-          viewBox="0 0 20 20"
-          fill="currentColor"
-        >
-          <path
-            fillRule="evenodd"
-            d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zm-4 0H9v2h2V9z"
-            clipRule="evenodd"
-          />
-        </svg>
+        <Bot className="size-5" aria-hidden="true" />
       </div>,
       getLayerRoot("agent")
     );
