@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/bytebase/omni/review"
 
@@ -143,7 +144,8 @@ func reviewResultComments(projectID string, issueUID int64, unit *reviewUnit, sq
 		}
 		slices.Sort(targets)
 		// Identical statements give equal keys; their order tells them apart.
-		key := findingKey(unit, rule, statementText(sql, result, finding), finding.Message, targets)
+		body, at := findingPlace(sql, result, finding)
+		key := findingKey(unit, rule, finding.Codes, body, at, targets)
 		occurrences[key]++
 		comments = append(comments, &store.IssueCommentMessage{
 			ProjectID: projectID,
@@ -165,29 +167,39 @@ func reviewResultComments(projectID string, issueUID int64, unit *reviewUnit, sq
 }
 
 // findingKey identifies a finding by what was judged: the unit, the rule, the
-// text of the statement it addresses, its message, and its databases. The
-// sheet and positions are left out, so an edit elsewhere in the SQL keeps the
-// finding while an edit to its statement makes it a new one.
-func findingKey(unit *reviewUnit, rule storepb.ReviewRuleType, statement, message string, targets []string) string {
+// codes of the conditions it reports, where it stands in its statement, and
+// its databases. The message is left out, so rewording it keeps the finding.
+func findingKey(unit *reviewUnit, rule storepb.ReviewRuleType, codes []review.FindingCode, body, at string, targets []string) string {
+	names := make([]string, 0, len(codes))
+	for _, code := range codes {
+		names = append(names, string(code))
+	}
 	h := sha256.New()
-	for _, field := range append([]string{unit.SpecID, unit.Engine.String(), rule.String(), statement, message}, targets...) {
+	for _, field := range append([]string{unit.SpecID, unit.Engine.String(), rule.String(), strings.Join(names, ","), body, at}, targets...) {
 		_, _ = h.Write(binary.BigEndian.AppendUint64(nil, uint64(len(field))))
 		_, _ = h.Write([]byte(field))
 	}
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-// statementText is the SQL of the statement a finding addresses, or empty for
-// a finding on the whole change.
-func statementText(sql string, result *review.Result, finding review.Finding) string {
-	if finding.Statement < 0 || finding.Statement >= len(result.Statements) {
-		return ""
+// findingPlace is where a finding stands: the body of its statement, and its
+// range within that body. A body leaves out the blank lines and comments
+// around the statement, so an edit to them, or anywhere else outside the
+// statement, keeps the finding, while an edit to the statement makes it a new
+// one. A finding on the whole change has neither, one on the whole statement
+// no range.
+func findingPlace(sql string, result *review.Result, finding review.Finding) (body, at string) {
+	if finding.Statement < 0 || finding.Statement >= len(result.Bodies) {
+		return "", ""
 	}
-	r := result.Statements[finding.Statement]
-	if r.Start < 0 || r.Start > r.End || r.End > len(sql) {
-		return ""
+	b := result.Bodies[finding.Statement]
+	if b.Start < 0 || b.Start > b.End || b.End > len(sql) {
+		return "", ""
 	}
-	return sql[r.Start:r.End]
+	if finding.Range == (review.Range{}) {
+		return sql[b.Start:b.End], ""
+	}
+	return sql[b.Start:b.End], fmt.Sprintf("%d-%d", finding.Range.Start-b.Start, finding.Range.End-b.Start)
 }
 
 // findingAnchor anchors a finding on the spec's sheet: its own range, else

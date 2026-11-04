@@ -3,7 +3,6 @@ package reviewrun
 import (
 	"context"
 	"errors"
-	"strings"
 	"testing"
 
 	metadatapb "github.com/bytebase/omni/metadata"
@@ -164,10 +163,12 @@ func TestReviewResultComments(t *testing.T) {
 	require.Equal(t, &storepb.Position{Line: 3}, line.Payload.StatementAnchor.EndPosition)
 }
 
-// TestReviewResultFingerprints pins what tells a finding apart across runs:
-// an edit elsewhere in the SQL keeps its fingerprint, while an edit to its
-// statement, another set of databases, or another spec makes it a new
-// finding. Identical statements of one unit are told apart by their order.
+// TestReviewResultFingerprints pins what tells a finding apart across runs,
+// on PostgreSQL's own review. An edit outside its statement, blank lines and
+// comments above it included, or a reworded message keeps its fingerprint;
+// an edit to the statement, another set of databases, or another spec makes
+// it a new finding. Findings of one code in one statement are told apart by
+// where they stand, and identical statements by their order.
 func TestReviewResultFingerprints(t *testing.T) {
 	t.Parallel()
 	unitOf := func(specID string, names ...string) *reviewUnit {
@@ -177,45 +178,52 @@ func TestReviewResultFingerprints(t *testing.T) {
 		}
 		return groupReviewUnits(nil, targets)[0]
 	}
-	// One statement per line, and a finding with the same message on every
-	// DROP.
-	fingerprints := func(unit *reviewUnit, sql string) []string {
-		all := make([]int, len(unit.Targets))
-		for i := range all {
-			all[i] = i
-		}
-		result := &review.Result{}
-		start := 0
-		for _, line := range strings.SplitAfter(sql, "\n") {
-			statement := strings.TrimSuffix(line, "\n")
-			result.Statements = append(result.Statements, review.Range{Start: start, End: start + len(statement)})
-			if strings.HasPrefix(statement, "DROP") {
-				result.Findings = append(result.Findings, review.Finding{
-					Rule: review.DisallowDropObject, Statement: len(result.Statements) - 1, Message: "DROP TABLE t", Targets: all,
-				})
-			}
-			start += len(line)
-		}
+	reviewOf := func(unit *reviewUnit, sql string) *review.Result {
+		t.Helper()
+		rules := []review.Rule{review.RequireWhere, review.RequireIsNull}
+		result, err := reviewFuncs[storepb.Engine_POSTGRES](context.Background(), sql, review.Options{Rules: rules}, make([]review.Target, len(unit.Targets)))
+		require.NoError(t, err)
+		return result
+	}
+	fingerprintsOf := func(unit *reviewUnit, sql string, result *review.Result) []string {
 		var out []string
 		for _, comment := range reviewResultComments("p", 101, unit, sql, result) {
 			out = append(out, comment.Payload.ReviewMetadata.Fingerprint)
 		}
 		return out
 	}
+	fingerprints := func(unit *reviewUnit, sql string) []string {
+		return fingerprintsOf(unit, sql, reviewOf(unit, sql))
+	}
 
 	unit := unitOf("spec-1", "instances/pg/databases/a")
-	base := fingerprints(unit, "DROP TABLE t;")
+	const update = "UPDATE t SET a = 1;"
+	base := fingerprints(unit, update)
 	require.Len(t, base, 1)
 	require.NotEmpty(t, base[0])
-	require.Equal(t, base, fingerprints(unit, "SELECT 1;\nDROP TABLE t;"), "an edit elsewhere keeps the finding")
-	require.NotEqual(t, base, fingerprints(unit, "DROP TABLE t CASCADE;"), "an edited statement is a new finding")
-	require.NotEqual(t, base, fingerprints(unitOf("spec-1", "instances/pg/databases/a", "instances/pg/databases/b"), "DROP TABLE t;"), "other databases make a new finding")
-	require.NotEqual(t, base, fingerprints(unitOf("spec-2", "instances/pg/databases/a"), "DROP TABLE t;"), "another spec makes a new finding")
+	require.Equal(t, base, fingerprints(unit, "SELECT 1;\n\n-- set every row\n"+update), "an edit outside the statement keeps the finding")
+	require.NotEqual(t, base, fingerprints(unit, "UPDATE t SET a = 2;"), "an edited statement is a new finding")
+	require.NotEqual(t, base, fingerprints(unitOf("spec-1", "instances/pg/databases/a", "instances/pg/databases/b"), update), "other databases make a new finding")
+	require.NotEqual(t, base, fingerprints(unitOf("spec-2", "instances/pg/databases/a"), update), "another spec makes a new finding")
 
-	twice := fingerprints(unit, "DROP TABLE t;\nDROP TABLE t;")
+	reworded := reviewOf(unit, update)
+	reworded.Findings[0].Message = "Reworded."
+	require.Equal(t, base, fingerprintsOf(unit, update, reworded), "a reworded message keeps the finding")
+
+	twice := fingerprints(unit, update+"\n"+update)
 	require.Len(t, twice, 2)
 	require.Equal(t, base[0], twice[0], "the first of identical statements keeps the finding")
 	require.NotEqual(t, twice[0], twice[1])
+
+	const nulls = "DELETE FROM t WHERE x = NULL OR y = NULL;"
+	both := fingerprints(unit, nulls)
+	require.Len(t, both, 2)
+	require.NotEqual(t, both[0], both[1])
+	// When the schema ends one of two such findings, as it can WALK_THROUGH's,
+	// the other keeps its own.
+	one := reviewOf(unit, nulls)
+	one.Findings = one.Findings[1:]
+	require.Equal(t, both[1:], fingerprintsOf(unit, nulls, one))
 }
 
 // TestBackupDatabaseExistsPostgres reads the PostgreSQL archive schema from
