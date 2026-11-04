@@ -228,6 +228,8 @@ type findingModel struct {
 	calls     atomic.Int32
 	merges    atomic.Int32
 	summaries atomic.Int32
+	// onSummary runs when the summary call arrives.
+	onSummary func()
 }
 
 func (m *findingModel) Chat(_ context.Context, request *v1pb.AIChatRequest) (*v1pb.AIChatResponse, error) {
@@ -247,6 +249,9 @@ func (m *findingModel) Chat(_ context.Context, request *v1pb.AIChatRequest) (*v1
 			content = fmt.Sprintf(`{"groups": [[%s]]}`, strings.Join(ids, ", "))
 		} else {
 			m.summaries.Add(1)
+			if m.onSummary != nil {
+				m.onSummary()
+			}
 			for i := range strings.Count(user, `{"database":`) {
 				ids = append(ids, strconv.Itoa(i+1))
 			}
@@ -254,6 +259,26 @@ func (m *findingModel) Chat(_ context.Context, request *v1pb.AIChatRequest) (*v1
 		}
 	}
 	return &v1pb.AIChatResponse{Content: &content}, nil
+}
+
+func TestAIReviewStopsWhenSwitchedOffBeforeItPosts(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	stores, issues := setupReviewFixture(ctx, t, 1)
+	var switchOffErr error
+	model := &findingModel{onSummary: func() {
+		_, switchOffErr = stores.UpsertSetting(ctx, &store.SettingMessage{Name: storepb.SettingName_AI, Workspace: "ws", Value: &storepb.AISetting{Enabled: true}})
+	}}
+	executor := &AIReviewExecutor{
+		store:    stores,
+		newModel: func(*storepb.AISetting, ...aireview.ModelOption) aireview.Model { return model },
+		slots:    semaphore.NewWeighted(aiReviewServerConcurrency),
+	}
+	comments, err := executor.RunOnce(ctx, "p", issues[0])
+	require.NoError(t, switchOffErr)
+	require.Equal(t, int32(1), model.summaries.Load())
+	require.ErrorContains(t, err, "AI SQL review is not enabled", "a switch-off during the summary stops the run before it posts")
+	require.Empty(t, comments)
 }
 
 // observedSlots tells the test when a review has to wait for a slot.

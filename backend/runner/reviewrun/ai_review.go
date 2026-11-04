@@ -63,8 +63,11 @@ type aiReviewFinding struct {
 // posts.
 type aiReviewProblem struct {
 	Findings []*aiReviewFinding
-	// Block is the lines of the statement the findings are on.
-	Block aireview.LineRange
+	// Block is the lines of the statement the findings are on, or of the
+	// whole sheet when BlockIsStatement is false because the sheet could not
+	// be split.
+	Block            aireview.LineRange
+	BlockIsStatement bool
 	// Reviewed is every database that reviewed the problem's sheet.
 	Reviewed []string
 	// Summary is the comment the model wrote for a problem that more than one
@@ -156,7 +159,7 @@ func mergeAIReviewFindings(ctx context.Context, merge mergeFunc, results []*aiRe
 // finding of each problem.
 func mergeSheetFindings(ctx context.Context, merge mergeFunc, findings []*aiReviewFinding) ([]*aiReviewProblem, error) {
 	statement := findings[0].Unit.Statement
-	blocks := statementBlocks(sheetEngine(findings), statement)
+	blocks, split := statementBlocks(sheetEngine(findings), statement)
 	blockOf := make([]int, len(findings))
 	blockTargets := make(map[int]map[string]bool)
 	for i, finding := range findings {
@@ -214,7 +217,7 @@ func mergeSheetFindings(ctx context.Context, merge mergeFunc, findings []*aiRevi
 	problems := make([]*aiReviewProblem, 0, len(groups))
 	for _, group := range groups {
 		// A merged group holds the findings of one block.
-		problem := &aiReviewProblem{Block: blocks[blockOf[group[0]]]}
+		problem := &aiReviewProblem{Block: blocks[blockOf[group[0]]], BlockIsStatement: split}
 		for _, i := range group {
 			problem.Findings = append(problem.Findings, findings[i])
 		}
@@ -278,18 +281,19 @@ func sheetEngine(findings []*aiReviewFinding) storepb.Engine {
 }
 
 // statementBlocks returns the line range of each statement of a sheet, the
-// blocks inside which findings can merge. Without a splitter for the engine,
-// or when the split does not give ordered ranges, the sheet is one block.
-func statementBlocks(engine storepb.Engine, statement string) []aireview.LineRange {
+// blocks inside which findings can merge, and true. Without a splitter for the
+// engine, or when the split does not give ordered ranges, the sheet is one
+// block and the result is false.
+func statementBlocks(engine storepb.Engine, statement string) ([]aireview.LineRange, bool) {
 	// The count is one too many when the sheet ends with a line break, which
 	// is harmless at the end of the last block.
 	whole := []aireview.LineRange{{Start: 1, End: strings.Count(statement, "\n") + 1}}
 	if engine == storepb.Engine_ENGINE_UNSPECIFIED {
-		return whole
+		return whole, false
 	}
 	statements, err := base.SplitMultiSQL(engine, statement)
 	if err != nil {
-		return whole
+		return whole, false
 	}
 	var blocks []aireview.LineRange
 	for _, s := range statements {
@@ -297,7 +301,7 @@ func statementBlocks(engine storepb.Engine, statement string) []aireview.LineRan
 			continue
 		}
 		if s.Start == nil || s.End == nil {
-			return whole
+			return whole, false
 		}
 		// A statement starts where the one before it ended, so its text can
 		// open with the line break and blank lines between the two.
@@ -310,14 +314,14 @@ func statementBlocks(engine storepb.Engine, statement string) []aireview.LineRan
 			end--
 		}
 		if end < start || (len(blocks) > 0 && start <= blocks[len(blocks)-1].End) {
-			return whole
+			return whole, false
 		}
 		blocks = append(blocks, aireview.LineRange{Start: start, End: end})
 	}
 	if len(blocks) == 0 {
-		return whole
+		return whole, false
 	}
-	return blocks
+	return blocks, true
 }
 
 // findBlock returns the index of the block that holds line. A line outside
@@ -538,7 +542,11 @@ func aiReviewCommentText(problem *aiReviewProblem, lead *aiReviewFinding, findin
 		switch {
 		case slices.Contains(targets, target):
 		case slices.Contains(onBlock, target):
-			differently = append(differently, target)
+			// Without statement boundaries, the other finding can be on any
+			// statement of the sheet, so neither list names the database.
+			if problem.BlockIsStatement {
+				differently = append(differently, target)
+			}
 		default:
 			unflagged = append(unflagged, target)
 		}

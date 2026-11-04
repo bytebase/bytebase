@@ -157,12 +157,15 @@ func TestAIReviewComments(t *testing.T) {
 	// billing reports a different problem on the drop's statement.
 	other := drop
 	other.Title = "Archive legacy_status first"
-	comments = aiReviewComments("p", 7, []*aiReviewProblem{
-		dropProblem(),
-		{Findings: []*aiReviewFinding{{Unit: unit("instances/staging/databases/billing"), Finding: other}}, Reviewed: reviewed},
-	})
-	require.Contains(t, comments[0].Payload.Comment, "\n- **P1** on app, prod-2/db\n- Flagged differently on billing\n\nRule:")
-	require.NotContains(t, comments[0].Payload.Comment, "Not flagged")
+	withOther := func(blockIsStatement bool) string {
+		problem := dropProblem()
+		problem.BlockIsStatement = blockIsStatement
+		otherProblem := &aiReviewProblem{Findings: []*aiReviewFinding{{Unit: unit("instances/staging/databases/billing"), Finding: other}}, Reviewed: reviewed, BlockIsStatement: blockIsStatement}
+		return aiReviewComments("p", 7, []*aiReviewProblem{problem, otherProblem})[0].Payload.Comment
+	}
+	require.Contains(t, withOther(true), "\n- **P1** on app, prod-2/db\n- Flagged differently on billing\n\nRule:")
+	require.NotContains(t, withOther(true), "Not flagged")
+	require.Contains(t, withOther(false), "\n- **P1** on app, prod-2/db\n\nRule:", "on a sheet that could not be split, the other finding can be on any statement")
 }
 
 func TestDatabaseList(t *testing.T) {
@@ -269,6 +272,7 @@ func TestMergeAIReviewFindings(t *testing.T) {
 		require.Equal(t, aireview.LineRange{Start: 3, End: 3}, problems[1].Block)
 		require.Equal(t, aireview.LineRange{Start: 1, End: 2}, problems[2].Block)
 		for _, problem := range problems {
+			require.True(t, problem.BlockIsStatement)
 			require.Equal(t, []string{"instances/prod/databases/db0", "instances/prod/databases/db1", "instances/prod/databases/db2", "instances/prod/databases/db3"}, problem.Reviewed, "a database that reported nothing was reviewed too")
 		}
 
@@ -315,6 +319,9 @@ func TestMergeAIReviewFindings(t *testing.T) {
 		require.Equal(t, [][]string{{"drop on db1", "drop on db2"}, {"index on db1"}, {"view on db3"}}, titles(problems))
 		require.Equal(t, []aireview.LineRange{{Start: 1, End: 4}}, merge.requests[0].Blocks)
 		require.Len(t, merge.requests[0].Candidates, 4)
+		for _, problem := range problems {
+			require.False(t, problem.BlockIsStatement)
+		}
 	})
 
 	t.Run("calls no model for one database", func(t *testing.T) {
@@ -409,12 +416,17 @@ func TestSummarizeAIReviewProblems(t *testing.T) {
 func TestStatementBlocks(t *testing.T) {
 	t.Parallel()
 
-	require.Equal(t, []aireview.LineRange{{Start: 1, End: 2}, {Start: 3, End: 3}}, statementBlocks(storepb.Engine_POSTGRES, mergeStatement))
-	require.Equal(t, []aireview.LineRange{{Start: 1, End: 3}, {Start: 5, End: 6}}, statementBlocks(storepb.Engine_POSTGRES, "-- c\n\nSELECT 1;\n\n-- d\nSELECT 2;"),
-		"a statement keeps its comments and leaves out the blank lines before it")
-	require.Equal(t, []aireview.LineRange{{Start: 1, End: 4}}, statementBlocks(storepb.Engine_ENGINE_UNSPECIFIED, mergeStatement))
+	blocks, split := statementBlocks(storepb.Engine_POSTGRES, mergeStatement)
+	require.True(t, split)
+	require.Equal(t, []aireview.LineRange{{Start: 1, End: 2}, {Start: 3, End: 3}}, blocks)
+	blocks, split = statementBlocks(storepb.Engine_POSTGRES, "-- c\n\nSELECT 1;\n\n-- d\nSELECT 2;")
+	require.True(t, split)
+	require.Equal(t, []aireview.LineRange{{Start: 1, End: 3}, {Start: 5, End: 6}}, blocks, "a statement keeps its comments and leaves out the blank lines before it")
+	blocks, split = statementBlocks(storepb.Engine_ENGINE_UNSPECIFIED, mergeStatement)
+	require.False(t, split)
+	require.Equal(t, []aireview.LineRange{{Start: 1, End: 4}}, blocks)
 
-	blocks := statementBlocks(storepb.Engine_POSTGRES, "SELECT 1;\n\nSELECT 2;")
+	blocks, _ = statementBlocks(storepb.Engine_POSTGRES, "SELECT 1;\n\nSELECT 2;")
 	require.Equal(t, 0, findBlock(&blocks, 1))
 	require.Equal(t, 2, findBlock(&blocks, 2), "a line between statements is a block of its own")
 	require.Equal(t, 2, findBlock(&blocks, 2))

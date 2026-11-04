@@ -178,6 +178,12 @@ func (e *AIReviewExecutor) RunOnce(ctx context.Context, projectID string, issueU
 	}, problems); err != nil {
 		return nil, err
 	}
+	// The merge and the summary fall back when a model call fails, the call
+	// that a switch-off refused included, so the setting is read again before
+	// the results post.
+	if _, err := e.checkAISetting(ctx, project.Workspace); err != nil {
+		return nil, err
+	}
 	return aiReviewComments(projectID, issueUID, problems), nil
 }
 
