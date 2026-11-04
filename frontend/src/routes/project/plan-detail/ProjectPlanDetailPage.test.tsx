@@ -335,6 +335,41 @@ describe("ProjectPlanDetailPage", () => {
     expect(selectedSpecIdText()).toBe("spec-1");
   });
 
+  it("keeps Plan-create Changes mounted while the phase is collapsed", async () => {
+    const page = buildPage();
+    mocks.usePlanDetailPage.mockReturnValue(page);
+
+    await act(async () => {
+      root.render(
+        <ProjectPlanDetailPage
+          planId="create"
+          projectId="foo"
+          routeQuery={{}}
+        />
+      );
+      await Promise.resolve();
+    });
+
+    expect(changesMountIdText()).toBe("1");
+
+    page.activePhases = new Set();
+    await act(async () => {
+      root.render(
+        <ProjectPlanDetailPage
+          planId="create"
+          projectId="foo"
+          routeQuery={{}}
+        />
+      );
+    });
+
+    const changesContent = container.querySelector(
+      '[data-testid="changes-mount-id"]'
+    );
+    expect(changesMountIdText()).toBe("1");
+    expect(changesContent?.closest("[hidden]")).not.toBeNull();
+  });
+
   it("keeps the current Plan-create target in the route context", async () => {
     const page = buildPage();
     page.isEditing = true;
