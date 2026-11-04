@@ -122,9 +122,7 @@ func singleLine(s string) string {
 // numberLines prefixes every line with its one-based number, the numbering of
 // storepb.Position.Line, so the model copies a line number instead of counting.
 func numberLines(statement string) (string, int) {
-	statement = strings.ReplaceAll(statement, "\r\n", "\n")
-	statement = strings.TrimSuffix(statement, "\n")
-	lines := strings.Split(statement, "\n")
+	lines := statementLines(statement)
 	var b strings.Builder
 	for i, line := range lines {
 		if i > 0 {
@@ -133,4 +131,11 @@ func numberLines(statement string) (string, int) {
 		_, _ = fmt.Fprintf(&b, "%d\t%s", i+1, line)
 	}
 	return b.String(), len(lines)
+}
+
+// statementLines splits a sheet into the lines a review numbers.
+func statementLines(statement string) []string {
+	statement = strings.ReplaceAll(statement, "\r\n", "\n")
+	statement = strings.TrimSuffix(statement, "\n")
+	return strings.Split(statement, "\n")
 }

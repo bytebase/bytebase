@@ -3,6 +3,8 @@ package reviewrun
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -50,7 +52,8 @@ func TestCISampleBoundsOnlyTheAIReview(t *testing.T) {
 
 	setCISamplingSize(ctx, t, stores, 2)
 	require.Len(t, reviewedDatabases(), 2)
-	require.Equal(t, int32(2), model.calls.Load())
+	require.Equal(t, int32(3), model.calls.Load(), "a review per database and one merge")
+	require.Equal(t, int32(1), model.merges.Load())
 
 	var ruleTargets int
 	ruleExecutor := &RuleExecutor{store: stores, reviewFuncs: map[storepb.Engine]review.ReviewFunc{
@@ -217,15 +220,26 @@ func setCISamplingSize(ctx context.Context, t *testing.T, stores *store.Store, s
 	}))
 }
 
-// findingModel answers every review with the same finding, so a run's one
-// comment names every database the run reviewed.
+// findingModel answers every review with the same finding, and the merge
+// with one group of every finding, so a run's one comment names every
+// database the run reviewed.
 type findingModel struct {
-	calls atomic.Int32
+	calls  atomic.Int32
+	merges atomic.Int32
 }
 
-func (m *findingModel) Chat(context.Context, *v1pb.AIChatRequest) (*v1pb.AIChatResponse, error) {
+func (m *findingModel) Chat(_ context.Context, request *v1pb.AIChatRequest) (*v1pb.AIChatResponse, error) {
 	m.calls.Add(1)
 	content := `{"findings": [{"title": "Backfill note", "severity": "P2", "line": 1, "rule": "r", "evidence": "e", "fix": "f"}]}`
+	// A review offers the schema tools, and the merge offers none.
+	if len(request.GetToolDefinitions()) == 0 {
+		m.merges.Add(1)
+		var ids []string
+		for i := range strings.Count(request.GetMessages()[1].GetContent(), `{"id":`) {
+			ids = append(ids, strconv.Itoa(i+1))
+		}
+		content = fmt.Sprintf(`{"groups": [[%s]]}`, strings.Join(ids, ", "))
+	}
 	return &v1pb.AIChatResponse{Content: &content}, nil
 }
 
