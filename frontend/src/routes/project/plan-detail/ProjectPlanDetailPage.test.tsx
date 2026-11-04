@@ -337,6 +337,7 @@ describe("ProjectPlanDetailPage", () => {
 
   it("keeps the current Plan-create target in the route context", async () => {
     const page = buildPage();
+    page.isEditing = true;
     const spec = {
       id: "spec-1",
       config: {
@@ -360,6 +361,7 @@ describe("ProjectPlanDetailPage", () => {
       );
     });
     expect(mocks.routerReplace).not.toHaveBeenCalled();
+    expect(page.bypassLeaveGuardOnce).not.toHaveBeenCalled();
 
     page.plan.specs = [
       {
@@ -393,6 +395,10 @@ describe("ProjectPlanDetailPage", () => {
       },
       { preventScrollReset: true }
     );
+    expect(page.bypassLeaveGuardOnce).toHaveBeenCalledOnce();
+    expect(
+      page.bypassLeaveGuardOnce.mock.invocationCallOrder[0]
+    ).toBeLessThan(mocks.routerReplace.mock.invocationCallOrder[0]);
   });
 
   it("renders a route-selected spec without an intermediate stale spec", async () => {

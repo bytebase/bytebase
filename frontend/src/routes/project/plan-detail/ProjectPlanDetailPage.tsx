@@ -153,6 +153,7 @@ function ProjectPlanDetailPageInner({
   );
   useEffect(() => {
     if (!page.isCreating || !page.ready || !planCreateRouteQuery) return;
+    if (page.isEditing) page.bypassLeaveGuardOnce();
     void router.replace(
       {
         query: planCreateRouteQuery,
@@ -160,7 +161,14 @@ function ProjectPlanDetailPageInner({
       },
       { preventScrollReset: true }
     );
-  }, [page.isCreating, page.ready, planCreateRouteQuery, routeHash]);
+  }, [
+    page.bypassLeaveGuardOnce,
+    page.isCreating,
+    page.isEditing,
+    page.ready,
+    planCreateRouteQuery,
+    routeHash,
+  ]);
 
   return (
     <PlanDetailProvider value={page}>
