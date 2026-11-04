@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -556,4 +557,20 @@ func TestQueryConnExplain(t *testing.T) {
 		Option: &v1pb.QueryOption{ExplainFormat: v1pb.QueryOption_JSON},
 	})
 	require.ErrorContains(t, err, "insertOne")
+}
+
+func TestAnnotateUnsupportedServerVersion(t *testing.T) {
+	// Copied verbatim from the driver's compatibility error, which is what the
+	// annotation matches on: reword this and it stops being the case under test.
+	refused := errors.New("server at 10.0.0.1:27017 reports wire version 8, but this version of the Go driver requires at least 9 (MongoDB 4.4)")
+
+	annotated := annotateUnsupportedServerVersion(refused)
+	require.ErrorContains(t, annotated, "MongoDB "+MinSupportedServerVersion+" or later is required")
+	require.ErrorContains(t, annotated, "reports wire version 8")
+	require.ErrorIs(t, annotated, refused)
+
+	require.NoError(t, annotateUnsupportedServerVersion(nil))
+
+	authFailure := errors.New("auth error: sasl conversation error")
+	require.Equal(t, authFailure, annotateUnsupportedServerVersion(authFailure))
 }

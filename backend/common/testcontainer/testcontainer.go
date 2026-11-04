@@ -355,10 +355,16 @@ func getTiDBContainer(ctx context.Context) (*Container, error) {
 
 // getMongoDBContainer starts MongoDB, which has no database/sql driver: its
 // tests open the Mongo driver themselves from the container's credentials.
+//
+// The image is pinned to the oldest MongoDB release Bytebase supports
+// (mongodb.MinSupportedServerVersion), so that a driver upgrade which raises the
+// floor above it fails this suite instead of reaching customers. Importing that
+// constant here would invert the dependency between the harness and the plugin,
+// so the two are kept in step by hand.
 func getMongoDBContainer(ctx context.Context) (*Container, error) {
 	const user, password = "testuser", "testpass"
 	return start(ctx, testcontainers.ContainerRequest{
-		Image: "mongo:5",
+		Image: "mongo:4.4",
 		Env: map[string]string{
 			"MONGO_INITDB_ROOT_USERNAME": user,
 			"MONGO_INITDB_ROOT_PASSWORD": password,

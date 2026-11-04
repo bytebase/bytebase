@@ -75,12 +75,30 @@ func (d *Driver) Close(ctx context.Context) error {
 	return nil
 }
 
+// MinSupportedServerVersion is the oldest MongoDB release the driver in go.mod
+// accepts. The driver enforces it by wire version while selecting a server and
+// refuses anything older, so this constant tracks go.mod's driver and nothing
+// else: raising it is a breaking change for existing instances.
+const MinSupportedServerVersion = "4.4"
+
 // Ping pings the database.
 func (d *Driver) Ping(ctx context.Context) error {
 	if err := d.client.Ping(ctx, nil); err != nil {
-		return errors.Wrap(err, "failed to ping MongoDB")
+		return errors.Wrap(annotateUnsupportedServerVersion(err), "failed to ping MongoDB")
 	}
 	return nil
+}
+
+// annotateUnsupportedServerVersion names the oldest supported release when the
+// driver refused the server for being too old, because the driver's own message
+// reports only a wire version number. The driver returns that refusal as a plain
+// error from server selection rather than a distinguishable type, so matching its
+// text is the only way to recognize it; any other error is returned unchanged.
+func annotateUnsupportedServerVersion(err error) error {
+	if err == nil || !strings.Contains(err.Error(), "wire version") {
+		return err
+	}
+	return errors.Wrapf(err, "MongoDB %s or later is required", MinSupportedServerVersion)
 }
 
 // GetDB gets the database.
