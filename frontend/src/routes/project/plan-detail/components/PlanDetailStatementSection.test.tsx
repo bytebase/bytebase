@@ -30,6 +30,7 @@ const mocks = vi.hoisted(() => ({
   scrollIntoView: vi.fn(),
   setSelection: vi.fn(),
   setScrollTop: vi.fn(),
+  minimizeAgent: vi.fn(),
   openAgentWithPrompt: vi.fn(),
   localSheetNames: [] as string[],
 }));
@@ -121,6 +122,11 @@ vi.mock("@/stores/app", () => ({
 }));
 vi.mock("@/modules/agent/logic/instanceConnectionHelp", () => ({
   openAgentWithPrompt: mocks.openAgentWithPrompt,
+}));
+vi.mock("@/modules/agent/store/agent", () => ({
+  useAgentStore: {
+    getState: () => ({ visible: true, minimize: mocks.minimizeAgent }),
+  },
 }));
 vi.mock("../shared/stores/usePlanDetailStore", () => ({
   usePlanDetailStore: (selector: (state: unknown) => unknown) =>
@@ -324,6 +330,7 @@ test("requires an explicit append or replace choice when the Plan already has SQ
 
   dispatchPlanDraft(database, "CREATE TABLE notes (id INT);");
   expect(getByRole("dialog")).toBeTruthy();
+  expect(mocks.minimizeAgent).toHaveBeenCalledOnce();
   fireEvent.click(getByRole("button", { name: "agent.plan-draft.append-sql" }));
   expect(getSheetStatement(sheet)).toBe(
     "SELECT 1;\n\nCREATE TABLE notes (id INT);"

@@ -45,6 +45,7 @@ import { cn } from "@/lib/utils";
 import { openAgentWithPrompt } from "@/modules/agent/logic/instanceConnectionHelp";
 import { buildPlanCreatePrompt } from "@/modules/agent/logic/planIssueAssistance";
 import { getDatabaseMentionLabel } from "@/modules/agent/logic/resourceMention";
+import { useAgentStore } from "@/modules/agent/store/agent";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import {
@@ -401,6 +402,10 @@ export function PlanDetailStatementSection({
         return;
       }
       if (statement.trim()) {
+        // This route-owned AlertDialog renders below the Agent overlay.
+        if (useAgentStore.getState().visible) {
+          useAgentStore.getState().minimize();
+        }
         setPendingAgentDraft(detail);
         return;
       }

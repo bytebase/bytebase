@@ -95,27 +95,14 @@ export function PlanDetailHeader() {
 
   const openPlanReview = () => {
     if (!project || !page.plan.name || page.isCreating) return;
-    const references = [
+    openAgentWithPrompt(buildPlanReviewPrompt(), [
       {
-        kind: "plan" as const,
+        kind: "plan",
         name: page.plan.name,
         project: project.name,
         label: getPlanMentionLabel(page.plan),
       },
-      ...(page.issue?.name.startsWith(`${project.name}/issues/`)
-        ? [
-            {
-              kind: "issue" as const,
-              name: page.issue.name,
-              project: project.name,
-              label:
-                page.issue.title ||
-                `Issue #${page.issue.name.split("/").at(-1)}`,
-            },
-          ]
-        : []),
-    ];
-    openAgentWithPrompt(buildPlanReviewPrompt(), references);
+    ]);
   };
 
   useEffect(() => {

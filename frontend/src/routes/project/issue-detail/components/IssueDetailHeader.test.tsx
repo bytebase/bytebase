@@ -50,7 +50,7 @@ beforeEach(() => {
   };
 });
 
-test("opens the Agent with this Issue and its linked Plan for review", () => {
+test("opens the Agent with this Issue as the selected resource for review", () => {
   render(<IssueDetailHeader />);
 
   const reviewButton = screen.getByRole("button", {
@@ -68,12 +68,6 @@ test("opens the Agent with this Issue and its linked Plan for review", () => {
         name: "projects/example/issues/42",
         project: "projects/example",
         label: "Review database migration",
-      },
-      {
-        kind: "plan",
-        name: "projects/example/plans/9",
-        project: "projects/example",
-        label: "Add audit table (#9)",
       },
     ]
   );

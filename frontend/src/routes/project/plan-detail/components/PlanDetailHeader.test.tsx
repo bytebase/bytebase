@@ -273,7 +273,7 @@ beforeEach(() => {
 });
 
 describe("PlanDetailHeader draft ownership", () => {
-  test("opens the Agent with the Plan and linked Issue for a review", async () => {
+  test("opens the Agent with the Plan as the selected resource for review", async () => {
     render(<PlanDetailHeader />);
 
     const reviewButton = screen.getByRole("button", {
@@ -291,12 +291,6 @@ describe("PlanDetailHeader draft ownership", () => {
           name: "projects/p1/plans/123",
           project: "projects/p1",
           label: "Plan title (#123)",
-        },
-        {
-          kind: "issue",
-          name: "projects/p1/issues/456",
-          project: "projects/p1",
-          label: "Stale issue title",
         },
       ]
     );

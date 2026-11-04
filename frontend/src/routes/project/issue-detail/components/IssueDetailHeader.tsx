@@ -4,7 +4,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { openAgentWithPrompt } from "@/modules/agent/logic/instanceConnectionHelp";
 import { buildIssueReviewPrompt } from "@/modules/agent/logic/planIssueAssistance";
-import { getPlanMentionLabel } from "@/modules/agent/logic/resourceMention";
 import { ApprovalStatus, IssueStatus } from "@/types/proto-es/v1/common_pb";
 import { useIssueDetailContext } from "../context/IssueDetailContext";
 import { IssueDetailActionBar } from "./IssueDetailActionBar";
@@ -30,26 +29,14 @@ export function IssueDetailHeader() {
     : undefined;
   const openIssueReview = () => {
     if (!issue || !issueProject || page.isCreating) return;
-    const references = [
+    openAgentWithPrompt(buildIssueReviewPrompt(), [
       {
-        kind: "issue" as const,
+        kind: "issue",
         name: issue.name,
         project: issueProject,
         label: issue.title || `Issue #${issue.name.split("/").at(-1)}`,
       },
-      ...(page.plan?.name.startsWith(`${issueProject}/plans/`) &&
-      issue.plan === page.plan.name
-        ? [
-            {
-              kind: "plan" as const,
-              name: page.plan.name,
-              project: issueProject,
-              label: getPlanMentionLabel(page.plan),
-            },
-          ]
-        : []),
-    ];
-    openAgentWithPrompt(buildIssueReviewPrompt(), references);
+    ]);
   };
 
   return (

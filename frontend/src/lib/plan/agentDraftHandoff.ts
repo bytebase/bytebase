@@ -31,5 +31,6 @@ export function appendAgentPlanDraftSQL(
   const draft = draftSQL.trim();
   if (!existing) return draft;
   if (!draft) return existing;
-  return `${existing}\n\n${draft}`;
+  const terminator = existing.endsWith(";") ? "" : "\n;";
+  return `${existing}${terminator}\n\n${draft}`;
 }

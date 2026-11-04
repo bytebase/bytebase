@@ -52,4 +52,13 @@ describe("Agent Plan draft handoff", () => {
       appendAgentPlanDraftSQL("  \n", "  ALTER TABLE app ADD x INT;  ")
     ).toBe("ALTER TABLE app ADD x INT;");
   });
+
+  test("terminates existing SQL before appending when it lacks a semicolon", () => {
+    expect(
+      appendAgentPlanDraftSQL(
+        "CREATE TABLE a (id integer)",
+        "CREATE TABLE b (id integer);"
+      )
+    ).toBe("CREATE TABLE a (id integer)\n;\n\nCREATE TABLE b (id integer);");
+  });
 });
