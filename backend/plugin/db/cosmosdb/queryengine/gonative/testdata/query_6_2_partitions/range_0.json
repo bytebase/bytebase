@@ -1,0 +1,102 @@
+{
+    "_rid": "S9w7AIGecFs=",
+    "Documents": [
+        {
+            "groupByItems": [
+                {
+                    "item": "4"
+                }
+            ],
+            "payload": {
+                "countryRegion": "4",
+                "count": {
+                    "item": 7
+                },
+                "totalPop": {
+                    "item": 3019002
+                }
+            }
+        },
+        {
+            "groupByItems": [
+                {
+                    "item": "1"
+                }
+            ],
+            "payload": {
+                "countryRegion": "1",
+                "count": {
+                    "item": 4
+                },
+                "totalPop": {
+                    "item": 8982000
+                }
+            }
+        },
+        {
+            "groupByItems": [
+                {
+                    "item": "2"
+                }
+            ],
+            "payload": {
+                "countryRegion": "2",
+                "count": {
+                    "item": 3
+                },
+                "totalPop": {
+                    "item": 0
+                }
+            }
+        },
+        {
+            "groupByItems": [
+                {
+                    "item": "3"
+                }
+            ],
+            "payload": {
+                "countryRegion": "3",
+                "count": {
+                    "item": 2
+                },
+                "totalPop": {
+                    "item": 0
+                }
+            }
+        },
+        {
+            "groupByItems": [
+                {
+                    "item": "7"
+                }
+            ],
+            "payload": {
+                "countryRegion": "7",
+                "count": {
+                    "item": 1
+                },
+                "totalPop": {
+                    "item": 22256
+                }
+            }
+        },
+        {
+            "groupByItems": [
+                {
+                    "item": "5"
+                }
+            ],
+            "payload": {
+                "countryRegion": "5",
+                "count": {
+                    "item": 1
+                },
+                "totalPop": {
+                    "item": 8419000
+                }
+            }
+        }
+    ],
+    "_count": 6
+}

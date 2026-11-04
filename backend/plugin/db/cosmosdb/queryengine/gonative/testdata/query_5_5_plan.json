@@ -1,0 +1,34 @@
+{
+    "partitionedQueryExecutionInfoVersion": 2,
+    "queryInfo": {
+        "distinctType": "None",
+        "top": null,
+        "offset": null,
+        "limit": null,
+        "orderBy": [],
+        "orderByExpressions": [],
+        "groupByExpressions": [],
+        "groupByAliases": [
+            "minPop",
+            "maxPop"
+        ],
+        "aggregates": [],
+        "groupByAliasToAggregateType": {
+            "maxPop": "Max",
+            "minPop": "Min"
+        },
+        "rewrittenQuery": "SELECT {\"minPop\": {\"item\": MIN(StringToNumber(c.population)), \"item2\": {\"min\": MIN(StringToNumber(c.population)), \"count\": COUNT(StringToNumber(c.population))}}, \"maxPop\": {\"item\": MAX(StringToNumber(c.population)), \"item2\": {\"max\": MAX(StringToNumber(c.population)), \"count\": COUNT(StringToNumber(c.population))}}} AS payload\nFROM c\nWHERE (StringToNumber(c.population) > 0)",
+        "hasSelectValue": false,
+        "dCountInfo": null,
+        "hasNonStreamingOrderBy": false
+    },
+    "queryRanges": [
+        {
+            "min": "",
+            "max": "FF",
+            "isMinInclusive": true,
+            "isMaxInclusive": false
+        }
+    ],
+    "hybridSearchQueryInfo": null
+}

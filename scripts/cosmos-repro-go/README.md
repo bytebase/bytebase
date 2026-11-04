@@ -1,14 +1,14 @@
 # cosmos-repro-go — BYT-9239 reproduction harness (Go)
 
 Go twin of `scripts/cosmos-repro-dotnet`. Runs the full 40-query target
-inventory from BYT-9239 against a live Azure Cosmos account through
-Bytebase's forked `azcosmos` SDK (which embeds the pure-Go cross-partition
-query engine), and prints a markdown PASS/FAIL table in the same shape as
-the .NET harness. Pairing both harnesses on the same container is the
-regression guard for the BYT-9239 feature set: as long as the Go matrix
-matches the .NET matrix (39/40 PASS; the single FAIL is the multi-key
-ORDER BY query that needs a composite index — a server-side constraint
-that affects every SDK), the Go engine is at .NET parity for this inventory.
+inventory from BYT-9239 against a live Azure Cosmos account through the same
+cross-partition path the Bytebase driver uses — the gateway first, the pure-Go
+query engine when the gateway refuses — and prints a markdown PASS/FAIL table
+in the same shape as the .NET harness. Pairing both harnesses on the same
+container is the regression guard for the BYT-9239 feature set: as long as the
+Go matrix matches the .NET matrix (39/40 PASS; the single FAIL is the multi-key
+ORDER BY query that needs a composite index — a server-side constraint that
+affects every SDK), the Go engine is at .NET parity for this inventory.
 
 ## Prerequisites
 
@@ -30,11 +30,11 @@ cd scripts/cosmos-repro-go
 go run . --verbose | tee out-go.md
 ```
 
-The harness uses `NewCrossPartitionQueryItemsPager`, which engages the
-pure-Go query engine automatically when the gateway returns its
-cross-partition sentinel error. Queries the gateway can still serve
-(e.g. single-partition WHERE filters, projections, built-ins) incur no
-extra round-trip — they never leave the gateway path.
+The harness calls the driver's own `QueryEveryPartition`, which engages the
+pure-Go query engine when the gateway returns its cross-partition sentinel
+error. Queries the gateway can still serve (e.g. single-partition WHERE
+filters, projections, built-ins) incur no extra round-trip — they never leave
+the gateway path.
 
 ## Scope
 

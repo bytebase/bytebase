@@ -3,10 +3,11 @@
 // Go reproduction harness for BYT-9239 — the twin of scripts/cosmos-repro-dotnet.
 // Runs the full 40-query target inventory from
 // https://linear.app/bytebase/issue/BYT-9239 against a live Azure Cosmos
-// account through Bytebase's forked azcosmos SDK (which includes the pure-Go
-// query engine), and prints a markdown PASS/FAIL table matching the shape
-// the .NET harness produces. Pairing both harnesses on the same container
-// is the regression guard for the BYT-9239 feature set.
+// account through the same cross-partition path the Bytebase driver uses
+// (gateway first, pure-Go query engine on refusal), and prints a markdown
+// PASS/FAIL table matching the shape the .NET harness produces. Pairing both
+// harnesses on the same container is the regression guard for the BYT-9239
+// feature set.
 //
 // Required environment variables:
 //   COSMOS_ENDPOINT   e.g. https://bytebase-cosmostest.documents.azure.com:443/
@@ -37,6 +38,8 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos"
+
+	"github.com/bytebase/bytebase/backend/plugin/db/cosmosdb"
 )
 
 type testCase struct {
@@ -156,7 +159,7 @@ func main() {
 	}
 
 	fmt.Printf("# Go SDK reproduction — db=%s coll=%s\n", db, coll)
-	fmt.Println("SDK: github.com/bytebase/azure-sdk-for-go/sdk/data/azcosmos (pure-Go query engine)")
+	fmt.Println("SDK: github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos + backend/plugin/db/cosmosdb/queryengine/gonative")
 	fmt.Println()
 
 	rows := make([]result, 0, len(cases))
@@ -209,19 +212,11 @@ func runOne(c *azcosmos.ContainerClient, tc testCase) result {
 	// containers. Matches the .NET harness's ceiling.
 	const rowCap = 10_000
 
-	pager := c.NewCrossPartitionQueryItemsPager(tc.sql, nil)
-	n := 0
-	for pager.More() {
-		page, err := pager.NextPage(ctx)
-		if err != nil {
-			return result{id: tc.id, sql: tc.sql, status: "FAIL", rows: n, elapsedMs: time.Since(start).Milliseconds(), err: err.Error()}
-		}
-		n += len(page.Items)
-		if n >= rowCap {
-			break
-		}
+	items, err := cosmosdb.QueryEveryPartition(ctx, c, tc.sql, nil, rowCap)
+	if err != nil {
+		return result{id: tc.id, sql: tc.sql, status: "FAIL", rows: len(items), elapsedMs: time.Since(start).Milliseconds(), err: err.Error()}
 	}
-	return result{id: tc.id, sql: tc.sql, status: "PASS", rows: n, elapsedMs: time.Since(start).Milliseconds()}
+	return result{id: tc.id, sql: tc.sql, status: "PASS", rows: len(items), elapsedMs: time.Since(start).Milliseconds()}
 }
 
 func envOr(key, def string) string {

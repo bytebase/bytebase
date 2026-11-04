@@ -1,0 +1,32 @@
+{
+    "partitionedQueryExecutionInfoVersion": 2,
+    "queryInfo": {
+        "distinctType": "None",
+        "top": null,
+        "offset": null,
+        "limit": null,
+        "orderBy": [
+            "Descending"
+        ],
+        "orderByExpressions": [
+            "c.population"
+        ],
+        "groupByExpressions": [],
+        "groupByAliases": [],
+        "aggregates": [],
+        "groupByAliasToAggregateType": {},
+        "rewrittenQuery": "SELECT c._rid, [{\"item\": c.population}] AS orderByItems, {\"name\": c.name, \"population\": c.population} AS payload\nFROM c\nWHERE ({documentdb-formattableorderbyquery-filter})\nORDER BY c.population DESC",
+        "hasSelectValue": false,
+        "dCountInfo": null,
+        "hasNonStreamingOrderBy": false
+    },
+    "queryRanges": [
+        {
+            "min": "",
+            "max": "FF",
+            "isMinInclusive": true,
+            "isMaxInclusive": false
+        }
+    ],
+    "hybridSearchQueryInfo": null
+}

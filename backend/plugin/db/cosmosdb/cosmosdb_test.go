@@ -1,11 +1,10 @@
 // Copyright (c) Bytebase (Hong Kong) Limited.
 package cosmosdb
 
-// Two suites cover the cross-partition query path, the one thing the forked
-// azcosmos SDK adds over upstream: the gateway cannot serve an aggregate,
-// DISTINCT, ORDER BY, TOP, OFFSET/LIMIT or GROUP BY that spans partitions, so
-// NewCrossPartitionQueryItemsPager pivots to a query engine that merges the
-// per-partition streams itself.
+// Two suites cover the cross-partition query path: the gateway cannot serve an
+// aggregate, DISTINCT, ORDER BY, TOP, OFFSET/LIMIT or GROUP BY that spans
+// partitions, so QueryEveryPartition pivots to the pure-Go query engine in
+// queryengine/gonative, which merges the per-partition streams itself.
 //
 // TestCrossPartition* run on the emulator SharedCosmosContainer starts, against
 // a fixture whose contents are known, and so assert exact answers. Both suites
