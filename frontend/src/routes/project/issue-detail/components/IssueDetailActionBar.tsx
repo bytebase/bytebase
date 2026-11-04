@@ -365,7 +365,7 @@ export function IssueDetailActionBar() {
 
   return (
     <>
-      <div className="flex items-center gap-x-2">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
         {shouldShowPlanLink && planRoute && (
           <RouterLink
             to={planRoute}

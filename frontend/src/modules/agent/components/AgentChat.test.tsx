@@ -24,10 +24,15 @@ const mocks = vi.hoisted(() => ({
   })),
   hasWorkspacePermissionV2: vi.fn(() => true),
   routerPush: vi.fn(),
+  routeListeners: [] as Array<() => void>,
   currentPath: "/initial",
+  currentRoute: undefined as
+    | { name?: string; params?: Record<string, string> }
+    | undefined,
   getSettingByName: vi.fn(),
   notify: vi.fn(),
   prepareAgentPlanDraftRoute: vi.fn(),
+  applyPlanDraftToCurrent: vi.fn(),
   prepareAgentDeniedQueryRequestRoute: vi.fn(),
   prepareIssueCommentDraftRoute: vi.fn(),
   wasDeniedQueryRequestDraftDelivered: vi.fn(),
@@ -83,25 +88,55 @@ vi.mock("@tanstack/react-virtual", async (importOriginal) => ({
   }),
 }));
 
-vi.mock("@/app/router", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/app/router")>()),
-  router: {
-    push: mocks.routerPush,
-    resolve: (to: unknown) => {
-      const fullPath =
-        typeof to === "object" &&
-        to !== null &&
-        "fullPath" in to &&
-        typeof to.fullPath === "string"
-          ? to.fullPath
-          : JSON.stringify(to);
-      return { href: fullPath, fullPath };
+vi.mock("@/app/router", async (importOriginal) => {
+  let routeSource: typeof mocks.currentRoute;
+  let routePath: string | undefined;
+  let snapshot:
+    | (NonNullable<typeof mocks.currentRoute> & { fullPath: string })
+    | undefined;
+  const getRouteSnapshot = () => {
+    if (
+      !snapshot ||
+      routeSource !== mocks.currentRoute ||
+      routePath !== mocks.currentPath
+    ) {
+      routeSource = mocks.currentRoute;
+      routePath = mocks.currentPath;
+      snapshot = {
+        ...(mocks.currentRoute ?? {}),
+        fullPath: mocks.currentPath,
+      };
+    }
+    return snapshot;
+  };
+  return {
+    ...(await importOriginal<typeof import("@/app/router")>()),
+    router: {
+      push: mocks.routerPush,
+      afterEach: (listener: () => void) => {
+        mocks.routeListeners.push(listener);
+        return () => {
+          mocks.routeListeners = mocks.routeListeners.filter(
+            (registered) => registered !== listener
+          );
+        };
+      },
+      resolve: (to: unknown) => {
+        const fullPath =
+          typeof to === "object" &&
+          to !== null &&
+          "fullPath" in to &&
+          typeof to.fullPath === "string"
+            ? to.fullPath
+            : JSON.stringify(to);
+        return { href: fullPath, fullPath };
+      },
+      get currentRoute() {
+        return { value: getRouteSnapshot() };
+      },
     },
-    get currentRoute() {
-      return { value: { fullPath: mocks.currentPath } };
-    },
-  },
-}));
+  };
+});
 
 vi.mock("@/utils", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/utils")>()),
@@ -122,6 +157,10 @@ vi.mock("@/stores/app", () => {
 vi.mock("../logic/planDraft", () => ({
   prepareAgentPlanDraftRoute: mocks.prepareAgentPlanDraftRoute,
   PlanDraftStorageError: class PlanDraftStorageError extends Error {},
+}));
+
+vi.mock("@/lib/plan/agentDraftHandoff", () => ({
+  dispatchAgentPlanDraftToCurrentPlan: mocks.applyPlanDraftToCurrent,
 }));
 
 vi.mock("../logic/deniedQueryAccess", () => ({
@@ -186,11 +225,14 @@ beforeEach(async () => {
   mocks.hasWorkspacePermissionV2.mockReset();
   mocks.hasWorkspacePermissionV2.mockReturnValue(true);
   mocks.routerPush.mockReset();
+  mocks.routeListeners = [];
+  mocks.currentRoute = undefined;
   mocks.currentPath = "/initial";
   mocks.getSettingByName.mockReset();
   mocks.getSettingByName.mockReturnValue(undefined);
   mocks.notify.mockReset();
   mocks.prepareAgentPlanDraftRoute.mockReset();
+  mocks.applyPlanDraftToCurrent.mockReset();
   mocks.prepareAgentDeniedQueryRequestRoute.mockReset();
   mocks.prepareIssueCommentDraftRoute.mockReset();
   mocks.wasDeniedQueryRequestDraftDelivered.mockReset();
@@ -506,6 +548,8 @@ describe("AgentChat", () => {
       "[data-agent-action-draft-plan]"
     );
     expect(button?.textContent).toContain("agent.plan-draft.open");
+    expect(button).toHaveClass("max-w-full", "whitespace-normal");
+    expect(button?.parentElement).toHaveClass("max-w-full");
     expect(mocks.prepareAgentPlanDraftRoute).not.toHaveBeenCalled();
     await act(async () => button?.click());
     expect(mocks.prepareAgentPlanDraftRoute).toHaveBeenCalledWith(
@@ -515,6 +559,98 @@ describe("AgentChat", () => {
     );
     expect(mocks.routerPush).toHaveBeenCalledWith(route);
     expect(useAgentStore.getState().minimized).toBe(true);
+    unmount();
+  });
+
+  test("applies generated SQL to the open Plan draft without navigating", async () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/sample" });
+    const content = "```sql\nCREATE TABLE notes (id INT);\n```";
+    const action = {
+      kind: "draft-plan" as const,
+      project: "projects/sample",
+      database: "instances/prod/databases/app",
+    };
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content,
+      metadata: { actions: [action] },
+    });
+    mocks.currentRoute = {
+      name: PROJECT_V1_ROUTE_PLAN_DETAIL,
+      params: { projectId: "sample", planId: "create" },
+    };
+    mocks.applyPlanDraftToCurrent.mockReturnValue(true);
+    useAgentStore.setState({ visible: true, minimized: false });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+
+    const button = container.querySelector<HTMLButtonElement>(
+      "[data-agent-action-draft-plan]"
+    );
+    expect(button?.textContent).toContain("agent.plan-draft.apply-to-current-plan");
+    await act(async () => button?.click());
+
+    expect(mocks.applyPlanDraftToCurrent).toHaveBeenCalledWith({
+      project: action.project,
+      database: action.database,
+      sql: "CREATE TABLE notes (id INT);",
+    });
+    expect(mocks.prepareAgentPlanDraftRoute).not.toHaveBeenCalled();
+    expect(mocks.routerPush).not.toHaveBeenCalled();
+    expect(useAgentStore.getState().minimized).toBe(false);
+    unmount();
+  });
+
+  test("updates the Plan draft action when navigation changes with the Agent open", () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/sample" });
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "```sql\nCREATE TABLE notes (id INT);\n```",
+      metadata: {
+        actions: [{
+          kind: "draft-plan",
+          project: "projects/sample",
+          database: "instances/prod/databases/app",
+        }],
+      },
+    });
+    mocks.currentRoute = {
+      name: "project.detail",
+      params: { projectId: "sample" },
+    };
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+
+    const button = container.querySelector<HTMLButtonElement>(
+      "[data-agent-action-draft-plan]"
+    );
+    expect(button?.textContent).toContain("agent.plan-draft.open");
+
+    mocks.currentRoute = {
+      name: PROJECT_V1_ROUTE_PLAN_DETAIL,
+      params: { projectId: "sample", planId: "create" },
+    };
+    mocks.currentPath = "/projects/sample/plans/create";
+    act(() => {
+      for (const listener of mocks.routeListeners) listener();
+    });
+    expect(button?.textContent).toContain(
+      "agent.plan-draft.apply-to-current-plan"
+    );
+
+    mocks.currentRoute = {
+      name: "project.detail",
+      params: { projectId: "sample" },
+    };
+    mocks.currentPath = "/projects/sample";
+    act(() => {
+      for (const listener of mocks.routeListeners) listener();
+    });
+    expect(button?.textContent).toContain("agent.plan-draft.open");
     unmount();
   });
 

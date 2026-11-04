@@ -35,13 +35,16 @@ export function AgentContextualStart({
 }: AgentContextualStartProps) {
   const { t } = useTranslation();
   const requiresReference =
-    page.kind === "database" || page.kind === "plan" || page.kind === "issue";
+    page.kind === "database" ||
+    page.kind === "plan" ||
+    page.kind === "issue" ||
+    (page.kind === "plan-create" && Boolean(page.databaseName));
   const Icon =
     page.kind === "project"
       ? Folder
       : page.kind === "database"
         ? Database
-        : page.kind === "plan"
+        : page.kind === "plan" || page.kind === "plan-create"
           ? ClipboardList
           : page.kind === "issue"
             ? CircleDot
@@ -71,6 +74,10 @@ export function AgentContextualStart({
         t("agent.contextual-start.plan-risks"),
         t("agent.contextual-start.plan-status"),
       ];
+      break;
+    case "plan-create":
+      heading = t("agent.contextual-start.plan-create-heading");
+      suggestions = [t("agent.contextual-start.plan-create-sql")];
       break;
     case "issue":
       heading = t("agent.contextual-start.issue-heading");

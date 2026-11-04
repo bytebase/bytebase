@@ -3539,6 +3539,75 @@ describe("AgentInput", () => {
     view.unmount();
   });
 
+  test("restores resource references when the queued prompt has no mention prefix", async () => {
+    mocks.getOrFetchSettingByName.mockResolvedValue({
+      value: { value: { case: "ai", value: { enabled: false } } },
+    });
+    const page = { path: "/projects/orders/plans/123", title: "Plan" };
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/orders", page });
+    const plan = {
+      kind: "plan" as const,
+      name: "projects/orders/plans/123",
+      project: "projects/orders",
+      label: "Add event tracking (#123)",
+    };
+    store.queueUserMessage({
+      chatId: chat.id,
+      text: "Review this Plan.",
+      page,
+      resourceReferences: [plan],
+    });
+
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => {
+      await vi.waitFor(() => expect(getQueuedUserMessage(chat.id)).toBeUndefined());
+    });
+
+    expect(store.getDraft(chat.id)).toEqual({
+      text: "@Add event tracking (#123) Review this Plan.",
+      mentions: [
+        { resource: plan, range: { start: 0, end: 26 } },
+      ],
+    });
+    view.unmount();
+  });
+
+  test("restores a singular bound resource from its existing mention", async () => {
+    mocks.getOrFetchSettingByName.mockResolvedValue({
+      value: { value: { case: "ai", value: { enabled: false } } },
+    });
+    const page = { path: "/projects/orders/plans/create", title: "Plan" };
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/orders", page });
+    const database = {
+      kind: "database" as const,
+      name: "instances/primary/databases/app",
+      project: "projects/orders",
+      label: "app (Primary)",
+    };
+    store.queueUserMessage({
+      chatId: chat.id,
+      text: "@app (Primary) Draft SQL for a new table.",
+      page,
+      resourceReference: database,
+    });
+
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => {
+      await vi.waitFor(() => expect(getQueuedUserMessage(chat.id)).toBeUndefined());
+    });
+
+    expect(store.getDraft(chat.id)).toEqual({
+      text: "@app (Primary) Draft SQL for a new table.",
+      resource: database,
+      mention: { start: 0, end: 14 },
+    });
+    view.unmount();
+  });
+
   test("binds an initial empty chat and uses its context for every run", async () => {
     mocks.runAgentLoop.mockResolvedValue({
       kind: "completed",

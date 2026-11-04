@@ -281,7 +281,7 @@ describe("buildSystemPrompt", () => {
     expect(selectedPrompt).toContain("generated DDL");
     expect(selectedPrompt).toContain("exactly one fenced `sql` code block");
     expect(selectedPrompt).toContain("opens a populated, unsaved Plan");
-    expect(selectedPrompt).toContain("does not create or execute the Plan");
+    expect(selectedPrompt).toContain("never persists or executes SQL");
     expect(selectedPrompt).toContain(
       "one primary action: Open, draft-plan, or draft-issue-comment"
     );

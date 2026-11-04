@@ -26,6 +26,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Table } from "@/components/ui/table";
+import { useReactiveRoute } from "@/hooks/useReactiveRoute";
 import {
   ExistingIssueCommentDraftError,
   IssueCommentDraftPermissionError,
@@ -33,6 +34,7 @@ import {
   prepareIssueCommentDraftRoute,
   wasIssueCommentDraftDelivered,
 } from "@/lib/issueCommentDraft";
+import { dispatchAgentPlanDraftToCurrentPlan } from "@/lib/plan/agentDraftHandoff";
 import {
   AI_ASSISTANT_PRODUCT_INTRO,
   PRODUCT_INTRO_QUERY_KEY,
@@ -63,7 +65,10 @@ import {
   isResourceMentionRange,
   normalizeAgentResourceReferences,
 } from "../logic/resourceMention";
-import { normalizeAgentResponseActions } from "../logic/responseActions";
+import {
+  extractPlanDraftSQL,
+  normalizeAgentResponseActions,
+} from "../logic/responseActions";
 import type {
   AgentAnswerEvidence,
   AgentEvidence,
@@ -326,15 +331,17 @@ function HandoffLink({ handoff }: { handoff?: AgentHandoff }) {
     return (
       <Button
         appearance="link"
-        className="h-auto px-0 py-0"
+        className="h-auto max-w-full min-w-0 justify-start px-0 py-0 text-left whitespace-normal"
         data-agent-handoff
         data-agent-action-open
         disabled={loading}
         onClick={() => void openSetup()}
         size="sm"
       >
-        {t(labelKey)}
-        <ArrowUpRight className="size-3.5" aria-hidden="true" />
+        <span className="min-w-0 break-words whitespace-normal">
+          {t(labelKey)}
+        </span>
+        <ArrowUpRight className="size-3.5 shrink-0" aria-hidden="true" />
       </Button>
     );
   }
@@ -343,10 +350,10 @@ function HandoffLink({ handoff }: { handoff?: AgentHandoff }) {
       data-agent-handoff
       data-agent-action-open
       to={to}
-      className="inline-flex items-center gap-1 text-sm text-accent hover:underline"
+      className="inline-flex max-w-full items-center gap-1 text-sm text-accent hover:underline"
     >
-      {t(labelKey)}
-      <ArrowUpRight className="size-3.5" aria-hidden="true" />
+      <span className="min-w-0 break-words">{t(labelKey)}</span>
+      <ArrowUpRight className="size-3.5 shrink-0" aria-hidden="true" />
     </RouterLink>
   );
 }
@@ -406,10 +413,41 @@ function PlanDraftButton({
 }) {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
+  const currentRoute = useReactiveRoute();
+  const isCurrentPlanCreate = (route = router.currentRoute.value) => {
+    const planId = route.params?.planId;
+    const projectId = route.params?.projectId;
+    return (
+      route.name === PROJECT_V1_ROUTE_PLAN_DETAIL &&
+      typeof planId === "string" &&
+      planId.toLowerCase() === "create" &&
+      typeof projectId === "string" &&
+      projectId === action.project.slice("projects/".length)
+    );
+  };
+  const applyToCurrentPlan = isCurrentPlanCreate(currentRoute);
   const openDraft = async () => {
     if (loading) return;
     setLoading(true);
     try {
+      if (isCurrentPlanCreate()) {
+        const sql = extractPlanDraftSQL(answer);
+        const handled =
+          sql &&
+          dispatchAgentPlanDraftToCurrentPlan({
+            project: action.project,
+            database: action.database,
+            sql,
+          });
+        if (!handled) {
+          useAppStore.getState().notify({
+            module: "bytebase",
+            style: "CRITICAL",
+            title: t("agent.plan-draft.current-plan-unavailable"),
+          });
+        }
+        return;
+      }
       const route = await prepareAgentPlanDraftRoute(
         action,
         answer,
@@ -442,17 +480,24 @@ function PlanDraftButton({
     <Button
       appearance="link"
       size="sm"
-      className="h-auto px-0 py-0"
+      className="h-auto max-w-full min-w-0 justify-start px-0 py-0 text-left whitespace-normal"
       data-agent-action-draft-plan
       disabled={loading}
       onClick={() => void openDraft()}
     >
       {loading ? (
-        <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+        <Loader2
+          className="size-3.5 shrink-0 animate-spin"
+          aria-hidden="true"
+        />
       ) : (
-        <ArrowUpRight className="size-3.5" aria-hidden="true" />
+        <ArrowUpRight className="size-3.5 shrink-0" aria-hidden="true" />
       )}
-      {t("agent.plan-draft.open")}
+      <span className="min-w-0 break-words">
+        {applyToCurrentPlan
+          ? t("agent.plan-draft.apply-to-current-plan")
+          : t("agent.plan-draft.open")}
+      </span>
     </Button>
   );
 }
@@ -506,17 +551,22 @@ function AccessRequestDraftButton({
     <Button
       appearance="link"
       size="sm"
-      className="h-auto px-0 py-0"
+      className="h-auto max-w-full min-w-0 justify-start px-0 py-0 text-left whitespace-normal"
       data-agent-action-request-access
       disabled={loading}
       onClick={() => void openDraft()}
     >
       {loading ? (
-        <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+        <Loader2
+          className="size-3.5 shrink-0 animate-spin"
+          aria-hidden="true"
+        />
       ) : (
-        <ArrowUpRight className="size-3.5" aria-hidden="true" />
+        <ArrowUpRight className="size-3.5 shrink-0" aria-hidden="true" />
       )}
-      {t("agent.access-grant-draft.open")}
+      <span className="min-w-0 break-words">
+        {t("agent.access-grant-draft.open")}
+      </span>
     </Button>
   );
 }
@@ -582,21 +632,26 @@ function IssueCommentDraftButton({
   };
 
   return (
-    <div>
+    <div className="max-w-full">
       <Button
         appearance="link"
         size="sm"
-        className="h-auto px-0 py-0"
+        className="h-auto max-w-full min-w-0 justify-start px-0 py-0 text-left whitespace-normal"
         data-agent-action-draft-issue-comment
         disabled={loading}
         onClick={() => void openDraft()}
       >
         {loading ? (
-          <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+          <Loader2
+            className="size-3.5 shrink-0 animate-spin"
+            aria-hidden="true"
+          />
         ) : (
-          <ArrowUpRight className="size-3.5" aria-hidden="true" />
+          <ArrowUpRight className="size-3.5 shrink-0" aria-hidden="true" />
         )}
-        {t("agent.issue-comment-draft.open")}
+        <span className="min-w-0 break-words">
+          {t("agent.issue-comment-draft.open")}
+        </span>
       </Button>
       <details className="mt-1 text-xs text-control-light">
         <summary className="cursor-pointer">
@@ -1070,7 +1125,7 @@ export function AgentChat({
                           issueCommentDraftAction ||
                           msg.metadata?.accessRequestDraft ||
                           msg.metadata?.handoff) && (
-                          <div className="mt-2">
+                          <div className="mt-2 max-w-full">
                             {planDraftAction ? (
                               <PlanDraftButton
                                 action={planDraftAction}

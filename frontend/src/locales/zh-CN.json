@@ -77,6 +77,8 @@
       "issue-security": "此工单是否存在安全隐患？",
       "issue-summary": "总结此工单及其当前状态",
       "plan-changes": "此计划拟进行哪些数据库变更？",
+      "plan-create-heading": "起草数据库变更计划",
+      "plan-create-sql": "帮我为此计划起草数据库变更 SQL。",
       "plan-heading": "询问此计划",
       "plan-risks": "此计划是否存在审核或部署风险？",
       "plan-status": "当前的审核和发布状态是什么？",
@@ -117,6 +119,9 @@
     "input-processing-placeholder": "正在处理...",
     "interrupted": "已中断",
     "interrupted-retry-hint": "对话已中断。您可以重试或发送新消息。",
+    "issue-assistance": {
+      "review": "与 Agent 一起审核"
+    },
     "issue-comment-draft": {
       "existing": "This issue already has an unsent comment. Review it before opening another draft.",
       "open": "Draft review comment",
@@ -158,9 +163,19 @@
       "issue-approval-rollout": "这是最后一步审批。通过所需检查和审核后，此次审批可能创建部署，但不保证任务会执行。",
       "issue-rejection": "拒绝此工单会停止当前审批流程。处理拒绝原因后才能继续审批。"
     },
+    "plan-assistance": {
+      "ask-draft-sql": "让 Agent 起草 SQL",
+      "review": "与 Agent 一起审核"
+    },
     "plan-draft": {
+      "append-sql": "追加 SQL",
+      "apply-to-current-plan": "应用到此计划",
+      "current-plan-unavailable": "无法将此 SQL 应用到当前计划。请确认目标数据库后重试。",
       "default-title": "建议的数据库变更",
+      "existing-sql-description": "选择将生成的 SQL 追加到现有草稿，或替换现有草稿。",
+      "existing-sql-title": "此 Plan 已包含 SQL",
       "open": "打开计划草稿",
+      "replace-sql": "替换 SQL",
       "unavailable": "无法打开计划草稿。数据库或 SQL 可能已更改。请让 Agent 重新生成。"
     },
     "plan-reference-unavailable": "此计划已不可用，或你没有访问权限。",

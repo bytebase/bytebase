@@ -164,7 +164,7 @@ describe("resolveAgentPageResource", () => {
   });
 
   test.each(["create", "CREATE", "-"])(
-    "does not reference a Plan for the %s route parameter",
+    "detects Plan creation context for the %s route parameter",
     (planId) => {
       expect(
         resolveAgentPageResource(
@@ -173,13 +173,82 @@ describe("resolveAgentPageResource", () => {
             planId,
           })
         )
-      ).toEqual({
-        kind: "project",
-        name: "projects/orders",
-        project: "projects/orders",
-      });
+      ).toEqual(
+        planId === "-"
+          ? {
+              kind: "project",
+              name: "projects/orders",
+              project: "projects/orders",
+            }
+          : { kind: "plan-create", project: "projects/orders" }
+      );
     }
   );
+
+  test("keeps a single selected database on the Plan-create route", () => {
+    expect(
+      resolveAgentPageResource(
+        detailRoute(
+          PROJECT_V1_ROUTE_PLAN_DETAIL,
+          { projectId: "orders", planId: "create" },
+          { databaseList: "instances/primary/databases/app" }
+        )
+      )
+    ).toEqual({
+      kind: "plan-create",
+      project: "projects/orders",
+      databaseName: "instances/primary/databases/app",
+    });
+  });
+
+  test("uses the current Plan-create target instead of the initial URL target", () => {
+    expect(
+      resolveAgentPageResource(
+        detailRoute(
+          PROJECT_V1_ROUTE_PLAN_DETAIL,
+          { projectId: "orders", planId: "create" },
+          {
+            agentDatabaseName: "instances/primary/databases/new",
+            databaseList: "instances/primary/databases/app",
+          }
+        )
+      )
+    ).toEqual({
+      kind: "plan-create",
+      project: "projects/orders",
+      databaseName: "instances/primary/databases/new",
+    });
+  });
+
+  test("does not fall back to the initial target when the current spec is unbound", () => {
+    expect(
+      resolveAgentPageResource(
+        detailRoute(
+          PROJECT_V1_ROUTE_PLAN_DETAIL,
+          { projectId: "orders", planId: "create" },
+          {
+            agentDatabaseName: "",
+            databaseList: "instances/primary/databases/app",
+          }
+        )
+      )
+    ).toEqual({ kind: "plan-create", project: "projects/orders" });
+  });
+
+  test("does not select one database from a multi-target Plan-create route", () => {
+    expect(
+      resolveAgentPageResource(
+        detailRoute(
+          PROJECT_V1_ROUTE_PLAN_DETAIL,
+          { projectId: "orders", planId: "create" },
+          {
+            databaseList:
+              "instances/primary/databases/app,instances/primary/databases/audit",
+          }
+        )
+      )
+    ).toEqual({ kind: "plan-create", project: "projects/orders" });
+  });
 
   test("uses the canonical database parent when present", () => {
     expect(

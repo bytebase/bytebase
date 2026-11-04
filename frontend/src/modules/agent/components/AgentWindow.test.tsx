@@ -318,6 +318,18 @@ afterEach(() => {
 });
 
 describe("AgentWindow", () => {
+  test("uses the header bot icon for the minimized launcher", () => {
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    act(() => useAgentStore.getState().minimize());
+
+    expect(
+      document.body.querySelector("[data-agent-window] .lucide-bot")
+    ).toBeInstanceOf(SVGElement);
+    unmount();
+  });
+
   test("hides the Agent window while the authenticated member is unavailable", () => {
     const { render, unmount } = renderIntoContainer(<AgentWindow />);
     render();
@@ -458,6 +470,16 @@ describe("AgentWindow", () => {
 
   test.each([
     {
+      kind: "plan-create" as const,
+      page: {
+        kind: "plan-create" as const,
+        project: "projects/orders",
+      },
+      context: "projects/orders",
+      heading: "agent.contextual-start.plan-create-heading",
+      suggestions: ["agent.contextual-start.plan-create-sql"],
+    },
+    {
       kind: "instance" as const,
       page: { kind: "instance" as const, name: "instances/primary" },
       context: "workspaces/acme",
@@ -575,6 +597,53 @@ describe("AgentWindow", () => {
       }],
     });
     expect(store.getMessages(chat?.id)).toEqual([]);
+    unmount();
+  });
+
+  test("binds the Plan-create starter to its selected database", async () => {
+    mocks.pageResource = {
+      kind: "plan-create",
+      project: "projects/orders",
+      databaseName: "instances/primary/databases/app",
+    };
+    mocks.getOrFetchDatabaseByName.mockResolvedValue({
+      name: "instances/primary/databases/app",
+      project: "projects/orders",
+      instanceResource: { title: "Primary" },
+    });
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    await act(async () => {
+      render();
+      await Promise.resolve();
+    });
+
+    const start = document.body.querySelector(
+      '[data-agent-contextual-start="plan-create"]'
+    );
+    const mention = start?.querySelector(
+      "[data-agent-contextual-mention]"
+    ) as HTMLButtonElement;
+    expect(mention).toBeInstanceOf(HTMLButtonElement);
+    expect(mention.textContent).toContain("@app (Primary)");
+
+    act(() => {
+      (
+        start?.querySelector(
+          "[data-agent-contextual-suggestion]"
+        ) as HTMLButtonElement
+      ).click();
+    });
+
+    expect(getCurrentQueuedUserMessage()).toMatchObject({
+      text: "@app (Primary) agent.contextual-start.plan-create-sql",
+      resourceReference: {
+        kind: "database",
+        name: "instances/primary/databases/app",
+        project: "projects/orders",
+        label: "app (Primary)",
+      },
+      runMode: "read-only",
+    });
     unmount();
   });
 

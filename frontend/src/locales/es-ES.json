@@ -77,6 +77,8 @@
       "issue-security": "¿Hay algún problema de seguridad relacionado con esta solicitud?",
       "issue-summary": "Resume esta solicitud y su estado",
       "plan-changes": "¿Qué cambios de base de datos propone este plan?",
+      "plan-create-heading": "Redactar un Plan de cambio de base de datos",
+      "plan-create-sql": "Ayúdame a redactar un cambio de base de datos para este Plan.",
       "plan-heading": "Preguntar sobre este plan",
       "plan-risks": "¿Hay riesgos de revisión o despliegue en este plan?",
       "plan-status": "¿Cuál es el estado actual de revisión y despliegue?",
@@ -117,6 +119,9 @@
     "input-processing-placeholder": "Procesando...",
     "interrupted": "Interrumpido",
     "interrupted-retry-hint": "La conversación fue interrumpida. Puede reintentar o enviar un nuevo mensaje.",
+    "issue-assistance": {
+      "review": "Revisar con el agente"
+    },
     "issue-comment-draft": {
       "existing": "This issue already has an unsent comment. Review it before opening another draft.",
       "open": "Draft review comment",
@@ -158,9 +163,19 @@
       "issue-approval-rollout": "Este es el último paso de aprobación. La aprobación puede crear un despliegue después de las comprobaciones y revisiones necesarias; no garantiza la ejecución de las tareas.",
       "issue-rejection": "Rechazar esta incidencia detiene su flujo de aprobación actual. Hay que resolver el rechazo antes de continuar con la aprobación."
     },
+    "plan-assistance": {
+      "ask-draft-sql": "Pedir al agente que redacte SQL",
+      "review": "Revisar con el agente"
+    },
     "plan-draft": {
+      "append-sql": "Añadir SQL",
+      "apply-to-current-plan": "Aplicar a este Plan",
+      "current-plan-unavailable": "No se pudo aplicar este SQL al Plan actual. Comprueba la base de datos de destino e inténtalo de nuevo.",
       "default-title": "Cambio de base de datos propuesto",
+      "existing-sql-description": "Elige si quieres añadir el SQL generado al borrador actual o reemplazarlo.",
+      "existing-sql-title": "Este Plan ya contiene SQL",
       "open": "Abrir borrador del plan",
+      "replace-sql": "Reemplazar SQL",
       "unavailable": "No se pudo abrir el borrador del plan. Es posible que la base de datos o el SQL hayan cambiado. Pide al agente que lo genere de nuevo."
     },
     "plan-reference-unavailable": "Este plan ya no está disponible o no tienes acceso a él.",
