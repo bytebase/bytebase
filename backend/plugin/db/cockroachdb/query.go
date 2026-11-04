@@ -37,7 +37,15 @@ func makeValueByTypeName(typeName string, _ *sql.ColumnType) any {
 
 var timeTzOID = fmt.Sprintf("%d", pgtype.TimetzOID)
 
-func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.RowValue {
+// convertValueIn binds the row value converter to the location timestamptz values
+// render in, which the caller reads from the session once per statement.
+func convertValueIn(location *time.Location) func(string, *sql.ColumnType, any) *v1pb.RowValue {
+	return func(typeName string, columnType *sql.ColumnType, value any) *v1pb.RowValue {
+		return convertValue(typeName, columnType, value, location)
+	}
+}
+
+func convertValue(typeName string, columnType *sql.ColumnType, value any, location *time.Location) *v1pb.RowValue {
 	switch raw := value.(type) {
 	case *sql.NullString:
 		if raw.Valid {
@@ -127,7 +135,7 @@ func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.
 					},
 				}
 			}
-			zone, offset := raw.Time.Zone()
+			zone, offset := raw.Time.In(location).Zone()
 			return &v1pb.RowValue{
 				Kind: &v1pb.RowValue_TimestampTzValue{
 					TimestampTzValue: &v1pb.RowValue_TimestampTZ{

@@ -104,6 +104,89 @@ func TestGetPGConnectionConfigPreservesExplicitQueryExecMode(t *testing.T) {
 	require.Equal(t, 128, connConfig.StatementCacheCapacity)
 }
 
+func TestGetPGConnectionConfigKeepsEachValueWhole(t *testing.T) {
+	open := func(edit func(*storepb.DataSource)) (*pgx.ConnConfig, error) {
+		dataSource := &storepb.DataSource{Username: "dba", Host: "db.example.com", Port: "5432"}
+		edit(dataSource)
+		return getPGConnectionConfig(db.ConnectionConfig{DataSource: dataSource})
+	}
+
+	t.Run("a port cannot name another host", func(t *testing.T) {
+		_, err := open(func(ds *storepb.DataSource) { ds.Port = "5432 host=other.example.com" })
+		require.ErrorContains(t, err, "invalid port")
+	})
+	t.Run("a port cannot name a CA file", func(t *testing.T) {
+		missing := t.TempDir() + "/missing-ca.pem"
+		_, err := open(func(ds *storepb.DataSource) { ds.Port = "5432 sslmode=verify-full sslrootcert=" + missing })
+		require.ErrorContains(t, err, "invalid port")
+	})
+	t.Run("a host carrying options stays one host", func(t *testing.T) {
+		connConfig, err := open(func(ds *storepb.DataSource) { ds.Host = "db.example.com port=6543" })
+		require.NoError(t, err)
+		require.Equal(t, "db.example.com port=6543", connConfig.Host)
+		require.Equal(t, uint16(5432), connConfig.Port)
+	})
+	t.Run("an extra parameter keeps libpq syntax", func(t *testing.T) {
+		connConfig, err := open(func(ds *storepb.DataSource) {
+			ds.ExtraConnectionParameters = map[string]string{"options": "'-c search_path=hr'"}
+		})
+		require.NoError(t, err)
+		require.Equal(t, "-c search_path=hr", connConfig.RuntimeParams["options"])
+	})
+	t.Run("surrounding whitespace is ignored", func(t *testing.T) {
+		connConfig, err := open(func(ds *storepb.DataSource) {
+			ds.Host = " db.example.com "
+			ds.Port = " 5432 "
+		})
+		require.NoError(t, err)
+		require.Equal(t, "db.example.com", connConfig.Host)
+		require.Equal(t, uint16(5432), connConfig.Port)
+	})
+	t.Run("a blank host is refused", func(t *testing.T) {
+		_, err := open(func(ds *storepb.DataSource) { ds.Host = "   " })
+		require.ErrorContains(t, err, "host must be set")
+	})
+	t.Run("a blank port is refused", func(t *testing.T) {
+		_, err := open(func(ds *storepb.DataSource) { ds.Port = "   " })
+		require.ErrorContains(t, err, "port must be set")
+	})
+}
+
+func TestGetRDSConnectionConfigKeepsTheUserWhole(t *testing.T) {
+	// Static credentials sign the token locally; no AWS file or endpoint is read.
+	t.Setenv("AWS_CONFIG_FILE", t.TempDir()+"/config")
+	t.Setenv("AWS_SHARED_CREDENTIALS_FILE", t.TempDir()+"/credentials")
+	t.Setenv("AWS_EC2_METADATA_DISABLED", "true")
+	// A set AWS_PROFILE makes the SDK load that profile strictly, and the files
+	// above have none.
+	t.Setenv("AWS_PROFILE", "")
+	connConfig, err := getRDSConnectionConfig(context.Background(), db.ConnectionConfig{
+		DataSource: &storepb.DataSource{
+			Host:               "rds.example.com",
+			Port:               "5432",
+			Username:           "dba host=other.example.com",
+			Region:             "us-east-1",
+			AuthenticationType: storepb.DataSource_AWS_RDS_IAM,
+			IamExtension: &storepb.DataSource_AwsCredential{
+				AwsCredential: &storepb.DataSource_AWSCredential{AccessKeyId: "AKIDEXAMPLE", SecretAccessKey: "not-a-real-secret"},
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, "rds.example.com", connConfig.Host)
+	require.Equal(t, "dba host=other.example.com", connConfig.User)
+}
+
+func TestGetCloudSQLConnectionConfigKeepsTheUserWhole(t *testing.T) {
+	config := cloudSQLIAMConnectionConfig(cloudSQLTestInstance)
+	config.DataSource.Username = "bytebase service account"
+	driver := &Driver{}
+	connConfig, err := driver.getCloudSQLConnectionConfig(context.Background(), config)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = driver.cloudSQLDialer.Close() })
+	require.Equal(t, "bytebase service account", connConfig.User)
+}
+
 func TestGetPGConnectionConfigDisablesTLSVerificationForAllHosts(t *testing.T) {
 	connConfig, err := getPGConnectionConfig(db.ConnectionConfig{
 		DataSource: &storepb.DataSource{
@@ -580,9 +663,9 @@ func TestCloudSQLIAMDialerClosesWhenOpenFails(t *testing.T) {
 	ctx := context.Background()
 
 	config := cloudSQLIAMConnectionConfig(cloudSQLTestInstance)
-	// A username that does not survive the keyword/value DSN fails Open after the
-	// connector has been built.
-	config.DataSource.Username = "bytebase service account"
+	// pgx refuses a NUL byte anywhere in a connection string, so this username
+	// fails Open after the connector has been built.
+	config.DataSource.Username = "bytebase\x00"
 
 	driver := &Driver{}
 	_, err := driver.Open(ctx, storepb.Engine_POSTGRES, config)

@@ -24,12 +24,12 @@ const templates: Record<string, string> = {
   "plan.summary.n-changes": "{{n}} changes",
   "plan.summary.n-database-groups": "{{n}} database groups",
   "plan.summary.n-databases": "{{n}} databases",
-  "plan.summary.n-error": "{{n}} error",
+  "plan.summary.n-error": "Errors: {{n}}",
   "plan.summary.n-of-m-approved": "{{n}} of {{m}} approved",
   "plan.summary.n-of-m-tasks": "{{n}}/{{m}} tasks",
   "plan.summary.n-passed": "{{n}} passed",
   "plan.summary.n-unresolved-threads": "{{count}} unresolved threads",
-  "plan.summary.n-warning": "{{n}} warning",
+  "plan.summary.n-warning": "Warnings: {{n}}",
   "plan.summary.approved-by": "Approved by {{names}}",
   "plan.summary.no-approval-required": "No approval required",
   "plan.findings.n-resolved": "{{count}} resolved",
@@ -81,7 +81,7 @@ describe("plan detail phase summaries", () => {
     } as unknown as Plan;
 
     expect(buildChangesSummary(plan, t)).toBe(
-      "2 changes · 2 databases and 1 database groups · 2 passed, 1 warning, 1 error"
+      "2 changes · 2 databases and 1 database groups · 2 passed, Warnings: 1, Errors: 1"
     );
   });
 

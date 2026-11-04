@@ -123,27 +123,22 @@ func getCockroachConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, 
 		return nil, errors.Errorf("user must be set")
 	}
 
-	if config.DataSource.Host == "" {
-		return nil, errors.Errorf("host must be set")
-	}
-
-	if config.DataSource.Port == "" {
-		return nil, errors.Errorf("port must be set")
-	}
-
 	if (config.DataSource.GetSslCert() == "" && config.DataSource.GetSslKey() != "") ||
 		(config.DataSource.GetSslCert() != "" && config.DataSource.GetSslKey() == "") {
 		return nil, errors.Errorf("ssl-cert and ssl-key must be both set or unset")
 	}
 
-	connStr := fmt.Sprintf("host=%s port=%s", config.DataSource.Host, config.DataSource.Port)
+	connStr, err := util.PGHostPort(config.DataSource.Host, config.DataSource.Port)
+	if err != nil {
+		return nil, err
+	}
 	if config.DataSource.GetUseSsl() {
 		connStr += fmt.Sprintf(" sslmode=%s", util.GetPGSSLMode(config.DataSource))
 	}
 
 	routingID := getRoutingIDFromCockroachCloudURL(config.DataSource.Host)
 	if routingID != "" {
-		connStr += fmt.Sprintf(" options='--cluster=%s'", routingID)
+		connStr += " options=" + util.QuotePGValue("--cluster="+routingID)
 	}
 
 	connConfig, err := pgx.ParseConfig(connStr)
@@ -655,6 +650,7 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 		startTime := time.Now()
 		queryResult, err := func() (*v1pb.QueryResult, error) {
 			if allQuery {
+				location := util.PgSessionLocation(conn)
 				var r *v1pb.QueryResult
 				if err := crdb.Execute(func() error {
 					rows, err := conn.QueryContext(ctx, statement)
@@ -662,7 +658,7 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 						return err
 					}
 					defer rows.Close()
-					r, err = util.RowsToQueryResult(rows, makeValueByTypeName, convertValue, queryContext.MaximumSQLResultSize)
+					r, err = util.RowsToQueryResult(rows, makeValueByTypeName, convertValueIn(location), queryContext.MaximumSQLResultSize)
 					if err != nil {
 						return err
 					}

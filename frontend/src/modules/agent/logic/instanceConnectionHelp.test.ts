@@ -125,7 +125,6 @@ describe("instanceConnectionHelp", () => {
     });
     expect(mocks.open).toHaveBeenCalledOnce();
   });
-
   test("binds page-launched assistance to its selected resource", () => {
     const resourceReference = {
       kind: "plan" as const,

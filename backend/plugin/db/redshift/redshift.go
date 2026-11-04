@@ -78,7 +78,11 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 		return nil, errors.Errorf("ssl-cert and ssl-key must be both set or unset")
 	}
 
-	pgxConnConfig, err := pgx.ParseConfig(fmt.Sprintf("host=%s port=%s", config.DataSource.Host, config.DataSource.Port))
+	hostPort, err := util.PGHostPort(config.DataSource.Host, config.DataSource.Port)
+	if err != nil {
+		return nil, err
+	}
+	pgxConnConfig, err := pgx.ParseConfig(hostPort)
 	if err != nil {
 		return nil, err
 	}
@@ -401,12 +405,13 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 		startTime := time.Now()
 		queryResult, err := func() (*v1pb.QueryResult, error) {
 			if allQuery {
+				location := util.PgSessionLocation(conn)
 				rows, err := conn.QueryContext(ctx, statement)
 				if err != nil {
 					return nil, err
 				}
 				defer rows.Close()
-				r, err := util.RowsToQueryResult(rows, makeValueByTypeName, convertValue, queryContext.MaximumSQLResultSize)
+				r, err := util.RowsToQueryResult(rows, makeValueByTypeName, convertValueIn(location), queryContext.MaximumSQLResultSize)
 				if err != nil {
 					return nil, err
 				}

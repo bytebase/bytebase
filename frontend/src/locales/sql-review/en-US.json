@@ -31,16 +31,16 @@
   },
   "attach-resource": {
     "change-resources": "Change attached resources",
-    "label": "You can apply the SQL review policy to environments or projects. The database will use the project-level policy if it exists, or fallback to the environment-level policy.",
+    "label": "You can apply the SQL review policy to environments or projects. The database will use the project-level policy if it exists, or fall back to the environment-level policy.",
     "label-environment": "The SQL review policy will affect all databases belonging to the selected environment.",
     "label-project": "The SQL review policy will affect all databases belonging to the selected project. This will supersede the database environment-level policy.",
     "no-linked-resources": "No attached resources",
-    "override-warning": "Following resources already bound with other SQL review policies. Click \"{{button}}\" will override the config.",
+    "override-warning": "The following resources are already linked to other SQL review policies. Clicking \"{{button}}\" will override the configuration.",
     "self": "Attach to resources"
   },
   "category": {
     "advice": "Advice",
-    "builtin": "Builtin rules",
+    "builtin": "Built-in rules",
     "column": "Column",
     "database": "Database",
     "engine": "Engine",
@@ -57,7 +57,7 @@
       "choose-template": "Choose template",
       "display-name": "Display name",
       "display-name-default": "SQL review policy",
-      "display-name-label": "A display name to help identifying among different review policies.",
+      "display-name-label": "A display name to distinguish this review policy from others.",
       "name": "Basic info"
     },
     "configure-rule": {
@@ -68,7 +68,7 @@
   },
   "delete": "Delete SQL review policy",
   "delete-description": "The SQL review policy and all its rules will be permanently removed. This cannot be undone.",
-  "description": "SQL review policy can define different set of SQL lint rules for the respective environments. It helps teams to adopt SQL best practice and enforce schema consistency across different databases. Whenever you attempt a DDL/DML change or use SQL Editor to query data, the query will be checked against the configured SQL review policy.",
+  "description": "SQL review policies can define different sets of SQL lint rules for different environments. They help teams adopt SQL best practices and enforce schema consistency across different databases. Whenever you attempt a DDL/DML change or use SQL Editor to query data, the query will be checked against the configured SQL review policy.",
   "disable-description": "Disabling this policy will stop enforcing its rules on the attached resources. You can re-enable it later.",
   "disabled": "SQL review is disabled",
   "enable-description": "Enabling this policy will start enforcing its rules on the attached resources.",
@@ -124,7 +124,7 @@
       "title": "Online migration"
     },
     "BUILTIN_PRIOR_BACKUP_CHECK": {
-      "description": "This rule checks whether a backup can be created before data changes. It verifies the existence of the backup target database and disallows non-supported scenarios. It's builtin and cannot skip.",
+      "description": "This rule checks whether a backup can be created before data changes. It verifies the existence of the backup target database and disallows non-supported scenarios. It is built in and cannot be skipped.",
       "title": "Prior backup feasibility check"
     },
     "BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE": {
@@ -150,7 +150,7 @@
       "title": "Restrict the initial value of auto-increment columns"
     },
     "COLUMN_AUTO_INCREMENT_MUST_INTEGER": {
-      "description": "MySQL's auto-increment column are generally used as business-independent primary key. Using integer types occupies less storage space and makes the primary key index structure more compact, bringing better query and DML performance. Suggested error level: Error",
+      "description": "MySQL's auto-increment columns are generally used as business-independent primary keys. Using integer types occupies less storage space and makes the primary key index structure more compact, bringing better query and DML performance. Suggested error level: Error",
       "title": "Enforce the use of \"INTEGER\" data type for auto-increment columns"
     },
     "COLUMN_AUTO_INCREMENT_MUST_UNSIGNED": {
@@ -194,8 +194,8 @@
       "title": "Prohibit dropping columns"
     },
     "COLUMN_DISALLOW_DROP_IN_INDEX": {
-      "description": "Prohibit dropping columns in index. Suggested error level: Error",
-      "title": "Prohibit dropping columns in index"
+      "description": "Prohibit dropping indexed columns. Suggested error level: Error",
+      "title": "Prohibit dropping indexed columns"
     },
     "COLUMN_DISALLOW_SET_CHARSET": {
       "description": "It is recommended to set the charset at the database level or table level. Setting the charset at finer granularity can bring unnecessary complexities. Suggested error level: Error.",
@@ -220,7 +220,7 @@
       "title": "Restrict the length of \"VARCHAR\" data type"
     },
     "COLUMN_NO_NULL": {
-      "description": "Columns cannot have NULL value.",
+      "description": "Columns cannot have NULL values.",
       "title": "Enforce \"NOT NULL\" constraints on columns"
     },
     "COLUMN_REQUIRED": {
@@ -241,11 +241,11 @@
       "title": "Require collation for text columns"
     },
     "COLUMN_REQUIRE_DEFAULT": {
-      "description": "Setting default values that satisfy business logic can effectively improve the data quality of downstream  analytical pipeline. This rule does not check \"PRIMARY KEY\", \"JSON\", \"BLOB\", \"TEXT\", \"GEOMETRY\", \"AUTO_INCREMENT\", \"GENERATED\" types. Suggested error level: Warning",
+      "description": "Setting default values that satisfy business logic can effectively improve the data quality of downstream analytical pipelines. This rule does not check \"PRIMARY KEY\", \"JSON\", \"BLOB\", \"TEXT\", \"GEOMETRY\", \"AUTO_INCREMENT\", \"GENERATED\" types. Suggested error level: Warning",
       "title": "Enforce setting default value on columns"
     },
     "COLUMN_SET_DEFAULT_FOR_NOT_NULL": {
-      "description": "For a 'NOT NULL' column, if a value is not assigned to the column when inserting a new row and the column does not have a default value, the database will reject the insertion of that row. Setting a default value for a new column can also ensure compatibility with legacy application. Suggested error level: Error",
+      "description": "For a 'NOT NULL' column, if a value is not assigned to the column when inserting a new row and the column does not have a default value, the database will reject the insertion of that row. Setting a default value for a new column can also ensure compatibility with legacy applications. Suggested error level: Error",
       "title": "Enforce default value on \"NOT NULL\" columns"
     },
     "COLUMN_TYPE_DISALLOW_LIST": {
@@ -254,7 +254,7 @@
           "title": "Disallow list"
         }
       },
-      "description": "Abusing column types can have serious negative effects on system maintainability and performance. For example, using \"LOB\" column to store large amounts of audio and video data may cause database performance to decrease, backup and recovery times to lengthen, and data synchronization tools incompatible. Suggested error level: Error",
+      "description": "Abusing column types can have serious negative effects on system maintainability and performance. For example, using a \"LOB\" column to store large amounts of audio and video data may cause database performance to decrease, backup and recovery times to lengthen, and data synchronization tools to become incompatible. Suggested error level: Error",
       "title": "Prohibit the use of certain column data types"
     },
     "DATABASE_DROP_EMPTY_DATABASE": {
@@ -266,7 +266,7 @@
       "title": "Enforce InnoDB storage engine"
     },
     "INDEX_CREATE_CONCURRENTLY": {
-      "description": "In PostgreSQL 11 and above, using the standard statement to create an index will cause table locking and unable to write. Using the \"CONCURRENTLY\" mode can avoid this problem. Suggested error level: Warning",
+      "description": "In PostgreSQL 11 and above, using the standard statement to create an index will lock the table and prevent writes. Using the \"CONCURRENTLY\" mode can avoid this problem. Suggested error level: Warning",
       "title": "Enforce concurrent index creation"
     },
     "INDEX_KEY_NUMBER_LIMIT": {
@@ -279,7 +279,7 @@
       "title": "Restrict the number of columns in a single index"
     },
     "INDEX_NOT_REDUNDANT": {
-      "description": "Redundant index may result in performance loss and occupy additional space. For example, the index on columns (c1, c2) will be treated as redundant indexes if there is already a index on column (c1). Suggested error level: Warning",
+      "description": "Redundant index may result in performance loss and occupy additional space. For example, the index on columns (c1, c2) will be treated as redundant indexes if there is already an index on column (c1). Suggested error level: Warning",
       "title": "Disallow redundant indexes"
     },
     "INDEX_NO_DUPLICATE_COLUMN": {
@@ -296,7 +296,7 @@
           "title": "Allow list"
         }
       },
-      "description": "The appropriate primary key type can optimize storage structure, reduce space usage, and beneficial for insert and query performance. Suggested error level: Warning",
+      "description": "The appropriate primary key type can optimize storage structure, reduce space usage, and improve insert and query performance. Suggested error level: Warning",
       "title": "Allowable list of primary key types"
     },
     "INDEX_TOTAL_NUMBER_LIMIT": {
@@ -466,7 +466,7 @@
           "title": "Maximum affected rows"
         }
       },
-      "description": "Reveal the number of rows to be updated or deleted can help determine whether the statement meets business expectations. Suggested error level: Warning",
+      "description": "Showing the number of rows to be updated or deleted can help determine whether the statement meets business expectations. Suggested error level: Warning",
       "title": "Restrict the maximum number of updated or deleted rows (estimated)."
     },
     "STATEMENT_CHECK_SET_ROLE_VARIABLE": {
@@ -478,11 +478,11 @@
       "title": "Prohibit creating objects without specifying the schema"
     },
     "STATEMENT_DISALLOW_ADD_COLUMN_WITH_DEFAULT": {
-      "description": "Before PostgreSQL 11, adding a column with a default value cause table locking and unable to read and write, which may cause business interruption. In PostgreSQL 11 and above, this issue has been optimized and there is no need to pay attention to this rule. Suggested error level: Warning",
+      "description": "Before PostgreSQL 11, adding a column with a default value causes table locking and prevents reads and writes, which may cause business interruption. In PostgreSQL 11 and above, this issue has been optimized and there is no need to pay attention to this rule. Suggested error level: Warning",
       "title": "Restrict adding columns with default values to a table"
     },
     "STATEMENT_DISALLOW_ADD_NOT_NULL": {
-      "description": "Adding NOT NULL constraint with default value before PostgreSQL 11 or adding NOT NULL constraint without default value requires to verify the existing data. This blocks read and write, which may cause business interruption. Suggested error level: Warning",
+      "description": "Adding a NOT NULL constraint with a default value before PostgreSQL 11, or adding a NOT NULL constraint without a default value, requires verifying the existing data. This blocks reads and writes, which may cause business interruption. Suggested error level: Warning",
       "title": "Restrict adding \"NOT NULL\" constraint to existing columns"
     },
     "STATEMENT_DISALLOW_COMMIT": {
@@ -494,7 +494,7 @@
       "title": "Disallow cross database queries"
     },
     "STATEMENT_DISALLOW_LIMIT": {
-      "description": "If LIMIT is used in DML statements without an ORDER BY clause, the affected rows order are not fixed, which may cause data inconsistency between the primary and replica databases in some replication modes. Suggested error level: Error",
+      "description": "If LIMIT is used in DML statements without an ORDER BY clause, the order of affected rows is not fixed, which may cause data inconsistency between the primary and replica databases in some replication modes. Suggested error level: Error",
       "title": "Prohibit using \"LIMIT\" clause in DML statements"
     },
     "STATEMENT_DISALLOW_OFFLINE_DDL": {
@@ -526,7 +526,7 @@
       "title": "Prohibit using \"ORDER BY rand()\" in \"INSERT\" statement"
     },
     "STATEMENT_INSERT_MUST_SPECIFY_COLUMN": {
-      "description": "The \"INSERT INTO table VALUES (...)\" statement does not explicit list column names. Once the column order changes or columns are added or dropped, the statement may fail or generate unexpected data. Suggested error level: Error",
+      "description": "The \"INSERT INTO table VALUES (...)\" statement does not explicitly list column names. Once the column order changes or columns are added or dropped, the statement may fail or generate unexpected data. Suggested error level: Error",
       "title": "Enforce specifying column names in \"INSERT\" statements"
     },
     "STATEMENT_INSERT_ROW_LIMIT": {
@@ -535,7 +535,7 @@
           "title": "Maximum insert amount"
         }
       },
-      "description": "Reveal the number of rows to be inserted can help determine whether the statement meets business expectations. Suggested error level: Warning",
+      "description": "Showing the number of rows to be inserted can help determine whether the statement meets business expectations. Suggested error level: Warning",
       "title": "Restrict the maximum number of inserted rows"
     },
     "STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION": {
@@ -551,13 +551,13 @@
       "description": "Set the maximum execution time for SQL statements. If the execution time exceeds the limit, the statement will be terminated. Suggested error level: Warning",
       "mariadb": {
         "description": "Set the MAX_STATEMENT_TIME parameter in the change script to explicitly control the maximum execution time of the statement. Suggested error level: Warning",
-        "title": "Enforce set the MAX_STATEMENT_TIME parameter explicitly"
+        "title": "Require an explicit MAX_STATEMENT_TIME parameter"
       },
       "mysql": {
         "description": "Set the MAX_EXECUTION_TIME parameter in the change script to explicitly control the maximum execution time of the statement. Suggested error level: Warning",
-        "title": "Enforce set the MAX_EXECUTION_TIME parameter explicitly"
+        "title": "Require an explicit MAX_EXECUTION_TIME parameter"
       },
-      "title": "Enforce set the max execution time parameter"
+      "title": "Require an explicit maximum execution time"
     },
     "STATEMENT_MERGE_ALTER_TABLE": {
       "description": "Every change to a table may cause a table-level lock and consume a large amount of resources. If there are multiple changes to the same table, they should be merged into a single change statement. Suggested error level: Error",
@@ -601,7 +601,7 @@
       "title": "Prohibit using NULL equality comparison in WHERE clause"
     },
     "STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE": {
-      "description": "When using leading wildcard, such as \"LIKE '%ABC'\", the database optimizer cannot use fast index scan, and fallback to full table scan or full index scan, which may cause serious performance impact. Suggested error level: Error",
+      "description": "When using a leading wildcard, such as \"LIKE '%ABC'\", the database optimizer cannot use a fast index scan and falls back to a full table scan or full index scan, which may cause serious performance impact. Suggested error level: Error",
       "title": "Prohibit using leading wildcard in filter conditions"
     },
     "STATEMENT_WHERE_REQUIRE_SELECT": {
@@ -641,7 +641,7 @@
     },
     "SYSTEM_EVENT_DISALLOW_CREATE": {
       "description": "This rule prohibits the creation of events within the database. System events often perform automated tasks that could affect the database environment. By disallowing their creation, it helps maintain control over database operations and prevents potential disruptions. Suggested error level: Warning",
-      "title": "Disallow to create events"
+      "title": "Prohibit creating events"
     },
     "SYSTEM_FUNCTION_DISALLOWED_LIST": {
       "component": {
@@ -654,15 +654,15 @@
     },
     "SYSTEM_FUNCTION_DISALLOW_CREATE": {
       "description": "This rule prohibits the creation of functions within the database. Functions provide reusable logic that can simplify queries and enhance data integrity. By disallowing their creation, it helps maintain control over database schema and prevents potential security risks. Suggested error level: Warning",
-      "title": "Disallow to create functions"
+      "title": "Prohibit creating functions"
     },
     "SYSTEM_PROCEDURE_DISALLOW_CREATE": {
       "description": "This rule prohibits the execution of procedures within the database. System procedures often perform critical operations that could impact the stability and security of the database environment. By disallowing their execution, it helps prevent unintended changes and potential vulnerabilities. Suggested error level: Warning",
-      "title": "Disallow to create procedures"
+      "title": "Prohibit creating procedures"
     },
     "SYSTEM_VIEW_DISALLOW_CREATE": {
       "description": "This rule prohibits the creation of views within the database. Views provide a virtual representation of data that can simplify queries and enhance data security. By disallowing their creation, it helps maintain control over database schema and prevents potential security risks. Suggested error level: Warning",
-      "title": "Disallow to create views"
+      "title": "Prohibit creating views"
     },
     "TABLE_COMMENT": {
       "component": {
@@ -828,7 +828,7 @@
     "bb-sql-review-prod": "Advanced Template",
     "bb-sql-review-prod-desc": "Comprehensive policy where you have total protection and best practices for your databases.",
     "bb-sql-review-sample": "Sample Template",
-    "bb-sql-review-sample-desc": "A minimum template with DROP protection and disallow column nullable."
+    "bb-sql-review-sample-desc": "A minimal template that prevents DROP operations and requires non-nullable columns."
   },
   "title": "SQL Review",
   "validation": {

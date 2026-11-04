@@ -100,7 +100,7 @@ require (
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78
 	github.com/yterajima/go-sitemap v0.4.0
 	github.com/zeebo/xxh3 v1.1.0
-	go.mongodb.org/mongo-driver/v2 v2.8.0
+	go.mongodb.org/mongo-driver/v2 v2.9.3
 	go.uber.org/multierr v1.11.0
 	golang.org/x/crypto v0.58.0
 	golang.org/x/net v0.62.0
@@ -369,23 +369,11 @@ require (
 replace (
 	github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos => github.com/bytebase/azure-sdk-for-go/sdk/data/azcosmos v0.0.0-20260424030223-eac0db373bca
 
-	github.com/antlr4-go/antlr/v4 => github.com/bytebase/antlr/v4 v4.0.0-20240827034948-8c385f108920
-
-	// copied from pingcap/tidb
-	// fix potential security issue(CVE-2020-26160) introduced by indirect dependency.
-	github.com/dgrijalva/jwt-go => github.com/form3tech-oss/jwt-go v3.2.6-0.20210809144907-32ab6a8243d7+incompatible
-	// Other fixes.
 	github.com/github/gh-ost => github.com/bytebase/gh-ost2 v1.1.7-0.20261102125703-6ff100bb26d5
 
-	github.com/jackc/pgx/v5 => github.com/bytebase/pgx/v5 v5.0.0-20261103063743-9142dbf56d46
-
-	github.com/mattn/go-oci8 => github.com/bytebase/go-obo v0.0.0-20231026081615-705a7fffbfd2
-
-	github.com/microsoft/go-mssqldb => github.com/bytebase/go-mssqldb v0.0.0-20240801091126-3ff3ca07d898
+	github.com/jackc/pgx/v5 => github.com/bytebase/pgx/v5 v5.0.0-20261103142809-663c807705c4
 
 	github.com/pingcap/tidb => github.com/bytebase/tidb v0.0.0-20251104040057-d29df9dd1b3b
 
 	github.com/pingcap/tidb/pkg/parser => github.com/bytebase/tidb/pkg/parser v0.0.0-20251104040057-d29df9dd1b3b
-
-	github.com/youmark/pkcs8 => github.com/bytebase/pkcs8 v0.0.0-20240612095628-fcd0a7484c94
 )
