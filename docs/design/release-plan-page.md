@@ -360,8 +360,14 @@ Azure), so the branch comes from the source-branch variable; Azure's `BUILD_SOUR
 keeps only the last segment of `feature/x`. The SHA stays the checked-out commit, a merge commit in
 those builds, because the release's files came from it and D8 links them there.
 
-The file's path is the action's glob match, relative to the pipeline's working directory; a pipeline
-that runs in a subdirectory gets a link that misses, and an unknown platform gets none. A marker
+The file's path is relative to the repository root, so a pipeline that runs in a subdirectory or
+passes an absolute pattern still gets a working link, and the SQL review annotations, which GitHub,
+GitLab and Bitbucket resolve from the root, land on the file. The action finds the root at the
+nearest `.git` at or above the working directory, else at the platform's checkout directory
+(`GITHUB_WORKSPACE`, `CI_PROJECT_DIR`, `BITBUCKET_CLONE_DIR`, `BUILD_SOURCESDIRECTORY`). With no
+root, or for a file outside it, the path stays the glob match and the link misses; a declarative
+rollout's one file is named by the pattern itself and gets no working link either; an unknown
+platform gets none. A marker
 miss is silent: the row shows the commit. When the title is the commit's first line and the PR
 number came from its marker, the marker is removed from the title, so a squash merge reads `<title>
 #N` once. The PR URL is the repository URL plus the platform's path and the number. On a platform
