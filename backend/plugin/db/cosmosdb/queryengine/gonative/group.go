@@ -346,6 +346,13 @@ func groupSortKeys(qi planQueryInfo) ([]groupSortKey, error) {
 // The words are matched outside quoted text, so a property path that needs
 // bracket notation — c["order by"] — is a key and not a clause, whichever it
 // is spelled as.
+//
+// The keys are plain property paths because that is all the service allows a
+// grouped query to order by: `GROUP BY SUBSTRING(c.x, 0, 1) ORDER BY
+// SUBSTRING(c.x, 0, 1)` is refused outright with SC2103, "not contained in
+// either an aggregate function or the GROUP BY clause", however exactly the
+// two spellings match. So a key here holds no comma and no bracketed
+// arithmetic of its own.
 func trailingOrderBy(query string) (keys []orderByKey, found bool) {
 	at := lastUnquotedIndex(query, orderByKeyword)
 	if at < 0 {

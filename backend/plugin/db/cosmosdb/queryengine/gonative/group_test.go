@@ -407,8 +407,8 @@ func descendingCountryFeed(t *testing.T) map[string][]byte {
 	}
 }
 
-// A range that reports a single group says nothing about the direction, which
-// is why reading it off the data answered a DESC query ascending.
+// A range that reports a single group says nothing about which way the groups
+// run, so the direction has to come from the clause.
 func TestGroupPipeline_EmitsDescendingWhenEveryRangeHasOneGroup(t *testing.T) {
 	p, err := newGroupPipeline(orderedCountByCountryPlan("ORDER BY c.country DESC"), []string{"0", "1"})
 	require.NoError(t, err)
