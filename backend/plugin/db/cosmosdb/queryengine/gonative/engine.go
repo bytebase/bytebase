@@ -1,38 +1,38 @@
 package gonative
 
 import (
+	"reflect"
+	"slices"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos/queryengine"
+	"github.com/pkg/errors"
 )
 
-// Engine is the pure-Go implementation of queryengine.QueryEngine.
-// It is constructed by Default(); callers should not instantiate Engine
-// directly because future stages may add required initialization.
-type Engine struct {
-	// (future stages add fields: supportedFeatures set, cardinality caps, etc.)
-}
+// Engine is the pure-Go implementation of queryengine.QueryEngine. Construct
+// it with Default() and treat the value as opaque.
+type Engine struct{}
 
 // Compile-time check that *Engine satisfies the interface.
 var _ queryengine.QueryEngine = (*Engine)(nil)
 
-// Default returns a new Engine with Stage-0 capabilities (none).
-// Callers should treat the returned value as opaque.
+// Default returns a new Engine.
 func Default() *Engine {
 	return &Engine{}
 }
 
 // supportedFeatures enumerates the gateway-known feature names the engine
 // can serve. The string is comma-separated per the gateway's query-plan
-// protocol; new feature names are appended as each stage lands.
+// protocol.
 //
-//	Aggregate              — VALUE-form aggregate queries (Stage 1)
-//	NonValueAggregate      — aliased-form aggregates (Stage 1)
-//	MultipleAggregates     — multi-aggregate in a single SELECT (Stage 1)
-//	DistinctValue          — SELECT DISTINCT VALUE c.field FROM c (Stage 2)
-//	Distinct               — SELECT DISTINCT c.field FROM c — object form (Stage 2)
-//	OrderBy                — single-key ORDER BY (Stage 3)
-//	Top                    — SELECT TOP N FROM c (Stage 4)
-//	OffsetAndLimit         — SELECT … ORDER BY … OFFSET N LIMIT M (Stage 5)
-//	GroupBy                — SELECT … FROM c GROUP BY c.field (Stage 6)
+//	Aggregate              — VALUE-form aggregate queries
+//	NonValueAggregate      — aliased-form aggregates
+//	MultipleAggregates     — multi-aggregate in a single SELECT
+//	DistinctValue          — SELECT DISTINCT VALUE c.field FROM c
+//	Distinct               — SELECT DISTINCT c.field FROM c — object form
+//	OrderBy                — single-key ORDER BY
+//	Top                    — SELECT TOP N FROM c
+//	OffsetAndLimit         — OFFSET N LIMIT M
+//	GroupBy                — SELECT … FROM c GROUP BY c.field
 const supportedFeatures = "Aggregate,NonValueAggregate,MultipleAggregates,Distinct,DistinctValue,OrderBy,Top,OffsetAndLimit,GroupBy"
 
 // SupportedFeatures implements queryengine.QueryEngine.
@@ -40,49 +40,84 @@ func (*Engine) SupportedFeatures() string {
 	return supportedFeatures
 }
 
+// Names of the planQueryInfo fields a dispatch branch claims. A plan field the
+// chosen pipeline does not claim fails the query — see requireHandled.
+const (
+	fieldRewrittenQuery              = "RewrittenQuery"
+	fieldHasSelectValue              = "HasSelectValue"
+	fieldAggregates                  = "Aggregates"
+	fieldGroupByAliases              = "GroupByAliases"
+	fieldGroupByAliasToAggregateType = "GroupByAliasToAggregateType"
+	fieldDistinctType                = "DistinctType"
+	fieldTop                         = "Top"
+	fieldOffset                      = "Offset"
+	fieldLimit                       = "Limit"
+	fieldOrderBy                     = "OrderBy"
+	fieldOrderByExpressions          = "OrderByExpressions"
+	fieldGroupByExpressions          = "GroupByExpressions"
+)
+
 // CreateQueryPipeline implements queryengine.QueryEngine. It parses the plan,
-// rejects any feature the engine does not yet support, then dispatches to the
-// appropriate pipeline implementation.
+// picks the pipeline for the plan's shape and rejects any plan field that
+// pipeline cannot honour.
 func (*Engine) CreateQueryPipeline(query string, plan string, pkranges string) (queryengine.QueryPipeline, error) {
 	p, err := parsePlan([]byte(plan))
 	if err != nil {
-		return nil, err
-	}
-	if err := rejectUnsupportedPlan(p); err != nil {
 		return nil, err
 	}
 	rangeIDs, err := parsePKRangeIDs([]byte(pkranges))
 	if err != nil {
 		return nil, err
 	}
+	qi := p.QueryInfo
 	switch {
-	case len(p.QueryInfo.OrderBy) > 0:
+	case len(qi.OrderBy) > 0:
+		if err := requireHandled(qi, fieldRewrittenQuery, fieldHasSelectValue,
+			fieldOrderBy, fieldOrderByExpressions, fieldOffset, fieldLimit); err != nil {
+			return nil, err
+		}
 		return newOrderByPipeline(p, rangeIDs)
-	case p.QueryInfo.DistinctType == "Unordered":
+	case qi.DistinctType != "":
+		// A DISTINCT pipeline runs the user's own query against every range
+		// and deduplicates what comes back, so it can honour nothing else:
+		// not the rewritten query a paged DISTINCT carries, and not the page
+		// itself.
+		if err := requireHandled(qi, fieldHasSelectValue, fieldDistinctType); err != nil {
+			return nil, err
+		}
 		pipe, err := newDistinctPipeline(p, rangeIDs)
 		if err != nil {
 			return nil, err
 		}
 		pipe.query = query
 		return pipe, nil
-	case len(p.QueryInfo.Aggregates) > 0:
-		pipe, err := newValuePipeline(p, rangeIDs)
-		if err != nil {
+	case len(qi.Aggregates) > 0:
+		if err := requireHandled(qi, fieldRewrittenQuery, fieldHasSelectValue,
+			fieldAggregates); err != nil {
 			return nil, err
 		}
-		return pipe, nil
-	case len(p.QueryInfo.GroupByExpressions) > 0:
+		return newValuePipeline(p, rangeIDs)
+	case len(qi.GroupByExpressions) > 0:
 		// GROUP BY plans carry groupByExpressions; the aliased-aggregate
-		// (single-group) path used by Stage 1 has groupByAliasToAggregateType
-		// populated but groupByExpressions empty. The check order matters.
-		return newGroupPipeline(p, rangeIDs)
-	case len(p.QueryInfo.GroupByAliasToAggregateType) > 0:
-		pipe, err := newAliasedPipeline(p, rangeIDs)
-		if err != nil {
+		// (single-group) path has groupByAliasToAggregateType populated but
+		// groupByExpressions empty. The check order matters.
+		if err := requireHandled(qi, fieldRewrittenQuery, fieldHasSelectValue,
+			fieldGroupByExpressions, fieldGroupByAliases, fieldGroupByAliasToAggregateType); err != nil {
 			return nil, err
 		}
-		return pipe, nil
-	case p.QueryInfo.Top != nil:
+		return newGroupPipeline(p, rangeIDs)
+	case len(qi.GroupByAliasToAggregateType) > 0:
+		if err := requireHandled(qi, fieldRewrittenQuery, fieldHasSelectValue,
+			fieldGroupByAliases, fieldGroupByAliasToAggregateType); err != nil {
+			return nil, err
+		}
+		return newAliasedPipeline(p, rangeIDs)
+	case qi.Top != nil:
+		// A TOP pipeline concatenates the ranges and keeps the first n rows,
+		// which is the whole answer only for a plan carrying nothing else.
+		if err := requireHandled(qi, fieldHasSelectValue, fieldTop); err != nil {
+			return nil, err
+		}
 		pipe, err := newTopPipeline(p, rangeIDs)
 		if err != nil {
 			return nil, err
@@ -90,33 +125,41 @@ func (*Engine) CreateQueryPipeline(query string, plan string, pkranges string) (
 		pipe.query = query
 		return pipe, nil
 	default:
-		return nil, ErrUnsupportedPlanFeature
+		return nil, errors.Wrap(ErrUnsupportedPlanFeature, "no pipeline for this plan shape")
 	}
 }
 
-// rejectUnsupportedPlan returns ErrUnsupportedPlanFeature when the plan uses
-// any feature beyond the engine's current scope. Later stages will prune
-// entries from this guard as their operators come online.
-func rejectUnsupportedPlan(p *planDoc) error {
-	qi := p.QueryInfo
-	// "Ordered" DISTINCT composes with ORDER BY merge; reject until Stage 3
-	// wires composition through the merge heap. Stage 3 itself handles plain
-	// ORDER BY — see the dispatch above.
-	if qi.DistinctType == "Ordered" {
-		return ErrUnsupportedPlanFeature
-	}
-	if qi.DistinctType != "" && qi.DistinctType != "None" && qi.DistinctType != "Unordered" {
-		return ErrUnsupportedPlanFeature
-	}
-	// OFFSET/LIMIT always composes with ORDER BY per Cosmos syntax; when that
-	// composition lands the plan has both qi.OrderBy and qi.Offset/qi.Limit,
-	// and the dispatch routes to newOrderByPipeline which handles them.
-	// Plans that set offset/limit without an ORDER BY fall through to the
-	// default case in CreateQueryPipeline and are rejected there.
-	if qi.HasNonStreamingOrderBy {
-		return ErrUnsupportedPlanFeature
+// requireHandled rejects a plan whose queryInfo sets a field the chosen
+// pipeline does not claim. It walks planQueryInfo by reflection rather than
+// checking a fixed list, so a field added to the struct later is rejected
+// until a pipeline claims it: an operator the pipeline cannot apply must fail
+// the query rather than vanish from the answer.
+func requireHandled(qi planQueryInfo, handled ...string) error {
+	v := reflect.ValueOf(qi)
+	t := v.Type()
+	for i := range t.NumField() {
+		name := t.Field(i).Name
+		if !planFieldSet(v.Field(i)) || slices.Contains(handled, name) {
+			continue
+		}
+		return errors.Wrapf(ErrUnsupportedPlanFeature, "pipeline cannot honour queryInfo.%s", name)
 	}
 	return nil
+}
+
+// planFieldSet reports whether a queryInfo field carries an instruction. A
+// plan that spells a field out as empty — `"aggregates": []` — says nothing,
+// and reflect.Value.IsZero would call that slice set because it is non-nil.
+// A pointer field is set whenever it is non-nil: `"top": 0` means TOP 0.
+func planFieldSet(v reflect.Value) bool {
+	switch v.Kind() {
+	case reflect.Slice, reflect.Map, reflect.String:
+		return v.Len() > 0
+	case reflect.Pointer:
+		return !v.IsNil()
+	default:
+		return !v.IsZero()
+	}
 }
 
 // CreateReadManyPipeline implements queryengine.QueryEngine.

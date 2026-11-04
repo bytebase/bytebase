@@ -1,0 +1,32 @@
+{
+    "partitionedQueryExecutionInfoVersion": 2,
+    "queryInfo": {
+        "distinctType": "None",
+        "top": 5,
+        "offset": null,
+        "limit": null,
+        "orderBy": [
+            "Ascending"
+        ],
+        "orderByExpressions": [
+            "c.seq"
+        ],
+        "groupByExpressions": [],
+        "groupByAliases": [],
+        "aggregates": [],
+        "groupByAliasToAggregateType": {},
+        "rewrittenQuery": "SELECT TOP 5 c._rid, [{\"item\": c.seq}] AS orderByItems, {\"seq\": c.seq} AS payload\nFROM c\nWHERE ({documentdb-formattableorderbyquery-filter})\nORDER BY c.seq ASC",
+        "hasSelectValue": false,
+        "dCountInfo": null,
+        "hasNonStreamingOrderBy": false
+    },
+    "queryRanges": [
+        {
+            "min": "",
+            "max": "FF",
+            "isMinInclusive": true,
+            "isMaxInclusive": false
+        }
+    ],
+    "hybridSearchQueryInfo": null
+}
