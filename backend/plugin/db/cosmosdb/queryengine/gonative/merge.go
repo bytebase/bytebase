@@ -76,10 +76,6 @@ type mergeHeap struct {
 	partitions []*partitionStream
 	idx        []int // heap of partition indices
 	descending bool
-	// err holds the first comparison that failed. Less cannot report one, and
-	// a merge that carried on past it would put out rows in an order nobody
-	// asked for, so the pipeline checks this and fails the query.
-	err error
 }
 
 func (h *mergeHeap) Len() int { return len(h.idx) }
@@ -89,13 +85,16 @@ func (h *mergeHeap) Less(i, j int) bool {
 	// partitions from the heap before they can be compared.
 	a, _ := h.partitions[h.idx[i]].peek()
 	b, _ := h.partitions[h.idx[j]].peek()
-	cmp, err := compareItems(a.OrderByItems[0].Item, b.OrderByItems[0].Item)
+	// The heap orders with compareItemsTotal so that it always has a minimum,
+	// and because that order follows the service's class ranking the minimum's
+	// class is the right one. Which of two values inside the array or object
+	// class comes first the service alone knows, so merge asks that question
+	// of the row it is about to emit — see ambiguousFirst — rather than of
+	// every pair the heap happens to sift.
+	cmp, err := compareItemsTotal(a.OrderByItems[0].Item, b.OrderByItems[0].Item)
 	if err != nil {
-		if h.err == nil {
-			h.err = err
-		}
-		// Keep the heap well-defined for the rest of this pass; merge fails
-		// the query as soon as it regains control.
+		// The bytes are not JSON; keep the heap well-defined and let the row
+		// fail when it is emitted.
 		return h.idx[i] < h.idx[j]
 	}
 	if h.descending {
@@ -335,21 +334,18 @@ func (p *orderByPipeline) merge() error {
 		}
 	}
 	heap.Init(h)
-	if h.err != nil {
-		return h.err
-	}
 
 	for h.Len() > 0 {
 		top, ok := heap.Pop(h).(int)
-		if h.err != nil {
-			return h.err
-		}
 		if !ok {
 			// Unreachable: the heap is seeded with partition indexes only.
 			return nil
 		}
 		s := p.partitions[top]
 		doc := s.pop()
+		if err := p.ambiguousFirst(doc, top); err != nil {
+			return err
+		}
 		fresh, err := p.firstSighting(doc.Payload)
 		if err != nil {
 			return err
@@ -372,13 +368,53 @@ func (p *orderByPipeline) merge() error {
 		}
 		if _, ok := s.peek(); ok {
 			heap.Push(h, top)
-			if h.err != nil {
-				return h.err
-			}
 			continue
 		}
 		if !p.fanout.drained(s.id) {
 			return nil
+		}
+	}
+	return nil
+}
+
+// ambiguousFirst reports an error when another range's head ties with doc for
+// the position doc is about to take, in a way the engine cannot settle: the
+// same composite class, a different value. The service orders within those
+// classes by its index's own encoding, so which of the two comes first is not
+// knowable here.
+//
+// Every scalar is unambiguous, and so is a composite no other head shares a
+// class with — including one the heap reached only because the ranges below it
+// drained. A later row of the same range is not a competitor: the service
+// already placed it behind doc in that range's own stream.
+func (p *orderByPipeline) ambiguousFirst(doc *orderByDoc, from int) error {
+	if len(doc.OrderByItems) == 0 {
+		return nil
+	}
+	item := doc.OrderByItems[0].Item
+	class := detectJSONType(item)
+	if class != jsonArray && class != jsonObject {
+		return nil
+	}
+	for i, stream := range p.partitions {
+		if i == from {
+			continue
+		}
+		head, ok := stream.peek()
+		if !ok || len(head.OrderByItems) == 0 {
+			continue
+		}
+		other := head.OrderByItems[0].Item
+		if detectJSONType(other) != class {
+			continue
+		}
+		order, err := compareComposites(item, other)
+		if err != nil {
+			return err
+		}
+		if order != 0 {
+			return errors.Wrapf(ErrUnsupportedPlanFeature,
+				"gonative: ORDER BY cannot order two different %ss", class)
 		}
 	}
 	return nil

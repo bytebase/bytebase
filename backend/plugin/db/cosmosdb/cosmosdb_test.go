@@ -1347,10 +1347,11 @@ func TestCrossPartitionSparseGroupBy(t *testing.T) {
 // service itself returns: undefined < null < bool < number < string < array <
 // object.
 //
-// Two different arrays, or two different objects, it cannot order, because the
-// service orders those by its index's own encoding — [1,2] < [2] < [1,3] on a
-// real container — and a merge comparator that disagreed with the streams it
-// merges would answer in an order that is neither. Those it fails instead.
+// Two different arrays, or two different objects, it cannot order when they
+// reach the merge from different ranges, because the service orders those by
+// its index's own encoding — [1,2] < [2] < [1,3] on a real container. Which
+// range holds which value is the emulator's to decide, so the engine's refusal
+// is covered in merge_test.go, where the ranges are given.
 func TestCrossPartitionMixedTypeOrder(t *testing.T) {
 	container := pagedFixture(t)
 
@@ -1371,11 +1372,4 @@ func TestCrossPartitionMixedTypeOrder(t *testing.T) {
 		`SELECT c.seq FROM c WHERE IS_DEFINED(c.v) AND NOT IS_OBJECT(c.v) AND (NOT IS_ARRAY(c.v) OR c.seq = %d) ORDER BY c.v`,
 		pagedShapes[7].seq))
 	assert.Equal(t, withOneArray, got, "an array sorts after the scalars")
-
-	// Two of them is the case no comparator can serve.
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-	defer cancel()
-	_, err := QueryEveryPartition(ctx, container, `SELECT c.seq FROM c WHERE IS_DEFINED(c.v) ORDER BY c.v`, nil, 0)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "cannot order two different")
 }
