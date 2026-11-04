@@ -7,7 +7,6 @@ import {
   CollapsiblePanel,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { useKeepEndInPlace } from "@/hooks/useKeepEndInPlace";
 import { cn } from "@/lib/utils";
 import {
   type Release,
@@ -20,6 +19,7 @@ import {
   type ReleaseChangeFile,
   type ReleaseChangeGroup,
 } from "./releaseChanges";
+import { useKeepEndInPlace } from "./useKeepEndInPlace";
 
 // The release's files with no per-database status (D1, D2): status is a fact
 // about one database, and lives on each task.
