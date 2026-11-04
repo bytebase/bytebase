@@ -26,6 +26,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Table } from "@/components/ui/table";
+import { useReactiveRoute } from "@/hooks/useReactiveRoute";
 import {
   ExistingIssueCommentDraftError,
   IssueCommentDraftPermissionError,
@@ -412,8 +413,8 @@ function PlanDraftButton({
 }) {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
-  const isCurrentPlanCreate = () => {
-    const route = router.currentRoute.value;
+  const currentRoute = useReactiveRoute();
+  const isCurrentPlanCreate = (route = router.currentRoute.value) => {
     const planId = route.params?.planId;
     const projectId = route.params?.projectId;
     return (
@@ -424,7 +425,7 @@ function PlanDraftButton({
       projectId === action.project.slice("projects/".length)
     );
   };
-  const applyToCurrentPlan = isCurrentPlanCreate();
+  const applyToCurrentPlan = isCurrentPlanCreate(currentRoute);
   const openDraft = async () => {
     if (loading) return;
     setLoading(true);
