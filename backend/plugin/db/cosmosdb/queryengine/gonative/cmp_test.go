@@ -83,11 +83,30 @@ func TestCompareItems_RanksCompositesLast(t *testing.T) {
 	}
 }
 
-// Within the array and object classes the service orders by the index's own
-// encoding, which the values cannot tell us; the engine orders by canonical
-// JSON instead, and what it must guarantee is that the order is total and the
-// same on every run.
-func TestCompareItems_OrdersCompositesConsistently(t *testing.T) {
+// Two different arrays, or two different objects, have no order the values can
+// give back: an ORDER BY merge that picked one would disagree with the streams
+// it merges, and under a TOP it would return the wrong rows.
+func TestCompareItems_RefusesTwoDifferentComposites(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		a, b json.RawMessage
+	}{
+		{"two arrays", json.RawMessage(`[1,2]`), json.RawMessage(`[1,3]`)},
+		{"two objects", json.RawMessage(`{"a":1}`), json.RawMessage(`{"b":1}`)},
+		{"nested", json.RawMessage(`[[1]]`), json.RawMessage(`[[2]]`)},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := compareItems(tc.a, tc.b)
+			assert.ErrorIs(t, err, ErrUnsupportedPlanFeature)
+			_, err = compareItems(tc.b, tc.a)
+			assert.ErrorIs(t, err, ErrUnsupportedPlanFeature)
+		})
+	}
+}
+
+// compareItemsTotal is the one for a caller free to pick an order: it must be
+// total and the same on every run.
+func TestCompareItemsTotal_OrdersCompositesConsistently(t *testing.T) {
 	values := []json.RawMessage{
 		json.RawMessage(`[1,3]`), json.RawMessage(`[2]`), json.RawMessage(`[1,2]`),
 		json.RawMessage(`{"b":1}`), json.RawMessage(`{"a":2}`), json.RawMessage(`{"a":1}`),
@@ -95,7 +114,7 @@ func TestCompareItems_OrdersCompositesConsistently(t *testing.T) {
 	sortOnce := func() []string {
 		shuffled := slices.Clone(values)
 		slices.SortStableFunc(shuffled, func(a, b json.RawMessage) int {
-			order, err := compareItems(a, b)
+			order, err := compareItemsTotal(a, b)
 			require.NoError(t, err)
 			return order
 		})

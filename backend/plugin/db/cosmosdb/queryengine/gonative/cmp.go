@@ -12,13 +12,19 @@ import (
 //
 //	undefined < null < bool < number < string < array < object
 //
-// That is the order the service itself returns mixed types in. Within the
-// array and object classes its order is the index's own encoding — a real
-// container answers [1,2] < [2] < [1,3] and {"b":1} < {"a":2} < {"a":1} — so
-// it is not a value order and cannot be reproduced from the values alone.
-// Two values of one class are therefore ordered by their canonical JSON,
-// which is stable across runs and leaves the class ranking above, the part a
-// user can predict, matching the service.
+// That is the order the service itself returns mixed types in, and the class
+// ranking is reproducible. The order *within* the array and object classes is
+// not: it is the index's own encoding, and a real container answers
+// [1,2] < [2] < [1,3] and {"b":1} < {"a":2} < {"a":1}, which no function of the
+// values gives back.
+//
+// So two unequal values of one of those classes have no order here, and the
+// two comparators below part ways over them: compareItems fails, because an
+// ORDER BY merge that disagrees with the per-partition streams it merges puts
+// out rows in an order that is neither the service's nor its own, and under a
+// TOP it returns the wrong rows outright. compareItemsTotal orders them by
+// canonical JSON, for the one caller that only needs *some* order it can
+// repeat — a GROUP BY the user did not order.
 type jsonType int
 
 const (
@@ -116,16 +122,66 @@ func compareItems(a, b json.RawMessage) (int, error) {
 		}
 		return strings.Compare(av, bv), nil
 	case jsonArray, jsonObject:
-		ca, err := canonicalJSON(a)
+		order, err := compareComposites(a, b)
 		if err != nil {
-			return 0, errors.Wrap(err, "gonative: cmp composite a")
+			return 0, err
 		}
-		cb, err := canonicalJSON(b)
-		if err != nil {
-			return 0, errors.Wrap(err, "gonative: cmp composite b")
+		if order == 0 {
+			return 0, nil
 		}
-		return bytes.Compare(ca, cb), nil
+		// Equal composites are one value and may be ordered together; unequal
+		// ones the service separates by an encoding this cannot see.
+		return 0, errors.Wrapf(ErrUnsupportedPlanFeature,
+			"gonative: ORDER BY cannot order two different %ss", ta)
 	default:
 		return 0, errors.Errorf("gonative: unknown jsonType %d", ta)
+	}
+}
+
+// compareItemsTotal is compareItems extended to a total order: two unequal
+// values of one composite class are ordered by their canonical JSON. Only a
+// caller free to pick the order may use it — see jsonType — because that
+// order is not the service's.
+func compareItemsTotal(a, b json.RawMessage) (int, error) {
+	ta, tb := detectJSONType(a), detectJSONType(b)
+	if ta == tb && (ta == jsonArray || ta == jsonObject) {
+		return compareComposites(a, b)
+	}
+	return compareItems(a, b)
+}
+
+// compareComposites orders two arrays or two objects by their canonical JSON,
+// which is 0 exactly when they are the same value.
+func compareComposites(a, b json.RawMessage) (int, error) {
+	ca, err := canonicalJSON(a)
+	if err != nil {
+		return 0, errors.Wrap(err, "gonative: cmp composite a")
+	}
+	cb, err := canonicalJSON(b)
+	if err != nil {
+		return 0, errors.Wrap(err, "gonative: cmp composite b")
+	}
+	return bytes.Compare(ca, cb), nil
+}
+
+// String names the class in an error a user may read.
+func (t jsonType) String() string {
+	switch t {
+	case jsonUndefined:
+		return "undefined"
+	case jsonNull:
+		return "null"
+	case jsonBool:
+		return "boolean"
+	case jsonNumber:
+		return "number"
+	case jsonString:
+		return "string"
+	case jsonArray:
+		return "array"
+	case jsonObject:
+		return "object"
+	default:
+		return "value"
 	}
 }

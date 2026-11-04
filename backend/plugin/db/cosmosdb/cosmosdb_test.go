@@ -1349,17 +1349,36 @@ func TestCrossPartitionSparseGroupBy(t *testing.T) {
 // object. The engine used to refuse to compare an array or an object, and the
 // merge then fell back to partition order, which let those rows overtake
 // everything else.
+//
+// It cannot order two different arrays or two different objects, because the
+// service orders those by its index's own encoding — [1,2] < [2] < [1,3] on a
+// real container — and a merge comparator that disagreed with the streams it
+// merges would answer in an order that is neither. Those it fails instead.
 func TestCrossPartitionMixedTypeOrder(t *testing.T) {
 	container := pagedFixture(t)
 
-	got := pagedSeqs(t, container, `SELECT c.seq FROM c WHERE IS_DEFINED(c.v) ORDER BY c.v`)
-	require.Len(t, got, len(pagedShapes))
-
 	scalars := make([]int, 0, len(pagedShapes))
-	for _, shape := range pagedShapes[:7] {
-		scalars = append(scalars, shape.seq)
+	for _, shape := range pagedShapes {
+		if shape.value[0] != '[' && shape.value[0] != '{' {
+			scalars = append(scalars, shape.seq)
+		}
 	}
-	assert.Equal(t, scalars, got[:7], "the scalar classes are ordered as the service orders them")
-	assert.ElementsMatch(t, []int{pagedShapes[7].seq, pagedShapes[8].seq}, got[7:9], "arrays follow strings")
-	assert.ElementsMatch(t, []int{pagedShapes[9].seq, pagedShapes[10].seq}, got[9:], "objects sort last")
+	got := pagedSeqs(t, container,
+		`SELECT c.seq FROM c WHERE IS_DEFINED(c.v) AND NOT IS_ARRAY(c.v) AND NOT IS_OBJECT(c.v) ORDER BY c.v`)
+	assert.Equal(t, scalars, got, "the scalar classes are ordered as the service orders them")
+
+	// One composite among them still orders, since the class ranking is the
+	// service's own: an array sorts after every string.
+	withOneArray := append(slices.Clone(scalars), pagedShapes[7].seq)
+	got = pagedSeqs(t, container, fmt.Sprintf(
+		`SELECT c.seq FROM c WHERE IS_DEFINED(c.v) AND NOT IS_OBJECT(c.v) AND (NOT IS_ARRAY(c.v) OR c.seq = %d) ORDER BY c.v`,
+		pagedShapes[7].seq))
+	assert.Equal(t, withOneArray, got, "an array sorts after the scalars")
+
+	// Two of them is the case no comparator can serve.
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+	_, err := QueryEveryPartition(ctx, container, `SELECT c.seq FROM c WHERE IS_DEFINED(c.v) ORDER BY c.v`, nil, 0)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "cannot order two different")
 }

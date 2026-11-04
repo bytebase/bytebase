@@ -586,3 +586,43 @@ func TestOrderByPipeline_DistinctDropsDuplicatesBeforeTheLimit(t *testing.T) {
 	})
 	assert.Equal(t, []string{`{"x":"a"}`, `{"x":"b"}`}, rows)
 }
+
+// A merge is only correct when its comparator agrees with the order inside the
+// streams it merges, and no comparator agrees with the service inside the array
+// and object classes. Codex's example on #21897: the service answers
+// [1,2], [2], [1,3] — ordering those by canonical JSON instead would emit
+// [1,2], [1,3], [2], and under a TOP 2 it would return the wrong rows.
+func TestOrderByPipeline_RefusesAnOrderItCannotMerge(t *testing.T) {
+	p := newAscPipeline(t, "0", "1")
+
+	res, err := p.Run()
+	require.NoError(t, err)
+	require.NotEmpty(t, res.Requests)
+	feed := map[string][]byte{
+		"0": mkOrderByBody(t,
+			ordered{ob: `[1,2]`, payload: `{"x":[1,2]}`},
+			ordered{ob: `[2]`, payload: `{"x":[2]}`}),
+		"1": mkOrderByBody(t, ordered{ob: `[1,3]`, payload: `{"x":[1,3]}`}),
+	}
+	results := make([]queryengine.QueryResult, 0, len(res.Requests))
+	for _, req := range res.Requests {
+		results = append(results, queryengine.NewQueryResult(req.PartitionKeyRangeID, feed[req.PartitionKeyRangeID], ""))
+	}
+	require.NoError(t, p.ProvideData(results))
+
+	_, err = p.Run()
+	assert.ErrorIs(t, err, ErrUnsupportedPlanFeature)
+}
+
+// One array among scalars is still ordered, because the class ranking is the
+// service's own: every array sorts after every string.
+func TestOrderByPipeline_OrdersOneCompositeAmongScalars(t *testing.T) {
+	p := newAscPipeline(t, "0", "1")
+	rows := runOnePass(t, p, map[string][]byte{
+		"0": mkOrderByBody(t,
+			ordered{ob: `"a"`, payload: `{"x":"a"}`},
+			ordered{ob: `[9]`, payload: `{"x":[9]}`}),
+		"1": mkOrderByBody(t, ordered{ob: `"b"`, payload: `{"x":"b"}`}),
+	})
+	assert.Equal(t, []string{`{"x":"a"}`, `{"x":"b"}`, `{"x":[9]}`}, rows)
+}

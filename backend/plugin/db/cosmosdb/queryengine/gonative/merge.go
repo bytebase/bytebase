@@ -76,6 +76,10 @@ type mergeHeap struct {
 	partitions []*partitionStream
 	idx        []int // heap of partition indices
 	descending bool
+	// err holds the first comparison that failed. Less cannot report one, and
+	// a merge that carried on past it would put out rows in an order nobody
+	// asked for, so the pipeline checks this and fails the query.
+	err error
 }
 
 func (h *mergeHeap) Len() int { return len(h.idx) }
@@ -87,9 +91,11 @@ func (h *mergeHeap) Less(i, j int) bool {
 	b, _ := h.partitions[h.idx[j]].peek()
 	cmp, err := compareItems(a.OrderByItems[0].Item, b.OrderByItems[0].Item)
 	if err != nil {
-		// compareItems rejects unorderable shapes (arrays, objects). For
-		// ORDER BY scalars this should never happen; if it does, fall back to
-		// stable-by-partition-index order so the heap remains well-defined.
+		if h.err == nil {
+			h.err = err
+		}
+		// Keep the heap well-defined for the rest of this pass; merge fails
+		// the query as soon as it regains control.
 		return h.idx[i] < h.idx[j]
 	}
 	if h.descending {
@@ -329,6 +335,9 @@ func (p *orderByPipeline) merge() error {
 		}
 	}
 	heap.Init(h)
+	if h.err != nil {
+		return h.err
+	}
 
 	for h.Len() > 0 {
 		if p.limit >= 0 && p.emitted >= p.limit {
@@ -336,6 +345,9 @@ func (p *orderByPipeline) merge() error {
 			return nil
 		}
 		top, ok := heap.Pop(h).(int)
+		if h.err != nil {
+			return h.err
+		}
 		if !ok {
 			// Unreachable: the heap is seeded with partition indexes only.
 			return nil
@@ -358,6 +370,9 @@ func (p *orderByPipeline) merge() error {
 		}
 		if _, ok := s.peek(); ok {
 			heap.Push(h, top)
+			if h.err != nil {
+				return h.err
+			}
 			continue
 		}
 		if !p.fanout.drained(s.id) {

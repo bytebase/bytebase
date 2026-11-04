@@ -664,6 +664,33 @@ func TestGroupPipeline_OrdersCompositeKeysConsistently(t *testing.T) {
 	assert.JSONEq(t, `{"tags":["b"],"n":1}`, string(rows[1]))
 }
 
+// An ORDER BY on a group key the engine cannot order — two different arrays —
+// fails the query. Ordering the groups by anything else would answer in an
+// order the user did not ask for, which is the whole point of reading the
+// clause in the first place.
+func TestGroupPipeline_RefusesAnOrderedKeyItCannotOrder(t *testing.T) {
+	plan := newGroupPlan("c.tags", []string{"tags", "n"}, map[string]string{"tags": "", "n": "Count"})
+	plan.QueryInfo.RewrittenQuery = "SELECT 1\nFROM c\nGROUP BY c.tags\nORDER BY c.tags"
+	p, err := newGroupPipeline(plan, []string{"0"})
+	require.NoError(t, err)
+
+	res, err := p.Run()
+	require.NoError(t, err)
+	require.NotEmpty(t, res.Requests)
+	body := mkGroupBody(t,
+		groupEntry{key: `["b"]`, payload: `{"tags":["b"],"n":{"item":1}}`},
+		groupEntry{key: `["a"]`, payload: `{"tags":["a"],"n":{"item":2}}`},
+	)
+	results := make([]queryengine.QueryResult, 0, len(res.Requests))
+	for _, req := range res.Requests {
+		results = append(results, queryengine.NewQueryResult(req.PartitionKeyRangeID, body, ""))
+	}
+	require.NoError(t, p.ProvideData(results))
+
+	_, err = p.Run()
+	assert.ErrorIs(t, err, ErrUnsupportedPlanFeature)
+}
+
 // A column the documents do not all define is ordinary in a schemaless store,
 // and the service answers it as a group of its own, counted apart from an
 // explicit null and spelled with the alias left out of the row. The engine
