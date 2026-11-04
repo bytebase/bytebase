@@ -20,8 +20,7 @@ describe("getPlanCreateAgentContextQuery", () => {
           makeSpec("spec-a", ["instances/i1/databases/db-a"]),
           makeSpec("spec-b", ["instances/i1/databases/db-b"]),
         ],
-        "spec-b",
-        "projects/p"
+        "spec-b"
       )
     ).toEqual({
       agentDatabaseName: "instances/i1/databases/db-b",
@@ -38,8 +37,7 @@ describe("getPlanCreateAgentContextQuery", () => {
           agentDatabaseName: "instances/i1/databases/db-a",
         },
         [makeSpec("spec-a", [])],
-        "spec-a",
-        "projects/p"
+        "spec-a"
       )
     ).toEqual({
       agentDatabaseName: "",
@@ -57,8 +55,7 @@ describe("getPlanCreateAgentContextQuery", () => {
             "instances/i1/databases/db-b",
           ]),
         ],
-        "spec-a",
-        "projects/p"
+        "spec-a"
       )
     ).toEqual({
       agentDatabaseName: "",
@@ -76,8 +73,7 @@ describe("getPlanCreateAgentContextQuery", () => {
       getPlanCreateAgentContextQuery(
         query,
         [makeSpec("spec-a", ["instances/i1/databases/db-a"])],
-        "spec-a",
-        "projects/p"
+        "spec-a"
       )
     ).toBeUndefined();
   });

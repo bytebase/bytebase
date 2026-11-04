@@ -397,7 +397,7 @@ describe("ProjectPlanDetailPage", () => {
     );
     expect(page.bypassLeaveGuardOnce).toHaveBeenCalledOnce();
     expect(
-      page.bypassLeaveGuardOnce.mock.invocationCallOrder[0]
+      vi.mocked(page.bypassLeaveGuardOnce).mock.invocationCallOrder[0]
     ).toBeLessThan(mocks.routerReplace.mock.invocationCallOrder[0]);
   });
 
