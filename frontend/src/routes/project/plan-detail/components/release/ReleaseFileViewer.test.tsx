@@ -1,5 +1,5 @@
 import { create } from "@bufbuild/protobuf";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 import i18n from "@/lib/i18n";
@@ -204,6 +204,31 @@ describe("ReleaseFileViewer", () => {
     );
     await flush();
     expect(screen.getByRole("link", { name: label }).getAttribute("href")).toBe(href);
+  });
+
+  test("closing the sheet keeps its file on screen while it slides away", async () => {
+    // jsdom has no exit animation, so the real sheet unmounts at once. This
+    // one stays mounted after close, as Base UI's does for the ~200 ms exit.
+    vi.resetModules();
+    vi.doMock("@/components/ui/sheet", () => {
+      const Part = ({ children }: { children?: ReactNode }) => <div>{children}</div>;
+      return {
+        Sheet: Part,
+        SheetBody: Part,
+        SheetHeader: Part,
+        SheetTitle: ({ children }: { children?: ReactNode }) => <h2>{children}</h2>,
+        SheetContent: ({ children, ...props }: { children?: ReactNode; "data-testid"?: string }) => (
+          <div data-testid={props["data-testid"]}>{children}</div>
+        ),
+      };
+    });
+    const { ReleaseFileViewer: Viewer } = await import("./ReleaseFileViewer");
+    const { rerender } = render(<Viewer target={target()} onClose={() => {}} />);
+    await flush();
+    rerender(<Viewer target={undefined} onClose={() => {}} />);
+    expect(screen.getByTestId("release-file-viewer").textContent).toContain("002");
+    vi.doUnmock("@/components/ui/sheet");
+    vi.resetModules();
   });
 
   test("an unknown platform gets no link", async () => {
