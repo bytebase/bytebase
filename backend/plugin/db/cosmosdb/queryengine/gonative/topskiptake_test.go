@@ -160,15 +160,35 @@ func TestTopPipeline_EmptyPartitions(t *testing.T) {
 	assert.True(t, p.IsComplete())
 }
 
-func TestTopPipeline_RejectsContinuationToken(t *testing.T) {
-	plan := newTopPlan(5)
-	p, err := newTopPipeline(plan, []string{"0"})
+// A TOP larger than a page reads as many pages as it takes to collect N rows.
+func TestTopPipeline_ReadsPagesUntilNRowsAreInHand(t *testing.T) {
+	p, err := newTopPipeline(newTopPlan(5), []string{"0"})
 	require.NoError(t, err)
-	_, _ = p.Run()
 
-	err = p.ProvideData([]queryengine.QueryResult{
-		{PartitionKeyRangeID: "0", Data: mkTopBody(t, `{"x":1}`), NextContinuation: "cont"},
+	rows, read := drivePages(t, p, map[string][]page{
+		"0": {
+			{body: mkTopBody(t, `{"x":1}`, `{"x":2}`), continuation: "0-page-2"},
+			{body: mkTopBody(t, `{"x":3}`, `{"x":4}`), continuation: "0-page-3"},
+			{body: mkTopBody(t, `{"x":5}`, `{"x":6}`)},
+		},
 	})
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "continuation token")
+	assert.Len(t, rows, 5)
+	assert.Equal(t, map[string]int{"0": 3}, read)
+}
+
+// Once N rows are in hand the pipeline stops, however many pages the ranges
+// still hold.
+func TestTopPipeline_StopsAtNWithoutReadingTheNextPage(t *testing.T) {
+	p, err := newTopPipeline(newTopPlan(4), []string{"0"})
+	require.NoError(t, err)
+
+	rows, read := drivePages(t, p, map[string][]page{
+		"0": {
+			{body: mkTopBody(t, `{"x":1}`, `{"x":2}`), continuation: "0-page-2"},
+			{body: mkTopBody(t, `{"x":3}`, `{"x":4}`), continuation: "0-page-3"},
+			{body: mkTopBody(t, `{"x":5}`, `{"x":6}`)},
+		},
+	})
+	assert.Len(t, rows, 4)
+	assert.Equal(t, map[string]int{"0": 2}, read)
 }

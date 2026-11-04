@@ -53,11 +53,9 @@ func canonicalJSON(raw json.RawMessage) ([]byte, error) {
 // The OS is the memory ceiling. Queries whose DISTINCT cardinality could
 // exhaust memory should scope themselves with a WHERE clause.
 type distinctPipeline struct {
-	query          string
-	pkRangeIDs     []string
-	partitionsDone map[string]bool
-	issued         bool
-	closed         bool
+	query  string
+	fanout rangeFanout
+	closed bool
 
 	// Pending items not yet returned to the caller. Populated during
 	// ProvideData as each partition's response is de-duplicated against the
@@ -82,9 +80,8 @@ func newDistinctPipeline(plan *planDoc, pkRangeIDs []string) (*distinctPipeline,
 	// against each partition. The pipeline needs the original query text to
 	// populate QueryRequest.Query; the caller passes it via CreateQueryPipeline.
 	return &distinctPipeline{
-		pkRangeIDs:     append([]string(nil), pkRangeIDs...),
-		partitionsDone: make(map[string]bool, len(pkRangeIDs)),
-		seen:           make(map[string]struct{}),
+		fanout: newRangeFanout(pkRangeIDs),
+		seen:   make(map[string]struct{}),
 	}, nil
 }
 
@@ -92,44 +89,25 @@ func newDistinctPipeline(plan *planDoc, pkRangeIDs []string) (*distinctPipeline,
 func (p *distinctPipeline) Query() string { return p.query }
 
 // IsComplete implements queryengine.QueryPipeline. A DISTINCT pipeline is
-// complete once every partition has delivered and every deduped item has been
-// flushed to the caller.
+// complete once every range has delivered its last page and every deduped
+// item has been flushed to the caller.
 func (p *distinctPipeline) IsComplete() bool {
-	if !p.issued {
-		return false
-	}
 	if len(p.pending) > 0 {
 		return false
 	}
-	for _, id := range p.pkRangeIDs {
-		if !p.partitionsDone[id] {
-			return false
-		}
-	}
-	return true
+	return p.fanout.allDrained()
 }
 
 // Close implements queryengine.QueryPipeline.
 func (p *distinctPipeline) Close() { p.closed = true }
 
-// Run drives one pipeline turn:
-//  1. First call — emit one QueryRequest per pk-range carrying the original query.
-//  2. Subsequent calls — flush any pending deduplicated items; otherwise wait
-//     for the SDK to deliver more partition responses via ProvideData.
+// Run drives one pipeline turn. Deduplicated items go out as soon as they are
+// known, so a DISTINCT over many pages does not hold the whole result before
+// the caller sees its first row:
+//  1. Flush any pending deduplicated items.
+//  2. Otherwise ask for the next page of every range that has one — the
+//     initial fan-out on the first call.
 func (p *distinctPipeline) Run() (*queryengine.PipelineResult, error) {
-	if !p.issued {
-		reqs := make([]queryengine.QueryRequest, len(p.pkRangeIDs))
-		for i, id := range p.pkRangeIDs {
-			reqs[i] = queryengine.QueryRequest{
-				PartitionKeyRangeID: id,
-				Id:                  uint64(i),
-				Query:               p.query,
-				IncludeParameters:   true,
-			}
-		}
-		p.issued = true
-		return &queryengine.PipelineResult{Requests: reqs}, nil
-	}
 	if len(p.pending) > 0 {
 		batch := p.pending
 		p.pending = nil
@@ -137,6 +115,9 @@ func (p *distinctPipeline) Run() (*queryengine.PipelineResult, error) {
 			Items:       batch,
 			IsCompleted: p.IsComplete(),
 		}, nil
+	}
+	if reqs := p.fanout.requests(p.query); len(reqs) > 0 {
+		return &queryengine.PipelineResult{Requests: reqs}, nil
 	}
 	return &queryengine.PipelineResult{IsCompleted: p.IsComplete()}, nil
 }
@@ -166,10 +147,9 @@ func (p *distinctPipeline) ProvideData(results []queryengine.QueryResult) error 
 			// buffer, which the SDK may reuse for later pages.
 			p.pending = append(p.pending, append([]byte(nil), doc...))
 		}
-		if r.NextContinuation != "" {
-			return errors.New("gonative: distinct partition returned a continuation token (multi-page not supported in Stage 2)")
+		if err := p.fanout.note(r); err != nil {
+			return err
 		}
-		p.partitionsDone[r.PartitionKeyRangeID] = true
 	}
 	return nil
 }

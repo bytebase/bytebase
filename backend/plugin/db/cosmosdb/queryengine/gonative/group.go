@@ -55,14 +55,13 @@ type groupState struct {
 // partition has delivered.
 //
 // GROUP BY is non-streaming — all partitions must arrive before any row is
-// emitted. Memory is bounded by the cardinality of distinct group keys, not
+// emitted, and a partition that answers over several pages must be read to its
+// last page. Memory is bounded by the cardinality of distinct group keys, not
 // by the total row count across partitions.
 type groupPipeline struct {
-	query          string
-	pkRangeIDs     []string
-	partitionsDone map[string]bool
-	issued         bool
-	closed         bool
+	query  string
+	fanout rangeFanout
+	closed bool
 
 	// aliases preserves the order of groupByAliases; kinds[i] is the
 	// aggregate kind for aliases[i] ("" when the alias is a group-key column).
@@ -126,59 +125,41 @@ func newGroupPipeline(plan *planDoc, pkRangeIDs []string) (*groupPipeline, error
 		// GROUP BY plans always carry a non-empty rewrittenQuery that wraps the
 		// user's projection into {groupByItems, payload}; running the original
 		// query instead would return raw rows with no groupByItems field.
-		query:          qi.RewrittenQuery,
-		pkRangeIDs:     append([]string(nil), pkRangeIDs...),
-		partitionsDone: make(map[string]bool, len(pkRangeIDs)),
-		aliases:        aliases,
-		kinds:          kinds,
-		groups:         make(map[string]*groupState),
+		query:   qi.RewrittenQuery,
+		fanout:  newRangeFanout(pkRangeIDs),
+		aliases: aliases,
+		kinds:   kinds,
+		groups:  make(map[string]*groupState),
 	}, nil
 }
 
 // Query implements queryengine.QueryPipeline.
 func (p *groupPipeline) Query() string { return p.query }
 
-// IsComplete returns true once every partition has delivered and every
-// finalized row has been flushed to the caller.
+// IsComplete returns true once every range has delivered its last page and
+// every finalized row has been flushed to the caller.
 func (p *groupPipeline) IsComplete() bool {
-	if !p.issued {
-		return false
-	}
 	if len(p.pending) > 0 {
 		return false
 	}
-	for _, id := range p.pkRangeIDs {
-		if !p.partitionsDone[id] {
-			return false
-		}
-	}
-	return p.finalized
+	return p.fanout.allDrained() && p.finalized
 }
 
 // Close implements queryengine.QueryPipeline.
 func (p *groupPipeline) Close() { p.closed = true }
 
 // Run drives one pipeline turn:
-//  1. First call — fan out one request per pk-range.
-//  2. After every partition has provided data, build the output rows by
-//     finalizing each group's aggregators and emitting in alias order.
+//  1. Ask for the next page of every range that has one — the initial fan-out
+//     across all ranges on the first call.
+//  2. Once every range has drained, build the output rows by finalizing each
+//     group's aggregators and emitting in alias order.
 //  3. Flush pending rows on subsequent calls until drained.
 func (p *groupPipeline) Run() (*queryengine.PipelineResult, error) {
-	if !p.issued {
-		reqs := make([]queryengine.QueryRequest, len(p.pkRangeIDs))
-		for i, id := range p.pkRangeIDs {
-			reqs[i] = queryengine.QueryRequest{
-				PartitionKeyRangeID: id,
-				Id:                  uint64(i),
-				Query:               p.query,
-				IncludeParameters:   true,
-			}
-		}
-		p.issued = true
+	if reqs := p.fanout.requests(p.query); len(reqs) > 0 {
 		return &queryengine.PipelineResult{Requests: reqs}, nil
 	}
 
-	if !p.finalized && p.allPartitionsDone() {
+	if !p.finalized && p.fanout.allDrained() {
 		if err := p.finalize(); err != nil {
 			return nil, err
 		}
@@ -196,6 +177,9 @@ func (p *groupPipeline) Run() (*queryengine.PipelineResult, error) {
 // appropriate group's state.
 func (p *groupPipeline) ProvideData(results []queryengine.QueryResult) error {
 	for _, r := range results {
+		if err := p.fanout.note(r); err != nil {
+			return err
+		}
 		resp, err := parseGroupPartitionResponse(r.Data)
 		if err != nil {
 			return err
@@ -234,10 +218,6 @@ func (p *groupPipeline) ProvideData(results []queryengine.QueryResult) error {
 				}
 			}
 		}
-		if r.NextContinuation != "" {
-			return errors.New("gonative: group partition returned a continuation token (multi-page not supported in Stage 6)")
-		}
-		p.partitionsDone[r.PartitionKeyRangeID] = true
 	}
 	return nil
 }
@@ -262,16 +242,6 @@ func (p *groupPipeline) initGroupState(doc groupDoc) *groupState {
 		}
 	}
 	return s
-}
-
-// allPartitionsDone returns true when every pk-range has reported.
-func (p *groupPipeline) allPartitionsDone() bool {
-	for _, id := range p.pkRangeIDs {
-		if !p.partitionsDone[id] {
-			return false
-		}
-	}
-	return true
 }
 
 // finalize walks the group map and produces one output row per group.

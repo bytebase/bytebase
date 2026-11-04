@@ -11,9 +11,11 @@ import (
 
 // orderByQueryFilterPlaceholder is the token the gateway embeds into ORDER BY
 // rewritten queries. The client-side engine must substitute it before firing
-// per-partition requests — with "true" on the initial page, and with a
-// continuation filter comparing the last emitted order-by key on subsequent
-// pages. Stage 3 handles the single-page case only; continuation is deferred.
+// per-partition requests. The engine substitutes "true" and leaves it there:
+// a range's later pages are fetched with the gateway's own continuation token,
+// which resumes that range's enumeration, so the filter never has to encode
+// where the range left off. The placeholder exists for engines that resume a
+// range from a client-side continuation token instead.
 const orderByQueryFilterPlaceholder = "{documentdb-formattableorderbyquery-filter}"
 
 // orderByItem is each element of the per-document orderByItems array. The
@@ -43,10 +45,13 @@ func parseOrderByPartitionResponse(raw []byte) (*orderByPartitionResponse, error
 	return &r, nil
 }
 
-// partitionStream holds one partition's ORDER BY documents, in gateway-sorted
-// order. The pipeline pops from the head as the heap selects from this
-// partition; emptying the slice means the partition is drained.
+// partitionStream buffers one partition's ORDER BY documents, in
+// gateway-sorted order. The pipeline pops from the head as the heap selects
+// from this partition; an empty buffer means the partition has delivered
+// everything it has so far, which is the end of its stream only once the
+// fanout reports the range drained.
 type partitionStream struct {
+	id   string // the partition key range that feeds this stream
 	docs []orderByDoc
 	head int // index of next doc to emit; len(docs)-head is the remaining count
 }
@@ -119,17 +124,19 @@ func (h *mergeHeap) Pop() any {
 // the per-partition query to `OFFSET 0 LIMIT (offset+limit)` so every
 // partition delivers enough rows to satisfy any interleaving, and this
 // pipeline handles the global skip + take after merging.
+//
+// A range answers over as many pages as its share of the result needs. The
+// merge therefore runs only while every range that still has pages has a row
+// buffered: the first range to run dry ends the turn, because its next page
+// may sort ahead of every other range's head.
 type orderByPipeline struct {
 	rewrittenQuery string
-	pkRangeIDs     []string
+	fanout         rangeFanout
 	descending     bool
 
-	partitionsDone map[string]bool
-	partitionByID  map[string]int
-	partitions     []*partitionStream
+	partitionByID map[string]int
+	partitions    []*partitionStream
 
-	heap   *mergeHeap
-	issued bool
 	closed bool
 
 	// offset and limit implement plan.QueryInfo.Offset/Limit. A negative limit
@@ -155,9 +162,9 @@ func newOrderByPipeline(plan *planDoc, pkRangeIDs []string) (*orderByPipeline, e
 	if plan.QueryInfo.OrderBy[0] != "Ascending" && plan.QueryInfo.OrderBy[0] != "Descending" {
 		return nil, ErrUnsupportedPlanFeature
 	}
-	// Substitute the formattable-order-by-query-filter placeholder with "true"
-	// for the initial request per partition. Multi-page continuation (which
-	// would substitute with a tail-comparison filter) is out of scope here.
+	// Substitute the formattable-order-by-query-filter placeholder with
+	// "true": every request this pipeline makes, first page or later, selects
+	// the whole range and relies on the continuation token to resume it.
 	query := strings.ReplaceAll(plan.QueryInfo.RewrittenQuery, orderByQueryFilterPlaceholder, "true")
 
 	// OFFSET/LIMIT always composes with ORDER BY per Cosmos syntax; defaults
@@ -181,13 +188,12 @@ func newOrderByPipeline(plan *planDoc, pkRangeIDs []string) (*orderByPipeline, e
 	partitions := make([]*partitionStream, len(pkRangeIDs))
 	for i, id := range pkRangeIDs {
 		partByID[id] = i
-		partitions[i] = &partitionStream{}
+		partitions[i] = &partitionStream{id: id}
 	}
 	return &orderByPipeline{
 		rewrittenQuery: query,
-		pkRangeIDs:     append([]string(nil), pkRangeIDs...),
+		fanout:         newRangeFanout(pkRangeIDs),
 		descending:     plan.QueryInfo.OrderBy[0] == "Descending",
-		partitionsDone: make(map[string]bool, len(pkRangeIDs)),
 		partitionByID:  partByID,
 		partitions:     partitions,
 		offset:         offset,
@@ -198,14 +204,11 @@ func newOrderByPipeline(plan *planDoc, pkRangeIDs []string) (*orderByPipeline, e
 func (p *orderByPipeline) Query() string { return p.rewrittenQuery }
 func (p *orderByPipeline) Close()        { p.closed = true }
 
-// IsComplete returns true once every partition's gateway response has been
-// merged and the last pending row has been handed to the caller, or once a
-// LIMIT has been satisfied (in which case unprocessed partition rows are
-// intentionally discarded).
+// IsComplete returns true once every range has delivered its last page, the
+// merge has consumed every buffered row and the last pending row has been
+// handed to the caller, or once a LIMIT has been satisfied (in which case
+// unprocessed partition rows are intentionally discarded).
 func (p *orderByPipeline) IsComplete() bool {
-	if !p.issued {
-		return false
-	}
 	if len(p.pending) > 0 {
 		return false
 	}
@@ -216,16 +219,11 @@ func (p *orderByPipeline) IsComplete() bool {
 	if p.limit >= 0 && p.emitted >= p.limit {
 		return true
 	}
-	for _, id := range p.pkRangeIDs {
-		if !p.partitionsDone[id] {
-			return false
-		}
-	}
-	if p.heap != nil && p.heap.Len() > 0 {
+	if !p.fanout.allDrained() {
 		return false
 	}
 	for _, s := range p.partitions {
-		if s.head < len(s.docs) {
+		if _, ok := s.peek(); ok {
 			return false
 		}
 	}
@@ -233,40 +231,26 @@ func (p *orderByPipeline) IsComplete() bool {
 }
 
 // Run drives one pipeline turn.
-//  1. First call: fan out one request per pk-range carrying the (substituted)
-//     rewritten query.
-//  2. After every partition has provided data, drain the heap into `pending`,
-//     then emit.
+//  1. Merge whatever the buffered pages make certain, and emit it.
+//  2. Otherwise ask for the next page of every range that has one — the
+//     initial fan-out across all ranges on the first call.
 func (p *orderByPipeline) Run() (*queryengine.PipelineResult, error) {
-	if !p.issued {
-		reqs := make([]queryengine.QueryRequest, len(p.pkRangeIDs))
-		for i, id := range p.pkRangeIDs {
-			reqs[i] = queryengine.QueryRequest{
-				PartitionKeyRangeID: id,
-				Id:                  uint64(i),
-				Query:               p.rewrittenQuery,
-				IncludeParameters:   true,
-			}
-		}
-		p.issued = true
-		return &queryengine.PipelineResult{Requests: reqs}, nil
-	}
-
-	if p.heap == nil && p.allPartitionsReady() {
-		p.initHeap()
-		p.drain()
-	}
+	p.merge()
 
 	if len(p.pending) > 0 {
 		batch := p.pending
 		p.pending = nil
 		return &queryengine.PipelineResult{Items: batch, IsCompleted: p.IsComplete()}, nil
 	}
-	return &queryengine.PipelineResult{IsCompleted: p.IsComplete()}, nil
+	if p.IsComplete() {
+		return &queryengine.PipelineResult{IsCompleted: true}, nil
+	}
+	return &queryengine.PipelineResult{Requests: p.fanout.requests(p.rewrittenQuery)}, nil
 }
 
-// ProvideData parses and stores each partition's response. Validates that
-// every document has at least one orderByItems entry and a payload.
+// ProvideData parses each response and buffers its documents against the
+// range that produced them. Validates that every document has at least one
+// orderByItems entry and a payload.
 func (p *orderByPipeline) ProvideData(results []queryengine.QueryResult) error {
 	for _, r := range results {
 		resp, err := parseOrderByPartitionResponse(r.Data)
@@ -281,30 +265,40 @@ func (p *orderByPipeline) ProvideData(results []queryengine.QueryResult) error {
 				return errors.Errorf("gonative: order-by doc %d missing payload", i)
 			}
 		}
-		if r.NextContinuation != "" {
-			return errors.New("gonative: order-by partition returned a continuation token (multi-page not supported in Stage 3)")
-		}
 		idx, ok := p.partitionByID[r.PartitionKeyRangeID]
 		if !ok {
 			return errors.Errorf("gonative: unexpected partition id %q", r.PartitionKeyRangeID)
 		}
-		p.partitions[idx].docs = append(p.partitions[idx].docs, resp.Documents...)
-		p.partitionsDone[r.PartitionKeyRangeID] = true
+		if err := p.fanout.note(r); err != nil {
+			return err
+		}
+		s := p.partitions[idx]
+		// Drop the rows the merge has already emitted before buffering the new
+		// page, so a range's buffer stays the size of its unread rows rather
+		// than of everything it has ever returned.
+		if s.head > 0 {
+			s.docs = s.docs[s.head:]
+			s.head = 0
+		}
+		s.docs = append(s.docs, resp.Documents...)
 	}
 	return nil
 }
 
-func (p *orderByPipeline) allPartitionsReady() bool {
-	for _, id := range p.pkRangeIDs {
-		if !p.partitionsDone[id] {
-			return false
-		}
+// merge flushes as much of the k-way merge into p.pending as the buffered
+// pages make certain. Popping the heap's top, advancing that range and
+// re-pushing it emits the globally-next row; a range that runs dry while it
+// still has pages ends the turn instead, because its next page may sort ahead
+// of every other range's head.
+//
+// OFFSET/LIMIT (Stage 5) apply here: the first `offset` rows are discarded,
+// and emission stops once `limit` rows have been collected (when limit >= 0).
+// Both are tracked on the pipeline so the next turn resumes where this one
+// stopped.
+func (p *orderByPipeline) merge() {
+	if p.waitingForPage() {
+		return
 	}
-	return true
-}
-
-// initHeap seeds the merge heap with every non-empty partition's head.
-func (p *orderByPipeline) initHeap() {
 	h := &mergeHeap{partitions: p.partitions, descending: p.descending}
 	for i, s := range p.partitions {
 		if _, ok := s.peek(); ok {
@@ -312,30 +306,15 @@ func (p *orderByPipeline) initHeap() {
 		}
 	}
 	heap.Init(h)
-	p.heap = h
-}
 
-// drain flushes the k-way merge into p.pending. After the single-page
-// guarantee the heap holds at most one row per partition; popping the top,
-// advancing that partition, and re-pushing (if not drained) emits the
-// globally-next row. Runs to completion in one Run() turn.
-//
-// OFFSET/LIMIT (Stage 5) apply here: the first `offset` rows are discarded,
-// and emission stops once `limit` rows have been collected (when limit >= 0).
-// Both are tracked on the pipeline across calls so a partial drain would
-// resume correctly — though in practice drain runs to completion.
-func (p *orderByPipeline) drain() {
-	for p.heap.Len() > 0 {
+	for h.Len() > 0 {
 		if p.limit >= 0 && p.emitted >= p.limit {
-			// LIMIT reached — stop popping and drop the remaining heap state
-			// so IsComplete trips on the next turn.
-			p.heap.idx = p.heap.idx[:0]
+			// LIMIT reached — the caller has everything it asked for.
 			return
 		}
-		top, ok := heap.Pop(p.heap).(int)
+		top, ok := heap.Pop(h).(int)
 		if !ok {
 			// Unreachable: the heap is seeded with partition indexes only.
-			p.heap.idx = p.heap.idx[:0]
 			return
 		}
 		s := p.partitions[top]
@@ -348,7 +327,22 @@ func (p *orderByPipeline) drain() {
 			p.emitted++
 		}
 		if _, ok := s.peek(); ok {
-			heap.Push(p.heap, top)
+			heap.Push(h, top)
+			continue
+		}
+		if !p.fanout.drained(s.id) {
+			return
 		}
 	}
+}
+
+// waitingForPage reports whether a range has nothing buffered and pages still
+// to come, which is what makes the merge's next pop uncertain.
+func (p *orderByPipeline) waitingForPage() bool {
+	for _, s := range p.partitions {
+		if _, buffered := s.peek(); !buffered && !p.fanout.drained(s.id) {
+			return true
+		}
+	}
+	return false
 }
