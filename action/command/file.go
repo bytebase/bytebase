@@ -29,6 +29,8 @@ func getReleaseFiles(w *world.World) ([]*v1pb.Release_File, error) {
 
 	slices.Sort(matches)
 
+	root := repositoryRoot()
+
 	if w.Declarative {
 		// For declarative files, we need to concat all the file contents if it is rollout.
 		if w.IsRollout {
@@ -61,7 +63,7 @@ func getReleaseFiles(w *world.World) ([]*v1pb.Release_File, error) {
 				return nil, err
 			}
 			files = append(files, &v1pb.Release_File{
-				Path:      m,
+				Path:      repositoryPath(root, m),
 				Version:   w.CurrentTime.Format(versionFormat),
 				Statement: content,
 			})
@@ -85,13 +87,58 @@ func getReleaseFiles(w *world.World) ([]*v1pb.Release_File, error) {
 		}
 
 		files = append(files, &v1pb.Release_File{
-			Path:      m,
+			Path:      repositoryPath(root, m),
 			Version:   version,
 			Statement: content,
 		})
 	}
 
 	return files, nil
+}
+
+// repositoryRootEnvs are the checkout directories of GitHub Actions, GitLab CI,
+// Bitbucket Pipelines and Azure Pipelines.
+var repositoryRootEnvs = []string{"GITHUB_WORKSPACE", "CI_PROJECT_DIR", "BITBUCKET_CLONE_DIR", "BUILD_SOURCESDIRECTORY"}
+
+// repositoryRoot returns the root of the checked-out repository, or "" if
+// unknown. It looks for .git itself because the action images have no git binary.
+func repositoryRoot() string {
+	if dir, err := os.Getwd(); err == nil {
+		for {
+			if _, err := os.Stat(filepath.Join(dir, ".git")); err == nil {
+				return dir
+			}
+			parent := filepath.Dir(dir)
+			if parent == dir {
+				break
+			}
+			dir = parent
+		}
+	}
+	for _, key := range repositoryRootEnvs {
+		if dir := os.Getenv(key); dir != "" {
+			return dir
+		}
+	}
+	return ""
+}
+
+// repositoryPath returns match relative to root with forward slashes, which is
+// how the VCS file links and the SQL review annotations address a file. A match
+// that cannot be placed under root is returned unchanged.
+func repositoryPath(root, match string) string {
+	if root == "" {
+		return match
+	}
+	abs, err := filepath.Abs(match)
+	if err != nil {
+		return match
+	}
+	rel, err := filepath.Rel(root, abs)
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return match
+	}
+	return filepath.ToSlash(rel)
 }
 
 var versionReg = regexp.MustCompile(`^[vV]?(\d+(\.\d+)*)`)
