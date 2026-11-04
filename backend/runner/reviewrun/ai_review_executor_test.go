@@ -3,6 +3,8 @@ package reviewrun
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -221,6 +223,9 @@ func setCISamplingSize(ctx context.Context, t *testing.T, stores *store.Store, s
 	}))
 }
 
+// summaryDatabaseID finds the database ids of a summary prompt's findings.
+var summaryDatabaseID = regexp.MustCompile(`"database":"([a-z2-7]+)"`)
+
 // findingModel answers every review with the same finding, the merge with one
 // group of every finding, and the summary with one group of every database,
 // so a run's one comment names every database the run reviewed.
@@ -236,8 +241,8 @@ func (m *findingModel) Chat(_ context.Context, request *v1pb.AIChatRequest) (*v1
 	m.calls.Add(1)
 	content := `{"findings": [{"title": "Backfill note", "severity": "P2", "line": 1, "rule": "r", "evidence": "e", "fix": "f"}]}`
 	// A review offers the schema tools, and the merge and the summary offer
-	// none. A merge numbers the findings, and a summary the databases, which
-	// report one finding each here.
+	// none. A merge numbers the findings, and a summary names the databases
+	// by id.
 	if len(request.GetToolDefinitions()) == 0 {
 		user := request.GetMessages()[1].GetContent()
 		var ids []string
@@ -252,8 +257,10 @@ func (m *findingModel) Chat(_ context.Context, request *v1pb.AIChatRequest) (*v1
 			if m.onSummary != nil {
 				m.onSummary()
 			}
-			for i := range strings.Count(user, `{"database":`) {
-				ids = append(ids, strconv.Itoa(i+1))
+			for _, match := range summaryDatabaseID.FindAllStringSubmatch(user, -1) {
+				if id := strconv.Quote(match[1]); !slices.Contains(ids, id) {
+					ids = append(ids, id)
+				}
 			}
 			content = fmt.Sprintf(`{"title": "Backfill note", "evidence": "e", "groups": [{"databases": [%s], "facts": ""}], "fix": "f"}`, strings.Join(ids, ", "))
 		}

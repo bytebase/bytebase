@@ -76,6 +76,9 @@ type Reviewer struct {
 	timeout            time.Duration
 	mergePromptBytes   int
 	summaryPromptBytes int
+	// databaseIDs returns the ids that stand for the databases of a summary.
+	// Tests replace it so that a scripted reply can name them.
+	databaseIDs func(count int, text string) []string
 }
 
 // NewReviewer creates a Reviewer.
@@ -86,6 +89,7 @@ func NewReviewer(model Model) *Reviewer {
 		timeout:            defaultTimeout,
 		mergePromptBytes:   defaultMergePromptBytes,
 		summaryPromptBytes: defaultSummaryPromptBytes,
+		databaseIDs:        newDatabaseIDs,
 	}
 }
 
