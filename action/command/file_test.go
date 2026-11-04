@@ -106,8 +106,8 @@ func TestExtractVersion(t *testing.T) {
 func TestGetReleaseFilesRepositoryPath(t *testing.T) {
 	tests := []struct {
 		name        string
-		gitMarker   string   // "dir", "file", or "" for no .git in repo/
-		submodules  []string // directories under repo/ that hold a submodule's .git file
+		gitMarker   string            // "dir", "file", or "" for no .git in repo/
+		submodules  map[string]string // directory under repo/ to its .git file's gitdir
 		env         map[string]string
 		cwd         string // relative to the temp dir
 		pattern     string // {tmp} is replaced with the temp dir
@@ -153,7 +153,7 @@ func TestGetReleaseFilesRepositoryPath(t *testing.T) {
 		{
 			name:       "submodule run is named from the superproject",
 			gitMarker:  "dir",
-			submodules: []string{"db"},
+			submodules: map[string]string{"db": "../.git/modules/db"},
 			cwd:        "repo/db",
 			pattern:    "migrations/*.sql",
 			want:       []string{"db/migrations/001_init.sql", "db/migrations/002_add.sql"},
@@ -161,7 +161,7 @@ func TestGetReleaseFilesRepositoryPath(t *testing.T) {
 		{
 			name:       "nested submodule run is named from the outermost superproject",
 			gitMarker:  "dir",
-			submodules: []string{"db", "db/migrations"},
+			submodules: map[string]string{"db": "../.git/modules/db", "db/migrations": "../../.git/modules/db/modules/migrations"},
 			cwd:        "repo/db/migrations",
 			pattern:    "*.sql",
 			want:       []string{"db/migrations/001_init.sql", "db/migrations/002_add.sql"},
@@ -193,6 +193,14 @@ func TestGetReleaseFilesRepositoryPath(t *testing.T) {
 			cwd:     "repo/db",
 			pattern: "migrations/*.sql",
 			want:    []string{"db/migrations/001_init.sql", "db/migrations/002_add.sql"},
+		},
+		{
+			name:       "submodule in a linked worktree is named from the superproject",
+			gitMarker:  "file",
+			submodules: map[string]string{"db": "/main/.git/worktrees/repo/modules/db"},
+			cwd:        "repo/db",
+			pattern:    "migrations/*.sql",
+			want:       []string{"db/migrations/001_init.sql", "db/migrations/002_add.sql"},
 		},
 		{
 			name:      "git root wins over the checkout variable",
@@ -254,9 +262,8 @@ func TestGetReleaseFilesRepositoryPath(t *testing.T) {
 				require.NoError(t, os.WriteFile(filepath.Join(tmp, "repo", ".git"), []byte("gitdir: /elsewhere/.git/worktrees/repo\n"), 0o600))
 			default:
 			}
-			for _, sub := range tt.submodules {
-				gitdir := "gitdir: " + strings.Repeat("../", strings.Count(sub, "/")+1) + ".git/modules/" + sub + "\n"
-				require.NoError(t, os.WriteFile(filepath.Join(tmp, "repo", filepath.FromSlash(sub), ".git"), []byte(gitdir), 0o600))
+			for dir, gitdir := range tt.submodules {
+				require.NoError(t, os.WriteFile(filepath.Join(tmp, "repo", filepath.FromSlash(dir), ".git"), []byte("gitdir: "+gitdir+"\n"), 0o600))
 			}
 			expand := func(s string) string { return strings.ReplaceAll(s, "{tmp}", filepath.ToSlash(tmp)) }
 			for _, key := range repositoryRootEnvs {
@@ -281,6 +288,27 @@ func TestGetReleaseFilesRepositoryPath(t *testing.T) {
 				want = append(want, expand(p))
 			}
 			require.Equal(t, want, got)
+		})
+	}
+}
+
+func TestIsSubmoduleGitdir(t *testing.T) {
+	tests := []struct {
+		gitdir string
+		want   bool
+	}{
+		{gitdir: "../.git/modules/db", want: true},
+		{gitdir: "../../.git/modules/db/modules/migrations", want: true},
+		{gitdir: "/main/.git/worktrees/wt/modules/db", want: true},
+		{gitdir: "/main/.git/worktrees/wt/modules/db/modules/migrations", want: true},
+		{gitdir: "/main/.git/worktrees/wt", want: false},
+		{gitdir: "/main/.git/modules/db/worktrees/wt", want: false},
+		{gitdir: "/srv/repo.git", want: false},
+		{gitdir: "/srv/modules/repo", want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.gitdir, func(t *testing.T) {
+			require.Equal(t, tt.want, isSubmoduleGitdir(tt.gitdir))
 		})
 	}
 }

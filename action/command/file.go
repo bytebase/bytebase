@@ -124,9 +124,8 @@ func repositoryRoot() string {
 }
 
 // isRepositoryRoot reports whether dir has a .git that is not a submodule's.
-// A submodule's .git is a file pointing into the superproject's .git/modules/,
-// and its files are named from the superproject, whose URL and SHA the release
-// records.
+// A submodule's files are named from the superproject, whose URL and SHA the
+// release records.
 func isRepositoryRoot(dir string) bool {
 	gitPath := filepath.Join(dir, ".git")
 	info, err := os.Stat(gitPath)
@@ -140,8 +139,26 @@ func isRepositoryRoot(dir string) bool {
 	if err != nil {
 		return true
 	}
-	gitdir := strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(string(content)), "gitdir:"))
-	return !strings.Contains(filepath.ToSlash(gitdir), ".git/modules/")
+	return !isSubmoduleGitdir(strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(string(content)), "gitdir:")))
+}
+
+// isSubmoduleGitdir reports whether a .git file's gitdir belongs to a submodule.
+// Git keeps a submodule's under modules/ of the superproject's git directory,
+// which is .git or, in a linked worktree, .git/worktrees/<id>; a linked
+// worktree's own gitdir ends in worktrees/<id>. The last of the two decides.
+func isSubmoduleGitdir(gitdir string) bool {
+	segments := strings.Split(filepath.ToSlash(gitdir), "/")
+	i := slices.Index(segments, ".git")
+	if i < 0 {
+		return false
+	}
+	last := ""
+	for _, segment := range segments[i+1:] {
+		if segment == "modules" || segment == "worktrees" {
+			last = segment
+		}
+	}
+	return last == "modules"
 }
 
 // repositoryPath returns match relative to root with forward slashes, which is
