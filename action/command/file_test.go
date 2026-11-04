@@ -106,7 +106,8 @@ func TestExtractVersion(t *testing.T) {
 func TestGetReleaseFilesRepositoryPath(t *testing.T) {
 	tests := []struct {
 		name        string
-		gitMarker   string // "dir", "file", or "" for no .git in repo/
+		gitMarker   string   // "dir", "file", or "" for no .git in repo/
+		submodules  []string // directories under repo/ that hold a submodule's .git file
 		env         map[string]string
 		cwd         string // relative to the temp dir
 		pattern     string // {tmp} is replaced with the temp dir
@@ -143,11 +144,27 @@ func TestGetReleaseFilesRepositoryPath(t *testing.T) {
 			want:      []string{"db/migrations/001_init.sql", "db/migrations/002_add.sql"},
 		},
 		{
-			name:      "git file from a worktree or submodule checkout",
+			name:      "git file from a worktree checkout",
 			gitMarker: "file",
 			cwd:       "repo/db",
 			pattern:   "migrations/*.sql",
 			want:      []string{"db/migrations/001_init.sql", "db/migrations/002_add.sql"},
+		},
+		{
+			name:       "submodule run is named from the superproject",
+			gitMarker:  "dir",
+			submodules: []string{"db"},
+			cwd:        "repo/db",
+			pattern:    "migrations/*.sql",
+			want:       []string{"db/migrations/001_init.sql", "db/migrations/002_add.sql"},
+		},
+		{
+			name:       "nested submodule run is named from the outermost superproject",
+			gitMarker:  "dir",
+			submodules: []string{"db", "db/migrations"},
+			cwd:        "repo/db/migrations",
+			pattern:    "*.sql",
+			want:       []string{"db/migrations/001_init.sql", "db/migrations/002_add.sql"},
 		},
 		{
 			name:    "GitHub workspace without git",
@@ -234,8 +251,12 @@ func TestGetReleaseFilesRepositoryPath(t *testing.T) {
 			case "dir":
 				require.NoError(t, os.Mkdir(filepath.Join(tmp, "repo", ".git"), 0o755))
 			case "file":
-				require.NoError(t, os.WriteFile(filepath.Join(tmp, "repo", ".git"), []byte("gitdir: /elsewhere"), 0o600))
+				require.NoError(t, os.WriteFile(filepath.Join(tmp, "repo", ".git"), []byte("gitdir: /elsewhere/.git/worktrees/repo\n"), 0o600))
 			default:
+			}
+			for _, sub := range tt.submodules {
+				gitdir := "gitdir: " + strings.Repeat("../", strings.Count(sub, "/")+1) + ".git/modules/" + sub + "\n"
+				require.NoError(t, os.WriteFile(filepath.Join(tmp, "repo", filepath.FromSlash(sub), ".git"), []byte(gitdir), 0o600))
 			}
 			expand := func(s string) string { return strings.ReplaceAll(s, "{tmp}", filepath.ToSlash(tmp)) }
 			for _, key := range repositoryRootEnvs {

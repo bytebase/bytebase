@@ -105,7 +105,7 @@ var repositoryRootEnvs = []string{"GITHUB_WORKSPACE", "CI_PROJECT_DIR", "BITBUCK
 func repositoryRoot() string {
 	if dir, err := os.Getwd(); err == nil {
 		for {
-			if _, err := os.Stat(filepath.Join(dir, ".git")); err == nil {
+			if isRepositoryRoot(dir) {
 				return dir
 			}
 			parent := filepath.Dir(dir)
@@ -121,6 +121,27 @@ func repositoryRoot() string {
 		}
 	}
 	return ""
+}
+
+// isRepositoryRoot reports whether dir has a .git that is not a submodule's.
+// A submodule's .git is a file pointing into the superproject's .git/modules/,
+// and its files are named from the superproject, whose URL and SHA the release
+// records.
+func isRepositoryRoot(dir string) bool {
+	gitPath := filepath.Join(dir, ".git")
+	info, err := os.Stat(gitPath)
+	if err != nil {
+		return false
+	}
+	if info.IsDir() {
+		return true
+	}
+	content, err := os.ReadFile(gitPath)
+	if err != nil {
+		return true
+	}
+	gitdir := strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(string(content)), "gitdir:"))
+	return !strings.Contains(filepath.ToSlash(gitdir), ".git/modules/")
 }
 
 // repositoryPath returns match relative to root with forward slashes, which is
