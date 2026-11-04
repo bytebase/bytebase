@@ -212,8 +212,8 @@ func (s *Store) ClaimAvailableReviewRuns(ctx context.Context, replicaID string) 
 // status, fenced on the claim's attempt. On DONE it posts the run's results in
 // the same transaction. A current root of the same reviewer on the issue (one
 // no run has superseded) whose fingerprint a result repeats keeps its thread,
-// state and replies included, and takes the result's anchor; that result is
-// not posted again. Every other current root of the reviewer is marked
+// state and replies included, and takes the result's text and anchor; that
+// result is not posted again. Every other current root of the reviewer is marked
 // superseded and, if OPEN, resolved; the remaining results are inserted as
 // OPEN roots with no creator, carrying the run's attempt; and a
 // ReviewRunCompletion event records the counts. A FAILED run leaves the
@@ -314,27 +314,33 @@ func (s *Store) CompleteReviewRun(ctx context.Context, claimed *ClaimedReviewRun
 			return false, errors.Wrapf(err, "failed to resolve reopened review results")
 		}
 
-		// A kept root moves to its statement in the SQL this run reviewed:
-		// equal fingerprints mean equal statement text, and an anchor left
-		// on an earlier sheet can lose its place in the current one.
+		// A kept root takes the text and the anchor of the result that
+		// repeats it. The fingerprint leaves the text out, so the text can
+		// differ: omni rewords a finding, or names what it found, such as an
+		// object's kind, differently. Equal fingerprints mean equal statement
+		// text, and an anchor left on an earlier sheet can lose its place in
+		// the current one. A result on the whole change has no anchor and
+		// leaves the kept one alone.
 		q = qb.Q().Space(`
 			UPDATE issue_comment kept
-			SET payload = jsonb_set(kept.payload, '{statementAnchor}', r.payload->'statementAnchor')
+			SET payload = kept.payload || jsonb_strip_nulls(jsonb_build_object(
+			      'comment', r.payload->'comment',
+			      'statementAnchor', r.payload->'statementAnchor'))
 			FROM unnest(?::JSONB[]) AS r(payload)
 			WHERE kept.project = ? AND kept.issue_id = ?
 			  AND kept.parent_id IS NULL
 			  AND kept.payload->'reviewMetadata'->>'runType' = ?
 			  AND kept.payload->'reviewMetadata'->'superseded' IS NULL
 			  AND kept.payload->'reviewMetadata'->>'fingerprint' = r.payload->'reviewMetadata'->>'fingerprint'
-			  AND r.payload ?? 'statementAnchor'
-			  AND kept.payload->'statementAnchor' IS DISTINCT FROM r.payload->'statementAnchor'
+			  AND ((r.payload ?? 'comment' AND kept.payload->'comment' IS DISTINCT FROM r.payload->'comment')
+			    OR (r.payload ?? 'statementAnchor' AND kept.payload->'statementAnchor' IS DISTINCT FROM r.payload->'statementAnchor'))
 		`, resultPayloads, claimed.ProjectID, claimed.IssueUID, claimed.Type)
 		query, args, err = q.ToSQL()
 		if err != nil {
 			return false, errors.Wrapf(err, "failed to build sql")
 		}
 		if _, err := tx.ExecContext(ctx, query, args...); err != nil {
-			return false, errors.Wrapf(err, "failed to move kept review results")
+			return false, errors.Wrapf(err, "failed to update kept review results")
 		}
 	}
 

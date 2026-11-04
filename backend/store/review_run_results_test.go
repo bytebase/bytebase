@@ -315,21 +315,21 @@ func TestCompleteReviewRunKeepsResultsReportedAgain(t *testing.T) {
 	got, updatedAfter := listSupersession(t, fixture, "default")
 	require.Equal(t, []supersession{
 		{Comment: "ai", ThreadState: "OPEN"},
-		{Comment: "open", ThreadState: "OPEN"},
-		{Comment: "accepted", ThreadState: "RESOLVED"},
+		{Comment: "open again", ThreadState: "OPEN"},
+		{Comment: "accepted again", ThreadState: "RESOLVED"},
 		{Comment: "fixed", ThreadState: "RESOLVED", Superseded: true},
 		{Comment: "no fingerprint", ThreadState: "RESOLVED", Superseded: true},
-		{Comment: "whole", ThreadState: "OPEN"},
+		{Comment: "whole again", ThreadState: "OPEN"},
 		{Comment: "new", ThreadState: "OPEN"},
 		{Comment: "no fingerprint again", ThreadState: "OPEN"},
-	}, got)
-	for _, comment := range []string{"open", "accepted", "whole"} {
-		require.Equal(t, updatedBefore[comment], updatedAfter[comment], "keeping %q is no content edit", comment)
+	}, got, "a kept result takes the text of the result that repeats it")
+	for before, after := range map[string]string{"open": "open again", "accepted": "accepted again", "whole": "whole again"} {
+		require.Equal(t, updatedBefore[before], updatedAfter[after], "keeping %q is no person's edit", before)
 	}
 	anchors := reviewResultAnchors(t, fixture, "default")
-	require.Equal(t, movedSheet+"/3", anchors["open"], "a kept result moves to the statement the run found")
-	require.Equal(t, reviewResultSheet+"/1", anchors["accepted"])
-	require.Equal(t, "", anchors["whole"])
+	require.Equal(t, movedSheet+"/3", anchors["open again"], "a kept result moves to the statement the run found")
+	require.Equal(t, reviewResultSheet+"/1", anchors["accepted again"])
+	require.Equal(t, "", anchors["whole again"])
 	require.Equal(t, []reviewRunCompletion{
 		{RunType: storepb.ReviewRun_AI, Posted: 1},
 		{RunType: storepb.ReviewRun_RULE, Posted: 5},
@@ -345,22 +345,24 @@ func TestCompleteReviewRunKeepsResultsReportedAgain(t *testing.T) {
 	final, _ := listSupersession(t, fixture, "default")
 	require.Equal(t, []supersession{
 		{Comment: "ai", ThreadState: "OPEN"},
-		{Comment: "open", ThreadState: "RESOLVED", Superseded: true},
-		{Comment: "accepted", ThreadState: "RESOLVED", Superseded: true},
+		{Comment: "open again", ThreadState: "RESOLVED", Superseded: true},
+		{Comment: "accepted again", ThreadState: "RESOLVED", Superseded: true},
 		{Comment: "fixed", ThreadState: "RESOLVED", Superseded: true},
 		{Comment: "no fingerprint", ThreadState: "RESOLVED", Superseded: true},
-		{Comment: "whole", ThreadState: "RESOLVED", Superseded: true},
-		{Comment: "new", ThreadState: "OPEN"},
+		{Comment: "whole again", ThreadState: "RESOLVED", Superseded: true},
+		{Comment: "new again", ThreadState: "OPEN"},
 		{Comment: "no fingerprint again", ThreadState: "RESOLVED", Superseded: true},
 		{Comment: "fixed again", ThreadState: "OPEN"},
 	}, final)
 	require.Equal(t, map[string]int64{
-		"ai": 0, "open": 0, "accepted": 0, "fixed": 0, "no fingerprint": 0, "whole": 0,
-		"new": 1, "no fingerprint again": 1, "fixed again": 2,
+		"ai": 0, "open again": 0, "accepted again": 0, "fixed": 0, "no fingerprint": 0, "whole again": 0,
+		"new again": 1, "no fingerprint again": 1, "fixed again": 2,
 	}, reviewResultAttempts(t, fixture, "default"), "a kept result keeps the attempt that posted it")
 	completions := listReviewRunCompletions(t, fixture, "default")
 	require.Equal(t, reviewRunCompletion{RunType: storepb.ReviewRun_RULE, Attempt: 2, Posted: 1, Kept: 1, Superseded: 4}, completions[len(completions)-1])
 	require.Equal(t, []reviewRunCompletion{{RunType: storepb.ReviewRun_RULE, Posted: 1}}, listReviewRunCompletions(t, fixture, "other"))
+	other, _ = listSupersession(t, fixture, "other")
+	require.Equal(t, []supersession{{Comment: "other", ThreadState: "OPEN"}}, other, "keeping the colliding fingerprint leaves the other project's text")
 
 	// Fingerprints are unique within a run.
 	ctx, s := fixture.ctx, fixture.store
