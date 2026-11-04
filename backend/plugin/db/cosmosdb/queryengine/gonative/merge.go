@@ -327,6 +327,13 @@ func (p *orderByPipeline) merge() error {
 	if p.waitingForPage() {
 		return nil
 	}
+	// A window already satisfied ends the merge before it touches a row: a
+	// page that landed after the last emission still holds rows the result
+	// does not include, and merging them would hand one to the caller or ask
+	// an order of them that nobody needs.
+	if p.windowFull() {
+		return nil
+	}
 	h := &mergeHeap{partitions: p.partitions, descending: p.descending}
 	for i, s := range p.partitions {
 		if _, ok := s.peek(); ok {

@@ -681,8 +681,12 @@ func TestOrderByPipeline_IgnoresAPageThatLandsAfterTheLimit(t *testing.T) {
 		queryengine.NewQueryResult("0", mkOrderByBody(t, ordered{ob: `[1]`, payload: `{"x":[1]}`}), ""),
 		queryengine.NewQueryResult("1", mkOrderByBody(t, ordered{ob: `[2]`, payload: `{"x":[2]}`}), ""),
 	}))
-	_, err = p.Run()
-	assert.NoError(t, err)
+
+	// Nothing more may come out of it, and nothing in that page may fail it.
+	late, err := p.Run()
+	require.NoError(t, err)
+	assert.Empty(t, late.Items)
+	assert.True(t, p.IsComplete())
 }
 
 // Three ranges headed by a scalar and two arrays: the first row is the scalar
