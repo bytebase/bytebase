@@ -691,11 +691,43 @@ func TestGroupPipeline_RefusesAnOrderedKeyItCannotOrder(t *testing.T) {
 	assert.ErrorIs(t, err, ErrUnsupportedPlanFeature)
 }
 
-// A column the documents do not all define is ordinary in a schemaless store,
-// and the service answers it as a group of its own, counted apart from an
-// explicit null and spelled with the alias left out of the row. The engine
-// used to fail the whole query on it, because the gateway sends that group's
-// key as a groupByItems entry with no "item" to canonicalize.
+// A clause that names one of two group keys leaves the other to settle ties.
+// The query asked nothing of that key, so either tie order satisfies it and an
+// array there must not fail the query — only a key the clause named has to be
+// ordered the service's way.
+func TestGroupPipeline_SettlesTiesOnAKeyTheClauseOmits(t *testing.T) {
+	plan := newGroupPlan("c.country", []string{"country", "tags", "n"},
+		map[string]string{"country": "", "tags": "", "n": "Count"})
+	plan.QueryInfo.GroupByExpressions = []string{"c.country", "c.tags"}
+	plan.QueryInfo.RewrittenQuery = "SELECT 1\nFROM c\nGROUP BY c.country, c.tags\nORDER BY c.country DESC"
+
+	p, err := newGroupPipeline(plan, []string{"0"})
+	require.NoError(t, err)
+
+	rows := driveGroup(t, p, map[string][]byte{
+		"0": mkTwoKeyGroupBody(t,
+			twoKeyEntry{keys: []string{`"AE"`, `["b"]`}, payload: `{"country":"AE","tags":["b"],"n":{"item":1}}`},
+			twoKeyEntry{keys: []string{`"BR"`, `["z"]`}, payload: `{"country":"BR","tags":["z"],"n":{"item":2}}`},
+			twoKeyEntry{keys: []string{`"AE"`, `["a"]`}, payload: `{"country":"AE","tags":["a"],"n":{"item":3}}`},
+		),
+	})
+	got := make([]string, 0, len(rows))
+	for _, row := range rows {
+		var object struct {
+			Country string   `json:"country"`
+			Tags    []string `json:"tags"`
+		}
+		require.NoError(t, json.Unmarshal(row, &object), "row: %s", row)
+		got = append(got, object.Country+"/"+strings.Join(object.Tags, ","))
+	}
+	assert.Equal(t, []string{"BR/z", "AE/a", "AE/b"}, got)
+}
+
+// A column the documents do not all define is ordinary in a schemaless store.
+// The service answers it as a group of its own, counted apart from an explicit
+// null and spelled with the alias left out of the row, and sends that group's
+// key as a groupByItems entry with no "item" at all — the shape this fixture
+// exists for.
 func TestGroupPipeline_GroupsAnUndefinedKeyOnItsOwn(t *testing.T) {
 	plan := newGroupPlan("c.v", []string{"k", "n"}, map[string]string{"k": "", "n": "Count"})
 	p, err := newGroupPipeline(plan, []string{"0", "1"})

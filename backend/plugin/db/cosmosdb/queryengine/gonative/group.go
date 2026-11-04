@@ -81,12 +81,8 @@ type groupPipeline struct {
 	order []string
 
 	// sort is how to order the output rows: which group key to compare
-	// first and which way, read from the query's ORDER BY — see groupSortKeys.
-	// ordered says whether the query named an order at all, which decides what
-	// an unorderable key means: a clause the engine cannot honour fails the
-	// query, while rows nobody ordered may go out in any repeatable order.
-	sort    []groupSortKey
-	ordered bool
+	// first, which way, and how strictly — see groupSortKeys.
+	sort []groupSortKey
 
 	// pending holds fully finalized rows awaiting the caller's next Run().
 	pending [][]byte
@@ -129,7 +125,7 @@ func newGroupPipeline(plan *planDoc, pkRangeIDs []string) (*groupPipeline, error
 		}
 	}
 
-	sortKeys, ordered, err := groupSortKeys(qi)
+	sortKeys, err := groupSortKeys(qi)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +140,6 @@ func newGroupPipeline(plan *planDoc, pkRangeIDs []string) (*groupPipeline, error
 		kinds:   kinds,
 		groups:  make(map[string]*groupState),
 		sort:    sortKeys,
-		ordered: ordered,
 	}, nil
 }
 
@@ -289,10 +284,15 @@ type orderByKey struct {
 }
 
 // groupSortKey names one group key to order the output rows by: its position
-// in groupByItems, and which way to compare it.
+// in groupByItems, which way to compare it, and whether the query named it.
+//
+// A key the query named has to be compared the service's way or not at all. A
+// key appended to settle ties the clause says nothing about takes any
+// repeatable order, so it is compared with compareItemsTotal and never fails.
 type groupSortKey struct {
 	index      int
 	descending bool
+	named      bool
 }
 
 // groupSortKeys works out how to order a GROUP BY's output rows. A GROUP BY
@@ -310,31 +310,31 @@ type groupSortKey struct {
 // Group keys the clause leaves out are appended ascending. The clause does not
 // constrain them, and ordering them too is what makes two runs of one query
 // answer alike.
-func groupSortKeys(qi planQueryInfo) (sortKeys []groupSortKey, ordered bool, err error) {
+func groupSortKeys(qi planQueryInfo) ([]groupSortKey, error) {
 	keys, found := trailingOrderBy(qi.RewrittenQuery)
 	if found && len(keys) == 0 {
-		return nil, false, errors.Wrap(ErrUnsupportedPlanFeature, "ORDER BY is not a plain list of keys")
+		return nil, errors.Wrap(ErrUnsupportedPlanFeature, "ORDER BY is not a plain list of keys")
 	}
-	sortKeys = make([]groupSortKey, 0, len(qi.GroupByExpressions))
+	sortKeys := make([]groupSortKey, 0, len(qi.GroupByExpressions))
 	named := make([]bool, len(qi.GroupByExpressions))
 	for _, key := range keys {
 		index := slices.Index(qi.GroupByExpressions, key.expr)
 		if index < 0 {
-			return nil, false, errors.Wrapf(ErrUnsupportedPlanFeature,
+			return nil, errors.Wrapf(ErrUnsupportedPlanFeature,
 				"ORDER BY key %q is not one of the GROUP BY expressions", key.expr)
 		}
 		if named[index] {
 			continue
 		}
 		named[index] = true
-		sortKeys = append(sortKeys, groupSortKey{index: index, descending: key.descending})
+		sortKeys = append(sortKeys, groupSortKey{index: index, descending: key.descending, named: true})
 	}
 	for index, taken := range named {
 		if !taken {
 			sortKeys = append(sortKeys, groupSortKey{index: index})
 		}
 	}
-	return sortKeys, len(keys) > 0, nil
+	return sortKeys, nil
 }
 
 // trailingOrderBy splits the ORDER BY clause that ends query into its keys.
@@ -453,13 +453,9 @@ func quotedBytes(s string) []bool {
 // gets compareItemsTotal: those rows have no order to be wrong about, and
 // ordering them anyway is what makes two runs of one query agree.
 func (p *groupPipeline) sortGroups() error {
-	cmp := compareItemsTotal
-	if p.ordered {
-		cmp = compareItems
-	}
 	var failed error
 	slices.SortStableFunc(p.order, func(a, b string) int {
-		order, err := compareGroupKeys(p.groups[a].items, p.groups[b].items, p.sort, cmp)
+		order, err := compareGroupKeys(p.groups[a].items, p.groups[b].items, p.sort)
 		if err != nil && failed == nil {
 			failed = err
 		}
@@ -469,11 +465,15 @@ func (p *groupPipeline) sortGroups() error {
 }
 
 // compareGroupKeys orders two group keys under Cosmos item ordering, comparing
-// the columns sortKeys names in the order and direction it gives, with cmp.
-func compareGroupKeys(a, b []groupByItem, sortKeys []groupSortKey, cmp func(a, b json.RawMessage) (int, error)) (int, error) {
+// the columns sortKeys names in the order, direction and strictness it gives.
+func compareGroupKeys(a, b []groupByItem, sortKeys []groupSortKey) (int, error) {
 	for _, key := range sortKeys {
 		if key.index >= len(a) || key.index >= len(b) {
 			continue
+		}
+		cmp := compareItemsTotal
+		if key.named {
+			cmp = compareItems
 		}
 		order, err := cmp(a[key.index].Item, b[key.index].Item)
 		if err != nil {

@@ -1324,8 +1324,7 @@ func TestCrossPartitionDistinctWithOrderByThroughTheDriver(t *testing.T) {
 // TestCrossPartitionSparseGroupBy groups on a column the documents do not all
 // define, which is ordinary in a schemaless store. The service answers the
 // undefined rows as a group of their own, counted apart from an explicit null
-// and spelled with the alias left out of the row; the engine used to fail the
-// query outright, because that group's key arrives with nothing to parse.
+// and spelled with the alias left out of the row.
 func TestCrossPartitionSparseGroupBy(t *testing.T) {
 	container := pagedFixture(t)
 
@@ -1346,11 +1345,9 @@ func TestCrossPartitionSparseGroupBy(t *testing.T) {
 
 // TestCrossPartitionMixedTypeOrder checks ORDER BY against the order the
 // service itself returns: undefined < null < bool < number < string < array <
-// object. The engine used to refuse to compare an array or an object, and the
-// merge then fell back to partition order, which let those rows overtake
-// everything else.
+// object.
 //
-// It cannot order two different arrays or two different objects, because the
+// Two different arrays, or two different objects, it cannot order, because the
 // service orders those by its index's own encoding — [1,2] < [2] < [1,3] on a
 // real container — and a merge comparator that disagreed with the streams it
 // merges would answer in an order that is neither. Those it fails instead.

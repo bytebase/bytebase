@@ -588,10 +588,10 @@ func TestOrderByPipeline_DistinctDropsDuplicatesBeforeTheLimit(t *testing.T) {
 }
 
 // A merge is only correct when its comparator agrees with the order inside the
-// streams it merges, and no comparator agrees with the service inside the array
-// and object classes. Codex's example on #21897: the service answers
-// [1,2], [2], [1,3] — ordering those by canonical JSON instead would emit
-// [1,2], [1,3], [2], and under a TOP 2 it would return the wrong rows.
+// streams it merges, and inside the array and object classes nothing derived
+// from the values does: the service answers these three [1,2], [2], [1,3],
+// while canonical JSON would put them [1,2], [1,3], [2] — an order that is
+// neither, and that a TOP 2 would cut in the wrong place.
 func TestOrderByPipeline_RefusesAnOrderItCannotMerge(t *testing.T) {
 	p := newAscPipeline(t, "0", "1")
 
