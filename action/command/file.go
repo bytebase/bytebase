@@ -104,15 +104,8 @@ var repositoryRootEnvs = []string{"GITHUB_WORKSPACE", "CI_PROJECT_DIR", "BITBUCK
 // unknown. It looks for .git itself because the action images have no git binary.
 func repositoryRoot() string {
 	if dir, err := os.Getwd(); err == nil {
-		for {
-			if isRepositoryRoot(dir) {
-				return dir
-			}
-			parent := filepath.Dir(dir)
-			if parent == dir {
-				break
-			}
-			dir = parent
+		if root := gitRepositoryRoot(dir); root != "" {
+			return root
 		}
 	}
 	for _, key := range repositoryRootEnvs {
@@ -123,42 +116,52 @@ func repositoryRoot() string {
 	return ""
 }
 
-// isRepositoryRoot reports whether dir has a .git that is not a submodule's.
-// A submodule's files are named from the superproject, whose URL and SHA the
-// release records.
-func isRepositoryRoot(dir string) bool {
+// gitRepositoryRoot returns the working tree at or above dir that is not a
+// submodule, or "" if there is none. A submodule's git directory lies under
+// modules/ of the git directory of the repository above it, and its files are
+// named from that superproject, whose URL and SHA the release records.
+func gitRepositoryRoot(dir string) string {
+	root, rootGitDir := "", ""
+	for {
+		if gitDir := gitDirectory(dir); gitDir != "" {
+			if root != "" {
+				if _, ok := pathWithin(filepath.Join(gitDir, "modules"), rootGitDir); !ok {
+					return root
+				}
+			}
+			root, rootGitDir = dir, gitDir
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return root
+		}
+		dir = parent
+	}
+}
+
+// gitDirectory returns the git directory of the working tree at dir: dir/.git,
+// or the gitdir a .git file points at. It returns "" if dir has no .git.
+func gitDirectory(dir string) string {
 	gitPath := filepath.Join(dir, ".git")
 	info, err := os.Stat(gitPath)
 	if err != nil {
-		return false
+		return ""
 	}
-	if info.IsDir() {
-		return true
-	}
-	content, err := os.ReadFile(gitPath)
-	if err != nil {
-		return true
-	}
-	return !isSubmoduleGitdir(strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(string(content)), "gitdir:")))
-}
-
-// isSubmoduleGitdir reports whether a .git file's gitdir belongs to a submodule.
-// Git keeps a submodule's under modules/ of the superproject's git directory,
-// which is .git or, in a linked worktree, .git/worktrees/<id>; a linked
-// worktree's own gitdir ends in worktrees/<id>. The last of the two decides.
-func isSubmoduleGitdir(gitdir string) bool {
-	segments := strings.Split(filepath.ToSlash(gitdir), "/")
-	i := slices.Index(segments, ".git")
-	if i < 0 {
-		return false
-	}
-	last := ""
-	for _, segment := range segments[i+1:] {
-		if segment == "modules" || segment == "worktrees" {
-			last = segment
+	gitDir := gitPath
+	if !info.IsDir() {
+		if content, err := os.ReadFile(gitPath); err == nil {
+			gitDir = strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(string(content)), "gitdir:"))
+			if !filepath.IsAbs(gitDir) {
+				gitDir = filepath.Join(dir, gitDir)
+			}
 		}
 	}
-	return last == "modules"
+	// Git writes a linked worktree's gitdir as a resolved path, so resolve
+	// symlinks before comparing it with a path built from the working directory.
+	if resolved, err := filepath.EvalSymlinks(gitDir); err == nil {
+		return resolved
+	}
+	return filepath.Clean(gitDir)
 }
 
 // repositoryPath returns match relative to root with forward slashes, which is
@@ -172,11 +175,20 @@ func repositoryPath(root, match string) string {
 	if err != nil {
 		return match
 	}
-	rel, err := filepath.Rel(root, abs)
-	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+	rel, ok := pathWithin(root, abs)
+	if !ok {
 		return match
 	}
 	return filepath.ToSlash(rel)
+}
+
+// pathWithin returns path relative to base when path lies under base.
+func pathWithin(base, path string) (string, bool) {
+	rel, err := filepath.Rel(base, path)
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return "", false
+	}
+	return rel, true
 }
 
 var versionReg = regexp.MustCompile(`^[vV]?(\d+(\.\d+)*)`)

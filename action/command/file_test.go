@@ -106,7 +106,8 @@ func TestExtractVersion(t *testing.T) {
 func TestGetReleaseFilesRepositoryPath(t *testing.T) {
 	tests := []struct {
 		name        string
-		gitMarker   string            // "dir", "file", or "" for no .git in repo/
+		outerGit    string            // .git in the temp dir: "dir", a gitdir for a .git file, or "" for none
+		repoGit     string            // .git in repo/, as outerGit
 		submodules  map[string]string // directory under repo/ to its .git file's gitdir
 		env         map[string]string
 		cwd         string // relative to the temp dir
@@ -116,43 +117,43 @@ func TestGetReleaseFilesRepositoryPath(t *testing.T) {
 		want        []string // {tmp} is replaced with the temp dir
 	}{
 		{
-			name:      "subdirectory run",
-			gitMarker: "dir",
-			cwd:       "repo/db",
-			pattern:   "migrations/*.sql",
-			want:      []string{"db/migrations/001_init.sql", "db/migrations/002_add.sql"},
+			name:    "subdirectory run",
+			repoGit: "dir",
+			cwd:     "repo/db",
+			pattern: "migrations/*.sql",
+			want:    []string{"db/migrations/001_init.sql", "db/migrations/002_add.sql"},
 		},
 		{
-			name:      "subdirectory run with a parent pattern",
-			gitMarker: "dir",
-			cwd:       "repo/db",
-			pattern:   "../shared/*.sql",
-			want:      []string{"shared/003_shared.sql"},
+			name:    "subdirectory run with a parent pattern",
+			repoGit: "dir",
+			cwd:     "repo/db",
+			pattern: "../shared/*.sql",
+			want:    []string{"shared/003_shared.sql"},
 		},
 		{
-			name:      "repository root run",
-			gitMarker: "dir",
-			cwd:       "repo",
-			pattern:   "db/migrations/*.sql",
-			want:      []string{"db/migrations/001_init.sql", "db/migrations/002_add.sql"},
+			name:    "repository root run",
+			repoGit: "dir",
+			cwd:     "repo",
+			pattern: "db/migrations/*.sql",
+			want:    []string{"db/migrations/001_init.sql", "db/migrations/002_add.sql"},
 		},
 		{
-			name:      "absolute pattern",
-			gitMarker: "dir",
-			cwd:       "repo/db",
-			pattern:   "{tmp}/repo/db/migrations/*.sql",
-			want:      []string{"db/migrations/001_init.sql", "db/migrations/002_add.sql"},
+			name:    "absolute pattern",
+			repoGit: "dir",
+			cwd:     "repo/db",
+			pattern: "{tmp}/repo/db/migrations/*.sql",
+			want:    []string{"db/migrations/001_init.sql", "db/migrations/002_add.sql"},
 		},
 		{
-			name:      "git file from a worktree checkout",
-			gitMarker: "file",
-			cwd:       "repo/db",
-			pattern:   "migrations/*.sql",
-			want:      []string{"db/migrations/001_init.sql", "db/migrations/002_add.sql"},
+			name:    "git file from a worktree checkout",
+			repoGit: "/elsewhere/.git/worktrees/repo",
+			cwd:     "repo/db",
+			pattern: "migrations/*.sql",
+			want:    []string{"db/migrations/001_init.sql", "db/migrations/002_add.sql"},
 		},
 		{
 			name:       "submodule run is named from the superproject",
-			gitMarker:  "dir",
+			repoGit:    "dir",
 			submodules: map[string]string{"db": "../.git/modules/db"},
 			cwd:        "repo/db",
 			pattern:    "migrations/*.sql",
@@ -160,7 +161,7 @@ func TestGetReleaseFilesRepositoryPath(t *testing.T) {
 		},
 		{
 			name:       "nested submodule run is named from the outermost superproject",
-			gitMarker:  "dir",
+			repoGit:    "dir",
 			submodules: map[string]string{"db": "../.git/modules/db", "db/migrations": "../../.git/modules/db/modules/migrations"},
 			cwd:        "repo/db/migrations",
 			pattern:    "*.sql",
@@ -196,19 +197,50 @@ func TestGetReleaseFilesRepositoryPath(t *testing.T) {
 		},
 		{
 			name:       "submodule in a linked worktree is named from the superproject",
-			gitMarker:  "file",
+			repoGit:    "/main/.git/worktrees/repo",
 			submodules: map[string]string{"db": "/main/.git/worktrees/repo/modules/db"},
 			cwd:        "repo/db",
 			pattern:    "migrations/*.sql",
 			want:       []string{"db/migrations/001_init.sql", "db/migrations/002_add.sql"},
 		},
 		{
-			name:      "git root wins over the checkout variable",
-			gitMarker: "dir",
-			env:       map[string]string{"GITHUB_WORKSPACE": "{tmp}"},
-			cwd:       "repo/db",
-			pattern:   "migrations/*.sql",
-			want:      []string{"db/migrations/001_init.sql", "db/migrations/002_add.sql"},
+			name:       "submodule named worktrees",
+			repoGit:    "dir",
+			submodules: map[string]string{"db": "../.git/modules/worktrees"},
+			cwd:        "repo/db",
+			pattern:    "migrations/*.sql",
+			want:       []string{"db/migrations/001_init.sql", "db/migrations/002_add.sql"},
+		},
+		{
+			name:    "linked worktree named modules",
+			repoGit: "/main/.git/worktrees/modules",
+			cwd:     "repo/db",
+			pattern: "migrations/*.sql",
+			want:    []string{"db/migrations/001_init.sql", "db/migrations/002_add.sql"},
+		},
+		{
+			name:     "linked worktree inside its main checkout",
+			outerGit: "dir",
+			repoGit:  "{tmp}/.git/worktrees/repo",
+			cwd:      "repo/db",
+			pattern:  "migrations/*.sql",
+			want:     []string{"db/migrations/001_init.sql", "db/migrations/002_add.sql"},
+		},
+		{
+			name:     "independent clone inside another repository",
+			outerGit: "dir",
+			repoGit:  "dir",
+			cwd:      "repo/db",
+			pattern:  "migrations/*.sql",
+			want:     []string{"db/migrations/001_init.sql", "db/migrations/002_add.sql"},
+		},
+		{
+			name:    "git root wins over the checkout variable",
+			repoGit: "dir",
+			env:     map[string]string{"GITHUB_WORKSPACE": "{tmp}"},
+			cwd:     "repo/db",
+			pattern: "migrations/*.sql",
+			want:    []string{"db/migrations/001_init.sql", "db/migrations/002_add.sql"},
 		},
 		{
 			name:    "no git and no checkout variable",
@@ -217,15 +249,15 @@ func TestGetReleaseFilesRepositoryPath(t *testing.T) {
 			want:    []string{"migrations/001_init.sql", "migrations/002_add.sql"},
 		},
 		{
-			name:      "file outside the repository",
-			gitMarker: "dir",
-			cwd:       "repo",
-			pattern:   "{tmp}/outside/*.sql",
-			want:      []string{"{tmp}/outside/004_outside.sql"},
+			name:    "file outside the repository",
+			repoGit: "dir",
+			cwd:     "repo",
+			pattern: "{tmp}/outside/*.sql",
+			want:    []string{"{tmp}/outside/004_outside.sql"},
 		},
 		{
 			name:        "declarative check",
-			gitMarker:   "dir",
+			repoGit:     "dir",
 			cwd:         "repo/db",
 			pattern:     "migrations/*.sql",
 			declarative: true,
@@ -233,7 +265,7 @@ func TestGetReleaseFilesRepositoryPath(t *testing.T) {
 		},
 		{
 			name:        "declarative rollout keeps the pattern",
-			gitMarker:   "dir",
+			repoGit:     "dir",
 			cwd:         "repo/db",
 			pattern:     "migrations/*.sql",
 			declarative: true,
@@ -255,17 +287,12 @@ func TestGetReleaseFilesRepositoryPath(t *testing.T) {
 				require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
 				require.NoError(t, os.WriteFile(path, []byte("SELECT 1;"), 0o600))
 			}
-			switch tt.gitMarker {
-			case "dir":
-				require.NoError(t, os.Mkdir(filepath.Join(tmp, "repo", ".git"), 0o755))
-			case "file":
-				require.NoError(t, os.WriteFile(filepath.Join(tmp, "repo", ".git"), []byte("gitdir: /elsewhere/.git/worktrees/repo\n"), 0o600))
-			default:
-			}
-			for dir, gitdir := range tt.submodules {
-				require.NoError(t, os.WriteFile(filepath.Join(tmp, "repo", filepath.FromSlash(dir), ".git"), []byte("gitdir: "+gitdir+"\n"), 0o600))
-			}
 			expand := func(s string) string { return strings.ReplaceAll(s, "{tmp}", filepath.ToSlash(tmp)) }
+			writeGit(t, tmp, expand(tt.outerGit))
+			writeGit(t, filepath.Join(tmp, "repo"), expand(tt.repoGit))
+			for dir, gitdir := range tt.submodules {
+				writeGit(t, filepath.Join(tmp, "repo", filepath.FromSlash(dir)), gitdir)
+			}
 			for _, key := range repositoryRootEnvs {
 				t.Setenv(key, expand(tt.env[key]))
 			}
@@ -292,23 +319,18 @@ func TestGetReleaseFilesRepositoryPath(t *testing.T) {
 	}
 }
 
-func TestIsSubmoduleGitdir(t *testing.T) {
-	tests := []struct {
-		gitdir string
-		want   bool
-	}{
-		{gitdir: "../.git/modules/db", want: true},
-		{gitdir: "../../.git/modules/db/modules/migrations", want: true},
-		{gitdir: "/main/.git/worktrees/wt/modules/db", want: true},
-		{gitdir: "/main/.git/worktrees/wt/modules/db/modules/migrations", want: true},
-		{gitdir: "/main/.git/worktrees/wt", want: false},
-		{gitdir: "/main/.git/modules/db/worktrees/wt", want: false},
-		{gitdir: "/srv/repo.git", want: false},
-		{gitdir: "/srv/modules/repo", want: false},
-	}
-	for _, tt := range tests {
-		t.Run(tt.gitdir, func(t *testing.T) {
-			require.Equal(t, tt.want, isSubmoduleGitdir(tt.gitdir))
-		})
+// writeGit gives dir a .git directory ("dir") or a .git file pointing at
+// gitdir, creating gitdir when it is relative, as Git does for submodules.
+func writeGit(t *testing.T, dir, git string) {
+	t.Helper()
+	switch git {
+	case "":
+	case "dir":
+		require.NoError(t, os.Mkdir(filepath.Join(dir, ".git"), 0o755))
+	default:
+		require.NoError(t, os.WriteFile(filepath.Join(dir, ".git"), []byte("gitdir: "+git+"\n"), 0o600))
+		if !filepath.IsAbs(git) {
+			require.NoError(t, os.MkdirAll(filepath.Join(dir, filepath.FromSlash(git)), 0o755))
+		}
 	}
 }
