@@ -365,12 +365,14 @@ passes an absolute pattern still gets a working link, and the SQL review annotat
 GitLab and Bitbucket resolve from the root, land on the file. The action finds the root at the
 nearest `.git` at or above the working directory, else at the platform's checkout directory
 (`GITHUB_WORKSPACE`, `CI_PROJECT_DIR`, `BITBUCKET_CLONE_DIR`, `BUILD_SOURCESDIRECTORY`). It skips a
-submodule's `.git`, a file pointing into the superproject's `.git/modules/`, because the URL and SHA
-are the superproject's: a file in a submodule is named from the superproject and its link misses
-rather than opening an unrelated file. With no root, or for a file outside it, the path stays the
-glob match and the link misses; a declarative rollout's one file is named by the pattern itself and
-gets no working link either; an unknown platform gets none. A marker miss is silent: the row shows
-the commit. When the title is the commit's first line and the PR
+submodule's `.git`, a file pointing into `modules/` of the superproject's git directory
+(`.git/modules/…`, or `.git/worktrees/<id>/modules/…` in a linked worktree; a worktree's own
+points at `worktrees/<id>`), because the URL and SHA are the superproject's: a file in a submodule
+is named from the superproject and its link misses rather than opening an unrelated file. With no
+root, or for a file outside it, the path stays the glob match and the link misses; a declarative
+rollout's one file is named by the pattern itself and gets no working link either; an unknown
+platform gets none. A marker miss is silent: the row shows the commit. When the title is the
+commit's first line and the PR
 number came from its marker, the marker is removed from the title, so a squash merge reads `<title>
 #N` once. The PR URL is the repository URL plus the platform's path and the number. On a platform
 the action does not detect (Jenkins, CircleCI, Buildkite, a shell) nothing is derived; four new
