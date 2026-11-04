@@ -222,7 +222,10 @@ func (s *Store) ClaimAvailableReviewRuns(ctx context.Context, replicaID string) 
 //
 // Lock order: the issue's review comments, then the run slot, then the issue
 // (the insert's foreign key), the order the project purge deletes them in.
-// The fence therefore runs before the inserts.
+// The fence therefore runs before the inserts. A re-run does not stop the
+// execution it supersedes, so two completions of one slot can overlap and
+// split the reviewer's roots differently; each locks every root it may
+// update, in primary-key order, before updating any.
 func (s *Store) CompleteReviewRun(ctx context.Context, claimed *ClaimedReviewRun, replicaID string, status storepb.ReviewRun_Status, payload *storepb.ReviewRunPayload, results []*IssueCommentMessage) (bool, error) {
 	switch status {
 	case storepb.ReviewRun_DONE:
@@ -253,8 +256,25 @@ func (s *Store) CompleteReviewRun(ctx context.Context, claimed *ClaimedReviewRun
 
 	var supersededCount int64
 	if status == storepb.ReviewRun_DONE {
-		// updated_at marks content edits, so both updates leave it alone.
 		q := qb.Q().Space(`
+			SELECT resource_id FROM issue_comment
+			WHERE project = ? AND issue_id = ?
+			  AND parent_id IS NULL
+			  AND payload->'reviewMetadata'->>'runType' = ?
+			  AND (payload->'reviewMetadata'->'superseded' IS NULL OR thread_state = 'OPEN')
+			ORDER BY resource_id
+			FOR UPDATE
+		`, claimed.ProjectID, claimed.IssueUID, claimed.Type)
+		query, args, err := q.ToSQL()
+		if err != nil {
+			return false, errors.Wrapf(err, "failed to build sql")
+		}
+		if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+			return false, errors.Wrapf(err, "failed to lock previous review results")
+		}
+
+		// updated_at marks content edits, so the updates leave it alone.
+		q = qb.Q().Space(`
 			UPDATE issue_comment
 			SET thread_state = ?,
 			    payload = jsonb_set(payload, '{reviewMetadata,superseded}', 'true'::jsonb)
@@ -264,7 +284,7 @@ func (s *Store) CompleteReviewRun(ctx context.Context, claimed *ClaimedReviewRun
 			  AND payload->'reviewMetadata'->'superseded' IS NULL
 			  AND COALESCE(payload->'reviewMetadata'->>'fingerprint', '') <> ALL(?::TEXT[])
 		`, string(ThreadStateResolved), claimed.ProjectID, claimed.IssueUID, claimed.Type, fingerprints)
-		query, args, err := q.ToSQL()
+		query, args, err = q.ToSQL()
 		if err != nil {
 			return false, errors.Wrapf(err, "failed to build sql")
 		}
