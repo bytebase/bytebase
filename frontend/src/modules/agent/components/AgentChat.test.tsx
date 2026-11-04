@@ -518,6 +518,8 @@ describe("AgentChat", () => {
       "[data-agent-action-draft-plan]"
     );
     expect(button?.textContent).toContain("agent.plan-draft.open");
+    expect(button).toHaveClass("max-w-full", "whitespace-normal");
+    expect(button?.parentElement).toHaveClass("max-w-full");
     expect(mocks.prepareAgentPlanDraftRoute).not.toHaveBeenCalled();
     await act(async () => button?.click());
     expect(mocks.prepareAgentPlanDraftRoute).toHaveBeenCalledWith(

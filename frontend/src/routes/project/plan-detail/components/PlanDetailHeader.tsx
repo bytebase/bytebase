@@ -593,8 +593,8 @@ export function PlanDetailHeader() {
 
   return (
     <div className="px-2 py-2 sm:px-4">
-      <div className="flex flex-row items-center justify-between gap-2">
-        <div className="flex min-w-0 flex-1 items-center gap-x-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex min-w-0 basis-full flex-1 items-center gap-x-2 sm:basis-auto">
           {/* Terminal status (Closed / Deployed) sits at the far left, before
               the title — a state badge, not an action. */}
           <PlanLifecycleStamp state={lifecycle} />
@@ -634,12 +634,17 @@ export function PlanDetailHeader() {
           />
         </div>
 
-        <div className="flex shrink-0 items-center gap-x-2">
+        <div className="ml-auto flex w-full min-w-0 max-w-full flex-wrap items-center justify-end gap-x-2 gap-y-2 sm:w-auto">
           {!page.isCreating &&
             page.plan.state === State.ACTIVE &&
             project &&
             page.plan.name && (
-              <Button onClick={openPlanReview} size="md" appearance="outline">
+              <Button
+                className="max-w-full whitespace-normal text-left"
+                onClick={openPlanReview}
+                size="md"
+                appearance="outline"
+              >
                 {t("agent.plan-assistance.review")}
               </Button>
             )}

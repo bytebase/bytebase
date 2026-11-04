@@ -58,6 +58,12 @@ test("opens the Agent with this Issue as the selected resource for review", () =
   });
   expect(reviewButton).toHaveAttribute("data-button-size", "md");
   expect(reviewButton.querySelector("svg")).toBeNull();
+  expect(reviewButton.parentElement).toHaveClass(
+    "w-full",
+    "flex-wrap",
+    "gap-y-2"
+  );
+  expect(reviewButton.parentElement?.parentElement).toHaveClass("flex-wrap");
   fireEvent.click(reviewButton);
 
   expect(mocks.openAgentWithPrompt).toHaveBeenCalledWith(

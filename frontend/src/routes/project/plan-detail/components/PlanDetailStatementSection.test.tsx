@@ -148,8 +148,14 @@ vi.mock("@/components/ui/alert-dialog", () => ({
   AlertDialogDescription: ({ children }: { children: React.ReactNode }) => (
     <p>{children}</p>
   ),
-  AlertDialogFooter: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
+  AlertDialogFooter: ({
+    children,
+    className,
+  }: {
+    children: React.ReactNode;
+    className?: string;
+  }) => (
+    <div className={className}>{children}</div>
   ),
   AlertDialogTitle: ({ children }: { children: React.ReactNode }) => (
     <h2>{children}</h2>
@@ -302,6 +308,9 @@ test("opens the Agent for the selected database and applies its DDL to this Plan
     name: "agent.plan-assistance.ask-draft-sql",
   });
   expect(trigger.querySelector("svg")).toBeNull();
+  expect(trigger).toHaveClass("max-w-full", "whitespace-normal");
+  expect(trigger.parentElement).toHaveClass("w-full", "max-w-full", "flex-wrap");
+  expect(trigger.parentElement?.parentElement).toHaveClass("flex-wrap");
 
   fireEvent.click(trigger);
   expect(openAgentWithPrompt).toHaveBeenCalledWith(
@@ -330,6 +339,9 @@ test("requires an explicit append or replace choice when the Plan already has SQ
 
   dispatchPlanDraft(database, "CREATE TABLE notes (id INT);");
   expect(getByRole("dialog")).toBeTruthy();
+  expect(
+    getByRole("button", { name: "agent.plan-draft.replace-sql" }).parentElement
+  ).toHaveClass("flex-wrap", "gap-y-2");
   expect(mocks.minimizeAgent).toHaveBeenCalledOnce();
   fireEvent.click(getByRole("button", { name: "agent.plan-draft.append-sql" }));
   expect(getSheetStatement(sheet)).toBe(

@@ -687,7 +687,7 @@ export function PlanDetailStatementSection({
 
   return (
     <div className={cn("flex flex-col gap-y-1", className)}>
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex flex-wrap items-start justify-between gap-2">
         <div
           className={cn(
             "flex items-center gap-x-1 textlabel uppercase",
@@ -713,12 +713,13 @@ export function PlanDetailStatementSection({
           type="file"
         />
         {(canModifyStatement || isEditing) && (
-          <div className="flex flex-wrap items-center justify-end gap-x-2 gap-y-2">
+          <div className="ml-auto flex w-full max-w-full flex-wrap items-center justify-end gap-x-2 gap-y-2 sm:w-auto">
             {page.isCreating &&
               project &&
               hasSingleDatabaseTarget &&
               selectedDatabaseName && (
                 <Button
+                  className="h-auto max-w-full whitespace-normal text-left"
                   onClick={askAgentToDraftSQL}
                   size="xs"
                   appearance="outline"
@@ -887,7 +888,7 @@ export function PlanDetailStatementSection({
           <AlertDialogDescription>
             {t("agent.plan-draft.existing-sql-description")}
           </AlertDialogDescription>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="flex-wrap gap-y-2">
             <Button
               appearance="secondary"
               onClick={() => setPendingAgentDraft(undefined)}
