@@ -2917,8 +2917,8 @@
           "self": "允许查询主数据源"
         },
         "allow-download": {
-          "description": "关闭后，导出只能发送到项目配置的存储目标（如 SharePoint），已批准的导出访问授权也不能下载。",
-          "self": "允许下载"
+          "description": "导出查询结果时，用户可以选择“下载”作为导出目标。关闭后，即使已批准导出访问授权，导出也只能发送到项目的存储目标（如 SharePoint）。",
+          "self": "允许下载导出文件"
         },
         "allow-email-code-signin": {
           "description": "用户可以通过输入发送到邮箱的 6 位验证码进行登录或注册。",
