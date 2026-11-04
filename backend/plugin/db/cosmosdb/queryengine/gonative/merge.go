@@ -223,11 +223,11 @@ func (p *orderByPipeline) IsComplete() bool {
 	if len(p.pending) > 0 {
 		return false
 	}
-	// LIMIT reached — the caller has everything it asked for. Any rows still
-	// sitting in partition streams were produced speculatively by the gateway
-	// (it fetched OFFSET+LIMIT rows per partition to cover any interleaving)
-	// and are safe to drop.
-	if p.limit >= 0 && p.emitted >= p.limit {
+	// The caller has everything it asked for. Any rows still sitting in
+	// partition streams were produced speculatively by the gateway (it fetched
+	// OFFSET+LIMIT rows per partition to cover any interleaving) and are safe
+	// to drop.
+	if p.windowFull() {
 		return true
 	}
 	if !p.fanout.allDrained() {
@@ -340,10 +340,6 @@ func (p *orderByPipeline) merge() error {
 	}
 
 	for h.Len() > 0 {
-		if p.limit >= 0 && p.emitted >= p.limit {
-			// LIMIT reached — the caller has everything it asked for.
-			return nil
-		}
 		top, ok := heap.Pop(h).(int)
 		if h.err != nil {
 			return h.err
@@ -368,6 +364,12 @@ func (p *orderByPipeline) merge() error {
 			p.pending = append(p.pending, append([]byte(nil), doc.Payload...))
 			p.emitted++
 		}
+		if p.windowFull() {
+			// The caller has everything it asked for. Putting the range back
+			// would compare its next row against the other heads, and a row
+			// outside the window has no business failing the query.
+			return nil
+		}
 		if _, ok := s.peek(); ok {
 			heap.Push(h, top)
 			if h.err != nil {
@@ -380,6 +382,11 @@ func (p *orderByPipeline) merge() error {
 		}
 	}
 	return nil
+}
+
+// windowFull reports whether LIMIT, or the TOP folded into it, is satisfied.
+func (p *orderByPipeline) windowFull() bool {
+	return p.limit >= 0 && p.emitted >= p.limit
 }
 
 // firstSighting reports whether a DISTINCT lets this payload through, and

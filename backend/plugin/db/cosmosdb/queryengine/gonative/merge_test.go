@@ -626,3 +626,61 @@ func TestOrderByPipeline_OrdersOneCompositeAmongScalars(t *testing.T) {
 	})
 	assert.Equal(t, []string{`{"x":"a"}`, `{"x":"b"}`, `{"x":[9]}`}, rows)
 }
+
+// Rows past the window never reach the caller, so an order the engine cannot
+// produce among them must not fail the query: TOP 2 over these streams is
+// 0, 1, and the arrays behind them are nobody's business.
+func TestOrderByPipeline_StopsAtTheLimitBeforeComparingExcludedRows(t *testing.T) {
+	p := newTopOrderByPipeline(t, 2, "0", "1")
+	rows := runOnePass(t, p, map[string][]byte{
+		"0": mkOrderByBody(t,
+			ordered{ob: `0`, payload: `{"x":0}`},
+			ordered{ob: `[1]`, payload: `{"x":[1]}`}),
+		"1": mkOrderByBody(t,
+			ordered{ob: `1`, payload: `{"x":1}`},
+			ordered{ob: `[2]`, payload: `{"x":[2]}`}),
+	})
+	assert.Equal(t, []string{`{"x":0}`, `{"x":1}`}, rows)
+}
+
+// TOP 0 asks for nothing, so no range is asked for a page and no row is ever
+// compared.
+func TestOrderByPipeline_AsksNothingOfRowsUnderTopZero(t *testing.T) {
+	p := newTopOrderByPipeline(t, 0, "0", "1")
+
+	res, err := p.Run()
+	require.NoError(t, err)
+	assert.Empty(t, res.Requests)
+	assert.True(t, p.IsComplete())
+}
+
+// A page in flight when the window fills is dropped rather than merged, so an
+// order the engine cannot produce inside it cannot fail a query that is already
+// answered.
+func TestOrderByPipeline_IgnoresAPageThatLandsAfterTheLimit(t *testing.T) {
+	p := newTopOrderByPipeline(t, 1, "0", "1")
+
+	res, err := p.Run()
+	require.NoError(t, err)
+	require.Len(t, res.Requests, 2)
+	require.NoError(t, p.ProvideData([]queryengine.QueryResult{
+		queryengine.NewQueryResult("0", mkOrderByBody(t, ordered{ob: `0`, payload: `{"x":0}`}), "more-0"),
+		queryengine.NewQueryResult("1", mkOrderByBody(t, ordered{ob: `1`, payload: `{"x":1}`}), "more-1"),
+	}))
+
+	flushed, err := p.Run()
+	require.NoError(t, err)
+	got := make([]string, 0, len(flushed.Items))
+	for _, item := range flushed.Items {
+		got = append(got, string(item))
+	}
+	assert.Equal(t, []string{`{"x":0}`}, got)
+	require.True(t, p.IsComplete())
+
+	require.NoError(t, p.ProvideData([]queryengine.QueryResult{
+		queryengine.NewQueryResult("0", mkOrderByBody(t, ordered{ob: `[1]`, payload: `{"x":[1]}`}), ""),
+		queryengine.NewQueryResult("1", mkOrderByBody(t, ordered{ob: `[2]`, payload: `{"x":[2]}`}), ""),
+	}))
+	_, err = p.Run()
+	assert.NoError(t, err)
+}
