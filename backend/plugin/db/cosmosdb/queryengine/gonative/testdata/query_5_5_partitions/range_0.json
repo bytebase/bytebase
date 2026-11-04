@@ -1,0 +1,24 @@
+{
+    "_rid": "S9w7AIGecFs=",
+    "Documents": [
+        {
+            "payload": {
+                "minPop": {
+                    "item": 22256,
+                    "item2": {
+                        "min": 22256,
+                        "count": 5
+                    }
+                },
+                "maxPop": {
+                    "item": 8982000,
+                    "item2": {
+                        "max": 8982000,
+                        "count": 5
+                    }
+                }
+            }
+        }
+    ],
+    "_count": 1
+}
