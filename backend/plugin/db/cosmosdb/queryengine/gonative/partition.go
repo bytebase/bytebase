@@ -13,7 +13,8 @@ import (
 //	VALUE form — plan.QueryInfo.Aggregates non-empty:
 //	  {"Documents":[[{"item":18}]]}
 //	  Each Documents[i] is an array of one item-object per aggregate in
-//	  plan.QueryInfo.Aggregates (positional match).
+//	  plan.QueryInfo.Aggregates (positional match). MIN/MAX carry item2 here
+//	  too: {"item":1,"item2":{"min":1,"count":5}}.
 //
 //	Aliased form — plan.QueryInfo.GroupByAliasToAggregateType non-empty:
 //	  {"Documents":[{"payload":{"alias":{"item":...,"item2":{...}}}}]}
@@ -21,15 +22,18 @@ import (
 //	  keyed by alias name. Item2 is present for MIN/MAX (reliable partial
 //	  {min|max, count}); for COUNT/SUM/AVG only Item is populated.
 
-// valueItem is each element inside a VALUE-form partition document.
-type valueItem struct {
-	Item json.RawMessage `json:"item"`
+// aggItem is one aggregate's partial inside a partition document. Item is the
+// aggregate's own value; Item2 is the cross-partition partial the gateway adds
+// for MIN and MAX, which carries the count of rows the partition contributed.
+type aggItem struct {
+	Item  json.RawMessage `json:"item"`
+	Item2 json.RawMessage `json:"item2,omitempty"`
 }
 
 // valuePartitionResponse decodes VALUE-form per-partition bodies.
 // Documents[i] is an array whose length equals the number of aggregates.
 type valuePartitionResponse struct {
-	Documents [][]valueItem `json:"Documents"`
+	Documents [][]aggItem `json:"Documents"`
 }
 
 // parseValuePartitionResponse decodes a per-partition response body for a
@@ -42,17 +46,9 @@ func parseValuePartitionResponse(raw []byte) (*valuePartitionResponse, error) {
 	return &r, nil
 }
 
-// aliasedItem is the per-alias partial inside an aliased-form partition
-// document's payload. Item is always present; Item2 is populated only for
-// MIN/MAX and carries the reliable cross-partition partial.
-type aliasedItem struct {
-	Item  json.RawMessage `json:"item"`
-	Item2 json.RawMessage `json:"item2,omitempty"`
-}
-
 // aliasedDoc is one entry of Documents for an aliased aggregate query.
 type aliasedDoc struct {
-	Payload map[string]aliasedItem `json:"payload"`
+	Payload map[string]aggItem `json:"payload"`
 }
 
 // aliasedPartitionResponse decodes aliased-form per-partition bodies.

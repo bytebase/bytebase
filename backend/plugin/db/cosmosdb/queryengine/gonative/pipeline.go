@@ -2,7 +2,6 @@ package gonative
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos/queryengine"
 	"github.com/pkg/errors"
@@ -20,14 +19,55 @@ type aggPipelineBase struct {
 	rewrittenQuery string
 	fanout         rangeFanout
 	aggregators    []aggregator // len == number of aggregates to emit
+	kinds          []string     // positional: aggregate kind per aggregator
 	emitted        bool
 	closed         bool
+
+	// skip and take carry the plan's OFFSET and LIMIT. An aggregate query
+	// produces exactly one row, so they can only keep it or drop it; the
+	// gateway strips both from the rewritten query and leaves them here.
+	// take is negative when the plan sets no LIMIT.
+	skip int
+	take int
 }
 
 // requests returns the work to issue next: the initial fan-out across every
 // range, then a follow-up for each range that still has pages to deliver.
 func (b *aggPipelineBase) requests() []queryengine.QueryRequest {
 	return b.fanout.requests(b.rewrittenQuery)
+}
+
+// keepsRow reports whether the plan's OFFSET/LIMIT leaves the single
+// aggregate row in the result: OFFSET 1 skips past it and LIMIT 0 asks for
+// nothing, and the gateway answers both with no rows at all.
+func (b *aggPipelineBase) keepsRow() bool {
+	return b.skip == 0 && b.take != 0
+}
+
+// newAggPipelineBase builds the state both aggregate pipelines share from the
+// plan: the per-partition query, one aggregator per kind in positional order,
+// and the plan's OFFSET/LIMIT.
+func newAggPipelineBase(plan *planDoc, pkRangeIDs []string, kinds []string) (aggPipelineBase, error) {
+	aggs := make([]aggregator, len(kinds))
+	for i, kind := range kinds {
+		a := newAggregator(kind)
+		if a == nil {
+			return aggPipelineBase{}, errors.Errorf("gonative: unsupported aggregate %q", kind)
+		}
+		aggs[i] = a
+	}
+	skip, take, err := planSkipTake(plan.QueryInfo)
+	if err != nil {
+		return aggPipelineBase{}, err
+	}
+	return aggPipelineBase{
+		rewrittenQuery: plan.QueryInfo.RewrittenQuery,
+		fanout:         newRangeFanout(pkRangeIDs),
+		aggregators:    aggs,
+		kinds:          kinds,
+		skip:           skip,
+		take:           take,
+	}, nil
 }
 
 // -----------------------------------------------------------------------------
@@ -42,21 +82,11 @@ type valuePipeline struct {
 // Returns an error if the plan references an aggregate kind the engine cannot
 // handle, so the caller can surface ErrUnsupportedPlanFeature.
 func newValuePipeline(plan *planDoc, pkRangeIDs []string) (*valuePipeline, error) {
-	aggs := make([]aggregator, len(plan.QueryInfo.Aggregates))
-	for i, kind := range plan.QueryInfo.Aggregates {
-		a := newAggregator(kind)
-		if a == nil {
-			return nil, errors.Errorf("gonative: unsupported aggregate %q", kind)
-		}
-		aggs[i] = a
+	base, err := newAggPipelineBase(plan, pkRangeIDs, plan.QueryInfo.Aggregates)
+	if err != nil {
+		return nil, err
 	}
-	return &valuePipeline{
-		aggPipelineBase: aggPipelineBase{
-			rewrittenQuery: plan.QueryInfo.RewrittenQuery,
-			fanout:         newRangeFanout(pkRangeIDs),
-			aggregators:    aggs,
-		},
-	}, nil
+	return &valuePipeline{aggPipelineBase: base}, nil
 }
 
 // Query returns the gateway-rewritten per-partition query.
@@ -90,6 +120,9 @@ func (p *valuePipeline) Run() (*queryengine.PipelineResult, error) {
 		return nil, err
 	}
 	p.emitted = true
+	if item == nil || !p.keepsRow() {
+		return &queryengine.PipelineResult{IsCompleted: true}, nil
+	}
 	return &queryengine.PipelineResult{Items: [][]byte{item}, IsCompleted: true}, nil
 }
 
@@ -105,7 +138,7 @@ func (p *valuePipeline) ProvideData(results []queryengine.QueryResult) error {
 				return errors.Errorf("gonative: value partition document has %d items, expected %d", len(doc), len(p.aggregators))
 			}
 			for i, item := range doc {
-				if err := p.aggregators[i].feedPartial(item.Item); err != nil {
+				if err := feedAggregatePartial(p.aggregators[i], p.kinds[i], item); err != nil {
 					return err
 				}
 			}
@@ -121,12 +154,23 @@ func (p *valuePipeline) ProvideData(results []queryengine.QueryResult) error {
 // For single-aggregate queries it is the finalized scalar itself; for
 // multi-aggregate queries (plan.QueryInfo.Aggregates with len > 1) it is a
 // JSON array of finalized scalars in positional order.
+//
+// Returns nil when a single aggregate finalized to undefined — MIN, MAX or AVG
+// over an empty set — because the gateway answers those with no row. An
+// undefined slot inside a multi-aggregate array has no such spelling and goes
+// out as null.
 func (p *valuePipeline) finalRow() ([]byte, error) {
 	finals := make([]json.RawMessage, len(p.aggregators))
 	for i, a := range p.aggregators {
 		v, err := a.finalize()
 		if err != nil {
 			return nil, err
+		}
+		if v == nil {
+			if len(p.aggregators) == 1 {
+				return nil, nil
+			}
+			v = json.RawMessage(`null`)
 		}
 		finals[i] = v
 	}
@@ -143,7 +187,6 @@ func (p *valuePipeline) finalRow() ([]byte, error) {
 type aliasedPipeline struct {
 	aggPipelineBase
 	aliases []string // preserved order from plan.QueryInfo.GroupByAliases
-	kinds   []string // positional: aggregate kind per alias
 }
 
 func newAliasedPipeline(plan *planDoc, pkRangeIDs []string) (*aliasedPipeline, error) {
@@ -152,28 +195,18 @@ func newAliasedPipeline(plan *planDoc, pkRangeIDs []string) (*aliasedPipeline, e
 	}
 	aliases := append([]string(nil), plan.QueryInfo.GroupByAliases...)
 	kinds := make([]string, len(aliases))
-	aggs := make([]aggregator, len(aliases))
 	for i, alias := range aliases {
 		kind, ok := plan.QueryInfo.GroupByAliasToAggregateType[alias]
 		if !ok {
 			return nil, errors.Errorf("gonative: alias %q missing from groupByAliasToAggregateType", alias)
 		}
-		a := newAggregator(kind)
-		if a == nil {
-			return nil, errors.Errorf("gonative: unsupported aggregate %q for alias %q", kind, alias)
-		}
 		kinds[i] = kind
-		aggs[i] = a
 	}
-	return &aliasedPipeline{
-		aggPipelineBase: aggPipelineBase{
-			rewrittenQuery: plan.QueryInfo.RewrittenQuery,
-			fanout:         newRangeFanout(pkRangeIDs),
-			aggregators:    aggs,
-		},
-		aliases: aliases,
-		kinds:   kinds,
-	}, nil
+	base, err := newAggPipelineBase(plan, pkRangeIDs, kinds)
+	if err != nil {
+		return nil, err
+	}
+	return &aliasedPipeline{aggPipelineBase: base, aliases: aliases}, nil
 }
 
 func (p *aliasedPipeline) Query() string    { return p.rewrittenQuery }
@@ -195,6 +228,9 @@ func (p *aliasedPipeline) Run() (*queryengine.PipelineResult, error) {
 		return nil, err
 	}
 	p.emitted = true
+	if !p.keepsRow() {
+		return &queryengine.PipelineResult{IsCompleted: true}, nil
+	}
 	return &queryengine.PipelineResult{Items: [][]byte{item}, IsCompleted: true}, nil
 }
 
@@ -210,7 +246,7 @@ func (p *aliasedPipeline) ProvideData(results []queryengine.QueryResult) error {
 				if !ok {
 					return errors.Errorf("gonative: aliased partition missing alias %q in payload", alias)
 				}
-				if err := p.feedAliasedPartial(slot, p.kinds[slot], partial); err != nil {
+				if err := feedAggregatePartial(p.aggregators[slot], p.kinds[slot], partial); err != nil {
 					return err
 				}
 			}
@@ -222,32 +258,11 @@ func (p *aliasedPipeline) ProvideData(results []queryengine.QueryResult) error {
 	return nil
 }
 
-// feedAliasedPartial routes an aliasedItem to the right aggregator. For
-// Min/Max it prefers Item2 (the reliable `{min|max, count}` partial) when
-// present, falling back to wrapping Item when the gateway short-circuited to
-// a single-partition shape (Item2 absent).
-func (p *aliasedPipeline) feedAliasedPartial(slot int, kind string, partial aliasedItem) error {
-	switch kind {
-	case "Min":
-		if len(partial.Item2) > 0 {
-			return p.aggregators[slot].feedPartial(partial.Item2)
-		}
-		synth := fmt.Appendf(nil, `{"min":%s,"count":1}`, partial.Item)
-		return p.aggregators[slot].feedPartial(synth)
-	case "Max":
-		if len(partial.Item2) > 0 {
-			return p.aggregators[slot].feedPartial(partial.Item2)
-		}
-		synth := fmt.Appendf(nil, `{"max":%s,"count":1}`, partial.Item)
-		return p.aggregators[slot].feedPartial(synth)
-	default:
-		// Count, Sum, Avg — the Item itself carries the partial in the right shape.
-		return p.aggregators[slot].feedPartial(partial.Item)
-	}
-}
-
 // finalRow builds `{"<alias1>": <v1>, ...}` preserving the original alias order
 // from the plan (matters for deterministic output — map iteration is random).
+// An alias whose aggregate finalized to undefined is left out of the object,
+// which is how the gateway spells MIN, MAX or AVG over an empty set: the whole
+// row comes back as `{}`.
 func (p *aliasedPipeline) finalRow() ([]byte, error) {
 	finals := make([]json.RawMessage, len(p.aggregators))
 	for i, a := range p.aggregators {
@@ -262,7 +277,10 @@ func (p *aliasedPipeline) finalRow() ([]byte, error) {
 	var buf []byte
 	buf = append(buf, '{')
 	for i, alias := range p.aliases {
-		if i > 0 {
+		if finals[i] == nil {
+			continue
+		}
+		if len(buf) > 1 {
 			buf = append(buf, ',')
 		}
 		keyRaw, err := json.Marshal(alias)

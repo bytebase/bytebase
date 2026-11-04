@@ -57,6 +57,15 @@ type distinctPipeline struct {
 	fanout rangeFanout
 	closed bool
 
+	// offset and limit are the plan's global skip and take, applied after
+	// dedup: the gateway strips OFFSET/LIMIT and TOP from the rewritten query
+	// so that each range reports its own distinct values in full and the page
+	// is cut once, over the whole result. A negative limit means unlimited.
+	offset  int
+	limit   int
+	skipped int
+	taken   int
+
 	// Pending items not yet returned to the caller. Populated during
 	// ProvideData as each partition's response is de-duplicated against the
 	// seen set.
@@ -68,19 +77,30 @@ type distinctPipeline struct {
 	seen map[string]struct{}
 }
 
-// newDistinctPipeline builds a pipeline for a plan whose distinctType is
-// "Unordered". Returns an error if the plan's distinctType is "Ordered" —
-// that form composes with Stage 3's ORDER BY merge and is not handled here.
-func newDistinctPipeline(plan *planDoc, pkRangeIDs []string) (*distinctPipeline, error) {
-	if plan.QueryInfo.DistinctType != "Unordered" {
-		// "Ordered" is Stage 3's responsibility; anything else is unexpected.
+// newDistinctPipeline builds a pipeline for a DISTINCT plan. "Ordered" and
+// "Unordered" differ only in whether the gateway promises sorted input, which
+// a global seen-set does not need; any other distinctType is a shape the
+// engine has not seen and rejects.
+func newDistinctPipeline(plan *planDoc, pkRangeIDs []string, query string) (*distinctPipeline, error) {
+	if plan.QueryInfo.DistinctType != "Unordered" && plan.QueryInfo.DistinctType != "Ordered" {
 		return nil, ErrUnsupportedPlanFeature
 	}
-	// DISTINCT plans carry an empty rewrittenQuery — run the original query
-	// against each partition. The pipeline needs the original query text to
-	// populate QueryRequest.Query; the caller passes it via CreateQueryPipeline.
+	offset, limit, err := planSkipTake(plan.QueryInfo)
+	if err != nil {
+		return nil, err
+	}
+	// A plain DISTINCT plan carries no rewrittenQuery, so each range answers
+	// the user's own query. A DISTINCT the user paged or capped does carry
+	// one — the same DISTINCT with the OFFSET/LIMIT or TOP taken off — and
+	// running that instead is what lets this pipeline cut the page globally.
+	if plan.QueryInfo.RewrittenQuery != "" {
+		query = plan.QueryInfo.RewrittenQuery
+	}
 	return &distinctPipeline{
+		query:  query,
 		fanout: newRangeFanout(pkRangeIDs),
+		offset: offset,
+		limit:  limit,
 		seen:   make(map[string]struct{}),
 	}, nil
 }
@@ -94,6 +114,11 @@ func (p *distinctPipeline) Query() string { return p.query }
 func (p *distinctPipeline) IsComplete() bool {
 	if len(p.pending) > 0 {
 		return false
+	}
+	if p.limit >= 0 && p.taken >= p.limit {
+		// LIMIT satisfied — whatever the ranges still hold cannot change the
+		// answer, so the pipeline stops asking for it.
+		return true
 	}
 	return p.fanout.allDrained()
 }
@@ -116,6 +141,9 @@ func (p *distinctPipeline) Run() (*queryengine.PipelineResult, error) {
 			IsCompleted: p.IsComplete(),
 		}, nil
 	}
+	if p.IsComplete() {
+		return &queryengine.PipelineResult{IsCompleted: true}, nil
+	}
 	if reqs := p.fanout.requests(p.query); len(reqs) > 0 {
 		return &queryengine.PipelineResult{Requests: reqs}, nil
 	}
@@ -124,7 +152,8 @@ func (p *distinctPipeline) Run() (*queryengine.PipelineResult, error) {
 
 // ProvideData implements queryengine.QueryPipeline. Each incoming partition
 // response is parsed and its documents are fed through the global seen set.
-// First-sightings become pending items; duplicates are silently dropped.
+// First-sightings pass to OFFSET/LIMIT and then become pending items;
+// duplicates are silently dropped.
 func (p *distinctPipeline) ProvideData(results []queryengine.QueryResult) error {
 	for _, r := range results {
 		resp, err := parseDistinctPartitionResponse(r.Data)
@@ -141,11 +170,19 @@ func (p *distinctPipeline) ProvideData(results []queryengine.QueryResult) error 
 				continue
 			}
 			p.seen[key] = struct{}{}
+			if p.skipped < p.offset {
+				p.skipped++
+				continue
+			}
+			if p.limit >= 0 && p.taken >= p.limit {
+				break
+			}
 			// Preserve the partition's original document bytes in the output —
 			// callers receive what the gateway returned, not our canonicalized
 			// form. Copy defensively: json.RawMessage is aliased to the input
 			// buffer, which the SDK may reuse for later pages.
 			p.pending = append(p.pending, append([]byte(nil), doc...))
+			p.taken++
 		}
 		if err := p.fanout.note(r); err != nil {
 			return err

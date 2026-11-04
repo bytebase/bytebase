@@ -51,9 +51,9 @@ func TestCountAgg_SumsAcrossPartitions(t *testing.T) {
 
 // ---------------------------------------------------------- Sum
 
-func TestSumAgg_EmptyFinalizesToNull(t *testing.T) {
+func TestSumAgg_EmptyFinalizesToUndefined(t *testing.T) {
 	out := feedFinal(t, newAggregator("Sum"))
-	assert.Equal(t, json.RawMessage(`null`), out)
+	assert.Nil(t, out, "no contributing row means no value, which the pipelines render as no row or an absent alias")
 }
 
 func TestSumAgg_SumsAcrossPartitions(t *testing.T) {
@@ -64,9 +64,9 @@ func TestSumAgg_SumsAcrossPartitions(t *testing.T) {
 
 // ---------------------------------------------------------- Avg
 
-func TestAvgAgg_EmptyFinalizesToNull(t *testing.T) {
+func TestAvgAgg_EmptyFinalizesToUndefined(t *testing.T) {
 	out := feedFinal(t, newAggregator("Avg"))
-	assert.Equal(t, json.RawMessage(`null`), out)
+	assert.Nil(t, out, "no contributing row means no value, which the pipelines render as no row or an absent alias")
 }
 
 func TestAvgAgg_SinglePartition(t *testing.T) {
@@ -88,11 +88,43 @@ func TestAvgAgg_ZeroCountPartialContributesNothing(t *testing.T) {
 	assert.Equal(t, json.RawMessage(`2`), out)
 }
 
+// ---------------------------------------------------------- partial routing
+
+// A MIN or MAX partial comes from item2, the only one that reports how many
+// rows the partition contributed; a partition that matched none contributes
+// nothing at all.
+func TestAggregatePartial_MinMaxPreferItem2(t *testing.T) {
+	both := aggItem{Item: json.RawMessage(`7`), Item2: json.RawMessage(`{"min":7,"count":3}`)}
+	assert.JSONEq(t, `{"min":7,"count":3}`, string(aggregatePartial("Min", both)))
+
+	onlyItem := aggItem{Item: json.RawMessage(`7`)}
+	assert.JSONEq(t, `{"min":7,"count":1}`, string(aggregatePartial("Min", onlyItem)))
+	assert.JSONEq(t, `{"max":7,"count":1}`, string(aggregatePartial("Max", onlyItem)))
+
+	assert.Nil(t, aggregatePartial("Min", aggItem{}))
+	assert.Equal(t, json.RawMessage(`7`), aggregatePartial("Count", onlyItem))
+}
+
+// An aggregate over a partition that matched no row has no partial for the
+// gateway to send, and the aggregate still has to finalize.
+func TestFeedAggregatePartial_SkipsAnAbsentPartial(t *testing.T) {
+	a := newAggregator("Min")
+	require.NoError(t, feedAggregatePartial(a, "Min", aggItem{}))
+	out, err := a.finalize()
+	require.NoError(t, err)
+	assert.Nil(t, out)
+
+	require.NoError(t, feedAggregatePartial(a, "Min", aggItem{Item2: json.RawMessage(`{"count":0}`)}))
+	out, err = a.finalize()
+	require.NoError(t, err)
+	assert.Nil(t, out)
+}
+
 // ---------------------------------------------------------- Min
 
-func TestMinAgg_EmptyFinalizesToNull(t *testing.T) {
+func TestMinAgg_EmptyFinalizesToUndefined(t *testing.T) {
 	out := feedFinal(t, newAggregator("Min"))
-	assert.Equal(t, json.RawMessage(`null`), out)
+	assert.Nil(t, out, "no contributing row means no value, which the pipelines render as no row or an absent alias")
 }
 
 func TestMinAgg_SinglePartitionNumeric(t *testing.T) {
@@ -128,9 +160,9 @@ func TestMinAgg_MixedTypesUsesCosmosOrdering(t *testing.T) {
 
 // ---------------------------------------------------------- Max
 
-func TestMaxAgg_EmptyFinalizesToNull(t *testing.T) {
+func TestMaxAgg_EmptyFinalizesToUndefined(t *testing.T) {
 	out := feedFinal(t, newAggregator("Max"))
-	assert.Equal(t, json.RawMessage(`null`), out)
+	assert.Nil(t, out, "no contributing row means no value, which the pipelines render as no row or an absent alias")
 }
 
 func TestMaxAgg_AcrossPartitions_TakesLargest(t *testing.T) {

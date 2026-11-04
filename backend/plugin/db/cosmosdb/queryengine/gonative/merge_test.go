@@ -501,3 +501,88 @@ func asStrings(rows [][]byte) []string {
 	}
 	return out
 }
+
+// ------------------------------------------------- TOP and DISTINCT composed
+
+func newTopOrderByPipeline(t *testing.T, n int, pkRangeIDs ...string) *orderByPipeline {
+	t.Helper()
+	plan := &planDoc{}
+	plan.QueryInfo.OrderBy = []string{"Ascending"}
+	plan.QueryInfo.Top = intPtr(n)
+	plan.QueryInfo.RewrittenQuery = `SELECT TOP 5 c._rid, [{"item":c.x}] AS orderByItems, c AS payload FROM c WHERE ({documentdb-formattableorderbyquery-filter}) ORDER BY c.x ASC`
+	p, err := newOrderByPipeline(plan, pkRangeIDs)
+	require.NoError(t, err)
+	return p
+}
+
+func newDistinctOrderByPipeline(t *testing.T, pkRangeIDs ...string) *orderByPipeline {
+	t.Helper()
+	plan := &planDoc{}
+	plan.QueryInfo.OrderBy = []string{"Ascending"}
+	plan.QueryInfo.DistinctType = "Unordered"
+	plan.QueryInfo.RewrittenQuery = `SELECT c._rid, [{"item":c.x}] AS orderByItems, {"x":c.x} AS payload FROM c WHERE ({documentdb-formattableorderbyquery-filter}) ORDER BY c.x`
+	p, err := newOrderByPipeline(plan, pkRangeIDs)
+	require.NoError(t, err)
+	return p
+}
+
+// The per-partition query carries TOP n, so the merge sees up to n rows from
+// every range and the cap has to be applied again over the merged stream.
+func TestOrderByPipeline_TopCapsTheMergedStream(t *testing.T) {
+	p := newTopOrderByPipeline(t, 3, "0", "1")
+	rows := runOnePass(t, p, map[string][]byte{
+		"0": mkOrderByBody(t,
+			ordered{ob: `1`, payload: `{"x":1}`},
+			ordered{ob: `4`, payload: `{"x":4}`},
+			ordered{ob: `6`, payload: `{"x":6}`},
+		),
+		"1": mkOrderByBody(t,
+			ordered{ob: `2`, payload: `{"x":2}`},
+			ordered{ob: `3`, payload: `{"x":3}`},
+			ordered{ob: `5`, payload: `{"x":5}`},
+		),
+	})
+	assert.Equal(t, []string{`{"x":1}`, `{"x":2}`, `{"x":3}`}, rows)
+}
+
+// DISTINCT with an ORDER BY dedups the merged stream: the service reports
+// distinctType "Unordered" for the object form even under ORDER BY, and the
+// per-partition query carries no DISTINCT at all, so every duplicate arrives.
+func TestOrderByPipeline_DistinctDedupsTheMergedStream(t *testing.T) {
+	p := newDistinctOrderByPipeline(t, "0", "1")
+	rows := runOnePass(t, p, map[string][]byte{
+		"0": mkOrderByBody(t,
+			ordered{ob: `"a"`, payload: `{"x":"a"}`},
+			ordered{ob: `"a"`, payload: `{"x":"a"}`},
+			ordered{ob: `"c"`, payload: `{"x":"c"}`},
+		),
+		"1": mkOrderByBody(t,
+			ordered{ob: `"a"`, payload: `{"x":"a"}`},
+			ordered{ob: `"b"`, payload: `{"x":"b"}`},
+			ordered{ob: `"c"`, payload: `{"x":"c"}`},
+		),
+	})
+	assert.Equal(t, []string{`{"x":"a"}`, `{"x":"b"}`, `{"x":"c"}`}, rows)
+}
+
+// A duplicate must not spend a row of the LIMIT, or a paged DISTINCT comes
+// back short.
+func TestOrderByPipeline_DistinctDropsDuplicatesBeforeTheLimit(t *testing.T) {
+	plan := &planDoc{}
+	plan.QueryInfo.OrderBy = []string{"Ascending"}
+	plan.QueryInfo.DistinctType = "Unordered"
+	plan.QueryInfo.Limit = intPtr(2)
+	plan.QueryInfo.RewrittenQuery = `SELECT c._rid, [{"item":c.x}] AS orderByItems, {"x":c.x} AS payload FROM c WHERE ({documentdb-formattableorderbyquery-filter}) ORDER BY c.x OFFSET 0 LIMIT 2`
+	p, err := newOrderByPipeline(plan, []string{"0"})
+	require.NoError(t, err)
+
+	rows := runOnePass(t, p, map[string][]byte{
+		"0": mkOrderByBody(t,
+			ordered{ob: `"a"`, payload: `{"x":"a"}`},
+			ordered{ob: `"a"`, payload: `{"x":"a"}`},
+			ordered{ob: `"a"`, payload: `{"x":"a"}`},
+			ordered{ob: `"b"`, payload: `{"x":"b"}`},
+		),
+	})
+	assert.Equal(t, []string{`{"x":"a"}`, `{"x":"b"}`}, rows)
+}

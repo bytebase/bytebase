@@ -6,10 +6,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// planDoc is the subset of the Cosmos query-plan document that Stage 1 uses.
-// Later stages (DISTINCT, ORDER BY, TOP, OFFSET/LIMIT, GROUP BY) will read
-// additional fields; declaring them defensively here keeps Stage 1 parsing
-// tolerant of plans that carry extra information.
+// planDoc is the subset of the Cosmos query-plan document the engine reads.
 //
 // Observed shapes (see queryengine/gonative/testdata):
 //
@@ -30,22 +27,25 @@ type planDoc struct {
 }
 
 // planQueryInfo holds the instruction set the engine uses to build a pipeline.
+//
+// Every field here is an instruction, so the pipeline the dispatch picks must
+// claim each one the plan sets — see requireHandled. A field added to this
+// struct is therefore rejected until a pipeline claims it, which is what keeps
+// a new plan shape from losing an operator silently.
 type planQueryInfo struct {
 	RewrittenQuery              string            `json:"rewrittenQuery"`
 	HasSelectValue              bool              `json:"hasSelectValue"`
 	Aggregates                  []string          `json:"aggregates"`
 	GroupByAliases              []string          `json:"groupByAliases"`
 	GroupByAliasToAggregateType map[string]string `json:"groupByAliasToAggregateType"`
-	// Fields that Stage 1 does not act on but decodes defensively so the
-	// dispatch logic can reject unsupported plans cleanly.
-	DistinctType           string   `json:"distinctType,omitempty"`
-	Top                    *int     `json:"top,omitempty"`
-	Offset                 *int     `json:"offset,omitempty"`
-	Limit                  *int     `json:"limit,omitempty"`
-	OrderBy                []string `json:"orderBy,omitempty"`
-	OrderByExpressions     []string `json:"orderByExpressions,omitempty"`
-	GroupByExpressions     []string `json:"groupByExpressions,omitempty"`
-	HasNonStreamingOrderBy bool     `json:"hasNonStreamingOrderBy,omitempty"`
+	DistinctType                string            `json:"distinctType,omitempty"`
+	Top                         *int              `json:"top,omitempty"`
+	Offset                      *int              `json:"offset,omitempty"`
+	Limit                       *int              `json:"limit,omitempty"`
+	OrderBy                     []string          `json:"orderBy,omitempty"`
+	OrderByExpressions          []string          `json:"orderByExpressions,omitempty"`
+	GroupByExpressions          []string          `json:"groupByExpressions,omitempty"`
+	HasNonStreamingOrderBy      bool              `json:"hasNonStreamingOrderBy,omitempty"`
 }
 
 // queryRange mirrors the gateway's pk-range description inside the plan.
@@ -56,13 +56,45 @@ type queryRange struct {
 	IsMaxInclusive bool   `json:"isMaxInclusive"`
 }
 
-// parsePlan decodes the gateway's query-plan JSON payload.
+// parsePlan decodes the gateway's query-plan JSON payload. It normalizes the
+// gateway's "None" distinctType to the empty string, so every caller can read
+// a set DistinctType as "this query has a DISTINCT".
 func parsePlan(raw []byte) (*planDoc, error) {
 	var p planDoc
 	if err := json.Unmarshal(raw, &p); err != nil {
 		return nil, errors.Wrap(err, "gonative: parse query plan")
 	}
+	if p.QueryInfo.DistinctType == "None" {
+		p.QueryInfo.DistinctType = ""
+	}
 	return &p, nil
+}
+
+// planSkipTake reads the plan's OFFSET, LIMIT and TOP as one global skip and
+// take, which is what every pipeline applies them as: the gateway strips them
+// from the rewritten query (or widens LIMIT to OFFSET+LIMIT) precisely so the
+// client applies them once, over the merged result.
+//
+// take is negative when the query names no upper bound. No Cosmos syntax
+// combines TOP with OFFSET/LIMIT, but a plan carrying both can only mean the
+// tighter of the two.
+func planSkipTake(qi planQueryInfo) (skip int, take int, err error) {
+	take = -1
+	for name, v := range map[string]*int{"OFFSET": qi.Offset, "LIMIT": qi.Limit, "TOP": qi.Top} {
+		if v != nil && *v < 0 {
+			return 0, 0, errors.Errorf("gonative: negative %s=%d", name, *v)
+		}
+	}
+	if qi.Offset != nil {
+		skip = *qi.Offset
+	}
+	if qi.Limit != nil {
+		take = *qi.Limit
+	}
+	if qi.Top != nil && (take < 0 || *qi.Top < take) {
+		take = *qi.Top
+	}
+	return skip, take, nil
 }
 
 // pkRangesResponse decodes the gateway's pk-ranges response just enough to

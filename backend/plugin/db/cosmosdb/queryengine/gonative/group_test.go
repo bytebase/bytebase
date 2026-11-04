@@ -103,28 +103,6 @@ func TestNewGroupPipeline_RequiresGroupByAliases(t *testing.T) {
 	assert.Contains(t, err.Error(), "groupByAliases")
 }
 
-func TestNewGroupPipeline_RejectsCompositionWithOrderBy(t *testing.T) {
-	plan := newGroupPlan("c.a", []string{"a"}, map[string]string{"a": ""})
-	plan.QueryInfo.OrderBy = []string{"Ascending"}
-	_, err := newGroupPipeline(plan, []string{"0"})
-	require.ErrorIs(t, err, ErrUnsupportedPlanFeature)
-}
-
-func TestNewGroupPipeline_RejectsCompositionWithTop(t *testing.T) {
-	plan := newGroupPlan("c.a", []string{"a"}, map[string]string{"a": ""})
-	n := 5
-	plan.QueryInfo.Top = &n
-	_, err := newGroupPipeline(plan, []string{"0"})
-	require.ErrorIs(t, err, ErrUnsupportedPlanFeature)
-}
-
-func TestNewGroupPipeline_RejectsCompositionWithDistinct(t *testing.T) {
-	plan := newGroupPlan("c.a", []string{"a"}, map[string]string{"a": ""})
-	plan.QueryInfo.DistinctType = "Unordered"
-	_, err := newGroupPipeline(plan, []string{"0"})
-	require.ErrorIs(t, err, ErrUnsupportedPlanFeature)
-}
-
 // ---------------------------------------------------------- semantics
 
 func TestGroupPipeline_SinglePartition_GroupKeyPassthrough(t *testing.T) {
@@ -351,4 +329,124 @@ func TestExtractAggregatePartial_MaxSynthesizesFromItemWhenItem2Absent(t *testin
 	got, err := extractAggregatePartial("Max", json.RawMessage(`{"item":99}`))
 	require.NoError(t, err)
 	assert.JSONEq(t, `{"max":99,"count":1}`, string(got))
+}
+
+// ---------------------------------------------------------- output order
+
+// groupKeysOf returns the group-key column of every emitted row, in the order
+// the pipeline emitted them.
+func groupKeysOf(t *testing.T, rows [][]byte, keyAlias string) []string {
+	t.Helper()
+	out := make([]string, 0, len(rows))
+	for _, r := range rows {
+		var obj map[string]any
+		require.NoError(t, json.Unmarshal(r, &obj))
+		v, ok := obj[keyAlias].(string)
+		require.True(t, ok, "row missing %s key: %s", keyAlias, r)
+		out = append(out, v)
+	}
+	return out
+}
+
+func countByCountryPlan() *planDoc {
+	return newGroupPlan("c.country",
+		[]string{"country", "n"},
+		map[string]string{"country": "", "n": "Count"})
+}
+
+// A GROUP BY the user also ordered reaches the engine as a plan with no order
+// fields, so the direction comes off the data: the gateway returns each
+// partition's own groups in the requested order.
+func TestGroupPipeline_EmitsAscendingWhenThePartitionsRunAscending(t *testing.T) {
+	p, err := newGroupPipeline(countByCountryPlan(), []string{"0", "1"})
+	require.NoError(t, err)
+
+	rows := driveGroup(t, p, map[string][]byte{
+		"0": mkGroupBody(t,
+			groupEntry{key: `"AE"`, payload: `{"country":"AE","n":{"item":2}}`},
+			groupEntry{key: `"DE"`, payload: `{"country":"DE","n":{"item":1}}`},
+		),
+		"1": mkGroupBody(t,
+			groupEntry{key: `"BR"`, payload: `{"country":"BR","n":{"item":4}}`},
+			groupEntry{key: `"CN"`, payload: `{"country":"CN","n":{"item":3}}`},
+		),
+	})
+	assert.Equal(t, []string{"AE", "BR", "CN", "DE"}, groupKeysOf(t, rows, "country"))
+}
+
+func TestGroupPipeline_EmitsDescendingWhenThePartitionsRunDescending(t *testing.T) {
+	p, err := newGroupPipeline(countByCountryPlan(), []string{"0", "1"})
+	require.NoError(t, err)
+
+	rows := driveGroup(t, p, map[string][]byte{
+		"0": mkGroupBody(t,
+			groupEntry{key: `"DE"`, payload: `{"country":"DE","n":{"item":1}}`},
+			groupEntry{key: `"AE"`, payload: `{"country":"AE","n":{"item":2}}`},
+		),
+		"1": mkGroupBody(t,
+			groupEntry{key: `"CN"`, payload: `{"country":"CN","n":{"item":3}}`},
+			groupEntry{key: `"BR"`, payload: `{"country":"BR","n":{"item":4}}`},
+		),
+	})
+	assert.Equal(t, []string{"DE", "CN", "BR", "AE"}, groupKeysOf(t, rows, "country"))
+}
+
+// Without an ORDER BY the output order is unspecified, but it still has to be
+// the same on every run: before this it followed Go's map iteration and five
+// consecutive runs of one query gave five different orders.
+func TestGroupPipeline_OutputOrderIsStableAcrossRuns(t *testing.T) {
+	feed := map[string][]byte{
+		"0": mkGroupBody(t,
+			groupEntry{key: `"AE"`, payload: `{"country":"AE","n":{"item":2}}`},
+			groupEntry{key: `"DE"`, payload: `{"country":"DE","n":{"item":1}}`},
+			groupEntry{key: `"BR"`, payload: `{"country":"BR","n":{"item":4}}`},
+			groupEntry{key: `"CN"`, payload: `{"country":"CN","n":{"item":3}}`},
+			groupEntry{key: `"US"`, payload: `{"country":"US","n":{"item":9}}`},
+		),
+	}
+	var first []string
+	for range 5 {
+		p, err := newGroupPipeline(countByCountryPlan(), []string{"0"})
+		require.NoError(t, err)
+		got := groupKeysOf(t, driveGroup(t, p, feed), "country")
+		if first == nil {
+			first = got
+			continue
+		}
+		assert.Equal(t, first, got)
+	}
+}
+
+// A group key Cosmos cannot order — an array or an object — leaves the output
+// in first-seen order rather than asking the comparator to invent one.
+func TestGroupPipeline_UnorderableKeysKeepFirstSeenOrder(t *testing.T) {
+	plan := newGroupPlan("c.tags", []string{"tags", "n"}, map[string]string{"tags": "", "n": "Count"})
+	p, err := newGroupPipeline(plan, []string{"0"})
+	require.NoError(t, err)
+
+	rows := driveGroup(t, p, map[string][]byte{
+		"0": mkGroupBody(t,
+			groupEntry{key: `["b"]`, payload: `{"tags":["b"],"n":{"item":1}}`},
+			groupEntry{key: `["a"]`, payload: `{"tags":["a"],"n":{"item":2}}`},
+		),
+	})
+	require.Len(t, rows, 2)
+	assert.JSONEq(t, `{"tags":["b"],"n":1}`, string(rows[0]))
+	assert.JSONEq(t, `{"tags":["a"],"n":2}`, string(rows[1]))
+}
+
+// MIN over a group where the column is undefined in every row has no value,
+// and the gateway leaves that alias out of the row rather than writing null.
+func TestGroupPipeline_OmitsAnAliasWithNoValue(t *testing.T) {
+	plan := newGroupPlan("c.country", []string{"country", "lo"}, map[string]string{"country": "", "lo": "Min"})
+	p, err := newGroupPipeline(plan, []string{"0"})
+	require.NoError(t, err)
+
+	rows := driveGroup(t, p, map[string][]byte{
+		"0": mkGroupBody(t,
+			groupEntry{key: `"AE"`, payload: `{"country":"AE","lo":{"item2":{"count":0}}}`},
+		),
+	})
+	require.Len(t, rows, 1)
+	assert.JSONEq(t, `{"country":"AE"}`, string(rows[0]))
 }

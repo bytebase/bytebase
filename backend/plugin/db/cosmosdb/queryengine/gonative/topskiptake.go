@@ -7,10 +7,10 @@ import (
 	"github.com/pkg/errors"
 )
 
-// topPartitionResponse decodes a "no rewrite" per-partition response — the
+// topPartitionResponse decodes an unwrapped per-partition response — the
 // Documents array carries raw user-shaped rows directly (no orderByItems /
-// payload wrapping). Used for standalone TOP, where the gateway runs the
-// original query per partition and returns whatever matches.
+// payload wrapping). Used for TOP and for OFFSET/LIMIT without an ORDER BY,
+// where each partition returns whatever matches and the engine cuts the page.
 type topPartitionResponse struct {
 	Documents []json.RawMessage `json:"Documents"`
 }
@@ -23,68 +23,76 @@ func parseTopPartitionResponse(raw []byte) (*topPartitionResponse, error) {
 	return &r, nil
 }
 
-// topPipeline implements queryengine.QueryPipeline for standalone TOP queries
-// — plans with `top: N` and none of ORDER BY, DISTINCT, aggregates, or GROUP BY.
-// Rows from each partition are concatenated and the first N are emitted.
+// skipTakePipeline implements queryengine.QueryPipeline for the plans whose
+// only operators cut a window out of an unordered result: `TOP n`, and
+// `OFFSET n LIMIT m` with no ORDER BY. Rows from each partition are
+// concatenated, the first `skip` are dropped and the next `take` emitted.
 //
-// TOP composed with ORDER BY/DISTINCT/aggregates/GROUP BY is out of Stage 4's
-// scope; the dispatch rejects those plans with ErrUnsupportedPlanFeature.
+// Which rows those are is unspecified without an ORDER BY, which is what
+// makes the window safe to cut here: the gateway widens the per-partition
+// query to `OFFSET 0 LIMIT (offset+limit)` (or leaves TOP n on it), so every
+// range offers at least as many rows as the window needs and no row the
+// window should hold is missing from the union.
 //
-// A TOP larger than a response page needs several pages from a range. The
-// pipeline keeps asking for them until it holds N rows, at which point it
+// A window larger than a response page needs several pages from a range. The
+// pipeline keeps asking for them until it holds take rows, at which point it
 // stops: IsComplete trips on the emitted count and no further page is
 // requested, however many rows the ranges still hold.
-type topPipeline struct {
+type skipTakePipeline struct {
 	query  string
-	n      int
+	skip   int
+	take   int // negative means unlimited
 	fanout rangeFanout
 	closed bool
 
-	// pending items ready to flush to the caller, already capped at N total.
+	// pending items ready to flush to the caller, already capped at take.
 	pending [][]byte
+	// skipped counts the rows dropped by skip so far.
+	skipped int
 	// emitted tracks how many rows have been drained via Run(); we stop
-	// accepting/emitting once we hit N.
+	// accepting/emitting once we hit take.
 	emitted int
 	// accumulated counts pending + emitted. Keeps ProvideData from growing
-	// `pending` past N so downstream flushes never over-emit.
+	// `pending` past take so downstream flushes never over-emit.
 	accumulated int
 }
 
-// newTopPipeline builds a pipeline for a plan whose only operator is TOP.
-// Returns ErrUnsupportedPlanFeature when the plan carries any other operator
-// that would require composition (ORDER BY, DISTINCT, aggregate, GROUP BY).
-func newTopPipeline(plan *planDoc, pkRangeIDs []string) (*topPipeline, error) {
-	if plan.QueryInfo.Top == nil {
-		return nil, errors.New("gonative: topPipeline requires a non-nil Top")
+// newSkipTakePipeline builds a pipeline for a plan whose only operators are
+// TOP and/or OFFSET/LIMIT. Composition with another operator is the
+// dispatch's call, not this constructor's: CreateQueryPipeline rejects a plan
+// carrying a field this pipeline cannot honour before it gets here.
+func newSkipTakePipeline(plan *planDoc, pkRangeIDs []string, query string) (*skipTakePipeline, error) {
+	if plan.QueryInfo.Top == nil && plan.QueryInfo.Offset == nil && plan.QueryInfo.Limit == nil {
+		return nil, errors.New("gonative: skipTakePipeline requires TOP, OFFSET or LIMIT")
 	}
-	// Composition with other operators is a follow-up. Stage 4 only handles
-	// standalone TOP — the dispatcher routes composed plans elsewhere or
-	// rejects them.
-	if len(plan.QueryInfo.OrderBy) > 0 ||
-		plan.QueryInfo.DistinctType == "Unordered" || plan.QueryInfo.DistinctType == "Ordered" ||
-		len(plan.QueryInfo.Aggregates) > 0 ||
-		len(plan.QueryInfo.GroupByAliasToAggregateType) > 0 ||
-		len(plan.QueryInfo.GroupByExpressions) > 0 {
-		return nil, ErrUnsupportedPlanFeature
+	skip, take, err := planSkipTake(plan.QueryInfo)
+	if err != nil {
+		return nil, err
 	}
-	n := *plan.QueryInfo.Top
-	if n < 0 {
-		return nil, errors.Errorf("gonative: negative TOP N=%d", n)
+	// A bare TOP plan carries no rewrittenQuery, so each range answers the
+	// user's own query, TOP and all. An OFFSET/LIMIT plan carries one widened
+	// to `OFFSET 0 LIMIT (offset+limit)`, and running that is what lets this
+	// pipeline cut the window globally rather than per range.
+	if plan.QueryInfo.RewrittenQuery != "" {
+		query = plan.QueryInfo.RewrittenQuery
 	}
-	return &topPipeline{
-		n:      n,
+	return &skipTakePipeline{
+		query:  query,
+		skip:   skip,
+		take:   take,
 		fanout: newRangeFanout(pkRangeIDs),
 	}, nil
 }
 
 // Query implements queryengine.QueryPipeline.
-func (p *topPipeline) Query() string { return p.query }
+func (p *skipTakePipeline) Query() string { return p.query }
 
-// IsComplete returns true once either (a) we've emitted N rows — which covers
-// TOP 0, so the pipeline never fires a request for it — or (b) every range has
-// delivered its last page and all pending rows have been flushed.
-func (p *topPipeline) IsComplete() bool {
-	if p.emitted >= p.n {
+// IsComplete returns true once either (a) we've emitted take rows — which
+// covers TOP 0 and LIMIT 0, so the pipeline never fires a request for them —
+// or (b) every range has delivered its last page and all pending rows have
+// been flushed.
+func (p *skipTakePipeline) IsComplete() bool {
+	if p.take >= 0 && p.emitted >= p.take {
 		return true
 	}
 	if len(p.pending) > 0 {
@@ -94,12 +102,12 @@ func (p *topPipeline) IsComplete() bool {
 }
 
 // Close implements queryengine.QueryPipeline.
-func (p *topPipeline) Close() { p.closed = true }
+func (p *skipTakePipeline) Close() { p.closed = true }
 
 // Run drives one pipeline turn: flush the rows already in hand, then ask for
 // the next page of every range that has one — the initial fan-out on the first
 // call.
-func (p *topPipeline) Run() (*queryengine.PipelineResult, error) {
+func (p *skipTakePipeline) Run() (*queryengine.PipelineResult, error) {
 	if len(p.pending) > 0 {
 		batch := p.pending
 		p.pending = nil
@@ -112,14 +120,14 @@ func (p *topPipeline) Run() (*queryengine.PipelineResult, error) {
 	return &queryengine.PipelineResult{Requests: p.fanout.requests(p.query)}, nil
 }
 
-// ProvideData consumes each partition's response and appends rows to `pending`
-// up to the overall TOP N limit. Anything beyond N is dropped.
-func (p *topPipeline) ProvideData(results []queryengine.QueryResult) error {
+// ProvideData consumes each partition's response, drops the first `skip` rows
+// and appends the rest to `pending` up to `take` rows in all.
+func (p *skipTakePipeline) ProvideData(results []queryengine.QueryResult) error {
 	for _, r := range results {
 		if err := p.fanout.note(r); err != nil {
 			return err
 		}
-		if p.accumulated >= p.n {
+		if p.full() {
 			// Already have enough rows — leave this response unread.
 			continue
 		}
@@ -128,8 +136,12 @@ func (p *topPipeline) ProvideData(results []queryengine.QueryResult) error {
 			return err
 		}
 		for _, doc := range resp.Documents {
-			if p.accumulated >= p.n {
+			if p.full() {
 				break
+			}
+			if p.skipped < p.skip {
+				p.skipped++
+				continue
 			}
 			// Defensive copy — json.RawMessage aliases the input buffer.
 			p.pending = append(p.pending, append([]byte(nil), doc...))
@@ -137,4 +149,9 @@ func (p *topPipeline) ProvideData(results []queryengine.QueryResult) error {
 		}
 	}
 	return nil
+}
+
+// full reports whether the window already holds every row it can take.
+func (p *skipTakePipeline) full() bool {
+	return p.take >= 0 && p.accumulated >= p.take
 }
