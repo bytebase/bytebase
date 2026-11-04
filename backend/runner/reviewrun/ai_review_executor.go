@@ -17,8 +17,9 @@ import (
 // the workspace and project AI review policy, once per database of the
 // project's CI sample, with that database's facts in the prompt and its synced
 // schema behind the tools. The reviews of one run share the model and run
-// concurrently under aiReviewRunConcurrency. A last call to the model merges
-// the findings that more than one database reports on the same statement.
+// concurrently under aiReviewRunConcurrency. A further call to the model
+// merges the findings that more than one database reports on the same
+// statement, and one more for each merged problem writes its comment.
 type AIReviewExecutor struct {
 	store    *store.Store
 	newModel func(*storepb.AISetting, ...aireview.ModelOption) aireview.Model
@@ -154,6 +155,27 @@ func (e *AIReviewExecutor) RunOnce(ctx context.Context, projectID string, issueU
 		return result, nil
 	}, results)
 	if err != nil {
+		return nil, err
+	}
+	if err := summarizeAIReviewProblems(ctx, func(ctx context.Context, request *aireview.SummaryRequest) (*aireview.Summary, error) {
+		// A summary is a model call like a review, so it takes a slot too.
+		if err := e.slots.Acquire(ctx, 1); err != nil {
+			return nil, err
+		}
+		defer e.slots.Release(1)
+		summary, err := reviewer.Summarize(ctx, request)
+		if err != nil {
+			return nil, err
+		}
+		slog.Info("AI review summarized a problem",
+			slog.String("project", projectID),
+			slog.Int64("issue_id", issueUID),
+			slog.Int("findings", len(request.Findings)),
+			slog.Int("groups", len(summary.Groups)),
+			slog.Int("model_calls", summary.Calls),
+			slog.Int("tokens", summary.TotalTokens))
+		return summary, nil
+	}, problems); err != nil {
 		return nil, err
 	}
 	return aiReviewComments(projectID, issueUID, problems), nil

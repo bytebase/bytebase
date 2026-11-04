@@ -52,8 +52,9 @@ func TestCISampleBoundsOnlyTheAIReview(t *testing.T) {
 
 	setCISamplingSize(ctx, t, stores, 2)
 	require.Len(t, reviewedDatabases(), 2)
-	require.Equal(t, int32(3), model.calls.Load(), "a review per database and one merge")
+	require.Equal(t, int32(4), model.calls.Load(), "a review per database, one merge, and one summary")
 	require.Equal(t, int32(1), model.merges.Load())
+	require.Equal(t, int32(1), model.summaries.Load())
 
 	var ruleTargets int
 	ruleExecutor := &RuleExecutor{store: stores, reviewFuncs: map[storepb.Engine]review.ReviewFunc{
@@ -220,25 +221,37 @@ func setCISamplingSize(ctx context.Context, t *testing.T, stores *store.Store, s
 	}))
 }
 
-// findingModel answers every review with the same finding, and the merge
-// with one group of every finding, so a run's one comment names every
-// database the run reviewed.
+// findingModel answers every review with the same finding, the merge with one
+// group of every finding, and the summary with one group of every database,
+// so a run's one comment names every database the run reviewed.
 type findingModel struct {
-	calls  atomic.Int32
-	merges atomic.Int32
+	calls     atomic.Int32
+	merges    atomic.Int32
+	summaries atomic.Int32
 }
 
 func (m *findingModel) Chat(_ context.Context, request *v1pb.AIChatRequest) (*v1pb.AIChatResponse, error) {
 	m.calls.Add(1)
 	content := `{"findings": [{"title": "Backfill note", "severity": "P2", "line": 1, "rule": "r", "evidence": "e", "fix": "f"}]}`
-	// A review offers the schema tools, and the merge offers none.
+	// A review offers the schema tools, and the merge and the summary offer
+	// none. A merge numbers the findings, and a summary the databases, which
+	// report one finding each here.
 	if len(request.GetToolDefinitions()) == 0 {
-		m.merges.Add(1)
+		user := request.GetMessages()[1].GetContent()
 		var ids []string
-		for i := range strings.Count(request.GetMessages()[1].GetContent(), `{"id":`) {
-			ids = append(ids, strconv.Itoa(i+1))
+		if count := strings.Count(user, `{"id":`); count > 0 {
+			m.merges.Add(1)
+			for i := range count {
+				ids = append(ids, strconv.Itoa(i+1))
+			}
+			content = fmt.Sprintf(`{"groups": [[%s]]}`, strings.Join(ids, ", "))
+		} else {
+			m.summaries.Add(1)
+			for i := range strings.Count(user, `{"database":`) {
+				ids = append(ids, strconv.Itoa(i+1))
+			}
+			content = fmt.Sprintf(`{"title": "Backfill note", "evidence": "e", "groups": [{"databases": [%s], "facts": ""}], "fix": "f"}`, strings.Join(ids, ", "))
 		}
-		content = fmt.Sprintf(`{"groups": [[%s]]}`, strings.Join(ids, ", "))
 	}
 	return &v1pb.AIChatResponse{Content: &content}, nil
 }

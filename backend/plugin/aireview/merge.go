@@ -150,48 +150,16 @@ func (r *Reviewer) mergeBatch(parent context.Context, ctx context.Context, batch
 		textMessage(v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_SYSTEM, strings.TrimSpace(mergePrompt)),
 		textMessage(v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_USER, buildMergePrompt(batch, nonce)),
 	}
-	for invalidReplies := 0; ; invalidReplies++ {
-		if err := r.contextError(parent, ctx, result.Calls); err != nil {
-			return nil, err
-		}
-		result.Calls++
-		response, err := r.model.Chat(ctx, &v1pb.AIChatRequest{Messages: messages})
-		if err != nil {
-			if ctxErr := r.contextError(parent, ctx, result.Calls); ctxErr != nil {
-				return nil, ctxErr
-			}
-			return nil, errors.Wrapf(err, "model call %d failed", result.Calls)
-		}
-		result.TotalTokens += int(response.GetUsage().GetTotalTokens())
-		switch response.GetStopReason() {
-		case v1pb.AIChatResponse_TURN_COMPLETED, v1pb.AIChatResponse_STOP_REASON_UNSPECIFIED:
-		case v1pb.AIChatResponse_TOKEN_LIMIT:
-			return nil, ErrTruncatedReply
-		case v1pb.AIChatResponse_BLOCKED:
-			return nil, ErrBlockedReply
-		default:
-			return nil, ErrUnfinishedReply
-		}
-		content := response.GetContent()
-		if len(response.GetToolCalls()) > 0 {
-			return nil, errors.Wrap(ErrInvalidReply, "the model called a tool, and the merge offers none")
-		}
-		if strings.TrimSpace(content) == "" {
-			return nil, ErrEmptyReply
-		}
-
-		groups, problems := parseMergeReply(content, members, blockOf)
-		if len(problems) == 0 {
-			return groups, nil
-		}
-		if invalidReplies >= maxInvalidReplies {
-			return nil, errors.Wrap(ErrInvalidReply, strings.Join(problems, "; "))
-		}
-		messages = append(messages,
-			textMessage(v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_ASSISTANT, content),
-			textMessage(v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_USER, mergeCorrectionMessage(problems)),
-		)
+	var groups [][]int
+	err := r.replyWithoutTools(parent, ctx, messages, &result.Calls, &result.TotalTokens, func(content string) []string {
+		var problems []string
+		groups, problems = parseMergeReply(content, members, blockOf)
+		return problems
+	}, mergeCorrectionMessage)
+	if err != nil {
+		return nil, err
 	}
+	return groups, nil
 }
 
 // mergeSections renders each block that holds candidates, with its findings.
@@ -324,7 +292,7 @@ func blockLines(lines []string, block LineRange, findingLines []int) string {
 // returns the groups as candidate indexes. It returns the problems that make
 // the reply invalid, worded for the model to correct.
 func parseMergeReply(text string, members []int, blockOf []int) ([][]int, []string) {
-	decoded, err := decodeMergeReply(text)
+	decoded, err := decodeLenient[mergeReplyJSON](text)
 	if err != nil {
 		return nil, []string{fmt.Sprintf("the reply is not a valid JSON object: %v", err)}
 	}
@@ -384,10 +352,10 @@ func parseMergeReply(text string, members []int, blockOf []int) ([][]int, []stri
 	return groups, problems
 }
 
-// decodeMergeReply accepts the bare object, the object in a code fence, or
-// the object inside prose. A wrong merge loses no finding, so the reply is
-// read more leniently than a review's.
-func decodeMergeReply(text string) (*mergeReplyJSON, error) {
+// decodeLenient accepts the bare object, the object in a code fence, or the
+// object inside prose. A merge or a summary changes how findings are posted,
+// never which are, so its reply is read more leniently than a review's.
+func decodeLenient[T any](text string) (*T, error) {
 	text = strings.TrimSpace(text)
 	candidates := []string{text}
 	if unfenced, ok := stripCodeFence(text); ok {
@@ -398,7 +366,7 @@ func decodeMergeReply(text string) (*mergeReplyJSON, error) {
 	}
 	var firstErr error
 	for _, candidate := range candidates {
-		decoded := &mergeReplyJSON{}
+		decoded := new(T)
 		err := jsonv2.Unmarshal([]byte(candidate), decoded, jsonv2.RejectUnknownMembers(true))
 		if err == nil {
 			return decoded, nil

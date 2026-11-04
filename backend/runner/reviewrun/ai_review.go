@@ -59,8 +59,25 @@ type aiReviewFinding struct {
 	Finding aireview.Finding
 }
 
+// aiReviewProblem is the findings that report one problem, which one comment
+// posts.
+type aiReviewProblem struct {
+	Findings []*aiReviewFinding
+	// Block is the lines of the statement the findings are on.
+	Block aireview.LineRange
+	// Reviewed is every database that reviewed the problem's sheet.
+	Reviewed []string
+	// Summary is the comment the model wrote for a problem that more than one
+	// database reports, or nil.
+	Summary *aireview.Summary
+}
+
 // mergeFunc asks the model which findings report the same problem.
 type mergeFunc func(context.Context, *aireview.MergeRequest) (*aireview.MergeResult, error)
+
+// summarizeFunc asks the model to write the comment of a problem that more
+// than one database reports.
+type summarizeFunc func(context.Context, *aireview.SummaryRequest) (*aireview.Summary, error)
 
 // aiReviewTarget states what the prompt says about a database: the engine,
 // its version, the environment, the database's defaults and owner, and every
@@ -97,18 +114,22 @@ func schemaObjectCount(s *metadatapb.SchemaMetadata) int {
 // which of them are the same problem. Every other finding, and every finding
 // of a merge that fails, is a problem of its own, so a failed merge posts
 // duplicates and never drops a finding. The error is ctx's, when it ends.
-func mergeAIReviewFindings(ctx context.Context, merge mergeFunc, results []*aiReviewResult) ([][]*aiReviewFinding, error) {
+func mergeAIReviewFindings(ctx context.Context, merge mergeFunc, results []*aiReviewResult) ([]*aiReviewProblem, error) {
 	type sheetKey struct {
 		specID      string
 		sheetSha256 string
 	}
 	var order []sheetKey
 	bySheet := make(map[sheetKey][]*aiReviewFinding)
+	reviewed := make(map[sheetKey][]string)
 	for _, result := range results {
 		if result == nil {
 			continue
 		}
 		key := sheetKey{specID: result.Unit.Check.SpecID, sheetSha256: result.Unit.Check.SheetSha256}
+		if !slices.Contains(reviewed[key], result.Unit.Check.Target) {
+			reviewed[key] = append(reviewed[key], result.Unit.Check.Target)
+		}
 		for _, finding := range result.Findings {
 			if _, ok := bySheet[key]; !ok {
 				order = append(order, key)
@@ -116,11 +137,15 @@ func mergeAIReviewFindings(ctx context.Context, merge mergeFunc, results []*aiRe
 			bySheet[key] = append(bySheet[key], &aiReviewFinding{Unit: result.Unit, Finding: finding})
 		}
 	}
-	var problems [][]*aiReviewFinding
+	var problems []*aiReviewProblem
 	for _, key := range order {
 		sheetProblems, err := mergeSheetFindings(ctx, merge, bySheet[key])
 		if err != nil {
 			return nil, err
+		}
+		slices.Sort(reviewed[key])
+		for _, problem := range sheetProblems {
+			problem.Reviewed = reviewed[key]
 		}
 		problems = append(problems, sheetProblems...)
 	}
@@ -129,7 +154,7 @@ func mergeAIReviewFindings(ctx context.Context, merge mergeFunc, results []*aiRe
 
 // mergeSheetFindings groups the findings of one sheet, ordered by the first
 // finding of each problem.
-func mergeSheetFindings(ctx context.Context, merge mergeFunc, findings []*aiReviewFinding) ([][]*aiReviewFinding, error) {
+func mergeSheetFindings(ctx context.Context, merge mergeFunc, findings []*aiReviewFinding) ([]*aiReviewProblem, error) {
 	statement := findings[0].Unit.Statement
 	blocks := statementBlocks(sheetEngine(findings), statement)
 	blockOf := make([]int, len(findings))
@@ -186,15 +211,58 @@ func mergeSheetFindings(ctx context.Context, merge mergeFunc, findings []*aiRevi
 	}
 	slices.SortFunc(groups, func(a, b []int) int { return cmp.Compare(a[0], b[0]) })
 
-	problems := make([][]*aiReviewFinding, 0, len(groups))
+	problems := make([]*aiReviewProblem, 0, len(groups))
 	for _, group := range groups {
-		problem := make([]*aiReviewFinding, 0, len(group))
+		// A merged group holds the findings of one block.
+		problem := &aiReviewProblem{Block: blocks[blockOf[group[0]]]}
 		for _, i := range group {
-			problem = append(problem, findings[i])
+			problem.Findings = append(problem.Findings, findings[i])
 		}
 		problems = append(problems, problem)
 	}
 	return problems, nil
+}
+
+// summarizeAIReviewProblems sets the summary of each problem that more than
+// one database reports, at most aiReviewRunConcurrency at a time. A problem
+// whose summary fails keeps none, and its comment is built from its lead
+// finding. The error is ctx's, when it ends.
+func summarizeAIReviewProblems(ctx context.Context, summarize summarizeFunc, problems []*aiReviewProblem) error {
+	var group errgroup.Group
+	group.SetLimit(aiReviewRunConcurrency)
+	for _, problem := range problems {
+		findings := findingsByTarget(problem.Findings)
+		if len(problemTargets(findings)) < 2 {
+			continue
+		}
+		group.Go(func() error {
+			// The scheduler's recovery covers only the goroutine that called
+			// RunOnce.
+			defer func() {
+				if r := recover(); r != nil {
+					slog.Error("AI review summary PANIC RECOVER", slog.Any("panic", r), log.BBStack("panic-stack"))
+				}
+			}()
+			request := &aireview.SummaryRequest{Statement: findings[0].Unit.Statement, Block: problem.Block}
+			for _, finding := range findings {
+				request.Findings = append(request.Findings, aireview.SummaryFinding{Database: finding.Unit.Check.Target, Finding: finding.Finding})
+			}
+			summary, err := summarize(ctx, request)
+			if err != nil {
+				if ctx.Err() == nil {
+					slog.Warn("AI review could not summarize a problem, posting its lead finding",
+						slog.String("spec", findings[0].Unit.Check.SpecID),
+						slog.Int("findings", len(findings)),
+						log.BBError(err))
+				}
+				return nil
+			}
+			problem.Summary = summary
+			return nil
+		})
+	}
+	_ = group.Wait()
+	return ctx.Err()
 }
 
 // sheetEngine returns the engine of the databases a sheet's findings come
@@ -267,26 +335,40 @@ func findBlock(blocks *[]aireview.LineRange, line int) int {
 
 // aiReviewComments converts the problems into the review result comments to
 // post: one OPEN root per problem, anchored to the line most of its findings
-// start on, with every database it applies to. The title, priority, rule, and
-// fix are those of its lead finding, and the evidence of every finding is
-// kept, since each database has facts of its own.
-func aiReviewComments(projectID string, issueUID int64, problems [][]*aiReviewFinding) []*store.IssueCommentMessage {
-	comments := make([]*store.IssueCommentMessage, 0, len(problems))
-	for _, findings := range problems {
-		lead := leadFinding(findings)
-		line := int32(commonLine(findings))
-		var targets []string
-		for _, finding := range findings {
-			if !slices.Contains(targets, finding.Unit.Check.Target) {
-				targets = append(targets, finding.Unit.Check.Target)
+// start on, with every database it applies to. The priority and rule are those
+// of its lead finding.
+func aiReviewComments(projectID string, issueUID int64, problems []*aiReviewProblem) []*store.IssueCommentMessage {
+	type blockKey struct {
+		specID      string
+		sheetSha256 string
+		block       aireview.LineRange
+	}
+	keyOf := func(problem *aiReviewProblem) blockKey {
+		check := problem.Findings[0].Unit.Check
+		return blockKey{specID: check.SpecID, sheetSha256: check.SheetSha256, block: problem.Block}
+	}
+	// onBlock holds the databases with any finding on a statement.
+	onBlock := make(map[blockKey][]string)
+	for _, problem := range problems {
+		key := keyOf(problem)
+		for _, finding := range problem.Findings {
+			if !slices.Contains(onBlock[key], finding.Unit.Check.Target) {
+				onBlock[key] = append(onBlock[key], finding.Unit.Check.Target)
 			}
 		}
-		slices.Sort(targets)
+	}
+
+	comments := make([]*store.IssueCommentMessage, 0, len(problems))
+	for _, problem := range problems {
+		findings := findingsByTarget(problem.Findings)
+		lead := leadFinding(findings)
+		line := int32(commonLine(findings))
+		targets := problemTargets(findings)
 		comments = append(comments, &store.IssueCommentMessage{
 			ProjectID: projectID,
 			IssueUID:  issueUID,
 			Payload: &storepb.IssueCommentPayload{
-				Comment: aiReviewCommentText(lead, findings, targets),
+				Comment: aiReviewCommentText(problem, lead, findings, targets, onBlock[keyOf(problem)]),
 				StatementAnchor: &storepb.IssueCommentPayload_StatementAnchor{
 					SpecId:        lead.Unit.Check.SpecID,
 					SheetSha256:   lead.Unit.Check.SheetSha256,
@@ -302,6 +384,26 @@ func aiReviewComments(projectID string, issueUID int64, problems [][]*aiReviewFi
 		})
 	}
 	return comments
+}
+
+// findingsByTarget orders findings by database, keeping the order of one
+// database's findings.
+func findingsByTarget(findings []*aiReviewFinding) []*aiReviewFinding {
+	byTarget := slices.Clone(findings)
+	slices.SortStableFunc(byTarget, func(x, y *aiReviewFinding) int { return cmp.Compare(x.Unit.Check.Target, y.Unit.Check.Target) })
+	return byTarget
+}
+
+// problemTargets returns the databases of findings ordered by database.
+func problemTargets(findings []*aiReviewFinding) []string {
+	var targets []string
+	for _, finding := range findings {
+		if !slices.Contains(targets, finding.Unit.Check.Target) {
+			targets = append(targets, finding.Unit.Check.Target)
+		}
+	}
+	slices.Sort(targets)
+	return targets
 }
 
 // leadFinding returns the finding a problem is posted as: the one with the
@@ -335,24 +437,135 @@ func commonLine(findings []*aiReviewFinding) int {
 	return best
 }
 
-// aiReviewCommentText renders a problem as the body of its thread. Evidence of
-// more than one database is labeled with the database it comes from.
-func aiReviewCommentText(lead *aiReviewFinding, findings []*aiReviewFinding, targets []string) string {
+// maxNamedDatabases is how many databases one line of a comment names; the
+// rest are counted.
+const maxNamedDatabases = 10
+
+// aiReviewGroup is databases of a problem that one line of its comment covers,
+// with the highest and lowest severity their findings carry.
+type aiReviewGroup struct {
+	highest aireview.Severity
+	lowest  aireview.Severity
+	targets []string
+	facts   string
+}
+
+// aiReviewCommentText renders a problem as the body of its thread, whose first
+// line is the title the frontend shows as the finding's name. A problem of
+// more than one database states the shared evidence once, then one line for
+// each group of databases with its severities and the facts that set it
+// apart, then the reviewed databases that reported a different problem on the
+// statement, onBlock, or nothing. Without a summary, the shared evidence is
+// the lead finding's, labeled with its database, and the databases are
+// grouped by severity alone.
+func aiReviewCommentText(problem *aiReviewProblem, lead *aiReviewFinding, findings []*aiReviewFinding, targets []string, onBlock []string) string {
 	var b strings.Builder
-	_, _ = b.WriteString(lead.Finding.Title)
-	byTarget := slices.Clone(findings)
-	slices.SortStableFunc(byTarget, func(x, y *aiReviewFinding) int { return cmp.Compare(x.Unit.Check.Target, y.Unit.Check.Target) })
-	labels := databaseLabels(targets)
-	for _, finding := range byTarget {
-		if len(targets) > 1 {
-			_, _ = fmt.Fprintf(&b, "\n\n%s: %s", labels[finding.Unit.Check.Target], finding.Finding.Evidence)
-		} else {
+	if len(targets) == 1 {
+		_, _ = b.WriteString(lead.Finding.Title)
+		for _, finding := range findings {
 			_, _ = fmt.Fprintf(&b, "\n\n%s", finding.Finding.Evidence)
 		}
+		_, _ = fmt.Fprintf(&b, "\n\nRule: %s", lead.Finding.Rule)
+		_, _ = fmt.Fprintf(&b, "\n\nSuggested fix: %s", lead.Finding.Fix)
+		return b.String()
+	}
+
+	named := slices.Clone(problem.Reviewed)
+	for _, target := range targets {
+		if !slices.Contains(named, target) {
+			named = append(named, target)
+		}
+	}
+	labels := databaseLabels(named)
+	severities := make(map[string]aireview.Severity)
+	for _, finding := range findings {
+		if severity, ok := severities[finding.Unit.Check.Target]; !ok || aiReviewPriority(finding.Finding.Severity) < aiReviewPriority(severity) {
+			severities[finding.Unit.Check.Target] = finding.Finding.Severity
+		}
+	}
+	var title, evidence, fix string
+	var groups []*aiReviewGroup
+	if summary := problem.Summary; summary != nil {
+		title, evidence, fix = summary.Title, summary.Evidence, summary.Fix
+		for _, summaryGroup := range summary.Groups {
+			group := &aiReviewGroup{highest: aireview.SeverityP2, lowest: aireview.SeverityP0, targets: summaryGroup.Databases, facts: summaryGroup.Facts}
+			for _, target := range summaryGroup.Databases {
+				priority := aiReviewPriority(severities[target])
+				if priority < aiReviewPriority(group.highest) {
+					group.highest = severities[target]
+				}
+				if priority > aiReviewPriority(group.lowest) {
+					group.lowest = severities[target]
+				}
+			}
+			groups = append(groups, group)
+		}
+	} else {
+		title, fix = lead.Finding.Title, lead.Finding.Fix
+		evidence = fmt.Sprintf("%s: %s", labels[lead.Unit.Check.Target], lead.Finding.Evidence)
+		bySeverity := make(map[aireview.Severity]*aiReviewGroup)
+		for _, target := range targets {
+			group, ok := bySeverity[severities[target]]
+			if !ok {
+				group = &aiReviewGroup{highest: severities[target], lowest: severities[target]}
+				bySeverity[severities[target]] = group
+				groups = append(groups, group)
+			}
+			group.targets = append(group.targets, target)
+		}
+	}
+	// The most severe group comes first.
+	slices.SortStableFunc(groups, func(x, y *aiReviewGroup) int {
+		return cmp.Compare(aiReviewPriority(x.highest), aiReviewPriority(y.highest))
+	})
+
+	_, _ = b.WriteString(title)
+	_, _ = fmt.Fprintf(&b, "\n\n%s\n", evidence)
+	for _, group := range groups {
+		// Databases with the same facts can still carry different severities,
+		// which the group shows as a range rather than raise to its highest.
+		severity := string(group.highest)
+		if group.lowest != group.highest {
+			severity += "–" + string(group.lowest)
+		}
+		_, _ = fmt.Fprintf(&b, "\n- **%s** on %s", severity, databaseList(group.targets, labels))
+		if group.facts != "" {
+			_, _ = fmt.Fprintf(&b, ": %s", group.facts)
+		}
+	}
+	var differently, unflagged []string
+	for _, target := range problem.Reviewed {
+		switch {
+		case slices.Contains(targets, target):
+		case slices.Contains(onBlock, target):
+			differently = append(differently, target)
+		default:
+			unflagged = append(unflagged, target)
+		}
+	}
+	if len(differently) > 0 {
+		_, _ = fmt.Fprintf(&b, "\n- Flagged differently on %s", databaseList(differently, labels))
+	}
+	if len(unflagged) > 0 {
+		_, _ = fmt.Fprintf(&b, "\n- Not flagged on %s", databaseList(unflagged, labels))
 	}
 	_, _ = fmt.Fprintf(&b, "\n\nRule: %s", lead.Finding.Rule)
-	_, _ = fmt.Fprintf(&b, "\n\nSuggested fix: %s", lead.Finding.Fix)
+	_, _ = fmt.Fprintf(&b, "\n\nSuggested fix: %s", fix)
 	return b.String()
+}
+
+// databaseList names databases by their labels in order, up to
+// maxNamedDatabases, and counts the rest.
+func databaseList(targets []string, labels map[string]string) string {
+	names := make([]string, 0, len(targets))
+	for _, target := range targets {
+		names = append(names, labels[target])
+	}
+	slices.Sort(names)
+	if len(names) > maxNamedDatabases {
+		return fmt.Sprintf("%s, and %d more", strings.Join(names[:maxNamedDatabases], ", "), len(names)-maxNamedDatabases)
+	}
+	return strings.Join(names, ", ")
 }
 
 // databaseLabels names each target by its database name, or by instance and
