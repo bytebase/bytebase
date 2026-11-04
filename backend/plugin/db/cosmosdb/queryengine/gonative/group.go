@@ -3,6 +3,7 @@ package gonative
 import (
 	"encoding/json"
 	"slices"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos/queryengine"
 	"github.com/pkg/errors"
@@ -78,16 +79,9 @@ type groupPipeline struct {
 	// is what the output falls back to when the keys cannot be ordered.
 	order []string
 
-	// descending says which way to order the output rows, and
-	// directionKnown whether the data has told us yet. A GROUP BY the user
-	// also ordered
-	// reaches the engine as a plan with no order fields at all — the ORDER BY
-	// survives only inside rewrittenQuery — so the direction can be read only
-	// off the responses: the gateway returns each partition's own groups in
-	// the requested order, and the first adjacent pair that differs says
-	// which way they run.
-	descending     bool
-	directionKnown bool
+	// sort is how to order the output rows: which group key to compare
+	// first and which way, read from the query's ORDER BY — see groupSortKeys.
+	sort []groupSortKey
 
 	// pending holds fully finalized rows awaiting the caller's next Run().
 	pending [][]byte
@@ -130,6 +124,11 @@ func newGroupPipeline(plan *planDoc, pkRangeIDs []string) (*groupPipeline, error
 		}
 	}
 
+	sortKeys, err := groupSortKeys(qi)
+	if err != nil {
+		return nil, err
+	}
+
 	return &groupPipeline{
 		// GROUP BY plans always carry a non-empty rewrittenQuery that wraps the
 		// user's projection into {groupByItems, payload}; running the original
@@ -139,6 +138,7 @@ func newGroupPipeline(plan *planDoc, pkRangeIDs []string) (*groupPipeline, error
 		aliases: aliases,
 		kinds:   kinds,
 		groups:  make(map[string]*groupState),
+		sort:    sortKeys,
 	}, nil
 }
 
@@ -193,7 +193,6 @@ func (p *groupPipeline) ProvideData(results []queryengine.QueryResult) error {
 		if err != nil {
 			return err
 		}
-		p.noteOrdering(resp.Documents)
 		for docIdx, doc := range resp.Documents {
 			if len(doc.GroupByItems) == 0 {
 				return errors.Errorf("gonative: group doc %d missing groupByItems", docIdx)
@@ -272,30 +271,115 @@ func (p *groupPipeline) finalize() error {
 	return nil
 }
 
-// noteOrdering reads the output direction off one partition's response, which
-// is the only place a GROUP BY's ORDER BY reaches the engine. Gives up on a
-// key it cannot compare: sortGroups checks for those itself.
-func (p *groupPipeline) noteOrdering(docs []groupDoc) {
-	if p.directionKnown {
-		return
-	}
-	for i := 1; i < len(docs); i++ {
-		order, err := compareGroupKeys(docs[i-1].GroupByItems, docs[i].GroupByItems)
-		if err != nil {
-			return
-		}
-		if order != 0 {
-			p.descending = order > 0
-			p.directionKnown = true
-			return
-		}
-	}
+// orderByKeyword is how the gateway spells the clause in a rewritten query.
+const orderByKeyword = "ORDER BY"
+
+// orderByKey is one key of an ORDER BY clause.
+type orderByKey struct {
+	expr       string
+	descending bool
 }
 
-// sortGroups puts p.order in group-key order, the direction taken from the
-// gateway's own per-partition streams. A GROUP BY without an ORDER BY has no
-// defined output order, so ordering those rows too costs nothing and is what
-// makes every run answer the same way.
+// groupSortKey names one group key to order the output rows by: its position
+// in groupByItems, and which way to compare it.
+type groupSortKey struct {
+	index      int
+	descending bool
+}
+
+// groupSortKeys works out how to order a GROUP BY's output rows. A GROUP BY
+// the user also ordered reaches the engine as a plan with no order fields at
+// all — orderBy and orderByExpressions stay empty and the ORDER BY survives
+// only inside the rewritten query — so the clause is read from that text.
+//
+// The engine orders these rows by comparing their group keys, so every key the
+// clause names must be one of the GROUP BY expressions. An order it cannot
+// produce that way — by an aggregate, or by a column the query does not group
+// by — fails the query rather than answering in an order nobody asked for. The
+// gateway refuses those queries itself today, so this is the engine holding the
+// line rather than a reachable error.
+//
+// Group keys the clause leaves out are appended ascending. The clause does not
+// constrain them, and ordering them too is what makes two runs of one query
+// answer alike.
+func groupSortKeys(qi planQueryInfo) ([]groupSortKey, error) {
+	keys, found := trailingOrderBy(qi.RewrittenQuery)
+	if found && len(keys) == 0 {
+		return nil, errors.Wrap(ErrUnsupportedPlanFeature, "ORDER BY is not a plain list of keys")
+	}
+	sortKeys := make([]groupSortKey, 0, len(qi.GroupByExpressions))
+	named := make([]bool, len(qi.GroupByExpressions))
+	for _, key := range keys {
+		index := slices.Index(qi.GroupByExpressions, key.expr)
+		if index < 0 {
+			return nil, errors.Wrapf(ErrUnsupportedPlanFeature,
+				"ORDER BY key %q is not one of the GROUP BY expressions", key.expr)
+		}
+		if named[index] {
+			continue
+		}
+		named[index] = true
+		sortKeys = append(sortKeys, groupSortKey{index: index, descending: key.descending})
+	}
+	for index, taken := range named {
+		if !taken {
+			sortKeys = append(sortKeys, groupSortKey{index: index})
+		}
+	}
+	return sortKeys, nil
+}
+
+// trailingOrderBy splits the ORDER BY clause that ends query into its keys.
+// found is false when the query has no trailing ORDER BY; keys is nil with
+// found true when the clause is not the plain `<expression> [ASC|DESC]` list
+// the gateway writes there, which the caller must treat as an order it cannot
+// honour rather than as no order at all.
+func trailingOrderBy(query string) (keys []orderByKey, found bool) {
+	at := strings.LastIndex(strings.ToUpper(query), orderByKeyword)
+	if at < 0 {
+		return nil, false
+	}
+	tail := query[at+len(orderByKeyword):]
+	for _, token := range strings.Fields(strings.ToUpper(tail)) {
+		switch token {
+		case "FROM", "WHERE", "GROUP", "JOIN":
+			// A clause follows the match, so the match sits inside the query
+			// body — in a string literal holding the words, say — and the
+			// query has no trailing ORDER BY.
+			return nil, false
+		}
+	}
+	for _, item := range strings.Split(tail, ",") {
+		fields := strings.Fields(item)
+		var key orderByKey
+		switch len(fields) {
+		case 1:
+			key.expr = fields[0]
+		case 2:
+			key.expr = fields[0]
+			switch strings.ToUpper(fields[1]) {
+			case "ASC":
+			case "DESC":
+				key.descending = true
+			default:
+				return nil, true
+			}
+		default:
+			return nil, true
+		}
+		if strings.ContainsAny(key.expr, `'"`) {
+			return nil, true
+		}
+		keys = append(keys, key)
+	}
+	if len(keys) == 0 {
+		return nil, true
+	}
+	return keys, true
+}
+
+// sortGroups puts p.order in group-key order, in the direction the query
+// asked for.
 //
 // Leaves first-seen order in place when any group key is a shape Cosmos
 // cannot order (an array or an object), since the comparator would have to
@@ -309,27 +393,30 @@ func (p *groupPipeline) sortGroups() {
 		}
 	}
 	slices.SortStableFunc(p.order, func(a, b string) int {
-		order, err := compareGroupKeys(p.groups[a].items, p.groups[b].items)
+		order, err := compareGroupKeys(p.groups[a].items, p.groups[b].items, p.sort)
 		if err != nil {
 			// Unreachable: every key was checked orderable just above.
 			return 0
-		}
-		if p.descending {
-			return -order
 		}
 		return order
 	})
 }
 
-// compareGroupKeys orders two group keys under Cosmos item ordering, column
-// by column.
-func compareGroupKeys(a, b []groupByItem) (int, error) {
-	for i := range min(len(a), len(b)) {
-		order, err := compareItems(a[i].Item, b[i].Item)
+// compareGroupKeys orders two group keys under Cosmos item ordering, comparing
+// the columns sortKeys names in the order and direction it gives.
+func compareGroupKeys(a, b []groupByItem, sortKeys []groupSortKey) (int, error) {
+	for _, key := range sortKeys {
+		if key.index >= len(a) || key.index >= len(b) {
+			continue
+		}
+		order, err := compareItems(a[key.index].Item, b[key.index].Item)
 		if err != nil {
 			return 0, err
 		}
 		if order != 0 {
+			if key.descending {
+				return -order, nil
+			}
 			return order, nil
 		}
 	}
