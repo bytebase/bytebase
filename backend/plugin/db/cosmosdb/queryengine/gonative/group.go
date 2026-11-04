@@ -334,23 +334,18 @@ func groupSortKeys(qi planQueryInfo) ([]groupSortKey, error) {
 // found true when the clause is not the plain `<expression> [ASC|DESC]` list
 // the gateway writes there, which the caller must treat as an order it cannot
 // honour rather than as no order at all.
+//
+// The words are matched outside quoted text, so a property path that needs
+// bracket notation — c["order by"] — is a key and not a clause, whichever it
+// is spelled as.
 func trailingOrderBy(query string) (keys []orderByKey, found bool) {
-	at := strings.LastIndex(strings.ToUpper(query), orderByKeyword)
+	at := lastUnquotedIndex(query, orderByKeyword)
 	if at < 0 {
 		return nil, false
 	}
 	tail := query[at+len(orderByKeyword):]
-	for _, token := range strings.Fields(strings.ToUpper(tail)) {
-		switch token {
-		case "FROM", "WHERE", "GROUP", "JOIN":
-			// A clause follows the match, so the match sits inside the query
-			// body — in a string literal holding the words, say — and the
-			// query has no trailing ORDER BY.
-			return nil, false
-		}
-	}
-	for _, item := range strings.Split(tail, ",") {
-		fields := strings.Fields(item)
+	for _, item := range splitUnquoted(tail, ',') {
+		fields := splitUnquoted(item, ' ', '\t', '\n', '\r')
 		var key orderByKey
 		switch len(fields) {
 		case 1:
@@ -367,15 +362,79 @@ func trailingOrderBy(query string) (keys []orderByKey, found bool) {
 		default:
 			return nil, true
 		}
-		if strings.ContainsAny(key.expr, `'"`) {
-			return nil, true
-		}
 		keys = append(keys, key)
 	}
 	if len(keys) == 0 {
 		return nil, true
 	}
 	return keys, true
+}
+
+// lastUnquotedIndex returns the last index at which needle occurs in s outside
+// quoted text, ignoring case, or -1.
+func lastUnquotedIndex(s, needle string) int {
+	quoted := quotedBytes(s)
+	for i := len(s) - len(needle); i >= 0; i-- {
+		if !quoted[i] && strings.EqualFold(s[i:i+len(needle)], needle) {
+			return i
+		}
+	}
+	return -1
+}
+
+// splitUnquoted splits s on any of seps that sits outside quoted text,
+// dropping empty pieces so runs of whitespace behave like one separator.
+func splitUnquoted(s string, seps ...byte) []string {
+	quoted := quotedBytes(s)
+	var out []string
+	start := -1
+	for i := range len(s) {
+		if !quoted[i] && slices.Contains(seps, s[i]) {
+			if start >= 0 {
+				out = append(out, s[start:i])
+				start = -1
+			}
+			continue
+		}
+		if start < 0 {
+			start = i
+		}
+	}
+	if start >= 0 {
+		out = append(out, s[start:])
+	}
+	return out
+}
+
+// quotedBytes marks the bytes of s that sit inside quoted text. A rewritten
+// query quotes a property path spelled in bracket notation and any string
+// literal the query compares against, and the words of a clause mean nothing
+// inside either.
+func quotedBytes(s string) []bool {
+	quoted := make([]bool, len(s))
+	var quote byte
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if quote == 0 {
+			if c == '"' || c == '\'' {
+				quote = c
+				quoted[i] = true
+			}
+			continue
+		}
+		quoted[i] = true
+		if c == '\\' && i+1 < len(s) {
+			// An escaped quote does not close the span, and the byte it
+			// escapes is inside it either way.
+			i++
+			quoted[i] = true
+			continue
+		}
+		if c == quote {
+			quote = 0
+		}
+	}
+	return quoted
 }
 
 // sortGroups puts p.order in group-key order, in the direction the query

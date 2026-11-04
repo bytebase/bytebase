@@ -547,6 +547,54 @@ func TestGroupPipeline_ReadsAnOrderWhoseKeyNameHoldsAKeyword(t *testing.T) {
 	assert.Equal(t, []string{"BR", "AE"}, groupKeysOf(t, rows, "nowhere"))
 }
 
+// A property path that needs bracket notation is a key like any other, even
+// when the property is named after the clause itself. Both plans here are what
+// the service answered for `GROUP BY c["country-name"]` and
+// `GROUP BY c["order by"]`.
+func TestGroupPipeline_ReadsAnOrderOnABracketPath(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		expr string
+		rest string
+		want []string
+	}{
+		{
+			name: "a path that has to be quoted",
+			expr: `c["country-name"]`,
+			rest: "\nORDER BY c[\"country-name\"] DESC",
+			want: []string{"BR", "AE"},
+		},
+		{
+			name: "a property named after the clause",
+			expr: `c["order by"]`,
+			rest: "\nORDER BY c[\"order by\"] DESC",
+			want: []string{"BR", "AE"},
+		},
+		{
+			name: "a property named after the clause, unordered",
+			expr: `c["order by"]`,
+			rest: "",
+			want: []string{"AE", "BR"},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			plan := newGroupPlan(tc.expr, []string{"k", "n"}, map[string]string{"k": "", "n": "Count"})
+			plan.QueryInfo.GroupByExpressions = []string{tc.expr}
+			plan.QueryInfo.RewrittenQuery = "SELECT [{\"item\": " + tc.expr + "}] AS groupByItems, " +
+				"{\"k\": " + tc.expr + ", \"n\": {\"item\": COUNT(1)}} AS payload\nFROM c\nGROUP BY " + tc.expr + tc.rest
+
+			p, err := newGroupPipeline(plan, []string{"0", "1"})
+			require.NoError(t, err)
+
+			rows := driveGroup(t, p, map[string][]byte{
+				"0": mkGroupBody(t, groupEntry{key: `"AE"`, payload: `{"k":"AE","n":{"item":2}}`}),
+				"1": mkGroupBody(t, groupEntry{key: `"BR"`, payload: `{"k":"BR","n":{"item":4}}`}),
+			})
+			assert.Equal(t, tc.want, groupKeysOf(t, rows, "k"))
+		})
+	}
+}
+
 // The words can appear in the query body — in a string literal the user wrote
 // — without the query naming an order.
 func TestGroupPipeline_IgnoresOrderByInsideTheQueryBody(t *testing.T) {
