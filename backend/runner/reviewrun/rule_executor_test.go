@@ -251,6 +251,6 @@ func TestRuleExecutorPassesTheSyncedDefaultSchema(t *testing.T) {
 		return messages
 	}
 
-	require.Equal(t, []string{"an object named t already exists"}, review("synced", "dbo"))
+	require.Equal(t, []string{"Table `t` already exists."}, review("synced", "dbo"))
 	require.Empty(t, review("unsynced", ""))
 }
