@@ -202,3 +202,21 @@ func TestNumberRawMessage_IntegerFormatting(t *testing.T) {
 	assert.Equal(t, json.RawMessage(`0`), numberRawMessage(0))
 	assert.Equal(t, json.RawMessage(`1.5`), numberRawMessage(1.5))
 }
+
+// MIN and MAX fold their partials through compareItems, so the composite
+// classes reach them too: two ranges reporting the same array agree on the
+// answer, while two reporting different arrays have none the values can give.
+func TestMinAgg_FoldsEqualComposites(t *testing.T) {
+	out := feedFinal(t, newAggregator("Min"),
+		[]byte(`{"min":[1,2],"count":2}`),
+		[]byte(`{"min":[1,2],"count":3}`),
+	)
+	assert.Equal(t, json.RawMessage(`[1,2]`), out)
+}
+
+func TestMinAgg_RefusesTwoDifferentComposites(t *testing.T) {
+	a := newAggregator("Min")
+	require.NoError(t, a.feedPartial([]byte(`{"min":[1,2],"count":1}`)))
+	err := a.feedPartial([]byte(`{"min":[1,3],"count":1}`))
+	assert.ErrorIs(t, err, ErrUnsupportedPlanFeature)
+}

@@ -19,12 +19,23 @@ import (
 // values gives back.
 //
 // So two unequal values of one of those classes have no order here, and the
-// two comparators below part ways over them: compareItems fails, because an
-// ORDER BY merge that disagrees with the per-partition streams it merges puts
+// two comparators below part ways over them. compareItems fails, for the
+// callers whose answer is the order itself: an ORDER BY that answered from a
+// comparator disagreeing with the per-partition streams it merges would put
 // out rows in an order that is neither the service's nor its own, and under a
-// TOP it returns the wrong rows outright. compareItemsTotal orders them by
-// canonical JSON, for the one caller that only needs *some* order it can
-// repeat — a GROUP BY the user did not order.
+// TOP it would take the wrong rows outright; MIN and MAX fold their partials
+// through the same comparison and would pick an arbitrary one of two arrays.
+// compareItemsTotal instead orders them by canonical JSON, which is
+// repeatable but not the service's, so a caller may use it only where that
+// cannot reach the answer:
+//
+//   - a GROUP BY the user did not order, whose rows have no order to be wrong
+//     about;
+//   - the ORDER BY merge heap, which needs *a* minimum to pop at all. Its
+//     order is provisional, and ambiguousFirst then asks the question that
+//     matters of the row about to go out — so changing the heap to
+//     compareItems would not make it stricter, only fail rows the answer
+//     never depended on.
 type jsonType int
 
 const (
@@ -136,16 +147,18 @@ func compareItems(a, b json.RawMessage) (int, error) {
 		// Equal composites are one value and may be ordered together; unequal
 		// ones the service separates by an encoding this cannot see.
 		return 0, errors.Wrapf(ErrUnsupportedPlanFeature,
-			"gonative: ORDER BY cannot order two different %ss", ta)
+			"gonative: cannot order two different %ss", ta)
 	default:
 		return 0, errors.Errorf("gonative: unknown jsonType %d", ta)
 	}
 }
 
 // compareItemsTotal is compareItems extended to a total order: two unequal
-// values of one composite class are ordered by their canonical JSON. Only a
-// caller free to pick the order may use it — see jsonType — because that
-// order is not the service's.
+// values of one composite class are ordered by their canonical JSON. That
+// order is not the service's, so a caller either has to be free to pick one —
+// a GROUP BY nobody ordered, or a sort key appended to settle ties — or has to
+// check the rows it hands back, as the merge heap does through
+// ambiguousFirst. See jsonType.
 func compareItemsTotal(a, b json.RawMessage) (int, error) {
 	ta, tb := detectJSONType(a), detectJSONType(b)
 	if ta == tb && (ta == jsonArray || ta == jsonObject) {
