@@ -540,7 +540,7 @@ The viewer, by the page's width:
 | Page width | Container | Behavior |
 |---|---|---|
 | 1280 px and wider | Column docked on the right half of the page | The plan narrows to the left half and stays interactive; another file swaps the content; Close or Esc closes |
-| 640 to 1279 px | Standard-width sheet over a scrim | Same body |
+| 640 to 1279 px | Standard-width sheet over a scrim | Same body; on close the sheet keeps showing its file until it has slid away, as the UX contract's sheets do, so no empty panel slides off |
 | Below 640 px | Full-width sheet | Lines wrap |
 
 The details block's Source row:
