@@ -5,10 +5,17 @@ import { EnvironmentLabel } from "@/components/EnvironmentLabel";
 import { HighlightLabelText } from "@/components/HighlightLabelText";
 import { Combobox } from "@/components/ui/combobox";
 import { usePaginatedSelect } from "@/hooks/usePaginatedSelect";
+import { useProjectByName } from "@/hooks/useProjectByName";
 import { useAppStore } from "@/stores/app";
+import { isDefaultProject, isValidProjectName } from "@/types";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
-import { extractInstanceResourceName, getDefaultPagination } from "@/utils";
+import {
+  extractInstanceResourceName,
+  getDefaultPagination,
+  hasProjectPermissionV2,
+  hasWorkspacePermissionV2,
+} from "@/utils";
 
 export interface InstanceSelectProps {
   value: string;
@@ -19,7 +26,22 @@ export interface InstanceSelectProps {
   portal?: boolean;
   /** Only show instances with these engines */
   engines?: Engine[];
+  /** Also offer this project's project instances, listed before workspace instances */
+  project?: string;
 }
+
+// One page token walks the project's instances and then the workspace's:
+// "<source index>:<token from that source's last page>".
+const encodePageToken = (sourceIndex: number, token: string) =>
+  `${sourceIndex}:${token}`;
+
+const decodePageToken = (pageToken: string) => {
+  const separator = pageToken.indexOf(":");
+  return {
+    sourceIndex: Number(pageToken.slice(0, separator)),
+    token: pageToken.slice(separator + 1),
+  };
+};
 
 export function InstanceSelect({
   value,
@@ -29,6 +51,7 @@ export function InstanceSelect({
   className,
   portal,
   engines,
+  project,
 }: InstanceSelectProps) {
   const { t } = useTranslation();
   // Stabilize engines array to avoid re-fetching on every render
@@ -47,19 +70,53 @@ export function InstanceSelect({
     return engines;
   }, [engines]);
 
+  const projectEntity = useProjectByName(project ?? "");
+  const projectParent =
+    isValidProjectName(project) &&
+    !isDefaultProject(project) &&
+    projectEntity.name === project &&
+    hasProjectPermissionV2(projectEntity, "bb.instances.list")
+      ? project
+      : undefined;
+  const canListWorkspaceInstances =
+    hasWorkspacePermissionV2("bb.instances.list");
+
   const fetchPage = useCallback(
     async (query: string, pageToken: string) => {
-      const result = await useAppStore.getState().fetchInstanceList({
-        pageSize: getDefaultPagination(),
-        pageToken,
-        filter: { query, engines: stableEngines },
-      });
-      return {
-        items: result.instances,
-        nextPageToken: result.nextPageToken,
-      };
+      const parents: (string | undefined)[] = [];
+      if (projectParent) parents.push(projectParent);
+      if (canListWorkspaceInstances) parents.push(undefined);
+
+      let { sourceIndex, token } = pageToken
+        ? decodePageToken(pageToken)
+        : { sourceIndex: 0, token: "" };
+      const pageSize = getDefaultPagination();
+      const items: Instance[] = [];
+      while (sourceIndex < parents.length) {
+        const result = await useAppStore.getState().fetchInstanceList({
+          parent: parents[sourceIndex],
+          pageSize,
+          pageToken: token,
+          filter: { query, engines: stableEngines },
+        });
+        items.push(...result.instances);
+        if (result.nextPageToken) {
+          return {
+            items,
+            nextPageToken: encodePageToken(sourceIndex, result.nextPageToken),
+          };
+        }
+        sourceIndex += 1;
+        token = "";
+        // Fill a short page from the next source so a project with few
+        // instances does not hide the workspace instances behind "load more".
+        if (items.length >= pageSize && sourceIndex < parents.length) {
+          return { items, nextPageToken: encodePageToken(sourceIndex, "") };
+        }
+      }
+      return { items, nextPageToken: "" };
     },
-    [stableEngines]
+    [stableEngines, projectParent, canListWorkspaceInstances]
   );
   const {
     items: instances,
