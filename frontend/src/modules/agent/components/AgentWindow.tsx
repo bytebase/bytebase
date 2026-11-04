@@ -237,7 +237,8 @@ export function AgentWindow() {
     if (
       !contextualStart ||
       contextualStart.kind === "project" ||
-      contextualStart.kind === "plan-create" ||
+      (contextualStart.kind === "plan-create" &&
+        !contextualStart.databaseName) ||
       contextualStart.kind === "instance" ||
       contextualStart.kind === "instance-create"
     ) {
@@ -261,10 +262,13 @@ export function AgentWindow() {
       return state.hasProjectPermission(project, "bb.plans.get");
     }
     const project = state.projectsByName[contextualStart.project];
-    const permission =
-      contextualStart.kind === "database"
-        ? "bb.databases.list"
-        : "bb.issues.list";
+    const isDatabaseReference =
+      contextualStart.kind === "database" ||
+      (contextualStart.kind === "plan-create" &&
+        Boolean(contextualStart.databaseName));
+    const permission = isDatabaseReference
+      ? "bb.databases.list"
+      : "bb.issues.list";
     const canList =
       state.hasWorkspacePermission(permission) ||
       Boolean(project && state.hasProjectPermission(project, permission));
@@ -326,7 +330,8 @@ export function AgentWindow() {
     if (
       !contextualStart ||
       contextualStart.kind === "project" ||
-      contextualStart.kind === "plan-create" ||
+      (contextualStart.kind === "plan-create" &&
+        !contextualStart.databaseName) ||
       contextualStart.kind === "instance" ||
       contextualStart.kind === "instance-create" ||
       !canReferenceContextualResource
@@ -363,7 +368,14 @@ export function AgentWindow() {
           label: getPlanMentionLabel(plan),
         });
       }
-      for (const name of contextualStart.names) {
+      const databaseNames =
+        contextualStart.kind === "database"
+          ? contextualStart.names
+          : contextualStart.kind === "plan-create" &&
+              contextualStart.databaseName
+            ? [contextualStart.databaseName]
+            : [];
+      for (const name of databaseNames) {
         const database = await useAppStore
           .getState()
           .getOrFetchDatabaseByName(name, true);
@@ -1015,7 +1027,9 @@ export function AgentWindow() {
       const requiresReference =
         contextualStart.kind === "database" ||
         contextualStart.kind === "plan" ||
-        contextualStart.kind === "issue";
+        contextualStart.kind === "issue" ||
+        (contextualStart.kind === "plan-create" &&
+          Boolean(contextualStart.databaseName));
       if (requiresReference && !reference) return;
       const chatContext =
         ("project" in contextualStart && contextualStart.project) ||

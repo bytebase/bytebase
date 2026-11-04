@@ -185,6 +185,37 @@ describe("resolveAgentPageResource", () => {
     }
   );
 
+  test("keeps a single selected database on the Plan-create route", () => {
+    expect(
+      resolveAgentPageResource(
+        detailRoute(
+          PROJECT_V1_ROUTE_PLAN_DETAIL,
+          { projectId: "orders", planId: "create" },
+          { databaseList: "instances/primary/databases/app" }
+        )
+      )
+    ).toEqual({
+      kind: "plan-create",
+      project: "projects/orders",
+      databaseName: "instances/primary/databases/app",
+    });
+  });
+
+  test("does not select one database from a multi-target Plan-create route", () => {
+    expect(
+      resolveAgentPageResource(
+        detailRoute(
+          PROJECT_V1_ROUTE_PLAN_DETAIL,
+          { projectId: "orders", planId: "create" },
+          {
+            databaseList:
+              "instances/primary/databases/app,instances/primary/databases/audit",
+          }
+        )
+      )
+    ).toEqual({ kind: "plan-create", project: "projects/orders" });
+  });
+
   test("uses the canonical database parent when present", () => {
     expect(
       resolveAgentPageResource(

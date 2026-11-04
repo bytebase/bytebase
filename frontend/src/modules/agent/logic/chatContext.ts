@@ -14,6 +14,7 @@ import {
 } from "@/app/router/handles";
 import { projectNamePrefix, workspaceNamePrefix } from "@/lib/resourceName";
 import { useAppStore } from "@/stores/app";
+import { isValidDatabaseName } from "@/types/v1/database";
 
 export function resolveChatContext(
   route: ReactRoute,
@@ -40,7 +41,7 @@ export function getCurrentChatContext(): string | undefined {
 
 export type AgentPageResource =
   | { kind: "project"; name: string; project: string }
-  | { kind: "plan-create"; project: string }
+  | { kind: "plan-create"; project: string; databaseName?: string }
   | { kind: "plan"; name: string; project: string }
   | {
       kind: "database";
@@ -84,7 +85,21 @@ export function resolveAgentPageResource(
     typeof planId === "string" &&
     planId.toLowerCase() === "create"
   ) {
-    return { kind: "plan-create", project };
+    const databaseList =
+      typeof route.query.databaseList === "string"
+        ? route.query.databaseList
+        : undefined;
+    const selectedDatabases = databaseList?.split(",");
+    const databaseName =
+      selectedDatabases?.length === 1 &&
+      isValidDatabaseName(selectedDatabases[0])
+        ? selectedDatabases[0]
+        : undefined;
+    return {
+      kind: "plan-create",
+      project,
+      ...(databaseName ? { databaseName } : {}),
+    };
   }
   if (route.name === PROJECT_V1_ROUTE_ISSUE_DETAIL) {
     return typeof issueId === "string" && issueId && issueId !== "-"

@@ -35,7 +35,10 @@ export function AgentContextualStart({
 }: AgentContextualStartProps) {
   const { t } = useTranslation();
   const requiresReference =
-    page.kind === "database" || page.kind === "plan" || page.kind === "issue";
+    page.kind === "database" ||
+    page.kind === "plan" ||
+    page.kind === "issue" ||
+    (page.kind === "plan-create" && Boolean(page.databaseName));
   const Icon =
     page.kind === "project"
       ? Folder

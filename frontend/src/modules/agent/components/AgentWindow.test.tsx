@@ -600,6 +600,53 @@ describe("AgentWindow", () => {
     unmount();
   });
 
+  test("binds the Plan-create starter to its selected database", async () => {
+    mocks.pageResource = {
+      kind: "plan-create",
+      project: "projects/orders",
+      databaseName: "instances/primary/databases/app",
+    };
+    mocks.getOrFetchDatabaseByName.mockResolvedValue({
+      name: "instances/primary/databases/app",
+      project: "projects/orders",
+      instanceResource: { title: "Primary" },
+    });
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    await act(async () => {
+      render();
+      await Promise.resolve();
+    });
+
+    const start = document.body.querySelector(
+      '[data-agent-contextual-start="plan-create"]'
+    );
+    const mention = start?.querySelector(
+      "[data-agent-contextual-mention]"
+    ) as HTMLButtonElement;
+    expect(mention).toBeInstanceOf(HTMLButtonElement);
+    expect(mention.textContent).toContain("@app (Primary)");
+
+    act(() => {
+      (
+        start?.querySelector(
+          "[data-agent-contextual-suggestion]"
+        ) as HTMLButtonElement
+      ).click();
+    });
+
+    expect(getCurrentQueuedUserMessage()).toMatchObject({
+      text: "@app (Primary) agent.contextual-start.plan-create-sql",
+      resourceReference: {
+        kind: "database",
+        name: "instances/primary/databases/app",
+        project: "projects/orders",
+        label: "app (Primary)",
+      },
+      runMode: "read-only",
+    });
+    unmount();
+  });
+
   test("does not offer a database mention without list permission", () => {
     mocks.canListReferences = false;
     mocks.pageResource = {
