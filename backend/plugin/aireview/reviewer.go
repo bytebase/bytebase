@@ -104,6 +104,7 @@ func (r *Reviewer) Review(parent context.Context, request *Request, tools Tools)
 	}
 
 	numberedStatement, lineCount := numberLines(request.Statement)
+	rules := Rules(request.WorkspacePolicy, request.ProjectPolicy)
 	nonce := rand.Text()
 	messages := buildMessages(request, numberedStatement, nonce, len(definitions) > 0)
 	result := &Result{}
@@ -197,13 +198,14 @@ func (r *Reviewer) Review(parent context.Context, request *Request, tools Tools)
 			continue
 		}
 
-		parsed, problems := parseReply(content, lineCount)
+		lastChance := invalidReplies >= maxInvalidReplies || result.Calls >= r.maxModelCalls
+		parsed, problems := parseReply(content, lineCount, rules, lastChance)
 		if len(problems) == 0 {
 			result.Findings = parsed.Findings
 			result.Notes = parsed.Notes
 			return result, nil
 		}
-		if invalidReplies >= maxInvalidReplies || result.Calls >= r.maxModelCalls {
+		if lastChance {
 			return nil, errors.Wrap(ErrInvalidReply, strings.Join(problems, "; "))
 		}
 		invalidReplies++

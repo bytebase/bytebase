@@ -132,7 +132,7 @@ func (e *AIReviewExecutor) RunOnce(ctx context.Context, projectID string, issueU
 	if err := aggregateUnitErrors(len(checkTargets), unitErrs); err != nil {
 		return nil, err
 	}
-	return aiReviewComments(projectID, issueUID, results), nil
+	return aiReviewComments(projectID, issueUID, results, aireview.Rules(policy.Workspace, policy.Project)), nil
 }
 
 // checkAISetting returns the workspace AI setting if it allows the review. It
