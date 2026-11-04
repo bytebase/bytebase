@@ -2,6 +2,7 @@ package gonative
 
 import (
 	"encoding/json"
+	"fmt"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -19,8 +20,11 @@ import (
 //	Max               — {"max": <value>, "count": <int>}
 //
 // finalize returns the final scalar as a json.RawMessage so the pipeline can
-// emit it without re-marshaling. Returns an empty value (JSON null) when no
-// contributing rows were observed (e.g. Avg over an empty set).
+// emit it without re-marshaling. It returns a nil message when the aggregate
+// has no value: Cosmos reports MIN, MAX and AVG over an empty set as
+// undefined, which the gateway renders as no row at all in the VALUE form and
+// as an absent alias in the aliased form. COUNT and SUM over an empty set are
+// 0, and the gateway sends that 0 as a partial, so they never finalize nil.
 type aggregator interface {
 	feedPartial(raw json.RawMessage) error
 	finalize() (json.RawMessage, error)
@@ -45,6 +49,45 @@ func newAggregator(kind string) aggregator {
 		return &avgAgg{}
 	}
 	return nil
+}
+
+// aggregatePartial returns the partial feedPartial expects for one aggregate,
+// given the gateway's {item, item2} document entry. MIN and MAX read item2:
+// only it reports how many rows the partition contributed, which is how a
+// partition that matched nothing contributes nothing. item2 is absent where
+// the gateway short-circuited to a single-partition shape, and item is then
+// the value itself. Every other kind carries its partial in item alone.
+//
+// Returns nil when the gateway left the partial out, which it does for an
+// aggregate over a partition that matched no row.
+func aggregatePartial(kind string, it aggItem) json.RawMessage {
+	switch kind {
+	case "Min", "Max":
+		if len(it.Item2) > 0 {
+			return it.Item2
+		}
+		if len(it.Item) == 0 {
+			return nil
+		}
+		key := "min"
+		if kind == "Max" {
+			key = "max"
+		}
+		return fmt.Appendf(nil, `{%q:%s,"count":1}`, key, it.Item)
+	default:
+		return it.Item
+	}
+}
+
+// feedAggregatePartial folds one partition document's partial into a. A
+// partial the gateway left out is not an error: the partition had no row to
+// contribute.
+func feedAggregatePartial(a aggregator, kind string, it aggItem) error {
+	partial := aggregatePartial(kind, it)
+	if len(partial) == 0 {
+		return nil
+	}
+	return a.feedPartial(partial)
 }
 
 // -----------------------------------------------------------------------------
@@ -87,7 +130,7 @@ func (a *sumAgg) feedPartial(raw json.RawMessage) error {
 
 func (a *sumAgg) finalize() (json.RawMessage, error) {
 	if !a.seen {
-		return json.RawMessage(`null`), nil
+		return nil, nil
 	}
 	return numberRawMessage(a.total), nil
 }
@@ -129,7 +172,7 @@ func (a *minAgg) feedPartial(raw json.RawMessage) error {
 
 func (a *minAgg) finalize() (json.RawMessage, error) {
 	if a.best == nil {
-		return json.RawMessage(`null`), nil
+		return nil, nil
 	}
 	return a.best, nil
 }
@@ -170,7 +213,7 @@ func (a *maxAgg) feedPartial(raw json.RawMessage) error {
 
 func (a *maxAgg) finalize() (json.RawMessage, error) {
 	if a.best == nil {
-		return json.RawMessage(`null`), nil
+		return nil, nil
 	}
 	return a.best, nil
 }
@@ -200,9 +243,7 @@ func (a *avgAgg) feedPartial(raw json.RawMessage) error {
 
 func (a *avgAgg) finalize() (json.RawMessage, error) {
 	if a.count == 0 {
-		// Matches Cosmos semantics: AVG over an empty set is undefined;
-		// gateway serializes this as JSON null for cross-partition results.
-		return json.RawMessage(`null`), nil
+		return nil, nil
 	}
 	return numberRawMessage(a.sum / float64(a.count)), nil
 }

@@ -70,6 +70,33 @@ func parsePlan(raw []byte) (*planDoc, error) {
 	return &p, nil
 }
 
+// planSkipTake reads the plan's OFFSET, LIMIT and TOP as one global skip and
+// take, which is what every pipeline applies them as: the gateway strips them
+// from the rewritten query (or widens LIMIT to OFFSET+LIMIT) precisely so the
+// client applies them once, over the merged result.
+//
+// take is negative when the query names no upper bound. No Cosmos syntax
+// combines TOP with OFFSET/LIMIT, but a plan carrying both can only mean the
+// tighter of the two.
+func planSkipTake(qi planQueryInfo) (skip int, take int, err error) {
+	take = -1
+	for name, v := range map[string]*int{"OFFSET": qi.Offset, "LIMIT": qi.Limit, "TOP": qi.Top} {
+		if v != nil && *v < 0 {
+			return 0, 0, errors.Errorf("gonative: negative %s=%d", name, *v)
+		}
+	}
+	if qi.Offset != nil {
+		skip = *qi.Offset
+	}
+	if qi.Limit != nil {
+		take = *qi.Limit
+	}
+	if qi.Top != nil && (take < 0 || *qi.Top < take) {
+		take = *qi.Top
+	}
+	return skip, take, nil
+}
+
 // pkRangesResponse decodes the gateway's pk-ranges response just enough to
 // extract the ordered partition-key-range IDs the pipeline needs to fan out.
 type pkRangesResponse struct {

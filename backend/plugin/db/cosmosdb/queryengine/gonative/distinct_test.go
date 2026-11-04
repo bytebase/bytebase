@@ -88,12 +88,15 @@ func rawMsgs(ss ...string) []json.RawMessage {
 	return out
 }
 
+// distinctTestQuery stands in for the user's query, which a DISTINCT plan
+// with no rewrittenQuery sends to every range unchanged.
+const distinctTestQuery = `SELECT DISTINCT c.country FROM c`
+
 func TestDistinctPipeline_SinglePartitionEmitsAll(t *testing.T) {
 	plan := &planDoc{}
 	plan.QueryInfo.DistinctType = "Unordered"
-	p, err := newDistinctPipeline(plan, []string{"0"})
+	p, err := newDistinctPipeline(plan, []string{"0"}, distinctTestQuery)
 	require.NoError(t, err)
-	p.query = `SELECT DISTINCT c.country FROM c`
 
 	items := feedSingle(t, p, rawMsgs(`{"country":"AD"}`, `{"country":"AE"}`, `{"country":"DE"}`))
 	assert.Len(t, items, 3)
@@ -103,7 +106,7 @@ func TestDistinctPipeline_SinglePartitionEmitsAll(t *testing.T) {
 func TestDistinctPipeline_DedupesWithinPartition(t *testing.T) {
 	plan := &planDoc{}
 	plan.QueryInfo.DistinctType = "Unordered"
-	p, err := newDistinctPipeline(plan, []string{"0"})
+	p, err := newDistinctPipeline(plan, []string{"0"}, distinctTestQuery)
 	require.NoError(t, err)
 
 	items := feedSingle(t, p, rawMsgs(`{"country":"AE"}`, `{"country":"AE"}`, `{"country":"AD"}`))
@@ -113,7 +116,7 @@ func TestDistinctPipeline_DedupesWithinPartition(t *testing.T) {
 func TestDistinctPipeline_DedupesAcrossPartitions(t *testing.T) {
 	plan := &planDoc{}
 	plan.QueryInfo.DistinctType = "Unordered"
-	p, err := newDistinctPipeline(plan, []string{"0", "1", "2"})
+	p, err := newDistinctPipeline(plan, []string{"0", "1", "2"}, distinctTestQuery)
 	require.NoError(t, err)
 
 	// Kick off the request fan-out.
@@ -144,7 +147,7 @@ func TestDistinctPipeline_DedupesAcrossPartitions(t *testing.T) {
 func TestDistinctPipeline_TreatsKeyReorderedObjectsAsDuplicates(t *testing.T) {
 	plan := &planDoc{}
 	plan.QueryInfo.DistinctType = "Unordered"
-	p, err := newDistinctPipeline(plan, []string{"0"})
+	p, err := newDistinctPipeline(plan, []string{"0"}, distinctTestQuery)
 	require.NoError(t, err)
 
 	items := feedSingle(t, p, rawMsgs(
@@ -158,7 +161,7 @@ func TestDistinctPipeline_DistinctValueScalars(t *testing.T) {
 	plan := &planDoc{}
 	plan.QueryInfo.DistinctType = "Unordered"
 	plan.QueryInfo.HasSelectValue = true
-	p, err := newDistinctPipeline(plan, []string{"0"})
+	p, err := newDistinctPipeline(plan, []string{"0"}, distinctTestQuery)
 	require.NoError(t, err)
 
 	// DISTINCT VALUE emits bare scalars in Documents[].
@@ -166,10 +169,10 @@ func TestDistinctPipeline_DistinctValueScalars(t *testing.T) {
 	assert.Len(t, items, 3)
 }
 
-func TestDistinctPipeline_RejectsOrderedDistinctType(t *testing.T) {
+func TestDistinctPipeline_RejectsUnknownDistinctType(t *testing.T) {
 	plan := &planDoc{}
-	plan.QueryInfo.DistinctType = "Ordered"
-	_, err := newDistinctPipeline(plan, []string{"0"})
+	plan.QueryInfo.DistinctType = "SomethingNew"
+	_, err := newDistinctPipeline(plan, []string{"0"}, distinctTestQuery)
 	require.ErrorIs(t, err, ErrUnsupportedPlanFeature)
 }
 
@@ -178,7 +181,7 @@ func TestDistinctPipeline_RejectsOrderedDistinctType(t *testing.T) {
 func TestDistinctPipeline_DedupesAcrossPages(t *testing.T) {
 	plan := &planDoc{}
 	plan.QueryInfo.DistinctType = "Unordered"
-	p, err := newDistinctPipeline(plan, []string{"0"})
+	p, err := newDistinctPipeline(plan, []string{"0"}, distinctTestQuery)
 	require.NoError(t, err)
 
 	rows, read := drivePages(t, p, map[string][]page{
@@ -208,7 +211,7 @@ func mkDistinctBody(t *testing.T, values ...string) []byte {
 func TestDistinctPipeline_HighCardinality(t *testing.T) {
 	plan := &planDoc{}
 	plan.QueryInfo.DistinctType = "Unordered"
-	p, err := newDistinctPipeline(plan, []string{"0"})
+	p, err := newDistinctPipeline(plan, []string{"0"}, distinctTestQuery)
 	require.NoError(t, err)
 
 	_, _ = p.Run()
@@ -220,4 +223,87 @@ func TestDistinctPipeline_HighCardinality(t *testing.T) {
 	require.NoError(t, p.ProvideData([]queryengine.QueryResult{
 		{PartitionKeyRangeID: "0", Data: body},
 	}))
+}
+
+// ------------------------------------------------- OFFSET, LIMIT and TOP
+
+// A DISTINCT the user paged carries a rewrittenQuery with the OFFSET/LIMIT
+// taken off, so every range reports its own distinct values in full and the
+// page is cut once, here. Sending the user's query instead would make each
+// range apply the LIMIT to itself.
+func TestNewDistinctPipeline_PagedPlanRunsTheRewrittenQuery(t *testing.T) {
+	plan := &planDoc{}
+	plan.QueryInfo.DistinctType = "Unordered"
+	plan.QueryInfo.Limit = intPtr(3)
+	plan.QueryInfo.RewrittenQuery = `SELECT DISTINCT c.country FROM c`
+	p, err := newDistinctPipeline(plan, []string{"0"}, `SELECT DISTINCT c.country FROM c OFFSET 0 LIMIT 3`)
+	require.NoError(t, err)
+	assert.Equal(t, `SELECT DISTINCT c.country FROM c`, p.Query())
+}
+
+func TestDistinctPipeline_LimitAppliesAfterDedup(t *testing.T) {
+	plan := &planDoc{}
+	plan.QueryInfo.DistinctType = "Unordered"
+	plan.QueryInfo.Limit = intPtr(2)
+	plan.QueryInfo.RewrittenQuery = `SELECT DISTINCT c.country FROM c`
+	p, err := newDistinctPipeline(plan, []string{"0"}, distinctTestQuery)
+	require.NoError(t, err)
+
+	items := feedSingle(t, p, rawMsgs(`"AE"`, `"AE"`, `"BR"`, `"CN"`))
+	assert.Equal(t, []string{`"AE"`, `"BR"`}, stringsOf(items))
+}
+
+func TestDistinctPipeline_OffsetSkipsDistinctValuesNotRows(t *testing.T) {
+	plan := &planDoc{}
+	plan.QueryInfo.DistinctType = "Unordered"
+	plan.QueryInfo.Offset = intPtr(1)
+	plan.QueryInfo.Limit = intPtr(2)
+	plan.QueryInfo.RewrittenQuery = `SELECT DISTINCT c.country FROM c`
+	p, err := newDistinctPipeline(plan, []string{"0"}, distinctTestQuery)
+	require.NoError(t, err)
+
+	items := feedSingle(t, p, rawMsgs(`"AE"`, `"AE"`, `"BR"`, `"CN"`, `"DE"`))
+	assert.Equal(t, []string{`"BR"`, `"CN"`}, stringsOf(items))
+}
+
+// TOP on a DISTINCT reaches the engine as a plan field exactly like LIMIT,
+// and caps the same way.
+func TestDistinctPipeline_TopCapsTheDedupedStream(t *testing.T) {
+	plan := &planDoc{}
+	plan.QueryInfo.DistinctType = "Unordered"
+	plan.QueryInfo.Top = intPtr(2)
+	plan.QueryInfo.RewrittenQuery = `SELECT DISTINCT c.country FROM c`
+	p, err := newDistinctPipeline(plan, []string{"0"}, distinctTestQuery)
+	require.NoError(t, err)
+
+	items := feedSingle(t, p, rawMsgs(`"AE"`, `"BR"`, `"CN"`))
+	assert.Equal(t, []string{`"AE"`, `"BR"`}, stringsOf(items))
+}
+
+// Once the LIMIT is met the pipeline must stop, however many pages the ranges
+// still hold: a satisfied page costs request charge for rows nobody sees.
+func TestDistinctPipeline_StopsAtTheLimitWithoutReadingTheNextPage(t *testing.T) {
+	plan := &planDoc{}
+	plan.QueryInfo.DistinctType = "Unordered"
+	plan.QueryInfo.Limit = intPtr(2)
+	plan.QueryInfo.RewrittenQuery = `SELECT DISTINCT c.country FROM c`
+	p, err := newDistinctPipeline(plan, []string{"0"}, distinctTestQuery)
+	require.NoError(t, err)
+
+	rows, read := drivePages(t, p, map[string][]page{
+		"0": {
+			{body: mkDistinctBody(t, `"AE"`, `"BR"`), continuation: "0-page-2"},
+			{body: mkDistinctBody(t, `"CN"`, `"DE"`)},
+		},
+	})
+	assert.Equal(t, []string{`"AE"`, `"BR"`}, stringsOf(rows))
+	assert.Equal(t, map[string]int{"0": 1}, read)
+}
+
+func stringsOf(items [][]byte) []string {
+	out := make([]string, 0, len(items))
+	for _, it := range items {
+		out = append(out, string(it))
+	}
+	return out
 }

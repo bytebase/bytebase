@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
+	"strings"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos/queryengine"
@@ -219,7 +221,7 @@ func TestAggPipeline_AliasedCountFoldsPartialsAcrossPages(t *testing.T) {
 
 // drivePipelineAll runs a pipeline end-to-end against captured fixtures and
 // returns every emitted row. Used for operators that emit more than one row
-// (DISTINCT, later Stage 3+ ORDER BY/TOP/LIMIT/GROUP BY).
+// (DISTINCT, ORDER BY, TOP, OFFSET/LIMIT, GROUP BY).
 func drivePipelineAll(t *testing.T, queryID, originalQuery string) []json.RawMessage {
 	t.Helper()
 	base := filepath.Join("testdata", "query_"+queryID)
@@ -415,4 +417,110 @@ func indexOf(haystack, needle []byte) int {
 		}
 	}
 	return -1
+}
+
+// drivePlan runs a recorded plan against the given per-range response bodies
+// and returns every emitted row. Unlike drivePipelineAll the bodies are given
+// inline, which is how the cases below pin an answer against a partition that
+// matched no row.
+func drivePlan(t *testing.T, planFile, query string, bodies map[string][]byte) []json.RawMessage {
+	t.Helper()
+	plan := mustReadFile(t, filepath.Join("testdata", "query_"+planFile+"_plan.json"))
+	ids := make([]string, 0, len(bodies))
+	for id := range bodies {
+		ids = append(ids, fmt.Sprintf("{\"id\":%q}", id))
+	}
+	// Range order decides which rows a window lands on, so it must not come
+	// from map iteration.
+	slices.Sort(ids)
+	pkranges := fmt.Sprintf(`{"PartitionKeyRanges":[%s]}`, strings.Join(ids, ","))
+
+	pipe, err := gonative.Default().CreateQueryPipeline(query, string(plan), pkranges)
+	require.NoError(t, err, "CreateQueryPipeline")
+	defer pipe.Close()
+
+	var rows []json.RawMessage
+	for i := 0; i < 50 && !pipe.IsComplete(); i++ {
+		res, err := pipe.Run()
+		require.NoError(t, err, "Run turn %d", i)
+		if len(res.Requests) > 0 {
+			results := make([]queryengine.QueryResult, 0, len(res.Requests))
+			for _, req := range res.Requests {
+				body, ok := bodies[req.PartitionKeyRangeID]
+				require.True(t, ok, "missing body for pk-range %s", req.PartitionKeyRangeID)
+				results = append(results, queryengine.NewQueryResult(req.PartitionKeyRangeID, body, ""))
+			}
+			require.NoError(t, pipe.ProvideData(results))
+		}
+		for _, it := range res.Items {
+			rows = append(rows, append(json.RawMessage(nil), it...))
+		}
+	}
+	require.True(t, pipe.IsComplete(), "pipeline did not converge")
+	return rows
+}
+
+// A VALUE-form MIN reads its partial from item2, the only one that reports how
+// many rows the partition contributed. Reading item instead fed a bare scalar
+// to an aggregator expecting `{min, count}`.
+func TestValuePipeline_MinReadsTheItem2Partial(t *testing.T) {
+	rows := drivePlan(t, "min_value_empty", `SELECT VALUE MIN(c.seq) FROM c WHERE c.seq > 0`,
+		map[string][]byte{
+			"0": []byte(`{"Documents":[[{"item":5,"item2":{"min":5,"count":3}}]]}`),
+			"1": []byte(`{"Documents":[[{"item":2,"item2":{"min":2,"count":7}}]]}`),
+		})
+	require.Len(t, rows, 1)
+	assert.JSONEq(t, `2`, string(rows[0]))
+}
+
+// MIN over a result set no row matched is undefined, and the gateway answers
+// it with no row at all. Before this the absent partial failed the query with
+// "gonative/agg.min: unexpected end of JSON input".
+func TestValuePipeline_MinOverAnEmptySetEmitsNoRow(t *testing.T) {
+	rows := drivePlan(t, "min_value_empty", `SELECT VALUE MIN(c.seq) FROM c WHERE c.seq > 99999999`,
+		map[string][]byte{
+			"0": []byte(`{"Documents":[[{"item2":{"count":0}}]]}`),
+			"1": []byte(`{"Documents":[[{"item2":{"count":0}}]]}`),
+		})
+	assert.Empty(t, rows)
+}
+
+// The aliased form of the same query answers with one row, the alias left out.
+func TestAliasedPipeline_MinOverAnEmptySetOmitsTheAlias(t *testing.T) {
+	rows := drivePlan(t, "min_aliased_empty", `SELECT MIN(c.seq) AS m FROM c WHERE c.seq > 99999999`,
+		map[string][]byte{
+			"0": []byte(`{"Documents":[{"payload":{"m":{"item2":{"count":0}}}}]}`),
+			"1": []byte(`{"Documents":[{"payload":{"m":{"item2":{"count":0}}}}]}`),
+		})
+	require.Len(t, rows, 1)
+	assert.JSONEq(t, `{}`, string(rows[0]))
+}
+
+// An aggregate produces exactly one row, so OFFSET 1 skips past it and the
+// gateway answers with nothing.
+func TestValuePipeline_OffsetPastTheOnlyRowEmitsNothing(t *testing.T) {
+	rows := drivePlan(t, "agg_offset_limit", `SELECT VALUE COUNT(1) FROM c OFFSET 1 LIMIT 1`,
+		map[string][]byte{
+			"0": []byte(`{"Documents":[[{"item":4}]]}`),
+			"1": []byte(`{"Documents":[[{"item":6}]]}`),
+		})
+	assert.Empty(t, rows)
+}
+
+// OFFSET/LIMIT with no ORDER BY cuts one window out of the concatenated
+// ranges. The engine used to reject the plan outright.
+func TestSkipTakePipeline_OffsetLimitWithoutOrderBy(t *testing.T) {
+	rows := drivePlan(t, "offset_limit", `SELECT c.seq FROM c OFFSET 2 LIMIT 3`,
+		map[string][]byte{
+			"0": []byte(`{"Documents":[{"seq":1},{"seq":2},{"seq":3}]}`),
+		})
+	assert.Equal(t, []string{`{"seq":3}`}, jsonStrings(rows))
+}
+
+func jsonStrings(rows []json.RawMessage) []string {
+	out := make([]string, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, string(r))
+	}
+	return out
 }

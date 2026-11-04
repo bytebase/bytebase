@@ -998,3 +998,280 @@ func TestCrossPartitionQueryLimit(t *testing.T) {
 	assert.Len(t, results[0].Rows, 7)
 	assert.EqualValues(t, 7, results[0].RowsCount)
 }
+
+// ------------------------------------ composed operators, local emulator
+//
+// The query classes in BYT-10397: each composes two operators the gateway
+// reports in one plan, and the engine used to honour only one of them. Every
+// case here runs on the multi-page fixture, because two of them (TOP with
+// ORDER BY, and DISTINCT with a LIMIT) answer correctly on a single physical
+// partition however the engine is broken.
+
+// pagedQuery runs a query against the multi-page fixture and returns its rows
+// as raw JSON, in the order the engine emitted them.
+func pagedQuery(t *testing.T, container *azcosmos.ContainerClient, sql string) []string {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+	items, err := QueryEveryPartition(ctx, container, sql, nil, 0)
+	require.NoError(t, err, "QueryEveryPartition: %s", sql)
+	rows := make([]string, 0, len(items))
+	for _, item := range items {
+		rows = append(rows, string(item))
+	}
+	return rows
+}
+
+// pagedBucketValues reads the bucket out of every row, for both spellings of
+// a projection: `{"bucket":"big-1"}` and the VALUE form's bare `"big-1"`.
+func pagedBucketValues(t *testing.T, rows []string) []string {
+	t.Helper()
+	out := make([]string, 0, len(rows))
+	for _, row := range rows {
+		var object struct {
+			Bucket *string `json:"bucket"`
+		}
+		if err := json.Unmarshal([]byte(row), &object); err == nil && object.Bucket != nil {
+			out = append(out, *object.Bucket)
+			continue
+		}
+		var scalar string
+		require.NoError(t, json.Unmarshal([]byte(row), &scalar), "row: %s", row)
+		out = append(out, scalar)
+	}
+	return out
+}
+
+// sortedPagedBuckets is the fixture's partition key values in ascending order.
+func sortedPagedBuckets() []string {
+	buckets := append(append([]string(nil), pagedBigBuckets...), pagedSmallBuckets...)
+	slices.Sort(buckets)
+	return buckets
+}
+
+// pagedBucketRows is how many rows each partition key value holds.
+func pagedBucketRows(bucket string) int {
+	if slices.Contains(pagedBigBuckets, bucket) {
+		return pagedBigRows
+	}
+	return pagedSmallRows
+}
+
+// TestCrossPartitionDistinctComposed covers DISTINCT alongside an ORDER BY or
+// a page. The service reports distinctType "Unordered" for the object form
+// even under ORDER BY, so the engine dropped the DISTINCT and returned every
+// row in the container; a paged DISTINCT ran the user's own query per range,
+// so each range applied the LIMIT to itself before anything was deduplicated.
+func TestCrossPartitionDistinctComposed(t *testing.T) {
+	container := pagedFixture(t)
+	buckets := sortedPagedBuckets()
+
+	t.Run("order_by_object_form", func(t *testing.T) {
+		assert.Equal(t, buckets, pagedBucketValues(t,
+			pagedQuery(t, container, `SELECT DISTINCT c.bucket FROM c ORDER BY c.bucket`)))
+	})
+
+	t.Run("order_by_value_form", func(t *testing.T) {
+		assert.Equal(t, buckets, pagedBucketValues(t,
+			pagedQuery(t, container, `SELECT DISTINCT VALUE c.bucket FROM c ORDER BY c.bucket`)))
+	})
+
+	t.Run("order_by_descending", func(t *testing.T) {
+		want := sortedPagedBuckets()
+		slices.Reverse(want)
+		assert.Equal(t, want, pagedBucketValues(t,
+			pagedQuery(t, container, `SELECT DISTINCT c.bucket FROM c ORDER BY c.bucket DESC`)))
+	})
+
+	// An ordered DISTINCT pins the page against exact values; the unordered
+	// forms below can only be held to the count, since Cosmos defines no
+	// order for them.
+	t.Run("order_by_with_a_page", func(t *testing.T) {
+		assert.Equal(t, buckets[2:5], pagedBucketValues(t,
+			pagedQuery(t, container, `SELECT DISTINCT c.bucket FROM c ORDER BY c.bucket OFFSET 2 LIMIT 3`)))
+	})
+
+	t.Run("limit_value_form", func(t *testing.T) {
+		got := pagedBucketValues(t,
+			pagedQuery(t, container, `SELECT DISTINCT VALUE c.bucket FROM c OFFSET 0 LIMIT 3`))
+		assert.Len(t, got, 3)
+		assert.Subset(t, buckets, got)
+		assert.Len(t, slices.Compact(slices.Sorted(slices.Values(got))), 3, "values must be distinct")
+	})
+
+	t.Run("offset_limit_object_form", func(t *testing.T) {
+		got := pagedBucketValues(t,
+			pagedQuery(t, container, `SELECT DISTINCT c.bucket FROM c OFFSET 2 LIMIT 3`))
+		assert.Len(t, got, 3)
+		assert.Subset(t, buckets, got)
+		assert.Len(t, slices.Compact(slices.Sorted(slices.Values(got))), 3, "values must be distinct")
+	})
+}
+
+// TestCrossPartitionTopWithOrderBy covers TOP alongside an ORDER BY. The
+// rewritten per-range query carries the TOP, so the merge saw n rows from
+// every range and emitted all of them: n x partitions rows, in order.
+func TestCrossPartitionTopWithOrderBy(t *testing.T) {
+	container := pagedFixture(t)
+	rows := pagedRows()
+
+	t.Run("ascending", func(t *testing.T) {
+		assert.Equal(t, ascendingSeqs(0, 5),
+			pagedSeqs(t, container, `SELECT TOP 5 c.seq FROM c ORDER BY c.seq ASC`))
+	})
+
+	t.Run("descending", func(t *testing.T) {
+		want := ascendingSeqs(rows-5, rows)
+		slices.Reverse(want)
+		assert.Equal(t, want, pagedSeqs(t, container, `SELECT TOP 5 c.seq FROM c ORDER BY c.seq DESC`))
+	})
+
+	// A TOP past the gateway's page cap has to keep reading the ranges after
+	// the cap, and still stop at n.
+	t.Run("above_the_page_cap", func(t *testing.T) {
+		assert.Equal(t, ascendingSeqs(0, pagedPageSize+25),
+			pagedSeqs(t, container, fmt.Sprintf(
+				`SELECT TOP %d c.seq FROM c ORDER BY c.seq ASC`, pagedPageSize+25)))
+	})
+}
+
+// TestCrossPartitionGroupByOrder covers the order GROUP BY rows come back in.
+// The pipeline emitted them straight out of a Go map, so the same query
+// answered in a different order every run, and a GROUP BY the user ordered
+// reaches the engine as a plan with no order fields at all — the ORDER BY
+// survives only inside the rewritten query.
+func TestCrossPartitionGroupByOrder(t *testing.T) {
+	container := pagedFixture(t)
+
+	type group struct {
+		Bucket string `json:"bucket"`
+		N      int    `json:"n"`
+	}
+	groupsOf := func(t *testing.T, rows []string) []group {
+		t.Helper()
+		out := make([]group, 0, len(rows))
+		for _, row := range rows {
+			var g group
+			require.NoError(t, json.Unmarshal([]byte(row), &g), "row: %s", row)
+			out = append(out, g)
+		}
+		return out
+	}
+	want := make([]group, 0, len(sortedPagedBuckets()))
+	for _, bucket := range sortedPagedBuckets() {
+		want = append(want, group{Bucket: bucket, N: pagedBucketRows(bucket)})
+	}
+
+	t.Run("order_by_the_group_key", func(t *testing.T) {
+		assert.Equal(t, want, groupsOf(t, pagedQuery(t, container,
+			`SELECT c.bucket, COUNT(1) AS n FROM c GROUP BY c.bucket ORDER BY c.bucket`)))
+	})
+
+	t.Run("order_by_descending", func(t *testing.T) {
+		reversed := slices.Clone(want)
+		slices.Reverse(reversed)
+		assert.Equal(t, reversed, groupsOf(t, pagedQuery(t, container,
+			`SELECT c.bucket, COUNT(1) AS n FROM c GROUP BY c.bucket ORDER BY c.bucket DESC`)))
+	})
+
+	// Without an ORDER BY the order is Cosmos's to choose, but it must be the
+	// same on every run.
+	t.Run("unordered_is_stable_across_runs", func(t *testing.T) {
+		const sql = `SELECT c.bucket, COUNT(1) AS n FROM c GROUP BY c.bucket`
+		first := groupsOf(t, pagedQuery(t, container, sql))
+		assert.ElementsMatch(t, want, first)
+		for range 2 {
+			assert.Equal(t, first, groupsOf(t, pagedQuery(t, container, sql)))
+		}
+	})
+}
+
+// TestCrossPartitionEmptyAggregates covers an aggregate whose filter matches
+// no row. MIN and MAX failed the query outright, because an empty partition's
+// partial is an absent one; the aliased form answered `{"m":null}` where the
+// gateway omits the alias. COUNT and SUM really are 0 over an empty set and
+// are here as controls.
+func TestCrossPartitionEmptyAggregates(t *testing.T) {
+	container := pagedFixture(t)
+	const noRows = `WHERE c.seq > 99999999`
+
+	for _, tc := range []struct {
+		name string
+		sql  string
+		want []string
+	}{
+		{"min_value", `SELECT VALUE MIN(c.seq) FROM c ` + noRows, nil},
+		{"max_value", `SELECT VALUE MAX(c.seq) FROM c ` + noRows, nil},
+		{"avg_value", `SELECT VALUE AVG(c.seq) FROM c ` + noRows, nil},
+		{"min_aliased", `SELECT MIN(c.seq) AS m FROM c ` + noRows, []string{`{}`}},
+		{"min_max_aliased", `SELECT MIN(c.seq) AS lo, MAX(c.seq) AS hi FROM c ` + noRows, []string{`{}`}},
+		{"count_value", `SELECT VALUE COUNT(1) FROM c ` + noRows, []string{`0`}},
+		{"count_aliased", `SELECT COUNT(1) AS n FROM c ` + noRows, []string{`{"n":0}`}},
+		{"sum_value", `SELECT VALUE SUM(c.seq) FROM c ` + noRows, []string{`0`}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got := pagedQuery(t, container, tc.sql)
+			require.Len(t, got, len(tc.want))
+			for i := range tc.want {
+				assert.JSONEq(t, tc.want[i], got[i])
+			}
+		})
+	}
+
+	// The same MIN and MAX over rows that do match: the VALUE form reads its
+	// partial from item2, which is where the count lives.
+	t.Run("min_max_over_rows_that_match", func(t *testing.T) {
+		assert.Equal(t, []string{`0`}, pagedQuery(t, container, `SELECT VALUE MIN(c.seq) FROM c`))
+		assert.Equal(t, []string{fmt.Sprint(pagedRows() - 1)},
+			pagedQuery(t, container, `SELECT VALUE MAX(c.seq) FROM c`))
+	})
+}
+
+// TestCrossPartitionOffsetLimitWithoutOrderBy covers ordinary result paging,
+// which the engine rejected although it advertises OffsetAndLimit. Cosmos
+// defines no order for it, so only the count and the rows' provenance hold.
+func TestCrossPartitionOffsetLimitWithoutOrderBy(t *testing.T) {
+	container := pagedFixture(t)
+
+	seqs := pagedSeqs(t, container, `SELECT c.seq FROM c OFFSET 2 LIMIT 3`)
+	require.Len(t, seqs, 3)
+	assert.Len(t, slices.Compact(slices.Sorted(slices.Values(seqs))), 3, "rows must not repeat")
+	for _, seq := range seqs {
+		assert.Less(t, seq, pagedRows())
+		assert.GreaterOrEqual(t, seq, 0)
+	}
+
+	// A window wider than the gateway's page cap reads several pages of a
+	// range before it is full.
+	wide := pagedSeqs(t, container, fmt.Sprintf(`SELECT c.seq FROM c OFFSET 0 LIMIT %d`, pagedPageSize+25))
+	assert.Len(t, wide, pagedPageSize+25)
+}
+
+// TestCrossPartitionAggregateWithOffsetLimit covers a page applied to an
+// aggregate. The query produces exactly one row, so OFFSET 1 skips past it and
+// the gateway answers with nothing; the engine returned the row regardless.
+func TestCrossPartitionAggregateWithOffsetLimit(t *testing.T) {
+	container := pagedFixture(t)
+
+	assert.Empty(t, pagedQuery(t, container, `SELECT VALUE COUNT(1) FROM c OFFSET 1 LIMIT 1`))
+	assert.Equal(t, []string{fmt.Sprint(pagedRows())},
+		pagedQuery(t, container, `SELECT VALUE COUNT(1) FROM c OFFSET 0 LIMIT 1`))
+	assert.Empty(t, pagedQuery(t, container, `SELECT COUNT(1) AS n FROM c OFFSET 1 LIMIT 1`))
+}
+
+// TestCrossPartitionDistinctWithOrderByThroughTheDriver runs the worst of
+// these through QueryConn, the entry point the SQL editor uses, so the SQL
+// validator is in the path too.
+func TestCrossPartitionDistinctWithOrderByThroughTheDriver(t *testing.T) {
+	driver := emulatorFixture(t)
+	rows := runQuery(t, driver, crossPartitionContainer, `SELECT DISTINCT c.country FROM c ORDER BY c.country`)
+	got := make([]string, 0, len(rows))
+	for _, row := range rows {
+		var object struct {
+			Country string `json:"country"`
+		}
+		require.NoError(t, json.Unmarshal(row, &object))
+		got = append(got, object.Country)
+	}
+	assert.Equal(t, slices.Sorted(slices.Values(crossPartitionCountries)), got)
+}

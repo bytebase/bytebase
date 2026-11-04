@@ -72,28 +72,23 @@ func (*Engine) CreateQueryPipeline(query string, plan string, pkranges string) (
 	qi := p.QueryInfo
 	switch {
 	case len(qi.OrderBy) > 0:
+		// ORDER BY owns every operator that applies to an ordered stream:
+		// DISTINCT dedups it, TOP and OFFSET/LIMIT cut it.
 		if err := requireHandled(qi, fieldRewrittenQuery, fieldHasSelectValue,
-			fieldOrderBy, fieldOrderByExpressions, fieldOffset, fieldLimit); err != nil {
+			fieldOrderBy, fieldOrderByExpressions,
+			fieldDistinctType, fieldTop, fieldOffset, fieldLimit); err != nil {
 			return nil, err
 		}
 		return newOrderByPipeline(p, rangeIDs)
 	case qi.DistinctType != "":
-		// A DISTINCT pipeline runs the user's own query against every range
-		// and deduplicates what comes back, so it can honour nothing else:
-		// not the rewritten query a paged DISTINCT carries, and not the page
-		// itself.
-		if err := requireHandled(qi, fieldHasSelectValue, fieldDistinctType); err != nil {
+		if err := requireHandled(qi, fieldRewrittenQuery, fieldHasSelectValue,
+			fieldDistinctType, fieldTop, fieldOffset, fieldLimit); err != nil {
 			return nil, err
 		}
-		pipe, err := newDistinctPipeline(p, rangeIDs)
-		if err != nil {
-			return nil, err
-		}
-		pipe.query = query
-		return pipe, nil
+		return newDistinctPipeline(p, rangeIDs, query)
 	case len(qi.Aggregates) > 0:
 		if err := requireHandled(qi, fieldRewrittenQuery, fieldHasSelectValue,
-			fieldAggregates); err != nil {
+			fieldAggregates, fieldOffset, fieldLimit); err != nil {
 			return nil, err
 		}
 		return newValuePipeline(p, rangeIDs)
@@ -108,22 +103,16 @@ func (*Engine) CreateQueryPipeline(query string, plan string, pkranges string) (
 		return newGroupPipeline(p, rangeIDs)
 	case len(qi.GroupByAliasToAggregateType) > 0:
 		if err := requireHandled(qi, fieldRewrittenQuery, fieldHasSelectValue,
-			fieldGroupByAliases, fieldGroupByAliasToAggregateType); err != nil {
+			fieldGroupByAliases, fieldGroupByAliasToAggregateType, fieldOffset, fieldLimit); err != nil {
 			return nil, err
 		}
 		return newAliasedPipeline(p, rangeIDs)
-	case qi.Top != nil:
-		// A TOP pipeline concatenates the ranges and keeps the first n rows,
-		// which is the whole answer only for a plan carrying nothing else.
-		if err := requireHandled(qi, fieldHasSelectValue, fieldTop); err != nil {
+	case qi.Top != nil || qi.Offset != nil || qi.Limit != nil:
+		if err := requireHandled(qi, fieldRewrittenQuery, fieldHasSelectValue,
+			fieldTop, fieldOffset, fieldLimit); err != nil {
 			return nil, err
 		}
-		pipe, err := newTopPipeline(p, rangeIDs)
-		if err != nil {
-			return nil, err
-		}
-		pipe.query = query
-		return pipe, nil
+		return newSkipTakePipeline(p, rangeIDs, query)
 	default:
 		return nil, errors.Wrap(ErrUnsupportedPlanFeature, "no pipeline for this plan shape")
 	}

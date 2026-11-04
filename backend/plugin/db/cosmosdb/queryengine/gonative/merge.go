@@ -19,8 +19,8 @@ import (
 const orderByQueryFilterPlaceholder = "{documentdb-formattableorderbyquery-filter}"
 
 // orderByItem is each element of the per-document orderByItems array. The
-// gateway emits one per ORDER BY expression; Stage 3 only supports single-key
-// ORDER BY so we read orderByItems[0].
+// gateway emits one per ORDER BY expression; the engine supports single-key
+// ORDER BY only, so it reads orderByItems[0].
 type orderByItem struct {
 	Item json.RawMessage `json:"item"`
 }
@@ -113,17 +113,22 @@ func (h *mergeHeap) Pop() any {
 // ORDER BY expression. It emits rows in the requested order by k-way-merging
 // each partition's gateway-sorted stream.
 //
-// Stage 3 scope is single-key ORDER BY only. Multi-key ORDER BY requires a
-// Cosmos composite index on the container — if the container lacks one the
-// gateway rejects the query outright; if it has one the gateway emits a plan
-// with multiple entries in orderByExpressions, and the comparator would need
-// to walk all of them. Both cases are deferred.
+// Single-key ORDER BY only. Multi-key ORDER BY requires a Cosmos composite
+// index on the container — if the container lacks one the gateway rejects the
+// query outright; if it has one the gateway emits a plan with multiple entries
+// in orderByExpressions, and the comparator would need to walk all of them.
+// Both cases are deferred.
 //
-// Stage 5 extends the pipeline with OFFSET/LIMIT awareness. Per Cosmos
-// semantics, OFFSET/LIMIT always composes with ORDER BY; the gateway rewrites
-// the per-partition query to `OFFSET 0 LIMIT (offset+limit)` so every
-// partition delivers enough rows to satisfy any interleaving, and this
-// pipeline handles the global skip + take after merging.
+// The operators ORDER BY composes with all apply to the merged stream, after
+// the k-way merge has put the rows in order:
+//
+//	OFFSET/LIMIT — the gateway widens the per-partition query to
+//	  `OFFSET 0 LIMIT (offset+limit)` so every partition delivers enough rows
+//	  to cover any interleaving, and the global skip + take happens here.
+//	TOP — the per-partition query carries `TOP n`, so each partition delivers
+//	  its own first n and the global first n is among them.
+//	DISTINCT — the payload of each merged row is deduplicated against every
+//	  row already emitted, before OFFSET/LIMIT counts it.
 //
 // A range answers over as many pages as its share of the result needs. The
 // merge therefore runs only while every range that still has pages has a row
@@ -139,14 +144,20 @@ type orderByPipeline struct {
 
 	closed bool
 
-	// offset and limit implement plan.QueryInfo.Offset/Limit. A negative limit
-	// (the sentinel returned by newOrderByPipeline when the plan has no limit)
-	// means "unlimited". skipped counts rows dropped by offset; emitted counts
-	// rows forwarded to the caller — both drive the skip+take logic in drain.
+	// offset and limit are the plan's global skip and take; a negative limit
+	// means unlimited. skipped counts rows dropped by offset; emitted counts
+	// rows forwarded to the caller — both drive the skip+take logic in merge.
 	offset  int
 	limit   int
 	skipped int
 	emitted int
+
+	// seen is the DISTINCT seen-set, nil unless the plan carries a DISTINCT.
+	// Keys are the canonical JSON of an emitted payload, as in
+	// distinctPipeline: a sorted stream makes duplicates adjacent, but the
+	// service reports distinctType "Unordered" for the object form even under
+	// ORDER BY, so the engine keeps the whole set rather than the last row.
+	seen map[string]struct{}
 
 	// pending emits produced by k-way merging when all partitions have data.
 	pending [][]byte
@@ -154,7 +165,7 @@ type orderByPipeline struct {
 
 // newOrderByPipeline constructs a pipeline for a plan with exactly one ORDER BY
 // expression. Returns ErrUnsupportedPlanFeature when the plan names multiple
-// ORDER BY keys — Stage 3 doesn't yet support that composition.
+// ORDER BY keys, which the comparator cannot walk.
 func newOrderByPipeline(plan *planDoc, pkRangeIDs []string) (*orderByPipeline, error) {
 	if len(plan.QueryInfo.OrderBy) != 1 {
 		return nil, ErrUnsupportedPlanFeature
@@ -167,21 +178,14 @@ func newOrderByPipeline(plan *planDoc, pkRangeIDs []string) (*orderByPipeline, e
 	// the whole range and relies on the continuation token to resume it.
 	query := strings.ReplaceAll(plan.QueryInfo.RewrittenQuery, orderByQueryFilterPlaceholder, "true")
 
-	// OFFSET/LIMIT always composes with ORDER BY per Cosmos syntax; defaults
-	// mean "no skip, unlimited take".
-	offset := 0
-	if plan.QueryInfo.Offset != nil {
-		if *plan.QueryInfo.Offset < 0 {
-			return nil, errors.Errorf("gonative: negative OFFSET=%d", *plan.QueryInfo.Offset)
-		}
-		offset = *plan.QueryInfo.Offset
+	offset, limit, err := planSkipTake(plan.QueryInfo)
+	if err != nil {
+		return nil, err
 	}
-	limit := -1
-	if plan.QueryInfo.Limit != nil {
-		if *plan.QueryInfo.Limit < 0 {
-			return nil, errors.Errorf("gonative: negative LIMIT=%d", *plan.QueryInfo.Limit)
-		}
-		limit = *plan.QueryInfo.Limit
+
+	var seen map[string]struct{}
+	if plan.QueryInfo.DistinctType != "" {
+		seen = make(map[string]struct{})
 	}
 
 	partByID := make(map[string]int, len(pkRangeIDs))
@@ -198,6 +202,7 @@ func newOrderByPipeline(plan *planDoc, pkRangeIDs []string) (*orderByPipeline, e
 		partitions:     partitions,
 		offset:         offset,
 		limit:          limit,
+		seen:           seen,
 	}, nil
 }
 
@@ -235,7 +240,9 @@ func (p *orderByPipeline) IsComplete() bool {
 //  2. Otherwise ask for the next page of every range the merge is waiting on
 //     — the initial fan-out across all ranges on the first call.
 func (p *orderByPipeline) Run() (*queryengine.PipelineResult, error) {
-	p.merge()
+	if err := p.merge(); err != nil {
+		return nil, err
+	}
 
 	if len(p.pending) > 0 {
 		batch := p.pending
@@ -306,13 +313,14 @@ func (p *orderByPipeline) ProvideData(results []queryengine.QueryResult) error {
 // still has pages ends the turn instead, because its next page may sort ahead
 // of every other range's head.
 //
-// OFFSET/LIMIT (Stage 5) apply here: the first `offset` rows are discarded,
-// and emission stops once `limit` rows have been collected (when limit >= 0).
-// Both are tracked on the pipeline so the next turn resumes where this one
-// stopped.
-func (p *orderByPipeline) merge() {
+// DISTINCT, OFFSET and LIMIT apply here, in that order: a row that repeats an
+// already-emitted payload is dropped before it counts against OFFSET, the
+// first `offset` surviving rows are discarded, and emission stops once `limit`
+// rows have been collected (when limit >= 0). All three are tracked on the
+// pipeline so the next turn resumes where this one stopped.
+func (p *orderByPipeline) merge() error {
 	if p.waitingForPage() {
-		return
+		return nil
 	}
 	h := &mergeHeap{partitions: p.partitions, descending: p.descending}
 	for i, s := range p.partitions {
@@ -325,18 +333,25 @@ func (p *orderByPipeline) merge() {
 	for h.Len() > 0 {
 		if p.limit >= 0 && p.emitted >= p.limit {
 			// LIMIT reached — the caller has everything it asked for.
-			return
+			return nil
 		}
 		top, ok := heap.Pop(h).(int)
 		if !ok {
 			// Unreachable: the heap is seeded with partition indexes only.
-			return
+			return nil
 		}
 		s := p.partitions[top]
 		doc := s.pop()
-		if p.skipped < p.offset {
+		fresh, err := p.firstSighting(doc.Payload)
+		if err != nil {
+			return err
+		}
+		switch {
+		case !fresh:
+			// DISTINCT already emitted this payload.
+		case p.skipped < p.offset:
 			p.skipped++
-		} else {
+		default:
 			// Defensive copy — json.RawMessage aliases the underlying buffer.
 			p.pending = append(p.pending, append([]byte(nil), doc.Payload...))
 			p.emitted++
@@ -346,9 +361,28 @@ func (p *orderByPipeline) merge() {
 			continue
 		}
 		if !p.fanout.drained(s.id) {
-			return
+			return nil
 		}
 	}
+	return nil
+}
+
+// firstSighting reports whether a DISTINCT lets this payload through, and
+// records it. Always true for a plan without a DISTINCT.
+func (p *orderByPipeline) firstSighting(payload json.RawMessage) (bool, error) {
+	if p.seen == nil {
+		return true, nil
+	}
+	canonical, err := canonicalJSON(payload)
+	if err != nil {
+		return false, err
+	}
+	key := string(canonical)
+	if _, ok := p.seen[key]; ok {
+		return false, nil
+	}
+	p.seen[key] = struct{}{}
+	return true, nil
 }
 
 // waitingForPage reports whether a range has nothing buffered and pages still

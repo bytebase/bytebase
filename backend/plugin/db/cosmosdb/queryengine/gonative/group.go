@@ -2,16 +2,16 @@ package gonative
 
 import (
 	"encoding/json"
-	"fmt"
+	"slices"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos/queryengine"
 	"github.com/pkg/errors"
 )
 
 // groupByItem is one entry in the per-document groupByItems array. For a
-// single-key GROUP BY the array has one element; multi-key GROUP BY (not in
-// Stage 6's target inventory but straightforward to support since we hash the
-// whole array) would have more.
+// single-key GROUP BY the array has one element; multi-key GROUP BY would
+// have more, and needs no special handling here because the engine hashes and
+// orders the whole array.
 type groupByItem struct {
 	Item json.RawMessage `json:"item"`
 }
@@ -44,6 +44,9 @@ type groupState struct {
 	// report a given group populates these; subsequent partitions overwrite
 	// with the same value (Cosmos guarantees equality).
 	keyValues map[string]json.RawMessage
+	// items is the group's key as the gateway reported it, kept for ordering
+	// the output rows.
+	items []groupByItem
 	// aggregators are ordered per groupByAliases; entries whose alias is a
 	// group-key column are nil.
 	aggregators []aggregator
@@ -71,6 +74,20 @@ type groupPipeline struct {
 	// groups is the per-group state, keyed on the canonical JSON of
 	// groupByItems. Grows to the cardinality of distinct group keys.
 	groups map[string]*groupState
+	// order holds those keys in the order the groups were first seen, which
+	// is what the output falls back to when the keys cannot be ordered.
+	order []string
+
+	// descending says which way to order the output rows, and
+	// directionKnown whether the data has told us yet. A GROUP BY the user
+	// also ordered
+	// reaches the engine as a plan with no order fields at all — the ORDER BY
+	// survives only inside rewrittenQuery — so the direction can be read only
+	// off the responses: the gateway returns each partition's own groups in
+	// the requested order, and the first adjacent pair that differs says
+	// which way they run.
+	descending     bool
+	directionKnown bool
 
 	// pending holds fully finalized rows awaiting the caller's next Run().
 	pending [][]byte
@@ -84,10 +101,9 @@ type groupPipeline struct {
 // and groupByAliasToAggregateType fields; any alias missing from the map is
 // treated as a group-key column.
 //
-// Returns ErrUnsupportedPlanFeature when the plan composes GROUP BY with
-// operators this stage does not handle (ORDER BY, DISTINCT, TOP, OFFSET/LIMIT).
-// Those compositions are valid SQL but require wrapping groupPipeline in
-// additional operators — deferred.
+// Composing GROUP BY with TOP, OFFSET/LIMIT or DISTINCT would mean wrapping
+// this pipeline in another operator; CreateQueryPipeline rejects those plans
+// before they reach here.
 func newGroupPipeline(plan *planDoc, pkRangeIDs []string) (*groupPipeline, error) {
 	qi := plan.QueryInfo
 	if len(qi.GroupByExpressions) == 0 {
@@ -96,13 +112,6 @@ func newGroupPipeline(plan *planDoc, pkRangeIDs []string) (*groupPipeline, error
 	if len(qi.GroupByAliases) == 0 {
 		return nil, errors.New("gonative: groupPipeline requires groupByAliases")
 	}
-	// Stage 6 does not compose GROUP BY with other operators. Reject anything
-	// that would require wrapping in ORDER BY / TOP / OFFSET-LIMIT / DISTINCT.
-	if len(qi.OrderBy) > 0 || qi.Top != nil || qi.Offset != nil || qi.Limit != nil ||
-		qi.DistinctType == "Unordered" || qi.DistinctType == "Ordered" {
-		return nil, ErrUnsupportedPlanFeature
-	}
-
 	aliases := append([]string(nil), qi.GroupByAliases...)
 	kinds := make([]string, len(aliases))
 	for i, alias := range aliases {
@@ -184,6 +193,7 @@ func (p *groupPipeline) ProvideData(results []queryengine.QueryResult) error {
 		if err != nil {
 			return err
 		}
+		p.noteOrdering(resp.Documents)
 		for docIdx, doc := range resp.Documents {
 			if len(doc.GroupByItems) == 0 {
 				return errors.Errorf("gonative: group doc %d missing groupByItems", docIdx)
@@ -196,6 +206,7 @@ func (p *groupPipeline) ProvideData(results []queryengine.QueryResult) error {
 			if !ok {
 				state = p.initGroupState(doc)
 				p.groups[key] = state
+				p.order = append(p.order, key)
 			}
 			// Merge this partition's aggregate contributions into the group's state.
 			for i, alias := range p.aliases {
@@ -229,6 +240,7 @@ func (p *groupPipeline) ProvideData(results []queryengine.QueryResult) error {
 func (p *groupPipeline) initGroupState(doc groupDoc) *groupState {
 	s := &groupState{
 		keyValues:   make(map[string]json.RawMessage, len(p.aliases)),
+		items:       append([]groupByItem(nil), doc.GroupByItems...),
 		aggregators: make([]aggregator, len(p.aliases)),
 	}
 	for i, alias := range p.aliases {
@@ -244,13 +256,13 @@ func (p *groupPipeline) initGroupState(doc groupDoc) *groupState {
 	return s
 }
 
-// finalize walks the group map and produces one output row per group.
-// Emission order is unspecified (follows Go's map iteration randomization);
-// callers that need deterministic order should add an ORDER BY clause, which
-// a future composition stage will wrap around this pipeline.
+// finalize produces one output row per group, in group-key order — see
+// sortGroups. Walking p.groups instead would emit them in Go's randomized map
+// order, which made the same query answer in a different order every run.
 func (p *groupPipeline) finalize() error {
-	for _, state := range p.groups {
-		row, err := p.buildRow(state)
+	p.sortGroups()
+	for _, key := range p.order {
+		row, err := p.buildRow(p.groups[key])
 		if err != nil {
 			return err
 		}
@@ -260,14 +272,97 @@ func (p *groupPipeline) finalize() error {
 	return nil
 }
 
+// noteOrdering reads the output direction off one partition's response, which
+// is the only place a GROUP BY's ORDER BY reaches the engine. Gives up on a
+// key it cannot compare: sortGroups checks for those itself.
+func (p *groupPipeline) noteOrdering(docs []groupDoc) {
+	if p.directionKnown {
+		return
+	}
+	for i := 1; i < len(docs); i++ {
+		order, err := compareGroupKeys(docs[i-1].GroupByItems, docs[i].GroupByItems)
+		if err != nil {
+			return
+		}
+		if order != 0 {
+			p.descending = order > 0
+			p.directionKnown = true
+			return
+		}
+	}
+}
+
+// sortGroups puts p.order in group-key order, the direction taken from the
+// gateway's own per-partition streams. A GROUP BY without an ORDER BY has no
+// defined output order, so ordering those rows too costs nothing and is what
+// makes every run answer the same way.
+//
+// Leaves first-seen order in place when any group key is a shape Cosmos
+// cannot order (an array or an object), since the comparator would have to
+// invent an answer for those.
+func (p *groupPipeline) sortGroups() {
+	for _, key := range p.order {
+		for _, item := range p.groups[key].items {
+			if detectJSONType(item.Item) == jsonUnorderable {
+				return
+			}
+		}
+	}
+	slices.SortStableFunc(p.order, func(a, b string) int {
+		order, err := compareGroupKeys(p.groups[a].items, p.groups[b].items)
+		if err != nil {
+			// Unreachable: every key was checked orderable just above.
+			return 0
+		}
+		if p.descending {
+			return -order
+		}
+		return order
+	})
+}
+
+// compareGroupKeys orders two group keys under Cosmos item ordering, column
+// by column.
+func compareGroupKeys(a, b []groupByItem) (int, error) {
+	for i := range min(len(a), len(b)) {
+		order, err := compareItems(a[i].Item, b[i].Item)
+		if err != nil {
+			return 0, err
+		}
+		if order != 0 {
+			return order, nil
+		}
+	}
+	return len(a) - len(b), nil
+}
+
 // buildRow assembles the final JSON object for a single group, preserving
 // the alias order from groupByAliases. JSON object key order in Go's encoder
 // depends on sort for map marshaling, so we write the object manually.
+//
+// An alias whose aggregate has no value — MIN or MAX over a group where the
+// column is undefined in every row — is left out of the object, which is how
+// the gateway spells it.
 func (p *groupPipeline) buildRow(s *groupState) ([]byte, error) {
 	var buf []byte
 	buf = append(buf, '{')
 	for i, alias := range p.aliases {
-		if i > 0 {
+		value := json.RawMessage("null")
+		if p.kinds[i] == "" {
+			if v, ok := s.keyValues[alias]; ok {
+				value = v
+			}
+		} else {
+			final, err := s.aggregators[i].finalize()
+			if err != nil {
+				return nil, err
+			}
+			if final == nil {
+				continue
+			}
+			value = final
+		}
+		if len(buf) > 1 {
 			buf = append(buf, ',')
 		}
 		aliasJSON, err := json.Marshal(alias)
@@ -276,20 +371,7 @@ func (p *groupPipeline) buildRow(s *groupState) ([]byte, error) {
 		}
 		buf = append(buf, aliasJSON...)
 		buf = append(buf, ':')
-		if p.kinds[i] == "" {
-			v, ok := s.keyValues[alias]
-			if !ok {
-				buf = append(buf, []byte("null")...)
-				continue
-			}
-			buf = append(buf, v...)
-		} else {
-			final, err := s.aggregators[i].finalize()
-			if err != nil {
-				return nil, err
-			}
-			buf = append(buf, final...)
-		}
+		buf = append(buf, value...)
 	}
 	buf = append(buf, '}')
 	return buf, nil
@@ -323,26 +405,12 @@ func groupKey(items []groupByItem) (string, error) {
 // "count":...}]}. For Count/Sum/Avg the aggregator consumes "item" directly.
 // For Min/Max: prefer "item2" (the reliable cross-partition partial carrying
 // count); fall back to synthesizing a single-count partial from "item" when
-// item2 is absent. Mirrors the feedAliasedPartial logic from Stage 1's
-// aliased-aggregate pipeline.
+// item2 is absent — see aggregatePartial, which both aggregate pipelines and
+// this one route through.
 func extractAggregatePartial(kind string, raw json.RawMessage) (json.RawMessage, error) {
-	var wrap aliasedItem
+	var wrap aggItem
 	if err := json.Unmarshal(raw, &wrap); err != nil {
 		return nil, errors.Wrap(err, "gonative: extract aggregate partial")
 	}
-	switch kind {
-	case "Min":
-		if len(wrap.Item2) > 0 {
-			return wrap.Item2, nil
-		}
-		return fmt.Appendf(nil, `{"min":%s,"count":1}`, wrap.Item), nil
-	case "Max":
-		if len(wrap.Item2) > 0 {
-			return wrap.Item2, nil
-		}
-		return fmt.Appendf(nil, `{"max":%s,"count":1}`, wrap.Item), nil
-	default:
-		// Count, Sum, Avg — Item alone carries the partial.
-		return wrap.Item, nil
-	}
+	return aggregatePartial(kind, wrap), nil
 }
