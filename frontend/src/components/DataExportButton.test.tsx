@@ -237,4 +237,94 @@ describe("DataExportButton cancel", () => {
     act(() => vi.advanceTimersByTime(3_600_000));
     expect(timer).toHaveTextContent("1:01:05");
   });
+
+  const pressEscape = () =>
+    fireEvent.keyDown(document.activeElement ?? document.body, {
+      key: "Escape",
+    });
+
+  const pressOutside = () => {
+    fireEvent.pointerDown(document.body);
+    fireEvent.mouseDown(document.body);
+    fireEvent.pointerUp(document.body);
+    fireEvent.mouseUp(document.body);
+    fireEvent.click(document.body);
+  };
+
+  const startPendingExport = () => {
+    let signal: AbortSignal | undefined;
+    onExport.mockImplementation((request) => {
+      signal = request.signal;
+    });
+    renderButton([ExportDestination.DOWNLOAD]);
+    openDrawer();
+    confirmExport();
+    return () => signal;
+  };
+
+  test("Escape and an outside click close the drawer when no export runs", async () => {
+    renderButton([ExportDestination.DOWNLOAD]);
+    openDrawer();
+    pressEscape();
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+
+    openDrawer();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    pressOutside();
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+  });
+
+  test("Escape and an outside click keep a running export open and running", () => {
+    const signal = startPendingExport();
+
+    pressEscape();
+    pressOutside();
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByRole("progressbar")).toBeInTheDocument();
+    expect(signal()?.aborted).toBe(false);
+  });
+
+  test("the close button aborts a running export", async () => {
+    const signal = startPendingExport();
+
+    fireEvent.click(screen.getByRole("button", { name: "common.close" }));
+
+    expect(signal()?.aborted).toBe(true);
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+  });
+
+  test("the password dialog stays open on Escape and an outside click while exporting", async () => {
+    let signal: AbortSignal | undefined;
+    onExport.mockImplementation((request) => {
+      signal = request.signal;
+    });
+    render(
+      <DataExportButton
+        viewMode="DROPDOWN"
+        supportFormats={[ExportFormat.CSV]}
+        supportPassword
+        onExport={onExport}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "common.export" }));
+    fireEvent.click(
+      await screen.findByRole("menuitem", { name: "sql-editor.download-as-file" })
+    );
+    fireEvent.click(await screen.findByRole("button", { name: "common.export" }));
+
+    pressEscape();
+    pressOutside();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(signal?.aborted).toBe(false);
+
+    cancel();
+    expect(signal?.aborted).toBe(true);
+  });
 });

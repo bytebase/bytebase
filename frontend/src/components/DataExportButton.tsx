@@ -239,9 +239,6 @@ function ElapsedTime({ since }: { since: number }) {
  *   batch-export database picker).
  * - DROPDOWN view: a hover dropdown of formats; if `supportPassword` is set,
  *   selecting a format opens a small Dialog to capture an optional password.
- *
- * While an export runs, Cancel aborts it. Dismissing the drawer another way
- * leaves the export running.
  */
 export function DataExportButton({
   size = "sm",
@@ -396,6 +393,29 @@ export function DataExportButton({
     setShowPasswordDialog(false);
   };
 
+  // While an export runs, Escape and an outside click are ignored so a stray
+  // dismissal cannot cancel or orphan it; any other close, such as the close
+  // button, cancels the export.
+  const handleOpenChange =
+    (setOpen: (open: boolean) => void) =>
+    (
+      open: boolean,
+      eventDetails?: { reason?: string; cancel?: () => void }
+    ) => {
+      if (open || !isRequesting) {
+        setOpen(open);
+        return;
+      }
+      if (
+        eventDetails?.reason === "escape-key" ||
+        eventDetails?.reason === "outside-press"
+      ) {
+        eventDetails.cancel?.();
+        return;
+      }
+      cancelExport();
+    };
+
   // Returns true when the clipboard write succeeded — Generate callers
   // gate the password commit on that so the masked input doesn't end up
   // holding a value the user can never read back. PR #20491 bot review
@@ -510,7 +530,7 @@ export function DataExportButton({
       )}
 
       {viewMode === "DRAWER" && (
-        <Sheet open={showDrawer} onOpenChange={setShowDrawer}>
+        <Sheet open={showDrawer} onOpenChange={handleOpenChange(setShowDrawer)}>
           <SheetContent width="medium">
             <SheetHeader>
               <SheetTitle>
@@ -667,7 +687,10 @@ export function DataExportButton({
       )}
 
       {viewMode === "DROPDOWN" && supportPassword && (
-        <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
+        <Dialog
+          open={showPasswordDialog}
+          onOpenChange={handleOpenChange(setShowPasswordDialog)}
+        >
           <DialogContent className="w-[26rem] max-w-[calc(100vw-4rem)]">
             <div className="flex flex-col gap-y-3">
               <DialogTitle>{t("export-data.password-optional")}</DialogTitle>
