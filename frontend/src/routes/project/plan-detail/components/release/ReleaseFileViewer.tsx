@@ -295,11 +295,11 @@ export function ReleaseFileViewer({
   vcsSource?: Release_VCSSource;
   onClose: () => void;
 }) {
-  // The last opened file stays rendered through the sheet's exit animation;
-  // the portal unmounts it once the sheet has slid away.
-  const lastTargetRef = useRef(target);
-  if (target) lastTargetRef.current = target;
-  const shown = lastTargetRef.current;
+  // The last opened file and its commit stay rendered through the sheet's
+  // exit animation; the portal unmounts them once the sheet has slid away.
+  const lastOpenedRef = useRef({ target, vcsSource });
+  if (target) lastOpenedRef.current = { target, vcsSource };
+  const shown = lastOpenedRef.current;
   return (
     <Sheet open={Boolean(target)} onOpenChange={(open) => !open && onClose()}>
       <SheetContent
@@ -307,10 +307,10 @@ export function ReleaseFileViewer({
         data-testid="release-file-viewer"
         data-layout="sheet"
       >
-        {shown ? (
+        {shown.target ? (
           <ReleaseFileViewerContent
-            target={shown}
-            vcsSource={vcsSource}
+            target={shown.target}
+            vcsSource={shown.vcsSource}
             layout="sheet"
             onClose={onClose}
           />
