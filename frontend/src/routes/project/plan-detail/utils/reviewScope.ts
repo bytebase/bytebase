@@ -1,20 +1,11 @@
+import { RULE_REVIEW_ENGINES } from "@/components/sql-review/standardRuleCatalog";
 import { isValidDatabaseGroupName } from "@/types/dbGroup";
-import { Engine } from "@/types/proto-es/v1/common_pb";
+import type { Engine } from "@/types/proto-es/v1/common_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 
-// Engines the standard rule review covers. Mirrors reviewFuncs in
-// backend/runner/reviewrun/review_funcs.go; a target on any other engine is
-// reviewed by the plan checks' review policy instead.
-const RULE_REVIEW_ENGINES: ReadonlySet<Engine> = new Set([
-  Engine.POSTGRES,
-  Engine.MYSQL,
-  Engine.OCEANBASE,
-  Engine.MARIADB,
-  Engine.TIDB,
-  Engine.MSSQL,
-  Engine.ORACLE,
-  Engine.SNOWFLAKE,
-]);
+const RULE_REVIEW_ENGINE_SET: ReadonlySet<Engine> = new Set(
+  RULE_REVIEW_ENGINES
+);
 
 export interface ReviewScope {
   // The databases the reviewer reviews, in plan order.
@@ -56,7 +47,7 @@ export function reviewScope(
       options.reviewer === "rule"
         ? targets.filter((database) => {
             const engine = options.engineOf(database);
-            return engine === undefined || RULE_REVIEW_ENGINES.has(engine);
+            return engine === undefined || RULE_REVIEW_ENGINE_SET.has(engine);
           })
         : targets;
     for (const database of eligible) candidates.add(database);

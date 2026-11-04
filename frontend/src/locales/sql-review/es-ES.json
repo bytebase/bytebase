@@ -758,12 +758,14 @@
   "select-all": "Seleccionar todo",
   "select-review-rules": "Seleccionar reglas de revisión de SQL",
   "standard-rules": {
+    "codes": "Códigos",
     "customize": {
       "description": "Cuando está desactivado, este proyecto sigue las reglas estándar del espacio de trabajo.",
       "self": "Personalizar para este proyecto",
       "view-workspace-rules": "Ver las reglas del espacio de trabajo"
     },
     "description": "Reglas integradas que revisan el SQL de cada issue. Los proyectos que no personalizan sus reglas siguen estas.",
+    "engines": "Motores",
     "load-failed": "No se pudieron cargar las reglas estándar.",
     "off": "Desactivada",
     "on": "Activada",
@@ -817,6 +819,7 @@
     },
     "running": "{{on}} de {{total}} reglas habilitadas",
     "self": "Reglas estándar",
+    "supported-engines": "Motores compatibles: {{engines}}",
     "syntax-off": "La comprobación de sintaxis está desactivada, por lo que no se ejecuta ninguna regla estándar. Actívela para revisar los cambios.",
     "workspace-rules-hidden": "No tienes permiso para ver las reglas del espacio de trabajo que sigue este proyecto."
   },

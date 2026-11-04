@@ -2184,9 +2184,7 @@
         "n-replies-hidden_other": "{{count}} respuestas ocultas",
         "n-replies_one": "{{count}} respuesta",
         "n-replies_other": "{{count}} respuestas",
-        "open": "Abierto",
         "priority": {
-          "p0": "El SQL es incorrecto y debe cambiar.",
           "p1": "Peligroso pero legítimo. Una persona debe aceptarlo.",
           "p2": "Solo informativo."
         },
@@ -2198,7 +2196,6 @@
         "resolve": "Resolver",
         "resolve-thread": "Resolver hilo",
         "resolved": "Resuelto",
-        "rule": "Regla",
         "threads-on-line_one": "{{count}} hilo en esta línea",
         "threads-on-line_other": "{{count}} hilos en esta línea",
         "walker": {

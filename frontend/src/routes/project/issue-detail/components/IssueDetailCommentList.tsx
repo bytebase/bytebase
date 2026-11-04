@@ -41,7 +41,6 @@ import {
   type IssueComment,
   type IssueComment_ReviewMetadata,
   IssueSchema,
-  ReviewRun_Type,
   UpdateIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
@@ -50,8 +49,7 @@ import { hasProjectPermissionV2 } from "@/utils/iam/permission";
 import { PlanSpecChangeReference } from "../../plan-detail/components/PlanChangeReference";
 import {
   ReviewerIcon,
-  ReviewPriorityBadge,
-  ReviewRule,
+  ReviewHeading,
   ReviewTargets,
   reviewerName,
 } from "../../plan-detail/components/threads/ReviewResult";
@@ -598,9 +596,9 @@ function EditableMarkdownContent({
   );
 }
 
-// A review result in an activity timeline. It is headed by its reviewer,
-// priority, and targets, as on the plan page's thread card, since it has no
-// creator to name.
+// A review result in an activity timeline, laid out as on the plan page's
+// thread card: headed by its reviewer, since it has no creator to name, then
+// its targets, its priority and rule, and its text.
 function ReviewResultActivityRow({
   body,
   comment,
@@ -628,10 +626,8 @@ function ReviewResultActivityRow({
       body={
         <div className="flex flex-col gap-y-2">
           <ReviewTargets spec={spec} targets={review.targets} />
+          <ReviewHeading review={review} />
           {body}
-          {review.runType === ReviewRun_Type.RULE && (
-            <ReviewRule ruleType={review.ruleType} />
-          )}
         </div>
       }
       header={
@@ -639,7 +635,6 @@ function ReviewResultActivityRow({
           <span className="font-medium text-main">
             {reviewerName(t, review.runType)}
           </span>
-          <ReviewPriorityBadge priority={review.priority} />
           <HumanizeTs className="text-xs text-control-light" tsMs={createdTs} />
           {createdTs !== updatedTs && (
             <span className="text-control-light text-xs">

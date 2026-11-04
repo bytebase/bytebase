@@ -2,6 +2,7 @@ import type { TFunction } from "i18next";
 import { Bot, ListChecks } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { FindingCodeBadge } from "@/components/sql-review/FindingCodeBadge";
 import { standardRuleText } from "@/components/sql-review/standardRules";
 import { UserAvatar } from "@/components/UserAvatar";
 import { Badge, type BadgeProps, badgeVariants } from "@/components/ui/badge";
@@ -12,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { isValidDatabaseName, unknownUser } from "@/types";
 import {
   type IssueComment,
+  type IssueComment_ReviewMetadata,
   IssueComment_ReviewMetadata_Priority,
   ReviewRun_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
@@ -97,16 +99,14 @@ export function ReviewPriorityBadge({
   );
 }
 
+// A priority's badge color and, for P1 and P2, what it means.
 export function priorityStyle(
   t: TFunction,
   priority: IssueComment_ReviewMetadata_Priority
-): { description: string; variant: BadgeProps["variant"] } | undefined {
+): { description?: string; variant: BadgeProps["variant"] } | undefined {
   switch (priority) {
     case IssueComment_ReviewMetadata_Priority.P0:
-      return {
-        description: t("plan.review.thread.priority.p0"),
-        variant: "destructive",
-      };
+      return { variant: "destructive" };
     case IssueComment_ReviewMetadata_Priority.P1:
       return {
         description: t("plan.review.thread.priority.p1"),
@@ -122,27 +122,47 @@ export function priorityStyle(
   }
 }
 
+// A review result's heading line: its priority, then for a rule review
+// result the rule and the finding codes. An AI result names its rule in its
+// text.
+export function ReviewHeading({
+  review,
+}: {
+  review: IssueComment_ReviewMetadata;
+}) {
+  const isRule = review.runType === ReviewRun_Type.RULE;
+  return (
+    <div
+      className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1"
+      data-testid="review-heading"
+    >
+      <ReviewPriorityBadge priority={review.priority} />
+      {isRule && <ReviewRule ruleType={review.ruleType} />}
+      {isRule &&
+        review.codes.map((code) => <FindingCodeBadge code={code} key={code} />)}
+    </div>
+  );
+}
+
 // The standard rule a rule review result reports, in the reader's language,
-// with what the rule checks on hover. An AI result names its rule in its text.
+// with what the rule checks on hover.
 export function ReviewRule({ ruleType }: { ruleType: ReviewRuleType }) {
   const { t } = useTranslation();
   if (ruleType === ReviewRuleType.REVIEW_RULE_TYPE_UNSPECIFIED) return null;
   const { title, description } = standardRuleText(t, ruleType);
   return (
-    <div
-      className="flex min-w-0 items-baseline gap-x-2 text-xs"
-      data-testid="review-rule"
+    <Tooltip
+      content={description}
+      render={
+        <span
+          className="min-w-0 text-sm font-medium text-main"
+          data-testid="review-rule"
+          tabIndex={0}
+        />
+      }
     >
-      <span className="shrink-0 text-control-light">
-        {t("plan.review.thread.rule")}
-      </span>
-      <Tooltip
-        content={description}
-        render={<span className="min-w-0 text-control" tabIndex={0} />}
-      >
-        {title}
-      </Tooltip>
-    </div>
+      {title}
+    </Tooltip>
   );
 }
 
@@ -165,7 +185,7 @@ export function ReviewTargets({
   const visible = folded ? targets.slice(0, VISIBLE_TARGETS) : targets;
   return (
     <div
-      className="flex min-w-0 items-baseline gap-x-2 text-xs"
+      className="flex min-w-0 items-center gap-x-2 text-xs"
       data-testid="review-targets"
     >
       <span className="shrink-0 text-control-light">

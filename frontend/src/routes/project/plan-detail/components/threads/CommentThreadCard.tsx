@@ -46,9 +46,10 @@ const FOLD_REPLIES_ABOVE = 4;
 
 // The same thread presentation for the statement editor and the Review
 // Activity timeline: root and replies in one card, Reply and Resolve or Reopen
-// in the footer. The reply composer carries a checkbox that mirrors the thread
-// state and, when toggled, settles the thread after the reply is posted.
-// Resolved threads collapse to a summary row.
+// in the footer, where a resolved thread also says so. The reply composer
+// carries a checkbox that mirrors the thread state and, when toggled, settles
+// the thread after the reply is posted. Resolved threads collapse to a
+// summary row.
 export function CommentThreadCard({
   className,
   collapsible = true,
@@ -250,15 +251,10 @@ export function CommentThreadCard({
           </>
         }
         comment={thread.root}
+        label={label}
         onEdit={actions.edit}
         project={project}
         spec={spec}
-        status={
-          <>
-            {label}
-            <ThreadStateBadge resolved={thread.resolved} />
-          </>
-        }
       />
       {(hiddenCount > 0 || visibleReplies.length > 0) && (
         <div
@@ -291,7 +287,7 @@ export function CommentThreadCard({
           ))}
         </div>
       )}
-      {(allowReply || allowSettle) && (
+      {(allowReply || allowSettle || thread.resolved) && (
         <div
           className="flex flex-wrap items-center gap-2 border-t border-block-border bg-control-bg/50 px-2 py-2 sm:px-3"
           ref={replyFooterRef}
@@ -372,6 +368,7 @@ export function CommentThreadCard({
             </>
           )}
           {!allowReply && <span className="flex-1" />}
+          {thread.resolved && !replyOpen && <ThreadStateBadge />}
           {allowSettle && !replyOpen && (
             <Button
               appearance="outline"
@@ -431,7 +428,7 @@ function ThreadSummary({
         className="hidden shrink-0 text-xs text-control-light sm:inline"
         tsMs={getTimeForPbTimestampProtoEs(thread.root.createTime)}
       />
-      <ThreadStateBadge resolved />
+      <ThreadStateBadge />
       <ChevronDown className="size-4 shrink-0 text-control-light" />
     </Button>
   );

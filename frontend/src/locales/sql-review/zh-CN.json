@@ -758,12 +758,14 @@
   "select-all": "选择全部",
   "select-review-rules": "选择 SQL 审核规则",
   "standard-rules": {
+    "codes": "规则码",
     "customize": {
       "description": "禁用后，此项目遵循工作空间的标准规则。",
       "self": "为此项目自定义",
       "view-workspace-rules": "查看工作空间规则"
     },
     "description": "内置规则，审核每个工单中的 SQL。未自定义规则的项目遵循这里的设置。",
+    "engines": "引擎",
     "load-failed": "标准规则加载失败。",
     "off": "关",
     "on": "开",
@@ -817,6 +819,7 @@
     },
     "running": "{{total}} 条规则中 {{on}} 条已启用",
     "self": "标准规则",
+    "supported-engines": "支持的引擎：{{engines}}",
     "syntax-off": "语法检查已禁用，因此不会运行任何标准规则。启用后即可审核变更。",
     "workspace-rules-hidden": "你没有权限查看此项目所遵循的工作空间规则。"
   },

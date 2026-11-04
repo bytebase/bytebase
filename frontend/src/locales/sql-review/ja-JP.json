@@ -758,12 +758,14 @@
   "select-all": "すべて選択",
   "select-review-rules": "SQL レビュールールを選択",
   "standard-rules": {
+    "codes": "コード",
     "customize": {
       "description": "無効の場合、このプロジェクトはワークスペースの標準ルールに従います。",
       "self": "このプロジェクト用にカスタマイズ",
       "view-workspace-rules": "ワークスペースのルールを表示"
     },
     "description": "すべての Issue の SQL をレビューする組み込みルールです。ルールをカスタマイズしていないプロジェクトはこの設定に従います。",
+    "engines": "エンジン",
     "load-failed": "標準ルールを読み込めませんでした。",
     "off": "オフ",
     "on": "オン",
@@ -817,6 +819,7 @@
     },
     "running": "{{total}} 件中 {{on}} 件のルールが有効",
     "self": "標準ルール",
+    "supported-engines": "対応エンジン：{{engines}}",
     "syntax-off": "構文チェックが無効になっているため、標準ルールは実行されません。変更をレビューするには有効にしてください。",
     "workspace-rules-hidden": "このプロジェクトが従うワークスペースのルールを表示する権限がありません。"
   },

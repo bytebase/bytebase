@@ -2184,9 +2184,7 @@
         "n-replies-hidden_other": "{{count}} phản hồi bị ẩn",
         "n-replies_one": "{{count}} phản hồi",
         "n-replies_other": "{{count}} phản hồi",
-        "open": "Đang mở",
         "priority": {
-          "p0": "SQL sai và phải được sửa.",
           "p1": "Nguy hiểm nhưng hợp lệ. Cần có người chấp nhận.",
           "p2": "Chỉ mang tính tham khảo."
         },
@@ -2198,7 +2196,6 @@
         "resolve": "Giải quyết",
         "resolve-thread": "Giải quyết luồng",
         "resolved": "Đã giải quyết",
-        "rule": "Quy tắc",
         "threads-on-line_one": "{{count}} chủ đề trên dòng này",
         "threads-on-line_other": "{{count}} chủ đề trên dòng này",
         "walker": {

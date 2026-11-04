@@ -758,12 +758,14 @@
   "select-all": "Chọn tất cả",
   "select-review-rules": "Chọn quy tắc đánh giá SQL",
   "standard-rules": {
+    "codes": "Mã",
     "customize": {
       "description": "Khi bị vô hiệu hóa, dự án này tuân theo các quy tắc tiêu chuẩn của không gian làm việc.",
       "self": "Tùy chỉnh cho dự án này",
       "view-workspace-rules": "Xem quy tắc của không gian làm việc"
     },
     "description": "Các quy tắc tích hợp sẵn dùng để đánh giá SQL của mọi issue. Các dự án không tùy chỉnh quy tắc sẽ tuân theo các quy tắc này.",
+    "engines": "Engine",
     "load-failed": "Không thể tải các quy tắc tiêu chuẩn.",
     "off": "Tắt",
     "on": "Bật",
@@ -817,6 +819,7 @@
     },
     "running": "Đã bật {{on}} trên {{total}} quy tắc",
     "self": "Quy tắc tiêu chuẩn",
+    "supported-engines": "Engine được hỗ trợ: {{engines}}",
     "syntax-off": "Tính năng kiểm tra cú pháp đang bị tắt nên không quy tắc tiêu chuẩn nào chạy. Hãy bật tính năng này để đánh giá các thay đổi.",
     "workspace-rules-hidden": "Bạn không có quyền xem các quy tắc của không gian làm việc mà dự án này tuân theo."
   },

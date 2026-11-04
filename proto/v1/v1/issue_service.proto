@@ -715,6 +715,10 @@ message IssueComment {
     // The ReviewRunCompletion.attempt of the run that posted the result. A
     // result a later run reports again keeps its thread and its attempt.
     int64 attempt = 6;
+    // The conditions a RULE result reports, as finding codes such as
+    // "WT101", one per reason. A code names the same condition on every
+    // engine. Empty for other reviewers.
+    repeated string codes = 7;
   }
 
   enum ThreadState {

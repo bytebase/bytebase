@@ -758,12 +758,14 @@
   "select-all": "Select all",
   "select-review-rules": "Select SQL review rules",
   "standard-rules": {
+    "codes": "Codes",
     "customize": {
       "description": "When disabled, this project follows the workspace standard rules.",
       "self": "Customize for this project",
       "view-workspace-rules": "View workspace rules"
     },
     "description": "Built-in rules that review the SQL of every issue. Projects that do not customize their rules follow these.",
+    "engines": "Engines",
     "load-failed": "The standard rules could not be loaded.",
     "off": "Off",
     "on": "On",
@@ -817,6 +819,7 @@
     },
     "running": "{{on}} of {{total}} rules enabled",
     "self": "Standard rules",
+    "supported-engines": "Supported engines: {{engines}}",
     "syntax-off": "Syntax checking is disabled, so none of the standard rules run. Turn it on to review changes.",
     "workspace-rules-hidden": "You do not have permission to view the workspace rules this project follows."
   },

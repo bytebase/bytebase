@@ -2184,9 +2184,7 @@
         "n-replies-hidden_other": "已隐藏 {{count}} 条回复",
         "n-replies_one": "{{count}} 条回复",
         "n-replies_other": "{{count}} 条回复",
-        "open": "待处理",
         "priority": {
-          "p0": "SQL 有误，必须修改。",
           "p1": "有风险但合理，需要有人确认接受。",
           "p2": "仅供参考。"
         },
@@ -2198,7 +2196,6 @@
         "resolve": "解决",
         "resolve-thread": "解决线程",
         "resolved": "已解决",
-        "rule": "规则",
         "threads-on-line_one": "此行有 {{count}} 个讨论",
         "threads-on-line_other": "此行有 {{count}} 个讨论",
         "walker": {
