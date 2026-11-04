@@ -642,6 +642,43 @@ func pagedRows() int {
 	return len(pagedBigBuckets)*pagedBigRows + len(pagedSmallBuckets)*pagedSmallRows
 }
 
+// pagedShapes gives eleven of the fixture's rows a `v`, one per shape a
+// document can hold, chosen so that the values span the container's ranges:
+// two rows in each big bucket and one in each small one. Every other row
+// leaves `v` undefined, so a query grouping or ordering on it meets both.
+//
+// Ordering them is what the service does by type — undefined < null < bool <
+// number < string < array < object — and the two seqs inside each of the array
+// and object classes are interchangeable, since the service orders those by
+// its index's own encoding.
+var pagedShapes = []struct {
+	seq   int
+	value string
+}{
+	{seq: 0, value: `null`},
+	{seq: 1, value: `false`},
+	{seq: pagedBigRows, value: `true`},
+	{seq: pagedBigRows + 1, value: `1`},
+	{seq: 2 * pagedBigRows, value: `20`},
+	{seq: 2*pagedBigRows + 1, value: `"a"`},
+	{seq: 2*pagedBigRows + pagedSmallRows, value: `"b"`},
+	{seq: 2*pagedBigRows + 2*pagedSmallRows, value: `[1,2]`},
+	{seq: 2*pagedBigRows + 3*pagedSmallRows, value: `[2]`},
+	{seq: 2*pagedBigRows + 4*pagedSmallRows, value: `{"a":1}`},
+	{seq: 2*pagedBigRows + 5*pagedSmallRows, value: `{"b":1}`},
+}
+
+// pagedShapeOf returns the shape attached to a row, or "" when the row leaves
+// `v` undefined.
+func pagedShapeOf(seq int) string {
+	for _, shape := range pagedShapes {
+		if shape.seq == seq {
+			return shape.value
+		}
+	}
+	return ""
+}
+
 var (
 	pagedOnce            sync.Once
 	pagedContainerClient *azcosmos.ContainerClient
@@ -712,11 +749,15 @@ func seedPaged(driver *Driver) (*azcosmos.ContainerClient, int, error) {
 	for range 12 {
 		wg.Go(func() {
 			for r := range rows {
-				item, err := json.Marshal(pagedRow{
+				row := pagedRow{
 					ID:     fmt.Sprintf("row-%d", r.seq),
 					Bucket: r.bucket,
 					Seq:    r.seq,
-				})
+				}
+				if shape := pagedShapeOf(r.seq); shape != "" {
+					row.V = json.RawMessage(shape)
+				}
+				item, err := json.Marshal(row)
 				if err == nil {
 					err = seedItem(ctx, container, r.bucket, item)
 				}
@@ -748,6 +789,10 @@ type pagedRow struct {
 	ID     string `json:"id"`
 	Bucket string `json:"bucket"`
 	Seq    int    `json:"seq"`
+	// V carries one of pagedShapes on the rows that have one, and is absent
+	// from every other document — which is what makes the fixture answer for
+	// a column a schemaless store defines on only some of its rows.
+	V json.RawMessage `json:"v,omitempty"`
 }
 
 // pagedSeqs runs a query against the multi-page fixture and returns the seq of
@@ -1274,4 +1319,57 @@ func TestCrossPartitionDistinctWithOrderByThroughTheDriver(t *testing.T) {
 		got = append(got, object.Country)
 	}
 	assert.Equal(t, slices.Sorted(slices.Values(crossPartitionCountries)), got)
+}
+
+// TestCrossPartitionSparseGroupBy groups on a column the documents do not all
+// define, which is ordinary in a schemaless store. The service answers the
+// undefined rows as a group of their own, counted apart from an explicit null
+// and spelled with the alias left out of the row.
+func TestCrossPartitionSparseGroupBy(t *testing.T) {
+	container := pagedFixture(t)
+
+	want := []string{fmt.Sprintf(`{"n":%d}`, pagedRows()-len(pagedShapes))}
+	for _, shape := range pagedShapes {
+		want = append(want, fmt.Sprintf(`{"k":%s,"n":1}`, shape.value))
+	}
+	rows := pagedQuery(t, container, `SELECT c.v AS k, COUNT(1) AS n FROM c GROUP BY c.v`)
+	assert.ElementsMatch(t, want, rows)
+
+	// The groups also come back in key order, the undefined one first, which
+	// is what makes two runs of one query agree.
+	require.NotEmpty(t, rows)
+	assert.Equal(t, want[0], rows[0])
+	assert.ElementsMatch(t, []string{`{"k":{"a":1},"n":1}`, `{"k":{"b":1},"n":1}`}, rows[len(rows)-2:],
+		"objects sort last")
+}
+
+// TestCrossPartitionMixedTypeOrder checks ORDER BY against the order the
+// service itself returns: undefined < null < bool < number < string < array <
+// object.
+//
+// Two different arrays, or two different objects, it cannot order when they
+// reach the merge from different ranges, because the service orders those by
+// its index's own encoding — [1,2] < [2] < [1,3] on a real container. Which
+// range holds which value is the emulator's to decide, so the engine's refusal
+// is covered in merge_test.go, where the ranges are given.
+func TestCrossPartitionMixedTypeOrder(t *testing.T) {
+	container := pagedFixture(t)
+
+	scalars := make([]int, 0, len(pagedShapes))
+	for _, shape := range pagedShapes {
+		if shape.value[0] != '[' && shape.value[0] != '{' {
+			scalars = append(scalars, shape.seq)
+		}
+	}
+	got := pagedSeqs(t, container,
+		`SELECT c.seq FROM c WHERE IS_DEFINED(c.v) AND NOT IS_ARRAY(c.v) AND NOT IS_OBJECT(c.v) ORDER BY c.v`)
+	assert.Equal(t, scalars, got, "the scalar classes are ordered as the service orders them")
+
+	// One composite among them still orders, since the class ranking is the
+	// service's own: an array sorts after every string.
+	withOneArray := append(slices.Clone(scalars), pagedShapes[7].seq)
+	got = pagedSeqs(t, container, fmt.Sprintf(
+		`SELECT c.seq FROM c WHERE IS_DEFINED(c.v) AND NOT IS_OBJECT(c.v) AND (NOT IS_ARRAY(c.v) OR c.seq = %d) ORDER BY c.v`,
+		pagedShapes[7].seq))
+	assert.Equal(t, withOneArray, got, "an array sorts after the scalars")
 }

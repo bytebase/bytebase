@@ -2,6 +2,8 @@ package gonative
 
 import (
 	"encoding/json"
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos/queryengine"
@@ -39,6 +41,14 @@ func mkGroupBody(t *testing.T, entries ...struct {
 	b, err := json.Marshal(map[string]any{"Documents": docs})
 	require.NoError(t, err)
 	return b
+}
+
+// mkGroupBodyRaw builds a partition response from literal document JSON, for
+// shapes mkGroupBody cannot spell — a groupByItems entry with no "item" at
+// all, which is how the gateway reports a key the document leaves undefined.
+func mkGroupBodyRaw(t *testing.T, docs ...string) []byte {
+	t.Helper()
+	return []byte(`{"Documents":[` + strings.Join(docs, ",") + `]}`)
 }
 
 type groupEntry = struct {
@@ -354,31 +364,38 @@ func countByCountryPlan() *planDoc {
 		map[string]string{"country": "", "n": "Count"})
 }
 
-// A GROUP BY the user also ordered reaches the engine as a plan with no order
-// fields, so the direction comes off the data: the gateway returns each
-// partition's own groups in the requested order.
-func TestGroupPipeline_EmitsAscendingWhenThePartitionsRunAscending(t *testing.T) {
-	p, err := newGroupPipeline(countByCountryPlan(), []string{"0", "1"})
+// orderedCountByCountryPlan is countByCountryPlan for a query the user also
+// ordered. Such a plan carries no order fields at all — the clause survives
+// only in the rewritten query, spelled as the gateway writes it.
+func orderedCountByCountryPlan(clause string) *planDoc {
+	plan := countByCountryPlan()
+	plan.QueryInfo.RewrittenQuery = `SELECT [{"item": c.country}] AS groupByItems, ` +
+		`{"country": c.country, "n": {"item": COUNT(1)}} AS payload` + "\n" +
+		`FROM c` + "\n" + `GROUP BY c.country` + "\n" + clause
+	return plan
+}
+
+// The direction comes from the query, not from the order the ranges happen to
+// answer in: these two feed the same rows and differ only in the clause.
+func TestGroupPipeline_EmitsAscendingWhenTheQueryOrdersAscending(t *testing.T) {
+	p, err := newGroupPipeline(orderedCountByCountryPlan("ORDER BY c.country"), []string{"0", "1"})
 	require.NoError(t, err)
 
-	rows := driveGroup(t, p, map[string][]byte{
-		"0": mkGroupBody(t,
-			groupEntry{key: `"AE"`, payload: `{"country":"AE","n":{"item":2}}`},
-			groupEntry{key: `"DE"`, payload: `{"country":"DE","n":{"item":1}}`},
-		),
-		"1": mkGroupBody(t,
-			groupEntry{key: `"BR"`, payload: `{"country":"BR","n":{"item":4}}`},
-			groupEntry{key: `"CN"`, payload: `{"country":"CN","n":{"item":3}}`},
-		),
-	})
+	rows := driveGroup(t, p, descendingCountryFeed(t))
 	assert.Equal(t, []string{"AE", "BR", "CN", "DE"}, groupKeysOf(t, rows, "country"))
 }
 
-func TestGroupPipeline_EmitsDescendingWhenThePartitionsRunDescending(t *testing.T) {
-	p, err := newGroupPipeline(countByCountryPlan(), []string{"0", "1"})
+func TestGroupPipeline_EmitsDescendingWhenTheQueryOrdersDescending(t *testing.T) {
+	p, err := newGroupPipeline(orderedCountByCountryPlan("ORDER BY c.country DESC"), []string{"0", "1"})
 	require.NoError(t, err)
 
-	rows := driveGroup(t, p, map[string][]byte{
+	rows := driveGroup(t, p, descendingCountryFeed(t))
+	assert.Equal(t, []string{"DE", "CN", "BR", "AE"}, groupKeysOf(t, rows, "country"))
+}
+
+func descendingCountryFeed(t *testing.T) map[string][]byte {
+	t.Helper()
+	return map[string][]byte{
 		"0": mkGroupBody(t,
 			groupEntry{key: `"DE"`, payload: `{"country":"DE","n":{"item":1}}`},
 			groupEntry{key: `"AE"`, payload: `{"country":"AE","n":{"item":2}}`},
@@ -387,8 +404,219 @@ func TestGroupPipeline_EmitsDescendingWhenThePartitionsRunDescending(t *testing.
 			groupEntry{key: `"CN"`, payload: `{"country":"CN","n":{"item":3}}`},
 			groupEntry{key: `"BR"`, payload: `{"country":"BR","n":{"item":4}}`},
 		),
+	}
+}
+
+// A range that reports a single group says nothing about which way the groups
+// run, so the direction has to come from the clause.
+func TestGroupPipeline_EmitsDescendingWhenEveryRangeHasOneGroup(t *testing.T) {
+	p, err := newGroupPipeline(orderedCountByCountryPlan("ORDER BY c.country DESC"), []string{"0", "1"})
+	require.NoError(t, err)
+
+	rows := driveGroup(t, p, map[string][]byte{
+		"0": mkGroupBody(t, groupEntry{key: `"AE"`, payload: `{"country":"AE","n":{"item":2}}`}),
+		"1": mkGroupBody(t, groupEntry{key: `"BR"`, payload: `{"country":"BR","n":{"item":4}}`}),
 	})
-	assert.Equal(t, []string{"DE", "CN", "BR", "AE"}, groupKeysOf(t, rows, "country"))
+	assert.Equal(t, []string{"BR", "AE"}, groupKeysOf(t, rows, "country"))
+}
+
+// An order the engine cannot produce by comparing group keys has to fail the
+// query: ordering by the keys anyway would answer in an order the user did not
+// ask for. The service refuses these itself today, so this is the engine
+// holding the line.
+func TestGroupPipeline_RejectsAnOrderItCannotProduce(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		clause string
+	}{
+		{"by an aggregate", "ORDER BY COUNT(1) DESC"},
+		{"by an output alias", "ORDER BY n DESC"},
+		{"by a column the query does not group by", "ORDER BY c.city"},
+		{"by something that is not a list of keys", "ORDER BY c.country NULLS LAST"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := newGroupPipeline(orderedCountByCountryPlan(tc.clause), []string{"0", "1"})
+			assert.ErrorIs(t, err, ErrUnsupportedPlanFeature)
+		})
+	}
+}
+
+// Cosmos gives every ORDER BY key its own direction, and accepts a clause that
+// names only some of the group keys.
+func TestGroupPipeline_OrdersMultipleKeysEachItsOwnWay(t *testing.T) {
+	feed := map[string][]byte{
+		"0": mkTwoKeyGroupBody(t,
+			twoKeyEntry{keys: []string{`"AE"`, `2`}, payload: `{"country":"AE","city":2,"n":{"item":7}}`},
+			twoKeyEntry{keys: []string{`"AE"`, `1`}, payload: `{"country":"AE","city":1,"n":{"item":8}}`},
+		),
+		"1": mkTwoKeyGroupBody(t,
+			twoKeyEntry{keys: []string{`"BR"`, `1`}, payload: `{"country":"BR","city":1,"n":{"item":9}}`},
+			twoKeyEntry{keys: []string{`"BR"`, `2`}, payload: `{"country":"BR","city":2,"n":{"item":6}}`},
+		),
+	}
+
+	for _, tc := range []struct {
+		name   string
+		clause string
+		want   []string
+	}{
+		{"ascending then descending", "ORDER BY c.country, c.city DESC", []string{"AE/2", "AE/1", "BR/2", "BR/1"}},
+		{"descending then ascending", "ORDER BY c.country DESC, c.city", []string{"BR/1", "BR/2", "AE/1", "AE/2"}},
+		{"only the second key", "ORDER BY c.city DESC", []string{"AE/2", "BR/2", "AE/1", "BR/1"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			p, err := newGroupPipeline(countryCityPlan(tc.clause), []string{"0", "1"})
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, countryCityKeysOf(t, driveGroup(t, p, feed)))
+		})
+	}
+}
+
+// A group key the clause leaves out still gets an order, so that two runs of
+// one query answer alike however the ranges happened to report their groups.
+func TestGroupPipeline_OrdersKeysTheClauseLeavesOut(t *testing.T) {
+	p, err := newGroupPipeline(countryCityPlan("ORDER BY c.city DESC"), []string{"0", "1"})
+	require.NoError(t, err)
+
+	rows := driveGroup(t, p, map[string][]byte{
+		"0": mkTwoKeyGroupBody(t,
+			twoKeyEntry{keys: []string{`"BR"`, `2`}, payload: `{"country":"BR","city":2,"n":{"item":6}}`},
+		),
+		"1": mkTwoKeyGroupBody(t,
+			twoKeyEntry{keys: []string{`"AE"`, `2`}, payload: `{"country":"AE","city":2,"n":{"item":7}}`},
+		),
+	})
+	assert.Equal(t, []string{"AE/2", "BR/2"}, countryCityKeysOf(t, rows))
+}
+
+// countryCityPlan groups by two keys, which the gateway reports in
+// groupByItems in the order groupByExpressions names them.
+func countryCityPlan(clause string) *planDoc {
+	plan := newGroupPlan("c.country",
+		[]string{"country", "city", "n"},
+		map[string]string{"country": "", "city": "", "n": "Count"})
+	plan.QueryInfo.GroupByExpressions = []string{"c.country", "c.city"}
+	plan.QueryInfo.RewrittenQuery = "SELECT 1\nFROM c\nGROUP BY c.country, c.city\n" + clause
+	return plan
+}
+
+// mkTwoKeyGroupBody is mkGroupBody for a two-expression GROUP BY: each
+// document's groupByItems carries both keys, in groupByExpressions order.
+func mkTwoKeyGroupBody(t *testing.T, entries ...struct {
+	keys    []string
+	payload string
+}) []byte {
+	t.Helper()
+	docs := make([]map[string]any, 0, len(entries))
+	for _, e := range entries {
+		var payloadObj map[string]json.RawMessage
+		require.NoError(t, json.Unmarshal([]byte(e.payload), &payloadObj), "invalid payload fixture: %s", e.payload)
+		items := make([]map[string]any, 0, len(e.keys))
+		for _, key := range e.keys {
+			items = append(items, map[string]any{"item": json.RawMessage(key)})
+		}
+		docs = append(docs, map[string]any{"groupByItems": items, "payload": payloadObj})
+	}
+	b, err := json.Marshal(map[string]any{"Documents": docs})
+	require.NoError(t, err)
+	return b
+}
+
+type twoKeyEntry = struct {
+	keys    []string
+	payload string
+}
+
+func countryCityKeysOf(t *testing.T, rows [][]byte) []string {
+	t.Helper()
+	out := make([]string, 0, len(rows))
+	for _, r := range rows {
+		var obj struct {
+			Country string `json:"country"`
+			City    int    `json:"city"`
+		}
+		require.NoError(t, json.Unmarshal(r, &obj), "row: %s", r)
+		out = append(out, fmt.Sprintf("%s/%d", obj.Country, obj.City))
+	}
+	return out
+}
+
+// A key whose name holds a clause keyword is still a key.
+func TestGroupPipeline_ReadsAnOrderWhoseKeyNameHoldsAKeyword(t *testing.T) {
+	plan := newGroupPlan("c.nowhere", []string{"nowhere", "n"}, map[string]string{"nowhere": "", "n": "Count"})
+	plan.QueryInfo.RewrittenQuery = "SELECT 1\nFROM c\nGROUP BY c.nowhere\nORDER BY c.nowhere DESC"
+
+	p, err := newGroupPipeline(plan, []string{"0", "1"})
+	require.NoError(t, err)
+
+	rows := driveGroup(t, p, map[string][]byte{
+		"0": mkGroupBody(t, groupEntry{key: `"AE"`, payload: `{"nowhere":"AE","n":{"item":2}}`}),
+		"1": mkGroupBody(t, groupEntry{key: `"BR"`, payload: `{"nowhere":"BR","n":{"item":4}}`}),
+	})
+	assert.Equal(t, []string{"BR", "AE"}, groupKeysOf(t, rows, "nowhere"))
+}
+
+// A property path that needs bracket notation is a key like any other, even
+// when the property is named after the clause itself. Both plans here are what
+// the service answered for `GROUP BY c["country-name"]` and
+// `GROUP BY c["order by"]`.
+func TestGroupPipeline_ReadsAnOrderOnABracketPath(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		expr string
+		rest string
+		want []string
+	}{
+		{
+			name: "a path that has to be quoted",
+			expr: `c["country-name"]`,
+			rest: "\nORDER BY c[\"country-name\"] DESC",
+			want: []string{"BR", "AE"},
+		},
+		{
+			name: "a property named after the clause",
+			expr: `c["order by"]`,
+			rest: "\nORDER BY c[\"order by\"] DESC",
+			want: []string{"BR", "AE"},
+		},
+		{
+			name: "a property named after the clause, unordered",
+			expr: `c["order by"]`,
+			rest: "",
+			want: []string{"AE", "BR"},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			plan := newGroupPlan(tc.expr, []string{"k", "n"}, map[string]string{"k": "", "n": "Count"})
+			plan.QueryInfo.GroupByExpressions = []string{tc.expr}
+			plan.QueryInfo.RewrittenQuery = "SELECT [{\"item\": " + tc.expr + "}] AS groupByItems, " +
+				"{\"k\": " + tc.expr + ", \"n\": {\"item\": COUNT(1)}} AS payload\nFROM c\nGROUP BY " + tc.expr + tc.rest
+
+			p, err := newGroupPipeline(plan, []string{"0", "1"})
+			require.NoError(t, err)
+
+			rows := driveGroup(t, p, map[string][]byte{
+				"0": mkGroupBody(t, groupEntry{key: `"AE"`, payload: `{"k":"AE","n":{"item":2}}`}),
+				"1": mkGroupBody(t, groupEntry{key: `"BR"`, payload: `{"k":"BR","n":{"item":4}}`}),
+			})
+			assert.Equal(t, tc.want, groupKeysOf(t, rows, "k"))
+		})
+	}
+}
+
+// The words can appear in the query body — in a string literal the user wrote
+// — without the query naming an order.
+func TestGroupPipeline_IgnoresOrderByInsideTheQueryBody(t *testing.T) {
+	plan := countByCountryPlan()
+	plan.QueryInfo.RewrittenQuery = `SELECT [{"item": c.country}] AS groupByItems, ` +
+		`{"country": c.country, "n": {"item": COUNT(1)}} AS payload` + "\n" +
+		`FROM c` + "\n" + `WHERE c.note != 'order by me'` + "\n" + `GROUP BY c.country`
+
+	p, err := newGroupPipeline(plan, []string{"0", "1"})
+	require.NoError(t, err)
+
+	rows := driveGroup(t, p, descendingCountryFeed(t))
+	assert.Equal(t, []string{"AE", "BR", "CN", "DE"}, groupKeysOf(t, rows, "country"))
 }
 
 // Without an ORDER BY the output order is unspecified, but it still has to be
@@ -417,9 +645,10 @@ func TestGroupPipeline_OutputOrderIsStableAcrossRuns(t *testing.T) {
 	}
 }
 
-// A group key Cosmos cannot order — an array or an object — leaves the output
-// in first-seen order rather than asking the comparator to invent one.
-func TestGroupPipeline_UnorderableKeysKeepFirstSeenOrder(t *testing.T) {
+// A group key the service cannot order by value — an array or an object — is
+// still ordered here, by its canonical JSON, so the same query does not answer
+// in a different order on the next run.
+func TestGroupPipeline_OrdersCompositeKeysConsistently(t *testing.T) {
 	plan := newGroupPlan("c.tags", []string{"tags", "n"}, map[string]string{"tags": "", "n": "Count"})
 	p, err := newGroupPipeline(plan, []string{"0"})
 	require.NoError(t, err)
@@ -431,8 +660,109 @@ func TestGroupPipeline_UnorderableKeysKeepFirstSeenOrder(t *testing.T) {
 		),
 	})
 	require.Len(t, rows, 2)
-	assert.JSONEq(t, `{"tags":["b"],"n":1}`, string(rows[0]))
-	assert.JSONEq(t, `{"tags":["a"],"n":2}`, string(rows[1]))
+	assert.JSONEq(t, `{"tags":["a"],"n":2}`, string(rows[0]))
+	assert.JSONEq(t, `{"tags":["b"],"n":1}`, string(rows[1]))
+}
+
+// An ORDER BY on a group key the engine cannot order — two different arrays —
+// fails the query. Ordering the groups by anything else would answer in an
+// order the user did not ask for, which is the whole point of reading the
+// clause in the first place.
+func TestGroupPipeline_RefusesAnOrderedKeyItCannotOrder(t *testing.T) {
+	plan := newGroupPlan("c.tags", []string{"tags", "n"}, map[string]string{"tags": "", "n": "Count"})
+	plan.QueryInfo.RewrittenQuery = "SELECT 1\nFROM c\nGROUP BY c.tags\nORDER BY c.tags"
+	p, err := newGroupPipeline(plan, []string{"0"})
+	require.NoError(t, err)
+
+	res, err := p.Run()
+	require.NoError(t, err)
+	require.NotEmpty(t, res.Requests)
+	body := mkGroupBody(t,
+		groupEntry{key: `["b"]`, payload: `{"tags":["b"],"n":{"item":1}}`},
+		groupEntry{key: `["a"]`, payload: `{"tags":["a"],"n":{"item":2}}`},
+	)
+	results := make([]queryengine.QueryResult, 0, len(res.Requests))
+	for _, req := range res.Requests {
+		results = append(results, queryengine.NewQueryResult(req.PartitionKeyRangeID, body, ""))
+	}
+	require.NoError(t, p.ProvideData(results))
+
+	_, err = p.Run()
+	assert.ErrorIs(t, err, ErrUnsupportedPlanFeature)
+}
+
+// A clause that names one of two group keys leaves the other to settle ties.
+// The query asked nothing of that key, so either tie order satisfies it and an
+// array there must not fail the query — only a key the clause named has to be
+// ordered the service's way.
+func TestGroupPipeline_SettlesTiesOnAKeyTheClauseOmits(t *testing.T) {
+	plan := newGroupPlan("c.country", []string{"country", "tags", "n"},
+		map[string]string{"country": "", "tags": "", "n": "Count"})
+	plan.QueryInfo.GroupByExpressions = []string{"c.country", "c.tags"}
+	plan.QueryInfo.RewrittenQuery = "SELECT 1\nFROM c\nGROUP BY c.country, c.tags\nORDER BY c.country DESC"
+
+	p, err := newGroupPipeline(plan, []string{"0"})
+	require.NoError(t, err)
+
+	rows := driveGroup(t, p, map[string][]byte{
+		"0": mkTwoKeyGroupBody(t,
+			twoKeyEntry{keys: []string{`"AE"`, `["b"]`}, payload: `{"country":"AE","tags":["b"],"n":{"item":1}}`},
+			twoKeyEntry{keys: []string{`"BR"`, `["z"]`}, payload: `{"country":"BR","tags":["z"],"n":{"item":2}}`},
+			twoKeyEntry{keys: []string{`"AE"`, `["a"]`}, payload: `{"country":"AE","tags":["a"],"n":{"item":3}}`},
+		),
+	})
+	got := make([]string, 0, len(rows))
+	for _, row := range rows {
+		var object struct {
+			Country string   `json:"country"`
+			Tags    []string `json:"tags"`
+		}
+		require.NoError(t, json.Unmarshal(row, &object), "row: %s", row)
+		got = append(got, object.Country+"/"+strings.Join(object.Tags, ","))
+	}
+	assert.Equal(t, []string{"BR/z", "AE/a", "AE/b"}, got)
+}
+
+// A column the documents do not all define is ordinary in a schemaless store.
+// The service answers it as a group of its own, counted apart from an explicit
+// null and spelled with the alias left out of the row, and sends that group's
+// key as a groupByItems entry with no "item" at all — the shape this fixture
+// exists for.
+func TestGroupPipeline_GroupsAnUndefinedKeyOnItsOwn(t *testing.T) {
+	plan := newGroupPlan("c.v", []string{"k", "n"}, map[string]string{"k": "", "n": "Count"})
+	p, err := newGroupPipeline(plan, []string{"0", "1"})
+	require.NoError(t, err)
+
+	rows := driveGroup(t, p, map[string][]byte{
+		"0": mkGroupBodyRaw(t,
+			`{"groupByItems":[{}],"payload":{"n":{"item":2}}}`,
+			`{"groupByItems":[{"item":null}],"payload":{"k":null,"n":{"item":1}}}`),
+		"1": mkGroupBodyRaw(t,
+			`{"groupByItems":[{"item":"a"}],"payload":{"k":"a","n":{"item":3}}}`,
+			`{"groupByItems":[{}],"payload":{"n":{"item":5}}}`),
+	})
+	require.Len(t, rows, 3)
+	assert.JSONEq(t, `{"n":7}`, string(rows[0]), "the undefined group merges across ranges and omits the alias")
+	assert.JSONEq(t, `{"k":null,"n":1}`, string(rows[1]), "an explicit null is its own group")
+	assert.JSONEq(t, `{"k":"a","n":3}`, string(rows[2]))
+}
+
+// A multi-key GROUP BY where one key is undefined in some rows: the undefined
+// slot still distinguishes the group.
+func TestGroupPipeline_GroupsOnAPartlyUndefinedKey(t *testing.T) {
+	plan := newGroupPlan("c.a", []string{"a", "b", "n"}, map[string]string{"a": "", "b": "", "n": "Count"})
+	plan.QueryInfo.GroupByExpressions = []string{"c.a", "c.b"}
+	p, err := newGroupPipeline(plan, []string{"0"})
+	require.NoError(t, err)
+
+	rows := driveGroup(t, p, map[string][]byte{
+		"0": mkGroupBodyRaw(t,
+			`{"groupByItems":[{"item":"x"},{}],"payload":{"a":"x","n":{"item":4}}}`,
+			`{"groupByItems":[{"item":"x"},{"item":7}],"payload":{"a":"x","b":7,"n":{"item":9}}}`),
+	})
+	require.Len(t, rows, 2)
+	assert.JSONEq(t, `{"a":"x","n":4}`, string(rows[0]))
+	assert.JSONEq(t, `{"a":"x","b":7,"n":9}`, string(rows[1]))
 }
 
 // MIN over a group where the column is undefined in every row has no value,

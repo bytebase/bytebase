@@ -1,8 +1,10 @@
 package gonative
 
 import (
+	"bytes"
 	"encoding/json"
 	"slices"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos/queryengine"
 	"github.com/pkg/errors"
@@ -78,16 +80,9 @@ type groupPipeline struct {
 	// is what the output falls back to when the keys cannot be ordered.
 	order []string
 
-	// descending says which way to order the output rows, and
-	// directionKnown whether the data has told us yet. A GROUP BY the user
-	// also ordered
-	// reaches the engine as a plan with no order fields at all — the ORDER BY
-	// survives only inside rewrittenQuery — so the direction can be read only
-	// off the responses: the gateway returns each partition's own groups in
-	// the requested order, and the first adjacent pair that differs says
-	// which way they run.
-	descending     bool
-	directionKnown bool
+	// sort is how to order the output rows: which group key to compare
+	// first, which way, and how strictly — see groupSortKeys.
+	sort []groupSortKey
 
 	// pending holds fully finalized rows awaiting the caller's next Run().
 	pending [][]byte
@@ -130,6 +125,11 @@ func newGroupPipeline(plan *planDoc, pkRangeIDs []string) (*groupPipeline, error
 		}
 	}
 
+	sortKeys, err := groupSortKeys(qi)
+	if err != nil {
+		return nil, err
+	}
+
 	return &groupPipeline{
 		// GROUP BY plans always carry a non-empty rewrittenQuery that wraps the
 		// user's projection into {groupByItems, payload}; running the original
@@ -139,6 +139,7 @@ func newGroupPipeline(plan *planDoc, pkRangeIDs []string) (*groupPipeline, error
 		aliases: aliases,
 		kinds:   kinds,
 		groups:  make(map[string]*groupState),
+		sort:    sortKeys,
 	}, nil
 }
 
@@ -193,7 +194,6 @@ func (p *groupPipeline) ProvideData(results []queryengine.QueryResult) error {
 		if err != nil {
 			return err
 		}
-		p.noteOrdering(resp.Documents)
 		for docIdx, doc := range resp.Documents {
 			if len(doc.GroupByItems) == 0 {
 				return errors.Errorf("gonative: group doc %d missing groupByItems", docIdx)
@@ -260,7 +260,9 @@ func (p *groupPipeline) initGroupState(doc groupDoc) *groupState {
 // sortGroups. Walking p.groups instead would emit them in Go's randomized map
 // order, which made the same query answer in a different order every run.
 func (p *groupPipeline) finalize() error {
-	p.sortGroups()
+	if err := p.sortGroups(); err != nil {
+		return err
+	}
 	for _, key := range p.order {
 		row, err := p.buildRow(p.groups[key])
 		if err != nil {
@@ -272,68 +274,229 @@ func (p *groupPipeline) finalize() error {
 	return nil
 }
 
-// noteOrdering reads the output direction off one partition's response, which
-// is the only place a GROUP BY's ORDER BY reaches the engine. Gives up on a
-// key it cannot compare: sortGroups checks for those itself.
-func (p *groupPipeline) noteOrdering(docs []groupDoc) {
-	if p.directionKnown {
-		return
-	}
-	for i := 1; i < len(docs); i++ {
-		order, err := compareGroupKeys(docs[i-1].GroupByItems, docs[i].GroupByItems)
-		if err != nil {
-			return
-		}
-		if order != 0 {
-			p.descending = order > 0
-			p.directionKnown = true
-			return
-		}
-	}
+// orderByKeyword is how the gateway spells the clause in a rewritten query.
+const orderByKeyword = "ORDER BY"
+
+// orderByKey is one key of an ORDER BY clause.
+type orderByKey struct {
+	expr       string
+	descending bool
 }
 
-// sortGroups puts p.order in group-key order, the direction taken from the
-// gateway's own per-partition streams. A GROUP BY without an ORDER BY has no
-// defined output order, so ordering those rows too costs nothing and is what
-// makes every run answer the same way.
+// groupSortKey names one group key to order the output rows by: its position
+// in groupByItems, which way to compare it, and whether the query named it.
 //
-// Leaves first-seen order in place when any group key is a shape Cosmos
-// cannot order (an array or an object), since the comparator would have to
-// invent an answer for those.
-func (p *groupPipeline) sortGroups() {
-	for _, key := range p.order {
-		for _, item := range p.groups[key].items {
-			if detectJSONType(item.Item) == jsonUnorderable {
-				return
-			}
+// A key the query named has to be compared the service's way or not at all. A
+// key appended to settle ties the clause says nothing about takes any
+// repeatable order, so it is compared with compareItemsTotal and never fails.
+type groupSortKey struct {
+	index      int
+	descending bool
+	named      bool
+}
+
+// groupSortKeys works out how to order a GROUP BY's output rows. A GROUP BY
+// the user also ordered reaches the engine as a plan with no order fields at
+// all — orderBy and orderByExpressions stay empty and the ORDER BY survives
+// only inside the rewritten query — so the clause is read from that text.
+//
+// The engine orders these rows by comparing their group keys, so every key the
+// clause names must be one of the GROUP BY expressions. An order it cannot
+// produce that way — by an aggregate, or by a column the query does not group
+// by — fails the query rather than answering in an order nobody asked for. The
+// gateway refuses those queries itself today, so this is the engine holding the
+// line rather than a reachable error.
+//
+// Group keys the clause leaves out are appended ascending. The clause does not
+// constrain them, and ordering them too is what makes two runs of one query
+// answer alike.
+func groupSortKeys(qi planQueryInfo) ([]groupSortKey, error) {
+	keys, found := trailingOrderBy(qi.RewrittenQuery)
+	if found && len(keys) == 0 {
+		return nil, errors.Wrap(ErrUnsupportedPlanFeature, "ORDER BY is not a plain list of keys")
+	}
+	sortKeys := make([]groupSortKey, 0, len(qi.GroupByExpressions))
+	named := make([]bool, len(qi.GroupByExpressions))
+	for _, key := range keys {
+		index := slices.Index(qi.GroupByExpressions, key.expr)
+		if index < 0 {
+			return nil, errors.Wrapf(ErrUnsupportedPlanFeature,
+				"ORDER BY key %q is not one of the GROUP BY expressions", key.expr)
+		}
+		if named[index] {
+			continue
+		}
+		named[index] = true
+		sortKeys = append(sortKeys, groupSortKey{index: index, descending: key.descending, named: true})
+	}
+	for index, taken := range named {
+		if !taken {
+			sortKeys = append(sortKeys, groupSortKey{index: index})
 		}
 	}
-	slices.SortStableFunc(p.order, func(a, b string) int {
-		order, err := compareGroupKeys(p.groups[a].items, p.groups[b].items)
-		if err != nil {
-			// Unreachable: every key was checked orderable just above.
-			return 0
+	return sortKeys, nil
+}
+
+// trailingOrderBy splits the ORDER BY clause that ends query into its keys.
+// found is false when the query has no trailing ORDER BY; keys is nil with
+// found true when the clause is not the plain `<expression> [ASC|DESC]` list
+// the gateway writes there, which the caller must treat as an order it cannot
+// honour rather than as no order at all.
+//
+// The words are matched outside quoted text, so a property path that needs
+// bracket notation — c["order by"] — is a key and not a clause, whichever it
+// is spelled as.
+//
+// The keys are plain property paths because that is all the service allows a
+// grouped query to order by: `GROUP BY SUBSTRING(c.x, 0, 1) ORDER BY
+// SUBSTRING(c.x, 0, 1)` is refused outright with SC2103, "not contained in
+// either an aggregate function or the GROUP BY clause", however exactly the
+// two spellings match. So a key here holds no comma and no bracketed
+// arithmetic of its own.
+func trailingOrderBy(query string) (keys []orderByKey, found bool) {
+	at := lastUnquotedIndex(query, orderByKeyword)
+	if at < 0 {
+		return nil, false
+	}
+	tail := query[at+len(orderByKeyword):]
+	for _, item := range splitUnquoted(tail, ',') {
+		fields := splitUnquoted(item, ' ', '\t', '\n', '\r')
+		var key orderByKey
+		switch len(fields) {
+		case 1:
+			key.expr = fields[0]
+		case 2:
+			key.expr = fields[0]
+			switch strings.ToUpper(fields[1]) {
+			case "ASC":
+			case "DESC":
+				key.descending = true
+			default:
+				return nil, true
+			}
+		default:
+			return nil, true
 		}
-		if p.descending {
-			return -order
+		keys = append(keys, key)
+	}
+	if len(keys) == 0 {
+		return nil, true
+	}
+	return keys, true
+}
+
+// lastUnquotedIndex returns the last index at which needle occurs in s outside
+// quoted text, ignoring case, or -1.
+func lastUnquotedIndex(s, needle string) int {
+	quoted := quotedBytes(s)
+	for i := len(s) - len(needle); i >= 0; i-- {
+		if !quoted[i] && strings.EqualFold(s[i:i+len(needle)], needle) {
+			return i
+		}
+	}
+	return -1
+}
+
+// splitUnquoted splits s on any of seps that sits outside quoted text,
+// dropping empty pieces so runs of whitespace behave like one separator.
+func splitUnquoted(s string, seps ...byte) []string {
+	quoted := quotedBytes(s)
+	var out []string
+	start := -1
+	for i := range len(s) {
+		if !quoted[i] && slices.Contains(seps, s[i]) {
+			if start >= 0 {
+				out = append(out, s[start:i])
+				start = -1
+			}
+			continue
+		}
+		if start < 0 {
+			start = i
+		}
+	}
+	if start >= 0 {
+		out = append(out, s[start:])
+	}
+	return out
+}
+
+// quotedBytes marks the bytes of s that sit inside quoted text. A rewritten
+// query quotes a property path spelled in bracket notation and any string
+// literal the query compares against, and the words of a clause mean nothing
+// inside either.
+func quotedBytes(s string) []bool {
+	quoted := make([]bool, len(s))
+	var quote byte
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if quote == 0 {
+			if c == '"' || c == '\'' {
+				quote = c
+				quoted[i] = true
+			}
+			continue
+		}
+		quoted[i] = true
+		if c == '\\' && i+1 < len(s) {
+			// An escaped quote does not close the span, and the byte it
+			// escapes is inside it either way.
+			i++
+			quoted[i] = true
+			continue
+		}
+		if c == quote {
+			quote = 0
+		}
+	}
+	return quoted
+}
+
+// sortGroups puts p.order in group-key order, in the direction the query asked
+// for. Each key carries how strictly it is compared — see groupSortKey — so a
+// key the query named fails rather than take an invented order, while one
+// appended to settle ties takes any repeatable one.
+func (p *groupPipeline) sortGroups() error {
+	var failed error
+	slices.SortStableFunc(p.order, func(a, b string) int {
+		order, err := compareGroupKeys(p.groups[a].items, p.groups[b].items, p.sort)
+		if err != nil && failed == nil {
+			failed = err
 		}
 		return order
 	})
+	return failed
 }
 
-// compareGroupKeys orders two group keys under Cosmos item ordering, column
-// by column.
-func compareGroupKeys(a, b []groupByItem) (int, error) {
-	for i := range min(len(a), len(b)) {
-		order, err := compareItems(a[i].Item, b[i].Item)
+// compareGroupKeys orders two group keys under Cosmos item ordering, comparing
+// the columns sortKeys names in the order, direction and strictness it gives.
+func compareGroupKeys(a, b []groupByItem, sortKeys []groupSortKey) (int, error) {
+	for _, key := range sortKeys {
+		if key.index >= len(a) || key.index >= len(b) {
+			continue
+		}
+		cmp := compareItemsTotal
+		if key.named {
+			cmp = compareItems
+		}
+		order, err := cmp(a[key.index].Item, b[key.index].Item)
 		if err != nil {
 			return 0, err
 		}
 		if order != 0 {
+			if key.descending {
+				return -order, nil
+			}
 			return order, nil
 		}
 	}
 	return len(a) - len(b), nil
+}
+
+// isUndefinedItem reports whether a groupByItems entry carries no value,
+// which is how the gateway spells a key the document does not define.
+func isUndefinedItem(raw json.RawMessage) bool {
+	return len(bytes.TrimLeft(raw, " \t\n\r")) == 0
 }
 
 // buildRow assembles the final JSON object for a single group, preserving
@@ -347,11 +510,15 @@ func (p *groupPipeline) buildRow(s *groupState) ([]byte, error) {
 	var buf []byte
 	buf = append(buf, '{')
 	for i, alias := range p.aliases {
-		value := json.RawMessage("null")
+		var value json.RawMessage
 		if p.kinds[i] == "" {
-			if v, ok := s.keyValues[alias]; ok {
-				value = v
+			v, ok := s.keyValues[alias]
+			if !ok {
+				// The group's key is undefined here, and the service answers
+				// that with the alias left out of the row.
+				continue
 			}
+			value = v
 		} else {
 			final, err := s.aggregators[i].finalize()
 			if err != nil {
@@ -383,13 +550,22 @@ func groupKey(items []groupByItem) (string, error) {
 	// Build a slice of the inner "item" values, canonicalize each, then join.
 	// Using a combined key of canonicalized element JSON keeps equality
 	// deterministic even for complex multi-key GROUP BY.
+	//
+	// A key the documents leave undefined arrives with no "item" at all. It is
+	// a group of its own — the service counts it apart from an explicit null —
+	// so each part is wrapped in an array and an undefined one is the empty
+	// array, which no value's canonical form can collide with.
 	parts := make([]json.RawMessage, len(items))
 	for i, it := range items {
+		if isUndefinedItem(it.Item) {
+			parts[i] = json.RawMessage(`[]`)
+			continue
+		}
 		c, err := canonicalJSON(it.Item)
 		if err != nil {
 			return "", errors.Wrapf(err, "gonative: canonicalize group key part %d", i)
 		}
-		parts[i] = c
+		parts[i] = append(append(json.RawMessage{'['}, c...), ']')
 	}
 	b, err := json.Marshal(parts)
 	if err != nil {
