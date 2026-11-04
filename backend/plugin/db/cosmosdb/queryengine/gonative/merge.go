@@ -70,8 +70,9 @@ func (s *partitionStream) pop() *orderByDoc {
 }
 
 // mergeHeap implements heap.Interface over partition indices. The comparator
-// uses compareItems on each partition's current head's orderByItems[0], with
-// the sort direction flipped for descending ORDER BY.
+// uses compareItemsTotal on each partition's current head's orderByItems[0],
+// with the sort direction flipped for descending ORDER BY — see Less for why
+// the total comparator rather than the strict one.
 type mergeHeap struct {
 	partitions []*partitionStream
 	idx        []int // heap of partition indices

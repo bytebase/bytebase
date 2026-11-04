@@ -446,12 +446,9 @@ func quotedBytes(s string) []bool {
 }
 
 // sortGroups puts p.order in group-key order, in the direction the query asked
-// for.
-//
-// A query that named an order gets compareItems, which fails rather than
-// invent an order for two different arrays or objects. A query that named none
-// gets compareItemsTotal: those rows have no order to be wrong about, and
-// ordering them anyway is what makes two runs of one query agree.
+// for. Each key carries how strictly it is compared — see groupSortKey — so a
+// key the query named fails rather than take an invented order, while one
+// appended to settle ties takes any repeatable one.
 func (p *groupPipeline) sortGroups() error {
 	var failed error
 	slices.SortStableFunc(p.order, func(a, b string) int {

@@ -64,9 +64,13 @@ func detectJSONType(raw json.RawMessage) jsonType {
 }
 
 // compareItems compares two JSON-encoded values using Cosmos item ordering.
-// Return values follow the usual convention: -1, 0, +1. Every shape a document
-// can hold compares — see jsonType for how arrays and objects are ranked — so
-// an error here means the bytes were not JSON.
+// Return values follow the usual convention: -1, 0, +1.
+//
+// Values of different classes always compare, and so do two equal values of
+// any class. Two *unequal* arrays, or two unequal objects, do not: the service
+// orders those by its index's own encoding, which no function of the values
+// reproduces, and the error says so by wrapping ErrUnsupportedPlanFeature.
+// Callers that may order such a pair take compareItemsTotal instead.
 func compareItems(a, b json.RawMessage) (int, error) {
 	ta, tb := detectJSONType(a), detectJSONType(b)
 	if ta != tb {
