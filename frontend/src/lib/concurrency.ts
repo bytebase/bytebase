@@ -1,6 +1,6 @@
 // Runs `task` over `items` with at most `limit` in flight, preserving order in
-// the result. Rejections are collected as `undefined` so one failed sheet
-// fetch does not abort the others.
+// the result. Rejections are collected as `undefined` so one failed task does
+// not abort the others.
 export async function runWithConcurrency<T, R>(
   items: readonly T[],
   limit: number,
