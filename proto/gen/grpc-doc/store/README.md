@@ -138,6 +138,7 @@
     - [IssueCommentPayload.IssueUpdate](#bytebase-store-IssueCommentPayload-IssueUpdate)
     - [IssueCommentPayload.PlanUpdate](#bytebase-store-IssueCommentPayload-PlanUpdate)
     - [IssueCommentPayload.ReviewMetadata](#bytebase-store-IssueCommentPayload-ReviewMetadata)
+    - [IssueCommentPayload.ReviewRunCompletion](#bytebase-store-IssueCommentPayload-ReviewRunCompletion)
     - [IssueCommentPayload.ReviewSubmission](#bytebase-store-IssueCommentPayload-ReviewSubmission)
     - [IssueCommentPayload.StatementAnchor](#bytebase-store-IssueCommentPayload-StatementAnchor)
   
@@ -2233,7 +2234,8 @@ new reviewer is a new value, not a migration.
 | issue_update | [IssueCommentPayload.IssueUpdate](#bytebase-store-IssueCommentPayload-IssueUpdate) |  |  |
 | plan_update | [IssueCommentPayload.PlanUpdate](#bytebase-store-IssueCommentPayload-PlanUpdate) |  |  |
 | review_submission | [IssueCommentPayload.ReviewSubmission](#bytebase-store-IssueCommentPayload-ReviewSubmission) |  |  |
-| statement_anchor | [IssueCommentPayload.StatementAnchor](#bytebase-store-IssueCommentPayload-StatementAnchor) |  | The statement context an inline comment references. Set at creation and immutable afterward; never set together with an event. |
+| review_run_completion | [IssueCommentPayload.ReviewRunCompletion](#bytebase-store-IssueCommentPayload-ReviewRunCompletion) |  |  |
+| statement_anchor | [IssueCommentPayload.StatementAnchor](#bytebase-store-IssueCommentPayload-StatementAnchor) |  | The statement context an inline comment references. Set at creation and immutable afterward, except that a later run reporting a review result again moves the result to its statement in the SQL that run reviewed. Never set together with an event. |
 | review_metadata | [IssueCommentPayload.ReviewMetadata](#bytebase-store-IssueCommentPayload-ReviewMetadata) |  | Present on review results only, beside the text and never together with an event. Written by the review executor; CreateIssueComment rejects it. The anchor is statement_anchor; a result without one addresses the whole change. |
 
 
@@ -2302,10 +2304,11 @@ add/remove/update from the snapshot pair.
 ### IssueCommentPayload.ReviewMetadata
 ReviewMetadata is what a review result carries beyond its text: which
 reviewer posted it, what it was judged against, its priority, and the
-databases it applies to. Results from the same reviewer are superseded
-together: when a run completes, it resolves every OPEN root of its type
-and marks every earlier root of its type superseded, in the transaction
-that posts the new results.
+databases it applies to. When a run completes, an earlier result of its
+type whose fingerprint the run reports again keeps its thread, and the
+run posts no new result for it; every other earlier root of its type is
+resolved and marked superseded, in the transaction that posts the new
+results.
 
 
 | Field | Type | Label | Description |
@@ -2314,7 +2317,30 @@ that posts the new results.
 | rule_type | [ReviewRuleType](#bytebase-store-ReviewRuleType) |  | The rule judged against. Set if and only if run_type is RULE. |
 | priority | [IssueCommentPayload.ReviewMetadata.Priority](#bytebase-store-IssueCommentPayload-ReviewMetadata-Priority) |  | A result merged across databases carries the highest priority among them. |
 | targets | [string](#string) | repeated | Every database the result applies to, sorted. Always complete; the renderer collapses it when it equals the spec&#39;s target set. Format: instances/{instance}/databases/{database} |
-| superseded | [bool](#bool) |  | A later run of the same reviewer has completed, so the result is not from the latest review. Set by that run whatever the thread state, and never cleared. |
+| superseded | [bool](#bool) |  | A later run of the same reviewer has completed without reporting the result again, so the latest review does not hold it. Set by that run whatever the thread state, and never cleared. |
+| fingerprint | [string](#string) |  | Identifies the finding across runs: equal fingerprints are the same finding on the same SQL. Unique among the results of one run. Empty when the reviewer cannot tell findings apart across runs, and an empty fingerprint matches nothing. |
+| attempt | [int64](#int64) |  | The review_run.attempt of the run that posted the result. A result a later run reports again keeps its attempt. |
+
+
+
+
+
+
+<a name="bytebase-store-IssueCommentPayload-ReviewRunCompletion"></a>
+
+### IssueCommentPayload.ReviewRunCompletion
+ReviewRunCompletion records that a review run completed DONE, and what
+it did to the results of its reviewer. Posted with no creator, in the
+transaction that posts the run&#39;s results.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| run_type | [ReviewRun.Type](#bytebase-store-ReviewRun-Type) |  |  |
+| attempt | [int64](#int64) |  | The run&#39;s review_run.attempt; its new results carry the same ReviewMetadata.attempt. |
+| posted_count | [int32](#int32) |  | Results the run posted as new threads. |
+| kept_count | [int32](#int32) |  | Earlier results the run reported again, which kept their threads. |
+| superseded_count | [int32](#int32) |  | Earlier results the run no longer reports, which it superseded. |
 
 
 

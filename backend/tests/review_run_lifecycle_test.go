@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
@@ -346,4 +347,169 @@ func setStoredAISQLReviewEnabled(ctx context.Context, t *testing.T, ctl *control
 	affected, err := result.RowsAffected()
 	require.NoError(t, err)
 	require.Equal(t, int64(1), affected)
+}
+
+// TestRuleReviewKeepsThreadsAcrossRuns drives the rule review through a re-run
+// and two SQL edits: a finding reported again keeps its thread, a person's
+// resolution included, and is not posted twice; a finding the SQL no longer
+// has is superseded; an edited statement is judged anew.
+func TestRuleReviewKeepsThreadsAcrossRuns(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+	ctl, ctx := startWorkspace(ctx, t, func(p *component.Profile) { p.SQLReviewV2 = true })
+	database := ctl.createTestPostgreSQLDatabase(ctx, t)
+
+	createSheet := func(statement string) string {
+		sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
+			Parent: ctl.project.Name,
+			Sheet:  &v1pb.Sheet{Content: []byte(statement)},
+		}))
+		a.NoError(err)
+		return sheet.Msg.Name
+	}
+	specID := uuid.NewString()
+	spec := func(sheet string) []*v1pb.Plan_Spec {
+		return []*v1pb.Plan_Spec{{
+			Id: specID,
+			Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+				ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{Targets: []string{database.Name}, Sheet: sheet},
+			},
+		}}
+	}
+	plan, err := ctl.planServiceClient.CreatePlan(ctx, connect.NewRequest(&v1pb.CreatePlanRequest{
+		Parent: ctl.project.Name,
+		Plan:   &v1pb.Plan{Specs: spec(createSheet("DROP TABLE IF EXISTS keep_a;\nDROP TABLE IF EXISTS keep_b;"))},
+	}))
+	a.NoError(err)
+	issue, err := ctl.issueServiceClient.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
+		Parent: ctl.project.Name,
+		Issue:  &v1pb.Issue{Title: "Review across runs", Type: v1pb.Issue_DATABASE_CHANGE, Plan: plan.Msg.Name},
+	}))
+	a.NoError(err)
+	projectID, issueUID, err := common.GetProjectIDIssueUID(issue.Msg.Name)
+	a.NoError(err)
+
+	waitAttempt := func(attempt int64) {
+		t.Helper()
+		a.Eventually(func() bool {
+			for _, r := range listReviewRuns(ctx, t, ctl, projectID) {
+				if r.IssueID == issueUID && r.Type == "RULE" && r.Attempt == attempt && (r.Status == "DONE" || r.Status == "FAILED") {
+					a.Equal("DONE", r.Status, "payload %s", r.Payload)
+					return true
+				}
+			}
+			return false
+		}, 90*time.Second, 500*time.Millisecond, "rule review attempt %d should finish", attempt)
+	}
+	// The DROP findings, by thread name.
+	drops := func() map[string]*v1pb.IssueComment {
+		t.Helper()
+		resp, err := ctl.issueServiceClient.ListIssueComments(ctx, connect.NewRequest(&v1pb.ListIssueCommentsRequest{Parent: issue.Msg.Name}))
+		a.NoError(err)
+		out := make(map[string]*v1pb.IssueComment)
+		for _, comment := range resp.Msg.IssueComments {
+			if comment.GetReviewMetadata().GetRuleType() == v1pb.ReviewRuleType_DISALLOW_DROP_OBJECT {
+				out[comment.Name] = comment
+			}
+		}
+		return out
+	}
+	// The rule review's latest completion event.
+	lastCompletion := func() *v1pb.IssueComment_ReviewRunCompletion {
+		t.Helper()
+		resp, err := ctl.issueServiceClient.ListIssueComments(ctx, connect.NewRequest(&v1pb.ListIssueCommentsRequest{Parent: issue.Msg.Name}))
+		a.NoError(err)
+		var last *v1pb.IssueComment_ReviewRunCompletion
+		for _, comment := range resp.Msg.IssueComments {
+			if completion := comment.GetReviewRunCompletion(); completion.GetRunType() == v1pb.ReviewRun_RULE {
+				a.Empty(comment.Creator)
+				last = completion
+			}
+		}
+		a.NotNil(last)
+		return last
+	}
+	counts := func(c *v1pb.IssueComment_ReviewRunCompletion) []int64 {
+		return []int64{c.GetAttempt(), int64(c.GetPostedCount()), int64(c.GetKeptCount()), int64(c.GetSupersededCount())}
+	}
+	about := func(threads map[string]*v1pb.IssueComment, table string) []*v1pb.IssueComment {
+		var out []*v1pb.IssueComment
+		for _, thread := range threads {
+			if strings.Contains(thread.Comment, table) {
+				out = append(out, thread)
+			}
+		}
+		return out
+	}
+	updateSQL := func(statement string) string {
+		t.Helper()
+		sheet := createSheet(statement)
+		_, err := ctl.planServiceClient.UpdatePlan(ctx, connect.NewRequest(&v1pb.UpdatePlanRequest{
+			Plan:       &v1pb.Plan{Name: plan.Msg.Name, Specs: spec(sheet)},
+			UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"specs"}},
+		}))
+		a.NoError(err)
+		return sheet
+	}
+
+	waitAttempt(0)
+	a.Equal([]int64{0, 2, 0, 0}, counts(lastCompletion()), "attempt, posted, kept, superseded")
+	first := drops()
+	a.Len(first, 2, "%v", first)
+	a.Len(about(first, "keep_a"), 1)
+	a.Len(about(first, "keep_b"), 1)
+	threadA, threadB := about(first, "keep_a")[0], about(first, "keep_b")[0]
+	_, err = ctl.issueServiceClient.UpdateIssueComment(ctx, connect.NewRequest(&v1pb.UpdateIssueCommentRequest{
+		Parent:       issue.Msg.Name,
+		IssueComment: &v1pb.IssueComment{Name: threadB.Name, ThreadState: new(v1pb.IssueComment_RESOLVED)},
+		UpdateMask:   &fieldmaskpb.FieldMask{Paths: []string{"thread_state"}},
+	}))
+	a.NoError(err)
+
+	// A re-run on the same SQL posts nothing and keeps the person's resolution.
+	_, err = runReview(ctx, ctl, issue.Msg.Name, "rule")
+	a.NoError(err)
+	waitAttempt(1)
+	a.Equal([]int64{1, 0, 2, 0}, counts(lastCompletion()))
+	second := drops()
+	a.Len(second, 2, "%v", second)
+	a.Equal(v1pb.IssueComment_OPEN, second[threadA.Name].GetThreadState())
+	a.Equal(v1pb.IssueComment_RESOLVED, second[threadB.Name].GetThreadState())
+	a.False(second[threadA.Name].GetReviewMetadata().GetSuperseded())
+	a.False(second[threadB.Name].GetReviewMetadata().GetSuperseded())
+
+	// Dropping keep_a and moving keep_b down a line supersedes A and keeps B,
+	// which moves with its statement.
+	moved := updateSQL("SELECT 1;\nDROP TABLE IF EXISTS keep_b;")
+	waitAttempt(2)
+	a.Equal([]int64{2, 0, 1, 1}, counts(lastCompletion()))
+	third := drops()
+	a.Len(third, 2, "%v", third)
+	a.Equal(v1pb.IssueComment_RESOLVED, third[threadA.Name].GetThreadState())
+	a.True(third[threadA.Name].GetReviewMetadata().GetSuperseded())
+	a.Equal(v1pb.IssueComment_RESOLVED, third[threadB.Name].GetThreadState())
+	a.False(third[threadB.Name].GetReviewMetadata().GetSuperseded())
+	a.True(strings.HasSuffix(moved, "/"+third[threadB.Name].GetStatementAnchor().GetSheetSha256()))
+	a.Equal(int32(2), third[threadB.Name].GetStatementAnchor().GetStartPosition().GetLine())
+
+	// Editing B's statement judges it anew.
+	_ = updateSQL("SELECT 1;\nDROP TABLE IF EXISTS keep_b CASCADE;")
+	waitAttempt(3)
+	a.Equal([]int64{3, 1, 0, 1}, counts(lastCompletion()))
+	fourth := drops()
+	a.Len(fourth, 3, "%v", fourth)
+	a.True(fourth[threadB.Name].GetReviewMetadata().GetSuperseded())
+	var current []*v1pb.IssueComment
+	for _, thread := range about(fourth, "keep_b") {
+		if !thread.GetReviewMetadata().GetSuperseded() {
+			current = append(current, thread)
+		}
+	}
+	a.Len(current, 1)
+	a.NotEqual(threadB.Name, current[0].Name)
+	a.Equal(v1pb.IssueComment_OPEN, current[0].GetThreadState())
+	a.Equal(int64(3), current[0].GetReviewMetadata().GetAttempt())
+	a.Equal(int64(0), fourth[threadB.Name].GetReviewMetadata().GetAttempt())
 }

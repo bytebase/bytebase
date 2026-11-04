@@ -998,8 +998,10 @@ export declare type IssueComment = Message<"bytebase.v1.IssueComment"> & {
 
   /**
    * Optional source context on a root or reply. A reply's anchor must share
-   * the root's spec and sheet_sha256; it may narrow the range.
-   * Cannot be set on events. Immutable after creation.
+   * the root's spec and sheet_sha256 when created; it may narrow the range.
+   * Cannot be set on events. Immutable after creation, except that a later
+   * review run reporting a review result again moves the result to its
+   * statement in the SQL that run reviewed.
    *
    * @generated from field: bytebase.v1.StatementAnchor statement_anchor = 16;
    */
@@ -1050,6 +1052,14 @@ export declare type IssueComment = Message<"bytebase.v1.IssueComment"> & {
      */
     value: IssueComment_ReviewSubmission;
     case: "reviewSubmission";
+  } | {
+    /**
+     * Review run completion event.
+     *
+     * @generated from field: bytebase.v1.IssueComment.ReviewRunCompletion review_run_completion = 18;
+     */
+    value: IssueComment_ReviewRunCompletion;
+    case: "reviewRunCompletion";
   } | { case: undefined; value?: undefined };
 };
 
@@ -1093,12 +1103,20 @@ export declare type IssueComment_ReviewMetadata = Message<"bytebase.v1.IssueComm
   targets: string[];
 
   /**
-   * A later run of the same reviewer has completed, so the result is not
-   * from the latest review, whatever its thread state.
+   * A later run of the same reviewer has completed without reporting the
+   * result again, whatever its thread state.
    *
    * @generated from field: bool superseded = 5;
    */
   superseded: boolean;
+
+  /**
+   * The ReviewRunCompletion.attempt of the run that posted the result. A
+   * result a later run reports again keeps its thread and its attempt.
+   *
+   * @generated from field: int64 attempt = 6;
+   */
+  attempt: bigint;
 };
 
 /**
@@ -1272,6 +1290,56 @@ export declare type IssueComment_ReviewSubmission = Message<"bytebase.v1.IssueCo
  * Use `create(IssueComment_ReviewSubmissionSchema)` to create a new message.
  */
 export declare const IssueComment_ReviewSubmissionSchema: GenMessage<IssueComment_ReviewSubmission>;
+
+/**
+ * A review run completed, and what it did to the results of its reviewer.
+ * Posted by the reviewer, with no creator.
+ *
+ * @generated from message bytebase.v1.IssueComment.ReviewRunCompletion
+ */
+export declare type IssueComment_ReviewRunCompletion = Message<"bytebase.v1.IssueComment.ReviewRunCompletion"> & {
+  /**
+   * The reviewer that ran.
+   *
+   * @generated from field: bytebase.v1.ReviewRun.Type run_type = 1;
+   */
+  runType: ReviewRun_Type;
+
+  /**
+   * Identifies the run among its reviewer's runs on the issue. The results
+   * it posted carry the same ReviewMetadata.attempt.
+   *
+   * @generated from field: int64 attempt = 2;
+   */
+  attempt: bigint;
+
+  /**
+   * Results the run posted as new threads.
+   *
+   * @generated from field: int32 posted_count = 3;
+   */
+  postedCount: number;
+
+  /**
+   * Earlier results the run reported again, which kept their threads.
+   *
+   * @generated from field: int32 kept_count = 4;
+   */
+  keptCount: number;
+
+  /**
+   * Earlier results the run no longer reports, now superseded.
+   *
+   * @generated from field: int32 superseded_count = 5;
+   */
+  supersededCount: number;
+};
+
+/**
+ * Describes the message bytebase.v1.IssueComment.ReviewRunCompletion.
+ * Use `create(IssueComment_ReviewRunCompletionSchema)` to create a new message.
+ */
+export declare const IssueComment_ReviewRunCompletionSchema: GenMessage<IssueComment_ReviewRunCompletion>;
 
 /**
  * Plan update event information (snapshot of plan.config.specs before

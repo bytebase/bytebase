@@ -716,6 +716,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.IssueCommentPayload.ReviewRunCompletion"><span class="badge">M</span>IssueCommentPayload.ReviewRunCompletion</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.IssueCommentPayload.ReviewSubmission"><span class="badge">M</span>IssueCommentPayload.ReviewSubmission</a>
                 </li>
               
@@ -6416,11 +6420,20 @@ model.</p></td>
                 </tr>
               
                 <tr>
+                  <td>review_run_completion</td>
+                  <td><a href="#bytebase.store.IssueCommentPayload.ReviewRunCompletion">IssueCommentPayload.ReviewRunCompletion</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>statement_anchor</td>
                   <td><a href="#bytebase.store.IssueCommentPayload.StatementAnchor">IssueCommentPayload.StatementAnchor</a></td>
                   <td></td>
                   <td><p>The statement context an inline comment references. Set at creation and
-immutable afterward; never set together with an event. </p></td>
+immutable afterward, except that a later run reporting a review result
+again moves the result to its statement in the SQL that run reviewed.
+Never set together with an event. </p></td>
                 </tr>
               
                 <tr>
@@ -6569,7 +6582,7 @@ change. </p></td>
         
       
         <h3 id="bytebase.store.IssueCommentPayload.ReviewMetadata">IssueCommentPayload.ReviewMetadata</h3>
-        <p>ReviewMetadata is what a review result carries beyond its text: which</p><p>reviewer posted it, what it was judged against, its priority, and the</p><p>databases it applies to. Results from the same reviewer are superseded</p><p>together: when a run completes, it resolves every OPEN root of its type</p><p>and marks every earlier root of its type superseded, in the transaction</p><p>that posts the new results.</p>
+        <p>ReviewMetadata is what a review result carries beyond its text: which</p><p>reviewer posted it, what it was judged against, its priority, and the</p><p>databases it applies to. When a run completes, an earlier result of its</p><p>type whose fingerprint the run reports again keeps its thread, and the</p><p>run posts no new result for it; every other earlier root of its type is</p><p>resolved and marked superseded, in the transaction that posts the new</p><p>results.</p>
 
         
           <table class="field-table">
@@ -6614,9 +6627,80 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td>superseded</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>A later run of the same reviewer has completed, so the result is not
-from the latest review. Set by that run whatever the thread state, and
-never cleared. </p></td>
+                  <td><p>A later run of the same reviewer has completed without reporting the
+result again, so the latest review does not hold it. Set by that run
+whatever the thread state, and never cleared. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>fingerprint</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Identifies the finding across runs: equal fingerprints are the same
+finding on the same SQL. Unique among the results of one run. Empty
+when the reviewer cannot tell findings apart across runs, and an empty
+fingerprint matches nothing. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>attempt</td>
+                  <td><a href="#int64">int64</a></td>
+                  <td></td>
+                  <td><p>The review_run.attempt of the run that posted the result. A result
+a later run reports again keeps its attempt. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.IssueCommentPayload.ReviewRunCompletion">IssueCommentPayload.ReviewRunCompletion</h3>
+        <p>ReviewRunCompletion records that a review run completed DONE, and what</p><p>it did to the results of its reviewer. Posted with no creator, in the</p><p>transaction that posts the run's results.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>run_type</td>
+                  <td><a href="#bytebase.store.ReviewRun.Type">ReviewRun.Type</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>attempt</td>
+                  <td><a href="#int64">int64</a></td>
+                  <td></td>
+                  <td><p>The run&#39;s review_run.attempt; its new results carry the same
+ReviewMetadata.attempt. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>posted_count</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>Results the run posted as new threads. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>kept_count</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>Earlier results the run reported again, which kept their threads. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>superseded_count</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>Earlier results the run no longer reports, which it superseded. </p></td>
                 </tr>
               
             </tbody>
