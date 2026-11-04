@@ -635,11 +635,14 @@ export function PlanDetailHeader() {
         </div>
 
         <div className="flex shrink-0 items-center gap-x-2">
-          {!page.isCreating && project && page.plan.name && (
-            <Button onClick={openPlanReview} size="md" appearance="outline">
-              {t("agent.plan-assistance.review")}
-            </Button>
-          )}
+          {!page.isCreating &&
+            page.plan.state === State.ACTIVE &&
+            project &&
+            page.plan.name && (
+              <Button onClick={openPlanReview} size="md" appearance="outline">
+                {t("agent.plan-assistance.review")}
+              </Button>
+            )}
           {/* Lifecycle slot: one primary advance/status per state. Create and
               ready-for-review stay here (coupled to the title/create flow); all
               other states render through PlanLifecycleSlot. */}

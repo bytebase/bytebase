@@ -296,6 +296,15 @@ describe("PlanDetailHeader draft ownership", () => {
     );
   });
 
+  test("does not offer Agent review for a closed Plan", () => {
+    mocks.page = makePage({ draft: false, planState: State.DELETED });
+    render(<PlanDetailHeader />);
+
+    expect(
+      screen.queryByRole("button", { name: "agent.plan-assistance.review" })
+    ).toBeNull();
+  });
+
   test("edits draft title and description through UpdatePlan with plan permission only", async () => {
     render(
       <>

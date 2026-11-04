@@ -201,6 +201,40 @@ describe("resolveAgentPageResource", () => {
     });
   });
 
+  test("uses the current Plan-create target instead of the initial URL target", () => {
+    expect(
+      resolveAgentPageResource(
+        detailRoute(
+          PROJECT_V1_ROUTE_PLAN_DETAIL,
+          { projectId: "orders", planId: "create" },
+          {
+            agentDatabaseName: "instances/primary/databases/new",
+            databaseList: "instances/primary/databases/app",
+          }
+        )
+      )
+    ).toEqual({
+      kind: "plan-create",
+      project: "projects/orders",
+      databaseName: "instances/primary/databases/new",
+    });
+  });
+
+  test("does not fall back to the initial target when the current spec is unbound", () => {
+    expect(
+      resolveAgentPageResource(
+        detailRoute(
+          PROJECT_V1_ROUTE_PLAN_DETAIL,
+          { projectId: "orders", planId: "create" },
+          {
+            agentDatabaseName: "",
+            databaseList: "instances/primary/databases/app",
+          }
+        )
+      )
+    ).toEqual({ kind: "plan-create", project: "projects/orders" });
+  });
+
   test("does not select one database from a multi-target Plan-create route", () => {
     expect(
       resolveAgentPageResource(

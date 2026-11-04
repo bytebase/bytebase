@@ -2,6 +2,7 @@ import { Check, Code2, Loader2, MessageSquareMore, Rocket } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { router } from "@/app/router";
 import { MAIN_SCROLL_RESTORATION_ID } from "@/app/router/NavigationScrollRestoration";
 import {
   AlertDialog,
@@ -38,6 +39,7 @@ import {
   PlanDetailProvider,
   usePlanDetailContext,
 } from "./shell/PlanDetailContext";
+import { getPlanCreateAgentContextQuery } from "./utils/agentContext";
 import {
   buildChangesSummary,
   buildDeploySummary,
@@ -140,6 +142,25 @@ function ProjectPlanDetailPageInner({
   // first client-local spec, without a placeholder route or a follow-up effect.
   const effectiveSelectedSpecId =
     selectedSpecId || page.plan.specs[0]?.id || "";
+  const planCreateRouteQuery = useMemo(
+    () =>
+      getPlanCreateAgentContextQuery(
+        routeQuery ?? {},
+        page.plan.specs,
+        effectiveSelectedSpecId
+      ),
+    [effectiveSelectedSpecId, page.plan.specs, routeQuery]
+  );
+  useEffect(() => {
+    if (!page.isCreating || !page.ready || !planCreateRouteQuery) return;
+    void router.replace(
+      {
+        query: planCreateRouteQuery,
+        ...(routeHash ? { hash: routeHash } : {}),
+      },
+      { preventScrollReset: true }
+    );
+  }, [page.isCreating, page.ready, planCreateRouteQuery, routeHash]);
 
   return (
     <PlanDetailProvider value={page}>

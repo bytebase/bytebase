@@ -20,6 +20,7 @@ const mocks = vi.hoisted(() => ({
   },
   branchMountCount: { value: 0 },
   routerPush: vi.fn(),
+  routerReplace: vi.fn(),
   selectedSpecRender: vi.fn(),
   usePlanDetailPage: vi.fn(),
 }));
@@ -34,6 +35,7 @@ vi.mock("react-i18next", () => ({
 vi.mock("@/app/router", () => ({
   router: {
     push: mocks.routerPush,
+    replace: mocks.routerReplace,
   },
 }));
 
@@ -331,6 +333,66 @@ describe("ProjectPlanDetailPage", () => {
       mocks.selectedSpecRender.mock.calls.every(([id]) => id === "spec-1")
     ).toBe(true);
     expect(selectedSpecIdText()).toBe("spec-1");
+  });
+
+  it("keeps the current Plan-create target in the route context", async () => {
+    const page = buildPage();
+    const spec = {
+      id: "spec-1",
+      config: {
+        case: "changeDatabaseConfig",
+        value: { targets: ["instances/i1/databases/db-a"] },
+      },
+    };
+    page.plan.specs = [spec] as unknown as PlanDetailPageState["plan"]["specs"];
+    mocks.usePlanDetailPage.mockReturnValue(page);
+
+    await act(async () => {
+      root.render(
+        <ProjectPlanDetailPage
+          planId="create"
+          projectId="foo"
+          routeQuery={{
+            databaseList: "instances/i1/databases/db-a",
+            sqlStorageKey: "keep-this-query",
+          }}
+        />
+      );
+    });
+    expect(mocks.routerReplace).not.toHaveBeenCalled();
+
+    page.plan.specs = [
+      {
+        ...spec,
+        config: {
+          ...spec.config,
+          value: { targets: ["instances/i1/databases/db-b"] },
+        },
+      },
+    ] as unknown as PlanDetailPageState["plan"]["specs"];
+    await act(async () => {
+      root.render(
+        <ProjectPlanDetailPage
+          planId="create"
+          projectId="foo"
+          routeQuery={{
+            databaseList: "instances/i1/databases/db-a",
+            sqlStorageKey: "keep-this-query",
+          }}
+        />
+      );
+    });
+
+    expect(mocks.routerReplace).toHaveBeenCalledWith(
+      {
+        query: {
+          agentDatabaseName: "instances/i1/databases/db-b",
+          databaseList: "instances/i1/databases/db-a",
+          sqlStorageKey: "keep-this-query",
+        },
+      },
+      { preventScrollReset: true }
+    );
   });
 
   it("renders a route-selected spec without an intermediate stale spec", async () => {

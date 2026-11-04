@@ -85,16 +85,24 @@ export function resolveAgentPageResource(
     typeof planId === "string" &&
     planId.toLowerCase() === "create"
   ) {
+    const agentDatabaseName =
+      typeof route.query.agentDatabaseName === "string"
+        ? route.query.agentDatabaseName
+        : undefined;
     const databaseList =
       typeof route.query.databaseList === "string"
         ? route.query.databaseList
         : undefined;
     const selectedDatabases = databaseList?.split(",");
     const databaseName =
-      selectedDatabases?.length === 1 &&
-      isValidDatabaseName(selectedDatabases[0])
-        ? selectedDatabases[0]
-        : undefined;
+      agentDatabaseName !== undefined
+        ? isValidDatabaseName(agentDatabaseName)
+          ? agentDatabaseName
+          : undefined
+        : selectedDatabases?.length === 1 &&
+            isValidDatabaseName(selectedDatabases[0])
+          ? selectedDatabases[0]
+          : undefined;
     return {
       kind: "plan-create",
       project,
