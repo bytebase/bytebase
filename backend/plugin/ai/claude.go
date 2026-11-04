@@ -46,8 +46,10 @@ type chatClaudeContentBlock struct {
 }
 
 type chatClaudeUsage struct {
-	InputTokens  int32 `json:"input_tokens"`
-	OutputTokens int32 `json:"output_tokens"`
+	InputTokens              *int32 `json:"input_tokens"`
+	OutputTokens             *int32 `json:"output_tokens"`
+	CacheCreationInputTokens *int32 `json:"cache_creation_input_tokens"`
+	CacheReadInputTokens     *int32 `json:"cache_read_input_tokens"`
 }
 
 type chatClaudeResponse struct {
@@ -246,8 +248,11 @@ func chatClaude(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb
 	}
 
 	result := &v1pb.AIChatResponse{StopReason: claudeStopReason(resp.StopReason)}
-	if resp.Usage != nil {
-		result.Usage = newAIChatUsage(resp.Usage.InputTokens + resp.Usage.OutputTokens)
+	if usage := resp.Usage; usage != nil && usage.InputTokens != nil && usage.OutputTokens != nil {
+		// Claude reports uncached, cache-write, and cache-read input separately.
+		inputTokens := addOptionalTokenCounts(usage.InputTokens, usage.CacheCreationInputTokens, usage.CacheReadInputTokens)
+		totalTokens := *inputTokens + *usage.OutputTokens
+		result.Usage = newAIChatUsage(&totalTokens, inputTokens, usage.OutputTokens, usage.CacheReadInputTokens)
 	}
 	var textContent string
 	for _, rawBlock := range resp.Content {

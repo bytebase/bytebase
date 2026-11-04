@@ -917,6 +917,7 @@ function AdditionalAddressesFields({
 
 interface InstanceFormBodyProps {
   onOpenInfoPanel?: (section: InfoSection) => void;
+  onAskAgent?: () => void;
 }
 
 // Engines without a host field (or with a non-local default) drop the local
@@ -927,7 +928,10 @@ const clearLocalPlaceholderHost = (ds: EditDataSource) => {
   }
 };
 
-export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
+export function InstanceFormBody({
+  onOpenInfoPanel,
+  onAskAgent,
+}: InstanceFormBodyProps) {
   const { t } = useTranslation();
   const ctx = useInstanceFormContext();
   const {
@@ -1543,7 +1547,22 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
         </FormSection>
 
         {/* Connection Card */}
-        <FormSection layout="stacked" title={t("instance.section.connection")}>
+        <FormSection
+          layout="stacked"
+          title={t("instance.section.connection")}
+          action={
+            isCreating && onAskAgent ? (
+              <Button
+                type="button"
+                appearance="link"
+                size="sm"
+                onClick={() => onAskAgent()}
+              >
+                {t("instance.ask-agent")}
+              </Button>
+            ) : undefined
+          }
+        >
           <FormFieldGroup density="compact">
             <DataSourceSection
               hideOptions

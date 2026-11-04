@@ -514,6 +514,7 @@ function AwsCredentialFields({
       >
         <Input
           aria-label={"Access Key ID"}
+          data-agent-sensitive
           className="w-full"
           disabled={!allowEdit}
           placeholder={t("common.sensitive-placeholder")}
@@ -524,6 +525,7 @@ function AwsCredentialFields({
       <FormField title={<span className="textlabel">Secret Access Key</span>}>
         <Input
           aria-label={"Secret Access Key"}
+          data-agent-sensitive
           className="w-full"
           disabled={!allowEdit}
           placeholder={t("common.sensitive-placeholder")}
@@ -534,6 +536,7 @@ function AwsCredentialFields({
       <FormField title={<span className="textlabel">Session Token</span>}>
         <Input
           aria-label={"Session Token"}
+          data-agent-sensitive
           className="w-full"
           disabled={!allowEdit}
           placeholder={t("common.sensitive-placeholder")}
@@ -652,6 +655,7 @@ function GcpCredentialField({
       <div className="flex flex-col gap-y-1 w-full">
         <Textarea
           aria-label={t("instance.iam-extension.specific-credential")}
+          data-agent-sensitive
           value={value}
           placeholder={t("instance.type-or-paste-credentials-write-only")}
           className={`w-full h-24 whitespace-pre-wrap resize-none ${isDragOver ? "border-accent" : ""}`}

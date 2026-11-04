@@ -23,6 +23,10 @@ export const BACKGROUND_PAGE_ACTION_RESULT: DomActionResult = {
   message:
     "This chat is not selected. Return to it before using the current page.",
 };
+const PASSWORD_FIELD_ACTION_RESULT: DomActionResult = {
+  success: false,
+  message: "Password fields are hidden from the agent.",
+};
 
 function getCenter(el: Element): { x: number; y: number } {
   const rect = el.getBoundingClientRect();
@@ -161,6 +165,9 @@ async function handleInput(
       message: `No input element found within [${el.tagName.toLowerCase()}]`,
     };
   }
+  if (target instanceof HTMLInputElement && target.type === "password") {
+    return PASSWORD_FIELD_ACTION_RESULT;
+  }
 
   target.focus();
   const normalizedValue =
@@ -201,11 +208,17 @@ async function handleRead(
 
   // Standard inputs
   if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+    if (el instanceof HTMLInputElement && el.type === "password") {
+      return PASSWORD_FIELD_ACTION_RESULT;
+    }
     return { success: true, message: el.value };
   }
 
   const inner = findInnerInput(el);
   if (inner) {
+    if (inner instanceof HTMLInputElement && inner.type === "password") {
+      return PASSWORD_FIELD_ACTION_RESULT;
+    }
     return { success: true, message: inner.value };
   }
 

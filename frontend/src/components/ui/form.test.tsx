@@ -251,6 +251,32 @@ describe("Form section layouts", () => {
     unmount();
   });
 
+  test("renders a section action beside, not inside, its heading", () => {
+    const { container, unmount } = renderIntoContainer(
+      createElement(
+        FormSection,
+        {
+          title: "Connection",
+          action: createElement("button", { type: "button" }, "Ask Agent"),
+        },
+        createElement("div", null, "Content")
+      )
+    );
+
+    const row = container.querySelector(
+      '[data-slot="form-section-heading-row"]'
+    );
+    const title = container.querySelector('[data-slot="form-section-title"]');
+    const action = container.querySelector("button");
+
+    expect(row).not.toBeNull();
+    expect(title?.parentElement).toBe(row);
+    expect(action?.parentElement).toBe(row);
+    expect(title?.contains(action)).toBe(false);
+
+    unmount();
+  });
+
   test("renders the description in the header, under the title", () => {
     const { container, unmount } = renderIntoContainer(
       createElement(

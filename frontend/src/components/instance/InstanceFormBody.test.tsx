@@ -283,6 +283,36 @@ test("uses a switch for synchronization scope", () => {
   );
 });
 
+test("places general Agent help beside the connection section heading", () => {
+  const onAskAgent = vi.fn();
+  render(
+    <InstanceFormProvider>
+      <InstanceFormBody onAskAgent={onAskAgent} />
+    </InstanceFormProvider>
+  );
+
+  const connectionTitle = screen.getByRole("heading", {
+    name: "instance.section.connection",
+  });
+  const headingRow = connectionTitle.closest(
+    '[data-slot="form-section-heading-row"]'
+  );
+  const askAgentButton = screen.getByRole("button", {
+    name: "instance.ask-agent",
+  });
+
+  expect(headingRow?.contains(askAgentButton)).toBe(true);
+  expect(connectionTitle).toHaveStyle({ width: "fit-content" });
+  expect(askAgentButton.querySelector("svg")).toBeNull();
+  expect(askAgentButton).toHaveTextContent("instance.ask-agent");
+  expect(
+    screen.queryByText("instance.need-help-connecting")
+  ).not.toBeInTheDocument();
+
+  fireEvent.click(askAgentButton);
+  expect(onAskAgent).toHaveBeenCalledOnce();
+});
+
 test("hides database-selection guidance while syncing all databases", () => {
   render(
     <InstanceFormProvider>

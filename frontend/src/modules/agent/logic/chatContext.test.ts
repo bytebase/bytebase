@@ -1,12 +1,16 @@
 import { describe, expect, test } from "vitest";
 import type { ReactRoute } from "@/app/router";
 import {
+  INSTANCE_ROUTE_CREATE,
+  INSTANCE_ROUTE_DETAIL,
   PROJECT_V1_ROUTE_DASHBOARD,
   PROJECT_V1_ROUTE_DATABASE_CHANGELOG_DETAIL,
   PROJECT_V1_ROUTE_DATABASE_DETAIL,
   PROJECT_V1_ROUTE_DATABASE_REVISION_DETAIL,
   PROJECT_V1_ROUTE_DATABASES,
   PROJECT_V1_ROUTE_DETAIL,
+  PROJECT_V1_ROUTE_INSTANCE_CREATE,
+  PROJECT_V1_ROUTE_INSTANCE_DETAIL,
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
   PROJECT_V1_ROUTE_ISSUES,
   PROJECT_V1_ROUTE_PLAN_DETAIL,
@@ -89,6 +93,40 @@ describe("resolveAgentPageResource", () => {
         detailRoute("sql-editor.project", { projectId: "orders" })
       )
     ).toBeUndefined();
+  });
+
+  test.each([
+    [
+      INSTANCE_ROUTE_DETAIL,
+      { instanceId: "primary" },
+      { kind: "instance", name: "instances/primary" },
+    ],
+    [
+      PROJECT_V1_ROUTE_INSTANCE_DETAIL,
+      { projectId: "orders", instanceId: "primary" },
+      {
+        kind: "instance",
+        name: "projects/orders/instances/primary",
+        project: "projects/orders",
+      },
+    ],
+  ])("detects instance detail routes (%s)", (name, params, expected) => {
+    expect(resolveAgentPageResource(detailRoute(name, params))).toEqual(
+      expected
+    );
+  });
+
+  test.each([
+    [INSTANCE_ROUTE_CREATE, {}, { kind: "instance-create" }],
+    [
+      PROJECT_V1_ROUTE_INSTANCE_CREATE,
+      { projectId: "orders" },
+      { kind: "instance-create", project: "projects/orders" },
+    ],
+  ])("detects instance creation routes (%s)", (name, params, expected) => {
+    expect(resolveAgentPageResource(detailRoute(name, params))).toEqual(
+      expected
+    );
   });
 
   test("uses the issue's project", () => {

@@ -9235,6 +9235,27 @@ components:
           title: total_tokens
           format: int32
           description: Total tokens used by the provider call.
+        inputTokens:
+          type:
+            - integer
+            - "null"
+          title: input_tokens
+          format: int32
+          description: Input tokens used by the provider call, including cached input.
+        outputTokens:
+          type:
+            - integer
+            - "null"
+          title: output_tokens
+          format: int32
+          description: Output tokens used by the provider call, including reasoning tokens.
+        cachedInputTokens:
+          type:
+            - integer
+            - "null"
+          title: cached_input_tokens
+          format: int32
+          description: Input tokens read from cache. This is a subset of input_tokens.
       title: AIChatUsage
       additionalProperties: false
       description: Token usage for a single AI provider call.

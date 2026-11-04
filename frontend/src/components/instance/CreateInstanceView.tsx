@@ -15,6 +15,8 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { ResponsiveFormLayout } from "@/components/ui/form";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
+import { openAgentWithPrompt } from "@/modules/agent/logic/instanceConnectionHelp";
+import { useAgentStore } from "@/modules/agent/store/agent";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
@@ -112,6 +114,14 @@ function CreateInstanceFormInner({
     isPreparingSampleProjectInstance,
     setIsPreparingSampleProjectInstance,
   ] = useState(false);
+
+  const handleAskAgent = useCallback((prompt?: string) => {
+    if (prompt) {
+      openAgentWithPrompt(prompt);
+    } else {
+      useAgentStore.getState().open();
+    }
+  }, []);
 
   const [activeInfoSection, setActiveInfoSection] = useState<
     InfoSection | undefined
@@ -248,11 +258,17 @@ function CreateInstanceFormInner({
                 </Button>
               </Alert>
             )}
-            <InstanceFormBody onOpenInfoPanel={handleOpenInfoPanel} />
+            <InstanceFormBody
+              onOpenInfoPanel={handleOpenInfoPanel}
+              onAskAgent={() => handleAskAgent()}
+            />
           </ResponsiveFormLayout>
         </div>
 
-        <InstanceFormButtons onCreated={onCreated} />
+        <InstanceFormButtons
+          onCreated={onCreated}
+          onAskAgent={handleAskAgent}
+        />
         <UnsavedChangesGuard />
       </div>
 

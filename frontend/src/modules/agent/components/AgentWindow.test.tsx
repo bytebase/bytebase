@@ -456,6 +456,87 @@ describe("AgentWindow", () => {
     unmount();
   });
 
+  test.each([
+    {
+      kind: "instance" as const,
+      page: { kind: "instance" as const, name: "instances/primary" },
+      context: "workspaces/acme",
+      heading: "agent.contextual-start.instance-heading",
+      suggestions: [
+        "agent.contextual-start.instance-sync",
+        "agent.contextual-start.instance-connection-permissions",
+      ],
+    },
+    {
+      kind: "instance-create" as const,
+      page: {
+        kind: "instance-create" as const,
+        project: "projects/orders",
+      },
+      context: "projects/orders",
+      heading: "agent.contextual-start.instance-create-heading",
+      suggestions: [
+        "agent.contextual-start.instance-create-details",
+        "agent.contextual-start.instance-create-transport",
+        "agent.contextual-start.instance-create-troubleshoot",
+      ],
+    },
+    {
+      kind: "instance" as const,
+      page: {
+        kind: "instance" as const,
+        name: "projects/orders/instances/primary",
+        project: "projects/orders",
+      },
+      context: "projects/orders",
+      heading: "agent.contextual-start.instance-heading",
+      suggestions: [
+        "agent.contextual-start.instance-sync",
+        "agent.contextual-start.instance-connection-permissions",
+      ],
+    },
+  ])("starts an instance contextual chat for $kind", ({
+    kind,
+    page,
+    context,
+    heading,
+    suggestions,
+  }) => {
+    mocks.currentContext = context;
+    mocks.pageResource = page;
+
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    const start = document.body.querySelector(
+      `[data-agent-contextual-start="${kind}"]`
+    );
+    expect(start?.textContent).toContain(heading);
+    expect(start?.querySelector("[data-agent-contextual-mention]")).toBeNull();
+    expect(
+      Array.from(
+        start?.querySelectorAll("[data-agent-contextual-suggestion]") ?? [],
+        (element) => element.textContent
+      )
+    ).toEqual(suggestions);
+
+    act(() => {
+      (start?.querySelector("[data-agent-contextual-suggestion]") as HTMLButtonElement).click();
+    });
+
+    const chat = useAgentStore
+      .getState()
+      .getChat(useAgentStore.getState().currentChatId);
+    expect(chat?.context).toBe(context);
+    expect(getCurrentQueuedUserMessage()).toMatchObject({
+      chatId: chat?.id,
+      text: suggestions[0],
+      runMode: "read-only",
+    });
+    expect(getCurrentQueuedUserMessage()).not.toHaveProperty("starterId");
+    unmount();
+  });
+
   test("prefills a bound database mention from the detail page", async () => {
     mocks.pageResource = {
       kind: "database",

@@ -8,7 +8,12 @@ import {
   AIChatResponse_StopReason,
 } from "@/types/proto-es/v1/ai_service_pb";
 import { normalizeAgentResponseActions } from "./responseActions";
-import type { AgentHandoff, AgentResponseAction } from "./types";
+import { getModelCallUsage } from "./tokenUsage";
+import type {
+  AgentHandoff,
+  AgentModelCallUsage,
+  AgentResponseAction,
+} from "./types";
 
 type ContinueAction = Extract<AgentResponseAction, { kind: "continue" }>;
 
@@ -32,7 +37,8 @@ export async function generateFollowUpQuestion(
     action?: AgentHandoff | Exclude<AgentResponseAction, ContinueAction>;
     existingQuestions: string[];
   },
-  signal: AbortSignal
+  signal: AbortSignal,
+  onUsage?: (usage: AgentModelCallUsage) => void
 ): Promise<FollowUpResult> {
   const existingQuestions = context.existingQuestions.slice(
     0,
@@ -74,6 +80,7 @@ export async function generateFollowUpQuestion(
       }
     );
     const totalTokensUsed = response.usage?.totalTokens ?? 0;
+    onUsage?.(getModelCallUsage("follow-up", response));
     if (
       requestController.signal.aborted ||
       response.toolCalls.length > 0 ||

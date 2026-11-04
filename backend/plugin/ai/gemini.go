@@ -62,7 +62,12 @@ type chatGeminiFunctionDecl struct {
 }
 
 type chatGeminiUsage struct {
-	TotalTokenCount int32 `json:"totalTokenCount"`
+	TotalTokenCount         *int32 `json:"totalTokenCount"`
+	PromptTokenCount        *int32 `json:"promptTokenCount"`
+	CachedContentTokenCount *int32 `json:"cachedContentTokenCount"`
+	CandidatesTokenCount    *int32 `json:"candidatesTokenCount"`
+	ToolUsePromptTokenCount *int32 `json:"toolUsePromptTokenCount"`
+	ThoughtsTokenCount      *int32 `json:"thoughtsTokenCount"`
 }
 
 type chatGeminiResponse struct {
@@ -243,8 +248,11 @@ func chatGemini(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb
 	}
 
 	result := &v1pb.AIChatResponse{}
-	if resp.UsageMetadata != nil {
-		result.Usage = newAIChatUsage(resp.UsageMetadata.TotalTokenCount)
+	if usage := resp.UsageMetadata; usage != nil {
+		// Gemini's total includes tool-use prompts and thoughts separately from candidates.
+		inputTokens := addOptionalTokenCounts(usage.PromptTokenCount, usage.ToolUsePromptTokenCount)
+		outputTokens := addOptionalTokenCounts(usage.CandidatesTokenCount, usage.ThoughtsTokenCount)
+		result.Usage = newAIChatUsage(usage.TotalTokenCount, inputTokens, outputTokens, usage.CachedContentTokenCount)
 	}
 	if len(resp.Candidates) > 0 {
 		result.StopReason = geminiStopReason(resp.Candidates[0].FinishReason)

@@ -155,7 +155,7 @@ function SecretInputControl({
   };
 
   return (
-    <div className={cn("relative min-w-0", className)}>
+    <div className={cn("relative min-w-0", className)} data-agent-sensitive>
       {multiline ? (
         <Textarea
           {...inputProps}

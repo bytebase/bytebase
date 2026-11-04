@@ -92,6 +92,15 @@ message AIChatRequest {
 message AIChatUsage {
   // Total tokens used by the provider call.
   int32 total_tokens = 1;
+
+  // Input tokens used by the provider call, including cached input.
+  optional int32 input_tokens = 2;
+
+  // Output tokens used by the provider call, including reasoning tokens.
+  optional int32 output_tokens = 3;
+
+  // Input tokens read from cache. This is a subset of input_tokens.
+  optional int32 cached_input_tokens = 4;
 }
 
 // Response message for AIService.Chat.

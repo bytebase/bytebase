@@ -42,11 +42,13 @@ describe("generateFollowUpQuestion", () => {
       )
     );
 
+    const onUsage = vi.fn();
     const result = await generateFollowUpQuestion(
       "How do I connect a database?",
       "Transfer an existing database, or connect a new instance.",
       { action, existingQuestions: [] },
-      new AbortController().signal
+      new AbortController().signal,
+      onUsage
     );
 
     expect(result).toEqual({
@@ -67,6 +69,11 @@ describe("generateFollowUpQuestion", () => {
       totalTokensUsed: 7,
     });
     expect(aiServiceClientConnect.chat).toHaveBeenCalledOnce();
+    expect(onUsage).toHaveBeenCalledExactlyOnceWith({
+      purpose: "follow-up",
+      toolNames: [],
+      totalTokens: 7,
+    });
     const request = vi.mocked(aiServiceClientConnect.chat).mock.calls[0][0];
     expect(request.toolDefinitions).toEqual([]);
     expect(request.messages?.[1]?.content).toContain(
@@ -165,6 +172,7 @@ describe("generateFollowUpQuestion", () => {
   });
 
   test("keeps the original answer usable when generation fails or is stopped", async () => {
+    const onUsage = vi.fn();
     vi.mocked(aiServiceClientConnect.chat).mockRejectedValue(
       new Error("Service unavailable")
     );
@@ -173,7 +181,8 @@ describe("generateFollowUpQuestion", () => {
         "What next?",
         "Review the plan.",
         { action, existingQuestions: [] },
-        new AbortController().signal
+        new AbortController().signal,
+        onUsage
       )
     ).toEqual({ actions: [], totalTokensUsed: 0 });
 
@@ -184,10 +193,94 @@ describe("generateFollowUpQuestion", () => {
         "What next?",
         "Review the plan.",
         { action, existingQuestions: [] },
-        controller.signal
+        controller.signal,
+        onUsage
       )
     ).toEqual({ actions: [], totalTokensUsed: 0 });
     expect(aiServiceClientConnect.chat).toHaveBeenCalledOnce();
+    expect(onUsage).not.toHaveBeenCalled();
+  });
+
+  test.each([
+    { usage: undefined, expected: {} },
+    {
+      usage: {
+        totalTokens: 0,
+        inputTokens: 0,
+        outputTokens: 0,
+        cachedInputTokens: 0,
+      },
+      expected: {
+        totalTokens: 0,
+        inputTokens: 0,
+        outputTokens: 0,
+        cachedInputTokens: 0,
+      },
+    },
+  ])(
+    "reports usage for invalid answers, preserving unknown and zero: $usage",
+    async ({ usage, expected }) => {
+      vi.mocked(aiServiceClientConnect.chat).mockResolvedValue({
+        ...response("not JSON"),
+        usage,
+      } as never);
+      const onUsage = vi.fn();
+
+      await generateFollowUpQuestion(
+        "What next?",
+        "Review the plan.",
+        { existingQuestions: [] },
+        new AbortController().signal,
+        onUsage
+      );
+
+      expect(onUsage).toHaveBeenCalledExactlyOnceWith({
+        purpose: "follow-up",
+        toolNames: [],
+        ...expected,
+      });
+    }
+  );
+
+  test("reports a response returned after cancellation without publishing questions", async () => {
+    let resolveChat!: (
+      result: Awaited<ReturnType<typeof aiServiceClientConnect.chat>>
+    ) => void;
+    vi.mocked(aiServiceClientConnect.chat).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveChat = resolve;
+        })
+    );
+    const controller = new AbortController();
+    const onUsage = vi.fn();
+    const generation = generateFollowUpQuestion(
+      "What next?",
+      "Review the plan.",
+      { existingQuestions: [] },
+      controller.signal,
+      onUsage
+    );
+    controller.abort();
+    resolveChat({
+      ...response('["How can I review the plan?"]'),
+      usage: {
+        totalTokens: 7,
+        inputTokens: 5,
+        outputTokens: 2,
+        cachedInputTokens: 1,
+      },
+    } as never);
+
+    expect(await generation).toEqual({ actions: [], totalTokensUsed: 7 });
+    expect(onUsage).toHaveBeenCalledExactlyOnceWith({
+      purpose: "follow-up",
+      toolNames: [],
+      totalTokens: 7,
+      inputTokens: 5,
+      outputTokens: 2,
+      cachedInputTokens: 1,
+    });
   });
 
   test("bounds the context sent for a follow-up", async () => {

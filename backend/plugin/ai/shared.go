@@ -10,13 +10,29 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
-func newAIChatUsage(totalTokens int32) *v1pb.AIChatUsage {
-	if totalTokens <= 0 {
+func newAIChatUsage(totalTokens, inputTokens, outputTokens, cachedInputTokens *int32) *v1pb.AIChatUsage {
+	if totalTokens == nil {
 		return nil
 	}
 	return &v1pb.AIChatUsage{
-		TotalTokens: totalTokens,
+		TotalTokens:       *totalTokens,
+		InputTokens:       inputTokens,
+		OutputTokens:      outputTokens,
+		CachedInputTokens: cachedInputTokens,
 	}
+}
+
+func addOptionalTokenCounts(base *int32, counts ...*int32) *int32 {
+	if base == nil {
+		return nil
+	}
+	total := *base
+	for _, count := range counts {
+		if count != nil {
+			total += *count
+		}
+	}
+	return &total
 }
 
 // doHTTPRequest executes an HTTP request and returns the response body. A

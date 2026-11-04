@@ -3,8 +3,13 @@ import { type ReactElement, useState } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
+import {
+  lazyExtractDomRefSuggestions,
+  lazyExtractDomTree,
+} from "@/modules/agent/dom";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
+  DataSource_AWSCredentialSchema,
   DataSource_AuthenticationType,
   DataSource_CloudSQLIPType,
   DataSource_GCPCredentialSchema,
@@ -105,6 +110,86 @@ describe("CredentialSourceForm", () => {
       unmount();
     }
   );
+
+  test("hides AWS IAM credentials from Agent DOM snapshots", async () => {
+    const dataSource = makeDataSource(
+      DataSource_AuthenticationType.AWS_RDS_IAM
+    );
+    dataSource.iamExtension = {
+      case: "awsCredential",
+      value: create(DataSource_AWSCredentialSchema, {
+        accessKeyId: "AKIAEXAMPLEKEY",
+        secretAccessKey: "example-secret-access-key",
+        sessionToken: "example-session-token",
+        roleArn: "arn:aws:iam::123456789012:role/example",
+      }),
+    };
+    const { unmount } = render(
+      <CredentialSourceForm
+        dataSource={dataSource}
+        engine={Engine.POSTGRES}
+        allowEdit={true}
+        onDataSourceChange={vi.fn()}
+      />
+    );
+
+    const { tree } = await lazyExtractDomTree();
+    const suggestions = await lazyExtractDomRefSuggestions();
+
+    expect(tree).not.toContain("AKIAEXAMPLEKEY");
+    expect(tree).not.toContain("example-secret-access-key");
+    expect(tree).not.toContain("example-session-token");
+    expect(tree).toContain("arn:aws:iam::123456789012:role/example");
+    expect(suggestions.map(({ value }) => value)).not.toContain(
+      "AKIAEXAMPLEKEY"
+    );
+    expect(suggestions.map(({ value }) => value)).not.toContain(
+      "example-secret-access-key"
+    );
+    expect(suggestions.map(({ value }) => value)).not.toContain(
+      "example-session-token"
+    );
+    expect(
+      suggestions.filter(({ label }) =>
+        ["Access Key ID", "Secret Access Key", "Session Token"].includes(
+          label
+        )
+      )
+    ).toEqual([]);
+
+    unmount();
+  });
+
+  test("hides GCP IAM credential contents from Agent DOM snapshots", async () => {
+    const dataSource = makeDataSource(
+      DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
+    );
+    dataSource.iamExtension = {
+      case: "gcpCredential",
+      value: create(DataSource_GCPCredentialSchema, {
+        content: '{"private_key":"example-gcp-private-key"}',
+      }),
+    };
+    const { unmount } = render(
+      <CredentialSourceForm
+        dataSource={dataSource}
+        engine={Engine.POSTGRES}
+        allowEdit={true}
+        onDataSourceChange={vi.fn()}
+      />
+    );
+
+    const { tree } = await lazyExtractDomTree();
+    const suggestions = await lazyExtractDomRefSuggestions();
+
+    expect(tree).not.toContain("example-gcp-private-key");
+    expect(suggestions.map(({ value }) => value)).not.toContain(
+      '{"private_key":"example-gcp-private-key"}'
+    );
+    expect(suggestions.some(({ tag }) => tag === "textarea")).toBe(false);
+
+    unmount();
+  });
 
   test("keeps default credential help below the title in a compact dependent group", () => {
     const { container, unmount } = render(

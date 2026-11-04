@@ -5321,6 +5321,9 @@ Token usage for a single AI provider call.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | total_tokens | [int32](#int32) |  | Total tokens used by the provider call. |
+| input_tokens | [int32](#int32) | optional | Input tokens used by the provider call, including cached input. |
+| output_tokens | [int32](#int32) | optional | Output tokens used by the provider call, including reasoning tokens. |
+| cached_input_tokens | [int32](#int32) | optional | Input tokens read from cache. This is a subset of input_tokens. |
 
 
 
