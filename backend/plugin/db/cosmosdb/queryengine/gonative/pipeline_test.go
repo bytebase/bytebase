@@ -2,6 +2,7 @@ package gonative_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -148,6 +149,72 @@ func TestAggPipeline_5_5_MultiAggMinMax(t *testing.T) {
 	maxV, ok := obj["maxPop"].(float64)
 	require.True(t, ok)
 	assert.LessOrEqual(t, minV, maxV)
+}
+
+// driveAggPagedPipeline is driveAggPipeline for a range that answers over
+// several pages: it replays each captured partition body `pages` times, every
+// page but the last carrying a continuation token, and returns the single
+// emitted row. An aggregate folds one partial per page, so the result is the
+// captured partial counted `pages` times over.
+func driveAggPagedPipeline(t *testing.T, queryID, originalQuery string, pages int) json.RawMessage {
+	t.Helper()
+	base := filepath.Join("testdata", "query_"+queryID)
+	plan := mustReadFile(t, base+"_plan.json")
+	pkranges := mustReadFile(t, base+"_pkranges.json")
+	bodies := partitionBodies(t, base+"_partitions")
+
+	engine := gonative.Default()
+	pipe, err := engine.CreateQueryPipeline(originalQuery, string(plan), string(pkranges))
+	require.NoError(t, err, "CreateQueryPipeline")
+	defer pipe.Close()
+
+	served := make(map[string]int, len(bodies))
+	var emitted json.RawMessage
+	for i := 0; i < 10*pages && !pipe.IsComplete(); i++ {
+		res, err := pipe.Run()
+		require.NoError(t, err, "Run turn %d", i)
+		if len(res.Requests) > 0 {
+			results := make([]queryengine.QueryResult, 0, len(res.Requests))
+			for _, req := range res.Requests {
+				body, ok := bodies[req.PartitionKeyRangeID]
+				require.True(t, ok, "missing fixture for pk-range %s", req.PartitionKeyRangeID)
+				served[req.PartitionKeyRangeID]++
+				continuation := ""
+				if served[req.PartitionKeyRangeID] < pages {
+					continuation = fmt.Sprintf("%s-page-%d", req.PartitionKeyRangeID, served[req.PartitionKeyRangeID])
+				} else {
+					require.Equal(t, pages, served[req.PartitionKeyRangeID],
+						"pk-range %s was asked for a page past the script", req.PartitionKeyRangeID)
+				}
+				results = append(results, queryengine.NewQueryResult(req.PartitionKeyRangeID, body, continuation))
+			}
+			require.NoError(t, pipe.ProvideData(results))
+		}
+		if len(res.Items) > 0 {
+			require.Len(t, res.Items, 1, "aggregate query emits exactly one row")
+			emitted = append(json.RawMessage(nil), res.Items[0]...)
+		}
+	}
+	require.True(t, pipe.IsComplete(), "pipeline did not converge")
+	require.NotNil(t, emitted, "no row emitted")
+	for id, pagesServed := range served {
+		assert.Equal(t, pages, pagesServed, "pk-range %s must be read to its last page", id)
+	}
+	return emitted
+}
+
+func TestAggPipeline_ValueCountFoldsPartialsAcrossPages(t *testing.T) {
+	row := driveAggPagedPipeline(t, "5_1b", `SELECT VALUE COUNT(1) FROM c`, 3)
+	var n float64
+	require.NoError(t, json.Unmarshal(row, &n))
+	assert.EqualValues(t, 54, n, "three pages of the 18-row partial")
+}
+
+func TestAggPipeline_AliasedCountFoldsPartialsAcrossPages(t *testing.T) {
+	row := driveAggPagedPipeline(t, "5_1", `SELECT COUNT(1) AS totalRecords FROM c`, 2)
+	var obj map[string]any
+	require.NoError(t, json.Unmarshal(row, &obj))
+	assert.EqualValues(t, 36, obj["totalRecords"], "two pages of the 18-row partial")
 }
 
 // drivePipelineAll runs a pipeline end-to-end against captured fixtures and

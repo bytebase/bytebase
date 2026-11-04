@@ -33,6 +33,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"slices"
 	"sync"
 	"testing"
 	"time"
@@ -536,28 +537,28 @@ func seedCrossPartition(endpoint string) (*Driver, int, error) {
 			if err != nil {
 				return nil, 0, errors.Wrap(err, "marshal a fixture city")
 			}
-			if _, err := container.CreateItem(ctx, azcosmos.NewPartitionKeyString(country), item, nil); err != nil && !alreadyExists(err) {
+			if err := seedItem(ctx, container, country, item); err != nil {
 				return nil, 0, errors.Wrapf(err, "seed %s-%d", country, i)
 			}
 		}
 	}
 
-	ranges, err := countPartitionKeyRanges(endpoint)
+	ranges, err := countContainerRanges(endpoint, crossPartitionContainer)
 	if err != nil {
 		return nil, 0, err
 	}
 	return driver, ranges, nil
 }
 
-// countPartitionKeyRanges reports how many physical partitions the fixture
+// countContainerRanges reports how many physical partitions a fixture
 // container spans. It reads the REST endpoint because the SDK keeps the range
 // list to itself, inside the query path under test.
-func countPartitionKeyRanges(endpoint string) (int, error) {
+func countContainerRanges(endpoint, container string) (int, error) {
 	client, err := newEmulatorRESTClient(endpoint)
 	if err != nil {
 		return 0, errors.Wrap(err, "build the emulator REST client")
 	}
-	link := fmt.Sprintf("dbs/%s/colls/%s", crossPartitionDatabase, crossPartitionContainer)
+	link := fmt.Sprintf("dbs/%s/colls/%s", crossPartitionDatabase, container)
 	body, err := client.get(link+"/pkranges", "pkranges", link)
 	if err != nil {
 		return 0, errors.Wrap(err, "read the container's partition key ranges")
@@ -573,9 +574,289 @@ func countPartitionKeyRanges(endpoint string) (int, error) {
 	return len(resp.PartitionKeyRanges), nil
 }
 
+// seedItem writes one fixture item, retrying what a loaded emulator does to a
+// write it cannot serve in time: a 408, a 429, a 503, or a dropped connection
+// that surfaces as an EOF. The emulator is slow enough under this repo's own
+// test load that an unretried seeder fails the whole suite on one dropped
+// write, with an error that reads like a query-engine bug. An error that is
+// not transient costs the attempts and then surfaces unchanged.
+func seedItem(ctx context.Context, container *azcosmos.ContainerClient, partitionKey string, item []byte) error {
+	var err error
+	for attempt := range 6 {
+		if attempt > 0 {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(time.Duration(attempt) * 500 * time.Millisecond):
+			}
+		}
+		if _, err = container.CreateItem(ctx, azcosmos.NewPartitionKeyString(partitionKey), item, nil); err == nil || alreadyExists(err) {
+			return nil
+		}
+	}
+	return err
+}
+
 func alreadyExists(err error) bool {
 	var responseErr *azcore.ResponseError
 	return errors.As(err, &responseErr) && responseErr.StatusCode == http.StatusConflict
+}
+
+// ------------------------------------------ multi-page fixture, local emulator
+
+const (
+	// pagedContainer is a second fixture whose ranges answer over several
+	// pages. The gateway caps a page at pagedPageSize items when the request
+	// names no page size, which is what the SDK's engine requests do: it
+	// forwards a continuation token and the range's partition key range id,
+	// and nothing else. A query engine that stops at the first page therefore
+	// loses every row past the cap, which is what this fixture catches.
+	pagedContainer = "paged"
+	// The emulator hands a container one physical partition per 6k RU or so,
+	// and the cities fixture already spends most of its budget, so this one
+	// asks for the least that still spans more than one.
+	pagedThroughput = 12000
+	// pagedPageSize is the gateway's own per-page item cap, measured both on
+	// the emulator and on a real Cosmos account.
+	pagedPageSize = 1000
+	// pagedBigRows puts one partition key value past the cap, so the range
+	// holding it must be read over several pages.
+	pagedBigRows = pagedPageSize + 50
+	// pagedSmallRows keeps the other partition key values short, so a merge
+	// has ranges that drain while the big ones still have pages to come.
+	pagedSmallRows = 5
+)
+
+// pagedBuckets are the fixture's partition key values: a partition key value
+// lives in exactly one physical partition, so the row count per value is what
+// decides which ranges have to page.
+var (
+	pagedBigBuckets   = []string{"big-1", "big-2"}
+	pagedSmallBuckets = []string{"small-1", "small-2", "small-3", "small-4", "small-5", "small-6"}
+)
+
+// pagedRows is the fixture's row count. Every row carries a distinct seq, from
+// 0 to pagedRows-1, so an ordered result has exactly one correct answer and
+// DISTINCT and GROUP BY over seq have exactly pagedRows outputs.
+func pagedRows() int {
+	return len(pagedBigBuckets)*pagedBigRows + len(pagedSmallBuckets)*pagedSmallRows
+}
+
+var (
+	pagedOnce            sync.Once
+	pagedContainerClient *azcosmos.ContainerClient
+	pagedRanges          int
+	pagedErr             error
+)
+
+// pagedFixture returns the seeded multi-page container, building it on first
+// use. It refuses a fixture confined to one physical partition for the same
+// reason emulatorFixture does: the gateway serves those queries itself.
+func pagedFixture(t *testing.T) *azcosmos.ContainerClient {
+	t.Helper()
+	driver := emulatorFixture(t)
+	pagedOnce.Do(func() {
+		pagedContainerClient, pagedRanges, pagedErr = seedPaged(driver)
+	})
+	require.NoError(t, pagedErr)
+	require.Greater(t, pagedRanges, 1,
+		"fixture spans %d physical partition(s); cross-partition queries need more than one", pagedRanges)
+	return pagedContainerClient
+}
+
+func seedPaged(driver *Driver) (*azcosmos.ContainerClient, int, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+
+	database, err := driver.client.NewDatabase(crossPartitionDatabase)
+	if err != nil {
+		return nil, 0, errors.Wrap(err, "open the fixture database")
+	}
+	throughput := azcosmos.NewManualThroughputProperties(pagedThroughput)
+	if _, err := database.CreateContainer(ctx, azcosmos.ContainerProperties{
+		ID:                     pagedContainer,
+		PartitionKeyDefinition: azcosmos.PartitionKeyDefinition{Paths: []string{"/bucket"}},
+	}, &azcosmos.CreateContainerOptions{ThroughputProperties: &throughput}); err != nil && !alreadyExists(err) {
+		return nil, 0, errors.Wrap(err, "create the multi-page container")
+	}
+	container, err := database.NewContainer(pagedContainer)
+	if err != nil {
+		return nil, 0, errors.Wrap(err, "open the multi-page container")
+	}
+
+	// A few thousand single writes is most of this suite's runtime, so they go
+	// out concurrently. The worker count is what the emulator answered without
+	// timing out under the load of the rest of this machine.
+	type row struct {
+		bucket string
+		seq    int
+	}
+	rows := make(chan row, pagedRows())
+	seq := 0
+	for _, bucket := range pagedBigBuckets {
+		for range pagedBigRows {
+			rows <- row{bucket: bucket, seq: seq}
+			seq++
+		}
+	}
+	for _, bucket := range pagedSmallBuckets {
+		for range pagedSmallRows {
+			rows <- row{bucket: bucket, seq: seq}
+			seq++
+		}
+	}
+	close(rows)
+
+	var wg sync.WaitGroup
+	errs := make(chan error, 1)
+	for range 12 {
+		wg.Go(func() {
+			for r := range rows {
+				item, err := json.Marshal(pagedRow{
+					ID:     fmt.Sprintf("row-%d", r.seq),
+					Bucket: r.bucket,
+					Seq:    r.seq,
+				})
+				if err == nil {
+					err = seedItem(ctx, container, r.bucket, item)
+				}
+				if err != nil {
+					select {
+					case errs <- errors.Wrapf(err, "seed row %d", r.seq):
+					default:
+					}
+					return
+				}
+			}
+		})
+	}
+	wg.Wait()
+	select {
+	case err := <-errs:
+		return nil, 0, err
+	default:
+	}
+
+	ranges, err := countContainerRanges(driver.connCfg.DataSource.GetHost(), pagedContainer)
+	if err != nil {
+		return nil, 0, err
+	}
+	return container, ranges, nil
+}
+
+type pagedRow struct {
+	ID     string `json:"id"`
+	Bucket string `json:"bucket"`
+	Seq    int    `json:"seq"`
+}
+
+// pagedSeqs runs a query against the multi-page fixture and returns the seq of
+// every row it emitted, in the order the engine emitted them.
+func pagedSeqs(t *testing.T, container *azcosmos.ContainerClient, sql string) []int {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+	items, err := QueryEveryPartition(ctx, container, sql, nil, 0)
+	require.NoError(t, err, "QueryEveryPartition: %s", sql)
+	seqs := make([]int, 0, len(items))
+	for _, item := range items {
+		var row struct {
+			Seq *int `json:"seq"`
+		}
+		require.NoError(t, json.Unmarshal(item, &row), "row: %s", item)
+		require.NotNil(t, row.Seq, "row missing seq: %s", item)
+		seqs = append(seqs, *row.Seq)
+	}
+	return seqs
+}
+
+// ascendingSeqs is the fixture's seq values in order: every query below either
+// returns this sequence or a slice of it.
+func ascendingSeqs(from, to int) []int {
+	seqs := make([]int, 0, to-from)
+	for seq := from; seq < to; seq++ {
+		seqs = append(seqs, seq)
+	}
+	return seqs
+}
+
+// TestCrossPartitionMultiPage covers the query classes whose results a range
+// can only deliver over several pages. Each one reads past the gateway's
+// per-page cap, which an engine that treats a continuation token as the end of
+// a range cannot do: before the engine followed them, an unbounded ORDER BY
+// failed outright on any container holding more than pagedPageSize rows in one
+// range, and so did DISTINCT and GROUP BY over that many values and a TOP
+// above the cap.
+func TestCrossPartitionMultiPage(t *testing.T) {
+	container := pagedFixture(t)
+	rows := pagedRows()
+
+	t.Run("order_by_unbounded", func(t *testing.T) {
+		assert.Equal(t, ascendingSeqs(0, rows),
+			pagedSeqs(t, container, `SELECT c.seq FROM c ORDER BY c.seq ASC`))
+	})
+
+	t.Run("order_by_descending", func(t *testing.T) {
+		want := ascendingSeqs(0, rows)
+		slices.Reverse(want)
+		assert.Equal(t, want, pagedSeqs(t, container, `SELECT c.seq FROM c ORDER BY c.seq DESC`))
+	})
+
+	// A page of a range ends mid-result, so the rows either side of the cap
+	// are the ones a resumed range can misplace.
+	t.Run("offset_limit_across_a_page_boundary", func(t *testing.T) {
+		assert.Equal(t, ascendingSeqs(pagedPageSize-5, pagedPageSize+5),
+			pagedSeqs(t, container, fmt.Sprintf(
+				`SELECT c.seq FROM c ORDER BY c.seq ASC OFFSET %d LIMIT 10`, pagedPageSize-5)))
+	})
+
+	t.Run("distinct_high_cardinality", func(t *testing.T) {
+		seqs := pagedSeqs(t, container, `SELECT DISTINCT c.seq FROM c`)
+		slices.Sort(seqs)
+		assert.Equal(t, ascendingSeqs(0, rows), seqs)
+	})
+
+	t.Run("group_by_many_groups", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+		defer cancel()
+		items, err := QueryEveryPartition(ctx, container,
+			`SELECT c.seq, COUNT(1) AS n FROM c GROUP BY c.seq`, nil, 0)
+		require.NoError(t, err)
+		seqs := make([]int, 0, len(items))
+		for _, item := range items {
+			var group struct {
+				Seq int `json:"seq"`
+				N   int `json:"n"`
+			}
+			require.NoError(t, json.Unmarshal(item, &group))
+			assert.Equal(t, 1, group.N, "seq %d", group.Seq)
+			seqs = append(seqs, group.Seq)
+		}
+		slices.Sort(seqs)
+		assert.Equal(t, ascendingSeqs(0, rows), seqs)
+	})
+
+	t.Run("top_above_the_page_cap", func(t *testing.T) {
+		assert.Len(t, pagedSeqs(t, container,
+			fmt.Sprintf(`SELECT TOP %d c.seq FROM c`, pagedPageSize+25)), pagedPageSize+25)
+	})
+
+	// An aggregate answers with one partial document per range however many
+	// rows that range holds, which is why aggregates were the one class this
+	// fixture's size never broke. Kept as the control case.
+	t.Run("aggregate_over_the_whole_fixture", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+		defer cancel()
+		items, err := QueryEveryPartition(ctx, container,
+			`SELECT COUNT(1) AS n, SUM(c.seq) AS total FROM c`, nil, 0)
+		require.NoError(t, err)
+		require.Len(t, items, 1)
+		want := 0
+		for _, seq := range ascendingSeqs(0, rows) {
+			want += seq
+		}
+		assert.JSONEq(t, fmt.Sprintf(`{"n":%d,"total":%d}`, rows, want), string(items[0]))
+	})
 }
 
 func TestCrossPartitionAggregates(t *testing.T) {

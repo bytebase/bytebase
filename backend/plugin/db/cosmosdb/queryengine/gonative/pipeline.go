@@ -12,43 +12,22 @@ import (
 // aggregate pipelines. Aggregators execute in a fixed positional order — the
 // pipeline knows how many slots it needs before the first partition response
 // arrives, and which slot each partial lands in.
+//
+// A range that answers over several pages contributes one partial per page;
+// the aggregators fold them in as they arrive, so the final row is the same
+// whether a range answered in one page or in twenty.
 type aggPipelineBase struct {
 	rewrittenQuery string
-	pkRangeIDs     []string
+	fanout         rangeFanout
 	aggregators    []aggregator // len == number of aggregates to emit
-	partitionsDone map[string]bool
-	issued         bool
 	emitted        bool
 	closed         bool
 }
 
-// issueRequests constructs the initial fan-out: one QueryRequest per
-// partition-key-range, all carrying the rewritten query the gateway produced.
-func (b *aggPipelineBase) issueRequests() []queryengine.QueryRequest {
-	reqs := make([]queryengine.QueryRequest, len(b.pkRangeIDs))
-	for i, id := range b.pkRangeIDs {
-		reqs[i] = queryengine.QueryRequest{
-			PartitionKeyRangeID: id,
-			Id:                  uint64(i),
-			Query:               b.rewrittenQuery,
-			IncludeParameters:   true,
-		}
-	}
-	b.issued = true
-	return reqs
-}
-
-// allPartitionsDone reports whether every pk-range has finished streaming.
-func (b *aggPipelineBase) allPartitionsDone() bool {
-	if len(b.pkRangeIDs) == 0 {
-		return true
-	}
-	for _, id := range b.pkRangeIDs {
-		if !b.partitionsDone[id] {
-			return false
-		}
-	}
-	return true
+// requests returns the work to issue next: the initial fan-out across every
+// range, then a follow-up for each range that still has pages to deliver.
+func (b *aggPipelineBase) requests() []queryengine.QueryRequest {
+	return b.fanout.requests(b.rewrittenQuery)
 }
 
 // -----------------------------------------------------------------------------
@@ -74,9 +53,8 @@ func newValuePipeline(plan *planDoc, pkRangeIDs []string) (*valuePipeline, error
 	return &valuePipeline{
 		aggPipelineBase: aggPipelineBase{
 			rewrittenQuery: plan.QueryInfo.RewrittenQuery,
-			pkRangeIDs:     pkRangeIDs,
+			fanout:         newRangeFanout(pkRangeIDs),
 			aggregators:    aggs,
-			partitionsDone: make(map[string]bool, len(pkRangeIDs)),
 		},
 	}, nil
 }
@@ -91,18 +69,20 @@ func (p *valuePipeline) IsComplete() bool { return p.emitted }
 func (p *valuePipeline) Close() { p.closed = true }
 
 // Run drives one pipeline turn. Must be called in the order:
-//  1. Run() — returns per-partition Requests on first call.
+//  1. Run() — returns per-partition Requests on first call, and a follow-up
+//     request for every range whose last response carried a continuation.
 //  2. Caller invokes ProvideData for each Request's partition response.
-//  3. Run() — finalizes aggregators and returns the single result row.
+//  3. Run() — once every range has drained, finalizes aggregators and returns
+//     the single result row.
 func (p *valuePipeline) Run() (*queryengine.PipelineResult, error) {
-	if !p.issued {
-		return &queryengine.PipelineResult{Requests: p.issueRequests()}, nil
-	}
 	if p.emitted {
 		return &queryengine.PipelineResult{IsCompleted: true}, nil
 	}
-	if !p.allPartitionsDone() {
-		// Caller has not yet fed every partition — no new work to surface.
+	if reqs := p.requests(); len(reqs) > 0 {
+		return &queryengine.PipelineResult{Requests: reqs}, nil
+	}
+	if !p.fanout.allDrained() {
+		// Caller has not yet fed every range — no new work to surface.
 		return &queryengine.PipelineResult{}, nil
 	}
 	item, err := p.finalRow()
@@ -130,12 +110,9 @@ func (p *valuePipeline) ProvideData(results []queryengine.QueryResult) error {
 				}
 			}
 		}
-		// Stage 1 assumes one page per partition for aggregates; NextContinuation
-		// should be empty. Flag explicitly if the assumption breaks.
-		if r.NextContinuation != "" {
-			return errors.New("gonative: aggregate partition returned a continuation token (multi-page not supported in Stage 1)")
+		if err := p.fanout.note(r); err != nil {
+			return err
 		}
-		p.partitionsDone[r.PartitionKeyRangeID] = true
 	}
 	return nil
 }
@@ -191,9 +168,8 @@ func newAliasedPipeline(plan *planDoc, pkRangeIDs []string) (*aliasedPipeline, e
 	return &aliasedPipeline{
 		aggPipelineBase: aggPipelineBase{
 			rewrittenQuery: plan.QueryInfo.RewrittenQuery,
-			pkRangeIDs:     pkRangeIDs,
+			fanout:         newRangeFanout(pkRangeIDs),
 			aggregators:    aggs,
-			partitionsDone: make(map[string]bool, len(pkRangeIDs)),
 		},
 		aliases: aliases,
 		kinds:   kinds,
@@ -205,13 +181,13 @@ func (p *aliasedPipeline) IsComplete() bool { return p.emitted }
 func (p *aliasedPipeline) Close()           { p.closed = true }
 
 func (p *aliasedPipeline) Run() (*queryengine.PipelineResult, error) {
-	if !p.issued {
-		return &queryengine.PipelineResult{Requests: p.issueRequests()}, nil
-	}
 	if p.emitted {
 		return &queryengine.PipelineResult{IsCompleted: true}, nil
 	}
-	if !p.allPartitionsDone() {
+	if reqs := p.requests(); len(reqs) > 0 {
+		return &queryengine.PipelineResult{Requests: reqs}, nil
+	}
+	if !p.fanout.allDrained() {
 		return &queryengine.PipelineResult{}, nil
 	}
 	item, err := p.finalRow()
@@ -239,10 +215,9 @@ func (p *aliasedPipeline) ProvideData(results []queryengine.QueryResult) error {
 				}
 			}
 		}
-		if r.NextContinuation != "" {
-			return errors.New("gonative: aggregate partition returned a continuation token (multi-page not supported in Stage 1)")
+		if err := p.fanout.note(r); err != nil {
+			return err
 		}
-		p.partitionsDone[r.PartitionKeyRangeID] = true
 	}
 	return nil
 }

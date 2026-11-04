@@ -173,19 +173,34 @@ func TestDistinctPipeline_RejectsOrderedDistinctType(t *testing.T) {
 	require.ErrorIs(t, err, ErrUnsupportedPlanFeature)
 }
 
-func TestDistinctPipeline_RejectsContinuationToken(t *testing.T) {
+// A value already emitted from an earlier page must not be emitted again when
+// a later page of the same range repeats it.
+func TestDistinctPipeline_DedupesAcrossPages(t *testing.T) {
 	plan := &planDoc{}
 	plan.QueryInfo.DistinctType = "Unordered"
 	p, err := newDistinctPipeline(plan, []string{"0"})
 	require.NoError(t, err)
-	_, _ = p.Run()
 
-	body, _ := json.Marshal(map[string]any{"Documents": rawMsgs(`"AE"`)})
-	err = p.ProvideData([]queryengine.QueryResult{
-		{PartitionKeyRangeID: "0", Data: body, NextContinuation: "deadbeef"},
+	rows, read := drivePages(t, p, map[string][]page{
+		"0": {
+			{body: mkDistinctBody(t, `"AE"`, `"BR"`), continuation: "0-page-2"},
+			{body: mkDistinctBody(t, `"BR"`, `"CN"`)},
+		},
 	})
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "continuation token")
+	got := make([]string, 0, len(rows))
+	for _, r := range rows {
+		got = append(got, string(r))
+	}
+	assert.Equal(t, []string{`"AE"`, `"BR"`, `"CN"`}, got)
+	assert.Equal(t, map[string]int{"0": 2}, read)
+}
+
+// mkDistinctBody wraps raw JSON values into a DISTINCT partition response.
+func mkDistinctBody(t *testing.T, values ...string) []byte {
+	t.Helper()
+	body, err := json.Marshal(map[string]any{"Documents": rawMsgs(values...)})
+	require.NoError(t, err)
+	return body
 }
 
 // Verifies the pipeline accepts high-cardinality inputs unchanged — the seen-set

@@ -344,15 +344,14 @@ func TestOrderByPipeline_OffsetBeyondAvailableRows(t *testing.T) {
 	assert.True(t, p.IsComplete())
 }
 
+// LIMIT 0 needs no row from any range, so the pipeline completes without
+// asking for a page at all.
 func TestOrderByPipeline_LimitZero_EmitsNothing(t *testing.T) {
 	p := newAscOffsetLimit(t, 0, 0, "0")
-	rows := runOnePass(t, p, map[string][]byte{
-		"0": mkOrderByBody(t,
-			ordered{ob: `1`, payload: `{"x":1}`},
-			ordered{ob: `2`, payload: `{"x":2}`},
-		),
-	})
-	assert.Empty(t, rows)
+	res, err := p.Run()
+	require.NoError(t, err)
+	assert.Empty(t, res.Items)
+	assert.Empty(t, res.Requests)
 	assert.True(t, p.IsComplete())
 }
 
@@ -378,13 +377,127 @@ func TestNewOrderByPipeline_RejectsNegativeLimit(t *testing.T) {
 	assert.Contains(t, err.Error(), "negative LIMIT")
 }
 
-func TestOrderByPipeline_RejectsContinuationToken(t *testing.T) {
-	p := newAscPipeline(t, "0")
-	_, _ = p.Run()
-	body := mkOrderByBody(t, ordered{ob: `1`, payload: `{}`})
-	err := p.ProvideData([]queryengine.QueryResult{
-		{PartitionKeyRangeID: "0", Data: body, NextContinuation: "cont"},
+// ------------------------------------------------------------- several pages
+
+func TestOrderByPipeline_ResumesARangeAcrossPages(t *testing.T) {
+	p := newAscPipeline(t, "0", "1")
+	rows, read := drivePages(t, p, map[string][]page{
+		"0": {
+			{body: mkOrderByBody(t,
+				ordered{ob: `1`, payload: `{"x":1}`},
+				ordered{ob: `5`, payload: `{"x":5}`},
+			), continuation: "0-page-2"},
+			{body: mkOrderByBody(t, ordered{ob: `9`, payload: `{"x":9}`})},
+		},
+		"1": {
+			{body: mkOrderByBody(t, ordered{ob: `2`, payload: `{"x":2}`})},
+		},
 	})
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "continuation token")
+	assert.Equal(t, []string{`{"x":1}`, `{"x":2}`, `{"x":5}`, `{"x":9}`}, asStrings(rows))
+	assert.Equal(t, map[string]int{"0": 2, "1": 1}, read)
+}
+
+// A range that runs dry mid-merge must not be overtaken: its next page can
+// hold a row that sorts ahead of every other range's head. Merging everything
+// buffered before fetching that page would emit 1, 2, 4, 3 here.
+func TestOrderByPipeline_WaitsForANextPageRatherThanOvertakeIt(t *testing.T) {
+	p := newAscPipeline(t, "0", "1")
+	rows, _ := drivePages(t, p, map[string][]page{
+		"0": {
+			{body: mkOrderByBody(t, ordered{ob: `1`, payload: `{"x":1}`}), continuation: "0-page-2"},
+			{body: mkOrderByBody(t, ordered{ob: `3`, payload: `{"x":3}`})},
+		},
+		"1": {
+			{body: mkOrderByBody(t,
+				ordered{ob: `2`, payload: `{"x":2}`},
+				ordered{ob: `4`, payload: `{"x":4}`},
+			)},
+		},
+	})
+	assert.Equal(t, []string{`{"x":1}`, `{"x":2}`, `{"x":3}`, `{"x":4}`}, asStrings(rows))
+}
+
+func TestOrderByPipeline_DescendingResumesARangeAcrossPages(t *testing.T) {
+	p := newDescPipeline(t, "0", "1")
+	rows, _ := drivePages(t, p, map[string][]page{
+		"0": {
+			{body: mkOrderByBody(t, ordered{ob: `9`, payload: `{"x":9}`}), continuation: "0-page-2"},
+			{body: mkOrderByBody(t, ordered{ob: `5`, payload: `{"x":5}`})},
+		},
+		"1": {
+			{body: mkOrderByBody(t,
+				ordered{ob: `7`, payload: `{"x":7}`},
+				ordered{ob: `1`, payload: `{"x":1}`},
+			)},
+		},
+	})
+	assert.Equal(t, []string{`{"x":9}`, `{"x":7}`, `{"x":5}`, `{"x":1}`}, asStrings(rows))
+}
+
+// A LIMIT the first page already satisfies ends the query there: the rows a
+// range still holds were fetched speculatively, and its later pages are never
+// asked for.
+func TestOrderByPipeline_LimitStopsBeforeTheNextPage(t *testing.T) {
+	p := newAscOffsetLimit(t, 0, 2, "0")
+	rows, read := drivePages(t, p, map[string][]page{
+		"0": {
+			{body: mkOrderByBody(t,
+				ordered{ob: `1`, payload: `{"x":1}`},
+				ordered{ob: `2`, payload: `{"x":2}`},
+			), continuation: "0-page-2"},
+			{body: mkOrderByBody(t, ordered{ob: `3`, payload: `{"x":3}`})},
+		},
+	})
+	assert.Equal(t, []string{`{"x":1}`, `{"x":2}`}, asStrings(rows))
+	assert.Equal(t, map[string]int{"0": 1}, read)
+}
+
+// An OFFSET past the first page has to read the next one to answer at all.
+func TestOrderByPipeline_OffsetReachesIntoTheNextPage(t *testing.T) {
+	p := newAscOffsetLimit(t, 2, 2, "0")
+	rows, read := drivePages(t, p, map[string][]page{
+		"0": {
+			{body: mkOrderByBody(t,
+				ordered{ob: `1`, payload: `{"x":1}`},
+				ordered{ob: `2`, payload: `{"x":2}`},
+			), continuation: "0-page-2"},
+			{body: mkOrderByBody(t,
+				ordered{ob: `3`, payload: `{"x":3}`},
+				ordered{ob: `4`, payload: `{"x":4}`},
+			)},
+		},
+	})
+	assert.Equal(t, []string{`{"x":3}`, `{"x":4}`}, asStrings(rows))
+	assert.Equal(t, map[string]int{"0": 2}, read)
+}
+
+// Ranges whose sort values do not overlap are consumed one after the other, so
+// the merge must leave the later range's pages unread while it works through
+// the earlier one. Asking every range with a token for its next page every
+// turn buys pages the merge cannot use — here it reads range 1 twice for a
+// LIMIT that never returns one of its rows.
+func TestOrderByPipeline_LeavesAnUnconsumedRangesPagesUnread(t *testing.T) {
+	p := newAscOffsetLimit(t, 0, 2, "0", "1")
+	rows, read := drivePages(t, p, map[string][]page{
+		"0": {
+			{body: mkOrderByBody(t, ordered{ob: `1`, payload: `{"x":1}`}), continuation: "0-page-2"},
+			{body: mkOrderByBody(t, ordered{ob: `2`, payload: `{"x":2}`})},
+		},
+		"1": {
+			{body: mkOrderByBody(t, ordered{ob: `10`, payload: `{"x":10}`}), continuation: "1-page-2"},
+			{body: mkOrderByBody(t, ordered{ob: `11`, payload: `{"x":11}`})},
+		},
+	})
+	assert.Equal(t, []string{`{"x":1}`, `{"x":2}`}, asStrings(rows))
+	assert.Equal(t, map[string]int{"0": 2, "1": 1}, read,
+		"range 1 still had a buffered row, so its second page was never needed")
+}
+
+// asStrings renders emitted rows for comparison against literal fixtures.
+func asStrings(rows [][]byte) []string {
+	out := make([]string, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, string(r))
+	}
+	return out
 }

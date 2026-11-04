@@ -252,20 +252,31 @@ func TestGroupPipeline_GroupKeysBeforeAggregatesInAliasOrder(t *testing.T) {
 	assert.Equal(t, `{"cityCount":5,"country":"AE"}`, string(rows[0]))
 }
 
-func TestGroupPipeline_RejectsContinuationToken(t *testing.T) {
+// A group whose rows straddle a page boundary gets one output row, with the
+// partials from every page folded into it.
+func TestGroupPipeline_FoldsAGroupsPartialsAcrossPages(t *testing.T) {
 	plan := newGroupPlan("c.a",
 		[]string{"a", "n"},
 		map[string]string{"a": "", "n": "Count"})
 	p, err := newGroupPipeline(plan, []string{"0"})
 	require.NoError(t, err)
-	_, _ = p.Run()
 
-	body := mkGroupBody(t, groupEntry{key: `"x"`, payload: `{"a":"x","n":{"item":1}}`})
-	err = p.ProvideData([]queryengine.QueryResult{
-		{PartitionKeyRangeID: "0", Data: body, NextContinuation: "cont"},
+	rows, read := drivePages(t, p, map[string][]page{
+		"0": {
+			{body: mkGroupBody(t, groupEntry{key: `"x"`, payload: `{"a":"x","n":{"item":2}}`}),
+				continuation: "0-page-2"},
+			{body: mkGroupBody(t,
+				groupEntry{key: `"x"`, payload: `{"a":"x","n":{"item":3}}`},
+				groupEntry{key: `"y"`, payload: `{"a":"y","n":{"item":1}}`},
+			)},
+		},
 	})
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "continuation token")
+	got := make([]string, 0, len(rows))
+	for _, r := range rows {
+		got = append(got, string(r))
+	}
+	assert.ElementsMatch(t, []string{`{"a":"x","n":5}`, `{"a":"y","n":1}`}, got)
+	assert.Equal(t, map[string]int{"0": 2}, read)
 }
 
 func TestGroupPipeline_RejectsMissingPayloadAlias(t *testing.T) {
