@@ -18,6 +18,7 @@ import {
 } from "@/components/SharePointExportResultDialog";
 import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
+import { runWithConcurrency } from "@/lib/concurrency";
 import { cn } from "@/lib/utils";
 import { RequestExportButton } from "@/modules/sql-editor/components/RequestExportButton";
 import { sharePointExportDatabaseLabel } from "@/modules/sql-editor/components/sharePointExportLabel";
@@ -49,6 +50,10 @@ import { TabContextMenu } from "./ContextMenu";
 import { type CloseTabAction, resultTabEvents } from "./resultTabContext";
 
 const MAX_EXPORT = 20;
+// Browsers allow about six connections per origin over HTTP/1.1, so four
+// leaves room for the SQL Editor's other requests. Each running export also
+// holds its whole result in server memory.
+const EXPORT_CONCURRENCY = 4;
 
 type Props = {
   readonly selectedDatabase: Database | undefined;
@@ -59,6 +64,10 @@ type BatchQueryItem = {
   database: Database;
   context: SQLEditorDatabaseQueryContext | undefined;
 };
+
+type DatabaseExportResult =
+  | { download: DownloadContent }
+  | { sharepoint: SharePointExportResult };
 
 const isEmptyQueryItem = (item: BatchQueryItem) => {
   if (!item.context) return true;
@@ -300,8 +309,6 @@ export function BatchQuerySelect({
     void (async () => {
       // === Prod path: per-database backend Export RPC ===
       const toSharePoint = options.destination === ExportDestination.SHAREPOINT;
-      const contents: DownloadContent[] = [];
-      const sharePointResults: SharePointExportResult[] = [];
       const tabsState = getSQLEditorTabsState();
       const tab = tabsState.tabsById.get(tabsState.currentTabId);
       // Defensive intersect — the drawer already filters to authorized
@@ -311,15 +318,16 @@ export function BatchQuerySelect({
       const targets = Array.from(selectedDatabaseNames).filter((name) =>
         exportableSet.has(name)
       );
-      for (const [index, databaseName] of targets.entries()) {
-        onProgress?.(index, targets.length);
+      const exportDatabase = async (
+        databaseName: string
+      ): Promise<DatabaseExportResult | undefined> => {
         const database = getDatabaseByName(databaseName);
         const { databaseName: shortName } = extractDatabaseResourceName(
           database.name
         );
         const label = sharePointExportDatabaseLabel(database);
         const context = head(tab?.databaseQueryContexts?.get(databaseName));
-        if (!context) continue;
+        if (!context) return undefined;
         try {
           const { content, uri } = await exportData(
             create(ExportRequestSchema, {
@@ -338,23 +346,23 @@ export function BatchQuerySelect({
             })
           );
           if (toSharePoint) {
-            sharePointResults.push(
-              toExportedSharePointResult(
+            return {
+              sharepoint: toExportedSharePointResult(
                 label,
                 uri,
                 exportDestination.sharepointUrl ?? ""
-              )
-            );
-            continue;
+              ),
+            };
           }
-          contents.push({
-            content,
-            filename: `${shortName}.${dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss")}.zip`,
-          });
+          return {
+            download: {
+              content,
+              filename: `${shortName}.${dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss")}.zip`,
+            },
+          };
         } catch (e) {
           if (toSharePoint) {
-            sharePointResults.push(toFailedSharePointExport(label, e));
-            continue;
+            return { sharepoint: toFailedSharePointExport(label, e) };
           }
           useAppStore.getState().notify({
             module: "bytebase",
@@ -364,9 +372,35 @@ export function BatchQuerySelect({
             }),
             description: String(e),
           });
+          return undefined;
         }
-      }
-      resolve(toSharePoint ? { sharepoint: sharePointResults } : contents);
+      };
+
+      let done = 0;
+      onProgress?.(done, targets.length);
+      // Results keep the selection order whatever order the exports finish in.
+      const results = await runWithConcurrency(
+        targets,
+        EXPORT_CONCURRENCY,
+        async (databaseName) => {
+          try {
+            return await exportDatabase(databaseName);
+          } finally {
+            onProgress?.(++done, targets.length);
+          }
+        }
+      );
+      resolve(
+        toSharePoint
+          ? {
+              sharepoint: results.flatMap((result) =>
+                result && "sharepoint" in result ? [result.sharepoint] : []
+              ),
+            }
+          : results.flatMap((result) =>
+              result && "download" in result ? [result.download] : []
+            )
+      );
       setSelectedDatabaseNames(new Set());
     })();
   };

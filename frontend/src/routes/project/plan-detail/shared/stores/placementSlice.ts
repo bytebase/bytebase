@@ -1,3 +1,4 @@
+import { runWithConcurrency } from "@/lib/concurrency";
 import { useAppStore } from "@/stores/app";
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import {
@@ -9,7 +10,6 @@ import {
   PLACEMENT_BUDGETS,
   type PlacementBudgets,
 } from "../../components/threads/placement/budgets";
-import { runWithConcurrency } from "../../components/threads/placement/concurrency";
 import {
   type Placement,
   UNAVAILABLE,
