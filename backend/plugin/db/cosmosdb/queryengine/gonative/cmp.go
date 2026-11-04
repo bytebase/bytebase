@@ -10,10 +10,15 @@ import (
 
 // jsonType enumerates the Cosmos item-ordering classes in ascending order:
 //
-//	undefined < null < bool < number < string
+//	undefined < null < bool < number < string < array < object
 //
-// Arrays and objects are not orderable in the Cosmos item-comparison rules;
-// callers that encounter them should treat the result as an error.
+// That is the order the service itself returns mixed types in. Within the
+// array and object classes its order is the index's own encoding — a real
+// container answers [1,2] < [2] < [1,3] and {"b":1} < {"a":2} < {"a":1} — so
+// it is not a value order and cannot be reproduced from the values alone.
+// Two values of one class are therefore ordered by their canonical JSON,
+// which is stable across runs and leaves the class ranking above, the part a
+// user can predict, matching the service.
 type jsonType int
 
 const (
@@ -22,7 +27,8 @@ const (
 	jsonBool
 	jsonNumber
 	jsonString
-	jsonUnorderable // arrays, objects — reject rather than compare
+	jsonArray
+	jsonObject
 )
 
 // detectJSONType inspects raw JSON (possibly leading whitespace) and returns
@@ -39,8 +45,10 @@ func detectJSONType(raw json.RawMessage) jsonType {
 		return jsonBool
 	case '"':
 		return jsonString
-	case '[', '{':
-		return jsonUnorderable
+	case '[':
+		return jsonArray
+	case '{':
+		return jsonObject
 	}
 	// digit, minus, plus, or dot → number
 	if (trimmed[0] >= '0' && trimmed[0] <= '9') || trimmed[0] == '-' || trimmed[0] == '+' || trimmed[0] == '.' {
@@ -49,14 +57,12 @@ func detectJSONType(raw json.RawMessage) jsonType {
 	return jsonUndefined
 }
 
-// compareItems compares two JSON-encoded scalars using Cosmos item ordering.
-// Return values follow the usual convention: -1, 0, +1.
-// Returns an error when either side is unorderable (array/object).
+// compareItems compares two JSON-encoded values using Cosmos item ordering.
+// Return values follow the usual convention: -1, 0, +1. Every shape a document
+// can hold compares — see jsonType for how arrays and objects are ranked — so
+// an error here means the bytes were not JSON.
 func compareItems(a, b json.RawMessage) (int, error) {
 	ta, tb := detectJSONType(a), detectJSONType(b)
-	if ta == jsonUnorderable || tb == jsonUnorderable {
-		return 0, errors.New("gonative: cannot compare unorderable values (arrays/objects)")
-	}
 	if ta != tb {
 		if ta < tb {
 			return -1, nil
@@ -109,6 +115,16 @@ func compareItems(a, b json.RawMessage) (int, error) {
 			return 0, errors.Wrap(err, "gonative: cmp string b")
 		}
 		return strings.Compare(av, bv), nil
+	case jsonArray, jsonObject:
+		ca, err := canonicalJSON(a)
+		if err != nil {
+			return 0, errors.Wrap(err, "gonative: cmp composite a")
+		}
+		cb, err := canonicalJSON(b)
+		if err != nil {
+			return 0, errors.Wrap(err, "gonative: cmp composite b")
+		}
+		return bytes.Compare(ca, cb), nil
 	default:
 		return 0, errors.Errorf("gonative: unknown jsonType %d", ta)
 	}

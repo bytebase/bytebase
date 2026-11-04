@@ -1,6 +1,7 @@
 package gonative
 
 import (
+	"bytes"
 	"encoding/json"
 	"slices"
 	"strings"
@@ -437,24 +438,13 @@ func quotedBytes(s string) []bool {
 	return quoted
 }
 
-// sortGroups puts p.order in group-key order, in the direction the query
-// asked for.
-//
-// Leaves first-seen order in place when any group key is a shape Cosmos
-// cannot order (an array or an object), since the comparator would have to
-// invent an answer for those.
+// sortGroups puts p.order in group-key order, in the direction the query asked
+// for. Every shape a document can hold compares — see jsonType — and groupKey
+// has already parsed each stored key, so the comparator cannot fail here.
 func (p *groupPipeline) sortGroups() {
-	for _, key := range p.order {
-		for _, item := range p.groups[key].items {
-			if detectJSONType(item.Item) == jsonUnorderable {
-				return
-			}
-		}
-	}
 	slices.SortStableFunc(p.order, func(a, b string) int {
 		order, err := compareGroupKeys(p.groups[a].items, p.groups[b].items, p.sort)
 		if err != nil {
-			// Unreachable: every key was checked orderable just above.
 			return 0
 		}
 		return order
@@ -482,6 +472,12 @@ func compareGroupKeys(a, b []groupByItem, sortKeys []groupSortKey) (int, error) 
 	return len(a) - len(b), nil
 }
 
+// isUndefinedItem reports whether a groupByItems entry carries no value,
+// which is how the gateway spells a key the document does not define.
+func isUndefinedItem(raw json.RawMessage) bool {
+	return len(bytes.TrimLeft(raw, " \t\n\r")) == 0
+}
+
 // buildRow assembles the final JSON object for a single group, preserving
 // the alias order from groupByAliases. JSON object key order in Go's encoder
 // depends on sort for map marshaling, so we write the object manually.
@@ -493,11 +489,15 @@ func (p *groupPipeline) buildRow(s *groupState) ([]byte, error) {
 	var buf []byte
 	buf = append(buf, '{')
 	for i, alias := range p.aliases {
-		value := json.RawMessage("null")
+		var value json.RawMessage
 		if p.kinds[i] == "" {
-			if v, ok := s.keyValues[alias]; ok {
-				value = v
+			v, ok := s.keyValues[alias]
+			if !ok {
+				// The group's key is undefined here, and the service answers
+				// that with the alias left out of the row.
+				continue
 			}
+			value = v
 		} else {
 			final, err := s.aggregators[i].finalize()
 			if err != nil {
@@ -529,13 +529,22 @@ func groupKey(items []groupByItem) (string, error) {
 	// Build a slice of the inner "item" values, canonicalize each, then join.
 	// Using a combined key of canonicalized element JSON keeps equality
 	// deterministic even for complex multi-key GROUP BY.
+	//
+	// A key the documents leave undefined arrives with no "item" at all. It is
+	// a group of its own — the service counts it apart from an explicit null —
+	// so each part is wrapped in an array and an undefined one is the empty
+	// array, which no value's canonical form can collide with.
 	parts := make([]json.RawMessage, len(items))
 	for i, it := range items {
+		if isUndefinedItem(it.Item) {
+			parts[i] = json.RawMessage(`[]`)
+			continue
+		}
 		c, err := canonicalJSON(it.Item)
 		if err != nil {
 			return "", errors.Wrapf(err, "gonative: canonicalize group key part %d", i)
 		}
-		parts[i] = c
+		parts[i] = append(append(json.RawMessage{'['}, c...), ']')
 	}
 	b, err := json.Marshal(parts)
 	if err != nil {

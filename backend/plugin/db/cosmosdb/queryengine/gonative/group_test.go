@@ -3,6 +3,7 @@ package gonative
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos/queryengine"
@@ -40,6 +41,14 @@ func mkGroupBody(t *testing.T, entries ...struct {
 	b, err := json.Marshal(map[string]any{"Documents": docs})
 	require.NoError(t, err)
 	return b
+}
+
+// mkGroupBodyRaw builds a partition response from literal document JSON, for
+// shapes mkGroupBody cannot spell — a groupByItems entry with no "item" at
+// all, which is how the gateway reports a key the document leaves undefined.
+func mkGroupBodyRaw(t *testing.T, docs ...string) []byte {
+	t.Helper()
+	return []byte(`{"Documents":[` + strings.Join(docs, ",") + `]}`)
 }
 
 type groupEntry = struct {
@@ -636,9 +645,10 @@ func TestGroupPipeline_OutputOrderIsStableAcrossRuns(t *testing.T) {
 	}
 }
 
-// A group key Cosmos cannot order — an array or an object — leaves the output
-// in first-seen order rather than asking the comparator to invent one.
-func TestGroupPipeline_UnorderableKeysKeepFirstSeenOrder(t *testing.T) {
+// A group key the service cannot order by value — an array or an object — is
+// still ordered here, by its canonical JSON, so the same query does not answer
+// in a different order on the next run.
+func TestGroupPipeline_OrdersCompositeKeysConsistently(t *testing.T) {
 	plan := newGroupPlan("c.tags", []string{"tags", "n"}, map[string]string{"tags": "", "n": "Count"})
 	p, err := newGroupPipeline(plan, []string{"0"})
 	require.NoError(t, err)
@@ -650,8 +660,50 @@ func TestGroupPipeline_UnorderableKeysKeepFirstSeenOrder(t *testing.T) {
 		),
 	})
 	require.Len(t, rows, 2)
-	assert.JSONEq(t, `{"tags":["b"],"n":1}`, string(rows[0]))
-	assert.JSONEq(t, `{"tags":["a"],"n":2}`, string(rows[1]))
+	assert.JSONEq(t, `{"tags":["a"],"n":2}`, string(rows[0]))
+	assert.JSONEq(t, `{"tags":["b"],"n":1}`, string(rows[1]))
+}
+
+// A column the documents do not all define is ordinary in a schemaless store,
+// and the service answers it as a group of its own, counted apart from an
+// explicit null and spelled with the alias left out of the row. The engine
+// used to fail the whole query on it, because the gateway sends that group's
+// key as a groupByItems entry with no "item" to canonicalize.
+func TestGroupPipeline_GroupsAnUndefinedKeyOnItsOwn(t *testing.T) {
+	plan := newGroupPlan("c.v", []string{"k", "n"}, map[string]string{"k": "", "n": "Count"})
+	p, err := newGroupPipeline(plan, []string{"0", "1"})
+	require.NoError(t, err)
+
+	rows := driveGroup(t, p, map[string][]byte{
+		"0": mkGroupBodyRaw(t,
+			`{"groupByItems":[{}],"payload":{"n":{"item":2}}}`,
+			`{"groupByItems":[{"item":null}],"payload":{"k":null,"n":{"item":1}}}`),
+		"1": mkGroupBodyRaw(t,
+			`{"groupByItems":[{"item":"a"}],"payload":{"k":"a","n":{"item":3}}}`,
+			`{"groupByItems":[{}],"payload":{"n":{"item":5}}}`),
+	})
+	require.Len(t, rows, 3)
+	assert.JSONEq(t, `{"n":7}`, string(rows[0]), "the undefined group merges across ranges and omits the alias")
+	assert.JSONEq(t, `{"k":null,"n":1}`, string(rows[1]), "an explicit null is its own group")
+	assert.JSONEq(t, `{"k":"a","n":3}`, string(rows[2]))
+}
+
+// A multi-key GROUP BY where one key is undefined in some rows: the undefined
+// slot still distinguishes the group.
+func TestGroupPipeline_GroupsOnAPartlyUndefinedKey(t *testing.T) {
+	plan := newGroupPlan("c.a", []string{"a", "b", "n"}, map[string]string{"a": "", "b": "", "n": "Count"})
+	plan.QueryInfo.GroupByExpressions = []string{"c.a", "c.b"}
+	p, err := newGroupPipeline(plan, []string{"0"})
+	require.NoError(t, err)
+
+	rows := driveGroup(t, p, map[string][]byte{
+		"0": mkGroupBodyRaw(t,
+			`{"groupByItems":[{"item":"x"},{}],"payload":{"a":"x","n":{"item":4}}}`,
+			`{"groupByItems":[{"item":"x"},{"item":7}],"payload":{"a":"x","b":7,"n":{"item":9}}}`),
+	})
+	require.Len(t, rows, 2)
+	assert.JSONEq(t, `{"a":"x","n":4}`, string(rows[0]))
+	assert.JSONEq(t, `{"a":"x","b":7,"n":9}`, string(rows[1]))
 }
 
 // MIN over a group where the column is undefined in every row has no value,
