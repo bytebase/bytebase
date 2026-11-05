@@ -47,10 +47,7 @@ func TestDecideExportDestination(t *testing.T) {
 	}{
 		{name: "unspecified is download", in: exportDestinationInput{}, want: v1pb.ExportDestination_DOWNLOAD},
 		{name: "download", in: exportDestinationInput{destination: v1pb.ExportDestination_DOWNLOAD, password: "pw"}, want: v1pb.ExportDestination_DOWNLOAD},
-		{name: "download disabled", in: exportDestinationInput{destination: v1pb.ExportDestination_DOWNLOAD, disableDownload: true}, wantCode: connect.CodeFailedPrecondition},
-		{name: "unspecified with download disabled", in: exportDestinationInput{disableDownload: true}, wantCode: connect.CodeFailedPrecondition},
 		{name: "sharepoint", in: sharePointReady(exportDestinationInput{}), want: v1pb.ExportDestination_SHAREPOINT},
-		{name: "sharepoint with download disabled", in: sharePointReady(exportDestinationInput{disableDownload: true}), want: v1pb.ExportDestination_SHAREPOINT},
 		{
 			name: "sharepoint without the feature",
 			in: func() exportDestinationInput {
@@ -73,15 +70,6 @@ func TestDecideExportDestination(t *testing.T) {
 			name: "sharepoint without destination",
 			in: func() exportDestinationInput {
 				in := sharePointReady(exportDestinationInput{})
-				in.destinationURL = ""
-				return in
-			}(),
-			wantCode: connect.CodeFailedPrecondition,
-		},
-		{
-			name: "sharepoint without destination and download disabled",
-			in: func() exportDestinationInput {
-				in := sharePointReady(exportDestinationInput{disableDownload: true})
 				in.destinationURL = ""
 				return in
 			}(),
@@ -393,30 +381,16 @@ func newEnterpriseLicenseService(ctx context.Context, t *testing.T, stores *stor
 	return licenseService
 }
 
-func setWorkspaceDisableDownload(ctx context.Context, t *testing.T, stores *store.Store, disableDownload bool) {
-	t.Helper()
-	payload, err := protojson.Marshal(&storepb.QueryDataPolicy{DisableDownload: disableDownload})
-	require.NoError(t, err)
-	_, err = stores.CreatePolicy(ctx, &store.PolicyMessage{
-		Workspace:    "default",
-		ResourceType: storepb.Policy_WORKSPACE,
-		Resource:     common.FormatWorkspace("default"),
-		Type:         storepb.Policy_QUERY_DATA,
-		Payload:      string(payload),
-		Enforce:      true,
-	})
-	require.NoError(t, err)
-}
+const exportFixtureSharePointURL = "https://contoso.sharepoint.com/sites/data/Exports"
 
 // newExportDestinationFixture seeds workspace SharePoint credentials and a
-// project that has sharePointURL as its SharePoint folder, or none when empty.
-func newExportDestinationFixture(t *testing.T, sharePointURL string) (context.Context, *store.Store, *store.DatabaseMessage) {
+// project whose SharePoint folder is exportFixtureSharePointURL.
+func newExportDestinationFixture(t *testing.T) (context.Context, *store.Store, *store.DatabaseMessage) {
 	t.Helper()
 	ctx := context.WithValue(context.Background(), common.WorkspaceIDContextKey, "default")
 	db, stores, _ := testcontainer.NewMetadataDB(t)
-	projectSetting := &storepb.Project{}
-	if sharePointURL != "" {
-		projectSetting.ExportSetting = &storepb.Project_ExportSetting{Sharepoint: &storepb.Project_SharePointDestination{Url: sharePointURL}}
+	projectSetting := &storepb.Project{
+		ExportSetting: &storepb.Project_ExportSetting{Sharepoint: &storepb.Project_SharePointDestination{Url: exportFixtureSharePointURL}},
 	}
 	projectSettingJSON, err := protojson.Marshal(projectSetting)
 	require.NoError(t, err)
@@ -430,123 +404,17 @@ func newExportDestinationFixture(t *testing.T, sharePointURL string) (context.Co
 	return ctx, stores, &store.DatabaseMessage{ProjectID: "export-project", InstanceID: "prod", DatabaseName: "hr"}
 }
 
-const exportFixtureSharePointURL = "https://contoso.sharepoint.com/sites/data/Exports"
-
-// TestPrepareExportDestinationReadsPolicyWithoutLicense runs on a free plan, as
-// after a lapsed license: disable_download still applies.
-func TestPrepareExportDestinationReadsPolicyWithoutLicense(t *testing.T) {
+func TestPrepareExportDestinationResolvesSharePoint(t *testing.T) {
 	t.Parallel()
-	ctx, stores, database := newExportDestinationFixture(t, exportFixtureSharePointURL)
-	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, stores, false, "")
-	require.NoError(t, err)
-	require.Error(t, licenseService.IsFeatureEnabled(ctx, "default", v1pb.PlanFeature_FEATURE_QUERY_POLICY))
-	service := &SQLService{store: stores, licenseService: licenseService}
-
-	target, err := service.prepareExportDestination(ctx, &v1pb.ExportRequest{Destination: v1pb.ExportDestination_DOWNLOAD}, database)
-	require.NoError(t, err, "a workspace without a policy allows download")
-	require.Nil(t, target)
-
-	setWorkspaceDisableDownload(ctx, t, stores, true)
-	for _, destination := range []v1pb.ExportDestination{v1pb.ExportDestination_EXPORT_DESTINATION_UNSPECIFIED, v1pb.ExportDestination_DOWNLOAD} {
-		_, err := service.prepareExportDestination(ctx, &v1pb.ExportRequest{Destination: destination}, database)
-		require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err), destination.String())
-	}
-	_, err = service.prepareExportDestination(ctx, &v1pb.ExportRequest{Destination: v1pb.ExportDestination_SHAREPOINT}, database)
-	require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(err), "the SharePoint destination needs the license")
-
-	setWorkspaceDisableDownload(ctx, t, stores, false)
-	target, err = service.prepareExportDestination(ctx, &v1pb.ExportRequest{}, database)
-	require.NoError(t, err)
-	require.Nil(t, target)
-}
-
-func TestPrepareExportDestinationAllowsSharePointWithDownloadDisabled(t *testing.T) {
-	t.Parallel()
-	ctx, stores, database := newExportDestinationFixture(t, exportFixtureSharePointURL)
+	ctx, stores, database := newExportDestinationFixture(t)
 	licenseService := newEnterpriseLicenseService(ctx, t, stores)
 	client := &exportSharePointClient{location: &sharepoint.Location{DriveID: "drive", ItemID: "item"}}
 	service := &SQLService{store: stores, licenseService: licenseService, newSharePointClient: func(cfg sharepoint.Config) (sharepoint.Client, error) {
 		require.Equal(t, sharepoint.Config{TenantID: "tenant", ClientID: "client", ClientSecret: "secret"}, cfg)
 		return client, nil
 	}}
-	setWorkspaceDisableDownload(ctx, t, stores, true)
-
 	target, err := service.prepareExportDestination(ctx, &v1pb.ExportRequest{Destination: v1pb.ExportDestination_SHAREPOINT}, database)
 	require.NoError(t, err)
 	require.Same(t, client.location, target.location)
 	require.Equal(t, exportFixtureSharePointURL, client.resolvedURL)
-
-	_, err = service.prepareExportDestination(ctx, &v1pb.ExportRequest{Destination: v1pb.ExportDestination_DOWNLOAD}, database)
-	require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err), "the license does not unlock download")
-}
-
-// TestPrepareExportDestinationRefusesWithoutAnyDestination covers a workspace
-// with downloads disabled and a project with no SharePoint folder.
-func TestPrepareExportDestinationRefusesWithoutAnyDestination(t *testing.T) {
-	t.Parallel()
-	ctx, stores, database := newExportDestinationFixture(t, "")
-	licenseService := newEnterpriseLicenseService(ctx, t, stores)
-	service := &SQLService{store: stores, licenseService: licenseService, newSharePointClient: func(sharepoint.Config) (sharepoint.Client, error) {
-		return nil, errors.New("no SharePoint client is expected")
-	}}
-	setWorkspaceDisableDownload(ctx, t, stores, true)
-
-	for _, destination := range []v1pb.ExportDestination{v1pb.ExportDestination_EXPORT_DESTINATION_UNSPECIFIED, v1pb.ExportDestination_DOWNLOAD, v1pb.ExportDestination_SHAREPOINT} {
-		_, err := service.prepareExportDestination(ctx, &v1pb.ExportRequest{Destination: destination}, database)
-		require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err), destination.String())
-	}
-}
-
-// TestExportRejectsDownloadDespiteExportGrant calls Export with an active
-// export grant for the exact statement. disable_download rejects the request
-// before any connection to the target database.
-func TestExportRejectsDownloadDespiteExportGrant(t *testing.T) {
-	t.Parallel()
-	ctx := context.WithValue(context.Background(), common.WorkspaceIDContextKey, "default")
-	ctx = context.WithValue(ctx, common.UserContextKey, &store.UserMessage{Email: "alice@example.com"})
-	db, stores, _ := testcontainer.NewMetadataDB(t)
-	_, err := db.ExecContext(ctx, `
-    INSERT INTO workspace (resource_id) VALUES ('default');
-    INSERT INTO project (resource_id, workspace, name, setting)
-    VALUES ('grant-project', 'default', 'Grant Project', '{"allowJustInTimeAccess":true}');`)
-	require.NoError(t, err)
-	instance, err := stores.CreateInstance(ctx, &store.InstanceMessage{
-		ResourceID: "prod",
-		Workspace:  "default",
-		Metadata: &storepb.Instance{
-			Engine:      storepb.Engine_POSTGRES,
-			Activation:  true,
-			DataSources: []*storepb.DataSource{{Id: "admin", Type: storepb.DataSourceType_ADMIN}},
-		},
-	})
-	require.NoError(t, err)
-	database, err := stores.UpsertDatabase(ctx, &store.DatabaseMessage{
-		InstanceID: "prod", DatabaseName: "hr", ProjectID: "grant-project", Metadata: &storepb.DatabaseMetadata{},
-	})
-	require.NoError(t, err)
-	const statement = "SELECT 1"
-	expires := time.Now().Add(time.Hour)
-	grant, err := stores.CreateAccessGrant(ctx, &store.AccessGrantMessage{
-		ProjectID: "grant-project", Creator: "alice@example.com", Status: storepb.AccessGrant_ACTIVE, ExpireTime: &expires,
-		Payload: &storepb.AccessGrantPayload{Query: statement, Targets: []string{"instances/prod/databases/hr"}, Export: true, Unmask: true},
-	})
-	require.NoError(t, err)
-	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, stores, false, "")
-	require.NoError(t, err)
-	service := &SQLService{store: stores, licenseService: licenseService}
-	got := service.preCheckAccess(ctx, statement, instance, database, nil, "", true /* requireExport */)
-	require.NotNil(t, got)
-	require.Equal(t, grant.ID, got.ID)
-
-	setWorkspaceDisableDownload(ctx, t, stores, true)
-	for _, destination := range []v1pb.ExportDestination{v1pb.ExportDestination_EXPORT_DESTINATION_UNSPECIFIED, v1pb.ExportDestination_DOWNLOAD} {
-		_, err := service.Export(ctx, connect.NewRequest(&v1pb.ExportRequest{
-			Name:        "instances/prod/databases/hr",
-			Statement:   statement,
-			Format:      v1pb.ExportFormat_CSV,
-			Destination: destination,
-		}))
-		require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err), destination.String())
-		require.ErrorContains(t, err, "the Download export destination is disabled", destination.String())
-	}
 }

@@ -58,16 +58,18 @@ Configuring a storage destination approves exports to it. SharePoint is
 offered when the workspace has the SharePoint plan feature and SharePoint
 credentials and the project has a SharePoint folder. Download is the only
 Export Destination with a policy switch: the workspace query data policy's
-`disable_download` turns it off. It defaults to false, so an upgrade keeps
-Download. A separate SharePoint switch was dropped because configuring a
+`disable_download` turns it off. It defaults to false. The upgrade sets it in
+workspaces whose policy had `disable_export = true` (ADR 0006); every other
+workspace keeps Download. A separate SharePoint switch was dropped because configuring a
 storage destination is itself the approval. The Export Permission
 (`bb.sql.export`, ADR 0006) decides who may export, and the available
 destinations decide where exports may go. An approved export access grant
 satisfies the Export Permission but never adds a destination, so with Download
-disabled and no project SharePoint folder, export is refused for everyone,
-grant holders too. The Export API enforces `disable_download` for every
-caller, including MCP; hiding the UI is not enforcement. The setting stays in
-effect if the workspace license lapses; only changing it requires the license.
+disabled and no project SharePoint folder, the SQL Editor offers export to no
+one, grant holders included. `disable_download` is a SQL Editor setting: the
+Export API does not check it, so API and MCP callers can still download. The
+setting stays in effect if the workspace license lapses; only changing it
+requires the license.
 
 Bytebase is neutral about how customers isolate projects. It uses whatever
 library root or folder is configured and does not recommend one structure or

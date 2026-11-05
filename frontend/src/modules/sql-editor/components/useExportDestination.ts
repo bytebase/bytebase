@@ -42,8 +42,8 @@ export function useExportDestination(projectName: string) {
   const hasSharePointFeature = usePlanFeature(
     PlanFeature.FEATURE_SHAREPOINT_EXPORT
   );
-  // The server enforces disable_download without a license check, so it is
-  // read regardless of FEATURE_QUERY_POLICY.
+  // disable_download stays in effect after the license lapses, so it is read
+  // regardless of FEATURE_QUERY_POLICY.
   const { disableDownload } = useSQLEditorQueryDataPolicy(projectName);
 
   useEffect(() => {
