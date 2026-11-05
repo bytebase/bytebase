@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -79,14 +80,19 @@ func TestMasksValuesMatchesWhatEachMaskerReturns(t *testing.T) {
 		require.NoError(t, err)
 		return m
 	}
+	samples := []*v1pb.RowValue{
+		{Kind: &v1pb.RowValue_StringValue{StringValue: "0123456789abcdefghij"}},
+		{Kind: &v1pb.RowValue_BoolValue{BoolValue: true}},
+		{Kind: &v1pb.RowValue_NullValue{}},
+	}
 	for name, tc := range map[string]struct {
 		masker Masker
 		want   bool
 	}{
 		"none":                 {NewNoneMasker(), false},
 		"range with no slice":  {NewRangeMasker(nil), false},
-		"outer with no margin": {inner(storepb.Algorithm_InnerOuterMask_OUTER, 0, 0), false},
 		"range with a slice":   {NewRangeMasker([]*MaskRangeSlice{{Start: 0, End: 1, Substitution: "*"}}), true},
+		"outer with no margin": {inner(storepb.Algorithm_InnerOuterMask_OUTER, 0, 0), true},
 		"outer with a prefix":  {inner(storepb.Algorithm_InnerOuterMask_OUTER, 1, 0), true},
 		"inner with no margin": {inner(storepb.Algorithm_InnerOuterMask_INNER, 0, 0), true},
 		"full":                 {NewFullMasker("***"), true},
@@ -94,10 +100,12 @@ func TestMasksValuesMatchesWhatEachMaskerReturns(t *testing.T) {
 		"default range":        {NewDefaultRangeMasker(), true},
 		"md5":                  {NewMD5Masker("salt"), true},
 	} {
-		sample := &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: "0123456789abcdefghij"}}
-		masked := tc.masker.Mask(&MaskData{Data: sample})
+		changed := false
+		for _, sample := range samples {
+			changed = changed || !proto.Equal(tc.masker.Mask(&MaskData{Data: sample}), sample)
+		}
 		require.Equal(t, tc.want, MasksValues(tc.masker), name)
-		require.Equal(t, tc.want, masked.GetStringValue() != sample.GetStringValue(), name)
+		require.Equal(t, tc.want, changed, name)
 	}
 }
 

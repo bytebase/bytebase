@@ -193,10 +193,15 @@ func TestAdministerMaskingRulesStatesWhatEachTypeDoes(t *testing.T) {
 	fullMask := &v1pb.Algorithm{Mask: &v1pb.Algorithm_FullMask_{FullMask: &v1pb.Algorithm_FullMask{Substitution: "*"}}}
 	md5 := &v1pb.Algorithm{Mask: &v1pb.Algorithm_Md5Mask{Md5Mask: &v1pb.Algorithm_MD5Mask{}}}
 	noSlice := &v1pb.Algorithm{Mask: &v1pb.Algorithm_RangeMask_{RangeMask: &v1pb.Algorithm_RangeMask{}}}
+	// With no margins, strings stay as they are, and NULL and booleans are
+	// replaced.
+	noMargin := &v1pb.Algorithm{Mask: &v1pb.Algorithm_InnerOuterMask_{InnerOuterMask: &v1pb.Algorithm_InnerOuterMask{
+		Type: v1pb.Algorithm_InnerOuterMask_OUTER, Substitution: "*"}}}
 	types, err := semanticTypesFromSetting([]*v1pb.SemanticTypeSetting_SemanticType{
 		semanticType("email", "Email", md5),
 		semanticType("plain", "Plain", nil),
 		semanticType("empty-range", "Empty range", noSlice),
+		semanticType("outer", "Outer", noMargin),
 		semanticType("redacted", "Redacted", fullMask),
 		// A stored copy of a built-in type is ignored, as masking ignores it.
 		semanticType("bb.default", "Stored default", nil),
@@ -212,6 +217,7 @@ func TestAdministerMaskingRulesStatesWhatEachTypeDoes(t *testing.T) {
 		"email":              {`"Email" (Hash (MD5))`, true},
 		"plain":              {`"Plain" (masks nothing)`, true},
 		"empty-range":        {`"Empty range" (masks nothing)`, true},
+		"outer":              {`"Outer" (Inner/Outer mask)`, true},
 		"bb.typo":            {`"bb.typo" (no such type, masks nothing)`, true},
 		"":                   {"no type (each column's own type)", true},
 	} {
