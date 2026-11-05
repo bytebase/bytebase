@@ -1137,7 +1137,8 @@
     "progress": {
       "databases": "{{total}} 件中 {{done}} 件のデータベースをエクスポートしました",
       "download": "エクスポートしています…",
-      "sharepoint": "SharePoint にエクスポートしています…"
+      "sharepoint": "SharePoint にエクスポートしています…",
+      "sharepoint-slow": "結果が大きい場合や SharePoint が混雑している場合は、数分かかることがあります。Bytebase は自動的に再試行します。"
     },
     "sharepoint": {
       "exported-title": "SharePoint にエクスポートしました",

@@ -1137,7 +1137,8 @@
     "progress": {
       "databases": "{{done}} de {{total}} bases de datos exportadas",
       "download": "Exportando…",
-      "sharepoint": "Exportando a SharePoint…"
+      "sharepoint": "Exportando a SharePoint…",
+      "sharepoint-slow": "Los resultados grandes o un SharePoint ocupado pueden tardar unos minutos. Bytebase reintenta automáticamente."
     },
     "sharepoint": {
       "exported-title": "Exportado a SharePoint",

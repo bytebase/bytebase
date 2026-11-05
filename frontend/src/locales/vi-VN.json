@@ -1137,7 +1137,8 @@
     "progress": {
       "databases": "Đã xuất {{done}}/{{total}} cơ sở dữ liệu",
       "download": "Đang xuất…",
-      "sharepoint": "Đang xuất sang SharePoint…"
+      "sharepoint": "Đang xuất sang SharePoint…",
+      "sharepoint-slow": "Kết quả lớn hoặc SharePoint đang bận có thể mất vài phút. Bytebase sẽ tự động thử lại."
     },
     "sharepoint": {
       "exported-title": "Đã xuất sang SharePoint",

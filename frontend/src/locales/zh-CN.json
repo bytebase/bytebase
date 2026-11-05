@@ -1137,7 +1137,8 @@
     "progress": {
       "databases": "已导出 {{done}}/{{total}} 个数据库",
       "download": "正在导出…",
-      "sharepoint": "正在导出到 SharePoint…"
+      "sharepoint": "正在导出到 SharePoint…",
+      "sharepoint-slow": "结果较大或 SharePoint 繁忙时，导出可能需要几分钟。Bytebase 会自动重试。"
     },
     "sharepoint": {
       "exported-title": "已导出到 SharePoint",
