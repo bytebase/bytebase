@@ -4,15 +4,26 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
-// The built-in semantic types. Masking adds them to the workspace's types, and
-// a stored type with a built-in ID is ignored.
+// The built-in semantic types' IDs.
 const (
 	DefaultSemanticTypeID        = "bb.default"
 	DefaultPartialSemanticTypeID = "bb.default-partial"
 )
 
-// BuiltinSemanticTypes returns the built-in semantic types.
-func BuiltinSemanticTypes() []*storepb.SemanticTypeSetting_SemanticType {
+// WithBuiltinSemanticTypes returns the workspace's semantic types as masking
+// reads them: the stored types and the built-in ones. A stored type with a
+// built-in ID is dropped.
+func WithBuiltinSemanticTypes(stored []*storepb.SemanticTypeSetting_SemanticType) []*storepb.SemanticTypeSetting_SemanticType {
+	types := make([]*storepb.SemanticTypeSetting_SemanticType, 0, len(stored)+2)
+	for _, semanticType := range stored {
+		if !isBuiltinSemanticTypeID(semanticType.GetId()) {
+			types = append(types, semanticType)
+		}
+	}
+	return append(types, builtinSemanticTypes()...)
+}
+
+func builtinSemanticTypes() []*storepb.SemanticTypeSetting_SemanticType {
 	return []*storepb.SemanticTypeSetting_SemanticType{
 		{
 			Id:    DefaultSemanticTypeID,
@@ -35,8 +46,7 @@ func BuiltinSemanticTypes() []*storepb.SemanticTypeSetting_SemanticType {
 	}
 }
 
-// IsBuiltinSemanticTypeID reports whether id names a built-in semantic type.
-func IsBuiltinSemanticTypeID(id string) bool {
+func isBuiltinSemanticTypeID(id string) bool {
 	return id == DefaultSemanticTypeID || id == DefaultPartialSemanticTypeID
 }
 
@@ -50,13 +60,13 @@ func ForSemanticType(semanticType *storepb.SemanticTypeSetting_SemanticType) (Ma
 	case DefaultPartialSemanticTypeID:
 		return NewDefaultRangeMasker(), nil
 	default:
-		return ForAlgorithm(semanticType.GetAlgorithm())
+		return forAlgorithm(semanticType.GetAlgorithm())
 	}
 }
 
-// ForAlgorithm returns the masker that algorithm configures. No algorithm masks
+// forAlgorithm returns the masker that algorithm configures. No algorithm masks
 // nothing.
-func ForAlgorithm(algorithm *storepb.Algorithm) (Masker, error) {
+func forAlgorithm(algorithm *storepb.Algorithm) (Masker, error) {
 	switch m := algorithm.GetMask().(type) {
 	case *storepb.Algorithm_FullMask_:
 		return NewFullMasker(m.FullMask.Substitution), nil

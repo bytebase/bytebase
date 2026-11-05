@@ -9,31 +9,38 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
-func TestIsBuiltinSemanticTypeID(t *testing.T) {
-	for id, want := range map[string]bool{
-		DefaultSemanticTypeID:        true,
-		DefaultPartialSemanticTypeID: true,
-		"email":                      false,
-		"":                           false,
-	} {
-		require.Equal(t, want, IsBuiltinSemanticTypeID(id), id)
+func TestWithBuiltinSemanticTypesDropsAStoredTypeWithABuiltinID(t *testing.T) {
+	stored := []*storepb.SemanticTypeSetting_SemanticType{
+		{Id: "email", Title: "Email"},
+		{Id: DefaultSemanticTypeID, Title: "Stored default"},
+		{Id: DefaultPartialSemanticTypeID, Title: "Stored partial"},
 	}
+
+	got := WithBuiltinSemanticTypes(stored)
+
+	require.Equal(t, []string{"email", DefaultSemanticTypeID, DefaultPartialSemanticTypeID}, semanticTypeIDs(got))
+	require.Equal(t, "Default", got[1].GetTitle())
+	require.Equal(t, "Default Partial", got[2].GetTitle())
+	require.Equal(t, []string{"email", DefaultSemanticTypeID, DefaultPartialSemanticTypeID}, semanticTypeIDs(stored))
+	require.Equal(t, "Stored default", stored[1].GetTitle())
 }
 
 // A built-in type masks by its ID: Default Partial stores a range mask with no
-// slices, which ForAlgorithm alone would read as masking nothing.
+// slices, which forAlgorithm alone would read as masking nothing.
 func TestForSemanticTypeMasksABuiltinTypeByItsID(t *testing.T) {
-	for _, semanticType := range BuiltinSemanticTypes() {
+	for _, semanticType := range builtinSemanticTypes() {
 		m, err := ForSemanticType(semanticType)
 		require.NoError(t, err)
 		require.True(t, MasksValues(m), semanticType.GetId())
 	}
-	stored, err := ForAlgorithm(BuiltinSemanticTypes()[1].GetAlgorithm())
+	stored, err := forAlgorithm(builtinSemanticTypes()[1].GetAlgorithm())
 	require.NoError(t, err)
 	require.False(t, MasksValues(stored))
 }
 
 func TestForAlgorithmBuildsEachKindOfMask(t *testing.T) {
+	inner, err := NewInnerOuterMasker(storepb.Algorithm_InnerOuterMask_INNER, 2, 3, "#")
+	require.NoError(t, err)
 	for name, tc := range map[string]struct {
 		algorithm *storepb.Algorithm
 		want      Masker
@@ -51,10 +58,16 @@ func TestForAlgorithmBuildsEachKindOfMask(t *testing.T) {
 			NewRangeMasker(nil), false, "Partial mask"},
 		"md5": {&storepb.Algorithm{Mask: &storepb.Algorithm_Md5Mask{Md5Mask: &storepb.Algorithm_MD5Mask{Salt: "s"}}},
 			NewMD5Masker("s"), true, "Hash (MD5)"},
+		"inner": {&storepb.Algorithm{Mask: &storepb.Algorithm_InnerOuterMask_{InnerOuterMask: &storepb.Algorithm_InnerOuterMask{
+			Type: storepb.Algorithm_InnerOuterMask_INNER, PrefixLen: 2, SuffixLen: 3, Substitution: "#"}}},
+			inner, true, "Inner/Outer mask"},
 	} {
-		m, err := ForAlgorithm(tc.algorithm)
+		m, err := forAlgorithm(tc.algorithm)
 		require.NoError(t, err, name)
 		require.True(t, tc.want.Equal(m), name)
+		// Equal leaves out a masker's substitution, and the masked value has it.
+		sample := &MaskData{Data: &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: "0123456789abcdefghij"}}}
+		require.Equal(t, tc.want.Mask(sample).GetStringValue(), m.Mask(sample).GetStringValue(), name)
 		require.Equal(t, tc.masks, MasksValues(m), name)
 		require.Equal(t, tc.name, AlgorithmName(tc.algorithm), name)
 	}
@@ -86,4 +99,12 @@ func TestMasksValuesMatchesWhatEachMaskerReturns(t *testing.T) {
 		require.Equal(t, tc.want, MasksValues(tc.masker), name)
 		require.Equal(t, tc.want, masked.GetStringValue() != sample.GetStringValue(), name)
 	}
+}
+
+func semanticTypeIDs(types []*storepb.SemanticTypeSetting_SemanticType) []string {
+	ids := make([]string, 0, len(types))
+	for _, semanticType := range types {
+		ids = append(ids, semanticType.GetId())
+	}
+	return ids
 }

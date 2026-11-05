@@ -166,24 +166,6 @@ func (s *QueryResultMasker) spanTouchesMaskedColumns(ctx context.Context, m *mas
 	return false
 }
 
-func getAlgorithmName(m masker.Masker) string {
-	switch m.(type) {
-	case *masker.NoneMasker:
-		return "None"
-	case *masker.FullMasker:
-		return "Full mask"
-	case *masker.RangeMasker, *masker.DefaultRangeMasker:
-		return "Partial mask"
-	case *masker.MD5Masker:
-		return "Hash (MD5)"
-	case *masker.InnerOuterMasker:
-		// Check the actual type by examining the mask result
-		return "Inner/Outer mask"
-	default:
-		return "Unknown"
-	}
-}
-
 func buildSemanticTypeToMaskerMap(ctx context.Context, stores *store.Store) (map[string]masker.Masker, error) {
 	semanticTypesSetting, err := getSemanticTypesSettingWithBuiltins(ctx, stores)
 	if err != nil {
@@ -516,7 +498,6 @@ func (s *QueryResultMasker) getMaskerForColumnResource(
 		return masker.NewNoneMasker(), nil, nil
 	}
 
-	evaluation.Algorithm = getAlgorithmName(result)
 	return result, evaluation, nil
 }
 

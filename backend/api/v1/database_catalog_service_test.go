@@ -119,13 +119,13 @@ func TestValidateCatalogSemanticTypeIDs(t *testing.T) {
 					Tables: []*storepb.TableCatalog{{
 						Name: "users",
 						Columns: []*storepb.ColumnCatalog{
-							{Name: "email", SemanticType: defaultSemanticTypeID},
-							{Name: "phone", SemanticType: defaultPartialSemanticTypeID},
+							{Name: "email", SemanticType: masker.DefaultSemanticTypeID},
+							{Name: "phone", SemanticType: masker.DefaultPartialSemanticTypeID},
 						},
 					}},
 				}},
 			},
-			setting: &storepb.SemanticTypeSetting{Types: masker.BuiltinSemanticTypes()},
+			setting: &storepb.SemanticTypeSetting{Types: masker.WithBuiltinSemanticTypes(nil)},
 		},
 		{
 			name: "unknown column semantic type rejected",

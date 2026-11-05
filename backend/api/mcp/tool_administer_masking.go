@@ -273,21 +273,20 @@ func (s *Server) readSemanticTypes(ctx context.Context) (map[string]*storepb.Sem
 	return semanticTypesFromSetting(setting.GetValue().GetSemanticType().GetTypes())
 }
 
-// semanticTypesFromSetting adds the built-in types to the stored ones, as
-// masking does: a stored type with a built-in ID is ignored.
+// semanticTypesFromSetting maps the semantic types masking reads by their ID:
+// the stored types and the built-in ones.
 func semanticTypesFromSetting(stored []*v1pb.SemanticTypeSetting_SemanticType) (map[string]*storepb.SemanticTypeSetting_SemanticType, error) {
-	types := make(map[string]*storepb.SemanticTypeSetting_SemanticType)
+	converted := make([]*storepb.SemanticTypeSetting_SemanticType, 0, len(stored))
 	for _, semanticType := range stored {
-		converted, err := storeSemanticType(semanticType)
+		c, err := storeSemanticType(semanticType)
 		if err != nil {
 			return nil, err
 		}
-		if !masker.IsBuiltinSemanticTypeID(converted.GetId()) {
-			types[converted.GetId()] = converted
-		}
+		converted = append(converted, c)
 	}
-	for _, builtin := range masker.BuiltinSemanticTypes() {
-		types[builtin.GetId()] = builtin
+	types := make(map[string]*storepb.SemanticTypeSetting_SemanticType)
+	for _, semanticType := range masker.WithBuiltinSemanticTypes(converted) {
+		types[semanticType.GetId()] = semanticType
 	}
 	return types, nil
 }
