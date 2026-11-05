@@ -339,9 +339,9 @@ const (
 		"and this request carries no such confirmation"
 	mcpProjectUpdateWayOut = "To turn just-in-time access on or off, use the set_just_in_time_access tool, which asks the user to confirm. " +
 		"Change other project settings signed in to the Bytebase console"
-	mcpPolicyUpdateUnconfirmed = "a policy changes over MCP only through grant_masking_exemption and revoke_masking_exemption, after the user confirms the change in the MCP client, " +
+	mcpPolicyUpdateUnconfirmed = "a policy changes over MCP only through grant_masking_exemption, revoke_masking_exemption and administer_workspace, after the user confirms the change in the MCP client, " +
 		"and this request carries no such confirmation"
-	mcpPolicyUpdateWayOut = "To grant or revoke a masking exemption, use those tools, which ask the user to confirm. " +
+	mcpPolicyUpdateWayOut = "To grant or revoke a masking exemption, use those tools, and to change the masking rules, use the administer_workspace tool; each asks the user to confirm. " +
 		"Change other policies signed in to the Bytebase console"
 	mcpSettingUpdateUnconfirmed = "a setting changes over MCP only through administer_workspace, after the user confirms the change in the MCP client, " +
 		"and this request carries no such confirmation"
