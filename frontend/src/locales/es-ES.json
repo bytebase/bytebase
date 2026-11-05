@@ -76,6 +76,26 @@
       "issue-heading": "Preguntar sobre esta solicitud",
       "issue-security": "¿Hay algún problema de seguridad relacionado con esta solicitud?",
       "issue-summary": "Resume esta solicitud y su estado",
+      "masking-catalog-exemption": "¿Afecta una excepción del proyecto a esta columna?",
+      "masking-catalog-heading": "Preguntar sobre la visibilidad de la columna",
+      "masking-catalog-rule": "¿Qué regla de enmascaramiento se aplica a esta columna?",
+      "masking-catalog-visibility": "¿Qué vería un desarrollador en esta columna?",
+      "masking-classification-effect": "¿Esta clasificación enmascara los valores de una columna?",
+      "masking-classification-exemptions": "¿Cómo puede una excepción cambiar lo que ve un usuario?",
+      "masking-classification-heading": "Preguntar sobre la clasificación de datos",
+      "masking-classification-rules": "¿Qué reglas de enmascaramiento se aplican a datos confidenciales?",
+      "masking-exemption-effect": "¿Quién podría ver valores sin enmascarar con esta excepción?",
+      "masking-exemption-heading": "Preguntar sobre excepciones del proyecto",
+      "masking-exemption-review": "¿Qué debo comprobar antes de conceder esta excepción?",
+      "masking-exemption-scope": "¿Cuál es el alcance de esta excepción?",
+      "masking-global-columns": "¿Qué columnas coinciden con esta regla de enmascaramiento?",
+      "masking-global-effect": "¿Qué vería un desarrollador en los valores cubiertos por esta regla Inner Mask?",
+      "masking-global-exemptions": "¿Podría una excepción revelar el valor original?",
+      "masking-global-heading": "Preguntar sobre el enmascaramiento de datos",
+      "masking-semantic-algorithm": "¿Qué conserva este algoritmo de enmascaramiento?",
+      "masking-semantic-heading": "Preguntar sobre tipos semánticos",
+      "masking-semantic-rules": "¿Qué reglas de enmascaramiento usan este tipo semántico?",
+      "masking-semantic-short-values": "¿Qué ocurre con los valores muy cortos?",
       "plan-changes": "¿Qué cambios de base de datos propone este plan?",
       "plan-create-heading": "Redactar un Plan de cambio de base de datos",
       "plan-create-sql": "Ayúdame a redactar un cambio de base de datos para este Plan.",
@@ -105,8 +125,13 @@
       "ask-next": "Siguiente pregunta"
     },
     "handoff": {
+      "open-data-classification": "Abrir la configuración de clasificación de datos",
+      "open-database-catalog": "Abrir la configuración de la columna",
+      "open-global-masking": "Abrir la configuración de enmascaramiento",
       "open-issue": "Abrir incidencia",
       "open-project-instances": "Abrir instancias del proyecto",
+      "open-project-masking-exemptions": "Abrir excepciones de enmascaramiento del proyecto",
+      "open-semantic-types": "Abrir la configuración de tipos semánticos",
       "review-database-changes": "Revisar cambios de base de datos",
       "review-issue-plan": "Revisar plan",
       "review-project-issues": "Revisar incidencias del proyecto",
@@ -148,6 +173,9 @@
       "workspace-governance": "¿Cómo gobierna Bytebase los cambios de base de datos?",
       "workspace-recent": "¿Qué cambió recientemente en este espacio de trabajo?",
       "workspace-setup-first": "¿Qué debería configurar primero?"
+    },
+    "masking": {
+      "ask-agent": "Preguntar al agente sobre enmascaramiento"
     },
     "minimize": "Minimizar",
     "new-chat": "Nuevo chat",
@@ -416,6 +444,20 @@
     }
   },
   "cel": {
+    "agent-help": {
+      "applied-raw": "Aplicado como CEL sin procesar",
+      "applied-selector": "Aplicado al selector",
+      "apply-group": "Aplicar la expresión generada",
+      "apply-raw": "Aplicar como CEL sin procesar",
+      "apply-selector": "Aplicar al selector",
+      "ask-tooltip": "Pide al agente que te ayude a crear esta expresión",
+      "invalid": "No se pudo aplicar esta expresión CEL de forma segura. Pide al agente que la revise o elige CEL sin procesar si está disponible.",
+      "mode-raw": "CEL sin procesar",
+      "mode-selector": "selector",
+      "no-attributes": "ninguno",
+      "starter": "Ayúdame a escribir una condición CEL para este editor. Primero hazme preguntas aclaratorias, de una en una. Modo: {{mode}}. Atributos disponibles: {{attributes}}. Usa solo estos atributos y no inspecciones datos ni ejecutes consultas. Cuando esté lista, explica la condición y proporciona exactamente un bloque `cel` delimitado por comillas invertidas. No afirmes que se aplicó ni se guardó; la revisaré antes de aplicarla.",
+      "unsaved": "La aplicación reemplaza la expresión actual de este editor sin guardar. No guarda la regla."
+    },
     "condition": {
       "add": "Agregar condición",
       "add-condition-in-group-placeholder": "Agregar {{plus}} para agregar condición",
@@ -1141,12 +1183,16 @@
       "sharepoint-slow": "Los resultados grandes o un SharePoint ocupado pueden tardar unos minutos. Bytebase reintenta automáticamente."
     },
     "sharepoint": {
+      "canceled-description": "La exportación se canceló mientras se exportaba esta base de datos. Es posible que existan archivos en SharePoint.",
       "exported-title": "Exportado a SharePoint",
+      "not-started-description": "La exportación se canceló antes de empezar con esta base de datos. No se exportó nada.",
       "open": "Abrir en SharePoint",
       "result-title": "Resultados de la exportación a SharePoint",
       "status": {
+        "canceled": "Cancelado",
         "exported": "Exportado",
         "failed": "Error",
+        "not-started": "No exportado",
         "unconfirmed": "Sin confirmar"
       }
     }
@@ -2930,7 +2976,7 @@
           "self": "Permitir consultar la fuente de datos de administración"
         },
         "allow-download": {
-          "description": "Los usuarios pueden elegir Descarga como destino al exportar resultados de consultas. Si se desactiva, las exportaciones solo van al destino de almacenamiento del proyecto, como SharePoint, incluso con una concesión de acceso de exportación aprobada.",
+          "description": "Los usuarios pueden elegir Descarga como destino al exportar resultados de consultas en el Editor SQL. Si se desactiva, las exportaciones del Editor SQL solo van al destino de almacenamiento del proyecto, como SharePoint, incluso con una concesión de acceso de exportación aprobada.",
           "self": "Permitir descargar exportaciones"
         },
         "allow-email-code-signin": {

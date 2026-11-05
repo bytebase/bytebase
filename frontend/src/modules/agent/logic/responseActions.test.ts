@@ -80,6 +80,100 @@ describe("response actions", () => {
     ).toEqual([]);
   });
 
+  test("accepts masking settings destinations only when observed in this turn", () => {
+    const targets = [
+      { kind: "open-global-masking" },
+      { kind: "open-semantic-types" },
+      { kind: "open-data-classification" },
+      {
+        kind: "open-project-masking-exemptions",
+        project: "projects/sample",
+      },
+      {
+        kind: "open-database-catalog",
+        project: "projects/sample",
+        database: "instances/prod/databases/app",
+      },
+    ] as const;
+
+    for (const target of targets) {
+      const action = { kind: "open", target } as const;
+      expect(normalizeAgentResponseActions([action])).toEqual([action]);
+      expect(acceptAgentResponseActions([action], [target])).toEqual([action]);
+      expect(acceptAgentResponseActions([action], [])).toEqual([]);
+    }
+    expect(
+      normalizeAgentResponseActions([
+        {
+          kind: "open",
+          target: {
+            kind: "open-database-catalog",
+            project: "projects/sample",
+            database: "instances/prod/databases/app",
+            url: "https://example.com",
+          },
+        },
+      ])
+    ).toEqual([]);
+  });
+
+  test("normalizes provider targets with empty unused fields", () => {
+    const optionalFields = {
+      workspace: "",
+      project: "",
+      database: "",
+      plan: "",
+      issue: "",
+      task: "",
+    };
+    expect(
+      normalizeAgentResponseActions([
+        {
+          kind: "open",
+          target: { kind: "open-global-masking", ...optionalFields },
+        },
+      ])
+    ).toEqual([{ kind: "open", target: { kind: "open-global-masking" } }]);
+
+    const database = "projects/sample/instances/primary/databases/app.v2";
+    expect(
+      normalizeAgentResponseActions([
+        {
+          kind: "open",
+          target: {
+            kind: "open-database-catalog",
+            ...optionalFields,
+            project: "projects/sample",
+            database,
+          },
+        },
+      ])
+    ).toEqual([
+      {
+        kind: "open",
+        target: {
+          kind: "open-database-catalog",
+          project: "projects/sample",
+          database,
+        },
+      },
+    ]);
+  });
+
+  test("does not discard non-empty unused target fields", () => {
+    expect(
+      normalizeAgentResponseActions([
+        {
+          kind: "open",
+          target: {
+            kind: "open-global-masking",
+            project: "projects/other",
+          },
+        },
+      ])
+    ).toEqual([]);
+  });
+
   test("offers an unsent comment draft only for the Issue observed this turn", () => {
     const issue = {
       kind: "open-issue",

@@ -33,6 +33,9 @@ const instanceOverviewApi = vi.hoisted(() => ({
     path === "/instances/primary" ? "instances/primary" : undefined
   ),
 }));
+const maskingOverviewApi = vi.hoisted(() => ({
+  create: vi.fn(() => vi.fn(async () => "masking_overview")),
+}));
 
 vi.mock("@/api", () => ({
   projectServiceClientConnect: { getProject: projectApi.getProject },
@@ -66,6 +69,9 @@ vi.mock("./databaseOverview", () => ({
 vi.mock("./instanceOverview", () => ({
   createInstanceOverviewTool: instanceOverviewApi.create,
   resolveInstanceNameFromPagePath: instanceOverviewApi.resolveName,
+}));
+vi.mock("./maskingOverview", () => ({
+  createMaskingOverviewTool: maskingOverviewApi.create,
 }));
 vi.mock("./domAction", () => ({
   createDomActionTool: vi.fn(() => vi.fn(async () => "dom_action")),
@@ -138,6 +144,7 @@ import { createWorkspaceOverviewTool } from "./workspaceOverview";
 import { createWorkspaceRecentActivityTool } from "./workspaceRecentActivity";
 
 beforeEach(() => {
+  maskingOverviewApi.create.mockClear();
   resourceChoiceApi.validate.mockReset();
   vi.mocked(checkPreparedApiPermission).mockReset();
   vi.mocked(checkPreparedApiPermission).mockResolvedValue({ kind: "allowed" });
@@ -225,6 +232,56 @@ describe("done tool", () => {
       text: "Could not finish",
       success: false,
     });
+  });
+});
+
+describe("masking overview tool", () => {
+  const maskingPage = { kind: "global-masking" as const };
+
+  test("is exposed only when the current page has masking context", () => {
+    expect(
+      getToolDefinitions().some((tool) => tool.name === "get_masking_overview")
+    ).toBe(false);
+    expect(
+      getToolDefinitions({ maskingPage }).some(
+        (tool) => tool.name === "get_masking_overview"
+      )
+    ).toBe(true);
+  });
+
+  test("refuses to inspect a page while another chat is selected", async () => {
+    const runOverview = vi.fn(async () => "masking_overview");
+    maskingOverviewApi.create.mockReturnValue(runOverview);
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      maskingPage,
+      canUseCurrentPage: () => false,
+    });
+    const result = await executor("get_masking_overview", {}, "masking-1");
+
+    expect(result.kind).toBe("tool_result");
+    if (result.kind === "tool_result") {
+      expect(result.result).toContain("This chat is not selected");
+    }
+    expect(runOverview).not.toHaveBeenCalled();
+  });
+
+  test("runs the bounded snapshot for the selected masking page", async () => {
+    const runOverview = vi.fn(async () => "masking_overview");
+    maskingOverviewApi.create.mockReturnValue(runOverview);
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      maskingPage,
+      workspaceName: "workspaces/default",
+      canUseCurrentPage: () => true,
+    });
+
+    await expect(
+      executor("get_masking_overview", {}, "masking-2")
+    ).resolves.toEqual({ kind: "tool_result", result: "masking_overview" });
+    expect(maskingOverviewApi.create).toHaveBeenCalledWith({
+      page: maskingPage,
+      workspaceName: "workspaces/default",
+    });
+    expect(runOverview).toHaveBeenCalledOnce();
   });
 });
 

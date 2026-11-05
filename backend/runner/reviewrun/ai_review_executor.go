@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/sync/semaphore"
 
+	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/aireview"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
@@ -19,7 +20,9 @@ import (
 // schema behind the tools. The reviews of one run share the model and run
 // concurrently under aiReviewRunConcurrency. A further call to the model
 // merges the findings that more than one database reports on the same
-// statement, and one more for each merged problem writes its comment.
+// statement, and tells which result an earlier run posted each problem
+// continues, whose thread the problem keeps. One more call for each other
+// merged problem writes its comment.
 type AIReviewExecutor struct {
 	store    *store.Store
 	newModel func(*storepb.AISetting, ...aireview.ModelOption) aireview.Model
@@ -135,6 +138,10 @@ func (e *AIReviewExecutor) RunOnce(ctx context.Context, projectID string, issueU
 	if err := aggregateUnitErrors(len(checkTargets), unitErrs); err != nil {
 		return nil, err
 	}
+	earlier, err := e.earlierResults(ctx, projectID, issueUID, results, sheets)
+	if err != nil {
+		return nil, err
+	}
 	problems, err := mergeAIReviewFindings(ctx, func(ctx context.Context, request *aireview.MergeRequest) (*aireview.MergeResult, error) {
 		// The merge is a model call like a review, so it takes a slot too.
 		if err := e.slots.Acquire(ctx, 1); err != nil {
@@ -153,7 +160,7 @@ func (e *AIReviewExecutor) RunOnce(ctx context.Context, projectID string, issueU
 			slog.Int("model_calls", result.Calls),
 			slog.Int("tokens", result.TotalTokens))
 		return result, nil
-	}, results)
+	}, results, earlier)
 	if err != nil {
 		return nil, err
 	}
@@ -184,7 +191,9 @@ func (e *AIReviewExecutor) RunOnce(ctx context.Context, projectID string, issueU
 	if _, err := e.checkAISetting(ctx, project.Workspace); err != nil {
 		return nil, err
 	}
-	return aiReviewComments(projectID, issueUID, problems), nil
+	comments := aiReviewComments(projectID, issueUID, problems)
+	sortReviewResults(plan.Config.GetSpecs(), comments)
+	return comments, nil
 }
 
 // checkAISetting returns the workspace AI setting if it allows the review. It
@@ -199,6 +208,62 @@ func (e *AIReviewExecutor) checkAISetting(ctx context.Context, workspace string)
 		return nil, err
 	}
 	return setting, nil
+}
+
+// earlierResults returns, for each sheet with findings, the results earlier
+// runs posted on its spec that a problem on it can keep: the AI reviewer's
+// current roots on the issue that carry a fingerprint, with the sheet each is
+// anchored to. A result whose sheet cannot be read is left out, so its problem
+// is posted again.
+func (e *AIReviewExecutor) earlierResults(ctx context.Context, projectID string, issueUID int64, results []*aiReviewResult, sheets map[string]string) (map[aiReviewSheet][]*aiReviewEarlier, error) {
+	bySpec := make(map[string]aiReviewSheet)
+	for _, result := range results {
+		if result != nil && len(result.Findings) > 0 {
+			check := result.Unit.Check
+			bySpec[check.SpecID] = aiReviewSheet{specID: check.SpecID, sheetSha256: check.SheetSha256}
+		}
+	}
+	if len(bySpec) == 0 {
+		return nil, nil
+	}
+
+	roots, err := e.store.ListIssueComment(ctx, &store.FindIssueCommentMessage{ProjectID: projectID, IssueUID: &issueUID, TopLevelOnly: true})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list earlier review results")
+	}
+	earlier := make(map[aiReviewSheet][]*aiReviewEarlier)
+	for _, root := range roots {
+		metadata, anchor := root.Payload.GetReviewMetadata(), root.Payload.GetStatementAnchor()
+		if metadata.GetRunType() != storepb.ReviewRun_AI || metadata.GetSuperseded() || metadata.GetFingerprint() == "" || root.ThreadState == nil {
+			continue
+		}
+		key, ok := bySpec[anchor.GetSpecId()]
+		if !ok {
+			continue
+		}
+		sheet, err := e.sheetStatement(ctx, sheets, anchor.GetSheetSha256())
+		if err != nil {
+			if ctx.Err() != nil {
+				return nil, ctx.Err()
+			}
+			slog.Warn("AI review could not read the sheet of an earlier result, posting its problem again",
+				slog.String("project", projectID),
+				slog.Int64("issue_id", issueUID),
+				slog.String("sheet", anchor.GetSheetSha256()),
+				log.BBError(err))
+			continue
+		}
+		earlier[key] = append(earlier[key], &aiReviewEarlier{
+			Fingerprint: metadata.GetFingerprint(),
+			Resolved:    *root.ThreadState == store.ThreadStateResolved,
+			Priority:    metadata.GetPriority(),
+			Comment:     root.Payload.GetComment(),
+			Sheet:       sheet,
+			SheetSha256: anchor.GetSheetSha256(),
+			Line:        int(anchor.GetStartPosition().GetLine()),
+		})
+	}
+	return earlier, nil
 }
 
 // sheetStatement returns the sheet text, loaded once per run, and refuses a

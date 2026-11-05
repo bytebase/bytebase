@@ -25,15 +25,14 @@ import (
 // The SharePoint fields are read only for the SharePoint destination.
 type exportDestinationInput struct {
 	destination              v1pb.ExportDestination
-	disableDownload          bool
 	password                 string
 	sharePointFeatureEnabled bool
 	destinationURL           string
 	sharePointSetting        *storepb.SharePointSetting
 }
 
-// decideExportDestination returns DOWNLOAD or SHAREPOINT. Nothing unlocks a
-// disabled Download: not an export grant, admin mode, or a lapsed license.
+// decideExportDestination returns DOWNLOAD or SHAREPOINT. The workspace's
+// disable_download is applied by the SQL Editor UI only.
 func decideExportDestination(in exportDestinationInput) (v1pb.ExportDestination, error) {
 	destination := in.destination
 	if destination == v1pb.ExportDestination_EXPORT_DESTINATION_UNSPECIFIED {
@@ -41,9 +40,6 @@ func decideExportDestination(in exportDestinationInput) (v1pb.ExportDestination,
 	}
 	switch destination {
 	case v1pb.ExportDestination_DOWNLOAD:
-		if in.disableDownload {
-			return 0, connect.NewError(connect.CodeFailedPrecondition, errors.New("the Download export destination is disabled by the workspace query data policy"))
-		}
 		return v1pb.ExportDestination_DOWNLOAD, nil
 	case v1pb.ExportDestination_SHAREPOINT:
 	default:
@@ -76,15 +72,9 @@ type sharePointExportTarget struct {
 // the query.
 func (s *SQLService) prepareExportDestination(ctx context.Context, request *v1pb.ExportRequest, database *store.DatabaseMessage) (*sharePointExportTarget, error) {
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
-	// Read without the license check, so the policy outlives the license.
-	policy, err := s.store.GetWorkspaceQueryDataPolicy(ctx, workspaceID)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get the workspace query data policy"))
-	}
 	in := exportDestinationInput{
-		destination:     request.GetDestination(),
-		disableDownload: policy.GetDisableDownload(),
-		password:        request.GetPassword(),
+		destination: request.GetDestination(),
+		password:    request.GetPassword(),
 	}
 	if in.destination == v1pb.ExportDestination_SHAREPOINT {
 		in.sharePointFeatureEnabled = s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_SHAREPOINT_EXPORT) == nil
@@ -151,6 +141,9 @@ func uploadSharePointExport(ctx context.Context, target *sharePointExportTarget,
 		code := connect.CodeInternal
 		if errors.Is(err, sharepoint.ErrNotFoundOrNoAccess) || errors.Is(err, sharepoint.ErrCredential) {
 			code = connect.CodeFailedPrecondition
+		}
+		if errors.Is(err, context.Canceled) {
+			code = connect.CodeCanceled
 		}
 		if errors.Is(err, sharepoint.ErrNothingUploaded) {
 			return "", connect.NewError(code, errors.Wrap(err, "the upload to SharePoint failed; nothing was uploaded"))

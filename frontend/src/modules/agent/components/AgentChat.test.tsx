@@ -8,9 +8,10 @@ import {
   PROJECT_V1_ROUTE_ISSUES,
   PROJECT_V1_ROUTE_PLAN_DETAIL,
   PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
+  SETTING_ROUTE_WORKSPACE_GENERAL,
 } from "@/app/router/handles";
-import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import type { RequestRoleDraft } from "../logic/deniedQueryAccess";
+import { registerAgentExpressionTarget } from "../logic/expressionDraft";
 import { createAgentStore, useAgentStore } from "../store/agent";
 
 (
@@ -29,6 +30,7 @@ const mocks = vi.hoisted(() => ({
   currentRoute: undefined as
     | { name?: string; params?: Record<string, string> }
     | undefined,
+  aiEnabled: undefined as boolean | undefined,
   getSettingByName: vi.fn(),
   notify: vi.fn(),
   prepareAgentPlanDraftRoute: vi.fn(),
@@ -146,6 +148,9 @@ vi.mock("@/utils", async (importOriginal) => ({
 vi.mock("@/stores/app", () => {
   const state = {
     getSettingByName: mocks.getSettingByName,
+    get serverInfo() {
+      return { aiEnabled: mocks.aiEnabled };
+    },
     notify: mocks.notify,
   };
   const useAppStore = <T,>(selector: (value: typeof state) => T) =>
@@ -228,6 +233,7 @@ beforeEach(async () => {
   mocks.routeListeners = [];
   mocks.currentRoute = undefined;
   mocks.currentPath = "/initial";
+  mocks.aiEnabled = undefined;
   mocks.getSettingByName.mockReset();
   mocks.getSettingByName.mockReturnValue(undefined);
   mocks.notify.mockReset();
@@ -248,6 +254,57 @@ afterEach(() => {
 });
 
 describe("AgentChat", () => {
+  test("offers member-clicked apply actions for one CEL draft in its source editor", async () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/sample" });
+    const apply = vi.fn(async () => true);
+    const unregister = registerAgentExpressionTarget(chat.id, apply);
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: 'This matches production.\n```cel\nresource.environment == "prod"\n```',
+    });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+
+    const selectorButton = container.querySelector<HTMLButtonElement>(
+      '[data-agent-expression-draft="selector"]'
+    );
+    expect(selectorButton?.textContent).toContain(
+      "cel.agent-help.apply-selector"
+    );
+    expect(
+      container.querySelector('[data-agent-expression-draft="raw"]')
+    ).not.toBeNull();
+
+    await act(async () => selectorButton?.click());
+
+    expect(apply).toHaveBeenCalledWith(
+      'resource.environment == "prod"',
+      "selector"
+    );
+    expect(selectorButton?.disabled).toBe(true);
+    act(() => unregister());
+    expect(
+      container.querySelector('[data-agent-expression-draft="selector"]')
+    ).toBeNull();
+    unmount();
+  });
+
+  test("does not offer CEL apply actions outside an active editor chat", () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/sample" });
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: '```cel\nresource.environment == "prod"\n```',
+    });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+    expect(container.querySelector('[data-agent-expression-draft="selector"]')).toBeNull();
+    unmount();
+  });
+
   test("opens a denied Query as an unsent Access Grant draft", async () => {
     const store = useAgentStore.getState();
     const chat = store.createChat({ context: "projects/sample" });
@@ -1546,24 +1603,31 @@ describe("AgentChat", () => {
     unmount();
   });
 
-  test("shows AI setup when the cached AI setting is disabled", () => {
-    mocks.getSettingByName.mockImplementation((name) => {
-      if (name !== Setting_SettingName.AI) return undefined;
-      return {
-        value: {
-          value: {
-            case: "ai",
-            value: { enabled: false },
-          },
-        },
-      };
-    });
+  test("shows AI setup and a settings link when ai_enabled is false", () => {
+    mocks.aiEnabled = false;
 
     const { container, render, unmount } = renderIntoContainer(<AgentChat />);
 
     render();
 
     expect(container.textContent).toContain("agent.ai-not-configured.title");
+    const configureLink = Array.from(
+      container.querySelectorAll<HTMLAnchorElement>("a")
+    ).find((link) =>
+      link.textContent?.includes("agent.ai-not-configured.configure")
+    );
+    expect(configureLink).toBeInstanceOf(HTMLAnchorElement);
+    expect(JSON.parse(configureLink?.getAttribute("href") ?? "null")).toMatchObject({
+      name: SETTING_ROUTE_WORKSPACE_GENERAL,
+      hash: "#ai-assistant",
+    });
+    act(() => configureLink?.click());
+    expect(mocks.routerPush).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: SETTING_ROUTE_WORKSPACE_GENERAL,
+        hash: "#ai-assistant",
+      })
+    );
 
     const dismissButton = Array.from(container.querySelectorAll("button")).find(
       (button) => button.textContent === "common.dismiss"

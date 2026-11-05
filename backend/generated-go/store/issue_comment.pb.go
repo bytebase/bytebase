@@ -589,9 +589,11 @@ type IssueCommentPayload_ReviewMetadata struct {
 	// whatever the thread state, and never cleared.
 	Superseded bool `protobuf:"varint,5,opt,name=superseded,proto3" json:"superseded,omitempty"`
 	// Identifies the finding across runs: equal fingerprints are the same
-	// finding on the same SQL. Unique among the results of one run. Empty
-	// when the reviewer cannot tell findings apart across runs, and an empty
-	// fingerprint matches nothing.
+	// finding on the same SQL. The rule review derives it from what it
+	// judged. The AI review starts it with a hash of its statement and ends
+	// it at random, and a later run carries it over to the finding its merge
+	// matches to the result. Unique among the results of one run. Empty on a
+	// result that predates it, and an empty fingerprint matches nothing.
 	Fingerprint string `protobuf:"bytes,6,opt,name=fingerprint,proto3" json:"fingerprint,omitempty"`
 	// The review_run.attempt of the run that posted the result. A result
 	// a later run reports again keeps its attempt.

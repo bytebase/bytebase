@@ -240,7 +240,10 @@ Steps:
 2. In export-enabled workspaces, for every workspace or project IAM binding of SQL Editor User
    or SQL Editor Read User, add a SQL Editor Exporter binding with the same members and
    condition.
-3. Remove the `disableExport` key from every `QUERY_DATA` policy, at workspace and project
+3. In approval-only workspaces, set `disableDownload = true` on the workspace-level
+   `QUERY_DATA` policy, so the SQL Editor stops offering Download there
+   ([ADR 0007](../adr/0007-sharepoint-export-ownership-boundary.md)).
+4. Remove the `disableExport` key from every `QUERY_DATA` policy, at workspace and project
    level, enforced or not.
 
 Approval-only workspaces get no new bindings. Ordinary users there keep exporting only through
@@ -281,6 +284,11 @@ WHERE p.type = 'IAM' AND p.workspace = added.workspace
   AND p.resource_type = added.resource_type AND p.resource = added.resource;
 
 UPDATE policy
+SET payload = payload || '{"disableDownload":true}'
+WHERE type = 'QUERY_DATA' AND resource_type = 'WORKSPACE'
+  AND workspace IN (SELECT workspace FROM approval_only_workspace);
+
+UPDATE policy
 SET payload = payload - 'disableExport'
 WHERE type = 'QUERY_DATA' AND payload ? 'disableExport';
 ```
@@ -317,6 +325,9 @@ offered, as today.
   roles; to stop export through grants in a project, turn off just-in-time access there. The
   release note must state this.
 - Writes that set `disable_export = true` are rejected.
+- In approval-only workspaces, the SQL Editor no longer offers Download, so it exports only to a
+  project's SharePoint folder. The Export API does not check `disable_download`, so API and MCP
+  callers can still download. The release note must state this.
 - Custom roles with `bb.sql.info` or `bb.sql.explain` but not `bb.sql.select` could export `SHOW`
   output before and cannot after. Giving them `bb.sql.export` would grant export of all data,
   which is broader than what they had.
@@ -335,7 +346,8 @@ custom roles and their permission sets through `bytebase_role`, and `disable_exp
   never adds it, which is why the migration adds bindings instead of rewriting roles.
 - **`disable_export` (approval-only workspaces).** A config that sets `disable_export = true` shows a
   `false → true` change, and applying it fails with the rejection message. A config that sets
-  `false` keeps applying until the provider drops the attribute.
+  `false` keeps applying until the provider drops the attribute. A config that does not set
+  `disable_download` shows a `true → false` change, and applying it turns Download back on.
 - **Order of operations.** A config cannot reference `roles/sqlEditorExporter` before the server
   knows the role.
 
@@ -379,8 +391,9 @@ binding {
   policy that stores `disableExport`. Assert exact payloads: the approval-only workspace has no
   new bindings; the export-enabled workspace has the added bindings; the third workspace is
   treated as approval-only; every custom role, with or without `bb.sql.select`, is unchanged in
-  every workspace; no query data policy keeps a `disableExport` key, their other fields and
-  `enforce` are unchanged. Assert that the id collision raises.
+  every workspace; the approval-only and third workspaces' workspace-level query data policies
+  gain `disableDownload = true`; no query data policy keeps a `disableExport` key, their other
+  fields and `enforce` are unchanged. Assert that the id collision raises.
 - **Export authorization** (`backend/api/v1`):
   - A select-only user cannot export.
   - A user with only `bb.sql.export`, scoped to one table, exports that table, is refused on

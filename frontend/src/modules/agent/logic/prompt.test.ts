@@ -51,6 +51,31 @@ describe("buildSystemPrompt", () => {
     );
   });
 
+  test("uses masking configuration evidence and synthetic-only previews on masking pages", () => {
+    const prompt = buildSystemPrompt({
+      path: "/settings/global-masking",
+      title: "Masking",
+      context: "workspaces/default",
+      maskingPage: { kind: "global-masking" },
+    });
+
+    expect(prompt).toContain("call get_masking_overview");
+    expect(prompt).toContain("synthetic values only");
+    expect(prompt).toMatch(/never read or query real row values/i);
+    expect(prompt).toContain(
+      "Never change masking rules, semantic types, classifications, or exemptions"
+    );
+    expect(prompt).toContain("prefix and suffix cover the whole value");
+    expect(prompt).toContain("interior is masked");
+    expect(prompt).toContain("For Outer Mask");
+    expect(prompt).toContain("target user or role");
+  });
+
+  test("does not add masking-specific instructions to unrelated pages", () => {
+    const prompt = buildSystemPrompt({ path: "/landing", title: "Workspace" });
+    expect(prompt).not.toContain("get_masking_overview");
+  });
+
   test("keeps project guidance when the selected project differs from the workspace chat", () => {
     const prompt = buildSystemPrompt({
       path: "/landing",

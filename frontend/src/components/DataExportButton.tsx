@@ -80,6 +80,9 @@ export type DataExportRequest = {
   options: ExportOption;
   resolve: (outcome: ExportOutcome) => void;
   reject: (reason?: unknown) => void;
+  // Aborted when the user cancels the export. A canceled SharePoint export
+  // still resolves, reporting what each database did.
+  signal: AbortSignal;
   // Reports progress of an export that covers several databases.
   onProgress?: (done: number, total: number) => void;
 };
@@ -185,26 +188,29 @@ const downloadSingle = (entry: DownloadContent, format: ExportFormat) => {
 
 const downloadZip = async (
   contents: DownloadContent[],
-  format: ExportFormat
+  format: ExportFormat,
+  signal: AbortSignal
 ) => {
   const zip = new JSZip();
   for (const entry of contents) {
     zip.file(entry.filename, toBlob(entry, format));
   }
   const zipFile = await zip.generateAsync({ type: "blob" });
+  if (signal.aborted) return;
   saveAs(zipFile, `download_${dayjs().format("YYYY-MM-DDTHH-mm-ss")}.zip`);
 };
 
 const downloadAll = async (
   contents: DownloadContent[],
-  format: ExportFormat
+  format: ExportFormat,
+  signal: AbortSignal
 ) => {
   if (contents.length === 0) return;
   if (contents.length === 1) {
     downloadSingle(contents[0], format);
     return;
   }
-  await downloadZip(contents, format);
+  await downloadZip(contents, format, signal);
 };
 
 /**
@@ -236,6 +242,7 @@ export function DataExportButton({
   const [showDrawer, setShowDrawer] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number }>();
+  const exportAbortRef = useRef<AbortController | undefined>(undefined);
   const [sharePointStartedAt, setSharePointStartedAt] = useState<number>();
   const sharePointElapsed = useElapsedSeconds(sharePointStartedAt);
   const [sharePointResults, setSharePointResults] = useState<
@@ -310,6 +317,8 @@ export function DataExportButton({
 
   const doExport = useCallback(() => {
     if (isRequesting) return;
+    const controller = new AbortController();
+    exportAbortRef.current = controller;
     setIsRequesting(true);
     setProgress(undefined);
     const options: ExportOption = { ...currentOption };
@@ -324,6 +333,7 @@ export function DataExportButton({
         options,
         resolve,
         reject,
+        signal: controller.signal,
         onProgress: (done, total) => setProgress({ done, total }),
       });
     })
@@ -332,7 +342,9 @@ export function DataExportButton({
           setSharePointResults(outcome.sharepoint);
           return;
         }
-        await downloadAll(outcome, options.format);
+        if (controller.signal.aborted) return;
+        await downloadAll(outcome, options.format, controller.signal);
+        if (controller.signal.aborted) return;
         pushNotification({
           module: "bytebase",
           style: "SUCCESS",
@@ -341,6 +353,7 @@ export function DataExportButton({
         });
       })
       .catch((error: unknown) => {
+        if (controller.signal.aborted) return;
         pushNotification({
           module: "bytebase",
           style: "CRITICAL",
@@ -349,6 +362,9 @@ export function DataExportButton({
         });
       })
       .finally(() => {
+        if (exportAbortRef.current === controller) {
+          exportAbortRef.current = undefined;
+        }
         setIsRequesting(false);
         setProgress(undefined);
         setSharePointStartedAt(undefined);
@@ -356,6 +372,35 @@ export function DataExportButton({
         setShowPasswordDialog(false);
       });
   }, [currentOption, isRequesting, onExport, t]);
+
+  const cancelExport = () => {
+    exportAbortRef.current?.abort();
+    setShowDrawer(false);
+    setShowPasswordDialog(false);
+  };
+
+  // While an export runs, Escape and an outside click are ignored so a stray
+  // dismissal cannot cancel or orphan it; any other close, such as the close
+  // button, cancels the export.
+  const handleOpenChange =
+    (setOpen: (open: boolean) => void) =>
+    (
+      open: boolean,
+      eventDetails?: { reason?: string; cancel?: () => void }
+    ) => {
+      if (open || !isRequesting) {
+        setOpen(open);
+        return;
+      }
+      if (
+        eventDetails?.reason === "escape-key" ||
+        eventDetails?.reason === "outside-press"
+      ) {
+        eventDetails.cancel?.();
+        return;
+      }
+      cancelExport();
+    };
 
   // Returns true when the clipboard write succeeded — Generate callers
   // gate the password commit on that so the masked input doesn't end up
@@ -471,7 +516,7 @@ export function DataExportButton({
       )}
 
       {viewMode === "DRAWER" && (
-        <Sheet open={showDrawer} onOpenChange={setShowDrawer}>
+        <Sheet open={showDrawer} onOpenChange={handleOpenChange(setShowDrawer)}>
           <SheetContent width="medium">
             <SheetHeader>
               <SheetTitle>
@@ -622,7 +667,12 @@ export function DataExportButton({
                     )}
                 </div>
               )}
-              <Button appearance="outline" onClick={() => setShowDrawer(false)}>
+              <Button
+                appearance="outline"
+                onClick={
+                  isRequesting ? cancelExport : () => setShowDrawer(false)
+                }
+              >
                 {t("common.cancel")}
               </Button>
               <Button
@@ -638,7 +688,10 @@ export function DataExportButton({
       )}
 
       {viewMode === "DROPDOWN" && supportPassword && (
-        <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
+        <Dialog
+          open={showPasswordDialog}
+          onOpenChange={handleOpenChange(setShowPasswordDialog)}
+        >
           <DialogContent className="w-[26rem] max-w-[calc(100vw-4rem)]">
             <div className="flex flex-col gap-y-3">
               <DialogTitle>{t("export-data.password-optional")}</DialogTitle>
@@ -656,7 +709,11 @@ export function DataExportButton({
                 <Button
                   appearance="outline"
                   size="sm"
-                  onClick={() => setShowPasswordDialog(false)}
+                  onClick={
+                    isRequesting
+                      ? cancelExport
+                      : () => setShowPasswordDialog(false)
+                  }
                 >
                   {t("common.cancel")}
                 </Button>

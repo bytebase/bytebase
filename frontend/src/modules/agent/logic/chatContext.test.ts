@@ -13,6 +13,7 @@ import {
   PROJECT_V1_ROUTE_INSTANCE_DETAIL,
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
   PROJECT_V1_ROUTE_ISSUES,
+  PROJECT_V1_ROUTE_MASKING_EXEMPTION,
   PROJECT_V1_ROUTE_PLAN_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
@@ -21,6 +22,9 @@ import {
   PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
   PROJECT_V1_ROUTE_PLANS,
   PROJECT_V1_ROUTE_SETTINGS,
+  WORKSPACE_ROUTE_DATA_CLASSIFICATION,
+  WORKSPACE_ROUTE_GLOBAL_MASKING,
+  WORKSPACE_ROUTE_SEMANTIC_TYPES,
 } from "@/app/router/handles";
 import { resolveAgentPageResource, resolveChatContext } from "./chatContext";
 
@@ -29,13 +33,14 @@ const routeWithParams = (params: ReactRoute["params"]) =>
 const detailRoute = (
   name: string,
   params: ReactRoute["params"],
-  query: ReactRoute["query"] = {}
+  query: ReactRoute["query"] = {},
+  hash = ""
 ): ReactRoute => ({
   name,
   params,
   query,
   fullPath: "",
-  hash: "",
+  hash,
   requiredPermissions: [],
   overrideDocumentTitle: false,
 });
@@ -68,6 +73,24 @@ describe("resolveChatContext", () => {
 });
 
 describe("resolveAgentPageResource", () => {
+  test.each([
+    [WORKSPACE_ROUTE_GLOBAL_MASKING, "global-masking"],
+    [WORKSPACE_ROUTE_SEMANTIC_TYPES, "semantic-types"],
+    [WORKSPACE_ROUTE_DATA_CLASSIFICATION, "data-classification"],
+  ])("detects workspace masking context on %s", (name, kind) => {
+    expect(resolveAgentPageResource(detailRoute(name, {}))).toEqual({ kind });
+  });
+
+  test("detects project masking exemption context", () => {
+    expect(
+      resolveAgentPageResource(
+        detailRoute(PROJECT_V1_ROUTE_MASKING_EXEMPTION, {
+          projectId: "orders",
+        })
+      )
+    ).toEqual({ kind: "masking-exemption", project: "projects/orders" });
+  });
+
   test.each([
     PROJECT_V1_ROUTE_DETAIL,
     PROJECT_V1_ROUTE_DATABASES,
@@ -265,6 +288,27 @@ describe("resolveAgentPageResource", () => {
       )
     ).toEqual({
       kind: "database",
+      project: "projects/orders",
+      names: ["projects/orders/instances/primary/databases/app"],
+    });
+  });
+
+  test("detects the database catalog tab as masking context", () => {
+    expect(
+      resolveAgentPageResource(
+        detailRoute(
+          PROJECT_V1_ROUTE_DATABASE_DETAIL,
+          {
+            projectId: "orders",
+            instanceId: "primary",
+            databaseName: "app",
+          },
+          { parent: "projects/orders/instances/primary" },
+          "#catalog"
+        )
+      )
+    ).toEqual({
+      kind: "database-catalog",
       project: "projects/orders",
       names: ["projects/orders/instances/primary/databases/app"],
     });

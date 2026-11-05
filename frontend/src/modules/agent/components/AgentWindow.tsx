@@ -196,6 +196,7 @@ export function AgentWindow() {
   const storedWorkspaceName = useAgentStore((s) => s.workspaceName);
   const storedUserEmail = useAgentStore((s) => s.userEmail);
   const getOrFetchSettingByName = useAppStore((s) => s.getOrFetchSettingByName);
+  const aiEnabled = useAppStore((s) => s.serverInfo?.aiEnabled);
   const batchFetchProjects = useAppStore((s) => s.batchFetchProjects);
   const projectsByName = useAppStore((s) => s.projectsByName);
   const instancesByName = useAppStore((s) => s.instancesByName);
@@ -240,7 +241,11 @@ export function AgentWindow() {
       (contextualStart.kind === "plan-create" &&
         !contextualStart.databaseName) ||
       contextualStart.kind === "instance" ||
-      contextualStart.kind === "instance-create"
+      contextualStart.kind === "instance-create" ||
+      contextualStart.kind === "global-masking" ||
+      contextualStart.kind === "semantic-types" ||
+      contextualStart.kind === "data-classification" ||
+      contextualStart.kind === "masking-exemption"
     ) {
       return true;
     }
@@ -264,6 +269,7 @@ export function AgentWindow() {
     const project = state.projectsByName[contextualStart.project];
     const isDatabaseReference =
       contextualStart.kind === "database" ||
+      contextualStart.kind === "database-catalog" ||
       (contextualStart.kind === "plan-create" &&
         Boolean(contextualStart.databaseName));
     const permission = isDatabaseReference
@@ -334,6 +340,10 @@ export function AgentWindow() {
         !contextualStart.databaseName) ||
       contextualStart.kind === "instance" ||
       contextualStart.kind === "instance-create" ||
+      contextualStart.kind === "global-masking" ||
+      contextualStart.kind === "semantic-types" ||
+      contextualStart.kind === "data-classification" ||
+      contextualStart.kind === "masking-exemption" ||
       !canReferenceContextualResource
     ) {
       return;
@@ -369,7 +379,8 @@ export function AgentWindow() {
         });
       }
       const databaseNames =
-        contextualStart.kind === "database"
+        contextualStart.kind === "database" ||
+        contextualStart.kind === "database-catalog"
           ? contextualStart.names
           : contextualStart.kind === "plan-create" &&
               contextualStart.databaseName
@@ -629,14 +640,23 @@ export function AgentWindow() {
           ? contextualStart.project
             ? getContextLabel(contextualStart.project)
             : t("agent.contextual-start.instance-create-title")
-          : (contextualReference?.label ??
-            (contextualStart.kind === "database"
-              ? extractDatabaseResourceName(contextualStart.names[0])
-                  .databaseName
-              : contextualStart.kind === "instance"
-                ? instancesByName?.[contextualStart.name]?.title ||
-                  `#${contextualStart.name.split("/").at(-1)}`
-                : `#${contextualStart.name.split("/").at(-1)}`))
+          : contextualStart.kind === "global-masking"
+            ? t("settings.sidebar.global-masking")
+            : contextualStart.kind === "semantic-types"
+              ? t("settings.sensitive-data.semantic-types.self")
+              : contextualStart.kind === "data-classification"
+                ? t("settings.sidebar.data-classification")
+                : contextualStart.kind === "masking-exemption"
+                  ? getContextLabel(contextualStart.project)
+                  : (contextualReference?.label ??
+                    (contextualStart.kind === "database" ||
+                    contextualStart.kind === "database-catalog"
+                      ? extractDatabaseResourceName(contextualStart.names[0])
+                          .databaseName
+                      : contextualStart.kind === "instance"
+                        ? instancesByName?.[contextualStart.name]?.title ||
+                          `#${contextualStart.name.split("/").at(-1)}`
+                        : `#${contextualStart.name.split("/").at(-1)}`))
     : "";
 
   const selectFirstDisplayedChat = useCallback(() => {
@@ -1026,6 +1046,7 @@ export function AgentWindow() {
       if (!contextualStart) return;
       const requiresReference =
         contextualStart.kind === "database" ||
+        contextualStart.kind === "database-catalog" ||
         contextualStart.kind === "plan" ||
         contextualStart.kind === "issue" ||
         (contextualStart.kind === "plan-create" &&
@@ -1313,23 +1334,29 @@ export function AgentWindow() {
 
   useEffect(() => {
     if (!visible || !currentChatId) return;
+    const markAIConfigurationRequired = () => {
+      useAgentStore.getState().setChatStatus(currentChatId, "error", {
+        requiresAIConfiguration: true,
+      });
+    };
+    if (aiEnabled === false) {
+      markAIConfigurationRequired();
+      return;
+    }
 
     let cancelled = false;
     void getOrFetchSettingByName(Setting_SettingName.AI, true).then(
       (setting) => {
-        if (cancelled || getAgentAIConfigurationEnabled(setting) !== false) {
-          return;
+        if (!cancelled && getAgentAIConfigurationEnabled(setting) === false) {
+          markAIConfigurationRequired();
         }
-        useAgentStore.getState().setChatStatus(currentChatId, "error", {
-          requiresAIConfiguration: true,
-        });
       }
     );
 
     return () => {
       cancelled = true;
     };
-  }, [currentChatId, getOrFetchSettingByName, visible]);
+  }, [aiEnabled, currentChatId, getOrFetchSettingByName, visible]);
 
   const openMobileChatList = useCallback(() => {
     setShowArchivedOnly(false);
@@ -1379,6 +1406,9 @@ export function AgentWindow() {
         loading={canReferenceContextualResource && contextualLoading}
         canStart
         hasCurrentChat={canContinueCurrentChat}
+        showAIConfigurationRecovery={
+          aiEnabled === false || currentChat?.requiresAIConfiguration === true
+        }
         onStart={startContextualChat}
         onContinue={continueCurrentChat}
       />

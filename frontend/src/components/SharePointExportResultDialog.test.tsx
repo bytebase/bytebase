@@ -34,6 +34,15 @@ describe("toFailedSharePointExport", () => {
       reason: "Error: boom",
     });
   });
+
+  test("treats an aborted request as canceled in flight", () => {
+    expect(
+      toFailedSharePointExport(
+        "db",
+        new ConnectError("The operation was aborted.", Code.Canceled)
+      )
+    ).toEqual({ database: "db", status: "CANCELED" });
+  });
 });
 
 describe("toExportedSharePointResult", () => {
@@ -106,5 +115,34 @@ describe("SharePointExportResultDialog", () => {
     expect(
       screen.getByText("export-data.sharepoint.exported-title")
     ).toBeInTheDocument();
+  });
+
+  test("says files may exist for a database canceled in flight", () => {
+    render(
+      <SharePointExportResultDialog
+        results={[
+          { database: "a", status: "EXPORTED", uri: "https://a" },
+          { database: "b", status: "CANCELED" },
+          { database: "c", status: "NOT_STARTED" },
+        ]}
+        onClose={vi.fn()}
+      />
+    );
+
+    expect(
+      screen.getByText("export-data.sharepoint.result-title")
+    ).toBeInTheDocument();
+    const rows = screen.getAllByRole("listitem");
+    expect(rows[0]).toHaveTextContent("export-data.sharepoint.status.exported");
+    expect(rows[1]).toHaveTextContent("export-data.sharepoint.status.canceled");
+    expect(rows[1]).toHaveTextContent(
+      "export-data.sharepoint.canceled-description"
+    );
+    expect(rows[2]).toHaveTextContent(
+      "export-data.sharepoint.status.not-started"
+    );
+    expect(rows[2]).toHaveTextContent(
+      "export-data.sharepoint.not-started-description"
+    );
   });
 });

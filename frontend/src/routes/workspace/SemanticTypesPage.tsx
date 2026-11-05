@@ -38,6 +38,7 @@ import {
 } from "@/components/WorkspacePageLayout";
 import { useSemanticTypes } from "@/hooks/useSemanticTypes";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
+import { AgentPageHelpButton } from "@/modules/agent/components/AgentPageHelpButton";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import type {
@@ -334,10 +335,13 @@ export function SemanticTypesPage() {
       />
 
       <WorkspacePageToolbar align="end">
-        <Button disabled={isReadonly} onClick={onAdd}>
-          <Plus />
-          {t("common.create")}
-        </Button>
+        <div className="flex items-center gap-x-2">
+          <AgentPageHelpButton />
+          <Button disabled={isReadonly} onClick={onAdd}>
+            <Plus />
+            {t("common.create")}
+          </Button>
+        </div>
       </WorkspacePageToolbar>
 
       <div className="overflow-x-auto rounded-sm border">

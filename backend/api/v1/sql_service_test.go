@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"database/sql"
 	"strings"
 	"testing"
 	"time"
@@ -10,6 +11,7 @@ import (
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/permission"
@@ -17,6 +19,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/iam"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -759,4 +762,51 @@ func TestResultForTimeoutUnwrapsAWrappedTimeout(t *testing.T) {
 	results := resultForTimeout("SELECT 1", err)
 	require.Len(t, results, 1)
 	require.Equal(t, "SELECT 1", results[0].Statement)
+}
+
+// blockingQueryDriver runs a query until its context ends.
+type blockingQueryDriver struct {
+	db.Driver
+	// started runs once the query is running.
+	started func()
+}
+
+func (d blockingQueryDriver) QueryConn(ctx context.Context, _ *sql.Conn, _ string, _ db.QueryContext) ([]*v1pb.QueryResult, error) {
+	if d.started != nil {
+		d.started()
+	}
+	<-ctx.Done()
+	return nil, ctx.Err()
+}
+
+func TestExecuteWithTimeoutTellsCancellationFromTimeout(t *testing.T) {
+	t.Parallel()
+
+	t.Run("caller cancels", func(t *testing.T) {
+		t.Parallel()
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		driver := blockingQueryDriver{started: cancel}
+		_, _, err := executeWithTimeout(ctx, driver, nil, "SELECT 1", db.QueryContext{Timeout: durationpb.New(time.Hour)})
+		require.Equal(t, connect.CodeCanceled, connect.CodeOf(err))
+		require.Equal(t, "canceled: the request was canceled before the query finished", err.Error())
+		require.Nil(t, resultForTimeout("SELECT 1", err))
+		require.Equal(t, connect.CodeCanceled, exportConnectError(err).Code())
+	})
+
+	t.Run("query policy timeout", func(t *testing.T) {
+		t.Parallel()
+		_, _, err := executeWithTimeout(context.Background(), blockingQueryDriver{}, nil, "SELECT 1", db.QueryContext{Timeout: durationpb.New(time.Millisecond)})
+		require.Equal(t, "timeout reached: 1ms", err.Error())
+		require.Len(t, resultForTimeout("SELECT 1", err), 1)
+	})
+
+	t.Run("caller deadline", func(t *testing.T) {
+		t.Parallel()
+		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
+		defer cancel()
+		_, _, err := executeWithTimeout(ctx, blockingQueryDriver{}, nil, "SELECT 1", db.QueryContext{})
+		var timedOut *queryTimeoutError
+		require.ErrorAs(t, err, &timedOut)
+	})
 }

@@ -21,11 +21,13 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const normalizeOpenTarget = (raw: unknown): AgentHandoff | undefined => {
   if (
     !isRecord(raw) ||
+    typeof raw.kind !== "string" ||
     Object.keys(raw).some(
       (key) =>
         key !== "kind" &&
         key !== "workspace" &&
         key !== "project" &&
+        key !== "database" &&
         key !== "plan" &&
         key !== "issue" &&
         key !== "task"
@@ -33,21 +35,50 @@ const normalizeOpenTarget = (raw: unknown): AgentHandoff | undefined => {
   ) {
     return undefined;
   }
-  // Some providers populate every optional schema field; retain only the one the target kind uses.
-  for (const field of [
+  const fieldsByKind: Record<string, readonly string[]> = {
+    "open-global-masking": [],
+    "open-semantic-types": [],
+    "open-data-classification": [],
+    "open-project-masking-exemptions": ["project"],
+    "open-database-catalog": ["project", "database"],
+    "review-workspace-issues": ["workspace"],
+    "review-project-issues": ["project"],
+    "review-database-changes": ["project"],
+    "open-project-instances": ["project"],
+    "transfer-project-databases": ["project"],
+    "connect-project-instance": ["project"],
+    "create-project-database": ["project"],
+    "view-failed-tasks": ["plan"],
+    "open-issue": ["issue"],
+    "review-issue-plan": ["plan"],
+    "view-failed-task": ["task"],
+  };
+  const usedFields = fieldsByKind[raw.kind];
+  if (!usedFields) return undefined;
+
+  const optionalFields = [
     "workspace",
     "project",
+    "database",
     "plan",
     "issue",
     "task",
-  ] as const) {
-    const target = normalizeAgentHandoff({
-      kind: raw.kind,
-      [field]: raw[field],
-    });
-    if (target) return target;
+  ];
+  if (
+    optionalFields.some(
+      (field) =>
+        !usedFields.includes(field) &&
+        raw[field] !== undefined &&
+        raw[field] !== ""
+    )
+  ) {
+    return undefined;
   }
-  return undefined;
+
+  return normalizeAgentHandoff({
+    kind: raw.kind,
+    ...Object.fromEntries(usedFields.map((field) => [field, raw[field]])),
+  });
 };
 
 export function normalizeAgentResponseActions(

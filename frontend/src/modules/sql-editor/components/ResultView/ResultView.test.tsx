@@ -34,6 +34,7 @@ const {
     destination: 1,
     resolve: (_outcome: unknown) => {},
     reject: (_reason: unknown) => {},
+    controller: new AbortController(),
   },
   useExportGrantBypass: vi.fn(),
 }));
@@ -151,6 +152,7 @@ vi.mock("./SingleResultView", () => ({
             },
             resolve: exportRequest.resolve,
             reject: exportRequest.reject,
+            signal: exportRequest.controller.signal,
             statement: "SELECT * FROM c",
           })
         }
@@ -204,6 +206,7 @@ describe("ResultView", () => {
     exportRequest.destination = ExportDestination.DOWNLOAD;
     exportRequest.resolve = vi.fn();
     exportRequest.reject = vi.fn();
+    exportRequest.controller = new AbortController();
     grantLookup({});
   });
 
@@ -243,7 +246,8 @@ describe("ResultView", () => {
 
     await waitFor(() => {
       expect(exportData).toHaveBeenCalledWith(
-        expect.objectContaining({ container: "customers" })
+        expect.objectContaining({ container: "customers" }),
+        exportRequest.controller.signal
       );
     });
   });
@@ -411,8 +415,39 @@ describe("ResultView", () => {
       });
     });
     expect(exportData).toHaveBeenCalledWith(
-      expect.objectContaining({ destination: ExportDestination.SHAREPOINT })
+      expect.objectContaining({ destination: ExportDestination.SHAREPOINT }),
+      exportRequest.controller.signal
     );
+  });
+
+  test("reports a SharePoint export canceled in flight as canceled", async () => {
+    exportAccess.databasesWithExport = [database.name];
+    exportRequest.destination = ExportDestination.SHAREPOINT;
+    exportData.mockImplementation(
+      (_request: unknown, signal: AbortSignal) =>
+        new Promise((_resolve, reject) => {
+          signal.addEventListener("abort", () =>
+            reject(new ConnectError("aborted", Code.Canceled))
+          );
+        })
+    );
+    render(
+      <ResultView
+        executeParams={executeParams}
+        database={database}
+        resultSet={queryResult}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "export" }));
+    exportRequest.controller.abort();
+
+    await waitFor(() => {
+      expect(exportRequest.resolve).toHaveBeenCalledWith({
+        sharepoint: [{ database: "main", status: "CANCELED" }],
+      });
+    });
+    expect(exportRequest.reject).not.toHaveBeenCalled();
   });
 
   test("reports an unconfirmed SharePoint export instead of rejecting", async () => {

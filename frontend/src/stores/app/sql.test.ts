@@ -1,8 +1,8 @@
 // @vitest-environment node
 import { create } from "@bufbuild/protobuf";
-import type { ContextValues } from "@connectrpc/connect";
+import { Code, type ContextValues } from "@connectrpc/connect";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { silentContextKey } from "@/api/context-key";
+import { ignoredCodesContextKey, silentContextKey } from "@/api/context-key";
 import { ExportDestination } from "@/types/proto-es/v1/common_pb";
 import {
   ExportRequestSchema,
@@ -19,9 +19,13 @@ vi.mock("@/api", () => ({
 const slice = () =>
   createSQLSlice((() => {}) as never, (() => ({})) as never, {} as never);
 
-const contextValuesOfLastCall = () =>
-  (mocks.export.mock.calls[0][1] as { contextValues: ContextValues })
-    .contextValues;
+const optionsOfLastCall = () =>
+  mocks.export.mock.calls[0][1] as {
+    contextValues: ContextValues;
+    signal?: AbortSignal;
+  };
+
+const contextValuesOfLastCall = () => optionsOfLastCall().contextValues;
 
 describe("exportData", () => {
   beforeEach(() => {
@@ -50,5 +54,20 @@ describe("exportData", () => {
 
     expect(result).toEqual({ content: new Uint8Array(), uri });
     expect(contextValuesOfLastCall().get(silentContextKey)).toBe(true);
+  });
+
+  test("aborts with the caller's signal and stays quiet when canceled", async () => {
+    mocks.export.mockResolvedValue(create(ExportResponseSchema, {}));
+    const { signal } = new AbortController();
+
+    await slice().exportData(
+      create(ExportRequestSchema, { destination: ExportDestination.DOWNLOAD }),
+      signal
+    );
+
+    expect(optionsOfLastCall().signal).toBe(signal);
+    expect(contextValuesOfLastCall().get(ignoredCodesContextKey)).toContain(
+      Code.Canceled
+    );
   });
 });
