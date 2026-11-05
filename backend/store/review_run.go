@@ -212,13 +212,13 @@ func (s *Store) ClaimAvailableReviewRuns(ctx context.Context, replicaID string) 
 // status, fenced on the claim's attempt. On DONE it posts the run's results in
 // the same transaction. A current root of the same reviewer on the issue (one
 // no run has superseded) whose fingerprint a result repeats keeps its thread,
-// state and replies included, and takes the result's text and anchor; that
-// result is not posted again. Every other current root of the reviewer is marked
-// superseded and, if OPEN, resolved; the remaining results are inserted as
-// OPEN roots with no creator, carrying the run's attempt; and a
-// ReviewRunCompletion event records the counts. A FAILED run leaves the
-// comments alone and takes no results. False means superseded: the slot was
-// reset or reaped since the claim, and nothing was written.
+// state and replies included, and takes the result's text, anchor, databases,
+// and priority; that result is not posted again. Every other current root of
+// the reviewer is marked superseded and, if OPEN, resolved; the remaining
+// results are inserted as OPEN roots with no creator, carrying the run's
+// attempt; and a ReviewRunCompletion event records the counts. A FAILED run
+// leaves the comments alone and takes no results. False means superseded: the
+// slot was reset or reaped since the claim, and nothing was written.
 //
 // Lock order: the issue's review comments, then the run slot, then the issue
 // (the insert's foreign key), the order the project purge deletes them in.
@@ -314,18 +314,24 @@ func (s *Store) CompleteReviewRun(ctx context.Context, claimed *ClaimedReviewRun
 			return false, errors.Wrapf(err, "failed to resolve reopened review results")
 		}
 
-		// A kept root takes the text and the anchor of the result that
-		// repeats it. The fingerprint leaves the text out, so the text can
-		// differ: omni rewords a finding, or names what it found, such as an
-		// object's kind, differently. Equal fingerprints mean equal statement
-		// text, and an anchor left on an earlier sheet can lose its place in
-		// the current one. A result on the whole change has no anchor and
-		// leaves the kept one alone.
+		// A kept root takes the text, the anchor, the databases, and the
+		// priority of the result that repeats it. The rule review's
+		// fingerprint leaves the text out, so the text can differ: omni
+		// rewords a finding, or names what it found, such as an object's
+		// kind, differently. An anchor left on an earlier sheet can lose its
+		// place in the current one. The AI review's results are matched by a
+		// model, so the databases and the priority can differ too. A result
+		// on the whole change has no anchor and leaves the kept one alone.
 		q = qb.Q().Space(`
 			UPDATE issue_comment kept
-			SET payload = kept.payload || jsonb_strip_nulls(jsonb_build_object(
-			      'comment', r.payload->'comment',
-			      'statementAnchor', r.payload->'statementAnchor'))
+			SET payload = jsonb_set(
+			      kept.payload || jsonb_strip_nulls(jsonb_build_object(
+			        'comment', r.payload->'comment',
+			        'statementAnchor', r.payload->'statementAnchor')),
+			      '{reviewMetadata}',
+			      ((kept.payload->'reviewMetadata') - 'targets' - 'priority') || jsonb_strip_nulls(jsonb_build_object(
+			        'targets', r.payload->'reviewMetadata'->'targets',
+			        'priority', r.payload->'reviewMetadata'->'priority')))
 			FROM unnest(?::JSONB[]) AS r(payload)
 			WHERE kept.project = ? AND kept.issue_id = ?
 			  AND kept.parent_id IS NULL
@@ -333,7 +339,9 @@ func (s *Store) CompleteReviewRun(ctx context.Context, claimed *ClaimedReviewRun
 			  AND kept.payload->'reviewMetadata'->'superseded' IS NULL
 			  AND kept.payload->'reviewMetadata'->>'fingerprint' = r.payload->'reviewMetadata'->>'fingerprint'
 			  AND ((r.payload ?? 'comment' AND kept.payload->'comment' IS DISTINCT FROM r.payload->'comment')
-			    OR (r.payload ?? 'statementAnchor' AND kept.payload->'statementAnchor' IS DISTINCT FROM r.payload->'statementAnchor'))
+			    OR (r.payload ?? 'statementAnchor' AND kept.payload->'statementAnchor' IS DISTINCT FROM r.payload->'statementAnchor')
+			    OR kept.payload->'reviewMetadata'->'targets' IS DISTINCT FROM r.payload->'reviewMetadata'->'targets'
+			    OR kept.payload->'reviewMetadata'->'priority' IS DISTINCT FROM r.payload->'reviewMetadata'->'priority')
 		`, resultPayloads, claimed.ProjectID, claimed.IssueUID, claimed.Type)
 		query, args, err = q.ToSQL()
 		if err != nil {

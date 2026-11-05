@@ -265,7 +265,7 @@ func TestMergeAIReviewFindings(t *testing.T) {
 		t.Parallel()
 
 		merge := &recordingMerge{groups: [][]int{{0, 1}, {2}}}
-		problems, err := mergeAIReviewFindings(context.Background(), merge.merge, results(storepb.Engine_POSTGRES))
+		problems, err := mergeAIReviewFindings(context.Background(), merge.merge, results(storepb.Engine_POSTGRES), nil)
 		require.NoError(t, err)
 		require.Equal(t, [][]string{{"drop on db1", "drop on db2"}, {"index on db1"}, {"view on db3"}}, titles(problems))
 		require.Equal(t, aireview.LineRange{Start: 1, End: 2}, problems[0].Block)
@@ -291,7 +291,7 @@ func TestMergeAIReviewFindings(t *testing.T) {
 		t.Parallel()
 
 		merge := &recordingMerge{err: errors.New("provider down")}
-		problems, err := mergeAIReviewFindings(context.Background(), merge.merge, results(storepb.Engine_POSTGRES))
+		problems, err := mergeAIReviewFindings(context.Background(), merge.merge, results(storepb.Engine_POSTGRES), nil)
 		require.NoError(t, err)
 		require.Equal(t, [][]string{{"drop on db1"}, {"index on db1"}, {"drop on db2"}, {"view on db3"}}, titles(problems))
 	})
@@ -304,7 +304,7 @@ func TestMergeAIReviewFindings(t *testing.T) {
 			cancel()
 			return nil, context.Canceled
 		}
-		_, err := mergeAIReviewFindings(ctx, merge, results(storepb.Engine_POSTGRES))
+		_, err := mergeAIReviewFindings(ctx, merge, results(storepb.Engine_POSTGRES), nil)
 		require.ErrorIs(t, err, context.Canceled)
 	})
 
@@ -314,7 +314,7 @@ func TestMergeAIReviewFindings(t *testing.T) {
 		mixed := results(storepb.Engine_POSTGRES)
 		mixed[3].Unit.Engine = storepb.Engine_MYSQL
 		merge := &recordingMerge{groups: [][]int{{0, 2}, {1}, {3}}}
-		problems, err := mergeAIReviewFindings(context.Background(), merge.merge, mixed)
+		problems, err := mergeAIReviewFindings(context.Background(), merge.merge, mixed, nil)
 		require.NoError(t, err)
 		require.Equal(t, [][]string{{"drop on db1", "drop on db2"}, {"index on db1"}, {"view on db3"}}, titles(problems))
 		require.Equal(t, []aireview.LineRange{{Start: 1, End: 4}}, merge.requests[0].Blocks)
@@ -328,11 +328,194 @@ func TestMergeAIReviewFindings(t *testing.T) {
 		t.Parallel()
 
 		merge := &recordingMerge{}
-		problems, err := mergeAIReviewFindings(context.Background(), merge.merge, results(storepb.Engine_POSTGRES)[:1])
+		problems, err := mergeAIReviewFindings(context.Background(), merge.merge, results(storepb.Engine_POSTGRES)[:1], nil)
 		require.NoError(t, err)
 		require.Equal(t, [][]string{{"drop on db1"}, {"index on db1"}}, titles(problems))
 		require.Empty(t, merge.requests)
 	})
+}
+
+func TestMergeAIReviewFindingsKeepsEarlierResults(t *testing.T) {
+	t.Parallel()
+
+	finding := func(title string, severity aireview.Severity, line int) aireview.Finding {
+		return aireview.Finding{Title: title, Severity: severity, Line: line}
+	}
+	// One database, so only the earlier results give the merge a second
+	// source.
+	results := func() []*aiReviewResult {
+		return []*aiReviewResult{mergeResult("instances/prod/databases/db1", storepb.Engine_POSTGRES,
+			finding("drop", aireview.SeverityP1, 1),
+			finding("index", aireview.SeverityP1, 3),
+		)}
+	}
+	sheet := aiReviewSheet{specID: "spec-1", sheetSha256: "sha"}
+	segments := sheetStatements(context.Background(), storepb.Engine_POSTGRES, "spec-1", mergeStatement).Segments
+	// earlier is a result posted on statement, of segments, at line of the
+	// sheet under review.
+	earlier := func(name string, statement, line int, resolved bool, priority storepb.IssueCommentPayload_ReviewMetadata_Priority) *aiReviewEarlier {
+		return &aiReviewEarlier{
+			Fingerprint: segments[statement] + "/" + name,
+			Resolved:    resolved,
+			Priority:    priority,
+			Comment:     name + "\n\nevidence on db1\n\nRule: r\n\nSuggested fix: f",
+			Sheet:       mergeStatement,
+			SheetSha256: "sha",
+			Line:        line,
+		}
+	}
+	p1, p2 := storepb.IssueCommentPayload_ReviewMetadata_P1, storepb.IssueCommentPayload_ReviewMetadata_P2
+	kept := func(problems []*aiReviewProblem) []string {
+		var names []string
+		for _, problem := range problems {
+			if problem.Earlier == nil {
+				names = append(names, "")
+				continue
+			}
+			_, name, _ := strings.Cut(problem.Earlier.Fingerprint, "/")
+			names = append(names, name)
+		}
+		return names
+	}
+
+	t.Run("keeps the earlier result the merge groups with a problem", func(t *testing.T) {
+		t.Parallel()
+
+		changed := earlier("changed", 0, 2, false, p1)
+		changed.Fingerprint = sheetStatements(context.Background(), storepb.Engine_POSTGRES, "spec-1", "ALTER TABLE orders\n  DROP COLUMN status;\n").Segments[0] + "/changed"
+		merge := &recordingMerge{groups: [][]int{{0, 2}, {1}, {3}}}
+		problems, err := mergeAIReviewFindings(context.Background(), merge.merge, results(), map[aiReviewSheet][]*aiReviewEarlier{
+			sheet: {earlier("open", 0, 2, false, p1), earlier("gone", 1, 3, true, p1), changed},
+		})
+		require.NoError(t, err)
+		require.Equal(t, [][]string{{"drop"}, {"index"}}, titles(problems))
+		require.Equal(t, []string{"open", ""}, kept(problems), "an earlier result left alone keeps nothing")
+		require.Equal(t, []string{segments[0], segments[1]}, []string{problems[0].Segment, problems[1].Segment})
+		require.Len(t, merge.requests, 1)
+		require.Equal(t, []aireview.MergeCandidate{
+			{Block: 0, Database: "instances/prod/databases/db1", Finding: finding("drop", aireview.SeverityP1, 1)},
+			{Block: 1, Database: "instances/prod/databases/db1", Finding: finding("index", aireview.SeverityP1, 3)},
+			{Block: 0, Earlier: true, Finding: aireview.Finding{Title: "open", Severity: aireview.SeverityP1, Line: 2, Rule: "r", Fix: "f"}},
+			{Block: 1, Earlier: true, Finding: aireview.Finding{Title: "gone", Severity: aireview.SeverityP1, Line: 3, Rule: "r", Fix: "f"}},
+		}, merge.requests[0].Candidates, "a result on a statement that changed is not offered, and none shows its evidence")
+	})
+
+	t.Run("moves an earlier result with its statement", func(t *testing.T) {
+		t.Parallel()
+
+		// The result was posted on line 3 of a sheet that opened with a
+		// comment and a blank line.
+		moved := earlier("moved", 0, 3, false, p1)
+		moved.Sheet, moved.SheetSha256 = "-- archive\n\n"+mergeStatement, "before"
+		merge := &recordingMerge{groups: [][]int{{0, 1}}}
+		_, err := mergeAIReviewFindings(context.Background(), merge.merge, results(), map[aiReviewSheet][]*aiReviewEarlier{sheet: {moved}})
+		require.NoError(t, err)
+		require.Equal(t, 1, merge.requests[0].Candidates[1].Finding.Line, "the statement's first line, where its body starts now")
+	})
+
+	t.Run("keeps a resolved result only for a problem no more severe", func(t *testing.T) {
+		t.Parallel()
+
+		merge := &recordingMerge{groups: [][]int{{0, 2}, {1, 3}}}
+		problems, err := mergeAIReviewFindings(context.Background(), merge.merge, results(), map[aiReviewSheet][]*aiReviewEarlier{
+			sheet: {earlier("accepted as P2", 0, 1, true, p2), earlier("open as P2", 1, 3, false, p2)},
+		})
+		require.NoError(t, err)
+		require.Equal(t, []string{"", "open as P2"}, kept(problems), "a P1 problem does not keep a P2 a person resolved, but keeps an open one")
+
+		merge = &recordingMerge{groups: [][]int{{0, 1}}}
+		problems, err = mergeAIReviewFindings(context.Background(), merge.merge, results(), map[aiReviewSheet][]*aiReviewEarlier{
+			sheet: {earlier("accepted as P1", 0, 1, true, p1)},
+		})
+		require.NoError(t, err)
+		require.Equal(t, []string{"accepted as P1", ""}, kept(problems))
+	})
+
+	t.Run("keeps nothing when the merge fails or groups two earlier results", func(t *testing.T) {
+		t.Parallel()
+
+		earlierResults := map[aiReviewSheet][]*aiReviewEarlier{sheet: {earlier("a", 0, 1, false, p1), earlier("b", 0, 2, false, p1)}}
+		merge := &recordingMerge{err: errors.New("provider down")}
+		problems, err := mergeAIReviewFindings(context.Background(), merge.merge, results(), earlierResults)
+		require.NoError(t, err)
+		require.Equal(t, []string{"", ""}, kept(problems))
+
+		merge = &recordingMerge{groups: [][]int{{0, 1, 2}}}
+		problems, err = mergeAIReviewFindings(context.Background(), merge.merge, results(), earlierResults)
+		require.NoError(t, err)
+		require.Equal(t, []string{"", ""}, kept(problems))
+	})
+}
+
+func TestSheetStatements(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	sheet := "-- archive old orders\nUPDATE orders SET status = 'archived';\n\nSELECT 1;\nSELECT 1;\n"
+	statements := sheetStatements(ctx, storepb.Engine_POSTGRES, "spec-1", sheet)
+	require.True(t, statements.Split)
+	require.Equal(t, []aireview.LineRange{{Start: 1, End: 2}, {Start: 4, End: 4}, {Start: 5, End: 5}}, statements.Blocks)
+	require.Equal(t, []int{2, 4, 5}, statements.BodyStart, "a body leaves out the comment before its statement")
+	require.NotEqual(t, statements.Segments[1], statements.Segments[2], "equal statements are told apart by their order")
+
+	same := sheetStatements(ctx, storepb.Engine_POSTGRES, "spec-1", "-- archive orders before 2024\n\nUPDATE orders SET status = 'archived';\nSELECT 1;\nSELECT 1;")
+	require.Equal(t, statements.Segments, same.Segments, "the comments and blank lines around a statement are not part of it")
+	edited := sheetStatements(ctx, storepb.Engine_POSTGRES, "spec-1", strings.Replace(sheet, "'archived'", "'closed'", 1))
+	require.NotEqual(t, statements.Segments[0], edited.Segments[0])
+	require.Equal(t, statements.Segments[1:], edited.Segments[1:], "an edit to one statement leaves the others")
+	require.NotEqual(t, statements.Segments, sheetStatements(ctx, storepb.Engine_POSTGRES, "spec-2", sheet).Segments, "a segment belongs to its spec")
+
+	whole := sheetStatements(ctx, storepb.Engine_ENGINE_UNSPECIFIED, "spec-1", sheet)
+	require.False(t, whole.Split)
+	require.Len(t, whole.Segments, 1)
+	require.Equal(t, statementSegment("spec-1", strings.TrimSpace(sheet), 1), whole.Segments[0], "a sheet that cannot be split is one statement")
+}
+
+func TestAIReviewCommentParts(t *testing.T) {
+	t.Parallel()
+
+	unit := func(target string) *aiReviewUnit {
+		return &aiReviewUnit{Check: &plancheck.CheckTarget{SpecID: "spec-1", SheetSha256: "sha", Target: target}}
+	}
+	finding := aireview.Finding{Title: "Drop the view first", Severity: aireview.SeverityP1, Line: 1, Rule: "No column is dropped while a view reads it.", Evidence: "v reads c.\n\nRule: not the rule", Fix: "DROP VIEW v;\n\nThen drop c."}
+	for _, targets := range [][]string{{"instances/i/databases/a"}, {"instances/i/databases/a", "instances/i/databases/b"}} {
+		problem := &aiReviewProblem{Reviewed: targets}
+		for _, target := range targets {
+			problem.Findings = append(problem.Findings, &aiReviewFinding{Unit: unit(target), Finding: finding})
+		}
+		title, rule, fix := aiReviewCommentParts(aiReviewComments("p", 7, []*aiReviewProblem{problem})[0].Payload.Comment)
+		require.Equal(t, []string{finding.Title, finding.Rule, finding.Fix}, []string{title, rule, fix})
+	}
+	title, rule, fix := aiReviewCommentParts("only a title")
+	require.Equal(t, []string{"only a title", "", ""}, []string{title, rule, fix})
+}
+
+func TestAIReviewCommentsKeepEarlierResults(t *testing.T) {
+	t.Parallel()
+
+	problem := func(earlier *aiReviewEarlier) *aiReviewProblem {
+		return &aiReviewProblem{
+			Findings: []*aiReviewFinding{{
+				Unit:    &aiReviewUnit{Check: &plancheck.CheckTarget{SpecID: "spec-1", SheetSha256: "new", Target: "instances/i/databases/a"}},
+				Finding: aireview.Finding{Title: "new words", Severity: aireview.SeverityP2, Line: 4, Rule: "r", Evidence: "e", Fix: "f"},
+			}},
+			Segment: "segment",
+			Earlier: earlier,
+		}
+	}
+	comments := aiReviewComments("p", 7, []*aiReviewProblem{
+		problem(&aiReviewEarlier{Fingerprint: "kept", Comment: "first words", Priority: storepb.IssueCommentPayload_ReviewMetadata_P1}),
+		problem(nil),
+		problem(nil),
+	})
+	require.Equal(t, "first words", comments[0].Payload.Comment, "a kept result keeps its text")
+	require.Equal(t, "kept", comments[0].Payload.ReviewMetadata.Fingerprint)
+	require.Equal(t, storepb.IssueCommentPayload_ReviewMetadata_P2, comments[0].Payload.ReviewMetadata.Priority, "and takes this run's priority")
+	require.Equal(t, "new", comments[0].Payload.StatementAnchor.SheetSha256)
+	require.Equal(t, int32(4), comments[0].Payload.StatementAnchor.StartPosition.Line)
+	require.True(t, strings.HasPrefix(comments[1].Payload.Comment, "new words"))
+	require.True(t, strings.HasPrefix(comments[1].Payload.ReviewMetadata.Fingerprint, "segment/"), "a new fingerprint starts with its statement's segment")
+	require.NotEqual(t, comments[1].Payload.ReviewMetadata.Fingerprint, comments[2].Payload.ReviewMetadata.Fingerprint)
 }
 
 // recordingSummary records the summary requests and answers each with a
@@ -374,6 +557,7 @@ func TestSummarizeAIReviewProblems(t *testing.T) {
 			{Findings: []*aiReviewFinding{finding("instances/i/databases/a", "index"), finding("instances/i/databases/a", "index again")}},
 			{Findings: []*aiReviewFinding{finding("instances/i/databases/a", "failing"), finding("instances/i/databases/b", "failing")}},
 			{Findings: []*aiReviewFinding{finding("instances/i/databases/a", "panicking"), finding("instances/i/databases/b", "panicking")}},
+			{Findings: []*aiReviewFinding{finding("instances/i/databases/a", "kept"), finding("instances/i/databases/b", "kept")}, Earlier: &aiReviewEarlier{Fingerprint: "kept"}},
 		}
 	}
 
@@ -387,6 +571,7 @@ func TestSummarizeAIReviewProblems(t *testing.T) {
 		require.Nil(t, problems[1].Summary, "one database's problem is not summarized")
 		require.Nil(t, problems[2].Summary, "a failed summary leaves the lead finding")
 		require.Nil(t, problems[3].Summary, "a panic is that problem's failure")
+		require.Nil(t, problems[4].Summary, "a problem that keeps an earlier result keeps its text")
 
 		require.Len(t, summary.requests, 3)
 		var request *aireview.SummaryRequest

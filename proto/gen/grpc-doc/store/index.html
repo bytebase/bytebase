@@ -6637,9 +6637,11 @@ whatever the thread state, and never cleared. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>Identifies the finding across runs: equal fingerprints are the same
-finding on the same SQL. Unique among the results of one run. Empty
-when the reviewer cannot tell findings apart across runs, and an empty
-fingerprint matches nothing. </p></td>
+finding on the same SQL. The rule review derives it from what it
+judged. The AI review starts it with a hash of its statement and ends
+it at random, and a later run carries it over to the finding its merge
+matches to the result. Unique among the results of one run. Empty on a
+result that predates it, and an empty fingerprint matches nothing. </p></td>
                 </tr>
               
                 <tr>
