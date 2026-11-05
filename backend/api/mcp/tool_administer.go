@@ -67,7 +67,7 @@ const (
 	adminChoiceChange = "change"
 
 	// approvalRulesApply is the fixed text of the approval form. It is one line,
-	// so it goes in the message when a line is left and no issue line says it.
+	// so it goes in the message whenever a line is left.
 	approvalRulesApply = "Approval checks from now on use these rules, also after a plan edit."
 
 	// rereadApprovalRules is the next step after the stored rules changed: the
@@ -514,9 +514,9 @@ func approvers(rule *v1pb.WorkspaceApprovalSetting_Rule) string {
 }
 
 // conditionText shows a condition between backquotes, as typed, when every
-// character prints. strconv.CanBackquote also passes a tab and invisible
-// characters such as U+202E, which change how the line reads, so such a
-// condition is escaped instead.
+// character prints. strconv.CanBackquote also passes a tab and format
+// characters such as U+202E and U+200B, which strconv.IsPrint rejects, so such
+// a condition is escaped instead.
 func conditionText(condition string) string {
 	if strconv.CanBackquote(condition) && !strings.ContainsFunc(condition, func(r rune) bool { return !strconv.IsPrint(r) }) {
 		return "`" + condition + "`"
@@ -550,9 +550,8 @@ type adminForm struct {
 // The message states the whole change: the question, a line or more per rule
 // change, and the user's issues whose approval a plan edit would check again
 // under the new rules. A change that does not fit is refused, never cut. The
-// fixed sentence goes in the message when a line is left and no issue line says
-// it for the user's issues, and in the description otherwise; the description
-// also lists every rule.
+// fixed sentence goes in the message when a line is left, and in the
+// description otherwise; the description also lists every rule.
 func approvalRulesForm(ctx context.Context, diff *approvalRulesDiff, issues string, link string) (*adminForm, error) {
 	question := "Change the approval rules for database changes"
 	if email := getUserEmail(ctx); email != "" {
@@ -590,7 +589,7 @@ func approvalRulesForm(ctx context.Context, diff *approvalRulesDiff, issues stri
 		sb.WriteString("\nWhen none of them matches, the fallback rules decide, and a change that no rule matches needs no approval.")
 	}
 	sb.WriteString(" Rules for other sources stay as they are.")
-	if issues == "" && len(lines) < messageLines {
+	if len(lines) < messageLines {
 		lines = append(lines, approvalRulesApply)
 	} else {
 		sb.WriteString("\n" + approvalRulesApply)
@@ -612,7 +611,7 @@ func changeTooLong(needed int, tooLong, link string) *toolError {
 	return &toolError{
 		Code:       "CHANGE_TOO_LONG",
 		Message:    fmt.Sprintf("this change needs %d lines, more than the %d one confirmation form shows, so the approval rules were not changed", needed, messageLines),
-		Suggestion: "make the change in smaller steps, a rule or two at a time. Each step is a form of its own and applies when the user accepts it, so tell the user the change comes in steps, and add a rule before removing the one it replaces. Or change the rules signed in to the Bytebase console: " + link,
+		Suggestion: "make the change in smaller steps, a rule or two at a time. Each step is a form of its own and applies when the user accepts it, so tell the user the change comes in steps, add a rule before removing the one it replaces, and before each step read the rules again with call_api SettingService/GetSetting and build the step from them. Or change the rules signed in to the Bytebase console: " + link,
 	}
 }
 
@@ -631,10 +630,10 @@ func countRules(n int) string {
 }
 
 // issuesLine names the user's open issues awaiting approval, as many as one
-// line holds, and counts the rest; it counts them all when the first name does
-// not fit, and drops the count when that does not fit either. A plan edit finds
-// an issue's approval again under the rules in force, so the line says so. more
-// means a search stopped at its page size, so a count is a lower bound.
+// line holds, and counts the rest. A plan edit finds an issue's approval again
+// under the rules in force, so the line says so. more means a search stopped at
+// its page size, so a count is only a lower bound, and "at least N" never fits
+// the line that counts them all, which then drops the count.
 func issuesLine(issues []string, more bool) string {
 	if len(issues) == 0 {
 		return ""
@@ -677,26 +676,33 @@ func issuesLine(issues []string, more bool) string {
 	return line + rest(0) + underRules
 }
 
+// continuedLine starts each continuation of a wrapped message line. Every
+// first line starts with a letter, so no part of a long value can pose as a line
+// of its own.
+const continuedLine = "... "
+
 // wrapMessageLine breaks line into lines of at most messageLineWidth columns,
-// at a space where it can.
+// at a space where it can, and starts each continuation with continuedLine.
 func wrapMessageLine(line string) []string {
 	var lines []string
-	for lineColumns(line) > messageLineWidth {
+	prefix := ""
+	for lineColumns(prefix+line) > messageLineWidth {
+		width := messageLineWidth - lineColumns(prefix)
 		runes := []rune(line)
-		cut := min(messageLineWidth, len(runes))
-		for lineColumns(string(runes[:cut])) > messageLineWidth {
+		cut := min(width, len(runes))
+		for lineColumns(string(runes[:cut])) > width {
 			cut--
 		}
+		next := cut
 		if space := strings.LastIndex(string(runes[:cut]), " "); space > 0 {
 			cut = len([]rune(string(runes[:cut])[:space]))
-			lines = append(lines, string(runes[:cut]))
-			line = string(runes[cut+1:])
-			continue
+			next = cut + 1
 		}
-		lines = append(lines, string(runes[:cut]))
-		line = string(runes[cut:])
+		lines = append(lines, prefix+string(runes[:cut]))
+		line = string(runes[next:])
+		prefix = continuedLine
 	}
-	return append(lines, line)
+	return append(lines, prefix+line)
 }
 
 // issuesAwaitingApproval lists the user's open change issues whose approval is

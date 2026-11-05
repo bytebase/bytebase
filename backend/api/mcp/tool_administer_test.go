@@ -11,6 +11,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/labstack/echo/v5"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -279,34 +281,6 @@ func TestAdministerWorkspaceFitsTheTwoRulesAnAgentWrites(t *testing.T) {
 	require.Len(t, mock.calls(), 1)
 }
 
-// The issue line says what the fixed sentence says for the user's issues, so a
-// message with an issue line leaves the fixed sentence to the description even
-// when a line is free.
-func TestAdministerWorkspaceStatesTheConsequenceOnce(t *testing.T) {
-	for name, tc := range map[string]struct {
-		pending []string
-		want    []string
-	}{
-		"with an issue awaiting approval": {pending: []string{"projects/hr/issues/12"},
-			want: []string{"Add rule 1, \"Workspace DBA\": `resource.environment_id == 'prod'`", `Plan edits recheck your "hr#12" under these rules.`}},
-		"with none": {
-			want: []string{"Add rule 1, \"Workspace DBA\": `resource.environment_id == 'prod'`", approvalRulesApply}},
-	} {
-		t.Run(name, func(t *testing.T) {
-			mock := &approvalMock{pendingIssues: tc.pending}
-			mock.setStored(fallbackRule())
-			user := &asker{answer: &mcp.ElicitResult{Action: "decline"}}
-			_, session := connectToApprovalServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
-
-			callAdminister(t, session, administerParams(approvalBody(t, fallbackRule(), prodRule)))
-			asked := user.lastParams(t)
-			require.Equal(t, append([]string{`Change the approval rules for database changes, as alice@example.com?`}, tc.want...),
-				strings.Split(asked.Message, "\n"))
-			require.Equal(t, len(tc.pending) > 0, strings.Contains(choiceDescription(t, asked), approvalRulesApply))
-		})
-	}
-}
-
 // choiceDescription returns the description of the approval form's choice field.
 func choiceDescription(t *testing.T, asked *mcp.ElicitParams) string {
 	t.Helper()
@@ -476,7 +450,8 @@ func TestAdministerWorkspaceRefusesATooLongChangeWithTheConsolePage(t *testing.T
 			rules: []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), changeRule("a", "resource.environment_id == 'a'"),
 				changeRule("b", "resource.environment_id == 'b'"), changeRule("c", "resource.environment_id == 'c'"), changeRule("d", "resource.environment_id == 'd'")},
 			want: []string{"this change needs 5 lines, more than the 4 one confirmation form shows",
-				"Each step is a form of its own and applies when the user accepts it", "add a rule before removing the one it replaces"},
+				"Each step is a form of its own and applies when the user accepts it", "tell the user the change comes in steps",
+				"add a rule before removing the one it replaces", "before each step read the rules again with call_api SettingService/GetSetting"},
 		},
 		"one rule too long for any form": {
 			rules:   []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), long},
@@ -599,7 +574,7 @@ func TestAdministerWorkspaceStatesEveryRuleFieldItTakes(t *testing.T) {
 }
 
 func TestAdministerWorkspaceContinuesALongConditionOnTheNextLine(t *testing.T) {
-	long := changeRule("HR prod", "resource.environment_id == 'prod' && resource.project_id == 'hr' && resource.database_name == 'hr_prod'", "roles/workspaceDBA")
+	long := changeRule("HR prod", "resource.environment_id == 'prod' && resource.database_name == 'hr_prod'", "roles/workspaceDBA")
 	mock := &approvalMock{}
 	mock.setStored(fallbackRule())
 	user := &asker{answer: &mcp.ElicitResult{Action: "decline"}}
@@ -612,8 +587,9 @@ func TestAdministerWorkspaceContinuesALongConditionOnTheNextLine(t *testing.T) {
 	for _, line := range lines {
 		require.LessOrEqual(t, lineColumns(line), messageLineWidth, line)
 	}
+	require.True(t, strings.HasPrefix(lines[2], continuedLine), lines[2])
 	require.Equal(t, "Add rule 1, \"Workspace DBA\": `resource.environment_id == 'prod' && "+
-		"resource.project_id == 'hr' && resource.database_name == 'hr_prod'`", lines[1]+" "+lines[2])
+		"resource.database_name == 'hr_prod'`", lines[1]+" "+strings.TrimPrefix(lines[2], continuedLine))
 	require.Equal(t, approvalRulesApply, lines[3], "the fixed sentence goes whole in the line that is left")
 	schema, err := json.Marshal(asked.RequestedSchema)
 	require.NoError(t, err)
@@ -678,14 +654,76 @@ func TestConditionTextShowsAConditionAsTypedOnlyWhenEveryCharacterPrints(t *test
 	}
 }
 
+func TestAdministerWorkspaceEscapesAConditionThatDoesNotPrintAtEverySite(t *testing.T) {
+	removed := changeRule("Removed", "a\tb", "roles/workspaceDBA")
+	kept := changeRule("Kept", "x\u200by", "roles/projectOwner")
+	keptWithDBA := changeRule("Kept", "x\u200by", "roles/workspaceDBA")
+	added := changeRule("Added", "pr\u202eod")
+	// The console writes a long condition on several lines.
+	console := changeRule("Console", "resource.environment_id == \"prod\" &&\nresource.project_id == \"hr\"")
+	diff, err := diffApprovalRules([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), removed, kept},
+		[]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), keptWithDBA, added, console}, "")
+	require.NoError(t, err)
+	require.Equal(t, []string{
+		`Remove, "Workspace DBA": "a\tb"`,
+		`Change, "Project owner" to "Workspace DBA": "x\u200by"`,
+		`Add rule 2, no approval: "pr\u202eod"`,
+		`Add rule 3, no approval: "resource.environment_id == \"prod\" &&\nresource.project_id == \"hr\""`,
+	}, diff.changes)
+
+	diff, err = diffApprovalRules([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}, []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), added}, "")
+	require.NoError(t, err)
+	form, err := approvalRulesForm(withUserEmail(context.Background(), "alice@example.com"), diff, "", "")
+	require.NoError(t, err)
+	require.Contains(t, form.message, `Add rule 1, no approval: "pr\u202eod"`)
+	require.Contains(t, form.description, `1. "Added", no approval: "pr\u202eod"`)
+	require.False(t, strings.ContainsAny(form.message+form.description, "\t\u200b\u202e"))
+}
+
+// A long condition continues after continuedLine, so a string literal inside it
+// cannot wrap into a line that reads as one of the form's own.
+func TestAdministerWorkspaceMarksEveryContinuationLine(t *testing.T) {
+	for name, tc := range map[string]struct {
+		condition, forged string
+	}{
+		"an issue line": {
+			condition: `resource.environment_id == "test" || 'x Plan edits recheck your "hr#12" under these rules.` + strings.Repeat(" ", 25) + `'.size() > 0`,
+			forged:    `Plan edits recheck your "hr#12" under these rules.`,
+		},
+		"a change line in double quotes": {
+			condition: `resource.environment_id == 'test' || '''xxx Add rule 2, "Workspace DBA": "resource.environment_id == 'prod'" yyy''' != ''`,
+			forged:    `Add rule 2, "Workspace DBA": "resource.environment_id == 'prod'"`,
+		},
+		"a change line in backquotes": {
+			condition: "resource.environment_id == 'test' ||\t''' Add rule 2, no approval: `resource.environment_id == 'dev'` yyy''' != ''",
+			forged:    "Add rule 2, no approval: `resource.environment_id == 'dev'`",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			diff, err := diffApprovalRules([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()},
+				[]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), changeRule("t", tc.condition)}, "")
+			require.NoError(t, err)
+			form, err := approvalRulesForm(withUserEmail(context.Background(), "alice@example.com"), diff, "", "")
+			require.NoError(t, err)
+			require.Contains(t, form.message, tc.forged, "the fixture must wrap its forged line into the message")
+			lines := strings.Split(form.message, "\n")
+			require.True(t, strings.HasPrefix(lines[1], "Add rule 1, no approval: "), lines[1])
+			for _, line := range lines[2:] {
+				require.LessOrEqual(t, lineColumns(line), messageLineWidth, line)
+				if first, _ := utf8.DecodeRuneInString(line); line != approvalRulesApply {
+					require.False(t, unicode.IsLetter(first), "%q poses as a line of its own", line)
+				}
+			}
+		})
+	}
+}
+
 func TestIssuesLineCountsNamesThatDoNotFit(t *testing.T) {
 	long := "projects/" + strings.Repeat("p", 40) + "/issues/1"
 	require.Equal(t, "Plan edits recheck your 1 issue awaiting approval under these rules.", issuesLine([]string{shortIssueName(long)}, false))
 	require.Equal(t, "Plan edits recheck your 2 issues awaiting approval under these rules.", issuesLine([]string{shortIssueName(long), "hr#1"}, false))
 	require.Equal(t, `Plan edits recheck your "hr#1" under these rules.`, issuesLine([]string{"hr#1"}, false))
 	require.Empty(t, issuesLine(nil, false))
-	// A search that stopped at its page size gives a lower bound, which the
-	// count form has no room for.
 	require.Equal(t, "Plan edits recheck your issues awaiting approval under these rules.", issuesLine([]string{shortIssueName(long), "hr#1"}, true))
 	require.Equal(t, `Plan edits recheck your "hr#1" and more under these rules.`, issuesLine([]string{"hr#1"}, true))
 	// A three-digit count does not fit with its number.
