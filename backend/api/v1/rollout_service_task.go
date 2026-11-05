@@ -267,8 +267,9 @@ func getTaskCreatesFromChangeDatabaseConfig(
 	return tasks, nil
 }
 
-// getVersionedRelease returns the release, or nil when it is declarative:
-// a declarative run computes its diff when it runs, so it has no state to store.
+// getVersionedRelease returns the release, or nil when it has no state to
+// store: a declarative run computes its diff when it runs, and a deleted
+// release fails its run.
 func getVersionedRelease(ctx context.Context, s *store.Store, releaseName string) (*store.ReleaseMessage, error) {
 	projectID, releaseID, err := common.GetProjectReleaseID(releaseName)
 	if err != nil {
@@ -279,7 +280,9 @@ func getVersionedRelease(ctx context.Context, s *store.Store, releaseName string
 		return nil, errors.Wrapf(err, "failed to get release %q", releaseName)
 	}
 	if release == nil {
-		return nil, errors.Errorf("release %q not found", releaseName)
+		// Deleted: the task is still created and its run reports the release
+		// as missing.
+		return nil, nil
 	}
 	if release.Payload.GetType() != storepb.SchemaChangeType_VERSIONED {
 		return nil, nil
@@ -364,19 +367,28 @@ func releaseStateOf(versions []string, revisions []*store.RevisionMessage, compu
 	}
 
 	state := &storepb.Task_ReleaseState{ComputeTime: computeTime}
-	for _, version := range versions {
+	var open *storepb.Task_ReleaseState_Range
+	for i, version := range versions {
 		if applied[version] {
 			state.AppliedCount++
+			open = nil
 			continue
 		}
-		pending := &storepb.Task_ReleaseState_PendingVersion{Version: version}
-		if deleted, ok := lastDeleted[version]; ok {
-			pending.RevisionDeleteTime = timestamppb.New(*deleted.DeletedAt)
-			if deleted.Deleter != nil {
-				pending.RevisionDeleter = *deleted.Deleter
-			}
+		if open == nil {
+			open = &storepb.Task_ReleaseState_Range{Start: int32(i)}
+			state.PendingRanges = append(state.PendingRanges, open)
 		}
-		state.PendingVersions = append(state.PendingVersions, pending)
+		open.End = int32(i + 1)
+		if deleted, ok := lastDeleted[version]; ok {
+			note := &storepb.Task_ReleaseState_DeletedRevision{
+				Version:    version,
+				DeleteTime: timestamppb.New(*deleted.DeletedAt),
+			}
+			if deleted.Deleter != nil {
+				note.Deleter = *deleted.Deleter
+			}
+			state.DeletedRevisions = append(state.DeletedRevisions, note)
+		}
 	}
 	return state
 }

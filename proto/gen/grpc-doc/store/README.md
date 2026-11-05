@@ -301,7 +301,8 @@
 - [store/task.proto](#store_task-proto)
     - [Task](#bytebase-store-Task)
     - [Task.ReleaseState](#bytebase-store-Task-ReleaseState)
-    - [Task.ReleaseState.PendingVersion](#bytebase-store-Task-ReleaseState-PendingVersion)
+    - [Task.ReleaseState.DeletedRevision](#bytebase-store-Task-ReleaseState-DeletedRevision)
+    - [Task.ReleaseState.Range](#bytebase-store-Task-ReleaseState-Range)
   
     - [Task.Type](#bytebase-store-Task-Type)
   
@@ -4722,26 +4723,43 @@ A preview: the run reads the database&#39;s revisions again when it starts.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| pending_versions | [Task.ReleaseState.PendingVersion](#bytebase-store-Task-ReleaseState-PendingVersion) | repeated | The versions the task will apply, in release order. Every other version of the release was applied: the database had a live VERSIONED revision with it. |
+| pending_ranges | [Task.ReleaseState.Range](#bytebase-store-Task-ReleaseState-Range) | repeated | The release&#39;s files the task will apply, as half-open ranges of positions in the release&#39;s file list, ascending. Every other file&#39;s version was applied: the database had a live VERSIONED revision with it. |
 | applied_count | [int32](#int32) |  | The number of the release&#39;s versions already applied. |
 | compute_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the state was computed. |
+| deleted_revisions | [Task.ReleaseState.DeletedRevision](#bytebase-store-Task-ReleaseState-DeletedRevision) | repeated | The versions to apply that had a deleted revision, in release order. |
 
 
 
 
 
 
-<a name="bytebase-store-Task-ReleaseState-PendingVersion"></a>
+<a name="bytebase-store-Task-ReleaseState-DeletedRevision"></a>
 
-### Task.ReleaseState.PendingVersion
+### Task.ReleaseState.DeletedRevision
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | version | [string](#string) |  |  |
-| revision_delete_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Set when the database had a revision of this version that was deleted: the newest deletion&#39;s time and the deleter&#39;s email. |
-| revision_deleter | [string](#string) |  |  |
+| delete_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The newest deletion&#39;s time and the deleter&#39;s email. |
+| deleter | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-Task-ReleaseState-Range"></a>
+
+### Task.ReleaseState.Range
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| start | [int32](#int32) |  |  |
+| end | [int32](#int32) |  |  |
 
 
 

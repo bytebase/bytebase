@@ -444,7 +444,11 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.Task.ReleaseState.PendingVersion"><span class="badge">M</span>Task.ReleaseState.PendingVersion</a>
+                  <a href="#bytebase.v1.Task.ReleaseState.DeletedRevision"><span class="badge">M</span>Task.ReleaseState.DeletedRevision</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.Task.ReleaseState.Range"><span class="badge">M</span>Task.ReleaseState.Range</a>
                 </li>
               
                 <li>
@@ -5992,11 +5996,19 @@ revisions again when it starts. </p></td>
             <tbody>
               
                 <tr>
-                  <td>pending_versions</td>
-                  <td><a href="#bytebase.v1.Task.ReleaseState.PendingVersion">Task.ReleaseState.PendingVersion</a></td>
+                  <td>pending_ranges</td>
+                  <td><a href="#bytebase.v1.Task.ReleaseState.Range">Task.ReleaseState.Range</a></td>
                   <td>repeated</td>
-                  <td><p>The versions the task will apply, in release order. Every other version
-of the release had a live revision on the database. </p></td>
+                  <td><p>The release&#39;s files the task will apply, as half-open ranges of
+positions in the release&#39;s `files`, ascending. Every other file&#39;s
+version had a live revision on the database. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>pending_count</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The number of files the task will apply: the ranges&#39; total length. </p></td>
                 </tr>
               
                 <tr>
@@ -6013,6 +6025,13 @@ of the release had a live revision on the database. </p></td>
                   <td><p>When the state was computed. </p></td>
                 </tr>
               
+                <tr>
+                  <td>deleted_revisions</td>
+                  <td><a href="#bytebase.v1.Task.ReleaseState.DeletedRevision">Task.ReleaseState.DeletedRevision</a></td>
+                  <td>repeated</td>
+                  <td><p>The versions to apply that had a deleted revision, in release order. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -6020,7 +6039,7 @@ of the release had a live revision on the database. </p></td>
 
         
       
-        <h3 id="bytebase.v1.Task.ReleaseState.PendingVersion">Task.ReleaseState.PendingVersion</h3>
+        <h3 id="bytebase.v1.Task.ReleaseState.DeletedRevision">Task.ReleaseState.DeletedRevision</h3>
         <p></p>
 
         
@@ -6038,18 +6057,49 @@ of the release had a live revision on the database. </p></td>
                 </tr>
               
                 <tr>
-                  <td>revision_delete_time</td>
+                  <td>delete_time</td>
                   <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
                   <td></td>
-                  <td><p>Set when the database had a revision of this version that was deleted. </p></td>
+                  <td><p>When the newest revision of this version was deleted. </p></td>
                 </tr>
               
                 <tr>
-                  <td>revision_deleter</td>
+                  <td>deleter</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The user who deleted that revision.
+                  <td><p>The user who deleted it.
 Format: users/hello@world.com </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Task.ReleaseState.Range">Task.ReleaseState.Range</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>start</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>end</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -31661,7 +31711,8 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The source branch. In a pull request build, the pull request&#39;s source
-branch rather than the platform&#39;s synthetic merge ref. </p></td>
+branch rather than the platform&#39;s synthetic merge ref. Empty for a run
+on a tag or a merge queue&#39;s temporary branch. </p></td>
                 </tr>
               
                 <tr>
@@ -31675,14 +31726,16 @@ branch rather than the platform&#39;s synthetic merge ref. </p></td>
                   <td>author_name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The commit author&#39;s display name. </p></td>
+                  <td><p>The author&#39;s display name: the commit&#39;s author where the CI platform
+exposes it, else the person who started the build. </p></td>
                 </tr>
               
                 <tr>
                   <td>author_login</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The commit author&#39;s login on the VCS platform. </p></td>
+                  <td><p>The author&#39;s login on the VCS platform: the commit&#39;s author, or the pull
+request&#39;s author in a pull request build. </p></td>
                 </tr>
               
                 <tr>

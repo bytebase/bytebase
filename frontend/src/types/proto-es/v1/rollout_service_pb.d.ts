@@ -643,12 +643,20 @@ export declare const Task_DatabaseUpdateSchema: GenMessage<Task_DatabaseUpdate>;
  */
 export declare type Task_ReleaseState = Message<"bytebase.v1.Task.ReleaseState"> & {
   /**
-   * The versions the task will apply, in release order. Every other version
-   * of the release had a live revision on the database.
+   * The release's files the task will apply, as half-open ranges of
+   * positions in the release's `files`, ascending. Every other file's
+   * version had a live revision on the database.
    *
-   * @generated from field: repeated bytebase.v1.Task.ReleaseState.PendingVersion pending_versions = 1;
+   * @generated from field: repeated bytebase.v1.Task.ReleaseState.Range pending_ranges = 1;
    */
-  pendingVersions: Task_ReleaseState_PendingVersion[];
+  pendingRanges: Task_ReleaseState_Range[];
+
+  /**
+   * The number of files the task will apply: the ranges' total length.
+   *
+   * @generated from field: int32 pending_count = 4;
+   */
+  pendingCount: number;
 
   /**
    * The number of the release's versions already applied.
@@ -663,6 +671,13 @@ export declare type Task_ReleaseState = Message<"bytebase.v1.Task.ReleaseState">
    * @generated from field: google.protobuf.Timestamp compute_time = 3;
    */
   computeTime?: Timestamp | undefined;
+
+  /**
+   * The versions to apply that had a deleted revision, in release order.
+   *
+   * @generated from field: repeated bytebase.v1.Task.ReleaseState.DeletedRevision deleted_revisions = 5;
+   */
+  deletedRevisions: Task_ReleaseState_DeletedRevision[];
 };
 
 /**
@@ -672,35 +687,56 @@ export declare type Task_ReleaseState = Message<"bytebase.v1.Task.ReleaseState">
 export declare const Task_ReleaseStateSchema: GenMessage<Task_ReleaseState>;
 
 /**
- * @generated from message bytebase.v1.Task.ReleaseState.PendingVersion
+ * @generated from message bytebase.v1.Task.ReleaseState.Range
  */
-export declare type Task_ReleaseState_PendingVersion = Message<"bytebase.v1.Task.ReleaseState.PendingVersion"> & {
+export declare type Task_ReleaseState_Range = Message<"bytebase.v1.Task.ReleaseState.Range"> & {
+  /**
+   * @generated from field: int32 start = 1;
+   */
+  start: number;
+
+  /**
+   * @generated from field: int32 end = 2;
+   */
+  end: number;
+};
+
+/**
+ * Describes the message bytebase.v1.Task.ReleaseState.Range.
+ * Use `create(Task_ReleaseState_RangeSchema)` to create a new message.
+ */
+export declare const Task_ReleaseState_RangeSchema: GenMessage<Task_ReleaseState_Range>;
+
+/**
+ * @generated from message bytebase.v1.Task.ReleaseState.DeletedRevision
+ */
+export declare type Task_ReleaseState_DeletedRevision = Message<"bytebase.v1.Task.ReleaseState.DeletedRevision"> & {
   /**
    * @generated from field: string version = 1;
    */
   version: string;
 
   /**
-   * Set when the database had a revision of this version that was deleted.
+   * When the newest revision of this version was deleted.
    *
-   * @generated from field: google.protobuf.Timestamp revision_delete_time = 2;
+   * @generated from field: google.protobuf.Timestamp delete_time = 2;
    */
-  revisionDeleteTime?: Timestamp | undefined;
+  deleteTime?: Timestamp | undefined;
 
   /**
-   * The user who deleted that revision.
+   * The user who deleted it.
    * Format: users/hello@world.com
    *
-   * @generated from field: string revision_deleter = 3;
+   * @generated from field: string deleter = 3;
    */
-  revisionDeleter: string;
+  deleter: string;
 };
 
 /**
- * Describes the message bytebase.v1.Task.ReleaseState.PendingVersion.
- * Use `create(Task_ReleaseState_PendingVersionSchema)` to create a new message.
+ * Describes the message bytebase.v1.Task.ReleaseState.DeletedRevision.
+ * Use `create(Task_ReleaseState_DeletedRevisionSchema)` to create a new message.
  */
-export declare const Task_ReleaseState_PendingVersionSchema: GenMessage<Task_ReleaseState_PendingVersion>;
+export declare const Task_ReleaseState_DeletedRevisionSchema: GenMessage<Task_ReleaseState_DeletedRevision>;
 
 /**
  * @generated from enum bytebase.v1.Task.Status
