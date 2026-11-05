@@ -15570,21 +15570,21 @@ Frontend must echo this back unchanged when sending tool results. </p></td>
                   <td>optional</td>
                   <td><p>Input tokens used by the provider call, including cached input. </p></td>
                 </tr>
-
+              
                 <tr>
                   <td>output_tokens</td>
                   <td><a href="#int32">int32</a></td>
                   <td>optional</td>
                   <td><p>Output tokens used by the provider call, including reasoning tokens. </p></td>
                 </tr>
-
+              
                 <tr>
                   <td>cached_input_tokens</td>
                   <td><a href="#int32">int32</a></td>
                   <td>optional</td>
                   <td><p>Input tokens read from cache. This is a subset of input_tokens. </p></td>
                 </tr>
-
+              
             </tbody>
           </table>
 
@@ -29051,8 +29051,9 @@ If false,
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>workspace-level policy
-Disable the Download export destination. Exports can still go to a
-configured storage destination such as SharePoint. </p></td>
+Hide the Download export destination in the SQL Editor. Exports can still go
+to a configured storage destination such as SharePoint. The Export API does
+not check this setting. </p></td>
                 </tr>
               
             </tbody>

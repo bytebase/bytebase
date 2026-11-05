@@ -18834,8 +18834,9 @@ components:
           title: disable_download
           description: |-
             workspace-level policy
-             Disable the Download export destination. Exports can still go to a
-             configured storage destination such as SharePoint.
+             Hide the Download export destination in the SQL Editor. Exports can still go
+             to a configured storage destination such as SharePoint. The Export API does
+             not check this setting.
       title: QueryDataPolicy
       additionalProperties: false
       description: QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
