@@ -228,12 +228,32 @@ func mergeSheetFindings(ctx context.Context, merge mergeFunc, findings []*aiRevi
 		blockTargets[blockOf[i]][finding.Unit.Check.Target] = true
 	}
 	// A line outside every statement, which findBlock made a block of its
-	// own, is its own body.
+	// own, is its own body. Its ordinal counts the equal lines outside every
+	// statement before it, so it holds whichever lines have findings.
 	segments, bodyStart := slices.Clone(statements.Segments), slices.Clone(statements.BodyStart)
-	lines := aireview.StatementLines(statement)
-	for _, block := range blocks[len(segments):] {
-		segments = append(segments, statementSegment(check.SpecID, strings.TrimSpace(lines[min(block.Start, len(lines))-1]), 1))
-		bodyStart = append(bodyStart, block.Start)
+	if extra := blocks[len(segments):]; len(extra) > 0 {
+		lines := aireview.StatementLines(statement)
+		outside := make([]bool, len(lines)+1)
+		for line := range outside {
+			outside[line] = true
+		}
+		for _, block := range statements.Blocks {
+			for line := max(block.Start, 1); line <= min(block.End, len(lines)); line++ {
+				outside[line] = false
+			}
+		}
+		for _, block := range extra {
+			at := min(block.Start, len(lines))
+			text := strings.TrimSpace(lines[at-1])
+			ordinal := 0
+			for line := 1; line <= at; line++ {
+				if outside[line] && strings.TrimSpace(lines[line-1]) == text {
+					ordinal++
+				}
+			}
+			segments = append(segments, statementSegment(check.SpecID, text, ordinal))
+			bodyStart = append(bodyStart, block.Start)
+		}
 	}
 	// An earlier result stands where its line stood in its statement's body,
 	// which is the same text in both sheets.

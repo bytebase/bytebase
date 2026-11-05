@@ -428,6 +428,37 @@ func TestMergeAIReviewFindingsKeepsEarlierResults(t *testing.T) {
 		require.Equal(t, []string{"between"}, kept(problems))
 	})
 
+	t.Run("tells equal lines outside every statement apart", func(t *testing.T) {
+		t.Parallel()
+
+		const gaps = "SELECT 1;\n\nSELECT 2;\n\nSELECT 3;\n"
+		run := func(earlierResults []*aiReviewEarlier, merge *recordingMerge, findings ...aireview.Finding) []*aiReviewProblem {
+			t.Helper()
+			result := mergeResult("instances/prod/databases/db1", storepb.Engine_POSTGRES, findings...)
+			result.Unit.Statement = gaps
+			problems, err := mergeAIReviewFindings(context.Background(), merge.merge, []*aiReviewResult{result}, map[aiReviewSheet][]*aiReviewEarlier{sheet: earlierResults})
+			require.NoError(t, err)
+			return problems
+		}
+		both := run(nil, &recordingMerge{}, finding("second line", aireview.SeverityP2, 2), finding("fourth line", aireview.SeverityP2, 4))
+		require.NotEqual(t, both[0].Segment, both[1].Segment)
+		alone := run(nil, &recordingMerge{}, finding("fourth line", aireview.SeverityP2, 4))
+		require.Equal(t, both[1].Segment, alone[0].Segment, "a line's segment does not depend on which other lines have findings")
+
+		posted := func(problem *aiReviewProblem, name string, line int) *aiReviewEarlier {
+			return &aiReviewEarlier{Fingerprint: problem.Segment + "/" + name, Priority: p2, Comment: name, Sheet: gaps, SheetSha256: "sha", Line: line}
+		}
+		merge := &recordingMerge{groups: [][]int{{0, 3}, {1, 2}}}
+		problems := run([]*aiReviewEarlier{posted(both[0], "second", 2), posted(both[1], "fourth", 4)}, merge,
+			finding("fourth line", aireview.SeverityP2, 4), finding("second line", aireview.SeverityP2, 2))
+		require.Equal(t, []int{4, 2, 2, 4}, []int{
+			merge.requests[0].Candidates[0].Finding.Line, merge.requests[0].Candidates[1].Finding.Line,
+			merge.requests[0].Candidates[2].Finding.Line, merge.requests[0].Candidates[3].Finding.Line,
+		}, "each earlier result stands on its own line")
+		require.Equal(t, merge.requests[0].Candidates[1].Block, merge.requests[0].Candidates[2].Block)
+		require.Equal(t, []string{"fourth", "second"}, kept(problems))
+	})
+
 	t.Run("keeps a resolved result only for a problem no more severe", func(t *testing.T) {
 		t.Parallel()
 
