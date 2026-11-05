@@ -6,8 +6,8 @@ The MCP settings page offers three modes (Disabled, Read-only, Read-write) and d
 one sentence. Since [#21324](https://github.com/bytebase/bytebase/pull/21324) removed the per-mode
 method drawer, nothing on the page says what a mode actually serves, and an admin choosing between
 Read-only and Read-write has nothing to compare beyond two sentences. The rule this doc lands on:
-**show capabilities, not methods or permissions — one ordered list of twelve capability rows in
-which each mode is a prefix, collapsed by default inside the existing Access policy section, and
+**show capabilities, not methods or permissions — one ordered list of capability rows in which
+each mode is a prefix, collapsed by default inside the existing Access policy section, and
 following the picked mode while editing.** The page also gets shorter: the mode cards shrink to an
 icon, a label and a three-word caption, with the selected mode's "Best for" under them; the
 disclosure line is the mode's description, and row details sit behind one toggle. The product change
@@ -86,7 +86,7 @@ the product.
 
 Every row is displayed under every mode — served, or muted with a `—` — and against every engine a
 workspace happens to hold, so **every line on this card must be true on both axes: mode and engine.**
-That covers the twelve rows, and equally the collapsed summary, the card captions and the "Best for"
+That covers every row, and equally the collapsed summary, the card captions and the "Best for"
 lines, which are not rows and were missed the first time the rule was applied. The summary is the
 line most admins read and often the only one. A
 claim whose truth depends on the mode names the mode as a condition; a claim whose truth depends on
@@ -426,12 +426,12 @@ row without it. The masked-write guard stays, because it never depended on the t
 
 **D13 — Read-write changes workspace administration after a confirmation.** Under Read-write, the
 agent can change the approval rules for database changes and the masking rules through
-`administer_workspace`, after the user confirms each change in the MCP client. Approval and masking rules bound what a user's agent
-can change and read, so this is a trade: the confirmation checks intent and is not a security boundary, since a hook in
-the user's own client can answer the form. An admin who wants no agent to change a setting chooses
-Read-only. Vincent Huang decided on 2026-11-02 that admin changes are no more dangerous than the
-DDL and DML that Read-write already runs, and that a user who does not trust the agent with a
-setting changes it in the console.
+`administer_workspace`, after the user confirms each change in the MCP client. Approval and masking
+rules bound what a user's agent can change and read, so this is a trade: the confirmation checks
+intent and is not a security boundary, since a hook in the user's own client can answer the form. An
+admin who wants no agent to change a setting chooses Read-only. Vincent Huang decided on 2026-11-02
+that admin changes are no more dangerous than the DDL and DML that Read-write already runs, and that
+a user who does not trust the agent with a setting changes it in the console.
 
 ## States
 
