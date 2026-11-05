@@ -334,14 +334,15 @@ export declare const ReviewAIPolicySchema: GenMessage<ReviewAIPolicy>;
  */
 export declare type RolloutPolicy = Message<"bytebase.v1.RolloutPolicy"> & {
   /**
-   * Whether rollout is automatic without manual approval.
+   * Whether the environment's rollout tasks start on their own, with no one running them.
    *
    * @generated from field: bool automatic = 1;
    */
   automatic: boolean;
 
   /**
-   * The roles that can approve rollout execution.
+   * Who can run, skip or cancel the environment's rollout tasks; WORKSPACE_APPROVAL sets approvers.
+   * Anyone with bb.taskRuns.create can too.
    *
    * @generated from field: repeated string roles = 2;
    */

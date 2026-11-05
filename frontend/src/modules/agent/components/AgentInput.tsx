@@ -47,6 +47,7 @@ import {
   getPlanMentionLabel,
   hasUnboundResourceMention,
   insertResourceMention,
+  normalizeAgentResourceMentions,
   normalizeAgentResourceReferences,
   removeMentionTrigger,
   updateDraftResourceMentions,
@@ -1800,18 +1801,37 @@ export function AgentInput({
         const restoreQueuedText = () => {
           const draft = store.getDraft(message.chatId);
           if (!draft.text && !draft.project && !draft.resource) {
+            const references = normalizeAgentResourceReferences(
+              message.resourceReferences,
+              message.resourceReference
+            );
             let offset = 0;
-            const mentions = message.resourceReferences?.map((resource) => {
+            const mentions = references.map((resource) => {
               const start = offset;
               const end = start + formatResourceMention(resource.label).length;
               offset = end + 1;
               return { resource, range: { start, end } };
             });
+            const hasReferencePrefix =
+              normalizeAgentResourceMentions(message.text, mentions).length ===
+              references.length;
+            const prefix = references
+              .map((resource) => formatResourceMention(resource.label))
+              .join(" ");
+            const text =
+              references.length > 0 && !hasReferencePrefix
+                ? `${prefix}${message.text ? ` ${message.text}` : " "}`
+                : message.text;
             store.setDraft(message.chatId, {
-              text: message.text,
-              ...(mentions
-                ? { mentions }
-                : { resource: message.resourceReference }),
+              text,
+              ...(references.length > 0
+                ? message.resourceReferences
+                  ? { mentions }
+                  : {
+                      resource: references[0],
+                      mention: mentions[0]?.range,
+                    }
+                : {}),
             });
           }
         };

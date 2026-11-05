@@ -17,7 +17,9 @@ import (
 // the workspace and project AI review policy, once per database of the
 // project's CI sample, with that database's facts in the prompt and its synced
 // schema behind the tools. The reviews of one run share the model and run
-// concurrently under aiReviewRunConcurrency.
+// concurrently under aiReviewRunConcurrency. A further call to the model
+// merges the findings that more than one database reports on the same
+// statement, and one more for each merged problem writes its comment.
 type AIReviewExecutor struct {
 	store    *store.Store
 	newModel func(*storepb.AISetting, ...aireview.ModelOption) aireview.Model
@@ -98,10 +100,11 @@ func (e *AIReviewExecutor) RunOnce(ctx context.Context, projectID string, issueU
 			ProjectPolicy:   policy.Project,
 			Statement:       unit.Statement,
 		}
-		tools, err := e.resolveAIReviewTarget(ctx, unit.Check, request)
+		tools, engine, err := e.resolveAIReviewTarget(ctx, unit.Check, request)
 		if err != nil {
 			return nil, err
 		}
+		unit.Engine = engine
 		result, err := reviewer.Review(ctx, request, tools)
 		if err != nil {
 			return nil, err
@@ -132,7 +135,56 @@ func (e *AIReviewExecutor) RunOnce(ctx context.Context, projectID string, issueU
 	if err := aggregateUnitErrors(len(checkTargets), unitErrs); err != nil {
 		return nil, err
 	}
-	return aiReviewComments(projectID, issueUID, results), nil
+	problems, err := mergeAIReviewFindings(ctx, func(ctx context.Context, request *aireview.MergeRequest) (*aireview.MergeResult, error) {
+		// The merge is a model call like a review, so it takes a slot too.
+		if err := e.slots.Acquire(ctx, 1); err != nil {
+			return nil, err
+		}
+		defer e.slots.Release(1)
+		result, err := reviewer.MergeFindings(ctx, request)
+		if err != nil {
+			return nil, err
+		}
+		slog.Info("AI review merged findings",
+			slog.String("project", projectID),
+			slog.Int64("issue_id", issueUID),
+			slog.Int("findings", len(request.Candidates)),
+			slog.Int("problems", len(result.Groups)),
+			slog.Int("model_calls", result.Calls),
+			slog.Int("tokens", result.TotalTokens))
+		return result, nil
+	}, results)
+	if err != nil {
+		return nil, err
+	}
+	if err := summarizeAIReviewProblems(ctx, func(ctx context.Context, request *aireview.SummaryRequest) (*aireview.Summary, error) {
+		// A summary is a model call like a review, so it takes a slot too.
+		if err := e.slots.Acquire(ctx, 1); err != nil {
+			return nil, err
+		}
+		defer e.slots.Release(1)
+		summary, err := reviewer.Summarize(ctx, request)
+		if err != nil {
+			return nil, err
+		}
+		slog.Info("AI review summarized a problem",
+			slog.String("project", projectID),
+			slog.Int64("issue_id", issueUID),
+			slog.Int("findings", len(request.Findings)),
+			slog.Int("groups", len(summary.Groups)),
+			slog.Int("model_calls", summary.Calls),
+			slog.Int("tokens", summary.TotalTokens))
+		return summary, nil
+	}, problems); err != nil {
+		return nil, err
+	}
+	// The merge and the summary fall back when a model call fails, the call
+	// that a switch-off refused included, so the setting is read again before
+	// the results post.
+	if _, err := e.checkAISetting(ctx, project.Workspace); err != nil {
+		return nil, err
+	}
+	return aiReviewComments(projectID, issueUID, problems), nil
 }
 
 // checkAISetting returns the workspace AI setting if it allows the review. It
@@ -171,12 +223,12 @@ func (e *AIReviewExecutor) sheetStatement(ctx context.Context, sheets map[string
 
 // resolveAIReviewTarget gathers what one review needs of a database: it sets
 // the facts the prompt states as the request's target and returns the tools
-// over the synced schema, sized to the request's prompt. A database whose
-// schema is not synced cannot be reviewed.
-func (e *AIReviewExecutor) resolveAIReviewTarget(ctx context.Context, checkTarget *plancheck.CheckTarget, request *aireview.Request) (aireview.Tools, error) {
+// over the synced schema, sized to the request's prompt, and the database's
+// engine. A database whose schema is not synced cannot be reviewed.
+func (e *AIReviewExecutor) resolveAIReviewTarget(ctx context.Context, checkTarget *plancheck.CheckTarget, request *aireview.Request) (aireview.Tools, storepb.Engine, error) {
 	instance, database, err := plancheck.ResolveDatabaseTarget(ctx, e.store, checkTarget.Target)
 	if err != nil {
-		return nil, err
+		return nil, storepb.Engine_ENGINE_UNSPECIFIED, err
 	}
 	dbSchema, err := e.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
 		Workspace:    instance.Workspace,
@@ -184,12 +236,13 @@ func (e *AIReviewExecutor) resolveAIReviewTarget(ctx context.Context, checkTarge
 		DatabaseName: database.DatabaseName,
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database schema")
+		return nil, storepb.Engine_ENGINE_UNSPECIFIED, errors.Wrapf(err, "failed to get database schema")
 	}
 	if dbSchema == nil || dbSchema.GetProto() == nil {
-		return nil, errors.New("metadata not synced")
+		return nil, storepb.Engine_ENGINE_UNSPECIFIED, errors.New("metadata not synced")
 	}
 	schema := dbSchema.GetProto()
 	request.Target = aiReviewTarget(instance, database, schema)
-	return aireview.NewCatalogTools(instance.Metadata.GetEngine(), schema, aireview.WithPromptOf(request)), nil
+	engine := instance.Metadata.GetEngine()
+	return aireview.NewCatalogTools(engine, schema, aireview.WithPromptOf(request)), engine, nil
 }

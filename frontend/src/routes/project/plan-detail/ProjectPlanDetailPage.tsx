@@ -2,6 +2,7 @@ import { Check, Code2, Loader2, MessageSquareMore, Rocket } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { router } from "@/app/router";
 import { MAIN_SCROLL_RESTORATION_ID } from "@/app/router/NavigationScrollRestoration";
 import {
   AlertDialog,
@@ -38,6 +39,7 @@ import {
   PlanDetailProvider,
   usePlanDetailContext,
 } from "./shell/PlanDetailContext";
+import { getPlanCreateAgentContextQuery } from "./utils/agentContext";
 import {
   buildChangesSummary,
   buildDeploySummary,
@@ -140,6 +142,33 @@ function ProjectPlanDetailPageInner({
   // first client-local spec, without a placeholder route or a follow-up effect.
   const effectiveSelectedSpecId =
     selectedSpecId || page.plan.specs[0]?.id || "";
+  const planCreateRouteQuery = useMemo(
+    () =>
+      getPlanCreateAgentContextQuery(
+        routeQuery ?? {},
+        page.plan.specs,
+        effectiveSelectedSpecId
+      ),
+    [effectiveSelectedSpecId, page.plan.specs, routeQuery]
+  );
+  useEffect(() => {
+    if (!page.isCreating || !page.ready || !planCreateRouteQuery) return;
+    if (page.isEditing) page.bypassLeaveGuardOnce();
+    void router.replace(
+      {
+        query: planCreateRouteQuery,
+        ...(routeHash ? { hash: routeHash } : {}),
+      },
+      { preventScrollReset: true }
+    );
+  }, [
+    page.bypassLeaveGuardOnce,
+    page.isCreating,
+    page.isEditing,
+    page.ready,
+    planCreateRouteQuery,
+    routeHash,
+  ]);
 
   return (
     <PlanDetailProvider value={page}>
@@ -409,6 +438,7 @@ function PlanPhaseRail({
         badge={phaseConfigs.changes.badge}
         expanded={page.activePhases.has("changes")}
         icon={<Code2 className="size-3 md:size-4" />}
+        keepChildrenMounted={page.isCreating}
         label={t("plan.navigator.changes")}
         onSelect={() => selectPhase("changes")}
         status={phaseConfigs.changes.status}
@@ -475,6 +505,7 @@ function PhaseSection({
   future,
   isLast = false,
   expanded,
+  keepChildrenMounted = false,
   status,
   summary,
   children,
@@ -492,6 +523,7 @@ function PhaseSection({
   future?: ReactNode;
   isLast?: boolean;
   expanded: boolean;
+  keepChildrenMounted?: boolean;
   status: PhaseStatus;
   summary?: string;
   children: ReactNode;
@@ -554,36 +586,48 @@ function PhaseSection({
               <div className="mt-0.5 text-sm text-control-light">{summary}</div>
             )}
           </div>
-        ) : !expanded ? (
-          <div className="cursor-pointer py-0.5" onClick={onToggle}>
-            <div className="flex items-center gap-2">
-              <span className="textlabel uppercase">{label}</span>
-              {badge && <Badge variant={badge.variant}>{badge.label}</Badge>}
-              <div className="flex-1" />
-              <span className="shrink-0 text-xs text-control-light">
-                {t("plan.phase.show-details")}
-              </span>
-            </div>
-            {summary && (
-              <div className="mt-0.5 text-sm text-control">{summary}</div>
-            )}
-          </div>
         ) : (
           <div className="flex flex-col">
-            <div className="flex items-center gap-2 py-0.5">
-              <span className="textlabel uppercase text-main">{label}</span>
-              {badge && <Badge variant={badge.variant}>{badge.label}</Badge>}
-              <div className="flex-1" />
-              <span
-                className="shrink-0 cursor-pointer text-xs text-control-light hover:text-control"
-                onClick={onToggle}
+            {expanded ? (
+              <div className="flex items-center gap-2 py-0.5">
+                <span className="textlabel uppercase text-main">{label}</span>
+                {badge && <Badge variant={badge.variant}>{badge.label}</Badge>}
+                <div className="flex-1" />
+                <span
+                  className="shrink-0 cursor-pointer text-xs text-control-light hover:text-control"
+                  onClick={onToggle}
+                >
+                  {t("plan.phase.hide-details")}
+                </span>
+              </div>
+            ) : (
+              <div className="cursor-pointer py-0.5" onClick={onToggle}>
+                <div className="flex items-center gap-2">
+                  <span className="textlabel uppercase">{label}</span>
+                  {badge && (
+                    <Badge variant={badge.variant}>{badge.label}</Badge>
+                  )}
+                  <div className="flex-1" />
+                  <span className="shrink-0 text-xs text-control-light">
+                    {t("plan.phase.show-details")}
+                  </span>
+                </div>
+                {summary && (
+                  <div className="mt-0.5 text-sm text-control">{summary}</div>
+                )}
+              </div>
+            )}
+            {(expanded || keepChildrenMounted) && (
+              <div
+                className={cn(
+                  "mt-1 overflow-hidden rounded-sm border bg-background",
+                  !expanded && "hidden"
+                )}
+                hidden={!expanded}
               >
-                {t("plan.phase.hide-details")}
-              </span>
-            </div>
-            <div className="mt-1 overflow-hidden rounded-sm border bg-background">
-              {children}
-            </div>
+                {children}
+              </div>
+            )}
           </div>
         )}
       </div>

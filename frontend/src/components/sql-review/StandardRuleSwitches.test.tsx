@@ -6,6 +6,7 @@ import { StandardRuleSwitches } from "./StandardRuleSwitches";
 import { STANDARD_RULE_TYPES } from "./standardRules";
 
 vi.mock("react-i18next", () => ({
+  initReactI18next: { type: "3rdParty", init: () => {} },
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 
@@ -34,7 +35,37 @@ function Stateful({
   );
 }
 
+const rowOf = (rule: string) =>
+  ruleSwitch(rule).closest("[class*='justify-between']") as HTMLElement;
+
+const codesOf = (row: HTMLElement) =>
+  Array.from(row.querySelectorAll("[data-testid='review-code']")).map(
+    (node) => node.textContent
+  );
+
 describe("StandardRuleSwitches", () => {
+  test("lists the engines reviewed, each rule's codes, and the engines of a rule fewer engines check", () => {
+    render(
+      <StandardRuleSwitches rules={STANDARD_RULE_TYPES} onChange={vi.fn()} />
+    );
+
+    expect(screen.getByTestId("standard-rule-engines").textContent).toBe(
+      "sql-review.standard-rules.supported-engines"
+    );
+    const where = rowOf("require-where");
+    expect(codesOf(where)).toEqual(["WH101"]);
+    expect(
+      where.querySelector("[data-testid='standard-rule-rule-engines']")
+    ).toBeNull();
+
+    const online = rowOf("online-migration");
+    expect(codesOf(online)[0]).toBe("OM101");
+    expect(
+      online.querySelector("[data-testid='standard-rule-rule-engines']")
+        ?.textContent
+    ).toBe("MySQL, MariaDB, OceanBase (MySQL)");
+  });
+
   test("switches one rule and reports the list in display order", () => {
     const onChange = vi.fn();
     render(

@@ -523,6 +523,7 @@ function CreateDatabaseForm({
               value={instanceName}
               onChange={handleInstanceChange}
               engines={enginesSupportCreateDatabase()}
+              project={effectiveProjectName}
               disabled={!!fixedInstanceName}
               portal
             />

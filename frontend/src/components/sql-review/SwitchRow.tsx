@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils";
 interface SwitchRowProps {
   title: string;
   description?: ReactNode;
+  // Facts below the description, such as what the setting covers.
+  details?: ReactNode;
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
   disabled?: boolean;
@@ -18,6 +20,7 @@ interface SwitchRowProps {
 export function SwitchRow({
   title,
   description,
+  details,
   checked,
   onCheckedChange,
   disabled = false,
@@ -32,6 +35,7 @@ export function SwitchRow({
         {description !== undefined && (
           <div className="text-sm text-control-light">{description}</div>
         )}
+        {details}
       </div>
       {readOnly ? (
         <span

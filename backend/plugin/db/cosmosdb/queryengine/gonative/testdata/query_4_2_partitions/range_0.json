@@ -1,0 +1,222 @@
+{
+    "_rid": "S9w7AIGecFs=",
+    "Documents": [
+        {
+            "_rid": "S9w7AIGecFsSAAAAAAAAAA==",
+            "orderByItems": [
+                {
+                    "item": "8982000"
+                }
+            ],
+            "payload": {
+                "name": "London",
+                "population": "8982000"
+            }
+        },
+        {
+            "_rid": "S9w7AIGecFsRAAAAAAAAAA==",
+            "orderByItems": [
+                {
+                    "item": "8419000"
+                }
+            ],
+            "payload": {
+                "name": "New York",
+                "population": "8419000"
+            }
+        },
+        {
+            "_rid": "S9w7AIGecFsBAAAAAAAAAA==",
+            "orderByItems": [
+                {
+                    "item": "62415"
+                }
+            ],
+            "payload": {
+                "name": "Al Fujayrah",
+                "population": "62415"
+            }
+        },
+        {
+            "_rid": "S9w7AIGecFsCAAAAAAAAAA==",
+            "orderByItems": [
+                {
+                    "item": "2956587"
+                }
+            ],
+            "payload": {
+                "name": "Dubai",
+                "population": "2956587"
+            }
+        },
+        {
+            "_rid": "S9w7AIGecFsQAAAAAAAAAA==",
+            "orderByItems": [
+                {
+                    "item": "22256"
+                }
+            ],
+            "payload": {
+                "name": "Andorra la Vella",
+                "population": "22256"
+            }
+        },
+        {
+            "_rid": "S9w7AIGecFsNAAAAAAAAAA==",
+            "orderByItems": [
+                {
+                    "item": 13960000
+                }
+            ],
+            "payload": {
+                "name": "Tokyo",
+                "population": 13960000
+            }
+        },
+        {
+            "_rid": "S9w7AIGecFsLAAAAAAAAAA==",
+            "orderByItems": [
+                {
+                    "item": 8982000
+                }
+            ],
+            "payload": {
+                "name": "London",
+                "population": 8982000
+            }
+        },
+        {
+            "_rid": "S9w7AIGecFsIAAAAAAAAAA==",
+            "orderByItems": [
+                {
+                    "item": 8336817
+                }
+            ],
+            "payload": {
+                "name": "New York",
+                "population": 8336817
+            }
+        },
+        {
+            "_rid": "S9w7AIGecFsJAAAAAAAAAA==",
+            "orderByItems": [
+                {
+                    "item": 3979576
+                }
+            ],
+            "payload": {
+                "name": "Los Angeles",
+                "population": 3979576
+            }
+        },
+        {
+            "_rid": "S9w7AIGecFsPAAAAAAAAAA==",
+            "orderByItems": [
+                {
+                    "item": 3645000
+                }
+            ],
+            "payload": {
+                "name": "Berlin",
+                "population": 3645000
+            }
+        },
+        {
+            "_rid": "S9w7AIGecFsDAAAAAAAAAA==",
+            "orderByItems": [
+                {
+                    "item": 3400800
+                }
+            ],
+            "payload": {
+                "name": "Dubai",
+                "population": 3400800
+            }
+        },
+        {
+            "_rid": "S9w7AIGecFsOAAAAAAAAAA==",
+            "orderByItems": [
+                {
+                    "item": 2753000
+                }
+            ],
+            "payload": {
+                "name": "Osaka",
+                "population": 2753000
+            }
+        },
+        {
+            "_rid": "S9w7AIGecFsKAAAAAAAAAA==",
+            "orderByItems": [
+                {
+                    "item": 2693976
+                }
+            ],
+            "payload": {
+                "name": "Chicago",
+                "population": 2693976
+            }
+        },
+        {
+            "_rid": "S9w7AIGecFsFAAAAAAAAAA==",
+            "orderByItems": [
+                {
+                    "item": 1274749
+                }
+            ],
+            "payload": {
+                "name": "Sharjah",
+                "population": 1274749
+            }
+        },
+        {
+            "_rid": "S9w7AIGecFsMAAAAAAAAAA==",
+            "orderByItems": [
+                {
+                    "item": 553230
+                }
+            ],
+            "payload": {
+                "name": "Manchester",
+                "population": 553230
+            }
+        },
+        {
+            "_rid": "S9w7AIGecFsHAAAAAAAAAA==",
+            "orderByItems": [
+                {
+                    "item": 62000
+                }
+            ],
+            "payload": {
+                "name": "Umm Al Qaywayn",
+                "population": 62000
+            }
+        },
+        {
+            "_rid": "S9w7AIGecFsGAAAAAAAAAA==",
+            "orderByItems": [
+                {
+                    "item": 22256
+                }
+            ],
+            "payload": {
+                "name": "Andorra la Vella",
+                "population": 22256
+            }
+        },
+        {
+            "_rid": "S9w7AIGecFsEAAAAAAAAAA==",
+            "orderByItems": [
+                {
+                    "item": 15000
+                }
+            ],
+            "payload": {
+                "name": "Ar Ruways",
+                "population": 15000
+            }
+        }
+    ],
+    "_count": 18
+}

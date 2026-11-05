@@ -3,7 +3,7 @@ import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { describe, expect, test, vi } from "vitest";
-import { MarkdownEditor } from "./MarkdownEditor";
+import { MarkdownEditor, markdownSummary } from "./MarkdownEditor";
 
 // Vitest stubs CSS imports; load the actual stylesheet from the frontend test root.
 const markdownStyles = readFileSync("src/assets/css/github-markdown-style.css", "utf8");
@@ -270,4 +270,19 @@ test("focuses the input when autofocus is requested", () => {
     unmount();
     container.remove();
   }
+});
+
+describe("markdownSummary", () => {
+  test("reads the first line as plain text", () => {
+    expect(markdownSummary("Table `t` already exists.\n\nThe body.")).toBe(
+      "Table t already exists."
+    );
+    expect(
+      markdownSummary(
+        "**Bold**, \\_escaped\\_, [a link](https://example.com), &amp;"
+      )
+    ).toBe("Bold, _escaped_, a link, &");
+    expect(markdownSummary("## A heading\nbody")).toBe("A heading");
+    expect(markdownSummary("<b>raw</b> HTML")).toBe("<b>raw</b> HTML");
+  });
 });

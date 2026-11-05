@@ -77,6 +77,8 @@
       "issue-security": "このイシューにセキュリティ上の懸念はありますか？",
       "issue-summary": "このイシューと現在の状態を要約して",
       "plan-changes": "このプランではどのようなデータベース変更を提案していますか？",
+      "plan-create-heading": "データベース変更 Plan を作成する",
+      "plan-create-sql": "この Plan のデータベース変更 SQL の作成を手伝ってください。",
       "plan-heading": "このプランについて質問する",
       "plan-risks": "このプランにレビューやデプロイ上のリスクはありますか？",
       "plan-status": "現在のレビューとロールアウトの状態は？",
@@ -117,6 +119,9 @@
     "input-processing-placeholder": "処理中...",
     "interrupted": "中断",
     "interrupted-retry-hint": "会話が中断されました。再試行するか、新しいメッセージを送信できます。",
+    "issue-assistance": {
+      "review": "Agent とレビュー"
+    },
     "issue-comment-draft": {
       "existing": "This issue already has an unsent comment. Review it before opening another draft.",
       "open": "Draft review comment",
@@ -158,9 +163,19 @@
       "issue-approval-rollout": "これは最終承認です。必要なチェックとレビューを通過するとロールアウトが作成される場合がありますが、タスクの実行は保証されません。",
       "issue-rejection": "このイシューを却下すると、現在の承認フローは停止します。承認を再開するには却下理由への対応が必要です。"
     },
+    "plan-assistance": {
+      "ask-draft-sql": "Agent に SQL の作成を依頼",
+      "review": "Agent とレビュー"
+    },
     "plan-draft": {
+      "append-sql": "SQL を追加",
+      "apply-to-current-plan": "この Plan に適用",
+      "current-plan-unavailable": "現在の Plan に SQL を適用できませんでした。対象データベースを確認して、もう一度お試しください。",
       "default-title": "提案されたデータベース変更",
+      "existing-sql-description": "生成した SQL を既存の下書きに追加するか、置き換えるかを選択してください。",
+      "existing-sql-title": "この Plan には SQL が既にあります",
       "open": "プランの下書きを開く",
+      "replace-sql": "SQL を置き換え",
       "unavailable": "プランの下書きを開けませんでした。データベースまたは SQL が変更された可能性があります。エージェントに再生成を依頼してください。"
     },
     "plan-reference-unavailable": "このプランは利用できないか、アクセス権がありません。",
@@ -1122,8 +1137,8 @@
     "progress": {
       "databases": "{{total}} 件中 {{done}} 件のデータベースをエクスポートしました",
       "download": "エクスポートしています…",
-      "elapsed": "経過時間",
-      "sharepoint": "SharePoint にエクスポートしています…"
+      "sharepoint": "SharePoint にエクスポートしています…",
+      "sharepoint-slow": "結果が大きい場合や SharePoint が混雑している場合は、数分かかることがあります。Bytebase は自動的に再試行します。"
     },
     "sharepoint": {
       "canceled-description": "このデータベースのエクスポート中にエクスポートがキャンセルされました。SharePoint にファイルが存在する可能性があります。",
@@ -1950,12 +1965,6 @@
       "report": "ステートメントレポート",
       "rerun": "再実行",
       "rerun-all": "すべて再実行",
-      "rerun-all-description_one": "プランチェックと Standard rules を再実行します。Standard rules の解決済みの検出事項 {{count}} 件が未解決に戻ります。",
-      "rerun-all-description_other": "プランチェックと Standard rules を再実行します。Standard rules の解決済みの検出事項 {{count}} 件が未解決に戻ります。",
-      "rerun-all-title": "すべて再実行しますか？",
-      "rerun-reopens_one": "解決済みの検出事項 {{count}} 件が未解決に戻り、再度対応が必要になります。",
-      "rerun-reopens_other": "解決済みの検出事項 {{count}} 件が未解決に戻り、再度対応が必要になります。",
-      "rerun-rule-title": "Standard rules を再実行しますか？",
       "retry": "再試行",
       "running": "実行中",
       "sampled": "{{total}} 個中 {{count}} 個のデータベースを抽出",
@@ -2108,6 +2117,13 @@
         "n-findings_other": "検出事項 {{count}} 件",
         "n-hidden-events_one": "{{count}} 件の非表示イベント",
         "n-hidden-events_other": "{{count}} 件の非表示イベント",
+        "n-new_one": "新規 {{count}} 件",
+        "n-new_other": "新規 {{count}} 件",
+        "n-no-longer-found_one": "解消 {{count}} 件",
+        "n-no-longer-found_other": "解消 {{count}} 件",
+        "n-still-found_one": "継続 {{count}} 件",
+        "n-still-found_other": "継続 {{count}} 件",
+        "no-findings": "検出事項なし",
         "reviewed-the-sql": "が SQL をレビューしました",
         "self": "アクティビティ",
         "show-all": "すべて表示"
@@ -2188,9 +2204,7 @@
         "n-replies-hidden_other": "{{count}} 件の返信が非表示",
         "n-replies_one": "{{count}} 件の返信",
         "n-replies_other": "{{count}} 件の返信",
-        "open": "未解決",
         "priority": {
-          "p0": "SQL に誤りがあり、修正が必要です。",
           "p1": "危険ですが正当な変更です。担当者による承認が必要です。",
           "p2": "参考情報です。"
         },
@@ -2202,7 +2216,6 @@
         "resolve": "解決",
         "resolve-thread": "スレッドを解決",
         "resolved": "解決済み",
-        "rule": "ルール",
         "threads-on-line_one": "この行に {{count}} 件のスレッド",
         "threads-on-line_other": "この行に {{count}} 件のスレッド",
         "walker": {
@@ -2921,8 +2934,8 @@
           "self": "管理データソースのクエリを許可する"
         },
         "allow-download": {
-          "description": "オフにすると、エクスポートはプロジェクトに設定されたストレージ先（SharePoint など）にのみ送信できます。承認済みのエクスポートアクセス許可があってもダウンロードはできません。",
-          "self": "ダウンロードを許可する"
+          "description": "クエリ結果をエクスポートするときに、エクスポート先として「ダウンロード」を選択できます。オフにすると、承認済みのエクスポートアクセス許可があっても、エクスポートはプロジェクトのストレージ先（SharePoint など）にのみ送信されます。",
+          "self": "エクスポートのダウンロードを許可する"
         },
         "allow-email-code-signin": {
           "description": "ユーザーはメールアドレスに送信された6桁のコードを入力してサインインまたはサインアップできます。",
@@ -3135,7 +3148,7 @@
         "disabled": "何も許可されません。MCP セッションは接続できません。",
         "floor": {
           "label": "どのモードでも決してできないこと：",
-          "text": "ワークスペースの管理、認証情報の取り扱い、Admin モードのセッションの開始、他人のクエリ履歴の閲覧。"
+          "text": "このポリシーの引き上げ、サービスアカウントキーの作成、ユーザーのパスワード・メールアドレス・MFA の変更、保存済みシークレットの表示、Admin モードのセッションの開始、他人のクエリ履歴の閲覧。"
         },
         "heading": "{{mode}} で許可されること",
         "hide-details": "詳細を隠す",
@@ -3144,6 +3157,10 @@
           "refused": "不許可"
         },
         "row": {
+          "approval-rules": {
+            "details": "データベース変更を誰が承認するかを決めるルールの追加・削除・並べ替え・変更 · 各変更は、実行される前にユーザーの MCP クライアントで確認されます · フォールバックルールと、ほかの種類の Issue のルールは変更されません",
+            "title": "データベース変更の承認ルールの管理"
+          },
           "approve": {
             "details": "各判断は、実行される前にユーザーの MCP クライアントで確認されます · ロール申請はコンソールで承認・却下します · 承認ルールとプロジェクトの自己承認設定は、コンソールと同じように適用されます",
             "title": "Issue の承認・却下"

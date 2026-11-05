@@ -903,6 +903,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.IssueComment.ReviewRunCompletion"><span class="badge">M</span>IssueComment.ReviewRunCompletion</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.IssueComment.ReviewSubmission"><span class="badge">M</span>IssueComment.ReviewSubmission</a>
                 </li>
               
@@ -3469,7 +3473,11 @@ gets delivered.</p></td>
 call — the MCP switch itself, the sign-in and SSO settings, the mail
 relay that carries credential resets, and the AI endpoint the stored API
 key is sent to. A session that can widen its own ceiling is not bounded
-by it.</p></td>
+by it.
+
+No method carries it. UpdateSetting, which writes all of these, is WRITE,
+and the gate serves it only for a setting the user confirmed, which the
+MCP server offers for the approval rules alone.</p></td>
               </tr>
             
               <tr>
@@ -11073,8 +11081,10 @@ Adding a reply does not reopen a resolved thread. </p></td>
                   <td><a href="#bytebase.v1.StatementAnchor">StatementAnchor</a></td>
                   <td></td>
                   <td><p>Optional source context on a root or reply. A reply&#39;s anchor must share
-the root&#39;s spec and sheet_sha256; it may narrow the range.
-Cannot be set on events. Immutable after creation. </p></td>
+the root&#39;s spec and sheet_sha256 when created; it may narrow the range.
+Cannot be set on events. Immutable after creation, except that a later
+review run reporting a review result again moves the result to its
+statement in the SQL that run reviewed. </p></td>
                 </tr>
               
                 <tr>
@@ -11111,6 +11121,13 @@ Never accepted on create or update. </p></td>
                   <td><a href="#bytebase.v1.IssueComment.ReviewSubmission">IssueComment.ReviewSubmission</a></td>
                   <td></td>
                   <td><p>Review submission event. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>review_run_completion</td>
+                  <td><a href="#bytebase.v1.IssueComment.ReviewRunCompletion">IssueComment.ReviewRunCompletion</a></td>
+                  <td></td>
+                  <td><p>Review run completion event. </p></td>
                 </tr>
               
             </tbody>
@@ -11291,8 +11308,78 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td>superseded</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>A later run of the same reviewer has completed, so the result is not
-from the latest review, whatever its thread state. </p></td>
+                  <td><p>A later run of the same reviewer has completed without reporting the
+result again, whatever its thread state. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>attempt</td>
+                  <td><a href="#int64">int64</a></td>
+                  <td></td>
+                  <td><p>The ReviewRunCompletion.attempt of the run that posted the result. A
+result a later run reports again keeps its thread and its attempt. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>codes</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The conditions a RULE result reports, as finding codes such as
+&#34;WT101&#34;, one per reason. A code names the same condition on every
+engine. Empty for other reviewers. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.IssueComment.ReviewRunCompletion">IssueComment.ReviewRunCompletion</h3>
+        <p>A review run completed, and what it did to the results of its reviewer.</p><p>Posted by the reviewer, with no creator.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>run_type</td>
+                  <td><a href="#bytebase.v1.ReviewRun.Type">ReviewRun.Type</a></td>
+                  <td></td>
+                  <td><p>The reviewer that ran. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>attempt</td>
+                  <td><a href="#int64">int64</a></td>
+                  <td></td>
+                  <td><p>Identifies the run among its reviewer&#39;s runs on the issue. The results
+it posted carry the same ReviewMetadata.attempt. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>posted_count</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>Results the run posted as new threads. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>kept_count</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>Earlier results the run reported again, which kept their threads. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>superseded_count</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>Earlier results the run no longer reports, now superseded. </p></td>
                 </tr>
               
             </tbody>
@@ -29058,14 +29145,15 @@ configured storage destination such as SharePoint. </p></td>
                   <td>automatic</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>Whether rollout is automatic without manual approval. </p></td>
+                  <td><p>Whether the environment&#39;s rollout tasks start on their own, with no one running them. </p></td>
                 </tr>
               
                 <tr>
                   <td>roles</td>
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
-                  <td><p>The roles that can approve rollout execution. </p></td>
+                  <td><p>Who can run, skip or cancel the environment&#39;s rollout tasks; WORKSPACE_APPROVAL sets approvers.
+Anyone with bb.taskRuns.create can too. </p></td>
                 </tr>
               
             </tbody>

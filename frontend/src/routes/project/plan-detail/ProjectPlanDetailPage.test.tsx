@@ -20,6 +20,7 @@ const mocks = vi.hoisted(() => ({
   },
   branchMountCount: { value: 0 },
   routerPush: vi.fn(),
+  routerReplace: vi.fn(),
   selectedSpecRender: vi.fn(),
   usePlanDetailPage: vi.fn(),
 }));
@@ -34,6 +35,7 @@ vi.mock("react-i18next", () => ({
 vi.mock("@/app/router", () => ({
   router: {
     push: mocks.routerPush,
+    replace: mocks.routerReplace,
   },
 }));
 
@@ -331,6 +333,107 @@ describe("ProjectPlanDetailPage", () => {
       mocks.selectedSpecRender.mock.calls.every(([id]) => id === "spec-1")
     ).toBe(true);
     expect(selectedSpecIdText()).toBe("spec-1");
+  });
+
+  it("keeps Plan-create Changes mounted while the phase is collapsed", async () => {
+    const page = buildPage();
+    mocks.usePlanDetailPage.mockReturnValue(page);
+
+    await act(async () => {
+      root.render(
+        <ProjectPlanDetailPage
+          planId="create"
+          projectId="foo"
+          routeQuery={{}}
+        />
+      );
+      await Promise.resolve();
+    });
+
+    expect(changesMountIdText()).toBe("1");
+
+    page.activePhases = new Set();
+    await act(async () => {
+      root.render(
+        <ProjectPlanDetailPage
+          planId="create"
+          projectId="foo"
+          routeQuery={{}}
+        />
+      );
+    });
+
+    const changesContent = container.querySelector(
+      '[data-testid="changes-mount-id"]'
+    );
+    expect(changesMountIdText()).toBe("1");
+    expect(changesContent?.closest("[hidden]")).not.toBeNull();
+  });
+
+  it("keeps the current Plan-create target in the route context", async () => {
+    const page = buildPage();
+    page.isEditing = true;
+    const spec = {
+      id: "spec-1",
+      config: {
+        case: "changeDatabaseConfig",
+        value: { targets: ["instances/i1/databases/db-a"] },
+      },
+    };
+    page.plan.specs = [spec] as unknown as PlanDetailPageState["plan"]["specs"];
+    mocks.usePlanDetailPage.mockReturnValue(page);
+
+    await act(async () => {
+      root.render(
+        <ProjectPlanDetailPage
+          planId="create"
+          projectId="foo"
+          routeQuery={{
+            databaseList: "instances/i1/databases/db-a",
+            sqlStorageKey: "keep-this-query",
+          }}
+        />
+      );
+    });
+    expect(mocks.routerReplace).not.toHaveBeenCalled();
+    expect(page.bypassLeaveGuardOnce).not.toHaveBeenCalled();
+
+    page.plan.specs = [
+      {
+        ...spec,
+        config: {
+          ...spec.config,
+          value: { targets: ["instances/i1/databases/db-b"] },
+        },
+      },
+    ] as unknown as PlanDetailPageState["plan"]["specs"];
+    await act(async () => {
+      root.render(
+        <ProjectPlanDetailPage
+          planId="create"
+          projectId="foo"
+          routeQuery={{
+            databaseList: "instances/i1/databases/db-a",
+            sqlStorageKey: "keep-this-query",
+          }}
+        />
+      );
+    });
+
+    expect(mocks.routerReplace).toHaveBeenCalledWith(
+      {
+        query: {
+          agentDatabaseName: "instances/i1/databases/db-b",
+          databaseList: "instances/i1/databases/db-a",
+          sqlStorageKey: "keep-this-query",
+        },
+      },
+      { preventScrollReset: true }
+    );
+    expect(page.bypassLeaveGuardOnce).toHaveBeenCalledOnce();
+    expect(
+      vi.mocked(page.bypassLeaveGuardOnce).mock.invocationCallOrder[0]
+    ).toBeLessThan(mocks.routerReplace.mock.invocationCallOrder[0]);
   });
 
   it("renders a route-selected spec without an intermediate stale spec", async () => {

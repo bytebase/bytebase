@@ -48,6 +48,7 @@ func TestConvertToIssueCommentReviewResult(t *testing.T) {
 				Priority:   storepb.IssueCommentPayload_ReviewMetadata_P1,
 				Targets:    []string{"instances/i/databases/a", "instances/i/databases/b"},
 				Superseded: true,
+				Codes:      []string{"WH101"},
 			},
 		},
 	})
@@ -58,6 +59,7 @@ func TestConvertToIssueCommentReviewResult(t *testing.T) {
 		Priority:   v1pb.IssueComment_ReviewMetadata_P1,
 		Targets:    []string{"instances/i/databases/a", "instances/i/databases/b"},
 		Superseded: true,
+		Codes:      []string{"WH101"},
 	}, got.ReviewMetadata)
 
 	person := convertToIssueComment("projects/p/issues/101", &store.IssueCommentMessage{

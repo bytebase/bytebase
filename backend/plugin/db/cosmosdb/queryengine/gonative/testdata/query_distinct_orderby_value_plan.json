@@ -1,0 +1,32 @@
+{
+    "partitionedQueryExecutionInfoVersion": 2,
+    "queryInfo": {
+        "distinctType": "Ordered",
+        "top": null,
+        "offset": null,
+        "limit": null,
+        "orderBy": [
+            "Ascending"
+        ],
+        "orderByExpressions": [
+            "c.bucket"
+        ],
+        "groupByExpressions": [],
+        "groupByAliases": [],
+        "aggregates": [],
+        "groupByAliasToAggregateType": {},
+        "rewrittenQuery": "SELECT c._rid, [{\"item\": c.bucket}] AS orderByItems, c.bucket AS payload\nFROM c\nWHERE (({documentdb-formattableorderbyquery-filter}) AND IS_DEFINED(c.bucket))\nORDER BY c.bucket",
+        "hasSelectValue": true,
+        "dCountInfo": null,
+        "hasNonStreamingOrderBy": false
+    },
+    "queryRanges": [
+        {
+            "min": "",
+            "max": "FF",
+            "isMinInclusive": true,
+            "isMaxInclusive": false
+        }
+    ],
+    "hybridSearchQueryInfo": null
+}

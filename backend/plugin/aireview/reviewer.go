@@ -68,19 +68,28 @@ type Result struct {
 	TotalTokens int
 }
 
-// Reviewer runs reviews against one model.
+// Reviewer runs reviews, merges their findings, and summarizes the merged
+// problems, against one model.
 type Reviewer struct {
-	model         Model
-	maxModelCalls int
-	timeout       time.Duration
+	model              Model
+	maxModelCalls      int
+	timeout            time.Duration
+	mergePromptBytes   int
+	summaryPromptBytes int
+	// databaseIDs returns the ids that stand for the databases of a summary.
+	// Tests replace it so that a scripted reply can name them.
+	databaseIDs func(count int, text string) []string
 }
 
 // NewReviewer creates a Reviewer.
 func NewReviewer(model Model) *Reviewer {
 	return &Reviewer{
-		model:         model,
-		maxModelCalls: defaultMaxModelCalls,
-		timeout:       defaultTimeout,
+		model:              model,
+		maxModelCalls:      defaultMaxModelCalls,
+		timeout:            defaultTimeout,
+		mergePromptBytes:   defaultMergePromptBytes,
+		summaryPromptBytes: defaultSummaryPromptBytes,
+		databaseIDs:        newDatabaseIDs,
 	}
 }
 
@@ -222,6 +231,54 @@ func (r *Reviewer) contextError(parent context.Context, ctx context.Context, cal
 		return errors.Wrapf(ErrDeadline, "%s, %d model calls", r.timeout, calls)
 	}
 	return nil
+}
+
+// replyWithoutTools calls the model, which has no tools, until accept finds no
+// problem in its reply, and asks for a correction with correct up to
+// maxInvalidReplies times. It adds its calls and tokens to calls and tokens.
+func (r *Reviewer) replyWithoutTools(parent context.Context, ctx context.Context, messages []*v1pb.AIChatMessage, calls, tokens *int, accept func(string) []string, correct func([]string) string) error {
+	for invalidReplies := 0; ; invalidReplies++ {
+		if err := r.contextError(parent, ctx, *calls); err != nil {
+			return err
+		}
+		*calls++
+		response, err := r.model.Chat(ctx, &v1pb.AIChatRequest{Messages: messages})
+		if err != nil {
+			if ctxErr := r.contextError(parent, ctx, *calls); ctxErr != nil {
+				return ctxErr
+			}
+			return errors.Wrapf(err, "model call %d failed", *calls)
+		}
+		*tokens += int(response.GetUsage().GetTotalTokens())
+		switch response.GetStopReason() {
+		case v1pb.AIChatResponse_TURN_COMPLETED, v1pb.AIChatResponse_STOP_REASON_UNSPECIFIED:
+		case v1pb.AIChatResponse_TOKEN_LIMIT:
+			return ErrTruncatedReply
+		case v1pb.AIChatResponse_BLOCKED:
+			return ErrBlockedReply
+		default:
+			return ErrUnfinishedReply
+		}
+		content := response.GetContent()
+		if len(response.GetToolCalls()) > 0 {
+			return errors.Wrap(ErrInvalidReply, "the model called a tool, and none is offered")
+		}
+		if strings.TrimSpace(content) == "" {
+			return ErrEmptyReply
+		}
+
+		problems := accept(content)
+		if len(problems) == 0 {
+			return nil
+		}
+		if invalidReplies >= maxInvalidReplies {
+			return errors.Wrap(ErrInvalidReply, strings.Join(problems, "; "))
+		}
+		messages = append(messages,
+			textMessage(v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_ASSISTANT, content),
+			textMessage(v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_USER, correct(problems)),
+		)
+	}
 }
 
 func callTool(ctx context.Context, tools Tools, toolNames []string, call *v1pb.AIChatToolCall) (string, error) {

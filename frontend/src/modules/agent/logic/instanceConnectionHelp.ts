@@ -2,6 +2,7 @@ import { router } from "@/app/router";
 import { useAppStore } from "@/stores/app";
 import { useAgentStore } from "../store/agent";
 import { getCurrentChatContext } from "./chatContext";
+import type { AgentResourceReference } from "./types";
 
 export type InstanceConnectionFailureCategory =
   | "auth_failed"
@@ -80,7 +81,10 @@ export function buildInstanceConnectionHelpPrompt(options: {
   ].join("\n");
 }
 
-export function openAgentWithPrompt(text: string): void {
+export function openAgentWithPrompt(
+  text: string,
+  resourceReferences?: AgentResourceReference[]
+): void {
   const app = useAppStore.getState();
   const workspaceName =
     app.workspace?.name ||
@@ -101,6 +105,7 @@ export function openAgentWithPrompt(text: string): void {
     text,
     page,
     runMode: "read-only",
+    ...(resourceReferences?.length ? { resourceReferences } : {}),
   });
   store.open();
 }

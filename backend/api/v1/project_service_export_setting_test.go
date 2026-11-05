@@ -137,7 +137,7 @@ func TestUpdateProjectExportSetting(t *testing.T) {
 		return project.Setting.GetExportSetting()
 	}
 
-	licensed := newService(newEnterpriseLicenseService(ctx, t, stores, "default"))
+	licensed := newService(newEnterpriseLicenseService(ctx, t, stores))
 	_, err = update(licensed, withURL(rawURL))
 	require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err), "the workspace has no SharePoint credentials")
 	require.Empty(t, client.resolved)

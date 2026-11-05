@@ -8,37 +8,33 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
-import { ReviewRun_Type } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import {
-  ReviewPriorityBadge,
-  ReviewRule,
-  ReviewTargets,
-  useCommentAuthor,
-} from "./ReviewResult";
+import { ReviewHeading, ReviewTargets, useCommentAuthor } from "./ReviewResult";
 
 // Roots and replies share one layout: author identity in the header, with
 // the body aligned to the comment region rather than indented below the name.
+// A review result follows the header with its targets, then its priority and
+// rule, then its text.
 export function ThreadComment({
   actions,
   className,
   comment,
+  label,
   onEdit,
   project,
   spec,
-  status,
 }: {
   // Header actions after the edit button (thread collapse or close).
   actions?: ReactNode;
   className?: string;
   comment: IssueComment;
+  // Extra header text after the timestamp (the anchored line range).
+  label?: ReactNode;
   onEdit: (issueCommentName: string, comment: string) => Promise<unknown>;
   project: Project | undefined;
   // The plan spec the thread sits on, when the owner knows it.
   spec?: Plan_Spec;
-  // Thread status shown after the timestamp (resolved).
-  status?: ReactNode;
 }) {
   const { t } = useTranslation();
   const author = useCommentAuthor(comment);
@@ -92,7 +88,6 @@ export function ThreadComment({
                 {author.name}
               </span>
             </div>
-            {review && <ReviewPriorityBadge priority={review.priority} />}
             <HumanizeTs
               className="hidden shrink-0 whitespace-nowrap text-xs text-control-light @2xs/comment:inline"
               tsMs={createdTs}
@@ -102,7 +97,7 @@ export function ThreadComment({
                 ({t("common.edited")})
               </span>
             )}
-            {status}
+            {label}
           </div>
           <div className="flex shrink-0 items-center gap-x-1">
             {allowEdit && !isEditing && (
@@ -122,14 +117,17 @@ export function ThreadComment({
           </div>
         </div>
         {review && (
-          <ReviewTargets
-            spec={
-              spec && comment.statementAnchor?.spec === spec.id
-                ? spec
-                : undefined
-            }
-            targets={review.targets}
-          />
+          <>
+            <ReviewTargets
+              spec={
+                spec && comment.statementAnchor?.spec === spec.id
+                  ? spec
+                  : undefined
+              }
+              targets={review.targets}
+            />
+            <ReviewHeading review={review} />
+          </>
         )}
         {isEditing ? (
           <div className="flex flex-col gap-y-2">
@@ -171,9 +169,6 @@ export function ThreadComment({
               />
             </div>
           )
-        )}
-        {review?.runType === ReviewRun_Type.RULE && (
-          <ReviewRule ruleType={review.ruleType} />
         )}
       </div>
     </div>

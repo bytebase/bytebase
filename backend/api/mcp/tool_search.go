@@ -175,7 +175,12 @@ func formatRefusals(endpoints []*EndpointInfo) string {
 // endpointNote is what an agent must know about an endpoint that MCP serves
 // only in part.
 func endpointNote(ep *EndpointInfo) string {
-	if ep.Path != v1connect.SettingServiceGetSettingProcedure {
+	switch ep.Path {
+	case v1connect.SettingServiceUpdateSettingProcedure:
+		return "MCP sessions change only the approval rules for database changes, through the administer_workspace tool, " +
+			"which asks the user to confirm first. call_api is refused for every setting."
+	case v1connect.SettingServiceGetSettingProcedure:
+	default:
 		return ""
 	}
 	// Masking adds the built-in types to the saved ones

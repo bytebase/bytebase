@@ -1,0 +1,30 @@
+{
+    "partitionedQueryExecutionInfoVersion": 2,
+    "queryInfo": {
+        "distinctType": "None",
+        "top": null,
+        "offset": null,
+        "limit": null,
+        "orderBy": [],
+        "orderByExpressions": [],
+        "groupByExpressions": [],
+        "groupByAliases": [],
+        "aggregates": [
+            "Count"
+        ],
+        "groupByAliasToAggregateType": {},
+        "rewrittenQuery": "SELECT VALUE [{\"item\": COUNT(1)}]\nFROM c",
+        "hasSelectValue": true,
+        "dCountInfo": null,
+        "hasNonStreamingOrderBy": false
+    },
+    "queryRanges": [
+        {
+            "min": "",
+            "max": "FF",
+            "isMinInclusive": true,
+            "isMaxInclusive": false
+        }
+    ],
+    "hybridSearchQueryInfo": null
+}

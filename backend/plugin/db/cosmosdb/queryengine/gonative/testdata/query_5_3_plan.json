@@ -1,0 +1,32 @@
+{
+    "partitionedQueryExecutionInfoVersion": 2,
+    "queryInfo": {
+        "distinctType": "None",
+        "top": null,
+        "offset": null,
+        "limit": null,
+        "orderBy": [],
+        "orderByExpressions": [],
+        "groupByExpressions": [],
+        "groupByAliases": [
+            "totalPop"
+        ],
+        "aggregates": [],
+        "groupByAliasToAggregateType": {
+            "totalPop": "Sum"
+        },
+        "rewrittenQuery": "SELECT {\"totalPop\": {\"item\": SUM(StringToNumber(c.population))}} AS payload\nFROM c",
+        "hasSelectValue": false,
+        "dCountInfo": null,
+        "hasNonStreamingOrderBy": false
+    },
+    "queryRanges": [
+        {
+            "min": "",
+            "max": "FF",
+            "isMinInclusive": true,
+            "isMaxInclusive": false
+        }
+    ],
+    "hybridSearchQueryInfo": null
+}

@@ -815,7 +815,7 @@ test.describe("Canceling a running export", () => {
   test("Cancel aborts the Export request quietly and query history records the export as canceled", async () => {
     await sqlEditor.gotoWithDb(projectId, env.instanceId, env.databaseId);
     // The export reruns the statement, so pg_sleep keeps it running long
-    // enough to watch the timer and cancel.
+    // enough to cancel.
     const marker = `export-cancel-${Date.now()}`;
     await sqlEditor.runPreparedQuery(`SELECT pg_sleep(4), '${marker}' AS marker;`);
 
@@ -826,9 +826,6 @@ test.describe("Canceling a running export", () => {
     });
     await drawer.getByRole("button", { name: "Confirm", exact: true }).click();
     await expect(drawer.getByRole("progressbar")).toBeVisible();
-    await expect(
-      drawer.getByRole("timer", { name: "Elapsed time" }),
-    ).toHaveText("0:01", { timeout: 3000 });
 
     await drawer.getByRole("button", { name: "Cancel", exact: true }).click();
     await abortedExport;

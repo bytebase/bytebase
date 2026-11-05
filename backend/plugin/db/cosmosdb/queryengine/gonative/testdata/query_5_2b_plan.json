@@ -1,0 +1,30 @@
+{
+    "partitionedQueryExecutionInfoVersion": 2,
+    "queryInfo": {
+        "distinctType": "None",
+        "top": null,
+        "offset": null,
+        "limit": null,
+        "orderBy": [],
+        "orderByExpressions": [],
+        "groupByExpressions": [],
+        "groupByAliases": [],
+        "aggregates": [
+            "Count"
+        ],
+        "groupByAliasToAggregateType": {},
+        "rewrittenQuery": "SELECT VALUE [{\"item\": COUNT(1)}]\nFROM c\nWHERE (c.country = \"AE\")",
+        "hasSelectValue": true,
+        "dCountInfo": null,
+        "hasNonStreamingOrderBy": false
+    },
+    "queryRanges": [
+        {
+            "min": "05C1E327DDF5CC08424600",
+            "max": "05C1E327DDF5CC08424600",
+            "isMinInclusive": true,
+            "isMaxInclusive": true
+        }
+    ],
+    "hybridSearchQueryInfo": null
+}

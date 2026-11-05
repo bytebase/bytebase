@@ -45,6 +45,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Tooltip } from "@/components/ui/tooltip";
+import { useElapsedSeconds } from "@/hooks/useElapsed";
 import { writeTextToClipboard } from "@/lib/clipboard";
 import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
@@ -123,6 +124,10 @@ const ROW_COUNT_PRESET = [1, 100, 500, 1000, 5000, 10000, 100000];
 const GENERATED_PASSWORD_LENGTH = 8;
 const GENERATED_PASSWORD_CHARSET =
   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+// A SharePoint export can wait minutes on server-side retries with no visible
+// change, so its progress shows the elapsed time and explains a long wait.
+const SLOW_HINT_AFTER_SECONDS = 60;
 
 const generateRandomPassword = (length = GENERATED_PASSWORD_LENGTH) => {
   const values = new Uint32Array(length);
@@ -205,34 +210,6 @@ const downloadAll = async (
   await downloadZip(contents, format);
 };
 
-const formatElapsed = (milliseconds: number) => {
-  const total = Math.max(0, Math.floor(milliseconds / 1000));
-  const hours = Math.floor(total / 3600);
-  const minutes = Math.floor((total % 3600) / 60);
-  const seconds = String(total % 60).padStart(2, "0");
-  return hours > 0
-    ? `${hours}:${String(minutes).padStart(2, "0")}:${seconds}`
-    : `${minutes}:${seconds}`;
-};
-
-function ElapsedTime({ since }: { since: number }) {
-  const { t } = useTranslation();
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(timer);
-  }, []);
-  return (
-    <span
-      role="timer"
-      aria-label={t("export-data.progress.elapsed")}
-      className="shrink-0 text-xs tabular-nums text-control-light"
-    >
-      {formatElapsed(now - since)}
-    </span>
-  );
-}
-
 /**
  * - DRAWER view: opens a Sheet with row-count / format / optional password
  *   fields, plus a `formContent` slot for caller-provided fields (e.g. the
@@ -262,8 +239,9 @@ export function DataExportButton({
   const [showDrawer, setShowDrawer] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number }>();
-  const [startedAt, setStartedAt] = useState<number>();
   const exportAbortRef = useRef<AbortController | undefined>(undefined);
+  const [sharePointStartedAt, setSharePointStartedAt] = useState<number>();
+  const sharePointElapsed = useElapsedSeconds(sharePointStartedAt);
   const [sharePointResults, setSharePointResults] = useState<
     SharePointExportResult[]
   >([]);
@@ -340,8 +318,12 @@ export function DataExportButton({
     exportAbortRef.current = controller;
     setIsRequesting(true);
     setProgress(undefined);
-    setStartedAt(Date.now());
     const options: ExportOption = { ...currentOption };
+    setSharePointStartedAt(
+      options.destination === ExportDestination.SHAREPOINT
+        ? Date.now()
+        : undefined
+    );
 
     new Promise<ExportOutcome>((resolve, reject) => {
       onExport({
@@ -381,7 +363,7 @@ export function DataExportButton({
         }
         setIsRequesting(false);
         setProgress(undefined);
-        setStartedAt(undefined);
+        setSharePointStartedAt(undefined);
         setShowDrawer(false);
         setShowPasswordDialog(false);
       });
@@ -648,7 +630,7 @@ export function DataExportButton({
             </SheetBody>
             <SheetFooter>
               {isRequesting && (
-                <div className="flex min-w-0 flex-1 items-end gap-x-2">
+                <div className="flex min-w-0 flex-1 flex-col gap-y-1.5">
                   <Progress
                     className="max-w-80"
                     value={
@@ -656,14 +638,29 @@ export function DataExportButton({
                     }
                     max={progress?.total}
                     label={
-                      progress && progress.total > 1
-                        ? t("export-data.progress.databases", progress)
-                        : isDownload
-                          ? t("export-data.progress.download")
-                          : t("export-data.progress.sharepoint")
+                      <>
+                        {progress && progress.total > 1
+                          ? t("export-data.progress.databases", progress)
+                          : isDownload
+                            ? t("export-data.progress.download")
+                            : t("export-data.progress.sharepoint")}
+                        {sharePointElapsed !== undefined && (
+                          <>
+                            {" "}
+                            <span className="tabular-nums">
+                              {`${sharePointElapsed}s`}
+                            </span>
+                          </>
+                        )}
+                      </>
                     }
                   />
-                  {startedAt !== undefined && <ElapsedTime since={startedAt} />}
+                  {sharePointElapsed !== undefined &&
+                    sharePointElapsed >= SLOW_HINT_AFTER_SECONDS && (
+                      <p className="max-w-80 text-xs text-control-light">
+                        {t("export-data.progress.sharepoint-slow")}
+                      </p>
+                    )}
                 </div>
               )}
               <Button

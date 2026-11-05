@@ -2,6 +2,7 @@ import { ChevronDown, MessageSquare } from "lucide-react";
 import { type ReactNode, type Ref, type SetStateAction, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { HumanizeTs } from "@/components/HumanizeTs";
+import { markdownSummary } from "@/components/MarkdownEditor";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getTimeForPbTimestampProtoEs } from "@/types";
@@ -174,7 +175,7 @@ function CollapsedThreadRow({
   const { t } = useTranslation();
   const author = useCommentAuthor(comment);
   const review = comment.reviewMetadata;
-  const firstLine = comment.comment.split("\n")[0] ?? "";
+  const firstLine = markdownSummary(comment.comment);
   return (
     <Button
       appearance="secondary"
@@ -213,7 +214,7 @@ function CollapsedThreadRow({
         className="hidden shrink-0 text-xs text-control-light @xl:inline"
         tsMs={getTimeForPbTimestampProtoEs(comment.createTime)}
       />
-      {resolved && <ThreadStateBadge resolved />}
+      {resolved && <ThreadStateBadge />}
       <ChevronDown className="size-4 shrink-0 text-control-light" />
     </Button>
   );

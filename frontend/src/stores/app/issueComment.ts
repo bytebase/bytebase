@@ -21,6 +21,7 @@ export enum IssueCommentType {
   ISSUE_UPDATE = "ISSUE_UPDATE",
   PLAN_UPDATE = "PLAN_UPDATE",
   REVIEW_SUBMISSION = "REVIEW_SUBMISSION",
+  REVIEW_RUN_COMPLETION = "REVIEW_RUN_COMPLETION",
 }
 
 export const getIssueCommentType = (
@@ -34,6 +35,8 @@ export const getIssueCommentType = (
     return IssueCommentType.PLAN_UPDATE;
   } else if (issueComment.event?.case === "reviewSubmission") {
     return IssueCommentType.REVIEW_SUBMISSION;
+  } else if (issueComment.event?.case === "reviewRunCompletion") {
+    return IssueCommentType.REVIEW_RUN_COMPLETION;
   }
   return IssueCommentType.USER_COMMENT;
 };

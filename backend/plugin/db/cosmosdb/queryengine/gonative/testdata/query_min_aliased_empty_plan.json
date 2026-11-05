@@ -1,0 +1,32 @@
+{
+    "partitionedQueryExecutionInfoVersion": 2,
+    "queryInfo": {
+        "distinctType": "None",
+        "top": null,
+        "offset": null,
+        "limit": null,
+        "orderBy": [],
+        "orderByExpressions": [],
+        "groupByExpressions": [],
+        "groupByAliases": [
+            "m"
+        ],
+        "aggregates": [],
+        "groupByAliasToAggregateType": {
+            "m": "Min"
+        },
+        "rewrittenQuery": "SELECT {\"m\": {\"item\": MIN(c.seq), \"item2\": {\"min\": MIN(c.seq), \"count\": COUNT(c.seq)}}} AS payload\nFROM c\nWHERE (c.seq > 99999999)",
+        "hasSelectValue": false,
+        "dCountInfo": null,
+        "hasNonStreamingOrderBy": false
+    },
+    "queryRanges": [
+        {
+            "min": "",
+            "max": "FF",
+            "isMinInclusive": true,
+            "isMaxInclusive": false
+        }
+    ],
+    "hybridSearchQueryInfo": null
+}

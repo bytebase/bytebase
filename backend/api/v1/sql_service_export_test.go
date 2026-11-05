@@ -376,10 +376,11 @@ func TestSharePointExportErrors(t *testing.T) {
 	}
 }
 
-// newEnterpriseLicenseService returns a license service under which
-// workspaceID holds a valid ENTERPRISE license.
-func newEnterpriseLicenseService(ctx context.Context, t *testing.T, stores *store.Store, workspaceID string) *enterprise.LicenseService {
+// newEnterpriseLicenseService returns a license service under which the
+// default workspace holds a valid ENTERPRISE license.
+func newEnterpriseLicenseService(ctx context.Context, t *testing.T, stores *store.Store) *enterprise.LicenseService {
 	t.Helper()
+	const workspaceID = "default"
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	require.NoError(t, err)
 	privateKeyPEM := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privateKey)})
@@ -465,7 +466,7 @@ func TestPrepareExportDestinationReadsPolicyWithoutLicense(t *testing.T) {
 func TestPrepareExportDestinationAllowsSharePointWithDownloadDisabled(t *testing.T) {
 	t.Parallel()
 	ctx, stores, database := newExportDestinationFixture(t, exportFixtureSharePointURL)
-	licenseService := newEnterpriseLicenseService(ctx, t, stores, "default")
+	licenseService := newEnterpriseLicenseService(ctx, t, stores)
 	client := &exportSharePointClient{location: &sharepoint.Location{DriveID: "drive", ItemID: "item"}}
 	service := &SQLService{store: stores, licenseService: licenseService, newSharePointClient: func(cfg sharepoint.Config) (sharepoint.Client, error) {
 		require.Equal(t, sharepoint.Config{TenantID: "tenant", ClientID: "client", ClientSecret: "secret"}, cfg)
@@ -487,7 +488,7 @@ func TestPrepareExportDestinationAllowsSharePointWithDownloadDisabled(t *testing
 func TestPrepareExportDestinationRefusesWithoutAnyDestination(t *testing.T) {
 	t.Parallel()
 	ctx, stores, database := newExportDestinationFixture(t, "")
-	licenseService := newEnterpriseLicenseService(ctx, t, stores, "default")
+	licenseService := newEnterpriseLicenseService(ctx, t, stores)
 	service := &SQLService{store: stores, licenseService: licenseService, newSharePointClient: func(sharepoint.Config) (sharepoint.Client, error) {
 		return nil, errors.New("no SharePoint client is expected")
 	}}

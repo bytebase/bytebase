@@ -5,6 +5,7 @@ import { describe, expect, test } from "vitest";
 import {
   IssueComment_Approval_Status,
   IssueComment_ReviewMetadataSchema,
+  IssueComment_ReviewRunCompletionSchema,
   IssueComment_ReviewSubmissionSchema,
   IssueComment_ThreadState,
   IssueCommentSchema,
@@ -106,95 +107,138 @@ describe("buildTimelineEntries", () => {
   const finding = (
     name: string,
     runType: ReviewRun_Type,
-    superseded: boolean,
-    seconds: bigint,
-    nanos = 0
+    attempt: bigint,
+    superseded = false
   ) =>
     create(IssueCommentSchema, {
       name,
       threadState: superseded
         ? IssueComment_ThreadState.RESOLVED
         : IssueComment_ThreadState.OPEN,
-      createTime: create(TimestampSchema, { seconds, nanos }),
       reviewMetadata: create(IssueComment_ReviewMetadataSchema, {
         runType,
+        attempt,
         superseded,
       }),
+    });
+  const completion = (
+    name: string,
+    runType: ReviewRun_Type,
+    attempt: bigint,
+    postedCount = 0
+  ) =>
+    create(IssueCommentSchema, {
+      name,
+      event: {
+        case: "reviewRunCompletion",
+        value: create(IssueComment_ReviewRunCompletionSchema, {
+          runType,
+          attempt,
+          postedCount,
+        }),
+      },
     });
   const rowsOf = (entries: TimelineEntry[]) =>
     entries.map((entry) =>
       entry.source.type === "review-run"
-        ? `run:${entry.source.findings.map((f) => f.name).join("+")}`
+        ? `run${entry.source.completion.attempt}:${entry.source.findings.map((f) => f.name).join("+")}`
         : entry.id
     );
 
-  test("opens each reviewer's latest run and folds a superseded one to the cards asked for", () => {
+  test("puts each run's findings under its completion, by reviewer and attempt", () => {
     const entries = buildTimelineEntries({
       comments: [
-        finding("r1", ReviewRun_Type.RULE, true, 10n, 0),
-        finding("r2", ReviewRun_Type.RULE, true, 10n, 1000),
+        completion("c-r0", ReviewRun_Type.RULE, 0n, 2),
+        finding("r1", ReviewRun_Type.RULE, 0n),
+        finding("r2", ReviewRun_Type.RULE, 0n),
+        completion("c-a0", ReviewRun_Type.AI, 0n, 1),
+        finding("a1", ReviewRun_Type.AI, 0n),
         userComment("u", "hello"),
-        finding("r3", ReviewRun_Type.RULE, false, 60n),
-        finding("a1", ReviewRun_Type.AI, false, 61n),
+        completion("c-r1", ReviewRun_Type.RULE, 1n, 1),
+        finding("r3", ReviewRun_Type.RULE, 1n),
       ],
-      keepFindingCard: (root) => root.name === "r2",
+      keepFindingCard: () => false,
     });
     expect(rowsOf(entries)).toEqual([
-      "run:r1+r2",
+      "run0:r1+r2",
+      "r1",
       "r2",
-      "u",
-      "run:r3",
-      "r3",
-      "run:a1",
+      "run0:a1",
       "a1",
+      "u",
+      "run1:r3",
+      "r3",
     ]);
   });
 
-  test("a toggle opens a superseded run and folds the latest one", () => {
+  test("a run that found nothing new still gets its line", () => {
     const entries = buildTimelineEntries({
       comments: [
-        finding("r1", ReviewRun_Type.RULE, true, 10n),
-        finding("r2", ReviewRun_Type.RULE, false, 60n),
+        completion("c-r0", ReviewRun_Type.RULE, 0n, 1),
+        finding("kept", ReviewRun_Type.RULE, 0n),
+        completion("c-r1", ReviewRun_Type.RULE, 1n),
+      ],
+      keepFindingCard: () => false,
+    });
+    expect(rowsOf(entries)).toEqual(["run0:kept", "kept", "run1:"]);
+    expect(entries.at(-1)?.pinned).toBe(false);
+  });
+
+  test("opens a run while any of its findings is current, else folds it to the cards asked for", () => {
+    const entries = buildTimelineEntries({
+      comments: [
+        completion("c-r0", ReviewRun_Type.RULE, 0n, 2),
+        finding("kept", ReviewRun_Type.RULE, 0n),
+        finding("fixed", ReviewRun_Type.RULE, 0n, true),
+        completion("c-r1", ReviewRun_Type.RULE, 1n, 2),
+        finding("gone", ReviewRun_Type.RULE, 1n, true),
+        finding("discussed", ReviewRun_Type.RULE, 1n, true),
+      ],
+      keepFindingCard: (root) => root.name === "discussed",
+    });
+    expect(
+      entries.map((entry) => [rowsOf([entry])[0], Boolean(entry.pinned)])
+    ).toEqual([
+      ["run0:kept+fixed", true],
+      ["kept", true],
+      ["fixed", true],
+      ["run1:gone+discussed", false],
+      ["discussed", false],
+    ]);
+  });
+
+  test("a toggle opens a folded run and folds an open one", () => {
+    const entries = buildTimelineEntries({
+      comments: [
+        completion("c-r0", ReviewRun_Type.RULE, 0n, 1),
+        finding("r1", ReviewRun_Type.RULE, 0n, true),
+        completion("c-r1", ReviewRun_Type.RULE, 1n, 1),
+        finding("r2", ReviewRun_Type.RULE, 1n),
       ],
       keepFindingCard: () => false,
       runToggles: new Map([
-        ["review-run:r1", true],
-        ["review-run:r2", false],
+        ["review-run:c-r0", true],
+        ["review-run:c-r1", false],
       ]),
     });
-    expect(rowsOf(entries)).toEqual(["run:r1", "r1", "run:r2"]);
+    expect(rowsOf(entries)).toEqual(["run0:r1", "r1", "run1:r2"]);
   });
 
-  test("pins an open run's line and cards, apart from a superseded run a second before", () => {
+  test("a finding whose run left no completion stays its own entry", () => {
     const entries = buildTimelineEntries({
-      comments: [
-        finding("old-1", ReviewRun_Type.RULE, true, 10n),
-        finding("old-2", ReviewRun_Type.RULE, true, 10n),
-        finding("new-1", ReviewRun_Type.RULE, false, 11n),
-        finding("new-2", ReviewRun_Type.RULE, false, 11n),
-      ],
+      comments: [finding("orphan", ReviewRun_Type.RULE, 0n)],
       keepFindingCard: () => false,
     });
-    expect(entries.map((entry) => [entry.id, Boolean(entry.pinned)])).toEqual([
-      ["review-run:old-1", false],
-      ["review-run:new-1", true],
-      ["new-1", true],
-      ["new-2", true],
-    ]);
+    expect(rowsOf(entries)).toEqual(["orphan"]);
   });
 
-  test("without the log, every finding stays its own entry", () => {
+  test("without the log, every finding stays its own entry and completions are left out", () => {
     const entries = buildTimelineEntries({
       comments: [
-        create(IssueCommentSchema, {
-          name: "r1",
-          threadState: IssueComment_ThreadState.OPEN,
-          reviewMetadata: create(IssueComment_ReviewMetadataSchema, {
-            runType: ReviewRun_Type.RULE,
-          }),
-        }),
+        completion("c-r0", ReviewRun_Type.RULE, 0n, 1),
+        finding("r1", ReviewRun_Type.RULE, 0n),
       ],
     });
-    expect(entries.map((entry) => entry.source.type)).toEqual(["comment"]);
+    expect(entries.map((entry) => entry.id)).toEqual(["r1"]);
   });
 });

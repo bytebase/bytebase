@@ -1,0 +1,32 @@
+{
+    "partitionedQueryExecutionInfoVersion": 2,
+    "queryInfo": {
+        "distinctType": "None",
+        "top": null,
+        "offset": null,
+        "limit": null,
+        "orderBy": [],
+        "orderByExpressions": [],
+        "groupByExpressions": [],
+        "groupByAliases": [
+            "avgPop"
+        ],
+        "aggregates": [],
+        "groupByAliasToAggregateType": {
+            "avgPop": "Average"
+        },
+        "rewrittenQuery": "SELECT {\"avgPop\": {\"item\": {\"sum\": SUM(StringToNumber(c.population)), \"count\": COUNT(StringToNumber(c.population))}}} AS payload\nFROM c",
+        "hasSelectValue": false,
+        "dCountInfo": null,
+        "hasNonStreamingOrderBy": false
+    },
+    "queryRanges": [
+        {
+            "min": "",
+            "max": "FF",
+            "isMinInclusive": true,
+            "isMaxInclusive": false
+        }
+    ],
+    "hybridSearchQueryInfo": null
+}

@@ -191,6 +191,7 @@
     - [IssueComment.IssueUpdate](#bytebase-v1-IssueComment-IssueUpdate)
     - [IssueComment.PlanUpdate](#bytebase-v1-IssueComment-PlanUpdate)
     - [IssueComment.ReviewMetadata](#bytebase-v1-IssueComment-ReviewMetadata)
+    - [IssueComment.ReviewRunCompletion](#bytebase-v1-IssueComment-ReviewRunCompletion)
     - [IssueComment.ReviewSubmission](#bytebase-v1-IssueComment-ReviewSubmission)
     - [ListIssueCommentsRequest](#bytebase-v1-ListIssueCommentsRequest)
     - [ListIssueCommentsResponse](#bytebase-v1-ListIssueCommentsResponse)
@@ -895,7 +896,9 @@ already keeps for the wording.
 | ENDS_SESSION | 4 | Destroys the human&#39;s own login session. |
 | ENDS_MEMBERSHIP | 5 | Destroys the caller&#39;s own workspace membership and mints a plain workspace token on the way out. |
 | MINTS_CREDENTIAL_FOR_OTHERS | 6 | Leaves someone holding a principal the caller is not — by issuing its credential, carrying an existing one out to a host the caller named, choosing what will later be trusted to mint one, or redirecting where one gets delivered. |
-| REWRITES_SESSION_BOUNDARY | 7 | Rewrites the workspace configuration that governs the session making the call — the MCP switch itself, the sign-in and SSO settings, the mail relay that carries credential resets, and the AI endpoint the stored API key is sent to. A session that can widen its own ceiling is not bounded by it. |
+| REWRITES_SESSION_BOUNDARY | 7 | Rewrites the workspace configuration that governs the session making the call — the MCP switch itself, the sign-in and SSO settings, the mail relay that carries credential resets, and the AI endpoint the stored API key is sent to. A session that can widen its own ceiling is not bounded by it.
+
+No method carries it. UpdateSetting, which writes all of these, is WRITE, and the gate serves it only for a setting the user confirmed, which the MCP server offers for the approval rules alone. |
 | DRIVES_THE_APPROVAL_DECISION | 8 | Can let a change or an access request pass its approval without an approver deciding it: re-running the finding that sets the approval, which can clear the issue outright, or activating an access grant directly. |
 | ADMINISTERS_THE_WORKSPACE | 9 | Administers the workspace rather than doing database work: identity, credentials, access control, governance policy, billing, workspace and instance configuration, project lifecycle, and the operator&#39;s own audit trail. |
 | READS_OTHER_USERS_SQL | 10 | Returns SQL that other people wrote. The permission gating it reads as an ordinary list permission, so the exclusion is per method rather than per permission: these methods span the workspace or ignore the per-object sharing that keeps a saved query private. |
@@ -3632,12 +3635,13 @@ A comment on an issue.
 | creator | [string](#string) |  | Format: users/{email} |
 | root | [string](#string) | optional | The thread root&#39;s name, set only on replies. Immutable after creation. Format: projects/{project}/issues/{issue}/issueComments/{issueComment} Must name a thread root in the same issue, never a general comment or reply. |
 | thread_state | [IssueComment.ThreadState](#bytebase-v1-IssueComment-ThreadState) | optional | Present only on thread roots. Set OPEN on create to start a thread; an anchored root starts one without it. Omit root, thread_state, and statement_anchor to create a general comment. Update through the thread_state field mask to resolve or reopen. Adding a reply does not reopen a resolved thread. |
-| statement_anchor | [StatementAnchor](#bytebase-v1-StatementAnchor) |  | Optional source context on a root or reply. A reply&#39;s anchor must share the root&#39;s spec and sheet_sha256; it may narrow the range. Cannot be set on events. Immutable after creation. |
+| statement_anchor | [StatementAnchor](#bytebase-v1-StatementAnchor) |  | Optional source context on a root or reply. A reply&#39;s anchor must share the root&#39;s spec and sheet_sha256 when created; it may narrow the range. Cannot be set on events. Immutable after creation, except that a later review run reporting a review result again moves the result to its statement in the SQL that run reviewed. |
 | review_metadata | [IssueComment.ReviewMetadata](#bytebase-v1-IssueComment-ReviewMetadata) |  | Present on review results, the comments the review executor posts. Never accepted on create or update. |
 | approval | [IssueComment.Approval](#bytebase-v1-IssueComment-Approval) |  | Approval event. |
 | issue_update | [IssueComment.IssueUpdate](#bytebase-v1-IssueComment-IssueUpdate) |  | Issue update event. |
 | plan_update | [IssueComment.PlanUpdate](#bytebase-v1-IssueComment-PlanUpdate) |  | Plan update event. |
 | review_submission | [IssueComment.ReviewSubmission](#bytebase-v1-IssueComment-ReviewSubmission) |  | Review submission event. |
+| review_run_completion | [IssueComment.ReviewRunCompletion](#bytebase-v1-IssueComment-ReviewRunCompletion) |  | Review run completion event. |
 
 
 
@@ -3710,7 +3714,29 @@ What a review result carries beyond its text.
 | rule_type | [ReviewRuleType](#bytebase-v1-ReviewRuleType) |  | The rule judged against. Set if and only if run_type is RULE. |
 | priority | [IssueComment.ReviewMetadata.Priority](#bytebase-v1-IssueComment-ReviewMetadata-Priority) |  |  |
 | targets | [string](#string) | repeated | Every database the result applies to, sorted. Format: instances/{instance}/databases/{database} |
-| superseded | [bool](#bool) |  | A later run of the same reviewer has completed, so the result is not from the latest review, whatever its thread state. |
+| superseded | [bool](#bool) |  | A later run of the same reviewer has completed without reporting the result again, whatever its thread state. |
+| attempt | [int64](#int64) |  | The ReviewRunCompletion.attempt of the run that posted the result. A result a later run reports again keeps its thread and its attempt. |
+| codes | [string](#string) | repeated | The conditions a RULE result reports, as finding codes such as &#34;WT101&#34;, one per reason. A code names the same condition on every engine. Empty for other reviewers. |
+
+
+
+
+
+
+<a name="bytebase-v1-IssueComment-ReviewRunCompletion"></a>
+
+### IssueComment.ReviewRunCompletion
+A review run completed, and what it did to the results of its reviewer.
+Posted by the reviewer, with no creator.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| run_type | [ReviewRun.Type](#bytebase-v1-ReviewRun-Type) |  | The reviewer that ran. |
+| attempt | [int64](#int64) |  | Identifies the run among its reviewer&#39;s runs on the issue. The results it posted carry the same ReviewMetadata.attempt. |
+| posted_count | [int32](#int32) |  | Results the run posted as new threads. |
+| kept_count | [int32](#int32) |  | Earlier results the run reported again, which kept their threads. |
+| superseded_count | [int32](#int32) |  | Earlier results the run no longer reports, now superseded. |
 
 
 
@@ -10197,8 +10223,8 @@ Rollout policy configuration.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| automatic | [bool](#bool) |  | Whether rollout is automatic without manual approval. |
-| roles | [string](#string) | repeated | The roles that can approve rollout execution. |
+| automatic | [bool](#bool) |  | Whether the environment&#39;s rollout tasks start on their own, with no one running them. |
+| roles | [string](#string) | repeated | Who can run, skip or cancel the environment&#39;s rollout tasks; WORKSPACE_APPROVAL sets approvers. Anyone with bb.taskRuns.create can too. |
 
 
 

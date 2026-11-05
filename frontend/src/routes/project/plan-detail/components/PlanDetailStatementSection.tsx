@@ -1,6 +1,13 @@
 import { clone, create } from "@bufbuild/protobuf";
 import { Loader2, Pencil, Table, Upload } from "lucide-react";
-import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type ChangeEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import {
   planServiceClientConnect,
@@ -19,10 +26,26 @@ import {
 } from "@/components/monaco";
 import { ReleaseInfoCard } from "@/components/release/ReleaseInfoCard";
 import { Alert } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { seedSheetStatement } from "@/hooks/useSheetStatement";
+import {
+  AGENT_PLAN_DRAFT_EVENT,
+  type AgentPlanDraftEventDetail,
+  appendAgentPlanDraftSQL,
+} from "@/lib/plan/agentDraftHandoff";
 import { cn } from "@/lib/utils";
+import { openAgentWithPrompt } from "@/modules/agent/logic/instanceConnectionHelp";
+import { buildPlanCreatePrompt } from "@/modules/agent/logic/planIssueAssistance";
+import { getDatabaseMentionLabel } from "@/modules/agent/logic/resourceMention";
+import { useAgentStore } from "@/modules/agent/store/agent";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import {
@@ -129,6 +152,8 @@ export function PlanDetailStatementSection({
   );
   const [draftStatement, setDraftStatement] = useState("");
   const [isSchemaEditorOpen, setIsSchemaEditorOpen] = useState(false);
+  const [pendingAgentDraft, setPendingAgentDraft] =
+    useState<AgentPlanDraftEventDetail>();
   const inputRef = useRef<HTMLInputElement>(null);
   // The read-only editor instance, captured whenever one is created so the
   // threads layer can attach even if threads become enabled later. Editing,
@@ -333,6 +358,75 @@ export function PlanDetailStatementSection({
     };
   }, [releaseName, sheetName, statementVersion]);
 
+  const hasSingleDatabaseTarget =
+    spec.config?.case === "changeDatabaseConfig" &&
+    spec.config.value.targets?.length === 1 &&
+    isValidDatabaseName(spec.config.value.targets[0]);
+
+  const updateLocalStatement = useCallback(
+    (nextStatement: string) => {
+      if (!sheetName) return;
+      const sheet = getLocalSheetByName(sheetName);
+      // Notifying write: the empty-statement validation subscribes to local
+      // sheets. (Previously this cloned the plan into patchState purely to
+      // force a re-render — the identity-preserving snapshot rightly ignores a
+      // content-identical clone, so the signal must be explicit.)
+      setLocalSheetStatement(sheet, nextStatement);
+      setStatement(nextStatement);
+      setDraftStatement(nextStatement);
+      setIsSheetOversize(false);
+    },
+    [sheetName]
+  );
+
+  useEffect(() => {
+    if (!page.isCreating) return;
+    const handleAgentDraft = (event: Event) => {
+      const detail = (event as CustomEvent<AgentPlanDraftEventDetail>).detail;
+      if (
+        !detail ||
+        detail.handled ||
+        detail.project !== project?.name ||
+        !hasSingleDatabaseTarget ||
+        targetDatabaseNames[0] !== detail.database
+      ) {
+        return;
+      }
+      detail.handled = true;
+      if (!sheetName || !detail.sql.trim() || isLoading) {
+        pushNotification({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: t("agent.plan-draft.current-plan-unavailable"),
+        });
+        return;
+      }
+      if (statement.trim()) {
+        // This route-owned AlertDialog renders below the Agent overlay.
+        if (useAgentStore.getState().visible) {
+          useAgentStore.getState().minimize();
+        }
+        setPendingAgentDraft(detail);
+        return;
+      }
+      updateLocalStatement(detail.sql);
+    };
+
+    window.addEventListener(AGENT_PLAN_DRAFT_EVENT, handleAgentDraft);
+    return () =>
+      window.removeEventListener(AGENT_PLAN_DRAFT_EVENT, handleAgentDraft);
+  }, [
+    hasSingleDatabaseTarget,
+    isLoading,
+    page.isCreating,
+    project?.name,
+    sheetName,
+    statement,
+    t,
+    targetDatabaseNames,
+    updateLocalStatement,
+  ]);
+
   if (isValidReleaseName(releaseName)) {
     return (
       <PlanDetailReleaseStatement
@@ -369,17 +463,30 @@ export function PlanDetailStatementSection({
     draftStatement.trim() !== "" &&
     hasChanges;
 
-  const updateLocalStatement = (nextStatement: string) => {
-    if (!sheetName) return;
-    const sheet = getLocalSheetByName(sheetName);
-    // Notifying write: the empty-statement validation subscribes to local
-    // sheets. (Previously this cloned the plan into patchState purely to
-    // force a re-render — the identity-preserving snapshot rightly ignores a
-    // content-identical clone, so the signal must be explicit.)
-    setLocalSheetStatement(sheet, nextStatement);
-    setStatement(nextStatement);
-    setDraftStatement(nextStatement);
-    setIsSheetOversize(false);
+  const selectedDatabaseName = hasSingleDatabaseTarget
+    ? targetDatabaseNames[0]
+    : undefined;
+  const selectedDatabase = selectedDatabaseName
+    ? databasesByName[selectedDatabaseName]
+    : undefined;
+  const selectedDatabaseLabel = selectedDatabase
+    ? getDatabaseMentionLabel(selectedDatabase)
+    : selectedDatabaseName?.split("/").at(-1);
+  const askAgentToDraftSQL = () => {
+    if (!project || !selectedDatabaseName || !selectedDatabaseLabel) return;
+    openAgentWithPrompt(buildPlanCreatePrompt(), [
+      {
+        kind: "database",
+        name: selectedDatabaseName,
+        project: project.name,
+        label: selectedDatabaseLabel,
+      },
+    ]);
+  };
+
+  const applyAgentDraft = (sql: string) => {
+    updateLocalStatement(sql);
+    setPendingAgentDraft(undefined);
   };
 
   const handleUploadClick = () => inputRef.current?.click();
@@ -580,7 +687,7 @@ export function PlanDetailStatementSection({
 
   return (
     <div className={cn("flex flex-col gap-y-1", className)}>
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex flex-wrap items-start justify-between gap-2">
         <div
           className={cn(
             "flex items-center gap-x-1 textlabel uppercase",
@@ -606,7 +713,20 @@ export function PlanDetailStatementSection({
           type="file"
         />
         {(canModifyStatement || isEditing) && (
-          <div className="flex flex-wrap items-center justify-end gap-x-2 gap-y-2">
+          <div className="ml-auto flex w-full max-w-full flex-wrap items-center justify-end gap-x-2 gap-y-2 sm:w-auto">
+            {page.isCreating &&
+              project &&
+              hasSingleDatabaseTarget &&
+              selectedDatabaseName && (
+                <Button
+                  className="h-auto max-w-full whitespace-normal text-left"
+                  onClick={askAgentToDraftSQL}
+                  size="xs"
+                  appearance="outline"
+                >
+                  {t("agent.plan-assistance.ask-draft-sql")}
+                </Button>
+              )}
             {!isEditingExistingStatement && (
               <>
                 <Button
@@ -755,6 +875,48 @@ export function PlanDetailStatementSection({
           onInsert={handleSchemaEditorInsert}
         />
       )}
+      <AlertDialog
+        open={Boolean(pendingAgentDraft)}
+        onOpenChange={(open) => {
+          if (!open) setPendingAgentDraft(undefined);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogTitle>
+            {t("agent.plan-draft.existing-sql-title")}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            {t("agent.plan-draft.existing-sql-description")}
+          </AlertDialogDescription>
+          <AlertDialogFooter className="flex-wrap gap-y-2">
+            <Button
+              appearance="secondary"
+              onClick={() => setPendingAgentDraft(undefined)}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              appearance="outline"
+              onClick={() => {
+                if (!pendingAgentDraft) return;
+                applyAgentDraft(
+                  appendAgentPlanDraftSQL(statement, pendingAgentDraft.sql)
+                );
+              }}
+            >
+              {t("agent.plan-draft.append-sql")}
+            </Button>
+            <Button
+              onClick={() => {
+                if (!pendingAgentDraft) return;
+                applyAgentDraft(pendingAgentDraft.sql);
+              }}
+            >
+              {t("agent.plan-draft.replace-sql")}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

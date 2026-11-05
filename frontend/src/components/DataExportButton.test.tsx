@@ -132,7 +132,7 @@ describe("DataExportButton destination", () => {
     fireEvent.click(screen.getByRole("button", { name: "common.confirm" }));
 
     expect(screen.getByRole("progressbar")).toHaveAccessibleName(
-      "export-data.progress.sharepoint"
+      /^export-data\.progress\.sharepoint \d+s$/
     );
     act(() => reportProgress?.(1, 3));
     expect(screen.getByRole("progressbar")).toHaveAttribute(
@@ -140,11 +140,64 @@ describe("DataExportButton destination", () => {
       "1"
     );
     expect(screen.getByRole("progressbar")).toHaveAccessibleName(
-      "export-data.progress.databases"
+      /^export-data\.progress\.databases \d+s$/
     );
 
     await act(async () => finish?.());
     expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+  });
+
+  test("explains a long SharePoint export with the elapsed time", async () => {
+    vi.useFakeTimers();
+    try {
+      let finish: (() => void) | undefined;
+      onExport.mockImplementation(({ resolve }) => {
+        finish = () => resolve({ sharepoint: [] });
+      });
+      renderButton([ExportDestination.SHAREPOINT]);
+      openDrawer();
+      fireEvent.click(screen.getByRole("button", { name: "common.confirm" }));
+
+      expect(screen.getByText("0s")).toBeInTheDocument();
+      act(() => vi.advanceTimersByTime(10_000));
+      expect(screen.getByText("10s")).toBeInTheDocument();
+      expect(
+        screen.queryByText("export-data.progress.sharepoint-slow")
+      ).not.toBeInTheDocument();
+
+      act(() => vi.advanceTimersByTime(65_000));
+      expect(screen.getByText("75s")).toBeInTheDocument();
+      expect(
+        screen.getByText("export-data.progress.sharepoint-slow")
+      ).toBeInTheDocument();
+
+      await act(async () => finish?.());
+      expect(
+        screen.queryByText("export-data.progress.sharepoint-slow")
+      ).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test("keeps a long download's progress unchanged", () => {
+    vi.useFakeTimers();
+    try {
+      onExport.mockImplementation(() => {});
+      renderButton([ExportDestination.DOWNLOAD]);
+      openDrawer();
+      fireEvent.click(screen.getByRole("button", { name: "common.confirm" }));
+
+      act(() => vi.advanceTimersByTime(75_000));
+      expect(screen.getByRole("progressbar")).toHaveAccessibleName(
+        "export-data.progress.download"
+      );
+      expect(
+        screen.queryByText("export-data.progress.sharepoint-slow")
+      ).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
@@ -219,23 +272,6 @@ describe("DataExportButton cancel", () => {
       ).toBeInTheDocument();
     });
     expect(pushNotification).not.toHaveBeenCalled();
-  });
-
-  test("shows the elapsed time beside the progress bar", () => {
-    vi.useFakeTimers();
-    onExport.mockImplementation(() => {});
-    renderButton([ExportDestination.DOWNLOAD]);
-    openDrawer();
-    confirmExport();
-
-    const timer = screen.getByRole("timer", {
-      name: "export-data.progress.elapsed",
-    });
-    expect(timer).toHaveTextContent("0:00");
-    act(() => vi.advanceTimersByTime(65_000));
-    expect(timer).toHaveTextContent("1:05");
-    act(() => vi.advanceTimersByTime(3_600_000));
-    expect(timer).toHaveTextContent("1:01:05");
   });
 
   const pressEscape = () =>

@@ -3,6 +3,10 @@ package reviewrun
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"slices"
+	"strconv"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -50,7 +54,9 @@ func TestCISampleBoundsOnlyTheAIReview(t *testing.T) {
 
 	setCISamplingSize(ctx, t, stores, 2)
 	require.Len(t, reviewedDatabases(), 2)
-	require.Equal(t, int32(2), model.calls.Load())
+	require.Equal(t, int32(4), model.calls.Load(), "a review per database, one merge, and one summary")
+	require.Equal(t, int32(1), model.merges.Load())
+	require.Equal(t, int32(1), model.summaries.Load())
 
 	var ruleTargets int
 	ruleExecutor := &RuleExecutor{store: stores, reviewFuncs: map[storepb.Engine]review.ReviewFunc{
@@ -217,16 +223,69 @@ func setCISamplingSize(ctx context.Context, t *testing.T, stores *store.Store, s
 	}))
 }
 
-// findingModel answers every review with the same finding, so a run's one
-// comment names every database the run reviewed.
+// summaryDatabaseID finds the database ids of a summary prompt's findings.
+var summaryDatabaseID = regexp.MustCompile(`"database":"([a-z2-7]+)"`)
+
+// findingModel answers every review with the same finding, the merge with one
+// group of every finding, and the summary with one group of every database,
+// so a run's one comment names every database the run reviewed.
 type findingModel struct {
-	calls atomic.Int32
+	calls     atomic.Int32
+	merges    atomic.Int32
+	summaries atomic.Int32
+	// onSummary runs when the summary call arrives.
+	onSummary func()
 }
 
-func (m *findingModel) Chat(context.Context, *v1pb.AIChatRequest) (*v1pb.AIChatResponse, error) {
+func (m *findingModel) Chat(_ context.Context, request *v1pb.AIChatRequest) (*v1pb.AIChatResponse, error) {
 	m.calls.Add(1)
 	content := `{"findings": [{"title": "Backfill note", "severity": "P2", "line": 1, "rule": "r", "evidence": "e", "fix": "f"}]}`
+	// A review offers the schema tools, and the merge and the summary offer
+	// none. A merge numbers the findings, and a summary names the databases
+	// by id.
+	if len(request.GetToolDefinitions()) == 0 {
+		user := request.GetMessages()[1].GetContent()
+		var ids []string
+		if count := strings.Count(user, `{"id":`); count > 0 {
+			m.merges.Add(1)
+			for i := range count {
+				ids = append(ids, strconv.Itoa(i+1))
+			}
+			content = fmt.Sprintf(`{"groups": [[%s]]}`, strings.Join(ids, ", "))
+		} else {
+			m.summaries.Add(1)
+			if m.onSummary != nil {
+				m.onSummary()
+			}
+			for _, match := range summaryDatabaseID.FindAllStringSubmatch(user, -1) {
+				if id := strconv.Quote(match[1]); !slices.Contains(ids, id) {
+					ids = append(ids, id)
+				}
+			}
+			content = fmt.Sprintf(`{"title": "Backfill note", "evidence": "e", "groups": [{"databases": [%s], "facts": ""}], "fix": "f"}`, strings.Join(ids, ", "))
+		}
+	}
 	return &v1pb.AIChatResponse{Content: &content}, nil
+}
+
+func TestAIReviewStopsWhenSwitchedOffBeforeItPosts(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	stores, issues := setupReviewFixture(ctx, t, 1)
+	var switchOffErr error
+	model := &findingModel{onSummary: func() {
+		_, switchOffErr = stores.UpsertSetting(ctx, &store.SettingMessage{Name: storepb.SettingName_AI, Workspace: "ws", Value: &storepb.AISetting{Enabled: true}})
+	}}
+	executor := &AIReviewExecutor{
+		store:    stores,
+		newModel: func(*storepb.AISetting, ...aireview.ModelOption) aireview.Model { return model },
+		slots:    semaphore.NewWeighted(aiReviewServerConcurrency),
+	}
+	comments, err := executor.RunOnce(ctx, "p", issues[0])
+	require.NoError(t, switchOffErr)
+	require.Equal(t, int32(1), model.summaries.Load())
+	require.ErrorContains(t, err, "AI SQL review is not enabled", "a switch-off during the summary stops the run before it posts")
+	require.Empty(t, comments)
 }
 
 // observedSlots tells the test when a review has to wait for a slot.

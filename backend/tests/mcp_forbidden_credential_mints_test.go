@@ -538,17 +538,15 @@ func TestMCPCannotRetargetADataSource(t *testing.T) {
 	a.NoError(err, "a normal session must still be able to update a data source")
 }
 
-// TestMCPCannotRewriteItsOwnCeiling covers the one method refused for what it
-// governs rather than for what it hands out.
+// TestMCPCannotRewriteItsOwnCeiling pins that a READ_WRITE session cannot change
+// the settings that bound it.
 //
 // SettingService/UpdateSetting writes value.mcp.capability, which IS the MCP
-// ceiling — the workspace switch that decides whether MCP sessions are served
-// at all, and at 1b-2 whether they are served read-only.
-// A session that can widen its own ceiling is not bounded by it, and "flip the
-// workspace MCP switch" stops being one of the three levers that contain a
-// runaway agent. The same method also keeps the stored SMTP password when
-// value.email.smtp omits it while accepting a new host, which hands over the
-// relay that carries password resets — TestEmailSetting's persisting twin.
+// ceiling. The same method keeps the stored SMTP password when value.email.smtp
+// omits it while accepting a new host, and keeps the stored AI key when the mask
+// names only the endpoint. The gate serves it only with a confirmation that
+// administer_workspace issues for the approval rules alone, and call_api cannot
+// carry one.
 //
 // The ceiling assertion is the load-bearing one: it reads the setting back
 // through the console afterwards, so this discriminates a gate that refuses
@@ -564,6 +562,7 @@ func TestMCPCannotRewriteItsOwnCeiling(t *testing.T) {
 	}))
 	a.NoError(err)
 
+	a.NoError(ctl.setMCPCapability(ctx, v1pb.MCPSetting_READ_WRITE))
 	ceilingBefore, err := ctl.getMCPCapability(ctx)
 	a.NoError(err)
 
@@ -604,10 +603,10 @@ func TestMCPCannotRewriteItsOwnCeiling(t *testing.T) {
 	session := openMCPSession(ctx, t, ctl, ctl.authInterceptor.token)
 	defer session.Close()
 
-	widened := callAPIOnSession(ctx, t, session, "SettingService/UpdateSetting", map[string]any{
+	rewritten := callAPIOnSession(ctx, t, session, "SettingService/UpdateSetting", map[string]any{
 		"setting": map[string]any{
 			"name":  "settings/MCP",
-			"value": map[string]any{"mcp": map[string]any{"capability": "READ_WRITE"}},
+			"value": map[string]any{"mcp": map[string]any{"capability": "DISABLED"}},
 		},
 		"updateMask": "value.mcp.capability",
 	})
@@ -635,19 +634,19 @@ func TestMCPCannotRewriteItsOwnCeiling(t *testing.T) {
 		"updateMask": "value.ai.endpoint",
 	})
 
-	t.Logf("MCP UpdateSetting{mcp_capability: READ_WRITE} → status=%d error=%q", widened.Status, widened.Error)
+	t.Logf("MCP UpdateSetting{mcp_capability: DISABLED} → status=%d error=%q", rewritten.Status, rewritten.Error)
 	t.Logf("MCP UpdateSetting{email.smtp → attacker} → status=%d error=%q", redirected.Status, redirected.Error)
 	t.Logf("MCP UpdateSetting{ai.endpoint → attacker} → status=%d error=%q", retargeted.Status, retargeted.Error)
 
 	for name, out := range map[string]mcpCallResult{
-		"ceiling":     widened,
+		"ceiling":     rewritten,
 		"smtp relay":  redirected,
 		"ai endpoint": retargeted,
 	} {
 		a.Equal(http.StatusForbidden, out.Status, "the %s write must be refused before dispatch", name)
-		a.Contains(out.Error, "not available to MCP sessions", "the %s write must be refused by the gate", name)
-		a.Contains(out.Error, "the switch meant to contain it",
-			"the %s denial must name the boundary, not a credential it did not hand out", name)
+		a.Contains(out.Error, "carries no such confirmation", "the %s write must be refused by the gate", name)
+		a.Contains(out.Error, "Change other settings signed in to the Bytebase console",
+			"the %s denial must send the user to the console", name)
 	}
 
 	after, err := ctl.getMCPCapability(ctx)
@@ -675,9 +674,6 @@ func TestMCPCannotRewriteItsOwnCeiling(t *testing.T) {
 		"a gate refusal is never stored")
 
 	// The console keeps working: the gate is on the internal MCP chain only.
-	// An explicit value rather than an echo of ceilingBefore, which the fixture
-	// leaves UNSPECIFIED — validateMCPCapability rejects writing that back, so
-	// echoing it would fail for a reason that has nothing to do with the gate.
 	a.NoError(ctl.setMCPCapability(ctx, v1pb.MCPSetting_READ_ONLY),
 		"a normal session must still be able to write workspace settings")
 
@@ -906,11 +902,14 @@ func TestMCPCredentialMintsLeaveDiscovery(t *testing.T) {
 		a.Contains(unavailable, "UserService/"+method)
 	}
 
-	// SettingService hosts TestEmailSetting, a mint, and keeps GetSetting, which
-	// the gate serves for the governance settings alone.
+	// SettingService hosts TestEmailSetting, a mint. It keeps GetSetting, which
+	// the gate serves for the governance settings alone, and UpdateSetting,
+	// which it serves only through administer_workspace.
 	served, unavailable = servedAndUnavailable("SettingService")
 	a.Contains(served, "SettingService/GetSetting", "the session reads the governance settings")
-	for _, method := range []string{"TestEmailSetting", "UpdateSetting", "ListSettings"} {
+	a.Contains(served, "SettingService/UpdateSetting", "the session changes the approval rules")
+	a.Contains(served, "through the administer_workspace tool", "the listing names the one way to change a setting")
+	for _, method := range []string{"TestEmailSetting", "ListSettings"} {
 		a.NotContains(served, "SettingService/"+method,
 			"search_api must not offer SettingService/%s, which the session can never call", method)
 		a.Contains(unavailable, "SettingService/"+method)

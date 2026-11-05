@@ -351,8 +351,8 @@ function ActivityRow({
   );
 }
 
-// One line per run: how many findings it posted and how many are still open.
-// "Show" opens the run's finding cards below it.
+// One line per completed run: what it found. "Show" opens the cards of the
+// findings it posted below it.
 function ReviewRunActivityRow({
   isLast,
   onToggle,
@@ -363,46 +363,70 @@ function ReviewRunActivityRow({
   source: Extract<TimelineSource, { type: "review-run" }>;
 }) {
   const { t } = useTranslation();
-  const open = source.findings.filter(
-    (finding) => finding.threadState === IssueComment_ThreadState.OPEN
-  ).length;
+  const { runType, postedCount, keptCount, supersededCount } =
+    source.completion;
+  // A run with nothing earlier to compare reads as a first review, with how
+  // many of its findings are still open. A later one says only what changed:
+  // an open count beside "still found" would read as covering those too.
+  const firstReview = keptCount === 0 && supersededCount === 0;
+  const open = firstReview
+    ? source.findings.filter(
+        (finding) => finding.threadState === IssueComment_ThreadState.OPEN
+      ).length
+    : 0;
+  const summary = firstReview
+    ? [
+        postedCount === 0
+          ? t("plan.review.activity.no-findings")
+          : t("plan.review.activity.n-findings", { count: postedCount }),
+      ]
+    : [
+        postedCount > 0 &&
+          t("plan.review.activity.n-new", { count: postedCount }),
+        keptCount > 0 &&
+          t("plan.review.activity.n-still-found", { count: keptCount }),
+        supersededCount > 0 &&
+          t("plan.review.activity.n-no-longer-found", {
+            count: supersededCount,
+          }),
+      ].filter((part) => part !== false);
+  if (open > 0)
+    summary.push(t("plan.automated-review.n-open", { count: open }));
   return (
     <ActivityRowShell
       header={
         <>
           <span className="font-medium text-main">
-            {reviewerName(t, source.runType)}
+            {reviewerName(t, runType)}
           </span>
           <span className="wrap-break-word min-w-0 text-control-light">
             {t("plan.review.activity.reviewed-the-sql")}
           </span>
           <span className="text-control-light">·</span>
           <span className="text-control">
-            {t("plan.review.activity.n-findings", {
-              count: source.findings.length,
-            })}
-            {open > 0 &&
-              `, ${t("plan.automated-review.n-open", { count: open })}`}
+            {summary.join(t("plan.findings.separator"))}
           </span>
           <HumanizeTs
             className="text-xs text-control-light"
             tsMs={getTimeForPbTimestampProtoEs(source.time)}
           />
-          <Button
-            aria-expanded={source.open}
-            appearance="link"
-            className="text-control-light"
-            onClick={onToggle}
-            size="xs"
-          >
-            {source.open ? t("common.hide") : t("common.show")}
-          </Button>
+          {source.findings.length > 0 && (
+            <Button
+              aria-expanded={source.open}
+              appearance="link"
+              className="text-control-light"
+              onClick={onToggle}
+              size="xs"
+            >
+              {source.open ? t("common.hide") : t("common.show")}
+            </Button>
+          )}
         </>
       }
       icon={
         <CommentIconBadge
           className="bg-control-bg text-control"
-          icon={<ReviewerIcon className="size-4" runType={source.runType} />}
+          icon={<ReviewerIcon className="size-4" runType={runType} />}
         />
       }
       isLast={isLast}

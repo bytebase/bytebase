@@ -77,6 +77,8 @@
       "issue-security": "此工单是否存在安全隐患？",
       "issue-summary": "总结此工单及其当前状态",
       "plan-changes": "此计划拟进行哪些数据库变更？",
+      "plan-create-heading": "起草数据库变更计划",
+      "plan-create-sql": "帮我为此计划起草数据库变更 SQL。",
       "plan-heading": "询问此计划",
       "plan-risks": "此计划是否存在审核或部署风险？",
       "plan-status": "当前的审核和发布状态是什么？",
@@ -117,6 +119,9 @@
     "input-processing-placeholder": "正在处理...",
     "interrupted": "已中断",
     "interrupted-retry-hint": "对话已中断。您可以重试或发送新消息。",
+    "issue-assistance": {
+      "review": "与 Agent 一起审核"
+    },
     "issue-comment-draft": {
       "existing": "This issue already has an unsent comment. Review it before opening another draft.",
       "open": "Draft review comment",
@@ -158,9 +163,19 @@
       "issue-approval-rollout": "这是最后一步审批。通过所需检查和审核后，此次审批可能创建部署，但不保证任务会执行。",
       "issue-rejection": "拒绝此工单会停止当前审批流程。处理拒绝原因后才能继续审批。"
     },
+    "plan-assistance": {
+      "ask-draft-sql": "让 Agent 起草 SQL",
+      "review": "与 Agent 一起审核"
+    },
     "plan-draft": {
+      "append-sql": "追加 SQL",
+      "apply-to-current-plan": "应用到此计划",
+      "current-plan-unavailable": "无法将此 SQL 应用到当前计划。请确认目标数据库后重试。",
       "default-title": "建议的数据库变更",
+      "existing-sql-description": "选择将生成的 SQL 追加到现有草稿，或替换现有草稿。",
+      "existing-sql-title": "此 Plan 已包含 SQL",
       "open": "打开计划草稿",
+      "replace-sql": "替换 SQL",
       "unavailable": "无法打开计划草稿。数据库或 SQL 可能已更改。请让 Agent 重新生成。"
     },
     "plan-reference-unavailable": "此计划已不可用，或你没有访问权限。",
@@ -1122,8 +1137,8 @@
     "progress": {
       "databases": "已导出 {{done}}/{{total}} 个数据库",
       "download": "正在导出…",
-      "elapsed": "已用时间",
-      "sharepoint": "正在导出到 SharePoint…"
+      "sharepoint": "正在导出到 SharePoint…",
+      "sharepoint-slow": "结果较大或 SharePoint 繁忙时，导出可能需要几分钟。Bytebase 会自动重试。"
     },
     "sharepoint": {
       "canceled-description": "导出此数据库时导出已取消。SharePoint 中可能已存在文件。",
@@ -1950,12 +1965,6 @@
       "report": "语句报告",
       "rerun": "重新运行",
       "rerun-all": "全部重新运行",
-      "rerun-all-description_one": "这会重新运行计划检查和 Standard rules。Standard rules 中已被解决的 {{count}} 项问题会重新变为待处理。",
-      "rerun-all-description_other": "这会重新运行计划检查和 Standard rules。Standard rules 中已被解决的 {{count}} 项问题会重新变为待处理。",
-      "rerun-all-title": "全部重新运行？",
-      "rerun-reopens_one": "已被解决的 {{count}} 项问题会重新变为待处理，需要再次处理。",
-      "rerun-reopens_other": "已被解决的 {{count}} 项问题会重新变为待处理，需要再次处理。",
-      "rerun-rule-title": "重新运行 Standard rules？",
       "retry": "重试",
       "running": "运行中",
       "sampled": "抽样 {{count}}/{{total}} 个数据库",
@@ -2108,6 +2117,13 @@
         "n-findings_other": "{{count}} 个发现",
         "n-hidden-events_one": "{{count}} 条隐藏活动",
         "n-hidden-events_other": "{{count}} 条隐藏活动",
+        "n-new_one": "{{count}} 个新发现",
+        "n-new_other": "{{count}} 个新发现",
+        "n-no-longer-found_one": "{{count}} 个已不存在",
+        "n-no-longer-found_other": "{{count}} 个已不存在",
+        "n-still-found_one": "{{count}} 个仍存在",
+        "n-still-found_other": "{{count}} 个仍存在",
+        "no-findings": "没有发现",
         "reviewed-the-sql": "审核了 SQL",
         "self": "活动",
         "show-all": "显示全部"
@@ -2188,9 +2204,7 @@
         "n-replies-hidden_other": "已隐藏 {{count}} 条回复",
         "n-replies_one": "{{count}} 条回复",
         "n-replies_other": "{{count}} 条回复",
-        "open": "待处理",
         "priority": {
-          "p0": "SQL 有误，必须修改。",
           "p1": "有风险但合理，需要有人确认接受。",
           "p2": "仅供参考。"
         },
@@ -2202,7 +2216,6 @@
         "resolve": "解决",
         "resolve-thread": "解决线程",
         "resolved": "已解决",
-        "rule": "规则",
         "threads-on-line_one": "此行有 {{count}} 个讨论",
         "threads-on-line_other": "此行有 {{count}} 个讨论",
         "walker": {
@@ -2921,8 +2934,8 @@
           "self": "允许查询主数据源"
         },
         "allow-download": {
-          "description": "关闭后，导出只能发送到项目配置的存储目标（如 SharePoint），已批准的导出访问授权也不能下载。",
-          "self": "允许下载"
+          "description": "导出查询结果时，用户可以选择“下载”作为导出目标。关闭后，即使已批准导出访问授权，导出也只能发送到项目的存储目标（如 SharePoint）。",
+          "self": "允许下载导出文件"
         },
         "allow-email-code-signin": {
           "description": "用户可以通过输入发送到邮箱的 6 位验证码进行登录或注册。",
@@ -3135,7 +3148,7 @@
         "disabled": "不允许任何操作；MCP 会话无法连接。",
         "floor": {
           "label": "在任何模式下都不允许：",
-          "text": "管理工作空间、处理凭据、开启 Admin 模式会话、查看他人的查询历史。"
+          "text": "提高此策略、创建服务账号密钥、更改用户的密码、邮箱或多因素认证、显示已存储的机密信息、开启 Admin 模式会话、查看他人的查询历史。"
         },
         "heading": "{{mode}} 允许",
         "hide-details": "隐藏详情",
@@ -3144,6 +3157,10 @@
           "refused": "不允许"
         },
         "row": {
+          "approval-rules": {
+            "details": "添加、删除、调整顺序或修改决定由谁审批数据库变更的规则 · 每项变更都会先在用户的 MCP 客户端中确认，然后才会执行 · 兜底规则和其他类型工单的规则保持不变",
+            "title": "管理数据库变更的审批规则"
+          },
           "approve": {
             "details": "每项决定都会先在用户的 MCP 客户端中确认，然后才会执行 · 角色申请需在控制台中批准或拒绝 · 审批规则和项目的自我审批设置照常适用，与控制台相同",
             "title": "批准或拒绝工单"

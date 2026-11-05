@@ -102,13 +102,13 @@ type SchemaSection struct {
 
 // TableEntry describes a table. Which fields are populated depends on the include level.
 type TableEntry struct {
-	Name        string        `json:"name"`
-	RowCount    int64         `json:"rowCount"`
-	ColumnCount int           `json:"columnCount,omitempty"` // summary only; in columns/details modes, len(Columns) is the count
-	Comment     string        `json:"comment,omitempty"`
-	Columns     []ColumnEntry `json:"columns,omitempty"`     // columns+
-	Indexes     []IndexEntry  `json:"indexes,omitempty"`     // details+
-	ForeignKeys []FKEntry     `json:"foreignKeys,omitempty"` // details+
+	Name             string        `json:"name"`
+	RowCountEstimate int64         `json:"rowCountEstimate"`      // as the last sync recorded it; can be an estimate (PostgreSQL: pg_class.reltuples)
+	ColumnCount      int           `json:"columnCount,omitempty"` // summary only; in columns/details modes, len(Columns) is the count
+	Comment          string        `json:"comment,omitempty"`
+	Columns          []ColumnEntry `json:"columns,omitempty"`     // columns+
+	Indexes          []IndexEntry  `json:"indexes,omitempty"`     // details+
+	ForeignKeys      []FKEntry     `json:"foreignKeys,omitempty"` // details+
 }
 
 // ColumnEntry describes a single column.
@@ -221,6 +221,7 @@ const getSchemaDescription = `Inspect a Bytebase database's schema.
 - For databases with many tables, columns/details modes return up to 200 tables PER SCHEMA.
   Use schema= or table= to narrow further.
 - Column masking metadata is only returned when table= is set.
+- rowCountEstimate is the row count the last metadata sync recorded. It can be an estimate, and can read 0 for a table that has rows; run a COUNT query when the number matters.
 - Requires bb.databases.getSchema permission.`
 
 func (s *Server) registerSchemaTool() {
@@ -553,9 +554,9 @@ func transformSchemas(metadata *databaseMetadata, include string) []SchemaSectio
 func buildTableEntry(t *tableMetadata, include string) TableEntry {
 	rowCount, _ := t.RowCount.Int64()
 	entry := TableEntry{
-		Name:     t.Name,
-		RowCount: rowCount,
-		Comment:  t.Comment,
+		Name:             t.Name,
+		RowCountEstimate: rowCount,
+		Comment:          t.Comment,
 	}
 
 	if include == schemaIncludeSummary {
@@ -659,8 +660,8 @@ func formatSchemaOutput(output *SchemaOutput, include string, warnings []string)
 
 // writeTableHeader writes the single-table header line.
 func writeTableHeader(sb *strings.Builder, t *TableDetail) {
-	fmt.Fprintf(sb, "Table: %s (%d rows, %d columns, %d indexes, %d foreign keys)\n",
-		t.Name, t.RowCount, len(t.Columns), len(t.Indexes), len(t.ForeignKeys))
+	fmt.Fprintf(sb, "Table: %s (row count estimate %d, %d columns, %d indexes, %d foreign keys)\n",
+		t.Name, t.RowCountEstimate, len(t.Columns), len(t.Indexes), len(t.ForeignKeys))
 }
 
 // writeSchemasHeader writes the multi-schema overview header lines.
