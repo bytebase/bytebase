@@ -19,6 +19,9 @@ export type SharePointExportResult = {
 } & (
   | { status: "EXPORTED"; uri: string }
   | { status: "FAILED" | "UNCONFIRMED"; reason: string }
+  // CANCELED: canceled while this database was exporting, so files may exist.
+  // NOT_STARTED: canceled before this database's export was requested.
+  | { status: "CANCELED" | "NOT_STARTED" }
 );
 
 // `uri` is the folder created for this export; falls back to the destination
@@ -31,12 +34,16 @@ export function toExportedSharePointResult(
   return { database, status: "EXPORTED", uri: uri || destinationUrl };
 }
 
-// The Export API reports an upload it could not confirm as UNAVAILABLE.
+// The Export API reports an upload it could not confirm as UNAVAILABLE. An
+// aborted request rejects with CANCELED.
 export function toFailedSharePointExport(
   database: string,
   error: unknown
 ): SharePointExportResult {
   if (error instanceof ConnectError) {
+    if (error.code === Code.Canceled) {
+      return { database, status: "CANCELED" };
+    }
     return {
       database,
       status: error.code === Code.Unavailable ? "UNCONFIRMED" : "FAILED",
@@ -44,6 +51,12 @@ export function toFailedSharePointExport(
     };
   }
   return { database, status: "FAILED", reason: String(error) };
+}
+
+export function toNotStartedSharePointExport(
+  database: string
+): SharePointExportResult {
+  return { database, status: "NOT_STARTED" };
 }
 
 interface Props {
@@ -81,28 +94,7 @@ export function SharePointExportResultDialog({ results, onClose }: Props) {
                   </span>
                   <ExportStatusBadge status={result.status} />
                 </div>
-                {result.status === "EXPORTED" ? (
-                  result.uri && (
-                    <>
-                      <span className="break-all text-control-light">
-                        {formatSharePointUrl(result.uri)}
-                      </span>
-                      <a
-                        href={result.uri}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex w-fit items-center gap-x-1 text-accent hover:underline"
-                      >
-                        {t("export-data.sharepoint.open")}
-                        <ExternalLink className="size-3" />
-                      </a>
-                    </>
-                  )
-                ) : (
-                  <span className="break-words text-control-light">
-                    {result.reason}
-                  </span>
-                )}
+                <ExportResultDetail result={result} />
               </li>
             ))}
           </ul>
@@ -113,6 +105,47 @@ export function SharePointExportResultDialog({ results, onClose }: Props) {
       </DialogContent>
     </Dialog>
   );
+}
+
+function ExportResultDetail({ result }: { result: SharePointExportResult }) {
+  const { t } = useTranslation();
+  switch (result.status) {
+    case "EXPORTED":
+      return (
+        result.uri && (
+          <>
+            <span className="break-all text-control-light">
+              {formatSharePointUrl(result.uri)}
+            </span>
+            <a
+              href={result.uri}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex w-fit items-center gap-x-1 text-accent hover:underline"
+            >
+              {t("export-data.sharepoint.open")}
+              <ExternalLink className="size-3" />
+            </a>
+          </>
+        )
+      );
+    case "CANCELED":
+      return (
+        <span className="break-words text-control-light">
+          {t("export-data.sharepoint.canceled-description")}
+        </span>
+      );
+    case "NOT_STARTED":
+      return (
+        <span className="break-words text-control-light">
+          {t("export-data.sharepoint.not-started-description")}
+        </span>
+      );
+    default:
+      return (
+        <span className="break-words text-control-light">{result.reason}</span>
+      );
+  }
 }
 
 function ExportStatusBadge({
@@ -132,6 +165,18 @@ function ExportStatusBadge({
       return (
         <Badge variant="warning">
           {t("export-data.sharepoint.status.unconfirmed")}
+        </Badge>
+      );
+    case "CANCELED":
+      return (
+        <Badge variant="warning">
+          {t("export-data.sharepoint.status.canceled")}
+        </Badge>
+      );
+    case "NOT_STARTED":
+      return (
+        <Badge variant="default">
+          {t("export-data.sharepoint.status.not-started")}
         </Badge>
       );
     case "FAILED":

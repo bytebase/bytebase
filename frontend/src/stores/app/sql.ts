@@ -10,7 +10,8 @@ import type { AppSliceCreator, SQLSlice } from "./types";
  * editor's permission-denied + silent context conventions. Query failures are
  * swallowed into the returned `SQLResultSetV1.error` so the result table can
  * render the error inline instead of bubbling a thrown exception. SharePoint
- * export failures are silent because the export result reports them.
+ * export failures are silent because the export result reports them, and a
+ * canceled export is the user's own action.
  */
 export const createSQLSlice: AppSliceCreator<SQLSlice> = () => ({
   query: async (params, signal) => {
@@ -35,14 +36,15 @@ export const createSQLSlice: AppSliceCreator<SQLSlice> = () => ({
     }
   },
 
-  exportData: async (params) => {
+  exportData: async (params, signal) => {
     const response = await sqlServiceClientConnect.export(params, {
       contextValues: createContextValues()
-        .set(ignoredCodesContextKey, [Code.PermissionDenied])
+        .set(ignoredCodesContextKey, [Code.PermissionDenied, Code.Canceled])
         .set(
           silentContextKey,
           params.destination === ExportDestination.SHAREPOINT
         ),
+      signal,
     });
     return { content: response.content, uri: response.uri };
   },

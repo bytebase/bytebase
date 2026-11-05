@@ -22,6 +22,8 @@
 //   - Read user with an active export grant: C7 exact-match re-enable,
 //     C5 badge, C6 filter
 //   - Masking ↔ export security (admin): no-leak without grant, reveal with grant
+//   - Cancel (admin): Cancel aborts a running export and the server records it
+//     as canceled
 //   - BUG (BYT-9656): re-request of a revoked grant drops the Export pre-fill
 //
 // Owns its fixtures (API/psql for setup, browser for verification): it creates
@@ -804,6 +806,45 @@ test.describe("Masking ↔ export security", () => {
       csv,
       `with an unmask grant the export must reveal the plaintext, got:\n${csv}`,
     ).toContain(SECRET_1);
+  });
+});
+
+// --- Canceling a running export --------------------------------------------
+
+test.describe("Canceling a running export", () => {
+  test("Cancel aborts the Export request quietly and query history records the export as canceled", async () => {
+    await sqlEditor.gotoWithDb(projectId, env.instanceId, env.databaseId);
+    // The export reruns the statement, so pg_sleep keeps it running long
+    // enough to cancel.
+    const marker = `export-cancel-${Date.now()}`;
+    await sqlEditor.runPreparedQuery(`SELECT pg_sleep(4), '${marker}' AS marker;`);
+
+    const drawer = await openExportDrawer();
+    const abortedExport = page.waitForEvent("requestfailed", {
+      predicate: (r) => r.url().includes("SQLService/Export"),
+      timeout: 10_000,
+    });
+    await drawer.getByRole("button", { name: "Confirm", exact: true }).click();
+    await expect(drawer.getByRole("progressbar")).toBeVisible();
+
+    await drawer.getByRole("button", { name: "Cancel", exact: true }).click();
+    await abortedExport;
+    await expect(drawer).toBeHidden();
+
+    await expect
+      .poll(
+        async () => {
+          const { queryHistories = [] } = await env.api.searchQueryHistories(
+            env.project,
+            `type == "EXPORT" && statement.contains("${marker}")`,
+          );
+          return queryHistories[0]?.error;
+        },
+        { timeout: 15_000, message: "the canceled export should be in query history" },
+      )
+      .toBe("canceled: the request was canceled before the query finished");
+    await expect(page.getByText("Failed to export data")).toHaveCount(0);
+    await expect(page.getByText(/Canceled/)).toHaveCount(0);
   });
 });
 

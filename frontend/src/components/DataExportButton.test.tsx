@@ -1,3 +1,4 @@
+import { Code, ConnectError } from "@connectrpc/connect";
 import {
   act,
   fireEvent,
@@ -5,7 +6,8 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
-import { beforeEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { pushNotification } from "@/stores";
 import { ExportDestination, ExportFormat } from "@/types/proto-es/v1/common_pb";
 import { type DataExportRequest, DataExportButton } from "./DataExportButton";
 
@@ -18,6 +20,26 @@ vi.mock("@/stores", () => ({ pushNotification: vi.fn() }));
 vi.mock("./MaxRowCountSelect", () => ({
   MaxRowCountSelect: () => null,
 }));
+
+// Zipping a multi-database download waits on the test, so it can cancel
+// while the zip is being generated.
+const zipMocks = vi.hoisted(() => ({
+  finishZip: undefined as (() => void) | undefined,
+  saveAs: vi.fn(),
+}));
+
+vi.mock("jszip", () => ({
+  default: class {
+    file() {}
+    generateAsync() {
+      return new Promise<Blob>((resolve) => {
+        zipMocks.finishZip = () => resolve(new Blob());
+      });
+    }
+  },
+}));
+
+vi.mock("file-saver", () => ({ default: zipMocks.saveAs }));
 
 const sharepointUrl =
   "https://contoso.sharepoint.com/sites/Finance/Shared%20Documents/Exports";
@@ -40,9 +62,16 @@ const renderButton = (destinations: ExportDestination[]) =>
 const openDrawer = () =>
   fireEvent.click(screen.getByRole("button", { name: "common.export" }));
 
+const confirmExport = () =>
+  fireEvent.click(screen.getByRole("button", { name: "common.confirm" }));
+
+const cancel = () =>
+  fireEvent.click(screen.getByRole("button", { name: "common.cancel" }));
+
 describe("DataExportButton destination", () => {
   beforeEach(() => {
     onExport.mockReset();
+    vi.mocked(pushNotification).mockReset();
   });
 
   test("defaults to SharePoint and hides the zip password for it", () => {
@@ -189,5 +218,193 @@ describe("DataExportButton destination", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe("DataExportButton cancel", () => {
+  beforeEach(() => {
+    onExport.mockReset();
+    vi.mocked(pushNotification).mockReset();
+    window.URL.createObjectURL = vi.fn(() => "blob:export");
+    window.URL.revokeObjectURL = vi.fn();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  test("aborts a running download and reports nothing", async () => {
+    let signal: AbortSignal | undefined;
+    onExport.mockImplementation((request) => {
+      signal = request.signal;
+      request.signal.addEventListener("abort", () =>
+        request.reject(new ConnectError("aborted", Code.Canceled))
+      );
+    });
+    renderButton([ExportDestination.DOWNLOAD]);
+    openDrawer();
+    confirmExport();
+    expect(signal?.aborted).toBe(false);
+
+    cancel();
+
+    expect(signal?.aborted).toBe(true);
+    await waitFor(() => {
+      expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+    });
+    expect(pushNotification).not.toHaveBeenCalled();
+  });
+
+  test("saves nothing from a download canceled as it finished", async () => {
+    onExport.mockImplementation((request) => {
+      request.signal.addEventListener("abort", () =>
+        request.resolve([{ content: new Uint8Array([1]), filename: "a.zip" }])
+      );
+    });
+    renderButton([ExportDestination.DOWNLOAD]);
+    openDrawer();
+    confirmExport();
+    cancel();
+
+    await waitFor(() => {
+      expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+    });
+    expect(window.URL.createObjectURL).not.toHaveBeenCalled();
+    expect(pushNotification).not.toHaveBeenCalled();
+  });
+
+  test("saves nothing from a multi-database download canceled while zipping", async () => {
+    zipMocks.finishZip = undefined;
+    zipMocks.saveAs.mockReset();
+    onExport.mockImplementation(({ resolve }) =>
+      resolve([
+        { content: new Uint8Array([1]), filename: "a.zip" },
+        { content: new Uint8Array([2]), filename: "b.zip" },
+      ])
+    );
+    renderButton([ExportDestination.DOWNLOAD]);
+    openDrawer();
+    confirmExport();
+    await waitFor(() => expect(zipMocks.finishZip).toBeDefined());
+
+    cancel();
+    await act(async () => zipMocks.finishZip?.());
+
+    await waitFor(() => {
+      expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+    });
+    expect(zipMocks.saveAs).not.toHaveBeenCalled();
+    expect(pushNotification).not.toHaveBeenCalled();
+  });
+
+  test("shows what a canceled SharePoint export left behind", async () => {
+    onExport.mockImplementation((request) => {
+      request.signal.addEventListener("abort", () =>
+        request.resolve({
+          sharepoint: [{ database: "main", status: "CANCELED" }],
+        })
+      );
+    });
+    renderButton([ExportDestination.SHAREPOINT]);
+    openDrawer();
+    confirmExport();
+    cancel();
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("export-data.sharepoint.canceled-description")
+      ).toBeInTheDocument();
+    });
+    expect(pushNotification).not.toHaveBeenCalled();
+  });
+
+  const pressEscape = () =>
+    fireEvent.keyDown(document.activeElement ?? document.body, {
+      key: "Escape",
+    });
+
+  const pressOutside = () => {
+    fireEvent.pointerDown(document.body);
+    fireEvent.mouseDown(document.body);
+    fireEvent.pointerUp(document.body);
+    fireEvent.mouseUp(document.body);
+    fireEvent.click(document.body);
+  };
+
+  const startPendingExport = () => {
+    let signal: AbortSignal | undefined;
+    onExport.mockImplementation((request) => {
+      signal = request.signal;
+    });
+    renderButton([ExportDestination.DOWNLOAD]);
+    openDrawer();
+    confirmExport();
+    return () => signal;
+  };
+
+  test("Escape and an outside click close the drawer when no export runs", async () => {
+    renderButton([ExportDestination.DOWNLOAD]);
+    openDrawer();
+    pressEscape();
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+
+    openDrawer();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    pressOutside();
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+  });
+
+  test("Escape and an outside click keep a running export open and running", () => {
+    const signal = startPendingExport();
+
+    pressEscape();
+    pressOutside();
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByRole("progressbar")).toBeInTheDocument();
+    expect(signal()?.aborted).toBe(false);
+  });
+
+  test("the close button aborts a running export", async () => {
+    const signal = startPendingExport();
+
+    fireEvent.click(screen.getByRole("button", { name: "common.close" }));
+
+    expect(signal()?.aborted).toBe(true);
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+  });
+
+  test("the password dialog stays open on Escape and an outside click while exporting", async () => {
+    let signal: AbortSignal | undefined;
+    onExport.mockImplementation((request) => {
+      signal = request.signal;
+    });
+    render(
+      <DataExportButton
+        viewMode="DROPDOWN"
+        supportFormats={[ExportFormat.CSV]}
+        supportPassword
+        onExport={onExport}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "common.export" }));
+    fireEvent.click(
+      await screen.findByRole("menuitem", { name: "sql-editor.download-as-file" })
+    );
+    fireEvent.click(await screen.findByRole("button", { name: "common.export" }));
+
+    pressEscape();
+    pressOutside();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(signal?.aborted).toBe(false);
+
+    cancel();
+    expect(signal?.aborted).toBe(true);
   });
 });

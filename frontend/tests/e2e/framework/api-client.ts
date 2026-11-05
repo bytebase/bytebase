@@ -451,6 +451,13 @@ export class BytebaseApiClient {
     });
   }
 
+  // The caller's own query histories in a project, newest first.
+  async searchQueryHistories(project: string, filter: string) {
+    return this.request<{
+      queryHistories?: { statement: string; type: string; error?: string }[];
+    }>("POST", `/v1/${project}/queryHistories:search`, { filter, pageSize: 10 });
+  }
+
   // Note: createUser is defined earlier in this file (added by the demo
   // -> signup migration on main, signature `(email, password, title)`).
   // Tests that previously used the local duplicate `(email, title, password)`

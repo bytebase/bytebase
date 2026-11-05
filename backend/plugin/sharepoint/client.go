@@ -32,6 +32,9 @@ const (
 	maxConcurrentUploads = 4
 	maxAttempts          = 5
 	requestTimeout       = 5 * time.Minute
+	// reconcileGrace bounds how long reconciliation keeps checking an upload
+	// after the export's request ends.
+	reconcileGrace = 30 * time.Second
 	// recentResolveTTL bounds how long ResolveRecent reuses a resolution, so a
 	// batch export resolves its destination once.
 	recentResolveTTL = time.Minute
@@ -51,6 +54,7 @@ type graphClient struct {
 	maxConcurrentUploads int
 	maxAttempts          int
 	wait                 func(ctx context.Context, d time.Duration) error
+	reconcileGrace       time.Duration
 	// now is time.Now when nil.
 	now func() time.Time
 
@@ -82,6 +86,7 @@ func newGraphClient(cfg Config) (Client, error) {
 		maxConcurrentUploads: maxConcurrentUploads,
 		maxAttempts:          maxAttempts,
 		wait:                 sleepContext,
+		reconcileGrace:       reconcileGrace,
 	}, nil
 }
 
@@ -293,6 +298,9 @@ func (c *graphClient) uploadFiles(ctx context.Context, loc *Location, folderName
 		return nil, firstErr
 	}
 	if attempted < len(files) {
+		if attempted == 0 {
+			return nil, &nothingUploadedError{err: ctx.Err()}
+		}
 		return nil, ctx.Err()
 	}
 	return &Folder{Name: folderName, WebURL: strings.TrimRight(loc.WebURL, "/") + "/" + url.PathEscape(folderName)}, nil
@@ -412,8 +420,10 @@ func nextExpectedOffset(body []byte, fallback int) (int, error) {
 // reconcile accepts an existing file as uploaded only if this application
 // created it with the same size; export folder names are unique per export.
 func (c *graphClient) reconcile(ctx context.Context, folderPath string, file File, outcomeUnknown bool) error {
+	lookupCtx, stop := c.reconcileContext(ctx)
+	defer stop()
 	var item driveItem
-	err := c.graphJSON(ctx, http.MethodGet, folderPath+escapeSegment(file.Name)+"?$select=size,folder,createdBy", nil, &item)
+	err := c.graphJSON(lookupCtx, http.MethodGet, folderPath+escapeSegment(file.Name)+"?$select=size,folder,createdBy", nil, &item)
 	if err == nil && item.Folder == nil && item.Size == int64(len(file.Content)) &&
 		item.CreatedBy.Application != nil && strings.EqualFold(item.CreatedBy.Application.ID, c.clientID) {
 		return nil
@@ -426,6 +436,24 @@ func (c *graphClient) reconcile(ctx context.Context, folderPath string, file Fil
 		return errors.Wrapf(err, "failed to check the existing file %q", file.Name)
 	}
 	return errors.Errorf("a different file named %q already exists in the SharePoint folder", file.Name)
+}
+
+// reconcileContext lets a reconciliation lookup outlive ctx by up to
+// reconcileGrace, so an export canceled mid-upload still records whether each
+// file in flight arrived instead of reporting it unconfirmed.
+func (c *graphClient) reconcileContext(ctx context.Context) (context.Context, context.CancelFunc) {
+	lookupCtx, cancel := context.WithCancel(context.WithoutCancel(ctx))
+	stopGrace := context.AfterFunc(ctx, func() {
+		select {
+		case <-lookupCtx.Done():
+		case <-time.After(c.reconcileGrace):
+			cancel()
+		}
+	})
+	return lookupCtx, func() {
+		stopGrace()
+		cancel()
+	}
 }
 
 func itemPath(driveID, itemID string) string {

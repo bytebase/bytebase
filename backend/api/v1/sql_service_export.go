@@ -142,6 +142,9 @@ func uploadSharePointExport(ctx context.Context, target *sharePointExportTarget,
 		if errors.Is(err, sharepoint.ErrNotFoundOrNoAccess) || errors.Is(err, sharepoint.ErrCredential) {
 			code = connect.CodeFailedPrecondition
 		}
+		if errors.Is(err, context.Canceled) {
+			code = connect.CodeCanceled
+		}
 		if errors.Is(err, sharepoint.ErrNothingUploaded) {
 			return "", connect.NewError(code, errors.Wrap(err, "the upload to SharePoint failed; nothing was uploaded"))
 		}

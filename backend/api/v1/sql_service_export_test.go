@@ -338,6 +338,9 @@ func TestSharePointExportErrors(t *testing.T) {
 		{name: "upload credential", uploadErr: errors.Wrap(sharepoint.ErrCredential, "token"), wantCode: connect.CodeFailedPrecondition, wantInMsg: []string{"may already exist", "20261022T010507Z-alice@example.com-hr-0a1b2c3d"}},
 		{name: "upload unconfirmed", uploadErr: errors.Wrap(sharepoint.ErrUnconfirmed, "upload"), wantCode: connect.CodeUnavailable, wantInMsg: []string{"could not be confirmed", "20261022T010507Z-alice@example.com-hr-0a1b2c3d"}},
 		{name: "upload failed after some files", uploadErr: errors.New("upload statement-1.result.csv: 507 insufficientStorage"), wantCode: connect.CodeInternal, wantInMsg: []string{"the upload to SharePoint failed", "may already exist", "insufficientStorage", "20261022T010507Z-alice@example.com-hr-0a1b2c3d"}},
+		{name: "canceled after some files", uploadErr: context.Canceled, wantCode: connect.CodeCanceled, wantInMsg: []string{"may already exist", "20261022T010507Z-alice@example.com-hr-0a1b2c3d"}},
+		{name: "canceled before any file", uploadErr: nothingUploadedError{context.Canceled}, wantCode: connect.CodeCanceled, wantInMsg: []string{"nothing was uploaded"}, wantNotInMsg: []string{"may already exist"}},
+		{name: "canceled with a file unconfirmed", uploadErr: errors.Wrap(sharepoint.ErrUnconfirmed, "file \"a.sql\""), wantCode: connect.CodeUnavailable, wantInMsg: []string{"could not be confirmed"}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
