@@ -6,6 +6,7 @@ import (
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/backend/component/masker"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
@@ -124,7 +125,7 @@ func TestValidateCatalogSemanticTypeIDs(t *testing.T) {
 					}},
 				}},
 			},
-			setting: &storepb.SemanticTypeSetting{Types: getBuiltinSemanticTypes()},
+			setting: &storepb.SemanticTypeSetting{Types: masker.BuiltinSemanticTypes()},
 		},
 		{
 			name: "unknown column semantic type rejected",

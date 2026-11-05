@@ -4,37 +4,15 @@ import (
 	"context"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/masker"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
 const (
-	defaultSemanticTypeID        = "bb.default"
-	defaultPartialSemanticTypeID = "bb.default-partial"
+	defaultSemanticTypeID        = masker.DefaultSemanticTypeID
+	defaultPartialSemanticTypeID = masker.DefaultPartialSemanticTypeID
 )
-
-func getBuiltinSemanticTypes() []*storepb.SemanticTypeSetting_SemanticType {
-	return []*storepb.SemanticTypeSetting_SemanticType{
-		{
-			Id:    defaultSemanticTypeID,
-			Title: "Default",
-			Algorithm: &storepb.Algorithm{
-				Mask: &storepb.Algorithm_FullMask_{
-					FullMask: &storepb.Algorithm_FullMask{},
-				},
-			},
-		},
-		{
-			Id:    defaultPartialSemanticTypeID,
-			Title: "Default Partial",
-			Algorithm: &storepb.Algorithm{
-				Mask: &storepb.Algorithm_RangeMask_{
-					RangeMask: &storepb.Algorithm_RangeMask{},
-				},
-			},
-		},
-	}
-}
 
 func getSemanticTypesSettingWithBuiltins(ctx context.Context, stores *store.Store) (*storepb.SemanticTypeSetting, error) {
 	setting, err := stores.GetSemanticTypesSetting(ctx, common.GetWorkspaceIDFromContext(ctx))
@@ -47,14 +25,10 @@ func getSemanticTypesSettingWithBuiltins(ctx context.Context, stores *store.Stor
 func appendBuiltinSemanticTypes(setting *storepb.SemanticTypeSetting) *storepb.SemanticTypeSetting {
 	types := make([]*storepb.SemanticTypeSetting_SemanticType, 0, len(setting.GetTypes())+2)
 	for _, semanticType := range setting.GetTypes() {
-		if !isBuiltinSemanticTypeID(semanticType.GetId()) {
+		if !masker.IsBuiltinSemanticTypeID(semanticType.GetId()) {
 			types = append(types, semanticType)
 		}
 	}
-	types = append(types, getBuiltinSemanticTypes()...)
+	types = append(types, masker.BuiltinSemanticTypes()...)
 	return &storepb.SemanticTypeSetting{Types: types}
-}
-
-func isBuiltinSemanticTypeID(id string) bool {
-	return id == defaultSemanticTypeID || id == defaultPartialSemanticTypeID
 }
