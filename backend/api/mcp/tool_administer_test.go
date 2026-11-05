@@ -3,8 +3,10 @@ package mcp
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -216,18 +218,24 @@ func TestAdministerWorkspaceAppliesConfirmedApprovalRules(t *testing.T) {
 	asked := user.lastParams(t)
 	require.Equal(t, strings.Join([]string{
 		`Change the approval rules for database changes, as alice@example.com?`,
-		`Added as rule 1, no approval: "resource.environment_id == 'test'"`,
-		`Added, "Workspace DBA": "resource.environment_id == 'prod'"`,
-		`Your issues awaiting approval: "hr#12".`,
+		"Add rule 1, no approval: `resource.environment_id == 'test'`",
+		"Add rule 2, \"Workspace DBA\": `resource.environment_id == 'prod'`",
+		`Plan edits recheck your "hr#12" under these rules.`,
 	}, "\n"), asked.Message)
 	for _, line := range strings.Split(asked.Message, "\n") {
 		require.LessOrEqual(t, lineColumns(line), messageLineWidth, line)
 	}
 	schema, err := json.Marshal(asked.RequestedSchema)
 	require.NoError(t, err)
+	description, err := json.Marshal("The rules for database changes, in the order an approval check tries them:\n" +
+		"1. \"Test\", no approval: `resource.environment_id == 'test'`\n" +
+		"2. \"Prod\", \"Workspace DBA\": `resource.environment_id == 'prod'`\n" +
+		"When none of them matches, the fallback rules decide, and a change that no rule matches needs no approval. Rules for other sources stay as they are.\n" +
+		approvalRulesApply)
+	require.NoError(t, err)
 	require.JSONEq(t, `{"type":"object","required":["choice"],"properties":{"choice":{"type":"string",
 		"title":"Apply this change?",
-		"description":"The rules for database changes, in the order an approval check tries them:\n1. \"Test\", no approval: \"resource.environment_id == 'test'\"\n2. \"Prod\", \"Workspace DBA\": \"resource.environment_id == 'prod'\"\nWhen none of them matches, the fallback rules decide, and a change that no rule matches needs no approval. Rules for other sources stay as they are.\nApproval checks from now on use these rules, also after a plan edit.",
+		"description":`+string(description)+`,
 		"oneOf":[{"const":"apply","title":"Apply"},{"const":"change","title":"Change it in chat"}],
 		"default":"apply"}}}`, string(schema))
 
@@ -244,6 +252,73 @@ func TestAdministerWorkspaceAppliesConfirmedApprovalRules(t *testing.T) {
 	require.JSONEq(t, `{"operationId":"SettingService/UpdateSetting","changed":true,
 		"message":"Applied: the approval rules now hold 2 rules for database changes. Approval checks from now on use these rules, also after a plan edit.\nApproval rules: https://bb.example.com/custom-approval",
 		"link":"https://bb.example.com/custom-approval"}`, string(output))
+}
+
+// The rules as an agent sent them in Claude Code: prod first, and CEL in double
+// quotes, which escaped quoting lengthens past a line.
+func TestAdministerWorkspaceFitsTheTwoRulesAnAgentWrites(t *testing.T) {
+	mock := &approvalMock{pendingIssues: []string{"projects/hr/issues/12"}}
+	mock.setStored(fallbackRule())
+	user := &asker{answer: adminAnswer(adminChoiceApply)}
+	_, session := connectToApprovalServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
+	prod := changeRule("Prod changes need DBA", `resource.environment_id == "prod"`, "roles/workspaceDBA")
+	test := changeRule("Test changes need no approval", `resource.environment_id == "test"`)
+
+	res := callAdminister(t, session, administerParams(approvalBody(t, prod, test, fallbackRule())))
+	require.False(t, res.IsError, resultText(t, res))
+	asked := user.lastParams(t)
+	require.Equal(t, strings.Join([]string{
+		`Change the approval rules for database changes, as alice@example.com?`,
+		"Add rule 1, \"Workspace DBA\": `resource.environment_id == \"prod\"`",
+		"Add rule 2, no approval: `resource.environment_id == \"test\"`",
+		`Plan edits recheck your "hr#12" under these rules.`,
+	}, "\n"), asked.Message)
+	require.Contains(t, choiceDescription(t, asked), "1. \"Prod changes need DBA\", \"Workspace DBA\": `resource.environment_id == \"prod\"`\n"+
+		"2. \"Test changes need no approval\", no approval: `resource.environment_id == \"test\"`\n")
+	require.True(t, strings.HasSuffix(choiceDescription(t, asked), "\n"+approvalRulesApply), "a full message leaves the fixed sentence to the description")
+	require.Len(t, mock.calls(), 1)
+}
+
+// The issue line says what the fixed sentence says for the user's issues, so a
+// message with an issue line leaves the fixed sentence to the description even
+// when a line is free.
+func TestAdministerWorkspaceStatesTheConsequenceOnce(t *testing.T) {
+	for name, tc := range map[string]struct {
+		pending []string
+		want    []string
+	}{
+		"with an issue awaiting approval": {pending: []string{"projects/hr/issues/12"},
+			want: []string{"Add rule 1, \"Workspace DBA\": `resource.environment_id == 'prod'`", `Plan edits recheck your "hr#12" under these rules.`}},
+		"with none": {
+			want: []string{"Add rule 1, \"Workspace DBA\": `resource.environment_id == 'prod'`", approvalRulesApply}},
+	} {
+		t.Run(name, func(t *testing.T) {
+			mock := &approvalMock{pendingIssues: tc.pending}
+			mock.setStored(fallbackRule())
+			user := &asker{answer: &mcp.ElicitResult{Action: "decline"}}
+			_, session := connectToApprovalServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
+
+			callAdminister(t, session, administerParams(approvalBody(t, fallbackRule(), prodRule)))
+			asked := user.lastParams(t)
+			require.Equal(t, append([]string{`Change the approval rules for database changes, as alice@example.com?`}, tc.want...),
+				strings.Split(asked.Message, "\n"))
+			require.Equal(t, len(tc.pending) > 0, strings.Contains(choiceDescription(t, asked), approvalRulesApply))
+		})
+	}
+}
+
+// choiceDescription returns the description of the approval form's choice field.
+func choiceDescription(t *testing.T, asked *mcp.ElicitParams) string {
+	t.Helper()
+	schema, err := json.Marshal(asked.RequestedSchema)
+	require.NoError(t, err)
+	var form struct {
+		Properties map[string]struct {
+			Description string `json:"description"`
+		} `json:"properties"`
+	}
+	require.NoError(t, json.Unmarshal(schema, &form))
+	return form.Properties[adminChoiceField].Description
 }
 
 func TestAdministerWorkspaceTakesTheFullOperationID(t *testing.T) {
@@ -394,17 +469,18 @@ func TestAdministerWorkspaceRefusesATooLongChangeWithTheConsolePage(t *testing.T
 	long := changeRule("Long", strings.Repeat("resource.project_id == 'p' || ", 9)+"true")
 	for name, tc := range map[string]struct {
 		rules   []*v1pb.WorkspaceApprovalSetting_Rule
-		want    string
+		want    []string
 		notWant string
 	}{
 		"several short rules": {
 			rules: []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), changeRule("a", "resource.environment_id == 'a'"),
 				changeRule("b", "resource.environment_id == 'b'"), changeRule("c", "resource.environment_id == 'c'"), changeRule("d", "resource.environment_id == 'd'")},
-			want: "this change needs 5 lines, more than the 4 one confirmation form shows",
+			want: []string{"this change needs 5 lines, more than the 4 one confirmation form shows",
+				"Each step is a form of its own and applies when the user accepts it", "add a rule before removing the one it replaces"},
 		},
 		"one rule too long for any form": {
 			rules:   []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), long},
-			want:    "make that change signed in to the Bytebase console",
+			want:    []string{"make that change signed in to the Bytebase console"},
 			notWant: "smaller steps",
 		},
 	} {
@@ -413,7 +489,9 @@ func TestAdministerWorkspaceRefusesATooLongChangeWithTheConsolePage(t *testing.T
 			mock.setStored(fallbackRule())
 			_, session := connectToApprovalServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{}).handle})
 			res := callAdminister(t, session, administerParams(approvalBody(t, tc.rules...)))
-			require.Contains(t, resultText(t, res), tc.want)
+			for _, want := range tc.want {
+				require.Contains(t, resultText(t, res), want)
+			}
 			require.Contains(t, resultText(t, res), "https://bb.example.com/custom-approval")
 			if tc.notWant != "" {
 				require.NotContains(t, resultText(t, res), tc.notWant)
@@ -432,8 +510,8 @@ func TestAdministerWorkspaceStatesMovedAndChangedRules(t *testing.T) {
 
 	callAdminister(t, session, administerParams(approvalBody(t, fallbackRule(), stagingWithDBA, prodRule)))
 	lines := strings.Split(user.lastParams(t).Message, "\n")
-	require.Contains(t, user.lastParams(t).Message, `Changed, "Project owner" to "Workspace DBA":`)
-	require.Contains(t, user.lastParams(t).Message, `Moved to rule 2: "resource.environment_id == 'prod'"`)
+	require.Contains(t, user.lastParams(t).Message, `Change, "Project owner" to "Workspace DBA":`)
+	require.Contains(t, user.lastParams(t).Message, "Move to rule 2: `resource.environment_id == 'prod'`")
 	require.LessOrEqual(t, len(lines), messageLines)
 	for _, line := range lines {
 		require.LessOrEqual(t, lineColumns(line), messageLineWidth, line)
@@ -455,24 +533,24 @@ func TestAdministerWorkspaceStatesEachKindOfChange(t *testing.T) {
 		want              []string
 	}{
 		"removed": {stored: []*v1pb.WorkspaceApprovalSetting_Rule{prod(nil)}, requested: nil,
-			want: []string{`Removed, "Workspace DBA": "resource.environment_id == 'prod'"`}},
+			want: []string{"Remove, \"Workspace DBA\": `resource.environment_id == 'prod'`"}},
 		"renamed": {stored: []*v1pb.WorkspaceApprovalSetting_Rule{prod(nil)},
 			requested: []*v1pb.WorkspaceApprovalSetting_Rule{prod(func(r *v1pb.WorkspaceApprovalSetting_Rule) { r.Template.Title = "Production" })},
-			want:      []string{`Renamed to "Production": "resource.environment_id == 'prod'"`}},
+			want:      []string{"Rename to \"Production\": `resource.environment_id == 'prod'`"}},
 		"description changed": {stored: []*v1pb.WorkspaceApprovalSetting_Rule{prod(nil)}, requested: []*v1pb.WorkspaceApprovalSetting_Rule{described},
-			want: []string{`Description changed to "Production": "resource.environment_id == 'prod'"`}},
+			want: []string{"Change description to \"Production\": `resource.environment_id == 'prod'`"}},
 		"description removed": {stored: []*v1pb.WorkspaceApprovalSetting_Rule{described}, requested: []*v1pb.WorkspaceApprovalSetting_Rule{prod(nil)},
-			want: []string{`Description removed: "resource.environment_id == 'prod'"`}},
+			want: []string{"Remove description: `resource.environment_id == 'prod'`"}},
 		"approvers and title changed": {stored: []*v1pb.WorkspaceApprovalSetting_Rule{prod(nil)},
 			requested: []*v1pb.WorkspaceApprovalSetting_Rule{prod(func(r *v1pb.WorkspaceApprovalSetting_Rule) {
 				r.Template.Title = "Production"
 				r.Template.Flow.Roles = nil
 			})},
-			want: []string{`Changed, "Workspace DBA" to no approval; renamed to "Production": "resource.environment_id == 'prod'"`}},
+			want: []string{"Change, \"Workspace DBA\" to no approval; rename to \"Production\": `resource.environment_id == 'prod'`"}},
 		"added ahead of a kept rule": {stored: []*v1pb.WorkspaceApprovalSetting_Rule{prod(nil)}, requested: []*v1pb.WorkspaceApprovalSetting_Rule{dev, prod(nil)},
-			want: []string{`Added as rule 1, no approval: "resource.environment_id != 'dev'"`}},
+			want: []string{"Add rule 1, no approval: `resource.environment_id != 'dev'`"}},
 		"added after the kept rules": {stored: []*v1pb.WorkspaceApprovalSetting_Rule{prod(nil)}, requested: []*v1pb.WorkspaceApprovalSetting_Rule{prod(nil), dev},
-			want: []string{`Added, no approval: "resource.environment_id != 'dev'"`}},
+			want: []string{"Add rule 2, no approval: `resource.environment_id != 'dev'`"}},
 	} {
 		t.Run(name, func(t *testing.T) {
 			diff, err := diffApprovalRules(append([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}, tc.stored...),
@@ -534,8 +612,8 @@ func TestAdministerWorkspaceContinuesALongConditionOnTheNextLine(t *testing.T) {
 	for _, line := range lines {
 		require.LessOrEqual(t, lineColumns(line), messageLineWidth, line)
 	}
-	require.Equal(t, `Added, "Workspace DBA": "resource.environment_id == 'prod' && `+
-		`resource.project_id == 'hr' && resource.database_name == 'hr_prod'"`, lines[1]+" "+lines[2])
+	require.Equal(t, "Add rule 1, \"Workspace DBA\": `resource.environment_id == 'prod' && "+
+		"resource.project_id == 'hr' && resource.database_name == 'hr_prod'`", lines[1]+" "+lines[2])
 	require.Equal(t, approvalRulesApply, lines[3], "the fixed sentence goes whole in the line that is left")
 	schema, err := json.Marshal(asked.RequestedSchema)
 	require.NoError(t, err)
@@ -547,9 +625,9 @@ func TestAdministerWorkspaceNamesTheUserIssuesAwaitingApproval(t *testing.T) {
 		morePending bool
 		want        string
 	}{
-		"every issue read": {want: `Your issues awaiting approval: "hr#12", "finance#7" and 2 more.`},
+		"every issue read": {want: `Plan edits recheck your "hr#12" and 3 more under these rules.`},
 		"a search with another page": {morePending: true,
-			want: `Your issues awaiting approval: "hr#12" and at least 3 more.`},
+			want: `Plan edits recheck your "hr#12" and at least 3 more under these rules.`},
 	} {
 		t.Run(name, func(t *testing.T) {
 			mock := &approvalMock{
@@ -583,15 +661,52 @@ func TestApproversNameEachRoleAsWritten(t *testing.T) {
 	}
 }
 
+func TestConditionTextShowsAConditionAsTypedOnlyWhenEveryCharacterPrints(t *testing.T) {
+	for condition, want := range map[string]string{
+		`resource.environment_id == "prod"`: "`resource.environment_id == \"prod\"`",
+		"resource.environment_id == 'prod'": "`resource.environment_id == 'prod'`",
+		`resource.environment_id == "環境"`:   "`resource.environment_id == \"環境\"`",
+		"resource.environment_id == `prod`": `"resource.environment_id == ` + "`prod`" + `"`,
+		"a\tb":                              `"a\tb"`,
+		"a\nb":                              `"a\nb"`,
+		"pr\u202eod":                        `"pr\u202eod"`,
+		"a\u200bb":                          `"a\u200bb"`,
+		"a\u00a0b":                          `"a\u00a0b"`,
+		"a\xffb":                            `"a\xffb"`,
+	} {
+		require.Equal(t, want, conditionText(condition), "%q", condition)
+	}
+}
+
 func TestIssuesLineCountsNamesThatDoNotFit(t *testing.T) {
 	long := "projects/" + strings.Repeat("p", 40) + "/issues/1"
-	require.Equal(t, "You have 1 issue awaiting approval.", issuesLine([]string{shortIssueName(long)}, false))
-	require.Equal(t, "You have 2 issues awaiting approval.", issuesLine([]string{shortIssueName(long), "hr#1"}, false))
-	require.Equal(t, `Your issues awaiting approval: "hr#1".`, issuesLine([]string{"hr#1"}, false))
+	require.Equal(t, "Plan edits recheck your 1 issue awaiting approval under these rules.", issuesLine([]string{shortIssueName(long)}, false))
+	require.Equal(t, "Plan edits recheck your 2 issues awaiting approval under these rules.", issuesLine([]string{shortIssueName(long), "hr#1"}, false))
+	require.Equal(t, `Plan edits recheck your "hr#1" under these rules.`, issuesLine([]string{"hr#1"}, false))
 	require.Empty(t, issuesLine(nil, false))
-	// A search that stopped at its page size gives a lower bound.
-	require.Equal(t, "You have at least 2 issues awaiting approval.", issuesLine([]string{shortIssueName(long), "hr#1"}, true))
-	require.Equal(t, `Your issues awaiting approval: "hr#1" and more.`, issuesLine([]string{"hr#1"}, true))
+	// A search that stopped at its page size gives a lower bound, which the
+	// count form has no room for.
+	require.Equal(t, "Plan edits recheck your issues awaiting approval under these rules.", issuesLine([]string{shortIssueName(long), "hr#1"}, true))
+	require.Equal(t, `Plan edits recheck your "hr#1" and more under these rules.`, issuesLine([]string{"hr#1"}, true))
+	// A three-digit count does not fit with its number.
+	hundred := slices.Repeat([]string{shortIssueName(long)}, 150)
+	require.Equal(t, "Plan edits recheck your issues awaiting approval under these rules.", issuesLine(hundred, false))
+}
+
+func TestIssuesLineFitsOneLineForEveryNameAndCount(t *testing.T) {
+	for length := 1; length <= 60; length++ {
+		for _, count := range []int{1, 2, 3, 5, 9, 10, 99, 100, 200} {
+			for _, more := range []bool{false, true} {
+				names := make([]string, count)
+				for i := range names {
+					names[i] = fmt.Sprintf("%s#%d", strings.Repeat("p", length), i+1)
+				}
+				line := issuesLine(names, more)
+				require.LessOrEqual(t, lineColumns(line), messageLineWidth, line)
+				require.True(t, strings.HasPrefix(line, "Plan edits recheck your ") && strings.HasSuffix(line, " under these rules."), line)
+			}
+		}
+	}
 }
 
 func TestAdministerWorkspaceRefusesAnAnswerToRulesThatChanged(t *testing.T) {
@@ -632,7 +747,7 @@ func TestAdministerWorkspaceRefusesAnAnswerOverStoredRulesThatChanged(t *testing
 	s, session := connectToApprovalServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{}).handle})
 	body := approvalBody(t, fallbackRule())
 	state := signedApprovalState(t, s, mock.stored, body, time.Now())
-	// Another admin renames the rule the request removes. A Removed line names
+	// Another admin renames the rule the request removes. A Remove line names
 	// no title, so the message stays the same.
 	mock.setStored(fallbackRule(), changeRule("New", "resource.environment_id == 'x'"))
 
@@ -655,7 +770,7 @@ func TestAdministerWorkspaceDescribesTheRulesLeft(t *testing.T) {
 		"an added rule's description": {
 			stored:    []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()},
 			requested: []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), described},
-			want:      `1. "Prod", "Workspace DBA": "resource.environment_id == 'prod'" (description "Production")`,
+			want:      "1. \"Prod\", \"Workspace DBA\": `resource.environment_id == 'prod'` (description \"Production\")",
 		},
 		"no rule left": {
 			stored:    []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), prodRule},
