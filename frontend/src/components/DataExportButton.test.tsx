@@ -21,6 +21,26 @@ vi.mock("./MaxRowCountSelect", () => ({
   MaxRowCountSelect: () => null,
 }));
 
+// Zipping a multi-database download waits on the test, so it can cancel
+// while the zip is being generated.
+const zipMocks = vi.hoisted(() => ({
+  finishZip: undefined as (() => void) | undefined,
+  saveAs: vi.fn(),
+}));
+
+vi.mock("jszip", () => ({
+  default: class {
+    file() {}
+    generateAsync() {
+      return new Promise<Blob>((resolve) => {
+        zipMocks.finishZip = () => resolve(new Blob());
+      });
+    }
+  },
+}));
+
+vi.mock("file-saver", () => ({ default: zipMocks.saveAs }));
+
 const sharepointUrl =
   "https://contoso.sharepoint.com/sites/Finance/Shared%20Documents/Exports";
 const folderUri = `${sharepointUrl}/20261022-main`;
@@ -250,6 +270,30 @@ describe("DataExportButton cancel", () => {
       expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
     });
     expect(window.URL.createObjectURL).not.toHaveBeenCalled();
+    expect(pushNotification).not.toHaveBeenCalled();
+  });
+
+  test("saves nothing from a multi-database download canceled while zipping", async () => {
+    zipMocks.finishZip = undefined;
+    zipMocks.saveAs.mockReset();
+    onExport.mockImplementation(({ resolve }) =>
+      resolve([
+        { content: new Uint8Array([1]), filename: "a.zip" },
+        { content: new Uint8Array([2]), filename: "b.zip" },
+      ])
+    );
+    renderButton([ExportDestination.DOWNLOAD]);
+    openDrawer();
+    confirmExport();
+    await waitFor(() => expect(zipMocks.finishZip).toBeDefined());
+
+    cancel();
+    await act(async () => zipMocks.finishZip?.());
+
+    await waitFor(() => {
+      expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+    });
+    expect(zipMocks.saveAs).not.toHaveBeenCalled();
     expect(pushNotification).not.toHaveBeenCalled();
   });
 

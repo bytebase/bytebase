@@ -188,26 +188,29 @@ const downloadSingle = (entry: DownloadContent, format: ExportFormat) => {
 
 const downloadZip = async (
   contents: DownloadContent[],
-  format: ExportFormat
+  format: ExportFormat,
+  signal: AbortSignal
 ) => {
   const zip = new JSZip();
   for (const entry of contents) {
     zip.file(entry.filename, toBlob(entry, format));
   }
   const zipFile = await zip.generateAsync({ type: "blob" });
+  if (signal.aborted) return;
   saveAs(zipFile, `download_${dayjs().format("YYYY-MM-DDTHH-mm-ss")}.zip`);
 };
 
 const downloadAll = async (
   contents: DownloadContent[],
-  format: ExportFormat
+  format: ExportFormat,
+  signal: AbortSignal
 ) => {
   if (contents.length === 0) return;
   if (contents.length === 1) {
     downloadSingle(contents[0], format);
     return;
   }
-  await downloadZip(contents, format);
+  await downloadZip(contents, format, signal);
 };
 
 /**
@@ -340,7 +343,8 @@ export function DataExportButton({
           return;
         }
         if (controller.signal.aborted) return;
-        await downloadAll(outcome, options.format);
+        await downloadAll(outcome, options.format, controller.signal);
+        if (controller.signal.aborted) return;
         pushNotification({
           module: "bytebase",
           style: "SUCCESS",
