@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"slices"
+	"strconv"
 	"strings"
 
 	"connectrpc.com/connect"
@@ -373,7 +374,7 @@ func diffApprovalRules(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule, 
 			storedKept = append(storedKept, condition)
 			continue
 		}
-		diff.changes = append(diff.changes, fmt.Sprintf("Removed, %s: %q", approvers(rule), condition))
+		diff.changes = append(diff.changes, fmt.Sprintf("Remove, %s: %s", approvers(rule), conditionText(condition)))
 	}
 	for _, rule := range requestedDB {
 		if condition := rule.GetCondition().GetExpression(); storedByCondition[condition] != nil {
@@ -391,13 +392,9 @@ func diffApprovalRules(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule, 
 			if err := approverError(rule); err != nil {
 				return nil, err
 			}
-			// An added rule decides before every rule after it, so its place
-			// matters unless it is last.
-			if i < len(requestedDB)-1 {
-				diff.changes = append(diff.changes, fmt.Sprintf("Added as rule %d, %s: %q", i+1, approvers(rule), condition))
-			} else {
-				diff.changes = append(diff.changes, fmt.Sprintf("Added, %s: %q", approvers(rule), condition))
-			}
+			// The first matching rule decides, so an added rule's place is part
+			// of the change.
+			diff.changes = append(diff.changes, fmt.Sprintf("Add rule %d, %s: %s", i+1, approvers(rule), conditionText(condition)))
 			continue
 		}
 		if !proto.Equal(before.GetTemplate().GetFlow(), rule.GetTemplate().GetFlow()) {
@@ -409,7 +406,7 @@ func diffApprovalRules(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule, 
 		kept++
 		if clauses := keptRuleClauses(before, rule, moved, i+1); len(clauses) > 0 {
 			line := strings.Join(clauses, "; ")
-			diff.changes = append(diff.changes, fmt.Sprintf("%s%s: %q", strings.ToUpper(line[:1]), line[1:], condition))
+			diff.changes = append(diff.changes, fmt.Sprintf("%s%s: %s", strings.ToUpper(line[:1]), line[1:], conditionText(condition)))
 		}
 	}
 	return diff, nil
@@ -420,19 +417,19 @@ func diffApprovalRules(stored, requested []*v1pb.WorkspaceApprovalSetting_Rule, 
 func keptRuleClauses(before, rule *v1pb.WorkspaceApprovalSetting_Rule, moved bool, position int) []string {
 	var clauses []string
 	if !proto.Equal(before.GetTemplate().GetFlow(), rule.GetTemplate().GetFlow()) {
-		clauses = append(clauses, fmt.Sprintf("changed, %s to %s", approvers(before), approvers(rule)))
+		clauses = append(clauses, fmt.Sprintf("change, %s to %s", approvers(before), approvers(rule)))
 	}
 	if moved {
-		clauses = append(clauses, fmt.Sprintf("moved to rule %d", position))
+		clauses = append(clauses, fmt.Sprintf("move to rule %d", position))
 	}
 	if title := rule.GetTemplate().GetTitle(); title != before.GetTemplate().GetTitle() {
-		clauses = append(clauses, "renamed to "+ruleTitle(rule))
+		clauses = append(clauses, "rename to "+ruleTitle(rule))
 	}
 	if description := rule.GetTemplate().GetDescription(); description != before.GetTemplate().GetDescription() {
 		if description == "" {
-			clauses = append(clauses, "description removed")
+			clauses = append(clauses, "remove description")
 		} else {
-			clauses = append(clauses, fmt.Sprintf("description changed to %q", description))
+			clauses = append(clauses, fmt.Sprintf("change description to %q", description))
 		}
 	}
 	return clauses
@@ -516,6 +513,17 @@ func approvers(rule *v1pb.WorkspaceApprovalSetting_Rule) string {
 	return strings.Join(names, " then ")
 }
 
+// conditionText shows a condition between backquotes, as typed, when every
+// character prints. strconv.CanBackquote also passes a tab and format
+// characters such as U+202E and U+200B, which strconv.IsPrint rejects, so such
+// a condition is escaped instead.
+func conditionText(condition string) string {
+	if strconv.CanBackquote(condition) && !strings.ContainsFunc(condition, func(r rune) bool { return !strconv.IsPrint(r) }) {
+		return "`" + condition + "`"
+	}
+	return strconv.Quote(condition)
+}
+
 // approverError refuses a rule whose approvers include a value that is not a
 // role name. An approval check matches a step's role by its exact name
 // (review.Workflow.canReview), so no one could approve such a step.
@@ -573,7 +581,7 @@ func approvalRulesForm(ctx context.Context, diff *approvalRulesDiff, issues stri
 	} else {
 		sb.WriteString("The rules for database changes, in the order an approval check tries them:")
 		for i, rule := range diff.requested {
-			fmt.Fprintf(&sb, "\n%d. %s, %s: %q", i+1, ruleTitle(rule), approvers(rule), rule.GetCondition().GetExpression())
+			fmt.Fprintf(&sb, "\n%d. %s, %s: %s", i+1, ruleTitle(rule), approvers(rule), conditionText(rule.GetCondition().GetExpression()))
 			if description := rule.GetTemplate().GetDescription(); description != "" {
 				fmt.Fprintf(&sb, " (description %q)", description)
 			}
@@ -603,7 +611,7 @@ func changeTooLong(needed int, tooLong, link string) *toolError {
 	return &toolError{
 		Code:       "CHANGE_TOO_LONG",
 		Message:    fmt.Sprintf("this change needs %d lines, more than the %d one confirmation form shows, so the approval rules were not changed", needed, messageLines),
-		Suggestion: "make the change in smaller steps, a rule or two at a time, or change the rules signed in to the Bytebase console: " + link,
+		Suggestion: "make the change in smaller steps, a rule or two at a time. Each step is a form of its own and applies when the user accepts it, so tell the user the change comes in steps, add a rule before removing the one it replaces, and before each step read the rules again with call_api SettingService/GetSetting and build the step from them. Or change the rules signed in to the Bytebase console: " + link,
 	}
 }
 
@@ -621,70 +629,80 @@ func countRules(n int) string {
 	return fmt.Sprintf("%d rules", n)
 }
 
-// issuesLine names the user's open issues, as many as one line holds, and
-// counts the rest; it only counts them when the first name alone does not fit.
-// more means a search stopped at its page size, so a count is a lower bound.
+// issuesLine names the user's open issues awaiting approval, as many as one
+// line holds, and counts the rest. A plan edit finds an issue's approval again
+// under the rules in force, so the line says so. more means a search stopped at
+// its page size, so a count is only a lower bound, and "at least N" never fits
+// the line that counts them all, which then drops the count.
 func issuesLine(issues []string, more bool) string {
 	if len(issues) == 0 {
 		return ""
 	}
+	const recheck, underRules = "Plan edits recheck your ", " under these rules."
 	rest := func(n int) string {
 		switch {
 		case more && n > 0:
-			return fmt.Sprintf(" and at least %d more.", n)
+			return fmt.Sprintf(" and at least %d more", n)
 		case more:
-			return " and more."
+			return " and more"
 		case n > 0:
-			return fmt.Sprintf(" and %d more.", n)
+			return fmt.Sprintf(" and %d more", n)
 		default:
-			return "."
+			return ""
 		}
 	}
-	line := "Your issues awaiting approval: "
+	line := recheck
 	for i, issue := range issues {
 		name := fmt.Sprintf("%q", issue)
 		candidate := line + name
 		if i > 0 {
 			candidate = line + ", " + name
 		}
-		if lineColumns(candidate+rest(len(issues)-i-1)) > messageLineWidth {
+		if lineColumns(candidate+rest(len(issues)-i-1)+underRules) > messageLineWidth {
 			if i > 0 {
-				return line + rest(len(issues)-i)
+				return line + rest(len(issues)-i) + underRules
 			}
-			switch {
-			case more:
-				return fmt.Sprintf("You have at least %d issues awaiting approval.", len(issues))
-			case len(issues) == 1:
-				return "You have 1 issue awaiting approval."
-			default:
-				return fmt.Sprintf("You have %d issues awaiting approval.", len(issues))
+			counted := fmt.Sprintf("%s%d issues awaiting approval%s", recheck, len(issues), underRules)
+			if len(issues) == 1 {
+				counted = recheck + "1 issue awaiting approval" + underRules
 			}
+			if more || lineColumns(counted) > messageLineWidth {
+				return recheck + "issues awaiting approval" + underRules
+			}
+			return counted
 		}
 		line = candidate
 	}
-	return line + rest(0)
+	return line + rest(0) + underRules
 }
 
+// continuedLine starts each continuation of a wrapped message line. Every
+// first line starts with a letter, so no part of a long value can pose as a line
+// of its own.
+const continuedLine = "> "
+
 // wrapMessageLine breaks line into lines of at most messageLineWidth columns,
-// at a space where it can.
+// at a space where it can, and starts each continuation with continuedLine.
 func wrapMessageLine(line string) []string {
 	var lines []string
-	for lineColumns(line) > messageLineWidth {
+	prefix := ""
+	for lineColumns(prefix+line) > messageLineWidth {
+		width := messageLineWidth - lineColumns(prefix)
 		runes := []rune(line)
-		cut := min(messageLineWidth, len(runes))
-		for lineColumns(string(runes[:cut])) > messageLineWidth {
+		cut := min(width, len(runes))
+		for lineColumns(string(runes[:cut])) > width {
 			cut--
 		}
+		next := cut
 		if space := strings.LastIndex(string(runes[:cut]), " "); space > 0 {
 			cut = len([]rune(string(runes[:cut])[:space]))
-			lines = append(lines, string(runes[:cut]))
-			line = string(runes[cut+1:])
-			continue
+			next = cut + 1
 		}
-		lines = append(lines, string(runes[:cut]))
-		line = string(runes[cut:])
+		lines = append(lines, prefix+string(runes[:cut]))
+		line = string(runes[next:])
+		prefix = continuedLine
 	}
-	return append(lines, line)
+	return append(lines, prefix+line)
 }
 
 // issuesAwaitingApproval lists the user's open change issues whose approval is
