@@ -719,6 +719,9 @@ message IssueComment {
     // "WT101", one per reason. A code names the same condition on every
     // engine. Empty for other reviewers.
     repeated string codes = 7;
+    // The name of the problem an AI result reports, on one line; the comment
+    // holds the rest. Empty for a RULE result, which rule_type names.
+    string title = 8;
   }
 
   enum ThreadState {

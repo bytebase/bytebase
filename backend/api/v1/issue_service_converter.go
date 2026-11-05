@@ -194,6 +194,7 @@ func convertToIssueCommentReviewMetadata(metadata *storepb.IssueCommentPayload_R
 		Superseded: metadata.Superseded,
 		Attempt:    metadata.Attempt,
 		Codes:      metadata.Codes,
+		Title:      metadata.Title,
 	}
 }
 

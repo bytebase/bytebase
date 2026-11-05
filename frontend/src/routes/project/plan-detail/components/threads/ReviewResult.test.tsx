@@ -138,19 +138,41 @@ describe("ReviewHeading", () => {
     expect(codesOf(container)).toEqual([]);
   });
 
-  test("shows an AI result by its priority alone", () => {
+  test("shows an AI result by its priority and title", () => {
     const { container, getByTestId } = render(
       <ReviewHeading
         review={create(IssueComment_ReviewMetadataSchema, {
           runType: ReviewRun_Type.AI,
           priority: IssueComment_ReviewMetadata_Priority.P2,
           codes: ["WT101"],
+          title: "Create `idx_rental` *concurrently*",
         })}
       />
     );
+    const heading = getByTestId("review-heading");
+    expect(
+      Array.from(heading.children).map((node) => node.getAttribute("data-testid"))
+    ).toEqual(["review-priority", "review-title"]);
     expect(getByTestId("review-priority").textContent).toBe("P2");
+    expect(getByTestId("review-title").textContent).toBe(
+      "Create idx_rental concurrently"
+    );
     expect(container.querySelector("[data-testid='review-rule']")).toBeNull();
     expect(codesOf(container)).toEqual([]);
+  });
+
+  test("shows a rule result without a title", () => {
+    const { container } = render(
+      <ReviewHeading
+        review={create(IssueComment_ReviewMetadataSchema, {
+          runType: ReviewRun_Type.RULE,
+          ruleType: ReviewRuleType.REQUIRE_WHERE,
+          priority: IssueComment_ReviewMetadata_Priority.P1,
+          title: "ignored",
+        })}
+      />
+    );
+    expect(container.querySelector("[data-testid='review-title']")).toBeNull();
   });
 });
 

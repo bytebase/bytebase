@@ -175,7 +175,8 @@ function CollapsedThreadRow({
   const { t } = useTranslation();
   const author = useCommentAuthor(comment);
   const review = comment.reviewMetadata;
-  const firstLine = markdownSummary(comment.comment);
+  // An AI result is summarized by its title, any other comment by its text.
+  const summary = markdownSummary(review?.title || comment.comment);
   return (
     <Button
       appearance="secondary"
@@ -194,8 +195,8 @@ function CollapsedThreadRow({
         {author.name}
       </span>
       {review && <ReviewPriorityBadge priority={review.priority} />}
-      <span className="min-w-0 flex-1 truncate text-control" title={firstLine}>
-        {firstLine}
+      <span className="min-w-0 flex-1 truncate text-control" title={summary}>
+        {summary}
       </span>
       {label}
       {replyCount > 0 && (

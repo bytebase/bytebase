@@ -4,6 +4,7 @@
 // approval passed, plan checks passed, the rule review done for the current
 // SQL, and no open thread.
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
+import { markdownSummary } from "@/components/MarkdownEditor";
 import { isThreadRoot } from "@/stores/app/issueComment";
 import { ApprovalStatus, IssueStatus } from "@/types/proto-es/v1/common_pb";
 import {
@@ -116,12 +117,9 @@ export function inFindingGroup(
     : set === group;
 }
 
-// An AI finding names its rule in its text; its first line is the title.
+// An AI finding's title as plain text.
 export const findingTitle = (comment: IssueComment): string =>
-  comment.comment
-    .split("\n", 1)[0]
-    .replace(/^#+\s*/, "")
-    .trim();
+  markdownSummary(comment.reviewMetadata?.title ?? "");
 
 export const emptyFindings = (): ReviewerFindings => ({
   open: 0,

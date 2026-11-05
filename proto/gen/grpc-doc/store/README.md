@@ -2303,12 +2303,12 @@ add/remove/update from the snapshot pair.
 
 ### IssueCommentPayload.ReviewMetadata
 ReviewMetadata is what a review result carries beyond its text: which
-reviewer posted it, what it was judged against, its priority, and the
-databases it applies to. When a run completes, an earlier result of its
-type whose fingerprint the run reports again keeps its thread, and the
-run posts no new result for it; every other earlier root of its type is
-resolved and marked superseded, in the transaction that posts the new
-results.
+reviewer posted it, what it was judged against, its priority, the
+databases it applies to, and for an AI result, its title. When a run
+completes, an earlier result of its type whose fingerprint the run
+reports again keeps its thread, and the run posts no new result for it;
+every other earlier root of its type is resolved and marked superseded,
+in the transaction that posts the new results.
 
 
 | Field | Type | Label | Description |
@@ -2321,6 +2321,7 @@ results.
 | fingerprint | [string](#string) |  | Identifies the finding across runs: equal fingerprints are the same finding on the same SQL. The rule review derives it from what it judged. The AI review starts it with a hash of its statement and ends it at random, and a later run carries it over to the finding its merge matches to the result. Unique among the results of one run. Empty on a result that predates it, and an empty fingerprint matches nothing. |
 | attempt | [int64](#int64) |  | The review_run.attempt of the run that posted the result. A result a later run reports again keeps its attempt. |
 | codes | [string](#string) | repeated | The conditions a RULE result reports, as omni finding codes such as &#34;WT101&#34;, one per reason. Empty for other reviewers. |
+| title | [string](#string) |  | The name of the problem an AI result reports, on one line; the comment holds the rest. Empty for a RULE result, which rule_type names. |
 
 
 

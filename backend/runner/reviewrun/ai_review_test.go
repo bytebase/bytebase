@@ -97,8 +97,7 @@ func TestAIReviewComments(t *testing.T) {
 	merged := comments[0]
 	require.Equal(t, "p", merged.ProjectID)
 	require.Equal(t, int64(7), merged.IssueUID)
-	require.Equal(t, "Drop orders_summary and orders_report before legacy_status"+
-		"\n\nprod-1/db: orders_summary and orders_report select legacy_status.\n"+
+	require.Equal(t, "prod-1/db: orders_summary and orders_report select legacy_status.\n"+
 		"\n- **P0** on prod-1/db"+
 		"\n- **P1** on app, prod-2/db"+
 		"\n- Not flagged on billing"+
@@ -114,9 +113,11 @@ func TestAIReviewComments(t *testing.T) {
 	require.Equal(t, storepb.ReviewRuleType_REVIEW_RULE_TYPE_UNSPECIFIED, metadata.RuleType)
 	require.Equal(t, storepb.IssueCommentPayload_ReviewMetadata_P0, metadata.Priority)
 	require.Equal(t, []string{"instances/prod-1/databases/db", "instances/prod-2/databases/db", "instances/staging/databases/app"}, metadata.Targets)
+	require.Equal(t, "Drop orders_summary and orders_report before legacy_status", metadata.Title)
 
 	single := comments[1]
-	require.Equal(t, "Create the index CONCURRENTLY\n\norders holds 52,000,000 rows.\n\nRule: An index on a table over 1 million rows is created CONCURRENTLY.\n\nSuggested fix: CREATE INDEX CONCURRENTLY idx_orders_created_at ON orders (created_at);", single.Payload.Comment)
+	require.Equal(t, "Create the index CONCURRENTLY", single.Payload.ReviewMetadata.Title)
+	require.Equal(t, "orders holds 52,000,000 rows.\n\nRule: An index on a table over 1 million rows is created CONCURRENTLY.\n\nSuggested fix: CREATE INDEX CONCURRENTLY idx_orders_created_at ON orders (created_at);", single.Payload.Comment)
 	require.Equal(t, int32(2), single.Payload.StatementAnchor.StartPosition.Line)
 	require.Equal(t, storepb.IssueCommentPayload_ReviewMetadata_P2, single.Payload.ReviewMetadata.Priority)
 	require.Equal(t, []string{"instances/prod-1/databases/db"}, single.Payload.ReviewMetadata.Targets)
@@ -134,8 +135,8 @@ func TestAIReviewComments(t *testing.T) {
 		Fix: "Drop each view that reads legacy_status first.",
 	}
 	comment := aiReviewComments("p", 7, []*aiReviewProblem{summarized})[0]
-	require.Equal(t, "Drop the views that read legacy_status first"+
-		"\n\nViews select legacy_status, so the DROP fails.\n"+
+	require.Equal(t, "Drop the views that read legacy_status first", comment.Payload.ReviewMetadata.Title)
+	require.Equal(t, "Views select legacy_status, so the DROP fails.\n"+
 		"\n- **P0** on prod-1/db: orders_summary and orders_report read it."+
 		"\n- **P1** on app, prod-2/db: orders_summary reads it."+
 		"\n- Not flagged on billing"+
@@ -152,7 +153,7 @@ func TestAIReviewComments(t *testing.T) {
 	}
 	summarized.Reviewed = reviewed[:3]
 	comment = aiReviewComments("p", 7, []*aiReviewProblem{summarized})[0]
-	require.Equal(t, "t\n\ne\n\n- **P0–P1** on app, prod-1/db, prod-2/db\n\nRule: No column is dropped while a view reads it.\n\nSuggested fix: f", comment.Payload.Comment, "a group shows the range of its severities, and every database flagged the problem")
+	require.Equal(t, "e\n\n- **P0–P1** on app, prod-1/db, prod-2/db\n\nRule: No column is dropped while a view reads it.\n\nSuggested fix: f", comment.Payload.Comment, "a group shows the range of its severities, and every database flagged the problem")
 
 	// billing reports a different problem on the drop's statement.
 	other := drop
@@ -199,7 +200,8 @@ func TestAIReviewCommentsBreakTies(t *testing.T) {
 	}}})
 	require.Len(t, comments, 1)
 	require.Equal(t, int32(7), comments[0].Payload.StatementAnchor.StartPosition.Line, "the first line on a tie")
-	require.True(t, strings.HasPrefix(comments[0].Payload.Comment, "instances/i/databases/a\n\na: e\n\n- **P1** on a, b, c, d\n"), "the first database leads on a tie")
+	require.Equal(t, "instances/i/databases/a", comments[0].Payload.ReviewMetadata.Title, "the first database leads on a tie")
+	require.True(t, strings.HasPrefix(comments[0].Payload.Comment, "a: e\n\n- **P1** on a, b, c, d\n"))
 }
 
 // mergeStatement has two statements: a drop on lines 1 and 2, and an index
@@ -358,7 +360,8 @@ func TestMergeAIReviewFindingsKeepsEarlierResults(t *testing.T) {
 			Fingerprint: segments[statement] + "/" + name,
 			Resolved:    resolved,
 			Priority:    priority,
-			Comment:     name + "\n\nevidence on db1\n\nRule: r\n\nSuggested fix: f",
+			Title:       name,
+			Comment:     "evidence on db1\n\nRule: r\n\nSuggested fix: f",
 			Sheet:       mergeStatement,
 			SheetSha256: "sha",
 			Line:        line,
@@ -421,7 +424,7 @@ func TestMergeAIReviewFindingsKeepsEarlierResults(t *testing.T) {
 		result.Unit.Statement = gap
 		first, err := mergeAIReviewFindings(context.Background(), (&recordingMerge{}).merge, []*aiReviewResult{result}, nil)
 		require.NoError(t, err)
-		posted := &aiReviewEarlier{Fingerprint: first[0].Segment + "/between", Priority: p2, Comment: "between", Sheet: gap, SheetSha256: "sha", Line: 2}
+		posted := &aiReviewEarlier{Fingerprint: first[0].Segment + "/between", Priority: p2, Title: "between", Sheet: gap, SheetSha256: "sha", Line: 2}
 		merge := &recordingMerge{groups: [][]int{{0, 1}}}
 		problems, err := mergeAIReviewFindings(context.Background(), merge.merge, []*aiReviewResult{result}, map[aiReviewSheet][]*aiReviewEarlier{sheet: {posted}})
 		require.NoError(t, err)
@@ -446,7 +449,7 @@ func TestMergeAIReviewFindingsKeepsEarlierResults(t *testing.T) {
 		require.Equal(t, both[1].Segment, alone[0].Segment, "a line's segment does not depend on which other lines have findings")
 
 		posted := func(problem *aiReviewProblem, name string, line int) *aiReviewEarlier {
-			return &aiReviewEarlier{Fingerprint: problem.Segment + "/" + name, Priority: p2, Comment: name, Sheet: gaps, SheetSha256: "sha", Line: line}
+			return &aiReviewEarlier{Fingerprint: problem.Segment + "/" + name, Priority: p2, Title: name, Sheet: gaps, SheetSha256: "sha", Line: line}
 		}
 		merge := &recordingMerge{groups: [][]int{{0, 3}, {1, 2}}}
 		problems := run([]*aiReviewEarlier{posted(both[0], "second", 2), posted(both[1], "fourth", 4)}, merge,
@@ -529,11 +532,11 @@ func TestAIReviewCommentParts(t *testing.T) {
 		for _, target := range targets {
 			problem.Findings = append(problem.Findings, &aiReviewFinding{Unit: unit(target), Finding: finding})
 		}
-		title, rule, fix := aiReviewCommentParts(aiReviewComments("p", 7, []*aiReviewProblem{problem})[0].Payload.Comment)
-		require.Equal(t, []string{finding.Title, finding.Rule, finding.Fix}, []string{title, rule, fix})
+		rule, fix := aiReviewCommentParts(aiReviewComments("p", 7, []*aiReviewProblem{problem})[0].Payload.Comment)
+		require.Equal(t, []string{finding.Rule, finding.Fix}, []string{rule, fix})
 	}
-	title, rule, fix := aiReviewCommentParts("only a title")
-	require.Equal(t, []string{"only a title", "", ""}, []string{title, rule, fix})
+	rule, fix := aiReviewCommentParts("only evidence")
+	require.Equal(t, []string{"", ""}, []string{rule, fix})
 }
 
 func TestAIReviewCommentsKeepEarlierResults(t *testing.T) {
@@ -550,16 +553,17 @@ func TestAIReviewCommentsKeepEarlierResults(t *testing.T) {
 		}
 	}
 	comments := aiReviewComments("p", 7, []*aiReviewProblem{
-		problem(&aiReviewEarlier{Fingerprint: "kept", Comment: "first words", Priority: storepb.IssueCommentPayload_ReviewMetadata_P1}),
+		problem(&aiReviewEarlier{Fingerprint: "kept", Title: "first title", Comment: "first words", Priority: storepb.IssueCommentPayload_ReviewMetadata_P1}),
 		problem(nil),
 		problem(nil),
 	})
 	require.Equal(t, "first words", comments[0].Payload.Comment, "a kept result keeps its text")
+	require.Equal(t, "first title", comments[0].Payload.ReviewMetadata.Title, "and its title")
 	require.Equal(t, "kept", comments[0].Payload.ReviewMetadata.Fingerprint)
 	require.Equal(t, storepb.IssueCommentPayload_ReviewMetadata_P2, comments[0].Payload.ReviewMetadata.Priority, "and takes this run's priority")
 	require.Equal(t, "new", comments[0].Payload.StatementAnchor.SheetSha256)
 	require.Equal(t, int32(4), comments[0].Payload.StatementAnchor.StartPosition.Line)
-	require.True(t, strings.HasPrefix(comments[1].Payload.Comment, "new words"))
+	require.Equal(t, "new words", comments[1].Payload.ReviewMetadata.Title)
 	require.True(t, strings.HasPrefix(comments[1].Payload.ReviewMetadata.Fingerprint, "segment/"), "a new fingerprint starts with its statement's segment")
 	require.NotEqual(t, comments[1].Payload.ReviewMetadata.Fingerprint, comments[2].Payload.ReviewMetadata.Fingerprint)
 }

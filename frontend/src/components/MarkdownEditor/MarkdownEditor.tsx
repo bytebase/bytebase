@@ -58,8 +58,8 @@ untrustedMarkdown.renderer.rules.image = (tokens, idx) => {
 };
 
 // A Markdown text's first line as plain text, for a one-line summary: markup
-// goes, and code spans, escapes, and entities keep their content. A review
-// finding's message is Markdown, its first line the summary.
+// goes, and code spans, escapes, and entities keep their content. A comment
+// is Markdown, and so is an AI review result's title.
 export function markdownSummary(text: string): string {
   const line = (text.split("\n", 1)[0] ?? "").replace(/^#+\s*/, "");
   const [inline] = untrustedMarkdown.parseInline(line, {});

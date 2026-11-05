@@ -6582,7 +6582,7 @@ change. </p></td>
         
       
         <h3 id="bytebase.store.IssueCommentPayload.ReviewMetadata">IssueCommentPayload.ReviewMetadata</h3>
-        <p>ReviewMetadata is what a review result carries beyond its text: which</p><p>reviewer posted it, what it was judged against, its priority, and the</p><p>databases it applies to. When a run completes, an earlier result of its</p><p>type whose fingerprint the run reports again keeps its thread, and the</p><p>run posts no new result for it; every other earlier root of its type is</p><p>resolved and marked superseded, in the transaction that posts the new</p><p>results.</p>
+        <p>ReviewMetadata is what a review result carries beyond its text: which</p><p>reviewer posted it, what it was judged against, its priority, the</p><p>databases it applies to, and for an AI result, its title. When a run</p><p>completes, an earlier result of its type whose fingerprint the run</p><p>reports again keeps its thread, and the run posts no new result for it;</p><p>every other earlier root of its type is resolved and marked superseded,</p><p>in the transaction that posts the new results.</p>
 
         
           <table class="field-table">
@@ -6658,6 +6658,14 @@ a later run reports again keeps its attempt. </p></td>
                   <td>repeated</td>
                   <td><p>The conditions a RULE result reports, as omni finding codes such as
 &#34;WT101&#34;, one per reason. Empty for other reviewers. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>title</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the problem an AI result reports, on one line; the comment
+holds the rest. Empty for a RULE result, which rule_type names. </p></td>
                 </tr>
               
             </tbody>

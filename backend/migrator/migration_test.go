@@ -163,6 +163,51 @@ func TestMigration3_25_1_DBSchemaSyncedAtBackfill(t *testing.T) {
 	}
 }
 
+func TestMigration3_25_2_AIReviewResultTitle(t *testing.T) {
+	ctx := context.Background()
+	_, db := testcontainer.NewPgDatabase(t)
+	_, err := db.ExecContext(ctx, `
+		CREATE TABLE issue_comment (
+			resource_id TEXT PRIMARY KEY,
+			payload JSONB NOT NULL DEFAULT '{}'
+		);
+		INSERT INTO issue_comment (resource_id, payload) VALUES
+			('one-database', '{"comment":"Do not drop a table that holds data\n\nThe rental table holds 10 rows.\n\nRule: Data risk.\n\nSuggested fix: Keep the table.","reviewMetadata":{"runType":"AI","priority":"P0"}}'),
+			('databases', '{"comment":"Create the index concurrently\n\nThe table is large.\n- **P1** on a, b\n\nRule: Locks.\n\nSuggested fix: Add CONCURRENTLY.","reviewMetadata":{"runType":"AI"}}'),
+			('title-only', '{"comment":"  Only a title  ","reviewMetadata":{"runType":"AI"}}'),
+			('migrated', '{"comment":"Evidence\n\nRule: R.","reviewMetadata":{"runType":"AI","title":"Kept title"}}'),
+			('rule', '{"comment":"Drops table rental.\nMore.","reviewMetadata":{"runType":"RULE","ruleType":"TABLE_DROP"}}'),
+			('person', '{"comment":"Looks good\n\nShip it."}');
+	`)
+	require.NoError(t, err)
+
+	statement, err := migrator.MigrationFS.ReadFile("migration/3.25/0002##ai_review_result_title.sql")
+	require.NoError(t, err)
+	_, err = db.ExecContext(ctx, string(statement))
+	require.NoError(t, err)
+
+	for _, tc := range []struct {
+		id      string
+		title   sql.NullString
+		comment string
+	}{
+		{id: "one-database", title: sql.NullString{String: "Do not drop a table that holds data", Valid: true}, comment: "The rental table holds 10 rows.\n\nRule: Data risk.\n\nSuggested fix: Keep the table."},
+		{id: "databases", title: sql.NullString{String: "Create the index concurrently", Valid: true}, comment: "The table is large.\n- **P1** on a, b\n\nRule: Locks.\n\nSuggested fix: Add CONCURRENTLY."},
+		{id: "title-only", title: sql.NullString{String: "Only a title", Valid: true}, comment: ""},
+		{id: "migrated", title: sql.NullString{String: "Kept title", Valid: true}, comment: "Evidence\n\nRule: R."},
+		{id: "rule", comment: "Drops table rental.\nMore."},
+		{id: "person", comment: "Looks good\n\nShip it."},
+	} {
+		var title sql.NullString
+		var comment string
+		require.NoError(t, db.QueryRowContext(ctx,
+			`SELECT payload->'reviewMetadata'->>'title', payload->>'comment' FROM issue_comment WHERE resource_id = $1`,
+			tc.id).Scan(&title, &comment))
+		require.Equal(t, tc.title, title, tc.id)
+		require.Equal(t, tc.comment, comment, tc.id)
+	}
+}
+
 func TestMigration3_25_0_SQLExportPermission(t *testing.T) {
 	ctx := context.Background()
 	_, db := testcontainer.NewPgDatabase(t)

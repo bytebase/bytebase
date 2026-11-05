@@ -167,6 +167,8 @@ func TestAIReviewKeepsTheThreadOfAProblemReportedAgain(t *testing.T) {
 	require.Len(t, second, 1)
 	require.Equal(t, first[0].Payload.ReviewMetadata.Fingerprint, second[0].Payload.ReviewMetadata.Fingerprint, "the merge matched the problem to the earlier result")
 	require.Equal(t, first[0].Payload.Comment, second[0].Payload.Comment)
+	require.NotEmpty(t, second[0].Payload.ReviewMetadata.Title)
+	require.Equal(t, first[0].Payload.ReviewMetadata.Title, second[0].Payload.ReviewMetadata.Title)
 	require.Equal(t, merges+1, model.merges.Load())
 	require.Equal(t, summaries, model.summaries.Load(), "a kept problem keeps its text, so nothing is summarized")
 	kept := roots()

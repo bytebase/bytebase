@@ -17,6 +17,7 @@ const (
 
 // Finding is one problem the review found in the statements.
 type Finding struct {
+	// Title is one line, since it heads the finding's comment.
 	Title    string
 	Severity Severity
 	// Line is the one-based line of the statements where the problem starts.
@@ -154,7 +155,7 @@ func stripCodeFence(text string) (string, bool) {
 
 func validateFinding(raw findingJSON, lineCount int) (Finding, []string) {
 	finding := Finding{
-		Title:    strings.TrimSpace(raw.Title),
+		Title:    strings.Join(strings.Fields(raw.Title), " "),
 		Severity: Severity(strings.ToUpper(strings.TrimSpace(raw.Severity))),
 		Line:     raw.Line,
 		Rule:     strings.TrimSpace(raw.Rule),

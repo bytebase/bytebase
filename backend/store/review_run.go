@@ -213,7 +213,7 @@ func (s *Store) ClaimAvailableReviewRuns(ctx context.Context, replicaID string) 
 // the same transaction. A current root of the same reviewer on the issue (one
 // no run has superseded) whose fingerprint a result repeats keeps its thread,
 // state and replies included, and takes the result's text, anchor, databases,
-// and priority, reopening if it was resolved and the priority rose; that
+// priority, and title, reopening if it was resolved and the priority rose; that
 // result is not posted again. Every other current root of the reviewer is
 // marked superseded and, if OPEN, resolved; the remaining results are inserted
 // as OPEN roots with no creator, carrying the run's attempt; and a
@@ -315,14 +315,15 @@ func (s *Store) CompleteReviewRun(ctx context.Context, claimed *ClaimedReviewRun
 			return false, errors.Wrapf(err, "failed to resolve reopened review results")
 		}
 
-		// A kept root takes the text, the anchor, the databases, and the
-		// priority of the result that repeats it. The rule review's
-		// fingerprint leaves the text out, so the text can differ: omni
-		// rewords a finding, or names what it found, such as an object's
-		// kind, differently. An anchor left on an earlier sheet can lose its
-		// place in the current one. The AI review's results are matched by a
-		// model, so the databases and the priority can differ too. A result
-		// on the whole change has no anchor and leaves the kept one alone.
+		// A kept root takes the text, the anchor, the databases, the
+		// priority, and the title of the result that repeats it. The rule
+		// review's fingerprint leaves the text out, so the text can differ:
+		// omni rewords a finding, or names what it found, such as an
+		// object's kind, differently. An anchor left on an earlier sheet can
+		// lose its place in the current one. The AI review's results are
+		// matched by a model, so the databases and the priority can differ
+		// too. A result on the whole change has no anchor and leaves the kept
+		// one alone.
 		// A resolved root whose priority rises is reopened: nobody accepted
 		// the higher priority, and the run read the thread's state before a
 		// person could resolve it.
@@ -338,9 +339,10 @@ func (s *Store) CompleteReviewRun(ctx context.Context, claimed *ClaimedReviewRun
 			        'comment', r.payload->'comment',
 			        'statementAnchor', r.payload->'statementAnchor')),
 			      '{reviewMetadata}',
-			      ((kept.payload->'reviewMetadata') - 'targets' - 'priority') || jsonb_strip_nulls(jsonb_build_object(
+			      ((kept.payload->'reviewMetadata') - 'targets' - 'priority' - 'title') || jsonb_strip_nulls(jsonb_build_object(
 			        'targets', r.payload->'reviewMetadata'->'targets',
-			        'priority', r.payload->'reviewMetadata'->'priority')))
+			        'priority', r.payload->'reviewMetadata'->'priority',
+			        'title', r.payload->'reviewMetadata'->'title')))
 			FROM unnest(?::JSONB[]) AS r(payload)
 			WHERE kept.project = ? AND kept.issue_id = ?
 			  AND kept.parent_id IS NULL
@@ -350,7 +352,8 @@ func (s *Store) CompleteReviewRun(ctx context.Context, claimed *ClaimedReviewRun
 			  AND ((r.payload ?? 'comment' AND kept.payload->'comment' IS DISTINCT FROM r.payload->'comment')
 			    OR (r.payload ?? 'statementAnchor' AND kept.payload->'statementAnchor' IS DISTINCT FROM r.payload->'statementAnchor')
 			    OR kept.payload->'reviewMetadata'->'targets' IS DISTINCT FROM r.payload->'reviewMetadata'->'targets'
-			    OR kept.payload->'reviewMetadata'->'priority' IS DISTINCT FROM r.payload->'reviewMetadata'->'priority')
+			    OR kept.payload->'reviewMetadata'->'priority' IS DISTINCT FROM r.payload->'reviewMetadata'->'priority'
+			    OR kept.payload->'reviewMetadata'->'title' IS DISTINCT FROM r.payload->'reviewMetadata'->'title')
 		`, resultPayloads, claimed.ProjectID, claimed.IssueUID, claimed.Type)
 		query, args, err = q.ToSQL()
 		if err != nil {
