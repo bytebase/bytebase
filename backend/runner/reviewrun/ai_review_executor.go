@@ -184,7 +184,9 @@ func (e *AIReviewExecutor) RunOnce(ctx context.Context, projectID string, issueU
 	if _, err := e.checkAISetting(ctx, project.Workspace); err != nil {
 		return nil, err
 	}
-	return aiReviewComments(projectID, issueUID, problems), nil
+	comments := aiReviewComments(projectID, issueUID, problems)
+	sortReviewResults(plan.Config.GetSpecs(), comments)
+	return comments, nil
 }
 
 // checkAISetting returns the workspace AI setting if it allows the review. It
