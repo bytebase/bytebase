@@ -15,6 +15,7 @@ import {
   type SharePointExportResult,
   toExportedSharePointResult,
   toFailedSharePointExport,
+  toNotStartedSharePointExport,
 } from "@/components/SharePointExportResultDialog";
 import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -304,6 +305,7 @@ export function BatchQuerySelect({
   const handleExport = ({
     options,
     resolve,
+    signal,
     onProgress,
   }: DataExportRequest) => {
     void (async () => {
@@ -343,7 +345,8 @@ export function BatchQuerySelect({
               schema: context.params.connection.schema,
               container: context.params.connection.table,
               destination: options.destination,
-            })
+            }),
+            signal
           );
           if (toSharePoint) {
             return {
@@ -364,6 +367,9 @@ export function BatchQuerySelect({
           if (toSharePoint) {
             return { sharepoint: toFailedSharePointExport(label, e) };
           }
+          if (signal.aborted) {
+            return undefined;
+          }
           useAppStore.getState().notify({
             module: "bytebase",
             style: "CRITICAL",
@@ -379,10 +385,22 @@ export function BatchQuerySelect({
       let done = 0;
       onProgress?.(done, targets.length);
       // Results keep the selection order whatever order the exports finish in.
+      // Once canceled, the remaining databases are not started.
       const results = await runWithConcurrency(
         targets,
         EXPORT_CONCURRENCY,
-        async (databaseName) => {
+        async (databaseName): Promise<DatabaseExportResult | undefined> => {
+          if (signal.aborted) {
+            return toSharePoint
+              ? {
+                  sharepoint: toNotStartedSharePointExport(
+                    sharePointExportDatabaseLabel(
+                      getDatabaseByName(databaseName)
+                    )
+                  ),
+                }
+              : undefined;
+          }
           try {
             return await exportDatabase(databaseName);
           } finally {

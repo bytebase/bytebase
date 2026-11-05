@@ -1183,12 +1183,16 @@
       "sharepoint-slow": "Los resultados grandes o un SharePoint ocupado pueden tardar unos minutos. Bytebase reintenta automáticamente."
     },
     "sharepoint": {
+      "canceled-description": "La exportación se canceló mientras se exportaba esta base de datos. Es posible que existan archivos en SharePoint.",
       "exported-title": "Exportado a SharePoint",
+      "not-started-description": "La exportación se canceló antes de empezar con esta base de datos. No se exportó nada.",
       "open": "Abrir en SharePoint",
       "result-title": "Resultados de la exportación a SharePoint",
       "status": {
+        "canceled": "Cancelado",
         "exported": "Exportado",
         "failed": "Error",
+        "not-started": "No exportado",
         "unconfirmed": "Sin confirmar"
       }
     }
@@ -2972,8 +2976,8 @@
           "self": "Permitir consultar la fuente de datos de administración"
         },
         "allow-download": {
-          "description": "Si se desactiva, las exportaciones solo pueden ir a un destino de almacenamiento configurado para el proyecto, como SharePoint, incluso con una concesión de acceso de exportación aprobada.",
-          "self": "Permitir descarga"
+          "description": "Los usuarios pueden elegir Descarga como destino al exportar resultados de consultas. Si se desactiva, las exportaciones solo van al destino de almacenamiento del proyecto, como SharePoint, incluso con una concesión de acceso de exportación aprobada.",
+          "self": "Permitir descargar exportaciones"
         },
         "allow-email-code-signin": {
           "description": "Los usuarios pueden iniciar sesión o registrarse introduciendo un código de 6 dígitos enviado a su correo electrónico.",

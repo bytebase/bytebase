@@ -30,6 +30,7 @@ const mocks = vi.hoisted(() => ({
   notify: vi.fn(),
   resolveExport: vi.fn(),
   reportProgress: vi.fn(),
+  exportController: new AbortController(),
 }));
 
 vi.mock("react-i18next", () => ({
@@ -63,6 +64,7 @@ vi.mock("@/components/DataExportButton", () => ({
             },
             resolve: mocks.resolveExport,
             reject: vi.fn(),
+            signal: mocks.exportController.signal,
             onProgress: mocks.reportProgress,
           })
         }
@@ -220,6 +222,7 @@ describe("BatchQuerySelect", () => {
     mocks.databasesWithExport = [];
     mocks.destinations = [ExportDestination.DOWNLOAD];
     mocks.exportDestination = ExportDestination.SHAREPOINT;
+    mocks.exportController = new AbortController();
     grantLookup([], []);
 
     cellA = {
@@ -417,7 +420,8 @@ describe("BatchQuerySelect", () => {
       });
     });
     expect(mocks.exportData).toHaveBeenCalledWith(
-      expect.objectContaining({ destination: ExportDestination.SHAREPOINT })
+      expect.objectContaining({ destination: ExportDestination.SHAREPOINT }),
+      mocks.exportController.signal
     );
     expect(mocks.reportProgress.mock.calls).toEqual([
       [0, 2],
@@ -459,8 +463,8 @@ describe("BatchQuerySelect", () => {
     return databases.map((database) => database.name);
   };
 
-  // Each export stays pending until the test settles it, so the test decides
-  // the order in which exports finish.
+  // Each export stays pending until the test settles it or the export is
+  // canceled, so the test decides the order in which exports finish.
   const deferExports = () => {
     const pending = new Map<
       string,
@@ -469,10 +473,14 @@ describe("BatchQuerySelect", () => {
     let inFlight = 0;
     let peak = 0;
     mocks.exportData.mockImplementation(
-      (request: { name: string }) =>
+      (request: { name: string }, signal: AbortSignal) =>
         new Promise((resolve, reject) => {
           inFlight++;
           peak = Math.max(peak, inFlight);
+          signal.addEventListener("abort", () => {
+            inFlight--;
+            reject(new ConnectError("aborted", Code.Canceled));
+          });
           pending.set(request.name, {
             resolve: (uri) => {
               inFlight--;
@@ -594,5 +602,50 @@ describe("BatchQuerySelect", () => {
       ["db0-content", "db0"],
       ["db2-content", "db2"],
     ]);
+  });
+
+  it("stops starting databases once canceled and reports each database's SharePoint outcome", async () => {
+    mocks.destinations = [ExportDestination.SHAREPOINT];
+    const names = useDatabases(6);
+    const exports = deferExports();
+    await exportAll();
+    exports.pending.get(names[3])?.resolve("https://example.com/exports/db3");
+    await flush();
+    expect(exports.started()).toEqual(names.slice(0, 5));
+
+    act(() => mocks.exportController.abort());
+    await flush();
+
+    expect(exports.started()).toEqual(names.slice(0, 5));
+    for (const call of mocks.exportData.mock.calls) {
+      expect(call[1]).toBe(mocks.exportController.signal);
+    }
+    expect(mocks.resolveExport).toHaveBeenCalledWith({
+      sharepoint: [
+        { database: "cell-0/db0", status: "CANCELED" },
+        { database: "cell-1/db1", status: "CANCELED" },
+        { database: "cell-2/db2", status: "CANCELED" },
+        {
+          database: "cell-3/db3",
+          status: "EXPORTED",
+          uri: "https://example.com/exports/db3",
+        },
+        { database: "cell-4/db4", status: "CANCELED" },
+        { database: "cell-5/db5", status: "NOT_STARTED" },
+      ],
+    });
+  });
+
+  it("reports no failures for a canceled download", async () => {
+    mocks.exportDestination = ExportDestination.DOWNLOAD;
+    useDatabases(3);
+    deferExports();
+    await exportAll();
+
+    act(() => mocks.exportController.abort());
+    await flush();
+
+    expect(mocks.notify).not.toHaveBeenCalled();
+    expect(mocks.resolveExport).toHaveBeenCalledWith([]);
   });
 });

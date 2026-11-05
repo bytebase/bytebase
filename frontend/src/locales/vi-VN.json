@@ -1183,12 +1183,16 @@
       "sharepoint-slow": "Kết quả lớn hoặc SharePoint đang bận có thể mất vài phút. Bytebase sẽ tự động thử lại."
     },
     "sharepoint": {
+      "canceled-description": "Quá trình xuất đã bị hủy khi đang xuất cơ sở dữ liệu này. Có thể đã có tệp trong SharePoint.",
       "exported-title": "Đã xuất sang SharePoint",
+      "not-started-description": "Quá trình xuất đã bị hủy trước khi bắt đầu cơ sở dữ liệu này. Không có gì được xuất.",
       "open": "Mở trong SharePoint",
       "result-title": "Kết quả xuất sang SharePoint",
       "status": {
+        "canceled": "Đã hủy",
         "exported": "Đã xuất",
         "failed": "Thất bại",
+        "not-started": "Chưa xuất",
         "unconfirmed": "Chưa xác nhận"
       }
     }
@@ -2972,8 +2976,8 @@
           "self": "Cho phép truy vấn nguồn dữ liệu quản trị"
         },
         "allow-download": {
-          "description": "Khi tắt, dữ liệu xuất chỉ có thể được gửi đến đích lưu trữ đã cấu hình cho dự án, chẳng hạn như SharePoint, kể cả với quyền truy cập xuất đã được phê duyệt.",
-          "self": "Cho phép tải xuống"
+          "description": "Người dùng có thể chọn Tải xuống làm đích khi xuất kết quả truy vấn. Khi tắt, dữ liệu xuất chỉ được gửi đến đích lưu trữ của dự án, chẳng hạn như SharePoint, kể cả với quyền truy cập xuất đã được phê duyệt.",
+          "self": "Cho phép tải xuống dữ liệu xuất"
         },
         "allow-email-code-signin": {
           "description": "Người dùng có thể đăng nhập hoặc đăng ký bằng cách nhập mã 6 chữ số được gửi đến email của họ.",
