@@ -1,8 +1,9 @@
 import { describe, expect, test } from "vitest";
+import enUS from "@/locales/sql-review/en-US.json";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { ReviewRuleType } from "@/types/proto-es/v1/review_rule_pb";
 import {
-  findingCodeTitle,
+  findingCodeTitleKey,
   RULE_REVIEW_ENGINES,
   standardRuleCodes,
   standardRuleEngines,
@@ -37,11 +38,23 @@ describe("standardRuleCatalog", () => {
     );
   });
 
-  test("titles a known code and not an unknown one", () => {
-    expect(findingCodeTitle("WT101")).toBe("Object doesn't exist");
-    expect(findingCodeTitle("ZZ999")).toBeUndefined();
+  test("keys a known code's title and not an unknown one", () => {
+    expect(findingCodeTitleKey("WT101")).toBe("sql-review.finding-code.wt101");
+    expect(findingCodeTitleKey("ZZ999")).toBeUndefined();
     expect(
       standardRuleCodes(ReviewRuleType.REVIEW_RULE_TYPE_UNSPECIFIED)
     ).toEqual([]);
+  });
+
+  // A code omni adds or retitles reaches the catalog through the backend's
+  // sync test, then fails here until en-US carries it; check-i18n holds the
+  // other locales to en-US's keys.
+  test("gives every code an en-US title equal to omni's", () => {
+    const titles: Record<string, string | undefined> = enUS["finding-code"];
+    for (const rule of STANDARD_RULE_TYPES) {
+      for (const { code, title } of standardRuleCodes(rule)) {
+        expect(titles[code.toLowerCase()], code).toBe(title);
+      }
+    }
   });
 });

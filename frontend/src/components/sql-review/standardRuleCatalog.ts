@@ -9,7 +9,8 @@ import catalog from "./standardRuleCatalog.json";
 export interface FindingCodeInfo {
   // Such as "WT101".
   code: string;
-  // A short English title, as omni names the code.
+  // omni's English title. The UI shows the sql-review.finding-code.<code>
+  // locale entry, whose en-US text is this title.
   title: string;
 }
 
@@ -40,12 +41,15 @@ export const standardRuleCodes = (
   rule: ReviewRuleType
 ): readonly FindingCodeInfo[] => RULES[ReviewRuleType[rule]]?.codes ?? [];
 
-const CODE_TITLES = new Map(
+const KNOWN_CODES: ReadonlySet<string> = new Set(
   Object.values(RULES).flatMap((rule) =>
-    (rule?.codes ?? []).map(({ code, title }) => [code, title] as const)
+    (rule?.codes ?? []).map(({ code }) => code)
   )
 );
 
-// A finding code's title, or undefined for a code this build does not know.
-export const findingCodeTitle = (code: string): string | undefined =>
-  CODE_TITLES.get(code);
+// The locale key of a finding code's title, or undefined for a code this
+// build does not know.
+export const findingCodeTitleKey = (code: string): string | undefined =>
+  KNOWN_CODES.has(code)
+    ? `sql-review.finding-code.${code.toLowerCase()}`
+    : undefined;
