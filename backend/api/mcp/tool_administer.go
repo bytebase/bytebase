@@ -69,12 +69,23 @@ const (
 	// approvalRulesApply is the fixed text of the approval form. It is one line,
 	// so it goes in the message whenever a line is left.
 	approvalRulesApply = "Approval checks from now on use these rules, also after a plan edit."
-
-	// rereadApprovalRules is the next step after the stored rules changed: the
-	// request was built from the old ones, so sending it again would undo the
-	// other change.
-	rereadApprovalRules = "read the rules again with call_api SettingService/GetSetting, make the user's change to them, and call administer_workspace with the result"
 )
+
+// adminRules names the rule list an entry changes, for the tool's own text.
+type adminRules struct {
+	// name is the list as the text names it, such as "the approval rules".
+	name string
+	// read is the call that reads the stored list.
+	read string
+}
+
+var approvalRules = adminRules{name: "the approval rules", read: "call_api SettingService/GetSetting"}
+
+// reread is the next step after the stored rules changed: the request was
+// built from the old ones, so sending it again would undo the other change.
+func (r adminRules) reread() string {
+	return "read the rules again with " + r.read + ", make the user's change to them, and call administer_workspace with the result"
+}
 
 var approvalSettingName = common.SettingNamePrefix + v1pb.Setting_WORKSPACE_APPROVAL.String()
 
@@ -94,13 +105,17 @@ func (*approvalRulesChange) confirmedProcedure() string {
 func (*approvalRulesChange) confirmedResource() string { return approvalSettingName }
 
 func (s *Server) handleAdministerWorkspace(ctx context.Context, req *mcp.CallToolRequest, input AdministerWorkspaceInput) (*mcp.CallToolResult, any, error) {
-	if endpoint, ok := s.openAPIIndex.GetEndpoint(input.OperationID); !ok || endpoint.Path != v1connect.SettingServiceUpdateSettingProcedure {
-		return formatToolError(&toolError{
-			Code:       "UNSUPPORTED_CHANGE",
-			Message:    fmt.Sprintf("administer_workspace does not change %q", input.OperationID),
-			Suggestion: "it changes the approval rules for database changes through SettingService/UpdateSetting; make other changes with the tool that serves them, or signed in to the Bytebase console",
-		}), nil, nil
+	if endpoint, ok := s.openAPIIndex.GetEndpoint(input.OperationID); ok && endpoint.Path == v1connect.SettingServiceUpdateSettingProcedure {
+		return s.administerApprovalRules(ctx, req, input)
 	}
+	return formatToolError(&toolError{
+		Code:       "UNSUPPORTED_CHANGE",
+		Message:    fmt.Sprintf("administer_workspace does not change %q", input.OperationID),
+		Suggestion: "it changes the approval rules for database changes through SettingService/UpdateSetting; make other changes with the tool that serves them, or signed in to the Bytebase console",
+	}), nil, nil
+}
+
+func (s *Server) administerApprovalRules(ctx context.Context, req *mcp.CallToolRequest, input AdministerWorkspaceInput) (*mcp.CallToolResult, any, error) {
 	link := s.consoleLink(ctx, "custom-approval")
 	change, err := parseApprovalRulesChange(input.Body, link)
 	if err != nil {
@@ -138,42 +153,8 @@ func (s *Server) handleAdministerWorkspace(ctx context.Context, req *mcp.CallToo
 	}
 	digest := approvalRulesDigest(form.message, stored, change.request)
 
-	reply, answered := s.signedReply(ctx, req, change, digest)
-	if !answered {
-		return s.askWithForm(ctx, change, digest, form.message, map[string]any{
-			"type": "object",
-			"properties": map[string]any{
-				adminChoiceField: map[string]any{
-					"type":        "string",
-					"title":       "Apply this change?",
-					"description": form.description,
-					"oneOf": []any{
-						map[string]any{"const": adminChoiceApply, "title": "Apply"},
-						map[string]any{"const": adminChoiceChange, "title": "Change it in chat"},
-					},
-					"default": adminChoiceApply,
-				},
-			},
-			"required": []string{adminChoiceField},
-		}), nil, nil
-	}
-	content, accepted, why := acceptedForm(reply.response)
-	if !accepted {
-		return textResult(fmt.Sprintf("Not changed: %s, so the approval rules stay as they are. Do not retry unless the user asks.", why)), nil, nil
-	}
-	switch content[adminChoiceField] {
-	case adminChoiceApply:
-	case adminChoiceChange:
-		return textResult("Not changed: the user wants to change this request. Ask them what to change, then call administer_workspace with the revised rules."), nil, nil
-	default:
-		return textResult("Not changed: the answer chose none of the form's choices, so the approval rules stay as they are."), nil, nil
-	}
-	if why := reply.staleReason("the approval rules, the user's issues awaiting approval or this request no longer read as they did when the user was asked"); why != "" {
-		return formatToolError(&toolError{
-			Code:       "STALE_CONFIRMATION",
-			Message:    why + ", so the approval rules were not changed",
-			Suggestion: rereadApprovalRules,
-		}), nil, nil
+	if result := s.confirmAdminChange(ctx, req, change, digest, form, approvalRules, "the approval rules, the user's issues awaiting approval or this request"); result != nil {
+		return result, nil, nil
 	}
 
 	confirmedCtx := auth.WithMCPConfirmedDecision(ctx, auth.MCPConfirmedDecision{
@@ -194,7 +175,7 @@ func (s *Server) handleAdministerWorkspace(ctx context.Context, req *mcp.CallToo
 			return formatToolError(&toolError{
 				Code:       "STALE_CONFIRMATION",
 				Message:    "the approval rules changed after the user was asked, so they were not changed",
-				Suggestion: rereadApprovalRules,
+				Suggestion: approvalRules.reread(),
 			}), nil, nil
 		}
 		return formatToolError(errors.Errorf("failed to update the approval rules: HTTP %d: %s", resp.Status, parseError(resp.Body))), nil, nil
@@ -557,22 +538,9 @@ func approvalRulesForm(ctx context.Context, diff *approvalRulesDiff, issues stri
 	if email := getUserEmail(ctx); email != "" {
 		question += ", as " + email
 	}
-	var ownWork []string
-	if issues != "" {
-		ownWork = wrapMessageLine(issues)
-	}
-	lines := []string{question + "?"}
-	tooLong := ""
-	for _, change := range diff.changes {
-		changeLines := wrapMessageLine(change)
-		if tooLong == "" && 1+len(changeLines)+len(ownWork) > messageLines {
-			tooLong = change
-		}
-		lines = append(lines, changeLines...)
-	}
-	lines = append(lines, ownWork...)
+	lines, tooLong := fitMessage(question+"?", diff.changes, issues)
 	if len(lines) > messageLines {
-		return nil, changeTooLong(len(lines), tooLong, link)
+		return nil, changeTooLong(len(lines), tooLong, approvalRules, link)
 	}
 
 	var sb strings.Builder
@@ -597,22 +565,85 @@ func approvalRulesForm(ctx context.Context, diff *approvalRulesDiff, issues stri
 	return &adminForm{message: strings.Join(lines, "\n"), description: sb.String()}, nil
 }
 
+// fitMessage puts the question, each change line and the change's effect on
+// the user into the lines a form shows, continuing a long line on the next.
+// tooLong is the first change that does not fit a form alone, if any.
+func fitMessage(question string, changes []string, effect string) (lines []string, tooLong string) {
+	var effectLines []string
+	if effect != "" {
+		effectLines = wrapMessageLine(effect)
+	}
+	lines = []string{question}
+	for _, change := range changes {
+		changeLines := wrapMessageLine(change)
+		if tooLong == "" && 1+len(changeLines)+len(effectLines) > messageLines {
+			tooLong = change
+		}
+		lines = append(lines, changeLines...)
+	}
+	return append(lines, effectLines...), tooLong
+}
+
 // changeTooLong refuses a change whose message needs more lines than a form
 // shows. Smaller steps help only when every rule change fits a form alone;
 // tooLong is the first one that does not.
-func changeTooLong(needed int, tooLong, link string) *toolError {
+func changeTooLong(needed int, tooLong string, rules adminRules, link string) *toolError {
 	if tooLong != "" {
 		return &toolError{
 			Code:       "CHANGE_TOO_LONG",
-			Message:    fmt.Sprintf("the rule change %q needs more lines than the %d one confirmation form shows, so the approval rules were not changed", tooLong, messageLines),
+			Message:    fmt.Sprintf("the rule change %q needs more lines than the %d one confirmation form shows, so %s were not changed", tooLong, messageLines, rules.name),
 			Suggestion: "make that change signed in to the Bytebase console: " + link,
 		}
 	}
 	return &toolError{
 		Code:       "CHANGE_TOO_LONG",
-		Message:    fmt.Sprintf("this change needs %d lines, more than the %d one confirmation form shows, so the approval rules were not changed", needed, messageLines),
-		Suggestion: "make the change in smaller steps, a rule or two at a time. Each step is a form of its own and applies when the user accepts it, so tell the user the change comes in steps, add a rule before removing the one it replaces, and before each step read the rules again with call_api SettingService/GetSetting and build the step from them. Or change the rules signed in to the Bytebase console: " + link,
+		Message:    fmt.Sprintf("this change needs %d lines, more than the %d one confirmation form shows, so %s were not changed", needed, messageLines, rules.name),
+		Suggestion: "make the change in smaller steps, a rule or two at a time. Each step is a form of its own and applies when the user accepts it, so tell the user the change comes in steps, add a rule before removing the one it replaces, and before each step read the rules again with " + rules.read + " and build the step from them. Or change the rules signed in to the Bytebase console: " + link,
 	}
+}
+
+// confirmAdminChange asks the user to confirm w, or reads their answer. It
+// returns the result that ends the call, or nil when the user chose Apply and
+// what the form showed still reads as it did when they were asked.
+func (s *Server) confirmAdminChange(ctx context.Context, req *mcp.CallToolRequest, w confirmableWrite, digest []byte, form *adminForm, rules adminRules, shown string) *mcp.CallToolResult {
+	reply, answered := s.signedReply(ctx, req, w, digest)
+	if !answered {
+		return s.askWithForm(ctx, w, digest, form.message, map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				adminChoiceField: map[string]any{
+					"type":        "string",
+					"title":       "Apply this change?",
+					"description": form.description,
+					"oneOf": []any{
+						map[string]any{"const": adminChoiceApply, "title": "Apply"},
+						map[string]any{"const": adminChoiceChange, "title": "Change it in chat"},
+					},
+					"default": adminChoiceApply,
+				},
+			},
+			"required": []string{adminChoiceField},
+		})
+	}
+	content, accepted, why := acceptedForm(reply.response)
+	if !accepted {
+		return textResult(fmt.Sprintf("Not changed: %s, so %s stay as they are. Do not retry unless the user asks.", why, rules.name))
+	}
+	switch content[adminChoiceField] {
+	case adminChoiceApply:
+	case adminChoiceChange:
+		return textResult("Not changed: the user wants to change this request. Ask them what to change, then call administer_workspace with the revised rules.")
+	default:
+		return textResult(fmt.Sprintf("Not changed: the answer chose none of the form's choices, so %s stay as they are.", rules.name))
+	}
+	if why := reply.staleReason(shown + " no longer read as they did when the user was asked"); why != "" {
+		return formatToolError(&toolError{
+			Code:       "STALE_CONFIRMATION",
+			Message:    why + ", so " + rules.name + " were not changed",
+			Suggestion: rules.reread(),
+		})
+	}
+	return nil
 }
 
 func ruleTitle(rule *v1pb.WorkspaceApprovalSetting_Rule) string {

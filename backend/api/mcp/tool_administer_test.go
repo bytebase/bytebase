@@ -778,7 +778,7 @@ func TestAdministerWorkspaceRefusesAnAnswerToRulesThatChanged(t *testing.T) {
 	res := callAdminister(t, session, administerParams(approvalBody(t, fallbackRule(), prodRule)))
 	require.True(t, res.IsError)
 	require.Contains(t, resultText(t, res), "STALE_CONFIRMATION")
-	require.Contains(t, resultText(t, res), rereadApprovalRules)
+	require.Contains(t, resultText(t, res), approvalRules.reread())
 	require.Empty(t, mock.calls())
 }
 
@@ -855,7 +855,7 @@ func TestAdministerWorkspaceReportsTheLockedWriteRefusal(t *testing.T) {
 	require.True(t, res.IsError)
 	require.Contains(t, resultText(t, res), "STALE_CONFIRMATION")
 	require.Contains(t, resultText(t, res), "the approval rules changed after the user was asked")
-	require.Contains(t, resultText(t, res), rereadApprovalRules)
+	require.Contains(t, resultText(t, res), approvalRules.reread())
 	require.Len(t, mock.calls(), 1)
 }
 
