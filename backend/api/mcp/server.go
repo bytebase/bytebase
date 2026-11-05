@@ -284,6 +284,7 @@ func (s *Server) registerTools() {
 	s.registerChangeTool()
 	s.registerDecideIssueTool()
 	s.registerSetJustInTimeAccessTool()
+	s.registerAdministerWorkspaceTool()
 	s.registerMaskingExemptionTools()
 	s.registerRequestAccessGrantTool()
 	s.registerReauthorizeTool()

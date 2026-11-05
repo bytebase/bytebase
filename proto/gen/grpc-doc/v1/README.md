@@ -896,7 +896,9 @@ already keeps for the wording.
 | ENDS_SESSION | 4 | Destroys the human&#39;s own login session. |
 | ENDS_MEMBERSHIP | 5 | Destroys the caller&#39;s own workspace membership and mints a plain workspace token on the way out. |
 | MINTS_CREDENTIAL_FOR_OTHERS | 6 | Leaves someone holding a principal the caller is not — by issuing its credential, carrying an existing one out to a host the caller named, choosing what will later be trusted to mint one, or redirecting where one gets delivered. |
-| REWRITES_SESSION_BOUNDARY | 7 | Rewrites the workspace configuration that governs the session making the call — the MCP switch itself, the sign-in and SSO settings, the mail relay that carries credential resets, and the AI endpoint the stored API key is sent to. A session that can widen its own ceiling is not bounded by it. |
+| REWRITES_SESSION_BOUNDARY | 7 | Rewrites the workspace configuration that governs the session making the call — the MCP switch itself, the sign-in and SSO settings, the mail relay that carries credential resets, and the AI endpoint the stored API key is sent to. A session that can widen its own ceiling is not bounded by it.
+
+No method carries it. UpdateSetting, which writes all of these, is WRITE, and the gate serves it only for a setting the user confirmed, which the MCP server offers for the approval rules alone. |
 | DRIVES_THE_APPROVAL_DECISION | 8 | Can let a change or an access request pass its approval without an approver deciding it: re-running the finding that sets the approval, which can clear the issue outright, or activating an access grant directly. |
 | ADMINISTERS_THE_WORKSPACE | 9 | Administers the workspace rather than doing database work: identity, credentials, access control, governance policy, billing, workspace and instance configuration, project lifecycle, and the operator&#39;s own audit trail. |
 | READS_OTHER_USERS_SQL | 10 | Returns SQL that other people wrote. The permission gating it reads as an ordinary list permission, so the exclusion is per method rather than per permission: these methods span the workspace or ignore the per-object sharing that keeps a saved query private. |

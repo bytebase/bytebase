@@ -5,6 +5,8 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"time"
+
+	"google.golang.org/protobuf/proto"
 )
 
 // MCPConfirmedDecision is the user's decision, confirmed in their MCP client, to
@@ -23,8 +25,11 @@ type MCPConfirmedDecision struct {
 	// user confirmed. The review workflow refuses the decision when it no longer
 	// matches.
 	IssueUpdateTime time.Time
-	// Digest is, for a SQL request, MCPStatementDigest of the request the user
-	// confirmed.
+	// Digest is what the procedure's handler checks before it acts. For a SQL
+	// request it is MCPStatementDigest of the request the user confirmed. For
+	// a change that replaces a stored value it is MCPValueDigest of the value
+	// the user saw, and the handler refuses the write when the value it reads
+	// under the write's lock no longer matches.
 	Digest []byte
 }
 
@@ -47,6 +52,18 @@ func MCPStatementDigest(statement, database, schema, container string) []byte {
 		_, _ = h.Write([]byte(field))
 	}
 	return h.Sum(nil)
+}
+
+// MCPValueDigest identifies a stored value as a confirmation shows it. The
+// marshal is deterministic, so the MCP tool and the handler, in one process,
+// get the same digest for equal messages.
+func MCPValueDigest(value proto.Message) []byte {
+	encoded, err := proto.MarshalOptions{Deterministic: true}.Marshal(value)
+	if err != nil {
+		return nil
+	}
+	sum := sha256.Sum256(encoded)
+	return sum[:]
 }
 
 // mcpConfirmedDecisionKey is unexported so that only code in this process can
