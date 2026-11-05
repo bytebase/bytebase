@@ -192,11 +192,12 @@ table in States:
   when the run has one.
 - Skipped: "Skipped by `<user>` · `<reason>`". Canceled: "Canceled · `<time>`".
 
-A release task whose stored to-apply list is empty (a declarative release has no list) says so in
-every state that would show the count: "Nothing to apply · 493 already applied" not started,
-"Running · started 15:14" running, and "Nothing new · 493 already applied · 0.3 s" done. The run
-records no result of its own, so the done line is the stored preview too: a revision deleted between
-rollout creation and the run makes it wrong, and the opened task's log shows what the run applied.
+A release task whose stored to-apply list is empty (a declarative release has no list) says so
+before it runs: "Nothing to apply · 493 already applied" not started, and "Running · started 15:14"
+running. A done release task reads "All 493 applied · 0.3 s" whatever its stored list held: that is
+a statement about the database (D5), true after any successful run, while the stored list is a
+preview that a revision deleted between rollout creation and the run makes wrong, so "Nothing new"
+there could contradict the opened task's "Applied again".
 
 *Already applied* counts the release's versions that were on the database when the rollout was created; the
 statement kind is DDL, DML or Mixed from the plan check's `statement_types`, whose enum is grouped
@@ -443,8 +444,10 @@ those builds, because the release's files came from it and D8 links them there.
 The file's path is the action's glob match, relative to the pipeline's working directory; a pipeline
 that runs in a subdirectory gets a link that misses, and an unknown platform gets none. A
 declarative rollout concatenates every match into one file and records the `--file-pattern` itself as
-its path (`getReleaseFiles` in `action/command/file.go`), so a path with `*` names no file and gets no
-link; a literal pattern is the file and keeps it. A marker
+its path (`getReleaseFiles` in `action/command/file.go`), so on a declarative release a path with a
+doublestar metacharacter (`*`, `?`, `[`, `{`) names no file and gets no link; a literal pattern is
+the file and keeps it. A versioned release's path is a real file name, which may contain `?` or
+`[`, so it always keeps its link. A marker
 miss is silent: the row shows the commit. When the title is the commit's first line and the PR
 number came from its marker, the marker is removed from the title, so a squash merge reads `<title>
 #N` once. The PR URL is the repository URL plus the platform's path and the number. On a platform
@@ -541,7 +544,7 @@ The folded card's description, per task state (D3):
 |---|---|---|---|
 | Not started | "3 to apply · 490 already applied", or "Nothing to apply · 493 already applied", then "· scheduled 18:00" or the waiting cause; a declarative release shows the status only | "DML · about 1,180 rows", then the schedule or waiting cause | gray |
 | Running | "Applying 3 files · started 15:14", or "Running · started 15:14" with nothing to apply | "Running · started 15:14" | blue |
-| Done | "All 493 applied · 4.1 s", or "Nothing new · 493 already applied · 0.3 s" when the stored list was empty | "DML · 4.1 s", "DDL · 1.2 s" or "Mixed · 3.4 s" | green |
+| Done | "All 493 applied · 4.1 s", whatever the stored list held | "DML · 4.1 s", "DDL · 1.2 s" or "Mixed · 3.4 s" | green |
 | Failed | `<failed version>` then the error's first line, or the first line alone when the error names no file | The error's first line | red |
 | Skipped | "Skipped by `<user>` · `<reason>`" | Same | gray |
 | Canceled | "Canceled · `<time>`" | Same | gray |
@@ -635,9 +638,8 @@ Tests to write, per the placement rules in `AGENTS.md`:
 - Folded card tests: each cell of the card table in States from the task, its latest run, the
   stored state and the plan check, before any log loads; the executor prefix removed from the
   error's first line; the release's file count on a done release task; DDL, DML and Mixed from the
-  statement types, with the run's duration; an empty stored list reading "Nothing to apply",
-  "Running" and "Nothing new" by state, and a declarative task, which has no list, never reading
-  "Nothing new"; the description under the database below 640 px; every task folded on load, the stage selected for
+  statement types, with the run's duration; an empty stored list reading "Nothing to apply" and
+  "Running" by state, and "All N applied" once done, as does a done task whose list was not empty; the description under the database below 640 px; every task folded on load, the stage selected for
   a failed, a running and a deployed plan, and a URL naming a task opening it.
 - Header click tests, folded and open: a click on the line's empty space and on the card padding
   toggles once; the task name and the caret toggle once, not twice; the checkbox, an action button
@@ -661,7 +663,7 @@ Tests to write, per the placement rules in `AGENTS.md`:
   failed section; opening at the top with the error when there
   is no range; the per-database line when opened from a section and none from Changes; the
   file-at-commit link per platform and none on an unknown one or for a declarative pattern path
-  with `*`; the container chosen
+  with `*`, `?`, `[` or `{`, while a versioned file named with `?` or `[` keeps it; the container chosen
   by the page's width; swapping files in the docked column; Close and Esc; the plan's state, such
   as loaded rows, kept when the column opens and closes.
 - Source row tests: each row of the States table from a `VCSSource` with that subset; a squash-merge
