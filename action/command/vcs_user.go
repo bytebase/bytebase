@@ -404,6 +404,19 @@ func getVCSSource(w *world.World) *v1pb.Release_VCSSource {
 	return source
 }
 
+// githubBranch is the source branch, or empty when the run is on a tag or a
+// merge queue's temporary branch. GITHUB_REF_NAME is the synthetic
+// "<N>/merge" in a pull request run, so that run reads GITHUB_HEAD_REF.
+func githubBranch() string {
+	if head := os.Getenv("GITHUB_HEAD_REF"); head != "" {
+		return head
+	}
+	if os.Getenv("GITHUB_EVENT_NAME") == "merge_group" || os.Getenv("GITHUB_REF_TYPE") != "branch" {
+		return ""
+	}
+	return os.Getenv("GITHUB_REF_NAME")
+}
+
 func getGitHubVCSSource() *v1pb.Release_VCSSource {
 	repoURL := os.Getenv("GITHUB_SERVER_URL") + "/" + os.Getenv("GITHUB_REPOSITORY")
 	sha := os.Getenv("GITHUB_SHA")
@@ -411,8 +424,7 @@ func getGitHubVCSSource() *v1pb.Release_VCSSource {
 		VcsType:   v1pb.VCSType_GITHUB,
 		Url:       repoURL + "/commit/" + sha,
 		CommitSha: sha,
-		// GITHUB_REF_NAME is the synthetic "<N>/merge" in a pull request run.
-		Branch: firstNonEmpty(os.Getenv("GITHUB_HEAD_REF"), os.Getenv("GITHUB_REF_NAME")),
+		Branch:    githubBranch(),
 	}
 
 	var event struct {
@@ -475,7 +487,7 @@ func getGitLabVCSSource() *v1pb.Release_VCSSource {
 		VcsType:     v1pb.VCSType_GITLAB,
 		Url:         repoURL + "/-/commit/" + sha,
 		CommitSha:   sha,
-		Branch:      firstNonEmpty(os.Getenv("CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"), os.Getenv("CI_COMMIT_REF_NAME")),
+		Branch:      firstNonEmpty(os.Getenv("CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"), os.Getenv("CI_COMMIT_BRANCH")),
 		CommitTitle: os.Getenv("CI_COMMIT_TITLE"),
 		AuthorName:  authorNameOf(os.Getenv("CI_COMMIT_AUTHOR")),
 	}
@@ -517,15 +529,21 @@ func getBitbucketVCSSource() *v1pb.Release_VCSSource {
 func getAzureDevOpsVCSSource() *v1pb.Release_VCSSource {
 	repoURL := os.Getenv("SYSTEM_COLLECTIONURI") + os.Getenv("SYSTEM_TEAMPROJECT") + "/_git/" + os.Getenv("BUILD_REPOSITORY_NAME")
 	sha := os.Getenv("BUILD_SOURCEVERSION")
-	// BUILD_SOURCEBRANCH is "refs/pull/<N>/merge" in a PR build, and
-	// BUILD_SOURCEBRANCHNAME keeps only the last segment of "feature/x".
+	// BUILD_SOURCEBRANCH is "refs/pull/<N>/merge" in a PR build and
+	// "refs/tags/<tag>" in a tag build, and BUILD_SOURCEBRANCHNAME keeps only
+	// the last segment of "feature/x". Only a refs/heads/ ref is a branch.
 	branch := firstNonEmpty(os.Getenv("SYSTEM_PULLREQUEST_SOURCEBRANCH"), os.Getenv("BUILD_SOURCEBRANCH"))
+	if name, ok := strings.CutPrefix(branch, "refs/heads/"); ok {
+		branch = name
+	} else if strings.HasPrefix(branch, "refs/") {
+		branch = ""
+	}
 	title, _ := splitCommitMessage(os.Getenv("BUILD_SOURCEVERSIONMESSAGE"))
 	source := &v1pb.Release_VCSSource{
 		VcsType:     v1pb.VCSType_AZURE_DEVOPS,
 		Url:         repoURL + "/commit/" + sha,
 		CommitSha:   sha,
-		Branch:      strings.TrimPrefix(branch, "refs/heads/"),
+		Branch:      branch,
 		CommitTitle: title,
 		AuthorName:  os.Getenv("BUILD_REQUESTEDFOR"),
 	}

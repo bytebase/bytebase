@@ -337,6 +337,7 @@ func TestGetVCSSource(t *testing.T) {
 		"GITHUB_SHA":        "0a1b2c3d",
 		"GITHUB_EVENT_NAME": "push",
 		"GITHUB_REF_NAME":   "main",
+		"GITHUB_REF_TYPE":   "branch",
 		githubEventPayload:  "",
 	}
 	with := func(base map[string]string, extra map[string]string) map[string]string {
@@ -410,6 +411,56 @@ func TestGetVCSSource(t *testing.T) {
 			},
 		},
 		{
+			name:     "GitHub tag push has no branch",
+			platform: world.GitHub,
+			env: with(githubPush, map[string]string{
+				"GITHUB_REF_NAME": "v1.2.0",
+				"GITHUB_REF_TYPE": "tag",
+			}),
+			want: &v1pb.Release_VCSSource{
+				VcsType: v1pb.VCSType_GITHUB, Url: "https://github.com/example/app/commit/0a1b2c3d", CommitSha: "0a1b2c3d",
+			},
+		},
+		{
+			name:     "GitHub merge queue run has no branch",
+			platform: world.GitHub,
+			env: with(githubPush, map[string]string{
+				"GITHUB_EVENT_NAME": "merge_group",
+				"GITHUB_REF_NAME":   "gh-readonly-queue/main/pr-42-0a1b2c3d",
+			}),
+			want: &v1pb.Release_VCSSource{
+				VcsType: v1pb.VCSType_GITHUB, Url: "https://github.com/example/app/commit/0a1b2c3d", CommitSha: "0a1b2c3d",
+			},
+		},
+		{
+			name:     "GitLab tag pipeline has no branch",
+			platform: world.GitLab,
+			env: map[string]string{
+				"CI_PROJECT_URL":     "https://gitlab.example.com/group/app",
+				"CI_COMMIT_SHA":      "9f8e7d6c",
+				"CI_COMMIT_REF_NAME": "v1.2.0",
+				"CI_COMMIT_TITLE":    "Release 1.2.0",
+			},
+			want: &v1pb.Release_VCSSource{
+				VcsType: v1pb.VCSType_GITLAB, Url: "https://gitlab.example.com/group/app/-/commit/9f8e7d6c",
+				CommitSha: "9f8e7d6c", CommitTitle: "Release 1.2.0",
+			},
+		},
+		{
+			name:     "Azure tag build has no branch",
+			platform: world.AzureDevOps,
+			env: map[string]string{
+				"SYSTEM_COLLECTIONURI":  "https://dev.azure.com/example/",
+				"SYSTEM_TEAMPROJECT":    "shop",
+				"BUILD_REPOSITORY_NAME": "app",
+				"BUILD_SOURCEVERSION":   "1c2d3e4f",
+				"BUILD_SOURCEBRANCH":    "refs/tags/v1.2.0",
+			},
+			want: &v1pb.Release_VCSSource{
+				VcsType: v1pb.VCSType_AZURE_DEVOPS, Url: "https://dev.azure.com/example/shop/_git/app/commit/1c2d3e4f", CommitSha: "1c2d3e4f",
+			},
+		},
+		{
 			name:     "GitLab merge request pipeline uses the source branch and the MR",
 			platform: world.GitLab,
 			env: map[string]string{
@@ -436,6 +487,7 @@ func TestGetVCSSource(t *testing.T) {
 				"CI_PROJECT_URL":     "https://gitlab.example.com/group/app",
 				"CI_COMMIT_SHA":      "9f8e7d6c",
 				"CI_COMMIT_REF_NAME": "main",
+				"CI_COMMIT_BRANCH":   "main",
 				"CI_COMMIT_TITLE":    "Merge branch 'feature/orders' into 'main'",
 				"CI_COMMIT_MESSAGE":  "Merge branch 'feature/orders' into 'main'\n\nOrders table\n\nSee merge request group/app!7",
 				"CI_COMMIT_AUTHOR":   "Alex Doe <alex@example.com>",
@@ -615,8 +667,8 @@ const githubEventPayload = "github event payload"
 // Every variable getVCSSource reads, cleared per case so the runner's own CI
 // environment cannot leak in.
 var vcsSourceEnvKeys = []string{
-	"GITHUB_SERVER_URL", "GITHUB_REPOSITORY", "GITHUB_SHA", "GITHUB_EVENT_NAME", "GITHUB_EVENT_PATH", "GITHUB_REF_NAME", "GITHUB_HEAD_REF",
-	"CI_PROJECT_URL", "CI_COMMIT_SHA", "CI_COMMIT_REF_NAME", "CI_MERGE_REQUEST_SOURCE_BRANCH_NAME", "CI_COMMIT_TITLE", "CI_COMMIT_MESSAGE", "CI_COMMIT_AUTHOR", "CI_MERGE_REQUEST_IID", "CI_MERGE_REQUEST_TITLE",
+	"GITHUB_SERVER_URL", "GITHUB_REPOSITORY", "GITHUB_SHA", "GITHUB_EVENT_NAME", "GITHUB_EVENT_PATH", "GITHUB_REF_NAME", "GITHUB_REF_TYPE", "GITHUB_HEAD_REF",
+	"CI_PROJECT_URL", "CI_COMMIT_SHA", "CI_COMMIT_REF_NAME", "CI_COMMIT_BRANCH", "CI_MERGE_REQUEST_SOURCE_BRANCH_NAME", "CI_COMMIT_TITLE", "CI_COMMIT_MESSAGE", "CI_COMMIT_AUTHOR", "CI_MERGE_REQUEST_IID", "CI_MERGE_REQUEST_TITLE",
 	"BITBUCKET_GIT_HTTP_ORIGIN", "BITBUCKET_COMMIT", "BITBUCKET_BRANCH", "BITBUCKET_PR_ID",
 	"SYSTEM_COLLECTIONURI", "SYSTEM_TEAMPROJECT", "BUILD_REPOSITORY_NAME", "BUILD_SOURCEVERSION", "BUILD_SOURCEBRANCH", "BUILD_SOURCEBRANCHNAME", "SYSTEM_PULLREQUEST_SOURCEBRANCH", "SYSTEM_PULLREQUEST_PULLREQUESTID", "BUILD_SOURCEVERSIONMESSAGE", "BUILD_REQUESTEDFOR",
 }
