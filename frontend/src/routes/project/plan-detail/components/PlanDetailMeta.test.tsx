@@ -391,6 +391,35 @@ test("a release plan's details block has Source, Triggered, Release and Progress
   expect(screen.getByTestId("stage-cells")).toBeDefined();
 });
 
+test("a release plan with an issue keeps Labels and Review, so a project that forces labels can still submit it", () => {
+  mocks.page = { ...releasePage(githubSource), issue: makePage().issue } as unknown as PlanDetailPageState;
+  render(<PlanDetailMeta />);
+  expect(rows()).toEqual(["source", "created", "labels", "release", "review", "progress"]);
+});
+
+test("a source link that is not http or https stays plain text", () => {
+  for (const url of ["javascript:alert(1)", "ftp://example.com/app/commit/0a1b2c3", "data:text/html,x"]) {
+    mocks.page = releasePage({ vcsType: 0, url, commitTitle: "Add the orders table" });
+    const view = render(<PlanDetailMeta />);
+    expect(sourceRow().querySelector("a")).toBeNull();
+    expect(sourceRow().textContent).toContain("Add the orders table");
+    view.unmount();
+  }
+  mocks.page = releasePage({
+    ...githubSource,
+    commitTitle: "Add the orders table",
+    pullRequest: { url: "javascript:alert(1)", number: 42n, title: "" },
+  });
+  render(<PlanDetailMeta />);
+  expect(sourceRow().querySelector("a")).toBeNull();
+});
+
+test("a title loses bidirectional-override characters, which could make it read as another", () => {
+  mocks.page = releasePage({ ...githubSource, commitTitle: "Add \u202Eelbat\u202C the \u2066orders\u2069 table" });
+  render(<PlanDetailMeta />);
+  expect(sourceRow().querySelector("a")?.textContent).toBe("Add elbat the orders table");
+});
+
 test("a UIOps plan's details block has Created, Labels, Changes, Review and Progress, and no Source", () => {
   mocks.page = {
     ...makePage(),

@@ -1,10 +1,9 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ReadonlyMonaco } from "@/components/monaco";
-import {
-  type OpenReleaseFile,
-  ReleaseSpineView,
-  type RevisionsLinkTarget,
+import type {
+  OpenReleaseFile,
+  RevisionsLinkTarget,
 } from "@/components/task-run-log/ReleaseSpineView";
 import { useReleaseByName } from "@/hooks/useAppState";
 import { useTimeReading } from "@/hooks/useTimeReading";
@@ -21,10 +20,9 @@ import {
 } from "@/utils/v1/issue/rollout";
 import { useOpenReleaseFile } from "../release/ReleaseFileViewer";
 import { DeployLatestTaskRunInfo } from "./DeployLatestTaskRunInfo";
+import { DeployTaskPlannedFiles } from "./DeployTaskPlannedFiles";
 import { DeployTaskSkippedReason } from "./DeployTaskSkippedReason";
 import { revisionsLinkOf } from "./revisionsLink";
-
-const NO_ENTRIES: never[] = [];
 
 // The expanded card body: a skipped reason, a waiting note, the SQL statement
 // (or release info), and the latest task run. Only mounts when the card is
@@ -165,20 +163,13 @@ export function DeployTaskBody({
           )}
         </div>
       ) : !latestTaskRun && spineFiles.length > 0 && releaseState ? (
-        <div className="flex flex-col gap-1">
-          <div className="text-xs text-control-light">
-            {t("task-run.spine.as-of", {
-              time: computedAgo ?? "",
-            })}
-          </div>
-          <ReleaseSpineView
-            files={spineFiles}
-            entries={NO_ENTRIES}
-            state={releaseState}
-            getSectionLabel={() => ""}
-            onOpenFile={openFile}
-          />
-        </div>
+        <DeployTaskPlannedFiles
+          computedAgo={computedAgo}
+          files={spineFiles}
+          onOpenFile={openFile}
+          skipped={task.status === Task_Status.SKIPPED}
+          state={releaseState}
+        />
       ) : null}
 
       {latestTaskRun && (

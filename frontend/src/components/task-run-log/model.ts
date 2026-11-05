@@ -897,6 +897,21 @@ export const firstLineOf = (text: string): string =>
     .map((line) => line.trim())
     .find((line) => line !== "") ?? "";
 
+// The versions a stored state will apply. Its ranges are positions in the
+// release's file list, which never changes.
+export const pendingVersionsOf = (
+  state: Task_ReleaseState | undefined,
+  files: readonly { version: string }[]
+): Set<string> => {
+  const versions = new Set<string>();
+  for (const range of state?.pendingRanges ?? []) {
+    for (let i = range.start; i < Math.min(range.end, files.length); i++) {
+      versions.add(files[i].version);
+    }
+  }
+  return versions;
+};
+
 export interface ReleaseSpineInput {
   // The release's files in release order: ascending by version, the order the
   // executor runs them.
@@ -926,17 +941,16 @@ export const buildReleaseSpine = ({
   run,
   state,
 }: ReleaseSpineInput): ReleaseSpine => {
-  const pending = new Map(
-    (state?.pendingVersions ?? []).map((p) => [p.version, p])
+  const pending = pendingVersionsOf(state, files);
+  const deleted = new Map(
+    (state?.deletedRevisions ?? []).map((d) => [d.version, d])
   );
   // A section exists only for a version the stored state lists as pending or
   // the run reached; one it counted applied had a live revision then.
   const deletedNote = (version: string) => {
-    const p = pending.get(version);
-    if (p?.revisionDeleter || p?.revisionDeleteTime) {
-      return { time: p.revisionDeleteTime, deleter: p.revisionDeleter };
-    }
-    return state && !p
+    const d = deleted.get(version);
+    if (d) return { time: d.deleteTime, deleter: d.deleter };
+    return state && !pending.has(version)
       ? { deleter: "", afterRolloutCreation: true }
       : undefined;
   };

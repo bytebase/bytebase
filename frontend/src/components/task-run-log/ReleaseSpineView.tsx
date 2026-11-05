@@ -84,6 +84,8 @@ export interface ReleaseSpineViewProps {
   detailText?: TaskRunLogDetailText;
   onOpenFile?: OpenReleaseFile;
   revisionsLink?: RevisionsLinkTarget;
+  // The task was skipped: no file is about to apply.
+  skipped?: boolean;
 }
 
 const STATUS_VARIANT: Record<
@@ -110,6 +112,7 @@ export function ReleaseSpineView({
   detailText,
   onOpenFile,
   revisionsLink,
+  skipped,
 }: ReleaseSpineViewProps) {
   const { t } = useTranslation();
   const spine = useMemo(
@@ -295,9 +298,11 @@ export function ReleaseSpineView({
           {pathLink}
           <span className="flex-1" />
           <Badge>
-            {note
-              ? t("task-run.spine.will-apply-again")
-              : t("task-run.spine.will-apply")}
+            {skipped
+              ? t("task-run.spine.not-applied")
+              : note
+                ? t("task-run.spine.will-apply-again")
+                : t("task-run.spine.will-apply")}
             {note ? <RevisionDeletedInfo text={note} /> : null}
           </Badge>
         </div>

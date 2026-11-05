@@ -121,7 +121,7 @@ const releaseTask = (status: Task_Status, pending: string[], applied: number) =>
         source: { case: "release", value: "projects/p/releases/r1" },
         releaseState: create(Task_ReleaseStateSchema, {
           appliedCount: applied,
-          pendingVersions: pending.map((version) => ({ version })),
+          pendingCount: pending.length,
         }),
       },
     },

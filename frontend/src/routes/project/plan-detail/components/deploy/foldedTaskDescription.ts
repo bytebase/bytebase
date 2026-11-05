@@ -150,7 +150,7 @@ export function foldedTaskDescription({
     task.payload.case === "databaseUpdate"
       ? task.payload.value.releaseState
       : undefined;
-  const pendingCount = state?.pendingVersions.length ?? 0;
+  const pendingCount = state?.pendingCount ?? 0;
   const appliedEarlier =
     state && t("task.folded.already-applied", { count: state.appliedCount });
   const statementKind = statementSummary

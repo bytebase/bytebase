@@ -4475,6 +4475,9 @@
         "pending": "加载 {{count}} 个待应用"
       },
       "no-statement": "未能确定此错误对应的语句。",
+      "not-applied": "未应用",
+      "planned_one": "发布创建时的计划 · {{count}} 个文件待应用",
+      "planned_other": "发布创建时的计划 · {{count}} 个文件待应用",
       "revision-deleted": "更早的修订已于 {{date}} 被 {{user}} 删除",
       "revision-deleted-after-rollout": "更早的修订在此发布创建后被删除",
       "revisions-on": "{{database}} 上的修订",

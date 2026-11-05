@@ -4475,6 +4475,9 @@
         "pending": "Cargar {{count}} pendientes"
       },
       "no-statement": "No se identificó ninguna sentencia para este error.",
+      "not-applied": "No aplicado",
+      "planned_one": "Planificado al crear el despliegue · {{count}} archivo por aplicar",
+      "planned_other": "Planificado al crear el despliegue · {{count}} archivos por aplicar",
       "revision-deleted": "Revisión anterior eliminada el {{date}} por {{user}}",
       "revision-deleted-after-rollout": "Revisión anterior eliminada después de crear este despliegue",
       "revisions-on": "Revisiones en {{database}}",
