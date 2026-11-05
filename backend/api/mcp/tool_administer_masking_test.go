@@ -474,20 +474,29 @@ func TestAdministerMaskingRulesRefusesAChangeTooLongForTheForm(t *testing.T) {
 }
 
 // The unmask line belongs to the removal, so the long added full mask fits a
-// form of its own, and smaller steps help.
+// form of its own, and smaller steps help. The edited rule keeps its id, which
+// the step that adds it before the removal cannot.
 func TestAdministerMaskingRulesSuggestsStepsForAChangeThatFitsAFormAlone(t *testing.T) {
 	mock := &maskingMock{}
-	mock.setStored(maskingRule("r1", "Prod", `resource.environment_id == "prod"`, "bb.default"))
+	prod := maskingRule("r1", "Prod", `resource.environment_id == "prod"`, "bb.default")
+	mock.setStored(prod)
 	condition := `resource.environment_id == "prod" && resource.column_name in ["birth_date", "gender", "amount", "salary", "address", "phone"]`
-	added := maskingRule("r2", "Personal data in prod", condition, "bb.default")
 	require.Len(t, wrapMessageLine("Add rule 1, \"Default\" (Full mask): "+conditionText(condition)), 3, "the added rule takes three lines")
-	_, session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{}).handle})
+	user := &asker{answer: adminAnswer(adminChoiceApply)}
+	_, session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
 
-	res := callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false, added))))
+	res := callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false, maskingRule("r1", "Personal data in prod", condition, "bb.default")))))
 	require.True(t, res.IsError)
 	require.Contains(t, resultText(t, res), "this change needs 6 lines")
 	require.Contains(t, resultText(t, res), "make the change in smaller steps")
+	require.Contains(t, resultText(t, res), "add a rule under a new UUID before removing the one it replaces")
 	require.Empty(t, mock.calls())
+
+	firstStep := maskingRequest(false, maskingRule("r2", "Personal data in prod", condition, "bb.default"), prod)
+	res = callAdminister(t, session, maskingParams(maskingBody(t, firstStep)))
+	require.False(t, res.IsError, resultText(t, res))
+	require.EqualValues(t, 1, user.asked.Load())
+	require.Len(t, mock.calls(), 1)
 }
 
 func TestAdministerMaskingRulesAsksNothingWhenNothingChanges(t *testing.T) {

@@ -87,6 +87,9 @@ type adminRules struct {
 	question string
 	// apply is the form's fixed sentence.
 	apply string
+	// replace is how a step replaces a rule. The added rule goes first, so the
+	// rules never lapse between the steps.
+	replace string
 }
 
 var approvalRules = adminRules{
@@ -94,6 +97,7 @@ var approvalRules = adminRules{
 	read:     "call_api SettingService/GetSetting",
 	question: "Change the approval rules for database changes",
 	apply:    approvalRulesApply,
+	replace:  "add a rule before removing the one it replaces",
 }
 
 // reread is the next step after the stored rules changed: the request was
@@ -645,7 +649,7 @@ func changeTooLong(needed int, tooLong string, rules adminRules, link string) *t
 	return &toolError{
 		Code:       "CHANGE_TOO_LONG",
 		Message:    fmt.Sprintf("this change needs %d lines, more than the %d one confirmation form shows, so %s were not changed", needed, messageLines, rules.name),
-		Suggestion: "make the change in smaller steps, a rule or two at a time. Each step is a form of its own and applies when the user accepts it, so tell the user the change comes in steps, add a rule before removing the one it replaces, and before each step read the rules again with " + rules.read + " and build the step from them. Or change the rules signed in to the Bytebase console: " + link,
+		Suggestion: "make the change in smaller steps, a rule or two at a time. Each step is a form of its own and applies when the user accepts it, so tell the user the change comes in steps, " + rules.replace + ", and before each step read the rules again with " + rules.read + " and build the step from them. Or change the rules signed in to the Bytebase console: " + link,
 	}
 }
 

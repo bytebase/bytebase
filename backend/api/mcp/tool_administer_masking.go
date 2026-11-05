@@ -38,6 +38,7 @@ var maskingRules = adminRules{
 	read:     "call_api OrgPolicyService/GetPolicy",
 	question: "Change the masking rules",
 	apply:    maskingRulesApply,
+	replace:  "add a rule under a new UUID before removing the one it replaces (two rules cannot share an id)",
 }
 
 // maskingRulesPath is where the rules sit in an UpdatePolicyRequest, as
@@ -201,7 +202,9 @@ func parseMaskingRulesChange(body map[string]any, workspace, link string) (*mask
 }
 
 // checkMaskingRules refuses what the handler would refuse or fail on, so the
-// user is never asked about a write that cannot happen.
+// user is never asked about a write that cannot happen. It also refuses two
+// rules with one id, which the handler stores but the console cannot edit: it
+// finds a rule by its id.
 func checkMaskingRules(rules []*v1pb.MaskingRulePolicy_MaskingRule) error {
 	ids := make(map[string]bool, len(rules))
 	for i, rule := range rules {
