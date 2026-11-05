@@ -4373,6 +4373,9 @@
         "pending": "Load {{count}} pending"
       },
       "no-statement": "No statement was identified for this error.",
+      "not-applied": "Not applied",
+      "planned_one": "Planned at rollout creation · {{count}} file to apply",
+      "planned_other": "Planned at rollout creation · {{count}} files to apply",
       "revision-deleted": "Earlier revision deleted {{date}} by {{user}}",
       "revision-deleted-after-rollout": "Earlier revision deleted after this rollout was created",
       "revisions-on": "Revisions on {{database}}",

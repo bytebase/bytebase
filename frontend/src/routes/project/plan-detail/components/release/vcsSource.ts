@@ -25,12 +25,17 @@ export interface RepoCommit {
   sha: string;
 }
 
+// Any client that can create a release writes its source URLs, so only a web
+// URL becomes a link.
+const webUrl = (url: string | undefined): string =>
+  url && /^https?:\/\//i.test(url) ? url : "";
+
 // The repository and commit of a release's source, from its commit URL. A
 // release from an old action carries only the URL.
 export const parseRepoCommit = (
   source: Release_VCSSource | undefined
 ): RepoCommit | undefined => {
-  if (!source?.url) return undefined;
+  if (!source || !webUrl(source.url)) return undefined;
   const commitPath = COMMIT_PATH[source.vcsType];
   const index = commitPath ? source.url.lastIndexOf(commitPath) : -1;
   if (index < 0) return undefined;
@@ -75,10 +80,12 @@ export const fileAtCommitUrl = (
 
 export const SOURCE_TITLE_LIMIT = 72;
 
-// Commit and PR text is shown as plain text: trimmed, control characters
-// removed, never rendered as markdown.
+// Commit and PR text is shown as plain text: trimmed, control and
+// bidirectional-override characters removed, never rendered as markdown.
 export const cleanSourceText = (text: string | undefined): string =>
-  (text ?? "").replace(/[\u0000-\u001f\u007f]/g, "").trim();
+  (text ?? "")
+    .replace(/[\u0000-\u001f\u007f\u202a-\u202e\u2066-\u2069]/g, "")
+    .trim();
 
 export interface SourceRow {
   // The PR title and number, else the commit title.
@@ -112,7 +119,7 @@ export const buildSourceRow = (
   }
   const author = cleanSourceText(source.authorName || source.authorLogin);
   const branch = cleanSourceText(source.branch);
-  const href = pr?.url || source.url;
+  const href = webUrl(pr?.url || source.url);
   if (!href && !title && !author && !branch) return undefined;
   return {
     title: title || undefined,

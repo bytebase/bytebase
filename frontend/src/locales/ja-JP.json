@@ -4373,6 +4373,9 @@
         "pending": "保留中 {{count}} 件を読み込む"
       },
       "no-statement": "このエラーに対応するステートメントを特定できませんでした。",
+      "not-applied": "未適用",
+      "planned_one": "ロールアウト作成時の計画 · 適用予定 {{count}} ファイル",
+      "planned_other": "ロールアウト作成時の計画 · 適用予定 {{count}} ファイル",
       "revision-deleted": "以前のリビジョンは {{date}} に {{user}} が削除",
       "revision-deleted-after-rollout": "以前のリビジョンはこのロールアウト作成後に削除",
       "revisions-on": "{{database}} のリビジョン",

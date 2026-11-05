@@ -20,6 +20,7 @@ import {
   groupEntriesByReleaseFile,
   hasReleaseFileMarkers,
   isSpineItemOpenByDefault,
+  pendingVersionsOf,
   type TaskRunLogDetailText,
   windowSpine,
 } from "./model";
@@ -1011,11 +1012,16 @@ const FILES = ["001", "002", "003", "004", "005"].map((version) => ({
 const stateOf = (pending: string[], deleted: Record<string, string> = {}) =>
   create(Task_ReleaseStateSchema, {
     appliedCount: FILES.length - pending.length,
-    pendingVersions: pending.map((version) => ({
-      version,
-      revisionDeleter: deleted[version] ?? "",
-      revisionDeleteTime: deleted[version] ? ts(100) : undefined,
-    })),
+    pendingRanges: FILES.flatMap((file, i) =>
+      pending.includes(file.version) ? [{ start: i, end: i + 1 }] : []
+    ),
+    deletedRevisions: pending
+      .filter((version) => deleted[version])
+      .map((version) => ({
+        version,
+        deleter: deleted[version],
+        deleteTime: ts(100),
+      })),
   });
 // The spine as [kind, version or label, status] rows, top to bottom.
 const shape = (spine: ReturnType<typeof buildReleaseSpine>) =>
@@ -1034,6 +1040,19 @@ const shape = (spine: ReturnType<typeof buildReleaseSpine>) =>
 const SYNC = String(TaskRunLogEntry_Type.DATABASE_SYNC);
 const FILE_ERROR = (version: string, message: string) =>
   `failed to execute release file ${version}.sql (version ${version}): ${message}`;
+
+describe("stored release state", () => {
+  test("ranges name positions in the release's files, and a range past the list stops at its end", () => {
+    const state = create(Task_ReleaseStateSchema, {
+      pendingRanges: [
+        { start: 0, end: 1 },
+        { start: 3, end: 9 },
+      ],
+    });
+    expect([...pendingVersionsOf(state, FILES)]).toEqual(["001", "004", "005"]);
+    expect(pendingVersionsOf(undefined, FILES).size).toBe(0);
+  });
+});
 
 describe("release spine", () => {
   test("before the first run it lists the stored state: the files applied earlier, then what will apply", () => {
@@ -1341,7 +1360,7 @@ describe("release spine limits and defaults", () => {
         ]),
       run: { status: TaskRun_Status.RUNNING, error: "" },
       state: create(Task_ReleaseStateSchema, {
-        pendingVersions: sixty.map((f) => ({ version: f.version })),
+        pendingRanges: [{ start: 0, end: sixty.length }],
       }),
     });
   const range = (from: number, to: number, status: string) =>
@@ -1381,7 +1400,7 @@ describe("release spine limits and defaults", () => {
       files: sixty,
       entries: [],
       state: create(Task_ReleaseStateSchema, {
-        pendingVersions: sixty.map((f) => ({ version: f.version })),
+        pendingRanges: [{ start: 0, end: sixty.length }],
       }),
     });
     expect(windowShape(windowSpine(spine.items, {}))).toEqual([
@@ -1413,7 +1432,7 @@ describe("release spine limits and defaults", () => {
       entries: [],
       state: create(Task_ReleaseStateSchema, {
         appliedCount: 50,
-        pendingVersions: sixty.slice(50).map((f) => ({ version: f.version })),
+        pendingRanges: [{ start: 50, end: sixty.length }],
       }),
     });
     const drawn = windowSpine(spine.items, {}, 5);

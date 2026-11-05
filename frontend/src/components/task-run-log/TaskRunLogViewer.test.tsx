@@ -1105,10 +1105,8 @@ describe("TaskRunLogViewer release spine", () => {
 
   test("a re-run version reads Applied again, and every outcome names its earlier revision's deleter and time behind an icon", () => {
     const releaseState = create(Task_ReleaseStateSchema, {
-      pendingVersions: [
-        { version: "007" },
-        { version: "008", revisionDeleter: "users/alex@example.com", revisionDeleteTime: ts(1_790_000_000) },
-      ],
+      pendingRanges: [{ start: 6, end: 8 }],
+      deletedRevisions: [{ version: "008", deleter: "users/alex@example.com", deleteTime: ts(1_790_000_000) }],
     });
     const info = (container: HTMLElement) =>
       within(within(container).getByTestId("spine-file-008-row")).getByTestId("spine-revision-deleted-info");
@@ -1135,7 +1133,7 @@ describe("TaskRunLogViewer release spine", () => {
     const info = (container: HTMLElement) =>
       within(within(container).getByTestId("spine-file-008-row")).queryByTestId("spine-revision-deleted-info");
     // At rollout creation 008 had a live revision; it was deleted before the run.
-    const countedApplied = create(Task_ReleaseStateSchema, { pendingVersions: [{ version: "007" }], appliedCount: 1 });
+    const countedApplied = create(Task_ReleaseStateSchema, { pendingRanges: [{ start: 6, end: 7 }], appliedCount: 1 });
 
     useRelease([marker(1, "007"), run(2, ""), marker(4, "008"), run(5, "")]);
     const view = renderViewer({ taskRunStatus: TaskRun_Status.DONE, releaseState: countedApplied });

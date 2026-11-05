@@ -4373,6 +4373,9 @@
         "pending": "Tải {{count}} đang chờ"
       },
       "no-statement": "Không xác định được câu lệnh cho lỗi này.",
+      "not-applied": "Chưa áp dụng",
+      "planned_one": "Kế hoạch khi tạo rollout · {{count}} tệp sẽ áp dụng",
+      "planned_other": "Kế hoạch khi tạo rollout · {{count}} tệp sẽ áp dụng",
       "revision-deleted": "Bản sửa đổi trước đó đã bị {{user}} xóa vào {{date}}",
       "revision-deleted-after-rollout": "Bản sửa đổi trước đó đã bị xóa sau khi tạo lượt triển khai này",
       "revisions-on": "Các bản sửa đổi trên {{database}}",

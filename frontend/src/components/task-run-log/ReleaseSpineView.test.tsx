@@ -41,7 +41,7 @@ const renderNotRun = () => {
         files: sixty,
         entries: [],
         state: create(Task_ReleaseStateSchema, {
-          pendingVersions: sixty.map((f) => ({ version: f.version })),
+          pendingRanges: [{ start: 0, end: sixty.length }],
         }),
         getSectionLabel: () => "",
       })
@@ -101,12 +101,12 @@ test("a version whose revision was deleted says so on a short chip and names who
         files,
         entries: [],
         state: create(Task_ReleaseStateSchema, {
-          pendingVersions: [
-            { version: "001" },
+          pendingRanges: [{ start: 0, end: 2 }],
+          deletedRevisions: [
             {
               version: "002",
-              revisionDeleter: "users/alex@example.com",
-              revisionDeleteTime: { seconds: BigInt(Date.UTC(2026, 10, 3, 6, 21) / 1000), nanos: 0 },
+              deleter: "users/alex@example.com",
+              deleteTime: { seconds: BigInt(Date.UTC(2026, 10, 3, 6, 21) / 1000), nanos: 0 },
             },
           ],
         }),

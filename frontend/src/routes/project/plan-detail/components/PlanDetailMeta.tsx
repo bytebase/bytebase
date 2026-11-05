@@ -249,7 +249,7 @@ export function PlanDetailMeta() {
           >
             {createdLine}
           </DetailRow>
-          {page.issue && !release && (
+          {page.issue && (
             <DetailRow label={t("plan.details.labels")} row="labels">
               <InlineLabels
                 allowChange={allowChangeLabels}
@@ -280,7 +280,7 @@ export function PlanDetailMeta() {
               {changesSummary}
             </DetailRow>
           )}
-          {page.issue && !release && (
+          {page.issue && (
             <DetailRow label={t("plan.details.review")} row="review">
               {reviewSummary}
             </DetailRow>
