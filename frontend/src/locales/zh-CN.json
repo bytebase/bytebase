@@ -76,6 +76,26 @@
       "issue-heading": "询问此工单",
       "issue-security": "此工单是否存在安全隐患？",
       "issue-summary": "总结此工单及其当前状态",
+      "masking-catalog-exemption": "项目例外会影响此列吗？",
+      "masking-catalog-heading": "询问列的可见内容",
+      "masking-catalog-rule": "此列适用哪条数据脱敏规则？",
+      "masking-catalog-visibility": "开发者会看到此列的什么内容？",
+      "masking-classification-effect": "此分类本身会脱敏列值吗？",
+      "masking-classification-exemptions": "例外会如何影响用户看到的内容？",
+      "masking-classification-heading": "询问数据分类",
+      "masking-classification-rules": "哪些脱敏规则适用于机密数据？",
+      "masking-exemption-effect": "此例外允许谁查看未脱敏的值？",
+      "masking-exemption-heading": "询问项目例外",
+      "masking-exemption-review": "授予此例外前应检查什么？",
+      "masking-exemption-scope": "此例外的适用范围是什么？",
+      "masking-global-columns": "哪些列匹配此脱敏规则？",
+      "masking-global-effect": "Inner Mask 规则覆盖的值会向开发者显示成什么样？",
+      "masking-global-exemptions": "例外可能让用户看到原始值吗？",
+      "masking-global-heading": "询问数据脱敏",
+      "masking-semantic-algorithm": "此脱敏算法会保留哪些部分？",
+      "masking-semantic-heading": "询问语义类型",
+      "masking-semantic-rules": "哪些脱敏规则使用此语义类型？",
+      "masking-semantic-short-values": "很短的值会如何处理？",
       "plan-changes": "此计划拟进行哪些数据库变更？",
       "plan-create-heading": "起草数据库变更计划",
       "plan-create-sql": "帮我为此计划起草数据库变更 SQL。",
@@ -105,8 +125,13 @@
       "ask-next": "接着问"
     },
     "handoff": {
+      "open-data-classification": "打开数据分类设置",
+      "open-database-catalog": "打开列设置",
+      "open-global-masking": "打开脱敏设置",
       "open-issue": "打开工单",
       "open-project-instances": "打开项目实例",
+      "open-project-masking-exemptions": "打开项目脱敏例外",
+      "open-semantic-types": "打开语义类型设置",
       "review-database-changes": "查看数据库变更",
       "review-issue-plan": "审核计划",
       "review-project-issues": "查看项目工单",
@@ -148,6 +173,9 @@
       "workspace-governance": "Bytebase 如何治理数据库变更？",
       "workspace-recent": "这个工作区最近有哪些变化？",
       "workspace-setup-first": "我应该先设置什么？"
+    },
+    "masking": {
+      "ask-agent": "向 Agent 询问数据脱敏"
     },
     "minimize": "最小化",
     "new-chat": "新对话",
@@ -416,6 +444,16 @@
     }
   },
   "cel": {
+    "agent-help": {
+      "applied-raw": "已作为 Raw CEL 应用",
+      "applied-selector": "已应用到选择器",
+      "apply-group": "应用生成的表达式",
+      "apply-raw": "作为 Raw CEL 应用",
+      "apply-selector": "应用到选择器",
+      "ask-tooltip": "让 Agent 帮助构建此表达式",
+      "invalid": "无法解析此 CEL 表达式。请让 Agent 修改后重试。",
+      "unsaved": "应用会替换此未保存编辑器中的当前表达式，但不会保存规则。"
+    },
     "condition": {
       "add": "添加条件",
       "add-condition-in-group-placeholder": "点击{{plus}}添加条件",

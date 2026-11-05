@@ -23,6 +23,11 @@ vi.mock("@/components/FeatureAttention", () => ({
   FeatureAttention: () => null,
 }));
 
+vi.mock("@/modules/agent/components/AgentPageHelpButton", () => ({
+  AgentPageHelpButton: () =>
+    createElement("button", {}, "Ask Agent about masking"),
+}));
+
 vi.mock("@/components/ui/alert", () => ({
   Alert: ({
     children,
@@ -224,6 +229,16 @@ async function renderPage(): Promise<void> {
 }
 
 describe("GlobalMaskingPage", () => {
+  it("keeps the toolbar actions grouped at the right edge", async () => {
+    await renderPage();
+
+    const helpButton = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent === "Ask Agent about masking"
+    );
+
+    expect(helpButton?.parentElement?.className).toContain("ml-auto");
+  });
+
   it("aligns the semantic type select with the expression editor", async () => {
     await renderPage();
 

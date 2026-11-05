@@ -15,11 +15,10 @@ import {
   PROJECT_V1_ROUTE_DATABASE_DETAIL,
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL,
-  SETTING_ROUTE_WORKSPACE_GENERAL,
 } from "@/app/router/handles";
 import { HumanizeTs } from "@/components/HumanizeTs";
 import { RouterLink } from "@/components/RouterLink";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   Collapsible,
   CollapsiblePanel,
@@ -35,25 +34,24 @@ import {
   wasIssueCommentDraftDelivered,
 } from "@/lib/issueCommentDraft";
 import { dispatchAgentPlanDraftToCurrentPlan } from "@/lib/plan/agentDraftHandoff";
-import {
-  AI_ASSISTANT_PRODUCT_INTRO,
-  PRODUCT_INTRO_QUERY_KEY,
-} from "@/lib/productIntro";
 import { projectNamePrefix } from "@/lib/resourceName";
 import {
   ACCESS_GRANT_DRAFT_QUERY_KEY,
   wasDeniedQueryRequestDraftDelivered,
 } from "@/modules/sql-editor/model/accessGrantDraft";
 import { useAppStore } from "@/stores/app";
-import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
-import { hasWorkspacePermissionV2 } from "@/utils";
-import { getAgentAIConfigurationEnabled } from "../logic/aiConfiguration";
 import {
   type DeniedQueryRequestDraft,
   DeniedQueryRequestDraftStorageError,
   prepareAgentDeniedQueryRequestRoute,
 } from "../logic/deniedQueryAccess";
 import { getAgentErrorSummary } from "../logic/errorDisplay";
+import {
+  applyAgentExpressionDraft,
+  canApplyAgentExpressionDraft,
+  extractAgentExpressionDraft,
+  subscribeToAgentExpressionTargets,
+} from "../logic/expressionDraft";
 import { resolveAgentHandoffRoute } from "../logic/handoff";
 import type { LandingStarterId } from "../logic/landingStarters";
 import {
@@ -87,6 +85,7 @@ import {
   selectMessages,
   useAgentStore,
 } from "../store/agent";
+import { AgentAIConfigurationRecovery } from "./AgentAIConfigurationRecovery";
 import { ToolCallCard } from "./ToolCallCard";
 
 interface AgentChatProps {
@@ -571,6 +570,94 @@ function AccessRequestDraftButton({
   );
 }
 
+function AgentExpressionDraftActions({
+  chatId,
+  expression,
+}: {
+  chatId: string;
+  expression: string;
+}) {
+  const { t } = useTranslation();
+  const [applyingMode, setApplyingMode] = useState<"selector" | "raw">();
+  const [appliedMode, setAppliedMode] = useState<"selector" | "raw">();
+  const [failed, setFailed] = useState(false);
+  const canApplySelector = canApplyAgentExpressionDraft(chatId, "selector");
+  const canApplyRaw = canApplyAgentExpressionDraft(chatId, "raw");
+
+  if (!canApplySelector && !canApplyRaw) return null;
+
+  const apply = async (mode: "selector" | "raw") => {
+    if (applyingMode || appliedMode) return;
+    setApplyingMode(mode);
+    setFailed(false);
+    try {
+      if (await applyAgentExpressionDraft(chatId, expression, mode)) {
+        setAppliedMode(mode);
+      } else {
+        setFailed(true);
+      }
+    } catch {
+      setFailed(true);
+    } finally {
+      setApplyingMode(undefined);
+    }
+  };
+
+  return (
+    <div
+      className="mt-2 flex max-w-full flex-col items-start gap-2"
+      role="group"
+      aria-label={t("cel.agent-help.apply-group")}
+      data-agent-expression-draft
+    >
+      <div className="flex max-w-full flex-wrap gap-2">
+        {canApplySelector && (
+          <Button
+            type="button"
+            appearance="outline"
+            size="sm"
+            data-agent-expression-draft="selector"
+            disabled={Boolean(applyingMode || appliedMode)}
+            onClick={() => void apply("selector")}
+          >
+            {applyingMode === "selector" ? (
+              <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+            ) : null}
+            {appliedMode === "selector"
+              ? t("cel.agent-help.applied-selector")
+              : t("cel.agent-help.apply-selector")}
+          </Button>
+        )}
+        {canApplyRaw && (
+          <Button
+            type="button"
+            appearance="outline"
+            size="sm"
+            data-agent-expression-draft="raw"
+            disabled={Boolean(applyingMode || appliedMode)}
+            onClick={() => void apply("raw")}
+          >
+            {applyingMode === "raw" ? (
+              <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+            ) : null}
+            {appliedMode === "raw"
+              ? t("cel.agent-help.applied-raw")
+              : t("cel.agent-help.apply-raw")}
+          </Button>
+        )}
+      </div>
+      <p className="text-xs text-control-light">
+        {t("cel.agent-help.unsaved")}
+      </p>
+      {failed && (
+        <p className="text-xs text-error" role="alert">
+          {t("cel.agent-help.invalid")}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function IssueCommentDraftButton({
   action,
 }: {
@@ -729,6 +816,7 @@ export function AgentChat({
     isAIConfigurationRecoveryDismissed,
     setAIConfigurationRecoveryDismissed,
   ] = useState(false);
+  const [, setExpressionTargetsVersion] = useState(0);
 
   const messages = useAgentStore(selectMessages);
   const currentChat = useAgentStore(selectCurrentChat);
@@ -753,17 +841,20 @@ export function AgentChat({
   const draftText = useAgentStore((s) =>
     currentChatId ? s.draftsByChatId[currentChatId]?.text : undefined
   );
-  const aiConfigurationEnabled = useAppStore((s) =>
-    getAgentAIConfigurationEnabled(s.getSettingByName(Setting_SettingName.AI))
-  );
+  const aiEnabled = useAppStore((s) => s.serverInfo?.aiEnabled);
   const allMessages = useAgentStore(selectMessages);
-  const clearError = useAgentStore((s) => s.clearError);
+
+  useEffect(
+    () =>
+      subscribeToAgentExpressionTargets(() =>
+        setExpressionTargetsVersion((version) => version + 1)
+      ),
+    []
+  );
 
   const showAIConfigurationRecovery =
     chatRequiresAIConfiguration ||
-    (aiConfigurationEnabled === false && !isAIConfigurationRecoveryDismissed);
-
-  const allowConfigure = hasWorkspacePermissionV2("bb.settings.set");
+    (aiEnabled === false && !isAIConfigurationRecoveryDismissed);
 
   const displayMessages = useMemo(
     () =>
@@ -867,14 +958,8 @@ export function AgentChat({
     return duplicateIndex;
   }
 
-  function goConfigure() {
-    clearError(currentChatId);
-    useAgentStore.getState().toggle();
-  }
-
   function dismiss() {
     setAIConfigurationRecoveryDismissed(true);
-    clearError(currentChatId);
   }
 
   useEffect(() => {
@@ -910,7 +995,7 @@ export function AgentChat({
 
   useEffect(() => {
     setAIConfigurationRecoveryDismissed(false);
-  }, [aiConfigurationEnabled, currentChatId]);
+  }, [aiEnabled, currentChatId]);
 
   return (
     <div
@@ -990,6 +1075,10 @@ export function AgentChat({
         );
         const references = msg.role === "user" ? boundReferences : [];
         const content = msg.content ?? "";
+        const expressionDraft =
+          msg.role === "assistant" && !isPending && !msg.metadata?.error
+            ? extractAgentExpressionDraft(content)
+            : undefined;
         const projectReference = references.find(
           (reference) => reference.kind === "project"
         );
@@ -1148,6 +1237,12 @@ export function AgentChat({
                             )}
                           </div>
                         )}
+                      {expressionDraft && (
+                        <AgentExpressionDraftActions
+                          chatId={msg.chatId}
+                          expression={expressionDraft}
+                        />
+                      )}
                     </div>
                   ) : null}
                   {msg.toolCalls?.map((toolCall, index, toolCalls) => (
@@ -1254,37 +1349,7 @@ export function AgentChat({
         )}
 
       {showAIConfigurationRecovery ? (
-        <div className="max-w-[80%] rounded-sm border border-warning/20 bg-warning/10 px-3 py-3 text-sm text-warning">
-          <div className="font-medium">
-            {t("agent.ai-not-configured.title")}
-          </div>
-          <div className="mt-1">{t("agent.ai-not-configured.description")}</div>
-          <div className="mt-3 flex flex-wrap gap-x-2 gap-y-2">
-            {allowConfigure && (
-              <RouterLink
-                to={{
-                  name: SETTING_ROUTE_WORKSPACE_GENERAL,
-                  hash: "#ai-assistant",
-                  query: {
-                    [PRODUCT_INTRO_QUERY_KEY]: AI_ASSISTANT_PRODUCT_INTRO,
-                  },
-                }}
-                className={buttonVariants({ size: "sm" })}
-                onClick={goConfigure}
-              >
-                {t("agent.ai-not-configured.configure")}
-              </RouterLink>
-            )}
-            <Button appearance="outline" size="sm" onClick={dismiss}>
-              {t("common.dismiss")}
-            </Button>
-          </div>
-          {!allowConfigure && (
-            <div className="mt-1 text-warning">
-              {t("agent.ai-not-configured.contact-admin")}
-            </div>
-          )}
-        </div>
+        <AgentAIConfigurationRecovery onDismiss={dismiss} />
       ) : (
         error && (
           <div

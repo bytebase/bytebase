@@ -26,6 +26,7 @@ const normalizeOpenTarget = (raw: unknown): AgentHandoff | undefined => {
         key !== "kind" &&
         key !== "workspace" &&
         key !== "project" &&
+        key !== "database" &&
         key !== "plan" &&
         key !== "issue" &&
         key !== "task"
@@ -33,10 +34,13 @@ const normalizeOpenTarget = (raw: unknown): AgentHandoff | undefined => {
   ) {
     return undefined;
   }
+  const directTarget = normalizeAgentHandoff(raw);
+  if (directTarget) return directTarget;
   // Some providers populate every optional schema field; retain only the one the target kind uses.
   for (const field of [
     "workspace",
     "project",
+    "database",
     "plan",
     "issue",
     "task",

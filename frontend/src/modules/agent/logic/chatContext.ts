@@ -10,7 +10,11 @@ import {
   PROJECT_V1_ROUTE_INSTANCE_CREATE,
   PROJECT_V1_ROUTE_INSTANCE_DETAIL,
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
+  PROJECT_V1_ROUTE_MASKING_EXEMPTION,
   PROJECT_V1_ROUTE_PLAN_DETAIL,
+  WORKSPACE_ROUTE_DATA_CLASSIFICATION,
+  WORKSPACE_ROUTE_GLOBAL_MASKING,
+  WORKSPACE_ROUTE_SEMANTIC_TYPES,
 } from "@/app/router/handles";
 import { projectNamePrefix, workspaceNamePrefix } from "@/lib/resourceName";
 import { useAppStore } from "@/stores/app";
@@ -48,9 +52,42 @@ export type AgentPageResource =
       project: string;
       names: string[];
     }
+  | {
+      kind: "database-catalog";
+      project: string;
+      names: string[];
+    }
   | { kind: "issue"; name: string; project: string }
   | { kind: "instance"; name: string; project?: string }
-  | { kind: "instance-create"; project?: string };
+  | { kind: "instance-create"; project?: string }
+  | { kind: "global-masking" }
+  | { kind: "semantic-types" }
+  | { kind: "data-classification" }
+  | { kind: "masking-exemption"; project: string };
+
+export type AgentMaskingPageResource = Extract<
+  AgentPageResource,
+  {
+    kind:
+      | "global-masking"
+      | "semantic-types"
+      | "data-classification"
+      | "database-catalog"
+      | "masking-exemption";
+  }
+>;
+
+export function isAgentMaskingPageResource(
+  page: AgentPageResource | undefined
+): page is AgentMaskingPageResource {
+  return (
+    page?.kind === "global-masking" ||
+    page?.kind === "semantic-types" ||
+    page?.kind === "data-classification" ||
+    page?.kind === "database-catalog" ||
+    page?.kind === "masking-exemption"
+  );
+}
 
 export function resolveAgentPageResource(
   route: ReactRoute
@@ -66,6 +103,15 @@ export function resolveAgentPageResource(
   ) {
     return { kind: "instance-create", ...(project ? { project } : {}) };
   }
+  if (route.name === WORKSPACE_ROUTE_GLOBAL_MASKING) {
+    return { kind: "global-masking" };
+  }
+  if (route.name === WORKSPACE_ROUTE_SEMANTIC_TYPES) {
+    return { kind: "semantic-types" };
+  }
+  if (route.name === WORKSPACE_ROUTE_DATA_CLASSIFICATION) {
+    return { kind: "data-classification" };
+  }
   if (
     (route.name === INSTANCE_ROUTE_DETAIL ||
       (project && route.name === PROJECT_V1_ROUTE_INSTANCE_DETAIL)) &&
@@ -80,6 +126,9 @@ export function resolveAgentPageResource(
     };
   }
   if (!project) return undefined;
+  if (route.name === PROJECT_V1_ROUTE_MASKING_EXEMPTION) {
+    return { kind: "masking-exemption", project };
+  }
   if (
     route.name === PROJECT_V1_ROUTE_PLAN_DETAIL &&
     typeof planId === "string" &&
@@ -152,7 +201,11 @@ export function resolveAgentPageResource(
         ? [parent]
         : [projectParent, workspaceParent];
     return {
-      kind: "database",
+      kind:
+        route.name === PROJECT_V1_ROUTE_DATABASE_DETAIL &&
+        route.hash === "#catalog"
+          ? "database-catalog"
+          : "database",
       project,
       names: parents.map(
         (candidate) => `${candidate}/databases/${databaseName}`

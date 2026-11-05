@@ -46,6 +46,7 @@ import type {
   ExemptionMember,
 } from "@/lib/sensitive-data/types";
 import { cn } from "@/lib/utils";
+import { AgentPageHelpButton } from "@/modules/agent/components/AgentPageHelpButton";
 import { operatorDisplayLabel } from "@/modules/cel/types/operator";
 import { extractUserEmail, pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
@@ -401,22 +402,27 @@ export function ProjectMaskingExemptionPage({
         <div className="mb-2">
           <FeatureAttention feature={PlanFeature.FEATURE_DATA_MASKING} />
         </div>
-        <div className="flex flex-row items-center gap-x-2 mb-2">
-          <AdvancedSearch
-            params={searchParams}
-            onParamsChange={setSearchParams}
-            scopeOptions={scopeOptions}
-            placeholder={t("issue.advanced-search.filter")}
-          />
-          <Button onClick={handleGrantClick} disabled={!hasCreatePermission}>
-            <FeatureBadge
-              feature={PlanFeature.FEATURE_DATA_MASKING}
-              clickable={false}
-              className="text-accent-text"
-              fallback={<ShieldCheck className="size-4" />}
+        <div className="mb-2 flex flex-wrap items-center gap-2">
+          <div className="w-full min-w-0 md:flex-1 md:basis-64">
+            <AdvancedSearch
+              params={searchParams}
+              onParamsChange={setSearchParams}
+              scopeOptions={scopeOptions}
+              placeholder={t("issue.advanced-search.filter")}
             />
-            {t("project.masking-exemption.grant-exemption")}
-          </Button>
+          </div>
+          <div className="ml-auto flex flex-wrap items-center gap-2">
+            <AgentPageHelpButton />
+            <Button onClick={handleGrantClick} disabled={!hasCreatePermission}>
+              <FeatureBadge
+                feature={PlanFeature.FEATURE_DATA_MASKING}
+                clickable={false}
+                className="text-accent-text"
+                fallback={<ShieldCheck className="size-4" />}
+              />
+              {t("project.masking-exemption.grant-exemption")}
+            </Button>
+          </div>
         </div>
 
         {/* Preset tabs */}

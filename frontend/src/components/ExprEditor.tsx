@@ -1,5 +1,5 @@
 import type { TFunction } from "i18next";
-import { HelpCircle, Plus, Trash2, X } from "lucide-react";
+import { Bot, HelpCircle, Plus, Trash2, X } from "lucide-react";
 import type { ReactNode } from "react";
 import {
   createContext,
@@ -29,6 +29,11 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import {
+  type AgentExpressionDraftMode,
+  registerAgentExpressionTarget,
+} from "@/modules/agent/logic/expressionDraft";
+import { openAgentWithPrompt } from "@/modules/agent/logic/instanceConnectionHelp";
 import type {
   ConditionExpr,
   ConditionGroupExpr,
@@ -52,11 +57,14 @@ import {
   isTimestampFactor,
   LogicalOperatorList,
   operatorDisplayLabel,
+  resolveCELExpr,
+  wrapAsGroup,
 } from "@/modules/cel";
 import { environmentNamePrefix } from "@/stores/modules/v1/common";
 import { getDefaultPagination } from "@/utils";
 import { CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID } from "@/utils/cel-attributes";
 import type { OptionConfig } from "@/utils/expr";
+import { batchConvertCELStringToParsedExpr } from "@/utils/v1/cel";
 
 export type { OptionConfig } from "@/utils/expr";
 
@@ -116,6 +124,7 @@ interface ExprEditorContextValue {
   factorOperatorOverrideMap: Map<Factor, Operator[]> | undefined;
   root: ConditionGroupExpr;
   onUpdate: (expr: ConditionGroupExpr) => void;
+  askAgent: () => void;
 }
 
 const ExprEditorContext = createContext<ExprEditorContextValue>({
@@ -126,6 +135,7 @@ const ExprEditorContext = createContext<ExprEditorContextValue>({
   factorOperatorOverrideMap: undefined,
   root: { type: ExprType.ConditionGroup, operator: "_&&_", args: [] },
   onUpdate: () => {},
+  askAgent: () => {},
 });
 
 function useExprEditorCtx() {
@@ -1356,6 +1366,7 @@ function ConditionGroup({
     factorList,
     enableRawExpression,
     factorOperatorOverrideMap: overrideMap,
+    askAgent,
   } = useExprEditorCtx();
 
   // For root, groupPath is []; for nested groups, it includes the operandIndex
@@ -1452,6 +1463,13 @@ function ConditionGroup({
         </div>
       )}
 
+      {root && (
+        <div className="pl-1.5 flex h-7 items-center gap-x-1.5 text-control text-sm font-medium">
+          <span>Where</span>
+          {!readonly && <AgentExpressionHelpButton onClick={askAgent} />}
+        </div>
+      )}
+
       {root && args.length === 0 && (
         <div className="text-control-light text-sm">
           {t("cel.condition.add-root-condition-placeholder")}
@@ -1461,41 +1479,43 @@ function ConditionGroup({
       {args.map((operand, i) => (
         <div
           key={i}
-          className={`flex items-start gap-x-1 w-full ${root ? "" : "px-1"}`}
+          className={`flex items-start gap-x-1 w-full ${root ? "pl-1.5" : "px-1"}`}
         >
-          <div className="w-14 shrink-0">
-            {i === 0 ? (
-              <div className="pl-1.5 h-8 flex items-center text-control text-sm">
-                Where
-              </div>
-            ) : i === 1 ? (
-              <Select
-                value={operator}
-                disabled={readonly}
-                onValueChange={(val) => {
-                  doUpdate((group) => {
-                    group.operator = val as LogicalOperator;
-                  });
-                }}
-              >
-                <SelectTrigger size="sm" className="shrink-0">
-                  <SelectValue>
-                    {(value: string | null) =>
-                      value ? logicalLabel(value) : null
-                    }
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="_&&_">{logicalLabel("_&&_")}</SelectItem>
-                  <SelectItem value="_||_">{logicalLabel("_||_")}</SelectItem>
-                </SelectContent>
-              </Select>
-            ) : (
-              <div className="pl-2 h-8 flex items-center text-control text-sm lowercase">
-                {logicalLabel(operator)}
-              </div>
-            )}
-          </div>
+          {(!root || i > 0) && (
+            <div className="w-14 shrink-0">
+              {i === 0 ? (
+                <div className="pl-1.5 h-8 flex items-center text-control text-sm">
+                  Where
+                </div>
+              ) : i === 1 ? (
+                <Select
+                  value={operator}
+                  disabled={readonly}
+                  onValueChange={(val) => {
+                    doUpdate((group) => {
+                      group.operator = val as LogicalOperator;
+                    });
+                  }}
+                >
+                  <SelectTrigger size="sm" className="shrink-0">
+                    <SelectValue>
+                      {(value: string | null) =>
+                        value ? logicalLabel(value) : null
+                      }
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_&&_">{logicalLabel("_&&_")}</SelectItem>
+                    <SelectItem value="_||_">{logicalLabel("_||_")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="pl-2 h-8 flex items-center text-control text-sm lowercase">
+                  {logicalLabel(operator)}
+                </div>
+              )}
+            </div>
+          )}
           <div className="flex-1 flex flex-col gap-y-1 min-w-0">
             {isConditionGroupExpr(operand) && (
               <ConditionGroup
@@ -1610,6 +1630,38 @@ export interface ExprEditorProps {
   onUpdate: (expr: ConditionGroupExpr) => void;
 }
 
+function buildAgentExpressionPrompt(factorList: Factor[], rawMode: boolean) {
+  const availableFactors =
+    factorList.length > 0 ? factorList.join(", ") : "none";
+  return [
+    "Help me configure the CEL expression in this editor. First ask what I want the condition to include or exclude, then clarify one detail at a time until you can draft it.",
+    `The current editor is in ${rawMode ? "raw CEL" : "selector"} mode. Available attributes: ${availableFactors}. Use only these attributes; do not inspect data, call APIs, or run queries.`,
+    "When the request is clear, explain what the expression matches and include exactly one fenced `cel` code block containing valid CEL. Do not claim that it has been applied or saved. I will review it and choose whether to apply it as selector conditions or raw CEL; applying only updates this unsaved editor.",
+  ].join("\n\n");
+}
+
+function AgentExpressionHelpButton({ onClick }: { onClick: () => void }) {
+  const { t } = useTranslation();
+  const label = t("cel.agent-help.ask-tooltip", {
+    defaultValue: "Ask Agent to help build this expression",
+  });
+
+  return (
+    <Tooltip content={label}>
+      <Button
+        type="button"
+        appearance="secondary"
+        size="sm"
+        className="px-1.5 text-accent hover:bg-accent/10"
+        aria-label={label}
+        onClick={onClick}
+      >
+        <Bot className="size-4" aria-hidden="true" />
+      </Button>
+    </Tooltip>
+  );
+}
+
 export function ExprEditor({
   expr,
   readonly = false,
@@ -1619,6 +1671,59 @@ export function ExprEditor({
   factorOperatorOverrideMap: overrideMap,
   onUpdate,
 }: ExprEditorProps) {
+  const onUpdateRef = useRef(onUpdate);
+  onUpdateRef.current = onUpdate;
+  const unregisterExpressionTargetsRef = useRef(new Map<string, () => void>());
+
+  useEffect(
+    () => () => {
+      for (const unregister of unregisterExpressionTargetsRef.current.values()) {
+        unregister();
+      }
+      unregisterExpressionTargetsRef.current.clear();
+    },
+    []
+  );
+
+  const applyAgentExpression = useCallback(
+    async (expression: string, mode: AgentExpressionDraftMode) => {
+      try {
+        const [parsed] = await batchConvertCELStringToParsedExpr([expression]);
+        if (!parsed?.exprKind) return false;
+        if (mode === "raw") {
+          onUpdateRef.current({
+            type: ExprType.ConditionGroup,
+            operator: "_&&_",
+            args: [{ type: ExprType.RawString, content: expression }],
+          });
+        } else {
+          onUpdateRef.current(wrapAsGroup(resolveCELExpr(parsed)));
+        }
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    []
+  );
+
+  const askAgent = useCallback(() => {
+    const rawMode = expr.args.length === 1 && isRawStringExpr(expr.args[0]);
+    openAgentWithPrompt(
+      buildAgentExpressionPrompt(factorList, rawMode),
+      undefined,
+      (chatId) => {
+        unregisterExpressionTargetsRef.current.get(chatId)?.();
+        unregisterExpressionTargetsRef.current.set(
+          chatId,
+          registerAgentExpressionTarget(chatId, applyAgentExpression, {
+            allowRaw: enableRawExpression,
+          })
+        );
+      }
+    );
+  }, [applyAgentExpression, enableRawExpression, expr, factorList]);
+
   const ctxValue: ExprEditorContextValue = useMemo(
     () => ({
       readonly,
@@ -1628,6 +1733,7 @@ export function ExprEditor({
       factorOperatorOverrideMap: overrideMap,
       root: expr,
       onUpdate,
+      askAgent,
     }),
     [
       readonly,
@@ -1637,6 +1743,7 @@ export function ExprEditor({
       overrideMap,
       expr,
       onUpdate,
+      askAgent,
     ]
   );
 

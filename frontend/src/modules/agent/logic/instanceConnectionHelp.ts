@@ -83,7 +83,8 @@ export function buildInstanceConnectionHelpPrompt(options: {
 
 export function openAgentWithPrompt(
   text: string,
-  resourceReferences?: AgentResourceReference[]
+  resourceReferences?: AgentResourceReference[],
+  onChatCreated?: (chatId: string) => void
 ): void {
   const app = useAppStore.getState();
   const workspaceName =
@@ -100,6 +101,7 @@ export function openAgentWithPrompt(
 
   const store = useAgentStore.getState();
   const chat = store.createChat({ page, context, workspaceName });
+  onChatCreated?.(chat.id);
   store.queueUserMessage({
     chatId: chat.id,
     text,

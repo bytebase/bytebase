@@ -5,6 +5,7 @@ import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import type { Factor } from "@/modules/cel/types/factor";
 import { type ConditionGroupExpr, ExprType } from "@/modules/cel/types/simple";
+import { applyAgentExpressionDraft } from "@/modules/agent/logic/expressionDraft";
 import {
   CEL_ATTRIBUTE_RESOURCE_DATABASE,
   CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID,
@@ -42,6 +43,28 @@ const { MockExprType } = vi.hoisted(() => ({
   } as const,
 }));
 
+const agentMock = vi.hoisted(() => ({
+  openAgentWithPrompt: vi.fn(
+    (
+      _prompt: string,
+      _references: unknown,
+      onChatCreated?: (chatId: string) => void
+    ) => onChatCreated?.("expression-chat")
+  ),
+}));
+
+vi.mock("@/modules/agent/logic/instanceConnectionHelp", () => ({
+  openAgentWithPrompt: agentMock.openAgentWithPrompt,
+}));
+
+vi.mock("@/utils/v1/cel", () => ({
+  batchConvertCELStringToParsedExpr: async () => [
+    {
+      exprKind: { case: "callExpr", value: {} },
+    },
+  ],
+}));
+
 vi.mock("@/modules/cel", () => ({
   ExprType: MockExprType,
   LogicalOperatorList: ["_&&_", "_||_"],
@@ -63,11 +86,18 @@ vi.mock("@/modules/cel", () => ({
     ),
   isTimestampFactor: () => false,
   operatorDisplayLabel: (operator: string) => operator,
+  resolveCELExpr: () => ({
+    type: "ConditionGroup",
+    operator: "_&&_",
+    args: [],
+  }),
+  wrapAsGroup: (expr: unknown) => expr,
 }));
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
-    t: (key: string) => key,
+    t: (key: string, options?: { defaultValue?: string }) =>
+      options?.defaultValue ?? key,
   }),
 }));
 
@@ -161,6 +191,135 @@ const flushEffects = async () => {
 describe("ExprEditor", () => {
   afterEach(() => {
     document.body.innerHTML = "";
+    agentMock.openAgentWithPrompt.mockClear();
+  });
+
+  test("opens Agent help and applies a generated expression to the selector", async () => {
+    const onUpdate = vi.fn();
+    const { container, unmount } = renderIntoContainer(
+      <ExprEditor
+        expr={{ type: ExprType.ConditionGroup, operator: "_&&_", args: [] }}
+        factorList={[CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID]}
+        onUpdate={onUpdate}
+      />
+    );
+
+    const askAgent = container.querySelector<HTMLButtonElement>(
+      'button[aria-label="Ask Agent to help build this expression"]'
+    );
+    expect(askAgent).toBeTruthy();
+    expect(askAgent?.textContent).toBe("");
+    expect(askAgent?.querySelector(".lucide-bot")).toBeTruthy();
+    expect(askAgent?.className).toContain("h-7");
+    await act(async () => {
+      fireEvent.click(askAgent!);
+    });
+    expect(agentMock.openAgentWithPrompt).toHaveBeenCalledOnce();
+    expect(agentMock.openAgentWithPrompt.mock.calls[0][0]).toContain(
+      CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID
+    );
+    expect(agentMock.openAgentWithPrompt.mock.calls[0][0]).toContain(
+      "First ask what I want the condition to include or exclude"
+    );
+    expect(agentMock.openAgentWithPrompt.mock.calls[0][0]).toContain(
+      "exactly one fenced `cel` code block"
+    );
+
+    await act(async () => {
+      await applyAgentExpressionDraft(
+        "expression-chat",
+        'resource.environment == "prod"',
+        "selector"
+      );
+    });
+    expect(onUpdate).toHaveBeenCalledWith({
+      type: ExprType.ConditionGroup,
+      operator: "_&&_",
+      args: [],
+    });
+    unmount();
+  });
+
+  test("keeps Agent help beside the expression's Where label", () => {
+    const { container, unmount } = renderIntoContainer(
+      <ExprEditor
+        expr={{
+          type: ExprType.ConditionGroup,
+          operator: "_&&_",
+          args: [{ type: ExprType.RawString, content: "true" }],
+        }}
+        factorList={[CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID]}
+        onUpdate={() => {}}
+      />
+    );
+
+    const askAgent = container.querySelector<HTMLButtonElement>(
+      'button[aria-label="Ask Agent to help build this expression"]'
+    );
+    const whereLabel = Array.from(container.querySelectorAll("span")).find(
+      (span) => span.textContent === "Where"
+    );
+    const expressionInput = container.querySelector("textarea");
+    expect(whereLabel?.parentElement?.contains(askAgent)).toBe(true);
+    expect(whereLabel?.parentElement?.querySelector("textarea")).toBeNull();
+    expect(
+      whereLabel?.parentElement?.compareDocumentPosition(expressionInput!) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(askAgent?.className).toContain("text-accent");
+    expect(askAgent?.className).not.toContain("border-control-border");
+    unmount();
+  });
+
+  test("does not offer Agent help from a read-only expression", () => {
+    const { container, unmount } = renderIntoContainer(
+      <ExprEditor
+        expr={{ type: ExprType.ConditionGroup, operator: "_&&_", args: [] }}
+        readonly
+        factorList={[CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID]}
+        onUpdate={() => {}}
+      />
+    );
+
+    expect(
+      container.querySelector(
+        'button[aria-label="Ask Agent to help build this expression"]'
+      )
+    ).toBeNull();
+    unmount();
+  });
+
+  test("applies a generated expression as raw CEL", async () => {
+    const onUpdate = vi.fn();
+    const { container, unmount } = renderIntoContainer(
+      <ExprEditor
+        expr={{ type: ExprType.ConditionGroup, operator: "_&&_", args: [] }}
+        factorList={[CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID]}
+        onUpdate={onUpdate}
+      />
+    );
+    const askAgent = container.querySelector<HTMLButtonElement>(
+      'button[aria-label="Ask Agent to help build this expression"]'
+    );
+    await act(async () => {
+      fireEvent.click(askAgent!);
+      await applyAgentExpressionDraft(
+        "expression-chat",
+        'resource.environment == "prod"',
+        "raw"
+      );
+    });
+    expect(onUpdate).toHaveBeenCalledWith({
+      type: ExprType.ConditionGroup,
+      operator: "_&&_",
+      args: [
+        {
+          type: ExprType.RawString,
+          content: 'resource.environment == "prod"',
+        },
+      ],
+    });
+    unmount();
   });
 
   test.each(["_==_", "@in"] as const)(
