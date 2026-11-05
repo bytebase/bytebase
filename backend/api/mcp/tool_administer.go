@@ -679,7 +679,7 @@ func issuesLine(issues []string, more bool) string {
 // continuedLine starts each continuation of a wrapped message line. Every
 // first line starts with a letter, so no part of a long value can pose as a line
 // of its own.
-const continuedLine = "... "
+const continuedLine = "> "
 
 // wrapMessageLine breaks line into lines of at most messageLineWidth columns,
 // at a space where it can, and starts each continuation with continuedLine.

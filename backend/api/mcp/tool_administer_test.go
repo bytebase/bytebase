@@ -574,7 +574,7 @@ func TestAdministerWorkspaceStatesEveryRuleFieldItTakes(t *testing.T) {
 }
 
 func TestAdministerWorkspaceContinuesALongConditionOnTheNextLine(t *testing.T) {
-	long := changeRule("HR prod", "resource.environment_id == 'prod' && resource.database_name == 'hr_prod'", "roles/workspaceDBA")
+	long := changeRule("HR prod", "resource.environment_id == 'prod' && resource.project_id == 'hr' && resource.database_name == 'hr_prod'", "roles/workspaceDBA")
 	mock := &approvalMock{}
 	mock.setStored(fallbackRule())
 	user := &asker{answer: &mcp.ElicitResult{Action: "decline"}}
@@ -589,11 +589,25 @@ func TestAdministerWorkspaceContinuesALongConditionOnTheNextLine(t *testing.T) {
 	}
 	require.True(t, strings.HasPrefix(lines[2], continuedLine), lines[2])
 	require.Equal(t, "Add rule 1, \"Workspace DBA\": `resource.environment_id == 'prod' && "+
-		"resource.database_name == 'hr_prod'`", lines[1]+" "+strings.TrimPrefix(lines[2], continuedLine))
+		"resource.project_id == 'hr' && resource.database_name == 'hr_prod'`", lines[1]+" "+strings.TrimPrefix(lines[2], continuedLine))
 	require.Equal(t, approvalRulesApply, lines[3], "the fixed sentence goes whole in the line that is left")
 	schema, err := json.Marshal(asked.RequestedSchema)
 	require.NoError(t, err)
 	require.NotContains(t, string(schema), approvalRulesApply)
+}
+
+// The continuation mark's width comes out of each continued line, so a wider
+// mark would push this rule's second line past the budget beside an issue line.
+func TestAdministerWorkspaceFitsALongRuleBesideAnIssue(t *testing.T) {
+	long := changeRule("HR prod", "resource.environment_id == 'prod' && resource.project_id == 'hr' && resource.database_name == 'hr_prod'", "roles/workspaceDBA")
+	diff, err := diffApprovalRules([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}, []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), long}, "")
+	require.NoError(t, err)
+	form, err := approvalRulesForm(withUserEmail(context.Background(), "alice@example.com"), diff, issuesLine([]string{"hr#12"}, false), "")
+	require.NoError(t, err)
+	lines := strings.Split(form.message, "\n")
+	require.Len(t, lines, 4)
+	require.True(t, strings.HasPrefix(lines[2], continuedLine), lines[2])
+	require.Equal(t, `Plan edits recheck your "hr#12" under these rules.`, lines[3])
 }
 
 func TestAdministerWorkspaceNamesTheUserIssuesAwaitingApproval(t *testing.T) {
