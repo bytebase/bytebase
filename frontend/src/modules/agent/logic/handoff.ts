@@ -1,12 +1,17 @@
 import type { RouteTarget } from "@/app/router";
 import {
+  PROJECT_V1_ROUTE_DATABASE_DETAIL,
   PROJECT_V1_ROUTE_INSTANCES,
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
   PROJECT_V1_ROUTE_ISSUES,
+  PROJECT_V1_ROUTE_MASKING_EXEMPTION,
   PROJECT_V1_ROUTE_PLAN_DETAIL,
   PROJECT_V1_ROUTE_PLAN_ROLLOUT,
   PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
+  WORKSPACE_ROUTE_DATA_CLASSIFICATION,
+  WORKSPACE_ROUTE_GLOBAL_MASKING,
   WORKSPACE_ROUTE_MY_ISSUES,
+  WORKSPACE_ROUTE_SEMANTIC_TYPES,
 } from "@/app/router/handles";
 import {
   type ProjectSetupState,
@@ -70,6 +75,46 @@ const taskIds = (
   };
 };
 
+const databaseIds = (
+  name: unknown,
+  project: string
+):
+  | {
+      projectId: string;
+      instanceId: string;
+      databaseName: string;
+      parent: string;
+    }
+  | undefined => {
+  if (typeof name !== "string") return undefined;
+  const projectMatch =
+    /^projects\/([A-Za-z0-9_-]+)\/instances\/([A-Za-z0-9_-]+)\/databases\/([^/]+)$/.exec(
+      name
+    );
+  const workspaceMatch =
+    /^instances\/([A-Za-z0-9_-]+)\/databases\/([^/]+)$/.exec(name);
+  if (projectMatch?.[3] === "-" || workspaceMatch?.[2] === "-") {
+    return undefined;
+  }
+  if (projectMatch && `projects/${projectMatch[1]}` === project) {
+    return {
+      projectId: projectMatch[1],
+      instanceId: projectMatch[2],
+      databaseName: projectMatch[3],
+      parent: `projects/${projectMatch[1]}/instances/${projectMatch[2]}`,
+    };
+  }
+  if (workspaceMatch) {
+    return {
+      projectId: project.slice("projects/".length),
+      instanceId: workspaceMatch[1],
+      databaseName: workspaceMatch[2],
+      parent: `instances/${workspaceMatch[1]}`,
+    };
+  }
+  return undefined;
+};
+
 const hasIssues = (
   value: unknown,
   relation?: string,
@@ -131,6 +176,41 @@ export function collectAgentHandoffs(
     return [];
   }
   if (!isRecord(payload) || typeof payload.error === "string") return [];
+
+  if (toolName === "get_masking_overview") {
+    if (!Array.isArray(payload.openTargets)) return [];
+    const expectedProject =
+      payload.page === "masking-exemption" ||
+      payload.page === "database-catalog"
+        ? scope.projectName
+        : undefined;
+    if (
+      (expectedProject && payload.project !== expectedProject) ||
+      (!expectedProject && payload.project !== undefined)
+    ) {
+      return [];
+    }
+    const observed: AgentHandoff[] = [];
+    for (const value of payload.openTargets) {
+      const target = normalizeAgentHandoff(value);
+      if (!target) continue;
+      if (
+        (target.kind === "open-project-masking-exemptions" ||
+          target.kind === "open-database-catalog") &&
+        target.project !== expectedProject
+      ) {
+        continue;
+      }
+      if (
+        target.kind === "open-database-catalog" &&
+        !databaseIds(target.database, target.project)
+      ) {
+        continue;
+      }
+      observed.push(target);
+    }
+    return observed;
+  }
 
   if (
     toolName === "get_workspace_attention" &&
@@ -251,7 +331,35 @@ export function collectAgentHandoffs(
 }
 
 export function normalizeAgentHandoff(raw: unknown): AgentHandoff | undefined {
-  if (!isRecord(raw) || Object.keys(raw).length !== 2) return undefined;
+  if (!isRecord(raw)) return undefined;
+  if (
+    Object.keys(raw).length === 1 &&
+    (raw.kind === "open-global-masking" ||
+      raw.kind === "open-semantic-types" ||
+      raw.kind === "open-data-classification")
+  ) {
+    return { kind: raw.kind };
+  }
+  if (raw.kind === "open-project-masking-exemptions") {
+    return Object.keys(raw).length === 2 && resourceId(raw.project, "projects")
+      ? { kind: raw.kind, project: raw.project as string }
+      : undefined;
+  }
+  if (raw.kind === "open-database-catalog") {
+    if (
+      Object.keys(raw).length !== 3 ||
+      !resourceId(raw.project, "projects") ||
+      !databaseIds(raw.database, raw.project as string)
+    ) {
+      return undefined;
+    }
+    return {
+      kind: raw.kind,
+      project: raw.project as string,
+      database: raw.database as string,
+    };
+  }
+  if (Object.keys(raw).length !== 2) return undefined;
   if (raw.kind === "review-workspace-issues") {
     return resourceId(raw.workspace, "workspaces")
       ? { kind: raw.kind, workspace: raw.workspace as string }
@@ -310,6 +418,34 @@ export function resolveAgentHandoffRoute(
 ): RouteTarget | undefined {
   const handoff = normalizeAgentHandoff(raw);
   if (!handoff) return undefined;
+  if (handoff.kind === "open-global-masking") {
+    return { name: WORKSPACE_ROUTE_GLOBAL_MASKING };
+  }
+  if (handoff.kind === "open-semantic-types") {
+    return { name: WORKSPACE_ROUTE_SEMANTIC_TYPES };
+  }
+  if (handoff.kind === "open-data-classification") {
+    return { name: WORKSPACE_ROUTE_DATA_CLASSIFICATION };
+  }
+  if (handoff.kind === "open-project-masking-exemptions") {
+    return {
+      name: PROJECT_V1_ROUTE_MASKING_EXEMPTION,
+      params: { projectId: resourceId(handoff.project, "projects")! },
+    };
+  }
+  if (handoff.kind === "open-database-catalog") {
+    const ids = databaseIds(handoff.database, handoff.project)!;
+    return {
+      name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
+      params: {
+        projectId: ids.projectId,
+        instanceId: ids.instanceId,
+        databaseName: ids.databaseName,
+      },
+      query: { parent: ids.parent },
+      hash: "#catalog",
+    };
+  }
   if (handoff.kind === "review-workspace-issues") {
     return { name: WORKSPACE_ROUTE_MY_ISSUES };
   }

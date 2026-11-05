@@ -1,15 +1,20 @@
 import { describe, expect, test } from "vitest";
 import {
   DATABASE_ROUTE_DASHBOARD,
+  PROJECT_V1_ROUTE_DATABASE_DETAIL,
   PROJECT_V1_ROUTE_DATABASES,
   PROJECT_V1_ROUTE_INSTANCE_CREATE,
   PROJECT_V1_ROUTE_INSTANCES,
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
   PROJECT_V1_ROUTE_ISSUES,
+  PROJECT_V1_ROUTE_MASKING_EXEMPTION,
   PROJECT_V1_ROUTE_PLAN_DETAIL,
   PROJECT_V1_ROUTE_PLAN_ROLLOUT,
   PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
+  WORKSPACE_ROUTE_DATA_CLASSIFICATION,
+  WORKSPACE_ROUTE_GLOBAL_MASKING,
   WORKSPACE_ROUTE_MY_ISSUES,
+  WORKSPACE_ROUTE_SEMANTIC_TYPES,
 } from "@/app/router/handles";
 import {
   PREPARE_DATABASE_PRODUCT_INTRO,
@@ -28,6 +33,88 @@ const project = "projects/sample";
 const workspace = "workspaces/example";
 
 describe("collectAgentHandoffs", () => {
+  test("collects only masking targets returned for the current page scope", () => {
+    const projectDatabase = `${project}/instances/primary/databases/app`;
+    const result = collectAgentHandoffs(
+      "get_masking_overview",
+      JSON.stringify({
+        page: "database-catalog",
+        project,
+        openTargets: [
+          { kind: "open-global-masking" },
+          { kind: "open-semantic-types" },
+          { kind: "open-data-classification" },
+          { kind: "open-project-masking-exemptions", project },
+          { kind: "open-database-catalog", project, database: projectDatabase },
+          {
+            kind: "open-database-catalog",
+            project: "projects/other",
+            database: projectDatabase,
+          },
+          {
+            kind: "open-database-catalog",
+            project,
+            database: "https://example.com",
+          },
+        ],
+      }),
+      { projectName: project }
+    );
+
+    expect(result).toEqual([
+      { kind: "open-global-masking" },
+      { kind: "open-semantic-types" },
+      { kind: "open-data-classification" },
+      { kind: "open-project-masking-exemptions", project },
+      { kind: "open-database-catalog", project, database: projectDatabase },
+    ]);
+    expect(
+      collectAgentHandoffs(
+        "get_masking_overview",
+        JSON.stringify({
+          page: "database-catalog",
+          project: "projects/other",
+          openTargets: [
+            {
+              kind: "open-database-catalog",
+              project,
+              database: projectDatabase,
+            },
+          ],
+        }),
+        { projectName: project }
+      )
+    ).toEqual([]);
+  });
+
+  test("opens a database catalog for database names containing dots", () => {
+    const database = `${project}/instances/primary/databases/app.v2`;
+    expect(
+      resolveAgentHandoffRoute({
+        kind: "open-database-catalog",
+        project,
+        database,
+      })
+    ).toEqual({
+      name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
+      params: {
+        projectId: "sample",
+        instanceId: "primary",
+        databaseName: "app.v2",
+      },
+      query: { parent: `${project}/instances/primary` },
+      hash: "#catalog",
+    });
+
+    expect(
+      resolveAgentHandoffRoute({
+        kind: "open-database-catalog",
+        project,
+        database: "projects/other/instances/primary/databases/app.v2",
+      })
+    ).toBeUndefined();
+  });
+
   test("collects an unnumbered workspace review queue from a partial result", () => {
     expect(
       collectAgentHandoffs(
@@ -563,6 +650,57 @@ describe("acceptAgentHandoff", () => {
 });
 
 describe("resolveAgentHandoffRoute", () => {
+  test("maps masking settings targets to their exact registered routes", () => {
+    expect(resolveAgentHandoffRoute({ kind: "open-global-masking" })).toEqual({
+      name: WORKSPACE_ROUTE_GLOBAL_MASKING,
+    });
+    expect(resolveAgentHandoffRoute({ kind: "open-semantic-types" })).toEqual({
+      name: WORKSPACE_ROUTE_SEMANTIC_TYPES,
+    });
+    expect(
+      resolveAgentHandoffRoute({ kind: "open-data-classification" })
+    ).toEqual({ name: WORKSPACE_ROUTE_DATA_CLASSIFICATION });
+    expect(
+      resolveAgentHandoffRoute({
+        kind: "open-project-masking-exemptions",
+        project,
+      })
+    ).toEqual({
+      name: PROJECT_V1_ROUTE_MASKING_EXEMPTION,
+      params: { projectId: "sample" },
+    });
+    expect(
+      resolveAgentHandoffRoute({
+        kind: "open-database-catalog",
+        project,
+        database: "instances/shared/databases/app",
+      })
+    ).toEqual({
+      name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
+      params: {
+        projectId: "sample",
+        instanceId: "shared",
+        databaseName: "app",
+      },
+      query: { parent: "instances/shared" },
+      hash: "#catalog",
+    });
+    expect(
+      resolveAgentHandoffRoute({
+        kind: "open-database-catalog",
+        project,
+        database: "projects/sample/instances/primary/databases/app",
+      })
+    ).toMatchObject({ query: { parent: "projects/sample/instances/primary" } });
+    expect(
+      resolveAgentHandoffRoute({
+        kind: "open-database-catalog",
+        project,
+        database: "projects/other/instances/primary/databases/app",
+      })
+    ).toBeUndefined();
+  });
+
   test("maps only canonical targets to registered routes", () => {
     expect(
       resolveAgentHandoffRoute({ kind: "review-workspace-issues", workspace })

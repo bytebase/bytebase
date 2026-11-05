@@ -25,6 +25,7 @@ import {
   factorOperatorOverrideMap,
   getClassificationLevelOptions,
 } from "@/lib/sensitive-data/components-utils";
+import { AgentPageHelpButton } from "@/modules/agent/components/AgentPageHelpButton";
 import type { ConditionGroupExpr, Factor, SimpleExpr } from "@/modules/cel";
 import {
   buildCELExpr,
@@ -542,58 +543,67 @@ export function GlobalMaskingPage() {
         }
       />
 
-      <WorkspacePageToolbar align="end">
-        {reorderRules ? (
-          <div className="flex items-center gap-x-2">
-            <Button
-              appearance="outline"
-              disabled={processing}
-              onClick={() => {
-                setReorderRules(false);
-                useAppStore
-                  .getState()
-                  .getOrFetchPolicyByParentAndType({
-                    parentPath: useAppStore.getState().workspaceResourceName(),
-                    policyType: PolicyType.MASKING_RULE,
-                  })
-                  .then((policy) => {
-                    if (policy) {
-                      const rules =
-                        policy.policy?.case === "maskingRulePolicy"
-                          ? policy.policy.value.rules
-                          : [];
-                      setItems(rules.map((rule) => ({ mode: "NORMAL", rule })));
-                    }
-                  });
-              }}
-            >
-              {t("common.cancel")}
-            </Button>
-            <Button disabled={processing} onClick={onReorderSubmit}>
-              {t("common.update")}
-            </Button>
-          </div>
-        ) : (
-          <div className="flex items-center gap-x-2">
-            <Button
-              appearance="outline"
-              disabled={
-                !hasPermission || !hasSensitiveDataFeature || items.length <= 1
-              }
-              onClick={() => setReorderRules(true)}
-            >
-              <ListOrdered className="h-4 w-4" />
-              {t("settings.sensitive-data.global-rules.re-order")}
-            </Button>
-            <Button
-              disabled={!hasPermission || !hasSensitiveDataFeature}
-              onClick={addNewRule}
-            >
-              <Plus className="h-4 w-4" />
-              {t("common.create")}
-            </Button>
-          </div>
-        )}
+      <WorkspacePageToolbar align="end" className="w-full">
+        <div className="ml-auto flex items-center gap-x-2">
+          <AgentPageHelpButton />
+          {reorderRules ? (
+            <>
+              <Button
+                appearance="outline"
+                disabled={processing}
+                onClick={() => {
+                  setReorderRules(false);
+                  useAppStore
+                    .getState()
+                    .getOrFetchPolicyByParentAndType({
+                      parentPath: useAppStore
+                        .getState()
+                        .workspaceResourceName(),
+                      policyType: PolicyType.MASKING_RULE,
+                    })
+                    .then((policy) => {
+                      if (policy) {
+                        const rules =
+                          policy.policy?.case === "maskingRulePolicy"
+                            ? policy.policy.value.rules
+                            : [];
+                        setItems(
+                          rules.map((rule) => ({ mode: "NORMAL", rule }))
+                        );
+                      }
+                    });
+                }}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button disabled={processing} onClick={onReorderSubmit}>
+                {t("common.update")}
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                appearance="outline"
+                disabled={
+                  !hasPermission ||
+                  !hasSensitiveDataFeature ||
+                  items.length <= 1
+                }
+                onClick={() => setReorderRules(true)}
+              >
+                <ListOrdered className="h-4 w-4" />
+                {t("settings.sensitive-data.global-rules.re-order")}
+              </Button>
+              <Button
+                disabled={!hasPermission || !hasSensitiveDataFeature}
+                onClick={addNewRule}
+              >
+                <Plus className="h-4 w-4" />
+                {t("common.create")}
+              </Button>
+            </>
+          )}
+        </div>
       </WorkspacePageToolbar>
 
       {/* Empty state */}

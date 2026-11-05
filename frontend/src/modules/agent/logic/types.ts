@@ -65,6 +65,11 @@ export interface AgentEvidence {
 export type AgentAnswerEvidence = AgentEvidence | AgentEvidence[];
 
 export type AgentHandoff =
+  | { kind: "open-global-masking" }
+  | { kind: "open-semantic-types" }
+  | { kind: "open-data-classification" }
+  | { kind: "open-project-masking-exemptions"; project: string }
+  | { kind: "open-database-catalog"; project: string; database: string }
   | { kind: "review-workspace-issues"; workspace: string }
   | {
       kind:

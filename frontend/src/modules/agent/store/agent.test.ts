@@ -74,6 +74,23 @@ const s = (store: StoreApi<AgentState>) => {
 };
 
 describe("useAgentStore (Zustand)", () => {
+  test("keeps expression draft targets transient and scoped to the active workspace", () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/alpha");
+    const chatId = s(store).currentChatId!;
+    const apply = vi.fn(async () => true);
+    s(store).registerExpressionDraftTarget(chatId, apply);
+
+    expect(s(store).canApplyExpressionDraft(chatId, "selector")).toBe(true);
+    const raw = JSON.parse(
+      localStorage.getItem(getAgentStateKey("workspaces/alpha"))!
+    ) as Record<string, unknown>;
+    expect(raw).not.toHaveProperty("expressionDraftTargetsByChatId");
+
+    s(store).setWorkspaceName("workspaces/beta");
+    expect(s(store).canApplyExpressionDraft(chatId, "selector")).toBe(false);
+  });
+
   test("uses distinct cache keys for workspace and member boundaries", () => {
     expect(getScopedAgentStateKey("workspaces/a.b", "c@example.com")).not.toBe(
       getScopedAgentStateKey("workspaces/a", "b.c@example.com")

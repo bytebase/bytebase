@@ -1,16 +1,21 @@
 import {
   ArrowUpRight,
+  BadgeCheck,
   CircleDot,
   ClipboardList,
   Database,
   Folder,
   LoaderCircle,
   Server,
+  Shield,
+  Tags,
+  Users,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import type { AgentPageResource } from "../logic/chatContext";
 import type { AgentResourceReference } from "../logic/types";
+import { AgentAIConfigurationRecovery } from "./AgentAIConfigurationRecovery";
 
 interface AgentContextualStartProps {
   page: AgentPageResource;
@@ -19,6 +24,7 @@ interface AgentContextualStartProps {
   loading: boolean;
   canStart: boolean;
   hasCurrentChat: boolean;
+  showAIConfigurationRecovery?: boolean;
   onStart: (prompt: string, reference?: AgentResourceReference) => void;
   onContinue: () => void;
 }
@@ -30,12 +36,14 @@ export function AgentContextualStart({
   loading,
   canStart,
   hasCurrentChat,
+  showAIConfigurationRecovery = false,
   onStart,
   onContinue,
 }: AgentContextualStartProps) {
   const { t } = useTranslation();
   const requiresReference =
     page.kind === "database" ||
+    page.kind === "database-catalog" ||
     page.kind === "plan" ||
     page.kind === "issue" ||
     (page.kind === "plan-create" && Boolean(page.databaseName));
@@ -44,11 +52,21 @@ export function AgentContextualStart({
       ? Folder
       : page.kind === "database"
         ? Database
-        : page.kind === "plan" || page.kind === "plan-create"
-          ? ClipboardList
-          : page.kind === "issue"
-            ? CircleDot
-            : Server;
+        : page.kind === "database-catalog"
+          ? Database
+          : page.kind === "plan" || page.kind === "plan-create"
+            ? ClipboardList
+            : page.kind === "issue"
+              ? CircleDot
+              : page.kind === "global-masking"
+                ? Shield
+                : page.kind === "semantic-types"
+                  ? Tags
+                  : page.kind === "data-classification"
+                    ? BadgeCheck
+                    : page.kind === "masking-exemption"
+                      ? Users
+                      : Server;
   let heading = "";
   let suggestions: string[] = [];
   switch (page.kind) {
@@ -65,6 +83,14 @@ export function AgentContextualStart({
       suggestions = [
         t("agent.contextual-start.database-schema"),
         t("agent.contextual-start.database-recent"),
+      ];
+      break;
+    case "database-catalog":
+      heading = t("agent.contextual-start.masking-catalog-heading");
+      suggestions = [
+        t("agent.contextual-start.masking-catalog-visibility"),
+        t("agent.contextual-start.masking-catalog-rule"),
+        t("agent.contextual-start.masking-catalog-exemption"),
       ];
       break;
     case "plan":
@@ -102,6 +128,38 @@ export function AgentContextualStart({
         t("agent.contextual-start.instance-create-troubleshoot"),
       ];
       break;
+    case "global-masking":
+      heading = t("agent.contextual-start.masking-global-heading");
+      suggestions = [
+        t("agent.contextual-start.masking-global-effect"),
+        t("agent.contextual-start.masking-global-columns"),
+        t("agent.contextual-start.masking-global-exemptions"),
+      ];
+      break;
+    case "semantic-types":
+      heading = t("agent.contextual-start.masking-semantic-heading");
+      suggestions = [
+        t("agent.contextual-start.masking-semantic-algorithm"),
+        t("agent.contextual-start.masking-semantic-rules"),
+        t("agent.contextual-start.masking-semantic-short-values"),
+      ];
+      break;
+    case "data-classification":
+      heading = t("agent.contextual-start.masking-classification-heading");
+      suggestions = [
+        t("agent.contextual-start.masking-classification-effect"),
+        t("agent.contextual-start.masking-classification-rules"),
+        t("agent.contextual-start.masking-classification-exemptions"),
+      ];
+      break;
+    case "masking-exemption":
+      heading = t("agent.contextual-start.masking-exemption-heading");
+      suggestions = [
+        t("agent.contextual-start.masking-exemption-effect"),
+        t("agent.contextual-start.masking-exemption-scope"),
+        t("agent.contextual-start.masking-exemption-review"),
+      ];
+      break;
   }
 
   return (
@@ -115,6 +173,11 @@ export function AgentContextualStart({
           <span className="min-w-0 truncate">{title}</span>
         </div>
         <h2 className="mt-3 text-xl font-semibold text-main">{heading}</h2>
+        {showAIConfigurationRecovery && (
+          <div className="mt-4">
+            <AgentAIConfigurationRecovery />
+          </div>
+        )}
         {requiresReference && !loading && !reference ? (
           <p className="mt-4 text-sm text-control-light">
             {t("agent.contextual-start.resource-unavailable")}

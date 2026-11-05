@@ -76,6 +76,26 @@
       "issue-heading": "Hỏi về yêu cầu này",
       "issue-security": "Yêu cầu này có vấn đề bảo mật nào cần lưu ý không?",
       "issue-summary": "Tóm tắt yêu cầu này và trạng thái của nó",
+      "masking-catalog-exemption": "Ngoại lệ của dự án có ảnh hưởng đến cột này không?",
+      "masking-catalog-heading": "Hỏi về khả năng hiển thị của cột",
+      "masking-catalog-rule": "Quy tắc che dữ liệu nào áp dụng cho cột này?",
+      "masking-catalog-visibility": "Nhà phát triển sẽ thấy gì ở cột này?",
+      "masking-classification-effect": "Phân loại này có tự che các giá trị trong cột không?",
+      "masking-classification-exemptions": "Ngoại lệ có thể thay đổi dữ liệu người dùng nhìn thấy thế nào?",
+      "masking-classification-heading": "Hỏi về phân loại dữ liệu",
+      "masking-classification-rules": "Quy tắc che dữ liệu nào áp dụng cho dữ liệu mật?",
+      "masking-exemption-effect": "Ai có thể xem giá trị chưa được che theo ngoại lệ này?",
+      "masking-exemption-heading": "Hỏi về ngoại lệ của dự án",
+      "masking-exemption-review": "Tôi nên kiểm tra gì trước khi cấp ngoại lệ này?",
+      "masking-exemption-scope": "Phạm vi của ngoại lệ này là gì?",
+      "masking-global-columns": "Cột nào khớp với quy tắc che dữ liệu này?",
+      "masking-global-effect": "Nhà phát triển sẽ thấy gì với các giá trị thuộc quy tắc Inner Mask này?",
+      "masking-global-exemptions": "Ngoại lệ có thể làm lộ giá trị gốc không?",
+      "masking-global-heading": "Hỏi về che dữ liệu",
+      "masking-semantic-algorithm": "Thuật toán che dữ liệu này giữ lại phần nào?",
+      "masking-semantic-heading": "Hỏi về kiểu ngữ nghĩa",
+      "masking-semantic-rules": "Quy tắc che dữ liệu nào sử dụng kiểu ngữ nghĩa này?",
+      "masking-semantic-short-values": "Điều gì xảy ra với các giá trị rất ngắn?",
       "plan-changes": "Kế hoạch này đề xuất những thay đổi cơ sở dữ liệu nào?",
       "plan-create-heading": "Soạn Plan thay đổi cơ sở dữ liệu",
       "plan-create-sql": "Hãy giúp tôi soạn thay đổi cơ sở dữ liệu cho Plan này.",
@@ -105,8 +125,13 @@
       "ask-next": "Câu hỏi tiếp theo"
     },
     "handoff": {
+      "open-data-classification": "Mở cài đặt phân loại dữ liệu",
+      "open-database-catalog": "Mở cài đặt cột",
+      "open-global-masking": "Mở cài đặt che dữ liệu",
       "open-issue": "Mở vấn đề",
       "open-project-instances": "Mở các phiên bản của dự án",
+      "open-project-masking-exemptions": "Mở ngoại lệ che dữ liệu của dự án",
+      "open-semantic-types": "Mở cài đặt kiểu ngữ nghĩa",
       "review-database-changes": "Xem các thay đổi cơ sở dữ liệu",
       "review-issue-plan": "Xem xét kế hoạch",
       "review-project-issues": "Xem các vấn đề của dự án",
@@ -148,6 +173,9 @@
       "workspace-governance": "Bytebase quản trị thay đổi cơ sở dữ liệu như thế nào?",
       "workspace-recent": "Gần đây có gì thay đổi trong không gian làm việc này?",
       "workspace-setup-first": "Tôi nên thiết lập gì trước?"
+    },
+    "masking": {
+      "ask-agent": "Hỏi Agent về che dữ liệu"
     },
     "minimize": "Thu nhỏ",
     "new-chat": "Cuộc trò chuyện mới",
@@ -416,6 +444,20 @@
     }
   },
   "cel": {
+    "agent-help": {
+      "applied-raw": "Đã áp dụng dưới dạng CEL thô",
+      "applied-selector": "Đã áp dụng vào bộ chọn",
+      "apply-group": "Áp dụng biểu thức được tạo",
+      "apply-raw": "Áp dụng dưới dạng CEL thô",
+      "apply-selector": "Áp dụng vào bộ chọn",
+      "ask-tooltip": "Nhờ Agent trợ giúp tạo biểu thức này",
+      "invalid": "Không thể áp dụng biểu thức CEL này một cách an toàn. Hãy yêu cầu Agent chỉnh sửa hoặc chọn CEL thô nếu có.",
+      "mode-raw": "CEL thô",
+      "mode-selector": "bộ chọn",
+      "no-attributes": "không có",
+      "starter": "Hãy giúp tôi viết điều kiện CEL cho trình chỉnh sửa này. Trước tiên, hãy hỏi để làm rõ, mỗi lần một câu. Chế độ: {{mode}}. Thuộc tính có thể dùng: {{attributes}}. Chỉ dùng các thuộc tính này, không kiểm tra dữ liệu hoặc chạy truy vấn. Khi sẵn sàng, hãy giải thích điều kiện và cung cấp đúng một khối mã `cel`. Không nói rằng biểu thức đã được áp dụng hoặc lưu; tôi sẽ xem lại trước khi áp dụng.",
+      "unsaved": "Thao tác thay thế biểu thức hiện tại trong trình chỉnh sửa chưa lưu này, không lưu quy tắc."
+    },
     "condition": {
       "add": "Thêm điều kiện",
       "add-condition-in-group-placeholder": "Thêm {{plus}} để thêm điều kiện",

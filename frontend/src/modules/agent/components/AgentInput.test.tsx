@@ -70,6 +70,7 @@ const mocks = vi.hoisted(() => ({
   projectPoliciesByName: {} as Record<string, object>,
   availableProjects: [] as { name: string; title: string }[],
   workspace: { name: "workspaces/demo", title: "Demo workspace" },
+  aiEnabled: undefined as boolean | undefined,
   currentContext: "projects/orders" as string | undefined,
   currentPath: "/demo",
 }));
@@ -127,6 +128,9 @@ vi.mock("@/app/router", async (importOriginal) => ({
 vi.mock("@/stores/app", () => {
   const state = {
     currentUser: { name: "users/me@example.com" },
+    get serverInfo() {
+      return { aiEnabled: mocks.aiEnabled };
+    },
     getOrFetchSettingByName: mocks.getOrFetchSettingByName,
     getOrFetchProjectByName: mocks.getOrFetchProjectByName,
     getSettingByName: () => undefined,
@@ -191,7 +195,9 @@ vi.mock("../logic/prompt", () => ({
 }));
 
 vi.mock("../logic/chatContext", () => ({
+  getCurrentAgentPageResource: () => undefined,
   getCurrentChatContext: () => mocks.currentContext,
+  isAgentMaskingPageResource: () => false,
 }));
 
 vi.mock("../logic/resourceSearch", () => ({
@@ -404,6 +410,7 @@ beforeEach(async () => {
   mocks.workspace = { name: "workspaces/demo", title: "Demo workspace" };
   mocks.currentContext = "projects/orders";
   mocks.currentPath = "/demo";
+  mocks.aiEnabled = undefined;
 
   ({ AgentInput } = await import("./AgentInput"));
 });
@@ -3955,6 +3962,23 @@ describe("AgentInput", () => {
       requiresAIConfiguration: true,
     });
 
+    unmount();
+  });
+
+  test("blocks chat input when ai_enabled is false", async () => {
+    mocks.aiEnabled = false;
+
+    const { render, unmount } = renderIntoContainer(<AgentInput />);
+
+    await act(async () => {
+      render();
+      await Promise.resolve();
+    });
+
+    const chatId = useAgentStore.getState().currentChatId!;
+    expect(useAgentStore.getState().getChat(chatId)).toMatchObject({
+      requiresAIConfiguration: true,
+    });
     unmount();
   });
 

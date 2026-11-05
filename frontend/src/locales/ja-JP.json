@@ -76,6 +76,26 @@
       "issue-heading": "このイシューについて質問する",
       "issue-security": "このイシューにセキュリティ上の懸念はありますか？",
       "issue-summary": "このイシューと現在の状態を要約して",
+      "masking-catalog-exemption": "プロジェクトの例外はこのカラムに適用されますか？",
+      "masking-catalog-heading": "カラムの表示内容について質問する",
+      "masking-catalog-rule": "このカラムに適用されるマスキングルールはどれですか？",
+      "masking-catalog-visibility": "開発者にはこのカラムがどう見えますか？",
+      "masking-classification-effect": "この分類だけでカラムの値はマスキングされますか？",
+      "masking-classification-exemptions": "例外によってユーザーの表示内容はどう変わりますか？",
+      "masking-classification-heading": "データ分類について質問する",
+      "masking-classification-rules": "機密データに適用されるマスキングルールはどれですか？",
+      "masking-exemption-effect": "この例外で誰が未マスキングの値を見られますか？",
+      "masking-exemption-heading": "プロジェクトの例外について質問する",
+      "masking-exemption-review": "この例外を許可する前に何を確認すべきですか？",
+      "masking-exemption-scope": "この例外の適用範囲は何ですか？",
+      "masking-global-columns": "このマスキングルールに一致するカラムはどれですか？",
+      "masking-global-effect": "この Inner Mask ルールの対象値は開発者にどう表示されますか？",
+      "masking-global-exemptions": "例外によって元の値が見えることはありますか？",
+      "masking-global-heading": "データマスキングについて質問する",
+      "masking-semantic-algorithm": "このマスキングアルゴリズムで保持される部分はどこですか？",
+      "masking-semantic-heading": "セマンティックタイプについて質問する",
+      "masking-semantic-rules": "このセマンティックタイプを使うマスキングルールはどれですか？",
+      "masking-semantic-short-values": "非常に短い値はどうなりますか？",
       "plan-changes": "このプランではどのようなデータベース変更を提案していますか？",
       "plan-create-heading": "データベース変更 Plan を作成する",
       "plan-create-sql": "この Plan のデータベース変更 SQL の作成を手伝ってください。",
@@ -105,8 +125,13 @@
       "ask-next": "次の質問"
     },
     "handoff": {
+      "open-data-classification": "データ分類の設定を開く",
+      "open-database-catalog": "カラム設定を開く",
+      "open-global-masking": "マスキング設定を開く",
       "open-issue": "課題を開く",
       "open-project-instances": "プロジェクトのインスタンスを開く",
+      "open-project-masking-exemptions": "プロジェクトのマスキング例外を開く",
+      "open-semantic-types": "セマンティックタイプの設定を開く",
       "review-database-changes": "データベース変更を確認",
       "review-issue-plan": "プランを確認",
       "review-project-issues": "プロジェクトの課題を確認",
@@ -148,6 +173,9 @@
       "workspace-governance": "Bytebase はデータベース変更をどのように管理しますか？",
       "workspace-recent": "このワークスペースで最近何が変わりましたか？",
       "workspace-setup-first": "最初に何を設定すればよいですか？"
+    },
+    "masking": {
+      "ask-agent": "マスキングについて Agent に質問"
     },
     "minimize": "最小化",
     "new-chat": "新しいチャット",
@@ -416,6 +444,20 @@
     }
   },
   "cel": {
+    "agent-help": {
+      "applied-raw": "Raw CEL として適用済み",
+      "applied-selector": "セレクターに適用済み",
+      "apply-group": "生成した式を適用",
+      "apply-raw": "Raw CEL として適用",
+      "apply-selector": "セレクターに適用",
+      "ask-tooltip": "Agent にこの式の作成を相談",
+      "invalid": "この CEL 式を安全に適用できませんでした。Agent に修正を依頼するか、利用可能な場合は Raw CEL を選択してください。",
+      "mode-raw": "Raw CEL",
+      "mode-selector": "セレクター",
+      "no-attributes": "なし",
+      "starter": "このエディターの CEL 条件を作成してください。まず、条件について一度に一つずつ確認してください。モード: {{mode}}。利用可能な属性: {{attributes}}。これらの属性のみを使用し、データを調べたりクエリを実行したりしないでください。準備ができたら、条件を説明し、`cel` のコードブロックを 1 つだけ提示してください。適用または保存したと主張しないでください。適用前に私が確認します。",
+      "unsaved": "適用すると未保存エディターの現在の式が置き換わります。ルールは保存されません。"
+    },
     "condition": {
       "add": "条件を追加する",
       "add-condition-in-group-placeholder": "{{plus}} をクリックして条件を追加します",

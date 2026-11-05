@@ -76,6 +76,26 @@
       "issue-heading": "Ask about this issue",
       "issue-security": "Are there any security concerns with this issue?",
       "issue-summary": "Summarize this issue and its status",
+      "masking-catalog-exemption": "Does a project exemption affect this column?",
+      "masking-catalog-heading": "Ask about column visibility",
+      "masking-catalog-rule": "Which masking rule applies to this column?",
+      "masking-catalog-visibility": "What would a developer see for this column?",
+      "masking-classification-effect": "Does this classification mask a column's values?",
+      "masking-classification-exemptions": "How can an exemption affect what a user sees?",
+      "masking-classification-heading": "Ask about data classification",
+      "masking-classification-rules": "Which masking rules target confidential data?",
+      "masking-exemption-effect": "Who could see unmasked values under this exemption?",
+      "masking-exemption-heading": "Ask about project exemptions",
+      "masking-exemption-review": "What should I check before granting this exemption?",
+      "masking-exemption-scope": "How is this exemption scoped?",
+      "masking-global-columns": "Which columns match this masking rule?",
+      "masking-global-effect": "What will a developer see for values covered by this Inner Mask rule?",
+      "masking-global-exemptions": "Could an exemption reveal the original value?",
+      "masking-global-heading": "Ask about data masking",
+      "masking-semantic-algorithm": "What does this masking algorithm preserve?",
+      "masking-semantic-heading": "Ask about semantic types",
+      "masking-semantic-rules": "Which masking rules use this semantic type?",
+      "masking-semantic-short-values": "What happens to very short values?",
       "plan-changes": "What database changes does this plan propose?",
       "plan-create-heading": "Draft a database change Plan",
       "plan-create-sql": "Help me draft a database change for this Plan.",
@@ -105,8 +125,13 @@
       "ask-next": "Ask next"
     },
     "handoff": {
+      "open-data-classification": "Open data classification settings",
+      "open-database-catalog": "Open column settings",
+      "open-global-masking": "Open masking settings",
       "open-issue": "Open issue",
       "open-project-instances": "Open project instances",
+      "open-project-masking-exemptions": "Open project masking exemptions",
+      "open-semantic-types": "Open semantic type settings",
       "review-database-changes": "Review database changes",
       "review-issue-plan": "Review plan",
       "review-project-issues": "Review project issues",
@@ -148,6 +173,9 @@
       "workspace-governance": "How does Bytebase govern database changes?",
       "workspace-recent": "What changed recently in this workspace?",
       "workspace-setup-first": "What should I set up first?"
+    },
+    "masking": {
+      "ask-agent": "Ask Agent about masking"
     },
     "minimize": "Minimize",
     "new-chat": "New Chat",
@@ -416,6 +444,20 @@
     }
   },
   "cel": {
+    "agent-help": {
+      "applied-raw": "Applied as raw CEL",
+      "applied-selector": "Applied to selector",
+      "apply-group": "Apply generated expression",
+      "apply-raw": "Apply as raw CEL",
+      "apply-selector": "Apply to selector",
+      "ask-tooltip": "Ask Agent to help build this expression",
+      "invalid": "Couldn't safely apply this CEL expression. Ask Agent to revise it or choose raw CEL if available.",
+      "mode-raw": "raw CEL",
+      "mode-selector": "selector",
+      "no-attributes": "none",
+      "starter": "Help me write a CEL condition for this editor. Ask clarifying questions first, one at a time. Mode: {{mode}}. Available attributes: {{attributes}}. Use only these attributes and do not inspect data or run queries. When ready, explain the condition and provide exactly one fenced `cel` block. Do not claim it is applied or saved; I will review before applying.",
+      "unsaved": "Applying replaces the current expression in this unsaved editor. It does not save the rule."
+    },
     "condition": {
       "add": "Add condition",
       "add-condition-in-group-placeholder": "Add {{plus}} to add condition",

@@ -22,6 +22,7 @@ import { GetProjectRequestSchema } from "@/types/proto-es/v1/project_service_pb"
 import { getSkill, type GetSkillArgs } from "../skills";
 import { normalizeAgentHandoff } from "../handoff";
 import { normalizeAgentResponseActions } from "../responseActions";
+import type { AgentMaskingPageResource } from "../chatContext";
 import type {
   AgentAskUserKind,
   AgentAskUserOption,
@@ -61,6 +62,7 @@ import { searchApi, type SearchApiArgs } from "./searchApi";
 import { createWorkspaceOverviewTool } from "./workspaceOverview";
 import { createWorkspaceRecentActivityTool } from "./workspaceRecentActivity";
 import { createWorkspaceAttentionTool } from "./workspaceAttention";
+import { createMaskingOverviewTool } from "./maskingOverview";
 
 const toToolResult = (result: string): ToolExecutionResult => ({
   kind: "tool_result",
@@ -189,6 +191,7 @@ const READ_ONLY_TOOL_NAMES = new Set([
   "get_project_recent_activity",
   "get_workspace_attention",
   "get_workspace_recent_activity",
+  "get_masking_overview",
   "get_skill",
   "ask_user",
   "done",
@@ -283,6 +286,7 @@ export function getToolDefinitions(
     runMode?: AgentRunMode;
     referencedProject?: string;
     instanceName?: string;
+    maskingPage?: AgentMaskingPageResource;
   } = {}
 ): ToolDefinition[] {
   const referencedProject = isCanonicalProjectName(options.referencedProject)
@@ -692,6 +696,11 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
                     kind: {
                       type: "string",
                       enum: [
+                        "open-global-masking",
+                        "open-semantic-types",
+                        "open-data-classification",
+                        "open-project-masking-exemptions",
+                        "open-database-catalog",
                         "review-workspace-issues",
                         "review-project-issues",
                         "review-database-changes",
@@ -706,6 +715,7 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
                     },
                     workspace: { type: "string" },
                     project: { type: "string" },
+                    database: { type: "string" },
                     plan: { type: "string" },
                     issue: { type: "string" },
                     task: { type: "string" },
@@ -742,6 +752,15 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
       },
     },
   ];
+
+  if (options.maskingPage) {
+    tools.push({
+      name: "get_masking_overview",
+      description:
+        "Read a bounded snapshot of data masking settings relevant to the current masking page. It reads masking rules, semantic type algorithms, classification metadata, and project exemptions; on a Database Catalog page it also reads schema and column metadata. It excludes exemption member identities, MD5 salts, credentials, and all database row values. It never changes settings. Use this for questions about configured masking effects and use synthetic values only for illustrative previews.",
+      parametersSchema: { type: "object", properties: {} },
+    });
+  }
 
   if (options.instanceName && !referencedProject) {
     tools.push({
@@ -784,12 +803,14 @@ interface CreateToolExecutorOptions {
   referencedPlan?: string;
   onNavigate?: () => void;
   runMode?: AgentRunMode;
+  maskingPage?: AgentMaskingPageResource;
 }
 
 const PAGE_MUTATION_TOOL_NAMES = new Set(["navigate", "dom_action"]);
 const PAGE_BOUND_TOOL_NAMES = new Set([
   "get_page_state",
   "get_instance_overview",
+  "get_masking_overview",
   ...PAGE_MUTATION_TOOL_NAMES,
 ]);
 const BACKGROUND_PAGE_TOOL_ERROR = JSON.stringify({
@@ -900,6 +921,10 @@ export function createToolExecutor(
   });
   const workspaceAttentionTool = createWorkspaceAttentionTool({
     workspaceName: options.context,
+  });
+  const maskingOverviewTool = createMaskingOverviewTool({
+    page: options.maskingPage,
+    workspaceName: options.workspaceName,
   });
   let referencedProjectAccess: Promise<boolean> | undefined;
   let referencedDatabaseAccess: Promise<boolean> | undefined;
@@ -1143,6 +1168,8 @@ export function createToolExecutor(
         return toToolResult(await databaseCountTool(args));
       case "get_instance_overview":
         return toToolResult(await instanceOverviewTool());
+      case "get_masking_overview":
+        return toToolResult(await maskingOverviewTool());
       case "get_workspace_overview":
         return toToolResult(await workspaceOverviewTool());
       case "get_project_open_issues":

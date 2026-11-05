@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
     i18n: { language: "en-US" },
   })),
   getOrFetchSettingByName: vi.fn(),
+  aiEnabled: undefined as boolean | undefined,
   batchFetchProjects: vi.fn(),
   projectErrorsByName: {} as Record<string, Error | undefined>,
   currentContext: "projects/orders" as string | undefined,
@@ -79,6 +80,9 @@ vi.mock("react-i18next", () => ({
 vi.mock("@/stores/app", () => {
   const state = {
     getOrFetchSettingByName: mocks.getOrFetchSettingByName,
+    get serverInfo() {
+      return { aiEnabled: mocks.aiEnabled };
+    },
     batchFetchProjects: mocks.batchFetchProjects,
     get projectsByName() {
       return mocks.projectsByName;
@@ -282,6 +286,7 @@ beforeEach(async () => {
   });
   mocks.getOrFetchSettingByName.mockReset();
   mocks.getOrFetchSettingByName.mockResolvedValue(undefined);
+  mocks.aiEnabled = true;
   mocks.batchFetchProjects.mockReset();
   mocks.batchFetchProjects.mockResolvedValue([]);
   mocks.projectsByName = {
@@ -445,6 +450,24 @@ describe("AgentWindow", () => {
     unmount();
   });
 
+  test("shows AI setup on the page-detected start when ai_enabled is false", () => {
+    mocks.aiEnabled = false;
+    mocks.pageResource = {
+      kind: "project",
+      name: "projects/orders",
+      project: "projects/orders",
+    };
+
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    const start = document.body.querySelector(
+      '[data-agent-contextual-start="project"]'
+    );
+    expect(start?.textContent).toContain("agent.ai-not-configured.title");
+    unmount();
+  });
+
   test("sends a contextual project starter through its direct read-only path", () => {
     mocks.pageResource = {
       kind: "project",
@@ -597,6 +620,51 @@ describe("AgentWindow", () => {
       }],
     });
     expect(store.getMessages(chat?.id)).toEqual([]);
+    unmount();
+  });
+
+  test("prefills a bound database mention from the database catalog page", async () => {
+    mocks.pageResource = {
+      kind: "database-catalog",
+      project: "projects/orders",
+      names: ["projects/orders/instances/primary/databases/app"],
+    };
+    mocks.getOrFetchDatabaseByName.mockResolvedValue({
+      name: "projects/orders/instances/primary/databases/app",
+      project: "projects/orders",
+      instanceResource: { title: "Primary" },
+    });
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    await act(async () => {
+      render();
+      await Promise.resolve();
+    });
+
+    const mentionButton = document.body.querySelector(
+      '[data-agent-contextual-mention]'
+    ) as HTMLButtonElement;
+    expect(mentionButton).toBeInstanceOf(HTMLButtonElement);
+    expect(mentionButton.disabled).toBe(false);
+    expect(mentionButton.textContent).toContain("@app (Primary)");
+
+    act(() => mentionButton.click());
+    const store = useAgentStore.getState();
+    const chat = useAgentStore
+      .getState()
+      .getChat(useAgentStore.getState().currentChatId);
+    expect(store.getDraft(chat?.id)).toMatchObject({
+      text: "@app (Primary) ",
+      mentions: [
+        {
+          resource: {
+            kind: "database",
+            name: "projects/orders/instances/primary/databases/app",
+            project: "projects/orders",
+            label: "app (Primary)",
+          },
+        },
+      ],
+    });
     unmount();
   });
 
@@ -2946,8 +3014,29 @@ describe("AgentWindow", () => {
     unmount();
   });
 
-  test("checks AI configuration when opening an existing chat", async () => {
+  test("marks the active chat when ai_enabled is false", async () => {
     const chatId = useAgentStore.getState().currentChatId!;
+    mocks.aiEnabled = false;
+    useAgentStore.setState({ visible: false });
+
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+
+    render();
+    await act(async () => {
+      useAgentStore.getState().toggle();
+      await Promise.resolve();
+    });
+
+    expect(useAgentStore.getState().getChat(chatId)).toMatchObject({
+      requiresAIConfiguration: true,
+    });
+
+    unmount();
+  });
+
+  test("falls back to the AI setting when ai_enabled is unavailable", async () => {
+    const chatId = useAgentStore.getState().currentChatId!;
+    mocks.aiEnabled = undefined;
     mocks.getOrFetchSettingByName.mockResolvedValue({
       value: {
         value: {
@@ -2959,7 +3048,6 @@ describe("AgentWindow", () => {
     useAgentStore.setState({ visible: false });
 
     const { render, unmount } = renderIntoContainer(<AgentWindow />);
-
     render();
     await act(async () => {
       useAgentStore.getState().toggle();
@@ -2973,7 +3061,6 @@ describe("AgentWindow", () => {
     expect(useAgentStore.getState().getChat(chatId)).toMatchObject({
       requiresAIConfiguration: true,
     });
-
     unmount();
   });
 

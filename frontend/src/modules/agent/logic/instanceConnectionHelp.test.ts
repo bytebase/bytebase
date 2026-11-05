@@ -125,6 +125,18 @@ describe("instanceConnectionHelp", () => {
     });
     expect(mocks.open).toHaveBeenCalledOnce();
   });
+
+  test("exposes the new chat before queueing its first message", () => {
+    const onChatCreated = vi.fn();
+
+    openAgentWithPrompt("Help with this expression.", [], onChatCreated);
+
+    expect(onChatCreated).toHaveBeenCalledWith("chat-1");
+    expect(onChatCreated.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.queueUserMessage.mock.invocationCallOrder[0]
+    );
+  });
+
   test("binds page-launched assistance to its selected resource", () => {
     const resourceReference = {
       kind: "plan" as const,

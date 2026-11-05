@@ -6,6 +6,10 @@ import {
   getNameParentTokens,
   projectNamePrefix,
 } from "@/stores/modules/v1/common";
+import type {
+  AgentExpressionDraftMode,
+  AgentExpressionDraftTarget,
+} from "../logic/expressionDraft";
 import { normalizeAgentHandoff } from "../logic/handoff";
 import type { LandingStarterId } from "../logic/landingStarters";
 import {
@@ -91,6 +95,12 @@ export interface QueuedUserMessage {
   starterId?: LandingStarterId;
   resourceReference?: AgentResourceReference;
   resourceReferences?: AgentResourceReference[];
+}
+
+interface RegisteredExpressionDraftTarget {
+  apply: AgentExpressionDraftTarget;
+  allowRaw: boolean;
+  token: symbol;
 }
 
 type QueueUserMessageInput = Omit<QueuedUserMessage, "id">;
@@ -667,6 +677,10 @@ export interface AgentState {
   abortControllersByChatId: Record<string, AbortController>;
   queuedUserMessagesByChatId: Record<string, QueuedUserMessage>;
   queuedUserMessageInFlightByChatId: Record<string, boolean>;
+  expressionDraftTargetsByChatId: Record<
+    string,
+    RegisteredExpressionDraftTarget
+  >;
 
   // UI actions
   open: () => void;
@@ -712,6 +726,20 @@ export interface AgentState {
   unarchiveAllArchivedChats: () => number;
   deleteChat: (chatId: string) => boolean;
   deleteAllArchivedChats: () => number;
+  registerExpressionDraftTarget: (
+    chatId: string,
+    target: AgentExpressionDraftTarget,
+    options?: { allowRaw?: boolean }
+  ) => () => void;
+  canApplyExpressionDraft: (
+    chatId: string,
+    mode: AgentExpressionDraftMode
+  ) => boolean;
+  applyExpressionDraft: (
+    chatId: string,
+    expression: string,
+    mode: AgentExpressionDraftMode
+  ) => Promise<boolean>;
 
   // Messages
   addMessage: (message: AddMessageOptions) => AgentMessage | null;
@@ -1189,6 +1217,7 @@ export const createAgentStore = () => {
         abortControllersByChatId: {},
         queuedUserMessagesByChatId: initial.queuedUserMessagesByChatId,
         queuedUserMessageInFlightByChatId: {},
+        expressionDraftTargetsByChatId: {},
 
         // UI actions
         open: () =>
@@ -1358,6 +1387,7 @@ export const createAgentStore = () => {
           set((state) => {
             delete state.queuedUserMessagesByChatId[chatId];
             delete state.queuedUserMessageInFlightByChatId[chatId];
+            delete state.expressionDraftTargetsByChatId[chatId];
           }),
 
         commitQueuedUserMessage: (chatId) => {
@@ -1706,6 +1736,7 @@ export const createAgentStore = () => {
             for (const chatId of deletedChatIds) {
               delete state.queuedUserMessagesByChatId[chatId];
               delete state.queuedUserMessageInFlightByChatId[chatId];
+              delete state.expressionDraftTargetsByChatId[chatId];
             }
 
             state.chats = state.chats.filter(
@@ -1719,6 +1750,37 @@ export const createAgentStore = () => {
             }
           });
           return deletedCount;
+        },
+
+        registerExpressionDraftTarget: (chatId, apply, options = {}) => {
+          const registered: RegisteredExpressionDraftTarget = {
+            apply,
+            allowRaw: options.allowRaw ?? true,
+            token: Symbol(),
+          };
+          set((state) => {
+            state.expressionDraftTargetsByChatId[chatId] = registered;
+          });
+          return () =>
+            set((state) => {
+              if (
+                state.expressionDraftTargetsByChatId[chatId]?.token ===
+                registered.token
+              ) {
+                delete state.expressionDraftTargetsByChatId[chatId];
+              }
+            });
+        },
+
+        canApplyExpressionDraft: (chatId, mode) => {
+          const target = get().expressionDraftTargetsByChatId[chatId];
+          return Boolean(target && (mode === "selector" || target.allowRaw));
+        },
+
+        applyExpressionDraft: async (chatId, expression, mode) => {
+          const target = get().expressionDraftTargetsByChatId[chatId];
+          if (!target || (mode === "raw" && !target.allowRaw)) return false;
+          return target.apply(expression, mode);
         },
 
         // Messages
@@ -2090,6 +2152,7 @@ export const createAgentStore = () => {
               draft.abortControllersByChatId = {};
               draft.queuedUserMessagesByChatId = {};
               draft.queuedUserMessageInFlightByChatId = {};
+              draft.expressionDraftTargetsByChatId = {};
             });
             return false;
           }
@@ -2130,6 +2193,7 @@ export const createAgentStore = () => {
             draft.queuedUserMessagesByChatId =
               persistedState.queuedUserMessagesByChatId;
             draft.queuedUserMessageInFlightByChatId = {};
+            draft.expressionDraftTargetsByChatId = {};
           });
           get().loadWindowState();
           return true;

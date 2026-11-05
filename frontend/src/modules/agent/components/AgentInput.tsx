@@ -27,7 +27,11 @@ import {
   getAgentAIConfigurationEnabled,
   isAgentAIConfigurationError,
 } from "../logic/aiConfiguration";
-import { getCurrentChatContext } from "../logic/chatContext";
+import {
+  getCurrentAgentPageResource,
+  getCurrentChatContext,
+  isAgentMaskingPageResource,
+} from "../logic/chatContext";
 import { resolveDeniedQueryAccessDraft } from "../logic/deniedQueryAccess";
 import { generateFollowUpQuestion } from "../logic/generateFollowUpQuestion";
 import { acceptAgentHandoff, collectAgentHandoffs } from "../logic/handoff";
@@ -425,9 +429,7 @@ export function AgentInput({
   );
   const workspace = useAppStore((s) => s.workspace);
   const getOrFetchProjectByName = useAppStore((s) => s.getOrFetchProjectByName);
-  const aiConfigurationEnabled = useAppStore((s) =>
-    getAgentAIConfigurationEnabled(s.getSettingByName(Setting_SettingName.AI))
-  );
+  const aiEnabled = useAppStore((s) => s.serverInfo?.aiEnabled);
 
   const formatRecentActivity = useCallback(
     (result: string) => {
@@ -786,17 +788,17 @@ export function AgentInput({
     const chat = useAgentStore.getState().getChat(currentChatId);
     if (!chat) return;
 
-    if (aiConfigurationEnabled === false) {
+    if (aiEnabled === false) {
       useAgentStore.getState().setChatStatus(chat.id, "error", {
         requiresAIConfiguration: true,
       });
       return;
     }
 
-    if (aiConfigurationEnabled === true && chat.requiresAIConfiguration) {
+    if (aiEnabled === true && chat.requiresAIConfiguration) {
       useAgentStore.getState().clearError(chat.id);
     }
-  }, [aiConfigurationEnabled, currentChatId]);
+  }, [aiEnabled, currentChatId]);
 
   useEffect(() => {
     const chat = useAgentStore.getState().getChat(currentChatId);
@@ -960,6 +962,10 @@ export function AgentInput({
       const referencedDatabase = databaseReference?.name;
       const referencedIssue = issueReference?.name;
       const referencedPlan = planReference?.name;
+      const currentPageResource = getCurrentAgentPageResource();
+      const maskingPage = isAgentMaskingPageResource(currentPageResource)
+        ? currentPageResource
+        : undefined;
       const instanceName = referencedProject
         ? undefined
         : resolveInstanceNameFromPagePath(page.path);
@@ -981,12 +987,14 @@ export function AgentInput({
         referencedIssue,
         referencedPlan,
         instanceName,
+        maskingPage,
         runMode,
       });
       const tools = getToolDefinitions({
         runMode,
         referencedProject,
         instanceName,
+        maskingPage,
       });
       const executor = createToolExecutor(router, {
         chatId,
@@ -998,6 +1006,7 @@ export function AgentInput({
         referencedDatabase,
         referencedIssue,
         referencedPlan,
+        maskingPage,
         runMode,
         canUseCurrentPage: () =>
           isCurrentChatScope(store, chatId) &&
@@ -1030,9 +1039,13 @@ export function AgentInput({
             : undefined),
       };
       const observeHandoffs = (name: string, result: string) => {
-        handoffCandidates.push(
-          ...collectAgentHandoffs(name, result, handoffScope)
-        );
+        const scope =
+          name === "get_masking_overview" &&
+          maskingPage &&
+          "project" in maskingPage
+            ? { ...handoffScope, projectName: maskingPage.project }
+            : handoffScope;
+        handoffCandidates.push(...collectAgentHandoffs(name, result, scope));
       };
 
       try {
