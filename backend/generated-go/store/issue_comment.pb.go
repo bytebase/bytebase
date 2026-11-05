@@ -595,7 +595,10 @@ type IssueCommentPayload_ReviewMetadata struct {
 	Fingerprint string `protobuf:"bytes,6,opt,name=fingerprint,proto3" json:"fingerprint,omitempty"`
 	// The review_run.attempt of the run that posted the result. A result
 	// a later run reports again keeps its attempt.
-	Attempt       int64 `protobuf:"varint,7,opt,name=attempt,proto3" json:"attempt,omitempty"`
+	Attempt int64 `protobuf:"varint,7,opt,name=attempt,proto3" json:"attempt,omitempty"`
+	// The conditions a RULE result reports, as omni finding codes such as
+	// "WT101", one per reason. Empty for other reviewers.
+	Codes         []string `protobuf:"bytes,8,rep,name=codes,proto3" json:"codes,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -677,6 +680,13 @@ func (x *IssueCommentPayload_ReviewMetadata) GetAttempt() int64 {
 		return x.Attempt
 	}
 	return 0
+}
+
+func (x *IssueCommentPayload_ReviewMetadata) GetCodes() []string {
+	if x != nil {
+		return x.Codes
+	}
+	return nil
 }
 
 // StatementAnchor records the anchored statement revision and range.
@@ -763,7 +773,7 @@ var File_store_issue_comment_proto protoreflect.FileDescriptor
 
 const file_store_issue_comment_proto_rawDesc = "" +
 	"\n" +
-	"\x19store/issue_comment.proto\x12\x0ebytebase.store\x1a\x14store/approval.proto\x1a\x12store/common.proto\x1a\x11store/issue.proto\x1a\x10store/plan.proto\x1a\x17store/review_rule.proto\x1a\x16store/review_run.proto\"\xd1\x11\n" +
+	"\x19store/issue_comment.proto\x12\x0ebytebase.store\x1a\x14store/approval.proto\x1a\x12store/common.proto\x1a\x11store/issue.proto\x1a\x10store/plan.proto\x1a\x17store/review_rule.proto\x1a\x16store/review_run.proto\"\xe7\x11\n" +
 	"\x13IssueCommentPayload\x12\x18\n" +
 	"\acomment\x18\x01 \x01(\tR\acomment\x12J\n" +
 	"\bapproval\x18\x02 \x01(\v2,.bytebase.store.IssueCommentPayload.ApprovalH\x00R\bapproval\x12T\n" +
@@ -808,7 +818,7 @@ const file_store_issue_comment_proto_rawDesc = "" +
 	"PlanUpdate\x12>\n" +
 	"\n" +
 	"from_specs\x18\x01 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\tfromSpecs\x12:\n" +
-	"\bto_specs\x18\x02 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\atoSpecs\x1a\x95\x03\n" +
+	"\bto_specs\x18\x02 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\atoSpecs\x1a\xab\x03\n" +
 	"\x0eReviewMetadata\x129\n" +
 	"\brun_type\x18\x01 \x01(\x0e2\x1e.bytebase.store.ReviewRun.TypeR\arunType\x12;\n" +
 	"\trule_type\x18\x02 \x01(\x0e2\x1e.bytebase.store.ReviewRuleTypeR\bruleType\x12W\n" +
@@ -818,7 +828,8 @@ const file_store_issue_comment_proto_rawDesc = "" +
 	"superseded\x18\x05 \x01(\bR\n" +
 	"superseded\x12 \n" +
 	"\vfingerprint\x18\x06 \x01(\tR\vfingerprint\x12\x18\n" +
-	"\aattempt\x18\a \x01(\x03R\aattempt\"<\n" +
+	"\aattempt\x18\a \x01(\x03R\aattempt\x12\x14\n" +
+	"\x05codes\x18\b \x03(\tR\x05codes\"<\n" +
 	"\bPriority\x12\x18\n" +
 	"\x14PRIORITY_UNSPECIFIED\x10\x00\x12\x06\n" +
 	"\x02P0\x10\x01\x12\x06\n" +

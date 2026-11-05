@@ -2481,7 +2481,11 @@ type IssueComment_ReviewMetadata struct {
 	Superseded bool `protobuf:"varint,5,opt,name=superseded,proto3" json:"superseded,omitempty"`
 	// The ReviewRunCompletion.attempt of the run that posted the result. A
 	// result a later run reports again keeps its thread and its attempt.
-	Attempt       int64 `protobuf:"varint,6,opt,name=attempt,proto3" json:"attempt,omitempty"`
+	Attempt int64 `protobuf:"varint,6,opt,name=attempt,proto3" json:"attempt,omitempty"`
+	// The conditions a RULE result reports, as finding codes such as
+	// "WT101", one per reason. A code names the same condition on every
+	// engine. Empty for other reviewers.
+	Codes         []string `protobuf:"bytes,7,rep,name=codes,proto3" json:"codes,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2556,6 +2560,13 @@ func (x *IssueComment_ReviewMetadata) GetAttempt() int64 {
 		return x.Attempt
 	}
 	return 0
+}
+
+func (x *IssueComment_ReviewMetadata) GetCodes() []string {
+	if x != nil {
+		return x.Codes
+	}
+	return nil
 }
 
 // Approval event information.
@@ -3016,7 +3027,7 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\rissue_comment\x18\x02 \x01(\v2\x19.bytebase.v1.IssueCommentR\fissueComment\x12@\n" +
 	"\vupdate_mask\x18\x03 \x01(\v2\x1a.google.protobuf.FieldMaskB\x03\xe0A\x02R\n" +
 	"updateMask\x12#\n" +
-	"\rallow_missing\x18\x04 \x01(\bR\fallowMissing\"\xcc\x12\n" +
+	"\rallow_missing\x18\x04 \x01(\bR\fallowMissing\"\xe2\x12\n" +
 	"\fIssueComment\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12#\n" +
 	"\acomment\x18\x02 \x01(\tB\t\xbaH\x06r\x04\x18\x80\x80\x04R\acomment\x12\x18\n" +
@@ -3035,7 +3046,7 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\vplan_update\x18\f \x01(\v2$.bytebase.v1.IssueComment.PlanUpdateH\x00R\n" +
 	"planUpdate\x12Y\n" +
 	"\x11review_submission\x18\r \x01(\v2*.bytebase.v1.IssueComment.ReviewSubmissionH\x00R\x10reviewSubmission\x12c\n" +
-	"\x15review_run_completion\x18\x12 \x01(\v2-.bytebase.v1.IssueComment.ReviewRunCompletionH\x00R\x13reviewRunCompletion\x1a\xe3\x02\n" +
+	"\x15review_run_completion\x18\x12 \x01(\v2-.bytebase.v1.IssueComment.ReviewRunCompletionH\x00R\x13reviewRunCompletion\x1a\xf9\x02\n" +
 	"\x0eReviewMetadata\x126\n" +
 	"\brun_type\x18\x01 \x01(\x0e2\x1b.bytebase.v1.ReviewRun.TypeR\arunType\x128\n" +
 	"\trule_type\x18\x02 \x01(\x0e2\x1b.bytebase.v1.ReviewRuleTypeR\bruleType\x12M\n" +
@@ -3044,7 +3055,8 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\n" +
 	"superseded\x18\x05 \x01(\bR\n" +
 	"superseded\x12\x18\n" +
-	"\aattempt\x18\x06 \x01(\x03R\aattempt\"<\n" +
+	"\aattempt\x18\x06 \x01(\x03R\aattempt\x12\x14\n" +
+	"\x05codes\x18\a \x03(\tR\x05codes\"<\n" +
 	"\bPriority\x12\x18\n" +
 	"\x14PRIORITY_UNSPECIFIED\x10\x00\x12\x06\n" +
 	"\x02P0\x10\x01\x12\x06\n" +

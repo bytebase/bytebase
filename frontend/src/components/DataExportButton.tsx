@@ -45,6 +45,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Tooltip } from "@/components/ui/tooltip";
+import { useElapsedSeconds } from "@/hooks/useElapsed";
 import { writeTextToClipboard } from "@/lib/clipboard";
 import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
@@ -120,6 +121,10 @@ const ROW_COUNT_PRESET = [1, 100, 500, 1000, 5000, 10000, 100000];
 const GENERATED_PASSWORD_LENGTH = 8;
 const GENERATED_PASSWORD_CHARSET =
   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+// A SharePoint export can wait minutes on server-side retries with no visible
+// change, so its progress shows the elapsed time and explains a long wait.
+const SLOW_HINT_AFTER_SECONDS = 60;
 
 const generateRandomPassword = (length = GENERATED_PASSWORD_LENGTH) => {
   const values = new Uint32Array(length);
@@ -231,6 +236,8 @@ export function DataExportButton({
   const [showDrawer, setShowDrawer] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number }>();
+  const [sharePointStartedAt, setSharePointStartedAt] = useState<number>();
+  const sharePointElapsed = useElapsedSeconds(sharePointStartedAt);
   const [sharePointResults, setSharePointResults] = useState<
     SharePointExportResult[]
   >([]);
@@ -306,6 +313,11 @@ export function DataExportButton({
     setIsRequesting(true);
     setProgress(undefined);
     const options: ExportOption = { ...currentOption };
+    setSharePointStartedAt(
+      options.destination === ExportDestination.SHAREPOINT
+        ? Date.now()
+        : undefined
+    );
 
     new Promise<ExportOutcome>((resolve, reject) => {
       onExport({
@@ -339,6 +351,7 @@ export function DataExportButton({
       .finally(() => {
         setIsRequesting(false);
         setProgress(undefined);
+        setSharePointStartedAt(undefined);
         setShowDrawer(false);
         setShowPasswordDialog(false);
       });
@@ -576,7 +589,7 @@ export function DataExportButton({
             </SheetBody>
             <SheetFooter>
               {isRequesting && (
-                <div className="min-w-0 flex-1">
+                <div className="flex min-w-0 flex-1 flex-col gap-y-1.5">
                   <Progress
                     className="max-w-80"
                     value={
@@ -584,13 +597,29 @@ export function DataExportButton({
                     }
                     max={progress?.total}
                     label={
-                      progress && progress.total > 1
-                        ? t("export-data.progress.databases", progress)
-                        : isDownload
-                          ? t("export-data.progress.download")
-                          : t("export-data.progress.sharepoint")
+                      <>
+                        {progress && progress.total > 1
+                          ? t("export-data.progress.databases", progress)
+                          : isDownload
+                            ? t("export-data.progress.download")
+                            : t("export-data.progress.sharepoint")}
+                        {sharePointElapsed !== undefined && (
+                          <>
+                            {" "}
+                            <span className="tabular-nums">
+                              {`${sharePointElapsed}s`}
+                            </span>
+                          </>
+                        )}
+                      </>
                     }
                   />
+                  {sharePointElapsed !== undefined &&
+                    sharePointElapsed >= SLOW_HINT_AFTER_SECONDS && (
+                      <p className="max-w-80 text-xs text-control-light">
+                        {t("export-data.progress.sharepoint-slow")}
+                      </p>
+                    )}
                 </div>
               )}
               <Button appearance="outline" onClick={() => setShowDrawer(false)}>

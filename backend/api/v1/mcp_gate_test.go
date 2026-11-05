@@ -123,7 +123,6 @@ func TestForbiddenClassMembership(t *testing.T) {
 		v1connect.WorkloadIdentityServiceUpdateWorkloadIdentityProcedure,
 		v1connect.SettingServiceTestEmailSettingProcedure,
 		v1connect.UserServiceUpdateEmailProcedure,
-		v1connect.SettingServiceUpdateSettingProcedure,
 		v1connect.InstanceServiceUpdateDataSourceProcedure,
 		v1connect.IssueServiceRetryIssueApprovalProcedure,
 		v1connect.AccessGrantServiceActivateAccessGrantProcedure,
@@ -180,7 +179,6 @@ func TestForbiddenClassMembership(t *testing.T) {
 		v1connect.WorkloadIdentityServiceCreateWorkloadIdentityProcedure: v1pb.MCPDenialReason_MINTS_CREDENTIAL_FOR_OTHERS,
 		v1connect.WorkloadIdentityServiceUpdateWorkloadIdentityProcedure: v1pb.MCPDenialReason_MINTS_CREDENTIAL_FOR_OTHERS,
 		v1connect.SettingServiceTestEmailSettingProcedure:                v1pb.MCPDenialReason_MINTS_CREDENTIAL_FOR_OTHERS,
-		v1connect.SettingServiceUpdateSettingProcedure:                   v1pb.MCPDenialReason_REWRITES_SESSION_BOUNDARY,
 		v1connect.InstanceServiceUpdateDataSourceProcedure:               v1pb.MCPDenialReason_MINTS_CREDENTIAL_FOR_OTHERS,
 		v1connect.IssueServiceRetryIssueApprovalProcedure:                v1pb.MCPDenialReason_DRIVES_THE_APPROVAL_DECISION,
 		v1connect.AccessGrantServiceActivateAccessGrantProcedure:         v1pb.MCPDenialReason_DRIVES_THE_APPROVAL_DECISION,
@@ -892,6 +890,51 @@ func TestMCPGateServesAPolicyUpdateOnlyWithItsConfirmation(t *testing.T) {
 
 	t.Run("a confirmed request is still held to the ceiling", func(t *testing.T) {
 		got := invokeMCPGateFrom(confirmed(procedure, policy), t, readOnlyCeiling(), write, procedure, request(policy))
+		require.Error(t, got.err)
+		require.False(t, got.dispatched)
+	})
+}
+
+func TestMCPGateServesASettingUpdateOnlyWithItsConfirmation(t *testing.T) {
+	const approval = "settings/WORKSPACE_APPROVAL"
+	write := classContext(v1pb.MCPMethodClass_WRITE)
+	procedure := v1connect.SettingServiceUpdateSettingProcedure
+	request := func(name string) connect.AnyRequest {
+		return connect.NewRequest(&v1pb.UpdateSettingRequest{Setting: &v1pb.Setting{Name: name}})
+	}
+	confirmed := func(procedure, name string) context.Context {
+		return auth.WithMCPConfirmedDecision(context.Background(), auth.MCPConfirmedDecision{Procedure: procedure, Resource: name})
+	}
+
+	t.Run("an unconfirmed request, as call_api sends it, is refused", func(t *testing.T) {
+		got := invokeMCPGate(t, readWriteCeiling(), write, procedure, request(approval))
+		require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got.err))
+		require.False(t, got.dispatched)
+		require.Contains(t, got.err.Error(), "administer_workspace", "the denial must name the tool that can confirm")
+		require.Contains(t, got.err.Error(), "Bytebase console", "the denial must name where other settings change")
+		require.True(t, got.auditMarked)
+	})
+
+	t.Run("the confirmed request is served", func(t *testing.T) {
+		got := invokeMCPGateFrom(confirmed(procedure, approval), t, readWriteCeiling(), write, procedure, request(approval))
+		require.NoError(t, got.err)
+		require.True(t, got.dispatched)
+	})
+
+	t.Run("a confirmation for another setting is refused", func(t *testing.T) {
+		got := invokeMCPGateFrom(confirmed(procedure, approval), t, readWriteCeiling(), write, procedure, request("settings/MCP"))
+		require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got.err))
+		require.False(t, got.dispatched)
+	})
+
+	t.Run("a confirmation for another procedure is refused", func(t *testing.T) {
+		got := invokeMCPGateFrom(confirmed(v1connect.OrgPolicyServiceUpdatePolicyProcedure, approval), t, readWriteCeiling(), write, procedure, request(approval))
+		require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got.err))
+		require.False(t, got.dispatched)
+	})
+
+	t.Run("a confirmed request is still held to the ceiling", func(t *testing.T) {
+		got := invokeMCPGateFrom(confirmed(procedure, approval), t, readOnlyCeiling(), write, procedure, request(approval))
 		require.Error(t, got.err)
 		require.False(t, got.dispatched)
 	})

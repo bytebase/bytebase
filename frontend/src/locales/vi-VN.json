@@ -1175,7 +1175,8 @@
     "progress": {
       "databases": "Đã xuất {{done}}/{{total}} cơ sở dữ liệu",
       "download": "Đang xuất…",
-      "sharepoint": "Đang xuất sang SharePoint…"
+      "sharepoint": "Đang xuất sang SharePoint…",
+      "sharepoint-slow": "Kết quả lớn hoặc SharePoint đang bận có thể mất vài phút. Bytebase sẽ tự động thử lại."
     },
     "sharepoint": {
       "exported-title": "Đã xuất sang SharePoint",
@@ -2237,9 +2238,7 @@
         "n-replies-hidden_other": "{{count}} phản hồi bị ẩn",
         "n-replies_one": "{{count}} phản hồi",
         "n-replies_other": "{{count}} phản hồi",
-        "open": "Đang mở",
         "priority": {
-          "p0": "SQL sai và phải được sửa.",
           "p1": "Nguy hiểm nhưng hợp lệ. Cần có người chấp nhận.",
           "p2": "Chỉ mang tính tham khảo."
         },
@@ -2251,7 +2250,6 @@
         "resolve": "Giải quyết",
         "resolve-thread": "Giải quyết luồng",
         "resolved": "Đã giải quyết",
-        "rule": "Quy tắc",
         "threads-on-line_one": "{{count}} chủ đề trên dòng này",
         "threads-on-line_other": "{{count}} chủ đề trên dòng này",
         "walker": {
@@ -3184,7 +3182,7 @@
         "disabled": "Không cho phép gì; không phiên MCP nào có thể kết nối.",
         "floor": {
           "label": "Không bao giờ, ở mọi chế độ:",
-          "text": "quản trị không gian làm việc, xử lý thông tin xác thực, mở phiên chế độ Admin, hoặc đọc lịch sử truy vấn của người khác."
+          "text": "nâng chính sách này, tạo khóa tài khoản dịch vụ, đổi mật khẩu, email hoặc MFA của một người, hiển thị bí mật đã lưu, mở phiên chế độ Admin, hoặc đọc lịch sử truy vấn của người khác."
         },
         "heading": "{{mode}} cho phép",
         "hide-details": "Ẩn chi tiết",
@@ -3193,6 +3191,10 @@
           "refused": "Không được phép"
         },
         "row": {
+          "approval-rules": {
+            "details": "Thêm, xóa, sắp xếp lại hoặc thay đổi các quy tắc quyết định ai phê duyệt một thay đổi cơ sở dữ liệu · Mỗi thay đổi được xác nhận trong ứng dụng MCP của người dùng trước khi được thực hiện · Quy tắc dự phòng và quy tắc cho các loại Issue khác giữ nguyên",
+            "title": "Quản lý quy tắc phê duyệt thay đổi cơ sở dữ liệu"
+          },
           "approve": {
             "details": "Mỗi quyết định được xác nhận trong ứng dụng MCP của người dùng trước khi được thực hiện · Yêu cầu vai trò được quyết định trên bảng điều khiển · Các quy tắc phê duyệt và thiết lập tự phê duyệt của dự án vẫn áp dụng, như trên bảng điều khiển",
             "title": "Phê duyệt hoặc từ chối Issue"

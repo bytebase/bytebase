@@ -271,6 +271,10 @@ const (
 	// relay that carries credential resets, and the AI endpoint the stored API
 	// key is sent to. A session that can widen its own ceiling is not bounded
 	// by it.
+	//
+	// No method carries it. UpdateSetting, which writes all of these, is WRITE,
+	// and the gate serves it only for a setting the user confirmed, which the
+	// MCP server offers for the approval rules alone.
 	MCPDenialReason_REWRITES_SESSION_BOUNDARY MCPDenialReason = 7
 	// Can let a change or an access request pass its approval without an
 	// approver deciding it: re-running the finding that sets the approval, which

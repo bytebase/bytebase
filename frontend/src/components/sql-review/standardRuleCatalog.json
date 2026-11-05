@@ -1,0 +1,309 @@
+{
+  "engines": [
+    "MYSQL",
+    "POSTGRES",
+    "SNOWFLAKE",
+    "TIDB",
+    "ORACLE",
+    "MSSQL",
+    "MARIADB",
+    "OCEANBASE"
+  ],
+  "rules": {
+    "DISALLOW_DROP_CONSTRAINT": {
+      "engines": [
+        "MYSQL",
+        "POSTGRES",
+        "SNOWFLAKE",
+        "TIDB",
+        "ORACLE",
+        "MSSQL",
+        "MARIADB",
+        "OCEANBASE"
+      ],
+      "codes": [
+        {
+          "code": "DC101",
+          "title": "Drops a constraint"
+        }
+      ]
+    },
+    "DISALLOW_DROP_OBJECT": {
+      "engines": [
+        "MYSQL",
+        "POSTGRES",
+        "SNOWFLAKE",
+        "TIDB",
+        "ORACLE",
+        "MSSQL",
+        "MARIADB",
+        "OCEANBASE"
+      ],
+      "codes": [
+        {
+          "code": "DO101",
+          "title": "Drops data"
+        },
+        {
+          "code": "DO102",
+          "title": "Drops a definition"
+        },
+        {
+          "code": "DO103",
+          "title": "Drops a user, role, or security object"
+        }
+      ]
+    },
+    "DISALLOW_RENAME": {
+      "engines": [
+        "MYSQL",
+        "POSTGRES",
+        "SNOWFLAKE",
+        "TIDB",
+        "ORACLE",
+        "MSSQL",
+        "MARIADB",
+        "OCEANBASE"
+      ],
+      "codes": [
+        {
+          "code": "RN101",
+          "title": "Renames a table, view, or column"
+        }
+      ]
+    },
+    "DISALLOW_TRUNCATE": {
+      "engines": [
+        "MYSQL",
+        "POSTGRES",
+        "SNOWFLAKE",
+        "TIDB",
+        "ORACLE",
+        "MSSQL",
+        "MARIADB",
+        "OCEANBASE"
+      ],
+      "codes": [
+        {
+          "code": "TR101",
+          "title": "Truncates data"
+        }
+      ]
+    },
+    "ONLINE_MIGRATION": {
+      "engines": ["MYSQL", "MARIADB", "OCEANBASE"],
+      "codes": [
+        {
+          "code": "OM101",
+          "title": "Engine has no online migration"
+        },
+        {
+          "code": "OM102",
+          "title": "gh-ost directive is invalid"
+        },
+        {
+          "code": "OM103",
+          "title": "Change doesn't fit online migration"
+        },
+        {
+          "code": "OM104",
+          "title": "gh-ost can't rename the column"
+        },
+        {
+          "code": "OM105",
+          "title": "Backup database doesn't exist"
+        },
+        {
+          "code": "OM106",
+          "title": "Table doesn't meet gh-ost's requirements"
+        }
+      ]
+    },
+    "PRIOR_BACKUP": {
+      "engines": ["MYSQL", "POSTGRES", "TIDB", "ORACLE", "MSSQL", "MARIADB"],
+      "codes": [
+        {
+          "code": "PB101",
+          "title": "Engine has no prior backup"
+        },
+        {
+          "code": "PB102",
+          "title": "Change exceeds the backup size limit"
+        },
+        {
+          "code": "PB103",
+          "title": "Backup database or schema doesn't exist"
+        },
+        {
+          "code": "PB104",
+          "title": "Change has nothing to back up"
+        },
+        {
+          "code": "PB105",
+          "title": "Statements can't share one backup"
+        },
+        {
+          "code": "PB106",
+          "title": "Backup may read another table"
+        },
+        {
+          "code": "PB107",
+          "title": "Table can't be backed up"
+        },
+        {
+          "code": "PB108",
+          "title": "Statement form can't be backed up"
+        },
+        {
+          "code": "PB109",
+          "title": "Backup reads what the change creates"
+        }
+      ]
+    },
+    "REQUIRE_IS_NULL": {
+      "engines": [
+        "MYSQL",
+        "POSTGRES",
+        "SNOWFLAKE",
+        "TIDB",
+        "ORACLE",
+        "MSSQL",
+        "MARIADB",
+        "OCEANBASE"
+      ],
+      "codes": [
+        {
+          "code": "NU101",
+          "title": "Comparison with NULL is never true"
+        }
+      ]
+    },
+    "REQUIRE_PRIMARY_KEY": {
+      "engines": [
+        "MYSQL",
+        "POSTGRES",
+        "SNOWFLAKE",
+        "TIDB",
+        "ORACLE",
+        "MSSQL",
+        "MARIADB",
+        "OCEANBASE"
+      ],
+      "codes": [
+        {
+          "code": "PK101",
+          "title": "Creates a table without a primary key"
+        },
+        {
+          "code": "PK102",
+          "title": "Removes a table's primary key"
+        }
+      ]
+    },
+    "REQUIRE_WHERE": {
+      "engines": [
+        "MYSQL",
+        "POSTGRES",
+        "SNOWFLAKE",
+        "TIDB",
+        "ORACLE",
+        "MSSQL",
+        "MARIADB",
+        "OCEANBASE"
+      ],
+      "codes": [
+        {
+          "code": "WH101",
+          "title": "UPDATE or DELETE has no WHERE clause"
+        }
+      ]
+    },
+    "SYNTAX": {
+      "engines": [
+        "MYSQL",
+        "POSTGRES",
+        "SNOWFLAKE",
+        "TIDB",
+        "ORACLE",
+        "MSSQL",
+        "MARIADB",
+        "OCEANBASE"
+      ],
+      "codes": [
+        {
+          "code": "SY101",
+          "title": "Statement doesn't parse"
+        }
+      ]
+    },
+    "WALK_THROUGH": {
+      "engines": [
+        "MYSQL",
+        "POSTGRES",
+        "TIDB",
+        "ORACLE",
+        "MSSQL",
+        "MARIADB",
+        "OCEANBASE"
+      ],
+      "codes": [
+        {
+          "code": "WT101",
+          "title": "Object doesn't exist"
+        },
+        {
+          "code": "WT201",
+          "title": "Name is already taken"
+        },
+        {
+          "code": "WT301",
+          "title": "Object is of another kind"
+        },
+        {
+          "code": "WT401",
+          "title": "Statement uses one name twice"
+        },
+        {
+          "code": "WT402",
+          "title": "No database or schema selected"
+        },
+        {
+          "code": "WT403",
+          "title": "Name is too long"
+        },
+        {
+          "code": "WT404",
+          "title": "Name is reserved"
+        },
+        {
+          "code": "WT405",
+          "title": "Schema still holds objects"
+        },
+        {
+          "code": "WT406",
+          "title": "System column can't be changed"
+        },
+        {
+          "code": "WT407",
+          "title": "Name refers to another database"
+        },
+        {
+          "code": "WT408",
+          "title": "Engine rejects this form of statement"
+        },
+        {
+          "code": "WT409",
+          "title": "Statement must start its batch"
+        },
+        {
+          "code": "WT410",
+          "title": "Trigger and table are in different schemas"
+        },
+        {
+          "code": "WT411",
+          "title": "Index belongs to a constraint"
+        }
+      ]
+    }
+  }
+}

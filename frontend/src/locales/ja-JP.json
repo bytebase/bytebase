@@ -1175,7 +1175,8 @@
     "progress": {
       "databases": "{{total}} 件中 {{done}} 件のデータベースをエクスポートしました",
       "download": "エクスポートしています…",
-      "sharepoint": "SharePoint にエクスポートしています…"
+      "sharepoint": "SharePoint にエクスポートしています…",
+      "sharepoint-slow": "結果が大きい場合や SharePoint が混雑している場合は、数分かかることがあります。Bytebase は自動的に再試行します。"
     },
     "sharepoint": {
       "exported-title": "SharePoint にエクスポートしました",
@@ -2237,9 +2238,7 @@
         "n-replies-hidden_other": "{{count}} 件の返信が非表示",
         "n-replies_one": "{{count}} 件の返信",
         "n-replies_other": "{{count}} 件の返信",
-        "open": "未解決",
         "priority": {
-          "p0": "SQL に誤りがあり、修正が必要です。",
           "p1": "危険ですが正当な変更です。担当者による承認が必要です。",
           "p2": "参考情報です。"
         },
@@ -2251,7 +2250,6 @@
         "resolve": "解決",
         "resolve-thread": "スレッドを解決",
         "resolved": "解決済み",
-        "rule": "ルール",
         "threads-on-line_one": "この行に {{count}} 件のスレッド",
         "threads-on-line_other": "この行に {{count}} 件のスレッド",
         "walker": {
@@ -3184,7 +3182,7 @@
         "disabled": "何も許可されません。MCP セッションは接続できません。",
         "floor": {
           "label": "どのモードでも決してできないこと：",
-          "text": "ワークスペースの管理、認証情報の取り扱い、Admin モードのセッションの開始、他人のクエリ履歴の閲覧。"
+          "text": "このポリシーの引き上げ、サービスアカウントキーの作成、ユーザーのパスワード・メールアドレス・MFA の変更、保存済みシークレットの表示、Admin モードのセッションの開始、他人のクエリ履歴の閲覧。"
         },
         "heading": "{{mode}} で許可されること",
         "hide-details": "詳細を隠す",
@@ -3193,6 +3191,10 @@
           "refused": "不許可"
         },
         "row": {
+          "approval-rules": {
+            "details": "データベース変更を誰が承認するかを決めるルールの追加・削除・並べ替え・変更 · 各変更は、実行される前にユーザーの MCP クライアントで確認されます · フォールバックルールと、ほかの種類の Issue のルールは変更されません",
+            "title": "データベース変更の承認ルールの管理"
+          },
           "approve": {
             "details": "各判断は、実行される前にユーザーの MCP クライアントで確認されます · ロール申請はコンソールで承認・却下します · 承認ルールとプロジェクトの自己承認設定は、コンソールと同じように適用されます",
             "title": "Issue の承認・却下"

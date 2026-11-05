@@ -124,6 +124,9 @@ message IssueCommentPayload {
     // The review_run.attempt of the run that posted the result. A result
     // a later run reports again keeps its attempt.
     int64 attempt = 7;
+    // The conditions a RULE result reports, as omni finding codes such as
+    // "WT101", one per reason. Empty for other reviewers.
+    repeated string codes = 8;
   }
 
   // StatementAnchor records the anchored statement revision and range.

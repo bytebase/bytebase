@@ -214,7 +214,7 @@ function CollapsedThreadRow({
         className="hidden shrink-0 text-xs text-control-light @xl:inline"
         tsMs={getTimeForPbTimestampProtoEs(comment.createTime)}
       />
-      {resolved && <ThreadStateBadge resolved />}
+      {resolved && <ThreadStateBadge />}
       <ChevronDown className="size-4 shrink-0 text-control-light" />
     </Button>
   );

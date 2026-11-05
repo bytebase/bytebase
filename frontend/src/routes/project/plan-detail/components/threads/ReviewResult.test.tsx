@@ -1,7 +1,11 @@
 import { create } from "@bufbuild/protobuf";
 import { cleanup, fireEvent, render } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { IssueComment_ReviewMetadata_Priority } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  IssueComment_ReviewMetadata_Priority,
+  IssueComment_ReviewMetadataSchema,
+  ReviewRun_Type,
+} from "@/types/proto-es/v1/issue_service_pb";
 import { ReviewRuleType } from "@/types/proto-es/v1/review_rule_pb";
 import {
   Plan_ChangeDatabaseConfigSchema,
@@ -27,6 +31,7 @@ vi.mock("../PlanTargetDisplay", () => ({
 }));
 
 import {
+  ReviewHeading,
   ReviewPriorityBadge,
   ReviewRule,
   ReviewTargets,
@@ -58,10 +63,10 @@ const changeSpec = (
 
 describe("ReviewPriorityBadge", () => {
   test.each([
-    [IssueComment_ReviewMetadata_Priority.P0, "P0", "plan.review.thread.priority.p0"],
+    [IssueComment_ReviewMetadata_Priority.P0, "P0", null],
     [IssueComment_ReviewMetadata_Priority.P1, "P1", "plan.review.thread.priority.p1"],
     [IssueComment_ReviewMetadata_Priority.P2, "P2", "plan.review.thread.priority.p2"],
-  ])("labels priority %s as %s and explains it", (priority, label, description) => {
+  ])("labels priority %s as %s, explained by %s", (priority, label, description) => {
     const { getByTestId } = render(<ReviewPriorityBadge priority={priority} />);
     expect(getByTestId("review-priority").textContent).toBe(label);
     expect(getByTestId("review-priority").getAttribute("title")).toBe(description);
@@ -82,9 +87,7 @@ describe("ReviewRule", () => {
     const { getByTestId } = render(
       <ReviewRule ruleType={ReviewRuleType.REQUIRE_WHERE} />
     );
-    const rule = getByTestId("review-rule");
-    expect(rule.firstElementChild?.textContent).toBe("plan.review.thread.rule");
-    expect(rule.lastElementChild?.textContent).toBe(
+    expect(getByTestId("review-rule").textContent).toBe(
       "sql-review.standard-rules.rule.require-where.title"
     );
   });
@@ -94,6 +97,60 @@ describe("ReviewRule", () => {
       <ReviewRule ruleType={ReviewRuleType.REVIEW_RULE_TYPE_UNSPECIFIED} />
     );
     expect(container).toBeEmptyDOMElement();
+  });
+});
+
+describe("ReviewHeading", () => {
+  const codesOf = (container: HTMLElement) =>
+    Array.from(container.querySelectorAll("[data-testid='review-code']")).map(
+      (node) => node.textContent
+    );
+
+  test("puts a rule result's priority, rule, and codes on one line", () => {
+    const { getByTestId } = render(
+      <ReviewHeading
+        review={create(IssueComment_ReviewMetadataSchema, {
+          runType: ReviewRun_Type.RULE,
+          ruleType: ReviewRuleType.PRIOR_BACKUP,
+          priority: IssueComment_ReviewMetadata_Priority.P0,
+          codes: ["PB103", "PB102"],
+        })}
+      />
+    );
+    const heading = getByTestId("review-heading");
+    expect(
+      Array.from(heading.children).map((node) => node.getAttribute("data-testid"))
+    ).toEqual(["review-priority", "review-rule", "review-code", "review-code"]);
+    expect(codesOf(heading)).toEqual(["PB103", "PB102"]);
+  });
+
+  test("shows a rule result without codes by its priority and rule", () => {
+    const { container, getByTestId } = render(
+      <ReviewHeading
+        review={create(IssueComment_ReviewMetadataSchema, {
+          runType: ReviewRun_Type.RULE,
+          ruleType: ReviewRuleType.REQUIRE_WHERE,
+          priority: IssueComment_ReviewMetadata_Priority.P1,
+        })}
+      />
+    );
+    expect(getByTestId("review-rule")).toBeInTheDocument();
+    expect(codesOf(container)).toEqual([]);
+  });
+
+  test("shows an AI result by its priority alone", () => {
+    const { container, getByTestId } = render(
+      <ReviewHeading
+        review={create(IssueComment_ReviewMetadataSchema, {
+          runType: ReviewRun_Type.AI,
+          priority: IssueComment_ReviewMetadata_Priority.P2,
+          codes: ["WT101"],
+        })}
+      />
+    );
+    expect(getByTestId("review-priority").textContent).toBe("P2");
+    expect(container.querySelector("[data-testid='review-rule']")).toBeNull();
+    expect(codesOf(container)).toEqual([]);
   });
 });
 

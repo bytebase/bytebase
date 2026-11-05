@@ -586,3 +586,166 @@ func TestOrderByPipeline_DistinctDropsDuplicatesBeforeTheLimit(t *testing.T) {
 	})
 	assert.Equal(t, []string{`{"x":"a"}`, `{"x":"b"}`}, rows)
 }
+
+// A merge is only correct when its comparator agrees with the order inside the
+// streams it merges, and inside the array and object classes nothing derived
+// from the values does: the service answers these three [1,2], [2], [1,3],
+// while canonical JSON would put them [1,2], [1,3], [2] — an order that is
+// neither, and that a TOP 2 would cut in the wrong place.
+func TestOrderByPipeline_RefusesAnOrderItCannotMerge(t *testing.T) {
+	p := newAscPipeline(t, "0", "1")
+
+	res, err := p.Run()
+	require.NoError(t, err)
+	require.NotEmpty(t, res.Requests)
+	feed := map[string][]byte{
+		"0": mkOrderByBody(t,
+			ordered{ob: `[1,2]`, payload: `{"x":[1,2]}`},
+			ordered{ob: `[2]`, payload: `{"x":[2]}`}),
+		"1": mkOrderByBody(t, ordered{ob: `[1,3]`, payload: `{"x":[1,3]}`}),
+	}
+	results := make([]queryengine.QueryResult, 0, len(res.Requests))
+	for _, req := range res.Requests {
+		results = append(results, queryengine.NewQueryResult(req.PartitionKeyRangeID, feed[req.PartitionKeyRangeID], ""))
+	}
+	require.NoError(t, p.ProvideData(results))
+
+	_, err = p.Run()
+	assert.ErrorIs(t, err, ErrUnsupportedPlanFeature)
+}
+
+// One array among scalars is still ordered, because the class ranking is the
+// service's own: every array sorts after every string.
+func TestOrderByPipeline_OrdersOneCompositeAmongScalars(t *testing.T) {
+	p := newAscPipeline(t, "0", "1")
+	rows := runOnePass(t, p, map[string][]byte{
+		"0": mkOrderByBody(t,
+			ordered{ob: `"a"`, payload: `{"x":"a"}`},
+			ordered{ob: `[9]`, payload: `{"x":[9]}`}),
+		"1": mkOrderByBody(t, ordered{ob: `"b"`, payload: `{"x":"b"}`}),
+	})
+	assert.Equal(t, []string{`{"x":"a"}`, `{"x":"b"}`, `{"x":[9]}`}, rows)
+}
+
+// Rows past the window never reach the caller, so an order the engine cannot
+// produce among them must not fail the query: TOP 2 over these streams is
+// 0, 1, and the arrays behind them are nobody's business.
+func TestOrderByPipeline_StopsAtTheLimitBeforeComparingExcludedRows(t *testing.T) {
+	p := newTopOrderByPipeline(t, 2, "0", "1")
+	rows := runOnePass(t, p, map[string][]byte{
+		"0": mkOrderByBody(t,
+			ordered{ob: `0`, payload: `{"x":0}`},
+			ordered{ob: `[1]`, payload: `{"x":[1]}`}),
+		"1": mkOrderByBody(t,
+			ordered{ob: `1`, payload: `{"x":1}`},
+			ordered{ob: `[2]`, payload: `{"x":[2]}`}),
+	})
+	assert.Equal(t, []string{`{"x":0}`, `{"x":1}`}, rows)
+}
+
+// TOP 0 asks for nothing, so no range is asked for a page and no row is ever
+// compared.
+func TestOrderByPipeline_AsksNothingOfRowsUnderTopZero(t *testing.T) {
+	p := newTopOrderByPipeline(t, 0, "0", "1")
+
+	res, err := p.Run()
+	require.NoError(t, err)
+	assert.Empty(t, res.Requests)
+	assert.True(t, p.IsComplete())
+}
+
+// A page in flight when the window fills is dropped rather than merged, so an
+// order the engine cannot produce inside it cannot fail a query that is already
+// answered.
+func TestOrderByPipeline_IgnoresAPageThatLandsAfterTheLimit(t *testing.T) {
+	p := newTopOrderByPipeline(t, 1, "0", "1")
+
+	res, err := p.Run()
+	require.NoError(t, err)
+	require.Len(t, res.Requests, 2)
+	require.NoError(t, p.ProvideData([]queryengine.QueryResult{
+		queryengine.NewQueryResult("0", mkOrderByBody(t, ordered{ob: `0`, payload: `{"x":0}`}), "more-0"),
+		queryengine.NewQueryResult("1", mkOrderByBody(t, ordered{ob: `1`, payload: `{"x":1}`}), "more-1"),
+	}))
+
+	flushed, err := p.Run()
+	require.NoError(t, err)
+	got := make([]string, 0, len(flushed.Items))
+	for _, item := range flushed.Items {
+		got = append(got, string(item))
+	}
+	assert.Equal(t, []string{`{"x":0}`}, got)
+	require.True(t, p.IsComplete())
+
+	require.NoError(t, p.ProvideData([]queryengine.QueryResult{
+		queryengine.NewQueryResult("0", mkOrderByBody(t, ordered{ob: `[1]`, payload: `{"x":[1]}`}), ""),
+		queryengine.NewQueryResult("1", mkOrderByBody(t, ordered{ob: `[2]`, payload: `{"x":[2]}`}), ""),
+	}))
+
+	// Nothing more may come out of it, and nothing in that page may fail it.
+	late, err := p.Run()
+	require.NoError(t, err)
+	assert.Empty(t, late.Items)
+	assert.True(t, p.IsComplete())
+}
+
+// Three ranges headed by a scalar and two arrays: the first row is the scalar
+// whatever the arrays' order, so TOP 1 is answerable.
+func TestOrderByPipeline_AnswersWhenTheFirstRowIsUnambiguous(t *testing.T) {
+	p := newTopOrderByPipeline(t, 1, "0", "1", "2")
+	rows := runOnePass(t, p, map[string][]byte{
+		"0": mkOrderByBody(t, ordered{ob: `0`, payload: `{"x":0}`}),
+		"1": mkOrderByBody(t, ordered{ob: `[1]`, payload: `{"x":[1]}`}),
+		"2": mkOrderByBody(t, ordered{ob: `[2]`, payload: `{"x":[2]}`}),
+	})
+	assert.Equal(t, []string{`{"x":0}`}, rows)
+}
+
+// One range's own stream is already in the service's order, so two different
+// arrays inside it are no trouble at all.
+func TestOrderByPipeline_OrdersCompositesWithinOneRange(t *testing.T) {
+	p := newAscPipeline(t, "0")
+	rows := runOnePass(t, p, map[string][]byte{
+		"0": mkOrderByBody(t,
+			ordered{ob: `[1]`, payload: `{"x":[1]}`},
+			ordered{ob: `[2]`, payload: `{"x":[2]}`}),
+	})
+	assert.Equal(t, []string{`{"x":[1]}`, `{"x":[2]}`}, rows)
+}
+
+// Two ranges holding the same value tie, and a tie is not an ambiguity.
+func TestOrderByPipeline_OrdersEqualCompositesAcrossRanges(t *testing.T) {
+	p := newAscPipeline(t, "0", "1")
+	rows := runOnePass(t, p, map[string][]byte{
+		"0": mkOrderByBody(t, ordered{ob: `[1]`, payload: `{"x":[1],"r":0}`}),
+		"1": mkOrderByBody(t, ordered{ob: `[1]`, payload: `{"x":[1],"r":1}`}),
+	})
+	assert.Len(t, rows, 2)
+}
+
+// The ambiguity can surface mid-stream, once the scalars ahead of it are gone.
+func TestOrderByPipeline_RefusesAnAmbiguityBehindTheScalars(t *testing.T) {
+	p := newAscPipeline(t, "0", "1")
+
+	res, err := p.Run()
+	require.NoError(t, err)
+	results := []queryengine.QueryResult{
+		queryengine.NewQueryResult("0", mkOrderByBody(t,
+			ordered{ob: `0`, payload: `{"x":0}`},
+			ordered{ob: `[1,2]`, payload: `{"x":[1,2]}`}), ""),
+		queryengine.NewQueryResult("1", mkOrderByBody(t,
+			ordered{ob: `1`, payload: `{"x":1}`},
+			ordered{ob: `[1,3]`, payload: `{"x":[1,3]}`}), ""),
+	}
+	require.Len(t, res.Requests, 2)
+	require.NoError(t, p.ProvideData(results))
+
+	var failure error
+	for !p.IsComplete() {
+		if _, err := p.Run(); err != nil {
+			failure = err
+			break
+		}
+	}
+	assert.ErrorIs(t, failure, ErrUnsupportedPlanFeature)
+}

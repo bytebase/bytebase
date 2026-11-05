@@ -17,9 +17,9 @@ served by no ceiling.
 | Class | Methods | Meaning |
 |---|---|---|
 | READ | 70 | served to a read-only session and above |
-| WRITE | 42 | served to a read-write session only |
+| WRITE | 43 | served to a read-write session only |
 | EXCLUDED | 74 | served by no ceiling this phase ships |
-| FORBIDDEN | 34 | never served, whatever the ceiling |
+| FORBIDDEN | 33 | never served, whatever the ceiling |
 | MCP_METHOD_CLASS_UNSPECIFIED | 0 | unclassified — CI rejects this, and the gate refuses it |
 | **total** | **220** | |
 
@@ -201,7 +201,7 @@ served by no ceiling.
 | SettingService/GetSetting | READ | — | bb.settings.get |
 | SettingService/ListSettings | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.settings.list |
 | SettingService/TestEmailSetting | FORBIDDEN | MINTS_CREDENTIAL_FOR_OTHERS | bb.settings.set |
-| SettingService/UpdateSetting | FORBIDDEN | REWRITES_SESSION_BOUNDARY | bb.settings.set |
+| SettingService/UpdateSetting | WRITE | — | bb.settings.set |
 | SheetService/BatchCreateSheets | WRITE | — | bb.sheets.create |
 | SheetService/CreateSheet | WRITE | — | bb.sheets.create |
 | SheetService/GetSheet | READ | — | bb.sheets.get |

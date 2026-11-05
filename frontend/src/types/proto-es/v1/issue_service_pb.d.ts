@@ -1117,6 +1117,15 @@ export declare type IssueComment_ReviewMetadata = Message<"bytebase.v1.IssueComm
    * @generated from field: int64 attempt = 6;
    */
   attempt: bigint;
+
+  /**
+   * The conditions a RULE result reports, as finding codes such as
+   * "WT101", one per reason. A code names the same condition on every
+   * engine. Empty for other reviewers.
+   *
+   * @generated from field: repeated string codes = 7;
+   */
+  codes: string[];
 };
 
 /**

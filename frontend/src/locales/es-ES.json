@@ -1175,7 +1175,8 @@
     "progress": {
       "databases": "{{done}} de {{total}} bases de datos exportadas",
       "download": "Exportando…",
-      "sharepoint": "Exportando a SharePoint…"
+      "sharepoint": "Exportando a SharePoint…",
+      "sharepoint-slow": "Los resultados grandes o un SharePoint ocupado pueden tardar unos minutos. Bytebase reintenta automáticamente."
     },
     "sharepoint": {
       "exported-title": "Exportado a SharePoint",
@@ -2237,9 +2238,7 @@
         "n-replies-hidden_other": "{{count}} respuestas ocultas",
         "n-replies_one": "{{count}} respuesta",
         "n-replies_other": "{{count}} respuestas",
-        "open": "Abierto",
         "priority": {
-          "p0": "El SQL es incorrecto y debe cambiar.",
           "p1": "Peligroso pero legítimo. Una persona debe aceptarlo.",
           "p2": "Solo informativo."
         },
@@ -2251,7 +2250,6 @@
         "resolve": "Resolver",
         "resolve-thread": "Resolver hilo",
         "resolved": "Resuelto",
-        "rule": "Regla",
         "threads-on-line_one": "{{count}} hilo en esta línea",
         "threads-on-line_other": "{{count}} hilos en esta línea",
         "walker": {
@@ -3184,7 +3182,7 @@
         "disabled": "No se permite nada; ninguna sesión MCP puede conectarse.",
         "floor": {
           "label": "Nunca, en ningún modo:",
-          "text": "administrar el espacio de trabajo, manejar credenciales, abrir una sesión de modo Admin ni leer el historial de consultas de otra persona."
+          "text": "elevar esta política, crear una clave de cuenta de servicio, cambiar la contraseña, el correo o el MFA de una persona, mostrar un secreto almacenado, abrir una sesión de modo Admin ni leer el historial de consultas de otra persona."
         },
         "heading": "{{mode}} permite",
         "hide-details": "Ocultar detalles",
@@ -3193,6 +3191,10 @@
           "refused": "No permitido"
         },
         "row": {
+          "approval-rules": {
+            "details": "Añadir, quitar, reordenar o cambiar las reglas que deciden quién aprueba un cambio de base de datos · Cada cambio se confirma en el cliente MCP del usuario antes de hacerse · Las reglas de respaldo y las reglas de otros tipos de issues no cambian",
+            "title": "Gestionar las reglas de aprobación de cambios de base de datos"
+          },
           "approve": {
             "details": "Cada decisión se confirma en el cliente MCP del usuario antes de tomarse · Las solicitudes de rol se deciden en la consola · Se aplican las reglas de aprobación y la configuración de autoaprobación del proyecto, como en la consola",
             "title": "Aprobar o rechazar issues"

@@ -124,8 +124,8 @@ func rulePriority(rule storepb.ReviewRuleType) storepb.IssueCommentPayload_Revie
 // reviewResultComments converts a unit's findings into the review result
 // comments to post: one OPEN root per finding, anchored to the finding's
 // range on the spec's sheet, naming the rule, its priority, every target the
-// finding applies to, and its fingerprint. A finding for a rule this server
-// does not know is dropped, as the contract says.
+// finding applies to, its codes, and its fingerprint. A finding for a rule
+// this server does not know is dropped, as the contract says.
 func reviewResultComments(projectID string, issueUID int64, unit *reviewUnit, sql string, result *review.Result) []*store.IssueCommentMessage {
 	text := review.Index(sql)
 	occurrences := make(map[string]int)
@@ -143,9 +143,13 @@ func reviewResultComments(projectID string, issueUID int64, unit *reviewUnit, sq
 			targets = append(targets, unit.Targets[i].Check.Target)
 		}
 		slices.Sort(targets)
+		codes := make([]string, 0, len(finding.Codes))
+		for _, code := range finding.Codes {
+			codes = append(codes, string(code))
+		}
 		// Identical statements give equal keys; their order tells them apart.
 		body, at := findingPlace(sql, result, finding)
-		key := findingKey(unit, rule, finding.Codes, body, at, targets)
+		key := findingKey(unit, rule, codes, body, at, targets)
 		occurrences[key]++
 		comments = append(comments, &store.IssueCommentMessage{
 			ProjectID: projectID,
@@ -159,6 +163,7 @@ func reviewResultComments(projectID string, issueUID int64, unit *reviewUnit, sq
 					Priority:    rulePriority(rule),
 					Targets:     targets,
 					Fingerprint: fmt.Sprintf("%s/%d", key, occurrences[key]),
+					Codes:       codes,
 				},
 			},
 		})
@@ -169,13 +174,9 @@ func reviewResultComments(projectID string, issueUID int64, unit *reviewUnit, sq
 // findingKey identifies a finding by what was judged: the unit, the rule, the
 // codes of the conditions it reports, where it stands in its statement, and
 // its databases. The message is left out, so rewording it keeps the finding.
-func findingKey(unit *reviewUnit, rule storepb.ReviewRuleType, codes []review.FindingCode, body, at string, targets []string) string {
-	names := make([]string, 0, len(codes))
-	for _, code := range codes {
-		names = append(names, string(code))
-	}
+func findingKey(unit *reviewUnit, rule storepb.ReviewRuleType, codes []string, body, at string, targets []string) string {
 	h := sha256.New()
-	for _, field := range append([]string{unit.SpecID, unit.Engine.String(), rule.String(), strings.Join(names, ","), body, at}, targets...) {
+	for _, field := range append([]string{unit.SpecID, unit.Engine.String(), rule.String(), strings.Join(codes, ","), body, at}, targets...) {
 		_, _ = h.Write(binary.BigEndian.AppendUint64(nil, uint64(len(field))))
 		_, _ = h.Write([]byte(field))
 	}

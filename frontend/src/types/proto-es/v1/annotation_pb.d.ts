@@ -244,6 +244,10 @@ export enum MCPDenialReason {
    * key is sent to. A session that can widen its own ceiling is not bounded
    * by it.
    *
+   * No method carries it. UpdateSetting, which writes all of these, is WRITE,
+   * and the gate serves it only for a setting the user confirmed, which the
+   * MCP server offers for the approval rules alone.
+   *
    * @generated from enum value: REWRITES_SESSION_BOUNDARY = 7;
    */
   REWRITES_SESSION_BOUNDARY = 7,

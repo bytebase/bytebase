@@ -29,6 +29,9 @@ const DYNAMIC_PREFIXES = [
   "dynamic.settings.sensitive-data.semantic-types.template.",
   "sql-review.category.",
   "sql-review.engine.",
+  // Finding code titles, rendered via t(findingCodeTitleKey(code)) over the
+  // codes in components/sql-review/standardRuleCatalog.json.
+  "sql-review.finding-code.",
   "sql-review.level.",
   "sql-review.rule.",
   "sql-review.template.",

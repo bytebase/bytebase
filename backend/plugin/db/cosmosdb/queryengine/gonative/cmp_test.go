@@ -2,6 +2,7 @@ package gonative
 
 import (
 	"encoding/json"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -55,11 +56,85 @@ func TestCompareItems_WithinType(t *testing.T) {
 	}
 }
 
-func TestCompareItems_UnorderableFails(t *testing.T) {
-	_, err := compareItems(json.RawMessage(`[1,2]`), json.RawMessage(`3`))
-	require.Error(t, err)
-	_, err = compareItems(json.RawMessage(`{}`), json.RawMessage(`null`))
-	require.Error(t, err)
+// The service sorts mixed types undefined < null < bool < number < string <
+// array < object; measured on a container holding one row of each.
+func TestCompareItems_RanksCompositesLast(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		a, b    json.RawMessage
+		wantCmp int
+	}{
+		{"array after number", json.RawMessage(`[1,2]`), json.RawMessage(`3`), 1},
+		{"array after string", json.RawMessage(`[1,2]`), json.RawMessage(`"zzz"`), 1},
+		{"object after array", json.RawMessage(`{"a":1}`), json.RawMessage(`[9,9]`), 1},
+		{"object after null", json.RawMessage(`{}`), json.RawMessage(`null`), 1},
+		{"array before object", json.RawMessage(`[]`), json.RawMessage(`{}`), -1},
+		{"equal arrays", json.RawMessage(`[1,2]`), json.RawMessage(`[1,2]`), 0},
+		{"equal objects, keys reordered", json.RawMessage(`{"a":1,"b":2}`), json.RawMessage(`{"b":2,"a":1}`), 0},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := compareItems(tc.a, tc.b)
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantCmp, got)
+			back, err := compareItems(tc.b, tc.a)
+			require.NoError(t, err)
+			assert.Equal(t, -tc.wantCmp, back, "comparison must be antisymmetric")
+		})
+	}
+}
+
+// Two different arrays, or two different objects, have no order the values can
+// give back: an ORDER BY merge that picked one would disagree with the streams
+// it merges, and under a TOP it would return the wrong rows.
+func TestCompareItems_RefusesTwoDifferentComposites(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		a, b json.RawMessage
+	}{
+		{"two arrays", json.RawMessage(`[1,2]`), json.RawMessage(`[1,3]`)},
+		{"two objects", json.RawMessage(`{"a":1}`), json.RawMessage(`{"b":1}`)},
+		{"nested", json.RawMessage(`[[1]]`), json.RawMessage(`[[2]]`)},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := compareItems(tc.a, tc.b)
+			assert.ErrorIs(t, err, ErrUnsupportedPlanFeature)
+			_, err = compareItems(tc.b, tc.a)
+			assert.ErrorIs(t, err, ErrUnsupportedPlanFeature)
+		})
+	}
+}
+
+// compareItemsTotal is the one for a caller free to pick an order: it must be
+// total and the same on every run.
+func TestCompareItemsTotal_OrdersCompositesConsistently(t *testing.T) {
+	values := []json.RawMessage{
+		json.RawMessage(`[1,3]`), json.RawMessage(`[2]`), json.RawMessage(`[1,2]`),
+		json.RawMessage(`{"b":1}`), json.RawMessage(`{"a":2}`), json.RawMessage(`{"a":1}`),
+	}
+	sortOnce := func() []string {
+		shuffled := slices.Clone(values)
+		slices.SortStableFunc(shuffled, func(a, b json.RawMessage) int {
+			order, err := compareItemsTotal(a, b)
+			require.NoError(t, err)
+			return order
+		})
+		out := make([]string, 0, len(shuffled))
+		for _, v := range shuffled {
+			out = append(out, string(v))
+		}
+		return out
+	}
+	first := sortOnce()
+	assert.Equal(t, first, sortOnce())
+	// Whatever the order within each class, every array precedes every object.
+	for i, v := range first {
+		if v[0] == '{' {
+			for _, rest := range first[i:] {
+				assert.Equal(t, byte('{'), rest[0], "an array sorted after an object: %v", first)
+			}
+			break
+		}
+	}
 }
 
 func TestCompareItems_HandlesLeadingWhitespace(t *testing.T) {
@@ -81,8 +156,8 @@ func TestDetectJSONType(t *testing.T) {
 		{`42`, jsonNumber},
 		{`-1.5`, jsonNumber},
 		{`"x"`, jsonString},
-		{`[1,2]`, jsonUnorderable},
-		{`{"a":1}`, jsonUnorderable},
+		{`[1,2]`, jsonArray},
+		{`{"a":1}`, jsonObject},
 		{` "pad" `, jsonString},
 	}
 	for _, tc := range cases {

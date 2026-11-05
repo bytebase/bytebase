@@ -38,6 +38,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("react-i18next", () => ({
+  initReactI18next: { type: "3rdParty", init: () => {} },
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 
@@ -61,7 +62,8 @@ vi.mock("@/utils", () => ({
 }));
 
 vi.mock("@/stores", () => ({ pushNotification: mocks.pushNotification }));
-vi.mock("@/stores/modules/v1/common", () => ({
+vi.mock("@/stores/modules/v1/common", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/stores/modules/v1/common")>()),
   projectNamePrefix: "projects/",
 }));
 

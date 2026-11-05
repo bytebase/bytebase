@@ -168,24 +168,29 @@ describe("IssueDetailCommentList", () => {
     ).toBe("chart");
   });
 
-  test("heads a review result with its reviewer, priority, and targets", () => {
+  test("heads a review result with its reviewer, then its targets and priority", () => {
     mocks.comments = [comment("result", true)];
     render(<IssueDetailCommentList />);
 
     expect(screen.queryByTestId("comment-row")).toBeNull();
     const header = screen.getByTestId("row-header");
     expect(header.textContent).toContain("sql-review.ai-review.self");
-    expect(screen.getByTestId("review-priority").textContent).toBe("P1");
+    expect(header.querySelector("[data-testid='review-priority']")).toBeNull();
     expect(screen.getByTestId("review-targets").textContent).toContain(
       "instances/i/databases/d"
     );
+    expect(
+      screen.getByTestId("review-heading").querySelector("[data-testid='review-priority']")
+        ?.textContent
+    ).toBe("P1");
   });
 
-  test("names the standard rule of a RULE result", () => {
+  test("names the standard rule and codes of a RULE result", () => {
     const rule = comment("rule", true);
     if (rule.reviewMetadata) {
       rule.reviewMetadata.runType = ReviewRun_Type.RULE;
       rule.reviewMetadata.ruleType = ReviewRuleType.REQUIRE_WHERE;
+      rule.reviewMetadata.codes = ["WH101"];
     }
     mocks.comments = [rule];
     render(<IssueDetailCommentList />);
@@ -193,8 +198,12 @@ describe("IssueDetailCommentList", () => {
     expect(screen.getByTestId("row-header").textContent).toContain(
       "sql-review.standard-rules.self"
     );
-    expect(screen.getByTestId("review-rule").textContent).toContain(
+    const heading = screen.getByTestId("review-heading");
+    expect(heading.querySelector("[data-testid='review-rule']")?.textContent).toBe(
       "sql-review.standard-rules.rule.require-where.title"
+    );
+    expect(heading.querySelector("[data-testid='review-code']")?.textContent).toBe(
+      "WH101"
     );
   });
 

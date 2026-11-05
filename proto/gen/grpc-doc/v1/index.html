@@ -3473,7 +3473,11 @@ gets delivered.</p></td>
 call — the MCP switch itself, the sign-in and SSO settings, the mail
 relay that carries credential resets, and the AI endpoint the stored API
 key is sent to. A session that can widen its own ceiling is not bounded
-by it.</p></td>
+by it.
+
+No method carries it. UpdateSetting, which writes all of these, is WRITE,
+and the gate serves it only for a setting the user confirmed, which the
+MCP server offers for the approval rules alone.</p></td>
               </tr>
             
               <tr>
@@ -11314,6 +11318,15 @@ result again, whatever its thread state. </p></td>
                   <td></td>
                   <td><p>The ReviewRunCompletion.attempt of the run that posted the result. A
 result a later run reports again keeps its thread and its attempt. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>codes</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The conditions a RULE result reports, as finding codes such as
+&#34;WT101&#34;, one per reason. A code names the same condition on every
+engine. Empty for other reviewers. </p></td>
                 </tr>
               
             </tbody>
@@ -29132,14 +29145,15 @@ configured storage destination such as SharePoint. </p></td>
                   <td>automatic</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>Whether rollout is automatic without manual approval. </p></td>
+                  <td><p>Whether the environment&#39;s rollout tasks start on their own, with no one running them. </p></td>
                 </tr>
               
                 <tr>
                   <td>roles</td>
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
-                  <td><p>The roles that can approve rollout execution. </p></td>
+                  <td><p>Who can run, skip or cancel the environment&#39;s rollout tasks; WORKSPACE_APPROVAL sets approvers.
+Anyone with bb.taskRuns.create can too. </p></td>
                 </tr>
               
             </tbody>

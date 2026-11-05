@@ -120,9 +120,9 @@ func TestReviewResultComments(t *testing.T) {
 	result := &review.Result{
 		Statements: []review.Range{{Start: 0, End: 19}, {Start: 20, End: 38}, {Start: 39, End: 47}},
 		Findings: []review.Finding{
-			{Rule: review.RequireWhere, Statement: 0, Message: "UPDATE without WHERE", Targets: []int{0, 1}},
+			{Rule: review.RequireWhere, Statement: 0, Message: "UPDATE without WHERE", Targets: []int{0, 1}, Codes: []review.FindingCode{review.MissingWhere}},
 			{Rule: review.DisallowDropObject, Statement: 1, Range: review.Range{Start: 31, End: 37}, Message: "DROP TABLE 你好", Targets: []int{1}},
-			{Rule: review.PriorBackup, Statement: -1, Message: "backup database missing", Targets: []int{0}},
+			{Rule: review.PriorBackup, Statement: -1, Message: "backup database missing", Targets: []int{0}, Codes: []review.FindingCode{review.BackupLocationMissing, review.ChangeTooLarge}},
 			{Rule: "FUTURE_RULE", Statement: 2, Message: "dropped: unknown to this server", Targets: []int{0}},
 			{Rule: review.Syntax, Statement: 2, Range: review.Range{Start: 40, End: 40}, Message: "empty range anchors the line", Targets: []int{0, 7}},
 		},
@@ -142,6 +142,7 @@ func TestReviewResultComments(t *testing.T) {
 	require.Equal(t, storepb.ReviewRuleType_REQUIRE_WHERE, whole.Payload.ReviewMetadata.RuleType)
 	require.Equal(t, storepb.IssueCommentPayload_ReviewMetadata_P1, whole.Payload.ReviewMetadata.Priority)
 	require.Equal(t, []string{"instances/pg/databases/a", "instances/pg/databases/b"}, whole.Payload.ReviewMetadata.Targets, "targets sorted")
+	require.Equal(t, []string{"WH101"}, whole.Payload.ReviewMetadata.Codes)
 	require.Equal(t, &storepb.IssueCommentPayload_StatementAnchor{
 		SpecId: "spec-1", SheetSha256: testSheet,
 		StartPosition: &storepb.Position{Line: 1, Column: 1},
@@ -156,6 +157,8 @@ func TestReviewResultComments(t *testing.T) {
 	change := comments[2]
 	require.Nil(t, change.Payload.StatementAnchor, "a whole-change finding has no anchor")
 	require.Equal(t, storepb.IssueCommentPayload_ReviewMetadata_P0, change.Payload.ReviewMetadata.Priority)
+	require.Equal(t, []string{"PB103", "PB102"}, change.Payload.ReviewMetadata.Codes, "a finding with several reasons keeps every code, in order")
+	require.Empty(t, comments[1].Payload.ReviewMetadata.Codes)
 
 	line := comments[3]
 	require.Equal(t, []string{"instances/pg/databases/b"}, line.Payload.ReviewMetadata.Targets, "an out-of-range target index is dropped")

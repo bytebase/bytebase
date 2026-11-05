@@ -295,6 +295,8 @@ var mcpRequestShapeRefusals = map[string]func(ctx context.Context, msg any) (rea
 		updatedProjectName, mcpProjectUpdateUnconfirmed, mcpProjectUpdateWayOut),
 	v1connect.OrgPolicyServiceUpdatePolicyProcedure: refuseUnconfirmed(v1connect.OrgPolicyServiceUpdatePolicyProcedure,
 		updatedPolicyName, mcpPolicyUpdateUnconfirmed, mcpPolicyUpdateWayOut),
+	v1connect.SettingServiceUpdateSettingProcedure: refuseUnconfirmed(v1connect.SettingServiceUpdateSettingProcedure,
+		updatedSettingName, mcpSettingUpdateUnconfirmed, mcpSettingUpdateWayOut),
 	v1connect.SheetServiceCreateSheetProcedure:       inTheConsole(refuseMaskedWriteSheet),
 	v1connect.SheetServiceBatchCreateSheetsProcedure: inTheConsole(refuseMaskedWriteSheetBatch),
 	v1connect.ReleaseServiceCreateReleaseProcedure:   inTheConsole(refuseMaskedWriteRelease),
@@ -341,6 +343,10 @@ const (
 		"and this request carries no such confirmation"
 	mcpPolicyUpdateWayOut = "To grant or revoke a masking exemption, use those tools, which ask the user to confirm. " +
 		"Change other policies signed in to the Bytebase console"
+	mcpSettingUpdateUnconfirmed = "a setting changes over MCP only through administer_workspace, after the user confirms the change in the MCP client, " +
+		"and this request carries no such confirmation"
+	mcpSettingUpdateWayOut = "To change the approval rules for database changes, use the administer_workspace tool, which asks the user to confirm. " +
+		"Change other settings signed in to the Bytebase console"
 )
 
 // refuseUnconfirmed serves procedure only when the request context carries a
@@ -358,6 +364,11 @@ func refuseUnconfirmed(procedure string, resourceOf func(msg any) (string, bool)
 		}
 		return reason, wayOut
 	}
+}
+
+func updatedSettingName(msg any) (string, bool) {
+	request, ok := msg.(*v1pb.UpdateSettingRequest)
+	return request.GetSetting().GetName(), ok
 }
 
 func approvedIssueName(msg any) (string, bool) {
