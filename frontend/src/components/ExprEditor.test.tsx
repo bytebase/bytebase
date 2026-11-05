@@ -5,7 +5,10 @@ import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import type { Factor } from "@/modules/cel/types/factor";
 import { type ConditionGroupExpr, ExprType } from "@/modules/cel/types/simple";
-import { applyAgentExpressionDraft } from "@/modules/agent/logic/expressionDraft";
+import {
+  applyAgentExpressionDraft,
+  canApplyAgentExpressionDraft,
+} from "@/modules/agent/logic/expressionDraft";
 import {
   CEL_ATTRIBUTE_RESOURCE_DATABASE,
   CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID,
@@ -188,6 +191,10 @@ const renderIntoContainer = (element: ReactElement) => {
 
   return {
     container,
+    rerender: (element: ReactElement) =>
+      act(() => {
+        root.render(element);
+      }),
     unmount: () =>
       act(() => {
         root.unmount();
@@ -376,6 +383,131 @@ describe("ExprEditor", () => {
         'button[aria-label="Ask Agent to help build this expression"]'
       )
     ).toBeNull();
+    unmount();
+  });
+
+  test("revokes Agent handoffs when the source editor becomes read-only", async () => {
+    const onUpdate = vi.fn();
+    const renderEditor = (readonly: boolean) => (
+      <ExprEditor
+        expr={{ type: ExprType.ConditionGroup, operator: "_&&_", args: [] }}
+        readonly={readonly}
+        factorList={[CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID]}
+        onUpdate={onUpdate}
+      />
+    );
+    const { container, rerender, unmount } = renderIntoContainer(
+      renderEditor(false)
+    );
+    const askAgent = container.querySelector<HTMLButtonElement>(
+      'button[aria-label="Ask Agent to help build this expression"]'
+    );
+    act(() => {
+      fireEvent.click(askAgent!);
+    });
+    expect(canApplyAgentExpressionDraft("expression-chat", "raw")).toBe(true);
+
+    rerender(renderEditor(true));
+
+    expect(canApplyAgentExpressionDraft("expression-chat", "raw")).toBe(false);
+    expect(canApplyAgentExpressionDraft("expression-chat", "selector")).toBe(
+      false
+    );
+    await expect(
+      applyAgentExpressionDraft("expression-chat", "true", "raw")
+    ).resolves.toBe(false);
+    expect(onUpdate).not.toHaveBeenCalled();
+    unmount();
+  });
+
+  test("does not apply raw CEL after the editor becomes read-only during parsing", async () => {
+    const onUpdate = vi.fn();
+    const renderEditor = (readonly: boolean) => (
+      <ExprEditor
+        expr={{ type: ExprType.ConditionGroup, operator: "_&&_", args: [] }}
+        readonly={readonly}
+        factorList={[CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID]}
+        onUpdate={onUpdate}
+      />
+    );
+    const { container, rerender, unmount } = renderIntoContainer(
+      renderEditor(false)
+    );
+    let finishParsing!: (
+      value: Awaited<
+        ReturnType<typeof expressionMock.batchConvertCELStringToParsedExpr>
+      >
+    ) => void;
+    expressionMock.batchConvertCELStringToParsedExpr.mockReturnValueOnce(
+      new Promise((resolve) => {
+        finishParsing = resolve;
+      })
+    );
+    const askAgent = container.querySelector<HTMLButtonElement>(
+      'button[aria-label="Ask Agent to help build this expression"]'
+    );
+    act(() => {
+      fireEvent.click(askAgent!);
+    });
+    const applying = applyAgentExpressionDraft(
+      "expression-chat",
+      "true",
+      "raw"
+    );
+
+    rerender(renderEditor(true));
+    finishParsing([{ exprKind: { case: "callExpr", value: {} } }]);
+
+    await expect(applying).resolves.toBe(false);
+    expect(onUpdate).not.toHaveBeenCalled();
+    unmount();
+  });
+
+  test("rejects an in-flight selector draft after ending and reopening Edit", async () => {
+    const onUpdate = vi.fn();
+    const renderEditor = (readonly: boolean) => (
+      <ExprEditor
+        expr={{ type: ExprType.ConditionGroup, operator: "_&&_", args: [] }}
+        readonly={readonly}
+        factorList={[CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID]}
+        onUpdate={onUpdate}
+      />
+    );
+    const { container, rerender, unmount } = renderIntoContainer(
+      renderEditor(false)
+    );
+    let finishValidation!: (value: string[]) => void;
+    expressionMock.batchConvertParsedExprToCELString.mockReturnValueOnce(
+      new Promise((resolve) => {
+        finishValidation = resolve;
+      })
+    );
+    const askAgent = container.querySelector<HTMLButtonElement>(
+      'button[aria-label="Ask Agent to help build this expression"]'
+    );
+    act(() => {
+      fireEvent.click(askAgent!);
+    });
+    const applying = applyAgentExpressionDraft(
+      "expression-chat",
+      "true",
+      "selector"
+    );
+    await waitFor(() => {
+      expect(
+        expressionMock.batchConvertParsedExprToCELString
+      ).toHaveBeenCalledOnce();
+    });
+
+    rerender(renderEditor(true));
+    rerender(renderEditor(false));
+    finishValidation(["canonical", "canonical"]);
+
+    await expect(applying).resolves.toBe(false);
+    expect(onUpdate).not.toHaveBeenCalled();
+    expect(canApplyAgentExpressionDraft("expression-chat", "selector")).toBe(
+      false
+    );
     unmount();
   });
 

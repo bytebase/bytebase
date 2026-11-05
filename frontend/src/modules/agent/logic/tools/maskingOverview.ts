@@ -8,7 +8,11 @@ import {
 } from "@/api";
 import { silentContextKey } from "@/api/context-key";
 import { settingNamePrefix } from "@/lib/resourceName";
-import { GetDatabaseCatalogRequestSchema } from "@/types/proto-es/v1/database_catalog_service_pb";
+import {
+  GetDatabaseCatalogRequestSchema,
+  type ObjectSchema,
+  ObjectSchema_Type,
+} from "@/types/proto-es/v1/database_catalog_service_pb";
 import { GetDatabaseRequestSchema } from "@/types/proto-es/v1/database_service_pb";
 import {
   GetPolicyRequestSchema,
@@ -196,6 +200,40 @@ function summarizeClassification(
   };
 }
 
+function* flattenObjectSchema(
+  parentPath: string,
+  objectSchema: ObjectSchema
+): Generator<{ name: string; semanticType: string; classification: string }> {
+  switch (objectSchema.type) {
+    case ObjectSchema_Type.OBJECT:
+      if (objectSchema.kind.case === "structKind") {
+        for (const [key, schema] of Object.entries(
+          objectSchema.kind.value.properties
+        )) {
+          yield* flattenObjectSchema(
+            [parentPath, key].filter(Boolean).join("."),
+            schema
+          );
+        }
+      }
+      return;
+    case ObjectSchema_Type.ARRAY:
+      if (
+        objectSchema.kind.case === "arrayKind" &&
+        objectSchema.kind.value.kind
+      ) {
+        yield* flattenObjectSchema(parentPath, objectSchema.kind.value.kind);
+      }
+      return;
+    default:
+      yield {
+        name: parentPath,
+        semanticType: objectSchema.semanticType,
+        classification: "",
+      };
+  }
+}
+
 async function summarizeCatalog(
   page: Extract<AgentPageResource, { kind: "database-catalog" }>
 ) {
@@ -211,25 +249,42 @@ async function summarizeCatalog(
           create(GetDatabaseCatalogRequestSchema, { name: `${name}/catalog` }),
           { contextValues: createContextValues().set(silentContextKey, true) }
         );
-      const columns = catalog.schemas.flatMap((schema) =>
-        schema.tables.flatMap((table) =>
-          table.kind?.case === "columns"
-            ? table.kind.value.columns.map((column) => ({
+      const columns: {
+        schema: string;
+        table: string;
+        column: string;
+        semanticType: string;
+        classification: string;
+      }[] = [];
+      let totalColumns = 0;
+      for (const schema of catalog.schemas) {
+        for (const table of schema.tables) {
+          const fields =
+            table.kind?.case === "columns"
+              ? table.kind.value.columns
+              : table.kind?.case === "objectSchema"
+                ? flattenObjectSchema("", table.kind.value)
+                : [];
+          for (const column of fields) {
+            totalColumns++;
+            if (columns.length < MAX_CATALOG_COLUMNS) {
+              columns.push({
                 schema: boundedText(schema.name),
                 table: boundedText(table.name),
                 column: boundedText(column.name),
                 semanticType: boundedText(column.semanticType),
                 classification: boundedText(column.classification),
-              }))
-            : []
-        )
-      );
+              });
+            }
+          }
+        }
+      }
       return {
         status: "available" as const,
         database: name,
-        columns: columns.slice(0, MAX_CATALOG_COLUMNS),
-        totalColumns: columns.length,
-        truncated: columns.length > MAX_CATALOG_COLUMNS,
+        columns,
+        totalColumns,
+        truncated: totalColumns > MAX_CATALOG_COLUMNS,
       };
     } catch {
       continue;

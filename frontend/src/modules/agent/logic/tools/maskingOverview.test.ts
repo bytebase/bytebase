@@ -22,7 +22,12 @@ vi.mock("@/api", () => ({
   settingServiceClientConnect: { getSetting: mocks.getSetting },
 }));
 
-import { GetDatabaseCatalogRequestSchema } from "@/types/proto-es/v1/database_catalog_service_pb";
+import {
+  DatabaseCatalogSchema,
+  GetDatabaseCatalogRequestSchema,
+  ObjectSchema_Type,
+  ObjectSchemaSchema,
+} from "@/types/proto-es/v1/database_catalog_service_pb";
 import { GetDatabaseRequestSchema } from "@/types/proto-es/v1/database_service_pb";
 
 describe("masking overview", () => {
@@ -223,6 +228,188 @@ describe("masking overview", () => {
     });
     expect(mocks.getPolicy).not.toHaveBeenCalled();
     expect(mocks.getSetting).not.toHaveBeenCalled();
+  });
+
+  test("includes nested document and array fields with their semantic types", async () => {
+    const project = "projects/sample";
+    const database = `${project}/instances/primary/databases/app`;
+    mocks.getDatabase.mockResolvedValue({ name: database, project });
+    mocks.getDatabaseCatalog.mockResolvedValue(
+      create(DatabaseCatalogSchema, {
+        name: `${database}/catalog`,
+        schemas: [
+          {
+            name: "app",
+            tables: [
+              {
+                name: "users",
+                kind: {
+                  case: "objectSchema",
+                  value: {
+                    type: ObjectSchema_Type.OBJECT,
+                    kind: {
+                      case: "structKind",
+                      value: {
+                        properties: {
+                          contact: {
+                            type: ObjectSchema_Type.OBJECT,
+                            kind: {
+                              case: "structKind",
+                              value: {
+                                properties: {
+                                  email: {
+                                    type: ObjectSchema_Type.STRING,
+                                    semanticType: "email-id",
+                                  },
+                                },
+                              },
+                            },
+                          },
+                          phones: {
+                            type: ObjectSchema_Type.ARRAY,
+                            kind: {
+                              case: "arrayKind",
+                              value: {
+                                kind: {
+                                  type: ObjectSchema_Type.OBJECT,
+                                  kind: {
+                                    case: "structKind",
+                                    value: {
+                                      properties: {
+                                        number: {
+                                          type: ObjectSchema_Type.STRING,
+                                          semanticType: "phone-id",
+                                        },
+                                      },
+                                    },
+                                  },
+                                },
+                              },
+                            },
+                          },
+                          tags: {
+                            type: ObjectSchema_Type.ARRAY,
+                            kind: {
+                              case: "arrayKind",
+                              value: {
+                                kind: { type: ObjectSchema_Type.STRING },
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            ],
+          },
+        ],
+      })
+    );
+
+    const result = JSON.parse(
+      await createMaskingOverviewTool({
+        page: { kind: "database-catalog", project, names: [database] },
+        workspaceName: "workspaces/default",
+      })()
+    );
+
+    expect(result.catalog).toEqual({
+      status: "available",
+      database,
+      columns: [
+        {
+          schema: "app",
+          table: "users",
+          column: "contact.email",
+          semanticType: "email-id",
+          classification: "",
+        },
+        {
+          schema: "app",
+          table: "users",
+          column: "phones.number",
+          semanticType: "phone-id",
+          classification: "",
+        },
+        {
+          schema: "app",
+          table: "users",
+          column: "tags",
+          semanticType: "",
+          classification: "",
+        },
+      ],
+      totalColumns: 3,
+      truncated: false,
+    });
+  });
+
+  test("bounds combined relational columns and document fields without losing the total count", async () => {
+    const project = "projects/sample";
+    const database = `${project}/instances/primary/databases/app`;
+    mocks.getDatabase.mockResolvedValue({ name: database, project });
+    mocks.getDatabaseCatalog.mockResolvedValue(
+      create(DatabaseCatalogSchema, {
+        name: `${database}/catalog`,
+        schemas: [
+          {
+            name: "app",
+            tables: [
+              {
+                name: "users",
+                kind: {
+                  case: "columns",
+                  value: { columns: [{ name: "email" }] },
+                },
+              },
+              {
+                name: "documents",
+                kind: {
+                  case: "objectSchema",
+                  value: {
+                    type: ObjectSchema_Type.OBJECT,
+                    kind: {
+                      case: "structKind",
+                      value: {
+                        properties: Object.fromEntries(
+                          Array.from({ length: 200 }, (_, index) => [
+                            `field_${index}`,
+                            create(ObjectSchemaSchema, {
+                              type: ObjectSchema_Type.STRING,
+                              semanticType: "email-id",
+                            }),
+                          ])
+                        ),
+                      },
+                    },
+                  },
+                },
+              },
+            ],
+          },
+        ],
+      })
+    );
+
+    const result = JSON.parse(
+      await createMaskingOverviewTool({
+        page: { kind: "database-catalog", project, names: [database] },
+        workspaceName: "workspaces/default",
+      })()
+    );
+
+    expect(result.catalog.columns).toHaveLength(200);
+    expect(result.catalog.totalColumns).toBe(201);
+    expect(result.catalog.truncated).toBe(true);
+    expect(result.catalog.columns[199]).toEqual({
+      schema: "app",
+      table: "documents",
+      column: "field_198",
+      semanticType: "email-id",
+      classification: "",
+    });
   });
 
   test("verifies a catalog database belongs to the page project before reading its catalog", async () => {

@@ -1687,22 +1687,29 @@ export function ExprEditor({
   const onUpdateRef = useRef(onUpdate);
   onUpdateRef.current = onUpdate;
   const unregisterExpressionTargetsRef = useRef(new Map<string, () => void>());
+  const editSessionRef = useRef({ readonly });
 
-  useEffect(
-    () => () => {
+  // Changing editability revokes registered handoffs and in-flight validations.
+  useLayoutEffect(() => {
+    editSessionRef.current = { readonly };
+    return () => {
+      editSessionRef.current = { readonly: true };
       for (const unregister of unregisterExpressionTargetsRef.current.values()) {
         unregister();
       }
       unregisterExpressionTargetsRef.current.clear();
-    },
-    []
-  );
+    };
+  }, [readonly]);
 
   const applyAgentExpression = useCallback(
     async (expression: string, mode: AgentExpressionDraftMode) => {
+      const editSession = editSessionRef.current;
+      const isEditable = () =>
+        !editSession.readonly && editSessionRef.current === editSession;
+      if (!isEditable()) return false;
       try {
         const [parsed] = await batchConvertCELStringToParsedExpr([expression]);
-        if (!parsed?.exprKind?.case) return false;
+        if (!parsed?.exprKind?.case || !isEditable()) return false;
         if (mode === "raw") {
           onUpdateRef.current({
             type: ExprType.ConditionGroup,
@@ -1712,10 +1719,12 @@ export function ExprEditor({
         } else {
           const selector = wrapAsGroup(resolveCELExpr(parsed));
           const rebuilt = await buildCELExpr(selector);
-          if (!rebuilt?.exprKind?.case) return false;
+          if (!rebuilt?.exprKind?.case || !isEditable()) return false;
           const [originalCEL, rebuiltCEL] =
             await batchConvertParsedExprToCELString([parsed, rebuilt]);
-          if (!originalCEL || originalCEL !== rebuiltCEL) return false;
+          if (!originalCEL || originalCEL !== rebuiltCEL || !isEditable()) {
+            return false;
+          }
           onUpdateRef.current(selector);
         }
         return true;
@@ -1727,11 +1736,14 @@ export function ExprEditor({
   );
 
   const askAgent = useCallback(() => {
+    const editSession = editSessionRef.current;
+    if (editSession.readonly) return;
     const rawMode = expr.args.length === 1 && isRawStringExpr(expr.args[0]);
     openAgentWithPrompt(
       buildAgentExpressionPrompt(factorList, rawMode, t),
       undefined,
       (chatId) => {
+        if (editSessionRef.current !== editSession) return;
         unregisterExpressionTargetsRef.current.get(chatId)?.();
         unregisterExpressionTargetsRef.current.set(
           chatId,
