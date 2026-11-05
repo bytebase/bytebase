@@ -67,7 +67,7 @@ const grantMaskingExemptionDescription = `Exempt one member from data masking in
 | expireTime   | No       | RFC 3339 time the exemption ends, e.g. "2026-10-27T00:00:00Z"; without it, it does not expire |
 | reason       | No       | Why, recorded with the exemption |
 
-An exemption is a standing policy change: the member then sees the covered data unmasked in query and export results. For a one-off query, request an access grant instead with request_access_grant.
+An exemption is a standing policy change: the member bypasses the masking that applies to the covered data in query and export results, including masking set up later. It does not set up masking itself. For a one-off query, request an access grant instead with request_access_grant.
 
 The tool adds one exemption and leaves every other entry as it is. For several columns of one table, pass them together in columns, so the user confirms once. It shows the user the member, the scope, the expiry and the effect, and asks them to confirm in a form; it writes only when they accept. A client that cannot show the form gets the project's masking exemption page, to grant it in the Bytebase console instead. Do not ask in chat first: the form is the question.
 
@@ -463,9 +463,9 @@ func describeExemptionGrant(ctx context.Context, g *exemptionGrant) string {
 	} else {
 		lines = append(lines, fmt.Sprintf("Instance %q", g.instanceID), fmt.Sprintf("Database %q, %s", g.databaseName, describeNarrowing(g)))
 	}
-	effect := "Unmasked in query and export results, with no expiry."
+	effect := "Bypasses masking here, with no expiry; adds no masking."
 	if g.expireTime != "" {
-		effect = fmt.Sprintf("Unmasked in query and export results until %q.", g.expireTime)
+		effect = fmt.Sprintf("Bypasses masking here until %q; adds no masking.", g.expireTime)
 	}
 	if g.note != "" {
 		effect += fmt.Sprintf(" Reason: %q", g.note)
@@ -528,7 +528,7 @@ func describeExemptionRevoke(ctx context.Context, input RevokeMaskingExemptionIn
 		question + "?",
 		fmt.Sprintf("Project %q", projectID),
 		condition,
-		"Masked again in their results unless another exemption covers the data.",
+		"Ends their bypass of any masking here, unless another exemption covers it.",
 	}, "\n")
 }
 

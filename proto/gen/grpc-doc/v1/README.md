@@ -10221,8 +10221,8 @@ Rollout policy configuration.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| automatic | [bool](#bool) |  | Whether rollout is automatic without manual approval. |
-| roles | [string](#string) | repeated | The roles that can approve rollout execution. |
+| automatic | [bool](#bool) |  | Whether the environment&#39;s rollout tasks start on their own, with no one running them. |
+| roles | [string](#string) | repeated | Who can run, skip or cancel the environment&#39;s rollout tasks; WORKSPACE_APPROVAL sets approvers. Anyone with bb.taskRuns.create can too. |
 
 
 

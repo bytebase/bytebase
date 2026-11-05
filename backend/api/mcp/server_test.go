@@ -612,8 +612,8 @@ func listToolsOverRoute(t *testing.T) []*mcp.Tool {
 }
 
 func TestInitializeServesInstructions(t *testing.T) {
-	const account = `This session acts as the Bytebase account test@example.com: every tool call runs with its permissions, ` +
-		`and "you" in tool results means it. The user may have other accounts with other emails, such as the client's own sign-in.`
+	const account = `In workspaces/ws-test, this session acts as the Bytebase account test@example.com, with its permissions. ` +
+		`"You" in tool results means it, not another account such as the client's sign-in.`
 	tools := listToolsOverRoute(t)
 	for _, row := range []struct {
 		name         string
@@ -670,10 +670,14 @@ func TestServerInstructionsFitClientLimit(t *testing.T) {
 	// No deliverable address is longer than 254 characters: RFC 5321
 	// §4.5.3.1.3 caps a path at 256 octets, angle brackets included.
 	email := strings.Repeat("a", 242) + "@example.com"
+	// Bytebase gives a new workspace a 16-character ID (auth_service.go). A
+	// workspace from before 3.17 keeps its UUID (migration 3.17/0009).
+	workspaceID := "6c86d081-379d-4366-be6f-481425e6f397"
 	endpoint, _, _ := newProbeServer(t)
-	session := connectLegacy(t, endpoint, mintMCPToken(t, email, "client-A", "ws-test", "mcp:read-write", time.Hour), nil)
+	session := connectLegacy(t, endpoint, mintMCPToken(t, email, "client-A", workspaceID, "mcp:read-write", time.Hour), nil)
 	instructions := session.InitializeResult().Instructions
 	require.Contains(t, instructions, email)
+	require.Contains(t, instructions, "workspaces/"+workspaceID)
 
 	// Claude Code cuts server instructions at 4,096 characters, and before
 	// v2.1.296 at 2,048 (code.claude.com/docs/en/mcp). Holding the older limit

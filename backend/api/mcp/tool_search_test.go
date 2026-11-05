@@ -246,6 +246,19 @@ func TestSearchAPISchemaLookupEnum(t *testing.T) {
 	require.Contains(t, text, "Enum values:")
 }
 
+// Schema mode cuts each description to its first 97 characters, so the part
+// of RolloutPolicy.roles that agents misread has to come first.
+func TestSearchAPIRolloutPolicyNamesWhoApproves(t *testing.T) {
+	profile := &config.Profile{Mode: common.ReleaseModeDev}
+	s, err := newServerWithStore(newTestServerStore(), profile, "test-secret", nil)
+	require.NoError(t, err)
+
+	result, _, err := s.handleSearchAPI(context.Background(), nil, SearchInput{Schema: "RolloutPolicy"})
+	require.NoError(t, err)
+	text := result.Content[0].(*mcpsdk.TextContent).Text
+	require.Contains(t, text, `"roles": array<string> // Who can run, skip or cancel the environment's rollout tasks; WORKSPACE_APPROVAL sets approvers.`)
+}
+
 func TestSearchAPIProtobufDescriptionTruncation(t *testing.T) {
 	profile := &config.Profile{Mode: common.ReleaseModeDev}
 	s, err := newServerWithStore(newTestServerStore(), profile, "test-secret", nil)
