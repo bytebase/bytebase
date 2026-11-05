@@ -350,6 +350,29 @@ func TestAdministerMaskingRulesRefusesAnAnswerOverRulesThatChanged(t *testing.T)
 	require.Empty(t, mock.calls())
 }
 
+// The form states what each rule's type does, so an answer over a type that
+// changed is refused even when only the description reads differently.
+func TestAdministerMaskingRulesRefusesAnAnswerOverTypesThatChanged(t *testing.T) {
+	md5 := &v1pb.Algorithm{Mask: &v1pb.Algorithm_Md5Mask{Md5Mask: &v1pb.Algorithm_MD5Mask{}}}
+	mock := &maskingMock{types: []*v1pb.SemanticTypeSetting_SemanticType{semanticType("email", "Email", md5)}}
+	kept := maskingRule("r1", "Emails", `resource.column_name == "email"`, "email")
+	mock.setStored(kept)
+	user := &asker{answer: adminAnswer(adminChoiceApply)}
+	// Another admin removes the email type's algorithm while the form is open.
+	user.whileAsked = func() {
+		mock.mu.Lock()
+		defer mock.mu.Unlock()
+		mock.types = []*v1pb.SemanticTypeSetting_SemanticType{semanticType("email", "Email", nil)}
+	}
+	_, session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
+
+	res := callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false,
+		proto.CloneOf(kept), maskingRule("r2", "Prod", `resource.environment_id == "prod"`, "bb.default")))))
+	require.True(t, res.IsError, resultText(t, res))
+	require.Contains(t, resultText(t, res), "STALE_CONFIRMATION")
+	require.Empty(t, mock.calls())
+}
+
 func TestAdministerMaskingRulesRefusesAChangeTooLongForTheForm(t *testing.T) {
 	mock := &maskingMock{}
 	mock.setStored()
