@@ -2930,7 +2930,7 @@
           "self": "Cho phép truy vấn nguồn dữ liệu quản trị"
         },
         "allow-download": {
-          "description": "Khi tắt, dữ liệu xuất chỉ có thể được gửi đến đích lưu trữ đã cấu hình cho dự án, chẳng hạn như SharePoint, kể cả với quyền truy cập xuất đã được phê duyệt.",
+          "description": "Khi tắt, dữ liệu xuất từ SQL Editor chỉ được gửi đến đích lưu trữ đã cấu hình cho dự án, chẳng hạn như SharePoint, kể cả với quyền truy cập xuất đã được phê duyệt. Ứng dụng API và MCP vẫn có thể tải xuống.",
           "self": "Cho phép tải xuống"
         },
         "allow-email-code-signin": {

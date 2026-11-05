@@ -400,8 +400,9 @@ export declare type QueryDataPolicy = Message<"bytebase.v1.QueryDataPolicy"> & {
 
   /**
    * workspace-level policy
-   * Disable the Download export destination. Exports can still go to a
-   * configured storage destination such as SharePoint.
+   * Hide the Download export destination in the SQL Editor. Exports can still go
+   * to a configured storage destination such as SharePoint. The Export API does
+   * not check this setting.
    *
    * @generated from field: bool disable_download = 5;
    */

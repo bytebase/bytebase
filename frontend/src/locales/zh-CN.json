@@ -2930,7 +2930,7 @@
           "self": "允许查询主数据源"
         },
         "allow-download": {
-          "description": "关闭后，导出只能发送到项目配置的存储目标（如 SharePoint），已批准的导出访问授权也不能下载。",
+          "description": "关闭后，SQL 编辑器中的导出只能发送到项目配置的存储目标（如 SharePoint），已批准的导出访问授权也不能下载。API 和 MCP 客户端仍可下载。",
           "self": "允许下载"
         },
         "allow-email-code-signin": {

@@ -2930,7 +2930,7 @@
           "self": "Allow querying the admin data source"
         },
         "allow-download": {
-          "description": "When off, exports can go only to a storage destination configured for the project, such as SharePoint, even with an approved export access grant.",
+          "description": "When off, SQL Editor exports go only to a storage destination configured for the project, such as SharePoint, even with an approved export access grant. API and MCP clients can still download.",
           "self": "Allow download"
         },
         "allow-email-code-signin": {

@@ -2930,7 +2930,7 @@
           "self": "Permitir consultar la fuente de datos de administración"
         },
         "allow-download": {
-          "description": "Si se desactiva, las exportaciones solo pueden ir a un destino de almacenamiento configurado para el proyecto, como SharePoint, incluso con una concesión de acceso de exportación aprobada.",
+          "description": "Si se desactiva, las exportaciones del Editor SQL solo van a un destino de almacenamiento configurado para el proyecto, como SharePoint, incluso con una concesión de acceso de exportación aprobada. Los clientes de API y MCP aún pueden descargar.",
           "self": "Permitir descarga"
         },
         "allow-email-code-signin": {

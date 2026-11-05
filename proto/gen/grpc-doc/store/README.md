@@ -2770,7 +2770,7 @@ QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 | maximum_result_rows | [int32](#int32) |  | Support both project-level and workspace-level. The maximum number of rows to return in the SQL editor. The default value &lt;= 0, means no limit. |
 | disable_copy_data | [bool](#bool) |  | workspace-level policy Disable copying data. |
 | allow_admin_data_source | [bool](#bool) |  | workspace-level policy Allow using the admin data source to query in the SQL editor. |
-| disable_download | [bool](#bool) |  | workspace-level policy Disable the Download export destination. Exports can still go to a configured storage destination such as SharePoint. |
+| disable_download | [bool](#bool) |  | workspace-level policy Hide the Download export destination in the SQL Editor. Exports can still go to a configured storage destination such as SharePoint. The Export API does not check this setting. |
 | disallow_ddl | [bool](#bool) |  | ================ Deprecate following fields. Disallow running DDL statements in the SQL editor. |
 | disallow_dml | [bool](#bool) |  | Disallow running DML statements in the SQL editor. |
 
