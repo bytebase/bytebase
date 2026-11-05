@@ -2930,8 +2930,8 @@
           "self": "Cho phép truy vấn nguồn dữ liệu quản trị"
         },
         "allow-download": {
-          "description": "Khi tắt, dữ liệu xuất chỉ có thể được gửi đến đích lưu trữ đã cấu hình cho dự án, chẳng hạn như SharePoint, kể cả với quyền truy cập xuất đã được phê duyệt.",
-          "self": "Cho phép tải xuống"
+          "description": "Người dùng có thể chọn Tải xuống làm đích khi xuất kết quả truy vấn. Khi tắt, dữ liệu xuất chỉ được gửi đến đích lưu trữ của dự án, chẳng hạn như SharePoint, kể cả với quyền truy cập xuất đã được phê duyệt.",
+          "self": "Cho phép tải xuống dữ liệu xuất"
         },
         "allow-email-code-signin": {
           "description": "Người dùng có thể đăng nhập hoặc đăng ký bằng cách nhập mã 6 chữ số được gửi đến email của họ.",

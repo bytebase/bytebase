@@ -2930,8 +2930,8 @@
           "self": "Permitir consultar la fuente de datos de administración"
         },
         "allow-download": {
-          "description": "Si se desactiva, las exportaciones solo pueden ir a un destino de almacenamiento configurado para el proyecto, como SharePoint, incluso con una concesión de acceso de exportación aprobada.",
-          "self": "Permitir descarga"
+          "description": "Los usuarios pueden elegir Descarga como destino al exportar resultados de consultas. Si se desactiva, las exportaciones solo van al destino de almacenamiento del proyecto, como SharePoint, incluso con una concesión de acceso de exportación aprobada.",
+          "self": "Permitir descargar exportaciones"
         },
         "allow-email-code-signin": {
           "description": "Los usuarios pueden iniciar sesión o registrarse introduciendo un código de 6 dígitos enviado a su correo electrónico.",

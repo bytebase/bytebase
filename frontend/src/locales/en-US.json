@@ -2930,8 +2930,8 @@
           "self": "Allow querying the admin data source"
         },
         "allow-download": {
-          "description": "When off, exports can go only to a storage destination configured for the project, such as SharePoint, even with an approved export access grant.",
-          "self": "Allow download"
+          "description": "Users can choose Download as the destination when exporting query results. When off, exports go only to the project's storage destination, such as SharePoint, even with an approved export access grant.",
+          "self": "Allow downloading exports"
         },
         "allow-email-code-signin": {
           "description": "Users can sign in or sign up by entering a 6-digit code delivered to their email address.",
