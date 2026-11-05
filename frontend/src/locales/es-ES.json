@@ -2976,7 +2976,7 @@
           "self": "Permitir consultar la fuente de datos de administración"
         },
         "allow-download": {
-          "description": "Los usuarios pueden elegir Descarga como destino al exportar resultados de consultas en el Editor SQL. Si se desactiva, las exportaciones del Editor SQL solo van al destino de almacenamiento del proyecto, como SharePoint, incluso con una concesión de acceso de exportación aprobada. Los clientes de API y MCP aún pueden descargar.",
+          "description": "Los usuarios pueden elegir Descarga como destino al exportar resultados de consultas en el Editor SQL. Si se desactiva, las exportaciones del Editor SQL solo van al destino de almacenamiento del proyecto, como SharePoint, incluso con una concesión de acceso de exportación aprobada.",
           "self": "Permitir descargar exportaciones"
         },
         "allow-email-code-signin": {
