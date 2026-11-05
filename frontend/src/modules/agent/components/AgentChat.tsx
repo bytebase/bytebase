@@ -48,9 +48,7 @@ import {
 import { getAgentErrorSummary } from "../logic/errorDisplay";
 import {
   applyAgentExpressionDraft,
-  canApplyAgentExpressionDraft,
   extractAgentExpressionDraft,
-  subscribeToAgentExpressionTargets,
 } from "../logic/expressionDraft";
 import { resolveAgentHandoffRoute } from "../logic/handoff";
 import type { LandingStarterId } from "../logic/landingStarters";
@@ -581,8 +579,12 @@ function AgentExpressionDraftActions({
   const [applyingMode, setApplyingMode] = useState<"selector" | "raw">();
   const [appliedMode, setAppliedMode] = useState<"selector" | "raw">();
   const [failed, setFailed] = useState(false);
-  const canApplySelector = canApplyAgentExpressionDraft(chatId, "selector");
-  const canApplyRaw = canApplyAgentExpressionDraft(chatId, "raw");
+  const canApplySelector = useAgentStore((state) =>
+    state.canApplyExpressionDraft(chatId, "selector")
+  );
+  const canApplyRaw = useAgentStore((state) =>
+    state.canApplyExpressionDraft(chatId, "raw")
+  );
 
   if (!canApplySelector && !canApplyRaw) return null;
 
@@ -816,7 +818,6 @@ export function AgentChat({
     isAIConfigurationRecoveryDismissed,
     setAIConfigurationRecoveryDismissed,
   ] = useState(false);
-  const [, setExpressionTargetsVersion] = useState(0);
 
   const messages = useAgentStore(selectMessages);
   const currentChat = useAgentStore(selectCurrentChat);
@@ -843,14 +844,6 @@ export function AgentChat({
   );
   const aiEnabled = useAppStore((s) => s.serverInfo?.aiEnabled);
   const allMessages = useAgentStore(selectMessages);
-
-  useEffect(
-    () =>
-      subscribeToAgentExpressionTargets(() =>
-        setExpressionTargetsVersion((version) => version + 1)
-      ),
-    []
-  );
 
   const showAIConfigurationRecovery =
     chatRequiresAIConfiguration ||

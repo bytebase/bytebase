@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
+import { useAgentStore } from "../store/agent";
 import {
   applyAgentExpressionDraft,
   canApplyAgentExpressionDraft,
   extractAgentExpressionDraft,
   registerAgentExpressionTarget,
-  subscribeToAgentExpressionTargets,
 } from "./expressionDraft";
 
 describe("agent expression drafts", () => {
@@ -70,15 +70,15 @@ describe("agent expression drafts", () => {
   });
 
   test("notifies Agent chat when a bound editor becomes unavailable", () => {
-    const listener = vi.fn();
-    const unsubscribe = subscribeToAgentExpressionTargets(listener);
-    const unregister = registerAgentExpressionTarget(
-      "chat-1",
-      async () => true
-    );
+    const chatId = "expression-chat-test";
+    const availability: boolean[] = [];
+    const unsubscribe = useAgentStore.subscribe((state) => {
+      availability.push(state.canApplyExpressionDraft(chatId, "selector"));
+    });
+    const unregister = registerAgentExpressionTarget(chatId, async () => true);
     unregister();
-
-    expect(listener).toHaveBeenCalledTimes(2);
     unsubscribe();
+
+    expect(availability).toEqual([true, false]);
   });
 });

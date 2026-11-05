@@ -53,16 +53,25 @@ const agentMock = vi.hoisted(() => ({
   ),
 }));
 
+const expressionMock = vi.hoisted(() => ({
+  buildCELExpr: vi.fn(async () => ({
+    exprKind: { case: "callExpr", value: {} },
+  })),
+  batchConvertCELStringToParsedExpr: vi.fn(async () => [
+    { exprKind: { case: "callExpr", value: {} } },
+  ]),
+  batchConvertParsedExprToCELString: vi.fn(async () => ["canonical", "canonical"]),
+}));
+
 vi.mock("@/modules/agent/logic/instanceConnectionHelp", () => ({
   openAgentWithPrompt: agentMock.openAgentWithPrompt,
 }));
 
 vi.mock("@/utils/v1/cel", () => ({
-  batchConvertCELStringToParsedExpr: async () => [
-    {
-      exprKind: { case: "callExpr", value: {} },
-    },
-  ],
+  batchConvertCELStringToParsedExpr:
+    expressionMock.batchConvertCELStringToParsedExpr,
+  batchConvertParsedExprToCELString:
+    expressionMock.batchConvertParsedExprToCELString,
 }));
 
 vi.mock("@/modules/cel", () => ({
@@ -86,6 +95,7 @@ vi.mock("@/modules/cel", () => ({
     ),
   isTimestampFactor: () => false,
   operatorDisplayLabel: (operator: string) => operator,
+  buildCELExpr: expressionMock.buildCELExpr,
   resolveCELExpr: () => ({
     type: "ConditionGroup",
     operator: "_&&_",
@@ -95,9 +105,12 @@ vi.mock("@/modules/cel", () => ({
 }));
 
 vi.mock("react-i18next", () => ({
+  initReactI18next: { type: "3rdParty", init: () => {} },
   useTranslation: () => ({
-    t: (key: string, options?: { defaultValue?: string }) =>
-      options?.defaultValue ?? key,
+    t: (key: string, options?: Record<string, string>) =>
+      key === "cel.agent-help.starter"
+        ? `${key}: ${options?.mode}; ${options?.attributes}`
+        : options?.defaultValue ?? key,
   }),
 }));
 
@@ -114,7 +127,8 @@ vi.mock("@/components/EnvironmentLabel", () => ({
   ),
 }));
 
-vi.mock("@/stores/modules/v1/common", () => ({
+vi.mock("@/stores/modules/v1/common", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/stores/modules/v1/common")>()),
   environmentNamePrefix: "environments/",
 }));
 
@@ -192,6 +206,15 @@ describe("ExprEditor", () => {
   afterEach(() => {
     document.body.innerHTML = "";
     agentMock.openAgentWithPrompt.mockClear();
+    expressionMock.buildCELExpr
+      .mockReset()
+      .mockResolvedValue({ exprKind: { case: "callExpr", value: {} } });
+    expressionMock.batchConvertCELStringToParsedExpr
+      .mockReset()
+      .mockResolvedValue([{ exprKind: { case: "callExpr", value: {} } }]);
+    expressionMock.batchConvertParsedExprToCELString
+      .mockReset()
+      .mockResolvedValue(["canonical", "canonical"]);
   });
 
   test("opens Agent help and applies a generated expression to the selector", async () => {
@@ -219,10 +242,10 @@ describe("ExprEditor", () => {
       CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID
     );
     expect(agentMock.openAgentWithPrompt.mock.calls[0][0]).toContain(
-      "First ask what I want the condition to include or exclude"
+      "cel.agent-help.starter"
     );
     expect(agentMock.openAgentWithPrompt.mock.calls[0][0]).toContain(
-      "exactly one fenced `cel` code block"
+      CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID
     );
 
     await act(async () => {
@@ -237,6 +260,69 @@ describe("ExprEditor", () => {
       operator: "_&&_",
       args: [],
     });
+    unmount();
+  });
+
+  test("does not apply a selector draft when conversion changes its meaning", async () => {
+    const onUpdate = vi.fn();
+    const { container, unmount } = renderIntoContainer(
+      <ExprEditor
+        expr={{ type: ExprType.ConditionGroup, operator: "_&&_", args: [] }}
+        factorList={[CEL_ATTRIBUTE_RESOURCE_DATABASE]}
+        onUpdate={onUpdate}
+      />
+    );
+    const askAgent = container.querySelector<HTMLButtonElement>(
+      'button[aria-label="Ask Agent to help build this expression"]'
+    );
+    expressionMock.batchConvertParsedExprToCELString.mockResolvedValueOnce([
+      '!(resource.database_name == "prod")',
+      'resource.database_name == "prod"',
+    ]);
+
+    let applied = true;
+    await act(async () => {
+      fireEvent.click(askAgent!);
+      applied = await applyAgentExpressionDraft(
+        "expression-chat",
+        '!(resource.database_name == "prod")',
+        "selector"
+      );
+    });
+
+    expect(applied).toBe(false);
+    expect(onUpdate).not.toHaveBeenCalled();
+    unmount();
+  });
+
+  test("does not apply a parsed CEL response without an expression case", async () => {
+    const onUpdate = vi.fn();
+    const { container, unmount } = renderIntoContainer(
+      <ExprEditor
+        expr={{ type: ExprType.ConditionGroup, operator: "_&&_", args: [] }}
+        factorList={[CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID]}
+        onUpdate={onUpdate}
+      />
+    );
+    const askAgent = container.querySelector<HTMLButtonElement>(
+      'button[aria-label="Ask Agent to help build this expression"]'
+    );
+    expressionMock.batchConvertCELStringToParsedExpr.mockResolvedValueOnce([
+      { exprKind: {} as never },
+    ]);
+
+    let applied = true;
+    await act(async () => {
+      fireEvent.click(askAgent!);
+      applied = await applyAgentExpressionDraft(
+        "expression-chat",
+        "invalid cel",
+        "raw"
+      );
+    });
+
+    expect(applied).toBe(false);
+    expect(onUpdate).not.toHaveBeenCalled();
     unmount();
   });
 
@@ -260,10 +346,14 @@ describe("ExprEditor", () => {
       (span) => span.textContent === "Where"
     );
     const expressionInput = container.querySelector("textarea");
-    expect(whereLabel?.parentElement?.contains(askAgent)).toBe(true);
-    expect(whereLabel?.parentElement?.querySelector("textarea")).toBeNull();
+    const whereLabelParent = whereLabel?.parentElement;
+    if (!whereLabelParent || !expressionInput) {
+      throw new Error("Expected the expression label and input to render");
+    }
+    expect(whereLabelParent.contains(askAgent)).toBe(true);
+    expect(whereLabelParent.querySelector("textarea")).toBeNull();
     expect(
-      whereLabel?.parentElement?.compareDocumentPosition(expressionInput!) &
+      whereLabelParent.compareDocumentPosition(expressionInput) &
         Node.DOCUMENT_POSITION_FOLLOWING
     ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(askAgent?.className).toContain("text-accent");

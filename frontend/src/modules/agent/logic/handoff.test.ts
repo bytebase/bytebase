@@ -87,6 +87,34 @@ describe("collectAgentHandoffs", () => {
     ).toEqual([]);
   });
 
+  test("opens a database catalog for database names containing dots", () => {
+    const database = `${project}/instances/primary/databases/app.v2`;
+    expect(
+      resolveAgentHandoffRoute({
+        kind: "open-database-catalog",
+        project,
+        database,
+      })
+    ).toEqual({
+      name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
+      params: {
+        projectId: "sample",
+        instanceId: "primary",
+        databaseName: "app.v2",
+      },
+      query: { parent: `${project}/instances/primary` },
+      hash: "#catalog",
+    });
+
+    expect(
+      resolveAgentHandoffRoute({
+        kind: "open-database-catalog",
+        project,
+        database: "projects/other/instances/primary/databases/app.v2",
+      })
+    ).toBeUndefined();
+  });
+
   test("collects an unnumbered workspace review queue from a partial result", () => {
     expect(
       collectAgentHandoffs(

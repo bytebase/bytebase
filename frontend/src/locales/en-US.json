@@ -451,7 +451,11 @@
       "apply-raw": "Apply as raw CEL",
       "apply-selector": "Apply to selector",
       "ask-tooltip": "Ask Agent to help build this expression",
-      "invalid": "Couldn't parse this CEL expression. Ask Agent to revise it, then try again.",
+      "invalid": "Couldn't safely apply this CEL expression. Ask Agent to revise it or choose raw CEL if available.",
+      "mode-raw": "raw CEL",
+      "mode-selector": "selector",
+      "no-attributes": "none",
+      "starter": "Help me write a CEL condition for this editor. Ask clarifying questions first, one at a time. Mode: {{mode}}. Available attributes: {{attributes}}. Use only these attributes and do not inspect data or run queries. When ready, explain the condition and provide exactly one fenced `cel` block. Do not claim it is applied or saved; I will review before applying.",
       "unsaved": "Applying replaces the current expression in this unsaved editor. It does not save the rule."
     },
     "condition": {

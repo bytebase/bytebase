@@ -451,7 +451,11 @@
       "apply-raw": "作为 Raw CEL 应用",
       "apply-selector": "应用到选择器",
       "ask-tooltip": "让 Agent 帮助构建此表达式",
-      "invalid": "无法解析此 CEL 表达式。请让 Agent 修改后重试。",
+      "invalid": "无法安全应用此 CEL 表达式。请让 Agent 修改，或在可用时选择 Raw CEL。",
+      "mode-raw": "Raw CEL",
+      "mode-selector": "选择器",
+      "no-attributes": "无",
+      "starter": "请帮我为此编辑器编写 CEL 条件。先逐个提问以明确条件。模式：{{mode}}。可用属性：{{attributes}}。只能使用这些属性，不要检查数据或运行查询。准备好后，请解释条件并提供且仅提供一个 `cel` 代码块。不要声称已应用或保存；我会在应用前审核。",
       "unsaved": "应用会替换此未保存编辑器中的当前表达式，但不会保存规则。"
     },
     "condition": {

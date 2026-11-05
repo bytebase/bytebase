@@ -117,6 +117,63 @@ describe("response actions", () => {
     ).toEqual([]);
   });
 
+  test("normalizes provider targets with empty unused fields", () => {
+    const optionalFields = {
+      workspace: "",
+      project: "",
+      database: "",
+      plan: "",
+      issue: "",
+      task: "",
+    };
+    expect(
+      normalizeAgentResponseActions([
+        {
+          kind: "open",
+          target: { kind: "open-global-masking", ...optionalFields },
+        },
+      ])
+    ).toEqual([{ kind: "open", target: { kind: "open-global-masking" } }]);
+
+    const database = "projects/sample/instances/primary/databases/app.v2";
+    expect(
+      normalizeAgentResponseActions([
+        {
+          kind: "open",
+          target: {
+            kind: "open-database-catalog",
+            ...optionalFields,
+            project: "projects/sample",
+            database,
+          },
+        },
+      ])
+    ).toEqual([
+      {
+        kind: "open",
+        target: {
+          kind: "open-database-catalog",
+          project: "projects/sample",
+          database,
+        },
+      },
+    ]);
+  });
+
+  test("does not discard non-empty unused target fields", () => {
+    expect(
+      normalizeAgentResponseActions([
+        {
+          kind: "open",
+          target: {
+            kind: "open-global-masking",
+            project: "projects/other",
+          },
+        },
+      ])
+    ).toEqual([]);
+  });
+
   test("offers an unsent comment draft only for the Issue observed this turn", () => {
     const issue = {
       kind: "open-issue",

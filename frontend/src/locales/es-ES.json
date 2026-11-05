@@ -451,7 +451,11 @@
       "apply-raw": "Aplicar como CEL sin procesar",
       "apply-selector": "Aplicar al selector",
       "ask-tooltip": "Pide al agente que te ayude a crear esta expresión",
-      "invalid": "No se pudo analizar esta expresión CEL. Pide al agente que la revise e inténtalo de nuevo.",
+      "invalid": "No se pudo aplicar esta expresión CEL de forma segura. Pide al agente que la revise o elige CEL sin procesar si está disponible.",
+      "mode-raw": "CEL sin procesar",
+      "mode-selector": "selector",
+      "no-attributes": "ninguno",
+      "starter": "Ayúdame a escribir una condición CEL para este editor. Primero hazme preguntas aclaratorias, de una en una. Modo: {{mode}}. Atributos disponibles: {{attributes}}. Usa solo estos atributos y no inspecciones datos ni ejecutes consultas. Cuando esté lista, explica la condición y proporciona exactamente un bloque `cel` delimitado por comillas invertidas. No afirmes que se aplicó ni se guardó; la revisaré antes de aplicarla.",
       "unsaved": "La aplicación reemplaza la expresión actual de este editor sin guardar. No guarda la regla."
     },
     "condition": {

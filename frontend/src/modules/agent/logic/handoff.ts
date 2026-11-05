@@ -88,11 +88,14 @@ const databaseIds = (
   | undefined => {
   if (typeof name !== "string") return undefined;
   const projectMatch =
-    /^projects\/([A-Za-z0-9_-]+)\/instances\/([A-Za-z0-9_-]+)\/databases\/([A-Za-z0-9_-]+)$/.exec(
+    /^projects\/([A-Za-z0-9_-]+)\/instances\/([A-Za-z0-9_-]+)\/databases\/([^/]+)$/.exec(
       name
     );
   const workspaceMatch =
-    /^instances\/([A-Za-z0-9_-]+)\/databases\/([A-Za-z0-9_-]+)$/.exec(name);
+    /^instances\/([A-Za-z0-9_-]+)\/databases\/([^/]+)$/.exec(name);
+  if (projectMatch?.[3] === "-" || workspaceMatch?.[2] === "-") {
+    return undefined;
+  }
   if (projectMatch && `projects/${projectMatch[1]}` === project) {
     return {
       projectId: projectMatch[1],

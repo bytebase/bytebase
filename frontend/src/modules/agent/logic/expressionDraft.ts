@@ -1,6 +1,7 @@
 import type { Code } from "mdast";
 import remarkParse from "remark-parse";
 import { unified } from "unified";
+import { useAgentStore } from "../store/agent";
 
 export type AgentExpressionDraftMode = "selector" | "raw";
 export type AgentExpressionDraftTarget = (
@@ -8,19 +9,8 @@ export type AgentExpressionDraftTarget = (
   mode: AgentExpressionDraftMode
 ) => Promise<boolean>;
 
-interface RegisteredExpressionTarget {
-  apply: AgentExpressionDraftTarget;
-  allowRaw: boolean;
-}
-
 const MAX_EXPRESSION_LENGTH = 20_000;
 const markdown = unified().use(remarkParse);
-const expressionTargets = new Map<string, RegisteredExpressionTarget>();
-const targetListeners = new Set<() => void>();
-
-function notifyTargetListeners() {
-  for (const listener of targetListeners) listener();
-}
 
 export function extractAgentExpressionDraft(
   answer: string
@@ -48,30 +38,16 @@ export function registerAgentExpressionTarget(
   target: AgentExpressionDraftTarget,
   options: { allowRaw?: boolean } = {}
 ): () => void {
-  const registered = { apply: target, allowRaw: options.allowRaw ?? true };
-  expressionTargets.set(chatId, registered);
-  notifyTargetListeners();
-  return () => {
-    if (expressionTargets.get(chatId) === registered) {
-      expressionTargets.delete(chatId);
-      notifyTargetListeners();
-    }
-  };
-}
-
-export function subscribeToAgentExpressionTargets(listener: () => void) {
-  targetListeners.add(listener);
-  return () => {
-    targetListeners.delete(listener);
-  };
+  return useAgentStore
+    .getState()
+    .registerExpressionDraftTarget(chatId, target, options);
 }
 
 export function canApplyAgentExpressionDraft(
   chatId: string,
   mode: AgentExpressionDraftMode
 ): boolean {
-  const target = expressionTargets.get(chatId);
-  return Boolean(target && (mode === "selector" || target.allowRaw));
+  return useAgentStore.getState().canApplyExpressionDraft(chatId, mode);
 }
 
 export async function applyAgentExpressionDraft(
@@ -79,7 +55,7 @@ export async function applyAgentExpressionDraft(
   expression: string,
   mode: AgentExpressionDraftMode
 ): Promise<boolean> {
-  const target = expressionTargets.get(chatId);
-  if (!target || (mode === "raw" && !target.allowRaw)) return false;
-  return target.apply(expression, mode);
+  return useAgentStore
+    .getState()
+    .applyExpressionDraft(chatId, expression, mode);
 }

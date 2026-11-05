@@ -44,6 +44,7 @@ import type {
   RawStringExpr,
 } from "@/modules/cel";
 import {
+  buildCELExpr,
   ExprType,
   getOperatorListByFactor as getRawOperatorListByFactor,
   isBooleanFactor,
@@ -64,7 +65,10 @@ import { environmentNamePrefix } from "@/stores/modules/v1/common";
 import { getDefaultPagination } from "@/utils";
 import { CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID } from "@/utils/cel-attributes";
 import type { OptionConfig } from "@/utils/expr";
-import { batchConvertCELStringToParsedExpr } from "@/utils/v1/cel";
+import {
+  batchConvertCELStringToParsedExpr,
+  batchConvertParsedExprToCELString,
+} from "@/utils/v1/cel";
 
 export type { OptionConfig } from "@/utils/expr";
 
@@ -1630,14 +1634,22 @@ export interface ExprEditorProps {
   onUpdate: (expr: ConditionGroupExpr) => void;
 }
 
-function buildAgentExpressionPrompt(factorList: Factor[], rawMode: boolean) {
+function buildAgentExpressionPrompt(
+  factorList: Factor[],
+  rawMode: boolean,
+  t: TFunction
+) {
   const availableFactors =
-    factorList.length > 0 ? factorList.join(", ") : "none";
-  return [
-    "Help me configure the CEL expression in this editor. First ask what I want the condition to include or exclude, then clarify one detail at a time until you can draft it.",
-    `The current editor is in ${rawMode ? "raw CEL" : "selector"} mode. Available attributes: ${availableFactors}. Use only these attributes; do not inspect data, call APIs, or run queries.`,
-    "When the request is clear, explain what the expression matches and include exactly one fenced `cel` code block containing valid CEL. Do not claim that it has been applied or saved. I will review it and choose whether to apply it as selector conditions or raw CEL; applying only updates this unsaved editor.",
-  ].join("\n\n");
+    factorList.length > 0
+      ? factorList.join(", ")
+      : t("cel.agent-help.no-attributes");
+  const mode = rawMode
+    ? t("cel.agent-help.mode-raw")
+    : t("cel.agent-help.mode-selector");
+  return t("cel.agent-help.starter", {
+    mode,
+    attributes: availableFactors,
+  });
 }
 
 function AgentExpressionHelpButton({ onClick }: { onClick: () => void }) {
@@ -1671,6 +1683,7 @@ export function ExprEditor({
   factorOperatorOverrideMap: overrideMap,
   onUpdate,
 }: ExprEditorProps) {
+  const { t } = useTranslation();
   const onUpdateRef = useRef(onUpdate);
   onUpdateRef.current = onUpdate;
   const unregisterExpressionTargetsRef = useRef(new Map<string, () => void>());
@@ -1689,7 +1702,7 @@ export function ExprEditor({
     async (expression: string, mode: AgentExpressionDraftMode) => {
       try {
         const [parsed] = await batchConvertCELStringToParsedExpr([expression]);
-        if (!parsed?.exprKind) return false;
+        if (!parsed?.exprKind?.case) return false;
         if (mode === "raw") {
           onUpdateRef.current({
             type: ExprType.ConditionGroup,
@@ -1697,7 +1710,13 @@ export function ExprEditor({
             args: [{ type: ExprType.RawString, content: expression }],
           });
         } else {
-          onUpdateRef.current(wrapAsGroup(resolveCELExpr(parsed)));
+          const selector = wrapAsGroup(resolveCELExpr(parsed));
+          const rebuilt = await buildCELExpr(selector);
+          if (!rebuilt?.exprKind?.case) return false;
+          const [originalCEL, rebuiltCEL] =
+            await batchConvertParsedExprToCELString([parsed, rebuilt]);
+          if (!originalCEL || originalCEL !== rebuiltCEL) return false;
+          onUpdateRef.current(selector);
         }
         return true;
       } catch {
@@ -1710,7 +1729,7 @@ export function ExprEditor({
   const askAgent = useCallback(() => {
     const rawMode = expr.args.length === 1 && isRawStringExpr(expr.args[0]);
     openAgentWithPrompt(
-      buildAgentExpressionPrompt(factorList, rawMode),
+      buildAgentExpressionPrompt(factorList, rawMode, t),
       undefined,
       (chatId) => {
         unregisterExpressionTargetsRef.current.get(chatId)?.();
@@ -1722,7 +1741,7 @@ export function ExprEditor({
         );
       }
     );
-  }, [applyAgentExpression, enableRawExpression, expr, factorList]);
+  }, [applyAgentExpression, enableRawExpression, expr, factorList, t]);
 
   const ctxValue: ExprEditorContextValue = useMemo(
     () => ({

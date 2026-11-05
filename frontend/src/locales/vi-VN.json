@@ -451,7 +451,11 @@
       "apply-raw": "Áp dụng dưới dạng CEL thô",
       "apply-selector": "Áp dụng vào bộ chọn",
       "ask-tooltip": "Nhờ Agent trợ giúp tạo biểu thức này",
-      "invalid": "Không thể phân tích biểu thức CEL này. Hãy yêu cầu Agent chỉnh sửa rồi thử lại.",
+      "invalid": "Không thể áp dụng biểu thức CEL này một cách an toàn. Hãy yêu cầu Agent chỉnh sửa hoặc chọn CEL thô nếu có.",
+      "mode-raw": "CEL thô",
+      "mode-selector": "bộ chọn",
+      "no-attributes": "không có",
+      "starter": "Hãy giúp tôi viết điều kiện CEL cho trình chỉnh sửa này. Trước tiên, hãy hỏi để làm rõ, mỗi lần một câu. Chế độ: {{mode}}. Thuộc tính có thể dùng: {{attributes}}. Chỉ dùng các thuộc tính này, không kiểm tra dữ liệu hoặc chạy truy vấn. Khi sẵn sàng, hãy giải thích điều kiện và cung cấp đúng một khối mã `cel`. Không nói rằng biểu thức đã được áp dụng hoặc lưu; tôi sẽ xem lại trước khi áp dụng.",
       "unsaved": "Thao tác thay thế biểu thức hiện tại trong trình chỉnh sửa chưa lưu này, không lưu quy tắc."
     },
     "condition": {
