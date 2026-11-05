@@ -143,18 +143,26 @@ describe("ThreadComment", () => {
       label: "P1",
     },
   ])(
-    "shows a $label review result as $reviewer with the databases it applies to",
+    "shows a $label review result as $reviewer, then its databases, then its priority",
     ({ runType, reviewer, priority, label }) => {
       const { container, getByTestId } = renderComment(
         reviewResult("Missing WHERE clause.", runType, priority)
       );
-      const header = getByTestId("comment-content").firstElementChild as HTMLElement;
+      const content = getByTestId("comment-content");
+      const header = content.firstElementChild as HTMLElement;
 
       expect(within(header).getByTitle(reviewer).textContent).toBe(reviewer);
       expect(within(header).getByTestId("reviewer-avatar")).toBeDefined();
-      expect(within(header).getByTestId("review-priority").textContent).toBe(
-        label
-      );
+      expect(within(header).queryByTestId("review-priority")).toBeNull();
+      expect(
+        Array.from(content.children)
+          .slice(1, 3)
+          .map((node) => node.getAttribute("data-testid"))
+      ).toEqual(["review-targets", "review-heading"]);
+      expect(
+        within(getByTestId("review-heading")).getByTestId("review-priority")
+          .textContent
+      ).toBe(label);
       expect(
         Array.from(container.querySelectorAll("[data-testid='target']")).map(
           (node) => node.textContent
@@ -165,7 +173,7 @@ describe("ThreadComment", () => {
     }
   );
 
-  test("names the standard rule of a RULE result, and no rule for an AI result", () => {
+  test("names the standard rule and codes of a RULE result, and no rule for an AI result", () => {
     const rule = reviewResult(
       "DELETE FROM employee has no WHERE clause",
       ReviewRun_Type.RULE,
@@ -173,11 +181,14 @@ describe("ThreadComment", () => {
     );
     if (rule.reviewMetadata) {
       rule.reviewMetadata.ruleType = ReviewRuleType.REQUIRE_WHERE;
+      rule.reviewMetadata.codes = ["WH101"];
     }
     const { getByTestId } = renderComment(rule);
-    expect(getByTestId("review-rule").textContent).toContain(
+    const heading = getByTestId("review-heading");
+    expect(within(heading).getByTestId("review-rule").textContent).toBe(
       "sql-review.standard-rules.rule.require-where.title"
     );
+    expect(within(heading).getByTestId("review-code").textContent).toBe("WH101");
     cleanup();
 
     const { container } = renderComment(reviewResult("Missing WHERE clause."));

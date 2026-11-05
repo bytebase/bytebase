@@ -523,6 +523,14 @@ func (x *IssueComment_ReviewMetadata) Equal(y *IssueComment_ReviewMetadata) bool
 	if x.Attempt != y.Attempt {
 		return false
 	}
+	if len(x.Codes) != len(y.Codes) {
+		return false
+	}
+	for i := 0; i < len(x.Codes); i++ {
+		if x.Codes[i] != y.Codes[i] {
+			return false
+		}
+	}
 	return true
 }
 

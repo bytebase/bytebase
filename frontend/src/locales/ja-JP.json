@@ -2199,9 +2199,7 @@
         "n-replies-hidden_other": "{{count}} 件の返信が非表示",
         "n-replies_one": "{{count}} 件の返信",
         "n-replies_other": "{{count}} 件の返信",
-        "open": "未解決",
         "priority": {
-          "p0": "SQL に誤りがあり、修正が必要です。",
           "p1": "危険ですが正当な変更です。担当者による承認が必要です。",
           "p2": "参考情報です。"
         },
@@ -2213,7 +2211,6 @@
         "resolve": "解決",
         "resolve-thread": "スレッドを解決",
         "resolved": "解決済み",
-        "rule": "ルール",
         "threads-on-line_one": "この行に {{count}} 件のスレッド",
         "threads-on-line_other": "この行に {{count}} 件のスレッド",
         "walker": {

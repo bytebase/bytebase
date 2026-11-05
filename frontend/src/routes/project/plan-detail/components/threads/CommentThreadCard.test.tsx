@@ -292,6 +292,7 @@ describe("CommentThreadCard", () => {
     expect(replies?.contains(comments[1])).toBe(true);
     expect(replies?.contains(comments[2])).toBe(true);
     expect(container.querySelector("[data-thread-state]")?.getAttribute("data-thread-state")).toBe("open");
+    expect(container.querySelector("[data-testid='thread-state']")).toBeNull();
     expect(buttonByText("plan.review.thread.resolve")).toBeDefined();
     expect(buttonByText("plan.review.thread.reply-placeholder")).toBeDefined();
   });
@@ -313,6 +314,29 @@ describe("CommentThreadCard", () => {
     ).toHaveLength(2);
     expect(buttonByText("common.reopen")).toBeDefined();
     expect(buttonByText("plan.review.thread.resolve")).toBeUndefined();
+    const states = container.querySelectorAll("[data-testid='thread-state']");
+    expect(states).toHaveLength(1);
+    expect(
+      container.querySelector("[data-testid='thread-reply-footer']")?.contains(states[0])
+    ).toBe(true);
+  });
+
+  test("a resolved thread says so in its footer when the reader can neither reply nor reopen", () => {
+    mocks.hasPermission.mockReturnValue(false);
+    const [thread] = groupThreads([comment("root", "Root", { resolved: true })]);
+    render(
+      <CommentThreadCard
+        collapsible={false}
+        issue={issue}
+        project={project}
+        thread={thread}
+      />
+    );
+    const footer = container.querySelector("[data-testid='thread-reply-footer']");
+    expect(footer?.querySelector("[data-testid='thread-state']")?.textContent).toBe(
+      "plan.review.thread.resolved"
+    );
+    expect(footer?.querySelectorAll("button")).toHaveLength(0);
   });
 
   test("a resolved review result summarizes as its reviewer", () => {

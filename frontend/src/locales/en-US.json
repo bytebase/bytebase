@@ -2199,9 +2199,7 @@
         "n-replies-hidden_other": "{{count}} replies hidden",
         "n-replies_one": "{{count}} reply",
         "n-replies_other": "{{count}} replies",
-        "open": "Open",
         "priority": {
-          "p0": "The SQL is wrong and must change.",
           "p1": "Dangerous but legitimate. A person must accept it.",
           "p2": "Advisory only."
         },
@@ -2213,7 +2211,6 @@
         "resolve": "Resolve",
         "resolve-thread": "Resolve thread",
         "resolved": "Resolved",
-        "rule": "Rule",
         "threads-on-line_one": "{{count}} thread on this line",
         "threads-on-line_other": "{{count}} threads on this line",
         "walker": {
