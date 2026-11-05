@@ -10,7 +10,6 @@ import (
 	"slices"
 	"strings"
 
-	"connectrpc.com/connect"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -34,19 +33,28 @@ const (
 	maskingRulesUnmask = "This can unmask data, for you too."
 )
 
-var maskingRules = adminRules{name: "the masking rules", read: "call_api OrgPolicyService/GetPolicy"}
+var maskingRules = adminRules{
+	name:     "the masking rules",
+	read:     "call_api OrgPolicyService/GetPolicy",
+	question: "Change the masking rules",
+	apply:    maskingRulesApply,
+}
 
 // maskingRulesPath is where the rules sit in an UpdatePolicyRequest, as
 // maskingRequestFields names them.
 const maskingRulesPath = "policy.masking_rule_policy.rules"
 
 // maskingRequestFields are the UpdatePolicyRequest fields the masking entry
-// takes: what the console's rule editor writes. A request that sets any other
-// field is refused before the form, since the form could not state it.
+// takes: what the console's rule editor writes, and policy.enforce and
+// policy.resource_type, which GetPolicy returns and this write ignores. A
+// request that sets any other field is refused before the form, since the form
+// could not state it.
 var maskingRequestFields = map[string]bool{
 	"policy":                                   true,
 	"policy.name":                              true,
 	"policy.type":                              true,
+	"policy.enforce":                           true,
+	"policy.resource_type":                     true,
 	"policy.masking_rule_policy":               true,
 	maskingRulesPath:                           true,
 	maskingRulesPath + ".id":                   true,
@@ -68,8 +76,6 @@ func (*maskingRulesChange) confirmedProcedure() string {
 	return v1connect.OrgPolicyServiceUpdatePolicyProcedure
 }
 
-// confirmedResource is the policy name as the request writes it, since the
-// gate matches the confirmation against the request.
 func (c *maskingRulesChange) confirmedResource() string { return c.request.GetPolicy().GetName() }
 
 func (s *Server) administerMaskingRules(ctx context.Context, req *mcp.CallToolRequest, input AdministerWorkspaceInput) (*mcp.CallToolResult, any, error) {
@@ -116,7 +122,7 @@ func (s *Server) administerMaskingRules(ctx context.Context, req *mcp.CallToolRe
 	if err != nil {
 		return formatToolError(err), nil, nil
 	}
-	digest := maskingRulesDigest(form, stored, change.request)
+	digest := maskingRulesDigest(form, change.request)
 	if result := s.confirmAdminChange(ctx, req, change, digest, form, maskingRules, "the masking rules, the semantic types or this request"); result != nil {
 		return result, nil, nil
 	}
@@ -158,14 +164,12 @@ func parseMaskingRulesChange(body map[string]any, workspace, link string) (*mask
 	if err := common.ProtojsonUnmarshaler.Unmarshal(encoded, request); err != nil {
 		return nil, &toolError{Code: "INVALID_REQUEST", Message: "the request body is not an UpdatePolicyRequest: " + err.Error()}
 	}
-	// The handler reads the policy type in any letter case.
-	want := common.WorkspacePrefix + workspace + "/" + common.PolicyNamePrefix
-	name := request.GetPolicy().GetName()
-	if kind, ok := strings.CutPrefix(name, want); !ok || !strings.EqualFold(kind, "masking_rule") || request.GetPolicy().GetType() != v1pb.PolicyType_MASKING_RULE {
+	want := common.WorkspacePrefix + workspace + "/" + common.PolicyNamePrefix + "masking_rule"
+	if name := request.GetPolicy().GetName(); name != want || request.GetPolicy().GetType() != v1pb.PolicyType_MASKING_RULE {
 		return nil, &toolError{
 			Code:       "UNSUPPORTED_CHANGE",
 			Message:    fmt.Sprintf("administer_workspace does not change the policy %q of type %s", name, request.GetPolicy().GetType()),
-			Suggestion: "it changes this workspace's masking rules, " + want + "masking_rule with type MASKING_RULE; change other policies signed in to the Bytebase console",
+			Suggestion: "it changes this workspace's masking rules, " + want + " with type MASKING_RULE; change other policies signed in to the Bytebase console",
 		}
 	}
 	if request.GetPolicy().GetMaskingRulePolicy() == nil {
@@ -240,7 +244,7 @@ func (s *Server) readMaskingRules(ctx context.Context, name string) ([]*v1pb.Mas
 	if err != nil {
 		return nil, false, errors.Wrap(err, "failed to read the masking rules")
 	}
-	if resp.Status == http.StatusNotFound || connectCodeOf(resp.Body) == connect.CodeNotFound {
+	if resp.Status == http.StatusNotFound {
 		return nil, false, nil
 	}
 	if err := checkAPIResponse(resp, "read the masking rules", "bb.policies.getMaskingRulePolicy"); err != nil {
@@ -260,7 +264,7 @@ func (s *Server) readSemanticTypes(ctx context.Context) (map[string]*storepb.Sem
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read the semantic types")
 	}
-	if resp.Status == http.StatusNotFound || connectCodeOf(resp.Body) == connect.CodeNotFound {
+	if resp.Status == http.StatusNotFound {
 		return semanticTypesFromSetting(nil)
 	}
 	if err := checkAPIResponse(resp, "read the semantic types", "bb.settings.get"); err != nil {
@@ -305,16 +309,15 @@ func storeSemanticType(semanticType *v1pb.SemanticTypeSetting_SemanticType) (*st
 	return stored, nil
 }
 
-// maskingRulesDigest binds an answer to the form the user read, the rules
-// stored when they read it, and the request. The form covers the semantic
-// types, since it states what each rule's type does.
-func maskingRulesDigest(form *adminForm, stored []*v1pb.MaskingRulePolicy_MaskingRule, request *v1pb.UpdatePolicyRequest) []byte {
+// maskingRulesDigest binds an answer to the form the user read and to the
+// request. The stored rules and the semantic types are bound through the
+// form, which states each change to the rules and what each rule's type does.
+func maskingRulesDigest(form *adminForm, request *v1pb.UpdatePolicyRequest) []byte {
 	h := sha256.New()
 	_, _ = h.Write([]byte(form.message))
 	_, _ = h.Write([]byte{0})
 	_, _ = h.Write([]byte(form.description))
 	_, _ = h.Write([]byte{0})
-	_, _ = h.Write(auth.MCPValueDigest(&v1pb.MaskingRulePolicy{Rules: stored}))
 	_, _ = h.Write(auth.MCPValueDigest(request))
 	return h.Sum(nil)
 }
@@ -322,13 +325,11 @@ func maskingRulesDigest(form *adminForm, stored []*v1pb.MaskingRulePolicy_Maskin
 // maskingRulesDiff is how a request changes the masking rules.
 type maskingRulesDiff struct {
 	// changes are the form's change lines: the removed rules, then the
-	// requested rules that differ, in the order masking tries them.
-	changes []string
+	// requested rules that differ, in the order masking tries them. A change
+	// that can show data unmasked has the effect.
+	changes []formChange
 	// requested are the rules as the request orders them.
 	requested []*v1pb.MaskingRulePolicy_MaskingRule
-	// unmasks reports a change that can show data unmasked: a rule removed,
-	// moved or given another type, or an added rule that masks nothing.
-	unmasks bool
 	// types describe each rule's semantic type.
 	types map[string]*storepb.SemanticTypeSetting_SemanticType
 }
@@ -337,6 +338,11 @@ type maskingRulesDiff struct {
 // are matched by their condition, the text masking evaluates, as the approval
 // rules are; a kept rule must keep its stored ID, so the form states every
 // change the write makes.
+//
+// Masking gives a column the type of the first rule that matches it, and a
+// column no rule matches keeps its own type. So a removed or moved rule can
+// hand columns to a rule that masks them less, and so can a rule given a type
+// that is not a full mask; these changes say they can unmask data.
 func diffMaskingRules(stored, requested []*v1pb.MaskingRulePolicy_MaskingRule, types map[string]*storepb.SemanticTypeSetting_SemanticType, link string) (*maskingRulesDiff, error) {
 	// The request cannot carry such a field, so the write would drop it unstated.
 	for _, rule := range stored {
@@ -348,7 +354,7 @@ func diffMaskingRules(stored, requested []*v1pb.MaskingRulePolicy_MaskingRule, t
 			}
 		}
 	}
-	storedByCondition, duplicate := maskingRulesByCondition(stored)
+	storedByCondition, duplicate := rulesByCondition(stored)
 	if duplicate != "" {
 		return nil, &toolError{
 			Code:       "DUPLICATE_CONDITION",
@@ -356,7 +362,7 @@ func diffMaskingRules(stored, requested []*v1pb.MaskingRulePolicy_MaskingRule, t
 			Suggestion: "change the rules signed in to the Bytebase console: " + link,
 		}
 	}
-	requestedByCondition, duplicate := maskingRulesByCondition(requested)
+	requestedByCondition, duplicate := rulesByCondition(requested)
 	if duplicate != "" {
 		return nil, &toolError{
 			Code:       "DUPLICATE_CONDITION",
@@ -372,9 +378,6 @@ func diffMaskingRules(stored, requested []*v1pb.MaskingRulePolicy_MaskingRule, t
 				Suggestion: "keep each stored rule's id, and give each new rule a new UUID",
 			}
 		}
-		if _, err := semanticTypeMasker(rule.GetSemanticType(), types); err != nil {
-			return nil, err
-		}
 	}
 
 	diff := &maskingRulesDiff{requested: requested, types: types}
@@ -385,62 +388,68 @@ func diffMaskingRules(stored, requested []*v1pb.MaskingRulePolicy_MaskingRule, t
 			storedKept = append(storedKept, condition)
 			continue
 		}
-		diff.unmasks = true
-		diff.changes = append(diff.changes, fmt.Sprintf("Remove, %s: %s", diff.typePhrase(rule.GetSemanticType()), maskingConditionText(condition)))
+		diff.changes = append(diff.changes, formChange{
+			text:   fmt.Sprintf("Remove, %s: %s", diff.typePhrase(rule.GetSemanticType()), conditionText(condition)),
+			effect: true,
+		})
 	}
 	for _, rule := range requested {
 		if condition := rule.GetCondition().GetExpression(); storedByCondition[condition] != nil {
 			requestedKept = append(requestedKept, condition)
 		}
 	}
-	// A kept rule outside the longest common order moved: the first matching
-	// rule decides, so a move changes which rule masks some columns.
+	// A kept rule outside the longest common order moved, and an added rule's
+	// place is part of its change.
 	inOrder := longestCommonOrder(storedKept, requestedKept)
 	kept := 0
 	for i, rule := range requested {
 		condition := rule.GetCondition().GetExpression()
 		before := storedByCondition[condition]
 		if before == nil {
-			if !diff.masks(rule.GetSemanticType()) {
-				diff.unmasks = true
-			}
-			// The first matching rule decides, so an added rule's place is part
-			// of the change.
-			diff.changes = append(diff.changes, fmt.Sprintf("Add rule %d, %s: %s", i+1, diff.typePhrase(rule.GetSemanticType()), maskingConditionText(condition)))
+			diff.changes = append(diff.changes, formChange{
+				text:   fmt.Sprintf("Add rule %d, %s: %s", i+1, diff.typePhrase(rule.GetSemanticType()), conditionText(condition)),
+				effect: !diff.masksEveryValue(rule.GetSemanticType()),
+			})
 			continue
 		}
 		moved := !inOrder[kept]
 		kept++
-		if clauses := diff.keptRuleClauses(before, rule, moved, i+1); len(clauses) > 0 {
-			line := strings.Join(clauses, "; ")
-			diff.changes = append(diff.changes, fmt.Sprintf("%s%s: %s", strings.ToUpper(line[:1]), line[1:], maskingConditionText(condition)))
+		if change, ok := diff.keptRuleChange(before, rule, moved, i+1); ok {
+			diff.changes = append(diff.changes, change)
 		}
 	}
 	return diff, nil
 }
 
-// keptRuleClauses states how a kept rule changes, one clause per field the
-// form shows: the type, the place and the title.
-func (d *maskingRulesDiff) keptRuleClauses(before, rule *v1pb.MaskingRulePolicy_MaskingRule, moved bool, position int) []string {
+// keptRuleChange states how a kept rule changes, one clause per field the form
+// shows: the type, the place and the title. ok is false for a rule that does
+// not change.
+func (d *maskingRulesDiff) keptRuleChange(before, rule *v1pb.MaskingRulePolicy_MaskingRule, moved bool, position int) (formChange, bool) {
 	var clauses []string
+	effect := moved
 	if rule.GetSemanticType() != before.GetSemanticType() {
-		d.unmasks = true
 		clauses = append(clauses, fmt.Sprintf("change type, %s to %s", d.typePhrase(before.GetSemanticType()), d.typePhrase(rule.GetSemanticType())))
+		effect = effect || !d.masksEveryValue(rule.GetSemanticType())
 	}
 	if moved {
-		d.unmasks = true
 		clauses = append(clauses, fmt.Sprintf("move to rule %d", position))
 	}
 	if title := rule.GetCondition().GetTitle(); title != before.GetCondition().GetTitle() {
 		clauses = append(clauses, "rename to "+maskingRuleTitle(rule))
 	}
-	return clauses
+	if len(clauses) == 0 {
+		return formChange{}, false
+	}
+	line := strings.Join(clauses, "; ")
+	return formChange{
+		text:   fmt.Sprintf("%s%s: %s", strings.ToUpper(line[:1]), line[1:], conditionText(rule.GetCondition().GetExpression())),
+		effect: effect,
+	}, true
 }
 
-// typePhrase names a rule's semantic type and what masking does with it. The
-// first matching rule decides, so a rule whose type masks nothing shows the
-// columns it matches unmasked, and a rule with no type leaves each column to its
-// own type and stops every later rule.
+// typePhrase names a rule's semantic type and what masking does with it. A
+// rule with no type still matches, and leaves each column it matches to the
+// column's own type.
 func (d *maskingRulesDiff) typePhrase(id string) string {
 	if id == "" {
 		return "no type (each column's own type)"
@@ -449,64 +458,30 @@ func (d *maskingRulesDiff) typePhrase(id string) string {
 	if !ok {
 		return fmt.Sprintf("%q (no such type, masks nothing)", id)
 	}
-	title := semanticType.GetTitle()
-	if title == "" {
-		title = id
+	if m := d.typeMasker(id); m == nil || !masker.MasksValues(m) {
+		return fmt.Sprintf("%q (masks nothing)", semanticType.GetTitle())
 	}
-	if !d.masks(id) {
-		return fmt.Sprintf("%q (masks nothing)", title)
-	}
-	return fmt.Sprintf("%q (%s)", title, masker.AlgorithmName(semanticType.GetAlgorithm()))
+	return fmt.Sprintf("%q (%s)", semanticType.GetTitle(), masker.AlgorithmName(semanticType.GetAlgorithm()))
 }
 
-// masks reports whether the semantic type id masks the columns a rule matches.
-// A rule with no type leaves each column to its own type, so it counts as
-// masking nothing.
-func (d *maskingRulesDiff) masks(id string) bool {
-	m, err := semanticTypeMasker(id, d.types)
-	return err == nil && m != nil && masker.MasksValues(m)
+// masksEveryValue reports whether the semantic type id hides every value of
+// the columns a rule gives it.
+func (d *maskingRulesDiff) masksEveryValue(id string) bool {
+	return masker.MasksEveryValue(d.typeMasker(id))
 }
 
-// semanticTypeMasker returns the masker the semantic type id applies, or nil
-// for an empty or unknown ID. A type whose algorithm masking cannot build is
-// refused, since masking fails on it.
-func semanticTypeMasker(id string, types map[string]*storepb.SemanticTypeSetting_SemanticType) (masker.Masker, error) {
-	semanticType, ok := types[id]
+// typeMasker returns the masker the semantic type id applies, or nil for no
+// type, an unknown one, or one whose algorithm masking cannot build.
+func (d *maskingRulesDiff) typeMasker(id string) masker.Masker {
+	semanticType, ok := d.types[id]
 	if id == "" || !ok {
-		return nil, nil
+		return nil
 	}
 	m, err := masker.ForSemanticType(semanticType)
 	if err != nil {
-		return nil, &toolError{
-			Code:       "INVALID_SEMANTIC_TYPE",
-			Message:    fmt.Sprintf("the semantic type %q has an algorithm masking cannot use: %v", id, err),
-			Suggestion: "fix the semantic type signed in to the Bytebase console",
-		}
+		return nil
 	}
-	return m, nil
-}
-
-// maskingRulesByCondition maps rules by their condition. It returns the first
-// condition two rules share, if any.
-func maskingRulesByCondition(rules []*v1pb.MaskingRulePolicy_MaskingRule) (map[string]*v1pb.MaskingRulePolicy_MaskingRule, string) {
-	byCondition := make(map[string]*v1pb.MaskingRulePolicy_MaskingRule, len(rules))
-	for _, rule := range rules {
-		condition := rule.GetCondition().GetExpression()
-		if _, ok := byCondition[condition]; ok {
-			return nil, condition
-		}
-		byCondition[condition] = rule
-	}
-	return byCondition, ""
-}
-
-// maskingConditionText shows a masking rule's condition. Masking evaluates an
-// empty condition as true, so it matches every column.
-func maskingConditionText(condition string) string {
-	if condition == "" {
-		return "every column"
-	}
-	return conditionText(condition)
+	return m
 }
 
 func maskingRuleTitle(rule *v1pb.MaskingRulePolicy_MaskingRule) string {
@@ -516,38 +491,17 @@ func maskingRuleTitle(rule *v1pb.MaskingRulePolicy_MaskingRule) string {
 	return "untitled"
 }
 
-// maskingRulesForm builds the masking form in the lines Claude Code shows: the
-// question, a line or more per rule change, and the change's effect on the
-// user. A change that does not fit is refused, never cut. The fixed sentence
-// goes in the message when a line is left, and in the description otherwise;
-// the description also lists every rule.
+// maskingRulesForm builds the masking form. Its effect line shows when a
+// change can show data unmasked.
 func maskingRulesForm(ctx context.Context, diff *maskingRulesDiff, link string) (*adminForm, error) {
-	question := "Change the masking rules"
-	if email := getUserEmail(ctx); email != "" {
-		question += ", as " + email
-	}
-	effect := ""
-	if diff.unmasks {
-		effect = maskingRulesUnmask
-	}
-	lines, tooLong := fitMessage(question+"?", diff.changes, effect)
-	if len(lines) > messageLines {
-		return nil, changeTooLong(len(lines), tooLong, maskingRules, link)
-	}
-
 	var sb strings.Builder
 	if len(diff.requested) == 0 {
 		sb.WriteString("No masking rule is left, so each column keeps its own semantic type.")
 	} else {
 		sb.WriteString("The masking rules, in the order masking tries them:")
 		for i, rule := range diff.requested {
-			fmt.Fprintf(&sb, "\n%d. %s, %s: %s", i+1, maskingRuleTitle(rule), diff.typePhrase(rule.GetSemanticType()), maskingConditionText(rule.GetCondition().GetExpression()))
+			fmt.Fprintf(&sb, "\n%d. %s, %s: %s", i+1, maskingRuleTitle(rule), diff.typePhrase(rule.GetSemanticType()), conditionText(rule.GetCondition().GetExpression()))
 		}
 	}
-	if len(lines) < messageLines {
-		lines = append(lines, maskingRulesApply)
-	} else {
-		sb.WriteString("\n" + maskingRulesApply)
-	}
-	return &adminForm{message: strings.Join(lines, "\n"), description: sb.String()}, nil
+	return maskingRules.form(ctx, diff.changes, maskingRulesUnmask, sb.String(), link)
 }

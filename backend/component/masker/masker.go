@@ -51,6 +51,13 @@ func MasksValues(m Masker) bool {
 	}
 }
 
+// MasksEveryValue reports whether m is a full mask, the only masker that hides
+// every value: it puts its substitution in place of each value, NULL included.
+func MasksEveryValue(m Masker) bool {
+	_, full := m.(*FullMasker)
+	return full
+}
+
 // NoneMasker is the masker that does not mask the data.
 type NoneMasker struct{}
 

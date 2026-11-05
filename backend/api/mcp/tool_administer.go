@@ -13,6 +13,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/pkg/errors"
+	"google.golang.org/genproto/googleapis/type/expr"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -81,9 +82,19 @@ type adminRules struct {
 	name string
 	// read is the call that reads the stored list.
 	read string
+	// question starts the form's question, which adds the user and a question
+	// mark.
+	question string
+	// apply is the form's fixed sentence.
+	apply string
 }
 
-var approvalRules = adminRules{name: "the approval rules", read: "call_api SettingService/GetSetting"}
+var approvalRules = adminRules{
+	name:     "the approval rules",
+	read:     "call_api SettingService/GetSetting",
+	question: "Change the approval rules for database changes",
+	apply:    approvalRulesApply,
+}
 
 // reread is the next step after the stored rules changed: the request was
 // built from the old ones, so sending it again would undo the other change.
@@ -439,8 +450,8 @@ func splitApprovalRules(rules []*v1pb.WorkspaceApprovalSetting_Rule) (other, dat
 
 // rulesByCondition maps rules by their condition. It returns the first
 // condition two rules share, if any.
-func rulesByCondition(rules []*v1pb.WorkspaceApprovalSetting_Rule) (map[string]*v1pb.WorkspaceApprovalSetting_Rule, string) {
-	byCondition := make(map[string]*v1pb.WorkspaceApprovalSetting_Rule, len(rules))
+func rulesByCondition[R interface{ GetCondition() *expr.Expr }](rules []R) (map[string]R, string) {
+	byCondition := make(map[string]R, len(rules))
 	for _, rule := range rules {
 		condition := rule.GetCondition().GetExpression()
 		if _, ok := byCondition[condition]; ok {
@@ -537,22 +548,14 @@ type adminForm struct {
 	description string
 }
 
-// approvalRulesForm builds the approval form in the lines Claude Code shows.
-// The message states the whole change: the question, a line or more per rule
-// change, and the user's issues whose approval a plan edit would check again
-// under the new rules. A change that does not fit is refused, never cut. The
-// fixed sentence goes in the message when a line is left, and in the
-// description otherwise; the description also lists every rule.
+// approvalRulesForm builds the approval form. Its effect line names the user's
+// issues whose approval a plan edit would check again under the new rules, so
+// every step of the change shows it.
 func approvalRulesForm(ctx context.Context, diff *approvalRulesDiff, issues string, link string) (*adminForm, error) {
-	question := "Change the approval rules for database changes"
-	if email := getUserEmail(ctx); email != "" {
-		question += ", as " + email
+	changes := make([]formChange, 0, len(diff.changes))
+	for _, change := range diff.changes {
+		changes = append(changes, formChange{text: change, effect: true})
 	}
-	lines, tooLong := fitMessage(question+"?", diff.changes, issues)
-	if len(lines) > messageLines {
-		return nil, changeTooLong(len(lines), tooLong, approvalRules, link)
-	}
-
 	var sb strings.Builder
 	if len(diff.requested) == 0 {
 		sb.WriteString("No rule for database changes is left, so the fallback rules decide every database change, and a change that none of them matches needs no approval.")
@@ -567,31 +570,65 @@ func approvalRulesForm(ctx context.Context, diff *approvalRulesDiff, issues stri
 		sb.WriteString("\nWhen none of them matches, the fallback rules decide, and a change that no rule matches needs no approval.")
 	}
 	sb.WriteString(" Rules for other sources stay as they are.")
-	if len(lines) < messageLines {
-		lines = append(lines, approvalRulesApply)
-	} else {
-		sb.WriteString("\n" + approvalRulesApply)
+	return approvalRules.form(ctx, changes, issues, sb.String(), link)
+}
+
+// formChange is one change line of a form. effect marks a change that the
+// form's effect line is about, so a step that holds it shows that line too.
+type formChange struct {
+	text   string
+	effect bool
+}
+
+// form builds an entry's form in the lines Claude Code shows: the question, a
+// line or more per rule change, and the change's effect on the user. A change
+// that does not fit is refused, never cut. The fixed sentence goes in the
+// message when a line is left, and ends the description otherwise, which
+// lists every rule.
+func (r adminRules) form(ctx context.Context, changes []formChange, effect, description, link string) (*adminForm, error) {
+	question := r.question
+	if email := getUserEmail(ctx); email != "" {
+		question += ", as " + email
 	}
-	return &adminForm{message: strings.Join(lines, "\n"), description: sb.String()}, nil
+	lines, tooLong := fitMessage(question+"?", changes, effect)
+	if len(lines) > messageLines {
+		return nil, changeTooLong(len(lines), tooLong, r, link)
+	}
+	if len(lines) < messageLines {
+		lines = append(lines, r.apply)
+	} else {
+		description += "\n" + r.apply
+	}
+	return &adminForm{message: strings.Join(lines, "\n"), description: description}, nil
 }
 
 // fitMessage puts the question, each change line and the change's effect on
 // the user into the lines a form shows, continuing a long line on the next.
-// tooLong is the first change that does not fit a form alone, if any.
-func fitMessage(question string, changes []string, effect string) (lines []string, tooLong string) {
+// The effect shows when a change has it. tooLong is the first change that
+// does not fit a form alone, if any.
+func fitMessage(question string, changes []formChange, effect string) (lines []string, tooLong string) {
 	var effectLines []string
 	if effect != "" {
 		effectLines = wrapMessageLine(effect)
 	}
 	lines = []string{question}
+	affected := false
 	for _, change := range changes {
-		changeLines := wrapMessageLine(change)
-		if tooLong == "" && 1+len(changeLines)+len(effectLines) > messageLines {
-			tooLong = change
-		}
+		changeLines := wrapMessageLine(change.text)
 		lines = append(lines, changeLines...)
+		alone := 1 + len(changeLines)
+		if change.effect {
+			alone += len(effectLines)
+			affected = true
+		}
+		if tooLong == "" && alone > messageLines {
+			tooLong = change.text
+		}
 	}
-	return append(lines, effectLines...), tooLong
+	if affected {
+		lines = append(lines, effectLines...)
+	}
+	return lines, tooLong
 }
 
 // changeTooLong refuses a change whose message needs more lines than a form

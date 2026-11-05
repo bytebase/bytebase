@@ -899,27 +899,30 @@ func TestAdministerWorkspaceClassifiesEveryApprovalRequestField(t *testing.T) {
 		"setting.value.workspace_approval.rules.condition.description": true,
 		"setting.value.workspace_approval.rules.condition.location":    true,
 	}
-	var walk func(protoreflect.MessageDescriptor, string)
-	walk = func(md protoreflect.MessageDescriptor, prefix string) {
-		fields := md.Fields()
-		for i := 0; i < fields.Len(); i++ {
-			fd := fields.Get(i)
-			path := string(fd.Name())
-			if prefix != "" {
-				path = prefix + "." + path
-			}
-			if oneof := fd.ContainingOneof(); oneof != nil && !oneof.IsSynthetic() && !approvalRequestFields[path] {
-				// The entry serves one member of a oneof; the others are other settings.
-				continue
-			}
-			if refused[path] {
-				continue
-			}
-			require.True(t, approvalRequestFields[path], "%s is neither taken nor refused by the approval entry", path)
-			if fd.Kind() == protoreflect.MessageKind && !fd.IsMap() {
-				walk(fd.Message(), path)
-			}
+	requireEveryFieldClassified(t, (&v1pb.UpdateSettingRequest{}).ProtoReflect().Descriptor(), "", approvalRequestFields, refused)
+}
+
+// requireEveryFieldClassified fails for a field under md that an entry neither
+// takes nor refuses. An entry serves one member of a oneof; the others are
+// other settings or policies, so the walk skips them.
+func requireEveryFieldClassified(t *testing.T, md protoreflect.MessageDescriptor, prefix string, taken, refused map[string]bool) {
+	t.Helper()
+	fields := md.Fields()
+	for i := 0; i < fields.Len(); i++ {
+		fd := fields.Get(i)
+		path := string(fd.Name())
+		if prefix != "" {
+			path = prefix + "." + path
+		}
+		if oneof := fd.ContainingOneof(); oneof != nil && !oneof.IsSynthetic() && !taken[path] {
+			continue
+		}
+		if refused[path] {
+			continue
+		}
+		require.True(t, taken[path], "%s is neither taken nor refused", path)
+		if fd.Kind() == protoreflect.MessageKind && !fd.IsMap() {
+			requireEveryFieldClassified(t, fd.Message(), path, taken, refused)
 		}
 	}
-	walk((&v1pb.UpdateSettingRequest{}).ProtoReflect().Descriptor(), "")
 }

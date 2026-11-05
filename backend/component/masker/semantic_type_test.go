@@ -101,6 +101,26 @@ func TestMasksValuesMatchesWhatEachMaskerReturns(t *testing.T) {
 	}
 }
 
+func TestMasksEveryValueOnlyForAFullMask(t *testing.T) {
+	inner, err := NewInnerOuterMasker(storepb.Algorithm_InnerOuterMask_INNER, 0, 0, "*")
+	require.NoError(t, err)
+	for name, tc := range map[string]struct {
+		masker Masker
+		want   bool
+	}{
+		"full":          {NewFullMasker("#"), true},
+		"default full":  {NewDefaultFullMasker(), true},
+		"default range": {NewDefaultRangeMasker(), false},
+		"range":         {NewRangeMasker([]*MaskRangeSlice{{Start: 0, End: 2, Substitution: "*"}}), false},
+		"md5":           {NewMD5Masker("salt"), false},
+		"inner":         {inner, false},
+		"none":          {NewNoneMasker(), false},
+		"no masker":     {nil, false},
+	} {
+		require.Equal(t, tc.want, MasksEveryValue(tc.masker), name)
+	}
+}
+
 func semanticTypeIDs(types []*storepb.SemanticTypeSetting_SemanticType) []string {
 	ids := make([]string, 0, len(types))
 	for _, semanticType := range types {

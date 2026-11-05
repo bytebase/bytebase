@@ -1,6 +1,7 @@
 package mcp
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -15,7 +16,6 @@ import (
 	"google.golang.org/genproto/googleapis/type/expr"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
@@ -94,7 +94,7 @@ func (m *maskingMock) setStored(rules ...*v1pb.MaskingRulePolicy_MaskingRule) {
 	m.stored = &v1pb.MaskingRulePolicy{Rules: rules}
 }
 
-func connectToMaskingServer(t *testing.T, mock *maskingMock, opts *mcp.ClientOptions) *mcp.ClientSession {
+func connectToMaskingServer(t *testing.T, mock *maskingMock, opts *mcp.ClientOptions) (*Server, *mcp.ClientSession) {
 	t.Helper()
 	profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}
 	s, err := newServerWithStore(newTestServerStore(), profile, revalidationSecret, mock)
@@ -104,7 +104,24 @@ func connectToMaskingServer(t *testing.T, mock *maskingMock, opts *mcp.ClientOpt
 	ts := httptest.NewServer(e)
 	t.Cleanup(ts.Close)
 	token := mintMCPToken(t, "alice@example.com", "client-A", "ws-test", "mcp:read-write", time.Hour)
-	return connectLegacy(t, ts.URL+mcpResourcePath, token, opts)
+	return s, connectLegacy(t, ts.URL+mcpResourcePath, token, opts)
+}
+
+// signedMaskingState is the request state the masking entry signs when it asks
+// about body over the stored rules, on a workspace with only the built-in
+// semantic types.
+func signedMaskingState(t *testing.T, s *Server, stored []*v1pb.MaskingRulePolicy_MaskingRule, body map[string]any, askedAt time.Time) string {
+	t.Helper()
+	change, err := parseMaskingRulesChange(body, "ws-test", "")
+	require.NoError(t, err)
+	types, err := semanticTypesFromSetting(nil)
+	require.NoError(t, err)
+	diff, err := diffMaskingRules(stored, change.request.GetPolicy().GetMaskingRulePolicy().GetRules(), types, "")
+	require.NoError(t, err)
+	alice := withOAuth2ClientID(withUserEmail(withWorkspaceID(context.Background(), "ws-test"), "alice@example.com"), "client-A")
+	form, err := maskingRulesForm(alice, diff, "")
+	require.NoError(t, err)
+	return s.signConfirmationState(alice, change, maskingRulesDigest(form, change.request), askedAt)
 }
 
 func maskingRule(id, title, condition, semanticType string) *v1pb.MaskingRulePolicy_MaskingRule {
@@ -140,7 +157,7 @@ func semanticType(id, title string, algorithm *v1pb.Algorithm) *v1pb.SemanticTyp
 func TestAdministerMaskingRulesAsksForTheJourneyRuleOnAWorkspaceWithNone(t *testing.T) {
 	mock := &maskingMock{}
 	user := &asker{answer: adminAnswer(adminChoiceApply)}
-	session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
+	_, session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
 	body := maskingBody(t, maskingRequest(true, maskingRule("7d3c1a52-1f6e-4a5b-9d0e-2b8f4c6a1e09", "Personal data in prod", journeyCondition, "bb.default")))
 
 	res := callAdminister(t, session, maskingParams(body))
@@ -170,6 +187,8 @@ func TestAdministerMaskingRulesAsksForTheJourneyRuleOnAWorkspaceWithNone(t *test
 		"link":"https://bb.example.com/global-masking"}`, string(output))
 }
 
+// An added rule can take a column from a later rule or from the column's own
+// type, so any type but a full mask can unmask data.
 func TestAdministerMaskingRulesStatesWhatEachTypeDoes(t *testing.T) {
 	fullMask := &v1pb.Algorithm{Mask: &v1pb.Algorithm_FullMask_{FullMask: &v1pb.Algorithm_FullMask{Substitution: "*"}}}
 	md5 := &v1pb.Algorithm{Mask: &v1pb.Algorithm_Md5Mask{Md5Mask: &v1pb.Algorithm_MD5Mask{}}}
@@ -178,7 +197,7 @@ func TestAdministerMaskingRulesStatesWhatEachTypeDoes(t *testing.T) {
 		semanticType("email", "Email", md5),
 		semanticType("plain", "Plain", nil),
 		semanticType("empty-range", "Empty range", noSlice),
-		semanticType("untitled", "", fullMask),
+		semanticType("redacted", "Redacted", fullMask),
 		// A stored copy of a built-in type is ignored, as masking ignores it.
 		semanticType("bb.default", "Stored default", nil),
 	})
@@ -188,9 +207,9 @@ func TestAdministerMaskingRulesStatesWhatEachTypeDoes(t *testing.T) {
 		unmasks bool
 	}{
 		"bb.default":         {`"Default" (Full mask)`, false},
-		"bb.default-partial": {`"Default Partial" (Partial mask)`, false},
-		"email":              {`"Email" (Hash (MD5))`, false},
-		"untitled":           {`"untitled" (Full mask)`, false},
+		"redacted":           {`"Redacted" (Full mask)`, false},
+		"bb.default-partial": {`"Default Partial" (Partial mask)`, true},
+		"email":              {`"Email" (Hash (MD5))`, true},
 		"plain":              {`"Plain" (masks nothing)`, true},
 		"empty-range":        {`"Empty range" (masks nothing)`, true},
 		"bb.typo":            {`"bb.typo" (no such type, masks nothing)`, true},
@@ -198,8 +217,7 @@ func TestAdministerMaskingRulesStatesWhatEachTypeDoes(t *testing.T) {
 	} {
 		diff, err := diffMaskingRules(nil, []*v1pb.MaskingRulePolicy_MaskingRule{maskingRule("r1", "", `resource.environment_id == "prod"`, id)}, types, "")
 		require.NoError(t, err, id)
-		require.Equal(t, []string{"Add rule 1, " + want.phrase + ": `resource.environment_id == \"prod\"`"}, diff.changes, id)
-		require.Equal(t, want.unmasks, diff.unmasks, id)
+		require.Equal(t, []formChange{{"Add rule 1, " + want.phrase + ": `resource.environment_id == \"prod\"`", want.unmasks}}, diff.changes, id)
 	}
 }
 
@@ -213,35 +231,48 @@ func TestAdministerMaskingRulesStatesEachKindOfChange(t *testing.T) {
 		change(changed)
 		return changed
 	}
+	rules := func(rules ...*v1pb.MaskingRulePolicy_MaskingRule) []*v1pb.MaskingRulePolicy_MaskingRule { return rules }
 	for name, tc := range map[string]struct {
 		stored, requested []*v1pb.MaskingRulePolicy_MaskingRule
-		want              []string
-		unmasks           bool
+		want              []formChange
 	}{
-		"removed": {stored: []*v1pb.MaskingRulePolicy_MaskingRule{prod}, requested: nil,
-			want: []string{"Remove, \"Default\" (Full mask): `resource.environment_id == \"prod\"`"}, unmasks: true},
-		"added after the kept rules": {stored: []*v1pb.MaskingRulePolicy_MaskingRule{prod}, requested: []*v1pb.MaskingRulePolicy_MaskingRule{prod, test},
-			want: []string{"Add rule 2, \"Default Partial\" (Partial mask): `resource.environment_id == \"test\"`"}},
-		"moved": {stored: []*v1pb.MaskingRulePolicy_MaskingRule{prod, test}, requested: []*v1pb.MaskingRulePolicy_MaskingRule{test, prod},
-			want: []string{"Move to rule 2: `resource.environment_id == \"prod\"`"}, unmasks: true},
-		"type changed": {stored: []*v1pb.MaskingRulePolicy_MaskingRule{prod},
-			requested: []*v1pb.MaskingRulePolicy_MaskingRule{with(prod, func(r *v1pb.MaskingRulePolicy_MaskingRule) { r.SemanticType = "bb.default-partial" })},
-			want:      []string{"Change type, \"Default\" (Full mask) to \"Default Partial\" (Partial mask): `resource.environment_id == \"prod\"`"}, unmasks: true},
-		"renamed": {stored: []*v1pb.MaskingRulePolicy_MaskingRule{prod},
-			requested: []*v1pb.MaskingRulePolicy_MaskingRule{with(prod, func(r *v1pb.MaskingRulePolicy_MaskingRule) { r.Condition.Title = "Production" })},
-			want:      []string{"Rename to \"Production\": `resource.environment_id == \"prod\"`"}},
-		"condition changed": {stored: []*v1pb.MaskingRulePolicy_MaskingRule{prod},
-			requested: []*v1pb.MaskingRulePolicy_MaskingRule{maskingRule("r3", "Prod", `resource.environment_id == "production"`, "bb.default")},
-			want: []string{"Remove, \"Default\" (Full mask): `resource.environment_id == \"prod\"`",
-				"Add rule 1, \"Default\" (Full mask): `resource.environment_id == \"production\"`"}, unmasks: true},
-		"every column": {requested: []*v1pb.MaskingRulePolicy_MaskingRule{maskingRule("r4", "", "", "bb.default")},
-			want: []string{"Add rule 1, \"Default\" (Full mask): every column"}},
+		"removed": {stored: rules(prod), requested: nil,
+			want: []formChange{{"Remove, \"Default\" (Full mask): `resource.environment_id == \"prod\"`", true}}},
+		"a full mask added before the kept rules": {stored: rules(test), requested: rules(prod, test),
+			want: []formChange{{"Add rule 1, \"Default\" (Full mask): `resource.environment_id == \"prod\"`", false}}},
+		"a partial mask added after the kept rules": {stored: rules(prod), requested: rules(prod, test),
+			want: []formChange{{"Add rule 2, \"Default Partial\" (Partial mask): `resource.environment_id == \"test\"`", true}}},
+		"moved": {stored: rules(prod, test), requested: rules(test, prod),
+			want: []formChange{{"Move to rule 2: `resource.environment_id == \"prod\"`", true}}},
+		"given a partial mask": {stored: rules(prod),
+			requested: rules(with(prod, func(r *v1pb.MaskingRulePolicy_MaskingRule) { r.SemanticType = "bb.default-partial" })),
+			want:      []formChange{{"Change type, \"Default\" (Full mask) to \"Default Partial\" (Partial mask): `resource.environment_id == \"prod\"`", true}}},
+		"given a full mask": {stored: rules(test),
+			requested: rules(with(test, func(r *v1pb.MaskingRulePolicy_MaskingRule) { r.SemanticType = "bb.default" })),
+			want:      []formChange{{"Change type, \"Default Partial\" (Partial mask) to \"Default\" (Full mask): `resource.environment_id == \"test\"`", false}}},
+		"renamed": {stored: rules(prod),
+			requested: rules(with(prod, func(r *v1pb.MaskingRulePolicy_MaskingRule) { r.Condition.Title = "Production" })),
+			want:      []formChange{{"Rename to \"Production\": `resource.environment_id == \"prod\"`", false}}},
+		"renamed to no title": {stored: rules(prod),
+			requested: rules(with(prod, func(r *v1pb.MaskingRulePolicy_MaskingRule) { r.Condition.Title = "" })),
+			want:      []formChange{{"Rename to untitled: `resource.environment_id == \"prod\"`", false}}},
+		"given a full mask, moved and renamed": {stored: rules(test, prod),
+			requested: rules(prod, with(test, func(r *v1pb.MaskingRulePolicy_MaskingRule) {
+				r.SemanticType = "bb.default"
+				r.Condition.Title = "Testing"
+			})),
+			want: []formChange{{"Change type, \"Default Partial\" (Partial mask) to \"Default\" (Full mask); move to rule 2; rename to \"Testing\": `resource.environment_id == \"test\"`", true}}},
+		"condition changed": {stored: rules(prod),
+			requested: rules(maskingRule("r3", "Prod", `resource.environment_id == "production"`, "bb.default")),
+			want: []formChange{
+				{"Remove, \"Default\" (Full mask): `resource.environment_id == \"prod\"`", true},
+				{"Add rule 1, \"Default\" (Full mask): `resource.environment_id == \"production\"`", false},
+			}},
 	} {
 		t.Run(name, func(t *testing.T) {
 			diff, err := diffMaskingRules(tc.stored, tc.requested, types, "")
 			require.NoError(t, err)
 			require.Equal(t, tc.want, diff.changes)
-			require.Equal(t, tc.unmasks, diff.unmasks)
 		})
 	}
 }
@@ -252,7 +283,7 @@ func TestAdministerMaskingRulesSaysAChangeCanUnmaskData(t *testing.T) {
 	mock := &maskingMock{}
 	mock.setStored(maskingRule("r1", "Prod", `resource.environment_id == "prod"`, "bb.default"))
 	user := &asker{answer: &mcp.ElicitResult{Action: "decline"}}
-	session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
+	_, session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
 
 	res := callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false))))
 	require.Contains(t, resultText(t, res), "Not changed: the user declined")
@@ -266,6 +297,28 @@ func TestAdministerMaskingRulesSaysAChangeCanUnmaskData(t *testing.T) {
 	require.Empty(t, mock.calls())
 }
 
+// With the question, two change lines and the unmask line, the message is full,
+// so the fixed sentence ends the description.
+func TestAdministerMaskingRulesLeavesTheFixedSentenceToAFullDescription(t *testing.T) {
+	mock := &maskingMock{}
+	mock.setStored(maskingRule("r1", "Prod", `resource.environment_id == "prod"`, "bb.default"))
+	user := &asker{answer: &mcp.ElicitResult{Action: "decline"}}
+	_, session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
+
+	res := callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false,
+		maskingRule("r2", "Test", `resource.environment_id == "test"`, "bb.default")))))
+	require.Contains(t, resultText(t, res), "Not changed: the user declined")
+	require.Equal(t, strings.Join([]string{
+		`Change the masking rules, as alice@example.com?`,
+		"Remove, \"Default\" (Full mask): `resource.environment_id == \"prod\"`",
+		"Add rule 1, \"Default\" (Full mask): `resource.environment_id == \"test\"`",
+		maskingRulesUnmask,
+	}, "\n"), user.lastParams(t).Message)
+	require.Equal(t, "The masking rules, in the order masking tries them:\n"+
+		"1. \"Test\", \"Default\" (Full mask): `resource.environment_id == \"test\"`\n"+maskingRulesApply,
+		choiceDescription(t, user.lastParams(t)))
+}
+
 func TestAdministerMaskingRulesRefusesBeforeAsking(t *testing.T) {
 	prod := maskingRule("r1", "Prod", `resource.environment_id == "prod"`, "bb.default")
 	withPolicy := func(change func(*v1pb.UpdatePolicyRequest)) *v1pb.UpdatePolicyRequest {
@@ -275,6 +328,8 @@ func TestAdministerMaskingRulesRefusesBeforeAsking(t *testing.T) {
 	}
 	described := maskingRule("r9", "Stored", `resource.environment_id == "test"`, "bb.default")
 	described.Condition.Description = "set through the API"
+	located := maskingRule("r9", "Stored", `resource.environment_id == "test"`, "bb.default")
+	located.Condition.Location = "set through the API"
 	for name, tc := range map[string]struct {
 		stored  []*v1pb.MaskingRulePolicy_MaskingRule
 		none    bool
@@ -285,20 +340,24 @@ func TestAdministerMaskingRulesRefusesBeforeAsking(t *testing.T) {
 			want: "UNSUPPORTED_CHANGE"},
 		"another workspace": {request: withPolicy(func(r *v1pb.UpdatePolicyRequest) { r.Policy.Name = "workspaces/ws-other/policies/masking_rule" }),
 			want: "UNSUPPORTED_CHANGE"},
+		"the policy type in capitals": {request: withPolicy(func(r *v1pb.UpdatePolicyRequest) { r.Policy.Name = "workspaces/ws-test/policies/MASKING_RULE" }),
+			want: "UNSUPPORTED_CHANGE"},
 		"another policy type": {request: withPolicy(func(r *v1pb.UpdatePolicyRequest) { r.Policy.Type = v1pb.PolicyType_MASKING_EXEMPTION }),
 			want: "UNSUPPORTED_CHANGE"},
 		"no rule list": {request: withPolicy(func(r *v1pb.UpdatePolicyRequest) { r.Policy.Policy = nil }),
 			want: "no policy.maskingRulePolicy"},
 		"another update mask": {request: withPolicy(func(r *v1pb.UpdatePolicyRequest) { r.UpdateMask.Paths = []string{"enforce"} }),
 			want: "updateMask"},
-		"enforce": {request: withPolicy(func(r *v1pb.UpdatePolicyRequest) { r.Policy.Enforce = true }),
-			want: "policy.enforce"},
 		"inherit from parent": {request: withPolicy(func(r *v1pb.UpdatePolicyRequest) { r.Policy.InheritFromParent = true }),
 			want: "policy.inherit_from_parent"},
 		"a condition description": {request: maskingRequest(true, described),
 			want: "policy.masking_rule_policy.rules.condition.description"},
 		"a stored condition description": {stored: []*v1pb.MaskingRulePolicy_MaskingRule{described}, request: maskingRequest(true, prod),
 			want: "a stored masking rule sets policy.masking_rule_policy.rules.condition.description"},
+		"a condition location": {request: maskingRequest(true, located),
+			want: "policy.masking_rule_policy.rules.condition.location"},
+		"a stored condition location": {stored: []*v1pb.MaskingRulePolicy_MaskingRule{located}, request: maskingRequest(true, prod),
+			want: "a stored masking rule sets policy.masking_rule_policy.rules.condition.location"},
 		"no id": {request: maskingRequest(true, maskingRule("", "Prod", `resource.environment_id == "prod"`, "bb.default")),
 			want: "rule 1 has no id"},
 		"an id twice": {request: maskingRequest(true, prod, maskingRule("r1", "Test", `resource.environment_id == "test"`, "bb.default")),
@@ -311,7 +370,10 @@ func TestAdministerMaskingRulesRefusesBeforeAsking(t *testing.T) {
 		"an invalid condition": {request: maskingRequest(true, maskingRule("r1", "", `resource.environment == "prod"`, "bb.default")),
 			want: "is not a masking rule condition"},
 		"one condition twice": {request: maskingRequest(true, prod, maskingRule("r2", "Again", `resource.environment_id == "prod"`, "bb.default")),
-			want: "DUPLICATE_CONDITION"},
+			want: "two requested masking rules have the condition"},
+		"one stored condition twice": {stored: []*v1pb.MaskingRulePolicy_MaskingRule{prod, maskingRule("r2", "Again", `resource.environment_id == "prod"`, "bb.default")},
+			request: maskingRequest(true, prod),
+			want:    "two stored masking rules have the condition"},
 		"no stored policy and no allowMissing": {none: true, request: maskingRequest(false, prod),
 			want: "allowMissing"},
 	} {
@@ -321,7 +383,7 @@ func TestAdministerMaskingRulesRefusesBeforeAsking(t *testing.T) {
 				mock.setStored(tc.stored...)
 			}
 			user := &asker{answer: adminAnswer(adminChoiceApply)}
-			session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
+			_, session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
 			res := callAdminister(t, session, maskingParams(maskingBody(t, tc.request)))
 			require.True(t, res.IsError, resultText(t, res))
 			require.Contains(t, resultText(t, res), tc.want)
@@ -339,7 +401,7 @@ func TestAdministerMaskingRulesRefusesAnAnswerOverRulesThatChanged(t *testing.T)
 	user.whileAsked = func() {
 		mock.setStored(maskingRule("r1", "Production", `resource.environment_id == "prod"`, "bb.default"))
 	}
-	session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
+	_, session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
 
 	res := callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false,
 		maskingRule("r1", "Prod", `resource.environment_id == "prod"`, "bb.default"),
@@ -364,10 +426,27 @@ func TestAdministerMaskingRulesRefusesAnAnswerOverTypesThatChanged(t *testing.T)
 		defer mock.mu.Unlock()
 		mock.types = []*v1pb.SemanticTypeSetting_SemanticType{semanticType("email", "Email", nil)}
 	}
-	session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
+	_, session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
 
 	res := callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false,
 		proto.CloneOf(kept), maskingRule("r2", "Prod", `resource.environment_id == "prod"`, "bb.default")))))
+	require.True(t, res.IsError, resultText(t, res))
+	require.Contains(t, resultText(t, res), "STALE_CONFIRMATION")
+	require.Empty(t, mock.calls())
+}
+
+func TestAdministerMaskingRulesRefusesAnAnswerToAnotherRequest(t *testing.T) {
+	mock := &maskingMock{}
+	mock.setStored()
+	s, session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{}).handle})
+	state := signedMaskingState(t, s, nil, maskingBody(t, maskingRequest(false,
+		maskingRule("r1", "Prod", `resource.environment_id == "prod"`, "bb.default"))), time.Now())
+	// The same form: an added rule's id is not in it.
+	params := maskingParams(maskingBody(t, maskingRequest(false,
+		maskingRule("r2", "Prod", `resource.environment_id == "prod"`, "bb.default"))))
+	params.InputResponses = mcp.InputResponseMap{confirmDecisionRequestID: adminAnswer(adminChoiceApply)}
+	params.RequestState = state
+	res := callAdminister(t, session, params)
 	require.True(t, res.IsError, resultText(t, res))
 	require.Contains(t, resultText(t, res), "STALE_CONFIRMATION")
 	require.Empty(t, mock.calls())
@@ -380,7 +459,7 @@ func TestAdministerMaskingRulesRefusesAChangeTooLongForTheForm(t *testing.T) {
 	for _, environment := range []string{"a", "b", "c", "d"} {
 		rules = append(rules, maskingRule("r-"+environment, "", `resource.environment_id == "`+environment+`"`, "bb.default"))
 	}
-	session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{}).handle})
+	_, session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{}).handle})
 	res := callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false, rules...))))
 	require.True(t, res.IsError)
 	require.Contains(t, resultText(t, res), "this change needs 5 lines, more than the 4 one confirmation form shows, so the masking rules were not changed")
@@ -388,12 +467,29 @@ func TestAdministerMaskingRulesRefusesAChangeTooLongForTheForm(t *testing.T) {
 	require.Contains(t, resultText(t, res), "https://bb.example.com/global-masking")
 }
 
+// The unmask line belongs to the removal, so the long added full mask fits a
+// form of its own, and smaller steps help.
+func TestAdministerMaskingRulesSuggestsStepsForAChangeThatFitsAFormAlone(t *testing.T) {
+	mock := &maskingMock{}
+	mock.setStored(maskingRule("r1", "Prod", `resource.environment_id == "prod"`, "bb.default"))
+	condition := `resource.environment_id == "prod" && resource.column_name in ["birth_date", "gender", "amount", "salary", "address", "phone"]`
+	added := maskingRule("r2", "Personal data in prod", condition, "bb.default")
+	require.Len(t, wrapMessageLine("Add rule 1, \"Default\" (Full mask): "+conditionText(condition)), 3, "the added rule takes three lines")
+	_, session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{}).handle})
+
+	res := callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false, added))))
+	require.True(t, res.IsError)
+	require.Contains(t, resultText(t, res), "this change needs 6 lines")
+	require.Contains(t, resultText(t, res), "make the change in smaller steps")
+	require.Empty(t, mock.calls())
+}
+
 func TestAdministerMaskingRulesAsksNothingWhenNothingChanges(t *testing.T) {
 	mock := &maskingMock{}
 	prod := maskingRule("r1", "Prod", `resource.environment_id == "prod"`, "bb.default")
 	mock.setStored(prod)
 	user := &asker{answer: adminAnswer(adminChoiceApply)}
-	session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
+	_, session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
 	res := callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false, proto.CloneOf(prod)))))
 	require.False(t, res.IsError, resultText(t, res))
 	require.Contains(t, resultText(t, res), "Nothing to change")
@@ -402,18 +498,30 @@ func TestAdministerMaskingRulesAsksNothingWhenNothingChanges(t *testing.T) {
 }
 
 // The agent may leave the update mask out, or write its one path as the API
-// names it or in the JSON form.
+// names it or in the JSON form, under either name of the field.
 func TestAdministerMaskingRulesSetsTheUpdateMask(t *testing.T) {
-	for _, mask := range []any{"masking_rule_policy", "maskingRulePolicy", nil} {
-		body := maskingBody(t, maskingRequest(true, maskingRule("r1", "", `resource.environment_id == "prod"`, "bb.default")))
-		delete(body, "updateMask")
-		if mask != nil {
-			body["updateMask"] = mask
+	for _, key := range []string{"updateMask", "update_mask"} {
+		for _, mask := range []any{"masking_rule_policy", "maskingRulePolicy", nil} {
+			body := maskingBody(t, maskingRequest(true, maskingRule("r1", "", `resource.environment_id == "prod"`, "bb.default")))
+			delete(body, "updateMask")
+			if mask != nil {
+				body[key] = mask
+			}
+			change, err := parseMaskingRulesChange(body, "ws-test", "")
+			require.NoError(t, err, "%s: %v", key, mask)
+			require.Equal(t, []string{"masking_rule_policy"}, change.request.GetUpdateMask().GetPaths(), "%s: %v", key, mask)
 		}
-		change, err := parseMaskingRulesChange(body, "ws-test", "")
-		require.NoError(t, err, mask)
-		require.Equal(t, []string{"masking_rule_policy"}, change.request.GetUpdateMask().GetPaths(), mask)
 	}
+}
+
+// An agent may send the policy as GetPolicy returns it, with policy.enforce and
+// policy.resource_type, which the write ignores.
+func TestAdministerMaskingRulesTakesThePolicyAsGetPolicyReturnsIt(t *testing.T) {
+	request := maskingRequest(true, maskingRule("r1", "", `resource.environment_id == "prod"`, "bb.default"))
+	request.Policy.Enforce = true
+	request.Policy.ResourceType = v1pb.PolicyResourceType_WORKSPACE
+	_, err := parseMaskingRulesChange(maskingBody(t, request), "ws-test", "")
+	require.NoError(t, err)
 }
 
 func TestStoreSemanticTypeKeepsEveryAlgorithmField(t *testing.T) {
@@ -435,36 +543,11 @@ func TestStoreSemanticTypeKeepsEveryAlgorithmField(t *testing.T) {
 }
 
 func TestAdministerMaskingRulesClassifiesEveryRequestField(t *testing.T) {
-	refused := map[string]bool{
+	requireEveryFieldClassified(t, (&v1pb.UpdatePolicyRequest{}).ProtoReflect().Descriptor(), "", maskingRequestFields, map[string]bool{
 		"policy.inherit_from_parent":                true,
-		"policy.enforce":                            true,
-		"policy.resource_type":                      true,
 		maskingRulesPath + ".condition.description": true,
 		maskingRulesPath + ".condition.location":    true,
-	}
-	var walk func(protoreflect.MessageDescriptor, string)
-	walk = func(md protoreflect.MessageDescriptor, prefix string) {
-		fields := md.Fields()
-		for i := 0; i < fields.Len(); i++ {
-			fd := fields.Get(i)
-			path := string(fd.Name())
-			if prefix != "" {
-				path = prefix + "." + path
-			}
-			if oneof := fd.ContainingOneof(); oneof != nil && !oneof.IsSynthetic() && !maskingRequestFields[path] {
-				// The entry serves one member of the policy oneof; the others are other policies.
-				continue
-			}
-			if refused[path] {
-				continue
-			}
-			require.True(t, maskingRequestFields[path], "%s is neither taken nor refused by the masking entry", path)
-			if fd.Kind() == protoreflect.MessageKind && !fd.IsMap() && path != "update_mask" {
-				walk(fd.Message(), path)
-			}
-		}
-	}
-	walk((&v1pb.UpdatePolicyRequest{}).ProtoReflect().Descriptor(), "")
+	})
 }
 
 func TestAdministerMaskingRulesChangesNothingUnlessApplied(t *testing.T) {
@@ -479,7 +562,7 @@ func TestAdministerMaskingRulesChangesNothingUnlessApplied(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			mock := &maskingMock{}
 			mock.setStored()
-			session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{answer: tc.answer}).handle})
+			_, session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{answer: tc.answer}).handle})
 			res := callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false, maskingRule("r1", "", `resource.environment_id == "prod"`, "bb.default")))))
 			require.Contains(t, resultText(t, res), tc.want)
 			require.Empty(t, mock.calls())
@@ -489,7 +572,7 @@ func TestAdministerMaskingRulesChangesNothingUnlessApplied(t *testing.T) {
 
 func TestAdministerMaskingRulesRefusesAClientThatCannotConfirm(t *testing.T) {
 	mock := &maskingMock{}
-	session := connectToMaskingServer(t, mock, nil)
+	_, session := connectToMaskingServer(t, mock, nil)
 	res := callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(true, maskingRule("r1", "", `resource.environment_id == "prod"`, "bb.default")))))
 	require.True(t, res.IsError)
 	require.Contains(t, resultText(t, res), "CONFIRMATION_UNAVAILABLE")
