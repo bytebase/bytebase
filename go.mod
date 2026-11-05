@@ -16,6 +16,7 @@ require (
 	connectrpc.com/connect v1.21.1
 	connectrpc.com/cors v0.1.0
 	connectrpc.com/grpcreflect v1.3.1
+	connectrpc.com/grpcreflect/v2 v2.0.0
 	connectrpc.com/validate v0.9.0
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.23.3
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.15.0
