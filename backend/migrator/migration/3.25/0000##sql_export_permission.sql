@@ -31,5 +31,10 @@ WHERE p.type = 'IAM' AND p.workspace = added.workspace
   AND p.resource_type = added.resource_type AND p.resource = added.resource;
 
 UPDATE policy
+SET payload = payload || '{"disableDownload":true}'
+WHERE type = 'QUERY_DATA' AND resource_type = 'WORKSPACE'
+  AND workspace IN (SELECT workspace FROM approval_only_workspace);
+
+UPDATE policy
 SET payload = payload - 'disableExport'
 WHERE type = 'QUERY_DATA' AND payload ? 'disableExport';
