@@ -586,8 +586,9 @@ type QueryDataPolicy struct {
 	// Allow using the admin data source to query in the SQL editor.
 	AllowAdminDataSource bool `protobuf:"varint,9,opt,name=allow_admin_data_source,json=allowAdminDataSource,proto3" json:"allow_admin_data_source,omitempty"`
 	// workspace-level policy
-	// Disable the Download export destination. Exports can still go to a
-	// configured storage destination such as SharePoint.
+	// Hide the Download export destination in the SQL Editor. Exports can still go
+	// to a configured storage destination such as SharePoint. The Export API does
+	// not check this setting.
 	DisableDownload bool `protobuf:"varint,10,opt,name=disable_download,json=disableDownload,proto3" json:"disable_download,omitempty"`
 	// ================
 	// Deprecate following fields.

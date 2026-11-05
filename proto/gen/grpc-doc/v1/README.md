@@ -10165,7 +10165,7 @@ QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 | disable_export | [bool](#bool) |  | **Deprecated.** Deprecated: export is controlled by the bb.sql.export permission. Always false; setting it to true is rejected. |
 | disable_copy_data | [bool](#bool) |  | workspace-level policy Disable copying query results in the SQL editor. |
 | allow_admin_data_source | [bool](#bool) |  | workspace-level policy Allow using the admin data source to query in the SQL editor. If true, users can select the admin data source or read-only data source If false, 1. when read-only data source is configured, users&#39;re force to use the read-only data source 2. otherwise fallback to use the admin data source. |
-| disable_download | [bool](#bool) |  | workspace-level policy Disable the Download export destination. Exports can still go to a configured storage destination such as SharePoint. |
+| disable_download | [bool](#bool) |  | workspace-level policy Hide the Download export destination in the SQL Editor. Exports can still go to a configured storage destination such as SharePoint. The Export API does not check this setting. |
 
 
 

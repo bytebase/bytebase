@@ -2976,7 +2976,7 @@
           "self": "Cho phép truy vấn nguồn dữ liệu quản trị"
         },
         "allow-download": {
-          "description": "Người dùng có thể chọn Tải xuống làm đích khi xuất kết quả truy vấn. Khi tắt, dữ liệu xuất chỉ được gửi đến đích lưu trữ của dự án, chẳng hạn như SharePoint, kể cả với quyền truy cập xuất đã được phê duyệt.",
+          "description": "Người dùng có thể chọn Tải xuống làm đích khi xuất kết quả truy vấn trong SQL Editor. Khi tắt, dữ liệu xuất từ SQL Editor chỉ được gửi đến đích lưu trữ của dự án, chẳng hạn như SharePoint, kể cả với quyền truy cập xuất đã được phê duyệt. Ứng dụng API và MCP vẫn có thể tải xuống.",
           "self": "Cho phép tải xuống dữ liệu xuất"
         },
         "allow-email-code-signin": {

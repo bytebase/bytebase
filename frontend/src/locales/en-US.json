@@ -2976,7 +2976,7 @@
           "self": "Allow querying the admin data source"
         },
         "allow-download": {
-          "description": "Users can choose Download as the destination when exporting query results. When off, exports go only to the project's storage destination, such as SharePoint, even with an approved export access grant.",
+          "description": "Users can choose Download as the destination when exporting query results in the SQL Editor. When off, SQL Editor exports go only to the project's storage destination, such as SharePoint, even with an approved export access grant. API and MCP clients can still download.",
           "self": "Allow downloading exports"
         },
         "allow-email-code-signin": {

@@ -316,8 +316,9 @@ message QueryDataPolicy {
   bool allow_admin_data_source = 4;
 
   // workspace-level policy
-  // Disable the Download export destination. Exports can still go to a
-  // configured storage destination such as SharePoint.
+  // Hide the Download export destination in the SQL Editor. Exports can still go
+  // to a configured storage destination such as SharePoint. The Export API does
+  // not check this setting.
   bool disable_download = 5;
 }
 
