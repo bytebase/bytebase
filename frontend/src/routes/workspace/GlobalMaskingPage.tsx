@@ -17,6 +17,11 @@ import { SemanticTypeSelect } from "@/components/SemanticTypeSelect";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   WorkspacePageInfo,
   WorkspacePageLayout,
   WorkspacePageToolbar,
@@ -241,12 +246,35 @@ function MaskingRuleConfig({
       {!readonly && (
         <div className="flex justify-between items-center">
           {mode === "EDIT" ? (
-            <div className="relative">
-              {showDeleteConfirm ? (
-                <div className="flex items-center gap-x-2">
-                  <span className="text-sm text-control">
-                    {t("settings.sensitive-data.global-rules.delete-rule-tip")}
-                  </span>
+            <Popover
+              open={showDeleteConfirm}
+              onOpenChange={setShowDeleteConfirm}
+            >
+              <PopoverTrigger
+                disabled={disabled}
+                render={
+                  <Button
+                    appearance="secondary"
+                    size="sm"
+                    className="text-error hover:text-error"
+                  />
+                }
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                {t("common.delete")}
+              </PopoverTrigger>
+              <PopoverContent aria-label={t("common.delete")}>
+                <p className="text-sm mb-2">
+                  {t("settings.sensitive-data.global-rules.delete-rule-tip")}
+                </p>
+                <div className="flex justify-end gap-x-2">
+                  <Button
+                    appearance="outline"
+                    size="sm"
+                    onClick={() => setShowDeleteConfirm(false)}
+                  >
+                    {t("common.cancel")}
+                  </Button>
                   <Button
                     variant="destructive"
                     size="sm"
@@ -258,27 +286,9 @@ function MaskingRuleConfig({
                   >
                     {t("common.delete")}
                   </Button>
-                  <Button
-                    appearance="outline"
-                    size="sm"
-                    onClick={() => setShowDeleteConfirm(false)}
-                  >
-                    {t("common.cancel")}
-                  </Button>
                 </div>
-              ) : (
-                <Button
-                  appearance="secondary"
-                  size="sm"
-                  className="text-error hover:text-error"
-                  disabled={disabled}
-                  onClick={() => setShowDeleteConfirm(true)}
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  {t("common.delete")}
-                </Button>
-              )}
-            </div>
+              </PopoverContent>
+            </Popover>
           ) : (
             <div />
           )}

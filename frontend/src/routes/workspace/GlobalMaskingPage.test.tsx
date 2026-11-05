@@ -38,18 +38,6 @@ vi.mock("@/components/ui/alert", () => ({
   }) => createElement("div", {}, description, children),
 }));
 
-vi.mock("@/components/ui/button", () => ({
-  Button: ({
-    children,
-    disabled,
-    onClick,
-  }: {
-    children?: ReactNode;
-    disabled?: boolean;
-    onClick?: () => void;
-  }) => createElement("button", { disabled, onClick }, children),
-}));
-
 vi.mock("@/components/ui/input", () => ({
   Input: (props: InputHTMLAttributes<HTMLInputElement>) =>
     createElement("input", props),
@@ -119,6 +107,7 @@ vi.mock("@/stores/app", () => {
     }),
     hasInstanceFeature: () => true,
     settingsByName: {},
+    upsertPolicy: vi.fn(async () => undefined),
     workspaceResourceName: () => "workspaces/default",
   };
   type StoreState = typeof state;
@@ -174,7 +163,7 @@ vi.mock("lucide-react", () => ({
   ChevronUp: () => createElement("span", {}),
   ExternalLink: () => createElement("span", {}),
   ListOrdered: () => createElement("span", {}),
-  Pencil: () => createElement("span", {}),
+  Pencil: () => createElement("span", { "data-testid": "edit-rule" }),
   Plus: () => createElement("span", {}),
   Trash2: () => createElement("span", {}),
 }));
@@ -202,6 +191,7 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 
+import { useAppStore } from "@/stores/app";
 import { GlobalMaskingPage } from "./GlobalMaskingPage";
 
 let container: HTMLDivElement;
@@ -228,7 +218,97 @@ async function renderPage(): Promise<void> {
   });
 }
 
+function getButton(parent: ParentNode, text: string): HTMLButtonElement {
+  const button = Array.from(parent.querySelectorAll("button")).find(
+    (button) => button.textContent === text
+  );
+  expect(button).toBeInstanceOf(HTMLButtonElement);
+  return button!;
+}
+
+async function editRule(): Promise<void> {
+  await renderPage();
+  await act(async () => {
+    container
+      .querySelector("[data-testid='edit-rule']")
+      ?.closest("button")
+      ?.click();
+  });
+}
+
 describe("GlobalMaskingPage", () => {
+  it("confirms rule deletion in a popover without replacing the trigger", async () => {
+    await editRule();
+    const trigger = getButton(container, "common.delete");
+
+    await act(async () => trigger.click());
+
+    const popup = document.querySelector("[role='dialog']");
+    expect(popup).not.toBeNull();
+    expect(container.contains(popup)).toBe(false);
+    expect(popup?.textContent).toContain(
+      "settings.sensitive-data.global-rules.delete-rule-tip"
+    );
+    expect(getButton(container, "common.delete")).toBe(trigger);
+    expect(trigger.getAttribute("aria-expanded")).toBe("true");
+    expect(useAppStore.getState().upsertPolicy).not.toHaveBeenCalled();
+
+    await act(async () => getButton(popup!, "common.cancel").click());
+
+    expect(document.querySelector("[role='dialog']")).toBeNull();
+    expect(useAppStore.getState().upsertPolicy).not.toHaveBeenCalled();
+    expect(container.querySelector("input")?.value).toBe("Default masking");
+
+    await act(async () => trigger.click());
+    await act(async () => {
+      getButton(document.querySelector("[role='dialog']")!, "common.delete")
+        .click();
+    });
+
+    expect(
+      useAppStore.getState().upsertPolicy
+    ).toHaveBeenCalledExactlyOnceWith({
+      parentPath: "workspaces/default",
+      policy: {
+        type: 1,
+        resourceType: 1,
+        policy: { case: "maskingRulePolicy", value: { rules: [] } },
+      },
+    });
+    expect(document.querySelector("[role='dialog']")).toBeNull();
+    expect(container.querySelector("input")).toBeNull();
+  });
+
+  it.each(["Escape", "outside click"])(
+    "dismisses deletion confirmation with %s without deleting the rule",
+    async (action) => {
+      await editRule();
+      const trigger = getButton(container, "common.delete");
+      await act(async () => trigger.click());
+      expect(document.querySelector("[role='dialog']")).not.toBeNull();
+
+      await act(async () => {
+        if (action === "Escape") {
+          document.dispatchEvent(
+            new KeyboardEvent("keydown", { key: "Escape", bubbles: true })
+          );
+        } else {
+          document.body.dispatchEvent(
+            new MouseEvent("mousedown", { bubbles: true })
+          );
+          document.body.dispatchEvent(
+            new MouseEvent("mouseup", { bubbles: true })
+          );
+          document.body.click();
+        }
+      });
+
+      expect(document.querySelector("[role='dialog']")).toBeNull();
+      expect(getButton(container, "common.delete")).toBe(trigger);
+      expect(useAppStore.getState().upsertPolicy).not.toHaveBeenCalled();
+    }
+  );
+
   it("keeps the toolbar actions grouped at the right edge", async () => {
     await renderPage();
 

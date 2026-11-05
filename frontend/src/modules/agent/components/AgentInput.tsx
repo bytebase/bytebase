@@ -1,3 +1,4 @@
+import { Send, Square } from "lucide-react";
 import {
   type RefObject,
   useCallback,
@@ -93,6 +94,7 @@ import {
   selectLoading,
   useAgentStore,
 } from "../store/agent";
+import { AgentComposer } from "./AgentComposer";
 import { AgentContextPicker } from "./AgentContextPicker";
 import { AgentMentionTextarea } from "./AgentMentionTextarea";
 import { AgentResourcePicker } from "./AgentResourcePicker";
@@ -2253,6 +2255,22 @@ export function AgentInput({
     }
   };
 
+  const inputFooter = (
+    <div
+      className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-2 text-xs text-control-light"
+      data-agent-input-footer
+    >
+      <AgentContextPicker
+        context={context}
+        contextTitle={contextTitle}
+        workspace={workspace}
+        disabled={loading || Boolean(currentPendingAsk)}
+        onSelect={selectContext}
+      />
+      <AgentTokenUsage key={currentChat?.id} chat={currentChat} />
+    </div>
+  );
+
   return (
     <div ref={composerRef} className="border-t p-3">
       {/* Pending ask banner */}
@@ -2338,19 +2356,9 @@ export function AgentInput({
         </div>
       )}
 
-      <div
-        className="mb-1 flex flex-wrap items-center justify-between gap-2 text-xs text-control-light"
-        data-agent-input-footer
-      >
-        <AgentContextPicker
-          context={context}
-          contextTitle={contextTitle}
-          workspace={workspace}
-          disabled={loading || Boolean(currentPendingAsk)}
-          onSelect={selectContext}
-        />
-        <AgentTokenUsage key={currentChat?.id} chat={currentChat} />
-      </div>
+      {(isAwaitingConfirm || isAwaitingChoose) && (
+        <div className="mb-1">{inputFooter}</div>
+      )}
 
       {/* Confirm buttons */}
       {isAwaitingConfirm ? (
@@ -2404,108 +2412,115 @@ export function AgentInput({
           ))}
         </div>
       ) : (
-        <div className="relative flex items-end gap-x-2" data-agent-input-row>
-          <div className="relative w-full">
-            {!input && (
-              <div
-                className="pointer-events-none absolute inset-x-3 inset-y-0 z-10 flex items-center truncate text-sm leading-5 text-control-light"
-                data-agent-input-placeholder
-              >
-                {isCurrentChatRunning ? (
-                  t("agent.input-processing-placeholder")
-                ) : (
-                  <>
-                    {inputPlaceholder} · {t("agent.input-keyboard-hint")}
-                  </>
-                )}
-              </div>
-            )}
-            <AgentMentionTextarea
-              size="md"
-              textareaRef={textareaRef}
-              value={input}
-              mentions={draftMentions.map(({ resource, range }) => ({
-                range,
-                label: resource.label,
-              }))}
-              onDeleteMention={({ text, caret }) => {
-                const store = useAgentStore.getState();
-                if (!store.currentChatId) return;
-                const draft = store.getDraft(store.currentChatId);
-                selectedMentionCaretRef.current = caret;
-                mentionRangeRef.current = null;
-                setResourcePickerOpen(false);
-                store.setDraft(store.currentChatId, {
-                  text,
-                  mentions: updateDraftResourceMentions(
-                    draft.text,
-                    text,
-                    getDraftResourceMentions(draft)
-                  ),
-                });
-              }}
-              rows={1}
-              className="block h-9 min-h-9 w-full resize-none overflow-y-hidden rounded-xs border px-3 py-1.5 text-sm leading-5 outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
-              aria-label={inputPlaceholder}
-              disabled={isCurrentChatRunning || isAIConfigurationBlocked}
-              onChange={(event) => {
-                setInput(event.target.value);
-                if (!canMentionResource) {
+        <div data-agent-input-row>
+          <AgentComposer
+            footer={inputFooter}
+            action={
+              loading ? (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="shrink-0 whitespace-nowrap"
+                  onClick={() =>
+                    useAgentStore.getState().cancel(currentChat?.id, "user")
+                  }
+                >
+                  <Square className="size-4" />
+                  {t("agent.stop")}
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  className="shrink-0 whitespace-nowrap"
+                  data-agent-send
+                  disabled={isSendDisabled}
+                  onClick={() => void send()}
+                >
+                  <Send className="size-4" />
+                  {sendLabel}
+                </Button>
+              )
+            }
+          >
+            <div className="relative w-full">
+              {!input && (
+                <div
+                  className="pointer-events-none absolute inset-x-3 inset-y-0 z-10 flex items-center truncate text-sm leading-5 text-control-light"
+                  data-agent-input-placeholder
+                >
+                  {isCurrentChatRunning ? (
+                    t("agent.input-processing-placeholder")
+                  ) : (
+                    <>
+                      {inputPlaceholder} · {t("agent.input-keyboard-hint")}
+                    </>
+                  )}
+                </div>
+              )}
+              <AgentMentionTextarea
+                size="md"
+                textareaRef={textareaRef}
+                value={input}
+                mentions={draftMentions.map(({ resource, range }) => ({
+                  range,
+                  label: resource.label,
+                }))}
+                onDeleteMention={({ text, caret }) => {
+                  const store = useAgentStore.getState();
+                  if (!store.currentChatId) return;
+                  const draft = store.getDraft(store.currentChatId);
+                  selectedMentionCaretRef.current = caret;
                   mentionRangeRef.current = null;
                   setResourcePickerOpen(false);
-                  return;
-                }
-                const range = getMentionTriggerRange(
-                  event.target.value,
-                  event.target.selectionStart
-                );
-                mentionRangeRef.current = range;
-                setResourcePickerOpen(Boolean(range));
-              }}
-              onKeyDown={handleTextareaKeydown}
-            />
-            {canMentionResource && workspace?.name ? (
-              <AgentResourcePicker
-                open={resourcePickerOpen}
-                onOpenChange={handleResourcePickerOpenChange}
-                anchorRef={textareaRef}
-                workspaceName={workspace.name}
-                projectName={projectContext}
-                selectedProjectName={selectedProjectMention?.resource.name}
-                hasSelectedReference={
-                  draftMentions.length > 1 ||
-                  (draftMentions.length === 1 && !selectedProjectMention)
-                }
-                onSelectProject={selectMentionProject}
-                onSelectDatabase={selectMentionDatabase}
-                onSelectIssue={selectMentionIssue}
-                onSelectPlan={selectMentionPlan}
+                  store.setDraft(store.currentChatId, {
+                    text,
+                    mentions: updateDraftResourceMentions(
+                      draft.text,
+                      text,
+                      getDraftResourceMentions(draft)
+                    ),
+                  });
+                }}
+                rows={1}
+                className="block h-9 min-h-9 w-full resize-none overflow-y-hidden border-0 focus:border-0 focus:ring-0"
+                aria-label={inputPlaceholder}
+                disabled={isCurrentChatRunning || isAIConfigurationBlocked}
+                onChange={(event) => {
+                  setInput(event.target.value);
+                  if (!canMentionResource) {
+                    mentionRangeRef.current = null;
+                    setResourcePickerOpen(false);
+                    return;
+                  }
+                  const range = getMentionTriggerRange(
+                    event.target.value,
+                    event.target.selectionStart
+                  );
+                  mentionRangeRef.current = range;
+                  setResourcePickerOpen(Boolean(range));
+                }}
+                onKeyDown={handleTextareaKeydown}
               />
-            ) : null}
-          </div>
-
-          {loading ? (
-            <Button
-              variant="destructive"
-              size="md"
-              className="shrink-0 self-end whitespace-nowrap"
-              onClick={() =>
-                useAgentStore.getState().cancel(currentChat?.id, "user")
-              }
-            >
-              {t("agent.stop")}
-            </Button>
-          ) : (
-            <Button
-              size="md"
-              className="shrink-0 self-end whitespace-nowrap"
-              data-agent-send
-              disabled={isSendDisabled}
-              onClick={() => void send()}
-            >
-              {sendLabel}
-            </Button>
-          )}
+              {canMentionResource && workspace?.name ? (
+                <AgentResourcePicker
+                  open={resourcePickerOpen}
+                  onOpenChange={handleResourcePickerOpenChange}
+                  anchorRef={textareaRef}
+                  workspaceName={workspace.name}
+                  projectName={projectContext}
+                  selectedProjectName={selectedProjectMention?.resource.name}
+                  hasSelectedReference={
+                    draftMentions.length > 1 ||
+                    (draftMentions.length === 1 && !selectedProjectMention)
+                  }
+                  onSelectProject={selectMentionProject}
+                  onSelectDatabase={selectMentionDatabase}
+                  onSelectIssue={selectMentionIssue}
+                  onSelectPlan={selectMentionPlan}
+                />
+              ) : null}
+            </div>
+          </AgentComposer>
         </div>
       )}
     </div>

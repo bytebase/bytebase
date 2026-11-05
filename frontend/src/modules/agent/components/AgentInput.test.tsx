@@ -6593,21 +6593,26 @@ describe("AgentInput", () => {
     unmount();
   });
 
-  test("uses a one-line textarea starting size beside the send button", () => {
+  test("keeps the input above the context, token usage, and send action in one composer", () => {
     const { container, render, unmount } = renderIntoContainer(<AgentInput />);
 
     render();
 
-    const row = container.querySelector("[data-agent-input-row]");
-    expect(row?.className).toContain("items-end");
+    const composer = container.querySelector("[data-agent-composer]");
+    const body = composer?.querySelector("[data-agent-composer-body]");
+    const footer = composer?.querySelector("[data-agent-composer-footer]");
     const textarea = container.querySelector("textarea");
     expect(textarea).toBeInstanceOf(HTMLTextAreaElement);
+    expect(body?.contains(textarea)).toBe(true);
+    expect(footer?.contains(textarea)).toBe(false);
+    expect(footer?.querySelector("[data-agent-input-footer]")).not.toBeNull();
+    expect(footer?.textContent).toContain("agent.context");
+    expect(footer?.textContent).toContain("agent.chat-total-tokens");
+    expect(footer?.querySelector("[data-agent-send]")).not.toBeNull();
+    expect(footer?.querySelector(".lucide-send")).not.toBeNull();
     expect(textarea?.className).toContain("h-9");
     expect(textarea?.className).toContain("min-h-9");
     expect(textarea?.className).not.toContain("max-h-");
-    expect(container.querySelector("[data-agent-send]")?.className).toContain(
-      "h-9"
-    );
 
     unmount();
   });

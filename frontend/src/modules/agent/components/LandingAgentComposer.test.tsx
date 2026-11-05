@@ -186,6 +186,34 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("LandingAgentComposer", () => {
+  test("submits a question from the unified composer footer", () => {
+    const { container } = renderComposer(project.name);
+    const prompt = screen.getByRole("textbox", { name: "Ask a question" });
+    const send = screen.getByRole("button", { name: "agent.send" });
+    const composer = container.querySelector("[data-agent-composer]");
+    const footer = composer?.querySelector("[data-agent-composer-footer]");
+
+    expect(composer).not.toBeNull();
+    expect(prompt.closest("[data-agent-composer]")).toBe(composer);
+    expect(prompt.closest("[data-agent-composer-body]")).not.toBeNull();
+    expect(footer).toContainElement(send);
+    expect(footer).toHaveTextContent("agent.context: Current context");
+
+    fireEvent.change(prompt, { target: { value: "List recent changes" } });
+    fireEvent.click(send);
+
+    expect(mocks.selectOrCreateChatForContext).toHaveBeenCalledWith(
+      project.name,
+      expect.objectContaining({ title: document.title }),
+      workspaceName
+    );
+    expect(mocks.queueUserMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ chatId: "chat-1", text: "List recent changes" })
+    );
+    expect(mocks.openAgent).toHaveBeenCalledOnce();
+    expect(prompt).toHaveValue("");
+  });
+
   test("queues a selected Plan from a project landing composer", async () => {
     renderComposer(project.name);
     triggerMention("@");
