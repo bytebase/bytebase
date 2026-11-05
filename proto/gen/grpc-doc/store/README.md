@@ -2318,7 +2318,7 @@ results.
 | priority | [IssueCommentPayload.ReviewMetadata.Priority](#bytebase-store-IssueCommentPayload-ReviewMetadata-Priority) |  | A result merged across databases carries the highest priority among them. |
 | targets | [string](#string) | repeated | Every database the result applies to, sorted. Always complete; the renderer collapses it when it equals the spec&#39;s target set. Format: instances/{instance}/databases/{database} |
 | superseded | [bool](#bool) |  | A later run of the same reviewer has completed without reporting the result again, so the latest review does not hold it. Set by that run whatever the thread state, and never cleared. |
-| fingerprint | [string](#string) |  | Identifies the finding across runs: equal fingerprints are the same finding on the same SQL. Unique among the results of one run. Empty when the reviewer cannot tell findings apart across runs, and an empty fingerprint matches nothing. |
+| fingerprint | [string](#string) |  | Identifies the finding across runs: equal fingerprints are the same finding on the same SQL. The rule review derives it from what it judged. The AI review starts it with a hash of its statement and ends it at random, and a later run carries it over to the finding its merge matches to the result. Unique among the results of one run. Empty on a result that predates it, and an empty fingerprint matches nothing. |
 | attempt | [int64](#int64) |  | The review_run.attempt of the run that posted the result. A result a later run reports again keeps its attempt. |
 | codes | [string](#string) | repeated | The conditions a RULE result reports, as omni finding codes such as &#34;WT101&#34;, one per reason. Empty for other reviewers. |
 

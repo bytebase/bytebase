@@ -123,6 +123,59 @@ func TestAIReviewRunsShareTheServerLimit(t *testing.T) {
 	require.Equal(t, int32(limit), model.maxInFlight.Load())
 }
 
+func TestAIReviewKeepsTheThreadOfAProblemReportedAgain(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	stores, issues := setupReviewFixture(ctx, t, 1)
+	model := &findingModel{}
+	executor := &AIReviewExecutor{
+		store:    stores,
+		newModel: func(*storepb.AISetting, ...aireview.ModelOption) aireview.Model { return model },
+		slots:    semaphore.NewWeighted(aiReviewServerConcurrency),
+	}
+	run := func() []*store.IssueCommentMessage {
+		t.Helper()
+		results, err := executor.RunOnce(ctx, "p", issues[0])
+		require.NoError(t, err)
+		_, err = stores.CreateReviewRun(ctx, "p", issues[0], store.ReviewRunTypeAI)
+		require.NoError(t, err)
+		claimed, err := stores.ClaimAvailableReviewRuns(ctx, "replica-1")
+		require.NoError(t, err)
+		require.Len(t, claimed, 1)
+		updated, err := stores.CompleteReviewRun(ctx, claimed[0], "replica-1", storepb.ReviewRun_DONE, nil, results)
+		require.NoError(t, err)
+		require.True(t, updated)
+		return results
+	}
+	roots := func() []*store.IssueCommentMessage {
+		t.Helper()
+		comments, err := stores.ListIssueComment(ctx, &store.FindIssueCommentMessage{ProjectID: "p", IssueUID: &issues[0], TopLevelOnly: true})
+		require.NoError(t, err)
+		return slices.DeleteFunc(comments, func(c *store.IssueCommentMessage) bool { return c.Payload.GetReviewMetadata() == nil })
+	}
+
+	first := run()
+	require.Len(t, first, 1)
+	require.NotEmpty(t, first[0].Payload.ReviewMetadata.Fingerprint)
+	posted := roots()
+	require.Len(t, posted, 1)
+	resolved := store.ThreadStateResolved
+	require.NoError(t, stores.UpdateIssueComment(ctx, &store.UpdateIssueCommentMessage{ProjectID: "p", ResourceID: posted[0].ResourceID, ThreadState: &resolved}))
+	merges, summaries := model.merges.Load(), model.summaries.Load()
+
+	second := run()
+	require.Len(t, second, 1)
+	require.Equal(t, first[0].Payload.ReviewMetadata.Fingerprint, second[0].Payload.ReviewMetadata.Fingerprint, "the merge matched the problem to the earlier result")
+	require.Equal(t, first[0].Payload.Comment, second[0].Payload.Comment)
+	require.Equal(t, merges+1, model.merges.Load())
+	require.Equal(t, summaries, model.summaries.Load(), "a kept problem keeps its text, so nothing is summarized")
+	kept := roots()
+	require.Len(t, kept, 1, "nothing is posted again")
+	require.Equal(t, posted[0].ResourceID, kept[0].ResourceID)
+	require.Equal(t, store.ThreadStateResolved, *kept[0].ThreadState, "the person's resolution stays")
+	require.False(t, kept[0].Payload.ReviewMetadata.Superseded)
+}
+
 // setupReviewFixture seeds project p with AI enabled, a PostgreSQL instance
 // holding fixtureDatabases synced databases, a database group matching all of
 // them, and the given number of issues, each with a plan whose one spec
