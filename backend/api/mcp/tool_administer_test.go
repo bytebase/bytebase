@@ -616,7 +616,12 @@ func TestAdministerWorkspaceNamesTheUserIssuesAwaitingApproval(t *testing.T) {
 			_, session := connectToApprovalServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
 
 			callAdminister(t, session, administerParams(approvalBody(t, fallbackRule(), prodRule)))
-			require.Contains(t, user.lastParams(t).Message, tc.want)
+			asked := user.lastParams(t)
+			require.Contains(t, asked.Message, tc.want)
+			lines := strings.Split(asked.Message, "\n")
+			require.Len(t, lines, 4)
+			require.Equal(t, approvalRulesApply, lines[3], "a free line takes the fixed sentence beside the issue line")
+			require.NotContains(t, choiceDescription(t, asked), approvalRulesApply)
 		})
 	}
 }
