@@ -206,6 +206,25 @@ describe("ReleaseFileViewer", () => {
     expect(screen.getByRole("link", { name: label }).getAttribute("href")).toBe(href);
   });
 
+  test.each([
+    ["schema/**/*.sql", false],
+    ["schema/*.sql", false],
+    ["schema/schema.sql", true],
+  ])("a declarative release whose path is %s links to it: %s", async (path, linked) => {
+    render(
+      <ReleaseFileViewer
+        target={target({ file: { version: "20261105", path, sheet: "projects/p/sheets/s2" } })}
+        vcsSource={create(Release_VCSSourceSchema, {
+          vcsType: VCSType.GITHUB,
+          url: "https://github.com/example/app/commit/0a1b2c3d4e5f",
+        })}
+        onClose={() => {}}
+      />
+    );
+    await flush();
+    expect(screen.queryByRole("link", { name: "Open in GitHub at 0a1b2c3" }) !== null).toBe(linked);
+  });
+
   test("a source URL that is not http or https gets no file link", async () => {
     render(
       <ReleaseFileViewer
