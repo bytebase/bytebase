@@ -382,8 +382,8 @@ func TestCompleteReviewRunKeepsResultsReportedAgain(t *testing.T) {
 }
 
 // TestCompleteReviewRunKeptResultTakesDatabasesAndPriority keeps an AI result
-// whose databases and priority change, on two projects whose issue ids
-// collide.
+// whose databases and priority change, reopening it when a resolved one's
+// priority rises, on two projects whose issue ids collide.
 func TestCompleteReviewRunKeptResultTakesDatabasesAndPriority(t *testing.T) {
 	t.Parallel()
 	fixture := newStorePostgresFixture(t, `
@@ -435,10 +435,18 @@ func TestCompleteReviewRunKeptResultTakesDatabasesAndPriority(t *testing.T) {
 	kept = metadata("default")
 	require.Equal(t, []string{a, b}, kept.Targets)
 	require.Equal(t, storepb.IssueCommentPayload_ReviewMetadata_PRIORITY_UNSPECIFIED, kept.Priority, "a result without a priority clears it")
+	state, _ = listSupersession(t, fixture, "default")
+	require.Equal(t, []supersession{{Comment: "kept", ThreadState: "RESOLVED"}}, state)
+
+	complete("default", result("default", storepb.IssueCommentPayload_ReviewMetadata_P1, a))
+	require.Equal(t, storepb.IssueCommentPayload_ReviewMetadata_P1, metadata("default").Priority)
+	state, _ = listSupersession(t, fixture, "default")
+	require.Equal(t, []supersession{{Comment: "kept", ThreadState: "OPEN"}}, state, "nobody accepted the higher priority")
 	require.Equal(t, []reviewRunCompletion{
 		{RunType: storepb.ReviewRun_AI, Posted: 1},
 		{RunType: storepb.ReviewRun_AI, Attempt: 1, Kept: 1},
 		{RunType: storepb.ReviewRun_AI, Attempt: 2, Kept: 1},
+		{RunType: storepb.ReviewRun_AI, Attempt: 3, Kept: 1},
 	}, listReviewRunCompletions(t, fixture, "default"))
 
 	other := metadata("other")

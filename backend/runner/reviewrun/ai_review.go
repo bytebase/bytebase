@@ -227,6 +227,14 @@ func mergeSheetFindings(ctx context.Context, merge mergeFunc, findings []*aiRevi
 		}
 		blockTargets[blockOf[i]][finding.Unit.Check.Target] = true
 	}
+	// A line outside every statement, which findBlock made a block of its
+	// own, is its own body.
+	segments, bodyStart := slices.Clone(statements.Segments), slices.Clone(statements.BodyStart)
+	lines := aireview.StatementLines(statement)
+	for _, block := range blocks[len(segments):] {
+		segments = append(segments, statementSegment(check.SpecID, strings.TrimSpace(lines[min(block.Start, len(lines))-1]), 1))
+		bodyStart = append(bodyStart, block.Start)
+	}
 	// An earlier result stands where its line stood in its statement's body,
 	// which is the same text in both sheets.
 	earlierBlockOf := make([]int, len(earlier))
@@ -235,7 +243,7 @@ func mergeSheetFindings(ctx context.Context, merge mergeFunc, findings []*aiRevi
 	before := map[string]*aiReviewStatements{check.SheetSha256: statements}
 	for i, result := range earlier {
 		segment, _, _ := strings.Cut(result.Fingerprint, "/")
-		earlierBlockOf[i] = slices.Index(statements.Segments, segment)
+		earlierBlockOf[i] = slices.Index(segments, segment)
 		if earlierBlockOf[i] < 0 {
 			continue
 		}
@@ -246,7 +254,7 @@ func mergeSheetFindings(ctx context.Context, merge mergeFunc, findings []*aiRevi
 			before[result.SheetSha256] = old
 		}
 		block := blocks[earlierBlockOf[i]]
-		earlierLine[i] = statements.BodyStart[earlierBlockOf[i]]
+		earlierLine[i] = bodyStart[earlierBlockOf[i]]
 		if from := slices.Index(old.Segments, segment); from >= 0 {
 			earlierLine[i] = min(max(earlierLine[i]+result.Line-old.BodyStart[from], block.Start), block.End)
 		}
@@ -329,13 +337,7 @@ func mergeSheetFindings(ctx context.Context, merge mergeFunc, findings []*aiRevi
 	for _, g := range groups {
 		// A merged group holds the findings of one block.
 		block := blockOf[g.findings[0]]
-		problem := &aiReviewProblem{Block: blocks[block], BlockIsStatement: split}
-		if block < len(statements.Segments) {
-			problem.Segment = statements.Segments[block]
-		} else {
-			// A line outside every statement is a block of its own.
-			problem.Segment = statementSegment(check.SpecID, strings.TrimSpace(aireview.StatementLines(statement)[blocks[block].Start-1]), 1)
-		}
+		problem := &aiReviewProblem{Block: blocks[block], BlockIsStatement: split, Segment: segments[block]}
 		for _, i := range g.findings {
 			problem.Findings = append(problem.Findings, findings[i])
 		}

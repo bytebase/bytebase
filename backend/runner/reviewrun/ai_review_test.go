@@ -413,6 +413,21 @@ func TestMergeAIReviewFindingsKeepsEarlierResults(t *testing.T) {
 		require.Equal(t, 1, merge.requests[0].Candidates[1].Finding.Line, "the statement's first line, where its body starts now")
 	})
 
+	t.Run("keeps a result on a line outside every statement", func(t *testing.T) {
+		t.Parallel()
+
+		const gap = "SELECT 1;\n\nSELECT 2;\n"
+		result := mergeResult("instances/prod/databases/db1", storepb.Engine_POSTGRES, finding("between", aireview.SeverityP2, 2))
+		result.Unit.Statement = gap
+		first, err := mergeAIReviewFindings(context.Background(), (&recordingMerge{}).merge, []*aiReviewResult{result}, nil)
+		require.NoError(t, err)
+		posted := &aiReviewEarlier{Fingerprint: first[0].Segment + "/between", Priority: p2, Comment: "between", Sheet: gap, SheetSha256: "sha", Line: 2}
+		merge := &recordingMerge{groups: [][]int{{0, 1}}}
+		problems, err := mergeAIReviewFindings(context.Background(), merge.merge, []*aiReviewResult{result}, map[aiReviewSheet][]*aiReviewEarlier{sheet: {posted}})
+		require.NoError(t, err)
+		require.Equal(t, []string{"between"}, kept(problems))
+	})
+
 	t.Run("keeps a resolved result only for a problem no more severe", func(t *testing.T) {
 		t.Parallel()
 

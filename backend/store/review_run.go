@@ -213,12 +213,13 @@ func (s *Store) ClaimAvailableReviewRuns(ctx context.Context, replicaID string) 
 // the same transaction. A current root of the same reviewer on the issue (one
 // no run has superseded) whose fingerprint a result repeats keeps its thread,
 // state and replies included, and takes the result's text, anchor, databases,
-// and priority; that result is not posted again. Every other current root of
-// the reviewer is marked superseded and, if OPEN, resolved; the remaining
-// results are inserted as OPEN roots with no creator, carrying the run's
-// attempt; and a ReviewRunCompletion event records the counts. A FAILED run
-// leaves the comments alone and takes no results. False means superseded: the
-// slot was reset or reaped since the claim, and nothing was written.
+// and priority, reopening if it was resolved and the priority rose; that
+// result is not posted again. Every other current root of the reviewer is
+// marked superseded and, if OPEN, resolved; the remaining results are inserted
+// as OPEN roots with no creator, carrying the run's attempt; and a
+// ReviewRunCompletion event records the counts. A FAILED run leaves the
+// comments alone and takes no results. False means superseded: the slot was
+// reset or reaped since the claim, and nothing was written.
 //
 // Lock order: the issue's review comments, then the run slot, then the issue
 // (the insert's foreign key), the order the project purge deletes them in.
@@ -322,9 +323,17 @@ func (s *Store) CompleteReviewRun(ctx context.Context, claimed *ClaimedReviewRun
 		// place in the current one. The AI review's results are matched by a
 		// model, so the databases and the priority can differ too. A result
 		// on the whole change has no anchor and leaves the kept one alone.
+		// A resolved root whose priority rises is reopened: nobody accepted
+		// the higher priority, and the run read the thread's state before a
+		// person could resolve it.
 		q = qb.Q().Space(`
 			UPDATE issue_comment kept
-			SET payload = jsonb_set(
+			SET thread_state = CASE
+			      WHEN kept.thread_state = 'RESOLVED'
+			        AND COALESCE(array_position(ARRAY['P0', 'P1', 'P2'], r.payload->'reviewMetadata'->>'priority'), 4)
+			          < COALESCE(array_position(ARRAY['P0', 'P1', 'P2'], kept.payload->'reviewMetadata'->>'priority'), 4)
+			      THEN 'OPEN' ELSE kept.thread_state END,
+			    payload = jsonb_set(
 			      kept.payload || jsonb_strip_nulls(jsonb_build_object(
 			        'comment', r.payload->'comment',
 			        'statementAnchor', r.payload->'statementAnchor')),
