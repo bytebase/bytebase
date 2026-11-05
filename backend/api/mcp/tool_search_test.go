@@ -372,6 +372,13 @@ func TestSearchAPINamesWhatMCPCannotDo(t *testing.T) {
 		require.Contains(t, detail, "through the administer_workspace tool")
 		require.Contains(t, detail, "Request Body")
 	})
+
+	t.Run("the policy update names the tools that change policies", func(t *testing.T) {
+		detail := searchText(t, s, SearchInput{OperationID: "OrgPolicyService/UpdatePolicy"})
+		require.Contains(t, detail, "the workspace masking rules through the administer_workspace tool")
+		require.Contains(t, detail, "grant_masking_exemption and revoke_masking_exemption")
+		require.Contains(t, detail, "Request Body")
+	})
 }
 
 // TestSearchAPINamesEveryRefusedMethod derives the refused methods from the
