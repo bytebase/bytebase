@@ -341,6 +341,40 @@ func TestAIReviewStopsWhenSwitchedOffBeforeItPosts(t *testing.T) {
 	require.Empty(t, comments)
 }
 
+func TestAIReviewExecutorSortsItsResults(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	stores, issues := setupReviewFixture(ctx, t, 1)
+	// One database: no merge and no summary, so each finding is a result.
+	setCISamplingSize(ctx, t, stores, 1)
+	executor := &AIReviewExecutor{
+		store:    stores,
+		newModel: func(*storepb.AISetting, ...aireview.ModelOption) aireview.Model { return advisoryFirstModel{} },
+		slots:    semaphore.NewWeighted(aiReviewServerConcurrency),
+	}
+	comments, err := executor.RunOnce(ctx, "p", issues[0])
+	require.NoError(t, err)
+	var priorities []storepb.IssueCommentPayload_ReviewMetadata_Priority
+	for _, comment := range comments {
+		priorities = append(priorities, comment.Payload.ReviewMetadata.Priority)
+	}
+	require.Equal(t, []storepb.IssueCommentPayload_ReviewMetadata_Priority{
+		storepb.IssueCommentPayload_ReviewMetadata_P0,
+		storepb.IssueCommentPayload_ReviewMetadata_P2,
+	}, priorities)
+}
+
+// advisoryFirstModel reports a P2 finding before a P0 one on the same line.
+type advisoryFirstModel struct{}
+
+func (advisoryFirstModel) Chat(context.Context, *v1pb.AIChatRequest) (*v1pb.AIChatResponse, error) {
+	content := `{"findings": [
+		{"title": "Advisory", "severity": "P2", "line": 1, "rule": "r", "evidence": "e", "fix": "f"},
+		{"title": "Blocking", "severity": "P0", "line": 1, "rule": "r", "evidence": "e", "fix": "f"}
+	]}`
+	return &v1pb.AIChatResponse{Content: &content}, nil
+}
+
 // observedSlots tells the test when a review has to wait for a slot.
 type observedSlots struct {
 	*semaphore.Weighted

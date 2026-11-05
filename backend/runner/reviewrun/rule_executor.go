@@ -128,6 +128,7 @@ func (e *RuleExecutor) RunOnce(ctx context.Context, projectID string, issueUID i
 	if err := aggregateUnitErrors(len(checkTargets), unitErrs); err != nil {
 		return nil, err
 	}
+	sortReviewResults(plan.Config.GetSpecs(), comments)
 	return comments, nil
 }
 
