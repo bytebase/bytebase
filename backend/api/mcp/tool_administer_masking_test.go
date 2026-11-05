@@ -94,7 +94,7 @@ func (m *maskingMock) setStored(rules ...*v1pb.MaskingRulePolicy_MaskingRule) {
 	m.stored = &v1pb.MaskingRulePolicy{Rules: rules}
 }
 
-func connectToMaskingServer(t *testing.T, mock *maskingMock, opts *mcp.ClientOptions) (*Server, *mcp.ClientSession) {
+func connectToMaskingServer(t *testing.T, mock *maskingMock, opts *mcp.ClientOptions) *mcp.ClientSession {
 	t.Helper()
 	profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}
 	s, err := newServerWithStore(newTestServerStore(), profile, revalidationSecret, mock)
@@ -104,7 +104,7 @@ func connectToMaskingServer(t *testing.T, mock *maskingMock, opts *mcp.ClientOpt
 	ts := httptest.NewServer(e)
 	t.Cleanup(ts.Close)
 	token := mintMCPToken(t, "alice@example.com", "client-A", "ws-test", "mcp:read-write", time.Hour)
-	return s, connectLegacy(t, ts.URL+mcpResourcePath, token, opts)
+	return connectLegacy(t, ts.URL+mcpResourcePath, token, opts)
 }
 
 func maskingRule(id, title, condition, semanticType string) *v1pb.MaskingRulePolicy_MaskingRule {
@@ -140,7 +140,7 @@ func semanticType(id, title string, algorithm *v1pb.Algorithm) *v1pb.SemanticTyp
 func TestAdministerMaskingRulesAsksForTheJourneyRuleOnAWorkspaceWithNone(t *testing.T) {
 	mock := &maskingMock{}
 	user := &asker{answer: adminAnswer(adminChoiceApply)}
-	_, session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
+	session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
 	body := maskingBody(t, maskingRequest(true, maskingRule("7d3c1a52-1f6e-4a5b-9d0e-2b8f4c6a1e09", "Personal data in prod", journeyCondition, "bb.default")))
 
 	res := callAdminister(t, session, maskingParams(body))
@@ -252,7 +252,7 @@ func TestAdministerMaskingRulesSaysAChangeCanUnmaskData(t *testing.T) {
 	mock := &maskingMock{}
 	mock.setStored(maskingRule("r1", "Prod", `resource.environment_id == "prod"`, "bb.default"))
 	user := &asker{answer: &mcp.ElicitResult{Action: "decline"}}
-	_, session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
+	session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
 
 	res := callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false))))
 	require.Contains(t, resultText(t, res), "Not changed: the user declined")
@@ -321,7 +321,7 @@ func TestAdministerMaskingRulesRefusesBeforeAsking(t *testing.T) {
 				mock.setStored(tc.stored...)
 			}
 			user := &asker{answer: adminAnswer(adminChoiceApply)}
-			_, session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
+			session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
 			res := callAdminister(t, session, maskingParams(maskingBody(t, tc.request)))
 			require.True(t, res.IsError, resultText(t, res))
 			require.Contains(t, resultText(t, res), tc.want)
@@ -339,7 +339,7 @@ func TestAdministerMaskingRulesRefusesAnAnswerOverRulesThatChanged(t *testing.T)
 	user.whileAsked = func() {
 		mock.setStored(maskingRule("r1", "Production", `resource.environment_id == "prod"`, "bb.default"))
 	}
-	_, session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
+	session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
 
 	res := callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false,
 		maskingRule("r1", "Prod", `resource.environment_id == "prod"`, "bb.default"),
@@ -364,7 +364,7 @@ func TestAdministerMaskingRulesRefusesAnAnswerOverTypesThatChanged(t *testing.T)
 		defer mock.mu.Unlock()
 		mock.types = []*v1pb.SemanticTypeSetting_SemanticType{semanticType("email", "Email", nil)}
 	}
-	_, session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
+	session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
 
 	res := callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false,
 		proto.CloneOf(kept), maskingRule("r2", "Prod", `resource.environment_id == "prod"`, "bb.default")))))
@@ -380,7 +380,7 @@ func TestAdministerMaskingRulesRefusesAChangeTooLongForTheForm(t *testing.T) {
 	for _, environment := range []string{"a", "b", "c", "d"} {
 		rules = append(rules, maskingRule("r-"+environment, "", `resource.environment_id == "`+environment+`"`, "bb.default"))
 	}
-	_, session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{}).handle})
+	session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{}).handle})
 	res := callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false, rules...))))
 	require.True(t, res.IsError)
 	require.Contains(t, resultText(t, res), "this change needs 5 lines, more than the 4 one confirmation form shows, so the masking rules were not changed")
@@ -393,7 +393,7 @@ func TestAdministerMaskingRulesAsksNothingWhenNothingChanges(t *testing.T) {
 	prod := maskingRule("r1", "Prod", `resource.environment_id == "prod"`, "bb.default")
 	mock.setStored(prod)
 	user := &asker{answer: adminAnswer(adminChoiceApply)}
-	_, session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
+	session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
 	res := callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false, proto.CloneOf(prod)))))
 	require.False(t, res.IsError, resultText(t, res))
 	require.Contains(t, resultText(t, res), "Nothing to change")
@@ -479,7 +479,7 @@ func TestAdministerMaskingRulesChangesNothingUnlessApplied(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			mock := &maskingMock{}
 			mock.setStored()
-			_, session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{answer: tc.answer}).handle})
+			session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{answer: tc.answer}).handle})
 			res := callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false, maskingRule("r1", "", `resource.environment_id == "prod"`, "bb.default")))))
 			require.Contains(t, resultText(t, res), tc.want)
 			require.Empty(t, mock.calls())
@@ -489,7 +489,7 @@ func TestAdministerMaskingRulesChangesNothingUnlessApplied(t *testing.T) {
 
 func TestAdministerMaskingRulesRefusesAClientThatCannotConfirm(t *testing.T) {
 	mock := &maskingMock{}
-	_, session := connectToMaskingServer(t, mock, nil)
+	session := connectToMaskingServer(t, mock, nil)
 	res := callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(true, maskingRule("r1", "", `resource.environment_id == "prod"`, "bb.default")))))
 	require.True(t, res.IsError)
 	require.Contains(t, resultText(t, res), "CONFIRMATION_UNAVAILABLE")
