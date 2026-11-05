@@ -2054,9 +2054,7 @@ test.describe("Editing keeps the reading position; Activity links land in the ed
 
   test("from the plan's URL, an Activity link while editing does not ask to leave (C5)", async () => {
     // The plan list links here. With no spec in the URL the link pushes the
-    // spec's route, and the plan's leave guard treats that in-page move as
-    // leaving while any editor is open (BYT-10360).
-    test.fail();
+    // spec's route, which the leave guard must not treat as leaving (BYT-10360).
     await goReview(planId);
     await followActivityLinkWhileEditing();
     await expectLineRevealedForTyping();
