@@ -150,7 +150,8 @@ describe("folded card description", () => {
     ["running", releaseTask(Task_Status.RUNNING, ["a", "b", "c"], 490), runOf(TaskRun_Status.RUNNING), "", "Applying 3 files · started 15:14"],
     ["running, nothing to apply", releaseTask(Task_Status.RUNNING, [], 493), runOf(TaskRun_Status.RUNNING), "", "Running · started 15:14"],
     ["done", releaseTask(Task_Status.DONE, ["a"], 492), runOf(TaskRun_Status.DONE), "4.1s", "All 493 applied · 4.1s"],
-    ["done, nothing new", releaseTask(Task_Status.DONE, [], 493), runOf(TaskRun_Status.DONE), "0.3s", "Nothing new · 493 already applied · 0.3s"],
+    // The stored list is a preview; done states what the database holds.
+    ["done, nothing was pending", releaseTask(Task_Status.DONE, [], 493), runOf(TaskRun_Status.DONE), "0.3s", "All 493 applied · 0.3s"],
   ])("a release task, %s", (_, task, latestTaskRun, timingDisplay, expected) => {
     expect(
       describeFolded({ task, latestTaskRun, timingDisplay, release: VERSIONED })?.textContent
@@ -180,7 +181,7 @@ describe("folded card description", () => {
     ).toBe("failed to get driver connection: refused");
   });
 
-  test("a declarative task shows its status and never reads Nothing new", () => {
+  test("a declarative task shows its status, not a file count", () => {
     const declarative = { type: Release_Type.DECLARATIVE, fileCount: 1 };
     const pending = create(TaskSchema, {
       status: Task_Status.NOT_STARTED,
@@ -190,7 +191,6 @@ describe("folded card description", () => {
     const done = create(TaskSchema, { ...pending, status: Task_Status.DONE });
     const text = describeFolded({ task: done, latestTaskRun: runOf(TaskRun_Status.DONE), timingDisplay: "0.3s", release: declarative })?.textContent;
     expect(text).toBe("Done · 0.3s");
-    expect(text).not.toContain("Nothing new");
   });
 
   test("skipped and canceled tasks", () => {

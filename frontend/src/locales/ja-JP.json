@@ -4253,7 +4253,6 @@
       "kind-ddl": "DDL",
       "kind-dml": "DML",
       "kind-mixed": "混在",
-      "nothing-new": "新しい変更なし",
       "nothing-to-apply": "適用対象なし",
       "scheduled": "予定",
       "skipped-by": "{{user}} がスキップ",

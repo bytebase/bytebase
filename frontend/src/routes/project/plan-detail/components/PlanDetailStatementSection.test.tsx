@@ -600,6 +600,7 @@ test("a row shows the file name, its folder muted and the version, and opens the
     "migrations/3.10/3.10.0007_remove_exporter_role.sql"
   );
   expect((mocks.openedFile as { context?: unknown }).context).toBeUndefined();
+  expect((mocks.openedFile as { declarative?: boolean }).declarative).toBe(false);
 });
 
 test("a declarative release is one line: the schema at its version, with Open", async () => {
@@ -610,4 +611,6 @@ test("a declarative release is one line: the schema at its version, with Open", 
   expect(line.textContent).toContain("20261005");
   fireEvent.click(view.getByRole("button", { name: "common.open" }));
   expect((mocks.openedFile as { file: { path: string } }).file.path).toBe("schema/schema.sql");
+  // Its path may be a pattern, which the viewer does not link.
+  expect((mocks.openedFile as { declarative?: boolean }).declarative).toBe(true);
 });

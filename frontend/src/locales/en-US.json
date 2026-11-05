@@ -4253,7 +4253,6 @@
       "kind-ddl": "DDL",
       "kind-dml": "DML",
       "kind-mixed": "Mixed",
-      "nothing-new": "Nothing new",
       "nothing-to-apply": "Nothing to apply",
       "scheduled": "scheduled",
       "skipped-by": "Skipped by {{user}}",

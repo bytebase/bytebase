@@ -51,13 +51,16 @@ export const platformName = (vcsType: VCSType | undefined) =>
 
 // A link to a release file at the release's commit. The path is the action's
 // glob match, relative to the pipeline's working directory. A declarative
-// rollout records its pattern as the path, and a path with "*" names no file.
+// rollout records its --file-pattern as the path, and a pattern with a glob
+// metacharacter names no file; a versioned path is a real file name.
 export const fileAtCommitUrl = (
   source: Release_VCSSource | undefined,
-  path: string
+  path: string,
+  declarative = false
 ): string | undefined => {
   const commit = parseRepoCommit(source);
-  if (!commit || !source || !path || path.includes("*")) return undefined;
+  if (!commit || !source || !path) return undefined;
+  if (declarative && /[*?[{]/.test(path)) return undefined;
   const { repoUrl, sha } = commit;
   // Each segment encoded, so "#", "?" and "&" in a file name stay in the path.
   const relative = path
