@@ -1094,13 +1094,16 @@ type Release_VCSSource struct {
 	// The commit the release's files were read from.
 	CommitSha string `protobuf:"bytes,3,opt,name=commit_sha,json=commitSha,proto3" json:"commit_sha,omitempty"`
 	// The source branch. In a pull request build, the pull request's source
-	// branch rather than the platform's synthetic merge ref.
+	// branch rather than the platform's synthetic merge ref. Empty for a run
+	// on a tag or a merge queue's temporary branch.
 	Branch string `protobuf:"bytes,4,opt,name=branch,proto3" json:"branch,omitempty"`
 	// The first line of the commit message.
 	CommitTitle string `protobuf:"bytes,5,opt,name=commit_title,json=commitTitle,proto3" json:"commit_title,omitempty"`
-	// The commit author's display name.
+	// The author's display name: the commit's author where the CI platform
+	// exposes it, else the person who started the build.
 	AuthorName string `protobuf:"bytes,6,opt,name=author_name,json=authorName,proto3" json:"author_name,omitempty"`
-	// The commit author's login on the VCS platform.
+	// The author's login on the VCS platform: the commit's author, or the pull
+	// request's author in a pull request build.
 	AuthorLogin string `protobuf:"bytes,7,opt,name=author_login,json=authorLogin,proto3" json:"author_login,omitempty"`
 	// The pull request the commit belongs to, when the build knows it.
 	PullRequest   *Release_VCSSource_PullRequest `protobuf:"bytes,8,opt,name=pull_request,json=pullRequest,proto3" json:"pull_request,omitempty"`

@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -93,11 +94,47 @@ func TestReleaseStatesReadOneRevisionQueryPerInstance(t *testing.T) {
 		"instance-a": {"db1", "db2", "db3"},
 		"instance-b": {"db1"},
 	}, namesOf)
-	// With no revisions, every target applies every version.
+	// With no revisions, every target applies every version: one range.
 	require.Len(t, states, 4)
 	for _, database := range databases {
-		require.Len(t, states[releaseStateKey(database)].GetPendingVersions(), 2)
+		state := states[releaseStateKey(database)]
+		require.Len(t, state.GetPendingRanges(), 1)
+		require.Equal(t, int32(0), state.PendingRanges[0].Start)
+		require.Equal(t, int32(2), state.PendingRanges[0].End)
 	}
+}
+
+func TestReleaseStateStoresPendingFilesAsRanges(t *testing.T) {
+	deletedAt := time.Date(2026, 10, 5, 9, 30, 0, 0, time.UTC)
+	deleter := "alex@example.com"
+	versions := []string{"001", "002", "003", "004", "005", "006"}
+	revisions := []*store.RevisionMessage{
+		{Version: "002"},
+		{Version: "003"},
+		{Version: "005", DeletedAt: &deletedAt, Deleter: &deleter},
+	}
+	state := releaseStateOf(versions, revisions, timestamppb.Now())
+
+	type span struct{ start, end int32 }
+	var spans []span
+	for _, r := range state.GetPendingRanges() {
+		spans = append(spans, span{r.Start, r.End})
+	}
+	require.Equal(t, []span{{0, 1}, {3, 6}}, spans)
+	require.Equal(t, int32(2), state.AppliedCount)
+	require.Len(t, state.DeletedRevisions, 1)
+	require.Equal(t, "005", state.DeletedRevisions[0].Version)
+	require.Equal(t, deleter, state.DeletedRevisions[0].Deleter)
+	require.True(t, state.DeletedRevisions[0].DeleteTime.AsTime().Equal(deletedAt))
+
+	// A large release on a new database is still one range.
+	many := make([]string, 500)
+	for i := range many {
+		many[i] = fmt.Sprintf("%04d", i)
+	}
+	fresh := releaseStateOf(many, nil, timestamppb.Now())
+	require.Len(t, fresh.PendingRanges, 1)
+	require.Equal(t, int32(500), fresh.PendingRanges[0].End)
 }
 
 // db1 has 001 and 002 live and 003 deleted; its sibling db2 on the same
@@ -127,6 +164,9 @@ const releaseStateFixtureSQL = `
 		 '{"type":"VERSIONED","files":[{"path":"001_init.sql","version":"001"},{"path":"002_orders.sql","version":"002"},{"path":"003_index.sql","version":"003"}]}'),
 		('project-a', 2, 'r2', 'ci@example.com',
 		 '{"type":"DECLARATIVE","files":[{"path":"schema.sql","version":"001"}]}');
+	INSERT INTO release (project, iteration, release_id, creator, payload, deleted) VALUES
+		('project-a', 3, 'r3', 'ci@example.com',
+		 '{"type":"VERSIONED","files":[{"path":"001_init.sql","version":"001"}]}', TRUE);
 `
 
 func TestRolloutCreationStoresReleaseState(t *testing.T) {
@@ -159,10 +199,11 @@ func TestRolloutCreationStoresReleaseState(t *testing.T) {
 			stateOf[*task.DatabaseName] = task.Payload.GetReleaseState()
 		}
 	}
+	files := []string{"001", "002", "003"}
 	pendingOf := func(state *storepb.Task_ReleaseState) []string {
 		var versions []string
-		for _, v := range state.GetPendingVersions() {
-			versions = append(versions, v.Version)
+		for _, r := range state.GetPendingRanges() {
+			versions = append(versions, files[r.Start:r.End]...)
 		}
 		return versions
 	}
@@ -173,8 +214,10 @@ func TestRolloutCreationStoresReleaseState(t *testing.T) {
 	require.NotNil(t, db1)
 	require.Equal(t, []string{"003"}, pendingOf(db1))
 	require.Equal(t, int32(2), db1.AppliedCount)
-	require.Equal(t, "alex@example.com", db1.PendingVersions[0].RevisionDeleter)
-	require.Equal(t, time.Date(2026, 10, 5, 9, 30, 0, 0, time.UTC), db1.PendingVersions[0].RevisionDeleteTime.AsTime())
+	require.Len(t, db1.DeletedRevisions, 1)
+	require.Equal(t, "003", db1.DeletedRevisions[0].Version)
+	require.Equal(t, "alex@example.com", db1.DeletedRevisions[0].Deleter)
+	require.Equal(t, time.Date(2026, 10, 5, 9, 30, 0, 0, time.UTC), db1.DeletedRevisions[0].DeleteTime.AsTime())
 	require.WithinDuration(t, before, db1.ComputeTime.AsTime(), time.Minute)
 
 	var db1Task *store.TaskMessage
@@ -189,18 +232,21 @@ func TestRolloutCreationStoresReleaseState(t *testing.T) {
 	v1State := v1Task.GetDatabaseUpdate().GetReleaseState()
 	require.NotNil(t, v1State)
 	require.Equal(t, int32(2), v1State.AppliedCount)
-	require.Len(t, v1State.PendingVersions, 1)
-	require.Equal(t, "003", v1State.PendingVersions[0].Version)
-	require.Equal(t, "users/alex@example.com", v1State.PendingVersions[0].RevisionDeleter)
-	require.True(t, v1State.PendingVersions[0].RevisionDeleteTime.AsTime().Equal(db1.PendingVersions[0].RevisionDeleteTime.AsTime()))
+	require.Equal(t, int32(1), v1State.PendingCount)
+	require.Len(t, v1State.PendingRanges, 1)
+	require.Equal(t, int32(2), v1State.PendingRanges[0].Start)
+	require.Equal(t, int32(3), v1State.PendingRanges[0].End)
+	require.Len(t, v1State.DeletedRevisions, 1)
+	require.Equal(t, "003", v1State.DeletedRevisions[0].Version)
+	require.Equal(t, "users/alex@example.com", v1State.DeletedRevisions[0].Deleter)
+	require.True(t, v1State.DeletedRevisions[0].DeleteTime.AsTime().Equal(db1.DeletedRevisions[0].DeleteTime.AsTime()))
 	require.True(t, v1State.ComputeTime.AsTime().Equal(db1.ComputeTime.AsTime()))
 
 	// The sibling's state is its own.
 	db2 := stateOf["db2"]
 	require.Equal(t, []string{"001", "002"}, pendingOf(db2))
 	require.Equal(t, int32(1), db2.AppliedCount)
-	require.Empty(t, db2.PendingVersions[0].RevisionDeleter)
-	require.Nil(t, db2.PendingVersions[0].RevisionDeleteTime)
+	require.Empty(t, db2.DeletedRevisions)
 
 	// A new database applies everything; a declarative revision is not a version.
 	db3 := stateOf["db3"]
@@ -231,4 +277,16 @@ func TestRolloutCreationStoresReleaseState(t *testing.T) {
 	v1Declarative, err := convertToTask(&store.ProjectMessage{ResourceID: "project-a"}, declarative[0])
 	require.NoError(t, err)
 	require.Nil(t, v1Declarative.GetDatabaseUpdate().GetReleaseState())
+
+	// A deleted release still gets its task, with no stored state, so the run
+	// reports the missing release where users see it.
+	missing, err := getTaskCreatesFromChangeDatabaseConfig(ctx, s,
+		&storepb.PlanConfig_Spec{Id: "spec-3"},
+		&storepb.PlanConfig_ChangeDatabaseConfig{
+			Targets: []string{"instances/instance-a/databases/db3"},
+			Release: "projects/project-a/releases/r3",
+		}, "project-a")
+	require.NoError(t, err)
+	require.Len(t, missing, 1)
+	require.Nil(t, missing[0].Payload.GetReleaseState())
 }

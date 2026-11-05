@@ -575,15 +575,19 @@ func convertToTaskReleaseState(state *storepb.Task_ReleaseState) *v1pb.Task_Rele
 		AppliedCount: state.AppliedCount,
 		ComputeTime:  state.ComputeTime,
 	}
-	for _, pending := range state.PendingVersions {
-		v := &v1pb.Task_ReleaseState_PendingVersion{
-			Version:            pending.Version,
-			RevisionDeleteTime: pending.RevisionDeleteTime,
+	for _, pending := range state.PendingRanges {
+		r.PendingRanges = append(r.PendingRanges, &v1pb.Task_ReleaseState_Range{Start: pending.Start, End: pending.End})
+		r.PendingCount += pending.End - pending.Start
+	}
+	for _, deleted := range state.DeletedRevisions {
+		v := &v1pb.Task_ReleaseState_DeletedRevision{
+			Version:    deleted.Version,
+			DeleteTime: deleted.DeleteTime,
 		}
-		if pending.RevisionDeleter != "" {
-			v.RevisionDeleter = common.FormatUserEmail(pending.RevisionDeleter)
+		if deleted.Deleter != "" {
+			v.Deleter = common.FormatUserEmail(deleted.Deleter)
 		}
-		r.PendingVersions = append(r.PendingVersions, v)
+		r.DeletedRevisions = append(r.DeletedRevisions, v)
 	}
 	return r
 }

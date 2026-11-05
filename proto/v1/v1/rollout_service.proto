@@ -487,21 +487,31 @@ message Task {
   }
 
   message ReleaseState {
-    // The versions the task will apply, in release order. Every other version
-    // of the release had a live revision on the database.
-    repeated PendingVersion pending_versions = 1;
+    // The release's files the task will apply, as half-open ranges of
+    // positions in the release's `files`, ascending. Every other file's
+    // version had a live revision on the database.
+    repeated Range pending_ranges = 1;
+    // The number of files the task will apply: the ranges' total length.
+    int32 pending_count = 4;
     // The number of the release's versions already applied.
     int32 applied_count = 2;
     // When the state was computed.
     google.protobuf.Timestamp compute_time = 3;
+    // The versions to apply that had a deleted revision, in release order.
+    repeated DeletedRevision deleted_revisions = 5;
 
-    message PendingVersion {
+    message Range {
+      int32 start = 1;
+      int32 end = 2;
+    }
+
+    message DeletedRevision {
       string version = 1;
-      // Set when the database had a revision of this version that was deleted.
-      google.protobuf.Timestamp revision_delete_time = 2;
-      // The user who deleted that revision.
+      // When the newest revision of this version was deleted.
+      google.protobuf.Timestamp delete_time = 2;
+      // The user who deleted it.
       // Format: users/hello@world.com
-      string revision_deleter = 3;
+      string deleter = 3;
     }
   }
 }

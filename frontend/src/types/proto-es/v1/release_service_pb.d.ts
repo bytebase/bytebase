@@ -574,7 +574,8 @@ export declare type Release_VCSSource = Message<"bytebase.v1.Release.VCSSource">
 
   /**
    * The source branch. In a pull request build, the pull request's source
-   * branch rather than the platform's synthetic merge ref.
+   * branch rather than the platform's synthetic merge ref. Empty for a run
+   * on a tag or a merge queue's temporary branch.
    *
    * @generated from field: string branch = 4;
    */
@@ -588,14 +589,16 @@ export declare type Release_VCSSource = Message<"bytebase.v1.Release.VCSSource">
   commitTitle: string;
 
   /**
-   * The commit author's display name.
+   * The author's display name: the commit's author where the CI platform
+   * exposes it, else the person who started the build.
    *
    * @generated from field: string author_name = 6;
    */
   authorName: string;
 
   /**
-   * The commit author's login on the VCS platform.
+   * The author's login on the VCS platform: the commit's author, or the pull
+   * request's author in a pull request build.
    *
    * @generated from field: string author_login = 7;
    */

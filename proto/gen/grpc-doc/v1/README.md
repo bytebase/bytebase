@@ -72,7 +72,8 @@
     - [Task.DatabaseCreate](#bytebase-v1-Task-DatabaseCreate)
     - [Task.DatabaseUpdate](#bytebase-v1-Task-DatabaseUpdate)
     - [Task.ReleaseState](#bytebase-v1-Task-ReleaseState)
-    - [Task.ReleaseState.PendingVersion](#bytebase-v1-Task-ReleaseState-PendingVersion)
+    - [Task.ReleaseState.DeletedRevision](#bytebase-v1-Task-ReleaseState-DeletedRevision)
+    - [Task.ReleaseState.Range](#bytebase-v1-Task-ReleaseState-Range)
     - [TaskRun](#bytebase-v1-TaskRun)
     - [TaskRun.SchedulerInfo](#bytebase-v1-TaskRun-SchedulerInfo)
     - [TaskRun.SchedulerInfo.WaitingCause](#bytebase-v1-TaskRun-SchedulerInfo-WaitingCause)
@@ -1834,26 +1835,44 @@ Payload for updating a database schema.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| pending_versions | [Task.ReleaseState.PendingVersion](#bytebase-v1-Task-ReleaseState-PendingVersion) | repeated | The versions the task will apply, in release order. Every other version of the release had a live revision on the database. |
+| pending_ranges | [Task.ReleaseState.Range](#bytebase-v1-Task-ReleaseState-Range) | repeated | The release&#39;s files the task will apply, as half-open ranges of positions in the release&#39;s `files`, ascending. Every other file&#39;s version had a live revision on the database. |
+| pending_count | [int32](#int32) |  | The number of files the task will apply: the ranges&#39; total length. |
 | applied_count | [int32](#int32) |  | The number of the release&#39;s versions already applied. |
 | compute_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the state was computed. |
+| deleted_revisions | [Task.ReleaseState.DeletedRevision](#bytebase-v1-Task-ReleaseState-DeletedRevision) | repeated | The versions to apply that had a deleted revision, in release order. |
 
 
 
 
 
 
-<a name="bytebase-v1-Task-ReleaseState-PendingVersion"></a>
+<a name="bytebase-v1-Task-ReleaseState-DeletedRevision"></a>
 
-### Task.ReleaseState.PendingVersion
+### Task.ReleaseState.DeletedRevision
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | version | [string](#string) |  |  |
-| revision_delete_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Set when the database had a revision of this version that was deleted. |
-| revision_deleter | [string](#string) |  | The user who deleted that revision. Format: users/hello@world.com |
+| delete_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the newest revision of this version was deleted. |
+| deleter | [string](#string) |  | The user who deleted it. Format: users/hello@world.com |
+
+
+
+
+
+
+<a name="bytebase-v1-Task-ReleaseState-Range"></a>
+
+### Task.ReleaseState.Range
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| start | [int32](#int32) |  |  |
+| end | [int32](#int32) |  |  |
 
 
 
@@ -11103,10 +11122,10 @@ Version control system source information.
 | vcs_type | [VCSType](#bytebase-v1-VCSType) |  | The type of VCS. |
 | url | [string](#string) |  | The url link to the e.g., GitHub commit or pull request. |
 | commit_sha | [string](#string) |  | The commit the release&#39;s files were read from. |
-| branch | [string](#string) |  | The source branch. In a pull request build, the pull request&#39;s source branch rather than the platform&#39;s synthetic merge ref. |
+| branch | [string](#string) |  | The source branch. In a pull request build, the pull request&#39;s source branch rather than the platform&#39;s synthetic merge ref. Empty for a run on a tag or a merge queue&#39;s temporary branch. |
 | commit_title | [string](#string) |  | The first line of the commit message. |
-| author_name | [string](#string) |  | The commit author&#39;s display name. |
-| author_login | [string](#string) |  | The commit author&#39;s login on the VCS platform. |
+| author_name | [string](#string) |  | The author&#39;s display name: the commit&#39;s author where the CI platform exposes it, else the person who started the build. |
+| author_login | [string](#string) |  | The author&#39;s login on the VCS platform: the commit&#39;s author, or the pull request&#39;s author in a pull request build. |
 | pull_request | [Release.VCSSource.PullRequest](#bytebase-v1-Release-VCSSource-PullRequest) |  | The pull request the commit belongs to, when the build knows it. |
 
 

@@ -332,7 +332,23 @@ func (x *Task_DatabaseUpdate) Equal(y *Task_DatabaseUpdate) bool {
 	return true
 }
 
-func (x *Task_ReleaseState_PendingVersion) Equal(y *Task_ReleaseState_PendingVersion) bool {
+func (x *Task_ReleaseState_Range) Equal(y *Task_ReleaseState_Range) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Start != y.Start {
+		return false
+	}
+	if x.End != y.End {
+		return false
+	}
+	return true
+}
+
+func (x *Task_ReleaseState_DeletedRevision) Equal(y *Task_ReleaseState_DeletedRevision) bool {
 	if x == y {
 		return true
 	}
@@ -342,10 +358,10 @@ func (x *Task_ReleaseState_PendingVersion) Equal(y *Task_ReleaseState_PendingVer
 	if x.Version != y.Version {
 		return false
 	}
-	if p, q := x.RevisionDeleteTime, y.RevisionDeleteTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
+	if p, q := x.DeleteTime, y.DeleteTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
 		return false
 	}
-	if x.RevisionDeleter != y.RevisionDeleter {
+	if x.Deleter != y.Deleter {
 		return false
 	}
 	return true
@@ -358,19 +374,30 @@ func (x *Task_ReleaseState) Equal(y *Task_ReleaseState) bool {
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if len(x.PendingVersions) != len(y.PendingVersions) {
+	if len(x.PendingRanges) != len(y.PendingRanges) {
 		return false
 	}
-	for i := 0; i < len(x.PendingVersions); i++ {
-		if !x.PendingVersions[i].Equal(y.PendingVersions[i]) {
+	for i := 0; i < len(x.PendingRanges); i++ {
+		if !x.PendingRanges[i].Equal(y.PendingRanges[i]) {
 			return false
 		}
+	}
+	if x.PendingCount != y.PendingCount {
+		return false
 	}
 	if x.AppliedCount != y.AppliedCount {
 		return false
 	}
 	if p, q := x.ComputeTime, y.ComputeTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
 		return false
+	}
+	if len(x.DeletedRevisions) != len(y.DeletedRevisions) {
+		return false
+	}
+	for i := 0; i < len(x.DeletedRevisions); i++ {
+		if !x.DeletedRevisions[i].Equal(y.DeletedRevisions[i]) {
+			return false
+		}
 	}
 	return true
 }

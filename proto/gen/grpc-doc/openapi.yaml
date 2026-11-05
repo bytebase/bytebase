@@ -26944,7 +26944,8 @@ components:
           title: branch
           description: |-
             The source branch. In a pull request build, the pull request's source
-             branch rather than the platform's synthetic merge ref.
+             branch rather than the platform's synthetic merge ref. Empty for a run
+             on a tag or a merge queue's temporary branch.
         commitTitle:
           type: string
           title: commit_title
@@ -26952,11 +26953,15 @@ components:
         authorName:
           type: string
           title: author_name
-          description: The commit author's display name.
+          description: |-
+            The author's display name: the commit's author where the CI platform
+             exposes it, else the person who started the build.
         authorLogin:
           type: string
           title: author_login
-          description: The commit author's login on the VCS platform.
+          description: |-
+            The author's login on the VCS platform: the commit's author, or the pull
+             request's author in a pull request build.
         pullRequest:
           allOf:
             - $ref: '#/components/schemas/bytebase.v1.Release.VCSSource.PullRequest'
@@ -30213,14 +30218,20 @@ components:
     bytebase.v1.Task.ReleaseState:
       type: object
       properties:
-        pendingVersions:
+        pendingRanges:
           type: array
           items:
-            $ref: '#/components/schemas/bytebase.v1.Task.ReleaseState.PendingVersion'
-          title: pending_versions
+            $ref: '#/components/schemas/bytebase.v1.Task.ReleaseState.Range'
+          title: pending_ranges
           description: |-
-            The versions the task will apply, in release order. Every other version
-             of the release had a live revision on the database.
+            The release's files the task will apply, as half-open ranges of
+             positions in the release's `files`, ascending. Every other file's
+             version had a live revision on the database.
+        pendingCount:
+          type: integer
+          title: pending_count
+          format: int32
+          description: 'The number of files the task will apply: the ranges'' total length.'
         appliedCount:
           type: integer
           title: applied_count
@@ -30231,26 +30242,45 @@ components:
             - $ref: '#/components/schemas/google.protobuf.Timestamp'
           title: compute_time
           description: When the state was computed.
+        deletedRevisions:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.Task.ReleaseState.DeletedRevision'
+          title: deleted_revisions
+          description: The versions to apply that had a deleted revision, in release order.
       title: ReleaseState
       additionalProperties: false
-    bytebase.v1.Task.ReleaseState.PendingVersion:
+    bytebase.v1.Task.ReleaseState.DeletedRevision:
       type: object
       properties:
         version:
           type: string
           title: version
-        revisionDeleteTime:
+        deleteTime:
           allOf:
             - $ref: '#/components/schemas/google.protobuf.Timestamp'
-          title: revision_delete_time
-          description: Set when the database had a revision of this version that was deleted.
-        revisionDeleter:
+          title: delete_time
+          description: When the newest revision of this version was deleted.
+        deleter:
           type: string
-          title: revision_deleter
+          title: deleter
           description: |-
-            The user who deleted that revision.
+            The user who deleted it.
              Format: users/hello@world.com
-      title: PendingVersion
+      title: DeletedRevision
+      additionalProperties: false
+    bytebase.v1.Task.ReleaseState.Range:
+      type: object
+      properties:
+        start:
+          type: integer
+          title: start
+          format: int32
+        end:
+          type: integer
+          title: end
+          format: int32
+      title: Range
       additionalProperties: false
     bytebase.v1.Task.Status:
       type: string
