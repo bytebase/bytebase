@@ -441,7 +441,10 @@ the queue. The SHA stays the checked-out commit, a merge commit in
 those builds, because the release's files came from it and D8 links them there.
 
 The file's path is the action's glob match, relative to the pipeline's working directory; a pipeline
-that runs in a subdirectory gets a link that misses, and an unknown platform gets none. A marker
+that runs in a subdirectory gets a link that misses, and an unknown platform gets none. A
+declarative rollout concatenates every match into one file and records the `--file-pattern` itself as
+its path (`getReleaseFiles` in `action/command/file.go`), so a path with `*` names no file and gets no
+link; a literal pattern is the file and keeps it. A marker
 miss is silent: the row shows the commit. When the title is the commit's first line and the PR
 number came from its marker, the marker is removed from the title, so a squash merge reads `<title>
 #N` once. The PR URL is the repository URL plus the platform's path and the number. On a platform
@@ -657,7 +660,8 @@ Tests to write, per the placement rules in `AGENTS.md`:
 - Viewer tests: the diagnostic placed from a byte range on a multi-byte statement, opened from the
   failed section; opening at the top with the error when there
   is no range; the per-database line when opened from a section and none from Changes; the
-  file-at-commit link per platform and none on an unknown one; the container chosen
+  file-at-commit link per platform and none on an unknown one or for a declarative pattern path
+  with `*`; the container chosen
   by the page's width; swapping files in the docked column; Close and Esc; the plan's state, such
   as loaded rows, kept when the column opens and closes.
 - Source row tests: each row of the States table from a `VCSSource` with that subset; a squash-merge
