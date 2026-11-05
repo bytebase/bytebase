@@ -317,6 +317,11 @@ describe("GlobalMaskingPage", () => {
     );
 
     expect(helpButton?.parentElement?.className).toContain("ml-auto");
+    const group = helpButton?.parentElement;
+    expect(group?.classList.contains("flex-wrap")).toBe(true);
+    expect(group?.classList.contains("gap-2")).toBe(true);
+    expect(group?.classList.contains("min-w-0")).toBe(true);
+    expect(group?.classList.contains("max-w-full")).toBe(true);
   });
 
   it("aligns the semantic type select with the expression editor", async () => {

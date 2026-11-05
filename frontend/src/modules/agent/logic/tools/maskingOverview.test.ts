@@ -171,17 +171,24 @@ describe("masking overview", () => {
         classification: "confidential",
       },
     ]);
-    expect(overview.semanticTypes.types[0].algorithm).toEqual({
-      kind: "md5-mask",
-      saltConfigured: true,
-    });
-    expect(overview.semanticTypes.types[1].algorithm).toEqual({
-      kind: "inner-outer-mask",
-      type: "inner",
-      prefixLen: 1,
-      suffixLen: 2,
-      substitution: "*",
-    });
+    expect(overview.semanticTypes.types).toContainEqual(
+      expect.objectContaining({
+        id: "email-id",
+        algorithm: { kind: "md5-mask", saltConfigured: true },
+      })
+    );
+    expect(overview.semanticTypes.types).toContainEqual(
+      expect.objectContaining({
+        id: "phone-id",
+        algorithm: {
+          kind: "inner-outer-mask",
+          type: "inner",
+          prefixLen: 1,
+          suffixLen: 2,
+          substitution: "*",
+        },
+      })
+    );
     expect(overview.exemptions.exemptions).toEqual([
       {
         memberCount: 1,
@@ -228,6 +235,184 @@ describe("masking overview", () => {
     });
     expect(mocks.getPolicy).not.toHaveBeenCalled();
     expect(mocks.getSetting).not.toHaveBeenCalled();
+  });
+
+  test("includes the effective built-in algorithms when no semantic types are configured", async () => {
+    mocks.getSetting.mockResolvedValue({
+      value: { value: { case: "semanticType", value: { types: [] } } },
+    });
+
+    const result = JSON.parse(
+      await createMaskingOverviewTool({
+        page: { kind: "semantic-types" },
+        workspaceName: "workspaces/default",
+      })()
+    );
+
+    expect(result.semanticTypes).toEqual({
+      status: "available",
+      types: [
+        expect.objectContaining({
+          id: "bb.default",
+          algorithm: { kind: "default-full-mask", substitution: "******" },
+        }),
+        expect.objectContaining({
+          id: "bb.default-partial",
+          algorithm: {
+            kind: "default-partial-mask",
+            stringAndBytes: {
+              visiblePortion: "length-dependent middle portion",
+              prefix: "**",
+              suffix: "**",
+            },
+          },
+        }),
+      ],
+      totalTypes: 2,
+      truncated: false,
+    });
+  });
+
+  test("ignores stored built-in overrides and counts effective types before truncation", async () => {
+    mocks.getSetting.mockResolvedValue({
+      value: {
+        value: {
+          case: "semanticType",
+          value: {
+            types: [
+              {
+                id: "bb.default",
+                title: "Stored default override",
+                algorithm: {
+                  mask: {
+                    case: "md5Mask",
+                    value: { salt: "never expose this salt" },
+                  },
+                },
+              },
+              {
+                id: "bb.default-partial",
+                title: "Stored partial override",
+                algorithm: {
+                  mask: { case: "fullMask", value: { substitution: "X" } },
+                },
+              },
+              ...Array.from({ length: 100 }, (_, index) => ({
+                id: `custom-${index}`,
+                title: `Custom ${index}`,
+                algorithm: {
+                  mask: { case: "fullMask", value: { substitution: "*" } },
+                },
+              })),
+            ],
+          },
+        },
+      },
+    });
+
+    const response = await createMaskingOverviewTool({
+      page: { kind: "semantic-types" },
+      workspaceName: "workspaces/default",
+    })();
+    const result = JSON.parse(response);
+
+    expect(result.semanticTypes.types).toHaveLength(100);
+    expect(result.semanticTypes.totalTypes).toBe(102);
+    expect(result.semanticTypes.truncated).toBe(true);
+    expect(result.semanticTypes.types[0]).toEqual(
+      expect.objectContaining({
+        id: "bb.default",
+        algorithm: { kind: "default-full-mask", substitution: "******" },
+      })
+    );
+    expect(result.semanticTypes.types[1]).toEqual(
+      expect.objectContaining({
+        id: "bb.default-partial",
+        algorithm: {
+          kind: "default-partial-mask",
+          stringAndBytes: {
+            visiblePortion: "length-dependent middle portion",
+            prefix: "**",
+            suffix: "**",
+          },
+        },
+      })
+    );
+    expect(result.semanticTypes.types[99]).toEqual(
+      expect.objectContaining({
+        id: "custom-97",
+        algorithm: { kind: "full-mask", substitution: "*" },
+      })
+    );
+    expect(response).not.toContain("Stored default override");
+    expect(response).not.toContain("Stored partial override");
+    expect(response).not.toContain("never expose this salt");
+  });
+
+  test("distinguishes built-in masking from empty configurable full and range algorithms", async () => {
+    mocks.getSetting.mockResolvedValue({
+      value: {
+        value: {
+          case: "semanticType",
+          value: {
+            types: [
+              {
+                id: "custom-full",
+                title: "Custom full",
+                algorithm: {
+                  mask: { case: "fullMask", value: { substitution: "" } },
+                },
+              },
+              {
+                id: "custom-range",
+                title: "Custom range",
+                algorithm: {
+                  mask: { case: "rangeMask", value: { slices: [] } },
+                },
+              },
+            ],
+          },
+        },
+      },
+    });
+
+    const result = JSON.parse(
+      await createMaskingOverviewTool({
+        page: { kind: "semantic-types" },
+        workspaceName: "workspaces/default",
+      })()
+    );
+
+    expect(result.semanticTypes.types).toEqual([
+      expect.objectContaining({
+        id: "bb.default",
+        algorithm: { kind: "default-full-mask", substitution: "******" },
+      }),
+      expect.objectContaining({
+        id: "bb.default-partial",
+        algorithm: {
+          kind: "default-partial-mask",
+          stringAndBytes: {
+            visiblePortion: "length-dependent middle portion",
+            prefix: "**",
+            suffix: "**",
+          },
+        },
+      }),
+      expect.objectContaining({
+        id: "custom-full",
+        algorithm: { kind: "full-mask", substitution: "" },
+      }),
+      expect.objectContaining({
+        id: "custom-range",
+        algorithm: {
+          kind: "range-mask",
+          slices: [],
+          totalSlices: 0,
+          truncated: false,
+        },
+      }),
+    ]);
   });
 
   test("includes nested document and array fields with their semantic types", async () => {

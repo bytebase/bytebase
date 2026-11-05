@@ -310,7 +310,7 @@ export function DataClassificationPage() {
       />
 
       <WorkspacePageToolbar align="end">
-        <div className="flex items-center justify-end gap-x-2 shrink-0">
+        <div className="flex min-w-0 max-w-full flex-wrap items-center justify-end gap-2">
           <AgentPageHelpButton />
           {allowEdit && (
             <>

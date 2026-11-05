@@ -97,6 +97,27 @@ afterEach(() => {
 });
 
 describe("SemanticTypesPage", () => {
+  test("lets the toolbar actions wrap within the available width", async () => {
+    mocks.getSettingByName.mockReturnValue(undefined);
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    roots.push(root);
+
+    await act(async () => {
+      root.render(<SemanticTypesPage />);
+      await Promise.resolve();
+    });
+
+    const createButton = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent === "common.create"
+    );
+    const group = createButton?.parentElement;
+    expect(group?.classList.contains("flex-wrap")).toBe(true);
+    expect(group?.classList.contains("gap-2")).toBe(true);
+    expect(group?.classList.contains("min-w-0")).toBe(true);
+    expect(group?.classList.contains("max-w-full")).toBe(true);
+  });
+
   test("keeps the semantic type table horizontally scrollable on narrow screens", async () => {
     mocks.getOrFetchSettingByName.mockReturnValueOnce(new Promise(() => {}));
     const container = document.createElement("div");

@@ -82,6 +82,20 @@ async function openClearConfirmation() {
 }
 
 describe("DataClassificationPage", () => {
+  it("lets the toolbar actions wrap within the available width", async () => {
+    render(<DataClassificationPage />);
+    const helpButton = await screen.findByRole("button", {
+      name: "Ask Agent about masking",
+    });
+    const group = helpButton.parentElement;
+
+    expect(group?.classList.contains("flex-wrap")).toBe(true);
+    expect(group?.classList.contains("gap-2")).toBe(true);
+    expect(group?.classList.contains("min-w-0")).toBe(true);
+    expect(group?.classList.contains("max-w-full")).toBe(true);
+    expect(group?.classList.contains("shrink-0")).toBe(false);
+  });
+
   it("opens Clear confirmation outside the toolbar without replacing its trigger", async () => {
     const { trigger, dialog } = await openClearConfirmation();
     const toolbar = trigger.closest("[data-slot='workspace-page-toolbar']");
