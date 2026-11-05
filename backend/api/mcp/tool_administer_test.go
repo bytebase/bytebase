@@ -596,8 +596,9 @@ func TestAdministerWorkspaceContinuesALongConditionOnTheNextLine(t *testing.T) {
 	require.NotContains(t, string(schema), approvalRulesApply)
 }
 
-// The continuation mark's width comes out of each continued line, so a wider
-// mark would push this rule's second line past the budget beside an issue line.
+// With the mark, this rule's second line takes 69 of the 70 columns, so a mark
+// two columns wider wraps it to a third line, and beside an issue line the form
+// is refused.
 func TestAdministerWorkspaceFitsALongRuleBesideAnIssue(t *testing.T) {
 	long := changeRule("HR prod", "resource.environment_id == 'prod' && resource.project_id == 'hr' && resource.database_name == 'hr_prod'", "roles/workspaceDBA")
 	diff, err := diffApprovalRules([]*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}, []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule(), long}, "")
