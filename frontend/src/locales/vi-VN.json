@@ -4355,7 +4355,6 @@
       "kind-ddl": "DDL",
       "kind-dml": "DML",
       "kind-mixed": "Hỗn hợp",
-      "nothing-new": "Không có gì mới",
       "nothing-to-apply": "Không có gì để áp dụng",
       "scheduled": "đã lên lịch",
       "skipped-by": "{{user}} đã bỏ qua",

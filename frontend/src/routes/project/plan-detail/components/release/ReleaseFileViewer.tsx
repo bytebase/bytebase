@@ -44,6 +44,8 @@ export interface ReleaseFileViewerTarget {
   context?: ReleaseFileOpenContext;
   // The stage of the failed task, for the header.
   stageTitle?: string;
+  // The file belongs to a declarative release, whose path may be a pattern.
+  declarative?: boolean;
 }
 
 // The 1-based line and column of a byte offset into UTF-8 `bytes`.
@@ -149,7 +151,7 @@ function ReleaseFileViewerContent({
     [diagnostic, editorReady]
   );
   const commit = parseRepoCommit(vcsSource);
-  const link = fileAtCommitUrl(vcsSource, target.file.path);
+  const link = fileAtCommitUrl(vcsSource, target.file.path, target.declarative);
   const platform = platformName(vcsSource?.vcsType);
   const databaseLine =
     context?.kind === "applied"

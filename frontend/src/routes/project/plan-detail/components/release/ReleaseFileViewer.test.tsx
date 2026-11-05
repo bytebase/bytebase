@@ -207,13 +207,17 @@ describe("ReleaseFileViewer", () => {
   });
 
   test.each([
-    ["schema/**/*.sql", false],
-    ["schema/*.sql", false],
-    ["schema/schema.sql", true],
-  ])("a declarative release whose path is %s links to it: %s", async (path, linked) => {
+    ["schema/**/*.sql", true, false],
+    ["schema/{tables,views}.sql", true, false],
+    ["schema/v?.sql", true, false],
+    ["schema/[ab].sql", true, false],
+    ["schema/schema.sql", true, true],
+    // A versioned release's path is a real file name.
+    ["migrations/002_[draft]?.sql", false, true],
+  ])("the file at %s (declarative: %s) links to the commit: %s", async (path, declarative, linked) => {
     render(
       <ReleaseFileViewer
-        target={target({ file: { version: "20261105", path, sheet: "projects/p/sheets/s2" } })}
+        target={{ ...target({ file: { version: "20261105", path, sheet: "projects/p/sheets/s2" } }), declarative }}
         vcsSource={create(Release_VCSSourceSchema, {
           vcsType: VCSType.GITHUB,
           url: "https://github.com/example/app/commit/0a1b2c3d4e5f",

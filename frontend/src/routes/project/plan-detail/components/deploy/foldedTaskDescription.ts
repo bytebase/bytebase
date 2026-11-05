@@ -211,15 +211,13 @@ export function foldedTaskDescription({
         tone: "info",
       };
     case Task_Status.DONE: {
+      // A statement about the database: the stored list is only a preview.
       if (versioned && release) {
         return {
-          text:
-            state && pendingCount === 0
-              ? join(t("task.folded.nothing-new"), appliedEarlier, duration)
-              : join(
-                  t("task.folded.all-applied", { count: release.fileCount }),
-                  duration
-                ),
+          text: join(
+            t("task.folded.all-applied", { count: release.fileCount }),
+            duration
+          ),
           tone: "success",
         };
       }

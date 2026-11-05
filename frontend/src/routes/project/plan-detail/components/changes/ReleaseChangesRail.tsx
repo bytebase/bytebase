@@ -34,7 +34,11 @@ export function ReleaseChangesRail({
   const openViewer = useOpenReleaseFile();
   // Opened from Changes there is no database, so no context.
   const open = openViewer
-    ? (file: ReleaseChangeFile) => openViewer({ file }, release.vcsSource)
+    ? (file: ReleaseChangeFile) =>
+        openViewer(
+          { file, declarative: release.type === Release_Type.DECLARATIVE },
+          release.vcsSource
+        )
     : undefined;
   const files = useMemo(
     () =>

@@ -4355,7 +4355,6 @@
       "kind-ddl": "DDL",
       "kind-dml": "DML",
       "kind-mixed": "混合",
-      "nothing-new": "没有新的变更",
       "nothing-to-apply": "无需应用",
       "scheduled": "计划于",
       "skipped-by": "由 {{user}} 跳过",
