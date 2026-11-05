@@ -283,11 +283,17 @@ expanding the latest failed task on load, which buried the other failures below 
 
 **D4 · The per-database file state is computed once, at rollout creation, and stored on the task.**
 `getTaskCreatesFromChangeDatabaseConfig` in `backend/api/v1/rollout_service_task.go` builds each
-release-backed task's payload today with only the release name. It gains a field holding the
-versions this task will apply (the small set: one to three for a train, all of them for a new
-database), each with the deleted revision's time and deleter when one existed, the count of versions
-already applied, and the time of the computation; the already-applied set is release files minus
-to-apply, so the large set is never stored. The rule is the executor's: a version is applied when
+release-backed task's payload today with only the release name. It gains a field holding which of
+the release's files this task will apply, as half-open ranges of positions in the release's file
+list (a release's files never change, so the positions stay valid): one range for a train or a new
+database, another only where a deleted revision left a gap. Beside the ranges it holds the count of
+versions already applied, each to-apply version whose revision was deleted with the newest
+deletion's time and deleter, and the time of the computation; the already-applied set is release
+files minus to-apply. The field stays small whatever the release's size: a 1,000-database group of
+new databases on a 500-file release stores one range per task, where a list of versions would store
+500,000 entries and return them on every rollout poll. The v1 task returns the ranges, their total
+as `pending_count`, and the deleted-revision notes; the page expands the ranges against the
+release's files, which it already loads. The rule is the executor's: a version is applied when
 the database has a live `VERSIONED` revision with that version; deleted revisions do not count. One
 indexed query per instance for all of the rollout's targets on it, through the store's `Versions`
 filter (`version = ANY(?)` in `backend/store/revision.go`) and a `DatabaseNames` filter beside it
@@ -303,14 +309,19 @@ a version first, a revision is imported or deleted). The caption on the planned 
 of rollout creation, `<time ago>`; the run re-checks the database.", its age from the stored
 computation time, not the plan's: a plan can wait before its rollout is created. Once a run starts, its log corrects
 the list version by version (D3). A declarative release gets no stored list: `runDeclarativeRelease`
-computes its diff inside the run, so its pending task shows only its status. Rerun creates a new
+computes its diff inside the run, so its pending task shows only its status. A release that is
+gone when the rollout is created (deleted) gets no stored state either: the task is still created
+and its run fails on the page, as it did before the field existed, rather than rollout creation
+failing in the background for an approved issue. The deleter is stored by email, so a user's email
+change rewrites it with the user's other references (`UpdateUserEmail`). Rerun creates a new
 task run, not a new task, so the field is refreshed only when a new rollout re-creates the task,
 which is what the action does on every push. Rejected: a read-only preview RPC (release plus targets
 to per-file state), which the page would call on every load for every pending task; computing the
 intersection in the frontend, which has no version filter (`ListRevisions` in the v1 API exposes
 none; the store has one) and would read a database's whole history; reusing `CheckRelease`, which
 runs SQL review and returns only the files it will apply; recomputing when a card is expanded, which
-is the preview RPC again; and storing nothing, which keeps finished tasks as they are (they read the
+is the preview RPC again; a list of the to-apply versions, which on a new database holds every file
+of the release, per task; and storing nothing, which keeps finished tasks as they are (they read the
 log) but leaves a task that has not run with no answer to what it will apply: no planned list, no
 "Will apply" zone while running, no "revision deleted" note, and folded cards that say only "Not
 started" or "Running".
@@ -354,10 +365,12 @@ with their revisions, and the failed file's own transaction was already rolled b
 (engines that commit DDL on their own, such as MySQL, TiDB and Oracle, keep what ran of it).
 `BatchSkipTasks` already takes several tasks and a `reason` (up to 1000 characters) and the store
 already keeps `skipped_reason`; the store's `BatchSkipTasks` additionally writes the skipper and
-the skip time into the task payload, returned as two output-only fields on the v1 `Task`, and the
+the skip time into the task payload, returned as two output-only fields on the v1 `Task` (a user's
+email change rewrites the skipper with the user's other references), and the
 task then shows "Skipped by `<user>` · `<time>` · `<reason>`" above its last run. The panel stops
-gating the reason field on the plan having an issue. Rejected: making the reason required in the
-API, which would change UIOps skips too; reading the skipper from the audit log, which the plan
+gating the reason field on the plan having an issue. Rejected: requiring the reason in the API,
+even only when a selected task is release-backed, which would refuse the skips API clients and
+scripts send today without one; the dialog is where a person decides; reading the skipper from the audit log, which the plan
 page does not load and a project Developer cannot read; spelling out the consequence per database
 and per later stage, and pointing at Import Revision, in the dialog, since the task list is enough;
 recording a revision on Skip, which would claim the version applied, which is what Import Revision
@@ -397,9 +410,12 @@ length outweighs the version.
 explicit flags.** The details block's Source row (D10) renders the fields it has in a fixed order:
 `title · author · repo@sha · branch`, missing fields leaving no gap. The title is the pull request
 title when the run knows one, else the first line of the commit message, else `repo@sha`; the PR or
-the commit is the link. Text only: trimmed, control characters removed, no markdown, 72 characters
+the commit is the link. Text only: trimmed, control and bidirectional-override characters removed
+(U+202A–202E, U+2066–2069, which could make a title read as another), no markdown, 72 characters
 then an ellipsis with the full text as the tooltip. Repository and SHA are parsed from the commit
-URL the action already sends, so a release with only `url` still gets a row (States). On a phone the
+URL the action already sends, so a release with only `url` still gets a row (States). Any client
+that can create a release writes these fields, so the row and the viewer's file link (D8) use only
+an `http` or `https` URL; any other scheme leaves the title as text and the file unlinked. On a phone the
 title takes its own line and the rest a second muted line.
 
 `VCSSource` gains `commit_sha`, `branch`, `commit_title`, `author_name`, `author_login`,
@@ -411,15 +427,17 @@ that `vcs_user.go` already parses for pull-request events:
 
 | Field | GitHub Actions | GitLab CI | Bitbucket Pipelines | Azure Pipelines |
 |---|---|---|---|---|
-| Branch | `GITHUB_HEAD_REF` in pull-request runs, else `GITHUB_REF_NAME` | `CI_MERGE_REQUEST_SOURCE_BRANCH_NAME` in MR pipelines, else `CI_COMMIT_REF_NAME` | `BITBUCKET_BRANCH`, the source branch in PR pipelines too | `SYSTEM_PULLREQUEST_SOURCEBRANCH` in PR builds, else `BUILD_SOURCEBRANCH`, without `refs/heads/` |
+| Branch | `GITHUB_HEAD_REF` in pull-request runs, else `GITHUB_REF_NAME` when `GITHUB_REF_TYPE` is `branch`; none in a `merge_group` run | `CI_MERGE_REQUEST_SOURCE_BRANCH_NAME` in MR pipelines, else `CI_COMMIT_BRANCH` (unset in tag pipelines) | `BITBUCKET_BRANCH`, the source branch in PR pipelines too | `SYSTEM_PULLREQUEST_SOURCEBRANCH` in PR builds, else `BUILD_SOURCEBRANCH` when it starts with `refs/heads/`, without that prefix |
 | Commit title | event payload `head_commit.message`, first line | `CI_COMMIT_TITLE` | not in the environment | `BUILD_SOURCEVERSIONMESSAGE`, first line |
-| Author | `head_commit.author.username`, or `pull_request.user.login` | `CI_COMMIT_AUTHOR` | not in the environment | `BUILD_REQUESTEDFOR` |
+| Author | `head_commit.author.username`, or `pull_request.user.login` (the PR's author) | `CI_COMMIT_AUTHOR` | not in the environment | `BUILD_REQUESTEDFOR` (who queued the build; Azure has no commit author in the environment) |
 | Pull request | `pull_request` event: number, title, URL. On push, the merge marker in the head commit's message: `(#N)` at the end of a squash merge, `Merge pull request #N` on a merge commit; a rebase merge carries none | `CI_MERGE_REQUEST_IID` and `CI_MERGE_REQUEST_TITLE` in MR pipelines; on push, `See merge request …!N` | `BITBUCKET_PR_ID` in PR pipelines; on push, `(pull request #N)` | `SYSTEM_PULLREQUEST_PULLREQUESTID` in PR builds; on push, `Merged PR N:` |
 | File at commit (frontend, from `repo@sha` and the file's path) | `<repo>/blob/<sha>/<path>` | `<repo>/-/blob/<sha>/<path>` | `<repo>/src/<sha>/<path>` | `<repo>?path=/<path>&version=GC<sha>` |
 
 In pull-request builds the platform's own ref is synthetic (`<N>/merge` on GitHub, `merge` on
 Azure), so the branch comes from the source-branch variable; Azure's `BUILD_SOURCEBRANCHNAME` also
-keeps only the last segment of `feature/x`. The SHA stays the checked-out commit, a merge commit in
+keeps only the last segment of `feature/x`. A run on a tag or on a merge queue's temporary branch
+(`gh-readonly-queue/…`) has no source branch, so `branch` stays empty rather than naming the tag or
+the queue. The SHA stays the checked-out commit, a merge commit in
 those builds, because the release's files came from it and D8 links them there.
 
 The file's path is the action's glob match, relative to the pipeline's working directory; a pipeline
@@ -451,9 +469,9 @@ lines up with a row of text; only a row that wraps grows:
 |---|---|---|
 | Source | D9's row: PR or commit title, author, `repo@sha`, branch | none |
 | Triggered / Created | "shop-ci (service account) · Oct 5, 15:02 · 12 minutes ago": the plan's creator by display name, not email, and `create_time` | The creator and time, today's "Created by" line |
-| Labels | none (no issue) | Today's inline issue labels, editable in place, required when the project forces them; absent when the plan has no issue |
+| Labels | As UIOps: a release plan can get an issue like any plan, and a project that forces labels then needs them here | Today's inline issue labels, editable in place, required when the project forces them; absent when the plan has no issue |
 | Release / Changes | "Migration-based · 493 files · update to version `202610051530`", the release's highest version in D1's order, or "State-based · `<schema version>`", from the release's type and files | "DDL", "DML" or "Mixed" on N databases, from the plan check's `statement_types`; database groups are counted beside the databases, and a kind of target the plan does not have is left out: "DML on 1 database group", "DDL on 2 databases · 1 database group" |
-| Review | none | The issue's approval state, "✓ Approved by alex (DBA) · Oct 5, 14:45", or who is next; absent when the plan has no issue |
+| Review | As UIOps | The issue's approval state, "✓ Approved by alex (DBA) · Oct 5, 14:45", or who is next; absent when the plan has no issue |
 | Progress | The plan list's stage cell (`ProjectPlanDashboardPage.tsx`): each stage's status icon and name, joined by arrows, wrapping when there are many | Same |
 
 The block folds. It opens unfolded every time the page loads, with "Hide details" at its top right,
@@ -508,7 +526,7 @@ The spine, per task status:
 | Failed | The log and the release's file list | "N files already applied to this database", folded; applied sections collapsed; the failed section open, its failed row open with the error on the line and the statement block under it (folded below 640 px); task-level steps as siblings; nothing for the files after the failed one. An error that names no file or step (D3) ends the spine with an open "Run failed" section instead, after the files already applied and any applied sections; "Revisions on `<database>`" at the end when a file was applied |
 | Canceled | The log and the release's file list | As Failed, with the section the cancel interrupted marked Canceled |
 | Skipped, after a run | As Failed | "Skipped by `<user>` · `<time>` · `<reason>`", then the last run as Failed |
-| Skipped, never run | Stored state | "Skipped by `<user>` · `<time>` · `<reason>`", then the planned list, collapsed |
+| Skipped, never run | Stored state | "Skipped by `<user>` · `<time>` · `<reason>`", then the planned list behind a closed "Planned at rollout creation · N files to apply" toggle; opened, it has no "re-checks" caption and marks each file to apply "Not applied" instead of "Will apply", since the task will not run |
 | Revision page, any run | The log and the release's file list | The sections of that run with the open and closed defaults of the run's status; no stored state, no Revisions link |
 
 Every row starts with the count line and follows the long-list rule (D3): at most 20 file sections
@@ -607,7 +625,10 @@ Tests to write, per the placement rules in `AGENTS.md`:
 - Run spine tests: a re-run version's applied section reads "Applied again" with the info icon
   naming the earlier revision's deleter and time, and no line under the section; a version the
   stored state counted applied that the run applied reads "Applied again" with the
-  after-the-rollout tooltip; without a stored state, "Applied".
+  after-the-rollout tooltip; without a stored state, "Applied". Stored ranges expand to the
+  release's files, a range past the list stopping at its end. A task skipped before it ran shows
+  the planned list behind the closed "Planned at rollout creation" toggle, its files "Not applied",
+  with no caption.
 - Folded card tests: each cell of the card table in States from the task, its latest run, the
   stored state and the plan check, before any log loads; the executor prefix removed from the
   error's first line; the release's file count on a done release task; DDL, DML and Mixed from the
@@ -619,7 +640,8 @@ Tests to write, per the placement rules in `AGENTS.md`:
   toggles once; the task name and the caret toggle once, not twice; the checkbox, an action button
   and the margin around each do not toggle; a click ending a text selection does not toggle.
 - Details block tests: each row for a release plan and a UIOps plan, the rows a plan kind lacks
-  absent; Migration-based and State-based; the Progress row's stage cells wrapping at six stages;
+  absent, and a release plan with an issue keeping Labels and Review; Migration-based and
+  State-based; the Progress row's stage cells wrapping at six stages;
   the labels editable in place and required when the project forces them, and in
   `plan-detail-lifecycle.spec.ts` every row the same height once a label is set; the description below the
   block clipped at 150 characters or 3 lines; the block unfolded on load, folding to the Progress
@@ -640,7 +662,8 @@ Tests to write, per the placement rules in `AGENTS.md`:
   as loaded rows, kept when the column opens and closes.
 - Source row tests: each row of the States table from a `VCSSource` with that subset; a squash-merge
   title ending in `(#N)` rendered with the number once; the 72-character truncation and tooltip; a
-  title with markdown and control characters rendered as text; the parse of `repo@sha` from each
+  title with markdown, control and bidirectional-override characters rendered as text; no link,
+  in the row or the viewer, from a URL that is not `http` or `https`; the parse of `repo@sha` from each
   platform's commit URL.
 - Action panel tests: each task line with its status chip, and a failed task's error first line, for
   a UIOps and a release task; the reason field shown and required for a release task, single and
@@ -650,14 +673,18 @@ Tests to write, per the placement rules in `AGENTS.md`:
   with a deleted revision carrying the deleter and time. Collision coverage, since the lookup keys
   on instance, database and version: the same version with a live revision on a sibling database of
   the same instance must not count for the target, and the target's own deleted revision of that
-  version must not count either; the sibling's state is asserted unchanged. `BatchSkipTasks` writes
+  version must not count either; the sibling's state is asserted unchanged. The pending files
+  stored as ranges, one range for a new database on a 500-file release; a deleted release creating
+  its task with no state. In `backend/store`, a user's email change rewriting the skipper and the
+  deleted-revision deleters, and not another user's email that contains it. `BatchSkipTasks` writes
   the skipper and the time on each selected task and on no other task of the stage, and the v1 task
   returns them.
 - `action/command`: `getVCSSource` per platform from environment fixtures and a GitHub payload file:
   PR event, squash-merge push, merge-commit push, rebase push (commit title, no PR), Bitbucket push
   (no title), undetected platform with and without the flags, flags overriding detection; the
   source branch, not the synthetic ref, in a GitHub pull-request run, a GitLab MR pipeline and an
-  Azure PR build, and a slashed Azure branch kept whole.
+  Azure PR build, and a slashed Azure branch kept whole; no branch on a GitHub tag push, a GitHub
+  merge queue run, a GitLab tag pipeline or an Azure tag build.
 - `frontend/tests/e2e/plan-detail`: a release-backed plan created through the API against the shared
   server with a target that already carries one version, read as a project Developer: the Changes
   rail newest first with the viewer opening from a file path; the planned spine before the run;
