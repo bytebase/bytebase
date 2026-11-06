@@ -1461,7 +1461,7 @@ func (s *SettingService) validateEnvironments(ctx context.Context, workspaceID s
 		if env.Title == "" {
 			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("environment title cannot be empty"))
 		}
-		if !isValidResourceID(env.Id) {
+		if !common.IsValidResourceID(env.Id) {
 			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid environment ID %v", env.Id))
 		}
 		if used[env.Id] {

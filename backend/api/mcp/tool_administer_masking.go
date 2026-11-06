@@ -2,7 +2,6 @@ package mcp
 
 import (
 	"context"
-	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"maps"
@@ -123,7 +122,9 @@ func (s *Server) administerMaskingRules(ctx context.Context, req *mcp.CallToolRe
 	if err != nil {
 		return formatToolError(err), nil, nil
 	}
-	digest := maskingRulesDigest(form, change.request)
+	// The stored rules and the semantic types are bound through the form, which
+	// states each change to the rules and what each rule's type does.
+	digest := adminFormDigest(form, change.request)
 	if result := s.confirmAdminChange(ctx, req, change, digest, form, maskingRules, "the masking rules, the semantic types or this request"); result != nil {
 		return result, nil, nil
 	}
@@ -310,19 +311,6 @@ func storeSemanticType(semanticType *v1pb.SemanticTypeSetting_SemanticType) (*st
 		return nil, errors.Wrap(err, "failed to read a semantic type")
 	}
 	return stored, nil
-}
-
-// maskingRulesDigest binds an answer to the form the user read and to the
-// request. The stored rules and the semantic types are bound through the
-// form, which states each change to the rules and what each rule's type does.
-func maskingRulesDigest(form *adminForm, request *v1pb.UpdatePolicyRequest) []byte {
-	h := sha256.New()
-	_, _ = h.Write([]byte(form.message))
-	_, _ = h.Write([]byte{0})
-	_, _ = h.Write([]byte(form.description))
-	_, _ = h.Write([]byte{0})
-	_, _ = h.Write(auth.MCPValueDigest(request))
-	return h.Sum(nil)
 }
 
 // maskingRulesDiff is how a request changes the masking rules.

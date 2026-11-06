@@ -297,6 +297,8 @@ var mcpRequestShapeRefusals = map[string]func(ctx context.Context, msg any) (rea
 		updatedPolicyName, mcpPolicyUpdateUnconfirmed, mcpPolicyUpdateWayOut),
 	v1connect.SettingServiceUpdateSettingProcedure: refuseUnconfirmed(v1connect.SettingServiceUpdateSettingProcedure,
 		updatedSettingName, mcpSettingUpdateUnconfirmed, mcpSettingUpdateWayOut),
+	v1connect.InstanceServiceCreateInstanceProcedure: refuseUnconfirmed(v1connect.InstanceServiceCreateInstanceProcedure,
+		createdInstanceName, mcpInstanceCreationUnconfirmed, mcpInstanceCreationWayOut),
 	v1connect.SheetServiceCreateSheetProcedure:       inTheConsole(refuseMaskedWriteSheet),
 	v1connect.SheetServiceBatchCreateSheetsProcedure: inTheConsole(refuseMaskedWriteSheetBatch),
 	v1connect.ReleaseServiceCreateReleaseProcedure:   inTheConsole(refuseMaskedWriteRelease),
@@ -347,6 +349,10 @@ const (
 		"and this request carries no such confirmation"
 	mcpSettingUpdateWayOut = "To change the approval rules for database changes, use the administer_workspace tool, which asks the user to confirm. " +
 		"Change other settings signed in to the Bytebase console"
+	mcpInstanceCreationUnconfirmed = "an instance is added over MCP only through administer_workspace, after the user confirms it in the MCP client, " +
+		"and this request carries no such confirmation"
+	mcpInstanceCreationWayOut = "To add a PostgreSQL instance to a project, use the administer_workspace tool, which asks the user to confirm and tests the connection before it adds the instance. " +
+		"Add other instances, or test a connection alone, signed in to the Bytebase console"
 )
 
 // refuseUnconfirmed serves procedure only when the request context carries a
@@ -389,6 +395,15 @@ func updatedProjectName(msg any) (string, bool) {
 func updatedPolicyName(msg any) (string, bool) {
 	request, ok := msg.(*v1pb.UpdatePolicyRequest)
 	return request.GetPolicy().GetName(), ok
+}
+
+// createdInstanceName names the instance a create adds, as its audit row does.
+func createdInstanceName(msg any) (string, bool) {
+	request, ok := msg.(*v1pb.CreateInstanceRequest)
+	if !ok {
+		return "", false
+	}
+	return getRequestResource(request, v1connect.InstanceServiceCreateInstanceProcedure), true
 }
 
 // refuseGrantIssueCreation applies grantIssueRefusal to CreateIssue. UpdateIssue's

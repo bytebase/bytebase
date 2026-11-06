@@ -17,8 +17,8 @@ served by no ceiling.
 | Class | Methods | Meaning |
 |---|---|---|
 | READ | 70 | served to a read-only session and above |
-| WRITE | 43 | served to a read-write session only |
-| EXCLUDED | 74 | served by no ceiling this phase ships |
+| WRITE | 44 | served to a read-write session only |
+| EXCLUDED | 73 | served by no ceiling this phase ships |
 | FORBIDDEN | 33 | never served, whatever the ceiling |
 | MCP_METHOD_CLASS_UNSPECIFIED | 0 | unclassified — CI rejects this, and the gate refuses it |
 | **total** | **220** | |
@@ -86,7 +86,7 @@ served by no ceiling.
 | InstanceService/AddDataSource | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.instances.update |
 | InstanceService/BatchSyncInstances | WRITE | — | bb.instances.sync |
 | InstanceService/BatchUpdateInstances | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.instances.update |
-| InstanceService/CreateInstance | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.instances.create |
+| InstanceService/CreateInstance | WRITE | — | bb.instances.create |
 | InstanceService/DeleteInstance | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.instances.delete |
 | InstanceService/GetInstance | READ | — | bb.instances.get |
 | InstanceService/ListInstanceDatabase | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.instances.get |
