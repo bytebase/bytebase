@@ -151,6 +151,9 @@ type fakeGraph struct {
 	override func(w http.ResponseWriter, r *http.Request) bool
 	// dropUploadResponse stores the next chunk and then drops the connection.
 	dropUploadResponse bool
+	// commitThenFail makes the next PUT take effect and then answers it with
+	// this status instead of the fake's response.
+	commitThenFail int
 }
 
 func newFakeGraph(t *testing.T) *fakeGraph {
@@ -164,6 +167,17 @@ func (f *fakeGraph) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if f.override != nil && f.override(w, r) {
 		return
 	}
+	if f.commitThenFail != 0 && r.Method == http.MethodPut {
+		status := f.commitThenFail
+		f.commitThenFail = 0
+		f.serve(httptest.NewRecorder(), r)
+		writeGraphError(w, status, "generalException")
+		return
+	}
+	f.serve(w, r)
+}
+
+func (f *fakeGraph) serve(w http.ResponseWriter, r *http.Request) {
 	if strings.HasPrefix(r.URL.Path, "/upload/") {
 		f.serveUpload(w, r)
 		return
@@ -365,21 +379,55 @@ func TestUploadResumesAfterLostChunkResponse(t *testing.T) {
 	require.Equal(t, []time.Duration{time.Second}, *waits)
 }
 
-func TestUploadUnconfirmed(t *testing.T) {
-	fake := newFakeGraph(t)
-	fake.override = func(w http.ResponseWriter, r *http.Request) bool {
-		if !strings.HasPrefix(r.URL.Path, "/upload/") {
-			return false
-		}
-		writeGraphError(w, http.StatusGatewayTimeout, "gatewayTimeout")
-		return true
+func TestUploadRetriesServerErrorAfterCommittedWrite(t *testing.T) {
+	for _, status := range []int{http.StatusInternalServerError, http.StatusBadGateway} {
+		t.Run(fmt.Sprintf("%d simple upload", status), func(t *testing.T) {
+			fake := newFakeGraph(t)
+			fake.commitThenFail = status
+			client, waits := newTestClient(t, fake)
+			client.simpleUploadMaxSize = simpleUploadMaxSize
+			_, err := client.Upload(context.Background(), testLocation, testFolder, testFiles)
+			require.NoError(t, err)
+			requireUploaded(t, fake)
+			require.Zero(t, fake.sessionCount)
+			require.Equal(t, []time.Duration{time.Second}, *waits)
+		})
+		t.Run(fmt.Sprintf("%d upload session chunk", status), func(t *testing.T) {
+			fake := newFakeGraph(t)
+			fake.commitThenFail = status
+			client, waits := newTestClient(t, fake)
+			_, err := client.Upload(context.Background(), testLocation, testFolder, testFiles)
+			require.NoError(t, err)
+			requireUploaded(t, fake)
+			require.Equal(t, []string{
+				"bytes 0-3/10", "bytes 4-7/10", "bytes 8-9/10",
+				"bytes 0-3/8", "bytes 4-7/8",
+			}, fake.contentRanges)
+			require.Equal(t, []time.Duration{time.Second}, *waits)
+		})
 	}
-	client, waits := newTestClient(t, fake)
-	_, err := client.Upload(context.Background(), testLocation, testFolder, testFiles)
-	require.ErrorIs(t, err, ErrUnconfirmed)
-	require.ErrorContains(t, err, "statement.sql")
-	require.NotContains(t, err.Error(), "tempauth")
-	require.Equal(t, []time.Duration{time.Second, 2 * time.Second}, *waits)
+}
+
+func TestUploadUnconfirmed(t *testing.T) {
+	for _, status := range []int{http.StatusInternalServerError, http.StatusBadGateway, http.StatusGatewayTimeout} {
+		t.Run(fmt.Sprint(status), func(t *testing.T) {
+			fake := newFakeGraph(t)
+			fake.override = func(w http.ResponseWriter, r *http.Request) bool {
+				if !strings.HasPrefix(r.URL.Path, "/upload/") {
+					return false
+				}
+				writeGraphError(w, status, "serverError")
+				return true
+			}
+			client, waits := newTestClient(t, fake)
+			_, err := client.Upload(context.Background(), testLocation, testFolder, testFiles)
+			require.ErrorIs(t, err, ErrUnconfirmed)
+			require.NotErrorIs(t, err, ErrNothingUploaded)
+			require.ErrorContains(t, err, "statement.sql")
+			require.NotContains(t, err.Error(), "tempauth")
+			require.Equal(t, []time.Duration{time.Second, 2 * time.Second}, *waits)
+		})
+	}
 }
 
 func TestUploadForbiddenUploadsNothing(t *testing.T) {

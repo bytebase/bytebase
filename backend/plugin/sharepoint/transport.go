@@ -142,7 +142,7 @@ func (c *graphClient) graphRaw(ctx context.Context, method, path string, body []
 	return nil
 }
 
-// send sends a request, retrying throttling, unavailability, and transport
+// send sends a request, retrying throttling, server errors, and transport
 // errors. If any attempt's outcome is unknown and the retries do not produce a
 // response, the error is an *unknownOutcomeError.
 func (c *graphClient) send(ctx context.Context, method, target string, body []byte, header http.Header, authorize bool) (*response, error) {
@@ -163,7 +163,7 @@ func (c *graphClient) send(ctx context.Context, method, target string, body []by
 			}
 		case resp.status == http.StatusTooManyRequests:
 			lastErr = newGraphError(resp)
-		case resp.status == http.StatusServiceUnavailable || resp.status == http.StatusGatewayTimeout:
+		case isRetriedServerError(resp.status):
 			outcomeUnknown = true
 			lastErr = newGraphError(resp)
 		default:
@@ -213,6 +213,18 @@ func (c *graphClient) sendOnce(ctx context.Context, method, target string, body 
 		return nil, &unknownOutcomeError{cause: transportError(err)}
 	}
 	return &response{status: resp.StatusCode, header: resp.Header, body: data}, nil
+}
+
+// isRetriedServerError reports whether status is a server error that Graph
+// asks clients to retry. A request that failed this way may still have taken
+// effect.
+func isRetriedServerError(status int) bool {
+	switch status {
+	case http.StatusInternalServerError, http.StatusBadGateway, http.StatusServiceUnavailable, http.StatusGatewayTimeout:
+		return true
+	default:
+		return false
+	}
 }
 
 // transportError drops the request URL from err.
