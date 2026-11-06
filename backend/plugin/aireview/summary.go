@@ -226,7 +226,7 @@ func buildSummaryPrompt(request *SummaryRequest, idOf map[string]string, nonce s
 // parseSummaryReply reads a summary reply for the databases of ids. It returns
 // the problems that make the reply invalid, worded for the model to correct.
 // The title and every group's facts become one line each, since the title is
-// the first line of the comment and each group a list item.
+// the heading of the comment and each group a list item.
 func parseSummaryReply(text string, ids []string) (*summaryReplyJSON, []string) {
 	reply, err := decodeLenient[summaryReplyJSON](text)
 	if err != nil {

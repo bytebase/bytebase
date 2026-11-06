@@ -3717,6 +3717,7 @@ What a review result carries beyond its text.
 | superseded | [bool](#bool) |  | A later run of the same reviewer has completed without reporting the result again, whatever its thread state. |
 | attempt | [int64](#int64) |  | The ReviewRunCompletion.attempt of the run that posted the result. A result a later run reports again keeps its thread and its attempt. |
 | codes | [string](#string) | repeated | The conditions a RULE result reports, as finding codes such as &#34;WT101&#34;, one per reason. A code names the same condition on every engine. Empty for other reviewers. |
+| title | [string](#string) |  | The name of the problem an AI result reports, on one line; the comment holds the rest. Empty for a RULE result, which rule_type names. |
 
 
 

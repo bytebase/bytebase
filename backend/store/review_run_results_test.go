@@ -381,10 +381,10 @@ func TestCompleteReviewRunKeepsResultsReportedAgain(t *testing.T) {
 	require.Equal(t, completions, listReviewRunCompletions(t, fixture, "default"))
 }
 
-// TestCompleteReviewRunKeptResultTakesDatabasesAndPriority keeps an AI result
-// whose databases and priority change, reopening it when a resolved one's
-// priority rises, on two projects whose issue ids collide.
-func TestCompleteReviewRunKeptResultTakesDatabasesAndPriority(t *testing.T) {
+// TestCompleteReviewRunKeptResultTakesDatabasesPriorityAndTitle keeps an AI
+// result whose databases, priority, and title change, reopening it when a
+// resolved one's priority rises, on two projects whose issue ids collide.
+func TestCompleteReviewRunKeptResultTakesDatabasesPriorityAndTitle(t *testing.T) {
 	t.Parallel()
 	fixture := newStorePostgresFixture(t, `
 		INSERT INTO project (resource_id, workspace, name) VALUES ('other', 'default', 'Other');
@@ -393,12 +393,13 @@ func TestCompleteReviewRunKeptResultTakesDatabasesAndPriority(t *testing.T) {
 		INSERT INTO issue (id, creator, project, name, status, type)
 		VALUES (301, 'admin@example.com', 'other', 'Issue Other', 'OPEN', 'DATABASE_CHANGE');
 	`)
-	result := func(projectID string, priority storepb.IssueCommentPayload_ReviewMetadata_Priority, targets ...string) *store.IssueCommentMessage {
+	result := func(projectID, title string, priority storepb.IssueCommentPayload_ReviewMetadata_Priority, targets ...string) *store.IssueCommentMessage {
 		r := reviewResult(projectID, "kept", storepb.ReviewRuleType_REVIEW_RULE_TYPE_UNSPECIFIED)
 		r.Payload.ReviewMetadata.RunType = storepb.ReviewRun_AI
 		r.Payload.ReviewMetadata.Priority = priority
 		r.Payload.ReviewMetadata.Targets = targets
 		r.Payload.ReviewMetadata.Fingerprint = "k"
+		r.Payload.ReviewMetadata.Title = title
 		return r
 	}
 	complete := func(projectID string, r *store.IssueCommentMessage) {
@@ -418,27 +419,29 @@ func TestCompleteReviewRunKeptResultTakesDatabasesAndPriority(t *testing.T) {
 	}
 	a, b := "instances/i/databases/a", "instances/i/databases/b"
 
-	complete("other", result("other", storepb.IssueCommentPayload_ReviewMetadata_P1, "instances/i/databases/z"))
-	complete("default", result("default", storepb.IssueCommentPayload_ReviewMetadata_P1, a, b))
+	complete("other", result("other", "Other title", storepb.IssueCommentPayload_ReviewMetadata_P1, "instances/i/databases/z"))
+	complete("default", result("default", "First title", storepb.IssueCommentPayload_ReviewMetadata_P1, a, b))
 	setReviewThreadState(t, fixture, "kept", store.ThreadStateResolved)
 
-	complete("default", result("default", storepb.IssueCommentPayload_ReviewMetadata_P2, a))
+	complete("default", result("default", "Second title", storepb.IssueCommentPayload_ReviewMetadata_P2, a))
 	kept := metadata("default")
 	require.Equal(t, []string{a}, kept.Targets)
 	require.Equal(t, storepb.IssueCommentPayload_ReviewMetadata_P2, kept.Priority)
+	require.Equal(t, "Second title", kept.Title)
 	require.Equal(t, "k", kept.Fingerprint)
 	require.False(t, kept.Superseded)
 	state, _ := listSupersession(t, fixture, "default")
 	require.Equal(t, []supersession{{Comment: "kept", ThreadState: "RESOLVED"}}, state, "the person's resolution stays")
 
-	complete("default", result("default", storepb.IssueCommentPayload_ReviewMetadata_PRIORITY_UNSPECIFIED, a, b))
+	complete("default", result("default", "Second title", storepb.IssueCommentPayload_ReviewMetadata_PRIORITY_UNSPECIFIED, a, b))
 	kept = metadata("default")
 	require.Equal(t, []string{a, b}, kept.Targets)
 	require.Equal(t, storepb.IssueCommentPayload_ReviewMetadata_PRIORITY_UNSPECIFIED, kept.Priority, "a result without a priority clears it")
 	state, _ = listSupersession(t, fixture, "default")
 	require.Equal(t, []supersession{{Comment: "kept", ThreadState: "RESOLVED"}}, state)
 
-	complete("default", result("default", storepb.IssueCommentPayload_ReviewMetadata_P1, a))
+	complete("default", result("default", "", storepb.IssueCommentPayload_ReviewMetadata_P1, a))
+	require.Empty(t, metadata("default").Title, "a result without a title clears it")
 	require.Equal(t, storepb.IssueCommentPayload_ReviewMetadata_P1, metadata("default").Priority)
 	state, _ = listSupersession(t, fixture, "default")
 	require.Equal(t, []supersession{{Comment: "kept", ThreadState: "OPEN"}}, state, "nobody accepted the higher priority")
@@ -452,6 +455,7 @@ func TestCompleteReviewRunKeptResultTakesDatabasesAndPriority(t *testing.T) {
 	other := metadata("other")
 	require.Equal(t, []string{"instances/i/databases/z"}, other.Targets, "the colliding issue in the other project is untouched")
 	require.Equal(t, storepb.IssueCommentPayload_ReviewMetadata_P1, other.Priority)
+	require.Equal(t, "Other title", other.Title)
 }
 
 type reviewRunCompletion struct {

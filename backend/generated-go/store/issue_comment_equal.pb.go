@@ -162,6 +162,9 @@ func (x *IssueCommentPayload_ReviewMetadata) Equal(y *IssueCommentPayload_Review
 			return false
 		}
 	}
+	if x.Title != y.Title {
+		return false
+	}
 	return true
 }
 

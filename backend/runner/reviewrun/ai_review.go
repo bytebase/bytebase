@@ -104,8 +104,9 @@ type aiReviewEarlier struct {
 	// lets the rollout past the problem.
 	Resolved bool
 	Priority storepb.IssueCommentPayload_ReviewMetadata_Priority
-	// Comment is the text the result was posted with, which a kept result
-	// keeps.
+	// Title and Comment are what the result was posted with, which a kept
+	// result keeps.
+	Title   string
 	Comment string
 	// Sheet is the text of the sheet the result is anchored to, SheetSha256
 	// its hash, and Line the anchored line.
@@ -384,20 +385,18 @@ func keptEarlier(findings []*aiReviewFinding, earlier []*aiReviewEarlier) *aiRev
 	return result
 }
 
-// earlierFinding is an earlier result as the merge shows it: the title, rule,
-// and fix of its comment, its priority, and the line it stands on now. The
-// evidence is left out, since a comment on more than one database names them
-// there.
+// earlierFinding is an earlier result as the merge shows it: its title, the
+// rule and fix of its comment, its priority, and the line it stands on now.
+// The evidence is left out, since a comment on more than one database names
+// them there.
 func earlierFinding(result *aiReviewEarlier, line int) aireview.Finding {
-	title, rule, fix := aiReviewCommentParts(result.Comment)
-	return aireview.Finding{Title: title, Severity: aiReviewSeverity(result.Priority), Line: line, Rule: rule, Fix: fix}
+	rule, fix := aiReviewCommentParts(result.Comment)
+	return aireview.Finding{Title: result.Title, Severity: aiReviewSeverity(result.Priority), Line: line, Rule: rule, Fix: fix}
 }
 
-// aiReviewCommentParts reads back the title, rule, and fix that
-// aiReviewCommentText wrote: the first line, and the last "Rule:" and
-// "Suggested fix:" paragraphs.
-func aiReviewCommentParts(comment string) (title, rule, fix string) {
-	title, _, _ = strings.Cut(comment, "\n")
+// aiReviewCommentParts reads back the rule and fix that aiReviewCommentText
+// wrote: the last "Rule:" and "Suggested fix:" paragraphs.
+func aiReviewCommentParts(comment string) (rule, fix string) {
 	if i := strings.LastIndex(comment, aiReviewFixLabel); i >= 0 {
 		fix = comment[i+len(aiReviewFixLabel):]
 		comment = comment[:i]
@@ -405,7 +404,7 @@ func aiReviewCommentParts(comment string) (title, rule, fix string) {
 	if i := strings.LastIndex(comment, aiReviewRuleLabel); i >= 0 {
 		rule = comment[i+len(aiReviewRuleLabel):]
 	}
-	return title, rule, fix
+	return rule, fix
 }
 
 // sheetStatements splits a sheet into the merge's blocks and gives each its
@@ -605,11 +604,12 @@ func aiReviewComments(projectID string, issueUID int64, problems []*aiReviewProb
 		lead := leadFinding(findings)
 		line := int32(commonLine(findings))
 		targets := problemTargets(findings)
-		var comment, fingerprint string
+		var title, comment, fingerprint string
 		if problem.Earlier != nil {
-			comment, fingerprint = problem.Earlier.Comment, problem.Earlier.Fingerprint
+			title, comment, fingerprint = problem.Earlier.Title, problem.Earlier.Comment, problem.Earlier.Fingerprint
 		} else {
-			comment, fingerprint = aiReviewCommentText(problem, lead, findings, targets, onBlock[keyOf(problem)]), problem.Segment+"/"+uuid.NewString()
+			title, comment = aiReviewCommentText(problem, lead, findings, targets, onBlock[keyOf(problem)])
+			fingerprint = problem.Segment + "/" + uuid.NewString()
 		}
 		comments = append(comments, &store.IssueCommentMessage{
 			ProjectID: projectID,
@@ -627,6 +627,7 @@ func aiReviewComments(projectID string, issueUID int64, problems []*aiReviewProb
 					Priority:    aiReviewPriority(lead.Finding.Severity),
 					Targets:     targets,
 					Fingerprint: fingerprint,
+					Title:       title,
 				},
 			},
 		})
@@ -704,24 +705,25 @@ type aiReviewGroup struct {
 	facts   string
 }
 
-// aiReviewCommentText renders a problem as the body of its thread, whose first
-// line is the title the frontend shows as the finding's name. A problem of
-// more than one database states the shared evidence once, then one line for
-// each group of databases with its severities and the facts that set it
-// apart, then the reviewed databases that reported a different problem on the
-// statement, onBlock, or nothing. Without a summary, the shared evidence is
-// the lead finding's, labeled with its database, and the databases are
-// grouped by severity alone.
-func aiReviewCommentText(problem *aiReviewProblem, lead *aiReviewFinding, findings []*aiReviewFinding, targets []string, onBlock []string) string {
+// aiReviewCommentText renders a problem as the title and the body of its
+// thread. A problem of more than one database states the shared evidence
+// once, then one line for each group of databases with its severities and the
+// facts that set it apart, then the reviewed databases that reported a
+// different problem on the statement, onBlock, or nothing. Without a summary,
+// the shared evidence is the lead finding's, labeled with its database, and
+// the databases are grouped by severity alone.
+func aiReviewCommentText(problem *aiReviewProblem, lead *aiReviewFinding, findings []*aiReviewFinding, targets []string, onBlock []string) (title, text string) {
 	var b strings.Builder
 	if len(targets) == 1 {
-		_, _ = b.WriteString(lead.Finding.Title)
-		for _, finding := range findings {
-			_, _ = fmt.Fprintf(&b, "\n\n%s", finding.Finding.Evidence)
+		for i, finding := range findings {
+			if i > 0 {
+				_, _ = b.WriteString("\n\n")
+			}
+			_, _ = b.WriteString(finding.Finding.Evidence)
 		}
 		_, _ = b.WriteString(aiReviewRuleLabel + lead.Finding.Rule)
 		_, _ = b.WriteString(aiReviewFixLabel + lead.Finding.Fix)
-		return b.String()
+		return lead.Finding.Title, b.String()
 	}
 
 	named := slices.Clone(problem.Reviewed)
@@ -737,7 +739,7 @@ func aiReviewCommentText(problem *aiReviewProblem, lead *aiReviewFinding, findin
 			severities[finding.Unit.Check.Target] = finding.Finding.Severity
 		}
 	}
-	var title, evidence, fix string
+	var evidence, fix string
 	var groups []*aiReviewGroup
 	if summary := problem.Summary; summary != nil {
 		title, evidence, fix = summary.Title, summary.Evidence, summary.Fix
@@ -773,8 +775,7 @@ func aiReviewCommentText(problem *aiReviewProblem, lead *aiReviewFinding, findin
 		return cmp.Compare(aiReviewPriority(x.highest), aiReviewPriority(y.highest))
 	})
 
-	_, _ = b.WriteString(title)
-	_, _ = fmt.Fprintf(&b, "\n\n%s\n", evidence)
+	_, _ = fmt.Fprintf(&b, "%s\n", evidence)
 	for _, group := range groups {
 		// Databases with the same facts can still carry different severities,
 		// which the group shows as a range rather than raise to its highest.
@@ -809,7 +810,7 @@ func aiReviewCommentText(problem *aiReviewProblem, lead *aiReviewFinding, findin
 	}
 	_, _ = b.WriteString(aiReviewRuleLabel + lead.Finding.Rule)
 	_, _ = b.WriteString(aiReviewFixLabel + fix)
-	return b.String()
+	return title, b.String()
 }
 
 // databaseList names databases by their labels in order, up to

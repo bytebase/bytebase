@@ -2,6 +2,7 @@ import type { TFunction } from "i18next";
 import { Bot, ListChecks } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { markdownSummary } from "@/components/MarkdownEditor";
 import { FindingCodeBadge } from "@/components/sql-review/FindingCodeBadge";
 import { standardRuleText } from "@/components/sql-review/standardRules";
 import { UserAvatar } from "@/components/UserAvatar";
@@ -123,8 +124,7 @@ export function priorityStyle(
 }
 
 // A review result's heading line: its priority, then for a rule review
-// result the rule and the finding codes. An AI result names its rule in its
-// text.
+// result the rule and the finding codes, and for an AI result its title.
 export function ReviewHeading({
   review,
 }: {
@@ -140,6 +140,14 @@ export function ReviewHeading({
       {isRule && <ReviewRule ruleType={review.ruleType} />}
       {isRule &&
         review.codes.map((code) => <FindingCodeBadge code={code} key={code} />)}
+      {!isRule && review.title && (
+        <span
+          className="min-w-0 text-sm font-medium text-main"
+          data-testid="review-title"
+        >
+          {markdownSummary(review.title)}
+        </span>
+      )}
     </div>
   );
 }

@@ -79,12 +79,12 @@ message IssueCommentPayload {
   }
 
   // ReviewMetadata is what a review result carries beyond its text: which
-  // reviewer posted it, what it was judged against, its priority, and the
-  // databases it applies to. When a run completes, an earlier result of its
-  // type whose fingerprint the run reports again keeps its thread, and the
-  // run posts no new result for it; every other earlier root of its type is
-  // resolved and marked superseded, in the transaction that posts the new
-  // results.
+  // reviewer posted it, what it was judged against, its priority, the
+  // databases it applies to, and for an AI result, its title. When a run
+  // completes, an earlier result of its type whose fingerprint the run
+  // reports again keeps its thread, and the run posts no new result for it;
+  // every other earlier root of its type is resolved and marked superseded,
+  // in the transaction that posts the new results.
   message ReviewMetadata {
     // Priority says what resolving the thread means. It has no bearing on
     // blocking: an OPEN root thread blocks whatever its priority, and a
@@ -129,6 +129,9 @@ message IssueCommentPayload {
     // The conditions a RULE result reports, as omni finding codes such as
     // "WT101", one per reason. Empty for other reviewers.
     repeated string codes = 8;
+    // The name of the problem an AI result reports, on one line; the comment
+    // holds the rest. Empty for a RULE result, which rule_type names.
+    string title = 9;
   }
 
   // StatementAnchor records the anchored statement revision and range.
