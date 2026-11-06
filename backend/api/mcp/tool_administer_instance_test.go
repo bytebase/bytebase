@@ -12,6 +12,7 @@ import (
 
 	"github.com/labstack/echo/v5"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -727,5 +728,32 @@ func TestConfirmAdminChangeNamesEachEntrysChange(t *testing.T) {
 			require.Equal(t, tc.revised, tc.subject.revised())
 			require.Equal(t, tc.reread, tc.subject.reread())
 		})
+	}
+}
+
+type licenseFacts struct {
+	masking, unified bool
+}
+
+func (l licenseFacts) IsFeatureEnabled(context.Context, string, v1pb.PlanFeature) error {
+	if !l.masking {
+		return errors.New("feature not in plan")
+	}
+	return nil
+}
+
+func (l licenseFacts) IsUnifiedInstanceLicense(context.Context, string) bool { return l.unified }
+
+func TestMaskingSkipsAnUnactivatedInstanceOnlyWithMaskingAndASeatLicense(t *testing.T) {
+	for _, tc := range []struct {
+		license licenseFacts
+		want    bool
+	}{
+		{licenseFacts{masking: true}, true},
+		{licenseFacts{masking: true, unified: true}, false},
+		{licenseFacts{}, false},
+		{licenseFacts{unified: true}, false},
+	} {
+		require.Equal(t, tc.want, maskingSkipsUnactivatedUnder(tc.license)(context.Background(), "ws-test"), "%+v", tc.license)
 	}
 }

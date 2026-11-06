@@ -95,11 +95,23 @@ func NewServer(stores *store.Store, profile *config.Profile, secret string, inte
 	s.findUnapprovableStep = func(ctx context.Context, workspace, issueName string) (*review.UnapprovableStep, error) {
 		return review.FindUnapprovableStep(ctx, stores, workspace, issueName)
 	}
-	s.maskingSkipsUnactivated = func(ctx context.Context, workspace string) bool {
+	s.maskingSkipsUnactivated = maskingSkipsUnactivatedUnder(licenses)
+	return s, nil
+}
+
+// instanceLicense is what the instance entry reads of a workspace's license.
+type instanceLicense interface {
+	IsFeatureEnabled(ctx context.Context, workspaceID string, f v1pb.PlanFeature) error
+	IsUnifiedInstanceLicense(ctx context.Context, workspaceID string) bool
+}
+
+// maskingSkipsUnactivatedUnder reports, under a workspace's license, whether
+// masking would skip an instance that is not activated.
+func maskingSkipsUnactivatedUnder(licenses instanceLicense) func(ctx context.Context, workspace string) bool {
+	return func(ctx context.Context, workspace string) bool {
 		return licenses.IsFeatureEnabled(ctx, workspace, v1pb.PlanFeature_FEATURE_DATA_MASKING) == nil &&
 			!licenses.IsUnifiedInstanceLicense(ctx, workspace)
 	}
-	return s, nil
 }
 
 func newServerWithStore(stores serverStore, profile *config.Profile, secret string, internalAPI http.Handler) (*Server, error) {
