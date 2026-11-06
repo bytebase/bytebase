@@ -570,9 +570,10 @@ func TestAdministerMaskingRulesChangesNothingUnlessApplied(t *testing.T) {
 		answer *mcp.ElicitResult
 		want   string
 	}{
-		"declined":        {&mcp.ElicitResult{Action: "decline"}, "Not changed: the user declined, so the masking rules stay as they are"},
-		"cancelled":       {&mcp.ElicitResult{Action: "cancel"}, "Not changed: the user cancelled, so the masking rules stay as they are"},
-		"changed in chat": {confirmAnswer(confirmChoiceChange), "Not changed: the user wants to change this request"},
+		"declined":  {&mcp.ElicitResult{Action: "decline"}, "Not changed: the user declined, so the masking rules stay as they are"},
+		"cancelled": {&mcp.ElicitResult{Action: "cancel"}, "Not changed: the user cancelled, so the masking rules stay as they are"},
+		"changed in chat": {confirmAnswer(confirmChoiceChange),
+			"Not changed: the user wants to change this request. Ask them what to change, then call administer_workspace with the revised rules."},
 	} {
 		t.Run(name, func(t *testing.T) {
 			mock := &maskingMock{}
