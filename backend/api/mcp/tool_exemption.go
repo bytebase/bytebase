@@ -521,8 +521,8 @@ func exemptionScope(g *exemptionGrant) string {
 // effect into the lines a form shows. The question starts with head, which
 // names the member and must fit one line: only the text after it, which ends
 // with the account's email, may run past the line. tooLong says why the form
-// does not fit, or is empty when it does. Values enter through %q, so none can
-// pose as a line of the message.
+// does not fit, or is empty when it does. Values enter through %q or
+// conditionText, so none can pose as a line of the message.
 func fitExemption(ctx context.Context, head, rest, change, effect string) (message, tooLong string) {
 	question := head + rest
 	if email := getUserEmail(ctx); email != "" {
@@ -587,8 +587,8 @@ func describeExemptionRevoke(ctx context.Context, input RevokeMaskingExemptionIn
 
 // revokeScope names the exemption the revoke ends, and its expiry apart. A
 // condition in the form a grant writes reads in the grant's words. Any other
-// shows through conditionText; when it leads with an expiry, the expiry is
-// split off and the rest shows as CEL prints it.
+// shows through conditionText, with its expiry apart when splitExemptionExpiry
+// can split one off.
 func revokeScope(input RevokeMaskingExemptionInput) (scope, expiry string) {
 	// An all-databases grant with no expiry writes no condition, which CEL
 	// cannot parse.
