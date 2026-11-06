@@ -20,6 +20,7 @@ import {
   groupEntriesByReleaseFile,
   hasReleaseFileMarkers,
   isSpineItemOpenByDefault,
+  parseReleaseFileError,
   pendingVersionsOf,
   type TaskRunLogDetailText,
   windowSpine,
@@ -1040,6 +1041,20 @@ const shape = (spine: ReturnType<typeof buildReleaseSpine>) =>
 const SYNC = String(TaskRunLogEntry_Type.DATABASE_SYNC);
 const FILE_ERROR = (version: string, message: string) =>
   `failed to execute release file ${version}.sql (version ${version}): ${message}`;
+
+describe("release file error", () => {
+  test("the path ends at the first version marker, so a message quoting SQL with one keeps its file", () => {
+    expect(
+      parseReleaseFileError(
+        "failed to execute release file m/2_a.sql (version 2): Error 1064: near '-- (version 9): x' at line 1"
+      )
+    ).toEqual({
+      path: "m/2_a.sql",
+      version: "2",
+      message: "Error 1064: near '-- (version 9): x' at line 1",
+    });
+  });
+});
 
 describe("stored release state", () => {
   test("ranges name positions in the release's files, and a range past the list stops at its end", () => {
