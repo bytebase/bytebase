@@ -121,7 +121,7 @@ func signedMaskingState(t *testing.T, s *Server, stored []*v1pb.MaskingRulePolic
 	alice := withOAuth2ClientID(withUserEmail(withWorkspaceID(context.Background(), "ws-test"), "alice@example.com"), "client-A")
 	form, err := maskingRulesForm(alice, diff, "")
 	require.NoError(t, err)
-	return s.signConfirmationState(alice, change, maskingRulesDigest(form, change.request), askedAt)
+	return s.signConfirmationState(alice, change, adminFormDigest(form, change.request), askedAt)
 }
 
 func maskingRule(id, title, condition, semanticType string) *v1pb.MaskingRulePolicy_MaskingRule {

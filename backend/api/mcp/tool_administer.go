@@ -100,6 +100,28 @@ var approvalRules = adminRules{
 	replace:  "add a rule before removing the one it replaces",
 }
 
+// adminSubject is what an entry changes, in the words confirmAdminChange's
+// results use.
+type adminSubject interface {
+	// unchanged ends a result that changed nothing, such as "the approval
+	// rules stay as they are".
+	unchanged() string
+	// notChanged ends the refusal of a stale answer, such as "the approval
+	// rules were not changed".
+	notChanged() string
+	// revised names what the agent sends after the user chose to change the
+	// request in chat.
+	revised() string
+	// reread is the next step after a stale answer.
+	reread() string
+}
+
+func (r adminRules) unchanged() string { return r.name + " stay as they are" }
+
+func (r adminRules) notChanged() string { return r.name + " were not changed" }
+
+func (adminRules) revised() string { return "the revised rules" }
+
 // reread is the next step after the stored rules changed: the request was
 // built from the old ones, so sending it again would undo the other change.
 func (r adminRules) reread() string {
@@ -584,26 +606,48 @@ type formChange struct {
 	effect bool
 }
 
-// form builds an entry's form in the lines Claude Code shows: the question, a
-// line or more per rule change, and the change's effect on the user. A change
-// that does not fit is refused, never cut. The fixed sentence goes in the
-// message when a line is left, and ends the description otherwise, which
-// lists every rule.
+// form builds a rule entry's form: a line or more per rule change, and the
+// description that lists every rule.
 func (r adminRules) form(ctx context.Context, changes []formChange, effect, description, link string) (*adminForm, error) {
-	question := r.question
+	return fitForm(ctx, r.question, changes, effect, r.apply, description, func(needed int, tooLong string) error {
+		return changeTooLong(needed, tooLong, r, link)
+	})
+}
+
+// fitForm builds an entry's form in the lines Claude Code shows: the question
+// with the user's account, a line or more per change, and the change's effect
+// on the user. A form that does not fit is refused with refuse, never cut. The
+// fixed sentence, when there is one, goes in the message when a line is left,
+// and ends the description otherwise.
+func fitForm(ctx context.Context, question string, changes []formChange, effect, fixed, description string, refuse func(needed int, tooLong string) error) (*adminForm, error) {
 	if email := getUserEmail(ctx); email != "" {
 		question += ", as " + email
 	}
 	lines, tooLong := fitMessage(question+"?", changes, effect)
 	if len(lines) > messageLines {
-		return nil, changeTooLong(len(lines), tooLong, r, link)
+		return nil, refuse(len(lines), tooLong)
 	}
-	if len(lines) < messageLines {
-		lines = append(lines, r.apply)
-	} else {
-		description += "\n" + r.apply
+	switch {
+	case fixed == "":
+	case len(lines) < messageLines:
+		lines = append(lines, fixed)
+	default:
+		description += "\n" + fixed
 	}
 	return &adminForm{message: strings.Join(lines, "\n"), description: description}, nil
+}
+
+// adminFormDigest binds an answer to the form the user read and to the
+// request. What an entry read for the form is bound through the form, which
+// states it.
+func adminFormDigest(form *adminForm, request proto.Message) []byte {
+	h := sha256.New()
+	_, _ = h.Write([]byte(form.message))
+	_, _ = h.Write([]byte{0})
+	_, _ = h.Write([]byte(form.description))
+	_, _ = h.Write([]byte{0})
+	_, _ = h.Write(auth.MCPValueDigest(request))
+	return h.Sum(nil)
 }
 
 // fitMessage puts the question, each change line and the change's effect on
@@ -656,7 +700,7 @@ func changeTooLong(needed int, tooLong string, rules adminRules, link string) *t
 // confirmAdminChange asks the user to confirm w, or reads their answer. It
 // returns the result that ends the call, or nil when the user chose Apply and
 // what the form showed still reads as it did when they were asked.
-func (s *Server) confirmAdminChange(ctx context.Context, req *mcp.CallToolRequest, w confirmableWrite, digest []byte, form *adminForm, rules adminRules, shown string) *mcp.CallToolResult {
+func (s *Server) confirmAdminChange(ctx context.Context, req *mcp.CallToolRequest, w confirmableWrite, digest []byte, form *adminForm, subject adminSubject, shown string) *mcp.CallToolResult {
 	reply, answered := s.signedReply(ctx, req, w, digest)
 	if !answered {
 		return s.askWithForm(ctx, w, digest, form.message, map[string]any{
@@ -678,20 +722,20 @@ func (s *Server) confirmAdminChange(ctx context.Context, req *mcp.CallToolReques
 	}
 	content, accepted, why := acceptedForm(reply.response)
 	if !accepted {
-		return textResult(fmt.Sprintf("Not changed: %s, so %s stay as they are. Do not retry unless the user asks.", why, rules.name))
+		return textResult(fmt.Sprintf("Not changed: %s, so %s. Do not retry unless the user asks.", why, subject.unchanged()))
 	}
 	switch content[adminChoiceField] {
 	case adminChoiceApply:
 	case adminChoiceChange:
-		return textResult("Not changed: the user wants to change this request. Ask them what to change, then call administer_workspace with the revised rules.")
+		return textResult("Not changed: the user wants to change this request. Ask them what to change, then call administer_workspace with " + subject.revised() + ".")
 	default:
-		return textResult(fmt.Sprintf("Not changed: the answer chose none of the form's choices, so %s stay as they are.", rules.name))
+		return textResult(fmt.Sprintf("Not changed: the answer chose none of the form's choices, so %s.", subject.unchanged()))
 	}
 	if why := reply.staleReason(shown + " no longer read as they did when the user was asked"); why != "" {
 		return formatToolError(&toolError{
 			Code:       "STALE_CONFIRMATION",
-			Message:    why + ", so " + rules.name + " were not changed",
-			Suggestion: rules.reread(),
+			Message:    why + ", so " + subject.notChanged(),
+			Suggestion: subject.reread(),
 		})
 	}
 	return nil
