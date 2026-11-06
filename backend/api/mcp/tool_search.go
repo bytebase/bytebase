@@ -183,6 +183,9 @@ func endpointNote(ep *EndpointInfo) string {
 		return "MCP sessions change the workspace masking rules through the administer_workspace tool, and masking exemptions " +
 			"through grant_masking_exemption and revoke_masking_exemption; each asks the user to confirm first. " +
 			"call_api is refused for every policy."
+	case v1connect.InstanceServiceCreateInstanceProcedure:
+		return "MCP sessions add a PostgreSQL instance that signs in with a user name and password to a project, through the administer_workspace tool, " +
+			"which asks the user to confirm first. call_api is refused for every instance."
 	case v1connect.SettingServiceGetSettingProcedure:
 	default:
 		return ""

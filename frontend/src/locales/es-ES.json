@@ -3199,6 +3199,10 @@
           "refused": "No permitido"
         },
         "row": {
+          "add-instances": {
+            "details": "Añadir a un proyecto una instancia de PostgreSQL que inicia sesión con usuario y contraseña · Cada instancia se confirma en el cliente MCP del usuario antes de añadirse · Sus bases de datos pasan a ese proyecto de forma permanente",
+            "title": "Añadir instancias a proyectos"
+          },
           "approval-rules": {
             "details": "Añadir, quitar, reordenar o cambiar las reglas que deciden quién aprueba un cambio de base de datos · Cada cambio se confirma en el cliente MCP del usuario antes de hacerse · Las reglas de respaldo y las reglas de otros tipos de issues no cambian",
             "title": "Gestionar las reglas de aprobación de cambios de base de datos"

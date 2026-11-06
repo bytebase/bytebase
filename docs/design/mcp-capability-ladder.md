@@ -59,7 +59,7 @@ What follows from it:
 
 ## The rows
 
-Fourteen rows: four read, ten write. Each has a title and a one-line list of sub-items in plain
+Fifteen rows: four read, eleven write. Each has a title and a one-line list of sub-items in plain
 words. The right column records which classified methods the row's wording has to cover; it is
 documentation for whoever rereads these rows after a classification change, and never appears in
 the product.
@@ -75,14 +75,15 @@ the product.
 | write | Request access grants | Ask for a time-boxed grant to run a specific statement, optionally with results unmasked or exported; the statement must be a read as far as the engine can check it · The grant starts only after it is approved, and a request that would need no one's approval is refused · A grant applies only where the project allows access grants · Revoke an active grant · Turn a project's "Allow access grants" on or off, after the user confirms | 3 WRITE methods: `AccessGrantService/CreateAccessGrant` and `RevokeAccessGrant`, served like any WRITE method; and `ProjectService/UpdateProject`, served only through the `set_just_in_time_access` tool, which asks the user to confirm and changes only that setting |
 | write | Grant or revoke masking exemptions | Exempt one member from masking for a database, a schema, a table or a column, or for every database in a project, with an optional expiry · Each exemption and each removal is confirmed in the user's MCP client before it is made · Exempted data shows unmasked in query and export results | 1 WRITE method: `OrgPolicyService/UpdatePolicy`, served only through the `grant_masking_exemption` and `revoke_masking_exemption` tools, which ask the user to confirm, then add one exemption entry or remove one member from the entries whose condition matches exactly; the workspace masking rule policy changes through `administer_workspace` (Set masking rules), and other policy types and `CreatePolicy` and `DeletePolicy` stay refused |
 | write | Approve or reject issues | Each decision is confirmed in the user's MCP client before it is made · Role requests are decided in the console · The approval rules and the project's self-approval setting apply, as in the console | 2 WRITE methods: `ApproveIssue`, `RejectIssue`, served only through the `decide_issue` tool, which asks the user to confirm each decision and refuses role requests |
+| write | Add instances to projects | Add a PostgreSQL instance to a project, signed in with a user name and password · Each instance is confirmed in the user's MCP client before it is added · Its databases join that project for good | 1 WRITE method: `InstanceService/CreateInstance`, which the gate serves only with a confirmation that `administer_workspace` attaches, for a PostgreSQL instance in a project that signs in with a password (D13). `UpdateInstance`, whose `allow_missing` also creates an instance, stays EXCLUDED with the other instance writes |
 | write | Manage approval rules for database changes | Add, remove, reorder or change the rules that decide who approves a database change · Each change is confirmed in the user's MCP client before it is made · The fallback rules and the rules for other kinds of issues stay as they are | 1 WRITE method: `SettingService/UpdateSetting`, which the gate serves only with a confirmation that `administer_workspace` attaches, for the approval rules alone (D13) |
 | write | Set masking rules | Add, remove, reorder or change the rules that decide which columns are masked and how · Each change is confirmed in the user's MCP client before it is made · Semantic types stay as they are | The `OrgPolicyService/UpdatePolicy` method of Grant or revoke masking exemptions, served for the workspace masking rule policy only through `administer_workspace`, which asks the user to confirm. On a workspace with no rules stored, `allowMissing` makes the handler create the policy; `CreatePolicy` itself stays refused |
 | write | Run rollouts and tasks | Create a rollout · Run, skip or cancel its tasks, under the project's approval policy | 4 WRITE methods: `CreateRollout`, `BatchRunTasks`, `BatchSkipTasks`, `BatchCancelTaskRuns` |
 | write | Run DML and DDL statements | INSERT, UPDATE, DELETE, CREATE, ALTER, DROP through queries, as far as the engine and the user's own permissions allow · Where the user's MCP client supports confirmations, a query that is not a read as far as the engine can check it runs only after the user confirms it · In other clients such a query can run without asking | Not a method: the statement clamp in `mcp_sql_clamp.go`, which Read-write lifts. A statement Bytebase cannot show is a read runs only through the `query_database` tool, which asks the user to confirm it when the client can show the form (`mcp_sql_write.go`) |
 | write | Export query results | Export results as files. Data leaves Bytebase | 1 WRITE method: `SQLService/Export`, which requires the user's own `bb.sql.export` on the data it reads, from a role or a matching export grant, and runs only statements Bytebase can show are reads |
 | write | Manage database housekeeping | Sync instances and databases · Saved queries | 9 WRITE methods: sync, saved-query writes |
-| — | *Read-write stops here* | | 113 methods |
-| floor | Never, in any mode: raise this policy, create a service account key, change a person's password, email or MFA, show a stored secret, open an Admin mode session, or read anyone else's query history. | | 107 methods: 33 FORBIDDEN, 74 EXCLUDED |
+| — | *Read-write stops here* | | 114 methods |
+| floor | Never, in any mode: raise this policy, create a service account key, change a person's password, email or MFA, show a stored secret, open an Admin mode session, or read anyone else's query history. | | 106 methods: 33 FORBIDDEN, 73 EXCLUDED |
 
 Every row is displayed under every mode — served, or muted with a `—` — and against every engine a
 workspace happens to hold, so **every line on this card must be true on both axes: mode and engine.**
@@ -305,7 +306,7 @@ its tier tag, nothing else. "Show details" reveals the sub-item line for every r
 there is one second-level control rather than one per row; per-row expanders were rejected as fiddly. No
 method names, no permission names, no counts, no link to a method list. The floor is kept as one
 short line because it is what a security-minded admin reads first, and it is what keeps the list
-honest about the 107 methods no mode reaches. There is no constants line under the list; the facts
+honest about the 106 methods no mode reaches. There is no constants line under the list; the facts
 it would carry (capped by the user's own permissions, refusals audited) move into the section
 description.
 
@@ -425,9 +426,10 @@ migration, because the store's unmarshaler discards the unknown key and the next
 row without it. The masked-write guard stays, because it never depended on the toggle.
 
 **D13 — Read-write changes workspace administration after a confirmation.** Under Read-write, the
-agent can change the approval rules for database changes and the masking rules through
-`administer_workspace`, after the user confirms each change in the MCP client. Approval and masking
-rules bound what a user's agent can change and read, so this is a trade: the confirmation checks
+agent can change the approval rules for database changes and the masking rules, and add a
+PostgreSQL instance to a project, through `administer_workspace`, after the user confirms each change
+in the MCP client. Approval and masking rules bound what a user's agent can change and read, and an
+instance's databases join its project for good, so this is a trade: the confirmation checks
 intent and is not a security boundary, since a hook in the user's own client can answer the form. An
 admin who wants no agent to change a setting chooses Read-only. Vincent Huang decided on 2026-11-02
 that admin changes are no more dangerous than the DDL and DML that Read-write already runs, and that

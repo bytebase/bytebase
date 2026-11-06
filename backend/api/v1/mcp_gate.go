@@ -297,6 +297,8 @@ var mcpRequestShapeRefusals = map[string]func(ctx context.Context, msg any) (rea
 		updatedPolicyName, mcpPolicyUpdateUnconfirmed, mcpPolicyUpdateWayOut),
 	v1connect.SettingServiceUpdateSettingProcedure: refuseUnconfirmed(v1connect.SettingServiceUpdateSettingProcedure,
 		updatedSettingName, mcpSettingUpdateUnconfirmed, mcpSettingUpdateWayOut),
+	v1connect.InstanceServiceCreateInstanceProcedure: refuseUnconfirmed(v1connect.InstanceServiceCreateInstanceProcedure,
+		createdInstanceName, mcpInstanceCreationUnconfirmed, mcpInstanceCreationWayOut),
 	v1connect.SheetServiceCreateSheetProcedure:       inTheConsole(refuseMaskedWriteSheet),
 	v1connect.SheetServiceBatchCreateSheetsProcedure: inTheConsole(refuseMaskedWriteSheetBatch),
 	v1connect.ReleaseServiceCreateReleaseProcedure:   inTheConsole(refuseMaskedWriteRelease),
@@ -347,6 +349,10 @@ const (
 		"and this request carries no such confirmation"
 	mcpSettingUpdateWayOut = "To change the approval rules for database changes, use the administer_workspace tool, which asks the user to confirm. " +
 		"Change other settings signed in to the Bytebase console"
+	mcpInstanceCreationUnconfirmed = "an instance is added over MCP only through administer_workspace, after the user confirms it in the MCP client, " +
+		"and this request carries no such confirmation"
+	mcpInstanceCreationWayOut = "To add a PostgreSQL instance to a project, use the administer_workspace tool, which asks the user to confirm. " +
+		"Add other instances signed in to the Bytebase console"
 )
 
 // refuseUnconfirmed serves procedure only when the request context carries a
@@ -389,6 +395,23 @@ func updatedProjectName(msg any) (string, bool) {
 func updatedPolicyName(msg any) (string, bool) {
 	request, ok := msg.(*v1pb.UpdatePolicyRequest)
 	return request.GetPolicy().GetName(), ok
+}
+
+// createdInstanceName names the instance a create adds, as the audit log does.
+// A parent that names no project gets a name no confirmation carries.
+func createdInstanceName(msg any) (string, bool) {
+	request, ok := msg.(*v1pb.CreateInstanceRequest)
+	if !ok {
+		return "", false
+	}
+	if request.Parent == nil {
+		return common.FormatInstance(request.GetInstanceId()), true
+	}
+	projectID, err := common.GetProjectID(request.GetParent())
+	if err != nil {
+		return "", true
+	}
+	return common.FormatProjectInstance(projectID, request.GetInstanceId()), true
 }
 
 // refuseGrantIssueCreation applies grantIssueRefusal to CreateIssue. UpdateIssue's

@@ -48,15 +48,17 @@ const administerWorkspaceDescription = `Make a workspace administration change t
 | operationId | Yes      | The operation, e.g. "SettingService/UpdateSetting" |
 | body        | Yes      | The operation's request body |
 
-It serves two changes.
+It serves three changes.
 
 The approval rules for database changes: send SettingService/UpdateSetting with setting.name "settings/WORKSPACE_APPROVAL" and the whole rule list in setting.value.workspaceApproval.rules. Read the stored rules first with call_api SettingService/GetSetting, change only the rules whose source is CHANGE_DATABASE, and send every other rule as stored, in its order. Give each rule you add the source CHANGE_DATABASE. Send a rule's source, condition.expression, template.title, template.description and template.flow.roles; other fields are refused. Name each approver in template.flow.roles by its role name, such as roles/workspaceDBA. An approval check tries the CHANGE_DATABASE rules in order, and the first whose condition matches decides who approves a change. When none matches, the rules with no source, such as the Fallback Rule, decide, and a change that no rule matches needs no approval.
 
 The masking rules: send OrgPolicyService/UpdatePolicy with policy.name "workspaces/{workspace}/policies/masking_rule", policy.type MASKING_RULE and the whole rule list in policy.maskingRulePolicy.rules, with allowMissing true when no rules are stored yet. Read the stored rules first with call_api OrgPolicyService/GetPolicy, and the semantic types with call_api SettingService/GetSetting on settings/SEMANTIC_TYPES; the built-in types bb.default (full mask) and bb.default-partial (partial mask) always exist. Send a rule's id, condition.expression, condition.title and semanticType; other fields are refused, and the tool sets updateMask. Keep each stored rule's id, and give each new rule a new UUID. Masking tries the rules in order, and the first whose condition matches gives a column its semantic type; a column that no rule matches keeps its own.
 
-The tool shows the user what changes and asks them to confirm in a form. It changes the rules only when they accept; declining or cancelling changes nothing. A change too long for the form is refused, and the refusal says whether smaller steps help. A client that cannot show the form gets the console page instead. Do not ask in chat first: the form is the question.
+A PostgreSQL instance in a project: send InstanceService/CreateInstance with parent "projects/{project}", instanceId, and instance with title, engine POSTGRES, environment ("environments/{id}", as call_api SettingService/GetSetting on settings/ENVIRONMENT lists them; leave it out for none), activation, and one dataSources entry: id (a new UUID), type ADMIN, host, port, username, password, and optionally database, useSsl and verifyTlsCertificate. Other fields are refused, and the default project cannot own an instance. Set activation true unless the user says otherwise: masking skips an instance that is not activated, unless every instance is licensed. When the user accepts, Bytebase tests the connection and adds the instance only if it connects; its databases join the project for good. Certificates, SSH, other engines and other sign-in methods are set up in the console.
 
-Reading and changing the approval rules needs bb.settings.get and bb.settings.set, as in the console. Reading and changing the masking rules needs bb.policies.getMaskingRulePolicy and bb.policies.updateMaskingRulePolicy, bb.policies.createMaskingRulePolicy for the first save, and bb.settings.get for the semantic types. call_api refuses SettingService/UpdateSetting and OrgPolicyService/UpdatePolicy.`
+The tool shows the user what changes and asks them to confirm in a form. It makes the change only when they accept; declining or cancelling changes nothing. A change too long for the form is refused, and the refusal says whether smaller steps help. A client that cannot show the form gets the console page instead. Do not ask in chat first: the form is the question.
+
+Reading and changing the approval rules needs bb.settings.get and bb.settings.set, as in the console. Reading and changing the masking rules needs bb.policies.getMaskingRulePolicy and bb.policies.updateMaskingRulePolicy, bb.policies.createMaskingRulePolicy for the first save, and bb.settings.get for the semantic types. Adding an instance needs bb.instances.create. call_api refuses SettingService/UpdateSetting, OrgPolicyService/UpdatePolicy and InstanceService/CreateInstance.`
 
 func (s *Server) registerAdministerWorkspaceTool() {
 	mcp.AddTool(s.mcpServer, &mcp.Tool{
@@ -152,13 +154,15 @@ func (s *Server) handleAdministerWorkspace(ctx context.Context, req *mcp.CallToo
 			return s.administerApprovalRules(ctx, req, input)
 		case v1connect.OrgPolicyServiceUpdatePolicyProcedure:
 			return s.administerMaskingRules(ctx, req, input)
+		case v1connect.InstanceServiceCreateInstanceProcedure:
+			return s.administerInstance(ctx, req, input)
 		default:
 		}
 	}
 	return formatToolError(&toolError{
 		Code:       "UNSUPPORTED_CHANGE",
 		Message:    fmt.Sprintf("administer_workspace does not change %q", input.OperationID),
-		Suggestion: "it changes the approval rules for database changes through SettingService/UpdateSetting and the masking rules through OrgPolicyService/UpdatePolicy; make other changes with the tool that serves them, or signed in to the Bytebase console",
+		Suggestion: "it changes the approval rules for database changes through SettingService/UpdateSetting and the masking rules through OrgPolicyService/UpdatePolicy, and adds a PostgreSQL instance to a project through InstanceService/CreateInstance; make other changes with the tool that serves them, or signed in to the Bytebase console",
 	}), nil, nil
 }
 

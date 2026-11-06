@@ -331,14 +331,14 @@ func TestSearchAPINamesWhatMCPCannotDo(t *testing.T) {
 		served, unavailable, ok := strings.Cut(text, "## Not available over MCP")
 		require.True(t, ok)
 		require.Contains(t, served, "InstanceService/GetInstance")
-		require.NotContains(t, served, "InstanceService/CreateInstance")
-		require.Contains(t, unavailable, "InstanceService/CreateInstance")
+		require.NotContains(t, served, "InstanceService/DeleteInstance")
+		require.Contains(t, unavailable, "InstanceService/DeleteInstance")
 		require.Equal(t, 1, strings.Count(unavailable, "refused because "+administers), "one line per reason")
 	})
 
 	t.Run("detail mode gives the refusal, not the schema", func(t *testing.T) {
-		text := searchText(t, s, SearchInput{OperationID: "InstanceService/CreateInstance"})
-		require.Contains(t, text, "## InstanceService/CreateInstance")
+		text := searchText(t, s, SearchInput{OperationID: "InstanceService/DeleteInstance"})
+		require.Contains(t, text, "## InstanceService/DeleteInstance")
 		require.Contains(t, text, "Not available over MCP")
 		require.Contains(t, text, administers)
 		require.Contains(t, text, "Bytebase console")
@@ -377,6 +377,18 @@ func TestSearchAPINamesWhatMCPCannotDo(t *testing.T) {
 		detail := searchText(t, s, SearchInput{OperationID: "OrgPolicyService/UpdatePolicy"})
 		require.Contains(t, detail, "the workspace masking rules through the administer_workspace tool")
 		require.Contains(t, detail, "grant_masking_exemption and revoke_masking_exemption")
+		require.Contains(t, detail, "Request Body")
+	})
+
+	t.Run("the instance create names the tool that adds instances", func(t *testing.T) {
+		text := searchText(t, s, SearchInput{Service: "InstanceService"})
+		served, unavailable, ok := strings.Cut(text, "## Not available over MCP")
+		require.True(t, ok)
+		require.Contains(t, served, "InstanceService/CreateInstance")
+		require.NotContains(t, unavailable, "InstanceService/CreateInstance")
+
+		detail := searchText(t, s, SearchInput{OperationID: "InstanceService/CreateInstance"})
+		require.Contains(t, detail, "add a PostgreSQL instance that signs in with a user name and password to a project, through the administer_workspace tool")
 		require.Contains(t, detail, "Request Body")
 	})
 }

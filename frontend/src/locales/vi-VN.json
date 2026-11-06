@@ -3199,6 +3199,10 @@
           "refused": "Không được phép"
         },
         "row": {
+          "add-instances": {
+            "details": "Thêm vào một dự án một phiên bản PostgreSQL đăng nhập bằng tên người dùng và mật khẩu · Mỗi phiên bản được xác nhận trong ứng dụng MCP của người dùng trước khi được thêm · Các cơ sở dữ liệu của nó thuộc về dự án đó vĩnh viễn",
+            "title": "Thêm phiên bản vào dự án"
+          },
           "approval-rules": {
             "details": "Thêm, xóa, sắp xếp lại hoặc thay đổi các quy tắc quyết định ai phê duyệt một thay đổi cơ sở dữ liệu · Mỗi thay đổi được xác nhận trong ứng dụng MCP của người dùng trước khi được thực hiện · Quy tắc dự phòng và quy tắc cho các loại Issue khác giữ nguyên",
             "title": "Quản lý quy tắc phê duyệt thay đổi cơ sở dữ liệu"
