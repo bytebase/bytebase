@@ -478,6 +478,10 @@ func TestMaskingExemptionToolsRefuseAFormTooLongBeforeAsking(t *testing.T) {
 			"project": "projects/hr", "member": "user:bob@example.com", "database": "instances/prod/databases/hr",
 			"table": "t", "columns": []string{"a", strings.Repeat("c", 128)},
 		}, tooManyLines, "grant it signed in to the Bytebase console: https://bb.example.com/projects/hr/masking-exemption"},
+		"a grant naming a column that is widest only once quoted": {"grant_masking_exemption", map[string]any{
+			"project": "projects/hr", "member": "user:bob@example.com", "database": "instances/prod/databases/hr",
+			"table": "T", "columns": []string{strings.Repeat("b", 40) + strings.Repeat(`"`, 10), strings.Repeat("a", 55)},
+		}, tooManyLines, "grant it signed in to the Bytebase console: https://bb.example.com/projects/hr/masking-exemption"},
 		"a grant to a member too long for the question": {"grant_masking_exemption", map[string]any{
 			"project": "projects/hr", "member": "user:" + strings.Repeat("m", 50) + "@example.com", "database": "instances/prod/databases/hr",
 		}, memberTooLong, "grant it signed in to the Bytebase console: https://bb.example.com/projects/hr/masking-exemption"},
@@ -644,7 +648,7 @@ func TestRevokeMaskingExemptionChangesNothingUnlessConfirmed(t *testing.T) {
 	res := callExemptionTool(t, session, "revoke_masking_exemption", map[string]any{"project": "projects/hr", "member": "user:bob@example.com", "condition": ""})
 	require.False(t, res.IsError, resultText(t, res))
 	require.Contains(t, resultText(t, res), "The exemption for user:bob@example.com was not removed: the user declined, so nothing changed")
-	require.Contains(t, user.lastParams(t).Message, `Project "hr": all databases, no expiry`)
+	require.Contains(t, user.lastParams(t).Message, `Project "hr": all databases, current and future`)
 	require.Empty(t, mock.calls())
 }
 
@@ -657,7 +661,7 @@ func TestRevokeMaskingExemptionNamesWhatItEnds(t *testing.T) {
 			`Database "hr" on instance "prod", all tables`, "2026-10-27T00:00:00.000Z",
 		},
 		"an expiry only": {`request.time < timestamp("2026-10-27T00:00:00.000Z")`, `Project "hr": all databases, current and future`, "2026-10-27T00:00:00.000Z"},
-		"no condition":   {"", `Project "hr": all databases, no expiry`, ""},
+		"no condition":   {"", `Project "hr": all databases, current and future`, ""},
 		"a grant's columns": {
 			`request.time < timestamp("2099-01-01T00:00:00.000Z") && (resource.instance_id == "prod" && resource.database_name == "hr" && resource.table_name == "employee" && resource.column_name in ["salary", "bonus"])`,
 			`Database "hr" on instance "prod", any schema, columns "salary", "bonus" in "employee"`, "2099-01-01T00:00:00.000Z",
@@ -718,6 +722,10 @@ func TestRevokeMaskingExemptionNamesWhatItEnds(t *testing.T) {
 			require.Equal(t, tc.expiry, expiry)
 		})
 	}
+	scope, _ := revokeScope(RevokeMaskingExemptionInput{Project: "projects/hr", Member: "allUsers",
+		Condition: `(resource.instance_id == "prod" && resource.database_name == "hr" && resource.table_name == "employee" && resource.column_name in ["salary", "bonus"])`})
+	require.Equal(t, `Database "hr" on instance "prod", any schema, columns "salary", "bonus" in "employee"`, scope,
+		"a member a grant refuses, such as allUsers, still reads in the grant's words")
 }
 
 func TestRevokeMaskingExemptionPutsTheExpiryWhereItFits(t *testing.T) {

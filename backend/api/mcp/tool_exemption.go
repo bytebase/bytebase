@@ -123,50 +123,61 @@ type exemptionGrant struct {
 }
 
 func parseExemptionGrant(input GrantMaskingExemptionInput) (*exemptionGrant, error) {
-	invalid := func(message, suggestion string) error {
-		return &toolError{Code: "INVALID_ARGUMENT", Message: message, Suggestion: suggestion}
-	}
 	if err := checkProjectName(input.Project); err != nil {
 		return nil, err
 	}
 	if !isNamedMember(input.Member) {
-		return nil, invalid(fmt.Sprintf("invalid member %q: an exemption names one user, group, service account or workload identity", input.Member),
+		return nil, invalidArgument(fmt.Sprintf("invalid member %q: an exemption names one user, group, service account or workload identity", input.Member),
 			`pass the member, e.g. "user:bob@example.com"; allUsers, which the policy API also accepts, would unmask the scope for everyone`)
 	}
-	g := &exemptionGrant{
-		project: input.Project, member: input.Member,
-		schema: input.Schema, table: input.Table, columns: input.Columns, note: input.Reason,
+	g, err := parseExemptionScope(input)
+	if err != nil {
+		return nil, err
 	}
+	g.member, g.note = input.Member, input.Reason
+	return g, nil
+}
+
+// parseExemptionScope checks what an exemption covers and until when, the
+// parts its condition holds. A revoke rebuilds a grant from a stored condition
+// through it, so it reads no member: the policy API stores members, such as
+// allUsers, that a grant refuses.
+func parseExemptionScope(input GrantMaskingExemptionInput) (*exemptionGrant, error) {
+	g := &exemptionGrant{project: input.Project, schema: input.Schema, table: input.Table, columns: input.Columns}
 	switch {
 	case input.Database != "" && input.AllDatabases:
-		return nil, invalid("pass database or allDatabases, not both", "")
+		return nil, invalidArgument("pass database or allDatabases, not both", "")
 	case input.Database == "" && !input.AllDatabases:
-		return nil, invalid("the exemption needs a scope: database, or allDatabases set to true",
+		return nil, invalidArgument("the exemption needs a scope: database, or allDatabases set to true",
 			"pass the database, or allDatabases: true for every database in the project, current and future")
 	case input.Database != "":
 		// A database on a project-owned instance is named under its project.
 		_, instanceID, databaseName, err := common.GetDatabaseResourceName(input.Database)
 		if err != nil {
-			return nil, invalid(fmt.Sprintf("invalid database %q", input.Database), "pass the database name, e.g. instances/prod/databases/hr")
+			return nil, invalidArgument(fmt.Sprintf("invalid database %q", input.Database), "pass the database name, e.g. instances/prod/databases/hr")
 		}
 		g.database, g.instanceID, g.databaseName = input.Database, instanceID, databaseName
 	default:
 		if input.Schema != "" || input.Table != "" || len(input.Columns) > 0 {
-			return nil, invalid("schema, table and columns narrow one database, so they need database", "")
+			return nil, invalidArgument("schema, table and columns narrow one database, so they need database", "")
 		}
 	}
 	if len(input.Columns) > 0 && input.Table == "" {
-		return nil, invalid("columns need table", "pass the table the columns belong to")
+		return nil, invalidArgument("columns need table", "pass the table the columns belong to")
 	}
 	if input.ExpireTime != "" {
 		expireTime, err := time.Parse(time.RFC3339, input.ExpireTime)
 		if err != nil {
-			return nil, invalid(fmt.Sprintf("invalid expireTime %q", input.ExpireTime), `pass an RFC 3339 time, e.g. "2026-10-27T00:00:00Z"`)
+			return nil, invalidArgument(fmt.Sprintf("invalid expireTime %q", input.ExpireTime), `pass an RFC 3339 time, e.g. "2026-10-27T00:00:00Z"`)
 		}
 		// The console writes the expiry with JavaScript's toISOString.
 		g.expireTime = expireTime.UTC().Format("2006-01-02T15:04:05.000Z")
 	}
 	return g, nil
+}
+
+func invalidArgument(message, suggestion string) error {
+	return &toolError{Code: "INVALID_ARGUMENT", Message: message, Suggestion: suggestion}
 }
 
 // isNamedMember reports whether member names one principal, as the tool's
@@ -310,7 +321,7 @@ func (s *Server) handleGrantMaskingExemption(ctx context.Context, req *mcp.CallT
 	message, tooLong := describeExemptionGrant(ctx, grant)
 	if tooLong != "" {
 		next := "grant it signed in to the Bytebase console: " + link
-		if oneColumnFits(ctx, grant) {
+		if eachColumnFits(ctx, grant) {
 			next = "exempt fewer columns at a time, or " + next
 		}
 		return formatToolError(&toolError{Code: "CHANGE_TOO_LONG", Message: tooLong, Suggestion: next}), nil, nil
@@ -481,17 +492,20 @@ func describeExemptionGrant(ctx context.Context, g *exemptionGrant) (message, to
 	return fitExemption(ctx, fmt.Sprintf("Exempt %q", g.member), " from masking", exemptionScope(g), effect)
 }
 
-// oneColumnFits reports whether a grant of several columns that does not fit a
-// form would fit with its widest column alone, so granting fewer columns at a
-// time can help.
-func oneColumnFits(ctx context.Context, g *exemptionGrant) bool {
+// eachColumnFits reports whether every column of a grant naming several fits a
+// form alone, so granting fewer columns at a time can help.
+func eachColumnFits(ctx context.Context, g *exemptionGrant) bool {
 	if len(g.columns) < 2 {
 		return false
 	}
-	one := *g
-	one.columns = []string{slices.MaxFunc(g.columns, func(a, b string) int { return lineColumns(a) - lineColumns(b) })}
-	_, tooLong := describeExemptionGrant(ctx, &one)
-	return tooLong == ""
+	for _, column := range g.columns {
+		one := *g
+		one.columns = []string{column}
+		if _, tooLong := describeExemptionGrant(ctx, &one); tooLong != "" {
+			return false
+		}
+	}
+	return true
 }
 
 // exemptionScope names what the grant covers.
@@ -576,10 +590,12 @@ func describeExemptionRevoke(ctx context.Context, input RevokeMaskingExemptionIn
 // shows through conditionText; when it leads with an expiry, the expiry is
 // split off and the rest shows as CEL prints it.
 func revokeScope(input RevokeMaskingExemptionInput) (scope, expiry string) {
-	projectID, _ := common.GetProjectID(input.Project)
+	// An all-databases grant with no expiry writes no condition, which CEL
+	// cannot parse.
 	if input.Condition == "" {
-		return fmt.Sprintf("Project %q: all databases, no expiry", projectID), ""
+		return exemptionScope(&exemptionGrant{project: input.Project}), ""
 	}
+	projectID, _ := common.GetProjectID(input.Project)
 	parsed, ok := parseExemptionCondition(input.Condition)
 	if !ok {
 		return fmt.Sprintf("Project %q: %s", projectID, conditionText(input.Condition)), ""
@@ -653,11 +669,11 @@ func exemptionExpiry(e celast.Expr) (string, bool) {
 
 // exemptionGrantOf returns the grant whose condition is exactly the revoke's,
 // so a revoke can name what it ends in the grant's words. The terms go through
-// parseExemptionGrant, the grant's own checks, so a condition the grant would
-// not write, such as columns with no table, returns false, as does a condition
-// in any other form.
+// parseExemptionScope, the grant's own checks on a condition, so a condition
+// the grant would not write, such as columns with no table, returns false, as
+// does a condition in any other form.
 func exemptionGrantOf(input RevokeMaskingExemptionInput, native *celast.AST) (*exemptionGrant, bool) {
-	grant := GrantMaskingExemptionInput{Project: input.Project, Member: input.Member}
+	grant := GrantMaskingExemptionInput{Project: input.Project}
 	var instanceID, databaseName string
 	for _, term := range conjuncts(native.Expr()) {
 		if expiry, ok := exemptionExpiry(term); ok {
@@ -688,7 +704,7 @@ func exemptionGrantOf(input RevokeMaskingExemptionInput, native *celast.AST) (*e
 	} else {
 		grant.AllDatabases = true
 	}
-	g, err := parseExemptionGrant(grant)
+	g, err := parseExemptionScope(grant)
 	if err != nil || g.condition() != input.Condition {
 		return nil, false
 	}
