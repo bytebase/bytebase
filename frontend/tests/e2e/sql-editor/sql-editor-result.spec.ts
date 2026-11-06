@@ -234,6 +234,197 @@ test.describe("Cell click opens the Detail panel for that cell", () => {
   });
 });
 
+test.describe("Row detail keeps long column labels from squeezing values (BYT-10362)", () => {
+  for (const viewport of [
+    { name: "desktop", width: 1440, height: 1000 },
+    { name: "narrow", width: 390, height: 844 },
+  ]) {
+    test(`${viewport.name} panel preserves readable JSON and text values`, async ({ page }) => {
+      test.setTimeout(120_000);
+      const detailEnv = loadTestEnv();
+      const editor = new SqlEditorPage(page, detailEnv.baseURL);
+      const jsonColumn = `json_expression_${"x".repeat(47)}`;
+      const textColumn = `text_expression_${"y".repeat(47)}`;
+      const jsonValue = '{"message":"json marker remains readable","ready":true}';
+      const textValue = "text marker remains readable\nlast text line";
+
+      await page.setViewportSize({ width: 1440, height: 1000 });
+      await editor.gotoWithDb(
+        detailEnv.project.split("/").pop()!,
+        detailEnv.instanceId,
+        detailEnv.databaseId,
+      );
+      await editor.runPreparedQuery(
+        `SELECT '${jsonValue}'::json AS "${jsonColumn}", ` +
+          `E'text marker remains readable\\nlast text line' AS "${textColumn}", ` +
+          "42 AS id;",
+      );
+
+      const resultRow = page.locator('[data-row-index="0"]').first();
+      await expect(resultRow).toBeVisible();
+      await resultRow.hover();
+      await resultRow.getByRole("button", {
+        name: enUS["sql-editor"]["view-detail"],
+        exact: true,
+      }).click();
+
+      const panel = page.getByRole("dialog", {
+        name: enUS.common.detail,
+        exact: true,
+      });
+      const rowBlock = panel.getByTestId("row-data-block");
+      await expect(rowBlock).toBeVisible();
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await expect(rowBlock.locator("dt")).toHaveCount(3);
+      await expect(rowBlock.locator("dd")).toHaveText([jsonValue, textValue, "42"]);
+
+      await expect.poll(async () => rowBlock.evaluate((block) => {
+        const fields = Array.from(block.querySelectorAll("dl > div"));
+        const valueLeftEdges: number[] = [];
+        let valuesHaveRoom = true;
+        let labelsDoNotOverlap = true;
+        let contentFits = block.scrollWidth <= block.clientWidth + 1;
+        for (const field of fields) {
+          const label = field.querySelector("dt")!;
+          const value = field.querySelector("dd")!;
+          const fieldBounds = field.getBoundingClientRect();
+          const labelBounds = label.getBoundingClientRect();
+          const valueBounds = value.getBoundingClientRect();
+          valueLeftEdges.push(valueBounds.left);
+          valuesHaveRoom &&= valueBounds.width >= fieldBounds.width / 2;
+          labelsDoNotOverlap &&= labelBounds.right <= valueBounds.left + 1;
+          contentFits &&= label.scrollWidth <= label.clientWidth + 1;
+          contentFits &&= value.scrollWidth <= value.clientWidth + 1;
+        }
+        return {
+          valuesHaveRoom,
+          labelsDoNotOverlap,
+          contentFits,
+          valuesAlign: Math.max(...valueLeftEdges) - Math.min(...valueLeftEdges) <= 1,
+        };
+      }), "column labels must leave aligned, readable values without horizontal overflow").toEqual({
+        valuesHaveRoom: true,
+        labelsDoNotOverlap: true,
+        contentFits: true,
+        valuesAlign: true,
+      });
+
+      for (const name of [jsonColumn, textColumn]) {
+        const label = rowBlock.getByText(name, { exact: true });
+        const namesInOverlay = page
+          .locator("#bb-react-layer-overlay")
+          .getByText(name, { exact: true });
+        await label.focus();
+        await page.keyboard.press("Shift+Tab");
+        await page.keyboard.press("Tab");
+        await expect(label).toBeFocused();
+        await expect(namesInOverlay).toHaveCount(2);
+        await expect(namesInOverlay.last()).toBeVisible();
+        await label.evaluate((element) => (element as HTMLElement).blur());
+        await expect(namesInOverlay).toHaveCount(1);
+      }
+    });
+  }
+});
+
+test.describe("Vertical display keeps row Copy and cell Expand actions separate", () => {
+  for (const resultWidth of [null, 340]) {
+    test(`${resultWidth === null ? "desktop" : "narrow"} row actions remain independently clickable`, async ({ page }) => {
+      test.setTimeout(120_000);
+      const actionEnv = loadTestEnv();
+      const editor = new SqlEditorPage(page, actionEnv.baseURL);
+      const column = `json_expression_${"x".repeat(47)}`;
+      const firstJSON = '{"marker":"first-action-marker"}';
+      const laterJSON = '{"marker":"later-action-marker"}';
+      await page.addInitScript(() => {
+        Object.defineProperty(navigator, "clipboard", {
+          configurable: true,
+          value: {
+            writeText: async (text: string) => {
+              (window as Window & { copiedRowJSON?: string }).copiedRowJSON = text;
+            },
+          },
+        });
+      });
+      await page.setViewportSize({ width: 1440, height: 1000 });
+      await editor.gotoWithDb(
+        actionEnv.project.split("/").pop()!,
+        actionEnv.instanceId,
+        actionEnv.databaseId,
+      );
+      await editor.runPreparedQuery(
+        `SELECT '${firstJSON}'::json AS "${column}", '${laterJSON}'::json AS payload;`,
+      );
+      await page.getByRole("radiogroup", {
+        name: enUS["sql-editor"]["result-view-mode"],
+      }).locator("label").filter({
+        hasText: enUS["sql-editor"]["vertical-display"],
+      }).click();
+
+      const rowBlock = page.getByTestId("row-data-block").first();
+      await expect(rowBlock).toBeVisible();
+      if (resultWidth !== null) {
+        // Constrain the result surface without testing the editor shell's mobile layout.
+        await page.locator("[data-query-result-vertical-body]").evaluate(
+          (body, width) => {
+            body.style.width = `${width}px`;
+            body.style.maxWidth = `${width}px`;
+          },
+          resultWidth,
+        );
+        await expect.poll(() => rowBlock.evaluate((block) => block.clientWidth)).toBeLessThanOrEqual(340);
+      }
+      const copy = rowBlock.getByRole("button", { name: enUS.common.copy, exact: true });
+      const expandButtons = rowBlock.locator("dd").getByRole("button").filter({
+        has: page.locator("svg.lucide-expand"),
+      });
+      await expect(expandButtons).toHaveCount(2);
+      const expands = await expandButtons.all();
+      for (const expand of expands) {
+        await expect.poll(async () => {
+          const copyBounds = await copy.boundingBox();
+          const expandBounds = await expand.boundingBox();
+          if (!copyBounds || !expandBounds) return Number.NEGATIVE_INFINITY;
+          return copyBounds.x - (expandBounds.x + expandBounds.width);
+        }, "row Copy must have at least an 8px horizontal gap from each cell Expand").toBeGreaterThanOrEqual(8);
+      }
+      for (const button of [copy, ...expands]) {
+        await expect.poll(() => button.evaluate((element) => {
+          const bounds = element.getBoundingClientRect();
+          return element.contains(document.elementFromPoint(
+            bounds.x + bounds.width / 2,
+            bounds.y + bounds.height / 2,
+          ));
+        }), "each row action must receive pointer events at its center").toBe(true);
+      }
+
+      await copy.click();
+      await expect(copy.locator("svg.lucide-check")).toBeVisible();
+      const copiedJSON = await page.evaluate(() =>
+        (window as Window & { copiedRowJSON?: string }).copiedRowJSON,
+      );
+      expect(JSON.parse(copiedJSON!)).toEqual({
+        [column]: firstJSON,
+        payload: laterJSON,
+      });
+
+      for (const [index, expand] of expands.entries()) {
+        await expand.click();
+        const detail = page.getByRole("dialog", {
+          name: enUS["sql-editor"]["result-detail"].cell,
+          exact: true,
+        });
+        await expect(detail).toBeVisible();
+        await expect(detail).toContainText(index === 0 ? column : "payload");
+        await expect(detail).toContainText(index === 0 ? "first-action-marker" : "later-action-marker");
+        await expect(detail).not.toContainText(index === 0 ? "later-action-marker" : "first-action-marker");
+        await page.keyboard.press("Escape");
+        await expect(detail).toBeHidden();
+      }
+    });
+  }
+});
+
 test.describe("Selecting a row paints visible feedback across the row", () => {
   // BYT-9478: in the result grid, clicking the row-select button
   // (the 12px bg-accent/5 hairline at the left of every row) only

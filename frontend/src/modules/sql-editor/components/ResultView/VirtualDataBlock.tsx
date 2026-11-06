@@ -94,6 +94,7 @@ export const VirtualDataBlock = forwardRef<
               statement={statement}
               getMaskingReason={getMaskingReason}
               className={cn(
+                "pr-12",
                 isActive && "border-2 border-accent/20 bg-accent/10!"
               )}
               actions={

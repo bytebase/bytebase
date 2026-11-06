@@ -1,4 +1,6 @@
 import type { HTMLAttributes, ReactNode } from "react";
+import type { LayerFamily } from "@/components/ui/layer";
+import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 type QueryResultColumn = { id: string; name: string };
@@ -9,6 +11,7 @@ interface QueryResultVerticalRowProps<TColumn extends QueryResultColumn>
   renderColumnName?: (column: TColumn, index: number) => ReactNode;
   renderColumnAccessory?: (column: TColumn, index: number) => ReactNode;
   renderValue: (column: TColumn, index: number) => ReactNode;
+  tooltipLayer?: LayerFamily;
   actions?: ReactNode;
 }
 
@@ -17,6 +20,7 @@ export function QueryResultVerticalRow<TColumn extends QueryResultColumn>({
   renderColumnName = (column) => column.name,
   renderColumnAccessory,
   renderValue,
+  tooltipLayer,
   actions,
   className,
   ...divProps
@@ -36,14 +40,26 @@ export function QueryResultVerticalRow<TColumn extends QueryResultColumn>({
             key={`${column.id}-${columnIndex}`}
             className="flex items-start text-sm text-control-light"
           >
-            <dt className="flex min-w-28 items-center pt-1 text-left font-medium">
-              <div className="flex items-center gap-x-1">
-                {renderColumnName(column, columnIndex)}
+            <dt className="flex w-28 max-w-1/3 min-w-0 shrink-0 items-center pt-1 text-left font-medium">
+              <div className="flex min-w-0 items-center gap-x-1">
+                <Tooltip
+                  content={column.name}
+                  layer={tooltipLayer}
+                  popupClassName="max-w-96 whitespace-pre-wrap wrap-anywhere"
+                  render={
+                    <span
+                      tabIndex={0}
+                      className="min-w-0 truncate focus-visible:outline-2 focus-visible:outline-accent"
+                    />
+                  }
+                >
+                  {renderColumnName(column, columnIndex)}
+                </Tooltip>
                 {renderColumnAccessory?.(column, columnIndex)}
               </div>
               {": "}
             </dt>
-            <dd className="min-w-0 flex-1">
+            <dd className="min-w-0 flex-1 wrap-anywhere">
               {renderValue(column, columnIndex)}
             </dd>
           </div>
