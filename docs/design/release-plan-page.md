@@ -192,9 +192,10 @@ table in States:
   when the run has one.
 - Skipped: "Skipped by `<user>` · `<reason>`". Canceled: "Canceled · `<time>`".
 
-A release task whose stored to-apply list is empty (a declarative release has no list) says so
-before it runs: "Nothing to apply · 493 already applied" not started, and "Running · started 15:14"
-running. A done release task reads "All 493 applied · 0.3 s" whatever its stored list held: that is
+A versioned release task whose stored to-apply list is empty says so before it runs: "Nothing to
+apply · 493 already applied" not started, and "Running · started 15:14" running. A declarative
+release has no list, so its task shows only its status in every state. A done versioned release task
+reads "All 493 applied · 0.3 s" whatever its stored list held: that is
 a statement about the database (D5), true after any successful run, while the stored list is a
 preview that a revision deleted between rollout creation and the run makes wrong, so "Nothing new"
 there could contradict the opened task's "Applied again".
@@ -217,7 +218,8 @@ its copy control; below 640 px the failed row opens with the block folded.
 
 A failed run's error (`TaskRun.detail`) always has a section. An error with the executor's file
 prefix ("failed to execute release file `<path>` (version `<v>`)") belongs to that file's section,
-the newest one; one from a task-level step (a prior backup) belongs to that step's section. Every
+the newest one. The path ends at the prefix's first " (version ", since the driver's message after
+it can quote the user's SQL (a MySQL syntax error does), which may contain the same text; one from a task-level step (a prior backup) belongs to that step's section. Every
 other error has no section of its own: the revisions could not be read, the driver could not
 connect, a file's statement could not be loaded before its marker, or a revision could not be
 written after the file ran. For those the spine ends with an open task-level "Run failed" section
@@ -544,7 +546,7 @@ The folded card's description, per task state (D3):
 |---|---|---|---|
 | Not started | "3 to apply · 490 already applied", or "Nothing to apply · 493 already applied", then "· scheduled 18:00" or the waiting cause; a declarative release shows the status only | "DML · about 1,180 rows", then the schedule or waiting cause | gray |
 | Running | "Applying 3 files · started 15:14", or "Running · started 15:14" with nothing to apply | "Running · started 15:14" | blue |
-| Done | "All 493 applied · 4.1 s", whatever the stored list held | "DML · 4.1 s", "DDL · 1.2 s" or "Mixed · 3.4 s" | green |
+| Done | "All 493 applied · 4.1 s", whatever the stored list held; a declarative release shows the status and duration | "DML · 4.1 s", "DDL · 1.2 s" or "Mixed · 3.4 s" | green |
 | Failed | `<failed version>` then the error's first line, or the first line alone when the error names no file | The error's first line | red |
 | Skipped | "Skipped by `<user>` · `<reason>`" | Same | gray |
 | Canceled | "Canceled · `<time>`" | Same | gray |
