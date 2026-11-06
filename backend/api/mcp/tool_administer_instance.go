@@ -134,7 +134,7 @@ func (s *Server) administerInstance(ctx context.Context, req *mcp.CallToolReques
 	resp, err := s.sendInstanceCreation(confirmedCtx, test)
 	if why := refusal(resp, err); why != "" {
 		// For the requests this entry takes, a 401 or 403 refuses the caller
-		// before the test runs, so a corrected request would be refused too.
+		// before the test runs, so it is not a test result.
 		if err == nil && (resp.Status == http.StatusUnauthorized || resp.Status == http.StatusForbidden) {
 			return formatToolError(errors.Errorf("failed to add the instance: %s", why)), nil, nil
 		}
