@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/type/expr"
 
+	"github.com/bytebase/bytebase/backend/component/masker"
 	"github.com/bytebase/bytebase/backend/store"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -56,7 +57,7 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 	defaultSemanticType := &storepb.SemanticTypeSetting{
 		Types: []*storepb.SemanticTypeSetting_SemanticType{
 			{
-				Id:    defaultSemanticTypeID,
+				Id:    masker.DefaultSemanticTypeID,
 				Title: "Default",
 				Algorithm: &storepb.Algorithm{
 					Mask: &storepb.Algorithm_FullMask_{
@@ -65,7 +66,7 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 				},
 			},
 			{
-				Id:    defaultPartialSemanticTypeID,
+				Id:    masker.DefaultPartialSemanticTypeID,
 				Title: "Default Partial",
 				Algorithm: &storepb.Algorithm{
 					Mask: &storepb.Algorithm_RangeMask_{
@@ -139,7 +140,7 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 				Rules: []*storepb.MaskingRulePolicy_MaskingRule{
 					{
 						Condition:    &expr.Expr{Expression: "true"},
-						SemanticType: defaultSemanticTypeID,
+						SemanticType: masker.DefaultSemanticTypeID,
 					},
 				},
 			},
@@ -147,7 +148,7 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 			dataClassification:                      defaultClassification,
 			databaseProjectDatabaseClassificationID: defaultProjectDatabaseDataClassificationID,
 
-			want:          defaultSemanticTypeID,
+			want:          masker.DefaultSemanticTypeID,
 			wantTitle:     "Default",
 			wantAlgorithm: "Full mask",
 		},
@@ -329,13 +330,13 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 			tableName:       "employees",
 			columnName:      "salary",
 			columnCatalog: &storepb.ColumnCatalog{
-				SemanticType: defaultSemanticTypeID,
+				SemanticType: masker.DefaultSemanticTypeID,
 			},
 			maskingRulePolicy:                       &storepb.MaskingRulePolicy{},
 			dataClassification:                      defaultClassification,
 			databaseProjectDatabaseClassificationID: defaultProjectDatabaseDataClassificationID,
 
-			want:          defaultSemanticTypeID,
+			want:          masker.DefaultSemanticTypeID,
 			wantTitle:     "Default",
 			wantAlgorithm: "Full mask",
 		},
@@ -346,13 +347,13 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 			tableName:       "employees",
 			columnName:      "salary",
 			columnCatalog: &storepb.ColumnCatalog{
-				SemanticType: defaultPartialSemanticTypeID,
+				SemanticType: masker.DefaultPartialSemanticTypeID,
 			},
 			maskingRulePolicy:                       &storepb.MaskingRulePolicy{},
 			dataClassification:                      defaultClassification,
 			databaseProjectDatabaseClassificationID: defaultProjectDatabaseDataClassificationID,
 
-			want:          defaultPartialSemanticTypeID,
+			want:          masker.DefaultPartialSemanticTypeID,
 			wantTitle:     "Default Partial",
 			wantAlgorithm: "Partial mask",
 		},

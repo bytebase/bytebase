@@ -3219,6 +3219,10 @@
             "details": "Exempt one member from masking for a database, a schema, a table or a column, or for every database in a project, with an optional expiry · Each exemption and each removal is confirmed in the user's MCP client before it is made · Exempted data shows unmasked in query and export results",
             "title": "Grant or revoke masking exemptions"
           },
+          "masking-rules": {
+            "details": "Add, remove, reorder or change the rules that decide which columns are masked and how · Each change is confirmed in the user's MCP client before it is made · Semantic types stay as they are",
+            "title": "Set masking rules"
+          },
           "propose": {
             "details": "Create sheets · Create and edit plans and issues · Run plan checks and reviews · Create, delete and restore releases · Create and delete revisions · Generate schema diffs. The project's approval policy decides whether a change needs approval.",
             "title": "Propose changes"
