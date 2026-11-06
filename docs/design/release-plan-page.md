@@ -12,7 +12,7 @@ lists the release's files by version with no status, and each task shows what th
 will do, to its database as one spine of file sections in the task-run log's own rows.** Every
 task is folded on load to one line that says what happened. A details block under the title names
 the pull request or commit, the release and the progress per stage, and gives a UIOps plan the same
-block. No action is added. The release detail page goes. The backend adds one task payload field,
+block. No action is added. Main already retired the release detail page (D12). The backend adds one task payload field,
 two fields on a skipped task and a few optional proto fields; the executor does not change.
 
 ## Problem
@@ -298,13 +298,21 @@ new databases on a 500-file release stores one range per task, where a list of v
 as `pending_count`, and the deleted-revision notes; the page expands the ranges against the
 release's files, which it already loads. The rule is the executor's: a version is applied when
 the database has a live `VERSIONED` revision with that version; deleted revisions do not count. One
-indexed query per instance for all of the rollout's targets on it, through the store's `Versions`
-filter (`version = ANY(?)` in `backend/store/revision.go`) and a `DatabaseNames` filter beside it
-(`db_name = ANY(?)`, always with the instance), so a rollout over a 10,000-database group costs one
-round trip per instance rather than one per database, and each query is bounded by the release's
-file count and the instance's targets, not the databases' history. Rejected: one query per target,
-which `checkReleaseVersioned` in `release_service_check.go` uses in the background plan check but
-which would put one uncached round trip per database into the synchronous rollout request.
+query per instance for all of the rollout's targets on it (`ListPendingReleaseVersions` in
+`backend/store/revision.go`) returns only the pairs of target database and release version that
+have no live `VERSIONED` revision, each with its newest deleted revision of that version if one
+exists; the applied count is the release's file count minus the pending ones, since a versioned
+release holds each version once. A release carries the whole migrations folder, so on a train
+nearly every pair is applied: returning the pending pairs instead of the matching revisions keeps
+the rows to about one per database for the new file, where reading the revisions would return one
+per applied file per database, about 5 million for a 500-file release on 10,000 databases. Postgres
+still checks every pair, through the revision index on instance, database, type and version, but
+nothing it rejects leaves the database. The rule therefore lives twice, in the executor's Go and in
+this query's SQL, and the store test pins it to the executor's: a deleted or declarative revision
+is not applied. Rejected: one query per target, which `checkReleaseVersioned` in
+`release_service_check.go` uses in the background plan check but which would put one uncached round
+trip per database into the synchronous rollout request; reading the matching revisions per instance
+and filtering in Go, which costs one row per applied pair.
 `GetRollout` and `ListTasks` already return the task, so the folded card and the planned spine read
 the field with no second request. What a run applies is decided only when it runs: the executor
 reads live revisions at its start, so the field is a preview that can go stale (another plan applies
@@ -509,18 +517,17 @@ violations and proposing a next step per class. Every class needs its own detect
 advice, both wrong on the next engine or driver, and the replays show users reading the error
 themselves and fixing the file in git.
 
-**D12 · The release detail page is removed; release URLs redirect to the owning plan.** Reading a
-file's SQL moves into Changes and the viewer, and the plan already shows everything else the page
-showed. The CI job summary prints a Release link (`action/github/summary.go`), so the URL keeps
-working: `/projects/<p>/releases/<r>` redirects to the newest plan whose spec references the
-release. A release no plan references (created through the API, or a CI run that died between the
-release and the plan) shows the not-found page; that is rare and the API still serves it. The page
-is also the only place that archives and restores a release (`deleteRelease` and `undeleteRelease`,
-called only from `ProjectReleaseDetailPage.tsx`), so both move to the release list before the page
-goes: each row gets Archive with the page's confirmation, and a "Show archived" switch lists
-archived releases (`ListReleases` already takes `show_deleted`) with Restore on each row. Rejected:
-keeping both pages, which leaves two places to open a file and the manifest shown twice; putting
-Archive on the plan page, which is about deploying the release, not managing it.
+**D12 · No release detail page; reading a file's SQL lives on the plan.** Changes and the viewer
+take over reading a file's SQL, and the plan already shows everything else the release page showed.
+Main retired that page before this PR (#21637): `releaseDetailRedirectLoader`
+(`frontend/src/app/router/releaseDetailRedirect.ts`) keeps the CI summary's Release link
+(`action/github/summary.go`) working by opening the plan when exactly one active plan references the
+release, and the Releases list filtered to the release otherwise, so a release no plan references
+still lands somewhere. This PR relies on that redirect and adds nothing to it. The retired page was
+also the only place that archived and restored a release (`deleteRelease` and `undeleteRelease`), and
+#21637 gave neither a new home, so today only the API archives or restores one; that gap is BYT-10419,
+not this PR. Rejected: restoring a release page as the place to read a file, which leaves two places
+to open a file and the manifest shown twice.
 
 ## States
 
@@ -593,8 +600,6 @@ The details block's Source row:
 | Frontend | `frontend/src/components/release/ReleaseFileViewer.tsx` (new), `ReleaseFileDetailPanel.tsx` | The viewer: one body with the diagnostic drawn from the command's byte range and error, the path's copy control and the file-at-commit link; side panel or sheet by `useMediaQuery` (D8, D9). |
 | Frontend | `frontend/src/routes/project/plan-detail/components/PlanDetailTaskRolloutActionPanel.tsx` | Each task's status chip after its database, replacing the status icon, and a failed task's error line, for UIOps and release tasks; the reason field shown and required for release-backed tasks (D7). |
 | Frontend | `frontend/src/routes/project/plan-detail/components/PlanDetailHeaderDetails.tsx`, `PlanDetailMeta.tsx` | The details block for release and UIOps plans, with the Source row and the plan list's stage cell for Progress, its fold (unfolded on every load, held in component state), above the description, which keeps today's clipping (D9, D10). |
-| Frontend | `frontend/src/routes/project/ProjectReleaseDashboardPage.tsx` | Archive on each row, a "Show archived" switch, and Restore on archived rows, before the detail page goes (D12). |
-| Frontend | `frontend/src/routes/project/ProjectReleaseDetailPage.tsx`, `frontend/src/app/router/routes/dashboard.tsx` | The page goes; the route redirects to the owning plan (D12). |
 | Frontend | `frontend/src/locales/*.json` | New strings; the retired release-page strings removed. |
 | Backend | `proto/store/store/task.proto`, `proto/v1/v1/rollout_service.proto`, `backend/api/v1/rollout_service_task.go`, `rollout_service_converter.go` | The release state field on the task payload, computed at creation with the store's `Versions` filter, returned on the v1 task (D4). |
 | Backend | `proto/store/store/task.proto`, `proto/v1/v1/rollout_service.proto`, `backend/store/task.go`, `backend/api/v1/rollout_service.go` | The skipper and skip time written by `BatchSkipTasks`, output-only on the v1 task (D7). |
@@ -654,8 +659,6 @@ Tests to write, per the placement rules in `AGENTS.md`:
   block clipped at 150 characters or 3 lines; the block unfolded on load, folding to the Progress
   line (after the Source title on a release plan) and back, and unfolded again after a reload or on
   another plan.
-- Release list tests: Archive on an active row with its confirmation, "Show archived" listing
-  archived releases through `show_deleted`, and Restore on an archived row.
 - Changes rail tests: descending order over timestamp, counter and dotted versions; the grouping per
   shape with the newest group open, and over a hundred counter or dotted versions as one flat list; 12 rows, "Load 12 more", "Load all" and "Show fewer"; a backfilled low version landing in its
   old group; a row's name, folder and version as separate parts, a path with no folder showing the
@@ -683,7 +686,7 @@ Tests to write, per the placement rules in `AGENTS.md`:
   the same instance must not count for the target, and the target's own deleted revision of that
   version must not count either; the sibling's state is asserted unchanged. The pending files
   stored as ranges, one range for a new database on a 500-file release; a deleted release creating
-  its task with no state. In `backend/store`, a user's email change rewriting the skipper and the
+  its task with no state. In `backend/store`, `ListPendingReleaseVersions` returning only the pairs a database lacks: a live `VERSIONED` revision applied, a deleted or declarative one not, the newest deletion chosen, and a sibling database's or another instance's revision not counted; a user's email change rewriting the skipper and the
   deleted-revision deleters, and not another user's email that contains it. `BatchSkipTasks` writes
   the skipper and the time on each selected task and on no other task of the stage, and the v1 task
   returns them.
@@ -712,6 +715,8 @@ Tests to write, per the placement rules in `AGENTS.md`:
 
 ## Not in this PR
 
+- Archive and restore of a release in the UI (BYT-10419). Main retired the release page that held
+  them (#21637, D12), so only the API archives or restores a release today.
 - The plan list for release plans (the failing file in the row, the source title as a column) and
   the Releases navigation entry, which the replays show as a decoy. Confirming that several
   candidates failed on the same file therefore costs one page open each, and an old failed plan does
