@@ -3,6 +3,7 @@ package mcp
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -28,6 +29,7 @@ const (
 	administerCreateInstance = "InstanceService/CreateInstance"
 	journeyOneInstance       = "projects/hr/instances/hr-staging"
 	journeyOnePassword       = "stagingpass"
+	callerRefused            = "MCP sessions in this workspace are read-only. Ask a workspace admin to raise the MCP ceiling"
 	// cloudHost is a 60-character cloud host name, as a managed PostgreSQL
 	// service names one.
 	cloudHost = "staging-db1.cluster-abcdefghijkl.us-east-1.rds.amazonaws.com"
@@ -66,7 +68,8 @@ type instanceMock struct {
 	// connectionFails makes the connection test fail as a refused sign-in does.
 	connectionFails bool
 	// testRefusal and createRefusal, when set, are the HTTP status the test or
-	// the create answers with, as a handler refusal that is no connection test.
+	// the create answers with: a 401 or 403 refuses the caller, as the gate does,
+	// and another status refuses the request, as the handler does.
 	testRefusal   int
 	createRefusal int
 	// inactive makes the create answer with an instance that is not activated
@@ -114,6 +117,8 @@ func (m *instanceMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			switch {
 			case m.connectionFails:
 				refuse(http.StatusBadRequest, "invalid_argument", `failed to connect to database: password authentication failed for user "postgres"`)
+			case m.testRefusal == http.StatusUnauthorized || m.testRefusal == http.StatusForbidden:
+				refuse(m.testRefusal, "permission_denied", callerRefused)
 			case m.testRefusal != 0:
 				refuse(m.testRefusal, "not_found", `project "projects/hr" not found`)
 			default:
@@ -381,6 +386,7 @@ func TestAdministerInstanceKeepsTheMaskingWarningInTheMessage(t *testing.T) {
 		require.NotContains(t, user.lastParams(t).Message, "ctivated")
 	})
 }
+
 func TestAdministerInstanceStatesNoEnvironment(t *testing.T) {
 	mock := newInstanceMock()
 	user := &asker{answer: &mcp.ElicitResult{Action: "decline"}}
@@ -508,6 +514,7 @@ func TestAdministerInstanceRefusesAnAnswerOverAnEnvironmentRemoved(t *testing.T)
 	require.Equal(t, `the environment "environments/test" does not exist, so no instance was added`, refusal.Message)
 	require.Empty(t, mock.calls())
 }
+
 func TestAdministerInstanceSkipsTheEnvironmentCheckForARoleThatCannotRead(t *testing.T) {
 	mock := newInstanceMock()
 	mock.environmentStatus = http.StatusForbidden
@@ -518,6 +525,7 @@ func TestAdministerInstanceSkipsTheEnvironmentCheckForARoleThatCannotRead(t *tes
 	require.Equal(t, int32(1), user.asked.Load())
 	require.Len(t, mock.calls(), 2)
 }
+
 func TestAdministerInstanceChangesNothingUnlessApplied(t *testing.T) {
 	for name, tc := range map[string]struct {
 		answer *mcp.ElicitResult
@@ -637,6 +645,18 @@ func TestAdministerInstanceReportsEachRefusalAsTheHandlerStatesIt(t *testing.T) 
 		require.Len(t, mock.calls(), 1)
 	})
 
+	for _, status := range []int{http.StatusUnauthorized, http.StatusForbidden} {
+		t.Run(fmt.Sprintf("a refusal of the caller at the test, HTTP %d", status), func(t *testing.T) {
+			mock := newInstanceMock()
+			mock.testRefusal = status
+			_, session := connectToInstanceServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{answer: adminAnswer(adminChoiceApply)}).handle})
+			res := callAdminister(t, session, instanceParams(instanceBody(t, nil)))
+			require.True(t, res.IsError)
+			require.Equal(t, fmt.Sprintf("failed to add the instance: HTTP %d: %s", status, callerRefused), resultText(t, res))
+			require.Len(t, mock.calls(), 1)
+		})
+	}
+
 	t.Run("at the create", func(t *testing.T) {
 		mock := newInstanceMock()
 		mock.createRefusal = http.StatusConflict
@@ -676,6 +696,7 @@ func TestAdministerInstanceReportsWhatTheCreateLeft(t *testing.T) {
 		})
 	}
 }
+
 func TestAdministerInstanceClassifiesEveryRequestField(t *testing.T) {
 	refused := map[string]bool{"validate_only": true}
 	for _, field := range []string{"name", "state", "engine_version", "external_link", "roles", "sync_interval", "sync_databases", "last_sync_time", "labels"} {

@@ -21,8 +21,7 @@ import (
 )
 
 // instanceNotActivated is a change line, never description text, which Claude
-// Code's fullscreen renderer cuts to one line. It shows only when masking would
-// skip the instance (LicenseService.IsFeatureEnabledForInstance).
+// Code's fullscreen renderer cuts to one line.
 const instanceNotActivated = "Not activated, so masking skips it."
 
 // instanceRequestFields are the CreateInstanceRequest fields the instance
@@ -134,6 +133,11 @@ func (s *Server) administerInstance(ctx context.Context, req *mcp.CallToolReques
 	test.ValidateOnly = true
 	resp, err := s.sendInstanceCreation(confirmedCtx, test)
 	if why := refusal(resp, err); why != "" {
+		// For the requests this entry takes, a 401 or 403 refuses the caller
+		// before the test runs, so a corrected request would be refused too.
+		if err == nil && (resp.Status == http.StatusUnauthorized || resp.Status == http.StatusForbidden) {
+			return formatToolError(errors.Errorf("failed to add the instance: %s", why)), nil, nil
+		}
 		return formatToolError(&toolError{
 			Code:       "CONNECTION_TEST_FAILED",
 			Message:    "Bytebase's connection test refused the request, so no instance was added: " + why,
@@ -323,10 +327,8 @@ func (s *Server) checkEnvironment(ctx context.Context, c *instanceCreation) erro
 	}
 }
 
-// instanceForm builds the form that asks to add the instance: the connection,
-// the environment and the lasting effect on the project, and, when maskingSkips
-// an instance that is not activated, that this one is not. The password appears
-// nowhere in it.
+// instanceForm builds the form that asks to add the instance. The password
+// appears nowhere in it.
 func instanceForm(ctx context.Context, c *instanceCreation, maskingSkips bool, link string) (*adminForm, error) {
 	question := func(instanceID string) string {
 		return fmt.Sprintf("Add instance %q to project %q?", instanceID, c.projectID)
@@ -379,8 +381,7 @@ func tlsMode(ds *v1pb.DataSource) string {
 	}
 }
 
-// instanceDescription is what the message leaves out. Its first line names the
-// instance and its title.
+// instanceDescription is what the message leaves out.
 func instanceDescription(c *instanceCreation) string {
 	ds := c.dataSource()
 	var sb strings.Builder

@@ -51,9 +51,10 @@ type Server struct {
 	// so NewServer binds it and tests replace it.
 	findUnapprovableStep func(ctx context.Context, workspace, issueName string) (*review.UnapprovableStep, error)
 
-	// maskingSkipsUnactivated reports whether masking would skip an instance
-	// that is not activated: the workspace's plan has data masking and its
-	// license does not cover every instance. NewServer binds it to the license.
+	// maskingSkipsUnactivated reports whether the plan has masking but
+	// LicenseService.IsFeatureEnabledForInstance would refuse it to an instance
+	// that is not activated. It needs the license service, which
+	// newServerWithStore does not take, so NewServer binds it and tests replace it.
 	maskingSkipsUnactivated func(ctx context.Context, workspace string) bool
 
 	// planCheckPollBudgetOverride lets tests shorten the plan-check poll budget.
@@ -85,9 +86,6 @@ func NewServer(stores *store.Store, profile *config.Profile, secret string, inte
 	if stores == nil {
 		return nil, errors.New("store is required")
 	}
-	if licenses == nil {
-		return nil, errors.New("license service is required")
-	}
 	s, err := newServerWithStore(stores, profile, secret, internalAPI)
 	if err != nil {
 		return nil, err
@@ -105,8 +103,6 @@ type instanceLicense interface {
 	IsUnifiedInstanceLicense(ctx context.Context, workspaceID string) bool
 }
 
-// maskingSkipsUnactivatedUnder reports, under a workspace's license, whether
-// masking would skip an instance that is not activated.
 func maskingSkipsUnactivatedUnder(licenses instanceLicense) func(ctx context.Context, workspace string) bool {
 	return func(ctx context.Context, workspace string) bool {
 		return licenses.IsFeatureEnabled(ctx, workspace, v1pb.PlanFeature_FEATURE_DATA_MASKING) == nil &&
