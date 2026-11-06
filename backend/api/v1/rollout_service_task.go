@@ -290,9 +290,9 @@ func getVersionedRelease(ctx context.Context, s *store.Store, releaseName string
 	return release, nil
 }
 
-// revisionLister is the one store read the release state needs.
-type revisionLister interface {
-	ListRevisions(ctx context.Context, find *store.FindRevisionMessage) ([]*store.RevisionMessage, error)
+// pendingVersionLister is the one store read the release state needs.
+type pendingVersionLister interface {
+	ListPendingReleaseVersions(ctx context.Context, instanceID string, databaseNames, versions []string) ([]*store.PendingReleaseVersion, error)
 }
 
 func releaseStateKey(database *store.DatabaseMessage) string {
@@ -301,10 +301,10 @@ func releaseStateKey(database *store.DatabaseMessage) string {
 
 // computeReleaseStates applies the executor's rule (runVersionedRelease) to
 // every target: a version is applied when the database has a live VERSIONED
-// revision with it. One query per instance, bounded by the release's file
-// count and the instance's targets, so a large database group stays one round
-// trip per instance. The states are keyed by releaseStateKey.
-func computeReleaseStates(ctx context.Context, lister revisionLister, release *store.ReleaseMessage, databases []*store.DatabaseMessage) (map[string]*storepb.Task_ReleaseState, error) {
+// revision with it. One query per instance returns only the pending pairs, so
+// a large database group costs one round trip per instance and rows for what
+// each database lacks. The states are keyed by releaseStateKey.
+func computeReleaseStates(ctx context.Context, lister pendingVersionLister, release *store.ReleaseMessage, databases []*store.DatabaseMessage) (map[string]*storepb.Task_ReleaseState, error) {
 	versions := make([]string, 0, len(release.Payload.GetFiles()))
 	for _, file := range release.Payload.GetFiles() {
 		versions = append(versions, file.Version)
@@ -325,51 +325,37 @@ func computeReleaseStates(ctx context.Context, lister revisionLister, release *s
 		namesOf[database.InstanceID] = append(namesOf[database.InstanceID], database.DatabaseName)
 	}
 
-	versioned := storepb.SchemaChangeType_VERSIONED
-	revisionsOf := map[string][]*store.RevisionMessage{}
+	pendingOf := map[string]map[string]*store.PendingReleaseVersion{}
 	for _, instanceID := range instances {
-		names := namesOf[instanceID]
-		revisions, err := lister.ListRevisions(ctx, &store.FindRevisionMessage{
-			InstanceID:    instanceID,
-			DatabaseNames: &names,
-			Type:          &versioned,
-			Versions:      &versions,
-			ShowDeleted:   true,
-		})
+		pending, err := lister.ListPendingReleaseVersions(ctx, instanceID, namesOf[instanceID], versions)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to list revisions on instance %q", instanceID)
+			return nil, errors.Wrapf(err, "failed to list pending release versions on instance %q", instanceID)
 		}
-		for _, revision := range revisions {
-			key := revision.InstanceID + "/" + revision.DatabaseName
-			revisionsOf[key] = append(revisionsOf[key], revision)
+		for _, p := range pending {
+			key := instanceID + "/" + p.DatabaseName
+			if pendingOf[key] == nil {
+				pendingOf[key] = map[string]*store.PendingReleaseVersion{}
+			}
+			pendingOf[key][p.Version] = p
 		}
 	}
 
 	computeTime := timestamppb.Now()
 	states := map[string]*storepb.Task_ReleaseState{}
 	for key := range seen {
-		states[key] = releaseStateOf(versions, revisionsOf[key], computeTime)
+		states[key] = releaseStateOf(versions, pendingOf[key], computeTime)
 	}
 	return states, nil
 }
 
-func releaseStateOf(versions []string, revisions []*store.RevisionMessage, computeTime *timestamppb.Timestamp) *storepb.Task_ReleaseState {
-	applied := map[string]bool{}
-	lastDeleted := map[string]*store.RevisionMessage{}
-	for _, revision := range revisions {
-		if revision.DeletedAt == nil {
-			applied[revision.Version] = true
-			continue
-		}
-		if prev, ok := lastDeleted[revision.Version]; !ok || revision.DeletedAt.After(*prev.DeletedAt) {
-			lastDeleted[revision.Version] = revision
-		}
-	}
-
+// releaseStateOf builds a task's state from the versions its database lacks,
+// keyed by version.
+func releaseStateOf(versions []string, pending map[string]*store.PendingReleaseVersion, computeTime *timestamppb.Timestamp) *storepb.Task_ReleaseState {
 	state := &storepb.Task_ReleaseState{ComputeTime: computeTime}
 	var open *storepb.Task_ReleaseState_Range
 	for i, version := range versions {
-		if applied[version] {
+		p, ok := pending[version]
+		if !ok {
 			state.AppliedCount++
 			open = nil
 			continue
@@ -379,15 +365,12 @@ func releaseStateOf(versions []string, revisions []*store.RevisionMessage, compu
 			state.PendingRanges = append(state.PendingRanges, open)
 		}
 		open.End = int32(i + 1)
-		if deleted, ok := lastDeleted[version]; ok {
-			note := &storepb.Task_ReleaseState_DeletedRevision{
+		if p.DeletedAt != nil {
+			state.DeletedRevisions = append(state.DeletedRevisions, &storepb.Task_ReleaseState_DeletedRevision{
 				Version:    version,
-				DeleteTime: timestamppb.New(*deleted.DeletedAt),
-			}
-			if deleted.Deleter != nil {
-				note.Deleter = *deleted.Deleter
-			}
-			state.DeletedRevisions = append(state.DeletedRevisions, note)
+				DeleteTime: timestamppb.New(*p.DeletedAt),
+				Deleter:    p.Deleter,
+			})
 		}
 	}
 	return state

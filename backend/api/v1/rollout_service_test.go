@@ -60,16 +60,26 @@ func TestConvertToTaskReturnsSkipperAndTime(t *testing.T) {
 	require.Nil(t, v1Task.SkipTime)
 }
 
-type countingRevisionLister struct {
-	finds []*store.FindRevisionMessage
+// countingPendingLister records each query and reports every version
+// pending, as for new databases.
+type countingPendingLister struct {
+	namesOf map[string][]string
+	calls   int
 }
 
-func (c *countingRevisionLister) ListRevisions(_ context.Context, find *store.FindRevisionMessage) ([]*store.RevisionMessage, error) {
-	c.finds = append(c.finds, find)
-	return nil, nil
+func (c *countingPendingLister) ListPendingReleaseVersions(_ context.Context, instanceID string, databaseNames, versions []string) ([]*store.PendingReleaseVersion, error) {
+	c.calls++
+	c.namesOf[instanceID] = databaseNames
+	var pending []*store.PendingReleaseVersion
+	for _, name := range databaseNames {
+		for _, version := range versions {
+			pending = append(pending, &store.PendingReleaseVersion{DatabaseName: name, Version: version})
+		}
+	}
+	return pending, nil
 }
 
-func TestReleaseStatesReadOneRevisionQueryPerInstance(t *testing.T) {
+func TestReleaseStatesReadOnePendingQueryPerInstance(t *testing.T) {
 	release := &store.ReleaseMessage{Payload: &storepb.ReleasePayload{
 		Type:  storepb.SchemaChangeType_VERSIONED,
 		Files: []*storepb.ReleasePayload_File{{Version: "001"}, {Version: "002"}},
@@ -80,21 +90,16 @@ func TestReleaseStatesReadOneRevisionQueryPerInstance(t *testing.T) {
 		{InstanceID: "instance-b", DatabaseName: "db1"},
 		{InstanceID: "instance-a", DatabaseName: "db3"},
 	}
-	lister := &countingRevisionLister{}
+	lister := &countingPendingLister{namesOf: map[string][]string{}}
 	states, err := computeReleaseStates(context.Background(), lister, release, databases)
 	require.NoError(t, err)
 
-	namesOf := map[string][]string{}
-	for _, find := range lister.finds {
-		require.NotNil(t, find.DatabaseNames)
-		namesOf[find.InstanceID] = *find.DatabaseNames
-	}
-	require.Len(t, lister.finds, 2)
+	require.Equal(t, 2, lister.calls)
 	require.Equal(t, map[string][]string{
 		"instance-a": {"db1", "db2", "db3"},
 		"instance-b": {"db1"},
-	}, namesOf)
-	// With no revisions, every target applies every version: one range.
+	}, lister.namesOf)
+	// Every version pending: one range per target.
 	require.Len(t, states, 4)
 	for _, database := range databases {
 		state := states[releaseStateKey(database)]
@@ -108,12 +113,13 @@ func TestReleaseStateStoresPendingFilesAsRanges(t *testing.T) {
 	deletedAt := time.Date(2026, 10, 5, 9, 30, 0, 0, time.UTC)
 	deleter := "alex@example.com"
 	versions := []string{"001", "002", "003", "004", "005", "006"}
-	revisions := []*store.RevisionMessage{
-		{Version: "002"},
-		{Version: "003"},
-		{Version: "005", DeletedAt: &deletedAt, Deleter: &deleter},
+	pending := map[string]*store.PendingReleaseVersion{
+		"001": {Version: "001"},
+		"004": {Version: "004"},
+		"005": {Version: "005", DeletedAt: &deletedAt, Deleter: deleter},
+		"006": {Version: "006"},
 	}
-	state := releaseStateOf(versions, revisions, timestamppb.Now())
+	state := releaseStateOf(versions, pending, timestamppb.Now())
 
 	type span struct{ start, end int32 }
 	var spans []span
@@ -129,10 +135,12 @@ func TestReleaseStateStoresPendingFilesAsRanges(t *testing.T) {
 
 	// A large release on a new database is still one range.
 	many := make([]string, 500)
+	all := map[string]*store.PendingReleaseVersion{}
 	for i := range many {
 		many[i] = fmt.Sprintf("%04d", i)
+		all[many[i]] = &store.PendingReleaseVersion{Version: many[i]}
 	}
-	fresh := releaseStateOf(many, nil, timestamppb.Now())
+	fresh := releaseStateOf(many, all, timestamppb.Now())
 	require.Len(t, fresh.PendingRanges, 1)
 	require.Equal(t, int32(500), fresh.PendingRanges[0].End)
 }
