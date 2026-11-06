@@ -149,14 +149,15 @@ func describeJustInTimeChange(ctx context.Context, change *justInTimeChange) str
 }
 
 // setJustInTimeAccessOnAnswer acts on the answer to a form this server sent. A
-// decline is reported before a change, so a user who said no is not asked again.
+// decline is reported before staleness is checked, so a user who said no is not
+// asked again.
 func (s *Server) setJustInTimeAccessOnAnswer(ctx context.Context, change *justInTimeChange, reply *confirmationReply, link string) (*mcp.CallToolResult, any) {
-	confirmed, wantsChange, why := confirmationOutcome(reply.response)
-	if wantsChange {
+	switch choice, why := confirmationOutcome(reply.response); choice {
+	case confirmChoiceApply:
+	case confirmChoiceChange:
 		return textResult(fmt.Sprintf("Just-in-time access in %s was not turned %s: %s. Ask them what to change, such as the project, then call set_just_in_time_access again.\nProject settings: %s",
 			change.project, change.state(), why, link)), nil
-	}
-	if !confirmed {
+	default:
 		return textResult(fmt.Sprintf("Just-in-time access in %s was not turned %s: %s, so nothing changed. Do not retry unless the user asks.\nProject settings: %s",
 			change.project, change.state(), why, link)), nil
 	}

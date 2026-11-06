@@ -154,6 +154,12 @@ func TestSetJustInTimeAccessSaysWhatTurningItOffDoes(t *testing.T) {
 		`Project "hr"`,
 		`Grants here stop applying (not revoked), and new requests are refused.`,
 	}, "\n"), user.lastParams(t).Message)
+	schema, err := json.Marshal(user.lastParams(t).RequestedSchema)
+	require.NoError(t, err)
+	require.JSONEq(t, `{"type":"object","required":["choice"],"properties":{"choice":{"type":"string",
+		"title":"Turn off just-in-time access?",
+		"oneOf":[{"const":"apply","title":"Turn off"},{"const":"change","title":"Change it in chat"}],
+		"default":"apply"}}}`, string(schema))
 	calls := mock.calls()
 	require.Len(t, calls, 1)
 	require.Equal(t, false, calls[0].body["project"].(map[string]any)["allowJustInTimeAccess"])

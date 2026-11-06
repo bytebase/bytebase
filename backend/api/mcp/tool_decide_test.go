@@ -276,6 +276,12 @@ func TestDecideIssueRejectsOnConfirmation(t *testing.T) {
 	require.NoError(t, err)
 	require.False(t, res.IsError, resultText(t, res))
 	require.Contains(t, user.lastParams(t).Message, `Reject issue "projects/hr/issues/42" titled "Add status column"`)
+	schema, err := json.Marshal(user.lastParams(t).RequestedSchema)
+	require.NoError(t, err)
+	require.JSONEq(t, `{"type":"object","required":["choice"],"properties":{"choice":{"type":"string",
+		"title":"Reject this issue?",
+		"oneOf":[{"const":"apply","title":"Reject"},{"const":"change","title":"Change it in chat"}],
+		"default":"apply"}}}`, string(schema))
 
 	calls := mock.calls()
 	require.Len(t, calls, 1)
@@ -335,17 +341,14 @@ func TestDecideIssueMalformedAnswerChangesNothing(t *testing.T) {
 		"an unknown action":                 &mcp.ElicitResult{Action: "approve", Content: map[string]any{confirmChoiceField: confirmChoiceApply}},
 		"the checkbox the form used to ask": &mcp.ElicitResult{Action: "accept", Content: map[string]any{"confirm": true}},
 	} {
-		confirmed, change, why := confirmationOutcome(response)
-		require.False(t, confirmed, name)
-		require.False(t, change, name)
+		choice, why := confirmationOutcome(response)
+		require.Empty(t, choice, name)
 		require.NotEmpty(t, why, name)
 	}
-	confirmed, change, _ := confirmationOutcome(confirmAnswer(confirmChoiceApply))
-	require.True(t, confirmed)
-	require.False(t, change)
-	confirmed, change, why := confirmationOutcome(confirmAnswer(confirmChoiceChange))
-	require.False(t, confirmed)
-	require.True(t, change)
+	choice, _ := confirmationOutcome(confirmAnswer(confirmChoiceApply))
+	require.Equal(t, confirmChoiceApply, choice)
+	choice, why := confirmationOutcome(confirmAnswer(confirmChoiceChange))
+	require.Equal(t, confirmChoiceChange, choice)
 	require.Equal(t, "the user wants to change this request", why)
 }
 

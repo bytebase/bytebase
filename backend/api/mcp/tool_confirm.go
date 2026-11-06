@@ -157,21 +157,21 @@ func (r *confirmationReply) staleReason(mismatch string) string {
 	}
 }
 
-// confirmationOutcome reports whether the answer chose the form's action. When
-// it did not, change reports that the user chose to change the request in
-// chat, and why says what the answer was, in words the result can carry.
-func confirmationOutcome(response mcp.InputResponse) (confirmed, change bool, why string) {
+// confirmationOutcome returns the choice the answer made, confirmChoiceApply or
+// confirmChoiceChange, or "" when it made none, and why the change is not
+// made, in words the result can carry.
+func confirmationOutcome(response mcp.InputResponse) (choice, why string) {
 	content, accepted, why := acceptedForm(response)
 	if !accepted {
-		return false, false, why
+		return "", why
 	}
 	switch content[confirmChoiceField] {
 	case confirmChoiceApply:
-		return true, false, ""
+		return confirmChoiceApply, ""
 	case confirmChoiceChange:
-		return false, true, "the user wants to change this request"
+		return confirmChoiceChange, "the user wants to change this request"
 	default:
-		return false, false, "the answer chose none of the form's choices"
+		return "", "the answer chose none of the form's choices"
 	}
 }
 

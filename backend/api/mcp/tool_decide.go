@@ -221,15 +221,15 @@ func (s *Server) recordRefusedDecision(ctx context.Context, decision *issueDecis
 
 // decideOnAnswer acts on the answer to a form this server sent. Only the
 // form's action decides, and only while what the user was asked about still
-// matches the issue. A decline is reported before a change, so a user who said
-// no is not asked again.
+// matches the issue. A decline is reported before staleness is checked, so a
+// user who said no is not asked again.
 func (s *Server) decideOnAnswer(ctx context.Context, decision *issueDecision, reply *confirmationReply, issueUpdateTime, link string) (*mcp.CallToolResult, any) {
-	confirmed, change, why := confirmationOutcome(reply.response)
-	if change {
+	switch choice, why := confirmationOutcome(reply.response); choice {
+	case confirmChoiceApply:
+	case confirmChoiceChange:
 		return textResult(fmt.Sprintf("Not %s: %s. Ask them what to change, such as the decision or its comment, then call decide_issue again.\nIssue: %s",
 			decision.pastTense(), why, link)), nil
-	}
-	if !confirmed {
+	default:
 		return textResult(fmt.Sprintf("Not %s: %s, so nothing changed. Do not retry unless the user asks.\nIssue: %s",
 			decision.pastTense(), why, link)), nil
 	}

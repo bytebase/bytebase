@@ -656,11 +656,11 @@ func (s *Server) confirmAdminChange(ctx context.Context, req *mcp.CallToolReques
 	if !answered {
 		return s.askToConfirm(ctx, w, digest, form.message, confirmChoice{question: "Apply this change?", action: "Apply", description: form.description})
 	}
-	confirmed, change, why := confirmationOutcome(reply.response)
-	if change {
-		return textResult("Not changed: the user wants to change this request. Ask them what to change, then call administer_workspace with the revised rules.")
-	}
-	if !confirmed {
+	switch choice, why := confirmationOutcome(reply.response); choice {
+	case confirmChoiceApply:
+	case confirmChoiceChange:
+		return textResult(fmt.Sprintf("Not changed: %s. Ask them what to change, then call administer_workspace with the revised rules.", why))
+	default:
 		return textResult(fmt.Sprintf("Not changed: %s, so %s stay as they are. Do not retry unless the user asks.", why, rules.name))
 	}
 	if why := reply.staleReason(shown + " no longer read as they did when the user was asked"); why != "" {

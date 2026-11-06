@@ -307,13 +307,13 @@ func (s *Server) handleGrantMaskingExemption(ctx context.Context, req *mcp.CallT
 	written := append(slices.Clone(exemptions), map[string]any{"members": []string{grant.member}, "condition": condition})
 	body := exemptionUpdateBody(write.policy, written)
 	output := &MaskingExemptionOutput{Project: grant.project, Member: grant.member, Condition: grant.condition(), Link: link}
-	message, fits := describeExemptionGrant(ctx, grant)
-	if !fits {
+	message, tooLong := describeExemptionGrant(ctx, grant)
+	if tooLong != "" {
 		next := "grant it signed in to the Bytebase console: " + link
-		if len(grant.columns) > 1 {
+		if oneColumnFits(ctx, grant) {
 			next = "exempt fewer columns at a time, or " + next
 		}
-		return formatToolError(exemptionTooLong(message, next)), nil, nil
+		return formatToolError(&toolError{Code: "CHANGE_TOO_LONG", Message: tooLong, Suggestion: next}), nil, nil
 	}
 	choice := confirmChoice{question: "Exempt this member from masking?", action: "Exempt"}
 	if grant.note != "" {
@@ -358,9 +358,9 @@ func (s *Server) handleRevokeMaskingExemption(ctx context.Context, req *mcp.Call
 	}
 	body := exemptionUpdateBody(write.policy, remaining)
 	output := &MaskingExemptionOutput{Project: input.Project, Member: input.Member, Condition: input.Condition, Link: link}
-	message, expiry, fits := describeExemptionRevoke(ctx, input)
-	if !fits {
-		return formatToolError(exemptionTooLong(message, "remove it signed in to the Bytebase console: "+link)), nil, nil
+	message, expiry, tooLong := describeExemptionRevoke(ctx, input)
+	if tooLong != "" {
+		return formatToolError(&toolError{Code: "CHANGE_TOO_LONG", Message: tooLong, Suggestion: "remove it signed in to the Bytebase console: " + link}), nil, nil
 	}
 	var notes []string
 	if matched > 1 {
@@ -443,11 +443,11 @@ func (s *Server) confirmExemptionWrite(ctx context.Context, req *mcp.CallToolReq
 	if !answered {
 		return s.askToConfirm(ctx, write, digest[:], message, choice), nil, nil
 	}
-	confirmed, change, why := confirmationOutcome(reply.response)
-	if change {
+	switch choice, why := confirmationOutcome(reply.response); choice {
+	case confirmChoiceApply:
+	case confirmChoiceChange:
 		return textResult(fmt.Sprintf("%s: %s. Ask them what to change, %s.\nMasking exemptions: %s", capitalize(notDone), why, toChange, output.Link)), nil, nil
-	}
-	if !confirmed {
+	default:
 		return textResult(fmt.Sprintf("%s: %s, so nothing changed. Do not retry unless the user asks.\nMasking exemptions: %s", capitalize(notDone), why, output.Link)), nil, nil
 	}
 	if why := reply.staleReason("what the user confirmed no longer matches this call and the project's exemptions as they are now"); why != "" {
@@ -471,20 +471,27 @@ func (s *Server) confirmExemptionWrite(ctx context.Context, req *mcp.CallToolReq
 	return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: done + "\nMasking exemptions: " + output.Link}}}, output, nil
 }
 
-// describeExemptionGrant builds the grant's confirmation message, and reports
-// whether it fits a form. The member comes right after the verb, before the
-// account's email, the only text a client may cut. Values enter through %q, so
-// none can pose as a line of the message.
-func describeExemptionGrant(ctx context.Context, g *exemptionGrant) (string, bool) {
-	question := fmt.Sprintf("Exempt %q from masking", g.member)
-	if email := getUserEmail(ctx); email != "" {
-		question += ", as " + email
-	}
+// describeExemptionGrant builds the grant's confirmation message. tooLong says
+// why it does not fit a form, or is empty when it does.
+func describeExemptionGrant(ctx context.Context, g *exemptionGrant) (message, tooLong string) {
 	effect := "Bypasses masking here, with no expiry; adds no masking."
 	if g.expireTime != "" {
 		effect = fmt.Sprintf("Bypasses masking until %q; adds no masking.", g.expireTime)
 	}
-	return fitExemption(question, exemptionScope(g), effect)
+	return fitExemption(ctx, fmt.Sprintf("Exempt %q", g.member), " from masking", exemptionScope(g), effect)
+}
+
+// oneColumnFits reports whether a grant of several columns that does not fit a
+// form would fit with its widest column alone, so granting fewer columns at a
+// time can help.
+func oneColumnFits(ctx context.Context, g *exemptionGrant) bool {
+	if len(g.columns) < 2 {
+		return false
+	}
+	one := *g
+	one.columns = []string{slices.MaxFunc(g.columns, func(a, b string) int { return lineColumns(a) - lineColumns(b) })}
+	_, tooLong := describeExemptionGrant(ctx, &one)
+	return tooLong == ""
 }
 
 // exemptionScope names what the grant covers.
@@ -497,19 +504,25 @@ func exemptionScope(g *exemptionGrant) string {
 }
 
 // fitExemption puts an exemption form's question, its change and the change's
-// effect into the lines a form shows, and reports whether they fit.
-func fitExemption(question, change, effect string) (string, bool) {
+// effect into the lines a form shows. The question starts with head, which
+// names the member and must fit one line: only the text after it, which ends
+// with the account's email, may run past the line. tooLong says why the form
+// does not fit, or is empty when it does. Values enter through %q, so none can
+// pose as a line of the message.
+func fitExemption(ctx context.Context, head, rest, change, effect string) (message, tooLong string) {
+	question := head + rest
+	if email := getUserEmail(ctx); email != "" {
+		question += ", as " + email
+	}
 	lines, _ := fitMessage(question+"?", []formChange{{text: change, effect: true}}, effect)
-	return strings.Join(lines, "\n"), len(lines) <= messageLines
-}
-
-// exemptionTooLong refuses an exemption whose form does not fit, since its
-// scope must show whole.
-func exemptionTooLong(message, next string) *toolError {
-	return &toolError{
-		Code:       "CHANGE_TOO_LONG",
-		Message:    fmt.Sprintf("this exemption needs %d lines, more than the %d one confirmation form shows, so nothing changed", strings.Count(message, "\n")+1, messageLines),
-		Suggestion: next,
+	message = strings.Join(lines, "\n")
+	switch {
+	case lineColumns(head) > messageLineWidth:
+		return message, fmt.Sprintf("the member does not fit the %d columns one line of the confirmation form shows, so nothing changed", messageLineWidth)
+	case len(lines) > messageLines:
+		return message, fmt.Sprintf("this exemption needs %d lines, more than the %d one confirmation form shows, so nothing changed", len(lines), messageLines)
+	default:
+		return message, ""
 	}
 }
 
@@ -533,70 +546,75 @@ func describeNarrowing(g *exemptionGrant) string {
 	}
 }
 
-// describeColumns names the columns in table. Several columns are counted
-// before they are named.
 func describeColumns(columns []string, table string) string {
 	if len(columns) == 1 {
 		return fmt.Sprintf("column %q in %s", columns[0], table)
 	}
-	return fmt.Sprintf("%d columns in %s: %s", len(columns), table, quoteAll(columns))
+	return fmt.Sprintf("columns %s in %s", quoteAll(columns), table)
 }
 
-// describeExemptionRevoke builds the revoke's confirmation message, and reports
-// whether it fits a form. The exemption's expiry ends the scope's line when the
-// message has room, and otherwise moves under the choice, returned as expiry.
-func describeExemptionRevoke(ctx context.Context, input RevokeMaskingExemptionInput) (message, expiry string, fits bool) {
-	question := fmt.Sprintf("Revoke masking exemption: %q", input.Member)
-	if email := getUserEmail(ctx); email != "" {
-		question += ", as " + email
-	}
+// describeExemptionRevoke builds the revoke's confirmation message. The
+// exemption's expiry ends the scope's line when the message has room, and
+// otherwise moves under the choice, returned as expiry. tooLong says why the
+// message does not fit a form, or is empty when it does.
+func describeExemptionRevoke(ctx context.Context, input RevokeMaskingExemptionInput) (message, expiry, tooLong string) {
 	const effect = "Ends their bypass of masking here, unless another exemption covers it."
+	head, rest := fmt.Sprintf("Revoke %q", input.Member), "'s masking exemption"
 	scope, until := revokeScope(input)
 	if until != "" {
-		if message, fits := fitExemption(question, fmt.Sprintf("%s, until %q", scope, until), effect); fits {
-			return message, "", true
+		if message, tooLong := fitExemption(ctx, head, rest, fmt.Sprintf("%s, until %q", scope, until), effect); tooLong == "" {
+			return message, "", ""
 		}
 		expiry = fmt.Sprintf("It would expire %q.", until)
 	}
-	message, fits = fitExemption(question, scope, effect)
-	return message, expiry, fits
+	message, tooLong = fitExemption(ctx, head, rest, scope, effect)
+	return message, expiry, tooLong
 }
 
 // revokeScope names the exemption the revoke ends, and its expiry apart. A
-// condition in the form a grant writes reads in the grant's words; any other
-// shows as typed.
+// condition in the form a grant writes reads in the grant's words. Any other
+// shows through conditionText; when it leads with an expiry, the expiry is
+// split off and the rest shows as CEL prints it.
 func revokeScope(input RevokeMaskingExemptionInput) (scope, expiry string) {
-	if g, ok := exemptionGrantOf(input.Project, input.Condition); ok {
+	projectID, _ := common.GetProjectID(input.Project)
+	if input.Condition == "" {
+		return fmt.Sprintf("Project %q: all databases, no expiry", projectID), ""
+	}
+	parsed, ok := parseExemptionCondition(input.Condition)
+	if !ok {
+		return fmt.Sprintf("Project %q: %s", projectID, conditionText(input.Condition)), ""
+	}
+	if g, ok := exemptionGrantOf(input, parsed); ok {
 		return exemptionScope(g), g.expireTime
 	}
-	projectID, _ := common.GetProjectID(input.Project)
-	condition, expiry := splitExemptionExpiry(input.Condition)
-	switch {
-	case condition == "" && expiry == "":
-		return fmt.Sprintf("Project %q: all databases, no expiry", projectID), ""
-	case condition == "":
+	condition, expiry := splitExemptionExpiry(input.Condition, parsed)
+	if condition == "" {
 		return fmt.Sprintf("Project %q: all databases", projectID), expiry
-	default:
-		return fmt.Sprintf("Project %q: %s", projectID, conditionText(condition)), expiry
 	}
+	return fmt.Sprintf("Project %q: %s", projectID, conditionText(condition)), expiry
+}
+
+// parseExemptionCondition parses an exemption's condition, or reports false for
+// one that is not CEL.
+func parseExemptionCondition(condition string) (*celast.AST, bool) {
+	env, err := cel.NewEnv(common.MaskingExemptionPolicyCELAttributes...)
+	if err != nil {
+		return nil, false
+	}
+	parsed, issues := env.Parse(condition)
+	if issues != nil && issues.Err() != nil {
+		return nil, false
+	}
+	return parsed.NativeRep(), true
 }
 
 // splitExemptionExpiry splits a condition whose top level is an expiry and'ed
 // with a scope, as the console writes it, into the scope and the expiry, so the
-// form names the expiry apart from the scope. It parses the condition, so CEL's
-// precedence and literal forms decide: the expiry of "T && A || B" does not
-// cover B, and that condition is returned whole, with no expiry, as is any
+// form names the expiry apart from the scope. It reads the parsed condition, so
+// CEL's precedence and literal forms decide: the expiry of "T && A || B" does
+// not cover B, and that condition is returned whole, with no expiry, as is any
 // other shape.
-func splitExemptionExpiry(condition string) (string, string) {
-	env, err := cel.NewEnv(common.MaskingExemptionPolicyCELAttributes...)
-	if err != nil {
-		return condition, ""
-	}
-	parsed, issues := env.Parse(condition)
-	if issues != nil && issues.Err() != nil {
-		return condition, ""
-	}
-	native := parsed.NativeRep()
+func splitExemptionExpiry(condition string, native *celast.AST) (string, string) {
 	root := native.Expr()
 	if expiry, ok := exemptionExpiry(root); ok {
 		return "", expiry
@@ -633,22 +651,17 @@ func exemptionExpiry(e celast.Expr) (string, bool) {
 	return stringLiteral(right.AsCall().Args()[0])
 }
 
-// exemptionGrantOf returns the grant whose condition is exactly condition, so a
-// revoke can name what it ends in the grant's words. A condition in any other
-// form, such as one written by hand, returns false.
-func exemptionGrantOf(project, condition string) (*exemptionGrant, bool) {
-	env, err := cel.NewEnv(common.MaskingExemptionPolicyCELAttributes...)
-	if err != nil {
-		return nil, false
-	}
-	parsed, issues := env.Parse(condition)
-	if issues != nil && issues.Err() != nil {
-		return nil, false
-	}
-	g := &exemptionGrant{project: project}
-	for _, term := range conjuncts(parsed.NativeRep().Expr()) {
+// exemptionGrantOf returns the grant whose condition is exactly the revoke's,
+// so a revoke can name what it ends in the grant's words. The terms go through
+// parseExemptionGrant, the grant's own checks, so a condition the grant would
+// not write, such as columns with no table, returns false, as does a condition
+// in any other form.
+func exemptionGrantOf(input RevokeMaskingExemptionInput, native *celast.AST) (*exemptionGrant, bool) {
+	grant := GrantMaskingExemptionInput{Project: input.Project, Member: input.Member}
+	var instanceID, databaseName string
+	for _, term := range conjuncts(native.Expr()) {
 		if expiry, ok := exemptionExpiry(term); ok {
-			g.expireTime = expiry
+			grant.ExpireTime = expiry
 			continue
 		}
 		attribute, values, ok := resourceValues(term)
@@ -657,23 +670,26 @@ func exemptionGrantOf(project, condition string) (*exemptionGrant, bool) {
 		}
 		switch attribute {
 		case "instance_id":
-			g.instanceID = values[0]
+			instanceID = values[0]
 		case "database_name":
-			g.databaseName = values[0]
+			databaseName = values[0]
 		case "schema_name":
-			g.schema = values[0]
+			grant.Schema = values[0]
 		case "table_name":
-			g.table = values[0]
+			grant.Table = values[0]
 		case "column_name":
-			g.columns = values
+			grant.Columns = values
 		default:
 			return nil, false
 		}
 	}
-	if g.instanceID != "" || g.databaseName != "" {
-		g.database = fmt.Sprintf("instances/%s/databases/%s", g.instanceID, g.databaseName)
+	if instanceID != "" || databaseName != "" {
+		grant.Database = fmt.Sprintf("instances/%s/databases/%s", instanceID, databaseName)
+	} else {
+		grant.AllDatabases = true
 	}
-	if g.condition() != condition {
+	g, err := parseExemptionGrant(grant)
+	if err != nil || g.condition() != input.Condition {
 		return nil, false
 	}
 	return g, true
@@ -691,8 +707,9 @@ func conjuncts(e celast.Expr) []celast.Expr {
 	return terms
 }
 
-// resourceValues returns the attribute and values of `resource.x == "v"` or
-// `resource.x in ["v", …]`.
+// resourceValues returns the attribute and value of `resource.x == "v"`, or the
+// values of `resource.column_name in ["v", …]`. Only column_name may hold a
+// list: exemptionGrantOf reads one value of every other attribute.
 func resourceValues(e celast.Expr) (string, []string, bool) {
 	if e.Kind() != celast.CallKind || len(e.AsCall().Args()) != 2 {
 		return "", nil, false
@@ -710,7 +727,7 @@ func resourceValues(e celast.Expr) (string, []string, bool) {
 		value, ok := stringLiteral(right)
 		return attribute, []string{value}, ok
 	case operators.In:
-		if right.Kind() != celast.ListKind {
+		if attribute != "column_name" || right.Kind() != celast.ListKind {
 			return "", nil, false
 		}
 		var values []string

@@ -340,7 +340,7 @@ func TestAdministerWorkspaceChangesNothingForAnAnswerWithNoChoice(t *testing.T) 
 			params.InputResponses = mcp.InputResponseMap{confirmDecisionRequestID: answer}
 			params.RequestState = signedApprovalState(t, s, mock.stored, body, time.Now())
 			res := callAdminister(t, session, params)
-			require.Contains(t, resultText(t, res), "Not changed: the answer chose none of the form's choices")
+			require.Contains(t, resultText(t, res), "Not changed: the answer chose none of the form's choices, so the approval rules stay as they are. Do not retry unless the user asks.")
 			require.Empty(t, mock.calls())
 		})
 	}

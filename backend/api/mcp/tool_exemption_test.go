@@ -244,7 +244,7 @@ func TestGrantMaskingExemptionSaysWhenATableIsInAnySchema(t *testing.T) {
 	}{
 		"a table":     {map[string]any{"table": "employee"}, `Database "hr" on instance "prod", any schema, table "employee"`},
 		"a column":    {map[string]any{"table": "employee", "columns": []string{"salary"}}, `Database "hr" on instance "prod", any schema, column "salary" in "employee"`},
-		"two columns": {map[string]any{"table": "employee", "columns": []string{"first_name", "last_name"}}, `Database "hr" on instance "prod", any schema, 2 columns in "employee": "first_name", "last_name"`},
+		"two columns": {map[string]any{"table": "employee", "columns": []string{"first_name", "last_name"}}, `Database "hr" on instance "prod", any schema, columns "first_name", "last_name" in "employee"`},
 		"a schema":    {map[string]any{"schema": "public"}, `Database "hr" on instance "prod", schema "public"`},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -272,7 +272,7 @@ func TestGrantMaskingExemptionCoversSeveralColumnsInOneEntry(t *testing.T) {
 	res := callExemptionTool(t, session, "grant_masking_exemption", grant)
 	require.False(t, res.IsError, resultText(t, res))
 	require.Equal(t, int32(1), user.asked.Load())
-	require.Contains(t, unwrapMessage(user.lastParams(t).Message), "\n"+`Database "hr" on instance "prod", 2 columns in "public"."employee": "first_name", "last_name"`+"\n")
+	require.Contains(t, unwrapMessage(user.lastParams(t).Message), "\n"+`Database "hr" on instance "prod", columns "first_name", "last_name" in "public"."employee"`+"\n")
 	calls := mock.calls()
 	require.Len(t, calls, 1)
 	require.Equal(t, map[string]any{
@@ -408,8 +408,7 @@ func TestMaskingExemptionToolsBindTheAnswerToTheArguments(t *testing.T) {
 	require.Empty(t, mock.calls())
 }
 
-// Journey 3's exemption as the agent sent it, and its removal: each form fits
-// whole, with the reason under the choice.
+// Journey 3's exemption, as the agent sent it.
 func TestMaskingExemptionFormsForTheJourneysExemption(t *testing.T) {
 	condition := `(resource.instance_id == "prod-pg" && resource.database_name == "hr_prod")`
 	mock := &policyMock{databaseProject: "projects/hr", exemptions: []map[string]any{
@@ -441,7 +440,7 @@ func TestMaskingExemptionFormsForTheJourneysExemption(t *testing.T) {
 	})
 	asked = user.lastParams(t)
 	require.Equal(t, strings.Join([]string{
-		`Revoke masking exemption: "group:hr-team@example.com", as alice@example.com?`,
+		`Revoke "group:hr-team@example.com"'s masking exemption, as alice@example.com?`,
 		`Database "hr_prod" on instance "prod-pg", all tables`,
 		`Ends their bypass of masking here, unless another exemption covers it.`,
 	}, "\n"), asked.Message)
@@ -459,26 +458,40 @@ func TestMaskingExemptionFormsForTheJourneysExemption(t *testing.T) {
 
 func TestMaskingExemptionToolsRefuseAFormTooLongBeforeAsking(t *testing.T) {
 	longest := strings.Repeat("x", 63)
+	const tooManyLines = "more than the 4 one confirmation form shows, so nothing changed"
+	const memberTooLong = "the member does not fit the 70 columns one line of the confirmation form shows, so nothing changed"
 	for name, tc := range map[string]struct {
 		tool      string
 		arguments map[string]any
+		reason    string
 		want      string
 	}{
-		"a grant naming several columns": {"grant_masking_exemption", map[string]any{
+		"a grant naming columns that fit one at a time": {"grant_masking_exemption", map[string]any{
+			"project": "projects/hr", "member": "user:bob@example.com", "database": "instances/prod-analytics-replica/databases/hr_reporting",
+			"table": "employee_compensation", "columns": []string{"base_salary_amount", "annual_bonus_amount", "stock_grant_value", "commission_rate"},
+		}, tooManyLines, "exempt fewer columns at a time, or grant it signed in to the Bytebase console: https://bb.example.com/projects/hr/masking-exemption"},
+		"a grant naming columns that do not fit even one at a time": {"grant_masking_exemption", map[string]any{
 			"project": "projects/hr", "member": "user:bob@example.com", "database": "instances/" + longest + "/databases/" + longest,
 			"table": "employee", "columns": []string{"birth_date", "gender"},
-		}, "exempt fewer columns at a time, or grant it signed in to the Bytebase console: https://bb.example.com/projects/hr/masking-exemption"},
+		}, tooManyLines, "grant it signed in to the Bytebase console: https://bb.example.com/projects/hr/masking-exemption"},
+		"a grant to a member too long for the question": {"grant_masking_exemption", map[string]any{
+			"project": "projects/hr", "member": "user:" + strings.Repeat("m", 50) + "@example.com", "database": "instances/prod/databases/hr",
+		}, memberTooLong, "grant it signed in to the Bytebase console: https://bb.example.com/projects/hr/masking-exemption"},
 		"a grant of one long column": {"grant_masking_exemption", map[string]any{
 			"project": "projects/hr", "member": "user:bob@example.com", "database": "instances/" + longest + "/databases/" + longest,
 			"table": "employee", "columns": []string{"birth_date"},
-		}, "grant it signed in to the Bytebase console: https://bb.example.com/projects/hr/masking-exemption"},
+		}, tooManyLines, "grant it signed in to the Bytebase console: https://bb.example.com/projects/hr/masking-exemption"},
 		"a revoke of a long condition": {"revoke_masking_exemption", map[string]any{
 			"project": "projects/hr", "member": "user:bob@example.com", "condition": strings.Repeat("c", 200),
-		}, "remove it signed in to the Bytebase console: https://bb.example.com/projects/hr/masking-exemption"},
+		}, tooManyLines, "remove it signed in to the Bytebase console: https://bb.example.com/projects/hr/masking-exemption"},
+		"a revoke for a member too long for the question": {"revoke_masking_exemption", map[string]any{
+			"project": "projects/hr", "member": "user:" + strings.Repeat("m", 50) + "@example.com", "condition": "",
+		}, memberTooLong, "remove it signed in to the Bytebase console: https://bb.example.com/projects/hr/masking-exemption"},
 	} {
 		t.Run(name, func(t *testing.T) {
 			mock := &policyMock{databaseProject: "projects/hr", exemptions: []map[string]any{
 				{"members": []any{"user:bob@example.com"}, "condition": map[string]any{"expression": strings.Repeat("c", 200)}},
+				{"members": []any{"user:" + strings.Repeat("m", 50) + "@example.com"}, "condition": map[string]any{"expression": ""}},
 			}}
 			user := &asker{answer: confirmAnswer(confirmChoiceApply)}
 			session := connectToPolicyServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
@@ -487,7 +500,7 @@ func TestMaskingExemptionToolsRefuseAFormTooLongBeforeAsking(t *testing.T) {
 			var refusal toolError
 			require.NoError(t, json.Unmarshal([]byte(resultText(t, res)), &refusal))
 			require.Equal(t, "CHANGE_TOO_LONG", refusal.Code)
-			require.Contains(t, refusal.Message, "more than the 4 one confirmation form shows, so nothing changed")
+			require.Contains(t, refusal.Message, tc.reason)
 			require.Equal(t, tc.want, refusal.Suggestion)
 			require.Zero(t, user.asked.Load(), "the user is not asked about a form that cannot show the change whole")
 			require.Empty(t, mock.calls())
@@ -601,7 +614,7 @@ func TestRevokeMaskingExemptionRemovesTheMemberFromEveryMatch(t *testing.T) {
 	res := callExemptionTool(t, session, "revoke_masking_exemption", map[string]any{"project": "projects/hr", "member": "user:bob@example.com", "condition": condition})
 	require.False(t, res.IsError, resultText(t, res))
 	require.Equal(t, strings.Join([]string{
-		`Revoke masking exemption: "user:bob@example.com", as alice@example.com?`,
+		`Revoke "user:bob@example.com"'s masking exemption, as alice@example.com?`,
 		`Database "hr" on instance "prod", all tables`,
 		`Ends their bypass of masking here, unless another exemption covers it.`,
 	}, "\n"), user.lastParams(t).Message)
@@ -643,7 +656,7 @@ func TestRevokeMaskingExemptionNamesWhatItEnds(t *testing.T) {
 		"no condition":   {"", `Project "hr": all databases, no expiry`, ""},
 		"a grant's columns": {
 			`request.time < timestamp("2099-01-01T00:00:00.000Z") && (resource.instance_id == "prod" && resource.database_name == "hr" && resource.table_name == "employee" && resource.column_name in ["salary", "bonus"])`,
-			`Database "hr" on instance "prod", any schema, 2 columns in "employee": "salary", "bonus"`, "2099-01-01T00:00:00.000Z",
+			`Database "hr" on instance "prod", any schema, columns "salary", "bonus" in "employee"`, "2099-01-01T00:00:00.000Z",
 		},
 		"a grant's one column": {
 			`(resource.instance_id == "prod" && resource.database_name == "hr" && resource.schema_name == "public" && resource.table_name == "employee" && resource.column_name == "salary")`,
@@ -674,6 +687,22 @@ func TestRevokeMaskingExemptionNamesWhatItEnds(t *testing.T) {
 			"Project \"hr\": `resource.table_name == \"a)b\"`", "2026-10-27T00:00:00.000Z",
 		},
 		"not CEL": {`((`, "Project \"hr\": `((`", ""},
+		"an empty list": {
+			`(resource.instance_id == "prod" && resource.database_name == "hr" && resource.table_name in [])`,
+			"Project \"hr\": `(resource.instance_id == \"prod\" && resource.database_name == \"hr\" && resource.table_name in [])`", "",
+		},
+		"one column in a list": {
+			`(resource.instance_id == "prod" && resource.database_name == "hr" && resource.table_name == "t" && resource.column_name in ["salary"])`,
+			"Project \"hr\": `(resource.instance_id == \"prod\" && resource.database_name == \"hr\" && resource.table_name == \"t\" && resource.column_name in [\"salary\"])`", "",
+		},
+		"a list on an attribute with one value": {
+			`(resource.instance_id in ["prod", "test"] && resource.database_name == "hr")`,
+			"Project \"hr\": `(resource.instance_id in [\"prod\", \"test\"] && resource.database_name == \"hr\")`", "",
+		},
+		"a column with no table": {
+			`(resource.instance_id == "prod" && resource.database_name == "hr" && resource.column_name == "salary")`,
+			"Project \"hr\": `(resource.instance_id == \"prod\" && resource.database_name == \"hr\" && resource.column_name == \"salary\")`", "",
+		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			scope, expiry := revokeScope(RevokeMaskingExemptionInput{Project: "projects/hr", Member: "user:bob@example.com", Condition: tc.condition})
@@ -683,8 +712,6 @@ func TestRevokeMaskingExemptionNamesWhatItEnds(t *testing.T) {
 	}
 }
 
-// A removal states the exemption's expiry in the message when it fits, and
-// under the choice when it does not.
 func TestRevokeMaskingExemptionPutsTheExpiryWhereItFits(t *testing.T) {
 	for name, tc := range map[string]struct {
 		condition, inMessage, description string
@@ -695,7 +722,7 @@ func TestRevokeMaskingExemptionPutsTheExpiryWhereItFits(t *testing.T) {
 		},
 		"two columns of a table": {
 			`request.time < timestamp("2099-01-01T00:00:00.000Z") && (resource.instance_id == "inst-0123456789" && resource.database_name == "db-0123456789" && resource.table_name == "employee" && resource.column_name in ["salary", "bonus"])`,
-			`2 columns in "employee": "salary", "bonus"`, `It would expire "2099-01-01T00:00:00.000Z".`,
+			`columns "salary", "bonus" in "employee"`, `It would expire "2099-01-01T00:00:00.000Z".`,
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -759,8 +786,6 @@ func TestMaskingExemptionFormsKeepAMemberOnItsLine(t *testing.T) {
 	}
 }
 
-// Every line fits the 70 columns a form shows, and a value too long for one
-// line continues on the next, so nothing is cut.
 func TestMaskingExemptionFormsShowEveryValueWhole(t *testing.T) {
 	ctx := withUserEmail(context.Background(), "alexander.smith@example.com")
 	long := "production-analytics-platform-west-2"
@@ -784,8 +809,8 @@ func TestMaskingExemptionFormsShowEveryValueWhole(t *testing.T) {
 			columns: []string{"birth_date", "gender", "salary"}},
 	} {
 		t.Run(name, func(t *testing.T) {
-			message, fits := describeExemptionGrant(ctx, g)
-			require.True(t, fits, "%q", message)
+			message, tooLong := describeExemptionGrant(ctx, g)
+			require.Empty(t, tooLong, "%q", message)
 			requireWhole(t, message, exemptionScope(g))
 			require.NotContains(t, message, "rrr", "the reason goes to the description")
 			lines := strings.Split(message, "\n")
@@ -793,15 +818,26 @@ func TestMaskingExemptionFormsShowEveryValueWhole(t *testing.T) {
 				"the effect takes one line: %q", lines)
 		})
 	}
-	revoke, _, fits := describeExemptionRevoke(ctx, RevokeMaskingExemptionInput{Project: "projects/hr", Member: member,
+	revoke, _, tooLong := describeExemptionRevoke(ctx, RevokeMaskingExemptionInput{Project: "projects/hr", Member: member,
 		Condition: `request.time < timestamp("2026-10-27T00:00:00.000Z") && (resource.instance_id == "prod-pg" && resource.database_name == "hr_prod")`})
-	require.True(t, fits, "%q", revoke)
+	require.Empty(t, tooLong, "%q", revoke)
 	requireWhole(t, revoke, `Database "hr_prod" on instance "prod-pg", all tables, until "2026-10-27T00:00:00.000Z"`)
 
-	_, fits = describeExemptionGrant(ctx, &exemptionGrant{member: member, database: "d", instanceID: longest, databaseName: longest, table: "t", columns: []string{"c"}})
-	require.False(t, fits, "two 63-character names and a column need more lines than a form shows")
-	_, fits = describeExemptionGrant(ctx, &exemptionGrant{project: "projects/" + longest, member: member})
-	require.False(t, fits, "a 63-character project ID cannot share a line, so its scope needs three")
-	_, _, fits = describeExemptionRevoke(ctx, RevokeMaskingExemptionInput{Project: "projects/hr", Member: member, Condition: strings.Repeat("c", 200)})
-	require.False(t, fits, "a 200-character condition needs more lines than a form shows")
+	_, tooLong = describeExemptionGrant(ctx, &exemptionGrant{member: member, database: "d", instanceID: longest, databaseName: longest, table: "t", columns: []string{"c"}})
+	require.NotEmpty(t, tooLong, "two 63-character names and a column need more lines than a form shows")
+	_, tooLong = describeExemptionGrant(ctx, &exemptionGrant{project: "projects/" + longest, member: member})
+	require.NotEmpty(t, tooLong, "a 63-character project ID cannot share a line, so its scope needs three")
+	_, _, tooLong = describeExemptionRevoke(ctx, RevokeMaskingExemptionInput{Project: "projects/hr", Member: member, Condition: strings.Repeat("c", 200)})
+	require.NotEmpty(t, tooLong, "a 200-character condition needs more lines than a form shows")
+
+	// 61 characters, so `Exempt "…"` and `Revoke "…"` end at column 70.
+	edge := "user:" + strings.Repeat("m", 44) + "@example.com"
+	_, tooLong = describeExemptionGrant(ctx, &exemptionGrant{project: "projects/hr", member: edge})
+	require.Empty(t, tooLong)
+	_, _, tooLong = describeExemptionRevoke(ctx, RevokeMaskingExemptionInput{Project: "projects/hr", Member: edge})
+	require.Empty(t, tooLong)
+	_, tooLong = describeExemptionGrant(ctx, &exemptionGrant{project: "projects/hr", member: edge + "m"})
+	require.NotEmpty(t, tooLong)
+	_, _, tooLong = describeExemptionRevoke(ctx, RevokeMaskingExemptionInput{Project: "projects/hr", Member: edge + "m"})
+	require.NotEmpty(t, tooLong)
 }
