@@ -330,8 +330,14 @@ func (s *Server) checkEnvironment(ctx context.Context, c *instanceCreation) erro
 // instanceForm builds the form that asks to add the instance. The password
 // appears nowhere in it.
 func instanceForm(ctx context.Context, c *instanceCreation, maskingSkips bool, link string) (*adminForm, error) {
+	// Activation can take one of the license's fixed number of instance
+	// licenses (InstanceService.checkActivationLimit), so the question names it.
+	add := "Add instance"
+	if c.request.GetInstance().GetActivation() {
+		add = "Add activated instance"
+	}
 	question := func(instanceID string) string {
-		return fmt.Sprintf("Add instance %q to project %q?", instanceID, c.projectID)
+		return fmt.Sprintf("%s %q to %q?", add, instanceID, c.projectID)
 	}
 	// Only the account's email may run past a line, so the IDs must fit.
 	if lineColumns(question(c.request.GetInstanceId())) > messageLineWidth {

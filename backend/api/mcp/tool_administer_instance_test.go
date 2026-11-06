@@ -209,7 +209,7 @@ func TestAdministerInstanceAddsJourneyOnesServer(t *testing.T) {
 	require.False(t, res.IsError, resultText(t, res))
 	asked := user.lastParams(t)
 	require.Equal(t, strings.Join([]string{
-		`Add instance "hr-staging" to project "hr", as alice@example.com?`,
+		`Add activated instance "hr-staging" to "hr", as alice@example.com?`,
 		`Host "localhost", port 5433, user "postgres", TLS not required`,
 		`Environment "test". Its databases join the project for good.`,
 	}, "\n"), asked.Message)
@@ -272,7 +272,7 @@ func TestAdministerInstanceFitsACloudHostInFourLines(t *testing.T) {
 	})))
 	asked := user.lastParams(t)
 	require.Equal(t, strings.Join([]string{
-		`Add instance "hr-staging" to project "hr", as alice@example.com?`,
+		`Add activated instance "hr-staging" to "hr", as alice@example.com?`,
 		`Host "` + cloudHost + `",`,
 		`> port 5432, user "postgres", TLS required and verified`,
 		`Environment "test". Its databases join the project for good.`,
@@ -300,7 +300,7 @@ func TestAdministerInstanceFitsLongerNamesInFourLines(t *testing.T) {
 	})))
 	lines := strings.Split(user.lastParams(t).Message, "\n")
 	require.Len(t, lines, messageLines)
-	require.Equal(t, `Add instance "analytics-staging-pg" to project "data-platform", as alice@example.com?`, lines[0],
+	require.Equal(t, `Add activated instance "analytics-staging-pg" to "data-platform", as alice@example.com?`, lines[0],
 		"only the question may run past a line, and only by the email")
 	for _, line := range lines[1:] {
 		require.LessOrEqual(t, lineColumns(line), messageLineWidth, line)
@@ -383,7 +383,68 @@ func TestAdministerInstanceKeepsTheMaskingWarningInTheMessage(t *testing.T) {
 		user := &asker{answer: &mcp.ElicitResult{Action: "decline"}}
 		_, session := connectToInstanceServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
 		callAdminister(t, session, instanceParams(instanceBody(t, nil)))
-		require.NotContains(t, user.lastParams(t).Message, "ctivated")
+		require.NotContains(t, user.lastParams(t).Message, instanceNotActivated)
+	})
+}
+
+func TestAdministerInstanceNamesTheActivationInTheQuestion(t *testing.T) {
+	ask := func(t *testing.T, edit func(request, instance, dataSource map[string]any)) (*mcp.ElicitParams, *mcp.CallToolResult) {
+		t.Helper()
+		mock := newInstanceMock()
+		user := &asker{answer: &mcp.ElicitResult{Action: "decline"}}
+		_, session := connectToInstanceServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
+		res := callAdminister(t, session, instanceParams(instanceBody(t, edit)))
+		if user.asked.Load() == 0 {
+			return nil, res
+		}
+		return user.lastParams(t), res
+	}
+	notActivated := func(_, instance, _ map[string]any) { instance["activation"] = false }
+
+	t.Run("activated", func(t *testing.T) {
+		asked, _ := ask(t, nil)
+		require.Equal(t, `Add activated instance "hr-staging" to "hr", as alice@example.com?`, strings.Split(asked.Message, "\n")[0])
+	})
+
+	t.Run("not activated", func(t *testing.T) {
+		asked, _ := ask(t, notActivated)
+		require.Equal(t, `Add instance "hr-staging" to "hr", as alice@example.com?`, strings.Split(asked.Message, "\n")[0])
+	})
+
+	// An instance ID and a project ID of 38 characters together fill the
+	// activated question's 70 columns.
+	ids := func(instanceID string) func(request, instance, dataSource map[string]any) {
+		return func(request, _, _ map[string]any) {
+			request["parent"] = "projects/data-platform"
+			request["instanceId"] = instanceID
+		}
+	}
+	fills := "analytics-staging-pg-0001"
+	require.Len(t, fills+"data-platform", 38)
+
+	t.Run("an activated question of 70 columns names both IDs", func(t *testing.T) {
+		asked, res := ask(t, ids(fills))
+		require.NotNil(t, asked, resultText(t, res))
+		question := strings.Split(asked.Message, "\n")[0]
+		require.Equal(t, `Add activated instance "analytics-staging-pg-0001" to "data-platform", as alice@example.com?`, question)
+		require.Equal(t, messageLineWidth, lineColumns(strings.TrimSuffix(question, ", as alice@example.com?")+"?"))
+	})
+
+	t.Run("one column more is refused with the shorter-ID advice", func(t *testing.T) {
+		asked, res := ask(t, ids(fills+"x"))
+		require.Nil(t, asked)
+		refusal := resultToolError(t, res)
+		require.Equal(t, "CHANGE_TOO_LONG", refusal.Code)
+		require.Contains(t, refusal.Suggestion, "use a shorter instance ID, or add the instance signed in to the Bytebase console")
+	})
+
+	t.Run("the same IDs fit when not activated", func(t *testing.T) {
+		asked, res := ask(t, func(request, instance, dataSource map[string]any) {
+			ids(fills+"x")(request, instance, dataSource)
+			notActivated(request, instance, dataSource)
+		})
+		require.NotNil(t, asked, resultText(t, res))
+		require.Equal(t, `Add instance "analytics-staging-pg-0001x" to "data-platform", as alice@example.com?`, strings.Split(asked.Message, "\n")[0])
 	})
 }
 
@@ -582,6 +643,19 @@ func TestAdministerInstanceRefusesAnAnswerToAnotherRequest(t *testing.T) {
 
 // The form never shows the password, so only the request in the digest ties an
 // answer to the password the user's agent sent.
+func TestAdministerInstanceRefusesAnAnswerOverAnActivationTurnedOn(t *testing.T) {
+	mock := newInstanceMock()
+	s, session := connectToInstanceServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{}).handle})
+	state := signedInstanceState(t, s, instanceBody(t, func(_, instance, _ map[string]any) { instance["activation"] = false }), time.Now())
+	params := instanceParams(instanceBody(t, nil))
+	params.InputResponses = mcp.InputResponseMap{confirmDecisionRequestID: adminAnswer(adminChoiceApply)}
+	params.RequestState = state
+	res := callAdminister(t, session, params)
+	require.True(t, res.IsError, resultText(t, res))
+	require.Contains(t, resultText(t, res), "STALE_CONFIRMATION")
+	require.Empty(t, mock.calls())
+}
+
 func TestAdministerInstanceRefusesAnAnswerOverAnotherPassword(t *testing.T) {
 	mock := newInstanceMock()
 	s, session := connectToInstanceServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{}).handle})
