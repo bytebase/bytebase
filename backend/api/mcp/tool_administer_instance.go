@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -129,7 +130,11 @@ func (s *Server) administerInstance(ctx context.Context, req *mcp.CallToolReques
 	// The create succeeds even when Bytebase cannot connect, and MCP can then
 	// neither repair the instance nor remove it, so the connection is tested
 	// first, as the console's Create does.
-	test := proto.CloneOf(change.request)
+	// The tool names the data source itself, as the console does, so a read
+	// after a create that did not finish can tell this attempt's instance.
+	attempt := proto.CloneOf(change.request)
+	attempt.GetInstance().GetDataSources()[0].Id = uuid.NewString()
+	test := proto.CloneOf(attempt)
 	test.ValidateOnly = true
 	resp, err := s.sendInstanceCreation(confirmedCtx, test)
 	if why := refusal(resp, err); why != "" {
@@ -144,13 +149,13 @@ func (s *Server) administerInstance(ctx context.Context, req *mcp.CallToolReques
 			Suggestion: "correct the request with the user as the message says, then call administer_workspace again; the user confirms the corrected request in a new form",
 		}), nil, nil
 	}
-	resp, err = s.sendInstanceCreation(confirmedCtx, change.request)
+	resp, err = s.sendInstanceCreation(confirmedCtx, attempt)
 	instanceLink := s.consoleLink(ctx, change.confirmedResource())
-	created, err := s.createdInstance(ctx, change, resp, err, instanceLink)
+	created, readBack, err := s.createdInstance(ctx, change, attempt.GetInstance().GetDataSources()[0].GetId(), resp, err, instanceLink)
 	if err != nil {
 		return formatToolError(err), nil, nil
 	}
-	text := s.instanceAddedText(ctx, change, created, maskingSkips)
+	text := s.instanceAddedText(ctx, change, created, maskingSkips, readBack)
 	return textResult(text), &AdministerWorkspaceOutput{OperationID: input.OperationID, Changed: true, Message: text, Link: instanceLink}, nil
 }
 
@@ -162,55 +167,48 @@ func (s *Server) sendInstanceCreation(ctx context.Context, request *v1pb.CreateI
 	return s.apiRequest(ctx, v1connect.InstanceServiceCreateInstanceProcedure, json.RawMessage(body))
 }
 
-// createdInstance is the instance the create added. The create stores the
-// instance before it syncs it, so a call that times out or fails with a 5xx
-// may still have added it, and the instance is read back. Its data source's ID
-// is a new UUID per request, so a match shows this request added it.
-func (s *Server) createdInstance(ctx context.Context, c *instanceCreation, resp *apiResponse, sendErr error, link string) (*v1pb.Instance, error) {
+// createdInstance is the instance the create added, and whether it was read
+// back. The create stores the instance before it syncs it, so a call that times
+// out or fails with a 5xx may still have added it. attemptID, the data source ID
+// the tool set, tells this attempt's instance from one that held the ID.
+func (s *Server) createdInstance(ctx context.Context, c *instanceCreation, attemptID string, resp *apiResponse, sendErr error, link string) (*v1pb.Instance, bool, error) {
 	why := refusal(resp, sendErr)
 	if why == "" {
 		created := &v1pb.Instance{}
 		if err := common.ProtojsonUnmarshaler.Unmarshal(resp.Body, created); err != nil {
-			return nil, errors.Wrap(err, "the instance was added, but the response could not be read")
+			return nil, false, errors.Wrap(err, "the instance was added, but the response could not be read")
 		}
-		return created, nil
+		return created, false, nil
 	}
 	if sendErr == nil && resp.Status < http.StatusInternalServerError {
-		return nil, errors.Errorf("failed to add the instance: %s", why)
+		return nil, false, errors.Errorf("failed to add the instance: %s", why)
 	}
 	read, err := s.apiRequest(ctx, v1connect.InstanceServiceGetInstanceProcedure, map[string]string{"name": c.confirmedResource()})
-	switch {
-	case err == nil && read.Status == http.StatusOK:
+	if err == nil && read.Status == http.StatusOK {
 		found := &v1pb.Instance{}
-		if common.ProtojsonUnmarshaler.Unmarshal(read.Body, found) != nil {
-			break
+		if common.ProtojsonUnmarshaler.Unmarshal(read.Body, found) == nil {
+			if adminDataSourceID(found) == attemptID {
+				return found, true, nil
+			}
+			return nil, false, errors.Errorf("failed to add the instance: instance ID %q already belongs to another instance, so no instance was added", c.request.GetInstanceId())
 		}
-		if addedByThisRequest(found, c) {
-			return found, nil
-		}
-		return nil, errors.Errorf("failed to add the instance: instance ID %q already belongs to another instance, so no instance was added", c.request.GetInstanceId())
-	// After a 5xx the create has returned, so no part of it is still running;
-	// after a timeout it may be.
-	case err == nil && read.Status == http.StatusNotFound && sendErr == nil:
-		return nil, errors.Errorf("failed to add the instance: %s", why)
 	}
-	return nil, &toolError{
+	// A 404 proves nothing: a project archived meanwhile hides its instances,
+	// and a create past its deadline may still be running.
+	return nil, false, &toolError{
 		Code:       "ADD_UNCONFIRMED",
 		Message:    fmt.Sprintf("the create did not finish (%s), and Bytebase could not confirm whether instance %q was added", why, c.request.GetInstanceId()),
 		Suggestion: "check the instance page before trying again, since adding the same server under another ID makes a second instance: " + link,
 	}
 }
 
-func addedByThisRequest(found *v1pb.Instance, c *instanceCreation) bool {
-	if found.GetState() != v1pb.State_ACTIVE {
-		return false
-	}
-	for _, ds := range found.GetDataSources() {
+func adminDataSourceID(instance *v1pb.Instance) string {
+	for _, ds := range instance.GetDataSources() {
 		if ds.GetType() == v1pb.DataSourceType_ADMIN {
-			return ds.GetId() == c.dataSource().GetId()
+			return ds.GetId()
 		}
 	}
-	return false
+	return ""
 }
 
 // refusal says why a call failed, as the handler or the transport states it,
@@ -310,10 +308,13 @@ func (c *instanceCreation) invalidValue() (why, suggestion string) {
 			`send it as "environments/{id}", such as "environments/test", or leave it out for no environment`
 	case ds.GetType() != v1pb.DataSourceType_ADMIN:
 		return fmt.Sprintf("the data source's type is %s, and an instance is added with its ADMIN data source", ds.GetType()), "set the data source's type to ADMIN"
-	case ds.GetId() == "":
-		return "the data source has no id", "give the data source a new UUID as its id"
 	case strings.TrimSpace(ds.GetHost()) == "":
 		return "the data source has no host", "send the server's host name or IP address"
+	// pgx reads a comma as a list of hosts and a path as a Unix socket, on which
+	// it skips TLS (pgconn.ParseConfig), so the form could state neither.
+	case strings.ContainsAny(ds.GetHost(), `,/\`):
+		return fmt.Sprintf("the host %q is not one host name or IP address", ds.GetHost()),
+			"send one host name or IP address; host lists and Unix sockets are set up in the console"
 	case !validPort(ds.GetPort()):
 		return fmt.Sprintf("the port %q is not a number from 1 to 65535", ds.GetPort()), `send the server's port, such as "5432"`
 	case ds.GetUsername() == "":
@@ -455,17 +456,21 @@ func instanceDescription(c *instanceCreation) string {
 // instanceAddedText reports the added instance: whether Bytebase synced it, and
 // whether masking skips it. The create's response sets last_sync_time only when
 // the instance sync succeeded, and activation when the instance is activated or
-// the license covers every instance.
-func (s *Server) instanceAddedText(ctx context.Context, c *instanceCreation, created *v1pb.Instance, maskingSkips bool) string {
+// the license covers every instance. A read-back's last_sync_time shows no sync,
+// since Syncer.SyncInstance writes it before it registers the databases.
+func (s *Server) instanceAddedText(ctx context.Context, c *instanceCreation, created *v1pb.Instance, maskingSkips, readBack bool) string {
 	var sb strings.Builder
 	fmt.Fprintf(&sb, "Added: instance %q in project %q", c.request.GetInstanceId(), c.projectID)
 	if id := c.environmentID(); id != "" {
 		fmt.Fprintf(&sb, ", environment %q", id)
 	}
 	sb.WriteString(".")
-	if created.GetLastSyncTime() != nil {
+	switch {
+	case readBack:
+		sb.WriteString(" Bytebase did not finish answering the create, so some of its databases may not be in the project yet; the instance page shows the sync.")
+	case created.GetLastSyncTime() != nil:
 		sb.WriteString(" Bytebase synced its databases into the project.")
-	} else {
+	default:
 		sb.WriteString(" Bytebase has not synced its databases yet; the instance page shows the sync.")
 	}
 	if maskingSkips && !created.GetActivation() {

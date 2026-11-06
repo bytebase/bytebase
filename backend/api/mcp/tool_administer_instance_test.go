@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v5"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/pkg/errors"
@@ -89,8 +90,11 @@ type instanceMock struct {
 	// stored is the instance a read finds: the one the create stored, or one
 	// that held the ID before. readStatus, when set, is the status a read
 	// answers with instead.
-	stored            *v1pb.Instance
-	readStatus        int
+	stored     *v1pb.Instance
+	readStatus int
+	// syncTimeWritten sets last_sync_time on what the create stores, as
+	// SyncInstance writes it before it registers the databases.
+	syncTimeWritten   bool
 	reads             int
 	readWhileCreating bool
 }
@@ -123,6 +127,15 @@ func storedInstance(body map[string]any) *v1pb.Instance {
 		ds.Password = ""
 	}
 	return instance
+}
+
+// storedFor is what the create stores for body.
+func (m *instanceMock) storedFor(body map[string]any) *v1pb.Instance {
+	stored := storedInstance(body)
+	if m.syncTimeWritten {
+		stored.LastSyncTime = timestamppb.New(time.Date(2026, 11, 6, 9, 0, 0, 0, time.UTC))
+	}
+	return stored
 }
 
 // runPastTheDeadline keeps the create running, without the lock, until the test
@@ -187,11 +200,11 @@ func (m *instanceMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			m.runPastTheDeadline()
 			return
 		case createFails500AfterStore:
-			m.stored = storedInstance(call.body)
+			m.stored = m.storedFor(call.body)
 			refuse(http.StatusInternalServerError, "internal", "the instance sync panicked")
 			return
 		case createTimesOutAfterStore:
-			m.stored = storedInstance(call.body)
+			m.stored = m.storedFor(call.body)
 			m.runPastTheDeadline()
 			return
 		}
@@ -274,6 +287,19 @@ func instanceParams(body map[string]any) *mcp.CallToolParams {
 	return &mcp.CallToolParams{Arguments: map[string]any{"operationId": administerCreateInstance, "body": body}}
 }
 
+// bodyDataSource is the request body's one data source.
+func bodyDataSource(t *testing.T, body map[string]any) map[string]any {
+	t.Helper()
+	instance, ok := body["instance"].(map[string]any)
+	require.True(t, ok)
+	dataSources, ok := instance["dataSources"].([]any)
+	require.True(t, ok)
+	require.Len(t, dataSources, 1)
+	dataSource, ok := dataSources[0].(map[string]any)
+	require.True(t, ok)
+	return dataSource
+}
+
 // signedInstanceState is the request state the instance entry signs when it
 // asks about body, as alice, at askedAt.
 func signedInstanceState(t *testing.T, s *Server, body map[string]any, askedAt time.Time) string {
@@ -315,7 +341,15 @@ func TestAdministerInstanceAddsJourneyOnesServer(t *testing.T) {
 	require.Len(t, calls, 2, "a connection test, then the create")
 	require.Equal(t, true, calls[0].body["validateOnly"])
 	require.Equal(t, confirmed, calls[0].confirmed)
-	require.Equal(t, body, calls[1].body, "the create must be the request the user confirmed")
+	sent := bodyDataSource(t, calls[1].body)
+	require.Equal(t, bodyDataSource(t, calls[0].body)["id"], sent["id"], "the test and the create name the same data source")
+	id, ok := sent["id"].(string)
+	require.True(t, ok)
+	_, err = uuid.Parse(id)
+	require.NoError(t, err, "the tool names the data source with a new UUID")
+	require.NotEqual(t, bodyDataSource(t, body)["id"], id)
+	sent["id"] = bodyDataSource(t, body)["id"]
+	require.Equal(t, body, calls[1].body, "apart from that ID, the create is the request the user confirmed")
 	require.Equal(t, confirmed, calls[1].confirmed)
 
 	text := "Added: instance \"hr-staging\" in project \"hr\", environment \"test\". Bytebase synced its databases into the project.\n" +
@@ -580,7 +614,10 @@ func TestAdministerInstanceRefusesBeforeAsking(t *testing.T) {
 		"no title":                {func(_, instance, _ map[string]any) { instance["title"] = "  " }, "the instance has no title"},
 		"an environment ID alone": {func(_, instance, _ map[string]any) { instance["environment"] = "test" }, `the environment "test" is not an environment's name`},
 		"a read-only data source": {func(_, _, dataSource map[string]any) { dataSource["type"] = "READ_ONLY" }, "the data source's type is READ_ONLY"},
-		"no data source id":       {func(_, _, dataSource map[string]any) { delete(dataSource, "id") }, "the data source has no id"},
+		"a host list":             {func(_, _, dataSource map[string]any) { dataSource["host"] = "db1,db2" }, `the host "db1,db2" is not one host name or IP address`},
+		"a trailing comma":        {func(_, _, dataSource map[string]any) { dataSource["host"] = "db," }, `the host "db," is not one host name or IP address`},
+		"a Unix socket":           {func(_, _, dataSource map[string]any) { dataSource["host"] = "/var/run/postgresql" }, `the host "/var/run/postgresql" is not one host name or IP address`},
+		"a Windows socket path":   {func(_, _, dataSource map[string]any) { dataSource["host"] = `C:\pg` }, `the host "C:\\pg" is not one host name or IP address`},
 		"no host":                 {func(_, _, dataSource map[string]any) { dataSource["host"] = " " }, "the data source has no host"},
 		"no port":                 {func(_, _, dataSource map[string]any) { delete(dataSource, "port") }, `the port "" is not a number`},
 		"options after the port":  {func(_, _, dataSource map[string]any) { dataSource["port"] = "5432 host=other.example" }, "is not a number from 1 to 65535"},
@@ -831,9 +868,22 @@ func TestAdministerInstanceReportsEachRefusalAsTheHandlerStatesIt(t *testing.T) 
 	})
 }
 
+func TestAdministerInstanceNamesTheDataSourceItself(t *testing.T) {
+	mock := newInstanceMock()
+	_, session := connectToInstanceServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{answer: adminAnswer(adminChoiceApply)}).handle})
+	res := callAdminister(t, session, instanceParams(instanceBody(t, func(_, _, dataSource map[string]any) { delete(dataSource, "id") })))
+	require.False(t, res.IsError, resultText(t, res))
+	calls := mock.calls()
+	require.Len(t, calls, 2)
+	id, ok := bodyDataSource(t, calls[1].body)["id"].(string)
+	require.True(t, ok)
+	_, err := uuid.Parse(id)
+	require.NoError(t, err)
+}
+
 func TestAdministerInstanceReadsBackACreateThatDidNotFinish(t *testing.T) {
 	added := "Added: instance \"hr-staging\" in project \"hr\", environment \"test\". " +
-		"Bytebase has not synced its databases yet; the instance page shows the sync.\n" +
+		"Bytebase did not finish answering the create, so some of its databases may not be in the project yet; the instance page shows the sync.\n" +
 		"Instance: https://bb.example.com/" + journeyOneInstance
 	held := func(edit func(*v1pb.Instance)) *v1pb.Instance {
 		instance := storedInstance(instanceBody(t, nil))
@@ -841,19 +891,20 @@ func TestAdministerInstanceReadsBackACreateThatDidNotFinish(t *testing.T) {
 		return instance
 	}
 	for name, tc := range map[string]struct {
-		fails      createFailure
-		heldBefore *v1pb.Instance
-		readStatus int
+		fails           createFailure
+		syncTimeWritten bool
+		heldBefore      *v1pb.Instance
+		readStatus      int
 		// want is the result text when the instance was added, and wantError
 		// the error otherwise.
 		want, wantError string
 	}{
 		"a timeout after the store, with the create still running": {fails: createTimesOutAfterStore, want: added},
 		"a 5xx after the store": {fails: createFails500AfterStore, want: added},
-		"a 5xx before the store": {
-			fails:     createFails500BeforeStore,
-			wantError: "failed to add the instance: HTTP 500: failed to count the instances",
+		"a timeout after the sync time was written, before the databases": {
+			fails: createTimesOutAfterStore, syncTimeWritten: true, want: added,
 		},
+		"a 5xx before the store":     {fails: createFails500BeforeStore, wantError: "ADD_UNCONFIRMED"},
 		"a timeout before the store": {fails: createTimesOutBeforeStore, wantError: "ADD_UNCONFIRMED"},
 		"a read that fails":          {fails: createFails500AfterStore, readStatus: http.StatusInternalServerError, wantError: "ADD_UNCONFIRMED"},
 		"an ID that another instance holds": {
@@ -861,7 +912,7 @@ func TestAdministerInstanceReadsBackACreateThatDidNotFinish(t *testing.T) {
 			heldBefore: held(func(instance *v1pb.Instance) { instance.DataSources[0].Id = "admin" }),
 			wantError:  `failed to add the instance: instance ID "hr-staging" already belongs to another instance, so no instance was added`,
 		},
-		"an ID that a deleted instance holds, with the same data source ID": {
+		"an ID that a deleted instance holds": {
 			fails:      createFails500BeforeStore,
 			heldBefore: held(func(instance *v1pb.Instance) { instance.State = v1pb.State_DELETED }),
 			wantError:  `failed to add the instance: instance ID "hr-staging" already belongs to another instance, so no instance was added`,
@@ -871,6 +922,7 @@ func TestAdministerInstanceReadsBackACreateThatDidNotFinish(t *testing.T) {
 			mock := newInstanceMock()
 			mock.createFails = tc.fails
 			mock.stored = tc.heldBefore
+			mock.syncTimeWritten = tc.syncTimeWritten
 			mock.readStatus = tc.readStatus
 			s, session := connectToInstanceServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{answer: adminAnswer(adminChoiceApply)}).handle})
 			s.internalAPITimeoutOverride = 200 * time.Millisecond
