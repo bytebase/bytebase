@@ -202,7 +202,7 @@ func (c *graphClient) lookup(ctx context.Context, canonical string) (*Location, 
 		return nil, errors.Wrapf(err, "failed to resolve %s", canonical)
 	}
 	if item.Folder == nil && item.Root == nil {
-		return nil, errors.Errorf("%s is a file; use a document library or folder", canonical)
+		return nil, errors.Wrap(ErrNotFolder, canonical)
 	}
 	if item.ID == "" || item.ParentReference.DriveID == "" {
 		return nil, errors.Errorf("Microsoft Graph did not return the document library of %s", canonical)
@@ -307,7 +307,7 @@ func (c *graphClient) uploadFiles(ctx context.Context, loc *Location, folderName
 }
 
 // uploadFile reports whether Graph rejected the file's upload as unauthorized,
-// forbidden, or not found.
+// forbidden, not found, or out of storage.
 func (c *graphClient) uploadFile(ctx context.Context, folderPath string, file File) (bool, error) {
 	err := c.putFile(ctx, folderPath, file)
 	if err == nil {
@@ -321,7 +321,7 @@ func (c *graphClient) uploadFile(ctx context.Context, folderPath string, file Fi
 	if errors.As(err, &unknown) || (errors.As(err, &graphErr) && graphErr.afterUnknownOutcome) {
 		return false, c.reconcile(ctx, folderPath, file, true)
 	}
-	rejected := errors.Is(err, ErrNotFoundOrNoAccess) || errors.Is(err, ErrCredential)
+	rejected := errors.Is(err, ErrNotFoundOrNoAccess) || errors.Is(err, ErrCredential) || errors.Is(err, ErrStorageFull)
 	return rejected, errors.Wrapf(err, "failed to upload %q", file.Name)
 }
 

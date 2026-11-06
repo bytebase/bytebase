@@ -31,6 +31,8 @@ const mocks = vi.hoisted(() => ({
   resolveExport: vi.fn(),
   reportProgress: vi.fn(),
   exportController: new AbortController(),
+  // The databases a retry asks for; undefined for a fresh export.
+  retryDatabases: undefined as string[] | undefined,
 }));
 
 vi.mock("react-i18next", () => ({
@@ -62,6 +64,7 @@ vi.mock("@/components/DataExportButton", () => ({
               password: "",
               destination: mocks.exportDestination,
             },
+            databases: mocks.retryDatabases,
             resolve: mocks.resolveExport,
             reject: vi.fn(),
             signal: mocks.exportController.signal,
@@ -223,6 +226,7 @@ describe("BatchQuerySelect", () => {
     mocks.destinations = [ExportDestination.DOWNLOAD];
     mocks.exportDestination = ExportDestination.SHAREPOINT;
     mocks.exportController = new AbortController();
+    mocks.retryDatabases = undefined;
     grantLookup([], []);
 
     cellA = {
@@ -407,14 +411,16 @@ describe("BatchQuerySelect", () => {
       expect(mocks.resolveExport).toHaveBeenCalledWith({
         sharepoint: [
           {
+            name: cellA.name,
             database: "cell-a/linear",
             status: "EXPORTED",
             uri: "https://contoso.sharepoint.com/sites/x/Exports/folder-a",
           },
           {
+            name: cellB.name,
             database: "cell-b/linear",
             status: "FAILED",
-            reason: "destination not found",
+            failure: { message: "destination not found" },
           },
         ],
       });
@@ -550,12 +556,14 @@ describe("BatchQuerySelect", () => {
     const { sharepoint } = mocks.resolveExport.mock.calls[0][0];
     expect(sharepoint).toEqual([
       expect.objectContaining({
+        name: names[0],
         database: "cell-0/db0",
         status: "FAILED",
-        reason: "quota exceeded",
+        failure: { message: "quota exceeded" },
       }),
       ...[1, 2, 3, 4, 5].map((i) =>
         expect.objectContaining({
+          name: names[i],
           database: `cell-${i}/db${i}`,
           status: "EXPORTED",
           uri: `https://example.com/exports/db${i}`,
@@ -622,18 +630,47 @@ describe("BatchQuerySelect", () => {
     }
     expect(mocks.resolveExport).toHaveBeenCalledWith({
       sharepoint: [
-        { database: "cell-0/db0", status: "CANCELED" },
-        { database: "cell-1/db1", status: "CANCELED" },
-        { database: "cell-2/db2", status: "CANCELED" },
+        { name: names[0], database: "cell-0/db0", status: "CANCELED" },
+        { name: names[1], database: "cell-1/db1", status: "CANCELED" },
+        { name: names[2], database: "cell-2/db2", status: "CANCELED" },
         {
+          name: names[3],
           database: "cell-3/db3",
           status: "EXPORTED",
           uri: "https://example.com/exports/db3",
         },
-        { database: "cell-4/db4", status: "CANCELED" },
-        { database: "cell-5/db5", status: "NOT_STARTED" },
+        { name: names[4], database: "cell-4/db4", status: "CANCELED" },
+        { name: names[5], database: "cell-5/db5", status: "NOT_STARTED" },
       ],
     });
+  });
+
+  it("retries only the requested databases and keeps the selection", async () => {
+    mocks.destinations = [ExportDestination.SHAREPOINT];
+    const names = useDatabases(3);
+    const exports = deferExports();
+    mocks.retryDatabases = [names[2], names[0]];
+    await exportAll();
+
+    expect(exports.started()).toEqual([names[2], names[0]]);
+    exports.pending.get(names[2])?.resolve("https://example.com/exports/db2");
+    exports.pending.get(names[0])?.resolve("https://example.com/exports/db0");
+    await flush();
+    expect(mocks.resolveExport).toHaveBeenCalledWith({
+      sharepoint: [
+        expect.objectContaining({ name: names[2], status: "EXPORTED" }),
+        expect.objectContaining({ name: names[0], status: "EXPORTED" }),
+      ],
+    });
+
+    mocks.retryDatabases = undefined;
+    act(() => {
+      testId("batch-export-submit")?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true })
+      );
+    });
+    await flush();
+    expect(exports.started()).toEqual([names[2], names[0], ...names]);
   });
 
   it("reports no failures for a canceled download", async () => {

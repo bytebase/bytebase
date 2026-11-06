@@ -226,6 +226,10 @@ export function ResultView({
     const { options, resolve, reject, signal, statement } = req;
     const { databaseName } = extractDatabaseResourceName(database.name);
     const toSharePoint = options.destination === ExportDestination.SHAREPOINT;
+    const sharePointTarget = {
+      name: database.name,
+      label: sharePointExportDatabaseLabel(database),
+    };
 
     // === Prod path: backend Export RPC ===
     const tabsState = getSQLEditorTabsState();
@@ -253,7 +257,7 @@ export function ResultView({
         resolve({
           sharepoint: [
             toExportedSharePointResult(
-              sharePointExportDatabaseLabel(database),
+              sharePointTarget,
               uri,
               exportDestination.sharepointUrl ?? ""
             ),
@@ -270,12 +274,7 @@ export function ResultView({
     } catch (e) {
       if (toSharePoint) {
         resolve({
-          sharepoint: [
-            toFailedSharePointExport(
-              sharePointExportDatabaseLabel(database),
-              e
-            ),
-          ],
+          sharepoint: [toFailedSharePointExport(sharePointTarget, e)],
         });
         return;
       }
