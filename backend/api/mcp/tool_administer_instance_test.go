@@ -131,7 +131,7 @@ func (m *instanceMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			call.confirmed = &confirmed
 		}
 		m.creations = append(m.creations, call)
-		if validateOnly, _ := call.body["validateOnly"].(bool); validateOnly {
+		if validateOnly, ok := call.body["validateOnly"].(bool); ok && validateOnly {
 			switch {
 			case m.connectionFails:
 				w.Header().Set(common.ConnectionFailureCategoryHeader, "auth_failed")
