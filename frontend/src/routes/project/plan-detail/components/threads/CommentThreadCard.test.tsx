@@ -347,6 +347,7 @@ describe("CommentThreadCard", () => {
     root.reviewMetadata = create(IssueComment_ReviewMetadataSchema, {
       runType: ReviewRun_Type.AI,
       priority: IssueComment_ReviewMetadata_Priority.P1,
+      title: "Add a WHERE clause",
     });
     render(
       <CommentThreadCard
@@ -358,6 +359,8 @@ describe("CommentThreadCard", () => {
     const summary = buttonByText("plan.review.thread.resolved");
     expect(summary?.textContent).toContain("sql-review.ai-review.self");
     expect(summary?.querySelector("[data-testid='review-priority']")?.textContent).toBe("P1");
+    expect(summary?.textContent).toContain("Add a WHERE clause");
+    expect(summary?.textContent).not.toContain("Missing WHERE clause.");
     expect(summary?.textContent).not.toContain("common.unknown");
   });
 

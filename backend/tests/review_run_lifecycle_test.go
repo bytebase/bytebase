@@ -252,7 +252,8 @@ func TestCollision_RunReviewLifecycle(t *testing.T) {
 	}
 	a.Len(results, 1, "one AI review result")
 	result := results[0]
-	a.Equal("Remove the placeholder statement\n\nSELECT 1 changes nothing.\n\nRule: Anything the policy below asks for.\n\nSuggested fix: Delete the statement.", result.Comment)
+	a.Equal("Remove the placeholder statement", result.GetReviewMetadata().GetTitle())
+	a.Equal("SELECT 1 changes nothing.\n\nRule: Anything the policy below asks for.\n\nSuggested fix: Delete the statement.", result.Comment)
 	a.Equal(v1pb.IssueComment_ReviewMetadata_P2, result.GetReviewMetadata().GetPriority())
 	a.Len(result.GetReviewMetadata().GetTargets(), 1)
 	a.True(strings.HasSuffix(result.GetReviewMetadata().GetTargets()[0], fixture.DatabaseA.Name), "target %q", result.GetReviewMetadata().GetTargets()[0])

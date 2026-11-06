@@ -1126,6 +1126,14 @@ export declare type IssueComment_ReviewMetadata = Message<"bytebase.v1.IssueComm
    * @generated from field: repeated string codes = 7;
    */
   codes: string[];
+
+  /**
+   * The name of the problem an AI result reports, on one line; the comment
+   * holds the rest. Empty for a RULE result, which rule_type names.
+   *
+   * @generated from field: string title = 8;
+   */
+  title: string;
 };
 
 /**

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	metadatapb "github.com/bytebase/omni/metadata"
+	"github.com/bytebase/omni/review"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
 
@@ -253,4 +254,95 @@ func TestRuleExecutorPassesTheSyncedDefaultSchema(t *testing.T) {
 
 	require.Equal(t, []string{"Table `t` already exists."}, review("synced", "dbo"))
 	require.Empty(t, review("unsynced", ""))
+}
+
+func TestRuleExecutorSortsItsResults(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	db, stores, _ := testcontainer.NewMetadataDB(t)
+	_, err := db.ExecContext(ctx, `
+		INSERT INTO workspace (resource_id) VALUES ('ws');
+		INSERT INTO principal (name, email, password_hash) VALUES ('creator', 'creator@example.com', 'unused');
+		INSERT INTO project (resource_id, workspace, name) VALUES ('p', 'ws', 'P');
+	`)
+	require.NoError(t, err)
+	payload, err := protojson.Marshal(&storepb.ReviewRulePolicy{Rules: []storepb.ReviewRuleType{storepb.ReviewRuleType_SYNTAX, storepb.ReviewRuleType_REQUIRE_WHERE}})
+	require.NoError(t, err)
+	_, err = stores.CreatePolicy(ctx, &store.PolicyMessage{
+		Workspace:    "ws",
+		ResourceType: storepb.Policy_PROJECT,
+		Resource:     common.FormatProject("p"),
+		Type:         storepb.Policy_REVIEW_RULE,
+		Payload:      string(payload),
+		Enforce:      true,
+	})
+	require.NoError(t, err)
+	_, err = stores.CreateInstance(ctx, &store.InstanceMessage{
+		ResourceID: "pg",
+		Workspace:  "ws",
+		Metadata: &storepb.Instance{
+			Engine:      storepb.Engine_POSTGRES,
+			DataSources: []*storepb.DataSource{{Id: "admin", Type: storepb.DataSourceType_ADMIN}},
+		},
+	})
+	require.NoError(t, err)
+	_, err = stores.UpsertDatabase(ctx, &store.DatabaseMessage{
+		ProjectID:    "p",
+		InstanceID:   "pg",
+		DatabaseName: "app",
+		Metadata:     &storepb.DatabaseMetadata{},
+	})
+	require.NoError(t, err)
+	_, err = stores.UpsertDBSchema(ctx, "pg", "app", &metadatapb.DatabaseSchemaMetadata{
+		Name:    "app",
+		Schemas: []*metadatapb.SchemaMetadata{{Name: "public"}},
+	}, nil, time.Now())
+	require.NoError(t, err)
+	sheets, err := stores.CreateSheets(ctx, "p", &store.SheetMessage{Statement: "UPDATE t SET a = 1;\nDROP TABLE u;"})
+	require.NoError(t, err)
+	plan, err := stores.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID: "p",
+		Name:      "plan",
+		Config: &storepb.PlanConfig{
+			Specs: []*storepb.PlanConfig_Spec{{
+				Id: "spec-1",
+				Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
+						Targets:     []string{"instances/pg/databases/app"},
+						SheetSha256: sheets[0].Sha256,
+					},
+				},
+			}},
+		},
+	}, "creator@example.com")
+	require.NoError(t, err)
+	issue, err := stores.CreateIssue(ctx, &store.IssueMessage{
+		ProjectID:    "p",
+		CreatorEmail: "creator@example.com",
+		Title:        "issue",
+		Type:         storepb.Issue_DATABASE_CHANGE,
+		Payload:      &storepb.Issue{},
+		PlanUID:      &plan.UID,
+	})
+	require.NoError(t, err)
+
+	// The engine reports the second statement first, and with the higher
+	// priority, so only the line can put the first statement first.
+	secondFirst := func(context.Context, string, review.Options, []review.Target) (*review.Result, error) {
+		return &review.Result{
+			Statements: []review.Range{{Start: 0, End: 19}, {Start: 20, End: 33}},
+			Findings: []review.Finding{
+				{Rule: review.Syntax, Statement: 1, Message: "line 2", Targets: []int{0}},
+				{Rule: review.RequireWhere, Statement: 0, Message: "line 1", Targets: []int{0}},
+			},
+		}, nil
+	}
+	executor := &RuleExecutor{store: stores, reviewFuncs: map[storepb.Engine]review.ReviewFunc{storepb.Engine_POSTGRES: secondFirst}}
+	comments, err := executor.RunOnce(ctx, "p", issue.UID)
+	require.NoError(t, err)
+	var messages []string
+	for _, comment := range comments {
+		messages = append(messages, comment.Payload.GetComment())
+	}
+	require.Equal(t, []string{"line 1", "line 2"}, messages)
 }

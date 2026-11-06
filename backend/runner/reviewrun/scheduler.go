@@ -33,9 +33,9 @@ const reviewRunSchedulerInterval = 5 * time.Second
 type Executor interface {
 	// RunOnce evaluates every (spec, target) unit of the issue's plan in the
 	// reviewer's scope (collect-all, no fail-fast) and returns the results to
-	// post as issue comments. A nil error marks the run DONE and posts the
-	// results; a non-nil error marks it FAILED with the aggregated message
-	// and posts nothing.
+	// post as issue comments, sorted by sortReviewResults. A nil error marks
+	// the run DONE and posts the results; a non-nil error marks it FAILED
+	// with the aggregated message and posts nothing.
 	RunOnce(ctx context.Context, projectID string, issueUID int64) ([]*store.IssueCommentMessage, error)
 }
 

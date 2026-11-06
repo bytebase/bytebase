@@ -157,6 +157,23 @@ test("shows a collapsed review result as its reviewer with its priority", () => 
   expect(rows[1].querySelector("[data-testid='review-priority']")).toBeNull();
 });
 
+test("summarizes a collapsed AI result by its title and a rule result by its text", () => {
+  const ai = entry("ai", false, 1);
+  ai.thread.root.reviewMetadata = create(IssueComment_ReviewMetadataSchema, {
+    runType: ReviewRun_Type.AI,
+    title: "Create the index `concurrently`",
+  });
+  const rule = entry("rule", false, 2);
+  rule.thread.root.reviewMetadata = create(IssueComment_ReviewMetadataSchema, {
+    runType: ReviewRun_Type.RULE,
+  });
+  const { container } = render(<ThreadStack {...props} threads={[ai, rule]} />);
+  const rows = container.querySelectorAll("[data-testid='thread-row']");
+  expect(rows[0].textContent).toContain("Create the index concurrently");
+  expect(rows[0].textContent).not.toContain("ai summary");
+  expect(rows[1].textContent).toContain("rule summary");
+});
+
 test("hands each expanded card the spec of the statement it sits on", () => {
   const { container } = render(<ThreadStack {...props} expandedRoots={new Set(["a", "b"])} threads={[entry("a", false, 1), entry("b", true, 2)]} />);
   const cards = Array.from(container.querySelectorAll("[data-thread-name]"));

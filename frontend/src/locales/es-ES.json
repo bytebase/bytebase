@@ -2977,7 +2977,7 @@
           "self": "Permitir consultar la fuente de datos de administración"
         },
         "allow-download": {
-          "description": "Los usuarios pueden elegir Descarga como destino al exportar resultados de consultas. Si se desactiva, las exportaciones solo van al destino de almacenamiento del proyecto, como SharePoint, incluso con una concesión de acceso de exportación aprobada.",
+          "description": "Los usuarios pueden elegir Descarga como destino al exportar resultados de consultas en el Editor SQL. Si se desactiva, las exportaciones del Editor SQL solo van al destino de almacenamiento del proyecto, como SharePoint, incluso con una concesión de acceso de exportación aprobada.",
           "self": "Permitir descargar exportaciones"
         },
         "allow-email-code-signin": {
@@ -3219,6 +3219,10 @@
           "masking-exemptions": {
             "details": "Eximir a un miembro del enmascaramiento para una base de datos, un esquema, una tabla o una columna, o para todas las bases de datos de un proyecto, con vencimiento opcional · Cada exención y cada retirada se confirma en el cliente MCP del usuario antes de aplicarse · Los datos exentos se muestran sin enmascarar en los resultados de consultas y exportaciones",
             "title": "Conceder o revocar exenciones de enmascaramiento"
+          },
+          "masking-rules": {
+            "details": "Añadir, quitar, reordenar o cambiar las reglas que deciden qué columnas se enmascaran y cómo · Cada cambio se confirma en el cliente MCP del usuario antes de hacerse · Los tipos semánticos no cambian",
+            "title": "Definir las reglas de enmascaramiento"
           },
           "propose": {
             "details": "Crear hojas · Crear y editar plans e issues · Ejecutar comprobaciones de plan y revisiones · Crear, eliminar y restaurar versiones · Crear y eliminar revisiones · Generar diferencias de esquema. La política de aprobación del proyecto decide si un cambio necesita aprobación",

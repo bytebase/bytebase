@@ -531,6 +531,9 @@ func (x *IssueComment_ReviewMetadata) Equal(y *IssueComment_ReviewMetadata) bool
 			return false
 		}
 	}
+	if x.Title != y.Title {
+		return false
+	}
 	return true
 }
 

@@ -2303,12 +2303,12 @@ add/remove/update from the snapshot pair.
 
 ### IssueCommentPayload.ReviewMetadata
 ReviewMetadata is what a review result carries beyond its text: which
-reviewer posted it, what it was judged against, its priority, and the
-databases it applies to. When a run completes, an earlier result of its
-type whose fingerprint the run reports again keeps its thread, and the
-run posts no new result for it; every other earlier root of its type is
-resolved and marked superseded, in the transaction that posts the new
-results.
+reviewer posted it, what it was judged against, its priority, the
+databases it applies to, and for an AI result, its title. When a run
+completes, an earlier result of its type whose fingerprint the run
+reports again keeps its thread, and the run posts no new result for it;
+every other earlier root of its type is resolved and marked superseded,
+in the transaction that posts the new results.
 
 
 | Field | Type | Label | Description |
@@ -2318,9 +2318,10 @@ results.
 | priority | [IssueCommentPayload.ReviewMetadata.Priority](#bytebase-store-IssueCommentPayload-ReviewMetadata-Priority) |  | A result merged across databases carries the highest priority among them. |
 | targets | [string](#string) | repeated | Every database the result applies to, sorted. Always complete; the renderer collapses it when it equals the spec&#39;s target set. Format: instances/{instance}/databases/{database} |
 | superseded | [bool](#bool) |  | A later run of the same reviewer has completed without reporting the result again, so the latest review does not hold it. Set by that run whatever the thread state, and never cleared. |
-| fingerprint | [string](#string) |  | Identifies the finding across runs: equal fingerprints are the same finding on the same SQL. Unique among the results of one run. Empty when the reviewer cannot tell findings apart across runs, and an empty fingerprint matches nothing. |
+| fingerprint | [string](#string) |  | Identifies the finding across runs: equal fingerprints are the same finding on the same SQL. The rule review derives it from what it judged. The AI review starts it with a hash of its statement and ends it at random, and a later run carries it over to the finding its merge matches to the result. Unique among the results of one run. Empty on a result that predates it, and an empty fingerprint matches nothing. |
 | attempt | [int64](#int64) |  | The review_run.attempt of the run that posted the result. A result a later run reports again keeps its attempt. |
 | codes | [string](#string) | repeated | The conditions a RULE result reports, as omni finding codes such as &#34;WT101&#34;, one per reason. Empty for other reviewers. |
+| title | [string](#string) |  | The name of the problem an AI result reports, on one line; the comment holds the rest. Empty for a RULE result, which rule_type names. |
 
 
 
@@ -2770,7 +2771,7 @@ QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 | maximum_result_rows | [int32](#int32) |  | Support both project-level and workspace-level. The maximum number of rows to return in the SQL editor. The default value &lt;= 0, means no limit. |
 | disable_copy_data | [bool](#bool) |  | workspace-level policy Disable copying data. |
 | allow_admin_data_source | [bool](#bool) |  | workspace-level policy Allow using the admin data source to query in the SQL editor. |
-| disable_download | [bool](#bool) |  | workspace-level policy Disable the Download export destination. Exports can still go to a configured storage destination such as SharePoint. |
+| disable_download | [bool](#bool) |  | workspace-level policy Hide the Download export destination in the SQL Editor. Exports can still go to a configured storage destination such as SharePoint. The Export API does not check this setting. |
 | disallow_ddl | [bool](#bool) |  | ================ Deprecate following fields. Disallow running DDL statements in the SQL editor. |
 | disallow_dml | [bool](#bool) |  | Disallow running DML statements in the SQL editor. |
 

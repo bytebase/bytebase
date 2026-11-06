@@ -1,6 +1,8 @@
 package reviewrun
 
 import (
+	"context"
+
 	mariadbreview "github.com/bytebase/omni/mariadb/review"
 	mssqlreview "github.com/bytebase/omni/mssql/review"
 	mysqlreview "github.com/bytebase/omni/mysql/review"
@@ -33,4 +35,20 @@ var reviewFuncs = map[storepb.Engine]review.ReviewFunc{
 func ReviewsEngine(engine storepb.Engine) bool {
 	_, ok := reviewFuncs[engine]
 	return ok
+}
+
+// statementBodies returns the body of each statement of sql as the standard
+// rule review reads it, or false for an engine it does not cover. omni gives
+// the bodies only with a review, and a review with no rules splits and parses
+// and nothing more.
+func statementBodies(ctx context.Context, engine storepb.Engine, sql string) ([]review.Range, bool) {
+	reviewFunc, ok := reviewFuncs[engine]
+	if !ok {
+		return nil, false
+	}
+	result, err := reviewFunc(ctx, sql, review.Options{Rules: []review.Rule{}}, nil)
+	if err != nil {
+		return nil, false
+	}
+	return result.Bodies, true
 }

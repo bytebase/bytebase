@@ -141,6 +141,7 @@ const comment = (name: string, reviewMetadata?: boolean) =>
           runType: ReviewRun_Type.AI,
           priority: IssueComment_ReviewMetadata_Priority.P1,
           targets: ["instances/i/databases/d"],
+          title: "Keep the table",
         }
       : undefined,
   });
@@ -168,7 +169,7 @@ describe("IssueDetailCommentList", () => {
     ).toBe("chart");
   });
 
-  test("heads a review result with its reviewer, then its targets and priority", () => {
+  test("heads a review result with its reviewer, then its targets, priority, and title", () => {
     mocks.comments = [comment("result", true)];
     render(<IssueDetailCommentList />);
 
@@ -179,10 +180,11 @@ describe("IssueDetailCommentList", () => {
     expect(screen.getByTestId("review-targets").textContent).toContain(
       "instances/i/databases/d"
     );
-    expect(
-      screen.getByTestId("review-heading").querySelector("[data-testid='review-priority']")
-        ?.textContent
-    ).toBe("P1");
+    const heading = screen.getByTestId("review-heading");
+    expect(heading.querySelector("[data-testid='review-priority']")?.textContent).toBe("P1");
+    expect(heading.querySelector("[data-testid='review-title']")?.textContent).toBe(
+      "Keep the table"
+    );
   });
 
   test("names the standard rule and codes of a RULE result", () => {

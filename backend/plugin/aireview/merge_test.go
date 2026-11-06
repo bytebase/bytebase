@@ -82,6 +82,20 @@ func TestMergeFindingsShowsTheLinesAroundTheFindingsOfALongBlock(t *testing.T) {
 	require.NotContains(t, user, "\n58\t")
 }
 
+func TestMergeFindingsShowsAnEarlierFindingWithoutADatabase(t *testing.T) {
+	t.Parallel()
+
+	request := threeDatabaseRequest()
+	request.Candidates = append([]MergeCandidate{{Block: 0, Earlier: true, Finding: Finding{Title: "Keep full_name", Severity: SeverityP1, Line: 2, Rule: "r", Fix: "f"}}}, request.Candidates...)
+	model := &scriptedModel{steps: []modelStep{finalReply(`{"groups": [[1, 2, 3], [4], [5]]}`)}}
+	result, err := NewReviewer(model).MergeFindings(context.Background(), request)
+	require.NoError(t, err)
+	require.Equal(t, [][]int{{0, 1, 2}, {3}, {4}}, result.Groups)
+	user := model.requests[0].Messages[1].GetContent()
+	require.Contains(t, user, `{"id":1,"block":1,"earlier":true,"line":2,"severity":"P1","title":"Keep full_name","rule":"r","evidence":"","fix":"f"}`)
+	require.Contains(t, user, `{"id":2,"block":1,"database":1,"line":1,`, "an earlier finding takes no database ordinal")
+}
+
 func TestMergeFindingsClipsLongTexts(t *testing.T) {
 	t.Parallel()
 
@@ -204,6 +218,7 @@ func TestParseMergeReply(t *testing.T) {
 	// Candidates 0 and 1 are on block 0, candidate 2 on block 1.
 	members := []int{0, 1, 2}
 	blockOf := []int{0, 0, 1}
+	earlier := []bool{false, false, false}
 	for _, tc := range []struct {
 		name     string
 		reply    string
@@ -224,7 +239,7 @@ func TestParseMergeReply(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			groups, problems := parseMergeReply(tc.reply, members, blockOf)
+			groups, problems := parseMergeReply(tc.reply, members, blockOf, earlier)
 			if tc.problems != nil {
 				require.Len(t, problems, len(tc.problems))
 				for i, problem := range tc.problems {
@@ -237,7 +252,17 @@ func TestParseMergeReply(t *testing.T) {
 		})
 	}
 
-	_, problems := parseMergeReply(`{"groups": [["1"]]}`, members, blockOf)
+	_, problems := parseMergeReply(`{"groups": [["1"]]}`, members, blockOf, earlier)
 	require.Len(t, problems, 1)
 	require.Contains(t, problems[0], "the reply is not a valid JSON object")
+
+	// The subtests run after this, so these are new variables. Candidates 0 and
+	// 1 are earlier findings.
+	twoEarlier := []bool{true, true, false}
+	oneBlock := []int{0, 0, 0}
+	groups, problems := parseMergeReply(`{"groups": [[1, 3], [2]]}`, members, oneBlock, twoEarlier)
+	require.Empty(t, problems)
+	require.Equal(t, [][]int{{0, 2}, {1}}, groups)
+	_, problems = parseMergeReply(`{"groups": [[1, 2, 3]]}`, members, oneBlock, twoEarlier)
+	require.Equal(t, []string{"groups[0] holds 2 earlier findings"}, problems)
 }

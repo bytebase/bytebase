@@ -403,7 +403,8 @@ function ThreadSummary({
   const { t } = useTranslation();
   const author = useCommentAuthor(thread.root);
   const review = thread.root.reviewMetadata;
-  const summary = markdownSummary(thread.root.comment);
+  // An AI result is summarized by its title, any other comment by its text.
+  const summary = markdownSummary(review?.title || thread.root.comment);
   return (
     <Button
       appearance="secondary"

@@ -3717,6 +3717,7 @@ What a review result carries beyond its text.
 | superseded | [bool](#bool) |  | A later run of the same reviewer has completed without reporting the result again, whatever its thread state. |
 | attempt | [int64](#int64) |  | The ReviewRunCompletion.attempt of the run that posted the result. A result a later run reports again keeps its thread and its attempt. |
 | codes | [string](#string) | repeated | The conditions a RULE result reports, as finding codes such as &#34;WT101&#34;, one per reason. A code names the same condition on every engine. Empty for other reviewers. |
+| title | [string](#string) |  | The name of the problem an AI result reports, on one line; the comment holds the rest. Empty for a RULE result, which rule_type names. |
 
 
 
@@ -10165,7 +10166,7 @@ QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 | disable_export | [bool](#bool) |  | **Deprecated.** Deprecated: export is controlled by the bb.sql.export permission. Always false; setting it to true is rejected. |
 | disable_copy_data | [bool](#bool) |  | workspace-level policy Disable copying query results in the SQL editor. |
 | allow_admin_data_source | [bool](#bool) |  | workspace-level policy Allow using the admin data source to query in the SQL editor. If true, users can select the admin data source or read-only data source If false, 1. when read-only data source is configured, users&#39;re force to use the read-only data source 2. otherwise fallback to use the admin data source. |
-| disable_download | [bool](#bool) |  | workspace-level policy Disable the Download export destination. Exports can still go to a configured storage destination such as SharePoint. |
+| disable_download | [bool](#bool) |  | workspace-level policy Hide the Download export destination in the SQL Editor. Exports can still go to a configured storage destination such as SharePoint. The Export API does not check this setting. |
 
 
 

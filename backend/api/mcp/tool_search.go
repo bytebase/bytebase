@@ -179,6 +179,10 @@ func endpointNote(ep *EndpointInfo) string {
 	case v1connect.SettingServiceUpdateSettingProcedure:
 		return "MCP sessions change only the approval rules for database changes, through the administer_workspace tool, " +
 			"which asks the user to confirm first. call_api is refused for every setting."
+	case v1connect.OrgPolicyServiceUpdatePolicyProcedure:
+		return "MCP sessions change the workspace masking rules through the administer_workspace tool, and masking exemptions " +
+			"through grant_masking_exemption and revoke_masking_exemption; each asks the user to confirm first. " +
+			"call_api is refused for every policy."
 	case v1connect.SettingServiceGetSettingProcedure:
 	default:
 		return ""

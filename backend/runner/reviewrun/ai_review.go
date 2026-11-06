@@ -3,12 +3,18 @@ package reviewrun
 import (
 	"cmp"
 	"context"
+	"crypto/sha256"
+	"encoding/binary"
+	"encoding/hex"
 	"fmt"
 	"log/slog"
 	"slices"
+	"strconv"
 	"strings"
 
 	metadatapb "github.com/bytebase/omni/metadata"
+	"github.com/bytebase/omni/review"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 
@@ -73,6 +79,55 @@ type aiReviewProblem struct {
 	// Summary is the comment the model wrote for a problem that more than one
 	// database reports, or nil.
 	Summary *aireview.Summary
+	// Segment identifies the statement the findings are on, and starts the
+	// fingerprint of a problem that keeps no earlier result.
+	Segment string
+	// Earlier is the result an earlier run posted that the problem keeps, or
+	// nil.
+	Earlier *aiReviewEarlier
+}
+
+// aiReviewSheet is a spec's sheet under review.
+type aiReviewSheet struct {
+	specID      string
+	sheetSha256 string
+}
+
+// aiReviewEarlier is a result an earlier run posted on a spec under review: a
+// current root of the AI reviewer, which a problem on the same statement can
+// keep.
+type aiReviewEarlier struct {
+	// Fingerprint starts with the segment of the statement the result was
+	// posted on.
+	Fingerprint string
+	// Resolved is true when a person resolved the thread, so that keeping it
+	// lets the rollout past the problem.
+	Resolved bool
+	Priority storepb.IssueCommentPayload_ReviewMetadata_Priority
+	// Title and Comment are what the result was posted with, which a kept
+	// result keeps.
+	Title   string
+	Comment string
+	// Sheet is the text of the sheet the result is anchored to, SheetSha256
+	// its hash, and Line the anchored line.
+	Sheet       string
+	SheetSha256 string
+	Line        int
+}
+
+// aiReviewStatements is the statements of a sheet, as merge blocks and their
+// segments.
+type aiReviewStatements struct {
+	Blocks []aireview.LineRange
+	// Split is false when the sheet could not be split, and its one block is
+	// the whole sheet.
+	Split bool
+	// BodyStart is the first line of each block's statement body.
+	BodyStart []int
+	// Segments identifies each block's statement across runs: the hash of the
+	// spec, the statement's body, and its ordinal among equal bodies, so that
+	// an edit to the statement changes it and an edit anywhere else does not.
+	Segments []string
 }
 
 // mergeFunc asks the model which findings report the same problem.
@@ -114,22 +169,20 @@ func schemaObjectCount(s *metadatapb.SchemaMetadata) int {
 // mergeAIReviewFindings groups the findings of the completed units into the
 // problems to post, one comment each. The findings that more than one
 // database reported on one statement of a sheet go to merge, which decides
-// which of them are the same problem. Every other finding, and every finding
-// of a merge that fails, is a problem of its own, so a failed merge posts
-// duplicates and never drops a finding. The error is ctx's, when it ends.
-func mergeAIReviewFindings(ctx context.Context, merge mergeFunc, results []*aiReviewResult) ([]*aiReviewProblem, error) {
-	type sheetKey struct {
-		specID      string
-		sheetSha256 string
-	}
-	var order []sheetKey
-	bySheet := make(map[sheetKey][]*aiReviewFinding)
-	reviewed := make(map[sheetKey][]string)
+// which of them are the same problem, and so do the findings on a statement
+// an earlier result stands on, with that result. Every other finding, and
+// every finding of a merge that fails, is a problem of its own, so a failed
+// merge posts duplicates and never drops a finding. The error is ctx's, when
+// it ends.
+func mergeAIReviewFindings(ctx context.Context, merge mergeFunc, results []*aiReviewResult, earlier map[aiReviewSheet][]*aiReviewEarlier) ([]*aiReviewProblem, error) {
+	var order []aiReviewSheet
+	bySheet := make(map[aiReviewSheet][]*aiReviewFinding)
+	reviewed := make(map[aiReviewSheet][]string)
 	for _, result := range results {
 		if result == nil {
 			continue
 		}
-		key := sheetKey{specID: result.Unit.Check.SpecID, sheetSha256: result.Unit.Check.SheetSha256}
+		key := aiReviewSheet{specID: result.Unit.Check.SpecID, sheetSha256: result.Unit.Check.SheetSha256}
 		if !slices.Contains(reviewed[key], result.Unit.Check.Target) {
 			reviewed[key] = append(reviewed[key], result.Unit.Check.Target)
 		}
@@ -142,7 +195,7 @@ func mergeAIReviewFindings(ctx context.Context, merge mergeFunc, results []*aiRe
 	}
 	var problems []*aiReviewProblem
 	for _, key := range order {
-		sheetProblems, err := mergeSheetFindings(ctx, merge, bySheet[key])
+		sheetProblems, err := mergeSheetFindings(ctx, merge, bySheet[key], earlier[key])
 		if err != nil {
 			return nil, err
 		}
@@ -156,10 +209,16 @@ func mergeAIReviewFindings(ctx context.Context, merge mergeFunc, results []*aiRe
 }
 
 // mergeSheetFindings groups the findings of one sheet, ordered by the first
-// finding of each problem.
-func mergeSheetFindings(ctx context.Context, merge mergeFunc, findings []*aiReviewFinding) ([]*aiReviewProblem, error) {
+// finding of each problem, and gives each problem the earlier result it keeps.
+// An earlier result is offered to the merge only while its statement, which
+// its fingerprint names, is unchanged and has findings; one left out is
+// superseded by the run.
+func mergeSheetFindings(ctx context.Context, merge mergeFunc, findings []*aiReviewFinding, earlier []*aiReviewEarlier) ([]*aiReviewProblem, error) {
 	statement := findings[0].Unit.Statement
-	blocks, split := statementBlocks(sheetEngine(findings), statement)
+	check := findings[0].Unit.Check
+	engine := sheetEngine(findings)
+	statements := sheetStatements(ctx, engine, check.SpecID, statement)
+	blocks, split := slices.Clone(statements.Blocks), statements.Split
 	blockOf := make([]int, len(findings))
 	blockTargets := make(map[int]map[string]bool)
 	for i, finding := range findings {
@@ -169,12 +228,73 @@ func mergeSheetFindings(ctx context.Context, merge mergeFunc, findings []*aiRevi
 		}
 		blockTargets[blockOf[i]][finding.Unit.Check.Target] = true
 	}
+	// A line outside every statement, which findBlock made a block of its
+	// own, is its own body. Its ordinal counts the equal lines outside every
+	// statement before it, so it holds whichever lines have findings.
+	segments, bodyStart := slices.Clone(statements.Segments), slices.Clone(statements.BodyStart)
+	if extra := blocks[len(segments):]; len(extra) > 0 {
+		lines := aireview.StatementLines(statement)
+		outside := make([]bool, len(lines)+1)
+		for line := range outside {
+			outside[line] = true
+		}
+		for _, block := range statements.Blocks {
+			for line := max(block.Start, 1); line <= min(block.End, len(lines)); line++ {
+				outside[line] = false
+			}
+		}
+		for _, block := range extra {
+			at := min(block.Start, len(lines))
+			text := strings.TrimSpace(lines[at-1])
+			ordinal := 0
+			for line := 1; line <= at; line++ {
+				if outside[line] && strings.TrimSpace(lines[line-1]) == text {
+					ordinal++
+				}
+			}
+			segments = append(segments, statementSegment(check.SpecID, text, ordinal))
+			bodyStart = append(bodyStart, block.Start)
+		}
+	}
+	// An earlier result stands where its line stood in its statement's body,
+	// which is the same text in both sheets.
+	earlierBlockOf := make([]int, len(earlier))
+	earlierLine := make([]int, len(earlier))
+	earlierOn := make(map[int]bool)
+	before := map[string]*aiReviewStatements{check.SheetSha256: statements}
+	for i, result := range earlier {
+		segment, _, _ := strings.Cut(result.Fingerprint, "/")
+		earlierBlockOf[i] = slices.Index(segments, segment)
+		if earlierBlockOf[i] < 0 {
+			continue
+		}
+		earlierOn[earlierBlockOf[i]] = true
+		old, ok := before[result.SheetSha256]
+		if !ok {
+			old = sheetStatements(ctx, engine, check.SpecID, result.Sheet)
+			before[result.SheetSha256] = old
+		}
+		block := blocks[earlierBlockOf[i]]
+		earlierLine[i] = bodyStart[earlierBlockOf[i]]
+		if from := slices.Index(old.Segments, segment); from >= 0 {
+			earlierLine[i] = min(max(earlierLine[i]+result.Line-old.BodyStart[from], block.Start), block.End)
+		}
+	}
+	// sources counts the databases with findings on a block, and one more when
+	// an earlier result stands on it.
+	sources := func(block int) int {
+		if earlierOn[block] {
+			return len(blockTargets[block]) + 1
+		}
+		return len(blockTargets[block])
+	}
 
 	request := &aireview.MergeRequest{Statement: statement, Blocks: blocks}
-	// offered maps a merge candidate to its finding.
+	// offered maps a merge candidate to its finding, or to its earlier result
+	// at len(findings) and after.
 	var offered []int
 	for i, finding := range findings {
-		if len(blockTargets[blockOf[i]]) > 1 {
+		if sources(blockOf[i]) > 1 {
 			offered = append(offered, i)
 			request.Candidates = append(request.Candidates, aireview.MergeCandidate{
 				Block:    blockOf[i],
@@ -183,8 +303,22 @@ func mergeSheetFindings(ctx context.Context, merge mergeFunc, findings []*aiRevi
 			})
 		}
 	}
+	for i, result := range earlier {
+		if earlierBlockOf[i] >= 0 && len(blockTargets[earlierBlockOf[i]]) > 0 {
+			offered = append(offered, len(findings)+i)
+			request.Candidates = append(request.Candidates, aireview.MergeCandidate{
+				Block:   earlierBlockOf[i],
+				Earlier: true,
+				Finding: earlierFinding(result, earlierLine[i]),
+			})
+		}
+	}
 
-	var groups [][]int
+	type group struct {
+		findings []int
+		earlier  []*aiReviewEarlier
+	}
+	var groups []*group
 	merged := make([]bool, len(findings))
 	if len(offered) > 0 {
 		result, err := merge(ctx, request)
@@ -197,45 +331,144 @@ func mergeSheetFindings(ctx context.Context, merge mergeFunc, findings []*aiRevi
 				slog.Int("findings", len(offered)),
 				log.BBError(err))
 		default:
-			for _, group := range result.Groups {
-				members := make([]int, 0, len(group))
-				for _, candidate := range group {
-					members = append(members, offered[candidate])
-					merged[offered[candidate]] = true
+			for _, candidates := range result.Groups {
+				g := &group{}
+				for _, candidate := range candidates {
+					if i := offered[candidate]; i < len(findings) {
+						g.findings = append(g.findings, i)
+						merged[i] = true
+					} else {
+						g.earlier = append(g.earlier, earlier[i-len(findings)])
+					}
 				}
-				groups = append(groups, members)
+				if len(g.findings) > 0 {
+					groups = append(groups, g)
+				}
 			}
 		}
 	}
 	for i := range findings {
 		if !merged[i] {
-			groups = append(groups, []int{i})
+			groups = append(groups, &group{findings: []int{i}})
 		}
 	}
-	slices.SortFunc(groups, func(a, b []int) int { return cmp.Compare(a[0], b[0]) })
+	slices.SortFunc(groups, func(a, b *group) int { return cmp.Compare(a.findings[0], b.findings[0]) })
 
 	problems := make([]*aiReviewProblem, 0, len(groups))
-	for _, group := range groups {
+	for _, g := range groups {
 		// A merged group holds the findings of one block.
-		problem := &aiReviewProblem{Block: blocks[blockOf[group[0]]], BlockIsStatement: split}
-		for _, i := range group {
+		block := blockOf[g.findings[0]]
+		problem := &aiReviewProblem{Block: blocks[block], BlockIsStatement: split, Segment: segments[block]}
+		for _, i := range g.findings {
 			problem.Findings = append(problem.Findings, findings[i])
 		}
+		problem.Earlier = keptEarlier(problem.Findings, g.earlier)
 		problems = append(problems, problem)
 	}
 	return problems, nil
 }
 
+// keptEarlier returns the earlier result a problem keeps: the one the merge
+// grouped with its findings, or nil when there is none or more than one. A
+// resolved result is kept only while the problem is no more severe than the
+// result was, since keeping it lets the rollout past the problem.
+func keptEarlier(findings []*aiReviewFinding, earlier []*aiReviewEarlier) *aiReviewEarlier {
+	if len(earlier) != 1 {
+		return nil
+	}
+	result := earlier[0]
+	// The enum orders P0 before P1 before P2, so the smaller value is the
+	// higher priority.
+	if result.Resolved && aiReviewPriority(leadFinding(findings).Finding.Severity) < result.Priority {
+		return nil
+	}
+	return result
+}
+
+// earlierFinding is an earlier result as the merge shows it: its title, the
+// rule and fix of its comment, its priority, and the line it stands on now.
+// The evidence is left out, since a comment on more than one database names
+// them there.
+func earlierFinding(result *aiReviewEarlier, line int) aireview.Finding {
+	rule, fix := aiReviewCommentParts(result.Comment)
+	return aireview.Finding{Title: result.Title, Severity: aiReviewSeverity(result.Priority), Line: line, Rule: rule, Fix: fix}
+}
+
+// aiReviewCommentParts reads back the rule and fix that aiReviewCommentText
+// wrote: the last "Rule:" and "Suggested fix:" paragraphs.
+func aiReviewCommentParts(comment string) (rule, fix string) {
+	if i := strings.LastIndex(comment, aiReviewFixLabel); i >= 0 {
+		fix = comment[i+len(aiReviewFixLabel):]
+		comment = comment[:i]
+	}
+	if i := strings.LastIndex(comment, aiReviewRuleLabel); i >= 0 {
+		rule = comment[i+len(aiReviewRuleLabel):]
+	}
+	return rule, fix
+}
+
+// sheetStatements splits a sheet into the merge's blocks and gives each its
+// segment. A block's body is its statement's as the standard rule review reads
+// it, from the first token to the last, so that the comments and blank lines
+// around a statement are not part of it. For an engine the rule review does
+// not cover, the body is the block's text, comments included.
+func sheetStatements(ctx context.Context, engine storepb.Engine, specID, sql string) *aiReviewStatements {
+	blocks, split := statementBlocks(engine, sql)
+	lines := aireview.StatementLines(sql)
+	bodies := make([]string, len(blocks))
+	bodyStart := make([]int, len(blocks))
+	for i, block := range blocks {
+		bodies[i] = strings.TrimSpace(strings.Join(lines[min(block.Start, len(lines))-1:min(block.End, len(lines))], "\n"))
+		bodyStart[i] = block.Start
+	}
+	var ranges []review.Range
+	if split {
+		ranges, _ = statementBodies(ctx, engine, sql)
+	}
+	read := make([]bool, len(blocks))
+	for _, r := range ranges {
+		if r.Start < 0 || r.Start >= r.End || r.End > len(sql) {
+			continue
+		}
+		line := strings.Count(sql[:r.Start], "\n") + 1
+		i := slices.IndexFunc(blocks, func(block aireview.LineRange) bool { return line >= block.Start && line <= block.End })
+		if i < 0 || read[i] {
+			continue
+		}
+		read[i] = true
+		bodies[i], bodyStart[i] = sql[r.Start:r.End], line
+	}
+	statements := &aiReviewStatements{Blocks: blocks, Split: split, BodyStart: bodyStart}
+	ordinals := make(map[string]int)
+	for _, body := range bodies {
+		ordinals[body]++
+		statements.Segments = append(statements.Segments, statementSegment(specID, body, ordinals[body]))
+	}
+	return statements
+}
+
+// statementSegment identifies a statement across runs by its spec, its body,
+// and its ordinal among the equal bodies of its sheet.
+func statementSegment(specID, body string, ordinal int) string {
+	h := sha256.New()
+	for _, field := range []string{specID, body, strconv.Itoa(ordinal)} {
+		_, _ = h.Write(binary.BigEndian.AppendUint64(nil, uint64(len(field))))
+		_, _ = h.Write([]byte(field))
+	}
+	return hex.EncodeToString(h.Sum(nil))
+}
+
 // summarizeAIReviewProblems sets the summary of each problem that more than
-// one database reports, at most aiReviewRunConcurrency at a time. A problem
-// whose summary fails keeps none, and its comment is built from its lead
-// finding. The error is ctx's, when it ends.
+// one database reports and keeps no earlier result, whose text it keeps
+// instead, at most aiReviewRunConcurrency at a time. A problem whose summary
+// fails keeps none, and its comment is built from its lead finding. The error
+// is ctx's, when it ends.
 func summarizeAIReviewProblems(ctx context.Context, summarize summarizeFunc, problems []*aiReviewProblem) error {
 	var group errgroup.Group
 	group.SetLimit(aiReviewRunConcurrency)
 	for _, problem := range problems {
 		findings := findingsByTarget(problem.Findings)
-		if len(problemTargets(findings)) < 2 {
+		if problem.Earlier != nil || len(problemTargets(findings)) < 2 {
 			continue
 		}
 		group.Go(func() error {
@@ -340,7 +573,10 @@ func findBlock(blocks *[]aireview.LineRange, line int) int {
 // aiReviewComments converts the problems into the review result comments to
 // post: one OPEN root per problem, anchored to the line most of its findings
 // start on, with every database it applies to. The priority and rule are those
-// of its lead finding.
+// of its lead finding. A problem that keeps an earlier result carries that
+// result's fingerprint and text, so the run keeps its thread and moves it. Any
+// other problem gets a new fingerprint: its statement's segment, then a random
+// part, since nothing else about an AI finding holds across runs.
 func aiReviewComments(projectID string, issueUID int64, problems []*aiReviewProblem) []*store.IssueCommentMessage {
 	type blockKey struct {
 		specID      string
@@ -368,11 +604,18 @@ func aiReviewComments(projectID string, issueUID int64, problems []*aiReviewProb
 		lead := leadFinding(findings)
 		line := int32(commonLine(findings))
 		targets := problemTargets(findings)
+		var title, comment, fingerprint string
+		if problem.Earlier != nil {
+			title, comment, fingerprint = problem.Earlier.Title, problem.Earlier.Comment, problem.Earlier.Fingerprint
+		} else {
+			title, comment = aiReviewCommentText(problem, lead, findings, targets, onBlock[keyOf(problem)])
+			fingerprint = problem.Segment + "/" + uuid.NewString()
+		}
 		comments = append(comments, &store.IssueCommentMessage{
 			ProjectID: projectID,
 			IssueUID:  issueUID,
 			Payload: &storepb.IssueCommentPayload{
-				Comment: aiReviewCommentText(problem, lead, findings, targets, onBlock[keyOf(problem)]),
+				Comment: comment,
 				StatementAnchor: &storepb.IssueCommentPayload_StatementAnchor{
 					SpecId:        lead.Unit.Check.SpecID,
 					SheetSha256:   lead.Unit.Check.SheetSha256,
@@ -380,9 +623,11 @@ func aiReviewComments(projectID string, issueUID int64, problems []*aiReviewProb
 					EndPosition:   &storepb.Position{Line: line},
 				},
 				ReviewMetadata: &storepb.IssueCommentPayload_ReviewMetadata{
-					RunType:  storepb.ReviewRun_AI,
-					Priority: aiReviewPriority(lead.Finding.Severity),
-					Targets:  targets,
+					RunType:     storepb.ReviewRun_AI,
+					Priority:    aiReviewPriority(lead.Finding.Severity),
+					Targets:     targets,
+					Fingerprint: fingerprint,
+					Title:       title,
 				},
 			},
 		})
@@ -445,6 +690,12 @@ func commonLine(findings []*aiReviewFinding) int {
 // rest are counted.
 const maxNamedDatabases = 10
 
+// The paragraphs that end every comment, which aiReviewCommentParts reads back.
+const (
+	aiReviewRuleLabel = "\n\nRule: "
+	aiReviewFixLabel  = "\n\nSuggested fix: "
+)
+
 // aiReviewGroup is databases of a problem that one line of its comment covers,
 // with the highest and lowest severity their findings carry.
 type aiReviewGroup struct {
@@ -454,24 +705,25 @@ type aiReviewGroup struct {
 	facts   string
 }
 
-// aiReviewCommentText renders a problem as the body of its thread, whose first
-// line is the title the frontend shows as the finding's name. A problem of
-// more than one database states the shared evidence once, then one line for
-// each group of databases with its severities and the facts that set it
-// apart, then the reviewed databases that reported a different problem on the
-// statement, onBlock, or nothing. Without a summary, the shared evidence is
-// the lead finding's, labeled with its database, and the databases are
-// grouped by severity alone.
-func aiReviewCommentText(problem *aiReviewProblem, lead *aiReviewFinding, findings []*aiReviewFinding, targets []string, onBlock []string) string {
+// aiReviewCommentText renders a problem as the title and the body of its
+// thread. A problem of more than one database states the shared evidence
+// once, then one line for each group of databases with its severities and the
+// facts that set it apart, then the reviewed databases that reported a
+// different problem on the statement, onBlock, or nothing. Without a summary,
+// the shared evidence is the lead finding's, labeled with its database, and
+// the databases are grouped by severity alone.
+func aiReviewCommentText(problem *aiReviewProblem, lead *aiReviewFinding, findings []*aiReviewFinding, targets []string, onBlock []string) (title, text string) {
 	var b strings.Builder
 	if len(targets) == 1 {
-		_, _ = b.WriteString(lead.Finding.Title)
-		for _, finding := range findings {
-			_, _ = fmt.Fprintf(&b, "\n\n%s", finding.Finding.Evidence)
+		for i, finding := range findings {
+			if i > 0 {
+				_, _ = b.WriteString("\n\n")
+			}
+			_, _ = b.WriteString(finding.Finding.Evidence)
 		}
-		_, _ = fmt.Fprintf(&b, "\n\nRule: %s", lead.Finding.Rule)
-		_, _ = fmt.Fprintf(&b, "\n\nSuggested fix: %s", lead.Finding.Fix)
-		return b.String()
+		_, _ = b.WriteString(aiReviewRuleLabel + lead.Finding.Rule)
+		_, _ = b.WriteString(aiReviewFixLabel + lead.Finding.Fix)
+		return lead.Finding.Title, b.String()
 	}
 
 	named := slices.Clone(problem.Reviewed)
@@ -487,7 +739,7 @@ func aiReviewCommentText(problem *aiReviewProblem, lead *aiReviewFinding, findin
 			severities[finding.Unit.Check.Target] = finding.Finding.Severity
 		}
 	}
-	var title, evidence, fix string
+	var evidence, fix string
 	var groups []*aiReviewGroup
 	if summary := problem.Summary; summary != nil {
 		title, evidence, fix = summary.Title, summary.Evidence, summary.Fix
@@ -523,8 +775,7 @@ func aiReviewCommentText(problem *aiReviewProblem, lead *aiReviewFinding, findin
 		return cmp.Compare(aiReviewPriority(x.highest), aiReviewPriority(y.highest))
 	})
 
-	_, _ = b.WriteString(title)
-	_, _ = fmt.Fprintf(&b, "\n\n%s\n", evidence)
+	_, _ = fmt.Fprintf(&b, "%s\n", evidence)
 	for _, group := range groups {
 		// Databases with the same facts can still carry different severities,
 		// which the group shows as a range rather than raise to its highest.
@@ -557,9 +808,9 @@ func aiReviewCommentText(problem *aiReviewProblem, lead *aiReviewFinding, findin
 	if len(unflagged) > 0 {
 		_, _ = fmt.Fprintf(&b, "\n- Not flagged on %s", databaseList(unflagged, labels))
 	}
-	_, _ = fmt.Fprintf(&b, "\n\nRule: %s", lead.Finding.Rule)
-	_, _ = fmt.Fprintf(&b, "\n\nSuggested fix: %s", fix)
-	return b.String()
+	_, _ = b.WriteString(aiReviewRuleLabel + lead.Finding.Rule)
+	_, _ = b.WriteString(aiReviewFixLabel + fix)
+	return title, b.String()
 }
 
 // databaseList names databases by their labels in order, up to
@@ -603,6 +854,18 @@ func databaseLabels(targets []string) map[string]string {
 		}
 	}
 	return labels
+}
+
+// aiReviewSeverity maps a thread priority back to the severity of a finding.
+func aiReviewSeverity(priority storepb.IssueCommentPayload_ReviewMetadata_Priority) aireview.Severity {
+	switch priority {
+	case storepb.IssueCommentPayload_ReviewMetadata_P0:
+		return aireview.SeverityP0
+	case storepb.IssueCommentPayload_ReviewMetadata_P1:
+		return aireview.SeverityP1
+	default:
+		return aireview.SeverityP2
+	}
 }
 
 // aiReviewPriority maps a finding's severity to the thread priority. The

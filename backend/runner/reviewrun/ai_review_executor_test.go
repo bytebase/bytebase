@@ -123,6 +123,61 @@ func TestAIReviewRunsShareTheServerLimit(t *testing.T) {
 	require.Equal(t, int32(limit), model.maxInFlight.Load())
 }
 
+func TestAIReviewKeepsTheThreadOfAProblemReportedAgain(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	stores, issues := setupReviewFixture(ctx, t, 1)
+	model := &findingModel{}
+	executor := &AIReviewExecutor{
+		store:    stores,
+		newModel: func(*storepb.AISetting, ...aireview.ModelOption) aireview.Model { return model },
+		slots:    semaphore.NewWeighted(aiReviewServerConcurrency),
+	}
+	run := func() []*store.IssueCommentMessage {
+		t.Helper()
+		results, err := executor.RunOnce(ctx, "p", issues[0])
+		require.NoError(t, err)
+		_, err = stores.CreateReviewRun(ctx, "p", issues[0], store.ReviewRunTypeAI)
+		require.NoError(t, err)
+		claimed, err := stores.ClaimAvailableReviewRuns(ctx, "replica-1")
+		require.NoError(t, err)
+		require.Len(t, claimed, 1)
+		updated, err := stores.CompleteReviewRun(ctx, claimed[0], "replica-1", storepb.ReviewRun_DONE, nil, results)
+		require.NoError(t, err)
+		require.True(t, updated)
+		return results
+	}
+	roots := func() []*store.IssueCommentMessage {
+		t.Helper()
+		comments, err := stores.ListIssueComment(ctx, &store.FindIssueCommentMessage{ProjectID: "p", IssueUID: &issues[0], TopLevelOnly: true})
+		require.NoError(t, err)
+		return slices.DeleteFunc(comments, func(c *store.IssueCommentMessage) bool { return c.Payload.GetReviewMetadata() == nil })
+	}
+
+	first := run()
+	require.Len(t, first, 1)
+	require.NotEmpty(t, first[0].Payload.ReviewMetadata.Fingerprint)
+	posted := roots()
+	require.Len(t, posted, 1)
+	resolved := store.ThreadStateResolved
+	require.NoError(t, stores.UpdateIssueComment(ctx, &store.UpdateIssueCommentMessage{ProjectID: "p", ResourceID: posted[0].ResourceID, ThreadState: &resolved}))
+	merges, summaries := model.merges.Load(), model.summaries.Load()
+
+	second := run()
+	require.Len(t, second, 1)
+	require.Equal(t, first[0].Payload.ReviewMetadata.Fingerprint, second[0].Payload.ReviewMetadata.Fingerprint, "the merge matched the problem to the earlier result")
+	require.Equal(t, first[0].Payload.Comment, second[0].Payload.Comment)
+	require.NotEmpty(t, second[0].Payload.ReviewMetadata.Title)
+	require.Equal(t, first[0].Payload.ReviewMetadata.Title, second[0].Payload.ReviewMetadata.Title)
+	require.Equal(t, merges+1, model.merges.Load())
+	require.Equal(t, summaries, model.summaries.Load(), "a kept problem keeps its text, so nothing is summarized")
+	kept := roots()
+	require.Len(t, kept, 1, "nothing is posted again")
+	require.Equal(t, posted[0].ResourceID, kept[0].ResourceID)
+	require.Equal(t, store.ThreadStateResolved, *kept[0].ThreadState, "the person's resolution stays")
+	require.False(t, kept[0].Payload.ReviewMetadata.Superseded)
+}
+
 // setupReviewFixture seeds project p with AI enabled, a PostgreSQL instance
 // holding fixtureDatabases synced databases, a database group matching all of
 // them, and the given number of issues, each with a plan whose one spec
@@ -286,6 +341,40 @@ func TestAIReviewStopsWhenSwitchedOffBeforeItPosts(t *testing.T) {
 	require.Equal(t, int32(1), model.summaries.Load())
 	require.ErrorContains(t, err, "AI SQL review is not enabled", "a switch-off during the summary stops the run before it posts")
 	require.Empty(t, comments)
+}
+
+func TestAIReviewExecutorSortsItsResults(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	stores, issues := setupReviewFixture(ctx, t, 1)
+	// One database: no merge and no summary, so each finding is a result.
+	setCISamplingSize(ctx, t, stores, 1)
+	executor := &AIReviewExecutor{
+		store:    stores,
+		newModel: func(*storepb.AISetting, ...aireview.ModelOption) aireview.Model { return advisoryFirstModel{} },
+		slots:    semaphore.NewWeighted(aiReviewServerConcurrency),
+	}
+	comments, err := executor.RunOnce(ctx, "p", issues[0])
+	require.NoError(t, err)
+	var priorities []storepb.IssueCommentPayload_ReviewMetadata_Priority
+	for _, comment := range comments {
+		priorities = append(priorities, comment.Payload.ReviewMetadata.Priority)
+	}
+	require.Equal(t, []storepb.IssueCommentPayload_ReviewMetadata_Priority{
+		storepb.IssueCommentPayload_ReviewMetadata_P0,
+		storepb.IssueCommentPayload_ReviewMetadata_P2,
+	}, priorities)
+}
+
+// advisoryFirstModel reports a P2 finding before a P0 one on the same line.
+type advisoryFirstModel struct{}
+
+func (advisoryFirstModel) Chat(context.Context, *v1pb.AIChatRequest) (*v1pb.AIChatResponse, error) {
+	content := `{"findings": [
+		{"title": "Advisory", "severity": "P2", "line": 1, "rule": "r", "evidence": "e", "fix": "f"},
+		{"title": "Blocking", "severity": "P0", "line": 1, "rule": "r", "evidence": "e", "fix": "f"}
+	]}`
+	return &v1pb.AIChatResponse{Content: &content}, nil
 }
 
 // observedSlots tells the test when a review has to wait for a slot.
