@@ -114,7 +114,7 @@ func TestMCPGrantIssuesAndAccessRequests(t *testing.T) {
 	session := openMCPSessionWithOptions(ctx, t, ctl, ctl.authInterceptor.token, &mcp.ClientOptions{
 		ElicitationHandler: func(context.Context, *mcp.ElicitRequest) (*mcp.ElicitResult, error) {
 			asked.Add(1)
-			return &mcp.ElicitResult{Action: "accept", Content: map[string]any{"confirm": true}}, nil
+			return &mcp.ElicitResult{Action: "accept", Content: map[string]any{"choice": "apply"}}, nil
 		},
 	})
 	defer session.Close()
@@ -442,7 +442,7 @@ func TestMCPDeveloperApprovesTheirOwnAccessRequest(t *testing.T) {
 	session := openMCPSessionWithOptions(ctx, t, ctl, login.Msg.Token, &mcp.ClientOptions{
 		ElicitationHandler: func(context.Context, *mcp.ElicitRequest) (*mcp.ElicitResult, error) {
 			asked.Add(1)
-			return &mcp.ElicitResult{Action: "accept", Content: map[string]any{"confirm": true}}, nil
+			return &mcp.ElicitResult{Action: "accept", Content: map[string]any{"choice": "apply"}}, nil
 		},
 	})
 	defer session.Close()
@@ -644,7 +644,7 @@ func TestMCPGrantsAndRevokesAMaskingExemption(t *testing.T) {
 	session := openMCPSessionWithOptions(ctx, t, ctl, ctl.authInterceptor.token, &mcp.ClientOptions{
 		ElicitationHandler: func(context.Context, *mcp.ElicitRequest) (*mcp.ElicitResult, error) {
 			asked.Add(1)
-			return &mcp.ElicitResult{Action: "accept", Content: map[string]any{"confirm": true}}, nil
+			return &mcp.ElicitResult{Action: "accept", Content: map[string]any{"choice": "apply"}}, nil
 		},
 	})
 	defer session.Close()

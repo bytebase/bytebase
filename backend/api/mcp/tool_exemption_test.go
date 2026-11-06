@@ -148,7 +148,7 @@ func salaryGrant() map[string]any {
 
 func TestGrantMaskingExemptionCreatesTheFirstExemption(t *testing.T) {
 	mock := &policyMock{databaseProject: "projects/hr"}
-	user := &asker{answer: confirmAnswer(true)}
+	user := &asker{answer: confirmAnswer(confirmChoiceApply)}
 	session := connectToPolicyServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
 
 	res := callExemptionTool(t, session, "grant_masking_exemption", salaryGrant())
@@ -156,10 +156,11 @@ func TestGrantMaskingExemptionCreatesTheFirstExemption(t *testing.T) {
 	require.Equal(t, int32(1), user.asked.Load())
 	require.Equal(t, strings.Join([]string{
 		`Exempt "user:bob@example.com" from masking, as alice@example.com?`,
-		`Instance "prod"`,
-		`Database "hr", column "salary" in "public"."employee"`,
-		`Bypasses masking here until "2026-10-27T00:00:00.000Z"; adds no masking. Reason: "payroll audit"`,
+		`Database "hr" on instance "prod", column "salary" in`,
+		`> "public"."employee"`,
+		`Bypasses masking until "2026-10-27T00:00:00.000Z"; adds no masking.`,
 	}, "\n"), user.lastParams(t).Message)
+	require.Equal(t, `Reason: "payroll audit"`, choiceDescription(t, user.lastParams(t)), "the reason goes under the choice")
 
 	calls := mock.calls()
 	require.Len(t, calls, 1)
@@ -194,7 +195,7 @@ func TestGrantMaskingExemptionKeepsEveryOtherEntry(t *testing.T) {
 		},
 	}
 	mock := &policyMock{databaseProject: "projects/hr", exemptions: []map[string]any{existing}}
-	session := connectToPolicyServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{answer: confirmAnswer(true)}).handle})
+	session := connectToPolicyServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{answer: confirmAnswer(confirmChoiceApply)}).handle})
 
 	res := callExemptionTool(t, session, "grant_masking_exemption", map[string]any{
 		"project": "projects/hr", "member": "user:bob@example.com", "database": "instances/prod/databases/hr",
@@ -216,14 +217,14 @@ func TestGrantMaskingExemptionKeepsEveryOtherEntry(t *testing.T) {
 
 func TestGrantMaskingExemptionNamesADatabaseOnAProjectOwnedInstance(t *testing.T) {
 	mock := &policyMock{databaseProject: "projects/hr"}
-	user := &asker{answer: confirmAnswer(true)}
+	user := &asker{answer: confirmAnswer(confirmChoiceApply)}
 	session := connectToPolicyServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
 
 	res := callExemptionTool(t, session, "grant_masking_exemption", map[string]any{
 		"project": "projects/hr", "member": "user:bob@example.com", "database": "projects/hr/instances/team/databases/payroll",
 	})
 	require.False(t, res.IsError, resultText(t, res))
-	require.Contains(t, user.lastParams(t).Message, "Instance \"team\"\nDatabase \"payroll\", all tables")
+	require.Contains(t, user.lastParams(t).Message, "\n"+`Database "payroll" on instance "team", all tables`+"\n")
 	calls := mock.calls()
 	require.Len(t, calls, 1)
 	require.Equal(t, map[string]any{"expression": `(resource.instance_id == "team" && resource.database_name == "payroll")`}, writtenExemptions(t, calls[0])[0].(map[string]any)["condition"])
@@ -241,14 +242,14 @@ func TestGrantMaskingExemptionSaysWhenATableIsInAnySchema(t *testing.T) {
 		arguments map[string]any
 		want      string
 	}{
-		"a table":     {map[string]any{"table": "employee"}, `Database "hr", any schema, table "employee"`},
-		"a column":    {map[string]any{"table": "employee", "columns": []string{"salary"}}, `Database "hr", any schema, column "salary" in "employee"`},
-		"two columns": {map[string]any{"table": "employee", "columns": []string{"first_name", "last_name"}}, `Database "hr", any schema, 2 columns in "employee": "first_name", "last_name"`},
-		"a schema":    {map[string]any{"schema": "public"}, `Database "hr", schema "public"`},
+		"a table":     {map[string]any{"table": "employee"}, `Database "hr" on instance "prod", any schema, table "employee"`},
+		"a column":    {map[string]any{"table": "employee", "columns": []string{"salary"}}, `Database "hr" on instance "prod", any schema, column "salary" in "employee"`},
+		"two columns": {map[string]any{"table": "employee", "columns": []string{"first_name", "last_name"}}, `Database "hr" on instance "prod", any schema, 2 columns in "employee": "first_name", "last_name"`},
+		"a schema":    {map[string]any{"schema": "public"}, `Database "hr" on instance "prod", schema "public"`},
 	} {
 		t.Run(name, func(t *testing.T) {
 			mock := &policyMock{databaseProject: "projects/hr"}
-			user := &asker{answer: confirmAnswer(true)}
+			user := &asker{answer: confirmAnswer(confirmChoiceApply)}
 			session := connectToPolicyServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
 			arguments := map[string]any{"project": "projects/hr", "member": "user:bob@example.com", "database": "instances/prod/databases/hr"}
 			for k, v := range tc.arguments {
@@ -256,14 +257,14 @@ func TestGrantMaskingExemptionSaysWhenATableIsInAnySchema(t *testing.T) {
 			}
 			res := callExemptionTool(t, session, "grant_masking_exemption", arguments)
 			require.False(t, res.IsError, resultText(t, res))
-			require.Contains(t, user.lastParams(t).Message, tc.want)
+			require.Contains(t, unwrapMessage(user.lastParams(t).Message), tc.want)
 		})
 	}
 }
 
 func TestGrantMaskingExemptionCoversSeveralColumnsInOneEntry(t *testing.T) {
 	mock := &policyMock{databaseProject: "projects/hr"}
-	user := &asker{answer: confirmAnswer(true)}
+	user := &asker{answer: confirmAnswer(confirmChoiceApply)}
 	session := connectToPolicyServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
 
 	grant := salaryGrant()
@@ -271,7 +272,7 @@ func TestGrantMaskingExemptionCoversSeveralColumnsInOneEntry(t *testing.T) {
 	res := callExemptionTool(t, session, "grant_masking_exemption", grant)
 	require.False(t, res.IsError, resultText(t, res))
 	require.Equal(t, int32(1), user.asked.Load())
-	require.Contains(t, user.lastParams(t).Message, "\n"+`Database "hr", 2 columns in "public"."employee": "first_name", "last_name"`+"\n")
+	require.Contains(t, unwrapMessage(user.lastParams(t).Message), "\n"+`Database "hr" on instance "prod", 2 columns in "public"."employee": "first_name", "last_name"`+"\n")
 	calls := mock.calls()
 	require.Len(t, calls, 1)
 	require.Equal(t, map[string]any{
@@ -282,7 +283,7 @@ func TestGrantMaskingExemptionCoversSeveralColumnsInOneEntry(t *testing.T) {
 
 func TestGrantMaskingExemptionForEveryDatabaseIsExplicit(t *testing.T) {
 	mock := &policyMock{}
-	user := &asker{answer: confirmAnswer(true)}
+	user := &asker{answer: confirmAnswer(confirmChoiceApply)}
 	session := connectToPolicyServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
 
 	res := callExemptionTool(t, session, "grant_masking_exemption", map[string]any{
@@ -291,8 +292,7 @@ func TestGrantMaskingExemptionForEveryDatabaseIsExplicit(t *testing.T) {
 	require.False(t, res.IsError, resultText(t, res))
 	require.Equal(t, strings.Join([]string{
 		`Exempt "user:bob@example.com" from masking, as alice@example.com?`,
-		`Project "hr"`,
-		`Scope: all databases in the project, current and future`,
+		`Project "hr": all databases, current and future`,
 		`Bypasses masking here, with no expiry; adds no masking.`,
 	}, "\n"), user.lastParams(t).Message)
 	calls := mock.calls()
@@ -309,7 +309,7 @@ func TestGrantMaskingExemptionForEveryDatabaseIsExplicit(t *testing.T) {
 
 func TestGrantMaskingExemptionRefusesBadArguments(t *testing.T) {
 	mock := &policyMock{databaseProject: "projects/hr"}
-	session := connectToPolicyServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{answer: confirmAnswer(true)}).handle})
+	session := connectToPolicyServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{answer: confirmAnswer(confirmChoiceApply)}).handle})
 	base := map[string]any{"project": "projects/hr", "member": "user:bob@example.com"}
 	with := func(extra map[string]any) map[string]any {
 		out := map[string]any{}
@@ -348,7 +348,7 @@ func TestGrantMaskingExemptionRefusesBadArguments(t *testing.T) {
 
 func TestGrantMaskingExemptionRefusesADatabaseInAnotherProject(t *testing.T) {
 	mock := &policyMock{databaseProject: "projects/finance"}
-	user := &asker{answer: confirmAnswer(true)}
+	user := &asker{answer: confirmAnswer(confirmChoiceApply)}
 	session := connectToPolicyServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
 
 	res := callExemptionTool(t, session, "grant_masking_exemption", salaryGrant())
@@ -360,7 +360,7 @@ func TestGrantMaskingExemptionRefusesADatabaseInAnotherProject(t *testing.T) {
 
 func TestGrantMaskingExemptionIsStaleWhenTheListChangesWhileAsking(t *testing.T) {
 	mock := &policyMock{databaseProject: "projects/hr"}
-	user := &asker{answer: confirmAnswer(true), whileAsked: func() {
+	user := &asker{answer: confirmAnswer(confirmChoiceApply), whileAsked: func() {
 		mock.mu.Lock()
 		defer mock.mu.Unlock()
 		mock.exemptions = []map[string]any{{"members": []any{"user:carol@example.com"}, "condition": map[string]any{"expression": ""}}}
@@ -386,7 +386,7 @@ func TestMaskingExemptionToolsBindTheAnswerToTheArguments(t *testing.T) {
 		require.NoError(t, err)
 		return res
 	}
-	accept := mcp.InputResponseMap{confirmDecisionRequestID: confirmAnswer(true)}
+	accept := mcp.InputResponseMap{confirmDecisionRequestID: confirmAnswer(confirmChoiceApply)}
 
 	first := call("grant_masking_exemption", salaryGrant(), nil, "")
 	require.True(t, first.NeedsInput())
@@ -408,21 +408,121 @@ func TestMaskingExemptionToolsBindTheAnswerToTheArguments(t *testing.T) {
 	require.Empty(t, mock.calls())
 }
 
+// Journey 3's exemption as the agent sent it, and its removal: each form fits
+// whole, with the reason under the choice.
+func TestMaskingExemptionFormsForTheJourneysExemption(t *testing.T) {
+	condition := `(resource.instance_id == "prod-pg" && resource.database_name == "hr_prod")`
+	mock := &policyMock{databaseProject: "projects/hr", exemptions: []map[string]any{
+		{"members": []any{"group:hr-team@example.com"}, "condition": map[string]any{"expression": condition}},
+	}}
+	user := &asker{answer: &mcp.ElicitResult{Action: "decline"}}
+	session := connectToPolicyServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
+
+	callExemptionTool(t, session, "grant_masking_exemption", map[string]any{
+		"project": "projects/hr", "member": "group:hr-team@example.com", "database": "instances/prod-pg/databases/hr_prod",
+		"reason": "HR team needs to see employee personal details (birth dates, salaries) in production",
+	})
+	asked := user.lastParams(t)
+	require.Equal(t, strings.Join([]string{
+		`Exempt "group:hr-team@example.com" from masking, as alice@example.com?`,
+		`Database "hr_prod" on instance "prod-pg", all tables`,
+		`Bypasses masking here, with no expiry; adds no masking.`,
+	}, "\n"), asked.Message)
+	schema, err := json.Marshal(asked.RequestedSchema)
+	require.NoError(t, err)
+	require.JSONEq(t, `{"type":"object","required":["choice"],"properties":{"choice":{"type":"string",
+		"title":"Exempt this member from masking?",
+		"description":"Reason: \"HR team needs to see employee personal details (birth dates, salaries) in production\"",
+		"oneOf":[{"const":"apply","title":"Exempt"},{"const":"change","title":"Change it in chat"}],
+		"default":"apply"}}}`, string(schema))
+
+	callExemptionTool(t, session, "revoke_masking_exemption", map[string]any{
+		"project": "projects/hr", "member": "group:hr-team@example.com", "condition": condition,
+	})
+	asked = user.lastParams(t)
+	require.Equal(t, strings.Join([]string{
+		`Revoke masking exemption: "group:hr-team@example.com", as alice@example.com?`,
+		`Database "hr_prod" on instance "prod-pg", all tables`,
+		`Ends their bypass of masking here, unless another exemption covers it.`,
+	}, "\n"), asked.Message)
+	for _, line := range strings.Split(asked.Message, "\n")[1:] {
+		require.LessOrEqual(t, lineColumns(line), messageLineWidth, line)
+	}
+	schema, err = json.Marshal(asked.RequestedSchema)
+	require.NoError(t, err)
+	require.JSONEq(t, `{"type":"object","required":["choice"],"properties":{"choice":{"type":"string",
+		"title":"Revoke this masking exemption?",
+		"oneOf":[{"const":"apply","title":"Revoke"},{"const":"change","title":"Change it in chat"}],
+		"default":"apply"}}}`, string(schema), "one matching entry needs no description")
+	require.Empty(t, mock.calls())
+}
+
+func TestMaskingExemptionToolsRefuseAFormTooLongBeforeAsking(t *testing.T) {
+	longest := strings.Repeat("x", 63)
+	for name, tc := range map[string]struct {
+		tool      string
+		arguments map[string]any
+		want      string
+	}{
+		"a grant naming several columns": {"grant_masking_exemption", map[string]any{
+			"project": "projects/hr", "member": "user:bob@example.com", "database": "instances/" + longest + "/databases/" + longest,
+			"table": "employee", "columns": []string{"birth_date", "gender"},
+		}, "exempt fewer columns at a time, or grant it signed in to the Bytebase console: https://bb.example.com/projects/hr/masking-exemption"},
+		"a grant of one long column": {"grant_masking_exemption", map[string]any{
+			"project": "projects/hr", "member": "user:bob@example.com", "database": "instances/" + longest + "/databases/" + longest,
+			"table": "employee", "columns": []string{"birth_date"},
+		}, "grant it signed in to the Bytebase console: https://bb.example.com/projects/hr/masking-exemption"},
+		"a revoke of a long condition": {"revoke_masking_exemption", map[string]any{
+			"project": "projects/hr", "member": "user:bob@example.com", "condition": strings.Repeat("c", 200),
+		}, "remove it signed in to the Bytebase console: https://bb.example.com/projects/hr/masking-exemption"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			mock := &policyMock{databaseProject: "projects/hr", exemptions: []map[string]any{
+				{"members": []any{"user:bob@example.com"}, "condition": map[string]any{"expression": strings.Repeat("c", 200)}},
+			}}
+			user := &asker{answer: confirmAnswer(confirmChoiceApply)}
+			session := connectToPolicyServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
+			res := callExemptionTool(t, session, tc.tool, tc.arguments)
+			require.True(t, res.IsError, resultText(t, res))
+			var refusal toolError
+			require.NoError(t, json.Unmarshal([]byte(resultText(t, res)), &refusal))
+			require.Equal(t, "CHANGE_TOO_LONG", refusal.Code)
+			require.Contains(t, refusal.Message, "more than the 4 one confirmation form shows, so nothing changed")
+			require.Equal(t, tc.want, refusal.Suggestion)
+			require.Zero(t, user.asked.Load(), "the user is not asked about a form that cannot show the change whole")
+			require.Empty(t, mock.calls())
+		})
+	}
+}
+
+func TestRevokeMaskingExemptionChangedInChatChangesNothing(t *testing.T) {
+	mock := &policyMock{exemptions: []map[string]any{{"members": []any{"user:bob@example.com"}, "condition": map[string]any{"expression": ""}}}}
+	user := &asker{answer: confirmAnswer(confirmChoiceChange)}
+	session := connectToPolicyServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
+
+	res := callExemptionTool(t, session, "revoke_masking_exemption", map[string]any{"project": "projects/hr", "member": "user:bob@example.com", "condition": ""})
+	require.False(t, res.IsError, resultText(t, res))
+	require.Contains(t, resultText(t, res), "The exemption for user:bob@example.com was not removed: the user wants to change this request. "+
+		"Ask them what to change, such as the member or the exemption's condition, then call revoke_masking_exemption again.")
+	require.Empty(t, mock.calls())
+}
+
 func TestGrantMaskingExemptionChangesNothingUnlessConfirmed(t *testing.T) {
 	for name, tc := range map[string]struct {
 		answer *mcp.ElicitResult
 		want   string
 	}{
-		"declined":           {&mcp.ElicitResult{Action: "decline"}, "the user declined"},
-		"cancelled":          {&mcp.ElicitResult{Action: "cancel"}, "the user cancelled"},
-		"accepted, unticked": {confirmAnswer(false), "the form was submitted without the confirmation checked"},
+		"declined":  {&mcp.ElicitResult{Action: "decline"}, "was not granted: the user declined, so nothing changed. Do not retry unless the user asks."},
+		"cancelled": {&mcp.ElicitResult{Action: "cancel"}, "was not granted: the user cancelled, so nothing changed"},
+		"changed in chat": {confirmAnswer(confirmChoiceChange), "was not granted: the user wants to change this request. " +
+			"Ask them what to change, such as the member, the scope, the expiry or the reason, then call grant_masking_exemption again."},
 	} {
 		t.Run(name, func(t *testing.T) {
 			mock := &policyMock{databaseProject: "projects/hr"}
 			session := connectToPolicyServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{answer: tc.answer}).handle})
 			res := callExemptionTool(t, session, "grant_masking_exemption", salaryGrant())
 			require.False(t, res.IsError, resultText(t, res))
-			require.Contains(t, resultText(t, res), "The exemption for user:bob@example.com was not granted: "+tc.want+", so nothing changed")
+			require.Contains(t, resultText(t, res), "The exemption for user:bob@example.com "+tc.want)
 			require.Empty(t, mock.calls())
 		})
 	}
@@ -447,7 +547,7 @@ func TestMaskingExemptionToolsRefuseAClientThatCannotConfirm(t *testing.T) {
 
 func TestMaskingExemptionToolsChangeNothingWhenThePolicyReadFails(t *testing.T) {
 	mock := &policyMock{databaseProject: "projects/hr", policyReadStatus: http.StatusInternalServerError}
-	user := &asker{answer: confirmAnswer(true)}
+	user := &asker{answer: confirmAnswer(confirmChoiceApply)}
 	session := connectToPolicyServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
 
 	for _, call := range []struct {
@@ -468,7 +568,7 @@ func TestMaskingExemptionToolsChangeNothingWhenThePolicyReadFails(t *testing.T) 
 func TestMaskingExemptionToolsReportTheRefusalInTheServersWords(t *testing.T) {
 	mock := &policyMock{databaseProject: "projects/hr", refusal: "permission denied: bb.policies.updateMaskingExemptionPolicy",
 		exemptions: []map[string]any{{"members": []any{"user:bob@example.com"}, "condition": map[string]any{"expression": ""}}}}
-	session := connectToPolicyServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{answer: confirmAnswer(true)}).handle})
+	session := connectToPolicyServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{answer: confirmAnswer(confirmChoiceApply)}).handle})
 
 	for _, call := range []struct {
 		name      string
@@ -495,17 +595,17 @@ func TestRevokeMaskingExemptionRemovesTheMemberFromEveryMatch(t *testing.T) {
 		{"members": []any{"user:carol@example.com", "user:bob@example.com"}, "condition": map[string]any{"expression": condition, "description": "kept"}},
 		{"members": []any{"user:bob@example.com"}, "condition": map[string]any{"expression": ""}},
 	}}
-	user := &asker{answer: confirmAnswer(true)}
+	user := &asker{answer: confirmAnswer(confirmChoiceApply)}
 	session := connectToPolicyServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
 
 	res := callExemptionTool(t, session, "revoke_masking_exemption", map[string]any{"project": "projects/hr", "member": "user:bob@example.com", "condition": condition})
 	require.False(t, res.IsError, resultText(t, res))
 	require.Equal(t, strings.Join([]string{
 		`Revoke masking exemption: "user:bob@example.com", as alice@example.com?`,
-		`Project "hr"`,
-		`Condition (2 entries) "(resource.instance_id == \"prod\" && resource.database_name == \"hr\")"`,
-		`Ends their bypass of any masking here, unless another exemption covers it.`,
+		`Database "hr" on instance "prod", all tables`,
+		`Ends their bypass of masking here, unless another exemption covers it.`,
 	}, "\n"), user.lastParams(t).Message)
+	require.Equal(t, "Removes the member from all 2 exemptions with this condition.", choiceDescription(t, user.lastParams(t)))
 	calls := mock.calls()
 	require.Len(t, calls, 1)
 	require.Equal(t, []any{
@@ -527,45 +627,87 @@ func TestRevokeMaskingExemptionChangesNothingUnlessConfirmed(t *testing.T) {
 	res := callExemptionTool(t, session, "revoke_masking_exemption", map[string]any{"project": "projects/hr", "member": "user:bob@example.com", "condition": ""})
 	require.False(t, res.IsError, resultText(t, res))
 	require.Contains(t, resultText(t, res), "The exemption for user:bob@example.com was not removed: the user declined, so nothing changed")
-	require.Contains(t, user.lastParams(t).Message, `Condition "" (all databases, no expiry)`)
+	require.Contains(t, user.lastParams(t).Message, `Project "hr": all databases, no expiry`)
 	require.Empty(t, mock.calls())
 }
 
-func TestRevokeMaskingExemptionShowsTheScopeBeforeTheExpiry(t *testing.T) {
-	ctx := withUserEmail(context.Background(), "alice@example.com")
+func TestRevokeMaskingExemptionNamesWhatItEnds(t *testing.T) {
 	for name, tc := range map[string]struct {
-		condition, want string
+		condition, scope, expiry string
 	}{
 		"the console's form": {
 			`request.time < timestamp("2026-10-27T00:00:00.000Z") && (resource.instance_id == "prod" && resource.database_name == "hr")`,
-			`Condition "resource.instance_id == \"prod\" && resource.database_name == \"hr\"", until "2026-10-27T00:00:00.000Z"`,
+			`Database "hr" on instance "prod", all tables`, "2026-10-27T00:00:00.000Z",
 		},
-		"an expiry only": {`request.time < timestamp("2026-10-27T00:00:00.000Z")`, `Condition "" (all databases), until "2026-10-27T00:00:00.000Z"`},
+		"an expiry only": {`request.time < timestamp("2026-10-27T00:00:00.000Z")`, `Project "hr": all databases, current and future`, "2026-10-27T00:00:00.000Z"},
+		"no condition":   {"", `Project "hr": all databases, no expiry`, ""},
+		"a grant's columns": {
+			`request.time < timestamp("2099-01-01T00:00:00.000Z") && (resource.instance_id == "prod" && resource.database_name == "hr" && resource.table_name == "employee" && resource.column_name in ["salary", "bonus"])`,
+			`Database "hr" on instance "prod", any schema, 2 columns in "employee": "salary", "bonus"`, "2099-01-01T00:00:00.000Z",
+		},
+		"a grant's one column": {
+			`(resource.instance_id == "prod" && resource.database_name == "hr" && resource.schema_name == "public" && resource.table_name == "employee" && resource.column_name == "salary")`,
+			`Database "hr" on instance "prod", column "salary" in "public"."employee"`, "",
+		},
+		"a grant's terms in another order": {
+			`(resource.database_name == "hr" && resource.instance_id == "prod")`,
+			"Project \"hr\": `(resource.database_name == \"hr\" && resource.instance_id == \"prod\")`", "",
+		},
 		"a column list": {
 			`request.time < timestamp("2026-10-27T00:00:00.000Z") && (resource.table_name == "employee" && resource.column_name in ["first_name", "last_name"])`,
-			`Condition "resource.table_name == \"employee\" && resource.column_name in [\"first_name\", \"last_name\"]", until "2026-10-27T00:00:00.000Z"`,
+			"Project \"hr\": `resource.table_name == \"employee\" && resource.column_name in [\"first_name\", \"last_name\"]`", "2026-10-27T00:00:00.000Z",
 		},
 		"an expiry last": {
 			`resource.database_name == "hr" && request.time < timestamp("2026-10-27T00:00:00.000Z")`,
-			`Condition "resource.database_name == \"hr\" && request.time < timestamp(\"2026-10-27T00:00:00.000Z\")"`,
+			"Project \"hr\": `resource.database_name == \"hr\" && request.time < timestamp(\"2026-10-27T00:00:00.000Z\")`", "",
 		},
 		"a top-level or": {
 			`request.time < timestamp("2026-10-27T00:00:00.000Z") && (resource.database_name == "hr") || (resource.database_name == "finance")`,
-			`Condition "request.time < timestamp(\"2026-10-27T00:00:00.000Z\") && (resource.database_name == \"hr\") || (resource.database_name == \"finance\")"`,
+			"Project \"hr\": `request.time < timestamp(\"2026-10-27T00:00:00.000Z\") && (resource.database_name == \"hr\") || (resource.database_name == \"finance\")`", "",
 		},
 		"single-quoted parentheses around a top-level or": {
 			`request.time < timestamp("2026-10-27T00:00:00.000Z") && (resource.table_name == '(') || (resource.database_name == ')')`,
-			`Condition "request.time < timestamp(\"2026-10-27T00:00:00.000Z\") && (resource.table_name == '(') || (resource.database_name == ')')"`,
+			"Project \"hr\": `request.time < timestamp(\"2026-10-27T00:00:00.000Z\") && (resource.table_name == '(') || (resource.database_name == ')')`", "",
 		},
 		"a parenthesis in a name": {
 			`request.time < timestamp("2026-10-27T00:00:00.000Z") && (resource.table_name == "a)b")`,
-			`Condition "resource.table_name == \"a)b\"", until "2026-10-27T00:00:00.000Z"`,
+			"Project \"hr\": `resource.table_name == \"a)b\"`", "2026-10-27T00:00:00.000Z",
 		},
-		"not CEL": {`((`, `Condition "(("`},
+		"not CEL": {`((`, "Project \"hr\": `((`", ""},
 	} {
 		t.Run(name, func(t *testing.T) {
-			lines := strings.Split(describeExemptionRevoke(ctx, RevokeMaskingExemptionInput{Project: "projects/hr", Member: "user:bob@example.com", Condition: tc.condition}, 1), "\n")
-			require.Equal(t, tc.want, lines[2])
+			scope, expiry := revokeScope(RevokeMaskingExemptionInput{Project: "projects/hr", Member: "user:bob@example.com", Condition: tc.condition})
+			require.Equal(t, tc.scope, scope)
+			require.Equal(t, tc.expiry, expiry)
+		})
+	}
+}
+
+// A removal states the exemption's expiry in the message when it fits, and
+// under the choice when it does not.
+func TestRevokeMaskingExemptionPutsTheExpiryWhereItFits(t *testing.T) {
+	for name, tc := range map[string]struct {
+		condition, inMessage, description string
+	}{
+		"a database": {
+			`request.time < timestamp("2099-01-01T00:00:00.000Z") && (resource.instance_id == "prod-pg" && resource.database_name == "hr_prod")`,
+			`until "2099-01-01T00:00:00.000Z"`, "",
+		},
+		"two columns of a table": {
+			`request.time < timestamp("2099-01-01T00:00:00.000Z") && (resource.instance_id == "inst-0123456789" && resource.database_name == "db-0123456789" && resource.table_name == "employee" && resource.column_name in ["salary", "bonus"])`,
+			`2 columns in "employee": "salary", "bonus"`, `It would expire "2099-01-01T00:00:00.000Z".`,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			mock := &policyMock{exemptions: []map[string]any{{"members": []any{"user:bob@example.com"}, "condition": map[string]any{"expression": tc.condition}}}}
+			user := &asker{answer: &mcp.ElicitResult{Action: "decline"}}
+			session := connectToPolicyServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
+			res := callExemptionTool(t, session, "revoke_masking_exemption", map[string]any{"project": "projects/hr", "member": "user:bob@example.com", "condition": tc.condition})
+			require.False(t, res.IsError, resultText(t, res))
+			asked := user.lastParams(t)
+			require.LessOrEqual(t, len(strings.Split(asked.Message, "\n")), messageLines, asked.Message)
+			require.Contains(t, unwrapMessage(asked.Message), tc.inMessage)
+			require.Equal(t, tc.description, choiceDescription(t, asked))
 		})
 	}
 }
@@ -583,7 +725,7 @@ func TestRevokeMaskingExemptionRefusesWithoutAMatch(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			mock := &policyMock{exemptions: tc.exemptions}
-			user := &asker{answer: confirmAnswer(true)}
+			user := &asker{answer: confirmAnswer(confirmChoiceApply)}
 			session := connectToPolicyServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
 			res := callExemptionTool(t, session, "revoke_masking_exemption", map[string]any{"project": "projects/hr", "member": "user:bob@example.com", "condition": `resource.database_name == "hr"`})
 			require.True(t, res.IsError)
@@ -600,53 +742,66 @@ func TestRevokeMaskingExemptionRefusesWithoutAMatch(t *testing.T) {
 	}
 }
 
+// unwrapMessage joins each continued line back to the line it continues.
+func unwrapMessage(message string) string {
+	return strings.ReplaceAll(message, "\n"+continuedLine, " ")
+}
+
 func TestMaskingExemptionFormsKeepAMemberOnItsLine(t *testing.T) {
 	ctx := withUserEmail(context.Background(), "alice@example.com")
 	forged := "user:bob@example.com\nInstance \"dev\"\nDatabase \"sandbox\", table \"t\""
-	for name, message := range map[string]string{
-		"grant":  describeExemptionGrant(ctx, &exemptionGrant{project: "projects/hr", member: forged}),
-		"revoke": describeExemptionRevoke(ctx, RevokeMaskingExemptionInput{Project: "projects/hr", Member: forged}, 1),
-	} {
-		view := claudeCodeView(message, 120)
-		require.Len(t, view, 4, "%s: %q", name, view)
-		require.Equal(t, `Project "hr"`, view[1], "%s: a line break in the member stays on line 1, escaped: %q", name, view)
+	grant, _ := describeExemptionGrant(ctx, &exemptionGrant{project: "projects/hr", member: forged})
+	revoke, _, _ := describeExemptionRevoke(ctx, RevokeMaskingExemptionInput{Project: "projects/hr", Member: forged})
+	for name, message := range map[string]string{"grant": grant, "revoke": revoke} {
+		lines := strings.Split(message, "\n")
+		require.Len(t, lines, 3, "%s: %q", name, lines)
+		require.True(t, strings.HasPrefix(lines[1], `Project "hr": all databases`), "%s: a line break in the member stays on line 1, escaped: %q", name, lines)
 	}
 }
 
-func TestMaskingExemptionFormsShowTheScopeInClaudeCodesDialog(t *testing.T) {
+// Every line fits the 70 columns a form shows, and a value too long for one
+// line continues on the next, so nothing is cut.
+func TestMaskingExemptionFormsShowEveryValueWhole(t *testing.T) {
 	ctx := withUserEmail(context.Background(), "alexander.smith@example.com")
+	long := "production-analytics-platform-west-2"
 	longest := strings.Repeat("x", 63)
-	grantView := func(g *exemptionGrant, columns int) []string {
-		return claudeCodeView(describeExemptionGrant(ctx, g), columns)
+	member := "serviceAccount:deploy@hr-analytics-prod.service.bytebase.com"
+	requireWhole := func(t *testing.T, message string, values ...string) {
+		t.Helper()
+		lines := strings.Split(message, "\n")
+		require.LessOrEqual(t, len(lines), messageLines, "%q", lines)
+		for _, line := range lines[1:] {
+			require.LessOrEqual(t, lineColumns(line), messageLineWidth, line)
+		}
+		for _, value := range values {
+			require.Contains(t, unwrapMessage(message), value)
+		}
 	}
-	for _, columns := range []int{80, 120} {
-		t.Run(fmt.Sprintf("%d columns", columns), func(t *testing.T) {
-			member := "serviceAccount:deploy@hr-analytics-prod.service.bytebase.com"
-			view := grantView(&exemptionGrant{project: "projects/hr", member: member, database: "d", instanceID: longest, databaseName: longest, table: "t", columns: []string{"c"}}, columns)
-			require.Len(t, view, 4, "%q", view)
-			require.True(t, strings.HasPrefix(view[0], fmt.Sprintf("Exempt %q", member)), "a %d-character member shows whole, its project included: %q", len(member), view)
-			require.Equal(t, fmt.Sprintf("Instance %q", longest), view[1], "the longest instance ID shows whole")
-			require.True(t, strings.HasPrefix(view[2], `Database "`+longest), "the longest PostgreSQL database name shows whole, and the narrowing after it is cut: %q", view)
-			require.True(t, strings.HasPrefix(view[3], "Bypasses masking here"), "%q", view)
-
-			west := grantView(&exemptionGrant{member: "user:bob@example.com", database: "d", instanceID: "production-analytics-platform-west", databaseName: "hr"}, columns)
-			east := grantView(&exemptionGrant{member: "user:bob@example.com", database: "d", instanceID: "production-analytics-platform-east", databaseName: "hr"}, columns)
-			require.NotEqual(t, west, east, "two instances that differ only at the end must not look the same")
-			prod := grantView(&exemptionGrant{member: "user:bob@example.com", database: "d", instanceID: longest, databaseName: "payroll_reporting_prod"}, columns)
-			test := grantView(&exemptionGrant{member: "user:bob@example.com", database: "d", instanceID: longest, databaseName: "payroll_reporting_test"}, columns)
-			require.NotEqual(t, prod, test, "two databases that differ only at the end must not look the same")
-
-			all := grantView(&exemptionGrant{project: "projects/" + longest, member: "user:bob@example.com", expireTime: "2026-10-27T00:00:00.000Z", note: strings.Repeat("r", 80)}, columns)
-			require.Len(t, all, 4, "%q", all)
-			require.Equal(t, fmt.Sprintf("Project %q", longest), all[1])
-			require.Equal(t, "Scope: all databases in the project, current and future", all[2])
-			require.True(t, strings.HasPrefix(all[3], `Bypasses masking here until "2026-10-27T00:00:00.000Z"; adds no masking.`), "the expiry and the no-setup clause show before the reason is cut: %q", all)
-
-			revoke := claudeCodeView(describeExemptionRevoke(ctx, RevokeMaskingExemptionInput{Project: "projects/" + longest, Member: "user:bob@example.com", Condition: strings.Repeat("c", 200)}, 3), columns)
-			require.Len(t, revoke, 4, "%q", revoke)
-			require.Equal(t, fmt.Sprintf("Project %q", longest), revoke[1])
-			require.True(t, strings.HasPrefix(revoke[2], "Condition (3 entries) \""), "%q", revoke)
-			require.NotContains(t, revoke[3], "…", "the effect line fits whole: %q", revoke)
+	for name, g := range map[string]*exemptionGrant{
+		"a long project, an expiry and a reason": {project: "projects/" + long, member: member, expireTime: "2026-10-27T00:00:00.000Z", note: strings.Repeat("r", 80)},
+		"a long database and a column":           {member: member, database: "d", instanceID: "prod-pg", databaseName: long, table: "employee", columns: []string{"birth_date"}},
+		"three columns": {member: member, database: "d", instanceID: "prod-pg", databaseName: "hr_prod", table: "employee",
+			columns: []string{"birth_date", "gender", "salary"}},
+	} {
+		t.Run(name, func(t *testing.T) {
+			message, fits := describeExemptionGrant(ctx, g)
+			require.True(t, fits, "%q", message)
+			requireWhole(t, message, exemptionScope(g))
+			require.NotContains(t, message, "rrr", "the reason goes to the description")
+			lines := strings.Split(message, "\n")
+			require.True(t, strings.HasPrefix(lines[len(lines)-1], "Bypasses masking") && strings.HasSuffix(lines[len(lines)-1], "adds no masking."),
+				"the effect takes one line: %q", lines)
 		})
 	}
+	revoke, _, fits := describeExemptionRevoke(ctx, RevokeMaskingExemptionInput{Project: "projects/hr", Member: member,
+		Condition: `request.time < timestamp("2026-10-27T00:00:00.000Z") && (resource.instance_id == "prod-pg" && resource.database_name == "hr_prod")`})
+	require.True(t, fits, "%q", revoke)
+	requireWhole(t, revoke, `Database "hr_prod" on instance "prod-pg", all tables, until "2026-10-27T00:00:00.000Z"`)
+
+	_, fits = describeExemptionGrant(ctx, &exemptionGrant{member: member, database: "d", instanceID: longest, databaseName: longest, table: "t", columns: []string{"c"}})
+	require.False(t, fits, "two 63-character names and a column need more lines than a form shows")
+	_, fits = describeExemptionGrant(ctx, &exemptionGrant{project: "projects/" + longest, member: member})
+	require.False(t, fits, "a 63-character project ID cannot share a line, so its scope needs three")
+	_, _, fits = describeExemptionRevoke(ctx, RevokeMaskingExemptionInput{Project: "projects/hr", Member: member, Condition: strings.Repeat("c", 200)})
+	require.False(t, fits, "a 200-character condition needs more lines than a form shows")
 }

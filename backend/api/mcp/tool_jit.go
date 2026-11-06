@@ -125,38 +125,40 @@ func (s *Server) handleSetJustInTimeAccess(ctx context.Context, req *mcp.CallToo
 		return result, output, nil
 	}
 
-	verb := "Turn " + change.state()
+	action := "Turn " + change.state()
 	return s.askToConfirm(ctx, change, digest[:], describeJustInTimeChange(ctx, change),
-		verb+" just-in-time access",
-		fmt.Sprintf("Check to turn %s just-in-time access in the project above. Leaving it unchecked, declining or cancelling changes nothing.", change.state()),
-	), nil, nil
+		confirmChoice{question: action + " just-in-time access?", action: action}), nil, nil
 }
 
-// describeJustInTimeChange builds the confirmation message. The project ID has
-// a line of its own: a resource ID is at most 63 characters, so "Project:" and
-// the quoted ID fit the 74 columns Claude Code shows of a line in an 80-column
-// terminal, and two IDs that differ only at the end stay distinguishable. It
-// enters through %q, so it cannot pose as a line of the message.
+// describeJustInTimeChange builds the confirmation message. A project ID is at
+// most 63 characters, so its line wraps at most once and the message always
+// fits a form. The ID enters through %q, so it cannot pose as a line of the
+// message.
 func describeJustInTimeChange(ctx context.Context, change *justInTimeChange) string {
 	question := fmt.Sprintf("Turn %s just-in-time access", change.state())
 	if email := getUserEmail(ctx); email != "" {
-		question += " as " + email
+		question += ", as " + email
 	}
 	projectID, _ := common.GetProjectID(change.project)
 	effect := "Active grants that have not expired apply again at once."
 	if !change.enabled {
-		effect = "Active grants here stop applying (not revoked); new requests are refused."
+		effect = "Grants here stop applying (not revoked), and new requests are refused."
 	}
-	return strings.Join([]string{question + "?", fmt.Sprintf("Project: %q", projectID), effect}, "\n")
+	lines, _ := fitMessage(question+"?", []formChange{{text: fmt.Sprintf("Project %q", projectID), effect: true}}, effect)
+	return strings.Join(lines, "\n")
 }
 
 // setJustInTimeAccessOnAnswer acts on the answer to a form this server sent. A
 // decline is reported before a change, so a user who said no is not asked again.
 func (s *Server) setJustInTimeAccessOnAnswer(ctx context.Context, change *justInTimeChange, reply *confirmationReply, link string) (*mcp.CallToolResult, any) {
-	if confirmed, why := confirmationOutcome(reply.response); !confirmed {
-		return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: fmt.Sprintf(
-			"Just-in-time access in %s was not turned %s: %s, so nothing changed. Do not retry unless the user asks.\nProject settings: %s",
-			change.project, change.state(), why, link)}}}, nil
+	confirmed, wantsChange, why := confirmationOutcome(reply.response)
+	if wantsChange {
+		return textResult(fmt.Sprintf("Just-in-time access in %s was not turned %s: %s. Ask them what to change, such as the project, then call set_just_in_time_access again.\nProject settings: %s",
+			change.project, change.state(), why, link)), nil
+	}
+	if !confirmed {
+		return textResult(fmt.Sprintf("Just-in-time access in %s was not turned %s: %s, so nothing changed. Do not retry unless the user asks.\nProject settings: %s",
+			change.project, change.state(), why, link)), nil
 	}
 	if why := reply.staleReason("what the user confirmed does not match this call"); why != "" {
 		return formatToolError(&toolError{

@@ -106,7 +106,7 @@ func callSetJustInTimeAccess(t *testing.T, session *mcp.ClientSession, enabled b
 
 func TestSetJustInTimeAccessTurnsItOnOnConfirmation(t *testing.T) {
 	mock := &projectMock{}
-	user := &asker{answer: confirmAnswer(true)}
+	user := &asker{answer: confirmAnswer(confirmChoiceApply)}
 	session := connectToProjectServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
 
 	res := callSetJustInTimeAccess(t, session, true)
@@ -114,15 +114,16 @@ func TestSetJustInTimeAccessTurnsItOnOnConfirmation(t *testing.T) {
 	require.Equal(t, int32(1), user.asked.Load())
 	asked := user.lastParams(t)
 	require.Equal(t, strings.Join([]string{
-		`Turn on just-in-time access as alice@example.com?`,
-		`Project: "hr"`,
+		`Turn on just-in-time access, as alice@example.com?`,
+		`Project "hr"`,
 		`Active grants that have not expired apply again at once.`,
 	}, "\n"), asked.Message)
 	schema, err := json.Marshal(asked.RequestedSchema)
 	require.NoError(t, err)
-	require.JSONEq(t, `{"type":"object","required":["confirm"],"properties":{"confirm":{"type":"boolean",
-		"title":"Turn on just-in-time access",
-		"description":"Check to turn on just-in-time access in the project above. Leaving it unchecked, declining or cancelling changes nothing."}}}`,
+	require.JSONEq(t, `{"type":"object","required":["choice"],"properties":{"choice":{"type":"string",
+		"title":"Turn on just-in-time access?",
+		"oneOf":[{"const":"apply","title":"Turn on"},{"const":"change","title":"Change it in chat"}],
+		"default":"apply"}}}`,
 		string(schema))
 
 	calls := mock.calls()
@@ -143,15 +144,15 @@ func TestSetJustInTimeAccessTurnsItOnOnConfirmation(t *testing.T) {
 
 func TestSetJustInTimeAccessSaysWhatTurningItOffDoes(t *testing.T) {
 	mock := &projectMock{enabled: true}
-	user := &asker{answer: confirmAnswer(true)}
+	user := &asker{answer: confirmAnswer(confirmChoiceApply)}
 	session := connectToProjectServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
 
 	res := callSetJustInTimeAccess(t, session, false)
 	require.False(t, res.IsError, resultText(t, res))
 	require.Equal(t, strings.Join([]string{
-		`Turn off just-in-time access as alice@example.com?`,
-		`Project: "hr"`,
-		`Active grants here stop applying (not revoked); new requests are refused.`,
+		`Turn off just-in-time access, as alice@example.com?`,
+		`Project "hr"`,
+		`Grants here stop applying (not revoked), and new requests are refused.`,
 	}, "\n"), user.lastParams(t).Message)
 	calls := mock.calls()
 	require.Len(t, calls, 1)
@@ -160,7 +161,7 @@ func TestSetJustInTimeAccessSaysWhatTurningItOffDoes(t *testing.T) {
 
 func TestSetJustInTimeAccessAsksNothingWhenAlreadySet(t *testing.T) {
 	mock := &projectMock{enabled: true}
-	user := &asker{answer: confirmAnswer(true)}
+	user := &asker{answer: confirmAnswer(confirmChoiceApply)}
 	session := connectToProjectServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
 
 	res := callSetJustInTimeAccess(t, session, true)
@@ -172,7 +173,7 @@ func TestSetJustInTimeAccessAsksNothingWhenAlreadySet(t *testing.T) {
 
 func TestSetJustInTimeAccessReportsASettingChangedWhileAsking(t *testing.T) {
 	mock := &projectMock{}
-	user := &asker{answer: confirmAnswer(true), whileAsked: func() { mock.set(true) }}
+	user := &asker{answer: confirmAnswer(confirmChoiceApply), whileAsked: func() { mock.set(true) }}
 	session := connectToProjectServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
 
 	res := callSetJustInTimeAccess(t, session, true)
@@ -186,9 +187,10 @@ func TestSetJustInTimeAccessChangesNothingUnlessConfirmed(t *testing.T) {
 		answer *mcp.ElicitResult
 		want   string
 	}{
-		"declined":           {&mcp.ElicitResult{Action: "decline"}, "the user declined"},
-		"cancelled":          {&mcp.ElicitResult{Action: "cancel"}, "the user cancelled"},
-		"accepted, unticked": {confirmAnswer(false), "the form was submitted without the confirmation checked"},
+		"declined":  {&mcp.ElicitResult{Action: "decline"}, "was not turned on: the user declined, so nothing changed. Do not retry unless the user asks."},
+		"cancelled": {&mcp.ElicitResult{Action: "cancel"}, "was not turned on: the user cancelled, so nothing changed"},
+		"changed in chat": {confirmAnswer(confirmChoiceChange),
+			"was not turned on: the user wants to change this request. Ask them what to change, such as the project, then call set_just_in_time_access again."},
 	} {
 		t.Run(name, func(t *testing.T) {
 			mock := &projectMock{}
@@ -197,7 +199,7 @@ func TestSetJustInTimeAccessChangesNothingUnlessConfirmed(t *testing.T) {
 
 			res := callSetJustInTimeAccess(t, session, true)
 			require.False(t, res.IsError, resultText(t, res))
-			require.Contains(t, resultText(t, res), "was not turned on: "+tc.want+", so nothing changed")
+			require.Contains(t, resultText(t, res), tc.want)
 			require.Empty(t, mock.calls())
 		})
 	}
@@ -217,7 +219,7 @@ func TestSetJustInTimeAccessRefusesAClientThatCannotConfirm(t *testing.T) {
 
 func TestSetJustInTimeAccessReportsTheRefusalInTheServersWords(t *testing.T) {
 	mock := &projectMock{refusal: "permission denied: bb.projects.update"}
-	session := connectToProjectServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{answer: confirmAnswer(true)}).handle})
+	session := connectToProjectServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{answer: confirmAnswer(confirmChoiceApply)}).handle})
 
 	res := callSetJustInTimeAccess(t, session, true)
 	require.True(t, res.IsError)
@@ -247,7 +249,7 @@ func TestSetJustInTimeAccessRefusesAnUnaskedAnswerFromAClientThatCannotConfirm(t
 	res, err := session.CallTool(ctx, &mcp.CallToolParams{
 		Name:           "set_just_in_time_access",
 		Arguments:      map[string]any{"project": "projects/hr", "enabled": true},
-		InputResponses: mcp.InputResponseMap{confirmDecisionRequestID: confirmAnswer(true)},
+		InputResponses: mcp.InputResponseMap{confirmDecisionRequestID: confirmAnswer(confirmChoiceApply)},
 	})
 	require.NoError(t, err)
 	require.True(t, res.IsError)
@@ -272,7 +274,7 @@ func TestSetJustInTimeAccessBindsTheAnswerToTheArguments(t *testing.T) {
 		require.NoError(t, err)
 		return res
 	}
-	accept := mcp.InputResponseMap{confirmDecisionRequestID: confirmAnswer(true)}
+	accept := mcp.InputResponseMap{confirmDecisionRequestID: confirmAnswer(confirmChoiceApply)}
 
 	first := call("projects/hr", true, nil, "")
 	require.True(t, first.NeedsInput())
@@ -290,7 +292,7 @@ func TestSetJustInTimeAccessBindsTheAnswerToTheArguments(t *testing.T) {
 
 func TestSetJustInTimeAccessRefusesAnInvalidProject(t *testing.T) {
 	mock := &projectMock{}
-	session := connectToProjectServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{answer: confirmAnswer(true)}).handle})
+	session := connectToProjectServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{answer: confirmAnswer(confirmChoiceApply)}).handle})
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 	for _, project := range []string{"hr", "projects/hr/issues/1", ""} {
@@ -312,12 +314,14 @@ func TestSetJustInTimeAccessFormShowsTheChangeInClaudeCodesDialog(t *testing.T) 
 		for _, columns := range []int{80, 120} {
 			t.Run(fmt.Sprintf("enabled %v at %d columns", enabled, columns), func(t *testing.T) {
 				change := &justInTimeChange{project: "projects/" + longestID, enabled: enabled}
-				view := claudeCodeView(describeJustInTimeChange(ctx, change), columns)
-				require.Len(t, view, 3, "%q", view)
+				message := describeJustInTimeChange(ctx, change)
+				view := claudeCodeView(message, columns)
+				require.LessOrEqual(t, len(view), messageLines, "%q", view)
+				for _, line := range view {
+					require.NotContains(t, line, "…", "no line is cut: %q", view)
+				}
 				require.True(t, strings.HasPrefix(view[0], fmt.Sprintf("Turn %s just-in-time access", change.state())), "%q", view)
-				require.Equal(t, fmt.Sprintf("Project: %q", longestID), view[1], "the longest project ID shows whole")
-				require.True(t, strings.HasPrefix(view[2], "Active grants"), "the effect: %q", view)
-				require.NotContains(t, view[2], "…", "the effect line must fit whole: %q", view)
+				require.Contains(t, unwrapMessage(message), fmt.Sprintf("Project %q", longestID), "the longest project ID shows whole")
 
 				west := claudeCodeView(describeJustInTimeChange(ctx, &justInTimeChange{project: "projects/production-analytics-platform-west", enabled: enabled}), columns)
 				east := claudeCodeView(describeJustInTimeChange(ctx, &justInTimeChange{project: "projects/production-analytics-platform-east", enabled: enabled}), columns)

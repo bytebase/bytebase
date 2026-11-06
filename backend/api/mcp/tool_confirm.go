@@ -15,11 +15,14 @@ import (
 )
 
 // confirmDecisionRequestID is the ID a confirmation is filed under, and
-// confirmDecisionField the form field it asks for. The client echoes both back,
-// so the two halves of one tool call must agree on them.
+// confirmChoiceField the form field it asks for, with confirmChoiceApply and
+// confirmChoiceChange its answers. The client echoes them back, so the two
+// halves of one tool call must agree on them.
 const (
 	confirmDecisionRequestID = "confirm"
-	confirmDecisionField     = "confirm"
+	confirmChoiceField       = "choice"
+	confirmChoiceApply       = "apply"
+	confirmChoiceChange      = "change"
 )
 
 // confirmationStatePurpose names this use of the server secret, so the key
@@ -48,23 +51,42 @@ func canShowConfirmation(req *mcp.CallToolRequest) bool {
 	return req != nil && req.Session != nil && clientSupportsElicitation(req.Session)
 }
 
+// confirmChoice is a confirmation form's one field: the question, the action
+// that makes the change, chosen when the form opens, and "Change it in chat".
+// description holds what the message leaves out, and is sent only when set.
+type confirmChoice struct {
+	question    string
+	action      string
+	description string
+}
+
+func (c confirmChoice) schema() map[string]any {
+	field := map[string]any{
+		"type":  "string",
+		"title": c.question,
+		"oneOf": []any{
+			map[string]any{"const": confirmChoiceApply, "title": c.action},
+			map[string]any{"const": confirmChoiceChange, "title": "Change it in chat"},
+		},
+		"default": confirmChoiceApply,
+	}
+	if c.description != "" {
+		field["description"] = c.description
+	}
+	return map[string]any{
+		"type":       "object",
+		"properties": map[string]any{confirmChoiceField: field},
+		"required":   []string{confirmChoiceField},
+	}
+}
+
 // askToConfirm returns the result that asks the user to confirm w. The SDK
 // elicits within this tools/call and re-invokes the handler with the answer
 // and the request state, the same multi round-trip shape as
 // elicitDatabaseChoice. A client on the 2026-07-28 protocol answers and echoes
 // the state itself.
-func (s *Server) askToConfirm(ctx context.Context, w confirmableWrite, digest []byte, message, title, description string) *mcp.CallToolResult {
-	return s.askWithForm(ctx, w, digest, message, map[string]any{
-		"type": "object",
-		"properties": map[string]any{
-			confirmDecisionField: map[string]any{
-				"type":        "boolean",
-				"title":       title,
-				"description": description,
-			},
-		},
-		"required": []string{confirmDecisionField},
-	})
+func (s *Server) askToConfirm(ctx context.Context, w confirmableWrite, digest []byte, message string, choice confirmChoice) *mcp.CallToolResult {
+	return s.askWithForm(ctx, w, digest, message, choice.schema())
 }
 
 // askWithForm is askToConfirm with a form the caller builds.
@@ -135,17 +157,22 @@ func (r *confirmationReply) staleReason(mismatch string) string {
 	}
 }
 
-// confirmationOutcome reports whether the answer confirms the write, and if
-// not, why, in words the result can carry.
-func confirmationOutcome(response mcp.InputResponse) (bool, string) {
+// confirmationOutcome reports whether the answer chose the form's action. When
+// it did not, change reports that the user chose to change the request in
+// chat, and why says what the answer was, in words the result can carry.
+func confirmationOutcome(response mcp.InputResponse) (confirmed, change bool, why string) {
 	content, accepted, why := acceptedForm(response)
 	if !accepted {
-		return false, why
+		return false, false, why
 	}
-	if confirmed, ok := content[confirmDecisionField].(bool); ok && confirmed {
-		return true, ""
+	switch content[confirmChoiceField] {
+	case confirmChoiceApply:
+		return true, false, ""
+	case confirmChoiceChange:
+		return false, true, "the user wants to change this request"
+	default:
+		return false, false, "the answer chose none of the form's choices"
 	}
-	return false, "the form was submitted without the confirmation checked"
 }
 
 // acceptedForm returns what an accepted form holds, or why the answer accepts
