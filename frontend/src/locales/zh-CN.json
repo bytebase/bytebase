@@ -455,6 +455,7 @@
       "mode-raw": "Raw CEL",
       "mode-selector": "选择器",
       "no-attributes": "无",
+      "selector-instructions": "优先生成可由选择器编辑的 CEL。支持的字段、值类型和操作模板（示例字面量仅为占位符）：{{capabilities}}。使用 &&、|| 和括号组合条件。选择器输出不能转换字段（如 lowerAscii()）、比较两个字段、调用任意函数，或返回独立常量和原始 CEL。只有支持 matches() 时，才使用等价的正则表达式实现不区分大小写的匹配。如果无法表达用户要求，请解释限制并询问如何继续，不要改变其含义。仅在允许时建议使用原始 CEL：{{allowRaw}}。",
       "starter": "请帮我为此编辑器编写 CEL 条件。先逐个提问以明确条件。模式：{{mode}}。可用属性：{{attributes}}。只能使用这些属性，不要检查数据或运行查询。准备好后，请解释条件并提供且仅提供一个 `cel` 代码块。不要声称已应用或保存；我会在应用前审核。",
       "unsaved": "应用会替换此未保存编辑器中的当前表达式，但不会保存规则。"
     },
@@ -3500,14 +3501,27 @@
       },
       "columns-to-mask": "要脱敏的列",
       "global-rules": {
+        "condition": "规则条件",
         "condition-order": "条件序列",
+        "create-rule": "创建规则",
+        "delete-rule": "删除规则",
         "delete-rule-tip": "删除这条规则？",
         "description": "使用全局规则批量脱敏，例如所有名为「电子邮件」的列将被脱敏成特定语义类型，并应用对应的脱敏算法。",
+        "edit-rule": "编辑 {{name}}",
+        "edit-rule-tooltip": "编辑规则",
         "error": {
           "invalid-condition": "规则的条件无效",
-          "missing-semantic-type": "需要指定语义类型"
+          "missing-semantic-type": "需要指定语义类型",
+          "save-failed": "无法保存更改。草稿已保留，请重试。"
         },
-        "re-order": "排序"
+        "move-down": "下移规则",
+        "move-up": "上移规则",
+        "name": "规则名称",
+        "re-order": "排序",
+        "rule-count": "规则（{{count}}）",
+        "save-order": "保存顺序",
+        "save-rule": "保存规则",
+        "semantic-type": "语义类型"
       },
       "grant-access": "授予访问权限",
       "mark-sensitive-data": "标记敏感数据",
