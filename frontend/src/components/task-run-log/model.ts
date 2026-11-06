@@ -879,9 +879,10 @@ export const buildReleaseFileGroups = (
 };
 
 // The executor's wrapper around a file's execution error
-// (runVersionedRelease in database_migrate_executor.go).
+// (runVersionedRelease in database_migrate_executor.go). The path stops at the
+// first version marker: the driver's message can quote SQL that contains one.
 const RELEASE_FILE_ERROR_RE =
-  /^failed to execute release file (.*) \(version ([^)]*)\): ([\s\S]*)$/;
+  /^failed to execute release file (.*?) \(version ([^)]*)\): ([\s\S]*)$/;
 
 export const parseReleaseFileError = (
   error: string
