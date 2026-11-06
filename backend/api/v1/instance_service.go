@@ -47,7 +47,6 @@ type InstanceService struct {
 }
 
 const (
-	connectionCategoryHeader             = "bytebase-connection-failure-category"
 	connectionCategoryNetworkUnreachable = "network_unreachable"
 	connectionCategoryAuthFailed         = "auth_failed"
 	connectionCategoryPermissionDenied   = "permission_denied"
@@ -67,7 +66,7 @@ func classifyConnectionFailure(err error) string {
 		if connectErr == nil {
 			return connectionCategorySuccess
 		}
-		if category := connectErr.Meta().Get(connectionCategoryHeader); category != "" {
+		if category := connectErr.Meta().Get(common.ConnectionFailureCategoryHeader); category != "" {
 			return category
 		}
 	}
@@ -116,7 +115,7 @@ func classifyConnectionFailure(err error) string {
 func newConnectionTestErrorWithCategory(code connect.Code, err error, format string, args ...any) *connect.Error {
 	category := classifyConnectionFailure(err)
 	connectErr := connect.NewError(code, errors.Wrapf(err, format, args...))
-	connectErr.Meta().Set(connectionCategoryHeader, category)
+	connectErr.Meta().Set(common.ConnectionFailureCategoryHeader, category)
 	return connectErr
 }
 

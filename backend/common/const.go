@@ -20,6 +20,11 @@ const (
 	ReservedTagReviewConfig string = "bb.tag.review_config"
 )
 
+// ConnectionFailureCategoryHeader is the response header in which a failed
+// instance connection test names its failure category, such as "auth_failed".
+// Only a connection test sets it.
+const ConnectionFailureCategoryHeader = "bytebase-connection-failure-category"
+
 const (
 	// defaultProjectPrefix is the prefix for the default project resource ID.
 	// Each workspace has its own default project: "default-{workspaceID}".
