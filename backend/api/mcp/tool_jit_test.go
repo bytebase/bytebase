@@ -315,6 +315,9 @@ func TestSetJustInTimeAccessFormShowsTheChangeInClaudeCodesDialog(t *testing.T) 
 			t.Run(fmt.Sprintf("enabled %v at %d columns", enabled, columns), func(t *testing.T) {
 				change := &justInTimeChange{project: "projects/" + longestID, enabled: enabled}
 				message := describeJustInTimeChange(ctx, change)
+				for _, line := range strings.Split(message, "\n")[1:] {
+					require.LessOrEqual(t, lineColumns(line), messageLineWidth, line)
+				}
 				view := claudeCodeView(message, columns)
 				require.LessOrEqual(t, len(view), messageLines, "%q", view)
 				for _, line := range view {
