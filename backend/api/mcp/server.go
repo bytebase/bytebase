@@ -60,6 +60,10 @@ type Server struct {
 	// planCheckPollBudgetOverride lets tests shorten the plan-check poll budget.
 	// Zero means use the default (planCheckPollBudget).
 	planCheckPollBudgetOverride time.Duration
+
+	// internalAPITimeoutOverride lets tests shorten the bound on one internal
+	// API call. Zero means use the default (internalAPITimeout).
+	internalAPITimeoutOverride time.Duration
 }
 
 type serverStore interface {

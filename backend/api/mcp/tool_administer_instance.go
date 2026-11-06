@@ -145,15 +145,12 @@ func (s *Server) administerInstance(ctx context.Context, req *mcp.CallToolReques
 		}), nil, nil
 	}
 	resp, err = s.sendInstanceCreation(confirmedCtx, change.request)
-	if why := refusal(resp, err); why != "" {
-		return formatToolError(errors.Errorf("failed to add the instance: %s", why)), nil, nil
-	}
-	created := &v1pb.Instance{}
-	if err := common.ProtojsonUnmarshaler.Unmarshal(resp.Body, created); err != nil {
-		return formatToolError(errors.Wrap(err, "the instance was added, but the response could not be read")), nil, nil
+	instanceLink := s.consoleLink(ctx, change.confirmedResource())
+	created, err := s.createdInstance(ctx, change, resp, err, instanceLink)
+	if err != nil {
+		return formatToolError(err), nil, nil
 	}
 	text := s.instanceAddedText(ctx, change, created, maskingSkips)
-	instanceLink := s.consoleLink(ctx, change.confirmedResource())
 	return textResult(text), &AdministerWorkspaceOutput{OperationID: input.OperationID, Changed: true, Message: text, Link: instanceLink}, nil
 }
 
@@ -163,6 +160,57 @@ func (s *Server) sendInstanceCreation(ctx context.Context, request *v1pb.CreateI
 		return nil, errors.Wrap(err, "failed to build the request")
 	}
 	return s.apiRequest(ctx, v1connect.InstanceServiceCreateInstanceProcedure, json.RawMessage(body))
+}
+
+// createdInstance is the instance the create added. The create stores the
+// instance before it syncs it, so a call that times out or fails with a 5xx
+// may still have added it, and the instance is read back. Its data source's ID
+// is a new UUID per request, so a match shows this request added it.
+func (s *Server) createdInstance(ctx context.Context, c *instanceCreation, resp *apiResponse, sendErr error, link string) (*v1pb.Instance, error) {
+	why := refusal(resp, sendErr)
+	if why == "" {
+		created := &v1pb.Instance{}
+		if err := common.ProtojsonUnmarshaler.Unmarshal(resp.Body, created); err != nil {
+			return nil, errors.Wrap(err, "the instance was added, but the response could not be read")
+		}
+		return created, nil
+	}
+	if sendErr == nil && resp.Status < http.StatusInternalServerError {
+		return nil, errors.Errorf("failed to add the instance: %s", why)
+	}
+	read, err := s.apiRequest(ctx, v1connect.InstanceServiceGetInstanceProcedure, map[string]string{"name": c.confirmedResource()})
+	switch {
+	case err == nil && read.Status == http.StatusOK:
+		found := &v1pb.Instance{}
+		if common.ProtojsonUnmarshaler.Unmarshal(read.Body, found) != nil {
+			break
+		}
+		if addedByThisRequest(found, c) {
+			return found, nil
+		}
+		return nil, errors.Errorf("failed to add the instance: instance ID %q already belongs to another instance, so no instance was added", c.request.GetInstanceId())
+	// After a 5xx the create has returned, so no part of it is still running;
+	// after a timeout it may be.
+	case err == nil && read.Status == http.StatusNotFound && sendErr == nil:
+		return nil, errors.Errorf("failed to add the instance: %s", why)
+	}
+	return nil, &toolError{
+		Code:       "ADD_UNCONFIRMED",
+		Message:    fmt.Sprintf("the create did not finish (%s), and Bytebase could not confirm whether instance %q was added", why, c.request.GetInstanceId()),
+		Suggestion: "check the instance page before trying again, since adding the same server under another ID makes a second instance: " + link,
+	}
+}
+
+func addedByThisRequest(found *v1pb.Instance, c *instanceCreation) bool {
+	if found.GetState() != v1pb.State_ACTIVE {
+		return false
+	}
+	for _, ds := range found.GetDataSources() {
+		if ds.GetType() == v1pb.DataSourceType_ADMIN {
+			return ds.GetId() == c.dataSource().GetId()
+		}
+	}
+	return false
 }
 
 // refusal says why a call failed, as the handler or the transport states it,

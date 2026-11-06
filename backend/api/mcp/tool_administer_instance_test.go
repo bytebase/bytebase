@@ -80,10 +80,59 @@ type instanceMock struct {
 	// maskingSkips is what the license says of an instance that is not
 	// activated: whether masking would skip it.
 	maskingSkips bool
+	// createFails, when set, is how the create fails after a passing test.
+	createFails createFailure
+	// release ends a create that runs past its caller's deadline, as a sync
+	// that has not yet noticed the cancellation.
+	release  chan struct{}
+	creating bool
+	// stored is the instance a read finds: the one the create stored, or one
+	// that held the ID before. readStatus, when set, is the status a read
+	// answers with instead.
+	stored            *v1pb.Instance
+	readStatus        int
+	reads             int
+	readWhileCreating bool
 }
 
+// createFailure is how a create fails after its connection test passed: with a
+// 5xx, or by running past the caller's deadline, before or after it stores the
+// instance.
+type createFailure int
+
+const (
+	createFails500BeforeStore createFailure = iota + 1
+	createFails500AfterStore
+	createTimesOutBeforeStore
+	createTimesOutAfterStore
+)
+
 func newInstanceMock() *instanceMock {
-	return &instanceMock{environments: []string{"test", "prod"}, maskingSkips: true}
+	return &instanceMock{environments: []string{"test", "prod"}, maskingSkips: true, release: make(chan struct{})}
+}
+
+// storedInstance is the instance a create stores for body, before any sync, as
+// a read returns it: the request's instance, active, with no password.
+func storedInstance(body map[string]any) *v1pb.Instance {
+	encoded, _ := json.Marshal(body)
+	request := &v1pb.CreateInstanceRequest{}
+	_ = common.ProtojsonUnmarshaler.Unmarshal(encoded, request)
+	instance := request.GetInstance()
+	instance.Name, instance.State = journeyOneInstance, v1pb.State_ACTIVE
+	for _, ds := range instance.GetDataSources() {
+		ds.Password = ""
+	}
+	return instance
+}
+
+// runPastTheDeadline keeps the create running, without the lock, until the test
+// releases it.
+func (m *instanceMock) runPastTheDeadline() {
+	m.creating = true
+	m.mu.Unlock()
+	<-m.release
+	m.mu.Lock()
+	m.creating = false
 }
 
 func (m *instanceMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -130,15 +179,53 @@ func (m *instanceMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			refuse(m.createRefusal, "already_exists", `instance ID "hr-staging" already exists`)
 			return
 		}
+		switch m.createFails {
+		case createFails500BeforeStore:
+			refuse(http.StatusInternalServerError, "internal", "failed to count the instances")
+			return
+		case createTimesOutBeforeStore:
+			m.runPastTheDeadline()
+			return
+		case createFails500AfterStore:
+			m.stored = storedInstance(call.body)
+			refuse(http.StatusInternalServerError, "internal", "the instance sync panicked")
+			return
+		case createTimesOutAfterStore:
+			m.stored = storedInstance(call.body)
+			m.runPastTheDeadline()
+			return
+		}
 		created := &v1pb.Instance{Name: journeyOneInstance, Title: "HR Staging", Engine: v1pb.Engine_POSTGRES, Activation: !m.inactive}
 		if !m.unsynced {
 			created.LastSyncTime = timestamppb.New(time.Date(2026, 11, 6, 9, 0, 0, 0, time.UTC))
 		}
 		body, _ := protojson.Marshal(created)
 		_, _ = w.Write(body)
+	case v1connect.InstanceServiceGetInstanceProcedure:
+		m.reads++
+		m.readWhileCreating = m.readWhileCreating || m.creating
+		var read struct {
+			Name string `json:"name"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&read)
+		switch {
+		case m.readStatus != 0:
+			refuse(m.readStatus, "internal", "the instance read failed")
+		case m.stored == nil || read.Name != journeyOneInstance:
+			refuse(http.StatusNotFound, "not_found", fmt.Sprintf("instance %q not found", read.Name))
+		default:
+			body, _ := protojson.Marshal(m.stored)
+			_, _ = w.Write(body)
+		}
 	default:
 		w.WriteHeader(http.StatusNotFound)
 	}
+}
+
+func (m *instanceMock) readCount() (reads int, whileCreating bool) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.reads, m.readWhileCreating
 }
 
 func (m *instanceMock) calls() []approvalCall {
@@ -739,7 +826,77 @@ func TestAdministerInstanceReportsEachRefusalAsTheHandlerStatesIt(t *testing.T) 
 		require.True(t, res.IsError)
 		require.Equal(t, `failed to add the instance: HTTP 409: instance ID "hr-staging" already exists`, resultText(t, res))
 		require.Len(t, mock.calls(), 2)
+		reads, _ := mock.readCount()
+		require.Zero(t, reads, "a refusal of the request is no uncertain outcome")
 	})
+}
+
+func TestAdministerInstanceReadsBackACreateThatDidNotFinish(t *testing.T) {
+	added := "Added: instance \"hr-staging\" in project \"hr\", environment \"test\". " +
+		"Bytebase has not synced its databases yet; the instance page shows the sync.\n" +
+		"Instance: https://bb.example.com/" + journeyOneInstance
+	held := func(edit func(*v1pb.Instance)) *v1pb.Instance {
+		instance := storedInstance(instanceBody(t, nil))
+		edit(instance)
+		return instance
+	}
+	for name, tc := range map[string]struct {
+		fails      createFailure
+		heldBefore *v1pb.Instance
+		readStatus int
+		// want is the result text when the instance was added, and wantError
+		// the error otherwise.
+		want, wantError string
+	}{
+		"a timeout after the store, with the create still running": {fails: createTimesOutAfterStore, want: added},
+		"a 5xx after the store": {fails: createFails500AfterStore, want: added},
+		"a 5xx before the store": {
+			fails:     createFails500BeforeStore,
+			wantError: "failed to add the instance: HTTP 500: failed to count the instances",
+		},
+		"a timeout before the store": {fails: createTimesOutBeforeStore, wantError: "ADD_UNCONFIRMED"},
+		"a read that fails":          {fails: createFails500AfterStore, readStatus: http.StatusInternalServerError, wantError: "ADD_UNCONFIRMED"},
+		"an ID that another instance holds": {
+			fails:      createFails500BeforeStore,
+			heldBefore: held(func(instance *v1pb.Instance) { instance.DataSources[0].Id = "admin" }),
+			wantError:  `failed to add the instance: instance ID "hr-staging" already belongs to another instance, so no instance was added`,
+		},
+		"an ID that a deleted instance holds, with the same data source ID": {
+			fails:      createFails500BeforeStore,
+			heldBefore: held(func(instance *v1pb.Instance) { instance.State = v1pb.State_DELETED }),
+			wantError:  `failed to add the instance: instance ID "hr-staging" already belongs to another instance, so no instance was added`,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			mock := newInstanceMock()
+			mock.createFails = tc.fails
+			mock.stored = tc.heldBefore
+			mock.readStatus = tc.readStatus
+			s, session := connectToInstanceServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{answer: adminAnswer(adminChoiceApply)}).handle})
+			s.internalAPITimeoutOverride = 200 * time.Millisecond
+			// Registered last, so it runs first and ends a create still running.
+			t.Cleanup(func() { close(mock.release) })
+
+			res := callAdminister(t, session, instanceParams(instanceBody(t, nil)))
+			reads, whileCreating := mock.readCount()
+			require.Equal(t, 1, reads)
+			if tc.fails == createTimesOutAfterStore {
+				require.True(t, whileCreating, "the read must not wait for the create")
+			}
+			if tc.want != "" {
+				require.False(t, res.IsError, resultText(t, res))
+				require.Equal(t, tc.want, resultText(t, res))
+				return
+			}
+			require.True(t, res.IsError, resultText(t, res))
+			require.Contains(t, resultText(t, res), tc.wantError)
+			if tc.wantError == "ADD_UNCONFIRMED" {
+				refusal := resultToolError(t, res)
+				require.Contains(t, refusal.Message, `could not confirm whether instance "hr-staging" was added`)
+				require.Contains(t, refusal.Suggestion, "https://bb.example.com/"+journeyOneInstance)
+			}
+		})
+	}
 }
 
 func TestAdministerInstanceReportsWhatTheCreateLeft(t *testing.T) {
