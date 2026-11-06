@@ -474,6 +474,10 @@ func TestMaskingExemptionToolsRefuseAFormTooLongBeforeAsking(t *testing.T) {
 			"project": "projects/hr", "member": "user:bob@example.com", "database": "instances/" + longest + "/databases/" + longest,
 			"table": "employee", "columns": []string{"birth_date", "gender"},
 		}, tooManyLines, "grant it signed in to the Bytebase console: https://bb.example.com/projects/hr/masking-exemption"},
+		"a grant naming a column too long for a form even alone": {"grant_masking_exemption", map[string]any{
+			"project": "projects/hr", "member": "user:bob@example.com", "database": "instances/prod/databases/hr",
+			"table": "t", "columns": []string{"a", strings.Repeat("c", 128)},
+		}, tooManyLines, "grant it signed in to the Bytebase console: https://bb.example.com/projects/hr/masking-exemption"},
 		"a grant to a member too long for the question": {"grant_masking_exemption", map[string]any{
 			"project": "projects/hr", "member": "user:" + strings.Repeat("m", 50) + "@example.com", "database": "instances/prod/databases/hr",
 		}, memberTooLong, "grant it signed in to the Bytebase console: https://bb.example.com/projects/hr/masking-exemption"},
@@ -687,9 +691,13 @@ func TestRevokeMaskingExemptionNamesWhatItEnds(t *testing.T) {
 			"Project \"hr\": `resource.table_name == \"a)b\"`", "2026-10-27T00:00:00.000Z",
 		},
 		"not CEL": {`((`, "Project \"hr\": `((`", ""},
-		"an empty list": {
+		"an empty list of tables": {
 			`(resource.instance_id == "prod" && resource.database_name == "hr" && resource.table_name in [])`,
 			"Project \"hr\": `(resource.instance_id == \"prod\" && resource.database_name == \"hr\" && resource.table_name in [])`", "",
+		},
+		"an empty list of columns": {
+			`(resource.instance_id == "prod" && resource.database_name == "hr" && resource.table_name == "t" && resource.column_name in [])`,
+			"Project \"hr\": `(resource.instance_id == \"prod\" && resource.database_name == \"hr\" && resource.table_name == \"t\" && resource.column_name in [])`", "",
 		},
 		"one column in a list": {
 			`(resource.instance_id == "prod" && resource.database_name == "hr" && resource.table_name == "t" && resource.column_name in ["salary"])`,
