@@ -455,6 +455,7 @@
       "mode-raw": "CEL thô",
       "mode-selector": "bộ chọn",
       "no-attributes": "không có",
+      "selector-instructions": "Ưu tiên CEL tương thích với bộ chọn. Các trường, kiểu giá trị và mẫu phép toán được hỗ trợ (giá trị ví dụ chỉ là chỗ giữ chỗ): {{capabilities}}. Kết hợp điều kiện bằng &&, || và dấu ngoặc. Với đầu ra cho bộ chọn, không biến đổi trường (như lowerAscii()), so sánh các trường với nhau, dùng hàm tùy ý hoặc trả về hằng số độc lập hay CEL thô. Để so khớp không phân biệt hoa thường, chỉ dùng mẫu matches() tương đương nếu được hỗ trợ. Nếu không thể biểu diễn yêu cầu, hãy giải thích giới hạn và hỏi cách tiếp tục mà không đổi ý nghĩa. Chỉ đề xuất CEL thô nếu được phép: {{allowRaw}}.",
       "starter": "Hãy giúp tôi viết điều kiện CEL cho trình chỉnh sửa này. Trước tiên, hãy hỏi để làm rõ, mỗi lần một câu. Chế độ: {{mode}}. Thuộc tính có thể dùng: {{attributes}}. Chỉ dùng các thuộc tính này, không kiểm tra dữ liệu hoặc chạy truy vấn. Khi sẵn sàng, hãy giải thích điều kiện và cung cấp đúng một khối mã `cel`. Không nói rằng biểu thức đã được áp dụng hoặc lưu; tôi sẽ xem lại trước khi áp dụng.",
       "unsaved": "Thao tác thay thế biểu thức hiện tại trong trình chỉnh sửa chưa lưu này, không lưu quy tắc."
     },
@@ -3199,6 +3200,10 @@
           "refused": "Không được phép"
         },
         "row": {
+          "add-instances": {
+            "details": "Thêm vào một dự án một phiên bản PostgreSQL đăng nhập bằng tên người dùng và mật khẩu · Mỗi phiên bản được xác nhận trong ứng dụng MCP của người dùng trước khi được thêm · Các cơ sở dữ liệu của nó thuộc về dự án đó vĩnh viễn",
+            "title": "Thêm phiên bản vào dự án"
+          },
           "approval-rules": {
             "details": "Thêm, xóa, sắp xếp lại hoặc thay đổi các quy tắc quyết định ai phê duyệt một thay đổi cơ sở dữ liệu · Mỗi thay đổi được xác nhận trong ứng dụng MCP của người dùng trước khi được thực hiện · Quy tắc dự phòng và quy tắc cho các loại Issue khác giữ nguyên",
             "title": "Quản lý quy tắc phê duyệt thay đổi cơ sở dữ liệu"
@@ -3504,14 +3509,27 @@
       },
       "columns-to-mask": "Các cột cần che",
       "global-rules": {
+        "condition": "Điều kiện quy tắc",
         "condition-order": "Thứ tự điều kiện",
+        "create-rule": "Tạo quy tắc",
+        "delete-rule": "Xóa quy tắc",
         "delete-rule-tip": "Xóa quy tắc này?",
         "description": "Sử dụng quy tắc toàn cục để áp dụng che giấu hàng loạt, ví dụ: tất cả các cột có tên là \"email\" sẽ được che bằng loại ngữ nghĩa cụ thể và áp dụng thuật toán che.",
+        "edit-rule": "Chỉnh sửa {{name}}",
+        "edit-rule-tooltip": "Chỉnh sửa quy tắc",
         "error": {
           "invalid-condition": "Điều kiện không hợp lệ",
-          "missing-semantic-type": "Kiểu ngữ nghĩa là bắt buộc"
+          "missing-semantic-type": "Kiểu ngữ nghĩa là bắt buộc",
+          "save-failed": "Không thể lưu thay đổi. Bản nháp được giữ lại; hãy thử lại."
         },
-        "re-order": "Sắp xếp lại"
+        "move-down": "Di chuyển quy tắc xuống",
+        "move-up": "Di chuyển quy tắc lên",
+        "name": "Tên quy tắc",
+        "re-order": "Sắp xếp lại",
+        "rule-count": "Quy tắc ({{count}})",
+        "save-order": "Lưu thứ tự",
+        "save-rule": "Lưu quy tắc",
+        "semantic-type": "Kiểu ngữ nghĩa"
       },
       "grant-access": "Cấp Quyền truy cập",
       "mark-sensitive-data": "Đánh dấu dữ liệu nhạy cảm",

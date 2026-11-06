@@ -9,6 +9,11 @@ import { FeatureAttention } from "@/components/FeatureAttention";
 import { LearnMoreLink } from "@/components/LearnMoreLink";
 import { Button } from "@/components/ui/button";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   WorkspacePageInfo,
   WorkspacePageLayout,
   WorkspacePageToolbar,
@@ -305,7 +310,7 @@ export function DataClassificationPage() {
       />
 
       <WorkspacePageToolbar align="end">
-        <div className="flex items-center justify-end gap-x-2 shrink-0">
+        <div className="flex min-w-0 max-w-full flex-wrap items-center justify-end gap-2">
           <AgentPageHelpButton />
           {allowEdit && (
             <>
@@ -336,19 +341,25 @@ export function DataClassificationPage() {
               ) : (
                 <>
                   {!emptyConfig && (
-                    <div className="relative">
-                      {showClearConfirm ? (
-                        <div className="flex items-center gap-x-2">
-                          <span className="text-sm text-control">
-                            {t("bbkit.confirm-button.sure-to-delete")}
-                          </span>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={onClear}
-                          >
-                            {t("common.clear")}
-                          </Button>
+                    <Popover
+                      open={showClearConfirm}
+                      onOpenChange={setShowClearConfirm}
+                    >
+                      <PopoverTrigger
+                        render={<Button appearance="outline" />}
+                        disabled={!hasClassificationFeature}
+                      >
+                        <Trash2 className="w-4 h-4 mr-1" />
+                        {t("common.clear")}
+                      </PopoverTrigger>
+                      <PopoverContent
+                        aria-label={t("common.clear")}
+                        className="w-max max-w-[calc(100vw-2rem)]"
+                      >
+                        <p className="text-sm mb-2">
+                          {t("bbkit.confirm-button.sure-to-delete")}
+                        </p>
+                        <div className="flex justify-end gap-x-2">
                           <Button
                             appearance="outline"
                             size="sm"
@@ -356,18 +367,16 @@ export function DataClassificationPage() {
                           >
                             {t("common.cancel")}
                           </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={onClear}
+                          >
+                            {t("common.clear")}
+                          </Button>
                         </div>
-                      ) : (
-                        <Button
-                          appearance="outline"
-                          disabled={!hasClassificationFeature}
-                          onClick={() => setShowClearConfirm(true)}
-                        >
-                          <Trash2 className="w-4 h-4 mr-1" />
-                          {t("common.clear")}
-                        </Button>
-                      )}
-                    </div>
+                      </PopoverContent>
+                    </Popover>
                   )}
                   <Button
                     disabled={!hasClassificationFeature}

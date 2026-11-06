@@ -371,7 +371,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 	if req.Msg.Instance == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("instance must be set"))
 	}
-	if !isValidResourceID(req.Msg.InstanceId) {
+	if !common.IsValidResourceID(req.Msg.InstanceId) {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid instance ID %v", req.Msg.InstanceId))
 	}
 

@@ -24,6 +24,7 @@ import {
   GetSettingRequestSchema,
   Setting_SettingName,
 } from "@/types/proto-es/v1/setting_service_pb";
+import { getSemanticTypeListWithBuiltins } from "@/types/semanticTypes";
 import type { AgentPageResource } from "../chatContext";
 import type { AgentHandoff } from "../types";
 
@@ -149,19 +150,37 @@ function summarizeExemptionPolicy(
   };
 }
 
+function summarizeSemanticTypeAlgorithm(id: string, algorithm?: Algorithm) {
+  // Built-in IDs use dedicated runtime maskers, not their stored algorithm.
+  if (id === "bb.default") {
+    return { kind: "default-full-mask", substitution: "******" };
+  }
+  if (id === "bb.default-partial") {
+    return {
+      kind: "default-partial-mask",
+      stringAndBytes: {
+        visiblePortion: "length-dependent middle portion",
+        prefix: "**",
+        suffix: "**",
+      },
+    };
+  }
+  return summarizeAlgorithm(algorithm);
+}
+
 function summarizeSemanticTypes(
   setting: Awaited<ReturnType<typeof getSetting>>
 ) {
   const value = setting?.value?.value;
   if (value?.case !== "semanticType") return unavailable;
-  const types = value.value.types;
+  const types = getSemanticTypeListWithBuiltins(value.value.types);
   return {
     status: "available" as const,
     types: types.slice(0, MAX_POLICY_ITEMS).map((type) => ({
       id: boundedText(type.id),
       title: boundedText(type.title),
       description: boundedText(type.description),
-      algorithm: summarizeAlgorithm(type.algorithm),
+      algorithm: summarizeSemanticTypeAlgorithm(type.id, type.algorithm),
     })),
     totalTypes: types.length,
     truncated: types.length > MAX_POLICY_ITEMS,

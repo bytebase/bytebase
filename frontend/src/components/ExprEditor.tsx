@@ -42,6 +42,7 @@ import type {
   LogicalOperator,
   Operator,
   RawStringExpr,
+  SimpleExpr,
 } from "@/modules/cel";
 import {
   buildCELExpr,
@@ -61,6 +62,7 @@ import {
   resolveCELExpr,
   wrapAsGroup,
 } from "@/modules/cel";
+import { buildSelectorCapabilities } from "@/modules/cel/logic/agentPrompt";
 import { environmentNamePrefix } from "@/stores/modules/v1/common";
 import { getDefaultPagination } from "@/utils";
 import { CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID } from "@/utils/cel-attributes";
@@ -76,17 +78,29 @@ export type { OptionConfig } from "@/utils/expr";
 // Helpers
 // ============================================================
 
-function factorText(factor: Factor, t: TFunction): string {
-  const key = `cel.factor.${factor.replace(/\./g, "_")}`;
-  const translated = t(key);
-  return translated === key ? factor : translated;
-}
-
 function getOperatorListByFactor(
   factor: Factor,
   overrideMap?: Map<Factor, Operator[]>
 ): Operator[] {
   return overrideMap?.get(factor) ?? getRawOperatorListByFactor(factor);
+}
+
+function canRenderAsSelector(
+  expr: SimpleExpr,
+  factors: Factor[],
+  overrideMap?: Map<Factor, Operator[]>
+): boolean {
+  if (isConditionGroupExpr(expr)) {
+    return expr.args.every((arg) =>
+      canRenderAsSelector(arg, factors, overrideMap)
+    );
+  }
+  if (!isConditionExpr(expr)) return false;
+  const factor = expr.args[0];
+  return (
+    factors.includes(factor) &&
+    getOperatorListByFactor(factor, overrideMap).includes(expr.operator)
+  );
 }
 
 function getDefaultValue(
@@ -871,7 +885,6 @@ function FactorSelect({
   groupPath: Path;
   operandIndex: number;
 }) {
-  const { t } = useTranslation();
   const {
     readonly,
     factorList,
@@ -917,17 +930,15 @@ function FactorSelect({
         });
       }}
     >
-      <SelectTrigger className="shrink-0">
-        <SelectValue>
-          {(value: string | null) =>
-            value ? factorText(value as Factor, t) : null
-          }
+      <SelectTrigger className="min-w-0 max-w-full flex-1 basis-32">
+        <SelectValue className="truncate">
+          {(value: string | null) => value}
         </SelectValue>
       </SelectTrigger>
       <SelectContent>
         {factorList.map((f) => (
           <SelectItem key={f} value={f}>
-            {factorText(f, t)}
+            {f}
           </SelectItem>
         ))}
       </SelectContent>
@@ -1256,11 +1267,31 @@ function ConditionRow({
   groupPath: Path;
   operandIndex: number;
 }) {
+  const { t } = useTranslation();
   const { readonly } = useExprEditorCtx();
   const doUpdate = useImmutableUpdate(groupPath);
+  const deleteButton = !readonly && (
+    <Button
+      type="button"
+      appearance="secondary"
+      size="sm"
+      aria-label={t("common.delete")}
+      className="shrink-0 text-control-placeholder hover:text-control hover:bg-control-bg"
+      onClick={() =>
+        doUpdate((group) => {
+          group.args.splice(operandIndex, 1);
+        })
+      }
+    >
+      <Trash2 className="size-4" />
+    </Button>
+  );
+  const valueInput = (
+    <ValueInput expr={expr} groupPath={groupPath} operandIndex={operandIndex} />
+  );
 
   return (
-    <div className="w-full flex items-center gap-x-1">
+    <div className="flex w-full min-w-0 flex-wrap items-center gap-2">
       <FactorSelect
         expr={expr}
         groupPath={groupPath}
@@ -1271,28 +1302,10 @@ function ConditionRow({
         groupPath={groupPath}
         operandIndex={operandIndex}
       />
-      <div className="w-56 shrink-0">
-        <ValueInput
-          expr={expr}
-          groupPath={groupPath}
-          operandIndex={operandIndex}
-        />
+      <div className="flex min-w-0 flex-1 basis-48 items-center gap-2">
+        <div className="min-w-0 flex-1">{valueInput}</div>
+        {deleteButton}
       </div>
-      {!readonly && (
-        <Button
-          type="button"
-          appearance="secondary"
-          size="sm"
-          className="shrink-0 text-control-placeholder hover:text-control hover:bg-control-bg"
-          onClick={() =>
-            doUpdate((group) => {
-              group.args.splice(operandIndex, 1);
-            })
-          }
-        >
-          <Trash2 className="size-3.5" />
-        </Button>
-      )}
     </div>
   );
 }
@@ -1314,10 +1327,10 @@ function RawStringEditor({
   const doUpdate = useImmutableUpdate(groupPath);
 
   return (
-    <div className="w-full flex items-start gap-x-1">
+    <div className="flex w-full min-w-0 items-start gap-x-1">
       <Textarea
         size="xs"
-        className="flex-1 min-h-16 max-h-24 px-2 py-1 text-sm rounded-xs border border-control-border bg-background resize-y disabled:opacity-50"
+        className="min-w-0 flex-1 min-h-16 max-h-24 px-2 py-1 text-sm rounded-xs border border-control-border bg-background resize-y disabled:opacity-50"
         placeholder="Enter raw CEL expression"
         value={expr.content}
         disabled={readonly}
@@ -1423,13 +1436,14 @@ function ConditionGroup({
 
   return (
     <div
-      className={`w-full flex flex-col gap-y-2 py-0.5 ${
-        root ? "" : "border rounded-xs bg-control-bg"
-      }`}
+      className={cn(
+        "flex w-full min-w-0 flex-col gap-y-2 py-0.5",
+        !root && "border rounded-xs bg-control-bg"
+      )}
     >
       {!root && (
         <div className="pl-2.5 pr-1 text-control-light flex items-center">
-          <div className="flex-1">
+          <div className="min-w-0 flex-1">
             {args.length > 0 ? (
               <>
                 {operator === "_||_" && (
@@ -1467,13 +1481,6 @@ function ConditionGroup({
         </div>
       )}
 
-      {root && (
-        <div className="pl-1.5 flex h-7 items-center gap-x-1.5 text-control text-sm font-medium">
-          <span>Where</span>
-          {!readonly && <AgentExpressionHelpButton onClick={askAgent} />}
-        </div>
-      )}
-
       {root && args.length === 0 && (
         <div className="text-control-light text-sm">
           {t("cel.condition.add-root-condition-placeholder")}
@@ -1483,7 +1490,10 @@ function ConditionGroup({
       {args.map((operand, i) => (
         <div
           key={i}
-          className={`flex items-start gap-x-1 w-full ${root ? "pl-1.5" : "px-1"}`}
+          className={cn(
+            "flex w-full min-w-0 flex-col items-start gap-2",
+            !root && "px-1"
+          )}
         >
           {(!root || i > 0) && (
             <div className="w-14 shrink-0">
@@ -1520,7 +1530,7 @@ function ConditionGroup({
               )}
             </div>
           )}
-          <div className="flex-1 flex flex-col gap-y-1 min-w-0">
+          <div className="flex w-full min-w-0 flex-1 flex-col gap-y-1">
             {isConditionGroupExpr(operand) && (
               <ConditionGroup
                 key={i}
@@ -1548,7 +1558,7 @@ function ConditionGroup({
       ))}
 
       {!root && !readonly && (
-        <div className="pl-1.5 pb-1 flex gap-x-1">
+        <div className="flex flex-wrap gap-2 pl-1.5 pb-1">
           <Button
             type="button"
             appearance="secondary"
@@ -1575,7 +1585,7 @@ function ConditionGroup({
       )}
 
       {root && !readonly && (
-        <div className="flex gap-x-1">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             type="button"
             appearance="secondary"
@@ -1614,6 +1624,7 @@ function ConditionGroup({
               {t("cel.condition.add-raw-expression")}
             </Button>
           )}
+          <AgentExpressionHelpButton onClick={askAgent} />
         </div>
       )}
     </div>
@@ -1627,6 +1638,7 @@ function ConditionGroup({
 export interface ExprEditorProps {
   expr: ConditionGroupExpr;
   readonly?: boolean;
+  bordered?: boolean;
   enableRawExpression?: boolean;
   factorList: Factor[];
   optionConfigMap?: Map<Factor, OptionConfig>;
@@ -1637,7 +1649,9 @@ export interface ExprEditorProps {
 function buildAgentExpressionPrompt(
   factorList: Factor[],
   rawMode: boolean,
-  t: TFunction
+  t: TFunction,
+  overrideMap: Map<Factor, Operator[]> | undefined,
+  allowRaw: boolean
 ) {
   const availableFactors =
     factorList.length > 0
@@ -1646,10 +1660,13 @@ function buildAgentExpressionPrompt(
   const mode = rawMode
     ? t("cel.agent-help.mode-raw")
     : t("cel.agent-help.mode-selector");
-  return t("cel.agent-help.starter", {
-    mode,
-    attributes: availableFactors,
-  });
+  return [
+    t("cel.agent-help.starter", { mode, attributes: availableFactors }),
+    t("cel.agent-help.selector-instructions", {
+      capabilities: buildSelectorCapabilities(factorList, overrideMap),
+      allowRaw,
+    }),
+  ].join("\n\n");
 }
 
 function AgentExpressionHelpButton({ onClick }: { onClick: () => void }) {
@@ -1677,6 +1694,7 @@ function AgentExpressionHelpButton({ onClick }: { onClick: () => void }) {
 export function ExprEditor({
   expr,
   readonly = false,
+  bordered = true,
   enableRawExpression = true,
   factorList,
   optionConfigMap = new Map(),
@@ -1686,6 +1704,8 @@ export function ExprEditor({
   const { t } = useTranslation();
   const onUpdateRef = useRef(onUpdate);
   onUpdateRef.current = onUpdate;
+  const selectorConfigRef = useRef({ factorList, overrideMap });
+  selectorConfigRef.current = { factorList, overrideMap };
   const unregisterExpressionTargetsRef = useRef(new Map<string, () => void>());
   const editSessionRef = useRef({ readonly });
 
@@ -1706,6 +1726,14 @@ export function ExprEditor({
       const editSession = editSessionRef.current;
       const isEditable = () =>
         !editSession.readonly && editSessionRef.current === editSession;
+      const isSupportedSelector = (selector: ConditionGroupExpr) => {
+        const config = selectorConfigRef.current;
+        return canRenderAsSelector(
+          selector,
+          config.factorList,
+          config.overrideMap
+        );
+      };
       if (!isEditable()) return false;
       try {
         const [parsed] = await batchConvertCELStringToParsedExpr([expression]);
@@ -1718,11 +1746,17 @@ export function ExprEditor({
           });
         } else {
           const selector = wrapAsGroup(resolveCELExpr(parsed));
+          if (!isSupportedSelector(selector)) return false;
           const rebuilt = await buildCELExpr(selector);
           if (!rebuilt?.exprKind?.case || !isEditable()) return false;
           const [originalCEL, rebuiltCEL] =
             await batchConvertParsedExprToCELString([parsed, rebuilt]);
-          if (!originalCEL || originalCEL !== rebuiltCEL || !isEditable()) {
+          if (
+            !originalCEL ||
+            originalCEL !== rebuiltCEL ||
+            !isEditable() ||
+            !isSupportedSelector(selector)
+          ) {
             return false;
           }
           onUpdateRef.current(selector);
@@ -1740,7 +1774,13 @@ export function ExprEditor({
     if (editSession.readonly) return;
     const rawMode = expr.args.length === 1 && isRawStringExpr(expr.args[0]);
     openAgentWithPrompt(
-      buildAgentExpressionPrompt(factorList, rawMode, t),
+      buildAgentExpressionPrompt(
+        factorList,
+        rawMode,
+        t,
+        overrideMap,
+        enableRawExpression
+      ),
       undefined,
       (chatId) => {
         if (editSessionRef.current !== editSession) return;
@@ -1753,7 +1793,14 @@ export function ExprEditor({
         );
       }
     );
-  }, [applyAgentExpression, enableRawExpression, expr, factorList, t]);
+  }, [
+    applyAgentExpression,
+    enableRawExpression,
+    expr,
+    factorList,
+    overrideMap,
+    t,
+  ]);
 
   const ctxValue: ExprEditorContextValue = useMemo(
     () => ({
@@ -1780,7 +1827,12 @@ export function ExprEditor({
 
   return (
     <ExprEditorContext.Provider value={ctxValue}>
-      <div className="bb-risk-expr-editor text-sm w-full">
+      <div
+        className={cn(
+          "bb-risk-expr-editor w-full min-w-0 text-sm",
+          bordered && "rounded-sm border border-control-border p-3"
+        )}
+      >
         <ConditionGroup expr={expr} root groupPath={[]} />
       </div>
     </ExprEditorContext.Provider>

@@ -30,6 +30,7 @@ import type {
   AgentResourceReference,
 } from "../logic/types";
 import { useAgentStore } from "../store/agent";
+import { AgentComposer } from "./AgentComposer";
 import { AgentMentionTextarea } from "./AgentMentionTextarea";
 import { AgentResourcePicker } from "./AgentResourcePicker";
 import { LandingStarterSelector } from "./LandingStarterSelector";
@@ -205,19 +206,35 @@ export function LandingAgentComposer({
 
   return (
     <form
-      className="min-w-0 rounded-sm border border-accent/60 bg-background focus-within:border-accent focus-within:ring-1 focus-within:ring-accent"
+      className="min-w-0"
       onSubmit={(event) => {
         event.preventDefault();
         sendMessage();
       }}
     >
-      <div className="px-3 pt-2">
-        <LandingStarterSelector
-          starterIds={starterIds}
-          onSelect={sendStarter}
-        />
-      </div>
-      <div className="relative">
+      <AgentComposer
+        header={
+          <LandingStarterSelector
+            starterIds={starterIds}
+            onSelect={sendStarter}
+          />
+        }
+        footer={
+          <span className="min-w-0 max-w-full truncate">
+            {t("agent.context")}: {contextTitle}
+          </span>
+        }
+        action={
+          <Button
+            type="submit"
+            size="sm"
+            disabled={!prompt.trim() || hasAdditionalMention}
+          >
+            <Send className="size-4" />
+            {t("agent.send")}
+          </Button>
+        }
+      >
         <AgentMentionTextarea
           textareaRef={textareaRef}
           mentions={stagedMentions.map(({ resource, range }) => ({
@@ -310,22 +327,7 @@ export function LandingAgentComposer({
           onSelectIssue={selectMentionIssue}
           onSelectPlan={selectMentionPlan}
         />
-      </div>
-      <div className="flex flex-wrap items-end justify-between gap-2 px-3 pb-3">
-        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 text-xs text-control-light">
-          <span className="min-w-0 max-w-full truncate">
-            {t("agent.context")}: {contextTitle}
-          </span>
-        </div>
-        <Button
-          type="submit"
-          size="sm"
-          disabled={!prompt.trim() || hasAdditionalMention}
-        >
-          <Send className="size-4" />
-          {t("agent.send")}
-        </Button>
-      </div>
+      </AgentComposer>
     </form>
   );
 }

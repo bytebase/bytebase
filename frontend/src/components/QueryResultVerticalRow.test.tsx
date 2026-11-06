@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, test } from "vitest";
 import { QueryResultVerticalRow } from "./QueryResultVerticalRow";
 
@@ -45,4 +45,54 @@ describe("QueryResultVerticalRow", () => {
     expect(screen.getByText("IDENTIFIER")).toBeInTheDocument();
     expect(screen.getByText("Masked")).toBeInTheDocument();
   });
+
+  test.each(["overlay", "agent"] as const)(
+    "exposes full highlighted column names in the %s tooltip layer",
+    async (tooltipLayer) => {
+      const columnName =
+        "JSON_SET(document, '$.actions', CAST('{\"example:user-one\":[\"read\",\"edit\"]}' AS JSON))";
+      const json = '{"id":"sample","actions":{"example:user-one":["read","edit"]}}';
+      const { container } = render(
+        <QueryResultVerticalRow
+          columns={[
+            { id: "expression", name: columnName, value: json },
+            { id: "id", name: "id", value: "42" },
+          ]}
+          tooltipLayer={tooltipLayer}
+          renderColumnName={(column) =>
+            column.id === "expression" ? (
+              <>
+                <mark>JSON_SET</mark>
+                {column.name.slice(8)}
+              </>
+            ) : (
+              column.name
+            )
+          }
+          renderColumnAccessory={(column) =>
+            column.id === "expression" ? (
+              <button type="button">Masking reason</button>
+            ) : null
+          }
+          renderValue={(column) => column.value}
+        />
+      );
+
+      const term = container.querySelector("dt")!;
+      expect(within(term).getByText("JSON_SET").tagName).toBe("MARK");
+      expect(within(term).getByRole("button", { name: "Masking reason" })).toBeVisible();
+      expect(Array.from(container.querySelectorAll("dd"), (value) => value.textContent)).toEqual([
+        json,
+        "42",
+      ]);
+
+      const label = term.querySelector<HTMLElement>("[tabindex='0']");
+      expect(label).not.toBeNull();
+      fireEvent.focus(label!);
+
+      const tooltipRoot = document.getElementById(`bb-react-layer-${tooltipLayer}`)!;
+      expect(await within(tooltipRoot).findByText(columnName)).toBeVisible();
+      expect(term).toHaveTextContent(columnName);
+    }
+  );
 });

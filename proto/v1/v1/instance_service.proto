@@ -60,8 +60,7 @@ service InstanceService {
     option (bytebase.v1.permission) = "bb.instances.create";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
-    option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Prepares a Sample Project Instance for a project.

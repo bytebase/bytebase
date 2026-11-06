@@ -455,6 +455,7 @@
       "mode-raw": "raw CEL",
       "mode-selector": "selector",
       "no-attributes": "none",
+      "selector-instructions": "Prefer selector-compatible CEL. Supported fields, value types, and operation templates (example literals are placeholders): {{capabilities}}. Combine conditions with &&, ||, and parentheses. For selector output, do not transform fields (such as lowerAscii()), compare fields with each other, use arbitrary functions, or return standalone constants or raw CEL. For case-insensitive matching, use an equivalent matches() pattern only if supported. If the request cannot be represented, explain the limitation and ask how to proceed without changing its meaning. Only offer raw CEL if allowed: {{allowRaw}}.",
       "starter": "Help me write a CEL condition for this editor. Ask clarifying questions first, one at a time. Mode: {{mode}}. Available attributes: {{attributes}}. Use only these attributes and do not inspect data or run queries. When ready, explain the condition and provide exactly one fenced `cel` block. Do not claim it is applied or saved; I will review before applying.",
       "unsaved": "Applying replaces the current expression in this unsaved editor. It does not save the rule."
     },
@@ -3199,6 +3200,10 @@
           "refused": "Not allowed"
         },
         "row": {
+          "add-instances": {
+            "details": "Add a PostgreSQL instance to a project, signed in with a user name and password · Each instance is confirmed in the user's MCP client before it is added · Its databases join that project for good",
+            "title": "Add instances to projects"
+          },
           "approval-rules": {
             "details": "Add, remove, reorder or change the rules that decide who approves a database change · Each change is confirmed in the user's MCP client before it is made · The fallback rules and the rules for other kinds of issues stay as they are",
             "title": "Manage approval rules for database changes"
@@ -3504,14 +3509,27 @@
       },
       "columns-to-mask": "Columns to mask",
       "global-rules": {
+        "condition": "Rule condition",
         "condition-order": "Condition order",
+        "create-rule": "Create rule",
+        "delete-rule": "Delete rule",
         "delete-rule-tip": "Delete this rule?",
         "description": "Use global rule to apply masking in batch, e.g. all columns named as \"email\" will be masked with the specific semantic type and apply the masking algorithm.",
+        "edit-rule": "Edit {{name}}",
+        "edit-rule-tooltip": "Edit rule",
         "error": {
           "invalid-condition": "Condition is invalid",
-          "missing-semantic-type": "Semantic type is required"
+          "missing-semantic-type": "Semantic type is required",
+          "save-failed": "Couldn't save changes. Your draft is kept; try again."
         },
-        "re-order": "Re-order"
+        "move-down": "Move rule down",
+        "move-up": "Move rule up",
+        "name": "Rule name",
+        "re-order": "Reorder",
+        "rule-count": "Rules ({{count}})",
+        "save-order": "Save order",
+        "save-rule": "Save rule",
+        "semantic-type": "Semantic type"
       },
       "grant-access": "Grant Access",
       "mark-sensitive-data": "Mark sensitive data",

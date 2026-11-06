@@ -455,6 +455,7 @@
       "mode-raw": "CEL sin procesar",
       "mode-selector": "selector",
       "no-attributes": "ninguno",
+      "selector-instructions": "Prefiere CEL compatible con el selector. Campos, tipos de valores y plantillas de operaciones admitidos (los valores de ejemplo son marcadores): {{capabilities}}. Combina condiciones con &&, || y paréntesis. Para el selector, no transformes campos (como lowerAscii()), compares campos entre sí, uses funciones arbitrarias ni devuelvas constantes independientes o CEL sin procesar. Para ignorar mayúsculas y minúsculas, usa un patrón matches() equivalente solo si está admitido. Si la solicitud no puede representarse, explica la limitación y pregunta cómo continuar sin cambiar su significado. Ofrece CEL sin procesar solo si está permitido: {{allowRaw}}.",
       "starter": "Ayúdame a escribir una condición CEL para este editor. Primero hazme preguntas aclaratorias, de una en una. Modo: {{mode}}. Atributos disponibles: {{attributes}}. Usa solo estos atributos y no inspecciones datos ni ejecutes consultas. Cuando esté lista, explica la condición y proporciona exactamente un bloque `cel` delimitado por comillas invertidas. No afirmes que se aplicó ni se guardó; la revisaré antes de aplicarla.",
       "unsaved": "La aplicación reemplaza la expresión actual de este editor sin guardar. No guarda la regla."
     },
@@ -3199,6 +3200,10 @@
           "refused": "No permitido"
         },
         "row": {
+          "add-instances": {
+            "details": "Añadir a un proyecto una instancia de PostgreSQL que inicia sesión con usuario y contraseña · Cada instancia se confirma en el cliente MCP del usuario antes de añadirse · Sus bases de datos pasan a ese proyecto de forma permanente",
+            "title": "Añadir instancias a proyectos"
+          },
           "approval-rules": {
             "details": "Añadir, quitar, reordenar o cambiar las reglas que deciden quién aprueba un cambio de base de datos · Cada cambio se confirma en el cliente MCP del usuario antes de hacerse · Las reglas de respaldo y las reglas de otros tipos de issues no cambian",
             "title": "Gestionar las reglas de aprobación de cambios de base de datos"
@@ -3504,14 +3509,27 @@
       },
       "columns-to-mask": "Columnas que se enmascararán",
       "global-rules": {
+        "condition": "Condición de la regla",
         "condition-order": "Orden de condición",
+        "create-rule": "Crear regla",
+        "delete-rule": "Eliminar regla",
         "delete-rule-tip": "¿Eliminar esta regla?",
         "description": "Utilice una regla global para aplicar el enmascaramiento en lote, por ejemplo, todas las columnas denominadas \"correo electrónico\" se enmascararán con el tipo semántico específico y se aplicará el algoritmo de enmascaramiento.",
+        "edit-rule": "Editar {{name}}",
+        "edit-rule-tooltip": "Editar regla",
         "error": {
           "invalid-condition": "La condición no es válida.",
-          "missing-semantic-type": "Se requiere el tipo semántico."
+          "missing-semantic-type": "Se requiere el tipo semántico.",
+          "save-failed": "No se pudieron guardar los cambios. El borrador se conserva; inténtelo de nuevo."
         },
-        "re-order": "Reordenar"
+        "move-down": "Bajar regla",
+        "move-up": "Subir regla",
+        "name": "Nombre de la regla",
+        "re-order": "Reordenar",
+        "rule-count": "Reglas ({{count}})",
+        "save-order": "Guardar orden",
+        "save-rule": "Guardar regla",
+        "semantic-type": "Tipo semántico"
       },
       "grant-access": "Conceder acceso",
       "mark-sensitive-data": "Marcar datos confidenciales",

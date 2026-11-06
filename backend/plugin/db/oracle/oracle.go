@@ -68,7 +68,7 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 	}
 	options := connectionOptions(config.DataSource.GetSid(), config.DataSource.GetExtraConnectionParameters(), tlsConfig != nil)
 	dsn := goora.BuildUrl(config.DataSource.Host, port, config.DataSource.GetServiceName(), config.DataSource.Username, config.Password, options)
-	db := sql.OpenDB(&connector{dsn: dsn, tlsConfig: tlsConfig, currentSchema: config.ConnectionContext.DatabaseName})
+	db := sql.OpenDB(&connector{drv: goora.NewDriver(), dsn: dsn, tlsConfig: tlsConfig, currentSchema: config.ConnectionContext.DatabaseName})
 	if config.ConnectionContext.DatabaseName != "" {
 		// Connect now so that a schema the session can't switch to fails Open, not the first statement.
 		if err := db.PingContext(ctx); err != nil {
@@ -97,21 +97,28 @@ func getTLSConfig(dataSource *storepb.DataSource) (*tls.Config, error) {
 	return config, nil
 }
 
-// connector opens each connection through go-ora's default driver, as sql.Open("oracle") does,
-// with its own copy of the TLS configuration: go-ora sets ServerName on the configuration it is
-// given, so connections opened in parallel can't share one.
+// connector opens each connection with its own copy of the TLS configuration: go-ora sets
+// ServerName on the configuration it is given, so connections opened in parallel can't share
+// one.
 //
 // It also sets currentSchema on every session it opens, because the pool opens a new session
 // whenever none is idle or one goes bad. go-ora's AddSessionParam can't do this: it stores the
-// parameter on the default driver, which every Bytebase Oracle connection shares.
+// parameter on the driver rather than the session.
+//
+// drv is this data source's own go-ora driver, never the process-wide default one. A go-ora
+// driver keeps the character set converters of the first connection opened through it and
+// copies them onto every later connection in place of the one that connection negotiates, so
+// a shared driver decodes every database's text with the first database's character set
+// (#21902).
 type connector struct {
+	drv           *goora.OracleDriver
 	dsn           string
 	tlsConfig     *tls.Config
 	currentSchema string
 }
 
 func (c *connector) Connect(ctx context.Context) (driver.Conn, error) {
-	oracleConnector, err := goora.GetDefaultDriver().OpenConnector(c.dsn)
+	oracleConnector, err := c.drv.OpenConnector(c.dsn)
 	if err != nil {
 		return nil, err
 	}
@@ -130,8 +137,8 @@ func (c *connector) Connect(ctx context.Context) (driver.Conn, error) {
 	return conn, nil
 }
 
-func (*connector) Driver() driver.Driver {
-	return goora.GetDefaultDriver()
+func (c *connector) Driver() driver.Driver {
+	return c.drv
 }
 
 const (

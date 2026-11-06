@@ -132,7 +132,7 @@ func TestMCPAuthMiddleware(t *testing.T) {
 // failure would surface as a nil-receiver panic on the first ceiling read
 // inside authMiddleware.
 func TestNewServerRequiresStore(t *testing.T) {
-	_, err := NewServer(nil, &config.Profile{}, "test-secret", nil)
+	_, err := NewServer(nil, &config.Profile{}, "test-secret", nil, nil)
 	require.Error(t, err)
 }
 

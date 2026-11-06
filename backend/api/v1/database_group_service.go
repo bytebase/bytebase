@@ -54,7 +54,7 @@ func (s *DatabaseGroupService) CreateDatabaseGroup(ctx context.Context, req *con
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q has been deleted", req.Msg.Parent))
 	}
 
-	if !isValidResourceID(req.Msg.DatabaseGroupId) {
+	if !common.IsValidResourceID(req.Msg.DatabaseGroupId) {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid database group id %q", req.Msg.DatabaseGroupId))
 	}
 	if req.Msg.DatabaseGroup.Title == "" {

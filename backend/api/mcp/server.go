@@ -24,7 +24,9 @@ import (
 	"github.com/bytebase/bytebase/backend/component/audit"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/review"
+	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 )
@@ -49,9 +51,19 @@ type Server struct {
 	// so NewServer binds it and tests replace it.
 	findUnapprovableStep func(ctx context.Context, workspace, issueName string) (*review.UnapprovableStep, error)
 
+	// maskingSkipsUnactivated reports whether the plan has masking but
+	// LicenseService.IsFeatureEnabledForInstance would refuse it to an instance
+	// that is not activated. It needs the license service, which
+	// newServerWithStore does not take, so NewServer binds it and tests replace it.
+	maskingSkipsUnactivated func(ctx context.Context, workspace string) bool
+
 	// planCheckPollBudgetOverride lets tests shorten the plan-check poll budget.
 	// Zero means use the default (planCheckPollBudget).
 	planCheckPollBudgetOverride time.Duration
+
+	// internalAPITimeoutOverride lets tests shorten the bound on one internal
+	// API call. Zero means use the default (internalAPITimeout).
+	internalAPITimeoutOverride time.Duration
 }
 
 type serverStore interface {
@@ -74,7 +86,7 @@ type serverStore interface {
 // holding a nil pointer, which no later nil test catches, so without this the
 // failure moves from a returned error here to a nil-receiver panic on the first
 // ceiling read inside authMiddleware.
-func NewServer(stores *store.Store, profile *config.Profile, secret string, internalAPI http.Handler) (*Server, error) {
+func NewServer(stores *store.Store, profile *config.Profile, secret string, internalAPI http.Handler, licenses *enterprise.LicenseService) (*Server, error) {
 	if stores == nil {
 		return nil, errors.New("store is required")
 	}
@@ -85,7 +97,21 @@ func NewServer(stores *store.Store, profile *config.Profile, secret string, inte
 	s.findUnapprovableStep = func(ctx context.Context, workspace, issueName string) (*review.UnapprovableStep, error) {
 		return review.FindUnapprovableStep(ctx, stores, workspace, issueName)
 	}
+	s.maskingSkipsUnactivated = maskingSkipsUnactivatedUnder(licenses)
 	return s, nil
+}
+
+// instanceLicense is what the instance entry reads of a workspace's license.
+type instanceLicense interface {
+	IsFeatureEnabled(ctx context.Context, workspaceID string, f v1pb.PlanFeature) error
+	IsUnifiedInstanceLicense(ctx context.Context, workspaceID string) bool
+}
+
+func maskingSkipsUnactivatedUnder(licenses instanceLicense) func(ctx context.Context, workspace string) bool {
+	return func(ctx context.Context, workspace string) bool {
+		return licenses.IsFeatureEnabled(ctx, workspace, v1pb.PlanFeature_FEATURE_DATA_MASKING) == nil &&
+			!licenses.IsUnifiedInstanceLicense(ctx, workspace)
+	}
 }
 
 func newServerWithStore(stores serverStore, profile *config.Profile, secret string, internalAPI http.Handler) (*Server, error) {
@@ -107,6 +133,9 @@ func newServerWithStore(stores serverStore, profile *config.Profile, secret stri
 		secret:         secret,
 		openAPIIndex:   openAPIIndex,
 		internalClient: newInternalAPIClient(internalAPI),
+		// Until NewServer binds the license, the form warns whenever an
+		// instance is not activated.
+		maskingSkipsUnactivated: func(context.Context, string) bool { return true },
 	}
 	s.registerTools()
 
