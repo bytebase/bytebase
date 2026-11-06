@@ -164,6 +164,7 @@ function AgentQueryResultVertical({
         renderRow={(rowIndex) => (
           <QueryResultVerticalRow
             columns={columns}
+            tooltipLayer="agent"
             renderValue={(_, columnIndex) => {
               const value = resultSet.rows[rowIndex]?.values[columnIndex];
               if (!value) return null;
