@@ -1,14 +1,17 @@
 import * as stylex from "@stylexjs/stylex";
+import { fromJson } from "@bufbuild/protobuf";
 import { fireEvent, waitFor } from "@testing-library/react";
 import { act, type ReactElement, StrictMode, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import type { Factor } from "@/modules/cel/types/factor";
+import { resolveCELExpr } from "@/modules/cel/logic/resolve";
 import { type ConditionGroupExpr, ExprType } from "@/modules/cel/types/simple";
 import {
   applyAgentExpressionDraft,
   canApplyAgentExpressionDraft,
 } from "@/modules/agent/logic/expressionDraft";
+import { ExprSchema } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
 import {
   CEL_ATTRIBUTE_RESOURCE_DATABASE,
   CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID,
@@ -57,13 +60,21 @@ const agentMock = vi.hoisted(() => ({
 }));
 
 const expressionMock = vi.hoisted(() => ({
+  resolveCELExpr: vi.fn<typeof resolveCELExpr>(() => ({
+    type: "ConditionGroup" as ExprType.ConditionGroup,
+    operator: "_&&_",
+    args: [],
+  })),
   buildCELExpr: vi.fn(async () => ({
     exprKind: { case: "callExpr", value: {} },
   })),
   batchConvertCELStringToParsedExpr: vi.fn(async () => [
     { exprKind: { case: "callExpr", value: {} } },
   ]),
-  batchConvertParsedExprToCELString: vi.fn(async () => ["canonical", "canonical"]),
+  batchConvertParsedExprToCELString: vi.fn(async () => [
+    "canonical",
+    "canonical",
+  ]),
 }));
 
 vi.mock("@/modules/agent/logic/instanceConnectionHelp", () => ({
@@ -77,7 +88,7 @@ vi.mock("@/utils/v1/cel", () => ({
     expressionMock.batchConvertParsedExprToCELString,
 }));
 
-vi.mock("@/modules/cel", () => ({
+vi.mock("@/modules/cel", async () => ({
   ExprType: MockExprType,
   LogicalOperatorList: ["_&&_", "_||_"],
   getOperatorListByFactor: () => ["_==_", "@in"],
@@ -99,12 +110,8 @@ vi.mock("@/modules/cel", () => ({
   isTimestampFactor: () => false,
   operatorDisplayLabel: (operator: string) => operator,
   buildCELExpr: expressionMock.buildCELExpr,
-  resolveCELExpr: () => ({
-    type: "ConditionGroup",
-    operator: "_&&_",
-    args: [],
-  }),
-  wrapAsGroup: (expr: unknown) => expr,
+  resolveCELExpr: expressionMock.resolveCELExpr,
+  wrapAsGroup: (await import("@/modules/cel/logic/resolve")).wrapAsGroup,
 }));
 
 vi.mock("react-i18next", () => ({
@@ -113,7 +120,9 @@ vi.mock("react-i18next", () => ({
     t: (key: string, options?: Record<string, string>) =>
       key === "cel.agent-help.starter"
         ? `${key}: ${options?.mode}; ${options?.attributes}`
-        : options?.defaultValue ?? key,
+        : key === "cel.agent-help.selector-instructions"
+          ? `${key}: ${options?.capabilities}; raw CEL allowed: ${options?.allowRaw}`
+          : (options?.defaultValue ?? key),
   }),
 }));
 
@@ -213,6 +222,11 @@ describe("ExprEditor", () => {
   afterEach(() => {
     document.body.innerHTML = "";
     agentMock.openAgentWithPrompt.mockClear();
+    expressionMock.resolveCELExpr.mockReset().mockReturnValue({
+      type: ExprType.ConditionGroup,
+      operator: "_&&_",
+      args: [],
+    });
     expressionMock.buildCELExpr
       .mockReset()
       .mockResolvedValue({ exprKind: { case: "callExpr", value: {} } });
@@ -302,6 +316,211 @@ describe("ExprEditor", () => {
     unmount();
   });
 
+  test.each([false, true])(
+    "tells Agent the selector's capabilities even when currently raw=%s",
+    (rawMode) => {
+      const { container, unmount } = renderIntoContainer(
+        <ExprEditor
+          expr={{
+            type: ExprType.ConditionGroup,
+            operator: "_&&_",
+            args: rawMode
+              ? [{ type: ExprType.RawString, content: "true" }]
+              : [],
+          }}
+          factorList={[CEL_ATTRIBUTE_RESOURCE_TABLE_NAME]}
+          factorOperatorOverrideMap={
+            new Map([[CEL_ATTRIBUTE_RESOURCE_TABLE_NAME, ["contains"]]])
+          }
+          enableRawExpression={false}
+          onUpdate={vi.fn()}
+        />
+      );
+      act(() => {
+        fireEvent.click(
+          container.querySelector<HTMLButtonElement>(
+            'button[aria-label="Ask Agent to help build this expression"]'
+          )!
+        );
+      });
+      const prompt = agentMock.openAgentWithPrompt.mock.calls[0][0];
+      expect(prompt).toContain("cel.agent-help.selector-instructions");
+      expect(prompt).toContain('resource.table_name.contains(\\"value\\")');
+      expect(prompt).not.toContain("resource.table_name.matches");
+      expect(prompt).not.toContain("resource.environment_id");
+      expect(prompt).toContain("raw CEL allowed: false");
+      unmount();
+    }
+  );
+
+  const containsTable = {
+    callExpr: {
+      function: "contains",
+      target: {
+        selectExpr: {
+          operand: { identExpr: { name: "resource" } },
+          field: "table_name",
+        },
+      },
+      args: [{ constExpr: { stringValue: "test" } }],
+    },
+  };
+  const containsTableIgnoringCase = {
+    callExpr: {
+      ...containsTable.callExpr,
+      target: {
+        callExpr: {
+          function: "lowerAscii",
+          target: containsTable.callExpr.target,
+        },
+      },
+    },
+  };
+
+  test.each([
+    [
+      "a transformed factor",
+      containsTableIgnoringCase,
+      'resource.table_name.lowerAscii().contains("test")',
+    ],
+    [
+      "a nested raw condition",
+      {
+        callExpr: {
+          function: "_&&_",
+          args: [containsTable, containsTableIgnoringCase],
+        },
+      },
+      'resource.table_name.contains("test") && resource.table_name.lowerAscii().contains("test")',
+    ],
+    ["a boolean constant", { constExpr: { boolValue: true } }, "true"],
+  ])(
+    "does not apply %s as a selector or change its meaning",
+    async (_, json, expression) => {
+      const parsed = fromJson(ExprSchema, json);
+      expressionMock.batchConvertCELStringToParsedExpr.mockResolvedValue([
+        parsed as never,
+      ]);
+      expressionMock.resolveCELExpr.mockImplementationOnce(resolveCELExpr);
+      const onUpdate = vi.fn();
+      const { container, unmount } = renderIntoContainer(
+        <ExprEditor
+          expr={{ type: ExprType.ConditionGroup, operator: "_&&_", args: [] }}
+          factorList={[CEL_ATTRIBUTE_RESOURCE_TABLE_NAME]}
+          onUpdate={onUpdate}
+        />
+      );
+      act(() => {
+        fireEvent.click(
+          container.querySelector<HTMLButtonElement>(
+            'button[aria-label="Ask Agent to help build this expression"]'
+          )!
+        );
+      });
+
+      await expect(
+        applyAgentExpressionDraft("expression-chat", expression, "selector")
+      ).resolves.toBe(false);
+      expect(onUpdate).not.toHaveBeenCalled();
+
+      await expect(
+        applyAgentExpressionDraft("expression-chat", expression, "raw")
+      ).resolves.toBe(true);
+      expect(onUpdate).toHaveBeenCalledWith({
+        type: ExprType.ConditionGroup,
+        operator: "_&&_",
+        args: [{ type: ExprType.RawString, content: expression }],
+      });
+      unmount();
+    }
+  );
+
+  test.each([true, false])(
+    "applies a supported condition as a selector with contains allowed=%s",
+    async (allowContains) => {
+      const expression = 'resource.table_name.contains("test")';
+      expressionMock.batchConvertCELStringToParsedExpr.mockResolvedValueOnce([
+        fromJson(ExprSchema, containsTable) as never,
+      ]);
+      expressionMock.resolveCELExpr.mockImplementationOnce(resolveCELExpr);
+      const onUpdate = vi.fn();
+      const { container, unmount } = renderIntoContainer(
+        <ExprEditor
+          expr={{ type: ExprType.ConditionGroup, operator: "_&&_", args: [] }}
+          factorList={[CEL_ATTRIBUTE_RESOURCE_TABLE_NAME]}
+          factorOperatorOverrideMap={
+            new Map([
+              [
+                CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
+                allowContains ? ["contains"] : ["_==_"],
+              ],
+            ])
+          }
+          onUpdate={onUpdate}
+        />
+      );
+      act(() => {
+        fireEvent.click(
+          container.querySelector<HTMLButtonElement>(
+            'button[aria-label="Ask Agent to help build this expression"]'
+          )!
+        );
+      });
+
+      await expect(
+        applyAgentExpressionDraft("expression-chat", expression, "selector")
+      ).resolves.toBe(allowContains);
+      if (allowContains) {
+        expect(onUpdate).toHaveBeenCalledWith({
+          type: ExprType.ConditionGroup,
+          operator: "_&&_",
+          args: [
+            {
+              type: ExprType.Condition,
+              operator: "contains",
+              args: [CEL_ATTRIBUTE_RESOURCE_TABLE_NAME, "test"],
+            },
+          ],
+        });
+      } else {
+        expect(onUpdate).not.toHaveBeenCalled();
+      }
+      unmount();
+    }
+  );
+
+  test("does not apply a selector draft using a field unavailable in this editor", async () => {
+    expressionMock.batchConvertCELStringToParsedExpr.mockResolvedValueOnce([
+      fromJson(ExprSchema, containsTable) as never,
+    ]);
+    expressionMock.resolveCELExpr.mockImplementationOnce(resolveCELExpr);
+    const onUpdate = vi.fn();
+    const { container, unmount } = renderIntoContainer(
+      <ExprEditor
+        expr={{ type: ExprType.ConditionGroup, operator: "_&&_", args: [] }}
+        factorList={[CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID]}
+        onUpdate={onUpdate}
+      />
+    );
+    act(() => {
+      fireEvent.click(
+        container.querySelector<HTMLButtonElement>(
+          'button[aria-label="Ask Agent to help build this expression"]'
+        )!
+      );
+    });
+
+    await expect(
+      applyAgentExpressionDraft(
+        "expression-chat",
+        'resource.table_name.contains("test")',
+        "selector"
+      )
+    ).resolves.toBe(false);
+    expect(onUpdate).not.toHaveBeenCalled();
+    unmount();
+  });
+
   test("does not apply a parsed CEL response without an expression case", async () => {
     const onUpdate = vi.fn();
     const { container, unmount } = renderIntoContainer(
@@ -333,8 +552,8 @@ describe("ExprEditor", () => {
     unmount();
   });
 
-  test("keeps Agent help beside the expression's Where label", () => {
-    const { container, unmount } = renderIntoContainer(
+  test("keeps the editor frame stable when editability changes", () => {
+    const editor = (readonly: boolean) => (
       <ExprEditor
         expr={{
           type: ExprType.ConditionGroup,
@@ -342,29 +561,450 @@ describe("ExprEditor", () => {
           args: [{ type: ExprType.RawString, content: "true" }],
         }}
         factorList={[CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID]}
+        readonly={readonly}
         onUpdate={() => {}}
       />
     );
+    const { container, rerender, unmount } = renderIntoContainer(editor(false));
+    const frame = container.querySelector(".bb-risk-expr-editor");
+    expectClasses(
+      frame?.className,
+      "min-w-0 w-full rounded-sm border border-control-border p-3"
+    );
+    expect(container.querySelector("textarea")).toBeEnabled();
+    rerender(editor(true));
+    expectClasses(
+      frame?.className,
+      "min-w-0 w-full rounded-sm border border-control-border p-3"
+    );
+    expect(container.querySelector("textarea")).toBeDisabled();
+    unmount();
+  });
 
-    const askAgent = container.querySelector<HTMLButtonElement>(
-      'button[aria-label="Ask Agent to help build this expression"]'
+  test("places Agent help after the actions without a duplicate root title", async () => {
+    const onUpdate = vi.fn();
+    const { container, unmount } = renderIntoContainer(
+      <ExprEditor
+        expr={{
+          type: ExprType.ConditionGroup,
+          operator: "_&&_",
+          args: [{ type: ExprType.RawString, content: "true" }],
+        }}
+        factorList={[CEL_ATTRIBUTE_RESOURCE_TABLE_NAME]}
+        onUpdate={onUpdate}
+      />
     );
-    const whereLabel = Array.from(container.querySelectorAll("span")).find(
-      (span) => span.textContent === "Where"
-    );
-    const expressionInput = container.querySelector("textarea");
-    const whereLabelParent = whereLabel?.parentElement;
-    if (!whereLabelParent || !expressionInput) {
-      throw new Error("Expected the expression label and input to render");
-    }
-    expect(whereLabelParent.contains(askAgent)).toBe(true);
-    expect(whereLabelParent.querySelector("textarea")).toBeNull();
+    expect(container.textContent).not.toContain("Where");
+    expect(container.textContent).not.toContain("cel.condition.title");
+    const rootGroup = container.querySelector(
+      ".bb-risk-expr-editor"
+    )?.firstElementChild;
     expect(
-      whereLabelParent.compareDocumentPosition(expressionInput) &
-        Node.DOCUMENT_POSITION_FOLLOWING
-    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
-    expect(askAgent?.className).toContain("text-accent");
-    expect(askAgent?.className).not.toContain("border-control-border");
+      rootGroup?.firstElementChild?.querySelector("textarea")
+    ).toBeInstanceOf(HTMLTextAreaElement);
+    const buttons = Array.from(container.querySelectorAll("button"));
+    const askAgent = buttons.find(
+      (button) =>
+        button.getAttribute("aria-label") ===
+        "Ask Agent to help build this expression"
+    );
+    expect(askAgent).not.toBeUndefined();
+    expect(buttons.slice(-4).map((button) => button.textContent)).toEqual([
+      "cel.condition.add",
+      "cel.condition.add-group",
+      "cel.condition.add-raw-expression",
+      "",
+    ]);
+    await act(async () => {
+      fireEvent.click(askAgent!);
+      await applyAgentExpressionDraft("expression-chat", "false", "raw");
+    });
+    expect(onUpdate).toHaveBeenCalledWith({
+      type: ExprType.ConditionGroup,
+      operator: "_&&_",
+      args: [{ type: ExprType.RawString, content: "false" }],
+    });
+    unmount();
+  });
+
+  test("omits the untitled root heading and Agent help when read-only", () => {
+    const { container, unmount } = renderIntoContainer(
+      <ExprEditor
+        readonly
+        expr={{
+          type: ExprType.ConditionGroup,
+          operator: "_&&_",
+          args: [{ type: ExprType.RawString, content: "true" }],
+        }}
+        factorList={[CEL_ATTRIBUTE_RESOURCE_TABLE_NAME]}
+        onUpdate={() => {}}
+      />
+    );
+    expect(container.textContent).not.toContain("cel.condition.title");
+    expect(container.querySelector("button")).toBeNull();
+    const rootGroup = container.querySelector(
+      ".bb-risk-expr-editor"
+    )?.firstElementChild;
+    const textarea = rootGroup?.firstElementChild?.querySelector("textarea");
+    expect(textarea).toBeInstanceOf(HTMLTextAreaElement);
+    expect(textarea?.disabled).toBe(true);
+    unmount();
+  });
+
+  test.each([undefined, false])(
+    "keeps the toolbar visible with bordered=%s",
+    (bordered) => {
+      const { container, unmount } = renderIntoContainer(
+        <ExprEditor
+          bordered={bordered}
+          expr={{ type: ExprType.ConditionGroup, operator: "_&&_", args: [] }}
+          factorList={[CEL_ATTRIBUTE_RESOURCE_TABLE_NAME]}
+          onUpdate={() => {}}
+        />
+      );
+
+      expect(container.textContent).toContain("cel.condition.add-group");
+      expect(container.textContent).toContain(
+        "cel.condition.add-raw-expression"
+      );
+      expect(
+        container.querySelector('button[aria-label="common.more"]')
+      ).toBeNull();
+      expect(
+        container
+          .querySelector(".bb-risk-expr-editor")
+          ?.classList.contains("border")
+      ).toBe(bordered !== false);
+      unmount();
+    }
+  );
+
+  test("renders nested conditions and raw CEL without edit actions in read-only mode", () => {
+    const onUpdate = vi.fn();
+    const { container, unmount } = renderIntoContainer(
+      <ExprEditor
+        readonly
+        expr={{
+          type: ExprType.ConditionGroup,
+          operator: "_&&_",
+          args: [
+            {
+              type: ExprType.Condition,
+              operator: "_==_",
+              args: [CEL_ATTRIBUTE_RESOURCE_TABLE_NAME, "accounts"],
+            },
+            {
+              type: ExprType.ConditionGroup,
+              operator: "_||_",
+              args: [
+                {
+                  type: ExprType.Condition,
+                  operator: "_==_",
+                  args: [CEL_ATTRIBUTE_RESOURCE_TABLE_NAME, "contacts"],
+                },
+                {
+                  type: ExprType.RawString,
+                  content: "custom.matches(resource)",
+                },
+              ],
+            },
+          ],
+        }}
+        factorList={[CEL_ATTRIBUTE_RESOURCE_TABLE_NAME]}
+        onUpdate={onUpdate}
+      />
+    );
+    expect(container.textContent).toContain("and");
+    expect(container.textContent).toContain("or");
+    expect(container.textContent).toContain(
+      "cel.condition.group.or.description"
+    );
+    expect(
+      Array.from(
+        container.querySelectorAll<HTMLInputElement>(
+          'input[placeholder="cel.condition.input-value"]'
+        )
+      ).map((input) => input.value)
+    ).toEqual(["accounts", "contacts"]);
+    expect(container.querySelector("textarea")).toHaveValue(
+      "custom.matches(resource)"
+    );
+    for (const control of container.querySelectorAll(
+      'button, input[placeholder="cel.condition.input-value"], textarea'
+    )) {
+      expect(control).toBeDisabled();
+    }
+    expect(container.textContent).not.toContain("cel.condition.add");
+    expect(container.querySelector(".lucide-trash-2")).toBeNull();
+    expect(container.querySelector(".lucide-bot")).toBeNull();
+    expect(onUpdate).not.toHaveBeenCalled();
+    unmount();
+  });
+
+  test.each([
+    [
+      "cel.condition.add-group",
+      { type: ExprType.ConditionGroup, operator: "_&&_", args: [] },
+    ],
+    [
+      "cel.condition.add-raw-expression",
+      { type: ExprType.RawString, content: "" },
+    ],
+  ])("adds %s from the visible toolbar", async (label, expected) => {
+    const onUpdate = vi.fn();
+    const { container, unmount } = renderIntoContainer(
+      <ExprEditor
+        expr={{ type: ExprType.ConditionGroup, operator: "_&&_", args: [] }}
+        factorList={[CEL_ATTRIBUTE_RESOURCE_TABLE_NAME]}
+        onUpdate={onUpdate}
+      />
+    );
+
+    expect(
+      Array.from(container.querySelectorAll("button")).some(
+        (button) => button.textContent === "cel.condition.add"
+      )
+    ).toBe(true);
+    const item = Array.from(container.querySelectorAll("button")).find(
+      (element) => element.textContent === label
+    );
+    expect(item).not.toBeUndefined();
+    await act(async () => {
+      fireEvent.click(item!);
+    });
+    expect(onUpdate).toHaveBeenCalledWith({
+      type: ExprType.ConditionGroup,
+      operator: "_&&_",
+      args: [expected],
+    });
+    unmount();
+  });
+
+  test("omits raw expressions from the toolbar when disabled", () => {
+    const { container, unmount } = renderIntoContainer(
+      <ExprEditor
+        enableRawExpression={false}
+        expr={{ type: ExprType.ConditionGroup, operator: "_&&_", args: [] }}
+        factorList={[CEL_ATTRIBUTE_RESOURCE_TABLE_NAME]}
+        onUpdate={() => {}}
+      />
+    );
+    const items = Array.from(container.querySelectorAll("button"));
+    expect(
+      items.some((item) => item.textContent === "cel.condition.add-group")
+    ).toBe(true);
+    expect(
+      items.some(
+        (item) => item.textContent === "cel.condition.add-raw-expression"
+      )
+    ).toBe(false);
+    unmount();
+  });
+
+  test("allows condition values to wrap without a fixed-width field", async () => {
+    const onUpdate = vi.fn();
+    const { container, unmount } = renderIntoContainer(
+      <ExprEditor
+        expr={{
+          type: ExprType.ConditionGroup,
+          operator: "_&&_",
+          args: [
+            {
+              type: ExprType.Condition,
+              operator: "_==_",
+              args: [CEL_ATTRIBUTE_RESOURCE_TABLE_NAME, ""],
+            },
+          ],
+        }}
+        factorList={[CEL_ATTRIBUTE_RESOURCE_TABLE_NAME]}
+        onUpdate={onUpdate}
+      />
+    );
+    const input = container.querySelector(
+      'input[placeholder="cel.condition.input-value"]'
+    );
+    expect(input).toBeInstanceOf(HTMLInputElement);
+    const valueField = input?.parentElement;
+    expect(valueField?.className).toContain("min-w-0");
+    expect(valueField?.className).not.toContain("w-56");
+    expect(container.textContent).toContain("resource.table_name");
+    await act(async () => {
+      fireEvent.change(input!, { target: { value: "orders" } });
+    });
+    expect(onUpdate).toHaveBeenCalledWith({
+      type: ExprType.ConditionGroup,
+      operator: "_&&_",
+      args: [
+        {
+          type: ExprType.Condition,
+          operator: "_==_",
+          args: [CEL_ATTRIBUTE_RESOURCE_TABLE_NAME, "orders"],
+        },
+      ],
+    });
+    unmount();
+  });
+
+  test("uses factor identifiers", () => {
+    const { container, unmount } = renderIntoContainer(
+      <ExprEditor
+        expr={{
+          type: ExprType.ConditionGroup,
+          operator: "_&&_",
+          args: [
+            {
+              type: ExprType.Condition,
+              operator: "_==_",
+              args: [CEL_ATTRIBUTE_RESOURCE_TABLE_NAME, "accounts"],
+            },
+          ],
+        }}
+        factorList={[CEL_ATTRIBUTE_RESOURCE_TABLE_NAME]}
+        onUpdate={vi.fn()}
+      />
+    );
+    expect(container.querySelector('[role="combobox"]')).toHaveTextContent(
+      "resource.table_name"
+    );
+    unmount();
+  });
+
+  test("keeps condition deletion at dense-control size", () => {
+    const onUpdate = vi.fn();
+    const { container, unmount } = renderIntoContainer(
+      <ExprEditor
+        expr={{
+          type: ExprType.ConditionGroup,
+          operator: "_&&_",
+          args: [
+            {
+              type: ExprType.Condition,
+              operator: "_==_",
+              args: [CEL_ATTRIBUTE_RESOURCE_TABLE_NAME, "orders"],
+            },
+          ],
+        }}
+        factorList={[CEL_ATTRIBUTE_RESOURCE_TABLE_NAME]}
+        onUpdate={onUpdate}
+      />
+    );
+    const icon = container.querySelector("svg.lucide-trash-2");
+    const button = icon?.closest("button");
+    expect(icon?.classList.contains("size-4")).toBe(true);
+    expectClasses(button?.className, "h-7 px-2 shrink-0");
+    expect(button?.getAttribute("aria-label")).toBe("common.delete");
+    act(() => {
+      fireEvent.click(button!);
+    });
+    expect(onUpdate).toHaveBeenCalledWith({
+      type: ExprType.ConditionGroup,
+      operator: "_&&_",
+      args: [],
+    });
+    unmount();
+  });
+
+  test("keeps nested logical operators and raw expressions editable", async () => {
+    const initialExpr: ConditionGroupExpr = {
+      type: ExprType.ConditionGroup,
+      operator: "_&&_",
+      args: [
+        {
+          type: ExprType.ConditionGroup,
+          operator: "_&&_",
+          args: [
+            {
+              type: ExprType.Condition,
+              operator: "_==_",
+              args: [CEL_ATTRIBUTE_RESOURCE_TABLE_NAME, "orders"],
+            },
+            {
+              type: ExprType.Condition,
+              operator: "_==_",
+              args: [CEL_ATTRIBUTE_RESOURCE_TABLE_NAME, "customers"],
+            },
+          ],
+        },
+      ],
+    };
+    let currentExpr = initialExpr;
+    const factorList: Factor[] = [CEL_ATTRIBUTE_RESOURCE_TABLE_NAME];
+    const Harness = () => {
+      const [expr, setExpr] = useState(initialExpr);
+      return (
+        <ExprEditor
+          expr={expr}
+          factorList={factorList}
+          onUpdate={(next) => {
+            currentExpr = next;
+            setExpr(next);
+          }}
+        />
+      );
+    };
+    const { container, unmount } = renderIntoContainer(<Harness />);
+    const logicalOperator = Array.from(
+      container.querySelectorAll("button")
+    ).find((button) => button.textContent === "and");
+    expect(logicalOperator).not.toBeUndefined();
+    await act(async () => {
+      fireEvent.click(logicalOperator!);
+    });
+    const orOption = Array.from(
+      document.querySelectorAll('[role="option"]')
+    ).find((option) => option.textContent === "or");
+    expect(orOption).not.toBeUndefined();
+    await act(async () => {
+      fireEvent.pointerDown(orOption!, { pointerType: "mouse" });
+      fireEvent.click(orOption!);
+    });
+    const addRaw = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent === "cel.condition.add-raw-expression"
+    );
+    expect(addRaw).not.toBeUndefined();
+    await act(async () => {
+      fireEvent.click(addRaw!);
+    });
+    const textarea = container.querySelector("textarea");
+    expect(textarea).not.toBeNull();
+    await act(async () => {
+      fireEvent.change(textarea!, { target: { value: "true" } });
+    });
+    expect(currentExpr).toEqual({
+      ...initialExpr,
+      args: [
+        {
+          type: ExprType.ConditionGroup,
+          operator: "_||_",
+          args: [
+            {
+              type: ExprType.Condition,
+              operator: "_==_",
+              args: [CEL_ATTRIBUTE_RESOURCE_TABLE_NAME, "orders"],
+            },
+            {
+              type: ExprType.Condition,
+              operator: "_==_",
+              args: [CEL_ATTRIBUTE_RESOURCE_TABLE_NAME, "customers"],
+            },
+            { type: ExprType.RawString, content: "true" },
+          ],
+        },
+      ],
+    });
+    unmount();
+  });
+
+  test("hides the toolbar and Agent help when read-only", () => {
+    const { container, unmount } = renderIntoContainer(
+      <ExprEditor
+        readonly
+        expr={{ type: ExprType.ConditionGroup, operator: "_&&_", args: [] }}
+        factorList={[CEL_ATTRIBUTE_RESOURCE_TABLE_NAME]}
+        onUpdate={() => {}}
+      />
+    );
+    expect(container.querySelector("button")).toBeNull();
     unmount();
   });
 
@@ -840,8 +1480,7 @@ describe("ExprEditor", () => {
     );
 
     const valueField = input?.parentElement;
-    expect(valueField?.className).toContain("w-56");
-    expect(valueField?.className).toContain("shrink-0");
+    expectClasses(valueField?.className, "min-w-0 flex-1");
     expect(input?.className).toContain("w-full");
     const deleteButton = container
       .querySelector("svg.lucide-trash-2")
@@ -990,9 +1629,9 @@ describe("ExprEditor", () => {
       await Promise.resolve();
     });
 
-    const filterInput = Array.from(document.body.querySelectorAll("input")).find(
-      (input) => input.placeholder === "common.filter-by-name"
-    );
+    const filterInput = Array.from(
+      document.body.querySelectorAll("input")
+    ).find((input) => input.placeholder === "common.filter-by-name");
     const dropdown = filterInput?.parentElement?.parentElement?.parentElement;
 
     expect(dropdown).toBeInstanceOf(HTMLDivElement);

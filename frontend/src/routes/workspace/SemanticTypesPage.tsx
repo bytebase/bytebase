@@ -335,7 +335,7 @@ export function SemanticTypesPage() {
       />
 
       <WorkspacePageToolbar align="end">
-        <div className="flex items-center gap-x-2">
+        <div className="flex min-w-0 max-w-full flex-wrap items-center justify-end gap-2">
           <AgentPageHelpButton />
           <Button disabled={isReadonly} onClick={onAdd}>
             <Plus />

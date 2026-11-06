@@ -63,7 +63,7 @@ beforeEach(async () => {
 });
 
 describe("DatabaseGroupForm", () => {
-  test("keeps condition editor and database preview close on wide screens", () => {
+  test("fills available width beside the database preview on wide screens", () => {
     const { container, render, unmount } = renderIntoContainer(
       <DatabaseGroupForm
         readonly={false}
@@ -86,7 +86,10 @@ describe("DatabaseGroupForm", () => {
     const layout = conditionColumn?.parentElement;
     expect(layout?.className).toContain("xl:flex-row");
     expect(layout?.className).toContain("xl:gap-x-8");
-    expect(conditionColumn?.className).toContain("xl:w-fit");
+    expect(conditionColumn?.classList.contains("w-full")).toBe(true);
+    expect(conditionColumn?.classList.contains("min-w-0")).toBe(true);
+    expect(conditionColumn?.classList.contains("xl:flex-1")).toBe(true);
+    expect(conditionColumn?.classList.contains("xl:w-fit")).toBe(false);
     expect(databaseColumn?.className).toContain("xl:w-[28rem]");
 
     unmount();

@@ -1,34 +1,59 @@
 import { create } from "@bufbuild/protobuf";
+import { isEqual } from "lodash-es";
 import {
-  ChevronDown,
-  ChevronUp,
+  ArrowDown,
+  ArrowUp,
   ListOrdered,
   Pencil,
   Plus,
   Trash2,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import { ExprEditor, type OptionConfig } from "@/components/ExprEditor";
 import { FeatureAttention } from "@/components/FeatureAttention";
 import { LearnMoreLink } from "@/components/LearnMoreLink";
-import { SemanticTypeSelect } from "@/components/SemanticTypeSelect";
+import {
+  SemanticTypeOption,
+  SemanticTypeSelect,
+} from "@/components/SemanticTypeSelect";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { FormError, FormField, FormFieldGroup } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Separator } from "@/components/ui/separator";
+import { StickyActionFooter } from "@/components/ui/sticky-action-footer";
+import { Tooltip } from "@/components/ui/tooltip";
 import {
   WorkspacePageInfo,
   WorkspacePageLayout,
   WorkspacePageToolbar,
 } from "@/components/WorkspacePageLayout";
+import { useSemanticTypes } from "@/hooks/useSemanticTypes";
+import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import {
   factorOperatorOverrideMap,
   getClassificationLevelOptions,
 } from "@/lib/sensitive-data/components-utils";
+import { cn } from "@/lib/utils";
 import { AgentPageHelpButton } from "@/modules/agent/components/AgentPageHelpButton";
 import type { ConditionGroupExpr, Factor, SimpleExpr } from "@/modules/cel";
 import {
   buildCELExpr,
+  ExprType,
   emptySimpleExpr,
   resolveCELExpr,
   validateSimpleExpr,
@@ -68,22 +93,65 @@ import {
   CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
 } from "@/utils/cel-attributes";
 
-// ============================================================
-// Types
-// ============================================================
-
 type MaskingRuleMode = "NORMAL" | "EDIT" | "CREATE";
-
 interface MaskingRuleItem {
   mode: MaskingRuleMode;
   rule: MaskingRulePolicy_MaskingRule;
 }
 
-// ============================================================
-// MaskingRuleConfig
-// ============================================================
+async function parseRuleCondition(
+  expression: string
+): Promise<ConditionGroupExpr> {
+  let resolved: SimpleExpr = expression
+    ? { type: ExprType.RawString, content: expression }
+    : emptySimpleExpr();
+  try {
+    if (expression) {
+      const [parsed] = await batchConvertCELStringToParsedExpr([expression]);
+      if (parsed?.exprKind.case) resolved = resolveCELExpr(parsed);
+    }
+  } catch {
+    // Retain the original CEL if the selector cannot be loaded.
+  }
+  return wrapAsGroup(resolved);
+}
 
-function MaskingRuleConfig({
+function MaskingRuleCondition({
+  expression,
+  factorList,
+  optionConfigMap,
+}: {
+  expression: string;
+  factorList: Factor[];
+  optionConfigMap: Map<Factor, OptionConfig>;
+}) {
+  const [expr, setExpr] = useState(() =>
+    wrapAsGroup({ type: ExprType.RawString, content: expression })
+  );
+  useEffect(() => {
+    let cancelled = false;
+    void parseRuleCondition(expression).then((parsed) => {
+      if (!cancelled) setExpr(parsed);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [expression]);
+
+  return (
+    <ExprEditor
+      bordered={false}
+      readonly
+      expr={expr}
+      factorList={factorList}
+      optionConfigMap={optionConfigMap}
+      factorOperatorOverrideMap={factorOperatorOverrideMap}
+      onUpdate={() => {}}
+    />
+  );
+}
+
+function MaskingRuleEditor({
   index,
   disabled,
   mode,
@@ -93,245 +161,256 @@ function MaskingRuleConfig({
   onCancel,
   onDelete,
   onConfirm,
+  onDirtyChange,
 }: {
   index: number;
   disabled: boolean;
-  mode: MaskingRuleMode;
+  mode: "EDIT" | "CREATE";
   factorList: Factor[];
   optionConfigMap: Map<Factor, OptionConfig>;
   maskingRule: MaskingRulePolicy_MaskingRule;
   onCancel: () => void;
-  onDelete: () => void;
-  onConfirm: (rule: MaskingRulePolicy_MaskingRule) => void;
+  onDelete: () => Promise<boolean>;
+  onConfirm: (rule: MaskingRulePolicy_MaskingRule) => Promise<boolean>;
+  onDirtyChange: (dirty: boolean) => void;
 }) {
   const { t } = useTranslation();
-
-  const readonly = mode === "NORMAL";
-
   const [title, setTitle] = useState(maskingRule.condition?.title ?? "");
+  const [semanticType, setSemanticType] = useState(maskingRule.semanticType);
   const [expr, setExpr] = useState<ConditionGroupExpr>(
     wrapAsGroup(emptySimpleExpr())
   );
-  const [semanticType, setSemanticType] = useState<string | undefined>(
-    maskingRule.semanticType || undefined
-  );
-  const [dirty, setDirty] = useState(false);
+  const [savedExpr, setSavedExpr] = useState(expr);
+  const [parsing, setParsing] = useState(true);
+  const [preparing, setPreparing] = useState(false);
+  const [conversionError, setConversionError] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-
-  const resetIdRef = useRef(0);
-  const resetToRule = useCallback(
-    async (rule: MaskingRulePolicy_MaskingRule) => {
-      const id = ++resetIdRef.current;
-      let simpleExpr: SimpleExpr = emptySimpleExpr();
-      if (rule.condition?.expression) {
-        const parsedExprs = await batchConvertCELStringToParsedExpr([
-          rule.condition.expression,
-        ]);
-        if (id !== resetIdRef.current) return;
-        const celExpr = parsedExprs[0];
-        if (celExpr) {
-          simpleExpr = resolveCELExpr(celExpr);
-        }
-      }
-      if (id !== resetIdRef.current) return;
-      setExpr(wrapAsGroup(simpleExpr));
-      setTitle(rule.condition?.title ?? "");
-      setSemanticType(rule.semanticType || undefined);
-      setDirty(false);
-    },
-    []
-  );
+  const conditionErrorId = useId();
+  const semanticErrorId = useId();
+  const locked = disabled || parsing || preparing;
 
   useEffect(() => {
-    resetToRule(maskingRule);
-  }, [maskingRule, resetToRule]);
-
-  const errorMessages = useMemo(() => {
-    const msgs: string[] = [];
-    if (!semanticType) {
-      msgs.push(
-        t("settings.sensitive-data.global-rules.error.missing-semantic-type")
+    let cancelled = false;
+    const load = async () => {
+      const group = await parseRuleCondition(
+        maskingRule.condition?.expression ?? ""
       );
-    }
-    if (!validateSimpleExpr(expr)) {
-      msgs.push(
-        t("settings.sensitive-data.global-rules.error.invalid-condition")
-      );
-    }
-    return msgs;
-  }, [semanticType, expr, t]);
+      if (cancelled) return;
+      setExpr(group);
+      setSavedExpr(group);
+      setParsing(false);
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [maskingRule]);
 
-  const defaultTitle = `${t("settings.sensitive-data.global-rules.condition-order")} ${index}`;
+  const dirty =
+    title !== (maskingRule.condition?.title ?? "") ||
+    semanticType !== maskingRule.semanticType ||
+    !isEqual(expr, savedExpr);
+  useEffect(() => {
+    onDirtyChange(dirty);
+  }, [dirty, onDirtyChange]);
 
-  const handleCancel = async () => {
-    await resetToRule(maskingRule);
-    onCancel();
-  };
-
+  const invalidCondition = !validateSimpleExpr(expr);
+  const invalidFields = !semanticType || invalidCondition;
+  const showConditionError = !parsing && (invalidCondition || conversionError);
+  const showSemanticError = !parsing && !semanticType;
   const handleConfirm = async () => {
-    const celexpr = await buildCELExpr(expr);
-    if (!celexpr) return;
-    const expressions = await batchConvertParsedExprToCELString([celexpr]);
-    onConfirm({
-      ...maskingRule,
-      semanticType: semanticType!,
-      condition: create(ExprSchema, {
-        expression: expressions[0],
-        title,
-        description: "",
-        location: "",
-      }),
-    });
-    setDirty(false);
+    if (locked || !dirty || invalidFields) return;
+    setPreparing(true);
+    setConversionError(false);
+    try {
+      let expression = maskingRule.condition?.expression ?? "";
+      // Renaming or changing semantic type must not rewrite an untouched expression.
+      if (!isEqual(expr, savedExpr)) {
+        const celExpr = await buildCELExpr(expr);
+        if (!celExpr) {
+          setConversionError(true);
+          return;
+        }
+        const [converted] = await batchConvertParsedExprToCELString([celExpr]);
+        if (!converted) {
+          setConversionError(true);
+          return;
+        }
+        expression = converted;
+      }
+      await onConfirm({
+        ...maskingRule,
+        semanticType,
+        condition: maskingRule.condition
+          ? { ...maskingRule.condition, expression, title }
+          : create(ExprSchema, { expression, title }),
+      });
+    } catch {
+      setConversionError(true);
+    } finally {
+      setPreparing(false);
+    }
   };
 
-  const handleExprUpdate = useCallback((newExpr: ConditionGroupExpr) => {
-    setExpr(newExpr);
-    setDirty(true);
-  }, []);
+  const cancelButton = (
+    <Button appearance="outline" disabled={locked} onClick={onCancel}>
+      {t("common.cancel")}
+    </Button>
+  );
+  const saveButton = (
+    <Button
+      disabled={locked || !dirty || invalidFields}
+      onClick={handleConfirm}
+    >
+      {mode === "CREATE"
+        ? t("settings.sensitive-data.global-rules.create-rule")
+        : t("settings.sensitive-data.global-rules.save-rule")}
+    </Button>
+  );
+  const deleteButton = mode === "EDIT" && (
+    <Popover open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+      <PopoverTrigger
+        disabled={locked}
+        render={<Button appearance="secondary" variant="destructive" />}
+      >
+        <Trash2 className="size-4" />
+        {t("settings.sensitive-data.global-rules.delete-rule")}
+      </PopoverTrigger>
+      <PopoverContent aria-label={t("common.delete")}>
+        <p className="mb-3 text-sm">
+          {t("settings.sensitive-data.global-rules.delete-rule-tip")}
+        </p>
+        <div className="flex justify-end gap-2">
+          <Button
+            appearance="outline"
+            size="sm"
+            disabled={locked}
+            onClick={() => setShowDeleteConfirm(false)}
+          >
+            {t("common.cancel")}
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            disabled={locked}
+            onClick={async () => {
+              if (await onDelete()) setShowDeleteConfirm(false);
+            }}
+          >
+            {t("common.delete")}
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+  const saveActions = (
+    <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+      {cancelButton}
+      {saveButton}
+    </div>
+  );
 
   return (
-    <div className="flex flex-col gap-y-4 w-full">
-      <div className="flex flex-col items-start gap-x-4 gap-y-4 xl:flex-row xl:items-stretch">
-        <div className="flex-1 flex flex-col gap-y-2 min-w-0">
-          <div className="flex items-center h-9">
-            {!readonly ? (
-              <Input
-                size="md"
-                className="w-64"
-                placeholder={defaultTitle}
-                value={title}
-                disabled={disabled}
-                onChange={(e) => {
-                  setTitle(e.target.value);
-                  setDirty(true);
-                }}
-              />
-            ) : (
-              <h3 className="font-medium text-sm text-main">
-                {title || defaultTitle}
-              </h3>
-            )}
-          </div>
+    <div className="w-full min-w-0">
+      <FormFieldGroup>
+        <FormField title={t("settings.sensitive-data.global-rules.name")}>
+          <Input
+            aria-label={t("settings.sensitive-data.global-rules.name")}
+            value={title}
+            disabled={locked}
+            placeholder={`${t("settings.sensitive-data.global-rules.condition-order")} ${index}`}
+            onChange={(event) => setTitle(event.target.value)}
+          />
+        </FormField>
+        <FormField
+          title={t("settings.sensitive-data.global-rules.condition")}
+          role="group"
+          aria-label={t("settings.sensitive-data.global-rules.condition")}
+          aria-invalid={showConditionError || undefined}
+          aria-describedby={showConditionError ? conditionErrorId : undefined}
+        >
           <ExprEditor
             expr={expr}
-            readonly={readonly}
+            readonly={locked}
             factorList={factorList}
             optionConfigMap={optionConfigMap}
             factorOperatorOverrideMap={factorOperatorOverrideMap}
-            onUpdate={handleExprUpdate}
+            onUpdate={setExpr}
           />
-        </div>
-        <div className="flex w-full flex-col gap-y-2 xl:w-80">
-          <h3 className="flex items-center h-9 font-medium text-sm text-main">
-            {t("settings.sensitive-data.semantic-types.table.semantic-type")}
-          </h3>
-          <SemanticTypeSelect
-            value={semanticType ?? ""}
-            disabled={disabled || readonly}
-            className="w-full"
-            onValueChange={(value) => {
-              setSemanticType(value || undefined);
-              setDirty(true);
-            }}
-          />
-        </div>
-      </div>
-
-      {!readonly && (
-        <div className="flex justify-between items-center">
-          {mode === "EDIT" ? (
-            <div className="relative">
-              {showDeleteConfirm ? (
-                <div className="flex items-center gap-x-2">
-                  <span className="text-sm text-control">
-                    {t("settings.sensitive-data.global-rules.delete-rule-tip")}
-                  </span>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    disabled={disabled}
-                    onClick={() => {
-                      setShowDeleteConfirm(false);
-                      onDelete();
-                    }}
-                  >
-                    {t("common.delete")}
-                  </Button>
-                  <Button
-                    appearance="outline"
-                    size="sm"
-                    onClick={() => setShowDeleteConfirm(false)}
-                  >
-                    {t("common.cancel")}
-                  </Button>
-                </div>
-              ) : (
-                <Button
-                  appearance="secondary"
-                  size="sm"
-                  className="text-error hover:text-error"
-                  disabled={disabled}
-                  onClick={() => setShowDeleteConfirm(true)}
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  {t("common.delete")}
-                </Button>
+          {showConditionError && (
+            <FormError id={conditionErrorId}>
+              {t(
+                "settings.sensitive-data.global-rules.error.invalid-condition"
               )}
-            </div>
-          ) : (
-            <div />
+            </FormError>
           )}
-          <div className="flex justify-end gap-x-2 ml-auto">
-            <Button
-              appearance="outline"
-              disabled={disabled}
-              onClick={handleCancel}
-            >
-              {t("common.cancel")}
-            </Button>
-            <div className="relative group">
-              <Button
-                disabled={errorMessages.length !== 0 || disabled || !dirty}
-                onClick={handleConfirm}
-              >
-                {mode === "CREATE" ? t("common.create") : t("common.update")}
-              </Button>
-              {errorMessages.length > 0 && (
-                <div className="absolute bottom-full mb-1 right-0 bg-main text-main-text text-xs rounded-xs px-2 py-1 hidden group-hover:block whitespace-nowrap z-10">
-                  <ul className="list-disc pl-4">
-                    {errorMessages.map((msg, i) => (
-                      <li key={i}>{msg}</li>
-                    ))}
-                  </ul>
-                </div>
+        </FormField>
+        <FormField
+          title={t("settings.sensitive-data.global-rules.semantic-type")}
+        >
+          <SemanticTypeSelect
+            aria-label={t("settings.sensitive-data.global-rules.semantic-type")}
+            aria-invalid={showSemanticError || undefined}
+            aria-describedby={showSemanticError ? semanticErrorId : undefined}
+            id={`masking-semantic-type-${maskingRule.id}`}
+            value={semanticType}
+            disabled={locked}
+            className="w-full max-w-sm"
+            onValueChange={setSemanticType}
+          />
+          {showSemanticError && (
+            <FormError id={semanticErrorId}>
+              {t(
+                "settings.sensitive-data.global-rules.error.missing-semantic-type"
               )}
-            </div>
-          </div>
+            </FormError>
+          )}
+        </FormField>
+      </FormFieldGroup>
+      {dirty ? (
+        <StickyActionFooter
+          className="mt-6"
+          contentClassName="flex-wrap"
+          contentPadding={false}
+          rightClassName="ml-auto"
+          left={deleteButton}
+          right={saveActions}
+        />
+      ) : (
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-2">
+          {deleteButton}
+          {saveActions}
         </div>
       )}
     </div>
   );
 }
 
-// ============================================================
-// GlobalMaskingPage (main)
-// ============================================================
-
 export function GlobalMaskingPage() {
   const { t } = useTranslation();
-
   const hasSensitiveDataFeature = useAppStore((s) =>
     s.hasInstanceFeature(PlanFeature.FEATURE_DATA_MASKING)
   );
-
   const hasPermission = hasWorkspacePermissionV2(
     "bb.policies.updateMaskingRulePolicy"
   );
-
+  const canEdit = hasPermission && hasSensitiveDataFeature;
+  const { semanticTypes } = useSemanticTypes();
   const [items, setItems] = useState<MaskingRuleItem[]>([]);
+  const [loaded, setLoaded] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [reorderRules, setReorderRules] = useState(false);
+  const [draftDirty, setDraftDirty] = useState(false);
+  const [mutationError, setMutationError] = useState(false);
+  const reorderSnapshot = useRef<MaskingRuleItem[]>([]);
+  const activeEditor = items.some((item) => item.mode !== "NORMAL");
+  const reorderDirty =
+    reorderRules &&
+    !isEqual(
+      items.map((item) => item.rule.id),
+      reorderSnapshot.current.map((item) => item.rule.id)
+    );
+  useUnsavedChangesGuard((activeEditor && draftDirty) || reorderDirty);
 
   const factorList = useMemo(
     (): Factor[] => [
@@ -345,8 +424,6 @@ export function GlobalMaskingPage() {
     ],
     []
   );
-
-  // Recomputes once the environment list loads into the app store.
   const environmentList = useAppStore((s) => s.environmentList);
   const environmentOptions = useMemo(
     () =>
@@ -356,15 +433,11 @@ export function GlobalMaskingPage() {
       })),
     [environmentList]
   );
-  // `getClassificationLevelOptions` reads the app store imperatively, so key
-  // this on a `settingsByName` subscription to recompute once the
-  // DATA_CLASSIFICATION setting resolves.
   const classificationSettingsByName = useAppStore((s) => s.settingsByName);
   const classificationOptions = useMemo(
     () => getClassificationLevelOptions(),
     [classificationSettingsByName]
   );
-
   const factorOptionsMap = useMemo((): Map<Factor, OptionConfig> => {
     const workspaceName = useAppStore.getState().workspaceResourceName();
     return factorList.reduce((map, factor) => {
@@ -389,9 +462,10 @@ export function GlobalMaskingPage() {
       }
       return map;
     }, new Map<Factor, OptionConfig>());
-  }, [environmentOptions, classificationOptions]);
+  }, [factorList, environmentOptions, classificationOptions]);
 
   useEffect(() => {
+    let cancelled = false;
     const load = async () => {
       const policy = await useAppStore
         .getState()
@@ -399,13 +473,13 @@ export function GlobalMaskingPage() {
           parentPath: useAppStore.getState().workspaceResourceName(),
           policyType: PolicyType.MASKING_RULE,
         });
-      if (policy) {
-        const rules =
-          policy.policy?.case === "maskingRulePolicy"
-            ? policy.policy.value.rules
-            : [];
-        setItems(rules.map((rule) => ({ mode: "NORMAL", rule })));
-      }
+      if (cancelled) return;
+      const rules =
+        policy?.policy?.case === "maskingRulePolicy"
+          ? policy.policy.value.rules
+          : [];
+      setItems(rules.map((rule) => ({ mode: "NORMAL", rule })));
+      setLoaded(true);
       await Promise.all([
         useAppStore
           .getState()
@@ -418,7 +492,10 @@ export function GlobalMaskingPage() {
           ),
       ]);
     };
-    load();
+    void load();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const upsertPolicy = useCallback(async (currentItems: MaskingRuleItem[]) => {
@@ -440,97 +517,114 @@ export function GlobalMaskingPage() {
     });
   }, []);
 
-  const addNewRule = () => {
-    const newItem: MaskingRuleItem = {
-      mode: "CREATE",
-      rule: create(MaskingRulePolicy_MaskingRuleSchema, { id: uuidv4() }),
-    };
-    setItems((prev) => [...prev, newItem]);
-  };
-
-  const onEdit = (index: number) => {
-    setItems((prev) => {
-      const next = [...prev];
-      next[index] = { ...next[index], mode: "EDIT" };
-      return next;
-    });
-  };
-
-  const onCancel = (index: number) => {
-    setItems((prev) => {
-      const next = [...prev];
-      const item = next[index];
-      if (item.mode === "CREATE") {
-        next.splice(index, 1);
-      } else {
-        next[index] = { ...item, mode: "NORMAL" };
-      }
-      return next;
-    });
-  };
-
-  const onConfirm = async (rule: MaskingRulePolicy_MaskingRule) => {
-    if (processing) return;
-    const index = items.findIndex((item) => item.rule.id === rule.id);
-    if (index < 0) return;
-
-    const isCreate = items[index].mode === "CREATE";
-    const nextItems: MaskingRuleItem[] = items.map((item, i) =>
-      i === index ? { mode: "NORMAL", rule } : item
-    );
-
+  const persist = async (
+    nextItems: MaskingRuleItem[],
+    notification: string
+  ) => {
+    if (processing || !canEdit) return false;
     setProcessing(true);
-    setItems(nextItems);
+    setMutationError(false);
     try {
       await upsertPolicy(nextItems);
+      setItems(nextItems);
+      setDraftDirty(false);
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
-        title: t(`common.${isCreate ? "created" : "updated"}`),
+        title: notification,
       });
+      return true;
+    } catch {
+      setMutationError(true);
+      return false;
     } finally {
       setProcessing(false);
     }
   };
-
-  const onRuleDelete = async (index: number) => {
-    const item = items[index];
-    const nextItems = items.filter((_, i) => i !== index);
-    setItems(nextItems);
-    if (item.mode === "CREATE") return;
-
-    await upsertPolicy(nextItems);
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("common.deleted"),
-    });
+  const addNewRule = () => {
+    if (!canEdit || !loaded || activeEditor || reorderRules || processing)
+      return;
+    setMutationError(false);
+    setDraftDirty(false);
+    setItems((prev) => [
+      ...prev,
+      {
+        mode: "CREATE",
+        rule: create(MaskingRulePolicy_MaskingRuleSchema, { id: uuidv4() }),
+      },
+    ]);
   };
-
-  const onReorder = (itemToMove: MaskingRuleItem, offset: number) => {
+  const onEdit = (index: number) => {
+    if (!canEdit || activeEditor || reorderRules || processing) return;
+    setMutationError(false);
+    setDraftDirty(false);
+    setItems((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, mode: "EDIT" } : item))
+    );
+  };
+  const onCancel = (index: number) => {
+    if (processing) return;
+    setItems((prev) =>
+      prev.flatMap((item, i) =>
+        i !== index
+          ? [item]
+          : item.mode === "CREATE"
+            ? []
+            : [{ ...item, mode: "NORMAL" as const }]
+      )
+    );
+    setDraftDirty(false);
+    setMutationError(false);
+  };
+  const onConfirm = (rule: MaskingRulePolicy_MaskingRule) => {
+    const index = items.findIndex((item) => item.rule.id === rule.id);
+    if (index < 0) return Promise.resolve(false);
+    const isCreate = items[index].mode === "CREATE";
+    return persist(
+      items.map((item, i) => (i === index ? { mode: "NORMAL", rule } : item)),
+      t(isCreate ? "common.created" : "common.updated")
+    );
+  };
+  const onRuleDelete = (index: number) =>
+    persist(
+      items.filter((_, i) => i !== index),
+      t("common.deleted")
+    );
+  const onReorder = (index: number, offset: number) => {
+    if (
+      processing ||
+      !reorderRules ||
+      index + offset < 0 ||
+      index + offset >= items.length
+    )
+      return;
     setItems((prev) => {
-      const idx = prev.findIndex((it) => it.rule.id === itemToMove.rule.id);
-      if (idx < 0) return prev;
       const next = [...prev];
-      arraySwap(next, idx, idx + offset);
+      arraySwap(next, index, index + offset);
       return next;
     });
   };
-
-  const onReorderSubmit = async () => {
-    await upsertPolicy(items);
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("common.updated"),
-    });
+  const startReorder = () => {
+    if (!canEdit || !loaded || processing || activeEditor || items.length < 2)
+      return;
+    reorderSnapshot.current = items;
+    setMutationError(false);
+    setReorderRules(true);
+  };
+  const cancelReorder = () => {
+    if (processing) return;
+    setItems(reorderSnapshot.current);
     setReorderRules(false);
+    setMutationError(false);
+  };
+  const saveReorder = async () => {
+    if (!reorderDirty) return;
+    if (await persist(items, t("common.updated"))) setReorderRules(false);
   };
 
   return (
-    <WorkspacePageLayout allowHorizontalOverflow className="gap-y-4">
+    <WorkspacePageLayout>
       <FeatureAttention feature={PlanFeature.FEATURE_DATA_MASKING} />
-
       <WorkspacePageInfo
         description={
           <>
@@ -542,145 +636,225 @@ export function GlobalMaskingPage() {
           </>
         }
       />
-
-      <WorkspacePageToolbar align="end" className="w-full">
-        <div className="ml-auto flex items-center gap-x-2">
-          <AgentPageHelpButton />
-          {reorderRules ? (
-            <>
-              <Button
-                appearance="outline"
-                disabled={processing}
-                onClick={() => {
-                  setReorderRules(false);
-                  useAppStore
-                    .getState()
-                    .getOrFetchPolicyByParentAndType({
-                      parentPath: useAppStore
-                        .getState()
-                        .workspaceResourceName(),
-                      policyType: PolicyType.MASKING_RULE,
-                    })
-                    .then((policy) => {
-                      if (policy) {
-                        const rules =
-                          policy.policy?.case === "maskingRulePolicy"
-                            ? policy.policy.value.rules
-                            : [];
-                        setItems(
-                          rules.map((rule) => ({ mode: "NORMAL", rule }))
-                        );
-                      }
-                    });
-                }}
-              >
-                {t("common.cancel")}
-              </Button>
-              <Button disabled={processing} onClick={onReorderSubmit}>
-                {t("common.update")}
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button
-                appearance="outline"
-                disabled={
-                  !hasPermission ||
-                  !hasSensitiveDataFeature ||
-                  items.length <= 1
-                }
-                onClick={() => setReorderRules(true)}
-              >
-                <ListOrdered className="h-4 w-4" />
-                {t("settings.sensitive-data.global-rules.re-order")}
-              </Button>
-              <Button
-                disabled={!hasPermission || !hasSensitiveDataFeature}
-                onClick={addNewRule}
-              >
-                <Plus className="h-4 w-4" />
-                {t("common.create")}
-              </Button>
-            </>
-          )}
-        </div>
-      </WorkspacePageToolbar>
-
-      {/* Empty state */}
-      {items.length === 0 && (
-        <div className="py-12 border rounded-sm flex items-center justify-center text-control-placeholder text-sm">
-          {t("common.no-data")}
-        </div>
-      )}
-
-      {/* Rule list */}
-      {items.map((item, index) => (
-        <div key={item.rule.id} className="flex items-start gap-x-4">
-          {item.mode === "NORMAL" &&
-            hasPermission &&
-            hasSensitiveDataFeature && (
-              <div>
-                {reorderRules ? (
-                  <div className="pt-2 flex flex-col">
-                    {index > 0 && (
-                      <Button
-                        appearance="secondary"
-                        size="xs"
-                        type="button"
-                        className="flex items-center justify-center rounded-xs hover:bg-control-bg"
-                        onClick={() => onReorder(item, -1)}
-                      >
-                        <ChevronUp className="w-4 h-4" />
-                      </Button>
-                    )}
-                    {index !== items.length - 1 && (
-                      <Button
-                        appearance="secondary"
-                        size="xs"
-                        type="button"
-                        className="flex items-center justify-center rounded-xs hover:bg-control-bg"
-                        onClick={() => onReorder(item, 1)}
-                      >
-                        <ChevronDown className="w-4 h-4" />
-                      </Button>
-                    )}
-                  </div>
-                ) : (
-                  <div className="pt-2">
-                    <Button
-                      appearance="secondary"
-                      size="xs"
-                      type="button"
-                      className="flex items-center justify-center rounded-xs hover:bg-control-bg"
-                      onClick={() => onEdit(index)}
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                  </div>
-                )}
-              </div>
+      <div className="flex min-w-0 flex-col gap-4">
+        <WorkspacePageToolbar className="flex-wrap gap-y-3">
+          <span className="shrink-0 whitespace-nowrap text-sm text-control-light">
+            {t("settings.sensitive-data.global-rules.rule-count", {
+              count: items.length,
+            })}
+          </span>
+          <div className="ml-auto flex min-w-0 max-w-full flex-wrap items-center justify-end gap-2">
+            <AgentPageHelpButton />
+            {reorderRules ? (
+              <>
+                <Button
+                  appearance="outline"
+                  disabled={processing}
+                  onClick={cancelReorder}
+                >
+                  {t("common.cancel")}
+                </Button>
+                <Button
+                  disabled={processing || !reorderDirty}
+                  onClick={saveReorder}
+                >
+                  {t("settings.sensitive-data.global-rules.save-order")}
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  appearance="outline"
+                  disabled={
+                    !canEdit ||
+                    !loaded ||
+                    activeEditor ||
+                    processing ||
+                    items.length <= 1
+                  }
+                  onClick={startReorder}
+                >
+                  <ListOrdered className="size-4" />
+                  {t("settings.sensitive-data.global-rules.re-order")}
+                </Button>
+                <Button
+                  disabled={!canEdit || !loaded || activeEditor || processing}
+                  onClick={addNewRule}
+                >
+                  <Plus className="size-4" />
+                  {t("settings.sensitive-data.global-rules.create-rule")}
+                </Button>
+              </>
             )}
-
-          <div
-            className={`pb-5 w-full ${
-              item.mode === "NORMAL" ? "" : "ml-10.5"
-            } ${index === items.length - 1 ? "" : "border-b"}`}
-          >
-            <MaskingRuleConfig
-              key={`expr-${item.rule.id}`}
-              index={index + 1}
-              disabled={processing}
-              mode={reorderRules ? "NORMAL" : item.mode}
-              maskingRule={item.rule}
-              factorList={factorList}
-              optionConfigMap={factorOptionsMap}
-              onCancel={() => onCancel(index)}
-              onDelete={() => onRuleDelete(index)}
-              onConfirm={(rule) => onConfirm(rule)}
-            />
           </div>
-        </div>
-      ))}
+        </WorkspacePageToolbar>
+        {mutationError && (
+          <Alert
+            variant="error"
+            description={t(
+              "settings.sensitive-data.global-rules.error.save-failed"
+            )}
+          />
+        )}
+        {!loaded ? (
+          <p className="text-sm text-control-light">{t("common.loading")}</p>
+        ) : items.length === 0 ? (
+          <p className="py-8 text-sm text-control-light">
+            {t("common.no-data")}
+          </p>
+        ) : (
+          <ol className="m-0 flex min-w-0 list-decimal flex-col gap-4 pl-6 text-sm marker:text-control-light">
+            {items.map((item, index) => {
+              const semanticType = semanticTypes.find(
+                (type) => type.id === item.rule.semanticType
+              );
+              const title =
+                item.rule.condition?.title ||
+                `${t("settings.sensitive-data.global-rules.condition-order")} ${index + 1}`;
+              return (
+                <li key={item.rule.id} className="min-w-0 pl-2">
+                  {item.mode !== "NORMAL" ? (
+                    <MaskingRuleEditor
+                      index={index + 1}
+                      mode={item.mode}
+                      disabled={processing || !canEdit}
+                      maskingRule={item.rule}
+                      factorList={factorList}
+                      optionConfigMap={factorOptionsMap}
+                      onCancel={() => onCancel(index)}
+                      onDelete={() => onRuleDelete(index)}
+                      onConfirm={onConfirm}
+                      onDirtyChange={setDraftDirty}
+                    />
+                  ) : (
+                    <div className="flex min-w-0 flex-col gap-4">
+                      <div
+                        className={cn(
+                          "flex min-w-0 items-start",
+                          reorderRules ? "justify-between gap-4" : "gap-2"
+                        )}
+                      >
+                        <h2
+                          className={cn(
+                            "min-w-0 wrap-anywhere text-base font-semibold text-main",
+                            reorderRules && "flex-1"
+                          )}
+                        >
+                          {title}
+                        </h2>
+                        {canEdit &&
+                          (reorderRules ? (
+                            <div className="flex shrink-0 gap-1">
+                              {[
+                                [
+                                  -1,
+                                  ArrowUp,
+                                  t(
+                                    "settings.sensitive-data.global-rules.move-up"
+                                  ),
+                                ],
+                                [
+                                  1,
+                                  ArrowDown,
+                                  t(
+                                    "settings.sensitive-data.global-rules.move-down"
+                                  ),
+                                ],
+                              ].map(([offset, Icon, key]) => {
+                                const DirectionIcon = Icon as typeof ArrowUp;
+                                const direction = offset as number;
+                                return (
+                                  <Tooltip
+                                    key={direction}
+                                    content={key as string}
+                                  >
+                                    <Button
+                                      appearance="secondary"
+                                      size="sm"
+                                      aria-label={key as string}
+                                      disabled={
+                                        processing ||
+                                        index + direction < 0 ||
+                                        index + direction >= items.length
+                                      }
+                                      onClick={() =>
+                                        onReorder(index, direction)
+                                      }
+                                    >
+                                      <DirectionIcon className="size-4" />
+                                    </Button>
+                                  </Tooltip>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <Tooltip
+                              content={t(
+                                "settings.sensitive-data.global-rules.edit-rule-tooltip"
+                              )}
+                              render={
+                                <Button
+                                  appearance="secondary"
+                                  size="sm"
+                                  className="shrink-0"
+                                  aria-label={t(
+                                    "settings.sensitive-data.global-rules.edit-rule",
+                                    { name: title }
+                                  )}
+                                  disabled={processing || activeEditor}
+                                  onClick={() => onEdit(index)}
+                                />
+                              }
+                            >
+                              <Pencil className="size-4" />
+                            </Tooltip>
+                          ))}
+                      </div>
+                      <dl className="flex min-w-0 flex-col gap-4">
+                        <div className="flex min-w-0 flex-col gap-2">
+                          <dt className="text-xs text-control-light">
+                            {t(
+                              "settings.sensitive-data.global-rules.semantic-type"
+                            )}
+                          </dt>
+                          <dd className="min-w-0">
+                            {semanticType ? (
+                              <SemanticTypeOption
+                                semanticType={semanticType}
+                                descriptionAsTooltip
+                              />
+                            ) : (
+                              <span className="wrap-anywhere">
+                                {item.rule.semanticType}
+                              </span>
+                            )}
+                          </dd>
+                        </div>
+                        <div className="flex min-w-0 flex-col gap-2">
+                          <dt className="text-xs text-control-light">
+                            {t(
+                              "settings.sensitive-data.global-rules.condition"
+                            )}
+                          </dt>
+                          <dd className="min-w-0">
+                            <MaskingRuleCondition
+                              key={item.rule.condition?.expression ?? ""}
+                              expression={item.rule.condition?.expression ?? ""}
+                              factorList={factorList}
+                              optionConfigMap={factorOptionsMap}
+                            />
+                          </dd>
+                        </div>
+                      </dl>
+                    </div>
+                  )}
+                  {index < items.length - 1 && <Separator className="mt-4" />}
+                </li>
+              );
+            })}
+          </ol>
+        )}
+      </div>
     </WorkspacePageLayout>
   );
 }

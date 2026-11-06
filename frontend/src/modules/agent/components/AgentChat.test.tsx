@@ -305,6 +305,51 @@ describe("AgentChat", () => {
     unmount();
   });
 
+  test("keeps a rejected selector draft available for a raw CEL retry", async () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/sample" });
+    const expression = 'resource.table_name.lowerAscii().contains("test")';
+    const apply = vi.fn(async (_expression: string, mode: "selector" | "raw") =>
+      mode === "raw"
+    );
+    const unregister = registerAgentExpressionTarget(chat.id, apply);
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: `\`\`\`cel\n${expression}\n\`\`\``,
+    });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+    const selectorButton = container.querySelector<HTMLButtonElement>(
+      '[data-agent-expression-draft="selector"]'
+    );
+    const rawButton = container.querySelector<HTMLButtonElement>(
+      '[data-agent-expression-draft="raw"]'
+    );
+
+    await act(async () => selectorButton?.click());
+
+    expect(apply).toHaveBeenNthCalledWith(1, expression, "selector");
+    expect(selectorButton?.disabled).toBe(false);
+    expect(rawButton?.disabled).toBe(false);
+    expect(container.querySelector('[role="alert"]')?.textContent).toBe(
+      "cel.agent-help.invalid"
+    );
+    expect(selectorButton?.textContent).toBe("cel.agent-help.apply-selector");
+    expect(container.textContent).not.toContain("cel.agent-help.applied-selector");
+
+    await act(async () => rawButton?.click());
+
+    expect(apply).toHaveBeenNthCalledWith(2, expression, "raw");
+    expect(rawButton?.textContent).toBe("cel.agent-help.applied-raw");
+    expect(rawButton?.disabled).toBe(true);
+    expect(selectorButton?.disabled).toBe(true);
+    expect(container.querySelector('[role="alert"]')).toBeNull();
+    expect(container.textContent).not.toContain("cel.agent-help.applied-selector");
+    act(() => unregister());
+    unmount();
+  });
+
   test("opens a denied Query as an unsent Access Grant draft", async () => {
     const store = useAgentStore.getState();
     const chat = store.createChat({ context: "projects/sample" });

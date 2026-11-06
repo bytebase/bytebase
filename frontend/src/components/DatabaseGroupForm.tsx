@@ -224,7 +224,7 @@ export function DatabaseGroupForm({
         <hr className="my-6" />
 
         <div className="flex w-full flex-col gap-y-6 xl:flex-row xl:items-start xl:gap-x-8">
-          <div className="max-w-full xl:w-fit">
+          <div className="w-full min-w-0 xl:flex-1">
             <p className="pl-1 font-medium text-main mb-2">
               {t("database-group.condition.self")}
             </p>
