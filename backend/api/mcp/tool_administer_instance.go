@@ -135,14 +135,14 @@ func (s *Server) administerInstance(ctx context.Context, req *mcp.CallToolReques
 	// first, as the console's Create does.
 	test := proto.CloneOf(change.request)
 	test.ValidateOnly = true
-	resp, err := sendInstanceCreation(confirmedCtx, s, test)
+	resp, err := s.sendInstanceCreation(confirmedCtx, test)
 	if err != nil {
 		return formatToolError(errors.Wrap(err, "failed to test the connection")), nil, nil
 	}
 	if resp.Status >= http.StatusBadRequest {
 		return formatToolError(instanceCreationError(resp, change)), nil, nil
 	}
-	resp, err = sendInstanceCreation(confirmedCtx, s, change.request)
+	resp, err = s.sendInstanceCreation(confirmedCtx, change.request)
 	if err != nil {
 		return formatToolError(errors.Wrap(err, "failed to add the instance")), nil, nil
 	}
@@ -151,14 +151,14 @@ func (s *Server) administerInstance(ctx context.Context, req *mcp.CallToolReques
 	}
 	created := &v1pb.Instance{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal(resp.Body, created); err != nil {
-		return formatToolError(errors.Wrap(err, "the instance was added, but its description could not be read")), nil, nil
+		return formatToolError(errors.Wrap(err, "the instance was added, but the response could not be read")), nil, nil
 	}
 	text := s.instanceAddedText(ctx, change, created)
 	instanceLink := s.consoleLink(ctx, change.confirmedResource())
 	return textResult(text), &AdministerWorkspaceOutput{OperationID: input.OperationID, Changed: true, Message: text, Link: instanceLink}, nil
 }
 
-func sendInstanceCreation(ctx context.Context, s *Server, request *v1pb.CreateInstanceRequest) (*apiResponse, error) {
+func (s *Server) sendInstanceCreation(ctx context.Context, request *v1pb.CreateInstanceRequest) (*apiResponse, error) {
 	body, err := protojson.Marshal(request)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to build the request")
