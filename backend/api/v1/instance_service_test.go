@@ -280,7 +280,7 @@ func TestValidateProjectInstanceListFilter(t *testing.T) {
 func TestClassifyConnectionFailure(t *testing.T) {
 	t.Parallel()
 	connectErr := connect.NewError(connect.CodeInvalidArgument, errors.New("generic connect error"))
-	connectErr.Meta().Set(common.ConnectionFailureCategoryHeader, connectionCategoryAuthFailed)
+	connectErr.Meta().Set(connectionCategoryHeader, connectionCategoryAuthFailed)
 	var typedNilConnectErr *connect.Error
 
 	testCases := []struct {

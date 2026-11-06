@@ -351,8 +351,8 @@ const (
 		"Change other settings signed in to the Bytebase console"
 	mcpInstanceCreationUnconfirmed = "an instance is added over MCP only through administer_workspace, after the user confirms it in the MCP client, " +
 		"and this request carries no such confirmation"
-	mcpInstanceCreationWayOut = "To add a PostgreSQL instance to a project, use the administer_workspace tool, which asks the user to confirm. " +
-		"Add other instances signed in to the Bytebase console"
+	mcpInstanceCreationWayOut = "To add a PostgreSQL instance to a project, use the administer_workspace tool, which asks the user to confirm and tests the connection before it adds the instance. " +
+		"Add other instances, or test a connection alone, signed in to the Bytebase console"
 )
 
 // refuseUnconfirmed serves procedure only when the request context carries a
@@ -397,21 +397,13 @@ func updatedPolicyName(msg any) (string, bool) {
 	return request.GetPolicy().GetName(), ok
 }
 
-// createdInstanceName names the instance a create adds, as the audit log does.
-// A parent that names no project gets a name no confirmation carries.
+// createdInstanceName names the instance a create adds, as its audit row does.
 func createdInstanceName(msg any) (string, bool) {
 	request, ok := msg.(*v1pb.CreateInstanceRequest)
 	if !ok {
 		return "", false
 	}
-	if request.Parent == nil {
-		return common.FormatInstance(request.GetInstanceId()), true
-	}
-	projectID, err := common.GetProjectID(request.GetParent())
-	if err != nil {
-		return "", true
-	}
-	return common.FormatProjectInstance(projectID, request.GetInstanceId()), true
+	return getRequestResource(request, v1connect.InstanceServiceCreateInstanceProcedure), true
 }
 
 // refuseGrantIssueCreation applies grantIssueRefusal to CreateIssue. UpdateIssue's

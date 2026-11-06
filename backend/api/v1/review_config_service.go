@@ -216,7 +216,7 @@ func convertToReviewConfigMessage(reviewConfig *v1pb.ReviewConfig) (*store.Revie
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid config name %s", reviewConfig.Name))
 	}
 
-	if !isValidResourceID(id) {
+	if !common.IsValidResourceID(id) {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid config id %v", reviewConfig.Name))
 	}
 

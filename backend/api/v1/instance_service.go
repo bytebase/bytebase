@@ -47,6 +47,7 @@ type InstanceService struct {
 }
 
 const (
+	connectionCategoryHeader             = "bytebase-connection-failure-category"
 	connectionCategoryNetworkUnreachable = "network_unreachable"
 	connectionCategoryAuthFailed         = "auth_failed"
 	connectionCategoryPermissionDenied   = "permission_denied"
@@ -66,7 +67,7 @@ func classifyConnectionFailure(err error) string {
 		if connectErr == nil {
 			return connectionCategorySuccess
 		}
-		if category := connectErr.Meta().Get(common.ConnectionFailureCategoryHeader); category != "" {
+		if category := connectErr.Meta().Get(connectionCategoryHeader); category != "" {
 			return category
 		}
 	}
@@ -115,7 +116,7 @@ func classifyConnectionFailure(err error) string {
 func newConnectionTestErrorWithCategory(code connect.Code, err error, format string, args ...any) *connect.Error {
 	category := classifyConnectionFailure(err)
 	connectErr := connect.NewError(code, errors.Wrapf(err, format, args...))
-	connectErr.Meta().Set(common.ConnectionFailureCategoryHeader, category)
+	connectErr.Meta().Set(connectionCategoryHeader, category)
 	return connectErr
 }
 
@@ -370,7 +371,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 	if req.Msg.Instance == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("instance must be set"))
 	}
-	if !isValidResourceID(req.Msg.InstanceId) {
+	if !common.IsValidResourceID(req.Msg.InstanceId) {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid instance ID %v", req.Msg.InstanceId))
 	}
 

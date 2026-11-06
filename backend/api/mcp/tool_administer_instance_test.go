@@ -14,6 +14,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
@@ -52,20 +53,15 @@ const journeyOneBody = `{
   }
 }`
 
-// instanceMock is the internal API behind the instance entry: the project, the
-// instance ID and the environments the tool reads, and the connection test and
-// the create, each recorded with its confirmation.
+// instanceMock is the internal API behind the instance entry: the environments
+// the tool reads, and the connection test and the create, each recorded with its
+// confirmation.
 type instanceMock struct {
 	mu sync.Mutex
-	// projectStatus, instanceStatus and environmentStatus, when set, are the
-	// HTTP status each read answers with.
-	projectStatus     int
-	instanceStatus    int
+	// environmentStatus, when set, is the HTTP status the environment read
+	// answers with.
 	environmentStatus int
-	projectState      v1pb.State
-	// existing is an instance the project already holds under the request's ID.
-	existing     *v1pb.Instance
-	environments []string
+	environments      []string
 	// connectionFails makes the connection test fail as a refused sign-in does.
 	connectionFails bool
 	// testRefusal and createRefusal, when set, are the HTTP status the test or
@@ -73,18 +69,17 @@ type instanceMock struct {
 	testRefusal   int
 	createRefusal int
 	// inactive makes the create answer with an instance that is not activated
-	// in effect.
+	// in effect, and unsynced with one whose instance sync failed.
 	inactive  bool
-	databases []string
-	listing   int
+	unsynced  bool
 	creations []approvalCall
+	// maskingSkips is what the license says of an instance that is not
+	// activated: whether masking would skip it.
+	maskingSkips bool
 }
 
 func newInstanceMock() *instanceMock {
-	return &instanceMock{
-		environments: []string{"test", "prod"},
-		databases:    []string{"hr_staging", "postgres"},
-	}
+	return &instanceMock{environments: []string{"test", "prod"}, maskingSkips: true}
 }
 
 func (m *instanceMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -96,23 +91,6 @@ func (m *instanceMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]any{"code": code, "message": message})
 	}
 	switch r.URL.Path {
-	case v1connect.ProjectServiceGetProjectProcedure:
-		if m.projectStatus != 0 {
-			refuse(m.projectStatus, "denied", "project read refused")
-			return
-		}
-		body, _ := protojson.Marshal(&v1pb.Project{Name: "projects/hr", Title: "HR", State: m.projectState})
-		_, _ = w.Write(body)
-	case v1connect.InstanceServiceGetInstanceProcedure:
-		switch {
-		case m.instanceStatus != 0:
-			refuse(m.instanceStatus, "denied", "instance read refused")
-		case m.existing == nil:
-			refuse(http.StatusNotFound, "not_found", `instance "`+journeyOneInstance+`" not found`)
-		default:
-			body, _ := protojson.Marshal(m.existing)
-			_, _ = w.Write(body)
-		}
 	case v1connect.SettingServiceGetSettingProcedure:
 		if m.environmentStatus != 0 {
 			refuse(m.environmentStatus, "denied", "setting read refused")
@@ -134,7 +112,6 @@ func (m *instanceMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if validateOnly, ok := call.body["validateOnly"].(bool); ok && validateOnly {
 			switch {
 			case m.connectionFails:
-				w.Header().Set(common.ConnectionFailureCategoryHeader, "auth_failed")
 				refuse(http.StatusBadRequest, "invalid_argument", `failed to connect to database: password authentication failed for user "postgres"`)
 			case m.testRefusal != 0:
 				refuse(m.testRefusal, "not_found", `project "projects/hr" not found`)
@@ -147,18 +124,12 @@ func (m *instanceMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			refuse(m.createRefusal, "already_exists", `instance ID "hr-staging" already exists`)
 			return
 		}
-		body, _ := protojson.Marshal(&v1pb.Instance{Name: journeyOneInstance, Title: "HR Staging", Engine: v1pb.Engine_POSTGRES, Activation: !m.inactive})
+		created := &v1pb.Instance{Name: journeyOneInstance, Title: "HR Staging", Engine: v1pb.Engine_POSTGRES, Activation: !m.inactive}
+		if !m.unsynced {
+			created.LastSyncTime = timestamppb.New(time.Date(2026, 11, 6, 9, 0, 0, 0, time.UTC))
+		}
+		body, _ := protojson.Marshal(created)
 		_, _ = w.Write(body)
-	case v1connect.DatabaseServiceListDatabasesProcedure:
-		if m.listing != 0 {
-			refuse(m.listing, "permission_denied", "")
-			return
-		}
-		var databases []map[string]any
-		for _, name := range m.databases {
-			databases = append(databases, map[string]any{"name": journeyOneInstance + "/databases/" + name})
-		}
-		_ = json.NewEncoder(w).Encode(map[string]any{"databases": databases})
 	default:
 		w.WriteHeader(http.StatusNotFound)
 	}
@@ -175,6 +146,11 @@ func connectToInstanceServer(t *testing.T, mock *instanceMock, opts *mcp.ClientO
 	profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}
 	s, err := newServerWithStore(newTestServerStore(), profile, revalidationSecret, mock)
 	require.NoError(t, err)
+	s.maskingSkipsUnactivated = func(context.Context, string) bool {
+		mock.mu.Lock()
+		defer mock.mu.Unlock()
+		return mock.maskingSkips
+	}
 	e := echo.New()
 	s.RegisterRoutes(e)
 	ts := httptest.NewServer(e)
@@ -212,7 +188,7 @@ func signedInstanceState(t *testing.T, s *Server, body map[string]any, askedAt t
 	change, err := parseInstanceCreation(body, "ws-test")
 	require.NoError(t, err)
 	alice := withOAuth2ClientID(withUserEmail(withWorkspaceID(context.Background(), "ws-test"), "alice@example.com"), "client-A")
-	form, err := instanceForm(alice, change, "")
+	form, err := instanceForm(alice, change, s.maskingSkipsUnactivated(alice, "ws-test"), "")
 	require.NoError(t, err)
 	return s.signConfirmationState(alice, change, adminFormDigest(form, change.request), askedAt)
 }
@@ -230,7 +206,6 @@ func TestAdministerInstanceAddsJourneyOnesServer(t *testing.T) {
 		`Add instance "hr-staging" to project "hr", as alice@example.com?`,
 		`Host "localhost", port 5433, user "postgres", TLS not required`,
 		`Environment "test". Its databases join the project for good.`,
-		instanceActivated,
 	}, "\n"), asked.Message)
 	for _, line := range strings.Split(asked.Message, "\n") {
 		require.LessOrEqual(t, lineColumns(line), messageLineWidth, line)
@@ -250,7 +225,7 @@ func TestAdministerInstanceAddsJourneyOnesServer(t *testing.T) {
 	require.Equal(t, body, calls[1].body, "the create must be the request the user confirmed")
 	require.Equal(t, confirmed, calls[1].confirmed)
 
-	text := "Added: instance \"hr-staging\" in project \"hr\", environment \"test\". Its databases: \"hr_staging\", \"postgres\".\n" +
+	text := "Added: instance \"hr-staging\" in project \"hr\", environment \"test\". Bytebase synced its databases into the project.\n" +
 		"Instance: https://bb.example.com/" + journeyOneInstance
 	require.Equal(t, text, resultText(t, res))
 	output, err := json.Marshal(res.StructuredContent)
@@ -299,7 +274,6 @@ func TestAdministerInstanceFitsACloudHostInFourLines(t *testing.T) {
 	for _, line := range strings.Split(asked.Message, "\n") {
 		require.LessOrEqual(t, lineColumns(line), messageLineWidth, line)
 	}
-	require.True(t, strings.HasSuffix(choiceDescription(t, asked), "\n"+instanceActivated), "the activation note ends the description when no line is left")
 }
 
 func TestAdministerInstanceFitsLongerNamesInFourLines(t *testing.T) {
@@ -376,15 +350,36 @@ func TestAdministerInstanceKeepsTheMaskingWarningInTheMessage(t *testing.T) {
 			notActivated(request, instance, dataSource)
 			dataSource["host"] = cloudHost
 		})))
-		require.True(t, res.IsError)
-		require.Contains(t, resultText(t, res), "CHANGE_TOO_LONG")
-		require.Contains(t, resultText(t, res), "this instance needs 5 lines, more than the 4 one confirmation form shows, so no instance was added")
-		require.Contains(t, resultText(t, res), "https://bb.example.com/projects/hr/instances/new")
+		refusal := resultToolError(t, res)
+		require.Equal(t, "CHANGE_TOO_LONG", refusal.Code)
+		require.Equal(t, "this instance needs 5 lines, more than the 4 one confirmation form shows, so no instance was added", refusal.Message)
+		require.Contains(t, refusal.Suggestion, "https://bb.example.com/projects/hr/instances/new")
 		require.Zero(t, user.asked.Load())
 		require.Empty(t, mock.calls())
 	})
-}
 
+	t.Run("no warning where masking would not skip it, so a cloud host fits", func(t *testing.T) {
+		mock := newInstanceMock()
+		mock.maskingSkips = false
+		user := &asker{answer: &mcp.ElicitResult{Action: "decline"}}
+		_, session := connectToInstanceServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
+		callAdminister(t, session, instanceParams(instanceBody(t, func(request, instance, dataSource map[string]any) {
+			notActivated(request, instance, dataSource)
+			dataSource["host"] = cloudHost
+		})))
+		asked := user.lastParams(t)
+		require.Len(t, strings.Split(asked.Message, "\n"), messageLines)
+		require.NotContains(t, asked.Message+choiceDescription(t, asked), "ctivated")
+	})
+
+	t.Run("no warning for an activated instance", func(t *testing.T) {
+		mock := newInstanceMock()
+		user := &asker{answer: &mcp.ElicitResult{Action: "decline"}}
+		_, session := connectToInstanceServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
+		callAdminister(t, session, instanceParams(instanceBody(t, nil)))
+		require.NotContains(t, user.lastParams(t).Message, "ctivated")
+	})
+}
 func TestAdministerInstanceStatesNoEnvironment(t *testing.T) {
 	mock := newInstanceMock()
 	user := &asker{answer: &mcp.ElicitResult{Action: "decline"}}
@@ -425,18 +420,21 @@ func TestAdministerInstanceRefusesBeforeAsking(t *testing.T) {
 		"two data sources": {func(_, instance, dataSource map[string]any) {
 			instance["dataSources"] = []any{dataSource, map[string]any{"id": "ro", "type": "READ_ONLY", "host": "localhost", "port": "5433", "username": "reader"}}
 		}, "has 2 data sources"},
-		"cloud IAM sign-in":           {func(_, _, dataSource map[string]any) { dataSource["authenticationType"] = "AWS_RDS_IAM" }, "signs in with AWS_RDS_IAM"},
-		"an invalid instance ID":      {func(request, _, _ map[string]any) { request["instanceId"] = "HR_Staging" }, `the instance ID "HR_Staging" is not valid`},
-		"no title":                    {func(_, instance, _ map[string]any) { instance["title"] = "  " }, "the instance has no title"},
-		"an environment ID alone":     {func(_, instance, _ map[string]any) { instance["environment"] = "test" }, `the environment "test" is not an environment's name`},
-		"a read-only data source":     {func(_, _, dataSource map[string]any) { dataSource["type"] = "READ_ONLY" }, "the data source's type is READ_ONLY"},
-		"no data source id":           {func(_, _, dataSource map[string]any) { delete(dataSource, "id") }, "the data source has no id"},
-		"no host":                     {func(_, _, dataSource map[string]any) { dataSource["host"] = " " }, "the data source has no host"},
-		"no port":                     {func(_, _, dataSource map[string]any) { delete(dataSource, "port") }, `the port "" is not a number`},
-		"options after the port":      {func(_, _, dataSource map[string]any) { dataSource["port"] = "5432 host=other.example" }, "is not a number from 1 to 65535"},
-		"port zero":                   {func(_, _, dataSource map[string]any) { dataSource["port"] = "0" }, `the port "0" is not a number`},
-		"a port past 65535":           {func(_, _, dataSource map[string]any) { dataSource["port"] = "65536" }, `the port "65536" is not a number`},
-		"a port with a leading zero":  {func(_, _, dataSource map[string]any) { dataSource["port"] = "05432" }, `the port "05432" is not a number`},
+		"cloud IAM sign-in":       {func(_, _, dataSource map[string]any) { dataSource["authenticationType"] = "AWS_RDS_IAM" }, "signs in with AWS_RDS_IAM"},
+		"an invalid instance ID":  {func(request, _, _ map[string]any) { request["instanceId"] = "HR_Staging" }, `the instance ID "HR_Staging" is not valid`},
+		"no title":                {func(_, instance, _ map[string]any) { instance["title"] = "  " }, "the instance has no title"},
+		"an environment ID alone": {func(_, instance, _ map[string]any) { instance["environment"] = "test" }, `the environment "test" is not an environment's name`},
+		"a read-only data source": {func(_, _, dataSource map[string]any) { dataSource["type"] = "READ_ONLY" }, "the data source's type is READ_ONLY"},
+		"no data source id":       {func(_, _, dataSource map[string]any) { delete(dataSource, "id") }, "the data source has no id"},
+		"no host":                 {func(_, _, dataSource map[string]any) { dataSource["host"] = " " }, "the data source has no host"},
+		"no port":                 {func(_, _, dataSource map[string]any) { delete(dataSource, "port") }, `the port "" is not a number`},
+		"options after the port":  {func(_, _, dataSource map[string]any) { dataSource["port"] = "5432 host=other.example" }, "is not a number from 1 to 65535"},
+		"port zero":               {func(_, _, dataSource map[string]any) { dataSource["port"] = "0" }, `the port "0" is not a number`},
+		"a port past 65535":       {func(_, _, dataSource map[string]any) { dataSource["port"] = "65536" }, `the port "65536" is not a number`},
+		"a signed port":           {func(_, _, dataSource map[string]any) { dataSource["port"] = "+5432" }, `the port "+5432" is not a number`},
+		"a question too wide for any instance ID": {func(request, _, _ map[string]any) {
+			request["parent"] = "projects/" + strings.Repeat("p", 40)
+		}, "is wider than one line of the confirmation form, so no instance was added (add the instance signed in"},
 		"no username":                 {func(_, _, dataSource map[string]any) { delete(dataSource, "username") }, "the data source has no username"},
 		"a connection test requested": {func(request, _, _ map[string]any) { request["validateOnly"] = true }, "the request sets validate_only"},
 		"the instance's name":         {func(_, instance, _ map[string]any) { instance["name"] = "instances/hr-staging" }, "the request sets instance.name"},
@@ -448,7 +446,7 @@ func TestAdministerInstanceRefusesBeforeAsking(t *testing.T) {
 		}, "the request sets instance.data_sources.extra_connection_parameters"},
 		"a question too long for one line": {func(request, _, _ map[string]any) {
 			request["instanceId"] = "a" + strings.Repeat("b", 61) + "c"
-		}, "is wider than one line of the confirmation form"},
+		}, "is wider than one line of the confirmation form, so no instance was added (use a shorter instance ID, or add"},
 		"a host too long for any form": {func(_, _, dataSource map[string]any) {
 			dataSource["host"] = strings.Repeat("h", 200) + ".example.com"
 		}, "CHANGE_TOO_LONG"},
@@ -467,24 +465,13 @@ func TestAdministerInstanceRefusesBeforeAsking(t *testing.T) {
 	}
 }
 
-func TestAdministerInstanceChecksTheProjectTheIDAndTheEnvironment(t *testing.T) {
+func TestAdministerInstanceChecksTheEnvironment(t *testing.T) {
 	for name, tc := range map[string]struct {
 		setup      func(m *instanceMock)
 		edit       func(request, instance, dataSource map[string]any)
 		message    string
 		suggestion string
 	}{
-		"a project that does not exist": {setup: func(m *instanceMock) { m.projectStatus = http.StatusNotFound },
-			message: `the project "projects/hr" does not exist, so no instance was added`, suggestion: "ProjectService/SearchProjects"},
-		"an archived project": {setup: func(m *instanceMock) { m.projectState = v1pb.State_DELETED },
-			message: `the project "projects/hr" is archived, so no instance was added`, suggestion: "restore this one"},
-		"an instance the project holds": {setup: func(m *instanceMock) {
-			m.existing = &v1pb.Instance{Name: journeyOneInstance, State: v1pb.State_ACTIVE}
-		}, message: `the instance "hr-staging" already exists in project "hr", so no instance was added`,
-			suggestion: "it is already added: https://bb.example.com/" + journeyOneInstance + ". To add another server, choose another instance ID"},
-		"a deleted instance with the ID": {setup: func(m *instanceMock) {
-			m.existing = &v1pb.Instance{Name: journeyOneInstance, State: v1pb.State_DELETED}
-		}, message: `a deleted instance in project "hr" holds the instance ID "hr-staging", so no instance was added`, suggestion: "choose another instance ID"},
 		"a misspelled environment": {edit: func(_, instance, _ map[string]any) { instance["environment"] = "environments/tset" },
 			message:    `the environment "environments/tset" does not exist, so no instance was added`,
 			suggestion: `the workspace's environments are "environments/test", "environments/prod"; use one of them, or leave instance.environment out for no environment`},
@@ -507,27 +494,29 @@ func TestAdministerInstanceChecksTheProjectTheIDAndTheEnvironment(t *testing.T) 
 	}
 }
 
-// A role may add instances without the reads the checks make; a read it does
-// not allow checks nothing, and the create stays the authority.
-func TestAdministerInstanceSkipsAChecksReadTheRoleDoesNotAllow(t *testing.T) {
-	for name, setup := range map[string]func(m *instanceMock){
-		"the project":      func(m *instanceMock) { m.projectStatus = http.StatusForbidden },
-		"the instance ID":  func(m *instanceMock) { m.instanceStatus = http.StatusForbidden },
-		"the environments": func(m *instanceMock) { m.environmentStatus = http.StatusForbidden; m.environments = nil },
-	} {
-		t.Run(name, func(t *testing.T) {
-			mock := newInstanceMock()
-			setup(mock)
-			user := &asker{answer: adminAnswer(adminChoiceApply)}
-			_, session := connectToInstanceServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
-			res := callAdminister(t, session, instanceParams(instanceBody(t, nil)))
-			require.False(t, res.IsError, resultText(t, res))
-			require.Equal(t, int32(1), user.asked.Load())
-			require.Len(t, mock.calls(), 2)
-		})
+func TestAdministerInstanceRefusesAnAnswerOverAnEnvironmentRemoved(t *testing.T) {
+	mock := newInstanceMock()
+	user := &asker{answer: adminAnswer(adminChoiceApply)}
+	user.whileAsked = func() {
+		mock.mu.Lock()
+		defer mock.mu.Unlock()
+		mock.environments = []string{"prod"}
 	}
+	_, session := connectToInstanceServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
+	refusal := resultToolError(t, callAdminister(t, session, instanceParams(instanceBody(t, nil))))
+	require.Equal(t, `the environment "environments/test" does not exist, so no instance was added`, refusal.Message)
+	require.Empty(t, mock.calls())
 }
-
+func TestAdministerInstanceSkipsTheEnvironmentCheckForARoleThatCannotRead(t *testing.T) {
+	mock := newInstanceMock()
+	mock.environmentStatus = http.StatusForbidden
+	user := &asker{answer: adminAnswer(adminChoiceApply)}
+	_, session := connectToInstanceServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
+	res := callAdminister(t, session, instanceParams(instanceBody(t, nil)))
+	require.False(t, res.IsError, resultText(t, res))
+	require.Equal(t, int32(1), user.asked.Load())
+	require.Len(t, mock.calls(), 2)
+}
 func TestAdministerInstanceChangesNothingUnlessApplied(t *testing.T) {
 	for name, tc := range map[string]struct {
 		answer *mcp.ElicitResult
@@ -624,25 +613,26 @@ func TestAdministerInstanceAddsNothingWhenTheConnectionFails(t *testing.T) {
 	mock.connectionFails = true
 	_, session := connectToInstanceServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{answer: adminAnswer(adminChoiceApply)}).handle})
 	refusal := resultToolError(t, callAdminister(t, session, instanceParams(instanceBody(t, nil))))
-	require.Equal(t, "CONNECTION_FAILED", refusal.Code)
-	require.Equal(t, `Bytebase could not connect to "localhost", port 5433, as "postgres", so no instance was added: `+
-		`failed to connect to database: password authentication failed for user "postgres"`, refusal.Message)
-	require.Contains(t, refusal.Suggestion, "check the host, port, user and password with the user")
+	require.Equal(t, "CONNECTION_TEST_FAILED", refusal.Code)
+	require.Equal(t, "Bytebase's connection test refused the request, so no instance was added: "+
+		`HTTP 400: failed to connect to database: password authentication failed for user "postgres"`, refusal.Message)
+	require.Contains(t, refusal.Suggestion, "correct the request with the user as the message says")
 	require.NotContains(t, refusal.Error(), journeyOnePassword)
 	calls := mock.calls()
 	require.Len(t, calls, 1, "the create is never sent after a failed test")
 	require.Equal(t, true, calls[0].body["validateOnly"])
 }
 
-func TestAdministerInstanceReportsAnyOtherRefusalAsTheHandlerStatesIt(t *testing.T) {
+func TestAdministerInstanceReportsEachRefusalAsTheHandlerStatesIt(t *testing.T) {
 	t.Run("at the test", func(t *testing.T) {
 		mock := newInstanceMock()
 		mock.testRefusal = http.StatusNotFound
 		_, session := connectToInstanceServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{answer: adminAnswer(adminChoiceApply)}).handle})
 		res := callAdminister(t, session, instanceParams(instanceBody(t, nil)))
 		require.True(t, res.IsError)
-		require.Equal(t, `failed to add the instance: HTTP 404: project "projects/hr" not found`, resultText(t, res))
-		require.NotContains(t, resultText(t, res), "CONNECTION_FAILED")
+		refusal := resultToolError(t, res)
+		require.Equal(t, "CONNECTION_TEST_FAILED", refusal.Code)
+		require.Equal(t, `Bytebase's connection test refused the request, so no instance was added: HTTP 404: project "projects/hr" not found`, refusal.Message)
 		require.Len(t, mock.calls(), 1)
 	})
 
@@ -660,27 +650,31 @@ func TestAdministerInstanceReportsAnyOtherRefusalAsTheHandlerStatesIt(t *testing
 func TestAdministerInstanceReportsWhatTheCreateLeft(t *testing.T) {
 	for name, tc := range map[string]struct {
 		setup func(m *instanceMock)
+		edit  func(request, instance, dataSource map[string]any)
 		want  string
 	}{
-		"no database yet": {func(m *instanceMock) { m.databases = nil },
-			`Added: instance "hr-staging" in project "hr", environment "test". Bytebase lists no database on it yet; the instance page shows its sync.`},
-		"not activated in effect": {func(m *instanceMock) { m.inactive = true },
-			`Its databases: "hr_staging", "postgres". It is not activated, so masking skips it; activate it signed in to the Bytebase console.`},
-		"databases the role cannot list": {func(m *instanceMock) { m.listing = http.StatusForbidden },
-			"Its databases could not be listed: PERMISSION_DENIED"},
+		"an instance sync that failed": {setup: func(m *instanceMock) { m.unsynced = true },
+			want: `Added: instance "hr-staging" in project "hr", environment "test". Bytebase has not synced its databases yet; the instance page shows the sync.` + "\n"},
+		"not activated in effect": {setup: func(m *instanceMock) { m.inactive = true },
+			want: `Bytebase synced its databases into the project. It is not activated, so masking skips it.` + "\n"},
+		"not activated, with no masking to skip it": {setup: func(m *instanceMock) { m.inactive = true; m.maskingSkips = false },
+			want: `Bytebase synced its databases into the project.` + "\n"},
+		"no environment": {edit: func(_, instance, _ map[string]any) { delete(instance, "environment") },
+			want: `Added: instance "hr-staging" in project "hr". Bytebase synced`},
 	} {
 		t.Run(name, func(t *testing.T) {
 			mock := newInstanceMock()
-			tc.setup(mock)
+			if tc.setup != nil {
+				tc.setup(mock)
+			}
 			_, session := connectToInstanceServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{answer: adminAnswer(adminChoiceApply)}).handle})
-			res := callAdminister(t, session, instanceParams(instanceBody(t, nil)))
+			res := callAdminister(t, session, instanceParams(instanceBody(t, tc.edit)))
 			require.False(t, res.IsError, resultText(t, res))
 			require.Contains(t, resultText(t, res), tc.want)
 			require.Contains(t, resultText(t, res), "\nInstance: https://bb.example.com/"+journeyOneInstance)
 		})
 	}
 }
-
 func TestAdministerInstanceClassifiesEveryRequestField(t *testing.T) {
 	refused := map[string]bool{"validate_only": true}
 	for _, field := range []string{"name", "state", "engine_version", "external_link", "roles", "sync_interval", "sync_databases", "last_sync_time", "labels"} {
@@ -698,4 +692,40 @@ func TestAdministerInstanceClassifiesEveryRequestField(t *testing.T) {
 		refused["instance.data_sources."+field] = true
 	}
 	requireEveryFieldClassified(t, (&v1pb.CreateInstanceRequest{}).ProtoReflect().Descriptor(), "", instanceRequestFields, refused)
+}
+
+func TestValidPortTakesWhatTheDriverReads(t *testing.T) {
+	for _, port := range []string{"5432", "05432", "1", "65535"} {
+		require.True(t, validPort(port), port)
+	}
+	for _, port := range []string{"", "0", "65536", "+5432", "-5432", "0x1538", "5_432", " 5432", "5432 host=other.example"} {
+		require.False(t, validPort(port), port)
+	}
+}
+
+func TestRefusalStatesTheTransportErrorOrTheHandlersMessage(t *testing.T) {
+	require.Equal(t, "context deadline exceeded", refusal(nil, context.DeadlineExceeded))
+	require.Equal(t, "HTTP 403: permission denied", refusal(&apiResponse{Status: http.StatusForbidden, Body: []byte(`{"code":"permission_denied","message":"permission denied"}`)}, nil))
+	require.Empty(t, refusal(&apiResponse{Status: http.StatusOK}, nil))
+}
+
+func TestConfirmAdminChangeNamesEachEntrysChange(t *testing.T) {
+	for name, tc := range map[string]struct {
+		subject                                adminSubject
+		unchanged, notChanged, revised, reread string
+	}{
+		"approval rules": {approvalRules, "the approval rules stay as they are", "the approval rules were not changed", "the revised rules",
+			"read the rules again with call_api SettingService/GetSetting, make the user's change to them, and call administer_workspace with the result"},
+		"masking rules": {maskingRules, "the masking rules stay as they are", "the masking rules were not changed", "the revised rules",
+			"read the rules again with call_api OrgPolicyService/GetPolicy, make the user's change to them, and call administer_workspace with the result"},
+		"an instance": {instanceSubject{}, "no instance was added", "no instance was added", "the revised request",
+			"call administer_workspace again to ask the user about the request as it is now"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			require.Equal(t, tc.unchanged, tc.subject.unchanged())
+			require.Equal(t, tc.notChanged, tc.subject.notChanged())
+			require.Equal(t, tc.revised, tc.subject.revised())
+			require.Equal(t, tc.reread, tc.subject.reread())
+		})
+	}
 }

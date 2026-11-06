@@ -20,14 +20,10 @@ import (
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 )
 
-const (
-	instanceActivated = "Activated: it uses one of the workspace's instance licenses."
-	// instanceNotActivated is the form's effect line, so it never moves to the
-	// description, which Claude Code's fullscreen renderer cuts to one line:
-	// masking skips an instance that is not activated unless the license covers
-	// every instance (LicenseService.IsFeatureEnabledForInstance).
-	instanceNotActivated = "Not activated, so masking skips it unless every instance is licensed."
-)
+// instanceNotActivated is a change line, never description text, which Claude
+// Code's fullscreen renderer cuts to one line. It shows only when masking would
+// skip the instance (LicenseService.IsFeatureEnabledForInstance).
+const instanceNotActivated = "Not activated, so masking skips it."
 
 // instanceRequestFields are the CreateInstanceRequest fields the instance
 // entry takes. A request that sets any other field is refused before the form,
@@ -112,12 +108,13 @@ func (s *Server) administerInstance(ctx context.Context, req *mcp.CallToolReques
 		}), nil, nil
 	}
 
-	// Read on both rounds: an answer is acted on only while the project, the
-	// instance ID and the environment still allow the instance the form states.
-	if err := s.checkInstanceTargets(ctx, change); err != nil {
+	// Read on both rounds: an answer is acted on only while the environment the
+	// form states exists.
+	if err := s.checkEnvironment(ctx, change); err != nil {
 		return formatToolError(err), nil, nil
 	}
-	form, err := instanceForm(ctx, change, link)
+	maskingSkips := s.maskingSkipsUnactivated(ctx, getWorkspaceID(ctx))
+	form, err := instanceForm(ctx, change, maskingSkips, link)
 	if err != nil {
 		return formatToolError(err), nil, nil
 	}
@@ -136,24 +133,22 @@ func (s *Server) administerInstance(ctx context.Context, req *mcp.CallToolReques
 	test := proto.CloneOf(change.request)
 	test.ValidateOnly = true
 	resp, err := s.sendInstanceCreation(confirmedCtx, test)
-	if err != nil {
-		return formatToolError(errors.Wrap(err, "failed to test the connection")), nil, nil
-	}
-	if resp.Status >= http.StatusBadRequest {
-		return formatToolError(instanceCreationError(resp, change)), nil, nil
+	if why := refusal(resp, err); why != "" {
+		return formatToolError(&toolError{
+			Code:       "CONNECTION_TEST_FAILED",
+			Message:    "Bytebase's connection test refused the request, so no instance was added: " + why,
+			Suggestion: "correct the request with the user as the message says, then call administer_workspace again; the user confirms the corrected request in a new form",
+		}), nil, nil
 	}
 	resp, err = s.sendInstanceCreation(confirmedCtx, change.request)
-	if err != nil {
-		return formatToolError(errors.Wrap(err, "failed to add the instance")), nil, nil
-	}
-	if resp.Status >= http.StatusBadRequest {
-		return formatToolError(instanceCreationError(resp, change)), nil, nil
+	if why := refusal(resp, err); why != "" {
+		return formatToolError(errors.Errorf("failed to add the instance: %s", why)), nil, nil
 	}
 	created := &v1pb.Instance{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal(resp.Body, created); err != nil {
 		return formatToolError(errors.Wrap(err, "the instance was added, but the response could not be read")), nil, nil
 	}
-	text := s.instanceAddedText(ctx, change, created)
+	text := s.instanceAddedText(ctx, change, created, maskingSkips)
 	instanceLink := s.consoleLink(ctx, change.confirmedResource())
 	return textResult(text), &AdministerWorkspaceOutput{OperationID: input.OperationID, Changed: true, Message: text, Link: instanceLink}, nil
 }
@@ -166,18 +161,16 @@ func (s *Server) sendInstanceCreation(ctx context.Context, request *v1pb.CreateI
 	return s.apiRequest(ctx, v1connect.InstanceServiceCreateInstanceProcedure, json.RawMessage(body))
 }
 
-// instanceCreationError reports a refused connection test or create. Only a
-// failed connection test sets the connection failure category, so any other
-// refusal reads as the handler states it.
-func instanceCreationError(resp *apiResponse, change *instanceCreation) error {
-	if resp.Headers.Get(common.ConnectionFailureCategoryHeader) == "" {
-		return errors.Errorf("failed to add the instance: HTTP %d: %s", resp.Status, parseError(resp.Body))
-	}
-	ds := change.dataSource()
-	return &toolError{
-		Code:       "CONNECTION_FAILED",
-		Message:    fmt.Sprintf("Bytebase could not connect to %q, port %s, as %q, so no instance was added: %s", ds.GetHost(), ds.GetPort(), ds.GetUsername(), parseError(resp.Body)),
-		Suggestion: "check the host, port, user and password with the user, then call administer_workspace again; the user confirms the corrected request in a new form",
+// refusal says why a call failed, as the handler or the transport states it,
+// or "" when it succeeded.
+func refusal(resp *apiResponse, err error) string {
+	switch {
+	case err != nil:
+		return err.Error()
+	case resp.Status >= http.StatusBadRequest:
+		return fmt.Sprintf("HTTP %d: %s", resp.Status, parseError(resp.Body))
+	default:
+		return ""
 	}
 }
 
@@ -218,7 +211,7 @@ func (c *instanceCreation) check(link string) error {
 		return &toolError{
 			Code:       "FIELD_NOT_SUPPORTED",
 			Message:    fmt.Sprintf("the request sets %s, which administer_workspace does not take", field),
-			Suggestion: "send parent, instanceId and instance with title, engine, environment, activation and one dataSources entry with id, type, host, port, username, password, database, useSsl and verifyTlsCertificate only; set up anything else signed in to the Bytebase console: " + link,
+			Suggestion: "send parent, instanceId and instance with title, engine, environment, activation and one dataSources entry with id, type, authenticationType, host, port, username, password, database, useSsl and verifyTlsCertificate only; set up anything else signed in to the Bytebase console: " + link,
 		}
 	}
 	instance := c.request.GetInstance()
@@ -278,67 +271,11 @@ func (c *instanceCreation) invalidValue() (why, suggestion string) {
 	}
 }
 
-// validPort reports whether port is a TCP port number written as the console's
-// port field takes it: digits alone.
+// validPort reports whether the PostgreSQL driver reads port as a port: digits
+// in base 10, from 1 to 65535 (parsePort in Bytebase's pgx fork).
 func validPort(port string) bool {
-	n, err := strconv.Atoi(port)
-	return err == nil && n >= 1 && n <= 65535 && strconv.Itoa(n) == port
-}
-
-// checkInstanceTargets refuses a project that does not exist or is archived, an
-// instance ID the project already holds, and an environment that does not
-// exist. These are checks for the user's sake: the create stays the authority,
-// and refuses an ID taken anywhere else. A read the user's role does not allow
-// checks nothing, so a role that may add instances without these reads still
-// can.
-func (s *Server) checkInstanceTargets(ctx context.Context, c *instanceCreation) error {
-	project := common.FormatProject(c.projectID)
-	resp, err := s.apiRequest(ctx, v1connect.ProjectServiceGetProjectProcedure, map[string]any{"name": project})
-	if err != nil {
-		return errors.Wrap(err, "failed to read the project")
-	}
-	switch {
-	case resp.Status == http.StatusNotFound:
-		return &toolError{
-			Code:       "INVALID_REQUEST",
-			Message:    fmt.Sprintf("the project %q does not exist, so no instance was added", project),
-			Suggestion: "find the project with call_api ProjectService/SearchProjects, and send its name as parent",
-		}
-	case readRefused(resp):
-	case resp.Status >= http.StatusBadRequest:
-		return errors.Errorf("failed to read the project: HTTP %d: %s", resp.Status, parseError(resp.Body))
-	case resourceState(resp.Body) == v1pb.State_DELETED.String():
-		return &toolError{
-			Code:       "INVALID_REQUEST",
-			Message:    fmt.Sprintf("the project %q is archived, so no instance was added", project),
-			Suggestion: "add the instance to another project, or restore this one signed in to the Bytebase console",
-		}
-	default:
-	}
-
-	name := c.confirmedResource()
-	resp, err = s.apiRequest(ctx, v1connect.InstanceServiceGetInstanceProcedure, map[string]any{"name": name})
-	if err != nil {
-		return errors.Wrap(err, "failed to look up the instance ID")
-	}
-	switch {
-	case resp.Status == http.StatusNotFound, readRefused(resp):
-	case resp.Status >= http.StatusBadRequest:
-		return errors.Errorf("failed to look up the instance ID: HTTP %d: %s", resp.Status, parseError(resp.Body))
-	case resourceState(resp.Body) == v1pb.State_DELETED.String():
-		return &toolError{
-			Code:       "ALREADY_EXISTS",
-			Message:    fmt.Sprintf("a deleted instance in project %q holds the instance ID %q, so no instance was added", c.projectID, c.request.GetInstanceId()),
-			Suggestion: "choose another instance ID, or restore that instance signed in to the Bytebase console",
-		}
-	default:
-		return &toolError{
-			Code:       "ALREADY_EXISTS",
-			Message:    fmt.Sprintf("the instance %q already exists in project %q, so no instance was added", c.request.GetInstanceId(), c.projectID),
-			Suggestion: "if it is the server the user means, it is already added: " + s.consoleLink(ctx, name) + ". To add another server, choose another instance ID",
-		}
-	}
-	return s.checkEnvironment(ctx, c)
+	n, err := strconv.ParseUint(port, 10, 16)
+	return err == nil && n >= 1
 }
 
 // checkEnvironment refuses an environment the workspace does not have. The
@@ -353,12 +290,13 @@ func (s *Server) checkEnvironment(ctx context.Context, c *instanceCreation) erro
 	if err != nil {
 		return errors.Wrap(err, "failed to read the environments")
 	}
-	var ids []string
+	var names []string
 	switch {
 	// Every workspace stores its environments when it is created, so a
 	// workspace without the setting has none, as store.GetEnvironment reads it.
 	case resp.Status == http.StatusNotFound:
-	case readRefused(resp):
+	// A role that may add instances without reading the environments still can.
+	case resp.Status == http.StatusForbidden:
 		return nil
 	case resp.Status >= http.StatusBadRequest:
 		return errors.Errorf("failed to read the environments: HTTP %d: %s", resp.Status, parseError(resp.Body))
@@ -368,19 +306,15 @@ func (s *Server) checkEnvironment(ctx context.Context, c *instanceCreation) erro
 			return errors.Wrap(err, "failed to parse the environments")
 		}
 		for _, environment := range setting.GetValue().GetEnvironment().GetEnvironments() {
-			ids = append(ids, environment.GetId())
+			names = append(names, common.EnvironmentNamePrefix+environment.GetId())
 		}
 	}
-	if slices.Contains(ids, id) {
+	if slices.Contains(names, common.EnvironmentNamePrefix+id) {
 		return nil
 	}
 	known := "the workspace has no environments"
-	if len(ids) > 0 {
-		quoted := make([]string, 0, len(ids))
-		for _, environment := range ids {
-			quoted = append(quoted, fmt.Sprintf("%q", common.EnvironmentNamePrefix+environment))
-		}
-		known = "the workspace's environments are " + strings.Join(quoted, ", ")
+	if len(names) > 0 {
+		known = "the workspace's environments are " + quoteAll(names)
 	}
 	return &toolError{
 		Code:       "INVALID_REQUEST",
@@ -389,33 +323,24 @@ func (s *Server) checkEnvironment(ctx context.Context, c *instanceCreation) erro
 	}
 }
 
-// readRefused reports a read the user's role does not allow.
-func readRefused(resp *apiResponse) bool {
-	return resp.Status == http.StatusForbidden || resp.Status == http.StatusUnauthorized
-}
-
-// resourceState reads the state of a project or an instance from its JSON.
-func resourceState(body json.RawMessage) string {
-	var resource struct {
-		State string `json:"state"`
-	}
-	if err := json.Unmarshal(body, &resource); err != nil {
-		return ""
-	}
-	return resource.State
-}
-
 // instanceForm builds the form that asks to add the instance: the connection,
-// the environment and the lasting effect on the project, and the activation.
-// The password appears nowhere in it.
-func instanceForm(ctx context.Context, c *instanceCreation, link string) (*adminForm, error) {
-	question := fmt.Sprintf("Add instance %q to project %q", c.request.GetInstanceId(), c.projectID)
+// the environment and the lasting effect on the project, and, when maskingSkips
+// an instance that is not activated, that this one is not. The password appears
+// nowhere in it.
+func instanceForm(ctx context.Context, c *instanceCreation, maskingSkips bool, link string) (*adminForm, error) {
+	question := func(instanceID string) string {
+		return fmt.Sprintf("Add instance %q to project %q?", instanceID, c.projectID)
+	}
 	// Only the account's email may run past a line, so the IDs must fit.
-	if lineColumns(question+"?") > messageLineWidth {
+	if lineColumns(question(c.request.GetInstanceId())) > messageLineWidth {
+		suggestion := "add the instance signed in to the Bytebase console: " + link
+		if lineColumns(question("a")) <= messageLineWidth {
+			suggestion = "use a shorter instance ID, or " + suggestion
+		}
 		return nil, &toolError{
 			Code:       "CHANGE_TOO_LONG",
 			Message:    fmt.Sprintf("the question naming instance %q and project %q is wider than one line of the confirmation form, so no instance was added", c.request.GetInstanceId(), c.projectID),
-			Suggestion: "use a shorter instance ID, or add the instance signed in to the Bytebase console: " + link,
+			Suggestion: suggestion,
 		}
 	}
 	ds := c.dataSource()
@@ -424,14 +349,13 @@ func instanceForm(ctx context.Context, c *instanceCreation, link string) (*admin
 		placement = fmt.Sprintf("Environment %q.", id)
 	}
 	changes := []formChange{
-		{text: fmt.Sprintf("Host %q, port %s, user %q, %s", ds.GetHost(), ds.GetPort(), ds.GetUsername(), tlsMode(ds)), effect: true},
+		{text: fmt.Sprintf("Host %q, port %s, user %q, %s", ds.GetHost(), ds.GetPort(), ds.GetUsername(), tlsMode(ds))},
 		{text: placement + " Its databases join the project for good."},
 	}
-	effect, fixed := "", instanceActivated
-	if !c.request.GetInstance().GetActivation() {
-		effect, fixed = instanceNotActivated, ""
+	if maskingSkips && !c.request.GetInstance().GetActivation() {
+		changes = append(changes, formChange{text: instanceNotActivated})
 	}
-	return fitForm(ctx, question, changes, effect, fixed, instanceDescription(c), func(needed int, _ string) error {
+	return fitForm(ctx, strings.TrimSuffix(question(c.request.GetInstanceId()), "?"), changes, "", "", instanceDescription(c), func(needed int, _ string) error {
 		return &toolError{
 			Code:       "CHANGE_TOO_LONG",
 			Message:    fmt.Sprintf("this instance needs %d lines, more than the %d one confirmation form shows, so no instance was added", needed, messageLines),
@@ -455,8 +379,8 @@ func tlsMode(ds *v1pb.DataSource) string {
 	}
 }
 
-// instanceDescription is what the message leaves out. Claude Code's fullscreen
-// renderer shows only its first line.
+// instanceDescription is what the message leaves out. Its first line names the
+// instance and its title.
 func instanceDescription(c *instanceCreation) string {
 	ds := c.dataSource()
 	var sb strings.Builder
@@ -473,64 +397,25 @@ func instanceDescription(c *instanceCreation) string {
 	return sb.String()
 }
 
-// instanceAddedText reports the added instance: its databases, and whether
-// masking skips it. The create's response sets activation when the instance is
-// activated or the license covers every instance.
-func (s *Server) instanceAddedText(ctx context.Context, c *instanceCreation, created *v1pb.Instance) string {
+// instanceAddedText reports the added instance: whether Bytebase synced it, and
+// whether masking skips it. The create's response sets last_sync_time only when
+// the instance sync succeeded, and activation when the instance is activated or
+// the license covers every instance.
+func (s *Server) instanceAddedText(ctx context.Context, c *instanceCreation, created *v1pb.Instance, maskingSkips bool) string {
 	var sb strings.Builder
 	fmt.Fprintf(&sb, "Added: instance %q in project %q", c.request.GetInstanceId(), c.projectID)
 	if id := c.environmentID(); id != "" {
 		fmt.Fprintf(&sb, ", environment %q", id)
 	}
 	sb.WriteString(".")
-	databases, more, err := s.instanceDatabases(ctx, c.confirmedResource())
-	switch {
-	case err != nil:
-		fmt.Fprintf(&sb, " Its databases could not be listed: %v.", err)
-	case len(databases) == 0:
-		sb.WriteString(" Bytebase lists no database on it yet; the instance page shows its sync.")
-	default:
-		quoted := make([]string, 0, len(databases))
-		for _, database := range databases {
-			quoted = append(quoted, fmt.Sprintf("%q", database))
-		}
-		fmt.Fprintf(&sb, " Its databases: %s", strings.Join(quoted, ", "))
-		if more {
-			sb.WriteString(" and more")
-		}
-		sb.WriteString(".")
+	if created.GetLastSyncTime() != nil {
+		sb.WriteString(" Bytebase synced its databases into the project.")
+	} else {
+		sb.WriteString(" Bytebase has not synced its databases yet; the instance page shows the sync.")
 	}
-	if !created.GetActivation() {
-		sb.WriteString(" It is not activated, so masking skips it; activate it signed in to the Bytebase console.")
+	if maskingSkips && !created.GetActivation() {
+		sb.WriteString(" It is not activated, so masking skips it.")
 	}
 	fmt.Fprintf(&sb, "\nInstance: %s", s.consoleLink(ctx, c.confirmedResource()))
 	return sb.String()
-}
-
-// instanceDatabases lists the names of the databases Bytebase holds on the
-// instance. more reports a list longer than one page, which the tool does not
-// read.
-func (s *Server) instanceDatabases(ctx context.Context, instance string) ([]string, bool, error) {
-	resp, err := s.apiRequest(ctx, v1connect.DatabaseServiceListDatabasesProcedure, map[string]any{"parent": instance, "pageSize": 1000})
-	if err != nil {
-		return nil, false, errors.Wrap(err, "failed to list the databases")
-	}
-	if err := checkAPIResponse(resp, "list the instance's databases", "bb.instances.get"); err != nil {
-		return nil, false, err
-	}
-	var found struct {
-		Databases []struct {
-			Name string `json:"name"`
-		} `json:"databases"`
-		NextPageToken string `json:"nextPageToken"`
-	}
-	if err := json.Unmarshal(resp.Body, &found); err != nil {
-		return nil, false, errors.Wrap(err, "failed to parse the databases")
-	}
-	names := make([]string, 0, len(found.Databases))
-	for _, database := range found.Databases {
-		_, name, _ := strings.Cut(database.Name, "/"+common.DatabaseIDPrefix)
-		names = append(names, name)
-	}
-	return names, found.NextPageToken != "", nil
 }

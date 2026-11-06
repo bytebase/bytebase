@@ -175,10 +175,9 @@ func TestMCPAdministersTheMaskingRulesAfterAConfirmation(t *testing.T) {
 	a.Equal(`resource.environment_id == "test"`, rules[1].GetCondition().GetExpression())
 }
 
-// TestMCPAddsAPostgreSQLInstanceAfterAConfirmation drives administer_workspace's
-// instance entry over a live session against a server of the test's own:
-// call_api is refused, a password the server refuses adds nothing, and the
-// instance the user confirmed joins the project with its databases.
+// TestMCPAddsAPostgreSQLInstanceAfterAConfirmation provisions a server of its
+// own: the entry refuses sync_databases, so an instance on sharedPgTarget would
+// sync every other test's databases.
 func TestMCPAddsAPostgreSQLInstanceAfterAConfirmation(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
@@ -240,7 +239,8 @@ func TestMCPAddsAPostgreSQLInstanceAfterAConfirmation(t *testing.T) {
 
 	failed, text := administer(body("not-the-password"))
 	a.True(failed, text)
-	a.Contains(text, "CONNECTION_FAILED", "the handler's connection test marks its failure")
+	a.Contains(text, "CONNECTION_TEST_FAILED")
+	a.Contains(text, "password authentication failed")
 	a.NotContains(text, "not-the-password")
 	a.Equal(int32(1), asked.Load())
 	a.False(added(), "a failed connection test adds nothing")
@@ -248,7 +248,7 @@ func TestMCPAddsAPostgreSQLInstanceAfterAConfirmation(t *testing.T) {
 	failed, text = administer(body("root-password"))
 	a.False(failed, text)
 	a.Contains(text, `Added: instance "`+instanceID+`" in project "`+strings.TrimPrefix(ctl.project.Name, "projects/")+`", environment "test".`)
-	a.Contains(text, `"hr_staging"`)
+	a.Contains(text, "Bytebase synced its databases into the project.")
 	a.NotContains(text, "root-password")
 	a.Equal(int32(2), asked.Load())
 	a.True(added())

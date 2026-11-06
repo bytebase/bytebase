@@ -40,10 +40,6 @@ func convertDeletedToState(deleted bool) v1pb.State {
 	return v1pb.State_ACTIVE
 }
 
-func isValidResourceID(resourceID string) bool {
-	return common.IsValidResourceID(resourceID)
-}
-
 // validateLabels validates labels according to the requirements.
 // Labels must follow these rules:
 // - Maximum 64 labels allowed
