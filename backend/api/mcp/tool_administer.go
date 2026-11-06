@@ -68,11 +68,6 @@ func (s *Server) registerAdministerWorkspaceTool() {
 }
 
 const (
-	// The choice field of the form, and its values.
-	adminChoiceField  = "choice"
-	adminChoiceApply  = "apply"
-	adminChoiceChange = "change"
-
 	// approvalRulesApply is the fixed text of the approval form. It is one line,
 	// so it goes in the message whenever a line is left.
 	approvalRulesApply = "Approval checks from now on use these rules, also after a plan edit."
@@ -707,33 +702,14 @@ func changeTooLong(needed int, tooLong string, rules adminRules, link string) *t
 func (s *Server) confirmAdminChange(ctx context.Context, req *mcp.CallToolRequest, w confirmableWrite, digest []byte, form *adminForm, subject adminSubject, shown string) *mcp.CallToolResult {
 	reply, answered := s.signedReply(ctx, req, w, digest)
 	if !answered {
-		return s.askWithForm(ctx, w, digest, form.message, map[string]any{
-			"type": "object",
-			"properties": map[string]any{
-				adminChoiceField: map[string]any{
-					"type":        "string",
-					"title":       "Apply this change?",
-					"description": form.description,
-					"oneOf": []any{
-						map[string]any{"const": adminChoiceApply, "title": "Apply"},
-						map[string]any{"const": adminChoiceChange, "title": "Change it in chat"},
-					},
-					"default": adminChoiceApply,
-				},
-			},
-			"required": []string{adminChoiceField},
-		})
+		return s.askToConfirm(ctx, w, digest, form.message, confirmChoice{question: "Apply this change?", action: "Apply", description: form.description})
 	}
-	content, accepted, why := acceptedForm(reply.response)
-	if !accepted {
-		return textResult(fmt.Sprintf("Not changed: %s, so %s. Do not retry unless the user asks.", why, subject.unchanged()))
-	}
-	switch content[adminChoiceField] {
-	case adminChoiceApply:
-	case adminChoiceChange:
-		return textResult("Not changed: the user wants to change this request. Ask them what to change, then call administer_workspace with " + subject.revised() + ".")
+	switch choice, why := confirmationOutcome(reply.response); choice {
+	case confirmChoiceApply:
+	case confirmChoiceChange:
+		return textResult(fmt.Sprintf("Not changed: %s. Ask them what to change, then call administer_workspace with %s.", why, subject.revised()))
 	default:
-		return textResult(fmt.Sprintf("Not changed: the answer chose none of the form's choices, so %s.", subject.unchanged()))
+		return textResult(fmt.Sprintf("Not changed: %s, so %s. Do not retry unless the user asks.", why, subject.unchanged()))
 	}
 	if why := reply.staleReason(shown + " no longer read as they did when the user was asked"); why != "" {
 		return formatToolError(&toolError{

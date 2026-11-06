@@ -185,10 +185,6 @@ func updateArguments(body map[string]any) map[string]any {
 	return map[string]any{"operationId": administerUpdateSetting, "body": body}
 }
 
-func adminAnswer(choice string) *mcp.ElicitResult {
-	return &mcp.ElicitResult{Action: "accept", Content: map[string]any{adminChoiceField: choice}}
-}
-
 // signedApprovalState signs the state the tool would have signed when it asked
 // about body, as alice, at askedAt.
 func signedApprovalState(t *testing.T, s *Server, stored *v1pb.WorkspaceApprovalSetting, body map[string]any, askedAt time.Time) string {
@@ -211,7 +207,7 @@ var (
 func TestAdministerWorkspaceAppliesConfirmedApprovalRules(t *testing.T) {
 	mock := &approvalMock{pendingIssues: []string{"projects/hr/issues/12"}}
 	mock.setStored(fallbackRule())
-	user := &asker{answer: adminAnswer(adminChoiceApply)}
+	user := &asker{answer: confirmAnswer(confirmChoiceApply)}
 	_, session := connectToApprovalServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
 	body := approvalBody(t, fallbackRule(), testRule, prodRule)
 
@@ -261,7 +257,7 @@ func TestAdministerWorkspaceAppliesConfirmedApprovalRules(t *testing.T) {
 func TestAdministerWorkspaceFitsTheTwoRulesAnAgentWrites(t *testing.T) {
 	mock := &approvalMock{pendingIssues: []string{"projects/hr/issues/12"}}
 	mock.setStored(fallbackRule())
-	user := &asker{answer: adminAnswer(adminChoiceApply)}
+	user := &asker{answer: confirmAnswer(confirmChoiceApply)}
 	_, session := connectToApprovalServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
 	prod := changeRule("Prod changes need DBA", `resource.environment_id == "prod"`, "roles/workspaceDBA")
 	test := changeRule("Test changes need no approval", `resource.environment_id == "test"`)
@@ -292,7 +288,7 @@ func choiceDescription(t *testing.T, asked *mcp.ElicitParams) string {
 		} `json:"properties"`
 	}
 	require.NoError(t, json.Unmarshal(schema, &form))
-	return form.Properties[adminChoiceField].Description
+	return form.Properties[confirmChoiceField].Description
 }
 
 func TestAdministerWorkspaceTakesTheFullOperationID(t *testing.T) {
@@ -313,9 +309,10 @@ func TestAdministerWorkspaceChangesNothingUnlessApplied(t *testing.T) {
 		answer *mcp.ElicitResult
 		want   string
 	}{
-		"declined":        {&mcp.ElicitResult{Action: "decline"}, "Not changed: the user declined"},
-		"cancelled":       {&mcp.ElicitResult{Action: "cancel"}, "Not changed: the user cancelled"},
-		"changed in chat": {adminAnswer(adminChoiceChange), "Not changed: the user wants to change this request"},
+		"declined":  {&mcp.ElicitResult{Action: "decline"}, "Not changed: the user declined"},
+		"cancelled": {&mcp.ElicitResult{Action: "cancel"}, "Not changed: the user cancelled"},
+		"changed in chat": {confirmAnswer(confirmChoiceChange),
+			"Not changed: the user wants to change this request. Ask them what to change, then call administer_workspace with the revised rules."},
 	} {
 		t.Run(name, func(t *testing.T) {
 			mock := &approvalMock{}
@@ -331,7 +328,7 @@ func TestAdministerWorkspaceChangesNothingUnlessApplied(t *testing.T) {
 
 func TestAdministerWorkspaceChangesNothingForAnAnswerWithNoChoice(t *testing.T) {
 	for name, answer := range map[string]*mcp.ElicitResult{
-		"an unknown choice": adminAnswer("skip"),
+		"an unknown choice": confirmAnswer("skip"),
 		"no choice":         {Action: "accept", Content: map[string]any{}},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -343,7 +340,7 @@ func TestAdministerWorkspaceChangesNothingForAnAnswerWithNoChoice(t *testing.T) 
 			params.InputResponses = mcp.InputResponseMap{confirmDecisionRequestID: answer}
 			params.RequestState = signedApprovalState(t, s, mock.stored, body, time.Now())
 			res := callAdminister(t, session, params)
-			require.Contains(t, resultText(t, res), "Not changed: the answer chose none of the form's choices")
+			require.Contains(t, resultText(t, res), "Not changed: the answer chose none of the form's choices, so the approval rules stay as they are. Do not retry unless the user asks.")
 			require.Empty(t, mock.calls())
 		})
 	}
@@ -425,7 +422,7 @@ func TestAdministerWorkspaceRefusesBeforeAsking(t *testing.T) {
 				stored = []*v1pb.WorkspaceApprovalSetting_Rule{fallbackRule()}
 			}
 			mock.setStored(stored...)
-			user := &asker{answer: adminAnswer(adminChoiceApply)}
+			user := &asker{answer: confirmAnswer(confirmChoiceApply)}
 			_, session := connectToApprovalServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
 			res := callAdminister(t, session, &mcp.CallToolParams{Arguments: tc.arguments})
 			require.True(t, res.IsError, resultText(t, res))
@@ -770,7 +767,7 @@ func TestIssuesLineFitsOneLineForEveryNameAndCount(t *testing.T) {
 func TestAdministerWorkspaceRefusesAnAnswerToRulesThatChanged(t *testing.T) {
 	mock := &approvalMock{}
 	mock.setStored(fallbackRule())
-	user := &asker{answer: adminAnswer(adminChoiceApply)}
+	user := &asker{answer: confirmAnswer(confirmChoiceApply)}
 	// Another admin adds a rule while the form is open.
 	user.whileAsked = func() { mock.setStored(fallbackRule(), testRule) }
 	_, session := connectToApprovalServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
@@ -791,7 +788,7 @@ func TestAdministerWorkspaceRefusesAnAnswerToAnotherRequest(t *testing.T) {
 	renamed := changeRule("Production", "resource.environment_id == 'prod'", "roles/workspaceDBA")
 
 	params := administerParams(approvalBody(t, fallbackRule(), renamed))
-	params.InputResponses = mcp.InputResponseMap{confirmDecisionRequestID: adminAnswer(adminChoiceApply)}
+	params.InputResponses = mcp.InputResponseMap{confirmDecisionRequestID: confirmAnswer(confirmChoiceApply)}
 	params.RequestState = state
 	res := callAdminister(t, session, params)
 	require.True(t, res.IsError)
@@ -810,7 +807,7 @@ func TestAdministerWorkspaceRefusesAnAnswerOverStoredRulesThatChanged(t *testing
 	mock.setStored(fallbackRule(), changeRule("New", "resource.environment_id == 'x'"))
 
 	params := administerParams(body)
-	params.InputResponses = mcp.InputResponseMap{confirmDecisionRequestID: adminAnswer(adminChoiceApply)}
+	params.InputResponses = mcp.InputResponseMap{confirmDecisionRequestID: confirmAnswer(confirmChoiceApply)}
 	params.RequestState = state
 	res := callAdminister(t, session, params)
 	require.True(t, res.IsError)
@@ -849,7 +846,7 @@ func TestAdministerWorkspaceDescribesTheRulesLeft(t *testing.T) {
 func TestAdministerWorkspaceReportsTheLockedWriteRefusal(t *testing.T) {
 	mock := &approvalMock{refuse: "failed_precondition"}
 	mock.setStored(fallbackRule())
-	_, session := connectToApprovalServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{answer: adminAnswer(adminChoiceApply)}).handle})
+	_, session := connectToApprovalServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{answer: confirmAnswer(confirmChoiceApply)}).handle})
 
 	res := callAdminister(t, session, administerParams(approvalBody(t, fallbackRule(), prodRule)))
 	require.True(t, res.IsError)
@@ -866,7 +863,7 @@ func TestAdministerWorkspaceRefusesAnExpiredAnswer(t *testing.T) {
 	body := approvalBody(t, fallbackRule(), prodRule)
 
 	params := administerParams(body)
-	params.InputResponses = mcp.InputResponseMap{confirmDecisionRequestID: adminAnswer(adminChoiceApply)}
+	params.InputResponses = mcp.InputResponseMap{confirmDecisionRequestID: confirmAnswer(confirmChoiceApply)}
 	params.RequestState = signedApprovalState(t, s, mock.stored, body, time.Now().Add(-11*time.Minute))
 	res := callAdminister(t, session, params)
 	require.True(t, res.IsError)

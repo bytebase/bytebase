@@ -144,10 +144,8 @@ func (s *Server) handleDecideIssue(ctx context.Context, req *mcp.CallToolRequest
 	if err != nil {
 		return formatToolError(err), nil, nil
 	}
-	return s.askToConfirm(ctx, decision, digest, message,
-		fmt.Sprintf("%s this issue", capitalize(decision.verb())),
-		fmt.Sprintf("Check to %s the issue described above. Leaving it unchecked, declining or cancelling changes nothing.", decision.verb()),
-	), nil, nil
+	action := capitalize(decision.verb())
+	return s.askToConfirm(ctx, decision, digest, message, confirmChoice{question: action + " this issue?", action: action}), nil, nil
 }
 
 func parseIssueDecision(input DecideIssueInput) (*issueDecision, error) {
@@ -221,15 +219,19 @@ func (s *Server) recordRefusedDecision(ctx context.Context, decision *issueDecis
 	audit.RecordOutOfBandAudit(ctx, s.store, s.profile.RuntimeEnableAuditLogStdout.Load(), getWorkspaceID(ctx), row)
 }
 
-// decideOnAnswer acts on the answer to a form this server sent. Only an
-// accepted form with the box checked decides, and only while what the user
-// was asked about still matches the issue. A decline is reported before a
-// change, so a user who said no is not asked again.
+// decideOnAnswer acts on the answer to a form this server sent. Only the
+// form's action decides, and only while what the user was asked about still
+// matches the issue. A decline is reported before staleness is checked, so a
+// user who said no is not asked again.
 func (s *Server) decideOnAnswer(ctx context.Context, decision *issueDecision, reply *confirmationReply, issueUpdateTime, link string) (*mcp.CallToolResult, any) {
-	if confirmed, why := confirmationOutcome(reply.response); !confirmed {
-		return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: fmt.Sprintf(
-			"Not %s: %s, so nothing changed. Do not retry unless the user asks.\nIssue: %s",
-			decision.pastTense(), why, link)}}}, nil
+	switch choice, why := confirmationOutcome(reply.response); choice {
+	case confirmChoiceApply:
+	case confirmChoiceChange:
+		return textResult(fmt.Sprintf("Not %s: %s. Ask them what to change, such as the decision or its comment, then call decide_issue again.\nIssue: %s",
+			decision.pastTense(), why, link)), nil
+	default:
+		return textResult(fmt.Sprintf("Not %s: %s, so nothing changed. Do not retry unless the user asks.\nIssue: %s",
+			decision.pastTense(), why, link)), nil
 	}
 	if why := reply.staleReason(fmt.Sprintf("what the user confirmed no longer matches %s as it is now", decision.issue)); why != "" {
 		return formatToolError(&toolError{

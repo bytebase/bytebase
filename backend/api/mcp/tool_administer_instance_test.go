@@ -314,7 +314,7 @@ func signedInstanceState(t *testing.T, s *Server, body map[string]any, askedAt t
 
 func TestAdministerInstanceAddsJourneyOnesServer(t *testing.T) {
 	mock := newInstanceMock()
-	user := &asker{answer: adminAnswer(adminChoiceApply)}
+	user := &asker{answer: confirmAnswer(confirmChoiceApply)}
 	_, session := connectToInstanceServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
 	body := instanceBody(t, nil)
 
@@ -688,7 +688,7 @@ func TestAdministerInstanceChecksTheEnvironment(t *testing.T) {
 
 func TestAdministerInstanceRefusesAnAnswerOverAnEnvironmentRemoved(t *testing.T) {
 	mock := newInstanceMock()
-	user := &asker{answer: adminAnswer(adminChoiceApply)}
+	user := &asker{answer: confirmAnswer(confirmChoiceApply)}
 	user.whileAsked = func() {
 		mock.mu.Lock()
 		defer mock.mu.Unlock()
@@ -703,7 +703,7 @@ func TestAdministerInstanceRefusesAnAnswerOverAnEnvironmentRemoved(t *testing.T)
 func TestAdministerInstanceSkipsTheEnvironmentCheckForARoleThatCannotRead(t *testing.T) {
 	mock := newInstanceMock()
 	mock.environmentStatus = http.StatusForbidden
-	user := &asker{answer: adminAnswer(adminChoiceApply)}
+	user := &asker{answer: confirmAnswer(confirmChoiceApply)}
 	_, session := connectToInstanceServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
 	res := callAdminister(t, session, instanceParams(instanceBody(t, nil)))
 	require.False(t, res.IsError, resultText(t, res))
@@ -718,7 +718,7 @@ func TestAdministerInstanceChangesNothingUnlessApplied(t *testing.T) {
 	}{
 		"declined":        {&mcp.ElicitResult{Action: "decline"}, "Not changed: the user declined, so no instance was added. Do not retry unless the user asks."},
 		"cancelled":       {&mcp.ElicitResult{Action: "cancel"}, "Not changed: the user cancelled, so no instance was added. Do not retry unless the user asks."},
-		"changed in chat": {adminAnswer(adminChoiceChange), "Not changed: the user wants to change this request. Ask them what to change, then call administer_workspace with the revised request."},
+		"changed in chat": {confirmAnswer(confirmChoiceChange), "Not changed: the user wants to change this request. Ask them what to change, then call administer_workspace with the revised request."},
 	} {
 		t.Run(name, func(t *testing.T) {
 			mock := newInstanceMock()
@@ -732,7 +732,7 @@ func TestAdministerInstanceChangesNothingUnlessApplied(t *testing.T) {
 
 func TestAdministerInstanceChangesNothingForAnAnswerWithNoChoice(t *testing.T) {
 	for name, answer := range map[string]*mcp.ElicitResult{
-		"an unknown choice": adminAnswer("skip"),
+		"an unknown choice": confirmAnswer("skip"),
 		"no choice":         {Action: "accept", Content: map[string]any{}},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -743,7 +743,7 @@ func TestAdministerInstanceChangesNothingForAnAnswerWithNoChoice(t *testing.T) {
 			params.InputResponses = mcp.InputResponseMap{confirmDecisionRequestID: answer}
 			params.RequestState = signedInstanceState(t, s, body, time.Now())
 			res := callAdminister(t, session, params)
-			require.Equal(t, "Not changed: the answer chose none of the form's choices, so no instance was added.", resultText(t, res))
+			require.Equal(t, "Not changed: the answer chose none of the form's choices, so no instance was added. Do not retry unless the user asks.", resultText(t, res))
 			require.Empty(t, mock.calls())
 		})
 	}
@@ -755,7 +755,7 @@ func TestAdministerInstanceRefusesAnAnswerToAnotherRequest(t *testing.T) {
 	state := signedInstanceState(t, s, instanceBody(t, nil), time.Now())
 	// The answer comes back with the host changed.
 	params := instanceParams(instanceBody(t, func(_, _, dataSource map[string]any) { dataSource["host"] = "other.example.com" }))
-	params.InputResponses = mcp.InputResponseMap{confirmDecisionRequestID: adminAnswer(adminChoiceApply)}
+	params.InputResponses = mcp.InputResponseMap{confirmDecisionRequestID: confirmAnswer(confirmChoiceApply)}
 	params.RequestState = state
 	res := callAdminister(t, session, params)
 	require.True(t, res.IsError, resultText(t, res))
@@ -772,7 +772,7 @@ func TestAdministerInstanceRefusesAnAnswerOverAnActivationTurnedOn(t *testing.T)
 	s, session := connectToInstanceServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{}).handle})
 	state := signedInstanceState(t, s, instanceBody(t, func(_, instance, _ map[string]any) { instance["activation"] = false }), time.Now())
 	params := instanceParams(instanceBody(t, nil))
-	params.InputResponses = mcp.InputResponseMap{confirmDecisionRequestID: adminAnswer(adminChoiceApply)}
+	params.InputResponses = mcp.InputResponseMap{confirmDecisionRequestID: confirmAnswer(confirmChoiceApply)}
 	params.RequestState = state
 	res := callAdminister(t, session, params)
 	require.True(t, res.IsError, resultText(t, res))
@@ -785,7 +785,7 @@ func TestAdministerInstanceRefusesAnAnswerOverAnotherPassword(t *testing.T) {
 	s, session := connectToInstanceServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{}).handle})
 	state := signedInstanceState(t, s, instanceBody(t, nil), time.Now())
 	params := instanceParams(instanceBody(t, func(_, _, dataSource map[string]any) { dataSource["password"] = "another-password" }))
-	params.InputResponses = mcp.InputResponseMap{confirmDecisionRequestID: adminAnswer(adminChoiceApply)}
+	params.InputResponses = mcp.InputResponseMap{confirmDecisionRequestID: confirmAnswer(confirmChoiceApply)}
 	params.RequestState = state
 	res := callAdminister(t, session, params)
 	require.Equal(t, "STALE_CONFIRMATION", resultToolError(t, res).Code)
@@ -797,7 +797,7 @@ func TestAdministerInstanceRefusesAnExpiredAnswer(t *testing.T) {
 	s, session := connectToInstanceServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{}).handle})
 	body := instanceBody(t, nil)
 	params := instanceParams(body)
-	params.InputResponses = mcp.InputResponseMap{confirmDecisionRequestID: adminAnswer(adminChoiceApply)}
+	params.InputResponses = mcp.InputResponseMap{confirmDecisionRequestID: confirmAnswer(confirmChoiceApply)}
 	params.RequestState = signedInstanceState(t, s, body, time.Now().Add(-confirmationLifetime-time.Minute))
 	res := callAdminister(t, session, params)
 	require.True(t, res.IsError, resultText(t, res))
@@ -818,7 +818,7 @@ func TestAdministerInstanceRefusesAClientThatCannotConfirm(t *testing.T) {
 func TestAdministerInstanceAddsNothingWhenTheConnectionFails(t *testing.T) {
 	mock := newInstanceMock()
 	mock.connectionFails = true
-	_, session := connectToInstanceServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{answer: adminAnswer(adminChoiceApply)}).handle})
+	_, session := connectToInstanceServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{answer: confirmAnswer(confirmChoiceApply)}).handle})
 	refusal := resultToolError(t, callAdminister(t, session, instanceParams(instanceBody(t, nil))))
 	require.Equal(t, "CONNECTION_TEST_FAILED", refusal.Code)
 	require.Equal(t, "Bytebase's connection test refused the request, so no instance was added: "+
@@ -834,7 +834,7 @@ func TestAdministerInstanceReportsEachRefusalAsTheHandlerStatesIt(t *testing.T) 
 	t.Run("at the test", func(t *testing.T) {
 		mock := newInstanceMock()
 		mock.testRefusal = http.StatusNotFound
-		_, session := connectToInstanceServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{answer: adminAnswer(adminChoiceApply)}).handle})
+		_, session := connectToInstanceServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{answer: confirmAnswer(confirmChoiceApply)}).handle})
 		res := callAdminister(t, session, instanceParams(instanceBody(t, nil)))
 		require.True(t, res.IsError)
 		refusal := resultToolError(t, res)
@@ -847,7 +847,7 @@ func TestAdministerInstanceReportsEachRefusalAsTheHandlerStatesIt(t *testing.T) 
 		t.Run(fmt.Sprintf("a refusal of the caller at the test, HTTP %d", status), func(t *testing.T) {
 			mock := newInstanceMock()
 			mock.testRefusal = status
-			_, session := connectToInstanceServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{answer: adminAnswer(adminChoiceApply)}).handle})
+			_, session := connectToInstanceServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{answer: confirmAnswer(confirmChoiceApply)}).handle})
 			res := callAdminister(t, session, instanceParams(instanceBody(t, nil)))
 			require.True(t, res.IsError)
 			require.Equal(t, fmt.Sprintf("failed to add the instance: HTTP %d: %s", status, callerRefused), resultText(t, res))
@@ -858,7 +858,7 @@ func TestAdministerInstanceReportsEachRefusalAsTheHandlerStatesIt(t *testing.T) 
 	t.Run("at the create", func(t *testing.T) {
 		mock := newInstanceMock()
 		mock.createRefusal = http.StatusConflict
-		_, session := connectToInstanceServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{answer: adminAnswer(adminChoiceApply)}).handle})
+		_, session := connectToInstanceServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{answer: confirmAnswer(confirmChoiceApply)}).handle})
 		res := callAdminister(t, session, instanceParams(instanceBody(t, nil)))
 		require.True(t, res.IsError)
 		require.Equal(t, `failed to add the instance: HTTP 409: instance ID "hr-staging" already exists`, resultText(t, res))
@@ -870,7 +870,7 @@ func TestAdministerInstanceReportsEachRefusalAsTheHandlerStatesIt(t *testing.T) 
 
 func TestAdministerInstanceNamesTheDataSourceItself(t *testing.T) {
 	mock := newInstanceMock()
-	_, session := connectToInstanceServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{answer: adminAnswer(adminChoiceApply)}).handle})
+	_, session := connectToInstanceServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{answer: confirmAnswer(confirmChoiceApply)}).handle})
 	res := callAdminister(t, session, instanceParams(instanceBody(t, func(_, _, dataSource map[string]any) { delete(dataSource, "id") })))
 	require.False(t, res.IsError, resultText(t, res))
 	calls := mock.calls()
@@ -924,7 +924,7 @@ func TestAdministerInstanceReadsBackACreateThatDidNotFinish(t *testing.T) {
 			mock.stored = tc.heldBefore
 			mock.syncTimeWritten = tc.syncTimeWritten
 			mock.readStatus = tc.readStatus
-			s, session := connectToInstanceServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{answer: adminAnswer(adminChoiceApply)}).handle})
+			s, session := connectToInstanceServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{answer: confirmAnswer(confirmChoiceApply)}).handle})
 			s.internalAPITimeoutOverride = 200 * time.Millisecond
 			// Registered last, so it runs first and ends a create still running.
 			t.Cleanup(func() { close(mock.release) })
@@ -971,7 +971,7 @@ func TestAdministerInstanceReportsWhatTheCreateLeft(t *testing.T) {
 			if tc.setup != nil {
 				tc.setup(mock)
 			}
-			_, session := connectToInstanceServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{answer: adminAnswer(adminChoiceApply)}).handle})
+			_, session := connectToInstanceServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{answer: confirmAnswer(confirmChoiceApply)}).handle})
 			res := callAdminister(t, session, instanceParams(instanceBody(t, tc.edit)))
 			require.False(t, res.IsError, resultText(t, res))
 			require.Contains(t, resultText(t, res), tc.want)

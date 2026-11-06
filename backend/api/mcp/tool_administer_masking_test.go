@@ -156,7 +156,7 @@ func semanticType(id, title string, algorithm *v1pb.Algorithm) *v1pb.SemanticTyp
 
 func TestAdministerMaskingRulesAsksForTheJourneyRuleOnAWorkspaceWithNone(t *testing.T) {
 	mock := &maskingMock{}
-	user := &asker{answer: adminAnswer(adminChoiceApply)}
+	user := &asker{answer: confirmAnswer(confirmChoiceApply)}
 	_, session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
 	body := maskingBody(t, maskingRequest(true, maskingRule("7d3c1a52-1f6e-4a5b-9d0e-2b8f4c6a1e09", "Personal data in prod", journeyCondition, "bb.default")))
 
@@ -388,7 +388,7 @@ func TestAdministerMaskingRulesRefusesBeforeAsking(t *testing.T) {
 			if !tc.none {
 				mock.setStored(tc.stored...)
 			}
-			user := &asker{answer: adminAnswer(adminChoiceApply)}
+			user := &asker{answer: confirmAnswer(confirmChoiceApply)}
 			_, session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
 			res := callAdminister(t, session, maskingParams(maskingBody(t, tc.request)))
 			require.True(t, res.IsError, resultText(t, res))
@@ -402,7 +402,7 @@ func TestAdministerMaskingRulesRefusesBeforeAsking(t *testing.T) {
 func TestAdministerMaskingRulesRefusesAnAnswerOverRulesThatChanged(t *testing.T) {
 	mock := &maskingMock{}
 	mock.setStored(maskingRule("r1", "Prod", `resource.environment_id == "prod"`, "bb.default"))
-	user := &asker{answer: adminAnswer(adminChoiceApply)}
+	user := &asker{answer: confirmAnswer(confirmChoiceApply)}
 	// Another admin renames the stored rule while the form is open.
 	user.whileAsked = func() {
 		mock.setStored(maskingRule("r1", "Production", `resource.environment_id == "prod"`, "bb.default"))
@@ -425,7 +425,7 @@ func TestAdministerMaskingRulesRefusesAnAnswerOverTypesThatChanged(t *testing.T)
 	mock := &maskingMock{types: []*v1pb.SemanticTypeSetting_SemanticType{semanticType("email", "Email", md5)}}
 	kept := maskingRule("r1", "Emails", `resource.column_name == "email"`, "email")
 	mock.setStored(kept)
-	user := &asker{answer: adminAnswer(adminChoiceApply)}
+	user := &asker{answer: confirmAnswer(confirmChoiceApply)}
 	// Another admin removes the email type's algorithm while the form is open.
 	user.whileAsked = func() {
 		mock.mu.Lock()
@@ -450,7 +450,7 @@ func TestAdministerMaskingRulesRefusesAnAnswerToAnotherRequest(t *testing.T) {
 	// The same form: an added rule's id is not in it.
 	params := maskingParams(maskingBody(t, maskingRequest(false,
 		maskingRule("r2", "Prod", `resource.environment_id == "prod"`, "bb.default"))))
-	params.InputResponses = mcp.InputResponseMap{confirmDecisionRequestID: adminAnswer(adminChoiceApply)}
+	params.InputResponses = mcp.InputResponseMap{confirmDecisionRequestID: confirmAnswer(confirmChoiceApply)}
 	params.RequestState = state
 	res := callAdminister(t, session, params)
 	require.True(t, res.IsError, resultText(t, res))
@@ -482,7 +482,7 @@ func TestAdministerMaskingRulesSuggestsStepsForAChangeThatFitsAFormAlone(t *test
 	mock.setStored(prod)
 	condition := `resource.environment_id == "prod" && resource.column_name in ["birth_date", "gender", "amount", "salary", "address", "phone"]`
 	require.Len(t, wrapMessageLine("Add rule 1, \"Default\" (Full mask): "+conditionText(condition)), 3, "the added rule takes three lines")
-	user := &asker{answer: adminAnswer(adminChoiceApply)}
+	user := &asker{answer: confirmAnswer(confirmChoiceApply)}
 	_, session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
 
 	res := callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false, maskingRule("r1", "Personal data in prod", condition, "bb.default")))))
@@ -503,7 +503,7 @@ func TestAdministerMaskingRulesAsksNothingWhenNothingChanges(t *testing.T) {
 	mock := &maskingMock{}
 	prod := maskingRule("r1", "Prod", `resource.environment_id == "prod"`, "bb.default")
 	mock.setStored(prod)
-	user := &asker{answer: adminAnswer(adminChoiceApply)}
+	user := &asker{answer: confirmAnswer(confirmChoiceApply)}
 	_, session := connectToMaskingServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
 	res := callAdminister(t, session, maskingParams(maskingBody(t, maskingRequest(false, proto.CloneOf(prod)))))
 	require.False(t, res.IsError, resultText(t, res))
@@ -570,9 +570,10 @@ func TestAdministerMaskingRulesChangesNothingUnlessApplied(t *testing.T) {
 		answer *mcp.ElicitResult
 		want   string
 	}{
-		"declined":        {&mcp.ElicitResult{Action: "decline"}, "Not changed: the user declined, so the masking rules stay as they are"},
-		"cancelled":       {&mcp.ElicitResult{Action: "cancel"}, "Not changed: the user cancelled, so the masking rules stay as they are"},
-		"changed in chat": {adminAnswer(adminChoiceChange), "Not changed: the user wants to change this request"},
+		"declined":  {&mcp.ElicitResult{Action: "decline"}, "Not changed: the user declined, so the masking rules stay as they are"},
+		"cancelled": {&mcp.ElicitResult{Action: "cancel"}, "Not changed: the user cancelled, so the masking rules stay as they are"},
+		"changed in chat": {confirmAnswer(confirmChoiceChange),
+			"Not changed: the user wants to change this request. Ask them what to change, then call administer_workspace with the revised rules."},
 	} {
 		t.Run(name, func(t *testing.T) {
 			mock := &maskingMock{}
