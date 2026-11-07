@@ -97,7 +97,9 @@ describe("DataExportButton destination", () => {
       expect(options.destination).toBe(ExportDestination.SHAREPOINT);
       expect(options.password).toBe("");
       resolve({
-        sharepoint: [{ database: "main", status: "EXPORTED", uri: folderUri }],
+        sharepoint: [
+          { name: "main", database: "main", status: "EXPORTED", uri: folderUri },
+        ],
       });
     });
     renderButton([ExportDestination.SHAREPOINT]);
@@ -301,7 +303,7 @@ describe("DataExportButton cancel", () => {
     onExport.mockImplementation((request) => {
       request.signal.addEventListener("abort", () =>
         request.resolve({
-          sharepoint: [{ database: "main", status: "CANCELED" }],
+          sharepoint: [{ name: "main", database: "main", status: "CANCELED" }],
         })
       );
     });
@@ -316,6 +318,54 @@ describe("DataExportButton cancel", () => {
       ).toBeInTheDocument();
     });
     expect(pushNotification).not.toHaveBeenCalled();
+  });
+
+  test("retries failed SharePoint databases with the same options", async () => {
+    onExport.mockImplementationOnce(({ resolve }) =>
+      resolve({
+        sharepoint: [
+          { name: "a", database: "a", status: "EXPORTED", uri: folderUri },
+          {
+            name: "b",
+            database: "b",
+            status: "FAILED",
+            failure: { message: "boom" },
+          },
+        ],
+      })
+    );
+    renderButton([ExportDestination.SHAREPOINT]);
+    openDrawer();
+    confirmExport();
+    const retry = await screen.findByRole("button", {
+      name: "export-data.sharepoint.retry-failed",
+    });
+
+    onExport.mockImplementationOnce(({ resolve }) =>
+      resolve({
+        sharepoint: [
+          { name: "b", database: "b", status: "EXPORTED", uri: folderUri },
+        ],
+      })
+    );
+    fireEvent.click(retry);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("export-data.sharepoint.exported-title")
+      ).toBeInTheDocument();
+    });
+    expect(onExport).toHaveBeenCalledTimes(2);
+    const [first, second] = onExport.mock.calls.map(([request]) => request);
+    expect(first.databases).toBeUndefined();
+    expect(second.databases).toEqual(["b"]);
+    expect(second.options).toEqual(first.options);
+    expect(screen.getAllByRole("listitem")).toHaveLength(2);
+    expect(
+      screen.queryByRole("button", {
+        name: "export-data.sharepoint.retry-failed",
+      })
+    ).not.toBeInTheDocument();
   });
 
   const pressEscape = () =>

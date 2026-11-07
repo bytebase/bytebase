@@ -407,6 +407,7 @@ describe("ResultView", () => {
       expect(exportRequest.resolve).toHaveBeenCalledWith({
         sharepoint: [
           {
+            name: database.name,
             database: "main",
             status: "EXPORTED",
             uri: "https://contoso.sharepoint.com/sites/x/Exports/20261022-main",
@@ -444,7 +445,9 @@ describe("ResultView", () => {
 
     await waitFor(() => {
       expect(exportRequest.resolve).toHaveBeenCalledWith({
-        sharepoint: [{ database: "main", status: "CANCELED" }],
+        sharepoint: [
+          { name: database.name, database: "main", status: "CANCELED" },
+        ],
       });
     });
     expect(exportRequest.reject).not.toHaveBeenCalled();
@@ -470,9 +473,10 @@ describe("ResultView", () => {
       expect(exportRequest.resolve).toHaveBeenCalledWith({
         sharepoint: [
           {
+            name: database.name,
             database: "main",
             status: "UNCONFIRMED",
-            reason: "could not be confirmed",
+            failure: { message: "could not be confirmed" },
           },
         ],
       });

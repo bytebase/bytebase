@@ -1185,15 +1185,29 @@
     },
     "sharepoint": {
       "canceled-description": "La exportación se canceló mientras se exportaba esta base de datos. Es posible que existan archivos en SharePoint.",
+      "error": {
+        "credential-rejected": "Microsoft Entra rechazó las credenciales de la aplicación de SharePoint. Pide a un administrador del espacio de trabajo que las actualice en la configuración del espacio de trabajo.",
+        "destination-not-folder": "El destino de SharePoint es un archivo. Pide al propietario del proyecto que configure una biblioteca de documentos o una carpeta.",
+        "destination-not-found": "La carpeta de SharePoint no existe o la aplicación de SharePoint no puede acceder a ella. Pide al propietario del proyecto que revise el destino de exportación.",
+        "files-may-exist": "Es posible que ya haya archivos en la carpeta «{{folder}}».",
+        "not-configured": "La exportación a SharePoint no está configurada para este proyecto. Pide a un administrador que revise la configuración de SharePoint.",
+        "request-failed": "SharePoint no pudo completar la exportación. Inténtalo de nuevo. Si sigue fallando, comparte los detalles del error con un administrador.",
+        "storage-full": "El sitio de SharePoint no tiene espacio de almacenamiento. Pide a un administrador de SharePoint que libere espacio.",
+        "upload-unconfirmed": "Bytebase no pudo confirmar que la carga terminó."
+      },
       "exported-title": "Exportado a SharePoint",
       "not-started-description": "La exportación se canceló antes de empezar con esta base de datos. No se exportó nada.",
       "open": "Abrir en SharePoint",
       "result-title": "Resultados de la exportación a SharePoint",
+      "retry-failed": "Reintentar fallidos",
+      "retry-unconfirmed-warning": "Cada reintento exporta a una carpeta nueva. Una base de datos marcada como Sin confirmar puede tener ya archivos en su carpeta anterior, por lo que SharePoint podría acabar con archivos duplicados.",
+      "retrying": "Reintentando…",
       "status": {
         "canceled": "Cancelado",
         "exported": "Exportado",
         "failed": "Error",
         "not-started": "No exportado",
+        "retrying": "Reintentando",
         "unconfirmed": "Sin confirmar"
       }
     }

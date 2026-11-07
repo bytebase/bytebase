@@ -68,6 +68,8 @@ func (e *graphError) sentinel() error {
 		return ErrCredential
 	case http.StatusForbidden, http.StatusNotFound:
 		return ErrNotFoundOrNoAccess
+	case http.StatusInsufficientStorage:
+		return ErrStorageFull
 	default:
 		return nil
 	}

@@ -53,8 +53,10 @@ import { ExportDestination, ExportFormat } from "@/types/proto-es/v1/common_pb";
 import { MaxRowCountSelect } from "./MaxRowCountSelect";
 import {
   formatSharePointUrl,
+  mergeSharePointResults,
   type SharePointExportResult,
   SharePointExportResultDialog,
+  toFailedSharePointExport,
 } from "./SharePointExportResultDialog";
 
 export type DownloadContent = {
@@ -78,6 +80,9 @@ export type ExportOutcome =
 
 export type DataExportRequest = {
   options: ExportOption;
+  // Database resource names to export instead of the caller's own selection.
+  // Set when retrying failed SharePoint exports.
+  databases?: string[];
   resolve: (outcome: ExportOutcome) => void;
   reject: (reason?: unknown) => void;
   // Aborted when the user cancels the export. A canceled SharePoint export
@@ -248,6 +253,12 @@ export function DataExportButton({
   const [sharePointResults, setSharePointResults] = useState<
     SharePointExportResult[]
   >([]);
+  // The options of the last SharePoint export, which a retry reuses.
+  const sharePointOptionsRef = useRef<ExportOption | undefined>(undefined);
+  const retryAbortRef = useRef<AbortController | undefined>(undefined);
+  const [retryingNames, setRetryingNames] = useState<ReadonlySet<string>>();
+  const [retryStartedAt, setRetryStartedAt] = useState<number>();
+  const retryElapsed = useElapsedSeconds(retryStartedAt);
   const exportUnavailable = destinations.length === 0;
   const triggerTooltip = exportUnavailable
     ? t("export-data.no-destination")
@@ -322,11 +333,11 @@ export function DataExportButton({
     setIsRequesting(true);
     setProgress(undefined);
     const options: ExportOption = { ...currentOption };
-    setSharePointStartedAt(
-      options.destination === ExportDestination.SHAREPOINT
-        ? Date.now()
-        : undefined
-    );
+    const toSharePoint = options.destination === ExportDestination.SHAREPOINT;
+    setSharePointStartedAt(toSharePoint ? Date.now() : undefined);
+    if (toSharePoint) {
+      sharePointOptionsRef.current = options;
+    }
 
     new Promise<ExportOutcome>((resolve, reject) => {
       onExport({
@@ -377,6 +388,52 @@ export function DataExportButton({
     exportAbortRef.current?.abort();
     setShowDrawer(false);
     setShowPasswordDialog(false);
+  };
+
+  const retrySharePointExport = (names: string[]) => {
+    const options = sharePointOptionsRef.current;
+    if (!options || retryingNames || names.length === 0) return;
+    const controller = new AbortController();
+    retryAbortRef.current = controller;
+    setRetryingNames(new Set(names));
+    setRetryStartedAt(Date.now());
+    new Promise<ExportOutcome>((resolve, reject) => {
+      onExport({
+        options,
+        databases: names,
+        resolve,
+        reject,
+        signal: controller.signal,
+      });
+    })
+      .then((outcome) => {
+        if (Array.isArray(outcome)) return;
+        setSharePointResults((results) =>
+          mergeSharePointResults(results, outcome.sharepoint)
+        );
+      })
+      .catch((error: unknown) => {
+        setSharePointResults((results) =>
+          mergeSharePointResults(
+            results,
+            results
+              .filter((result) => names.includes(result.name))
+              .map((result) =>
+                toFailedSharePointExport(
+                  { name: result.name, label: result.database },
+                  error
+                )
+              )
+          )
+        );
+      })
+      .finally(() => {
+        if (retryAbortRef.current === controller) {
+          retryAbortRef.current = undefined;
+        }
+        setRetryingNames(undefined);
+        setRetryStartedAt(undefined);
+      });
   };
 
   // While an export runs, Escape and an outside click are ignored so a stray
@@ -733,6 +790,14 @@ export function DataExportButton({
 
       <SharePointExportResultDialog
         results={sharePointResults}
+        retry={
+          retryingNames && {
+            names: retryingNames,
+            elapsedSeconds: retryElapsed,
+          }
+        }
+        onRetry={retrySharePointExport}
+        onCancelRetry={() => retryAbortRef.current?.abort()}
         onClose={() => setSharePointResults([])}
       />
     </>

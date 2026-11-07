@@ -109,7 +109,7 @@ func TestResolve(t *testing.T) {
 			"id": "item1", "name": "project a", "file": map[string]any{}, "parentReference": parent,
 		}))
 		_, err := client.Resolve(context.Background(), canonical)
-		require.ErrorContains(t, err, "is a file")
+		require.ErrorIs(t, err, ErrNotFolder)
 	})
 
 	t.Run("forbidden", func(t *testing.T) {
@@ -394,6 +394,20 @@ func TestUploadForbiddenUploadsNothing(t *testing.T) {
 	require.ErrorIs(t, err, ErrNotFoundOrNoAccess)
 	require.ErrorIs(t, err, ErrNothingUploaded)
 	require.Empty(t, fake.folders)
+}
+
+func TestUploadStorageFull(t *testing.T) {
+	fake := newFakeGraph(t)
+	fake.override = func(w http.ResponseWriter, _ *http.Request) bool {
+		writeGraphError(w, http.StatusInsufficientStorage, "quotaLimitReached")
+		return true
+	}
+	client, waits := newTestClient(t, fake)
+	_, err := client.Upload(context.Background(), testLocation, testFolder, testFiles)
+	require.ErrorIs(t, err, ErrStorageFull)
+	require.ErrorIs(t, err, ErrNothingUploaded)
+	require.ErrorContains(t, err, "quotaLimitReached")
+	require.Empty(t, *waits)
 }
 
 func TestUploadRejectionDoesNotDenyAConcurrentUpload(t *testing.T) {
