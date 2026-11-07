@@ -144,9 +144,15 @@ func (x *ReleasePayload_File) GetVersion() string {
 }
 
 type ReleasePayload_VCSSource struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	VcsType       VCSType                `protobuf:"varint,1,opt,name=vcs_type,json=vcsType,proto3,enum=bytebase.store.VCSType" json:"vcs_type,omitempty"`
-	Url           string                 `protobuf:"bytes,2,opt,name=url,proto3" json:"url,omitempty"`
+	state         protoimpl.MessageState                `protogen:"open.v1"`
+	VcsType       VCSType                               `protobuf:"varint,1,opt,name=vcs_type,json=vcsType,proto3,enum=bytebase.store.VCSType" json:"vcs_type,omitempty"`
+	Url           string                                `protobuf:"bytes,2,opt,name=url,proto3" json:"url,omitempty"`
+	CommitSha     string                                `protobuf:"bytes,3,opt,name=commit_sha,json=commitSha,proto3" json:"commit_sha,omitempty"`
+	Branch        string                                `protobuf:"bytes,4,opt,name=branch,proto3" json:"branch,omitempty"`
+	CommitTitle   string                                `protobuf:"bytes,5,opt,name=commit_title,json=commitTitle,proto3" json:"commit_title,omitempty"`
+	AuthorName    string                                `protobuf:"bytes,6,opt,name=author_name,json=authorName,proto3" json:"author_name,omitempty"`
+	AuthorLogin   string                                `protobuf:"bytes,7,opt,name=author_login,json=authorLogin,proto3" json:"author_login,omitempty"`
+	PullRequest   *ReleasePayload_VCSSource_PullRequest `protobuf:"bytes,8,opt,name=pull_request,json=pullRequest,proto3" json:"pull_request,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -195,11 +201,113 @@ func (x *ReleasePayload_VCSSource) GetUrl() string {
 	return ""
 }
 
+func (x *ReleasePayload_VCSSource) GetCommitSha() string {
+	if x != nil {
+		return x.CommitSha
+	}
+	return ""
+}
+
+func (x *ReleasePayload_VCSSource) GetBranch() string {
+	if x != nil {
+		return x.Branch
+	}
+	return ""
+}
+
+func (x *ReleasePayload_VCSSource) GetCommitTitle() string {
+	if x != nil {
+		return x.CommitTitle
+	}
+	return ""
+}
+
+func (x *ReleasePayload_VCSSource) GetAuthorName() string {
+	if x != nil {
+		return x.AuthorName
+	}
+	return ""
+}
+
+func (x *ReleasePayload_VCSSource) GetAuthorLogin() string {
+	if x != nil {
+		return x.AuthorLogin
+	}
+	return ""
+}
+
+func (x *ReleasePayload_VCSSource) GetPullRequest() *ReleasePayload_VCSSource_PullRequest {
+	if x != nil {
+		return x.PullRequest
+	}
+	return nil
+}
+
+type ReleasePayload_VCSSource_PullRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Url           string                 `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
+	Number        int64                  `protobuf:"varint,2,opt,name=number,proto3" json:"number,omitempty"`
+	Title         string                 `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ReleasePayload_VCSSource_PullRequest) Reset() {
+	*x = ReleasePayload_VCSSource_PullRequest{}
+	mi := &file_store_release_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReleasePayload_VCSSource_PullRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReleasePayload_VCSSource_PullRequest) ProtoMessage() {}
+
+func (x *ReleasePayload_VCSSource_PullRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_store_release_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReleasePayload_VCSSource_PullRequest.ProtoReflect.Descriptor instead.
+func (*ReleasePayload_VCSSource_PullRequest) Descriptor() ([]byte, []int) {
+	return file_store_release_proto_rawDescGZIP(), []int{0, 1, 0}
+}
+
+func (x *ReleasePayload_VCSSource_PullRequest) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+func (x *ReleasePayload_VCSSource_PullRequest) GetNumber() int64 {
+	if x != nil {
+		return x.Number
+	}
+	return 0
+}
+
+func (x *ReleasePayload_VCSSource_PullRequest) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
 var File_store_release_proto protoreflect.FileDescriptor
 
 const file_store_release_proto_rawDesc = "" +
 	"\n" +
-	"\x13store/release.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\x8e\x03\n" +
+	"\x13store/release.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\xd5\x05\n" +
 	"\x0eReleasePayload\x129\n" +
 	"\x05files\x18\x02 \x03(\v2#.bytebase.store.ReleasePayload.FileR\x05files\x12G\n" +
 	"\n" +
@@ -208,10 +316,22 @@ const file_store_release_proto_rawDesc = "" +
 	"\x04File\x12\x12\n" +
 	"\x04path\x18\x02 \x01(\tR\x04path\x12!\n" +
 	"\fsheet_sha256\x18\x04 \x01(\tR\vsheetSha256\x12\x18\n" +
-	"\aversion\x18\x06 \x01(\tR\aversionJ\x04\b\x01\x10\x02J\x04\b\x03\x10\x04J\x04\b\x05\x10\x06\x1aQ\n" +
+	"\aversion\x18\x06 \x01(\tR\aversionJ\x04\b\x01\x10\x02J\x04\b\x03\x10\x04J\x04\b\x05\x10\x06\x1a\x97\x03\n" +
 	"\tVCSSource\x122\n" +
 	"\bvcs_type\x18\x01 \x01(\x0e2\x17.bytebase.store.VCSTypeR\avcsType\x12\x10\n" +
-	"\x03url\x18\x02 \x01(\tR\x03urlJ\x04\b\x01\x10\x02B\x8f\x01\n" +
+	"\x03url\x18\x02 \x01(\tR\x03url\x12\x1d\n" +
+	"\n" +
+	"commit_sha\x18\x03 \x01(\tR\tcommitSha\x12\x16\n" +
+	"\x06branch\x18\x04 \x01(\tR\x06branch\x12!\n" +
+	"\fcommit_title\x18\x05 \x01(\tR\vcommitTitle\x12\x1f\n" +
+	"\vauthor_name\x18\x06 \x01(\tR\n" +
+	"authorName\x12!\n" +
+	"\fauthor_login\x18\a \x01(\tR\vauthorLogin\x12W\n" +
+	"\fpull_request\x18\b \x01(\v24.bytebase.store.ReleasePayload.VCSSource.PullRequestR\vpullRequest\x1aM\n" +
+	"\vPullRequest\x12\x10\n" +
+	"\x03url\x18\x01 \x01(\tR\x03url\x12\x16\n" +
+	"\x06number\x18\x02 \x01(\x03R\x06number\x12\x14\n" +
+	"\x05title\x18\x03 \x01(\tR\x05titleJ\x04\b\x01\x10\x02B\x8f\x01\n" +
 	"\x12com.bytebase.storeB\fReleaseProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
@@ -226,24 +346,26 @@ func file_store_release_proto_rawDescGZIP() []byte {
 	return file_store_release_proto_rawDescData
 }
 
-var file_store_release_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_store_release_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_store_release_proto_goTypes = []any{
-	(*ReleasePayload)(nil),           // 0: bytebase.store.ReleasePayload
-	(*ReleasePayload_File)(nil),      // 1: bytebase.store.ReleasePayload.File
-	(*ReleasePayload_VCSSource)(nil), // 2: bytebase.store.ReleasePayload.VCSSource
-	(SchemaChangeType)(0),            // 3: bytebase.store.SchemaChangeType
-	(VCSType)(0),                     // 4: bytebase.store.VCSType
+	(*ReleasePayload)(nil),                       // 0: bytebase.store.ReleasePayload
+	(*ReleasePayload_File)(nil),                  // 1: bytebase.store.ReleasePayload.File
+	(*ReleasePayload_VCSSource)(nil),             // 2: bytebase.store.ReleasePayload.VCSSource
+	(*ReleasePayload_VCSSource_PullRequest)(nil), // 3: bytebase.store.ReleasePayload.VCSSource.PullRequest
+	(SchemaChangeType)(0),                        // 4: bytebase.store.SchemaChangeType
+	(VCSType)(0),                                 // 5: bytebase.store.VCSType
 }
 var file_store_release_proto_depIdxs = []int32{
 	1, // 0: bytebase.store.ReleasePayload.files:type_name -> bytebase.store.ReleasePayload.File
 	2, // 1: bytebase.store.ReleasePayload.vcs_source:type_name -> bytebase.store.ReleasePayload.VCSSource
-	3, // 2: bytebase.store.ReleasePayload.type:type_name -> bytebase.store.SchemaChangeType
-	4, // 3: bytebase.store.ReleasePayload.VCSSource.vcs_type:type_name -> bytebase.store.VCSType
-	4, // [4:4] is the sub-list for method output_type
-	4, // [4:4] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	4, // 2: bytebase.store.ReleasePayload.type:type_name -> bytebase.store.SchemaChangeType
+	5, // 3: bytebase.store.ReleasePayload.VCSSource.vcs_type:type_name -> bytebase.store.VCSType
+	3, // 4: bytebase.store.ReleasePayload.VCSSource.pull_request:type_name -> bytebase.store.ReleasePayload.VCSSource.PullRequest
+	5, // [5:5] is the sub-list for method output_type
+	5, // [5:5] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_store_release_proto_init() }
@@ -258,7 +380,7 @@ func file_store_release_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_release_proto_rawDesc), len(file_store_release_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

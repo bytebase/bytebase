@@ -8,44 +8,29 @@ import { useOnKeyChange } from "@/hooks/useOnKeyChange";
 import {
   type Stage,
   type Task,
-  Task_Status,
   type TaskRun,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import { usePlanDetailContext } from "../../shell/PlanDetailContext";
 import { DeployTaskItem } from "./DeployTaskItem";
 import { DeployTaskToolbar } from "./DeployTaskToolbar";
+import {
+  type FoldedStatementSummary,
+  statementSummaryForTarget,
+} from "./foldedTaskDescription";
 import { isDeployTaskSelectable } from "./taskActionState";
 
 const DEFAULT_PAGE_SIZE = 20;
 const EMPTY_TASK_RUNS: TaskRun[] = [];
 
-// The task worth opening by default: the first one that needs attention
-// (running or failed), falling back to the first task.
-const autoExpandTaskName = (tasks: Task[]): string | undefined =>
-  (
-    tasks.find(
-      (task) =>
-        task.status === Task_Status.RUNNING ||
-        task.status === Task_Status.FAILED
-    ) ?? tasks[0]
-  )?.name;
-
+// Every task is folded on load, release and UIOps alike (the folded card says
+// what happened). Only a task the URL names opens: it is the reader's focus.
 const initialExpandedNames = (
   tasks: Task[],
   selectedTaskName?: string
-): Set<string> => {
-  // An explicit task resource selection is the user's focus — open only it;
-  // opening the auto pick too would show two unrelated cards on a deep link.
-  if (
-    selectedTaskName &&
-    tasks.some((task) => task.name === selectedTaskName)
-  ) {
-    return new Set([selectedTaskName]);
-  }
-  // No selection: open a sensible default so the list isn't all-collapsed.
-  const autoName = autoExpandTaskName(tasks);
-  return autoName ? new Set([autoName]) : new Set();
-};
+): Set<string> =>
+  selectedTaskName && tasks.some((task) => task.name === selectedTaskName)
+    ? new Set([selectedTaskName])
+    : new Set();
 
 // Grow the page so a deep-linked task beyond the first page is visible.
 const initialDisplayedCount = (
@@ -73,6 +58,18 @@ export function DeployTaskList({
 }) {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
+  // One summary object per target, rebuilt only when the plan check runs
+  // change, so the memoized cards see the same prop across poll ticks.
+  const statementSummaries = useMemo(() => {
+    const byTarget = new Map<string, FoldedStatementSummary | undefined>();
+    for (const task of stage.tasks) {
+      byTarget.set(
+        task.target,
+        statementSummaryForTarget(page.planCheckRuns, task.target)
+      );
+    }
+    return byTarget;
+  }, [page.planCheckRuns, stage.tasks]);
   // Full task resource name resolved from the task resource route.
   const selectedTaskName = page.selectedTaskName;
   const filteredTasks = stage.tasks;
@@ -278,6 +275,7 @@ export function DeployTaskList({
             stageEnvironment={stage.environment}
             task={task}
             taskRuns={page.taskRunsByTaskName.get(task.name) ?? EMPTY_TASK_RUNS}
+            statementSummary={statementSummaries.get(task.target)}
           />
         ))}
 

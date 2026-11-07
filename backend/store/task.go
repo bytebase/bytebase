@@ -488,7 +488,8 @@ func taskStatusQuery(where *qb.Query) *qb.Query {
 }
 
 // BatchSkipTasks batch skip tasks.
-func (s *Store) BatchSkipTasks(ctx context.Context, projectID string, taskUIDs []int64, comment string) error {
+// The skipper is the skipping user's email; the skip time is the transaction's.
+func (s *Store) BatchSkipTasks(ctx context.Context, projectID string, taskUIDs []int64, comment string, skipper string) error {
 	if len(taskUIDs) == 0 {
 		return nil
 	}
@@ -551,9 +552,13 @@ func (s *Store) BatchSkipTasks(ctx context.Context, projectID string, taskUIDs [
 
 	q := qb.Q().Space(`
 		UPDATE task AS t
-		SET payload = payload || jsonb_build_object('skipped', ?::BOOLEAN) || jsonb_build_object('skippedReason', ?::TEXT)
+		SET payload = payload || jsonb_build_object(
+			'skipped', ?::BOOLEAN,
+			'skippedReason', ?::TEXT,
+			'skipper', ?::TEXT,
+			'skipTime', to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'))
 		WHERE t.id = ANY(?) AND t.project = ?
-		AND (t.payload->>'skipped')::BOOLEAN IS NOT TRUE`, true, comment, taskUIDs, projectID)
+		AND (t.payload->>'skipped')::BOOLEAN IS NOT TRUE`, true, comment, skipper, taskUIDs, projectID)
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return errors.Wrapf(err, "failed to build sql")

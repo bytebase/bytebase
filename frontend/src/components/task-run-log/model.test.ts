@@ -1,6 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import { describe, expect, test, vi } from "vitest";
 import {
+  Task_ReleaseStateSchema,
   TaskRun_Status,
   type TaskRunLogEntry,
   TaskRunLogEntry_PriorBackup_PriorBackupDetail_ItemSchema,
@@ -12,11 +13,17 @@ import {
   assignEntryKeys,
   type BuildSectionsOptions,
   buildReleaseFileGroups,
+  buildReleaseSpine,
   buildRowsFromEntries,
   collectLeafSections,
+  countSpine,
   groupEntriesByReleaseFile,
   hasReleaseFileMarkers,
+  isSpineItemOpenByDefault,
+  parseReleaseFileError,
+  pendingVersionsOf,
   type TaskRunLogDetailText,
+  windowSpine,
 } from "./model";
 import {
   begin,
@@ -29,7 +36,13 @@ import {
   retry,
   rollback,
 } from "./taskRunLogEntries";
-import type { AttemptGroup, LogRow, Section } from "./types";
+import type {
+  AttemptGroup,
+  LogRow,
+  Section,
+  SpineItem,
+  SpineWindowItem,
+} from "./types";
 import {
   buildReleaseSheetFetchResult,
   buildSheetFetchStateForMissingTask,
@@ -949,5 +962,639 @@ describe("row identity", () => {
     expect(after).toHaveLength(2);
     expect(after[1]?.items[0]?.key).toBe(before[0]?.items[1]?.key);
     expect(after[0]?.items[0]?.key).toBe(before[0]?.items[0]?.key);
+  });
+});
+
+describe("release spine grouping", () => {
+  test("a file group ends at a database-sync entry, which becomes a sibling", () => {
+    const sync = databaseSync(9, 10);
+    const entries = [
+      releaseFile(1, "001"),
+      command(2, { statement: "CREATE TABLE a (id INT);", error: "" }),
+      releaseFile(4, "002"),
+      command(5, { statement: "CREATE TABLE b (id INT);", error: "" }),
+      sync,
+    ];
+    const groups = groupEntriesByReleaseFile(entries);
+    expect(
+      groups.map((g) => [g.file?.version ?? null, g.entries.length])
+    ).toEqual([
+      ["001", 1],
+      ["002", 1],
+      [null, 1],
+    ]);
+    expect(groups[2]?.entries[0]).toBe(sync);
+  });
+
+  test("a prior backup is a sibling and a gh-ost migration stays inside its file", () => {
+    const backup = priorBackup(1, 2);
+    const ghost = create(TaskRunLogEntrySchema, {
+      type: TaskRunLogEntry_Type.GHOST_MIGRATION,
+      logTime: ts(5),
+      ghostMigration: { startTime: ts(5), endTime: ts(6), error: "" },
+    });
+    const entries = [backup, releaseFile(3, "001"), ghost, databaseSync(7, 8)];
+    const groups = groupEntriesByReleaseFile(entries);
+    expect(
+      groups.map((g) => [g.file?.version ?? null, g.entries.length])
+    ).toEqual([
+      [null, 1],
+      ["001", 1],
+      [null, 1],
+    ]);
+    expect(groups[1]?.entries[0]).toBe(ghost);
+  });
+});
+
+const FILES = ["001", "002", "003", "004", "005"].map((version) => ({
+  version,
+  path: `${version}.sql`,
+}));
+const stateOf = (pending: string[], deleted: Record<string, string> = {}) =>
+  create(Task_ReleaseStateSchema, {
+    appliedCount: FILES.length - pending.length,
+    pendingRanges: FILES.flatMap((file, i) =>
+      pending.includes(file.version) ? [{ start: i, end: i + 1 }] : []
+    ),
+    deletedRevisions: pending
+      .filter((version) => deleted[version])
+      .map((version) => ({
+        version,
+        deleter: deleted[version],
+        deleteTime: ts(100),
+      })),
+  });
+// The spine as [kind, version or label, status] rows, top to bottom.
+const shape = (spine: ReturnType<typeof buildReleaseSpine>) =>
+  spine.items.map((item) => {
+    switch (item.kind) {
+      case "applied-earlier":
+        return ["earlier", item.files.map((f) => f.version).join(",")];
+      case "file":
+        return ["file", item.version, item.status];
+      case "step":
+        return ["step", String(item.type)];
+      case "run-failed":
+        return ["run-failed"];
+    }
+  });
+const SYNC = String(TaskRunLogEntry_Type.DATABASE_SYNC);
+const FILE_ERROR = (version: string, message: string) =>
+  `failed to execute release file ${version}.sql (version ${version}): ${message}`;
+
+describe("release file error", () => {
+  test("the path ends at the first version marker, so a message quoting SQL with one keeps its file", () => {
+    expect(
+      parseReleaseFileError(
+        "failed to execute release file m/2_a.sql (version 2): Error 1064: near '-- (version 9): x' at line 1"
+      )
+    ).toEqual({
+      path: "m/2_a.sql",
+      version: "2",
+      message: "Error 1064: near '-- (version 9): x' at line 1",
+    });
+  });
+});
+
+describe("stored release state", () => {
+  test("ranges name positions in the release's files, and a range past the list stops at its end", () => {
+    const state = create(Task_ReleaseStateSchema, {
+      pendingRanges: [
+        { start: 0, end: 1 },
+        { start: 3, end: 9 },
+      ],
+    });
+    expect([...pendingVersionsOf(state, FILES)]).toEqual(["001", "004", "005"]);
+    expect(pendingVersionsOf(undefined, FILES).size).toBe(0);
+  });
+});
+
+describe("release spine", () => {
+  test("before the first run it lists the stored state: the files applied earlier, then what will apply", () => {
+    const spine = buildReleaseSpine({
+      files: FILES,
+      entries: [],
+      state: stateOf(["004", "005"], { "004": "users/alex@example.com" }),
+    });
+    expect(shape(spine)).toEqual([
+      ["earlier", "001,002,003"],
+      ["file", "004", "pending"],
+      ["file", "005", "pending"],
+    ]);
+    const reapplied = spine.items[1];
+    expect(
+      reapplied?.kind === "file" && reapplied.revisionDeleted
+    ).toMatchObject({
+      deleter: "users/alex@example.com",
+    });
+  });
+
+  test("a done run counts every file without a marker as applied earlier and applies every marked file", () => {
+    const spine = buildReleaseSpine({
+      files: FILES,
+      entries: [
+        releaseFile(1, "004"),
+        command(2, { error: "" }),
+        releaseFile(4, "005"),
+        command(5, { error: "" }),
+        databaseSync(7, 8),
+      ],
+      run: { status: TaskRun_Status.DONE, error: "" },
+    });
+    expect(shape(spine)).toEqual([
+      ["earlier", "001,002,003"],
+      ["file", "004", "applied"],
+      ["file", "005", "applied"],
+      ["step", SYNC],
+    ]);
+  });
+
+  test("a done run with no marker has everything applied", () => {
+    const spine = buildReleaseSpine({
+      files: FILES,
+      entries: [databaseSync(1, 2)],
+      run: { status: TaskRun_Status.DONE, error: "" },
+    });
+    expect(shape(spine)).toEqual([
+      ["earlier", "001,002,003,004,005"],
+      ["step", SYNC],
+    ]);
+  });
+
+  test("a failed run counts the unmarked files below its newest marker as applied earlier and lists nothing after the failed file", () => {
+    const spine = buildReleaseSpine({
+      files: FILES,
+      entries: [
+        releaseFile(1, "002"),
+        command(2, { error: "" }),
+        releaseFile(4, "003"),
+        command(5, {
+          statement: "ALTER TABLE t ADD c INT;",
+          error: "column exists",
+        }),
+        databaseSync(7, 8),
+      ],
+      run: {
+        status: TaskRun_Status.FAILED,
+        error: FILE_ERROR("003", "column exists"),
+      },
+      state: stateOf(["002", "003", "004", "005"]),
+    });
+    expect(shape(spine)).toEqual([
+      ["earlier", "001"],
+      ["file", "002", "applied"],
+      ["file", "003", "failed"],
+      ["step", SYNC],
+    ]);
+    const failed = spine.items[2];
+    expect(failed?.kind === "file" && failed.error).toBe("column exists");
+    expect(failed?.kind === "file" && failed.noStatement).toBe(false);
+  });
+
+  test("a running run lists the files it has not reached as will apply, the boundary at the current file", () => {
+    const spine = buildReleaseSpine({
+      files: FILES,
+      entries: [
+        releaseFile(1, "002"),
+        command(2, { error: "" }),
+        releaseFile(4, "003"),
+        command(5),
+      ],
+      run: { status: TaskRun_Status.RUNNING, error: "" },
+      state: stateOf(["002", "003", "004", "005"]),
+    });
+    expect(shape(spine)).toEqual([
+      ["earlier", "001"],
+      ["file", "002", "applied"],
+      ["file", "003", "running"],
+      ["file", "004", "pending"],
+      ["file", "005", "pending"],
+    ]);
+  });
+
+  test("a stored will-apply version the run passed over joins the files applied earlier, and a stored applied version with a marker leaves them", () => {
+    // The state said 002 and 004 would apply; 002 had been applied by another
+    // plan, and 003's revision was deleted after the rollout was created.
+    const spine = buildReleaseSpine({
+      files: FILES,
+      entries: [
+        releaseFile(1, "003"),
+        command(2, { error: "" }),
+        releaseFile(4, "004"),
+        command(5),
+      ],
+      run: { status: TaskRun_Status.RUNNING, error: "" },
+      state: stateOf(["002", "004"]),
+    });
+    expect(shape(spine)).toEqual([
+      ["earlier", "001,002,005"],
+      ["file", "003", "applied"],
+      ["file", "004", "running"],
+    ]);
+  });
+
+  test("a run that failed before any marker takes the stored applied versions and ends with Run failed", () => {
+    const error =
+      'failed to get driver connection for instance "prod": connection refused';
+    const withState = buildReleaseSpine({
+      files: FILES,
+      entries: [],
+      run: { status: TaskRun_Status.FAILED, error },
+      state: stateOf(["004", "005"]),
+    });
+    expect(shape(withState)).toEqual([
+      ["earlier", "001,002,003"],
+      ["run-failed"],
+    ]);
+    expect(withState.items.at(-1)).toMatchObject({ kind: "run-failed", error });
+
+    const withoutState = buildReleaseSpine({
+      files: FILES,
+      entries: [],
+      run: { status: TaskRun_Status.FAILED, error },
+    });
+    expect(shape(withoutState)).toEqual([["run-failed"]]);
+  });
+
+  test("a run that failed loading the second file's statement keeps the first file applied and ends with Run failed", () => {
+    const run = {
+      status: TaskRun_Status.FAILED,
+      error: "failed to get sheet abc for version 005: not found",
+    };
+    const entries = [releaseFile(1, "004"), command(2, { error: "" })];
+    expect(
+      shape(
+        buildReleaseSpine({
+          files: FILES,
+          entries,
+          run,
+          state: stateOf(["004", "005"]),
+        })
+      )
+    ).toEqual([
+      ["earlier", "001,002,003"],
+      ["file", "004", "applied"],
+      ["run-failed"],
+    ]);
+    // Without a stored state only the versions below the newest marker are known.
+    expect(shape(buildReleaseSpine({ files: FILES, entries, run }))).toEqual([
+      ["earlier", "001,002,003"],
+      ["file", "004", "applied"],
+      ["run-failed"],
+    ]);
+  });
+
+  test("a revision-write failure after a file ran leaves the file applied and the error in Run failed", () => {
+    const spine = buildReleaseSpine({
+      files: FILES,
+      entries: [releaseFile(1, "005"), command(2, { error: "" })],
+      run: {
+        status: TaskRun_Status.FAILED,
+        error: "failed to create revision for version 005: duplicate key",
+      },
+      state: stateOf(["005"]),
+    });
+    expect(shape(spine)).toEqual([
+      ["earlier", "001,002,003,004"],
+      ["file", "005", "applied"],
+      ["run-failed"],
+    ]);
+  });
+
+  test("a file error with no failed command says no statement was identified", () => {
+    const spine = buildReleaseSpine({
+      files: FILES,
+      entries: [releaseFile(1, "005")],
+      run: {
+        status: TaskRun_Status.FAILED,
+        error: FILE_ERROR(
+          "005",
+          "ORA-00942: table or view does not exist\nmore"
+        ),
+      },
+      state: stateOf(["005"]),
+    });
+    const failed = spine.items.at(-1);
+    expect(failed).toMatchObject({
+      kind: "file",
+      status: "failed",
+      noStatement: true,
+      error: "ORA-00942: table or view does not exist\nmore",
+    });
+  });
+
+  test("a failed prior backup owns the error, so there is no Run failed section", () => {
+    const failedBackup = create(TaskRunLogEntrySchema, {
+      type: TaskRunLogEntry_Type.PRIOR_BACKUP,
+      logTime: ts(1),
+      priorBackup: { startTime: ts(1), endTime: ts(2), error: "backup failed" },
+    });
+    const spine = buildReleaseSpine({
+      files: FILES,
+      entries: [failedBackup],
+      run: {
+        status: TaskRun_Status.FAILED,
+        error: "failed to back up: backup failed",
+      },
+      state: stateOf(["005"]),
+    });
+    expect(shape(spine)).toEqual([
+      ["earlier", "001,002,003,004"],
+      ["step", String(TaskRunLogEntry_Type.PRIOR_BACKUP)],
+    ]);
+  });
+
+  test("a canceled run marks the section it interrupted as canceled", () => {
+    const spine = buildReleaseSpine({
+      files: FILES,
+      entries: [
+        releaseFile(1, "004"),
+        command(2, { error: "" }),
+        releaseFile(4, "005"),
+        command(5),
+      ],
+      run: { status: TaskRun_Status.CANCELED, error: "canceled" },
+      state: stateOf(["004", "005"]),
+    });
+    expect(shape(spine)).toEqual([
+      ["earlier", "001,002,003"],
+      ["file", "004", "applied"],
+      ["file", "005", "canceled"],
+    ]);
+  });
+
+  test("a re-run version keeps the stored revision-deleted note on its section", () => {
+    const spine = buildReleaseSpine({
+      files: FILES,
+      entries: [releaseFile(1, "005"), command(2, { error: "" })],
+      run: { status: TaskRun_Status.DONE, error: "" },
+      state: stateOf(["005"], { "005": "users/alex@example.com" }),
+    });
+    expect(spine.items.at(-1)).toMatchObject({
+      kind: "file",
+      version: "005",
+      revisionDeleted: { deleter: "users/alex@example.com" },
+    });
+  });
+});
+
+describe("release spine limits and defaults", () => {
+  const many = Array.from({ length: 40 }, (_, i) => ({
+    version: String(i + 1).padStart(3, "0"),
+    path: `${String(i + 1).padStart(3, "0")}.sql`,
+  }));
+
+  // The drawn spine as compact rows: "030:running", "load:applied:9:more",
+  // "earlier:001".
+  const windowShape = (items: SpineWindowItem[]) =>
+    items.map((item) => {
+      switch (item.kind) {
+        case "file":
+          return `${item.version}:${item.status}`;
+        case "load":
+          return `load:${item.key}:${item.count}${item.more ? ":more" : ""}`;
+        case "applied-earlier":
+          return `earlier:${item.files.length}`;
+        default:
+          return item.kind;
+      }
+    });
+  const sixty = Array.from({ length: 60 }, (_, i) => ({
+    version: String(i + 1).padStart(3, "0"),
+    path: `${String(i + 1).padStart(3, "0")}.sql`,
+  }));
+  // A new database running the 30th of 60 files.
+  const runningAt30 = () =>
+    buildReleaseSpine({
+      files: sixty,
+      entries: sixty
+        .slice(0, 30)
+        .flatMap((file, i) => [
+          releaseFile(i * 3 + 1, file.version),
+          command(i * 3 + 2, i === 29 ? {} : { error: "" }),
+        ]),
+      run: { status: TaskRun_Status.RUNNING, error: "" },
+      state: create(Task_ReleaseStateSchema, {
+        pendingRanges: [{ start: 0, end: sixty.length }],
+      }),
+    });
+  const range = (from: number, to: number, status: string) =>
+    Array.from(
+      { length: to - from + 1 },
+      (_, i) => `${String(from + i).padStart(3, "0")}:${status}`
+    );
+
+  test("running at file 30 of 60: the first 20, a load row for the hidden applied, the running file, a load row for the pending", () => {
+    expect(windowShape(windowSpine(runningAt30().items, {}))).toEqual([
+      ...range(1, 20, "applied"),
+      "load:applied:9:more",
+      "030:running",
+      "load:pending:30",
+    ]);
+  });
+
+  test("a load row reveals its stretch in place, partly or all of it", () => {
+    const spine = runningAt30();
+    expect(
+      windowShape(
+        windowSpine(spine.items, {
+          applied: Number.POSITIVE_INFINITY,
+          pending: 20,
+        })
+      )
+    ).toEqual([
+      ...range(1, 29, "applied"),
+      "030:running",
+      ...range(31, 50, "pending"),
+      "load:pending:10:more",
+    ]);
+  });
+
+  test("before the first run the first 20 will apply and the rest load", () => {
+    const spine = buildReleaseSpine({
+      files: sixty,
+      entries: [],
+      state: create(Task_ReleaseStateSchema, {
+        pendingRanges: [{ start: 0, end: sixty.length }],
+      }),
+    });
+    expect(windowShape(windowSpine(spine.items, {}))).toEqual([
+      ...range(1, 20, "pending"),
+      "load:pending:40:more",
+    ]);
+  });
+
+  test("a failed section past the cap is still shown, after the hidden applied files", () => {
+    const entries = many.flatMap((file, i) => [
+      releaseFile(i * 3 + 1, file.version),
+      command(i * 3 + 2, { error: i === 39 ? "boom" : "" }),
+    ]);
+    const spine = buildReleaseSpine({
+      files: many,
+      entries,
+      run: { status: TaskRun_Status.FAILED, error: FILE_ERROR("040", "boom") },
+    });
+    expect(windowShape(windowSpine(spine.items, {}))).toEqual([
+      ...range(1, 20, "applied"),
+      "load:applied:19:more",
+      "040:failed",
+    ]);
+  });
+
+  test("the files already applied pass through as one fold at the top, in version order, outside the cap", () => {
+    const spine = buildReleaseSpine({
+      files: sixty,
+      entries: [],
+      state: create(Task_ReleaseStateSchema, {
+        appliedCount: 50,
+        pendingRanges: [{ start: 50, end: sixty.length }],
+      }),
+    });
+    const drawn = windowSpine(spine.items, {}, 5);
+    expect(windowShape(drawn)).toEqual([
+      "earlier:50",
+      ...range(51, 55, "pending"),
+      "load:pending:5:more",
+    ]);
+    const fold = drawn[0];
+    expect(
+      fold.kind === "applied-earlier" &&
+        fold.files.map((f) => f.version).slice(0, 3)
+    ).toEqual(["001", "002", "003"]);
+  });
+
+  test("a stretch that mixes states loads as files", () => {
+    const items: SpineItem[] = [
+      ...range(1, 3, "applied").map((row) => {
+        const [version] = row.split(":");
+        return {
+          kind: "file" as const,
+          id: `file-${version}`,
+          version,
+          path: "",
+          status: "applied" as const,
+          entries: [],
+        };
+      }),
+      {
+        kind: "file",
+        id: "file-004",
+        version: "004",
+        path: "",
+        status: "pending",
+        entries: [],
+      },
+    ];
+    expect(windowShape(windowSpine(items, {}, 2))).toEqual([
+      "001:applied",
+      "002:applied",
+      "load:files:2:more",
+    ]);
+    // The fold above is not a section of the stretch's files.
+    const folded: SpineItem[] = [
+      { kind: "applied-earlier", files: sixty.slice(0, 1) },
+      ...items,
+    ];
+    expect(windowShape(windowSpine(folded, {}, 0))).toEqual([
+      "earlier:1",
+      "load:files:4",
+    ]);
+  });
+
+  test("the count line counts every file section by state and the files already applied", () => {
+    expect(countSpine(runningAt30().items, 60)).toEqual({
+      files: 60,
+      applied: 29,
+      running: 1,
+      failed: 0,
+      canceled: 0,
+      pending: 30,
+      appliedEarlier: 0,
+    });
+  });
+
+  test("failed, running and Run failed sections open by default; applied, pending and steps do not", () => {
+    const spine = buildReleaseSpine({
+      files: FILES,
+      entries: [
+        releaseFile(1, "004"),
+        command(2, { error: "" }),
+        releaseFile(3, "005"),
+        command(4, { error: "x" }),
+        databaseSync(6, 7),
+      ],
+      run: { status: TaskRun_Status.FAILED, error: FILE_ERROR("005", "x") },
+    });
+    expect(
+      spine.items.map((item) => [item.kind, isSpineItemOpenByDefault(item)])
+    ).toEqual([
+      ["applied-earlier", false],
+      ["file", false],
+      ["file", true],
+      ["step", false],
+    ]);
+    expect(isSpineItemOpenByDefault({ kind: "run-failed", error: "e" })).toBe(
+      true
+    );
+  });
+});
+
+describe("release spine review fixes", () => {
+  test("a step that holds the run's error, such as a failed prior backup, opens by default", () => {
+    const failedBackup = create(TaskRunLogEntrySchema, {
+      type: TaskRunLogEntry_Type.PRIOR_BACKUP,
+      logTime: ts(1),
+      priorBackup: { startTime: ts(1), endTime: ts(2), error: "backup failed" },
+    });
+    const spine = buildReleaseSpine({
+      files: FILES,
+      entries: [failedBackup],
+      run: {
+        status: TaskRun_Status.FAILED,
+        error: "failed to back up: backup failed",
+      },
+    });
+    const step = spine.items.find((item) => item.kind === "step");
+    expect(step && isSpineItemOpenByDefault(step)).toBe(true);
+  });
+
+  test("each group with no file, before and after the file loop, gets its own id", () => {
+    const entries = [
+      databaseSync(1, 2),
+      releaseFile(3, "001"),
+      command(4, { error: "" }),
+      databaseSync(6, 7),
+    ];
+    const groups = buildReleaseFileGroups(entries, {
+      getSectionLabel: (type) => String(type),
+      entryKeys: assignEntryKeys(entries),
+      includeOrphanGroup: true,
+    });
+    const ids = groups.map((group) => group.id);
+    expect(ids).toHaveLength(3);
+    expect(new Set(ids).size).toBe(3);
+    expect(groups.filter((group) => group.isOrphan)).toHaveLength(2);
+  });
+});
+
+describe("release spine error ownership", () => {
+  test("a revision-write failure after a retried command stays in Run failed", () => {
+    const error = "failed to create revision for version 005: duplicate key";
+    const spine = buildReleaseSpine({
+      files: FILES,
+      entries: [
+        releaseFile(1, "005"),
+        command(2, { error: "lock timeout" }),
+        retryMarker(4),
+        command(5, { error: "" }),
+      ],
+      run: { status: TaskRun_Status.FAILED, error },
+      state: stateOf(["005"]),
+    });
+    expect(spine.items.find((item) => item.kind === "file")).toMatchObject({
+      version: "005",
+      status: "applied",
+    });
+    expect(spine.items.at(-1)).toMatchObject({ kind: "run-failed", error });
   });
 });

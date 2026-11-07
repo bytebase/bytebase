@@ -440,6 +440,18 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.Task.ReleaseState"><span class="badge">M</span>Task.ReleaseState</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.Task.ReleaseState.DeletedRevision"><span class="badge">M</span>Task.ReleaseState.DeletedRevision</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.Task.ReleaseState.Range"><span class="badge">M</span>Task.ReleaseState.Range</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.TaskRun"><span class="badge">M</span>TaskRun</a>
                 </li>
               
@@ -2725,6 +2737,10 @@
               
                 <li>
                   <a href="#bytebase.v1.Release.VCSSource"><span class="badge">M</span>Release.VCSSource</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.Release.VCSSource.PullRequest"><span class="badge">M</span>Release.VCSSource.PullRequest</a>
                 </li>
               
                 <li>
@@ -5883,6 +5899,21 @@ If there are no task runs, it will be empty. </p></td>
 If there are no task runs or the task run is not scheduled, it will be empty. </p></td>
                 </tr>
               
+                <tr>
+                  <td>skipper</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The user who skipped the task.
+Format: users/hello@world.com </p></td>
+                </tr>
+              
+                <tr>
+                  <td>skip_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>When the task was skipped. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -5936,6 +5967,139 @@ If there are no task runs or the task run is not scheduled, it will be empty. </
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>Format: projects/{project}/releases/{release} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>release_state</td>
+                  <td><a href="#bytebase.v1.Task.ReleaseState">Task.ReleaseState</a></td>
+                  <td></td>
+                  <td><p>The release&#39;s file state on the target database when the rollout was
+created. Set only for a versioned release. The run reads the database&#39;s
+revisions again when it starts. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Task.ReleaseState">Task.ReleaseState</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>pending_ranges</td>
+                  <td><a href="#bytebase.v1.Task.ReleaseState.Range">Task.ReleaseState.Range</a></td>
+                  <td>repeated</td>
+                  <td><p>The release&#39;s files the task will apply, as half-open ranges of
+positions in the release&#39;s `files`, ascending. Every other file&#39;s
+version had a live revision on the database. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>pending_count</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The number of files the task will apply: the ranges&#39; total length. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>applied_count</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The number of the release&#39;s versions already applied. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>compute_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>When the state was computed. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>deleted_revisions</td>
+                  <td><a href="#bytebase.v1.Task.ReleaseState.DeletedRevision">Task.ReleaseState.DeletedRevision</a></td>
+                  <td>repeated</td>
+                  <td><p>The versions to apply that had a deleted revision, in release order. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Task.ReleaseState.DeletedRevision">Task.ReleaseState.DeletedRevision</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>version</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>delete_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>When the newest revision of this version was deleted. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>deleter</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The user who deleted it.
+Format: users/hello@world.com </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Task.ReleaseState.Range">Task.ReleaseState.Range</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>start</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>end</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -31524,6 +31688,90 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The url link to the e.g., GitHub commit or pull request. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>commit_sha</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The commit the release&#39;s files were read from. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>branch</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The source branch. In a pull request build, the pull request&#39;s source
+branch rather than the platform&#39;s synthetic merge ref. Empty for a run
+on a tag or a merge queue&#39;s temporary branch. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>commit_title</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The first line of the commit message. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>author_name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The author&#39;s display name: the commit&#39;s author where the CI platform
+exposes it, else the person who started the build. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>author_login</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The author&#39;s login on the VCS platform: the commit&#39;s author, or the pull
+request&#39;s author in a pull request build. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>pull_request</td>
+                  <td><a href="#bytebase.v1.Release.VCSSource.PullRequest">Release.VCSSource.PullRequest</a></td>
+                  <td></td>
+                  <td><p>The pull request the commit belongs to, when the build knows it. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Release.VCSSource.PullRequest">Release.VCSSource.PullRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>url</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>number</td>
+                  <td><a href="#int64">int64</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>title</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>

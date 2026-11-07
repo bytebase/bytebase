@@ -71,6 +71,9 @@
     - [Task](#bytebase-v1-Task)
     - [Task.DatabaseCreate](#bytebase-v1-Task-DatabaseCreate)
     - [Task.DatabaseUpdate](#bytebase-v1-Task-DatabaseUpdate)
+    - [Task.ReleaseState](#bytebase-v1-Task-ReleaseState)
+    - [Task.ReleaseState.DeletedRevision](#bytebase-v1-Task-ReleaseState-DeletedRevision)
+    - [Task.ReleaseState.Range](#bytebase-v1-Task-ReleaseState-Range)
     - [TaskRun](#bytebase-v1-TaskRun)
     - [TaskRun.SchedulerInfo](#bytebase-v1-TaskRun-SchedulerInfo)
     - [TaskRun.SchedulerInfo.WaitingCause](#bytebase-v1-TaskRun-SchedulerInfo-WaitingCause)
@@ -665,6 +668,7 @@
     - [Release](#bytebase-v1-Release)
     - [Release.File](#bytebase-v1-Release-File)
     - [Release.VCSSource](#bytebase-v1-Release-VCSSource)
+    - [Release.VCSSource.PullRequest](#bytebase-v1-Release-VCSSource-PullRequest)
     - [UndeleteReleaseRequest](#bytebase-v1-UndeleteReleaseRequest)
     - [UpdateReleaseRequest](#bytebase-v1-UpdateReleaseRequest)
     - [VCSUser](#bytebase-v1-VCSUser)
@@ -1785,6 +1789,8 @@ When paginating, all other parameters provided to `ListTaskRuns` must match the 
 | database_update | [Task.DatabaseUpdate](#bytebase-v1-Task-DatabaseUpdate) |  |  |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The update_time is the update time of latest task run. If there are no task runs, it will be empty. |
 | run_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The run_time is the scheduled run time of latest task run. If there are no task runs or the task run is not scheduled, it will be empty. |
+| skipper | [string](#string) |  | The user who skipped the task. Format: users/hello@world.com |
+| skip_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the task was skipped. |
 
 
 
@@ -1816,6 +1822,59 @@ Payload for updating a database schema.
 | ----- | ---- | ----- | ----------- |
 | sheet | [string](#string) |  | Format: projects/{project}/sheets/{sheet} |
 | release | [string](#string) |  | Format: projects/{project}/releases/{release} |
+| release_state | [Task.ReleaseState](#bytebase-v1-Task-ReleaseState) |  | The release&#39;s file state on the target database when the rollout was created. Set only for a versioned release. The run reads the database&#39;s revisions again when it starts. |
+
+
+
+
+
+
+<a name="bytebase-v1-Task-ReleaseState"></a>
+
+### Task.ReleaseState
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| pending_ranges | [Task.ReleaseState.Range](#bytebase-v1-Task-ReleaseState-Range) | repeated | The release&#39;s files the task will apply, as half-open ranges of positions in the release&#39;s `files`, ascending. Every other file&#39;s version had a live revision on the database. |
+| pending_count | [int32](#int32) |  | The number of files the task will apply: the ranges&#39; total length. |
+| applied_count | [int32](#int32) |  | The number of the release&#39;s versions already applied. |
+| compute_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the state was computed. |
+| deleted_revisions | [Task.ReleaseState.DeletedRevision](#bytebase-v1-Task-ReleaseState-DeletedRevision) | repeated | The versions to apply that had a deleted revision, in release order. |
+
+
+
+
+
+
+<a name="bytebase-v1-Task-ReleaseState-DeletedRevision"></a>
+
+### Task.ReleaseState.DeletedRevision
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| version | [string](#string) |  |  |
+| delete_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the newest revision of this version was deleted. |
+| deleter | [string](#string) |  | The user who deleted it. Format: users/hello@world.com |
+
+
+
+
+
+
+<a name="bytebase-v1-Task-ReleaseState-Range"></a>
+
+### Task.ReleaseState.Range
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| start | [int32](#int32) |  |  |
+| end | [int32](#int32) |  |  |
 
 
 
@@ -11066,6 +11125,29 @@ Version control system source information.
 | ----- | ---- | ----- | ----------- |
 | vcs_type | [VCSType](#bytebase-v1-VCSType) |  | The type of VCS. |
 | url | [string](#string) |  | The url link to the e.g., GitHub commit or pull request. |
+| commit_sha | [string](#string) |  | The commit the release&#39;s files were read from. |
+| branch | [string](#string) |  | The source branch. In a pull request build, the pull request&#39;s source branch rather than the platform&#39;s synthetic merge ref. Empty for a run on a tag or a merge queue&#39;s temporary branch. |
+| commit_title | [string](#string) |  | The first line of the commit message. |
+| author_name | [string](#string) |  | The author&#39;s display name: the commit&#39;s author where the CI platform exposes it, else the person who started the build. |
+| author_login | [string](#string) |  | The author&#39;s login on the VCS platform: the commit&#39;s author, or the pull request&#39;s author in a pull request build. |
+| pull_request | [Release.VCSSource.PullRequest](#bytebase-v1-Release-VCSSource-PullRequest) |  | The pull request the commit belongs to, when the build knows it. |
+
+
+
+
+
+
+<a name="bytebase-v1-Release-VCSSource-PullRequest"></a>
+
+### Release.VCSSource.PullRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| url | [string](#string) |  |  |
+| number | [int64](#int64) |  |  |
+| title | [string](#string) |  |  |
 
 
 

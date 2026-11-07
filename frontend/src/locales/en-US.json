@@ -2070,6 +2070,31 @@
     "description": {
       "placeholder": "Add description"
     },
+    "details": {
+      "approved": "Approved",
+      "approved-by": "Approved by {{user}}",
+      "awaiting-approval": "Awaiting approval",
+      "by-author": "by {{author}}",
+      "changes": "Changes",
+      "changes-on-targets": "{{kind}} on {{targets}}",
+      "created": "Created",
+      "database-groups_one": "{{count}} database group",
+      "database-groups_other": "{{count}} database groups",
+      "databases_one": "{{count}} database",
+      "databases_other": "{{count}} databases",
+      "labels": "Labels",
+      "migration-based_one": "Migration-based · {{count}} file · update to version {{version}}",
+      "migration-based_other": "Migration-based · {{count}} files · update to version {{version}}",
+      "no-approval": "No approval required",
+      "progress": "Progress",
+      "rejected": "Rejected",
+      "release": "Release",
+      "review": "Review",
+      "source": "Source",
+      "state-based": "State-based · {{version}}",
+      "triggered": "Triggered",
+      "waiting-for": "Waiting for {{role}}"
+    },
     "draft-update-permission-required": "You can view this draft, but you need bb.issues.update to edit issue labels or submit it for review.",
     "editor": {
       "save-changes-before-continuing": "Please save or cancel your changes before continuing"
@@ -2111,6 +2136,8 @@
       "checking": "Checking…",
       "checks-failing": "Checks failing",
       "deployed": "Deployed",
+      "deployed-with-skipped_one": "Deployed, {{count}} task skipped",
+      "deployed-with-skipped_other": "Deployed, {{count}} tasks skipped",
       "gate-automated-review-passed": "Automated review passed",
       "gate-checks-failed": "Some checks were not successful",
       "gate-checks-failed-sub": "{{failing}} failing, {{passed}} passed",
@@ -2131,9 +2158,6 @@
       "run": "Run"
     },
     "list-description": "Change requests created in the UI and their deploy progress.",
-    "meta": {
-      "created-by": "Created by {{user}}"
-    },
     "navigator": {
       "changes": "Changes",
       "checks": "Checks",
@@ -2682,6 +2706,14 @@
   "release": {
     "and-n-more-files": "and {{count}} more files",
     "change-tip": "This change is linked to a release artifact.",
+    "changes": {
+      "load-all": "Load all ({{count}})",
+      "load-more": "Load {{count}} more",
+      "manifest_one": "{{count}} file · newest {{version}}",
+      "manifest_other": "{{count}} files · newest {{version}}",
+      "schema": "Schema",
+      "show-fewer": "Show fewer"
+    },
     "empty": {
       "description": "Changes your CI pipeline releases to Bytebase appear here with their deploy progress.",
       "read-guide": "Read the GitOps guide",
@@ -2704,7 +2736,16 @@
     "vcs-type": {
       "unspecified": "Unknown VCS"
     },
-    "view-all-files": "View all files"
+    "view-all-files": "View all files",
+    "viewer": {
+      "already-applied": "Already applied; this run passed over it",
+      "already-applied-before-run": "Applied before this rollout",
+      "applied-by-run": "Applied by this run",
+      "failed-on": "Failed on {{stage}}",
+      "open-at-commit": "Open in {{platform}} at {{sha}}",
+      "size": "{{size}} bytes",
+      "statement-unavailable": "The file's statement could not be loaded."
+    }
   },
   "remind": {
     "role-expire": {
@@ -4284,6 +4325,25 @@
     },
     "executed-by": "Executed by",
     "execution-time": "Execution time",
+    "folded": {
+      "about-rows_one": "about {{rows}} row",
+      "about-rows_other": "about {{rows}} rows",
+      "all-applied_one": "All {{count}} applied",
+      "all-applied_other": "All {{count}} applied",
+      "already-applied_one": "{{count}} already applied",
+      "already-applied_other": "{{count}} already applied",
+      "applying_one": "Applying {{count}} file",
+      "applying_other": "Applying {{count}} files",
+      "kind-ddl": "DDL",
+      "kind-dml": "DML",
+      "kind-mixed": "Mixed",
+      "nothing-to-apply": "Nothing to apply",
+      "scheduled": "scheduled",
+      "skipped-by": "Skipped by {{user}}",
+      "started": "started {{time}}",
+      "to-apply_one": "{{count}} to apply",
+      "to-apply_other": "{{count}} to apply"
+    },
     "no-cancelable-tasks": "No cancelable tasks",
     "no-permission": "No permission to perform this action",
     "no-runnable-tasks": "No runnable tasks",
@@ -4306,6 +4366,7 @@
     "select-task": "Select Task",
     "skip-prior-backup": "Skip prior backup",
     "skip-prior-backup-description": "Skip the automatic data backup before applying changes",
+    "skip-reason-required": "Enter why the task is skipped.",
     "skip-task": "Skip task | Skip tasks",
     "skipped-no-reason": "No reason provided",
     "started": "Started",
@@ -4371,6 +4432,47 @@
       }
     },
     "run-number": "Run #{{number}}",
+    "spine": {
+      "already-applied_one": "{{count}} file already applied to this database",
+      "already-applied_other": "{{count}} files already applied to this database",
+      "as-of": "As of rollout creation, {{time}}; the run re-checks the database.",
+      "count": {
+        "already-applied": "{{count}} already applied",
+        "applied": "{{count}} applied",
+        "canceled": "{{count}} canceled",
+        "failed": "{{count}} failed",
+        "files_one": "{{count}} file",
+        "files_other": "{{count}} files",
+        "pending": "{{count}} pending",
+        "running": "{{count}} running"
+      },
+      "load": {
+        "all": "Load all ({{count}})",
+        "applied": "Load {{count}} applied",
+        "files": "Load {{count}} files",
+        "more-applied": "Load {{count}} more applied",
+        "more-files": "Load {{count}} more files",
+        "more-pending": "Load {{count}} more pending",
+        "pending": "Load {{count}} pending"
+      },
+      "no-statement": "No statement was identified for this error.",
+      "not-applied": "Not applied",
+      "planned_one": "Planned at rollout creation · {{count}} file to apply",
+      "planned_other": "Planned at rollout creation · {{count}} files to apply",
+      "revision-deleted": "Earlier revision deleted {{date}} by {{user}}",
+      "revision-deleted-after-rollout": "Earlier revision deleted after this rollout was created",
+      "revisions-on": "Revisions on {{database}}",
+      "run-failed": "Run failed",
+      "status": {
+        "applied": "Applied",
+        "applied-again": "Applied again",
+        "canceled": "Canceled",
+        "failed": "Failed",
+        "running": "Running"
+      },
+      "will-apply": "Will apply",
+      "will-apply-again": "Will apply again · revision deleted"
+    },
     "status": {
       "enqueued": "Waiting for execution.",
       "enqueued-with-rollout-time": "Waiting to execute after {{time}}.",

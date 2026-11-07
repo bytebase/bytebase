@@ -37,6 +37,10 @@ func NewRootCommand(w *world.World) *cobra.Command {
 	cmd.PersistentFlags().StringSliceVar(&w.Targets, "targets", []string{"instances/test-sample-instance/databases/hr_test", "instances/prod-sample-instance/databases/hr_prod"}, "Bytebase targets: one or more workspace or project-instance databases, or a single project database group")
 	cmd.PersistentFlags().StringVar(&w.FilePattern, "file-pattern", "", "File pattern to glob migration files")
 	cmd.PersistentFlags().BoolVar(&w.Declarative, "declarative", false, "Whether to use declarative mode. (experimental)")
+	cmd.PersistentFlags().StringVar(&w.SourceTitle, "source-title", "", "Title of the change the release comes from, such as the pull request or commit title. Overrides the value detected from the CI environment")
+	cmd.PersistentFlags().StringVar(&w.SourceURL, "source-url", "", "Link to the commit or pull request the release comes from. Overrides the value detected from the CI environment")
+	cmd.PersistentFlags().StringVar(&w.SourceAuthor, "source-author", "", "Author of the change the release comes from. Overrides the value detected from the CI environment")
+	cmd.PersistentFlags().StringVar(&w.SourceRef, "source-ref", "", "Branch the release comes from. Overrides the value detected from the CI environment")
 
 	cmd.AddCommand(NewCheckCommand(w))
 	cmd.AddCommand(NewRolloutCommand(w))

@@ -1,14 +1,14 @@
 import { memo, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useReleaseByName } from "@/hooks/useAppState";
 import { formatTaskRunDuration } from "@/lib/taskRun";
-import { cn } from "@/lib/utils";
+import { useAppStore } from "@/stores/app";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
   type Stage,
   type Task,
-  Task_Status,
   type TaskRun,
   TaskRun_Status,
 } from "@/types/proto-es/v1/rollout_service_pb";
@@ -16,6 +16,7 @@ import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { databaseForTask } from "@/utils";
 import {
   isReleaseBasedTask,
+  releaseNameOfTaskV1,
   scheduledRunTimeMs,
 } from "@/utils/v1/issue/rollout";
 import { isRerunnableTaskStatus } from "../lifecycle/frontierStage";
@@ -27,6 +28,7 @@ import {
 import { DeployTaskBody } from "./DeployTaskBody";
 import { DeployTaskHeader } from "./DeployTaskHeader";
 import { DeployTaskRunHistorySheet } from "./DeployTaskRunHistorySheet";
+import type { FoldedStatementSummary } from "./foldedTaskDescription";
 import { useDeployTaskActions } from "./taskActions";
 import { useDeployTaskStatement } from "./useDeployTaskStatement";
 
@@ -58,6 +60,7 @@ export const DeployTaskItem = memo(function DeployTaskItem({
   project,
   rolloutName,
   stageEnvironment,
+  statementSummary,
   task,
   taskRuns,
 }: {
@@ -82,6 +85,8 @@ export const DeployTaskItem = memo(function DeployTaskItem({
   // Reads the live stage on demand — only the action panel (open on user
   // interaction) needs the full object, so it stays out of the memo inputs.
   getStage: () => Stage;
+  // The plan check's statement summary for the task's target.
+  statementSummary?: FoldedStatementSummary;
   task: Task;
   // This task's runs, newest first (grouped upstream with stable identities).
   taskRuns: TaskRun[];
@@ -141,16 +146,18 @@ export const DeployTaskItem = memo(function DeployTaskItem({
   const timingDisplay = latestTaskRun
     ? formatTaskRunDuration(latestTaskRun)
     : "";
-  const collapsedContextInfo =
-    task.status === Task_Status.DONE ? timingDisplay : "";
-  const collapsedStatusText =
-    latestTaskRun?.detail ||
-    task.skippedReason ||
-    (task.status === Task_Status.FAILED
-      ? t("task.status.failed")
-      : task.status === Task_Status.SKIPPED
-        ? t("task.status.skipped")
-        : "");
+  const releaseName = isReleaseTask ? releaseNameOfTaskV1(task) : "";
+  const release = useReleaseByName(releaseName ?? "");
+  const fetchRelease = useAppStore((state) => state.fetchRelease);
+  useEffect(() => {
+    if (releaseName) fetchRelease(releaseName, true).catch(() => {});
+  }, [fetchRelease, releaseName]);
+  const stageTitle = useAppStore(
+    (state) => state.getEnvironmentByName(stageEnvironment)?.title
+  );
+  const releaseInfo = release
+    ? { type: release.type, fileCount: release.files.length }
+    : undefined;
   const actionItems = [
     {
       key: "RUN" as const,
@@ -182,19 +189,12 @@ export const DeployTaskItem = memo(function DeployTaskItem({
   return (
     <>
       <div className="group rounded-sm border bg-background" ref={hostRef}>
-        {/* Same padding in both modes: the header row is button-height (h-6)
-            either way, so expanding only reveals content below — nothing
-            above the fold moves. */}
-        <div
-          className={cn(
-            "py-2.5 pl-3 pr-4",
-            isExpanded && "flex flex-col gap-3"
-          )}
-        >
+        {/* The header carries the card's top padding, so clicks there toggle
+            too, and is button-height (h-6) either way: expanding only reveals
+            content below, and nothing above the fold moves. */}
+        <div>
           <DeployTaskHeader
             actionItems={actionItems}
-            collapsedContextInfo={collapsedContextInfo}
-            collapsedStatusText={collapsedStatusText}
             isExpanded={isExpanded}
             isSelectable={isSelectable}
             isSelected={isSelected}
@@ -206,24 +206,30 @@ export const DeployTaskItem = memo(function DeployTaskItem({
             onRollback={() => setRollbackOpen(true)}
             onToggleExpand={() => onToggleExpand(task)}
             onToggleSelect={() => onToggleSelect(task)}
+            release={releaseInfo}
             scheduledTimeMs={scheduledTimeMs}
             showRollback={Boolean(rollbackableTaskRun)}
+            statementSummary={statementSummary}
             task={task}
             timingDisplay={timingDisplay}
           />
           {isExpanded && (
-            <DeployTaskBody
-              active={active}
-              databaseEngine={databaseEngine}
-              historyCount={taskRuns.length}
-              isStatementLoading={isStatementLoading}
-              isTruncated={isTruncated}
-              latestTaskRun={latestTaskRun}
-              onShowHistory={() => setHistoryOpen(true)}
-              statement={statement}
-              task={task}
-              timingDisplay={timingDisplay}
-            />
+            <div className="pt-0.5 pr-4 pb-2.5 pl-3">
+              <DeployTaskBody
+                active={active}
+                databaseEngine={databaseEngine}
+                historyCount={taskRuns.length}
+                isStatementLoading={isStatementLoading}
+                isTruncated={isTruncated}
+                latestTaskRun={latestTaskRun}
+                onShowHistory={() => setHistoryOpen(true)}
+                projectId={project.name.replace(/^projects\//, "")}
+                stageTitle={stageTitle}
+                statement={statement}
+                task={task}
+                timingDisplay={timingDisplay}
+              />
+            </div>
           )}
         </div>
       </div>

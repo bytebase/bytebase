@@ -5,9 +5,14 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { rolloutServiceClientConnect } from "@/api";
 import { listAllTaskRuns } from "@/api/taskRun";
-import { TaskStatusIcon } from "@/components/TaskStatusIcon";
+import {
+  firstLineOf,
+  parseReleaseFileError,
+} from "@/components/task-run-log/model";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { FormError, FormField, FormLabel } from "@/components/ui/form";
 import {
   Sheet,
   SheetBody,
@@ -28,10 +33,12 @@ import {
   BatchCancelTaskRunsRequestSchema,
   BatchRunTasksRequestSchema,
   BatchSkipTasksRequestSchema,
+  Task_Status,
   Task_Type,
   TaskRun_Status,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import { extractStageUID } from "@/utils";
+import { isReleaseBasedTask } from "@/utils/v1/issue/rollout";
 import {
   CANCELABLE_TASK_STATUSES,
   canRolloutTasks,
@@ -134,6 +141,10 @@ export function PlanDetailTaskRolloutActionPanel({
       );
     });
   }, [eligibleTasks, page.plan.specs]);
+  // A release-backed skip leaves no other trace of why the migration was
+  // bypassed (D7); a UIOps skip keeps the API's optional reason.
+  const reasonRequired =
+    action === "SKIP" && eligibleTasks.some(isReleaseBasedTask);
   const showStageInfo = !isDatabaseCreate;
   const showTaskInfo = rolloutType !== "DATABASE_CREATE";
   const taskCountSuffix = useMemo(() => {
@@ -214,6 +225,9 @@ export function PlanDetailTaskRolloutActionPanel({
     if (!canRun) {
       errors.push(t("task.no-permission"));
     }
+    if (reasonRequired && !comment.trim()) {
+      errors.push(t("task.skip-reason-required"));
+    }
     if (
       action === "RUN" &&
       runTimeInMS !== undefined &&
@@ -222,7 +236,15 @@ export function PlanDetailTaskRolloutActionPanel({
       errors.push(t("task.error.scheduled-time-must-be-in-the-future"));
     }
     return errors;
-  }, [action, canRun, eligibleTasks.length, page.issue?.type, runTimeInMS, t]);
+  }, [
+    action,
+    canRun,
+    comment,
+    eligibleTasks.length,
+    reasonRequired,
+    runTimeInMS,
+    t,
+  ]);
 
   const handleConfirm = useCallback(async () => {
     if (!page.rollout || !action || validationErrors.length > 0) {
@@ -334,15 +356,41 @@ export function PlanDetailTaskRolloutActionPanel({
                 </label>
                 <div className="max-h-64 overflow-y-auto">
                   <ul className="flex flex-col gap-y-2 text-sm">
-                    {eligibleTasks.map((task) => (
-                      <li
-                        className="flex h-8 items-center gap-x-2"
-                        key={task.name}
-                      >
-                        <TaskStatusIcon size="small" status={task.status} />
-                        <PlanDetailTaskDatabaseName task={task} />
-                      </li>
-                    ))}
+                    {eligibleTasks.map((task) => {
+                      const errorLine = taskErrorLine(
+                        task,
+                        page.taskRunsByTaskName.get(task.name)?.[0]?.detail
+                      );
+                      return (
+                        <li
+                          className="flex flex-col gap-y-1"
+                          data-testid="rollout-action-task"
+                          key={task.name}
+                        >
+                          <div className="flex min-h-8 items-center gap-x-2">
+                            <PlanDetailTaskDatabaseName task={task} />
+                            <Badge
+                              variant={
+                                TASK_STATUS_VARIANT[task.status] ?? "default"
+                              }
+                              data-testid="task-status-chip"
+                            >
+                              {t(
+                                `task.status.${Task_Status[task.status].toLowerCase().replaceAll("_", "-")}`
+                              )}
+                            </Badge>
+                          </div>
+                          {errorLine ? (
+                            <div
+                              className="truncate text-xs text-error"
+                              data-testid="task-error-line"
+                            >
+                              {errorLine}
+                            </div>
+                          ) : null}
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
               </div>
@@ -401,17 +449,24 @@ export function PlanDetailTaskRolloutActionPanel({
               </div>
             )}
 
-            {action === "SKIP" && page.issue && (
-              <div className="flex shrink-0 flex-col gap-y-1">
-                <p className="font-medium text-control">{t("common.reason")}</p>
+            {action === "SKIP" && (
+              <FormField data-testid="skip-reason-field">
+                <FormLabel htmlFor="skip-reason">
+                  {t("common.reason")}
+                  {reasonRequired && <span className="text-error"> *</span>}
+                </FormLabel>
                 <Textarea
+                  id="skip-reason"
                   className="min-h-28"
                   maxLength={1000}
                   onChange={(event) => setComment(event.target.value)}
                   placeholder={t("issue.leave-a-comment")}
                   value={comment}
                 />
-              </div>
+                {reasonRequired && !comment.trim() && (
+                  <FormError>{t("task.skip-reason-required")}</FormError>
+                )}
+              </FormField>
             )}
           </div>
 
@@ -554,6 +609,27 @@ function groupTasksByStage(tasks: Task[]) {
     grouped.get(stageId)?.push(task);
   }
   return grouped;
+}
+
+const TASK_STATUS_VARIANT: Partial<
+  Record<Task_Status, "success" | "secondary" | "destructive" | "warning">
+> = {
+  [Task_Status.DONE]: "success",
+  [Task_Status.RUNNING]: "secondary",
+  [Task_Status.FAILED]: "destructive",
+  [Task_Status.CANCELED]: "warning",
+};
+
+// The same text the failed task's folded card shows: the failed version, then
+// the error's first line without the executor's prefix.
+function taskErrorLine(task: Task, detail: string | undefined) {
+  if (task.status !== Task_Status.FAILED || !detail) return "";
+  const fileError = isReleaseBasedTask(task)
+    ? parseReleaseFileError(detail)
+    : undefined;
+  return fileError
+    ? `${fileError.version} ${firstLineOf(fileError.message)}`
+    : firstLineOf(detail);
 }
 
 function PlanDetailTaskDatabaseName({ task }: { task: Task }) {

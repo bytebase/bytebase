@@ -1,6 +1,10 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
-import type { Rollout, Stage } from "@/types/proto-es/v1/rollout_service_pb";
+import {
+  type Rollout,
+  type Stage,
+  Task_Status,
+} from "@/types/proto-es/v1/rollout_service_pb";
 import type { PlanDetailPageState } from "../../shell/hooks/types";
 import { PlanDetailProvider } from "../../shell/PlanDetailContext";
 import { DeployBranch } from "./DeployBranch";
@@ -73,16 +77,68 @@ const makePage = (routeStageId: string): PlanDetailPageState =>
   }) as unknown as PlanDetailPageState;
 
 describe("DeployBranch stage selection", () => {
-  test("uses the rollout frontier while a stale stage route canonicalizes", () => {
+  test("uses the default stage while a stale stage route canonicalizes", () => {
     render(
       <PlanDetailProvider value={makePage("missing")}>
         <DeployBranch />
       </PlanDetailProvider>
     );
 
+    // Nothing failed or running: the last stage.
     expect(screen.getByTestId("selected-stage-id")).toHaveTextContent(
-      `${ROLLOUT}/stages/a`
+      `${ROLLOUT}/stages/b`
     );
+  });
+
+  const stageWith = (id: string, statuses: Task_Status[]): Stage =>
+    ({
+      name: `${ROLLOUT}/stages/${id}`,
+      environment: `environments/${id}`,
+      tasks: statuses.map((status, i) => ({
+        name: `${ROLLOUT}/stages/${id}/tasks/t${i}`,
+        status,
+      })),
+    }) as unknown as Stage;
+  const selectedOnLoad = (stages: Stage[]) => {
+    const page = {
+      ...makePage(""),
+      rollout: { name: ROLLOUT, stages },
+    } as unknown as PlanDetailPageState;
+    render(
+      <PlanDetailProvider value={page}>
+        <DeployBranch />
+      </PlanDetailProvider>
+    );
+    return screen.getByTestId("selected-stage-id").textContent;
+  };
+
+  test("on load a failed plan selects the stage holding the latest failed task", () => {
+    expect(
+      selectedOnLoad([
+        stageWith("test", [Task_Status.DONE, Task_Status.FAILED]),
+        stageWith("staging", [Task_Status.FAILED]),
+        stageWith("prod", [Task_Status.NOT_STARTED]),
+      ])
+    ).toBe(`${ROLLOUT}/stages/staging`);
+  });
+
+  test("on load a running plan selects the running stage", () => {
+    expect(
+      selectedOnLoad([
+        stageWith("test", [Task_Status.DONE]),
+        stageWith("staging", [Task_Status.RUNNING, Task_Status.NOT_STARTED]),
+        stageWith("prod", [Task_Status.NOT_STARTED]),
+      ])
+    ).toBe(`${ROLLOUT}/stages/staging`);
+  });
+
+  test("on load a deployed plan selects the last stage", () => {
+    expect(
+      selectedOnLoad([
+        stageWith("test", [Task_Status.DONE]),
+        stageWith("prod", [Task_Status.DONE, Task_Status.SKIPPED]),
+      ])
+    ).toBe(`${ROLLOUT}/stages/prod`);
   });
 
   test("a quick click back to the route stage supersedes a pending optimistic switch", () => {

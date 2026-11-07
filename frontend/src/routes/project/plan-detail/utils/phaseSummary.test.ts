@@ -85,6 +85,39 @@ describe("plan detail phase summaries", () => {
     );
   });
 
+  test("a release plan's collapsed Changes line names only the targets per stage", () => {
+    const plan = {
+      specs: [
+        {
+          config: {
+            case: "changeDatabaseConfig",
+            value: {
+              release: "projects/p1/releases/r1",
+              targets: ["instances/i/databases/a"],
+            },
+          },
+        },
+      ],
+      planCheckRunStatusCount: { SUCCESS: 2 },
+      rolloutStageSummaries: [
+        {
+          stage: "projects/p1/plans/1/rollout/stages/test",
+          taskStatusCounts: [{ status: 4, count: 2 }],
+        },
+        {
+          stage: "projects/p1/plans/1/rollout/stages/prod",
+          taskStatusCounts: [
+            { status: 1, count: 1 },
+            { status: 5, count: 2 },
+          ],
+        },
+      ],
+    } as unknown as Plan;
+    expect(buildChangesSummary(plan, t)).toBe(
+      "test: 2 databases → prod: 3 databases"
+    );
+  });
+
   test("summarizes review approval progress and last approver", () => {
     const issue = {
       approvalTemplate: {

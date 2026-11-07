@@ -912,6 +912,24 @@ func (s *Store) UpdateUserEmail(ctx context.Context, user *UserMessage, newEmail
 	if err := updateReference("UPDATE task_run SET creator = $1 WHERE creator = $2"); err != nil {
 		return nil, err
 	}
+	if err := updateReference(`UPDATE task SET payload = jsonb_set(payload, '{skipper}', to_jsonb($1::TEXT)) WHERE payload->>'skipper' = $2`); err != nil {
+		return nil, err
+	}
+	if err := updateReference(`
+		UPDATE task
+		SET payload = jsonb_set(payload, '{releaseState,deletedRevisions}', (
+			SELECT jsonb_agg(
+				CASE WHEN note->>'deleter' = $2 THEN jsonb_set(note, '{deleter}', to_jsonb($1::TEXT)) ELSE note END
+				ORDER BY position)
+			FROM jsonb_array_elements(payload->'releaseState'->'deletedRevisions') WITH ORDINALITY AS notes(note, position)
+		))
+		WHERE EXISTS (
+			SELECT 1
+			FROM jsonb_array_elements(payload->'releaseState'->'deletedRevisions') AS note
+			WHERE note->>'deleter' = $2
+		)`); err != nil {
+		return nil, err
+	}
 	if err := updateReference("UPDATE plan SET creator = $1 WHERE creator = $2"); err != nil {
 		return nil, err
 	}
