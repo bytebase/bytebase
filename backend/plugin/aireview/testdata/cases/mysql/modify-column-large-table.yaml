@@ -1,0 +1,55 @@
+description: >-
+  Changing total from decimal(10,2) to decimal(14,2) changes the stored type,
+  which MySQL 8.0 can do only by copying the table, and a copy blocks every
+  write to the table while it runs. On 61 million rows that is hours. Only the
+  current type and the row count show it. add-column-instant is a change to
+  the same table that is safe.
+engine: MYSQL
+version: "8.0.36"
+environment: prod
+statement: |
+  -- Order totals above 99,999,999.99 no longer fit.
+  ALTER TABLE orders MODIFY COLUMN total DECIMAL(14,2) NOT NULL DEFAULT '0.00';
+schema:
+  name: shop
+  character_set: utf8mb4
+  collation: utf8mb4_0900_ai_ci
+  schemas:
+    - name: ""
+      tables:
+        - name: orders
+          engine: InnoDB
+          charset: utf8mb4
+          collation: utf8mb4_0900_ai_ci
+          row_count: 61000000
+          data_size: 25769803776
+          index_size: 6442450944
+          data_free: 7340032
+          columns:
+            - {name: id, position: 1, type: bigint, default: AUTO_INCREMENT}
+            - {name: customer_id, position: 2, type: bigint}
+            - {name: status, position: 3, type: varchar(32), default: "'pending'", character_set: utf8mb4, collation: utf8mb4_0900_ai_ci}
+            - {name: total, position: 4, type: "decimal(10,2)", default: "'0.00'"}
+            - {name: created_at, position: 5, type: datetime, default: CURRENT_TIMESTAMP}
+          indexes:
+            - {name: PRIMARY, expressions: [id], key_length: [-1], descending: [false], type: BTREE, unique: true, primary: true, visible: true}
+            - {name: idx_orders_customer_id, expressions: [customer_id], key_length: [-1], descending: [false], type: BTREE, visible: true}
+            - {name: idx_orders_created_at, expressions: [created_at], key_length: [-1], descending: [false], type: BTREE, visible: true}
+        - name: customers
+          engine: InnoDB
+          charset: utf8mb4
+          collation: utf8mb4_0900_ai_ci
+          row_count: 1300000
+          data_size: 216006656
+          index_size: 89128960
+          columns:
+            - {name: id, position: 1, type: bigint, default: AUTO_INCREMENT}
+            - {name: email, position: 2, type: varchar(255), character_set: utf8mb4, collation: utf8mb4_0900_ai_ci}
+            - {name: created_at, position: 3, type: datetime, default: CURRENT_TIMESTAMP}
+          indexes:
+            - {name: PRIMARY, expressions: [id], key_length: [-1], descending: [false], type: BTREE, unique: true, primary: true, visible: true}
+            - {name: uk_customers_email, expressions: [email], key_length: [-1], descending: [false], type: BTREE, unique: true, visible: true}
+expect:
+  find:
+    - line: 2
+      keywords: [copy, copies, rebuild, rewrite]

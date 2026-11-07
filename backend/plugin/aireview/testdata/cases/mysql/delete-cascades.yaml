@@ -1,0 +1,73 @@
+description: >-
+  The foreign keys from invoices to accounts and from invoice_lines to
+  invoices are ON DELETE CASCADE, so purging closed accounts also deletes
+  their invoices and every invoice line, the billing records the author meant
+  to keep. Only the foreign keys of the tables the statement never names show
+  it.
+engine: MYSQL
+version: "8.0.36"
+environment: prod
+statement: |
+  -- Purge the accounts closed before 2021.
+  DELETE FROM accounts WHERE status = 'closed' AND closed_at < '2021-01-01';
+schema:
+  name: billing
+  character_set: utf8mb4
+  collation: utf8mb4_0900_ai_ci
+  schemas:
+    - name: ""
+      tables:
+        - name: accounts
+          engine: InnoDB
+          charset: utf8mb4
+          collation: utf8mb4_0900_ai_ci
+          row_count: 410000
+          data_size: 60391424
+          index_size: 25165824
+          columns:
+            - {name: id, position: 1, type: bigint, default: AUTO_INCREMENT}
+            - {name: name, position: 2, type: varchar(255), character_set: utf8mb4, collation: utf8mb4_0900_ai_ci}
+            - {name: status, position: 3, type: varchar(16), default: "'active'", character_set: utf8mb4, collation: utf8mb4_0900_ai_ci}
+            - {name: closed_at, position: 4, type: datetime, nullable: true, default: "NULL"}
+          indexes:
+            - {name: PRIMARY, expressions: [id], key_length: [-1], descending: [false], type: BTREE, unique: true, primary: true, visible: true}
+            - {name: idx_accounts_status_closed_at, expressions: [status, closed_at], key_length: [-1, -1], descending: [false, false], type: BTREE, visible: true}
+        - name: invoices
+          engine: InnoDB
+          charset: utf8mb4
+          collation: utf8mb4_0900_ai_ci
+          row_count: 30500000
+          data_size: 5905580032
+          index_size: 2147483648
+          columns:
+            - {name: id, position: 1, type: bigint, default: AUTO_INCREMENT}
+            - {name: account_id, position: 2, type: bigint}
+            - {name: amount, position: 3, type: "decimal(12,2)"}
+            - {name: issued_at, position: 4, type: datetime}
+            - {name: paid_at, position: 5, type: datetime, nullable: true, default: "NULL"}
+          indexes:
+            - {name: PRIMARY, expressions: [id], key_length: [-1], descending: [false], type: BTREE, unique: true, primary: true, visible: true}
+            - {name: fk_invoices_account, expressions: [account_id], key_length: [-1], descending: [false], type: BTREE, visible: true}
+          foreign_keys:
+            - {name: fk_invoices_account, columns: [account_id], referenced_table: accounts, referenced_columns: [id], on_delete: CASCADE, on_update: RESTRICT, match_type: NONE}
+        - name: invoice_lines
+          engine: InnoDB
+          charset: utf8mb4
+          collation: utf8mb4_0900_ai_ci
+          row_count: 96000000
+          data_size: 11274289152
+          index_size: 4294967296
+          columns:
+            - {name: id, position: 1, type: bigint, default: AUTO_INCREMENT}
+            - {name: invoice_id, position: 2, type: bigint}
+            - {name: description, position: 3, type: varchar(255), character_set: utf8mb4, collation: utf8mb4_0900_ai_ci}
+            - {name: amount, position: 4, type: "decimal(12,2)"}
+          indexes:
+            - {name: PRIMARY, expressions: [id], key_length: [-1], descending: [false], type: BTREE, unique: true, primary: true, visible: true}
+            - {name: fk_invoice_lines_invoice, expressions: [invoice_id], key_length: [-1], descending: [false], type: BTREE, visible: true}
+          foreign_keys:
+            - {name: fk_invoice_lines_invoice, columns: [invoice_id], referenced_table: invoices, referenced_columns: [id], on_delete: CASCADE, on_update: RESTRICT, match_type: NONE}
+expect:
+  find:
+    - line: 2
+      keywords: [cascade, cascading, invoices, invoice_lines]

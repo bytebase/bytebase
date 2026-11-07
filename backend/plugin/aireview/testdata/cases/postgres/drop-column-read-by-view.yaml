@@ -1,0 +1,89 @@
+description: >-
+  The view order_revenue reads orders.discount, so PostgreSQL refuses the DROP
+  COLUMN on line 3 and the migration fails; with CASCADE it would drop the
+  view instead. Only the view's definition shows the dependency, and
+  recent_orders is a view on the same table that does not read the column.
+  Line 2 adds a nullable column without a default, which PostgreSQL does
+  without rewriting the table, so it must not be flagged.
+engine: POSTGRES
+version: "16.0.4"
+environment: prod
+statement: |
+  -- Pricing moved to the promotions service.
+  ALTER TABLE orders ADD COLUMN promotion_id bigint;
+  ALTER TABLE orders DROP COLUMN discount;
+schema:
+  name: shop
+  character_set: UTF8
+  collation: en_US.UTF-8
+  owner: shop_owner
+  search_path: '"$user", public'
+  schemas:
+    - name: public
+      owner: pg_database_owner
+      comment: standard public schema
+      tables:
+        - name: orders
+          owner: shop_owner
+          row_count: 48000000
+          data_size: 12348030976
+          index_size: 2147483648
+          columns:
+            - {name: id, position: 1, type: bigint, default: "nextval('public.orders_id_seq'::regclass)"}
+            - {name: customer_id, position: 2, type: bigint}
+            - {name: status, position: 3, type: text}
+            - {name: total, position: 4, type: "numeric(12,2)"}
+            - {name: discount, position: 5, type: "numeric(12,2)", default: "0"}
+            - {name: created_at, position: 6, type: timestamp(6) with time zone, default: "now()"}
+          indexes:
+            - name: orders_pkey
+              expressions: [id]
+              type: btree
+              unique: true
+              primary: true
+              is_constraint: true
+              definition: CREATE UNIQUE INDEX orders_pkey ON public.orders USING btree (id);
+            - name: idx_orders_customer_id
+              expressions: [customer_id]
+              type: btree
+              definition: CREATE INDEX idx_orders_customer_id ON public.orders USING btree (customer_id);
+            - name: idx_orders_created_at
+              expressions: [created_at]
+              type: btree
+              definition: CREATE INDEX idx_orders_created_at ON public.orders USING btree (created_at);
+      views:
+        - name: order_revenue
+          definition: |-2
+             SELECT id,
+                customer_id,
+                created_at,
+                (total - discount) AS net_total
+               FROM public.orders;
+          columns:
+            - {name: id, position: 1, type: bigint, nullable: true}
+            - {name: customer_id, position: 2, type: bigint, nullable: true}
+            - {name: created_at, position: 3, type: timestamp(6) with time zone, nullable: true}
+            - {name: net_total, position: 4, type: numeric, nullable: true}
+        - name: recent_orders
+          definition: |-2
+             SELECT id,
+                customer_id,
+                status,
+                total,
+                created_at
+               FROM public.orders
+              WHERE (created_at > (now() - '30 days'::interval));
+          columns:
+            - {name: id, position: 1, type: bigint, nullable: true}
+            - {name: customer_id, position: 2, type: bigint, nullable: true}
+            - {name: status, position: 3, type: text, nullable: true}
+            - {name: total, position: 4, type: "numeric(12,2)", nullable: true}
+            - {name: created_at, position: 5, type: timestamp(6) with time zone, nullable: true}
+      sequences:
+        - {name: orders_id_seq, data_type: bigint, start: "1", increment: "1", min_value: "1", max_value: "9223372036854775807", cache_size: "1", owner_table: orders, owner_column: id}
+expect:
+  find:
+    - line: 3
+      keywords: [order_revenue]
+  not_flag:
+    - line: 2
