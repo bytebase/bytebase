@@ -1867,7 +1867,7 @@ test.describe("Inline comments open with review submission, plain comments stay 
       await planPage.composerEditor.fill(plainText);
       await planPage.composerSubmitButton.click();
       const timeline = page.locator("#plan-phase-review");
-      const plain = timeline.getByText(plainText, { exact: true });
+      const plain = timeline.getByRole("listitem").getByText(plainText, { exact: true });
       await expect(plain).toBeVisible({ timeout: 15_000 });
       // Not a thread: no card, and no Reply / Resolve on its row.
       await expect(timeline.getByTestId("comment-thread").filter({ hasText: plainText })).toHaveCount(0);
@@ -2053,10 +2053,7 @@ test.describe("Editing keeps the reading position; Activity links land in the ed
   });
 
   test("from the plan's URL, an Activity link while editing does not ask to leave (C5)", async () => {
-    // The plan list links here. With no spec in the URL the link pushes the
-    // spec's route, and the plan's leave guard treats that in-page move as
-    // leaving while any editor is open (BYT-10360).
-    test.fail();
+    // The plan list links here, with no spec in the URL.
     await goReview(planId);
     await followActivityLinkWhileEditing();
     await expectLineRevealedForTyping();
