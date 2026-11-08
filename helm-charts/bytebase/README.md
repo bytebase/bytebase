@@ -35,9 +35,9 @@ When upgrading from chart 1.1.4, move any digest configured through `bytebase.di
 
 ## High availability note
 
-The bundled Helm chart currently deploys Bytebase as a single-replica StatefulSet. It does not expose a Helm value for running multiple Bytebase application replicas.
+By default the bundled Helm chart deploys Bytebase as a single-replica StatefulSet (`replicas: 1`). With `bytebase.autoscaling.enabled=true` the chart omits `spec.replicas` and an external autoscaler (an HPA or KEDA) owns the replica count; the StatefulSet stays single-replica while that autoscaler's maximum is one, scale-to-zero included. The chart has no value for a fixed multi-replica deployment.
 
-If you are preparing an HA deployment, treat the multi-replica topology as operator-managed outside this chart. Each HA replica must still start with `--ha` and the same shared external PostgreSQL `PG_URL`. Set `bytebase.option.ha=true` so the replica this chart manages starts with the flag too; review the operator runbook before proceeding:
+Running more than one Bytebase server at the same time, whether through an autoscaler whose maximum is above one or through replicas operated outside this chart, is an HA topology: the license must enable HA, and every replica must start with `--ha` and the same shared external PostgreSQL `PG_URL`. Set `bytebase.option.ha=true` so the replicas this chart manages start with the flag; review the operator runbook before proceeding:
 
 - [High availability runbook](../../docs/operations/high-availability.md)
 - [Upgrade guidance](../../docs/operations/upgrade.md)
@@ -80,7 +80,7 @@ helm delete --namespace <YOUR_NAMESPACE> <RELEASE_NAME>
 
 Use `helm upgrade` command to upgrade the bytebase version or configuration.
 
-For HA-aware operations, note that this chart still renders `replicas: 1`. A `helm upgrade` does not enable a multi-replica topology by itself. If you operate multiple Bytebase servers outside this chart, keep `--ha` (`bytebase.option.ha` for the replica this chart manages) and the shared external PostgreSQL `PG_URL` consistent on every replica and follow the operator runbook and upgrade guidance here:
+For HA-aware operations, note that by default this chart renders `replicas: 1`, and a `helm upgrade` does not enable a multi-replica topology by itself. With `bytebase.autoscaling.enabled=true` the replica count belongs to the external autoscaler. If that autoscaler can scale above one, or you operate more Bytebase servers outside this chart, keep `--ha` (`bytebase.option.ha` for the replicas this chart manages) and the shared external PostgreSQL `PG_URL` consistent on every replica and follow the operator runbook and upgrade guidance here:
 
 - [High availability runbook](../../docs/operations/high-availability.md)
 - [Upgrade guidance](../../docs/operations/upgrade.md)
