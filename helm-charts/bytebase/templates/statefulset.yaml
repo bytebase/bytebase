@@ -47,7 +47,9 @@ spec:
     matchLabels:
       app: bytebase
   serviceName: "bytebase"
+  {{- if not .Values.bytebase.autoscaling.enabled }}
   replicas: 1
+  {{- end }}
   template:
     metadata:
       labels:

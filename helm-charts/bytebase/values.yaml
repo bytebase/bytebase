@@ -90,6 +90,13 @@ bytebase:
   #    prometheus.io/scrape: "true"
   #    prometheus.io/port: "8080"
 
+  # Hand the StatefulSet replica count to an external autoscaler (an HPA, or a
+  # KEDA ScaledObject/HTTPScaledObject that scales to zero). When enabled the chart
+  # omits spec.replicas, so GitOps tools that diff the rendered manifest (Argo CD,
+  # Flux) neither revert nor report the count the autoscaler sets.
+  autoscaling:
+    enabled: false
+
   # Additional Bytebase secret mounts
   # Defines additional mounts with secret. Secret must be manually created in the namespace.
   extraSecretMounts:
