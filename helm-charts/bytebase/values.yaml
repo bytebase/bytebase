@@ -31,7 +31,9 @@ bytebase:
     # Run in HA mode. Required on every replica once more than one Bytebase server
     # shares an external PostgreSQL: it turns off the in-process metadata cache, so a
     # replica never serves another replica's stale writes. This chart renders
-    # replicas: 1, so set it only when further replicas run outside the chart.
+    # replicas: 1 by default; set it when more than one server can run: further
+    # replicas outside the chart, or bytebase.autoscaling with an autoscaler whose
+    # maximum is above one.
     ha: false
     # Let non-loopback clients scrape /metrics, which answers loopback only by
     # default. The endpoint is unauthenticated, so enable it only where the port is

@@ -47,7 +47,7 @@ spec:
     matchLabels:
       app: bytebase
   serviceName: "bytebase"
-  {{- if not .Values.bytebase.autoscaling.enabled }}
+  {{- if not (.Values.bytebase.autoscaling | default dict).enabled }}
   replicas: 1
   {{- end }}
   template:

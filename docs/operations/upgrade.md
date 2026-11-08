@@ -29,13 +29,13 @@ The bundled Helm chart still deploys a single replica by default, so HA rollouts
 
 The chart README uses `helm upgrade` for version and configuration changes, and that is still the correct command.
 
-However, the chart currently renders a single-replica StatefulSet. Upgrading the chart does not enable an HA topology and does not add a chart value for running multiple Bytebase application replicas.
+By default the chart renders a single-replica StatefulSet, and upgrading the chart does not enable an HA topology. With `bytebase.autoscaling.enabled=true` an external autoscaler (an HPA or KEDA) owns the replica count: while its maximum is one the deployment stays single-replica; if it can scale above one, the chart-managed replicas form an HA topology that needs the multi-replica guidance below (HA license, `bytebase.option.ha=true`, shared external PostgreSQL).
 
-If you operate multiple Bytebase servers today, treat that topology as operator-managed and keep the upgrade procedure for those extra replicas in your own platform tooling.
+If you operate multiple Bytebase servers outside the chart, treat that topology as operator-managed and keep the upgrade procedure for those extra replicas in your own platform tooling.
 
 ## Multi-replica upgrade guidance
 
-If you operate multiple Bytebase replicas outside the bundled chart:
+If you run multiple Bytebase replicas, through an autoscaler whose maximum is above one or outside the bundled chart:
 
 1. **Only keep multiple active replicas if HA is licensed.**
    - Without `ha: true`, Bytebase logs HA restriction warnings and background runners skip work when more than one replica is active.
