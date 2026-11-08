@@ -98,6 +98,10 @@ bytebase:
   # Flux) neither revert nor report the count the autoscaler sets.
   autoscaling:
     enabled: false
+    # The highest replica count the external autoscaler may set. Above 1 the chart
+    # requires bytebase.option.ha=true and refuses persistence backed by its single
+    # ReadWriteOnce bytebase-volume claim, which every replica would mount.
+    maxReplicas: 1
 
   # Additional Bytebase secret mounts
   # Defines additional mounts with secret. Secret must be manually created in the namespace.
