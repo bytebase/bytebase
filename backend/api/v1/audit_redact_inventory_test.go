@@ -744,6 +744,7 @@ var auditRecordedFields = []string{
 	"bytebase.v1.Plan.name",
 	"bytebase.v1.Plan.title",
 	"bytebase.v1.PlanCheckRun.Result.content",
+	"bytebase.v1.PlanCheckRun.Result.sheet_sha256",
 	"bytebase.v1.PlanCheckRun.Result.target",
 	"bytebase.v1.PlanCheckRun.Result.title",
 	"bytebase.v1.PlanCheckRun.error",
