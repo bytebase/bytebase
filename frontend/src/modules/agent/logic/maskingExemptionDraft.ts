@@ -9,11 +9,11 @@ import {
   userServiceClientConnect,
 } from "@/api";
 import { silentContextKey } from "@/api/context-key";
+import { getMaskingExemptionSelectorConfig } from "@/lib/sensitive-data/maskingExemption";
 import {
   buildCELExpr,
   type ConditionGroupExpr,
   ExprType,
-  type Factor,
   resolveCELExpr,
   type SimpleExpr,
   validateSimpleExpr,
@@ -31,13 +31,7 @@ import {
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import { GetProjectRequestSchema } from "@/types/proto-es/v1/project_service_pb";
 import { GetUserRequestSchema } from "@/types/proto-es/v1/user_service_pb";
-import {
-  CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL,
-  CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME,
-  CEL_ATTRIBUTE_RESOURCE_DATABASE,
-  CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
-  CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
-} from "@/utils/cel-attributes";
+import { CEL_ATTRIBUTE_RESOURCE_DATABASE } from "@/utils/cel-attributes";
 import {
   batchConvertCELStringToParsedExpr,
   batchConvertParsedExprToCELString,
@@ -69,13 +63,6 @@ const projectPattern = /^projects\/(?!-$)[A-Za-z0-9_-]+$/;
 const databasePattern =
   /^(?:projects\/[A-Za-z0-9_-]+\/)?instances\/[A-Za-z0-9_-]+\/databases\/[^/]+$/;
 const emailPattern = /^[^\s@/:]+@[^\s@/:]+\.[^\s@/:]+$/;
-const factors: Factor[] = [
-  CEL_ATTRIBUTE_RESOURCE_DATABASE,
-  CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
-  CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
-  CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME,
-  CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL,
-];
 const options = () => ({
   contextValues: createContextValues().set(silentContextKey, true),
 });
@@ -257,7 +244,12 @@ async function resolveCondition(condition: string) {
   if (!parsed?.exprKind.case)
     throw new Error("The exemption condition could not be parsed.");
   const resolved = resolveCELExpr(parsed);
-  if (!canRenderAsSelector(resolved, factors) || !validateSimpleExpr(resolved))
+  const { factorList, factorOperatorOverrideMap } =
+    getMaskingExemptionSelectorConfig();
+  if (
+    !canRenderAsSelector(resolved, factorList, factorOperatorOverrideMap) ||
+    !validateSimpleExpr(resolved)
+  )
     throw new Error(
       "The condition cannot be represented by the exemption selector."
     );

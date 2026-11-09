@@ -11,6 +11,7 @@ import {
   consumeMaskingExemptionDraft,
   getMaskingExemptionDraft,
   getMaskingExemptionDraftSource,
+  parseMaskingExemptionDraftCondition,
   prepareMaskingExemptionDraft,
   revalidateMaskingExemptionDraft,
   validateMaskingExemptionDraft,
@@ -70,9 +71,16 @@ const literal = (value: string) =>
       value: { constantKind: { case: "stringValue", value } },
     },
   });
-const call = (fn: string, args: Expr[]) =>
+const call = (fn: string, args: Expr[], target?: Expr) =>
   create(ExprSchema, {
-    exprKind: { case: "callExpr", value: { function: fn, args } },
+    exprKind: { case: "callExpr", value: { function: fn, args, target } },
+  });
+const select = (field: string) =>
+  create(ExprSchema, {
+    exprKind: {
+      case: "selectExpr",
+      value: { operand: ident("resource"), field },
+    },
   });
 const expressions = new Map<string, Expr>();
 beforeEach(() => {
@@ -134,6 +142,108 @@ beforeEach(() => {
 afterEach(() => {
   vi.useRealTimers();
 });
+
+it("accepts a parsed column-only predicate without table or catalog metadata and retains database scope", async () => {
+  expressions.set(
+    condition,
+    call("_==_", [select("column_name"), literal("email")])
+  );
+  const { draftId, draft } = await prepareMaskingExemptionDraft(
+    { ...input, expirationTimestamp: null },
+    context
+  );
+  const group = await parseMaskingExemptionDraftCondition(draft.condition);
+  expect(group.args).toEqual([
+    {
+      type: "Condition",
+      operator: "_==_",
+      args: ["resource.database", database],
+    },
+    {
+      type: "Condition",
+      operator: "_==_",
+      args: ["resource.column_name", "email"],
+    },
+  ]);
+  expect(draft.expirationTimestamp).toBeNull();
+  const revalidated = await revalidateMaskingExemptionDraft(draftId, context);
+  expect({ ...revalidated, condition: draft.condition }).toEqual(draft);
+  expect(
+    await parseMaskingExemptionDraftCondition(revalidated.condition)
+  ).toEqual(group);
+});
+
+it("keeps database membership inside the confirmed database restriction", async () => {
+  const names = [database, "instances/primary/databases/other"];
+  expressions.set(
+    "database-membership",
+    call("_&&_", [
+      call("@in", [
+        select("database"),
+        create(ExprSchema, {
+          exprKind: {
+            case: "listExpr",
+            value: { elements: names.map(literal) },
+          },
+        }),
+      ]),
+      call("_==_", [select("column_name"), literal("email")]),
+    ])
+  );
+  const { draft } = await prepareMaskingExemptionDraft(
+    { ...input, condition: "database-membership" },
+    context
+  );
+  const group = await parseMaskingExemptionDraftCondition(draft.condition);
+  expect(group.operator).toBe("_&&_");
+  expect(group.args).toEqual([
+    {
+      type: "Condition",
+      operator: "_==_",
+      args: ["resource.database", database],
+    },
+    { type: "Condition", operator: "@in", args: ["resource.database", names] },
+    {
+      type: "Condition",
+      operator: "_==_",
+      args: ["resource.column_name", "email"],
+    },
+  ]);
+  for (const name of names)
+    expect(mocks.database).toHaveBeenCalledWith(
+      expect.objectContaining({ name }),
+      expect.anything()
+    );
+});
+
+it.each([
+  ["column not-equal", call("_!=_", [select("column_name"), literal("email")])],
+  [
+    "column contains",
+    call("contains", [literal("mail")], select("column_name")),
+  ],
+  ["table contains", call("contains", [literal("user")], select("table_name"))],
+  [
+    "schema membership",
+    call("@in", [
+      select("schema_name"),
+      create(ExprSchema, {
+        exprKind: {
+          case: "listExpr",
+          value: { elements: [literal("public")] },
+        },
+      }),
+    ]),
+  ],
+])(
+  "rejects %s when the exemption form does not offer that operator",
+  async (_, parsed) => {
+    expressions.set("unsupported-selector", parsed);
+    await expect(
+      parseMaskingExemptionDraftCondition("unsupported-selector")
+    ).rejects.toThrow(/selector/i);
+  }
+);
 
 it("resolves a verified current user and independently ANDs exact database scope", async () => {
   const { draftId, draft } = await prepareMaskingExemptionDraft(input, context);

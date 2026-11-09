@@ -6,6 +6,33 @@ import { AgentHelpButton } from "./AgentHelpButton";
 afterEach(cleanup);
 
 describe("AgentHelpButton", () => {
+  test.each([false, true])(
+    "supports neutral outline styling with iconOnly=%s",
+    (iconOnly) => {
+      render(
+        <AgentHelpButton appearance="outline" size="sm" iconOnly={iconOnly}>
+          Agent
+        </AgentHelpButton>
+      );
+      const help = screen.getByRole("button", { name: "Agent" });
+      expect(help).toHaveClass(
+        "h-7",
+        "border",
+        "border-control-border",
+        "text-control",
+        "bg-transparent"
+      );
+      expect(help).not.toHaveClass("text-accent", "hover:bg-accent/10");
+      expect(help.querySelector("svg")).toHaveClass("shrink-0");
+      if (iconOnly) {
+        expect(help).toHaveClass("w-7", "px-0");
+        expect(help).toHaveTextContent("");
+      } else {
+        expect(help).toHaveTextContent("Agent");
+      }
+    }
+  );
+
   test("matches ordinary page commands with primary ghost styling", () => {
     const click = vi.fn();
     render(<><AgentHelpButton onClick={click}>Ask Agent</AgentHelpButton><Button>Create rule</Button></>);

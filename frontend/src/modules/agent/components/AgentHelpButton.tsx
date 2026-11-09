@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 
 type AgentHelpButtonProps = Omit<
   ButtonProps,
-  "appearance" | "variant" | "size" | "children"
+  "variant" | "size" | "children"
 > & {
   children: string;
   size?: ControlSize;
@@ -16,6 +16,7 @@ const iconOnlyWidth = { xs: "w-6", sm: "w-7", md: "w-9", lg: "w-10" };
 
 export function AgentHelpButton({
   children,
+  appearance = "ghost",
   size = "md",
   iconOnly = false,
   className,
@@ -27,7 +28,7 @@ export function AgentHelpButton({
     <Button
       {...props}
       type={type}
-      appearance="ghost"
+      appearance={appearance}
       size={size}
       title={title ?? children}
       aria-label={props["aria-label"] ?? children}

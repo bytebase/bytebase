@@ -161,8 +161,15 @@ describe("DashboardHeader", () => {
       const agent = container.querySelector(
         'button[aria-label="Agent"]'
       ) as HTMLButtonElement;
-      expect(agent).toHaveClass("h-7", "text-accent", "bg-transparent");
-      expect(agent).not.toHaveClass("border");
+      expect(agent).toHaveClass(
+        "h-7",
+        "border",
+        "border-control-border",
+        "text-control",
+        "bg-transparent"
+      );
+      expect(agent).not.toHaveClass("text-accent", "hover:bg-accent/10");
+      expect(agent.querySelector("svg")).toHaveClass("shrink-0");
       await act(async () => agent.click());
       await act(async () => agent.click());
       expect(mocks.openAgent).toHaveBeenCalledTimes(2);
@@ -171,6 +178,26 @@ describe("DashboardHeader", () => {
       unmount();
     }
   });
+
+  test.each([390, 768])(
+    "keeps the Agent button square and labeled at %ipx",
+    (width) => {
+      window.innerWidth = width;
+      const { container, render, unmount } = renderIntoContainer(
+        <DashboardHeader showLogo={false} />
+      );
+      try {
+        render();
+        const agent = container.querySelector('button[aria-label="Agent"]');
+        expect(agent).toHaveClass("h-7", "w-7", "px-0", "border", "text-control");
+        expect(agent).toHaveAttribute("title", "Agent");
+        expect(agent).toHaveTextContent("");
+        expect(agent?.querySelector("svg")).toHaveAttribute("width", "16");
+      } finally {
+        unmount();
+      }
+    }
+  );
 
   test("renders logo, toggle, and shared entrypoints", () => {
     const onOpenMobileSidebar = vi.fn();

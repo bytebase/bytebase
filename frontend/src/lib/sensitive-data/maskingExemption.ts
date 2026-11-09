@@ -183,6 +183,29 @@ export const rewriteMaskingExemptionDatabaseConditions = (
   expr: ConditionGroupExpr
 ): ConditionGroupExpr => rewriteDatabaseExpr(expr) as ConditionGroupExpr;
 
+export const getMaskingExemptionSelectorConfig = (): {
+  factorList: Factor[];
+  factorOperatorOverrideMap: Map<Factor, Operator[]>;
+} => ({
+  factorList: [
+    CEL_ATTRIBUTE_RESOURCE_DATABASE,
+    CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
+    CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
+    CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME,
+    CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL,
+  ],
+  factorOperatorOverrideMap: new Map<Factor, Operator[]>([
+    [CEL_ATTRIBUTE_RESOURCE_DATABASE, ["_==_", "@in"]],
+    [CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME, ["_==_"]],
+    [CEL_ATTRIBUTE_RESOURCE_TABLE_NAME, ["_==_", "@in"]],
+    [CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME, ["_==_", "@in"]],
+    [
+      CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL,
+      ["_==_", "_!=_", "_<_", "_<=_", "_>=_", "_>_"],
+    ],
+  ]),
+});
+
 export const useMaskingExemptionExprConfig = (
   projectName: string
 ): {
@@ -190,28 +213,8 @@ export const useMaskingExemptionExprConfig = (
   factorOperatorOverrideMap: Map<Factor, Operator[]>;
   factorOptionConfigMap: Map<Factor, OptionConfig>;
 } => {
-  const factorList = useMemo((): Factor[] => {
-    return [
-      CEL_ATTRIBUTE_RESOURCE_DATABASE,
-      CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
-      CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
-      CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME,
-      CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL,
-    ];
-  }, []);
-
-  const factorOperatorOverrideMap = useMemo(
-    () =>
-      new Map<Factor, Operator[]>([
-        [CEL_ATTRIBUTE_RESOURCE_DATABASE, ["_==_", "@in"]],
-        [CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME, ["_==_"]],
-        [CEL_ATTRIBUTE_RESOURCE_TABLE_NAME, ["_==_", "@in"]],
-        [CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME, ["_==_", "@in"]],
-        [
-          CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL,
-          ["_==_", "_!=_", "_<_", "_<=_", "_>=_", "_>_"],
-        ],
-      ]),
+  const { factorList, factorOperatorOverrideMap } = useMemo(
+    getMaskingExemptionSelectorConfig,
     []
   );
 

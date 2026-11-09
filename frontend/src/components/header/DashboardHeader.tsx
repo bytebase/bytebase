@@ -89,6 +89,7 @@ export function DashboardHeader({
       <div className="flex flex-1 items-center justify-end gap-x-2">
         <AgentHelpButton
           size="sm"
+          appearance="outline"
           iconOnly={!isLargeLabelVisible}
           aria-label={t("agent.self")}
           title={t("agent.self")}
