@@ -1261,12 +1261,12 @@ var File_v1_release_service_proto protoreflect.FileDescriptor
 
 const file_v1_release_service_proto_rawDesc = "" +
 	"\n" +
-	"\x18v1/release_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x14v1/sql_service.proto\"E\n" +
-	"\x11GetReleaseRequest\x120\n" +
-	"\x04name\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
-	"\x14bytebase.com/ReleaseR\x04name\"\xc2\x01\n" +
-	"\x13ListReleasesRequest\x124\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
+	"\x18v1/release_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x14v1/sql_service.proto\"F\n" +
+	"\x11GetReleaseRequest\x121\n" +
+	"\x04name\x18\x01 \x01(\tB\x1d\xe2A\x01\x02\xfaA\x16\n" +
+	"\x14bytebase.com/ReleaseR\x04name\"\xc3\x01\n" +
+	"\x13ListReleasesRequest\x125\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1d\xe2A\x01\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x12\x1b\n" +
 	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
@@ -1275,27 +1275,27 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"\x06filter\x18\x05 \x01(\tR\x06filter\"p\n" +
 	"\x14ListReleasesResponse\x120\n" +
 	"\breleases\x18\x01 \x03(\v2\x14.bytebase.v1.ReleaseR\breleases\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xe1\x01\n" +
-	"\x14CreateReleaseRequest\x124\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
-	"\x14bytebase.com/ProjectR\x06parent\x123\n" +
-	"\arelease\x18\x02 \x01(\v2\x14.bytebase.v1.ReleaseB\x03\xe0A\x02R\arelease\x12.\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xe3\x01\n" +
+	"\x14CreateReleaseRequest\x125\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1d\xe2A\x01\x02\xfaA\x16\n" +
+	"\x14bytebase.com/ProjectR\x06parent\x124\n" +
+	"\arelease\x18\x02 \x01(\v2\x14.bytebase.v1.ReleaseB\x04\xe2A\x01\x02R\arelease\x12.\n" +
 	"\x13release_id_template\x18\x03 \x01(\tR\x11releaseIdTemplate\x12.\n" +
-	"\x13release_id_timezone\x18\x04 \x01(\tR\x11releaseIdTimezone\"\x88\x01\n" +
-	"\x14UpdateReleaseRequest\x123\n" +
-	"\arelease\x18\x01 \x01(\v2\x14.bytebase.v1.ReleaseB\x03\xe0A\x02R\arelease\x12;\n" +
+	"\x13release_id_timezone\x18\x04 \x01(\tR\x11releaseIdTimezone\"\x89\x01\n" +
+	"\x14UpdateReleaseRequest\x124\n" +
+	"\arelease\x18\x01 \x01(\v2\x14.bytebase.v1.ReleaseB\x04\xe2A\x01\x02R\arelease\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
-	"updateMask\"H\n" +
-	"\x14DeleteReleaseRequest\x120\n" +
-	"\x04name\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
-	"\x14bytebase.com/ReleaseR\x04name\"J\n" +
-	"\x16UndeleteReleaseRequest\x120\n" +
-	"\x04name\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
-	"\x14bytebase.com/ReleaseR\x04name\"\xee\x01\n" +
-	"\x13CheckReleaseRequest\x124\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
-	"\x14bytebase.com/ProjectR\x06parent\x123\n" +
-	"\arelease\x18\x02 \x01(\v2\x14.bytebase.v1.ReleaseB\x03\xe0A\x02R\arelease\x12\x18\n" +
+	"updateMask\"I\n" +
+	"\x14DeleteReleaseRequest\x121\n" +
+	"\x04name\x18\x01 \x01(\tB\x1d\xe2A\x01\x02\xfaA\x16\n" +
+	"\x14bytebase.com/ReleaseR\x04name\"K\n" +
+	"\x16UndeleteReleaseRequest\x121\n" +
+	"\x04name\x18\x01 \x01(\tB\x1d\xe2A\x01\x02\xfaA\x16\n" +
+	"\x14bytebase.com/ReleaseR\x04name\"\xf0\x01\n" +
+	"\x13CheckReleaseRequest\x125\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1d\xe2A\x01\x02\xfaA\x16\n" +
+	"\x14bytebase.com/ProjectR\x06parent\x124\n" +
+	"\arelease\x18\x02 \x01(\v2\x14.bytebase.v1.ReleaseB\x04\xe2A\x01\x02R\arelease\x12\x18\n" +
 	"\atargets\x18\x03 \x03(\tR\atargets\x12!\n" +
 	"\fcustom_rules\x18\x04 \x01(\tR\vcustomRules\x12/\n" +
 	"\bvcs_user\x18\x05 \x01(\v2\x14.bytebase.v1.VCSUserR\avcsUser\"\x93\x01\n" +
@@ -1315,32 +1315,32 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"\aadvices\x18\x03 \x03(\v2\x13.bytebase.v1.AdviceR\aadvices\x12#\n" +
 	"\raffected_rows\x18\x04 \x01(\x03R\faffectedRows\x125\n" +
 	"\n" +
-	"risk_level\x18\x05 \x01(\x0e2\x16.bytebase.v1.RiskLevelR\triskLevel\"T\n" +
-	"\x1cListReleaseCategoriesRequest\x124\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
+	"risk_level\x18\x05 \x01(\x0e2\x16.bytebase.v1.RiskLevelR\triskLevel\"U\n" +
+	"\x1cListReleaseCategoriesRequest\x125\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1d\xe2A\x01\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\"?\n" +
 	"\x1dListReleaseCategoriesResponse\x12\x1e\n" +
 	"\n" +
 	"categories\x18\x01 \x03(\tR\n" +
-	"categories\"\xbb\b\n" +
-	"\aRelease\x12\x17\n" +
-	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12\x1a\n" +
+	"categories\"\xc1\b\n" +
+	"\aRelease\x12\x18\n" +
+	"\x04name\x18\x01 \x01(\tB\x04\xe2A\x01\x03R\x04name\x12\x1a\n" +
 	"\bcategory\x18\x02 \x01(\tR\bcategory\x12/\n" +
 	"\x05files\x18\x03 \x03(\v2\x19.bytebase.v1.Release.FileR\x05files\x12=\n" +
 	"\n" +
-	"vcs_source\x18\x04 \x01(\v2\x1e.bytebase.v1.Release.VCSSourceR\tvcsSource\x12\x1d\n" +
-	"\acreator\x18\x05 \x01(\tB\x03\xe0A\x03R\acreator\x12@\n" +
-	"\vcreate_time\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
-	"createTime\x12-\n" +
-	"\x05state\x18\a \x01(\x0e2\x12.bytebase.v1.StateB\x03\xe0A\x03R\x05state\x12-\n" +
-	"\x04type\x18\b \x01(\x0e2\x19.bytebase.v1.Release.TypeR\x04type\x1a\xbe\x01\n" +
+	"vcs_source\x18\x04 \x01(\v2\x1e.bytebase.v1.Release.VCSSourceR\tvcsSource\x12\x1e\n" +
+	"\acreator\x18\x05 \x01(\tB\x04\xe2A\x01\x03R\acreator\x12A\n" +
+	"\vcreate_time\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\n" +
+	"createTime\x12.\n" +
+	"\x05state\x18\a \x01(\x0e2\x12.bytebase.v1.StateB\x04\xe2A\x01\x03R\x05state\x12-\n" +
+	"\x04type\x18\b \x01(\x0e2\x19.bytebase.v1.Release.TypeR\x04type\x1a\xc0\x01\n" +
 	"\x04File\x12\x12\n" +
 	"\x04path\x18\x02 \x01(\tR\x04path\x12\x18\n" +
 	"\aversion\x18\x06 \x01(\tR\aversion\x12-\n" +
 	"\x05sheet\x18\x03 \x01(\tB\x17\xfaA\x14\n" +
-	"\x12bytebase.com/SheetR\x05sheet\x12%\n" +
-	"\tstatement\x18\a \x01(\fB\a\xe0A\x04\xd0\xea0\x02R\tstatement\x12&\n" +
-	"\fsheet_sha256\x18\x04 \x01(\tB\x03\xe0A\x03R\vsheetSha256J\x04\b\x01\x10\x02J\x04\b\x05\x10\x06\x1a\x8a\x03\n" +
+	"\x12bytebase.com/SheetR\x05sheet\x12&\n" +
+	"\tstatement\x18\a \x01(\fB\b\xe2A\x01\x04\xd0\xea0\x02R\tstatement\x12'\n" +
+	"\fsheet_sha256\x18\x04 \x01(\tB\x04\xe2A\x01\x03R\vsheetSha256J\x04\b\x01\x10\x02J\x04\b\x05\x10\x06\x1a\x8a\x03\n" +
 	"\tVCSSource\x12/\n" +
 	"\bvcs_type\x18\x01 \x01(\x0e2\x14.bytebase.v1.VCSTypeR\avcsType\x12\x10\n" +
 	"\x03url\x18\x02 \x01(\tR\x03url\x12\x1d\n" +
