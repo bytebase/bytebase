@@ -381,19 +381,18 @@ func getVCSSource(w *world.World) *v1pb.Release_VCSSource {
 	if source == nil {
 		source = &v1pb.Release_VCSSource{}
 	}
+	// A flag URL names another change, so nothing detected about the change
+	// matches it; only the platform stays. The other flags then apply.
+	if w.SourceURL != "" {
+		source = &v1pb.Release_VCSSource{VcsType: source.VcsType, Url: w.SourceURL}
+	}
 	// The Source row shows a pull request's title and link over the commit's,
-	// so a title flag replaces both titles. A flag URL names another change:
-	// neither the detected SHA nor the detected pull request matches it.
+	// so a title flag replaces both titles.
 	if w.SourceTitle != "" {
 		source.CommitTitle = w.SourceTitle
 		if source.PullRequest != nil {
 			source.PullRequest.Title = w.SourceTitle
 		}
-	}
-	if w.SourceURL != "" {
-		source.Url = w.SourceURL
-		source.CommitSha = ""
-		source.PullRequest = nil
 	}
 	if w.SourceAuthor != "" {
 		source.AuthorName = w.SourceAuthor
