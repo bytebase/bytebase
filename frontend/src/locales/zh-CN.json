@@ -1987,6 +1987,28 @@
   "plan": {
     "add-spec": "添加变更",
     "add-spec-pending-draft": "请先保存或放弃当前的待处理变更，然后再添加新变更",
+    "affected-rows": {
+      "details": "详情",
+      "estimate": "估算",
+      "estimated": "已估算",
+      "estimated-on_one": "已在 {{count}} 个数据库上估算",
+      "estimated-on_other": "已在 {{count}} 个数据库上估算",
+      "explanation": "统计 UPDATE、DELETE 和 INSERT ... SELECT 修改的行数（对抽样语句执行 EXPLAIN 估算），加上 INSERT ... VALUES 插入的行数，以及 DDL 语句所修改的每张表的行数。审批规则按数据库读取这个数字。",
+      "filter": "显示的数据库",
+      "filter-all": "全部 {{n}}",
+      "filter-incomplete": "不完整 {{n}}",
+      "go-to-line": "跳到第 {{line}} 行",
+      "incomplete": "不完整",
+      "incomplete-on_one": "{{count}} 个不完整",
+      "incomplete-on_other": "{{count}} 个不完整",
+      "n-databases_one": "{{count}} 个数据库",
+      "n-databases_other": "{{count}} 个数据库",
+      "not-estimated": "未估算",
+      "on": "{{database}} 上 {{rows}} 行",
+      "rerun": "重新运行",
+      "self": "影响行数",
+      "up-to-on": "最多 {{database}} 上 {{rows}} 行"
+    },
     "ai-review": {
       "failed-to-run": "无法启动 AI 审核",
       "run": "运行 AI 审核",
@@ -2019,7 +2041,6 @@
       "passed-on_other": "在 {{count}} 个数据库上通过",
       "policy": "审核策略",
       "project-rules": "项目规则：开启 {{on}}/{{total}} 条",
-      "report": "语句报告",
       "rerun": "重新运行",
       "rerun-all": "全部重新运行",
       "retry": "重试",
@@ -2063,6 +2084,7 @@
       "reviewer-outdated": "{{reviewer}} 运行后 SQL 已变更",
       "reviewer-running": "{{reviewer}} 运行中",
       "show": "查看",
+      "statement-error": "SQL 有语法错误",
       "submit": "提交审核",
       "waiting-on": "正在等待",
       "worth-a-look": "不会挡住发布，但值得看一下"
@@ -2317,10 +2339,6 @@
       "close-review-confirm": "确认关闭这个审批？",
       "reopen-confirm": "确认重新打开这个计划？",
       "reopen-review-confirm": "确认重新打开这个审批？"
-    },
-    "statement-summary": {
-      "affected-rows_one": "约影响 {{count}} 行",
-      "affected-rows_other": "约影响 {{count}} 行"
     },
     "status-scope": {
       "description": "按计划中任务的当前状态筛选",

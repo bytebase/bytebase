@@ -683,6 +683,15 @@ export declare type PlanCheckRun_Result = Message<"bytebase.v1.PlanCheckRun.Resu
   type: PlanCheckRun_Result_Type;
 
   /**
+   * The content hash of the SQL sheet the result checked, which tells apart
+   * the plan's changes that target the same database. Empty for a result
+   * stored before it was recorded.
+   *
+   * @generated from field: string sheet_sha256 = 9;
+   */
+  sheetSha256: string;
+
+  /**
    * @generated from oneof bytebase.v1.PlanCheckRun.Result.report
    */
   report: {

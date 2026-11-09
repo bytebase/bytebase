@@ -10046,6 +10046,15 @@ Format: instances/{instance}/databases/{database} or projects/{project}/instance
                 </tr>
               
                 <tr>
+                  <td>sheet_sha256</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The content hash of the SQL sheet the result checked, which tells apart
+the plan&#39;s changes that target the same database. Empty for a result
+stored before it was recorded. </p></td>
+                </tr>
+              
+                <tr>
                   <td>sql_summary_report</td>
                   <td><a href="#bytebase.v1.PlanCheckRun.Result.SqlSummaryReport">PlanCheckRun.Result.SqlSummaryReport</a></td>
                   <td></td>

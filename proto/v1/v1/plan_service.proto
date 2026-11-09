@@ -403,6 +403,10 @@ message PlanCheckRun {
     // Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
     string target = 7;
     Type type = 8;
+    // The content hash of the SQL sheet the result checked, which tells apart
+    // the plan's changes that target the same database. Empty for a result
+    // stored before it was recorded.
+    string sheet_sha256 = 9;
 
     enum Type {
       TYPE_UNSPECIFIED = 0;

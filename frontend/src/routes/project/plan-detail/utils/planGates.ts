@@ -23,15 +23,9 @@ import {
 } from "@/types/proto-es/v1/plan_service_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 
-export type AutomatedReviewer =
-  | "rule"
-  | "ai"
-  | "policy"
-  | "ghost"
-  | "report"
-  | "checks";
+export type AutomatedReviewer = "rule" | "ai" | "policy" | "ghost" | "checks";
 
-export type PlanCheckReviewer = "policy" | "ghost" | "report";
+export type PlanCheckReviewer = "policy" | "ghost";
 
 // One conclusion per reviewer. "passed" is a run with no findings;
 // "resolved" a run whose findings people have all resolved.
@@ -86,6 +80,7 @@ export type PlanGate =
   | { kind: "submit" }
   | { kind: "approval"; rejected: boolean; role?: string }
   | { kind: "review"; row: AutomatedReviewRow }
+  | { kind: "statement-error" }
   | { kind: "discussion"; open: number };
 
 export const findingPriority = (
@@ -267,14 +262,13 @@ export function aiReviewRow(input: {
 const PLAN_CHECK_TYPE: Record<PlanCheckReviewer, PlanCheckRun_Result_Type> = {
   policy: PlanCheckRun_Result_Type.STATEMENT_ADVISE,
   ghost: PlanCheckRun_Result_Type.GHOST_SYNC,
-  report: PlanCheckRun_Result_Type.STATEMENT_SUMMARY_REPORT,
 };
 
 // A plan check type's row, from its results: the V1 SQL review on engines the
-// standard rules do not cover, the gh-ost dry run, or the statement report.
-// The server creates no rollout while any result is an ERROR. A report that
-// passes describes the statement rather than judging it, so it has no row.
-// Undefined without a result to show.
+// standard rules do not cover, or the gh-ost dry run. The server creates no
+// rollout while any result is an ERROR. The statement report describes the
+// SQL rather than judging it, so it has no row: its estimate, and any error,
+// show beside the SQL. Undefined without a result to show.
 export function planCheckRow(
   reviewer: PlanCheckReviewer,
   runs: readonly PlanCheckRun[]
@@ -290,7 +284,6 @@ export function planCheckRow(
     (result) => result.status === Advice_Level.WARNING
   ).length;
   if (results.length === 0) return undefined;
-  if (reviewer === "report" && errors === 0 && warnings === 0) return undefined;
   const conclusion: ReviewConclusion = errors > 0 ? "open" : "passed";
   return {
     reviewer,
@@ -302,6 +295,17 @@ export function planCheckRow(
     warnings,
   };
 }
+
+// The statement report fails only on a syntax error. It has no reviewer row,
+// but the server creates no rollout while any plan check result is an ERROR.
+export const statementReportFails = (runs: readonly PlanCheckRun[]): boolean =>
+  runs.some((run) =>
+    run.results.some(
+      (result) =>
+        result.type === PlanCheckRun_Result_Type.STATEMENT_SUMMARY_REPORT &&
+        result.status === Advice_Level.ERROR
+    )
+  );
 
 // The plan check run while it has no results to show: queued, running, or
 // stopped before producing any, as when its targets cannot be derived. The
@@ -353,6 +357,7 @@ export function computePlanGates(input: {
   >;
   currentApprovalRole?: string;
   rows: readonly AutomatedReviewRow[];
+  statementError?: boolean;
   openDiscussions: number;
 }): PlanGate[] {
   const { issue } = input;
@@ -370,6 +375,7 @@ export function computePlanGates(input: {
   for (const row of input.rows) {
     if (row.holdsRollout) gates.push({ kind: "review", row });
   }
+  if (input.statementError) gates.push({ kind: "statement-error" });
   if (input.openDiscussions > 0) {
     gates.push({ kind: "discussion", open: input.openDiscussions });
   }

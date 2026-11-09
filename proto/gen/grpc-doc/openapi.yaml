@@ -25638,6 +25638,13 @@ components:
           allOf:
             - $ref: '#/components/schemas/bytebase.v1.PlanCheckRun.Result.Type'
           title: type
+        sheetSha256:
+          type: string
+          title: sheet_sha256
+          description: |-
+            The content hash of the SQL sheet the result checked, which tells apart
+             the plan's changes that target the same database. Empty for a result
+             stored before it was recorded.
       title: Result
     bytebase.v1.PlanCheckRun.Result.SqlReviewReport:
       type: object

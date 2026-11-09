@@ -3242,6 +3242,7 @@ For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; create_time &
 | code | [int32](#int32) |  |  |
 | target | [string](#string) |  | Target identification for consolidated results. Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database} |
 | type | [PlanCheckRun.Result.Type](#bytebase-v1-PlanCheckRun-Result-Type) |  |  |
+| sheet_sha256 | [string](#string) |  | The content hash of the SQL sheet the result checked, which tells apart the plan&#39;s changes that target the same database. Empty for a result stored before it was recorded. |
 | sql_summary_report | [PlanCheckRun.Result.SqlSummaryReport](#bytebase-v1-PlanCheckRun-Result-SqlSummaryReport) |  |  |
 | sql_review_report | [PlanCheckRun.Result.SqlReviewReport](#bytebase-v1-PlanCheckRun-Result-SqlReviewReport) |  |  |
 

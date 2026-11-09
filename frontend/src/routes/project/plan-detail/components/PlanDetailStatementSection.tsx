@@ -80,6 +80,7 @@ import {
 } from "@/utils/v1/sheet";
 import { usePlanDetailStore } from "../shared/stores/usePlanDetailStore";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
+import { affectedRowsSummary } from "../utils/affectedRows";
 import {
   createEmptyLocalSheet,
   getLocalSheetByName,
@@ -87,7 +88,7 @@ import {
   setLocalSheetStatement,
 } from "../utils/localSheet";
 import { getSQLAdviceMarkers } from "../utils/sqlAdvice";
-import { statementSummary } from "../utils/statementSummary";
+import { AffectedRowsStrip } from "./AffectedRowsStrip";
 import { SchemaEditorSheet } from "./SchemaEditorSheet";
 import { StatementThreadsLayer } from "./threads/StatementThreadsLayer";
 import {
@@ -252,24 +253,13 @@ export function PlanDetailStatementSection({
     () => getSQLAdviceMarkers(planCheckRuns),
     [planCheckRuns]
   );
-  // Under SQL Review V2 the summary report is not a check; it describes the
-  // statement here.
-  const summary = useMemo(
-    () => (sqlReviewV2Enabled() ? statementSummary(planCheckRuns) : undefined),
+  // Under SQL Review V2 the statement report is not a check; its estimate
+  // sits under the SQL it describes.
+  const affectedRows = useMemo(
+    () =>
+      sqlReviewV2Enabled() ? affectedRowsSummary(planCheckRuns) : undefined,
     [planCheckRuns]
   );
-  const summaryText = summary
-    ? [
-        summary.types.join(", "),
-        summary.affectedRows > 0n
-          ? t("plan.statement-summary.affected-rows", {
-              count: Number(summary.affectedRows),
-            })
-          : "",
-      ]
-        .filter(Boolean)
-        .join(" · ")
-    : "";
 
   useEffect(() => {
     if (!isEditing) {
@@ -684,6 +674,7 @@ export function PlanDetailStatementSection({
   const threadsEnabled = Boolean(
     issue && !page.isCreating && !isPendingDraft && sheetSha256
   );
+  const showsAffectedRows = Boolean(affectedRows) && !isEditing && !isEmpty;
 
   return (
     <div className={cn("flex flex-col gap-y-1", className)}>
@@ -696,14 +687,6 @@ export function PlanDetailStatementSection({
         >
           <span>{statementTitle}</span>
           {isEmpty && <span className="text-error">*</span>}
-          {summaryText && !isEmpty && (
-            <span
-              className="ml-2 text-xs font-normal normal-case text-control-light"
-              data-testid="statement-summary"
-            >
-              {summaryText}
-            </span>
-          )}
         </div>
         <Input
           ref={inputRef}
@@ -813,52 +796,73 @@ export function PlanDetailStatementSection({
           {t("common.loading")}
         </div>
       ) : isEditing || showsReadonlyEditor ? (
-        <div className="relative overflow-hidden rounded-sm border border-control-border">
-          {isEditing ? (
-            <MonacoEditor
-              advices={page.isCreating ? markers : []}
-              autoCompleteContext={autoCompleteContext}
-              className="relative h-auto max-h-[600px] min-h-[120px]"
-              content={editorContent}
-              language={language}
-              options={STATEMENT_EDITOR_OPTIONS}
-              onReady={(_monaco, editor) => setEditingEditor(editor)}
-              onChange={(nextStatement) => {
-                if (page.isCreating) {
-                  updateLocalStatement(nextStatement);
-                  return;
-                }
-                setDraftStatement(nextStatement);
-              }}
-            />
-          ) : (
-            <>
-              <ReadonlyMonaco
-                advices={markers}
+        <div className="flex flex-col">
+          <div
+            className={cn(
+              "relative overflow-hidden rounded-sm border border-control-border",
+              showsAffectedRows && "rounded-b-none"
+            )}
+          >
+            {isEditing ? (
+              <MonacoEditor
+                advices={page.isCreating ? markers : []}
+                autoCompleteContext={autoCompleteContext}
                 className="relative h-auto max-h-[600px] min-h-[120px]"
-                content={statement}
+                content={editorContent}
                 language={language}
-                onReady={(monaco, editor) =>
-                  setReadonlyEditor({ editor, monaco })
-                }
-                options={
-                  threadsEnabled
-                    ? THREADS_EDITOR_OPTIONS
-                    : STATEMENT_EDITOR_OPTIONS
-                }
+                options={STATEMENT_EDITOR_OPTIONS}
+                onReady={(_monaco, editor) => setEditingEditor(editor)}
+                onChange={(nextStatement) => {
+                  if (page.isCreating) {
+                    updateLocalStatement(nextStatement);
+                    return;
+                  }
+                  setDraftStatement(nextStatement);
+                }}
               />
-              {threadsEnabled && issue && sheetSha256 && readonlyEditor && (
-                <StatementThreadsLayer
-                  editor={readonlyEditor.editor}
-                  issue={issue}
-                  key={sheetSha256}
-                  monaco={readonlyEditor.monaco}
-                  previewEndLine={previewEndLine}
-                  sheetSha256={sheetSha256}
-                  spec={spec}
+            ) : (
+              <>
+                <ReadonlyMonaco
+                  advices={markers}
+                  className="relative h-auto max-h-[600px] min-h-[120px]"
+                  content={statement}
+                  language={language}
+                  onReady={(monaco, editor) =>
+                    setReadonlyEditor({ editor, monaco })
+                  }
+                  options={
+                    threadsEnabled
+                      ? THREADS_EDITOR_OPTIONS
+                      : STATEMENT_EDITOR_OPTIONS
+                  }
                 />
-              )}
-            </>
+                {threadsEnabled && issue && sheetSha256 && readonlyEditor && (
+                  <StatementThreadsLayer
+                    editor={readonlyEditor.editor}
+                    issue={issue}
+                    key={sheetSha256}
+                    monaco={readonlyEditor.monaco}
+                    previewEndLine={previewEndLine}
+                    sheetSha256={sheetSha256}
+                    spec={spec}
+                  />
+                )}
+              </>
+            )}
+          </div>
+          {showsAffectedRows && affectedRows && (
+            <AffectedRowsStrip
+              onGoToLine={
+                readonlyEditor
+                  ? (line) =>
+                      focusEditorAtAnchor(
+                        readonlyEditor.editor,
+                        lineViewAnchor(line)
+                      )
+                  : undefined
+              }
+              summary={affectedRows}
+            />
           )}
         </div>
       ) : (

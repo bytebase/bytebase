@@ -1987,6 +1987,28 @@
   "plan": {
     "add-spec": "Add Change",
     "add-spec-pending-draft": "Save or discard the pending change before adding another",
+    "affected-rows": {
+      "details": "Details",
+      "estimate": "Estimate",
+      "estimated": "Estimated",
+      "estimated-on_one": "Estimated on {{count}} database",
+      "estimated-on_other": "Estimated on {{count}} databases",
+      "explanation": "Counts the rows that UPDATE, DELETE, and INSERT ... SELECT change, estimated with EXPLAIN on sample statements, plus the rows that INSERT ... VALUES adds and the row count of each table a DDL statement changes. Approval rules read this number for each database.",
+      "filter": "Databases to show",
+      "filter-all": "All {{n}}",
+      "filter-incomplete": "Incomplete {{n}}",
+      "go-to-line": "Go to line {{line}}",
+      "incomplete": "Incomplete",
+      "incomplete-on_one": "Incomplete on {{count}}",
+      "incomplete-on_other": "Incomplete on {{count}}",
+      "n-databases_one": "{{count}} database",
+      "n-databases_other": "{{count}} databases",
+      "not-estimated": "Not estimated",
+      "on": "{{rows}} on {{database}}",
+      "rerun": "Rerun",
+      "self": "Affected rows",
+      "up-to-on": "up to {{rows}} on {{database}}"
+    },
     "ai-review": {
       "failed-to-run": "Could not start the AI review",
       "run": "Run AI review",
@@ -2019,7 +2041,6 @@
       "passed-on_other": "Passed on {{count}} databases",
       "policy": "Review policy",
       "project-rules": "Project rules: {{on}} of {{total}} on",
-      "report": "Statement report",
       "rerun": "Rerun",
       "rerun-all": "Re-run all",
       "retry": "Retry",
@@ -2063,6 +2084,7 @@
       "reviewer-outdated": "SQL changed after {{reviewer}} ran",
       "reviewer-running": "{{reviewer}} is running",
       "show": "Show",
+      "statement-error": "The SQL has a syntax error",
       "submit": "Submit for review",
       "waiting-on": "Waiting on",
       "worth-a-look": "Does not hold the rollout, but worth a look"
@@ -2317,10 +2339,6 @@
       "close-review-confirm": "Close this review?",
       "reopen-confirm": "Reopen this plan?",
       "reopen-review-confirm": "Reopen this review?"
-    },
-    "statement-summary": {
-      "affected-rows_one": "~{{count}} row affected",
-      "affected-rows_other": "~{{count}} rows affected"
     },
     "status-scope": {
       "description": "Filter by the current status of the plan's tasks",

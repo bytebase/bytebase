@@ -34,6 +34,7 @@ import {
   rowNeedsAttention,
   ruleReviewApplies,
   ruleReviewRow,
+  statementReportFails,
 } from "./planGates";
 
 const finding = (
@@ -298,31 +299,37 @@ describe("planCheckRow", () => {
   });
 });
 
-describe("statement report and run rows", () => {
-  test("a report that fails holds the rollout; one that passes has no row", () => {
-    const report = (level: Advice_Level) =>
-      create(PlanCheckRunSchema, {
-        status: PlanCheckRun_Status.DONE,
-        results: [
-          create(PlanCheckRun_ResultSchema, {
-            type: PlanCheckRun_Result_Type.STATEMENT_SUMMARY_REPORT,
-            status: level,
-            target: "db1",
-          }),
-        ],
-      });
-    const failing = planCheckRow("report", [report(Advice_Level.ERROR)]);
-    expect(failing?.conclusion).toBe("open");
-    expect(failing?.holdsRollout).toBe(true);
-    expect(failing?.findings.p0).toBe(1);
-    expect(
-      planCheckRow("report", [report(Advice_Level.SUCCESS)])
-    ).toBeUndefined();
-    expect(
-      planCheckRow("report", [report(Advice_Level.WARNING)])?.holdsRollout
-    ).toBe(false);
-  });
+describe("statement report", () => {
+  const report = (level: Advice_Level) =>
+    create(PlanCheckRunSchema, {
+      status: PlanCheckRun_Status.DONE,
+      results: [
+        create(PlanCheckRun_ResultSchema, {
+          type: PlanCheckRun_Result_Type.STATEMENT_SUMMARY_REPORT,
+          status: level,
+          target: "db1",
+        }),
+      ],
+    });
 
+  test("fails only on an ERROR, which still holds the rollout without a row", () => {
+    expect(statementReportFails([report(Advice_Level.ERROR)])).toBe(true);
+    expect(statementReportFails([report(Advice_Level.WARNING)])).toBe(false);
+    expect(
+      computePlanGates({
+        issue: create(IssueSchema, {
+          status: IssueStatus.OPEN,
+          approvalStatus: ApprovalStatus.SKIPPED,
+        }),
+        rows: [],
+        statementError: true,
+        openDiscussions: 0,
+      })
+    ).toEqual([{ kind: "statement-error" }]);
+  });
+});
+
+describe("run rows", () => {
   test.each([
     [PlanCheckRun_Status.FAILED, "failed"],
     [PlanCheckRun_Status.CANCELED, "failed"],

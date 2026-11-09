@@ -151,6 +151,11 @@ function GateLine({ gate }: { gate: PlanGate }) {
       };
       break;
     }
+    case "statement-error":
+      icon = <CircleAlert className="size-4 text-error" />;
+      label = t("plan.deploy-waiting.statement-error");
+      onShow = () => focusPlanPhase("changes", page.expandPhase);
+      break;
     case "discussion":
       icon = <MessagesSquare className="size-4 text-warning" />;
       label = t("plan.deploy-waiting.open-discussions", { count: gate.open });
