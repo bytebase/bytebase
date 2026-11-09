@@ -195,9 +195,9 @@ test("builds semantic type choices from current settings rather than model optio
   expect(result.kind).toBe("ask_user");
   if (result.kind !== "ask_user") return;
   expect(result.ask.options?.map((option) => option.value)).toEqual([
-    "bb.default",
-    "bb.default-partial",
-    "create-semantic-type",
+    "semantic-type:bb.default",
+    "semantic-type:bb.default-partial",
+    "action:create-semantic-type",
   ]);
   expect(result.ask.defaultValue).toBeUndefined();
   expect(

@@ -91,14 +91,51 @@ test("lists all types including duplicate titles/configurations, with creation l
   const choices = await getMaskingSemanticTypeChoices(context);
   expect(choices).toHaveLength(113);
   expect(choices.slice(0, 2).map((option) => option.value)).toEqual([
-    "bb.default",
-    "bb.default-partial",
+    "semantic-type:bb.default",
+    "semantic-type:bb.default-partial",
   ]);
-  expect(choices[111].value).toBe("custom-109");
-  expect(choices.at(-1)?.value).toBe("create-semantic-type");
+  expect(choices[111].value).toBe("semantic-type:custom-109");
+  expect(choices.at(-1)?.value).toBe("action:create-semantic-type");
   expect(choices[2].label).not.toBe(choices[3].label);
   expect(JSON.stringify(choices)).not.toContain("must-not-leak");
 });
+test.each(["allowed", "denied", "unknown"])(
+  "keeps action-like type IDs selectable with %s configure access",
+  async (status) => {
+    const state = setup();
+    state.steps[0].configure.status = status;
+    mocks.setup.mockResolvedValue(state);
+    mocks.setting.mockResolvedValue(
+      create(SettingSchema, {
+        value: {
+          value: {
+            case: "semanticType",
+            value: {
+              types: [
+                { id: "create-semantic-type", title: "Email" },
+                { id: "action:create-semantic-type", title: "Name" },
+                { id: "semantic-type:custom-email", title: "Phone" },
+              ],
+            },
+          },
+        },
+      })
+    );
+
+    const choices = await getMaskingSemanticTypeChoices(context);
+    const values = choices.map((option) => option.value);
+    expect(values).toEqual([
+      "semantic-type:bb.default",
+      "semantic-type:bb.default-partial",
+      "semantic-type:create-semantic-type",
+      "semantic-type:action:create-semantic-type",
+      "semantic-type:semantic-type:custom-email",
+      ...(status === "allowed" ? ["action:create-semantic-type"] : []),
+    ]);
+    expect(new Set(values).size).toBe(choices.length);
+    expect(choices[2].label).toBe("Email (create-semantic-type)");
+  }
+);
 test.each(["denied", "unknown"])(
   "does not offer creation with %s configure access",
   async (status) => {
@@ -109,7 +146,7 @@ test.each(["denied", "unknown"])(
       (await getMaskingSemanticTypeChoices(context)).map(
         (option) => option.value
       )
-    ).toEqual(["bb.default", "bb.default-partial"]);
+    ).toEqual(["semantic-type:bb.default", "semantic-type:bb.default-partial"]);
   }
 );
 test.each(["denied", "unknown"])(

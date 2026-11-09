@@ -1028,7 +1028,7 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
     {
       name: "ask_masking_semantic_type",
       description:
-        "Ask which semantic type should mask the confirmed columns. No arguments: runtime reads fresh settings and permissions and supplies ALL built-in and custom types, including duplicate names or algorithms, without ranking or deduplication. Create a custom masking type is included only when read/configure permissions and feature availability are verified. Options are unselected. Values are exact type IDs or create-semantic-type. Do not substitute a generic full/partial ask_user question. A selection is not permission to open or save a form.",
+        "Ask which semantic type should mask the confirmed columns. No arguments: runtime reads fresh settings and permissions and supplies ALL built-in and custom types, including duplicate names or algorithms, without ranking or deduplication. Create a custom masking type is included only when read/configure permissions and feature availability are verified. Options are unselected. Existing type values are semantic-type:<exactTypeId>: remove exactly one semantic-type: prefix before passing the ID to get_masking_overview or a rule draft. The distinct action:create-semantic-type value requests creation. Do not substitute a generic full/partial ask_user question. A selection is not permission to open or save a form.",
       parametersSchema: {
         type: "object",
         properties: {},
@@ -1162,7 +1162,6 @@ interface CreateToolExecutorOptions {
   context?: string;
   workspaceName?: string;
   referencedProject?: string;
-  databaseChoiceProject?: string;
   pagePath?: string;
   referencedDatabase?: string;
   historicalDatabase?: { database: string; project?: string };
@@ -1251,14 +1250,6 @@ export function createToolExecutor(
       ? options.referencedPlan
       : undefined;
   const projectName = referencedProject ?? options.context;
-  // A resumed masking choice scopes its picker, not the chat's other tools.
-  const databaseChoiceProject = isCanonicalProjectName(projectName)
-    ? projectName
-    : /^projects\/(?!-$)[A-Za-z0-9_-]+$/.test(
-          options.databaseChoiceProject ?? ""
-        )
-      ? options.databaseChoiceProject
-      : undefined;
   const navigateTool = createNavigateTool(router);
   const pageStateTool = createPageStateTool(router);
   const domActionTool = createDomActionTool(router, options.canUseCurrentPage);
@@ -1913,8 +1904,8 @@ export function createToolExecutor(
           args.defaultValue !== undefined
         ) {
           if (
-            !isCanonicalProjectName(databaseChoiceProject) ||
-            databaseChoiceProject === "projects/-" ||
+            !isCanonicalProjectName(projectName) ||
+            projectName === "projects/-" ||
             !options.workspaceName ||
             options.workspaceName === "workspaces/-"
           ) {
@@ -1927,7 +1918,7 @@ export function createToolExecutor(
               ? await validateResourceChoices(
                   "database",
                   [args.defaultValue],
-                  databaseChoiceProject,
+                  projectName,
                   options.workspaceName
                 )
               : undefined;
@@ -1940,7 +1931,7 @@ export function createToolExecutor(
           return parseAskUserArgs(args, toolCallId, {
             kind: "database",
             name: database.value,
-            project: databaseChoiceProject,
+            project: projectName,
             label: database.label,
           });
         }
@@ -1958,7 +1949,7 @@ export function createToolExecutor(
         }
         if (
           args.resourceKind === "database" &&
-          !isCanonicalProjectName(databaseChoiceProject)
+          !isCanonicalProjectName(projectName)
         ) {
           return toToolResult(
             'Error: A Project is required to verify database choices. Ask the member which Project first. If these options are ordinary preferences rather than databases, retry kind="choose" with resourceKind="none" instead.'
@@ -1980,7 +1971,7 @@ export function createToolExecutor(
         const verified = await validateResourceChoices(
           args.resourceKind,
           values as string[],
-          databaseChoiceProject,
+          projectName,
           options.workspaceName
         );
         if (!verified) {

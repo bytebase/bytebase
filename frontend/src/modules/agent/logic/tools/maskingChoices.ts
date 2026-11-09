@@ -62,19 +62,19 @@ export async function getMaskingSemanticTypeChoices(
   );
   const seen = new Set<string>();
   const choices = types.map((type) => {
-    if (!type.id || type.id === "create-semantic-type" || seen.has(type.id))
+    if (!type.id || seen.has(type.id))
       throw new Error("The semantic type IDs are invalid or ambiguous.");
     seen.add(type.id);
     return {
       label: `${type.title || type.id} (${type.id})`,
-      value: type.id,
+      value: `semantic-type:${type.id}`,
       ...(type.description ? { description: type.description } : {}),
     };
   });
   if (step?.configure.status === "allowed")
     choices.push({
       label: i18n.t("agent.masking.semantic-type-choice.create"),
-      value: "create-semantic-type",
+      value: "action:create-semantic-type",
       description: i18n.t(
         "agent.masking.semantic-type-choice.create-description"
       ),

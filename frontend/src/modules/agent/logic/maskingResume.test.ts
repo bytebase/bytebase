@@ -108,20 +108,24 @@ describe("getMaskingResumeArgs", () => {
     }
   );
 
-  test.each(["bb.default", "custom-email", "create-semantic-type"])(
-    "refreshes current eligibility after semantic type choice %s",
-    (value) => {
-      const messages = exemptionScopeTurn(
-        { kind: "choose", answer: "Selected method", value },
-        { askArgs: {} }
-      );
-      messages[3].toolCalls![0].name = "ask_masking_semantic_type";
-      expect(getMaskingResumeArgs(messages)).toEqual({
-        project: "projects/orders",
-        database: "instances/prod/databases/orders",
-      });
-    }
-  );
+  test.each([
+    "bb.default",
+    "custom-email",
+    "create-semantic-type",
+    "semantic-type:bb.default",
+    "semantic-type:create-semantic-type",
+    "action:create-semantic-type",
+  ])("refreshes current eligibility after semantic type choice %s", (value) => {
+    const messages = exemptionScopeTurn(
+      { kind: "choose", answer: "Selected method", value },
+      { askArgs: {} }
+    );
+    messages[3].toolCalls![0].name = "ask_masking_semantic_type";
+    expect(getMaskingResumeArgs(messages)).toEqual({
+      project: "projects/orders",
+      database: "instances/prod/databases/orders",
+    });
+  });
 
   test.each([
     "orders",
