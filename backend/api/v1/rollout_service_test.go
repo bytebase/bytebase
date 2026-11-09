@@ -177,6 +177,44 @@ const releaseStateFixtureSQL = `
 		 '{"type":"VERSIONED","files":[{"path":"001_init.sql","version":"001"}]}', TRUE);
 `
 
+type versionedReleaseGetter struct{}
+
+func (versionedReleaseGetter) GetRelease(context.Context, *store.FindReleaseMessage) (*store.ReleaseMessage, error) {
+	return &store.ReleaseMessage{Payload: &storepb.ReleasePayload{
+		Type:  storepb.SchemaChangeType_VERSIONED,
+		Files: []*storepb.ReleasePayload_File{{Version: "001"}},
+	}}, nil
+}
+
+// failingPendingLister fails on instance-b and finds everything applied
+// elsewhere.
+type failingPendingLister struct{}
+
+func (failingPendingLister) ListPendingReleaseVersions(_ context.Context, instanceID string, _, _ []string) ([]*store.PendingReleaseVersion, error) {
+	if instanceID == "instance-b" {
+		return nil, errors.New("connection reset")
+	}
+	return nil, nil
+}
+
+// The state is a preview: a failed read leaves that release's tasks without
+// one, and the other release's tasks keep theirs.
+func TestReleaseStateReadFailureLeavesOnlyThatReleaseWithoutState(t *testing.T) {
+	taskOf := func(instanceID, release string) *store.TaskMessage {
+		db := "db1"
+		return &store.TaskMessage{
+			InstanceID:   instanceID,
+			DatabaseName: &db,
+			Payload:      &storepb.Task{Source: &storepb.Task_Release{Release: release}},
+		}
+	}
+	ok := taskOf("instance-a", "projects/project-a/releases/r1")
+	failed := taskOf("instance-b", "projects/project-a/releases/r2")
+	attachReleaseStates(context.Background(), versionedReleaseGetter{}, failingPendingLister{}, []*store.TaskMessage{failed, ok})
+	require.Equal(t, int32(1), ok.Payload.GetReleaseState().GetAppliedCount())
+	require.Nil(t, failed.Payload.GetReleaseState())
+}
+
 func TestRolloutCreationStoresReleaseState(t *testing.T) {
 	t.Parallel()
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -200,6 +238,11 @@ func TestRolloutCreationStoresReleaseState(t *testing.T) {
 		}, "project-a")
 	require.NoError(t, err)
 	require.Len(t, tasks, 4)
+	// The builder runs for every stage; only the tasks being created are read.
+	for _, task := range tasks {
+		require.Nil(t, task.Payload.GetReleaseState())
+	}
+	attachReleaseStates(ctx, s, s, tasks)
 
 	stateOf := map[string]*storepb.Task_ReleaseState{}
 	for _, task := range tasks {
@@ -280,6 +323,7 @@ func TestRolloutCreationStoresReleaseState(t *testing.T) {
 		}, "project-a")
 	require.NoError(t, err)
 	require.Len(t, declarative, 1)
+	attachReleaseStates(ctx, s, s, declarative)
 	require.Nil(t, declarative[0].Payload.GetReleaseState())
 	declarative[0].ProjectID, declarative[0].PlanID, declarative[0].ID = "project-a", 102, 103
 	v1Declarative, err := convertToTask(&store.ProjectMessage{ResourceID: "project-a"}, declarative[0])
@@ -296,5 +340,6 @@ func TestRolloutCreationStoresReleaseState(t *testing.T) {
 		}, "project-a")
 	require.NoError(t, err)
 	require.Len(t, missing, 1)
+	attachReleaseStates(ctx, s, s, missing)
 	require.Nil(t, missing[0].Payload.GetReleaseState())
 }

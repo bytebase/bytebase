@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -10,6 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/ghost"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -204,22 +206,6 @@ func getTaskCreatesFromChangeDatabaseConfig(
 		}
 	}
 
-	var versionedRelease *store.ReleaseMessage
-	if c.Release != "" {
-		versionedRelease, err = getVersionedRelease(ctx, s, c.Release)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	var releaseStates map[string]*storepb.Task_ReleaseState
-	if versionedRelease != nil {
-		releaseStates, err = computeReleaseStates(ctx, s, versionedRelease, databases)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	var tasks []*store.TaskMessage
 	for _, database := range databases {
 		if database.EffectiveEnvironmentID == nil {
@@ -240,9 +226,6 @@ func getTaskCreatesFromChangeDatabaseConfig(
 		if c.Release != "" {
 			payload.Source = &storepb.Task_Release{
 				Release: c.Release,
-			}
-			if versionedRelease != nil {
-				payload.ReleaseState = releaseStates[releaseStateKey(database)]
 			}
 		} else {
 			payload.Source = &storepb.Task_SheetSha256{
@@ -267,10 +250,60 @@ func getTaskCreatesFromChangeDatabaseConfig(
 	return tasks, nil
 }
 
+// releaseGetter is the store read that resolves a task's release.
+type releaseGetter interface {
+	GetRelease(ctx context.Context, find *store.FindReleaseMessage) (*store.ReleaseMessage, error)
+}
+
+// attachReleaseStates fills the stored release state (D4) of the
+// release-backed tasks about to be created, after the stage filter, so a
+// promotion reads only its stage's targets. A failed read is logged and leaves
+// those tasks without a state: the state is a preview, and rollout creation
+// does not fail for it.
+func attachReleaseStates(ctx context.Context, releases releaseGetter, lister pendingVersionLister, tasks []*store.TaskMessage) {
+	var names []string
+	tasksOf := map[string][]*store.TaskMessage{}
+	for _, task := range tasks {
+		name := task.Payload.GetRelease()
+		if name == "" || task.DatabaseName == nil {
+			continue
+		}
+		if _, ok := tasksOf[name]; !ok {
+			names = append(names, name)
+		}
+		tasksOf[name] = append(tasksOf[name], task)
+	}
+	for _, name := range names {
+		if err := attachReleaseState(ctx, releases, lister, name, tasksOf[name]); err != nil {
+			slog.WarnContext(ctx, "failed to compute the release state; creating the tasks without it",
+				slog.String("release", name), log.BBError(err))
+		}
+	}
+}
+
+func attachReleaseState(ctx context.Context, releases releaseGetter, lister pendingVersionLister, releaseName string, tasks []*store.TaskMessage) error {
+	release, err := getVersionedRelease(ctx, releases, releaseName)
+	if err != nil || release == nil {
+		return err
+	}
+	databases := make([]*store.DatabaseMessage, 0, len(tasks))
+	for _, task := range tasks {
+		databases = append(databases, &store.DatabaseMessage{InstanceID: task.InstanceID, DatabaseName: *task.DatabaseName})
+	}
+	states, err := computeReleaseStates(ctx, lister, release, databases)
+	if err != nil {
+		return err
+	}
+	for i, task := range tasks {
+		task.Payload.ReleaseState = states[releaseStateKey(databases[i])]
+	}
+	return nil
+}
+
 // getVersionedRelease returns the release, or nil when it has no state to
 // store: a declarative run computes its diff when it runs, and a deleted
 // release fails its run.
-func getVersionedRelease(ctx context.Context, s *store.Store, releaseName string) (*store.ReleaseMessage, error) {
+func getVersionedRelease(ctx context.Context, s releaseGetter, releaseName string) (*store.ReleaseMessage, error) {
 	projectID, releaseID, err := common.GetProjectReleaseID(releaseName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse release name %q", releaseName)
