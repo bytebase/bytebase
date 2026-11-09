@@ -2084,6 +2084,7 @@
       "reviewer-outdated": "SQL changed after {{reviewer}} ran",
       "reviewer-running": "{{reviewer}} is running",
       "show": "Show",
+      "statement-error": "The SQL has a syntax error",
       "submit": "Submit for review",
       "waiting-on": "Waiting on",
       "worth-a-look": "Does not hold the rollout, but worth a look"

@@ -2084,6 +2084,7 @@
       "reviewer-outdated": "El SQL cambió después de ejecutar {{reviewer}}",
       "reviewer-running": "{{reviewer}} en ejecución",
       "show": "Mostrar",
+      "statement-error": "El SQL tiene un error de sintaxis",
       "submit": "Enviar a revisión",
       "waiting-on": "En espera de",
       "worth-a-look": "No detiene el despliegue, pero conviene revisarlo"

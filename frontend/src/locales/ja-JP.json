@@ -2084,6 +2084,7 @@
       "reviewer-outdated": "{{reviewer}} の実行後に SQL が変更されました",
       "reviewer-running": "{{reviewer}} を実行中",
       "show": "表示",
+      "statement-error": "SQL に構文エラーがあります",
       "submit": "レビューに提出",
       "waiting-on": "待機中の項目",
       "worth-a-look": "ロールアウトは止めませんが、確認をおすすめします"

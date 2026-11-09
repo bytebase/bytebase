@@ -80,6 +80,7 @@ export type PlanGate =
   | { kind: "submit" }
   | { kind: "approval"; rejected: boolean; role?: string }
   | { kind: "review"; row: AutomatedReviewRow }
+  | { kind: "statement-error" }
   | { kind: "discussion"; open: number };
 
 export const findingPriority = (
@@ -295,6 +296,17 @@ export function planCheckRow(
   };
 }
 
+// The statement report fails only on a syntax error. It has no reviewer row,
+// but the server creates no rollout while any plan check result is an ERROR.
+export const statementReportFails = (runs: readonly PlanCheckRun[]): boolean =>
+  runs.some((run) =>
+    run.results.some(
+      (result) =>
+        result.type === PlanCheckRun_Result_Type.STATEMENT_SUMMARY_REPORT &&
+        result.status === Advice_Level.ERROR
+    )
+  );
+
 // The plan check run while it has no results to show: queued, running, or
 // stopped before producing any, as when its targets cannot be derived. The
 // server creates the rollout only once the current run is DONE.
@@ -345,6 +357,7 @@ export function computePlanGates(input: {
   >;
   currentApprovalRole?: string;
   rows: readonly AutomatedReviewRow[];
+  statementError?: boolean;
   openDiscussions: number;
 }): PlanGate[] {
   const { issue } = input;
@@ -362,6 +375,7 @@ export function computePlanGates(input: {
   for (const row of input.rows) {
     if (row.holdsRollout) gates.push({ kind: "review", row });
   }
+  if (input.statementError) gates.push({ kind: "statement-error" });
   if (input.openDiscussions > 0) {
     gates.push({ kind: "discussion", open: input.openDiscussions });
   }

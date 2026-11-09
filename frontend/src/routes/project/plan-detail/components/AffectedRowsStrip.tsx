@@ -36,14 +36,14 @@ export function AffectedRowsStrip({
   const page = usePlanDetailContext();
   const { allowRunChecks, isRunningChecks, runChecks } = usePlanCheckActions();
   const ruleReview = useSqlReviewV2()?.ruleReview;
-  const [details, setDetails] = useState<{
+  const [detailsState, setDetailsState] = useState<{
     open: boolean;
     filter: AffectedRowsFilter;
     // Remounts the sheet's contents on each open, so its filter starts over.
     key: number;
   }>({ open: false, filter: "all", key: 0 });
   const openDetails = (filter: AffectedRowsFilter) =>
-    setDetails((prev) => ({ open: true, filter, key: prev.key + 1 }));
+    setDetailsState((prev) => ({ open: true, filter, key: prev.key + 1 }));
 
   const { targets } = summary;
   const lookCount = targets.filter(needsLook).length;
@@ -60,6 +60,21 @@ export function AffectedRowsStrip({
     <span className="font-medium text-control">
       {t("plan.affected-rows.self")}
     </span>
+  );
+
+  const details = (
+    <>
+      <InlineAction onClick={() => openDetails("all")}>
+        {t("plan.affected-rows.details")}
+      </InlineAction>
+      <AffectedRowsSheet
+        filter={detailsState.filter}
+        key={detailsState.key}
+        onOpenChange={(open) => setDetailsState((prev) => ({ ...prev, open }))}
+        open={detailsState.open}
+        summary={summary}
+      />
+    </>
   );
 
   if (figureTargets.length === 0) {
@@ -81,6 +96,7 @@ export function AffectedRowsStrip({
             {t("plan.affected-rows.go-to-line", { line: errorLine })}
           </InlineAction>
         )}
+        {details}
       </Strip>
     );
   }
@@ -149,16 +165,7 @@ export function AffectedRowsStrip({
           {t("plan.affected-rows.rerun")}
         </InlineAction>
       )}
-      <InlineAction onClick={() => openDetails("all")}>
-        {t("plan.affected-rows.details")}
-      </InlineAction>
-      <AffectedRowsSheet
-        filter={details.filter}
-        key={details.key}
-        onOpenChange={(open) => setDetails((prev) => ({ ...prev, open }))}
-        open={details.open}
-        summary={summary}
-      />
+      {details}
     </Strip>
   );
 }

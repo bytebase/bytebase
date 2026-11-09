@@ -2084,6 +2084,7 @@
       "reviewer-outdated": "SQL đã thay đổi sau khi {{reviewer}} chạy",
       "reviewer-running": "{{reviewer}} đang chạy",
       "show": "Xem",
+      "statement-error": "SQL có lỗi cú pháp",
       "submit": "Gửi để đánh giá",
       "waiting-on": "Đang chờ",
       "worth-a-look": "Không chặn bản triển khai, nhưng nên xem qua"

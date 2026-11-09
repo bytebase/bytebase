@@ -19,6 +19,7 @@ import {
   resolvedByPeople,
   ruleReviewApplies,
   ruleReviewRow,
+  statementReportFails,
 } from "../utils/planGates";
 import { useAIReviewRun } from "./useAIReviewRun";
 import { useSqlReviewV2 } from "./useSqlReviewV2";
@@ -93,6 +94,7 @@ export function usePlanReviewState(): PlanReviewState | undefined {
         issue,
         currentApprovalRole,
         rows,
+        statementError: statementReportFails(page.planCheckRuns),
         openDiscussions,
       }),
       openDiscussions,

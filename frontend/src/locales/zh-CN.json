@@ -2084,6 +2084,7 @@
       "reviewer-outdated": "{{reviewer}} 运行后 SQL 已变更",
       "reviewer-running": "{{reviewer}} 运行中",
       "show": "查看",
+      "statement-error": "SQL 有语法错误",
       "submit": "提交审核",
       "waiting-on": "正在等待",
       "worth-a-look": "不会挡住发布，但值得看一下"

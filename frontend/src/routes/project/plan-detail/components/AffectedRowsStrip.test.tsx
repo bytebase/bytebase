@@ -151,7 +151,7 @@ describe("AffectedRowsStrip", () => {
     );
   });
 
-  test("shows a syntax error with a way to its line", () => {
+  test("shows a syntax error with a way to its line and its diagnostic in Details", () => {
     const onGoToLine = vi.fn();
     renderStrip(
       [
@@ -159,7 +159,8 @@ describe("AffectedRowsStrip", () => {
           status: "not-estimated",
           rows: 0n,
           title: "Syntax error",
-          line: 12,
+          reason: 'Syntax error at line 2:59 related text: "AND;"',
+          line: 2,
         }),
       ],
       onGoToLine
@@ -167,10 +168,13 @@ describe("AffectedRowsStrip", () => {
     const strip = screen.getByTestId("affected-rows");
     expect(strip.textContent).toContain("plan.affected-rows.not-estimated");
     expect(strip.textContent).toContain("Syntax error");
-    expect(screen.queryByText("plan.affected-rows.details")).toBeNull();
 
-    fireEvent.click(screen.getByText("plan.affected-rows.go-to-line(12)"));
+    fireEvent.click(screen.getByText("plan.affected-rows.go-to-line(2)"));
+    expect(onGoToLine).toHaveBeenCalledWith(2);
 
-    expect(onGoToLine).toHaveBeenCalledWith(12);
+    fireEvent.click(screen.getByText("plan.affected-rows.details"));
+    expect(screen.getByTestId("details").textContent).toContain(
+      'Syntax error at line 2:59 related text: "AND;"'
+    );
   });
 });
