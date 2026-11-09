@@ -912,6 +912,11 @@ func (s *Store) UpdateUserEmail(ctx context.Context, user *UserMessage, newEmail
 	if err := updateReference("UPDATE task_run SET creator = $1 WHERE creator = $2"); err != nil {
 		return nil, err
 	}
+	// The two task rewrites below match different rows, so lock every task
+	// either touches in (project, id) order first, as BatchSkipTasks does.
+	if err := lockTasksReferencingEmail(ctx, tx, user.Email); err != nil {
+		return nil, err
+	}
 	if err := updateReference(`UPDATE task SET payload = jsonb_set(payload, '{skipper}', to_jsonb($1::TEXT)) WHERE payload->>'skipper' = $2`); err != nil {
 		return nil, err
 	}
@@ -1041,4 +1046,30 @@ func (s *Store) UpdateUserEmail(ctx context.Context, user *UserMessage, newEmail
 	s.userEmailCache.Add(updatedUser.Email, updatedUser)
 
 	return updatedUser, nil
+}
+
+func lockTasksReferencingEmail(ctx context.Context, tx *sql.Tx, email string) error {
+	rows, err := tx.QueryContext(ctx, `
+		SELECT project, id
+		FROM task
+		WHERE payload->>'skipper' = $1
+			OR EXISTS (
+				SELECT 1
+				FROM jsonb_array_elements(payload->'releaseState'->'deletedRevisions') AS note
+				WHERE note->>'deleter' = $1
+			)
+		ORDER BY project, id
+		FOR UPDATE`, email)
+	if err != nil {
+		return errors.Wrapf(err, "failed to lock tasks referencing the user")
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var project string
+		var id int64
+		if err := rows.Scan(&project, &id); err != nil {
+			return errors.Wrapf(err, "failed to scan locked task")
+		}
+	}
+	return errors.Wrapf(rows.Err(), "failed to read locked tasks")
 }
