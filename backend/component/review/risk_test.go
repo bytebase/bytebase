@@ -25,9 +25,9 @@ func TestGetRiskLevelFromStatementTypes(t *testing.T) {
 			want:           storepb.RiskLevel_MODERATE,
 		},
 		{
-			name:           "EXECUTE is LOW",
+			name:           "EXECUTE is HIGH",
 			statementTypes: []string{"EXECUTE"},
-			want:           storepb.RiskLevel_LOW,
+			want:           storepb.RiskLevel_HIGH,
 		},
 		{
 			name:           "DROP_TABLE is HIGH",

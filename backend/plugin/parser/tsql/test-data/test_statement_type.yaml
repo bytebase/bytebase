@@ -61,20 +61,20 @@
 - statement: |-
     EXEC ('DROP TABLE dbo.Authors');
   want:
-    - STATEMENT_TYPE_UNSPECIFIED
+    - EXECUTE
 - statement: |-
     EXEC sp_executesql N'DROP TABLE dbo.Authors';
   want:
-    - STATEMENT_TYPE_UNSPECIFIED
+    - EXECUTE
 - statement: |-
     EXEC sys.sp_executesql N'DROP TABLE dbo.Authors';
   want:
-    - STATEMENT_TYPE_UNSPECIFIED
+    - EXECUTE
 - statement: |-
     EXEC dbo.SP_RENAME 'dbo.Authors', 'Writers';
   want:
-    - STATEMENT_TYPE_UNSPECIFIED
+    - EXECUTE
 - statement: |-
     EXEC master.dbo.xp_cmdshell 'dir';
   want:
-    - STATEMENT_TYPE_UNSPECIFIED
+    - EXECUTE

@@ -1040,7 +1040,7 @@ func TestApprovalTemplateMatchesOnEngineWithoutStatementReport(t *testing.T) {
 	}
 }
 
-func TestApprovalTemplateRoutesProcedureExecution(t *testing.T) {
+func TestApprovalTemplateRoutesExecute(t *testing.T) {
 	rules := []*storepb.WorkspaceApprovalSetting_Rule{
 		{
 			Source:    storepb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE,
@@ -1050,7 +1050,7 @@ func TestApprovalTemplateRoutesProcedureExecution(t *testing.T) {
 		{
 			Source:    storepb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE,
 			Condition: &expr.Expr{Expression: `statement.sql_type == "EXECUTE"`},
-			Template:  &storepb.ApprovalTemplate{Title: "Procedure"},
+			Template:  &storepb.ApprovalTemplate{Title: "Execute"},
 		},
 		{
 			Source:    storepb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE,
@@ -1064,9 +1064,10 @@ func TestApprovalTemplateRoutesProcedureExecution(t *testing.T) {
 		statement string
 		want      string
 	}{
-		{"named procedure takes the procedure rule", "EXEC dbo.usp_ArchiveOrders @Days = 30;", "Procedure"},
-		{"dynamic SQL takes the fallback rule", "EXEC ('DROP TABLE dbo.Orders');", "Fallback"},
-		{"sp_executesql takes the fallback rule", "EXEC sp_executesql N'DROP TABLE dbo.Orders';", "Fallback"},
+		{"procedure call takes the execute rule", "EXEC dbo.usp_ArchiveOrders @Days = 30;", "Execute"},
+		{"dynamic SQL takes the execute rule", "EXEC ('DROP TABLE dbo.Orders');", "Execute"},
+		{"system procedure takes the execute rule", "EXEC sp_executesql N'DROP TABLE dbo.Orders';", "Execute"},
+		{"unclassified statement takes the fallback rule", "GRANT SELECT ON dbo.Orders TO reporting;", "Fallback"},
 		{"an earlier rule wins for a mixed sheet", "EXEC dbo.usp_ArchiveOrders;\nDROP TABLE dbo.Orders;", "Schema change"},
 	}
 

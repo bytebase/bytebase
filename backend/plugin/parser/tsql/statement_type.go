@@ -1,8 +1,6 @@
 package tsql
 
 import (
-	"strings"
-
 	"github.com/bytebase/omni/mssql/ast"
 	"github.com/pkg/errors"
 
@@ -68,28 +66,8 @@ func getStatementType(node ast.Node) storepb.StatementType {
 	case *ast.UpdateStmt:
 		return storepb.StatementType_UPDATE
 	case *ast.ExecStmt:
-		if isProcedureCall(n) {
-			return storepb.StatementType_EXECUTE
-		}
+		return storepb.StatementType_EXECUTE
 	default:
 	}
 	return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
-}
-
-// isProcedureCall reports whether an EXEC runs a user procedure by name. A
-// sql_type rule can route EXECUTE to a lighter approval path, so EXEC of a SQL
-// string stays unclassified because it can run any statement. System procedures
-// stay unclassified for the same reason: sp_executesql runs dynamic SQL, and
-// others such as sp_rename and xp_cmdshell change schema or reach the host.
-// They are matched by the sp_ and xp_ prefixes in any schema, so a user
-// procedure named with those prefixes is also left unclassified.
-func isProcedureCall(n *ast.ExecStmt) bool {
-	if n.ExecString != nil || n.Name == nil {
-		return false
-	}
-	if strings.EqualFold(n.Name.Schema, "sys") {
-		return false
-	}
-	object := strings.ToLower(n.Name.Object)
-	return !strings.HasPrefix(object, "sp_") && !strings.HasPrefix(object, "xp_")
 }

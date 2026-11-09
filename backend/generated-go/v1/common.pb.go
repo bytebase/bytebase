@@ -647,8 +647,8 @@ const (
 	StatementType_UPDATE StatementType = 61
 	StatementType_DELETE StatementType = 62
 	StatementType_MERGE  StatementType = 63
-	// A call to a stored procedure by name, such as T-SQL EXEC. Dynamic SQL
-	// execution and system procedures are not included.
+	// A T-SQL EXEC or EXECUTE, whether it calls a procedure, including a system
+	// procedure, or runs a SQL string.
 	StatementType_EXECUTE StatementType = 70
 )
 
