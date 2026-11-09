@@ -1336,6 +1336,10 @@ type PlanCheckRun_Result struct {
 	// Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
 	Target string                   `protobuf:"bytes,7,opt,name=target,proto3" json:"target,omitempty"`
 	Type   PlanCheckRun_Result_Type `protobuf:"varint,8,opt,name=type,proto3,enum=bytebase.v1.PlanCheckRun_Result_Type" json:"type,omitempty"`
+	// The content hash of the SQL sheet the result checked, which tells apart
+	// the plan's changes that target the same database. Empty for a result
+	// stored before it was recorded.
+	SheetSha256 string `protobuf:"bytes,9,opt,name=sheet_sha256,json=sheetSha256,proto3" json:"sheet_sha256,omitempty"`
 	// Types that are valid to be assigned to Report:
 	//
 	//	*PlanCheckRun_Result_SqlSummaryReport_
@@ -1415,6 +1419,13 @@ func (x *PlanCheckRun_Result) GetType() PlanCheckRun_Result_Type {
 		return x.Type
 	}
 	return PlanCheckRun_Result_TYPE_UNSPECIFIED
+}
+
+func (x *PlanCheckRun_Result) GetSheetSha256() string {
+	if x != nil {
+		return x.SheetSha256
+	}
+	return ""
 }
 
 func (x *PlanCheckRun_Result) GetReport() isPlanCheckRun_Result_Report {
@@ -1654,21 +1665,22 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\x19CancelPlanCheckRunRequest\x126\n" +
 	"\x04name\x18\x01 \x01(\tB\"\xe2A\x01\x02\xfaA\x1b\n" +
 	"\x19bytebase.com/PlanCheckRunR\x04name\"\x1c\n" +
-	"\x1aCancelPlanCheckRunResponse\"\xb9\t\n" +
+	"\x1aCancelPlanCheckRunResponse\"\xdc\t\n" +
 	"\fPlanCheckRun\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x128\n" +
 	"\x06status\x18\x03 \x01(\x0e2 .bytebase.v1.PlanCheckRun.StatusR\x06status\x12:\n" +
 	"\aresults\x18\x06 \x03(\v2 .bytebase.v1.PlanCheckRun.ResultR\aresults\x12\x14\n" +
 	"\x05error\x18\a \x01(\tR\x05error\x12A\n" +
 	"\vcreate_time\x18\b \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\n" +
-	"createTime\x1a\x98\x06\n" +
+	"createTime\x1a\xbb\x06\n" +
 	"\x06Result\x121\n" +
 	"\x06status\x18\x01 \x01(\x0e2\x19.bytebase.v1.Advice.LevelR\x06status\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x18\n" +
 	"\acontent\x18\x03 \x01(\tR\acontent\x12\x12\n" +
 	"\x04code\x18\x04 \x01(\x05R\x04code\x12\x16\n" +
 	"\x06target\x18\a \x01(\tR\x06target\x129\n" +
-	"\x04type\x18\b \x01(\x0e2%.bytebase.v1.PlanCheckRun.Result.TypeR\x04type\x12a\n" +
+	"\x04type\x18\b \x01(\x0e2%.bytebase.v1.PlanCheckRun.Result.TypeR\x04type\x12!\n" +
+	"\fsheet_sha256\x18\t \x01(\tR\vsheetSha256\x12a\n" +
 	"\x12sql_summary_report\x18\x05 \x01(\v21.bytebase.v1.PlanCheckRun.Result.SqlSummaryReportH\x00R\x10sqlSummaryReport\x12^\n" +
 	"\x11sql_review_report\x18\x06 \x01(\v20.bytebase.v1.PlanCheckRun.Result.SqlReviewReportH\x00R\x0fsqlReviewReport\x1a\x82\x01\n" +
 	"\x10SqlSummaryReport\x12C\n" +

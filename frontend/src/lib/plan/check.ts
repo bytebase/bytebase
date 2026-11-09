@@ -11,6 +11,7 @@ import {
 } from "@/types/proto-es/v1/plan_service_pb";
 import type { CheckReleaseResponse_CheckResult } from "@/types/proto-es/v1/release_service_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
+import { extractSheetUID } from "@/utils/v1/sheet";
 
 export interface PlanCheckSummary {
   error: number;
@@ -92,12 +93,20 @@ const targetsForSpec = (spec: Plan_Spec): string[] => {
   return [];
 };
 
+// A sheet's name ends in its content hash, which results record as sheetSha256.
+const sheetSha256ForSpec = (spec: Plan_Spec): string =>
+  spec.config.case === "changeDatabaseConfig" && spec.config.value.sheet
+    ? extractSheetUID(spec.config.value.sheet).toLowerCase()
+    : "";
+
 // The plan-check scheduler expands a db-group spec into per-database targets
 // before running checks (see backend/runner/plancheck/derive.go), so result.target
 // is always a database resource name. The spec, however, still stores the
 // db-group name. The caller is responsible for resolving any db-group target to
 // its matched database names before calling this function; otherwise checks for
-// db-group specs would silently render empty.
+// db-group specs would silently render empty. Two specs can target one
+// database, so a result must also name the spec's sheet; one stored before
+// results recorded their sheet matches any.
 export const planCheckRunListForSpec = (
   planCheckRuns: PlanCheckRun[],
   spec: Plan_Spec,
@@ -108,9 +117,14 @@ export const planCheckRunListForSpec = (
   if (targetSet.size === 0) {
     return [];
   }
+  const sheetSha256 = sheetSha256ForSpec(spec);
   return planCheckRuns.flatMap((run) => {
-    const matchingResults = run.results.filter((result) =>
-      targetSet.has(result.target)
+    const matchingResults = run.results.filter(
+      (result) =>
+        targetSet.has(result.target) &&
+        (!sheetSha256 ||
+          !result.sheetSha256 ||
+          result.sheetSha256.toLowerCase() === sheetSha256)
     );
     if (matchingResults.length > 0) {
       return [{ ...run, results: matchingResults }];

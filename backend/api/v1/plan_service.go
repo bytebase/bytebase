@@ -1250,13 +1250,14 @@ func convertToPlanCheckRunResults(results []*storepb.PlanCheckRunResult_Result) 
 
 func convertToPlanCheckRunResult(result *storepb.PlanCheckRunResult_Result) *v1pb.PlanCheckRun_Result {
 	resultV1 := &v1pb.PlanCheckRun_Result{
-		Status:  convertToPlanCheckRunResultStatus(result.Status),
-		Title:   result.Title,
-		Content: result.Content,
-		Code:    result.Code,
-		Target:  result.Target,
-		Type:    convertToV1ResultType(result.Type),
-		Report:  nil,
+		Status:      convertToPlanCheckRunResultStatus(result.Status),
+		Title:       result.Title,
+		Content:     result.Content,
+		Code:        result.Code,
+		Target:      result.Target,
+		Type:        convertToV1ResultType(result.Type),
+		SheetSha256: result.SheetSha256,
+		Report:      nil,
 	}
 	switch report := result.Report.(type) {
 	case *storepb.PlanCheckRunResult_Result_SqlSummaryReport_:
