@@ -126,6 +126,7 @@ export function foldedTaskDescription({
   statementSummary,
   duration,
   skipperName,
+  rerun = false,
   t,
   locale,
   nowMs = Date.now(),
@@ -138,6 +139,9 @@ export function foldedTaskDescription({
   duration: string;
   // The skipper's display name; the email when the user has not loaded.
   skipperName?: string;
+  // The latest run follows an earlier one, which may have applied files the
+  // stored count still lists, so the count is not shown (D4).
+  rerun?: boolean;
   nowMs?: number;
   t: TFunction;
   locale: string;
@@ -203,7 +207,7 @@ export function foldedTaskDescription({
     case Task_Status.RUNNING:
       return {
         text: join(
-          versioned && state && pendingCount > 0
+          versioned && state && pendingCount > 0 && !rerun
             ? t("task.folded.applying", { count: pendingCount })
             : statusLabel(task.status),
           started
@@ -227,7 +231,7 @@ export function foldedTaskDescription({
       };
     }
     default: {
-      if (versioned && state) {
+      if (versioned && state && !rerun) {
         return {
           text:
             pendingCount > 0

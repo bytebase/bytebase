@@ -145,26 +145,29 @@ export const formatRelativeTime = (ms: number): string => {
   return `+${(ms / 1000).toFixed(2)}s`;
 };
 
-export const hasError = (entry: TaskRunLogEntry): boolean => {
+const errorTextOf = (entry: TaskRunLogEntry): string => {
   switch (entry.type) {
     case TaskRunLogEntry_Type.COMMAND_EXECUTE:
-      return Boolean(entry.commandExecute?.response?.error);
+      return entry.commandExecute?.response?.error ?? "";
     case TaskRunLogEntry_Type.TRANSACTION_CONTROL:
-      return Boolean(entry.transactionControl?.error);
+      return entry.transactionControl?.error ?? "";
     case TaskRunLogEntry_Type.SCHEMA_DUMP:
-      return Boolean(entry.schemaDump?.error);
+      return entry.schemaDump?.error ?? "";
     case TaskRunLogEntry_Type.DATABASE_SYNC:
-      return Boolean(entry.databaseSync?.error);
+      return entry.databaseSync?.error ?? "";
     case TaskRunLogEntry_Type.PRIOR_BACKUP:
-      return Boolean(entry.priorBackup?.error);
+      return entry.priorBackup?.error ?? "";
     case TaskRunLogEntry_Type.COMPUTE_DIFF:
-      return Boolean(entry.computeDiff?.error);
+      return entry.computeDiff?.error ?? "";
     case TaskRunLogEntry_Type.GHOST_MIGRATION:
-      return Boolean(entry.ghostMigration?.error);
+      return entry.ghostMigration?.error ?? "";
     default:
-      return false;
+      return "";
   }
 };
+
+export const hasError = (entry: TaskRunLogEntry): boolean =>
+  Boolean(errorTextOf(entry));
 
 export const isComplete = (entry: TaskRunLogEntry): boolean => {
   switch (entry.type) {
@@ -924,6 +927,9 @@ export interface ReleaseSpineInput {
   // The state stored on the task at rollout creation; absent for a task
   // created before it existed, and on the revision page.
   state?: Task_ReleaseState;
+  // The run follows an earlier run of the task, which may have applied files
+  // the stored state lists as pending.
+  rerun?: boolean;
 }
 
 const isEnded = (status: TaskRun_Status) =>
@@ -941,6 +947,7 @@ export const buildReleaseSpine = ({
   entries,
   run,
   state,
+  rerun = false,
 }: ReleaseSpineInput): ReleaseSpine => {
   const pending = pendingVersionsOf(state, files);
   const deleted = new Map(
@@ -990,6 +997,9 @@ export const buildReleaseSpine = ({
   const boundary =
     newestMarked === undefined ? -1 : (fileIndex.get(newestMarked) ?? -1);
   const markedVersions = new Set(marked.map((g) => g.file?.version));
+  // Before a rerun's first marker the stored state may list files the
+  // earlier run applied (D4).
+  const listed = rerun && marked.length === 0 ? undefined : state;
   const ended = isEnded(run.status);
   const failed = run.status === TaskRun_Status.FAILED;
   const fileError = failed ? parseReleaseFileError(run.error) : undefined;
@@ -1002,7 +1012,7 @@ export const buildReleaseSpine = ({
       applied.push(file);
       return;
     }
-    if (!state) return;
+    if (!listed) return;
     if (!pending.has(file.version)) {
       applied.push(file);
     } else if (!ended) {
@@ -1021,7 +1031,17 @@ export const buildReleaseSpine = ({
         type: group.entries[0].type,
         entries: group.entries,
       };
-      if (failed && !fileError && group.entries.some(hasError)) {
+      // A step owns the run's error only when the error is its own; a
+      // non-fatal step error, such as the schema sync's, is not (D3).
+      const runError = run.error;
+      if (
+        failed &&
+        !fileError &&
+        group.entries.some((entry) => {
+          const text = errorTextOf(entry);
+          return text !== "" && runError.includes(text);
+        })
+      ) {
         errorOwned = true;
       }
       runItems.push(step);
@@ -1075,7 +1095,6 @@ export const isSpineItemOpenByDefault = (item: SpineItem): boolean => {
     case "run-failed":
       return true;
     case "step":
-      // A failed step, such as a prior backup, carries the run's error.
       return item.entries.some(hasError);
     case "file":
       return (

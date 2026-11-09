@@ -55,6 +55,7 @@ export function DeployTaskHeader({
   onToggleExpand,
   onToggleSelect,
   release,
+  rerun = false,
   scheduledTimeMs,
   showRollback,
   statementSummary,
@@ -72,6 +73,8 @@ export function DeployTaskHeader({
   onToggleSelect: () => void;
   // The task's release, for a release-backed task.
   release?: FoldedReleaseInfo;
+  // The latest run follows an earlier run of the task.
+  rerun?: boolean;
   scheduledTimeMs: number | undefined;
   showRollback: boolean;
   // The plan check's statement summary for the task's target.
@@ -92,6 +95,7 @@ export function DeployTaskHeader({
         statementSummary,
         duration: timingDisplay,
         skipperName,
+        rerun,
         t,
         locale: i18n.language,
       });

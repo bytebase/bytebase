@@ -46,6 +46,8 @@ export interface TaskRunLogViewerProps {
   // The task's stored release state. The plan page passes it; the revision
   // page renders the run's log alone.
   releaseState?: Task_ReleaseState;
+  // The run follows an earlier run of the task (D4).
+  rerun?: boolean;
   onOpenFile?: OpenReleaseFile;
   // The run's error alert. The spine places the error on its section, so the
   // alert shows only when the spine does not render.
@@ -65,6 +67,7 @@ export const TaskRunLogViewer = memo(function TaskRunLogViewer({
   active = true,
   runError,
   releaseState,
+  rerun,
   onOpenFile,
   errorAlert,
   revisionsLink,
@@ -225,6 +228,7 @@ export const TaskRunLogViewer = memo(function TaskRunLogViewer({
         entries={entries}
         run={spineRun}
         state={releaseState}
+        rerun={rerun}
         sheetsMap={sheetsMap}
         getSectionLabel={getSectionLabel}
         detailText={detailText}

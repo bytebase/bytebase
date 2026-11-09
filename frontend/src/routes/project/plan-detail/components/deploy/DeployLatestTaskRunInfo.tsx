@@ -136,6 +136,7 @@ export function DeployLatestTaskRunInfo({
         taskRunStatus={taskRun.status}
         runError={taskRun.detail}
         releaseState={releaseState}
+        rerun={historyCount > 1}
         onOpenFile={onOpenFile}
         errorAlert={errorAlert}
         revisionsLink={revisionsLink}

@@ -276,6 +276,27 @@ describe("folded card description", () => {
     vi.useRealTimers();
   });
 
+  // An earlier run may have applied files the stored count still lists.
+  test("a rerun reads the plain status, scheduled or running", () => {
+    const scheduled = render({
+      isExpanded: false,
+      rerun: true,
+      release: VERSIONED,
+      scheduledTimeMs: SCHEDULED_AT_MS,
+      task: releaseTask(Task_Status.PENDING, ["a", "b", "c"], 490),
+      latestTaskRun: runOf(TaskRun_Status.PENDING),
+    }).querySelector('[data-testid="folded-description"]');
+    expect(scheduled?.textContent).toMatch(/^Pending · scheduled /);
+    expect(
+      describeFolded({
+        rerun: true,
+        release: VERSIONED,
+        task: releaseTask(Task_Status.RUNNING, ["a", "b", "c"], 490),
+        latestTaskRun: runOf(TaskRun_Status.RUNNING),
+      })?.textContent
+    ).toBe("Running · started 15:14");
+  });
+
   test("a task waiting on its run says why after the not-started line", () => {
     const waiting = create(TaskRunSchema, {
       status: TaskRun_Status.PENDING,

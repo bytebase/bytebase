@@ -391,6 +391,23 @@ test("a release plan's details block has Source, Triggered, Release and Progress
   expect(screen.getByTestId("stage-cells")).toBeDefined();
 });
 
+test.each([
+  ["while the release loads", () => new Promise<never>(() => {})],
+  ["when the release cannot be read, as an archived one", () => Promise.reject(new Error("not found"))],
+])("a release plan keeps its rows %s, with - for Source and the release id for Release", async (_, fetch) => {
+  mocks.page = releasePage(githubSource);
+  mocks.release = undefined;
+  mocks.fetchRelease.mockImplementation(fetch);
+  render(<PlanDetailMeta />);
+  await waitFor(() => expect(mocks.fetchRelease).toHaveBeenCalled());
+  expect(rows()).toEqual(["source", "created", "release", "progress"]);
+  expect(sourceRow().textContent).toContain("-");
+  const row = (name: string) =>
+    screen.getAllByTestId("plan-detail-row").find((r) => r.getAttribute("data-row") === name)!;
+  expect(row("created").textContent).toContain("plan.details.triggered");
+  expect(row("release").textContent).toContain("r1");
+});
+
 test("a release plan with an issue keeps Labels and Review, so a project that forces labels can still submit it", () => {
   mocks.page = { ...releasePage(githubSource), issue: makePage().issue } as unknown as PlanDetailPageState;
   render(<PlanDetailMeta />);

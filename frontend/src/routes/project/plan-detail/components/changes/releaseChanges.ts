@@ -16,20 +16,6 @@ export interface ReleaseChangeGroup {
   files: ReleaseChangeFile[];
 }
 
-// Versions are digits and dots (model.NewVersion); compare them segment by
-// segment as numbers, then the shorter first, the order the executor runs
-// them in (Version.LessThan).
-export const compareVersions = (a: string, b: string): number => {
-  const as = a.split(".");
-  const bs = b.split(".");
-  for (let i = 0; i < Math.min(as.length, bs.length); i++) {
-    const x = BigInt(as[i]);
-    const y = BigInt(bs[i]);
-    if (x !== y) return x < y ? -1 : 1;
-  }
-  return Math.sign(as.length - bs.length);
-};
-
 // A first segment of 8 to 14 digits starting with a plausible year.
 const TIMESTAMP_RE = /^((?:19|20)\d{2})(\d{2})(\d{2})\d{0,6}$/;
 
@@ -45,9 +31,9 @@ const timestampOf = (version: string) => {
 export const groupReleaseChanges = (
   files: ReleaseChangeFile[]
 ): ReleaseChangeGroup[] => {
-  const sorted = [...files].sort((a, b) =>
-    compareVersions(b.version, a.version)
-  );
+  // The store keeps the files in the executor's order, so newest first is
+  // that list reversed; a client sort would reorder versions that parse equal.
+  const sorted = [...files].reverse();
   if (sorted.length === 0) return [];
 
   if (sorted.every((file) => timestampOf(file.version))) {

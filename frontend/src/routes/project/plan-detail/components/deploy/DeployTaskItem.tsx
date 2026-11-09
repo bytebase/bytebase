@@ -207,6 +207,7 @@ export const DeployTaskItem = memo(function DeployTaskItem({
             onToggleExpand={() => onToggleExpand(task)}
             onToggleSelect={() => onToggleSelect(task)}
             release={releaseInfo}
+            rerun={taskRuns.length > 1}
             scheduledTimeMs={scheduledTimeMs}
             showRollback={Boolean(rollbackableTaskRun)}
             statementSummary={statementSummary}

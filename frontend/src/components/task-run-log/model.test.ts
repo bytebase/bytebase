@@ -1261,6 +1261,58 @@ describe("release spine", () => {
     ]);
   });
 
+  // The stored state predates the first run, which applied 002 and 003 and
+  // failed on 004; the rerun's log decides from its first marker on.
+  test.each([TaskRun_Status.PENDING, TaskRun_Status.RUNNING])(
+    "a rerun lists nothing from the stored state before its first marker (%s)",
+    (status) => {
+      const spine = buildReleaseSpine({
+        files: FILES,
+        entries: [],
+        run: { status, error: "" },
+        state: stateOf(["002", "003", "004", "005"]),
+        rerun: true,
+      });
+      expect(shape(spine)).toEqual([]);
+    }
+  );
+
+  test("a rerun past its first marker takes the files above it from the stored state", () => {
+    const spine = buildReleaseSpine({
+      files: FILES,
+      entries: [releaseFile(1, "004"), command(2)],
+      run: { status: TaskRun_Status.RUNNING, error: "" },
+      state: stateOf(["002", "003", "004", "005"]),
+      rerun: true,
+    });
+    expect(shape(spine)).toEqual([
+      ["earlier", "001,002,003"],
+      ["file", "004", "running"],
+      ["file", "005", "pending"],
+    ]);
+  });
+
+  test("a schema sync that failed after a revision-write failure keeps its entry, and the write's error still opens Run failed", () => {
+    const error = "failed to create revision for version 005: duplicate key";
+    const spine = buildReleaseSpine({
+      files: FILES,
+      entries: [
+        releaseFile(1, "005"),
+        command(2, { error: "" }),
+        databaseSync(3, 4, { error: "dump schema: connection reset" }),
+      ],
+      run: { status: TaskRun_Status.FAILED, error },
+      state: stateOf(["005"]),
+    });
+    expect(shape(spine)).toEqual([
+      ["earlier", "001,002,003,004"],
+      ["file", "005", "applied"],
+      ["step", SYNC],
+      ["run-failed"],
+    ]);
+    expect(spine.items.at(-1)).toMatchObject({ kind: "run-failed", error });
+  });
+
   test("a file error with no failed command says no statement was identified", () => {
     const spine = buildReleaseSpine({
       files: FILES,

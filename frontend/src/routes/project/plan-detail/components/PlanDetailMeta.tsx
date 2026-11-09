@@ -40,10 +40,10 @@ import {
 } from "@/types/proto-es/v1/release_service_pb";
 import { colorToHex, hasProjectPermissionV2 } from "@/utils";
 import { displayRoleTitle } from "@/utils/role";
+import { extractReleaseUID } from "@/utils/v1/release";
 import { PlanStages } from "../../PlanTable";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
 import { isDatabaseGroupName } from "../utils/phaseSummary";
-import { compareVersions } from "./changes/releaseChanges";
 import {
   statementKindLabel,
   statementKindOf,
@@ -66,6 +66,9 @@ export function PlanDetailMeta() {
       ? releaseName.value.release
       : "";
   const release = useReleaseByName(releaseResource);
+  // The spec names the release, so the rows are a release plan's from the
+  // first render, before the release is read or when it cannot be (D10).
+  const isReleasePlan = Boolean(releaseResource);
   const fetchRelease = useAppStore((state) => state.fetchRelease);
   useEffect(() => {
     if (releaseResource) {
@@ -236,14 +239,16 @@ export function PlanDetailMeta() {
       )}
       <CollapsiblePanel className="flex items-start gap-x-3">
         <dl className="grid min-w-0 flex-1 grid-cols-[max-content_minmax(0,1fr)] gap-x-4 gap-y-1">
-          {release && (
+          {isReleasePlan && (
             <DetailRow label={t("plan.details.source")} row="source">
-              <SourceRowView source={release.vcsSource} />
+              <SourceRowView source={release?.vcsSource} />
             </DetailRow>
           )}
           <DetailRow
             label={
-              release ? t("plan.details.triggered") : t("plan.details.created")
+              isReleasePlan
+                ? t("plan.details.triggered")
+                : t("plan.details.created")
             }
             row="created"
           >
@@ -262,17 +267,19 @@ export function PlanDetailMeta() {
               />
             </DetailRow>
           )}
-          {release ? (
+          {isReleasePlan ? (
             <DetailRow label={t("plan.details.release")} row="release">
               <span data-testid="plan-detail-release">
-                {release.type === Release_Type.DECLARATIVE
-                  ? t("plan.details.state-based", {
-                      version: release.files[0]?.version ?? "",
-                    })
-                  : t("plan.details.migration-based", {
-                      count: release.files.length,
-                      version: newestVersion(release),
-                    })}
+                {!release
+                  ? extractReleaseUID(releaseResource)
+                  : release.type === Release_Type.DECLARATIVE
+                    ? t("plan.details.state-based", {
+                        version: release.files[0]?.version ?? "",
+                      })
+                    : t("plan.details.migration-based", {
+                        count: release.files.length,
+                        version: newestVersion(release),
+                      })}
               </span>
             </DetailRow>
           ) : (
@@ -317,11 +324,8 @@ function DetailRow({
   );
 }
 
-const newestVersion = (release: Release) =>
-  [...release.files]
-    .map((file) => file.version)
-    .sort(compareVersions)
-    .at(-1) ?? "";
+// The store keeps the files in the executor's order, newest last.
+const newestVersion = (release: Release) => release.files.at(-1)?.version ?? "";
 
 function SourceRowView({
   source,

@@ -79,6 +79,8 @@ export interface ReleaseSpineViewProps {
   // The latest run; absent before the first run.
   run?: { status: TaskRun_Status; error: string };
   state?: Task_ReleaseState;
+  // The run follows an earlier run of the task (D4).
+  rerun?: boolean;
   sheetsMap?: Map<string, Sheet>;
   getSectionLabel: (type: TaskRunLogEntry_Type) => string;
   detailText?: TaskRunLogDetailText;
@@ -107,6 +109,7 @@ export function ReleaseSpineView({
   entries,
   run,
   state,
+  rerun,
   sheetsMap,
   getSectionLabel,
   detailText,
@@ -116,8 +119,8 @@ export function ReleaseSpineView({
 }: ReleaseSpineViewProps) {
   const { t } = useTranslation();
   const spine = useMemo(
-    () => buildReleaseSpine({ files, entries, run, state }),
-    [files, entries, run, state]
+    () => buildReleaseSpine({ files, entries, run, state, rerun }),
+    [files, entries, run, state, rerun]
   );
   const [loads, setLoads] = useState<SpineLoads>({});
   const items = useMemo(() => windowSpine(spine.items, loads), [spine, loads]);
