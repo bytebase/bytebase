@@ -692,22 +692,22 @@ var File_v1_workload_identity_service_proto protoreflect.FileDescriptor
 
 const file_v1_workload_identity_service_proto_rawDesc = "" +
 	"\n" +
-	"\"v1/workload_identity_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\"\xf6\x02\n" +
-	"\x10WorkloadIdentity\x12\x17\n" +
-	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12(\n" +
-	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x19\n" +
-	"\x05email\x18\x03 \x01(\tB\x03\xe0A\x03R\x05email\x12\x1e\n" +
-	"\x05title\x18\x04 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12@\n" +
-	"\vcreate_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
-	"createTime\x12b\n" +
-	"\x18workload_identity_config\x18\x06 \x01(\v2#.bytebase.v1.WorkloadIdentityConfigB\x03\xe0A\x02R\x16workloadIdentityConfig:>\xeaA;\n" +
-	"\x1dbytebase.com/WorkloadIdentity\x12\x1aworkloadIdentities/{email}\"\xe4\x02\n" +
-	"\x16WorkloadIdentityConfig\x12Z\n" +
-	"\rprovider_type\x18\x01 \x01(\x0e20.bytebase.v1.WorkloadIdentityConfig.ProviderTypeB\x03\xe0A\x02R\fproviderType\x12\"\n" +
+	"\"v1/workload_identity_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\"\xfa\x02\n" +
+	"\x10WorkloadIdentity\x12\x18\n" +
+	"\x04name\x18\x01 \x01(\tB\x04\xe2A\x01\x03R\x04name\x12(\n" +
+	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x1a\n" +
+	"\x05email\x18\x03 \x01(\tB\x04\xe2A\x01\x03R\x05email\x12\x1e\n" +
+	"\x05title\x18\x04 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12A\n" +
+	"\vcreate_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\n" +
+	"createTime\x12c\n" +
+	"\x18workload_identity_config\x18\x06 \x01(\v2#.bytebase.v1.WorkloadIdentityConfigB\x04\xe2A\x01\x02R\x16workloadIdentityConfig:>\xeaA;\n" +
+	"\x1dbytebase.com/WorkloadIdentity\x12\x1aworkloadIdentities/{email}\"\xe8\x02\n" +
+	"\x16WorkloadIdentityConfig\x12[\n" +
+	"\rprovider_type\x18\x01 \x01(\x0e20.bytebase.v1.WorkloadIdentityConfig.ProviderTypeB\x04\xe2A\x01\x02R\fproviderType\x12#\n" +
 	"\n" +
-	"issuer_url\x18\x02 \x01(\tB\x03\xe0A\x02R\tissuerUrl\x120\n" +
-	"\x11allowed_audiences\x18\x03 \x03(\tB\x03\xe0A\x02R\x10allowedAudiences\x12,\n" +
-	"\x0fsubject_pattern\x18\x04 \x01(\tB\x03\xe0A\x02R\x0esubjectPattern\x12\x19\n" +
+	"issuer_url\x18\x02 \x01(\tB\x04\xe2A\x01\x02R\tissuerUrl\x121\n" +
+	"\x11allowed_audiences\x18\x03 \x03(\tB\x04\xe2A\x01\x02R\x10allowedAudiences\x12-\n" +
+	"\x0fsubject_pattern\x18\x04 \x01(\tB\x04\xe2A\x01\x02R\x0esubjectPattern\x12\x19\n" +
 	"\bjwks_url\x18\x05 \x01(\tR\ajwksUrl\"O\n" +
 	"\fProviderType\x12\x1d\n" +
 	"\x19PROVIDER_TYPE_UNSPECIFIED\x10\x00\x12\n" +
@@ -715,14 +715,14 @@ const file_v1_workload_identity_service_proto_rawDesc = "" +
 	"\x06GITHUB\x10\x01\x12\n" +
 	"\n" +
 	"\x06GITLAB\x10\x02\x12\b\n" +
-	"\x04OIDC\x10\x03\"\xda\x01\n" +
+	"\x04OIDC\x10\x03\"\xdc\x01\n" +
 	"\x1dCreateWorkloadIdentityRequest\x121\n" +
 	"\x06parent\x18\x01 \x01(\tB\x19\xfaA\x16\n" +
-	"\x14bytebase.com/ProjectR\x06parent\x125\n" +
-	"\x14workload_identity_id\x18\x02 \x01(\tB\x03\xe0A\x02R\x12workloadIdentityId\x12O\n" +
-	"\x11workload_identity\x18\x03 \x01(\v2\x1d.bytebase.v1.WorkloadIdentityB\x03\xe0A\x02R\x10workloadIdentity\"W\n" +
-	"\x1aGetWorkloadIdentityRequest\x129\n" +
-	"\x04name\x18\x01 \x01(\tB%\xe0A\x02\xfaA\x1f\n" +
+	"\x14bytebase.com/ProjectR\x06parent\x126\n" +
+	"\x14workload_identity_id\x18\x02 \x01(\tB\x04\xe2A\x01\x02R\x12workloadIdentityId\x12P\n" +
+	"\x11workload_identity\x18\x03 \x01(\v2\x1d.bytebase.v1.WorkloadIdentityB\x04\xe2A\x01\x02R\x10workloadIdentity\"X\n" +
+	"\x1aGetWorkloadIdentityRequest\x12:\n" +
+	"\x04name\x18\x01 \x01(\tB&\xe2A\x01\x02\xfaA\x1f\n" +
 	"\x1dbytebase.com/WorkloadIdentityR\x04name\"\xc9\x01\n" +
 	"\x1dListWorkloadIdentitiesRequest\x121\n" +
 	"\x06parent\x18\x01 \x01(\tB\x19\xfaA\x16\n" +
@@ -734,16 +734,16 @@ const file_v1_workload_identity_service_proto_rawDesc = "" +
 	"\x06filter\x18\x05 \x01(\tR\x06filter\"\x98\x01\n" +
 	"\x1eListWorkloadIdentitiesResponse\x12N\n" +
 	"\x13workload_identities\x18\x01 \x03(\v2\x1d.bytebase.v1.WorkloadIdentityR\x12workloadIdentities\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xad\x01\n" +
-	"\x1dUpdateWorkloadIdentityRequest\x12O\n" +
-	"\x11workload_identity\x18\x01 \x01(\v2\x1d.bytebase.v1.WorkloadIdentityB\x03\xe0A\x02R\x10workloadIdentity\x12;\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xae\x01\n" +
+	"\x1dUpdateWorkloadIdentityRequest\x12P\n" +
+	"\x11workload_identity\x18\x01 \x01(\v2\x1d.bytebase.v1.WorkloadIdentityB\x04\xe2A\x01\x02R\x10workloadIdentity\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
-	"updateMask\"Z\n" +
-	"\x1dDeleteWorkloadIdentityRequest\x129\n" +
-	"\x04name\x18\x01 \x01(\tB%\xe0A\x02\xfaA\x1f\n" +
-	"\x1dbytebase.com/WorkloadIdentityR\x04name\"\\\n" +
-	"\x1fUndeleteWorkloadIdentityRequest\x129\n" +
-	"\x04name\x18\x01 \x01(\tB%\xe0A\x02\xfaA\x1f\n" +
+	"updateMask\"[\n" +
+	"\x1dDeleteWorkloadIdentityRequest\x12:\n" +
+	"\x04name\x18\x01 \x01(\tB&\xe2A\x01\x02\xfaA\x1f\n" +
+	"\x1dbytebase.com/WorkloadIdentityR\x04name\"]\n" +
+	"\x1fUndeleteWorkloadIdentityRequest\x12:\n" +
+	"\x04name\x18\x01 \x01(\tB&\xe2A\x01\x02\xfaA\x1f\n" +
 	"\x1dbytebase.com/WorkloadIdentityR\x04name2\xc5\v\n" +
 	"\x17WorkloadIdentityService\x12\xcf\x02\n" +
 	"\x16CreateWorkloadIdentity\x12*.bytebase.v1.CreateWorkloadIdentityRequest\x1a\x1d.bytebase.v1.WorkloadIdentity\"\xe9\x01\xdaA-parent,workload_identity,workload_identity_id\x8a\xea0\x1cbb.workloadIdentities.create\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x03\xa8\xea0\x06\x82\xd3\xe4\x93\x02\x82\x01:\x11workload_identityZA:\x11workload_identity\",/v1/{parent=workspaces/*}/workloadIdentities\"*/v1/{parent=projects/*}/workloadIdentities\x12\xb6\x01\n" +
