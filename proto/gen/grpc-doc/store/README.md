@@ -617,6 +617,7 @@ StatementType represents the type of SQL statement.
 | UPDATE | 61 |  |
 | DELETE | 62 |  |
 | MERGE | 63 |  |
+| EXECUTE | 70 | A T-SQL EXEC or EXECUTE, whether it calls a procedure, including a system procedure, or runs a SQL string. |
 
 
 

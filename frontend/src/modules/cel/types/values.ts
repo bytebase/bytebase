@@ -1,6 +1,9 @@
 import { StatementType } from "@/types/proto-es/v1/common_pb";
 
+// EXECUTE is classified for SQL Server only. Other engines still report a
+// procedure call such as CALL as STATEMENT_TYPE_UNSPECIFIED.
 const OTHER_STATEMENT_TYPES = [
+  StatementType.EXECUTE,
   StatementType.STATEMENT_TYPE_UNSPECIFIED,
 ] as const;
 
