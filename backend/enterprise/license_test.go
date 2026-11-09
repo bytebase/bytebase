@@ -27,6 +27,7 @@ func newTestLicenseService(sub *v1pb.Subscription) *LicenseService {
 		cache: expirable.NewLRU[string, *v1pb.Subscription](8, nil, time.Minute),
 	}
 	s.cache.Add(licenseCacheKey("test-workspace"), sub)
+	s.cache.Add(licenseCacheKey(""), sub)
 	return s
 }
 
@@ -312,4 +313,52 @@ func TestGetUserLimitUncached(t *testing.T) {
 	require.NoError(t, s.UpdateLicense(ctx, "ws-a", "not-a-license"))
 	_, err = licenseService.GetVerifiedStateUncached(ctx, "ws-a")
 	require.Error(t, err)
+}
+
+func TestCheckReplicaLimit(t *testing.T) {
+	ctx := context.WithValue(context.Background(), common.WorkspaceIDContextKey, "test-workspace")
+
+	t.Run("saas mode bypasses check", func(t *testing.T) {
+		service := newTestLicenseService(&v1pb.Subscription{Plan: v1pb.PlanType_FREE, Ha: false})
+		service.saas = true
+		service.replicaCache.Store(&replicaCacheState{replicaCount: 5, loadedAt: time.Now()})
+		require.NoError(t, service.CheckReplicaLimit(ctx))
+	})
+
+	t.Run("ha licensed allows multiple replicas", func(t *testing.T) {
+		service := newTestLicenseService(&v1pb.Subscription{Plan: v1pb.PlanType_ENTERPRISE, Ha: true})
+		service.replicaCache.Store(&replicaCacheState{replicaCount: 3, loadedAt: time.Now()})
+		require.NoError(t, service.CheckReplicaLimit(ctx))
+	})
+
+	t.Run("single replica without ha is allowed", func(t *testing.T) {
+		service := newTestLicenseService(&v1pb.Subscription{Plan: v1pb.PlanType_FREE, Ha: false})
+		service.replicaCache.Store(&replicaCacheState{replicaCount: 1, loadedAt: time.Now()})
+		require.NoError(t, service.CheckReplicaLimit(ctx))
+	})
+
+	t.Run("multiple replicas without ha returns clear error", func(t *testing.T) {
+		service := newTestLicenseService(&v1pb.Subscription{Plan: v1pb.PlanType_FREE, Ha: false})
+		service.replicaCache.Store(&replicaCacheState{replicaCount: 3, loadedAt: time.Now()})
+		err := service.CheckReplicaLimit(ctx)
+		require.Error(t, err)
+		require.EqualError(
+			t,
+			err,
+			"multiple Bytebase server replicas detected (3) sharing the metadata database, but HA is not enabled in license; scale Bytebase server down to 1 replica or upgrade to an HA license",
+		)
+	})
+
+	t.Run("scaling down multiple replicas restores healthy state immediately", func(t *testing.T) {
+		service := newTestLicenseService(&v1pb.Subscription{Plan: v1pb.PlanType_FREE, Ha: false})
+		// 3 replicas active (e.g. 3 pods deployed without HA license)
+		service.replicaCache.Store(&replicaCacheState{replicaCount: 3, loadedAt: time.Now()})
+		err := service.CheckReplicaLimit(ctx)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "multiple Bytebase server replicas detected (3)")
+
+		// Pods scaled down or graceful shutdown deletes stale replicas back to 1
+		service.replicaCache.Store(&replicaCacheState{replicaCount: 1, loadedAt: time.Now()})
+		require.NoError(t, service.CheckReplicaLimit(ctx))
+	})
 }

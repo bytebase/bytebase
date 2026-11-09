@@ -63,7 +63,7 @@ If more than one active replica is detected and the license does not enable HA, 
 The current runtime behavior is to log warnings such as:
 
 ```text
-multiple replicas detected (<count>) but HA is not enabled in license
+multiple Bytebase server replicas detected (<count>) sharing the metadata database, but HA is not enabled in license; scale Bytebase server down to 1 replica or upgrade to an HA license
 ```
 
 When that condition is present, background runners that check the replica limit skip work instead of continuing in an unsupported topology. This includes scheduler and cleaner paths used for task execution, plan checks, schema sync, approvals, and stale-run cleanup.
@@ -109,7 +109,7 @@ Check the following:
 
 A replica falls out of the active set after roughly 30 seconds without a heartbeat. A brief drop during restarts or node moves can therefore be expected.
 
-### Logs show `multiple replicas detected ... but HA is not enabled in license`
+### Logs show `multiple Bytebase server replicas detected ... but HA is not enabled in license`
 
 This means the deployment topology and license do not match. Resolve it by doing one of the following:
 

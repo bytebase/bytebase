@@ -583,7 +583,13 @@ func (s *LicenseService) CheckReplicaLimit(ctx context.Context) error {
 	if s.saas {
 		return nil
 	}
-	workspaceID, _ := s.store.GetWorkspaceID(ctx)
+	var workspaceID string
+	if s.store != nil {
+		workspaceID, _ = s.store.GetWorkspaceID(ctx)
+	}
+	if workspaceID == "" {
+		workspaceID = common.GetWorkspaceIDFromContext(ctx)
+	}
 	if s.LoadEffectiveSubscription(ctx, workspaceID).Ha {
 		return nil // HA license, no limit
 	}
@@ -591,7 +597,7 @@ func (s *LicenseService) CheckReplicaLimit(ctx context.Context) error {
 	count := s.CountActiveReplicas(ctx)
 	if count > 1 {
 		return errors.Errorf(
-			"multiple replicas detected (%d) but HA is not enabled in license",
+			"multiple Bytebase server replicas detected (%d) sharing the metadata database, but HA is not enabled in license; scale Bytebase server down to 1 replica or upgrade to an HA license",
 			count,
 		)
 	}

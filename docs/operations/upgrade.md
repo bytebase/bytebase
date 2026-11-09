@@ -63,7 +63,7 @@ Validate the following before closing the change:
 1. `GET /v1/actuator/info` returns the expected `version`.
 2. `GET /v1/actuator/info` returns the expected `replicaCount`.
 3. `GET /v1/subscription` still shows the expected `ha` value.
-4. Logs do not show `multiple replicas detected ... but HA is not enabled in license`.
+4. Logs do not show `multiple Bytebase server replicas detected ... but HA is not enabled in license`.
 5. Background operations resume normally after the rollout window.
 
 ## When to stop the rollout
