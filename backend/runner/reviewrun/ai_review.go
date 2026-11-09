@@ -173,12 +173,17 @@ func schemaObjectCount(s *metadatapb.SchemaMetadata) int {
 }
 
 // aiReviewStandardRules returns the standard rules the policy turns on, each
-// with the severity the standard review gives its findings. A policy that
-// switches the standard review off turns none on.
-func aiReviewStandardRules(policy *storepb.ReviewRulePolicy) []aireview.StandardRule {
+// with the severity the standard review gives its findings and whether it
+// evaluates the rule on the engine. A policy that switches the standard
+// review off turns none on.
+func aiReviewStandardRules(policy *storepb.ReviewRulePolicy, engine storepb.Engine) []aireview.StandardRule {
 	rules := make([]aireview.StandardRule, 0, len(policy.GetRules()))
 	for _, rule := range policy.GetRules() {
-		rules = append(rules, aireview.StandardRule{Type: rule, Severity: aiReviewSeverity(rulePriority(rule))})
+		rules = append(rules, aireview.StandardRule{
+			Type:     rule,
+			Severity: aiReviewSeverity(rulePriority(rule)),
+			Reviewed: reviewsRule(engine, rule),
+		})
 	}
 	return rules
 }

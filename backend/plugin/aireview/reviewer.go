@@ -55,8 +55,8 @@ type Request struct {
 	// them.
 	StandardRules []StandardRule
 	// StandardReviewRuns is true when the standard review runs on the
-	// target's engine, so the model leaves the rules that are on to it.
-	// Otherwise the model checks them.
+	// target's engine. The prompt says so, since a rule it does not evaluate
+	// there is the model's either way.
 	StandardReviewRuns bool
 	Target             Target
 	// Statement is the sheet text. Finding lines refer to its lines.

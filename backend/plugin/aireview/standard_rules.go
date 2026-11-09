@@ -17,6 +17,10 @@ var standardRulesPrompt string
 type StandardRule struct {
 	Type     storepb.ReviewRuleType
 	Severity Severity
+	// Reviewed is true when the standard review evaluates the rule on the
+	// target's engine, so the model leaves the rule's condition to it.
+	// Otherwise the model checks it.
+	Reviewed bool
 }
 
 // standardRuleSentences names the condition of each rule the prompt states,
@@ -42,9 +46,10 @@ var standardRuleSentences = []struct {
 
 // writeStandardRules states the standard rules section and then every rule
 // with its state for this review: left to the standard review where the rule
-// is on and the standard review runs on the target's engine, yours where it
-// is on and the standard review does not run there, and off otherwise. A
-// state reads as a fact, not an order: "reported" read as one to report.
+// is on and the standard review evaluates it on the target's engine, yours
+// where it is on and the standard review does not evaluate it there, and off
+// otherwise. A state reads as a fact, not an order: "reported" read as one to
+// report.
 func writeStandardRules(b *strings.Builder, request *Request) {
 	_, _ = b.WriteString("\n\n" + strings.TrimSpace(standardRulesPrompt) + "\n\n## Rules for this review\n\n")
 	// The model is told outright, since the section's general sentences
@@ -59,7 +64,7 @@ func writeStandardRules(b *strings.Builder, request *Request) {
 		switch {
 		case i < 0:
 			_, _ = fmt.Fprintf(b, "- %s (off): %s\n", rule.rule, rule.sentence)
-		case request.StandardReviewRuns:
+		case request.StandardRules[i].Reviewed:
 			_, _ = fmt.Fprintf(b, "- %s (left to the standard review, %s): %s\n", rule.rule, request.StandardRules[i].Severity, rule.sentence)
 		default:
 			_, _ = fmt.Fprintf(b, "- %s (yours, %s): %s\n", rule.rule, request.StandardRules[i].Severity, rule.sentence)

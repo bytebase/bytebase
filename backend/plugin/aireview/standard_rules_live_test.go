@@ -3,6 +3,7 @@ package aireview
 import (
 	"context"
 	"os"
+	"slices"
 	"strings"
 	"testing"
 
@@ -40,6 +41,16 @@ func TestReviewLiveStandardRules(t *testing.T) {
 		{Type: storepb.ReviewRuleType_DISALLOW_RENAME, Severity: SeverityP1},
 		{Type: storepb.ReviewRuleType_REQUIRE_PRIMARY_KEY, Severity: SeverityP1},
 	}
+	// reviewed marks every rule but the unchecked ones as evaluated by the
+	// standard review, as on an engine that implements them.
+	reviewed := func(rules []StandardRule, unchecked ...storepb.ReviewRuleType) []StandardRule {
+		marked := make([]StandardRule, 0, len(rules))
+		for _, rule := range rules {
+			rule.Reviewed = !slices.Contains(unchecked, rule.Type)
+			marked = append(marked, rule)
+		}
+		return marked
+	}
 	const whereSentence = "Every UPDATE needs a WHERE clause."
 	citesRule := func(rule string) func(Finding) bool {
 		return func(finding Finding) bool { return strings.Contains(finding.Rule, rule) }
@@ -57,14 +68,14 @@ func TestReviewLiveStandardRules(t *testing.T) {
 		{
 			name:      "an UPDATE with no WHERE is left to the standard review",
 			statement: "UPDATE orders SET currency = 'EUR';",
-			rules:     everyRule,
+			rules:     reviewed(everyRule),
 			runs:      true,
 			check:     func(t *testing.T, findings []Finding) { require.Empty(t, findings) },
 		},
 		{
 			name:      "an always true WHERE is reported for the rule",
 			statement: "UPDATE orders SET currency = 'EUR' WHERE 1=1;",
-			rules:     everyRule,
+			rules:     reviewed(everyRule),
 			runs:      true,
 			check: func(t *testing.T, findings []Finding) {
 				require.True(t, anyFinding(findings, citesRule("REQUIRE_WHERE")), "a finding cites REQUIRE_WHERE")
@@ -73,7 +84,7 @@ func TestReviewLiveStandardRules(t *testing.T) {
 		{
 			name:      "a dropped column reports the view that reads it, not the drop",
 			statement: "ALTER TABLE orders DROP COLUMN legacy_status;",
-			rules:     everyRule,
+			rules:     reviewed(everyRule),
 			runs:      true,
 			check: func(t *testing.T, findings []Finding) {
 				require.NotEmpty(t, findings)
@@ -87,7 +98,7 @@ func TestReviewLiveStandardRules(t *testing.T) {
 			name:      "a TRUNCATE the project turned off stays out under a general aim",
 			statement: "TRUNCATE order_events;",
 			policy:    "Protect production data.",
-			rules:     []StandardRule{{Type: storepb.ReviewRuleType_REQUIRE_WHERE, Severity: SeverityP1}},
+			rules:     []StandardRule{{Type: storepb.ReviewRuleType_REQUIRE_WHERE, Severity: SeverityP1, Reviewed: true}},
 			runs:      true,
 			check:     func(t *testing.T, findings []Finding) { require.Empty(t, findings) },
 		},
@@ -104,10 +115,26 @@ func TestReviewLiveStandardRules(t *testing.T) {
 			name:      "a rule that is reported is reported again when the policy names it",
 			statement: "UPDATE orders SET currency = 'EUR';",
 			policy:    whereSentence,
-			rules:     everyRule,
+			rules:     reviewed(everyRule),
 			runs:      true,
 			check: func(t *testing.T, findings []Finding) {
 				require.True(t, anyFinding(findings, citesRule(whereSentence)), "a finding quotes the policy")
+			},
+		},
+		{
+			name:      "a missing table is left to a standard review that walks through",
+			statement: "DELETE FROM invoices WHERE id = 1;",
+			rules:     reviewed(everyRule),
+			runs:      true,
+			check:     func(t *testing.T, findings []Finding) { require.Empty(t, findings) },
+		},
+		{
+			name:      "a missing table is the model's where the standard review does not walk through",
+			statement: "DELETE FROM invoices WHERE id = 1;",
+			rules:     reviewed(everyRule, storepb.ReviewRuleType_WALK_THROUGH),
+			runs:      true,
+			check: func(t *testing.T, findings []Finding) {
+				require.True(t, anyFinding(findings, citesRule("WALK_THROUGH")), "a finding cites WALK_THROUGH")
 			},
 		},
 		{

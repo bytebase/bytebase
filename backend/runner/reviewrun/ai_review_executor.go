@@ -63,7 +63,6 @@ func (e *AIReviewExecutor) RunOnce(ctx context.Context, projectID string, issueU
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get review rule policy")
 	}
-	standardRules := aiReviewStandardRules(rulePolicy)
 
 	databaseGroup, err := plancheck.GetDatabaseGroupForPlan(ctx, e.store, plan, nil)
 	if err != nil {
@@ -107,10 +106,9 @@ func (e *AIReviewExecutor) RunOnce(ctx context.Context, projectID string, issueU
 		request := &aireview.Request{
 			WorkspacePolicy: policy.Workspace,
 			ProjectPolicy:   policy.Project,
-			StandardRules:   standardRules,
 			Statement:       unit.Statement,
 		}
-		tools, engine, err := e.resolveAIReviewTarget(ctx, unit.Check, request)
+		tools, engine, err := e.resolveAIReviewTarget(ctx, unit.Check, rulePolicy, request)
 		if err != nil {
 			return nil, err
 		}
@@ -304,11 +302,12 @@ func (e *AIReviewExecutor) sheetStatement(ctx context.Context, sheets map[string
 }
 
 // resolveAIReviewTarget gathers what one review needs of a database: it sets
-// the facts the prompt states as the request's target, and whether the
-// standard review runs on its engine, and returns the tools over the synced
-// schema, sized to the request's prompt, and the database's engine. A
-// database whose schema is not synced cannot be reviewed.
-func (e *AIReviewExecutor) resolveAIReviewTarget(ctx context.Context, checkTarget *plancheck.CheckTarget, request *aireview.Request) (aireview.Tools, storepb.Engine, error) {
+// the facts the prompt states as the request's target, and the standard rules
+// the policy turns on with which of them the standard review evaluates on its
+// engine, and returns the tools over the synced schema, sized to the
+// request's prompt, and the database's engine. A database whose schema is not
+// synced cannot be reviewed.
+func (e *AIReviewExecutor) resolveAIReviewTarget(ctx context.Context, checkTarget *plancheck.CheckTarget, rulePolicy *storepb.ReviewRulePolicy, request *aireview.Request) (aireview.Tools, storepb.Engine, error) {
 	instance, database, err := plancheck.ResolveDatabaseTarget(ctx, e.store, checkTarget.Target)
 	if err != nil {
 		return nil, storepb.Engine_ENGINE_UNSPECIFIED, err
@@ -327,6 +326,7 @@ func (e *AIReviewExecutor) resolveAIReviewTarget(ctx context.Context, checkTarge
 	schema := dbSchema.GetProto()
 	request.Target = aiReviewTarget(instance, database, schema)
 	engine := instance.Metadata.GetEngine()
+	request.StandardRules = aiReviewStandardRules(rulePolicy, engine)
 	request.StandardReviewRuns = ReviewsEngine(engine)
 	return aireview.NewCatalogTools(engine, schema, aireview.WithPromptOf(request)), engine, nil
 }

@@ -78,16 +78,22 @@ func TestBuildMessagesStatesTheStandardRules(t *testing.T) {
 		{Type: storepb.ReviewRuleType_REQUIRE_WHERE, Severity: SeverityP1},
 		{Type: storepb.ReviewRuleType_ONLINE_MIGRATION, Severity: SeverityP0},
 	}
+	reviewed := []StandardRule{
+		{Type: storepb.ReviewRuleType_SYNTAX, Severity: SeverityP0, Reviewed: true},
+		{Type: storepb.ReviewRuleType_WALK_THROUGH, Severity: SeverityP0},
+		{Type: storepb.ReviewRuleType_REQUIRE_WHERE, Severity: SeverityP1, Reviewed: true},
+	}
 	tests := []struct {
 		name    string
 		request *Request
 		want    []string
 	}{
 		{
-			name:    "the rules that are on are reported where the standard review runs",
-			request: &Request{StandardRules: on, StandardReviewRuns: true},
+			name:    "the rules the standard review evaluates are left to it, and the others are the model's",
+			request: &Request{StandardRules: reviewed, StandardReviewRuns: true},
 			want: []string{
 				"## Rules for this review\n\nThe standard review runs on this database's engine.\n\n- SYNTAX (left to the standard review, P0): A statement that does not parse for this engine fails when it runs.\n",
+				"- WALK_THROUGH (yours, P0): ",
 				"- REQUIRE_WHERE (left to the standard review, P1): An UPDATE or DELETE with no WHERE clause changes every row of its table.\n",
 				"- DISALLOW_TRUNCATE (off): A TRUNCATE removes every row of its table.\n",
 			},
