@@ -66,6 +66,11 @@ func getStatementType(stmt tidbast.StmtNode) storepb.StatementType {
 		return storepb.StatementType_INSERT
 	case *tidbast.UpdateStmt:
 		return storepb.StatementType_UPDATE
+
+	// A procedure call or a prepared statement runs code the statement text does
+	// not show. PREPARE only defines the statement, so it stays unclassified.
+	case *tidbast.CallStmt, *tidbast.ExecuteStmt:
+		return storepb.StatementType_EXECUTE
 	}
 
 	return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED

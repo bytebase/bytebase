@@ -141,6 +141,30 @@ func TestGetStatementTypes(t *testing.T) {
 				storepb.StatementType_COMMENT,
 			},
 		},
+		{
+			name:      "call procedure",
+			statement: "CALL archive_orders(30);",
+			want: []storepb.StatementType{
+				storepb.StatementType_EXECUTE,
+			},
+		},
+		{
+			name:      "execute prepared statement",
+			statement: "EXECUTE purge_stmt(30);",
+			want: []storepb.StatementType{
+				storepb.StatementType_EXECUTE,
+			},
+		},
+		{
+			name:      "prepare",
+			statement: "PREPARE purge_stmt(int) AS DELETE FROM t1 WHERE id = $1;",
+			want:      []storepb.StatementType{},
+		},
+		{
+			name:      "do block",
+			statement: "DO $$ BEGIN DELETE FROM t1; END $$;",
+			want:      []storepb.StatementType{},
+		},
 	}
 
 	for _, tt := range tests {
