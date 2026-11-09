@@ -246,9 +246,10 @@ describe("DatabaseTargetDisplay", () => {
     expect(rootElement?.getAttribute("title")).toBeNull();
     expect(environment?.className).toContain("max-w-24");
     expect(instance?.className).toContain("max-w-40");
-    expect(database?.className).toContain("flex-1");
+    expect(database?.className).toContain("flex-auto");
     expect(database?.className).toContain("min-w-0");
-    expect(database?.className).toContain("basis-12");
+    // A fixed basis wider than a short name squeezes the instance and environment.
+    expect(database?.className).not.toMatch(/\bbasis-/);
   });
 
   it("uses overflow-aware identity tooltips and exposes the full environment name", async () => {
@@ -319,7 +320,6 @@ describe("DatabaseTargetDisplay", () => {
     expect(rootElement?.className).toContain("text-base");
     expect(engineIcon?.className).toContain("h-5");
     expect(database?.className).toContain("min-w-0");
-    expect(database?.className).toContain("basis-16");
   });
 
   it("falls back to the raw target when the target is not a database", () => {

@@ -1987,6 +1987,28 @@
   "plan": {
     "add-spec": "Agregar cambio",
     "add-spec-pending-draft": "Guarda o descarta el cambio pendiente antes de agregar otro",
+    "affected-rows": {
+      "details": "Detalles",
+      "estimate": "Estimación",
+      "estimated": "Estimado",
+      "estimated-on_one": "Estimado en {{count}} base de datos",
+      "estimated-on_other": "Estimado en {{count}} bases de datos",
+      "explanation": "Cuenta las filas que cambian UPDATE, DELETE e INSERT ... SELECT, estimadas con EXPLAIN sobre sentencias de muestra, más las filas que añade INSERT ... VALUES y el número de filas de cada tabla que cambia una sentencia DDL. Las reglas de aprobación leen este número para cada base de datos.",
+      "filter": "Bases de datos que mostrar",
+      "filter-all": "Todas {{n}}",
+      "filter-incomplete": "Incompletas {{n}}",
+      "go-to-line": "Ir a la línea {{line}}",
+      "incomplete": "Incompleto",
+      "incomplete-on_one": "Incompleto en {{count}}",
+      "incomplete-on_other": "Incompleto en {{count}}",
+      "n-databases_one": "{{count}} base de datos",
+      "n-databases_other": "{{count}} bases de datos",
+      "not-estimated": "Sin estimar",
+      "on": "{{rows}} en {{database}}",
+      "rerun": "Volver a ejecutar",
+      "self": "Filas afectadas",
+      "up-to-on": "hasta {{rows}} en {{database}}"
+    },
     "ai-review": {
       "failed-to-run": "No se pudo iniciar la revisión con IA",
       "run": "Ejecutar revisión con IA",
@@ -2019,7 +2041,6 @@
       "passed-on_other": "Aprobado en {{count}} bases de datos",
       "policy": "Política de revisión",
       "project-rules": "Reglas del proyecto: {{on}} de {{total}} activas",
-      "report": "Informe de sentencias",
       "rerun": "Volver a ejecutar",
       "rerun-all": "Volver a ejecutar todo",
       "retry": "Reintentar",
@@ -2317,10 +2338,6 @@
       "close-review-confirm": "¿Cerrar esta revisión?",
       "reopen-confirm": "¿Reabrir este plan?",
       "reopen-review-confirm": "¿Reabrir esta revisión?"
-    },
-    "statement-summary": {
-      "affected-rows_one": "~{{count}} fila afectada",
-      "affected-rows_other": "~{{count}} filas afectadas"
     },
     "status-scope": {
       "description": "Filtrar por el estado actual de las tareas del plan",

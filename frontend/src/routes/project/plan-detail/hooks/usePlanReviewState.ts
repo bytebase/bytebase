@@ -80,7 +80,7 @@ export function usePlanReviewState(): PlanReviewState | undefined {
         aiReviewRow({ run: ai.run, runFetched: ai.shown, findings: aiFindings })
       );
     }
-    for (const reviewer of ["policy", "ghost", "report"] as const) {
+    for (const reviewer of ["policy", "ghost"] as const) {
       const row = planCheckRow(reviewer, page.planCheckRuns);
       if (row) rows.push(row);
     }

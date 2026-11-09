@@ -1987,6 +1987,28 @@
   "plan": {
     "add-spec": "Thêm thay đổi",
     "add-spec-pending-draft": "Lưu hoặc hủy thay đổi đang chờ trước khi thêm thay đổi khác",
+    "affected-rows": {
+      "details": "Chi tiết",
+      "estimate": "Ước tính",
+      "estimated": "Đã ước tính",
+      "estimated-on_one": "Đã ước tính trên {{count}} cơ sở dữ liệu",
+      "estimated-on_other": "Đã ước tính trên {{count}} cơ sở dữ liệu",
+      "explanation": "Đếm số dòng mà UPDATE, DELETE và INSERT ... SELECT thay đổi, ước tính bằng EXPLAIN trên các câu lệnh mẫu, cộng với số dòng INSERT ... VALUES thêm vào và số dòng của mỗi bảng mà câu lệnh DDL thay đổi. Quy tắc phê duyệt đọc con số này cho từng cơ sở dữ liệu.",
+      "filter": "Cơ sở dữ liệu hiển thị",
+      "filter-all": "Tất cả {{n}}",
+      "filter-incomplete": "Chưa đầy đủ {{n}}",
+      "go-to-line": "Đi đến dòng {{line}}",
+      "incomplete": "Chưa đầy đủ",
+      "incomplete-on_one": "Chưa đầy đủ trên {{count}}",
+      "incomplete-on_other": "Chưa đầy đủ trên {{count}}",
+      "n-databases_one": "{{count}} cơ sở dữ liệu",
+      "n-databases_other": "{{count}} cơ sở dữ liệu",
+      "not-estimated": "Chưa ước tính",
+      "on": "{{rows}} trên {{database}}",
+      "rerun": "Chạy lại",
+      "self": "Số dòng bị ảnh hưởng",
+      "up-to-on": "tối đa {{rows}} trên {{database}}"
+    },
     "ai-review": {
       "failed-to-run": "Không thể bắt đầu đánh giá bằng AI",
       "run": "Chạy đánh giá bằng AI",
@@ -2019,7 +2041,6 @@
       "passed-on_other": "Đạt trên {{count}} cơ sở dữ liệu",
       "policy": "Chính sách đánh giá",
       "project-rules": "Quy tắc dự án: bật {{on}}/{{total}}",
-      "report": "Báo cáo câu lệnh",
       "rerun": "Chạy lại",
       "rerun-all": "Chạy lại tất cả",
       "retry": "Thử lại",
@@ -2317,10 +2338,6 @@
       "close-review-confirm": "Đóng đợt xem xét này?",
       "reopen-confirm": "Mở lại kế hoạch này?",
       "reopen-review-confirm": "Mở lại đợt xem xét này?"
-    },
-    "statement-summary": {
-      "affected-rows_one": "~{{count}} dòng bị ảnh hưởng",
-      "affected-rows_other": "~{{count}} dòng bị ảnh hưởng"
     },
     "status-scope": {
       "description": "Lọc theo trạng thái hiện tại của các tác vụ trong kế hoạch",

@@ -1987,6 +1987,28 @@
   "plan": {
     "add-spec": "変更を追加",
     "add-spec-pending-draft": "新しい変更を追加する前に、保留中の変更を保存または破棄してください",
+    "affected-rows": {
+      "details": "詳細",
+      "estimate": "見積もり",
+      "estimated": "見積もり済み",
+      "estimated-on_one": "{{count}} 個のデータベースで見積もり",
+      "estimated-on_other": "{{count}} 個のデータベースで見積もり",
+      "explanation": "UPDATE、DELETE、INSERT ... SELECT が変更する行数（サンプルのステートメントに EXPLAIN を実行して見積もり）に、INSERT ... VALUES が追加する行数と、DDL ステートメントが変更する各テーブルの行数を加えたものです。承認ルールはデータベースごとにこの数値を参照します。",
+      "filter": "表示するデータベース",
+      "filter-all": "すべて {{n}}",
+      "filter-incomplete": "不完全 {{n}}",
+      "go-to-line": "{{line}} 行目へ移動",
+      "incomplete": "不完全",
+      "incomplete-on_one": "{{count}} 個で不完全",
+      "incomplete-on_other": "{{count}} 個で不完全",
+      "n-databases_one": "{{count}} 個のデータベース",
+      "n-databases_other": "{{count}} 個のデータベース",
+      "not-estimated": "見積もりなし",
+      "on": "{{database}} で {{rows}} 行",
+      "rerun": "再実行",
+      "self": "影響行数",
+      "up-to-on": "最大で {{database}} の {{rows}} 行"
+    },
     "ai-review": {
       "failed-to-run": "AI レビューを開始できませんでした",
       "run": "AI レビューを実行",
@@ -2019,7 +2041,6 @@
       "passed-on_other": "{{count}} 個のデータベースで合格",
       "policy": "レビューポリシー",
       "project-rules": "プロジェクトのルール：{{total}} 件中 {{on}} 件が有効",
-      "report": "ステートメントレポート",
       "rerun": "再実行",
       "rerun-all": "すべて再実行",
       "retry": "再試行",
@@ -2317,10 +2338,6 @@
       "close-review-confirm": "このレビューを閉じますか？",
       "reopen-confirm": "このプランを再開きますか？",
       "reopen-review-confirm": "このレビューを再開しますか？"
-    },
-    "statement-summary": {
-      "affected-rows_one": "約 {{count}} 行に影響",
-      "affected-rows_other": "約 {{count}} 行に影響"
     },
     "status-scope": {
       "description": "プラン内のタスクの現在のステータスで絞り込みます",

@@ -16,7 +16,6 @@ type DatabaseTargetDisplaySize = "sm" | "md";
 const sizeClasses: Record<
   DatabaseTargetDisplaySize,
   {
-    database: string;
     environment: string;
     icon: string;
     instance: string;
@@ -24,14 +23,12 @@ const sizeClasses: Record<
   }
 > = {
   sm: {
-    database: "min-w-0 basis-12",
     environment: "max-w-24",
     icon: "h-4 w-4",
     instance: "max-w-40",
     root: "text-sm",
   },
   md: {
-    database: "min-w-0 basis-16",
     environment: "max-w-28",
     icon: "h-5 w-5",
     instance: "max-w-48",
@@ -156,7 +153,7 @@ export function DatabaseTargetDisplay({
       <EllipsisText
         text={databaseName}
         tooltipLayer={tooltipLayer}
-        className={cn("flex-1 truncate text-control", classes.database)}
+        className="min-w-0 flex-auto truncate text-control"
       >
         <HighlightLabelText text={databaseName} keyword={keyword} />
       </EllipsisText>
