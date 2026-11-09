@@ -5580,18 +5580,18 @@ var File_v1_database_service_proto protoreflect.FileDescriptor
 
 const file_v1_database_service_proto_rawDesc = "" +
 	"\n" +
-	"\x19v1/database_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x19v1/instance_service.proto\"G\n" +
-	"\x12GetDatabaseRequest\x121\n" +
-	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
-	"\x15bytebase.com/DatabaseR\x04name\"\x86\x01\n" +
-	"\x18BatchGetDatabasesRequest\x125\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\x12\x15bytebase.com/DatabaseR\x06parent\x123\n" +
-	"\x05names\x18\x02 \x03(\tB\x1d\xe0A\x02\xfaA\x17\n" +
+	"\x19v1/database_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x19v1/instance_service.proto\"H\n" +
+	"\x12GetDatabaseRequest\x122\n" +
+	"\x04name\x18\x01 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
+	"\x15bytebase.com/DatabaseR\x04name\"\x88\x01\n" +
+	"\x18BatchGetDatabasesRequest\x126\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\x12\x15bytebase.com/DatabaseR\x06parent\x124\n" +
+	"\x05names\x18\x02 \x03(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
 	"\x15bytebase.com/DatabaseR\x05names\"P\n" +
 	"\x19BatchGetDatabasesResponse\x123\n" +
-	"\tdatabases\x18\x01 \x03(\v2\x15.bytebase.v1.DatabaseR\tdatabases\"\xdf\x01\n" +
-	"\x14ListDatabasesRequest\x125\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\x12\x15bytebase.com/DatabaseR\x06parent\x12\x1b\n" +
+	"\tdatabases\x18\x01 \x03(\v2\x15.bytebase.v1.DatabaseR\tdatabases\"\xe0\x01\n" +
+	"\x14ListDatabasesRequest\x126\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\x12\x15bytebase.com/DatabaseR\x06parent\x12\x1b\n" +
 	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
 	"page_token\x18\x03 \x01(\tR\tpageToken\x12\x16\n" +
@@ -5608,72 +5608,72 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\x06filter\x18\x03 \x01(\tR\x06filter\"v\n" +
 	"\x17SearchDatabasesResponse\x123\n" +
 	"\tdatabases\x18\x01 \x03(\v2\x15.bytebase.v1.DatabaseR\tdatabases\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x8c\x01\n" +
-	"\x15UpdateDatabaseRequest\x126\n" +
-	"\bdatabase\x18\x01 \x01(\v2\x15.bytebase.v1.DatabaseB\x03\xe0A\x02R\bdatabase\x12;\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x8d\x01\n" +
+	"\x15UpdateDatabaseRequest\x127\n" +
+	"\bdatabase\x18\x01 \x01(\v2\x15.bytebase.v1.DatabaseB\x04\xe2A\x01\x02R\bdatabase\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
-	"updateMask\"z\n" +
+	"updateMask\"{\n" +
 	"\x1bBatchUpdateDatabasesRequest\x12\x16\n" +
-	"\x06parent\x18\x01 \x01(\tR\x06parent\x12C\n" +
-	"\brequests\x18\x02 \x03(\v2\".bytebase.v1.UpdateDatabaseRequestB\x03\xe0A\x02R\brequests\"S\n" +
+	"\x06parent\x18\x01 \x01(\tR\x06parent\x12D\n" +
+	"\brequests\x18\x02 \x03(\v2\".bytebase.v1.UpdateDatabaseRequestB\x04\xe2A\x01\x02R\brequests\"S\n" +
 	"\x1cBatchUpdateDatabasesResponse\x123\n" +
-	"\tdatabases\x18\x01 \x03(\v2\x15.bytebase.v1.DatabaseR\tdatabases\"h\n" +
+	"\tdatabases\x18\x01 \x03(\v2\x15.bytebase.v1.DatabaseR\tdatabases\"i\n" +
 	"\x19BatchSyncDatabasesRequest\x12\x16\n" +
-	"\x06parent\x18\x01 \x01(\tR\x06parent\x123\n" +
-	"\x05names\x18\x02 \x03(\tB\x1d\xe0A\x02\xfaA\x17\n" +
+	"\x06parent\x18\x01 \x01(\tR\x06parent\x124\n" +
+	"\x05names\x18\x02 \x03(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
 	"\x15bytebase.com/DatabaseR\x05names\"\x1c\n" +
-	"\x1aBatchSyncDatabasesResponse\"H\n" +
-	"\x13SyncDatabaseRequest\x121\n" +
-	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
+	"\x1aBatchSyncDatabasesResponse\"I\n" +
+	"\x13SyncDatabaseRequest\x122\n" +
+	"\x04name\x18\x01 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
 	"\x15bytebase.com/DatabaseR\x04name\"\x16\n" +
-	"\x14SyncDatabaseResponse\"\x85\x01\n" +
-	"\x1aGetDatabaseMetadataRequest\x129\n" +
-	"\x04name\x18\x01 \x01(\tB%\xe0A\x02\xfaA\x1f\n" +
+	"\x14SyncDatabaseResponse\"\x86\x01\n" +
+	"\x1aGetDatabaseMetadataRequest\x12:\n" +
+	"\x04name\x18\x01 \x01(\tB&\xe2A\x01\x02\xfaA\x1f\n" +
 	"\x1dbytebase.com/DatabaseMetadataR\x04name\x12\x16\n" +
 	"\x06filter\x18\x02 \x01(\tR\x06filter\x12\x14\n" +
-	"\x05limit\x18\x03 \x01(\x05R\x05limit\"S\n" +
-	"\x18GetDatabaseSchemaRequest\x127\n" +
-	"\x04name\x18\x01 \x01(\tB#\xe0A\x02\xfaA\x1d\n" +
-	"\x1bbytebase.com/DatabaseSchemaR\x04name\"\xe6\x01\n" +
-	"\x1bGetDatabaseSDLSchemaRequest\x121\n" +
-	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
+	"\x05limit\x18\x03 \x01(\x05R\x05limit\"T\n" +
+	"\x18GetDatabaseSchemaRequest\x128\n" +
+	"\x04name\x18\x01 \x01(\tB$\xe2A\x01\x02\xfaA\x1d\n" +
+	"\x1bbytebase.com/DatabaseSchemaR\x04name\"\xe7\x01\n" +
+	"\x1bGetDatabaseSDLSchemaRequest\x122\n" +
+	"\x04name\x18\x01 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
 	"\x15bytebase.com/DatabaseR\x04name\x12J\n" +
 	"\x06format\x18\x02 \x01(\x0e22.bytebase.v1.GetDatabaseSDLSchemaRequest.SDLFormatR\x06format\"H\n" +
 	"\tSDLFormat\x12\x1a\n" +
 	"\x16SDL_FORMAT_UNSPECIFIED\x10\x00\x12\x0f\n" +
 	"\vSINGLE_FILE\x10\x01\x12\x0e\n" +
 	"\n" +
-	"MULTI_FILE\x10\x02\"\x8a\x01\n" +
-	"\x11DiffSchemaRequest\x121\n" +
-	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
+	"MULTI_FILE\x10\x02\"\x8b\x01\n" +
+	"\x11DiffSchemaRequest\x122\n" +
+	"\x04name\x18\x01 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
 	"\x15bytebase.com/DatabaseR\x04name\x12\x18\n" +
 	"\x06schema\x18\x02 \x01(\tH\x00R\x06schema\x12\x1e\n" +
 	"\tchangelog\x18\x03 \x01(\tH\x00R\tchangelogB\b\n" +
 	"\x06target\"(\n" +
 	"\x12DiffSchemaResponse\x12\x12\n" +
-	"\x04diff\x18\x01 \x01(\tR\x04diff\"\x95\x01\n" +
-	"\x13DiffMetadataRequest\x121\n" +
-	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
-	"\x15bytebase.com/DatabaseR\x04name\x12K\n" +
-	"\x0ftarget_metadata\x18\x02 \x01(\v2\x1d.bytebase.v1.DatabaseMetadataB\x03\xe0A\x02R\x0etargetMetadata\"*\n" +
+	"\x04diff\x18\x01 \x01(\tR\x04diff\"\x97\x01\n" +
+	"\x13DiffMetadataRequest\x122\n" +
+	"\x04name\x18\x01 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
+	"\x15bytebase.com/DatabaseR\x04name\x12L\n" +
+	"\x0ftarget_metadata\x18\x02 \x01(\v2\x1d.bytebase.v1.DatabaseMetadataB\x04\xe2A\x01\x02R\x0etargetMetadata\"*\n" +
 	"\x14DiffMetadataResponse\x12\x12\n" +
-	"\x04diff\x18\x01 \x01(\tR\x04diff\"\xcf\x06\n" +
+	"\x04diff\x18\x01 \x01(\tR\x04diff\"\xd8\x06\n" +
 	"\bDatabase\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12-\n" +
-	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateB\x03\xe0A\x03R\x05state\x12Q\n" +
-	"\x14successful_sync_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\x12successfulSyncTime\x12\x18\n" +
-	"\aproject\x18\x04 \x01(\tR\aproject\x12\x1d\n" +
-	"\arelease\x18\x05 \x01(\tB\x03\xe0A\x03R\arelease\x12*\n" +
-	"\venvironment\x18\x06 \x01(\tB\x03\xe0A\x01H\x00R\venvironment\x88\x01\x01\x12=\n" +
-	"\x15effective_environment\x18\a \x01(\tB\x03\xe0A\x03H\x01R\x14effectiveEnvironment\x88\x01\x01\x129\n" +
-	"\x06labels\x18\b \x03(\v2!.bytebase.v1.Database.LabelsEntryR\x06labels\x12O\n" +
-	"\x11instance_resource\x18\t \x01(\v2\x1d.bytebase.v1.InstanceResourceB\x03\xe0A\x03R\x10instanceResource\x12.\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12.\n" +
+	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateB\x04\xe2A\x01\x03R\x05state\x12R\n" +
+	"\x14successful_sync_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\x12successfulSyncTime\x12\x18\n" +
+	"\aproject\x18\x04 \x01(\tR\aproject\x12\x1e\n" +
+	"\arelease\x18\x05 \x01(\tB\x04\xe2A\x01\x03R\arelease\x12+\n" +
+	"\venvironment\x18\x06 \x01(\tB\x04\xe2A\x01\x01H\x00R\venvironment\x88\x01\x01\x12>\n" +
+	"\x15effective_environment\x18\a \x01(\tB\x04\xe2A\x01\x03H\x01R\x14effectiveEnvironment\x88\x01\x01\x129\n" +
+	"\x06labels\x18\b \x03(\v2!.bytebase.v1.Database.LabelsEntryR\x06labels\x12P\n" +
+	"\x11instance_resource\x18\t \x01(\v2\x1d.bytebase.v1.InstanceResourceB\x04\xe2A\x01\x03R\x10instanceResource\x12/\n" +
 	"\x10backup_available\x18\n" +
-	" \x01(\bB\x03\xe0A\x03R\x0fbackupAvailable\x12=\n" +
-	"\vsync_status\x18\v \x01(\x0e2\x17.bytebase.v1.SyncStatusB\x03\xe0A\x03R\n" +
-	"syncStatus\x12\"\n" +
+	" \x01(\bB\x04\xe2A\x01\x03R\x0fbackupAvailable\x12>\n" +
+	"\vsync_status\x18\v \x01(\x0e2\x17.bytebase.v1.SyncStatusB\x04\xe2A\x01\x03R\n" +
+	"syncStatus\x12#\n" +
 	"\n" +
-	"sync_error\x18\f \x01(\tB\x03\xe0A\x03R\tsyncError\x1a9\n" +
+	"sync_error\x18\f \x01(\tB\x04\xe2A\x01\x03R\tsyncError\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:\x84\x01\xeaA\x80\x01\n" +
@@ -6056,12 +6056,12 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\n" +
 	"match_type\x18\b \x01(\tR\tmatchType\"(\n" +
 	"\x0eDatabaseSchema\x12\x16\n" +
-	"\x06schema\x18\x01 \x01(\tR\x06schema\"S\n" +
+	"\x06schema\x18\x01 \x01(\tR\x06schema\"T\n" +
 	"\x11DatabaseSDLSchema\x12\x16\n" +
-	"\x06schema\x18\x01 \x01(\fR\x06schema\x12&\n" +
-	"\fcontent_type\x18\x02 \x01(\tB\x03\xe0A\x03R\vcontentType\"\x97\x03\n" +
-	"\x16GetSchemaStringRequest\x121\n" +
-	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
+	"\x06schema\x18\x01 \x01(\fR\x06schema\x12'\n" +
+	"\fcontent_type\x18\x02 \x01(\tB\x04\xe2A\x01\x03R\vcontentType\"\x98\x03\n" +
+	"\x16GetSchemaStringRequest\x122\n" +
+	"\x04name\x18\x01 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
 	"\x15bytebase.com/DatabaseR\x04name\x12B\n" +
 	"\x04type\x18\x02 \x01(\x0e2..bytebase.v1.GetSchemaStringRequest.ObjectTypeR\x04type\x12\x16\n" +
 	"\x06schema\x18\x03 \x01(\tR\x06schema\x12\x16\n" +

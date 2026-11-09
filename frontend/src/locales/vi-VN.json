@@ -1248,15 +1248,29 @@
     },
     "sharepoint": {
       "canceled-description": "Quá trình xuất đã bị hủy khi đang xuất cơ sở dữ liệu này. Có thể đã có tệp trong SharePoint.",
+      "error": {
+        "credential-rejected": "Microsoft Entra đã từ chối thông tin xác thực của ứng dụng SharePoint. Hãy nhờ quản trị viên không gian làm việc cập nhật chúng trong cài đặt không gian làm việc.",
+        "destination-not-folder": "Đích SharePoint là một tệp. Hãy nhờ chủ sở hữu dự án đặt một thư viện tài liệu hoặc thư mục.",
+        "destination-not-found": "Thư mục SharePoint không tồn tại hoặc ứng dụng SharePoint không thể truy cập. Hãy nhờ chủ sở hữu dự án kiểm tra đích xuất.",
+        "files-may-exist": "Có thể đã có một số tệp trong thư mục “{{folder}}”.",
+        "not-configured": "Dự án này chưa thiết lập xuất sang SharePoint. Hãy nhờ quản trị viên kiểm tra cài đặt SharePoint.",
+        "request-failed": "SharePoint không thể hoàn tất việc xuất. Hãy thử lại. Nếu vẫn thất bại, hãy chia sẻ chi tiết lỗi với quản trị viên.",
+        "storage-full": "Trang SharePoint đã hết dung lượng lưu trữ. Hãy nhờ quản trị viên SharePoint giải phóng dung lượng.",
+        "upload-unconfirmed": "Bytebase không thể xác nhận việc tải lên đã hoàn tất."
+      },
       "exported-title": "Đã xuất sang SharePoint",
       "not-started-description": "Quá trình xuất đã bị hủy trước khi bắt đầu cơ sở dữ liệu này. Không có gì được xuất.",
       "open": "Mở trong SharePoint",
       "result-title": "Kết quả xuất sang SharePoint",
+      "retry-failed": "Thử lại mục thất bại",
+      "retry-unconfirmed-warning": "Mỗi lần thử lại sẽ xuất vào một thư mục mới. Cơ sở dữ liệu được đánh dấu Chưa xác nhận có thể đã có tệp trong thư mục trước đó, nên SharePoint có thể có tệp trùng lặp.",
+      "retrying": "Đang thử lại…",
       "status": {
         "canceled": "Đã hủy",
         "exported": "Đã xuất",
         "failed": "Thất bại",
         "not-started": "Chưa xuất",
+        "retrying": "Đang thử lại",
         "unconfirmed": "Chưa xác nhận"
       }
     }
@@ -3263,6 +3277,10 @@
           "refused": "Không được phép"
         },
         "row": {
+          "add-instances": {
+            "details": "Thêm vào một dự án một phiên bản PostgreSQL đăng nhập bằng tên người dùng và mật khẩu · Mỗi phiên bản được xác nhận trong ứng dụng MCP của người dùng trước khi được thêm · Các cơ sở dữ liệu của nó thuộc về dự án đó vĩnh viễn",
+            "title": "Thêm phiên bản vào dự án"
+          },
           "approval-rules": {
             "details": "Thêm, xóa, sắp xếp lại hoặc thay đổi các quy tắc quyết định ai phê duyệt một thay đổi cơ sở dữ liệu · Mỗi thay đổi được xác nhận trong ứng dụng MCP của người dùng trước khi được thực hiện · Quy tắc dự phòng và quy tắc cho các loại Issue khác giữ nguyên",
             "title": "Quản lý quy tắc phê duyệt thay đổi cơ sở dữ liệu"

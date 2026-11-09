@@ -24,6 +24,7 @@ export type MCPCapabilityRowId =
   | "request-access"
   | "masking-exemptions"
   | "approve"
+  | "add-instances"
   | "approval-rules"
   | "masking-rules"
   | "run-rollouts"
@@ -61,6 +62,7 @@ export const MCP_CAPABILITY_ROWS: readonly MCPCapabilityRow[] = [
   { id: "request-access", tier: "write" },
   { id: "masking-exemptions", tier: "write" },
   { id: "approve", tier: "write" },
+  { id: "add-instances", tier: "write" },
   { id: "approval-rules", tier: "write" },
   { id: "masking-rules", tier: "write" },
   { id: "run-rollouts", tier: "write" },

@@ -1248,15 +1248,29 @@
     },
     "sharepoint": {
       "canceled-description": "导出此数据库时导出已取消。SharePoint 中可能已存在文件。",
+      "error": {
+        "credential-rejected": "Microsoft Entra 拒绝了 SharePoint 应用的凭据。请联系工作空间管理员在工作空间设置中更新。",
+        "destination-not-folder": "SharePoint 导出目标是一个文件。请联系项目所有者改为设置文档库或文件夹。",
+        "destination-not-found": "SharePoint 文件夹不存在，或 SharePoint 应用无法访问它。请联系项目所有者检查导出目标。",
+        "files-may-exist": "文件夹“{{folder}}”中可能已有部分文件。",
+        "not-configured": "此项目尚未设置导出到 SharePoint。请联系管理员检查 SharePoint 设置。",
+        "request-failed": "SharePoint 无法完成导出。请重试；如果仍然失败，请将错误详情提供给管理员。",
+        "storage-full": "SharePoint 站点存储空间已满。请联系 SharePoint 管理员释放空间。",
+        "upload-unconfirmed": "Bytebase 无法确认上传是否完成。"
+      },
       "exported-title": "已导出到 SharePoint",
       "not-started-description": "导出在此数据库开始前已取消，未导出任何内容。",
       "open": "在 SharePoint 中打开",
       "result-title": "SharePoint 导出结果",
+      "retry-failed": "重试失败项",
+      "retry-unconfirmed-warning": "每次重试都会导出到新的文件夹。标记为“未确认”的数据库在之前的文件夹中可能已有文件，因此 SharePoint 中可能出现重复文件。",
+      "retrying": "正在重试…",
       "status": {
         "canceled": "已取消",
         "exported": "已导出",
         "failed": "失败",
         "not-started": "未导出",
+        "retrying": "重试中",
         "unconfirmed": "未确认"
       }
     }
@@ -3263,6 +3277,10 @@
           "refused": "不允许"
         },
         "row": {
+          "add-instances": {
+            "details": "向项目添加使用用户名和密码登录的 PostgreSQL 实例 · 每个实例都会先在用户的 MCP 客户端中确认，然后才会添加 · 其数据库将永久归属该项目",
+            "title": "向项目添加实例"
+          },
           "approval-rules": {
             "details": "添加、删除、调整顺序或修改决定由谁审批数据库变更的规则 · 每项变更都会先在用户的 MCP 客户端中确认，然后才会执行 · 兜底规则和其他类型工单的规则保持不变",
             "title": "管理数据库变更的审批规则"

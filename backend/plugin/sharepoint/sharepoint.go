@@ -46,6 +46,10 @@ var (
 	ErrNotFoundOrNoAccess = errors.New("the SharePoint destination does not exist or Bytebase cannot access it")
 	// ErrCredential means Entra rejected the application's credentials.
 	ErrCredential = errors.New("Microsoft Entra rejected the SharePoint application credentials")
+	// ErrNotFolder means the destination URL names a file.
+	ErrNotFolder = errors.New("the SharePoint destination is a file; use a document library or folder")
+	// ErrStorageFull means the destination's site or library is out of storage.
+	ErrStorageFull = errors.New("the SharePoint destination is out of storage")
 	// ErrUnconfirmed means an upload could not be confirmed after retries and
 	// reconciliation; some files may exist in SharePoint.
 	ErrUnconfirmed = errors.New("the upload to SharePoint could not be confirmed; files may exist in the destination")

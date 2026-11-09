@@ -12,6 +12,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/alexmullins/zip"
 	"github.com/pkg/errors"
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/export"
@@ -52,13 +53,56 @@ func decideExportDestination(in exportDestinationInput) (v1pb.ExportDestination,
 		return 0, connect.NewError(connect.CodeInvalidArgument, errors.New("password applies only to download"))
 	}
 	if in.destinationURL == "" {
-		return 0, connect.NewError(connect.CodeFailedPrecondition, errors.New("the project has no SharePoint export destination"))
+		return 0, sharePointExportError(connect.CodeFailedPrecondition, errors.New("the project has no SharePoint export destination"), sharePointReasonNotConfigured, "")
 	}
 	setting := in.sharePointSetting
 	if setting.GetTenantId() == "" || setting.GetClientId() == "" || setting.GetClientSecret() == "" {
-		return 0, connect.NewError(connect.CodeFailedPrecondition, errors.New("SharePoint is not configured in workspace settings"))
+		return 0, sharePointExportError(connect.CodeFailedPrecondition, errors.New("SharePoint is not configured in workspace settings"), sharePointReasonNotConfigured, "")
 	}
 	return v1pb.ExportDestination_SHAREPOINT, nil
+}
+
+// The ErrorInfo reasons of SharePoint export errors, which the SQL Editor
+// explains to the user. Metadata "folder", when present, names the export
+// folder where some files may already exist.
+const (
+	sharePointErrorDomain                = "bytebase.com"
+	sharePointReasonNotConfigured        = "SHAREPOINT_NOT_CONFIGURED"
+	sharePointReasonCredentialRejected   = "SHAREPOINT_CREDENTIAL_REJECTED"
+	sharePointReasonDestinationNotFound  = "SHAREPOINT_DESTINATION_NOT_FOUND"
+	sharePointReasonDestinationNotFolder = "SHAREPOINT_DESTINATION_NOT_FOLDER"
+	sharePointReasonStorageFull          = "SHAREPOINT_STORAGE_FULL"
+	sharePointReasonUploadUnconfirmed    = "SHAREPOINT_UPLOAD_UNCONFIRMED"
+	sharePointReasonRequestFailed        = "SHAREPOINT_REQUEST_FAILED"
+)
+
+func sharePointExportError(code connect.Code, err error, reason, folder string) *connect.Error {
+	connectErr := connect.NewError(code, err)
+	info := &errdetails.ErrorInfo{Reason: reason, Domain: sharePointErrorDomain}
+	if folder != "" {
+		info.Metadata = map[string]string{"folder": folder}
+	}
+	if detail, detailErr := connect.NewErrorDetail(info); detailErr == nil {
+		connectErr.AddDetail(detail)
+	}
+	return connectErr
+}
+
+func sharePointErrorReason(err error) string {
+	switch {
+	case errors.Is(err, sharepoint.ErrUnconfirmed):
+		return sharePointReasonUploadUnconfirmed
+	case errors.Is(err, sharepoint.ErrCredential):
+		return sharePointReasonCredentialRejected
+	case errors.Is(err, sharepoint.ErrNotFoundOrNoAccess):
+		return sharePointReasonDestinationNotFound
+	case errors.Is(err, sharepoint.ErrNotFolder):
+		return sharePointReasonDestinationNotFolder
+	case errors.Is(err, sharepoint.ErrStorageFull):
+		return sharePointReasonStorageFull
+	default:
+		return sharePointReasonRequestFailed
+	}
 }
 
 // sharePointExportTarget is the destination an export captured when it started.
@@ -117,14 +161,19 @@ func resolveSharePointExportTarget(ctx context.Context, newClient func(sharepoin
 		ClientSecret: setting.GetClientSecret(),
 	})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Wrap(err, "invalid SharePoint configuration"))
+		reason := sharePointReasonNotConfigured
+		if errors.Is(err, sharepoint.ErrCredential) {
+			reason = sharePointReasonCredentialRejected
+		}
+		return nil, sharePointExportError(connect.CodeFailedPrecondition, errors.Wrap(err, "invalid SharePoint configuration"), reason, "")
 	}
 	location, err := client.ResolveRecent(ctx, destinationURL)
 	if err != nil {
-		if errors.Is(err, sharepoint.ErrNotFoundOrNoAccess) || errors.Is(err, sharepoint.ErrCredential) {
-			return nil, connect.NewError(connect.CodeFailedPrecondition, err)
+		reason := sharePointErrorReason(err)
+		if reason == sharePointReasonRequestFailed {
+			return nil, sharePointExportError(connect.CodeInternal, errors.Wrap(err, "failed to resolve the SharePoint export destination"), reason, "")
 		}
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to resolve the SharePoint export destination"))
+		return nil, sharePointExportError(connect.CodeFailedPrecondition, err, reason, "")
 	}
 	return &sharePointExportTarget{client: client, location: location}, nil
 }
@@ -134,23 +183,28 @@ func resolveSharePointExportTarget(ctx context.Context, newClient func(sharepoin
 // uploaded, so every error names the folder.
 func uploadSharePointExport(ctx context.Context, target *sharePointExportTarget, folderName string, files []sharepoint.File) (string, error) {
 	folder, err := target.client.Upload(ctx, target.location, folderName, files)
-	if err != nil {
-		if errors.Is(err, sharepoint.ErrUnconfirmed) {
-			return "", connect.NewError(connect.CodeUnavailable, errors.Errorf("the upload to SharePoint could not be confirmed; files may exist in folder %q", folderName))
-		}
-		code := connect.CodeInternal
-		if errors.Is(err, sharepoint.ErrNotFoundOrNoAccess) || errors.Is(err, sharepoint.ErrCredential) {
-			code = connect.CodeFailedPrecondition
-		}
-		if errors.Is(err, context.Canceled) {
-			code = connect.CodeCanceled
-		}
-		if errors.Is(err, sharepoint.ErrNothingUploaded) {
-			return "", connect.NewError(code, errors.Wrap(err, "the upload to SharePoint failed; nothing was uploaded"))
-		}
-		return "", connect.NewError(code, errors.Wrapf(err, "the upload to SharePoint failed; some files may already exist in folder %q", folderName))
+	if err == nil {
+		return folder.WebURL, nil
 	}
-	return folder.WebURL, nil
+	reason := sharePointErrorReason(err)
+	if reason == sharePointReasonUploadUnconfirmed {
+		return "", sharePointExportError(connect.CodeUnavailable, errors.Errorf("the upload to SharePoint could not be confirmed; files may exist in folder %q", folderName), reason, folderName)
+	}
+	filesMayRemainIn := folderName
+	if errors.Is(err, sharepoint.ErrNothingUploaded) {
+		filesMayRemainIn = ""
+		err = errors.Wrap(err, "the upload to SharePoint failed; nothing was uploaded")
+	} else {
+		err = errors.Wrapf(err, "the upload to SharePoint failed; some files may already exist in folder %q", folderName)
+	}
+	if errors.Is(err, context.Canceled) {
+		return "", connect.NewError(connect.CodeCanceled, err)
+	}
+	code := connect.CodeFailedPrecondition
+	if reason == sharePointReasonRequestFailed {
+		code = connect.CodeInternal
+	}
+	return "", sharePointExportError(code, err, reason, filesMayRemainIn)
 }
 
 const (

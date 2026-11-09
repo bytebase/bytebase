@@ -1713,12 +1713,12 @@ var File_v1_project_service_proto protoreflect.FileDescriptor
 
 const file_v1_project_service_proto_rawDesc = "" +
 	"\n" +
-	"\x18v1/project_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x17google/type/color.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x13v1/iam_policy.proto\"E\n" +
-	"\x11GetProjectRequest\x120\n" +
-	"\x04name\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
-	"\x14bytebase.com/ProjectR\x04name\"M\n" +
-	"\x17BatchGetProjectsRequest\x122\n" +
-	"\x05names\x18\x01 \x03(\tB\x1c\xe0A\x02\xfaA\x16\n" +
+	"\x18v1/project_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x17google/type/color.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x13v1/iam_policy.proto\"F\n" +
+	"\x11GetProjectRequest\x121\n" +
+	"\x04name\x18\x01 \x01(\tB\x1d\xe2A\x01\x02\xfaA\x16\n" +
+	"\x14bytebase.com/ProjectR\x04name\"N\n" +
+	"\x17BatchGetProjectsRequest\x123\n" +
+	"\x05names\x18\x01 \x03(\tB\x1d\xe2A\x01\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x05names\"L\n" +
 	"\x18BatchGetProjectsResponse\x120\n" +
 	"\bprojects\x18\x01 \x03(\v2\x14.bytebase.v1.ProjectR\bprojects\"\xa7\x01\n" +
@@ -1741,25 +1741,25 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\border_by\x18\x05 \x01(\tR\aorderBy\"r\n" +
 	"\x16SearchProjectsResponse\x120\n" +
 	"\bprojects\x18\x01 \x03(\v2\x14.bytebase.v1.ProjectR\bprojects\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"j\n" +
-	"\x14CreateProjectRequest\x123\n" +
-	"\aproject\x18\x01 \x01(\v2\x14.bytebase.v1.ProjectB\x03\xe0A\x02R\aproject\x12\x1d\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"k\n" +
+	"\x14CreateProjectRequest\x124\n" +
+	"\aproject\x18\x01 \x01(\v2\x14.bytebase.v1.ProjectB\x04\xe2A\x01\x02R\aproject\x12\x1d\n" +
 	"\n" +
-	"project_id\x18\x02 \x01(\tR\tprojectId\"\xad\x01\n" +
-	"\x14UpdateProjectRequest\x123\n" +
-	"\aproject\x18\x01 \x01(\v2\x14.bytebase.v1.ProjectB\x03\xe0A\x02R\aproject\x12;\n" +
+	"project_id\x18\x02 \x01(\tR\tprojectId\"\xae\x01\n" +
+	"\x14UpdateProjectRequest\x124\n" +
+	"\aproject\x18\x01 \x01(\v2\x14.bytebase.v1.ProjectB\x04\xe2A\x01\x02R\aproject\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
 	"updateMask\x12#\n" +
-	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"^\n" +
-	"\x14DeleteProjectRequest\x120\n" +
-	"\x04name\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
+	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"_\n" +
+	"\x14DeleteProjectRequest\x121\n" +
+	"\x04name\x18\x01 \x01(\tB\x1d\xe2A\x01\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x04name\x12\x14\n" +
-	"\x05purge\x18\x02 \x01(\bR\x05purge\"J\n" +
-	"\x16UndeleteProjectRequest\x120\n" +
-	"\x04name\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
-	"\x14bytebase.com/ProjectR\x04name\"f\n" +
-	"\x1aBatchDeleteProjectsRequest\x122\n" +
-	"\x05names\x18\x01 \x03(\tB\x1c\xe0A\x02\xfaA\x16\n" +
+	"\x05purge\x18\x02 \x01(\bR\x05purge\"K\n" +
+	"\x16UndeleteProjectRequest\x121\n" +
+	"\x04name\x18\x01 \x01(\tB\x1d\xe2A\x01\x02\xfaA\x16\n" +
+	"\x14bytebase.com/ProjectR\x04name\"g\n" +
+	"\x1aBatchDeleteProjectsRequest\x123\n" +
+	"\x05names\x18\x01 \x03(\tB\x1d\xe2A\x01\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x05names\x12\x14\n" +
 	"\x05purge\x18\x02 \x01(\bR\x05purge\"]\n" +
 	"\x05Label\x12\x14\n" +
@@ -1799,34 +1799,34 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"sharepoint\x18\x01 \x01(\v2\".bytebase.v1.SharePointDestinationR\n" +
 	"sharepoint:-\xeaA*\n" +
 	"\x14bytebase.com/Project\x12\x12projects/{project}J\x04\b\b\x10\n" +
-	"J\x04\b\v\x10\r\"\x80\x01\n" +
-	"\x11AddWebhookRequest\x126\n" +
-	"\aproject\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
-	"\x14bytebase.com/ProjectR\aproject\x123\n" +
-	"\awebhook\x18\x02 \x01(\v2\x14.bytebase.v1.WebhookB\x03\xe0A\x02R\awebhook\"\xad\x01\n" +
-	"\x14UpdateWebhookRequest\x123\n" +
-	"\awebhook\x18\x01 \x01(\v2\x14.bytebase.v1.WebhookB\x03\xe0A\x02R\awebhook\x12;\n" +
+	"J\x04\b\v\x10\r\"\x82\x01\n" +
+	"\x11AddWebhookRequest\x127\n" +
+	"\aproject\x18\x01 \x01(\tB\x1d\xe2A\x01\x02\xfaA\x16\n" +
+	"\x14bytebase.com/ProjectR\aproject\x124\n" +
+	"\awebhook\x18\x02 \x01(\v2\x14.bytebase.v1.WebhookB\x04\xe2A\x01\x02R\awebhook\"\xae\x01\n" +
+	"\x14UpdateWebhookRequest\x124\n" +
+	"\awebhook\x18\x01 \x01(\v2\x14.bytebase.v1.WebhookB\x04\xe2A\x01\x02R\awebhook\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
 	"updateMask\x12#\n" +
-	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"K\n" +
-	"\x14RemoveWebhookRequest\x123\n" +
-	"\awebhook\x18\x01 \x01(\v2\x14.bytebase.v1.WebhookB\x03\xe0A\x02R\awebhook\"\x81\x01\n" +
-	"\x12TestWebhookRequest\x126\n" +
-	"\aproject\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
-	"\x14bytebase.com/ProjectR\aproject\x123\n" +
-	"\awebhook\x18\x02 \x01(\v2\x14.bytebase.v1.WebhookB\x03\xe0A\x02R\awebhook\"+\n" +
+	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"L\n" +
+	"\x14RemoveWebhookRequest\x124\n" +
+	"\awebhook\x18\x01 \x01(\v2\x14.bytebase.v1.WebhookB\x04\xe2A\x01\x02R\awebhook\"\x83\x01\n" +
+	"\x12TestWebhookRequest\x127\n" +
+	"\aproject\x18\x01 \x01(\tB\x1d\xe2A\x01\x02\xfaA\x16\n" +
+	"\x14bytebase.com/ProjectR\aproject\x124\n" +
+	"\awebhook\x18\x02 \x01(\v2\x14.bytebase.v1.WebhookB\x04\xe2A\x01\x02R\awebhook\"+\n" +
 	"\x13TestWebhookResponse\x12\x14\n" +
 	"\x05error\x18\x01 \x01(\tR\x05error\")\n" +
 	"\x15SharePointDestination\x12\x10\n" +
-	"\x03url\x18\x01 \x01(\tR\x03url\"\x83\x03\n" +
+	"\x03url\x18\x01 \x01(\tR\x03url\"\x88\x03\n" +
 	"\aWebhook\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x121\n" +
-	"\x04type\x18\x02 \x01(\x0e2\x18.bytebase.v1.WebhookTypeB\x03\xe0A\x02R\x04type\x12\x19\n" +
-	"\x05title\x18\x03 \x01(\tB\x03\xe0A\x02R\x05title\x12\x19\n" +
-	"\x03url\x18\x04 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\x03url\x12B\n" +
-	"\x1burl_supports_direct_message\x18\b \x01(\bB\x03\xe0A\x03R\x18urlSupportsDirectMessage\x12%\n" +
-	"\x0edirect_message\x18\x06 \x01(\bR\rdirectMessage\x12N\n" +
-	"\x12notification_types\x18\x05 \x03(\x0e2\x1a.bytebase.v1.Activity.TypeB\x03\xe0A\x06R\x11notificationTypes:@\xeaA=\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x122\n" +
+	"\x04type\x18\x02 \x01(\x0e2\x18.bytebase.v1.WebhookTypeB\x04\xe2A\x01\x02R\x04type\x12\x1a\n" +
+	"\x05title\x18\x03 \x01(\tB\x04\xe2A\x01\x02R\x05title\x12\x1a\n" +
+	"\x03url\x18\x04 \x01(\tB\b\xe2A\x01\x04\xd0\xea0\x01R\x03url\x12C\n" +
+	"\x1burl_supports_direct_message\x18\b \x01(\bB\x04\xe2A\x01\x03R\x18urlSupportsDirectMessage\x12%\n" +
+	"\x0edirect_message\x18\x06 \x01(\bR\rdirectMessage\x12O\n" +
+	"\x12notification_types\x18\x05 \x03(\x0e2\x1a.bytebase.v1.Activity.TypeB\x04\xe2A\x01\x06R\x11notificationTypes:@\xeaA=\n" +
 	"\x14bytebase.com/Webhook\x12%projects/{project}/webhooks/{webhook}\"\xb6\x01\n" +
 	"\bActivity\"\xa9\x01\n" +
 	"\x04Type\x12\x14\n" +

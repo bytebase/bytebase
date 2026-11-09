@@ -24951,7 +24951,7 @@ components:
               description: |-
                 protobuf.Duration value.
 
-                 Deprecated: duration is no longer considered a builtin cel type.
+                 Deprecated: duration is no longer considered a builtin CEL type.
               deprecated: true
           title: duration_value
         - type: object
@@ -24986,7 +24986,7 @@ components:
               description: |-
                 protobuf.Timestamp value.
 
-                 Deprecated: timestamp is no longer considered a builtin cel type.
+                 Deprecated: timestamp is no longer considered a builtin CEL type.
               deprecated: true
           title: timestamp_value
         - type: object
@@ -25045,7 +25045,7 @@ components:
 
          Named 'Constant' here for backwards compatibility.
 
-         This is similar as the primitives supported in the well-known type
+         This is similar to the primitives supported in the well-known type
          `google.protobuf.Value`, but richer so it can represent CEL's full range of
          primitives.
 
@@ -25156,7 +25156,7 @@ components:
           description: |-
             Required. An id assigned to this node by the parser which is unique in a
              given expression tree. This is used to associate type information and other
-             attributes to a node in the parse tree.
+             attributes with a node in the parse tree.
       title: Expr
       description: |-
         An abstract representation of a common expression.
@@ -25164,12 +25164,12 @@ components:
          Expressions are abstractly represented as a collection of identifiers,
          select statements, function calls, literals, and comprehensions. All
          operators with the exception of the '.' operator are modelled as function
-         calls. This makes it easy to represent new operators into the existing AST.
+         calls. This makes it easy to represent new operators in the existing AST.
 
          All references within expressions must resolve to a
          [Decl][google.api.expr.v1alpha1.Decl] provided at type-check for an
          expression to be valid. A reference may either be a bare identifier `name` or
-         a qualified identifier `google.api.name`. References may either refer to a
+         a qualified identifier `google.api.name`. References may refer to either a
          value or a function declaration.
 
          For example, the expression `google.api.name.startsWith('expr')` references
@@ -25184,7 +25184,7 @@ components:
             - $ref: '#/components/schemas/google.api.expr.v1alpha1.Expr'
           title: target
           description: |-
-            The target of an method call-style expression. For example, `x` in
+            The target of a method call-style expression. For example, `x` in
              `x.f()`.
         function:
           type: string
@@ -25210,15 +25210,14 @@ components:
           title: iter_var
           description: |-
             The name of the first iteration variable.
-             When the iter_range is a list, this variable is the list element.
-             When the iter_range is a map, this variable is the map entry key.
+             For the single iteration variable macros, when iter_range is a list, this
+             variable is the list element and when the iter_range is a map, this
+             variable is the map key.
         iterVar2:
           type: string
           title: iter_var2
           description: |-
-            The name of the second iteration variable, empty if not set.
-             When the iter_range is a list, this variable is the integer index.
-             When the iter_range is a map, this variable is the map entry value.
+            The name of the second iteration variable; empty if not set.
              This field is only set for comprehension v2 macros.
         iterRange:
           allOf:
@@ -25285,7 +25284,7 @@ components:
 
          The `has(m.x)` macro tests whether the property `x` is present in struct
          `m`. The semantics of this macro depend on the type of `m`. For proto2
-         messages `has(m.x)` is defined as 'defined, but not set`. For proto3, the
+         messages `has(m.x)` is defined as 'defined, but not set'. For proto3, the
          macro tests whether the property is set to its default. For map and struct
          types, the macro tests whether the property `x` is defined on `m`.
 
@@ -25305,7 +25304,7 @@ components:
 
          Comprehensions for the optional V2 macros which support map-to-map
          translation differ slightly from the standard environment macros in that
-         they expose both the key or index in addition to the value for each list
+         they expose the key or index in addition to the value for each list
          or map entry:
 
          ```
@@ -25345,7 +25344,7 @@ components:
       description: |-
         A list creation expression.
 
-         Lists may either be homogenous, e.g. `[1, 2, 3]`, or heterogeneous, e.g.
+         Lists may either be homogeneous, e.g. `[1, 2, 3]`, or heterogeneous, e.g.
          `dyn([1, 'hello', 2.0])`
     google.api.expr.v1alpha1.Expr.CreateStruct:
       type: object
@@ -25354,7 +25353,7 @@ components:
           type: string
           title: message_name
           description: |-
-            The type name of the message to be created, empty when creating map
+            The type name of the message to be created; empty when creating map
              literals.
         entries:
           type: array
@@ -25410,7 +25409,7 @@ components:
           description: |-
             Required. An id assigned to this node by the parser which is unique
              in a given expression tree. This is used to associate type
-             information and other attributes to the node.
+             information and other attributes with the node.
         value:
           allOf:
             - $ref: '#/components/schemas/google.api.expr.v1alpha1.Expr'
@@ -25508,10 +25507,15 @@ components:
       enum:
         - NULL_VALUE
       description: |-
-        `NullValue` is a singleton enumeration to represent the null value for the
-         `Value` type union.
+        Represents a JSON `null`.
 
-         The JSON representation for `NullValue` is JSON `null`.
+         `NullValue` is a sentinel, using an enum with only one value to represent
+         the null value for the `Value` type union.
+
+         A field of type `NullValue` with any value other than `0` is considered
+         invalid. Most ProtoJSON serializers will emit a `Value` with a `null_value`
+         set as a JSON `null` regardless of the integer value, and so will round trip
+         to a `0` value.
     google.protobuf.Struct:
       type: object
       additionalProperties:
@@ -25608,22 +25612,22 @@ components:
       additionalProperties: false
       description: |-
         Represents a color in the RGBA color space. This representation is designed
-         for simplicity of conversion to/from color representations in various
+         for simplicity of conversion to and from color representations in various
          languages over compactness. For example, the fields of this representation
          can be trivially provided to the constructor of `java.awt.Color` in Java; it
          can also be trivially provided to UIColor's `+colorWithRed:green:blue:alpha`
          method in iOS; and, with just a little work, it can be easily formatted into
          a CSS `rgba()` string in JavaScript.
 
-         This reference page doesn't carry information about the absolute color
-         space
-         that should be used to interpret the RGB value (e.g. sRGB, Adobe RGB,
-         DCI-P3, BT.2020, etc.). By default, applications should assume the sRGB color
+         This reference page doesn't have information about the absolute color
+         space that should be used to interpret the RGB value—for example, sRGB,
+         Adobe RGB,
+         DCI-P3, and BT.2020. By default, applications should assume the sRGB color
          space.
 
-         When color equality needs to be decided, implementations, unless
-         documented otherwise, treat two colors as equal if all their red,
-         green, blue, and alpha values each differ by at most 1e-5.
+         When color equality needs to be decided, implementations, unless documented
+         otherwise, treat two colors as equal if all their red, green, blue, and alpha
+         values each differ by at most `1e-5`.
 
          Example (Java):
 

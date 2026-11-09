@@ -2169,9 +2169,9 @@ var File_v1_sql_service_proto protoreflect.FileDescriptor
 
 const file_v1_sql_service_proto_rawDesc = "" +
 	"\n" +
-	"\x14v1/sql_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x1ev1/query_history_service.proto\"\xd5\x01\n" +
-	"\x13AdminExecuteRequest\x121\n" +
-	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
+	"\x14v1/sql_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x1ev1/query_history_service.proto\"\xd6\x01\n" +
+	"\x13AdminExecuteRequest\x122\n" +
+	"\x04name\x18\x01 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
 	"\x15bytebase.com/DatabaseR\x04name\x12\x1c\n" +
 	"\tstatement\x18\x02 \x01(\tR\tstatement\x12\x14\n" +
 	"\x05limit\x18\x03 \x01(\x05R\x05limit\x12\x1b\n" +
@@ -2181,9 +2181,9 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\n" +
 	"_container\"J\n" +
 	"\x14AdminExecuteResponse\x122\n" +
-	"\aresults\x18\x01 \x03(\v2\x18.bytebase.v1.QueryResultR\aresults\"\xcb\x02\n" +
-	"\fQueryRequest\x121\n" +
-	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
+	"\aresults\x18\x01 \x03(\v2\x18.bytebase.v1.QueryResultR\aresults\"\xcc\x02\n" +
+	"\fQueryRequest\x122\n" +
+	"\x04name\x18\x01 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
 	"\x15bytebase.com/DatabaseR\x04name\x12\x1c\n" +
 	"\tstatement\x18\x02 \x01(\tR\tstatement\x12\x14\n" +
 	"\x05limit\x18\x03 \x01(\x05R\x05limit\x12$\n" +
@@ -2335,9 +2335,9 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\x15RULE_TYPE_UNSPECIFIED\x10\x00\x12\x10\n" +
 	"\fPARSER_BASED\x10\x01\x12\x0e\n" +
 	"\n" +
-	"AI_POWERED\x10\x02\"\xa2\x03\n" +
-	"\rExportRequest\x121\n" +
-	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
+	"AI_POWERED\x10\x02\"\xa3\x03\n" +
+	"\rExportRequest\x122\n" +
+	"\x04name\x18\x01 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
 	"\x15bytebase.com/DatabaseR\x04name\x12\x1c\n" +
 	"\tstatement\x18\x02 \x01(\tR\tstatement\x12\x14\n" +
 	"\x05limit\x18\x03 \x01(\x05R\x05limit\x121\n" +

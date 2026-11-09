@@ -271,7 +271,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to configure gRPC routers")
 	}
-	mcpServer, err := mcp.NewServer(stores, profile, secret, internalMCPHandler)
+	mcpServer, err := mcp.NewServer(stores, profile, secret, internalMCPHandler, s.licenseService)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create MCP server")
 	}

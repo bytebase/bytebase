@@ -17,6 +17,7 @@ import (
 	"github.com/alexmullins/zip"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -40,10 +41,11 @@ func TestDecideExportDestination(t *testing.T) {
 		return in
 	}
 	for _, tc := range []struct {
-		name     string
-		in       exportDestinationInput
-		want     v1pb.ExportDestination
-		wantCode connect.Code
+		name       string
+		in         exportDestinationInput
+		want       v1pb.ExportDestination
+		wantCode   connect.Code
+		wantReason string
 	}{
 		{name: "unspecified is download", in: exportDestinationInput{}, want: v1pb.ExportDestination_DOWNLOAD},
 		{name: "download", in: exportDestinationInput{destination: v1pb.ExportDestination_DOWNLOAD, password: "pw"}, want: v1pb.ExportDestination_DOWNLOAD},
@@ -73,7 +75,8 @@ func TestDecideExportDestination(t *testing.T) {
 				in.destinationURL = ""
 				return in
 			}(),
-			wantCode: connect.CodeFailedPrecondition,
+			wantCode:   connect.CodeFailedPrecondition,
+			wantReason: sharePointReasonNotConfigured,
 		},
 		{
 			name: "sharepoint without credentials",
@@ -82,7 +85,8 @@ func TestDecideExportDestination(t *testing.T) {
 				in.sharePointSetting = nil
 				return in
 			}(),
-			wantCode: connect.CodeFailedPrecondition,
+			wantCode:   connect.CodeFailedPrecondition,
+			wantReason: sharePointReasonNotConfigured,
 		},
 		{
 			name: "sharepoint without client secret",
@@ -91,7 +95,8 @@ func TestDecideExportDestination(t *testing.T) {
 				in.sharePointSetting = &storepb.SharePointSetting{TenantId: "tenant", ClientId: "client"}
 				return in
 			}(),
-			wantCode: connect.CodeFailedPrecondition,
+			wantCode:   connect.CodeFailedPrecondition,
+			wantReason: sharePointReasonNotConfigured,
 		},
 		{name: "unknown destination", in: exportDestinationInput{destination: v1pb.ExportDestination(99)}, wantCode: connect.CodeInvalidArgument},
 	} {
@@ -100,6 +105,7 @@ func TestDecideExportDestination(t *testing.T) {
 			got, err := decideExportDestination(tc.in)
 			if tc.wantCode != 0 {
 				require.Equal(t, tc.wantCode, connect.CodeOf(err))
+				requireSharePointErrorInfo(t, err, tc.wantReason, "")
 				return
 			}
 			require.NoError(t, err)
@@ -318,29 +324,59 @@ type nothingUploadedError struct{ error }
 func (e nothingUploadedError) Unwrap() error      { return e.error }
 func (nothingUploadedError) Is(target error) bool { return target == sharepoint.ErrNothingUploaded }
 
+// requireSharePointErrorInfo asserts err's ErrorInfo reason and folder, or that
+// it has no ErrorInfo when wantReason is empty.
+func requireSharePointErrorInfo(t *testing.T, err error, wantReason, wantFolder string) {
+	t.Helper()
+	var connectErr *connect.Error
+	require.ErrorAs(t, err, &connectErr)
+	var infos []*errdetails.ErrorInfo
+	for _, detail := range connectErr.Details() {
+		value, valueErr := detail.Value()
+		require.NoError(t, valueErr)
+		if info, ok := value.(*errdetails.ErrorInfo); ok {
+			infos = append(infos, info)
+		}
+	}
+	if wantReason == "" {
+		require.Empty(t, infos)
+		return
+	}
+	require.Len(t, infos, 1)
+	require.Equal(t, sharePointErrorDomain, infos[0].GetDomain())
+	require.Equal(t, wantReason, infos[0].GetReason())
+	require.Equal(t, wantFolder, infos[0].GetMetadata()["folder"])
+}
+
 func TestSharePointExportErrors(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	setting := &storepb.SharePointSetting{TenantId: "tenant", ClientId: "client", ClientSecret: "secret"}
+	const folder = "20261022T010507Z-alice@example.com-hr-0a1b2c3d"
 	for _, tc := range []struct {
 		name         string
 		resolveErr   error
 		uploadErr    error
 		wantCode     connect.Code
+		wantReason   string
+		wantFolder   string
 		wantInMsg    []string
 		wantNotInMsg []string
 	}{
-		{name: "resolve not found", resolveErr: errors.Wrap(sharepoint.ErrNotFoundOrNoAccess, "graph"), wantCode: connect.CodeFailedPrecondition},
-		{name: "resolve credential", resolveErr: sharepoint.ErrCredential, wantCode: connect.CodeFailedPrecondition},
-		{name: "resolve other", resolveErr: errors.New("boom"), wantCode: connect.CodeInternal},
-		{name: "upload not found", uploadErr: sharepoint.ErrNotFoundOrNoAccess, wantCode: connect.CodeFailedPrecondition, wantInMsg: []string{"may already exist", "20261022T010507Z-alice@example.com-hr-0a1b2c3d"}},
-		{name: "folder not created", uploadErr: nothingUploadedError{sharepoint.ErrNotFoundOrNoAccess}, wantCode: connect.CodeFailedPrecondition, wantInMsg: []string{"nothing was uploaded"}, wantNotInMsg: []string{"may already exist", "20261022T010507Z-alice@example.com-hr-0a1b2c3d"}},
-		{name: "upload credential", uploadErr: errors.Wrap(sharepoint.ErrCredential, "token"), wantCode: connect.CodeFailedPrecondition, wantInMsg: []string{"may already exist", "20261022T010507Z-alice@example.com-hr-0a1b2c3d"}},
-		{name: "upload unconfirmed", uploadErr: errors.Wrap(sharepoint.ErrUnconfirmed, "upload"), wantCode: connect.CodeUnavailable, wantInMsg: []string{"could not be confirmed", "20261022T010507Z-alice@example.com-hr-0a1b2c3d"}},
-		{name: "upload failed after some files", uploadErr: errors.New("upload statement-1.result.csv: 507 insufficientStorage"), wantCode: connect.CodeInternal, wantInMsg: []string{"the upload to SharePoint failed", "may already exist", "insufficientStorage", "20261022T010507Z-alice@example.com-hr-0a1b2c3d"}},
-		{name: "canceled after some files", uploadErr: context.Canceled, wantCode: connect.CodeCanceled, wantInMsg: []string{"may already exist", "20261022T010507Z-alice@example.com-hr-0a1b2c3d"}},
+		{name: "resolve not found", resolveErr: errors.Wrap(sharepoint.ErrNotFoundOrNoAccess, "graph"), wantCode: connect.CodeFailedPrecondition, wantReason: sharePointReasonDestinationNotFound},
+		{name: "resolve credential", resolveErr: sharepoint.ErrCredential, wantCode: connect.CodeFailedPrecondition, wantReason: sharePointReasonCredentialRejected},
+		{name: "resolve file", resolveErr: errors.Wrap(sharepoint.ErrNotFolder, "https://contoso.sharepoint.com/sites/data/Exports"), wantCode: connect.CodeFailedPrecondition, wantReason: sharePointReasonDestinationNotFolder},
+		{name: "resolve other", resolveErr: errors.New("boom"), wantCode: connect.CodeInternal, wantReason: sharePointReasonRequestFailed},
+		{name: "upload not found", uploadErr: sharepoint.ErrNotFoundOrNoAccess, wantCode: connect.CodeFailedPrecondition, wantReason: sharePointReasonDestinationNotFound, wantFolder: folder, wantInMsg: []string{"may already exist", folder}},
+		{name: "folder not created", uploadErr: nothingUploadedError{sharepoint.ErrNotFoundOrNoAccess}, wantCode: connect.CodeFailedPrecondition, wantReason: sharePointReasonDestinationNotFound, wantInMsg: []string{"nothing was uploaded"}, wantNotInMsg: []string{"may already exist", folder}},
+		{name: "upload credential", uploadErr: errors.Wrap(sharepoint.ErrCredential, "token"), wantCode: connect.CodeFailedPrecondition, wantReason: sharePointReasonCredentialRejected, wantFolder: folder, wantInMsg: []string{"may already exist", folder}},
+		{name: "upload unconfirmed", uploadErr: errors.Wrap(sharepoint.ErrUnconfirmed, "upload"), wantCode: connect.CodeUnavailable, wantReason: sharePointReasonUploadUnconfirmed, wantFolder: folder, wantInMsg: []string{"could not be confirmed", folder}},
+		{name: "storage full after some files", uploadErr: errors.Wrap(sharepoint.ErrStorageFull, "Microsoft Graph returned HTTP 507 quotaLimitReached"), wantCode: connect.CodeFailedPrecondition, wantReason: sharePointReasonStorageFull, wantFolder: folder, wantInMsg: []string{"may already exist", "quotaLimitReached", folder}},
+		{name: "storage full before any file", uploadErr: nothingUploadedError{sharepoint.ErrStorageFull}, wantCode: connect.CodeFailedPrecondition, wantReason: sharePointReasonStorageFull, wantInMsg: []string{"nothing was uploaded"}, wantNotInMsg: []string{folder}},
+		{name: "upload failed after some files", uploadErr: errors.New("upload statement-1.result.csv: 500 generalException"), wantCode: connect.CodeInternal, wantReason: sharePointReasonRequestFailed, wantFolder: folder, wantInMsg: []string{"the upload to SharePoint failed", "may already exist", "generalException", folder}},
+		{name: "canceled after some files", uploadErr: context.Canceled, wantCode: connect.CodeCanceled, wantInMsg: []string{"may already exist", folder}},
 		{name: "canceled before any file", uploadErr: nothingUploadedError{context.Canceled}, wantCode: connect.CodeCanceled, wantInMsg: []string{"nothing was uploaded"}, wantNotInMsg: []string{"may already exist"}},
-		{name: "canceled with a file unconfirmed", uploadErr: errors.Wrap(sharepoint.ErrUnconfirmed, "file \"a.sql\""), wantCode: connect.CodeUnavailable, wantInMsg: []string{"could not be confirmed"}},
+		{name: "canceled with a file unconfirmed", uploadErr: errors.Wrap(sharepoint.ErrUnconfirmed, "file \"a.sql\""), wantCode: connect.CodeUnavailable, wantReason: sharePointReasonUploadUnconfirmed, wantFolder: folder, wantInMsg: []string{"could not be confirmed"}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -349,11 +385,13 @@ func TestSharePointExportErrors(t *testing.T) {
 			target, err := resolveSharePointExportTarget(ctx, newClient, setting, "https://contoso.sharepoint.com/sites/data/Exports")
 			if tc.resolveErr != nil {
 				require.Equal(t, tc.wantCode, connect.CodeOf(err))
+				requireSharePointErrorInfo(t, err, tc.wantReason, "")
 				return
 			}
 			require.NoError(t, err)
-			_, err = uploadSharePointExport(ctx, target, "20261022T010507Z-alice@example.com-hr-0a1b2c3d", nil)
+			_, err = uploadSharePointExport(ctx, target, folder, nil)
 			require.Equal(t, tc.wantCode, connect.CodeOf(err))
+			requireSharePointErrorInfo(t, err, tc.wantReason, tc.wantFolder)
 			for _, want := range tc.wantInMsg {
 				require.Contains(t, err.Error(), want)
 			}

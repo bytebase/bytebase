@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strings"
 	"sync/atomic"
 	"testing"
 
@@ -172,4 +173,87 @@ func TestMCPAdministersTheMaskingRulesAfterAConfirmation(t *testing.T) {
 	rules, _ = stored()
 	a.Len(rules, 2)
 	a.Equal(`resource.environment_id == "test"`, rules[1].GetCondition().GetExpression())
+}
+
+// TestMCPAddsAPostgreSQLInstanceAfterAConfirmation provisions a server of its
+// own: the entry refuses sync_databases, so an instance on sharedPgTarget would
+// sync every other test's databases.
+func TestMCPAddsAPostgreSQLInstanceAfterAConfirmation(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl, ctx := startWorkspace(ctx, t)
+	a.NoError(ctl.setMCPCapability(ctx, v1pb.MCPSetting_READ_WRITE))
+	pg := provisionPgInstance(t)
+	createPgDatabase(t, pg, "hr_staging")
+
+	var asked atomic.Int32
+	session := openMCPSessionWithOptions(ctx, t, ctl, ctl.authInterceptor.token, &mcp.ClientOptions{
+		ElicitationHandler: func(context.Context, *mcp.ElicitRequest) (*mcp.ElicitResult, error) {
+			asked.Add(1)
+			return &mcp.ElicitResult{Action: "accept", Content: map[string]any{"choice": "apply"}}, nil
+		},
+	})
+	defer session.Close()
+
+	const instanceID = "mcp-added-staging"
+	instanceName := ctl.project.Name + "/instances/" + instanceID
+	body := func(password string) map[string]any {
+		dataSource := pg.adminDataSource()
+		dataSource.Password = password
+		encoded, err := protojson.Marshal(&v1pb.CreateInstanceRequest{
+			Parent:     &ctl.project.Name,
+			InstanceId: instanceID,
+			Instance: &v1pb.Instance{
+				Title:       "Staging",
+				Engine:      v1pb.Engine_POSTGRES,
+				Environment: new("environments/test"),
+				Activation:  true,
+				DataSources: []*v1pb.DataSource{dataSource},
+			},
+		})
+		a.NoError(err)
+		var decoded map[string]any
+		a.NoError(json.Unmarshal(encoded, &decoded))
+		return decoded
+	}
+	administer := func(body map[string]any) (bool, string) {
+		return callToolOnSession(ctx, t, session, "administer_workspace", map[string]any{
+			"operationId": "InstanceService/CreateInstance",
+			"body":        body,
+		})
+	}
+	added := func() bool {
+		_, err := ctl.instanceServiceClient.GetInstance(ctx, connect.NewRequest(&v1pb.GetInstanceRequest{Name: instanceName}))
+		if connect.CodeOf(err) == connect.CodeNotFound {
+			return false
+		}
+		a.NoError(err)
+		return true
+	}
+
+	direct := callAPIOnSession(ctx, t, session, "InstanceService/CreateInstance", body("root-password"))
+	a.Equal(http.StatusForbidden, direct.Status, direct.Error)
+	a.Contains(direct.Error, "administer_workspace")
+	a.False(added(), "call_api added nothing")
+
+	failed, text := administer(body("not-the-password"))
+	a.True(failed, text)
+	a.Contains(text, "CONNECTION_TEST_FAILED")
+	a.Contains(text, "password authentication failed")
+	a.NotContains(text, "not-the-password")
+	a.Equal(int32(1), asked.Load())
+	a.False(added(), "a failed connection test adds nothing")
+
+	failed, text = administer(body("root-password"))
+	a.False(failed, text)
+	a.Contains(text, `Added: instance "`+instanceID+`" in project "`+strings.TrimPrefix(ctl.project.Name, "projects/")+`", environment "test".`)
+	a.Contains(text, "Bytebase synced its databases into the project.")
+	a.NotContains(text, "root-password")
+	a.Equal(int32(2), asked.Load())
+	a.True(added())
+	database, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{Name: instanceName + "/databases/hr_staging"}))
+	a.NoError(err)
+	a.Equal(ctl.project.Name, database.Msg.Project)
+	a.Equal("environments/test", database.Msg.GetEffectiveEnvironment())
 }

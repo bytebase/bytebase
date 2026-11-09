@@ -23,6 +23,7 @@ import (
 
 	goora "github.com/sijms/go-ora/v2"
 	"github.com/sijms/go-ora/v2/configurations"
+	"github.com/sijms/go-ora/v2/converters"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -327,6 +328,72 @@ func TestConnectionOptionsAsReadByDriver(t *testing.T) {
 	})
 }
 
+// Each data source needs a go-ora driver of its own, because a shared one decodes every
+// database's text with the first database's character set (#21902); see connector.
+func TestOpenGivesEachDataSourceItsOwnGoOraDriver(t *testing.T) {
+	ctx := context.Background()
+	// No database name, so Open builds the pool without connecting.
+	open := func(t *testing.T, host string) db.Driver {
+		driver, err := (&Driver{}).Open(ctx, storepb.Engine_ORACLE, db.ConnectionConfig{
+			DataSource: &storepb.DataSource{Host: host, Port: "1521", Username: "bytebase", ServiceName: "ORCLPDB1"},
+			Password:   "secret",
+		})
+		require.NoError(t, err)
+		t.Cleanup(func() { driver.Close(ctx) })
+		return driver
+	}
+	first, second := open(t, "first.example.com"), open(t, "second.example.com")
+	require.NotSame(t, goora.GetDefaultDriver(), first.GetDB().Driver(), "a data source must not share the process-wide go-ora driver")
+	require.NotSame(t, first.GetDB().Driver(), second.GetDB().Driver(), "two data sources must not share a go-ora driver")
+}
+
+// A character set latched on go-ora's process-wide driver must not reach Bytebase's
+// connections. WE8ISO8859P1 stands in for another Oracle data source, as a ZHS16GBK one did in
+// #21902: its decoder mangles this container's AL32UTF8 bytes, so text that survives the round
+// trip proves the connection used its own server's character set.
+func TestQueryIgnoresTheSharedDriverCharset(t *testing.T) {
+	ctx := context.Background()
+	container, schema := testcontainer.NewOracleSchema(t)
+	// A VARCHAR2 column, which the server sends in the database character set. UNISTR spells
+	// the text out in code points, so no client encoding decides what gets stored.
+	_, err := container.GetDB().ExecContext(ctx, fmt.Sprintf("CREATE TABLE %s.CHARSET_PROBE (C VARCHAR2(100))", schema))
+	require.NoError(t, err)
+	_, err = container.GetDB().ExecContext(ctx, fmt.Sprintf(`INSERT INTO %s.CHARSET_PROBE VALUES (UNISTR('\6570\636E\5E93'))`, schema))
+	require.NoError(t, err)
+
+	const we8iso8859p1, al16utf16 = 31, 2000
+	goora.SetStringConverter(sharedGoOraDriver{}, converters.NewStringConverter(we8iso8859p1), converters.NewStringConverter(al16utf16))
+	t.Cleanup(func() { goora.SetStringConverter(sharedGoOraDriver{}, nil, nil) })
+
+	driver, err := (&Driver{}).Open(ctx, storepb.Engine_ORACLE, db.ConnectionConfig{
+		DataSource: &storepb.DataSource{
+			Host:        container.GetHost(),
+			Port:        container.GetPort(),
+			Username:    container.GetUsername(),
+			ServiceName: testcontainer.OracleServiceName,
+		},
+		Password:          container.GetPassword(),
+		ConnectionContext: db.ConnectionContext{DatabaseName: schema},
+	})
+	require.NoError(t, err)
+	defer driver.Close(ctx)
+
+	conn, err := driver.GetDB().Conn(ctx)
+	require.NoError(t, err)
+	defer conn.Close()
+	results, err := driver.QueryConn(ctx, conn, "SELECT C FROM CHARSET_PROBE", db.QueryContext{MaximumSQLResultSize: 1024})
+	require.NoError(t, err)
+	require.Len(t, results, 1)
+	require.Empty(t, results[0].Error)
+	require.Equal(t, "数据库", results[0].Rows[0].Values[0].GetStringValue())
+}
+
+// sharedGoOraDriver hands go-ora's process-wide driver to SetStringConverter, which takes
+// whatever exposes a Driver method.
+type sharedGoOraDriver struct{}
+
+func (sharedGoOraDriver) Driver() driver.Driver { return goora.GetDefaultDriver() }
+
 func TestOpenAppliesTLSSettings(t *testing.T) {
 	pki := newTestPKI(t)
 	serverConfig := &tls.Config{Certificates: []tls.Certificate{pki.server}}
@@ -440,6 +507,7 @@ func TestOpenAppliesTLSSettings(t *testing.T) {
 		config, err := getTLSConfig(verified(port))
 		require.NoError(t, err)
 		c := &connector{
+			drv:       goora.NewDriver(),
 			dsn:       goora.BuildUrl("localhost", portNumber, "ORCLPDB1", "bytebase", "secret", connectionOptions("", nil, true)),
 			tlsConfig: config,
 		}

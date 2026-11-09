@@ -1248,15 +1248,29 @@
     },
     "sharepoint": {
       "canceled-description": "このデータベースのエクスポート中にエクスポートがキャンセルされました。SharePoint にファイルが存在する可能性があります。",
+      "error": {
+        "credential-rejected": "Microsoft Entra が SharePoint アプリの資格情報を拒否しました。ワークスペース管理者にワークスペース設定で更新するよう依頼してください。",
+        "destination-not-folder": "SharePoint のエクスポート先がファイルです。プロジェクトオーナーにドキュメント ライブラリまたはフォルダーを設定するよう依頼してください。",
+        "destination-not-found": "SharePoint のフォルダーが存在しないか、SharePoint アプリがアクセスできません。プロジェクトオーナーにエクスポート先を確認するよう依頼してください。",
+        "files-may-exist": "フォルダー「{{folder}}」に一部のファイルが既に存在する可能性があります。",
+        "not-configured": "このプロジェクトでは SharePoint へのエクスポートが設定されていません。管理者に SharePoint の設定を確認するよう依頼してください。",
+        "request-failed": "SharePoint でエクスポートを完了できませんでした。もう一度お試しください。失敗が続く場合は、エラー詳細を管理者に共有してください。",
+        "storage-full": "SharePoint サイトのストレージが不足しています。SharePoint 管理者に空き容量を確保するよう依頼してください。",
+        "upload-unconfirmed": "Bytebase はアップロードの完了を確認できませんでした。"
+      },
       "exported-title": "SharePoint にエクスポートしました",
       "not-started-description": "このデータベースの処理を開始する前にエクスポートがキャンセルされました。何もエクスポートされていません。",
       "open": "SharePoint で開く",
       "result-title": "SharePoint エクスポートの結果",
+      "retry-failed": "失敗分を再試行",
+      "retry-unconfirmed-warning": "再試行すると新しいフォルダーにエクスポートされます。「未確認」のデータベースは以前のフォルダーに既にファイルがある可能性があるため、SharePoint にファイルが重複することがあります。",
+      "retrying": "再試行しています…",
       "status": {
         "canceled": "キャンセル済み",
         "exported": "エクスポート済み",
         "failed": "失敗",
         "not-started": "未エクスポート",
+        "retrying": "再試行中",
         "unconfirmed": "未確認"
       }
     }
@@ -3263,6 +3277,10 @@
           "refused": "不許可"
         },
         "row": {
+          "add-instances": {
+            "details": "ユーザー名とパスワードでサインインする PostgreSQL インスタンスをプロジェクトに追加 · 各インスタンスは、追加される前にユーザーの MCP クライアントで確認されます · そのデータベースはそのプロジェクトに加わり、ほかのプロジェクトへは移動できません",
+            "title": "プロジェクトへのインスタンスの追加"
+          },
           "approval-rules": {
             "details": "データベース変更を誰が承認するかを決めるルールの追加・削除・並べ替え・変更 · 各変更は、実行される前にユーザーの MCP クライアントで確認されます · フォールバックルールと、ほかの種類の Issue のルールは変更されません",
             "title": "データベース変更の承認ルールの管理"

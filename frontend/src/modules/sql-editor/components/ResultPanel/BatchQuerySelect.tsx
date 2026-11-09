@@ -304,6 +304,7 @@ export function BatchQuerySelect({
 
   const handleExport = ({
     options,
+    databases,
     resolve,
     signal,
     onProgress,
@@ -317,8 +318,8 @@ export function BatchQuerySelect({
       // DBs, but if a stale name lingers in `selectedDatabaseNames` we skip it here rather
       // than firing a doomed backend call.
       const exportableSet = new Set(exportableDatabaseNames);
-      const targets = Array.from(selectedDatabaseNames).filter((name) =>
-        exportableSet.has(name)
+      const targets = (databases ?? Array.from(selectedDatabaseNames)).filter(
+        (name) => exportableSet.has(name)
       );
       const exportDatabase = async (
         databaseName: string
@@ -327,7 +328,10 @@ export function BatchQuerySelect({
         const { databaseName: shortName } = extractDatabaseResourceName(
           database.name
         );
-        const label = sharePointExportDatabaseLabel(database);
+        const target = {
+          name: databaseName,
+          label: sharePointExportDatabaseLabel(database),
+        };
         const context = head(tab?.databaseQueryContexts?.get(databaseName));
         if (!context) return undefined;
         try {
@@ -351,7 +355,7 @@ export function BatchQuerySelect({
           if (toSharePoint) {
             return {
               sharepoint: toExportedSharePointResult(
-                label,
+                target,
                 uri,
                 exportDestination.sharepointUrl ?? ""
               ),
@@ -365,7 +369,7 @@ export function BatchQuerySelect({
           };
         } catch (e) {
           if (toSharePoint) {
-            return { sharepoint: toFailedSharePointExport(label, e) };
+            return { sharepoint: toFailedSharePointExport(target, e) };
           }
           if (signal.aborted) {
             return undefined;
@@ -393,11 +397,12 @@ export function BatchQuerySelect({
           if (signal.aborted) {
             return toSharePoint
               ? {
-                  sharepoint: toNotStartedSharePointExport(
-                    sharePointExportDatabaseLabel(
+                  sharepoint: toNotStartedSharePointExport({
+                    name: databaseName,
+                    label: sharePointExportDatabaseLabel(
                       getDatabaseByName(databaseName)
-                    )
-                  ),
+                    ),
+                  }),
                 }
               : undefined;
           }
@@ -419,7 +424,9 @@ export function BatchQuerySelect({
               result && "download" in result ? [result.download] : []
             )
       );
-      setSelectedDatabaseNames(new Set());
+      if (!databases) {
+        setSelectedDatabaseNames(new Set());
+      }
     })();
   };
 

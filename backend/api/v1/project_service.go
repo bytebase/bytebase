@@ -216,7 +216,7 @@ func (s *ProjectService) SearchProjects(ctx context.Context, req *connect.Reques
 
 // CreateProject creates a project.
 func (s *ProjectService) CreateProject(ctx context.Context, req *connect.Request[v1pb.CreateProjectRequest]) (*connect.Response[v1pb.Project], error) {
-	if !isValidResourceID(req.Msg.ProjectId) {
+	if !common.IsValidResourceID(req.Msg.ProjectId) {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid project ID %v", req.Msg.ProjectId))
 	}
 	if req.Msg.ProjectId == "default" || strings.HasPrefix(req.Msg.ProjectId, "default-") {

@@ -21,8 +21,9 @@ import (
 // concurrently under aiReviewRunConcurrency. A further call to the model
 // merges the findings that more than one database reports on the same
 // statement, and tells which result an earlier run posted each problem
-// continues, whose thread the problem keeps. One more call for each other
-// merged problem writes its comment.
+// continues, whose thread the problem keeps. A run holds back the new problems
+// past the maxAIReviewProblems most important open ones. One more call for
+// each other merged problem it posts writes its comment.
 type AIReviewExecutor struct {
 	store    *store.Store
 	newModel func(*storepb.AISetting, ...aireview.ModelOption) aireview.Model
@@ -163,6 +164,15 @@ func (e *AIReviewExecutor) RunOnce(ctx context.Context, projectID string, issueU
 	}, results, earlier)
 	if err != nil {
 		return nil, err
+	}
+	// The limit comes before the summaries, so a held problem costs no model
+	// call.
+	if held := limitAIReviewProblems(plan.Config.GetSpecs(), problems); held > 0 {
+		slog.Info("AI review held back the problems over the limit",
+			slog.String("project", projectID),
+			slog.Int64("issue_id", issueUID),
+			slog.Int("problems", len(problems)),
+			slog.Int("held", held))
 	}
 	if err := summarizeAIReviewProblems(ctx, func(ctx context.Context, request *aireview.SummaryRequest) (*aireview.Summary, error) {
 		// A summary is a model call like a review, so it takes a slot too.

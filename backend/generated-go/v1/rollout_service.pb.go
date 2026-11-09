@@ -3309,31 +3309,31 @@ var File_v1_rollout_service_proto protoreflect.FileDescriptor
 
 const file_v1_rollout_service_proto_rawDesc = "" +
 	"\n" +
-	"\x18v1/rollout_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\"\xd5\x01\n" +
-	"\x14BatchRunTasksRequest\x122\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1a\xe0A\x02\xfaA\x14\n" +
+	"\x18v1/rollout_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\"\xd6\x01\n" +
+	"\x14BatchRunTasksRequest\x123\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1b\xe2A\x01\x02\xfaA\x14\n" +
 	"\x12bytebase.com/StageR\x06parent\x12\x14\n" +
 	"\x05tasks\x18\x02 \x03(\tR\x05tasks\x12:\n" +
 	"\brun_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampH\x00R\arunTime\x88\x01\x01\x12*\n" +
 	"\x11skip_prior_backup\x18\x04 \x01(\bR\x0fskipPriorBackupB\v\n" +
 	"\t_run_time\"\x17\n" +
-	"\x15BatchRunTasksResponse\"\x83\x01\n" +
-	"\x15BatchSkipTasksRequest\x122\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1a\xe0A\x02\xfaA\x14\n" +
+	"\x15BatchRunTasksResponse\"\x84\x01\n" +
+	"\x15BatchSkipTasksRequest\x123\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1b\xe2A\x01\x02\xfaA\x14\n" +
 	"\x12bytebase.com/StageR\x06parent\x12\x14\n" +
 	"\x05tasks\x18\x02 \x03(\tR\x05tasks\x12 \n" +
 	"\x06reason\x18\x03 \x01(\tB\b\xbaH\x05r\x03\x18\xe8\aR\x06reason\"\x18\n" +
-	"\x16BatchSkipTasksResponse\"l\n" +
-	"\x1aBatchCancelTaskRunsRequest\x121\n" +
-	"\x06parent\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
+	"\x16BatchSkipTasksResponse\"m\n" +
+	"\x1aBatchCancelTaskRunsRequest\x122\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1a\xe2A\x01\x02\xfaA\x13\n" +
 	"\x11bytebase.com/TaskR\x06parent\x12\x1b\n" +
 	"\ttask_runs\x18\x02 \x03(\tR\btaskRuns\"\x1d\n" +
-	"\x1bBatchCancelTaskRunsResponse\"E\n" +
-	"\x11GetRolloutRequest\x120\n" +
-	"\x04name\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
-	"\x14bytebase.com/RolloutR\x04name\"\x9f\x01\n" +
-	"\x13ListRolloutsRequest\x124\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
+	"\x1bBatchCancelTaskRunsResponse\"F\n" +
+	"\x11GetRolloutRequest\x121\n" +
+	"\x04name\x18\x01 \x01(\tB\x1d\xe2A\x01\x02\xfaA\x16\n" +
+	"\x14bytebase.com/RolloutR\x04name\"\xa0\x01\n" +
+	"\x13ListRolloutsRequest\x125\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1d\xe2A\x01\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x12\x1b\n" +
 	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
@@ -3341,42 +3341,42 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\x06filter\x18\x04 \x01(\tR\x06filter\"p\n" +
 	"\x14ListRolloutsResponse\x120\n" +
 	"\brollouts\x18\x01 \x03(\v2\x14.bytebase.v1.RolloutR\brollouts\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"w\n" +
-	"\x14CreateRolloutRequest\x121\n" +
-	"\x06parent\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"x\n" +
+	"\x14CreateRolloutRequest\x122\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1a\xe2A\x01\x02\xfaA\x13\n" +
 	"\x11bytebase.com/PlanR\x06parent\x12\x1b\n" +
 	"\x06target\x18\x03 \x01(\tH\x00R\x06target\x88\x01\x01B\t\n" +
-	"\a_targetJ\x04\b\x02\x10\x03\"\x84\x01\n" +
-	"\x13ListTaskRunsRequest\x121\n" +
-	"\x06parent\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
+	"\a_targetJ\x04\b\x02\x10\x03\"\x85\x01\n" +
+	"\x13ListTaskRunsRequest\x122\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1a\xe2A\x01\x02\xfaA\x13\n" +
 	"\x11bytebase.com/TaskR\x06parent\x12\x1b\n" +
 	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
 	"page_token\x18\x03 \x01(\tR\tpageToken\"q\n" +
 	"\x14ListTaskRunsResponse\x121\n" +
 	"\ttask_runs\x18\x01 \x03(\v2\x14.bytebase.v1.TaskRunR\btaskRuns\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"E\n" +
-	"\x11GetTaskRunRequest\x120\n" +
-	"\x04name\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
-	"\x14bytebase.com/TaskRunR\x04name\"L\n" +
-	"\x14GetTaskRunLogRequest\x124\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
-	"\x14bytebase.com/TaskRunR\x06parent\"\xbd\x02\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"F\n" +
+	"\x11GetTaskRunRequest\x121\n" +
+	"\x04name\x18\x01 \x01(\tB\x1d\xe2A\x01\x02\xfaA\x16\n" +
+	"\x14bytebase.com/TaskRunR\x04name\"M\n" +
+	"\x14GetTaskRunLogRequest\x125\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1d\xe2A\x01\x02\xfaA\x16\n" +
+	"\x14bytebase.com/TaskRunR\x06parent\"\xc1\x02\n" +
 	"\aRollout\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12\x19\n" +
-	"\x05title\x18\x03 \x01(\tB\x03\xe0A\x03R\x05title\x12/\n" +
-	"\x06stages\x18\x04 \x03(\v2\x12.bytebase.v1.StageB\x03\xe0A\x03R\x06stages\x12@\n" +
-	"\vcreate_time\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
-	"createTime\x12@\n" +
-	"\vupdate_time\x18\a \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1a\n" +
+	"\x05title\x18\x03 \x01(\tB\x04\xe2A\x01\x03R\x05title\x120\n" +
+	"\x06stages\x18\x04 \x03(\v2\x12.bytebase.v1.StageB\x04\xe2A\x01\x03R\x06stages\x12A\n" +
+	"\vcreate_time\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\n" +
+	"createTime\x12A\n" +
+	"\vupdate_time\x18\a \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\n" +
 	"updateTime:B\xeaA?\n" +
-	"\x14bytebase.com/Rollout\x12'projects/{project}/plans/{plan}/rolloutJ\x04\b\x02\x10\x03J\x04\b\x05\x10\x06\"\xcc\x01\n" +
+	"\x14bytebase.com/Rollout\x12'projects/{project}/plans/{plan}/rolloutJ\x04\b\x02\x10\x03J\x04\b\x05\x10\x06\"\xcd\x01\n" +
 	"\x05Stage\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12\x13\n" +
-	"\x02id\x18\x02 \x01(\tB\x03\xe0A\x03R\x02id\x12 \n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
+	"\x02id\x18\x02 \x01(\tB\x04\xe2A\x01\x03R\x02id\x12 \n" +
 	"\venvironment\x18\x03 \x01(\tR\venvironment\x12'\n" +
 	"\x05tasks\x18\x04 \x03(\v2\x11.bytebase.v1.TaskR\x05tasks:O\xeaAL\n" +
-	"\x12bytebase.com/Stage\x126projects/{project}/plans/{plan}/rollout/stages/{stage}\"\xd5\a\n" +
+	"\x12bytebase.com/Stage\x126projects/{project}/plans/{plan}/rollout/stages/{stage}\"\xd7\a\n" +
 	"\x04Task\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x17\n" +
 	"\aspec_id\x18\x02 \x01(\tR\x06specId\x120\n" +
@@ -3385,11 +3385,11 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\x04type\x18\x05 \x01(\x0e2\x16.bytebase.v1.Task.TypeR\x04type\x12\x16\n" +
 	"\x06target\x18\x06 \x01(\tR\x06target\x12K\n" +
 	"\x0fdatabase_create\x18\a \x01(\v2 .bytebase.v1.Task.DatabaseCreateH\x00R\x0edatabaseCreate\x12K\n" +
-	"\x0fdatabase_update\x18\b \x01(\v2 .bytebase.v1.Task.DatabaseUpdateH\x00R\x0edatabaseUpdate\x12E\n" +
+	"\x0fdatabase_update\x18\b \x01(\v2 .bytebase.v1.Task.DatabaseUpdateH\x00R\x0edatabaseUpdate\x12F\n" +
 	"\vupdate_time\x18\n" +
-	" \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03H\x01R\n" +
-	"updateTime\x88\x01\x01\x12?\n" +
-	"\brun_time\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03H\x02R\arunTime\x88\x01\x01\x1a,\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03H\x01R\n" +
+	"updateTime\x88\x01\x01\x12@\n" +
+	"\brun_time\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03H\x02R\arunTime\x88\x01\x01\x1a,\n" +
 	"\x0eDatabaseCreate\x12\x14\n" +
 	"\x05sheet\x18\x04 \x01(\tR\x05sheetJ\x04\b\x01\x10\x04\x1aT\n" +
 	"\x0eDatabaseUpdate\x12\x16\n" +
@@ -3415,21 +3415,21 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\apayloadB\x0e\n" +
 	"\f_update_timeB\v\n" +
 	"\t_run_timeJ\x04\b\t\x10\n" +
-	"\"\xfc\a\n" +
+	"\"\x81\b\n" +
 	"\aTaskRun\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
-	"\acreator\x18\x02 \x01(\tR\acreator\x12@\n" +
-	"\vcreate_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
-	"createTime\x12@\n" +
-	"\vupdate_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
+	"\acreator\x18\x02 \x01(\tR\acreator\x12A\n" +
+	"\vcreate_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\n" +
+	"createTime\x12A\n" +
+	"\vupdate_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\n" +
 	"updateTime\x123\n" +
 	"\x06status\x18\x05 \x01(\x0e2\x1b.bytebase.v1.TaskRun.StatusR\x06status\x12\x16\n" +
-	"\x06detail\x18\x06 \x01(\tR\x06detail\x12>\n" +
+	"\x06detail\x18\x06 \x01(\tR\x06detail\x12?\n" +
 	"\n" +
-	"start_time\x18\t \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\tstartTime\x12(\n" +
-	"\x10has_prior_backup\x18\v \x01(\bR\x0ehasPriorBackup\x12N\n" +
-	"\x0escheduler_info\x18\f \x01(\v2\".bytebase.v1.TaskRun.SchedulerInfoB\x03\xe0A\x03R\rschedulerInfo\x12?\n" +
-	"\brun_time\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03H\x00R\arunTime\x88\x01\x01\x1a\xf5\x01\n" +
+	"start_time\x18\t \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\tstartTime\x12(\n" +
+	"\x10has_prior_backup\x18\v \x01(\bR\x0ehasPriorBackup\x12O\n" +
+	"\x0escheduler_info\x18\f \x01(\v2\".bytebase.v1.TaskRun.SchedulerInfoB\x04\xe2A\x01\x03R\rschedulerInfo\x12@\n" +
+	"\brun_time\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03H\x00R\arunTime\x88\x01\x01\x1a\xf5\x01\n" +
 	"\rSchedulerInfo\x12;\n" +
 	"\vreport_time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"reportTime\x12T\n" +
@@ -3548,9 +3548,9 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\fCOMPUTE_DIFF\x10\b\x12\x18\n" +
 	"\x14RELEASE_FILE_EXECUTE\x10\t\x12\x13\n" +
 	"\x0fGHOST_MIGRATION\x10\n" +
-	"\"\x04\b\x04\x10\x04J\x04\b\a\x10\b\"P\n" +
-	"\x18GetTaskRunSessionRequest\x124\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
+	"\"\x04\b\x04\x10\x04J\x04\b\a\x10\b\"Q\n" +
+	"\x18GetTaskRunSessionRequest\x125\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1d\xe2A\x01\x02\xfaA\x16\n" +
 	"\x14bytebase.com/TaskRunR\x06parent\"\xc3\t\n" +
 	"\x0eTaskRunSession\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12B\n" +
@@ -3592,9 +3592,9 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\v_xact_startB\x0e\n" +
 	"\f_query_start:\x80\x01\xeaA}\n" +
 	"\x1bbytebase.com/TaskRunSession\x12^projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/sessionB\t\n" +
-	"\asession\"Q\n" +
-	"\x1dPreviewTaskRunRollbackRequest\x120\n" +
-	"\x04name\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
+	"\asession\"R\n" +
+	"\x1dPreviewTaskRunRollbackRequest\x121\n" +
+	"\x04name\x18\x01 \x01(\tB\x1d\xe2A\x01\x02\xfaA\x16\n" +
 	"\x14bytebase.com/TaskRunR\x04name\">\n" +
 	"\x1ePreviewTaskRunRollbackResponse\x12\x1c\n" +
 	"\tstatement\x18\x01 \x01(\tR\tstatement2\xbb\x10\n" +

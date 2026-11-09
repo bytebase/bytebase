@@ -6,8 +6,8 @@ modules:
     name: buf.build/bytebase/store
 
 deps:
-  - buf.build/googleapis/googleapis
-  - buf.build/bufbuild/protovalidate
+  - buf.build/googleapis/googleapis:8ac61b9e502343289c8c42b17aa5b245
+  - buf.build/bufbuild/protovalidate:511051f7f4374c3ca873b53ae68a9288
 lint:
   use:
     - BASIC
