@@ -6,6 +6,7 @@ const baseAddress =
   import.meta.env.BB_GRPC_LOCAL ||
   (typeof window === "undefined" ? "" : window.location.origin);
 const REFRESH_PATH = "/bytebase.v1.AuthService/Refresh";
+export const DEFAULT_AGENT_QUERY_LIMIT = 100;
 
 export interface CallApiArgs {
   operationId: string;
@@ -204,13 +205,20 @@ export function prepareApiCall(args: CallApiArgs): PrepareApiCallResult {
   }
 
   try {
+    const body = args.body ?? {};
+    const requestBody =
+      path === "/bytebase.v1.SQLService/Query" &&
+      isPlainObject(body) &&
+      body.limit == null
+        ? { ...body, limit: DEFAULT_AGENT_QUERY_LIMIT }
+        : body;
     return {
       kind: "prepared",
       call: Object.freeze({
         operationId: `${match[1]}.${match[2]}`,
         path,
         body: JSON.stringify(
-          coerceRequestBody(args.body ?? {}, getRequestSchema(args.operationId))
+          coerceRequestBody(requestBody, getRequestSchema(args.operationId))
         ),
       }),
     };

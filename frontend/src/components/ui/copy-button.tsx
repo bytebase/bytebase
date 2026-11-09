@@ -2,6 +2,7 @@ import { Check, Copy } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button, type ButtonProps } from "@/components/ui/button";
+import type { LayerFamily } from "@/components/ui/layer";
 import { Tooltip } from "@/components/ui/tooltip";
 import { writeTextToClipboard } from "@/lib/clipboard";
 import { cn } from "@/lib/utils";
@@ -15,6 +16,7 @@ interface CopyButtonProps {
   readonly appearance?: ButtonProps["appearance"];
   readonly disabled?: boolean;
   readonly className?: string;
+  readonly tooltipLayer?: LayerFamily;
 }
 
 export function CopyButton({
@@ -24,6 +26,7 @@ export function CopyButton({
   appearance = "secondary",
   disabled,
   className,
+  tooltipLayer,
 }: CopyButtonProps) {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
@@ -47,7 +50,7 @@ export function CopyButton({
   }, [content, t]);
 
   return (
-    <Tooltip content={t("common.copy")}>
+    <Tooltip content={t("common.copy")} layer={tooltipLayer}>
       <Button
         type="button"
         variant={variant}

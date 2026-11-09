@@ -14,6 +14,7 @@ import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 
 const mocks = vi.hoisted(() => ({
   record: vi.fn(),
+  openAgent: vi.fn(),
   toggleAgent: vi.fn(),
   resolve: vi.fn(({ name }: { name: string }) => ({
     href: `/${name}`,
@@ -101,6 +102,7 @@ vi.mock("@/utils/storage-keys", async (importOriginal) => {
 vi.mock("@/modules/agent/store/agent", () => ({
   useAgentStore: {
     getState: () => ({
+      open: mocks.openAgent,
       toggle: mocks.toggleAgent,
     }),
   },
@@ -150,6 +152,26 @@ beforeEach(async () => {
 });
 
 describe("DashboardHeader", () => {
+  test("uses the shared open action for every Agent launch", async () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <DashboardHeader showLogo={false} />
+    );
+    try {
+      render();
+      const agent = container.querySelector(
+        'button[aria-label="Agent"]'
+      ) as HTMLButtonElement;
+      expect(agent).toHaveClass("h-7", "text-accent", "bg-transparent");
+      expect(agent).not.toHaveClass("border");
+      await act(async () => agent.click());
+      await act(async () => agent.click());
+      expect(mocks.openAgent).toHaveBeenCalledTimes(2);
+      expect(mocks.toggleAgent).not.toHaveBeenCalled();
+    } finally {
+      unmount();
+    }
+  });
+
   test("renders logo, toggle, and shared entrypoints", () => {
     const onOpenMobileSidebar = vi.fn();
     const { container, render, unmount } = renderIntoContainer(

@@ -100,20 +100,16 @@ export const resolveCELExpr = (expr: CELExpr): SimpleExpr => {
           args: [],
         };
         const [left, right] = args;
-        const sub = (subTree: CELExpr, expand: boolean) => {
+        const sub = (subTree: CELExpr) => {
           const subExpr = dfs(subTree);
-          if (
-            expand &&
-            isConditionGroupExpr(subExpr) &&
-            subExpr.operator === operator
-          ) {
+          if (isConditionGroupExpr(subExpr) && subExpr.operator === operator) {
             group.args.push(...subExpr.args);
           } else {
             group.args.push(subExpr);
           }
         };
-        sub(left, true);
-        sub(right, false);
+        sub(left);
+        sub(right);
         return group;
       }
       if (isNegativeOperator(operator)) {

@@ -10,7 +10,14 @@ import zhCN from "@/locales/zh-CN.json";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { AIChatResponse_StopReason } from "@/types/proto-es/v1/ai_service_pb";
 import type { DomRefSuggestion } from "../dom";
+import type { AgentMaskingPageResource } from "../logic/chatContext";
+import type { AgentPendingAsk } from "../logic/types";
 import { createAgentStore, useAgentStore } from "../store/agent";
+import {
+  AgentDialog,
+  AgentDialogContent,
+  AgentDialogTitle,
+} from "./ui/AgentDialog";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -73,6 +80,7 @@ const mocks = vi.hoisted(() => ({
   aiEnabled: undefined as boolean | undefined,
   currentContext: "projects/orders" as string | undefined,
   currentPath: "/demo",
+  currentPageResource: undefined as AgentMaskingPageResource | undefined,
 }));
 
 vi.mock("@/api", async (importOriginal) => ({
@@ -186,7 +194,8 @@ vi.mock("../logic/aiConfiguration", async (importOriginal) => ({
   isAgentAIConfigurationError: mocks.isAgentAIConfigurationError,
 }));
 
-vi.mock("../logic/outboundHistory", () => ({
+vi.mock("../logic/outboundHistory", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../logic/outboundHistory")>()),
   buildOutboundHistory: mocks.buildOutboundHistory,
 }));
 
@@ -195,9 +204,10 @@ vi.mock("../logic/prompt", () => ({
 }));
 
 vi.mock("../logic/chatContext", () => ({
-  getCurrentAgentPageResource: () => undefined,
+  getCurrentAgentPageResource: () => mocks.currentPageResource,
   getCurrentChatContext: () => mocks.currentContext,
-  isAgentMaskingPageResource: () => false,
+  isAgentMaskingPageResource: (page: unknown) =>
+    page !== undefined && page === mocks.currentPageResource,
 }));
 
 vi.mock("../logic/resourceSearch", () => ({
@@ -293,7 +303,10 @@ beforeEach(async () => {
     queuedUserMessagesByChatId: {},
     queuedUserMessageInFlightByChatId: {},
     currentChatId: initialState.currentChatId,
+    visible: initialState.visible,
+    minimized: initialState.minimized,
     abortControllersByChatId: {},
+    remoteBusyChatIds: {},
   });
 
   mocks.useTranslation.mockReset();
@@ -410,6 +423,7 @@ beforeEach(async () => {
   mocks.workspace = { name: "workspaces/demo", title: "Demo workspace" };
   mocks.currentContext = "projects/orders";
   mocks.currentPath = "/demo";
+  mocks.currentPageResource = undefined;
   mocks.aiEnabled = undefined;
 
   ({ AgentInput } = await import("./AgentInput"));
@@ -422,6 +436,901 @@ afterEach(() => {
 });
 
 describe("AgentInput", () => {
+  test.each([undefined, "", " \n\t "])(
+    "uses visible fallback confirmation labels for %j custom labels",
+    async (label) => {
+      mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+      const store = useAgentStore.getState();
+      const chat = store.ensureCurrentChat(undefined, "projects/orders");
+      const view = renderIntoContainer(<AgentInput />);
+      try {
+        for (const confirmed of [true, false]) {
+          act(() => store.awaitUser(chat.id, {
+            toolCallId: `confirm-${confirmed}`,
+            kind: "confirm",
+            prompt: "Prepare this unsaved draft?",
+            confirmLabel: label,
+            cancelLabel: label,
+          }));
+          await act(async () => view.render());
+          const buttons = [...view.container.querySelectorAll("button")];
+          const confirm = buttons.find((button) => button.textContent === "agent.confirm");
+          const cancel = buttons.find((button) => button.textContent === "agent.cancel");
+          expect(confirm).toHaveAccessibleName("agent.confirm");
+          expect(cancel).toHaveAccessibleName("agent.cancel");
+          expect(store.getPendingAsk(chat.id)?.toolCallId).toBe(`confirm-${confirmed}`);
+          await act(async () => (confirmed ? confirm : cancel)?.click());
+          const response = store.getMessages(chat.id).find((message) => message.toolCallId === `confirm-${confirmed}`);
+          expect(JSON.parse(response?.content ?? "null")).toMatchObject({
+            kind: "confirm",
+            confirmed,
+            answer: confirmed ? "agent.confirm" : "agent.cancel",
+          });
+        }
+      } finally {
+        view.unmount();
+      }
+    }
+  );
+
+  test("keeps nonblank custom confirmation labels", async () => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat(undefined, "projects/orders");
+    store.awaitUser(chat.id, {
+      toolCallId: "confirm-custom",
+      kind: "confirm",
+      prompt: "Prepare this unsaved draft?",
+      confirmLabel: "  Prepare draft  ",
+      cancelLabel: "  Not now  ",
+    });
+    const view = renderIntoContainer(<AgentInput />);
+    try {
+      await act(async () => view.render());
+      const buttons = [...view.container.querySelectorAll("button")];
+      expect(buttons.find((button) => button.textContent === "Prepare draft")).toHaveAccessibleName("Prepare draft");
+      expect(buttons.find((button) => button.textContent === "Not now")).toHaveAccessibleName("Not now");
+      expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+    } finally {
+      view.unmount();
+    }
+  });
+
+  test("passes a historical masking database candidate without selecting it", async () => {
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/orders" });
+    store.addMessage({
+      chatId: chat.id,
+      role: "user",
+      content: "Query @orders",
+      metadata: {
+        resourceReference: {
+          kind: "database",
+          name: "instances/prod/databases/orders",
+          project: "projects/orders",
+          label: "orders",
+        },
+      },
+    });
+    const view = renderIntoContainer(<AgentInput />);
+    try {
+      view.render();
+      const textarea = view.container.querySelector("textarea") as HTMLTextAreaElement;
+      await act(async () => {
+        setTextareaValue(textarea, "Help me mask email");
+        textarea.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+      await act(async () => {
+        view.container.querySelector<HTMLButtonElement>("[data-agent-send]")?.click();
+        await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+      });
+
+      expect(mocks.createToolExecutor).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          historicalDatabase: {
+            database: "instances/prod/databases/orders",
+            project: "projects/orders",
+          },
+          referencedDatabase: undefined,
+          referencedProject: undefined,
+        })
+      );
+      expect(mocks.executeTool).not.toHaveBeenCalledWith(
+        "get_database_overview",
+        expect.anything(),
+        expect.anything()
+      );
+      expect(store.getMessages(chat.id).at(-1)?.metadata?.resourceReference).toBeUndefined();
+      expect(store.getChat(chat.id)?.context).toBe("projects/orders");
+    } finally {
+      view.unmount();
+    }
+  });
+
+  test("keeps the mention picker open when typing creates the first selected chat", async () => {
+    useAgentStore.getState().clearCurrentChat();
+    mocks.currentContext = undefined;
+    const view = renderIntoContainer(<AgentInput />);
+    try {
+      view.render();
+      const textarea = view.container.querySelector("textarea") as HTMLTextAreaElement;
+      await act(async () => {
+        setTextareaValue(textarea, "@");
+        textarea.setSelectionRange(1, 1);
+        textarea.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+      expect(useAgentStore.getState().currentChatId).not.toBeNull();
+      expect(document.querySelector("[data-agent-resource-picker]")).not.toBeNull();
+    } finally {
+      view.unmount();
+    }
+  });
+
+  test("binds a database mention in a clarification reply without changing the saved draft", async () => {
+    const databaseName = "instances/prod/databases/orders";
+    mocks.executeTool.mockResolvedValue({
+      kind: "tool_result",
+      result: JSON.stringify({
+        project: "projects/orders",
+        database: { status: "available", name: databaseName, state: "ACTIVE" },
+      }),
+    });
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/orders" });
+    store.setDraft(chat.id, { text: "Unsent next question" });
+    store.addMessage({ chatId: chat.id, role: "user", content: "Help me with this database" });
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      toolCalls: [{ id: "ask-database", name: "ask_user", arguments: '{"kind":"input","prompt":"Which database?"}' }],
+    });
+    store.awaitUser(chat.id, { toolCallId: "ask-database", kind: "input", prompt: "Which database?" });
+    const view = renderIntoContainer(<AgentInput />);
+    try {
+      view.render();
+      const textarea = view.container.querySelector("textarea") as HTMLTextAreaElement;
+      await act(async () => {
+        setTextareaValue(textarea, "Use @");
+        textarea.setSelectionRange(5, 5);
+        textarea.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+      expect(document.querySelector("[data-agent-resource-picker]")).not.toBeNull();
+      await act(async () => {
+        document.querySelector<HTMLButtonElement>('[data-agent-resource-category="database"]')?.click();
+      });
+      await vi.waitFor(() => expect(document.querySelector(`[data-agent-resource-database="${databaseName}"]`)).not.toBeNull());
+      await act(async () => {
+        document.querySelector<HTMLButtonElement>(`[data-agent-resource-database="${databaseName}"]`)?.click();
+      });
+
+      expect(textarea.value).toBe("Use @orders (prod) ");
+      expect(view.container.querySelector("[data-agent-inline-mention]")?.textContent).toBe("@orders (prod)");
+      expect(store.getDraft(chat.id)).toEqual({ text: "Unsent next question" });
+      const send = view.container.querySelector("[data-agent-send]") as HTMLButtonElement;
+      await act(async () => {
+        setTextareaValue(textarea, "Use @orders (prod) @unknown");
+        textarea.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+      expect(send).toBeDisabled();
+      await act(async () => {
+        setTextareaValue(textarea, "Use @orders (prod) ");
+        textarea.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+      await act(async () => {
+        send.click();
+        await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+      });
+
+      const reply = store.getMessages(chat.id).find((message) => message.toolCallId === "ask-database");
+      expect(JSON.parse(reply?.content ?? "{}")).toEqual({ kind: "input", answer: "Use @orders (prod)" });
+      expect(reply?.metadata?.resourceReference).toEqual({
+        kind: "database", name: databaseName, project: "projects/orders", label: "orders (prod)",
+      });
+      expect(mocks.executeTool).toHaveBeenCalledWith("get_database_overview", { databaseName }, expect.any(String));
+      expect(mocks.createToolExecutor).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+        context: "projects/orders", referencedDatabase: databaseName, referencedProject: "projects/orders", runMode: "read-only",
+      }));
+      expect(store.getPendingAsk(chat.id)).toBeNull();
+      expect(store.getChat(chat.id)?.context).toBe("projects/orders");
+      expect(store.getMessages(chat.id).filter((message) => message.role === "user")).toHaveLength(1);
+      expect(store.getDraft(chat.id)).toEqual({ text: "Unsent next question" });
+    } finally {
+      view.unmount();
+    }
+  });
+
+  test.each([false, true])("prefills a verified database as a bound mention and revalidates it only after Reply (referenced project: %s)", async (referencedProject) => {
+    const databaseName = "instances/prod/databases/orders";
+    const project = referencedProject ? "projects/billing" : "projects/orders";
+    const resource = { kind: "database" as const, name: databaseName, project, label: "orders (Production)" };
+    mocks.executeTool.mockResolvedValue({
+      kind: "tool_result",
+      result: JSON.stringify({ project: resource.project, database: { status: "available", name: databaseName, state: "ACTIVE" } }),
+    });
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/orders" });
+    store.setDraft(chat.id, { text: "Unsent next question" });
+    store.addMessage({ chatId: chat.id, role: "user", content: referencedProject ? "@Billing Retry my query" : "Retry my query", metadata: referencedProject ? { resourceReference: { kind: "project", name: project, project, label: "Billing" } } : undefined });
+    store.addMessage({ chatId: chat.id, role: "assistant", toolCalls: [{ id: "ask-prefilled-database", name: "ask_user", arguments: JSON.stringify({ kind: "input", resourceKind: "database", prompt: "Which database?", defaultValue: databaseName }) }] });
+    store.awaitUser(chat.id, { toolCallId: "ask-prefilled-database", kind: "input", prompt: "Which database?", defaultValue: databaseName, defaultResource: resource });
+    useAgentStore.setState({ visible: true, minimized: false });
+    const view = renderIntoContainer(<AgentInput />);
+    try {
+      view.render();
+      const textarea = view.container.querySelector("textarea") as HTMLTextAreaElement;
+      expect(textarea.value).toBe("@orders (Production) ");
+      expect(view.container.querySelector("[data-agent-inline-mention]")?.textContent).toBe("@orders (Production)");
+      expect(document.activeElement).toBe(textarea);
+      expect(textarea.selectionStart).toBe(textarea.value.length);
+      expect(store.getDraft(chat.id)).toEqual({ text: "Unsent next question" });
+      expect(mocks.executeTool).not.toHaveBeenCalled();
+      expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+
+      await act(async () => {
+        (view.container.querySelector("[data-agent-send]") as HTMLButtonElement).click();
+        await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+      });
+      const reply = store.getMessages(chat.id).find((message) => message.toolCallId === "ask-prefilled-database");
+      expect(JSON.parse(reply?.content ?? "{}")).toEqual({ kind: "input", answer: "@orders (Production)" });
+      expect(reply?.metadata?.resourceReference).toEqual(resource);
+      expect(mocks.executeTool).toHaveBeenCalledWith("get_database_overview", { databaseName }, expect.any(String));
+      expect(store.getDraft(chat.id)).toEqual({ text: "Unsent next question" });
+    } finally {
+      view.unmount();
+    }
+  });
+
+  test("lets the member edit and delete a prefilled database mention without resetting their answer", async () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/orders" });
+    store.setDraft(chat.id, { text: "Saved question" });
+    store.awaitUser(chat.id, {
+      toolCallId: "ask-prefilled-database", kind: "input", prompt: "Which database?",
+      defaultValue: "instances/prod/databases/orders",
+      defaultResource: { kind: "database", name: "instances/prod/databases/orders", project: "projects/orders", label: "orders (prod)" },
+    });
+    const view = renderIntoContainer(<AgentInput />);
+    try {
+      view.render();
+      const textarea = view.container.querySelector("textarea") as HTMLTextAreaElement;
+      expect(textarea.value).toBe("@orders (prod) ");
+      await act(async () => {
+        setTextareaValue(textarea, "Use @orders (prod) ");
+        textarea.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+      act(() => store.incrementChatTotalTokens(chat.id, 1));
+      expect(textarea.value).toBe("Use @orders (prod) ");
+      expect(view.container.querySelector("[data-agent-inline-mention]")?.textContent).toBe("@orders (prod)");
+      act(() => {
+        textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+        textarea.dispatchEvent(new KeyboardEvent("keydown", { key: "Backspace", bubbles: true, cancelable: true }));
+      });
+      expect(textarea.value).toBe("Use ");
+      expect(view.container.querySelector("[data-agent-inline-mention]")).toBeNull();
+      act(() => store.awaitUser(chat.id, { toolCallId: "ask-schema", kind: "input", prompt: "Which schema?", defaultValue: "public" }));
+      expect(textarea.value).toBe("public");
+      expect(store.getDraft(chat.id)).toEqual({ text: "Saved question" });
+    } finally {
+      view.unmount();
+    }
+  });
+
+  test.each([
+    { defaultValue: "instances/prod/databases/orders" },
+    { defaultValue: "Use instances/prod/databases/orders" },
+    { defaultValue: "instances/prod/databases/another", defaultResource: { kind: "database" as const, name: "instances/prod/databases/orders", project: "projects/orders", label: "orders (prod)" } },
+    { defaultValue: "instances/prod/databases/orders", defaultResource: { kind: "database" as const, name: "instances/prod/databases/orders", project: "projects/billing", label: "orders (prod)" } },
+  ])("does not fabricate a mention from an unbound or mismatched default: %j", (prefill) => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/orders" });
+    store.awaitUser(chat.id, { toolCallId: "ask-database", kind: "input", prompt: "Which database?", ...prefill });
+    const view = renderIntoContainer(<AgentInput />);
+    try {
+      view.render();
+      expect(view.container.querySelector("textarea")?.value).toBe(prefill.defaultValue);
+      expect(view.container.querySelector("[data-agent-inline-mention]")).toBeNull();
+      expect(mocks.executeTool).not.toHaveBeenCalled();
+    } finally {
+      view.unmount();
+    }
+  });
+
+  test("blocks a prefilled database reply when fresh access verification fails", async () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/orders" });
+    store.addMessage({ chatId: chat.id, role: "user", content: "Retry my query" });
+    store.addMessage({ chatId: chat.id, role: "assistant", toolCalls: [{ id: "ask-database", name: "ask_user", arguments: '{"kind":"input","prompt":"Which database?"}' }] });
+    store.awaitUser(chat.id, {
+      toolCallId: "ask-database", kind: "input", prompt: "Which database?", defaultValue: "instances/prod/databases/orders",
+      defaultResource: { kind: "database", name: "instances/prod/databases/orders", project: "projects/orders", label: "orders (prod)" },
+    });
+    mocks.executeTool.mockResolvedValue({ kind: "tool_result", result: JSON.stringify({ project: "projects/orders", database: { status: "unavailable" } }) });
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+    const view = renderIntoContainer(<AgentInput />);
+    try {
+      view.render();
+      await act(async () => {
+        (view.container.querySelector("[data-agent-send]") as HTMLButtonElement).click();
+        await vi.waitFor(() => expect(store.getChat(chat.id)?.status).toBe("idle"));
+      });
+      expect(mocks.executeTool).toHaveBeenCalledWith("get_database_overview", { databaseName: "instances/prod/databases/orders" }, expect.any(String));
+      expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+      expect(store.getMessages(chat.id).at(-1)?.content).toBe("agent.database-reference-unavailable");
+    } finally {
+      view.unmount();
+    }
+  });
+
+  test("edits reply mentions and clears them for the next question without touching the saved draft", async () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/orders" });
+    store.setDraft(chat.id, { text: "Saved question" });
+    store.awaitUser(chat.id, { toolCallId: "first-question", kind: "input", prompt: "Which project?" });
+    const view = renderIntoContainer(<AgentInput />);
+    try {
+      view.render();
+      const textarea = view.container.querySelector("textarea") as HTMLTextAreaElement;
+      const selectProject = async () => {
+        await act(async () => {
+          setTextareaValue(textarea, "@");
+          textarea.setSelectionRange(1, 1);
+          textarea.dispatchEvent(new Event("input", { bubbles: true }));
+        });
+        await act(async () => {
+          document.querySelector<HTMLButtonElement>('[data-agent-resource-category="project"]')?.click();
+        });
+        await vi.waitFor(() => expect(document.querySelector('[data-agent-resource-project="projects/billing"]')).not.toBeNull());
+        await act(async () => {
+          document.querySelector<HTMLButtonElement>('[data-agent-resource-project="projects/billing"]')?.click();
+        });
+      };
+      await selectProject();
+      expect(textarea.value).toBe("@Billing ");
+      expect(view.container.querySelector("[data-agent-inline-mention]")).not.toBeNull();
+
+      act(() => {
+        textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+        textarea.dispatchEvent(new KeyboardEvent("keydown", { key: "Backspace", bubbles: true, cancelable: true }));
+      });
+      expect(textarea.value).toBe("");
+      expect(view.container.querySelector("[data-agent-inline-mention]")).toBeNull();
+      await selectProject();
+      act(() => store.awaitUser(chat.id, { toolCallId: "second-question", kind: "input", prompt: "Which schema?", defaultValue: "public" }));
+      expect(textarea.value).toBe("public");
+      expect(view.container.querySelector("[data-agent-inline-mention]")).toBeNull();
+      expect(document.querySelector("[data-agent-resource-picker]")).toBeNull();
+      expect(store.getDraft(chat.id)).toEqual({ text: "Saved question" });
+      expect(store.getChat(chat.id)?.context).toBe("projects/orders");
+    } finally {
+      view.unmount();
+    }
+  });
+
+  test("focuses a new free-text question once with its default value and caret at the end", () => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat(undefined, "projects/orders");
+    useAgentStore.setState({ visible: true, minimized: false });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    const textarea = view.container.querySelector("textarea") as HTMLTextAreaElement;
+
+    act(() =>
+      store.awaitUser(chat.id, {
+        toolCallId: "question-1",
+        kind: "input",
+        prompt: "Which database?",
+        defaultValue: "orders",
+      })
+    );
+
+    expect(textarea.value).toBe("orders");
+    expect(document.activeElement).toBe(textarea);
+    expect(textarea.selectionStart).toBe(6);
+    expect(textarea.selectionEnd).toBe(6);
+    act(() => {
+      setTextareaValue(textarea, "orders_archive");
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+      textarea.setSelectionRange(2, 2);
+      store.incrementChatTotalTokens(chat.id, 10);
+    });
+    view.render();
+    expect(textarea.value).toBe("orders_archive");
+    expect(textarea.selectionStart).toBe(2);
+    const send = view.container.querySelector(
+      "[data-agent-send]"
+    ) as HTMLButtonElement;
+    send.focus();
+    act(() => store.incrementChatTotalTokens(chat.id, 10));
+    view.render();
+    expect(document.activeElement).toBe(send);
+
+    act(() =>
+      store.awaitUser(chat.id, {
+        toolCallId: "question-2",
+        kind: "input",
+        prompt: "Which schema?",
+        defaultValue: "public",
+      })
+    );
+    expect(textarea.value).toBe("public");
+    expect(document.activeElement).toBe(textarea);
+    expect(textarea.selectionStart).toBe(6);
+    view.unmount();
+  });
+
+  test("aligns clarification radios with the first title line above descriptions", () => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat(undefined, "projects/orders");
+    store.awaitUser(chat.id, {
+      toolCallId: "scope",
+      kind: "choose",
+      prompt: "Which databases should this rule cover?",
+      options: [
+        { label: "Only this database", value: "database", description: "Keep the rule limited to the selected database, even when this description wraps onto multiple lines." },
+        { label: "All databases in this project", value: "project", description: "Apply the same policy to the project." },
+        { label: "All workspace databases", value: "workspace" },
+      ],
+    });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    const choices = view.container.querySelectorAll<HTMLElement>('[role="radio"]');
+    expect(choices).toHaveLength(3);
+    for (const choice of choices) {
+      expect(choice.closest("label")?.classList.contains("items-start")).toBe(true);
+      expect(choice.classList.contains("mt-0.5")).toBe(true);
+    }
+    view.unmount();
+  });
+
+  test("selects a clarification option without sending until Reply", async () => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat(undefined, "projects/orders");
+    store.setDraft(chat.id, { text: "Keep my draft" });
+    store.awaitUser(chat.id, {
+      toolCallId: "visibility",
+      kind: "choose",
+      prompt: "How should emails appear?",
+      defaultValue: "full",
+      options: [
+        { label: "Fully hidden", value: "full" },
+        { label: "Partially masked", value: "partial" },
+      ],
+    });
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    const reply = [...view.container.querySelectorAll("button")].find(
+      (button) => button.textContent === "agent.reply"
+    );
+    expect(reply).toBeDefined();
+    expect(reply?.disabled).toBe(true);
+    const choices = view.container.querySelectorAll<HTMLElement>('[role="radio"]');
+    expect(choices).toHaveLength(2);
+    expect([...choices].every((choice) => choice.getAttribute("aria-checked") === "false")).toBe(true);
+    act(() => choices[0].click());
+    expect(choices[0].getAttribute("aria-checked")).toBe("true");
+    expect(reply?.disabled).toBe(false);
+    act(() => choices[1].click());
+    expect(choices[1].getAttribute("aria-checked")).toBe("true");
+    expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+    expect(store.getPendingAsk(chat.id)?.toolCallId).toBe("visibility");
+    await act(async () => {
+      reply?.click();
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+    });
+    expect(JSON.parse(store.getMessages(chat.id).find((message) => message.toolCallId === "visibility")?.content ?? "{}")).toEqual({
+      kind: "choose", answer: "Partially masked", value: "partial",
+    });
+    expect(store.getDraft(chat.id).text).toBe("Keep my draft");
+    view.unmount();
+  });
+
+  test("replaces exemption scope choices with separate unselected expiration choices after Reply", async () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/orders" });
+    store.addMessage({ chatId: chat.id, role: "user", content: "Prepare a masking exemption for me" });
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      toolCalls: [{ id: "exemption-scope", name: "ask_masking_exemption_scope", arguments: "{}" }],
+    });
+    store.awaitUser(chat.id, {
+      toolCallId: "exemption-scope",
+      kind: "choose",
+      prompt: "Which databases should this exemption cover?",
+      options: [
+        { label: "Only orders (Production)", value: "instances/prod/databases/orders" },
+        { label: "All databases in this project", value: "projects/orders" },
+        { label: "Another database", value: "another-database" },
+      ],
+    });
+    const expiration = {
+      kind: "choose" as const,
+      prompt: "When should this exemption expire?",
+      options: [
+        { label: "After 24 hours", value: "24-hours" },
+        { label: "No expiration", value: "no-expiration" },
+      ],
+    };
+    mocks.runAgentLoop
+      .mockImplementationOnce(async (_history, _tools, _executor, callbacks) => {
+        callbacks.onAssistantMessage({
+          role: "assistant",
+          toolCalls: [{ id: "exemption-expiration", name: "ask_user", arguments: JSON.stringify(expiration) }],
+        });
+        return { kind: "awaiting_user", ask: { toolCallId: "exemption-expiration", ...expiration }, totalTokensUsed: 0 };
+      })
+      .mockResolvedValueOnce({ kind: "completed", totalTokensUsed: 0 });
+    const view = renderIntoContainer(<AgentInput />);
+    try {
+      view.render();
+      const reply = () => [...view.container.querySelectorAll("button")].find((button) => button.textContent === "agent.reply");
+      let choices = view.container.querySelectorAll<HTMLElement>('[role="radio"]');
+      expect(choices).toHaveLength(3);
+      expect([...choices].every((choice) => choice.getAttribute("aria-checked") === "false")).toBe(true);
+      expect(reply()?.disabled).toBe(true);
+      expect(store.getPendingAsk(chat.id)).not.toHaveProperty("defaultValue");
+      act(() => choices[1].click());
+      expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+      expect(store.getPendingAsk(chat.id)?.toolCallId).toBe("exemption-scope");
+
+      await act(async () => {
+        reply()?.click();
+        await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+      });
+
+      expect(JSON.parse(store.getMessages(chat.id).find((message) => message.toolCallId === "exemption-scope")?.content ?? "{}")).toEqual({
+        kind: "choose", answer: "All databases in this project", value: "projects/orders",
+      });
+      expect(view.container.textContent).toContain("When should this exemption expire?");
+      expect(view.container.textContent).not.toContain("Which databases should this exemption cover?");
+      expect(view.container.textContent).not.toContain("Only orders (Production)");
+      expect(view.container.textContent).not.toContain("All databases in this project");
+      expect(view.container.textContent).not.toContain("Another database");
+      expect(view.container.textContent).toContain("After 24 hours");
+      expect(view.container.textContent).toContain("No expiration");
+      choices = view.container.querySelectorAll<HTMLElement>('[role="radio"]');
+      expect(choices).toHaveLength(2);
+      expect([...choices].every((choice) => choice.getAttribute("aria-checked") === "false")).toBe(true);
+      expect(reply()?.disabled).toBe(true);
+      expect(store.getPendingAsk(chat.id)).not.toHaveProperty("defaultValue");
+      expect(mocks.runAgentLoop).toHaveBeenCalledOnce();
+
+      act(() => choices[1].click());
+      expect(mocks.runAgentLoop).toHaveBeenCalledOnce();
+      await act(async () => {
+        reply()?.click();
+        await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledTimes(2));
+      });
+      expect(JSON.parse(store.getMessages(chat.id).find((message) => message.toolCallId === "exemption-expiration")?.content ?? "{}")).toEqual({
+        kind: "choose", answer: "No expiration", value: "no-expiration",
+      });
+    } finally {
+      view.unmount();
+    }
+  });
+
+  test("does not reuse a choice across questions or chats", () => {
+    const store = useAgentStore.getState();
+    const first = store.createChat({ context: "projects/orders" });
+    const ask = { toolCallId: "scope", kind: "choose" as const, prompt: "Which scope?", options: [{ label: "Workspace", value: "workspace" }] };
+    store.awaitUser(first.id, ask);
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    const reply = () => [...view.container.querySelectorAll("button")].find((button) => button.textContent === "agent.reply");
+    act(() => view.container.querySelector<HTMLElement>('[role="radio"]')?.click());
+    expect(reply()?.disabled).toBe(false);
+    act(() => store.awaitUser(first.id, { ...ask, toolCallId: "next-scope" }));
+    expect(reply()?.disabled).toBe(true);
+    act(() => view.container.querySelector<HTMLElement>('[role="radio"]')?.click());
+    expect(reply()?.disabled).toBe(false);
+    act(() => {
+      const second = store.createChat({ context: "projects/billing" });
+      store.awaitUser(second.id, { ...ask, toolCallId: "next-scope" });
+    });
+    expect(reply()?.disabled).toBe(true);
+    act(() => store.setCurrentChat(first.id));
+    expect(reply()?.disabled).toBe(true);
+    expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+    view.unmount();
+  });
+
+  test.each(["chat", "question", "account"] as const)(
+    "does not submit a stale choice after the %s changes during configuration refresh",
+    async (change) => {
+      const store = useAgentStore.getState();
+      const chat = store.createChat({ context: "projects/orders" });
+      const ask = { toolCallId: "visibility", kind: "choose" as const, prompt: "Which visibility?", options: [{ label: "Fully hidden", value: "full" }] };
+      store.awaitUser(chat.id, ask);
+      const view = renderIntoContainer(<AgentInput />);
+      await act(async () => view.render());
+      let finishRefresh!: () => void;
+      mocks.getOrFetchSettingByName.mockImplementationOnce(
+        () => new Promise((resolve) => { finishRefresh = () => resolve(undefined); })
+      );
+      act(() => view.container.querySelector<HTMLElement>('[role="radio"]')?.click());
+      await act(async () => {
+        [...view.container.querySelectorAll("button")].find((button) => button.textContent === "agent.reply")?.click();
+      });
+      expect(finishRefresh).toBeDefined();
+      await act(async () => {
+        if (change === "chat") store.createChat({ context: "projects/billing" });
+        if (change === "question") store.awaitUser(chat.id, { ...ask, toolCallId: "replacement" });
+        if (change === "account") useAgentStore.setState({ userEmail: "another@example.com" });
+        finishRefresh();
+      });
+      expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+      expect(store.getMessages(chat.id).filter((message) => message.role === "tool")).toHaveLength(0);
+      view.unmount();
+    }
+  );
+
+  test.each<AgentPendingAsk>([
+    {
+      toolCallId: "choose",
+      kind: "choose",
+      prompt: "Which database?",
+      options: [{ label: "Orders", value: "orders" }],
+    },
+    { toolCallId: "confirm", kind: "confirm", prompt: "Continue?" },
+    {
+      toolCallId: "api",
+      kind: "input",
+      prompt: "Approve?",
+      apiPermission: {
+        actionId: "action-1",
+        operationId: "ProjectService/UpdateProject",
+      },
+    },
+  ])("does not autofocus a $toolCallId request", (pendingAsk) => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat(undefined, "projects/orders");
+    useAgentStore.setState({ visible: true, minimized: false });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    const button = document.createElement("button");
+    view.container.appendChild(button);
+    button.focus();
+    act(() => store.awaitUser(chat.id, pendingAsk));
+    expect(document.activeElement).toBe(button);
+    view.unmount();
+  });
+
+  test("does not focus for another chat's question", () => {
+    const store = useAgentStore.getState();
+    const background = store.createChat({ context: "projects/billing" });
+    store.createChat({ context: "projects/orders" });
+    useAgentStore.setState({ visible: true, minimized: false });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    const button = document.createElement("button");
+    view.container.appendChild(button);
+    button.focus();
+    act(() =>
+      store.awaitUser(background.id, {
+        toolCallId: "background",
+        kind: "input",
+        prompt: "Which database?",
+      })
+    );
+    expect(document.activeElement).toBe(button);
+    act(() => store.setCurrentChat(background.id));
+    expect(document.activeElement).toBe(view.container.querySelector("textarea"));
+    view.unmount();
+  });
+
+  test.each([
+    { tool: "prepare_masking_rule_drafts", result: { draftId: "batch-1" }, kind: "draft-masking-rule", id: "batch-1" },
+    { tool: "prepare_semantic_type_draft", result: { draftId: "semantic-1" }, kind: "draft-semantic-type", id: "semantic-1" },
+    { tool: "prepare_semantic_type_draft", result: { error: "Permission denied" }, kind: undefined, id: undefined },
+    { tool: "prepare_masking_exemption_draft", result: { draftId: "exemption-1" }, kind: "draft-masking-exemption", id: "exemption-1" },
+    { tool: "prepare_masking_exemption_draft", result: { error: "Permission denied" }, kind: undefined, id: undefined },
+    { tool: "prepare_masking_rule_drafts", result: { error: "Invalid second rule" }, kind: undefined, id: undefined },
+  ])("uses only the latest successful $tool handoff across masking flows", async ({tool, result, kind, id}) => {
+    mocks.runAgentLoop.mockImplementation(async (_history, _tools, _executor, callbacks) => {
+      callbacks.onAssistantMessage({toolCalls:[
+        {id:"old", name:"prepare_masking_rule_draft", arguments:"{}"},
+        {id:"new", name:tool, arguments:"{}"},
+      ]});
+      callbacks.onToolResult("old", JSON.stringify({draftId:"old-rule"}));
+      callbacks.onToolResult("new", JSON.stringify(result));
+      callbacks.onText("Review the new masking proposal.");
+      return {kind:"completed", success:true, actions:[], totalTokensUsed:0};
+    });
+    const store = useAgentStore.getState();
+    const page = {path:"/projects/orders", title:"Orders"};
+    const chat = store.createChat({context:"projects/orders",page});
+    store.queueUserMessage({chatId:chat.id,text:"Prepare the masking drafts.",page});
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => { await vi.waitFor(() => expect(store.getMessages(chat.id).some(message => message.content === "Review the new masking proposal.")).toBe(true)); });
+    expect(store.getMessages(chat.id).find(message => message.content === "Review the new masking proposal.")?.metadata?.actions).toEqual(id ? [{kind, draftId:id}] : undefined);
+    view.unmount();
+  });
+
+  test.each([
+    { latest: JSON.stringify({ draftId: "draft-new" }), expectedId: "draft-new" },
+    { latest: JSON.stringify({ error: "Unsupported selector condition" }), expectedId: undefined },
+    { latest: JSON.stringify({ draftId: "draft-old" }), expectedId: "draft-old" },
+  ])("offers only the latest successfully prepared masking draft: $latest", async ({ latest, expectedId }) => {
+    mocks.runAgentLoop.mockImplementation(async (_history, _tools, _executor, callbacks) => {
+      callbacks.onAssistantMessage({ toolCalls: [
+        { id: "prepare-1", name: "prepare_masking_rule_draft", arguments: "{}" },
+        { id: "prepare-2", name: "prepare_masking_rule_draft", arguments: "{}" },
+      ] });
+      callbacks.onToolResult("prepare-1", JSON.stringify({ draftId: "draft-old" }));
+      callbacks.onToolResult("prepare-2", latest);
+      callbacks.onText("Review the masking draft.");
+      return {
+        kind: "completed", success: true,
+        actions: [{ kind: "draft-masking-rule", draftId: "draft-old" }],
+        totalTokensUsed: 0,
+      };
+    });
+    const store = useAgentStore.getState();
+    const page = { path: "/projects/orders", title: "Orders" };
+    const chat = store.createChat({ context: "projects/orders", page });
+    store.queueUserMessage({ chatId: chat.id, text: "Prepare a global email masking rule.", page });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => {
+      await vi.waitFor(() => expect(store.getMessages(chat.id).some((message) => message.content === "Review the masking draft.")).toBe(true));
+    });
+    const answer = store.getMessages(chat.id).find((message) => message.content === "Review the masking draft.");
+    expect(answer?.metadata?.actions).toEqual(expectedId ? [{ kind: "draft-masking-rule", draftId: expectedId }] : undefined);
+    view.unmount();
+  });
+
+  test.each([
+    { name: "omitted actions", actions: undefined, success: true },
+    { name: "empty actions", actions: [], success: true },
+    { name: "invented draft ID", actions: [{ kind: "draft-masking-rule", draftId: "invented" }], success: true },
+    { name: "competing settings link", actions: [{ kind: "open", target: { kind: "open-global-masking" } }], success: true },
+    { name: "unsuccessful completion", actions: [], success: false },
+  ])("attaches the runtime masking draft action after same-batch completion with $name", async ({ actions, success }) => {
+    mocks.runAgentLoop.mockImplementation(async (_history, _tools, _executor, callbacks) => {
+      callbacks.onAssistantMessage({ toolCalls: [
+        { id: "overview", name: "get_masking_overview", arguments: "{}" },
+        { id: "prepare", name: "prepare_masking_rule_draft", arguments: "{}" },
+        { id: "done", name: "done", arguments: JSON.stringify({ success, text: "Review the prepared draft.", actions }) },
+      ] });
+      callbacks.onToolResult("overview", JSON.stringify({ openTargets: [{ kind: "open-global-masking" }] }));
+      callbacks.onToolResult("prepare", JSON.stringify({ draftId: "runtime-draft" }));
+      callbacks.onText("Review the prepared draft.");
+      return { kind: "completed", success, actions, totalTokensUsed: 0 };
+    });
+    const store = useAgentStore.getState();
+    const page = { path: "/settings/global-masking", title: "Global Masking" };
+    const chat = store.createChat({ context: "workspaces/demo", page });
+    store.queueUserMessage({ chatId: chat.id, text: "Prepare an email masking rule.", page });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => {
+      await vi.waitFor(() => expect(store.getMessages(chat.id).some((message) => message.content === "Review the prepared draft.")).toBe(true));
+    });
+    const answer = store.getMessages(chat.id).find((message) => message.content === "Review the prepared draft.");
+    expect(answer?.metadata?.actions).toEqual(success ? [{ kind: "draft-masking-rule", draftId: "runtime-draft" }] : undefined);
+    expect(mocks.routerPush).not.toHaveBeenCalled();
+    expect(mocks.executeTool).not.toHaveBeenCalledWith("prepare_masking_rule_draft", expect.anything(), expect.anything());
+    view.unmount();
+  });
+
+  test("does not revive a masking draft from an earlier run when a clarification resumes", async () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/orders" });
+    store.addMessage({ chatId: chat.id, role: "user", content: "Prepare an email mask." });
+    store.addMessage({ chatId: chat.id, role: "assistant", toolCalls: [{ id: "old-prepare", name: "prepare_masking_rule_draft", arguments: "{}" }] });
+    store.addMessage({ chatId: chat.id, role: "tool", toolCallId: "old-prepare", content: '{"draftId":"previous-run"}' });
+    store.awaitUser(chat.id, { toolCallId: "visibility", kind: "choose", prompt: "Which visibility?", options: [{ label: "Fully hidden", value: "full" }] });
+    mocks.runAgentLoop.mockImplementation(async (_history, _tools, _executor, callbacks) => {
+      callbacks.onText("Review this draft.");
+      return { kind: "completed", success: true, actions: [{ kind: "draft-masking-rule", draftId: "previous-run" }], totalTokensUsed: 0 };
+    });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    act(() => view.container.querySelector<HTMLElement>('[role="radio"]')?.click());
+    await act(async () => {
+      [...view.container.querySelectorAll("button")].find((button) => button.textContent === "agent.reply")?.click();
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+    });
+    expect(store.getMessages(chat.id).find((message) => message.content === "Review this draft.")?.metadata?.actions).toBeUndefined();
+    view.unmount();
+  });
+
+  test.each([
+    { visible: false, minimized: false },
+    { visible: true, minimized: true },
+  ])(
+    "does not autofocus while visible=$visible and minimized=$minimized",
+    (windowState) => {
+      const store = useAgentStore.getState();
+      const chat = store.ensureCurrentChat(undefined, "projects/orders");
+      useAgentStore.setState(windowState);
+      const view = renderIntoContainer(<AgentInput />);
+      view.render();
+      const button = document.createElement("button");
+      view.container.appendChild(button);
+      button.focus();
+      act(() =>
+        store.awaitUser(chat.id, {
+          toolCallId: "hidden",
+          kind: "input",
+          prompt: "Which database?",
+        })
+      );
+      expect(document.activeElement).toBe(button);
+      view.unmount();
+    }
+  );
+
+  test.each(["inert", "data-base-ui-inert", "aria-hidden"])(
+    "does not autofocus under an %s ancestor or after it is revealed",
+    (attribute) => {
+      const store = useAgentStore.getState();
+      const chat = store.ensureCurrentChat(undefined, "projects/orders");
+      useAgentStore.setState({ visible: true, minimized: false });
+      const view = renderIntoContainer(<AgentInput />);
+      view.render();
+      const button = document.createElement("button");
+      document.body.appendChild(button);
+      button.focus();
+      view.container.setAttribute(
+        attribute,
+        attribute === "aria-hidden" ? "true" : ""
+      );
+      act(() =>
+        store.awaitUser(chat.id, {
+          toolCallId: "obstructed",
+          kind: "input",
+          prompt: "Which database?",
+          defaultValue: "orders",
+        })
+      );
+      expect(document.activeElement).toBe(button);
+      view.container.removeAttribute(attribute);
+      view.render();
+      expect(document.activeElement).toBe(button);
+      button.remove();
+      view.unmount();
+    }
+  );
+
+  test("does not take focus from an open agent dialog", async () => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat(undefined, "projects/orders");
+    useAgentStore.setState({ visible: true, minimized: false });
+    const view = renderIntoContainer(
+      <>
+        <AgentInput />
+        <AgentDialog open>
+          <AgentDialogContent>
+            <AgentDialogTitle>Delete chat</AgentDialogTitle>
+            <button type="button">Keep chat</button>
+          </AgentDialogContent>
+        </AgentDialog>
+      </>
+    );
+    await act(async () => view.render());
+    const button = document.querySelector(
+      "[data-agent-dialog-content] button"
+    ) as HTMLButtonElement;
+    button.focus();
+    act(() =>
+      store.awaitUser(chat.id, {
+        toolCallId: "modal",
+        kind: "input",
+        prompt: "Which database?",
+        defaultValue: "orders",
+      })
+    );
+    expect(document.activeElement).toBe(button);
+    expect(view.container.querySelector("textarea")?.value).toBe("orders");
+    view.unmount();
+  });
+
   test("focuses the end of a prefilled composer draft", () => {
     const chat = useAgentStore.getState().createChat({
       context: "projects/orders",
@@ -500,6 +1409,9 @@ describe("AgentInput", () => {
     ).toBe("agent.input-processing-placeholder");
     expect(view.container.textContent).not.toContain("agent.input-keyboard-hint");
     expect(view.container.querySelector("textarea")?.disabled).toBe(true);
+    expect(
+      view.container.querySelector("textarea")?.classList.contains("disabled:bg-transparent")
+    ).toBe(true);
     expect(view.container.textContent).toContain("agent.stop");
 
     act(() => store.setChatStatus(chat.id, "idle"));
@@ -523,6 +1435,105 @@ describe("AgentInput", () => {
     expect(view.container.querySelector("textarea")?.value).toBe("List databases");
     expect(view.container.querySelector("[data-agent-input-placeholder]")).toBeNull();
     view.unmount();
+  });
+
+  test("does not execute queued work or stop a run owned by another tab", async () => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat(undefined, "projects/orders");
+    store.saveState();
+    const sibling = createAgentStore();
+    sibling.getState().setWorkspaceName(store.workspaceName!, store.userEmail!);
+    const view = renderIntoContainer(<AgentInput />);
+
+    try {
+      view.render();
+      expect(view.container.querySelector("textarea")).not.toBeDisabled();
+
+      sibling.getState().queueUserMessage({
+        chatId: chat.id,
+        text: "List databases",
+        page: { path: "/demo", title: "Demo" },
+      });
+      await act(async () => useAgentStore.getState().syncState());
+
+      expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+      expect(mocks.resolvePendingApiCall).not.toHaveBeenCalled();
+      expect(sibling.getState().getMessages(chat.id)).toEqual([]);
+      expect(sibling.getState().takeQueuedUserMessage(chat.id)).not.toBeNull();
+      sibling.getState().commitQueuedUserMessage(chat.id);
+      sibling.getState().startChatRun(chat.id, undefined, {
+        runId: "sibling-run",
+      });
+      await act(async () => useAgentStore.getState().syncState());
+
+      const stop = [...view.container.querySelectorAll("button")].find(
+        (button) => button.textContent === "agent.stop"
+      );
+      expect(stop).toBeDisabled();
+      expect(view.container.querySelector("textarea")).toBeDisabled();
+      await act(async () => stop?.click());
+
+      expect(useAgentStore.getState().getChat(chat.id)?.status).toBe("running");
+      expect(sibling.getState().getChat(chat.id)?.status).toBe("running");
+      expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+      expect(mocks.resolvePendingApiCall).not.toHaveBeenCalled();
+    } finally {
+      view.unmount();
+    }
+  });
+
+  test("disables permission confirmation owned by another tab", async () => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat(undefined, "projects/orders");
+    store.saveState();
+    const sibling = createAgentStore();
+    sibling.getState().setWorkspaceName(store.workspaceName!, store.userEmail!);
+    mocks.getPendingApiCallPreview.mockReturnValue({
+      operationId: "bytebase.v1.ProjectService.UpdateProject",
+      body: '{"project":{"name":"projects/orders","title":"Orders"}}',
+      expiresAt: Date.now() + 5 * 60_000,
+    });
+    const view = renderIntoContainer(<AgentInput />);
+
+    try {
+      view.render();
+      sibling.getState().startChatRun(chat.id, undefined, {
+        runId: "sibling-run",
+      });
+      sibling.getState().awaitUser(chat.id, {
+        kind: "confirm",
+        toolCallId: "sibling-write",
+        prompt: "Update this project?",
+        apiPermission: {
+          actionId: "sibling-action",
+          operationId: "bytebase.v1.ProjectService.UpdateProject",
+        },
+      });
+      await act(async () => useAgentStore.getState().syncState());
+
+      for (const label of [
+        "agent.api-permission-allow",
+        "agent.api-permission-deny",
+      ]) {
+        const button = [...view.container.querySelectorAll("button")].find(
+          (candidate) => candidate.textContent === label
+        );
+        expect(button).toBeDisabled();
+        await act(async () => button?.click());
+      }
+
+      expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+      expect(mocks.resolvePendingApiCall).not.toHaveBeenCalled();
+      expect(useAgentStore.getState().getChat(chat.id)?.status).toBe(
+        "awaiting_user"
+      );
+      expect(useAgentStore.getState().getPendingAsk(chat.id)).toEqual(
+        sibling.getState().getPendingAsk(chat.id)
+      );
+      expect(useAgentStore.getState().getMessages(chat.id)).toEqual([]);
+    } finally {
+      view.unmount();
+    }
   });
 
   test("sends a queued Project Home message in its bound chat once", async () => {
@@ -968,6 +1979,255 @@ describe("AgentInput", () => {
       kind: "review-project-issues",
       project: "projects/orders",
     });
+    view.unmount();
+  });
+
+  test.each([
+    {
+      name: "a workspace-selected project",
+      context: "workspaces/demo",
+      referencedProject: undefined,
+      accepted: true,
+    },
+    {
+      name: "a referenced project",
+      context: "projects/orders",
+      referencedProject: "projects/billing",
+      accepted: true,
+    },
+    {
+      name: "a different project-bound chat",
+      context: "projects/orders",
+      referencedProject: undefined,
+      accepted: false,
+    },
+  ])("scopes masking handoffs to $name instead of the captured page", async ({
+    context,
+    referencedProject,
+    accepted,
+  }) => {
+    const target = {
+      kind: "open-project-masking-exemptions" as const,
+      project: "projects/billing",
+    };
+    mocks.currentPageResource = {
+      kind: "masking-exemption",
+      project: "projects/orders",
+    };
+    mocks.currentContext = context;
+    mocks.runAgentLoop.mockImplementation(
+      async (_history, _tools, _executor, callbacks) => {
+        callbacks.onAssistantMessage({
+          toolCalls: [
+            {
+              id: "masking-overview",
+              name: "get_masking_overview",
+              arguments: JSON.stringify({ project: "projects/billing" }),
+            },
+          ],
+        });
+        callbacks.onToolResult(
+          "masking-overview",
+          JSON.stringify({
+            page: "workspace",
+            project: "projects/billing",
+            openTargets: [target],
+          })
+        );
+        callbacks.onText("Review the Billing masking exemptions.", target);
+        return { kind: "completed", success: true, totalTokensUsed: 0 };
+      }
+    );
+    const page = {
+      path: "/projects/orders/masking-exemption",
+      title: "Masking exemptions",
+    };
+    const chat = useAgentStore.getState().createChat({ context, page });
+    useAgentStore.getState().queueUserMessage({
+      chatId: chat.id,
+      text: "Help me configure masking in Billing.",
+      page,
+      resourceReference: referencedProject
+        ? {
+            kind: "project",
+            name: referencedProject,
+            project: referencedProject,
+            label: "Billing",
+          }
+        : undefined,
+    });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+
+    await act(async () => {
+      await vi.waitFor(() =>
+        expect(
+          useAgentStore.getState().getMessages(chat.id).some((message) =>
+            message.content === "Review the Billing masking exemptions."
+          )
+        ).toBe(true)
+      );
+    });
+
+    const answer = useAgentStore.getState().getMessages(chat.id).find(
+      (message) => message.content === "Review the Billing masking exemptions."
+    );
+    expect(answer?.metadata?.handoff).toEqual(accepted ? target : undefined);
+    expect(mocks.createToolExecutor).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        context,
+        referencedProject,
+        maskingPage: mocks.currentPageResource,
+      })
+    );
+    view.unmount();
+  });
+
+  test.each([
+    { name: "denied", latestResult: JSON.stringify({ project: "projects/orders", openTargets: [] }) },
+    { name: "failed", latestResult: JSON.stringify({ error: "Current permissions could not be verified." }) },
+  ])("replaces stale masking handoffs with the latest $name snapshot while keeping other destinations", async ({ latestResult }) => {
+    mocks.runAgentLoop.mockImplementation(async (_history, _tools, _executor, callbacks) => {
+      callbacks.onAssistantMessage({ toolCalls: [
+        { id: "project-overview", name: "get_project_overview", arguments: "{}" },
+        { id: "masking-allowed", name: "get_masking_overview", arguments: "{}" },
+        { id: "masking-latest", name: "get_masking_overview", arguments: "{}" },
+      ] });
+      callbacks.onToolResult("project-overview", JSON.stringify({
+        project: "projects/orders",
+        personalIssues: { status: "available", issues: [{ name: "projects/orders/issues/42", relation: "review" }] },
+      }));
+      callbacks.onToolResult("masking-allowed", JSON.stringify({ project: "projects/orders", openTargets: [{ kind: "open-global-masking" }] }));
+      callbacks.onToolResult("masking-latest", latestResult);
+      callbacks.onText("Review the issue; masking configuration remains unavailable.", { kind: "review-project-issues", project: "projects/orders" });
+      return {
+        kind: "completed",
+        success: true,
+        actions: [{ kind: "open", target: { kind: "open-global-masking" } }],
+        totalTokensUsed: 0,
+      };
+    });
+    const store = useAgentStore.getState();
+    const page = { path: "/projects/orders", title: "Orders" };
+    const chat = store.createChat({ context: "projects/orders", page });
+    store.queueUserMessage({ chatId: chat.id, text: "What should I review about masking?", page });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => {
+      await vi.waitFor(() => expect(store.getMessages(chat.id).some((message) => message.content === "Review the issue; masking configuration remains unavailable.")).toBe(true));
+    });
+    const answer = store.getMessages(chat.id).find((message) => message.content === "Review the issue; masking configuration remains unavailable.");
+    expect(answer?.metadata?.actions).toBeUndefined();
+    expect(answer?.metadata?.handoff).toEqual({ kind: "review-project-issues", project: "projects/orders" });
+    view.unmount();
+  });
+
+  test.each([
+    { name: "available", openTargets: [{ kind: "open-global-masking" }], fails: false },
+    { name: "permission denied", openTargets: [], fails: false },
+    { name: "failed", openTargets: [], fails: true },
+  ])("refreshes masking handoffs after clarification when the overview is $name", async ({
+    openTargets,
+    fails,
+  }) => {
+    const target = { kind: "open-global-masking" as const };
+    const args = { project: "projects/orders" };
+    const freshResult = JSON.stringify({
+      project: "projects/orders",
+      openTargets,
+      maskingPolicy: { status: openTargets.length ? "available" : "unavailable" },
+    });
+    if (fails) mocks.executeTool.mockRejectedValueOnce(new Error("unavailable"));
+    else mocks.executeTool.mockResolvedValueOnce({ kind: "tool_result", result: freshResult });
+    mocks.runAgentLoop.mockImplementation(async (_history, _tools, _executor, callbacks) => {
+      callbacks.onText("Open Global Masking, then select Create rule.");
+      return {
+        kind: "completed",
+        success: true,
+        actions: [{ kind: "open", target }],
+        totalTokensUsed: 0,
+      };
+    });
+    const store = useAgentStore.getState();
+    const page = { path: "/projects/orders", title: "Orders" };
+    const chat = store.createChat({ context: "projects/orders", page });
+    store.addMessage({ chatId: chat.id, role: "user", content: "Help me mask email addresses." });
+    store.addMessage({ chatId: chat.id, role: "assistant", toolCalls: [{ id: "masking-before-ask", name: "get_masking_overview", arguments: JSON.stringify(args) }] });
+    store.addMessage({ chatId: chat.id, role: "tool", toolCallId: "masking-before-ask", content: JSON.stringify({ project: "projects/orders", openTargets: [target] }) });
+    store.addMessage({ chatId: chat.id, role: "assistant", toolCalls: [{ id: "masking-ask", name: "ask_user", arguments: '{"prompt":"Which visibility?"}' }] });
+    store.awaitUser(chat.id, {
+      toolCallId: "masking-ask",
+      prompt: "Which visibility?",
+      kind: "choose",
+      options: [{ label: "Fully hidden", value: "full" }],
+    });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    const choice = view.container.querySelector<HTMLElement>('[role="radio"]');
+    expect(choice).not.toBeNull();
+    act(() => choice?.click());
+    await act(async () => {
+      [...view.container.querySelectorAll("button")].find((button) => button.textContent === "agent.reply")?.click();
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+    });
+    expect(mocks.executeTool).toHaveBeenCalledWith("get_masking_overview", args, expect.any(String));
+    const history = mocks.runAgentLoop.mock.calls[0][0];
+    const refresh = history.find((message: { role: string }) => message.role === "tool");
+    if (fails) expect(JSON.parse(refresh.content)).toMatchObject({ error: expect.any(String) });
+    else expect(refresh.content).toBe(freshResult);
+    expect(store.getMessages(chat.id).find((message) => message.content === "Open Global Masking, then select Create rule.")?.metadata?.actions).toEqual(openTargets.length ? [{ kind: "open", target }] : undefined);
+    view.unmount();
+  });
+
+  test.each(["abort", "account change"])("does not continue a masking refresh after %s", async (change) => {
+    const store = useAgentStore.getState();
+    const page = { path: "/projects/orders", title: "Orders" };
+    const chat = store.createChat({ context: "projects/orders", page });
+    store.addMessage({ chatId: chat.id, role: "user", content: "Help with masking." });
+    store.addMessage({ chatId: chat.id, role: "assistant", toolCalls: [{ id: "overview", name: "get_masking_overview", arguments: "{}" }] });
+    store.addMessage({ chatId: chat.id, role: "tool", toolCallId: "overview", content: '{"project":"projects/orders","openTargets":[{"kind":"open-global-masking"}]}' });
+    store.addMessage({ chatId: chat.id, role: "assistant", toolCalls: [{ id: "ask", name: "ask_user", arguments: "{}" }] });
+    store.awaitUser(chat.id, { toolCallId: "ask", kind: "choose", prompt: "Which visibility?", options: [{ label: "Fully hidden", value: "full" }] });
+    let finishRefresh!: (result: { kind: "tool_result"; result: string }) => void;
+    mocks.executeTool.mockImplementationOnce(() => new Promise((resolve) => { finishRefresh = resolve; }));
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    act(() => view.container.querySelector<HTMLElement>('[role="radio"]')?.click());
+    await act(async () => {
+      [...view.container.querySelectorAll("button")].find((button) => button.textContent === "agent.reply")?.click();
+      await vi.waitFor(() => expect(mocks.executeTool).toHaveBeenCalledOnce());
+    });
+    await act(async () => {
+      if (change === "abort") store.getAbortController(chat.id)?.abort();
+      else useAgentStore.setState({ userEmail: "another@example.com" });
+      finishRefresh({ kind: "tool_result", result: '{"project":"projects/orders","openTargets":[{"kind":"open-global-masking"}]}' });
+    });
+    expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+    expect(store.getMessages(chat.id).filter((message) => message.toolCalls?.[0]?.name === "get_masking_overview")).toHaveLength(1);
+    view.unmount();
+  });
+
+  test("does not refresh masking from a previous completed user turn", async () => {
+    const store = useAgentStore.getState();
+    const page = { path: "/projects/orders", title: "Orders" };
+    const chat = store.createChat({ context: "projects/orders", page });
+    store.addMessage({ chatId: chat.id, role: "user", content: "Help with masking." });
+    store.addMessage({ chatId: chat.id, role: "assistant", toolCalls: [{ id: "old-overview", name: "get_masking_overview", arguments: "{}" }] });
+    store.addMessage({ chatId: chat.id, role: "tool", toolCallId: "old-overview", content: '{"openTargets":[{"kind":"open-global-masking"}]}' });
+    store.addMessage({ chatId: chat.id, role: "assistant", content: "Masking explanation." });
+    store.addMessage({ chatId: chat.id, role: "user", content: "Help me connect an instance." });
+    store.addMessage({ chatId: chat.id, role: "assistant", toolCalls: [{ id: "connect-ask", name: "ask_user", arguments: "{}" }] });
+    store.awaitUser(chat.id, { toolCallId: "connect-ask", kind: "choose", prompt: "Which engine?", options: [{ label: "PostgreSQL", value: "postgres" }] });
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", success: true, totalTokensUsed: 0 });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    act(() => view.container.querySelector<HTMLElement>('[role="radio"]')?.click());
+    await act(async () => {
+      [...view.container.querySelectorAll("button")].find((button) => button.textContent === "agent.reply")?.click();
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+    });
+    expect(mocks.executeTool).not.toHaveBeenCalled();
     view.unmount();
   });
 
@@ -3326,6 +4586,253 @@ describe("AgentInput", () => {
     view.unmount();
   });
 
+  test("retries the latest failed turn without losing completed tools, human answers, or the draft", async () => {
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+    const store = useAgentStore.getState();
+    const chatId = store.currentChatId!;
+    store.addMessage({ chatId, role: "user", content: "Inspect orders" });
+    store.addMessage({ chatId, role: "assistant", toolCalls: [{ id: "read-1", name: "call_api", arguments: "{}" }], metadata: { runId: "failed-run" } });
+    store.addMessage({ chatId, role: "tool", toolCallId: "read-1", content: '{"status":200}', metadata: { runId: "failed-run" } });
+    store.addMessage({ chatId, role: "assistant", toolCalls: [{ id: "ask-1", name: "ask_user", arguments: '{"kind":"input","prompt":"Which database?"}' }], metadata: { runId: "failed-run" } });
+    store.addMessage({ chatId, role: "tool", toolCallId: "ask-1", content: '{"kind":"input","answer":"Orders"}', metadata: { runId: "failed-run" } });
+    store.setDraft(chatId, { text: "My unsent question" });
+    store.startChatRun(chatId, { path: "/demo", title: "Demo" }, { runId: "failed-run", runMode: "read-only" });
+    store.setChatStatus(chatId, "error", { lastError: "Connection lost" });
+    const history = store.getMessages(chatId);
+    const draft = store.getDraft(chatId);
+    const retryActionRef = createRef<(() => void) | null>();
+    const view = renderIntoContainer(<AgentInput retryActionRef={retryActionRef} />);
+    view.render();
+    const textarea = view.container.querySelector("textarea") as HTMLTextAreaElement;
+    textarea.setSelectionRange(3, 3);
+
+    await act(async () => {
+      retryActionRef.current?.();
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+    });
+
+    expect(store.getMessages(chatId)).toEqual(history);
+    expect(mocks.buildOutboundHistory).toHaveBeenLastCalledWith("system", history, undefined);
+    expect(mocks.getToolDefinitions).toHaveBeenLastCalledWith({ runMode: "read-only" });
+    expect(store.getDraft(chatId)).toEqual(draft);
+    expect(textarea.value).toBe(draft.text);
+    expect(textarea.selectionStart).toBe(3);
+    view.unmount();
+  });
+
+  test("keeps failed run mode so Retry cannot widen a read-only request", async () => {
+    mocks.runAgentLoop
+      .mockResolvedValueOnce({ kind: "error", error: new Error("Connection lost") })
+      .mockResolvedValueOnce({ kind: "completed", totalTokensUsed: 0 });
+    const store = useAgentStore.getState();
+    const chatId = store.currentChatId!;
+    store.queueUserMessage({ chatId, text: "Review orders", page: { path: "/demo", title: "Demo" }, runMode: "read-only" });
+    const retryActionRef = createRef<(() => void) | null>();
+    const view = renderIntoContainer(<AgentInput retryActionRef={retryActionRef} />);
+    view.render();
+    await act(async () => {
+      await vi.waitFor(() => expect(store.getChat(chatId)?.status).toBe("error"));
+    });
+    await act(async () => {
+      retryActionRef.current?.();
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledTimes(2));
+    });
+    expect(mocks.getToolDefinitions).toHaveBeenLastCalledWith({ runMode: "read-only" });
+    expect(store.getMessages(chatId).filter((message) => message.role === "user")).toHaveLength(1);
+    view.unmount();
+  });
+
+  test("directly resends an older user message with its bound resources and preserves the draft and caret", async () => {
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+    mocks.executeTool.mockResolvedValue({ kind: "tool_result", result: '{"project":"projects/orders"}' });
+    const store = useAgentStore.getState();
+    const chatId = store.currentChatId!;
+    const resource = { kind: "project" as const, name: "projects/orders", project: "projects/orders", label: "Orders" };
+    const draftResource = { kind: "project" as const, name: "projects/billing", project: "projects/billing", label: "Billing" };
+    const original = store.addMessage({ chatId, role: "user", content: "@Orders Review databases", metadata: { resourceReference: resource, resourceReferences: [resource], route: "/old-page", runId: "old-run" } })!;
+    store.addMessage({ chatId, role: "assistant", content: "First answer" });
+    store.addMessage({ chatId, role: "user", content: "Another question" });
+    store.addMessage({ chatId, role: "assistant", content: "Another answer" });
+    store.setDraft(chatId, { text: "@Billing unsent question", mentions: [{ resource: draftResource, range: { start: 0, end: 8 } }] });
+    const draft = store.getDraft(chatId);
+    const history = store.getMessages(chatId);
+    const resendActionRef = createRef<((messageId: string) => void) | null>();
+    const view = renderIntoContainer(<AgentInput resendActionRef={resendActionRef} />);
+    view.render();
+    const textarea = view.container.querySelector("textarea") as HTMLTextAreaElement;
+    textarea.setSelectionRange(12, 12);
+
+    expect(resendActionRef.current).toBeTypeOf("function");
+    await act(async () => {
+      resendActionRef.current?.(original.id);
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+    });
+
+    const messages = store.getMessages(chatId);
+    expect(messages.slice(0, history.length)).toEqual(history);
+    expect(messages.filter((message) => message.role === "user")).toHaveLength(3);
+    const resent = messages[history.length];
+    expect(resent.id).not.toBe(original.id);
+    expect(resent).toMatchObject({ role: "user", content: original.content, metadata: { route: "/demo", resourceReference: resource } });
+    expect(resent.metadata?.runId).toBeUndefined();
+    expect(resent.metadata?.resourceReferences).toBeUndefined();
+    expect(store.getDraft(chatId)).toEqual(draft);
+    expect(textarea.value).toBe(draft.text);
+    expect(textarea.selectionStart).toBe(12);
+    expect(mocks.createToolExecutor).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({ referencedProject: "projects/orders", runMode: "read-only" }));
+    view.unmount();
+  });
+
+  test.each(["running", "awaiting_user", "archived", "queued"] as const)("does not retry or resend while %s", async (blocked) => {
+    const store = useAgentStore.getState();
+    const chatId = store.currentChatId!;
+    const message = store.addMessage({ chatId, role: "user", content: "Original question" })!;
+    store.setChatStatus(chatId, "error", { lastError: "Connection lost" });
+    if (blocked === "running") store.startChatRun(chatId, { path: "/demo", title: "Demo" });
+    if (blocked === "awaiting_user") store.awaitUser(chatId, { toolCallId: "ask-1", kind: "input", prompt: "Which database?" });
+    if (blocked === "archived") store.archiveChat(chatId);
+    const retryActionRef = createRef<(() => void) | null>();
+    const resendActionRef = createRef<((messageId: string) => void) | null>();
+    const view = renderIntoContainer(<AgentInput retryActionRef={retryActionRef} resendActionRef={resendActionRef} />);
+    view.render();
+    if (blocked === "queued") {
+      act(() => useAgentStore.setState({ queuedUserMessageInFlightByChatId: { [chatId]: true } }));
+    }
+    await act(async () => {
+      retryActionRef.current?.();
+      resendActionRef.current?.(message.id);
+    });
+    expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+    expect(store.getMessages(chatId)).toHaveLength(1);
+    view.unmount();
+  });
+
+  test("allows Resend once the answer is complete while optional follow-ups are still loading", async () => {
+    let resolveFollowUp!: (value: unknown) => void;
+    mocks.aiChat.mockImplementationOnce(() => new Promise((resolve) => { resolveFollowUp = resolve; }));
+    mocks.runAgentLoop
+      .mockImplementationOnce(async (_history, _tools, _executor, callbacks) => {
+        callbacks.onText("Hello");
+        return { kind: "completed", success: true, totalTokensUsed: 0 };
+      })
+      .mockResolvedValueOnce({ kind: "completed", totalTokensUsed: 0 });
+    const store = useAgentStore.getState();
+    const chatId = store.currentChatId!;
+    const message = store.addMessage({ chatId, role: "user", content: "Say hello" })!;
+    const resendActionRef = createRef<((messageId: string) => void) | null>();
+    const view = renderIntoContainer(<AgentInput resendActionRef={resendActionRef} />);
+    view.render();
+    await act(async () => {
+      resendActionRef.current?.(message.id);
+      await vi.waitFor(() => expect(resolveFollowUp).toBeTypeOf("function"));
+    });
+    expect(store.getChat(chatId)?.status).toBe("idle");
+    try {
+      await act(async () => {
+        resendActionRef.current?.(message.id);
+        await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledTimes(2));
+      });
+    } finally {
+      await act(async () => resolveFollowUp({ content: "[]", toolCalls: [], usage: { totalTokens: 0 } }));
+      view.unmount();
+    }
+  });
+
+  test.each(["retry", "resend"] as const)("deduplicates %s while configuration loads", async (action) => {
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+    const store = useAgentStore.getState();
+    const chatId = store.currentChatId!;
+    const message = store.addMessage({ chatId, role: "user", content: "Original question" })!;
+    store.setChatStatus(chatId, "error", { lastError: "Connection lost" });
+    const retryActionRef = createRef<(() => void) | null>();
+    const resendActionRef = createRef<((messageId: string) => void) | null>();
+    const view = renderIntoContainer(<AgentInput retryActionRef={retryActionRef} resendActionRef={resendActionRef} />);
+    view.render();
+    let resolveSetting!: (setting: undefined) => void;
+    mocks.getOrFetchSettingByName.mockImplementationOnce(() => new Promise<undefined>((resolve) => { resolveSetting = resolve; }));
+    const trigger = () => action === "retry" ? retryActionRef.current?.() : resendActionRef.current?.(message.id);
+    act(() => { trigger(); trigger(); });
+    expect(resolveSetting).toBeTypeOf("function");
+    await act(async () => {
+      resolveSetting(undefined);
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+    });
+    expect(store.getMessages(chatId).filter((item) => item.role === "user")).toHaveLength(action === "retry" ? 1 : 2);
+    view.unmount();
+  });
+
+  test.each(
+    (["retry", "resend"] as const).flatMap((action) =>
+      (["chat", "account", "workspace", "page", "history", "running", "awaiting_user", "archived"] as const).map((change) => [action, change] as const)
+    )
+  )("does not %s when %s changes during configuration check", async (action, change) => {
+    const store = useAgentStore.getState();
+    const chatId = store.currentChatId!;
+    const message = store.addMessage({ chatId, role: "user", content: "Original question" })!;
+    store.setChatStatus(chatId, "error", { lastError: "Connection lost" });
+    const retryActionRef = createRef<(() => void) | null>();
+    const resendActionRef = createRef<((messageId: string) => void) | null>();
+    const view = renderIntoContainer(<AgentInput retryActionRef={retryActionRef} resendActionRef={resendActionRef} />);
+    view.render();
+    let resolveSetting!: (setting: undefined) => void;
+    mocks.getOrFetchSettingByName.mockImplementationOnce(() => new Promise<undefined>((resolve) => { resolveSetting = resolve; }));
+    act(() => action === "retry" ? retryActionRef.current?.() : resendActionRef.current?.(message.id));
+    expect(resolveSetting).toBeTypeOf("function");
+    act(() => {
+      if (change === "chat") store.createChat();
+      if (change === "account") store.setWorkspaceName("workspaces/demo", "other@example.com");
+      if (change === "workspace") store.setWorkspaceName("workspaces/other", "agent@example.com");
+      if (change === "page") mocks.currentPath = "/another-page";
+      if (change === "history") store.addMessage({ chatId, role: "user", content: "A newer question" });
+      if (change === "running") store.startChatRun(chatId, { path: "/demo", title: "Demo" });
+      if (change === "awaiting_user") store.awaitUser(chatId, { toolCallId: "ask-1", kind: "input", prompt: "Which database?" });
+      if (change === "archived") store.archiveChat(chatId);
+    });
+    await act(async () => resolveSetting(undefined));
+    expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+    expect(store.getMessages(chatId).filter((item) => item.content === message.content)).toHaveLength(change === "account" || change === "workspace" ? 0 : 1);
+    view.unmount();
+  });
+
+  test.each(["", "Unsent question"])("preserves draft %j when direct Resend is blocked by configuration", async (draft) => {
+    const store = useAgentStore.getState();
+    const chatId = store.currentChatId!;
+    const message = store.addMessage({ chatId, role: "user", content: "Original question" })!;
+    store.setDraft(chatId, { text: draft });
+    const resendActionRef = createRef<((messageId: string) => void) | null>();
+    const view = renderIntoContainer(<AgentInput resendActionRef={resendActionRef} />);
+    view.render();
+    mocks.getOrFetchSettingByName.mockResolvedValue({ value: { value: { case: "ai", value: { enabled: false } } } });
+    expect(resendActionRef.current).toBeTypeOf("function");
+    await act(async () => resendActionRef.current?.(message.id));
+    expect(store.getDraft(chatId).text).toBe(draft);
+    expect(store.getMessages(chatId)).toHaveLength(1);
+    expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+    view.unmount();
+  });
+
+  test("resends both original bound references and revalidates the database", async () => {
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+    const store = useAgentStore.getState();
+    const chatId = store.currentChatId!;
+    const project = { kind: "project" as const, name: "projects/orders", project: "projects/orders", label: "Orders" };
+    const database = { kind: "database" as const, name: "instances/prod/databases/orders", project: "projects/orders", label: "orders (prod)" };
+    mocks.executeTool.mockResolvedValue({ kind: "tool_result", result: JSON.stringify({ project: project.name, database: { status: "available", name: database.name, state: "ACTIVE" } }) });
+    const original = store.addMessage({ chatId, role: "user", content: "@Orders @orders (prod) Inspect schema", metadata: { resourceReference: project, resourceReferences: [project, database] } })!;
+    const resendActionRef = createRef<((messageId: string) => void) | null>();
+    const view = renderIntoContainer(<AgentInput resendActionRef={resendActionRef} />);
+    view.render();
+    await act(async () => {
+      resendActionRef.current?.(original.id);
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+    });
+    const resent = store.getMessages(chatId).filter((message) => message.role === "user")[1];
+    expect(resent).toMatchObject({ content: original.content, metadata: { resourceReference: project, resourceReferences: [project, database] } });
+    expect(mocks.executeTool).toHaveBeenCalledWith("get_database_overview", { databaseName: database.name }, expect.any(String));
+    expect(store.getDraft(chatId).text).toBe("");
+    view.unmount();
+  });
+
   test("keeps a read-only starter read-only when retrying an interrupted run", async () => {
     mocks.runAgentLoop
       .mockResolvedValueOnce({ kind: "aborted" })
@@ -3453,6 +4960,67 @@ describe("AgentInput", () => {
     expect(getQueuedUserMessage(chat.id)).toBeUndefined();
     view.unmount();
   });
+
+  test.each(
+    (["before", "during"] as const).flatMap((timing) =>
+      [false, true].map((hasNewerDraft) => [timing, hasNewerDraft] as const)
+    )
+  )(
+    "keeps an archived queued message unsent when archived %s configuration loading with newer draft %s",
+    async (timing, hasNewerDraft) => {
+      mocks.runAgentLoop.mockResolvedValue({
+        kind: "completed",
+        totalTokensUsed: 0,
+      });
+      const page = { path: "/projects/billing", title: "Billing" };
+      const store = useAgentStore.getState();
+      const chat = store.createChat({ context: "projects/billing", page });
+      store.queueUserMessage({ chatId: chat.id, text: "Queued question", page });
+      if (hasNewerDraft) {
+        store.setDraft(chat.id, { text: "Newer unsent question" });
+      }
+      let resolveSetting!: (value: undefined) => void;
+      if (timing === "before") {
+        store.archiveChat(chat.id);
+      } else {
+        mocks.getOrFetchSettingByName.mockReturnValue(
+          new Promise<undefined>((resolve) => {
+            resolveSetting = resolve;
+          })
+        );
+      }
+      const view = renderIntoContainer(<AgentInput />);
+      await act(async () => view.render());
+      if (timing === "during") {
+        act(() => {
+          store.archiveChat(chat.id);
+        });
+      }
+      view.unmount();
+      if (timing === "during") {
+        await act(async () => {
+          resolveSetting(undefined);
+        });
+      }
+
+      const messages = store.getMessages(chat.id);
+      const draft = store.getDraft(chat.id);
+      const queued = getQueuedUserMessage(chat.id);
+      store.unarchiveChat(chat.id);
+      const restored = renderIntoContainer(<AgentInput />);
+      await act(async () => restored.render());
+      restored.unmount();
+
+      expect(messages).toEqual([]);
+      expect(draft.text).toBe(
+        hasNewerDraft ? "Newer unsent question" : "Queued question"
+      );
+      expect(queued).toBeUndefined();
+      expect(store.getMessages(chat.id)).toEqual([]);
+      expect(store.getChat(chat.id)?.status).toBe("idle");
+      expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+    }
+  );
 
   test("does not send a queued message after the account changes during configuration check", async () => {
     let resolveSetting!: (value: undefined) => void;
@@ -5798,6 +7366,211 @@ describe("AgentInput", () => {
     view.unmount();
   });
 
+  test("disables Send for an archived chat", () => {
+    const store = useAgentStore.getState();
+    const chatId = store.currentChatId!;
+    store.setDraft(chatId, { text: "Unsent question" });
+    store.archiveChat(chatId);
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+
+    const sendButton = view.container.querySelector("[data-agent-send]");
+    view.unmount();
+    expect(sendButton).toBeDisabled();
+  });
+
+  test("does not send an archived chat with Enter", async () => {
+    mocks.runAgentLoop.mockResolvedValue({
+      kind: "completed",
+      totalTokensUsed: 0,
+    });
+    const store = useAgentStore.getState();
+    const chatId = store.currentChatId!;
+    store.setDraft(chatId, { text: "Unsent question" });
+    store.archiveChat(chatId);
+    const draft = store.getDraft(chatId);
+    const messages = store.getMessages(chatId);
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+
+    await act(async () => {
+      view.container
+        .querySelector("textarea")
+        ?.dispatchEvent(
+          new KeyboardEvent("keydown", { key: "Enter", bubbles: true })
+        );
+    });
+
+    view.unmount();
+    expect(store.getMessages(chatId)).toEqual(messages);
+    expect(store.getDraft(chatId)).toEqual(draft);
+    expect(store.getChat(chatId)?.status).toBe("idle");
+    expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+  });
+
+  test.each([false, true])(
+    "does not send after a chat is archived during configuration loading with pending input %s",
+    async (hasPendingInput) => {
+      mocks.runAgentLoop.mockResolvedValue({
+        kind: "completed",
+        totalTokensUsed: 0,
+      });
+      const store = useAgentStore.getState();
+      const chatId = store.currentChatId!;
+      store.setDraft(chatId, { text: "Unsent question" });
+      if (hasPendingInput) {
+        store.awaitUser(chatId, {
+          toolCallId: "ask-1",
+          kind: "input",
+          prompt: "Which database?",
+        });
+      }
+      const view = renderIntoContainer(<AgentInput />);
+      view.render();
+      const textarea = view.container.querySelector(
+        "textarea"
+      ) as HTMLTextAreaElement;
+      if (hasPendingInput) {
+        act(() => {
+          setTextareaValue(textarea, "Orders");
+          textarea.dispatchEvent(new Event("input", { bubbles: true }));
+        });
+      }
+      const draft = store.getDraft(chatId);
+      const messages = store.getMessages(chatId);
+      const pendingAsk = store.getPendingAsk(chatId);
+      let resolveSetting!: (value: undefined) => void;
+      mocks.getOrFetchSettingByName.mockImplementationOnce(
+        () =>
+          new Promise<undefined>((resolve) => {
+            resolveSetting = resolve;
+          })
+      );
+
+      act(() => {
+        (
+          view.container.querySelector("[data-agent-send]") as HTMLButtonElement
+        ).click();
+      });
+      expect(resolveSetting).toBeTypeOf("function");
+      act(() => {
+        store.archiveChat(chatId);
+      });
+      await act(async () => {
+        resolveSetting(undefined);
+      });
+
+      view.unmount();
+      expect(store.getMessages(chatId)).toEqual(messages);
+      expect(store.getDraft(chatId)).toEqual(draft);
+      expect(store.getPendingAsk(chatId)).toEqual(pendingAsk);
+      expect(store.getChat(chatId)?.status).toBe(
+        hasPendingInput ? "awaiting_user" : "idle"
+      );
+      expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+    }
+  );
+
+  test.each(
+    (["api permission", "confirmation", "choice"] as const).flatMap((action) =>
+      (["before", "during"] as const).map((timing) => [action, timing] as const)
+    )
+  )(
+    "does not submit %s when archived %s configuration loading",
+    async (action, timing) => {
+      mocks.runAgentLoop.mockResolvedValue({
+        kind: "completed",
+        totalTokensUsed: 0,
+      });
+      const store = useAgentStore.getState();
+      const chatId = store.currentChatId!;
+      store.setDraft(chatId, { text: "Unsent question" });
+      store.awaitUser(
+        chatId,
+        action === "choice"
+          ? {
+              toolCallId: "ask-1",
+              kind: "choose",
+              prompt: "Which database?",
+              options: [{ label: "Orders", value: "orders" }],
+            }
+          : {
+              toolCallId: "ask-1",
+              kind: "confirm",
+              prompt: "Continue?",
+              ...(action === "api permission"
+                ? {
+                    apiPermission: {
+                      actionId: "action-1",
+                      operationId: "bytebase.v1.ProjectService.UpdateProject",
+                    },
+                  }
+                : {}),
+            }
+      );
+      if (action === "api permission") {
+        mocks.getPendingApiCallPreview.mockReturnValue({
+          operationId: "bytebase.v1.ProjectService.UpdateProject",
+          body: '{"project":{"name":"projects/orders"}}',
+          expiresAt: Date.now() + 5 * 60_000,
+        });
+      }
+      const view = renderIntoContainer(<AgentInput />);
+      await act(async () => view.render());
+      if (action === "choice") {
+        act(() => {
+          view.container.querySelector<HTMLElement>('[role="radio"]')?.click();
+        });
+      }
+      const draft = store.getDraft(chatId);
+      const messages = store.getMessages(chatId);
+      const pendingAsk = store.getPendingAsk(chatId);
+      let resolveSetting!: (value: undefined) => void;
+      if (timing === "before") {
+        act(() => {
+          store.archiveChat(chatId);
+        });
+      } else {
+        mocks.getOrFetchSettingByName.mockImplementationOnce(
+          () =>
+            new Promise<undefined>((resolve) => {
+              resolveSetting = resolve;
+            })
+        );
+      }
+      const label =
+        action === "api permission"
+          ? "agent.api-permission-allow"
+          : action === "choice"
+            ? "agent.reply"
+            : "agent.confirm";
+      await act(async () => {
+        [...view.container.querySelectorAll("button")]
+          .find((button) => button.textContent === label)
+          ?.click();
+      });
+      if (timing === "during") {
+        expect(resolveSetting).toBeTypeOf("function");
+        act(() => {
+          store.archiveChat(chatId);
+        });
+      }
+      view.unmount();
+      if (timing === "during") {
+        await act(async () => {
+          resolveSetting(undefined);
+        });
+      }
+
+      expect(mocks.resolvePendingApiCall).not.toHaveBeenCalled();
+      expect(store.getMessages(chatId)).toEqual(messages);
+      expect(store.getDraft(chatId)).toEqual(draft);
+      expect(store.getPendingAsk(chatId)).toEqual(pendingAsk);
+      expect(store.getChat(chatId)?.status).toBe("awaiting_user");
+      expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+    }
+  );
+
   test("restores an unsent question after switching chats and remounting", async () => {
     const store = useAgentStore.getState();
     const original = store.createChat({ context: "projects/orders" });
@@ -6171,6 +7944,71 @@ describe("AgentInput", () => {
       ])
     );
     view.unmount();
+  });
+
+  test("records an approved API result and settles the run if archived during execution", async () => {
+    const store = useAgentStore.getState();
+    const chatId = store.currentChatId!;
+    store.startChatRun(
+      chatId,
+      { path: "/demo", title: "Demo" },
+      { runId: "approved-run" }
+    );
+    store.awaitUser(chatId, {
+      toolCallId: "tool-write",
+      prompt: "bytebase.v1.ProjectService.UpdateProject",
+      kind: "confirm",
+      apiPermission: {
+        actionId: "action-archive",
+        operationId: "bytebase.v1.ProjectService.UpdateProject",
+      },
+    });
+    mocks.getPendingApiCallPreview.mockReturnValue({
+      operationId: "bytebase.v1.ProjectService.UpdateProject",
+      body: '{"project":{"name":"projects/orders"}}',
+      expiresAt: Date.now() + 5 * 60_000,
+    });
+    let resolvePermission!: (result: string) => void;
+    mocks.resolvePendingApiCall.mockImplementation(
+      () =>
+        new Promise<string>((resolve) => {
+          resolvePermission = resolve;
+        })
+    );
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => {
+      [...view.container.querySelectorAll("button")]
+        .find((button) => button.textContent === "agent.api-permission-allow")
+        ?.click();
+    });
+    expect(resolvePermission).toBeTypeOf("function");
+    expect(store.getChat(chatId)?.status).toBe("running");
+    expect(store.getChat(chatId)?.runId).toBe("approved-run");
+    act(() => {
+      store.archiveChat(chatId);
+    });
+    view.unmount();
+
+    await act(async () => {
+      resolvePermission('{"status":200,"response":{}}');
+    });
+
+    expect(store.getMessages(chatId)).toEqual([
+      expect.objectContaining({
+        role: "tool",
+        toolCallId: "tool-write",
+        content: '{"status":200,"response":{}}',
+        metadata: { route: "/demo", runId: "approved-run" },
+      }),
+    ]);
+    expect(store.getChat(chatId)).toMatchObject({
+      archived: true,
+      status: "idle",
+      runId: null,
+    });
+    expect(store.getAbortController(chatId)).toBeNull();
+    expect(mocks.runAgentLoop).not.toHaveBeenCalled();
   });
 
   test("does not resume an approved API call after the user stops it", async () => {

@@ -26,6 +26,146 @@ const issueCommentDraft = {
 const ddlAnswer = "I suggest:\n\n```sql\nCREATE TABLE notes (id INT);\n```";
 
 describe("response actions", () => {
+  test("offers only a prepared current-run semantic type draft", () => {
+    const action = { kind: "draft-semantic-type", draftId: "semantic-2" };
+    expect(normalizeAgentResponseActions([action, followUp])).toEqual([
+      action,
+      followUp,
+    ]);
+    expect(acceptAgentResponseActions([action, followUp], [])).toEqual([
+      followUp,
+    ]);
+    expect(
+      acceptAgentResponseActions(
+        [open, followUp],
+        [open.target],
+        undefined,
+        [],
+        [],
+        ["semantic-1", "semantic-2"]
+      )
+    ).toEqual([action, followUp]);
+    expect(
+      normalizeAgentResponseActions([
+        { ...action, algorithm: { salt: "secret" } },
+      ])
+    ).toEqual([]);
+  });
+  test("offers only the latest current-run exemption draft instead of a competing settings link", () => {
+    const action = { kind: "draft-masking-exemption", draftId: "exemption-2" };
+    expect(normalizeAgentResponseActions([action, followUp])).toEqual([
+      action,
+      followUp,
+    ]);
+    expect(acceptAgentResponseActions([action, followUp], [])).toEqual([
+      followUp,
+    ]);
+    expect(
+      acceptAgentResponseActions(
+        [open, followUp],
+        [open.target],
+        undefined,
+        [],
+        ["exemption-1", "exemption-2"]
+      )
+    ).toEqual([action, followUp]);
+    expect(
+      acceptAgentResponseActions(
+        [action, followUp],
+        [],
+        undefined,
+        [],
+        ["invalid draft ID"]
+      )
+    ).toEqual([followUp]);
+    expect(
+      normalizeAgentResponseActions([
+        { ...action, members: ["user:member@example.com"] },
+      ])
+    ).toEqual([]);
+  });
+
+  test("accepts only a masking draft prepared in the current run", () => {
+    const action = { kind: "draft-masking-rule", draftId: "draft-1" };
+    expect(normalizeAgentResponseActions([action])).toEqual([action]);
+    expect(
+      normalizeAgentResponseActions([
+        {
+          ...action,
+          project: "",
+          database: "",
+          issue: "",
+          comment: "",
+          prompt: "",
+          target: {},
+        },
+      ])
+    ).toEqual([action]);
+    expect(acceptAgentResponseActions([action], [], undefined, [])).toEqual([]);
+    expect(
+      acceptAgentResponseActions([action], [], undefined, ["draft-1"])
+    ).toEqual([action]);
+    expect(
+      normalizeAgentResponseActions([{ ...action, condition: "true" }])
+    ).toEqual([]);
+    expect(normalizeAgentResponseActions([{ ...action, draftId: "" }])).toEqual(
+      []
+    );
+  });
+
+  test.each([
+    { proposed: undefined },
+    { proposed: [] },
+    { proposed: [followUp] },
+    {
+      proposed: [
+        { kind: "draft-masking-rule", draftId: "invented-draft" },
+        followUp,
+      ],
+    },
+    { proposed: [open, followUp] },
+    { proposed: [planDraft, followUp] },
+    { proposed: [issueCommentDraft, followUp] },
+  ])(
+    "offers the prepared masking draft independently of proposed actions: $proposed",
+    ({ proposed }) => {
+      expect(
+        acceptAgentResponseActions(proposed, [open.target], undefined, [
+          "prepared-draft",
+        ])
+      ).toEqual([
+        { kind: "draft-masking-rule", draftId: "prepared-draft" },
+        ...(proposed?.includes(followUp) ? [followUp] : []),
+      ]);
+    }
+  );
+
+  test("offers only the latest observed masking draft", () => {
+    expect(
+      acceptAgentResponseActions(
+        [{ kind: "draft-masking-rule", draftId: "earlier-draft" }, followUp],
+        [],
+        undefined,
+        ["earlier-draft", "latest-draft"]
+      )
+    ).toEqual([
+      { kind: "draft-masking-rule", draftId: "latest-draft" },
+      followUp,
+    ]);
+  });
+
+  test("does not recover masking drafts from an invalid or absent latest ID", () => {
+    const proposed = [
+      { kind: "draft-masking-rule", draftId: "earlier-draft" },
+      followUp,
+    ];
+    for (const observed of [[], ["earlier-draft", "invalid draft id"]]) {
+      expect(
+        acceptAgentResponseActions(proposed, [], undefined, observed)
+      ).toEqual([followUp]);
+    }
+  });
+
   test("accepts one typed Open and one unsent Continue action", () => {
     expect(normalizeAgentResponseActions([open, followUp])).toEqual([
       open,

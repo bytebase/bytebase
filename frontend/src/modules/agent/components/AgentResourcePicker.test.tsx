@@ -168,9 +168,9 @@ const secondPlan = create(PlanSchema, {
   state: State.ACTIVE,
 });
 
-function deferredPage() {
-  let resolve!: (page: { items: Project[]; nextPageToken: string }) => void;
-  const promise = new Promise<{ items: Project[]; nextPageToken: string }>(
+function deferredPage<T = Project>() {
+  let resolve!: (page: { items: T[]; nextPageToken: string }) => void;
+  const promise = new Promise<{ items: T[]; nextPageToken: string }>(
     (complete) => { resolve = complete; }
   );
   return { promise, resolve };
@@ -425,6 +425,43 @@ describe("AgentResourcePicker", () => {
 
     fireEvent.mouseEnter(projects);
     expect(projects).toHaveFocus();
+  });
+
+  test.each([
+    { category: "Projects", search: mocks.searchAgentProjects, items: [project, secondProject], resultAttribute: "data-agent-resource-project" },
+    { category: "Databases", search: mocks.searchAgentDatabases, items: [database, secondDatabase], resultAttribute: "data-agent-resource-database" },
+    { category: "Issues", search: mocks.searchAgentIssues, items: [issue, secondIssue], resultAttribute: "data-agent-resource-issue" },
+    { category: "Plans", search: mocks.searchAgentPlans, items: [plan, secondPlan], resultAttribute: "data-agent-resource-plan" },
+  ])("keeps $category search focused when arriving results are under the pointer", async ({ category, search: searchResources, items, resultAttribute }) => {
+    const page = deferredPage<(typeof items)[number]>();
+    searchResources
+      .mockResolvedValueOnce({ items: [], nextPageToken: "" })
+      .mockReturnValueOnce(page.promise);
+    render(<PickerHarness projectName={project.name} />);
+    fireEvent.click(screen.getByRole("button", { name: category }));
+    const search = screen.getByRole("textbox", {
+      name: `Search ${category.toLowerCase()}`,
+    }) as HTMLInputElement;
+    await waitFor(() => expect(search).toHaveFocus());
+    fireEvent.change(search, { target: { value: "orders" } });
+    search.setSelectionRange(3, 3);
+    await waitFor(() => expect(searchResources).toHaveBeenCalledTimes(2));
+    expect(search).toHaveFocus();
+    await act(async () => page.resolve({ items, nextPageToken: "" }));
+    const results = document.querySelectorAll<HTMLButtonElement>(`[${resultAttribute}]`);
+    expect(results).toHaveLength(2);
+
+    fireEvent.mouseEnter(results[1]);
+
+    expect(search).toHaveFocus();
+    expect(search.selectionStart).toBe(3);
+    fireEvent.keyDown(search, { key: "ArrowDown" });
+    expect(results[0]).toHaveFocus();
+    fireEvent.keyDown(results[0], { key: "ArrowUp" });
+    expect(search).toHaveFocus();
+    fireEvent.change(search, { target: { value: "orders2" } });
+    expect(search).toHaveValue("orders2");
+    expect(search).toHaveFocus();
   });
 
   test("moves the active result to the hovered option", async () => {

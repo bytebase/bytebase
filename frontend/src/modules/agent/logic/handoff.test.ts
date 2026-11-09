@@ -33,6 +33,31 @@ const project = "projects/sample";
 const workspace = "workspaces/example";
 
 describe("collectAgentHandoffs", () => {
+  test.each(["workspace", "project"])(
+    "accepts verified masking navigation from a normal %s chat",
+    (page) => {
+      const target = { kind: "open-project-masking-exemptions", project };
+      const result = JSON.stringify({ page, project, openTargets: [target] });
+      expect(
+        collectAgentHandoffs(
+          "get_masking_overview",
+          result,
+          page === "workspace"
+            ? { workspaceName: workspace }
+            : { projectName: project }
+        )
+      ).toEqual([target]);
+      expect(
+        collectAgentHandoffs("get_masking_overview", result, {
+          projectName: "projects/other",
+        })
+      ).toEqual([]);
+      expect(collectAgentHandoffs("get_masking_overview", result, {})).toEqual(
+        []
+      );
+    }
+  );
+
   test("collects only masking targets returned for the current page scope", () => {
     const projectDatabase = `${project}/instances/primary/databases/app`;
     const result = collectAgentHandoffs(

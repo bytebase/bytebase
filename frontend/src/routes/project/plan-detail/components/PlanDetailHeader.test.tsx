@@ -73,7 +73,12 @@ vi.mock("@/components/ui/button", () => ({
     size?: string;
     variant?: string;
   }) => (
-    <button {...props} data-button-size={_size}>
+    <button
+      {...props}
+      data-button-size={_size}
+      data-button-appearance={_appearance}
+      data-button-variant={_variant}
+    >
       {children}
     </button>
   ),
@@ -280,7 +285,9 @@ describe("PlanDetailHeader draft ownership", () => {
       name: "agent.plan-assistance.review",
     });
     expect(reviewButton).toHaveAttribute("data-button-size", "md");
-    expect(reviewButton.querySelector("svg")).toBeNull();
+    expect(reviewButton).toHaveAttribute("data-button-appearance", "ghost");
+    expect(reviewButton.querySelector(".lucide-bot")).not.toBeNull();
+    expect(reviewButton).not.toHaveClass("whitespace-normal", "h-auto");
     expect(reviewButton.parentElement).toHaveClass(
       "w-full",
       "flex-wrap",

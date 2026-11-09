@@ -21,9 +21,12 @@ describe("AgentPageHelpButton", () => {
   test("opens the existing Agent window", () => {
     render(<AgentPageHelpButton />);
     const helpButton = screen.getByRole("button", {
-      name: "Ask Agent about masking",
+      name: "Ask Agent",
     });
     expect(helpButton.className.split(" ")).toContain("h-9");
+    expect(helpButton).toHaveClass("text-accent", "bg-transparent");
+    expect(helpButton).not.toHaveClass("border");
+    expect(helpButton.querySelector(".lucide-bot")).toBeTruthy();
     fireEvent.click(helpButton);
     expect(mocks.open).toHaveBeenCalledOnce();
   });

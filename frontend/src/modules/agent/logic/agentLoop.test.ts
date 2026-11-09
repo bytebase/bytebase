@@ -675,7 +675,7 @@ describe("runAgentLoop", () => {
       throw new Error(`Expected error outcome, got ${outcome.kind}`);
     }
     expect(outcome.error.message).toBe(
-      "Agent must finish with done({ text, success, actions }) or ask_user(...), not plain assistant text."
+      "Agent must finish with done({ text, success, actions }), ask_user(...), or ask_masking_exemption_scope(...), not plain assistant text."
     );
     expect(outcome.totalTokensUsed).toBe(0);
     expect(onError).toHaveBeenCalledWith(outcome.error);
@@ -1642,6 +1642,50 @@ describe("runAgentLoop", () => {
     expect(executeTool).not.toHaveBeenCalled();
   });
 
+  test("can ask for exemption scope while finalizing an answer", async () => {
+    vi.mocked(aiServiceClientConnect.chat)
+      .mockResolvedValueOnce({ content: "", toolCalls: [] } as never)
+      .mockResolvedValueOnce({
+        content: "",
+        toolCalls: [
+          {
+            id: "scope",
+            name: "ask_masking_exemption_scope",
+            arguments: "{}",
+            metadata: "",
+          },
+        ],
+      } as never);
+    const ask = {
+      toolCallId: "scope",
+      prompt: "Which databases should this exemption cover?",
+      kind: "choose" as const,
+      options: [
+        { label: "All databases in this project", value: "projects/orders" },
+        { label: "Another database", value: "another-database" },
+      ],
+    };
+    const outcome = await runAgentLoop(
+      [{ role: "user", content: "Help me configure a masking exemption." }],
+      ["call_api", "ask_user", "ask_masking_exemption_scope", "done"].map(
+        (name) => ({ name, description: name, parametersSchema: {} })
+      ),
+      async () => ({ kind: "ask_user", ask })
+    );
+
+    expect(outcome).toEqual({ kind: "awaiting_user", ask, totalTokensUsed: 0 });
+    expect(
+      vi
+        .mocked(aiServiceClientConnect.chat)
+        .mock.calls[1]?.[0]?.toolDefinitions?.map((tool) => tool.name)
+    ).toEqual(["ask_user", "ask_masking_exemption_scope", "done"]);
+    expect(
+      vi
+        .mocked(aiServiceClientConnect.chat)
+        .mock.calls[1]?.[0]?.messages?.at(-1)?.content
+    ).toContain("ask_masking_exemption_scope");
+  });
+
   test("completes a read-only starter when the model answers in plain text after a tool result", async () => {
     vi.mocked(aiServiceClientConnect.chat)
       .mockResolvedValueOnce({
@@ -1745,82 +1789,94 @@ describe("runAgentLoop", () => {
     expect(onToolResult).not.toHaveBeenCalled();
   });
 
-  test("records skipped tool results after ask_user and does not execute later tool calls", async () => {
-    vi.mocked(aiServiceClientConnect.chat).mockResolvedValue({
-      content: "",
-      toolCalls: [
-        {
-          id: "tool-ask",
-          name: "ask_user",
-          arguments: JSON.stringify({
-            prompt: "Which environment should I use?",
-            kind: "input",
-          }),
-          metadata: "",
-        },
-        {
-          id: "tool-late",
-          name: "search_api",
-          arguments: JSON.stringify({ service: "SQLService" }),
-          metadata: "",
-        },
-      ],
-    } as never);
-
-    const executeTool: ToolExecutor = vi.fn(async (name, _args, toolCallId) => {
-      if (name === "ask_user") {
-        return {
-          kind: "ask_user" as const,
-          ask: {
-            toolCallId,
-            prompt: "Which environment should I use?",
-            kind: "input" as const,
+  test.each(["ask_user", "ask_masking_exemption_scope"])(
+    "records skipped tool results after %s and does not execute later tool calls",
+    async (questionTool) => {
+      vi.mocked(aiServiceClientConnect.chat).mockResolvedValue({
+        content: "",
+        toolCalls: [
+          {
+            id: "tool-ask",
+            name: questionTool,
+            arguments: JSON.stringify(
+              questionTool === "ask_user"
+                ? {
+                    prompt: "Which environment should I use?",
+                    kind: "input",
+                  }
+                : {}
+            ),
+            metadata: "",
           },
-        };
-      }
-      return {
-        kind: "tool_result" as const,
-        result: "should not run",
-      };
-    });
-    const onToolResult = vi.fn();
+          {
+            id: "tool-late",
+            name: "search_api",
+            arguments: JSON.stringify({ service: "SQLService" }),
+            metadata: "",
+          },
+        ],
+      } as never);
 
-    const outcome = await runAgentLoop(
-      [{ role: "system", content: "system" }],
-      [],
-      executeTool,
-      { onToolResult }
-    );
+      const executeTool: ToolExecutor = vi.fn(
+        async (name, _args, toolCallId) => {
+          if (name === questionTool) {
+            return {
+              kind: "ask_user" as const,
+              ask: {
+                toolCallId,
+                prompt: "Which environment should I use?",
+                kind: "input" as const,
+              },
+            };
+          }
+          return {
+            kind: "tool_result" as const,
+            result: "should not run",
+          };
+        }
+      );
+      const onToolResult = vi.fn();
 
-    expect(outcome).toEqual({
-      kind: "awaiting_user",
-      ask: {
-        toolCallId: "tool-ask",
-        prompt: "Which environment should I use?",
-        kind: "input",
-      },
-      totalTokensUsed: 0,
-    });
-    expect(executeTool).toHaveBeenCalledTimes(1);
-    expect(executeTool).toHaveBeenCalledWith(
-      "ask_user",
-      {
-        prompt: "Which environment should I use?",
-        kind: "input",
-      },
-      "tool-ask"
-    );
-    expect(onToolResult).toHaveBeenCalledTimes(1);
-    expect(onToolResult).toHaveBeenCalledWith(
-      "tool-late",
-      JSON.stringify({
-        skipped: true,
-        blockedByToolCallId: "tool-ask",
-        blockedByKind: "ask_user",
-        reason: "Skipped because this assistant turn already emitted ask_user",
-      })
-    );
-  });
+      const outcome = await runAgentLoop(
+        [{ role: "system", content: "system" }],
+        [],
+        executeTool,
+        { onToolResult }
+      );
+
+      expect(outcome).toEqual({
+        kind: "awaiting_user",
+        ask: {
+          toolCallId: "tool-ask",
+          prompt: "Which environment should I use?",
+          kind: "input",
+        },
+        totalTokensUsed: 0,
+      });
+      expect(executeTool).toHaveBeenCalledTimes(1);
+      expect(executeTool).toHaveBeenCalledWith(
+        questionTool,
+        questionTool === "ask_user"
+          ? {
+              prompt: "Which environment should I use?",
+              kind: "input",
+            }
+          : {},
+        "tool-ask"
+      );
+      expect(onToolResult).toHaveBeenCalledTimes(1);
+      expect(onToolResult).toHaveBeenCalledWith(
+        "tool-late",
+        JSON.stringify({
+          skipped: true,
+          blockedByToolCallId: "tool-ask",
+          blockedByKind: "ask_user",
+          reason:
+            "Skipped because this assistant turn already emitted ask_user",
+        })
+      );
+    }
+  );
 
   test("records skipped tool results after done and does not execute later tool calls", async () => {
     vi.mocked(aiServiceClientConnect.chat).mockResolvedValue({

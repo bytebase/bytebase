@@ -42,10 +42,10 @@ import {
   appendAgentPlanDraftSQL,
 } from "@/lib/plan/agentDraftHandoff";
 import { cn } from "@/lib/utils";
+import { AgentHelpButton } from "@/modules/agent/components/AgentHelpButton";
 import { openAgentWithPrompt } from "@/modules/agent/logic/instanceConnectionHelp";
 import { buildPlanCreatePrompt } from "@/modules/agent/logic/planIssueAssistance";
 import { getDatabaseMentionLabel } from "@/modules/agent/logic/resourceMention";
-import { useAgentStore } from "@/modules/agent/store/agent";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import {
@@ -365,7 +365,7 @@ export function PlanDetailStatementSection({
 
   const updateLocalStatement = useCallback(
     (nextStatement: string) => {
-      if (!sheetName) return;
+      if (!sheetName) return false;
       const sheet = getLocalSheetByName(sheetName);
       // Notifying write: the empty-statement validation subscribes to local
       // sheets. (Previously this cloned the plan into patchState purely to
@@ -375,8 +375,27 @@ export function PlanDetailStatementSection({
       setStatement(nextStatement);
       setDraftStatement(nextStatement);
       setIsSheetOversize(false);
+      return true;
     },
     [sheetName]
+  );
+
+  const applyAgentDraft = useCallback(
+    (detail: AgentPlanDraftEventDetail, sql: string) => {
+      try {
+        if (!updateLocalStatement(sql)) return;
+      } catch {
+        pushNotification({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: t("agent.plan-draft.current-plan-unavailable"),
+        });
+        return;
+      }
+      setPendingAgentDraft(undefined);
+      detail.onApplied?.();
+    },
+    [t, updateLocalStatement]
   );
 
   useEffect(() => {
@@ -402,14 +421,10 @@ export function PlanDetailStatementSection({
         return;
       }
       if (statement.trim()) {
-        // This route-owned AlertDialog renders below the Agent overlay.
-        if (useAgentStore.getState().visible) {
-          useAgentStore.getState().minimize();
-        }
         setPendingAgentDraft(detail);
         return;
       }
-      updateLocalStatement(detail.sql);
+      applyAgentDraft(detail, detail.sql);
     };
 
     window.addEventListener(AGENT_PLAN_DRAFT_EVENT, handleAgentDraft);
@@ -424,7 +439,7 @@ export function PlanDetailStatementSection({
     statement,
     t,
     targetDatabaseNames,
-    updateLocalStatement,
+    applyAgentDraft,
   ]);
 
   if (isValidReleaseName(releaseName)) {
@@ -482,11 +497,6 @@ export function PlanDetailStatementSection({
         label: selectedDatabaseLabel,
       },
     ]);
-  };
-
-  const applyAgentDraft = (sql: string) => {
-    updateLocalStatement(sql);
-    setPendingAgentDraft(undefined);
   };
 
   const handleUploadClick = () => inputRef.current?.click();
@@ -718,14 +728,9 @@ export function PlanDetailStatementSection({
               project &&
               hasSingleDatabaseTarget &&
               selectedDatabaseName && (
-                <Button
-                  className="h-auto max-w-full whitespace-normal text-left"
-                  onClick={askAgentToDraftSQL}
-                  size="xs"
-                  appearance="outline"
-                >
+                <AgentHelpButton onClick={askAgentToDraftSQL} size="xs">
                   {t("agent.plan-assistance.ask-draft-sql")}
-                </Button>
+                </AgentHelpButton>
               )}
             {!isEditingExistingStatement && (
               <>
@@ -881,7 +886,7 @@ export function PlanDetailStatementSection({
           if (!open) setPendingAgentDraft(undefined);
         }}
       >
-        <AlertDialogContent>
+        <AlertDialogContent layer="agent">
           <AlertDialogTitle>
             {t("agent.plan-draft.existing-sql-title")}
           </AlertDialogTitle>
@@ -900,6 +905,7 @@ export function PlanDetailStatementSection({
               onClick={() => {
                 if (!pendingAgentDraft) return;
                 applyAgentDraft(
+                  pendingAgentDraft,
                   appendAgentPlanDraftSQL(statement, pendingAgentDraft.sql)
                 );
               }}
@@ -909,7 +915,7 @@ export function PlanDetailStatementSection({
             <Button
               onClick={() => {
                 if (!pendingAgentDraft) return;
-                applyAgentDraft(pendingAgentDraft.sql);
+                applyAgentDraft(pendingAgentDraft, pendingAgentDraft.sql);
               }}
             >
               {t("agent.plan-draft.replace-sql")}

@@ -1,14 +1,14 @@
 import { useTranslation } from "react-i18next";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/app/router/handles";
-import { RouterLink } from "@/components/RouterLink";
 import { Alert } from "@/components/ui/alert";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   AI_ASSISTANT_PRODUCT_INTRO,
   PRODUCT_INTRO_QUERY_KEY,
 } from "@/lib/productIntro";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { useAgentStore } from "../store/agent";
+import { AgentPrimaryActionLink } from "./AgentPrimaryAction";
 
 export function AgentAIConfigurationRecovery({
   onDismiss,
@@ -39,7 +39,7 @@ export function AgentAIConfigurationRecovery({
     >
       <div className="mt-3 flex flex-wrap gap-x-2 gap-y-2">
         {allowConfigure && (
-          <RouterLink
+          <AgentPrimaryActionLink
             to={{
               name: SETTING_ROUTE_WORKSPACE_GENERAL,
               hash: "#ai-assistant",
@@ -47,11 +47,10 @@ export function AgentAIConfigurationRecovery({
                 [PRODUCT_INTRO_QUERY_KEY]: AI_ASSISTANT_PRODUCT_INTRO,
               },
             }}
-            className={buttonVariants({ size: "sm" })}
             onClick={goConfigure}
           >
             {t("agent.ai-not-configured.configure")}
-          </RouterLink>
+          </AgentPrimaryActionLink>
         )}
         {onDismiss && (
           <Button appearance="outline" size="sm" onClick={dismiss}>

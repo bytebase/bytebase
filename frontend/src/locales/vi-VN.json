@@ -43,12 +43,13 @@
     "api-permission-title": "Yêu cầu quyền thực hiện",
     "archive-all-chats": "Lưu trữ tất cả cuộc trò chuyện",
     "archive-chat": "Lưu trữ cuộc trò chuyện",
+    "archive-chat-confirmation": "Lưu trữ cuộc trò chuyện này?",
     "archived-only-chats": "Xem các cuộc trò chuyện đã lưu trữ",
     "args": "Tham số",
     "assistant-title": "Trợ lý AI",
     "cancel": "Hủy",
     "cancel-request": "Hủy yêu cầu",
-    "chat-archived-label": "Đã lưu trữ",
+    "chat-archived-notice": "Cuộc trò chuyện này đã được lưu trữ.",
     "chat-default-title": "Cuộc trò chuyện mới",
     "chat-list-label": "Cuộc trò chuyện",
     "chat-total-tokens": "Token của cuộc trò chuyện: {{count}}",
@@ -60,7 +61,7 @@
     "context-workspace": "Không gian làm việc",
     "contextual-start": {
       "active-request": "Hoàn tất yêu cầu đang chạy trước khi bắt đầu cuộc trò chuyện khác.",
-      "continue-chat": "Tiếp tục cuộc trò chuyện hiện tại",
+      "continue-chat": "Tiếp tục cuộc trò chuyện gần nhất",
       "database-heading": "Hỏi về cơ sở dữ liệu này",
       "database-recent": "Cơ sở dữ liệu này có thay đổi gì gần đây?",
       "database-schema": "Cơ sở dữ liệu này có những bảng nào?",
@@ -92,6 +93,9 @@
       "masking-global-effect": "Nhà phát triển sẽ thấy gì với các giá trị thuộc quy tắc Inner Mask này?",
       "masking-global-exemptions": "Ngoại lệ có thể làm lộ giá trị gốc không?",
       "masking-global-heading": "Hỏi về che dữ liệu",
+      "masking-rule-configure": "Giúp tôi cấu hình quy tắc này.",
+      "masking-rule-effect": "Giải thích tác động che dữ liệu của quy tắc này.",
+      "masking-rule-review": "Xem xét quy tắc này.",
       "masking-semantic-algorithm": "Thuật toán che dữ liệu này giữ lại phần nào?",
       "masking-semantic-heading": "Hỏi về kiểu ngữ nghĩa",
       "masking-semantic-rules": "Quy tắc che dữ liệu nào sử dụng kiểu ngữ nghĩa này?",
@@ -175,12 +179,60 @@
       "workspace-setup-first": "Tôi nên thiết lập gì trước?"
     },
     "masking": {
-      "ask-agent": "Hỏi Agent về che dữ liệu"
+      "ask-agent-short": "Hỏi Agent",
+      "exemption-scope": {
+        "another-database": "Cơ sở dữ liệu khác",
+        "only-database": "Chỉ {{database}}",
+        "project": "Tất cả cơ sở dữ liệu trong dự án này",
+        "question": "Miễn trừ này áp dụng cho những cơ sở dữ liệu nào?"
+      },
+      "rule-scope": {
+        "choose-project": "Chọn dự án",
+        "question": "Quy tắc che dữ liệu này áp dụng cho những cơ sở dữ liệu nào?",
+        "workspace": "Tất cả cơ sở dữ liệu trong không gian làm việc"
+      },
+      "semantic-type-choice": {
+        "create": "Tạo kiểu che dữ liệu tùy chỉnh…",
+        "create-description": "Chuẩn bị kiểu ngữ nghĩa mới với cấu hình che dữ liệu của bạn.",
+        "question": "Kiểu ngữ nghĩa nào sẽ che dữ liệu cho các cột này?"
+      }
+    },
+    "masking-exemption-draft": {
+      "applied": "Đã áp dụng vào bản nháp",
+      "apply": "Áp dụng vào bản nháp",
+      "inactive": "Bản nháp này không còn khả dụng. Hãy kiểm tra các miễn trừ hiện tại trước khi chuẩn bị bản nháp khác.",
+      "open": "Mở bản nháp miễn trừ",
+      "opened": "Đã mở bản nháp miễn trừ",
+      "unavailable": "Không thể áp dụng bản nháp này. Trình chỉnh sửa, quyền hoặc cấu hình có thể đã thay đổi. Hãy xem lại biểu mẫu hiện tại và yêu cầu Agent chuẩn bị lại.",
+      "unsaved": "Chỉ điền vào biểu mẫu chưa lưu. Hãy xem lại trước khi chọn Cấp miễn trừ."
+    },
+    "masking-rule-draft": {
+      "all-databases": "Tất cả cơ sở dữ liệu trong không gian làm việc",
+      "applied": "Đã áp dụng vào bản nháp",
+      "apply": "Áp dụng vào bản nháp",
+      "help-prompt": "Trước tiên hãy đọc quy tắc chưa lưu hiện tại bằng get_masking_rule_draft. Dùng các trường thực tế, không dùng đề xuất trước đó. Chỉ hỏi thông tin còn thiếu. Không lưu cài đặt.",
+      "inactive": "Bản nháp này không còn khả dụng. Hãy kiểm tra các quy tắc che dữ liệu hiện tại trước khi chuẩn bị bản nháp mới.",
+      "open": "Mở bản nháp quy tắc",
+      "opened": "Đã mở bản nháp quy tắc",
+      "queue": {
+        "created": "Đã tạo",
+        "editing": "Đang chỉnh sửa",
+        "needs-recheck": "Quy tắc che dữ liệu hoặc loại ngữ nghĩa đã thay đổi. Hãy kiểm tra lại bản nháp trước khi tiếp tục.",
+        "pending": "Đang chờ",
+        "recheck": "Kiểm tra lại bản nháp",
+        "review": "Xem lại",
+        "title": "Bản nháp quy tắc"
+      },
+      "review-many": "Xem lại {{count}} bản nháp quy tắc",
+      "scope": "Phạm vi cơ sở dữ liệu",
+      "semantic-type": "Kiểu ngữ nghĩa",
+      "unavailable": "Không thể áp dụng bản nháp. Trình chỉnh sửa, quyền hoặc cấu hình có thể đã thay đổi. Hãy xem lại biểu mẫu hiện tại và nhờ Agent chuẩn bị lại.",
+      "unsaved": "Chỉ điền biểu mẫu chưa lưu. Hãy xem lại trước khi chọn Tạo quy tắc."
     },
     "minimize": "Thu nhỏ",
     "new-chat": "Cuộc trò chuyện mới",
     "other-chats": "Các cuộc trò chuyện khác",
-    "pending-choose-hint": "Vui lòng chọn một tùy chọn ở trên",
+    "pending-choose-hint": "Chọn một tùy chọn, sau đó nhấp vào Trả lời.",
     "pending-confirm-hint": "Vui lòng xác nhận hoặc hủy ở trên",
     "pending-input-hint": "Vui lòng cung cấp đầu vào ở trên",
     "permission": {
@@ -238,6 +290,7 @@
     "request-failed": "Trợ lý không thể hoàn tất yêu cầu này.",
     "request-stopped-by-user": "Yêu cầu đã được người dùng dừng",
     "request-stopped-retry-hint": "Thao tác đã gửi vẫn có thể hoàn tất. Hãy kiểm tra trạng thái trước khi thử lại.",
+    "resend-message": "Gửi lại tin nhắn",
     "resource-picker": {
       "add-context": "Thêm ngữ cảnh",
       "databases": "Cơ sở dữ liệu",
@@ -262,6 +315,16 @@
     "result": "Kết quả",
     "retry-last-chat-turn": "Thử lại",
     "self": "Trợ lý",
+    "semantic-type-draft": {
+      "created": "Đã tạo",
+      "inactive": "Bản nháp này không còn khả dụng. Kiểm tra các kiểu ngữ nghĩa hiện tại trước khi chuẩn bị bản nháp khác.",
+      "open": "Mở bản nháp kiểu ngữ nghĩa",
+      "opened": "Đã mở bản nháp kiểu ngữ nghĩa",
+      "save-failed": "Không thể tạo kiểu ngữ nghĩa. Kiểm tra biểu mẫu rồi thử lại.",
+      "saved": "Kiểu ngữ nghĩa này đã được tạo. Làm mới cấu hình trước khi sử dụng trong quy tắc che dữ liệu.",
+      "unavailable": "Không thể mở bản nháp này. Trình chỉnh sửa, quyền hoặc cấu hình có thể đã thay đổi. Kiểm tra biểu mẫu hiện tại và yêu cầu Agent chuẩn bị lại.",
+      "unsaved": "Chỉ điền vào biểu mẫu chưa lưu. Kiểm tra trước khi chọn Tạo."
+    },
     "send": "Gửi",
     "stop": "Dừng",
     "token-usage": {
@@ -297,7 +360,7 @@
     "tool-response-submitted": "Phản hồi đã được gửi",
     "tool-value": "Giá trị",
     "unarchive-all-chats": "Bỏ lưu trữ tất cả cuộc trò chuyện",
-    "unarchive-chat": "Bỏ lưu trữ",
+    "unarchive-chat": "Khôi phục cuộc trò chuyện",
     "workspace-attention": {
       "checking": "Đang kiểm tra các mục cần bạn chú ý...",
       "empty": "Bạn không có issue mở nào cần chú ý.",

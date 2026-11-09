@@ -12,6 +12,7 @@ import { extractDatabaseResourceName } from "@/utils/v1/database";
 import type {
   AgentDraft,
   AgentMentionRange,
+  AgentMessage,
   AgentResourceMention,
   AgentResourceReference,
 } from "./types";
@@ -309,6 +310,88 @@ export const normalizeAgentResourceReferences = (
   return project && child && child.project === project.name
     ? [project, child]
     : [];
+};
+
+export const getHumanInputResourceReferenceMap = (
+  messages: AgentMessage[]
+): Map<AgentMessage, AgentResourceReference[]> => {
+  const referencesByMessage = new Map<AgentMessage, AgentResourceReference[]>();
+  const pendingInputs = new Set<string>();
+  const seenToolCallIds = new Set<string>();
+  let hasUserTurn = false;
+
+  for (const message of messages) {
+    if (message.role === "user") {
+      hasUserTurn = true;
+      pendingInputs.clear();
+      seenToolCallIds.clear();
+    } else if (!hasUserTurn) {
+      continue;
+    } else if (message.role === "assistant") {
+      for (const toolCall of message.toolCalls ?? []) {
+        if (!toolCall.id) continue;
+        if (seenToolCallIds.has(toolCall.id)) {
+          pendingInputs.delete(toolCall.id);
+          continue;
+        }
+        seenToolCallIds.add(toolCall.id);
+        if (toolCall.name !== "ask_user") continue;
+        try {
+          const args = JSON.parse(toolCall.arguments);
+          if (
+            typeof args?.prompt === "string" &&
+            args.prompt.trim() &&
+            (args.kind === undefined || args.kind === "input")
+          ) {
+            pendingInputs.add(toolCall.id);
+          }
+        } catch {
+          continue;
+        }
+      }
+      continue;
+    } else if (message.role === "tool") {
+      if (!message.toolCallId || !pendingInputs.delete(message.toolCallId)) {
+        continue;
+      }
+      try {
+        const response = JSON.parse(message.content ?? "null");
+        if (
+          response?.kind !== "input" ||
+          typeof response.answer !== "string" ||
+          !response.answer.trim()
+        ) {
+          continue;
+        }
+      } catch {
+        continue;
+      }
+    } else {
+      continue;
+    }
+
+    const references = normalizeAgentResourceReferences(
+      message.metadata?.resourceReferences,
+      message.metadata?.resourceReference
+    );
+    if (references.length > 0) {
+      referencesByMessage.set(message, references);
+    }
+  }
+  return referencesByMessage;
+};
+
+export const getCurrentTurnResourceReferences = (
+  messages: AgentMessage[]
+): AgentResourceReference[] => {
+  const currentTurnStart = messages.findLastIndex(
+    (message) => message.role === "user"
+  );
+  if (currentTurnStart < 0) return [];
+  const referencesByMessage = getHumanInputResourceReferenceMap(
+    messages.slice(currentTurnStart)
+  );
+  return [...referencesByMessage.values()].at(-1) ?? [];
 };
 
 export const normalizeAgentResourceMentions = (

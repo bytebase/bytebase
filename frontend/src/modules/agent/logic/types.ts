@@ -90,6 +90,9 @@ export type AgentResponseAction =
   | { kind: "open"; target: AgentHandoff }
   | { kind: "draft-plan"; project: string; database: string }
   | { kind: "draft-issue-comment"; issue: string; comment: string }
+  | { kind: "draft-masking-rule"; draftId: string }
+  | { kind: "draft-masking-exemption"; draftId: string }
+  | { kind: "draft-semantic-type"; draftId: string }
   | { kind: "continue"; prompt: string };
 
 export interface AgentResourceReference {
@@ -130,7 +133,21 @@ export interface AgentMessageMetadata {
   evidence?: AgentAnswerEvidence;
   handoff?: AgentHandoff;
   actions?: AgentResponseAction[];
+  maskingRuleDraftHandoff?: {
+    draftId: string;
+    outcome: "opened" | "applied";
+  };
+  maskingExemptionDraftHandoff?: {
+    draftId: string;
+    outcome: "opened" | "applied";
+    created?: true;
+  };
   accessRequestDraft?: DeniedQueryRequestDraft;
+  semanticTypeDraftHandoff?: {
+    draftId: string;
+    outcome: "opened";
+    created?: true;
+  };
   resourceReference?: AgentResourceReference;
   resourceReferences?: AgentResourceReference[];
 }
@@ -183,6 +200,7 @@ export interface AgentPendingAsk {
     operationId: string;
   };
   defaultValue?: string;
+  defaultResource?: AgentResourceReference;
   confirmLabel?: string;
   cancelLabel?: string;
   options?: AgentAskUserOption[];

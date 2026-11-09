@@ -20,6 +20,7 @@ import {
 } from "@/lib/plan/workflow";
 import { invalidateProjectPlansPagedDataCache } from "@/lib/projectPagedDataCache";
 import { cn } from "@/lib/utils";
+import { AgentHelpButton } from "@/modules/agent/components/AgentHelpButton";
 import { openAgentWithPrompt } from "@/modules/agent/logic/instanceConnectionHelp";
 import { buildPlanReviewPrompt } from "@/modules/agent/logic/planIssueAssistance";
 import { getPlanMentionLabel } from "@/modules/agent/logic/resourceMention";
@@ -639,14 +640,9 @@ export function PlanDetailHeader() {
             page.plan.state === State.ACTIVE &&
             project &&
             page.plan.name && (
-              <Button
-                className="max-w-full whitespace-normal text-left"
-                onClick={openPlanReview}
-                size="md"
-                appearance="outline"
-              >
+              <AgentHelpButton onClick={openPlanReview} size="md">
                 {t("agent.plan-assistance.review")}
-              </Button>
+              </AgentHelpButton>
             )}
           {/* Lifecycle slot: one primary advance/status per state. Create and
               ready-for-review stay here (coupled to the title/create flow); all

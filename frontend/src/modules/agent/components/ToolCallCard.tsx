@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { PlainCellValue } from "@/components/PlainCellValue";
 import { QueryResultVerticalBody } from "@/components/QueryResultVerticalBody";
 import { QueryResultVerticalRow } from "@/components/QueryResultVerticalRow";
+import { Alert } from "@/components/ui/alert";
 import {
   Collapsible,
   CollapsiblePanel,
@@ -354,7 +355,19 @@ export function ToolCallCard({ toolCall, result }: Props) {
       ? preview
       : undefined;
   }, [parsedArguments, resultText, toolCall.name]);
-  const isAskUser = toolCall.name === "ask_user";
+  const runtimeQuestionKey = {
+    ask_masking_exemption_scope: "agent.masking.exemption-scope.question",
+    ask_masking_rule_scope: "agent.masking.rule-scope.question",
+    ask_masking_semantic_type: "agent.masking.semantic-type-choice.question",
+  }[toolCall.name];
+  const isAskUser = toolCall.name === "ask_user" || !!runtimeQuestionKey;
+  const askError = isAskUser
+    ? hasErrorResult
+      ? ((parsedResult as Record<string, unknown>).error as string)
+      : resultText.startsWith("Error:")
+        ? resultText
+        : undefined
+    : undefined;
   const isDone = toolCall.name === "done";
   const isCanceledAsk =
     isAskUser &&
@@ -362,8 +375,17 @@ export function ToolCallCard({ toolCall, result }: Props) {
     parsedResult !== null &&
     !Array.isArray(parsedResult) &&
     (parsedResult as Record<string, unknown>).kind === "cancelled";
+  const isSkippedAsk =
+    isAskUser &&
+    typeof parsedResult === "object" &&
+    parsedResult !== null &&
+    !Array.isArray(parsedResult) &&
+    (parsedResult as Record<string, unknown>).skipped === true;
 
   const askPrompt = useMemo(() => {
+    if (runtimeQuestionKey) {
+      return t(runtimeQuestionKey);
+    }
     if (
       typeof parsedArguments === "object" &&
       parsedArguments &&
@@ -373,9 +395,10 @@ export function ToolCallCard({ toolCall, result }: Props) {
       return (parsedArguments as Record<string, unknown>).prompt as string;
     }
     return "";
-  }, [parsedArguments]);
+  }, [runtimeQuestionKey, parsedArguments, t]);
 
   const askKind = useMemo(() => {
+    if (runtimeQuestionKey) return "choose" as const;
     if (
       typeof parsedArguments === "object" &&
       parsedArguments &&
@@ -386,7 +409,7 @@ export function ToolCallCard({ toolCall, result }: Props) {
       if (kind === "choose") return "choose" as const;
     }
     return "input" as const;
-  }, [parsedArguments]);
+  }, [runtimeQuestionKey, parsedArguments]);
 
   const askDefaultValue = useMemo(() => {
     if (
@@ -491,7 +514,7 @@ export function ToolCallCard({ toolCall, result }: Props) {
     ((parsedResult as Record<string, unknown>).failedApiCallCount as number) >
       0;
   const renderStatus = () => {
-    if (hasErrorResult || callApiError) {
+    if (hasErrorResult || callApiError || askError) {
       return <span className="text-error">{t("agent.tool-failed")}</span>;
     }
     if (isAskUser) {
@@ -502,10 +525,17 @@ export function ToolCallCard({ toolCall, result }: Props) {
           </span>
         );
       }
-      return resultText ? (
+      if (isSkippedAsk) {
+        return (
+          <span className="text-control-light">{t("common.skipped")}</span>
+        );
+      }
+      return askResponse ? (
         <span className="text-success">
           {t("agent.tool-response-submitted")}
         </span>
+      ) : resultText ? (
+        <span className="text-control-light">{t("agent.tool-completed")}</span>
       ) : (
         <span className="text-warning">{t("agent.tool-ask-user")}</span>
       );
@@ -645,6 +675,17 @@ export function ToolCallCard({ toolCall, result }: Props) {
           {expanded ? "\u25BE" : "\u25B8"}
         </span>
       </CollapsibleTrigger>
+
+      {askError && (
+        <Alert
+          variant="error"
+          appearance="caption"
+          aria-label={t("agent.tool-failed")}
+          className="max-h-32 overflow-y-auto border-t border-block-border px-2 py-1.5 whitespace-pre-wrap break-words"
+        >
+          {askError}
+        </Alert>
+      )}
 
       {queryPreview && <QueryResultPreview preview={queryPreview} />}
 

@@ -136,6 +136,7 @@ vi.mock("../ui/button", () => ({
     disabled,
     onClick,
     appearance,
+    variant,
     size,
     className,
   }: {
@@ -143,11 +144,13 @@ vi.mock("../ui/button", () => ({
     disabled?: boolean;
     onClick?: () => void;
     appearance?: string;
+    variant?: string;
     size?: string;
     className?: string;
   }) => (
     <button
       data-appearance={appearance}
+      data-variant={variant}
       data-size={size}
       className={className}
       disabled={disabled}
@@ -663,13 +666,10 @@ describe("InstanceFormButtons", () => {
       button.textContent?.includes("instance.ask-agent-about-error")
     );
     expect(askAgentButton).toBeDefined();
-    expect(askAgentButton).toHaveAttribute("data-appearance", "outline");
+    expect(askAgentButton).toHaveAttribute("data-appearance", "ghost");
     expect(askAgentButton).toHaveAttribute("data-size", "md");
-    expect(askAgentButton).toHaveClass("border-accent", "text-accent");
-    expect(askAgentButton?.querySelector("svg")).toHaveAttribute(
-      "width",
-      "16"
-    );
+    expect(askAgentButton).not.toHaveClass("border-accent");
+    expect(askAgentButton?.querySelector(".lucide-bot")).not.toBeNull();
 
     await act(async () => {
       askAgentButton?.click();
@@ -718,6 +718,10 @@ describe("InstanceFormButtons", () => {
       button.textContent?.includes("instance.ask-agent-about-error")
     );
     expect(askAgentButton).toBeDefined();
+
+    expect(askAgentButton).toHaveAttribute("data-appearance", "ghost");
+    expect(askAgentButton).toHaveAttribute("data-size", "md");
+    expect(askAgentButton?.querySelector(".lucide-bot")).not.toBeNull();
 
     await act(async () => {
       askAgentButton?.click();
@@ -844,6 +848,9 @@ describe("InstanceFormButtons", () => {
       button.textContent?.includes("instance.ask-agent-about-error")
     );
     expect(askAgentButton).toBeDefined();
+    expect(askAgentButton).toHaveAttribute("data-appearance", "ghost");
+    expect(askAgentButton).toHaveAttribute("data-size", "md");
+    expect(askAgentButton?.querySelector(".lucide-bot")).not.toBeNull();
 
     await act(async () => {
       askAgentButton?.click();

@@ -179,14 +179,12 @@ export function collectAgentHandoffs(
 
   if (toolName === "get_masking_overview") {
     if (!Array.isArray(payload.openTargets)) return [];
-    const expectedProject =
-      payload.page === "masking-exemption" ||
-      payload.page === "database-catalog"
-        ? scope.projectName
-        : undefined;
+    const expectedProject = payload.project;
     if (
-      (expectedProject && payload.project !== expectedProject) ||
-      (!expectedProject && payload.project !== undefined)
+      expectedProject !== undefined &&
+      (!resourceId(expectedProject, "projects") ||
+        (scope.projectName && scope.projectName !== expectedProject) ||
+        (!scope.projectName && !resourceId(scope.workspaceName, "workspaces")))
     ) {
       return [];
     }

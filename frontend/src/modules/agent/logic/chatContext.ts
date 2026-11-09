@@ -11,6 +11,7 @@ import {
   PROJECT_V1_ROUTE_INSTANCE_DETAIL,
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
   PROJECT_V1_ROUTE_MASKING_EXEMPTION,
+  PROJECT_V1_ROUTE_MASKING_EXEMPTION_CREATE,
   PROJECT_V1_ROUTE_PLAN_DETAIL,
   WORKSPACE_ROUTE_DATA_CLASSIFICATION,
   WORKSPACE_ROUTE_GLOBAL_MASKING,
@@ -126,7 +127,10 @@ export function resolveAgentPageResource(
     };
   }
   if (!project) return undefined;
-  if (route.name === PROJECT_V1_ROUTE_MASKING_EXEMPTION) {
+  if (
+    route.name === PROJECT_V1_ROUTE_MASKING_EXEMPTION ||
+    route.name === PROJECT_V1_ROUTE_MASKING_EXEMPTION_CREATE
+  ) {
     return { kind: "masking-exemption", project };
   }
   if (

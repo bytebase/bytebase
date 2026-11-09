@@ -12,6 +12,8 @@ import {
 } from "@/app/router/handles";
 import type { RequestRoleDraft } from "../logic/deniedQueryAccess";
 import { registerAgentExpressionTarget } from "../logic/expressionDraft";
+import { acceptAgentResponseActions } from "../logic/responseActions";
+import type { AgentHandoff, AgentMessageMetadata } from "../logic/types";
 import { createAgentStore, useAgentStore } from "../store/agent";
 
 (
@@ -27,18 +29,29 @@ const mocks = vi.hoisted(() => ({
   routerPush: vi.fn(),
   routeListeners: [] as Array<() => void>,
   currentPath: "/initial",
+  resolvedPath: undefined as string | undefined,
   currentRoute: undefined as
     | { name?: string; params?: Record<string, string> }
     | undefined,
   aiEnabled: undefined as boolean | undefined,
   getSettingByName: vi.fn(),
   notify: vi.fn(),
+  writeTextToClipboard: vi.fn(),
   prepareAgentPlanDraftRoute: vi.fn(),
   applyPlanDraftToCurrent: vi.fn(),
   prepareAgentDeniedQueryRequestRoute: vi.fn(),
   prepareIssueCommentDraftRoute: vi.fn(),
   wasDeniedQueryRequestDraftDelivered: vi.fn(),
   wasIssueCommentDraftDelivered: vi.fn(),
+  getMaskingRuleDraft: vi.fn(),
+  getSemanticTypeDraft: vi.fn(),
+  getMaskingRuleDraftSource: vi.fn(),
+  revalidateMaskingRuleDraft: vi.fn(),
+  consumeMaskingRuleDraft: vi.fn(),
+  getMaskingExemptionDraft: vi.fn(),
+  getMaskingExemptionDraftSource: vi.fn(),
+  revalidateMaskingExemptionDraft: vi.fn(),
+  consumeMaskingExemptionDraft: vi.fn(),
 }));
 
 let AgentChat: typeof import("./AgentChat").AgentChat;
@@ -125,12 +138,12 @@ vi.mock("@/app/router", async (importOriginal) => {
       },
       resolve: (to: unknown) => {
         const fullPath =
-          typeof to === "object" &&
+          mocks.resolvedPath ?? (typeof to === "object" &&
           to !== null &&
           "fullPath" in to &&
           typeof to.fullPath === "string"
             ? to.fullPath
-            : JSON.stringify(to);
+            : JSON.stringify(to));
         return { href: fullPath, fullPath };
       },
       get currentRoute() {
@@ -145,9 +158,15 @@ vi.mock("@/utils", async (importOriginal) => ({
   hasWorkspacePermissionV2: mocks.hasWorkspacePermissionV2,
 }));
 
+vi.mock("@/lib/clipboard", () => ({
+  writeTextToClipboard: mocks.writeTextToClipboard,
+}));
+
 vi.mock("@/stores/app", () => {
   const state = {
     getSettingByName: mocks.getSettingByName,
+    currentUser: { name: "users/member@example.com" },
+    workspaceResourceName: () => "workspaces/demo",
     get serverInfo() {
       return { aiEnabled: mocks.aiEnabled };
     },
@@ -158,6 +177,30 @@ vi.mock("@/stores/app", () => {
   useAppStore.getState = () => state;
   return { useAppStore };
 });
+
+vi.mock("../logic/semanticTypeDraft", () => ({
+  getSemanticTypeDraft: mocks.getSemanticTypeDraft,
+  getSemanticTypeDraftSource: () => undefined,
+  getSafeSemanticTypeDraftSummary: (draft: unknown) => draft,
+  revalidateSemanticTypeDraft: vi.fn(),
+  consumeSemanticTypeDraft: vi.fn(),
+}));
+vi.mock("../logic/maskingRuleDraft", () => ({
+  getMaskingRuleDraft: mocks.getMaskingRuleDraft,
+  getMaskingRuleDrafts: (...args: unknown[]) => {
+    const draft = mocks.getMaskingRuleDraft(...args);
+    return draft ? [draft] : undefined;
+  },
+  getMaskingRuleDraftSource: mocks.getMaskingRuleDraftSource,
+  revalidateMaskingRuleDraft: mocks.revalidateMaskingRuleDraft,
+  consumeMaskingRuleDraft: mocks.consumeMaskingRuleDraft,
+}));
+vi.mock("../logic/maskingExemptionDraft", () => ({
+  getMaskingExemptionDraft: mocks.getMaskingExemptionDraft,
+  getMaskingExemptionDraftSource: mocks.getMaskingExemptionDraftSource,
+  revalidateMaskingExemptionDraft: mocks.revalidateMaskingExemptionDraft,
+  consumeMaskingExemptionDraft: mocks.consumeMaskingExemptionDraft,
+}));
 
 vi.mock("../logic/planDraft", () => ({
   prepareAgentPlanDraftRoute: mocks.prepareAgentPlanDraftRoute,
@@ -204,6 +247,18 @@ const renderIntoContainer = (element: ReactElement) => {
   };
 };
 
+const expectCompactPrimaryAction = (
+  action: Element | null,
+  label: string,
+  icon = "arrow-up-right"
+) => {
+  expect(action).toHaveClass("h-7", "text-xs", "text-accent", "max-w-full");
+  expect(action).not.toHaveClass("border", "h-auto", "whitespace-normal");
+  expect(action).toHaveAttribute("title", label);
+  expect(action?.querySelector(".truncate")?.textContent).toBe(label);
+  expect(action?.lastElementChild).toHaveClass(`lucide-${icon}`);
+};
+
 beforeEach(async () => {
   vi.stubGlobal("localStorage", createMockStorage());
   const initialState = createAgentStore().getState();
@@ -217,6 +272,8 @@ beforeEach(async () => {
     pendingAskByChatId: initialState.pendingAskByChatId,
     draftsByChatId: initialState.draftsByChatId,
     currentChatId: initialState.currentChatId,
+    workspaceName: "workspaces/demo",
+    userEmail: "member@example.com",
     abortControllersByChatId: {},
     queuedUserMessagesByChatId: {},
     queuedUserMessageInFlightByChatId: {},
@@ -233,9 +290,12 @@ beforeEach(async () => {
   mocks.routeListeners = [];
   mocks.currentRoute = undefined;
   mocks.currentPath = "/initial";
+  mocks.resolvedPath = undefined;
   mocks.aiEnabled = undefined;
   mocks.getSettingByName.mockReset();
   mocks.getSettingByName.mockReturnValue(undefined);
+  mocks.writeTextToClipboard.mockReset();
+  mocks.writeTextToClipboard.mockResolvedValue(true);
   mocks.notify.mockReset();
   mocks.prepareAgentPlanDraftRoute.mockReset();
   mocks.applyPlanDraftToCurrent.mockReset();
@@ -245,6 +305,14 @@ beforeEach(async () => {
   mocks.wasDeniedQueryRequestDraftDelivered.mockReturnValue(true);
   mocks.wasIssueCommentDraftDelivered.mockReset();
   mocks.wasIssueCommentDraftDelivered.mockReturnValue(true);
+  mocks.getMaskingRuleDraft.mockReset();
+  mocks.getMaskingRuleDraftSource.mockReset();
+  mocks.revalidateMaskingRuleDraft.mockReset();
+  mocks.consumeMaskingRuleDraft.mockReset();
+  mocks.getMaskingExemptionDraft.mockReset();
+  mocks.getMaskingExemptionDraftSource.mockReset();
+  mocks.revalidateMaskingExemptionDraft.mockReset();
+  mocks.consumeMaskingExemptionDraft.mockReset();
 
   ({ AgentChat } = await import("./AgentChat"));
 });
@@ -254,6 +322,444 @@ afterEach(() => {
 });
 
 describe("AgentChat", () => {
+  test("copies each user message's original text without changing the draft", async () => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat();
+    const content = "@Orders select * from orders;\nKeep the original text.";
+    store.addMessage({
+      chatId: chat.id,
+      role: "user",
+      content,
+      metadata: {
+        resourceReference: { kind: "project", name: "projects/orders", project: "projects/orders", label: "Orders" },
+      },
+    });
+    store.addMessage({ chatId: chat.id, role: "assistant", content: "An answer" });
+    store.addMessage({ chatId: chat.id, role: "user", content: "Another request" });
+    store.setDraft(chat.id, { text: "Unsent draft" });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+    try {
+      const buttons = container.querySelectorAll<HTMLButtonElement>('button[aria-label="common.copy"]');
+      expect(buttons).toHaveLength(2);
+      await act(async () => buttons[0].click());
+      await act(async () => buttons[1].click());
+      expect(mocks.writeTextToClipboard.mock.calls).toEqual([[content], ["Another request"]]);
+      expect(buttons[0].querySelector(".lucide-check")).not.toBeNull();
+      expect(store.getDraft(chat.id).text).toBe("Unsent draft");
+      expect(store.getMessages(chat.id)).toHaveLength(3);
+    } finally {
+      unmount();
+    }
+  });
+
+  test("places Copy and Resend before the rightmost timestamp in a vertically centered row", () => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat();
+    store.addMessage({ chatId: chat.id, role: "user", content: "Original request" });
+    store.addMessage({ chatId: chat.id, role: "assistant", content: "An answer" });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat onResend={vi.fn()} />);
+    render();
+    try {
+      const footer = container.querySelector("[data-agent-message-actions]");
+      const copy = footer?.querySelector('button[aria-label="common.copy"]');
+      const resend = footer?.querySelector('button[aria-label="agent.resend-message"]');
+      const timestamp = footer?.querySelector("[data-agent-message-timestamp]");
+      expect(copy).not.toBeNull();
+      expect(resend).not.toBeNull();
+      expect(footer).toHaveClass("mt-1", "flex", "items-center", "justify-end", "gap-0");
+      expect(footer?.lastElementChild).toBe(timestamp);
+      expect(copy?.compareDocumentPosition(resend!)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+      expect(copy).toHaveClass("h-6", "px-1.5");
+      expect(resend).toHaveClass("h-6", "px-1.5");
+      expect(timestamp).not.toHaveClass("mt-1");
+      const assistantTimestamp = container.querySelectorAll("[data-agent-message-timestamp]")[1];
+      expect(assistantTimestamp).toHaveClass("mt-1");
+    } finally {
+      unmount();
+    }
+  });
+
+  test.each(["running", "awaiting_user", "archived", "queued"] as const)(
+    "allows copying a user message while the chat is %s",
+    async (state) => {
+      const store = useAgentStore.getState();
+      const chat = store.ensureCurrentChat();
+      store.addMessage({ chatId: chat.id, role: "user", content: "Original request" });
+      if (state === "running") store.startChatRun(chat.id);
+      if (state === "awaiting_user") store.awaitUser(chat.id, { toolCallId: "question", kind: "input", prompt: "Which database?" });
+      if (state === "archived") store.archiveChat(chat.id);
+      if (state === "queued") store.queueUserMessage({ chatId: chat.id, text: "Queued request", page: { path: "/demo", title: "Demo" } });
+      const { container, render, unmount } = renderIntoContainer(<AgentChat onResend={vi.fn()} />);
+      render();
+      try {
+        const copy = container.querySelector<HTMLButtonElement>('button[aria-label="common.copy"]');
+        expect(copy).not.toBeNull();
+        expect(copy).not.toBeDisabled();
+        await act(async () => copy?.click());
+        expect(mocks.writeTextToClipboard).toHaveBeenCalledWith("Original request");
+      } finally {
+        unmount();
+      }
+    }
+  );
+
+  test("resends each user message by its original ID without changing the draft", () => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat();
+    const first = store.addMessage({
+      chatId: chat.id,
+      role: "user",
+      content: "First request",
+    });
+    store.addMessage({ chatId: chat.id, role: "assistant", content: "First answer" });
+    const second = store.addMessage({
+      chatId: chat.id,
+      role: "user",
+      content: "Second request",
+    });
+    store.setDraft(chat.id, { text: "Unsent next question" });
+    const onResend = vi.fn();
+    const { container, render, unmount } = renderIntoContainer(
+      <AgentChat onResend={onResend} />
+    );
+    render();
+    try {
+      const resendButtons = container.querySelectorAll<HTMLButtonElement>(
+        'button[aria-label="agent.resend-message"]'
+      );
+      expect(resendButtons).toHaveLength(2);
+      expect(resendButtons[0].querySelector(".lucide-repeat-2")).not.toBeNull();
+      act(() => resendButtons[0].click());
+      act(() => resendButtons[1].click());
+      expect(onResend.mock.calls).toEqual([[first?.id], [second?.id]]);
+      expect(store.getDraft(chat.id)).toEqual({ text: "Unsent next question" });
+      expect(store.getMessages(chat.id)).toHaveLength(3);
+    } finally {
+      unmount();
+    }
+  });
+
+  test.each(["running", "awaiting_user", "queued"] as const)(
+    "disables user-message resend while the chat is %s",
+    (state) => {
+      const store = useAgentStore.getState();
+      const chat = store.ensureCurrentChat();
+      store.addMessage({ chatId: chat.id, role: "user", content: "Original request" });
+      if (state === "running") store.startChatRun(chat.id);
+      if (state === "awaiting_user") {
+        store.awaitUser(chat.id, { toolCallId: "question", kind: "input", prompt: "Which database?" });
+      }
+      if (state === "queued") {
+        store.queueUserMessage({ chatId: chat.id, text: "Queued request", page: { path: "/demo", title: "Demo" } });
+      }
+      const onResend = vi.fn();
+      const { container, render, unmount } = renderIntoContainer(
+        <AgentChat onResend={onResend} />
+      );
+      render();
+      try {
+        const resend = container.querySelector<HTMLButtonElement>(
+          'button[aria-label="agent.resend-message"]'
+        );
+        expect(resend).not.toBeNull();
+        expect(resend).toBeDisabled();
+        act(() => resend?.click());
+        expect(onResend).not.toHaveBeenCalled();
+      } finally {
+        unmount();
+      }
+    }
+  );
+
+  test("hides resend and follow-up actions in archived transcripts while keeping Copy", async () => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat();
+    store.addMessage({ chatId: chat.id, role: "user", content: "Original request" });
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "An answer",
+      metadata: { actions: [{ kind: "continue", prompt: "What is the impact?" }] },
+    });
+    store.setDraft(chat.id, { text: "Unsent draft" });
+    store.archiveChat(chat.id);
+    const onResend = vi.fn();
+    const onContinueAction = vi.fn();
+    const { container, render, unmount } = renderIntoContainer(
+      <AgentChat onResend={onResend} onContinueAction={onContinueAction} />
+    );
+    render();
+    try {
+      expect(container.textContent).toContain("Original request");
+      expect(container.textContent).toContain("An answer");
+      expect(
+        container.querySelector('[aria-label="agent.resend-message"]')
+      ).toBeNull();
+      expect(container.querySelector("[data-agent-follow-up]")).toBeNull();
+      const copy = container.querySelector<HTMLButtonElement>(
+        '[aria-label="common.copy"]'
+      );
+      expect(copy).not.toBeNull();
+      expect(copy).not.toBeDisabled();
+      await act(async () => copy?.click());
+      expect(mocks.writeTextToClipboard).toHaveBeenCalledWith("Original request");
+      expect(store.getDraft(chat.id).text).toBe("Unsent draft");
+      expect(onResend).not.toHaveBeenCalled();
+      expect(onContinueAction).not.toHaveBeenCalled();
+
+      act(() => store.unarchiveChat(chat.id));
+      expect(
+        container.querySelector('[aria-label="agent.resend-message"]')
+      ).not.toBeNull();
+      expect(container.querySelector("[data-agent-follow-up]")).not.toBeNull();
+    } finally {
+      unmount();
+    }
+  });
+
+  test.each<{
+    name: string;
+    metadata: AgentMessageMetadata;
+    selector: string;
+  }>([
+    {
+      name: "navigation handoff",
+      metadata: {
+        handoff: { kind: "review-project-issues", project: "projects/sample" },
+      },
+      selector: "[data-agent-handoff]",
+    },
+    {
+      name: "setup handoff",
+      metadata: {
+        actions: [{
+          kind: "open",
+          target: { kind: "transfer-project-databases", project: "projects/sample" },
+        }],
+      },
+      selector: "[data-agent-action-open]",
+    },
+    {
+      name: "plan draft",
+      metadata: {
+        actions: [{
+          kind: "draft-plan",
+          project: "projects/sample",
+          database: "instances/prod/databases/app",
+        }],
+      },
+      selector: "[data-agent-action-draft-plan]",
+    },
+    {
+      name: "issue comment draft",
+      metadata: {
+        actions: [{
+          kind: "draft-issue-comment",
+          issue: "projects/sample/issues/7",
+          comment: "Review this change.",
+        }],
+      },
+      selector: "[data-agent-action-draft-issue-comment]",
+    },
+    {
+      name: "access request draft",
+      metadata: {
+        accessRequestDraft: {
+          project: "projects/sample",
+          sourceDatabase: "instances/prod/databases/app",
+          targets: ["instances/prod/databases/app"],
+          statement: "SELECT * FROM orders",
+        },
+      },
+      selector: "[data-agent-action-request-access]",
+    },
+  ])("hides the $name action when its transcript is archived", ({ metadata, selector }) => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/sample" });
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "Review the answer.",
+      metadata,
+    });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+    try {
+      expect(container.querySelector(selector)).not.toBeNull();
+      act(() => store.archiveChat(chat.id));
+      expect(container.querySelector(selector)).toBeNull();
+      expect(container.textContent).toContain("Review the answer.");
+      act(() => store.unarchiveChat(chat.id));
+      expect(container.querySelector(selector)).not.toBeNull();
+    } finally {
+      unmount();
+    }
+  });
+
+  test("hides archived expression apply actions without removing evidence links", () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/sample" });
+    const unregister = registerAgentExpressionTarget(
+      chat.id,
+      vi.fn(async () => true)
+    );
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: 'Use this condition.\n```cel\nresource.environment == "prod"\n```',
+      metadata: {
+        evidence: {
+          project: "projects/sample",
+          references: [{
+            kind: "issue",
+            name: "projects/sample/issues/7",
+            title: "Review changes",
+          }],
+        },
+      },
+    });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+    try {
+      expect(
+        container.querySelector("[data-agent-expression-draft]")
+      ).not.toBeNull();
+      act(() => store.archiveChat(chat.id));
+      expect(container.querySelector("[data-agent-expression-draft]")).toBeNull();
+      expect(container.querySelector("code")?.textContent).toContain(
+        'resource.environment == "prod"'
+      );
+      const evidenceTrigger = Array.from(container.querySelectorAll("button")).find(
+        (button) => button.textContent === "agent.evidence.references"
+      );
+      act(() => evidenceTrigger?.click());
+      expect(container.querySelector("a")?.textContent).toBe("Review changes");
+    } finally {
+      unmount();
+      unregister();
+    }
+  });
+
+  test("offers Retry in the current failed turn's error banner", () => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat();
+    store.addMessage({ chatId: chat.id, role: "user", content: "Count databases" });
+    store.finishChatRun(chat.id, { status: "error", lastError: "Connection failed" });
+    const onRetry = vi.fn();
+    const { container, render, unmount } = renderIntoContainer(
+      <AgentChat onRetry={onRetry} />
+    );
+    render();
+    try {
+      const retry = container.querySelector<HTMLButtonElement>(
+        '[role="alert"] [data-agent-retry]'
+      );
+      expect(retry?.textContent).toBe("agent.retry-last-chat-turn");
+      expect(retry?.querySelector(".lucide-rotate-ccw")).not.toBeNull();
+      act(() => retry?.click());
+      expect(onRetry).toHaveBeenCalledOnce();
+    } finally {
+      unmount();
+    }
+  });
+
+  test.each(["no user", "idle", "running", "awaiting_user", "archived", "queued"] as const)(
+    "does not offer error Retry for %s",
+    (state) => {
+      const store = useAgentStore.getState();
+      const chat = store.ensureCurrentChat();
+      if (state !== "no user") {
+        store.addMessage({ chatId: chat.id, role: "user", content: "Count databases" });
+      }
+      store.finishChatRun(chat.id, { status: "error", lastError: "Connection failed" });
+      if (state === "idle" || state === "running" || state === "awaiting_user") {
+        store.setChatStatus(chat.id, state, { lastError: "Connection failed" });
+      }
+      if (state === "archived") store.archiveChat(chat.id);
+      if (state === "queued") {
+        useAgentStore.setState({ queuedUserMessagesByChatId: {
+          [chat.id]: { id: "queued-message", chatId: chat.id, text: "Queued request", page: { path: "/demo", title: "Demo" } },
+        } });
+      }
+      const onRetry = vi.fn();
+      const { container, render, unmount } = renderIntoContainer(
+        <AgentChat onRetry={onRetry} />
+      );
+      render();
+      try {
+        expect(container.querySelector('[role="alert"] [data-agent-retry]')).toBeNull();
+        expect(onRetry).not.toHaveBeenCalled();
+      } finally {
+        unmount();
+      }
+    }
+  );
+
+  test("renders the runtime semantic-type action without opening or writing automatically", () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "workspaces/demo", workspaceName: "workspaces/demo" });
+    mocks.getSemanticTypeDraft.mockReturnValue({ id: "new-type", title: "Same title", description: "Synthetic mask", algorithm: { kind: "full-mask", substitution: "hidden" } });
+    store.addMessage({ chatId: chat.id, role: "assistant", content: "Review the semantic type.", metadata: { actions: acceptAgentResponseActions(undefined, [], undefined, [], [], ["semantic-1"]) } });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+    expect(container.querySelector<HTMLButtonElement>("[data-agent-action-draft-semantic-type]")?.disabled).toBe(false);
+    expect(container.textContent).toContain("agent.semantic-type-draft.open");
+    expect(container.textContent).toContain("Same title");
+    expect(mocks.routerPush).not.toHaveBeenCalled();
+    unmount();
+  });
+
+  test("renders a prepared exemption as a member-clicked prefill action, not only navigation", () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({context:"projects/sample",workspaceName:"workspaces/demo"});
+    mocks.getMaskingExemptionDraft.mockReturnValue({project:"projects/sample",scope:{kind:"database",database:"instances/primary/databases/app"},members:["user:member@example.com"],condition:'resource.column_name == "email"',description:"Temporary access",expirationTimestamp:null});
+    store.addMessage({chatId:chat.id,role:"assistant",content:"Review the new exemption draft.",metadata:{actions:acceptAgentResponseActions(undefined,[],undefined,[],["exemption-1"])}});
+    const {container,render,unmount}=renderIntoContainer(<AgentChat />);
+    render();
+    const button=container.querySelector<HTMLButtonElement>("[data-agent-action-draft-masking-exemption]");
+    expect(button?.disabled).toBe(false);
+    expect(button?.textContent).toContain("agent.masking-exemption-draft.open");
+    expect(container.textContent).toContain("user:member@example.com");
+    expect(mocks.routerPush).not.toHaveBeenCalled();
+    expect(mocks.revalidateMaskingExemptionDraft).not.toHaveBeenCalled();
+    expect(mocks.consumeMaskingExemptionDraft).not.toHaveBeenCalled();
+    unmount();
+  });
+
+  test("renders an actionable prepared masking draft when the model omits its action", () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "workspaces/demo", workspaceName: "workspaces/demo" });
+    const actions = acceptAgentResponseActions(undefined, [], undefined, ["runtime-draft"]);
+    const draft = {
+      title: "Mask email columns",
+      condition: 'resource.column_name == "email"',
+      semanticType: "bb.default",
+      scope: { kind: "workspace" },
+    };
+    mocks.getMaskingRuleDraft.mockReturnValue(draft);
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "Review the prepared masking rule draft.",
+      metadata: { actions },
+    });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+    const button = container.querySelector<HTMLButtonElement>("[data-agent-action-draft-masking-rule]");
+    expect(button?.textContent).toContain("agent.masking-rule-draft.open");
+    expect(button?.disabled).toBe(false);
+    expect(container.querySelector("code")?.textContent).toBe(draft.condition);
+    expect(container.textContent).toContain("agent.masking-rule-draft.unsaved");
+    expect(mocks.getMaskingRuleDraft).toHaveBeenCalledWith("runtime-draft", {
+      workspaceName: "workspaces/demo", userName: "users/member@example.com", chatId: chat.id,
+    });
+    expect(mocks.routerPush).not.toHaveBeenCalled();
+    expect(mocks.revalidateMaskingRuleDraft).not.toHaveBeenCalled();
+    expect(mocks.consumeMaskingRuleDraft).not.toHaveBeenCalled();
+    unmount();
+  });
+
   test("offers member-clicked apply actions for one CEL draft in its source editor", async () => {
     const store = useAgentStore.getState();
     const chat = store.createChat({ context: "projects/sample" });
@@ -264,6 +770,7 @@ describe("AgentChat", () => {
       role: "assistant",
       content: 'This matches production.\n```cel\nresource.environment == "prod"\n```',
     });
+    useAgentStore.setState({ visible: true, minimized: false });
     const { container, render, unmount } = renderIntoContainer(<AgentChat />);
     render();
 
@@ -273,6 +780,21 @@ describe("AgentChat", () => {
     expect(selectorButton?.textContent).toContain(
       "cel.agent-help.apply-selector"
     );
+    expectCompactPrimaryAction(
+      selectorButton,
+      "cel.agent-help.apply-selector",
+      "file-pen-line"
+    );
+    expectCompactPrimaryAction(
+      container.querySelector('[data-agent-expression-draft="raw"]'),
+      "cel.agent-help.apply-raw",
+      "file-pen-line"
+    );
+    expect(selectorButton?.parentElement).toHaveClass("-ml-2", "gap-2");
+    expect(selectorButton).not.toHaveClass("-ml-2");
+    expect(
+      container.querySelector('[data-agent-expression-draft="raw"]')
+    ).not.toHaveClass("-ml-2");
     expect(
       container.querySelector('[data-agent-expression-draft="raw"]')
     ).not.toBeNull();
@@ -284,6 +806,14 @@ describe("AgentChat", () => {
       "selector"
     );
     expect(selectorButton?.disabled).toBe(true);
+    expect(useAgentStore.getState().minimized).toBe(true);
+    expect(useAgentStore.getState().currentChatId).toBe(chat.id);
+    expect(store.getMessages(chat.id)).toHaveLength(1);
+    expectCompactPrimaryAction(
+      selectorButton,
+      "cel.agent-help.applied-selector",
+      "check"
+    );
     act(() => unregister());
     expect(
       container.querySelector('[data-agent-expression-draft="selector"]')
@@ -305,6 +835,38 @@ describe("AgentChat", () => {
     unmount();
   });
 
+  test("keeps the newly selected chat open when expression application finishes", async () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/sample" });
+    let finishApply!: (result: boolean) => void;
+    const unregister = registerAgentExpressionTarget(
+      chat.id,
+      () => new Promise((resolve) => { finishApply = resolve; })
+    );
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: '```cel\nresource.environment == "prod"\n```',
+    });
+    useAgentStore.setState({ visible: true, minimized: false });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[data-agent-expression-draft="selector"]')?.click();
+    });
+    expect(finishApply).toBeDefined();
+    let selectedChatId!: string;
+    await act(async () => {
+      selectedChatId = store.createChat({ context: "projects/another" }).id;
+      finishApply(true);
+    });
+    expect(useAgentStore.getState().minimized).toBe(false);
+    expect(useAgentStore.getState().currentChatId).toBe(selectedChatId);
+    expect(store.getMessages(chat.id)).toHaveLength(1);
+    act(() => unregister());
+    unmount();
+  });
+
   test("keeps a rejected selector draft available for a raw CEL retry", async () => {
     const store = useAgentStore.getState();
     const chat = store.createChat({ context: "projects/sample" });
@@ -318,6 +880,7 @@ describe("AgentChat", () => {
       role: "assistant",
       content: `\`\`\`cel\n${expression}\n\`\`\``,
     });
+    useAgentStore.setState({ visible: true, minimized: false });
     const { container, render, unmount } = renderIntoContainer(<AgentChat />);
     render();
     const selectorButton = container.querySelector<HTMLButtonElement>(
@@ -331,6 +894,7 @@ describe("AgentChat", () => {
 
     expect(apply).toHaveBeenNthCalledWith(1, expression, "selector");
     expect(selectorButton?.disabled).toBe(false);
+    expect(useAgentStore.getState().minimized).toBe(false);
     expect(rawButton?.disabled).toBe(false);
     expect(container.querySelector('[role="alert"]')?.textContent).toBe(
       "cel.agent-help.invalid"
@@ -342,7 +906,9 @@ describe("AgentChat", () => {
 
     expect(apply).toHaveBeenNthCalledWith(2, expression, "raw");
     expect(rawButton?.textContent).toBe("cel.agent-help.applied-raw");
+    expectCompactPrimaryAction(rawButton, "cel.agent-help.applied-raw", "check");
     expect(rawButton?.disabled).toBe(true);
+    expect(useAgentStore.getState().minimized).toBe(true);
     expect(selectorButton?.disabled).toBe(true);
     expect(container.querySelector('[role="alert"]')).toBeNull();
     expect(container.textContent).not.toContain("cel.agent-help.applied-selector");
@@ -382,6 +948,8 @@ describe("AgentChat", () => {
       "[data-agent-action-request-access]"
     );
     expect(button?.textContent).toContain("agent.access-grant-draft.open");
+    expectCompactPrimaryAction(button, "agent.access-grant-draft.open");
+    expect(button).toHaveClass("-ml-2");
     expect(mocks.prepareAgentDeniedQueryRequestRoute).not.toHaveBeenCalled();
     await act(async () => button?.click());
     expect(mocks.prepareAgentDeniedQueryRequestRoute).toHaveBeenCalledWith(draft);
@@ -521,6 +1089,8 @@ describe("AgentChat", () => {
       "[data-agent-action-draft-issue-comment]"
     );
     expect(button?.textContent).toContain("agent.issue-comment-draft.open");
+    expectCompactPrimaryAction(button, "agent.issue-comment-draft.open");
+    expect(button).toHaveClass("-ml-2");
     await act(async () => button?.click());
     expect(mocks.prepareIssueCommentDraftRoute).toHaveBeenCalledWith(
       action.issue,
@@ -650,7 +1220,8 @@ describe("AgentChat", () => {
       "[data-agent-action-draft-plan]"
     );
     expect(button?.textContent).toContain("agent.plan-draft.open");
-    expect(button).toHaveClass("max-w-full", "whitespace-normal");
+    expectCompactPrimaryAction(button, "agent.plan-draft.open");
+    expect(button).toHaveClass("-ml-2");
     expect(button?.parentElement).toHaveClass("max-w-full");
     expect(mocks.prepareAgentPlanDraftRoute).not.toHaveBeenCalled();
     await act(async () => button?.click());
@@ -683,7 +1254,11 @@ describe("AgentChat", () => {
       name: PROJECT_V1_ROUTE_PLAN_DETAIL,
       params: { projectId: "sample", planId: "create" },
     };
-    mocks.applyPlanDraftToCurrent.mockReturnValue(true);
+    let reportApplied!: () => void;
+    mocks.applyPlanDraftToCurrent.mockImplementation((request) => {
+      reportApplied = request.onApplied;
+      return true;
+    });
     useAgentStore.setState({ visible: true, minimized: false });
     const { container, render, unmount } = renderIntoContainer(<AgentChat />);
     render();
@@ -692,16 +1267,58 @@ describe("AgentChat", () => {
       "[data-agent-action-draft-plan]"
     );
     expect(button?.textContent).toContain("agent.plan-draft.apply-to-current-plan");
+    expectCompactPrimaryAction(
+      button,
+      "agent.plan-draft.apply-to-current-plan",
+      "file-pen-line"
+    );
     await act(async () => button?.click());
 
     expect(mocks.applyPlanDraftToCurrent).toHaveBeenCalledWith({
       project: action.project,
       database: action.database,
       sql: "CREATE TABLE notes (id INT);",
+      onApplied: expect.any(Function),
     });
     expect(mocks.prepareAgentPlanDraftRoute).not.toHaveBeenCalled();
     expect(mocks.routerPush).not.toHaveBeenCalled();
     expect(useAgentStore.getState().minimized).toBe(false);
+    act(() => reportApplied());
+    expect(useAgentStore.getState().minimized).toBe(true);
+    unmount();
+  });
+
+  test.each([false, true])("keeps the Agent open before SQL is applied (handled=%s)", async (handled) => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/sample" });
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "```sql\nCREATE TABLE notes (id INT);\n```",
+      metadata: { actions: [{
+        kind: "draft-plan", project: "projects/sample", database: "instances/prod/databases/app",
+      }] },
+    });
+    mocks.currentRoute = {
+      name: PROJECT_V1_ROUTE_PLAN_DETAIL,
+      params: { projectId: "sample", planId: "create" },
+    };
+    mocks.applyPlanDraftToCurrent.mockReturnValue(handled);
+    useAgentStore.setState({ visible: true, minimized: false });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>("[data-agent-action-draft-plan]")?.click();
+    });
+    expect(mocks.applyPlanDraftToCurrent).toHaveBeenCalledOnce();
+    expect(useAgentStore.getState().minimized).toBe(false);
+    if (!handled) {
+      expect(mocks.notify).toHaveBeenCalledWith(expect.objectContaining({
+        title: "agent.plan-draft.current-plan-unavailable",
+      }));
+    } else {
+      expect(mocks.notify).not.toHaveBeenCalled();
+    }
     unmount();
   });
 
@@ -1077,8 +1694,142 @@ describe("AgentChat", () => {
     render();
     const link = container.querySelector<HTMLAnchorElement>("[data-agent-handoff]");
     expect(link?.textContent).toContain("agent.handoff.review-database-changes");
+    expectCompactPrimaryAction(link, "agent.handoff.review-database-changes");
+    expect(link).toHaveClass("-ml-2");
     expect(link?.getAttribute("href")).toContain(PROJECT_V1_ROUTE_ISSUES);
     expect(mocks.routerPush).not.toHaveBeenCalled();
+    unmount();
+  });
+
+  test.each(["success", "blocked", "error", "chat switch"] as const)(
+    "minimizes a primary Open only after verified navigation: %s",
+    async (outcome) => {
+      const store = useAgentStore.getState();
+      const chat = store.createChat({ context: "projects/sample" });
+      store.addMessage({
+        chatId: chat.id,
+        role: "assistant",
+        content: "Review the current change queue.",
+        metadata: { handoff: { kind: "review-database-changes", project: "projects/sample" } },
+      });
+      let finishNavigation!: () => void;
+      mocks.routerPush.mockImplementation(async (to) => {
+        await new Promise<void>((resolve) => { finishNavigation = resolve; });
+        if (outcome === "error") throw new Error("Navigation failed");
+        if (outcome !== "blocked") mocks.currentPath = JSON.stringify(to);
+      });
+      useAgentStore.setState({ visible: true, minimized: false });
+      const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+      render();
+      await act(async () => container.querySelector<HTMLAnchorElement>("[data-agent-handoff]")?.click());
+      expect(useAgentStore.getState().minimized).toBe(false);
+      expect(finishNavigation).toBeDefined();
+      await act(async () => {
+        if (outcome === "chat switch") store.createChat({ context: "projects/another" });
+        finishNavigation();
+      });
+      expect(useAgentStore.getState().minimized).toBe(outcome === "success");
+      expect(store.getMessages(chat.id)).toHaveLength(1);
+      unmount();
+    }
+  );
+
+  test.each<{
+    handoff: AgentHandoff;
+    targetPath: string;
+    resultingPath: string;
+    arrived: boolean;
+  }>([
+    {
+      handoff: { kind: "review-issue-plan", plan: "projects/sample/plans/9" },
+      targetPath: "/projects/sample/plans/9?phase=review",
+      resultingPath: "/projects/sample/plans/9?phase=rollout",
+      arrived: false,
+    },
+    {
+      handoff: { kind: "review-issue-plan", plan: "projects/sample/plans/9" },
+      targetPath: "/projects/sample/plans/9?phase=review",
+      resultingPath: "/projects/sample/plans/9",
+      arrived: false,
+    },
+    {
+      handoff: { kind: "review-issue-plan", plan: "projects/sample/plans/9" },
+      targetPath: "/projects/sample/plans/9?phase=review",
+      resultingPath: "/projects/sample/plans/9?phase=review&phase=rollout",
+      arrived: false,
+    },
+    {
+      handoff: { kind: "open-database-catalog", project: "projects/sample", database: "instances/prod/databases/app" },
+      targetPath: "/projects/sample/databases/app?parent=instances%2Fprod#catalog",
+      resultingPath: "/projects/sample/databases/app?parent=instances%2Fprod#overview",
+      arrived: false,
+    },
+    {
+      handoff: { kind: "open-database-catalog", project: "projects/sample", database: "instances/prod/databases/app" },
+      targetPath: "/projects/sample/databases/app?parent=instances%2Fprod#catalog",
+      resultingPath: "/projects/sample/databases/app?parent=instances%2Fother#catalog",
+      arrived: false,
+    },
+    {
+      handoff: { kind: "review-issue-plan", plan: "projects/sample/plans/9" },
+      targetPath: "/projects/sample/plans/9?phase=review",
+      resultingPath: "/projects/sample/plans/9?view=list&phase=review",
+      arrived: true,
+    },
+    {
+      handoff: { kind: "open-global-masking" },
+      targetPath: "/settings/global-masking",
+      resultingPath: "/settings/global-masking?view=rules",
+      arrived: true,
+    },
+    {
+      handoff: { kind: "open-database-catalog", project: "projects/sample", database: "instances/prod/databases/app" },
+      targetPath: "/projects/sample/databases/app?parent=instances%2Fprod#catalog",
+      resultingPath: "/projects/sample/databases/app?schema=public&parent=instances%2Fprod#catalog",
+      arrived: true,
+    },
+  ])("requires the primary Open destination state: $resultingPath", async ({ handoff, targetPath, resultingPath, arrived }) => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/sample" });
+    store.addMessage({ chatId: chat.id, role: "assistant", content: "Open the relevant page.", metadata: { handoff } });
+    mocks.resolvedPath = targetPath;
+    mocks.currentPath = arrived ? "/initial" : resultingPath;
+    mocks.routerPush.mockImplementation(async () => {
+      if (arrived) mocks.currentPath = resultingPath;
+    });
+    useAgentStore.setState({ visible: true, minimized: false });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+    await act(async () => container.querySelector<HTMLAnchorElement>("[data-agent-handoff]")?.click());
+    expect(mocks.routerPush).toHaveBeenCalledOnce();
+    expect(useAgentStore.getState().minimized).toBe(arrived);
+    unmount();
+  });
+
+  test.each([
+    { ctrlKey: true }, { metaKey: true }, { shiftKey: true }, { altKey: true }, { button: 1 },
+  ])("preserves native modified primary Open clicks: %j", (init) => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/sample" });
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "Review the current change queue.",
+      metadata: { handoff: { kind: "review-database-changes", project: "projects/sample" } },
+    });
+    useAgentStore.setState({ visible: true, minimized: false });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+    let nativeNavigationAllowed = false;
+    container.addEventListener("click", (click) => {
+      nativeNavigationAllowed = !click.defaultPrevented;
+      click.preventDefault();
+    });
+    const event = new MouseEvent("click", { bubbles: true, cancelable: true, ...init });
+    act(() => { container.querySelector<HTMLAnchorElement>("[data-agent-handoff]")?.dispatchEvent(event); });
+    expect(nativeNavigationAllowed).toBe(true);
+    expect(mocks.routerPush).not.toHaveBeenCalled();
+    expect(useAgentStore.getState().minimized).toBe(false);
     unmount();
   });
 
@@ -1125,6 +1876,8 @@ describe("AgentChat", () => {
     const button = container.querySelector<HTMLButtonElement>(
       "button[data-agent-handoff]"
     );
+    expectCompactPrimaryAction(button, button?.textContent ?? "");
+    expect(button).toHaveClass("-ml-2");
     await act(async () => button?.click());
 
     expect(button).not.toBeNull();

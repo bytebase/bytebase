@@ -14,10 +14,17 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 vi.mock("@/components/ui/button", () => ({
-  Button: ({ children, size, ...props }: ButtonHTMLAttributes<HTMLButtonElement> & {
+  Button: ({ children, size, appearance, variant, ...props }: ButtonHTMLAttributes<HTMLButtonElement> & {
     size?: string;
+    appearance?: string;
+    variant?: string;
   }) => (
-    <button {...props} data-button-size={size}>
+    <button
+      {...props}
+      data-button-size={size}
+      data-button-appearance={appearance}
+      data-button-variant={variant}
+    >
       {children}
     </button>
   ),
@@ -57,7 +64,9 @@ test("opens the Agent with this Issue as the selected resource for review", () =
     name: "agent.issue-assistance.review",
   });
   expect(reviewButton).toHaveAttribute("data-button-size", "md");
-  expect(reviewButton.querySelector("svg")).toBeNull();
+  expect(reviewButton).toHaveAttribute("data-button-appearance", "ghost");
+  expect(reviewButton.querySelector(".lucide-bot")).not.toBeNull();
+  expect(reviewButton).not.toHaveClass("whitespace-normal", "h-auto");
   expect(reviewButton.parentElement).toHaveClass(
     "w-full",
     "flex-wrap",

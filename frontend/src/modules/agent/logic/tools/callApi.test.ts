@@ -89,6 +89,68 @@ describe("callApi", () => {
     expect(mocks.fetch).not.toHaveBeenCalled();
   });
 
+  test.each(["SQLService/Query", "bytebase.v1.SQLService.Query"])(
+    "defaults %s to 100 rows without rewriting SQL or mutating arguments",
+    (operationId) => {
+      const body = {
+        name: "instances/example/databases/app",
+        statement: "SELECT * FROM accounts",
+      };
+
+      const result = prepareApiCall({ operationId, body });
+
+      expect(result).toEqual({
+        kind: "prepared",
+        call: {
+          operationId: "bytebase.v1.SQLService.Query",
+          path: "/bytebase.v1.SQLService/Query",
+          body: JSON.stringify({ ...body, limit: 100 }),
+        },
+      });
+      expect(body).not.toHaveProperty("limit");
+      expect(mocks.fetch).not.toHaveBeenCalled();
+    }
+  );
+
+  test.each([
+    { limit: undefined, expected: 100 },
+    { limit: null, expected: 100 },
+    { limit: 1, expected: 1 },
+    { limit: 250, expected: 250 },
+    { limit: 0, expected: 0 },
+  ])("prepares query limit $limit as $expected", ({ limit, expected }) => {
+    const result = prepareApiCall({
+      operationId: "SQLService/Query",
+      body: { statement: "SELECT * FROM accounts LIMIT 5", limit },
+    });
+
+    expect(result.kind).toBe("prepared");
+    if (result.kind !== "prepared") return;
+    expect(JSON.parse(result.call.body)).toEqual({
+      statement: "SELECT * FROM accounts LIMIT 5",
+      limit: expected,
+    });
+  });
+
+  test.each(["AdminExecute", "Export"])(
+    "does not add a query limit to SQLService/%s",
+    (method) => {
+      mocks.getEndpointPath.mockReturnValue(
+        `/bytebase.v1.SQLService/${method}`
+      );
+      const body = { statement: "SELECT * FROM accounts" };
+
+      const result = prepareApiCall({
+        operationId: `SQLService/${method}`,
+        body,
+      });
+
+      expect(result.kind).toBe("prepared");
+      if (result.kind !== "prepared") return;
+      expect(JSON.parse(result.call.body)).toEqual(body);
+    }
+  );
+
   test("dispatches the prepared payload without resolving the operation again", async () => {
     mocks.getEndpointPath.mockReturnValue(
       "/bytebase.v1.ProjectService/UpdateProject"
@@ -188,7 +250,7 @@ describe("callApi", () => {
           "Content-Type": "application/json",
           "Connect-Protocol-Version": "1",
         },
-        body: JSON.stringify({ statement: "SELECT 1" }),
+        body: JSON.stringify({ statement: "SELECT 1", limit: 100 }),
       })
     );
   });

@@ -717,7 +717,7 @@ describe("DatabaseCatalogPanel", () => {
     render();
     await flush();
 
-    const helpButton = getButton(container, "agent.masking.ask-agent");
+    const helpButton = getButton(container, "agent.masking.ask-agent-short");
     const searchInput = container.querySelector<HTMLInputElement>(
       'input[placeholder="common.search"]'
     );

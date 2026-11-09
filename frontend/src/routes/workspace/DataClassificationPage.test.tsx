@@ -47,7 +47,7 @@ vi.mock("@/components/FeatureAttention", () => ({
 }));
 vi.mock("@/modules/agent/components/AgentPageHelpButton", () => ({
   AgentPageHelpButton: () => (
-    <button type="button">Ask Agent about masking</button>
+    <button type="button">Ask Agent</button>
   ),
 }));
 vi.mock("@bufbuild/protobuf", () => ({
@@ -85,7 +85,7 @@ describe("DataClassificationPage", () => {
   it("lets the toolbar actions wrap within the available width", async () => {
     render(<DataClassificationPage />);
     const helpButton = await screen.findByRole("button", {
-      name: "Ask Agent about masking",
+      name: "Ask Agent",
     });
     const group = helpButton.parentElement;
 

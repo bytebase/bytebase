@@ -43,12 +43,13 @@
     "api-permission-title": "Request permission",
     "archive-all-chats": "Archive all chats",
     "archive-chat": "Archive chat",
+    "archive-chat-confirmation": "Archive this chat?",
     "archived-only-chats": "View archived chats",
     "args": "Args",
     "assistant-title": "AI Assistant",
     "cancel": "Cancel",
     "cancel-request": "Cancel request",
-    "chat-archived-label": "Archived",
+    "chat-archived-notice": "This chat is archived.",
     "chat-default-title": "New Chat",
     "chat-list-label": "Chats",
     "chat-total-tokens": "Chat tokens: {{count}}",
@@ -60,7 +61,7 @@
     "context-workspace": "Workspace",
     "contextual-start": {
       "active-request": "Finish the active request before starting another chat.",
-      "continue-chat": "Continue current chat",
+      "continue-chat": "Continue last chat",
       "database-heading": "Ask about this database",
       "database-recent": "What changed recently in this database?",
       "database-schema": "What tables are in this database?",
@@ -92,6 +93,9 @@
       "masking-global-effect": "What will a developer see for values covered by this Inner Mask rule?",
       "masking-global-exemptions": "Could an exemption reveal the original value?",
       "masking-global-heading": "Ask about data masking",
+      "masking-rule-configure": "Help me configure this rule.",
+      "masking-rule-effect": "Explain the masking effect of this rule.",
+      "masking-rule-review": "Review this rule.",
       "masking-semantic-algorithm": "What does this masking algorithm preserve?",
       "masking-semantic-heading": "Ask about semantic types",
       "masking-semantic-rules": "Which masking rules use this semantic type?",
@@ -175,12 +179,60 @@
       "workspace-setup-first": "What should I set up first?"
     },
     "masking": {
-      "ask-agent": "Ask Agent about masking"
+      "ask-agent-short": "Ask Agent",
+      "exemption-scope": {
+        "another-database": "Another database",
+        "only-database": "Only {{database}}",
+        "project": "All databases in this project",
+        "question": "Which databases should this exemption cover?"
+      },
+      "rule-scope": {
+        "choose-project": "Choose a project",
+        "question": "Which databases should this masking rule cover?",
+        "workspace": "All workspace databases"
+      },
+      "semantic-type-choice": {
+        "create": "Create a custom masking type…",
+        "create-description": "Prepare a new semantic type with your masking settings.",
+        "question": "Which semantic type should mask these columns?"
+      }
+    },
+    "masking-exemption-draft": {
+      "applied": "Applied to draft",
+      "apply": "Apply to draft",
+      "inactive": "This draft is no longer available. Check the current exemptions before preparing another draft.",
+      "open": "Open exemption draft",
+      "opened": "Opened exemption draft",
+      "unavailable": "Couldn't apply this draft. The editor, permissions, or configuration may have changed. Review the current form and ask Agent to prepare it again.",
+      "unsaved": "Only fills the unsaved form. Review it before selecting Grant Exemption."
+    },
+    "masking-rule-draft": {
+      "all-databases": "All workspace databases",
+      "applied": "Applied to draft",
+      "apply": "Apply to draft",
+      "help-prompt": "First read the current unsaved rule with get_masking_rule_draft. Use its actual fields, not an earlier proposal. Ask only for missing details. Do not save settings.",
+      "inactive": "This draft is no longer available. Check the current masking rules before preparing another draft.",
+      "open": "Open rule draft",
+      "opened": "Opened rule draft",
+      "queue": {
+        "created": "Created",
+        "editing": "Editing",
+        "needs-recheck": "Masking rules or semantic types changed. Recheck drafts before continuing.",
+        "pending": "Pending",
+        "recheck": "Recheck drafts",
+        "review": "Review",
+        "title": "Rule drafts"
+      },
+      "review-many": "Review {{count}} rule drafts",
+      "scope": "Database scope",
+      "semantic-type": "Semantic type",
+      "unavailable": "Couldn't apply this draft. The editor, permissions, or configuration may have changed. Review the current form and ask Agent to prepare it again.",
+      "unsaved": "Only fills the unsaved form. Review it before selecting Create rule."
     },
     "minimize": "Minimize",
     "new-chat": "New Chat",
     "other-chats": "Other chats",
-    "pending-choose-hint": "Please select an option above",
+    "pending-choose-hint": "Select an option, then click Reply.",
     "pending-confirm-hint": "Please confirm or cancel above",
     "pending-input-hint": "Please provide input above",
     "permission": {
@@ -238,6 +290,7 @@
     "request-failed": "The assistant couldn't complete this request.",
     "request-stopped-by-user": "Request stopped by user",
     "request-stopped-retry-hint": "An action already sent may still complete. Check its status before retrying.",
+    "resend-message": "Resend message",
     "resource-picker": {
       "add-context": "Add context",
       "databases": "Databases",
@@ -262,6 +315,16 @@
     "result": "Result",
     "retry-last-chat-turn": "Retry",
     "self": "Agent",
+    "semantic-type-draft": {
+      "created": "Created",
+      "inactive": "This draft is no longer available. Check the current semantic types before preparing another draft.",
+      "open": "Open semantic type draft",
+      "opened": "Opened semantic type draft",
+      "save-failed": "Couldn't create the semantic type. Review the form and try again.",
+      "saved": "This semantic type was created. Refresh its configuration before using it in a masking rule.",
+      "unavailable": "Couldn't open this draft. The editor, permissions, or configuration may have changed. Review the current form and ask Agent to prepare it again.",
+      "unsaved": "Only fills the unsaved form. Review it before selecting Create."
+    },
     "send": "Send",
     "stop": "Stop",
     "token-usage": {
@@ -297,7 +360,7 @@
     "tool-response-submitted": "Response submitted",
     "tool-value": "Value",
     "unarchive-all-chats": "Unarchive all chats",
-    "unarchive-chat": "Unarchive chat",
+    "unarchive-chat": "Restore chat",
     "workspace-attention": {
       "checking": "Checking items needing your attention...",
       "empty": "You have no open issues needing attention.",

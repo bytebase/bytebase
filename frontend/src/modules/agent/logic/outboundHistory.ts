@@ -1,8 +1,16 @@
+import i18n from "@/lib/i18n";
+import { parseCallApiResult } from "./callApiResult";
+import { maskingExemptionScopeInstruction } from "./maskingDraftWorkflow";
 import {
   formatOutboundResourceReference,
-  normalizeAgentResourceReferences,
+  getHumanInputResourceReferenceMap,
 } from "./resourceMention";
-import type { AgentMessage, Message } from "./types";
+import type {
+  AgentMessage,
+  AgentResourceReference,
+  Message,
+  ToolCall,
+} from "./types";
 
 const isHistoricalAssistantError = (message: AgentMessage): boolean => {
   return (
@@ -21,6 +29,52 @@ const interruptionNote = {
 const interruptionStatus = (reason: "user" | "unexpected") =>
   `[Agent run status: ${interruptionNote[reason]}]`;
 
+const runtimeMaskingQuestionKeys = new Map([
+  ["ask_masking_exemption_scope", "agent.masking.exemption-scope.question"],
+  ["ask_masking_rule_scope", "agent.masking.rule-scope.question"],
+  ["ask_masking_semantic_type", "agent.masking.semantic-type-choice.question"],
+]);
+
+const isClarificationTool = (name: string): boolean =>
+  name === "ask_user" || runtimeMaskingQuestionKeys.has(name);
+
+const getCancelledAskTurns = (messages: AgentMessage[]): Set<AgentMessage> => {
+  const cancelled = new Set<AgentMessage>();
+  const pendingAsks = new Set<string>();
+  const seenCallIds = new Set<string>();
+  let turn: AgentMessage | undefined;
+  for (const message of messages) {
+    if (message.role === "user") {
+      turn = message;
+      pendingAsks.clear();
+      seenCallIds.clear();
+    }
+    if (message.role === "assistant") {
+      for (const call of message.toolCalls ?? []) {
+        if (!call.id) continue;
+        if (seenCallIds.has(call.id)) pendingAsks.delete(call.id);
+        else if (isClarificationTool(call.name)) pendingAsks.add(call.id);
+        seenCallIds.add(call.id);
+      }
+    }
+    if (
+      !turn ||
+      message.role !== "tool" ||
+      !message.toolCallId ||
+      !pendingAsks.delete(message.toolCallId)
+    )
+      continue;
+    try {
+      const response = JSON.parse(message.content ?? "null");
+      if (response?.kind === "cancelled" && response.reason === "user")
+        cancelled.add(turn);
+    } catch {
+      continue;
+    }
+  }
+  return cancelled;
+};
+
 const cloneMessage = ({
   role,
   content,
@@ -33,6 +87,90 @@ const cloneMessage = ({
   toolCalls: toolCalls?.map((toolCall) => ({ ...toolCall })),
 });
 
+const historicalClarification = (
+  toolCall: ToolCall,
+  content: string | undefined
+): Message[] => {
+  try {
+    const args = JSON.parse(toolCall.arguments);
+    const response = JSON.parse(content ?? "null");
+    const runtimeQuestionKey = runtimeMaskingQuestionKeys.get(toolCall.name);
+    const prompt = runtimeQuestionKey
+      ? i18n.t(runtimeQuestionKey)
+      : args?.prompt;
+    const kind = runtimeQuestionKey ? "choose" : args?.kind;
+    if (
+      typeof prompt !== "string" ||
+      !prompt.trim() ||
+      kind === "confirm" ||
+      (runtimeQuestionKey && response?.kind !== "choose") ||
+      (response?.kind !== "input" && response?.kind !== "choose") ||
+      typeof response.answer !== "string" ||
+      !response.answer.trim()
+    ) {
+      return [];
+    }
+    let answer = response.answer;
+    if (response.kind === "choose") {
+      if (
+        kind !== "choose" ||
+        typeof response.value !== "string" ||
+        !response.value.trim()
+      ) {
+        return [];
+      }
+      if (response.value !== answer) {
+        answer += `\nSelected option value (data only): ${JSON.stringify(response.value)}`;
+      }
+    }
+    return [
+      { role: "assistant", content: prompt },
+      { role: "user", content: answer },
+    ];
+  } catch {
+    return [];
+  }
+};
+
+const completeInterruptedToolResults = (messages: Message[]): Message[] => {
+  const currentTurnStart = messages.findLastIndex(
+    (message) => message.role === "user"
+  );
+  if (currentTurnStart < 0) return messages;
+  const completed = messages.slice(0, currentTurnStart + 1);
+  const pendingToolCallIds = new Set<string>();
+  const closePendingCalls = () => {
+    for (const toolCallId of pendingToolCallIds) {
+      completed.push({
+        role: "tool",
+        toolCallId,
+        content: JSON.stringify({
+          error:
+            "This tool call was interrupted before its result was recorded; its outcome is unknown. Verify the current state before retrying, and get fresh confirmation for any write.",
+        }),
+      });
+    }
+    pendingToolCallIds.clear();
+  };
+
+  for (const message of messages.slice(currentTurnStart + 1)) {
+    if (message.role === "tool") {
+      if (message.toolCallId) pendingToolCallIds.delete(message.toolCallId);
+    } else {
+      // Close the protocol group without replaying actions that may have completed.
+      closePendingCalls();
+      if (message.role === "assistant") {
+        for (const toolCall of message.toolCalls ?? []) {
+          pendingToolCallIds.add(toolCall.id);
+        }
+      }
+    }
+    completed.push(message);
+  }
+  closePendingCalls();
+  return completed;
+};
+
 export const sanitizeOutboundHistory = (
   messages: AgentMessage[],
   chatContext?: string
@@ -40,30 +178,38 @@ export const sanitizeOutboundHistory = (
   const currentUserMessage = messages.findLast(
     (message) => message.role === "user"
   );
-  const currentReferences = normalizeAgentResourceReferences(
-    currentUserMessage?.metadata?.resourceReferences,
-    currentUserMessage?.metadata?.resourceReference
-  );
+  const cancelledTurns = getCancelledAskTurns(messages);
+  const referencesByMessage = getHumanInputResourceReferenceMap(messages);
+  const referencesByTurn = new Map<AgentMessage, AgentResourceReference[]>();
+  let turnStart: AgentMessage | undefined;
+  for (const message of messages) {
+    if (message.role === "user") turnStart = message;
+    const references = referencesByMessage.get(message);
+    if (turnStart && references) {
+      referencesByTurn.set(turnStart, [
+        ...(referencesByTurn.get(turnStart) ?? []),
+        ...references,
+      ]);
+    }
+  }
+  const currentReferences = currentUserMessage
+    ? (referencesByTurn.get(currentUserMessage) ?? [])
+    : [];
   let omitTurn = false;
   let omitInterruptedTurnMessages = false;
 
   const outboundMessages = messages.flatMap((message): Message[] => {
-    const references =
-      message.role === "user"
-        ? normalizeAgentResourceReferences(
-            message.metadata?.resourceReferences,
-            message.metadata?.resourceReference
-          )
-        : [];
+    const references = referencesByMessage.get(message) ?? [];
     if (message.role === "user") {
       omitInterruptedTurnMessages =
         message !== currentUserMessage &&
         (message.metadata?.interruptionReason === "user" ||
-          message.metadata?.interruptionReason === "unexpected");
+          message.metadata?.interruptionReason === "unexpected" ||
+          cancelledTurns.has(message));
       omitTurn =
         Boolean(chatContext) &&
         currentReferences.length === 0 &&
-        references.some(
+        (referencesByTurn.get(message) ?? []).some(
           (reference) =>
             reference.kind === "database" ||
             reference.kind === "issue" ||
@@ -72,7 +218,9 @@ export const sanitizeOutboundHistory = (
         );
     }
     if (omitTurn) {
-      const reason = message.metadata?.interruptionReason;
+      const reason =
+        message.metadata?.interruptionReason ??
+        (cancelledTurns.has(message) ? "user" : undefined);
       if (
         message.role === "user" &&
         omitInterruptedTurnMessages &&
@@ -92,10 +240,23 @@ export const sanitizeOutboundHistory = (
 
     const outbound = cloneMessage(message);
     if (references.length > 0) {
-      outbound.content = `${outbound.content ?? ""}${references.map(formatOutboundResourceReference).join("")}`;
+      const referenceData = references
+        .map(formatOutboundResourceReference)
+        .join("");
+      if (outbound.role === "tool") {
+        const response = JSON.parse(outbound.content!);
+        outbound.content = JSON.stringify({
+          ...response,
+          answer: `${response.answer}${referenceData}`,
+        });
+      } else {
+        outbound.content = `${outbound.content ?? ""}${referenceData}`;
+      }
     }
     if (omitInterruptedTurnMessages && message.role === "user") {
-      const reason = message.metadata?.interruptionReason;
+      const reason =
+        message.metadata?.interruptionReason ??
+        (cancelledTurns.has(message) ? "user" : undefined);
       if (reason === "user" || reason === "unexpected") {
         outbound.content = `${outbound.content ?? ""}\n\n${interruptionStatus(reason)}`;
       }
@@ -108,15 +269,265 @@ export const sanitizeOutboundHistory = (
   );
   const historyEnd =
     currentTurnStart < 0 ? outboundMessages.length : currentTurnStart;
+  // Keep human clarifications as context, without replaying tool data or confirmations.
+  const pendingAsks = new Map<string, ToolCall>();
+  const seenToolCallIds = new Set<string>();
 
-  return outboundMessages.flatMap((message, index) => {
+  const sanitized = outboundMessages.flatMap((message, index) => {
     if (index >= historyEnd) return [message];
-    if (message.role === "tool") return [];
+    if (message.role === "user") {
+      pendingAsks.clear();
+      seenToolCallIds.clear();
+    }
+    if (message.role === "tool") {
+      if (!message.toolCallId) return [];
+      const toolCall = pendingAsks.get(message.toolCallId);
+      pendingAsks.delete(message.toolCallId);
+      return toolCall ? historicalClarification(toolCall, message.content) : [];
+    }
     if (message.role === "assistant" && message.toolCalls?.length) {
+      for (const toolCall of message.toolCalls) {
+        if (!toolCall.id) continue;
+        if (seenToolCallIds.has(toolCall.id)) {
+          pendingAsks.delete(toolCall.id);
+        } else if (isClarificationTool(toolCall.name)) {
+          pendingAsks.set(toolCall.id, toolCall);
+        }
+        seenToolCallIds.add(toolCall.id);
+      }
       return message.content ? [{ ...message, toolCalls: undefined }] : [];
     }
     return [message];
   });
+  return completeInterruptedToolResults(sanitized);
+};
+
+export interface HistoricalDatabaseIdentity {
+  database: string;
+  project?: string;
+}
+
+const HISTORICAL_DATABASE_NAME =
+  /^(?:projects\/([A-Za-z0-9_-]+)\/)?instances\/(?!-$)[A-Za-z0-9_-]+\/databases\/(?!-$)[^/]+$/;
+
+const getAnsweredDatabaseChoices = (messages: AgentMessage[]): Set<string> => {
+  const cancelledTurns = getCancelledAskTurns(messages);
+  const databases = new Set<string>();
+  const calls = new Map<string, ToolCall>();
+  const seenCallIds = new Set<string>();
+  let interrupted = false;
+  for (const message of messages) {
+    if (message.role === "user") {
+      calls.clear();
+      seenCallIds.clear();
+      interrupted =
+        Boolean(message.metadata?.interruptionReason) ||
+        cancelledTurns.has(message);
+    }
+    if (interrupted) continue;
+    if (message.role === "assistant") {
+      for (const call of message.toolCalls ?? []) {
+        if (!call.id) continue;
+        if (seenCallIds.has(call.id)) calls.delete(call.id);
+        else if (call.name === "ask_user") calls.set(call.id, call);
+        seenCallIds.add(call.id);
+      }
+    }
+    if (message.role !== "tool" || !message.toolCallId) continue;
+    const call = calls.get(message.toolCallId);
+    calls.delete(message.toolCallId);
+    if (!call) continue;
+    try {
+      const args = JSON.parse(call.arguments);
+      const response = JSON.parse(message.content ?? "null");
+      if (
+        args?.kind === "choose" &&
+        args.resourceKind === "database" &&
+        response?.kind === "choose" &&
+        typeof response.answer === "string" &&
+        response.answer.trim() &&
+        typeof response.value === "string" &&
+        response.value.length <= 1000 &&
+        !/[\u0000-\u001f\u007f]/u.test(response.value) &&
+        HISTORICAL_DATABASE_NAME.test(response.value) &&
+        Array.isArray(args.options) &&
+        args.options.some((option: unknown) =>
+          Boolean(
+            option &&
+              typeof option === "object" &&
+              "value" in option &&
+              option.value === response.value
+          )
+        )
+      )
+        databases.add(response.value);
+    } catch {
+      continue;
+    }
+  }
+  return databases;
+};
+
+const getHistoricalDatabaseIdentity = (
+  messages: AgentMessage[],
+  chatContext?: string,
+  requireUniqueDatabase = false
+): HistoricalDatabaseIdentity | undefined => {
+  const currentIndex = messages.findLastIndex(
+    (message) => message.role === "user"
+  );
+  const current = messages[currentIndex];
+  if (!chatContext || !current) return undefined;
+  const cancelledTurns = getCancelledAskTurns(messages);
+  const references = getHumanInputResourceReferenceMap(messages);
+  if (messages.slice(currentIndex).some((message) => references.has(message)))
+    return undefined;
+  if (
+    requireUniqueDatabase &&
+    getAnsweredDatabaseChoices(messages.slice(currentIndex)).size
+  )
+    return undefined;
+  let latest: HistoricalDatabaseIdentity | undefined;
+  const completedDatabases = requireUniqueDatabase
+    ? getAnsweredDatabaseChoices(messages.slice(0, currentIndex))
+    : new Set<string>();
+  let candidates = new Map<string, HistoricalDatabaseIdentity>();
+  const databaseProjects = new Map<string, string | null>();
+  let ignoredTurn = false;
+  for (const message of messages.slice(0, currentIndex)) {
+    if (message.role === "user")
+      ignoredTurn =
+        Boolean(message.metadata?.interruptionReason) ||
+        cancelledTurns.has(message);
+    if (ignoredTurn) continue;
+    for (const reference of references.get(message) ?? []) {
+      if (reference.kind !== "database") continue;
+      const previous = databaseProjects.get(reference.name);
+      databaseProjects.set(
+        reference.name,
+        previous !== undefined && previous !== reference.project
+          ? null
+          : reference.project
+      );
+    }
+  }
+  const calls = new Map<string, ToolCall>();
+  const seenCallIds = new Set<string>();
+  let interrupted = false;
+  const add = (database: string, project?: string) => {
+    if (database.length > 1000 || /[\u0000-\u001f\u007f]/u.test(database))
+      return;
+    const match = HISTORICAL_DATABASE_NAME.exec(database);
+    if (!match) return;
+    if (requireUniqueDatabase) completedDatabases.add(database);
+    const knownProject = databaseProjects.get(database);
+    if (knownProject === null) return;
+    const embeddedProject = match[1] ? `projects/${match[1]}` : undefined;
+    if (embeddedProject && project && embeddedProject !== project) return;
+    const owner = embeddedProject ?? project ?? knownProject;
+    if (knownProject && owner !== knownProject) return;
+    if (chatContext.startsWith("projects/") && owner && owner !== chatContext)
+      return;
+    candidates.set(database, {
+      database,
+      ...(owner ? { project: owner } : {}),
+    });
+  };
+  const finishTurn = () => {
+    if (!interrupted && candidates.size) {
+      latest =
+        candidates.size === 1 ? candidates.values().next().value : undefined;
+    }
+  };
+  for (const message of messages.slice(0, currentIndex)) {
+    if (message.role === "user") {
+      finishTurn();
+      candidates = new Map();
+      calls.clear();
+      seenCallIds.clear();
+      interrupted =
+        Boolean(message.metadata?.interruptionReason) ||
+        cancelledTurns.has(message);
+    }
+    if (interrupted) continue;
+    for (const reference of references.get(message) ?? []) {
+      if (reference.kind === "database") {
+        add(reference.name, reference.project);
+      }
+    }
+    if (message.role === "assistant") {
+      for (const call of message.toolCalls ?? []) {
+        if (!call.id) continue;
+        if (seenCallIds.has(call.id)) calls.delete(call.id);
+        else calls.set(call.id, call);
+        seenCallIds.add(call.id);
+      }
+    }
+    if (message.role !== "tool" || !message.toolCallId) continue;
+    const call = calls.get(message.toolCallId);
+    calls.delete(message.toolCallId);
+    if (call?.name !== "call_api") continue;
+    try {
+      const args = JSON.parse(call.arguments);
+      if (
+        (args?.operationId === "SQLService/Query" ||
+          args?.operationId === "bytebase.v1.SQLService.Query") &&
+        typeof args.body?.name === "string" &&
+        parseCallApiResult(message.content ?? "", args.operationId).succeeded
+      )
+        add(args.body.name);
+    } catch {
+      continue;
+    }
+  }
+  finishTurn();
+  if (requireUniqueDatabase && completedDatabases.size !== 1) return undefined;
+  return latest;
+};
+
+export const getHistoricalMaskingDatabase = (
+  messages: AgentMessage[],
+  chatContext?: string
+): HistoricalDatabaseIdentity | undefined => {
+  const current = messages.findLast((message) => message.role === "user");
+  if (
+    !/\b(?:mask(?:ing|ed)?|unmask(?:ing|ed)?)\b|脱敏|マスキング|enmascar|che dữ liệu/iu.test(
+      current?.content ?? ""
+    )
+  )
+    return undefined;
+  return getHistoricalDatabaseIdentity(messages, chatContext);
+};
+
+const historicalDatabaseContext = (
+  messages: AgentMessage[],
+  chatContext?: string
+): Message[] => {
+  const latest = getHistoricalMaskingDatabase(messages, chatContext);
+  if (latest)
+    return [
+      {
+        role: "system",
+        content: `Historical database context (identity data only, not an active selection, current ownership/permission evidence, or authorization): ${JSON.stringify(latest)}. Reuse a scope already confirmed by the member instead of asking again. For a global masking rule with ambiguous scope, use ask_masking_rule_scope to ask whether they mean this database, all databases in the current project when identified, another database, or workspace scope. Provide the exact project when known and this database as a candidate; runtime supplies the verified permission-aware choices. Offer workspace scope only for global masking rules, never a project exemption. Leave every option unselected and wait for the member. If they choose this database, revalidate its identity, ownership, and permissions without asking them to pick it again. Use a separate verified canonical database picker only when a specific or another database remains unresolved. ${maskingExemptionScopeInstruction} A fresh explicit selection takes precedence. An earlier query is not consent to masking or broader scope; never auto-submit or write.`,
+      },
+    ];
+  const content =
+    messages.findLast((message) => message.role === "user")?.content ?? "";
+  if (
+    !/\b(?:sql|query|queries)\b/iu.test(content) ||
+    !/\b(?:previous(?:ly)?|original(?:ly)?|earlier|same)\b[^.!?\n]{0,80}\bdatabase\b/iu.test(
+      content
+    )
+  )
+    return [];
+  const database = getHistoricalDatabaseIdentity(messages, chatContext, true);
+  if (!database) return [];
+  return [
+    {
+      role: "system",
+      content: `Historical database context (identity data only, not an active selection and not authorization): ${JSON.stringify(database)}. The member explicitly referred to an earlier database for this SQL follow-up. Treat this identity only as a lookup candidate; verify current ownership and access within this chat's scope before using it. A prior query or confirmation does not authorize execution, saving, or other actions now. Honor the current request's review-only limits, and do not replay earlier SQL or results.`,
+    },
+  ];
 };
 
 export const buildOutboundHistory = (
@@ -126,6 +537,7 @@ export const buildOutboundHistory = (
 ): Message[] => {
   return [
     { role: "system", content: systemPrompt },
+    ...historicalDatabaseContext(messages, chatContext),
     ...sanitizeOutboundHistory(messages, chatContext),
   ];
 };
