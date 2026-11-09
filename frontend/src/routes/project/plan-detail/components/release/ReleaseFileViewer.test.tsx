@@ -142,6 +142,26 @@ describe("ReleaseFileViewer", () => {
     ]);
   });
 
+  // Ranges count the mark's three bytes, and the editor shows it as a
+  // character at line 1, column 1.
+  test.each([
+    ["on the first line", { start: 3, end: 15 }, { startLineNumber: 1, startColumn: 2, endLineNumber: 1, endColumn: 13 }],
+    ["ending at the end of the file", { start: 16, end: 40 }, { startLineNumber: 2, startColumn: 1, endLineNumber: 2, endColumn: 25 }],
+  ])("a sheet starting with a byte order mark keeps the error %s on its statement", async (_, range, position) => {
+    mocks.fetchSheet.mockResolvedValue(sheetOf(`﻿${STATEMENT}`));
+    render(
+      <ReleaseFileViewer
+        target={target({ context: { kind: "failed", error: "boom", range } })}
+        vcsSource={github}
+        onClose={() => {}}
+      />
+    );
+    await flush();
+    expect(mocks.editorProps.at(-1)?.advices).toEqual([
+      { severity: "ERROR", message: "boom", ...position },
+    ]);
+  });
+
   test("with no command range it opens at the top with the error above the editor", async () => {
     render(
       <ReleaseFileViewer

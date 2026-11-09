@@ -415,6 +415,35 @@ describe("task-run-log model", () => {
     expect(sections[1]?.items[0]?.detail).toBe("Completed (2 tables)");
   });
 
+  test("a declarative release's diff computation and commands stay in its file, and the sync after it is a sibling", () => {
+    const entries = [
+      releaseFile(1, "20261005"),
+      create(TaskRunLogEntrySchema, {
+        type: TaskRunLogEntry_Type.COMPUTE_DIFF,
+        logTime: ts(2),
+        computeDiff: { startTime: ts(2), endTime: ts(3) },
+      }),
+      command(4),
+      databaseSync(6, 7),
+    ];
+    const groups = groupEntriesByReleaseFile(entries);
+    expect(
+      groups.map((group) => [
+        group.file?.version ?? null,
+        group.entries.map((entry) => entry.type),
+      ])
+    ).toEqual([
+      [
+        "20261005",
+        [
+          TaskRunLogEntry_Type.COMPUTE_DIFF,
+          TaskRunLogEntry_Type.COMMAND_EXECUTE,
+        ],
+      ],
+      [null, [TaskRunLogEntry_Type.DATABASE_SYNC]],
+    ]);
+  });
+
   test("drops empty release-file groups created by consecutive and trailing markers", () => {
     const entries = [
       create(TaskRunLogEntrySchema, {

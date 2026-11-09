@@ -231,13 +231,13 @@ export const hasReleaseFileMarkers = (entries: TaskRunLogEntry[]): boolean => {
   );
 };
 
-// Steps the executor runs once per task, around the file loop. A gh-ost
-// migration runs per file inside the loop, so it is not one of them.
+// Steps the executor logs outside the file loop (D3). A gh-ost migration and
+// a declarative release's diff computation are logged inside a file, so they
+// are not among them.
 const TASK_LEVEL_TYPES: ReadonlySet<TaskRunLogEntry_Type> = new Set([
   TaskRunLogEntry_Type.PRIOR_BACKUP,
   TaskRunLogEntry_Type.SCHEMA_DUMP,
   TaskRunLogEntry_Type.DATABASE_SYNC,
-  TaskRunLogEntry_Type.COMPUTE_DIFF,
 ]);
 
 export const isTaskLevelEntry = (entry: TaskRunLogEntry): boolean =>

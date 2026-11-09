@@ -116,6 +116,12 @@ describe("plan detail phase summaries", () => {
     expect(buildChangesSummary(plan, t)).toBe(
       "test: 2 databases → prod: 3 databases"
     );
+    const titles: Record<string, string> = { test: "Test", prod: "Production" };
+    expect(
+      buildChangesSummary(plan, t, {
+        stageTitle: (stage) => titles[stage.split("/").at(-1) ?? ""],
+      })
+    ).toBe("Test: 2 databases → Production: 3 databases");
   });
 
   test("summarizes review approval progress and last approver", () => {

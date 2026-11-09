@@ -78,7 +78,14 @@ const extractPrincipalEmail = (principal: string): string =>
 export const buildChangesSummary = (
   plan: Plan,
   t: T,
-  { includeChecks = true }: { includeChecks?: boolean } = {}
+  {
+    includeChecks = true,
+    stageTitle = (stage) => stage.split("/").at(-1) ?? stage,
+  }: {
+    includeChecks?: boolean;
+    // A stage's environment title, as the Progress row shows it.
+    stageTitle?: (stage: string) => string;
+  } = {}
 ): string => {
   // A release plan's facts live in the details block; once its rollout exists
   // the collapsed line names only the targets per stage (D10).
@@ -93,7 +100,7 @@ export const buildChangesSummary = (
           (sum, item) => sum + item.count,
           0
         );
-        return `${summary.stage.split("/").at(-1)}: ${t("plan.summary.n-databases", { n: count })}`;
+        return `${stageTitle(summary.stage)}: ${t("plan.summary.n-databases", { n: count })}`;
       })
       .join(" → ");
   }

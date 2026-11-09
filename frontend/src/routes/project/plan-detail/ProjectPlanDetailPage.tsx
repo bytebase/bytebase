@@ -19,6 +19,7 @@ import { ApprovalStatus, IssueStatus } from "@/types/proto-es/v1/common_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { getRolloutStatus } from "@/utils";
 import { sqlReviewV2Enabled } from "@/utils/featureGates";
+import { useStageTitle } from "../PlanTable";
 import { getReviewBadge } from "../utils/reviewBadge";
 import { DeployBranch } from "./components/deploy/DeployBranch";
 import { PlanDetailChangesBranch } from "./components/PlanDetailChangesBranch";
@@ -313,6 +314,7 @@ function PlanPhaseRail({
   const page = usePlanDetailContext();
   const unresolvedThreads = useUnresolvedThreadTotal(page.issue?.name);
   const reviewState = usePlanReviewState();
+  const stageTitle = useStageTitle();
   const isGitOpsPlan = useMemo(
     () => isReleaseBackedPlan(page.plan.specs),
     [page.plan.specs]
@@ -495,6 +497,7 @@ function PlanPhaseRail({
         onToggle={() => page.togglePhase("changes")}
         summary={buildChangesSummary(page.plan, t, {
           includeChecks: !reviewState,
+          stageTitle,
         })}
       >
         <PlanDetailChangesBranch

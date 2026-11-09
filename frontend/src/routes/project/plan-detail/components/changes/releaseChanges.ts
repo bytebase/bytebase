@@ -36,8 +36,13 @@ export const groupReleaseChanges = (
   const sorted = [...files].reverse();
   if (sorted.length === 0) return [];
 
-  if (sorted.every((file) => timestampOf(file.version))) {
-    const newestDay = timestampOf(sorted[0].version)!.day;
+  const days = sorted.map((file) => timestampOf(file.version)?.day);
+  // Groups follow the executor's order, so they need it to be date order.
+  const dateOrdered = days.every(
+    (day, i) => day !== undefined && (i === 0 || day <= (days[i - 1] ?? ""))
+  );
+  if (dateOrdered) {
+    const newestDay = days[0];
     const groups: ReleaseChangeGroup[] = [];
     for (const file of sorted) {
       const stamp = timestampOf(file.version)!;

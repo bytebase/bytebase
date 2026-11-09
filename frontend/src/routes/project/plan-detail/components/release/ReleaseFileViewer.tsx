@@ -48,9 +48,13 @@ export interface ReleaseFileViewerTarget {
   declarative?: boolean;
 }
 
+// Command ranges are byte offsets into the sheet as stored, a byte order mark
+// included, so every decode keeps the mark (D8).
+const sheetDecoder = new TextDecoder("utf-8", { ignoreBOM: true });
+
 // The 1-based line and column of a byte offset into UTF-8 `bytes`.
 const positionOfByte = (bytes: Uint8Array, offset: number) => {
-  const before = new TextDecoder().decode(bytes.subarray(0, offset));
+  const before = sheetDecoder.decode(bytes.subarray(0, offset));
   const lines = before.split("\n");
   return { line: lines.length, column: (lines.at(-1)?.length ?? 0) + 1 };
 };
@@ -123,7 +127,7 @@ function ReleaseFileViewerContent({
   }
   const loaded = sheet?.name === sheetName ? sheet.value : undefined;
   const statement = useMemo(
-    () => (loaded ? new TextDecoder().decode(loaded.content) : ""),
+    () => (loaded ? sheetDecoder.decode(loaded.content) : ""),
     [loaded]
   );
   const context = target.context;

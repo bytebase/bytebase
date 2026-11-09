@@ -507,8 +507,8 @@ export const useTaskRunLogData = (
 
   // ---- Sheet(s) referenced by the log ----
 
-  // A release task fetches only the sheets of the files its run reached: one to
-  // three on a typical release of hundreds.
+  // A release task fetches only the sheets of the files its run reached, not
+  // every file in the release.
   const reachedVersionsKey = useMemo(
     () =>
       [
