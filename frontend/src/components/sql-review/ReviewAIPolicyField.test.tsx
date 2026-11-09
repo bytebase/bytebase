@@ -183,6 +183,9 @@ describe("ReviewAIPolicyField", () => {
     expect(
       screen.getByText("sql-review.ai-review.policy.description")
     ).toBeInTheDocument();
+    expect(
+      screen.getByText("sql-review.ai-review.policy.standard-rules-hint")
+    ).toBeInTheDocument();
   });
 
   test("keeps the policy control aligned with its section header", async () => {

@@ -172,6 +172,25 @@ func schemaObjectCount(s *metadatapb.SchemaMetadata) int {
 		len(s.GetEvents()) + len(s.GetStreams()) + len(s.GetTasks()) + len(s.GetEnumTypes()) + len(s.GetCompositeTypes())
 }
 
+// aiReviewStandardRules returns the standard rules the policy turns on, each
+// with the severity the standard review gives its findings and whether the
+// model leaves the rule to it on the engine, which needs the standard review
+// to run there. A policy that switches the standard review off turns none on.
+func aiReviewStandardRules(policy *storepb.ReviewRulePolicy, engine storepb.Engine, runs bool) []aireview.StandardRule {
+	rules := make([]aireview.StandardRule, 0, len(policy.GetRules()))
+	for _, rule := range policy.GetRules() {
+		rules = append(rules, aireview.StandardRule{
+			Type:     rule,
+			Severity: aiReviewSeverity(rulePriority(rule)),
+			// The walk stops at a statement it cannot follow, such as a DO
+			// block, and says nothing of the statements after it, so the
+			// model checks WALK_THROUGH's condition too.
+			Reviewed: runs && rule != storepb.ReviewRuleType_WALK_THROUGH && reviewsRule(engine, rule),
+		})
+	}
+	return rules
+}
+
 // mergeAIReviewFindings groups the findings of the completed units into the
 // problems to post, one comment each. The findings that more than one
 // database reported on one statement of a sheet go to merge, which decides
