@@ -366,6 +366,68 @@ func TestAIReviewExecutorSortsItsResults(t *testing.T) {
 	}, priorities)
 }
 
+func TestAIReviewPostsTheMostImportantProblems(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	stores, issues := setupReviewFixture(ctx, t, 1)
+	setCISamplingSize(ctx, t, stores, 2)
+	model := &overLimitModel{}
+	executor := &AIReviewExecutor{
+		store:    stores,
+		newModel: func(*storepb.AISetting, ...aireview.ModelOption) aireview.Model { return model },
+		slots:    semaphore.NewWeighted(aiReviewServerConcurrency),
+	}
+	comments, err := executor.RunOnce(ctx, "p", issues[0])
+	require.NoError(t, err)
+	require.Len(t, comments, maxAIReviewProblems)
+	require.Equal(t, storepb.IssueCommentPayload_ReviewMetadata_P0, comments[0].Payload.ReviewMetadata.Priority, "the problem reported last posts, since it is P0")
+	require.Len(t, comments[0].Payload.ReviewMetadata.Targets, 2, "a problem on two databases counts once")
+	require.Equal(t, int32(maxAIReviewProblems), model.summaries.Load(), "a held problem is not summarized")
+}
+
+// overLimitModel reports one problem more than a run posts, the last one P0,
+// merges each problem's findings across the databases, and counts the
+// summaries.
+type overLimitModel struct {
+	summaries atomic.Int32
+}
+
+func (m *overLimitModel) Chat(_ context.Context, request *v1pb.AIChatRequest) (*v1pb.AIChatResponse, error) {
+	if len(request.GetToolDefinitions()) > 0 {
+		findings := make([]string, 0, maxAIReviewProblems+1)
+		for i := range maxAIReviewProblems + 1 {
+			severity := "P2"
+			if i == maxAIReviewProblems {
+				severity = "P0"
+			}
+			findings = append(findings, fmt.Sprintf(`{"title": "Problem %d", "severity": %q, "line": 1, "rule": "r", "evidence": "e", "fix": "f"}`, i, severity))
+		}
+		content := `{"findings": [` + strings.Join(findings, ", ") + `]}`
+		return &v1pb.AIChatResponse{Content: &content}, nil
+	}
+	user := request.GetMessages()[1].GetContent()
+	var content string
+	if count := strings.Count(user, `{"id":`); count > 0 {
+		// The merge numbers the first database's findings before the second's.
+		n := count / 2
+		groups := make([]string, 0, n)
+		for i := 1; i <= n; i++ {
+			groups = append(groups, fmt.Sprintf("[%d, %d]", i, i+n))
+		}
+		content = `{"groups": [` + strings.Join(groups, ", ") + `]}`
+	} else {
+		m.summaries.Add(1)
+		var ids []string
+		for _, match := range summaryDatabaseID.FindAllStringSubmatch(user, -1) {
+			if id := strconv.Quote(match[1]); !slices.Contains(ids, id) {
+				ids = append(ids, id)
+			}
+		}
+		content = fmt.Sprintf(`{"title": "t", "evidence": "e", "groups": [{"databases": [%s], "facts": ""}], "fix": "f"}`, strings.Join(ids, ", "))
+	}
+	return &v1pb.AIChatResponse{Content: &content}, nil
+}
+
 // advisoryFirstModel reports a P2 finding before a P0 one on the same line.
 type advisoryFirstModel struct{}
 

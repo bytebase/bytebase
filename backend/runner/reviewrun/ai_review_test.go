@@ -3,6 +3,7 @@ package reviewrun
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -167,6 +168,13 @@ func TestAIReviewComments(t *testing.T) {
 	require.Contains(t, withOther(true), "\n- **P1** on app, prod-2/db\n- Flagged differently on billing\n\nRule:")
 	require.NotContains(t, withOther(true), "Not flagged")
 	require.Contains(t, withOther(false), "\n- **P1** on app, prod-2/db\n\nRule:", "on a sheet that could not be split, the other finding can be on any statement")
+
+	problem := dropProblem()
+	problem.BlockIsStatement = true
+	held := &aiReviewProblem{Findings: []*aiReviewFinding{{Unit: unit("instances/staging/databases/billing"), Finding: other}}, Reviewed: reviewed, BlockIsStatement: true, Held: true}
+	comments = aiReviewComments("p", 7, []*aiReviewProblem{problem, held})
+	require.Len(t, comments, 1, "a held problem posts no comment")
+	require.Contains(t, comments[0].Payload.Comment, "\n- Flagged differently on billing\n", "a database whose finding is held still flagged the statement")
 }
 
 func TestDatabaseList(t *testing.T) {
@@ -568,6 +576,69 @@ func TestAIReviewCommentsKeepEarlierResults(t *testing.T) {
 	require.NotEqual(t, comments[1].Payload.ReviewMetadata.Fingerprint, comments[2].Payload.ReviewMetadata.Fingerprint)
 }
 
+func TestLimitAIReviewProblems(t *testing.T) {
+	t.Parallel()
+
+	specs := []*storepb.PlanConfig_Spec{{Id: "spec-1"}, {Id: "spec-2"}}
+	problem := func(title string, severity aireview.Severity, specID string, line int) *aiReviewProblem {
+		return &aiReviewProblem{Findings: []*aiReviewFinding{{
+			Unit:    &aiReviewUnit{Check: &plancheck.CheckTarget{SpecID: specID, Target: "instances/i/databases/a"}},
+			Finding: aireview.Finding{Title: title, Severity: severity, Line: line},
+		}}}
+	}
+	kept := func(problem *aiReviewProblem, resolved bool) *aiReviewProblem {
+		problem.Earlier = &aiReviewEarlier{Fingerprint: problem.Findings[0].Finding.Title, Resolved: resolved}
+		return problem
+	}
+	// onLines returns a P1 problem on each line of spec-1 from first to last.
+	onLines := func(first, last int) []*aiReviewProblem {
+		var problems []*aiReviewProblem
+		for line := first; line <= last; line++ {
+			problems = append(problems, problem(fmt.Sprintf("line %d", line), aireview.SeverityP1, "spec-1", line))
+		}
+		return problems
+	}
+	names := func(problems []*aiReviewProblem) []string {
+		var result []string
+		for _, problem := range problems {
+			result = append(result, problem.Findings[0].Finding.Title)
+		}
+		return result
+	}
+	posted := func(problems []*aiReviewProblem) []string {
+		return names(slices.DeleteFunc(slices.Clone(problems), func(problem *aiReviewProblem) bool { return problem.Held }))
+	}
+
+	t.Run("posts the most important problems", func(t *testing.T) {
+		t.Parallel()
+
+		problems := append([]*aiReviewProblem{
+			problem("advisory", aireview.SeverityP2, "spec-1", 1),
+			problem("second spec", aireview.SeverityP1, "spec-2", 1),
+		}, onLines(2, 10)...)
+		problems = append(problems, problem("blocking", aireview.SeverityP0, "spec-2", 5))
+		require.Equal(t, 2, limitAIReviewProblems(specs, problems))
+		require.Equal(t, append(names(onLines(2, 10)), "blocking"), posted(problems), "P0 first, then P1 in reading order")
+
+		few := onLines(1, 3)
+		require.Zero(t, limitAIReviewProblems(specs, few))
+		require.Equal(t, names(few), posted(few))
+	})
+
+	t.Run("posts every problem that keeps an earlier result", func(t *testing.T) {
+		t.Parallel()
+
+		problems := append([]*aiReviewProblem{
+			kept(problem("accepted", aireview.SeverityP1, "spec-1", 1), true),
+			kept(problem("reported again", aireview.SeverityP0, "spec-1", 30), false),
+		}, onLines(1, 11)...)
+		problems = append(problems, kept(problem("open below the limit", aireview.SeverityP2, "spec-1", 20), false))
+		require.Equal(t, 2, limitAIReviewProblems(specs, problems))
+		want := append([]string{"accepted", "reported again"}, names(onLines(1, 9))...)
+		require.Equal(t, append(want, "open below the limit"), posted(problems), "a resolved thread takes no place, and an open one takes a place but posts below the limit too")
+	})
+}
+
 // recordingSummary records the summary requests and answers each with a
 // summary titled after its first finding, or fails or panics on the titles
 // named.
@@ -608,6 +679,7 @@ func TestSummarizeAIReviewProblems(t *testing.T) {
 			{Findings: []*aiReviewFinding{finding("instances/i/databases/a", "failing"), finding("instances/i/databases/b", "failing")}},
 			{Findings: []*aiReviewFinding{finding("instances/i/databases/a", "panicking"), finding("instances/i/databases/b", "panicking")}},
 			{Findings: []*aiReviewFinding{finding("instances/i/databases/a", "kept"), finding("instances/i/databases/b", "kept")}, Earlier: &aiReviewEarlier{Fingerprint: "kept"}},
+			{Findings: []*aiReviewFinding{finding("instances/i/databases/a", "held"), finding("instances/i/databases/b", "held")}, Held: true},
 		}
 	}
 
@@ -622,6 +694,7 @@ func TestSummarizeAIReviewProblems(t *testing.T) {
 		require.Nil(t, problems[2].Summary, "a failed summary leaves the lead finding")
 		require.Nil(t, problems[3].Summary, "a panic is that problem's failure")
 		require.Nil(t, problems[4].Summary, "a problem that keeps an earlier result keeps its text")
+		require.Nil(t, problems[5].Summary, "a held problem posts no comment to summarize")
 
 		require.Len(t, summary.requests, 3)
 		var request *aireview.SummaryRequest
