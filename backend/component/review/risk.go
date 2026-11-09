@@ -4,22 +4,21 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
-// High risk statement types - destructive, irreversible operations, and EXECUTE,
-// whose effect is not visible in the statement: it can run a procedure, dynamic
-// SQL, or a system procedure such as xp_cmdshell.
+// High risk statement types - destructive, irreversible operations.
 var highRiskStatementTypes = map[string]bool{
 	"DROP_DATABASE": true,
 	"DROP_TABLE":    true,
 	"DROP_SCHEMA":   true,
 	"TRUNCATE":      true,
-	"EXECUTE":       true,
 }
 
-// Moderate risk statement types - data modification, potentially wide impact.
+// Moderate risk statement types - data modification, potentially wide impact,
+// and EXECUTE, whose effect is not visible in the statement.
 var moderateRiskStatementTypes = map[string]bool{
 	"DELETE":      true,
 	"UPDATE":      true,
 	"MERGE":       true,
+	"EXECUTE":     true,
 	"ALTER_TABLE": true,
 	"DROP_INDEX":  true,
 }
