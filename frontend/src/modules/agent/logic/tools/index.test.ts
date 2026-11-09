@@ -2,6 +2,8 @@
 import { create } from "@bufbuild/protobuf";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { AppRouterInstance } from "@/app/router";
+import i18n from "@/lib/i18n";
+import { useAppStore } from "@/stores/app";
 import {
   ConstantSchema,
   type Expr,
@@ -14,17 +16,30 @@ import {
   IssueStatus,
   State,
 } from "@/types/proto-es/v1/common_pb";
+import { DatabaseSchema$ } from "@/types/proto-es/v1/database_service_pb";
 import {
   ApprovalFlowSchema,
   ApprovalTemplateSchema,
   Issue_Type,
   IssueSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
+import type { MaskingRuleEditorSnapshot } from "../maskingRuleDraftTarget";
 
 const projectApi = vi.hoisted(() => ({ getProject: vi.fn() }));
 const issueApi = vi.hoisted(() => ({ getIssue: vi.fn() }));
 const planApi = vi.hoisted(() => ({ getPlan: vi.fn() }));
 const databaseApi = vi.hoisted(() => ({ getDatabase: vi.fn() }));
+const semanticApi = vi.hoisted(() => ({
+  setting: vi.fn(),
+  prepare: vi.fn(),
+  summary: vi.fn(),
+  setup: vi.fn(),
+}));
+vi.mock("../semanticTypeDraft", () => ({
+  prepareSemanticTypeDraft: semanticApi.prepare,
+  getSafeSemanticTypeDraftSummary: semanticApi.summary,
+}));
+vi.mock("./maskingSetup", () => ({ getMaskingSetup: semanticApi.setup }));
 const celApi = vi.hoisted(() => ({ batchParse: vi.fn() }));
 const resourceChoiceApi = vi.hoisted(() => ({ validate: vi.fn() }));
 const instanceOverviewApi = vi.hoisted(() => ({
@@ -36,12 +51,36 @@ const instanceOverviewApi = vi.hoisted(() => ({
 const maskingOverviewApi = vi.hoisted(() => ({
   create: vi.fn(() => vi.fn(async () => "masking_overview")),
 }));
+const maskingDraftApi = vi.hoisted(() => ({
+  prepare: vi.fn(async () => ({ draftId: "draft-1", draft: {} })),
+  prepareMany: vi.fn(async () => ({ draftId: "batch-1", drafts: [{}, {}] })),
+  prepareExemption: vi.fn(async () => ({ draftId: "exemption-1", draft: {} })),
+  exemptionSnapshot: vi.fn(async (): Promise<unknown> => undefined),
+  snapshot: vi.fn<() => Promise<MaskingRuleEditorSnapshot | undefined>>(
+    async () => undefined
+  ),
+}));
+
+vi.mock("../maskingRuleDraft", () => ({
+  prepareMaskingRuleDraft: maskingDraftApi.prepare,
+  prepareMaskingRuleDrafts: maskingDraftApi.prepareMany,
+}));
+vi.mock("../maskingExemptionDraft", () => ({
+  prepareMaskingExemptionDraft: maskingDraftApi.prepareExemption,
+}));
+vi.mock("../maskingExemptionDraftTarget", () => ({
+  getMaskingExemptionEditorSnapshot: maskingDraftApi.exemptionSnapshot,
+}));
+vi.mock("../maskingRuleDraftTarget", () => ({
+  getMaskingRuleEditorSnapshot: maskingDraftApi.snapshot,
+}));
 
 vi.mock("@/api", () => ({
   projectServiceClientConnect: { getProject: projectApi.getProject },
   issueServiceClientConnect: { getIssue: issueApi.getIssue },
   planServiceClientConnect: { getPlan: planApi.getPlan },
   databaseServiceClientConnect: { getDatabase: databaseApi.getDatabase },
+  settingServiceClientConnect: { getSetting: semanticApi.setting },
   celServiceClientConnect: { batchParse: celApi.batchParse },
 }));
 
@@ -133,7 +172,10 @@ import { createDomActionTool } from "./domAction";
 import { createIssueOverviewTool } from "./issueOverview";
 import { createNavigateTool } from "./navigate";
 import { createPageStateTool } from "./pageState";
-import { getPendingApiCallPreview } from "./pendingApiCall";
+import {
+  getPendingApiCallPreview,
+  resolvePendingApiCall,
+} from "./pendingApiCall";
 import { createPlanOverviewTool } from "./planOverview";
 import { createProjectGovernanceOverviewTool } from "./projectGovernanceOverview";
 import { createProjectOpenIssuesTool } from "./projectOpenIssues";
@@ -143,7 +185,110 @@ import { createWorkspaceAttentionTool } from "./workspaceAttention";
 import { createWorkspaceOverviewTool } from "./workspaceOverview";
 import { createWorkspaceRecentActivityTool } from "./workspaceRecentActivity";
 
+test("builds semantic type choices from current settings rather than model options", async () => {
+  const execute = createToolExecutor({} as AppRouterInstance, {
+    workspaceName: "workspaces/example",
+    userName: "users/member@example.com",
+    chatId: "chat",
+  });
+  const result = await execute("ask_masking_semantic_type", {}, "choose-type");
+  expect(result.kind).toBe("ask_user");
+  if (result.kind !== "ask_user") return;
+  expect(result.ask.options?.map((option) => option.value)).toEqual([
+    "semantic-type:bb.default",
+    "semantic-type:bb.default-partial",
+    "action:create-semantic-type",
+  ]);
+  expect(result.ask.defaultValue).toBeUndefined();
+  expect(
+    (await execute("ask_masking_semantic_type", { options: [] }, "bad")).kind
+  ).toBe("tool_result");
+});
+
+test("prepares semantic type drafts without exposing private algorithm fields", async () => {
+  const execute = createToolExecutor({} as AppRouterInstance, {
+    workspaceName: "workspaces/example",
+    userName: "users/member@example.com",
+    chatId: "chat",
+  });
+  const args = { title: "New type", algorithm: { kind: "md5-mask" } };
+  expect(
+    await execute("prepare_semantic_type_draft", args, "prepare-type")
+  ).toEqual({
+    kind: "tool_result",
+    result: JSON.stringify({
+      draftId: "semantic-draft-1",
+      draft: {
+        id: "new-type",
+        title: "New type",
+        algorithm: { kind: "md5-mask" },
+      },
+    }),
+  });
+  expect(semanticApi.prepare).toHaveBeenCalledWith(args, {
+    workspaceName: "workspaces/example",
+    userName: "users/member@example.com",
+    chatId: "chat",
+  });
+});
+
+test("blocks exemption scope choices when current operation permissions are denied", async () => {
+  semanticApi.setup.mockResolvedValue({
+    features: { masking: "available" },
+    steps: [
+      {
+        id: "masking-exemptions",
+        readAccess: { status: "allowed" },
+        configure: {
+          status: "denied",
+          missingPermissions: ["bb.policies.updateMaskingExemptionPolicy"],
+        },
+      },
+    ],
+  });
+  const execute = createToolExecutor({} as AppRouterInstance, {
+    context: "projects/sample",
+    workspaceName: "workspaces/example",
+  });
+  const result = await execute("ask_masking_exemption_scope", {}, "scope");
+  expect(result).toEqual({
+    kind: "tool_result",
+    result: expect.stringContaining("bb.policies.updateMaskingExemptionPolicy"),
+  });
+});
+
 beforeEach(() => {
+  useAppStore.setState({
+    currentUser: { name: "users/member@example.com" } as ReturnType<
+      typeof useAppStore.getState
+    >["currentUser"],
+    workspaceResourceName: () => "workspaces/example",
+  });
+  const access = {
+    status: "allowed",
+    missingPermissions: [],
+    requiredPermissions: [],
+    scope: "workspaces/example",
+  };
+  semanticApi.setup.mockResolvedValue({
+    features: { masking: "available" },
+    scopeAccess: { project: access, databasePicker: access, projects: access },
+    steps: ["semantic-types", "global-masking", "masking-exemptions"].map(
+      (id) => ({ id, readAccess: access, configure: access })
+    ),
+  });
+  semanticApi.setting.mockResolvedValue({
+    value: { value: { case: "semanticType", value: { types: [] } } },
+  });
+  semanticApi.prepare.mockResolvedValue({
+    draftId: "semantic-draft-1",
+    draft: { id: "new-type", algorithm: { salt: "never-leak" } },
+  });
+  semanticApi.summary.mockReturnValue({
+    id: "new-type",
+    title: "New type",
+    algorithm: { kind: "md5-mask" },
+  });
   maskingOverviewApi.create.mockClear();
   resourceChoiceApi.validate.mockReset();
   vi.mocked(checkPreparedApiPermission).mockReset();
@@ -208,7 +353,361 @@ const call = (fn: string, ...args: Expr[]): Expr =>
 const projectFilter = (project: string): Expr =>
   call("_==_", ident("project"), literal(project));
 
+describe.each(["prepare_masking_rule_draft", "prepare_masking_rule_drafts"])(
+  "%s project boundary",
+  (toolName) => {
+    const rule = (scope: Record<string, unknown>) => ({
+      title: "Mask email",
+      condition: 'resource.column_name == "email"',
+      semanticType: "bb.default",
+      scope,
+    });
+    const args = (scope: Record<string, unknown>) =>
+      toolName === "prepare_masking_rule_drafts"
+        ? { rules: [rule(scope), rule(scope)] }
+        : rule(scope);
+    const prepare =
+      toolName === "prepare_masking_rule_drafts"
+        ? maskingDraftApi.prepareMany
+        : maskingDraftApi.prepare;
+
+    beforeEach(() => {
+      maskingDraftApi.prepare.mockClear();
+      maskingDraftApi.prepareMany.mockClear();
+    });
+
+    describe.each([
+      {
+        context: "workspaces/test",
+        referencedProject: "projects/referenced",
+      },
+      { context: "projects/referenced", referencedProject: undefined },
+      {
+        context: "projects/other",
+        referencedProject: "projects/referenced",
+      },
+      {
+        context: "projects/referenced",
+        referencedProject: "projects/invalid/issues/1",
+      },
+    ])("bound by $context and $referencedProject", (binding) => {
+      test.each(["project", "database"])(
+        "rejects a foreign %s scope before preparing any draft",
+        async (kind) => {
+          const execute = createToolExecutor({} as AppRouterInstance, {
+            chatId: "chat-1",
+            userName: "users/1",
+            workspaceName: "workspaces/test",
+            ...binding,
+          });
+          const result = await execute(
+            toolName,
+            args({
+              kind,
+              project: "projects/other",
+              ...(kind === "database"
+                ? { database: "instances/prod/databases/app" }
+                : {}),
+            }),
+            "foreign-project"
+          );
+          expect(
+            result.kind === "tool_result" && JSON.parse(result.result).error
+          ).toMatch(/bound project/i);
+          expect(prepare).not.toHaveBeenCalled();
+        }
+      );
+
+      test.each([
+        { kind: "workspace" },
+        { kind: "project", project: "projects/referenced" },
+        {
+          kind: "database",
+          project: "projects/referenced",
+          database: "instances/prod/databases/app",
+        },
+      ])("allows a confirmed $kind scope", async (scope) => {
+        const execute = createToolExecutor({} as AppRouterInstance, {
+          chatId: "chat-1",
+          userName: "users/1",
+          workspaceName: "workspaces/test",
+          ...binding,
+        });
+        const proposal = args(scope);
+        const result = await execute(toolName, proposal, "permitted-project");
+        expect(
+          result.kind === "tool_result" && JSON.parse(result.result)
+        ).toEqual(expect.objectContaining({ draftId: expect.any(String) }));
+        expect(prepare).toHaveBeenCalledWith(
+          proposal,
+          {
+            chatId: "chat-1",
+            userName: "users/1",
+            workspaceName: "workspaces/test",
+          },
+          { requireSourceMatch: true, source: undefined }
+        );
+      });
+    });
+
+    test.each(["project", "database"])(
+      "allows an unbound workspace chat to choose a %s scope",
+      async (kind) => {
+        const execute = createToolExecutor({} as AppRouterInstance, {
+          chatId: "chat-1",
+          userName: "users/1",
+          workspaceName: "workspaces/test",
+          context: "workspaces/test",
+        });
+        const result = await execute(
+          toolName,
+          args({
+            kind,
+            project: "projects/chosen",
+            ...(kind === "database"
+              ? { database: "instances/prod/databases/app" }
+              : {}),
+          }),
+          "choose-project"
+        );
+        expect(
+          result.kind === "tool_result" && JSON.parse(result.result)
+        ).toEqual(expect.objectContaining({ draftId: expect.any(String) }));
+      }
+    );
+  }
+);
+
+test.each([0, 1])(
+  "rejects a foreign project in batch entry %i before preparing the batch",
+  async (foreignIndex) => {
+    maskingDraftApi.prepareMany.mockClear();
+    const execute = createToolExecutor({} as AppRouterInstance, {
+      chatId: "chat-1",
+      userName: "users/1",
+      workspaceName: "workspaces/test",
+      referencedProject: "projects/referenced",
+    });
+    const result = await execute(
+      "prepare_masking_rule_drafts",
+      {
+        rules: [0, 1].map((index) => ({
+          title: "Mask email",
+          condition: 'resource.column_name == "email"',
+          semanticType: "bb.default",
+          scope: {
+            kind: "project",
+            project:
+              index === foreignIndex ? "projects/other" : "projects/referenced",
+          },
+        })),
+      },
+      "mixed-batch"
+    );
+    expect(
+      result.kind === "tool_result" && JSON.parse(result.result).error
+    ).toMatch(/bound project/i);
+    expect(maskingDraftApi.prepareMany).not.toHaveBeenCalled();
+  }
+);
+
 describe("done tool", () => {
+  test("identifies current unsaved existing-rule fields as review-only", async () => {
+    const snapshot = {
+      sessionId: "editor-existing",
+      revision: "2",
+      mode: "edit" as const,
+      title: "Email",
+      condition: 'resource.column_name == "email"',
+      semanticType: "bb.default",
+    };
+    maskingDraftApi.snapshot.mockResolvedValueOnce(snapshot);
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      chatId: "chat-1",
+      userName: "users/1",
+      workspaceName: "workspaces/test",
+    });
+
+    const result = await executor("get_masking_rule_draft", {}, "read-edit");
+    expect(result.kind).toBe("tool_result");
+    if (result.kind === "tool_result") {
+      expect(JSON.parse(result.result)).toMatchObject({
+        status: "unsaved",
+        reviewOnly: true,
+        draft: snapshot,
+        explanation: expect.stringMatching(/existing.*review-only/i),
+      });
+      expect(JSON.parse(result.result)).not.toHaveProperty("draftId");
+    }
+
+    maskingDraftApi.prepare.mockRejectedValueOnce(
+      new Error("Existing masking rule editors are review-only.")
+    );
+    const prepared = await executor(
+      "prepare_masking_rule_draft",
+      {},
+      "prepare-edit"
+    );
+    expect(maskingDraftApi.prepare).toHaveBeenLastCalledWith(
+      {},
+      expect.anything(),
+      { requireSourceMatch: true, source: snapshot }
+    );
+    expect(prepared.kind).toBe("tool_result");
+    if (prepared.kind === "tool_result") {
+      expect(JSON.parse(prepared.result)).toEqual({
+        error: "Existing masking rule editors are review-only.",
+      });
+      expect(JSON.parse(prepared.result)).not.toHaveProperty("draftId");
+    }
+  });
+
+  test("anchors a refinement to the unsaved snapshot actually read by this run", async () => {
+    const snapshot = {
+      sessionId: "editor-1",
+      revision: "2",
+      title: "Email",
+      condition: 'resource.column_name == "email"',
+      semanticType: "bb.default",
+      chatId: "chat-1",
+    };
+    maskingDraftApi.snapshot.mockResolvedValueOnce(snapshot);
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      chatId: "chat-1",
+      userName: "users/1",
+      workspaceName: "workspaces/test",
+    });
+    await executor("get_masking_rule_draft", {}, "read");
+    await executor("prepare_masking_rule_draft", {}, "prepare");
+    expect(maskingDraftApi.prepare).toHaveBeenLastCalledWith(
+      {},
+      expect.anything(),
+      { requireSourceMatch: true, source: snapshot }
+    );
+  });
+
+  test.each(["prepare_masking_rule_drafts", "prepare_masking_exemption_draft"])(
+    "prepares %s without writing policy in read-only chats",
+    async (name) => {
+      const options = {
+        chatId: "chat-1",
+        userName: "users/1",
+        workspaceName: "workspaces/test",
+        context: "projects/sample",
+        runMode: "read-only" as const,
+      };
+      expect(
+        getToolDefinitions(options).some((tool) => tool.name === name)
+      ).toBe(true);
+      const executor = createToolExecutor({} as AppRouterInstance, options);
+      const args =
+        name === "prepare_masking_rule_drafts"
+          ? { rules: [{}, {}] }
+          : {
+              project: "projects/sample",
+              members: ["self"],
+              scope: { kind: "project" },
+              condition: 'resource.column_name == "email"',
+              description: "Temporary access",
+              expirationTimestamp: null,
+            };
+      const result = await executor(name, args, "prepare");
+      expect(result).toMatchObject({ kind: "tool_result" });
+      expect(
+        name === "prepare_masking_rule_drafts"
+          ? maskingDraftApi.prepareMany
+          : maskingDraftApi.prepareExemption
+      ).toHaveBeenCalledWith(
+        args,
+        {
+          chatId: options.chatId,
+          userName: options.userName,
+          workspaceName: options.workspaceName,
+        },
+        { requireSourceMatch: true, source: undefined }
+      );
+    }
+  );
+
+  test("rejects exemption proposals for a different bound project before preparing", async () => {
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      chatId: "chat-1",
+      userName: "users/1",
+      workspaceName: "workspaces/test",
+      context: "projects/sample",
+    });
+    const result = await executor(
+      "prepare_masking_exemption_draft",
+      { project: "projects/other" },
+      "prepare"
+    );
+    expect(maskingDraftApi.prepareExemption).not.toHaveBeenCalled();
+    expect(
+      result.kind === "tool_result" && JSON.parse(result.result).error
+    ).toMatch(/project/i);
+  });
+
+  test.each([
+    "get_masking_exemption_draft",
+    "prepare_masking_exemption_draft",
+    "prepare_masking_rule_drafts",
+  ])("does not inspect or prepare %s from a background chat", async (name) => {
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      chatId: "chat-1",
+      userName: "users/1",
+      workspaceName: "workspaces/test",
+      canUseCurrentPage: () => false,
+    });
+    const result = await executor(name, {}, "background");
+    expect(
+      result.kind === "tool_result" && JSON.parse(result.result).error
+    ).toMatch(/not selected/i);
+    expect(maskingDraftApi.exemptionSnapshot).not.toHaveBeenCalled();
+    expect(maskingDraftApi.prepareExemption).not.toHaveBeenCalled();
+    expect(maskingDraftApi.prepareMany).not.toHaveBeenCalled();
+  });
+
+  test("prepares a local masking draft with executor-owned identity", async () => {
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      chatId: "chat-1",
+      userName: "users/1",
+      workspaceName: "workspaces/test",
+      context: "projects/sample",
+    });
+    const args = {
+      title: "Mask email",
+      condition: 'resource.column_name == "email"',
+      semanticType: "bb.default",
+      scope: { kind: "workspace" },
+    };
+    const result = await executor("prepare_masking_rule_draft", args, "1");
+    expect(result).toMatchObject({ kind: "tool_result" });
+    expect(maskingDraftApi.prepare).toHaveBeenCalledWith(
+      args,
+      {
+        chatId: "chat-1",
+        userName: "users/1",
+        workspaceName: "workspaces/test",
+      },
+      { requireSourceMatch: true, source: undefined }
+    );
+  });
+
+  test("does not inspect another chat's unsaved masking editor", async () => {
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      chatId: "chat-1",
+      userName: "users/1",
+      workspaceName: "workspaces/test",
+      canUseCurrentPage: () => false,
+    });
+    const result = await executor("get_masking_rule_draft", {}, "1");
+    expect(result.kind).toBe("tool_result");
+    if (result.kind === "tool_result") {
+      expect(JSON.parse(result.result)).toHaveProperty("error");
+    }
+    expect(maskingDraftApi.snapshot).not.toHaveBeenCalled();
+  });
+
   test("requires an explicit task success value", async () => {
     const definition = getToolDefinitions().find(
       (tool) => tool.name === "done"
@@ -238,10 +737,10 @@ describe("done tool", () => {
 describe("masking overview tool", () => {
   const maskingPage = { kind: "global-masking" as const };
 
-  test("is exposed only when the current page has masking context", () => {
+  test("is available from ordinary chats as well as masking pages", () => {
     expect(
       getToolDefinitions().some((tool) => tool.name === "get_masking_overview")
-    ).toBe(false);
+    ).toBe(true);
     expect(
       getToolDefinitions({ maskingPage }).some(
         (tool) => tool.name === "get_masking_overview"
@@ -249,7 +748,7 @@ describe("masking overview tool", () => {
     ).toBe(true);
   });
 
-  test("refuses to inspect a page while another chat is selected", async () => {
+  test("can inspect captured masking scope while another chat is selected", async () => {
     const runOverview = vi.fn(async () => "masking_overview");
     maskingOverviewApi.create.mockReturnValue(runOverview);
     const executor = createToolExecutor({} as AppRouterInstance, {
@@ -260,9 +759,36 @@ describe("masking overview tool", () => {
 
     expect(result.kind).toBe("tool_result");
     if (result.kind === "tool_result") {
-      expect(result.result).toContain("This chat is not selected");
+      expect(result.result).toBe("masking_overview");
     }
-    expect(runOverview).not.toHaveBeenCalled();
+    expect(runOverview).toHaveBeenCalledOnce();
+  });
+
+  test("supports an optional exact semantic type lookup without widening the default catalog", async () => {
+    const definition = getToolDefinitions().find(
+      (tool) => tool.name === "get_masking_overview"
+    );
+    expect(definition?.parametersSchema).toMatchObject({
+      properties: {
+        semanticTypeId: { type: "string", minLength: 1, maxLength: 500 },
+      },
+    });
+    expect(definition?.parametersSchema.required ?? []).not.toContain(
+      "semanticTypeId"
+    );
+    const runOverview = vi.fn(async () => "exact_semantic_type");
+    maskingOverviewApi.create.mockReturnValue(runOverview);
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      workspaceName: "workspaces/default",
+    });
+    await expect(
+      executor(
+        "get_masking_overview",
+        { semanticTypeId: "custom-149" },
+        "masking-exact"
+      )
+    ).resolves.toEqual({ kind: "tool_result", result: "exact_semantic_type" });
+    expect(runOverview).toHaveBeenCalledWith({ semanticTypeId: "custom-149" });
   });
 
   test("runs the bounded snapshot for the selected masking page", async () => {
@@ -280,8 +806,35 @@ describe("masking overview tool", () => {
     expect(maskingOverviewApi.create).toHaveBeenCalledWith({
       page: maskingPage,
       workspaceName: "workspaces/default",
+      context: undefined,
+      databaseName: undefined,
     });
     expect(runOverview).toHaveBeenCalledOnce();
+  });
+
+  test("binds masking guidance to the selected project rather than the live page", async () => {
+    const runOverview = vi.fn(async () => "masking_overview");
+    maskingOverviewApi.create.mockReturnValue(runOverview);
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      context: "projects/original",
+      referencedProject: "projects/referenced",
+      workspaceName: "workspaces/default",
+      maskingPage: { kind: "masking-exemption", project: "projects/original" },
+    });
+
+    await executor(
+      "get_masking_overview",
+      { project: "projects/referenced" },
+      "masking-3"
+    );
+    expect(maskingOverviewApi.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        context: "projects/referenced",
+      })
+    );
+    expect(runOverview).toHaveBeenCalledWith({
+      project: "projects/referenced",
+    });
   });
 });
 
@@ -1400,6 +1953,48 @@ describe("agent tools referenced project", () => {
     expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
   });
 
+  test("previews and dispatches the same default-limited query after approval", async () => {
+    const identity = {
+      chatId: "chat-query-preview",
+      userName: "users/me@example.com",
+      toolCallId: "tool-query-preview",
+    };
+    const executor = createToolExecutor({} as AppRouterInstance, identity);
+    const body: Record<string, unknown> = {
+      name: "instances/example/databases/app",
+      statement: "SELECT * FROM accounts",
+    };
+
+    const result = await executor(
+      "call_api",
+      { operationId: "SQLService/Query", body },
+      identity.toolCallId
+    );
+
+    expect(result.kind).toBe("ask_user");
+    if (result.kind !== "ask_user" || !result.ask.apiPermission) {
+      throw new Error("Expected API permission request");
+    }
+    const actionId = result.ask.apiPermission.actionId;
+    const preview = getPendingApiCallPreview({ ...identity, actionId });
+    expect(preview).toMatchObject({
+      operationId: "bytebase.v1.SQLService.Query",
+      body: JSON.stringify({ ...body, limit: 100 }),
+    });
+    expect(body).not.toHaveProperty("limit");
+    expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
+
+    body.limit = 500;
+    body.statement = "SELECT * FROM other_accounts";
+    await resolvePendingApiCall({ ...identity, actionId, approved: true });
+
+    expect(dispatchPreparedApiCall).toHaveBeenCalledExactlyOnceWith({
+      operationId: "bytebase.v1.SQLService.Query",
+      path: "/bytebase.v1.SQLService/Query",
+      body: preview?.body,
+    });
+  });
+
   test("refuses a write API when no signed-in chat can approve it", async () => {
     const executor = createToolExecutor({} as AppRouterInstance);
 
@@ -1610,8 +2205,18 @@ describe("agent tools read-only mode", () => {
       "get_workspace_attention",
       "get_workspace_recent_activity",
       "get_skill",
+      "ask_masking_exemption_scope",
       "ask_user",
       "done",
+      "get_masking_rule_draft",
+      "prepare_masking_rule_draft",
+      "get_masking_overview",
+      "prepare_masking_rule_drafts",
+      "get_masking_exemption_draft",
+      "prepare_masking_exemption_draft",
+      "ask_masking_semantic_type",
+      "ask_masking_rule_scope",
+      "prepare_semantic_type_draft",
     ]);
     expect(getToolDefinitions().map((tool) => tool.name)).not.toContain(
       "get_project_open_issues"
@@ -1955,6 +2560,1005 @@ describe("agent tools read-only mode", () => {
 });
 
 describe("agent tools ask_user", () => {
+  test.each(["", " \n\t "])(
+    "omits blank confirmation labels %j",
+    async (label) => {
+      const execute = createToolExecutor({} as AppRouterInstance);
+      expect(
+        await execute(
+          "ask_user",
+          {
+            kind: "confirm",
+            prompt: "Prepare this unsaved draft?",
+            confirmLabel: label,
+            cancelLabel: label,
+          },
+          "confirm-blank"
+        )
+      ).toEqual({
+        kind: "ask_user",
+        ask: {
+          kind: "confirm",
+          toolCallId: "confirm-blank",
+          prompt: "Prepare this unsaved draft?",
+        },
+      });
+    }
+  );
+
+  test("trims nonblank custom confirmation labels", async () => {
+    const execute = createToolExecutor({} as AppRouterInstance);
+    expect(
+      await execute(
+        "ask_user",
+        {
+          kind: "confirm",
+          prompt: "Prepare this unsaved draft?",
+          confirmLabel: "  Prepare draft  ",
+          cancelLabel: "  Not now  ",
+        },
+        "confirm-custom"
+      )
+    ).toMatchObject({
+      kind: "ask_user",
+      ask: { confirmLabel: "Prepare draft", cancelLabel: "Not now" },
+    });
+  });
+
+  test("rejects a legacy scope purpose on an expiration question and preserves the ordinary retry", async () => {
+    const execute = createToolExecutor({} as AppRouterInstance, {
+      context: "projects/sample",
+      workspaceName: "workspaces/example",
+    });
+    const expiration = {
+      kind: "choose",
+      resourceKind: "none",
+      prompt: "When should this exemption expire?",
+      options: [
+        { label: "After 24 hours", value: "24-hours" },
+        { label: "No expiration", value: "no-expiration" },
+      ],
+    };
+
+    expect(
+      await execute(
+        "ask_user",
+        { ...expiration, purpose: "masking-exemption-scope" },
+        "legacy-expiration"
+      )
+    ).toMatchObject({
+      kind: "tool_result",
+      result: expect.stringContaining("ask_masking_exemption_scope"),
+    });
+    expect(databaseApi.getDatabase).not.toHaveBeenCalled();
+    expect(await execute("ask_user", expiration, "expiration")).toEqual({
+      kind: "ask_user",
+      ask: {
+        toolCallId: "expiration",
+        kind: "choose",
+        prompt: "When should this exemption expire?",
+        options: expiration.options,
+      },
+    });
+  });
+
+  describe("database input defaults", () => {
+    beforeEach(async () => {
+      const actual =
+        await vi.importActual<typeof import("./resourceChoices")>(
+          "./resourceChoices"
+        );
+      resourceChoiceApi.validate.mockImplementation(
+        actual.validateResourceChoices
+      );
+      databaseApi.getDatabase.mockImplementation(async ({ name }) =>
+        create(DatabaseSchema$, {
+          name,
+          project: "projects/sample",
+          state: State.ACTIVE,
+          instanceResource: { title: "Production" },
+        })
+      );
+    });
+
+    test.each([
+      { kind: "input", name: "instances/prod/databases/orders" },
+      { kind: undefined, name: "instances/prod/databases/orders" },
+      {
+        kind: "input",
+        name: "projects/sample/instances/prod/databases/orders",
+      },
+    ])(
+      "binds a freshly verified $kind default $name",
+      async ({ kind, name }) => {
+        const executeTool = createToolExecutor({} as AppRouterInstance, {
+          context: "projects/sample",
+          workspaceName: "workspaces/example",
+        });
+
+        expect(
+          await executeTool(
+            "ask_user",
+            {
+              kind,
+              resourceKind: "database",
+              prompt: "Which database?",
+              defaultValue: name,
+              defaultResource: {
+                kind: "database",
+                name: "instances/forged/databases/other",
+                project: "projects/other",
+                label: "Forged label",
+              },
+            },
+            "input-database"
+          )
+        ).toEqual({
+          kind: "ask_user",
+          ask: {
+            toolCallId: "input-database",
+            kind: "input",
+            prompt: "Which database?",
+            defaultValue: name,
+            defaultResource: {
+              kind: "database",
+              name,
+              project: "projects/sample",
+              label: "orders (Production)",
+            },
+          },
+        });
+      }
+    );
+
+    test.each([undefined, "none"])(
+      "does not bind an untyped default with resourceKind=%s",
+      async (resourceKind) => {
+        const executeTool = createToolExecutor({} as AppRouterInstance, {
+          context: "projects/sample",
+          workspaceName: "workspaces/example",
+        });
+        expect(
+          await executeTool(
+            "ask_user",
+            {
+              resourceKind,
+              prompt: "Describe the resource name",
+              defaultValue: "instances/prod/databases/orders",
+              defaultResource: {
+                kind: "database",
+                name: "instances/prod/databases/orders",
+                project: "projects/sample",
+                label: "Forged label",
+              },
+            },
+            "plain-input"
+          )
+        ).toEqual({
+          kind: "ask_user",
+          ask: {
+            toolCallId: "plain-input",
+            kind: "input",
+            prompt: "Describe the resource name",
+            defaultValue: "instances/prod/databases/orders",
+          },
+        });
+        expect(databaseApi.getDatabase).not.toHaveBeenCalled();
+      }
+    );
+
+    test.each([undefined, "input"])(
+      "allows a database input with kind=%s and no default",
+      async (kind) => {
+        const executeTool = createToolExecutor({} as AppRouterInstance, {
+          context: "workspaces/example",
+          workspaceName: "workspaces/example",
+        });
+        expect(
+          await executeTool(
+            "ask_user",
+            { kind, resourceKind: "database", prompt: "Which database?" },
+            "empty-input"
+          )
+        ).toEqual({
+          kind: "ask_user",
+          ask: {
+            toolCallId: "empty-input",
+            kind: "input",
+            prompt: "Which database?",
+          },
+        });
+        expect(databaseApi.getDatabase).not.toHaveBeenCalled();
+      }
+    );
+
+    test("keeps confirmation defaults as plain text", async () => {
+      const executeTool = createToolExecutor({} as AppRouterInstance, {
+        context: "projects/sample",
+        workspaceName: "workspaces/example",
+      });
+      expect(
+        await executeTool(
+          "ask_user",
+          {
+            kind: "confirm",
+            resourceKind: "database",
+            prompt: "Continue?",
+            defaultValue: "instances/prod/databases/orders",
+          },
+          "confirm-database"
+        )
+      ).toEqual({
+        kind: "ask_user",
+        ask: {
+          toolCallId: "confirm-database",
+          kind: "confirm",
+          prompt: "Continue?",
+          defaultValue: "instances/prod/databases/orders",
+        },
+      });
+      expect(databaseApi.getDatabase).not.toHaveBeenCalled();
+    });
+
+    test.each([
+      { context: undefined, workspaceName: "workspaces/example" },
+      { context: "workspaces/example", workspaceName: "workspaces/example" },
+      { context: "projects/-", workspaceName: "workspaces/example" },
+      { context: "projects/sample", workspaceName: undefined },
+      { context: "projects/sample", workspaceName: "workspaces/-" },
+    ])("rejects a database default without exact scope %j", async (scope) => {
+      const executeTool = createToolExecutor({} as AppRouterInstance, scope);
+      expect(
+        await executeTool(
+          "ask_user",
+          {
+            kind: "input",
+            resourceKind: "database",
+            prompt: "Which database?",
+            defaultValue: "instances/prod/databases/orders",
+          },
+          "unscoped-input"
+        )
+      ).toMatchObject({
+        kind: "tool_result",
+        result: expect.stringContaining("required"),
+      });
+    });
+
+    test.each([
+      "orders",
+      "instances/prod/databases/orders/tables/customers",
+      " instances/prod/databases/orders ",
+      "projects/other/instances/prod/databases/orders",
+      null,
+      42,
+    ])("rejects an invalid database input default %j", async (defaultValue) => {
+      const executeTool = createToolExecutor({} as AppRouterInstance, {
+        context: "projects/sample",
+        workspaceName: "workspaces/example",
+      });
+      expect(
+        await executeTool(
+          "ask_user",
+          {
+            kind: "input",
+            resourceKind: "database",
+            prompt: "Which database?",
+            defaultValue,
+          },
+          "invalid-input"
+        )
+      ).toMatchObject({
+        kind: "tool_result",
+        result: expect.stringContaining("could not be verified"),
+      });
+    });
+
+    test.each(["denied", "wrong-name", "wrong-project", "deleted"])(
+      "rejects a %s database input default using fresh API data",
+      async (failure) => {
+        databaseApi.getDatabase.mockImplementation(async () => {
+          if (failure === "denied") throw new Error("Permission denied");
+          return create(DatabaseSchema$, {
+            name:
+              failure === "wrong-name"
+                ? "instances/prod/databases/other"
+                : "instances/prod/databases/orders",
+            project:
+              failure === "wrong-project"
+                ? "projects/other"
+                : "projects/sample",
+            state: failure === "deleted" ? State.DELETED : State.ACTIVE,
+          });
+        });
+        const executeTool = createToolExecutor({} as AppRouterInstance, {
+          context: "projects/sample",
+          workspaceName: "workspaces/example",
+        });
+        expect(
+          await executeTool(
+            "ask_user",
+            {
+              kind: "input",
+              resourceKind: "database",
+              prompt: "Which database?",
+              defaultValue: "instances/prod/databases/orders",
+            },
+            "unavailable-input"
+          )
+        ).toMatchObject({
+          kind: "tool_result",
+          result: expect.stringContaining("could not be verified"),
+        });
+      }
+    );
+  });
+
+  test.each(["projects/sample", "workspaces/example"])(
+    "keeps ordinary preferences as choices in %s",
+    async (context) => {
+      const executeTool = createToolExecutor({} as AppRouterInstance, {
+        context,
+        workspaceName: "workspaces/example",
+      });
+      const options = [
+        { label: "Fully hide email values", value: "full" },
+        { label: "Partially mask email values", value: "partial" },
+      ];
+
+      await expect(
+        executeTool(
+          "ask_user",
+          {
+            kind: "choose",
+            resourceKind: "none",
+            prompt: "Should email values be fully hidden or partially masked?",
+            options,
+          },
+          "choose-visibility"
+        )
+      ).resolves.toEqual({
+        kind: "ask_user",
+        ask: {
+          toolCallId: "choose-visibility",
+          kind: "choose",
+          prompt: "Should email values be fully hidden or partially masked?",
+          options,
+        },
+      });
+      expect(resourceChoiceApi.validate).not.toHaveBeenCalled();
+    }
+  );
+
+  test.each(["projects/sample", "workspaces/example"])(
+    "keeps a mistagged preference retry as a choice in %s",
+    async (context) => {
+      resourceChoiceApi.validate.mockResolvedValue(undefined);
+      const executeTool = createToolExecutor({} as AppRouterInstance, {
+        context,
+        workspaceName: "workspaces/example",
+      });
+      const result = await executeTool(
+        "ask_user",
+        {
+          kind: "choose",
+          resourceKind: "database",
+          prompt: "Should email values be fully hidden or partially masked?",
+          options: [{ value: "full" }, { value: "partial" }],
+        },
+        "choose-visibility"
+      );
+
+      expect(result).toMatchObject({
+        kind: "tool_result",
+        result: expect.stringContaining('resourceKind="none"'),
+      });
+      if (result.kind === "tool_result") {
+        expect(result.result).toContain('kind="choose"');
+        expect(result.result).not.toContain("free-form");
+      }
+    }
+  );
+
+  test("rejects mixed database and scope options using the real validator", async () => {
+    const actual =
+      await vi.importActual<typeof import("./resourceChoices")>(
+        "./resourceChoices"
+      );
+    resourceChoiceApi.validate.mockImplementation(
+      actual.validateResourceChoices
+    );
+    databaseApi.getDatabase.mockResolvedValue(
+      create(DatabaseSchema$, {
+        name: "instances/prod/databases/orders",
+        project: "projects/sample",
+        state: State.ACTIVE,
+        instanceResource: { title: "Production" },
+      })
+    );
+    const executeTool = createToolExecutor({} as AppRouterInstance, {
+      context: "projects/sample",
+      workspaceName: "workspaces/example",
+    });
+    const result = await executeTool(
+      "ask_user",
+      {
+        kind: "choose",
+        resourceKind: "database",
+        prompt: "Which database scope?",
+        options: [
+          { value: "instances/prod/databases/orders" },
+          { value: "workspace" },
+        ],
+      },
+      "choose-mixed"
+    );
+
+    expect(resourceChoiceApi.validate).toHaveBeenCalledWith(
+      "database",
+      ["instances/prod/databases/orders", "workspace"],
+      "projects/sample",
+      "workspaces/example"
+    );
+    expect(result).toMatchObject({
+      kind: "tool_result",
+      result: expect.stringContaining("could not be verified"),
+    });
+    expect(databaseApi.getDatabase).not.toHaveBeenCalled();
+  });
+
+  test("keeps scope intents separate from the subsequent verified database picker", async () => {
+    const actual =
+      await vi.importActual<typeof import("./resourceChoices")>(
+        "./resourceChoices"
+      );
+    resourceChoiceApi.validate.mockImplementation(
+      actual.validateResourceChoices
+    );
+    databaseApi.getDatabase.mockResolvedValue(
+      create(DatabaseSchema$, {
+        name: "instances/prod/databases/orders",
+        project: "projects/sample",
+        state: State.ACTIVE,
+        instanceResource: { title: "Production" },
+      })
+    );
+    const executeTool = createToolExecutor({} as AppRouterInstance, {
+      context: "projects/sample",
+      workspaceName: "workspaces/example",
+    });
+    const options = [
+      { label: "Only the previously queried database", value: "this_database" },
+      { label: "All databases in this project", value: "project" },
+      {
+        label: "Choose another database in this project",
+        value: "another_database",
+      },
+    ];
+    expect(
+      await executeTool(
+        "ask_user",
+        {
+          kind: "choose",
+          resourceKind: "none",
+          prompt: "Which database scope should the global rule cover?",
+          options,
+        },
+        "choose-scope"
+      )
+    ).toEqual({
+      kind: "ask_user",
+      ask: {
+        toolCallId: "choose-scope",
+        kind: "choose",
+        prompt: "Which database scope should the global rule cover?",
+        options,
+      },
+    });
+    expect(databaseApi.getDatabase).not.toHaveBeenCalled();
+    expect(
+      await executeTool(
+        "ask_user",
+        {
+          kind: "choose",
+          resourceKind: "database",
+          prompt: "Which database?",
+          options: [
+            {
+              label: "Unverified label",
+              value: "instances/prod/databases/orders",
+            },
+          ],
+        },
+        "choose-database"
+      )
+    ).toEqual({
+      kind: "ask_user",
+      ask: {
+        toolCallId: "choose-database",
+        kind: "choose",
+        prompt: "Which database?",
+        options: [
+          {
+            label: "orders (Production)",
+            value: "instances/prod/databases/orders",
+          },
+        ],
+      },
+    });
+    expect(databaseApi.getDatabase).toHaveBeenCalledOnce();
+  });
+
+  describe("resumed masking database choices", () => {
+    const database = "instances/prod/databases/orders";
+    const pickerArgs = (kind: "choose" | "input") => ({
+      kind,
+      resourceKind: "database",
+      prompt: "Which database?",
+      ...(kind === "choose"
+        ? { options: [{ label: "Unverified label", value: database }] }
+        : { defaultValue: database }),
+    });
+
+    beforeEach(async () => {
+      const actual =
+        await vi.importActual<typeof import("./resourceChoices")>(
+          "./resourceChoices"
+        );
+      resourceChoiceApi.validate.mockImplementation(
+        actual.validateResourceChoices
+      );
+      databaseApi.getDatabase.mockResolvedValue(
+        create(DatabaseSchema$, {
+          name: database,
+          project: "projects/sample",
+          state: State.ACTIVE,
+          instanceResource: { title: "Production" },
+        })
+      );
+    });
+
+    test.each(["choose", "input"] as const)(
+      "uses the selected project for a workspace chat's database %s",
+      async (kind) => {
+        const execute = createToolExecutor({} as AppRouterInstance, {
+          context: "workspaces/example",
+          workspaceName: "workspaces/example",
+          databaseChoiceProject: "projects/sample",
+        });
+        const result = await execute("ask_user", pickerArgs(kind), "database");
+
+        expect(result).toMatchObject({
+          kind: "ask_user",
+          ask:
+            kind === "choose"
+              ? { options: [{ label: "orders (Production)", value: database }] }
+              : {
+                  defaultResource: {
+                    kind: "database",
+                    name: database,
+                    project: "projects/sample",
+                    label: "orders (Production)",
+                  },
+                },
+        });
+      }
+    );
+
+    test.each([
+      undefined,
+      "projects/-",
+      "projects/sample/databases/orders",
+      "projects/invalid project",
+    ])(
+      "does not use an invalid selected project %j",
+      async (databaseChoiceProject) => {
+        const execute = createToolExecutor({} as AppRouterInstance, {
+          context: "workspaces/example",
+          workspaceName: "workspaces/example",
+          databaseChoiceProject,
+        });
+        for (const kind of ["choose", "input"] as const) {
+          expect(
+            await execute("ask_user", pickerArgs(kind), `database-${kind}`)
+          ).toMatchObject({
+            kind: "tool_result",
+            result: expect.stringContaining("required"),
+          });
+        }
+        expect(databaseApi.getDatabase).not.toHaveBeenCalled();
+      }
+    );
+
+    test.each(["different-project", "inactive", "unavailable"])(
+      "revalidates selected-project databases after they become %s",
+      async (change) => {
+        if (change === "unavailable") {
+          databaseApi.getDatabase.mockRejectedValue(
+            new Error("Access revoked")
+          );
+        } else {
+          databaseApi.getDatabase.mockResolvedValue(
+            create(DatabaseSchema$, {
+              name: database,
+              project:
+                change === "different-project"
+                  ? "projects/other"
+                  : "projects/sample",
+              state: change === "inactive" ? State.DELETED : State.ACTIVE,
+            })
+          );
+        }
+        const execute = createToolExecutor({} as AppRouterInstance, {
+          context: "workspaces/example",
+          workspaceName: "workspaces/example",
+          databaseChoiceProject: "projects/sample",
+        });
+        for (const kind of ["choose", "input"] as const) {
+          expect(
+            await execute("ask_user", pickerArgs(kind), `database-${kind}`)
+          ).toMatchObject({
+            kind: "tool_result",
+            result: expect.stringContaining("could not be verified"),
+          });
+        }
+        expect(databaseApi.getDatabase).toHaveBeenCalledTimes(2);
+      }
+    );
+
+    test.each([
+      { context: "projects/sample" },
+      { context: "workspaces/example", referencedProject: "projects/sample" },
+    ])(
+      "retains the bound project instead of a conflicting selection %j",
+      async (scope) => {
+        const execute = createToolExecutor({} as AppRouterInstance, {
+          ...scope,
+          workspaceName: "workspaces/example",
+          databaseChoiceProject: "projects/other",
+        });
+        expect(
+          await execute("ask_user", pickerArgs("choose"), "database")
+        ).toMatchObject({
+          kind: "ask_user",
+          ask: { options: [{ value: database }] },
+        });
+        databaseApi.getDatabase.mockResolvedValue(
+          create(DatabaseSchema$, {
+            name: database,
+            project: "projects/other",
+            state: State.ACTIVE,
+          })
+        );
+        expect(
+          await execute("ask_user", pickerArgs("choose"), "foreign-database")
+        ).toMatchObject({
+          kind: "tool_result",
+          result: expect.stringContaining("could not be verified"),
+        });
+      }
+    );
+
+    test("does not narrow a workspace rule to the database picker's project", async () => {
+      const execute = createToolExecutor({} as AppRouterInstance, {
+        context: "workspaces/example",
+        workspaceName: "workspaces/example",
+        databaseChoiceProject: "projects/sample",
+        userName: "users/member@example.com",
+        chatId: "chat",
+      });
+      expect(
+        await execute(
+          "prepare_masking_rule_draft",
+          {
+            title: "Mask email",
+            semanticType: "bb.default",
+            condition: 'resource.column_name == "email"',
+            scope: { kind: "workspace" },
+          },
+          "rule"
+        )
+      ).toMatchObject({
+        kind: "tool_result",
+        result: expect.stringContaining('"draftId":"draft-1"'),
+      });
+    });
+  });
+
+  describe("masking exemption scope choices", () => {
+    beforeEach(async () => {
+      const actual =
+        await vi.importActual<typeof import("./resourceChoices")>(
+          "./resourceChoices"
+        );
+      resourceChoiceApi.validate.mockImplementation(
+        actual.validateResourceChoices
+      );
+      databaseApi.getDatabase.mockResolvedValue(
+        create(DatabaseSchema$, {
+          name: "instances/prod/databases/orders",
+          project: "projects/sample",
+          state: State.ACTIVE,
+          instanceResource: { title: "Production" },
+        })
+      );
+    });
+
+    test("supplies complete unselected scope choices with the verified database label", async () => {
+      const execute = createToolExecutor({} as AppRouterInstance, {
+        context: "projects/sample",
+        workspaceName: "workspaces/example",
+        historicalDatabase: {
+          database: "instances/prod/databases/orders",
+          project: "projects/sample",
+        },
+      });
+      expect(await execute("ask_masking_exemption_scope", {}, "scope")).toEqual(
+        {
+          kind: "ask_user",
+          ask: {
+            toolCallId: "scope",
+            kind: "choose",
+            prompt: "Which databases should this exemption cover?",
+            options: [
+              {
+                label: "Only orders (Production)",
+                value: "instances/prod/databases/orders",
+              },
+              {
+                label: "All databases in this project",
+                value: "projects/sample",
+              },
+              { label: "Another database", value: "another-database" },
+            ],
+          },
+        }
+      );
+    });
+
+    test.each(["denied", "moved", "deleted", "renamed"])(
+      "does not offer a %s historical database",
+      async (state) => {
+        if (state === "denied")
+          databaseApi.getDatabase.mockRejectedValue(new Error("Forbidden"));
+        else
+          databaseApi.getDatabase.mockResolvedValue(
+            create(DatabaseSchema$, {
+              name:
+                state === "renamed"
+                  ? "instances/prod/databases/other"
+                  : "instances/prod/databases/orders",
+              project: state === "moved" ? "projects/other" : "projects/sample",
+              state: state === "deleted" ? State.DELETED : State.ACTIVE,
+            })
+          );
+        const execute = createToolExecutor({} as AppRouterInstance, {
+          context: "projects/sample",
+          workspaceName: "workspaces/example",
+          historicalDatabase: {
+            database: "instances/prod/databases/orders",
+            project: "projects/sample",
+          },
+        });
+        const result = await execute(
+          "ask_masking_exemption_scope",
+          {},
+          "scope"
+        );
+        expect(result).toMatchObject({
+          kind: "ask_user",
+          ask: {
+            options: [
+              {
+                label: "All databases in this project",
+                value: "projects/sample",
+              },
+              { label: "Another database", value: "another-database" },
+            ],
+          },
+        });
+      }
+    );
+
+    test.each([
+      { context: "workspaces/example", workspaceName: "workspaces/example" },
+      { context: "projects/-", workspaceName: "workspaces/example" },
+      { context: "projects/sample", workspaceName: "workspaces/-" },
+      { context: "projects/sample", workspaceName: undefined },
+    ])("requires an exact Project and Workspace: %j", async (scope) => {
+      const execute = createToolExecutor({} as AppRouterInstance, scope);
+      expect(
+        await execute("ask_masking_exemption_scope", {}, "scope")
+      ).toMatchObject({
+        kind: "tool_result",
+        result: expect.stringContaining("exact Project and Workspace"),
+      });
+      expect(databaseApi.getDatabase).not.toHaveBeenCalled();
+    });
+
+    test("ignores a historical candidate owned by another project", async () => {
+      const execute = createToolExecutor({} as AppRouterInstance, {
+        context: "projects/sample",
+        workspaceName: "workspaces/example",
+        historicalDatabase: {
+          database: "instances/prod/databases/orders",
+          project: "projects/other",
+        },
+      });
+      expect(
+        await execute("ask_masking_exemption_scope", {}, "scope")
+      ).toMatchObject({
+        kind: "ask_user",
+        ask: {
+          options: [
+            { value: "projects/sample" },
+            { value: "another-database" },
+          ],
+        },
+      });
+      expect(databaseApi.getDatabase).not.toHaveBeenCalled();
+    });
+
+    test("uses the explicit database reference before model and historical suggestions", async () => {
+      const execute = createToolExecutor({} as AppRouterInstance, {
+        context: "projects/sample",
+        workspaceName: "workspaces/example",
+        referencedDatabase: "instances/prod/databases/orders",
+        historicalDatabase: {
+          database: "instances/prod/databases/old",
+          project: "projects/sample",
+        },
+      });
+      expect(
+        await execute(
+          "ask_masking_exemption_scope",
+          {
+            database: "instances/prod/databases/other",
+          },
+          "scope"
+        )
+      ).toMatchObject({
+        kind: "ask_user",
+        ask: {
+          options: [
+            {
+              label: "Only orders (Production)",
+              value: "instances/prod/databases/orders",
+            },
+            { value: "projects/sample" },
+            { value: "another-database" },
+          ],
+        },
+      });
+      expect(resourceChoiceApi.validate).toHaveBeenCalledWith(
+        "database",
+        ["instances/prod/databases/orders"],
+        "projects/sample",
+        "workspaces/example"
+      );
+    });
+
+    test("verifies an exact database candidate supplied with the scope question", async () => {
+      const execute = createToolExecutor({} as AppRouterInstance, {
+        context: "projects/sample",
+        workspaceName: "workspaces/example",
+      });
+      expect(
+        await execute(
+          "ask_masking_exemption_scope",
+          {
+            database: "instances/prod/databases/orders",
+          },
+          "scope"
+        )
+      ).toMatchObject({
+        kind: "ask_user",
+        ask: {
+          options: [
+            {
+              label: "Only orders (Production)",
+              value: "instances/prod/databases/orders",
+            },
+            { value: "projects/sample" },
+            { value: "another-database" },
+          ],
+        },
+      });
+    });
+
+    test("localizes the code-owned question and options in every supported language", async () => {
+      try {
+        for (const language of ["en-US", "zh-CN", "es-ES", "ja-JP", "vi-VN"]) {
+          await i18n.changeLanguage(language);
+          const execute = createToolExecutor({} as AppRouterInstance, {
+            context: "projects/sample",
+            workspaceName: "workspaces/example",
+          });
+          const result = await execute(
+            "ask_masking_exemption_scope",
+            {},
+            "scope"
+          );
+          expect(result.kind).toBe("ask_user");
+          if (result.kind !== "ask_user")
+            throw new Error("Expected scope choices");
+          const question = i18n.getResource(
+            language,
+            "translation",
+            "agent.masking.exemption-scope.question"
+          );
+          expect(question).toEqual(expect.any(String));
+          expect(result.ask.prompt).toBe(question);
+          for (const [index, key] of [
+            "project",
+            "another-database",
+          ].entries()) {
+            const translation = i18n.getResource(
+              language,
+              "translation",
+              `agent.masking.exemption-scope.${key}`
+            );
+            expect(translation).toEqual(expect.any(String));
+            expect(result.ask.options?.[index].label).toBe(translation);
+          }
+          expect(
+            i18n.getResource(
+              language,
+              "translation",
+              "agent.masking.exemption-scope.only-database"
+            )
+          ).toContain("{{database}}");
+        }
+      } finally {
+        await i18n.changeLanguage("en-US");
+      }
+    });
+
+    test.each([
+      { prompt: "When should this exemption expire?" },
+      { kind: "input" },
+      { options: [{ label: "No expiration", value: "no-expiration" }] },
+      { defaultValue: "projects/sample" },
+      { purpose: "masking-exemption-scope" },
+      { resourceKind: "none" },
+      { project: "projects/other" },
+    ])("rejects model-owned question fields %j", async (extra) => {
+      const execute = createToolExecutor({} as AppRouterInstance, {
+        context: "projects/sample",
+        workspaceName: "workspaces/example",
+      });
+      expect(
+        await execute("ask_masking_exemption_scope", extra, "scope")
+      ).toMatchObject({
+        kind: "tool_result",
+        result: expect.stringMatching(/error/i),
+      });
+      expect(databaseApi.getDatabase).not.toHaveBeenCalled();
+    });
+
+    test("separates the fixed scope tool schema from ordinary questions", () => {
+      const definitions = getToolDefinitions();
+      const generic = definitions.find((tool) => tool.name === "ask_user");
+      const scope = definitions.find(
+        (tool) => tool.name === "ask_masking_exemption_scope"
+      );
+
+      expect(generic?.parametersSchema.properties).not.toHaveProperty(
+        "purpose"
+      );
+      expect(generic?.parametersSchema.properties).not.toHaveProperty(
+        "database"
+      );
+      expect(scope?.parametersSchema).toEqual({
+        type: "object",
+        properties: {
+          database: expect.objectContaining({ type: "string" }),
+        },
+        additionalProperties: false,
+      });
+    });
+  });
+
   test("replaces model labels with verified resource choices", async () => {
     resourceChoiceApi.validate.mockResolvedValue([
       {
@@ -1972,6 +3576,7 @@ describe("agent tools ask_user", () => {
         kind: "choose",
         resourceKind: "database",
         prompt: "Which database?",
+        defaultValue: "instances/prod/databases/orders",
         options: [
           { label: "Forged label", value: "instances/prod/databases/orders" },
         ],
@@ -1990,6 +3595,7 @@ describe("agent tools ask_user", () => {
         toolCallId: "choose-1",
         prompt: "Which database?",
         kind: "choose",
+        defaultValue: "instances/prod/databases/orders",
         options: [
           {
             label: "orders (Production)",
@@ -2030,7 +3636,9 @@ describe("agent tools ask_user", () => {
     expect(askUser?.parametersSchema).toEqual(
       expect.objectContaining({
         properties: expect.objectContaining({
-          resourceKind: expect.objectContaining({ enum: ["database"] }),
+          resourceKind: expect.objectContaining({
+            enum: ["none", "database"],
+          }),
         }),
       })
     );
@@ -2076,6 +3684,10 @@ describe("agent tools ask_user", () => {
       kind: "tool_result",
       result: expect.stringContaining("could not be verified"),
     });
+    if (result.kind === "tool_result") {
+      expect(result.result).toContain('kind="choose"');
+      expect(result.result).not.toContain("free-form");
+    }
   });
 
   test("accepts a legacy typed handoff on done", async () => {
@@ -2193,7 +3805,15 @@ describe("agent tools ask_user", () => {
           items: {
             properties: {
               kind: {
-                enum: ["open", "draft-plan", "draft-issue-comment", "continue"],
+                enum: [
+                  "open",
+                  "draft-plan",
+                  "draft-issue-comment",
+                  "draft-masking-rule",
+                  "draft-masking-exemption",
+                  "draft-semantic-type",
+                  "continue",
+                ],
               },
               project: { type: "string" },
               database: { type: "string" },
@@ -2235,6 +3855,87 @@ describe("agent tools ask_user", () => {
       ],
     });
   });
+
+  test("describes masking draft actions as runtime-owned member handoffs", () => {
+    const definitions = getToolDefinitions();
+    const done = definitions.find((tool) => tool.name === "done");
+    const prepare = definitions.find(
+      (tool) => tool.name === "prepare_masking_rule_draft"
+    );
+
+    expect(done?.description).toContain("draft-masking-rule");
+    expect(done?.description).toContain("draft-semantic-type");
+    expect(done?.description).toContain(
+      "runtime supplies the latest eligible current-run masking draft action"
+    );
+    expect(done?.parametersSchema).toMatchObject({
+      properties: {
+        actions: {
+          description: expect.stringContaining(
+            "draft-masking-rule opens or applies an unsaved masking form only after a member click"
+          ),
+          items: {
+            properties: {
+              draftId: {
+                description: expect.stringContaining(
+                  "Normally omit the entire draft-masking-rule action"
+                ),
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(prepare?.description).toContain(
+      "Do not require the member to copy a draft ID"
+    );
+    expect(prepare?.description).toContain(
+      "After a resumed run or source change, read the current form and prepare again"
+    );
+  });
+
+  test("defers masking catalog and scope choices to permission-aware runtime tools", () => {
+    const ask = getToolDefinitions().find((tool) => tool.name === "ask_user");
+    expect(ask?.description).toContain("ask_masking_semantic_type");
+    expect(ask?.description).toContain("ask_masking_rule_scope");
+    expect(ask?.description).not.toContain(
+      "ordinary preferences such as full versus partial masking"
+    );
+  });
+
+  test("keeps existing-rule snapshots review-only in masking draft tool guidance", () => {
+    const definitions = getToolDefinitions();
+    const read = definitions.find(
+      (tool) => tool.name === "get_masking_rule_draft"
+    );
+    const prepare = definitions.find(
+      (tool) => tool.name === "prepare_masking_rule_draft"
+    );
+
+    expect(read?.description).toContain("EDIT is review-only");
+    expect(prepare?.description).toContain("CREATE mode only");
+    expect(prepare?.description).toContain(
+      "Never prepare a full-rule replacement for an existing-rule editor"
+    );
+  });
+
+  test.each(["done", "prepare_masking_rule_draft", "get_masking_overview"])(
+    "requires draft-first masking setup in the %s tool guidance",
+    (name) => {
+      const definition = getToolDefinitions().find(
+        (tool) => tool.name === name
+      );
+      expect(definition?.description).toContain(
+        "MUST call prepare_masking_rule_draft before done"
+      );
+      expect(definition?.description).toContain(
+        "Do not finish a ready setup with only manual steps or an Open settings action"
+      );
+      expect(definition?.description).toContain(
+        "Conceptual or effect questions, explicitly requested manual-only instructions"
+      );
+    }
+  );
 
   test("exposes an unsent Issue comment draft action", () => {
     const definition = getToolDefinitions().find(
@@ -2341,26 +4042,38 @@ describe("agent tools ask_user", () => {
     });
   });
 
-  test("falls back to input when choose options are missing", async () => {
+  test("requests corrected choices when choose options are missing", async () => {
     const executeTool = createToolExecutor({} as AppRouterInstance);
 
-    const result = await executeTool(
-      "ask_user",
-      {
-        prompt: "Which environment should I use?",
-        kind: "choose",
-      },
-      "tool-choose"
-    );
+    await expect(
+      executeTool(
+        "ask_user",
+        {
+          prompt: "Which environment should I use?",
+          kind: "choose",
+        },
+        "tool-choose"
+      )
+    ).rejects.toThrow('Retry with kind="choose"');
+  });
 
-    expect(result).toEqual({
-      kind: "ask_user",
-      ask: {
-        toolCallId: "tool-choose",
-        prompt: "Which environment should I use?",
-        kind: "input",
-      },
-    });
+  test("requests distinct choice values instead of ambiguous options", async () => {
+    const executeTool = createToolExecutor({} as AppRouterInstance);
+
+    await expect(
+      executeTool(
+        "ask_user",
+        {
+          prompt: "How should emails be masked?",
+          kind: "choose",
+          options: [
+            { label: "Fully hidden", value: "full" },
+            { label: "Partially visible", value: " full " },
+          ],
+        },
+        "tool-choose"
+      )
+    ).rejects.toThrow('Retry with kind="choose" and distinct option values');
   });
 });
 

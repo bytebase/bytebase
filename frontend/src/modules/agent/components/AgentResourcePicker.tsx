@@ -75,10 +75,6 @@ type SearchStatus =
 
 const PICKER_VIEWPORT_PADDING = 8;
 
-const focusHoveredOption = (event: MouseEvent<HTMLButtonElement>) => {
-  event.currentTarget.focus();
-};
-
 const isSelectableDatabase = (
   database: Database,
   projectName?: string
@@ -167,6 +163,11 @@ export function AgentResourcePicker({
   const noticeRef = useRef<HTMLButtonElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const resultRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const focusHoveredOption = (event: MouseEvent<HTMLButtonElement>) => {
+    if (event.currentTarget.ownerDocument.activeElement === searchRef.current)
+      return;
+    event.currentTarget.focus();
+  };
   const databaseProjectName =
     selectedProjectName ??
     (projectName && projectName !== "projects/-" ? projectName : undefined);

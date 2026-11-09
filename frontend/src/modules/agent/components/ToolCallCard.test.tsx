@@ -62,6 +62,145 @@ const renderCard = (operationId: string, result: string) => {
 };
 
 describe("ToolCallCard", () => {
+  test.each([
+    ["ask_masking_rule_scope", "agent.masking.rule-scope.question"],
+    ["ask_masking_semantic_type", "agent.masking.semantic-type-choice.question"],
+  ])("renders %s as its own runtime choice question", (name, prompt) => {
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    act(() => root.render(<ToolCallCard toolCall={{id: "runtime", name, arguments: "{}"}} />));
+    expect(container.textContent).toContain("agent.tool-ask-user");
+    act(() => (container.querySelector("button") as HTMLElement).click());
+    expect(container.querySelector("pre")).toHaveTextContent(prompt);
+    expect(container.textContent).toContain("agent.tool-ask-user-choose");
+    act(() => root.unmount());
+  });
+
+  test.each([
+    { result: undefined, status: "agent.tool-ask-user" },
+    {
+      result: JSON.stringify({
+        kind: "choose",
+        answer: "All databases in this project",
+        value: "projects/orders",
+      }),
+      status: "agent.tool-response-submitted",
+    },
+    {
+      result: JSON.stringify({ kind: "cancelled", reason: "user" }),
+      status: "agent.tool-request-canceled",
+    },
+    {
+      result: "Error: Select an exact project first.",
+      status: "agent.tool-failed",
+    },
+  ])(
+    "renders the dedicated scope question with $status",
+    ({ result, status }) => {
+      const container = document.createElement("div");
+      const root = createRoot(container);
+      act(() =>
+        root.render(
+          <ToolCallCard
+            toolCall={{
+              id: "scope",
+              name: "ask_masking_exemption_scope",
+              arguments: "{}",
+            }}
+            result={result}
+          />
+        )
+      );
+
+      expect(container.textContent).toContain(status);
+      act(() => (container.querySelector("button") as HTMLElement).click());
+      expect(container.textContent).toContain("agent.tool-ask-user-choose");
+      expect(container.querySelector("pre")).toHaveTextContent(
+        "agent.masking.exemption-scope.question"
+      );
+      expect(container.textContent).not.toContain("agent.tool-ask-user-input");
+      act(() => root.unmount());
+    }
+  );
+
+  test.each([
+    {
+      name: "a rejected ask as failed",
+      result:
+        "Error: Resource choices could not be verified with current access. Ask a free-form question instead; do not describe the list as empty.",
+      status: "agent.tool-failed",
+    },
+    {
+      name: "a skipped ask as skipped",
+      result: JSON.stringify({
+        skipped: true,
+        blockedByToolCallId: "ask-previous",
+        blockedByKind: "ask_user",
+        reason: "Skipped because this assistant turn already emitted ask_user",
+      }),
+      status: "common.skipped",
+    },
+    {
+      name: "an unrecognized ask result as completed",
+      result: JSON.stringify({ status: "complete" }),
+      status: "agent.tool-completed",
+    },
+    {
+      name: "a malformed answer as completed",
+      result: JSON.stringify({ kind: "input" }),
+      status: "agent.tool-completed",
+    },
+    {
+      name: "an unanswered ask as asking the user",
+      result: undefined,
+      status: "agent.tool-ask-user",
+    },
+    {
+      name: "an input answer as submitted",
+      result: JSON.stringify({ kind: "input", answer: "Production" }),
+      status: "agent.tool-response-submitted",
+    },
+    {
+      name: "a choice answer as submitted",
+      result: JSON.stringify({
+        kind: "choose",
+        answer: "Production",
+        value: "prod",
+      }),
+      status: "agent.tool-response-submitted",
+    },
+    {
+      name: "a declined confirmation as submitted",
+      result: JSON.stringify({
+        kind: "confirm",
+        answer: "Cancel",
+        confirmed: false,
+      }),
+      status: "agent.tool-response-submitted",
+    },
+  ])("shows $name", ({ result, status }) => {
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    act(() => {
+      root.render(
+        <ToolCallCard
+          toolCall={{
+            id: "ask-1",
+            name: "ask_user",
+            arguments: JSON.stringify({ kind: "input", prompt: "Which project?" }),
+          }}
+          result={result}
+        />
+      );
+    });
+
+    expect(container.textContent).toContain(status);
+    if (status !== "agent.tool-response-submitted") {
+      expect(container.textContent).not.toContain("agent.tool-response-submitted");
+    }
+    act(() => root.unmount());
+  });
+
   test("shows a canceled ask without claiming the user submitted an answer", () => {
     const container = document.createElement("div");
     const root = createRoot(container);
@@ -80,6 +219,40 @@ describe("ToolCallCard", () => {
 
     expect(container.textContent).toContain("agent.tool-request-canceled");
     expect(container.textContent).not.toContain("agent.tool-response-submitted");
+    act(() => root.unmount());
+  });
+
+  test.each([
+    "Error: The database choices could not be verified.",
+    JSON.stringify({ error: "The database choices could not be verified." }),
+  ])("shows an ask failure reason without requiring expansion: %s", (result) => {
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    const toolCall = {
+      id: "ask-1",
+      name: "ask_user",
+      arguments: JSON.stringify({
+        kind: "choose",
+        prompt: "Which database?",
+        options: [{ label: "Example database", value: "example" }],
+      }),
+    };
+    act(() => root.render(<ToolCallCard toolCall={toolCall} />));
+    expect(container.querySelector('[role="alert"]')).toBeNull();
+
+    act(() => root.render(<ToolCallCard toolCall={toolCall} result={result} />));
+
+    expect(container.querySelector('[role="alert"]')).toHaveTextContent(
+      "The database choices could not be verified."
+    );
+    expect(container.textContent).toContain("agent.tool-failed");
+    expect(container.textContent).not.toContain("agent.tool-response-submitted");
+
+    act(() => (container.querySelector("button") as HTMLElement).click());
+
+    expect(container.querySelectorAll('[role="alert"]')).toHaveLength(1);
+    expect(container.textContent).toContain("Which database?");
+    expect(container.textContent).toContain("Example database");
     act(() => root.unmount());
   });
 

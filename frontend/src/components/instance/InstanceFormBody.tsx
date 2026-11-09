@@ -47,6 +47,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { AgentHelpButton } from "@/modules/agent/components/AgentHelpButton";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import {
@@ -1552,14 +1553,13 @@ export function InstanceFormBody({
           title={t("instance.section.connection")}
           action={
             isCreating && onAskAgent ? (
-              <Button
+              <AgentHelpButton
                 type="button"
-                appearance="link"
                 size="sm"
                 onClick={() => onAskAgent()}
               >
                 {t("instance.ask-agent")}
-              </Button>
+              </AgentHelpButton>
             ) : undefined
           }
         >

@@ -1,7 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { Code, ConnectError } from "@connectrpc/connect";
 import { cloneDeep, isEqual } from "lodash-es";
-import { MessageCircleQuestion } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { createBehaviorMetric } from "@/app/analytics/behavior";
@@ -16,6 +15,7 @@ import {
   PRODUCT_INTRO_QUERY_KEY,
   PRODUCT_INTRO_TIP_QUERY_KEY,
 } from "@/lib/productIntro";
+import { AgentHelpButton } from "@/modules/agent/components/AgentHelpButton";
 import { buildInstanceConnectionHelpPrompt } from "@/modules/agent/logic/instanceConnectionHelp";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
@@ -589,10 +589,9 @@ export function InstanceFormButtons({
         {testConnectionFailure.message}
       </p>
       {onAskAgent && (
-        <Button
-          appearance="outline"
+        <AgentHelpButton
           size="md"
-          className="mt-3 border-accent text-accent"
+          className="mt-3"
           onClick={() =>
             askAgentAboutFailure(
               "connection test",
@@ -602,9 +601,8 @@ export function InstanceFormButtons({
             )
           }
         >
-          <MessageCircleQuestion size={16} />
           {t("instance.ask-agent-about-error")}
-        </Button>
+        </AgentHelpButton>
       )}
     </div>
   );
@@ -617,10 +615,9 @@ export function InstanceFormButtons({
         description={<span data-agent-sensitive>{createFailure.message}</span>}
       >
         {onAskAgent && (
-          <Button
-            appearance="outline"
+          <AgentHelpButton
             size="md"
-            className="mt-3 border-accent text-accent"
+            className="mt-3"
             onClick={() =>
               askAgentAboutFailure(
                 "instance creation",
@@ -630,9 +627,8 @@ export function InstanceFormButtons({
               )
             }
           >
-            <MessageCircleQuestion size={16} />
             {t("instance.ask-agent-about-error")}
-          </Button>
+          </AgentHelpButton>
         )}
       </Alert>
     </div>
@@ -667,10 +663,8 @@ export function InstanceFormButtons({
         </AlertDialogDescription>
         <AlertDialogFooter>
           {onAskAgent && (
-            <Button
-              appearance="outline"
+            <AgentHelpButton
               size="md"
-              className="border-accent text-accent"
               onClick={() => {
                 closeConnectionFailureDialog(false);
                 askAgentAboutFailure(
@@ -681,9 +675,8 @@ export function InstanceFormButtons({
                 );
               }}
             >
-              <MessageCircleQuestion size={16} />
               {t("instance.ask-agent-about-error")}
-            </Button>
+            </AgentHelpButton>
           )}
           <Button
             appearance="outline"

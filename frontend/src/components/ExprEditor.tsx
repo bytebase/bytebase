@@ -1,5 +1,5 @@
 import type { TFunction } from "i18next";
-import { Bot, HelpCircle, Plus, Trash2, X } from "lucide-react";
+import { HelpCircle, Plus, Trash2, X } from "lucide-react";
 import type { ReactNode } from "react";
 import {
   createContext,
@@ -29,6 +29,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { AgentHelpButton } from "@/modules/agent/components/AgentHelpButton";
 import {
   type AgentExpressionDraftMode,
   registerAgentExpressionTarget,
@@ -42,7 +43,6 @@ import type {
   LogicalOperator,
   Operator,
   RawStringExpr,
-  SimpleExpr,
 } from "@/modules/cel";
 import {
   buildCELExpr,
@@ -63,6 +63,7 @@ import {
   wrapAsGroup,
 } from "@/modules/cel";
 import { buildSelectorCapabilities } from "@/modules/cel/logic/agentPrompt";
+import { canRenderAsSelector } from "@/modules/cel/logic/selector";
 import { environmentNamePrefix } from "@/stores/modules/v1/common";
 import { getDefaultPagination } from "@/utils";
 import { CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID } from "@/utils/cel-attributes";
@@ -83,24 +84,6 @@ function getOperatorListByFactor(
   overrideMap?: Map<Factor, Operator[]>
 ): Operator[] {
   return overrideMap?.get(factor) ?? getRawOperatorListByFactor(factor);
-}
-
-function canRenderAsSelector(
-  expr: SimpleExpr,
-  factors: Factor[],
-  overrideMap?: Map<Factor, Operator[]>
-): boolean {
-  if (isConditionGroupExpr(expr)) {
-    return expr.args.every((arg) =>
-      canRenderAsSelector(arg, factors, overrideMap)
-    );
-  }
-  if (!isConditionExpr(expr)) return false;
-  const factor = expr.args[0];
-  return (
-    factors.includes(factor) &&
-    getOperatorListByFactor(factor, overrideMap).includes(expr.operator)
-  );
 }
 
 function getDefaultValue(
@@ -930,7 +913,7 @@ function FactorSelect({
         });
       }}
     >
-      <SelectTrigger className="min-w-0 max-w-full flex-1 basis-32">
+      <SelectTrigger className="min-w-0 max-w-xs flex-1 basis-32">
         <SelectValue className="truncate">
           {(value: string | null) => value}
         </SelectValue>
@@ -988,6 +971,7 @@ function OperatorSelect({
       value={expr.operator}
       disabled={readonly}
       onValueChange={(val) => {
+        if (val === expr.operator) return;
         doUpdate((group) => {
           const cond = group.args[operandIndex] as ConditionExpr;
           cond.operator = val as ConditionOperator;
@@ -1302,7 +1286,7 @@ function ConditionRow({
         groupPath={groupPath}
         operandIndex={operandIndex}
       />
-      <div className="flex min-w-0 flex-1 basis-48 items-center gap-2">
+      <div className="flex min-w-0 max-w-sm flex-1 basis-48 items-center gap-2">
         <div className="min-w-0 flex-1">{valueInput}</div>
         {deleteButton}
       </div>
@@ -1677,16 +1661,9 @@ function AgentExpressionHelpButton({ onClick }: { onClick: () => void }) {
 
   return (
     <Tooltip content={label}>
-      <Button
-        type="button"
-        appearance="secondary"
-        size="sm"
-        className="px-1.5 text-accent hover:bg-accent/10"
-        aria-label={label}
-        onClick={onClick}
-      >
-        <Bot className="size-4" aria-hidden="true" />
-      </Button>
+      <AgentHelpButton iconOnly size="sm" onClick={onClick}>
+        {label}
+      </AgentHelpButton>
     </Tooltip>
   );
 }

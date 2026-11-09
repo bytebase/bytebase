@@ -8,17 +8,58 @@ import {
 } from "@/modules/cel";
 import type { DatabaseResource } from "@/types";
 import {
+  CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL,
   CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME,
   CEL_ATTRIBUTE_RESOURCE_DATABASE,
   CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME,
   CEL_ATTRIBUTE_RESOURCE_INSTANCE_ID,
+  CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
+  CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
 } from "@/utils/cel-attributes";
 import {
   buildMaskingExemption,
+  getMaskingExemptionSelectorConfig,
   rewriteMaskingExemptionDatabaseConditions,
 } from "./maskingExemption";
 
 const expr = wrapAsGroup(emptySimpleExpr());
+
+describe("getMaskingExemptionSelectorConfig", () => {
+  test("uses the native exemption factor and operator rules", () => {
+    const config = getMaskingExemptionSelectorConfig();
+    expect(config.factorList).toEqual([
+      CEL_ATTRIBUTE_RESOURCE_DATABASE,
+      CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
+      CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
+      CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME,
+      CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL,
+    ]);
+    expect([...config.factorOperatorOverrideMap]).toEqual([
+      [CEL_ATTRIBUTE_RESOURCE_DATABASE, ["_==_", "@in"]],
+      [CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME, ["_==_"]],
+      [CEL_ATTRIBUTE_RESOURCE_TABLE_NAME, ["_==_", "@in"]],
+      [CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME, ["_==_", "@in"]],
+      [
+        CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL,
+        ["_==_", "_!=_", "_<_", "_<=_", "_>=_", "_>_"],
+      ],
+    ]);
+  });
+
+  test("does not share mutable selector configuration between callers", () => {
+    const first = getMaskingExemptionSelectorConfig();
+    const second = getMaskingExemptionSelectorConfig();
+    first.factorList.length = 0;
+    first.factorOperatorOverrideMap.get(
+      CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME
+    )!.length = 0;
+    first.factorOperatorOverrideMap.clear();
+    expect(second.factorList).toHaveLength(5);
+    expect(
+      second.factorOperatorOverrideMap.get(CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME)
+    ).toEqual(["_==_", "@in"]);
+  });
+});
 
 describe("buildMaskingExemption", () => {
   test("builds an all-database exemption without condition expression", async () => {

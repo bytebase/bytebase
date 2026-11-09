@@ -4,6 +4,7 @@ export interface AgentPlanDraftRequest {
   project: string;
   database: string;
   sql: string;
+  onApplied?: () => void;
 }
 
 export interface AgentPlanDraftEventDetail extends AgentPlanDraftRequest {

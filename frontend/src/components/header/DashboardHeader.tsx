@@ -1,4 +1,4 @@
-import { Bot, CircleDot, Menu, MessagesSquare } from "lucide-react";
+import { CircleDot, Menu, MessagesSquare } from "lucide-react";
 import { useMemo, useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
@@ -12,6 +12,7 @@ import { SQLEditorButton } from "@/components/SQLEditorButton";
 import { Button } from "@/components/ui/button";
 import { useRecentVisit, useSubscription } from "@/hooks/useAppState";
 import { cn } from "@/lib/utils";
+import { AgentHelpButton } from "@/modules/agent/components/AgentHelpButton";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { STORAGE_KEY_MY_ISSUES_TAB } from "@/utils/storage-keys";
 import { HeaderBreadcrumb } from "./HeaderBreadcrumb";
@@ -86,22 +87,22 @@ export function DashboardHeader({
       </div>
 
       <div className="flex flex-1 items-center justify-end gap-x-2">
-        <Button
+        <AgentHelpButton
           size="sm"
           appearance="outline"
+          iconOnly={!isLargeLabelVisible}
           aria-label={t("agent.self")}
           title={t("agent.self")}
           onClick={() => {
             void import("@/modules/agent/store/agent").then(
               ({ useAgentStore }) => {
-                useAgentStore.getState().toggle();
+                useAgentStore.getState().open();
               }
             );
           }}
         >
-          <Bot className="h-4 w-4" />
-          {isLargeLabelVisible ? <span>{t("agent.self")}</span> : null}
-        </Button>
+          {t("agent.self")}
+        </AgentHelpButton>
 
         {currentPlan === PlanType.FREE ? (
           <Button

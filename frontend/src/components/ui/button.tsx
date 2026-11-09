@@ -16,6 +16,7 @@ const buttonStyles = cva(
         solid: "",
         outline: "border border-control-border bg-transparent",
         secondary: "",
+        ghost: "bg-transparent",
         link: "underline-offset-4 hover:underline",
       },
       size: {
@@ -45,6 +46,11 @@ const buttonStyles = cva(
       },
       {
         variant: "default",
+        appearance: "ghost",
+        className: "text-accent hover:bg-accent/10",
+      },
+      {
+        variant: "default",
         appearance: "link",
         className: "text-accent",
       },
@@ -62,6 +68,11 @@ const buttonStyles = cva(
       {
         variant: "destructive",
         appearance: "secondary",
+        className: "text-error hover:bg-error/10",
+      },
+      {
+        variant: "destructive",
+        appearance: "ghost",
         className: "text-error hover:bg-error/10",
       },
       {

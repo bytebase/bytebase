@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { StoreApi } from "zustand";
+import type { AgentChat } from "../logic/types";
 import type { AgentState } from "./agent";
 import {
   AGENT_STATE_KEY,
@@ -8,8 +9,10 @@ import {
   createAgentStore,
   getAgentWindowKey,
   getAgentStateKey as getScopedAgentStateKey,
+  selectContinueChatForContext,
   selectLoading,
   selectOrderedChats,
+  useAgentStore,
 } from "./agent";
 
 function createMockStorage(): Storage {
@@ -72,6 +75,223 @@ const s = (store: StoreApi<AgentState>) => {
       state.setWorkspaceName(workspaceName, userEmail),
   };
 };
+
+describe("selectContinueChatForContext", () => {
+  const workspaceName = "workspaces/alpha";
+  const context = "projects/orders";
+  const chat = (id: string, overrides: Partial<AgentChat> = {}): AgentChat => ({
+    id,
+    title: id,
+    context,
+    workspaceName,
+    createdTs: 1,
+    updatedTs: 1,
+    status: "idle",
+    totalTokensUsed: 0,
+    archived: false,
+    ...overrides,
+  });
+  const setup = (chats: AgentChat[], currentChatId = chats[0]?.id) => {
+    const store = createAgentStore();
+    store.setState({ workspaceName, chats, currentChatId });
+    return store;
+  };
+
+  test.each(["billing", "older-orders"])(
+    "chooses the newest matching chat instead of the selected %s chat",
+    (currentChatId) => {
+      const newest = chat("newest-orders", { updatedTs: 20 });
+      const store = setup(
+        [
+          chat("billing", { context: "projects/billing", updatedTs: 30 }),
+          chat("older-orders", { updatedTs: 10 }),
+          newest,
+        ],
+        currentChatId
+      );
+
+      expect(
+        selectContinueChatForContext(store.getState(), context, workspaceName)
+      ).toBe(newest);
+      expect(store.getState().currentChatId).toBe(currentChatId);
+    }
+  );
+
+  test("breaks update ties by creation recency and retains exact-tie ordering", () => {
+    const newest = chat("newer-created", { createdTs: 5 });
+    const store = setup([
+      chat("older-created"),
+      newest,
+      chat("same-timestamps", { createdTs: 5 }),
+    ]);
+
+    expect(
+      selectContinueChatForContext(store.getState(), context, workspaceName)
+    ).toBe(newest);
+  });
+
+  test("isolates identical Project contexts in different Workspaces", () => {
+    const alpha = chat("alpha-orders");
+    const beta = chat("beta-orders", {
+      workspaceName: "workspaces/beta",
+      updatedTs: 10,
+    });
+    const store = setup([alpha, beta]);
+    const before = structuredClone(store.getState().chats);
+
+    expect(
+      selectContinueChatForContext(store.getState(), context, workspaceName)
+    ).toBe(alpha);
+    expect(store.getState().chats).toEqual(before);
+  });
+
+  test("matches Workspace context exactly rather than a Project chat", () => {
+    const workspace = chat("workspace", { context: workspaceName });
+    const store = setup([chat("orders", { updatedTs: 10 }), workspace]);
+
+    expect(
+      selectContinueChatForContext(
+        store.getState(),
+        workspaceName,
+        workspaceName
+      )
+    ).toBe(workspace);
+  });
+
+  test("skips archived and unselectable matches", () => {
+    const eligible = chat("eligible");
+    const store = setup([
+      chat("archived", { updatedTs: 30, archived: true }),
+      chat("unselectable", { updatedTs: 20 }),
+      eligible,
+    ]);
+    const state = {
+      ...store.getState(),
+      canSelectChat: (id?: string | null) => id !== "unselectable",
+    };
+
+    expect(selectContinueChatForContext(state, context, workspaceName)).toBe(
+      eligible
+    );
+  });
+
+  test.each([
+    {
+      name: "no matching context",
+      requestedContext: "projects/billing",
+      requestedWorkspace: workspaceName,
+      storeWorkspace: workspaceName,
+      chatWorkspace: workspaceName,
+    },
+    {
+      name: "missing context",
+      requestedContext: undefined,
+      requestedWorkspace: workspaceName,
+      storeWorkspace: workspaceName,
+      chatWorkspace: workspaceName,
+    },
+    {
+      name: "missing Workspace",
+      requestedContext: context,
+      requestedWorkspace: undefined,
+      storeWorkspace: workspaceName,
+      chatWorkspace: workspaceName,
+    },
+    {
+      name: "stale store Workspace",
+      requestedContext: context,
+      requestedWorkspace: workspaceName,
+      storeWorkspace: "workspaces/beta",
+      chatWorkspace: workspaceName,
+    },
+    {
+      name: "unknown store Workspace",
+      requestedContext: context,
+      requestedWorkspace: workspaceName,
+      storeWorkspace: null,
+      chatWorkspace: workspaceName,
+    },
+    {
+      name: "unknown chat Workspace",
+      requestedContext: context,
+      requestedWorkspace: workspaceName,
+      storeWorkspace: workspaceName,
+      chatWorkspace: undefined,
+    },
+    {
+      name: "legacy unscoped chat",
+      requestedContext: context,
+      requestedWorkspace: workspaceName,
+      storeWorkspace: workspaceName,
+      chatWorkspace: workspaceName,
+      chatContext: undefined,
+    },
+  ])("returns null for $name", (fixture) => {
+    const store = setup([
+      chat("orders", {
+        workspaceName: fixture.chatWorkspace,
+        context: "chatContext" in fixture ? fixture.chatContext : context,
+      }),
+    ]);
+    store.setState({ workspaceName: fixture.storeWorkspace });
+
+    expect(
+      selectContinueChatForContext(
+        store.getState(),
+        fixture.requestedContext,
+        fixture.requestedWorkspace
+      )
+    ).toBeNull();
+  });
+
+  test.each(["idle", "running", "awaiting_user", "error"] as const)(
+    "allows a matching %s chat without changing conversation or run state",
+    (status) => {
+      const store = setup([chat("orders", { status })]);
+      const controller = new AbortController();
+      store.getState().setDraft("orders", { text: "Unsent question" });
+      store.getState().addMessage({
+        chatId: "orders",
+        role: "user",
+        content: "Previous question",
+      });
+      store.getState().setPendingAsk("orders", {
+        toolCallId: "ask",
+        kind: "confirm",
+        prompt: "Proceed?",
+      });
+      store.getState().queueUserMessage({
+        chatId: "orders",
+        text: "Queued question",
+        page: { path: "/projects/orders", title: "Orders" },
+      });
+      store.getState().setAbortController("orders", controller);
+      const before = store.getState();
+      const records = structuredClone({
+        chats: before.chats,
+        messages: before.messagesByChatId,
+        drafts: before.draftsByChatId,
+        pendingAsks: before.pendingAskByChatId,
+        queuedMessages: before.queuedUserMessagesByChatId,
+      });
+
+      expect(selectContinueChatForContext(before, context, workspaceName)).toBe(
+        before.chats[0]
+      );
+      expect(store.getState()).toBe(before);
+      expect({
+        chats: before.chats,
+        messages: before.messagesByChatId,
+        drafts: before.draftsByChatId,
+        pendingAsks: before.pendingAskByChatId,
+        queuedMessages: before.queuedUserMessagesByChatId,
+      }).toEqual(records);
+      expect(before.currentChatId).toBe("orders");
+      expect(before.abortControllersByChatId.orders).toBe(controller);
+      expect(before.chats[0].status).toBe(status);
+    }
+  );
+});
 
 describe("useAgentStore (Zustand)", () => {
   test("keeps expression draft targets transient and scoped to the active workspace", () => {
@@ -178,6 +398,618 @@ describe("useAgentStore (Zustand)", () => {
       s(corrupted).getMessages(chatId)[0].metadata?.actions
     ).toBeUndefined();
   });
+  test("persists semantic type Created receipts only after an exact Opened handoff", () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/alpha");
+    const chat = s(store).createChat({ workspaceName: "workspaces/alpha" });
+    const message = s(store).addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      metadata: {
+        actions: [{ kind: "draft-semantic-type", draftId: "semantic-1" }],
+      },
+    })!;
+    expect(s(store).recordSemanticTypeDraftHandoff).toBeTypeOf("function");
+    expect(
+      s(store).recordSemanticTypeDraftHandoff(
+        chat.id,
+        message.id,
+        "semantic-1",
+        "created"
+      )
+    ).toBeNull();
+    expect(
+      s(store).recordSemanticTypeDraftHandoff(
+        chat.id,
+        message.id,
+        "wrong",
+        "opened"
+      )
+    ).toBeNull();
+    s(store).recordSemanticTypeDraftHandoff(
+      chat.id,
+      message.id,
+      "semantic-1",
+      "opened"
+    );
+    expect(
+      s(store).recordSemanticTypeDraftHandoff(
+        chat.id,
+        message.id,
+        "semantic-1",
+        "created"
+      )?.metadata?.semanticTypeDraftHandoff
+    ).toEqual({ draftId: "semantic-1", outcome: "opened", created: true });
+    const reloaded = createAgentStore();
+    s(reloaded).setWorkspaceName("workspaces/alpha");
+    expect(
+      s(reloaded).getMessages(chat.id)[0].metadata?.semanticTypeDraftHandoff
+    ).toEqual({ draftId: "semantic-1", outcome: "opened", created: true });
+  });
+  test.each(["opened", "applied"] as const)(
+    "persists the exact exemption draft's %s handoff across reloads",
+    (outcome) => {
+      const store = createAgentStore();
+      s(store).setWorkspaceName("workspaces/alpha");
+      const chat = s(store).createChat({ workspaceName: "workspaces/alpha" });
+      const message = s(store).addMessage({
+        chatId: chat.id,
+        role: "assistant",
+        metadata: {
+          actions: [
+            { kind: "draft-masking-exemption", draftId: "exemption-1" },
+          ],
+        },
+      })!;
+      expect(
+        s(store).recordMaskingExemptionDraftHandoff(
+          chat.id,
+          message.id,
+          "wrong-draft",
+          outcome
+        )
+      ).toBeNull();
+      const receipt = { draftId: "exemption-1", outcome };
+      expect(
+        s(store).recordMaskingExemptionDraftHandoff(
+          chat.id,
+          message.id,
+          "exemption-1",
+          outcome
+        )?.metadata?.maskingExemptionDraftHandoff
+      ).toEqual(receipt);
+      expect(
+        s(store).recordMaskingExemptionDraftHandoff(
+          chat.id,
+          message.id,
+          "exemption-1",
+          outcome === "opened" ? "applied" : "opened"
+        )?.metadata?.maskingExemptionDraftHandoff
+      ).toEqual(receipt);
+      const reloaded = createAgentStore();
+      s(reloaded).setWorkspaceName("workspaces/alpha");
+      expect(
+        s(reloaded).getMessages(chat.id)[0].metadata
+          ?.maskingExemptionDraftHandoff
+      ).toEqual(receipt);
+    }
+  );
+
+  test("does not record exemption completion against another action, role, or workspace", () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/alpha");
+    const chat = s(store).createChat({ workspaceName: "workspaces/alpha" });
+    const rule = s(store).addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      metadata: {
+        actions: [{ kind: "draft-masking-rule", draftId: "draft-1" }],
+      },
+    })!;
+    const user = s(store).addMessage({
+      chatId: chat.id,
+      role: "user",
+      metadata: {
+        actions: [{ kind: "draft-masking-exemption", draftId: "draft-1" }],
+      },
+    })!;
+    expect(
+      s(store).recordMaskingExemptionDraftHandoff(
+        chat.id,
+        rule.id,
+        "draft-1",
+        "opened"
+      )
+    ).toBeNull();
+    expect(
+      s(store).recordMaskingExemptionDraftHandoff(
+        chat.id,
+        user.id,
+        "draft-1",
+        "opened"
+      )
+    ).toBeNull();
+    const other = s(store).createChat({ workspaceName: "workspaces/other" });
+    const message = s(store).addMessage({
+      chatId: other.id,
+      role: "assistant",
+      metadata: {
+        actions: [{ kind: "draft-masking-exemption", draftId: "draft-1" }],
+      },
+    })!;
+    expect(
+      s(store).recordMaskingExemptionDraftHandoff(
+        other.id,
+        message.id,
+        "draft-1",
+        "opened"
+      )
+    ).toBeNull();
+  });
+
+  test.each(["opened", "applied"] as const)(
+    "marks an %s exemption handoff created without replacing its history or metadata",
+    (outcome) => {
+      const store = createAgentStore();
+      s(store).setWorkspaceName("workspaces/alpha");
+      const chat = s(store).createChat({ workspaceName: "workspaces/alpha" });
+      const message = s(store).addMessage({
+        chatId: chat.id,
+        role: "assistant",
+        content: "Review this exemption.",
+        metadata: {
+          route: "/projects/sample/masking-exemption/create",
+          runId: "run-1",
+          actions: [
+            { kind: "draft-masking-exemption", draftId: "exemption-1" },
+          ],
+        },
+      })!;
+      s(store).recordMaskingExemptionDraftHandoff(
+        chat.id,
+        message.id,
+        "exemption-1",
+        outcome
+      );
+      s(store).createChat({ workspaceName: "workspaces/alpha" });
+      expect(s(store).currentChatId).not.toBe(chat.id);
+      const before = s(store).getMessages(chat.id)[0];
+      const created = s(store).markMaskingExemptionDraftCreated(
+        chat.id,
+        message.id,
+        "exemption-1"
+      );
+      expect(created).toEqual({
+        ...before,
+        metadata: {
+          ...before.metadata,
+          maskingExemptionDraftHandoff: {
+            draftId: "exemption-1",
+            outcome,
+            created: true,
+          },
+        },
+      });
+      const completedState = store.getState();
+      expect(
+        s(store).markMaskingExemptionDraftCreated(
+          chat.id,
+          message.id,
+          "exemption-1"
+        )
+      ).toBe(created);
+      expect(store.getState()).toBe(completedState);
+      expect(
+        s(store).recordMaskingExemptionDraftHandoff(
+          chat.id,
+          message.id,
+          "exemption-1",
+          outcome === "opened" ? "applied" : "opened"
+        )
+      ).toBe(created);
+
+      const reloaded = createAgentStore();
+      s(reloaded).setWorkspaceName("workspaces/alpha");
+      expect(s(reloaded).getMessages(chat.id)[0]).toEqual(created);
+    }
+  );
+
+  test("rejects created exemptions without the exact assistant action and prior handoff", () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/alpha");
+    const chat = s(store).createChat({ workspaceName: "workspaces/alpha" });
+    const otherChat = s(store).createChat({
+      workspaceName: "workspaces/alpha",
+    });
+    const action = {
+      kind: "draft-masking-exemption" as const,
+      draftId: "exemption-1",
+    };
+    const receipt = { draftId: "exemption-1", outcome: "opened" as const };
+    const valid = s(store).addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      metadata: { actions: [action], maskingExemptionDraftHandoff: receipt },
+    })!;
+    const noHandoff = s(store).addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      metadata: { actions: [action] },
+    })!;
+    const wrongHandoff = s(store).addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      metadata: {
+        actions: [action],
+        maskingExemptionDraftHandoff: { ...receipt, draftId: "other-draft" },
+      },
+    })!;
+    const rule = s(store).addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      metadata: {
+        actions: [{ kind: "draft-masking-rule", draftId: "exemption-1" }],
+        maskingExemptionDraftHandoff: receipt,
+      },
+    })!;
+    const wrongAction = s(store).addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      metadata: {
+        actions: [{ ...action, draftId: "other-draft" }],
+        maskingExemptionDraftHandoff: receipt,
+      },
+    })!;
+    const noAction = s(store).addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      metadata: { maskingExemptionDraftHandoff: receipt },
+    })!;
+    const user = s(store).addMessage({
+      chatId: chat.id,
+      role: "user",
+      metadata: { actions: [action], maskingExemptionDraftHandoff: receipt },
+    })!;
+    const before = store.getState().messagesByChatId;
+    for (const [chatId, messageId, draftId] of [
+      [chat.id, valid.id, "other-draft"],
+      [chat.id, "missing-message", "exemption-1"],
+      [otherChat.id, valid.id, "exemption-1"],
+      ["missing-chat", valid.id, "exemption-1"],
+      [chat.id, noHandoff.id, "exemption-1"],
+      [chat.id, wrongHandoff.id, "exemption-1"],
+      [chat.id, rule.id, "exemption-1"],
+      [chat.id, wrongAction.id, "exemption-1"],
+      [chat.id, noAction.id, "exemption-1"],
+      [chat.id, user.id, "exemption-1"],
+    ]) {
+      expect(
+        s(store).markMaskingExemptionDraftCreated(chatId, messageId, draftId)
+      ).toBeNull();
+    }
+    expect(store.getState().messagesByChatId).toBe(before);
+
+    for (const scope of [
+      { workspaceName: "workspaces/beta", userEmail: TEST_USER_EMAIL },
+      { workspaceName: null, userEmail: TEST_USER_EMAIL },
+      { workspaceName: "workspaces/alpha", userEmail: null },
+    ]) {
+      store.setState(scope);
+      expect(
+        s(store).markMaskingExemptionDraftCreated(
+          chat.id,
+          valid.id,
+          "exemption-1"
+        )
+      ).toBeNull();
+      expect(store.getState().messagesByChatId).toBe(before);
+    }
+  });
+
+  test("isolates created exemption receipts across member caches", () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/alpha", "first@example.com");
+    const chat = s(store).createChat({ workspaceName: "workspaces/alpha" });
+    const message = s(store).addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      metadata: {
+        actions: [{ kind: "draft-masking-exemption", draftId: "exemption-1" }],
+      },
+    })!;
+    s(store).recordMaskingExemptionDraftHandoff(
+      chat.id,
+      message.id,
+      "exemption-1",
+      "opened"
+    );
+    s(store).setWorkspaceName("workspaces/alpha", "second@example.com");
+    expect(
+      s(store).markMaskingExemptionDraftCreated(
+        chat.id,
+        message.id,
+        "exemption-1"
+      )
+    ).toBeNull();
+    s(store).setWorkspaceName("workspaces/alpha", "first@example.com");
+    expect(
+      s(store).getMessages(chat.id)[0].metadata?.maskingExemptionDraftHandoff
+    ).toEqual({ draftId: "exemption-1", outcome: "opened" });
+  });
+
+  test.each([
+    {
+      name: "an exact exemption handoff",
+      created: true,
+      expectedCreated: true,
+    },
+    {
+      name: "a false created flag",
+      created: false,
+      expectedCreated: undefined,
+    },
+    {
+      name: "a string created flag",
+      created: "true",
+      expectedCreated: undefined,
+    },
+    {
+      name: "a mismatched exemption draft",
+      created: true,
+      draftId: "other-draft",
+      expectedReceipt: false,
+    },
+    {
+      name: "an invalid handoff outcome",
+      created: true,
+      outcome: "created",
+      expectedReceipt: false,
+    },
+    {
+      name: "a missing exemption action",
+      created: true,
+      actions: [],
+      expectedReceipt: false,
+    },
+    {
+      name: "a non-assistant exemption",
+      created: true,
+      role: "user",
+      expectedReceipt: false,
+    },
+    {
+      name: "a masking rule handoff",
+      created: true,
+      kind: "draft-masking-rule",
+      expectedCreated: undefined,
+    },
+  ])("normalizes the created flag for $name", (fixture) => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/alpha");
+    const chat = s(store).createChat({ workspaceName: "workspaces/alpha" });
+    s(store).addMessage({ chatId: chat.id, role: "assistant" });
+    const key = getAgentStateKey("workspaces/alpha");
+    const raw = JSON.parse(localStorage.getItem(key)!);
+    const saved = raw.messagesByChatId[chat.id][0];
+    const kind = fixture.kind ?? "draft-masking-exemption";
+    const receiptKey =
+      kind === "draft-masking-rule"
+        ? "maskingRuleDraftHandoff"
+        : "maskingExemptionDraftHandoff";
+    saved.role = fixture.role ?? "assistant";
+    saved.metadata = {
+      actions: fixture.actions ?? [{ kind, draftId: "exemption-1" }],
+      [receiptKey]: {
+        draftId: fixture.draftId ?? "exemption-1",
+        outcome: fixture.outcome ?? "opened",
+        created: fixture.created,
+      },
+    };
+    localStorage.setItem(key, JSON.stringify(raw));
+
+    const reloaded = createAgentStore();
+    s(reloaded).setWorkspaceName("workspaces/alpha");
+    const receipt = s(reloaded).getMessages(chat.id)[0].metadata?.[receiptKey];
+    expect(receipt).toEqual(
+      fixture.expectedReceipt === false
+        ? undefined
+        : {
+            draftId: "exemption-1",
+            outcome: "opened",
+            ...(fixture.expectedCreated ? { created: true } : {}),
+          }
+    );
+  });
+
+  test.each(["opened", "applied"] as const)(
+    "persists a masking rule draft's %s handoff without replacing its first outcome",
+    (outcome) => {
+      const store = createAgentStore();
+      s(store).setWorkspaceName("workspaces/alpha");
+      const chatId = s(store).createChat({
+        workspaceName: "workspaces/alpha",
+      }).id;
+      const message = s(store).addMessage({
+        chatId,
+        role: "assistant",
+        content: "Review the unsaved masking rule.",
+        metadata: {
+          actions: [{ kind: "draft-masking-rule", draftId: "draft-1" }],
+        },
+      })!;
+      const receipt = { draftId: "draft-1", outcome };
+
+      expect(
+        s(store).recordMaskingRuleDraftHandoff(
+          chatId,
+          message.id,
+          "draft-1",
+          outcome
+        )?.metadata?.maskingRuleDraftHandoff
+      ).toEqual(receipt);
+      expect(
+        s(store).recordMaskingRuleDraftHandoff(
+          chatId,
+          message.id,
+          "draft-1",
+          outcome === "opened" ? "applied" : "opened"
+        )?.metadata?.maskingRuleDraftHandoff
+      ).toEqual(receipt);
+
+      const reloaded = createAgentStore();
+      s(reloaded).setWorkspaceName("workspaces/alpha");
+      expect(s(reloaded).getMessages(chatId)[0].metadata).toEqual({
+        actions: [{ kind: "draft-masking-rule", draftId: "draft-1" }],
+        maskingRuleDraftHandoff: receipt,
+      });
+    }
+  );
+  test("rejects masking handoff receipts for mismatched messages, actions, and workspaces", () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/alpha");
+    const chatId = s(store).createChat({
+      workspaceName: "workspaces/alpha",
+    }).id;
+    const otherChatId = s(store).createChat().id;
+    const message = s(store).addMessage({
+      chatId,
+      role: "assistant",
+      metadata: {
+        actions: [{ kind: "draft-masking-rule", draftId: "draft-1" }],
+      },
+    })!;
+    const userMessage = s(store).addMessage({
+      chatId,
+      role: "user",
+      metadata: {
+        actions: [{ kind: "draft-masking-rule", draftId: "draft-1" }],
+      },
+    })!;
+    const noAction = s(store).addMessage({ chatId, role: "assistant" })!;
+    const before = store.getState().messagesByChatId;
+
+    for (const [targetChat, targetMessage, draftId] of [
+      [chatId, message.id, "different-draft"],
+      [chatId, "missing-message", "draft-1"],
+      [chatId, userMessage.id, "draft-1"],
+      [chatId, noAction.id, "draft-1"],
+      [otherChatId, message.id, "draft-1"],
+      ["missing-chat", message.id, "draft-1"],
+    ]) {
+      expect(
+        s(store).recordMaskingRuleDraftHandoff(
+          targetChat,
+          targetMessage,
+          draftId,
+          "opened"
+        )
+      ).toBeNull();
+    }
+    expect(store.getState().messagesByChatId).toBe(before);
+
+    store.setState({ workspaceName: "workspaces/beta" });
+    expect(
+      s(store).recordMaskingRuleDraftHandoff(
+        chatId,
+        message.id,
+        "draft-1",
+        "opened"
+      )
+    ).toBeNull();
+    expect(store.getState().messagesByChatId).toBe(before);
+  });
+  test("isolates masking handoff receipts across workspace and member caches", () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/alpha", "first@example.com");
+    const chatId = s(store).createChat({
+      workspaceName: "workspaces/alpha",
+    }).id;
+    const message = s(store).addMessage({
+      chatId,
+      role: "assistant",
+      metadata: {
+        actions: [{ kind: "draft-masking-rule", draftId: "draft-1" }],
+      },
+    })!;
+    s(store).recordMaskingRuleDraftHandoff(
+      chatId,
+      message.id,
+      "draft-1",
+      "opened"
+    );
+
+    for (const [workspace, member] of [
+      ["workspaces/beta", "first@example.com"],
+      ["workspaces/alpha", "second@example.com"],
+    ]) {
+      s(store).setWorkspaceName(workspace, member);
+      expect(s(store).getMessages(chatId)).toEqual([]);
+      expect(
+        s(store).recordMaskingRuleDraftHandoff(
+          chatId,
+          message.id,
+          "draft-1",
+          "applied"
+        )
+      ).toBeNull();
+    }
+    s(store).setWorkspaceName("workspaces/alpha", "first@example.com");
+    expect(
+      s(store).getMessages(chatId)[0].metadata?.maskingRuleDraftHandoff
+    ).toEqual({
+      draftId: "draft-1",
+      outcome: "opened",
+    });
+  });
+  test.each([
+    {
+      name: "a different draft",
+      receipt: { draftId: "draft-2", outcome: "opened" },
+    },
+    {
+      name: "an invalid outcome",
+      receipt: { draftId: "draft-1", outcome: "saved" },
+    },
+    { name: "a missing draft", receipt: { outcome: "applied" } },
+    { name: "a non-object receipt", receipt: "opened" },
+    {
+      name: "a non-assistant message",
+      receipt: { draftId: "draft-1", outcome: "opened" },
+      role: "user",
+    },
+    {
+      name: "a missing action",
+      receipt: { draftId: "draft-1", outcome: "opened" },
+      actions: [],
+    },
+  ])(
+    "drops persisted masking handoff receipts with $name",
+    ({ receipt, role, actions }) => {
+      const store = createAgentStore();
+      s(store).setWorkspaceName("workspaces/alpha");
+      const chatId = s(store).currentChatId!;
+      s(store).addMessage({
+        chatId,
+        role: "assistant",
+        metadata: {
+          actions: [{ kind: "draft-masking-rule", draftId: "draft-1" }],
+        },
+      });
+      const key = getAgentStateKey("workspaces/alpha");
+      const raw = JSON.parse(localStorage.getItem(key)!);
+      const saved = raw.messagesByChatId[chatId][0];
+      saved.metadata.maskingRuleDraftHandoff = receipt;
+      if (role) saved.role = role;
+      if (actions) saved.metadata.actions = actions;
+      localStorage.setItem(key, JSON.stringify(raw));
+
+      const reloaded = createAgentStore();
+      s(reloaded).setWorkspaceName("workspaces/alpha");
+      expect(
+        s(reloaded).getMessages(chatId)[0].metadata?.maskingRuleDraftHandoff
+      ).toBeUndefined();
+    }
+  );
   test("enriches only the latest answer with up to three distinct persisted Continue actions", () => {
     const store = createAgentStore();
     s(store).setWorkspaceName("workspaces/alpha");
@@ -265,6 +1097,28 @@ describe("useAgentStore (Zustand)", () => {
     expect(s(store).getChat(chatId)?.status).toBe("running");
     expect(s(store).chats).toHaveLength(1);
   });
+
+  test.each([
+    { visible: false, minimized: false, expectedVisible: true },
+    { visible: false, minimized: true, expectedVisible: true },
+    { visible: true, minimized: true, expectedVisible: true },
+    { visible: true, minimized: false, expectedVisible: false },
+  ])(
+    "toggles visible=$visible minimized=$minimized without changing the chat",
+    ({ visible, minimized, expectedVisible }) => {
+      const store = createAgentStore();
+      const chatId = s(store).currentChatId;
+      const chats = s(store).chats;
+      store.setState({ visible, minimized });
+
+      s(store).toggle();
+
+      expect(s(store).visible).toBe(expectedVisible);
+      expect(s(store).minimized).toBe(false);
+      expect(s(store).currentChatId).toBe(chatId);
+      expect(s(store).chats).toBe(chats);
+    }
+  );
 
   test("creates a default chat when no persisted state exists", () => {
     const store = createAgentStore();
@@ -1853,6 +2707,108 @@ describe("useAgentStore (Zustand)", () => {
     });
   });
 
+  test.each([false, true])(
+    "preserves a bound database input default after rehydration (referenced project: %s)",
+    (referencedProject) => {
+      const store = createAgentStore();
+      s(store).setWorkspaceName("workspaces/acme");
+      const chat = s(store).createChat({ context: "projects/orders" });
+      const defaultResource = {
+        kind: "database" as const,
+        name: "instances/prod/databases/orders",
+        project: referencedProject ? "projects/billing" : "projects/orders",
+        label: "orders (Production)",
+      };
+      if (referencedProject) {
+        s(store).addMessage({
+          chatId: chat.id,
+          role: "user",
+          content: "@Billing Retry my query",
+          metadata: {
+            resourceReference: {
+              kind: "project",
+              name: "projects/billing",
+              project: "projects/billing",
+              label: "Billing",
+            },
+          },
+        });
+      }
+      s(store).awaitUser(chat.id, {
+        toolCallId: "ask-database",
+        prompt: "Which database?",
+        kind: "input",
+        defaultValue: defaultResource.name,
+        defaultResource,
+      });
+
+      const rehydrated = createAgentStore();
+      s(rehydrated).setWorkspaceName("workspaces/acme");
+      expect(s(rehydrated).getPendingAsk(chat.id)).toMatchObject({
+        kind: "input",
+        defaultValue: defaultResource.name,
+        defaultResource,
+      });
+      expect(s(rehydrated).getChat(chat.id)?.status).toBe("awaiting_user");
+      expect(s(rehydrated).getMessages(chat.id)).toHaveLength(
+        referencedProject ? 1 : 0
+      );
+    }
+  );
+
+  test.each([
+    { kind: "input", defaultValue: "instances/prod/databases/other" },
+    { kind: "confirm", defaultValue: "instances/prod/databases/orders" },
+    {
+      kind: "choose",
+      defaultValue: "instances/prod/databases/orders",
+      options: [{ label: "Orders", value: "orders" }],
+    },
+    {
+      kind: "input",
+      defaultValue: "instances/prod/databases/orders",
+      project: "projects/other",
+    },
+    {
+      kind: "input",
+      defaultValue: "instances/prod/databases/orders",
+      name: "not-a-database",
+    },
+  ])(
+    "discards mismatched persisted default resources: %j",
+    ({ name, project, ...ask }) => {
+      const chatId = "chat-database";
+      localStorage.setItem(
+        getAgentStateKey("workspaces/acme"),
+        JSON.stringify({
+          currentChatId: chatId,
+          chats: [
+            { id: chatId, context: "projects/orders", status: "awaiting_user" },
+          ],
+          pendingAskByChatId: {
+            [chatId]: {
+              toolCallId: "ask-database",
+              prompt: "Which database?",
+              ...ask,
+              defaultResource: {
+                kind: "database",
+                name: name ?? "instances/prod/databases/orders",
+                project: project ?? "projects/orders",
+                label: "orders (prod)",
+              },
+            },
+          },
+        })
+      );
+      const store = createAgentStore();
+      s(store).setWorkspaceName("workspaces/acme");
+      expect(s(store).getPendingAsk(chatId)?.defaultResource).toBeUndefined();
+      expect(s(store).getPendingAsk(chatId)?.defaultValue).toBe(
+        ask.defaultValue
+      );
+    }
+  );
+
   test("preserves pending API permission metadata after rehydration", () => {
     const store = createAgentStore();
     s(store).setWorkspaceName("workspaces/acme");
@@ -2698,5 +3654,1186 @@ describe("useAgentStore (Zustand)", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe("cross-tab Agent history", () => {
+  const workspaceName = "workspaces/alpha";
+  const page = { path: "/landing", title: "Home" };
+  const setupTabs = () => {
+    const writer = createAgentStore();
+    s(writer).setWorkspaceName(workspaceName);
+    const chatId = s(writer).currentChatId!;
+    s(writer).addMessage({ chatId, role: "user", content: "Initial question" });
+    s(writer).incrementChatTotalTokens(chatId, 10);
+    const otherChat = s(writer).createChat({
+      title: "Other conversation",
+      select: false,
+    });
+    s(writer).saveState();
+
+    const follower = createAgentStore();
+    s(follower).setWorkspaceName(workspaceName);
+    return { writer, follower, chatId, otherChatId: otherChat.id };
+  };
+  const finishAnswer = (store: StoreApi<AgentState>, chatId: string) => {
+    s(store).startChatRun(chatId, page, { runId: "remote-run" });
+    s(store).addMessage({
+      chatId,
+      role: "assistant",
+      content: "Latest answer",
+      metadata: { runId: "remote-run" },
+    });
+    s(store).incrementChatTotalTokens(chatId, 7);
+    s(store).finishChatRun(chatId);
+  };
+  const persistedState = () =>
+    JSON.parse(mockStorage.getItem(getAgentStateKey(workspaceName))!);
+
+  test("imports completed messages and token usage without changing selection", () => {
+    const { writer, follower, chatId, otherChatId } = setupTabs();
+    s(follower).setCurrentChat(otherChatId);
+    finishAnswer(writer, chatId);
+
+    s(follower).syncState();
+
+    expect(s(follower).getMessages(chatId)).toEqual(
+      s(writer).getMessages(chatId)
+    );
+    expect(s(follower).getChat(chatId)?.totalTokensUsed).toBe(17);
+    expect(s(follower).currentChatId).toBe(otherChatId);
+  });
+
+  test("rebases an explicit stale save before it can overwrite a newer answer", () => {
+    const { writer, follower, chatId } = setupTabs();
+    finishAnswer(writer, chatId);
+
+    s(follower).saveState();
+
+    expect(persistedState().messagesByChatId[chatId]).toEqual(
+      s(writer).getMessages(chatId)
+    );
+    expect(
+      persistedState().chats.find((chat: AgentChat) => chat.id === chatId)
+        ?.totalTokensUsed
+    ).toBe(17);
+    s(follower).syncState();
+    expect(s(follower).getMessages(chatId)).toHaveLength(2);
+    expect(s(follower).getChat(chatId)?.totalTokensUsed).toBe(17);
+  });
+
+  test("clears a stale error without replacing a newer completed answer", () => {
+    const { writer, follower, chatId } = setupTabs();
+    s(writer).startChatRun(chatId, page, { runId: "failed-run" });
+    s(writer).setChatStatus(chatId, "error", { lastError: "Previous error" });
+    s(follower).syncState();
+    finishAnswer(writer, chatId);
+
+    s(follower).clearError(chatId);
+
+    expect(persistedState().messagesByChatId[chatId]).toEqual(
+      s(writer).getMessages(chatId)
+    );
+    expect(s(follower).getChat(chatId)?.totalTokensUsed).toBe(17);
+  });
+
+  test.each(["masking-rule", "masking-exemption", "semantic-type"] as const)(
+    "records a stale %s draft receipt without replacing a newer completed answer",
+    (kind) => {
+      const { writer, follower } = setupTabs();
+      const chat = s(writer).createChat({ workspaceName });
+      const message = s(writer).addMessage({
+        chatId: chat.id,
+        role: "assistant",
+        metadata: {
+          actions: [{ kind: `draft-${kind}`, draftId: "draft-1" }],
+        },
+      })!;
+      s(follower).syncState();
+      finishAnswer(writer, chat.id);
+
+      const recordHandoff =
+        kind === "masking-rule"
+          ? s(follower).recordMaskingRuleDraftHandoff
+          : kind === "masking-exemption"
+            ? s(follower).recordMaskingExemptionDraftHandoff
+            : s(follower).recordSemanticTypeDraftHandoff;
+      expect(
+        recordHandoff(chat.id, message.id, "draft-1", "opened")
+      ).not.toBeNull();
+
+      expect(
+        persistedState().messagesByChatId[chat.id].map(
+          (entry: { content?: string }) => entry.content
+        )
+      ).toEqual([undefined, "Latest answer"]);
+      expect(s(follower).getChat(chat.id)?.totalTokensUsed).toBe(7);
+    }
+  );
+
+  test("marks a stale exemption draft created without replacing a newer completed answer", () => {
+    const { writer, follower } = setupTabs();
+    const chat = s(writer).createChat({ workspaceName });
+    const message = s(writer).addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      metadata: {
+        actions: [{ kind: "draft-masking-exemption", draftId: "draft-1" }],
+      },
+    })!;
+    s(writer).recordMaskingExemptionDraftHandoff(
+      chat.id,
+      message.id,
+      "draft-1",
+      "opened"
+    );
+    s(follower).syncState();
+    finishAnswer(writer, chat.id);
+
+    expect(
+      s(follower).markMaskingExemptionDraftCreated(
+        chat.id,
+        message.id,
+        "draft-1"
+      )
+    ).not.toBeNull();
+
+    expect(
+      persistedState().messagesByChatId[chat.id].map(
+        (entry: { content?: string }) => entry.content
+      )
+    ).toEqual([undefined, "Latest answer"]);
+    expect(s(follower).getChat(chat.id)?.totalTokensUsed).toBe(7);
+  });
+
+  test.each([
+    ["masking-rule", "maskingRuleDraftHandoff", "opened"],
+    ["masking-rule", "maskingRuleDraftHandoff", "applied"],
+    ["masking-exemption", "maskingExemptionDraftHandoff", "opened"],
+    ["masking-exemption", "maskingExemptionDraftHandoff", "applied"],
+    ["semantic-type", "semanticTypeDraftHandoff", "opened"],
+  ] as const)(
+    "preserves a %s %s receipt recorded in another tab during a run (%s)",
+    (kind, key, outcome) => {
+      const { writer, follower } = setupTabs();
+      const chat = s(writer).createChat({ workspaceName });
+      const message = s(writer).addMessage({
+        chatId: chat.id,
+        role: "assistant",
+        content: "Prepared draft",
+        metadata: {
+          actions: [{ kind: `draft-${kind}`, draftId: "draft-1" }],
+        },
+      })!;
+      const controller = new AbortController();
+      s(writer).startChatRun(chat.id, page, { runId: "owner-run" });
+      s(writer).setAbortController(chat.id, controller);
+      s(follower).syncState();
+
+      const receipt =
+        kind === "masking-rule"
+          ? s(follower).recordMaskingRuleDraftHandoff(
+              chat.id,
+              message.id,
+              "draft-1",
+              outcome
+            )
+          : kind === "masking-exemption"
+            ? s(follower).recordMaskingExemptionDraftHandoff(
+                chat.id,
+                message.id,
+                "draft-1",
+                outcome
+              )
+            : s(follower).recordSemanticTypeDraftHandoff(
+                chat.id,
+                message.id,
+                "draft-1",
+                outcome
+              );
+      expect(receipt?.metadata?.[key]).toEqual({ draftId: "draft-1", outcome });
+      s(writer).addMessage({
+        chatId: chat.id,
+        role: "assistant",
+        content: "New answer from the owner",
+        metadata: { runId: "owner-run" },
+      });
+      s(writer).incrementChatTotalTokens(chat.id, 7);
+      s(writer).syncState();
+
+      expect(s(writer).getMessages(chat.id)[0].metadata?.[key]).toEqual({
+        draftId: "draft-1",
+        outcome,
+      });
+      expect(
+        persistedState().messagesByChatId[chat.id][0].metadata[key]
+      ).toEqual({
+        draftId: "draft-1",
+        outcome,
+      });
+      expect(
+        s(writer)
+          .getMessages(chat.id)
+          .map((entry) => entry.content)
+      ).toEqual(["Prepared draft", "New answer from the owner"]);
+      expect(s(writer).getChat(chat.id)).toMatchObject({
+        status: "running",
+        runId: "owner-run",
+        totalTokensUsed: 7,
+      });
+      expect(s(writer).getAbortController(chat.id)).toBe(controller);
+      expect(controller.signal.aborted).toBe(false);
+      s(writer).finishChatRun(chat.id);
+      s(writer).setAbortController(chat.id, null);
+      const reloaded = createAgentStore();
+      s(reloaded).setWorkspaceName(workspaceName);
+      expect(s(reloaded).getMessages(chat.id)[0].metadata?.[key]).toEqual({
+        draftId: "draft-1",
+        outcome,
+      });
+    }
+  );
+
+  test.each([
+    ["masking-exemption", "maskingExemptionDraftHandoff"],
+    ["semantic-type", "semanticTypeDraftHandoff"],
+  ] as const)(
+    "preserves a %s Created receipt recorded in another tab while awaiting input",
+    (kind, key) => {
+      const { writer, follower } = setupTabs();
+      const chat = s(writer).createChat({ workspaceName });
+      const message = s(writer).addMessage({
+        chatId: chat.id,
+        role: "assistant",
+        metadata: {
+          actions: [{ kind: `draft-${kind}`, draftId: "draft-1" }],
+        },
+      })!;
+      const recordOpened =
+        kind === "masking-exemption"
+          ? s(writer).recordMaskingExemptionDraftHandoff
+          : s(writer).recordSemanticTypeDraftHandoff;
+      recordOpened(chat.id, message.id, "draft-1", "opened");
+      const controller = new AbortController();
+      const ask = {
+        kind: "input" as const,
+        toolCallId: "owner-ask",
+        prompt: "Which column?",
+      };
+      s(writer).startChatRun(chat.id, page, { runId: "owner-run" });
+      s(writer).setAbortController(chat.id, controller);
+      s(writer).awaitUser(chat.id, ask);
+      s(follower).syncState();
+      const created =
+        kind === "masking-exemption"
+          ? s(follower).markMaskingExemptionDraftCreated(
+              chat.id,
+              message.id,
+              "draft-1"
+            )
+          : s(follower).recordSemanticTypeDraftHandoff(
+              chat.id,
+              message.id,
+              "draft-1",
+              "created"
+            );
+      expect(created?.metadata?.[key]?.created).toBe(true);
+
+      s(writer).incrementChatTotalTokens(chat.id, 7);
+      s(writer).syncState();
+
+      expect(s(writer).getMessages(chat.id)[0].metadata?.[key]).toEqual({
+        draftId: "draft-1",
+        outcome: "opened",
+        created: true,
+      });
+      expect(
+        persistedState().messagesByChatId[chat.id][0].metadata[key].created
+      ).toBe(true);
+      expect(s(writer).getChat(chat.id)).toMatchObject({
+        status: "awaiting_user",
+        runId: "owner-run",
+        totalTokensUsed: 7,
+      });
+      expect(s(writer).getPendingAsk(chat.id)).toEqual(ask);
+      expect(s(writer).getAbortController(chat.id)).toBe(controller);
+      expect(controller.signal.aborted).toBe(false);
+      s(follower).saveState();
+      s(writer).saveState();
+      const reloaded = createAgentStore();
+      s(reloaded).setWorkspaceName(workspaceName);
+      expect(s(reloaded).getMessages(chat.id)[0].metadata?.[key]?.created).toBe(
+        true
+      );
+    }
+  );
+
+  test.each(["changed-draft", "changed-kind", "removed-message"] as const)(
+    "does not merge a receipt into a %s while preserving the owner's execution",
+    (change) => {
+      const { writer, follower } = setupTabs();
+      const chat = s(writer).createChat({ workspaceName });
+      const message = s(writer).addMessage({
+        chatId: chat.id,
+        role: "assistant",
+        metadata: {
+          actions: [{ kind: "draft-masking-exemption", draftId: "draft-1" }],
+        },
+      })!;
+      s(writer).startChatRun(chat.id, page, { runId: "owner-run" });
+      s(follower).syncState();
+      s(follower).recordMaskingExemptionDraftHandoff(
+        chat.id,
+        message.id,
+        "draft-1",
+        "opened"
+      );
+      writer.setState((state) => ({
+        messagesByChatId: {
+          ...state.messagesByChatId,
+          [chat.id]:
+            change === "removed-message"
+              ? []
+              : [
+                  {
+                    ...message,
+                    content: "Owner's updated message",
+                    metadata: {
+                      actions: [
+                        change === "changed-kind"
+                          ? { kind: "draft-masking-rule", draftId: "draft-1" }
+                          : {
+                              kind: "draft-masking-exemption",
+                              draftId: "draft-2",
+                            },
+                      ],
+                    },
+                  },
+                ],
+        },
+      }));
+
+      s(writer).incrementChatTotalTokens(chat.id, 7);
+      s(writer).syncState();
+
+      const messages = s(writer).getMessages(chat.id);
+      expect(messages).toHaveLength(change === "removed-message" ? 0 : 1);
+      expect(
+        messages[0]?.metadata?.maskingExemptionDraftHandoff
+      ).toBeUndefined();
+      if (change !== "removed-message")
+        expect(messages[0].content).toBe("Owner's updated message");
+      expect(s(writer).getChat(chat.id)).toMatchObject({
+        status: "running",
+        runId: "owner-run",
+        totalTokensUsed: 7,
+      });
+    }
+  );
+
+  test("rebases a receipt-only edit without replacing a concurrently completed answer", () => {
+    const { writer, follower } = setupTabs();
+    const chat = s(writer).createChat({ workspaceName });
+    s(writer).addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      metadata: {
+        actions: [{ kind: "draft-masking-exemption", draftId: "draft-1" }],
+      },
+    });
+    s(follower).syncState();
+    finishAnswer(writer, chat.id);
+
+    follower.setState((state) => ({
+      messagesByChatId: {
+        ...state.messagesByChatId,
+        [chat.id]: [
+          {
+            ...state.messagesByChatId[chat.id][0],
+            metadata: {
+              ...state.messagesByChatId[chat.id][0].metadata,
+              maskingExemptionDraftHandoff: {
+                draftId: "draft-1",
+                outcome: "opened",
+              },
+            },
+          },
+        ],
+      },
+    }));
+
+    expect(
+      persistedState().messagesByChatId[chat.id].map(
+        (entry: { content?: string }) => entry.content
+      )
+    ).toEqual([undefined, "Latest answer"]);
+    expect(
+      persistedState().messagesByChatId[chat.id][0].metadata
+        .maskingExemptionDraftHandoff
+    ).toEqual({
+      draftId: "draft-1",
+      outcome: "opened",
+    });
+    s(follower).syncState();
+    expect(s(follower).getChat(chat.id)).toMatchObject({
+      status: "idle",
+      totalTokensUsed: 7,
+    });
+  });
+
+  test.each(["touch", "rename"] as const)(
+    "preserves newer execution history when a stale tab makes a local %s",
+    (action) => {
+      const { writer, follower, chatId } = setupTabs();
+      finishAnswer(writer, chatId);
+
+      if (action === "touch") s(follower).touchChat(chatId);
+      else s(follower).renameChat(chatId, "Locally renamed");
+      s(follower).saveState();
+
+      expect(persistedState().messagesByChatId[chatId]).toEqual(
+        s(writer).getMessages(chatId)
+      );
+      const persistedChat = persistedState().chats.find(
+        (chat: AgentChat) => chat.id === chatId
+      );
+      expect(persistedChat?.totalTokensUsed).toBe(17);
+      if (action === "rename") {
+        expect(persistedChat?.title).toBe("Locally renamed");
+      }
+    }
+  );
+
+  test.each(["workspace", "reload"] as const)(
+    "does not revive a completed owner's pending ask after %s hydration",
+    (hydrate) => {
+      const owner = createAgentStore();
+      s(owner).setWorkspaceName(workspaceName);
+      const chatId = s(owner).currentChatId!;
+      s(owner).addMessage({ chatId, role: "user", content: "Question" });
+      s(owner).startChatRun(chatId, page, { runId: "owner-run" });
+      s(owner).setAbortController(chatId, new AbortController());
+      s(owner).awaitUser(chatId, {
+        kind: "input",
+        toolCallId: "owner-ask",
+        prompt: "Which column?",
+      });
+      const observer = createAgentStore();
+      s(observer).setWorkspaceName(workspaceName);
+      if (hydrate === "reload") s(observer).loadState();
+
+      expect(
+        s(owner).answerPendingAsk(chatId, { kind: "input", answer: "email" })
+      ).not.toBeNull();
+      s(owner).startChatRun(chatId, page, { runId: "resumed-run" });
+      s(owner).addMessage({
+        chatId,
+        role: "assistant",
+        content: "Completed answer",
+      });
+      s(owner).finishChatRun(chatId);
+      s(owner).setAbortController(chatId, null);
+
+      s(observer).renameChat(chatId, "Renamed by observer");
+      s(owner).syncState();
+
+      expect(
+        s(owner).addMessage({
+          chatId,
+          role: "user",
+          content: "Next question",
+        })
+      ).not.toBeNull();
+      expect(s(owner).getChat(chatId)).toMatchObject({
+        title: "Renamed by observer",
+        status: "idle",
+      });
+      expect(s(owner).getPendingAsk(chatId)).toBeNull();
+      expect(
+        s(owner)
+          .getMessages(chatId)
+          .map((message) => message.content)
+      ).toEqual([
+        "Question",
+        '{"kind":"input","answer":"email"}',
+        "Completed answer",
+        "Next question",
+      ]);
+    }
+  );
+
+  test.each(["running", "awaiting_user"] as const)(
+    "recovers a crashed owner's %s execution despite a stale active marker",
+    (status) => {
+      const owner = createAgentStore();
+      s(owner).setWorkspaceName(workspaceName);
+      const chatId = s(owner).currentChatId!;
+      s(owner).addMessage({ chatId, role: "user", content: "Question" });
+      s(owner).startChatRun(chatId, page, { runId: "owner-run" });
+      s(owner).setAbortController(chatId, new AbortController());
+      if (status === "awaiting_user") {
+        s(owner).awaitUser(chatId, {
+          kind: "input",
+          toolCallId: "owner-ask",
+          prompt: "Which column?",
+        });
+      }
+
+      const restored = createAgentStore();
+      s(restored).setWorkspaceName(workspaceName);
+
+      expect(s(restored).isChatRunning(chatId)).toBe(false);
+      if (status === "running") {
+        expect(s(restored).getChat(chatId)).toMatchObject({
+          status: "idle",
+          interrupted: true,
+          interruptionReason: "unexpected",
+        });
+        expect(
+          s(restored).addMessage({
+            chatId,
+            role: "user",
+            content: "Retry question",
+          })
+        ).not.toBeNull();
+      } else {
+        expect(s(restored).getChat(chatId)?.status).toBe("awaiting_user");
+        expect(
+          s(restored).answerPendingAsk(chatId, {
+            kind: "input",
+            answer: "email",
+          })
+        ).not.toBeNull();
+        expect(s(restored).getPendingAsk(chatId)).toBeNull();
+      }
+    }
+  );
+
+  test("recovers a pending ask without an active execution owner", () => {
+    const previous = createAgentStore();
+    s(previous).setWorkspaceName(workspaceName);
+    const chatId = s(previous).currentChatId!;
+    s(previous).awaitUser(chatId, {
+      kind: "input",
+      toolCallId: "restored-ask",
+      prompt: "Which column?",
+    });
+
+    const restored = createAgentStore();
+    s(restored).setWorkspaceName(workspaceName);
+
+    expect(s(restored).isChatRunning(chatId)).toBe(false);
+    expect(
+      s(restored).answerPendingAsk(chatId, { kind: "input", answer: "email" })
+    ).not.toBeNull();
+    expect(s(restored).getPendingAsk(chatId)).toBeNull();
+    expect(s(restored).getMessages(chatId).at(-1)?.content).toBe(
+      '{"kind":"input","answer":"email"}'
+    );
+  });
+
+  test.each(["finished", "stopped"] as const)(
+    "allows a new turn after hydrating a %s execution",
+    (status) => {
+      const owner = createAgentStore();
+      s(owner).setWorkspaceName(workspaceName);
+      const chatId = s(owner).currentChatId!;
+      s(owner).addMessage({ chatId, role: "user", content: "Question" });
+      s(owner).startChatRun(chatId, page, { runId: "owner-run" });
+      s(owner).setAbortController(chatId, new AbortController());
+      if (status === "stopped") s(owner).cancel(chatId, "user");
+      else s(owner).finishChatRun(chatId);
+      s(owner).setAbortController(chatId, null);
+
+      const restored = createAgentStore();
+      s(restored).setWorkspaceName(workspaceName);
+
+      expect(s(restored).isChatRunning(chatId)).toBe(false);
+      expect(s(restored).getChat(chatId)?.interrupted).toBe(
+        status === "stopped"
+      );
+      expect(
+        s(restored).addMessage({
+          chatId,
+          role: "user",
+          content: "Next question",
+        })
+      ).not.toBeNull();
+    }
+  );
+
+  test("keeps a locally owned pending ask answerable after explicit reload", () => {
+    const owner = createAgentStore();
+    s(owner).setWorkspaceName(workspaceName);
+    const chatId = s(owner).currentChatId!;
+    s(owner).startChatRun(chatId, page, { runId: "owner-run" });
+    const controller = new AbortController();
+    s(owner).setAbortController(chatId, controller);
+    s(owner).awaitUser(chatId, {
+      kind: "input",
+      toolCallId: "owner-ask",
+      prompt: "Which column?",
+    });
+
+    s(owner).loadState();
+
+    expect(s(owner).getAbortController(chatId)).toBe(controller);
+    expect(
+      s(owner).answerPendingAsk(chatId, { kind: "input", answer: "email" })
+    ).not.toBeNull();
+    expect(s(owner).getPendingAsk(chatId)).toBeNull();
+    expect(controller.signal.aborted).toBe(false);
+  });
+
+  test.each(["active-controller", "changed-execution"] as const)(
+    "keeps %s local execution ahead of a conflicting stored completion",
+    (ownership) => {
+      const { follower, chatId } = setupTabs();
+      s(follower).startChatRun(chatId, page, { runId: "local-run" });
+      const controller = new AbortController();
+      if (ownership === "active-controller") {
+        s(follower).setAbortController(chatId, controller);
+      }
+      const incoming = persistedState();
+      const chat = incoming.chats.find(
+        (entry: AgentChat) => entry.id === chatId
+      );
+      chat.status = "idle";
+      chat.runId = null;
+      incoming.activeChatIds = [];
+      incoming.messagesByChatId[chatId].push({
+        id: "remote-answer",
+        chatId,
+        role: "assistant",
+        content: "Conflicting answer",
+        createdTs: Date.now(),
+      });
+      mockStorage.setItem(
+        getAgentStateKey(workspaceName),
+        JSON.stringify(incoming)
+      );
+
+      if (ownership === "changed-execution") {
+        follower.setState((state) => ({
+          messagesByChatId: {
+            ...state.messagesByChatId,
+            [chatId]: [
+              ...state.messagesByChatId[chatId],
+              {
+                id: "local-answer",
+                chatId,
+                role: "assistant",
+                content: "Local answer",
+                createdTs: Date.now(),
+              },
+            ],
+          },
+        }));
+      }
+      s(follower).syncState();
+      s(follower).saveState();
+
+      expect(s(follower).getChat(chatId)).toMatchObject({
+        status: "running",
+        runId: "local-run",
+      });
+      expect(
+        s(follower)
+          .getMessages(chatId)
+          .map((message) => message.content)
+      ).toEqual(
+        ownership === "active-controller"
+          ? ["Initial question"]
+          : ["Initial question", "Local answer"]
+      );
+      expect(persistedState().messagesByChatId[chatId]).toEqual(
+        s(follower).getMessages(chatId)
+      );
+      if (ownership === "active-controller") {
+        expect(s(follower).getAbortController(chatId)).toBe(controller);
+        expect(controller.signal.aborted).toBe(false);
+      }
+    }
+  );
+
+  test("does not resurrect a deleted chat and reconciles its selected ID", () => {
+    const { writer, follower, chatId, otherChatId } = setupTabs();
+    expect(s(follower).currentChatId).toBe(chatId);
+    s(writer).deleteChat(chatId);
+
+    s(follower).saveState();
+    expect(
+      persistedState().chats.some((chat: AgentChat) => chat.id === chatId)
+    ).toBe(false);
+    s(follower).syncState();
+
+    expect(s(follower).getChat(chatId)).toBeNull();
+    expect(s(follower).getMessages(chatId)).toEqual([]);
+    expect(s(follower).currentChatId).toBe(otherChatId);
+  });
+
+  test.each([
+    { workspace: "workspaces/beta", email: TEST_USER_EMAIL },
+    { workspace: workspaceName, email: "another@example.com" },
+  ])(
+    "isolates $workspace and $email while synchronizing",
+    ({ workspace, email }) => {
+      const { follower, chatId } = setupTabs();
+      const otherScope = createAgentStore();
+      s(otherScope).setWorkspaceName(workspace, email);
+      const otherChatId = s(otherScope).currentChatId!;
+      s(otherScope).addMessage({
+        chatId: otherChatId,
+        role: "assistant",
+        content: "Different scope",
+      });
+      s(otherScope).incrementChatTotalTokens(otherChatId, 99);
+
+      s(follower).syncState();
+
+      expect(
+        s(follower)
+          .getMessages(chatId)
+          .map((message) => message.content)
+      ).toEqual(["Initial question"]);
+      expect(s(follower).getChat(chatId)?.totalTokensUsed).toBe(10);
+      expect(s(follower).getChat(otherChatId)).toBeNull();
+      expect(s(follower).currentChatId).toBe(chatId);
+    }
+  );
+
+  test("preserves local controllers, runs, and pending asks while importing another answer", () => {
+    const { writer, follower, chatId, otherChatId } = setupTabs();
+    const pendingChat = s(follower).createChat({
+      title: "Local pending ask",
+      select: false,
+    });
+    const controller = new AbortController();
+    const ask = {
+      kind: "input" as const,
+      toolCallId: "local-ask",
+      prompt: "Which database?",
+    };
+    s(follower).startChatRun(chatId, page, { runId: "local-run" });
+    s(follower).setAbortController(chatId, controller);
+    s(follower).startChatRun(pendingChat.id, page, { runId: "local-ask-run" });
+    s(follower).awaitUser(pendingChat.id, ask);
+    finishAnswer(writer, otherChatId);
+
+    s(follower).syncState();
+
+    expect(s(follower).getAbortController(chatId)).toBe(controller);
+    expect(controller.signal.aborted).toBe(false);
+    expect(s(follower).getChat(chatId)).toMatchObject({
+      status: "running",
+      runId: "local-run",
+    });
+    expect(s(follower).getChat(pendingChat.id)).toMatchObject({
+      status: "awaiting_user",
+      runId: "local-ask-run",
+    });
+    expect(s(follower).getPendingAsk(pendingChat.id)).toEqual(ask);
+    expect(s(follower).getMessages(otherChatId)).toEqual(
+      s(writer).getMessages(otherChatId)
+    );
+    expect(s(follower).getChat(otherChatId)?.totalTokensUsed).toBe(7);
+  });
+
+  test("does not execute a queue imported from another tab", () => {
+    const { writer, follower, chatId } = setupTabs();
+    s(writer).queueUserMessage({ chatId, text: "Queued question", page });
+
+    s(follower).syncState();
+
+    expect(s(follower).isChatRunning(chatId)).toBe(true);
+    expect(s(follower).takeQueuedUserMessage(chatId)).toBeNull();
+    expect(s(follower).commitQueuedUserMessage(chatId)).toBeNull();
+    expect(s(follower).getMessages(chatId)).toHaveLength(1);
+    expect(s(writer).takeQueuedUserMessage(chatId)?.text).toBe(
+      "Queued question"
+    );
+  });
+
+  test("keeps an idle follow-up controller busy until its owner releases it", () => {
+    const { writer, follower, chatId } = setupTabs();
+    s(writer).startChatRun(chatId, page, { runId: "owner-run" });
+    s(writer).setAbortController(chatId, new AbortController());
+    s(writer).addMessage({
+      chatId,
+      role: "assistant",
+      content: "Completed answer",
+      metadata: { runId: "owner-run" },
+    });
+    s(writer).finishChatRun(chatId);
+    s(follower).syncState();
+
+    expect(s(follower).getChat(chatId)?.status).toBe("idle");
+    expect(s(follower).isChatRunning(chatId)).toBe(true);
+    s(follower).queueUserMessage({ chatId, text: "Next question", page });
+    expect(s(follower).queuedUserMessagesByChatId[chatId]).toBeUndefined();
+
+    s(writer).setAbortController(chatId, null);
+    s(follower).syncState();
+
+    expect(s(follower).isChatRunning(chatId)).toBe(false);
+    s(follower).queueUserMessage({ chatId, text: "Next question", page });
+    expect(s(follower).queuedUserMessagesByChatId[chatId]?.text).toBe(
+      "Next question"
+    );
+  });
+
+  test("does not bulk-delete an archived run owned by another tab", () => {
+    const { writer, follower, chatId } = setupTabs();
+    s(writer).startChatRun(chatId, page, { runId: "owner-run" });
+    s(writer).archiveChat(chatId);
+    s(follower).syncState();
+
+    expect(s(follower).deleteAllArchivedChats()).toBe(0);
+
+    expect(
+      persistedState().chats.some((chat: AgentChat) => chat.id === chatId)
+    ).toBe(true);
+    expect(s(follower).getChat(chatId)?.status).toBe("running");
+    expect(s(writer).getChat(chatId)?.status).toBe("running");
+  });
+
+  test.each(["running", "awaiting_user"] as const)(
+    "does not cancel or answer another tab's %s run",
+    (status) => {
+      const { writer, follower, chatId } = setupTabs();
+      s(writer).startChatRun(chatId, page, { runId: "owner-run" });
+      if (status === "awaiting_user") {
+        s(writer).awaitUser(chatId, {
+          kind: "input",
+          toolCallId: "owner-ask",
+          prompt: "Which database?",
+        });
+      }
+      s(follower).syncState();
+      const messages = s(follower).getMessages(chatId);
+      const chat = s(follower).getChat(chatId);
+      const saved = mockStorage.getItem(getAgentStateKey(workspaceName));
+
+      expect(s(follower).isChatRunning(chatId)).toBe(true);
+      s(follower).cancel(chatId, "user");
+      expect(
+        s(follower).answerPendingAsk(chatId, {
+          kind: "input",
+          answer: "orders",
+        })
+      ).toBeNull();
+      expect(s(follower).cancelPendingAsk(chatId)).toBe(false);
+
+      expect(s(follower).getMessages(chatId)).toEqual(messages);
+      expect(s(follower).getChat(chatId)).toEqual(chat);
+      expect(mockStorage.getItem(getAgentStateKey(workspaceName))).toBe(saved);
+      expect(s(writer).getChat(chatId)?.status).toBe(status);
+    }
+  );
+
+  test("keeps local drafts and selection without echoing imported state to storage", () => {
+    const { writer, follower, chatId, otherChatId } = setupTabs();
+    s(follower).setCurrentChat(otherChatId);
+    s(follower).setDraft(otherChatId, { text: "Unsent local question" });
+    s(follower).saveState();
+    finishAnswer(writer, chatId);
+    const write = vi.spyOn(mockStorage, "setItem");
+
+    s(follower).syncState();
+    s(follower).syncState();
+
+    expect(s(follower).getMessages(chatId)).toHaveLength(2);
+    expect(s(follower).currentChatId).toBe(otherChatId);
+    expect(s(follower).getDraft(otherChatId)).toEqual({
+      text: "Unsent local question",
+    });
+    expect(write).not.toHaveBeenCalled();
+    write.mockRestore();
+  });
+});
+
+describe("cross-tab Agent browser events", () => {
+  const workspaceName = "workspaces/alpha";
+  const page = { path: "/landing", title: "Home" };
+  let originalSingletonState: AgentState;
+
+  beforeEach(() => {
+    originalSingletonState = useAgentStore.getState();
+    useAgentStore.getState().setWorkspaceName(undefined, "");
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    useAgentStore.getState().setWorkspaceName(undefined, "");
+    useAgentStore.setState(originalSingletonState);
+  });
+
+  const setupSingleton = () => {
+    const writer = createAgentStore();
+    s(writer).setWorkspaceName(workspaceName);
+    const chatId = s(writer).currentChatId!;
+    s(writer).addMessage({ chatId, role: "user", content: "Initial question" });
+    s(writer).incrementChatTotalTokens(chatId, 10);
+    const otherChat = s(writer).createChat({
+      title: "Other conversation",
+      select: false,
+    });
+    s(writer).saveState();
+    s(useAgentStore).setWorkspaceName(workspaceName);
+    return { writer, chatId, otherChatId: otherChat.id };
+  };
+  const finishAnswer = (writer: StoreApi<AgentState>, chatId: string) => {
+    s(writer).startChatRun(chatId, page, { runId: "remote-run" });
+    s(writer).addMessage({
+      chatId,
+      role: "assistant",
+      content: "Latest answer",
+    });
+    s(writer).incrementChatTotalTokens(chatId, 7);
+    s(writer).finishChatRun(chatId);
+  };
+  const dispatchStorage = (
+    key = getAgentStateKey(workspaceName),
+    storageArea = mockStorage,
+    newValue = mockStorage.getItem(key)
+  ) => {
+    const event = new StorageEvent("storage", { key, newValue });
+    Object.defineProperty(event, "storageArea", { value: storageArea });
+    window.dispatchEvent(event);
+  };
+
+  test("imports matching storage events without echo writes or selection changes", () => {
+    const { writer, chatId, otherChatId } = setupSingleton();
+    s(useAgentStore).setCurrentChat(otherChatId);
+    finishAnswer(writer, chatId);
+    const write = vi.spyOn(mockStorage, "setItem");
+
+    dispatchStorage();
+
+    expect(s(useAgentStore).getMessages(chatId)).toEqual(
+      s(writer).getMessages(chatId)
+    );
+    expect(s(useAgentStore).getChat(chatId)?.totalTokensUsed).toBe(17);
+    expect(s(useAgentStore).currentChatId).toBe(otherChatId);
+    expect(write).not.toHaveBeenCalled();
+  });
+
+  test.each([
+    { name: "another workspace", key: getAgentStateKey("workspaces/beta") },
+    {
+      name: "another user",
+      key: getScopedAgentStateKey(workspaceName, "another@example.com")!,
+    },
+    { name: "another storage area", key: getAgentStateKey(workspaceName) },
+  ])("ignores storage events for $name", ({ name, key }) => {
+    const { writer, chatId } = setupSingleton();
+    finishAnswer(writer, chatId);
+    const write = vi.spyOn(mockStorage, "setItem");
+
+    dispatchStorage(
+      key,
+      name === "another storage area" ? createMockStorage() : mockStorage
+    );
+
+    expect(s(useAgentStore).getMessages(chatId)).toHaveLength(1);
+    expect(s(useAgentStore).getChat(chatId)?.totalTokensUsed).toBe(10);
+    expect(write).not.toHaveBeenCalled();
+  });
+
+  test("reads the latest storage value on stale events and again on window focus", () => {
+    const { writer, chatId } = setupSingleton();
+    const staleSnapshot = mockStorage.getItem(getAgentStateKey(workspaceName));
+    finishAnswer(writer, chatId);
+    const write = vi.spyOn(mockStorage, "setItem");
+
+    dispatchStorage(
+      getAgentStateKey(workspaceName),
+      mockStorage,
+      staleSnapshot
+    );
+
+    expect(s(useAgentStore).getMessages(chatId)).toHaveLength(2);
+    expect(s(useAgentStore).getChat(chatId)?.totalTokensUsed).toBe(17);
+    expect(write).not.toHaveBeenCalled();
+
+    s(writer).addMessage({
+      chatId,
+      role: "assistant",
+      content: "Answer completed while unfocused",
+    });
+    s(writer).incrementChatTotalTokens(chatId, 5);
+    write.mockClear();
+    window.dispatchEvent(new Event("focus"));
+
+    expect(s(useAgentStore).getMessages(chatId)).toEqual(
+      s(writer).getMessages(chatId)
+    );
+    expect(s(useAgentStore).getChat(chatId)?.totalTokensUsed).toBe(22);
+    expect(write).not.toHaveBeenCalled();
+  });
+
+  test("rebases a stale singleton snapshot before saving on pagehide", () => {
+    const { writer, chatId } = setupSingleton();
+    finishAnswer(writer, chatId);
+
+    window.dispatchEvent(new Event("pagehide"));
+
+    const saved = JSON.parse(
+      mockStorage.getItem(getAgentStateKey(workspaceName))!
+    );
+    expect(saved.messagesByChatId[chatId]).toEqual(
+      s(writer).getMessages(chatId)
+    );
+    expect(
+      saved.chats.find((chat: AgentChat) => chat.id === chatId)?.totalTokensUsed
+    ).toBe(17);
+  });
+
+  test.each(["running", "awaiting_user", "api-permission", "queued"] as const)(
+    "releases this tab's %s conversation on pagehide so another tab can retry",
+    (status) => {
+      const { writer: follower, chatId } = setupSingleton();
+      const owner = s(useAgentStore);
+      const controller = new AbortController();
+      if (status === "queued") {
+        owner.queueUserMessage({ chatId, text: "Queued question", page });
+      } else {
+        owner.startChatRun(chatId, page, { runId: "owner-run" });
+        owner.setAbortController(chatId, controller);
+        if (status !== "running") {
+          owner.awaitUser(chatId, {
+            kind: status === "api-permission" ? "confirm" : "input",
+            toolCallId: "owner-ask",
+            prompt: "Continue?",
+            ...(status === "api-permission"
+              ? {
+                  apiPermission: {
+                    actionId: "local-approval",
+                    operationId: "SQLService/Query",
+                  },
+                }
+              : {}),
+          });
+        }
+      }
+      s(follower).syncState();
+      expect(s(follower).isChatRunning(chatId)).toBe(true);
+
+      window.dispatchEvent(new Event("pagehide"));
+      s(follower).syncState();
+
+      expect(s(follower).remoteBusyChatIds[chatId]).toBeUndefined();
+      expect(s(follower).getChat(chatId)).toMatchObject({
+        status: "idle",
+        interrupted: true,
+        interruptionReason: "unexpected",
+      });
+      expect(s(follower).getPendingAsk(chatId)).toBeNull();
+      expect(s(follower).queuedUserMessagesByChatId[chatId]).toBeUndefined();
+      expect(s(useAgentStore).getAbortController(chatId)).toBeNull();
+      if (status !== "queued") expect(controller.signal.aborted).toBe(true);
+      expect(s(follower).getMessages(chatId).at(-1)?.content).toBe(
+        status === "queued" ? "Queued question" : "Initial question"
+      );
+      s(follower).startChatRun(chatId, page, { runId: "retry-run" });
+      expect(s(follower).getChat(chatId)?.runId).toBe("retry-run");
+    }
+  );
+
+  test("pagehide does not interrupt work owned by another tab", () => {
+    const { writer, chatId } = setupSingleton();
+    s(writer).startChatRun(chatId, page, { runId: "remote-run" });
+    s(writer).setAbortController(chatId, new AbortController());
+    dispatchStorage();
+
+    window.dispatchEvent(new Event("pagehide"));
+    s(writer).syncState();
+
+    expect(s(writer).getChat(chatId)).toMatchObject({
+      status: "running",
+      runId: "remote-run",
+      interrupted: false,
+    });
+    expect(s(writer).getAbortController(chatId)?.signal.aborted).toBe(false);
+  });
+
+  test("pagehide releases follow-up generation without marking a completed answer interrupted", () => {
+    const { writer: follower, chatId } = setupSingleton();
+    const controller = new AbortController();
+    s(useAgentStore).startChatRun(chatId, page, { runId: "owner-run" });
+    s(useAgentStore).setAbortController(chatId, controller);
+    s(useAgentStore).addMessage({
+      chatId,
+      role: "assistant",
+      content: "Completed answer",
+    });
+    s(useAgentStore).finishChatRun(chatId);
+    s(follower).syncState();
+    expect(s(follower).isChatRunning(chatId)).toBe(true);
+
+    window.dispatchEvent(new Event("pagehide"));
+    s(follower).syncState();
+
+    expect(controller.signal.aborted).toBe(true);
+    expect(s(follower).isChatRunning(chatId)).toBe(false);
+    expect(s(follower).getChat(chatId)?.interrupted).toBe(false);
+    expect(s(follower).getMessages(chatId).at(-1)?.content).toBe(
+      "Completed answer"
+    );
+  });
+
+  test("tracks a remote queued run through awaiting input and completion without taking ownership", () => {
+    const { writer, chatId } = setupSingleton();
+    const write = vi.spyOn(mockStorage, "setItem");
+    const receive = () => {
+      write.mockClear();
+      dispatchStorage();
+      expect(write).not.toHaveBeenCalled();
+    };
+    s(writer).queueUserMessage({ chatId, text: "Queued question", page });
+    receive();
+    expect(s(useAgentStore).remoteBusyChatIds[chatId]).toBe(true);
+    expect(s(useAgentStore).isChatRunning(chatId)).toBe(true);
+    expect(s(useAgentStore).takeQueuedUserMessage(chatId)).toBeNull();
+    expect(s(useAgentStore).commitQueuedUserMessage(chatId)).toBeNull();
+
+    expect(s(writer).takeQueuedUserMessage(chatId)).not.toBeNull();
+    expect(s(writer).commitQueuedUserMessage(chatId)).not.toBeNull();
+    s(writer).startChatRun(chatId, page, { runId: "owner-run" });
+    receive();
+    expect(s(useAgentStore).getChat(chatId)?.status).toBe("running");
+    expect(s(useAgentStore).remoteBusyChatIds[chatId]).toBe(true);
+
+    s(writer).awaitUser(chatId, {
+      kind: "input",
+      toolCallId: "owner-ask",
+      prompt: "Which database?",
+    });
+    receive();
+    expect(s(useAgentStore).getChat(chatId)?.status).toBe("awaiting_user");
+    expect(s(useAgentStore).isChatRunning(chatId)).toBe(true);
+    expect(
+      s(useAgentStore).answerPendingAsk(chatId, {
+        kind: "input",
+        answer: "orders",
+      })
+    ).toBeNull();
+    expect(s(useAgentStore).cancelPendingAsk(chatId)).toBe(false);
+    expect(write).not.toHaveBeenCalled();
+
+    expect(
+      s(writer).answerPendingAsk(chatId, { kind: "input", answer: "orders" })
+    ).not.toBeNull();
+    finishAnswer(writer, chatId);
+    receive();
+
+    expect(s(useAgentStore).remoteBusyChatIds[chatId]).toBeUndefined();
+    expect(s(useAgentStore).isChatRunning(chatId)).toBe(false);
+    expect(s(useAgentStore).getPendingAsk(chatId)).toBeNull();
+    expect(s(useAgentStore).queuedUserMessagesByChatId[chatId]).toBeUndefined();
+    expect(s(useAgentStore).getMessages(chatId)).toEqual(
+      s(writer).getMessages(chatId)
+    );
+    expect(s(useAgentStore).getChat(chatId)?.totalTokensUsed).toBe(17);
   });
 });

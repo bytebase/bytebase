@@ -43,12 +43,13 @@
     "api-permission-title": "Solicitar permiso",
     "archive-all-chats": "Archivar todos los chats",
     "archive-chat": "Archivar chat",
+    "archive-chat-confirmation": "¿Archivar este chat?",
     "archived-only-chats": "Ver chats archivados",
     "args": "Argumentos",
     "assistant-title": "Asistente de IA",
     "cancel": "Cancelar",
     "cancel-request": "Cancelar solicitud",
-    "chat-archived-label": "Archivado",
+    "chat-archived-notice": "Este chat está archivado.",
     "chat-default-title": "Nuevo chat",
     "chat-list-label": "Chats",
     "chat-total-tokens": "Tokens del chat: {{count}}",
@@ -60,7 +61,7 @@
     "context-workspace": "Espacio de trabajo",
     "contextual-start": {
       "active-request": "Termina la solicitud activa antes de iniciar otro chat.",
-      "continue-chat": "Continuar el chat actual",
+      "continue-chat": "Continuar el último chat",
       "database-heading": "Preguntar sobre esta base de datos",
       "database-recent": "¿Qué cambió recientemente en esta base de datos?",
       "database-schema": "¿Qué tablas hay en esta base de datos?",
@@ -92,6 +93,9 @@
       "masking-global-effect": "¿Qué vería un desarrollador en los valores cubiertos por esta regla Inner Mask?",
       "masking-global-exemptions": "¿Podría una excepción revelar el valor original?",
       "masking-global-heading": "Preguntar sobre el enmascaramiento de datos",
+      "masking-rule-configure": "Ayúdame a configurar esta regla.",
+      "masking-rule-effect": "Explica el efecto de enmascaramiento de esta regla.",
+      "masking-rule-review": "Revisa esta regla.",
       "masking-semantic-algorithm": "¿Qué conserva este algoritmo de enmascaramiento?",
       "masking-semantic-heading": "Preguntar sobre tipos semánticos",
       "masking-semantic-rules": "¿Qué reglas de enmascaramiento usan este tipo semántico?",
@@ -175,12 +179,60 @@
       "workspace-setup-first": "¿Qué debería configurar primero?"
     },
     "masking": {
-      "ask-agent": "Preguntar al agente sobre enmascaramiento"
+      "ask-agent-short": "Preguntar al agente",
+      "exemption-scope": {
+        "another-database": "Otra base de datos",
+        "only-database": "Solo {{database}}",
+        "project": "Todas las bases de datos de este proyecto",
+        "question": "¿Qué bases de datos debe cubrir esta exención?"
+      },
+      "rule-scope": {
+        "choose-project": "Elegir un proyecto",
+        "question": "¿Qué bases de datos debe cubrir esta regla de enmascaramiento?",
+        "workspace": "Todas las bases de datos del espacio de trabajo"
+      },
+      "semantic-type-choice": {
+        "create": "Crear un tipo de enmascaramiento personalizado…",
+        "create-description": "Preparar un nuevo tipo semántico con su configuración de enmascaramiento.",
+        "question": "¿Qué tipo semántico debe enmascarar estas columnas?"
+      }
+    },
+    "masking-exemption-draft": {
+      "applied": "Aplicado al borrador",
+      "apply": "Aplicar al borrador",
+      "inactive": "Este borrador ya no está disponible. Revisa las exenciones actuales antes de preparar otro borrador.",
+      "open": "Abrir borrador de exención",
+      "opened": "Borrador de exención abierto",
+      "unavailable": "No se pudo aplicar este borrador. El editor, los permisos o la configuración pueden haber cambiado. Revisa el formulario actual y pide al Agent que lo prepare de nuevo.",
+      "unsaved": "Solo rellena el formulario sin guardar. Revísalo antes de seleccionar Conceder Exención."
+    },
+    "masking-rule-draft": {
+      "all-databases": "Todas las bases de datos del espacio de trabajo",
+      "applied": "Aplicado al borrador",
+      "apply": "Aplicar al borrador",
+      "help-prompt": "Primero lee la regla actual sin guardar con get_masking_rule_draft. Usa sus campos reales, no una propuesta anterior. Pregunta solo por los datos que faltan. No guardes la configuración.",
+      "inactive": "Este borrador ya no está disponible. Revisa las reglas de enmascaramiento actuales antes de preparar otro borrador.",
+      "open": "Abrir borrador de regla",
+      "opened": "Borrador de regla abierto",
+      "queue": {
+        "created": "Creado",
+        "editing": "En edición",
+        "needs-recheck": "Las reglas de enmascaramiento o los tipos semánticos han cambiado. Revalida los borradores antes de continuar.",
+        "pending": "Pendiente",
+        "recheck": "Revalidar borradores",
+        "review": "Revisar",
+        "title": "Borradores de reglas"
+      },
+      "review-many": "Revisar {{count}} borradores de reglas",
+      "scope": "Alcance de bases de datos",
+      "semantic-type": "Tipo semántico",
+      "unavailable": "No se pudo aplicar el borrador. El editor, los permisos o la configuración pueden haber cambiado. Revisa el formulario actual y pide al agente que lo prepare de nuevo.",
+      "unsaved": "Solo rellena el formulario sin guardar. Revísalo antes de seleccionar Crear regla."
     },
     "minimize": "Minimizar",
     "new-chat": "Nuevo chat",
     "other-chats": "Otros chats",
-    "pending-choose-hint": "Seleccione una opción arriba",
+    "pending-choose-hint": "Seleccione una opción y luego haga clic en Responder.",
     "pending-confirm-hint": "Confirme o cancele arriba",
     "pending-input-hint": "Proporcione la entrada arriba",
     "permission": {
@@ -238,6 +290,7 @@
     "request-failed": "El asistente no pudo completar esta solicitud.",
     "request-stopped-by-user": "Solicitud detenida por el usuario",
     "request-stopped-retry-hint": "Una acción ya enviada puede completarse igualmente. Compruebe su estado antes de reintentar.",
+    "resend-message": "Reenviar mensaje",
     "resource-picker": {
       "add-context": "Añadir contexto",
       "databases": "Bases de datos",
@@ -262,6 +315,16 @@
     "result": "Resultado",
     "retry-last-chat-turn": "Reintentar",
     "self": "Asistente",
+    "semantic-type-draft": {
+      "created": "Creado",
+      "inactive": "Este borrador ya no está disponible. Revise los tipos semánticos actuales antes de preparar otro.",
+      "open": "Abrir borrador de tipo semántico",
+      "opened": "Borrador de tipo semántico abierto",
+      "save-failed": "No se pudo crear el tipo semántico. Revise el formulario e inténtelo de nuevo.",
+      "saved": "Se creó este tipo semántico. Actualice su configuración antes de usarlo en una regla de enmascaramiento.",
+      "unavailable": "No se pudo abrir este borrador. Es posible que el editor, los permisos o la configuración hayan cambiado. Revise el formulario actual y pida al agente que lo prepare de nuevo.",
+      "unsaved": "Solo rellena el formulario sin guardar. Revíselo antes de seleccionar Crear."
+    },
     "send": "Enviar",
     "stop": "Detener",
     "token-usage": {
@@ -297,7 +360,7 @@
     "tool-response-submitted": "Respuesta enviada",
     "tool-value": "Valor",
     "unarchive-all-chats": "Desarchivar todos los chats",
-    "unarchive-chat": "Desarchivar chat",
+    "unarchive-chat": "Restaurar chat",
     "workspace-attention": {
       "checking": "Comprobando los elementos que necesitan tu atención...",
       "empty": "No tienes issues abiertos que requieran tu atención.",

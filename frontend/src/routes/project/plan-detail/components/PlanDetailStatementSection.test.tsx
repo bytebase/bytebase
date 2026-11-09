@@ -33,6 +33,7 @@ const mocks = vi.hoisted(() => ({
   minimizeAgent: vi.fn(),
   openAgentWithPrompt: vi.fn(),
   localSheetNames: [] as string[],
+  failLocalWrite: false,
   getRelease: vi.fn(),
   openedFile: undefined as unknown,
 }));
@@ -151,29 +152,18 @@ vi.mock("../shared/stores/usePlanDetailStore", () => ({
 vi.mock("../shell/PlanDetailContext", () => ({
   usePlanDetailContext: () => mocks.page,
 }));
+vi.mock("../utils/localSheet", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("../utils/localSheet")>();
+  return {
+    ...actual,
+    setLocalSheetStatement: (...args: Parameters<typeof actual.setLocalSheetStatement>) => {
+      if (mocks.failLocalWrite) throw new Error("Local sheet unavailable");
+      return actual.setLocalSheetStatement(...args);
+    },
+  };
+});
 vi.mock("./SchemaEditorSheet", () => ({ SchemaEditorSheet: () => null }));
-vi.mock("@/components/ui/alert-dialog", () => ({
-  AlertDialog: ({ children, open }: { children: React.ReactNode; open: boolean }) =>
-    open ? <div>{children}</div> : null,
-  AlertDialogContent: ({ children }: { children: React.ReactNode }) => (
-    <div role="dialog">{children}</div>
-  ),
-  AlertDialogDescription: ({ children }: { children: React.ReactNode }) => (
-    <p>{children}</p>
-  ),
-  AlertDialogFooter: ({
-    children,
-    className,
-  }: {
-    children: React.ReactNode;
-    className?: string;
-  }) => (
-    <div className={className}>{children}</div>
-  ),
-  AlertDialogTitle: ({ children }: { children: React.ReactNode }) => (
-    <h2>{children}</h2>
-  ),
-}));
 vi.mock("./threads/StatementThreadsLayer", () => ({
   StatementThreadsLayer: () => null,
 }));
@@ -184,6 +174,7 @@ afterEach(() => {
   mocks.localSheetNames = [];
   mocks.sheets.clear();
   mocks.threadFocus = undefined;
+  mocks.failLocalWrite = false;
   vi.clearAllMocks();
 });
 
@@ -297,12 +288,17 @@ const renderPlanCreationSpec = (
   };
 };
 
-const dispatchPlanDraft = (database: string, sql: string) => {
+const dispatchPlanDraft = (
+  database: string,
+  sql: string,
+  onApplied?: () => void
+) => {
   const detail: AgentPlanDraftEventDetail = {
     project: "projects/p",
     database,
     sql,
     handled: false,
+    onApplied,
   };
   act(() => {
     window.dispatchEvent(
@@ -320,8 +316,12 @@ test("opens the Agent for the selected database and applies its DDL to this Plan
   const trigger = getByRole("button", {
     name: "agent.plan-assistance.ask-draft-sql",
   });
-  expect(trigger.querySelector("svg")).toBeNull();
-  expect(trigger).toHaveClass("max-w-full", "whitespace-normal");
+  expect(trigger.querySelector(".lucide-bot")).not.toBeNull();
+  expect(trigger).toHaveClass("h-6", "bg-transparent", "text-accent");
+  expect(trigger).not.toHaveClass("whitespace-normal", "h-auto");
+  expect(trigger.querySelector(".truncate")).toHaveTextContent(
+    "agent.plan-assistance.ask-draft-sql"
+  );
   expect(trigger.parentElement).toHaveClass("w-full", "max-w-full", "flex-wrap");
   expect(trigger.parentElement?.parentElement).toHaveClass("flex-wrap");
 
@@ -337,12 +337,19 @@ test("opens the Agent for the selected database and applies its DDL to this Plan
     ]
   );
 
-  const event = dispatchPlanDraft(database, "CREATE TABLE notes (id INT);");
+  const onApplied = vi.fn();
+  const event = dispatchPlanDraft(
+    database,
+    "CREATE TABLE notes (id INT);",
+    onApplied
+  );
   expect(event.handled).toBe(true);
   expect(getSheetStatement(sheet)).toBe("CREATE TABLE notes (id INT);");
   expect(getByTestId("editing-statement").textContent).toBe(
     "CREATE TABLE notes (id INT);"
   );
+  expect(onApplied).toHaveBeenCalledOnce();
+  expect(mocks.minimizeAgent).not.toHaveBeenCalled();
 });
 
 test("requires an explicit append or replace choice when the Plan already has SQL", () => {
@@ -350,19 +357,37 @@ test("requires an explicit append or replace choice when the Plan already has SQ
   const { sheet, getByRole, queryByRole, getByTestId } =
     renderPlanCreationSpec(database, "SELECT 1;");
 
-  dispatchPlanDraft(database, "CREATE TABLE notes (id INT);");
-  expect(getByRole("dialog")).toBeTruthy();
+  const onApplied = vi.fn();
+  const request = dispatchPlanDraft(
+    database,
+    "CREATE TABLE notes (id INT);",
+    onApplied
+  );
+  expect(request.handled).toBe(true);
+  const dialog = getByRole("alertdialog");
+  expect(dialog.closest("[data-bb-layer-family]")).toHaveAttribute(
+    "data-bb-layer-family",
+    "agent"
+  );
   expect(
     getByRole("button", { name: "agent.plan-draft.replace-sql" }).parentElement
   ).toHaveClass("flex-wrap", "gap-y-2");
-  expect(mocks.minimizeAgent).toHaveBeenCalledOnce();
+  expect(mocks.minimizeAgent).not.toHaveBeenCalled();
+  expect(onApplied).not.toHaveBeenCalled();
   fireEvent.click(getByRole("button", { name: "agent.plan-draft.append-sql" }));
   expect(getSheetStatement(sheet)).toBe(
     "SELECT 1;\n\nCREATE TABLE notes (id INT);"
   );
-  expect(queryByRole("dialog")).toBeNull();
+  expect(queryByRole("alertdialog")).toBeNull();
+  expect(onApplied).toHaveBeenCalledOnce();
 
-  dispatchPlanDraft(database, "ALTER TABLE notes ADD COLUMN name text;");
+  const onReplaced = vi.fn();
+  dispatchPlanDraft(
+    database,
+    "ALTER TABLE notes ADD COLUMN name text;",
+    onReplaced
+  );
+  expect(onReplaced).not.toHaveBeenCalled();
   fireEvent.click(getByRole("button", { name: "agent.plan-draft.replace-sql" }));
   expect(getSheetStatement(sheet)).toBe(
     "ALTER TABLE notes ADD COLUMN name text;"
@@ -370,7 +395,61 @@ test("requires an explicit append or replace choice when the Plan already has SQ
   expect(getByTestId("editing-statement").textContent).toBe(
     "ALTER TABLE notes ADD COLUMN name text;"
   );
+  expect(onReplaced).toHaveBeenCalledOnce();
 });
+
+test("does not report an applied draft when confirmation is canceled", () => {
+  const database = "instances/mysql/databases/app";
+  const { sheet, getByRole, queryByRole } = renderPlanCreationSpec(
+    database,
+    "SELECT 1;"
+  );
+  const onApplied = vi.fn();
+  dispatchPlanDraft(database, "CREATE TABLE notes (id INT);", onApplied);
+
+  fireEvent.click(getByRole("button", { name: "common.cancel" }));
+  expect(queryByRole("alertdialog")).toBeNull();
+  expect(getSheetStatement(sheet)).toBe("SELECT 1;");
+  expect(onApplied).not.toHaveBeenCalled();
+  expect(mocks.minimizeAgent).not.toHaveBeenCalled();
+});
+
+test("does not report an invalid draft as applied", () => {
+  const database = "instances/mysql/databases/app";
+  const { sheet } = renderPlanCreationSpec(database);
+  const onApplied = vi.fn();
+  const request = dispatchPlanDraft(database, " ", onApplied);
+
+  expect(request.handled).toBe(true);
+  expect(getSheetStatement(sheet)).toBe("");
+  expect(onApplied).not.toHaveBeenCalled();
+  expect(mocks.minimizeAgent).not.toHaveBeenCalled();
+});
+
+test.each(["", "SELECT 1;"])(
+  "keeps the Agent open if applying SQL to %j fails",
+  (initialSQL) => {
+    const database = "instances/mysql/databases/app";
+    const { sheet, getByRole, queryByRole } = renderPlanCreationSpec(
+      database,
+      initialSQL
+    );
+    const onApplied = vi.fn();
+    mocks.failLocalWrite = true;
+
+    dispatchPlanDraft(database, "CREATE TABLE notes (id INT);", onApplied);
+    if (initialSQL) {
+      fireEvent.click(
+        getByRole("button", { name: "agent.plan-draft.replace-sql" })
+      );
+      expect(queryByRole("alertdialog")).not.toBeNull();
+    }
+
+    expect(getSheetStatement(sheet)).toBe(initialSQL);
+    expect(onApplied).not.toHaveBeenCalled();
+    expect(mocks.minimizeAgent).not.toHaveBeenCalled();
+  }
+);
 
 test("does not offer or apply a draft when the Plan has an invalid extra target", () => {
   const database = "instances/mysql/databases/app";

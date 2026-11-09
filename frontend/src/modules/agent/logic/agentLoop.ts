@@ -252,8 +252,15 @@ export async function runAgentLoop(
 ): Promise<AgentLoopOutcome> {
   const conversation: Message[] = [...messages];
   const protoTools = tools.map(toolDefToProto);
-  const terminalTools = protoTools.filter(
-    (tool) => tool.name === "done" || tool.name === "ask_user"
+  const terminalToolNames = new Set([
+    "done",
+    "ask_user",
+    "ask_masking_exemption_scope",
+    "ask_masking_rule_scope",
+    "ask_masking_semantic_type",
+  ]);
+  const terminalTools = protoTools.filter((tool) =>
+    terminalToolNames.has(tool.name)
   );
   let totalTokensUsed = 0;
   let providerCallCount = 0;
@@ -342,9 +349,7 @@ export async function runAgentLoop(
       if (response.toolCalls.length > 0) {
         if (
           awaitingTerminalCall &&
-          response.toolCalls.some(
-            (call) => call.name !== "done" && call.name !== "ask_user"
-          )
+          response.toolCalls.some((call) => !terminalToolNames.has(call.name))
         ) {
           const error = new Error(
             "Agent called a non-terminal tool while finalizing its answer."
@@ -515,8 +520,8 @@ export async function runAgentLoop(
         conversation.push({
           role: "user",
           content: text
-            ? "Finalize your preceding answer by calling done({ text, success, actions }), using actions: [] when none apply, or call ask_user if input is required. Do not call any other tools or start another task."
-            : "Your previous response was empty. Answer the user's request by calling done({ text, success, actions }), using actions: [] when none apply, or call ask_user if input is required. Do not call any other tools or start another task.",
+            ? "Finalize your preceding answer by calling done({ text, success, actions }), using actions: [] when none apply, or call ask_user, ask_masking_exemption_scope, ask_masking_rule_scope, or ask_masking_semantic_type if input is required. Do not call any other tools or start another task."
+            : "Your previous response was empty. Answer the user's request by calling done({ text, success, actions }), using actions: [] when none apply, or call ask_user, ask_masking_exemption_scope, ask_masking_rule_scope, or ask_masking_semantic_type if input is required. Do not call any other tools or start another task.",
         });
         awaitingTerminalCall = true;
         continue;
@@ -528,7 +533,7 @@ export async function runAgentLoop(
       }
 
       const error = new Error(
-        "Agent must finish with done({ text, success, actions }) or ask_user(...), not plain assistant text."
+        "Agent must finish with done({ text, success, actions }), ask_user(...), ask_masking_exemption_scope(...), ask_masking_rule_scope(...), or ask_masking_semantic_type(...), not plain assistant text."
       );
       callbacks?.onError?.(error);
       return {

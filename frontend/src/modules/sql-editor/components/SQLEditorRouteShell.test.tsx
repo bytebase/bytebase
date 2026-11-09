@@ -1050,6 +1050,315 @@ describe("SQLEditorRouteShell", () => {
     unmount();
   });
 
+  test("connects a corrected database route after an unresolved initial database", async () => {
+    const databaseRoute = mocks.renderRoute;
+    mocks.getOrFetchDatabaseByName.mockImplementation(async (name: string) =>
+      create(DatabaseSchema$, {
+        name: name.endsWith("/missing") ? "instances/-1/databases/-1" : name,
+        project: "projects/proj1",
+      })
+    );
+    mocks.renderRoute = {
+      ...databaseRoute,
+      fullPath: "/sql-editor/projects/proj1/instances/inst1/databases/missing",
+      params: { project: "proj1", instance: "inst1", database: "missing" },
+      query: {},
+    };
+    mocks.currentRoute = mocks.renderRoute;
+    const { rerender, unmount } = renderShell();
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(mocks.tabsState.addTab).not.toHaveBeenCalled();
+
+    mocks.renderRoute = databaseRoute;
+    mocks.currentRoute = databaseRoute;
+    rerender();
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(mocks.tabsState.addTab).toHaveBeenCalledOnce();
+    expect(
+      mocks.tabsState.tabsById.get(mocks.tabsState.currentTabId)?.connection
+    ).toEqual({
+      instance: "instances/inst1",
+      database: "instances/inst1/databases/db1",
+      schema: "public",
+      table: "users",
+    });
+    expect(mocks.tabsState.addTab.mock.calls[0][0]).not.toHaveProperty(
+      "statement"
+    );
+    unmount();
+  });
+
+  test("does not duplicate the connected draft when its URL is synchronized", async () => {
+    const { rerender, unmount } = renderShell();
+    await act(async () => {
+      await Promise.resolve();
+    });
+    const tab = mocks.tabsState.tabsById.get(mocks.tabsState.currentTabId);
+    tab.statement = "SELECT 1 AS unsaved_draft";
+    tab.connection.database = "instances/inst1/databases/db2";
+    mocks.renderRoute = {
+      ...mocks.renderRoute,
+      fullPath: "/sql-editor/projects/proj1/instances/inst1/databases/db2",
+      params: { project: "proj1", instance: "inst1", database: "db2" },
+    };
+    mocks.currentRoute = mocks.renderRoute;
+    rerender();
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(mocks.tabsState.addTab).toHaveBeenCalledOnce();
+    expect(mocks.tabsState.tabsById.get(mocks.tabsState.currentTabId)).toBe(
+      tab
+    );
+    expect(tab.statement).toBe("SELECT 1 AS unsaved_draft");
+    unmount();
+  });
+
+  test("keeps the canonical project connection when URL sync removes its parent", async () => {
+    const parent = "projects/proj1/instances/inst1";
+    mocks.renderRoute = {
+      ...mocks.renderRoute,
+      query: { ...mocks.renderRoute.query, parent },
+    };
+    mocks.currentRoute = mocks.renderRoute;
+    const { rerender, unmount } = renderShell();
+    await act(async () => {
+      await Promise.resolve();
+    });
+    mocks.renderRoute = {
+      ...mocks.renderRoute,
+      query: { schema: "public", table: "users" },
+    };
+    mocks.currentRoute = mocks.renderRoute;
+    rerender();
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(mocks.tabsState.addTab).toHaveBeenCalledOnce();
+    expect(
+      mocks.tabsState.tabsById.get(mocks.tabsState.currentTabId)?.connection
+        .database
+    ).toBe(`${parent}/databases/db1`);
+    unmount();
+  });
+
+  test("connects a different instance route after bootstrap", async () => {
+    const { rerender, unmount } = renderShell();
+    await act(async () => {
+      await Promise.resolve();
+    });
+    mocks.tabsState.addTab.mockClear();
+    mocks.renderRoute = {
+      ...mocks.renderRoute,
+      name: "sql-editor.instance",
+      fullPath: "/sql-editor/projects/proj1/instances/inst2",
+      params: { project: "proj1", instance: "inst2" },
+      query: {},
+    };
+    mocks.currentRoute = mocks.renderRoute;
+    rerender();
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(mocks.tabsState.addTab).toHaveBeenCalledOnce();
+    expect(mocks.tabsState.addTab).toHaveBeenCalledWith({
+      connection: { instance: "instances/inst2", database: "" },
+      mode: "SAVED_QUERY",
+    });
+    unmount();
+  });
+
+  test("ignores a late database resolution after a newer route is connected", async () => {
+    const { rerender, unmount } = renderShell();
+    await act(async () => {
+      await Promise.resolve();
+    });
+    mocks.tabsState.addTab.mockClear();
+    let resolveDatabase!: (
+      database: ReturnType<typeof create<typeof DatabaseSchema$>>
+    ) => void;
+    mocks.getOrFetchDatabaseByName.mockImplementation((name: string) => {
+      if (name.endsWith("/slow"))
+        return new Promise((resolve) => {
+          resolveDatabase = resolve;
+        });
+      return Promise.resolve(
+        create(DatabaseSchema$, { name, project: "projects/proj1" })
+      );
+    });
+    mocks.renderRoute = {
+      ...mocks.renderRoute,
+      fullPath: "/sql-editor/projects/proj1/instances/inst1/databases/slow",
+      params: { project: "proj1", instance: "inst1", database: "slow" },
+      query: {},
+    };
+    mocks.currentRoute = mocks.renderRoute;
+    rerender();
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(resolveDatabase).toBeTypeOf("function");
+    mocks.renderRoute = {
+      ...mocks.renderRoute,
+      fullPath: "/sql-editor/projects/proj1/instances/inst1/databases/latest",
+      params: { project: "proj1", instance: "inst1", database: "latest" },
+    };
+    mocks.currentRoute = mocks.renderRoute;
+    rerender();
+    await act(async () => {
+      await Promise.resolve();
+    });
+    await act(async () => {
+      resolveDatabase(
+        create(DatabaseSchema$, {
+          name: "instances/inst1/databases/slow",
+          project: "projects/proj1",
+        })
+      );
+    });
+
+    expect(mocks.tabsState.addTab).toHaveBeenCalledOnce();
+    expect(
+      mocks.tabsState.tabsById.get(mocks.tabsState.currentTabId)?.connection
+        .database
+    ).toBe("instances/inst1/databases/latest");
+    unmount();
+  });
+
+  test("does not let a late old URL sync replace a newer database route", async () => {
+    let resolveOldSync!: (
+      database: ReturnType<typeof create<typeof DatabaseSchema$>>
+    ) => void;
+    let firstDatabaseReads = 0;
+    mocks.getOrFetchDatabaseByName.mockImplementation((name: string) => {
+      if (
+        name === "instances/inst1/databases/db1" &&
+        ++firstDatabaseReads === 2
+      )
+        return new Promise((resolve) => {
+          resolveOldSync = resolve;
+        });
+      return Promise.resolve(
+        create(DatabaseSchema$, { name, project: "projects/proj1" })
+      );
+    });
+    const { rerender, unmount } = renderShell();
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(resolveOldSync).toBeTypeOf("function");
+    mocks.renderRoute = {
+      ...mocks.renderRoute,
+      fullPath: "/sql-editor/projects/proj1/instances/inst1/databases/latest",
+      params: { project: "proj1", instance: "inst1", database: "latest" },
+      query: {},
+    };
+    mocks.currentRoute = mocks.renderRoute;
+    rerender();
+    await act(async () => {
+      await Promise.resolve();
+    });
+    await act(async () => {
+      resolveOldSync(
+        create(DatabaseSchema$, {
+          name: "instances/inst1/databases/db1",
+          project: "projects/proj1",
+        })
+      );
+    });
+
+    expect(mocks.navigateReplace).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "sql-editor.database",
+        params: expect.objectContaining({ database: "db1" }),
+      })
+    );
+    expect(
+      mocks.tabsState.tabsById.get(mocks.tabsState.currentTabId)?.connection
+        .database
+    ).toBe("instances/inst1/databases/latest");
+    unmount();
+  });
+
+  test("does not connect a deferred target after the shell unmounts", async () => {
+    const { rerender, unmount } = renderShell();
+    await act(async () => {
+      await Promise.resolve();
+    });
+    mocks.tabsState.addTab.mockClear();
+    let resolveDatabase!: (
+      database: ReturnType<typeof create<typeof DatabaseSchema$>>
+    ) => void;
+    mocks.getOrFetchDatabaseByName.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveDatabase = resolve;
+        })
+    );
+    mocks.renderRoute = {
+      ...mocks.renderRoute,
+      fullPath: "/sql-editor/projects/proj1/instances/inst1/databases/slow",
+      params: { project: "proj1", instance: "inst1", database: "slow" },
+      query: {},
+    };
+    mocks.currentRoute = mocks.renderRoute;
+    rerender();
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(resolveDatabase).toBeTypeOf("function");
+    unmount();
+    await act(async () => {
+      resolveDatabase(
+        create(DatabaseSchema$, {
+          name: "instances/inst1/databases/slow",
+          project: "projects/proj1",
+        })
+      );
+    });
+
+    expect(mocks.tabsState.addTab).not.toHaveBeenCalled();
+  });
+
+  test("does not switch project when a corrected route resolves outside the active project", async () => {
+    const { rerender, unmount } = renderShell();
+    await act(async () => {
+      await Promise.resolve();
+    });
+    mocks.tabsState.addTab.mockClear();
+    mocks.maybeSwitchProject.mockClear();
+    mocks.getOrFetchDatabaseByName.mockResolvedValue(
+      create(DatabaseSchema$, {
+        name: "instances/inst1/databases/other",
+        project: "projects/other",
+      })
+    );
+    mocks.renderRoute = {
+      ...mocks.renderRoute,
+      fullPath: "/sql-editor/projects/proj1/instances/inst1/databases/other",
+      params: { project: "proj1", instance: "inst1", database: "other" },
+      query: {},
+    };
+    mocks.currentRoute = mocks.renderRoute;
+    rerender();
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(mocks.tabsState.addTab).not.toHaveBeenCalled();
+    expect(mocks.maybeSwitchProject).not.toHaveBeenCalled();
+    expect(mocks.editorState.project).toBe("projects/proj1");
+    unmount();
+  });
+
   test("resolves a project instance database without a parent query", async () => {
     const parent = "projects/proj1/instances/inst1";
     mocks.getOrFetchDatabaseByName.mockImplementation(async (name: string) =>

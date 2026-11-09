@@ -1,23 +1,29 @@
 import { create } from "@bufbuild/protobuf";
-import { createContextValues } from "@connectrpc/connect";
+import { Code, ConnectError, createContextValues } from "@connectrpc/connect";
 import {
   databaseCatalogServiceClientConnect,
   databaseServiceClientConnect,
   orgPolicyServiceClientConnect,
+  projectServiceClientConnect,
   settingServiceClientConnect,
 } from "@/api";
 import { silentContextKey } from "@/api/context-key";
 import { settingNamePrefix } from "@/lib/resourceName";
+import { State } from "@/types/proto-es/v1/common_pb";
 import {
   GetDatabaseCatalogRequestSchema,
   type ObjectSchema,
   ObjectSchema_Type,
 } from "@/types/proto-es/v1/database_catalog_service_pb";
-import { GetDatabaseRequestSchema } from "@/types/proto-es/v1/database_service_pb";
+import {
+  type Database,
+  GetDatabaseRequestSchema,
+} from "@/types/proto-es/v1/database_service_pb";
 import {
   GetPolicyRequestSchema,
   PolicyType,
 } from "@/types/proto-es/v1/org_policy_service_pb";
+import { GetProjectRequestSchema } from "@/types/proto-es/v1/project_service_pb";
 import {
   type Algorithm,
   Algorithm_InnerOuterMask_MaskType,
@@ -27,6 +33,7 @@ import {
 import { getSemanticTypeListWithBuiltins } from "@/types/semanticTypes";
 import type { AgentPageResource } from "../chatContext";
 import type { AgentHandoff } from "../types";
+import { getMaskingSetup } from "./maskingSetup";
 
 const MAX_POLICY_ITEMS = 100;
 const MAX_CATALOG_COLUMNS = 200;
@@ -46,6 +53,14 @@ const isMaskingPage = (page: AgentPageResource | undefined) =>
   page?.kind === "data-classification" ||
   page?.kind === "masking-exemption" ||
   page?.kind === "database-catalog";
+const isProjectName = (name: string | undefined): name is string =>
+  Boolean(name && /^projects\/(?!-$)[A-Za-z0-9_-]+$/.test(name));
+
+export interface MaskingOverviewArgs {
+  project?: string;
+  database?: string;
+  semanticTypeId?: string;
+}
 
 function summarizeAlgorithm(algorithm?: Algorithm) {
   switch (algorithm?.mask?.case) {
@@ -98,7 +113,9 @@ async function getPolicy(parent: string, type: PolicyType) {
       create(GetPolicyRequestSchema, { name }),
       { contextValues: createContextValues().set(silentContextKey, true) }
     );
-  } catch {
+  } catch (error) {
+    if (ConnectError.from(error).code === Code.NotFound)
+      return { missing: true } as const;
     return undefined;
   }
 }
@@ -117,6 +134,16 @@ async function getSetting(settingName: Setting_SettingName) {
 }
 
 function summarizeMaskingPolicy(policy: Awaited<ReturnType<typeof getPolicy>>) {
+  if (policy && "missing" in policy) {
+    return {
+      status: "available" as const,
+      configured: false,
+      enforced: false,
+      rules: [],
+      totalRules: 0,
+      truncated: false,
+    };
+  }
   const value = policy?.policy;
   if (!policy || value?.case !== "maskingRulePolicy") return unavailable;
   const rules = value.value.rules;
@@ -136,6 +163,15 @@ function summarizeMaskingPolicy(policy: Awaited<ReturnType<typeof getPolicy>>) {
 function summarizeExemptionPolicy(
   policy: Awaited<ReturnType<typeof getPolicy>>
 ) {
+  if (policy && "missing" in policy) {
+    return {
+      status: "available" as const,
+      configured: false,
+      exemptions: [],
+      totalExemptions: 0,
+      truncated: false,
+    };
+  }
   const value = policy?.policy;
   if (value?.case !== "maskingExemptionPolicy") return unavailable;
   const exemptions = value.value.exemptions;
@@ -169,21 +205,32 @@ function summarizeSemanticTypeAlgorithm(id: string, algorithm?: Algorithm) {
 }
 
 function summarizeSemanticTypes(
-  setting: Awaited<ReturnType<typeof getSetting>>
+  setting: Awaited<ReturnType<typeof getSetting>>,
+  semanticTypeId?: string
 ) {
   const value = setting?.value?.value;
   if (value?.case !== "semanticType") return unavailable;
   const types = getSemanticTypeListWithBuiltins(value.value.types);
+  const selected =
+    semanticTypeId === undefined
+      ? types.slice(0, MAX_POLICY_ITEMS)
+      : types.filter((type) => type.id === semanticTypeId);
   return {
     status: "available" as const,
-    types: types.slice(0, MAX_POLICY_ITEMS).map((type) => ({
+    ...(semanticTypeId === undefined
+      ? {}
+      : {
+          requestedTypeId: semanticTypeId,
+          requestedTypeFound: selected.length > 0,
+        }),
+    types: selected.map((type) => ({
       id: boundedText(type.id),
       title: boundedText(type.title),
       description: boundedText(type.description),
       algorithm: summarizeSemanticTypeAlgorithm(type.id, type.algorithm),
     })),
     totalTypes: types.length,
-    truncated: types.length > MAX_POLICY_ITEMS,
+    truncated: semanticTypeId === undefined && types.length > MAX_POLICY_ITEMS,
   };
 }
 
@@ -315,49 +362,207 @@ async function summarizeCatalog(
 export function createMaskingOverviewTool({
   page,
   workspaceName,
+  context,
+  databaseName,
 }: {
   page?: AgentPageResource;
   workspaceName?: string;
+  context?: string;
+  databaseName?: string;
 }) {
-  return async (): Promise<string> => {
-    if (!isMaskingPage(page)) {
-      return JSON.stringify({ error: "This chat is not on a masking page." });
-    }
-    const validWorkspaceName = workspaceName ?? "";
+  return async (args: MaskingOverviewArgs = {}): Promise<string> => {
+    if (
+      args.semanticTypeId !== undefined &&
+      (typeof args.semanticTypeId !== "string" ||
+        !args.semanticTypeId.trim() ||
+        args.semanticTypeId.length > MAX_TEXT_LENGTH ||
+        args.semanticTypeId.includes("\0"))
+    )
+      return JSON.stringify({
+        error: "Select an exact semantic type ID of at most 500 characters.",
+      });
+    const validWorkspaceName =
+      workspaceName ?? (context?.startsWith("workspaces/") ? context : "");
     if (!/^workspaces\/[A-Za-z0-9_-]+$/.test(validWorkspaceName)) {
       return JSON.stringify({
         error: "A workspace context is required to inspect masking settings.",
       });
     }
 
-    const project =
-      page.kind === "masking-exemption" || page.kind === "database-catalog"
+    const pageProject =
+      page?.kind === "masking-exemption" || page?.kind === "database-catalog"
         ? page.project
         : undefined;
+    const boundProject = isProjectName(context)
+      ? context
+      : context
+        ? undefined
+        : pageProject;
+    if (boundProject && args.project && args.project !== boundProject) {
+      return JSON.stringify({
+        error: "The selected project is outside this chat's scope.",
+      });
+    }
+    const project = args.project ?? boundProject;
+    if (project) {
+      if (!isProjectName(project))
+        return JSON.stringify({
+          error: "Select an exact project before inspecting its masking setup.",
+        });
+      try {
+        const observed = await projectServiceClientConnect.getProject(
+          create(GetProjectRequestSchema, { name: project }),
+          { contextValues: createContextValues().set(silentContextKey, true) }
+        );
+        if (observed.name !== project || observed.state !== State.ACTIVE)
+          throw new Error("unavailable");
+      } catch {
+        return JSON.stringify({
+          error:
+            "The selected project is unavailable or inaccessible. Do not infer its configuration or permissions.",
+        });
+      }
+    }
+    // An explicit project without a database selects project-wide scope.
+    const database =
+      args.database ??
+      (args.project === undefined
+        ? (databaseName ??
+          (page?.kind === "database-catalog" && page.project === project
+            ? page.names[0]
+            : undefined))
+        : undefined);
+    if (
+      database &&
+      (!project ||
+        !/^(?:projects\/[A-Za-z0-9_-]+\/)?instances\/[A-Za-z0-9_-]+\/databases\/[^/]+$/.test(
+          database
+        ))
+    ) {
+      return JSON.stringify({
+        error:
+          "Select an exact database and its project before inspecting a catalog.",
+      });
+    }
+    let verifiedDatabase: Database | undefined;
+    if (database && project) {
+      try {
+        const observed = await databaseServiceClientConnect.getDatabase(
+          create(GetDatabaseRequestSchema, { name: database }),
+          { contextValues: createContextValues().set(silentContextKey, true) }
+        );
+        if (observed.name === database && observed.project === project)
+          verifiedDatabase = observed;
+      } catch {
+        // An unavailable database is not evidence of a particular missing permission.
+      }
+    }
+    const setup = await getMaskingSetup({
+      workspaceName: validWorkspaceName,
+      projectName: project,
+      databaseName: verifiedDatabase?.name,
+      database: verifiedDatabase,
+    });
+    const readCheck = (id: string) =>
+      setup.steps.find((step) => step.id === id)?.readAccess;
+    const canRead = (id: string) => readCheck(id)?.status !== "denied";
+    const facet = <T>(id: string, summary: T) => {
+      const check = readCheck(id);
+      if (check?.status === "denied")
+        return {
+          ...unavailable,
+          reason: "permission-denied",
+          requiredPermissions: check.requiredPermissions,
+          missingPermissions: check.missingPermissions,
+          scope: check.scope,
+        };
+      if (
+        summary &&
+        typeof summary === "object" &&
+        "configured" in summary &&
+        summary.configured === false &&
+        check?.status !== "allowed"
+      ) {
+        return { ...unavailable, reason: "permission-unverified" };
+      }
+      return summary;
+    };
     const [maskingPolicy, semanticTypes, classification, exemptions, catalog] =
       await Promise.all([
-        getPolicy(validWorkspaceName, PolicyType.MASKING_RULE),
-        getSetting(Setting_SettingName.SEMANTIC_TYPES),
-        getSetting(Setting_SettingName.DATA_CLASSIFICATION),
-        project
+        canRead("global-masking")
+          ? getPolicy(validWorkspaceName, PolicyType.MASKING_RULE)
+          : undefined,
+        canRead("semantic-types")
+          ? getSetting(Setting_SettingName.SEMANTIC_TYPES)
+          : undefined,
+        canRead("data-classification")
+          ? getSetting(Setting_SettingName.DATA_CLASSIFICATION)
+          : undefined,
+        project && canRead("masking-exemptions")
           ? getPolicy(project, PolicyType.MASKING_EXEMPTION)
           : Promise.resolve(undefined),
-        page.kind === "database-catalog"
-          ? summarizeCatalog(page)
-          : Promise.resolve({ status: "not-applicable" as const }),
+        project && verifiedDatabase && canRead("database-catalog")
+          ? summarizeCatalog({
+              kind: "database-catalog",
+              project,
+              names: [verifiedDatabase.name],
+            })
+          : Promise.resolve(
+              database ? unavailable : { status: "not-applicable" as const }
+            ),
       ]);
 
+    if (
+      maskingPolicy &&
+      "missing" in maskingPolicy &&
+      readCheck("global-masking")?.status === "allowed"
+    ) {
+      const step = setup.steps.find((step) => step.id === "global-masking");
+      const creation = step?.additionalRequirements?.find(
+        (check) =>
+          check.source === "backend" &&
+          check.condition === "when-policy-missing"
+      );
+      if (step && creation?.source === "backend") {
+        const checks = [step.configure, creation];
+        step.configure = {
+          ...step.configure,
+          status: checks.some((check) => check.status === "denied")
+            ? "denied"
+            : checks.some((check) => check.status === "unknown")
+              ? "unknown"
+              : checks.some((check) => check.status === "needs-scope")
+                ? "needs-scope"
+                : "allowed",
+          requiredPermissions: [
+            ...new Set(checks.flatMap((check) => check.requiredPermissions)),
+          ],
+          missingPermissions: [
+            ...new Set(checks.flatMap((check) => check.missingPermissions)),
+          ],
+        };
+      }
+    }
+
     const openTargets: AgentHandoff[] = [];
-    if (maskingPolicy) openTargets.push({ kind: "open-global-masking" });
-    if (semanticTypes) openTargets.push({ kind: "open-semantic-types" });
-    if (classification) openTargets.push({ kind: "open-data-classification" });
-    if (project && exemptions) {
+    const canOpenPolicy = (id: string, policy: typeof maskingPolicy) =>
+      policy && readCheck(id)?.status === "allowed";
+    if (canOpenPolicy("global-masking", maskingPolicy))
+      openTargets.push({ kind: "open-global-masking" });
+    if (semanticTypes && readCheck("semantic-types")?.status === "allowed")
+      openTargets.push({ kind: "open-semantic-types" });
+    if (
+      classification &&
+      readCheck("data-classification")?.status === "allowed"
+    )
+      openTargets.push({ kind: "open-data-classification" });
+    if (project && canOpenPolicy("masking-exemptions", exemptions)) {
       openTargets.push({ kind: "open-project-masking-exemptions", project });
     }
     if (
       project &&
-      page.kind === "database-catalog" &&
-      catalog.status === "available"
+      catalog.status === "available" &&
+      readCheck("database-catalog")?.status === "allowed"
     ) {
       openTargets.push({
         kind: "open-database-catalog",
@@ -366,17 +571,43 @@ export function createMaskingOverviewTool({
       });
     }
 
+    const relevantPage =
+      page &&
+      isMaskingPage(page) &&
+      (!("project" in page) || page.project === project)
+        ? page
+        : undefined;
     return JSON.stringify({
-      page: page.kind,
+      currentTime: new Date().toISOString(),
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      page: relevantPage?.kind ?? (project ? "project" : "workspace"),
       ...(project ? { project } : {}),
+      ...(database && !verifiedDatabase
+        ? {
+            databaseSelection: {
+              status: "unavailable",
+              reason: "inaccessible-or-project-mismatch",
+            },
+          }
+        : {}),
+      setup,
       openTargets,
-      maskingPolicy: summarizeMaskingPolicy(maskingPolicy),
-      semanticTypes: summarizeSemanticTypes(semanticTypes),
-      classification: summarizeClassification(classification),
+      maskingPolicy: facet(
+        "global-masking",
+        summarizeMaskingPolicy(maskingPolicy)
+      ),
+      semanticTypes: facet(
+        "semantic-types",
+        summarizeSemanticTypes(semanticTypes, args.semanticTypeId)
+      ),
+      classification: facet(
+        "data-classification",
+        summarizeClassification(classification)
+      ),
       exemptions: project
-        ? summarizeExemptionPolicy(exemptions)
+        ? facet("masking-exemptions", summarizeExemptionPolicy(exemptions))
         : { status: "not-applicable" },
-      catalog,
+      catalog: facet("database-catalog", catalog),
     });
   };
 }

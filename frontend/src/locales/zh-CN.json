@@ -43,12 +43,13 @@
     "api-permission-title": "请求执行许可",
     "archive-all-chats": "归档所有对话",
     "archive-chat": "归档对话",
+    "archive-chat-confirmation": "归档此对话？",
     "archived-only-chats": "查看已归档对话",
     "args": "参数",
     "assistant-title": "AI 助手",
     "cancel": "取消",
     "cancel-request": "取消请求",
-    "chat-archived-label": "已归档",
+    "chat-archived-notice": "此对话已归档。",
     "chat-default-title": "新对话",
     "chat-list-label": "对话列表",
     "chat-total-tokens": "聊天 token 数：{{count}}",
@@ -60,7 +61,7 @@
     "context-workspace": "工作区",
     "contextual-start": {
       "active-request": "请先完成当前请求，再开始新的聊天。",
-      "continue-chat": "继续当前聊天",
+      "continue-chat": "继续上次聊天",
       "database-heading": "询问此数据库",
       "database-recent": "此数据库最近有什么变更？",
       "database-schema": "此数据库有哪些表？",
@@ -92,6 +93,9 @@
       "masking-global-effect": "Inner Mask 规则覆盖的值会向开发者显示成什么样？",
       "masking-global-exemptions": "例外可能让用户看到原始值吗？",
       "masking-global-heading": "询问数据脱敏",
+      "masking-rule-configure": "帮我配置此规则。",
+      "masking-rule-effect": "解释此规则的数据脱敏效果。",
+      "masking-rule-review": "审查此规则。",
       "masking-semantic-algorithm": "此脱敏算法会保留哪些部分？",
       "masking-semantic-heading": "询问语义类型",
       "masking-semantic-rules": "哪些脱敏规则使用此语义类型？",
@@ -175,12 +179,60 @@
       "workspace-setup-first": "我应该先设置什么？"
     },
     "masking": {
-      "ask-agent": "向 Agent 询问数据脱敏"
+      "ask-agent-short": "询问 Agent",
+      "exemption-scope": {
+        "another-database": "其他数据库",
+        "only-database": "仅 {{database}}",
+        "project": "此项目中的所有数据库",
+        "question": "此脱敏豁免应适用于哪些数据库？"
+      },
+      "rule-scope": {
+        "choose-project": "选择项目",
+        "question": "此脱敏规则应覆盖哪些数据库？",
+        "workspace": "工作空间内的所有数据库"
+      },
+      "semantic-type-choice": {
+        "create": "创建自定义脱敏类型…",
+        "create-description": "按所需脱敏配置准备新的语义类型。",
+        "question": "应使用哪种语义类型对这些列进行脱敏？"
+      }
+    },
+    "masking-exemption-draft": {
+      "applied": "已填入草稿",
+      "apply": "应用到草稿",
+      "inactive": "此草稿已不可用。请先检查当前脱敏豁免，再准备新的草稿。",
+      "open": "打开豁免草稿",
+      "opened": "已打开豁免草稿",
+      "unavailable": "无法应用此草稿。编辑器、权限或配置可能已更改。请检查当前表单，并让 Agent 重新准备草稿。",
+      "unsaved": "仅填写未保存的表单。请检查后再选择授予豁免。"
+    },
+    "masking-rule-draft": {
+      "all-databases": "工作空间内所有数据库",
+      "applied": "已填入草稿",
+      "apply": "应用到草稿",
+      "help-prompt": "先使用 get_masking_rule_draft 读取当前未保存的规则。以实际字段为准，不要使用先前的提案。只询问缺失的信息。不要保存设置。",
+      "inactive": "此草稿已不可用。请先检查当前脱敏规则，再准备新的草稿。",
+      "open": "打开规则草稿",
+      "opened": "已打开规则草稿",
+      "queue": {
+        "created": "已创建",
+        "editing": "编辑中",
+        "needs-recheck": "脱敏规则或语义类型已更改。请重新检查草稿后再继续。",
+        "pending": "待处理",
+        "recheck": "重新检查草稿",
+        "review": "审核",
+        "title": "规则草稿"
+      },
+      "review-many": "审核 {{count}} 条规则草稿",
+      "scope": "数据库范围",
+      "semantic-type": "语义类型",
+      "unavailable": "无法应用此草稿。编辑器、权限或配置可能已更改。请检查当前表单，并让 Agent 重新准备草稿。",
+      "unsaved": "仅填写未保存的表单。请检查后再选择创建规则。"
     },
     "minimize": "最小化",
     "new-chat": "新对话",
     "other-chats": "其他对话",
-    "pending-choose-hint": "请在上方选择一个选项",
+    "pending-choose-hint": "选择一个选项，然后点击“回复”。",
     "pending-confirm-hint": "请在上方确认或取消",
     "pending-input-hint": "请在上方提供输入",
     "permission": {
@@ -238,6 +290,7 @@
     "request-failed": "助手未能完成此请求。",
     "request-stopped-by-user": "用户已停止请求",
     "request-stopped-retry-hint": "已发送的操作仍可能完成。重试前请先检查其状态。",
+    "resend-message": "重新发送消息",
     "resource-picker": {
       "add-context": "添加上下文",
       "databases": "数据库",
@@ -262,6 +315,16 @@
     "result": "结果",
     "retry-last-chat-turn": "重试",
     "self": "助手",
+    "semantic-type-draft": {
+      "created": "已创建",
+      "inactive": "此草稿已不可用。请先检查当前语义类型，再准备新草稿。",
+      "open": "打开语义类型草稿",
+      "opened": "已打开语义类型草稿",
+      "save-failed": "无法创建语义类型。请检查表单并重试。",
+      "saved": "此语义类型已创建。请刷新其配置，再用于脱敏规则。",
+      "unavailable": "无法打开此草稿。编辑器、权限或配置可能已发生变化。请检查当前表单，并让 Agent 重新准备。",
+      "unsaved": "仅填充尚未保存的表单。请检查后再点击创建。"
+    },
     "send": "发送",
     "stop": "停止",
     "token-usage": {
@@ -297,7 +360,7 @@
     "tool-response-submitted": "已提交回复",
     "tool-value": "值",
     "unarchive-all-chats": "取消归档所有对话",
-    "unarchive-chat": "取消归档",
+    "unarchive-chat": "恢复对话",
     "workspace-attention": {
       "checking": "正在检查需要你关注的事项...",
       "empty": "没有需要你关注的开放 issue。",

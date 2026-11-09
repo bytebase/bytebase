@@ -14,6 +14,7 @@ import {
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
   PROJECT_V1_ROUTE_ISSUES,
   PROJECT_V1_ROUTE_MASKING_EXEMPTION,
+  PROJECT_V1_ROUTE_MASKING_EXEMPTION_CREATE,
   PROJECT_V1_ROUTE_PLAN_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
@@ -81,10 +82,13 @@ describe("resolveAgentPageResource", () => {
     expect(resolveAgentPageResource(detailRoute(name, {}))).toEqual({ kind });
   });
 
-  test("detects project masking exemption context", () => {
+  test.each([
+    PROJECT_V1_ROUTE_MASKING_EXEMPTION,
+    PROJECT_V1_ROUTE_MASKING_EXEMPTION_CREATE,
+  ])("detects project masking exemption context on %s", (name) => {
     expect(
       resolveAgentPageResource(
-        detailRoute(PROJECT_V1_ROUTE_MASKING_EXEMPTION, {
+        detailRoute(name, {
           projectId: "orders",
         })
       )

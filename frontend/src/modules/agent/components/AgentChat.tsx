@@ -3,7 +3,8 @@ import {
   Building2,
   ChevronRight,
   Folder,
-  Loader2,
+  Repeat2,
+  RotateCcw,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -24,6 +25,7 @@ import {
   CollapsiblePanel,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { CopyButton } from "@/components/ui/copy-button";
 import { Table } from "@/components/ui/table";
 import { useReactiveRoute } from "@/hooks/useReactiveRoute";
 import {
@@ -35,6 +37,7 @@ import {
 } from "@/lib/issueCommentDraft";
 import { dispatchAgentPlanDraftToCurrentPlan } from "@/lib/plan/agentDraftHandoff";
 import { projectNamePrefix } from "@/lib/resourceName";
+import { cn } from "@/lib/utils";
 import {
   ACCESS_GRANT_DRAFT_QUERY_KEY,
   wasDeniedQueryRequestDraftDelivered,
@@ -52,6 +55,10 @@ import {
 } from "../logic/expressionDraft";
 import { resolveAgentHandoffRoute } from "../logic/handoff";
 import type { LandingStarterId } from "../logic/landingStarters";
+import {
+  captureAgentPageHandoffContext,
+  minimizeAgentAfterPageHandoff,
+} from "../logic/pageHandoff";
 import {
   PlanDraftStorageError,
   prepareAgentPlanDraftRoute,
@@ -84,12 +91,21 @@ import {
   useAgentStore,
 } from "../store/agent";
 import { AgentAIConfigurationRecovery } from "./AgentAIConfigurationRecovery";
+import {
+  AgentPrimaryAction,
+  AgentPrimaryActionLink,
+} from "./AgentPrimaryAction";
+import { MaskingExemptionDraftButton } from "./MaskingExemptionDraftButton";
+import { MaskingRuleDraftButton } from "./MaskingRuleDraftButton";
+import { SemanticTypeDraftButton } from "./SemanticTypeDraftButton";
 import { ToolCallCard } from "./ToolCallCard";
+import { AgentTooltip } from "./ui/AgentTooltip";
 
 interface AgentChatProps {
   className?: string;
   contextLabel?: string;
   onRetry?: () => void;
+  onResend?: (messageId: string) => void;
   onSelectSuggestion?: (starterId: LandingStarterId) => void;
   onContinueAction?: (
     chatId: string,
@@ -296,62 +312,72 @@ function HandoffLink({ handoff }: { handoff?: AgentHandoff }) {
         : handoff.kind === "create-project-database"
           ? "project.home.create-database"
           : `agent.handoff.${handoff.kind}`;
+  const openHandoff = async () => {
+    if (loading) return;
+    const handoffContext = captureAgentPageHandoffContext();
+    setLoading(true);
+    try {
+      const targetPath = router.resolve(to).fullPath;
+      await router.push(to);
+      const currentPath = router.currentRoute.value.fullPath;
+      if (reachedHandoffRoute(currentPath, targetPath)) {
+        minimizeAgentAfterPageHandoff(handoffContext);
+      }
+    } catch {
+      useAppStore.getState().notify({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("common.failed"),
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
   if (
     handoff.kind === "transfer-project-databases" ||
     handoff.kind === "connect-project-instance" ||
     handoff.kind === "create-project-database"
   ) {
-    const openSetup = async () => {
-      if (loading) return;
-      setLoading(true);
-      try {
-        const targetPath = router.resolve(to).fullPath;
-        await router.push(to);
-        const currentPath = router.currentRoute.value.fullPath;
-        if (
-          (currentPath === targetPath ||
-            sameRoutePathname(currentPath, targetPath)) &&
-          useAgentStore.getState().visible
-        ) {
-          useAgentStore.getState().minimize();
-        }
-      } catch {
-        useAppStore.getState().notify({
-          module: "bytebase",
-          style: "CRITICAL",
-          title: t("common.failed"),
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
     return (
-      <Button
-        appearance="link"
-        className="h-auto max-w-full min-w-0 justify-start px-0 py-0 text-left whitespace-normal"
+      <AgentPrimaryAction
+        className="-ml-2"
         data-agent-handoff
         data-agent-action-open
         disabled={loading}
-        onClick={() => void openSetup()}
-        size="sm"
+        loading={loading}
+        onClick={() => void openHandoff()}
       >
-        <span className="min-w-0 break-words whitespace-normal">
-          {t(labelKey)}
-        </span>
-        <ArrowUpRight className="size-3.5 shrink-0" aria-hidden="true" />
-      </Button>
+        {t(labelKey)}
+      </AgentPrimaryAction>
     );
   }
   return (
-    <RouterLink
+    <AgentPrimaryActionLink
+      className="-ml-2"
       data-agent-handoff
       data-agent-action-open
       to={to}
-      className="inline-flex max-w-full items-center gap-1 text-sm text-accent hover:underline"
+      loading={loading}
+      onClick={(event) => {
+        if (
+          event.defaultPrevented ||
+          event.metaKey ||
+          event.ctrlKey ||
+          event.shiftKey ||
+          event.altKey ||
+          event.button !== 0 ||
+          (event.currentTarget.target &&
+            event.currentTarget.target !== "_self") ||
+          event.currentTarget.hasAttribute("download")
+        ) {
+          return;
+        }
+        event.preventDefault();
+        void openHandoff();
+      }}
     >
-      <span className="min-w-0 break-words">{t(labelKey)}</span>
-      <ArrowUpRight className="size-3.5 shrink-0" aria-hidden="true" />
-    </RouterLink>
+      {t(labelKey)}
+    </AgentPrimaryActionLink>
   );
 }
 
@@ -381,6 +407,27 @@ function sameRoutePathname(currentPath: string, targetPath: string): boolean {
     new URL(currentPath, "https://bytebase.invalid").pathname ===
     new URL(targetPath, "https://bytebase.invalid").pathname
   );
+}
+
+function reachedHandoffRoute(currentPath: string, targetPath: string): boolean {
+  if (currentPath === targetPath) return true;
+  if (!currentPath.startsWith("/") || !targetPath.startsWith("/")) return false;
+  const target = new URL(targetPath, "https://bytebase.invalid");
+  const current = new URL(currentPath, "https://bytebase.invalid");
+  if (
+    current.pathname !== target.pathname ||
+    (target.hash && current.hash !== target.hash)
+  ) {
+    return false;
+  }
+  return [...new Set(target.searchParams.keys())].every((key) => {
+    const expected = target.searchParams.getAll(key);
+    const actual = current.searchParams.getAll(key);
+    return (
+      actual.length === expected.length &&
+      expected.every((value, index) => actual[index] === value)
+    );
+  });
 }
 
 async function waitForDeliveredAccessDraft(key: string): Promise<boolean> {
@@ -425,6 +472,7 @@ function PlanDraftButton({
   const applyToCurrentPlan = isCurrentPlanCreate(currentRoute);
   const openDraft = async () => {
     if (loading) return;
+    const handoffContext = captureAgentPageHandoffContext();
     setLoading(true);
     try {
       if (isCurrentPlanCreate()) {
@@ -435,6 +483,7 @@ function PlanDraftButton({
             project: action.project,
             database: action.database,
             sql,
+            onApplied: () => minimizeAgentAfterPageHandoff(handoffContext),
           });
         if (!handled) {
           useAppStore.getState().notify({
@@ -452,11 +501,8 @@ function PlanDraftButton({
       );
       const targetPath = router.resolve(route).fullPath;
       await router.push(route);
-      if (
-        router.currentRoute.value.fullPath === targetPath &&
-        useAgentStore.getState().visible
-      ) {
-        useAgentStore.getState().minimize();
+      if (router.currentRoute.value.fullPath === targetPath) {
+        minimizeAgentAfterPageHandoff(handoffContext);
       }
     } catch (error) {
       const title =
@@ -474,28 +520,18 @@ function PlanDraftButton({
   };
 
   return (
-    <Button
-      appearance="link"
-      size="sm"
-      className="h-auto max-w-full min-w-0 justify-start px-0 py-0 text-left whitespace-normal"
+    <AgentPrimaryAction
+      className="-ml-2"
       data-agent-action-draft-plan
+      actionKind={applyToCurrentPlan ? "apply" : "open"}
       disabled={loading}
+      loading={loading}
       onClick={() => void openDraft()}
     >
-      {loading ? (
-        <Loader2
-          className="size-3.5 shrink-0 animate-spin"
-          aria-hidden="true"
-        />
-      ) : (
-        <ArrowUpRight className="size-3.5 shrink-0" aria-hidden="true" />
-      )}
-      <span className="min-w-0 break-words">
-        {applyToCurrentPlan
-          ? t("agent.plan-draft.apply-to-current-plan")
-          : t("agent.plan-draft.open")}
-      </span>
-    </Button>
+      {applyToCurrentPlan
+        ? t("agent.plan-draft.apply-to-current-plan")
+        : t("agent.plan-draft.open")}
+    </AgentPrimaryAction>
   );
 }
 
@@ -508,6 +544,7 @@ function AccessRequestDraftButton({
   const [loading, setLoading] = useState(false);
   const openDraft = async () => {
     if (loading) return;
+    const handoffContext = captureAgentPageHandoffContext();
     setLoading(true);
     try {
       const route = await prepareAgentDeniedQueryRequestRoute(draft);
@@ -527,8 +564,10 @@ function AccessRequestDraftButton({
           style: "CRITICAL",
           title: t("agent.access-grant-draft.unavailable"),
         });
-      } else if (useAgentStore.getState().visible) {
-        useAgentStore.getState().minimize();
+      } else if (
+        sameRoutePathname(router.currentRoute.value.fullPath, targetPath)
+      ) {
+        minimizeAgentAfterPageHandoff(handoffContext);
       }
     } catch (error) {
       useAppStore.getState().notify({
@@ -545,26 +584,15 @@ function AccessRequestDraftButton({
   };
 
   return (
-    <Button
-      appearance="link"
-      size="sm"
-      className="h-auto max-w-full min-w-0 justify-start px-0 py-0 text-left whitespace-normal"
+    <AgentPrimaryAction
+      className="-ml-2"
       data-agent-action-request-access
       disabled={loading}
+      loading={loading}
       onClick={() => void openDraft()}
     >
-      {loading ? (
-        <Loader2
-          className="size-3.5 shrink-0 animate-spin"
-          aria-hidden="true"
-        />
-      ) : (
-        <ArrowUpRight className="size-3.5 shrink-0" aria-hidden="true" />
-      )}
-      <span className="min-w-0 break-words">
-        {t("agent.access-grant-draft.open")}
-      </span>
-    </Button>
+      {t("agent.access-grant-draft.open")}
+    </AgentPrimaryAction>
   );
 }
 
@@ -590,11 +618,13 @@ function AgentExpressionDraftActions({
 
   const apply = async (mode: "selector" | "raw") => {
     if (applyingMode || appliedMode) return;
+    const handoffContext = captureAgentPageHandoffContext(chatId);
     setApplyingMode(mode);
     setFailed(false);
     try {
       if (await applyAgentExpressionDraft(chatId, expression, mode)) {
         setAppliedMode(mode);
+        minimizeAgentAfterPageHandoff(handoffContext);
       } else {
         setFailed(true);
       }
@@ -612,40 +642,36 @@ function AgentExpressionDraftActions({
       aria-label={t("cel.agent-help.apply-group")}
       data-agent-expression-draft
     >
-      <div className="flex max-w-full flex-wrap gap-2">
+      <div className="-ml-2 flex max-w-full flex-wrap gap-2">
         {canApplySelector && (
-          <Button
+          <AgentPrimaryAction
             type="button"
-            appearance="outline"
-            size="sm"
+            actionKind="apply"
             data-agent-expression-draft="selector"
             disabled={Boolean(applyingMode || appliedMode)}
+            loading={applyingMode === "selector"}
+            completed={appliedMode === "selector"}
             onClick={() => void apply("selector")}
           >
-            {applyingMode === "selector" ? (
-              <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
-            ) : null}
             {appliedMode === "selector"
               ? t("cel.agent-help.applied-selector")
               : t("cel.agent-help.apply-selector")}
-          </Button>
+          </AgentPrimaryAction>
         )}
         {canApplyRaw && (
-          <Button
+          <AgentPrimaryAction
             type="button"
-            appearance="outline"
-            size="sm"
+            actionKind="apply"
             data-agent-expression-draft="raw"
             disabled={Boolean(applyingMode || appliedMode)}
+            loading={applyingMode === "raw"}
+            completed={appliedMode === "raw"}
             onClick={() => void apply("raw")}
           >
-            {applyingMode === "raw" ? (
-              <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
-            ) : null}
             {appliedMode === "raw"
               ? t("cel.agent-help.applied-raw")
               : t("cel.agent-help.apply-raw")}
-          </Button>
+          </AgentPrimaryAction>
         )}
       </div>
       <p className="text-xs text-control-light">
@@ -669,6 +695,7 @@ function IssueCommentDraftButton({
   const [loading, setLoading] = useState(false);
   const openDraft = async () => {
     if (loading) return;
+    const handoffContext = captureAgentPageHandoffContext();
     setLoading(true);
     try {
       const route = prepareIssueCommentDraftRoute(action.issue, action.comment);
@@ -696,10 +723,9 @@ function IssueCommentDraftButton({
         reachedIssueCommentDraftRoute(
           router.currentRoute.value.fullPath,
           targetPath
-        ) &&
-        useAgentStore.getState().visible
+        )
       ) {
-        useAgentStore.getState().minimize();
+        minimizeAgentAfterPageHandoff(handoffContext);
       }
     } catch (error) {
       const title =
@@ -722,26 +748,15 @@ function IssueCommentDraftButton({
 
   return (
     <div className="max-w-full">
-      <Button
-        appearance="link"
-        size="sm"
-        className="h-auto max-w-full min-w-0 justify-start px-0 py-0 text-left whitespace-normal"
+      <AgentPrimaryAction
+        className="-ml-2"
         data-agent-action-draft-issue-comment
         disabled={loading}
+        loading={loading}
         onClick={() => void openDraft()}
       >
-        {loading ? (
-          <Loader2
-            className="size-3.5 shrink-0 animate-spin"
-            aria-hidden="true"
-          />
-        ) : (
-          <ArrowUpRight className="size-3.5 shrink-0" aria-hidden="true" />
-        )}
-        <span className="min-w-0 break-words">
-          {t("agent.issue-comment-draft.open")}
-        </span>
-      </Button>
+        {t("agent.issue-comment-draft.open")}
+      </AgentPrimaryAction>
       <details className="mt-1 text-xs text-control-light">
         <summary className="cursor-pointer">
           {t("agent.issue-comment-draft.preview")}
@@ -809,6 +824,7 @@ export function AgentChat({
   className,
   contextLabel,
   onRetry,
+  onResend,
   onSelectSuggestion,
   onContinueAction,
 }: AgentChatProps) {
@@ -906,6 +922,16 @@ export function AgentChat({
   const latestUserMessageId = displayMessages.findLast(
     (message) => message.role === "user"
   )?.id;
+  const isChatActionBlocked =
+    loading ||
+    currentChat?.status === "awaiting_user" ||
+    currentChat?.archived ||
+    Boolean(queuedUserMessage);
+  const canRetryError =
+    currentChat?.status === "error" &&
+    Boolean(latestUserMessageId) &&
+    !isChatActionBlocked &&
+    Boolean(onRetry);
 
   function getToolResult(
     messageId: string,
@@ -1048,7 +1074,7 @@ export function AgentChat({
           interruption.userMessageId === latestUserMessageId &&
           currentChat?.interrupted &&
           currentChat.interruptionReason === "unexpected" &&
-          !loading &&
+          !isChatActionBlocked &&
           onRetry;
         const isPending = msg.metadata?.pending === true;
         const actions = normalizeAgentResponseActions(msg.metadata?.actions);
@@ -1058,6 +1084,15 @@ export function AgentChat({
         );
         const issueCommentDraftAction = actions.find(
           (action) => action.kind === "draft-issue-comment"
+        );
+        const maskingRuleDraftAction = actions.find(
+          (action) => action.kind === "draft-masking-rule"
+        );
+        const maskingExemptionDraftAction = actions.find(
+          (action) => action.kind === "draft-masking-exemption"
+        );
+        const semanticTypeDraftAction = actions.find(
+          (action) => action.kind === "draft-semantic-type"
         );
         const boundReferences = normalizeAgentResourceReferences(
           msg.metadata?.resourceReferences,
@@ -1083,7 +1118,10 @@ export function AgentChat({
             !msg.toolCalls?.length);
         const timestamp = (
           <time
-            className="mt-1 text-xs text-control-light"
+            className={cn(
+              "text-xs text-control-light",
+              msg.role === "user" ? "shrink-0 whitespace-nowrap" : "mt-1"
+            )}
             dateTime={new Date(msg.createdTs).toISOString()}
             data-agent-message-timestamp
           >
@@ -1109,7 +1147,31 @@ export function AgentChat({
                       </span>
                     )}
                 </div>
-                {showTimestamp && timestamp}
+                <div
+                  className="mt-1 flex max-w-full items-center justify-end gap-0"
+                  data-agent-message-actions
+                >
+                  <CopyButton
+                    content={content}
+                    size="xs"
+                    tooltipLayer="agent"
+                    className="px-1.5"
+                  />
+                  {onResend && !currentChat?.archived && (
+                    <AgentTooltip content={t("agent.resend-message")}>
+                      <Button
+                        appearance="secondary"
+                        size="xs"
+                        aria-label={t("agent.resend-message")}
+                        disabled={isChatActionBlocked}
+                        onClick={() => onResend(msg.id)}
+                      >
+                        <Repeat2 className="size-3.5" />
+                      </Button>
+                    </AgentTooltip>
+                  )}
+                  {showTimestamp && timestamp}
+                </div>
               </div>
             ) : (
               <div className="flex flex-col">
@@ -1200,15 +1262,37 @@ export function AgentChat({
                         {msg.content}
                       </ReactMarkdown>
                       <EvidenceReferences evidence={msg.metadata?.evidence} />
-                      {!msg.metadata?.pending &&
+                      {!currentChat?.archived &&
+                        !msg.metadata?.pending &&
                         !msg.metadata?.error &&
                         (openAction ||
                           planDraftAction ||
                           issueCommentDraftAction ||
+                          maskingRuleDraftAction ||
+                          maskingExemptionDraftAction ||
+                          semanticTypeDraftAction ||
                           msg.metadata?.accessRequestDraft ||
                           msg.metadata?.handoff) && (
                           <div className="mt-2 max-w-full">
-                            {planDraftAction ? (
+                            {semanticTypeDraftAction ? (
+                              <SemanticTypeDraftButton
+                                draftId={semanticTypeDraftAction.draftId}
+                                chatId={msg.chatId}
+                                messageId={msg.id}
+                              />
+                            ) : maskingExemptionDraftAction ? (
+                              <MaskingExemptionDraftButton
+                                draftId={maskingExemptionDraftAction.draftId}
+                                chatId={msg.chatId}
+                                messageId={msg.id}
+                              />
+                            ) : maskingRuleDraftAction ? (
+                              <MaskingRuleDraftButton
+                                draftId={maskingRuleDraftAction.draftId}
+                                chatId={msg.chatId}
+                                messageId={msg.id}
+                              />
+                            ) : planDraftAction ? (
                               <PlanDraftButton
                                 action={planDraftAction}
                                 answer={msg.content}
@@ -1230,7 +1314,7 @@ export function AgentChat({
                             )}
                           </div>
                         )}
-                      {expressionDraft && (
+                      {expressionDraft && !currentChat?.archived && (
                         <AgentExpressionDraftActions
                           chatId={msg.chatId}
                           expression={expressionDraft}
@@ -1252,6 +1336,7 @@ export function AgentChat({
                 </div>
                 {showTimestamp && timestamp}
                 {msg.content &&
+                  !currentChat?.archived &&
                   !msg.metadata?.pending &&
                   !msg.metadata?.error &&
                   continueActions.length > 0 && (
@@ -1349,8 +1434,22 @@ export function AgentChat({
             className="rounded-sm bg-error/10 px-3 py-2 text-sm text-error"
             role="alert"
           >
-            <div data-agent-error-summary>
-              {getAgentErrorSummary(error) ?? t("agent.request-failed")}
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 break-words" data-agent-error-summary>
+                {getAgentErrorSummary(error) ?? t("agent.request-failed")}
+              </div>
+              {canRetryError && (
+                <Button
+                  appearance="outline"
+                  size="xs"
+                  className="shrink-0"
+                  data-agent-retry
+                  onClick={onRetry}
+                >
+                  <RotateCcw className="size-3.5" />
+                  {t("agent.retry-last-chat-turn")}
+                </Button>
+              )}
             </div>
             <Collapsible className="mt-1">
               <CollapsibleTrigger

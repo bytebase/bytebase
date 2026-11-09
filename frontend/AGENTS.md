@@ -77,9 +77,9 @@ React UI components live in `src/components/ui/` and follow shadcn-style pattern
 - **Use `cn()` for conditional classes** — import from `@/lib/utils`, don't write manual template literal ternaries
 - **Overlay layering policy** — React overlays use three semantic families: `overlay`, `agent`, and `critical`.
   - Standard app overlays mount into `overlay`.
-  - The shared primitives in `src/components/ui/` are the `overlay` entry points; they are not for agent-owned or critical surfaces.
+  - The shared primitives in `src/components/ui/` default to `overlay`; they are not entry points for critical surfaces.
   - `AgentWindow`, the minimized launcher, and other agent-owned overlays mount into `agent` and stay above normal app overlays.
-  - Agent-owned surfaces should use the wrappers in `src/modules/agent/components/ui/` or other agent-owned code that mounts into `getLayerRoot("agent")`.
+  - Agent-owned alert dialogs use shared `AlertDialogContent` with `layer="agent"`. Other agent-owned surfaces should use the wrappers in `src/modules/agent/components/ui/` or other agent-owned code that mounts into `getLayerRoot("agent")`.
   - Forced session-expired / re-login UI mounts into `critical` and is the only layer allowed above and disabling the agent.
   - `critical` is reserved for auth/session recovery surfaces such as `SessionExpiredSurface`; do not introduce new feature-level critical overlays without an explicit policy change.
   - Each family has a dedicated portal root; use `getLayerRoot(<family>)` to choose the family root, and use `LAYER_SURFACE_CLASS` / `LAYER_BACKDROP_CLASS` from `src/components/ui/layer.ts` for shared intra-family stacking where appropriate.

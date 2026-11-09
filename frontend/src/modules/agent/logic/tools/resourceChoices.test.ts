@@ -1,7 +1,10 @@
 // @vitest-environment node
+
+import { create } from "@bufbuild/protobuf";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { databaseServiceClientConnect } from "@/api";
 import { State } from "@/types/proto-es/v1/common_pb";
+import { DatabaseSchema$ } from "@/types/proto-es/v1/database_service_pb";
 import { validateResourceChoices } from "./resourceChoices";
 
 vi.mock("@/api", () => ({
@@ -13,6 +16,67 @@ beforeEach(() => {
 });
 
 describe("validateResourceChoices", () => {
+  test.each([
+    "workspace",
+    "project",
+    "another_database",
+    "",
+    "  ",
+    "instances/prod/databases/orders/tables/customers",
+  ])(
+    "rejects a database list mixed with %j instead of silently narrowing it",
+    async (value) => {
+      vi.mocked(databaseServiceClientConnect.getDatabase).mockResolvedValue(
+        create(DatabaseSchema$, {
+          name: "instances/prod/databases/orders",
+          project: "projects/sample",
+          state: State.ACTIVE,
+          instanceResource: { title: "Production" },
+        })
+      );
+      expect(
+        await validateResourceChoices(
+          "database",
+          ["instances/prod/databases/orders", value],
+          "projects/sample",
+          "workspaces/example"
+        )
+      ).toBeUndefined();
+      expect(databaseServiceClientConnect.getDatabase).not.toHaveBeenCalled();
+    }
+  );
+
+  test("still excludes inaccessible and out-of-project canonical resources", async () => {
+    vi.mocked(databaseServiceClientConnect.getDatabase)
+      .mockResolvedValueOnce(
+        create(DatabaseSchema$, {
+          name: "instances/prod/databases/orders",
+          project: "projects/sample",
+          state: State.ACTIVE,
+          instanceResource: { title: "Production" },
+        })
+      )
+      .mockRejectedValueOnce(new Error("Permission denied"));
+    expect(
+      await validateResourceChoices(
+        "database",
+        [
+          "instances/prod/databases/orders",
+          "instances/prod/databases/denied",
+          "projects/other/instances/prod/databases/other",
+        ],
+        "projects/sample",
+        "workspaces/example"
+      )
+    ).toEqual([
+      {
+        label: "orders (Production)",
+        value: "instances/prod/databases/orders",
+      },
+    ]);
+    expect(databaseServiceClientConnect.getDatabase).toHaveBeenCalledTimes(2);
+  });
+
   test("uses fresh active database names and titles in the selected project", async () => {
     vi.mocked(databaseServiceClientConnect.getDatabase).mockImplementation(
       async (request) =>

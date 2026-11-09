@@ -77,6 +77,64 @@ describe("lazyExtractDomRefSuggestions", () => {
     expect(tree).not.toContain("Submit secret");
     expect(suggestions).toEqual([]);
   });
+
+  test("cannot read sensitive fields through an indexed ancestor", async () => {
+    document.body.innerHTML = `<div role="button" aria-label="Mask algorithm"><input data-agent-sensitive value="private-md5-salt" /></div>`;
+    const suggestions = await lazyExtractDomRefSuggestions();
+    const group = suggestions.find((item) => item.role === "button");
+    expect(group).toBeDefined();
+    expect(JSON.stringify(suggestions)).not.toContain("private-md5-salt");
+    const result = await lazyExecuteDomAction({
+      type: "read",
+      ref: group!.ref,
+    });
+    expect(result.success).toBe(false);
+    expect(result.message).not.toContain("private-md5-salt");
+  });
+
+  test("cannot update a sensitive input through an indexed ancestor", async () => {
+    document.body.innerHTML = `<div role="button" aria-label="Mask algorithm"><input data-agent-sensitive value="private-md5-salt" /></div>`;
+    const group = (await lazyExtractDomRefSuggestions()).find(
+      (item) => item.role === "button"
+    );
+    expect(group).toBeDefined();
+    const result = await lazyExecuteDomAction({
+      type: "input",
+      ref: group!.ref,
+      value: "replacement-salt",
+    });
+    expect(result.success).toBe(false);
+    expect(document.querySelector<HTMLInputElement>("input")?.value).toBe(
+      "private-md5-salt"
+    );
+  });
+
+  test("does not read a ref that becomes sensitive after snapshot extraction", async () => {
+    document.body.innerHTML = `<input value="private-md5-salt" />`;
+    const input = (await lazyExtractDomRefSuggestions()).find(
+      (item) => item.tag === "input"
+    );
+    document.querySelector("input")?.setAttribute("data-agent-sensitive", "");
+    const result = await lazyExecuteDomAction({
+      type: "read",
+      ref: input!.ref,
+    });
+    expect(result.success).toBe(false);
+    expect(result.message).not.toContain("private-md5-salt");
+  });
+
+  test("does not read sensitive text through an indexed ancestor", async () => {
+    document.body.innerHTML = `<div role="button" aria-label="Mask algorithm"><span data-agent-sensitive>private-md5-salt</span></div>`;
+    const group = (await lazyExtractDomRefSuggestions()).find(
+      (item) => item.role === "button"
+    );
+    const result = await lazyExecuteDomAction({
+      type: "read",
+      ref: group!.ref,
+    });
+    expect(result.success).toBe(false);
+    expect(result.message).not.toContain("private-md5-salt");
+  });
 });
 
 describe("lazyExecuteDomAction", () => {

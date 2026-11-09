@@ -14,6 +14,7 @@ import { normalizeAgentHandoff } from "../logic/handoff";
 import type { LandingStarterId } from "../logic/landingStarters";
 import {
   formatResourceMention,
+  getCurrentTurnResourceReferences,
   getMentionTriggerRange,
   insertResourceMention,
   isResourceMentionRange,
@@ -32,6 +33,7 @@ import type {
   AgentInterruptionReason,
   AgentMentionRange,
   AgentMessage,
+  AgentMessageMetadata,
   AgentModelCallUsage,
   AgentPendingAsk,
   AgentResourceReference,
@@ -70,6 +72,7 @@ interface PersistedAgentState {
   pendingAskByChatId: Record<string, AgentPendingAsk>;
   draftsByChatId: Record<string, AgentDraft>;
   queuedUserMessagesByChatId: Record<string, QueuedUserMessage>;
+  activeChatIds?: string[];
 }
 
 interface CreateChatOptions {
@@ -302,6 +305,34 @@ const normalizeQueuedUserMessage = (
   };
 };
 
+type DraftHandoffKind =
+  | "draft-masking-rule"
+  | "draft-masking-exemption"
+  | "draft-semantic-type";
+
+const normalizeDraftHandoff = (
+  receipt: unknown,
+  kind: DraftHandoffKind,
+  role: unknown,
+  actions: AgentResponseAction[]
+): AgentMessageMetadata["maskingExemptionDraftHandoff"] =>
+  role === "assistant" &&
+  isRecord(receipt) &&
+  typeof receipt.draftId === "string" &&
+  (receipt.outcome === "opened" || receipt.outcome === "applied") &&
+  (kind !== "draft-semantic-type" || receipt.outcome === "opened") &&
+  actions.some(
+    (action) => action.kind === kind && action.draftId === receipt.draftId
+  )
+    ? {
+        draftId: receipt.draftId,
+        outcome: receipt.outcome,
+        ...(kind !== "draft-masking-rule" && receipt.created === true
+          ? { created: true as const }
+          : {}),
+      }
+    : undefined;
+
 const normalizeMessage = (
   raw: unknown,
   chatId: string,
@@ -316,6 +347,12 @@ const normalizeMessage = (
       )
     : [];
   const actions = normalizeAgentResponseActions(metadata?.actions);
+  const semanticTypeReceipt = normalizeDraftHandoff(
+    metadata?.semanticTypeDraftHandoff,
+    "draft-semantic-type",
+    message.role,
+    actions
+  );
   return {
     id: typeof message.id === "string" ? message.id : uuidv4(),
     chatId:
@@ -346,6 +383,22 @@ const normalizeMessage = (
           ),
           handoff: normalizeAgentHandoff(metadata.handoff),
           actions: actions.length > 0 ? actions : undefined,
+          maskingRuleDraftHandoff: normalizeDraftHandoff(
+            metadata.maskingRuleDraftHandoff,
+            "draft-masking-rule",
+            message.role,
+            actions
+          ),
+          maskingExemptionDraftHandoff: normalizeDraftHandoff(
+            metadata.maskingExemptionDraftHandoff,
+            "draft-masking-exemption",
+            message.role,
+            actions
+          ),
+          semanticTypeDraftHandoff:
+            semanticTypeReceipt?.outcome === "opened"
+              ? { ...semanticTypeReceipt, outcome: "opened" }
+              : undefined,
           resourceReference:
             metadata.resourceReferences === undefined
               ? resourceReferences[0]
@@ -360,7 +413,10 @@ const normalizeMessage = (
   };
 };
 
-const normalizePendingAsk = (raw: unknown): AgentPendingAsk | null => {
+const normalizePendingAsk = (
+  raw: unknown,
+  context?: string
+): AgentPendingAsk | null => {
   const pendingAsk = isRecord(raw) ? raw : {};
   if (
     typeof pendingAsk.toolCallId !== "string" ||
@@ -405,6 +461,15 @@ const normalizePendingAsk = (raw: unknown): AgentPendingAsk | null => {
       : pendingAsk.kind === "choose" && options.length > 0
         ? "choose"
         : "input";
+  const defaultResource = normalizeAgentResourceReference(
+    pendingAsk.defaultResource
+  );
+  const hasBoundDefault =
+    kind === "input" &&
+    defaultResource?.kind === "database" &&
+    defaultResource.name === pendingAsk.defaultValue &&
+    (!context?.startsWith(projectNamePrefix) ||
+      defaultResource.project === context);
 
   return {
     toolCallId: pendingAsk.toolCallId,
@@ -425,6 +490,7 @@ const normalizePendingAsk = (raw: unknown): AgentPendingAsk | null => {
       typeof pendingAsk.defaultValue === "string"
         ? pendingAsk.defaultValue
         : undefined,
+    ...(hasBoundDefault ? { defaultResource } : {}),
     confirmLabel:
       typeof pendingAsk.confirmLabel === "string"
         ? pendingAsk.confirmLabel
@@ -522,7 +588,10 @@ const createEmptyPersistedState = (): PersistedAgentState => ({
   queuedUserMessagesByChatId: {},
 });
 
-const normalizePersistedState = (raw: unknown): PersistedAgentState => {
+const normalizePersistedState = (
+  raw: unknown,
+  recoverInterruptedRuns = true
+): PersistedAgentState => {
   if (!isRecord(raw)) {
     return createEmptyPersistedState();
   }
@@ -572,7 +641,7 @@ const normalizePersistedState = (raw: unknown): PersistedAgentState => {
     if (lastMessage) {
       chat.updatedTs = Math.max(chat.updatedTs, lastMessage.createdTs);
     }
-    if (chat.status === "running") {
+    if (recoverInterruptedRuns && chat.status === "running") {
       chat.status = DEFAULT_CHAT_STATUS;
       chat.interrupted = true;
       chat.interruptionReason = "unexpected";
@@ -586,11 +655,14 @@ const normalizePersistedState = (raw: unknown): PersistedAgentState => {
       );
     }
 
-    const pendingAsk = normalizePendingAsk(rawPendingAskByChatId[chat.id]);
+    const pendingAsk = normalizePendingAsk(
+      rawPendingAskByChatId[chat.id],
+      getCurrentTurnResourceReferences(messages).at(-1)?.project ?? chat.context
+    );
     if (chat.status === "awaiting_user") {
       if (pendingAsk) {
         pendingAskByChatId[chat.id] = pendingAsk;
-      } else {
+      } else if (recoverInterruptedRuns) {
         chat.status = DEFAULT_CHAT_STATUS;
       }
     }
@@ -654,6 +726,12 @@ const normalizePersistedState = (raw: unknown): PersistedAgentState => {
     pendingAskByChatId,
     draftsByChatId,
     queuedUserMessagesByChatId,
+    activeChatIds:
+      !recoverInterruptedRuns && Array.isArray(raw.activeChatIds)
+        ? raw.activeChatIds.filter(
+            (id): id is string => typeof id === "string" && chatIds.has(id)
+          )
+        : undefined,
   };
 };
 
@@ -677,6 +755,7 @@ export interface AgentState {
   abortControllersByChatId: Record<string, AbortController>;
   queuedUserMessagesByChatId: Record<string, QueuedUserMessage>;
   queuedUserMessageInFlightByChatId: Record<string, boolean>;
+  remoteBusyChatIds: Record<string, boolean>;
   expressionDraftTargetsByChatId: Record<
     string,
     RegisteredExpressionDraftTarget
@@ -758,6 +837,24 @@ export interface AgentState {
     actions: Extract<AgentResponseAction, { kind: "continue" }>[],
     references: AgentResourceReference[]
   ) => AgentMessage | null;
+  recordMaskingRuleDraftHandoff: (
+    chatId: string,
+    messageId: string,
+    draftId: string,
+    outcome: "opened" | "applied"
+  ) => AgentMessage | null;
+  recordMaskingExemptionDraftHandoff: AgentState["recordMaskingRuleDraftHandoff"];
+  recordSemanticTypeDraftHandoff: (
+    chatId: string,
+    messageId: string,
+    draftId: string,
+    outcome: "opened" | "created"
+  ) => AgentMessage | null;
+  markMaskingExemptionDraftCreated: (
+    chatId: string,
+    messageId: string,
+    draftId: string
+  ) => AgentMessage | null;
 
   // Status
   setChatStatus: (
@@ -832,6 +929,7 @@ export interface AgentState {
   loadWindowState: () => void;
   saveState: () => void;
   loadState: () => void;
+  syncState: () => void;
 
   // Queries
   getChat: (chatId?: string | null) => AgentChat | null;
@@ -869,6 +967,25 @@ export const selectOrderedChats = (state: AgentState): AgentChat[] => {
 export const selectCurrentChat = (state: AgentState): AgentChat | null =>
   state.chats.find((chat) => chat.id === state.currentChatId) ?? null;
 
+export const selectContinueChatForContext = (
+  state: AgentState,
+  context?: string,
+  workspaceName?: string
+): AgentChat | null => {
+  if (!context || !workspaceName || state.workspaceName !== workspaceName) {
+    return null;
+  }
+  return (
+    selectOrderedChats(state).find(
+      (chat) =>
+        chat.context === context &&
+        chat.workspaceName === workspaceName &&
+        !chat.archived &&
+        state.canSelectChat(chat.id)
+    ) ?? null
+  );
+};
+
 export const selectMessages = (state: AgentState): AgentMessage[] =>
   (state.currentChatId
     ? state.messagesByChatId[state.currentChatId]
@@ -882,7 +999,10 @@ export const selectCurrentPendingAsk = (
     : undefined) ?? null;
 
 export const selectLoading = (state: AgentState): boolean =>
-  selectCurrentChat(state)?.status === "running";
+  selectCurrentChat(state)?.status === "running" ||
+  Boolean(
+    state.currentChatId && state.remoteBusyChatIds?.[state.currentChatId]
+  );
 
 export const selectError = (state: AgentState): string | null =>
   selectCurrentChat(state)?.lastError ?? null;
@@ -1166,10 +1286,176 @@ const loadInitialState = (): {
   return ensureCurrentChat(createEmptyPersistedState());
 };
 
+const persistedSnapshot = (state: AgentState): PersistedAgentState => ({
+  currentChatId: state.currentChatId,
+  chats: state.chats,
+  messagesByChatId: state.messagesByChatId,
+  pendingAskByChatId: state.pendingAskByChatId,
+  draftsByChatId: state.draftsByChatId,
+  queuedUserMessagesByChatId: state.queuedUserMessagesByChatId,
+  activeChatIds: Object.keys(state.abortControllersByChatId),
+});
+
+const samePersistedValue = (a: unknown, b: unknown) =>
+  a === b || JSON.stringify(a) === JSON.stringify(b);
+
+const mergeDraftHandoffs = (
+  message: AgentMessage,
+  other: AgentMessage | undefined
+): AgentMessage => {
+  if (!other || other.role !== "assistant" || other.chatId !== message.chatId)
+    return message;
+  let metadata = message.metadata;
+  for (const [key, kind] of [
+    ["maskingRuleDraftHandoff", "draft-masking-rule"],
+    ["maskingExemptionDraftHandoff", "draft-masking-exemption"],
+    ["semanticTypeDraftHandoff", "draft-semantic-type"],
+  ] as const) {
+    const incoming = normalizeDraftHandoff(
+      other.metadata?.[key],
+      kind,
+      message.role,
+      message.metadata?.actions ?? []
+    );
+    if (!incoming) continue;
+    const current = normalizeDraftHandoff(
+      metadata?.[key],
+      kind,
+      message.role,
+      message.metadata?.actions ?? []
+    );
+    if (current && current.draftId !== incoming.draftId) continue;
+    const receipt = current
+      ? { ...current, ...(incoming.created ? { created: true as const } : {}) }
+      : incoming;
+    if (!samePersistedValue(metadata?.[key], receipt))
+      metadata = { ...metadata, [key]: receipt };
+  }
+  return metadata === message.metadata ? message : { ...message, metadata };
+};
+
+const chatExecution = (state: PersistedAgentState, chat: AgentChat) => {
+  const {
+    title: _title,
+    context: _context,
+    workspaceName: _workspaceName,
+    createdTs: _createdTs,
+    updatedTs: _updatedTs,
+    page: _page,
+    archived: _archived,
+    ...execution
+  } = normalizeChat(chat);
+  return {
+    ...execution,
+    messages: (state.messagesByChatId[chat.id] ?? []).map((message) => {
+      if (!message.metadata) return message;
+      const {
+        maskingRuleDraftHandoff: _ruleReceipt,
+        maskingExemptionDraftHandoff: _exemptionReceipt,
+        semanticTypeDraftHandoff: _typeReceipt,
+        ...metadata
+      } = message.metadata;
+      return { ...message, metadata };
+    }),
+    pendingAsk: state.pendingAskByChatId[chat.id],
+    queuedMessage: state.queuedUserMessagesByChatId[chat.id],
+    active: state.activeChatIds?.includes(chat.id) ?? false,
+  };
+};
+
+// Rebase only this tab's edits; an untouched snapshot must not undo another tab.
+const rebasePersistedChanges = (
+  base: PersistedAgentState,
+  local: PersistedAgentState,
+  remote: PersistedAgentState,
+  locallyBusy: Set<string>
+): PersistedAgentState => {
+  const baseChats = new Map(base.chats.map((chat) => [chat.id, chat]));
+  const localChats = new Map(local.chats.map((chat) => [chat.id, chat]));
+  const remoteChats = new Map(remote.chats.map((chat) => [chat.id, chat]));
+  const result = createEmptyPersistedState();
+  result.activeChatIds = [];
+  for (const id of new Set([...remoteChats.keys(), ...localChats.keys()])) {
+    const previous = baseChats.get(id);
+    const current = localChats.get(id);
+    const incoming = remoteChats.get(id);
+    if (previous && (!current || (!incoming && !locallyBusy.has(id)))) continue;
+    const useLocal =
+      current &&
+      (!previous ||
+        locallyBusy.has(id) ||
+        !samePersistedValue(
+          chatExecution(base, previous),
+          chatExecution(local, current)
+        ));
+    const source = useLocal ? local : remote;
+    const sourceChat = useLocal ? current : incoming;
+    if (!sourceChat) continue;
+    const chat = { ...sourceChat };
+    if (current && incoming && previous) {
+      for (const key of [
+        "title",
+        "context",
+        "workspaceName",
+        "page",
+        "archived",
+      ] as const) {
+        if (!samePersistedValue(current[key], previous[key])) {
+          Object.assign(chat, { [key]: current[key] });
+        } else {
+          Object.assign(chat, { [key]: incoming[key] });
+        }
+      }
+      chat.updatedTs =
+        current.updatedTs === previous.updatedTs
+          ? incoming.updatedTs
+          : incoming.updatedTs === previous.updatedTs
+            ? current.updatedTs
+            : Math.max(current.updatedTs, incoming.updatedTs);
+    }
+    result.chats.push(chat);
+    // Native forms may finish in another tab while this tab owns execution.
+    const otherMessages = new Map(
+      (useLocal ? remote : local).messagesByChatId[id]?.map((message) => [
+        message.id,
+        message,
+      ])
+    );
+    result.messagesByChatId[id] = (source.messagesByChatId[id] ?? []).map(
+      (message) => mergeDraftHandoffs(message, otherMessages.get(message.id))
+    );
+    if (source.activeChatIds?.includes(id)) result.activeChatIds.push(id);
+    if (source.pendingAskByChatId[id])
+      result.pendingAskByChatId[id] = source.pendingAskByChatId[id];
+    if (source.queuedUserMessagesByChatId[id])
+      result.queuedUserMessagesByChatId[id] =
+        source.queuedUserMessagesByChatId[id];
+    const draft = samePersistedValue(
+      local.draftsByChatId[id],
+      base.draftsByChatId[id]
+    )
+      ? remote.draftsByChatId[id]
+      : local.draftsByChatId[id];
+    if (draft) result.draftsByChatId[id] = draft;
+  }
+  const selected =
+    local.currentChatId !== base.currentChatId
+      ? local.currentChatId
+      : remote.currentChatId;
+  result.currentChatId =
+    selected && result.chats.some((chat) => chat.id === selected)
+      ? selected
+      : null;
+  return result;
+};
+
 export const createAgentStore = () => {
   const initial = loadInitialState();
   const initialWindowState = getInitialWindowState();
   const lastSerializedByScope = new Map<string, string>();
+  const snapshotsByScope = new Map<string, PersistedAgentState>();
+  const storageSnapshotsByScope = new Map<string, PersistedAgentState>();
+  let applyingSnapshot = false;
   let draftPersistTimer: ReturnType<typeof setTimeout> | null = null;
   const clearDraftPersistTimer = () => {
     if (draftPersistTimer !== null) {
@@ -1199,6 +1485,46 @@ export const createAgentStore = () => {
         return chat;
       };
 
+      const recordMaskingDraftHandoff = (
+        kind: "draft-masking-rule" | "draft-masking-exemption",
+        key: "maskingRuleDraftHandoff" | "maskingExemptionDraftHandoff",
+        chatId: string,
+        messageId: string,
+        draftId: string,
+        outcome: "opened" | "applied"
+      ): AgentMessage | null => {
+        get().syncState();
+        const state = get();
+        const message = state.messagesByChatId[chatId]?.find(
+          (candidate) => candidate.id === messageId
+        );
+        if (
+          !state.workspaceName ||
+          !state.userEmail ||
+          _getChat(chatId)?.workspaceName !== state.workspaceName ||
+          message?.chatId !== chatId ||
+          message.role !== "assistant" ||
+          !message.metadata?.actions?.some(
+            (action) => action.kind === kind && action.draftId === draftId
+          ) ||
+          (outcome !== "opened" && outcome !== "applied")
+        )
+          return null;
+        const receipt = message.metadata[key];
+        if (receipt) return receipt.draftId === draftId ? message : null;
+        set((draft) => {
+          const current = draft.messagesByChatId[chatId]?.find(
+            (candidate) => candidate.id === messageId
+          );
+          if (current?.metadata) current.metadata[key] = { draftId, outcome };
+        });
+        return (
+          get().messagesByChatId[chatId]?.find(
+            (candidate) => candidate.id === messageId
+          ) ?? null
+        );
+      };
+
       return {
         // Window state
         visible: false,
@@ -1217,6 +1543,7 @@ export const createAgentStore = () => {
         abortControllersByChatId: {},
         queuedUserMessagesByChatId: initial.queuedUserMessagesByChatId,
         queuedUserMessageInFlightByChatId: {},
+        remoteBusyChatIds: {},
         expressionDraftTargetsByChatId: {},
 
         // UI actions
@@ -1225,13 +1552,15 @@ export const createAgentStore = () => {
             state.visible = true;
             state.minimized = false;
           }),
-        toggle: () =>
+        toggle: () => {
+          if (!get().visible || get().minimized) {
+            get().open();
+            return;
+          }
           set((state) => {
-            state.visible = !state.visible;
-            if (state.visible) {
-              state.minimized = false;
-            }
-          }),
+            state.visible = false;
+          });
+        },
         minimize: () =>
           set((state) => {
             state.minimized = true;
@@ -1296,7 +1625,9 @@ export const createAgentStore = () => {
           return get().abortControllersByChatId[chatId] ?? null;
         },
 
-        isChatRunning: (chatId) => _getChat(chatId)?.status === "running",
+        isChatRunning: (chatId) =>
+          _getChat(chatId)?.status === "running" ||
+          Boolean(chatId && get().remoteBusyChatIds[chatId]),
 
         canSelectChat: (chatId) => {
           return Boolean(chatId && _getChat(chatId));
@@ -1345,7 +1676,9 @@ export const createAgentStore = () => {
         },
 
         queueUserMessage: (message) => {
+          get().syncState();
           if (
+            get().remoteBusyChatIds[message.chatId] ||
             _getChat(message.chatId)?.status !== "idle" ||
             get().queuedUserMessagesByChatId[message.chatId]
           ) {
@@ -1374,7 +1707,11 @@ export const createAgentStore = () => {
 
         takeQueuedUserMessage: (chatId) => {
           const message = get().queuedUserMessagesByChatId[chatId];
-          if (!message || get().queuedUserMessageInFlightByChatId[chatId]) {
+          if (
+            !message ||
+            get().remoteBusyChatIds[chatId] ||
+            get().queuedUserMessageInFlightByChatId[chatId]
+          ) {
             return null;
           }
           set((state) => {
@@ -1392,7 +1729,7 @@ export const createAgentStore = () => {
 
         commitQueuedUserMessage: (chatId) => {
           const queued = get().queuedUserMessagesByChatId[chatId];
-          if (!queued || !_getChat(chatId)) {
+          if (!queued || get().remoteBusyChatIds[chatId] || !_getChat(chatId)) {
             return null;
           }
 
@@ -1678,7 +2015,9 @@ export const createAgentStore = () => {
         },
 
         deleteChat: (chatId) => {
-          if (!_getChat(chatId)) return false;
+          get().syncState();
+          if (!_getChat(chatId) || get().remoteBusyChatIds[chatId])
+            return false;
           get().cancel(chatId);
           set((state) => {
             state.chats = state.chats.filter((c) => c.id !== chatId);
@@ -1710,8 +2049,11 @@ export const createAgentStore = () => {
         },
 
         deleteAllArchivedChats: () => {
+          get().syncState();
           const archivedChatIds = get()
-            .chats.filter((chat) => chat.archived)
+            .chats.filter(
+              (chat) => chat.archived && !get().remoteBusyChatIds[chat.id]
+            )
             .map((chat) => chat.id);
           for (const chatId of archivedChatIds) {
             get().cancel(chatId);
@@ -1719,7 +2061,9 @@ export const createAgentStore = () => {
 
           let deletedCount = 0;
           set((state) => {
-            const archivedChats = state.chats.filter((chat) => chat.archived);
+            const archivedChats = state.chats.filter(
+              (chat) => chat.archived && !state.remoteBusyChatIds[chat.id]
+            );
             deletedCount = archivedChats.length;
             if (deletedCount === 0) return;
 
@@ -1785,8 +2129,10 @@ export const createAgentStore = () => {
 
         // Messages
         addMessage: (message) => {
+          if (message.role === "user") get().syncState();
           if (message.chatId && !_getChat(message.chatId)) return null;
           const chatId = message.chatId ?? get().ensureCurrentChat().id;
+          if (get().remoteBusyChatIds[chatId]) return null;
           const createdTs = Date.now();
           const agentMessage: AgentMessage = {
             ...message,
@@ -1882,9 +2228,116 @@ export const createAgentStore = () => {
           return get().messagesByChatId[chatId]?.at(-1) ?? null;
         },
 
+        recordSemanticTypeDraftHandoff: (
+          chatId,
+          messageId,
+          draftId,
+          outcome
+        ) => {
+          get().syncState();
+          const state = get();
+          const message = state.messagesByChatId[chatId]?.find(
+            (candidate) => candidate.id === messageId
+          );
+          const receipt = message?.metadata?.semanticTypeDraftHandoff;
+          if (
+            !state.workspaceName ||
+            !state.userEmail ||
+            _getChat(chatId)?.workspaceName !== state.workspaceName ||
+            message?.chatId !== chatId ||
+            message.role !== "assistant" ||
+            !message.metadata?.actions?.some(
+              (action) =>
+                action.kind === "draft-semantic-type" &&
+                action.draftId === draftId
+            ) ||
+            (outcome !== "opened" && outcome !== "created") ||
+            (receipt && receipt.draftId !== draftId) ||
+            (outcome === "created" && receipt?.outcome !== "opened")
+          )
+            return null;
+          set((draft) => {
+            const current = draft.messagesByChatId[chatId]?.find(
+              (candidate) => candidate.id === messageId
+            );
+            if (current?.metadata)
+              current.metadata.semanticTypeDraftHandoff = {
+                draftId,
+                outcome: "opened",
+                ...(receipt?.created || outcome === "created"
+                  ? { created: true }
+                  : {}),
+              };
+          });
+          return (
+            get().messagesByChatId[chatId]?.find(
+              (candidate) => candidate.id === messageId
+            ) ?? null
+          );
+        },
+        recordMaskingRuleDraftHandoff: (chatId, messageId, draftId, outcome) =>
+          recordMaskingDraftHandoff(
+            "draft-masking-rule",
+            "maskingRuleDraftHandoff",
+            chatId,
+            messageId,
+            draftId,
+            outcome
+          ),
+        recordMaskingExemptionDraftHandoff: (
+          chatId,
+          messageId,
+          draftId,
+          outcome
+        ) =>
+          recordMaskingDraftHandoff(
+            "draft-masking-exemption",
+            "maskingExemptionDraftHandoff",
+            chatId,
+            messageId,
+            draftId,
+            outcome
+          ),
+        markMaskingExemptionDraftCreated: (chatId, messageId, draftId) => {
+          get().syncState();
+          const state = get();
+          const message = state.messagesByChatId[chatId]?.find(
+            (candidate) => candidate.id === messageId
+          );
+          const receipt = message?.metadata?.maskingExemptionDraftHandoff;
+          if (
+            !state.workspaceName ||
+            !state.userEmail ||
+            _getChat(chatId)?.workspaceName !== state.workspaceName ||
+            message?.chatId !== chatId ||
+            message.role !== "assistant" ||
+            !message.metadata?.actions?.some(
+              (action) =>
+                action.kind === "draft-masking-exemption" &&
+                action.draftId === draftId
+            ) ||
+            receipt?.draftId !== draftId ||
+            (receipt.outcome !== "opened" && receipt.outcome !== "applied")
+          )
+            return null;
+          if (receipt.created) return message;
+          set((draft) => {
+            const current = draft.messagesByChatId[chatId]?.find(
+              (candidate) => candidate.id === messageId
+            );
+            if (current?.metadata?.maskingExemptionDraftHandoff)
+              current.metadata.maskingExemptionDraftHandoff.created = true;
+          });
+          return (
+            get().messagesByChatId[chatId]?.find(
+              (candidate) => candidate.id === messageId
+            ) ?? null
+          );
+        },
+
         // Status
         setChatStatus: (chatId, status, options = {}) => {
-          if (!_getChat(chatId)) return null;
+          if (!_getChat(chatId) || get().remoteBusyChatIds[chatId]) return null;
           set((state) => {
             const chat = state.chats.find((c) => c.id === chatId);
             if (chat) {
@@ -2009,11 +2462,13 @@ export const createAgentStore = () => {
         },
 
         cancelPendingAsk: (chatId) => {
+          get().syncState();
           const id = chatId ?? get().currentChatId;
           const chat = _getChat(id);
           const pendingAsk = id ? get().pendingAskByChatId[id] : undefined;
           if (
             !id ||
+            get().remoteBusyChatIds[id] ||
             chat?.status !== "awaiting_user" ||
             !pendingAsk ||
             pendingAsk.apiPermission
@@ -2050,6 +2505,8 @@ export const createAgentStore = () => {
         },
 
         answerPendingAsk: (chatId, response, metadata) => {
+          get().syncState();
+          if (get().remoteBusyChatIds[chatId]) return null;
           const pendingAsk = get().getPendingAsk(chatId);
           if (!pendingAsk) return null;
           const toolMessage = get().addMessage({
@@ -2095,8 +2552,9 @@ export const createAgentStore = () => {
 
         // Abort / cancel
         cancel: (chatId, reason) => {
+          get().syncState();
           const id = chatId ?? get().currentChatId;
-          if (!id) return;
+          if (!id || get().remoteBusyChatIds[id]) return;
           get().getAbortController(id)?.abort();
           get().setAbortController(id, null);
           if (get().isChatRunning(id)) {
@@ -2106,9 +2564,10 @@ export const createAgentStore = () => {
 
         // Error
         clearError: (chatId) => {
+          get().syncState();
           const id = chatId ?? get().currentChatId;
           const chat = _getChat(id);
-          if (!chat) return;
+          if (!chat || get().remoteBusyChatIds[chat.id]) return;
           set((state) => {
             const c = state.chats.find((c) => c.id === id);
             if (c) {
@@ -2152,6 +2611,7 @@ export const createAgentStore = () => {
               draft.abortControllersByChatId = {};
               draft.queuedUserMessagesByChatId = {};
               draft.queuedUserMessageInFlightByChatId = {};
+              draft.remoteBusyChatIds = {};
               draft.expressionDraftTargetsByChatId = {};
             });
             return false;
@@ -2181,6 +2641,13 @@ export const createAgentStore = () => {
           const storage = getSafeStorage();
           migrateLegacyState(storage, workspaceName, nextUserEmail);
           const persistedState = getPersistedState(storage, stateKey);
+          const serialized = storage?.getItem(stateKey);
+          snapshotsByScope.set(
+            stateKey,
+            serialized ? persistedState : createEmptyPersistedState()
+          );
+          storageSnapshotsByScope.set(stateKey, persistedState);
+          if (serialized) lastSerializedByScope.set(stateKey, serialized);
           set((draft) => {
             draft.workspaceName = workspaceName;
             draft.userEmail = nextUserEmail;
@@ -2193,6 +2660,7 @@ export const createAgentStore = () => {
             draft.queuedUserMessagesByChatId =
               persistedState.queuedUserMessagesByChatId;
             draft.queuedUserMessageInFlightByChatId = {};
+            draft.remoteBusyChatIds = {};
             draft.expressionDraftTargetsByChatId = {};
           });
           get().loadWindowState();
@@ -2276,27 +2744,10 @@ export const createAgentStore = () => {
 
         saveState: () => {
           clearDraftPersistTimer();
-          const storage = getSafeStorage();
-          const workspaceName = get().workspaceName;
-          const userEmail = get().userEmail;
-          const key =
-            workspaceName && userEmail
-              ? getAgentStateKey(workspaceName, userEmail)
-              : null;
-          if (!storage || !key) return;
-          const state = get();
-          const persistedState: PersistedAgentState = {
-            currentChatId: state.currentChatId,
-            chats: state.chats,
-            messagesByChatId: state.messagesByChatId,
-            pendingAskByChatId: state.pendingAskByChatId,
-            draftsByChatId: state.draftsByChatId,
-            queuedUserMessagesByChatId: state.queuedUserMessagesByChatId,
-          };
-          const serialized = JSON.stringify(persistedState);
-          lastSerializedByScope.set(key, serialized);
-          storage.setItem(key, serialized);
+          synchronizeState(get(), true);
         },
+
+        syncState: () => synchronizeState(get(), false),
 
         loadState: () => {
           const storage = getSafeStorage();
@@ -2308,6 +2759,10 @@ export const createAgentStore = () => {
               : null;
           if (!key) return;
           const state = getPersistedState(storage, key);
+          snapshotsByScope.set(key, state);
+          storageSnapshotsByScope.set(key, state);
+          const serialized = storage?.getItem(key);
+          if (serialized) lastSerializedByScope.set(key, serialized);
           set((draft) => {
             draft.chats = state.chats;
             draft.messagesByChatId = state.messagesByChatId;
@@ -2316,13 +2771,14 @@ export const createAgentStore = () => {
             draft.currentChatId = state.currentChatId;
             draft.queuedUserMessagesByChatId = state.queuedUserMessagesByChatId;
             draft.queuedUserMessageInFlightByChatId = {};
+            draft.remoteBusyChatIds = {};
           });
         },
       };
     })
   );
 
-  const persistState = (state: AgentState) => {
+  const synchronizeState = (state: AgentState, persist: boolean) => {
     const storage = getSafeStorage();
     const workspaceName = state.workspaceName;
     const userEmail = state.userEmail;
@@ -2333,22 +2789,125 @@ export const createAgentStore = () => {
     if (!storage || !key) {
       return;
     }
-    const persistedState: PersistedAgentState = {
-      currentChatId: state.currentChatId,
-      chats: state.chats,
-      messagesByChatId: state.messagesByChatId,
-      pendingAskByChatId: state.pendingAskByChatId,
-      draftsByChatId: state.draftsByChatId,
-      queuedUserMessagesByChatId: state.queuedUserMessagesByChatId,
-    };
-    const serialized = JSON.stringify(persistedState);
-    if (serialized !== lastSerializedByScope.get(key)) {
-      lastSerializedByScope.set(key, serialized);
-      storage.setItem(key, serialized);
+    const saved = storage.getItem(key);
+    let remote = storageSnapshotsByScope.get(key);
+    if (!remote || saved !== lastSerializedByScope.get(key)) {
+      try {
+        remote = saved
+          ? normalizePersistedState(JSON.parse(saved), false)
+          : createEmptyPersistedState();
+      } catch {
+        return;
+      }
+    }
+    const local = persistedSnapshot(state);
+    const base = snapshotsByScope.get(key) ?? createEmptyPersistedState();
+    const baseChats = new Map(base.chats.map((chat) => [chat.id, chat]));
+    const remoteChats = new Map(remote.chats.map((chat) => [chat.id, chat]));
+    const locallyBusy = new Set(
+      state.chats
+        .filter((chat) => {
+          if (
+            state.remoteBusyChatIds[chat.id] ||
+            !(
+              state.abortControllersByChatId[chat.id] ||
+              chat.status === "running" ||
+              chat.status === "awaiting_user" ||
+              state.pendingAskByChatId[chat.id] ||
+              state.queuedUserMessagesByChatId[chat.id]
+            )
+          )
+            return false;
+          if (state.abortControllersByChatId[chat.id]) return true;
+          const previous = baseChats.get(chat.id);
+          if (!previous) return true;
+          const previousExecution = chatExecution(base, previous);
+          if (
+            !samePersistedValue(previousExecution, chatExecution(local, chat))
+          )
+            return true;
+          // Restored pending work must not override progress made by its owner.
+          const incoming = remoteChats.get(chat.id);
+          return Boolean(
+            incoming &&
+              samePersistedValue(
+                previousExecution,
+                chatExecution(remote, incoming)
+              )
+          );
+        })
+        .map((chat) => chat.id)
+    );
+    const merged = rebasePersistedChanges(base, local, remote, locallyBusy);
+    const serialized = persist ? JSON.stringify(merged) : saved;
+    if (persist && serialized !== saved) storage.setItem(key, serialized!);
+    if (serialized) lastSerializedByScope.set(key, serialized);
+    storageSnapshotsByScope.set(key, persist ? merged : remote);
+
+    const ids = new Set(merged.chats.map((chat) => chat.id));
+    const currentChatId =
+      state.currentChatId && !ids.has(state.currentChatId)
+        ? (merged.chats.find((chat) => !chat.archived)?.id ??
+          merged.chats[0]?.id ??
+          null)
+        : state.currentChatId;
+    const draftsByChatId = Object.fromEntries(
+      Object.entries(state.draftsByChatId).filter(([id]) => ids.has(id))
+    );
+    const remoteBusyChatIds = Object.fromEntries(
+      merged.chats
+        .filter(
+          (chat) =>
+            !locallyBusy.has(chat.id) &&
+            (chat.status === "running" ||
+              chat.status === "awaiting_user" ||
+              merged.activeChatIds?.includes(chat.id) ||
+              merged.queuedUserMessagesByChatId[chat.id])
+        )
+        .map((chat) => [chat.id, true])
+    );
+    applyingSnapshot = true;
+    try {
+      store.setState((draft) => {
+        if (!samePersistedValue(draft.chats, merged.chats))
+          draft.chats = merged.chats;
+        if (
+          !samePersistedValue(draft.messagesByChatId, merged.messagesByChatId)
+        )
+          draft.messagesByChatId = merged.messagesByChatId;
+        if (
+          !samePersistedValue(
+            draft.pendingAskByChatId,
+            merged.pendingAskByChatId
+          )
+        )
+          draft.pendingAskByChatId = merged.pendingAskByChatId;
+        if (
+          !samePersistedValue(
+            draft.queuedUserMessagesByChatId,
+            merged.queuedUserMessagesByChatId
+          )
+        )
+          draft.queuedUserMessagesByChatId = merged.queuedUserMessagesByChatId;
+        if (!samePersistedValue(draft.draftsByChatId, draftsByChatId))
+          draft.draftsByChatId = draftsByChatId;
+        if (!samePersistedValue(draft.remoteBusyChatIds, remoteBusyChatIds))
+          draft.remoteBusyChatIds = remoteBusyChatIds;
+        draft.currentChatId = currentChatId;
+      });
+      snapshotsByScope.set(key, {
+        ...persistedSnapshot(store.getState()),
+        draftsByChatId: persist
+          ? store.getState().draftsByChatId
+          : base.draftsByChatId,
+      });
+    } finally {
+      applyingSnapshot = false;
     }
   };
 
   store.subscribe((state, previousState) => {
+    if (applyingSnapshot) return;
     const nonDraftStateChanged =
       state.workspaceName !== previousState.workspaceName ||
       state.userEmail !== previousState.userEmail ||
@@ -2356,6 +2915,8 @@ export const createAgentStore = () => {
       state.chats !== previousState.chats ||
       state.messagesByChatId !== previousState.messagesByChatId ||
       state.pendingAskByChatId !== previousState.pendingAskByChatId ||
+      state.abortControllersByChatId !==
+        previousState.abortControllersByChatId ||
       state.queuedUserMessagesByChatId !==
         previousState.queuedUserMessagesByChatId;
     const draftChanged = state.draftsByChatId !== previousState.draftsByChatId;
@@ -2365,10 +2926,10 @@ export const createAgentStore = () => {
     if (!nonDraftStateChanged && draftChanged) {
       draftPersistTimer = setTimeout(() => {
         draftPersistTimer = null;
-        persistState(store.getState());
+        synchronizeState(store.getState(), true);
       }, DRAFT_PERSIST_DELAY_MS);
     } else {
-      persistState(state);
+      synchronizeState(state, true);
     }
   });
 
@@ -2382,7 +2943,38 @@ export const createAgentStore = () => {
 export const useAgentStore = createAgentStore();
 
 if (typeof window !== "undefined") {
-  window.addEventListener("pagehide", () =>
-    useAgentStore.getState().saveState()
-  );
+  window.addEventListener("storage", (event) => {
+    const { workspaceName, userEmail } = useAgentStore.getState();
+    if (
+      workspaceName &&
+      userEmail &&
+      (event.key === null ||
+        event.key === getAgentStateKey(workspaceName, userEmail)) &&
+      (!event.storageArea || event.storageArea === getSafeStorage())
+    ) {
+      useAgentStore.getState().syncState();
+    }
+  });
+  window.addEventListener("focus", () => useAgentStore.getState().syncState());
+  window.addEventListener("pagehide", () => {
+    useAgentStore.getState().syncState();
+    const state = useAgentStore.getState();
+    for (const chat of state.chats) {
+      if (state.remoteBusyChatIds[chat.id]) continue;
+      const controller = state.abortControllersByChatId[chat.id];
+      const queued = state.queuedUserMessagesByChatId[chat.id];
+      controller?.abort();
+      // Keep the question for an explicit retry, never replay an approval on exit.
+      if (queued) state.commitQueuedUserMessage(chat.id);
+      if (
+        chat.status === "running" ||
+        chat.status === "awaiting_user" ||
+        queued
+      )
+        state.interruptChatRun(chat.id);
+      if (queued) state.finishQueuedUserMessage(chat.id);
+      if (controller) state.setAbortController(chat.id, null);
+    }
+    useAgentStore.getState().saveState();
+  });
 }

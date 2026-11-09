@@ -1,4 +1,5 @@
 import { skill as databaseChangeSkill } from "./databaseChange";
+import { skill as dataMaskingSkill } from "./dataMasking";
 import { skill as grantPermissionSkill } from "./grantPermission";
 import { skill as querySkill } from "./query";
 
@@ -8,7 +9,12 @@ interface Skill {
   content: string;
 }
 
-const skills: Skill[] = [querySkill, databaseChangeSkill, grantPermissionSkill];
+const skills: Skill[] = [
+  querySkill,
+  databaseChangeSkill,
+  grantPermissionSkill,
+  dataMaskingSkill,
+];
 
 const skillMap = new Map(skills.map((s) => [s.name, s]));
 

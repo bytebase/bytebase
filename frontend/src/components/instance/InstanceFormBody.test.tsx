@@ -303,7 +303,11 @@ test("places general Agent help beside the connection section heading", () => {
 
   expect(headingRow?.contains(askAgentButton)).toBe(true);
   expect(connectionTitle).toHaveStyle({ width: "fit-content" });
-  expect(askAgentButton.querySelector("svg")).toBeNull();
+  expect(askAgentButton.querySelector(".lucide-bot")).not.toBeNull();
+  expect(askAgentButton).toHaveClass("h-7", "bg-transparent", "text-accent");
+  expect(askAgentButton.querySelector(".truncate")).toHaveTextContent(
+    "instance.ask-agent"
+  );
   expect(askAgentButton).toHaveTextContent("instance.ask-agent");
   expect(
     screen.queryByText("instance.need-help-connecting")

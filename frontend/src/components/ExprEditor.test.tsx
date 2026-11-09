@@ -255,6 +255,8 @@ describe("ExprEditor", () => {
     expect(askAgent?.textContent).toBe("");
     expect(askAgent?.querySelector(".lucide-bot")).toBeTruthy();
     expect(askAgent?.className).toContain("h-7");
+    expect(askAgent).toHaveClass("bg-transparent");
+    expect(askAgent).not.toHaveClass("hover:bg-control-bg");
     await act(async () => {
       fireEvent.click(askAgent!);
     });
@@ -845,6 +847,44 @@ describe("ExprEditor", () => {
     unmount();
   });
 
+  test.each([false, true])(
+    "bounds selector widths without constraining the editor with readonly=%s",
+    (readonly) => {
+      const { container, unmount } = renderIntoContainer(
+        <ExprEditor
+          readonly={readonly}
+          expr={{
+            type: ExprType.ConditionGroup,
+            operator: "_&&_",
+            args: [
+              {
+                type: ExprType.Condition,
+                operator: "_==_",
+                args: [CEL_ATTRIBUTE_RESOURCE_TABLE_NAME, "accounts"],
+              },
+            ],
+          }}
+          factorList={[CEL_ATTRIBUTE_RESOURCE_TABLE_NAME]}
+          onUpdate={() => {}}
+        />
+      );
+      const factor = container.querySelector('[role="combobox"]');
+      const value = container.querySelector(
+        'input[placeholder="cel.condition.input-value"]'
+      );
+      expectClasses(factor?.className, "min-w-0 max-w-xs flex-1");
+      expectClasses(
+        value?.parentElement?.parentElement?.className,
+        "min-w-0 max-w-sm flex-1"
+      );
+      expectClasses(factor?.parentElement?.className, "w-full flex-wrap");
+      const editor = container.querySelector(".bb-risk-expr-editor");
+      expect(editor?.classList.contains("w-full")).toBe(true);
+      expect(editor?.classList.contains("max-w-sm")).toBe(false);
+      unmount();
+    }
+  );
+
   test("uses factor identifiers", () => {
     const { container, unmount } = renderIntoContainer(
       <ExprEditor
@@ -868,6 +908,68 @@ describe("ExprEditor", () => {
     );
     unmount();
   });
+
+  test.each(["_==_", "@in"] as const)(
+    "preserves condition values when reselecting the current %s operator",
+    async (operator) => {
+      const initialExpr: ConditionGroupExpr = {
+        type: ExprType.ConditionGroup,
+        operator: "_&&_",
+        args: [
+          operator === "@in"
+            ? {
+                type: ExprType.Condition,
+                operator,
+                args: [
+                  CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
+                  ["orders", "customers"],
+                ],
+              }
+            : {
+                type: ExprType.Condition,
+                operator,
+                args: [CEL_ATTRIBUTE_RESOURCE_TABLE_NAME, "orders"],
+              },
+        ],
+      };
+      let currentExpr = initialExpr;
+      const onUpdate = vi.fn();
+      const Harness = () => {
+        const [expr, setExpr] = useState(initialExpr);
+        return (
+          <ExprEditor
+            expr={expr}
+            factorList={[CEL_ATTRIBUTE_RESOURCE_TABLE_NAME]}
+            onUpdate={(next) => {
+              onUpdate(next);
+              currentExpr = next;
+              setExpr(next);
+            }}
+          />
+        );
+      };
+      const { container, unmount } = renderIntoContainer(<Harness />);
+      const trigger = Array.from(
+        container.querySelectorAll('[role="combobox"]')
+      ).find((element) => element.textContent === operator);
+      expect(trigger).toBeTruthy();
+      await act(async () => {
+        fireEvent.click(trigger!);
+      });
+      const option = Array.from(
+        document.querySelectorAll('[role="option"]')
+      ).find((element) => element.textContent === operator);
+      expect(option).toBeTruthy();
+      await act(async () => {
+        fireEvent.pointerDown(option!, { pointerType: "mouse" });
+        fireEvent.click(option!);
+      });
+
+      unmount();
+      expect(currentExpr).toEqual(initialExpr);
+      expect(onUpdate).not.toHaveBeenCalled();
+    }
+  );
 
   test("keeps condition deletion at dense-control size", () => {
     const onUpdate = vi.fn();

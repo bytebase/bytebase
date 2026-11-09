@@ -27,6 +27,13 @@ const PASSWORD_FIELD_ACTION_RESULT: DomActionResult = {
   success: false,
   message: "Password fields are hidden from the agent.",
 };
+const SENSITIVE_FIELD_ACTION_RESULT: DomActionResult = {
+  success: false,
+  message: "Sensitive content is hidden from the agent.",
+};
+
+const isAgentSensitive = (element: Element): boolean =>
+  element.closest("[data-agent-sensitive]") !== null;
 
 function getCenter(el: Element): { x: number; y: number } {
   const rect = el.getBoundingClientRect();
@@ -142,6 +149,7 @@ async function handleInput(
   // Monaco editor
   const monacoEditor = await findMonacoEditor(el);
   if (canUseCurrentPage?.() === false) return BACKGROUND_PAGE_ACTION_RESULT;
+  if (isAgentSensitive(el)) return SENSITIVE_FIELD_ACTION_RESULT;
   if (monacoEditor) {
     const normalizedValue = normalizeMultilineValue(value);
     monacoEditor.setValue(normalizedValue);
@@ -165,6 +173,7 @@ async function handleInput(
       message: `No input element found within [${el.tagName.toLowerCase()}]`,
     };
   }
+  if (isAgentSensitive(target)) return SENSITIVE_FIELD_ACTION_RESULT;
   if (target instanceof HTMLInputElement && target.type === "password") {
     return PASSWORD_FIELD_ACTION_RESULT;
   }
@@ -202,6 +211,9 @@ async function handleRead(
   // Monaco editor — read full content via API
   const monacoEditor = await findMonacoEditor(el);
   if (canUseCurrentPage?.() === false) return BACKGROUND_PAGE_ACTION_RESULT;
+  if (isAgentSensitive(el) || el.querySelector("[data-agent-sensitive]")) {
+    return SENSITIVE_FIELD_ACTION_RESULT;
+  }
   if (monacoEditor) {
     return { success: true, message: monacoEditor.getValue() };
   }
@@ -237,6 +249,7 @@ export async function executeDomAction(
   canUseCurrentPage?: () => boolean
 ): Promise<DomActionResult> {
   if (canUseCurrentPage?.() === false) return BACKGROUND_PAGE_ACTION_RESULT;
+  if (isAgentSensitive(element)) return SENSITIVE_FIELD_ACTION_RESULT;
   switch (params.type) {
     case "click":
       return handleClick(element);

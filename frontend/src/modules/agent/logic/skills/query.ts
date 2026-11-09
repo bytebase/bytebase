@@ -1,19 +1,26 @@
+export const sqlEditorPersistenceInstruction =
+  "SQL Editor automatically creates or updates a Saved Query after SQL edits when permitted, without a Save click or SQL execution. Do not promise that SQL entered there is unsaved or unpersisted. If the member forbids saving or persistence, do not type SQL into SQL Editor or modify its content; return the SQL inline in chat instead and do not write a Saved Query through APIs. Explain the auto-save limitation if an editor draft is requested without persistence. This restriction takes precedence over general editor interaction guidance. Do not execute review-only SQL. Do not equate not executed with not saved.";
+
 export const skill = {
   name: "query",
   description:
-    "Use when running SQL queries, executing SELECT/INSERT/UPDATE/DELETE statements, or fetching data from databases",
+    "Use when reviewing or running SQL queries, executing SELECT/INSERT/UPDATE/DELETE statements, or fetching data from databases",
   content: `# Execute SQL
 
 ## Overview
 
 Run SQL queries against databases managed by Bytebase.
 
+## Review-only requests
+
+${sqlEditorPersistenceInstruction}
+
 ## Prerequisites
 
 - Know the instance and database name
 - Have \`bb.sql.query\` permission
 
-## Workflow
+## Execution workflow (only when requested)
 
 1. **Get the schema**:
    \`\`\`

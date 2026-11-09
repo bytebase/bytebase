@@ -29,6 +29,7 @@ export async function validateResourceChoices(
     return undefined;
   }
   const names = [...new Set(values.map((value) => value.trim()))];
+  if (names.some((name) => !DATABASE_NAME.test(name))) return undefined;
   const contextValues = createContextValues().set(silentContextKey, true);
 
   if (kind !== "database" || !PROJECT_NAME.test(projectName ?? "")) {

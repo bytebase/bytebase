@@ -11,6 +11,7 @@ afterEach(() => {
 
 describe("Agent Plan draft handoff", () => {
   test("delivers the exact project, database, and SQL to the open Plan", () => {
+    const onApplied = vi.fn();
     const listener = vi.fn((event: Event) => {
       (event as CustomEvent<{ handled: boolean }>).detail.handled = true;
     });
@@ -21,6 +22,7 @@ describe("Agent Plan draft handoff", () => {
         project: "projects/example",
         database: "instances/dev/databases/app",
         sql: "CREATE TABLE app_log (id INT);",
+        onApplied,
       })
     ).toBe(true);
     expect(listener).toHaveBeenCalledOnce();
@@ -29,7 +31,9 @@ describe("Agent Plan draft handoff", () => {
       database: "instances/dev/databases/app",
       sql: "CREATE TABLE app_log (id INT);",
       handled: true,
+      onApplied,
     });
+    expect(onApplied).not.toHaveBeenCalled();
 
     window.removeEventListener(AGENT_PLAN_DRAFT_EVENT, listener);
   });

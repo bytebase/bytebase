@@ -104,9 +104,37 @@ export function normalizeAgentResponseActions(
           key !== "project" &&
           key !== "database" &&
           key !== "issue" &&
-          key !== "comment"
+          key !== "comment" &&
+          key !== "draftId"
       )
     ) {
+      continue;
+    }
+    if (
+      candidate.kind === "draft-masking-rule" ||
+      candidate.kind === "draft-masking-exemption" ||
+      candidate.kind === "draft-semantic-type"
+    ) {
+      if (
+        Object.entries(candidate).every(
+          ([key, value]) =>
+            key === "kind" ||
+            key === "draftId" ||
+            value === undefined ||
+            value === "" ||
+            (key === "target" &&
+              isRecord(value) &&
+              Object.keys(value).length === 0)
+        ) &&
+        typeof candidate.draftId === "string" &&
+        /^[A-Za-z0-9_-]{1,100}$/.test(candidate.draftId) &&
+        !primaryAction
+      ) {
+        primaryAction = {
+          kind: candidate.kind,
+          draftId: candidate.draftId,
+        };
+      }
       continue;
     }
     if (candidate.kind === "open") {
@@ -200,24 +228,59 @@ export function acceptAgentResponseActions(
   planDraftContext?: {
     verifiedDatabase: { name: string; project: string };
     answer: string;
-  }
+  },
+  observedMaskingDraftIds: readonly string[] = [],
+  observedExemptionDraftIds: readonly string[] = [],
+  observedSemanticTypeDraftIds: readonly string[] = []
 ): AgentResponseAction[] {
-  const actions = normalizeAgentResponseActions(proposed).filter(
-    (action) =>
-      action.kind === "continue" ||
-      (action.kind === "open"
-        ? observedOpenTargets.some(
-            (target) => JSON.stringify(target) === JSON.stringify(action.target)
-          )
-        : action.kind === "draft-issue-comment"
-          ? observedOpenTargets.some(
-              (target) =>
-                target.kind === "open-issue" && target.issue === action.issue
-            )
-          : planDraftContext?.verifiedDatabase.name === action.database &&
-            planDraftContext.verifiedDatabase.project === action.project &&
-            Boolean(extractPlanDraftSQL(planDraftContext.answer)))
-  );
+  const normalizedActions = normalizeAgentResponseActions(proposed);
+  const preparedMaskingDraft = normalizeAgentResponseActions([
+    {
+      kind: observedSemanticTypeDraftIds.length
+        ? "draft-semantic-type"
+        : observedExemptionDraftIds.length
+          ? "draft-masking-exemption"
+          : "draft-masking-rule",
+      draftId: observedSemanticTypeDraftIds.length
+        ? observedSemanticTypeDraftIds.at(-1)
+        : observedExemptionDraftIds.length
+          ? observedExemptionDraftIds.at(-1)
+          : observedMaskingDraftIds.at(-1),
+    },
+  ])[0];
+  if (
+    preparedMaskingDraft?.kind === "draft-masking-rule" ||
+    preparedMaskingDraft?.kind === "draft-masking-exemption" ||
+    preparedMaskingDraft?.kind === "draft-semantic-type"
+  ) {
+    return [
+      preparedMaskingDraft,
+      ...normalizedActions.filter((action) => action.kind === "continue"),
+    ];
+  }
+  const actions = normalizedActions.filter((action) => {
+    if (action.kind === "continue") return true;
+    if (
+      action.kind === "draft-masking-rule" ||
+      action.kind === "draft-masking-exemption" ||
+      action.kind === "draft-semantic-type"
+    )
+      return false;
+    if (action.kind === "open")
+      return observedOpenTargets.some(
+        (target) => JSON.stringify(target) === JSON.stringify(action.target)
+      );
+    if (action.kind === "draft-issue-comment")
+      return observedOpenTargets.some(
+        (target) =>
+          target.kind === "open-issue" && target.issue === action.issue
+      );
+    return (
+      planDraftContext?.verifiedDatabase.name === action.database &&
+      planDraftContext.verifiedDatabase.project === action.project &&
+      Boolean(extractPlanDraftSQL(planDraftContext.answer))
+    );
+  });
   const proposedPrimary =
     Array.isArray(proposed) &&
     proposed.some(
@@ -225,6 +288,9 @@ export function acceptAgentResponseActions(
         isRecord(action) &&
         (action.kind === "open" ||
           action.kind === "draft-plan" ||
+          action.kind === "draft-masking-rule" ||
+          action.kind === "draft-masking-exemption" ||
+          action.kind === "draft-semantic-type" ||
           action.kind === "draft-issue-comment")
     );
   if (!proposedPrimary && planDraftContext) {

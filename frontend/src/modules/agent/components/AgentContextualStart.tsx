@@ -21,6 +21,7 @@ interface AgentContextualStartProps {
   page: AgentPageResource;
   title: string;
   reference?: AgentResourceReference;
+  maskingRuleEditor?: boolean;
   loading: boolean;
   canStart: boolean;
   hasCurrentChat: boolean;
@@ -33,6 +34,7 @@ export function AgentContextualStart({
   page,
   title,
   reference,
+  maskingRuleEditor = false,
   loading,
   canStart,
   hasCurrentChat,
@@ -130,11 +132,17 @@ export function AgentContextualStart({
       break;
     case "global-masking":
       heading = t("agent.contextual-start.masking-global-heading");
-      suggestions = [
-        t("agent.contextual-start.masking-global-effect"),
-        t("agent.contextual-start.masking-global-columns"),
-        t("agent.contextual-start.masking-global-exemptions"),
-      ];
+      suggestions = maskingRuleEditor
+        ? [
+            t("agent.contextual-start.masking-rule-configure"),
+            t("agent.contextual-start.masking-rule-effect"),
+            t("agent.contextual-start.masking-rule-review"),
+          ]
+        : [
+            t("agent.contextual-start.masking-global-effect"),
+            t("agent.contextual-start.masking-global-columns"),
+            t("agent.contextual-start.masking-global-exemptions"),
+          ];
       break;
     case "semantic-types":
       heading = t("agent.contextual-start.masking-semantic-heading");
@@ -236,8 +244,8 @@ export function AgentContextualStart({
         )}
         {hasCurrentChat && (
           <Button
-            appearance="secondary"
-            size="sm"
+            appearance="solid"
+            size="md"
             className="mt-4"
             onClick={onContinue}
             data-agent-contextual-continue

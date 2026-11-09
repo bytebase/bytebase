@@ -2,8 +2,12 @@ import { Ban, CheckCircle2, Menu } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { AgentHelpButton } from "@/modules/agent/components/AgentHelpButton";
 import { openAgentWithPrompt } from "@/modules/agent/logic/instanceConnectionHelp";
-import { buildIssueReviewPrompt } from "@/modules/agent/logic/planIssueAssistance";
+import {
+  buildIssueReviewPrompt,
+  canReviewWithAgent,
+} from "@/modules/agent/logic/planIssueAssistance";
 import { ApprovalStatus, IssueStatus } from "@/types/proto-es/v1/common_pb";
 import { useIssueDetailContext } from "../context/IssueDetailContext";
 import { IssueDetailActionBar } from "./IssueDetailActionBar";
@@ -64,16 +68,14 @@ export function IssueDetailHeader() {
         </div>
 
         <div className="ml-auto flex w-full min-w-0 max-w-full flex-wrap items-center justify-end gap-x-2 gap-y-2 sm:w-auto">
-          {issue && issueProject && !page.isCreating && (
-            <Button
-              className="max-w-full whitespace-normal text-left"
-              onClick={openIssueReview}
-              size="md"
-              appearance="outline"
-            >
-              {t("agent.issue-assistance.review")}
-            </Button>
-          )}
+          {issueProject &&
+            !page.isCreating &&
+            canReviewWithAgent(issue, issue?.plan ? page.plan : undefined) &&
+            !page.rollout && (
+              <AgentHelpButton onClick={openIssueReview} size="md">
+                {t("agent.issue-assistance.review")}
+              </AgentHelpButton>
+            )}
           <IssueDetailActionBar />
           {showMobileSidebarButton && (
             <Button
