@@ -38,6 +38,10 @@ export const PROVIDER_MODELS: Record<AISetting_Provider, ProviderModel[]> = {
       endpoint: "https://generativelanguage.googleapis.com/v1beta",
     },
     {
+      value: "gemini-3.6-flash",
+      endpoint: "https://generativelanguage.googleapis.com/v1beta",
+    },
+    {
       value: "gemini-3.5-flash-lite",
       endpoint: "https://generativelanguage.googleapis.com/v1beta",
     },
