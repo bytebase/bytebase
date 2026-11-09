@@ -6,33 +6,27 @@ export interface ProviderModel {
 }
 
 const OPENAI_RESPONSES_ENDPOINT = "https://api.openai.com/v1/responses";
-const OPENAI_CHAT_COMPLETIONS_ENDPOINT =
-  "https://api.openai.com/v1/chat/completions";
 const AZURE_OPENAI_RESPONSES_ENDPOINT =
   "https://{resource name}.openai.azure.com/openai/v1/responses";
-const AZURE_OPENAI_CHAT_COMPLETIONS_ENDPOINT =
-  "https://{resource name}.openai.azure.com/openai/v1/chat/completions";
 
 export const PROVIDER_MODELS: Record<AISetting_Provider, ProviderModel[]> = {
   [AISetting_Provider.OPEN_AI]: [
-    { value: "gpt-5.6-terra", endpoint: OPENAI_RESPONSES_ENDPOINT },
+    { value: "gpt-6.1-sol", endpoint: OPENAI_RESPONSES_ENDPOINT },
     { value: "gpt-6-astra", endpoint: OPENAI_RESPONSES_ENDPOINT },
+    { value: "gpt-6.1-terra", endpoint: OPENAI_RESPONSES_ENDPOINT },
+    { value: "gpt-6-luna", endpoint: OPENAI_RESPONSES_ENDPOINT },
     { value: "gpt-5.6-sol", endpoint: OPENAI_RESPONSES_ENDPOINT },
+    { value: "gpt-5.6-terra", endpoint: OPENAI_RESPONSES_ENDPOINT },
     { value: "gpt-5.6-luna", endpoint: OPENAI_RESPONSES_ENDPOINT },
-    { value: "gpt-5.5", endpoint: OPENAI_RESPONSES_ENDPOINT },
-    { value: "gpt-5", endpoint: OPENAI_RESPONSES_ENDPOINT },
-    { value: "gpt-5-mini", endpoint: OPENAI_RESPONSES_ENDPOINT },
-    { value: "gpt-4o", endpoint: OPENAI_CHAT_COMPLETIONS_ENDPOINT },
   ],
   [AISetting_Provider.AZURE_OPENAI]: [
-    { value: "gpt-5.6-terra", endpoint: AZURE_OPENAI_RESPONSES_ENDPOINT },
+    { value: "gpt-6.1-sol", endpoint: AZURE_OPENAI_RESPONSES_ENDPOINT },
     { value: "gpt-6-astra", endpoint: AZURE_OPENAI_RESPONSES_ENDPOINT },
+    { value: "gpt-6.1-terra", endpoint: AZURE_OPENAI_RESPONSES_ENDPOINT },
+    { value: "gpt-6-luna", endpoint: AZURE_OPENAI_RESPONSES_ENDPOINT },
     { value: "gpt-5.6-sol", endpoint: AZURE_OPENAI_RESPONSES_ENDPOINT },
+    { value: "gpt-5.6-terra", endpoint: AZURE_OPENAI_RESPONSES_ENDPOINT },
     { value: "gpt-5.6-luna", endpoint: AZURE_OPENAI_RESPONSES_ENDPOINT },
-    { value: "gpt-5.5", endpoint: AZURE_OPENAI_RESPONSES_ENDPOINT },
-    { value: "gpt-5", endpoint: AZURE_OPENAI_RESPONSES_ENDPOINT },
-    { value: "gpt-5-mini", endpoint: AZURE_OPENAI_RESPONSES_ENDPOINT },
-    { value: "gpt-4o", endpoint: AZURE_OPENAI_CHAT_COMPLETIONS_ENDPOINT },
   ],
   [AISetting_Provider.GEMINI]: [
     {
@@ -40,15 +34,7 @@ export const PROVIDER_MODELS: Record<AISetting_Provider, ProviderModel[]> = {
       endpoint: "https://generativelanguage.googleapis.com/v1beta",
     },
     {
-      value: "gemini-3.7-flash",
-      endpoint: "https://generativelanguage.googleapis.com/v1beta",
-    },
-    {
-      value: "gemini-3.6-flash",
-      endpoint: "https://generativelanguage.googleapis.com/v1beta",
-    },
-    {
-      value: "gemini-3.5-flash",
+      value: "gemini-4-argon",
       endpoint: "https://generativelanguage.googleapis.com/v1beta",
     },
     {
@@ -58,11 +44,7 @@ export const PROVIDER_MODELS: Record<AISetting_Provider, ProviderModel[]> = {
   ],
   [AISetting_Provider.CLAUDE]: [
     {
-      value: "claude-sonnet-5",
-      endpoint: "https://api.anthropic.com/v1/messages",
-    },
-    {
-      value: "claude-opus-5",
+      value: "claude-sonnet-5-5",
       endpoint: "https://api.anthropic.com/v1/messages",
     },
     {
@@ -70,7 +52,11 @@ export const PROVIDER_MODELS: Record<AISetting_Provider, ProviderModel[]> = {
       endpoint: "https://api.anthropic.com/v1/messages",
     },
     {
-      value: "claude-haiku-4-5",
+      value: "claude-opus-5-5",
+      endpoint: "https://api.anthropic.com/v1/messages",
+    },
+    {
+      value: "claude-haiku-5-5",
       endpoint: "https://api.anthropic.com/v1/messages",
     },
   ],
@@ -111,12 +97,12 @@ export const PROVIDER_DEFAULTS: Record<
   [AISetting_Provider.OPEN_AI]: {
     apiKeyDoc: "https://platform.openai.com/account/api-keys",
     endpoint: OPENAI_RESPONSES_ENDPOINT,
-    model: "gpt-5.6-terra",
+    model: "gpt-6.1-sol",
   },
   [AISetting_Provider.AZURE_OPENAI]: {
     apiKeyDoc: "https://ai.azure.com/",
     endpoint: AZURE_OPENAI_RESPONSES_ENDPOINT,
-    model: "gpt-5.6-terra",
+    model: "gpt-6.1-sol",
   },
   [AISetting_Provider.GEMINI]: {
     apiKeyDoc: "https://ai.google.dev/gemini-api/docs",
@@ -126,7 +112,7 @@ export const PROVIDER_DEFAULTS: Record<
   [AISetting_Provider.CLAUDE]: {
     apiKeyDoc: "https://docs.anthropic.com/en/api/getting-started",
     endpoint: "https://api.anthropic.com/v1/messages",
-    model: "claude-sonnet-5",
+    model: "claude-sonnet-5-5",
   },
   [AISetting_Provider.PROVIDER_UNSPECIFIED]: {
     apiKeyDoc: "",

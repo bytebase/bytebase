@@ -10,16 +10,16 @@ import {
 describe("PROVIDER_DEFAULTS", () => {
   test("uses current default model IDs for built-in AI providers", () => {
     expect(PROVIDER_DEFAULTS[AISetting_Provider.OPEN_AI].model).toBe(
-      "gpt-5.6-terra"
+      "gpt-6.1-sol"
     );
     expect(PROVIDER_DEFAULTS[AISetting_Provider.AZURE_OPENAI].model).toBe(
-      "gpt-5.6-terra"
+      "gpt-6.1-sol"
     );
     expect(PROVIDER_DEFAULTS[AISetting_Provider.GEMINI].model).toBe(
       "gemini-3.8-flash"
     );
     expect(PROVIDER_DEFAULTS[AISetting_Provider.CLAUDE].model).toBe(
-      "claude-sonnet-5"
+      "claude-sonnet-5-5"
     );
   });
 
@@ -29,9 +29,9 @@ describe("PROVIDER_DEFAULTS", () => {
     ).toEqual(
       expect.arrayContaining([
         "gpt-6-astra",
-        "gpt-5.6-sol",
-        "gpt-5.6-terra",
-        "gpt-5.6-luna",
+        "gpt-6.1-sol",
+        "gpt-6.1-terra",
+        "gpt-6-luna",
       ])
     );
     expect(
@@ -41,18 +41,17 @@ describe("PROVIDER_DEFAULTS", () => {
     ).toEqual(
       expect.arrayContaining([
         "gpt-6-astra",
-        "gpt-5.6-sol",
-        "gpt-5.6-terra",
-        "gpt-5.6-luna",
+        "gpt-6.1-sol",
+        "gpt-6.1-terra",
+        "gpt-6-luna",
       ])
     );
     expect(
       PROVIDER_MODELS[AISetting_Provider.GEMINI].map((model) => model.value)
     ).toEqual(
       expect.arrayContaining([
+        "gemini-4-argon",
         "gemini-3.8-flash",
-        "gemini-3.7-flash",
-        "gemini-3.6-flash",
         "gemini-3.5-flash-lite",
       ])
     );
@@ -61,29 +60,20 @@ describe("PROVIDER_DEFAULTS", () => {
     ).toEqual(
       expect.arrayContaining([
         "claude-fable-5-1",
-        "claude-opus-5",
-        "claude-haiku-4-5",
+        "claude-opus-5-5",
+        "claude-sonnet-5-5",
+        "claude-haiku-5-5",
       ])
     );
   });
 
-  test("uses the Responses API for current OpenAI models", () => {
-    const modelNames = [
-      "gpt-6-astra",
-      "gpt-5.6-sol",
-      "gpt-5.6-terra",
-      "gpt-5.6-luna",
-      "gpt-5.5",
-    ];
+  test("uses the Responses API for every OpenAI model", () => {
     for (const provider of [
       AISetting_Provider.OPEN_AI,
       AISetting_Provider.AZURE_OPENAI,
     ]) {
-      for (const modelName of modelNames) {
-        const model = PROVIDER_MODELS[provider].find(
-          (model) => model.value === modelName
-        );
-        expect(model?.endpoint).toContain("/responses");
+      for (const model of PROVIDER_MODELS[provider]) {
+        expect(model.endpoint).toContain("/responses");
       }
     }
   });
@@ -104,51 +94,35 @@ describe("PROVIDER_DEFAULTS", () => {
     }
   });
 
-  test("uses the legacy Chat Completions API for GPT-4o", () => {
-    for (const provider of [
-      AISetting_Provider.OPEN_AI,
-      AISetting_Provider.AZURE_OPENAI,
-    ]) {
-      const gpt4o = PROVIDER_MODELS[provider].find(
-        (model) => model.value === "gpt-4o"
-      );
-      expect(gpt4o?.endpoint).toContain("/chat/completions");
-    }
-  });
-
   test("preserves the Azure resource origin when changing models", () => {
     const provider = AISetting_Provider.AZURE_OPENAI;
-    const gpt4o = PROVIDER_MODELS[provider].find(
-      (model) => model.value === "gpt-4o"
-    );
-    const gpt5 = PROVIDER_MODELS[provider].find(
-      (model) => model.value === "gpt-5"
+    const luna = PROVIDER_MODELS[provider].find(
+      (model) => model.value === "gpt-6-luna"
     );
 
-    expect(gpt4o).toBeDefined();
-    expect(gpt5).toBeDefined();
+    expect(luna).toBeDefined();
     expect(
-      getModelEndpoint(provider, PROVIDER_DEFAULTS[provider].endpoint, gpt4o!)
-    ).toBe(gpt4o!.endpoint);
+      getModelEndpoint(provider, PROVIDER_DEFAULTS[provider].endpoint, luna!)
+    ).toBe(luna!.endpoint);
     expect(
       getModelEndpoint(
         provider,
         "https://{resource%20name}.openai.azure.com/openai/v1/responses",
-        gpt4o!
+        luna!
       )
-    ).toBe(gpt4o!.endpoint);
+    ).toBe(luna!.endpoint);
     expect(
       getModelEndpoint(
         provider,
         "https://contoso.openai.azure.com/openai/v1/responses",
-        gpt4o!
+        luna!
       )
-    ).toBe("https://contoso.openai.azure.com/openai/v1/chat/completions");
+    ).toBe("https://contoso.openai.azure.com/openai/v1/responses");
     expect(
       getModelEndpoint(
         provider,
         "https://contoso.openai.azure.com/openai/deployments/legacy/chat/completions?api-version=2024-06-01",
-        gpt5!
+        luna!
       )
     ).toBe("https://contoso.openai.azure.com/openai/v1/responses");
   });
