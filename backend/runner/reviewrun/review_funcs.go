@@ -2,6 +2,7 @@ package reviewrun
 
 import (
 	"context"
+	"slices"
 
 	mariadbreview "github.com/bytebase/omni/mariadb/review"
 	mssqlreview "github.com/bytebase/omni/mssql/review"
@@ -19,7 +20,7 @@ import (
 // reviewFuncs maps an engine to its omni Review entry point. An engine absent
 // here has no standard rule review: a run skips its targets, and the plan
 // checks keep V1's statement advice for it. The map fills in as omni ships
-// engine review packages: each one is a line here and nothing else.
+// engine review packages: each one is a line here and a line in engineRules.
 var reviewFuncs = map[storepb.Engine]review.ReviewFunc{
 	storepb.Engine_POSTGRES:  pgreview.Review,
 	storepb.Engine_MYSQL:     mysqlreview.Review,
@@ -31,10 +32,30 @@ var reviewFuncs = map[storepb.Engine]review.ReviewFunc{
 	storepb.Engine_SNOWFLAKE: snowflakereview.Review,
 }
 
+// engineRules maps an engine to the rules its omni package implements. Its
+// Review evaluates no other rule, whatever the policy turns on, so the AI
+// review checks such a rule itself.
+var engineRules = map[storepb.Engine][]review.Rule{
+	storepb.Engine_POSTGRES:  pgreview.Rules,
+	storepb.Engine_MYSQL:     mysqlreview.Rules,
+	storepb.Engine_OCEANBASE: oceanbasereview.Rules,
+	storepb.Engine_MARIADB:   mariadbreview.Rules,
+	storepb.Engine_TIDB:      tidbreview.Rules,
+	storepb.Engine_MSSQL:     mssqlreview.Rules,
+	storepb.Engine_ORACLE:    oraclereview.Rules,
+	storepb.Engine_SNOWFLAKE: snowflakereview.Rules,
+}
+
 // ReviewsEngine reports whether the standard rule review covers the engine.
 func ReviewsEngine(engine storepb.Engine) bool {
 	_, ok := reviewFuncs[engine]
 	return ok
+}
+
+// reviewsRule reports whether the standard rule review evaluates the rule on
+// the engine.
+func reviewsRule(engine storepb.Engine, rule storepb.ReviewRuleType) bool {
+	return slices.Contains(engineRules[engine], review.Rule(rule.String()))
 }
 
 // statementBodies returns the body of each statement of sql as the standard

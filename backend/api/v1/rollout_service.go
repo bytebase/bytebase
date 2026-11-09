@@ -312,6 +312,8 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 		}
 	}
 
+	attachReleaseStates(ctx, s.store, s.store, tasks)
+
 	if err := CreateRolloutAndPendingTasks(ctx, s.store, user.Email, plan, issue, project, tasks); err != nil {
 		if IsStaleRolloutApprovalError(err) || IsDraftIssueNotSubmittedError(err) {
 			return nil, connect.NewError(connect.CodeFailedPrecondition, err)
@@ -466,6 +468,7 @@ func CreateRolloutAndPendingTasks(
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to get pipeline create for rollout creation")
 			}
+			attachReleaseStates(ctx, s, s, created)
 			return created, nil
 		},
 	})
@@ -1047,7 +1050,7 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, req *connect.Reques
 		return connect.NewResponse(&v1pb.BatchSkipTasksResponse{}), nil
 	}
 
-	if err := s.store.BatchSkipTasks(ctx, projectID, taskUIDs, request.Reason); err != nil {
+	if err := s.store.BatchSkipTasks(ctx, projectID, taskUIDs, request.Reason, user.Email); err != nil {
 		if common.ErrorCode(err) == common.Conflict {
 			return nil, connect.NewError(connect.CodeFailedPrecondition, err)
 		}

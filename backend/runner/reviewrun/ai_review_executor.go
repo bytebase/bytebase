@@ -29,15 +29,20 @@ type AIReviewExecutor struct {
 	newModel func(*storepb.AISetting, ...aireview.ModelOption) aireview.Model
 	// slots bounds the reviews in flight across every run of the executor.
 	slots reviewSlots
+	// ruleReviewCovers reports whether the standard rule review runs on an
+	// engine. It is nil where SQL Review V2 is off: an AI review can still
+	// run there, and no standard rule review runs beside it.
+	ruleReviewCovers func(storepb.Engine) bool
 }
 
 // NewAIReviewExecutor creates the AI review executor. The server creates one,
 // so aiReviewServerConcurrency bounds the reviews of every run on the server.
-func NewAIReviewExecutor(s *store.Store) *AIReviewExecutor {
+func NewAIReviewExecutor(s *store.Store, ruleReviewCovers func(storepb.Engine) bool) *AIReviewExecutor {
 	return &AIReviewExecutor{
-		store:    s,
-		newModel: aireview.NewModel,
-		slots:    semaphore.NewWeighted(aiReviewServerConcurrency),
+		store:            s,
+		newModel:         aireview.NewModel,
+		slots:            semaphore.NewWeighted(aiReviewServerConcurrency),
+		ruleReviewCovers: ruleReviewCovers,
 	}
 }
 
@@ -58,6 +63,10 @@ func (e *AIReviewExecutor) RunOnce(ctx context.Context, projectID string, issueU
 	policy, err := e.store.GetEffectiveReviewAIPolicy(ctx, project.Workspace, projectID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get AI review policy")
+	}
+	rulePolicy, err := e.store.GetEffectiveReviewRulePolicy(ctx, project.Workspace, projectID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get review rule policy")
 	}
 
 	databaseGroup, err := plancheck.GetDatabaseGroupForPlan(ctx, e.store, plan, nil)
@@ -104,7 +113,7 @@ func (e *AIReviewExecutor) RunOnce(ctx context.Context, projectID string, issueU
 			ProjectPolicy:   policy.Project,
 			Statement:       unit.Statement,
 		}
-		tools, engine, err := e.resolveAIReviewTarget(ctx, unit.Check, request)
+		tools, engine, err := e.resolveAIReviewTarget(ctx, unit.Check, rulePolicy, request)
 		if err != nil {
 			return nil, err
 		}
@@ -298,10 +307,12 @@ func (e *AIReviewExecutor) sheetStatement(ctx context.Context, sheets map[string
 }
 
 // resolveAIReviewTarget gathers what one review needs of a database: it sets
-// the facts the prompt states as the request's target and returns the tools
-// over the synced schema, sized to the request's prompt, and the database's
-// engine. A database whose schema is not synced cannot be reviewed.
-func (e *AIReviewExecutor) resolveAIReviewTarget(ctx context.Context, checkTarget *plancheck.CheckTarget, request *aireview.Request) (aireview.Tools, storepb.Engine, error) {
+// the facts the prompt states as the request's target, and the standard rules
+// the policy turns on with which of them the standard review evaluates on its
+// engine, and returns the tools over the synced schema, sized to the
+// request's prompt, and the database's engine. A database whose schema is not
+// synced cannot be reviewed.
+func (e *AIReviewExecutor) resolveAIReviewTarget(ctx context.Context, checkTarget *plancheck.CheckTarget, rulePolicy *storepb.ReviewRulePolicy, request *aireview.Request) (aireview.Tools, storepb.Engine, error) {
 	instance, database, err := plancheck.ResolveDatabaseTarget(ctx, e.store, checkTarget.Target)
 	if err != nil {
 		return nil, storepb.Engine_ENGINE_UNSPECIFIED, err
@@ -320,5 +331,7 @@ func (e *AIReviewExecutor) resolveAIReviewTarget(ctx context.Context, checkTarge
 	schema := dbSchema.GetProto()
 	request.Target = aiReviewTarget(instance, database, schema)
 	engine := instance.Metadata.GetEngine()
+	request.StandardReviewRuns = e.ruleReviewCovers != nil && e.ruleReviewCovers(engine)
+	request.StandardRules = aiReviewStandardRules(rulePolicy, engine, request.StandardReviewRuns)
 	return aireview.NewCatalogTools(engine, schema, aireview.WithPromptOf(request)), engine, nil
 }

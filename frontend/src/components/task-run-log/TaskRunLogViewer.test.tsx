@@ -7,6 +7,7 @@ import { beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 import i18n from "@/lib/i18n";
 import { retry, runningCommand } from "./taskRunLogEntries";
 import {
+  Task_ReleaseStateSchema,
   TaskRun_Status,
   type TaskRunLogEntry,
   TaskRunLogEntry_Type,
@@ -197,8 +198,22 @@ const renderViewer = (props: Partial<TaskRunLogViewerProps> = {}) => {
   };
 };
 
+let narrowViewport = false;
+
 beforeAll(async () => {
   await i18n.changeLanguage("en-US");
+  // jsdom has no matchMedia; the spine asks it for the phone layout.
+  Object.defineProperty(window, "matchMedia", {
+    configurable: true,
+    writable: true,
+    value: (query: string) =>
+      ({
+        matches: narrowViewport && query === "(max-width: 639px)",
+        media: query,
+        addEventListener: () => {},
+        removeEventListener: () => {},
+      }) as unknown as MediaQueryList,
+  });
 });
 
 beforeEach(() => {
@@ -835,6 +850,366 @@ describe("TaskRunLogViewer row folds", () => {
     offsetTop.mockRestore();
     offsetHeight.mockRestore();
     clientHeight.mockRestore();
+    view.unmount();
+  });
+});
+
+describe("TaskRunLogViewer release spine", () => {
+  const ts = (seconds: number) => ({ seconds: BigInt(seconds), nanos: 0 });
+  const marker = (seconds: number, version: string) =>
+    create(TaskRunLogEntrySchema, {
+      type: TaskRunLogEntry_Type.RELEASE_FILE_EXECUTE,
+      logTime: ts(seconds),
+      releaseFileExecute: { version, filePath: `migrations/${version}_change.sql` },
+    });
+  const run = (seconds: number, error: string, range?: { start: number; end: number }) =>
+    create(TaskRunLogEntrySchema, {
+      type: TaskRunLogEntry_Type.COMMAND_EXECUTE,
+      logTime: ts(seconds),
+      commandExecute: {
+        logTime: ts(seconds),
+        statement: `STATEMENT ${seconds};`,
+        range,
+        response: { logTime: ts(seconds + 1), error },
+      },
+    });
+  const FILES = ["001", "002", "003", "004", "005", "006", "007", "008"].map((version) => ({
+    version,
+    path: `migrations/${version}_change.sql`,
+    sheet: `projects/p/sheets/${version}`,
+  }));
+  const useRelease = (entries: TaskRunLogEntry[]) =>
+    mocks.useTaskRunLogData.mockReturnValue({
+      ...createDefaultData(),
+      entries,
+      release: { name: "projects/p/releases/r1", type: 1, files: FILES },
+    });
+
+  beforeEach(() => {
+    mocks.useTaskRunLogSections.mockImplementation(
+      (options: UseTaskRunLogSectionsOptions) =>
+        mocks.actualUseTaskRunLogSections!(options)
+    );
+  });
+
+  const failedRun = () => {
+    useRelease([
+      marker(1, "007"),
+      run(2, ""),
+      marker(4, "008"),
+      run(5, "ERROR: column \"c\" already exists\nDETAIL: more", { start: 10, end: 40 }),
+    ]);
+  };
+  const failedError =
+    'failed to execute release file migrations/008_change.sql (version 008): ERROR: column "c" already exists\nDETAIL: more';
+
+  test("the failed section opens on its failed row; collapsed, its header carries the error's first line", () => {
+    failedRun();
+    const view = renderViewer({ taskRunStatus: TaskRun_Status.FAILED, runError: failedError });
+    const header = within(view.container).getByTestId("spine-file-008");
+    expect(header.getAttribute("aria-expanded")).toBe("true");
+    expect(header.textContent).toContain("008");
+    expect(header.textContent).toContain("Failed");
+    expect(view.container.textContent).toContain('ERROR: column "c" already exists');
+    // Applied sections start collapsed.
+    expect(within(view.container).getByTestId("spine-file-007").getAttribute("aria-expanded")).toBe("false");
+
+    act(() => header.click());
+    expect(header.getAttribute("aria-expanded")).toBe("false");
+    expect(
+      within(view.container).getByTestId("spine-file-008-error").textContent
+    ).toBe('ERROR: column "c" already exists');
+    view.unmount();
+  });
+
+  test("the path opens the file viewer at the failed command", () => {
+    failedRun();
+    const onOpenFile = vi.fn();
+    const view = renderViewer({ taskRunStatus: TaskRun_Status.FAILED, runError: failedError, onOpenFile });
+    act(() => button(view.container, /migrations\/008_change\.sql/).click());
+    expect(onOpenFile).toHaveBeenCalledWith(
+      { version: "008", path: "migrations/008_change.sql" },
+      {
+        kind: "failed",
+        error: 'ERROR: column "c" already exists\nDETAIL: more',
+        range: { start: 10, end: 40 },
+      }
+    );
+    act(() => button(view.container, /migrations\/007_change\.sql/).click());
+    expect(onOpenFile).toHaveBeenLastCalledWith(
+      { version: "007", path: "migrations/007_change.sql" },
+      { kind: "applied" }
+    );
+    view.unmount();
+  });
+
+  test("the files already applied fold under one line, open indented under it in version order, and open the viewer", () => {
+    failedRun();
+    const onOpenFile = vi.fn();
+    const view = renderViewer({ taskRunStatus: TaskRun_Status.FAILED, runError: failedError, onOpenFile });
+    expect(within(view.container).getByTestId("spine-count").textContent).toContain("6 already applied");
+    const trigger = within(view.container).getByTestId("spine-already-applied");
+    expect(trigger.textContent).toBe("6 files already applied to this database");
+    expect(trigger.getAttribute("aria-expanded")).toBe("false");
+    expect(within(view.container).queryByRole("button", { name: /^Load/ })).toBeNull();
+    const rows = () =>
+      within(view.container)
+        .queryAllByTestId("spine-already-applied-row")
+        .map((row) => row.textContent?.match(/migrations\/\d+_change\.sql/)?.[0]);
+    expect(rows()).toEqual([]);
+    act(() => trigger.click());
+    const panel = within(view.container).getByTestId("spine-already-applied-files");
+    expect(within(panel).getAllByTestId("spine-already-applied-row")).toHaveLength(6);
+    expect(panel.textContent).not.toContain("Applied");
+    expect(rows()).toEqual([
+      "migrations/001_change.sql",
+      "migrations/002_change.sql",
+      "migrations/003_change.sql",
+      "migrations/004_change.sql",
+      "migrations/005_change.sql",
+      "migrations/006_change.sql",
+    ]);
+    act(() => button(view.container, /migrations\/001_change\.sql/).click());
+    expect(onOpenFile).toHaveBeenCalledWith(
+      { version: "001", path: "migrations/001_change.sql" },
+      { kind: "already-applied", run: true }
+    );
+    view.unmount();
+  });
+
+  test("the Revisions link shows once the run applied a file, failed or done, and not when it applied none", () => {
+    const revisionsLink = { href: "/projects/p/instances/i/databases/db#revision", database: "db" };
+    const link = (container: HTMLElement) =>
+      within(container).queryByRole("link", { name: "Revisions on db" });
+
+    failedRun();
+    const partial = renderViewer({ taskRunStatus: TaskRun_Status.FAILED, runError: failedError, revisionsLink });
+    expect(link(partial.container)?.getAttribute("href")).toBe(revisionsLink.href);
+    partial.unmount();
+
+    useRelease([marker(1, "007"), run(2, "boom")]);
+    const none = renderViewer({
+      taskRunStatus: TaskRun_Status.FAILED,
+      runError: "failed to execute release file migrations/007_change.sql (version 007): boom",
+      revisionsLink,
+    });
+    expect(link(none.container)).toBeNull();
+    none.unmount();
+
+    useRelease([]);
+    const done = renderViewer({ taskRunStatus: TaskRun_Status.DONE, revisionsLink });
+    expect(link(done.container)).not.toBeNull();
+    done.unmount();
+
+    failedRun();
+    const revisionPage = renderViewer({ taskRunStatus: TaskRun_Status.FAILED, runError: failedError });
+    expect(link(revisionPage.container)).toBeNull();
+    revisionPage.unmount();
+  });
+
+  test("an error that names no file ends the spine with an open Run failed section holding it", () => {
+    useRelease([marker(1, "008"), run(2, "")]);
+    const error = "failed to create revision for version 008: duplicate key";
+    const view = renderViewer({ taskRunStatus: TaskRun_Status.FAILED, runError: error });
+    const section = within(view.container).getByTestId("spine-run-failed");
+    expect(section.textContent).toContain("Run failed");
+    expect(section.textContent).toContain(error);
+    view.unmount();
+  });
+
+  test("a failed file with no command response says no statement was identified and carries the run's error", () => {
+    useRelease([marker(1, "008")]);
+    const view = renderViewer({
+      taskRunStatus: TaskRun_Status.FAILED,
+      runError: "failed to execute release file migrations/008_change.sql (version 008): ORA-00942: table or view does not exist",
+    });
+    const content = within(view.container).getByTestId("spine-file-008-content");
+    expect(content.textContent).toContain("No statement was identified");
+    expect(content.textContent).toContain("ORA-00942: table or view does not exist");
+    view.unmount();
+  });
+
+  test("the log-only form, without a run error or a stored state, keeps the run's defaults", () => {
+    useRelease([marker(1, "007"), run(2, ""), marker(4, "008"), run(5, "boom")]);
+    const view = renderViewer({ taskRunStatus: TaskRun_Status.DONE });
+    expect(within(view.container).getByTestId("spine-file-008").getAttribute("aria-expanded")).toBe("false");
+    expect(within(view.container).getByTestId("spine-already-applied").textContent).toBe("6 files already applied to this database");
+    view.unmount();
+  });
+
+  test("the failed row opens with its statement block on a wide screen and folded below 640 px", () => {
+    failedRun();
+    const wide = renderViewer({ taskRunStatus: TaskRun_Status.FAILED, runError: failedError });
+    expect(within(wide.container).getByText("STATEMENT 5;")).toBeDefined();
+    wide.unmount();
+    narrowViewport = true;
+    failedRun();
+    const narrow = renderViewer({ taskRunStatus: TaskRun_Status.FAILED, runError: failedError });
+    expect(within(narrow.container).queryByText("STATEMENT 5;")).toBeNull();
+    expect(narrow.container.textContent).toContain('ERROR: column "c" already exists');
+    narrowViewport = false;
+    narrow.unmount();
+  });
+
+  test("inside a file only the rows holding an error start open", () => {
+    useRelease([marker(1, "008"), run(2, ""), run(4, "boom")]);
+    const view = renderViewer({
+      taskRunStatus: TaskRun_Status.FAILED,
+      runError: "failed to execute release file migrations/008_change.sql (version 008): boom",
+    });
+    const content = within(view.container).getByTestId("spine-file-008-content");
+    const headers = within(content).getAllByRole("button", { expanded: true });
+    expect(headers.some((h) => h.textContent?.includes("Command"))).toBe(true);
+    view.unmount();
+    useRelease([marker(1, "008"), run(2, "")]);
+    const done = renderViewer({ taskRunStatus: TaskRun_Status.FAILED, runError: "failed to execute release file migrations/008_change.sql (version 008): x" });
+    expect(
+      within(within(done.container).getByTestId("spine-file-008-content")).queryAllByRole("button", { expanded: true })
+    ).toHaveLength(0);
+    done.unmount();
+  });
+
+  test("a failed run opened without its error still marks the file whose command failed", () => {
+    failedRun();
+    const view = renderViewer({ taskRunStatus: TaskRun_Status.FAILED });
+    expect(within(view.container).getByTestId("spine-file-008").textContent).toContain("Failed");
+    view.unmount();
+  });
+
+  test("a section's accessible name carries its status", () => {
+    failedRun();
+    const view = renderViewer({ taskRunStatus: TaskRun_Status.FAILED, runError: failedError });
+    expect(within(view.container).getByRole("button", { name: /008.*Failed/ })).toBeDefined();
+    view.unmount();
+  });
+
+  test("a running or canceled file opens the viewer with no settled outcome", () => {
+    useRelease([marker(1, "008"), run(2, "")]);
+    const onOpenFile = vi.fn();
+    const view = renderViewer({ taskRunStatus: TaskRun_Status.CANCELED, runError: "canceled", onOpenFile });
+    act(() => button(view.container, /migrations\/008_change\.sql/).click());
+    expect(onOpenFile).toHaveBeenCalledWith(
+      { version: "008", path: "migrations/008_change.sql" },
+      { kind: "unsettled" }
+    );
+    view.unmount();
+  });
+
+  test("without a viewer to open, file paths are plain text", () => {
+    failedRun();
+    const view = renderViewer({ taskRunStatus: TaskRun_Status.FAILED, runError: failedError });
+    expect(within(view.container).queryByRole("button", { name: /migrations\/008_change\.sql/ })).toBeNull();
+    expect(view.container.textContent).toContain("migrations/008_change.sql");
+    view.unmount();
+  });
+
+  test("a re-run version reads Applied again, and every outcome names its earlier revision's deleter and time behind an icon", () => {
+    const releaseState = create(Task_ReleaseStateSchema, {
+      pendingRanges: [{ start: 6, end: 8 }],
+      deletedRevisions: [{ version: "008", deleter: "users/alex@example.com", deleteTime: ts(1_790_000_000) }],
+    });
+    const info = (container: HTMLElement) =>
+      within(within(container).getByTestId("spine-file-008-row")).getByTestId("spine-revision-deleted-info");
+
+    useRelease([marker(1, "007"), run(2, ""), marker(4, "008"), run(5, "")]);
+    const done = renderViewer({ taskRunStatus: TaskRun_Status.DONE, releaseState });
+    expect(within(done.container).getByTestId("spine-file-008").textContent).toContain("Applied again");
+    expect(within(done.container).getByTestId("spine-file-007").textContent).not.toContain("again");
+    expect(info(done.container).getAttribute("aria-label")).toMatch(
+      /^Earlier revision deleted .*2026.* by alex@example\.com$/
+    );
+    // Under "Applied" a line reads as if this run's revision was deleted.
+    expect(done.container.textContent).not.toContain("alex@example.com");
+    done.unmount();
+
+    failedRun();
+    const failed = renderViewer({ taskRunStatus: TaskRun_Status.FAILED, runError: failedError, releaseState });
+    expect(within(failed.container).getByTestId("spine-file-008").textContent).toContain("Failed");
+    expect(info(failed.container).getAttribute("aria-label")).toContain("alex@example.com");
+    failed.unmount();
+  });
+
+  test("a version the stored state counted applied that the run applied reads Applied again; without a stored state, Applied", () => {
+    const info = (container: HTMLElement) =>
+      within(within(container).getByTestId("spine-file-008-row")).queryByTestId("spine-revision-deleted-info");
+    // At rollout creation 008 had a live revision; it was deleted before the run.
+    const countedApplied = create(Task_ReleaseStateSchema, { pendingRanges: [{ start: 6, end: 7 }], appliedCount: 1 });
+
+    useRelease([marker(1, "007"), run(2, ""), marker(4, "008"), run(5, "")]);
+    const view = renderViewer({ taskRunStatus: TaskRun_Status.DONE, releaseState: countedApplied });
+    expect(within(view.container).getByTestId("spine-file-008").textContent).toContain("Applied again");
+    expect(info(view.container)?.getAttribute("aria-label")).toBe(
+      "Earlier revision deleted after this rollout was created"
+    );
+    expect(within(view.container).getByTestId("spine-file-007").textContent).not.toContain("again");
+    view.unmount();
+
+    const noState = renderViewer({ taskRunStatus: TaskRun_Status.DONE });
+    expect(within(noState.container).getByTestId("spine-file-008").textContent).not.toContain("again");
+    expect(info(noState.container)).toBeNull();
+    noState.unmount();
+  });
+
+  test("the spine waits for the log: a run whose log is still loading shows the loading state", () => {
+    mocks.useTaskRunLogData.mockReturnValue({
+      ...createDefaultData(),
+      logFetch: { status: "loading" },
+      entries: [],
+      release: { name: "projects/p/releases/r1", type: 1, files: FILES },
+    });
+    const view = renderViewer({ taskRunStatus: TaskRun_Status.FAILED, runError: "boom" });
+    expect(within(view.container).queryByTestId("release-spine")).toBeNull();
+    expect(view.container.textContent).toContain("Loading");
+    view.unmount();
+  });
+
+  test("a run the caller gave no status for takes it from the data hook", () => {
+    mocks.useTaskRunLogData.mockReturnValue({
+      ...createDefaultData(),
+      entries: [marker(1, "007"), run(2, ""), marker(4, "008"), run(5, "boom")],
+      release: { name: "projects/p/releases/r1", type: 1, files: FILES },
+      taskRun: { name: "runs/1", status: TaskRun_Status.FAILED, detail: failedError },
+    });
+    const view = renderViewer({});
+    expect(within(view.container).getByTestId("spine-file-008").textContent).toContain("Failed");
+    view.unmount();
+  });
+
+  test("the run's error alert shows only when the spine does not render", () => {
+    failedRun();
+    const spine = renderViewer({
+      taskRunStatus: TaskRun_Status.FAILED,
+      runError: failedError,
+      errorAlert: <div data-testid="error-alert" />,
+    });
+    expect(within(spine.container).queryByTestId("error-alert")).toBeNull();
+    spine.unmount();
+    mocks.useTaskRunLogData.mockReturnValue({
+      ...createDefaultData(),
+      entries: [
+        { ...marker(1, "008"), replicaId: "r1" },
+        { ...run(2, "boom"), replicaId: "r2" },
+      ],
+      release: { name: "projects/p/releases/r1", type: 1, files: FILES },
+    });
+    const replicas = renderViewer({
+      taskRunStatus: TaskRun_Status.FAILED,
+      runError: failedError,
+      errorAlert: <div data-testid="error-alert" />,
+    });
+    expect(within(replicas.container).getByTestId("error-alert")).toBeDefined();
+    replicas.unmount();
+  });
+
+  test("a failed poll that keeps the entries keeps the spine", () => {
+    mocks.useTaskRunLogData.mockReturnValue({
+      ...createDefaultData(),
+      logFetch: { status: "error", error: "network" },
+      entries: [marker(1, "007"), run(2, ""), marker(4, "008"), run(5, "")],
+      release: { name: "projects/p/releases/r1", type: 1, files: FILES },
+    });
+    const view = renderViewer({ taskRunStatus: TaskRun_Status.RUNNING });
+    expect(within(view.container).getByTestId("release-spine")).toBeDefined();
     view.unmount();
   });
 });

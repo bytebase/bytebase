@@ -2180,6 +2180,143 @@ describe("AgentInput", () => {
     view.unmount();
   });
 
+  test.each([
+    {
+      name: "a workspace chat",
+      context: "workspaces/demo",
+      referencedProject: undefined,
+    },
+    {
+      name: "a project-bound chat",
+      context: "projects/orders",
+      referencedProject: undefined,
+    },
+    {
+      name: "a referenced-project turn",
+      context: "workspaces/demo",
+      referencedProject: "projects/orders",
+    },
+  ])(
+    "keeps a resumed masking selection local to database choices in $name",
+    async ({ context, referencedProject }) => {
+      mocks.executeTool.mockResolvedValue({
+        kind: "tool_result",
+        result: '{"project":"projects/orders"}',
+      });
+      mocks.runAgentLoop.mockResolvedValue({
+        kind: "completed",
+        success: true,
+        totalTokensUsed: 0,
+      });
+      const store = useAgentStore.getState();
+      const page = { path: "/settings/global-masking", title: "Global Masking" };
+      const chat = store.createChat({ context, page });
+      store.addMessage({
+        chatId: chat.id,
+        role: "user",
+        content: "Help me mask email addresses.",
+        ...(referencedProject
+          ? {
+              metadata: {
+                resourceReference: {
+                  kind: "project" as const,
+                  name: referencedProject,
+                  project: referencedProject,
+                  label: "Order service",
+                },
+              },
+            }
+          : {}),
+      });
+      store.addMessage({
+        chatId: chat.id,
+        role: "assistant",
+        toolCalls: [{
+          id: "masking-overview",
+          name: "get_masking_overview",
+          arguments: '{"project":"projects/orders"}',
+        }],
+      });
+      store.addMessage({
+        chatId: chat.id,
+        role: "tool",
+        toolCallId: "masking-overview",
+        content: '{"project":"projects/orders"}',
+      });
+      store.addMessage({
+        chatId: chat.id,
+        role: "assistant",
+        toolCalls: [{
+          id: "rule-scope",
+          name: "ask_masking_rule_scope",
+          arguments: '{"project":"projects/orders"}',
+        }],
+      });
+      store.awaitUser(chat.id, {
+        toolCallId: "rule-scope",
+        kind: "choose",
+        prompt: "Which databases should the rule cover?",
+        options: [{ label: "Another database", value: "another-database" }],
+      });
+      const view = renderIntoContainer(<AgentInput />);
+      try {
+        view.render();
+        const choice = view.container.querySelector<HTMLElement>('[role="radio"]');
+        expect(choice).not.toBeNull();
+        act(() => choice?.click());
+        await act(async () => {
+          [...view.container.querySelectorAll("button")]
+            .find((button) => button.textContent === "agent.reply")?.click();
+          await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+        });
+
+        const answer = store.getMessages(chat.id)
+          .find((message) => message.toolCallId === "rule-scope");
+        expect(JSON.parse(answer?.content ?? "null")).toEqual({
+          kind: "choose",
+          answer: "Another database",
+          value: "another-database",
+        });
+        expect(mocks.createToolExecutor).toHaveBeenLastCalledWith(
+          expect.anything(),
+          expect.objectContaining({
+            context,
+            referencedProject,
+            databaseChoiceProject: "projects/orders",
+          })
+        );
+        expect(mocks.buildSystemPrompt).toHaveBeenLastCalledWith(
+          expect.objectContaining({ context, referencedProject })
+        );
+        expect(mocks.getToolDefinitions).toHaveBeenLastCalledWith(
+          expect.objectContaining({ referencedProject })
+        );
+        expect(store.getChat(chat.id)?.context).toBe(context);
+
+        const textarea = view.container.querySelector("textarea") as HTMLTextAreaElement;
+        await act(async () => {
+          setTextareaValue(textarea, "What needs my attention?");
+          textarea.dispatchEvent(new Event("input", { bubbles: true }));
+        });
+        await act(async () => {
+          view.container.querySelector<HTMLButtonElement>("[data-agent-send]")?.click();
+          await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledTimes(2));
+        });
+        expect(mocks.createToolExecutor).toHaveBeenLastCalledWith(
+          expect.anything(),
+          expect.objectContaining({
+            context,
+            referencedProject: undefined,
+            databaseChoiceProject: undefined,
+          })
+        );
+        expect(store.getChat(chat.id)?.context).toBe(context);
+      } finally {
+        view.unmount();
+      }
+    }
+  );
+
   test.each(["abort", "account change"])("does not continue a masking refresh after %s", async (change) => {
     const store = useAgentStore.getState();
     const page = { path: "/projects/orders", title: "Orders" };

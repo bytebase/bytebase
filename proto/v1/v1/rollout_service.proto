@@ -455,6 +455,13 @@ message Task {
   // If there are no task runs or the task run is not scheduled, it will be empty.
   optional google.protobuf.Timestamp run_time = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
 
+  // The user who skipped the task.
+  // Format: users/hello@world.com
+  string skipper = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When the task was skipped.
+  google.protobuf.Timestamp skip_time = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
+
   // Payload for creating a new database.
   message DatabaseCreate {
     reserved 1 to 3;
@@ -471,6 +478,40 @@ message Task {
       string sheet = 1;
       // Format: projects/{project}/releases/{release}
       string release = 4;
+    }
+
+    // The release's file state on the target database when the rollout was
+    // created. Set only for a versioned release. The run reads the database's
+    // revisions again when it starts.
+    ReleaseState release_state = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+  }
+
+  message ReleaseState {
+    // The release's files the task will apply, as half-open ranges of
+    // positions in the release's `files`, ascending. Every other file's
+    // version had a live revision on the database.
+    repeated Range pending_ranges = 1;
+    // The number of files the task will apply: the ranges' total length.
+    int32 pending_count = 4;
+    // The number of the release's versions already applied.
+    int32 applied_count = 2;
+    // When the state was computed.
+    google.protobuf.Timestamp compute_time = 3;
+    // The versions to apply that had a deleted revision, in release order.
+    repeated DeletedRevision deleted_revisions = 5;
+
+    message Range {
+      int32 start = 1;
+      int32 end = 2;
+    }
+
+    message DeletedRevision {
+      string version = 1;
+      // When the newest revision of this version was deleted.
+      google.protobuf.Timestamp delete_time = 2;
+      // The user who deleted it.
+      // Format: users/hello@world.com
+      string deleter = 3;
     }
   }
 }

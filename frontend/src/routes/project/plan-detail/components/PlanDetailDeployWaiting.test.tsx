@@ -163,6 +163,20 @@ describe("PlanDetailDeployWaiting", () => {
     );
   });
 
+  test("names a syntax error the report found instead of promising a rollout", () => {
+    renderWaiting([{ kind: "statement-error" }]);
+    expect(screen.queryByText("plan.deploy-waiting.creating-rollout")).toBeNull();
+    expect(
+      screen.getByText("plan.deploy-waiting.statement-error")
+    ).toBeDefined();
+
+    fireEvent.click(screen.getByText("plan.deploy-waiting.show"));
+    expect(mocks.focusPlanPhase).toHaveBeenCalledWith(
+      "changes",
+      expect.any(Function)
+    );
+  });
+
   test("says the rollout is being created once nothing holds it", () => {
     renderWaiting([]);
     expect(

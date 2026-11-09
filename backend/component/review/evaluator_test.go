@@ -1040,6 +1040,58 @@ func TestApprovalTemplateMatchesOnEngineWithoutStatementReport(t *testing.T) {
 	}
 }
 
+func TestApprovalTemplateRoutesExecute(t *testing.T) {
+	rules := []*storepb.WorkspaceApprovalSetting_Rule{
+		{
+			Source:    storepb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE,
+			Condition: &expr.Expr{Expression: `statement.sql_type in ["DROP_TABLE", "ALTER_TABLE"]`},
+			Template:  &storepb.ApprovalTemplate{Title: "Schema change"},
+		},
+		{
+			Source:    storepb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE,
+			Condition: &expr.Expr{Expression: `statement.sql_type == "EXECUTE"`},
+			Template:  &storepb.ApprovalTemplate{Title: "Execute"},
+		},
+		{
+			Source:    storepb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE,
+			Condition: &expr.Expr{Expression: `resource.environment_id == "prod"`},
+			Template:  &storepb.ApprovalTemplate{Title: "Fallback"},
+		},
+	}
+
+	tests := []struct {
+		name      string
+		statement string
+		want      string
+	}{
+		{"procedure call takes the execute rule", "EXEC dbo.usp_ArchiveOrders @Days = 30;", "Execute"},
+		{"dynamic SQL takes the execute rule", "EXEC ('DROP TABLE dbo.Orders');", "Execute"},
+		{"system procedure takes the execute rule", "EXEC sp_executesql N'DROP TABLE dbo.Orders';", "Execute"},
+		{"unclassified statement takes the fallback rule", "GRANT SELECT ON dbo.Orders TO reporting;", "Fallback"},
+		{"an earlier rule wins for a mixed sheet", "EXEC dbo.usp_ArchiveOrders;\nDROP TABLE dbo.Orders;", "Schema change"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := require.New(t)
+			statementTypes := statementTypesFromParser(storepb.Engine_MSSQL, tt.statement)
+			a.NotEmpty(statementTypes)
+
+			celVars := expandCELVars(map[string]any{
+				common.CELAttributeResourceEnvironmentID: "prod",
+				common.CELAttributeResourceProjectID:     "project",
+				common.CELAttributeResourceDBEngine:      storepb.Engine_MSSQL.String(),
+				common.CELAttributeStatementText:         tt.statement,
+			}, statementTypes, nil)
+
+			template, err := getApprovalTemplate(&storepb.WorkspaceApprovalSetting{Rules: rules}, storepb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE, celVars)
+			a.NoError(err)
+			a.NotNil(template)
+			a.Equal(tt.want, template.Title)
+		})
+	}
+}
+
 // A sheet of N statements yields N type entries, all identical when the sheet
 // repeats one statement. Every rule is evaluated against every activation, so
 // without deduplication a large sheet costs tens of thousands of pointless

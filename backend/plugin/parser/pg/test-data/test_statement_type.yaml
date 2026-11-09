@@ -168,3 +168,25 @@
 - statement: CREATE FUNCTION purge() RETURNS bigint LANGUAGE sql BEGIN ATOMIC WITH d AS (DELETE FROM t1 RETURNING 1) SELECT count(*) FROM d; END;
   want:
     - CREATE_FUNCTION
+- statement: CALL archive_orders(30);
+  want:
+    - EXECUTE
+- statement: DO $$ BEGIN DELETE FROM t1; END $$;
+  want:
+    - EXECUTE
+- statement: DO LANGUAGE plpgsql $$ BEGIN PERFORM 1; END $$;
+  want:
+    - EXECUTE
+- statement: EXECUTE purge_stmt(30);
+  want:
+    - EXECUTE
+- statement: EXPLAIN ANALYZE EXECUTE purge_stmt(30);
+  want:
+    - EXECUTE
+- statement: EXPLAIN EXECUTE purge_stmt(30);
+  want: []
+- statement: PREPARE purge_stmt(int) AS DELETE FROM t1 WHERE id = $1;
+  want: []
+- statement: CREATE PROCEDURE archive_orders(days int) LANGUAGE sql AS $$ DELETE FROM t1 $$;
+  want:
+    - CREATE_FUNCTION

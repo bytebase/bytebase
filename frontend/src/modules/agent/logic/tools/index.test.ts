@@ -3089,6 +3089,182 @@ describe("agent tools ask_user", () => {
     expect(databaseApi.getDatabase).toHaveBeenCalledOnce();
   });
 
+  describe("resumed masking database choices", () => {
+    const database = "instances/prod/databases/orders";
+    const pickerArgs = (kind: "choose" | "input") => ({
+      kind,
+      resourceKind: "database",
+      prompt: "Which database?",
+      ...(kind === "choose"
+        ? { options: [{ label: "Unverified label", value: database }] }
+        : { defaultValue: database }),
+    });
+
+    beforeEach(async () => {
+      const actual =
+        await vi.importActual<typeof import("./resourceChoices")>(
+          "./resourceChoices"
+        );
+      resourceChoiceApi.validate.mockImplementation(
+        actual.validateResourceChoices
+      );
+      databaseApi.getDatabase.mockResolvedValue(
+        create(DatabaseSchema$, {
+          name: database,
+          project: "projects/sample",
+          state: State.ACTIVE,
+          instanceResource: { title: "Production" },
+        })
+      );
+    });
+
+    test.each(["choose", "input"] as const)(
+      "uses the selected project for a workspace chat's database %s",
+      async (kind) => {
+        const execute = createToolExecutor({} as AppRouterInstance, {
+          context: "workspaces/example",
+          workspaceName: "workspaces/example",
+          databaseChoiceProject: "projects/sample",
+        });
+        const result = await execute("ask_user", pickerArgs(kind), "database");
+
+        expect(result).toMatchObject({
+          kind: "ask_user",
+          ask:
+            kind === "choose"
+              ? { options: [{ label: "orders (Production)", value: database }] }
+              : {
+                  defaultResource: {
+                    kind: "database",
+                    name: database,
+                    project: "projects/sample",
+                    label: "orders (Production)",
+                  },
+                },
+        });
+      }
+    );
+
+    test.each([
+      undefined,
+      "projects/-",
+      "projects/sample/databases/orders",
+      "projects/invalid project",
+    ])(
+      "does not use an invalid selected project %j",
+      async (databaseChoiceProject) => {
+        const execute = createToolExecutor({} as AppRouterInstance, {
+          context: "workspaces/example",
+          workspaceName: "workspaces/example",
+          databaseChoiceProject,
+        });
+        for (const kind of ["choose", "input"] as const) {
+          expect(
+            await execute("ask_user", pickerArgs(kind), `database-${kind}`)
+          ).toMatchObject({
+            kind: "tool_result",
+            result: expect.stringContaining("required"),
+          });
+        }
+        expect(databaseApi.getDatabase).not.toHaveBeenCalled();
+      }
+    );
+
+    test.each(["different-project", "inactive", "unavailable"])(
+      "revalidates selected-project databases after they become %s",
+      async (change) => {
+        if (change === "unavailable") {
+          databaseApi.getDatabase.mockRejectedValue(
+            new Error("Access revoked")
+          );
+        } else {
+          databaseApi.getDatabase.mockResolvedValue(
+            create(DatabaseSchema$, {
+              name: database,
+              project:
+                change === "different-project"
+                  ? "projects/other"
+                  : "projects/sample",
+              state: change === "inactive" ? State.DELETED : State.ACTIVE,
+            })
+          );
+        }
+        const execute = createToolExecutor({} as AppRouterInstance, {
+          context: "workspaces/example",
+          workspaceName: "workspaces/example",
+          databaseChoiceProject: "projects/sample",
+        });
+        for (const kind of ["choose", "input"] as const) {
+          expect(
+            await execute("ask_user", pickerArgs(kind), `database-${kind}`)
+          ).toMatchObject({
+            kind: "tool_result",
+            result: expect.stringContaining("could not be verified"),
+          });
+        }
+        expect(databaseApi.getDatabase).toHaveBeenCalledTimes(2);
+      }
+    );
+
+    test.each([
+      { context: "projects/sample" },
+      { context: "workspaces/example", referencedProject: "projects/sample" },
+    ])(
+      "retains the bound project instead of a conflicting selection %j",
+      async (scope) => {
+        const execute = createToolExecutor({} as AppRouterInstance, {
+          ...scope,
+          workspaceName: "workspaces/example",
+          databaseChoiceProject: "projects/other",
+        });
+        expect(
+          await execute("ask_user", pickerArgs("choose"), "database")
+        ).toMatchObject({
+          kind: "ask_user",
+          ask: { options: [{ value: database }] },
+        });
+        databaseApi.getDatabase.mockResolvedValue(
+          create(DatabaseSchema$, {
+            name: database,
+            project: "projects/other",
+            state: State.ACTIVE,
+          })
+        );
+        expect(
+          await execute("ask_user", pickerArgs("choose"), "foreign-database")
+        ).toMatchObject({
+          kind: "tool_result",
+          result: expect.stringContaining("could not be verified"),
+        });
+      }
+    );
+
+    test("does not narrow a workspace rule to the database picker's project", async () => {
+      const execute = createToolExecutor({} as AppRouterInstance, {
+        context: "workspaces/example",
+        workspaceName: "workspaces/example",
+        databaseChoiceProject: "projects/sample",
+        userName: "users/member@example.com",
+        chatId: "chat",
+      });
+      expect(
+        await execute(
+          "prepare_masking_rule_draft",
+          {
+            title: "Mask email",
+            semanticType: "bb.default",
+            condition: 'resource.column_name == "email"',
+            scope: { kind: "workspace" },
+          },
+          "rule"
+        )
+      ).toMatchObject({
+        kind: "tool_result",
+        result: expect.stringContaining('"draftId":"draft-1"'),
+      });
+    });
+  });
+
   describe("masking exemption scope choices", () => {
     beforeEach(async () => {
       const actual =

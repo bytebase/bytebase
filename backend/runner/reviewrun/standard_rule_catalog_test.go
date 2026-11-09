@@ -7,15 +7,7 @@ import (
 	"slices"
 	"testing"
 
-	mariadbreview "github.com/bytebase/omni/mariadb/review"
-	mssqlreview "github.com/bytebase/omni/mssql/review"
-	mysqlreview "github.com/bytebase/omni/mysql/review"
-	oceanbasereview "github.com/bytebase/omni/oceanbase/review"
-	oraclereview "github.com/bytebase/omni/oracle/review"
-	pgreview "github.com/bytebase/omni/pg/review"
 	"github.com/bytebase/omni/review"
-	snowflakereview "github.com/bytebase/omni/snowflake/review"
-	tidbreview "github.com/bytebase/omni/tidb/review"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -48,18 +40,6 @@ type catalogRule struct {
 type catalogCode struct {
 	Code  string `json:"code"`
 	Title string `json:"title"`
-}
-
-// engineRules is each reviewed engine's own rule list.
-var engineRules = map[storepb.Engine][]review.Rule{
-	storepb.Engine_POSTGRES:  pgreview.Rules,
-	storepb.Engine_MYSQL:     mysqlreview.Rules,
-	storepb.Engine_OCEANBASE: oceanbasereview.Rules,
-	storepb.Engine_MARIADB:   mariadbreview.Rules,
-	storepb.Engine_TIDB:      tidbreview.Rules,
-	storepb.Engine_MSSQL:     mssqlreview.Rules,
-	storepb.Engine_ORACLE:    oraclereview.Rules,
-	storepb.Engine_SNOWFLAKE: snowflakereview.Rules,
 }
 
 // TestFrontendStandardRuleCatalogInSync fails when the frontend catalog drifts

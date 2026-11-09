@@ -19,6 +19,7 @@ import { ApprovalStatus, IssueStatus } from "@/types/proto-es/v1/common_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { getRolloutStatus } from "@/utils";
 import { sqlReviewV2Enabled } from "@/utils/featureGates";
+import { useStageTitle } from "../PlanTable";
 import { getReviewBadge } from "../utils/reviewBadge";
 import { DeployBranch } from "./components/deploy/DeployBranch";
 import { PlanDetailChangesBranch } from "./components/PlanDetailChangesBranch";
@@ -26,6 +27,11 @@ import { PlanDetailDeployFuture } from "./components/PlanDetailDeployFuture";
 import { PlanDetailDeployWaiting } from "./components/PlanDetailDeployWaiting";
 import { PlanDetailHeader } from "./components/PlanDetailHeader";
 import { PlanDetailHeaderDetails } from "./components/PlanDetailHeaderDetails";
+import {
+  ReleaseFileViewerDock,
+  ReleaseFileViewerProvider,
+  VIEWER_DOCK_MIN_WIDTH,
+} from "./components/release/ReleaseFileViewer";
 import { PlanReviewSection } from "./components/review/PlanReviewSection";
 import { useUnresolvedThreadTotal } from "./components/threads/useUnresolvedThreadCounts";
 import { useIssueCommentThreadsSync } from "./hooks/useIssueCommentThreadsSync";
@@ -104,6 +110,41 @@ function ProjectPlanDetailPageInner({
     scrollHost.addEventListener("scroll", onScroll, { passive: true });
     return () => scrollHost.removeEventListener("scroll", onScroll);
   }, [pageHost]);
+  // The page's width decides whether the file viewer docks as a column (D8);
+  // the title row's height and the scroll pane's height place that column.
+  const [header, setHeader] = useState<HTMLElement | null>(null);
+  const [layoutSize, setLayoutSize] = useState({
+    page: 0,
+    header: 0,
+    pane: 0,
+  });
+  useEffect(() => {
+    if (!pageHost) return;
+    const scrollHost = pageHost.closest<HTMLElement>(
+      `[data-scroll-restoration-id="${MAIN_SCROLL_RESTORATION_ID}"]`
+    );
+    const measure = () => {
+      const next = {
+        page: pageHost.clientWidth,
+        header: header?.offsetHeight ?? 0,
+        pane: scrollHost?.clientHeight ?? window.innerHeight,
+      };
+      setLayoutSize((prev) =>
+        prev.page === next.page &&
+        prev.header === next.header &&
+        prev.pane === next.pane
+          ? prev
+          : next
+      );
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(pageHost);
+    if (header) observer.observe(header);
+    if (scrollHost) observer.observe(scrollHost);
+    return () => observer.disconnect();
+  }, [pageHost, header]);
+  const viewerDocked = layoutSize.page >= VIEWER_DOCK_MIN_WIDTH;
   const [selectedSpecId, setSelectedSpecId] = useState(specId ?? "");
   const page = usePlanDetailPage({
     projectId,
@@ -172,80 +213,90 @@ function ProjectPlanDetailPageInner({
 
   return (
     <PlanDetailProvider value={page}>
-      <SqlReviewV2Provider>
-        <div
-          ref={setPageHost}
-          data-testid="plan-detail-page"
-          className="relative min-h-full overflow-x-clip bg-control-bg/50"
-        >
+      <ReleaseFileViewerProvider docked={viewerDocked}>
+        <SqlReviewV2Provider>
           <div
-            className={cn(
-              "flex min-h-full flex-col",
-              page.ready ? "" : "invisible pointer-events-none"
-            )}
+            ref={setPageHost}
+            data-testid="plan-detail-page"
+            className="relative min-h-full overflow-x-clip bg-control-bg/50"
           >
-            {/* Only the title/action row is sticky (GitHub issue-header pattern);
+            <div
+              className={cn(
+                "flex min-h-full flex-col",
+                page.ready ? "" : "invisible pointer-events-none"
+              )}
+            >
+              {/* Only the title/action row is sticky (GitHub issue-header pattern);
               the description + metadata below scroll away beneath it. The
               dashboard main pane is the scroll container, so top-0 pins to it;
               z-20 keeps it above the phase rail nodes (z-10). The border appears
               only when stuck, so the row is flat at the top. */}
-            <header
-              className={cn(
-                "sticky top-0 z-20 shrink-0 bg-background",
-                headerStuck && "border-b"
-              )}
-            >
-              <PlanDetailHeader />
-            </header>
-            <PlanDetailHeaderDetails />
+              <header
+                ref={setHeader}
+                className={cn(
+                  "sticky top-0 z-20 shrink-0 bg-background",
+                  headerStuck && "border-b"
+                )}
+              >
+                <PlanDetailHeader />
+              </header>
+              <PlanDetailHeaderDetails />
 
-            <main className="min-h-[calc(100vh-4rem)] min-w-0 flex-1">
-              <PlanPhaseRail
-                onSelectedSpecIdChange={setSelectedSpecId}
-                selectedSpecId={effectiveSelectedSpecId}
-              />
-            </main>
-          </div>
-
-          {!page.ready && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-y-3 bg-background">
-              <Loader2 className="h-8 w-8 animate-spin text-accent" />
-              <div className="text-sm text-control-light">
-                {t("common.loading")}
-              </div>
+              <ReleaseFileViewerDock
+                columnStyle={{
+                  top: layoutSize.header,
+                  height: Math.max(layoutSize.pane - layoutSize.header, 0),
+                }}
+              >
+                <main className="min-h-[calc(100vh-4rem)] min-w-0 flex-1">
+                  <PlanPhaseRail
+                    onSelectedSpecIdChange={setSelectedSpecId}
+                    selectedSpecId={effectiveSelectedSpecId}
+                  />
+                </main>
+              </ReleaseFileViewerDock>
             </div>
-          )}
 
-          <AlertDialog
-            open={page.pendingLeaveConfirm}
-            onOpenChange={(open) => {
-              if (!open) {
-                page.resolveLeaveConfirm(false);
-              }
-            }}
-          >
-            <AlertDialogContent>
-              <AlertDialogTitle>
-                {t("common.leave-without-saving")}
-              </AlertDialogTitle>
-              <AlertDialogFooter>
-                <Button
-                  appearance="outline"
-                  onClick={() => page.resolveLeaveConfirm(false)}
-                >
-                  {t("common.cancel")}
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={() => page.resolveLeaveConfirm(true)}
-                >
-                  {t("common.discard-changes")}
-                </Button>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
-      </SqlReviewV2Provider>
+            {!page.ready && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-y-3 bg-background">
+                <Loader2 className="h-8 w-8 animate-spin text-accent" />
+                <div className="text-sm text-control-light">
+                  {t("common.loading")}
+                </div>
+              </div>
+            )}
+
+            <AlertDialog
+              open={page.pendingLeaveConfirm}
+              onOpenChange={(open) => {
+                if (!open) {
+                  page.resolveLeaveConfirm(false);
+                }
+              }}
+            >
+              <AlertDialogContent>
+                <AlertDialogTitle>
+                  {t("common.leave-without-saving")}
+                </AlertDialogTitle>
+                <AlertDialogFooter>
+                  <Button
+                    appearance="outline"
+                    onClick={() => page.resolveLeaveConfirm(false)}
+                  >
+                    {t("common.cancel")}
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() => page.resolveLeaveConfirm(true)}
+                  >
+                    {t("common.discard-changes")}
+                  </Button>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </SqlReviewV2Provider>
+      </ReleaseFileViewerProvider>
     </PlanDetailProvider>
   );
 }
@@ -263,6 +314,7 @@ function PlanPhaseRail({
   const page = usePlanDetailContext();
   const unresolvedThreads = useUnresolvedThreadTotal(page.issue?.name);
   const reviewState = usePlanReviewState();
+  const stageTitle = useStageTitle();
   const isGitOpsPlan = useMemo(
     () => isReleaseBackedPlan(page.plan.specs),
     [page.plan.specs]
@@ -445,6 +497,7 @@ function PlanPhaseRail({
         onToggle={() => page.togglePhase("changes")}
         summary={buildChangesSummary(page.plan, t, {
           includeChecks: !reviewState,
+          stageTitle,
         })}
       >
         <PlanDetailChangesBranch

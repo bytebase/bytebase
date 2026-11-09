@@ -432,8 +432,10 @@ vi.mock("../utils/options", () => ({
   getPlanOptionVisibility: mocks.getPlanOptionVisibility,
 }));
 
-vi.mock("@/lib/plan/check", () => ({
-  planCheckRunListForSpec: () => [],
+vi.mock("@/lib/plan/check", async () => ({
+  ...(await vi.importActual<typeof import("@/lib/plan/check")>(
+    "@/lib/plan/check"
+  )),
   transformReleaseCheckResultsToPlanCheckRuns: (
     results: CheckReleaseResponse_CheckResult[]
   ) =>
@@ -1127,6 +1129,44 @@ describe("PlanDetailChangesBranch", () => {
     await flush();
 
     expect(container.textContent).toContain("group-a");
+  });
+
+  it("gives a database group change the check runs of its matched databases", async () => {
+    mocks.dbGroupStore.getDBGroupByName.mockReturnValue({
+      name: "projects/foo/databaseGroups/group-a",
+      matchedDatabases: [{ name: DB_WIDGETS }],
+    });
+    const page = buildPageState();
+    page.isCreating = false;
+    page.plan.specs = [
+      {
+        id: "spec-1",
+        config: {
+          case: "changeDatabaseConfig",
+          value: { targets: ["projects/foo/databaseGroups/group-a"] },
+        },
+      },
+    ] as unknown as PlanDetailPageState["plan"]["specs"];
+    page.planCheckRuns = [
+      { name: "run-widgets", results: [{ target: DB_WIDGETS }] },
+      { name: "run-cogs", results: [{ target: DB_COGS }] },
+    ] as unknown as PlanCheckRun[];
+
+    act(() => {
+      root.render(
+        <PlanDetailProvider value={page}>
+          <PlanDetailChangesBranch
+            selectedSpecId="spec-1"
+            onSelectedSpecIdChange={vi.fn()}
+          />
+        </PlanDetailProvider>
+      );
+    });
+    await flush();
+
+    expect(
+      container.querySelector('[data-testid="statement-section"]')?.textContent
+    ).toBe("spec-1:run-widgets:0");
   });
 
   it("discards a pending change when navigating to another plan", async () => {

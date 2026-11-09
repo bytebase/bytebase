@@ -81,6 +81,7 @@ import { useProjectByName } from "@/hooks/useProjectByName";
 import { useSessionPageSize } from "@/hooks/useSessionPageSize";
 import { seedSheetStatement } from "@/hooks/useSheetStatement";
 import {
+  expandSpecTargets,
   planCheckRunListForSpec,
   transformReleaseCheckResultsToPlanCheckRuns,
 } from "@/lib/plan/check";
@@ -569,6 +570,25 @@ export function PlanDetailChangesBranch({
     () => transformReleaseCheckResultsToPlanCheckRuns(draftCheckResults ?? []),
     [draftCheckResults]
   );
+  // Check results name the databases a group matches, never the group.
+  const dbGroupsByName = useAppStore((s) => s.dbGroupsByName);
+  const specCheckRuns = useMemo(
+    () =>
+      selectedSpec
+        ? planCheckRunListForSpec(
+            page.planCheckRuns,
+            selectedSpec,
+            expandSpecTargets(selectedSpec, (target) =>
+              isValidDatabaseGroupName(target)
+                ? dbGroupsByName[target]?.matchedDatabases.map(
+                    (database) => database.name
+                  )
+                : undefined
+            )
+          )
+        : [],
+    [dbGroupsByName, page.planCheckRuns, selectedSpec]
+  );
 
   if (!selectedSpec) {
     return (
@@ -695,11 +715,7 @@ export function PlanDetailChangesBranch({
             selectedSpec={selectedSpec}
           />
           <PlanDetailStatementSection
-            planCheckRuns={
-              page.isCreating
-                ? draftCheckRuns
-                : planCheckRunListForSpec(page.planCheckRuns, selectedSpec)
-            }
+            planCheckRuns={page.isCreating ? draftCheckRuns : specCheckRuns}
             spec={selectedSpec}
             statementVersion={statementVersionBySpecId[selectedSpec.id] ?? 0}
           />

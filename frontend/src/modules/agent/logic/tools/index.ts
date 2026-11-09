@@ -1162,6 +1162,7 @@ interface CreateToolExecutorOptions {
   context?: string;
   workspaceName?: string;
   referencedProject?: string;
+  databaseChoiceProject?: string;
   pagePath?: string;
   referencedDatabase?: string;
   historicalDatabase?: { database: string; project?: string };
@@ -1250,6 +1251,14 @@ export function createToolExecutor(
       ? options.referencedPlan
       : undefined;
   const projectName = referencedProject ?? options.context;
+  // A resumed masking choice scopes its picker, not the chat's other tools.
+  const databaseChoiceProject = isCanonicalProjectName(projectName)
+    ? projectName
+    : /^projects\/(?!-$)[A-Za-z0-9_-]+$/.test(
+          options.databaseChoiceProject ?? ""
+        )
+      ? options.databaseChoiceProject
+      : undefined;
   const navigateTool = createNavigateTool(router);
   const pageStateTool = createPageStateTool(router);
   const domActionTool = createDomActionTool(router, options.canUseCurrentPage);
@@ -1904,8 +1913,8 @@ export function createToolExecutor(
           args.defaultValue !== undefined
         ) {
           if (
-            !isCanonicalProjectName(projectName) ||
-            projectName === "projects/-" ||
+            !isCanonicalProjectName(databaseChoiceProject) ||
+            databaseChoiceProject === "projects/-" ||
             !options.workspaceName ||
             options.workspaceName === "workspaces/-"
           ) {
@@ -1918,7 +1927,7 @@ export function createToolExecutor(
               ? await validateResourceChoices(
                   "database",
                   [args.defaultValue],
-                  projectName,
+                  databaseChoiceProject,
                   options.workspaceName
                 )
               : undefined;
@@ -1931,7 +1940,7 @@ export function createToolExecutor(
           return parseAskUserArgs(args, toolCallId, {
             kind: "database",
             name: database.value,
-            project: projectName,
+            project: databaseChoiceProject,
             label: database.label,
           });
         }
@@ -1949,7 +1958,7 @@ export function createToolExecutor(
         }
         if (
           args.resourceKind === "database" &&
-          !isCanonicalProjectName(projectName)
+          !isCanonicalProjectName(databaseChoiceProject)
         ) {
           return toToolResult(
             'Error: A Project is required to verify database choices. Ask the member which Project first. If these options are ordinary preferences rather than databases, retry kind="choose" with resourceKind="none" instead.'
@@ -1971,7 +1980,7 @@ export function createToolExecutor(
         const verified = await validateResourceChoices(
           args.resourceKind,
           values as string[],
-          projectName,
+          databaseChoiceProject,
           options.workspaceName
         );
         if (!verified) {

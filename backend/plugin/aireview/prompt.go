@@ -35,8 +35,9 @@ type SchemaSummary struct {
 
 // buildMessages lays the prompt out with the stable part first, so the vendor's
 // prefix cache holds it across the reviews of one project: the system message
-// changes only with the policy, and the user message carries the target and the
-// statements.
+// changes only with the policies, the standard rules that are on, and whether
+// the standard review runs on the target's engine, and the user message
+// carries the target and the statements.
 func buildMessages(request *Request, numberedStatement string, nonce string, hasTools bool) []*v1pb.AIChatMessage {
 	return []*v1pb.AIChatMessage{
 		textMessage(v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_SYSTEM, buildSystemPrompt(request)),
@@ -51,7 +52,8 @@ func textMessage(role v1pb.AIChatMessageRole, content string) *v1pb.AIChatMessag
 func buildSystemPrompt(request *Request) string {
 	var b strings.Builder
 	_, _ = b.WriteString(strings.TrimSpace(basePrompt))
-	_, _ = b.WriteString("\n\n# Policy\n\n")
+	writeStandardRules(&b, request)
+	_, _ = b.WriteString("\n# Policy\n\n")
 	_, _ = b.WriteString("The workspace policy holds the company's standards. The project policy holds the team's conventions. When the two conflict, the project policy wins.\n")
 	writePolicy(&b, "Workspace policy", request.WorkspacePolicy)
 	writePolicy(&b, "Project policy", request.ProjectPolicy)

@@ -21,6 +21,7 @@
       "project-self": "项目补充策略",
       "remove-only": "你可以删除此策略，但不能修改它。清空文本即可删除。",
       "self": "审核策略",
+      "standard-rules-hint": "AI 审核不会重复标准规则的检查，也会跳过已关闭的规则。如需让 AI 审核仍然检查某项，请在策略中写明，例如“每条 UPDATE 语句都必须带有 WHERE 子句”。",
       "too-large": "策略大小为 {{size}} 字节，超过了 {{limit}} 字节的上限。请缩短后再保存。"
     },
     "project-description": "AI 审核在工作空间中配置。请在下方添加可选的项目专属策略。",

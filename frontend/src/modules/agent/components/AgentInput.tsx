@@ -1148,6 +1148,7 @@ export function AgentInput({
         instanceName,
         maskingPage,
       });
+      const maskingResumeArgs = getMaskingResumeArgs(store.getMessages(chatId));
       const executor = createToolExecutor(router, {
         chatId,
         userName: useAppStore.getState().currentUser?.name,
@@ -1156,6 +1157,7 @@ export function AgentInput({
         referencedProject,
         pagePath: page.path,
         referencedDatabase,
+        databaseChoiceProject: maskingResumeArgs?.project,
         historicalDatabase: getHistoricalMaskingDatabase(
           store.getMessages(chatId),
           store.getChat(chatId)?.context
@@ -1234,9 +1236,6 @@ export function AgentInput({
 
       try {
         const history = buildChatHistory(chatId, systemPrompt);
-        const maskingResumeArgs = getMaskingResumeArgs(
-          store.getMessages(chatId)
-        );
         if (maskingResumeArgs) {
           const toolCallId = uuidv4();
           const toolCall = {

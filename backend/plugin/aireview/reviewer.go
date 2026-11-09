@@ -50,7 +50,15 @@ var (
 type Request struct {
 	WorkspacePolicy string
 	ProjectPolicy   string
-	Target          Target
+	// StandardRules is the standard review's rules that are on for the
+	// project. The prompt leaves the others unchecked unless the policy names
+	// them.
+	StandardRules []StandardRule
+	// StandardReviewRuns is true when the standard review runs on the
+	// target's engine. The prompt says so, since a rule it does not evaluate
+	// there is the model's either way.
+	StandardReviewRuns bool
+	Target             Target
 	// Statement is the sheet text. Finding lines refer to its lines.
 	Statement string
 }

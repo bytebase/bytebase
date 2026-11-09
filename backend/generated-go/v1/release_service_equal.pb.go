@@ -297,6 +297,25 @@ func (x *Release_File) Equal(y *Release_File) bool {
 	return true
 }
 
+func (x *Release_VCSSource_PullRequest) Equal(y *Release_VCSSource_PullRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Url != y.Url {
+		return false
+	}
+	if x.Number != y.Number {
+		return false
+	}
+	if x.Title != y.Title {
+		return false
+	}
+	return true
+}
+
 func (x *Release_VCSSource) Equal(y *Release_VCSSource) bool {
 	if x == y {
 		return true
@@ -308,6 +327,24 @@ func (x *Release_VCSSource) Equal(y *Release_VCSSource) bool {
 		return false
 	}
 	if x.Url != y.Url {
+		return false
+	}
+	if x.CommitSha != y.CommitSha {
+		return false
+	}
+	if x.Branch != y.Branch {
+		return false
+	}
+	if x.CommitTitle != y.CommitTitle {
+		return false
+	}
+	if x.AuthorName != y.AuthorName {
+		return false
+	}
+	if x.AuthorLogin != y.AuthorLogin {
+		return false
+	}
+	if !x.PullRequest.Equal(y.PullRequest) {
 		return false
 	}
 	return true

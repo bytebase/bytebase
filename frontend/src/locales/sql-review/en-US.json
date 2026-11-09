@@ -21,6 +21,7 @@
       "project-self": "Project additional policy",
       "remove-only": "You can remove this policy but not change it. Clear the text to remove it.",
       "self": "Review policy",
+      "standard-rules-hint": "The AI review does not repeat the standard rules, and skips the ones that are off. To have it check one anyway, name it in the policy, such as \"Every UPDATE needs a WHERE clause\".",
       "too-large": "The policy is {{size}} bytes, over the {{limit}}-byte limit. Shorten it to save."
     },
     "project-description": "AI review is configured for the workspace. Add an optional project-specific policy below.",

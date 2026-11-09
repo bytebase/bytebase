@@ -2050,6 +2050,28 @@
   "plan": {
     "add-spec": "Agregar cambio",
     "add-spec-pending-draft": "Guarda o descarta el cambio pendiente antes de agregar otro",
+    "affected-rows": {
+      "details": "Detalles",
+      "estimate": "Estimación",
+      "estimated": "Estimado",
+      "estimated-on_one": "Estimado en {{count}} base de datos",
+      "estimated-on_other": "Estimado en {{count}} bases de datos",
+      "explanation": "Cuenta las filas que cambian UPDATE, DELETE e INSERT ... SELECT, estimadas con EXPLAIN sobre sentencias de muestra, más las filas que añade INSERT ... VALUES y el número de filas de cada tabla que cambia una sentencia DDL. Las reglas de aprobación leen este número para cada base de datos.",
+      "filter": "Bases de datos que mostrar",
+      "filter-all": "Todas {{n}}",
+      "filter-incomplete": "Incompletas {{n}}",
+      "go-to-line": "Ir a la línea {{line}}",
+      "incomplete": "Incompleto",
+      "incomplete-on_one": "Incompleto en {{count}}",
+      "incomplete-on_other": "Incompleto en {{count}}",
+      "n-databases_one": "{{count}} base de datos",
+      "n-databases_other": "{{count}} bases de datos",
+      "not-estimated": "Sin estimar",
+      "on": "{{rows}} en {{database}}",
+      "rerun": "Volver a ejecutar",
+      "self": "Filas afectadas",
+      "up-to-on": "hasta {{rows}} en {{database}}"
+    },
     "ai-review": {
       "failed-to-run": "No se pudo iniciar la revisión con IA",
       "run": "Ejecutar revisión con IA",
@@ -2082,7 +2104,6 @@
       "passed-on_other": "Aprobado en {{count}} bases de datos",
       "policy": "Política de revisión",
       "project-rules": "Reglas del proyecto: {{on}} de {{total}} activas",
-      "report": "Informe de sentencias",
       "rerun": "Volver a ejecutar",
       "rerun-all": "Volver a ejecutar todo",
       "retry": "Reintentar",
@@ -2126,12 +2147,38 @@
       "reviewer-outdated": "El SQL cambió después de ejecutar {{reviewer}}",
       "reviewer-running": "{{reviewer}} en ejecución",
       "show": "Mostrar",
+      "statement-error": "El SQL tiene un error de sintaxis",
       "submit": "Enviar a revisión",
       "waiting-on": "En espera de",
       "worth-a-look": "No detiene el despliegue, pero conviene revisarlo"
     },
     "description": {
       "placeholder": "Agregar descripción"
+    },
+    "details": {
+      "approved": "Aprobado",
+      "approved-by": "Aprobado por {{user}}",
+      "awaiting-approval": "Pendiente de aprobación",
+      "by-author": "por {{author}}",
+      "changes": "Cambios",
+      "changes-on-targets": "{{kind}} en {{targets}}",
+      "created": "Creado",
+      "database-groups_one": "{{count}} grupo de bases de datos",
+      "database-groups_other": "{{count}} grupos de bases de datos",
+      "databases_one": "{{count}} base de datos",
+      "databases_other": "{{count}} bases de datos",
+      "labels": "Etiquetas",
+      "migration-based_one": "Basado en migraciones · {{count}} archivo · actualizar a la versión {{version}}",
+      "migration-based_other": "Basado en migraciones · {{count}} archivos · actualizar a la versión {{version}}",
+      "no-approval": "No requiere aprobación",
+      "progress": "Progreso",
+      "rejected": "Rechazado",
+      "release": "Versión",
+      "review": "Revisión",
+      "source": "Origen",
+      "state-based": "Basado en estado · {{version}}",
+      "triggered": "Activado",
+      "waiting-for": "Esperando a {{role}}"
     },
     "draft-update-permission-required": "Puedes ver este borrador, pero necesitas bb.issues.update para editar etiquetas de problema o enviarlo a revisión.",
     "editor": {
@@ -2174,6 +2221,8 @@
       "checking": "Comprobando…",
       "checks-failing": "Comprobaciones fallidas",
       "deployed": "Desplegado",
+      "deployed-with-skipped_one": "Desplegado, {{count}} tarea omitida",
+      "deployed-with-skipped_other": "Desplegado, {{count}} tareas omitidas",
       "gate-automated-review-passed": "La revisión automática se aprobó",
       "gate-checks-failed": "Algunas comprobaciones fallaron",
       "gate-checks-failed-sub": "{{failing}} con errores, {{passed}} correctas",
@@ -2194,9 +2243,6 @@
       "run": "Ejecutar"
     },
     "list-description": "Solicitudes de cambio creadas en la interfaz y su progreso de despliegue.",
-    "meta": {
-      "created-by": "Creado por {{user}}"
-    },
     "navigator": {
       "changes": "Cambios",
       "checks": "Verificaciones",
@@ -2380,10 +2426,6 @@
       "close-review-confirm": "¿Cerrar esta revisión?",
       "reopen-confirm": "¿Reabrir este plan?",
       "reopen-review-confirm": "¿Reabrir esta revisión?"
-    },
-    "statement-summary": {
-      "affected-rows_one": "~{{count}} fila afectada",
-      "affected-rows_other": "~{{count}} filas afectadas"
     },
     "status-scope": {
       "description": "Filtrar por el estado actual de las tareas del plan",
@@ -2745,6 +2787,14 @@
   "release": {
     "and-n-more-files": "y {{count}} archivos más",
     "change-tip": "Este cambio está vinculado a un artefacto de versión.",
+    "changes": {
+      "load-all": "Cargar todos ({{count}})",
+      "load-more": "Cargar {{count}} más",
+      "manifest_one": "{{count}} archivo · más reciente {{version}}",
+      "manifest_other": "{{count}} archivos · más reciente {{version}}",
+      "schema": "Esquema",
+      "show-fewer": "Mostrar menos"
+    },
     "empty": {
       "description": "Los cambios que tu pipeline de CI publica en Bytebase aparecen aquí con su progreso de despliegue.",
       "read-guide": "Leer la guía de GitOps",
@@ -2767,7 +2817,16 @@
     "vcs-type": {
       "unspecified": "VCS desconocido"
     },
-    "view-all-files": "Ver todos los archivos"
+    "view-all-files": "Ver todos los archivos",
+    "viewer": {
+      "already-applied": "Ya aplicado; esta ejecución lo omitió",
+      "already-applied-before-run": "Ya aplicado antes de este despliegue",
+      "applied-by-run": "Aplicado por esta ejecución",
+      "failed-on": "Falló en {{stage}}",
+      "open-at-commit": "Abrir en {{platform}} en {{sha}}",
+      "size": "{{size}} bytes",
+      "statement-unavailable": "No se pudo cargar la sentencia del archivo."
+    }
   },
   "remind": {
     "role-expire": {
@@ -4347,6 +4406,25 @@
     },
     "executed-by": "Ejecutado por",
     "execution-time": "Tiempo de ejecución",
+    "folded": {
+      "about-rows_one": "unas {{rows}} fila",
+      "about-rows_other": "unas {{rows}} filas",
+      "all-applied_one": "{{count}} aplicado",
+      "all-applied_other": "Los {{count}} aplicados",
+      "already-applied_one": "{{count}} ya aplicado",
+      "already-applied_other": "{{count}} ya aplicados",
+      "applying_one": "Aplicando {{count}} archivo",
+      "applying_other": "Aplicando {{count}} archivos",
+      "kind-ddl": "DDL",
+      "kind-dml": "DML",
+      "kind-mixed": "Mixto",
+      "nothing-to-apply": "Nada que aplicar",
+      "scheduled": "programado",
+      "skipped-by": "Omitido por {{user}}",
+      "started": "iniciado a las {{time}}",
+      "to-apply_one": "{{count}} por aplicar",
+      "to-apply_other": "{{count}} por aplicar"
+    },
     "no-cancelable-tasks": "No hay tareas cancelables",
     "no-permission": "No hay permiso para realizar esta acción",
     "no-runnable-tasks": "No hay tareas ejecutables",
@@ -4369,6 +4447,7 @@
     "select-task": "Seleccionar tarea",
     "skip-prior-backup": "Omitir respaldo previo",
     "skip-prior-backup-description": "Omitir la copia de seguridad automática de datos antes de aplicar cambios",
+    "skip-reason-required": "Indique por qué se omite la tarea.",
     "skip-task": "Saltar tarea | Saltar tareas",
     "skipped-no-reason": "No se indicó ningún motivo",
     "started": "Iniciado",
@@ -4434,6 +4513,47 @@
       }
     },
     "run-number": "Ejecución n.º {{number}}",
+    "spine": {
+      "already-applied_one": "{{count}} archivo ya aplicado a esta base de datos",
+      "already-applied_other": "{{count}} archivos ya aplicados a esta base de datos",
+      "as-of": "Según la creación del despliegue, {{time}}; la ejecución vuelve a comprobar la base de datos.",
+      "count": {
+        "already-applied": "{{count}} ya aplicados",
+        "applied": "{{count}} aplicados",
+        "canceled": "{{count}} cancelados",
+        "failed": "{{count}} fallidos",
+        "files_one": "{{count}} archivo",
+        "files_other": "{{count}} archivos",
+        "pending": "{{count}} pendientes",
+        "running": "{{count}} en ejecución"
+      },
+      "load": {
+        "all": "Cargar todos ({{count}})",
+        "applied": "Cargar {{count}} aplicados",
+        "files": "Cargar {{count}} archivos",
+        "more-applied": "Cargar {{count}} aplicados más",
+        "more-files": "Cargar {{count}} archivos más",
+        "more-pending": "Cargar {{count}} pendientes más",
+        "pending": "Cargar {{count}} pendientes"
+      },
+      "no-statement": "No se identificó ninguna sentencia para este error.",
+      "not-applied": "No aplicado",
+      "planned_one": "Planificado al crear el despliegue · {{count}} archivo por aplicar",
+      "planned_other": "Planificado al crear el despliegue · {{count}} archivos por aplicar",
+      "revision-deleted": "Revisión anterior eliminada el {{date}} por {{user}}",
+      "revision-deleted-after-rollout": "Revisión anterior eliminada después de crear este despliegue",
+      "revisions-on": "Revisiones en {{database}}",
+      "run-failed": "Ejecución fallida",
+      "status": {
+        "applied": "Aplicado",
+        "applied-again": "Aplicado de nuevo",
+        "canceled": "Cancelado",
+        "failed": "Fallido",
+        "running": "En ejecución"
+      },
+      "will-apply": "Se aplicará",
+      "will-apply-again": "Se aplicará de nuevo · revisión eliminada"
+    },
     "status": {
       "enqueued": "Esperando a ser ejecutada.",
       "enqueued-with-rollout-time": "Esperando para ejecutar después de {{time}}.",
