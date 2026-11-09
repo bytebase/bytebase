@@ -19,6 +19,9 @@ import (
 // names. It needs a key and network access that CI does not have:
 //
 //	AIREVIEW_LIVE_CLAUDE_API_KEY=... go test ./backend/plugin/aireview/ -run '^TestReviewLiveStandardRules$' -v -count=1
+//
+// claude-sonnet-5 still reports the missing table about half the time while
+// WALK_THROUGH is off; claude-sonnet-5-5 and claude-haiku-5-5 do not.
 func TestReviewLiveStandardRules(t *testing.T) {
 	t.Parallel()
 	apiKey := os.Getenv("AIREVIEW_LIVE_CLAUDE_API_KEY")
@@ -27,7 +30,7 @@ func TestReviewLiveStandardRules(t *testing.T) {
 	}
 	modelName := os.Getenv("AIREVIEW_LIVE_CLAUDE_MODEL")
 	if modelName == "" {
-		modelName = "claude-sonnet-5"
+		modelName = "claude-sonnet-5-5"
 	}
 
 	everyRule := []StandardRule{
@@ -41,16 +44,17 @@ func TestReviewLiveStandardRules(t *testing.T) {
 		{Type: storepb.ReviewRuleType_DISALLOW_RENAME, Severity: SeverityP1},
 		{Type: storepb.ReviewRuleType_REQUIRE_PRIMARY_KEY, Severity: SeverityP1},
 	}
-	// reviewed marks every rule but the unchecked ones as evaluated by the
-	// standard review, as on an engine that implements them.
-	reviewed := func(rules []StandardRule, unchecked ...storepb.ReviewRuleType) []StandardRule {
-		marked := make([]StandardRule, 0, len(rules))
-		for _, rule := range rules {
-			rule.Reviewed = !slices.Contains(unchecked, rule.Type)
-			marked = append(marked, rule)
-		}
-		return marked
+	// onPostgres is what the AI review sends for a PostgreSQL database with
+	// every rule on: the standard review evaluates each one, and the model
+	// checks WALK_THROUGH too, since the walk can stop early.
+	onPostgres := make([]StandardRule, 0, len(everyRule))
+	for _, rule := range everyRule {
+		rule.Reviewed = rule.Type != storepb.ReviewRuleType_WALK_THROUGH
+		onPostgres = append(onPostgres, rule)
 	}
+	walkOff := slices.DeleteFunc(slices.Clone(onPostgres), func(rule StandardRule) bool {
+		return rule.Type == storepb.ReviewRuleType_WALK_THROUGH
+	})
 	const whereSentence = "Every UPDATE needs a WHERE clause."
 	citesRule := func(rule string) func(Finding) bool {
 		return func(finding Finding) bool { return strings.Contains(finding.Rule, rule) }
@@ -68,14 +72,14 @@ func TestReviewLiveStandardRules(t *testing.T) {
 		{
 			name:      "an UPDATE with no WHERE is left to the standard review",
 			statement: "UPDATE orders SET currency = 'EUR';",
-			rules:     reviewed(everyRule),
+			rules:     onPostgres,
 			runs:      true,
 			check:     func(t *testing.T, findings []Finding) { require.Empty(t, findings) },
 		},
 		{
 			name:      "an always true WHERE is reported for the rule",
 			statement: "UPDATE orders SET currency = 'EUR' WHERE 1=1;",
-			rules:     reviewed(everyRule),
+			rules:     onPostgres,
 			runs:      true,
 			check: func(t *testing.T, findings []Finding) {
 				require.True(t, anyFinding(findings, citesRule("REQUIRE_WHERE")), "a finding cites REQUIRE_WHERE")
@@ -84,7 +88,7 @@ func TestReviewLiveStandardRules(t *testing.T) {
 		{
 			name:      "a dropped column reports the view that reads it, not the drop",
 			statement: "ALTER TABLE orders DROP COLUMN legacy_status;",
-			rules:     reviewed(everyRule),
+			rules:     onPostgres,
 			runs:      true,
 			check: func(t *testing.T, findings []Finding) {
 				require.NotEmpty(t, findings)
@@ -115,23 +119,25 @@ func TestReviewLiveStandardRules(t *testing.T) {
 			name:      "a rule that is reported is reported again when the policy names it",
 			statement: "UPDATE orders SET currency = 'EUR';",
 			policy:    whereSentence,
-			rules:     reviewed(everyRule),
+			rules:     onPostgres,
 			runs:      true,
 			check: func(t *testing.T, findings []Finding) {
 				require.True(t, anyFinding(findings, citesRule(whereSentence)), "a finding quotes the policy")
 			},
 		},
 		{
-			name:      "a missing table is left to a standard review that walks through",
+			name:      "a missing table is the model's while WALK_THROUGH is on",
 			statement: "DELETE FROM invoices WHERE id = 1;",
-			rules:     reviewed(everyRule),
+			rules:     onPostgres,
 			runs:      true,
-			check:     func(t *testing.T, findings []Finding) { require.Empty(t, findings) },
+			check: func(t *testing.T, findings []Finding) {
+				require.True(t, anyFinding(findings, citesRule("WALK_THROUGH")), "a finding cites WALK_THROUGH")
+			},
 		},
 		{
-			name:      "a column an UPDATE sets is the model's where the standard review walks through",
+			name:      "a missing column is the model's while WALK_THROUGH is on",
 			statement: "UPDATE orders SET nonexistent_column = 1 WHERE id = 1;",
-			rules:     reviewed(everyRule),
+			rules:     onPostgres,
 			runs:      true,
 			check: func(t *testing.T, findings []Finding) {
 				require.True(t, anyFinding(findings, func(finding Finding) bool {
@@ -140,13 +146,11 @@ func TestReviewLiveStandardRules(t *testing.T) {
 			},
 		},
 		{
-			name:      "a missing table is the model's where the standard review does not walk through",
+			name:      "a missing table stays out while WALK_THROUGH is off",
 			statement: "DELETE FROM invoices WHERE id = 1;",
-			rules:     reviewed(everyRule, storepb.ReviewRuleType_WALK_THROUGH),
+			rules:     walkOff,
 			runs:      true,
-			check: func(t *testing.T, findings []Finding) {
-				require.True(t, anyFinding(findings, citesRule("WALK_THROUGH")), "a finding cites WALK_THROUGH")
-			},
+			check:     func(t *testing.T, findings []Finding) { require.Empty(t, findings) },
 		},
 		{
 			name:      "a rule that is on is the model's where no standard review runs",

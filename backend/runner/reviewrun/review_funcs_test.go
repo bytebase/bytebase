@@ -33,7 +33,8 @@ func TestAIReviewStandardRulesFollowTheEngine(t *testing.T) {
 		}
 		return got
 	}
-	require.Equal(t, []bool{true, true}, reviewed(storepb.Engine_POSTGRES))
-	require.Equal(t, []bool{true, false}, reviewed(storepb.Engine_SNOWFLAKE), "omni's Snowflake review does not walk through")
+	require.Equal(t, []bool{true, false}, reviewed(storepb.Engine_POSTGRES), "the walk can stop early, so the model checks WALK_THROUGH too")
 	require.Equal(t, []bool{false, false}, reviewed(storepb.Engine_CLICKHOUSE), "no standard review runs on ClickHouse")
+	require.True(t, reviewsRule(storepb.Engine_POSTGRES, storepb.ReviewRuleType_WALK_THROUGH))
+	require.False(t, reviewsRule(storepb.Engine_SNOWFLAKE, storepb.ReviewRuleType_WALK_THROUGH), "omni's Snowflake review does not walk through")
 }

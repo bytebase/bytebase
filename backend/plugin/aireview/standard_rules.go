@@ -34,10 +34,7 @@ var standardRuleSentences = []struct {
 	sentence string
 }{
 	{storepb.ReviewRuleType_SYNTAX, "A statement that does not parse for this engine fails when it runs."},
-	// omni's walk checks the object a statement creates, alters, renames, or
-	// drops, and the table a single-table DML writes to, on every engine
-	// that walks; none checks the columns a statement reads or sets.
-	{storepb.ReviewRuleType_WALK_THROUGH, "A statement fails when the object it creates, alters, renames, or drops, or the one table an INSERT, UPDATE, DELETE, or MERGE writes to, does not fit the schema: it does not exist or is of another kind, its name is already taken or used twice, the engine rejects its name, or it is a schema to drop that still holds objects."},
+	{storepb.ReviewRuleType_WALK_THROUGH, "A statement fails when a name it uses does not fit the schema: an object that does not exist or is of another kind, a name that is already taken or used twice, a name the engine rejects, or a schema to drop that still holds objects."},
 	{storepb.ReviewRuleType_REQUIRE_IS_NULL, "A comparison with NULL by = or <> is never true, so its predicate matches no row."},
 	{storepb.ReviewRuleType_REQUIRE_WHERE, "An UPDATE or DELETE with no WHERE clause changes every row of its table."},
 	{storepb.ReviewRuleType_DISALLOW_DROP_OBJECT, "Dropping an object, such as a table, column, view, index, sequence, schema, function, user, or role, loses the data, definition, or access it held."},
