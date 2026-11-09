@@ -57,7 +57,7 @@ func GetStatementTypesWithPositions(asts []base.AST) ([]StatementTypeWithPositio
 		}
 
 		// STATEMENT_TYPE_UNSPECIFIED entries (statements omni parses but the classifier
-		// does not know — GRANT, SET, CALL, …) are INCLUDED, with their positions and
+		// does not know — GRANT, SET, PREPARE, …) are INCLUDED, with their positions and
 		// text, so the SDL statement-type gate fails closed: dropping them here would
 		// let an unclassified statement bypass the release-check allowlist entirely.
 		stmtType := classifyStatementType(omniAST.Node)
@@ -145,6 +145,11 @@ func classifyStatementType(node ast.Node) storepb.StatementType {
 		return storepb.StatementType_UPDATE
 	case *ast.DeleteStmt:
 		return storepb.StatementType_DELETE
+
+	// A procedure call or a prepared statement runs code the statement text does
+	// not show. PREPARE only defines the statement, so it stays unclassified.
+	case *ast.CallStmt, *ast.ExecuteStmt:
+		return storepb.StatementType_EXECUTE
 
 	default:
 		return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED

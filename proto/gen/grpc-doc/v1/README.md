@@ -1417,7 +1417,7 @@ StatementType represents the type of SQL statement.
 | UPDATE | 61 |  |
 | DELETE | 62 |  |
 | MERGE | 63 |  |
-| EXECUTE | 70 | A T-SQL EXEC or EXECUTE, whether it calls a procedure, including a system procedure, or runs a SQL string. |
+| EXECUTE | 70 | A statement that runs procedural or dynamic code: a procedure call (CALL, T-SQL EXEC), a prepared or dynamic statement (EXECUTE, EXECUTE IMMEDIATE, EXEC of a SQL string), or an anonymous block (PostgreSQL DO, Oracle BEGIN ... END). |
 
 
 

@@ -56,9 +56,17 @@ func TestGetStatementTypes(t *testing.T) {
 		{"DROP FUNCTION f;", storepb.StatementType_DROP_FUNCTION},
 		{"DROP PROCEDURE p;", storepb.StatementType_DROP_PROCEDURE},
 		{"DROP SEARCH INDEX idx ON users;", storepb.StatementType_DROP_INDEX},
+		// Procedure calls and dynamic SQL.
+		{"CALL ds.proc(1, 'a');", storepb.StatementType_EXECUTE},
+		{"CALL `proj.ds.proc`();", storepb.StatementType_EXECUTE},
+		{"CALL BQ.REFRESH_MATERIALIZED_VIEW('proj.ds.mv');", storepb.StatementType_EXECUTE},
+		{"EXECUTE IMMEDIATE 'DROP TABLE ds.t';", storepb.StatementType_EXECUTE},
+		{"EXECUTE IMMEDIATE \"SELECT @a\" INTO x USING 1 AS a;", storepb.StatementType_EXECUTE},
+		{"EXECUTE IMMEDIATE CONCAT('DROP ', 'TABLE t');", storepb.StatementType_EXECUTE},
 		// No enum value; see the deferral on statementType.
 		{"ALTER SCHEMA ds SET OPTIONS(description='x');", storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED},
 		{"DROP ROW ACCESS POLICY rap ON users;", storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED},
+		{"BEGIN CALL ds.proc(); END;", storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED},
 		{"SELECT * FROM users;", storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED},
 	}
 	for _, tt := range tests {
@@ -112,6 +120,14 @@ func TestParseStatementsMultiStatement(t *testing.T) {
 		storepb.StatementType_ALTER_TABLE,
 		storepb.StatementType_INSERT,
 	}, got)
+}
+
+func TestGetStatementTypesSpannerCall(t *testing.T) {
+	stmts, err := ParseStatements("CALL cancel_query('12345');", Config{Dialect: analysis.DialectSpanner})
+	require.NoError(t, err)
+	got, err := GetStatementTypes(base.ExtractASTs(stmts))
+	require.NoError(t, err)
+	require.Equal(t, []storepb.StatementType{storepb.StatementType_EXECUTE}, got)
 }
 
 // An unparseable statement must survive as UNSPECIFIED rather than vanish.

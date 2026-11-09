@@ -117,6 +117,9 @@ func classifyOmniStatementType(node redshiftast.Node) storepb.StatementType {
 		return storepb.StatementType_DELETE
 	case *redshiftast.MergeStmt:
 		return storepb.StatementType_MERGE
+	// A procedure or prepared statement runs code this classifier does not look into. Redshift has no DO.
+	case *redshiftast.CallStmt, *redshiftast.ExecuteStmt:
+		return storepb.StatementType_EXECUTE
 	case *redshiftast.RedshiftObjectStmt:
 		return classifyOmniRedshiftObjectStatementType(n.Command, n.ObjectType)
 	default:

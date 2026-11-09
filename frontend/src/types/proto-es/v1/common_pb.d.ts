@@ -875,8 +875,10 @@ export enum StatementType {
   MERGE = 63,
 
   /**
-   * A T-SQL EXEC or EXECUTE, whether it calls a procedure, including a system
-   * procedure, or runs a SQL string.
+   * A statement that runs procedural or dynamic code: a procedure call (CALL,
+   * T-SQL EXEC), a prepared or dynamic statement (EXECUTE, EXECUTE IMMEDIATE,
+   * EXEC of a SQL string), or an anonymous block (PostgreSQL DO, Oracle
+   * BEGIN ... END).
    *
    * @generated from enum value: EXECUTE = 70;
    */

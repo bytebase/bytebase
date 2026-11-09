@@ -75,6 +75,10 @@ func classifyOmniStatementType(node oracleast.Node) storepb.StatementType {
 		return storepb.StatementType_UPDATE
 	case *oracleast.DeleteStmt:
 		return storepb.StatementType_DELETE
+	// An anonymous block is how Oracle runs a procedure (SQL*Plus EXEC expands to
+	// one), and its body is not classified statement by statement.
+	case *oracleast.CallStmt, *oracleast.PLSQLBlock:
+		return storepb.StatementType_EXECUTE
 	default:
 		return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
 	}

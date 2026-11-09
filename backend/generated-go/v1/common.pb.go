@@ -647,8 +647,10 @@ const (
 	StatementType_UPDATE StatementType = 61
 	StatementType_DELETE StatementType = 62
 	StatementType_MERGE  StatementType = 63
-	// A T-SQL EXEC or EXECUTE, whether it calls a procedure, including a system
-	// procedure, or runs a SQL string.
+	// A statement that runs procedural or dynamic code: a procedure call (CALL,
+	// T-SQL EXEC), a prepared or dynamic statement (EXECUTE, EXECUTE IMMEDIATE,
+	// EXEC of a SQL string), or an anonymous block (PostgreSQL DO, Oracle
+	// BEGIN ... END).
 	StatementType_EXECUTE StatementType = 70
 )
 
