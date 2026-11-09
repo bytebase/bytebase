@@ -35,6 +35,9 @@ const (
 	// aiReviewServerConcurrency caps the reviews in flight across every run on
 	// the server, so runs side by side cannot multiply the load on the provider.
 	aiReviewServerConcurrency = 16
+	// maxAIReviewProblems is how many open problems a run posts before it holds
+	// back new ones, so that the ones that matter are not lost in a long list.
+	maxAIReviewProblems = 10
 )
 
 // reviewSlots is the limit on reviews in flight that every run of an executor
@@ -85,6 +88,9 @@ type aiReviewProblem struct {
 	// Earlier is the result an earlier run posted that the problem keeps, or
 	// nil.
 	Earlier *aiReviewEarlier
+	// Held is true when the run holds the problem back. It posts no comment,
+	// but its databases still flagged its statement.
+	Held bool
 }
 
 // aiReviewSheet is a spec's sheet under review.
@@ -458,17 +464,57 @@ func statementSegment(specID, body string, ordinal int) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-// summarizeAIReviewProblems sets the summary of each problem that more than
-// one database reports and keeps no earlier result, whose text it keeps
-// instead, at most aiReviewRunConcurrency at a time. A problem whose summary
-// fails keeps none, and its comment is built from its lead finding. The error
-// is ctx's, when it ends.
+// limitAIReviewProblems marks Held every problem past the maxAIReviewProblems
+// most important open ones, by priority and then in reading order, and returns
+// how many it marked. A problem that keeps an earlier result is never held,
+// since holding it would supersede the thread of a problem the run still
+// reports, and a resolved one takes no place, since nobody has to act on it.
+func limitAIReviewProblems(specs []*storepb.PlanConfig_Spec, problems []*aiReviewProblem) int {
+	specIndex := make(map[string]int, len(specs))
+	for i, spec := range specs {
+		specIndex[spec.GetId()] = i
+	}
+	type place struct{ priority, spec, line int }
+	placeOf := func(problem *aiReviewProblem) place {
+		lead := leadFinding(problem.Findings)
+		p := place{priority: priorityRank(aiReviewPriority(lead.Finding.Severity)), spec: len(specs), line: commonLine(problem.Findings)}
+		if i, ok := specIndex[lead.Unit.Check.SpecID]; ok {
+			p.spec = i
+		}
+		return p
+	}
+	ranked := slices.Clone(problems)
+	slices.SortStableFunc(ranked, func(x, y *aiReviewProblem) int {
+		a, b := placeOf(x), placeOf(y)
+		return cmp.Or(cmp.Compare(a.priority, b.priority), cmp.Compare(a.spec, b.spec), cmp.Compare(a.line, b.line))
+	})
+
+	places, held := 0, 0
+	for _, problem := range ranked {
+		switch {
+		case problem.Earlier != nil && problem.Earlier.Resolved:
+		case places < maxAIReviewProblems:
+			places++
+		case problem.Earlier != nil:
+		default:
+			problem.Held = true
+			held++
+		}
+	}
+	return held
+}
+
+// summarizeAIReviewProblems sets the summary of each problem that is not held,
+// that more than one database reports, and that keeps no earlier result, whose
+// text it keeps instead, at most aiReviewRunConcurrency at a time. A problem
+// whose summary fails keeps none, and its comment is built from its lead
+// finding. The error is ctx's, when it ends.
 func summarizeAIReviewProblems(ctx context.Context, summarize summarizeFunc, problems []*aiReviewProblem) error {
 	var group errgroup.Group
 	group.SetLimit(aiReviewRunConcurrency)
 	for _, problem := range problems {
 		findings := findingsByTarget(problem.Findings)
-		if problem.Earlier != nil || len(problemTargets(findings)) < 2 {
+		if problem.Held || problem.Earlier != nil || len(problemTargets(findings)) < 2 {
 			continue
 		}
 		group.Go(func() error {
@@ -571,12 +617,12 @@ func findBlock(blocks *[]aireview.LineRange, line int) int {
 }
 
 // aiReviewComments converts the problems into the review result comments to
-// post: one OPEN root per problem, anchored to the line most of its findings
-// start on, with every database it applies to. The priority and rule are those
-// of its lead finding. A problem that keeps an earlier result carries that
-// result's fingerprint and text, so the run keeps its thread and moves it. Any
-// other problem gets a new fingerprint: its statement's segment, then a random
-// part, since nothing else about an AI finding holds across runs.
+// post: one OPEN root per problem not held, anchored to the line most of its
+// findings start on, with every database it applies to. The priority and rule
+// are those of its lead finding. A problem that keeps an earlier result carries
+// that result's fingerprint and text, so the run keeps its thread and moves it.
+// Any other problem gets a new fingerprint: its statement's segment, then a
+// random part, since nothing else about an AI finding holds across runs.
 func aiReviewComments(projectID string, issueUID int64, problems []*aiReviewProblem) []*store.IssueCommentMessage {
 	type blockKey struct {
 		specID      string
@@ -600,6 +646,9 @@ func aiReviewComments(projectID string, issueUID int64, problems []*aiReviewProb
 
 	comments := make([]*store.IssueCommentMessage, 0, len(problems))
 	for _, problem := range problems {
+		if problem.Held {
+			continue
+		}
 		findings := findingsByTarget(problem.Findings)
 		lead := leadFinding(findings)
 		line := int32(commonLine(findings))
