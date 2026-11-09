@@ -305,6 +305,34 @@ const normalizeQueuedUserMessage = (
   };
 };
 
+type DraftHandoffKind =
+  | "draft-masking-rule"
+  | "draft-masking-exemption"
+  | "draft-semantic-type";
+
+const normalizeDraftHandoff = (
+  receipt: unknown,
+  kind: DraftHandoffKind,
+  role: unknown,
+  actions: AgentResponseAction[]
+): AgentMessageMetadata["maskingExemptionDraftHandoff"] =>
+  role === "assistant" &&
+  isRecord(receipt) &&
+  typeof receipt.draftId === "string" &&
+  (receipt.outcome === "opened" || receipt.outcome === "applied") &&
+  (kind !== "draft-semantic-type" || receipt.outcome === "opened") &&
+  actions.some(
+    (action) => action.kind === kind && action.draftId === receipt.draftId
+  )
+    ? {
+        draftId: receipt.draftId,
+        outcome: receipt.outcome,
+        ...(kind !== "draft-masking-rule" && receipt.created === true
+          ? { created: true as const }
+          : {}),
+      }
+    : undefined;
+
 const normalizeMessage = (
   raw: unknown,
   chatId: string,
@@ -319,33 +347,11 @@ const normalizeMessage = (
       )
     : [];
   const actions = normalizeAgentResponseActions(metadata?.actions);
-  const normalizeDraftHandoff = (
-    receipt: unknown,
-    kind:
-      | "draft-masking-rule"
-      | "draft-masking-exemption"
-      | "draft-semantic-type"
-  ): AgentMessageMetadata["maskingExemptionDraftHandoff"] =>
-    message.role === "assistant" &&
-    isRecord(receipt) &&
-    typeof receipt.draftId === "string" &&
-    (receipt.outcome === "opened" || receipt.outcome === "applied") &&
-    actions.some(
-      (action) => action.kind === kind && action.draftId === receipt.draftId
-    )
-      ? {
-          draftId: receipt.draftId,
-          outcome: receipt.outcome,
-          ...((kind === "draft-masking-exemption" ||
-            kind === "draft-semantic-type") &&
-          receipt.created === true
-            ? { created: true as const }
-            : {}),
-        }
-      : undefined;
   const semanticTypeReceipt = normalizeDraftHandoff(
     metadata?.semanticTypeDraftHandoff,
-    "draft-semantic-type"
+    "draft-semantic-type",
+    message.role,
+    actions
   );
   return {
     id: typeof message.id === "string" ? message.id : uuidv4(),
@@ -379,11 +385,15 @@ const normalizeMessage = (
           actions: actions.length > 0 ? actions : undefined,
           maskingRuleDraftHandoff: normalizeDraftHandoff(
             metadata.maskingRuleDraftHandoff,
-            "draft-masking-rule"
+            "draft-masking-rule",
+            message.role,
+            actions
           ),
           maskingExemptionDraftHandoff: normalizeDraftHandoff(
             metadata.maskingExemptionDraftHandoff,
-            "draft-masking-exemption"
+            "draft-masking-exemption",
+            message.role,
+            actions
           ),
           semanticTypeDraftHandoff:
             semanticTypeReceipt?.outcome === "opened"
@@ -1289,6 +1299,41 @@ const persistedSnapshot = (state: AgentState): PersistedAgentState => ({
 const samePersistedValue = (a: unknown, b: unknown) =>
   a === b || JSON.stringify(a) === JSON.stringify(b);
 
+const mergeDraftHandoffs = (
+  message: AgentMessage,
+  other: AgentMessage | undefined
+): AgentMessage => {
+  if (!other || other.role !== "assistant" || other.chatId !== message.chatId)
+    return message;
+  let metadata = message.metadata;
+  for (const [key, kind] of [
+    ["maskingRuleDraftHandoff", "draft-masking-rule"],
+    ["maskingExemptionDraftHandoff", "draft-masking-exemption"],
+    ["semanticTypeDraftHandoff", "draft-semantic-type"],
+  ] as const) {
+    const incoming = normalizeDraftHandoff(
+      other.metadata?.[key],
+      kind,
+      message.role,
+      message.metadata?.actions ?? []
+    );
+    if (!incoming) continue;
+    const current = normalizeDraftHandoff(
+      metadata?.[key],
+      kind,
+      message.role,
+      message.metadata?.actions ?? []
+    );
+    if (current && current.draftId !== incoming.draftId) continue;
+    const receipt = current
+      ? { ...current, ...(incoming.created ? { created: true as const } : {}) }
+      : incoming;
+    if (!samePersistedValue(metadata?.[key], receipt))
+      metadata = { ...metadata, [key]: receipt };
+  }
+  return metadata === message.metadata ? message : { ...message, metadata };
+};
+
 const chatExecution = (state: PersistedAgentState, chat: AgentChat) => {
   const {
     title: _title,
@@ -1302,7 +1347,16 @@ const chatExecution = (state: PersistedAgentState, chat: AgentChat) => {
   } = normalizeChat(chat);
   return {
     ...execution,
-    messages: state.messagesByChatId[chat.id] ?? [],
+    messages: (state.messagesByChatId[chat.id] ?? []).map((message) => {
+      if (!message.metadata) return message;
+      const {
+        maskingRuleDraftHandoff: _ruleReceipt,
+        maskingExemptionDraftHandoff: _exemptionReceipt,
+        semanticTypeDraftHandoff: _typeReceipt,
+        ...metadata
+      } = message.metadata;
+      return { ...message, metadata };
+    }),
     pendingAsk: state.pendingAskByChatId[chat.id],
     queuedMessage: state.queuedUserMessagesByChatId[chat.id],
     active: state.activeChatIds?.includes(chat.id) ?? false,
@@ -1360,7 +1414,16 @@ const rebasePersistedChanges = (
             : Math.max(current.updatedTs, incoming.updatedTs);
     }
     result.chats.push(chat);
-    result.messagesByChatId[id] = source.messagesByChatId[id] ?? [];
+    // Native forms may finish in another tab while this tab owns execution.
+    const otherMessages = new Map(
+      (useLocal ? remote : local).messagesByChatId[id]?.map((message) => [
+        message.id,
+        message,
+      ])
+    );
+    result.messagesByChatId[id] = (source.messagesByChatId[id] ?? []).map(
+      (message) => mergeDraftHandoffs(message, otherMessages.get(message.id))
+    );
     if (source.activeChatIds?.includes(id)) result.activeChatIds.push(id);
     if (source.pendingAskByChatId[id])
       result.pendingAskByChatId[id] = source.pendingAskByChatId[id];

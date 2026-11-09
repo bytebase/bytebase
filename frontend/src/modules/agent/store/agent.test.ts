@@ -3806,6 +3806,281 @@ describe("cross-tab Agent history", () => {
     expect(s(follower).getChat(chat.id)?.totalTokensUsed).toBe(7);
   });
 
+  test.each([
+    ["masking-rule", "maskingRuleDraftHandoff", "opened"],
+    ["masking-rule", "maskingRuleDraftHandoff", "applied"],
+    ["masking-exemption", "maskingExemptionDraftHandoff", "opened"],
+    ["masking-exemption", "maskingExemptionDraftHandoff", "applied"],
+    ["semantic-type", "semanticTypeDraftHandoff", "opened"],
+  ] as const)(
+    "preserves a %s %s receipt recorded in another tab during a run (%s)",
+    (kind, key, outcome) => {
+      const { writer, follower } = setupTabs();
+      const chat = s(writer).createChat({ workspaceName });
+      const message = s(writer).addMessage({
+        chatId: chat.id,
+        role: "assistant",
+        content: "Prepared draft",
+        metadata: {
+          actions: [{ kind: `draft-${kind}`, draftId: "draft-1" }],
+        },
+      })!;
+      const controller = new AbortController();
+      s(writer).startChatRun(chat.id, page, { runId: "owner-run" });
+      s(writer).setAbortController(chat.id, controller);
+      s(follower).syncState();
+
+      const receipt =
+        kind === "masking-rule"
+          ? s(follower).recordMaskingRuleDraftHandoff(
+              chat.id,
+              message.id,
+              "draft-1",
+              outcome
+            )
+          : kind === "masking-exemption"
+            ? s(follower).recordMaskingExemptionDraftHandoff(
+                chat.id,
+                message.id,
+                "draft-1",
+                outcome
+              )
+            : s(follower).recordSemanticTypeDraftHandoff(
+                chat.id,
+                message.id,
+                "draft-1",
+                outcome
+              );
+      expect(receipt?.metadata?.[key]).toEqual({ draftId: "draft-1", outcome });
+      s(writer).addMessage({
+        chatId: chat.id,
+        role: "assistant",
+        content: "New answer from the owner",
+        metadata: { runId: "owner-run" },
+      });
+      s(writer).incrementChatTotalTokens(chat.id, 7);
+      s(writer).syncState();
+
+      expect(s(writer).getMessages(chat.id)[0].metadata?.[key]).toEqual({
+        draftId: "draft-1",
+        outcome,
+      });
+      expect(
+        persistedState().messagesByChatId[chat.id][0].metadata[key]
+      ).toEqual({
+        draftId: "draft-1",
+        outcome,
+      });
+      expect(
+        s(writer)
+          .getMessages(chat.id)
+          .map((entry) => entry.content)
+      ).toEqual(["Prepared draft", "New answer from the owner"]);
+      expect(s(writer).getChat(chat.id)).toMatchObject({
+        status: "running",
+        runId: "owner-run",
+        totalTokensUsed: 7,
+      });
+      expect(s(writer).getAbortController(chat.id)).toBe(controller);
+      expect(controller.signal.aborted).toBe(false);
+      s(writer).finishChatRun(chat.id);
+      s(writer).setAbortController(chat.id, null);
+      const reloaded = createAgentStore();
+      s(reloaded).setWorkspaceName(workspaceName);
+      expect(s(reloaded).getMessages(chat.id)[0].metadata?.[key]).toEqual({
+        draftId: "draft-1",
+        outcome,
+      });
+    }
+  );
+
+  test.each([
+    ["masking-exemption", "maskingExemptionDraftHandoff"],
+    ["semantic-type", "semanticTypeDraftHandoff"],
+  ] as const)(
+    "preserves a %s Created receipt recorded in another tab while awaiting input",
+    (kind, key) => {
+      const { writer, follower } = setupTabs();
+      const chat = s(writer).createChat({ workspaceName });
+      const message = s(writer).addMessage({
+        chatId: chat.id,
+        role: "assistant",
+        metadata: {
+          actions: [{ kind: `draft-${kind}`, draftId: "draft-1" }],
+        },
+      })!;
+      const recordOpened =
+        kind === "masking-exemption"
+          ? s(writer).recordMaskingExemptionDraftHandoff
+          : s(writer).recordSemanticTypeDraftHandoff;
+      recordOpened(chat.id, message.id, "draft-1", "opened");
+      const controller = new AbortController();
+      const ask = {
+        kind: "input" as const,
+        toolCallId: "owner-ask",
+        prompt: "Which column?",
+      };
+      s(writer).startChatRun(chat.id, page, { runId: "owner-run" });
+      s(writer).setAbortController(chat.id, controller);
+      s(writer).awaitUser(chat.id, ask);
+      s(follower).syncState();
+      const created =
+        kind === "masking-exemption"
+          ? s(follower).markMaskingExemptionDraftCreated(
+              chat.id,
+              message.id,
+              "draft-1"
+            )
+          : s(follower).recordSemanticTypeDraftHandoff(
+              chat.id,
+              message.id,
+              "draft-1",
+              "created"
+            );
+      expect(created?.metadata?.[key]?.created).toBe(true);
+
+      s(writer).incrementChatTotalTokens(chat.id, 7);
+      s(writer).syncState();
+
+      expect(s(writer).getMessages(chat.id)[0].metadata?.[key]).toEqual({
+        draftId: "draft-1",
+        outcome: "opened",
+        created: true,
+      });
+      expect(
+        persistedState().messagesByChatId[chat.id][0].metadata[key].created
+      ).toBe(true);
+      expect(s(writer).getChat(chat.id)).toMatchObject({
+        status: "awaiting_user",
+        runId: "owner-run",
+        totalTokensUsed: 7,
+      });
+      expect(s(writer).getPendingAsk(chat.id)).toEqual(ask);
+      expect(s(writer).getAbortController(chat.id)).toBe(controller);
+      expect(controller.signal.aborted).toBe(false);
+      s(follower).saveState();
+      s(writer).saveState();
+      const reloaded = createAgentStore();
+      s(reloaded).setWorkspaceName(workspaceName);
+      expect(s(reloaded).getMessages(chat.id)[0].metadata?.[key]?.created).toBe(
+        true
+      );
+    }
+  );
+
+  test.each(["changed-draft", "changed-kind", "removed-message"] as const)(
+    "does not merge a receipt into a %s while preserving the owner's execution",
+    (change) => {
+      const { writer, follower } = setupTabs();
+      const chat = s(writer).createChat({ workspaceName });
+      const message = s(writer).addMessage({
+        chatId: chat.id,
+        role: "assistant",
+        metadata: {
+          actions: [{ kind: "draft-masking-exemption", draftId: "draft-1" }],
+        },
+      })!;
+      s(writer).startChatRun(chat.id, page, { runId: "owner-run" });
+      s(follower).syncState();
+      s(follower).recordMaskingExemptionDraftHandoff(
+        chat.id,
+        message.id,
+        "draft-1",
+        "opened"
+      );
+      writer.setState((state) => ({
+        messagesByChatId: {
+          ...state.messagesByChatId,
+          [chat.id]:
+            change === "removed-message"
+              ? []
+              : [
+                  {
+                    ...message,
+                    content: "Owner's updated message",
+                    metadata: {
+                      actions: [
+                        change === "changed-kind"
+                          ? { kind: "draft-masking-rule", draftId: "draft-1" }
+                          : {
+                              kind: "draft-masking-exemption",
+                              draftId: "draft-2",
+                            },
+                      ],
+                    },
+                  },
+                ],
+        },
+      }));
+
+      s(writer).incrementChatTotalTokens(chat.id, 7);
+      s(writer).syncState();
+
+      const messages = s(writer).getMessages(chat.id);
+      expect(messages).toHaveLength(change === "removed-message" ? 0 : 1);
+      expect(
+        messages[0]?.metadata?.maskingExemptionDraftHandoff
+      ).toBeUndefined();
+      if (change !== "removed-message")
+        expect(messages[0].content).toBe("Owner's updated message");
+      expect(s(writer).getChat(chat.id)).toMatchObject({
+        status: "running",
+        runId: "owner-run",
+        totalTokensUsed: 7,
+      });
+    }
+  );
+
+  test("rebases a receipt-only edit without replacing a concurrently completed answer", () => {
+    const { writer, follower } = setupTabs();
+    const chat = s(writer).createChat({ workspaceName });
+    s(writer).addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      metadata: {
+        actions: [{ kind: "draft-masking-exemption", draftId: "draft-1" }],
+      },
+    });
+    s(follower).syncState();
+    finishAnswer(writer, chat.id);
+
+    follower.setState((state) => ({
+      messagesByChatId: {
+        ...state.messagesByChatId,
+        [chat.id]: [
+          {
+            ...state.messagesByChatId[chat.id][0],
+            metadata: {
+              ...state.messagesByChatId[chat.id][0].metadata,
+              maskingExemptionDraftHandoff: {
+                draftId: "draft-1",
+                outcome: "opened",
+              },
+            },
+          },
+        ],
+      },
+    }));
+
+    expect(
+      persistedState().messagesByChatId[chat.id].map(
+        (entry: { content?: string }) => entry.content
+      )
+    ).toEqual([undefined, "Latest answer"]);
+    expect(
+      persistedState().messagesByChatId[chat.id][0].metadata
+        .maskingExemptionDraftHandoff
+    ).toEqual({
+      draftId: "draft-1",
+      outcome: "opened",
+    });
+    s(follower).syncState();
+    expect(s(follower).getChat(chat.id)).toMatchObject({
+      status: "idle",
+      totalTokensUsed: 7,
+    });
+  });
+
   test.each(["touch", "rename"] as const)(
     "preserves newer execution history when a stale tab makes a local %s",
     (action) => {

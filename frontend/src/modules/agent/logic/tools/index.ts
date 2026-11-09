@@ -279,6 +279,24 @@ const PROJECT_SCOPED_TOOL_NAMES = new Set([
 const isCanonicalProjectName = (value: string | undefined): value is string =>
   !!value && getNameParentTokens(value, [projectNamePrefix]).length === 1;
 
+const maskingRuleDraftTargetsAnotherProject = (
+  proposal: unknown,
+  boundProject: string
+): boolean => {
+  const scope =
+    proposal && typeof proposal === "object" && "scope" in proposal
+      ? proposal.scope
+      : undefined;
+  return (
+    !!scope &&
+    typeof scope === "object" &&
+    "kind" in scope &&
+    (scope.kind === "project" || scope.kind === "database") &&
+    "project" in scope &&
+    scope.project !== boundProject
+  );
+};
+
 const ISSUE_NAME_API_METHODS = new Set([
   "GetIssue",
   "ApproveIssue",
@@ -1572,6 +1590,26 @@ export function createToolExecutor(
                       "No editable unsaved global masking rule is available to this chat. A page visit or draft does not establish saved policy.",
                   }
             )
+          );
+        }
+        const boundProject = isCanonicalProjectName(projectName)
+          ? projectName
+          : undefined;
+        const proposals =
+          name === "prepare_masking_rule_drafts" && Array.isArray(args.rules)
+            ? args.rules
+            : [args];
+        if (
+          boundProject &&
+          proposals.some((proposal) =>
+            maskingRuleDraftTargetsAnotherProject(proposal, boundProject)
+          )
+        ) {
+          return toToolResult(
+            JSON.stringify({
+              error:
+                "The masking rule scope must belong to this chat's bound project.",
+            })
           );
         }
         try {

@@ -353,6 +353,164 @@ const call = (fn: string, ...args: Expr[]): Expr =>
 const projectFilter = (project: string): Expr =>
   call("_==_", ident("project"), literal(project));
 
+describe.each(["prepare_masking_rule_draft", "prepare_masking_rule_drafts"])(
+  "%s project boundary",
+  (toolName) => {
+    const rule = (scope: Record<string, unknown>) => ({
+      title: "Mask email",
+      condition: 'resource.column_name == "email"',
+      semanticType: "bb.default",
+      scope,
+    });
+    const args = (scope: Record<string, unknown>) =>
+      toolName === "prepare_masking_rule_drafts"
+        ? { rules: [rule(scope), rule(scope)] }
+        : rule(scope);
+    const prepare =
+      toolName === "prepare_masking_rule_drafts"
+        ? maskingDraftApi.prepareMany
+        : maskingDraftApi.prepare;
+
+    beforeEach(() => {
+      maskingDraftApi.prepare.mockClear();
+      maskingDraftApi.prepareMany.mockClear();
+    });
+
+    describe.each([
+      {
+        context: "workspaces/test",
+        referencedProject: "projects/referenced",
+      },
+      { context: "projects/referenced", referencedProject: undefined },
+      {
+        context: "projects/other",
+        referencedProject: "projects/referenced",
+      },
+      {
+        context: "projects/referenced",
+        referencedProject: "projects/invalid/issues/1",
+      },
+    ])("bound by $context and $referencedProject", (binding) => {
+      test.each(["project", "database"])(
+        "rejects a foreign %s scope before preparing any draft",
+        async (kind) => {
+          const execute = createToolExecutor({} as AppRouterInstance, {
+            chatId: "chat-1",
+            userName: "users/1",
+            workspaceName: "workspaces/test",
+            ...binding,
+          });
+          const result = await execute(
+            toolName,
+            args({
+              kind,
+              project: "projects/other",
+              ...(kind === "database"
+                ? { database: "instances/prod/databases/app" }
+                : {}),
+            }),
+            "foreign-project"
+          );
+          expect(
+            result.kind === "tool_result" && JSON.parse(result.result).error
+          ).toMatch(/bound project/i);
+          expect(prepare).not.toHaveBeenCalled();
+        }
+      );
+
+      test.each([
+        { kind: "workspace" },
+        { kind: "project", project: "projects/referenced" },
+        {
+          kind: "database",
+          project: "projects/referenced",
+          database: "instances/prod/databases/app",
+        },
+      ])("allows a confirmed $kind scope", async (scope) => {
+        const execute = createToolExecutor({} as AppRouterInstance, {
+          chatId: "chat-1",
+          userName: "users/1",
+          workspaceName: "workspaces/test",
+          ...binding,
+        });
+        const proposal = args(scope);
+        const result = await execute(toolName, proposal, "permitted-project");
+        expect(
+          result.kind === "tool_result" && JSON.parse(result.result)
+        ).toEqual(expect.objectContaining({ draftId: expect.any(String) }));
+        expect(prepare).toHaveBeenCalledWith(
+          proposal,
+          {
+            chatId: "chat-1",
+            userName: "users/1",
+            workspaceName: "workspaces/test",
+          },
+          { requireSourceMatch: true, source: undefined }
+        );
+      });
+    });
+
+    test.each(["project", "database"])(
+      "allows an unbound workspace chat to choose a %s scope",
+      async (kind) => {
+        const execute = createToolExecutor({} as AppRouterInstance, {
+          chatId: "chat-1",
+          userName: "users/1",
+          workspaceName: "workspaces/test",
+          context: "workspaces/test",
+        });
+        const result = await execute(
+          toolName,
+          args({
+            kind,
+            project: "projects/chosen",
+            ...(kind === "database"
+              ? { database: "instances/prod/databases/app" }
+              : {}),
+          }),
+          "choose-project"
+        );
+        expect(
+          result.kind === "tool_result" && JSON.parse(result.result)
+        ).toEqual(expect.objectContaining({ draftId: expect.any(String) }));
+      }
+    );
+  }
+);
+
+test.each([0, 1])(
+  "rejects a foreign project in batch entry %i before preparing the batch",
+  async (foreignIndex) => {
+    maskingDraftApi.prepareMany.mockClear();
+    const execute = createToolExecutor({} as AppRouterInstance, {
+      chatId: "chat-1",
+      userName: "users/1",
+      workspaceName: "workspaces/test",
+      referencedProject: "projects/referenced",
+    });
+    const result = await execute(
+      "prepare_masking_rule_drafts",
+      {
+        rules: [0, 1].map((index) => ({
+          title: "Mask email",
+          condition: 'resource.column_name == "email"',
+          semanticType: "bb.default",
+          scope: {
+            kind: "project",
+            project:
+              index === foreignIndex ? "projects/other" : "projects/referenced",
+          },
+        })),
+      },
+      "mixed-batch"
+    );
+    expect(
+      result.kind === "tool_result" && JSON.parse(result.result).error
+    ).toMatch(/bound project/i);
+    expect(maskingDraftApi.prepareMany).not.toHaveBeenCalled();
+  }
+);
+
 describe("done tool", () => {
   test("identifies current unsaved existing-rule fields as review-only", async () => {
     const snapshot = {
