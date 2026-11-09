@@ -129,6 +129,17 @@ func TestReviewLiveStandardRules(t *testing.T) {
 			check:     func(t *testing.T, findings []Finding) { require.Empty(t, findings) },
 		},
 		{
+			name:      "a column an UPDATE sets is the model's where the standard review walks through",
+			statement: "UPDATE orders SET nonexistent_column = 1 WHERE id = 1;",
+			rules:     reviewed(everyRule),
+			runs:      true,
+			check: func(t *testing.T, findings []Finding) {
+				require.True(t, anyFinding(findings, func(finding Finding) bool {
+					return strings.Contains(finding.Title+finding.Evidence, "nonexistent_column")
+				}), "a finding names the missing column")
+			},
+		},
+		{
 			name:      "a missing table is the model's where the standard review does not walk through",
 			statement: "DELETE FROM invoices WHERE id = 1;",
 			rules:     reviewed(everyRule, storepb.ReviewRuleType_WALK_THROUGH),
