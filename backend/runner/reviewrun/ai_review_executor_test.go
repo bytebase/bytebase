@@ -328,19 +328,28 @@ func TestAIReviewStatesTheStandardRules(t *testing.T) {
 	ctx := context.Background()
 	stores, issues := setupReviewFixture(ctx, t, 1)
 	setCISamplingSize(ctx, t, stores, 1)
-	model := &systemPromptModel{}
-	executor := &AIReviewExecutor{
-		store:    stores,
-		newModel: func(*storepb.AISetting, ...aireview.ModelOption) aireview.Model { return model },
-		slots:    semaphore.NewWeighted(aiReviewServerConcurrency),
+	// The fixture's policy turns SYNTAX alone on, on PostgreSQL.
+	for _, tc := range []struct {
+		name             string
+		ruleReviewCovers func(storepb.Engine) bool
+		want             string
+	}{
+		{name: "the standard review runs", ruleReviewCovers: ReviewsEngine, want: "- SYNTAX (left to the standard review, P0): "},
+		{name: "SQL Review V2 is off", want: "- SYNTAX (yours, P0): "},
+	} {
+		model := &systemPromptModel{}
+		executor := &AIReviewExecutor{
+			store:            stores,
+			newModel:         func(*storepb.AISetting, ...aireview.ModelOption) aireview.Model { return model },
+			slots:            semaphore.NewWeighted(aiReviewServerConcurrency),
+			ruleReviewCovers: tc.ruleReviewCovers,
+		}
+		comments, err := executor.RunOnce(ctx, "p", issues[0])
+		require.NoError(t, err, tc.name)
+		require.Empty(t, comments, tc.name)
+		require.Contains(t, model.system, tc.want, tc.name)
+		require.Contains(t, model.system, "- REQUIRE_WHERE (off): ", tc.name)
 	}
-	comments, err := executor.RunOnce(ctx, "p", issues[0])
-	require.NoError(t, err)
-	require.Empty(t, comments)
-	// The fixture's policy turns SYNTAX alone on, and the standard review
-	// runs on PostgreSQL.
-	require.Contains(t, model.system, "- SYNTAX (left to the standard review, P0): ")
-	require.Contains(t, model.system, "- REQUIRE_WHERE (off): ")
 }
 
 // systemPromptModel keeps the system prompt of the review it answers, and
@@ -579,7 +588,7 @@ func TestAIReviewExecutorChecksTheSettingAgain(t *testing.T) {
 		})
 		require.NoError(t, err)
 	}
-	executor := NewAIReviewExecutor(stores)
+	executor := NewAIReviewExecutor(stores, ReviewsEngine)
 
 	setAISetting(&storepb.AISetting{Enabled: true})
 	_, err = executor.RunOnce(ctx, "p", issue.UID)

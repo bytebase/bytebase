@@ -29,15 +29,20 @@ type AIReviewExecutor struct {
 	newModel func(*storepb.AISetting, ...aireview.ModelOption) aireview.Model
 	// slots bounds the reviews in flight across every run of the executor.
 	slots reviewSlots
+	// ruleReviewCovers reports whether the standard rule review runs on an
+	// engine. It is nil where SQL Review V2 is off: an AI review can still
+	// run there, and no standard rule review runs beside it.
+	ruleReviewCovers func(storepb.Engine) bool
 }
 
 // NewAIReviewExecutor creates the AI review executor. The server creates one,
 // so aiReviewServerConcurrency bounds the reviews of every run on the server.
-func NewAIReviewExecutor(s *store.Store) *AIReviewExecutor {
+func NewAIReviewExecutor(s *store.Store, ruleReviewCovers func(storepb.Engine) bool) *AIReviewExecutor {
 	return &AIReviewExecutor{
-		store:    s,
-		newModel: aireview.NewModel,
-		slots:    semaphore.NewWeighted(aiReviewServerConcurrency),
+		store:            s,
+		newModel:         aireview.NewModel,
+		slots:            semaphore.NewWeighted(aiReviewServerConcurrency),
+		ruleReviewCovers: ruleReviewCovers,
 	}
 }
 
@@ -326,7 +331,7 @@ func (e *AIReviewExecutor) resolveAIReviewTarget(ctx context.Context, checkTarge
 	schema := dbSchema.GetProto()
 	request.Target = aiReviewTarget(instance, database, schema)
 	engine := instance.Metadata.GetEngine()
-	request.StandardRules = aiReviewStandardRules(rulePolicy, engine)
-	request.StandardReviewRuns = ReviewsEngine(engine)
+	request.StandardReviewRuns = e.ruleReviewCovers != nil && e.ruleReviewCovers(engine)
+	request.StandardRules = aiReviewStandardRules(rulePolicy, engine, request.StandardReviewRuns)
 	return aireview.NewCatalogTools(engine, schema, aireview.WithPromptOf(request)), engine, nil
 }

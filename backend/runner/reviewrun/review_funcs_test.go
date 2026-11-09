@@ -27,7 +27,7 @@ func TestAIReviewStandardRulesFollowTheEngine(t *testing.T) {
 	policy := &storepb.ReviewRulePolicy{Rules: []storepb.ReviewRuleType{storepb.ReviewRuleType_SYNTAX, storepb.ReviewRuleType_WALK_THROUGH}}
 	reviewed := func(engine storepb.Engine) []bool {
 		var got []bool
-		for _, rule := range aiReviewStandardRules(policy, engine) {
+		for _, rule := range aiReviewStandardRules(policy, engine, ReviewsEngine(engine)) {
 			require.Equal(t, aireview.SeverityP0, rule.Severity, rule.Type)
 			got = append(got, rule.Reviewed)
 		}
@@ -35,6 +35,9 @@ func TestAIReviewStandardRulesFollowTheEngine(t *testing.T) {
 	}
 	require.Equal(t, []bool{true, false}, reviewed(storepb.Engine_POSTGRES), "the walk can stop early, so the model checks WALK_THROUGH too")
 	require.Equal(t, []bool{false, false}, reviewed(storepb.Engine_CLICKHOUSE), "no standard review runs on ClickHouse")
+	for _, rule := range aiReviewStandardRules(policy, storepb.Engine_POSTGRES, false) {
+		require.False(t, rule.Reviewed, "%s: no standard review runs where SQL Review V2 is off", rule.Type)
+	}
 	require.True(t, reviewsRule(storepb.Engine_POSTGRES, storepb.ReviewRuleType_WALK_THROUGH))
 	require.False(t, reviewsRule(storepb.Engine_SNOWFLAKE, storepb.ReviewRuleType_WALK_THROUGH), "omni's Snowflake review does not walk through")
 }
