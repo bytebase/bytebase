@@ -83,7 +83,7 @@ What follows from it:
 - Facts, no classification, no new actions.
 - Stay close to today's plan page: the same frame, task rows, log rows and actions as a UIOps plan;
   what is new is only what a release needs.
-- Every bypass leaves a trace: who, when, why.
+- Every bypass leaves a trace: who and when, and why when it is skipped from the page (D7).
 - Phone width is a layout, not a degradation; the console is opened from phones in the replays and
   clips there today.
 
@@ -99,7 +99,9 @@ on top whether versions are timestamps such as `202610051500` or counters such a
 grouping level, derived from the version string: a timestamp-like version (a first segment of 8 to
 14 digits starting with a plausible year) groups by day for the newest group and by month for the
 rest, with the newest group open and the others collapsed with a count; counters, dotted versions
-such as `3.10.0008` and anything else are one flat list. A group exists only where its label names
+such as `3.10.0008` and anything else are one flat list. Groups follow the executor's order, so
+when that order is not also date order (`20261005` runs before `202609011200`, since versions
+compare as numbers) the list is flat too. A group exists only where its label names
 what its files share, a day or a month; a boundary drawn by row count names nothing, and the load
 row below already bounds the list. An open group shows its
 first 12 rows; one row below them offers "Load 12 more" and "Load all (N)", which load in place, and
@@ -139,8 +141,9 @@ executor. Under it, one slot, whose sources are:
 - Once a run has started, the run's log and the release's file list: one file section per
   `RELEASE_FILE_EXECUTE` marker, the already-applied versions derived from them (D5), and task-level
   steps (prior backup, schema dump, database sync) as sibling sections in the order they ran, never
-  nested under a file. A gh-ost migration runs per file inside the executor's file loop, so its
-  entries belong to that file's section.
+  nested under a file. A step is task-level because the executor logs it outside the file loop,
+  not because of its type: a gh-ost migration runs per file inside the loop, and a declarative
+  release computes its diff after its one file's marker, so both belong to that file's section.
 
 While a run is in progress, the files it has not reached show below it as "Will apply", from the
 stored state. The log decides every version up to its newest marker and the stored state covers the
@@ -292,7 +295,10 @@ expanding the latest failed task on load, which buried the other failures below 
 
 **D4 · The per-database file state is computed once, at rollout creation, and stored on the task.**
 `getTaskCreatesFromChangeDatabaseConfig` in `backend/api/v1/rollout_service_task.go` builds each
-release-backed task's payload today with only the release name. It gains a field holding which of
+release-backed task's payload today with only the release name. The state is filled after the
+stage filter, for the tasks of the stage being created, so promoting a stage reads only that
+stage's targets. A failed read is logged and leaves the task without a state, as a deleted release
+does: the state is a preview, and rollout creation does not fail for it. The payload gains a field holding which of
 the release's files this task will apply, as half-open ranges of positions in the release's file
 list (a release's files never change, so the positions stay valid): one range for a train or a new
 database, another only where a deleted revision left a gap. Beside the ranges it holds the count of
@@ -408,7 +414,8 @@ in `<platform>` at `<short sha>`", built from the D9 template when the platform 
 failed file the link is the header's main action: the next step after reading the error on its
 statement is to fix the file in git. Opened from a failed section, it scrolls to the failed command
 and draws the error on that statement as an inline diagnostic, from the command's byte range
-(`CommandExecute.range`, byte offsets into the sheet) and the error in its response, placed once the
+(`CommandExecute.range`, byte offsets into the sheet as stored, a UTF-8 byte order mark included, so
+the viewer keeps the mark when it decodes the sheet) and the error in its response, placed once the
 log arrives; the header says "Failed on `<stage>`". With no command range (the drivers above) it
 opens at the top with the error above the editor. Opened from an applied section or the
 files already applied, one line under the header says what this database did with the version
@@ -518,7 +525,8 @@ starts unfolded. The description is not part of the block and keeps its own Show
 
 The description stays below the block, rendered and clipped as today (`PlanDetailHeaderDetails.tsx`:
 150 characters or 3 lines, then Show more), so the rows keep their place whatever its length. A
-release plan's collapsed Changes line then shows only the targets per stage. "Migration-based" and
+release plan's collapsed Changes line then shows only the targets per stage, each stage by its
+environment's title, as in the Progress row. "Migration-based" and
 "State-based" are the docs' names for the two GitOps workflows; the console's "Versioned" and
 "Declarative" elsewhere are a separate copy change. Rejected: the PR title as the plan title, which
 breaks the link from the CI summary and the plan list, and is absent on a rebase merge or an
@@ -648,7 +656,7 @@ Tests to write, per the placement rules in `AGENTS.md`:
   cap of 20 with the running and a failed section past it still shown, each hidden stretch's load
   row named by its state with "more" only after a shown section of that state, and "Load 20 more"
   and "Load all" on a stretch over 20; the files already applied passed through as one fold, never
-  windowed; a prior backup as a sibling owning the run's error, and a failed schema sync after a
+  windowed; a declarative release's diff computation and commands inside its file's section; a prior backup as a sibling owning the run's error, and a failed schema sync after a
   revision-write failure keeping its entry while the write's error opens "Run failed";
   and a gh-ost migration inside its file's section; a run with no command response carrying the
   run's error on the header; the log-only form without a task keeping the run's defaults.
@@ -686,12 +694,13 @@ Tests to write, per the placement rules in `AGENTS.md`:
   line (after the Source title on a release plan) and back, and unfolded again after a reload or on
   another plan.
 - Changes rail tests: descending order over timestamp, counter and dotted versions; two versions
-  that parse equal kept in the stored order, reversed; the grouping per
+  that parse equal kept in the stored order, reversed; mixed timestamp lengths as one flat list; the grouping per
   shape with the newest group open, and over a hundred counter or dotted versions as one flat list; 12 rows, "Load 12 more", "Load all" and "Show fewer"; a backfilled low version landing in its
   old group; a row's name, folder and version as separate parts, a path with no folder showing the
   name alone, and a click anywhere on the row opening the viewer; the collapsed line; the
   declarative one-liner.
-- Viewer tests: the diagnostic placed from a byte range on a multi-byte statement, opened from the
+- Viewer tests: the diagnostic placed from a byte range on a multi-byte statement and on a sheet
+  starting with a byte order mark, opened from the
   failed section; opening at the top with the error when there
   is no range; the per-database line when opened from a section and none from Changes; the
   file-at-commit link per platform and none on an unknown one or for a declarative pattern path
@@ -713,7 +722,8 @@ Tests to write, per the placement rules in `AGENTS.md`:
   the same instance must not count for the target, and the target's own deleted revision of that
   version must not count either; the sibling's state is asserted unchanged. The pending files
   stored as ranges, one range for a new database on a 500-file release; a deleted release creating
-  its task with no state. In `backend/store`, `ListPendingReleaseVersions` returning only the pairs a database lacks: a live `VERSIONED` revision applied, a deleted or declarative one not, the newest deletion chosen, and a sibling database's or another instance's revision not counted; a user's email change rewriting the skipper and the
+  its task with no state; a failed pending-version read creating its tasks with no state; the
+  task builder storing no state, so only the tasks of the stage being created are read. In `backend/store`, `ListPendingReleaseVersions` returning only the pairs a database lacks: a live `VERSIONED` revision applied, a deleted or declarative one not, the newest deletion chosen, and a sibling database's or another instance's revision not counted; a user's email change rewriting the skipper and the
   deleted-revision deleters, and not another user's email that contains it; the rename and a
   `BatchSkipTasks` over the same tasks, run concurrently in both orders, both committing. `BatchSkipTasks` writes
   the skipper and the time on each selected task and on no other task of the stage, and the v1 task
