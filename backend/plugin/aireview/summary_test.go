@@ -13,7 +13,7 @@ import (
 const summaryStatement = "ALTER TABLE events\n  ALTER COLUMN payload TYPE json;\nALTER TABLE orders DROP COLUMN legacy_ref;\n"
 
 func rewriteFinding(severity Severity, evidence string) Finding {
-	return Finding{Title: "Avoid a full table rewrite", Severity: severity, Line: 1, Rule: "Flag a schema change that blocks writes on a table with more than 1 million rows.", Evidence: evidence, Fix: "Add a json column and backfill it."}
+	return Finding{Title: "ALTER COLUMN payload TYPE json rewrites events", Severity: severity, Line: 1, Rule: "Flag a schema change that blocks writes on a table with more than 1 million rows.", Evidence: evidence, Fix: "Add a json column and backfill it."}
 }
 
 // rewriteRequest holds one problem on three databases, the first of which
@@ -41,7 +41,7 @@ func summaryReviewer(model Model) *Reviewer {
 	return reviewer
 }
 
-const rewriteReply = `{"title": "Avoid rewriting events to change payload", "evidence": "jsonb to json rewrites the table under an ACCESS EXCLUSIVE lock.", "groups": [{"databases": ["kq7rzm"], "facts": "events has 10M rows."}, {"databases": ["p3n8ra", "w2x5tc"], "facts": "events has 24k to 116k rows."}], "fix": "Add a json column and backfill it."}`
+const rewriteReply = `{"title": "Changing payload to json rewrites events under a lock", "evidence": "jsonb to json rewrites the table under an ACCESS EXCLUSIVE lock.", "groups": [{"databases": ["kq7rzm"], "facts": "events has 10M rows."}, {"databases": ["p3n8ra", "w2x5tc"], "facts": "events has 24k to 116k rows."}], "fix": "Add a json column and backfill it."}`
 
 func TestSummarizeReturnsTheModelsGroups(t *testing.T) {
 	t.Parallel()
@@ -49,7 +49,7 @@ func TestSummarizeReturnsTheModelsGroups(t *testing.T) {
 	model := &scriptedModel{steps: []modelStep{finalReply(rewriteReply)}}
 	summary, err := summaryReviewer(model).Summarize(context.Background(), rewriteRequest())
 	require.NoError(t, err)
-	require.Equal(t, "Avoid rewriting events to change payload", summary.Title)
+	require.Equal(t, "Changing payload to json rewrites events under a lock", summary.Title)
 	require.Equal(t, "jsonb to json rewrites the table under an ACCESS EXCLUSIVE lock.", summary.Evidence)
 	require.Equal(t, []SummaryGroup{
 		{Databases: []string{"instances/prod/databases/big"}, Facts: "events has 10M rows."},
@@ -67,8 +67,8 @@ func TestSummarizeReturnsTheModelsGroups(t *testing.T) {
 	user := request.Messages[1].GetContent()
 	require.Contains(t, user, ">\n1\tALTER TABLE events\n2\t  ALTER COLUMN payload TYPE json;\n</block-", "the prompt shows the problem's statement")
 	require.NotContains(t, user, "legacy_ref", "and no other statement")
-	require.Contains(t, user, `{"database":"kq7rzm","line":1,"severity":"P1","title":"Avoid a full table rewrite","rule":"Flag a schema change that blocks writes on a table with more than 1 million rows.","evidence":"events has 10,000,000 rows.","fix":"Add a json column and backfill it."}`)
-	require.Contains(t, user, `{"database":"kq7rzm","line":1,"severity":"P1","title":"Avoid a full table rewrite","rule":"Flag a schema change that blocks writes on a table with more than 1 million rows.","evidence":"payload is read by v_events."`, "a database keeps its id across its findings")
+	require.Contains(t, user, `{"database":"kq7rzm","line":1,"severity":"P1","title":"ALTER COLUMN payload TYPE json rewrites events","rule":"Flag a schema change that blocks writes on a table with more than 1 million rows.","evidence":"events has 10,000,000 rows.","fix":"Add a json column and backfill it."}`)
+	require.Contains(t, user, `{"database":"kq7rzm","line":1,"severity":"P1","title":"ALTER COLUMN payload TYPE json rewrites events","rule":"Flag a schema change that blocks writes on a table with more than 1 million rows.","evidence":"payload is read by v_events."`, "a database keeps its id across its findings")
 	require.Contains(t, user, `{"database":"w2x5tc","line":1,"severity":"P2",`)
 	require.NotContains(t, user, "instances/prod", "the prompt names no database")
 }
@@ -107,7 +107,7 @@ func TestSummarizeFailsOnAnUnfinishedReply(t *testing.T) {
 		step modelStep
 		want error
 	}{
-		{name: "token limit", step: finalReply(`{"title": "Avoid`).stoppedFor(stopTokenLimit), want: ErrTruncatedReply},
+		{name: "token limit", step: finalReply(`{"title": "ALTER COLUMN`).stoppedFor(stopTokenLimit), want: ErrTruncatedReply},
 		{name: "blocked", step: finalReply("").stoppedFor(stopBlocked), want: ErrBlockedReply},
 		{name: "tool call", step: toolCallReply(&v1pb.AIChatToolCall{Id: "c1", Name: "read", Arguments: "{}"}), want: ErrInvalidReply},
 	} {
@@ -155,13 +155,13 @@ func TestParseSummaryReply(t *testing.T) {
 	}{
 		{
 			name:  "one group needs no facts",
-			reply: `{"title": "Keep events append-only", "evidence": "The table comment says the rows are never updated.", "groups": [{"databases": ["w2x5tc", "kq7rzm", "p3n8ra"], "facts": ""}], "fix": "Insert a corrected event."}`,
-			want:  &summaryReplyJSON{Title: "Keep events append-only", Evidence: "The table comment says the rows are never updated.", Groups: &[]summaryGroupJSON{{Databases: []string{"w2x5tc", "kq7rzm", "p3n8ra"}}}, Fix: "Insert a corrected event."},
+			reply: `{"title": "UPDATE changes rows of the append-only events table", "evidence": "The table comment says the rows are never updated.", "groups": [{"databases": ["w2x5tc", "kq7rzm", "p3n8ra"], "facts": ""}], "fix": "Insert a corrected event."}`,
+			want:  &summaryReplyJSON{Title: "UPDATE changes rows of the append-only events table", Evidence: "The table comment says the rows are never updated.", Groups: &[]summaryGroupJSON{{Databases: []string{"w2x5tc", "kq7rzm", "p3n8ra"}}}, Fix: "Insert a corrected event."},
 		},
 		{
 			name:  "fenced, with the title and facts on one line",
-			reply: "```json\n{\"title\": \"Drop\\nthe view first\", \"evidence\": \" e \", \"groups\": [{\"databases\": [\"kq7rzm\"], \"facts\": \"a\\n b\"}, {\"databases\": [\"p3n8ra\", \"w2x5tc\"], \"facts\": \"c\"}], \"fix\": \"f\"}\n```",
-			want:  &summaryReplyJSON{Title: "Drop the view first", Evidence: "e", Groups: &[]summaryGroupJSON{{Databases: []string{"kq7rzm"}, Facts: "a b"}, {Databases: []string{"p3n8ra", "w2x5tc"}, Facts: "c"}}, Fix: "f"},
+			reply: "```json\n{\"title\": \"DROP COLUMN fails:\\nview reads it\", \"evidence\": \" e \", \"groups\": [{\"databases\": [\"kq7rzm\"], \"facts\": \"a\\n b\"}, {\"databases\": [\"p3n8ra\", \"w2x5tc\"], \"facts\": \"c\"}], \"fix\": \"f\"}\n```",
+			want:  &summaryReplyJSON{Title: "DROP COLUMN fails: view reads it", Evidence: "e", Groups: &[]summaryGroupJSON{{Databases: []string{"kq7rzm"}, Facts: "a b"}, {Databases: []string{"p3n8ra", "w2x5tc"}, Facts: "c"}}, Fix: "f"},
 		},
 		{
 			name:  "one group without facts among several",
