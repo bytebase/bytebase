@@ -22012,6 +22012,7 @@ components:
         - UPDATE
         - DELETE
         - MERGE
+        - EXECUTE
       description: StatementType represents the type of SQL statement.
     bytebase.v1.StorageConfig:
       type: object

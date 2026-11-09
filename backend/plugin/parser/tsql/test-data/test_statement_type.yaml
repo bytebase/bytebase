@@ -42,3 +42,39 @@
     WHERE FirstName = 'John' AND LastName = 'Doe';
   want:
     - DELETE
+- statement: |-
+    EXEC dbo.usp_GetOrders 1;
+  want:
+    - EXECUTE
+- statement: |-
+    EXECUTE usp_GetOrders @CustomerID = 1, @Total = @t OUTPUT;
+  want:
+    - EXECUTE
+- statement: |-
+    EXEC @rc = [dbo].[usp_GetOrders] WITH RECOMPILE;
+  want:
+    - EXECUTE
+- statement: |-
+    EXEC otherdb.dbo.usp_GetOrders;
+  want:
+    - EXECUTE
+- statement: |-
+    EXEC ('DROP TABLE dbo.Authors');
+  want:
+    - STATEMENT_TYPE_UNSPECIFIED
+- statement: |-
+    EXEC sp_executesql N'DROP TABLE dbo.Authors';
+  want:
+    - STATEMENT_TYPE_UNSPECIFIED
+- statement: |-
+    EXEC sys.sp_executesql N'DROP TABLE dbo.Authors';
+  want:
+    - STATEMENT_TYPE_UNSPECIFIED
+- statement: |-
+    EXEC dbo.SP_RENAME 'dbo.Authors', 'Writers';
+  want:
+    - STATEMENT_TYPE_UNSPECIFIED
+- statement: |-
+    EXEC master.dbo.xp_cmdshell 'dir';
+  want:
+    - STATEMENT_TYPE_UNSPECIFIED
