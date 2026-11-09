@@ -680,22 +680,25 @@ export function GlobalMaskingPage() {
     expr: ConditionGroupExpr;
     status: "pending" | "editing" | "created";
   };
-  const [ruleDrafts, setRuleDrafts] = useState<QueuedDraft[]>([]);
-  const queue = useRef<
-    | {
-        drafts: QueuedDraft[];
-        chatId: string;
-        workspaceName: string;
-        userName: string;
-        baseline: { rules: MaskingRulePolicy_MaskingRule[]; semantic: unknown };
-      }
-    | undefined
-  >(undefined);
-  const [queueNeedsRecheck, setQueueNeedsRecheck] = useState(false);
-  const updateQueue = (next: QueuedDraft[]) => {
-    if (queue.current) queue.current.drafts = next;
-    setRuleDrafts(next);
+  type DraftQueue = {
+    drafts: QueuedDraft[];
+    chatId: string;
+    workspaceName: string;
+    userName: string;
+    baseline: { rules: MaskingRulePolicy_MaskingRule[]; semantic: unknown };
+    needsRecheck: boolean;
   };
+  const [draftQueue, setDraftQueue] = useState<DraftQueue>();
+  const queue = useRef<DraftQueue>(undefined);
+  const replaceQueue = (next: DraftQueue) => {
+    queue.current = next;
+    setDraftQueue(next);
+  };
+  const updateQueueDrafts = (drafts: QueuedDraft[]) => {
+    if (queue.current) replaceQueue({ ...queue.current, drafts });
+  };
+  const ruleDrafts = draftQueue?.drafts ?? [];
+  const queueNeedsRecheck = draftQueue?.needsRecheck ?? false;
   const draftOperation = useRef(false);
   const pageActive = useRef(true);
   useEffect(() => {
@@ -785,7 +788,7 @@ export function GlobalMaskingPage() {
     const fields = editorRef.current?.getLocalState();
     const owner = queue.current;
     if (!fields || !owner) return;
-    updateQueue(
+    updateQueueDrafts(
       owner.drafts.map((entry) =>
         entry.status === "editing"
           ? {
@@ -802,13 +805,16 @@ export function GlobalMaskingPage() {
     );
   };
   const checkQueue = async (recheck = false) => {
-    const owner = assertQueueOwner();
+    let owner = assertQueueOwner();
     if (!(await useAppStore.getState().refreshSubscription()))
       throw new Error("The masking feature could not be verified.");
     const baseline = await readQueueBaseline();
     assertQueueOwner();
-    if (!recheck && (queueNeedsRecheck || !isEqual(baseline, owner.baseline))) {
-      setQueueNeedsRecheck(true);
+    if (
+      !recheck &&
+      (owner.needsRecheck || !isEqual(baseline, owner.baseline))
+    ) {
+      replaceQueue({ ...owner, needsRecheck: true });
       throw new Error("Recheck the masking rule drafts before continuing.");
     }
     for (const entry of owner.drafts.filter(
@@ -826,7 +832,8 @@ export function GlobalMaskingPage() {
       assertQueueOwner();
     }
     if (recheck) {
-      owner.baseline = baseline;
+      owner = { ...owner, baseline, needsRecheck: false };
+      replaceQueue(owner);
       const active = pageState.current.items.filter(
         (item) => item.mode !== "NORMAL"
       );
@@ -834,7 +841,6 @@ export function GlobalMaskingPage() {
         ...baseline.rules.map((rule) => ({ mode: "NORMAL" as const, rule })),
         ...active,
       ]);
-      setQueueNeedsRecheck(false);
     }
     return owner;
   };
@@ -966,15 +972,14 @@ export function GlobalMaskingPage() {
         }
         const baseline = await readQueueBaseline();
         assertDraftAvailable(active, false, chatId);
-        queue.current = {
+        replaceQueue({
           drafts: parsed,
           chatId,
           workspaceName,
           userName: userName!,
           baseline,
-        };
-        updateQueue(parsed);
-        setQueueNeedsRecheck(false);
+          needsRecheck: false,
+        });
         setMutationError(false);
         setDraftDirty(true);
         const first = parsed[0];
@@ -1009,7 +1014,7 @@ export function GlobalMaskingPage() {
           (item) => item.mode === "CREATE"
         )?.rule.id;
         if (queue.current?.drafts.some((entry) => entry.id === activeRuleId)) {
-          updateQueue(
+          updateQueueDrafts(
             queue.current.drafts.map((entry) =>
               entry.id === activeRuleId
                 ? { ...entry, draft: structuredClone(draft), expr }
@@ -1227,7 +1232,7 @@ export function GlobalMaskingPage() {
     if (pageState.current.processing || draftOperation.current) return;
     const cancelledId = pageState.current.items[index]?.rule.id;
     if (queue.current?.drafts.some((entry) => entry.id === cancelledId))
-      updateQueue(
+      updateQueueDrafts(
         queue.current.drafts.map((entry) =>
           entry.id === cancelledId ? { ...entry, status: "pending" } : entry
         )
@@ -1271,7 +1276,7 @@ export function GlobalMaskingPage() {
         );
         assertQueueOwner();
         if (!isEqual(await readQueueBaseline(), owner.baseline)) {
-          setQueueNeedsRecheck(true);
+          replaceQueue({ ...owner, needsRecheck: true });
           throw new Error("Recheck the masking rule drafts before continuing.");
         }
         assertQueueOwner();
@@ -1295,14 +1300,20 @@ export function GlobalMaskingPage() {
       t(isCreate ? "common.created" : "common.updated")
     );
     if (saved && queued && queue.current) {
-      queue.current.baseline.rules = structuredClone(
-        next.filter((item) => item.mode === "NORMAL").map((item) => item.rule)
-      );
-      updateQueue(
-        queue.current.drafts.map((entry) =>
+      replaceQueue({
+        ...queue.current,
+        baseline: {
+          ...queue.current.baseline,
+          rules: structuredClone(
+            next
+              .filter((item) => item.mode === "NORMAL")
+              .map((item) => item.rule)
+          ),
+        },
+        drafts: queue.current.drafts.map((entry) =>
           entry.id === rule.id ? { ...entry, status: "created" } : entry
-        )
-      );
+        ),
+      });
     }
     return saved;
   };
@@ -1364,7 +1375,7 @@ export function GlobalMaskingPage() {
         (entry) => entry.id === id && entry.status === "pending"
       );
       if (!selected) return;
-      updateQueue(
+      updateQueueDrafts(
         owner.drafts.map((entry) =>
           entry.id === id
             ? { ...entry, status: "editing" }

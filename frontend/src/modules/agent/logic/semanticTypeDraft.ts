@@ -10,6 +10,7 @@ import {
   Algorithm_InnerOuterMask_MaskType,
   AlgorithmSchema,
   GetSettingRequestSchema,
+  type SemanticTypeSetting_SemanticType,
 } from "@/types/proto-es/v1/setting_service_pb";
 import type { MaskingRuleDraftContext } from "./maskingRuleDraft";
 import {
@@ -262,6 +263,16 @@ export async function validateSemanticTypeDraft(
   draft: SemanticTypeDraft,
   context: MaskingRuleDraftContext
 ): Promise<SemanticTypeDraft> {
+  return (await validateSemanticTypeDraftForSave(draft, context)).draft;
+}
+
+export async function validateSemanticTypeDraftForSave(
+  draft: SemanticTypeDraft,
+  context: MaskingRuleDraftContext
+): Promise<{
+  draft: SemanticTypeDraft;
+  types: SemanticTypeSetting_SemanticType[];
+}> {
   assertContext(context);
   if (!uuidPattern.test(draft.id))
     throw new Error("A new semantic type requires its own generated UUID.");
@@ -307,7 +318,7 @@ export async function validateSemanticTypeDraft(
     throw new Error(
       "The semantic type ID already exists. Prepare a new draft."
     );
-  return structuredClone(draft);
+  return { draft: structuredClone(draft), types: value.value.types };
 }
 
 function purgeExpiredDrafts(): void {

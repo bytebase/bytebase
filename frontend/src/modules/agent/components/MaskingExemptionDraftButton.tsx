@@ -5,6 +5,11 @@ import { PROJECT_V1_ROUTE_MASKING_EXEMPTION_CREATE } from "@/app/router/handles"
 import { Alert } from "@/components/ui/alert";
 import { useAppStore } from "@/stores/app";
 import {
+  assertCurrentContext,
+  assertCurrentTarget,
+  waitForTarget,
+} from "../logic/draftHandoff";
+import {
   consumeMaskingExemptionDraft,
   getMaskingExemptionDraft,
   getMaskingExemptionDraftSource,
@@ -15,46 +20,12 @@ import {
   isMaskingExemptionDraftTargetReady,
   openMaskingExemptionDraftInEditor,
 } from "../logic/maskingExemptionDraftTarget";
-import type { MaskingRuleDraftContext } from "../logic/maskingRuleDraft";
 import {
   captureAgentPageHandoffContext,
   minimizeAgentAfterPageHandoff,
 } from "../logic/pageHandoff";
 import { useAgentStore } from "../store/agent";
 import { AgentPrimaryAction } from "./AgentPrimaryAction";
-
-function assertCurrentContext(context: MaskingRuleDraftContext): void {
-  const app = useAppStore.getState();
-  const agent = useAgentStore.getState();
-  if (
-    app.currentUser?.name !== context.userName ||
-    app.workspaceResourceName() !== context.workspaceName ||
-    agent.currentChatId !== context.chatId ||
-    agent.getChat(context.chatId)?.workspaceName !== context.workspaceName
-  ) {
-    throw new Error(
-      "The masking exemption draft context is no longer current."
-    );
-  }
-}
-
-function assertCurrentTarget(targetPath: string): void {
-  if (router.currentRoute.value.fullPath !== targetPath)
-    throw new Error("The masking exemption editor route is no longer current.");
-}
-
-async function waitForTarget(
-  context: MaskingRuleDraftContext,
-  targetPath: string
-): Promise<void> {
-  for (let attempt = 0; attempt < 60; attempt++) {
-    assertCurrentContext(context);
-    assertCurrentTarget(targetPath);
-    if (isMaskingExemptionDraftTargetReady(context)) return;
-    await new Promise((resolve) => setTimeout(resolve, 50));
-  }
-  throw new Error("The masking exemption editor is not available.");
-}
 
 export function MaskingExemptionDraftButton({
   draftId,
@@ -138,7 +109,11 @@ export function MaskingExemptionDraftButton({
         if (targetPath !== `/projects/${projectId}/masking-exemption/create`)
           throw new Error("The masking exemption create route is unavailable.");
         await router.push(target);
-        await waitForTarget(context, targetPath);
+        await waitForTarget(
+          context,
+          targetPath,
+          isMaskingExemptionDraftTargetReady
+        );
         assertCurrentContext(context);
         assertCurrentTarget(targetPath);
         await openMaskingExemptionDraftInEditor(validated, context, action);

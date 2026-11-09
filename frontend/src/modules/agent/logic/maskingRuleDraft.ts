@@ -22,7 +22,6 @@ import {
 } from "@/modules/cel";
 import { canRenderAsSelector } from "@/modules/cel/logic/selector";
 import { useAppStore } from "@/stores/app";
-import type { Expr } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { GetDatabaseRequestSchema } from "@/types/proto-es/v1/database_service_pb";
 import {
@@ -48,6 +47,7 @@ import {
   batchConvertCELStringToParsedExpr,
   batchConvertParsedExprToCELString,
 } from "@/utils/v1/cel";
+import { getMaskingDraftCELShape } from "./maskingDraftCEL";
 import {
   getMaskingRuleEditorSnapshot,
   type MaskingRuleEditorSnapshot,
@@ -73,10 +73,8 @@ export interface MaskingRuleDraftContext {
 }
 
 interface DraftEntry {
-  proposal: MaskingRuleDraft;
-  draft: MaskingRuleDraft;
-  proposals?: MaskingRuleDraft[];
-  batch?: MaskingRuleDraft[];
+  proposals: MaskingRuleDraft[];
+  drafts: MaskingRuleDraft[];
   context: MaskingRuleDraftContext;
   createdAt: number;
   source?: MaskingRuleEditorSnapshot;
@@ -209,64 +207,6 @@ function assertPermissionEvidence(
   );
 }
 
-// CEL resolution can coerce unsupported constant types. Compare the parsed and
-// rebuilt trees, ignoring only IDs, factor notation, and logical associativity.
-function expressionShape(expr: Expr): unknown {
-  const kind = expr.exprKind;
-  switch (kind.case) {
-    case "identExpr":
-      return ["factor", kind.value.name];
-    case "selectExpr":
-      if (
-        !kind.value.testOnly &&
-        kind.value.operand?.exprKind.case === "identExpr"
-      )
-        return [
-          "factor",
-          `${kind.value.operand.exprKind.value.name}.${kind.value.field}`,
-        ];
-      break;
-    case "constExpr": {
-      const constant = kind.value.constantKind;
-      return ["constant", constant.case, String(constant.value)];
-    }
-    case "listExpr":
-      return [
-        "list",
-        kind.value.elements.map(expressionShape),
-        kind.value.optionalIndices,
-      ];
-    case "callExpr": {
-      const call = kind.value;
-      if (
-        !call.target &&
-        (call.function === "_&&_" || call.function === "_||_")
-      ) {
-        const flatten = (node: Expr): unknown[] => {
-          const nested = node.exprKind;
-          if (
-            nested.case === "callExpr" &&
-            !nested.value.target &&
-            nested.value.function === call.function &&
-            nested.value.args.length === 2
-          )
-            return nested.value.args.flatMap(flatten);
-          return [expressionShape(node)];
-        };
-        if (call.args.length !== 2) break;
-        return [call.function, call.args.flatMap(flatten)];
-      }
-      return [
-        "call",
-        call.function,
-        call.target ? expressionShape(call.target) : undefined,
-        call.args.map(expressionShape),
-      ];
-    }
-  }
-  throw new Error("The condition cannot be represented by the rule selector.");
-}
-
 async function resolveCondition(condition: string) {
   if (!boundedText(condition, MAX_CONDITION_LENGTH))
     throw new Error("The masking rule condition is invalid or too long.");
@@ -279,7 +219,13 @@ async function resolveCondition(condition: string) {
       "The condition cannot be represented by the rule selector."
     );
   const built = await buildCELExpr(resolved);
-  if (!built || !isEqual(expressionShape(parsed), expressionShape(built)))
+  if (
+    !built ||
+    !isEqual(
+      getMaskingDraftCELShape(parsed, "rule"),
+      getMaskingDraftCELShape(built, "rule")
+    )
+  )
     throw new Error(
       "The condition cannot be represented by the rule selector."
     );
@@ -294,7 +240,12 @@ export async function parseMaskingRuleDraftCondition(
   if (!converted)
     throw new Error("The masking rule condition could not be converted.");
   const roundtrip = await resolveCondition(converted);
-  if (!isEqual(expressionShape(built), expressionShape(roundtrip.built)))
+  if (
+    !isEqual(
+      getMaskingDraftCELShape(built, "rule"),
+      getMaskingDraftCELShape(roundtrip.built, "rule")
+    )
+  )
     throw new Error("The masking rule condition changed during conversion.");
   return group;
 }
@@ -436,7 +387,10 @@ export async function validateMaskingRuleDraft(
   );
   if (
     !roundtrip ||
-    !isEqual(expressionShape(built), expressionShape(roundtrip))
+    !isEqual(
+      getMaskingDraftCELShape(built, "rule"),
+      getMaskingDraftCELShape(roundtrip, "rule")
+    )
   )
     throw new Error("The scoped masking rule changed during conversion.");
   assertContext(context);
@@ -496,8 +450,8 @@ export async function prepareMaskingRuleDraft(
   if (drafts.size >= MAX_DRAFTS) drafts.delete(drafts.keys().next().value!);
   const draftId = uuidv4();
   drafts.set(draftId, {
-    proposal,
-    draft,
+    proposals: [proposal],
+    drafts: [draft],
     context: { ...context },
     createdAt: Date.now(),
     source: source ? structuredClone(source) : undefined,
@@ -509,7 +463,7 @@ export function getMaskingRuleDraft(
   id: string,
   context: MaskingRuleDraftContext
 ): MaskingRuleDraft | undefined {
-  const draft = getEntry(id, context)?.draft;
+  const draft = getEntry(id, context)?.drafts[0];
   return draft ? structuredClone(draft) : undefined;
 }
 
@@ -555,10 +509,8 @@ export async function prepareMaskingRuleDrafts(
   if (drafts.size >= MAX_DRAFTS) drafts.delete(drafts.keys().next().value!);
   const draftId = uuidv4();
   drafts.set(draftId, {
-    proposal: proposals[0],
-    draft: batch[0],
     proposals,
-    batch,
+    drafts: batch,
     context: { ...context },
     createdAt: Date.now(),
   });
@@ -570,7 +522,7 @@ export function getMaskingRuleDrafts(
   context: MaskingRuleDraftContext
 ): MaskingRuleDraft[] | undefined {
   const entry = getEntry(id, context);
-  return entry ? structuredClone(entry.batch ?? [entry.draft]) : undefined;
+  return entry ? structuredClone(entry.drafts) : undefined;
 }
 
 export function getMaskingRuleDraftSource(
@@ -610,12 +562,11 @@ export async function revalidateMaskingRuleDrafts(
       "The masking feature is unverified because its subscription could not be refreshed."
     );
   const batch: MaskingRuleDraft[] = [];
-  for (const proposal of entry.proposals ?? [entry.proposal])
+  for (const proposal of entry.proposals)
     batch.push(await validateMaskingRuleDraft(proposal, context));
   if (getEntry(id, context) !== entry)
     throw new Error("The masking rule draft is unavailable or expired.");
-  entry.draft = batch[0];
-  if (entry.proposals) entry.batch = batch;
+  entry.drafts = batch;
   return structuredClone(batch);
 }
 

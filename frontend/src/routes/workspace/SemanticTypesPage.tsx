@@ -3,7 +3,6 @@ import { Check, Info, Pencil, Plus, Trash2, Undo2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
-import { settingServiceClientConnect } from "@/api";
 import { FeatureAttention } from "@/components/FeatureAttention";
 import { Button } from "@/components/ui/button";
 import { FormError, FormField } from "@/components/ui/form";
@@ -43,6 +42,7 @@ import { AgentPageHelpButton } from "@/modules/agent/components/AgentPageHelpBut
 import {
   type SemanticTypeDraft,
   validateSemanticTypeDraft,
+  validateSemanticTypeDraftForSave,
 } from "@/modules/agent/logic/semanticTypeDraft";
 import {
   registerSemanticTypeDraftTarget,
@@ -61,7 +61,6 @@ import {
   Algorithm_RangeMask_SliceSchema,
   AlgorithmSchema,
   Algorithm_FullMaskSchema as FullMaskSchema,
-  GetSettingRequestSchema,
   Algorithm_MD5MaskSchema as MD5MaskSchema,
   Algorithm_RangeMaskSchema as RangeMaskSchema,
   SemanticTypeSetting_SemanticTypeSchema,
@@ -363,23 +362,9 @@ export function SemanticTypesPage() {
           description: current.item.description,
           algorithm: current.item.algorithm!,
         };
-        const validated = await validateSemanticTypeDraft(
-          draft,
-          current.draftContext
-        );
+        const { draft: validated, types: existing } =
+          await validateSemanticTypeDraftForSave(draft, current.draftContext);
         assertCurrent();
-        const setting = await settingServiceClientConnect.getSetting(
-          create(GetSettingRequestSchema, { name: "settings/SEMANTIC_TYPES" })
-        );
-        assertCurrent();
-        const value = setting?.value?.value;
-        if (value?.case !== "semanticType") {
-          throw new Error("The semantic type setting is unavailable.");
-        }
-        const existing = value.value.types;
-        if (existing.some(({ id }) => id === validated.id)) {
-          throw new Error("The semantic type ID is already in use.");
-        }
         const types = [
           ...existing.filter(({ id }) => !isBuiltinSemanticTypeId(id)),
           create(SemanticTypeSetting_SemanticTypeSchema, {

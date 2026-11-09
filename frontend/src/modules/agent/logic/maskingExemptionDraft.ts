@@ -22,7 +22,6 @@ import {
 import { canRenderAsSelector } from "@/modules/cel/logic/selector";
 import { useAppStore } from "@/stores/app";
 import { AccountType, getAccountTypeByEmail } from "@/types";
-import type { Expr } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { GetDatabaseRequestSchema } from "@/types/proto-es/v1/database_service_pb";
 import {
@@ -36,6 +35,7 @@ import {
   batchConvertCELStringToParsedExpr,
   batchConvertParsedExprToCELString,
 } from "@/utils/v1/cel";
+import { getMaskingDraftCELShape } from "./maskingDraftCEL";
 import {
   getMaskingExemptionEditorSnapshot,
   type MaskingExemptionEditorSnapshot,
@@ -185,60 +185,6 @@ function parseProposal(raw: unknown): MaskingExemptionDraft {
   };
 }
 
-// Preserve constant types and call structure so selector coercion cannot widen CEL.
-function shape(expr: Expr): unknown {
-  const kind = expr.exprKind;
-  switch (kind.case) {
-    case "identExpr":
-      return ["factor", kind.value.name];
-    case "selectExpr":
-      if (
-        !kind.value.testOnly &&
-        kind.value.operand?.exprKind.case === "identExpr"
-      )
-        return [
-          "factor",
-          `${kind.value.operand.exprKind.value.name}.${kind.value.field}`,
-        ];
-      break;
-    case "constExpr":
-      return [
-        "constant",
-        kind.value.constantKind.case,
-        String(kind.value.constantKind.value),
-      ];
-    case "listExpr":
-      return [
-        "list",
-        kind.value.elements.map(shape),
-        kind.value.optionalIndices,
-      ];
-    case "callExpr": {
-      const call = kind.value;
-      if (!call.target && ["_&&_", "_||_"].includes(call.function)) {
-        const flatten = (node: Expr): unknown[] =>
-          node.exprKind.case === "callExpr" &&
-          !node.exprKind.value.target &&
-          node.exprKind.value.function === call.function &&
-          node.exprKind.value.args.length === 2
-            ? node.exprKind.value.args.flatMap(flatten)
-            : [shape(node)];
-        if (call.args.length !== 2) break;
-        return [call.function, call.args.flatMap(flatten)];
-      }
-      return [
-        "call",
-        call.function,
-        call.target ? shape(call.target) : undefined,
-        call.args.map(shape),
-      ];
-    }
-  }
-  throw new Error(
-    "The condition cannot be represented by the exemption selector."
-  );
-}
-
 async function resolveCondition(condition: string) {
   const [parsed] = await batchConvertCELStringToParsedExpr([condition]);
   if (!parsed?.exprKind.case)
@@ -281,7 +227,13 @@ async function resolveCondition(condition: string) {
   };
   validateDatabase(resolved);
   const built = await buildCELExpr(resolved);
-  if (!built || !isEqual(shape(parsed), shape(built)))
+  if (
+    !built ||
+    !isEqual(
+      getMaskingDraftCELShape(parsed, "exemption"),
+      getMaskingDraftCELShape(built, "exemption")
+    )
+  )
     throw new Error(
       "The condition cannot be represented by the exemption selector."
     );
@@ -297,7 +249,10 @@ export async function parseMaskingExemptionDraftCondition(
   const [text] = await batchConvertParsedExprToCELString([built]);
   if (
     !text ||
-    !isEqual(shape(built), shape((await resolveCondition(text)).built))
+    !isEqual(
+      getMaskingDraftCELShape(built, "exemption"),
+      getMaskingDraftCELShape((await resolveCondition(text)).built, "exemption")
+    )
   )
     throw new Error("The exemption condition changed during conversion.");
   return group;
@@ -489,7 +444,13 @@ export async function validateMaskingExemptionDraft(
   if (
     !condition ||
     !bounded(condition, 20000) ||
-    !isEqual(shape(built), shape((await resolveCondition(condition)).built))
+    !isEqual(
+      getMaskingDraftCELShape(built, "exemption"),
+      getMaskingDraftCELShape(
+        (await resolveCondition(condition)).built,
+        "exemption"
+      )
+    )
   )
     throw new Error("The scoped exemption changed during conversion.");
   assertContext(context);

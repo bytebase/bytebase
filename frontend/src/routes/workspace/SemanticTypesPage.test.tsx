@@ -20,6 +20,12 @@ const mocks = vi.hoisted(() => ({
   getSetting: vi.fn(async () => undefined as unknown),
   setSettingByName: vi.fn(),
   validateDraft: vi.fn(async (draft: unknown, _context: unknown) => draft),
+  validateDraftForSave: vi.fn(
+    async (draft: unknown, _context: unknown) => ({
+      draft,
+      types: [] as Array<{ id: string }>,
+    })
+  ),
   recordHandoff: vi.fn(),
   hasPermission: true,
   hasFeature: true,
@@ -65,6 +71,7 @@ vi.mock("@/modules/agent/store/agent", () => ({
 
 vi.mock("@/modules/agent/logic/semanticTypeDraft", () => ({
   validateSemanticTypeDraft: mocks.validateDraft,
+  validateSemanticTypeDraftForSave: mocks.validateDraftForSave,
 }));
 
 vi.mock("@/modules/agent/logic/semanticTypeDraftTarget", () => ({
@@ -173,7 +180,25 @@ beforeEach(() => {
   mocks.getSetting.mockResolvedValue({
     value: { value: { case: "semanticType", value: { types: [] } } },
   });
-  mocks.validateDraft.mockImplementation(async (draft) => draft);
+  mocks.validateDraftForSave.mockImplementation(async (draft) => {
+    const setting = (await mocks.getSetting()) as
+      | {
+          value: {
+            value: { case: string; value: { types: Array<{ id: string }> } };
+          };
+        }
+      | undefined;
+    const value = setting?.value.value;
+    if (value?.case !== "semanticType") throw new Error("Unavailable setting");
+    if (value.value.types.some(({ id }) => id === (draft as { id: string }).id)) {
+      throw new Error("Existing type ID");
+    }
+    return { draft, types: value.value.types };
+  });
+  mocks.validateDraft.mockImplementation(
+    async (draft, context) =>
+      (await mocks.validateDraftForSave(draft, context)).draft
+  );
   mocks.upsertSetting.mockResolvedValue(undefined);
 });
 
@@ -186,6 +211,7 @@ afterEach(() => {
   mocks.upsertSetting.mockClear();
   mocks.useUnsavedChangesGuard.mockClear();
   mocks.validateDraft.mockClear();
+  mocks.validateDraftForSave.mockClear();
   mocks.getSetting.mockClear();
   mocks.setSettingByName.mockClear();
   mocks.recordHandoff.mockClear();
@@ -490,7 +516,7 @@ describe("SemanticTypesPage", () => {
     }
   );
 
-  test("appends to freshly read semantic types and permits duplicate titles and algorithms", async () => {
+  test("reads semantic types once at save and preserves fresh types with duplicate titles and algorithms", async () => {
     const { container } = await renderPage();
     await act(async () => {
       await mocks.target?.open(draftFixture(), "chat-test", originFixture());
@@ -499,12 +525,14 @@ describe("SemanticTypesPage", () => {
     mocks.getSetting.mockResolvedValue({
       value: { value: { case: "semanticType", value: { types: [existing] } } },
     });
+    mocks.getSetting.mockClear();
     await act(async () => {
       container
         .querySelector<HTMLButtonElement>('button[aria-label="common.confirm"]')
         ?.click();
       await Promise.resolve();
     });
+    expect(mocks.getSetting).toHaveBeenCalledTimes(1);
     const request = mocks.upsertSetting.mock.calls.at(-1)?.[0] as
       | {
           value: {
@@ -621,7 +649,9 @@ describe("SemanticTypesPage", () => {
     await act(async () => {
       await mocks.target?.open(draftFixture(), "chat-test", originFixture());
     });
-    mocks.validateDraft.mockRejectedValueOnce(new Error("Permission revoked"));
+    mocks.validateDraftForSave.mockRejectedValueOnce(
+      new Error("Permission revoked")
+    );
     await act(async () => {
       container
         .querySelector<HTMLButtonElement>('button[aria-label="common.confirm"]')
@@ -793,7 +823,7 @@ describe("SemanticTypesPage", () => {
         ?.click();
       await Promise.resolve();
     });
-    expect(mocks.validateDraft).toHaveBeenLastCalledWith(
+    expect(mocks.validateDraftForSave).toHaveBeenLastCalledWith(
       expect.objectContaining({
         algorithm: expect.objectContaining({
           mask: expect.objectContaining({

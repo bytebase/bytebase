@@ -206,7 +206,12 @@ describe("masking rule drafts", () => {
     expect(drafts).toHaveLength(2);
     expect(getMaskingRuleDrafts(draftId, context)).toEqual(drafts);
     expect(getMaskingRuleDraft(draftId, context)).toEqual(drafts[0]);
-    expect(await revalidateMaskingRuleDrafts(draftId, context)).toHaveLength(2);
+    const revalidated = await revalidateMaskingRuleDrafts(draftId, context);
+    expect(revalidated).toHaveLength(2);
+    expect(getMaskingRuleDrafts(draftId, context)).toEqual(revalidated);
+    expect(getMaskingRuleDraft(draftId, context)).toEqual(revalidated[0]);
+    revalidated[0].title = "Mutated outside registry";
+    expect(getMaskingRuleDraft(draftId, context)?.title).toBe("Mask email");
     expect(
       getMaskingRuleDrafts(draftId, { ...context, chatId: "other" })
     ).toBeUndefined();
@@ -234,9 +239,12 @@ describe("masking rule drafts", () => {
     ]);
   });
 
-  it("provides batch reads for old singleton entries", async () => {
+  it("provides consistent single and batch reads when revalidating a singleton", async () => {
     const { draftId, draft } = await prepareMaskingRuleDraft(input, context);
     expect(getMaskingRuleDrafts(draftId, context)).toEqual([draft]);
+    const revalidated = await revalidateMaskingRuleDraft(draftId, context);
+    expect(getMaskingRuleDraft(draftId, context)).toEqual(revalidated);
+    expect(getMaskingRuleDrafts(draftId, context)).toEqual([revalidated]);
     expect(await revalidateMaskingRuleDrafts(draftId, context)).toHaveLength(1);
   });
 

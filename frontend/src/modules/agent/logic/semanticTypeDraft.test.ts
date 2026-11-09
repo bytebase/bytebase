@@ -11,6 +11,7 @@ import {
   prepareSemanticTypeDraft,
   revalidateSemanticTypeDraft,
   validateSemanticTypeDraft,
+  validateSemanticTypeDraftForSave,
 } from "./semanticTypeDraft";
 import type { getMaskingSetup } from "./tools/maskingSetup";
 
@@ -107,6 +108,29 @@ describe("semanticTypeDraft", () => {
       expect.objectContaining({ name: "settings/SEMANTIC_TYPES" }),
       expect.anything()
     );
+  });
+
+  it("returns the fresh types from the final save validation read", async () => {
+    const { draft } = await prepareSemanticTypeDraft(proposal, context);
+    const setting = create(SettingSchema, {
+      value: {
+        value: {
+          case: "semanticType",
+          value: { types: [{ ...draft, id: "other-custom-type" }] },
+        },
+      },
+    });
+    mocks.getSetting.mockResolvedValue(setting);
+    mocks.getSetting.mockClear();
+
+    const validated = await validateSemanticTypeDraftForSave(draft, context);
+
+    expect(mocks.getSetting).toHaveBeenCalledTimes(1);
+    expect(validated.draft).toEqual(draft);
+    expect(validated.draft).not.toBe(draft);
+    expect(validated.types).toEqual([
+      expect.objectContaining({ id: "other-custom-type", title: draft.title }),
+    ]);
   });
 
   it.each([

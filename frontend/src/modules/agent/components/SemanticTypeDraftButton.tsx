@@ -3,8 +3,12 @@ import { useTranslation } from "react-i18next";
 import { router } from "@/app/router";
 import { Alert } from "@/components/ui/alert";
 import { useAppStore } from "@/stores/app";
+import {
+  assertCurrentContext,
+  assertCurrentTarget,
+  waitForTarget,
+} from "../logic/draftHandoff";
 import { resolveAgentHandoffRoute } from "../logic/handoff";
-import type { MaskingRuleDraftContext } from "../logic/maskingRuleDraft";
 import {
   captureAgentPageHandoffContext,
   minimizeAgentAfterPageHandoff,
@@ -22,37 +26,6 @@ import {
 } from "../logic/semanticTypeDraftTarget";
 import { useAgentStore } from "../store/agent";
 import { AgentPrimaryAction } from "./AgentPrimaryAction";
-
-function assertCurrentContext(context: MaskingRuleDraftContext): void {
-  const app = useAppStore.getState();
-  const agent = useAgentStore.getState();
-  if (
-    app.currentUser?.name !== context.userName ||
-    app.workspaceResourceName() !== context.workspaceName ||
-    agent.currentChatId !== context.chatId ||
-    agent.getChat(context.chatId)?.workspaceName !== context.workspaceName
-  ) {
-    throw new Error("The semantic type draft context is no longer current.");
-  }
-}
-
-function assertCurrentTarget(targetPath: string): void {
-  if (router.currentRoute.value.fullPath !== targetPath)
-    throw new Error("The semantic type editor route is no longer current.");
-}
-
-async function waitForTarget(
-  context: MaskingRuleDraftContext,
-  targetPath: string
-): Promise<void> {
-  for (let attempt = 0; attempt < 60; attempt++) {
-    assertCurrentContext(context);
-    assertCurrentTarget(targetPath);
-    if (isSemanticTypeDraftTargetReady(context)) return;
-    await new Promise((resolve) => setTimeout(resolve, 50));
-  }
-  throw new Error("The semantic type editor is not available.");
-}
 
 export function SemanticTypeDraftButton({
   draftId,
@@ -127,7 +100,7 @@ export function SemanticTypeDraftButton({
       } else if (router.currentRoute.value.fullPath !== targetPath) {
         await router.push(target);
       }
-      await waitForTarget(context, targetPath);
+      await waitForTarget(context, targetPath, isSemanticTypeDraftTargetReady);
       assertCurrentContext(context);
       assertCurrentTarget(targetPath);
       await openSemanticTypeDraftInEditor(
