@@ -746,21 +746,19 @@ const (
 )
 
 // aiReviewGroup is databases of a problem that one line of its comment covers,
-// with the highest and lowest severity their findings carry.
+// with the highest severity their findings carry.
 type aiReviewGroup struct {
 	highest aireview.Severity
-	lowest  aireview.Severity
 	targets []string
 	facts   string
 }
 
 // aiReviewCommentText renders a problem as the title and the body of its
 // thread. A problem of more than one database states the shared evidence
-// once, then one line for each group of databases with its severities and the
-// facts that set it apart, then the reviewed databases that reported a
-// different problem on the statement, onBlock, or nothing. Without a summary,
-// the shared evidence is the lead finding's, labeled with its database, and
-// the databases are grouped by severity alone.
+// once, then one line for each group of databases with the facts that set it
+// apart, then the reviewed databases that reported a different problem on the
+// statement, onBlock, or nothing. Without a summary, the shared evidence is the
+// lead finding's, labeled with its database.
 func aiReviewCommentText(problem *aiReviewProblem, lead *aiReviewFinding, findings []*aiReviewFinding, targets []string, onBlock []string) (title, text string) {
 	var b strings.Builder
 	if len(targets) == 1 {
@@ -793,14 +791,11 @@ func aiReviewCommentText(problem *aiReviewProblem, lead *aiReviewFinding, findin
 	if summary := problem.Summary; summary != nil {
 		title, evidence, fix = summary.Title, summary.Evidence, summary.Fix
 		for _, summaryGroup := range summary.Groups {
-			group := &aiReviewGroup{highest: aireview.SeverityP2, lowest: aireview.SeverityP0, targets: summaryGroup.Databases, facts: summaryGroup.Facts}
+			group := &aiReviewGroup{highest: aireview.SeverityP2, targets: summaryGroup.Databases, facts: summaryGroup.Facts}
 			for _, target := range summaryGroup.Databases {
 				priority := aiReviewPriority(severities[target])
 				if priority < aiReviewPriority(group.highest) {
 					group.highest = severities[target]
-				}
-				if priority > aiReviewPriority(group.lowest) {
-					group.lowest = severities[target]
 				}
 			}
 			groups = append(groups, group)
@@ -808,16 +803,7 @@ func aiReviewCommentText(problem *aiReviewProblem, lead *aiReviewFinding, findin
 	} else {
 		title, fix = lead.Finding.Title, lead.Finding.Fix
 		evidence = fmt.Sprintf("%s: %s", labels[lead.Unit.Check.Target], lead.Finding.Evidence)
-		bySeverity := make(map[aireview.Severity]*aiReviewGroup)
-		for _, target := range targets {
-			group, ok := bySeverity[severities[target]]
-			if !ok {
-				group = &aiReviewGroup{highest: severities[target], lowest: severities[target]}
-				bySeverity[severities[target]] = group
-				groups = append(groups, group)
-			}
-			group.targets = append(group.targets, target)
-		}
+		groups = []*aiReviewGroup{{targets: targets}}
 	}
 	// The most severe group comes first.
 	slices.SortStableFunc(groups, func(x, y *aiReviewGroup) int {
@@ -826,13 +812,7 @@ func aiReviewCommentText(problem *aiReviewProblem, lead *aiReviewFinding, findin
 
 	_, _ = fmt.Fprintf(&b, "%s\n", evidence)
 	for _, group := range groups {
-		// Databases with the same facts can still carry different severities,
-		// which the group shows as a range rather than raise to its highest.
-		severity := string(group.highest)
-		if group.lowest != group.highest {
-			severity += "–" + string(group.lowest)
-		}
-		_, _ = fmt.Fprintf(&b, "\n- **%s** on %s", severity, databaseList(group.targets, labels))
+		_, _ = fmt.Fprintf(&b, "\n- %s", databaseList(group.targets, labels))
 		if group.facts != "" {
 			_, _ = fmt.Fprintf(&b, ": %s", group.facts)
 		}
