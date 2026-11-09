@@ -460,20 +460,20 @@ const file_v1_role_service_proto_rawDesc = "" +
 	"\x15v1/role_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x13v1/annotation.proto\"\x12\n" +
 	"\x10ListRolesRequest\"<\n" +
 	"\x11ListRolesResponse\x12'\n" +
-	"\x05roles\x18\x01 \x03(\v2\x11.bytebase.v1.RoleR\x05roles\"]\n" +
-	"\x11CreateRoleRequest\x12*\n" +
-	"\x04role\x18\x01 \x01(\v2\x11.bytebase.v1.RoleB\x03\xe0A\x02R\x04role\x12\x1c\n" +
-	"\arole_id\x18\x02 \x01(\tB\x03\xe0A\x02R\x06roleId\"?\n" +
-	"\x0eGetRoleRequest\x12-\n" +
-	"\x04name\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
-	"\x11bytebase.com/RoleR\x04name\"\xa1\x01\n" +
-	"\x11UpdateRoleRequest\x12*\n" +
-	"\x04role\x18\x01 \x01(\v2\x11.bytebase.v1.RoleB\x03\xe0A\x02R\x04role\x12;\n" +
+	"\x05roles\x18\x01 \x03(\v2\x11.bytebase.v1.RoleR\x05roles\"_\n" +
+	"\x11CreateRoleRequest\x12+\n" +
+	"\x04role\x18\x01 \x01(\v2\x11.bytebase.v1.RoleB\x04\xe2A\x01\x02R\x04role\x12\x1d\n" +
+	"\arole_id\x18\x02 \x01(\tB\x04\xe2A\x01\x02R\x06roleId\"@\n" +
+	"\x0eGetRoleRequest\x12.\n" +
+	"\x04name\x18\x01 \x01(\tB\x1a\xe2A\x01\x02\xfaA\x13\n" +
+	"\x11bytebase.com/RoleR\x04name\"\xa2\x01\n" +
+	"\x11UpdateRoleRequest\x12+\n" +
+	"\x04role\x18\x01 \x01(\v2\x11.bytebase.v1.RoleB\x04\xe2A\x01\x02R\x04role\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
 	"updateMask\x12#\n" +
-	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"B\n" +
-	"\x11DeleteRoleRequest\x12-\n" +
-	"\x04name\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
+	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"C\n" +
+	"\x11DeleteRoleRequest\x12.\n" +
+	"\x04name\x18\x01 \x01(\tB\x1a\xe2A\x01\x02\xfaA\x13\n" +
 	"\x11bytebase.com/RoleR\x04name\"\x92\x02\n" +
 	"\x04Role\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1e\n" +

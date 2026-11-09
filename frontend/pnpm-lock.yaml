@@ -173,8 +173,8 @@ importers:
         specifier: ^1.3.0
         version: 1.9.0(@date-fns/tz@1.5.0)(@types/react@19.3.0)(date-fns@4.4.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@buf/googleapis_googleapis.bufbuild_es':
-        specifier: 2.13.0-20261015202054-8ac61b9e5023.1
-        version: 2.13.0-20261015202054-8ac61b9e5023.1(@bufbuild/protobuf@2.16.0)
+        specifier: 2.16.0-20261015202054-8ac61b9e5023.1
+        version: 2.16.0-20261015202054-8ac61b9e5023.1(@bufbuild/protobuf@2.16.0)
       '@bufbuild/protobuf':
         specifier: 2.16.0
         version: 2.16.0
@@ -401,9 +401,9 @@ importers:
       '@testing-library/react':
         specifier: ^16.3.2
         version: 16.3.3(@testing-library/dom@10.4.1)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
-      '@tsconfig/node24':
-        specifier: 24.0.5
-        version: 24.0.5
+      '@tsconfig/node26':
+        specifier: 26.0.1
+        version: 26.0.1
       '@types/crypto-js':
         specifier: ^4.2.2
         version: 4.2.2
@@ -1151,10 +1151,10 @@ packages:
     resolution: {integrity: sha512-ctxtJ/eA+t+6q2++vj5j7FYX3nRu311q1wfYH3xjlLOsczhlhxAg2FWNUXhpGvAw3BWo1xBcvOV6/YLc2r5FJw==}
     hasBin: true
 
-  '@buf/googleapis_googleapis.bufbuild_es@2.13.0-20261015202054-8ac61b9e5023.1':
-    resolution: {integrity: sha512-9S2PieTfGyr/42hjK72ynax6oyE3hjTXsUZwk67Tv7KShfOS8riRigj7MddZX7QTPH2N1h25qhC+kp8pMUJy8w==}
+  '@buf/googleapis_googleapis.bufbuild_es@2.16.0-20261015202054-8ac61b9e5023.1':
+    resolution: {integrity: sha512-lJNO49J/R41BEl6yqXlHm0g0AHeBt78wFtuXx7QILQy+SYSXEhysvF5TunRUo6sQyH4L9YiqiiGMIMue5PMdeg==}
     peerDependencies:
-      '@bufbuild/protobuf': ^2.13.0
+      '@bufbuild/protobuf': ^2.16.0
 
   '@bufbuild/protobuf@2.16.0':
     resolution: {integrity: sha512-FWa0sPlqYGJgpTs6OxBRcL/AW4JT0OIO+W1ajerluoTVh8CV0B7XM1qsNCRgnkSCkRCgOICKHRQlY17jrsm0+Q==}
@@ -1974,8 +1974,8 @@ packages:
       '@types/react-dom':
         optional: true
 
-  '@tsconfig/node24@24.0.5':
-    resolution: {integrity: sha512-DWC54fGPuhZgg3Ighg4Y/A/bA3ZdB5hnzAuv/MkQ/X85sVsBsMQxu8t7khutdYeiNksBbFdDyeqv1HSW2Zl8aA==}
+  '@tsconfig/node26@26.0.1':
+    resolution: {integrity: sha512-NQT8JUFDKeAIWpR1dakeF534msQAsoSLr1WpKdRDt3sCvk2fsFK3EVKUBG5xKYVamiRO6yTfniiyvCaqOGgn/g==}
 
   '@types/aria-query@5.0.4':
     resolution: {integrity: sha512-rfT93uj5s0PRL7EzccGMs3brplhcrghnDoV26NqKhCAS1hVo+WdNsPvE/yb6ilfr5hi2MEk6d5EWJTKdxg8jVw==}
@@ -4744,7 +4744,7 @@ snapshots:
     dependencies:
       css-tree: 3.2.1
 
-  '@buf/googleapis_googleapis.bufbuild_es@2.13.0-20261015202054-8ac61b9e5023.1(@bufbuild/protobuf@2.16.0)':
+  '@buf/googleapis_googleapis.bufbuild_es@2.16.0-20261015202054-8ac61b9e5023.1(@bufbuild/protobuf@2.16.0)':
     dependencies:
       '@bufbuild/protobuf': 2.16.0
 
@@ -5414,7 +5414,7 @@ snapshots:
       '@types/react': 19.3.0
       '@types/react-dom': 19.3.0(@types/react@19.3.0)
 
-  '@tsconfig/node24@24.0.5': {}
+  '@tsconfig/node26@26.0.1': {}
 
   '@types/aria-query@5.0.4': {}
 

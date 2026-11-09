@@ -684,12 +684,12 @@ var File_v1_group_service_proto protoreflect.FileDescriptor
 
 const file_v1_group_service_proto_rawDesc = "" +
 	"\n" +
-	"\x16v1/group_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x13v1/annotation.proto\"A\n" +
-	"\x0fGetGroupRequest\x12.\n" +
-	"\x04name\x18\x01 \x01(\tB\x1a\xe0A\x02\xfaA\x14\n" +
-	"\x12bytebase.com/GroupR\x04name\"I\n" +
-	"\x15BatchGetGroupsRequest\x120\n" +
-	"\x05names\x18\x01 \x03(\tB\x1a\xe0A\x02\xfaA\x14\n" +
+	"\x16v1/group_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x13v1/annotation.proto\"B\n" +
+	"\x0fGetGroupRequest\x12/\n" +
+	"\x04name\x18\x01 \x01(\tB\x1b\xe2A\x01\x02\xfaA\x14\n" +
+	"\x12bytebase.com/GroupR\x04name\"J\n" +
+	"\x15BatchGetGroupsRequest\x121\n" +
+	"\x05names\x18\x01 \x03(\tB\x1b\xe2A\x01\x02\xfaA\x14\n" +
 	"\x12bytebase.com/GroupR\x05names\"D\n" +
 	"\x16BatchGetGroupsResponse\x12*\n" +
 	"\x06groups\x18\x01 \x03(\v2\x12.bytebase.v1.GroupR\x06groups\"g\n" +
@@ -700,18 +700,18 @@ const file_v1_group_service_proto_rawDesc = "" +
 	"\x06filter\x18\x03 \x01(\tR\x06filter\"h\n" +
 	"\x12ListGroupsResponse\x12*\n" +
 	"\x06groups\x18\x01 \x03(\v2\x12.bytebase.v1.GroupR\x06groups\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"i\n" +
-	"\x12CreateGroupRequest\x12-\n" +
-	"\x05group\x18\x01 \x01(\v2\x12.bytebase.v1.GroupB\x03\xe0A\x02R\x05group\x12$\n" +
-	"\vgroup_email\x18\x02 \x01(\tB\x03\xe0A\x02R\n" +
-	"groupEmail\"\xa5\x01\n" +
-	"\x12UpdateGroupRequest\x12-\n" +
-	"\x05group\x18\x01 \x01(\v2\x12.bytebase.v1.GroupB\x03\xe0A\x02R\x05group\x12;\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"k\n" +
+	"\x12CreateGroupRequest\x12.\n" +
+	"\x05group\x18\x01 \x01(\v2\x12.bytebase.v1.GroupB\x04\xe2A\x01\x02R\x05group\x12%\n" +
+	"\vgroup_email\x18\x02 \x01(\tB\x04\xe2A\x01\x02R\n" +
+	"groupEmail\"\xa6\x01\n" +
+	"\x12UpdateGroupRequest\x12.\n" +
+	"\x05group\x18\x01 \x01(\v2\x12.bytebase.v1.GroupB\x04\xe2A\x01\x02R\x05group\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
 	"updateMask\x12#\n" +
-	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"D\n" +
-	"\x12DeleteGroupRequest\x12.\n" +
-	"\x04name\x18\x01 \x01(\tB\x1a\xe0A\x02\xfaA\x14\n" +
+	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"E\n" +
+	"\x12DeleteGroupRequest\x12/\n" +
+	"\x04name\x18\x01 \x01(\tB\x1b\xe2A\x01\x02\xfaA\x14\n" +
 	"\x12bytebase.com/GroupR\x04name\"\x8d\x01\n" +
 	"\vGroupMember\x12\x16\n" +
 	"\x06member\x18\x01 \x01(\tR\x06member\x121\n" +
@@ -720,9 +720,9 @@ const file_v1_group_service_proto_rawDesc = "" +
 	"\x10ROLE_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05OWNER\x10\x01\x12\n" +
 	"\n" +
-	"\x06MEMBER\x10\x02\"\xf7\x01\n" +
-	"\x05Group\x12\x17\n" +
-	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12\x1e\n" +
+	"\x06MEMBER\x10\x02\"\xf8\x01\n" +
+	"\x05Group\x12\x18\n" +
+	"\x04name\x18\x01 \x01(\tB\x04\xe2A\x01\x03R\x04name\x12\x1e\n" +
 	"\x05title\x18\x02 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12*\n" +
 	"\vdescription\x18\x03 \x01(\tB\b\xbaH\x05r\x03\x18\xe8\aR\vdescription\x122\n" +
 	"\amembers\x18\x04 \x03(\v2\x18.bytebase.v1.GroupMemberR\amembers\x12\x16\n" +

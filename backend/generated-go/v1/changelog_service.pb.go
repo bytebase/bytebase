@@ -433,9 +433,9 @@ var File_v1_changelog_service_proto protoreflect.FileDescriptor
 
 const file_v1_changelog_service_proto_rawDesc = "" +
 	"\n" +
-	"\x1av1/changelog_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"\xd2\x01\n" +
-	"\x15ListChangelogsRequest\x125\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
+	"\x1av1/changelog_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"\xd3\x01\n" +
+	"\x15ListChangelogsRequest\x126\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
 	"\x15bytebase.com/DatabaseR\x06parent\x12\x1b\n" +
 	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
@@ -446,11 +446,11 @@ const file_v1_changelog_service_proto_rawDesc = "" +
 	"\n" +
 	"changelogs\x18\x01 \x03(\v2\x16.bytebase.v1.ChangelogR\n" +
 	"changelogs\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x81\x01\n" +
-	"\x13GetChangelogRequest\x12:\n" +
-	"\x04name\x18\x01 \x01(\tB&\xe0A\x02\xfaA \n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x82\x01\n" +
+	"\x13GetChangelogRequest\x12;\n" +
+	"\x04name\x18\x01 \x01(\tB'\xe2A\x01\x02\xfaA \n" +
 	"\x1ebytebase.com/DatabaseChangelogR\x04name\x12.\n" +
-	"\x04view\x18\x02 \x01(\x0e2\x1a.bytebase.v1.ChangelogViewR\x04view\"\xa0\x04\n" +
+	"\x04view\x18\x02 \x01(\x0e2\x1a.bytebase.v1.ChangelogViewR\x04view\"\xa1\x04\n" +
 	"\tChangelog\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12;\n" +
 	"\vcreate_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
@@ -459,9 +459,9 @@ const file_v1_changelog_service_proto_rawDesc = "" +
 	"\x06schema\x18\a \x01(\tR\x06schema\x12\x1f\n" +
 	"\vschema_size\x18\b \x01(\x03R\n" +
 	"schemaSize\x12\x19\n" +
-	"\btask_run\x18\v \x01(\tR\ataskRun\x12\"\n" +
+	"\btask_run\x18\v \x01(\tR\ataskRun\x12#\n" +
 	"\n" +
-	"plan_title\x18\x0f \x01(\tB\x03\xe0A\x03R\tplanTitle\"C\n" +
+	"plan_title\x18\x0f \x01(\tB\x04\xe2A\x01\x03R\tplanTitle\"C\n" +
 	"\x06Status\x12\x16\n" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aPENDING\x10\x01\x12\b\n" +

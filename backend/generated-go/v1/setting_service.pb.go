@@ -3671,21 +3671,21 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x18v1/setting_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a google/protobuf/field_mask.proto\x1a\x17google/type/color.proto\x1a\x16google/type/expr.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x16v1/issue_service.proto\"\x15\n" +
 	"\x13ListSettingsRequest\"H\n" +
 	"\x14ListSettingsResponse\x120\n" +
-	"\bsettings\x18\x01 \x03(\v2\x14.bytebase.v1.SettingR\bsettings\"E\n" +
-	"\x11GetSettingRequest\x120\n" +
-	"\x04name\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
+	"\bsettings\x18\x01 \x03(\v2\x14.bytebase.v1.SettingR\bsettings\"F\n" +
+	"\x11GetSettingRequest\x121\n" +
+	"\x04name\x18\x01 \x01(\tB\x1d\xe2A\x01\x02\xfaA\x16\n" +
 	"\x14bytebase.com/SettingR\x04name\"D\n" +
 	"\x12GetSettingResponse\x12.\n" +
-	"\asetting\x18\x01 \x01(\v2\x14.bytebase.v1.SettingR\asetting\"\xd2\x01\n" +
-	"\x14UpdateSettingRequest\x123\n" +
-	"\asetting\x18\x01 \x01(\v2\x14.bytebase.v1.SettingB\x03\xe0A\x02R\asetting\x12#\n" +
+	"\asetting\x18\x01 \x01(\v2\x14.bytebase.v1.SettingR\asetting\"\xd3\x01\n" +
+	"\x14UpdateSettingRequest\x124\n" +
+	"\asetting\x18\x01 \x01(\v2\x14.bytebase.v1.SettingB\x04\xe2A\x01\x02R\asetting\x12#\n" +
 	"\rvalidate_only\x18\x02 \x01(\bR\fvalidateOnly\x12#\n" +
 	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\x12;\n" +
 	"\vupdate_mask\x18\x04 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
-	"updateMask\"\xd6\x02\n" +
-	"\aSetting\x12\x17\n" +
-	"\x04name\x18\x01 \x01(\tB\x03\xe0A\bR\x04name\x124\n" +
-	"\x05value\x18\x02 \x01(\v2\x19.bytebase.v1.SettingValueB\x03\xe0A\x02R\x05value\"\xcc\x01\n" +
+	"updateMask\"\xd8\x02\n" +
+	"\aSetting\x12\x18\n" +
+	"\x04name\x18\x01 \x01(\tB\x04\xe2A\x01\bR\x04name\x125\n" +
+	"\x05value\x18\x02 \x01(\v2\x19.bytebase.v1.SettingValueB\x04\xe2A\x01\x02R\x05value\"\xcc\x01\n" +
 	"\vSettingName\x12\x1c\n" +
 	"\x18SETTING_NAME_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11WORKSPACE_PROFILE\x10\x01\x12\x16\n" +
@@ -3718,37 +3718,37 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\rExportSetting\x12>\n" +
 	"\n" +
 	"sharepoint\x18\x01 \x01(\v2\x1e.bytebase.v1.SharePointSettingR\n" +
-	"sharepoint\"\xac\x01\n" +
+	"sharepoint\"\xae\x01\n" +
 	"\x11SharePointSetting\x12\x1b\n" +
 	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x1b\n" +
-	"\tclient_id\x18\x02 \x01(\tR\bclientId\x12,\n" +
-	"\rclient_secret\x18\x03 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\fclientSecret\x12/\n" +
-	"\x11client_secret_set\x18\x04 \x01(\bB\x03\xe0A\x03R\x0fclientSecretSet\"\x9a\b\n" +
+	"\tclient_id\x18\x02 \x01(\tR\bclientId\x12-\n" +
+	"\rclient_secret\x18\x03 \x01(\tB\b\xe2A\x01\x04\xd0\xea0\x01R\fclientSecret\x120\n" +
+	"\x11client_secret_set\x18\x04 \x01(\bB\x04\xe2A\x01\x03R\x0fclientSecretSet\"\xa9\b\n" +
 	"\fAppIMSetting\x12?\n" +
-	"\bsettings\x18\x01 \x03(\v2#.bytebase.v1.AppIMSetting.IMSettingR\bsettings\x1a&\n" +
-	"\x05Slack\x12\x1d\n" +
-	"\x05token\x18\x01 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\x05token\x1aL\n" +
-	"\x06Feishu\x12\x1a\n" +
-	"\x06app_id\x18\x01 \x01(\tB\x03\xe0A\x04R\x05appId\x12&\n" +
+	"\bsettings\x18\x01 \x03(\v2#.bytebase.v1.AppIMSetting.IMSettingR\bsettings\x1a'\n" +
+	"\x05Slack\x12\x1e\n" +
+	"\x05token\x18\x01 \x01(\tB\b\xe2A\x01\x04\xd0\xea0\x01R\x05token\x1aN\n" +
+	"\x06Feishu\x12\x1b\n" +
+	"\x06app_id\x18\x01 \x01(\tB\x04\xe2A\x01\x04R\x05appId\x12'\n" +
 	"\n" +
-	"app_secret\x18\x02 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\tappSecret\x1af\n" +
-	"\x05Wecom\x12\x1c\n" +
-	"\acorp_id\x18\x01 \x01(\tB\x03\xe0A\x04R\x06corpId\x12\x1e\n" +
-	"\bagent_id\x18\x02 \x01(\tB\x03\xe0A\x04R\aagentId\x12\x1f\n" +
-	"\x06secret\x18\x03 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\x06secret\x1aJ\n" +
-	"\x04Lark\x12\x1a\n" +
-	"\x06app_id\x18\x01 \x01(\tB\x03\xe0A\x04R\x05appId\x12&\n" +
+	"app_secret\x18\x02 \x01(\tB\b\xe2A\x01\x04\xd0\xea0\x01R\tappSecret\x1ai\n" +
+	"\x05Wecom\x12\x1d\n" +
+	"\acorp_id\x18\x01 \x01(\tB\x04\xe2A\x01\x04R\x06corpId\x12\x1f\n" +
+	"\bagent_id\x18\x02 \x01(\tB\x04\xe2A\x01\x04R\aagentId\x12 \n" +
+	"\x06secret\x18\x03 \x01(\tB\b\xe2A\x01\x04\xd0\xea0\x01R\x06secret\x1aL\n" +
+	"\x04Lark\x12\x1b\n" +
+	"\x06app_id\x18\x01 \x01(\tB\x04\xe2A\x01\x04R\x05appId\x12'\n" +
 	"\n" +
-	"app_secret\x18\x02 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\tappSecret\x1a~\n" +
-	"\bDingTalk\x12 \n" +
-	"\tclient_id\x18\x01 \x01(\tB\x03\xe0A\x04R\bclientId\x12,\n" +
-	"\rclient_secret\x18\x02 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\fclientSecret\x12\"\n" +
+	"app_secret\x18\x02 \x01(\tB\b\xe2A\x01\x04\xd0\xea0\x01R\tappSecret\x1a\x81\x01\n" +
+	"\bDingTalk\x12!\n" +
+	"\tclient_id\x18\x01 \x01(\tB\x04\xe2A\x01\x04R\bclientId\x12-\n" +
+	"\rclient_secret\x18\x02 \x01(\tB\b\xe2A\x01\x04\xd0\xea0\x01R\fclientSecret\x12#\n" +
 	"\n" +
-	"robot_code\x18\x03 \x01(\tB\x03\xe0A\x04R\trobotCode\x1ay\n" +
-	"\x05Teams\x12 \n" +
-	"\ttenant_id\x18\x01 \x01(\tB\x03\xe0A\x04R\btenantId\x12 \n" +
-	"\tclient_id\x18\x02 \x01(\tB\x03\xe0A\x04R\bclientId\x12,\n" +
-	"\rclient_secret\x18\x03 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\fclientSecret\x1a\xa3\x03\n" +
+	"robot_code\x18\x03 \x01(\tB\x04\xe2A\x01\x04R\trobotCode\x1a|\n" +
+	"\x05Teams\x12!\n" +
+	"\ttenant_id\x18\x01 \x01(\tB\x04\xe2A\x01\x04R\btenantId\x12!\n" +
+	"\tclient_id\x18\x02 \x01(\tB\x04\xe2A\x01\x04R\bclientId\x12-\n" +
+	"\rclient_secret\x18\x03 \x01(\tB\b\xe2A\x01\x04\xd0\xea0\x01R\fclientSecret\x1a\xa3\x03\n" +
 	"\tIMSetting\x12,\n" +
 	"\x04type\x18\x01 \x01(\x0e2\x18.bytebase.v1.WebhookTypeR\x04type\x127\n" +
 	"\x05slack\x18\x02 \x01(\v2\x1f.bytebase.v1.AppIMSetting.SlackH\x00R\x05slack\x12:\n" +
@@ -3757,7 +3757,7 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x04lark\x18\x05 \x01(\v2\x1e.bytebase.v1.AppIMSetting.LarkH\x00R\x04lark\x12@\n" +
 	"\bdingtalk\x18\x06 \x01(\v2\".bytebase.v1.AppIMSetting.DingTalkH\x00R\bdingtalk\x127\n" +
 	"\x05teams\x18\a \x01(\v2\x1f.bytebase.v1.AppIMSetting.TeamsH\x00R\x05teamsB\t\n" +
-	"\apayload\"\x91\x0f\n" +
+	"\apayload\"\x92\x0f\n" +
 	"\x17WorkspaceProfileSetting\x12!\n" +
 	"\fexternal_url\x18\x01 \x01(\tR\vexternalUrl\x12'\n" +
 	"\x0fdisallow_signup\x18\x02 \x01(\bR\x0edisallowSignup\x12\x1f\n" +
@@ -3783,8 +3783,8 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x17allow_email_code_signin\x18\x16 \x01(\bR\x14allowEmailCodeSignin\x12-\n" +
 	"\x13sql_editor_theme_id\x18\x17 \x01(\tR\x10sqlEditorThemeId\x12Y\n" +
 	"\x17sql_editor_custom_theme\x18\x18 \x01(\v2\".bytebase.v1.SQLEditorThemeSettingR\x14sqlEditorCustomTheme\x12Q\n" +
-	"\x17maximum_role_expiration\x18\x19 \x01(\v2\x19.google.protobuf.DurationR\x15maximumRoleExpiration\x12J\n" +
-	"\x1fdirectory_sync_token_configured\x18\x1b \x01(\bB\x03\xe0A\x03R\x1cdirectorySyncTokenConfigured\x1a\x93\x03\n" +
+	"\x17maximum_role_expiration\x18\x19 \x01(\v2\x19.google.protobuf.DurationR\x15maximumRoleExpiration\x12K\n" +
+	"\x1fdirectory_sync_token_configured\x18\x1b \x01(\bB\x04\xe2A\x01\x03R\x1cdirectorySyncTokenConfigured\x1a\x93\x03\n" +
 	"\x13PasswordRestriction\x12\x1d\n" +
 	"\n" +
 	"min_length\x18\x01 \x01(\x05R\tminLength\x12%\n" +
@@ -3905,29 +3905,29 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x06CLAUDE\x10\x02\x12\n" +
 	"\n" +
 	"\x06GEMINI\x10\x03\x12\x10\n" +
-	"\fAZURE_OPENAI\x10\x04\"\xe2\x02\n" +
+	"\fAZURE_OPENAI\x10\x04\"\xe3\x02\n" +
 	"\x12EnvironmentSetting\x12O\n" +
-	"\fenvironments\x18\x01 \x03(\v2+.bytebase.v1.EnvironmentSetting.EnvironmentR\fenvironments\x1a\xfa\x01\n" +
-	"\vEnvironment\x12\x17\n" +
-	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12\x0e\n" +
+	"\fenvironments\x18\x01 \x03(\v2+.bytebase.v1.EnvironmentSetting.EnvironmentR\fenvironments\x1a\xfb\x01\n" +
+	"\vEnvironment\x12\x18\n" +
+	"\x04name\x18\x01 \x01(\tB\x04\xe2A\x01\x03R\x04name\x12\x0e\n" +
 	"\x02id\x18\x02 \x01(\tR\x02id\x12\x14\n" +
 	"\x05title\x18\x03 \x01(\tR\x05title\x12I\n" +
 	"\x04tags\x18\x04 \x03(\v25.bytebase.v1.EnvironmentSetting.Environment.TagsEntryR\x04tags\x12(\n" +
 	"\x05color\x18\x05 \x01(\v2\x12.google.type.ColorR\x05color\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xd0\x05\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xd1\x05\n" +
 	"\fEmailSetting\x12\x12\n" +
 	"\x04from\x18\x01 \x01(\tR\x04from\x12\x1b\n" +
 	"\tfrom_name\x18\x02 \x01(\tR\bfromName\x122\n" +
 	"\x04type\x18\x03 \x01(\x0e2\x1e.bytebase.v1.EmailSetting.TypeR\x04type\x12:\n" +
-	"\x04smtp\x18\x04 \x01(\v2$.bytebase.v1.EmailSetting.SMTPConfigH\x00R\x04smtp\x1a\xec\x03\n" +
+	"\x04smtp\x18\x04 \x01(\v2$.bytebase.v1.EmailSetting.SMTPConfigH\x00R\x04smtp\x1a\xed\x03\n" +
 	"\n" +
 	"SMTPConfig\x12\x12\n" +
 	"\x04host\x18\x01 \x01(\tR\x04host\x12\x12\n" +
 	"\x04port\x18\x02 \x01(\x05R\x04port\x12\x1a\n" +
-	"\busername\x18\x03 \x01(\tR\busername\x12#\n" +
-	"\bpassword\x18\x04 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\bpassword\x12O\n" +
+	"\busername\x18\x03 \x01(\tR\busername\x12$\n" +
+	"\bpassword\x18\x04 \x01(\tB\b\xe2A\x01\x04\xd0\xea0\x01R\bpassword\x12O\n" +
 	"\n" +
 	"encryption\x18\x05 \x01(\x0e2/.bytebase.v1.EmailSetting.SMTPConfig.EncryptionR\n" +
 	"encryption\x12[\n" +
@@ -3947,11 +3947,11 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\b\n" +
 	"\x04SMTP\x10\x01B\b\n" +
-	"\x06config\"\x90\x01\n" +
-	"\x17TestEmailSettingRequest\x12\x1b\n" +
-	"\x06parent\x18\x01 \x01(\tB\x03\xe0A\x02R\x06parent\x12C\n" +
-	"\remail_setting\x18\x02 \x01(\v2\x19.bytebase.v1.EmailSettingB\x03\xe0A\x02R\femailSetting\x12\x13\n" +
-	"\x02to\x18\x03 \x01(\tB\x03\xe0A\x02R\x02to\"J\n" +
+	"\x06config\"\x93\x01\n" +
+	"\x17TestEmailSettingRequest\x12\x1c\n" +
+	"\x06parent\x18\x01 \x01(\tB\x04\xe2A\x01\x02R\x06parent\x12D\n" +
+	"\remail_setting\x18\x02 \x01(\v2\x19.bytebase.v1.EmailSettingB\x04\xe2A\x01\x02R\femailSetting\x12\x14\n" +
+	"\x02to\x18\x03 \x01(\tB\x04\xe2A\x01\x02R\x02to\"J\n" +
 	"\x18TestEmailSettingResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x14\n" +
 	"\x05error\x18\x02 \x01(\tR\x05error*T\n" +
