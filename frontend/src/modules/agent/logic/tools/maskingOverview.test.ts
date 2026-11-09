@@ -35,7 +35,11 @@ import {
   ObjectSchema_Type,
   ObjectSchemaSchema,
 } from "@/types/proto-es/v1/database_catalog_service_pb";
-import { GetDatabaseRequestSchema } from "@/types/proto-es/v1/database_service_pb";
+import {
+  DatabaseSchema$,
+  GetDatabaseRequestSchema,
+} from "@/types/proto-es/v1/database_service_pb";
+import { InstanceResourceSchema } from "@/types/proto-es/v1/instance_service_pb";
 
 describe("masking overview", () => {
   beforeEach(() => {
@@ -183,7 +187,8 @@ describe("masking overview", () => {
     "preserves default and explicit database selection for %j",
     async (args, database) => {
       const project = "projects/sample";
-      mocks.getDatabase.mockResolvedValue({ name: database, project });
+      const observed = create(DatabaseSchema$, { name: database, project });
+      mocks.getDatabase.mockResolvedValue(observed);
       mocks.getDatabaseCatalog.mockResolvedValue({ schemas: [] });
       const result = JSON.parse(
         await createMaskingOverviewTool({
@@ -198,7 +203,67 @@ describe("masking overview", () => {
         workspaceName: "workspaces/default",
         projectName: project,
         databaseName: database,
+        database: observed,
       });
+    }
+  );
+
+  test("passes fresh instance activation evidence to catalog setup", async () => {
+    const project = "projects/sample";
+    const database = "instances/primary/databases/app";
+    const observed = create(DatabaseSchema$, {
+      name: database,
+      project,
+      instanceResource: create(InstanceResourceSchema, {
+        name: "instances/primary",
+        activation: false,
+      }),
+    });
+    mocks.getDatabase.mockResolvedValue(observed);
+    mocks.getDatabaseCatalog.mockResolvedValue({ schemas: [] });
+
+    const result = JSON.parse(
+      await createMaskingOverviewTool({
+        context: project,
+        workspaceName: "workspaces/default",
+      })({ database })
+    );
+
+    expect(result.catalog).toMatchObject({ status: "available", database });
+    expect(mocks.getMaskingSetup).toHaveBeenCalledWith(
+      expect.objectContaining({ database: observed, databaseName: database })
+    );
+  });
+
+  test.each(["read failure", "changed project"])(
+    "does not pass stale catalog scope after database %s",
+    async (failure) => {
+      const database = "instances/primary/databases/app";
+      if (failure === "read failure") {
+        mocks.getDatabase.mockRejectedValue(new Error("unavailable"));
+      } else {
+        mocks.getDatabase.mockResolvedValue(
+          create(DatabaseSchema$, {
+            name: database,
+            project: "projects/other",
+          })
+        );
+      }
+
+      const result = JSON.parse(
+        await createMaskingOverviewTool({
+          context: "projects/sample",
+          workspaceName: "workspaces/default",
+          databaseName: database,
+        })()
+      );
+
+      expect(result.catalog).toEqual({ status: "unavailable" });
+      expect(mocks.getDatabaseCatalog).not.toHaveBeenCalled();
+      expect(mocks.getMaskingSetup).toHaveBeenCalledWith(
+        expect.objectContaining({ databaseName: undefined })
+      );
+      expect(mocks.getMaskingSetup.mock.calls[0][0].database).toBeUndefined();
     }
   );
 

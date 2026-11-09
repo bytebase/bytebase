@@ -2802,19 +2802,40 @@ export const createAgentStore = () => {
     }
     const local = persistedSnapshot(state);
     const base = snapshotsByScope.get(key) ?? createEmptyPersistedState();
+    const baseChats = new Map(base.chats.map((chat) => [chat.id, chat]));
+    const remoteChats = new Map(remote.chats.map((chat) => [chat.id, chat]));
     const locallyBusy = new Set(
       state.chats
-        .filter(
-          (chat) =>
-            !state.remoteBusyChatIds[chat.id] &&
-            Boolean(
+        .filter((chat) => {
+          if (
+            state.remoteBusyChatIds[chat.id] ||
+            !(
               state.abortControllersByChatId[chat.id] ||
-                chat.status === "running" ||
-                chat.status === "awaiting_user" ||
-                state.pendingAskByChatId[chat.id] ||
-                state.queuedUserMessagesByChatId[chat.id]
+              chat.status === "running" ||
+              chat.status === "awaiting_user" ||
+              state.pendingAskByChatId[chat.id] ||
+              state.queuedUserMessagesByChatId[chat.id]
             )
-        )
+          )
+            return false;
+          if (state.abortControllersByChatId[chat.id]) return true;
+          const previous = baseChats.get(chat.id);
+          if (!previous) return true;
+          const previousExecution = chatExecution(base, previous);
+          if (
+            !samePersistedValue(previousExecution, chatExecution(local, chat))
+          )
+            return true;
+          // Restored pending work must not override progress made by its owner.
+          const incoming = remoteChats.get(chat.id);
+          return Boolean(
+            incoming &&
+              samePersistedValue(
+                previousExecution,
+                chatExecution(remote, incoming)
+              )
+          );
+        })
         .map((chat) => chat.id)
     );
     const merged = rebasePersistedChanges(base, local, remote, locallyBusy);

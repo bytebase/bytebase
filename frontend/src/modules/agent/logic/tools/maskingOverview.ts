@@ -15,7 +15,10 @@ import {
   type ObjectSchema,
   ObjectSchema_Type,
 } from "@/types/proto-es/v1/database_catalog_service_pb";
-import { GetDatabaseRequestSchema } from "@/types/proto-es/v1/database_service_pb";
+import {
+  type Database,
+  GetDatabaseRequestSchema,
+} from "@/types/proto-es/v1/database_service_pb";
 import {
   GetPolicyRequestSchema,
   PolicyType,
@@ -441,7 +444,7 @@ export function createMaskingOverviewTool({
           "Select an exact database and its project before inspecting a catalog.",
       });
     }
-    let verifiedDatabase: string | undefined;
+    let verifiedDatabase: Database | undefined;
     if (database && project) {
       try {
         const observed = await databaseServiceClientConnect.getDatabase(
@@ -449,7 +452,7 @@ export function createMaskingOverviewTool({
           { contextValues: createContextValues().set(silentContextKey, true) }
         );
         if (observed.name === database && observed.project === project)
-          verifiedDatabase = database;
+          verifiedDatabase = observed;
       } catch {
         // An unavailable database is not evidence of a particular missing permission.
       }
@@ -457,7 +460,8 @@ export function createMaskingOverviewTool({
     const setup = await getMaskingSetup({
       workspaceName: validWorkspaceName,
       projectName: project,
-      databaseName: verifiedDatabase,
+      databaseName: verifiedDatabase?.name,
+      database: verifiedDatabase,
     });
     const readCheck = (id: string) =>
       setup.steps.find((step) => step.id === id)?.readAccess;
@@ -501,7 +505,7 @@ export function createMaskingOverviewTool({
           ? summarizeCatalog({
               kind: "database-catalog",
               project,
-              names: [verifiedDatabase],
+              names: [verifiedDatabase.name],
             })
           : Promise.resolve(
               database ? unavailable : { status: "not-applicable" as const }

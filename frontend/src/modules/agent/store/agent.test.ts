@@ -4104,6 +4104,258 @@ describe("cross-tab Agent history", () => {
     }
   );
 
+  test.each(["workspace", "reload"] as const)(
+    "does not revive a completed owner's pending ask after %s hydration",
+    (hydrate) => {
+      const owner = createAgentStore();
+      s(owner).setWorkspaceName(workspaceName);
+      const chatId = s(owner).currentChatId!;
+      s(owner).addMessage({ chatId, role: "user", content: "Question" });
+      s(owner).startChatRun(chatId, page, { runId: "owner-run" });
+      s(owner).setAbortController(chatId, new AbortController());
+      s(owner).awaitUser(chatId, {
+        kind: "input",
+        toolCallId: "owner-ask",
+        prompt: "Which column?",
+      });
+      const observer = createAgentStore();
+      s(observer).setWorkspaceName(workspaceName);
+      if (hydrate === "reload") s(observer).loadState();
+
+      expect(
+        s(owner).answerPendingAsk(chatId, { kind: "input", answer: "email" })
+      ).not.toBeNull();
+      s(owner).startChatRun(chatId, page, { runId: "resumed-run" });
+      s(owner).addMessage({
+        chatId,
+        role: "assistant",
+        content: "Completed answer",
+      });
+      s(owner).finishChatRun(chatId);
+      s(owner).setAbortController(chatId, null);
+
+      s(observer).renameChat(chatId, "Renamed by observer");
+      s(owner).syncState();
+
+      expect(
+        s(owner).addMessage({
+          chatId,
+          role: "user",
+          content: "Next question",
+        })
+      ).not.toBeNull();
+      expect(s(owner).getChat(chatId)).toMatchObject({
+        title: "Renamed by observer",
+        status: "idle",
+      });
+      expect(s(owner).getPendingAsk(chatId)).toBeNull();
+      expect(
+        s(owner)
+          .getMessages(chatId)
+          .map((message) => message.content)
+      ).toEqual([
+        "Question",
+        '{"kind":"input","answer":"email"}',
+        "Completed answer",
+        "Next question",
+      ]);
+    }
+  );
+
+  test.each(["running", "awaiting_user"] as const)(
+    "recovers a crashed owner's %s execution despite a stale active marker",
+    (status) => {
+      const owner = createAgentStore();
+      s(owner).setWorkspaceName(workspaceName);
+      const chatId = s(owner).currentChatId!;
+      s(owner).addMessage({ chatId, role: "user", content: "Question" });
+      s(owner).startChatRun(chatId, page, { runId: "owner-run" });
+      s(owner).setAbortController(chatId, new AbortController());
+      if (status === "awaiting_user") {
+        s(owner).awaitUser(chatId, {
+          kind: "input",
+          toolCallId: "owner-ask",
+          prompt: "Which column?",
+        });
+      }
+
+      const restored = createAgentStore();
+      s(restored).setWorkspaceName(workspaceName);
+
+      expect(s(restored).isChatRunning(chatId)).toBe(false);
+      if (status === "running") {
+        expect(s(restored).getChat(chatId)).toMatchObject({
+          status: "idle",
+          interrupted: true,
+          interruptionReason: "unexpected",
+        });
+        expect(
+          s(restored).addMessage({
+            chatId,
+            role: "user",
+            content: "Retry question",
+          })
+        ).not.toBeNull();
+      } else {
+        expect(s(restored).getChat(chatId)?.status).toBe("awaiting_user");
+        expect(
+          s(restored).answerPendingAsk(chatId, {
+            kind: "input",
+            answer: "email",
+          })
+        ).not.toBeNull();
+        expect(s(restored).getPendingAsk(chatId)).toBeNull();
+      }
+    }
+  );
+
+  test("recovers a pending ask without an active execution owner", () => {
+    const previous = createAgentStore();
+    s(previous).setWorkspaceName(workspaceName);
+    const chatId = s(previous).currentChatId!;
+    s(previous).awaitUser(chatId, {
+      kind: "input",
+      toolCallId: "restored-ask",
+      prompt: "Which column?",
+    });
+
+    const restored = createAgentStore();
+    s(restored).setWorkspaceName(workspaceName);
+
+    expect(s(restored).isChatRunning(chatId)).toBe(false);
+    expect(
+      s(restored).answerPendingAsk(chatId, { kind: "input", answer: "email" })
+    ).not.toBeNull();
+    expect(s(restored).getPendingAsk(chatId)).toBeNull();
+    expect(s(restored).getMessages(chatId).at(-1)?.content).toBe(
+      '{"kind":"input","answer":"email"}'
+    );
+  });
+
+  test.each(["finished", "stopped"] as const)(
+    "allows a new turn after hydrating a %s execution",
+    (status) => {
+      const owner = createAgentStore();
+      s(owner).setWorkspaceName(workspaceName);
+      const chatId = s(owner).currentChatId!;
+      s(owner).addMessage({ chatId, role: "user", content: "Question" });
+      s(owner).startChatRun(chatId, page, { runId: "owner-run" });
+      s(owner).setAbortController(chatId, new AbortController());
+      if (status === "stopped") s(owner).cancel(chatId, "user");
+      else s(owner).finishChatRun(chatId);
+      s(owner).setAbortController(chatId, null);
+
+      const restored = createAgentStore();
+      s(restored).setWorkspaceName(workspaceName);
+
+      expect(s(restored).isChatRunning(chatId)).toBe(false);
+      expect(s(restored).getChat(chatId)?.interrupted).toBe(
+        status === "stopped"
+      );
+      expect(
+        s(restored).addMessage({
+          chatId,
+          role: "user",
+          content: "Next question",
+        })
+      ).not.toBeNull();
+    }
+  );
+
+  test("keeps a locally owned pending ask answerable after explicit reload", () => {
+    const owner = createAgentStore();
+    s(owner).setWorkspaceName(workspaceName);
+    const chatId = s(owner).currentChatId!;
+    s(owner).startChatRun(chatId, page, { runId: "owner-run" });
+    const controller = new AbortController();
+    s(owner).setAbortController(chatId, controller);
+    s(owner).awaitUser(chatId, {
+      kind: "input",
+      toolCallId: "owner-ask",
+      prompt: "Which column?",
+    });
+
+    s(owner).loadState();
+
+    expect(s(owner).getAbortController(chatId)).toBe(controller);
+    expect(
+      s(owner).answerPendingAsk(chatId, { kind: "input", answer: "email" })
+    ).not.toBeNull();
+    expect(s(owner).getPendingAsk(chatId)).toBeNull();
+    expect(controller.signal.aborted).toBe(false);
+  });
+
+  test.each(["active-controller", "changed-execution"] as const)(
+    "keeps %s local execution ahead of a conflicting stored completion",
+    (ownership) => {
+      const { follower, chatId } = setupTabs();
+      s(follower).startChatRun(chatId, page, { runId: "local-run" });
+      const controller = new AbortController();
+      if (ownership === "active-controller") {
+        s(follower).setAbortController(chatId, controller);
+      }
+      const incoming = persistedState();
+      const chat = incoming.chats.find(
+        (entry: AgentChat) => entry.id === chatId
+      );
+      chat.status = "idle";
+      chat.runId = null;
+      incoming.activeChatIds = [];
+      incoming.messagesByChatId[chatId].push({
+        id: "remote-answer",
+        chatId,
+        role: "assistant",
+        content: "Conflicting answer",
+        createdTs: Date.now(),
+      });
+      mockStorage.setItem(
+        getAgentStateKey(workspaceName),
+        JSON.stringify(incoming)
+      );
+
+      if (ownership === "changed-execution") {
+        follower.setState((state) => ({
+          messagesByChatId: {
+            ...state.messagesByChatId,
+            [chatId]: [
+              ...state.messagesByChatId[chatId],
+              {
+                id: "local-answer",
+                chatId,
+                role: "assistant",
+                content: "Local answer",
+                createdTs: Date.now(),
+              },
+            ],
+          },
+        }));
+      }
+      s(follower).syncState();
+      s(follower).saveState();
+
+      expect(s(follower).getChat(chatId)).toMatchObject({
+        status: "running",
+        runId: "local-run",
+      });
+      expect(
+        s(follower)
+          .getMessages(chatId)
+          .map((message) => message.content)
+      ).toEqual(
+        ownership === "active-controller"
+          ? ["Initial question"]
+          : ["Initial question", "Local answer"]
+      );
+      expect(persistedState().messagesByChatId[chatId]).toEqual(
+        s(follower).getMessages(chatId)
+      );
+      if (ownership === "active-controller") {
+        expect(s(follower).getAbortController(chatId)).toBe(controller);
+        expect(controller.signal.aborted).toBe(false);
+      }
+    }
+  );
+
   test("does not resurrect a deleted chat and reconciles its selected ID", () => {
     const { writer, follower, chatId, otherChatId } = setupTabs();
     expect(s(follower).currentChatId).toBe(chatId);

@@ -22,7 +22,10 @@ import { invalidateProjectPlansPagedDataCache } from "@/lib/projectPagedDataCach
 import { cn } from "@/lib/utils";
 import { AgentHelpButton } from "@/modules/agent/components/AgentHelpButton";
 import { openAgentWithPrompt } from "@/modules/agent/logic/instanceConnectionHelp";
-import { buildPlanReviewPrompt } from "@/modules/agent/logic/planIssueAssistance";
+import {
+  buildPlanReviewPrompt,
+  canReviewWithAgent,
+} from "@/modules/agent/logic/planIssueAssistance";
 import { getPlanMentionLabel } from "@/modules/agent/logic/resourceMention";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
@@ -637,7 +640,8 @@ export function PlanDetailHeader() {
 
         <div className="ml-auto flex w-full min-w-0 max-w-full flex-wrap items-center justify-end gap-x-2 gap-y-2 sm:w-auto">
           {!page.isCreating &&
-            page.plan.state === State.ACTIVE &&
+            canReviewWithAgent(page.issue, page.plan) &&
+            !page.rollout &&
             project &&
             page.plan.name && (
               <AgentHelpButton onClick={openPlanReview} size="md">

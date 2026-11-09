@@ -7,7 +7,10 @@ import { bindingMatchesUser } from "@/stores/app/utils";
 import type { Permission } from "@/types/iam/permission";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import { ActuatorInfoSchema } from "@/types/proto-es/v1/actuator_service_pb";
-import { DatabaseSchema$ } from "@/types/proto-es/v1/database_service_pb";
+import {
+  type Database,
+  DatabaseSchema$,
+} from "@/types/proto-es/v1/database_service_pb";
 import { IamPolicySchema } from "@/types/proto-es/v1/iam_policy_pb";
 import { InstanceResourceSchema } from "@/types/proto-es/v1/instance_service_pb";
 import { ProjectSchema } from "@/types/proto-es/v1/project_service_pb";
@@ -38,6 +41,7 @@ const permissions: Permission[] = [
 
 const mocks = vi.hoisted(() => ({
   state: undefined as unknown as AppStoreState,
+  database: undefined as unknown as Database,
   getIamPolicy: vi.fn(),
   fetchCurrentUser: vi.fn(),
   loadWorkspacePermissionState: vi.fn(),
@@ -72,6 +76,10 @@ beforeEach(() => {
   mocks.deniedWorkspace.clear();
   mocks.deniedProject.clear();
   const project = create(ProjectSchema, { name: projectName });
+  mocks.database = create(DatabaseSchema$, {
+    name: databaseName,
+    project: projectName,
+  });
   mocks.state = {
     serverInfo: create(ActuatorInfoSchema, { workspace: workspaceName }),
     currentUser: create(UserSchema, { name: "users/member@example.com" }),
@@ -282,6 +290,7 @@ describe("getMaskingSetup", () => {
         workspaceName,
         projectName,
         databaseName,
+        database: mocks.database,
       });
 
       expect(step(result, "database-catalog").configure.status).toBe(
@@ -407,6 +416,7 @@ describe("getMaskingSetup", () => {
       workspaceName,
       projectName,
       databaseName,
+      database: mocks.database,
     });
 
     expect(mocks.state.projectPoliciesByName[projectName]).toBe(fresh);
@@ -499,9 +509,10 @@ describe("getMaskingSetup", () => {
       workspaceName,
       projectName,
       databaseName,
+      database: mocks.database,
     });
     expect(withoutInstance.features.catalogMasking).toBe("unknown");
-    mocks.state.databasesByName[databaseName] = create(DatabaseSchema$, {
+    mocks.database = create(DatabaseSchema$, {
       name: databaseName,
       project: projectName,
       instanceResource: create(InstanceResourceSchema, {
@@ -514,6 +525,7 @@ describe("getMaskingSetup", () => {
       workspaceName,
       projectName,
       databaseName,
+      database: mocks.database,
     });
 
     expect(withInstance.features.masking).toBe("available");
@@ -521,7 +533,7 @@ describe("getMaskingSetup", () => {
   });
 
   test("does not claim catalog permissions when the database belongs to another project", async () => {
-    mocks.state.databasesByName[databaseName] = create(DatabaseSchema$, {
+    mocks.database = create(DatabaseSchema$, {
       name: databaseName,
       project: "projects/other",
     });
@@ -530,6 +542,128 @@ describe("getMaskingSetup", () => {
       workspaceName,
       projectName,
       databaseName,
+      database: mocks.database,
+    });
+
+    expect(step(result, "database-catalog").readAccess.status).toBe("unknown");
+    expect(step(result, "database-catalog").configure.status).toBe("unknown");
+    expect(result.features.catalogMasking).toBe("unknown");
+  });
+
+  test("uses fresh catalog eligibility when the database is absent from the UI cache", async () => {
+    mocks.state.databasesByName = {};
+    mocks.database.instanceResource = create(InstanceResourceSchema, {
+      name: "instances/primary",
+      activation: true,
+    });
+
+    const result = await getMaskingSetup({
+      workspaceName,
+      projectName,
+      databaseName,
+      database: mocks.database,
+    });
+
+    expect(result.features.catalogMasking).toBe("available");
+    expect(step(result, "database-catalog").readAccess.status).toBe("allowed");
+    expect(step(result, "database-catalog").configure.status).toBe("allowed");
+    expect(mocks.state.databasesByName).toEqual({});
+  });
+
+  test.each([
+    { cached: true, fresh: false, want: "unavailable" },
+    { cached: false, fresh: true, want: "available" },
+  ])(
+    "uses fresh activation $fresh instead of cached activation $cached",
+    async ({ cached, fresh, want }) => {
+      mocks.state.databasesByName[databaseName].instanceResource = create(
+        InstanceResourceSchema,
+        { name: "instances/primary", activation: cached }
+      );
+      mocks.database.instanceResource = create(InstanceResourceSchema, {
+        name: "instances/primary",
+        activation: fresh,
+      });
+
+      const result = await getMaskingSetup({
+        workspaceName,
+        projectName,
+        databaseName,
+        database: mocks.database,
+      });
+
+      expect(result.features.catalogMasking).toBe(want);
+      expect(step(result, "database-catalog").readAccess.status).toBe(
+        "allowed"
+      );
+    }
+  );
+
+  test.each([
+    {
+      cached: "projects/other",
+      fresh: projectName,
+      want: "allowed",
+      catalogMasking: "available",
+    },
+    {
+      cached: projectName,
+      fresh: "projects/other",
+      want: "unknown",
+      catalogMasking: "unknown",
+    },
+  ])(
+    "uses fresh project ownership $fresh instead of cached ownership $cached",
+    async ({ cached, fresh, want, catalogMasking }) => {
+      mocks.state.databasesByName[databaseName].project = cached;
+      mocks.state.databasesByName[databaseName].instanceResource = create(
+        InstanceResourceSchema,
+        { name: "instances/primary", activation: true }
+      );
+      mocks.database.project = fresh;
+      mocks.database.instanceResource = create(InstanceResourceSchema, {
+        name: "instances/primary",
+        activation: true,
+      });
+
+      const result = await getMaskingSetup({
+        workspaceName,
+        projectName,
+        databaseName,
+        database: mocks.database,
+      });
+
+      expect(step(result, "database-catalog").readAccess.status).toBe(want);
+      expect(step(result, "database-catalog").configure.status).toBe(want);
+      expect(result.features.catalogMasking).toBe(catalogMasking);
+    }
+  );
+
+  test("keeps catalog eligibility unknown when fresh database evidence is unavailable", async () => {
+    mocks.state.databasesByName[databaseName].instanceResource = create(
+      InstanceResourceSchema,
+      { name: "instances/primary", activation: true }
+    );
+
+    const result = await getMaskingSetup({
+      workspaceName,
+      projectName,
+      databaseName,
+    });
+
+    expect(result.features.catalogMasking).toBe("unknown");
+    expect(step(result, "database-catalog").readAccess.status).toBe("unknown");
+    expect(step(result, "database-catalog").configure.status).toBe("unknown");
+  });
+
+  test("rejects fresh database evidence for a different resource", async () => {
+    mocks.database.name = "instances/secondary/databases/app.v2";
+
+    const result = await getMaskingSetup({
+      workspaceName,
+      projectName,
+      databaseName,
+      database: mocks.database,
     });
 
     expect(step(result, "database-catalog").readAccess.status).toBe("unknown");

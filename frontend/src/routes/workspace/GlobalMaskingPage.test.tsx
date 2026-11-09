@@ -96,6 +96,7 @@ const {
   state: {
     environmentList: [],
     getOrFetchPolicyByParentAndType: vi.fn(),
+    fetchPolicyByParentAndType: vi.fn(),
     getOrFetchSettingByName: vi.fn(async () => undefined),
     setSettingByName: vi.fn(),
     hasInstanceFeature: vi.fn(() => true),
@@ -393,6 +394,11 @@ beforeEach(() => {
       value: { rules: structuredClone(fixtures) },
     },
   });
+  state.fetchPolicyByParentAndType
+    .mockReset()
+    .mockImplementation((request) =>
+      state.getOrFetchPolicyByParentAndType(request)
+    );
 });
 afterEach(cleanup);
 async function renderPage() {
@@ -438,6 +444,180 @@ function openRuleHelp() {
 }
 
 describe("GlobalMaskingPage", () => {
+  it.each(["undefined", "rejected", "incompatible"])(
+    "preserves existing rules when a %s policy read cannot verify a recheck",
+    async (failure) => {
+      await renderPage();
+      await act(async () =>
+        openMaskingRuleDraftsInEditor(
+          [agentDraft, { ...agentDraft, title: "Second draft" }],
+          agentContext
+        )
+      );
+      freshSemanticSetting.mockResolvedValue({
+        value: {
+          value: {
+            case: "semanticType",
+            value: { types: [{ id: "changed" }] },
+          },
+        },
+      } as never);
+      fireEvent.click(
+        screen
+          .getAllByRole("button", { name: prefix + "create-rule" })
+          .at(-1)!
+      );
+      const recheck = await screen.findByRole("button", {
+        name: "agent.masking-rule-draft.queue.recheck",
+      });
+      if (failure === "rejected") {
+        state.getOrFetchPolicyByParentAndType.mockRejectedValue(
+          new Error("Policy read failed")
+        );
+      } else {
+        state.getOrFetchPolicyByParentAndType.mockResolvedValue(
+          failure === "undefined"
+            ? undefined
+            : { policy: { case: undefined } }
+        );
+      }
+      await act(async () => fireEvent.click(recheck));
+
+      expect(screen.getByText("Test masking")).toBeInTheDocument();
+      expect(screen.getByText("Production masking")).toBeInTheDocument();
+      expect(recheck).toBeInTheDocument();
+      expect(screen.getByText(prefix + "error.save-failed")).toBeInTheDocument();
+      expect(screen.getByRole("textbox", { name: prefix + "name" })).toHaveValue(
+        agentDraft.title
+      );
+      await act(async () =>
+        fireEvent.click(
+          screen
+            .getAllByRole("button", { name: prefix + "create-rule" })
+            .at(-1)!
+        )
+      );
+      expect(state.upsertPolicy).not.toHaveBeenCalled();
+
+      state.getOrFetchPolicyByParentAndType.mockResolvedValue({
+        policy: {
+          case: "maskingRulePolicy",
+          value: { rules: structuredClone(fixtures) },
+        },
+      });
+      await act(async () => fireEvent.click(recheck));
+      await act(async () =>
+        fireEvent.click(
+          screen
+            .getAllByRole("button", { name: prefix + "create-rule" })
+            .at(-1)!
+        )
+      );
+      expect(savedRules().slice(0, 2)).toEqual(fixtures);
+      expect(savedRules()).toHaveLength(3);
+    }
+  );
+
+  it("creates a queued rule when the authoritative read confirms no policy exists", async () => {
+    state.getOrFetchPolicyByParentAndType.mockResolvedValue(undefined);
+    state.fetchPolicyByParentAndType.mockResolvedValue(null);
+    render(<GlobalMaskingPage />);
+    await waitFor(() =>
+      expect(isMaskingRuleDraftTargetReady(agentContext)).toBe(true)
+    );
+    await act(async () =>
+      openMaskingRuleDraftsInEditor(
+        [agentDraft, { ...agentDraft, title: "Second draft" }],
+        agentContext
+      )
+    );
+    await act(async () =>
+      fireEvent.click(
+        screen
+          .getAllByRole("button", { name: prefix + "create-rule" })
+          .at(-1)!
+      )
+    );
+
+    expect(savedRules()).toHaveLength(1);
+    expect(savedRules()[0]).toMatchObject({
+      semanticType: "DEFAULT",
+      condition: { title: agentDraft.title },
+    });
+  });
+
+  it.each(["save", "cancel"])(
+    "keeps completed drafts out of native %s handling after the Agent chat changes",
+    async (action) => {
+      await renderPage();
+      state.upsertPolicy.mockImplementation(async (request) => {
+        const { policy } = request as { policy: { policy: unknown } };
+        state.getOrFetchPolicyByParentAndType.mockResolvedValue(policy);
+      });
+      await act(async () =>
+        openMaskingRuleDraftsInEditor(
+          [agentDraft, { ...agentDraft, title: "Second draft" }],
+          agentContext
+        )
+      );
+      await act(async () =>
+        fireEvent.click(
+          screen
+            .getAllByRole("button", { name: prefix + "create-rule" })
+            .at(-1)!
+        )
+      );
+      await act(async () =>
+        fireEvent.click(
+          screen.getByRole("button", {
+            name: "agent.masking-rule-draft.queue.review",
+          })
+        )
+      );
+      await screen.findByDisplayValue("Second draft");
+      await act(async () =>
+        fireEvent.click(
+          screen
+            .getAllByRole("button", { name: prefix + "create-rule" })
+            .at(-1)!
+        )
+      );
+      expect(savedRules()).toHaveLength(4);
+      agentState.currentChatId = "another-chat";
+      fireEvent.click(
+        screen.getAllByRole("button", { name: prefix + "edit-rule" })[2]
+      );
+      const name = await screen.findByRole("textbox", { name: prefix + "name" });
+      await waitFor(() => expect(name).toBeEnabled());
+      fireEvent.change(name, { target: { value: "Native title edit" } });
+      await act(async () =>
+        fireEvent.click(
+          screen.getByRole("button", {
+            name: action === "save" ? prefix + "save-rule" : "common.cancel",
+          })
+        )
+      );
+
+      expect(
+        screen.queryByRole("textbox", { name: prefix + "name" })
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", {
+          name: "agent.masking-rule-draft.queue.review",
+        })
+      ).not.toBeInTheDocument();
+      expect(
+        screen.getAllByRole("button", { name: prefix + "edit-rule" })[2]
+      ).toBeEnabled();
+      expect(guard).toHaveBeenLastCalledWith(false);
+      expect(savedRules().slice(0, 2)).toEqual(fixtures);
+      expect(savedRules()[2].condition.title).toBe(
+        action === "save" ? "Native title edit" : agentDraft.title
+      );
+      expect(savedRules()).toHaveLength(4);
+    }
+  );
+
   it("stages a batch atomically and retains incomplete edits when switching", async () => {
     await renderPage();
     await act(async () => openMaskingRuleDraftsInEditor([agentDraft, { ...agentDraft, title: "Second draft" }], agentContext));

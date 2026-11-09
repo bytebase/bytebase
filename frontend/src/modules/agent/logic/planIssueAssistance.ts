@@ -1,3 +1,24 @@
+import {
+  ApprovalStatus,
+  IssueStatus,
+  State,
+} from "@/types/proto-es/v1/common_pb";
+import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
+import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
+
+export function canReviewWithAgent(
+  issue: Issue | undefined,
+  plan?: Plan
+): boolean {
+  return (
+    !!issue &&
+    !issue.draft &&
+    issue.status === IssueStatus.OPEN &&
+    issue.approvalStatus === ApprovalStatus.PENDING &&
+    (!plan || (plan.state === State.ACTIVE && !plan.hasRollout))
+  );
+}
+
 export function buildPlanCreatePrompt(): string {
   return "I am drafting a database change in the current Plan. Ask what change I want if I have not described it. Inspect the selected database's latest synced schema before proposing SQL. Return reviewable DDL and offer the action to apply it to this Plan. Do not create another Plan or execute SQL.";
 }

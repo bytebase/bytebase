@@ -6,6 +6,7 @@ import { useAppStore } from "@/stores/app";
 import type { AppStoreState } from "@/stores/app/types";
 import { projectWideBindings } from "@/stores/app/utils";
 import type { Permission } from "@/types/iam/permission";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { GetIamPolicyRequestSchema } from "@/types/proto-es/v1/iam_policy_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
@@ -71,11 +72,13 @@ export async function getMaskingSetup({
   workspaceName,
   projectName,
   databaseName,
+  database,
 }: {
   workspaceName: string;
   projectName?: string;
-  // The caller verifies that this database belongs to projectName before passing it.
   databaseName?: string;
+  // Freshly read evidence, not an entry from the UI's database cache.
+  database?: Database;
 }): Promise<{
   source: "frontend-permission-check";
   features: {
@@ -211,16 +214,14 @@ export async function getMaskingSetup({
         Boolean(project && state.hasProjectPermission(project, permission)),
       verifyProjectPermission
     );
-  const database = databaseName
-    ? state.databasesByName[databaseName]
-    : undefined;
   const databaseScopeKnown = Boolean(
     databaseName &&
       projectName &&
       /^(?:projects\/[A-Za-z0-9_-]+\/)?instances\/[A-Za-z0-9_-]+\/databases\/[^/]+$/.test(
         databaseName
       ) &&
-      (!database || database.project === projectName) &&
+      database?.name === databaseName &&
+      database.project === projectName &&
       (!databaseName.startsWith("projects/") ||
         databaseName.startsWith(`${projectName}/`))
   );

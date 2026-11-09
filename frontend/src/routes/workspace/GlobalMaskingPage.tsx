@@ -761,11 +761,16 @@ export function GlobalMaskingPage() {
   };
   const readQueueBaseline = async () => {
     const app = useAppStore.getState();
-    const policy = await app.getOrFetchPolicyByParentAndType({
+    const policy = await app.fetchPolicyByParentAndType({
       parentPath: workspaceName,
       policyType: PolicyType.MASKING_RULE,
       refresh: true,
     });
+    if (
+      policy === undefined ||
+      (policy !== null && policy.policy.case !== "maskingRulePolicy")
+    )
+      throw new Error("The masking rule policy could not be verified.");
     const setting = await settingServiceClientConnect.getSetting(
       create(GetSettingRequestSchema, { name: "settings/SEMANTIC_TYPES" })
     );
@@ -1231,7 +1236,11 @@ export function GlobalMaskingPage() {
   const onCancel = (index: number) => {
     if (pageState.current.processing || draftOperation.current) return;
     const cancelledId = pageState.current.items[index]?.rule.id;
-    if (queue.current?.drafts.some((entry) => entry.id === cancelledId))
+    if (
+      queue.current?.drafts.some(
+        (entry) => entry.id === cancelledId && entry.status !== "created"
+      )
+    )
       updateQueueDrafts(
         queue.current.drafts.map((entry) =>
           entry.id === cancelledId ? { ...entry, status: "pending" } : entry
@@ -1253,7 +1262,9 @@ export function GlobalMaskingPage() {
     const index = items.findIndex((item) => item.rule.id === rule.id);
     if (index < 0) return false;
     const isCreate = items[index].mode === "CREATE";
-    const queued = queue.current?.drafts.find((entry) => entry.id === rule.id);
+    const queued = queue.current?.drafts.find(
+      (entry) => entry.id === rule.id && entry.status !== "created"
+    );
     if (queued) {
       if (draftOperation.current || pageState.current.processing) return false;
       captureQueueEditor();

@@ -4,7 +4,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AgentHelpButton } from "@/modules/agent/components/AgentHelpButton";
 import { openAgentWithPrompt } from "@/modules/agent/logic/instanceConnectionHelp";
-import { buildIssueReviewPrompt } from "@/modules/agent/logic/planIssueAssistance";
+import {
+  buildIssueReviewPrompt,
+  canReviewWithAgent,
+} from "@/modules/agent/logic/planIssueAssistance";
 import { ApprovalStatus, IssueStatus } from "@/types/proto-es/v1/common_pb";
 import { useIssueDetailContext } from "../context/IssueDetailContext";
 import { IssueDetailActionBar } from "./IssueDetailActionBar";
@@ -65,11 +68,14 @@ export function IssueDetailHeader() {
         </div>
 
         <div className="ml-auto flex w-full min-w-0 max-w-full flex-wrap items-center justify-end gap-x-2 gap-y-2 sm:w-auto">
-          {issue && issueProject && !page.isCreating && (
-            <AgentHelpButton onClick={openIssueReview} size="md">
-              {t("agent.issue-assistance.review")}
-            </AgentHelpButton>
-          )}
+          {issueProject &&
+            !page.isCreating &&
+            canReviewWithAgent(issue, issue?.plan ? page.plan : undefined) &&
+            !page.rollout && (
+              <AgentHelpButton onClick={openIssueReview} size="md">
+                {t("agent.issue-assistance.review")}
+              </AgentHelpButton>
+            )}
           <IssueDetailActionBar />
           {showMobileSidebarButton && (
             <Button
