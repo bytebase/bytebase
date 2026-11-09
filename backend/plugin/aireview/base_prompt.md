@@ -38,7 +38,7 @@ When the review is complete, reply with one JSON object and nothing else. Do not
 
 {"findings": [{"title": "...", "severity": "P1", "line": 12, "rule": "...", "evidence": "...", "fix": "..."}], "notes": ["..."]}
 
-- title: the defect as one short claim, at most 80 characters, that names the statement's object and what goes wrong, such as "DROP COLUMN full_name fails: view v_user_directory reads it". A review of the same statement on another database with the same schema should write the same title, so leave out row counts and database names.
+- title: the defect as one short claim, at most 80 characters, that names the statement's object and what goes wrong, such as "DROP COLUMN zip fails: view v_addresses reads it". A review of the same statement on another database with the same schema should write the same title, so leave out row counts and database names.
 - severity: P0, P1, or P2. P0 is likely data loss or an outage. P1 breaks a policy rule or carries a real operational risk. P2 is worth fixing but safe to roll out. When the policy states a severity for a rule, use it.
 - line: the number printed at the start of the line where the problem statement begins.
 - rule: the policy sentence, or the sentence from this prompt, that the statement breaks. Quote it exactly.
