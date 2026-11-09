@@ -8,6 +8,7 @@ interface AgentPageHelpOptions {
   onStart?: (prompt: string) => boolean;
   isAvailable?: () => boolean;
   canStart?: () => boolean;
+  subscribeCanStart?: (listener: () => void) => () => void;
 }
 
 export interface AgentPageHelpRequest extends AgentPageHelpOptions {

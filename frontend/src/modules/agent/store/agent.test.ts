@@ -4162,6 +4162,99 @@ describe("cross-tab Agent browser events", () => {
     ).toBe(17);
   });
 
+  test.each(["running", "awaiting_user", "api-permission", "queued"] as const)(
+    "releases this tab's %s conversation on pagehide so another tab can retry",
+    (status) => {
+      const { writer: follower, chatId } = setupSingleton();
+      const owner = s(useAgentStore);
+      const controller = new AbortController();
+      if (status === "queued") {
+        owner.queueUserMessage({ chatId, text: "Queued question", page });
+      } else {
+        owner.startChatRun(chatId, page, { runId: "owner-run" });
+        owner.setAbortController(chatId, controller);
+        if (status !== "running") {
+          owner.awaitUser(chatId, {
+            kind: status === "api-permission" ? "confirm" : "input",
+            toolCallId: "owner-ask",
+            prompt: "Continue?",
+            ...(status === "api-permission"
+              ? {
+                  apiPermission: {
+                    actionId: "local-approval",
+                    operationId: "SQLService/Query",
+                  },
+                }
+              : {}),
+          });
+        }
+      }
+      s(follower).syncState();
+      expect(s(follower).isChatRunning(chatId)).toBe(true);
+
+      window.dispatchEvent(new Event("pagehide"));
+      s(follower).syncState();
+
+      expect(s(follower).remoteBusyChatIds[chatId]).toBeUndefined();
+      expect(s(follower).getChat(chatId)).toMatchObject({
+        status: "idle",
+        interrupted: true,
+        interruptionReason: "unexpected",
+      });
+      expect(s(follower).getPendingAsk(chatId)).toBeNull();
+      expect(s(follower).queuedUserMessagesByChatId[chatId]).toBeUndefined();
+      expect(s(useAgentStore).getAbortController(chatId)).toBeNull();
+      if (status !== "queued") expect(controller.signal.aborted).toBe(true);
+      expect(s(follower).getMessages(chatId).at(-1)?.content).toBe(
+        status === "queued" ? "Queued question" : "Initial question"
+      );
+      s(follower).startChatRun(chatId, page, { runId: "retry-run" });
+      expect(s(follower).getChat(chatId)?.runId).toBe("retry-run");
+    }
+  );
+
+  test("pagehide does not interrupt work owned by another tab", () => {
+    const { writer, chatId } = setupSingleton();
+    s(writer).startChatRun(chatId, page, { runId: "remote-run" });
+    s(writer).setAbortController(chatId, new AbortController());
+    dispatchStorage();
+
+    window.dispatchEvent(new Event("pagehide"));
+    s(writer).syncState();
+
+    expect(s(writer).getChat(chatId)).toMatchObject({
+      status: "running",
+      runId: "remote-run",
+      interrupted: false,
+    });
+    expect(s(writer).getAbortController(chatId)?.signal.aborted).toBe(false);
+  });
+
+  test("pagehide releases follow-up generation without marking a completed answer interrupted", () => {
+    const { writer: follower, chatId } = setupSingleton();
+    const controller = new AbortController();
+    s(useAgentStore).startChatRun(chatId, page, { runId: "owner-run" });
+    s(useAgentStore).setAbortController(chatId, controller);
+    s(useAgentStore).addMessage({
+      chatId,
+      role: "assistant",
+      content: "Completed answer",
+    });
+    s(useAgentStore).finishChatRun(chatId);
+    s(follower).syncState();
+    expect(s(follower).isChatRunning(chatId)).toBe(true);
+
+    window.dispatchEvent(new Event("pagehide"));
+    s(follower).syncState();
+
+    expect(controller.signal.aborted).toBe(true);
+    expect(s(follower).isChatRunning(chatId)).toBe(false);
+    expect(s(follower).getChat(chatId)?.interrupted).toBe(false);
+    expect(s(follower).getMessages(chatId).at(-1)?.content).toBe(
+      "Completed answer"
+    );
+  });
+
   test("tracks a remote queued run through awaiting input and completion without taking ownership", () => {
     const { writer, chatId } = setupSingleton();
     const write = vi.spyOn(mockStorage, "setItem");

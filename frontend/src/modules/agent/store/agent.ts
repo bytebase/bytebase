@@ -2872,7 +2872,25 @@ if (typeof window !== "undefined") {
     }
   });
   window.addEventListener("focus", () => useAgentStore.getState().syncState());
-  window.addEventListener("pagehide", () =>
-    useAgentStore.getState().saveState()
-  );
+  window.addEventListener("pagehide", () => {
+    useAgentStore.getState().syncState();
+    const state = useAgentStore.getState();
+    for (const chat of state.chats) {
+      if (state.remoteBusyChatIds[chat.id]) continue;
+      const controller = state.abortControllersByChatId[chat.id];
+      const queued = state.queuedUserMessagesByChatId[chat.id];
+      controller?.abort();
+      // Keep the question for an explicit retry, never replay an approval on exit.
+      if (queued) state.commitQueuedUserMessage(chat.id);
+      if (
+        chat.status === "running" ||
+        chat.status === "awaiting_user" ||
+        queued
+      )
+        state.interruptChatRun(chat.id);
+      if (queued) state.finishQueuedUserMessage(chat.id);
+      if (controller) state.setAbortController(chat.id, null);
+    }
+    useAgentStore.getState().saveState();
+  });
 }

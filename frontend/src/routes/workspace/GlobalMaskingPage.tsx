@@ -261,6 +261,7 @@ function MaskingRuleEditor({
     workspaceName: useAppStore.getState().workspaceResourceName(),
   }));
   const helpActive = useRef(true);
+  const helpReadinessListeners = useRef(new Set<() => void>());
   const revokeHelp = useRef<(() => void) | undefined>(undefined);
   useEffect(() => {
     helpActive.current = true;
@@ -334,6 +335,9 @@ function MaskingRuleEditor({
     locked,
     revision: String(revision.current.value),
   };
+  useEffect(() => {
+    for (const listener of helpReadinessListeners.current) listener();
+  }, [locked, chatId]);
   useImperativeHandle(
     editorRef,
     () => ({
@@ -365,6 +369,14 @@ function MaskingRuleEditor({
           maskingRuleEditor: true,
           isAvailable,
           canStart,
+          subscribeCanStart: (listener) => {
+            helpReadinessListeners.current.add(listener);
+            const unsubscribe = useAgentStore.subscribe(listener);
+            return () => {
+              helpReadinessListeners.current.delete(listener);
+              unsubscribe();
+            };
+          },
           onStart: (prompt) => {
             if (!isAvailable() || !canStart()) return false;
             const text = `${prompt}\n${t("agent.masking-rule-draft.help-prompt")}`;

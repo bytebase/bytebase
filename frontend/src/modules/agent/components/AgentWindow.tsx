@@ -22,6 +22,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
@@ -247,6 +248,17 @@ export function AgentWindow() {
   const contextualPageHelpRef = useRef<AgentPageHelpRequest | null>(null);
   const [contextualPageHelp, setContextualPageHelp] =
     useState<AgentPageHelpRequest | null>(null);
+  const canStartPageHelp = useSyncExternalStore(
+    useCallback(
+      (listener) =>
+        contextualPageHelp?.subscribeCanStart?.(listener) ?? (() => {}),
+      [contextualPageHelp]
+    ),
+    useCallback(
+      () => !contextualPageHelp || canStartAgentPageHelp(contextualPageHelp),
+      [contextualPageHelp]
+    )
+  );
   const [contextualChatScope, setContextualChatScope] = useState<{
     context: string;
     workspaceName: string;
@@ -1611,9 +1623,7 @@ export function AgentWindow() {
         }
         loading={canReferenceContextualResource && contextualLoading}
         maskingRuleEditor={contextualPageHelp?.maskingRuleEditor}
-        canStart={
-          !contextualPageHelp || canStartAgentPageHelp(contextualPageHelp)
-        }
+        canStart={canStartPageHelp}
         hasCurrentChat={!contextualPageHelp?.onStart && !!continuableChat}
         showAIConfigurationRecovery={
           aiEnabled === false || currentChat?.requiresAIConfiguration === true

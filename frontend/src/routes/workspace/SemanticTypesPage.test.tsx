@@ -426,6 +426,70 @@ describe("SemanticTypesPage", () => {
     );
   });
 
+  test.each([false, true])(
+    "finishes a saved Agent type despite receipt persistence failure (other unsaved row: %s)",
+    async (hasOtherUnsavedRow) => {
+      const { container } = await renderPage();
+      await act(async () => {
+        await mocks.target?.open(draftFixture(), "chat-test", originFixture());
+      });
+      if (hasOtherUnsavedRow) {
+        act(() =>
+          Array.from(container.querySelectorAll("button"))
+            .find((button) => button.textContent === "common.create")
+            ?.click()
+        );
+        act(() =>
+          changeInput(
+            Array.from(
+              container.querySelectorAll<HTMLInputElement>(
+                'input[placeholder="settings.sensitive-data.semantic-types.table.title"]'
+              )
+            ).at(-1) ?? null,
+            "Other local type"
+          )
+        );
+      }
+      mocks.recordHandoff.mockImplementationOnce(() => {
+        throw new DOMException("Storage quota exhausted", "QuotaExceededError");
+      });
+
+      await act(async () => {
+        container
+          .querySelector<HTMLButtonElement>('button[aria-label="common.confirm"]')
+          ?.click();
+        await Promise.resolve();
+      });
+
+      expect(mocks.upsertSetting).toHaveBeenCalledTimes(1);
+      const request = mocks.upsertSetting.mock.calls[0][0] as {
+        value: { value: { value: { types: Array<{ id: string }> } } };
+      };
+      expect(request.value.value.value.types.map(({ id }) => id)).toEqual([
+        "329ea6d8-86f1-4c50-9541-c73b61403816",
+      ]);
+      expect(container.textContent).not.toContain(
+        "agent.semantic-type-draft.save-failed"
+      );
+      const savedRow = Array.from(container.querySelectorAll("tbody tr")).find(
+        (row) => row.textContent?.includes(draftFixture().id)
+      );
+      expect(savedRow?.textContent).toContain("Custom email");
+      expect(savedRow?.querySelector("input")).toBeNull();
+      expect(
+        Array.from(
+          container.querySelectorAll<HTMLInputElement>(
+            'input[placeholder="settings.sensitive-data.semantic-types.table.title"]'
+          )
+        ).map(({ value }) => value)
+      ).toEqual(hasOtherUnsavedRow ? ["Other local type"] : []);
+      expect((await mocks.target?.getSnapshot())?.busy).toBe(hasOtherUnsavedRow);
+      expect(mocks.useUnsavedChangesGuard).toHaveBeenLastCalledWith(
+        hasOtherUnsavedRow
+      );
+    }
+  );
+
   test("appends to freshly read semantic types and permits duplicate titles and algorithms", async () => {
     const { container } = await renderPage();
     await act(async () => {

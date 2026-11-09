@@ -132,7 +132,7 @@ vi.mock("@/app/router", () => ({
 vi.mock("@/modules/agent/store/agent", () => ({
   useAgentStore: Object.assign(
     (selector: (store: typeof agentState) => unknown) => selector(agentState),
-    { getState: () => agentState }
+    { getState: () => agentState, subscribe: vi.fn(() => () => {}) }
   ),
 }));
 vi.mock("@/modules/agent/logic/instanceConnectionHelp", () => ({
@@ -963,6 +963,31 @@ describe("GlobalMaskingPage", () => {
     await expect(applyMaskingRuleDraftInEditor(agentDraft, snapshot!, context)).rejects.toThrow();
     expect(name).toHaveValue("Unsaved rule title");
     expect(state.upsertPolicy).not.toHaveBeenCalled();
+  });
+
+  it("notifies open editor help when its pending condition parse finishes", async () => {
+    await renderPage();
+    let finishParsing!: (value: unknown[]) => void;
+    parseCondition.mockImplementationOnce(() => new Promise((resolve) => {
+      finishParsing = resolve;
+    }));
+    fireEvent.click(screen.getAllByRole("button", { name: prefix + "edit-rule" })[0]);
+    const name = await screen.findByRole("textbox", { name: prefix + "name" });
+    expect(name).toBeDisabled();
+    const request = openRuleHelp();
+    expect(request.canStart?.()).toBe(false);
+    const readinessChanged = vi.fn(() => request.canStart?.());
+    expect(request.subscribeCanStart).toBeTypeOf("function");
+    const unsubscribe = request.subscribeCanStart?.(readinessChanged);
+    try {
+      await act(async () => finishParsing([{ exprKind: { case: "callExpr" } }]));
+      expect(name).toBeEnabled();
+      expect(readinessChanged).toHaveReturnedWith(true);
+      expect(openAgentPrompt).not.toHaveBeenCalled();
+      expect(agentState.queueUserMessage).not.toHaveBeenCalled();
+    } finally {
+      unsubscribe?.();
+    }
   });
 
   it.each(["running", "awaiting_user", "queued", "archived", "missing"])(

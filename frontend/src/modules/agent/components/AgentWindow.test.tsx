@@ -360,28 +360,39 @@ describe("AgentWindow", () => {
     }
   });
 
-  test("opens busy editor help with disabled starters and checks readiness again", () => {
+  test("updates busy editor help starters when its source becomes ready", () => {
     let ready = false;
+    const readinessListeners = new Set<() => void>();
     const onStart = vi.fn(() => true);
     const { render, unmount } = renderIntoContainer(<AgentWindow />);
     let revoke = () => {};
     try {
       render();
-      act(() => { revoke = openAgentPageHelp({ page: { kind: "global-masking" }, maskingRuleEditor: true, onStart, canStart: () => ready }); });
+      act(() => { revoke = openAgentPageHelp({ page: { kind: "global-masking" }, maskingRuleEditor: true, onStart, canStart: () => ready, subscribeCanStart: (listener) => {
+        readinessListeners.add(listener);
+        return () => readinessListeners.delete(listener);
+      } }); });
       let starter = document.body.querySelector<HTMLButtonElement>("[data-agent-contextual-suggestion]");
       expect(starter?.disabled).toBe(true);
       act(() => starter?.click());
       expect(onStart).not.toHaveBeenCalled();
-      ready = true;
-      render();
+      act(() => {
+        ready = true;
+        for (const listener of readinessListeners) listener();
+      });
       starter = document.body.querySelector<HTMLButtonElement>("[data-agent-contextual-suggestion]");
       expect(starter?.disabled).toBe(false);
       ready = false;
       act(() => starter?.click());
       expect(onStart).not.toHaveBeenCalled();
+      act(() => {
+        for (const listener of readinessListeners) listener();
+      });
+      expect(starter?.disabled).toBe(true);
       expect(document.body.querySelector("[data-agent-contextual-start]")).toBeInstanceOf(HTMLElement);
     } finally {
       act(() => revoke());
+      expect(readinessListeners.size).toBe(0);
       unmount();
     }
   });

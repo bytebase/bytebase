@@ -256,6 +256,8 @@ export async function runAgentLoop(
     "done",
     "ask_user",
     "ask_masking_exemption_scope",
+    "ask_masking_rule_scope",
+    "ask_masking_semantic_type",
   ]);
   const terminalTools = protoTools.filter((tool) =>
     terminalToolNames.has(tool.name)
@@ -518,8 +520,8 @@ export async function runAgentLoop(
         conversation.push({
           role: "user",
           content: text
-            ? "Finalize your preceding answer by calling done({ text, success, actions }), using actions: [] when none apply, or call ask_user or ask_masking_exemption_scope if input is required. Do not call any other tools or start another task."
-            : "Your previous response was empty. Answer the user's request by calling done({ text, success, actions }), using actions: [] when none apply, or call ask_user or ask_masking_exemption_scope if input is required. Do not call any other tools or start another task.",
+            ? "Finalize your preceding answer by calling done({ text, success, actions }), using actions: [] when none apply, or call ask_user, ask_masking_exemption_scope, ask_masking_rule_scope, or ask_masking_semantic_type if input is required. Do not call any other tools or start another task."
+            : "Your previous response was empty. Answer the user's request by calling done({ text, success, actions }), using actions: [] when none apply, or call ask_user, ask_masking_exemption_scope, ask_masking_rule_scope, or ask_masking_semantic_type if input is required. Do not call any other tools or start another task.",
         });
         awaitingTerminalCall = true;
         continue;
@@ -531,7 +533,7 @@ export async function runAgentLoop(
       }
 
       const error = new Error(
-        "Agent must finish with done({ text, success, actions }), ask_user(...), or ask_masking_exemption_scope(...), not plain assistant text."
+        "Agent must finish with done({ text, success, actions }), ask_user(...), ask_masking_exemption_scope(...), ask_masking_rule_scope(...), or ask_masking_semantic_type(...), not plain assistant text."
       );
       callbacks?.onError?.(error);
       return {

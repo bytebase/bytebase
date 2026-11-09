@@ -390,14 +390,18 @@ export function SemanticTypesPage() {
         await upsertSetting(types, t("common.created"));
         if (current.draftOrigin) {
           const origin = current.draftOrigin;
-          useAgentStore
-            .getState()
-            .recordSemanticTypeDraftHandoff(
-              origin.chatId,
-              origin.messageId,
-              origin.draftId,
-              "created"
-            );
+          try {
+            useAgentStore
+              .getState()
+              .recordSemanticTypeDraftHandoff(
+                origin.chatId,
+                origin.messageId,
+                origin.draftId,
+                "created"
+              );
+          } catch {
+            // Local chat persistence cannot turn a saved type into a failed save.
+          }
         }
         if (mounted.current && hasCurrentOwner()) {
           setItems((rows) => {

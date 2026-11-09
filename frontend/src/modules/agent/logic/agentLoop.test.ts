@@ -675,7 +675,7 @@ describe("runAgentLoop", () => {
       throw new Error(`Expected error outcome, got ${outcome.kind}`);
     }
     expect(outcome.error.message).toBe(
-      "Agent must finish with done({ text, success, actions }), ask_user(...), or ask_masking_exemption_scope(...), not plain assistant text."
+      "Agent must finish with done({ text, success, actions }), ask_user(...), ask_masking_exemption_scope(...), ask_masking_rule_scope(...), or ask_masking_semantic_type(...), not plain assistant text."
     );
     expect(outcome.totalTokensUsed).toBe(0);
     expect(onError).toHaveBeenCalledWith(outcome.error);
@@ -1642,15 +1642,22 @@ describe("runAgentLoop", () => {
     expect(executeTool).not.toHaveBeenCalled();
   });
 
-  test("can ask for exemption scope while finalizing an answer", async () => {
+  test.each([
+    ["ask_masking_exemption_scope", ""],
+    ["ask_masking_exemption_scope", "I need more masking configuration."],
+    ["ask_masking_rule_scope", ""],
+    ["ask_masking_rule_scope", "I need more masking configuration."],
+    ["ask_masking_semantic_type", ""],
+    ["ask_masking_semantic_type", "I need more masking configuration."],
+  ])("can call %s while finalizing after %j", async (questionTool, content) => {
     vi.mocked(aiServiceClientConnect.chat)
-      .mockResolvedValueOnce({ content: "", toolCalls: [] } as never)
+      .mockResolvedValueOnce({ content, toolCalls: [] } as never)
       .mockResolvedValueOnce({
         content: "",
         toolCalls: [
           {
             id: "scope",
-            name: "ask_masking_exemption_scope",
+            name: questionTool,
             arguments: "{}",
             metadata: "",
           },
@@ -1658,7 +1665,7 @@ describe("runAgentLoop", () => {
       } as never);
     const ask = {
       toolCallId: "scope",
-      prompt: "Which databases should this exemption cover?",
+      prompt: "Which masking configuration should I use?",
       kind: "choose" as const,
       options: [
         { label: "All databases in this project", value: "projects/orders" },
@@ -1666,10 +1673,15 @@ describe("runAgentLoop", () => {
       ],
     };
     const outcome = await runAgentLoop(
-      [{ role: "user", content: "Help me configure a masking exemption." }],
-      ["call_api", "ask_user", "ask_masking_exemption_scope", "done"].map(
-        (name) => ({ name, description: name, parametersSchema: {} })
-      ),
+      [{ role: "user", content: "Help me configure masking." }],
+      [
+        "call_api",
+        "ask_user",
+        "ask_masking_exemption_scope",
+        "ask_masking_rule_scope",
+        "ask_masking_semantic_type",
+        "done",
+      ].map((name) => ({ name, description: name, parametersSchema: {} })),
       async () => ({ kind: "ask_user", ask })
     );
 
@@ -1678,12 +1690,18 @@ describe("runAgentLoop", () => {
       vi
         .mocked(aiServiceClientConnect.chat)
         .mock.calls[1]?.[0]?.toolDefinitions?.map((tool) => tool.name)
-    ).toEqual(["ask_user", "ask_masking_exemption_scope", "done"]);
+    ).toEqual([
+      "ask_user",
+      "ask_masking_exemption_scope",
+      "ask_masking_rule_scope",
+      "ask_masking_semantic_type",
+      "done",
+    ]);
     expect(
       vi
         .mocked(aiServiceClientConnect.chat)
         .mock.calls[1]?.[0]?.messages?.at(-1)?.content
-    ).toContain("ask_masking_exemption_scope");
+    ).toContain(questionTool);
   });
 
   test("completes a read-only starter when the model answers in plain text after a tool result", async () => {
