@@ -37,7 +37,9 @@ func ValidateToken(ctx context.Context, tokenString string, config *storepb.Work
 
 	// Use jwt.Claims which handles audience as both string and []string
 	var registeredClaims jwt.Claims
-	if err := token.Claims(jwks, &registeredClaims); err != nil {
+	// The raw payload carries the provider claims the subject check may read.
+	var payload map[string]any
+	if err := token.Claims(jwks, &registeredClaims, &payload); err != nil {
 		return nil, errors.Wrap(err, "failed to verify token signature")
 	}
 
@@ -65,7 +67,7 @@ func ValidateToken(ctx context.Context, tokenString string, config *storepb.Work
 	}
 
 	// Validate subject pattern
-	if !matchSubjectPattern(claims.Subject, config.SubjectPattern) {
+	if !matchSubject(claims.Subject, config.SubjectPattern, payload) {
 		return nil, errors.Errorf("subject mismatch: expected pattern %q, got %q", config.SubjectPattern, claims.Subject)
 	}
 
@@ -92,6 +94,21 @@ func validateAudience(tokenAudience []string, allowedAudiences []string) bool {
 		}
 	}
 	return false
+}
+
+// matchSubject reports whether a token's subject satisfies the pattern. The
+// prefix match is the rule every identity has always had. A GitHub pattern
+// ("repo:...") can also be satisfied by the token's repository claims, so it
+// keeps working when GitHub switches the repository to ID-based subjects
+// (BYT-10349). The second check only adds matches; it never removes one.
+func matchSubject(subject, pattern string, payload map[string]any) bool {
+	if matchSubjectPattern(subject, pattern) {
+		return true
+	}
+	if !strings.HasPrefix(pattern, githubSubjectPrefix) {
+		return false
+	}
+	return matchGitHubClaims(subject, pattern, githubClaimsFrom(payload))
 }
 
 func matchSubjectPattern(subject, pattern string) bool {
