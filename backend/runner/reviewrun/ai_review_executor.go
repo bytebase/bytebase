@@ -59,6 +59,11 @@ func (e *AIReviewExecutor) RunOnce(ctx context.Context, projectID string, issueU
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get AI review policy")
 	}
+	rulePolicy, err := e.store.GetEffectiveReviewRulePolicy(ctx, project.Workspace, projectID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get review rule policy")
+	}
+	standardRules := aiReviewStandardRules(rulePolicy)
 
 	databaseGroup, err := plancheck.GetDatabaseGroupForPlan(ctx, e.store, plan, nil)
 	if err != nil {
@@ -102,6 +107,7 @@ func (e *AIReviewExecutor) RunOnce(ctx context.Context, projectID string, issueU
 		request := &aireview.Request{
 			WorkspacePolicy: policy.Workspace,
 			ProjectPolicy:   policy.Project,
+			StandardRules:   standardRules,
 			Statement:       unit.Statement,
 		}
 		tools, engine, err := e.resolveAIReviewTarget(ctx, unit.Check, request)
@@ -298,9 +304,10 @@ func (e *AIReviewExecutor) sheetStatement(ctx context.Context, sheets map[string
 }
 
 // resolveAIReviewTarget gathers what one review needs of a database: it sets
-// the facts the prompt states as the request's target and returns the tools
-// over the synced schema, sized to the request's prompt, and the database's
-// engine. A database whose schema is not synced cannot be reviewed.
+// the facts the prompt states as the request's target, and whether the
+// standard review runs on its engine, and returns the tools over the synced
+// schema, sized to the request's prompt, and the database's engine. A
+// database whose schema is not synced cannot be reviewed.
 func (e *AIReviewExecutor) resolveAIReviewTarget(ctx context.Context, checkTarget *plancheck.CheckTarget, request *aireview.Request) (aireview.Tools, storepb.Engine, error) {
 	instance, database, err := plancheck.ResolveDatabaseTarget(ctx, e.store, checkTarget.Target)
 	if err != nil {
@@ -320,5 +327,6 @@ func (e *AIReviewExecutor) resolveAIReviewTarget(ctx context.Context, checkTarge
 	schema := dbSchema.GetProto()
 	request.Target = aiReviewTarget(instance, database, schema)
 	engine := instance.Metadata.GetEngine()
+	request.StandardReviewRuns = ReviewsEngine(engine)
 	return aireview.NewCatalogTools(engine, schema, aireview.WithPromptOf(request)), engine, nil
 }

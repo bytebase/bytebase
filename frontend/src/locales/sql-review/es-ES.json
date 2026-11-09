@@ -21,6 +21,7 @@
       "project-self": "Política adicional del proyecto",
       "remove-only": "Puedes eliminar esta política, pero no cambiarla. Vacía el texto para eliminarla.",
       "self": "Política de revisión",
+      "standard-rules-hint": "La revisión con IA no repite las reglas estándar y omite las que están desactivadas. Para que compruebe alguna de todos modos, nómbrala en la política, por ejemplo: \"Todo UPDATE necesita una cláusula WHERE\".",
       "too-large": "La política ocupa {{size}} bytes, más que el límite de {{limit}} bytes. Acórtala para guardarla."
     },
     "project-description": "La revisión con IA se configura para el espacio de trabajo. Agrega abajo una política opcional específica del proyecto.",

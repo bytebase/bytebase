@@ -323,6 +323,38 @@ func (m *findingModel) Chat(_ context.Context, request *v1pb.AIChatRequest) (*v1
 	return &v1pb.AIChatResponse{Content: &content}, nil
 }
 
+func TestAIReviewStatesTheStandardRules(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	stores, issues := setupReviewFixture(ctx, t, 1)
+	setCISamplingSize(ctx, t, stores, 1)
+	model := &systemPromptModel{}
+	executor := &AIReviewExecutor{
+		store:    stores,
+		newModel: func(*storepb.AISetting, ...aireview.ModelOption) aireview.Model { return model },
+		slots:    semaphore.NewWeighted(aiReviewServerConcurrency),
+	}
+	comments, err := executor.RunOnce(ctx, "p", issues[0])
+	require.NoError(t, err)
+	require.Empty(t, comments)
+	// The fixture's policy turns SYNTAX alone on, and the standard review
+	// runs on PostgreSQL.
+	require.Contains(t, model.system, "- SYNTAX (left to the standard review, P0): ")
+	require.Contains(t, model.system, "- REQUIRE_WHERE (off): ")
+}
+
+// systemPromptModel keeps the system prompt of the review it answers, and
+// reports no finding.
+type systemPromptModel struct {
+	system string
+}
+
+func (m *systemPromptModel) Chat(_ context.Context, request *v1pb.AIChatRequest) (*v1pb.AIChatResponse, error) {
+	m.system = request.GetMessages()[0].GetContent()
+	content := `{"findings": [], "notes": []}`
+	return &v1pb.AIChatResponse{Content: &content}, nil
+}
+
 func TestAIReviewStopsWhenSwitchedOffBeforeItPosts(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

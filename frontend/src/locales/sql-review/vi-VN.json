@@ -21,6 +21,7 @@
       "project-self": "Chính sách bổ sung của dự án",
       "remove-only": "Bạn có thể xóa chính sách này nhưng không thể thay đổi nó. Hãy xóa hết nội dung để xóa chính sách.",
       "self": "Chính sách đánh giá",
+      "standard-rules-hint": "Đánh giá bằng AI không lặp lại các quy tắc tiêu chuẩn và bỏ qua những quy tắc đang tắt. Để AI vẫn kiểm tra một quy tắc, hãy nêu rõ trong chính sách, ví dụ: \"Mọi câu lệnh UPDATE đều cần mệnh đề WHERE\".",
       "too-large": "Chính sách có dung lượng {{size}} byte, vượt quá giới hạn {{limit}} byte. Hãy rút gọn để lưu."
     },
     "project-description": "Tính năng đánh giá bằng AI được cấu hình cho không gian làm việc. Hãy thêm chính sách tùy chọn dành riêng cho dự án bên dưới.",

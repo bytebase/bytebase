@@ -172,6 +172,17 @@ func schemaObjectCount(s *metadatapb.SchemaMetadata) int {
 		len(s.GetEvents()) + len(s.GetStreams()) + len(s.GetTasks()) + len(s.GetEnumTypes()) + len(s.GetCompositeTypes())
 }
 
+// aiReviewStandardRules returns the standard rules the policy turns on, each
+// with the severity the standard review gives its findings. A policy that
+// switches the standard review off turns none on.
+func aiReviewStandardRules(policy *storepb.ReviewRulePolicy) []aireview.StandardRule {
+	rules := make([]aireview.StandardRule, 0, len(policy.GetRules()))
+	for _, rule := range policy.GetRules() {
+		rules = append(rules, aireview.StandardRule{Type: rule, Severity: aiReviewSeverity(rulePriority(rule))})
+	}
+	return rules
+}
+
 // mergeAIReviewFindings groups the findings of the completed units into the
 // problems to post, one comment each. The findings that more than one
 // database reported on one statement of a sheet go to merge, which decides
