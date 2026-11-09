@@ -358,5 +358,27 @@ message Release {
     VCSType vcs_type = 1;
     // The url link to the e.g., GitHub commit or pull request.
     string url = 2;
+    // The commit the release's files were read from.
+    string commit_sha = 3;
+    // The source branch. In a pull request build, the pull request's source
+    // branch rather than the platform's synthetic merge ref. Empty for a run
+    // on a tag or a merge queue's temporary branch.
+    string branch = 4;
+    // The first line of the commit message.
+    string commit_title = 5;
+    // The author's display name: the commit's author where the CI platform
+    // exposes it, else the person who started the build.
+    string author_name = 6;
+    // The author's login on the VCS platform: the commit's author, or the pull
+    // request's author in a pull request build.
+    string author_login = 7;
+    // The pull request the commit belongs to, when the build knows it.
+    PullRequest pull_request = 8;
+
+    message PullRequest {
+      string url = 1;
+      int64 number = 2;
+      string title = 3;
+    }
   }
 }

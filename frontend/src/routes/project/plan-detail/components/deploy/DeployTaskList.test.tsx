@@ -61,6 +61,7 @@ const makePage = (selectedTaskName?: string) =>
     refreshState: () => Promise.resolve(),
     selectedTaskName,
     taskRunsByTaskName: new Map(),
+    planCheckRuns: [],
   }) as unknown as PlanDetailPageState;
 
 const makeStage = (
@@ -90,7 +91,7 @@ const renderList = (stage: Stage, selectedTaskName?: string) => (
 );
 
 describe("DeployTaskList stage switching (BYT-9763)", () => {
-  test("auto-expands the new stage's first task on switch, without a stale frame", () => {
+  test("a switched-to stage shows every task folded, without a stale frame", () => {
     const stageA = makeStage("rollouts/r/stages/a", [
       "rollouts/r/stages/a/tasks/a1",
       "rollouts/r/stages/a/tasks/a2",
@@ -101,53 +102,33 @@ describe("DeployTaskList stage switching (BYT-9763)", () => {
     ]);
 
     const { rerender } = render(renderList(stageA));
-    expect(expandedOf("rollouts/r/stages/a/tasks/a1")).toBe("true");
+    expect(expandedOf("rollouts/r/stages/a/tasks/a1")).toBe("false");
     expect(expandedOf("rollouts/r/stages/a/tasks/a2")).toBe("false");
 
-    // Switch stage on the same instance. The first task of the new stage must
-    // be expanded immediately — derived during render — instead of relying on
-    // a post-paint effect that briefly leaves the list collapsed.
     rerender(renderList(stageB));
     expect(screen.queryByText("rollouts/r/stages/a/tasks/a1")).toBeNull();
-    expect(expandedOf("rollouts/r/stages/b/tasks/b1")).toBe("true");
+    expect(expandedOf("rollouts/r/stages/b/tasks/b1")).toBe("false");
     expect(expandedOf("rollouts/r/stages/b/tasks/b2")).toBe("false");
   });
 });
 
-describe("DeployTaskList first-actionable auto-expand", () => {
+describe("DeployTaskList every task folded on load", () => {
   const stageName = "projects/p/plans/plan-1/rollout/stages/s";
   const taskName = (id: string) => `${stageName}/tasks/${id}`;
 
-  test("expands the first running task over earlier finished ones", () => {
-    const stage = makeStage(stageName, [
-      { name: taskName("t1"), status: Task_Status.DONE },
-      { name: taskName("t2"), status: Task_Status.RUNNING },
-      { name: taskName("t3"), status: Task_Status.FAILED },
-    ]);
+  test.each([
+    ["running and failed", [Task_Status.DONE, Task_Status.RUNNING, Task_Status.FAILED]],
+    ["failed", [Task_Status.DONE, Task_Status.FAILED]],
+    ["done", [Task_Status.DONE, Task_Status.DONE]],
+  ])("a stage with %s tasks opens none of them", (_, statuses) => {
+    const stage = makeStage(
+      stageName,
+      statuses.map((status, i) => ({ name: taskName(`t${i}`), status }))
+    );
     render(renderList(stage));
-    expect(expandedOf(taskName("t1"))).toBe("false");
-    expect(expandedOf(taskName("t2"))).toBe("true");
-    expect(expandedOf(taskName("t3"))).toBe("false");
-  });
-
-  test("expands the first failed task when nothing is running", () => {
-    const stage = makeStage(stageName, [
-      { name: taskName("t1"), status: Task_Status.DONE },
-      { name: taskName("t2"), status: Task_Status.FAILED },
-    ]);
-    render(renderList(stage));
-    expect(expandedOf(taskName("t1"))).toBe("false");
-    expect(expandedOf(taskName("t2"))).toBe("true");
-  });
-
-  test("falls back to the first task when nothing is actionable", () => {
-    const stage = makeStage(stageName, [
-      { name: taskName("t1"), status: Task_Status.DONE },
-      { name: taskName("t2"), status: Task_Status.DONE },
-    ]);
-    render(renderList(stage));
-    expect(expandedOf(taskName("t1"))).toBe("true");
-    expect(expandedOf(taskName("t2"))).toBe("false");
+    statuses.forEach((_status, i) => {
+      expect(expandedOf(taskName(`t${i}`))).toBe("false");
+    });
   });
 });
 
@@ -179,8 +160,7 @@ describe("DeployTaskList deep-linked task", () => {
 
     rerender(renderList(stage, taskName(26)));
     expect(expandedOf(taskName(26))).toBe("true");
-    // The earlier auto pick stays expanded — deep links add, never collapse.
-    expect(expandedOf(taskName(1))).toBe("true");
+    expect(expandedOf(taskName(1))).toBe("false");
   });
 });
 
@@ -188,7 +168,7 @@ describe("DeployTaskList mirrors the focused task into the URL", () => {
   const stageName = "projects/p/plans/plan-1/rollout/stages/s";
   const taskName = (id: number) => `${stageName}/tasks/t${id}`;
 
-  test("mounting an active stage does not write its automatic default", () => {
+  test("mounting an active stage opens no task and writes no URL", () => {
     routerMocks.push.mockClear();
     const stage = makeStage(stageName, [
       { name: taskName(1), status: Task_Status.DONE },
@@ -200,9 +180,8 @@ describe("DeployTaskList mirrors the focused task into the URL", () => {
       </PlanDetailProvider>
     );
 
-    // The first running task expands, but automatic selection must not make a
-    // rollout/stage URL more specific or create a history entry.
-    expect(expandedOf(taskName(2))).toBe("true");
+    expect(expandedOf(taskName(1))).toBe("false");
+    expect(expandedOf(taskName(2))).toBe("false");
     expect(routerMocks.push).not.toHaveBeenCalled();
   });
 
@@ -215,7 +194,7 @@ describe("DeployTaskList mirrors the focused task into the URL", () => {
       </PlanDetailProvider>
     );
 
-    // t1 is the default; opening t2 focuses it and mirrors it into the URL.
+    // Opening t2 focuses it and mirrors it into the URL.
     fireEvent.click(screen.getByText(taskName(2)));
     expect(expandedOf(taskName(2))).toBe("true");
     expect(routerMocks.push).toHaveBeenLastCalledWith(
@@ -308,38 +287,31 @@ describe("DeployTaskList keep-alive activation", () => {
     expect(routerMocks.push).not.toHaveBeenCalled();
   });
 
-  test("first activation expands the default task without changing the URL", () => {
+  test("first activation keeps every task folded without changing the URL", () => {
     routerMocks.push.mockClear();
     const stage = makeStage(stageName, [taskName(1), taskName(2)]);
     const { rerender } = render(renderActive(stage, false));
 
     rerender(renderActive(stage, true));
-    expect(expandedOf(taskName(1))).toBe("true");
+    expect(expandedOf(taskName(1))).toBe("false");
+    expect(expandedOf(taskName(2))).toBe("false");
     expect(routerMocks.push).not.toHaveBeenCalled();
   });
 
-  test("first activation reseeds focus to a task that went active while hidden", () => {
+  test("first activation keeps a task that went running while hidden folded", () => {
     routerMocks.push.mockClear();
-    // Mount hidden with everything not-started — the captured default focus is
-    // the first task.
     const hidden = makeStage(stageName, [
       { name: taskName(1), status: Task_Status.NOT_STARTED },
       { name: taskName(2), status: Task_Status.NOT_STARTED },
     ]);
     const { rerender } = render(renderActive(hidden, false));
-
-    // Still hidden, t2 starts running. Same task names, so the name-keyed reseed
-    // doesn't fire — the captured focus (t1) is now stale.
     const running = makeStage(stageName, [
       { name: taskName(1), status: Task_Status.DONE },
       { name: taskName(2), status: Task_Status.RUNNING },
     ]);
     rerender(renderActive(running, false));
-
-    // On first activation the default-open card reflects current status, but
-    // the automatic choice does not write a task URL.
     rerender(renderActive(running, true));
-    expect(expandedOf(taskName(2))).toBe("true");
+    expect(expandedOf(taskName(2))).toBe("false");
     expect(routerMocks.push).not.toHaveBeenCalled();
   });
 
@@ -392,14 +364,15 @@ describe("DeployTaskList keep-alive activation", () => {
   test("switching away and back preserves state without re-seeding", () => {
     const stage = makeStage(stageName, [taskName(1), taskName(2)]);
     const { rerender } = render(renderActive(stage, true));
-    expect(expandedOf(taskName(1))).toBe("true");
-
-    // User closes the default card, then switches to another stage and back;
-    // the list keeps what the user left — no default re-expansion.
-    fireEvent.click(screen.getByText(taskName(1)));
     expect(expandedOf(taskName(1))).toBe("false");
+
+    // The reader opens a card, switches to another stage and back; the list
+    // keeps what the reader left.
+    fireEvent.click(screen.getByText(taskName(2)));
+    expect(expandedOf(taskName(2))).toBe("true");
     rerender(renderActive(stage, false));
     rerender(renderActive(stage, true));
+    expect(expandedOf(taskName(2))).toBe("true");
     expect(expandedOf(taskName(1))).toBe("false");
   });
 });

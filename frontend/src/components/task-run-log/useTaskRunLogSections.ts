@@ -14,7 +14,6 @@ import {
   collectAttemptRowIds,
   collectLeafSections,
   getUniqueReplicaIds,
-  groupEntriesByReleaseFile,
   groupEntriesByReplica,
   hasReleaseFileMarkers,
 } from "./model";
@@ -157,10 +156,8 @@ export const useTaskRunLogSections = ({
         };
       }
 
-      const releaseEntryGroups = groupEntriesByReleaseFile(replicaEntries);
-      const orphanGroup = releaseEntryGroups.find(
-        (group) => group.file === null
-      );
+      // Every group with no file, the steps before and after the file loop,
+      // renders in log order among the file groups.
       return {
         replicaId,
         releaseFileGroups: buildReleaseFileGroups(replicaEntries, {
@@ -171,21 +168,10 @@ export const useTaskRunLogSections = ({
           idPrefix: replicaId,
           forceError,
           detailText,
+          includeOrphanGroup: true,
           taskRunStatus,
         }),
-        rows:
-          orphanGroup && orphanGroup.entries.length > 0
-            ? buildRowsFromEntries(orphanGroup.entries, {
-                getSectionLabel,
-                entryKeys,
-                sheet,
-                sheetsMap,
-                idPrefix: `${replicaId}-orphan`,
-                forceError,
-                detailText,
-                taskRunStatus,
-              })
-            : [],
+        rows: [],
       };
     });
   }, [

@@ -1,5 +1,5 @@
 import { create } from "@bufbuild/protobuf";
-import { act, cleanup, fireEvent, render, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, waitFor, within } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 import { AGENT_PLAN_DRAFT_EVENT } from "@/lib/plan/agentDraftHandoff";
 import type { AgentPlanDraftEventDetail } from "@/lib/plan/agentDraftHandoff";
@@ -33,6 +33,19 @@ const mocks = vi.hoisted(() => ({
   minimizeAgent: vi.fn(),
   openAgentWithPrompt: vi.fn(),
   localSheetNames: [] as string[],
+  getRelease: vi.fn(),
+  openedFile: undefined as unknown,
+}));
+
+vi.mock("@/api", () => ({
+  planServiceClientConnect: {},
+  sheetServiceClientConnect: {},
+  releaseServiceClientConnect: { getRelease: mocks.getRelease },
+}));
+vi.mock("./release/ReleaseFileViewer", () => ({
+  useOpenReleaseFile: () => (target: unknown) => {
+    mocks.openedFile = target;
+  },
 }));
 
 vi.mock("react-i18next", () => ({
@@ -461,4 +474,143 @@ test("an Activity anchor wins over the reading position captured by Edit", () =>
   expect(mocks.revealLineInCenter).toHaveBeenCalledWith(1);
   expect(mocks.setScrollTop).not.toHaveBeenCalled();
   expect(mocks.clearThreadFocus).toHaveBeenCalledWith(3);
+});
+
+const releaseSpec = create(Plan_SpecSchema, {
+  id: "spec",
+  config: {
+    case: "changeDatabaseConfig",
+    value: create(Plan_ChangeDatabaseConfigSchema, {
+      release: "projects/p/releases/r1",
+    }),
+  },
+});
+const releasePage = {
+  currentUser: { name: "users/test" },
+  isCreating: false,
+  readonly: true,
+  project: { name: "projects/p" },
+  plan: create(PlanSchema, { name: "projects/p/plans/1", specs: [releaseSpec] }),
+  setEditing: vi.fn(),
+};
+const fileOf = (version: string, path = `migrations/${version}.sql`) => ({
+  version,
+  path,
+  sheet: `projects/p/sheets/${version}`,
+});
+const renderRail = async (files: ReturnType<typeof fileOf>[], type = 1) => {
+  mocks.page = releasePage;
+  mocks.getRelease.mockResolvedValue({ name: "projects/p/releases/r1", type, files });
+  const view = render(<PlanDetailStatementSection spec={releaseSpec} />);
+  await waitFor(() => expect(view.getByTestId("release-changes")).toBeDefined());
+  return view;
+};
+const rowVersions = (view: ReturnType<typeof render>) =>
+  view.queryAllByTestId("release-change-row").map((row) => row.getAttribute("data-version"));
+
+test("the Changes list puts the newest version on top whatever its shape", async () => {
+  for (const versions of [
+    ["202610051200", "202610051400", "202610051530"],
+    ["001", "002", "010"],
+    ["1.2.9", "1.10.0", "1.10.2"],
+    // The executor's order: equal leading segments, the shorter version first.
+    ["1", "1.0", "1.0.1"],
+  ]) {
+    const view = await renderRail(versions.map((v) => fileOf(v)));
+    expect(rowVersions(view)).toEqual([...versions].reverse());
+    cleanup();
+  }
+});
+
+test("timestamp versions group by day for the newest group and by month for the rest, newest open", async () => {
+  const view = await renderRail(
+    ["202608011200", "202609150900", "202609200900", "202610050900", "202610051530"].map((v) => fileOf(v))
+  );
+  const groups = view.getAllByTestId("release-change-group");
+  expect(groups.map((g) => [g.getAttribute("data-group"), g.getAttribute("aria-expanded")])).toEqual([
+    ["2026-10-05", "true"],
+    ["2026-09", "false"],
+    ["2026-08", "false"],
+  ]);
+  expect(groups[1].textContent).toContain("2");
+  expect(rowVersions(view)).toEqual(["202610051530", "202610050900"]);
+  fireEvent.click(groups[1]);
+  expect(rowVersions(view)).toContain("202609200900");
+});
+
+test("a group shows 12 rows, loads 12 more or all in place, and Show fewer returns to 12", async () => {
+  const versions = Array.from({ length: 30 }, (_, i) => String(i + 1).padStart(3, "0"));
+  const view = await renderRail(versions.map((v) => fileOf(v)));
+  const load = within(view.getByTestId("release-change-load"));
+  expect(rowVersions(view)).toHaveLength(12);
+  expect(view.queryByRole("button", { name: "release.changes.show-fewer" })).toBeNull();
+  fireEvent.click(load.getByRole("button", { name: "release.changes.load-more" }));
+  expect(rowVersions(view)).toHaveLength(24);
+  // Six left: "Load 6 more" covers them, so there is no Load all.
+  expect(view.queryByRole("button", { name: "release.changes.load-all" })).toBeNull();
+  fireEvent.click(view.getByRole("button", { name: "release.changes.show-fewer" }));
+  expect(rowVersions(view)).toHaveLength(12);
+  fireEvent.click(view.getByRole("button", { name: "release.changes.load-all" }));
+  expect(rowVersions(view)).toHaveLength(30);
+  expect(view.queryByRole("button", { name: "release.changes.load-more" })).toBeNull();
+});
+
+test("over a hundred counter or dotted versions are one flat list with no group headers", async () => {
+  for (const versions of [
+    Array.from({ length: 250 }, (_, i) => String(i + 1).padStart(4, "0")),
+    Array.from({ length: 119 }, (_, i) => `3.${Math.floor(i / 12)}.${String(i % 12).padStart(4, "0")}`),
+  ]) {
+    const view = await renderRail(versions.map((v) => fileOf(v)));
+    expect(view.queryAllByTestId("release-change-group")).toHaveLength(0);
+    expect(rowVersions(view)).toHaveLength(12);
+    expect(rowVersions(view)[0]).toBe(versions.at(-1));
+    fireEvent.click(view.getByRole("button", { name: "release.changes.load-all" }));
+    expect(rowVersions(view)).toHaveLength(versions.length);
+    cleanup();
+  }
+});
+
+test("a backfilled low version lands in its own old group, not on top", async () => {
+  const view = await renderRail(
+    ["202607010000", "202610051500", "202610051530"].map((v) => fileOf(v))
+  );
+  expect(rowVersions(view)).toEqual(["202610051530", "202610051500"]);
+  expect(view.getAllByTestId("release-change-group").map((g) => g.getAttribute("data-group"))).toEqual([
+    "2026-10-05",
+    "2026-07",
+  ]);
+});
+
+test("a row shows the file name, its folder muted and the version, and opens the viewer from anywhere on it", async () => {
+  const view = await renderRail([
+    fileOf("3.10.0007", "migrations/3.10/3.10.0007_remove_exporter_role.sql"),
+    fileOf("3.10.0008", "3.10.0008_top_level.sql"),
+  ]);
+  const [rootFile, nestedFile] = view.getAllByTestId("release-change-row");
+  const part = (row: HTMLElement, id: string) => within(row).queryByTestId(id)?.textContent;
+  expect(part(nestedFile, "release-change-name")).toBe("3.10.0007_remove_exporter_role.sql");
+  expect(part(nestedFile, "release-change-folder")).toBe("migrations/3.10");
+  expect(part(nestedFile, "release-change-version")).toBe("3.10.0007");
+  // A file at the repository root has no folder to show.
+  expect(part(rootFile, "release-change-name")).toBe("3.10.0008_top_level.sql");
+  expect(part(rootFile, "release-change-folder")).toBeUndefined();
+
+  fireEvent.click(within(nestedFile).getByTestId("release-change-version"));
+  expect((mocks.openedFile as { file: { path: string } }).file.path).toBe(
+    "migrations/3.10/3.10.0007_remove_exporter_role.sql"
+  );
+  expect((mocks.openedFile as { context?: unknown }).context).toBeUndefined();
+  expect((mocks.openedFile as { declarative?: boolean }).declarative).toBe(false);
+});
+
+test("a declarative release is one line: the schema at its version, with Open", async () => {
+  const view = await renderRail([fileOf("20261005", "schema/schema.sql")], 2);
+  expect(view.queryAllByTestId("release-change-row")).toHaveLength(0);
+  const line = view.getByTestId("release-changes");
+  expect(line.textContent).toContain("schema/schema.sql");
+  expect(line.textContent).toContain("20261005");
+  fireEvent.click(view.getByRole("button", { name: "common.open" }));
+  expect((mocks.openedFile as { file: { path: string } }).file.path).toBe("schema/schema.sql");
+  // Its path may be a pattern, which the viewer does not link.
+  expect((mocks.openedFile as { declarative?: boolean }).declarative).toBe(true);
 });

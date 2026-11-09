@@ -2092,6 +2092,31 @@
     "description": {
       "placeholder": "説明を追加"
     },
+    "details": {
+      "approved": "承認済み",
+      "approved-by": "{{user}} が承認",
+      "awaiting-approval": "承認待ち",
+      "by-author": "作成者 {{author}}",
+      "changes": "変更",
+      "changes-on-targets": "{{targets}} での {{kind}}",
+      "created": "作成",
+      "database-groups_one": "{{count}} データベースグループ",
+      "database-groups_other": "{{count}} データベースグループ",
+      "databases_one": "{{count}} データベース",
+      "databases_other": "{{count}} データベース",
+      "labels": "ラベル",
+      "migration-based_one": "マイグレーションベース · {{count}} ファイル · バージョン {{version}} に更新",
+      "migration-based_other": "マイグレーションベース · {{count}} ファイル · バージョン {{version}} に更新",
+      "no-approval": "承認不要",
+      "progress": "進捗",
+      "rejected": "却下",
+      "release": "リリース",
+      "review": "レビュー",
+      "source": "ソース",
+      "state-based": "ステートベース · {{version}}",
+      "triggered": "トリガー",
+      "waiting-for": "{{role}} の承認待ち"
+    },
     "draft-update-permission-required": "この下書きは表示できますが、イシューラベルの編集やレビューへの提出には bb.issues.update が必要です。",
     "editor": {
       "save-changes-before-continuing": "続行する前に変更を保存またはキャンセルしてください"
@@ -2133,6 +2158,8 @@
       "checking": "チェック中…",
       "checks-failing": "チェック失敗",
       "deployed": "デプロイ済み",
+      "deployed-with-skipped_one": "デプロイ済み、{{count}} 件のタスクをスキップ",
+      "deployed-with-skipped_other": "デプロイ済み、{{count}} 件のタスクをスキップ",
       "gate-automated-review-passed": "自動レビューに合格",
       "gate-checks-failed": "一部のチェックが失敗しました",
       "gate-checks-failed-sub": "{{failing}} 件失敗、{{passed}} 件成功",
@@ -2153,9 +2180,6 @@
       "run": "実行"
     },
     "list-description": "UI で作成された変更リクエストとそのデプロイ進捗。",
-    "meta": {
-      "created-by": "{{user}} が作成"
-    },
     "navigator": {
       "changes": "変更点",
       "checks": "チェック",
@@ -2700,6 +2724,14 @@
   "release": {
     "and-n-more-files": "他 {{count}} 件のファイル",
     "change-tip": "この変更はリリースアーティファクトにリンクされています。",
+    "changes": {
+      "load-all": "すべて読み込む（{{count}}）",
+      "load-more": "さらに {{count}} 件読み込む",
+      "manifest_one": "{{count}} ファイル · 最新 {{version}}",
+      "manifest_other": "{{count}} ファイル · 最新 {{version}}",
+      "schema": "スキーマ",
+      "show-fewer": "表示を減らす"
+    },
     "empty": {
       "description": "CI パイプラインが Bytebase にリリースした変更が、デプロイ進捗とともにここに表示されます。",
       "read-guide": "GitOps ガイドを読む",
@@ -2722,7 +2754,16 @@
     "vcs-type": {
       "unspecified": "不明な VCS"
     },
-    "view-all-files": "すべてのファイルを表示"
+    "view-all-files": "すべてのファイルを表示",
+    "viewer": {
+      "already-applied": "適用済み。この実行では対象外",
+      "already-applied-before-run": "このロールアウト以前に適用済み",
+      "applied-by-run": "この実行で適用",
+      "failed-on": "{{stage}} で失敗",
+      "open-at-commit": "{{platform}} で {{sha}} を開く",
+      "size": "{{size}} バイト",
+      "statement-unavailable": "ファイルのステートメントを読み込めませんでした。"
+    }
   },
   "remind": {
     "role-expire": {
@@ -4302,6 +4343,25 @@
     },
     "executed-by": "実行者",
     "execution-time": "実行時間",
+    "folded": {
+      "about-rows_one": "約 {{rows}} 行",
+      "about-rows_other": "約 {{rows}} 行",
+      "all-applied_one": "全 {{count}} 件適用済み",
+      "all-applied_other": "全 {{count}} 件適用済み",
+      "already-applied_one": "{{count}} 件は以前に適用済み",
+      "already-applied_other": "{{count}} 件は以前に適用済み",
+      "applying_one": "{{count}} ファイルを適用中",
+      "applying_other": "{{count}} ファイルを適用中",
+      "kind-ddl": "DDL",
+      "kind-dml": "DML",
+      "kind-mixed": "混在",
+      "nothing-to-apply": "適用対象なし",
+      "scheduled": "予定",
+      "skipped-by": "{{user}} がスキップ",
+      "started": "{{time}} 開始",
+      "to-apply_one": "{{count}} 件適用予定",
+      "to-apply_other": "{{count}} 件適用予定"
+    },
     "no-cancelable-tasks": "キャンセル可能なタスクはありません",
     "no-permission": "この操作を実行する権限がありません",
     "no-runnable-tasks": "実行可能なタスクはありません",
@@ -4324,6 +4384,7 @@
     "select-task": "タスクを選択",
     "skip-prior-backup": "事前バックアップをスキップ",
     "skip-prior-backup-description": "変更適用前の自動データバックアップをスキップする",
+    "skip-reason-required": "タスクをスキップする理由を入力してください。",
     "skip-task": "タスクをスキップ | タスクをスキップ",
     "skipped-no-reason": "理由が指定されていません",
     "started": "開始日時",
@@ -4389,6 +4450,47 @@
       }
     },
     "run-number": "実行 #{{number}}",
+    "spine": {
+      "already-applied_one": "{{count}} ファイルはこのデータベースに適用済み",
+      "already-applied_other": "{{count}} ファイルはこのデータベースに適用済み",
+      "as-of": "ロールアウト作成時点（{{time}}）の状態です。実行時にデータベースを再確認します。",
+      "count": {
+        "already-applied": "{{count}} 件は以前に適用済み",
+        "applied": "{{count}} 件適用済み",
+        "canceled": "{{count}} 件キャンセル済み",
+        "failed": "{{count}} 件失敗",
+        "files_one": "{{count}} ファイル",
+        "files_other": "{{count}} ファイル",
+        "pending": "{{count}} 件保留中",
+        "running": "{{count}} 件実行中"
+      },
+      "load": {
+        "all": "すべて読み込む（{{count}}）",
+        "applied": "適用済み {{count}} 件を読み込む",
+        "files": "{{count}} ファイルを読み込む",
+        "more-applied": "適用済みをさらに {{count}} 件読み込む",
+        "more-files": "さらに {{count}} ファイルを読み込む",
+        "more-pending": "保留中をさらに {{count}} 件読み込む",
+        "pending": "保留中 {{count}} 件を読み込む"
+      },
+      "no-statement": "このエラーに対応するステートメントを特定できませんでした。",
+      "not-applied": "未適用",
+      "planned_one": "ロールアウト作成時の計画 · 適用予定 {{count}} ファイル",
+      "planned_other": "ロールアウト作成時の計画 · 適用予定 {{count}} ファイル",
+      "revision-deleted": "以前のリビジョンは {{date}} に {{user}} が削除",
+      "revision-deleted-after-rollout": "以前のリビジョンはこのロールアウト作成後に削除",
+      "revisions-on": "{{database}} のリビジョン",
+      "run-failed": "実行失敗",
+      "status": {
+        "applied": "適用済み",
+        "applied-again": "再適用済み",
+        "canceled": "キャンセル済み",
+        "failed": "失敗",
+        "running": "実行中"
+      },
+      "will-apply": "適用予定",
+      "will-apply-again": "再適用予定 · リビジョン削除済み"
+    },
     "status": {
       "enqueued": "実行を待っています。",
       "enqueued-with-rollout-time": "{{time}} の後に実行される予定です。",

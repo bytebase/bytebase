@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package bytebase.store;
 
+import "google/protobuf/timestamp.proto";
+
 option go_package = "generated-go/store";
 
 // Task is the metadata for database operation tasks.
@@ -37,4 +39,39 @@ message Task {
 
   // Whether to create an automatic backup before applying changes.
   bool enable_prior_backup = 11;
+
+  // The email of the user who skipped the task.
+  string skipper = 14;
+  // When the task was skipped.
+  google.protobuf.Timestamp skip_time = 15;
+
+  // The release's file state on the task's database when the task was
+  // created. Set only for tasks of a versioned release.
+  ReleaseState release_state = 16;
+
+  // A preview: the run reads the database's revisions again when it starts.
+  message ReleaseState {
+    // The release's files the task will apply, as half-open ranges of
+    // positions in the release's file list, ascending. Every other file's
+    // version was applied: the database had a live VERSIONED revision with it.
+    repeated Range pending_ranges = 1;
+    // The number of the release's versions already applied.
+    int32 applied_count = 2;
+    // When the state was computed.
+    google.protobuf.Timestamp compute_time = 3;
+    // The versions to apply that had a deleted revision, in release order.
+    repeated DeletedRevision deleted_revisions = 4;
+
+    message Range {
+      int32 start = 1;
+      int32 end = 2;
+    }
+
+    message DeletedRevision {
+      string version = 1;
+      // The newest deletion's time and the deleter's email.
+      google.protobuf.Timestamp delete_time = 2;
+      string deleter = 3;
+    }
+  }
 }

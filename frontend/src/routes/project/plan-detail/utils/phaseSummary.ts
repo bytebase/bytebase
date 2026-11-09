@@ -18,7 +18,7 @@ export type { PlanCheckSummary } from "@/lib/plan/check";
 
 type T = (key: string, options?: Record<string, unknown>) => string;
 
-const isDatabaseGroupName = (name: string): boolean =>
+export const isDatabaseGroupName = (name: string): boolean =>
   name.includes("/databaseGroups/");
 
 // Mirrors the eligibility gates that can permanently prevent RolloutCreator
@@ -78,8 +78,33 @@ const extractPrincipalEmail = (principal: string): string =>
 export const buildChangesSummary = (
   plan: Plan,
   t: T,
-  { includeChecks = true }: { includeChecks?: boolean } = {}
+  {
+    includeChecks = true,
+    stageTitle = (stage) => stage.split("/").at(-1) ?? stage,
+  }: {
+    includeChecks?: boolean;
+    // A stage's environment title, as the Progress row shows it.
+    stageTitle?: (stage: string) => string;
+  } = {}
 ): string => {
+  // A release plan's facts live in the details block; once its rollout exists
+  // the collapsed line names only the targets per stage (D10).
+  const isRelease = plan.specs.some(
+    (spec) =>
+      spec.config?.case === "changeDatabaseConfig" && spec.config.value.release
+  );
+  if (isRelease && plan.rolloutStageSummaries.length > 0) {
+    return plan.rolloutStageSummaries
+      .map((summary) => {
+        const count = summary.taskStatusCounts.reduce(
+          (sum, item) => sum + item.count,
+          0
+        );
+        return `${stageTitle(summary.stage)}: ${t("plan.summary.n-databases", { n: count })}`;
+      })
+      .join(" → ");
+  }
+
   const parts: string[] = [];
 
   parts.push(t("plan.summary.n-changes", { n: plan.specs.length }));

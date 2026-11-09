@@ -93,10 +93,21 @@ export function createPlanStagesColumn(t: TFunction): PlanColumn {
   };
 }
 
-function PlanStages({ plan }: { plan: Plan }) {
+// Each stage's status icon and name, joined by arrows. Also the plan page's
+// Progress row.
+// A rollout stage's name as the reader sees it: its environment's title.
+export const useStageTitle = () => {
   // Subscribe so stage names re-render when the environment cache loads.
   const getEnvironmentByName = useAppStore((s) => s.getEnvironmentByName);
   void useAppStore((s) => s.environmentList);
+  return (stage: string) => {
+    const envName = formatEnvironmentName(extractStageUID(stage));
+    return getEnvironmentByName(envName)?.title || envName;
+  };
+};
+
+export function PlanStages({ plan }: { plan: Plan }) {
+  const stageTitle = useStageTitle();
 
   if (plan.rolloutStageSummaries.length === 0) {
     return <span className="text-control-light">-</span>;
@@ -104,14 +115,12 @@ function PlanStages({ plan }: { plan: Plan }) {
   return (
     <div className="flex items-center gap-1 flex-wrap">
       {plan.rolloutStageSummaries.map((summary, index) => {
-        const envName = formatEnvironmentName(extractStageUID(summary.stage));
-        const environment = getEnvironmentByName(envName);
         const stageStatus = getStageStatusFromCounts(summary.taskStatusCounts);
         return (
           <div key={summary.stage} className="flex items-center gap-1">
             <div className="flex items-center gap-1">
               <TaskStatusIcon size="tiny" status={stageStatus} />
-              <span className="text-sm">{environment?.title || envName}</span>
+              <span className="text-sm">{stageTitle(summary.stage)}</span>
             </div>
             {index < plan.rolloutStageSummaries.length - 1 && (
               <span className="mx-1 text-control-light">&rarr;</span>

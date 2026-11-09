@@ -1,7 +1,10 @@
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import type { LucideIcon } from "lucide-react";
 import { CheckCircle2, Circle, LoaderCircle, XCircle } from "lucide-react";
-import type { TaskRunLogEntry } from "@/types/proto-es/v1/rollout_service_pb";
+import type {
+  Task_ReleaseState,
+  TaskRunLogEntry,
+} from "@/types/proto-es/v1/rollout_service_pb";
 import {
   TaskRun_Status,
   TaskRunLogEntry_TransactionControl_Type,
@@ -16,8 +19,17 @@ import type {
   LogRow,
   ReleaseFileEntriesGroup,
   ReleaseFileGroup,
+  ReleaseSpine,
+  ReleaseSpineFile,
   Section,
   SectionStatus,
+  SpineFileSection,
+  SpineFileStatus,
+  SpineItem,
+  SpineLoadKey,
+  SpineLoads,
+  SpineStepSection,
+  SpineWindowItem,
 } from "./types";
 
 const STATUS_CONFIG: Record<
@@ -133,26 +145,29 @@ export const formatRelativeTime = (ms: number): string => {
   return `+${(ms / 1000).toFixed(2)}s`;
 };
 
-export const hasError = (entry: TaskRunLogEntry): boolean => {
+const errorTextOf = (entry: TaskRunLogEntry): string => {
   switch (entry.type) {
     case TaskRunLogEntry_Type.COMMAND_EXECUTE:
-      return Boolean(entry.commandExecute?.response?.error);
+      return entry.commandExecute?.response?.error ?? "";
     case TaskRunLogEntry_Type.TRANSACTION_CONTROL:
-      return Boolean(entry.transactionControl?.error);
+      return entry.transactionControl?.error ?? "";
     case TaskRunLogEntry_Type.SCHEMA_DUMP:
-      return Boolean(entry.schemaDump?.error);
+      return entry.schemaDump?.error ?? "";
     case TaskRunLogEntry_Type.DATABASE_SYNC:
-      return Boolean(entry.databaseSync?.error);
+      return entry.databaseSync?.error ?? "";
     case TaskRunLogEntry_Type.PRIOR_BACKUP:
-      return Boolean(entry.priorBackup?.error);
+      return entry.priorBackup?.error ?? "";
     case TaskRunLogEntry_Type.COMPUTE_DIFF:
-      return Boolean(entry.computeDiff?.error);
+      return entry.computeDiff?.error ?? "";
     case TaskRunLogEntry_Type.GHOST_MIGRATION:
-      return Boolean(entry.ghostMigration?.error);
+      return entry.ghostMigration?.error ?? "";
     default:
-      return false;
+      return "";
   }
 };
+
+export const hasError = (entry: TaskRunLogEntry): boolean =>
+  Boolean(errorTextOf(entry));
 
 export const isComplete = (entry: TaskRunLogEntry): boolean => {
   switch (entry.type) {
@@ -216,6 +231,20 @@ export const hasReleaseFileMarkers = (entries: TaskRunLogEntry[]): boolean => {
   );
 };
 
+// Steps the executor logs outside the file loop (D3). A gh-ost migration and
+// a declarative release's diff computation are logged inside a file, so they
+// are not among them.
+const TASK_LEVEL_TYPES: ReadonlySet<TaskRunLogEntry_Type> = new Set([
+  TaskRunLogEntry_Type.PRIOR_BACKUP,
+  TaskRunLogEntry_Type.SCHEMA_DUMP,
+  TaskRunLogEntry_Type.DATABASE_SYNC,
+]);
+
+export const isTaskLevelEntry = (entry: TaskRunLogEntry): boolean =>
+  TASK_LEVEL_TYPES.has(entry.type);
+
+// A file group ends at the next file marker or at a task-level entry, which
+// starts a group of its own with no file.
 export const groupEntriesByReleaseFile = (
   entries: TaskRunLogEntry[]
 ): ReleaseFileEntriesGroup[] => {
@@ -226,6 +255,10 @@ export const groupEntriesByReleaseFile = (
   let current: ReleaseFileEntriesGroup = { file: null, entries: [] };
 
   for (const entry of sorted) {
+    if (isTaskLevelEntry(entry) && current.file !== null) {
+      groups.push(current);
+      current = { file: null, entries: [] };
+    }
     if (entry.type === TaskRunLogEntry_Type.RELEASE_FILE_EXECUTE) {
       if (current.file !== null || current.entries.length > 0) {
         groups.push(current);
@@ -800,13 +833,20 @@ export const buildReleaseFileGroups = (
 
   const results: ReleaseFileGroup[] = [];
   let fileIndex = 0;
+  // Task-level steps before and after the file loop each make a group with no
+  // file, so each needs its own id.
+  let orphanIndex = 0;
 
   for (const group of groupEntriesByReleaseFile(entries)) {
     if (group.file === null) {
       if (!buildOptions.includeOrphanGroup || group.entries.length === 0) {
         continue;
       }
-      const orphanPrefix = prefixId(buildOptions.idPrefix, "orphan");
+      const orphanPrefix = prefixId(
+        buildOptions.idPrefix,
+        orphanIndex === 0 ? "orphan" : `orphan-${orphanIndex}`
+      );
+      orphanIndex++;
       results.push({
         id: orphanPrefix,
         version: "",
@@ -839,4 +879,349 @@ export const buildReleaseFileGroups = (
   }
 
   return results;
+};
+
+// The executor's wrapper around a file's execution error
+// (runVersionedRelease in database_migrate_executor.go). The path stops at the
+// first version marker: the driver's message can quote SQL that contains one.
+const RELEASE_FILE_ERROR_RE =
+  /^failed to execute release file (.*?) \(version ([^)]*)\): ([\s\S]*)$/;
+
+export const parseReleaseFileError = (
+  error: string
+): { path: string; version: string; message: string } | undefined => {
+  const match = RELEASE_FILE_ERROR_RE.exec(error);
+  if (!match) return undefined;
+  return { path: match[1], version: match[2], message: match[3] };
+};
+
+export const firstLineOf = (text: string): string =>
+  text
+    .split("\n")
+    .map((line) => line.trim())
+    .find((line) => line !== "") ?? "";
+
+// The versions a stored state will apply. Its ranges are positions in the
+// release's file list, which never changes.
+export const pendingVersionsOf = (
+  state: Task_ReleaseState | undefined,
+  files: readonly { version: string }[]
+): Set<string> => {
+  const versions = new Set<string>();
+  for (const range of state?.pendingRanges ?? []) {
+    for (let i = range.start; i < Math.min(range.end, files.length); i++) {
+      versions.add(files[i].version);
+    }
+  }
+  return versions;
+};
+
+export interface ReleaseSpineInput {
+  // The release's files in release order: ascending by version, the order the
+  // executor runs them.
+  files: ReleaseSpineFile[];
+  // The latest run's log; empty before the first run.
+  entries: TaskRunLogEntry[];
+  // The latest run; absent before the first run.
+  run?: { status: TaskRun_Status; error: string };
+  // The state stored on the task at rollout creation; absent for a task
+  // created before it existed, and on the revision page.
+  state?: Task_ReleaseState;
+  // The run follows an earlier run of the task, which may have applied files
+  // the stored state lists as pending.
+  rerun?: boolean;
+}
+
+const isEnded = (status: TaskRun_Status) =>
+  status !== TaskRun_Status.RUNNING &&
+  status !== TaskRun_Status.PENDING &&
+  status !== TaskRun_Status.AVAILABLE;
+
+// Before the first run the stored state is the only source. Once a run has
+// started, its log decides every version up to the newest file marker, since
+// the executor writes a marker before each file it runs and nothing for a
+// file it passes over; the stored state covers the versions above it. An
+// ended run lists only what ran (D3, D5).
+export const buildReleaseSpine = ({
+  files,
+  entries,
+  run,
+  state,
+  rerun = false,
+}: ReleaseSpineInput): ReleaseSpine => {
+  const pending = pendingVersionsOf(state, files);
+  const deleted = new Map(
+    (state?.deletedRevisions ?? []).map((d) => [d.version, d])
+  );
+  // A section exists only for a version the stored state lists as pending or
+  // the run reached; one it counted applied had a live revision then.
+  const deletedNote = (version: string) => {
+    const d = deleted.get(version);
+    if (d) return { time: d.deleteTime, deleter: d.deleter };
+    return state && !pending.has(version)
+      ? { deleter: "", afterRolloutCreation: true }
+      : undefined;
+  };
+  const fileSection = (
+    file: ReleaseSpineFile,
+    status: SpineFileSection["status"],
+    sectionEntries: TaskRunLogEntry[] = []
+  ): SpineFileSection => ({
+    kind: "file",
+    id: `file-${file.version}`,
+    version: file.version,
+    path: file.path,
+    status,
+    entries: sectionEntries,
+    revisionDeleted: deletedNote(file.version),
+  });
+  const foldOf = (applied: ReleaseSpineFile[]): SpineItem[] =>
+    applied.length > 0 ? [{ kind: "applied-earlier", files: applied }] : [];
+
+  if (!run) {
+    if (!state) return { items: [] };
+    return {
+      items: [
+        ...foldOf(files.filter((f) => !pending.has(f.version))),
+        ...files
+          .filter((f) => pending.has(f.version))
+          .map((f) => fileSection(f, "pending")),
+      ],
+    };
+  }
+
+  const fileIndex = new Map(files.map((f, i) => [f.version, i]));
+  const groups = groupEntriesByReleaseFile(entries);
+  const marked = groups.filter((g) => g.file !== null);
+  const newestMarked = marked.at(-1)?.file?.version;
+  const boundary =
+    newestMarked === undefined ? -1 : (fileIndex.get(newestMarked) ?? -1);
+  const markedVersions = new Set(marked.map((g) => g.file?.version));
+  // Before a rerun's first marker the stored state may list files the
+  // earlier run applied (D4).
+  const listed = rerun && marked.length === 0 ? undefined : state;
+  const ended = isEnded(run.status);
+  const failed = run.status === TaskRun_Status.FAILED;
+  const fileError = failed ? parseReleaseFileError(run.error) : undefined;
+
+  const applied: ReleaseSpineFile[] = [];
+  const willApply: SpineFileSection[] = [];
+  files.forEach((file, index) => {
+    if (markedVersions.has(file.version)) return;
+    if (index < boundary || run.status === TaskRun_Status.DONE) {
+      applied.push(file);
+      return;
+    }
+    if (!listed) return;
+    if (!pending.has(file.version)) {
+      applied.push(file);
+    } else if (!ended) {
+      willApply.push(fileSection(file, "pending"));
+    }
+  });
+
+  const runItems: SpineItem[] = [];
+  let errorOwned = !failed;
+  groups.forEach((group, index) => {
+    if (group.file === null) {
+      if (group.entries.length === 0) return;
+      const step: SpineStepSection = {
+        kind: "step",
+        id: `step-${index}`,
+        type: group.entries[0].type,
+        entries: group.entries,
+      };
+      // A step owns the run's error only when the error is its own; a
+      // non-fatal step error, such as the schema sync's, is not (D3).
+      const runError = run.error;
+      if (
+        failed &&
+        !fileError &&
+        group.entries.some((entry) => {
+          const text = errorTextOf(entry);
+          return text !== "" && runError.includes(text);
+        })
+      ) {
+        errorOwned = true;
+      }
+      runItems.push(step);
+      return;
+    }
+    const file: ReleaseSpineFile = {
+      version: group.file.version,
+      path:
+        group.file.filePath ||
+        files[fileIndex.get(group.file.version) ?? -1]?.path ||
+        "",
+    };
+    const isNewest =
+      group.file.version === newestMarked && group === marked.at(-1);
+    let status: SpineFileSection["status"] = "applied";
+    if (isNewest) {
+      if (!ended) status = "running";
+      else if (run.status === TaskRun_Status.CANCELED) status = "canceled";
+      else if (fileError && fileError.version === file.version) {
+        status = "failed";
+      } else if (failed && !run.error && group.entries.some(commandFailed)) {
+        // The run's error is unknown here (a caller passed none), but the
+        // file's own command failed.
+        status = "failed";
+        errorOwned = true;
+      }
+    }
+    const section = fileSection(file, status, group.entries);
+    if (status === "failed" && fileError) {
+      section.error = fileError.message;
+      section.noStatement = !group.entries.some(commandFailed);
+      errorOwned = true;
+    }
+    runItems.push(section);
+  });
+
+  const items: SpineItem[] = [...foldOf(applied), ...runItems, ...willApply];
+  if (!errorOwned && run.error) {
+    items.push({ kind: "run-failed", error: run.error });
+  }
+  return { items };
+};
+
+// The file sections a spine shows before its load rows.
+export const SPINE_SECTION_CAP = 20;
+// Rows one "Load N more" adds when a stretch is longer than it.
+export const SPINE_LOAD_STEP = 20;
+
+export const isSpineItemOpenByDefault = (item: SpineItem): boolean => {
+  switch (item.kind) {
+    case "run-failed":
+      return true;
+    case "step":
+      return item.entries.some(hasError);
+    case "file":
+      return (
+        item.status === "failed" ||
+        item.status === "running" ||
+        item.status === "canceled"
+      );
+    default:
+      return false;
+  }
+};
+
+const PINNED_STATUSES: ReadonlySet<SpineFileStatus> = new Set([
+  "running",
+  "failed",
+  "canceled",
+]);
+
+// The spine as drawn: the first `cap` file sections in version order, the
+// running, failed or canceled section wherever it falls, and each hidden
+// stretch as one load row named by what it holds. `loads` counts the rows the
+// reader loaded per stretch; a stretch holds one state, since a pinned section
+// separates the applied files from the pending ones.
+export const windowSpine = (
+  items: SpineItem[],
+  loads: SpineLoads,
+  cap = SPINE_SECTION_CAP
+): SpineWindowItem[] => {
+  const out: SpineWindowItem[] = [];
+  const shown = new Set<SpineLoadKey>();
+  let fileIndex = 0;
+  let stretch: SpineFileSection[] = [];
+
+  const show = (section: SpineFileSection) => {
+    out.push(section);
+    shown.add(section.status === "pending" ? "pending" : "applied");
+  };
+  const flush = () => {
+    if (stretch.length === 0) return;
+    const first = stretch[0].status;
+    const key: SpineLoadKey =
+      (first === "applied" || first === "pending") &&
+      stretch.every((section) => section.status === first)
+        ? first
+        : "files";
+    const revealed = Math.min(loads[key] ?? 0, stretch.length);
+    for (const section of stretch.slice(0, revealed)) show(section);
+    const count = stretch.length - revealed;
+    if (count > 0) {
+      out.push({
+        kind: "load",
+        key,
+        count,
+        more: key === "files" ? shown.size > 0 : shown.has(key),
+      });
+    }
+    stretch = [];
+  };
+
+  for (const item of items) {
+    if (item.kind === "file") {
+      if (fileIndex < cap || PINNED_STATUSES.has(item.status)) {
+        flush();
+        show(item);
+      } else {
+        stretch.push(item);
+      }
+      fileIndex++;
+      continue;
+    }
+    flush();
+    out.push(item);
+  }
+  flush();
+  return out;
+};
+
+export interface SpineCounts {
+  files: number;
+  applied: number;
+  running: number;
+  failed: number;
+  canceled: number;
+  pending: number;
+  appliedEarlier: number;
+}
+
+// The count line's numbers: every file section by state, and the files
+// applied before this rollout.
+export const countSpine = (
+  items: SpineItem[],
+  totalFiles: number
+): SpineCounts => {
+  const counts: SpineCounts = {
+    files: totalFiles,
+    applied: 0,
+    running: 0,
+    failed: 0,
+    canceled: 0,
+    pending: 0,
+    appliedEarlier: 0,
+  };
+  for (const item of items) {
+    if (item.kind === "applied-earlier") {
+      counts.appliedEarlier += item.files.length;
+    } else if (item.kind === "file") {
+      counts[item.status]++;
+    }
+  }
+  return counts;
+};
+
+// The span from the first entry's start to the last entry's end.
+export const formatEntriesDuration = (entries: TaskRunLogEntry[]): string =>
+  formatOptionalDuration(getEntriesTimeSpan(entries).durationMs);
+
+// The failed command of a file section, for the viewer's diagnostic.
+export const findFailedCommand = (
+  entries: TaskRunLogEntry[]
+): { error: string; range?: { start: number; end: number } } | undefined => {
+  const failedEntry = [...entries].reverse().find(commandFailed);
+  const command = failedEntry?.commandExecute;
+  if (!command) return undefined;
+  return {
+    error: command.response?.error ?? "",
+    range: command.range
+      ? { start: command.range.start, end: command.range.end }
+      : undefined,
+  };
 };

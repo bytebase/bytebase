@@ -11,12 +11,19 @@ import { DeployTaskSkippedReason } from "./DeployTaskSkippedReason";
 
 const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({
-    t: (key: string) => key,
+    t: (key: string, options?: Record<string, unknown>) =>
+      options ? `${key}(${Object.values(options).join(",")})` : key,
   })),
+}));
+
+vi.mock("../useUserDisplayName", () => ({
+  useUserDisplayName: (name?: string) =>
+    name === "users/alex@example.com" ? "Alex Doe" : "",
 }));
 
 vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
+  initReactI18next: { type: "3rdParty", init: () => {} },
 }));
 
 const renderIntoContainer = (element: ReactElement) => {
@@ -83,6 +90,29 @@ describe("DeployTaskSkippedReason", () => {
     render();
 
     expect(container.textContent).toBe("");
+
+    unmount();
+  });
+
+  test("names who skipped the task and when, before the reason", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <DeployTaskSkippedReason
+        task={makeTask({
+          skippedReason: "fixed in git",
+          skipper: "users/alex@example.com",
+          // 2026-10-05 07:14 UTC
+          skipTime: { seconds: BigInt(1791184440), nanos: 0 },
+        } as Partial<Task>)}
+      />
+    );
+
+    render();
+
+    const text = container.textContent ?? "";
+    expect(text).toContain("task.folded.skipped-by(Alex Doe)");
+    expect(text).toContain("2026");
+    expect(text).toContain("fixed in git");
+    expect(text.indexOf("alex@example.com")).toBeLessThan(text.indexOf("fixed in git"));
 
     unmount();
   });

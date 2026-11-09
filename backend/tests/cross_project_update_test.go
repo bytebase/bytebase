@@ -166,6 +166,8 @@ func TestCollisionBatchSkipTasksNoCrossProjectEffect(t *testing.T) {
 	a.NoError(err)
 	a.Equal(v1pb.Task_SKIPPED, rolloutBAfter.Msg.Stages[0].Tasks[0].Status,
 		"project B task should be skipped")
+	a.NotEmpty(rolloutBAfter.Msg.Stages[0].Tasks[0].Skipper, "project B task should record its skipper")
+	a.NotNil(rolloutBAfter.Msg.Stages[0].Tasks[0].SkipTime, "project B task should record its skip time")
 
 	aAfter := snapshotProject(ctx, t, ctl, fixture.ProjectA)
 	assertProjectUnchanged(t, fixture.BaselineA, aAfter, "project A after project B task skip")
