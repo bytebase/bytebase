@@ -2185,20 +2185,29 @@ describe("AgentInput", () => {
       name: "a workspace chat",
       context: "workspaces/demo",
       referencedProject: undefined,
+      overviewArgs: { project: "projects/orders" },
     },
     {
       name: "a project-bound chat",
       context: "projects/orders",
       referencedProject: undefined,
+      overviewArgs: { project: "projects/orders" },
     },
     {
       name: "a referenced-project turn",
       context: "workspaces/demo",
       referencedProject: "projects/orders",
+      overviewArgs: { project: "projects/orders" },
+    },
+    {
+      name: "a workspace chat after an exact semantic type lookup",
+      context: "workspaces/demo",
+      referencedProject: undefined,
+      overviewArgs: { project: "projects/orders", semanticTypeId: "custom-email" },
     },
   ])(
     "keeps a resumed masking selection local to database choices in $name",
-    async ({ context, referencedProject }) => {
+    async ({ context, referencedProject, overviewArgs }) => {
       mocks.executeTool.mockResolvedValue({
         kind: "tool_result",
         result: '{"project":"projects/orders"}',
@@ -2234,7 +2243,7 @@ describe("AgentInput", () => {
         toolCalls: [{
           id: "masking-overview",
           name: "get_masking_overview",
-          arguments: '{"project":"projects/orders"}',
+          arguments: JSON.stringify(overviewArgs),
         }],
       });
       store.addMessage({

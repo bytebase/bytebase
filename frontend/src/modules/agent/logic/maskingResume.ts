@@ -67,9 +67,14 @@ export function getMaskingResumeArgs(
   const args = parseObject(calls.get(overview.toolCallId)?.arguments);
   if (
     !args ||
-    Object.keys(args).some((key) => key !== "project" && key !== "database") ||
+    Object.keys(args).some(
+      (key) =>
+        key !== "project" && key !== "database" && key !== "semanticTypeId"
+    ) ||
     (args.project !== undefined && typeof args.project !== "string") ||
-    (args.database !== undefined && typeof args.database !== "string")
+    (args.database !== undefined && typeof args.database !== "string") ||
+    (args.semanticTypeId !== undefined &&
+      typeof args.semanticTypeId !== "string")
   ) {
     return undefined;
   }

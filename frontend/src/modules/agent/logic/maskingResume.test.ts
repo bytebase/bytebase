@@ -85,6 +85,115 @@ const exemptionScopeTurn = (
 
 describe("getMaskingResumeArgs", () => {
   test.each([
+    {
+      name: "another rule database",
+      tool: "ask_masking_rule_scope",
+      askArgs: { project: "projects/orders" },
+      answer: {
+        kind: "choose",
+        answer: "Another database",
+        value: "another-database",
+      },
+      expected: { project: "projects/orders" },
+    },
+    {
+      name: "workspace rule scope",
+      tool: "ask_masking_rule_scope",
+      askArgs: { project: "projects/orders" },
+      answer: {
+        kind: "choose",
+        answer: "All workspace databases",
+        value: "workspace",
+      },
+      expected: {},
+    },
+    {
+      name: "another exemption database",
+      tool: "ask_masking_exemption_scope",
+      askArgs: {},
+      answer: {
+        kind: "choose",
+        answer: "Another database",
+        value: "another-database",
+      },
+      expected: { project: "projects/orders" },
+    },
+    {
+      name: "semantic type selection",
+      tool: "ask_masking_semantic_type",
+      askArgs: {},
+      answer: {
+        kind: "choose",
+        answer: "Email",
+        value: "semantic-type:custom-email",
+      },
+      expected: {
+        project: "projects/orders",
+        database: "instances/prod/databases/orders",
+      },
+    },
+    {
+      name: "expiration clarification",
+      tool: "ask_user",
+      askArgs: { kind: "input", prompt: "When should it expire?" },
+      answer: { kind: "input", answer: "No expiration" },
+      expected: {
+        project: "projects/orders",
+        database: "instances/prod/databases/orders",
+      },
+    },
+  ])(
+    "resumes $name after an exact semantic type lookup",
+    ({ tool, askArgs, answer, expected }) => {
+      const messages = exemptionScopeTurn(answer, {
+        overviewArgs: {
+          project: "projects/orders",
+          database: "instances/prod/databases/orders",
+          semanticTypeId: "custom-email",
+        },
+        askArgs,
+      });
+      messages[3].toolCalls![0].name = tool;
+      expect(getMaskingResumeArgs(messages)).toEqual(expected);
+    }
+  );
+
+  test.each([null, 7, true, {}])(
+    "rejects a malformed semantic type filter %j",
+    (semanticTypeId) => {
+      const messages = exemptionScopeTurn(
+        {
+          kind: "choose",
+          answer: "Another database",
+          value: "another-database",
+        },
+        {
+          overviewArgs: { project: "projects/orders", semanticTypeId },
+          askArgs: {},
+        }
+      );
+      messages[3].toolCalls![0].name = "ask_masking_rule_scope";
+      expect(getMaskingResumeArgs(messages)).toBeUndefined();
+    }
+  );
+
+  test("still rejects unknown overview arguments alongside an exact type lookup", () => {
+    const messages = exemptionScopeTurn(
+      { kind: "choose", answer: "Another database", value: "another-database" },
+      {
+        overviewArgs: {
+          project: "projects/orders",
+          semanticTypeId: "custom-email",
+          unexpected: true,
+        },
+        askArgs: {},
+      }
+    );
+    messages[3].toolCalls![0].name = "ask_masking_rule_scope";
+    expect(getMaskingResumeArgs(messages)).toBeUndefined();
+  });
+
+  test.each([
     ["workspace", {}],
     ["choose-project", {}],
     ["projects/billing", { project: "projects/billing" }],
