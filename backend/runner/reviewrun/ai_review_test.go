@@ -99,11 +99,10 @@ func TestAIReviewComments(t *testing.T) {
 	require.Equal(t, "p", merged.ProjectID)
 	require.Equal(t, int64(7), merged.IssueUID)
 	require.Equal(t, "prod-1/db: orders_summary and orders_report select legacy_status.\n"+
-		"\n- **P0** on prod-1/db"+
-		"\n- **P1** on app, prod-2/db"+
+		"\n- app, prod-1/db, prod-2/db"+
 		"\n- Not flagged on billing"+
 		"\n\nRule: No column is dropped while a view reads it."+
-		"\n\nSuggested fix: Drop both views first.", merged.Payload.Comment, "without a summary, the P0 finding leads and the databases group by severity")
+		"\n\nSuggested fix: Drop both views first.", merged.Payload.Comment, "without a summary, the P0 finding leads")
 	anchor := merged.Payload.StatementAnchor
 	require.Equal(t, "spec-1", anchor.SpecId)
 	require.Equal(t, "sha", anchor.SheetSha256)
@@ -138,8 +137,8 @@ func TestAIReviewComments(t *testing.T) {
 	comment := aiReviewComments("p", 7, []*aiReviewProblem{summarized})[0]
 	require.Equal(t, "Drop the views that read legacy_status first", comment.Payload.ReviewMetadata.Title)
 	require.Equal(t, "Views select legacy_status, so the DROP fails.\n"+
-		"\n- **P0** on prod-1/db: orders_summary and orders_report read it."+
-		"\n- **P1** on app, prod-2/db: orders_summary reads it."+
+		"\n- prod-1/db: orders_summary and orders_report read it."+
+		"\n- app, prod-2/db: orders_summary reads it."+
 		"\n- Not flagged on billing"+
 		"\n\nRule: No column is dropped while a view reads it."+
 		"\n\nSuggested fix: Drop each view that reads legacy_status first.", comment.Payload.Comment, "the most severe group comes first")
@@ -154,7 +153,7 @@ func TestAIReviewComments(t *testing.T) {
 	}
 	summarized.Reviewed = reviewed[:3]
 	comment = aiReviewComments("p", 7, []*aiReviewProblem{summarized})[0]
-	require.Equal(t, "e\n\n- **P0–P1** on app, prod-1/db, prod-2/db\n\nRule: No column is dropped while a view reads it.\n\nSuggested fix: f", comment.Payload.Comment, "a group shows the range of its severities, and every database flagged the problem")
+	require.Equal(t, "e\n\n- app, prod-1/db, prod-2/db\n\nRule: No column is dropped while a view reads it.\n\nSuggested fix: f", comment.Payload.Comment, "every database flagged the problem")
 
 	// billing reports a different problem on the drop's statement.
 	other := drop
@@ -165,9 +164,9 @@ func TestAIReviewComments(t *testing.T) {
 		otherProblem := &aiReviewProblem{Findings: []*aiReviewFinding{{Unit: unit("instances/staging/databases/billing"), Finding: other}}, Reviewed: reviewed, BlockIsStatement: blockIsStatement}
 		return aiReviewComments("p", 7, []*aiReviewProblem{problem, otherProblem})[0].Payload.Comment
 	}
-	require.Contains(t, withOther(true), "\n- **P1** on app, prod-2/db\n- Flagged differently on billing\n\nRule:")
+	require.Contains(t, withOther(true), "\n- app, prod-1/db, prod-2/db\n- Flagged differently on billing\n\nRule:")
 	require.NotContains(t, withOther(true), "Not flagged")
-	require.Contains(t, withOther(false), "\n- **P1** on app, prod-2/db\n\nRule:", "on a sheet that could not be split, the other finding can be on any statement")
+	require.Contains(t, withOther(false), "\n- app, prod-1/db, prod-2/db\n\nRule:", "on a sheet that could not be split, the other finding can be on any statement")
 
 	problem := dropProblem()
 	problem.BlockIsStatement = true
@@ -209,7 +208,7 @@ func TestAIReviewCommentsBreakTies(t *testing.T) {
 	require.Len(t, comments, 1)
 	require.Equal(t, int32(7), comments[0].Payload.StatementAnchor.StartPosition.Line, "the first line on a tie")
 	require.Equal(t, "instances/i/databases/a", comments[0].Payload.ReviewMetadata.Title, "the first database leads on a tie")
-	require.True(t, strings.HasPrefix(comments[0].Payload.Comment, "a: e\n\n- **P1** on a, b, c, d\n"))
+	require.True(t, strings.HasPrefix(comments[0].Payload.Comment, "a: e\n\n- a, b, c, d\n"))
 }
 
 // mergeStatement has two statements: a drop on lines 1 and 2, and an index
