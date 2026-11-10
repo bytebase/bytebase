@@ -47,10 +47,10 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 			r.sendHeartbeat(ctx)
 		case <-ctx.Done():
 			cleanupCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-			defer cancel()
 			if err := r.store.DeleteReplicaHeartbeat(cleanupCtx, r.profile.ReplicaID); err != nil {
 				slog.Warn("Failed to delete replica heartbeat on shutdown", slog.String("replicaID", r.profile.ReplicaID), log.BBError(err))
 			}
+			cancel()
 			return
 		}
 	}
