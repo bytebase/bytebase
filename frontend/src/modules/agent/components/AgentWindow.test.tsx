@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { act, cloneElement } from "react";
 import { createRoot } from "react-dom/client";
@@ -228,6 +228,60 @@ const getCurrentQueuedUserMessage = () => {
   return store.currentChatId
     ? store.queuedUserMessagesByChatId[store.currentChatId]
     : undefined;
+};
+
+const openChatList = async (width: number, archived = false) => {
+  if (width < 480 || (!archived && width < 750)) {
+    await act(async () => {
+      screen.getByRole("button", { name: "agent.chat-list-label" }).click();
+      await Promise.resolve();
+    });
+  }
+  if (archived) {
+    await act(async () => {
+      screen.getByRole("button", { name: "agent.archived-only-chats" }).click();
+      await Promise.resolve();
+    });
+  }
+};
+
+const openChatMenu = async (chatId: string) => {
+  const trigger = document.body.querySelector(
+    `[data-agent-chat-row="${chatId}"] [data-agent-chat-menu]`
+  ) as HTMLButtonElement;
+  expect(trigger).toBeInstanceOf(HTMLButtonElement);
+  await act(async () => {
+    trigger.click();
+    await Promise.resolve();
+  });
+  return trigger;
+};
+
+const beginChatRename = async (chatId: string) => {
+  await openChatMenu(chatId);
+  const rename = getLayerRoot("agent").querySelector(
+    "[data-agent-rename-chat]"
+  ) as HTMLElement;
+  expect(rename).toHaveAttribute("role", "menuitem");
+  await act(async () => {
+    rename.click();
+    await Promise.resolve();
+  });
+  const input = document.body.querySelector(
+    `[data-agent-chat-row="${chatId}"] [data-agent-chat-title-input]`
+  ) as HTMLInputElement;
+  expect(input).toBeInstanceOf(HTMLInputElement);
+  return input;
+};
+
+const selectChatMenuAction = async (chatId: string, selector: string) => {
+  await openChatMenu(chatId);
+  const action = getLayerRoot("agent").querySelector(selector) as HTMLElement;
+  expect(action).toHaveAttribute("role", "menuitem");
+  await act(async () => {
+    action.click();
+    await Promise.resolve();
+  });
 };
 
 beforeEach(async () => {
@@ -1731,6 +1785,350 @@ describe("AgentWindow", () => {
     unmount();
   });
 
+  test.each([1200, 700, 390])(
+    "selects chats by title without entering rename mode at %ipx",
+    async (width) => {
+      useAgentStore.setState({ size: { width, height: 600 } });
+      const chat = useAgentStore.getState().createChat({
+        title: "Inspect the database settings",
+        context: "projects/orders",
+        select: false,
+      });
+      const { render, unmount } = renderIntoContainer(<AgentWindow />);
+      try {
+        render();
+        await openChatList(width);
+        const title = document.body.querySelector(
+          `[data-agent-chat-row="${chat.id}"] button`
+        ) as HTMLButtonElement;
+        act(() => title.click());
+        expect(useAgentStore.getState().currentChatId).toBe(chat.id);
+        expect(document.body.querySelector("[data-agent-chat-title-input]")).toBeNull();
+
+        if (width < 750) await openChatList(width);
+        const selectedTitle = document.body.querySelector(
+          `[data-agent-chat-row="${chat.id}"] button`
+        ) as HTMLButtonElement;
+        act(() => selectedTitle.click());
+        expect(useAgentStore.getState().currentChatId).toBe(chat.id);
+        expect(document.body.querySelector("[data-agent-chat-title-input]")).toBeNull();
+        expect(document.body.querySelector("[data-agent-inline-rename-input]")).toBeNull();
+      } finally {
+        unmount();
+      }
+    }
+  );
+
+  test.each([1200, 700, 390].flatMap((width) =>
+    [false, true].map((archived) => ({ width, archived }))
+  ))(
+    "renames a row without selecting or restoring it at $width px when archived=$archived",
+    async ({ width, archived }) => {
+      useAgentStore.setState({ size: { width, height: 600 } });
+      const store = useAgentStore.getState();
+      const selectedChatId = store.currentChatId;
+      const selectedChat = store.getChat(selectedChatId);
+      const target = store.createChat({
+        title: "Saved database discussion",
+        context: "projects/orders",
+        archived,
+        select: false,
+      });
+      const { render, unmount } = renderIntoContainer(<AgentWindow />);
+      try {
+        render();
+        await openChatList(width, archived);
+        const trigger = await openChatMenu(target.id);
+        expect(trigger).toHaveAccessibleName("common.more: Saved database discussion");
+        const menu = getLayerRoot("agent").querySelector("[data-agent-dropdown-menu-content]");
+        expect(menu).toHaveAttribute("role", "menu");
+        expect(menu?.querySelector("[data-agent-rename-chat]")).toBeInstanceOf(HTMLElement);
+        expect(menu?.querySelector(archived ? "[data-agent-unarchive-chat]" : "[data-agent-archive-chat]")).toBeInstanceOf(HTMLElement);
+        expect(menu?.querySelector("[data-agent-delete-chat]") !== null).toBe(archived);
+        expect(getLayerRoot("overlay").querySelector("[data-agent-rename-chat]")).toBeNull();
+        await act(async () => {
+          (menu?.querySelector("[data-agent-rename-chat]") as HTMLElement).click();
+          await Promise.resolve();
+        });
+        const row = document.body.querySelector(`[data-agent-chat-row="${target.id}"]`);
+        const input = row?.querySelector("[data-agent-chat-title-input]") as HTMLInputElement;
+        expect(input).toBeInstanceOf(HTMLInputElement);
+        expect(input).toHaveValue("Saved database discussion");
+        expect(document.activeElement).toBe(input);
+        expect([input.selectionStart, input.selectionEnd]).toEqual([0, input.value.length]);
+        expect(useAgentStore.getState().currentChatId).toBe(selectedChatId);
+        expect(store.getChat(target.id)?.archived).toBe(archived);
+        act(() => fireEvent.change(input, { target: { value: "  Renamed discussion  " } }));
+        const save = row?.querySelector("[data-agent-save-chat-title]") as HTMLButtonElement;
+        expect(save).toHaveAccessibleName("common.save");
+        act(() => save.click());
+        expect(store.getChat(target.id)?.title).toBe("Renamed discussion");
+        expect(store.getChat(target.id)?.archived).toBe(archived);
+        expect(store.getChat(selectedChatId)?.title).toBe(selectedChat?.title);
+        expect(useAgentStore.getState().currentChatId).toBe(selectedChatId);
+        expect(document.body.querySelector("[data-agent-chat-title-input]")).toBeNull();
+        expect(document.body.querySelector(`[data-agent-chat-row="${target.id}"] button`)).toHaveAccessibleName("Renamed discussion");
+      } finally {
+        unmount();
+      }
+    }
+  );
+
+  test.each([1200, 700, 390])(
+    "discards canceled rename edits and ignores composing Enter at %ipx",
+    async (width) => {
+      useAgentStore.setState({ size: { width, height: 600 } });
+      const store = useAgentStore.getState();
+      const selectedChatId = store.currentChatId;
+      const target = store.createChat({
+        title: "Original discussion",
+        context: "projects/orders",
+        select: false,
+      });
+      const { render, unmount } = renderIntoContainer(<AgentWindow />);
+      try {
+        render();
+        await openChatList(width);
+        let input = await beginChatRename(target.id);
+        act(() => fireEvent.change(input, { target: { value: "Uncommitted name" } }));
+        act(() => fireEvent.keyDown(input, { key: "Escape" }));
+        expect(store.getChat(target.id)?.title).toBe("Original discussion");
+        expect(document.body.querySelector("[data-agent-chat-title-input]")).toBeNull();
+
+        input = await beginChatRename(target.id);
+        act(() => fireEvent.change(input, { target: { value: "Canceled name" } }));
+        const cancel = document.body.querySelector("[data-agent-cancel-chat-title]") as HTMLButtonElement;
+        expect(cancel).toHaveAccessibleName("common.cancel");
+        act(() => cancel.click());
+        expect(store.getChat(target.id)?.title).toBe("Original discussion");
+        expect(document.body.querySelector("[data-agent-chat-title-input]")).toBeNull();
+
+        input = await beginChatRename(target.id);
+        act(() => fireEvent.change(input, { target: { value: "  Enter-saved name  " } }));
+        act(() => fireEvent.keyDown(input, { key: "Enter", isComposing: true }));
+        expect(store.getChat(target.id)?.title).toBe("Original discussion");
+        expect(input).toHaveFocus();
+        expect(input.isConnected).toBe(true);
+        act(() => fireEvent.keyDown(input, { key: "Enter" }));
+        expect(store.getChat(target.id)?.title).toBe("Enter-saved name");
+        expect(useAgentStore.getState().currentChatId).toBe(selectedChatId);
+        expect(document.body.querySelector("[data-agent-chat-title-input]")).toBeNull();
+      } finally {
+        unmount();
+      }
+    }
+  );
+
+  test.each([1200, 700, 390].flatMap((width) =>
+    [
+      { value: "  Renamed discussion  ", expected: "Renamed discussion" },
+      { value: "   ", expected: "Original discussion" },
+      { value: "  Original discussion  ", expected: "Original discussion" },
+    ].map((rename) => ({ width, ...rename }))
+  ))(
+    "finishes rename on blur without moving focus at $width px for '$value'",
+    async ({ width, value, expected }) => {
+      useAgentStore.setState({ size: { width, height: 600 } });
+      const store = useAgentStore.getState();
+      const selectedChatId = store.currentChatId;
+      const target = store.createChat({
+        title: "Original discussion",
+        context: "projects/orders",
+        select: false,
+      });
+      const destination = store.createChat({
+        title: "Destination discussion",
+        context: "projects/orders",
+        select: false,
+      });
+      const { render, unmount } = renderIntoContainer(<AgentWindow />);
+      try {
+        render();
+        await openChatList(width);
+        const input = await beginChatRename(target.id);
+        act(() => fireEvent.change(input, { target: { value } }));
+        const destinationButton = document.body.querySelector(
+          `[data-agent-chat-row="${destination.id}"] button`
+        ) as HTMLButtonElement;
+        act(() => destinationButton.focus());
+        expect(store.getChat(target.id)?.title).toBe(expected);
+        expect(document.body.querySelector("[data-agent-chat-title-input]")).toBeNull();
+        expect(destinationButton).toHaveFocus();
+        expect(useAgentStore.getState().currentChatId).toBe(selectedChatId);
+      } finally {
+        unmount();
+      }
+    }
+  );
+
+  test.each([1200, 700, 390].flatMap((width) =>
+    ["   ", "  Original discussion  "].map((value) => ({ width, value }))
+  ))(
+    "finishes unchanged rename on Enter at $width px for '$value'",
+    async ({ width, value }) => {
+      useAgentStore.setState({ size: { width, height: 600 } });
+      const store = useAgentStore.getState();
+      const target = store.createChat({
+        title: "Original discussion",
+        context: "projects/orders",
+        select: false,
+      });
+      const { render, unmount } = renderIntoContainer(<AgentWindow />);
+      try {
+        render();
+        await openChatList(width);
+        const input = await beginChatRename(target.id);
+        act(() => fireEvent.change(input, { target: { value } }));
+        expect(document.body.querySelector("[data-agent-save-chat-title]")).toBeDisabled();
+        act(() => fireEvent.keyDown(input, { key: "Enter" }));
+        expect(store.getChat(target.id)?.title).toBe("Original discussion");
+        expect(document.body.querySelector("[data-agent-chat-title-input]")).toBeNull();
+        expect(document.body.querySelector(
+          `[data-agent-chat-row="${target.id}"] [data-agent-chat-menu]`
+        )).toHaveFocus();
+      } finally {
+        unmount();
+      }
+    }
+  );
+
+  test.each([1200, 700, 390].flatMap((width) =>
+    ["pointer", "keyboard"].map((interaction) => ({ width, interaction }))
+  ))(
+    "does not save before $interaction Cancel at $width px",
+    async ({ width, interaction }) => {
+      useAgentStore.setState({ size: { width, height: 600 } });
+      const store = useAgentStore.getState();
+      const target = store.createChat({
+        title: "Original discussion",
+        context: "projects/orders",
+        select: false,
+      });
+      const { render, unmount } = renderIntoContainer(<AgentWindow />);
+      try {
+        render();
+        await openChatList(width);
+        const input = await beginChatRename(target.id);
+        act(() => fireEvent.change(input, { target: { value: "Canceled discussion" } }));
+        const cancel = document.body.querySelector(
+          "[data-agent-cancel-chat-title]"
+        ) as HTMLButtonElement;
+        if (interaction === "pointer") {
+          act(() => {
+            const shouldFocus = fireEvent.pointerDown(cancel, {
+              button: 0,
+              clientX: 100,
+              clientY: 100,
+            });
+            if (shouldFocus) cancel.focus();
+          });
+        } else {
+          const save = document.body.querySelector(
+            "[data-agent-save-chat-title]"
+          ) as HTMLButtonElement;
+          act(() => save.focus());
+          expect(save).toHaveFocus();
+          act(() => cancel.focus());
+          expect(cancel).toHaveFocus();
+        }
+        expect(store.getChat(target.id)?.title).toBe("Original discussion");
+        expect(cancel.isConnected).toBe(true);
+        act(() => cancel.click());
+        expect(store.getChat(target.id)?.title).toBe("Original discussion");
+        expect(document.body.querySelector("[data-agent-chat-title-input]")).toBeNull();
+      } finally {
+        unmount();
+      }
+    }
+  );
+
+  test.each([1200, 700, 390].flatMap((width) =>
+    [false, true].map((selected) => ({ width, selected }))
+  ))(
+    "finishes rename when clicking a chat at $width px (already selected: $selected)",
+    async ({ width, selected }) => {
+      useAgentStore.setState({ size: { width, height: 600 } });
+      const store = useAgentStore.getState();
+      const target = store.createChat({
+        title: "Original discussion",
+        context: "projects/orders",
+        select: false,
+      });
+      const destination = store.createChat({
+        title: "Destination discussion",
+        context: "projects/orders",
+        select: selected,
+      });
+      const { render, unmount } = renderIntoContainer(<AgentWindow />);
+      try {
+        render();
+        await openChatList(width);
+        const input = await beginChatRename(target.id);
+        act(() => fireEvent.change(input, { target: { value: "Renamed discussion" } }));
+        const destinationButton = document.body.querySelector(
+          `[data-agent-chat-row="${destination.id}"] button`
+        ) as HTMLButtonElement;
+        act(() => {
+          const shouldFocus = fireEvent.mouseDown(destinationButton, { button: 0 });
+          expect(shouldFocus).toBe(false);
+          if (shouldFocus) destinationButton.focus();
+        });
+        expect(input).toHaveFocus();
+        expect(store.getChat(target.id)?.title).toBe("Original discussion");
+        act(() => destinationButton.click());
+        expect(store.getChat(target.id)?.title).toBe("Renamed discussion");
+        expect(store.getChat(destination.id)?.title).toBe("Destination discussion");
+        expect(useAgentStore.getState().currentChatId).toBe(destination.id);
+        expect(document.body.querySelector("[data-agent-chat-title-input]")).toBeNull();
+        if (width >= 750) expect(destinationButton).toHaveFocus();
+      } finally {
+        unmount();
+      }
+    }
+  );
+
+  test.each(["close/open", "minimize/restore"])(
+    "refocuses the unsaved rename draft after %s",
+    async (transition) => {
+      const store = useAgentStore.getState();
+      const selectedChatId = store.currentChatId;
+      const target = store.createChat({
+        title: "Original discussion",
+        context: "projects/orders",
+        select: false,
+      });
+      const { render, unmount } = renderIntoContainer(<AgentWindow />);
+      try {
+        render();
+        const input = await beginChatRename(target.id);
+        act(() => fireEvent.change(input, { target: { value: "Unsaved discussion" } }));
+        act(() => {
+          if (transition === "close/open") store.toggle();
+          else store.minimize();
+        });
+        expect(document.body.querySelector("[data-agent-chat-title-input]")).toBeNull();
+        act(() => {
+          if (transition === "close/open") store.open();
+          else store.restore();
+        });
+
+        const reopenedInput = document.body.querySelector(
+          `[data-agent-chat-row="${target.id}"] [data-agent-chat-title-input]`
+        ) as HTMLInputElement;
+        expect(reopenedInput).toHaveValue("Unsaved discussion");
+        expect(document.activeElement).toBe(reopenedInput);
+        expect([reopenedInput.selectionStart, reopenedInput.selectionEnd]).toEqual([
+          0,
+          reopenedInput.value.length,
+        ]);
+        expect(store.getChat(target.id)?.title).toBe("Original discussion");
+        expect(useAgentStore.getState().currentChatId).toBe(selectedChatId);
+      } finally {
+        unmount();
+      }
+    }
+  );
+
   test("allows a contextual chat to start while another chat is running", () => {
     const store = useAgentStore.getState();
     const running = store.createChat({ context: "projects/analytics" });
@@ -2525,10 +2923,7 @@ describe("AgentWindow", () => {
     render();
 
     try {
-      const archiveButton = document.body.querySelector(
-        `[data-agent-chat-row="${firstActiveChatId}"] [data-agent-archive-chat]`
-      ) as HTMLButtonElement;
-      act(() => archiveButton.click());
+      await selectChatMenuAction(firstActiveChatId, "[data-agent-archive-chat]");
       const confirmation = getLayerRoot("agent").querySelector(
         "[data-agent-archive-chat-confirmation]"
       ) as HTMLElement;
@@ -2601,7 +2996,7 @@ describe("AgentWindow", () => {
     }
   });
 
-  test("offers Restore and Delete in one archived chat row menu", async () => {
+  test("offers Rename, Restore, and Delete in one archived chat row menu", async () => {
     mocks.useTranslation.mockReturnValue({
       t: (key: string) =>
         key === "agent.unarchive-chat" ? enUS.agent["unarchive-chat"] : key,
@@ -2646,6 +3041,9 @@ describe("AgentWindow", () => {
       });
 
       const agentRoot = getLayerRoot("agent");
+      expect(agentRoot.querySelector("[data-agent-rename-chat]")).toBeInstanceOf(
+        HTMLElement
+      );
       expect(
         agentRoot.querySelector("[data-agent-unarchive-chat]")
       ).toBeInstanceOf(HTMLElement);
@@ -3007,7 +3405,7 @@ describe("AgentWindow", () => {
     }
   });
 
-  test("keeps rename out of the mobile chat list", () => {
+  test("keeps title selection separate from rename in the mobile chat list", () => {
     useAgentStore.setState({ size: { width: 479, height: 450 } });
     const chatId = useAgentStore.getState().currentChatId!;
 
@@ -3079,7 +3477,7 @@ describe("AgentWindow", () => {
     unmount();
   });
 
-  test("restores and deletes archived chats from the mobile archive view", () => {
+  test("restores and deletes archived chats from the mobile archive view", async () => {
     useAgentStore.setState({ size: { width: 479, height: 450 } });
     const store = useAgentStore.getState();
     const restoredChat = store.createChat({
@@ -3106,18 +3504,12 @@ describe("AgentWindow", () => {
     ) as HTMLButtonElement;
     act(() => archiveButton.click());
 
-    const restoreButton = document.body.querySelector(
-      `[data-agent-chat-row="${restoredChat.id}"] [data-agent-unarchive-chat]`
-    ) as HTMLButtonElement;
-    act(() => restoreButton.click());
+    await selectChatMenuAction(restoredChat.id, "[data-agent-unarchive-chat]");
     expect(useAgentStore.getState().getChat(restoredChat.id)?.archived).toBe(
       false
     );
 
-    const deleteButton = document.body.querySelector(
-      `[data-agent-chat-row="${deletedChat.id}"] [data-agent-delete-chat]`
-    ) as HTMLButtonElement;
-    act(() => deleteButton.click());
+    await selectChatMenuAction(deletedChat.id, "[data-agent-delete-chat]");
     const confirmButton = Array.from(
       document.body.querySelectorAll("button")
     ).find((button) => button.textContent === "common.confirm");
@@ -3142,18 +3534,9 @@ describe("AgentWindow", () => {
       await Promise.resolve();
     });
 
-    const selectedChat = document.body.querySelector(
-      `[data-agent-chat-row="${chatId}"] button`
-    ) as HTMLButtonElement;
-    expect(selectedChat).toBeInstanceOf(HTMLButtonElement);
-    await act(async () => {
-      selectedChat.click();
-      await Promise.resolve();
-    });
-
-    expect(
-      document.body.querySelector("[data-agent-inline-rename-input]")
-    ).toBeInstanceOf(HTMLInputElement);
+    const input = await beginChatRename(chatId);
+    expect(input).toBeInstanceOf(HTMLInputElement);
+    expect(useAgentStore.getState().currentChatId).toBe(chatId);
 
     unmount();
   });
@@ -3374,7 +3757,7 @@ describe("AgentWindow", () => {
       expect(header).not.toContainElement(children);
       expect(children).not.toHaveClass("ml-8", "pl-4");
       expect(children).toContainElement(chatRow);
-      expect(chatRow).toHaveClass("w-full", "py-2");
+      expect(chatRow).toHaveClass("w-full", "min-h-10");
       expect(toggle.querySelector("svg.lucide-folder-open")).toBeInstanceOf(
         SVGElement
       );
@@ -3476,7 +3859,7 @@ describe("AgentWindow", () => {
       expect(header).not.toContainElement(children);
       expect(children).not.toHaveClass("ml-8", "pl-4");
       expect(children).toContainElement(chatRow);
-      expect(chatRow).toHaveClass("w-full", "py-2");
+      expect(chatRow).toHaveClass("w-full", "min-h-10");
 
       act(() => toggle.click());
       expect(toggle).toHaveAttribute("aria-expanded", "false");
@@ -4164,7 +4547,7 @@ describe("AgentWindow", () => {
   });
 
   test.each([1200, 700, 390])(
-    "confirms archiving the chosen chat in an Agent popover at width %s",
+    "confirms archiving the chosen chat from its Agent menu at width %s",
     async (width) => {
       useAgentStore.setState({ size: { width, height: 600 } });
       const store = useAgentStore.getState();
@@ -4195,12 +4578,7 @@ describe("AgentWindow", () => {
           });
         }
 
-        const trigger = document.body.querySelector(
-          `[data-agent-chat-row="${targetChat.id}"] [data-agent-archive-chat]`
-        ) as HTMLButtonElement;
-        expect(trigger).toBeInstanceOf(HTMLButtonElement);
-        expect(trigger.querySelector("svg")).toHaveClass("size-3.5");
-        await act(async () => trigger.click());
+        await selectChatMenuAction(targetChat.id, "[data-agent-archive-chat]");
 
         expect(store.getChat(targetChat.id)?.archived).toBe(false);
         expect(useAgentStore.getState().currentChatId).toBe(currentChatId);
@@ -4215,17 +4593,6 @@ describe("AgentWindow", () => {
             "[data-agent-archive-chat-confirmation]"
           )
         ).toBeNull();
-        expect(trigger).toHaveClass("hover:bg-control/25");
-        expect(
-          document.body.querySelector(
-            `[data-agent-chat-row="${targetChat.id}"] [data-agent-archive-chat]`
-          )
-        ).toBe(trigger);
-        expect(trigger).toHaveAttribute("aria-expanded", "true");
-        expect(trigger.closest("[data-agent-chat-archive-action]")).toHaveAttribute(
-          "data-open",
-          "true"
-        );
 
         await act(async () => {
           Array.from(confirmation.querySelectorAll("button"))
@@ -4233,9 +4600,9 @@ describe("AgentWindow", () => {
             .click();
         });
         expect(store.getChat(targetChat.id)?.archived).toBe(false);
-        expect(trigger).toHaveAttribute("aria-expanded", "false");
+        expect(agentRoot.querySelector("[data-agent-archive-chat-confirmation]")).toBeNull();
 
-        await act(async () => trigger.click());
+        await selectChatMenuAction(targetChat.id, "[data-agent-archive-chat]");
         confirmation = agentRoot.querySelector(
           "[data-agent-archive-chat-confirmation]"
         ) as HTMLElement;
@@ -4264,17 +4631,7 @@ describe("AgentWindow", () => {
 
     render();
 
-    const archiveButton = document.body.querySelector(
-      "[data-agent-archive-chat]"
-    ) as HTMLButtonElement | null;
-
-    expect(archiveButton).toBeInstanceOf(HTMLButtonElement);
-
-    act(() => {
-      archiveButton?.dispatchEvent(
-        new MouseEvent("click", { bubbles: true, cancelable: true })
-      );
-    });
+    await selectChatMenuAction(chatId, "[data-agent-archive-chat]");
 
     const confirmation = getLayerRoot("agent").querySelector(
       "[data-agent-archive-chat-confirmation]"
@@ -4292,19 +4649,19 @@ describe("AgentWindow", () => {
     unmount();
   });
 
-  test("vertically aligns each chat title with its archive action", () => {
+  test("vertically aligns each chat title with its action menu", () => {
     const { render, unmount } = renderIntoContainer(<AgentWindow />);
     render();
 
-    const archiveButton = document.body.querySelector(
-      "[data-agent-archive-chat]"
+    const menuButton = document.body.querySelector(
+      "[data-agent-chat-menu]"
     ) as HTMLButtonElement | null;
     const title = document.body.querySelector(
       "[data-agent-chat-title]"
     ) as HTMLDivElement | null;
     const rowContent = title?.parentElement?.parentElement;
 
-    expect(archiveButton).toBeInstanceOf(HTMLButtonElement);
+    expect(menuButton).toBeInstanceOf(HTMLButtonElement);
     expect(rowContent).toBeInstanceOf(HTMLDivElement);
     expect(rowContent?.className).toContain("items-center");
 

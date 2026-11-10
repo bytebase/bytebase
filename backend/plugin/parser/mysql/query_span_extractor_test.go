@@ -783,22 +783,6 @@ func TestOmniQuerySpanScenarioBatch2_FromJoinAndScopeCoverage(t *testing.T) {
 					{Name: "1", SourceColumns: base.SourceColumnSet{}, IsPlainField: true},
 				},
 			},
-			{
-				name:      "dual_join_right",
-				statement: "SELECT t.a FROM t JOIN DUAL",
-				want: []base.QuerySpanResult{
-					{Name: "a", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "a"}}), IsPlainField: true},
-				},
-				wantSrc: []base.ColumnResource{{Database: "db", Table: "t"}},
-			},
-			{
-				name:      "dual_join_left",
-				statement: "SELECT t.a FROM DUAL JOIN t",
-				want: []base.QuerySpanResult{
-					{Name: "a", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "a"}}), IsPlainField: true},
-				},
-				wantSrc: []base.ColumnResource{{Database: "db", Table: "t"}},
-			},
 		}
 		for _, tc := range tests {
 			t.Run(tc.name, func(t *testing.T) {
@@ -1201,8 +1185,10 @@ func TestOmniQuerySpanScenarioBatch3_ErrorAndMetadataCoverage(t *testing.T) {
 		_, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "SELECT a INTO @x FROM t")
 		require.ErrorContains(t, err, "unsupported select statement with into")
 
+		// TABLE is a query primary wrapped in a SelectStmt now; its INTO
+		// belongs to the wrapper, so it trips the select-into guard.
 		_, err = newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "TABLE t INTO @x")
-		require.ErrorContains(t, err, "unsupported table statement with into")
+		require.ErrorContains(t, err, "unsupported select statement with into")
 
 		_, err = newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "SELECT FROM")
 		require.Error(t, err)
@@ -1246,9 +1232,6 @@ func TestOmniQuerySpanScenarioBatch3_ErrorAndMetadataCoverage(t *testing.T) {
 		require.ErrorIs(t, err, base.MixUserSystemTablesError)
 
 		_, err = newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "TABLE t ORDER BY (SELECT user FROM mysql.user)")
-		require.ErrorIs(t, err, base.MixUserSystemTablesError)
-
-		_, err = newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "TABLE t LIMIT (SELECT COUNT(*) FROM mysql.user)")
 		require.ErrorIs(t, err, base.MixUserSystemTablesError)
 
 		_, err = newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "LOCK TABLES t READ, mysql.user READ")

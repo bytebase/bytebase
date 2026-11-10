@@ -285,6 +285,7 @@
       "unavailable": "Không thể tải hoạt động gần đây.",
       "unknown-time": "thời gian không xác định"
     },
+    "rename-chat": "Đổi tên",
     "rename-chat-placeholder": "Nhập tên cuộc trò chuyện",
     "reply": "Trả lời",
     "request-failed": "Trợ lý không thể hoàn tất yêu cầu này.",

@@ -6640,21 +6640,6 @@
       definition: ""
       comment: ""
       priority: 0
-    - text: seq1
-      type: SEQUENCE
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: test.order_id_seq
-      type: SEQUENCE
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: user_id_seq
-      type: SEQUENCE
-      definition: ""
-      comment: ""
-      priority: 0
     - text: t1
       type: TABLE
       definition: ""

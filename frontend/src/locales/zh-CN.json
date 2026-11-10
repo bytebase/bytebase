@@ -285,6 +285,7 @@
       "unavailable": "无法加载最近活动。",
       "unknown-time": "未知时间"
     },
+    "rename-chat": "重命名",
     "rename-chat-placeholder": "输入对话名称",
     "reply": "回复",
     "request-failed": "助手未能完成此请求。",

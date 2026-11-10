@@ -1,4 +1,14 @@
+import { create, fromJson } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
+import { databaseServiceClientConnect } from "@/api";
+import { silentContextKey } from "@/api/context-key";
 import { refreshTokens } from "@/api/refreshToken";
+import { getEffectiveQueryDataPolicy } from "@/lib/queryDataPolicy";
+import { useAppStore } from "@/stores/app";
+import { GetDatabaseRequestSchema } from "@/types/proto-es/v1/database_service_pb";
+import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
+import { QueryRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { PropertyInfo, SchemaInfo } from "./gen/openapi-index";
 import { getEndpointPath, getRequestSchema, getSchema } from "./searchApi";
 
@@ -175,8 +185,80 @@ const fetchApi = async ({
   return parseResponse(response);
 };
 
-export function prepareApiCall(args: CallApiArgs): PrepareApiCallResult {
-  if (typeof args.operationId !== "string" || !args.operationId) {
+const getQueryRequestLimit = async (
+  body: Record<string, unknown>
+): Promise<number> => {
+  if (
+    body.limit != null &&
+    typeof body.limit !== "number" &&
+    typeof body.limit !== "string"
+  ) {
+    throw new Error("Query limit must be a 32-bit integer.");
+  }
+  const limit =
+    body.limit == null
+      ? undefined
+      : fromJson(QueryRequestSchema, { limit: body.limit }).limit;
+  const requestedLimit = limit ?? DEFAULT_AGENT_QUERY_LIMIT;
+  if (
+    typeof body.name !== "string" ||
+    !/^(?:projects\/[^/]+\/)?instances\/[^/]+\/databases\/[^/]+$/.test(
+      body.name
+    )
+  ) {
+    return requestedLimit;
+  }
+
+  const store = useAppStore.getState();
+  if (!(await store.loadSubscription())) {
+    throw new Error("Cannot determine the query policy subscription status.");
+  }
+  if (!useAppStore.getState().hasFeature(PlanFeature.FEATURE_QUERY_POLICY)) {
+    return requestedLimit;
+  }
+  const workspace = store.workspaceResourceName();
+  if (!workspace) throw new Error("Cannot determine the query workspace.");
+  const database = await databaseServiceClientConnect.getDatabase(
+    create(GetDatabaseRequestSchema, { name: body.name }),
+    { contextValues: createContextValues().set(silentContextKey, true) }
+  );
+  if (
+    database.name !== body.name ||
+    !/^projects\/[^/]+$/.test(database.project) ||
+    database.project === "projects/-"
+  ) {
+    throw new Error("Cannot determine the target database project.");
+  }
+  const policies = await Promise.all(
+    [workspace, database.project].map((parentPath) =>
+      store.fetchPolicyByParentAndType({
+        parentPath,
+        policyType: PolicyType.DATA_QUERY,
+        refresh: true,
+      })
+    )
+  );
+  if (policies.some((policy) => policy === undefined)) {
+    throw new Error("Cannot load the target database query policies.");
+  }
+  const [workspacePolicy, projectPolicy] = policies.map((policy) =>
+    policy?.policy.case === "queryDataPolicy" ? policy.policy.value : undefined
+  );
+  const { maximumResultRows } = getEffectiveQueryDataPolicy(
+    workspacePolicy,
+    projectPolicy
+  );
+  if (maximumResultRows === Number.MAX_VALUE) return requestedLimit;
+  return limit == null || limit <= 0
+    ? maximumResultRows
+    : Math.min(limit, maximumResultRows);
+};
+
+export async function prepareApiCall(
+  args: CallApiArgs
+): Promise<PrepareApiCallResult> {
+  const operationId = args.operationId;
+  if (typeof operationId !== "string" || !operationId) {
     return {
       kind: "error",
       result: JSON.stringify({
@@ -186,12 +268,12 @@ export function prepareApiCall(args: CallApiArgs): PrepareApiCallResult {
     };
   }
 
-  const path = getEndpointPath(args.operationId);
+  const path = getEndpointPath(operationId);
   if (!path) {
     return {
       kind: "error",
       result: JSON.stringify({
-        error: `Unknown operation: ${args.operationId}. Use search_api to find valid operations.`,
+        error: `Unknown operation: ${operationId}. Use search_api to find valid operations.`,
       }),
     };
   }
@@ -205,12 +287,11 @@ export function prepareApiCall(args: CallApiArgs): PrepareApiCallResult {
   }
 
   try {
-    const body = args.body ?? {};
+    // Snapshot arguments before policy reads so the approved payload cannot drift.
+    const body = JSON.parse(JSON.stringify(args.body ?? {}));
     const requestBody =
-      path === "/bytebase.v1.SQLService/Query" &&
-      isPlainObject(body) &&
-      body.limit == null
-        ? { ...body, limit: DEFAULT_AGENT_QUERY_LIMIT }
+      path === "/bytebase.v1.SQLService/Query" && isPlainObject(body)
+        ? { ...body, limit: await getQueryRequestLimit(body) }
         : body;
     return {
       kind: "prepared",
@@ -218,7 +299,7 @@ export function prepareApiCall(args: CallApiArgs): PrepareApiCallResult {
         operationId: `${match[1]}.${match[2]}`,
         path,
         body: JSON.stringify(
-          coerceRequestBody(requestBody, getRequestSchema(args.operationId))
+          coerceRequestBody(requestBody, getRequestSchema(operationId))
         ),
       }),
     };
@@ -226,7 +307,7 @@ export function prepareApiCall(args: CallApiArgs): PrepareApiCallResult {
     return {
       kind: "error",
       result: JSON.stringify({
-        error: `Failed to prepare ${args.operationId}: ${err instanceof Error ? err.message : String(err)}`,
+        error: `Failed to prepare ${operationId}: ${err instanceof Error ? err.message : String(err)}`,
       }),
     };
   }
@@ -269,7 +350,7 @@ export async function dispatchPreparedApiCall(
 }
 
 export async function callApi(args: CallApiArgs): Promise<string> {
-  const result = prepareApiCall(args);
+  const result = await prepareApiCall(args);
   return result.kind === "error"
     ? result.result
     : dispatchPreparedApiCall(result.call);

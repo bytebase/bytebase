@@ -13,72 +13,84 @@
     CREATE TABLE t1(a INT AUTO_INCREMENT);
     CREATE TABLE t2(a varchar(255) AUTO_INCREMENT);
   want:
-    - status: 2
-      code: 410
-      title: COLUMN_AUTO_INCREMENT_MUST_INTEGER
-      content: Auto-increment column `t2`.`a` requires integer type
+    - status: 3
+      code: 201
+      title: Syntax error
+      content: |-
+        Syntax error at line 2:17: Incorrect column specifier for column 'a'
+        related text: CREATE TABLE t2(a varchar(255) AUTO_INCREMENT);
       startposition:
         line: 2
-        column: 0
+        column: 17
       endposition: null
 - statement: |-
     CREATE TABLE t(b int);
     ALTER TABLE t ADD COLUMN a varchar(255) AUTO_INCREMENT;
   want:
-    - status: 2
-      code: 410
-      title: COLUMN_AUTO_INCREMENT_MUST_INTEGER
-      content: Auto-increment column `t`.`a` requires integer type
+    - status: 3
+      code: 201
+      title: Syntax error
+      content: |-
+        Syntax error at line 2:26: Incorrect column specifier for column 'a'
+        related text: ALTER TABLE t ADD COLUMN a varchar(255) AUTO_INCREMENT;
       startposition:
         line: 2
-        column: 0
+        column: 26
       endposition: null
 - statement: |-
     CREATE TABLE t(b int);
     ALTER TABLE t ADD COLUMN a varchar(255) AUTO_INCREMENT, ADD COLUMN c INT;
   want:
-    - status: 2
-      code: 410
-      title: COLUMN_AUTO_INCREMENT_MUST_INTEGER
-      content: Auto-increment column `t`.`a` requires integer type
+    - status: 3
+      code: 201
+      title: Syntax error
+      content: |-
+        Syntax error at line 2:26: Incorrect column specifier for column 'a'
+        related text: ALTER TABLE t ADD COLUMN a varchar(255) AUTO_INCREMENT, ADD COLUMN c INT;
       startposition:
         line: 2
-        column: 0
+        column: 26
       endposition: null
 - statement: |-
     CREATE TABLE t(b int);
     ALTER TABLE t ADD COLUMN (a varchar(255) AUTO_INCREMENT, c INT);
   want:
-    - status: 2
-      code: 410
-      title: COLUMN_AUTO_INCREMENT_MUST_INTEGER
-      content: Auto-increment column `t`.`a` requires integer type
+    - status: 3
+      code: 201
+      title: Syntax error
+      content: |-
+        Syntax error at line 2:27: Incorrect column specifier for column 'a'
+        related text: ALTER TABLE t ADD COLUMN (a varchar(255) AUTO_INCREMENT, c INT);
       startposition:
         line: 2
-        column: 0
+        column: 27
       endposition: null
 - statement: |-
     CREATE TABLE t(a int, b int);
     ALTER TABLE t MODIFY COLUMN a varchar(255) AUTO_INCREMENT;
     ALTER TABLE t MODIFY COLUMN b varchar(255);
   want:
-    - status: 2
-      code: 410
-      title: COLUMN_AUTO_INCREMENT_MUST_INTEGER
-      content: Auto-increment column `t`.`a` requires integer type
+    - status: 3
+      code: 201
+      title: Syntax error
+      content: |-
+        Syntax error at line 2:29: Incorrect column specifier for column 'a'
+        related text: ALTER TABLE t MODIFY COLUMN a varchar(255) AUTO_INCREMENT;
       startposition:
         line: 2
-        column: 0
+        column: 29
       endposition: null
 - statement: |-
     CREATE TABLE t(b int);
     ALTER TABLE t CHANGE COLUMN b a varchar(255) AUTO_INCREMENT;
   want:
-    - status: 2
-      code: 410
-      title: COLUMN_AUTO_INCREMENT_MUST_INTEGER
-      content: Auto-increment column `t`.`a` requires integer type
+    - status: 3
+      code: 201
+      title: Syntax error
+      content: |-
+        Syntax error at line 2:31: Incorrect column specifier for column 'a'
+        related text: ALTER TABLE t CHANGE COLUMN b a varchar(255) AUTO_INCREMENT;
       startposition:
         line: 2
-        column: 0
+        column: 31
       endposition: null

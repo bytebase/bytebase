@@ -61,12 +61,12 @@ func TestValidateSQLForEditor(t *testing.T) {
 			gotAllQuery: true,
 		},
 		{
-			statement:   `explain    analyze select * from t`,
+			statement:   `analyze select * from t`,
 			valid:       false,
 			gotAllQuery: true,
 		},
 		{
-			statement:   `explain    analyze update t set a = 5`,
+			statement:   `analyze update t set a = 5`,
 			valid:       false,
 			gotAllQuery: true,
 		},

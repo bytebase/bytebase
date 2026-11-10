@@ -901,8 +901,6 @@ func nodeLocStart(expr ast.TableExpr) int {
 		return e.Loc.Start
 	case *ast.SubqueryExpr:
 		return e.Loc.Start
-	case *ast.JsonTableExpr:
-		return e.Loc.Start
 	}
 	return -1
 }
@@ -914,8 +912,6 @@ func nodeLocEnd(expr ast.TableExpr) int {
 	case *ast.JoinClause:
 		return e.Loc.End
 	case *ast.SubqueryExpr:
-		return e.Loc.End
-	case *ast.JsonTableExpr:
 		return e.Loc.End
 	}
 	return -1

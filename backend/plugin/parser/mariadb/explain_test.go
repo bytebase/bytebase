@@ -46,7 +46,6 @@ func TestExplainStatementJSON(t *testing.T) {
 	}{
 		{"SELECT 1", "EXPLAIN FORMAT=JSON SELECT 1"},
 		{"EXPLAIN SELECT 1", "EXPLAIN FORMAT=JSON SELECT 1"},
-		{"EXPLAIN FORMAT=TREE SELECT 1", "EXPLAIN FORMAT=JSON SELECT 1"},
 		{"EXPLAIN FORMAT=JSON SELECT 1", "EXPLAIN FORMAT=JSON SELECT 1"},
 		// Nothing to plan, so the statement runs as written and the format the
 		// request named has nowhere to go.
@@ -77,10 +76,9 @@ func TestDescribeExplain(t *testing.T) {
 	}{
 		{statement: "EXPLAIN FORMAT=JSON SELECT 1", format: "json", isExplain: true},
 		{statement: "explain format = json select 1", format: "json", isExplain: true},
-		{statement: "EXPLAIN FORMAT=TREE SELECT 1", format: "text", isExplain: true},
 		{statement: "EXPLAIN FORMAT=TRADITIONAL SELECT 1", format: "text", isExplain: true},
 		{statement: "EXPLAIN SELECT 1", isExplain: true},
-		{statement: "EXPLAIN ANALYZE SELECT 1", executed: true, isExplain: true},
+		{statement: "ANALYZE SELECT 1", executed: true, isExplain: true},
 		{statement: "SELECT 1"},
 		{statement: "SELECT 1; SELECT 2"},
 		// EXPLAIN over a table name describes its columns. The result is a

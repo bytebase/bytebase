@@ -285,6 +285,7 @@
       "unavailable": "Unable to load recent activity.",
       "unknown-time": "an unknown time"
     },
+    "rename-chat": "Rename",
     "rename-chat-placeholder": "Enter chat name",
     "reply": "Reply",
     "request-failed": "The assistant couldn't complete this request.",

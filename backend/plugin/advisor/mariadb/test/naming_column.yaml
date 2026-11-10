@@ -10,13 +10,15 @@
       endposition: null
 - statement: CREATE TABLE book(id int, gbhzmtchhsjzyrhdroxmyouwloxqezowdvhcbqalqcgqhfbjnvmhwrbggezmzeusx int);
   want:
-    - status: 2
-      code: 302
-      title: NAMING_COLUMN
-      content: '`book`.`gbhzmtchhsjzyrhdroxmyouwloxqezowdvhcbqalqcgqhfbjnvmhwrbggezmzeusx` mismatches column naming convention, its length should be within 64 characters'
+    - status: 3
+      code: 201
+      title: Syntax error
+      content: |-
+        Syntax error at line 1:27: Identifier name 'gbhzmtchhsjzyrhdroxmyouwloxqezowdvhcbqalqcgqhfbjnvmhwrbggezmzeusx' is too long
+        related text: CREATE TABLE book(id int, gbhzmtchhsjzyrhdroxmyouwloxqezowdvhcbqalqcgqhfbjnvmhwrbggezmzeusx int);
       startposition:
         line: 1
-        column: 0
+        column: 27
       endposition: null
 - statement: CREATE TABLE book(id int, creator_id int);
 - statement: |-
@@ -24,21 +26,15 @@
     ALTER TABLE book RENAME COLUMN creator_id TO creatorId;
     ALTER TABLE book CHANGE COLUMN creatorId gbhzmtchhsjzyrhdroxmyouwloxqezowdvhcbqalqcgqhfbjnvmhwrbggezmzeusx int;
   want:
-    - status: 2
-      code: 302
-      title: NAMING_COLUMN
-      content: '`book`.`creatorId` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      startposition:
-        line: 2
-        column: 0
-      endposition: null
-    - status: 2
-      code: 302
-      title: NAMING_COLUMN
-      content: '`book`.`gbhzmtchhsjzyrhdroxmyouwloxqezowdvhcbqalqcgqhfbjnvmhwrbggezmzeusx` mismatches column naming convention, its length should be within 64 characters'
+    - status: 3
+      code: 201
+      title: Syntax error
+      content: |-
+        Syntax error at line 3:42: Identifier name 'gbhzmtchhsjzyrhdroxmyouwloxqezowdvhcbqalqcgqhfbjnvmhwrbggezmzeusx' is too long
+        related text: ALTER TABLE book CHANGE COLUMN creatorId gbhzmtchhsjzyrhdroxmyouwloxqezowdvhcbqalqcgqhfbjnvmhwrbggezmzeusx int;
       startposition:
         line: 3
-        column: 0
+        column: 42
       endposition: null
 - statement: |
     ALTER TABLE tech_book RENAME COLUMN id TO creator_id;

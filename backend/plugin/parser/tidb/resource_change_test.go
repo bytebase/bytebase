@@ -140,9 +140,9 @@ func TestExtractChangedResourcesDMLCounts(t *testing.T) {
 			statement: `BATCH ON id LIMIT 1000 DRY RUN DELETE FROM t WHERE c = 1;`,
 		},
 		{
-			// pingcap cannot parse the row alias, which omni accepts.
-			name:        "statement_without_pingcap_ast",
-			statement:   "INSERT INTO t VALUES (1, 2) AS new ON DUPLICATE KEY UPDATE c = new.c;\nUPDATE t2 SET c = 1 WHERE id = 1;",
+			// A multi-statement INSERT + UPDATE, both parsed by omni.
+			name:        "insert_and_update_dml_counts",
+			statement:   "INSERT INTO t VALUES (1, 2) ON DUPLICATE KEY UPDATE c = 3;\nUPDATE t2 SET c = 1 WHERE id = 1;",
 			dmlCount:    1,
 			insertCount: 1,
 			samples:     []string{"UPDATE t2 SET c = 1 WHERE id = 1"},
