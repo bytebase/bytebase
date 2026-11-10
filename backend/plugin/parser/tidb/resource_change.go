@@ -1,11 +1,11 @@
 package tidb
 
 import (
+	"slices"
 	"strings"
 	"unicode"
 
 	omniast "github.com/bytebase/omni/tidb/ast"
-	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -18,78 +18,112 @@ func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_TIDB, extractChangedResources)
 }
 
-func extractChangedResources(database string, _ string, dbMetadata *model.DatabaseMetadata, asts []base.AST, statement string) (*base.ChangeSummary, error) {
+func extractChangedResources(database string, _ string, dbMetadata *model.DatabaseMetadata, asts []base.AST, _ string) (*base.ChangeSummary, error) {
 	summary := &base.ChangeSummary{
 		ChangedResources: model.NewChangedResources(dbMetadata),
 	}
-	for _, ast := range asts {
-		tidbAST, ok := GetTiDBAST(ast)
+	for _, a := range asts {
+		node, ok := GetOmniNode(a)
 		if !ok {
-			// The pingcap re-parse rejects some statements omni accepts. Read those from the
-			// omni AST rather than failing the summary of every other statement.
-			omniAST, ok := ast.(*OmniAST)
-			if !ok {
-				return nil, errors.New("expected TiDB AST")
-			}
-			addOmniTables(database, omniAST.Node, summary.ChangedResources)
+			return nil, errors.New("expected TiDB AST")
+		}
+		getResourceChanges(database, node, summary.ChangedResources)
+		if omniAST, ok := a.(*OmniAST); ok {
 			countOmniDML(summary, omniAST)
-			continue
-		}
-		node := tidbAST.Node
-		err := getResourceChanges(database, node, statement, summary.ChangedResources)
-		if err != nil {
-			return nil, err
-		}
-
-		switch n := node.(type) {
-		case *tidbast.InsertStmt:
-			if len(n.Lists) > 0 {
-				summary.InsertCount += len(n.Lists)
-				continue
-			}
-			addSampleDML(summary, n.Text())
-		case *tidbast.UpdateStmt, *tidbast.DeleteStmt:
-			addSampleDML(summary, node.Text())
-		case *tidbast.NonTransactionalDMLStmt:
-			if n.DryRun == tidbast.NoDryRun {
-				addBatchSampleDML(summary, ast)
-			}
-		default:
 		}
 	}
 	return summary, nil
 }
 
-// addOmniTables records the tables an omni INSERT, UPDATE, DELETE, or BATCH statement names, as
-// getResourceChanges does for the pingcap AST.
-func addOmniTables(database string, node omniast.Node, changedResources *model.ChangedResources) {
-	var tableExprs []omniast.TableExpr
+// getResourceChanges records the tables and databases a statement changes.
+//
+// A table-level DDL records the table it changes (DROP/ALTER/TRUNCATE also mark
+// its data affected). A DML statement records the tables it writes. A non-table
+// object DDL (view/sequence) records only its target database, and only when its
+// name carries an explicit qualifier (SUP-222 / BYT-9698); an unqualified name
+// records nothing and falls back to the request database.
+func getResourceChanges(database string, node omniast.Node, changedResources *model.ChangedResources) {
+	addTable := func(ref *omniast.TableRef, affectsData bool) {
+		if ref == nil {
+			return
+		}
+		d := ref.Schema
+		if d == "" {
+			d = database
+		}
+		changedResources.AddTable(d, "", &storepb.ChangedResourceTable{Name: ref.Name}, affectsData)
+	}
+	objectDatabase := func(ref *omniast.TableRef) {
+		if ref != nil && ref.Schema != "" {
+			changedResources.AddDatabase(ref.Schema)
+		}
+	}
+
 	switch n := node.(type) {
+	case *omniast.CreateTableStmt:
+		addTable(n.Table, false)
+	case *omniast.DropTableStmt:
+		for _, name := range n.Tables {
+			addTable(name, true)
+		}
+	case *omniast.DropViewStmt:
+		for _, view := range n.Views {
+			objectDatabase(view)
+		}
+	case *omniast.AlterTableStmt:
+		addTable(n.Table, true)
+	case *omniast.TruncateStmt:
+		for _, name := range n.Tables {
+			addTable(name, true)
+		}
+	case *omniast.LoadDataStmt:
+		addTable(n.Table, false)
+	case *omniast.ImportIntoStmt:
+		addTable(n.Table, false)
+	case *omniast.RenameTableStmt:
+		for _, pair := range n.Pairs {
+			addTable(pair.Old, false)
+			addTable(pair.New, false)
+		}
+	case *omniast.CreateIndexStmt:
+		addTable(n.Table, false)
+	case *omniast.DropIndexStmt:
+		addTable(n.Table, false)
+	case *omniast.CreateViewStmt:
+		objectDatabase(n.Name)
+	case *omniast.CreateSequenceStmt:
+		objectDatabase(n.Name)
+	case *omniast.AlterSequenceStmt:
+		objectDatabase(n.Name)
+	case *omniast.DropSequenceStmt:
+		for _, seq := range n.Sequences {
+			objectDatabase(seq)
+		}
 	case *omniast.InsertStmt:
 		if n.Table != nil {
-			tableExprs = append(tableExprs, n.Table)
+			addDMLTables(addTable, []omniast.TableExpr{n.Table})
 		}
 	case *omniast.UpdateStmt:
-		tableExprs = n.Tables
+		addDMLTables(addTable, n.Tables)
 	case *omniast.DeleteStmt:
-		tableExprs = append(append(tableExprs, n.Tables...), n.Using...)
+		addDMLTables(addTable, slices.Concat(n.Tables, n.Using))
 	case *omniast.BatchStmt:
 		if n.DryRun == omniast.BatchDryRunNone {
-			addOmniTables(database, n.DML, changedResources)
+			getResourceChanges(database, n.DML, changedResources)
 		}
-		return
 	default:
-		return
 	}
+}
+
+// addDMLTables records every base table named by a DML statement's table
+// expressions, descending through joins. A derived table (subquery) names no
+// base table, matching the previous pingcap behavior.
+func addDMLTables(addTable func(*omniast.TableRef, bool), tableExprs []omniast.TableExpr) {
 	var add func(expr omniast.TableExpr)
 	add = func(expr omniast.TableExpr) {
 		switch e := expr.(type) {
 		case *omniast.TableRef:
-			d := e.Schema
-			if d == "" {
-				d = database
-			}
-			changedResources.AddTable(d, "", &storepb.ChangedResourceTable{Name: e.Name}, false)
+			addTable(e, false)
 		case *omniast.JoinClause:
 			add(e.Left)
 			add(e.Right)
@@ -169,314 +203,6 @@ func addSampleDML(summary *base.ChangeSummary, text string) {
 	summary.DMLStatements = append(summary.DMLStatements, trimStatement(text))
 }
 
-// addTiDBObjectDatabase records a database-only write target for a non-table object DDL
-// (view/sequence) ONLY when its name carries an explicit database qualifier. An unqualified
-// name records nothing (request-database fallback). SUP-222 / BYT-9698.
-func addTiDBObjectDatabase(changedResources *model.ChangedResources, name *tidbast.TableName) {
-	if name != nil && name.Schema.O != "" {
-		changedResources.AddDatabase(name.Schema.O)
-	}
-}
-
-func getResourceChanges(database string, node tidbast.StmtNode, _ string, changedResources *model.ChangedResources) error {
-	switch node := node.(type) {
-	case *tidbast.CreateTableStmt:
-		d, table := node.Table.Schema.O, node.Table.Name.O
-		if d == "" {
-			d = database
-		}
-		changedResources.AddTable(
-			d,
-			"",
-			&storepb.ChangedResourceTable{
-				Name: table,
-			},
-			false,
-		)
-	case *tidbast.DropTableStmt:
-		if node.IsView {
-			// Views aren't tracked as changed tables (risk/approval doesn't use them), but a
-			// qualified cross-database DROP VIEW is gated by its target database. SUP-222.
-			for _, name := range node.Tables {
-				addTiDBObjectDatabase(changedResources, name)
-			}
-			return nil
-		}
-		for _, name := range node.Tables {
-			d, table := name.Schema.O, name.Name.O
-			if d == "" {
-				d = database
-			}
-			changedResources.AddTable(
-				d,
-				"",
-				&storepb.ChangedResourceTable{
-					Name: table,
-				},
-				true,
-			)
-		}
-	case *tidbast.AlterTableStmt:
-		d, table := node.Table.Schema.O, node.Table.Name.O
-		if d == "" {
-			d = database
-		}
-		changedResources.AddTable(
-			d,
-			"",
-			&storepb.ChangedResourceTable{
-				Name: table,
-			},
-			true,
-		)
-	case *tidbast.TruncateTableStmt:
-		d, table := node.Table.Schema.O, node.Table.Name.O
-		if d == "" {
-			d = database
-		}
-		changedResources.AddTable(
-			d,
-			"",
-			&storepb.ChangedResourceTable{
-				Name: table,
-			},
-			true,
-		)
-	case *tidbast.LoadDataStmt:
-		if node.Table != nil {
-			d, table := node.Table.Schema.O, node.Table.Name.O
-			if d == "" {
-				d = database
-			}
-			changedResources.AddTable(d, "", &storepb.ChangedResourceTable{Name: table}, false)
-		}
-	case *tidbast.ImportIntoStmt:
-		if node.Table != nil {
-			d, table := node.Table.Schema.O, node.Table.Name.O
-			if d == "" {
-				d = database
-			}
-			changedResources.AddTable(d, "", &storepb.ChangedResourceTable{Name: table}, false)
-		}
-	case *tidbast.RenameTableStmt:
-		for _, tableToTable := range node.TableToTables {
-			{
-				d, table := tableToTable.OldTable.Schema.O, tableToTable.OldTable.Name.O
-				if d == "" {
-					d = database
-				}
-				changedResources.AddTable(
-					d,
-					"",
-					&storepb.ChangedResourceTable{
-						Name: table,
-					},
-					false,
-				)
-			}
-			{
-				d, table := tableToTable.NewTable.Schema.O, tableToTable.NewTable.Name.O
-				if d == "" {
-					d = database
-				}
-				changedResources.AddTable(
-					d,
-					"",
-					&storepb.ChangedResourceTable{
-						Name: table,
-					},
-					false,
-				)
-			}
-		}
-	case *tidbast.CreateIndexStmt:
-		d, table := node.Table.Schema.O, node.Table.Name.O
-		if d == "" {
-			d = database
-		}
-		changedResources.AddTable(
-			d,
-			"",
-			&storepb.ChangedResourceTable{
-				Name: table,
-			},
-			false,
-		)
-	case *tidbast.DropIndexStmt:
-		d, table := node.Table.Schema.O, node.Table.Name.O
-		if d == "" {
-			d = database
-		}
-		changedResources.AddTable(
-			d,
-			"",
-			&storepb.ChangedResourceTable{
-				Name: table,
-			},
-			false,
-		)
-	case *tidbast.CreateViewStmt:
-		// Not tracked as a changed table (risk/approval doesn't use views), but a qualified
-		// cross-database view is gated by its target database. SUP-222 / BYT-9698.
-		addTiDBObjectDatabase(changedResources, node.ViewName)
-	case *tidbast.CreateSequenceStmt:
-		addTiDBObjectDatabase(changedResources, node.Name)
-	case *tidbast.AlterSequenceStmt:
-		addTiDBObjectDatabase(changedResources, node.Name)
-	case *tidbast.DropSequenceStmt:
-		for _, seq := range node.Sequences {
-			addTiDBObjectDatabase(changedResources, seq)
-		}
-	case *tidbast.InsertStmt:
-		tables, err := extractTableRefs(node.Table)
-		if err != nil {
-			return errors.Wrap(err, "failed to extract table refs")
-		}
-		for _, table := range tables {
-			d := table.database
-			if d == "" {
-				d = database
-			}
-			changedResources.AddTable(
-				d,
-				"",
-				&storepb.ChangedResourceTable{
-					Name: table.table,
-				},
-				false,
-			)
-		}
-	case *tidbast.UpdateStmt:
-		tables, err := extractTableRefs(node.TableRefs)
-		if err != nil {
-			return errors.Wrap(err, "failed to extract table refs")
-		}
-		for _, table := range tables {
-			d := table.database
-			if d == "" {
-				d = database
-			}
-			changedResources.AddTable(
-				d,
-				"",
-				&storepb.ChangedResourceTable{
-					Name: table.table,
-				},
-				false,
-			)
-		}
-	case *tidbast.DeleteStmt:
-		tables, err := extractTableRefs(node.TableRefs)
-		if err != nil {
-			return errors.Wrap(err, "failed to extract table refs")
-		}
-		for _, table := range tables {
-			d := table.database
-			if d == "" {
-				d = database
-			}
-			changedResources.AddTable(
-				d,
-				"",
-				&storepb.ChangedResourceTable{
-					Name: table.table,
-				},
-				false,
-			)
-		}
-		if node.Tables != nil {
-			for _, table := range node.Tables.Tables {
-				d := table.Schema.O
-				if d == "" {
-					d = database
-				}
-				changedResources.AddTable(
-					d,
-					"",
-					&storepb.ChangedResourceTable{
-						Name: table.Name.O,
-					},
-					false,
-				)
-			}
-		}
-	case *tidbast.NonTransactionalDMLStmt:
-		if node.DryRun == tidbast.NoDryRun {
-			return getResourceChanges(database, node.DMLStmt, "", changedResources)
-		}
-	default:
-	}
-	return nil
-}
-
 func trimStatement(statement string) string {
 	return strings.TrimLeftFunc(strings.TrimRightFunc(statement, utils.IsSpaceOrSemicolon), unicode.IsSpace)
-}
-
-type table struct {
-	database string
-	table    string
-}
-
-func extractResultSetNode(n tidbast.ResultSetNode) ([]table, error) {
-	if n == nil {
-		return nil, nil
-	}
-	switch n := n.(type) {
-	case *tidbast.SelectStmt:
-		return nil, nil
-	case *tidbast.SubqueryExpr:
-		return nil, nil
-	case *tidbast.TableSource:
-		return extractTableSource(n)
-	case *tidbast.TableName:
-		return extractTableName(n)
-	case *tidbast.Join:
-		return extractJoin(n)
-	case *tidbast.SetOprStmt:
-		return nil, nil
-	}
-	return nil, nil
-}
-
-func extractTableRefs(n *tidbast.TableRefsClause) ([]table, error) {
-	if n == nil {
-		return nil, nil
-	}
-	return extractJoin(n.TableRefs)
-}
-
-func extractJoin(n *tidbast.Join) ([]table, error) {
-	if n == nil {
-		return nil, nil
-	}
-	l, err := extractResultSetNode(n.Left)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to extract left node in join")
-	}
-	r, err := extractResultSetNode(n.Right)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to extract right node in join")
-	}
-	l = append(l, r...)
-	return l, nil
-}
-
-func extractTableSource(n *tidbast.TableSource) ([]table, error) {
-	if n == nil {
-		return nil, nil
-	}
-	return extractResultSetNode(n.Source)
-}
-
-func extractTableName(n *tidbast.TableName) ([]table, error) {
-	if n == nil {
-		return nil, nil
-	}
-	return []table{
-		{
-			table:    n.Name.O,
-			database: n.Schema.O,
-		},
-	}, nil
 }
