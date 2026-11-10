@@ -34,7 +34,7 @@ func GetDatabaseMetadata(schemaText string) (*metadatapb.DatabaseSchemaMetadata,
 		}, nil
 	}
 
-	extractor := &omniMetadataExtractor{
+	extractor := &metadataExtractor{
 		currentSchema: "dbo",
 		schemas:       make(map[string]*metadatapb.SchemaMetadata),
 		tables:        make(map[tableKey]*metadatapb.TableMetadata),
@@ -68,7 +68,7 @@ func GetDatabaseMetadata(schemaText string) (*metadatapb.DatabaseSchemaMetadata,
 	return schemaMetadata, nil
 }
 
-type omniMetadataExtractor struct {
+type metadataExtractor struct {
 	currentDatabase string
 	currentSchema   string
 	schemas         map[string]*metadatapb.SchemaMetadata
@@ -78,7 +78,7 @@ type omniMetadataExtractor struct {
 	err             error
 }
 
-func (e *omniMetadataExtractor) getOrCreateSchema(schemaName string) *metadatapb.SchemaMetadata {
+func (e *metadataExtractor) getOrCreateSchema(schemaName string) *metadatapb.SchemaMetadata {
 	if schemaName == "" {
 		schemaName = "dbo"
 	}
@@ -97,7 +97,7 @@ func (e *omniMetadataExtractor) getOrCreateSchema(schemaName string) *metadatapb
 	return schema
 }
 
-func (e *omniMetadataExtractor) getOrCreateTable(schemaName, tableName string) *metadatapb.TableMetadata {
+func (e *metadataExtractor) getOrCreateTable(schemaName, tableName string) *metadatapb.TableMetadata {
 	key := tableKey{schema: schemaName, table: tableName}
 	if table, exists := e.tables[key]; exists {
 		return table
@@ -115,7 +115,7 @@ func (e *omniMetadataExtractor) getOrCreateTable(schemaName, tableName string) *
 	return table
 }
 
-func (e *omniMetadataExtractor) extractStatement(node ast.Node) {
+func (e *metadataExtractor) extractStatement(node ast.Node) {
 	if node == nil || e.err != nil {
 		return
 	}
@@ -172,7 +172,7 @@ func (e *omniMetadataExtractor) extractStatement(node ast.Node) {
 	}
 }
 
-func (e *omniMetadataExtractor) extractCreateTable(n *ast.CreateTableStmt) {
+func (e *metadataExtractor) extractCreateTable(n *ast.CreateTableStmt) {
 	schemaName, tableName := tableRefSchemaObject(n.Name, e.currentSchema)
 	table := e.getOrCreateTable(schemaName, tableName)
 
@@ -205,7 +205,7 @@ func (e *omniMetadataExtractor) extractCreateTable(n *ast.CreateTableStmt) {
 	}
 }
 
-func (e *omniMetadataExtractor) extractColumn(n *ast.ColumnDef, table *metadatapb.TableMetadata, schemaName string) {
+func (e *metadataExtractor) extractColumn(n *ast.ColumnDef, table *metadatapb.TableMetadata, schemaName string) {
 	column := &metadatapb.ColumnMetadata{
 		Name:     n.Name,
 		Position: int32(len(table.Columns) + 1),
@@ -267,7 +267,7 @@ func (e *omniMetadataExtractor) extractColumn(n *ast.ColumnDef, table *metadatap
 	table.Columns = append(table.Columns, column)
 }
 
-func (e *omniMetadataExtractor) extractTableConstraint(n *ast.ConstraintDef, table *metadatapb.TableMetadata, schemaName string) {
+func (e *metadataExtractor) extractTableConstraint(n *ast.ConstraintDef, table *metadatapb.TableMetadata, schemaName string) {
 	switch n.Type {
 	case ast.ConstraintPrimaryKey:
 		table.Indexes = append(table.Indexes, e.constraintIndexMetadata(n, "", indexColumnNames(n.Columns), true))
@@ -281,7 +281,7 @@ func (e *omniMetadataExtractor) extractTableConstraint(n *ast.ConstraintDef, tab
 	}
 }
 
-func (e *omniMetadataExtractor) extractCreateIndex(n *ast.CreateIndexStmt) {
+func (e *metadataExtractor) extractCreateIndex(n *ast.CreateIndexStmt) {
 	schemaName, tableName := tableRefSchemaObject(n.Table, e.currentSchema)
 	table := e.getOrCreateTable(schemaName, tableName)
 
@@ -297,7 +297,7 @@ func (e *omniMetadataExtractor) extractCreateIndex(n *ast.CreateIndexStmt) {
 	table.Indexes = append(table.Indexes, index)
 }
 
-func (e *omniMetadataExtractor) extractCreateSpatialIndex(n *ast.CreateSpatialIndexStmt) {
+func (e *metadataExtractor) extractCreateSpatialIndex(n *ast.CreateSpatialIndexStmt) {
 	schemaName, tableName := tableRefSchemaObject(n.Table, e.currentSchema)
 	table := e.getOrCreateTable(schemaName, tableName)
 
@@ -330,7 +330,7 @@ func (e *omniMetadataExtractor) extractCreateSpatialIndex(n *ast.CreateSpatialIn
 	table.Indexes = append(table.Indexes, index)
 }
 
-func (e *omniMetadataExtractor) extractCreateSequence(n *ast.CreateSequenceStmt) {
+func (e *metadataExtractor) extractCreateSequence(n *ast.CreateSequenceStmt) {
 	schemaName, sequenceName := tableRefSchemaObject(n.Name, e.currentSchema)
 	schemaMetadata := e.getOrCreateSchema(schemaName)
 	sequence := &metadatapb.SequenceMetadata{Name: sequenceName}
@@ -343,7 +343,7 @@ func (e *omniMetadataExtractor) extractCreateSequence(n *ast.CreateSequenceStmt)
 	schemaMetadata.Sequences = append(schemaMetadata.Sequences, sequence)
 }
 
-func (e *omniMetadataExtractor) constraintIndexMetadata(n *ast.ConstraintDef, prefix string, columns []string, primary bool) *metadatapb.IndexMetadata {
+func (e *metadataExtractor) constraintIndexMetadata(n *ast.ConstraintDef, prefix string, columns []string, primary bool) *metadatapb.IndexMetadata {
 	name := n.Name
 	if name == "" && prefix != "" {
 		e.indexCounter++
@@ -368,7 +368,7 @@ func (e *omniMetadataExtractor) constraintIndexMetadata(n *ast.ConstraintDef, pr
 	return index
 }
 
-func (*omniMetadataExtractor) inlineIndexMetadata(n *ast.InlineIndexDef) *metadatapb.IndexMetadata {
+func (*metadataExtractor) inlineIndexMetadata(n *ast.InlineIndexDef) *metadatapb.IndexMetadata {
 	index := &metadatapb.IndexMetadata{
 		Name:         n.Name,
 		Unique:       n.Unique,
@@ -381,7 +381,7 @@ func (*omniMetadataExtractor) inlineIndexMetadata(n *ast.InlineIndexDef) *metada
 	return index
 }
 
-func (e *omniMetadataExtractor) appendCheckConstraint(table *metadatapb.TableMetadata, n *ast.ConstraintDef) {
+func (e *metadataExtractor) appendCheckConstraint(table *metadatapb.TableMetadata, n *ast.ConstraintDef) {
 	check := &metadatapb.CheckConstraintMetadata{
 		Name:       n.Name,
 		Expression: e.nodeText(n.Expr),
@@ -417,7 +417,7 @@ func appendForeignKey(table *metadatapb.TableMetadata, n *ast.ConstraintDef, col
 	table.ForeignKeys = append(table.ForeignKeys, fk)
 }
 
-func (e *omniMetadataExtractor) extractExtendedProperty(n *ast.ExecStmt) {
+func (e *metadataExtractor) extractExtendedProperty(n *ast.ExecStmt) {
 	if n.Name == nil || !strings.EqualFold(n.Name.Object, "sp_addextendedproperty") {
 		return
 	}
@@ -460,7 +460,7 @@ func (e *omniMetadataExtractor) extractExtendedProperty(n *ast.ExecStmt) {
 	}
 }
 
-func (e *omniMetadataExtractor) applyComment(schemaName, tableName, columnName, comment string) {
+func (e *metadataExtractor) applyComment(schemaName, tableName, columnName, comment string) {
 	key := tableKey{schema: schemaName, table: tableName}
 	table := e.tables[key]
 	if table == nil {
@@ -600,7 +600,7 @@ func tableRefSchemaObject(ref *ast.TableRef, fallbackSchema string) (string, str
 	return schemaName, ref.Object
 }
 
-func (e *omniMetadataExtractor) nodeText(node ast.Node) string {
+func (e *metadataExtractor) nodeText(node ast.Node) string {
 	loc := ast.NodeLoc(node)
 	if loc.Start < 0 || loc.End < 0 || loc.Start > loc.End || loc.End > len(e.schemaText) {
 		return ""
@@ -608,7 +608,7 @@ func (e *omniMetadataExtractor) nodeText(node ast.Node) string {
 	return e.schemaText[loc.Start:loc.End]
 }
 
-func (e *omniMetadataExtractor) definitionText(node ast.Node) string {
+func (e *metadataExtractor) definitionText(node ast.Node) string {
 	loc := ast.NodeLoc(node)
 	if loc.Start < 0 || loc.End < 0 || loc.Start > loc.End || loc.End > len(e.schemaText) {
 		return ""
