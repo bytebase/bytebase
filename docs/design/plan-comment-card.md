@@ -54,8 +54,9 @@ replies. Where this design differs from it, the decision says why.
 
 **D1 · No color on commented lines.** The four at-rest tints go: grey, amber, red, and the accent
 tint of an unfolded thread. The margin marker stays as the only mark on the statement at rest. The
-highlight while a reader selects lines for a new comment (`bb-thread-line--selecting`) stays, in
-neutral grey, because it is feedback on an action and ends with it. Severity stays where it
+highlight while a reader selects lines for a new comment (`bb-thread-line--selecting`) stays,
+because it is feedback on an action and ends with it. Its color changes from `--color-info`, a
+blue, to the neutral `--color-control-bg-hover`, so that no comment state paints the SQL in a hue. Severity stays where it
 already is, on the P0, P1 or P2 badge inside the comment. Rejected: tinting only P1 lines, as
 BYT-10499 asks. Severity would still be painted on the SQL, and the reader would still have to
 learn a color code. Rejected: one neutral tint for every commented range. It still paints the
@@ -63,8 +64,9 @@ statement, and D3 names the lines in words.
 
 **D2 · The box has a width limit.** The thread stack is capped at `max-w-3xl` (48rem), and the view
 zone's right padding grows from `pr-2` to `pr-4`, so on a narrow editor the card keeps 16px clear
-of the right edge. The border (`border-block-border`), corners (`rounded-sm`) and `shadow-sm` stay.
-Rejected: keeping the full width. A box as wide as the code reads as a band of the statement.
+of the right edge. The border (`border-block-border`) and corners (`rounded-sm`) stay. `shadow-sm`,
+which only the Changes section passes to the card today, becomes part of the card, so the Activity
+card gains it; the Activity card keeps its full width. Rejected: keeping the full width. A box as wide as the code reads as a band of the statement.
 
 **D3 · A title bar names the lines.** Every card starts with a bar on `bg-control-bg`, in 12/16
 text. In the Changes section it reads "Comment on line 1" or "Comment on lines 1–7". In Activity it
@@ -137,26 +139,46 @@ current statement.
 
 ## Scope
 
-Frontend only. Four PRs, in order. Each leaves main shippable.
+Frontend only. Four PRs, in order. Each leaves main shippable. Every class, token or string that a
+decision changes is named in one slice below, with the test that pins it.
 
-1. **Title bar and folding (D3, D4, D5, D6).**
-   - Files: `CommentThreadCard.tsx` (bar, fold control, delete `ThreadSummary`), `ThreadStack.tsx`
-     (delete `CollapsedThreadRow`, drop `showRanges`), `StatementAnchorContext.tsx` (its header
-     becomes the bar's Activity content), `ThreadStateBadge.tsx`, and the five locale files for the
-     two title strings.
-   - Tests: `CommentThreadCard.test.tsx`, `ThreadStack.test.tsx`, `StatementAnchorContext.test.tsx`.
-     E2E: `frontend/tests/e2e/plan-detail/plan-detail.page.ts` reads `thread-row`, which this
-     slice removes, and `plan-detail-review.spec.ts` asserts the folded and resolved states.
+1. **Title bar and folding (D2 shadow, D3, D4, D5, D6).**
+   - `CommentThreadCard.tsx`: add the bar on `bg-control-bg` with `text-control` text; add the fold
+     control and drop the `thread.resolved` condition on folding; delete `ThreadSummary`; move
+     `ThreadStateBadge` from the footer into the bar; take `shadow-sm` into the card's own classes.
+   - `ThreadStack.tsx`: delete `CollapsedThreadRow` and `showRanges`; stop passing `shadow-sm` and
+     the close button.
+   - `StatementAnchorContext.tsx`: its header becomes the bar's Activity content, and
+     `AnchorStatePill` renders "Outdated" and "Statement unavailable" as text labels in place of
+     `Badge variant="warning"` and `variant="default"`.
+   - The five locale files, for the two title strings.
+   - Tests: `CommentThreadCard.test.tsx` (an open thread folds and unfolds; the bar is the same in
+     both states; "Resolved" renders in the bar), `ThreadStack.test.tsx` (a folded thread renders
+     the card's bar and no `thread-row`), `StatementAnchorContext.test.tsx` (no `Badge` for the
+     outdated and unavailable states). E2E: `frontend/tests/e2e/plan-detail/plan-detail.page.ts`
+     reads `thread-row`, which this slice removes, and `plan-detail-review.spec.ts` asserts the
+     folded and resolved states.
 2. **No line tints, and the width limit (D1, D2).** Depends on slice 1, which gives every thread a
    title that names its lines.
-   - Files: `statementThreads.css`, `StatementThreadsLayer.tsx` (delete `commentedLines` and
-     `LINE_CLASS_BY_WEIGHT`, keep the selecting highlight, widen the zone padding).
-   - Tests: `StatementThreadsLayer.test.tsx`.
+   - `StatementThreadsLayer.tsx`: delete `commentedLines` and `LINE_CLASS_BY_WEIGHT`; delete the
+     `bb-thread-line` paint over an unfolded thread's range; keep the two
+     `bb-thread-line--selecting` paints. Both view-zone wrappers, the thread stack's and the
+     composer's, go from `py-2 pr-2` to `py-2 pr-4` with `max-w-3xl`.
+   - `statementThreads.css`: delete the `--passive`, `--attention`, `--blocking` and
+     `bb-thread-line` rules; `bb-thread-line--selecting` changes from `--color-info` to
+     `--color-control-bg-hover`.
+   - Tests: `StatementThreadsLayer.test.tsx` (no decoration carries `bb-thread-line`,
+     `--passive`, `--attention` or `--blocking` for an open or an unfolded thread; a pending
+     selection and an open composer still carry `--selecting`). E2E: `plan-detail-review.spec.ts`
+     asserts that a selected line's computed background is the grey token.
 3. **Comment column and replies (D7).**
-   - Files: `ThreadComment.tsx`, `CommentThreadCard.tsx` and `CommentThreadCard.css` (replies).
+   - `ThreadComment.tsx`: the two-column grid.
+   - `CommentThreadCard.tsx` and `CommentThreadCard.css`: indent the replies, draw the joining
+     line, and drop `bg-control-bg/50` from the replies block.
    - Tests: `ThreadComment.test.tsx`, `CommentThreadCard.test.tsx`.
 4. **Composer (D8).**
-   - Files: `InlineThreadComposer.tsx`.
+   - `InlineThreadComposer.tsx`: the bar goes from `bg-control-bg/50` with `text-sm` to the card's
+     bar, and the avatar moves into the body.
 
 ## Not in this PR
 
