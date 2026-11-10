@@ -692,9 +692,7 @@ const omniStmtsCacheKey = "tidb.omniStmts"
 //
 // Type switch over stmt.AST:
 //   - *tidbparser.OmniAST: omni accepted — collect the node.
-//   - *tidbparser.AST: dispatcher fell back to pingcap (omni rejected the
-//     statement). Skip — migrated advisors emit no advice for omni-rejected SQL.
-//   - default: unknown AST type — warn (a future third tidb AST type shouldn't
+//   - default: unknown AST type — warn (a future tidb AST type shouldn't
 //     silently drop statements).
 func getTiDBOmniNodes(checkCtx advisor.Context) ([]OmniStmt, error) {
 	if cached, ok := checkCtx.Memo(omniStmtsCacheKey); ok {
@@ -719,11 +717,6 @@ func getTiDBOmniNodes(checkCtx advisor.Context) ([]OmniStmt, error) {
 				Text:     a.Text,
 				BaseLine: stmt.BaseLine(),
 			})
-		case *tidbparser.AST:
-			// omni is the sole TiDB parser, so this bridge AST no longer
-			// reaches here; kept defensively. Advisors emit no advice for a
-			// statement omni did not produce, so skip it.
-			continue
 		default:
 			slog.Warn("unexpected stmt.AST type for tidb dispatcher",
 				slog.String("type", fmt.Sprintf("%T", a)))

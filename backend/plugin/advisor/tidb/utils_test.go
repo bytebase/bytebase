@@ -57,65 +57,6 @@ func TestGetTiDBOmniNodesCachesAcrossRules(t *testing.T) {
 		"expected cached []OmniStmt; got fresh walk — single-parse-per-review invariant broken")
 }
 
-// TestGetTiDBOmniNodesSkipsPingcapFallbackAST pins the Phase 1.5 soft-fail
-// invariant at the post-flip layer: when the dispatcher fell back to
-// pingcap for a statement (omni rejected it), getTiDBOmniNodes silently
-// skips the *AST arm — advisors emit no advice for omni-rejected SQL.
-//
-// Pre-flip this responsibility lived in getTiDBOmniNodes itself (which
-// re-parsed each statement and soft-failed on omni grammar gaps). Post-
-// flip §1.5.N+1, the responsibility moves to the dispatcher: the soft-
-// fail signal arrives as an *AST in stmt.AST instead of a parse error
-// inside getTiDBOmniNodes. The end-to-end soft-fail behavior is
-// preserved; only the layer changes.
-//
-// See plans/2026-04-23-omni-tidb-completion-plan.md §1.5.0 invariant #2
-// (soft-fail) + #8 (3-arm switch contract).
-func TestGetTiDBOmniNodesSkipsPingcapFallbackAST(t *testing.T) {
-	ctx := advisor.Context{
-		ParsedStatements: []base.ParsedStatement{
-			{
-				Statement: base.Statement{
-					Text:  "CREATE TABLE t (id INT)",
-					Start: &storepb.Position{Line: 1},
-				},
-				AST: &tidbparser.OmniAST{
-					Text:          "CREATE TABLE t (id INT)",
-					StartPosition: &storepb.Position{Line: 1},
-				},
-			},
-			{
-				Statement: base.Statement{
-					Text:  "FLASHBACK TABLE foo TO BEFORE DROP",
-					Start: &storepb.Position{Line: 2},
-				},
-				// Omni rejected this statement; dispatcher fell back to
-				// pingcap and produced an *AST. Migrated advisors must
-				// SKIP this statement silently — no advice, no error.
-				AST: &tidbparser.AST{
-					StartPosition: &storepb.Position{Line: 2},
-				},
-			},
-			{
-				Statement: base.Statement{
-					Text:  "INSERT INTO t (id) VALUES (1)",
-					Start: &storepb.Position{Line: 3},
-				},
-				AST: &tidbparser.OmniAST{
-					Text:          "INSERT INTO t (id) VALUES (1)",
-					StartPosition: &storepb.Position{Line: 3},
-				},
-			},
-		},
-	}
-	ctx.InitMemo()
-
-	got, err := getTiDBOmniNodes(ctx)
-	require.NoError(t, err, "soft-fail invariant: pingcap-fallback AST must not propagate as an error")
-	require.Len(t, got, 2,
-		"expected only the two omni-accepted statements; the *AST arm must be skipped")
-}
-
 // TestCollectFKCreateTableNilConstraintGuard pins the defensive nil-check
 // in collectFKCreateTable. The original batch-4 form passed
 // `ostmt.AbsoluteLine(constraint.Loc.Start)` as the line argument to
