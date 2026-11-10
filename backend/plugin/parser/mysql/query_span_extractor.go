@@ -55,6 +55,9 @@ type querySpanExtractor struct {
 	accessTables base.SourceColumnSet
 
 	viewResolutionStack map[string]bool
+
+	// source is the original SQL text, used to slice expression names via Loc.
+	source string
 }
 
 func newQuerySpanExtractor(defaultDatabase string, gCtx base.GetQuerySpanContext, ignoreCaseSensitive bool) *querySpanExtractor {
@@ -65,10 +68,6 @@ func newQuerySpanExtractor(defaultDatabase string, gCtx base.GetQuerySpanContext
 		predicateColumns:    make(base.SourceColumnSet),
 		ctePredicateColumns: make(map[*base.PseudoTable]base.SourceColumnSet),
 	}
-}
-
-func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*base.QuerySpan, error) {
-	return (&omniQuerySpanExtractor{querySpanExtractor: q}).getOmniQuerySpan(ctx, stmt)
 }
 
 type joinType int
@@ -406,23 +405,9 @@ func isSystemResource(resource base.ColumnResource, ignoreCaseSensitive bool) bo
 	return onDiskSystemDatabases[database]
 }
 
-// omniQuerySpanExtractor extracts query span information from omni MySQL AST.
-// It embeds querySpanExtractor so shared metadata and identifier-resolution
-// helpers can be reused as the omni implementation grows.
-type omniQuerySpanExtractor struct {
-	*querySpanExtractor
-	source string
-}
-
-func newOmniQuerySpanExtractor(defaultDatabase string, gCtx base.GetQuerySpanContext, ignoreCaseSensitive bool) *omniQuerySpanExtractor {
-	return &omniQuerySpanExtractor{
-		querySpanExtractor: newQuerySpanExtractor(defaultDatabase, gCtx, ignoreCaseSensitive),
-	}
-}
-
-// getOmniQuerySpan is the package-internal omni entry point used by migration
-// tests and the production MySQL query-span path after cutover.
-func (q *omniQuerySpanExtractor) getOmniQuerySpan(ctx context.Context, statement string) (*base.QuerySpan, error) {
+// getQuerySpan is the package-internal entry point used by migration tests and
+// the production MySQL query-span path.
+func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string) (*base.QuerySpan, error) {
 	q.ctx = ctx
 	q.source = statement
 
@@ -486,7 +471,7 @@ func (q *omniQuerySpanExtractor) getOmniQuerySpan(ctx context.Context, statement
 	}, nil
 }
 
-func (q *omniQuerySpanExtractor) extractSelectRoot(root ast.Node) (*base.PseudoTable, error) {
+func (q *querySpanExtractor) extractSelectRoot(root ast.Node) (*base.PseudoTable, error) {
 	switch n := root.(type) {
 	case *ast.SelectStmt:
 		return q.extractSelectStmt(n)
@@ -504,7 +489,7 @@ func (q *omniQuerySpanExtractor) extractSelectRoot(root ast.Node) (*base.PseudoT
 	}
 }
 
-func (q *omniQuerySpanExtractor) extractSelectStmt(stmt *ast.SelectStmt) (*base.PseudoTable, error) {
+func (q *querySpanExtractor) extractSelectStmt(stmt *ast.SelectStmt) (*base.PseudoTable, error) {
 	if stmt == nil {
 		return &base.PseudoTable{}, nil
 	}
@@ -553,7 +538,7 @@ func (q *omniQuerySpanExtractor) extractSelectStmt(stmt *ast.SelectStmt) (*base.
 
 // extractQuerySpecification extracts a SELECT ... FROM ... block,
 // recording the columns its conditions read as it resolves each clause.
-func (q *omniQuerySpanExtractor) extractQuerySpecification(stmt *ast.SelectStmt) (*base.PseudoTable, error) {
+func (q *querySpanExtractor) extractQuerySpecification(stmt *ast.SelectStmt) (*base.PseudoTable, error) {
 	q.clause = clauseFrom
 	fromSources, err := q.extractTableSources(stmt.From)
 	if err != nil {
@@ -588,7 +573,7 @@ func (q *omniQuerySpanExtractor) extractQuerySpecification(stmt *ast.SelectStmt)
 	}, nil
 }
 
-func (q *omniQuerySpanExtractor) extractTableStmt(stmt *ast.TableStmt) (*base.PseudoTable, error) {
+func (q *querySpanExtractor) extractTableStmt(stmt *ast.TableStmt) (*base.PseudoTable, error) {
 	if stmt == nil || stmt.Table == nil {
 		return &base.PseudoTable{}, nil
 	}
@@ -604,7 +589,7 @@ func (q *omniQuerySpanExtractor) extractTableStmt(stmt *ast.TableStmt) (*base.Ps
 
 // extractValuesStmt merges every row into its column, since each row is
 // returned.
-func (q *omniQuerySpanExtractor) extractValuesStmt(stmt *ast.ValuesStmt) (*base.PseudoTable, error) {
+func (q *querySpanExtractor) extractValuesStmt(stmt *ast.ValuesStmt) (*base.PseudoTable, error) {
 	if stmt == nil || len(stmt.Rows) == 0 {
 		return &base.PseudoTable{}, nil
 	}
@@ -631,7 +616,7 @@ func (q *omniQuerySpanExtractor) extractValuesStmt(stmt *ast.ValuesStmt) (*base.
 	return &base.PseudoTable{Columns: columns}, nil
 }
 
-func (q *omniQuerySpanExtractor) extractSetOp(stmt *ast.SelectStmt) (*base.PseudoTable, error) {
+func (q *querySpanExtractor) extractSetOp(stmt *ast.SelectStmt) (*base.PseudoTable, error) {
 	if stmt == nil || stmt.SetOp == ast.SetOpNone {
 		return q.extractSelectStmt(stmt)
 	}
@@ -668,7 +653,7 @@ func (q *omniQuerySpanExtractor) extractSetOp(stmt *ast.SelectStmt) (*base.Pseud
 
 // processCTEs extracts each CTE into its own predicate set, which
 // findTableSchema merges into the reading query's.
-func (q *omniQuerySpanExtractor) processCTEs(ctes []*ast.CommonTableExpr) error {
+func (q *querySpanExtractor) processCTEs(ctes []*ast.CommonTableExpr) error {
 	for _, cte := range ctes {
 		readerPredicateColumns := q.predicateColumns
 		q.predicateColumns = make(base.SourceColumnSet)
@@ -686,7 +671,7 @@ func (q *omniQuerySpanExtractor) processCTEs(ctes []*ast.CommonTableExpr) error 
 	return nil
 }
 
-func (q *omniQuerySpanExtractor) extractCTE(cte *ast.CommonTableExpr) (*base.PseudoTable, error) {
+func (q *querySpanExtractor) extractCTE(cte *ast.CommonTableExpr) (*base.PseudoTable, error) {
 	if cte == nil {
 		return nil, nil
 	}
@@ -696,7 +681,7 @@ func (q *omniQuerySpanExtractor) extractCTE(cte *ast.CommonTableExpr) (*base.Pse
 	return q.extractNonRecursiveCTE(cte)
 }
 
-func (q *omniQuerySpanExtractor) extractNonRecursiveCTE(cte *ast.CommonTableExpr) (*base.PseudoTable, error) {
+func (q *querySpanExtractor) extractNonRecursiveCTE(cte *ast.CommonTableExpr) (*base.PseudoTable, error) {
 	tableSource, err := q.extractSelectStmt(cte.Select)
 	if err != nil {
 		return nil, err
@@ -713,7 +698,7 @@ func (q *omniQuerySpanExtractor) extractNonRecursiveCTE(cte *ast.CommonTableExpr
 	return &base.PseudoTable{Name: cte.Name, Columns: results}, nil
 }
 
-func (q *omniQuerySpanExtractor) extractRecursiveCTE(cte *ast.CommonTableExpr) (*base.PseudoTable, error) {
+func (q *querySpanExtractor) extractRecursiveCTE(cte *ast.CommonTableExpr) (*base.PseudoTable, error) {
 	selectStmt := ast.UnwrapParenSource(cte.Select)
 	if selectStmt == nil || selectStmt.SetOp == ast.SetOpNone {
 		return q.extractNonRecursiveCTE(cte)
@@ -760,7 +745,7 @@ func (q *omniQuerySpanExtractor) extractRecursiveCTE(cte *ast.CommonTableExpr) (
 	return cteInfo, nil
 }
 
-func (q *omniQuerySpanExtractor) extractRecursiveCTEAnchor(stmt *ast.SelectStmt) (*base.PseudoTable, error) {
+func (q *querySpanExtractor) extractRecursiveCTEAnchor(stmt *ast.SelectStmt) (*base.PseudoTable, error) {
 	stmt = ast.UnwrapParenSource(stmt)
 	if stmt == nil || stmt.SetOp == ast.SetOpNone {
 		return q.extractSelectStmt(stmt)
@@ -777,7 +762,7 @@ func cloneQuerySpanResults(results []base.QuerySpanResult) []base.QuerySpanResul
 	return clone
 }
 
-func (q *omniQuerySpanExtractor) extractTableSources(tableExprs []ast.TableExpr) ([]base.TableSource, error) {
+func (q *querySpanExtractor) extractTableSources(tableExprs []ast.TableExpr) ([]base.TableSource, error) {
 	var result []base.TableSource
 	for _, tableExpr := range tableExprs {
 		tableSource, err := q.extractTableSource(tableExpr)
@@ -793,7 +778,7 @@ func (q *omniQuerySpanExtractor) extractTableSources(tableExprs []ast.TableExpr)
 	return result, nil
 }
 
-func (q *omniQuerySpanExtractor) extractTableSource(tableExpr ast.TableExpr) (base.TableSource, error) {
+func (q *querySpanExtractor) extractTableSource(tableExpr ast.TableExpr) (base.TableSource, error) {
 	switch t := tableExpr.(type) {
 	case nil:
 		return nil, nil
@@ -823,7 +808,7 @@ func (q *omniQuerySpanExtractor) extractTableSource(tableExpr ast.TableExpr) (ba
 	}
 }
 
-func (q *omniQuerySpanExtractor) extractJSONTable(expr *ast.JsonTableExpr) (base.TableSource, error) {
+func (q *querySpanExtractor) extractJSONTable(expr *ast.JsonTableExpr) (base.TableSource, error) {
 	if expr == nil {
 		return nil, nil
 	}
@@ -863,7 +848,7 @@ func flattenJSONTableColumns(columns []*ast.JsonTableColumn) []*ast.JsonTableCol
 	return result
 }
 
-func (q *omniQuerySpanExtractor) extractJoin(join *ast.JoinClause) (base.TableSource, error) {
+func (q *querySpanExtractor) extractJoin(join *ast.JoinClause) (base.TableSource, error) {
 	if join == nil {
 		return nil, nil
 	}
@@ -928,7 +913,7 @@ func omniJoinType(joinType ast.JoinType) joinType {
 	}
 }
 
-func (q *omniQuerySpanExtractor) extractSubquery(expr *ast.SubqueryExpr) (*base.PseudoTable, error) {
+func (q *querySpanExtractor) extractSubquery(expr *ast.SubqueryExpr) (*base.PseudoTable, error) {
 	if expr == nil {
 		return &base.PseudoTable{}, nil
 	}
@@ -965,7 +950,7 @@ func (q *omniQuerySpanExtractor) extractSubquery(expr *ast.SubqueryExpr) (*base.
 // cloneForSubquery returns the extractor for a query nested in an
 // expression of the current SELECT, which sees its tables and, where MySQL
 // allows, its select list.
-func (q *omniQuerySpanExtractor) cloneForSubquery() *omniQuerySpanExtractor {
+func (q *querySpanExtractor) cloneForSubquery() *querySpanExtractor {
 	return q.cloneWithScope(outerScope{
 		tables: slices.Concat(q.tableSourceFrom, q.priorTableInFrom),
 		items:  q.selectItemsVisibleToSubquery(),
@@ -975,31 +960,29 @@ func (q *omniQuerySpanExtractor) cloneForSubquery() *omniQuerySpanExtractor {
 // cloneWithScope returns an extractor for a nested query that sees scope
 // as its nearest enclosing SELECT. The nested query records its predicate
 // columns into the same set.
-func (q *omniQuerySpanExtractor) cloneWithScope(scope outerScope) *omniQuerySpanExtractor {
+func (q *querySpanExtractor) cloneWithScope(scope outerScope) *querySpanExtractor {
 	outerScopes := slices.Clone(q.outerScopes)
 	if len(scope.tables) > 0 || len(scope.items) > 0 {
 		outerScopes = append(outerScopes, scope)
 	}
-	return &omniQuerySpanExtractor{
-		querySpanExtractor: &querySpanExtractor{
-			ctx:                 q.ctx,
-			defaultDatabase:     q.defaultDatabase,
-			gCtx:                q.gCtx,
-			ctes:                q.ctes,
-			outerScopes:         outerScopes,
-			tableSourceFrom:     []base.TableSource{},
-			ignoreCaseSensitive: q.ignoreCaseSensitive,
-			outputInCondition:   q.inCondition || q.outputInCondition,
-			predicateColumns:    q.predicateColumns,
-			ctePredicateColumns: q.ctePredicateColumns,
-			accessTables:        q.accessTables,
-			viewResolutionStack: cloneViewResolutionStack(q.viewResolutionStack),
-		},
-		source: q.source,
+	return &querySpanExtractor{
+		ctx:                 q.ctx,
+		defaultDatabase:     q.defaultDatabase,
+		gCtx:                q.gCtx,
+		ctes:                q.ctes,
+		outerScopes:         outerScopes,
+		tableSourceFrom:     []base.TableSource{},
+		ignoreCaseSensitive: q.ignoreCaseSensitive,
+		outputInCondition:   q.inCondition || q.outputInCondition,
+		predicateColumns:    q.predicateColumns,
+		ctePredicateColumns: q.ctePredicateColumns,
+		accessTables:        q.accessTables,
+		viewResolutionStack: cloneViewResolutionStack(q.viewResolutionStack),
+		source:              q.source,
 	}
 }
 
-func (q *omniQuerySpanExtractor) extractTargetList(targets []ast.ExprNode, fromSources []base.TableSource) ([]base.QuerySpanResult, error) {
+func (q *querySpanExtractor) extractTargetList(targets []ast.ExprNode, fromSources []base.TableSource) ([]base.QuerySpanResult, error) {
 	var result []base.QuerySpanResult
 	for _, target := range targets {
 		switch t := target.(type) {
@@ -1050,7 +1033,7 @@ func (q *omniQuerySpanExtractor) extractTargetList(targets []ast.ExprNode, fromS
 	return result, nil
 }
 
-func (q *omniQuerySpanExtractor) extractTarget(target ast.ExprNode) (base.QuerySpanResult, error) {
+func (q *querySpanExtractor) extractTarget(target ast.ExprNode) (base.QuerySpanResult, error) {
 	switch t := target.(type) {
 	case *ast.ResTarget:
 		field, err := q.extractExpr(t.Val)
@@ -1066,7 +1049,7 @@ func (q *omniQuerySpanExtractor) extractTarget(target ast.ExprNode) (base.QueryS
 	}
 }
 
-func (q *omniQuerySpanExtractor) extractExpr(expr ast.ExprNode) (base.QuerySpanResult, error) {
+func (q *querySpanExtractor) extractExpr(expr ast.ExprNode) (base.QuerySpanResult, error) {
 	switch e := expr.(type) {
 	case nil:
 		return base.QuerySpanResult{
@@ -1280,7 +1263,7 @@ func (q *omniQuerySpanExtractor) extractExpr(expr ast.ExprNode) (base.QuerySpanR
 	}
 }
 
-func (q *omniQuerySpanExtractor) extractSelectSourceColumns(selectStmt *ast.SelectStmt) (base.SourceColumnSet, bool, error) {
+func (q *querySpanExtractor) extractSelectSourceColumns(selectStmt *ast.SelectStmt) (base.SourceColumnSet, bool, error) {
 	subqueryExtractor := q.cloneForSubquery()
 	tableSource, err := subqueryExtractor.extractSelectStmt(selectStmt)
 	if err != nil {
@@ -1298,7 +1281,7 @@ func (q *omniQuerySpanExtractor) extractSelectSourceColumns(selectStmt *ast.Sele
 	return sourceColumns, isPlain, nil
 }
 
-func (q *omniQuerySpanExtractor) mergeExprSources(exprs ...ast.ExprNode) (base.SourceColumnSet, error) {
+func (q *querySpanExtractor) mergeExprSources(exprs ...ast.ExprNode) (base.SourceColumnSet, error) {
 	result := make(base.SourceColumnSet)
 	for _, expr := range exprs {
 		if expr == nil {
@@ -1313,14 +1296,14 @@ func (q *omniQuerySpanExtractor) mergeExprSources(exprs ...ast.ExprNode) (base.S
 	return result, nil
 }
 
-func (q *omniQuerySpanExtractor) extractColumnWild(columnRef *ast.ColumnRef, fromSources []base.TableSource) ([]base.QuerySpanResult, error) {
+func (q *querySpanExtractor) extractColumnWild(columnRef *ast.ColumnRef, fromSources []base.TableSource) ([]base.QuerySpanResult, error) {
 	if columnRef == nil {
 		return nil, nil
 	}
 	return q.extractTableWild(columnRef.Schema, columnRef.Table, fromSources)
 }
 
-func (q *omniQuerySpanExtractor) extractTableWild(databaseName, tableName string, fromSources []base.TableSource) ([]base.QuerySpanResult, error) {
+func (q *querySpanExtractor) extractTableWild(databaseName, tableName string, fromSources []base.TableSource) ([]base.QuerySpanResult, error) {
 	if databaseName == "" && tableName == "" {
 		var result []base.QuerySpanResult
 		for _, fromSource := range fromSources {
@@ -1339,7 +1322,7 @@ func (q *omniQuerySpanExtractor) extractTableWild(databaseName, tableName string
 	return result, nil
 }
 
-func (q *omniQuerySpanExtractor) exprName(expr ast.ExprNode) string {
+func (q *querySpanExtractor) exprName(expr ast.ExprNode) string {
 	switch e := expr.(type) {
 	case *ast.ColumnRef:
 		var parts []string
@@ -1455,7 +1438,7 @@ var binaryOpNames = map[ast.BinaryOp]string{
 	ast.BinOpSoundsLike:  " sounds like ",
 }
 
-func (q *omniQuerySpanExtractor) slice(loc ast.Loc) string {
+func (q *querySpanExtractor) slice(loc ast.Loc) string {
 	if loc.Start < 0 || loc.End <= loc.Start || loc.End > len(q.source) {
 		return ""
 	}
