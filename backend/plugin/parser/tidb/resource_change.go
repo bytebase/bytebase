@@ -27,7 +27,7 @@ func extractChangedResources(database string, _ string, dbMetadata *model.Databa
 		if !ok {
 			return nil, errors.New("expected TiDB AST")
 		}
-		getResourceChanges(database, node, summary.ChangedResources)
+		recordResourceChanges(database, node, summary.ChangedResources)
 		if omniAST, ok := a.(*OmniAST); ok {
 			countOmniDML(summary, omniAST)
 		}
@@ -35,14 +35,14 @@ func extractChangedResources(database string, _ string, dbMetadata *model.Databa
 	return summary, nil
 }
 
-// getResourceChanges records the tables and databases a statement changes.
+// recordResourceChanges records the tables and databases a statement changes.
 //
 // A table-level DDL records the table it changes (DROP/ALTER/TRUNCATE also mark
 // its data affected). A DML statement records the tables it writes. A non-table
 // object DDL (view/sequence) records only its target database, and only when its
 // name carries an explicit qualifier (SUP-222 / BYT-9698); an unqualified name
 // records nothing and falls back to the request database.
-func getResourceChanges(database string, node omniast.Node, changedResources *model.ChangedResources) {
+func recordResourceChanges(database string, node omniast.Node, changedResources *model.ChangedResources) {
 	addTable := func(ref *omniast.TableRef, affectsData bool) {
 		if ref == nil {
 			return
@@ -109,7 +109,7 @@ func getResourceChanges(database string, node omniast.Node, changedResources *mo
 		addDMLTables(addTable, slices.Concat(n.Tables, n.Using))
 	case *omniast.BatchStmt:
 		if n.DryRun == omniast.BatchDryRunNone {
-			getResourceChanges(database, n.DML, changedResources)
+			recordResourceChanges(database, n.DML, changedResources)
 		}
 	default:
 	}
