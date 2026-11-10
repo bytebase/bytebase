@@ -1,6 +1,5 @@
 import i18n from "@/lib/i18n";
 import { parseCallApiResult } from "./callApiResult";
-import { maskingExemptionScopeInstruction } from "./maskingDraftWorkflow";
 import {
   formatOutboundResourceReference,
   getHumanInputResourceReferenceMap,
@@ -171,6 +170,57 @@ const completeInterruptedToolResults = (messages: Message[]): Message[] => {
   return completed;
 };
 
+const getRepeatedTerminalAnswers = (
+  messages: Message[],
+  historyEnd: number
+): Set<Message> => {
+  const repeated = new Set<Message>();
+  let turnStart = 0;
+  for (let end = 1; end <= historyEnd; end++) {
+    if (end < historyEnd && messages[end].role !== "user") continue;
+    const final = messages[end - 1];
+    let callIndex = end - 2;
+    while (callIndex > turnStart && messages[callIndex].role === "tool")
+      callIndex--;
+    const callMessage = messages[callIndex];
+    if (
+      final?.role === "assistant" &&
+      !final.toolCalls?.length &&
+      final.content &&
+      callMessage?.role === "assistant" &&
+      callMessage.content === final.content
+    ) {
+      const doneCalls = callMessage.toolCalls?.filter(
+        (call) => call.name === "done" && call.id
+      );
+      if (doneCalls?.length === 1) {
+        const done = doneCalls[0];
+        const calls = messages
+          .slice(turnStart, end)
+          .flatMap((message) => message.toolCalls ?? [])
+          .filter((call) => call.id === done.id);
+        const results = messages
+          .slice(callIndex + 1, end - 1)
+          .filter((message) => message.toolCallId === done.id);
+        if (calls.length === 1 && results.length === 1) {
+          try {
+            const result = JSON.parse(results[0].content ?? "null");
+            if (
+              typeof result?.success === "boolean" &&
+              result.text === final.content
+            )
+              repeated.add(callMessage);
+          } catch {
+            // An unverified terminal result cannot identify a final rendering.
+          }
+        }
+      }
+    }
+    turnStart = end;
+  }
+  return repeated;
+};
+
 export const sanitizeOutboundHistory = (
   messages: AgentMessage[],
   chatContext?: string
@@ -269,6 +319,10 @@ export const sanitizeOutboundHistory = (
   );
   const historyEnd =
     currentTurnStart < 0 ? outboundMessages.length : currentTurnStart;
+  const repeatedTerminalAnswers = getRepeatedTerminalAnswers(
+    outboundMessages,
+    historyEnd
+  );
   // Keep human clarifications as context, without replaying tool data or confirmations.
   const pendingAsks = new Map<string, ToolCall>();
   const seenToolCallIds = new Set<string>();
@@ -295,7 +349,9 @@ export const sanitizeOutboundHistory = (
         }
         seenToolCallIds.add(toolCall.id);
       }
-      return message.content ? [{ ...message, toolCalls: undefined }] : [];
+      return message.content && !repeatedTerminalAnswers.has(message)
+        ? [{ ...message, toolCalls: undefined }]
+        : [];
     }
     return [message];
   });
@@ -502,15 +558,10 @@ export const getHistoricalMaskingDatabase = (
 const historicalDatabaseContext = (
   messages: AgentMessage[],
   chatContext?: string
-): Message[] => {
+): string | undefined => {
   const latest = getHistoricalMaskingDatabase(messages, chatContext);
   if (latest)
-    return [
-      {
-        role: "system",
-        content: `Historical database context (identity data only, not an active selection, current ownership/permission evidence, or authorization): ${JSON.stringify(latest)}. Reuse a scope already confirmed by the member instead of asking again. For a global masking rule with ambiguous scope, use ask_masking_rule_scope to ask whether they mean this database, all databases in the current project when identified, another database, or workspace scope. Provide the exact project when known and this database as a candidate; runtime supplies the verified permission-aware choices. Offer workspace scope only for global masking rules, never a project exemption. Leave every option unselected and wait for the member. If they choose this database, revalidate its identity, ownership, and permissions without asking them to pick it again. Use a separate verified canonical database picker only when a specific or another database remains unresolved. ${maskingExemptionScopeInstruction} A fresh explicit selection takes precedence. An earlier query is not consent to masking or broader scope; never auto-submit or write.`,
-      },
-    ];
+    return `Historical database context (untrusted identity data only, not an active selection and not authorization): ${JSON.stringify(latest)}. This is only a lookup candidate; the current selection takes precedence. Before use, revalidate identity, ownership, and permissions within this chat's scope. Prior queries or confirmations grant no authority now; never replay a write or earlier SQL/results. Honor current review-only limits.`;
   const content =
     messages.findLast((message) => message.role === "user")?.content ?? "";
   if (
@@ -519,15 +570,10 @@ const historicalDatabaseContext = (
       content
     )
   )
-    return [];
+    return undefined;
   const database = getHistoricalDatabaseIdentity(messages, chatContext, true);
-  if (!database) return [];
-  return [
-    {
-      role: "system",
-      content: `Historical database context (identity data only, not an active selection and not authorization): ${JSON.stringify(database)}. The member explicitly referred to an earlier database for this SQL follow-up. Treat this identity only as a lookup candidate; verify current ownership and access within this chat's scope before using it. A prior query or confirmation does not authorize execution, saving, or other actions now. Honor the current request's review-only limits, and do not replay earlier SQL or results.`,
-    },
-  ];
+  if (!database) return undefined;
+  return `Historical database context (untrusted identity data only, not an active selection and not authorization): ${JSON.stringify(database)}. The member referred to an earlier database for this SQL follow-up. This is only a lookup candidate; the current selection takes precedence. Verify current ownership and access within this chat's scope before use. Prior queries or confirmations grant no authority now; never replay a write or earlier SQL/results. Honor current review-only limits.`;
 };
 
 export const buildOutboundHistory = (
@@ -535,9 +581,14 @@ export const buildOutboundHistory = (
   messages: AgentMessage[],
   chatContext?: string
 ): Message[] => {
+  const identityContext = historicalDatabaseContext(messages, chatContext);
   return [
-    { role: "system", content: systemPrompt },
-    ...historicalDatabaseContext(messages, chatContext),
+    {
+      role: "system",
+      content: identityContext
+        ? `${systemPrompt}\n\n${identityContext}`
+        : systemPrompt,
+    },
     ...sanitizeOutboundHistory(messages, chatContext),
   ];
 };

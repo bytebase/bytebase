@@ -36,7 +36,6 @@ import {
   isAgentMaskingPageResource,
 } from "../logic/chatContext";
 import { resolveDeniedQueryAccessDraft } from "../logic/deniedQueryAccess";
-import { generateFollowUpQuestion } from "../logic/generateFollowUpQuestion";
 import { acceptAgentHandoff, collectAgentHandoffs } from "../logic/handoff";
 import type { IssueDecisionImpact } from "../logic/issueDecisionImpact";
 import {
@@ -44,6 +43,10 @@ import {
   type LandingStarterId,
 } from "../logic/landingStarters";
 import { getMaskingResumeArgs } from "../logic/maskingResume";
+import {
+  getMaskingSectionsForPage,
+  getMaskingSectionsForTurn,
+} from "../logic/maskingSkillContext";
 import {
   buildOutboundHistory,
   getHistoricalMaskingDatabase,
@@ -66,6 +69,10 @@ import {
   updateDraftResourceMentions,
 } from "../logic/resourceMention";
 import { acceptAgentResponseActions } from "../logic/responseActions";
+import {
+  getMaskingSkillGuidance,
+  type MaskingSkillSection,
+} from "../logic/skills";
 import { createToolExecutor, getToolDefinitions } from "../logic/tools";
 import { apiCallNeedsConfirmation } from "../logic/tools/apiMethodClass";
 import { extractDatabaseOverviewEvidence } from "../logic/tools/databaseOverview";
@@ -1088,9 +1095,6 @@ export function AgentInput({
       skipReferencePreflight = false
     ) => {
       const store = useAgentStore.getState();
-      const lastUserMessage = store
-        .getMessages(chatId)
-        .findLast((message) => message.role === "user");
       const references = getCurrentTurnResourceReferences(
         store.getMessages(chatId)
       );
@@ -1142,13 +1146,26 @@ export function AgentInput({
         maskingPage,
         runMode,
       });
-      const tools = getToolDefinitions({
+      const messages = store.getMessages(chatId);
+      const maskingResumeArgs = getMaskingResumeArgs(messages);
+      const maskingSections = new Set<MaskingSkillSection>([
+        ...getMaskingSectionsForPage(maskingPage),
+        ...getMaskingSectionsForTurn(messages),
+      ]);
+      const toolOptions = {
         runMode,
         referencedProject,
         instanceName,
         maskingPage,
+      };
+      const resolveRequestContext = () => ({
+        tools: getToolDefinitions({
+          ...toolOptions,
+          maskingSections: [...maskingSections],
+        }),
+        systemGuidance: getMaskingSkillGuidance([...maskingSections]),
       });
-      const maskingResumeArgs = getMaskingResumeArgs(store.getMessages(chatId));
+      const tools = resolveRequestContext().tools;
       const executor = createToolExecutor(router, {
         chatId,
         userName: useAppStore.getState().currentUser?.name,
@@ -1166,6 +1183,11 @@ export function AgentInput({
         referencedPlan,
         maskingPage,
         runMode,
+        onSkillLoaded: (load) => {
+          if (load.name === "data-masking" && load.section) {
+            maskingSections.add(load.section);
+          }
+        },
         canUseCurrentPage: () =>
           isCurrentChatScope(store, chatId) &&
           useAgentStore.getState().currentChatId === chatId,
@@ -1660,7 +1682,10 @@ export function AgentInput({
             },
           },
           controller.signal,
-          { allowPlainTextCompletion: runMode === "read-only" }
+          {
+            allowPlainTextCompletion: runMode === "read-only",
+            resolveRequestContext,
+          }
         );
 
         if (
@@ -1691,12 +1716,6 @@ export function AgentInput({
           return;
         }
 
-        let followUpRequest:
-          | {
-              messageId: string;
-              context: Parameters<typeof generateFollowUpQuestion>[2];
-            }
-          | undefined;
         if (finalText && outcome.kind === "completed") {
           const handoff = outcome.success
             ? acceptAgentHandoff(finalHandoffProposal, handoffCandidates)
@@ -1713,14 +1732,7 @@ export function AgentInput({
                 semanticTypeDraftIds
               )
             : [];
-          const primaryAction = actions.find(
-            (action) => action.kind !== "continue"
-          );
-          const nextAction = primaryAction ?? handoff;
-          const existingQuestions = actions.flatMap((action) =>
-            action.kind === "continue" ? [action.prompt] : []
-          );
-          const finalMessage = useAgentStore.getState().addMessage({
+          useAgentStore.getState().addMessage({
             chatId,
             role: "assistant",
             content: finalText,
@@ -1737,46 +1749,9 @@ export function AgentInput({
                 : {}),
             },
           });
-          if (
-            finalMessage &&
-            outcome.success &&
-            !controller.signal.aborted &&
-            existingQuestions.length < 2
-          ) {
-            followUpRequest = {
-              messageId: finalMessage.id,
-              context: { action: nextAction, existingQuestions },
-            };
-          }
         }
 
         handleOutcome(chatId, outcome);
-        if (followUpRequest && finalText) {
-          const followUp = await generateFollowUpQuestion(
-            lastUserMessage?.content ?? "",
-            finalText,
-            followUpRequest.context,
-            controller.signal,
-            recordUsage
-          );
-          if (
-            controller.signal.aborted ||
-            runToken !== runTokens.get(chatId) ||
-            !isCurrentChatScope(store, chatId)
-          ) {
-            return;
-          }
-          if (followUp.actions.length > 0) {
-            useAgentStore
-              .getState()
-              .appendContinueActions(
-                chatId,
-                followUpRequest.messageId,
-                followUp.actions,
-                references
-              );
-          }
-        }
       } finally {
         if (
           useAgentStore.getState().getAbortController(chatId) === controller
