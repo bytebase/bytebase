@@ -136,6 +136,11 @@ export function ThreadStack({
               issue={issue}
               label={rangeLabel(entry)}
               onClose={() => onCollapse(entry.thread.root.name)}
+              // Only the reader's own Resolve collapses the card; a remote
+              // resolve must not shift the editor under them.
+              onThreadStateChanged={(resolved) => {
+                if (resolved) onCollapse(entry.thread.root.name);
+              }}
               replyDraft={replyDrafts[entry.thread.root.name] ?? ""}
               onReplyDraftChange={(draft) =>
                 onReplyDraftChange(entry.thread.root.name, draft)

@@ -26,9 +26,10 @@ vi.mock("@/stores/app", () => ({
     selector({ getUserByIdentifier: () => ({ email: "a@example.com", title: "Aurora" }) }),
 }));
 vi.mock("./CommentThreadCard", () => ({
-  CommentThreadCard: ({ thread, onClose, replyDraft, onReplyDraftChange, spec }: {
+  CommentThreadCard: ({ thread, onClose, onThreadStateChanged, replyDraft, onReplyDraftChange, spec }: {
     thread: EditorThread["thread"];
     onClose: () => void;
+    onThreadStateChanged: (resolved: boolean) => void;
     replyDraft: string;
     onReplyDraftChange: (draft: string) => void;
     spec?: { id: string };
@@ -36,6 +37,8 @@ vi.mock("./CommentThreadCard", () => ({
     <div data-thread-name={thread.root.name} data-resolved={String(thread.resolved)} data-spec={spec?.id}>
       <input aria-label="Reply draft" value={replyDraft} onChange={(e) => onReplyDraftChange(e.target.value)} />
       <button onClick={onClose}>Close</button>
+      <button onClick={() => onThreadStateChanged(true)}>Resolved here</button>
+      <button onClick={() => onThreadStateChanged(false)}>Reopened here</button>
     </div>
   ),
 }));
@@ -100,6 +103,15 @@ describe("ThreadStack", () => {
     fireEvent.click(container.querySelector('[data-thread-name="a"] button')!);
     expect(props.onCollapse).toHaveBeenCalledWith("a");
     expect(props.onExpand).not.toHaveBeenCalled();
+  });
+
+  test("collapses a thread resolved from its card and keeps a reopened one expanded", () => {
+    const threads = [entry("a", false, 1)];
+    const { getByText } = render(<ThreadStack {...props} expandedRoots={new Set(["a"])} threads={threads} />);
+    fireEvent.click(getByText("Reopened here"));
+    expect(props.onCollapse).not.toHaveBeenCalled();
+    fireEvent.click(getByText("Resolved here"));
+    expect(props.onCollapse).toHaveBeenCalledExactlyOnceWith("a");
   });
 
   test("preserves a reply draft when another thread opens", () => {
