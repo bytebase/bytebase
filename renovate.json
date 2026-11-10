@@ -80,7 +80,6 @@
     }
   ],
   "ignoreDeps": [
-    "github.com/pingcap/tidb",
     "github.com/pingcap/tidb/pkg/parser",
     "github.com/form3tech-oss/jwt-go",
     "github.com/elastic/go-elasticsearch/v7",
