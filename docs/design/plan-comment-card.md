@@ -120,7 +120,8 @@ its avatar. A finding stacks four rows, and they scan better with the avatar out
 
 **D8 · The composer is the same card.** `InlineThreadComposer` keeps its title ("Add a comment on
 lines 9 to 10") in the bar, and its avatar moves from the bar into the body's avatar column beside
-the editor.
+the editor. It takes the card's frame as well: the same border, corners and shadow, so a comment
+does not change shape when it is posted.
 
 **D9 · The "Applies to" row is unchanged.** A finding that applies to only some of a change's
 databases lists them under the author row, as today (`ReviewTargets`). The bar does not name or
@@ -220,7 +221,10 @@ row of States that differs from today traces to one of them.
    - Tests: `ThreadComment.test.tsx`, `CommentThreadCard.test.tsx`.
 5. **Composer (D8).** Depends on slice 1, for the bar.
    - `InlineThreadComposer.tsx`: the bar goes from `bg-control-bg/50` with `text-sm` to the card's
-     bar, and the avatar moves into the body.
+     bar, and the avatar moves into the body. It gains `shadow-sm`, which it does not have today,
+     so its frame matches the posted card's.
+   - Tests: a new `InlineThreadComposer.test.tsx` (the composer carries the card's border, corners
+     and `shadow-sm`; its avatar renders in the body and not in the bar).
 
 The two sibling docs add three more PRs. Across all three docs the order is:
 
