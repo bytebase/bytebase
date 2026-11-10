@@ -287,8 +287,8 @@ func getColumnsFromCmd(cmd *ast.AlterTableCmd) []*ast.ColumnDef {
 }
 
 // nolint:unused
-// omniColumnName returns the effective column name for a command.
-func omniColumnName(cmd *ast.AlterTableCmd) string {
+// alterCmdColumnName returns the effective column name for a command.
+func alterCmdColumnName(cmd *ast.AlterTableCmd) string {
 	if cmd.Column != nil {
 		return cmd.Column.Name
 	}

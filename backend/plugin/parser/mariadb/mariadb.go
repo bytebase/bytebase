@@ -30,9 +30,9 @@ func parseStatements(statement string) ([]base.ParsedStatement, error) {
 			continue
 		}
 
-		list, omniErr := ParseMariaDB(stmt.Text)
-		if omniErr != nil {
-			return nil, convertError(omniErr, stmt)
+		list, err := ParseMariaDB(stmt.Text)
+		if err != nil {
+			return nil, convertError(err, stmt)
 		}
 
 		if list == nil || len(list.Items) == 0 {

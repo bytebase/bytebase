@@ -94,7 +94,7 @@ func (r *namingFKConventionRule) OnStatement(node ast.Node) {
 }
 
 func (r *namingFKConventionRule) handleCreateStmt(n *ast.CreateStmt) {
-	tableName := omniTableName(n.Relation)
+	tableName := rangeVarTableName(n.Relation)
 	cols, constraints := tableElements(n)
 
 	// Check table-level FK constraints
@@ -115,7 +115,7 @@ func (r *namingFKConventionRule) handleCreateStmt(n *ast.CreateStmt) {
 }
 
 func (r *namingFKConventionRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
-	tableName := omniTableName(n.Relation)
+	tableName := rangeVarTableName(n.Relation)
 
 	for _, cmd := range alterTableCmds(n) {
 		if ast.AlterTableType(cmd.Subtype) == ast.AT_AddConstraint {
@@ -161,7 +161,7 @@ func (*namingFKConventionRule) extractFKMetaData(c *ast.Constraint, tableName st
 	}
 
 	// Extract referenced table
-	referencedTable := omniTableName(c.Pktable)
+	referencedTable := rangeVarTableName(c.Pktable)
 
 	// Extract referenced columns from PkAttrs
 	var referencedColumns []string
@@ -193,7 +193,7 @@ func (*namingFKConventionRule) extractColumnFKMetaData(c *ast.Constraint, tableN
 	}
 
 	constraintName := c.Conname
-	referencedTable := omniTableName(c.Pktable)
+	referencedTable := rangeVarTableName(c.Pktable)
 
 	// Extract referenced columns from PkAttrs
 	var referencedColumns []string

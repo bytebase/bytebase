@@ -879,7 +879,7 @@ func (q *querySpanExtractor) extractJoin(join *ast.JoinClause) (base.TableSource
 		}
 	default:
 	}
-	tp := omniJoinType(join.Type)
+	tp := toJoinType(join.Type)
 	if left != nil && right != nil {
 		// USING and NATURAL compare the joined columns of both sides.
 		for _, name := range joinedColumnNames(left, right, tp, using) {
@@ -890,7 +890,7 @@ func (q *querySpanExtractor) extractJoin(join *ast.JoinClause) (base.TableSource
 	return joinTableSources(left, right, tp, using), nil
 }
 
-func omniJoinType(joinType ast.JoinType) joinType {
+func toJoinType(joinType ast.JoinType) joinType {
 	switch joinType {
 	case ast.JoinInner:
 		return InnerJoin

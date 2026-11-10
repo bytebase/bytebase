@@ -62,7 +62,7 @@ func (r *indexNoDuplicateColumnRule) OnStatement(node ast.Node) {
 
 func (r *indexNoDuplicateColumnRule) handleIndexStmt(n *ast.IndexStmt) {
 	indexName := n.Idxname
-	tableName := omniTableName(n.Relation)
+	tableName := rangeVarTableName(n.Relation)
 	columns := indexColumns(n)
 	if dupCol := findDuplicate(columns); dupCol != "" {
 		r.addDuplicateAdvice("INDEX", indexName, tableName, dupCol, r.ContentStartLine())
@@ -70,7 +70,7 @@ func (r *indexNoDuplicateColumnRule) handleIndexStmt(n *ast.IndexStmt) {
 }
 
 func (r *indexNoDuplicateColumnRule) handleCreateStmt(n *ast.CreateStmt) {
-	tableName := omniTableName(n.Relation)
+	tableName := rangeVarTableName(n.Relation)
 	_, constraints := tableElements(n)
 	for _, c := range constraints {
 		r.checkConstraint(c, tableName)
@@ -78,7 +78,7 @@ func (r *indexNoDuplicateColumnRule) handleCreateStmt(n *ast.CreateStmt) {
 }
 
 func (r *indexNoDuplicateColumnRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
-	tableName := omniTableName(n.Relation)
+	tableName := rangeVarTableName(n.Relation)
 	for _, cmd := range alterTableCmds(n) {
 		if cmd.Subtype == int(ast.AT_AddConstraint) {
 			if c, ok := cmd.Def.(*ast.Constraint); ok {

@@ -168,7 +168,7 @@ func (r *columnNoNullRule) generateAdvice() {
 }
 
 func (r *columnNoNullRule) handleCreateStmt(n *ast.CreateStmt) {
-	tableName := omniTableName(n.Relation)
+	tableName := rangeVarTableName(n.Relation)
 	if tableName == "" {
 		return
 	}
@@ -206,7 +206,7 @@ func (r *columnNoNullRule) handleCreateStmt(n *ast.CreateStmt) {
 }
 
 func (r *columnNoNullRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
-	tableName := omniTableName(n.Relation)
+	tableName := rangeVarTableName(n.Relation)
 	if tableName == "" {
 		return
 	}

@@ -102,7 +102,7 @@ func (r *namingIndexConventionRule) handleIndexStmt(n *ast.IndexStmt) {
 		return
 	}
 
-	tableName := omniTableName(n.Relation)
+	tableName := rangeVarTableName(n.Relation)
 	if tableName == "" {
 		return
 	}

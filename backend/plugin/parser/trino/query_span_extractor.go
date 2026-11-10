@@ -120,12 +120,12 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 		}
 	}
 
-	omniSpan, err := analysis.GetQuerySpanWithCatalog(spanInput, q.buildSpanCatalog(ctx, spanInput))
+	rawSpan, err := analysis.GetQuerySpanWithCatalog(spanInput, q.buildSpanCatalog(ctx, spanInput))
 	if err != nil {
 		return nil, err
 	}
 
-	tables := q.toTableResources(omniSpan)
+	tables := q.toTableResources(rawSpan)
 
 	if !readsResults {
 		// DML/DDL/unknown: report accessed tables as source columns (table-level,
@@ -140,7 +140,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 	// Resolve relation aliases (e.g. "u" in "FROM users u") back to physical
 	// table names so aliased column references match the expanded source
 	// columns.
-	aliasMap := q.buildAliasMap(omniSpan)
+	aliasMap := q.buildAliasMap(rawSpan)
 
 	// Expand each accessed table to its columns via metadata. If metadata is
 	// unavailable (e.g. tests without a getter), fall back to the table-level
@@ -151,10 +151,10 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 	// detected and skipped per resolved table inside expandTablesToColumns (not
 	// via a query-text substring scan), so a real maskable table is still
 	// expanded even when the same statement mentions "system." in a literal.
-	orderedColumns, fullSourceColumns, notFound := q.expandTablesToColumns(omniSpan)
+	orderedColumns, fullSourceColumns, notFound := q.expandTablesToColumns(rawSpan)
 
-	results := q.buildResults(omniSpan, fullSourceColumns, orderedColumns, aliasMap)
-	predicateColumns := q.mapPredicateColumns(omniSpan, fullSourceColumns, aliasMap)
+	results := q.buildResults(rawSpan, fullSourceColumns, orderedColumns, aliasMap)
+	predicateColumns := q.mapPredicateColumns(rawSpan, fullSourceColumns, aliasMap)
 
 	span := &base.QuerySpan{
 		Type:             queryType,

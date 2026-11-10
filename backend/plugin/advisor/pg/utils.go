@@ -100,8 +100,8 @@ func hasDataModifyingCTE(with *ast.WithClause) bool {
 }
 
 // nolint:unused
-// omniTableName extracts the table name from a RangeVar.
-func omniTableName(rv *ast.RangeVar) string {
+// rangeVarTableName extracts the table name from a RangeVar.
+func rangeVarTableName(rv *ast.RangeVar) string {
 	if rv == nil {
 		return ""
 	}

@@ -44,7 +44,7 @@ func classifyQueryType(node ast.Node, allSystems bool) (queryType base.QueryType
 
 	// EXPLAIN: check for ANALYZE option
 	case *ast.ExplainStmt:
-		if isExplainAnalyzeOmni(n) {
+		if isExplainAnalyzeStmt(n) {
 			qt := classifyExplainedQuery(n.Query)
 			return qt, true
 		}
@@ -124,9 +124,9 @@ func intoClause(n *ast.SelectStmt) *ast.IntoClause {
 	return intoClause(n.Rarg)
 }
 
-// isExplainAnalyzeOmni reports whether an ExplainStmt executes its query: its last ANALYZE option
+// isExplainAnalyzeStmt reports whether an ExplainStmt executes its query: its last ANALYZE option
 // is not FALSE, OFF, or 0, the values PostgreSQL reads as false.
-func isExplainAnalyzeOmni(n *ast.ExplainStmt) bool {
+func isExplainAnalyzeStmt(n *ast.ExplainStmt) bool {
 	if n.Options == nil {
 		return false
 	}
@@ -152,7 +152,7 @@ func isExplainAnalyzeOmni(n *ast.ExplainStmt) bool {
 // within text, the text of the EXPLAIN. It returns any other node and text unchanged.
 func UnwrapExplainAnalyze(node ast.Node, text string) (ast.Node, string) {
 	explain, ok := node.(*ast.ExplainStmt)
-	if !ok || !isExplainAnalyzeOmni(explain) {
+	if !ok || !isExplainAnalyzeStmt(explain) {
 		return node, text
 	}
 	inner, ok := explainedText(explain, text)

@@ -80,7 +80,7 @@ func (r *statementObjectOwnerCheckRule) OnStatement(node ast.Node) {
 	case *ast.AlterTableStmt:
 		if n.Relation != nil {
 			schemaName := schemaName(n.Relation)
-			tableName := omniTableName(n.Relation)
+			tableName := rangeVarTableName(n.Relation)
 			r.checkTableOwnership(schemaName, tableName)
 		}
 	case *ast.AlterTypeStmt:

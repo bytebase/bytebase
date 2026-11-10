@@ -80,7 +80,7 @@ func (r *columnRequirementRule) OnStatement(node ast.Node) {
 }
 
 func (r *columnRequirementRule) handleCreateStmt(n *ast.CreateStmt) {
-	tableName := omniTableName(n.Relation)
+	tableName := rangeVarTableName(n.Relation)
 	if tableName == "" {
 		return
 	}
@@ -117,7 +117,7 @@ func (r *columnRequirementRule) handleCreateStmt(n *ast.CreateStmt) {
 }
 
 func (r *columnRequirementRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
-	tableName := omniTableName(n.Relation)
+	tableName := rangeVarTableName(n.Relation)
 	if tableName == "" {
 		return
 	}
@@ -146,7 +146,7 @@ func (r *columnRequirementRule) handleRenameStmt(n *ast.RenameStmt) {
 		return
 	}
 
-	tableName := omniTableName(n.Relation)
+	tableName := rangeVarTableName(n.Relation)
 	if tableName == "" {
 		return
 	}

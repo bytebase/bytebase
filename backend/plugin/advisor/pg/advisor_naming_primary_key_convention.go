@@ -99,7 +99,7 @@ func (r *namingPKConventionRule) OnStatement(node ast.Node) {
 }
 
 func (r *namingPKConventionRule) handleCreateStmt(n *ast.CreateStmt) {
-	tableName := omniTableName(n.Relation)
+	tableName := rangeVarTableName(n.Relation)
 	schemaName := schemaName(n.Relation)
 
 	_, constraints := tableElements(n)
@@ -134,7 +134,7 @@ func (r *namingPKConventionRule) handleCreateStmt(n *ast.CreateStmt) {
 }
 
 func (r *namingPKConventionRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
-	tableName := omniTableName(n.Relation)
+	tableName := rangeVarTableName(n.Relation)
 	schemaName := schemaName(n.Relation)
 
 	for _, cmd := range alterTableCmds(n) {
@@ -170,7 +170,7 @@ func (r *namingPKConventionRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
 func (r *namingPKConventionRule) handleRenameStmt(n *ast.RenameStmt) {
 	// ALTER TABLE ... RENAME CONSTRAINT
 	if n.RenameType == ast.OBJECT_TABCONSTRAINT {
-		tableName := omniTableName(n.Relation)
+		tableName := rangeVarTableName(n.Relation)
 		schemaName := schemaName(n.Relation)
 		oldName := n.Subname
 		newName := n.Newname

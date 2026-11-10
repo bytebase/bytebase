@@ -84,7 +84,7 @@ func (r *namingColumnConventionRule) OnStatement(node ast.Node) {
 }
 
 func (r *namingColumnConventionRule) handleCreateStmt(n *ast.CreateStmt) {
-	tableName := omniTableName(n.Relation)
+	tableName := rangeVarTableName(n.Relation)
 	cols, _ := tableElements(n)
 	for _, col := range cols {
 		r.checkColumnName(tableName, col.Colname)
@@ -92,7 +92,7 @@ func (r *namingColumnConventionRule) handleCreateStmt(n *ast.CreateStmt) {
 }
 
 func (r *namingColumnConventionRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
-	tableName := omniTableName(n.Relation)
+	tableName := rangeVarTableName(n.Relation)
 	for _, cmd := range alterTableCmds(n) {
 		if ast.AlterTableType(cmd.Subtype) == ast.AT_AddColumn {
 			if colDef, ok := cmd.Def.(*ast.ColumnDef); ok {
@@ -104,7 +104,7 @@ func (r *namingColumnConventionRule) handleAlterTableStmt(n *ast.AlterTableStmt)
 
 func (r *namingColumnConventionRule) handleRenameStmt(n *ast.RenameStmt) {
 	if n.RenameType == ast.OBJECT_COLUMN {
-		tableName := omniTableName(n.Relation)
+		tableName := rangeVarTableName(n.Relation)
 		r.checkColumnName(tableName, n.Newname)
 	}
 }

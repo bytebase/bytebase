@@ -70,7 +70,7 @@ func (r *columnTypeDisallowListRule) OnStatement(node ast.Node) {
 }
 
 func (r *columnTypeDisallowListRule) handleCreateStmt(n *ast.CreateStmt) {
-	tableName := omniTableName(n.Relation)
+	tableName := rangeVarTableName(n.Relation)
 	if tableName == "" {
 		return
 	}
@@ -84,7 +84,7 @@ func (r *columnTypeDisallowListRule) handleCreateStmt(n *ast.CreateStmt) {
 }
 
 func (r *columnTypeDisallowListRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
-	tableName := omniTableName(n.Relation)
+	tableName := rangeVarTableName(n.Relation)
 	if tableName == "" {
 		return
 	}

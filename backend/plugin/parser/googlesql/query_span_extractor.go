@@ -73,7 +73,7 @@ func (q *QuerySpanExtractor) GetQuerySpan(ctx context.Context, statement string)
 		return nil, errors.Errorf("expecting only one statement to get query span, but got %d", count)
 	}
 
-	omniSpan, err := analysis.GetQuerySpan(single, q.cfg.Dialect)
+	rawSpan, err := analysis.GetQuerySpan(single, q.cfg.Dialect)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +81,7 @@ func (q *QuerySpanExtractor) GetQuerySpan(ctx context.Context, statement string)
 	// Reject a statement that reads from both user and system
 	// (INFORMATION_SCHEMA / SPANNER_SYS) tables, matching the legacy
 	// isMixedQuery → MixUserSystemTablesError.
-	allSystems, mixed := classifyAccess(omniSpan)
+	allSystems, mixed := classifyAccess(rawSpan)
 	if mixed {
 		return nil, base.MixUserSystemTablesError
 	}
@@ -98,7 +98,7 @@ func (q *QuerySpanExtractor) GetQuerySpan(ctx context.Context, statement string)
 		}, nil
 	}
 
-	queryType := MapQueryType(omniSpan.Type)
+	queryType := MapQueryType(rawSpan.Type)
 	if queryType == base.QueryTypeUnknown && q.cfg.SetStatementIsSelect && IsSetStatement(single) {
 		// Legacy-spanner special case: a SET statement classifies as Select
 		// ("treat SAFE SET as select"); omni classifies it Unknown.
@@ -118,7 +118,7 @@ func (q *QuerySpanExtractor) GetQuerySpan(ctx context.Context, statement string)
 	// column-expanded source columns. Uses the table name AS WRITTEN in the
 	// query (the legacy accessTableListener recorded the written identifier),
 	// with the dialect defaults filled in.
-	accessTables := q.toTableResources(omniSpan)
+	accessTables := q.toTableResources(rawSpan)
 
 	// Only a read-only query produces per-column results; DML/DDL/Explain/
 	// Unknown keep the accessed tables and no per-column lineage.
@@ -133,19 +133,19 @@ func (q *QuerySpanExtractor) GetQuerySpan(ctx context.Context, statement string)
 
 	// Resolve relation aliases (e.g. "g" in "FROM galleries g") back to physical
 	// table names so aliased column references match the expanded source columns.
-	aliasMap := q.buildAliasMap(ctx, omniSpan)
+	aliasMap := q.buildAliasMap(ctx, rawSpan)
 
 	// Expand each accessed table to its columns via metadata: the membership set
 	// used for lineage matching. The per-column resources use the
 	// METADATA-canonical table name, matching the legacy findTableSchema/
 	// PhysicalTable, which is why result lineage carries metadata casing while
 	// the table-level SourceColumns above carry the written casing.
-	fullSourceColumns, notFound, err := q.expandTablesToColumns(ctx, omniSpan)
+	fullSourceColumns, notFound, err := q.expandTablesToColumns(ctx, rawSpan)
 	if err != nil {
 		return nil, err
 	}
 
-	results := q.expandColumnInfos(ctx, omniSpan.Results, fullSourceColumns, aliasMap)
+	results := q.expandColumnInfos(ctx, rawSpan.Results, fullSourceColumns, aliasMap)
 
 	span := &base.QuerySpan{
 		Type:          queryType,
