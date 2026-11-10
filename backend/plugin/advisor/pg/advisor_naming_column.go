@@ -49,7 +49,7 @@ func (*NamingColumnConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 	}
 
 	rule := &namingColumnConventionRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
@@ -57,11 +57,11 @@ func (*NamingColumnConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 		maxLength: maxLength,
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type namingColumnConventionRule struct {
-	OmniBaseRule
+	BaseRule
 
 	format    *regexp.Regexp
 	maxLength int
@@ -85,7 +85,7 @@ func (r *namingColumnConventionRule) OnStatement(node ast.Node) {
 
 func (r *namingColumnConventionRule) handleCreateStmt(n *ast.CreateStmt) {
 	tableName := omniTableName(n.Relation)
-	cols, _ := omniTableElements(n)
+	cols, _ := tableElements(n)
 	for _, col := range cols {
 		r.checkColumnName(tableName, col.Colname)
 	}
@@ -93,7 +93,7 @@ func (r *namingColumnConventionRule) handleCreateStmt(n *ast.CreateStmt) {
 
 func (r *namingColumnConventionRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
 	tableName := omniTableName(n.Relation)
-	for _, cmd := range omniAlterTableCmds(n) {
+	for _, cmd := range alterTableCmds(n) {
 		if ast.AlterTableType(cmd.Subtype) == ast.AT_AddColumn {
 			if colDef, ok := cmd.Def.(*ast.ColumnDef); ok {
 				r.checkColumnName(tableName, colDef.Colname)

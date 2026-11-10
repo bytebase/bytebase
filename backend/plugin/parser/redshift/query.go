@@ -24,7 +24,7 @@ func init() {
 func ValidateSQLForEditor(statement string) (bool, bool, error) {
 	omniStmts, err := ParseRedshift(statement)
 	if err != nil {
-		return false, false, convertOmniError(err, base.Statement{
+		return false, false, convertError(err, base.Statement{
 			Text:  statement,
 			Start: &storepb.Position{Line: 1, Column: 1},
 		})
@@ -37,7 +37,7 @@ func ValidateSQLForEditor(statement string) (bool, bool, error) {
 			continue
 		}
 		seen = true
-		canRunInReadOnly, stmtReturnsData := validateOmniEditorStatement(stmt.AST)
+		canRunInReadOnly, stmtReturnsData := validateEditorStatement(stmt.AST)
 		if !canRunInReadOnly {
 			return false, false, nil
 		}
@@ -48,16 +48,16 @@ func ValidateSQLForEditor(statement string) (bool, bool, error) {
 	return seen, returnsData, nil
 }
 
-func validateOmniEditorStatement(node redshiftast.Node) (bool, bool) {
+func validateEditorStatement(node redshiftast.Node) (bool, bool) {
 	switch n := node.(type) {
 	case *redshiftast.SelectStmt:
-		if n.IntoClause != nil || hasOmniDMLInWithClause(n.WithClause) {
+		if n.IntoClause != nil || hasDMLInWithClause(n.WithClause) {
 			return false, false
 		}
 		return true, true
 	case *redshiftast.ExplainStmt:
-		if hasOmniExplainAnalyze(n) {
-			if selectStmt, ok := n.Query.(*redshiftast.SelectStmt); ok && selectStmt.IntoClause == nil && !hasOmniDMLInWithClause(selectStmt.WithClause) {
+		if hasExplainAnalyze(n) {
+			if selectStmt, ok := n.Query.(*redshiftast.SelectStmt); ok && selectStmt.IntoClause == nil && !hasDMLInWithClause(selectStmt.WithClause) {
 				return true, false
 			}
 			return false, false
@@ -72,7 +72,7 @@ func validateOmniEditorStatement(node redshiftast.Node) (bool, bool) {
 	}
 }
 
-func hasOmniExplainAnalyze(stmt *redshiftast.ExplainStmt) bool {
+func hasExplainAnalyze(stmt *redshiftast.ExplainStmt) bool {
 	if stmt == nil || stmt.Options == nil {
 		return false
 	}
@@ -88,7 +88,7 @@ func hasOmniExplainAnalyze(stmt *redshiftast.ExplainStmt) bool {
 	return false
 }
 
-func hasOmniDMLInWithClause(withClause *redshiftast.WithClause) bool {
+func hasDMLInWithClause(withClause *redshiftast.WithClause) bool {
 	if withClause == nil || withClause.Ctes == nil {
 		return false
 	}
@@ -97,14 +97,14 @@ func hasOmniDMLInWithClause(withClause *redshiftast.WithClause) bool {
 		if !ok {
 			continue
 		}
-		if hasOmniDMLNode(cte.Ctequery) {
+		if hasDMLNode(cte.Ctequery) {
 			return true
 		}
 	}
 	return false
 }
 
-func hasOmniDMLNode(node redshiftast.Node) bool {
+func hasDMLNode(node redshiftast.Node) bool {
 	hasDML := false
 	redshiftast.Inspect(node, func(n redshiftast.Node) bool {
 		switch n.(type) {

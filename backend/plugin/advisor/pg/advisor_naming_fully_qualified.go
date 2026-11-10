@@ -33,18 +33,18 @@ func (*FullyQualifiedObjectNameAdvisor) Check(_ context.Context, checkCtx adviso
 	}
 
 	rule := &fullyQualifiedObjectNameRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 		dbMetadata: checkCtx.DBSchema,
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type fullyQualifiedObjectNameRule struct {
-	OmniBaseRule
+	BaseRule
 
 	dbMetadata *metadatapb.DatabaseSchemaMetadata
 }
@@ -82,7 +82,7 @@ func (r *fullyQualifiedObjectNameRule) OnStatement(node ast.Node) {
 }
 
 func (r *fullyQualifiedObjectNameRule) handleDropStmt(n *ast.DropStmt) {
-	for _, nameParts := range omniDropObjectNames(n) {
+	for _, nameParts := range dropObjectNames(n) {
 		objName := strings.Join(nameParts, ".")
 		if !isFullyQualifiedName(objName) {
 			r.addUnqualifiedAdvice(objName)
@@ -97,7 +97,7 @@ func (r *fullyQualifiedObjectNameRule) handleSelectStmt(n *ast.SelectStmt) {
 
 	schemaNameMap := r.getSchemaNameMapFromPublic()
 
-	for _, rv := range omniCollectFromClauseRangeVars(n.FromClause) {
+	for _, rv := range collectFromClauseRangeVars(n.FromClause) {
 		tableName := rv.Relname
 		// Only check tables that exist in the schema
 		if schemaNameMap == nil || schemaNameMap[tableName] {

@@ -22,7 +22,7 @@ func classifyQueryType(node ast.Node, allSystems bool) (queryType base.QueryType
 
 	// SELECT: check for INTO clause (becomes DDL)
 	case *ast.SelectStmt:
-		if hasOmniIntoClause(n) {
+		if hasIntoClause(n) {
 			return base.DDL, false
 		}
 		// A data-modifying CTE writes, so the SELECT needs DML permission.
@@ -104,24 +104,24 @@ func classifyQueryType(node ast.Node, allSystems bool) (queryType base.QueryType
 	}
 }
 
-// hasOmniIntoClause checks if a SelectStmt has an INTO clause (SELECT INTO).
-func hasOmniIntoClause(n *ast.SelectStmt) bool {
-	return omniIntoClause(n) != nil
+// hasIntoClause checks if a SelectStmt has an INTO clause (SELECT INTO).
+func hasIntoClause(n *ast.SelectStmt) bool {
+	return intoClause(n) != nil
 }
 
-// omniIntoClause returns the INTO clause of n, searching set-operation arms
+// intoClause returns the INTO clause of n, searching set-operation arms
 // (UNION/INTERSECT/EXCEPT) — the parser attaches INTO to the first arm, not the root.
-func omniIntoClause(n *ast.SelectStmt) *ast.IntoClause {
+func intoClause(n *ast.SelectStmt) *ast.IntoClause {
 	if n == nil {
 		return nil
 	}
 	if n.IntoClause != nil {
 		return n.IntoClause
 	}
-	if c := omniIntoClause(n.Larg); c != nil {
+	if c := intoClause(n.Larg); c != nil {
 		return c
 	}
-	return omniIntoClause(n.Rarg)
+	return intoClause(n.Rarg)
 }
 
 // isExplainAnalyzeOmni reports whether an ExplainStmt executes its query: its last ANALYZE option
@@ -175,7 +175,7 @@ func classifyExplainedQuery(query ast.Node) base.QueryType {
 	}
 	switch n := query.(type) {
 	case *ast.SelectStmt:
-		if hasOmniIntoClause(n) {
+		if hasIntoClause(n) {
 			return base.DDL
 		}
 		if containsWriteCTE(n) {

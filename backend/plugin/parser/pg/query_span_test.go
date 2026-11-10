@@ -610,7 +610,7 @@ func TestWalkExprStopsOnSelfReferentialFunction(t *testing.T) {
 				}},
 			}},
 		}
-		extractor := newOmniQuerySpanExtractor(testDB, []string{testSchema}, base.GetQuerySpanContext{})
+		extractor := newQuerySpanExtractor(testDB, []string{testSchema}, base.GetQuerySpanContext{})
 		extractor.cat = catalog.New()
 		extractor.walkExpr(q, q.TargetList[0].Expr, make(base.SourceColumnSet))
 	})
@@ -636,7 +636,7 @@ func TestCollectPredicateColumnsStopsOnCyclicQuery(t *testing.T) {
 	mustNotOverflow(t, func() {
 		q := &catalog.Query{}
 		q.CTEList = []*catalog.CommonTableExprQ{{Query: q}}
-		extractor := newOmniQuerySpanExtractor(testDB, []string{testSchema}, base.GetQuerySpanContext{})
+		extractor := newQuerySpanExtractor(testDB, []string{testSchema}, base.GetQuerySpanContext{})
 		extractor.collectPredicateColumns(q)
 	})
 }
@@ -653,7 +653,7 @@ func TestExtractLineageStopsOnCyclicSetOp(t *testing.T) {
 		selStmt := &ast.SelectStmt{}
 		selStmt.Larg = selStmt
 		selStmt.Rarg = &ast.SelectStmt{}
-		extractor := newOmniQuerySpanExtractor(testDB, []string{testSchema}, base.GetQuerySpanContext{})
+		extractor := newQuerySpanExtractor(testDB, []string{testSchema}, base.GetQuerySpanContext{})
 		extractor.extractLineage(q, selStmt)
 	})
 }
@@ -670,7 +670,7 @@ func TestResolveThroughCTEStopsOnCyclicCTE(t *testing.T) {
 			}}},
 			FromClause: &ast.List{Items: []ast.Node{&ast.RangeVar{Relname: "c"}}},
 		}
-		extractor := newOmniQuerySpanExtractor(testDB, []string{testSchema}, base.GetQuerySpanContext{})
+		extractor := newQuerySpanExtractor(testDB, []string{testSchema}, base.GetQuerySpanContext{})
 		extractor.cat = catalog.New()
 		analyzer := &plpgsqlAnalyzer{
 			extractor: extractor,
@@ -776,7 +776,7 @@ func TestRangeVarFallbackSkipsCompositeTypes(t *testing.T) {
 		t.Fatalf("LoadMetadata: %v", err)
 	}
 
-	e := &omniQuerySpanExtractor{
+	e := &querySpanExtractor{
 		cat:             cat,
 		searchPath:      []string{"public"},
 		defaultDatabase: "db",

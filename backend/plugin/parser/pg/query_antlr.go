@@ -74,7 +74,7 @@ func isWriteSelect(n *ast.SelectStmt) bool {
 	if n == nil {
 		return false
 	}
-	if hasOmniIntoClause(n) {
+	if hasIntoClause(n) {
 		return true
 	}
 	return containsWriteCTE(n)

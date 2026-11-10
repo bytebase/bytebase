@@ -32,20 +32,20 @@ func (*StatementMergeAlterTableAdvisor) Check(_ context.Context, checkCtx adviso
 	}
 
 	rule := &statementMergeAlterTableRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 		tableMap: make(tableMap),
 	}
 
-	RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	RunRules(checkCtx.ParsedStatements, []Rule{rule})
 
 	return rule.generateAdvice(), nil
 }
 
 type statementMergeAlterTableRule struct {
-	OmniBaseRule
+	BaseRule
 	tableMap tableMap
 }
 
@@ -89,7 +89,7 @@ func (r *statementMergeAlterTableRule) OnStatement(node ast.Node) {
 	case *ast.CreateStmt:
 		if n.Relation != nil {
 			tableName := omniTableName(n.Relation)
-			schema := omniSchemaName(n.Relation)
+			schema := schemaName(n.Relation)
 			if tableName != "" {
 				r.tableMap.set(schema, tableName, int(r.ContentEndLine()))
 			}
@@ -97,7 +97,7 @@ func (r *statementMergeAlterTableRule) OnStatement(node ast.Node) {
 	case *ast.AlterTableStmt:
 		if n.Relation != nil {
 			tableName := omniTableName(n.Relation)
-			schema := omniSchemaName(n.Relation)
+			schema := schemaName(n.Relation)
 			if tableName != "" {
 				r.tableMap.add(schema, tableName, int(r.ContentEndLine()))
 			}

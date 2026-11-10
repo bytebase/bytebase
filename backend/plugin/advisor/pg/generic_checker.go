@@ -10,8 +10,8 @@ import (
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
-// OmniRule defines the interface for omni-based SQL validation rules.
-type OmniRule interface {
+// Rule defines the interface for omni-based SQL validation rules.
+type Rule interface {
 	// OnStatement is called for each top-level statement AST node.
 	OnStatement(node ast.Node)
 
@@ -22,8 +22,8 @@ type OmniRule interface {
 	GetAdviceList() []*storepb.Advice
 }
 
-// OmniBaseRule provides common functionality for omni-based rules.
-type OmniBaseRule struct {
+// BaseRule provides common functionality for omni-based rules.
+type BaseRule struct {
 	Level    storepb.Advice_Status
 	Title    string
 	Advice   []*storepb.Advice
@@ -32,18 +32,18 @@ type OmniBaseRule struct {
 }
 
 // SetStatement sets the statement context for position calculations.
-func (r *OmniBaseRule) SetStatement(baseLine int, stmtText string) {
+func (r *BaseRule) SetStatement(baseLine int, stmtText string) {
 	r.BaseLine = baseLine
 	r.StmtText = stmtText
 }
 
 // GetAdviceList returns the accumulated advice.
-func (r *OmniBaseRule) GetAdviceList() []*storepb.Advice {
+func (r *BaseRule) GetAdviceList() []*storepb.Advice {
 	return r.Advice
 }
 
 // AddAdvice adds advice. The BaseLine offset is added automatically to StartPosition.Line.
-func (r *OmniBaseRule) AddAdvice(advice *storepb.Advice) {
+func (r *BaseRule) AddAdvice(advice *storepb.Advice) {
 	if advice.StartPosition != nil {
 		advice.StartPosition.Line += int32(r.BaseLine)
 	}
@@ -51,13 +51,13 @@ func (r *OmniBaseRule) AddAdvice(advice *storepb.Advice) {
 }
 
 // AddAdviceAbsolute adds advice with an already-absolute line number.
-func (r *OmniBaseRule) AddAdviceAbsolute(advice *storepb.Advice) {
+func (r *BaseRule) AddAdviceAbsolute(advice *storepb.Advice) {
 	r.Advice = append(r.Advice, advice)
 }
 
 // LocToLine converts an omni Loc byte offset to a 1-based line number
 // relative to the current statement (suitable for AddAdvice which adds BaseLine).
-func (r *OmniBaseRule) LocToLine(loc ast.Loc) int32 {
+func (r *BaseRule) LocToLine(loc ast.Loc) int32 {
 	if loc.Start < 0 || r.StmtText == "" {
 		return r.ContentStartLine()
 	}
@@ -68,7 +68,7 @@ func (r *OmniBaseRule) LocToLine(loc ast.Loc) int32 {
 // TrimmedStmtText returns the statement text with leading/trailing whitespace
 // and trailing semicolons removed. This matches the behavior of the ANTLR
 // getTextFromTokens helper that did not include semicolons.
-func (r *OmniBaseRule) TrimmedStmtText() string {
+func (r *BaseRule) TrimmedStmtText() string {
 	return strings.TrimRight(strings.TrimSpace(r.StmtText), ";")
 }
 
@@ -76,7 +76,7 @@ func (r *OmniBaseRule) TrimmedStmtText() string {
 // character in StmtText. This accounts for leading newlines that SplitSQL may
 // include in the statement text. Returns 1 if the text is empty or has no
 // leading newlines.
-func (r *OmniBaseRule) ContentStartLine() int32 {
+func (r *BaseRule) ContentStartLine() int32 {
 	idx := strings.IndexFunc(r.StmtText, func(c rune) bool {
 		return c != ' ' && c != '\t' && c != '\n' && c != '\r'
 	})
@@ -89,7 +89,7 @@ func (r *OmniBaseRule) ContentStartLine() int32 {
 
 // ContentEndLine returns the 1-based line number of the last non-whitespace
 // character in StmtText. This matches ANTLR's GetStop().GetLine() behavior.
-func (r *OmniBaseRule) ContentEndLine() int32 {
+func (r *BaseRule) ContentEndLine() int32 {
 	if r.StmtText == "" {
 		return 1
 	}
@@ -112,7 +112,7 @@ func (r *OmniBaseRule) ContentEndLine() int32 {
 // FindLineByName searches for an identifier name in the statement text and returns
 // its 1-based line number. Falls back to ContentStartLine() if not found.
 // This is useful when the AST node's Loc is unknown (-1) but we need a line number.
-func (r *OmniBaseRule) FindLineByName(name string) int32 {
+func (r *BaseRule) FindLineByName(name string) int32 {
 	if name == "" || r.StmtText == "" {
 		return r.ContentStartLine()
 	}
@@ -126,12 +126,12 @@ func (r *OmniBaseRule) FindLineByName(name string) int32 {
 
 // RunRules iterates over parsed statements and dispatches each omni AST node to all rules.
 // Returns combined advice from all rules. Skips statements without omni AST.
-func RunRules(stmts []base.ParsedStatement, rules []OmniRule) []*storepb.Advice {
+func RunRules(stmts []base.ParsedStatement, rules []Rule) []*storepb.Advice {
 	for _, stmt := range stmts {
 		if stmt.AST == nil {
 			continue
 		}
-		node, ok := pgparser.GetOmniNode(stmt.AST)
+		node, ok := pgparser.GetNode(stmt.AST)
 		if !ok {
 			continue
 		}

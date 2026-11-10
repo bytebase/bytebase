@@ -29,11 +29,11 @@ func GetQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, stmt base.
 	if schema != "" {
 		searchPath = []string{schema}
 	}
-	extractor := newOmniQuerySpanExtractor(database, searchPath, gCtx)
+	extractor := newQuerySpanExtractor(database, searchPath, gCtx)
 
-	querySpan, err := extractor.getOmniQuerySpan(ctx, stmt.Text)
+	querySpan, err := extractor.getQuerySpan(ctx, stmt.Text)
 	if err != nil {
-		err = convertOmniError(err, stmt)
+		err = convertError(err, stmt)
 		return nil, errors.Wrapf(err, "failed to get query span from statement: %s", stmt.Text)
 	}
 	return querySpan, nil

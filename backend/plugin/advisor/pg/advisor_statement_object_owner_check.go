@@ -47,7 +47,7 @@ func (*StatementObjectOwnerCheckAdvisor) Check(ctx context.Context, checkCtx adv
 	}
 
 	rule := &statementObjectOwnerCheckRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
@@ -55,11 +55,11 @@ func (*StatementObjectOwnerCheckAdvisor) Check(ctx context.Context, checkCtx adv
 		currentRole: currentRole,
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type statementObjectOwnerCheckRule struct {
-	OmniBaseRule
+	BaseRule
 	dbMetadata  *model.DatabaseMetadata
 	currentRole string
 }
@@ -75,16 +75,16 @@ func (r *statementObjectOwnerCheckRule) OnStatement(node ast.Node) {
 		// SET ROLE handling - no-op for now (same as ANTLR version)
 	case *ast.AlterSeqStmt:
 		if n.Sequence != nil {
-			r.checkSchemaOwnership(omniSchemaName(n.Sequence))
+			r.checkSchemaOwnership(schemaName(n.Sequence))
 		}
 	case *ast.AlterTableStmt:
 		if n.Relation != nil {
-			schemaName := omniSchemaName(n.Relation)
+			schemaName := schemaName(n.Relation)
 			tableName := omniTableName(n.Relation)
 			r.checkTableOwnership(schemaName, tableName)
 		}
 	case *ast.AlterTypeStmt:
-		parts := omniListStrings(n.TypeName)
+		parts := listStrings(n.TypeName)
 		var schemaName string
 		if len(parts) >= 2 {
 			schemaName = parts[0]
@@ -103,11 +103,11 @@ func (r *statementObjectOwnerCheckRule) OnStatement(node ast.Node) {
 		}
 		r.checkSchemaOwnership(schemaName)
 	case *ast.CreateFunctionStmt:
-		schemaName := omniExtractSchemaFromFuncname(n.Funcname)
+		schemaName := extractSchemaFromFuncname(n.Funcname)
 		r.checkSchemaOwnership(schemaName)
 	case *ast.IndexStmt:
 		if n.Relation != nil {
-			r.checkSchemaOwnership(omniSchemaName(n.Relation))
+			r.checkSchemaOwnership(schemaName(n.Relation))
 		}
 	case *ast.CreateSchemaStmt:
 		owner := r.dbMetadata.GetProto().GetOwner()
@@ -125,19 +125,19 @@ func (r *statementObjectOwnerCheckRule) OnStatement(node ast.Node) {
 		}
 	case *ast.CreateSeqStmt:
 		if n.Sequence != nil {
-			r.checkSchemaOwnership(omniSchemaName(n.Sequence))
+			r.checkSchemaOwnership(schemaName(n.Sequence))
 		}
 	case *ast.CreateStmt:
 		if n.Relation != nil {
-			r.checkSchemaOwnership(omniSchemaName(n.Relation))
+			r.checkSchemaOwnership(schemaName(n.Relation))
 		}
 	case *ast.CreateTrigStmt:
 		if n.Relation != nil {
-			r.checkSchemaOwnership(omniSchemaName(n.Relation))
+			r.checkSchemaOwnership(schemaName(n.Relation))
 		}
 	case *ast.DefineStmt:
 		if n.Kind == ast.OBJECT_TYPE {
-			parts := omniListStrings(n.Defnames)
+			parts := listStrings(n.Defnames)
 			var schemaName string
 			if len(parts) >= 2 {
 				schemaName = parts[0]
@@ -147,13 +147,13 @@ func (r *statementObjectOwnerCheckRule) OnStatement(node ast.Node) {
 	case *ast.CreateTableAsStmt:
 		// Handles CREATE MATERIALIZED VIEW
 		if n.Objtype == ast.OBJECT_MATVIEW && n.Into != nil && n.Into.Rel != nil {
-			r.checkSchemaOwnership(omniSchemaName(n.Into.Rel))
+			r.checkSchemaOwnership(schemaName(n.Into.Rel))
 		}
 	case *ast.AlterFunctionStmt:
 		// DROP FUNCTION is handled by DropStmt in omni AST
 		// AlterFunctionStmt handles ALTER FUNCTION
 		if n.Func != nil {
-			schemaName := omniExtractSchemaFromObjectWithArgs(n.Func)
+			schemaName := extractSchemaFromObjectWithArgs(n.Func)
 			r.checkSchemaOwnership(schemaName)
 		}
 	case *ast.DropStmt:
@@ -166,7 +166,7 @@ func (r *statementObjectOwnerCheckRule) OnStatement(node ast.Node) {
 
 func (r *statementObjectOwnerCheckRule) handleDropStmt(n *ast.DropStmt) {
 	// For DROP INDEX, DROP TYPE, etc., check schema ownership via object names
-	names := omniDropObjectNames(n)
+	names := dropObjectNames(n)
 	for _, parts := range names {
 		var schemaName string
 		if len(parts) >= 2 {
@@ -186,7 +186,7 @@ func (r *statementObjectOwnerCheckRule) handleRenameStmt(n *ast.RenameStmt) {
 	case ast.OBJECT_INDEX:
 		// ALTER INDEX RENAME
 		if n.Relation != nil {
-			r.checkSchemaOwnership(omniSchemaName(n.Relation))
+			r.checkSchemaOwnership(schemaName(n.Relation))
 		}
 	default:
 	}
@@ -253,21 +253,21 @@ func (r *statementObjectOwnerCheckRule) checkTableOwnership(schemaName, tableNam
 	}
 }
 
-// omniExtractSchemaFromFuncname extracts the schema name from a function's qualified name list.
-func omniExtractSchemaFromFuncname(funcname *ast.List) string {
-	parts := omniListStrings(funcname)
+// extractSchemaFromFuncname extracts the schema name from a function's qualified name list.
+func extractSchemaFromFuncname(funcname *ast.List) string {
+	parts := listStrings(funcname)
 	if len(parts) >= 2 {
 		return parts[0]
 	}
 	return ""
 }
 
-// omniExtractSchemaFromObjectWithArgs extracts the schema from an ObjectWithArgs node.
-func omniExtractSchemaFromObjectWithArgs(obj *ast.ObjectWithArgs) string {
+// extractSchemaFromObjectWithArgs extracts the schema from an ObjectWithArgs node.
+func extractSchemaFromObjectWithArgs(obj *ast.ObjectWithArgs) string {
 	if obj == nil || obj.Objname == nil {
 		return ""
 	}
-	parts := omniListStrings(obj.Objname)
+	parts := listStrings(obj.Objname)
 	if len(parts) >= 2 {
 		return parts[0]
 	}

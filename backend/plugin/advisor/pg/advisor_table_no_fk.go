@@ -31,17 +31,17 @@ func (*TableNoFKAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*
 	}
 
 	rule := &tableNoFKRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type tableNoFKRule struct {
-	OmniBaseRule
+	BaseRule
 }
 
 func (*tableNoFKRule) Name() string {
@@ -61,9 +61,9 @@ func (r *tableNoFKRule) OnStatement(node ast.Node) {
 // handleCreateStmt handles CREATE TABLE with FK constraints.
 func (r *tableNoFKRule) handleCreateStmt(n *ast.CreateStmt) {
 	tableName := omniTableName(n.Relation)
-	schema := omniSchemaName(n.Relation)
+	schema := schemaName(n.Relation)
 
-	cols, constraints := omniTableElements(n)
+	cols, constraints := tableElements(n)
 
 	// Check table-level constraints for FOREIGN KEY
 	for _, c := range constraints {
@@ -75,7 +75,7 @@ func (r *tableNoFKRule) handleCreateStmt(n *ast.CreateStmt) {
 
 	// Check column-level constraints for REFERENCES (column-level FK)
 	for _, col := range cols {
-		for _, c := range omniColumnConstraints(col) {
+		for _, c := range columnConstraints(col) {
 			if c.Contype == ast.CONSTR_FOREIGN {
 				r.addFKAdvice(schema, tableName)
 				return
@@ -87,9 +87,9 @@ func (r *tableNoFKRule) handleCreateStmt(n *ast.CreateStmt) {
 // handleAlterTableStmt handles ALTER TABLE ADD CONSTRAINT with FK.
 func (r *tableNoFKRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
 	tableName := omniTableName(n.Relation)
-	schema := omniSchemaName(n.Relation)
+	schema := schemaName(n.Relation)
 
-	for _, cmd := range omniAlterTableCmds(n) {
+	for _, cmd := range alterTableCmds(n) {
 		if ast.AlterTableType(cmd.Subtype) == ast.AT_AddConstraint {
 			constraint, ok := cmd.Def.(*ast.Constraint)
 			if !ok || constraint == nil {

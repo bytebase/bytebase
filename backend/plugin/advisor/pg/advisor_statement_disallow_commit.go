@@ -31,17 +31,17 @@ func (*StatementDisallowCommitAdvisor) Check(_ context.Context, checkCtx advisor
 	}
 
 	rule := &statementDisallowCommitRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type statementDisallowCommitRule struct {
-	OmniBaseRule
+	BaseRule
 }
 
 func (*statementDisallowCommitRule) Name() string {

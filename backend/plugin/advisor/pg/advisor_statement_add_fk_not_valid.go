@@ -30,17 +30,17 @@ func (*StatementAddFKNotValidAdvisor) Check(_ context.Context, checkCtx advisor.
 	}
 
 	rule := &statementAddFKNotValidRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type statementAddFKNotValidRule struct {
-	OmniBaseRule
+	BaseRule
 }
 
 func (*statementAddFKNotValidRule) Name() string {
@@ -53,7 +53,7 @@ func (r *statementAddFKNotValidRule) OnStatement(node ast.Node) {
 		return
 	}
 
-	for _, cmd := range omniAlterTableCmds(alter) {
+	for _, cmd := range alterTableCmds(alter) {
 		if ast.AlterTableType(cmd.Subtype) != ast.AT_AddConstraint {
 			continue
 		}

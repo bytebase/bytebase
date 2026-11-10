@@ -54,7 +54,7 @@ func (*NamingPKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 	}
 
 	rule := &namingPKConventionRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
@@ -64,11 +64,11 @@ func (*NamingPKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 		originalMetadata: checkCtx.OriginalMetadata,
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type namingPKConventionRule struct {
-	OmniBaseRule
+	BaseRule
 
 	format           string
 	maxLength        int
@@ -100,12 +100,12 @@ func (r *namingPKConventionRule) OnStatement(node ast.Node) {
 
 func (r *namingPKConventionRule) handleCreateStmt(n *ast.CreateStmt) {
 	tableName := omniTableName(n.Relation)
-	schemaName := omniSchemaName(n.Relation)
+	schemaName := schemaName(n.Relation)
 
-	_, constraints := omniTableElements(n)
+	_, constraints := tableElements(n)
 	for _, c := range constraints {
 		if c.Contype == ast.CONSTR_PRIMARY && c.Conname != "" {
-			columnList := omniConstraintColumns(c)
+			columnList := constraintColumns(c)
 			r.checkPKName(&pkMetaData{
 				pkName:    c.Conname,
 				tableName: tableName,
@@ -135,9 +135,9 @@ func (r *namingPKConventionRule) handleCreateStmt(n *ast.CreateStmt) {
 
 func (r *namingPKConventionRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
 	tableName := omniTableName(n.Relation)
-	schemaName := omniSchemaName(n.Relation)
+	schemaName := schemaName(n.Relation)
 
-	for _, cmd := range omniAlterTableCmds(n) {
+	for _, cmd := range alterTableCmds(n) {
 		if ast.AlterTableType(cmd.Subtype) == ast.AT_AddConstraint {
 			c, ok := cmd.Def.(*ast.Constraint)
 			if !ok || c.Contype != ast.CONSTR_PRIMARY {
@@ -148,7 +148,7 @@ func (r *namingPKConventionRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
 				continue
 			}
 
-			columnList := omniConstraintColumns(c)
+			columnList := constraintColumns(c)
 
 			// PRIMARY KEY USING INDEX
 			if c.Indexname != "" {
@@ -171,7 +171,7 @@ func (r *namingPKConventionRule) handleRenameStmt(n *ast.RenameStmt) {
 	// ALTER TABLE ... RENAME CONSTRAINT
 	if n.RenameType == ast.OBJECT_TABCONSTRAINT {
 		tableName := omniTableName(n.Relation)
-		schemaName := omniSchemaName(n.Relation)
+		schemaName := schemaName(n.Relation)
 		oldName := n.Subname
 		newName := n.Newname
 

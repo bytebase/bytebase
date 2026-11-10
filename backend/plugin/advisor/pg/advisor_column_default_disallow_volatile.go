@@ -31,17 +31,17 @@ func (*ColumnDefaultDisallowVolatileAdvisor) Check(_ context.Context, checkCtx a
 	}
 
 	rule := &columnDefaultDisallowVolatileRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type columnDefaultDisallowVolatileRule struct {
-	OmniBaseRule
+	BaseRule
 }
 
 func (*columnDefaultDisallowVolatileRule) Name() string {
@@ -62,7 +62,7 @@ func (r *columnDefaultDisallowVolatileRule) handleAlterTableStmt(n *ast.AlterTab
 		return
 	}
 
-	for _, cmd := range omniAlterTableCmds(n) {
+	for _, cmd := range alterTableCmds(n) {
 		if ast.AlterTableType(cmd.Subtype) != ast.AT_AddColumn {
 			continue
 		}
@@ -94,7 +94,7 @@ func (*columnDefaultDisallowVolatileRule) hasVolatileDefault(col *ast.ColumnDef)
 	}
 
 	// Check constraints for DEFAULT with function calls
-	for _, c := range omniColumnConstraints(col) {
+	for _, c := range columnConstraints(col) {
 		if c.Contype == ast.CONSTR_DEFAULT && c.RawExpr != nil && containsFuncCall(c.RawExpr) {
 			return true
 		}

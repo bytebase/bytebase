@@ -31,17 +31,17 @@ func (*CompatibilityAdvisor) Check(_ context.Context, checkCtx advisor.Context) 
 	}
 
 	rule := &compatibilityRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type compatibilityRule struct {
-	OmniBaseRule
+	BaseRule
 
 	lastCreateTable string
 }
@@ -150,7 +150,7 @@ func (r *compatibilityRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
 		return
 	}
 
-	for _, cmd := range omniAlterTableCmds(n) {
+	for _, cmd := range alterTableCmds(n) {
 		code := advisorcode.Ok
 
 		switch ast.AlterTableType(cmd.Subtype) {

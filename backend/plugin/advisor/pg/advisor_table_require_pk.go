@@ -42,7 +42,7 @@ func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 	}
 
 	rule := &tableRequirePKRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
@@ -57,7 +57,7 @@ func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 		if stmt.AST == nil {
 			continue
 		}
-		node, ok := pgparser.GetOmniNode(stmt.AST)
+		node, ok := pgparser.GetNode(stmt.AST)
 		if !ok {
 			continue
 		}
@@ -82,7 +82,7 @@ type tableMention struct {
 }
 
 type tableRequirePKRule struct {
-	OmniBaseRule
+	BaseRule
 	originalMetadata *model.DatabaseMetadata
 	finalMetadata    *model.DatabaseMetadata
 

@@ -32,17 +32,17 @@ func (*StatementNoLeadingWildcardLikeAdvisor) Check(_ context.Context, checkCtx 
 	}
 
 	rule := &statementNoLeadingWildcardLikeRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type statementNoLeadingWildcardLikeRule struct {
-	OmniBaseRule
+	BaseRule
 }
 
 func (*statementNoLeadingWildcardLikeRule) Name() string {

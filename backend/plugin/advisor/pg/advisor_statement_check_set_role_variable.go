@@ -28,13 +28,13 @@ func (*StatementCheckSetRoleVariable) Check(_ context.Context, checkCtx advisor.
 	}
 
 	rule := &statementCheckSetRoleVariableRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	advice := RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	advice := RunRules(checkCtx.ParsedStatements, []Rule{rule})
 
 	if !rule.hasSetRole {
 		advice = append(advice, &storepb.Advice{
@@ -50,7 +50,7 @@ func (*StatementCheckSetRoleVariable) Check(_ context.Context, checkCtx advisor.
 }
 
 type statementCheckSetRoleVariableRule struct {
-	OmniBaseRule
+	BaseRule
 
 	hasSetRole      bool
 	foundNonSetStmt bool
@@ -62,7 +62,7 @@ func (*statementCheckSetRoleVariableRule) Name() string {
 
 func (r *statementCheckSetRoleVariableRule) OnStatement(node ast.Node) {
 	if setStmt, ok := node.(*ast.VariableSetStmt); ok {
-		if !r.foundNonSetStmt && omniIsRoleOrSearchPathSet(setStmt) {
+		if !r.foundNonSetStmt && isRoleOrSearchPathSet(setStmt) {
 			r.hasSetRole = true
 		}
 		return

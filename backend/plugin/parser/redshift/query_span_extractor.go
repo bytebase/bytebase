@@ -15,21 +15,21 @@ import (
 
 const redshiftGetDatabaseMetadataError = "failed to get database metadata for database: %s"
 
-type omniQuerySpanExtractor struct {
+type querySpanExtractor struct {
 	defaultDatabase string
 	searchPath      []string
 	gCtx            base.GetQuerySpanContext
 }
 
-func newOmniQuerySpanExtractor(defaultDatabase string, searchPath []string, gCtx base.GetQuerySpanContext) *omniQuerySpanExtractor {
-	return &omniQuerySpanExtractor{
+func newQuerySpanExtractor(defaultDatabase string, searchPath []string, gCtx base.GetQuerySpanContext) *querySpanExtractor {
+	return &querySpanExtractor{
 		defaultDatabase: defaultDatabase,
-		searchPath:      normalizeOmniSearchPath(searchPath),
+		searchPath:      normalizeSearchPath(searchPath),
 		gCtx:            gCtx,
 	}
 }
 
-func normalizeOmniSearchPath(searchPath []string) []string {
+func normalizeSearchPath(searchPath []string) []string {
 	result := make([]string, 0, len(searchPath))
 	for _, schema := range searchPath {
 		if schema != "" {
@@ -42,38 +42,38 @@ func normalizeOmniSearchPath(searchPath []string) []string {
 	return result
 }
 
-func (q *omniQuerySpanExtractor) getOmniQuerySpan(ctx context.Context, statement string) (*base.QuerySpan, error) {
-	return q.getOmniQuerySpanWithFunctionStack(ctx, statement, map[string]bool{})
+func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string) (*base.QuerySpan, error) {
+	return q.getQuerySpanWithFunctionStack(ctx, statement, map[string]bool{})
 }
 
-func (q *omniQuerySpanExtractor) getOmniQuerySpanWithFunctionStack(ctx context.Context, statement string, functionStack map[string]bool) (*base.QuerySpan, error) {
+func (q *querySpanExtractor) getQuerySpanWithFunctionStack(ctx context.Context, statement string, functionStack map[string]bool) (*base.QuerySpan, error) {
 	stmts, err := ParseRedshift(statement)
 	if err != nil {
 		return nil, err
 	}
 	if len(stmts) == 0 || stmts[0].Empty() {
-		return emptyOmniQuerySpan(base.Select), nil
+		return emptyQuerySpan(base.Select), nil
 	}
 	if len(stmts) != 1 {
 		return nil, errors.Errorf("expected exactly 1 statement, got %d", len(stmts))
 	}
 
 	node := stmts[0].AST
-	queryType := omniQuerySpanType(node, false /* allSystems */)
-	if explain, ok := node.(*redshiftast.ExplainStmt); ok && hasOmniExplainAnalyze(explain) {
-		return q.getOmniExplainAnalyzeQuerySpan(ctx, explain.Query, queryType)
+	queryType := querySpanType(node, false /* allSystems */)
+	if explain, ok := node.(*redshiftast.ExplainStmt); ok && hasExplainAnalyze(explain) {
+		return q.getExplainAnalyzeQuerySpan(ctx, explain.Query, queryType)
 	}
 	if unload, ok := node.(*redshiftast.UnloadStmt); ok {
-		return q.getOmniUnloadQuerySpan(ctx, unload, functionStack)
+		return q.getUnloadQuerySpan(ctx, unload, functionStack)
 	}
 	if _, ok := node.(*redshiftast.VariableSetStmt); ok {
-		return emptyOmniQuerySpan(queryType), nil
+		return emptyQuerySpan(queryType), nil
 	}
 	if queryType != base.Select {
-		return emptyOmniQuerySpan(queryType), nil
+		return emptyQuerySpan(queryType), nil
 	}
 
-	accessTables, earlySpan, err := q.collectOmniSelectAccessTables(ctx, node)
+	accessTables, earlySpan, err := q.collectSelectAccessTables(ctx, node)
 	if err != nil {
 		return nil, err
 	}
@@ -81,20 +81,20 @@ func (q *omniQuerySpanExtractor) getOmniQuerySpanWithFunctionStack(ctx context.C
 		return earlySpan, nil
 	}
 
-	cat, err := q.newOmniQuerySpanCatalog(ctx)
+	cat, err := q.newQuerySpanCatalog(ctx)
 	if err != nil {
 		return nil, err
 	}
-	omniSpan, err := redshiftanalysis.GetQuerySpan(cat, statement)
+	span, err := redshiftanalysis.GetQuerySpan(cat, statement)
 	if err != nil {
-		if isOmniQuerySpanNotFound(err) {
-			return q.notFoundOmniQuerySpan(err), nil
+		if isQuerySpanNotFound(err) {
+			return q.notFoundQuerySpan(err), nil
 		}
 		return nil, err
 	}
 
-	results := q.convertOmniResults(omniSpan.Results)
-	functionAccessTables, functionResultSources, functionIssues, err := q.collectOmniFunctionBodySources(ctx, node, functionStack, make(map[string]omniFunctionBodySources))
+	results := q.convertResults(span.Results)
+	functionAccessTables, functionResultSources, functionIssues, err := q.collectFunctionBodySources(ctx, node, functionStack, make(map[string]functionBodySources))
 	if err != nil {
 		return nil, err
 	}
@@ -104,27 +104,27 @@ func (q *omniQuerySpanExtractor) getOmniQuerySpanWithFunctionStack(ctx context.C
 	if functionIssues.functionNotSupportedError != nil && len(accessTables) == 0 {
 		accessTables[base.ColumnResource{Database: q.defaultDatabase}] = true
 	}
-	mergeOmniFunctionResultSources(results, functionResultSources)
-	if hasOmniRangeVar(node) && hasResultWithoutSource(results) && !q.allOmniAccessTablesExist(ctx, accessTables) {
-		return q.notFoundOmniQuerySpan(&base.ResourceNotFoundError{Database: &q.defaultDatabase}), nil
+	mergeFunctionResultSources(results, functionResultSources)
+	if hasRangeVar(node) && hasResultWithoutSource(results) && !q.allAccessTablesExist(ctx, accessTables) {
+		return q.notFoundQuerySpan(&base.ResourceNotFoundError{Database: &q.defaultDatabase}), nil
 	}
 
 	return &base.QuerySpan{
 		Type:                      base.Select,
 		SourceColumns:             accessTables,
-		PredicateColumns:          q.convertOmniColumnList(omniSpan.PredicateColumns),
+		PredicateColumns:          q.convertColumnList(span.PredicateColumns),
 		Results:                   results,
 		NotFoundError:             functionIssues.notFoundError,
 		FunctionNotSupportedError: functionIssues.functionNotSupportedError,
 	}, nil
 }
 
-func (q *omniQuerySpanExtractor) getOmniExplainAnalyzeQuerySpan(ctx context.Context, query redshiftast.Node, queryType base.QueryType) (*base.QuerySpan, error) {
+func (q *querySpanExtractor) getExplainAnalyzeQuerySpan(ctx context.Context, query redshiftast.Node, queryType base.QueryType) (*base.QuerySpan, error) {
 	if queryType != base.Select {
-		return emptyOmniQuerySpan(queryType), nil
+		return emptyQuerySpan(queryType), nil
 	}
 
-	accessTables, earlySpan, err := q.collectOmniSelectAccessTables(ctx, query)
+	accessTables, earlySpan, err := q.collectSelectAccessTables(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -139,8 +139,8 @@ func (q *omniQuerySpanExtractor) getOmniExplainAnalyzeQuerySpan(ctx context.Cont
 	}, nil
 }
 
-func (q *omniQuerySpanExtractor) getOmniUnloadQuerySpan(ctx context.Context, unload *redshiftast.UnloadStmt, functionStack map[string]bool) (*base.QuerySpan, error) {
-	span, err := q.getOmniQuerySpanWithFunctionStack(ctx, unload.Query, functionStack)
+func (q *querySpanExtractor) getUnloadQuerySpan(ctx context.Context, unload *redshiftast.UnloadStmt, functionStack map[string]bool) (*base.QuerySpan, error) {
+	span, err := q.getQuerySpanWithFunctionStack(ctx, unload.Query, functionStack)
 	if err != nil {
 		return nil, err
 	}
@@ -154,12 +154,12 @@ func (q *omniQuerySpanExtractor) getOmniUnloadQuerySpan(ctx context.Context, unl
 	}, nil
 }
 
-func (q *omniQuerySpanExtractor) collectOmniSelectAccessTables(ctx context.Context, node redshiftast.Node) (base.SourceColumnSet, *base.QuerySpan, error) {
-	accessTables, err := q.collectOmniAccessTables(ctx, node)
+func (q *querySpanExtractor) collectSelectAccessTables(ctx context.Context, node redshiftast.Node) (base.SourceColumnSet, *base.QuerySpan, error) {
+	accessTables, err := q.collectAccessTables(ctx, node)
 	if err != nil {
 		var resourceNotFound *base.ResourceNotFoundError
 		if errors.As(err, &resourceNotFound) {
-			return nil, q.notFoundOmniQuerySpan(resourceNotFound), nil
+			return nil, q.notFoundQuerySpan(resourceNotFound), nil
 		}
 		return nil, nil, err
 	}
@@ -168,12 +168,12 @@ func (q *omniQuerySpanExtractor) collectOmniSelectAccessTables(ctx context.Conte
 		return nil, nil, base.MixUserSystemTablesError
 	}
 	if allSystems {
-		return nil, emptyOmniQuerySpan(base.SelectInfoSchema), nil
+		return nil, emptyQuerySpan(base.SelectInfoSchema), nil
 	}
 	return accessTables, nil, nil
 }
 
-func (q *omniQuerySpanExtractor) notFoundOmniQuerySpan(err error) *base.QuerySpan {
+func (q *querySpanExtractor) notFoundQuerySpan(err error) *base.QuerySpan {
 	return &base.QuerySpan{
 		Type: base.Select,
 		SourceColumns: base.SourceColumnSet{
@@ -185,7 +185,7 @@ func (q *omniQuerySpanExtractor) notFoundOmniQuerySpan(err error) *base.QuerySpa
 	}
 }
 
-func emptyOmniQuerySpan(queryType base.QueryType) *base.QuerySpan {
+func emptyQuerySpan(queryType base.QueryType) *base.QuerySpan {
 	return &base.QuerySpan{
 		Type:          queryType,
 		SourceColumns: base.SourceColumnSet{},
@@ -193,7 +193,7 @@ func emptyOmniQuerySpan(queryType base.QueryType) *base.QuerySpan {
 	}
 }
 
-func (q *omniQuerySpanExtractor) newOmniQuerySpanCatalog(ctx context.Context) (*redshiftcatalog.Catalog, error) {
+func (q *querySpanExtractor) newQuerySpanCatalog(ctx context.Context) (*redshiftcatalog.Catalog, error) {
 	if q.gCtx.GetDatabaseMetadataFunc == nil {
 		return nil, errors.New("GetDatabaseMetadataFunc is not set in GetQuerySpanContext")
 	}
@@ -210,18 +210,18 @@ func (q *omniQuerySpanExtractor) newOmniQuerySpanCatalog(ctx context.Context) (*
 	return cat, nil
 }
 
-type omniFunctionBodySources struct {
+type functionBodySources struct {
 	accessTables base.SourceColumnSet
 	results      []base.QuerySpanResult
-	issues       omniFunctionBodyIssues
+	issues       functionBodyIssues
 }
 
-type omniFunctionBodyIssues struct {
+type functionBodyIssues struct {
 	notFoundError             error
 	functionNotSupportedError error
 }
 
-func (i *omniFunctionBodyIssues) merge(other omniFunctionBodyIssues) {
+func (i *functionBodyIssues) merge(other functionBodyIssues) {
 	if i.notFoundError == nil {
 		i.notFoundError = other.notFoundError
 	}
@@ -230,27 +230,27 @@ func (i *omniFunctionBodyIssues) merge(other omniFunctionBodyIssues) {
 	}
 }
 
-type omniFunctionSourceProjection struct {
+type functionSourceProjection struct {
 	names   []string
 	sources []base.SourceColumnSet
 }
 
-type omniFunctionSourceScope map[string]omniFunctionSourceProjection
+type functionSourceScope map[string]functionSourceProjection
 
-func (q *omniQuerySpanExtractor) collectOmniAccessTables(ctx context.Context, node redshiftast.Node) (base.SourceColumnSet, error) {
+func (q *querySpanExtractor) collectAccessTables(ctx context.Context, node redshiftast.Node) (base.SourceColumnSet, error) {
 	result := make(base.SourceColumnSet)
-	if err := q.collectOmniAccessTablesFromNode(ctx, node, map[string]bool{}, result); err != nil {
+	if err := q.collectAccessTablesFromNode(ctx, node, map[string]bool{}, result); err != nil {
 		return nil, err
 	}
 	return result, nil
 }
 
-func (q *omniQuerySpanExtractor) collectOmniAccessTablesFromNode(ctx context.Context, node redshiftast.Node, ctes map[string]bool, result base.SourceColumnSet) error {
+func (q *querySpanExtractor) collectAccessTablesFromNode(ctx context.Context, node redshiftast.Node, ctes map[string]bool, result base.SourceColumnSet) error {
 	if node == nil {
 		return nil
 	}
 	if selectStmt, ok := node.(*redshiftast.SelectStmt); ok {
-		return q.collectOmniAccessTablesFromSelect(ctx, selectStmt, ctes, result)
+		return q.collectAccessTablesFromSelect(ctx, selectStmt, ctes, result)
 	}
 
 	var err error
@@ -260,7 +260,7 @@ func (q *omniQuerySpanExtractor) collectOmniAccessTablesFromNode(ctx context.Con
 		}
 		if n != node {
 			if selectStmt, ok := n.(*redshiftast.SelectStmt); ok {
-				err = q.collectOmniAccessTablesFromSelect(ctx, selectStmt, ctes, result)
+				err = q.collectAccessTablesFromSelect(ctx, selectStmt, ctes, result)
 				return false
 			}
 		}
@@ -268,11 +268,11 @@ func (q *omniQuerySpanExtractor) collectOmniAccessTablesFromNode(ctx context.Con
 		if !ok || rangeVar == nil || rangeVar.Relname == "" {
 			return true
 		}
-		if isOmniCTEReference(rangeVar, ctes) {
+		if isCTEReference(rangeVar, ctes) {
 			return true
 		}
 
-		resource, resolveErr := q.resolveOmniRangeVar(ctx, rangeVar)
+		resource, resolveErr := q.resolveRangeVar(ctx, rangeVar)
 		if resolveErr != nil {
 			err = resolveErr
 			return false
@@ -288,10 +288,10 @@ func (q *omniQuerySpanExtractor) collectOmniAccessTablesFromNode(ctx context.Con
 	return nil
 }
 
-func (q *omniQuerySpanExtractor) collectOmniAccessTablesFromSelect(ctx context.Context, selectStmt *redshiftast.SelectStmt, ctes map[string]bool, result base.SourceColumnSet) error {
-	localCTEs := cloneOmniCTENameSet(ctes)
+func (q *querySpanExtractor) collectAccessTablesFromSelect(ctx context.Context, selectStmt *redshiftast.SelectStmt, ctes map[string]bool, result base.SourceColumnSet) error {
+	localCTEs := cloneCTENameSet(ctes)
 	if selectStmt.WithClause != nil && selectStmt.WithClause.Ctes != nil {
-		cteScope := cloneOmniCTENameSet(ctes)
+		cteScope := cloneCTENameSet(ctes)
 		if selectStmt.WithClause.Recursive {
 			for _, item := range selectStmt.WithClause.Ctes.Items {
 				cte, ok := item.(*redshiftast.CommonTableExpr)
@@ -305,7 +305,7 @@ func (q *omniQuerySpanExtractor) collectOmniAccessTablesFromSelect(ctx context.C
 			if !ok || cte.Ctename == "" {
 				continue
 			}
-			if err := q.collectOmniAccessTablesFromNode(ctx, cte.Ctequery, cteScope, result); err != nil {
+			if err := q.collectAccessTablesFromNode(ctx, cte.Ctequery, cteScope, result); err != nil {
 				return err
 			}
 			name := strings.ToLower(cte.Ctename)
@@ -321,22 +321,22 @@ func (q *omniQuerySpanExtractor) collectOmniAccessTablesFromSelect(ctx context.C
 		selectStmt.LimitOffset,
 		selectStmt.LimitCount,
 	} {
-		if err := q.collectOmniAccessTablesFromNode(ctx, node, localCTEs, result); err != nil {
+		if err := q.collectAccessTablesFromNode(ctx, node, localCTEs, result); err != nil {
 			return err
 		}
 	}
 	if selectStmt.IntoClause != nil {
-		if err := q.collectOmniAccessTablesFromNode(ctx, selectStmt.IntoClause, localCTEs, result); err != nil {
+		if err := q.collectAccessTablesFromNode(ctx, selectStmt.IntoClause, localCTEs, result); err != nil {
 			return err
 		}
 	}
 	if selectStmt.Larg != nil {
-		if err := q.collectOmniAccessTablesFromNode(ctx, selectStmt.Larg, localCTEs, result); err != nil {
+		if err := q.collectAccessTablesFromNode(ctx, selectStmt.Larg, localCTEs, result); err != nil {
 			return err
 		}
 	}
 	if selectStmt.Rarg != nil {
-		if err := q.collectOmniAccessTablesFromNode(ctx, selectStmt.Rarg, localCTEs, result); err != nil {
+		if err := q.collectAccessTablesFromNode(ctx, selectStmt.Rarg, localCTEs, result); err != nil {
 			return err
 		}
 	}
@@ -351,51 +351,51 @@ func (q *omniQuerySpanExtractor) collectOmniAccessTablesFromSelect(ctx context.C
 		selectStmt.SortClause,
 		selectStmt.LockingClause,
 	} {
-		if err := q.collectOmniAccessTablesFromList(ctx, list, localCTEs, result); err != nil {
+		if err := q.collectAccessTablesFromList(ctx, list, localCTEs, result); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (q *omniQuerySpanExtractor) collectOmniAccessTablesFromList(ctx context.Context, list *redshiftast.List, ctes map[string]bool, result base.SourceColumnSet) error {
+func (q *querySpanExtractor) collectAccessTablesFromList(ctx context.Context, list *redshiftast.List, ctes map[string]bool, result base.SourceColumnSet) error {
 	if list == nil {
 		return nil
 	}
 	for _, item := range list.Items {
-		if err := q.collectOmniAccessTablesFromNode(ctx, item, ctes, result); err != nil {
+		if err := q.collectAccessTablesFromNode(ctx, item, ctes, result); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (q *omniQuerySpanExtractor) collectOmniFunctionBodySources(ctx context.Context, node redshiftast.Node, functionStack map[string]bool, cache map[string]omniFunctionBodySources) (base.SourceColumnSet, []base.SourceColumnSet, omniFunctionBodyIssues, error) {
-	accessTables, issues, err := q.collectOmniFunctionBodyAccessTables(ctx, node, functionStack, cache)
+func (q *querySpanExtractor) collectFunctionBodySources(ctx context.Context, node redshiftast.Node, functionStack map[string]bool, cache map[string]functionBodySources) (base.SourceColumnSet, []base.SourceColumnSet, functionBodyIssues, error) {
+	accessTables, issues, err := q.collectFunctionBodyAccessTables(ctx, node, functionStack, cache)
 	if err != nil {
-		return nil, nil, omniFunctionBodyIssues{}, err
+		return nil, nil, functionBodyIssues{}, err
 	}
 
 	var resultSources []base.SourceColumnSet
 	if selectStmt, ok := node.(*redshiftast.SelectStmt); ok {
-		var sourceIssues omniFunctionBodyIssues
-		resultSources, sourceIssues, err = q.collectOmniSelectFunctionResultSources(ctx, selectStmt, functionStack, cache, nil)
+		var sourceIssues functionBodyIssues
+		resultSources, sourceIssues, err = q.collectSelectFunctionResultSources(ctx, selectStmt, functionStack, cache, nil)
 		if err != nil {
-			return nil, nil, omniFunctionBodyIssues{}, err
+			return nil, nil, functionBodyIssues{}, err
 		}
 		issues.merge(sourceIssues)
 	}
 	return accessTables, resultSources, issues, nil
 }
 
-func (q *omniQuerySpanExtractor) collectOmniFunctionBodyAccessTables(ctx context.Context, node redshiftast.Node, functionStack map[string]bool, cache map[string]omniFunctionBodySources) (base.SourceColumnSet, omniFunctionBodyIssues, error) {
+func (q *querySpanExtractor) collectFunctionBodyAccessTables(ctx context.Context, node redshiftast.Node, functionStack map[string]bool, cache map[string]functionBodySources) (base.SourceColumnSet, functionBodyIssues, error) {
 	result := make(base.SourceColumnSet)
 	if node == nil {
-		return result, omniFunctionBodyIssues{}, nil
+		return result, functionBodyIssues{}, nil
 	}
 
 	var err error
-	issues := omniFunctionBodyIssues{}
+	issues := functionBodyIssues{}
 	redshiftast.Inspect(node, func(n redshiftast.Node) bool {
 		if err != nil {
 			return false
@@ -404,7 +404,7 @@ func (q *omniQuerySpanExtractor) collectOmniFunctionBodyAccessTables(ctx context
 		if !ok {
 			return true
 		}
-		sources, sourceErr := q.omniFunctionBodySourcesForCall(ctx, call, functionStack, cache)
+		sources, sourceErr := q.functionBodySourcesForCall(ctx, call, functionStack, cache)
 		if sourceErr != nil {
 			err = sourceErr
 			return false
@@ -418,14 +418,14 @@ func (q *omniQuerySpanExtractor) collectOmniFunctionBodyAccessTables(ctx context
 	return result, issues, err
 }
 
-func (q *omniQuerySpanExtractor) collectOmniSelectFunctionResultSources(ctx context.Context, selectStmt *redshiftast.SelectStmt, functionStack map[string]bool, cache map[string]omniFunctionBodySources, outerScope omniFunctionSourceScope) ([]base.SourceColumnSet, omniFunctionBodyIssues, error) {
+func (q *querySpanExtractor) collectSelectFunctionResultSources(ctx context.Context, selectStmt *redshiftast.SelectStmt, functionStack map[string]bool, cache map[string]functionBodySources, outerScope functionSourceScope) ([]base.SourceColumnSet, functionBodyIssues, error) {
 	if selectStmt == nil || selectStmt.TargetList == nil {
-		return nil, omniFunctionBodyIssues{}, nil
+		return nil, functionBodyIssues{}, nil
 	}
 
-	scope, issues, err := q.omniFunctionSourceScopeForSelect(ctx, selectStmt, functionStack, cache, outerScope)
+	scope, issues, err := q.functionSourceScopeForSelect(ctx, selectStmt, functionStack, cache, outerScope)
 	if err != nil {
-		return nil, omniFunctionBodyIssues{}, err
+		return nil, functionBodyIssues{}, err
 	}
 
 	result := make([]base.SourceColumnSet, 0, selectStmt.TargetList.Len())
@@ -435,9 +435,9 @@ func (q *omniQuerySpanExtractor) collectOmniSelectFunctionResultSources(ctx cont
 			result = append(result, nil)
 			continue
 		}
-		sources, sourceIssues, err := q.collectOmniFunctionBodyResultSources(ctx, target.Val, functionStack, cache, scope)
+		sources, sourceIssues, err := q.collectFunctionBodyResultSources(ctx, target.Val, functionStack, cache, scope)
 		if err != nil {
-			return nil, omniFunctionBodyIssues{}, err
+			return nil, functionBodyIssues{}, err
 		}
 		issues.merge(sourceIssues)
 		result = append(result, sources)
@@ -445,12 +445,12 @@ func (q *omniQuerySpanExtractor) collectOmniSelectFunctionResultSources(ctx cont
 	return result, issues, nil
 }
 
-func (q *omniQuerySpanExtractor) omniFunctionSourceScopeForSelect(ctx context.Context, selectStmt *redshiftast.SelectStmt, functionStack map[string]bool, cache map[string]omniFunctionBodySources, outerScope omniFunctionSourceScope) (omniFunctionSourceScope, omniFunctionBodyIssues, error) {
-	scope := cloneOmniFunctionSourceScope(outerScope)
-	issues := omniFunctionBodyIssues{}
+func (q *querySpanExtractor) functionSourceScopeForSelect(ctx context.Context, selectStmt *redshiftast.SelectStmt, functionStack map[string]bool, cache map[string]functionBodySources, outerScope functionSourceScope) (functionSourceScope, functionBodyIssues, error) {
+	scope := cloneFunctionSourceScope(outerScope)
+	issues := functionBodyIssues{}
 
 	if selectStmt.WithClause != nil && selectStmt.WithClause.Ctes != nil {
-		cteScope := cloneOmniFunctionSourceScope(scope)
+		cteScope := cloneFunctionSourceScope(scope)
 		for _, item := range selectStmt.WithClause.Ctes.Items {
 			cte, ok := item.(*redshiftast.CommonTableExpr)
 			if !ok || cte.Ctename == "" {
@@ -460,12 +460,12 @@ func (q *omniQuerySpanExtractor) omniFunctionSourceScopeForSelect(ctx context.Co
 			if !ok {
 				continue
 			}
-			sources, sourceIssues, err := q.collectOmniSelectFunctionResultSources(ctx, cteSelect, functionStack, cache, cteScope)
+			sources, sourceIssues, err := q.collectSelectFunctionResultSources(ctx, cteSelect, functionStack, cache, cteScope)
 			if err != nil {
-				return nil, omniFunctionBodyIssues{}, err
+				return nil, functionBodyIssues{}, err
 			}
 			issues.merge(sourceIssues)
-			projection := omniFunctionSourceProjection{
+			projection := functionSourceProjection{
 				names:   redshiftSelectOutputNames(cteSelect),
 				sources: sources,
 			}
@@ -478,57 +478,57 @@ func (q *omniQuerySpanExtractor) omniFunctionSourceScopeForSelect(ctx context.Co
 		}
 	}
 
-	sourceIssues, err := q.collectOmniFunctionSourceScopeFromList(ctx, selectStmt.FromClause, functionStack, cache, scope)
+	sourceIssues, err := q.collectFunctionSourceScopeFromList(ctx, selectStmt.FromClause, functionStack, cache, scope)
 	if err != nil {
-		return nil, omniFunctionBodyIssues{}, err
+		return nil, functionBodyIssues{}, err
 	}
 	issues.merge(sourceIssues)
 	return scope, issues, nil
 }
 
-func (q *omniQuerySpanExtractor) collectOmniFunctionSourceScopeFromList(ctx context.Context, list *redshiftast.List, functionStack map[string]bool, cache map[string]omniFunctionBodySources, scope omniFunctionSourceScope) (omniFunctionBodyIssues, error) {
+func (q *querySpanExtractor) collectFunctionSourceScopeFromList(ctx context.Context, list *redshiftast.List, functionStack map[string]bool, cache map[string]functionBodySources, scope functionSourceScope) (functionBodyIssues, error) {
 	if list == nil {
-		return omniFunctionBodyIssues{}, nil
+		return functionBodyIssues{}, nil
 	}
-	issues := omniFunctionBodyIssues{}
+	issues := functionBodyIssues{}
 	for _, item := range list.Items {
-		sourceIssues, err := q.collectOmniFunctionSourceScopeFromNode(ctx, item, functionStack, cache, scope)
+		sourceIssues, err := q.collectFunctionSourceScopeFromNode(ctx, item, functionStack, cache, scope)
 		if err != nil {
-			return omniFunctionBodyIssues{}, err
+			return functionBodyIssues{}, err
 		}
 		issues.merge(sourceIssues)
 	}
 	return issues, nil
 }
 
-func (q *omniQuerySpanExtractor) collectOmniFunctionSourceScopeFromNode(ctx context.Context, node redshiftast.Node, functionStack map[string]bool, cache map[string]omniFunctionBodySources, scope omniFunctionSourceScope) (omniFunctionBodyIssues, error) {
+func (q *querySpanExtractor) collectFunctionSourceScopeFromNode(ctx context.Context, node redshiftast.Node, functionStack map[string]bool, cache map[string]functionBodySources, scope functionSourceScope) (functionBodyIssues, error) {
 	switch n := node.(type) {
 	case *redshiftast.RangeVar:
 		if n == nil || n.Alias == nil || n.Alias.Aliasname == "" {
-			return omniFunctionBodyIssues{}, nil
+			return functionBodyIssues{}, nil
 		}
 		projection, ok := scope[strings.ToLower(n.Relname)]
 		if !ok {
-			return omniFunctionBodyIssues{}, nil
+			return functionBodyIssues{}, nil
 		}
 		if aliasNames := redshiftStringList(n.Alias.Colnames); len(aliasNames) > 0 {
 			projection.names = aliasNames
 		}
 		scope[strings.ToLower(n.Alias.Aliasname)] = projection
-		return omniFunctionBodyIssues{}, nil
+		return functionBodyIssues{}, nil
 	case *redshiftast.RangeSubselect:
 		if n == nil || n.Alias == nil || n.Alias.Aliasname == "" {
-			return omniFunctionBodyIssues{}, nil
+			return functionBodyIssues{}, nil
 		}
 		selectStmt, ok := n.Subquery.(*redshiftast.SelectStmt)
 		if !ok {
-			return omniFunctionBodyIssues{}, nil
+			return functionBodyIssues{}, nil
 		}
-		sources, issues, err := q.collectOmniSelectFunctionResultSources(ctx, selectStmt, functionStack, cache, scope)
+		sources, issues, err := q.collectSelectFunctionResultSources(ctx, selectStmt, functionStack, cache, scope)
 		if err != nil {
-			return omniFunctionBodyIssues{}, err
+			return functionBodyIssues{}, err
 		}
-		projection := omniFunctionSourceProjection{
+		projection := functionSourceProjection{
 			names:   redshiftSelectOutputNames(selectStmt),
 			sources: sources,
 		}
@@ -539,44 +539,44 @@ func (q *omniQuerySpanExtractor) collectOmniFunctionSourceScopeFromNode(ctx cont
 		return issues, nil
 	case *redshiftast.JoinExpr:
 		if n == nil {
-			return omniFunctionBodyIssues{}, nil
+			return functionBodyIssues{}, nil
 		}
-		leftIssues, err := q.collectOmniFunctionSourceScopeFromNode(ctx, n.Larg, functionStack, cache, scope)
+		leftIssues, err := q.collectFunctionSourceScopeFromNode(ctx, n.Larg, functionStack, cache, scope)
 		if err != nil {
-			return omniFunctionBodyIssues{}, err
+			return functionBodyIssues{}, err
 		}
-		rightIssues, err := q.collectOmniFunctionSourceScopeFromNode(ctx, n.Rarg, functionStack, cache, scope)
+		rightIssues, err := q.collectFunctionSourceScopeFromNode(ctx, n.Rarg, functionStack, cache, scope)
 		if err != nil {
-			return omniFunctionBodyIssues{}, err
+			return functionBodyIssues{}, err
 		}
 		leftIssues.merge(rightIssues)
 		return leftIssues, nil
 	default:
-		return omniFunctionBodyIssues{}, nil
+		return functionBodyIssues{}, nil
 	}
 }
 
-func (q *omniQuerySpanExtractor) collectOmniFunctionBodyResultSources(ctx context.Context, node redshiftast.Node, functionStack map[string]bool, cache map[string]omniFunctionBodySources, scope omniFunctionSourceScope) (base.SourceColumnSet, omniFunctionBodyIssues, error) {
+func (q *querySpanExtractor) collectFunctionBodyResultSources(ctx context.Context, node redshiftast.Node, functionStack map[string]bool, cache map[string]functionBodySources, scope functionSourceScope) (base.SourceColumnSet, functionBodyIssues, error) {
 	result := make(base.SourceColumnSet)
 	if node == nil {
-		return result, omniFunctionBodyIssues{}, nil
+		return result, functionBodyIssues{}, nil
 	}
 
 	var err error
-	issues := omniFunctionBodyIssues{}
+	issues := functionBodyIssues{}
 	redshiftast.Inspect(node, func(n redshiftast.Node) bool {
 		if err != nil {
 			return false
 		}
 		if columnRef, ok := n.(*redshiftast.ColumnRef); ok {
-			mergeOmniSourceColumnSet(result, resolveOmniFunctionColumnRef(scope, columnRef))
+			mergeSourceColumnSet(result, resolveFunctionColumnRef(scope, columnRef))
 			return true
 		}
 		call, ok := n.(*redshiftast.FuncCall)
 		if !ok {
 			return true
 		}
-		sources, sourceErr := q.omniFunctionBodySourcesForCall(ctx, call, functionStack, cache)
+		sources, sourceErr := q.functionBodySourcesForCall(ctx, call, functionStack, cache)
 		if sourceErr != nil {
 			err = sourceErr
 			return false
@@ -592,15 +592,15 @@ func (q *omniQuerySpanExtractor) collectOmniFunctionBodyResultSources(ctx contex
 	return result, issues, err
 }
 
-func (q *omniQuerySpanExtractor) omniFunctionBodySourcesForCall(ctx context.Context, call *redshiftast.FuncCall, functionStack map[string]bool, cache map[string]omniFunctionBodySources) (omniFunctionBodySources, error) {
-	schemaName, functionName := omniFunctionCallName(call.Funcname)
+func (q *querySpanExtractor) functionBodySourcesForCall(ctx context.Context, call *redshiftast.FuncCall, functionStack map[string]bool, cache map[string]functionBodySources) (functionBodySources, error) {
+	schemaName, functionName := functionCallName(call.Funcname)
 	if functionName == "" || IsSystemFunction(functionName, "") {
-		return omniFunctionBodySources{accessTables: base.SourceColumnSet{}}, nil
+		return functionBodySources{accessTables: base.SourceColumnSet{}}, nil
 	}
 
-	functionSchema, function, findErr := q.findOmniFunctionMetadata(ctx, schemaName, functionName, call.Args.Len())
+	functionSchema, function, findErr := q.findFunctionMetadata(ctx, schemaName, functionName, call.Args.Len())
 	if findErr != nil || function == nil {
-		return omniFunctionBodySources{accessTables: base.SourceColumnSet{}}, findErr
+		return functionBodySources{accessTables: base.SourceColumnSet{}}, findErr
 	}
 
 	cacheKey := strings.ToLower(functionSchema + "." + function.GetName() + "/" + function.GetSignature())
@@ -608,16 +608,16 @@ func (q *omniQuerySpanExtractor) omniFunctionBodySourcesForCall(ctx context.Cont
 		return sources, nil
 	}
 	if functionStack[cacheKey] {
-		return omniFunctionBodySources{accessTables: base.SourceColumnSet{}}, nil
+		return functionBodySources{accessTables: base.SourceColumnSet{}}, nil
 	}
 
-	body, ok, bodyErr := extractOmniSQLFunctionBody(function.GetDefinition())
+	body, ok, bodyErr := extractSQLFunctionBody(function.GetDefinition())
 	if bodyErr != nil {
 		// Body extraction failures should fail closed through QuerySpan.FunctionNotSupportedError.
 		//nolint:nilerr
-		return omniFunctionBodySources{
+		return functionBodySources{
 			accessTables: base.SourceColumnSet{},
-			issues: omniFunctionBodyIssues{
+			issues: functionBodyIssues{
 				functionNotSupportedError: &base.FunctionNotSupportedError{
 					Err:        bodyErr,
 					Function:   functionSchema + "." + function.GetName(),
@@ -627,9 +627,9 @@ func (q *omniQuerySpanExtractor) omniFunctionBodySourcesForCall(ctx context.Cont
 		}, nil
 	}
 	if !ok {
-		return omniFunctionBodySources{
+		return functionBodySources{
 			accessTables: base.SourceColumnSet{},
-			issues: omniFunctionBodyIssues{
+			issues: functionBodyIssues{
 				functionNotSupportedError: &base.FunctionNotSupportedError{
 					Err:        errors.New("unsupported or empty SQL function body"),
 					Function:   functionSchema + "." + function.GetName(),
@@ -640,15 +640,15 @@ func (q *omniQuerySpanExtractor) omniFunctionBodySourcesForCall(ctx context.Cont
 	}
 
 	functionStack[cacheKey] = true
-	span, querySpanErr := q.getOmniQuerySpanWithFunctionStack(ctx, body, functionStack)
+	span, querySpanErr := q.getQuerySpanWithFunctionStack(ctx, body, functionStack)
 	delete(functionStack, cacheKey)
 	if querySpanErr != nil {
-		return omniFunctionBodySources{}, errors.Wrapf(querySpanErr, "failed to get query span for function: %s.%s", functionSchema, functionName)
+		return functionBodySources{}, errors.Wrapf(querySpanErr, "failed to get query span for function: %s.%s", functionSchema, functionName)
 	}
-	sources := omniFunctionBodySources{
+	sources := functionBodySources{
 		accessTables: span.SourceColumns,
 		results:      span.Results,
-		issues: omniFunctionBodyIssues{
+		issues: functionBodyIssues{
 			notFoundError:             span.NotFoundError,
 			functionNotSupportedError: span.FunctionNotSupportedError,
 		},
@@ -659,7 +659,7 @@ func (q *omniQuerySpanExtractor) omniFunctionBodySourcesForCall(ctx context.Cont
 	return sources, nil
 }
 
-func (q *omniQuerySpanExtractor) findOmniFunctionMetadata(ctx context.Context, schemaName, functionName string, argCount int) (string, *metadatapb.FunctionMetadata, error) {
+func (q *querySpanExtractor) findFunctionMetadata(ctx context.Context, schemaName, functionName string, argCount int) (string, *metadatapb.FunctionMetadata, error) {
 	if q.gCtx.GetDatabaseMetadataFunc == nil {
 		return "", nil, nil
 	}
@@ -683,7 +683,7 @@ func (q *omniQuerySpanExtractor) findOmniFunctionMetadata(ctx context.Context, s
 		return schemas[0], functions[0], nil
 	}
 	for i, function := range functions {
-		count, ok := omniFunctionParameterCount(function.GetDefinition())
+		count, ok := functionParameterCount(function.GetDefinition())
 		if ok && count == argCount {
 			return schemas[i], function, nil
 		}
@@ -691,7 +691,7 @@ func (q *omniQuerySpanExtractor) findOmniFunctionMetadata(ctx context.Context, s
 	return "", nil, nil
 }
 
-func omniFunctionCallName(list *redshiftast.List) (string, string) {
+func functionCallName(list *redshiftast.List) (string, string) {
 	if list == nil {
 		return "", ""
 	}
@@ -713,7 +713,7 @@ func omniFunctionCallName(list *redshiftast.List) (string, string) {
 	}
 }
 
-func omniFunctionParameterCount(definition string) (int, bool) {
+func functionParameterCount(definition string) (int, bool) {
 	stmts, err := ParseRedshift(definition)
 	if err != nil || len(stmts) != 1 {
 		return 0, false
@@ -725,7 +725,7 @@ func omniFunctionParameterCount(definition string) (int, bool) {
 	return stmt.Parameters.Len(), true
 }
 
-func extractOmniSQLFunctionBody(definition string) (string, bool, error) {
+func extractSQLFunctionBody(definition string) (string, bool, error) {
 	stmts, err := ParseRedshift(definition)
 	if err != nil {
 		return "", false, errors.Wrapf(err, "failed to parse function definition")
@@ -748,9 +748,9 @@ func extractOmniSQLFunctionBody(definition string) (string, bool, error) {
 			}
 			switch strings.ToLower(elem.Defname) {
 			case "language":
-				language = omniDefElemString(elem.Arg)
+				language = defElemString(elem.Arg)
 			case "as":
-				body = omniDefElemString(elem.Arg)
+				body = defElemString(elem.Arg)
 			default:
 			}
 		}
@@ -765,7 +765,7 @@ func extractOmniSQLFunctionBody(definition string) (string, bool, error) {
 	return body, true, nil
 }
 
-func omniDefElemString(node redshiftast.Node) string {
+func defElemString(node redshiftast.Node) string {
 	switch value := node.(type) {
 	case *redshiftast.String:
 		return value.Str
@@ -773,13 +773,13 @@ func omniDefElemString(node redshiftast.Node) string {
 		if len(value.Items) == 0 {
 			return ""
 		}
-		return omniDefElemString(value.Items[0])
+		return defElemString(value.Items[0])
 	default:
 		return ""
 	}
 }
 
-func mergeOmniFunctionResultSources(results []base.QuerySpanResult, functionResultSources []base.SourceColumnSet) {
+func mergeFunctionResultSources(results []base.QuerySpanResult, functionResultSources []base.SourceColumnSet) {
 	if len(functionResultSources) == len(results) {
 		for i, sources := range functionResultSources {
 			for source := range sources {
@@ -803,28 +803,28 @@ func mergeOmniFunctionResultSources(results []base.QuerySpanResult, functionResu
 	}
 }
 
-func cloneOmniFunctionSourceScope(scope omniFunctionSourceScope) omniFunctionSourceScope {
-	result := make(omniFunctionSourceScope, len(scope))
+func cloneFunctionSourceScope(scope functionSourceScope) functionSourceScope {
+	result := make(functionSourceScope, len(scope))
 	for name, projection := range scope {
 		result[name] = projection
 	}
 	return result
 }
 
-func mergeOmniSourceColumnSet(dst, src base.SourceColumnSet) {
+func mergeSourceColumnSet(dst, src base.SourceColumnSet) {
 	for source := range src {
 		dst[source] = true
 	}
 }
 
-func resolveOmniFunctionColumnRef(scope omniFunctionSourceScope, columnRef *redshiftast.ColumnRef) base.SourceColumnSet {
+func resolveFunctionColumnRef(scope functionSourceScope, columnRef *redshiftast.ColumnRef) base.SourceColumnSet {
 	parts := redshiftColumnRefParts(columnRef)
 	switch len(parts) {
 	case 1:
-		return resolveUnqualifiedOmniFunctionColumn(scope, parts[0])
+		return resolveUnqualifiedFunctionColumn(scope, parts[0])
 	case 2:
 		if projection, ok := scope[strings.ToLower(parts[0])]; ok {
-			return projection.omniFunctionSourcesForColumn(parts[1])
+			return projection.functionSourcesForColumn(parts[1])
 		}
 		return base.SourceColumnSet{}
 	default:
@@ -832,10 +832,10 @@ func resolveOmniFunctionColumnRef(scope omniFunctionSourceScope, columnRef *reds
 	}
 }
 
-func resolveUnqualifiedOmniFunctionColumn(scope omniFunctionSourceScope, columnName string) base.SourceColumnSet {
+func resolveUnqualifiedFunctionColumn(scope functionSourceScope, columnName string) base.SourceColumnSet {
 	var result base.SourceColumnSet
 	for _, projection := range scope {
-		sources := projection.omniFunctionSourcesForColumn(columnName)
+		sources := projection.functionSourcesForColumn(columnName)
 		if len(sources) == 0 {
 			continue
 		}
@@ -850,7 +850,7 @@ func resolveUnqualifiedOmniFunctionColumn(scope omniFunctionSourceScope, columnN
 	return result
 }
 
-func (p omniFunctionSourceProjection) omniFunctionSourcesForColumn(columnName string) base.SourceColumnSet {
+func (p functionSourceProjection) functionSourcesForColumn(columnName string) base.SourceColumnSet {
 	for i, name := range p.names {
 		if !strings.EqualFold(name, columnName) || i >= len(p.sources) {
 			continue
@@ -883,17 +883,17 @@ func redshiftTargetOutputName(target *redshiftast.ResTarget) string {
 	if target.Name != "" {
 		return target.Name
 	}
-	if parts := redshiftColumnRefParts(asOmniColumnRef(target.Val)); len(parts) > 0 {
+	if parts := redshiftColumnRefParts(asColumnRef(target.Val)); len(parts) > 0 {
 		return parts[len(parts)-1]
 	}
 	if call, ok := target.Val.(*redshiftast.FuncCall); ok {
-		_, functionName := omniFunctionCallName(call.Funcname)
+		_, functionName := functionCallName(call.Funcname)
 		return functionName
 	}
 	return ""
 }
 
-func asOmniColumnRef(node redshiftast.Node) *redshiftast.ColumnRef {
+func asColumnRef(node redshiftast.Node) *redshiftast.ColumnRef {
 	columnRef, ok := node.(*redshiftast.ColumnRef)
 	if !ok {
 		return nil
@@ -931,7 +931,7 @@ func redshiftStringList(list *redshiftast.List) []string {
 	return result
 }
 
-func cloneOmniCTENameSet(ctes map[string]bool) map[string]bool {
+func cloneCTENameSet(ctes map[string]bool) map[string]bool {
 	result := make(map[string]bool, len(ctes))
 	for name, ok := range ctes {
 		result[name] = ok
@@ -939,7 +939,7 @@ func cloneOmniCTENameSet(ctes map[string]bool) map[string]bool {
 	return result
 }
 
-func isOmniCTEReference(rangeVar *redshiftast.RangeVar, ctes map[string]bool) bool {
+func isCTEReference(rangeVar *redshiftast.RangeVar, ctes map[string]bool) bool {
 	if rangeVar == nil || rangeVar.Schemaname != "" || rangeVar.Catalogname != "" {
 		return false
 	}
@@ -955,7 +955,7 @@ func hasResultWithoutSource(results []base.QuerySpanResult) bool {
 	return false
 }
 
-func hasOmniRangeVar(node redshiftast.Node) bool {
+func hasRangeVar(node redshiftast.Node) bool {
 	found := false
 	redshiftast.Inspect(node, func(n redshiftast.Node) bool {
 		if _, ok := n.(*redshiftast.RangeVar); ok {
@@ -967,19 +967,19 @@ func hasOmniRangeVar(node redshiftast.Node) bool {
 	return found
 }
 
-func (q *omniQuerySpanExtractor) allOmniAccessTablesExist(ctx context.Context, accessTables base.SourceColumnSet) bool {
+func (q *querySpanExtractor) allAccessTablesExist(ctx context.Context, accessTables base.SourceColumnSet) bool {
 	if len(accessTables) == 0 || q.gCtx.GetDatabaseMetadataFunc == nil {
 		return false
 	}
 	for resource := range accessTables {
-		if !q.omniAccessTableExists(ctx, resource) {
+		if !q.accessTableExists(ctx, resource) {
 			return false
 		}
 	}
 	return true
 }
 
-func (q *omniQuerySpanExtractor) omniAccessTableExists(ctx context.Context, resource base.ColumnResource) bool {
+func (q *querySpanExtractor) accessTableExists(ctx context.Context, resource base.ColumnResource) bool {
 	if isSystemResource(resource) {
 		return true
 	}
@@ -1007,7 +1007,7 @@ func (q *omniQuerySpanExtractor) omniAccessTableExists(ctx context.Context, reso
 		schema.GetSequence(resource.Table) != nil
 }
 
-func (q *omniQuerySpanExtractor) resolveOmniRangeVar(ctx context.Context, rangeVar *redshiftast.RangeVar) (base.ColumnResource, error) {
+func (q *querySpanExtractor) resolveRangeVar(ctx context.Context, rangeVar *redshiftast.RangeVar) (base.ColumnResource, error) {
 	resource := base.ColumnResource{
 		Database: q.defaultDatabase,
 		Schema:   rangeVar.Schemaname,
@@ -1039,19 +1039,19 @@ func (q *omniQuerySpanExtractor) resolveOmniRangeVar(ctx context.Context, rangeV
 	return resource, nil
 }
 
-func (q *omniQuerySpanExtractor) convertOmniResults(results []redshiftanalysis.QuerySpanResult) []base.QuerySpanResult {
+func (q *querySpanExtractor) convertResults(results []redshiftanalysis.QuerySpanResult) []base.QuerySpanResult {
 	converted := make([]base.QuerySpanResult, 0, len(results))
 	for _, result := range results {
 		converted = append(converted, base.QuerySpanResult{
 			Name:          result.Name,
-			SourceColumns: q.convertOmniColumnList(result.SourceColumns),
+			SourceColumns: q.convertColumnList(result.SourceColumns),
 			IsPlainField:  result.IsPlainField,
 		})
 	}
 	return converted
 }
 
-func (q *omniQuerySpanExtractor) convertOmniColumnList(columns []redshiftanalysis.ColumnResource) base.SourceColumnSet {
+func (q *querySpanExtractor) convertColumnList(columns []redshiftanalysis.ColumnResource) base.SourceColumnSet {
 	result := make(base.SourceColumnSet)
 	for _, column := range columns {
 		result[base.ColumnResource{
@@ -1064,10 +1064,10 @@ func (q *omniQuerySpanExtractor) convertOmniColumnList(columns []redshiftanalysi
 	return result
 }
 
-func omniQuerySpanType(node redshiftast.Node, allSystems bool) base.QueryType {
+func querySpanType(node redshiftast.Node, allSystems bool) base.QueryType {
 	switch n := node.(type) {
 	case *redshiftast.SelectStmt:
-		if hasOmniSelectIntoClause(n) {
+		if hasSelectIntoClause(n) {
 			return base.DDL
 		}
 		if allSystems {
@@ -1075,8 +1075,8 @@ func omniQuerySpanType(node redshiftast.Node, allSystems bool) base.QueryType {
 		}
 		return base.Select
 	case *redshiftast.ExplainStmt:
-		if hasOmniExplainAnalyze(n) {
-			return omniQuerySpanType(n.Query, allSystems)
+		if hasExplainAnalyze(n) {
+			return querySpanType(n.Query, allSystems)
 		}
 		return base.Explain
 	case *redshiftast.RedshiftShowStmt, *redshiftast.RedshiftDescStmt, *redshiftast.VariableShowStmt:
@@ -1120,23 +1120,23 @@ func omniQuerySpanType(node redshiftast.Node, allSystems bool) base.QueryType {
 	}
 }
 
-func hasOmniSelectIntoClause(n *redshiftast.SelectStmt) bool {
+func hasSelectIntoClause(n *redshiftast.SelectStmt) bool {
 	if n == nil {
 		return false
 	}
 	if n.IntoClause != nil {
 		return true
 	}
-	if hasOmniSelectIntoClause(n.Larg) {
+	if hasSelectIntoClause(n.Larg) {
 		return true
 	}
-	if hasOmniSelectIntoClause(n.Rarg) {
+	if hasSelectIntoClause(n.Rarg) {
 		return true
 	}
 	return false
 }
 
-func isOmniQuerySpanNotFound(err error) bool {
+func isQuerySpanNotFound(err error) bool {
 	if err == nil {
 		return false
 	}

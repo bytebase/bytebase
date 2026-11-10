@@ -35,7 +35,7 @@ func (*ColumnNoNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) (
 	}
 
 	rule := &columnNoNullRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
@@ -49,7 +49,7 @@ func (*ColumnNoNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) (
 		if stmt.AST == nil {
 			continue
 		}
-		node, ok := pgparser.GetOmniNode(stmt.AST)
+		node, ok := pgparser.GetNode(stmt.AST)
 		if !ok {
 			continue
 		}
@@ -78,7 +78,7 @@ func (c columnName) normalizeTableName() string {
 type columnMap map[columnName]int32
 
 type columnNoNullRule struct {
-	OmniBaseRule
+	BaseRule
 
 	originalMetadata *model.DatabaseMetadata
 	nullableColumns  columnMap
@@ -172,9 +172,9 @@ func (r *columnNoNullRule) handleCreateStmt(n *ast.CreateStmt) {
 	if tableName == "" {
 		return
 	}
-	schema := omniSchemaName(n.Relation)
+	schema := schemaName(n.Relation)
 
-	cols, constraints := omniTableElements(n)
+	cols, constraints := tableElements(n)
 
 	searchFrom := 0
 	for _, col := range cols {
@@ -187,7 +187,7 @@ func (r *columnNoNullRule) handleCreateStmt(n *ast.CreateStmt) {
 			r.removeColumn(schema, tableName, col.Colname)
 			continue
 		}
-		for _, c := range omniColumnConstraints(col) {
+		for _, c := range columnConstraints(col) {
 			if c.Contype == ast.CONSTR_NOTNULL || c.Contype == ast.CONSTR_PRIMARY {
 				r.removeColumn(schema, tableName, col.Colname)
 				break
@@ -198,7 +198,7 @@ func (r *columnNoNullRule) handleCreateStmt(n *ast.CreateStmt) {
 	// Table-level constraints (e.g., PRIMARY KEY (col1, col2))
 	for _, c := range constraints {
 		if c.Contype == ast.CONSTR_PRIMARY {
-			for _, colName := range omniConstraintColumns(c) {
+			for _, colName := range constraintColumns(c) {
 				r.removeColumn(schema, tableName, colName)
 			}
 		}
@@ -210,9 +210,9 @@ func (r *columnNoNullRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
 	if tableName == "" {
 		return
 	}
-	schema := omniSchemaName(n.Relation)
+	schema := schemaName(n.Relation)
 
-	for _, cmd := range omniAlterTableCmds(n) {
+	for _, cmd := range alterTableCmds(n) {
 		switch ast.AlterTableType(cmd.Subtype) {
 		case ast.AT_AddColumn:
 			colDef, ok := cmd.Def.(*ast.ColumnDef)
@@ -227,7 +227,7 @@ func (r *columnNoNullRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
 				r.removeColumn(schema, tableName, colDef.Colname)
 				continue
 			}
-			for _, c := range omniColumnConstraints(colDef) {
+			for _, c := range columnConstraints(colDef) {
 				if c.Contype == ast.CONSTR_NOTNULL || c.Contype == ast.CONSTR_PRIMARY {
 					r.removeColumn(schema, tableName, colDef.Colname)
 					break
@@ -246,7 +246,7 @@ func (r *columnNoNullRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
 				continue
 			}
 			if constraint.Contype == ast.CONSTR_PRIMARY {
-				for _, colName := range omniConstraintColumns(constraint) {
+				for _, colName := range constraintColumns(constraint) {
 					r.removeColumn(schema, tableName, colName)
 				}
 
