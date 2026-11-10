@@ -127,15 +127,15 @@
       `id` int NOT NULL AUTO_INCREMENT,
       `post_id` int NOT NULL,
       `user_id` int NOT NULL,
-      `content` text NOT NULL,
+      `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
       `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
       PRIMARY KEY (`id`)
-    ) ENGINE=InnoDB;
+    ) ENGINE=InnoDB COLLATE=utf8mb4_bin;
     CREATE INDEX `idx_post_user` ON `comments` (`post_id`, `user_id`);
     CREATE INDEX `fk_comment_user` ON `comments` (`user_id`);
     ALTER TABLE `comments` ADD CONSTRAINT `fk_comment_post` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`) ON DELETE CASCADE;
     ALTER TABLE `comments` ADD CONSTRAINT `fk_comment_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
-    ALTER TABLE `users` ADD COLUMN `is_active` tinyint(1);
+    ALTER TABLE `users` ADD COLUMN `is_active` tinyint(1) DEFAULT 1;
     CREATE INDEX `idx_email_active` ON `users` (`email`, `is_active`);
 - description: TiDB specific features like AUTO_RANDOM and clustered index
   oldSchema: |
@@ -247,16 +247,8 @@
     LEFT JOIN orders o ON p.id = o.product_id
     GROUP BY p.id, p.name, p.price, p.stock;
   expected: |
-    ALTER TABLE `products` ADD COLUMN `category` varchar(50);
-    CREATE VIEW `product_inventory` AS SELECT
-        p.id,
-        p.name,
-        p.price,
-        p.stock,
-        COALESCE(SUM(o.quantity), 0) AS total_ordered
-    FROM products p
-    LEFT JOIN orders o ON p.id = o.product_id
-    GROUP BY p.id, p.name, p.price, p.stock;
+    ALTER TABLE `products` ADD COLUMN `category` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT 'general';
+    CREATE VIEW `product_inventory` AS SELECT `p`.`id` AS `id`,`p`.`name` AS `name`,`p`.`price` AS `price`,`p`.`stock` AS `stock`,COALESCE(SUM(`o`.`quantity`), 0) AS `total_ordered` FROM `products` AS `p` LEFT JOIN `orders` AS `o` ON `p`.`id`=`o`.`product_id` GROUP BY `p`.`id`,`p`.`name`,`p`.`price`,`p`.`stock`;
 - description: Views and stored routines
   oldSchema: |
     CREATE TABLE sales (
@@ -359,25 +351,14 @@
   expected: |
     CREATE TABLE IF NOT EXISTS `sales_reports` (
       `id` int NOT NULL AUTO_INCREMENT,
-      `report_type` varchar(50) NOT NULL,
+      `report_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
       `report_data` json,
       `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
       PRIMARY KEY (`id`)
-    ) ENGINE=InnoDB;
+    ) ENGINE=InnoDB COLLATE=utf8mb4_bin;
     CREATE INDEX `idx_type` ON `sales_reports` (`report_type`);
-    CREATE VIEW `monthly_sales` AS SELECT
-        YEAR(sale_date) AS year,
-        MONTH(sale_date) AS month,
-        SUM(sale_amount) AS total_sales
-    FROM sales
-    GROUP BY YEAR(sale_date), MONTH(sale_date);
-    CREATE VIEW `top_products` AS SELECT
-        product_name,
-        COUNT(*) AS sale_count,
-        SUM(sale_amount) AS total_revenue
-    FROM sales
-    GROUP BY product_name
-    ORDER BY SUM(sale_amount) DESC;
+    CREATE VIEW `monthly_sales` AS SELECT YEAR(`sale_date`) AS `year`,MONTH(`sale_date`) AS `month`,SUM(`sale_amount`) AS `total_sales` FROM `sales` GROUP BY YEAR(`sale_date`),MONTH(`sale_date`);
+    CREATE VIEW `top_products` AS SELECT `product_name` AS `product_name`,COUNT(1) AS `sale_count`,SUM(`sale_amount`) AS `total_revenue` FROM `sales` GROUP BY `product_name` ORDER BY SUM(`sales`.`sale_amount`) DESC;
 - description: Drop operations for views, functions, indexes, and constraints
   oldSchema: |
     CREATE TABLE products (
@@ -422,18 +403,16 @@
   expected: |
     CREATE TABLE IF NOT EXISTS `product_stats` (
       `id` int NOT NULL AUTO_INCREMENT,
-      `category` varchar(50) NOT NULL,
-      `product_count` int,
+      `category` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+      `product_count` int DEFAULT 0,
       `avg_price` decimal(10,2),
       PRIMARY KEY (`id`),
       UNIQUE KEY `uk_category` (`category`)
-    ) ENGINE=InnoDB;
-    ALTER TABLE `products` ADD COLUMN `category` varchar(50);
+    ) ENGINE=InnoDB COLLATE=utf8mb4_bin;
+    ALTER TABLE `products` ADD COLUMN `category` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
     CREATE INDEX `idx_category` ON `products` (`category`);
     CREATE INDEX `idx_price` ON `products` (`price`);
-    CREATE VIEW `product_summary` AS SELECT category, COUNT(*) as count, AVG(price) as avg_price
-    FROM products
-    GROUP BY category;
+    CREATE VIEW `product_summary` AS SELECT `category` AS `category`,COUNT(1) AS `count`,AVG(`price`) AS `avg_price` FROM `products` GROUP BY `category`;
 - description: Reverse of drop operations - creating views, indexes, and constraints
   oldSchema: |
     CREATE TABLE products (
@@ -528,8 +507,8 @@
     ALTER TABLE `users` DROP COLUMN `created_at`;
 
 
-    ALTER TABLE `users` MODIFY COLUMN `name` varchar(50) NOT NULL;
-    ALTER TABLE `users` MODIFY COLUMN `email` varchar(100);
+    ALTER TABLE `users` MODIFY COLUMN `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;
+    ALTER TABLE `users` MODIFY COLUMN `email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
 - description: Reverse of ALTER TABLE operations - dropping columns and constraints
   oldSchema: |
     CREATE TABLE users (
@@ -557,11 +536,11 @@
         CONSTRAINT uk_phone UNIQUE (phone)
     );
   expected: |
-    ALTER TABLE `users` ADD COLUMN `phone` varchar(20);
-    ALTER TABLE `users` ADD COLUMN `address` text;
+    ALTER TABLE `users` ADD COLUMN `phone` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
+    ALTER TABLE `users` ADD COLUMN `address` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
     ALTER TABLE `users` ADD COLUMN `created_at` timestamp DEFAULT CURRENT_TIMESTAMP;
-    ALTER TABLE `users` MODIFY COLUMN `name` varchar(100) NOT NULL;
-    ALTER TABLE `users` MODIFY COLUMN `email` varchar(150) NOT NULL;
+    ALTER TABLE `users` MODIFY COLUMN `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;
+    ALTER TABLE `users` MODIFY COLUMN `email` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;
     CREATE INDEX `idx_age` ON `users` (`age`);
     CREATE INDEX `idx_name` ON `users` (`name`);
     ALTER TABLE `users` ADD UNIQUE KEY `uk_phone` (`phone`);
@@ -619,10 +598,6 @@
     ALTER TABLE categories ADD CONSTRAINT fk_parent FOREIGN KEY (parent_id) REFERENCES categories(id);
     ALTER TABLE products ADD CONSTRAINT fk_category FOREIGN KEY (category_id) REFERENCES categories(id);
   expected: |+
-    ALTER TABLE `categories` DROP FOREIGN KEY `fk_parent`;
-
-    ALTER TABLE `products` DROP FOREIGN KEY `fk_category`;
-
     DROP TABLE IF EXISTS `product_attributes`;
 
     ALTER TABLE `categories` DROP COLUMN `description`;
@@ -687,16 +662,14 @@
     CREATE TABLE IF NOT EXISTS `product_attributes` (
       `id` int NOT NULL AUTO_INCREMENT,
       `product_id` int NOT NULL,
-      `attribute_name` varchar(100) NOT NULL,
-      `attribute_value` varchar(200),
+      `attribute_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+      `attribute_value` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin,
       PRIMARY KEY (`id`)
-    ) ENGINE=InnoDB;
+    ) ENGINE=InnoDB COLLATE=utf8mb4_bin;
     CREATE INDEX `idx_product_attr` ON `product_attributes` (`product_id`, `attribute_name`);
     ALTER TABLE `product_attributes` ADD CONSTRAINT `fk_product_attr` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE;
-    ALTER TABLE `categories` ADD COLUMN `description` text;
-    ALTER TABLE `categories` ADD CONSTRAINT `fk_parent` FOREIGN KEY (`parent_id`) REFERENCES `categories` (`id`);
+    ALTER TABLE `categories` ADD COLUMN `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
     ALTER TABLE `products` ADD COLUMN `weight` decimal(8,3);
-    ALTER TABLE `products` ADD CONSTRAINT `fk_category` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`);
 - description: Operations on partitioned tables
   oldSchema: |
     CREATE TABLE sales_data (
@@ -782,14 +755,7 @@
     CREATE INDEX `idx_customer` ON `sales_data` (`customer_id`);
     CREATE INDEX `idx_product` ON `sales_data` (`product_id`);
     CREATE INDEX `idx_region_date` ON `sales_data` (`region`, `sale_date`);
-    CREATE VIEW `regional_sales` AS SELECT
-        region,
-        YEAR(sale_date) AS year,
-        MONTH(sale_date) AS month,
-        SUM(amount) AS total_sales,
-        COUNT(DISTINCT customer_id) AS unique_customers
-    FROM sales_data
-    GROUP BY region, YEAR(sale_date), MONTH(sale_date);
+    CREATE VIEW `regional_sales` AS SELECT `region` AS `region`,YEAR(`sale_date`) AS `year`,MONTH(`sale_date`) AS `month`,SUM(`amount`) AS `total_sales`,COUNT(DISTINCT `customer_id`) AS `unique_customers` FROM `sales_data` GROUP BY `region`,YEAR(`sale_date`),MONTH(`sale_date`);
 - description: Create tables with foreign key constraints
   oldSchema: ""
   newSchema: |
@@ -817,20 +783,20 @@
     CREATE TABLE IF NOT EXISTS `posts` (
       `id` int NOT NULL AUTO_INCREMENT,
       `user_id` int NOT NULL,
-      `title` varchar(200) NOT NULL,
-      `content` text,
+      `title` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+      `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin,
       `published_at` datetime,
       PRIMARY KEY (`id`)
-    ) ENGINE=InnoDB;
+    ) ENGINE=InnoDB COLLATE=utf8mb4_bin;
     CREATE INDEX `idx_user_id` ON `posts` (`user_id`);
     CREATE TABLE IF NOT EXISTS `users` (
       `id` int NOT NULL AUTO_INCREMENT,
-      `username` varchar(50) NOT NULL,
-      `email` varchar(100) NOT NULL,
+      `username` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+      `email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
       `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
       PRIMARY KEY (`id`),
       UNIQUE KEY `uk_email` (`email`)
-    ) ENGINE=InnoDB;
+    ) ENGINE=InnoDB COLLATE=utf8mb4_bin;
     CREATE INDEX `idx_username` ON `users` (`username`);
     ALTER TABLE `posts` ADD CONSTRAINT `fk_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 - description: Reverse of create tables with foreign key constraints - creating from empty
@@ -990,15 +956,15 @@
       `id` int NOT NULL AUTO_INCREMENT,
       `post_id` int NOT NULL,
       `user_id` int NOT NULL,
-      `content` text NOT NULL,
+      `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
       `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
       PRIMARY KEY (`id`)
-    ) ENGINE=InnoDB;
+    ) ENGINE=InnoDB COLLATE=utf8mb4_bin;
     CREATE INDEX `idx_post_user` ON `comments` (`post_id`, `user_id`);
     CREATE INDEX `fk_comment_user` ON `comments` (`user_id`);
     ALTER TABLE `comments` ADD CONSTRAINT `fk_comment_post` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`) ON DELETE CASCADE;
     ALTER TABLE `comments` ADD CONSTRAINT `fk_comment_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
-    ALTER TABLE `users` ADD COLUMN `is_active` tinyint(1);
+    ALTER TABLE `users` ADD COLUMN `is_active` tinyint(1) DEFAULT 1;
     CREATE INDEX `idx_email_active` ON `users` (`email`, `is_active`);
 - description: Drop and recreate foreign key constraints with different options
   oldSchema: |
@@ -1156,7 +1122,16 @@
         PRIMARY KEY (id)
     );
   expected: |+
+    ALTER TABLE `customers` DROP FOREIGN KEY `fk_preferred_order`;
+
+    ALTER TABLE `orders` DROP FOREIGN KEY `fk_customer`;
+
     DROP TABLE IF EXISTS `order_items`;
+
+    DROP INDEX `fk_preferred_order` ON `customers`;
+
+    DROP INDEX `fk_customer` ON `orders`;
+
 
 - description: Reverse of circular foreign key dependencies - dropping tables and foreign keys
   oldSchema: |
@@ -1207,13 +1182,17 @@
     CREATE TABLE IF NOT EXISTS `order_items` (
       `id` int NOT NULL AUTO_INCREMENT,
       `order_id` int NOT NULL,
-      `product_name` varchar(100) NOT NULL,
+      `product_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
       `quantity` int NOT NULL,
       `unit_price` decimal(10,2) NOT NULL,
       PRIMARY KEY (`id`)
-    ) ENGINE=InnoDB;
+    ) ENGINE=InnoDB COLLATE=utf8mb4_bin;
     CREATE INDEX `idx_order` ON `order_items` (`order_id`);
     ALTER TABLE `order_items` ADD CONSTRAINT `fk_order_item` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE;
+    CREATE INDEX `fk_preferred_order` ON `customers` (`preferred_order_id`);
+    ALTER TABLE `customers` ADD CONSTRAINT `fk_preferred_order` FOREIGN KEY (`preferred_order_id`) REFERENCES `orders` (`id`) ON DELETE SET NULL;
+    CREATE INDEX `fk_customer` ON `orders` (`customer_id`);
+    ALTER TABLE `orders` ADD CONSTRAINT `fk_customer` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`id`) ON DELETE CASCADE;
 - description: Adding comments to tables and columns using TiDB COMMENT syntax
   oldSchema: |
     CREATE TABLE categories (
@@ -1266,7 +1245,7 @@
         name VARCHAR(50) NOT NULL,
         PRIMARY KEY (id)
     );
-  expected: |+
+  expected: |
     ALTER TABLE `products` DROP FOREIGN KEY `fk_supplier`;
 
     DROP TABLE IF EXISTS `suppliers`;
@@ -1282,8 +1261,12 @@
 
     ALTER TABLE `categories` COMMENT = '';
 
+    ALTER TABLE `categories` MODIFY COLUMN `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;
     ALTER TABLE `products` COMMENT = '';
 
+    ALTER TABLE `products` MODIFY COLUMN `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;
+    ALTER TABLE `products` MODIFY COLUMN `price` decimal(10,2) NOT NULL;
+    ALTER TABLE `products` MODIFY COLUMN `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
 - description: Reverse of table and column comments - removing comments and dropping tables
   oldSchema: |
     CREATE TABLE products (
@@ -1338,24 +1321,28 @@
     ) COMMENT = 'Product catalog table storing all available products';
   expected: |
     CREATE TABLE IF NOT EXISTS `suppliers` (
-      `id` int NOT NULL AUTO_INCREMENT,
-      `company_name` varchar(100) NOT NULL,
-      `contact_email` varchar(150),
-      `phone` varchar(20),
-      `address` text,
-      `is_active` tinyint(1),
-      `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+      `id` int NOT NULL AUTO_INCREMENT COMMENT 'Unique supplier identifier',
+      `company_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT 'Official company name',
+      `contact_email` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin COMMENT 'Primary contact email address',
+      `phone` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin COMMENT 'Contact phone number',
+      `address` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin COMMENT 'Full business address',
+      `is_active` tinyint(1) DEFAULT 1 COMMENT 'Supplier active status',
+      `created_at` timestamp DEFAULT CURRENT_TIMESTAMP COMMENT 'Record creation timestamp',
       PRIMARY KEY (`id`),
       UNIQUE KEY `uk_email` (`contact_email`)
-    ) ENGINE=InnoDB COMMENT='Supplier information and contact details';
+    ) ENGINE=InnoDB COLLATE=utf8mb4_bin COMMENT='Supplier information and contact details';
     CREATE INDEX `idx_active` ON `suppliers` (`is_active`);
     ALTER TABLE `categories` COMMENT = 'Product categories for organization';
 
+    ALTER TABLE `categories` MODIFY COLUMN `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT 'Category name';
     ALTER TABLE `products` COMMENT = 'Product catalog table storing all available products';
 
-    ALTER TABLE `products` ADD COLUMN `supplier_id` int;
-    ALTER TABLE `products` ADD COLUMN `weight` decimal(8,3);
-    ALTER TABLE `products` ADD COLUMN `in_stock` tinyint(1);
+    ALTER TABLE `products` ADD COLUMN `supplier_id` int COMMENT 'Reference to supplier table';
+    ALTER TABLE `products` ADD COLUMN `weight` decimal(8,3) COMMENT 'Product weight in kilograms';
+    ALTER TABLE `products` ADD COLUMN `in_stock` tinyint(1) DEFAULT 1 COMMENT 'Current stock availability';
+    ALTER TABLE `products` MODIFY COLUMN `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT 'Product display name';
+    ALTER TABLE `products` MODIFY COLUMN `price` decimal(10,2) NOT NULL COMMENT 'Product price in USD';
+    ALTER TABLE `products` MODIFY COLUMN `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin COMMENT 'Detailed product description';
     CREATE INDEX `fk_supplier` ON `products` (`supplier_id`);
     ALTER TABLE `products` ADD CONSTRAINT `fk_supplier` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers` (`id`) ON DELETE SET NULL;
 - description: Modifying existing comments and removing comments from tables and columns
@@ -1447,9 +1434,15 @@
 
     ALTER TABLE `posts` COMMENT = 'Blog posts and articles';
 
+    ALTER TABLE `posts` MODIFY COLUMN `title` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT 'Post title';
+    ALTER TABLE `posts` MODIFY COLUMN `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin COMMENT 'Post content body';
+    ALTER TABLE `posts` MODIFY COLUMN `view_count` int DEFAULT 0 COMMENT 'Number of views';
     ALTER TABLE `users` COMMENT = 'User account information and profile data';
 
-    ALTER TABLE `users` MODIFY COLUMN `status` enum('active','inactive','suspended');
+    ALTER TABLE `users` MODIFY COLUMN `username` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT 'Unique username for login';
+    ALTER TABLE `users` MODIFY COLUMN `full_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin COMMENT 'User full display name';
+    ALTER TABLE `users` MODIFY COLUMN `bio` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin COMMENT 'User biography or description';
+    ALTER TABLE `users` MODIFY COLUMN `status` enum('active','inactive','suspended') CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT 'active' COMMENT 'Account status';
 - description: Reverse of modify and drop comments - restoring original comments and dropping new table
   oldSchema: |
     CREATE TABLE users (
@@ -1529,27 +1522,33 @@
     ) COMMENT = 'User-specific configuration and preference settings';
   expected: |
     CREATE TABLE IF NOT EXISTS `user_preferences` (
-      `id` int NOT NULL AUTO_INCREMENT,
-      `user_id` int NOT NULL,
-      `preference_key` varchar(100) NOT NULL,
-      `preference_value` text,
-      `is_public` tinyint(1),
-      `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
-      `updated_at` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      `id` int NOT NULL AUTO_INCREMENT COMMENT 'Preference record identifier',
+      `user_id` int NOT NULL COMMENT 'User ID foreign key reference',
+      `preference_key` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT 'Configuration key name',
+      `preference_value` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin COMMENT 'Configuration value in JSON format',
+      `is_public` tinyint(1) DEFAULT 0 COMMENT 'Whether preference is publicly visible',
+      `created_at` timestamp DEFAULT CURRENT_TIMESTAMP COMMENT 'Preference creation time',
+      `updated_at` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Last modification time',
       PRIMARY KEY (`id`),
       UNIQUE KEY `uk_user_key` (`user_id`, `preference_key`)
-    ) ENGINE=InnoDB COMMENT='User-specific configuration and preference settings';
+    ) ENGINE=InnoDB COLLATE=utf8mb4_bin COMMENT='User-specific configuration and preference settings';
     CREATE INDEX `idx_key` ON `user_preferences` (`preference_key`);
     CREATE INDEX `idx_public` ON `user_preferences` (`is_public`);
     ALTER TABLE `user_preferences` ADD CONSTRAINT `fk_pref_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
     ALTER TABLE `posts` COMMENT = 'Blog posts with analytics and engagement tracking';
 
+    ALTER TABLE `posts` MODIFY COLUMN `title` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT 'Post title with SEO optimization';
+    ALTER TABLE `posts` MODIFY COLUMN `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin COMMENT 'Rich text post content with markdown support';
+    ALTER TABLE `posts` MODIFY COLUMN `view_count` int DEFAULT 0;
     ALTER TABLE `users` COMMENT = 'Updated user account information with enhanced profile features';
 
-    ALTER TABLE `users` ADD COLUMN `avatar_url` varchar(255);
-    ALTER TABLE `users` ADD COLUMN `last_login` datetime;
-    ALTER TABLE `users` ADD COLUMN `login_count` int;
-    ALTER TABLE `users` MODIFY COLUMN `status` enum('active','inactive','suspended','pending');
+    ALTER TABLE `users` ADD COLUMN `avatar_url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin COMMENT 'Profile picture URL';
+    ALTER TABLE `users` ADD COLUMN `last_login` datetime COMMENT 'Last successful login timestamp';
+    ALTER TABLE `users` ADD COLUMN `login_count` int DEFAULT 0 COMMENT 'Total number of logins';
+    ALTER TABLE `users` MODIFY COLUMN `username` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT 'Updated: Unique username for authentication and display';
+    ALTER TABLE `users` MODIFY COLUMN `full_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
+    ALTER TABLE `users` MODIFY COLUMN `bio` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin COMMENT 'Updated: Extended user biography with rich text support';
+    ALTER TABLE `users` MODIFY COLUMN `status` enum('active','inactive','suspended','pending') CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT 'active' COMMENT 'Updated: Account status with pending verification';
 - description: Testing comments with special characters, quotes, Unicode, multi-line text, and edge cases
   oldSchema: "CREATE TABLE test_table (\n    id INT NOT NULL AUTO_INCREMENT,\n    simple_field VARCHAR(100),\n    field_with_quotes VARCHAR(100) COMMENT 'Field with \"double\" and ''single'' quotes',\n    field_with_symbols VARCHAR(100) COMMENT 'Field with symbols: @#$%^&*()_+-={}[]|:\";''<>?,./ and more!',\n    field_with_unicode VARCHAR(100) COMMENT 'Unicode test: 你好世界 \U0001F30D café naïve résumé Москва العالم 한국어',\n    field_multiline TEXT COMMENT 'Multi-line comment:\nLine 1 with regular text\nLine 2 with \"quotes\" and symbols @#$\nLine 3 with unicode: 测试 \U0001F680 café\nFinal line with mixed content',\n    field_with_sql VARCHAR(100) COMMENT 'Comment with SQL-like content: SELECT * FROM table WHERE id = ''123'' AND name LIKE \"%test%\"',\n    field_with_html VARCHAR(100) COMMENT 'HTML content: <div class=\"test\">Hello & \"World\"</div> <!-- comment -->',\n    field_with_json VARCHAR(100) COMMENT 'JSON example: {\"name\": \"test\", \"value\": 123, \"nested\": {\"key\": \"value with spaces\"}}',\n    field_with_escape VARCHAR(100) COMMENT 'Escape sequences: \\n \\t \\r \" '' \\\\',\n    PRIMARY KEY (id)\n) COMMENT = 'Table with \"double quotes\" and ''single quotes'' in comment';\n\nCREATE TABLE special_comments_table (\n    id BIGINT NOT NULL AUTO_RANDOM COMMENT 'ID with \"quotes\", symbols @#$, unicode 测试\U0001F31F, and\nmulti-line\ncontent',\n    data_field JSON COMMENT 'Updated JSON field: {\"new\": \"structure\", \"with\": [\"array\", \"of\", \"strings\"], \"escapes\": \"\\n\\t\\r\"}',\n    html_field TEXT,\n    sql_field VARCHAR(255) COMMENT 'SQL patterns: SELECT * FROM users WHERE name = ''O''Brien'' AND age > 21',\n    unicode_field VARCHAR(200) COMMENT '多语言支持: English, 中文, العربية, Русский, 日本語, 한국어, Français, Español',\n    symbols_field VARCHAR(100) COMMENT 'All symbols: !@#$%^&*()_+-={}[]|:\";''<>?,./ plus tab    and newline\ntest',\n    url_field VARCHAR(300) COMMENT 'URL with params: https://example.com/path?param1=value1&param2=\"quoted value\"&param3=50%+discount',\n    regex_field VARCHAR(150) COMMENT 'Regex pattern: ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\\\.[a-zA-Z]{2,}$ for email validation',\n    PRIMARY KEY (id),\n    INDEX idx_unicode (unicode_field)\n) COMMENT = 'Special characters test table with:\n- Double quotes: \"test\"\n- Single quotes: ''test''\n- Unicode: 特殊字符测试表 \U0001F3AF\n- Symbols: @#$%^&*()\n- HTML: <div>content</div>\n- JSON: {\"key\": \"value\"}\n- URLs: https://example.com\n- Multi-line content with various encodings';\n"
   newSchema: |
@@ -1588,4 +1587,4 @@
         PRIMARY KEY (id)
     );
   newSchema: "CREATE TABLE test_table (\n    id INT NOT NULL AUTO_INCREMENT,\n    simple_field VARCHAR(100),\n    field_with_quotes VARCHAR(100) COMMENT 'Field with \"double\" and ''single'' quotes',\n    field_with_symbols VARCHAR(100) COMMENT 'Field with symbols: @#$%^&*()_+-={}[]|:\";''<>?,./ and more!',\n    field_with_unicode VARCHAR(100) COMMENT 'Unicode test: 你好世界 \U0001F30D café naïve résumé Москва العالم 한국어',\n    field_multiline TEXT COMMENT 'Multi-line comment:\nLine 1 with regular text\nLine 2 with \"quotes\" and symbols @#$\nLine 3 with unicode: 测试 \U0001F680 café\nFinal line with mixed content',\n    field_with_sql VARCHAR(100) COMMENT 'Comment with SQL-like content: SELECT * FROM table WHERE id = ''123'' AND name LIKE \"%test%\"',\n    field_with_html VARCHAR(100) COMMENT 'HTML content: <div class=\"test\">Hello & \"World\"</div> <!-- comment -->',\n    field_with_json VARCHAR(100) COMMENT 'JSON example: {\"name\": \"test\", \"value\": 123, \"nested\": {\"key\": \"value with spaces\"}}',\n    field_with_escape VARCHAR(100) COMMENT 'Escape sequences: \\n \\t \\r \" '' \\\\',\n    PRIMARY KEY (id)\n) COMMENT = 'Table with \"double quotes\" and ''single quotes'' in comment';\n\nCREATE TABLE special_comments_table (\n    id BIGINT NOT NULL AUTO_RANDOM COMMENT 'ID with \"quotes\", symbols @#$, unicode 测试\U0001F31F, and\nmulti-line\ncontent',\n    data_field JSON COMMENT 'Updated JSON field: {\"new\": \"structure\", \"with\": [\"array\", \"of\", \"strings\"], \"escapes\": \"\\n\\t\\r\"}',\n    html_field TEXT,\n    sql_field VARCHAR(255) COMMENT 'SQL patterns: SELECT * FROM users WHERE name = ''O''Brien'' AND age > 21',\n    unicode_field VARCHAR(200) COMMENT '多语言支持: English, 中文, العربية, Русский, 日本語, 한국어, Français, Español',\n    symbols_field VARCHAR(100) COMMENT 'All symbols: !@#$%^&*()_+-={}[]|:\";''<>?,./ plus tab    and newline\ntest',\n    url_field VARCHAR(300) COMMENT 'URL with params: https://example.com/path?param1=value1&param2=\"quoted value\"&param3=50%+discount',\n    regex_field VARCHAR(150) COMMENT 'Regex pattern: ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\\\.[a-zA-Z]{2,}$ for email validation',\n    PRIMARY KEY (id),\n    INDEX idx_unicode (unicode_field)\n) COMMENT = 'Special characters test table with:\n- Double quotes: \"test\"\n- Single quotes: ''test''\n- Unicode: 特殊字符测试表 \U0001F3AF\n- Symbols: @#$%^&*()\n- HTML: <div>content</div>\n- JSON: {\"key\": \"value\"}\n- URLs: https://example.com\n- Multi-line content with various encodings';\n"
-  expected: "CREATE TABLE IF NOT EXISTS `special_comments_table` (\n  `id` bigint NOT NULL,\n  `data_field` json,\n  `html_field` text,\n  `sql_field` varchar(255),\n  `unicode_field` varchar(200),\n  `symbols_field` varchar(100),\n  `url_field` varchar(300),\n  `regex_field` varchar(150),\n  PRIMARY KEY (`id`)\n) ENGINE=InnoDB COMMENT='Special characters test table with:\n- Double quotes: \"test\"\n- Single quotes: 'test'\n- Unicode: 特殊字符测试表 \U0001F3AF\n- Symbols: @#$%^&*()\n- HTML: <div>content</div>\n- JSON: {\"key\": \"value\"}\n- URLs: https://example.com\n- Multi-line content with various encodings';\nCREATE INDEX `idx_unicode` ON `special_comments_table` (`unicode_field`);\nALTER TABLE `test_table` COMMENT = 'Table with \"double quotes\" and 'single quotes' in comment';\n\nALTER TABLE `test_table` ADD COLUMN `field_with_quotes` varchar(100);\nALTER TABLE `test_table` ADD COLUMN `field_with_symbols` varchar(100);\nALTER TABLE `test_table` ADD COLUMN `field_with_unicode` varchar(100);\nALTER TABLE `test_table` ADD COLUMN `field_multiline` text;\nALTER TABLE `test_table` ADD COLUMN `field_with_sql` varchar(100);\nALTER TABLE `test_table` ADD COLUMN `field_with_html` varchar(100);\nALTER TABLE `test_table` ADD COLUMN `field_with_json` varchar(100);\nALTER TABLE `test_table` ADD COLUMN `field_with_escape` varchar(100);\n"
+  expected: "CREATE TABLE IF NOT EXISTS `special_comments_table` (\n  `id` bigint NOT NULL /*T![auto_rand] AUTO_RANDOM(0) */ COMMENT 'ID with \"quotes\", symbols @#$, unicode 测试\U0001F31F, and\nmulti-line\ncontent',\n  `data_field` json COMMENT 'Updated JSON field: {\"new\": \"structure\", \"with\": [\"array\", \"of\", \"strings\"], \"escapes\": \"\n\t\r\"}',\n  `html_field` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin,\n  `sql_field` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin COMMENT 'SQL patterns: SELECT * FROM users WHERE name = 'O'Brien' AND age > 21',\n  `unicode_field` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin COMMENT '多语言支持: English, 中文, العربية, Русский, 日本語, 한국어, Français, Español',\n  `symbols_field` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin COMMENT 'All symbols: !@#$%^&*()_+-={}[]|:\";'<>?,./ plus tab    and newline\ntest',\n  `url_field` varchar(300) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin COMMENT 'URL with params: https://example.com/path?param1=value1&param2=\"quoted value\"&param3=50%+discount',\n  `regex_field` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin COMMENT 'Regex pattern: ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$ for email validation',\n  PRIMARY KEY (`id`)\n) ENGINE=InnoDB COLLATE=utf8mb4_bin COMMENT='Special characters test table with:\n- Double quotes: \"test\"\n- Single quotes: 'test'\n- Unicode: 特殊字符测试表 \U0001F3AF\n- Symbols: @#$%^&*()\n- HTML: <div>content</div>\n- JSON: {\"key\": \"value\"}\n- URLs: https://example.com\n- Multi-line content with various encodings';\nCREATE INDEX `idx_unicode` ON `special_comments_table` (`unicode_field`);\nALTER TABLE `test_table` COMMENT = 'Table with \"double quotes\" and 'single quotes' in comment';\n\nALTER TABLE `test_table` ADD COLUMN `field_with_quotes` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin COMMENT 'Field with \"double\" and 'single' quotes';\nALTER TABLE `test_table` ADD COLUMN `field_with_symbols` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin COMMENT 'Field with symbols: @#$%^&*()_+-={}[]|:\";'<>?,./ and more!';\nALTER TABLE `test_table` ADD COLUMN `field_with_unicode` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin COMMENT 'Unicode test: 你好世界 \U0001F30D café naïve résumé Москва العالم 한국어';\nALTER TABLE `test_table` ADD COLUMN `field_multiline` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin COMMENT 'Multi-line comment:\nLine 1 with regular text\nLine 2 with \"quotes\" and symbols @#$\nLine 3 with unicode: 测试 \U0001F680 café\nFinal line with mixed content';\nALTER TABLE `test_table` ADD COLUMN `field_with_sql` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin COMMENT 'Comment with SQL-like content: SELECT * FROM table WHERE id = '123' AND name LIKE \"%test%\"';\nALTER TABLE `test_table` ADD COLUMN `field_with_html` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin COMMENT 'HTML content: <div class=\"test\">Hello & \"World\"</div> <!-- comment -->';\nALTER TABLE `test_table` ADD COLUMN `field_with_json` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin COMMENT 'JSON example: {\"name\": \"test\", \"value\": 123, \"nested\": {\"key\": \"value with spaces\"}}';\nALTER TABLE `test_table` ADD COLUMN `field_with_escape` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin COMMENT 'Escape sequences: \n \t \r \" ' \\';\n"
