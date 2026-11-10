@@ -10,8 +10,8 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-// OmniAST wraps an omni AST node and implements the base.AST interface.
-type OmniAST struct {
+// AST wraps an omni AST node and implements the base.AST interface.
+type AST struct {
 	// Node is the omni AST node (e.g. *ast.SelectStmt, *ast.CreateTableStmt).
 	Node ast.Node
 	// Text is the original SQL text of this statement.
@@ -21,7 +21,7 @@ type OmniAST struct {
 }
 
 // ASTStartPosition implements base.AST.
-func (a *OmniAST) ASTStartPosition() *storepb.Position {
+func (a *AST) ASTStartPosition() *storepb.Position {
 	return a.StartPosition
 }
 
@@ -31,17 +31,17 @@ func ParseTSQL(sql string) ([]omnimssql.Statement, error) {
 	return omnimssql.Parse(sql)
 }
 
-// GetOmniNode extracts the omni AST node from a base.AST interface.
-// Returns the node and true if it is an OmniAST, nil and false otherwise.
-func GetOmniNode(a base.AST) (ast.Node, bool) {
+// GetNode extracts the omni AST node from a base.AST interface.
+// Returns the node and true if it is an AST, nil and false otherwise.
+func GetNode(a base.AST) (ast.Node, bool) {
 	if a == nil {
 		return nil, false
 	}
-	omniAST, ok := a.(*OmniAST)
+	node, ok := a.(*AST)
 	if !ok {
 		return nil, false
 	}
-	return omniAST.Node, true
+	return node.Node, true
 }
 
 // ByteOffsetToRunePosition converts a byte offset in sql to a 1-based line:column

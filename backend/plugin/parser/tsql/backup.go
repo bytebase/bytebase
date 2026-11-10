@@ -266,7 +266,7 @@ func prepareTransformation(databaseName, statement string, caseSensitive bool) (
 
 	var dmls []statementInfo
 	for _, parsedStatement := range parsedStatements {
-		node, ok := GetOmniNode(parsedStatement.AST)
+		node, ok := GetNode(parsedStatement.AST)
 		if !ok || node == nil {
 			continue
 		}

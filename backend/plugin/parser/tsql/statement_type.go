@@ -12,7 +12,7 @@ import (
 func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
 	sqlTypeSet := make(map[storepb.StatementType]bool)
 	for _, a := range asts {
-		node, ok := GetOmniNode(a)
+		node, ok := GetNode(a)
 		if !ok {
 			return nil, errors.New("expected omni AST for MSSQL")
 		}

@@ -177,7 +177,7 @@ func prepareTransformation(databaseName string, parsedStatements []base.ParsedSt
 		if stmt.AST == nil {
 			continue
 		}
-		node, ok := tsqlparser.GetOmniNode(stmt.AST)
+		node, ok := tsqlparser.GetNode(stmt.AST)
 		if !ok || node == nil {
 			continue
 		}
