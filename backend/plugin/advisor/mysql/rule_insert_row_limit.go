@@ -50,7 +50,7 @@ func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Contex
 		if stmt.AST == nil {
 			continue
 		}
-		node, ok := mysqlparser.GetOmniNode(stmt.AST)
+		node, ok := mysqlparser.GetNode(stmt.AST)
 		if !ok {
 			continue
 		}

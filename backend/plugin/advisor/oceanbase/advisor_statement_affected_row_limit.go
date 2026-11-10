@@ -51,15 +51,15 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 			if stmt.AST == nil {
 				continue
 			}
-			node, ok := oceanbaseparser.GetOmniNode(stmt.AST)
+			node, ok := oceanbaseparser.GetNode(stmt.AST)
 			if !ok {
 				continue
 			}
 			switch n := node.(type) {
 			case *ast.UpdateStmt:
-				checker.handleStmt(stmt.Text, omniLine(stmt.BaseLine(), stmt.Text, n.Loc))
+				checker.handleStmt(stmt.Text, lineOf(stmt.BaseLine(), stmt.Text, n.Loc))
 			case *ast.DeleteStmt:
-				checker.handleStmt(stmt.Text, omniLine(stmt.BaseLine(), stmt.Text, n.Loc))
+				checker.handleStmt(stmt.Text, lineOf(stmt.BaseLine(), stmt.Text, n.Loc))
 			default:
 			}
 		}

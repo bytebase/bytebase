@@ -50,7 +50,7 @@ func (*StatementDmlDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 			if stmt.AST == nil {
 				continue
 			}
-			node, ok := oceanbaseparser.GetOmniNode(stmt.AST)
+			node, ok := oceanbaseparser.GetNode(stmt.AST)
 			if !ok {
 				continue
 			}

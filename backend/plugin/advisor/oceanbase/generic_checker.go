@@ -133,7 +133,7 @@ func RunRules(stmts []base.ParsedStatement, rules []OmniRule) []*storepb.Advice 
 		if stmt.AST == nil {
 			continue
 		}
-		node, ok := oceanbaseparser.GetOmniNode(stmt.AST)
+		node, ok := oceanbaseparser.GetNode(stmt.AST)
 		if !ok {
 			continue
 		}

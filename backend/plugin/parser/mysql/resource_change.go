@@ -32,15 +32,15 @@ func extractChangedResources(currentDatabase string, _ string, dbMetadata *model
 	}
 
 	for _, unifiedAST := range asts {
-		omniAST, ok := unifiedAST.(*OmniAST)
+		node, ok := unifiedAST.(*AST)
 		if !ok {
-			return nil, errors.New("expected OmniAST for MySQL")
+			return nil, errors.New("expected AST for MySQL")
 		}
-		if omniAST.Node == nil {
+		if node.Node == nil {
 			continue
 		}
 
-		switch n := omniAST.Node.(type) {
+		switch n := node.Node.(type) {
 		case *ast.CreateTableStmt:
 			if n.Table != nil {
 				db, table := omniTableRef(n.Table, currentDatabase)
@@ -110,14 +110,14 @@ func extractChangedResources(currentDatabase string, _ string, dbMetadata *model
 				continue
 			}
 			dmlCount++
-			dmlStatements = append(dmlStatements, omniStatementText(omniAST))
+			dmlStatements = append(dmlStatements, omniStatementText(node))
 
 		case *ast.UpdateStmt:
 			for _, resource := range extractTableExprs(n.Tables, currentDatabase) {
 				changedResources.AddTable(resource.Database, "", &storepb.ChangedResourceTable{Name: resource.Table}, false)
 			}
 			dmlCount++
-			dmlStatements = append(dmlStatements, omniStatementText(omniAST))
+			dmlStatements = append(dmlStatements, omniStatementText(node))
 
 		case *ast.DeleteStmt:
 			for _, resource := range extractTableExprs(n.Tables, currentDatabase) {
@@ -127,7 +127,7 @@ func extractChangedResources(currentDatabase string, _ string, dbMetadata *model
 				changedResources.AddTable(resource.Database, "", &storepb.ChangedResourceTable{Name: resource.Table}, false)
 			}
 			dmlCount++
-			dmlStatements = append(dmlStatements, omniStatementText(omniAST))
+			dmlStatements = append(dmlStatements, omniStatementText(node))
 
 		// Non-table object DDL: gate by the object's own explicit database qualifier only.
 		// CREATE TRIGGER is intentionally skipped — its AST name is unqualified (a bare string);
@@ -202,7 +202,7 @@ func extractTableExpr(expr ast.TableExpr, defaultDB string) []base.SchemaResourc
 }
 
 // omniStatementText returns the text of a statement, ensuring it ends with a semicolon.
-func omniStatementText(a *OmniAST) string {
+func omniStatementText(a *AST) string {
 	text := strings.TrimSpace(a.Text)
 	if !strings.HasSuffix(text, ";") {
 		text += ";"

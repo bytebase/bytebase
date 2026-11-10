@@ -233,7 +233,7 @@ func mySQLOmniASTSkipsCreateTableAsAdvice(d *model.DatabaseMetadata, asts []base
 	if index >= len(asts) {
 		return false
 	}
-	node, ok := mysqlparser.GetOmniNode(asts[index])
+	node, ok := mysqlparser.GetNode(asts[index])
 	if !ok {
 		return false
 	}
@@ -333,7 +333,7 @@ func isMySQLIdentifierChar(ch byte) bool {
 
 func precheckMySQLOmniWalkThrough(d *model.DatabaseMetadata, asts []base.AST) mySQLWalkThroughAdvice {
 	for i, unifiedAST := range asts {
-		node, ok := mysqlparser.GetOmniNode(unifiedAST)
+		node, ok := mysqlparser.GetNode(unifiedAST)
 		if !ok {
 			continue
 		}
@@ -441,7 +441,7 @@ func mysqlRenameTargetDatabases(d *model.DatabaseMetadata, asts []base.AST) []st
 		targets = append(targets, targetTable.Schema)
 	}
 	for _, unifiedAST := range asts {
-		node, ok := mysqlparser.GetOmniNode(unifiedAST)
+		node, ok := mysqlparser.GetNode(unifiedAST)
 		if !ok {
 			continue
 		}

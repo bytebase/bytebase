@@ -46,7 +46,7 @@ func parseStatements(statement string) ([]base.ParsedStatement, error) {
 		for _, node := range list.Items {
 			result = append(result, base.ParsedStatement{
 				Statement: stmt,
-				AST: &OmniAST{
+				AST: &AST{
 					Node:          node,
 					Text:          stmt.Text,
 					StartPosition: stmt.Start,

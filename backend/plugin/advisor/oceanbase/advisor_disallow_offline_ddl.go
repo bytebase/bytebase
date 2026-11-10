@@ -47,7 +47,7 @@ func (*DisallowOfflineDdlAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 		if stmt.AST == nil {
 			continue
 		}
-		node, ok := oceanbaseparser.GetOmniNode(stmt.AST)
+		node, ok := oceanbaseparser.GetNode(stmt.AST)
 		if !ok {
 			continue
 		}
@@ -70,15 +70,15 @@ func (checker *disallowOfflineDdlChecker) checkStatement(text string, baseLine i
 	case *ast.AlterTableStmt:
 		checker.checkAlterTable(text, baseLine, n)
 	case *ast.DropTableStmt:
-		checker.advice(omniLine(baseLine, text, n.Loc), "Dropping tables")
+		checker.advice(lineOf(baseLine, text, n.Loc), "Dropping tables")
 	case *ast.TruncateStmt:
-		checker.advice(omniLine(baseLine, text, n.Loc), "Truncating tables")
+		checker.advice(lineOf(baseLine, text, n.Loc), "Truncating tables")
 	default:
 	}
 }
 
 func (checker *disallowOfflineDdlChecker) checkAlterTable(text string, baseLine int, stmt *ast.AlterTableStmt) {
-	databaseName, tableName := omniTableSchemaAndName(stmt.Table)
+	databaseName, tableName := tableSchemaAndName(stmt.Table)
 	if databaseName == "" {
 		databaseName = checker.currentDB
 	}
@@ -86,7 +86,7 @@ func (checker *disallowOfflineDdlChecker) checkAlterTable(text string, baseLine 
 		if cmd == nil {
 			continue
 		}
-		line := omniLine(baseLine, text, cmd.Loc)
+		line := lineOf(baseLine, text, cmd.Loc)
 		checker.checkAlterTableCmd(line, databaseName, tableName, cmd)
 	}
 }
@@ -169,7 +169,7 @@ func (*disallowOfflineDdlChecker) getSpecialColumnType(column *ast.ColumnDef) st
 		return "stored generated"
 	case column.AutoIncrement:
 		return "auto increment"
-	case omniColumnHasPrimaryKey(column):
+	case columnHasPrimaryKey(column):
 		return "primary key"
 	default:
 		return ""
