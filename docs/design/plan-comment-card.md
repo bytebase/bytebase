@@ -148,23 +148,27 @@ current statement.
 
 Frontend only. Four PRs, in order. Each leaves main shippable. Every class, token or string that a
 decision changes is named in one slice below, with the test that pins it, and so is the owner of
-any state a slice rewires.
+any state a slice rewires. Every row of States that differs from today traces to one of them.
 
 1. **Title bar and folding (D2 shadow, D3, D4, D5, D6).**
    - `CommentThreadCard.tsx`: add the bar on `bg-control-bg` with `text-control` text; add the fold
      control and drop the `thread.resolved` condition on folding; delete `ThreadSummary`; move
      `ThreadStateBadge` from the footer into the bar; take `shadow-sm` into the card's own classes.
      The fold takes an optional controlled pair, `expanded` and `onExpandedChange`, which replaces
-     `onClose`. Without it the card keeps its own state, which is what Activity uses.
+     `onClose` and the `collapsible` prop. Without it the card keeps its own state, which is what
+     Activity uses. Both collapse buttons in the author row go. The footer's guard loses
+     `thread.resolved`: it renders only when the reader can reply or settle, since the badge it
+     held for a read-only reader is now in the bar.
    - `ThreadStack.tsx`: delete `CollapsedThreadRow` and `showRanges`, and stop passing
      `shadow-sm`. Every thread renders the card, folded or not, with `expanded` from
      `expandedRoots` and `onExpandedChange` calling the layer's `onExpand` and `onCollapse`.
-   - `StatementAnchorContext.tsx`: its header becomes the bar's Activity content, and
-     `AnchorStatePill` renders "Outdated" and "Statement unavailable" as text labels in place of
+   - `StatementAnchorContext.tsx`: its header becomes the bar's Activity content and loses its
+     own collapse button (`onCollapse`), and `AnchorStatePill` renders "Outdated" and "Statement unavailable" as text labels in place of
      `Badge variant="warning"` and `variant="default"`.
    - The five locale files, for the two title strings.
    - Tests: `CommentThreadCard.test.tsx` (an open thread folds and unfolds; the bar is the same in
-     both states; "Resolved" renders in the bar; a controlled card does not fold on its own),
+     both states; "Resolved" renders in the bar; a controlled card does not fold on its own; a
+     resolved thread whose reader can neither reply nor settle renders no footer),
      `ThreadStack.test.tsx` (a folded thread renders the card's bar and no `thread-row`),
      `StatementThreadsLayer.test.tsx` (folding from the bar removes the thread from
      `expandedRoots` and clears the stepper's selection; unfolding from the bar adds it and selects
