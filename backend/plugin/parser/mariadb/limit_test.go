@@ -181,7 +181,7 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 			want:  "SELECT * FROM t LIMIT 10 INTO /* into */ OUTFILE '/tmp/a';",
 		},
 		{
-			stmt:  "SELECT c INTO @v FROM t LIMIT row_count;",
+			stmt:  "SELECT c INTO @v FROM t LIMIT 20;",
 			count: 10,
 			want:  "SELECT c INTO @v FROM t LIMIT 10;",
 		},

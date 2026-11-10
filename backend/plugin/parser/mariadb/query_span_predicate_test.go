@@ -69,7 +69,7 @@ var predicateCases = []predicateCase{
 	{name: "where null-safe and regexp", statement: "SELECT 1 FROM t WHERE b <=> NULL OR c REGEXP '^1'", want: []string{"t.b", "t.c"}},
 	{name: "where user variable", statement: "SELECT a FROM t WHERE b = @guess", want: []string{"t.b"}},
 	{name: "where json path", statement: "SELECT id FROM j WHERE doc->>'$.k' = 'v'", want: []string{"j.doc"}, skip: map[string]string{"mariadb": "MariaDB has no ->> operator"}},
-	{name: "where member of", statement: "SELECT id FROM j WHERE 1 MEMBER OF (doc->'$.arr')", want: []string{"j.doc"}, skip: map[string]string{"mariadb": "MariaDB has no MEMBER OF"}},
+	{name: "where member of", statement: "SELECT id FROM j WHERE 1 MEMBER OF (doc->'$.arr')", want: []string{"j.doc"}, rejected: true, skip: map[string]string{"mariadb": "MariaDB has no MEMBER OF"}},
 	{name: "where database-qualified column", statement: "SELECT t.a FROM t WHERE {db}.t.b = 1", want: []string{"t.b"}},
 	{name: "where column in other case", statement: "SELECT A FROM t WHERE B = 1", want: []string{"t.b"}, results: [][]string{{"t.a"}}},
 	{name: "where quoted identifiers", statement: "SELECT `a` FROM `t` WHERE `b` = 1", want: []string{"t.b"}},
@@ -111,10 +111,10 @@ var predicateCases = []predicateCase{
 	{name: "select list subquery resolves inside first", statement: "SELECT (SELECT b FROM t1 LIMIT 1) AS x FROM t", want: []string{}, results: [][]string{{"t1.b"}}},
 	{name: "derived table", statement: "SELECT d.a FROM (SELECT a, c FROM t WHERE b = 1) d WHERE d.c = 0", want: []string{"t.b", "t.c"}, results: [][]string{{"t.a"}}},
 	{name: "derived table column list", statement: "SELECT x FROM (SELECT a, c FROM t) d (x, y) WHERE y = 0", want: []string{"t.c"}, results: [][]string{{"t.a"}}},
-	{name: "lateral", statement: "SELECT l.k FROM t, LATERAL (SELECT count(*) AS k FROM t1 WHERE t1.a = t.a) l", want: []string{"t.a", "t1.a"}, results: [][]string{{}}, skip: noMariaDBLateral},
-	{name: "lateral in a join sees the left operand", statement: "SELECT x.b FROM t JOIN LATERAL (SELECT t.b) AS x ON TRUE", want: []string{}, results: [][]string{{"t.b"}}, skip: noMariaDBLateral},
-	{name: "lateral in a join condition", statement: "SELECT x.k FROM t JOIN LATERAL (SELECT count(*) AS k FROM t1 WHERE t1.a = t.a) AS x ON TRUE", want: []string{"t.a", "t1.a"}, results: [][]string{{}}, skip: noMariaDBLateral},
-	{name: "lateral after two joined tables", statement: "SELECT x.k FROM t JOIN t1 ON t.a = t1.a JOIN LATERAL (SELECT u.c AS k FROM u WHERE u.b = t1.b) AS x ON TRUE", want: []string{"t.a", "t1.a", "t1.b", "u.b"}, results: [][]string{{"u.c"}}, skip: noMariaDBLateral},
+	{name: "lateral", statement: "SELECT l.k FROM t, LATERAL (SELECT count(*) AS k FROM t1 WHERE t1.a = t.a) l", want: []string{"t.a", "t1.a"}, results: [][]string{{}}, rejected: true, skip: noMariaDBLateral},
+	{name: "lateral in a join sees the left operand", statement: "SELECT x.b FROM t JOIN LATERAL (SELECT t.b) AS x ON TRUE", want: []string{}, results: [][]string{{"t.b"}}, rejected: true, skip: noMariaDBLateral},
+	{name: "lateral in a join condition", statement: "SELECT x.k FROM t JOIN LATERAL (SELECT count(*) AS k FROM t1 WHERE t1.a = t.a) AS x ON TRUE", want: []string{"t.a", "t1.a"}, results: [][]string{{}}, rejected: true, skip: noMariaDBLateral},
+	{name: "lateral after two joined tables", statement: "SELECT x.k FROM t JOIN t1 ON t.a = t1.a JOIN LATERAL (SELECT u.c AS k FROM u WHERE u.b = t1.b) AS x ON TRUE", want: []string{"t.a", "t1.a", "t1.b", "u.b"}, results: [][]string{{"u.c"}}, rejected: true, skip: noMariaDBLateral},
 	{name: "derived table cannot see its siblings", statement: "SELECT 1 FROM t, (SELECT a FROM t1 WHERE t1.b = t.b) d", rejected: true},
 	// MariaDB spells MySQL's VALUES ROW(...) bare.
 	{name: "every values row", statement: "SELECT * FROM (VALUES (1), ((SELECT b FROM t LIMIT 1))) AS v (x)", want: []string{}, results: [][]string{{"t.b"}}},
@@ -198,9 +198,9 @@ var predicateCases = []predicateCase{
 	{name: "subquery two levels down sees an alias", statement: "SELECT c AS x, (SELECT (SELECT x + 1)) AS s FROM u", want: []string{}, results: [][]string{{"u.c"}, {"u.c"}}},
 
 	// EXPLAIN ANALYZE runs the query and reports the rows each step returns.
-	{name: "explain analyze condition", statement: "EXPLAIN ANALYZE SELECT 1 FROM t WHERE b = 123", want: []string{"t.b"}, skip: noMariaDBExplainAnalyze},
-	{name: "explain analyze having alias", statement: "EXPLAIN ANALYZE SELECT c AS b FROM t HAVING b > 150", want: []string{"t.c"}, skip: noMariaDBExplainAnalyze},
-	{name: "explain analyze nested condition", statement: "EXPLAIN ANALYZE SELECT a FROM t WHERE a IN (SELECT a FROM t1 WHERE c = 0)", want: []string{"t.a", "t1.a", "t1.c"}, skip: noMariaDBExplainAnalyze},
+	{name: "explain analyze condition", statement: "EXPLAIN ANALYZE SELECT 1 FROM t WHERE b = 123", want: []string{"t.b"}, rejected: true, skip: noMariaDBExplainAnalyze},
+	{name: "explain analyze having alias", statement: "EXPLAIN ANALYZE SELECT c AS b FROM t HAVING b > 150", want: []string{"t.c"}, rejected: true, skip: noMariaDBExplainAnalyze},
+	{name: "explain analyze nested condition", statement: "EXPLAIN ANALYZE SELECT a FROM t WHERE a IN (SELECT a FROM t1 WHERE c = 0)", want: []string{"t.a", "t1.a", "t1.c"}, rejected: true, skip: noMariaDBExplainAnalyze},
 
 	// A view's own conditions are not the caller's; its columns trace to the
 	// table. The engines check a view's privileges on the view, so they skip it.

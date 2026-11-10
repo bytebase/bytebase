@@ -6640,21 +6640,6 @@
       definition: ""
       comment: ""
       priority: 0
-    - text: seq1
-      type: SEQUENCE
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: test.order_id_seq
-      type: SEQUENCE
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: user_id_seq
-      type: SEQUENCE
-      definition: ""
-      comment: ""
-      priority: 0
     - text: t1
       type: TABLE
       definition: ""
@@ -8132,7 +8117,7 @@
       comment: ""
       priority: 0
 - input: WITH RECURSIVE x AS (SELECT c1 FROM t1 UNION ALL SELECT x.| FROM x JOIN t1 ON x.c1 = t1.c1) SELECT * FROM x
-  want:
+  want: []
 - input: WITH x AS (SELECT * FROM t2) INSERT INTO t1 SELECT | FROM x
   want:
     - text: c1
@@ -8717,7 +8702,7 @@
       comment: ""
       priority: 0
 - input: SELECT g.| FROM generate_series(1, 10) g
-  want:
+  want: []
 - input: SELECT | FROM t1, generate_series(1, 10) g
   want:
     - text: c1

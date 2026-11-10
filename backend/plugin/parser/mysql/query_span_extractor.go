@@ -592,15 +592,13 @@ func (q *omniQuerySpanExtractor) extractOmniTableStmt(stmt *ast.TableStmt) (*bas
 	if stmt == nil || stmt.Table == nil {
 		return &base.PseudoTable{}, nil
 	}
-	if stmt.Into != nil {
-		return nil, errors.New("meet unsupported table statement with into")
-	}
+	// A TABLE primary carries only its table; the ORDER BY, LIMIT and INTO
+	// after it belong to the SelectStmt wrapper, which handles them.
 	tableSource, err := q.findTableSchema(stmt.Table.Schema, stmt.Table.Name)
 	if err != nil {
 		return nil, err
 	}
 	q.selectItems = tableSource.GetQuerySpanResult()
-	q.collectTrailingClauses(stmt.OrderBy, stmt.Limit)
 	return &base.PseudoTable{Columns: tableSource.GetQuerySpanResult()}, nil
 }
 
@@ -628,7 +626,8 @@ func (q *omniQuerySpanExtractor) extractOmniValuesStmt(stmt *ast.ValuesStmt) (*b
 		}
 	}
 	q.selectItems = columns
-	q.collectTrailingClauses(stmt.OrderBy, stmt.Limit)
+	// A VALUES primary carries only its rows; the SelectStmt wrapper holds any
+	// trailing ORDER BY and LIMIT.
 	return &base.PseudoTable{Columns: columns}, nil
 }
 
@@ -1681,7 +1680,6 @@ func collectOmniAccessTablesFromNode(result base.SourceColumnSet, node ast.Node,
 			}
 		}
 		collectOmniAccessTablesFromNode(result, n.Select, defaultDatabase)
-		collectOmniAccessTablesFromNode(result, n.TableSource, defaultDatabase)
 		for _, assignment := range n.SetList {
 			if assignment != nil {
 				collectOmniAccessTablesFromExpr(result, assignment.Value, defaultDatabase)
@@ -1773,16 +1771,12 @@ func collectOmniAccessTablesFromNode(result base.SourceColumnSet, node ast.Node,
 			return
 		}
 		collectOmniAccessTablesFromTableRef(result, n.Table, defaultDatabase)
-		collectOmniAccessTablesFromOrderBy(result, n.OrderBy, defaultDatabase)
-		collectOmniAccessTablesFromLimit(result, n.Limit, defaultDatabase)
 	case *ast.ValuesStmt:
 		for _, row := range n.Rows {
 			for _, expr := range row {
 				collectOmniAccessTablesFromExpr(result, expr, defaultDatabase)
 			}
 		}
-		collectOmniAccessTablesFromOrderBy(result, n.OrderBy, defaultDatabase)
-		collectOmniAccessTablesFromLimit(result, n.Limit, defaultDatabase)
 	case *ast.CallStmt:
 		for _, arg := range n.Args {
 			collectOmniAccessTablesFromExpr(result, arg, defaultDatabase)
@@ -1820,14 +1814,6 @@ func collectOmniAccessTablesFromOrderBy(result base.SourceColumnSet, orderByItem
 			collectOmniAccessTablesFromExpr(result, orderBy.Expr, defaultDatabase)
 		}
 	}
-}
-
-func collectOmniAccessTablesFromLimit(result base.SourceColumnSet, limit *ast.Limit, defaultDatabase string) {
-	if limit == nil {
-		return
-	}
-	collectOmniAccessTablesFromExpr(result, limit.Count, defaultDatabase)
-	collectOmniAccessTablesFromExpr(result, limit.Offset, defaultDatabase)
 }
 
 func collectOmniAccessTablesFromTableRefs(result base.SourceColumnSet, tableRefs []*ast.TableRef, defaultDatabase string) {

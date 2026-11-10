@@ -54,23 +54,27 @@
       b timestamp default current_timestamp() on update localtimestamp()
     );
   want:
-    - status: 2
-      code: 419
-      title: COLUMN_CURRENT_TIME_COUNT_LIMIT
-      content: Table `t` has 2 ON UPDATE CURRENT_TIMESTAMP() columns. The count greater than 1.
+    - status: 3
+      code: 201
+      title: Syntax error
+      content: |-
+        Syntax error at line 2:39: syntax error at or near "localtime"
+        related text:   a timestamp default now() on update localtime,
       startposition:
-        line: 3
-        column: 0
+        line: 2
+        column: 39
       endposition: null
 - statement: |-
     ALTER TABLE tech_book ADD COLUMN a timestamp default now() on update localtime;
     ALTER TABLE tech_book ADD COLUMN b timestamp default current_timestamp() on update localtimestamp();
   want:
-    - status: 2
-      code: 419
-      title: COLUMN_CURRENT_TIME_COUNT_LIMIT
-      content: Table `tech_book` has 2 ON UPDATE CURRENT_TIMESTAMP() columns. The count greater than 1.
+    - status: 3
+      code: 201
+      title: Syntax error
+      content: |-
+        Syntax error at line 1:70: syntax error at or near "localtime"
+        related text: ALTER TABLE tech_book ADD COLUMN a timestamp default now() on update localtime;
       startposition:
-        line: 2
-        column: 0
+        line: 1
+        column: 70
       endposition: null

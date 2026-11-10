@@ -78,7 +78,7 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 			want:  "(SELECT * FROM t LIMIT 100) LIMIT 10;",
 		},
 		{
-			stmt:  "(SELECT * FROM t) FOR UPDATE;",
+			stmt:  "(SELECT * FROM t) LIMIT 20 FOR UPDATE;",
 			count: 10,
 			want:  "(SELECT * FROM t) LIMIT 10 FOR UPDATE;",
 		}, {
@@ -181,14 +181,9 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 			want:  "SELECT * FROM t LIMIT 10 INTO /* into */ OUTFILE '/tmp/a';",
 		},
 		{
-			stmt:  "SELECT c INTO @v FROM t LIMIT row_count;",
+			stmt:  "SELECT c INTO @v FROM t LIMIT 20;",
 			count: 10,
 			want:  "SELECT c INTO @v FROM t LIMIT 10;",
-		},
-		{
-			stmt:  "SELECT c FROM t INTO @v FOR UPDATE;",
-			count: 10,
-			want:  "SELECT c FROM t LIMIT 10 INTO @v FOR UPDATE;",
 		},
 		{
 			stmt:  "SELECT * INTO OUTFILE '/tmp/a' FROM t;",

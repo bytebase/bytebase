@@ -571,10 +571,19 @@ func (q *omniQuerySpanExtractor) extractOmniQuerySpecification(stmt *ast.SelectS
 	}
 	q.selectItems = results
 
-	q.groupBy = stmt.GroupBy
+	// MariaDB GROUP BY items carry an optional ASC/DESC now; span extraction
+	// only cares about the expression each one groups on.
+	q.groupBy = make([]ast.ExprNode, 0, len(stmt.GroupBy))
+	for _, item := range stmt.GroupBy {
+		if item != nil {
+			q.groupBy = append(q.groupBy, item.Expr)
+		}
+	}
 	q.clause = clauseGroupBy
-	for _, expr := range stmt.GroupBy {
-		q.collectNestedQueryColumns(expr)
+	for _, item := range stmt.GroupBy {
+		if item != nil {
+			q.collectNestedQueryColumns(item.Expr)
+		}
 	}
 	q.clause = clauseHaving
 	q.collectConditionColumns(stmt.Having)
@@ -1260,12 +1269,6 @@ func (q *omniQuerySpanExtractor) extractOmniExpr(expr ast.ExprNode) (base.QueryS
 			return base.QuerySpanResult{}, err
 		}
 		return base.QuerySpanResult{Name: q.omniExprName(e), SourceColumns: sourceColumns, IsPlainField: false}, nil
-	case *ast.MemberOfExpr:
-		sourceColumns, err := q.mergeOmniExprSources(e.Value, e.Array)
-		if err != nil {
-			return base.QuerySpanResult{}, err
-		}
-		return base.QuerySpanResult{Name: q.omniExprName(e), SourceColumns: sourceColumns, IsPlainField: false}, nil
 	case *ast.KeywordArg:
 		// Keyword arguments (TIMESTAMPDIFF(SECOND, ...), GET_FORMAT(DATE, ...))
 		// are unit selectors, not column references — no lineage.
@@ -1506,8 +1509,6 @@ func omniExprNodeLoc(node ast.Node) (ast.Loc, bool) {
 		return n.Loc, true
 	case *ast.RowExpr:
 		return n.Loc, true
-	case *ast.MemberOfExpr:
-		return n.Loc, true
 	case *ast.ParenExpr:
 		return n.Loc, true
 	case *ast.StarExpr:
@@ -1657,7 +1658,9 @@ func collectOmniAccessTablesFromNode(result base.SourceColumnSet, node ast.Node,
 		}
 		collectOmniAccessTablesFromExpr(result, n.Where, defaultDatabase)
 		for _, groupBy := range n.GroupBy {
-			collectOmniAccessTablesFromExpr(result, groupBy, defaultDatabase)
+			if groupBy != nil {
+				collectOmniAccessTablesFromExpr(result, groupBy.Expr, defaultDatabase)
+			}
 		}
 		collectOmniAccessTablesFromExpr(result, n.Having, defaultDatabase)
 		for _, orderBy := range n.OrderBy {
@@ -1951,9 +1954,6 @@ func collectOmniAccessTablesFromExpr(result base.SourceColumnSet, expr ast.ExprN
 		for _, item := range e.Items {
 			collectOmniAccessTablesFromExpr(result, item, defaultDatabase)
 		}
-	case *ast.MemberOfExpr:
-		collectOmniAccessTablesFromExpr(result, e.Value, defaultDatabase)
-		collectOmniAccessTablesFromExpr(result, e.Array, defaultDatabase)
 	case *ast.ParenExpr:
 		collectOmniAccessTablesFromExpr(result, e.Expr, defaultDatabase)
 	default:

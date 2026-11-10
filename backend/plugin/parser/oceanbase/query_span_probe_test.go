@@ -207,7 +207,7 @@ func probeMySQLOmniStructuralInvariants(t *testing.T) {
 	})
 
 	t.Run("query_type_statement_roots", func(t *testing.T) {
-		require.IsType(t, &ast.ExplainStmt{}, mustMySQLOmniNode(t, "EXPLAIN ANALYZE SELECT * FROM t"))
+		require.IsType(t, &ast.ExplainStmt{}, mustMySQLOmniNode(t, "EXPLAIN SELECT * FROM t"))
 		require.IsType(t, &ast.ShowStmt{}, mustMySQLOmniNode(t, "SHOW DATABASES"))
 		require.IsType(t, &ast.SetStmt{}, mustMySQLOmniNode(t, "SET CHARSET DEFAULT"))
 		require.IsType(t, &ast.CreateTableStmt{}, mustMySQLOmniNode(t, "CREATE TABLE t(a INT)"))

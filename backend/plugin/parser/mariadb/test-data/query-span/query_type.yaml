@@ -1,5 +1,5 @@
-- description: explain analyze query
-  statement: explain analyze select * from t
+- description: analyze query (MariaDB's executed EXPLAIN)
+  statement: analyze select * from t
   defaultDatabase: db
   metadata: |-
     {
