@@ -11,10 +11,20 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func TestExplainAnalyzeDigestRejected(t *testing.T) {
+func TestExplainByDigestOrConnectionRejected(t *testing.T) {
+	// EXPLAIN FOR CONNECTION parses to an ExplainStmt with no wrapped statement.
+	// Its referenced tables cannot be determined, so it is rejected with a clear
+	// message rather than an empty span.
 	span, err := GetQuerySpan(context.Background(), base.GetQuerySpanContext{},
-		base.Statement{Text: "EXPLAIN ANALYZE 'sqldigest'"}, "db", "", false)
+		base.Statement{Text: "EXPLAIN FOR CONNECTION 5"}, "db", "", false)
 	require.ErrorContains(t, err, "EXPLAIN by digest or connection is not supported")
+	require.Nil(t, span)
+
+	// omni does not accept EXPLAIN by SQL digest, so that form is rejected at
+	// parse time (the statement cannot run regardless).
+	span, err = GetQuerySpan(context.Background(), base.GetQuerySpanContext{},
+		base.Statement{Text: "EXPLAIN ANALYZE 'sqldigest'"}, "db", "", false)
+	require.Error(t, err)
 	require.Nil(t, span)
 }
 
