@@ -248,6 +248,10 @@ func tidbExecErrorAdvice(d *model.DatabaseMetadata, index int, position *storepb
 // would silently accept but that bytebase still warns on: a cross-database
 // reference, a dropped database, or a CREATE TABLE ... AS SELECT.
 func precheckTiDBOmniWalkThrough(d *model.DatabaseMetadata, asts []base.AST) tiDBWalkThroughAdvice {
+	// created tracks the tables a preceding statement in this batch added to the
+	// current database, so a later CREATE TABLE IF NOT EXISTS against one of them
+	// is recognized as the no-op it is rather than flagged.
+	created := make(map[string]bool)
 	for i, unifiedAST := range asts {
 		node, ok := tidbparser.GetOmniNode(unifiedAST)
 		if !ok {
@@ -257,15 +261,41 @@ func precheckTiDBOmniWalkThrough(d *model.DatabaseMetadata, asts []base.AST) tiD
 		if omniAST, ok := unifiedAST.(*tidbparser.OmniAST); ok {
 			text = strings.TrimSpace(omniAST.Text)
 		}
-		if advice := precheckTiDBOmniNode(d, node, text); advice != nil {
+		if advice := precheckTiDBOmniNode(d, node, text, created); advice != nil {
 			advice.StartPosition = tidbStatementStartPosition(unifiedAST.ASTStartPosition())
 			return tiDBWalkThroughAdvice{index: i, advice: advice}
 		}
+		tidbTrackBatchTables(d, node, created)
 	}
 	return tiDBWalkThroughAdvice{}
 }
 
-func precheckTiDBOmniNode(d *model.DatabaseMetadata, node ast.Node, text string) *storepb.Advice {
+// tidbTrackBatchTables records the current-database tables a statement creates
+// or drops, so later prechecks in the same batch see the running table set.
+func tidbTrackBatchTables(d *model.DatabaseMetadata, node ast.Node, created map[string]bool) {
+	switch n := node.(type) {
+	case *ast.CreateTableStmt:
+		if n.Table != nil && (n.Table.Schema == "" || isCurrentDatabase(d, n.Table.Schema)) {
+			created[tidbTableKey(d, n.Table.Name)] = true
+		}
+	case *ast.DropTableStmt:
+		for _, table := range n.Tables {
+			if table != nil && (table.Schema == "" || isCurrentDatabase(d, table.Schema)) {
+				delete(created, tidbTableKey(d, table.Name))
+			}
+		}
+	default:
+	}
+}
+
+func tidbTableKey(d *model.DatabaseMetadata, name string) string {
+	if !d.GetIsObjectCaseSensitive() {
+		return strings.ToLower(name)
+	}
+	return name
+}
+
+func precheckTiDBOmniNode(d *model.DatabaseMetadata, node ast.Node, text string, created map[string]bool) *storepb.Advice {
 	switch n := node.(type) {
 	case *ast.CreateDatabaseStmt:
 		if n.Name != "" && !isCurrentDatabase(d, n.Name) {
@@ -293,7 +323,7 @@ func precheckTiDBOmniNode(d *model.DatabaseMetadata, node ast.Node, text string)
 		if advice := precheckTiDBTableRefDatabase(d, n.Table); advice != nil {
 			return advice
 		}
-		if n.IfNotExists && tidbOmniTableExistsInCurrentDatabase(d, n.Table) {
+		if n.IfNotExists && tidbTableExistsInBatch(d, created, n.Table) {
 			return nil
 		}
 		if n.Select != nil {
@@ -346,6 +376,18 @@ func precheckTiDBTableRefDatabase(d *model.DatabaseMetadata, table *ast.TableRef
 		return nil
 	}
 	return notCurrentTiDBDatabaseAdvice(d, table.Schema)
+}
+
+// tidbTableExistsInBatch reports whether a table exists either in the loaded
+// metadata or by a preceding statement in the same batch.
+func tidbTableExistsInBatch(d *model.DatabaseMetadata, created map[string]bool, table *ast.TableRef) bool {
+	if tidbOmniTableExistsInCurrentDatabase(d, table) {
+		return true
+	}
+	if table == nil || (table.Schema != "" && !isCurrentDatabase(d, table.Schema)) {
+		return false
+	}
+	return created[tidbTableKey(d, table.Name)]
 }
 
 func tidbOmniTableExistsInCurrentDatabase(d *model.DatabaseMetadata, table *ast.TableRef) bool {

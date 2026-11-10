@@ -1129,3 +1129,33 @@
       "collation":  "utf8mb4_bin"
     }
   advice: null
+- statement: |-
+    CREATE TABLE t(a INT);
+    CREATE TABLE IF NOT EXISTS t AS SELECT 1 AS a;
+  ignore_case_sensitive: false
+  want: |-
+    {
+      "name":  "test",
+      "schemas":  [
+        {
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a",
+                  "position":  1,
+                  "nullable":  true,
+                  "type":  "int"
+                }
+              ],
+              "engine":  "InnoDB",
+              "collation":  "utf8mb4_bin"
+            }
+          ]
+        }
+      ],
+      "characterSet":  "utf8mb4",
+      "collation":  "utf8mb4_bin"
+    }
+  advice: null
