@@ -41,7 +41,8 @@ comment URL to a TiDB issue, **not imports** — ignore them. The real importers
 |---|---|---|---|---|
 | **db/tidb/stats** | `stats.go` | `DeleteStmt`, `UpdateStmt`, `Join`, `TableSource`, `ResultSetNode` (DML target counting) | `omni/tidb/ast` + `ParseTiDBOmni` | **DONE** (this PR). Fully self-contained; parsed with omni, walks `DeleteStmt.Tables`/`UpdateStmt.Tables`/`JoinClause`. |
 | **advisor/tidb** | `utils.go`, `advisor_builtin_prior_backup_check.go` | `utils.go`: `ast.StmtNode` return + `ast.Rand`; `prior_backup_check.go`: `AsPingCapAST()` + `DDLNode` | `omni/tidb/ast` | **In progress.** `utils.go` is already ~90% on `omniast` (`OmniStmt` + dozens of `omni*` helpers). Remaining: `getTiDBNodes` returns pingcap `[]ast.StmtNode` for still-un-migrated advisors; finishes when the last advisor stops using it. `prior_backup_check` uses the bridge for authoritative DDL detection. |
-| **parser/tidb — query-span** | `query_span_extractor.go` (+ helpers `util.go`, `query.go`, `limit.go`, `query_type.go`, `statement_type.go`, `resource_change.go`, `ast.go`) | 40+ expression/clause node types; visitor `Accept`/`Enter`/`Leave`; `format`/`Restore`; `parser.New` | `omni/tidb/ast` (`Walk`/`Visit`, `NodeToString`) + `ParseTiDBOmni` | **Not started. No omni-side gap blocks it** (see below). The largest unit. `resource_change.go` is already dual (imports both). |
+| **parser/tidb — statement/result-limit** | `statement_type.go`, `limit.go` | `GetStatementTypes` statement classification; `format.Restore` result-limit rewrite | `omni/tidb/ast` + `omni/tidb/deparse` + `ParseTiDBOmni` | **DONE.** Self-contained registered entry points (`RegisterGetStatementTypes`, `RegisterResultLimitFunc`). `statement_type` switches on omni node types (omni's separate `DropViewStmt` replaces pingcap's `DropTableStmt.IsView`). `limit` deparses via `deparse.RestoreSelectWith(stmt, RestoreStringWithoutCharset)` — byte-identical to the old pingcap `format.Restore` output (golden test unchanged). |
+| **parser/tidb — query-span** | `query_span_extractor.go` (+ helpers `util.go`, `query.go`, `query_type.go`, `resource_change.go`, `ast.go`) | 40+ expression/clause node types; visitor `Accept`/`Enter`/`Leave`; `parser.New` | `omni/tidb/ast` (`Walk`/`Visit`) + `ParseTiDBOmni` | **Not started. No omni-side gap blocks it** (see below). The largest unit. `resource_change.go` is already dual (imports both). `query_type.go` is coupled to the extractor (called with its node), so it migrates here. |
 | **parser/tidb — core/bridge** | `tidb.go`, `ast.go` | `tidbparser`, pingcap `ast`, `mysql`, `parser_driver`; the `AST`/`PingCapASTProvider` bridge | — (delete) | Deleted last, once no consumer calls `AsPingCapAST`/`ParseTiDB`. |
 | **tokenizer** | `tokenizer.go` | `*tidbast.CreateTableStmt`, `Constraint*` consts | — (delete) | Only caller is `tidb.go`'s pingcap line-tracking. Dies with the bridge; not a migration target. |
 | **schema/tidb** | `walk_through.go`, `get_database_metadata.go`, `generate_migration_test.go` | `parser.New`, `ast.*`, `types.FieldType`, `mysql.Type*`/sql-mode | `omni/tidb/catalog` (`metadata_load.go`) + `omni/tidb/ast` + `omni/metadata` | **Blocked on omni catalog parity**, being finished in a sibling omni session. May need a fresh omni pin re-bump once that lands. |
@@ -59,10 +60,13 @@ closest-to-a-gap items are all handleable on the Bytebase side with no omni PR:
    `case tidbast.DDLNode:` fall-throughs with explicit concrete-type
    enumeration (or a small local classifier).
 2. **`Node.Text()`** (`util.go`, auto-derived column name fallback): omni nodes
-   carry byte-offset `Loc` + a `NodeToString` deparser instead of retained
-   source text. Slice the statement by `Loc`, or call `NodeToString`.
+   carry byte-offset `Loc`, and omni's SQL deparser is the `omni/tidb/deparse`
+   package (`RestoreSelect`/`Deparse`). `ast.NodeToString` is a debug
+   S-expression dumper, **not** a SQL serializer — do not use it to rebuild SQL.
+   For an auto-derived column name, slice the statement by `Loc`.
 3. **`format` package / `Restore` / `parser_driver.ValueExpr`** (`limit.go`):
-   not in omni by design; `ast.NodeToString` + `*ast.IntLit` replace them.
+   not in omni by design; `deparse.RestoreSelectWith(stmt, flags)` + `*ast.IntLit`
+   replace them (the `limit.go` migration uses exactly this).
 
 An optional omni ergonomics PR (a `DMLNode`/`DDLNode`-style classifier, a
 source-span convenience) could reduce boilerplate but is not on the critical
@@ -91,10 +95,12 @@ path.
 
 ## Recommended order (smallest / most independent first)
 
-1. **`db/tidb/stats.go`** — DONE in this PR. Self-contained, independent of the
-   bridge and of catalog parity; proves the `ParseTiDBOmni` + omni-AST-walk
-   pattern. Verified by the pure `TestCountDMLTargets` (9 cases) +
-   `TestGetAffectedRows*`.
+1. **`db/tidb/stats.go`, `parser/tidb/statement_type.go`, `parser/tidb/limit.go`**
+   — DONE. Self-contained, independent of the bridge and of catalog parity; they
+   prove the `ParseTiDBOmni` + omni-AST-walk pattern and the
+   `deparse.RestoreSelectWith` round-trip. Verified by the pure
+   `TestCountDMLTargets` (9 cases), `TestGetAffectedRows*`, `TestGetStatementType`,
+   and `TestGetStatementWithResultLimit` (golden output unchanged).
 2. **Finish `advisor/tidb`** — migrate the remaining advisors off
    `getTiDBNodes`/`AsPingCapAST`, then delete the pingcap return path. Already
    mostly done; unblocks removing the bridge's advisor consumers.
