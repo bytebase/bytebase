@@ -107,22 +107,26 @@ Rejected: an outlined button, which is heavier than the one line it sits on.
 
 ## Scope
 
-Frontend and one guideline file. One PR. It depends on slice 1 of
-[Plan comment card](plan-comment-card.md), which gives a finding card its title bar.
+Frontend and one guideline file. Two PRs. Each leaves main shippable and names what it depends on.
 
-1. **Group (D1 to D5, D7).**
+1. **Show and Hide in the link color (D7).** Depends on nothing. It does not need the group or the
+   new card.
+   - `ReviewActivityTimeline.tsx`: the Show and Hide control in `ReviewRunActivityRow` drops the
+     `text-control-light` override.
+   - Tests: `ReviewActivityTimeline.test.tsx` (the control carries no color override).
+2. **Group (D1 to D5).** Depends on slice 2 of [Plan comment card](plan-comment-card.md), which
+   gives a finding's card in Activity its title bar.
    - `timelineEvents.ts`: a run's finding entries become children of its `review-run` entry.
-   - `ReviewActivityTimeline.tsx`: `ReviewRunActivityRow` renders the group, and its Show and Hide
-     control drops the `text-control-light` override. `ThreadActivityRow` keeps rendering a
-     person's thread.
+   - `ReviewActivityTimeline.tsx`: `ReviewRunActivityRow` renders the group. `ThreadActivityRow`
+     keeps rendering a person's thread.
    - `foldTimeline.ts`: a group stays together when a long history folds, as an open run's line
      and cards do today.
    - `docs/agents/frontend-ux.md`: the exception in D4.
    - Tests: `timelineEvents.test.ts` (the kept-card rule in D5, unchanged cases plus the
      grouping), `ReviewActivityTimeline.test.tsx` (a finding renders inside its review's group and
      without a timeline icon; a hidden review with a kept finding still renders a group; a review
-     with no cards renders no frame; the Show and Hide control carries no color override),
-     `foldTimeline.test.ts`. E2E: `frontend/tests/e2e/plan-detail/plan-detail-review.spec.ts`.
+     with no cards renders no frame), `foldTimeline.test.ts`. E2E:
+     `frontend/tests/e2e/plan-detail/plan-detail-review.spec.ts`.
 
 ## Not in this PR
 
