@@ -34,7 +34,7 @@ func (*ColumnCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor
 
 	rule := NewColumnCommentConventionRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase, commentPayload)
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule})
 }
 
 // ColumnCommentConventionRule is the rule implementation for column comment convention.
@@ -70,19 +70,19 @@ func (*ColumnCommentConventionRule) Name() string {
 func (r *ColumnCommentConventionRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
-		tableName := omniObjectName(n.Name, r.currentDatabase)
-		for _, col := range omniColumnDefs(n.Columns) {
+		tableName := objectName(n.Name, r.currentDatabase)
+		for _, col := range columnDefs(n.Columns) {
 			columnName := fmt.Sprintf("%s.%s", tableName, col.Name)
 			r.columnNames = append(r.columnNames, columnName)
 			r.columnLine[columnName] = r.locLine(col.Loc)
 		}
 	case *ast.AlterTableStmt:
-		tableName := omniObjectName(n.Name, r.currentDatabase)
-		for _, cmd := range omniAlterTableCmds(n) {
+		tableName := objectName(n.Name, r.currentDatabase)
+		for _, cmd := range alterTableCmds(n) {
 			if cmd.Action != ast.AT_ADD_COLUMN {
 				continue
 			}
-			for _, col := range append(omniColumnDefs(cmd.ColumnDefs), cmd.ColumnDef) {
+			for _, col := range append(columnDefs(cmd.ColumnDefs), cmd.ColumnDef) {
 				if col == nil {
 					continue
 				}
@@ -95,7 +95,7 @@ func (r *ColumnCommentConventionRule) OnStatement(node ast.Node) {
 		if n.ObjectType != ast.OBJECT_TABLE || n.Column == "" {
 			return
 		}
-		columnName := fmt.Sprintf("%s.%s", omniObjectName(n.Object, r.currentDatabase), n.Column)
+		columnName := fmt.Sprintf("%s.%s", objectName(n.Object, r.currentDatabase), n.Column)
 		r.columnComment[columnName] = n.Comment
 	default:
 	}

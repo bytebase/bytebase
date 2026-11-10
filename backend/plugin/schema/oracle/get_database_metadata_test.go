@@ -428,7 +428,7 @@ END financial_utils;
 	}
 }
 
-func TestGetDatabaseMetadataUsesOmni(t *testing.T) {
+func TestGetDatabaseMetadataUses(t *testing.T) {
 	metadata, err := schema.GetDatabaseMetadata(storepb.Engine_ORACLE, `
 CREATE TABLE T (
     ID NUMBER PRIMARY KEY

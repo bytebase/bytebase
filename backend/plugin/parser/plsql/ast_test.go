@@ -154,38 +154,38 @@ func TestParsePLSQLReturnsParseError(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestOracleOmniASTWrapper(t *testing.T) {
+func TestOracleASTWrapper(t *testing.T) {
 	node := &ast.SelectStmt{}
 	start := &storepb.Position{Line: 2, Column: 3}
-	omniAST := &OmniAST{
+	wrapped := &AST{
 		Node:          node,
 		Text:          "SELECT 1 FROM DUAL",
 		StartPosition: start,
 	}
 
-	var parsed base.AST = omniAST
+	var parsed base.AST = wrapped
 	require.Equal(t, start, parsed.ASTStartPosition())
 
-	got, ok := GetOmniNode(parsed)
+	got, ok := GetNode(parsed)
 	require.True(t, ok)
 	require.Same(t, node, got)
 
-	got, ok = GetOmniNode(nil)
+	got, ok = GetNode(nil)
 	require.False(t, ok)
 	require.Nil(t, got)
 }
 
-func TestOracleOmniASTUsesOmniNode(t *testing.T) {
+func TestOracleASTUsesNode(t *testing.T) {
 	start := &storepb.Position{Line: 4, Column: 1}
-	omniAST := &OmniAST{
+	wrapped := &AST{
 		Node:          &ast.SelectStmt{},
 		Text:          "SELECT * FROM T",
 		StartPosition: start,
 	}
 
-	node, ok := GetOmniNode(omniAST)
+	node, ok := GetNode(wrapped)
 	require.True(t, ok)
-	require.Same(t, omniAST.Node, node)
+	require.Same(t, wrapped.Node, node)
 }
 
 func TestOracleByteOffsetToRunePosition(t *testing.T) {

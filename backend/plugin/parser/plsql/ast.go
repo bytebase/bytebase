@@ -13,8 +13,8 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-// OmniAST wraps an omni AST node and implements the base.AST interface.
-type OmniAST struct {
+// AST wraps an omni AST node and implements the base.AST interface.
+type AST struct {
 	// Node is the omni AST node (e.g. *ast.SelectStmt, *ast.CreateTableStmt).
 	Node ast.Node
 	// Text is the original SQL text of this statement.
@@ -24,7 +24,7 @@ type OmniAST struct {
 }
 
 // ASTStartPosition implements base.AST.
-func (a *OmniAST) ASTStartPosition() *storepb.Position {
+func (a *AST) ASTStartPosition() *storepb.Position {
 	return a.StartPosition
 }
 
@@ -52,7 +52,7 @@ func ParsePLSQL(sql string) (*ast.List, error) {
 			continue
 		}
 		if statement.Range != nil {
-			offsetOmniLocs(parsed, int(statement.Range.Start))
+			offsetLocs(parsed, int(statement.Range.Start))
 		}
 		list.Items = append(list.Items, parsed.Items...)
 	}
@@ -69,16 +69,16 @@ func offsetOracleParseError(err error, offset int) error {
 	return &adjusted
 }
 
-type omniLocOffsetter int
+type locOffsetter int
 
-func offsetOmniLocs(node ast.Node, offset int) {
+func offsetLocs(node ast.Node, offset int) {
 	if offset == 0 {
 		return
 	}
-	ast.Walk(omniLocOffsetter(offset), node)
+	ast.Walk(locOffsetter(offset), node)
 }
 
-func (o omniLocOffsetter) Visit(node ast.Node) ast.Visitor {
+func (o locOffsetter) Visit(node ast.Node) ast.Visitor {
 	if node == nil {
 		return nil
 	}
@@ -110,17 +110,17 @@ func (o omniLocOffsetter) Visit(node ast.Node) ast.Visitor {
 	return o
 }
 
-// GetOmniNode extracts the omni AST node from a base.AST interface.
-// Returns the node and true if it is an OmniAST, nil and false otherwise.
-func GetOmniNode(a base.AST) (ast.Node, bool) {
+// GetNode extracts the omni AST node from a base.AST interface.
+// Returns the node and true if it is an AST, nil and false otherwise.
+func GetNode(a base.AST) (ast.Node, bool) {
 	if a == nil {
 		return nil, false
 	}
-	omniAST, ok := a.(*OmniAST)
+	wrapped, ok := a.(*AST)
 	if !ok {
 		return nil, false
 	}
-	return omniAST.Node, true
+	return wrapped.Node, true
 }
 
 // ByteOffsetToRunePosition converts a byte offset in sql to a 1-based line:column
@@ -150,7 +150,7 @@ func ByteOffsetToRunePosition(sql string, byteOffset int) *storepb.Position {
 	}
 }
 
-func convertOmniError(err error, stmt base.Statement) error {
+func convertError(err error, stmt base.Statement) error {
 	var parseErr *oracleparser.ParseError
 	if !errors.As(err, &parseErr) {
 		return err

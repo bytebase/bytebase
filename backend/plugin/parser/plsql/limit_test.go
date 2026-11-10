@@ -17,7 +17,7 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 	runLimitTest(t, "test_limit.yaml", false /* record */)
 }
 
-func TestAddLimitFor12cAndLaterUsesOmni(t *testing.T) {
+func TestAddLimitFor12cAndLaterUses(t *testing.T) {
 	stmt := "SELECT emp_id, salary, ROW_NUMBER() OVER (ORDER BY salary DESC) AS rn FROM employees QUALIFY rn <= 10"
 
 	got := addLimitFor12cAndLater(stmt, 5)

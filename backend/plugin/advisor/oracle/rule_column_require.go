@@ -41,7 +41,7 @@ func (*ColumnRequireAdvisor) Check(_ context.Context, checkCtx advisor.Context) 
 
 	rule := NewColumnRequireRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase, stringArrayPayload.List)
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule})
 }
 
 type columnSet map[string]bool
@@ -80,13 +80,13 @@ func (r *ColumnRequireRule) OnStatement(node ast.Node) {
 		for column := range r.requiredColumns {
 			missing[column] = true
 		}
-		for _, col := range omniColumnDefs(n.Columns) {
+		for _, col := range columnDefs(n.Columns) {
 			delete(missing, col.Name)
 		}
-		r.addMissingColumnsAdvice(omniLastObjectName(n.Name), missing, r.locLine(n.Loc))
+		r.addMissingColumnsAdvice(lastObjectName(n.Name), missing, r.locLine(n.Loc))
 	case *ast.AlterTableStmt:
 		missing := make(columnSet)
-		for _, cmd := range omniAlterTableCmds(n) {
+		for _, cmd := range alterTableCmds(n) {
 			switch cmd.Action {
 			case ast.AT_DROP_COLUMN:
 				if _, ok := r.requiredColumns[cmd.ColumnName]; ok {
@@ -101,7 +101,7 @@ func (r *ColumnRequireRule) OnStatement(node ast.Node) {
 			default:
 			}
 		}
-		r.addMissingColumnsAdvice(omniLastObjectName(n.Name), missing, r.locLine(n.Loc))
+		r.addMissingColumnsAdvice(lastObjectName(n.Name), missing, r.locLine(n.Loc))
 	default:
 	}
 }

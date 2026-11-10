@@ -36,7 +36,7 @@ func (*NamingIdentifierCaseAdvisor) Check(_ context.Context, checkCtx advisor.Co
 
 	rule := NewNamingIdentifierCaseRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase, namingCasePayload.Upper)
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule})
 }
 
 // NamingIdentifierCaseRule is the rule implementation for identifier case.
@@ -63,7 +63,7 @@ func (*NamingIdentifierCaseRule) Name() string {
 
 // OnStatement checks identifier case from the omni AST.
 func (r *NamingIdentifierCaseRule) OnStatement(node ast.Node) {
-	for _, ident := range omniIdentifiers(node) {
+	for _, ident := range identifiers(node) {
 		if r.upper {
 			if ident.name != strings.ToUpper(ident.name) {
 				r.AddAdvice(
