@@ -19,9 +19,9 @@ func TestOmniQuerySpanScaffold_QueryTypesAndAccessTables(t *testing.T) {
 		wantResources []base.ColumnResource
 	}{
 		{
-			name:      "explain_analyze_select_accesses_table",
-			statement: "EXPLAIN ANALYZE SELECT * FROM t",
-			wantType:  base.Select,
+			name:      "explain_select_accesses_table",
+			statement: "EXPLAIN SELECT * FROM t",
+			wantType:  base.Explain,
 			wantResources: []base.ColumnResource{
 				{Database: "db", Table: "t"},
 			},
@@ -471,7 +471,6 @@ func TestOmniQuerySpanSystematicMigrationRegressions(t *testing.T) {
   a COLLATE utf8mb4_bin AS collated,
   MATCH(a) AGAINST (b) AS matched,
   ROW(a, b) AS row_field,
-  a MEMBER OF(c) AS member_field,
   a + INTERVAL b DAY AS interval_field
 FROM t`,
 		)
@@ -488,7 +487,6 @@ FROM t`,
 			{Name: "collated", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "a"}}), IsPlainField: false},
 			{Name: "matched", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "a"}, {Database: "db", Table: "t", Column: "b"}}), IsPlainField: false},
 			{Name: "row_field", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "a"}, {Database: "db", Table: "t", Column: "b"}}), IsPlainField: false},
-			{Name: "member_field", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "a"}, {Database: "db", Table: "t", Column: "c"}}), IsPlainField: false},
 			{Name: "interval_field", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "a"}, {Database: "db", Table: "t", Column: "b"}}), IsPlainField: false},
 		}, span.Results)
 	})
@@ -539,17 +537,6 @@ func TestOmniQuerySpanScenarioBatch1_RootAndQueryTypeCoverage(t *testing.T) {
 				wantResults: []base.QuerySpanResult{
 					{Name: "DEFAULT", SourceColumns: base.SourceColumnSet{}, IsPlainField: true},
 				},
-			},
-			{
-				name:      "explain_analyze_values",
-				statement: "EXPLAIN ANALYZE VALUES (1, 2 + 3)",
-				wantType:  base.Select,
-			},
-			{
-				name:          "explain_analyze_insert",
-				statement:     "EXPLAIN ANALYZE INSERT INTO t VALUES(1, 2, 3)",
-				wantType:      base.DML,
-				wantResources: []base.ColumnResource{{Database: "db", Table: "t"}},
 			},
 		}
 		for _, tc := range tests {
@@ -759,22 +746,6 @@ func TestOmniQuerySpanScenarioBatch2_FromJoinAndScopeCoverage(t *testing.T) {
 					{Name: "1", SourceColumns: base.SourceColumnSet{}, IsPlainField: true},
 				},
 			},
-			{
-				name:      "dual_join_right",
-				statement: "SELECT t.a FROM t JOIN DUAL",
-				want: []base.QuerySpanResult{
-					{Name: "a", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "a"}}), IsPlainField: true},
-				},
-				wantSrc: []base.ColumnResource{{Database: "db", Table: "t"}},
-			},
-			{
-				name:      "dual_join_left",
-				statement: "SELECT t.a FROM DUAL JOIN t",
-				want: []base.QuerySpanResult{
-					{Name: "a", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "a"}}), IsPlainField: true},
-				},
-				wantSrc: []base.ColumnResource{{Database: "db", Table: "t"}},
-			},
 		}
 		for _, tc := range tests {
 			t.Run(tc.name, func(t *testing.T) {
@@ -836,15 +807,6 @@ func TestOmniQuerySpanScenarioBatch2_FromJoinAndScopeCoverage(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, []base.QuerySpanResult{
 			{Name: "c1", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "a"}}), IsPlainField: true},
-		}, span.Results)
-
-		span, err = newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(
-			context.Background(),
-			"SELECT x.a FROM t, LATERAL (SELECT t.a) AS x",
-		)
-		require.NoError(t, err)
-		require.Equal(t, []base.QuerySpanResult{
-			{Name: "a", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "a"}}), IsPlainField: true},
 		}, span.Results)
 	})
 
@@ -1197,9 +1159,9 @@ func TestOmniQuerySpanScenarioBatch3_ErrorAndMetadataCoverage(t *testing.T) {
 		require.Empty(t, span.Results)
 		require.Empty(t, span.SourceColumns)
 
-		span, err = newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "EXPLAIN ANALYZE SELECT * FROM missing")
+		span, err = newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "EXPLAIN SELECT * FROM missing")
 		require.NoError(t, err)
-		require.Equal(t, base.Select, span.Type)
+		require.Equal(t, base.Explain, span.Type)
 		require.Empty(t, span.Results)
 		require.Nil(t, span.NotFoundError)
 

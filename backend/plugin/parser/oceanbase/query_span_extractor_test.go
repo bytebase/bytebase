@@ -19,9 +19,9 @@ func TestOmniQuerySpanScaffold_QueryTypesAndAccessTables(t *testing.T) {
 		wantResources []base.ColumnResource
 	}{
 		{
-			name:      "explain_analyze_select_accesses_table",
-			statement: "EXPLAIN ANALYZE SELECT * FROM t",
-			wantType:  base.Select,
+			name:      "explain_select_accesses_table",
+			statement: "EXPLAIN SELECT * FROM t",
+			wantType:  base.Explain,
 			wantResources: []base.ColumnResource{
 				{Database: "db", Table: "t"},
 			},
@@ -519,16 +519,8 @@ FROM t`,
 		}
 	})
 
-	t.Run("table_and_values_roots_return_select_results", func(t *testing.T) {
-		tableSpan, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "TABLE t")
-		require.NoError(t, err)
-		require.Equal(t, base.Select, tableSpan.Type)
-		require.Equal(t, []base.QuerySpanResult{
-			{Name: "a", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "a"}}), IsPlainField: true},
-			{Name: "b", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "b"}}), IsPlainField: true},
-			{Name: "c", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "c"}}), IsPlainField: true},
-		}, tableSpan.Results)
-
+	// OceanBase has no TABLE statement; only VALUES is a query primary here.
+	t.Run("values_root_returns_select_results", func(t *testing.T) {
 		valuesSpan, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "VALUES ROW(1, 2 + 3)")
 		require.NoError(t, err)
 		require.Equal(t, base.Select, valuesSpan.Type)
@@ -557,23 +549,6 @@ func TestOmniQuerySpanScenarioBatch1_RootAndQueryTypeCoverage(t *testing.T) {
 				wantResults: []base.QuerySpanResult{
 					{Name: "DEFAULT", SourceColumns: base.SourceColumnSet{}, IsPlainField: true},
 				},
-			},
-			{
-				name:          "explain_analyze_table",
-				statement:     "EXPLAIN ANALYZE TABLE t",
-				wantType:      base.Select,
-				wantResources: []base.ColumnResource{{Database: "db", Table: "t"}},
-			},
-			{
-				name:      "explain_analyze_values",
-				statement: "EXPLAIN ANALYZE VALUES ROW(1, 2 + 3)",
-				wantType:  base.Select,
-			},
-			{
-				name:          "explain_analyze_insert",
-				statement:     "EXPLAIN ANALYZE INSERT INTO t VALUES(1, 2, 3)",
-				wantType:      base.DML,
-				wantResources: []base.ColumnResource{{Database: "db", Table: "t"}},
 			},
 		}
 		for _, tc := range tests {
@@ -1196,9 +1171,6 @@ func TestOmniQuerySpanScenarioBatch3_ErrorAndMetadataCoverage(t *testing.T) {
 		_, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "SELECT a INTO @x FROM t")
 		require.ErrorContains(t, err, "unsupported select statement with into")
 
-		_, err = newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "TABLE t INTO @x")
-		require.ErrorContains(t, err, "unsupported table statement with into")
-
 		_, err = newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "SELECT FROM")
 		require.Error(t, err)
 
@@ -1219,9 +1191,9 @@ func TestOmniQuerySpanScenarioBatch3_ErrorAndMetadataCoverage(t *testing.T) {
 		require.Empty(t, span.Results)
 		require.Empty(t, span.SourceColumns)
 
-		span, err = newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "EXPLAIN ANALYZE SELECT * FROM missing")
+		span, err = newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "EXPLAIN SELECT * FROM missing")
 		require.NoError(t, err)
-		require.Equal(t, base.Select, span.Type)
+		require.Equal(t, base.Explain, span.Type)
 		require.Empty(t, span.Results)
 		require.Nil(t, span.NotFoundError)
 
@@ -1238,12 +1210,6 @@ func TestOmniQuerySpanScenarioBatch3_ErrorAndMetadataCoverage(t *testing.T) {
 		require.ErrorIs(t, err, base.MixUserSystemTablesError)
 
 		_, err = newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "SET @x = (SELECT a FROM t), @y = (SELECT user FROM mysql.user)")
-		require.ErrorIs(t, err, base.MixUserSystemTablesError)
-
-		_, err = newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "TABLE t ORDER BY (SELECT user FROM mysql.user)")
-		require.ErrorIs(t, err, base.MixUserSystemTablesError)
-
-		_, err = newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "TABLE t LIMIT (SELECT COUNT(*) FROM mysql.user)")
 		require.ErrorIs(t, err, base.MixUserSystemTablesError)
 
 		_, err = newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "LOCK TABLES t READ, mysql.user READ")

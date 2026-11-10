@@ -1502,7 +1502,9 @@ func collectOmniAccessTablesFromNode(result base.SourceColumnSet, node ast.Node,
 		}
 		collectOmniAccessTablesFromExpr(result, n.Where, defaultDatabase)
 		for _, groupBy := range n.GroupBy {
-			collectOmniAccessTablesFromExpr(result, groupBy, defaultDatabase)
+			if groupBy != nil {
+				collectOmniAccessTablesFromExpr(result, groupBy.Expr, defaultDatabase)
+			}
 		}
 		collectOmniAccessTablesFromExpr(result, n.Having, defaultDatabase)
 		for _, orderBy := range n.OrderBy {

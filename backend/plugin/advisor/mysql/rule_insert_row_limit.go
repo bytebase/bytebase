@@ -64,7 +64,8 @@ func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Contex
 		position := base.ConvertANTLRLineToPosition(baseLine + int(mysqlparser.ByteOffsetToRunePosition(stmt.Text, contentStartIndex(stmt.Text)).Line))
 
 		// INSERT ... SELECT and INSERT ... TABLE: use EXPLAIN to count rows.
-		if ins.Select != nil || ins.TableSource != nil {
+		// Both carry their source as a SelectStmt now.
+		if ins.Select != nil {
 			if driver == nil {
 				continue
 			}

@@ -20,23 +20,27 @@ import (
 //
 // Also asserts the per-fallback observability sub-contract: the
 // tidb_dispatcher_omni_fallback_total{reason} counter increments by
-// exactly 1 for the rejected statement, with the "flashback" label.
+// exactly 1 for the rejected statement, with the "unknown" label.
 //
 // The Option B fixture must be a statement omni REJECTS but pingcap
-// ACCEPTS (invariant #9); omni now parses BATCH and CREATE SEQUENCE, so
-// neither falls back. If pingcap also rejected the fixture, the
-// require.NoError below would fail.
+// ACCEPTS (invariant #9). omni now parses BATCH, CREATE SEQUENCE and
+// FLASHBACK, so the fixture is TRAFFIC CAPTURE — grammar newer than the
+// pinned TiDB v8.5.5 that pingcap's master parser still accepts. It
+// classifies to the "unknown" reason (no flashback/sequence/batch
+// keyword). If pingcap also rejected the fixture, the require.NoError
+// below would fail; when omni's pin catches up to this grammar, swap in
+// the next pingcap-only form.
 func TestParseTiDBStatementsOmni_OptionBFallback(t *testing.T) {
 	const (
 		omniAccepted1 = "CREATE TABLE t (id INT);"
-		omniRejected  = "FLASHBACK TABLE t;"
+		omniRejected  = "TRAFFIC CAPTURE TO 's3://x' DURATION = '1h';"
 		omniAccepted2 = "INSERT INTO t (id) VALUES (1);"
 	)
 	input := omniAccepted1 + "\n" + omniRejected + "\n" + omniAccepted2
 
 	// Snapshot the counter before so the assertion is delta-based — other
 	// tests in the package may have incremented it already.
-	before := testutil.ToFloat64(tidbDispatcherOmniFallbackTotal.WithLabelValues("flashback"))
+	before := testutil.ToFloat64(tidbDispatcherOmniFallbackTotal.WithLabelValues("unknown"))
 
 	result, err := parseTiDBStatementsOmni(input)
 	require.NoError(t, err,
@@ -50,7 +54,7 @@ func TestParseTiDBStatementsOmni_OptionBFallback(t *testing.T) {
 	// trailing whitespace etc.).
 	for _, ps := range result {
 		switch {
-		case strings.Contains(ps.Text, "FLASHBACK"):
+		case strings.Contains(ps.Text, "TRAFFIC"):
 			require.IsType(t, &AST{}, ps.AST,
 				"omni-rejected statement must carry pingcap *AST after Option B fallback (un-migrated advisors continue to function)")
 		case strings.Contains(ps.Text, "CREATE TABLE") || strings.Contains(ps.Text, "INSERT"):
@@ -62,9 +66,9 @@ func TestParseTiDBStatementsOmni_OptionBFallback(t *testing.T) {
 	}
 
 	// Counter sub-contract.
-	after := testutil.ToFloat64(tidbDispatcherOmniFallbackTotal.WithLabelValues("flashback"))
+	after := testutil.ToFloat64(tidbDispatcherOmniFallbackTotal.WithLabelValues("unknown"))
 	require.InDelta(t, 1.0, after-before, 0.0001,
-		"counter must increment by exactly 1 for the single FLASHBACK fallback")
+		"counter must increment by exactly 1 for the single pingcap-only fallback")
 }
 
 // TestParseTiDBStatementsOmni_BothEnginesReject pins the Q2 design

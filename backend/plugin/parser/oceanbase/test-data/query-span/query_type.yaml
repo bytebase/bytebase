@@ -1,12 +1,12 @@
-- description: explain analyze query
-  statement: explain analyze select * from t
+- description: explain query
+  statement: explain select * from t
   defaultDatabase: db
   metadata: |-
     {
       "name":  "db"
     }
   querySpan:
-    type: 1
+    type: 2
     results: []
     sourcecolumns:
         - server: ""

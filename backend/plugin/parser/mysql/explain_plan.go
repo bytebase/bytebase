@@ -153,10 +153,10 @@ func CapAffectedRowsByLimit(stmt ast.Node, rows float64) int64 {
 	var limit *ast.Limit
 	switch s := stmt.(type) {
 	case *ast.InsertStmt:
+		// INSERT ... SELECT and INSERT ... TABLE both carry their source as a
+		// SelectStmt now; its wrapper holds any trailing LIMIT.
 		if s.Select != nil {
 			limit = s.Select.Limit
-		} else if s.TableSource != nil {
-			limit = s.TableSource.Limit
 		}
 	case *ast.UpdateStmt:
 		limit = s.Limit

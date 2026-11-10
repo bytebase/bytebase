@@ -259,8 +259,8 @@ github.com/bytebase/gomongo v0.0.0-20260730033313-67ba6e249735 h1:v8y6mXeHmYVsdM
 github.com/bytebase/gomongo v0.0.0-20260730033313-67ba6e249735/go.mod h1:vTHjcvfn8Pmf65WjnV1ytTCYyC7xNhFjrniv4YWvtA8=
 github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0 h1:bJ8NSf2K+pccl5m/wuu97fiYjDwpJH6IzURAq/3XA2U=
 github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0/go.mod h1:BEWMfiZtqshdmulKJcIsWb45MUaEvDO4CROcgi8dfFg=
-github.com/bytebase/omni v0.0.0-20261104062238-c42b07874f14 h1:ebjGmuKMemJL2tSmEV6+ZTNQ+KdXf2q+6+y+KHB/TQo=
-github.com/bytebase/omni v0.0.0-20261104062238-c42b07874f14/go.mod h1:9XZE1hqtvr09Oc+DdLu1/yCb8MDcoy/EPdA4AONDHlE=
+github.com/bytebase/omni v0.0.0-20261109180954-804a5b3401b7 h1:5Ry5ttHyw1Z8MoSurY3ptXuZo0krKTDVEnTYqLnoddA=
+github.com/bytebase/omni v0.0.0-20261109180954-804a5b3401b7/go.mod h1:/v6gra/bwwzLFkbHwnUbW5nUTidVf9SWD3uJsU+lBbo=
 github.com/bytebase/pgx/v5 v5.0.0-20261103142809-663c807705c4 h1:CVgGkwGGV1wLd9Fju0XcY1cac2sf7IKOLA80bWGUwG8=
 github.com/bytebase/pgx/v5 v5.0.0-20261103142809-663c807705c4/go.mod h1:u2Fi6no03HCSBYE+ZVdLxbwdu3xyi2vU+K/YNJioSds=
 github.com/bytebase/tidb v0.0.0-20251104040057-d29df9dd1b3b h1:FIMLXCmledlGHw7NzIT2BGVflB2ZNamudc+QtTNITH0=
@@ -357,6 +357,8 @@ github.com/dgryski/go-farm v0.0.0-20240924180020-3414d57e47da h1:aIftn67I1fkbMa5
 github.com/dgryski/go-farm v0.0.0-20240924180020-3414d57e47da/go.mod h1:SqUrOPUnsFjfmXRMNPybcSiG0BgUW2AuFH8PAnS2iTw=
 github.com/distribution/reference v0.6.0 h1:0IXCQ5g4/QMHHkarYzh5l+u8T3t73zM5QvfrDyIgxBk=
 github.com/distribution/reference v0.6.0/go.mod h1:BbU0aIcezP1/5jX/8MP0YiH4SdvB5Y4f/wlDRiLyi3E=
+github.com/docker/docker v28.5.2+incompatible h1:DBX0Y0zAjZbSrm1uzOkdr1onVghKaftjlSWt4AFexzM=
+github.com/docker/docker v28.5.2+incompatible/go.mod h1:eEKB0N0r5NX/I1kEveEz05bcu8tLC/8azJZsviup8Sk=
 github.com/docker/go-connections v0.4.0/go.mod h1:Gbd7IOopHjR8Iph03tsViu4nIes5XhDvyHbTtUxmeec=
 github.com/docker/go-connections v0.8.2 h1:9d9DEokx5W7qlr0shkFXIxEA7+TTD+llwzcykSlxMNc=
 github.com/docker/go-connections v0.8.2/go.mod h1:no1qkHdjq7kLMGUXYAduOhYPSJxxvgWBh7ogVvptn3Q=
