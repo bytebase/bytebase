@@ -40,9 +40,9 @@ func extractChangedResources(currentDatabase string, _ string, dbMetadata *model
 	}
 
 	for _, unifiedAST := range asts {
-		parsed, ok := unifiedAST.(*omniAST)
+		parsed, ok := unifiedAST.(*astNode)
 		if !ok {
-			return nil, errors.New("expected omniAST for StarRocks")
+			return nil, errors.New("expected astNode for StarRocks")
 		}
 		if parsed.node == nil {
 			continue
@@ -154,7 +154,7 @@ func objectName(name *ast.ObjectName, defaultDatabase string) (string, string) {
 }
 
 // statementText returns the text of a statement, ensuring it ends with a semicolon.
-func statementText(a *omniAST) string {
+func statementText(a *astNode) string {
 	text := strings.TrimSpace(a.text)
 	if !strings.HasSuffix(text, ";") {
 		text += ";"
