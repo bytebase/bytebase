@@ -308,6 +308,11 @@ beforeEach(async () => {
     minimized: initialState.minimized,
     abortControllersByChatId: {},
     remoteBusyChatIds: {},
+    preferences: {
+      sendWithEnter: true,
+      tokenLimitPerRun: 60_000,
+      openingBehavior: "landing",
+    },
   });
 
   mocks.useTranslation.mockReset();
@@ -462,6 +467,9 @@ describe("AgentInput", () => {
     );
     const store = useAgentStore.getState();
     store.setDraft(store.currentChatId!, { text: "Help with masking" });
+    useAgentStore.setState({
+      preferences: { ...store.preferences, sendWithEnter: true },
+    });
     const view = renderIntoContainer(<AgentInput />);
     view.render();
     try {
@@ -478,6 +486,107 @@ describe("AgentInput", () => {
       expect(
         useAgentStore.getState().getChat(store.currentChatId!)?.status
       ).not.toBe("error");
+    } finally {
+      view.unmount();
+    }
+  });
+
+  test.each([
+    { sendWithEnter: true, key: "Enter", sends: true },
+    { sendWithEnter: true, key: "Enter", shiftKey: true, sends: false },
+    { sendWithEnter: true, key: "Enter", ctrlKey: true, sends: false },
+    { sendWithEnter: false, key: "Enter", sends: false },
+    { sendWithEnter: false, key: "Enter", shiftKey: true, sends: false },
+    { sendWithEnter: false, key: "Enter", ctrlKey: true, sends: true },
+    { sendWithEnter: false, key: "Enter", metaKey: true, sends: true },
+    { sendWithEnter: false, key: "Enter", ctrlKey: true, altKey: true, sends: false },
+    { sendWithEnter: false, key: "Enter", metaKey: true, shiftKey: true, sends: false },
+    { sendWithEnter: true, key: "Enter", keyCode: 229, sends: false },
+    { sendWithEnter: false, key: "Enter", ctrlKey: true, isComposing: true, sends: false },
+    { sendWithEnter: false, key: "Enter", metaKey: true, keyCode: 229, sends: false },
+  ])("honors the configured send shortcut for %j", async ({ sendWithEnter, sends, ...event }) => {
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+    const store = useAgentStore.getState();
+    store.setDraft(store.currentChatId!, { text: "A question" });
+    useAgentStore.setState({ preferences: { ...store.preferences, sendWithEnter } });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    try {
+      const textarea = view.container.querySelector("textarea")!;
+      let allowsDefault = false;
+      await act(async () => {
+        allowsDefault = textarea.dispatchEvent(new KeyboardEvent("keydown", { ...event, bubbles: true, cancelable: true }));
+      });
+      if (sends) await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+
+      expect(allowsDefault).toBe(!sends);
+      expect(mocks.runAgentLoop).toHaveBeenCalledTimes(sends ? 1 : 0);
+      expect(useAgentStore.getState().getMessages(store.currentChatId!)).toEqual(
+        sends ? expect.arrayContaining([expect.objectContaining({ role: "user", content: "A question" })]) : []
+      );
+    } finally {
+      view.unmount();
+    }
+  });
+
+  test("updates the keyboard hint when the send preference changes", async () => {
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    try {
+      expect(view.container.querySelector("[data-agent-input-placeholder]")).toHaveTextContent("agent.input-keyboard-hint");
+      await act(async () => useAgentStore.setState({ preferences: { ...useAgentStore.getState().preferences, sendWithEnter: false } }));
+      expect(view.container.querySelector("[data-agent-input-placeholder]")).toHaveTextContent("agent.input-keyboard-hint-newline");
+    } finally {
+      view.unmount();
+    }
+  });
+
+  test("uses the configured shortcut when replying to a clarification", async () => {
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+    const store = useAgentStore.getState();
+    const chatId = store.currentChatId!;
+    store.awaitUser(chatId, { toolCallId: "clarification", kind: "input", prompt: "Which database?" });
+    useAgentStore.setState({ preferences: { ...store.preferences, sendWithEnter: false } });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    try {
+      const textarea = view.container.querySelector("textarea")!;
+      await act(async () => {
+        setTextareaValue(textarea, "The orders database");
+        textarea.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+      await act(async () => textarea.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true })));
+      expect(useAgentStore.getState().pendingAskByChatId[chatId]).toBeDefined();
+      await act(async () => textarea.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", ctrlKey: true, bubbles: true, cancelable: true })));
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+      expect(useAgentStore.getState().pendingAskByChatId[chatId]).toBeUndefined();
+    } finally {
+      view.unmount();
+    }
+  });
+
+  test("snapshots the token limit for each run and applies changes only to the next run", async () => {
+    let finishRun!: (outcome: { kind: "completed"; totalTokensUsed: number }) => void;
+    mocks.runAgentLoop.mockImplementationOnce(() => new Promise((resolve) => { finishRun = resolve; }));
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+    const store = useAgentStore.getState();
+    const chatId = store.currentChatId!;
+    store.setDraft(chatId, { text: "First question" });
+    useAgentStore.setState({ preferences: { ...store.preferences, tokenLimitPerRun: 24_000 } });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    try {
+      await act(async () => (view.container.querySelector("[data-agent-send]") as HTMLButtonElement).click());
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+      expect(mocks.runAgentLoop.mock.calls[0][5]).toMatchObject({ maxTotalTokens: 24_000 });
+
+      await act(async () => useAgentStore.setState({ preferences: { ...useAgentStore.getState().preferences, tokenLimitPerRun: 36_000 } }));
+      expect(mocks.runAgentLoop.mock.calls[0][5]).toMatchObject({ maxTotalTokens: 24_000 });
+      await act(async () => finishRun({ kind: "completed", totalTokensUsed: 0 }));
+      await act(async () => store.setDraft(chatId, { text: "Second question" }));
+      await act(async () => (view.container.querySelector("[data-agent-send]") as HTMLButtonElement).click());
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledTimes(2));
+      expect(mocks.runAgentLoop.mock.calls[1][5]).toMatchObject({ maxTotalTokens: 36_000 });
     } finally {
       view.unmount();
     }

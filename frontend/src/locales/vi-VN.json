@@ -144,6 +144,7 @@
       "view-failed-tasks": "Xem các tác vụ thất bại"
     },
     "input-keyboard-hint": "Enter để gửi · Shift+Enter để xuống dòng",
+    "input-keyboard-hint-newline": "Enter để xuống dòng · Cmd/Ctrl+Enter để gửi",
     "input-placeholder": "Hỏi AI hoặc nhập @ để chọn tài nguyên",
     "input-processing-placeholder": "Đang xử lý...",
     "interrupted": "Bị gián đoạn",
@@ -259,6 +260,23 @@
       "unavailable": "Không thể mở bản nháp Plan. Cơ sở dữ liệu hoặc SQL có thể đã thay đổi. Hãy yêu cầu Agent tạo lại."
     },
     "plan-reference-unavailable": "Kế hoạch này không còn khả dụng hoặc bạn không có quyền truy cập.",
+    "preferences": {
+      "back": "Quay lại trò chuyện",
+      "continue-last-chat": "Tiếp tục cuộc trò chuyện trước",
+      "enter-help": "Shift+Enter để xuống dòng.",
+      "invalid-token-limit": "Nhập một số nguyên dương.",
+      "newline-help": "Enter để xuống dòng. Cmd/Ctrl+Enter để gửi.",
+      "reset": "Khôi phục mặc định",
+      "reset-confirmation": "Khôi phục tùy chọn về mặc định?",
+      "scope": "Được lưu cho tài khoản của bạn trong không gian làm việc và trình duyệt này.",
+      "send-with-enter": "Gửi bằng Enter",
+      "show-landing": "Hiển thị trang bắt đầu",
+      "storage-failed": "Không thể lưu cục bộ. Thay đổi có hiệu lực cho đến khi tải lại trang này.",
+      "title": "Tùy chọn Agent",
+      "token-limit": "Giới hạn token mỗi lần chạy",
+      "tokens": "token",
+      "when-opening": "Khi mở Agent"
+    },
     "project-attention": {
       "checking": "Đang kiểm tra các mục cần bạn chú ý...",
       "empty": "Bạn không có issue mở nào cần chú ý trong dự án này.",

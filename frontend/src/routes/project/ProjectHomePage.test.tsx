@@ -4,6 +4,7 @@ import { TimestampSchema } from "@bufbuild/protobuf/wkt";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { silentContextKey } from "@/api/context-key";
+import type { AgentPreferences } from "@/modules/agent/store/preferences";
 import type { Permission } from "@/types/iam";
 import { ApprovalStatus, Engine, IssueStatus, State } from "@/types/proto-es/v1/common_pb";
 import { DatabaseSchema$ } from "@/types/proto-es/v1/database_service_pb";
@@ -110,8 +111,8 @@ vi.mock("@/components/RouterLink", () => ({
 }));
 vi.mock("@/modules/agent/store/agent", () => ({
   useAgentStore: Object.assign(
-    (selector: (state: { chats: []; queuedUserMessage: null }) => unknown) =>
-      selector({ chats: [], queuedUserMessage: null }),
+    (selector: (state: { chats: []; queuedUserMessage: null; preferences: AgentPreferences }) => unknown) =>
+      selector({ chats: [], queuedUserMessage: null, preferences: { sendWithEnter: true, tokenLimitPerRun: 60000, openingBehavior: "landing" } }),
     {
       getState: () => ({
         open: mocks.open,
@@ -119,6 +120,7 @@ vi.mock("@/modules/agent/store/agent", () => ({
         queueUserMessage: mocks.queueUserMessage,
         chats: [],
         queuedUserMessage: null,
+        preferences: { sendWithEnter: true, tokenLimitPerRun: 60000, openingBehavior: "landing" },
       }),
     }
   ),

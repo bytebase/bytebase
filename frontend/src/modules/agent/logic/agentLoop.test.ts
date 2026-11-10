@@ -5,6 +5,21 @@ import { AIChatMessageRole } from "@/types/proto-es/v1/ai_service_pb";
 import { runAgentLoop } from "./agentLoop";
 import type { ToolExecutionResult, ToolExecutor } from "./types";
 
+const preferenceDefaults = vi.hoisted(() => ({ tokenLimitPerRun: 100_000 }));
+
+vi.mock("../store/preferences", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../store/preferences")>();
+  return {
+    ...actual,
+    DEFAULT_AGENT_PREFERENCES: {
+      ...actual.DEFAULT_AGENT_PREFERENCES,
+      get tokenLimitPerRun() {
+        return preferenceDefaults.tokenLimitPerRun;
+      },
+    },
+  };
+});
+
 vi.mock("@/api", () => ({
   aiServiceClientConnect: {
     chat: vi.fn(),
@@ -14,6 +29,7 @@ vi.mock("@/api", () => ({
 describe("runAgentLoop", () => {
   beforeEach(() => {
     vi.mocked(aiServiceClientConnect.chat).mockReset();
+    preferenceDefaults.tokenLimitPerRun = 100_000;
   });
 
   test("treats a non-AbortError response after user cancellation as aborted", async () => {
@@ -431,49 +447,76 @@ describe("runAgentLoop", () => {
     }
   );
 
-  test("stops after cumulative provider usage reaches the run budget", async () => {
-    vi.mocked(aiServiceClientConnect.chat)
-      .mockResolvedValueOnce({
-        content: "",
-        toolCalls: [
-          {
-            id: "tool-1",
-            name: "lookup",
-            arguments: "{}",
-            metadata: "",
-          },
-        ],
-        usage: { totalTokens: 60_000 },
-      } as never)
-      .mockResolvedValueOnce({
-        content: "",
-        toolCalls: [
-          {
-            id: "done-1",
-            name: "done",
-            arguments: JSON.stringify({ text: "Done", success: true }),
-            metadata: "",
-          },
-        ],
-      } as never);
+  test.each([
+    { limit: undefined, usage: 100_000, calls: 1, success: false },
+    { limit: undefined, usage: 60_000, calls: 2, success: true },
+    { limit: 1_200, usage: 1_200, calls: 1, success: false },
+    { limit: 90_000, usage: 60_000, calls: 2, success: true },
+    { limit: 0, usage: 100_000, calls: 1, success: false },
+    { limit: -1, usage: 100_000, calls: 1, success: false },
+    { limit: 1.5, usage: 100_000, calls: 1, success: false },
+    { limit: Number.NaN, usage: 100_000, calls: 1, success: false },
+    {
+      limit: Number.POSITIVE_INFINITY,
+      usage: 100_000,
+      calls: 1,
+      success: false,
+    },
+    {
+      limit: Number.MAX_SAFE_INTEGER + 1,
+      usage: 100_000,
+      calls: 1,
+      success: false,
+    },
+  ])(
+    "applies per-run budget $limit after provider usage $usage",
+    async ({ limit, usage, calls, success }) => {
+      vi.mocked(aiServiceClientConnect.chat)
+        .mockResolvedValueOnce({
+          content: "",
+          toolCalls: [
+            {
+              id: "tool-1",
+              name: "lookup",
+              arguments: "{}",
+              metadata: "",
+            },
+          ],
+          usage: { totalTokens: usage },
+        } as never)
+        .mockResolvedValueOnce({
+          content: "",
+          toolCalls: [
+            {
+              id: "done-1",
+              name: "done",
+              arguments: JSON.stringify({ text: "Done", success: true }),
+              metadata: "",
+            },
+          ],
+        } as never);
 
-    const outcome = await runAgentLoop(
-      [
-        { role: "system", content: "system" },
-        { role: "user", content: "Inspect" },
-      ],
-      [{ name: "lookup", description: "Lookup", parametersSchema: {} }],
-      vi.fn(async (name, args) =>
-        name === "done"
-          ? { kind: "done" as const, text: String(args.text), success: true }
-          : { kind: "tool_result" as const, result: "ok" }
-      )
-    );
+      const outcome = await runAgentLoop(
+        [
+          { role: "system", content: "system" },
+          { role: "user", content: "Inspect" },
+        ],
+        [{ name: "lookup", description: "Lookup", parametersSchema: {} }],
+        vi.fn(async (name, args) =>
+          name === "done"
+            ? { kind: "done" as const, text: String(args.text), success: true }
+            : { kind: "tool_result" as const, result: "ok" }
+        ),
+        undefined,
+        undefined,
+        { maxTotalTokens: limit }
+      );
 
-    expect(outcome.kind).toBe("completed");
-    expect(outcome).toMatchObject({ success: false, totalTokensUsed: 60_000 });
-    expect(aiServiceClientConnect.chat).toHaveBeenCalledOnce();
-  });
+      expect(outcome.kind).toBe("completed");
+      expect(outcome).toMatchObject({ success, totalTokensUsed: usage });
+      expect(aiServiceClientConnect.chat).toHaveBeenCalledTimes(calls);
+    }
+  );
 
   test("refuses a request that exceeds the serialized payload budget", async () => {
     const outcome = await runAgentLoop(
@@ -487,6 +530,29 @@ describe("runAgentLoop", () => {
 
     expect(outcome).toMatchObject({ kind: "completed", success: false });
     expect(aiServiceClientConnect.chat).not.toHaveBeenCalled();
+  });
+
+  test("uses the preference default when no per-run token budget is supplied", async () => {
+    preferenceDefaults.tokenLimitPerRun = 24_000;
+    vi.mocked(aiServiceClientConnect.chat)
+      .mockResolvedValueOnce({
+        content: "",
+        toolCalls: [{ id: "lookup", name: "lookup", arguments: "{}" }],
+        usage: { totalTokens: 24_000 },
+      } as never)
+      .mockResolvedValueOnce({ content: "Done", toolCalls: [] } as never);
+
+    const outcome = await runAgentLoop(
+      [{ role: "user", content: "Inspect" }],
+      [{ name: "lookup", description: "Lookup", parametersSchema: {} }],
+      vi.fn(async () => ({ kind: "tool_result" as const, result: "ok" })),
+      undefined,
+      undefined,
+      { allowPlainTextCompletion: true }
+    );
+
+    expect(outcome).toMatchObject({ success: false, totalTokensUsed: 24_000 });
+    expect(aiServiceClientConnect.chat).toHaveBeenCalledTimes(1);
   });
 
   test("prunes completed tool output while retaining the current question", async () => {

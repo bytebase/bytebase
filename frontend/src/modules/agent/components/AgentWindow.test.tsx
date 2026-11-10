@@ -1,4 +1,4 @@
-import { fireEvent, screen } from "@testing-library/react";
+import { fireEvent, screen, within } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { act, cloneElement } from "react";
 import { createRoot } from "react-dom/client";
@@ -8,6 +8,7 @@ import enUS from "@/locales/en-US.json";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { createAgentStore, useAgentStore } from "../store/agent";
+import { DEFAULT_AGENT_PREFERENCES, getAgentPreferencesKey } from "../store/preferences";
 import type { AgentPageResource } from "../logic/chatContext";
 import { openAgentPageHelp } from "../logic/contextualHelp";
 
@@ -379,7 +380,276 @@ afterEach(() => {
   document.body.innerHTML = "";
 });
 
+test("opens preferences without unmounting the conversation and restores trigger focus", () => {
+  const { render, unmount } = renderIntoContainer(<AgentWindow />);
+  try {
+    render();
+    const input = document.body.querySelector('[data-testid="agent-input"]');
+    const chatId = useAgentStore.getState().currentChatId;
+    const trigger = screen.getByRole("button", { name: "agent.preferences.title" });
+    act(() => trigger.click());
+
+    expect(screen.getByRole("heading", { name: "agent.preferences.title" })).toBeInTheDocument();
+    const header = document.body.querySelector<HTMLElement>("[data-agent-window-header]")!;
+    expect(within(header).getByRole("heading", { name: "agent.assistant-title" })).toBeInTheDocument();
+    expect(within(screen.getByRole("region", { name: "agent.preferences.title" })).getByRole("heading", { name: "agent.preferences.title" })).toBeInTheDocument();
+    expect(trigger).not.toBeVisible();
+    expect(document.body.querySelector('[data-testid="agent-input"]')).toBe(input);
+    expect(input?.closest("[inert]")).not.toBeNull();
+    expect(useAgentStore.getState().currentChatId).toBe(chatId);
+
+    act(() => screen.getByRole("button", { name: "agent.preferences.back" }).click());
+    expect(document.body.querySelector("[data-agent-preferences]")).toBeNull();
+    expect(document.body.querySelector('[data-testid="agent-input"]')).toBe(input);
+    expect(trigger).toHaveFocus();
+  } finally {
+    unmount();
+  }
+});
+
+test("keeps the preference description visible beside the body heading", () => {
+  const { render, unmount } = renderIntoContainer(<AgentWindow />);
+  try {
+    render();
+    act(() => screen.getByRole("button", { name: "agent.preferences.title" }).click());
+    const preferences = screen.getByRole("region", { name: "agent.preferences.title" });
+    expect(within(preferences).getByRole("heading", { name: "agent.preferences.title" })).toBeVisible();
+    expect(within(preferences).getByText("agent.preferences.scope")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "agent.preferences.storage" })).toBeNull();
+  } finally {
+    unmount();
+  }
+});
+
+test("continues the last eligible contextual chat on initial entry when preferred", () => {
+  const store = useAgentStore.getState();
+  const chat = store.createChat({
+    context: "projects/orders", workspaceName: mocks.workspace.name,
+    page: { path: "/projects/orders", title: "Orders" },
+  });
+  store.setDraft(chat.id, { text: "Keep this draft" });
+  mocks.pageResource = { kind: "project", name: "projects/orders", project: "projects/orders" };
+  useAgentStore.setState({
+    preferences: { sendWithEnter: true, tokenLimitPerRun: 60000, openingBehavior: "continue" },
+  });
+  const { render, unmount } = renderIntoContainer(<AgentWindow />);
+  try {
+    render();
+    expect(document.body.querySelector("[data-agent-contextual-start]")).toBeNull();
+    expect(useAgentStore.getState().currentChatId).toBe(chat.id);
+    expect(useAgentStore.getState().getDraft(chat.id).text).toBe("Keep this draft");
+  } finally {
+    unmount();
+  }
+});
+
+test("uses persisted opening preferences on cold owner hydration", () => {
+  const chat = useAgentStore.getState().createChat({
+    context: "projects/orders", workspaceName: mocks.workspace.name,
+    page: { path: "/projects/orders", title: "Orders" },
+  });
+  const key = getAgentPreferencesKey(mocks.workspace.name, "first@example.com");
+  localStorage.setItem(key!, JSON.stringify({ ...DEFAULT_AGENT_PREFERENCES, openingBehavior: "continue" }));
+  useAgentStore.setState({ workspaceName: null, userEmail: null, preferences: { ...DEFAULT_AGENT_PREFERENCES } });
+  mocks.pageResource = { kind: "project", name: "projects/orders", project: "projects/orders" };
+  const { render, unmount } = renderIntoContainer(<AgentWindow />);
+  try {
+    render();
+    expect(document.body.querySelector("[data-agent-contextual-start]")).toBeNull();
+    expect(useAgentStore.getState().currentChatId).toBe(chat.id);
+  } finally {
+    unmount();
+  }
+});
+
+test("keeps a cold-hydrated queued request ahead of the opening preference", () => {
+  const store = useAgentStore.getState();
+  const chat = store.createChat({ context: "projects/orders", workspaceName: mocks.workspace.name });
+  store.queueUserMessage({ chatId: chat.id, text: "Queued question", page: { path: "/projects/orders", title: "Orders" } });
+  store.saveState();
+  useAgentStore.setState({ workspaceName: null, userEmail: null, chats: [], currentChatId: null, queuedUserMessagesByChatId: {} });
+  mocks.pageResource = { kind: "project", name: "projects/orders", project: "projects/orders" };
+  const { render, unmount } = renderIntoContainer(<AgentWindow />);
+  try {
+    render();
+    expect(document.body.querySelector("[data-agent-contextual-start]")).toBeNull();
+    expect(useAgentStore.getState().currentChatId).toBe(chat.id);
+    expect(useAgentStore.getState().queuedUserMessagesByChatId[chat.id]?.text).toBe("Queued question");
+  } finally {
+    unmount();
+  }
+});
+
+test("applies the next owner's opening preference while Agent remains open", () => {
+  const second = createAgentStore();
+  second.getState().setWorkspaceName(mocks.workspace.name, "second@example.com");
+  const chat = second.getState().createChat({ context: "projects/orders", workspaceName: mocks.workspace.name });
+  second.getState().updatePreferences({ openingBehavior: "continue" });
+  second.getState().saveState();
+  mocks.pageResource = { kind: "project", name: "projects/orders", project: "projects/orders" };
+  const { render, unmount } = renderIntoContainer(<AgentWindow />);
+  try {
+    render();
+    expect(document.body.querySelector("[data-agent-contextual-start]")).toBeInTheDocument();
+    mocks.currentUser = { name: "users/second@example.com", email: "second@example.com", workspace: mocks.workspace.name };
+    render();
+    expect(document.body.querySelector("[data-agent-contextual-start]")).toBeNull();
+    expect(useAgentStore.getState().currentChatId).toBe(chat.id);
+  } finally {
+    unmount();
+  }
+});
+
+test("applies a changed opening choice on the next open without disrupting the current view", () => {
+  const store = useAgentStore.getState();
+  const chat = store.createChat({ context: "projects/orders", workspaceName: mocks.workspace.name });
+  mocks.pageResource = { kind: "project", name: "projects/orders", project: "projects/orders" };
+  const { render, unmount } = renderIntoContainer(<AgentWindow />);
+  try {
+    render();
+    act(() => store.updatePreferences({ openingBehavior: "continue" }));
+    expect(document.body.querySelector("[data-agent-contextual-start]")).toBeInTheDocument();
+    act(() => store.toggle());
+    act(() => store.open());
+    expect(document.body.querySelector("[data-agent-contextual-start]")).toBeNull();
+    expect(useAgentStore.getState().currentChatId).toBe(chat.id);
+    act(() => store.updatePreferences({ openingBehavior: "landing" }));
+    expect(document.body.querySelector("[data-agent-contextual-start]")).toBeNull();
+    act(() => store.toggle());
+    act(() => store.open());
+    expect(document.body.querySelector("[data-agent-contextual-start]")).toBeInTheDocument();
+  } finally {
+    unmount();
+  }
+});
+
+test("preserves a minimized view when the opening preference has changed", () => {
+  const store = useAgentStore.getState();
+  store.createChat({ context: "projects/orders", workspaceName: mocks.workspace.name });
+  mocks.pageResource = { kind: "project", name: "projects/orders", project: "projects/orders" };
+  const { render, unmount } = renderIntoContainer(<AgentWindow />);
+  try {
+    render();
+    act(() => store.updatePreferences({ openingBehavior: "continue" }));
+    act(() => store.minimize());
+    act(() => store.restore());
+    expect(document.body.querySelector("[data-agent-contextual-start]")).toBeInTheDocument();
+    act(() => store.toggle());
+    act(() => store.open());
+    expect(document.body.querySelector("[data-agent-contextual-start]")).toBeNull();
+  } finally {
+    unmount();
+  }
+});
+
+test("falls back to the landing view when the preferred last chat is unavailable", () => {
+  mocks.pageResource = { kind: "project", name: "projects/orders", project: "projects/orders" };
+  useAgentStore.setState({
+    preferences: { sendWithEnter: true, tokenLimitPerRun: 60000, openingBehavior: "continue" },
+    chats: [], currentChatId: null,
+  });
+  const { render, unmount } = renderIntoContainer(<AgentWindow />);
+  try {
+    render();
+    expect(document.body.querySelector('[data-agent-contextual-start="project"]')).toBeInTheDocument();
+    expect(useAgentStore.getState().queuedUserMessagesByChatId).toEqual({});
+  } finally {
+    unmount();
+  }
+});
+
+test("shows an empty start on general pages without discarding the previous discussion", () => {
+  const store = useAgentStore.getState();
+  const chat = store.createChat({ context: "projects/orders", workspaceName: mocks.workspace.name });
+  store.addMessage({ chatId: chat.id, role: "user", content: "Previous discussion" });
+  const { render, unmount } = renderIntoContainer(<AgentWindow />);
+  try {
+    render();
+    const state = useAgentStore.getState();
+    expect(state.currentChatId).not.toBe(chat.id);
+    expect(state.getMessages()).toEqual([]);
+    expect(state.getMessages(chat.id).at(-1)?.content).toBe("Previous discussion");
+  } finally {
+    unmount();
+  }
+});
+
 describe("AgentWindow", () => {
+  test.each([
+    { width: 1200, action: "change" },
+    { width: 390, action: "change" },
+    { width: 1200, action: "reset" },
+    { width: 390, action: "reset" },
+  ])("keeps preferences open after $action with current page help at $width px", async ({ width, action }) => {
+    vi.stubGlobal("innerWidth", width);
+    useAgentStore.setState({ size: { width, height: 600 } });
+    const store = useAgentStore.getState();
+    store.updatePreferences({ openingBehavior: action === "reset" ? "continue" : "landing" });
+    const chat = store.createChat({ context: mocks.workspace.name, workspaceName: mocks.workspace.name });
+    store.setDraft(chat.id, { text: "Keep this draft" });
+    store.addMessage({ chatId: chat.id, role: "user", content: "Existing discussion" });
+    const onStart = vi.fn(() => true);
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    let revoke = () => {};
+    try {
+      render();
+      act(() => { revoke = openAgentPageHelp({ page: { kind: "global-masking" }, maskingRuleEditor: true, onStart }); });
+      const chatCount = useAgentStore.getState().chats.length;
+      act(() => screen.getByRole("button", { name: "agent.preferences.title" }).click());
+
+      if (action === "change") {
+        act(() => screen.getByRole("radio", { name: "agent.preferences.continue-last-chat" }).click());
+      } else {
+        await act(async () => screen.getByRole("button", { name: "agent.preferences.reset" }).click());
+        const confirmation = screen.getByRole("dialog", { name: "agent.preferences.reset-confirmation" });
+        await act(async () => within(confirmation).getByRole("button", { name: "common.reset" }).click());
+      }
+
+      expect(screen.getByRole("region", { name: "agent.preferences.title" })).toBeVisible();
+      expect(screen.getByRole("radio", { name: action === "change" ? "agent.preferences.continue-last-chat" : "agent.preferences.show-landing" })).toBeChecked();
+      if (action === "reset") {
+        expect(useAgentStore.getState().preferences).toEqual(DEFAULT_AGENT_PREFERENCES);
+      }
+      act(() => screen.getByRole("button", { name: "agent.preferences.back" }).click());
+      expect(document.body.querySelector('[data-agent-contextual-start="global-masking"]')).toBeVisible();
+      expect(useAgentStore.getState().currentChatId).toBe(chat.id);
+      expect(useAgentStore.getState().chats).toHaveLength(chatCount);
+      expect(store.getDraft(chat.id).text).toBe("Keep this draft");
+      expect(store.getMessages(chat.id)).toHaveLength(1);
+      expect(onStart).not.toHaveBeenCalled();
+      expect(getCurrentQueuedUserMessage()).toBeUndefined();
+    } finally {
+      act(() => revoke());
+      unmount();
+    }
+  });
+
+  test.each(["reopen", "new help"])("dismisses preferences on %s while page help is current", (action) => {
+    const store = useAgentStore.getState();
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    let revoke = () => {};
+    try {
+      render();
+      act(() => { revoke = openAgentPageHelp({ page: { kind: "global-masking" } }); });
+      act(() => screen.getByRole("button", { name: "agent.preferences.title" }).click());
+      expect(screen.getByRole("region", { name: "agent.preferences.title" })).toBeVisible();
+
+      if (action === "reopen") {
+        act(() => store.toggle());
+        act(() => store.open());
+      } else {
+        act(() => { revoke = openAgentPageHelp({ page: { kind: "semantic-types" } }); });
+      }
+
+      expect(screen.queryByRole("region", { name: "agent.preferences.title" })).toBeNull();
+      expect(document.body.querySelector(`[data-agent-contextual-start="${action === "reopen" ? "global-masking" : "semantic-types"}"]`)).toBeVisible();
+      expect(getCurrentQueuedUserMessage()).toBeUndefined();
+    } finally {
+      act(() => revoke());
+      unmount();
+    }
+  });
+
   test.each([false, true])("opens editor help without submitting and dismisses only when started=%s", (started) => {
     const store = useAgentStore.getState();
     const owner = store.createChat({ context: mocks.workspace.name, workspaceName: mocks.workspace.name });
@@ -577,6 +847,80 @@ describe("AgentWindow", () => {
       unmount();
     }
   });
+
+  test.each([
+    { width: 1600, height: 1000 },
+    { width: 390, height: 844 },
+  ])(
+    "remembers the dragged launcher position across reopening and minimizing at $width px",
+    ({ width, height }) => {
+      vi.stubGlobal("innerWidth", width);
+      vi.stubGlobal("innerHeight", height);
+      const rectSpy = vi
+        .spyOn(Element.prototype, "getBoundingClientRect")
+        .mockImplementation(function (this: Element) {
+          if (
+            this instanceof HTMLButtonElement &&
+            this.hasAttribute("data-agent-window")
+          ) {
+            const right = Number.parseFloat(this.style.right) || 16;
+            const bottom = Number.parseFloat(this.style.bottom) || 16;
+            return new DOMRect(
+              window.innerWidth - right - 40,
+              window.innerHeight - bottom - 40,
+              40,
+              40
+            );
+          }
+          return new DOMRect();
+        });
+      const { render, unmount } = renderIntoContainer(<AgentWindow />);
+      const getLauncher = () =>
+        document.body.querySelector<HTMLButtonElement>(
+          "button[data-agent-window]"
+        )!;
+      try {
+        render();
+        act(() => useAgentStore.getState().minimize());
+        const launcher = getLauncher();
+        launcher.setPointerCapture = vi.fn();
+        launcher.releasePointerCapture = vi.fn();
+        const pointer = (type: string, x: number, y: number) => {
+          const event = new MouseEvent(type, {
+            bubbles: true,
+            button: 0,
+            clientX: x,
+            clientY: y,
+          });
+          Object.defineProperties(event, {
+            pointerId: { value: 1 },
+            isPrimary: { value: true },
+          });
+          act(() => launcher.dispatchEvent(event));
+        };
+        pointer("pointerdown", width - 36, height - 36);
+        pointer("pointermove", width - 136, height - 136);
+        pointer("pointerup", width - 136, height - 136);
+        expect(launcher.style.right).toBe("116px");
+        expect(launcher.style.bottom).toBe("116px");
+
+        for (let i = 0; i < 2; i++) {
+          act(() => getLauncher().click());
+          const chatWindow = document.body.querySelector<HTMLElement>(
+            "div[data-agent-window]"
+          )!;
+          expect(chatWindow.style.right).toBe("16px");
+          expect(chatWindow.style.bottom).toBe("16px");
+          act(() => useAgentStore.getState().minimize());
+          expect(getLauncher().style.right).toBe("116px");
+          expect(getLauncher().style.bottom).toBe("116px");
+        }
+      } finally {
+        unmount();
+        rectSpy.mockRestore();
+      }
+    }
+  );
 
   test("hides the Agent window while the authenticated member is unavailable", () => {
     const { render, unmount } = renderIntoContainer(<AgentWindow />);
@@ -966,14 +1310,18 @@ describe("AgentWindow", () => {
         mocks.workspace = { name: "workspaces/other", title: "Other Workspace" };
         mocks.currentUser = { ...originalUser!, workspace: mocks.workspace.name };
         render();
+        expect(document.body.querySelector("[data-agent-contextual-continue]")).toBeNull();
+        let nextChatId: string;
         act(() => {
-          useAgentStore.getState().createChat({
+          nextChatId = useAgentStore.getState().createChat({
             context: "projects/orders",
             workspaceName: mocks.workspace.name,
-          });
+          }).id;
         });
-        expect(document.body.querySelector("[data-agent-contextual-continue]")).toBeNull();
         expect(document.body.querySelector("[data-agent-contextual-start]")).toBeInstanceOf(HTMLElement);
+        act(() => (document.body.querySelector("[data-agent-contextual-continue]") as HTMLButtonElement).click());
+        expect(useAgentStore.getState().currentChatId).toBe(nextChatId!);
+        expect(useAgentStore.getState().getChat(nextChatId!)?.workspaceName).toBe("workspaces/other");
       } finally {
         unmount();
         mocks.workspace = originalWorkspace;

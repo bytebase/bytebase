@@ -14,6 +14,7 @@ import {
   selectOrderedChats,
   useAgentStore,
 } from "./agent";
+import { getAgentPreferencesKey } from "./preferences";
 
 function createMockStorage(): Storage {
   let store: Record<string, string> = {};
@@ -75,6 +76,363 @@ const s = (store: StoreApi<AgentState>) => {
       state.setWorkspaceName(workspaceName, userEmail),
   };
 };
+
+describe("Agent preferences", () => {
+  const defaults = {
+    sendWithEnter: true,
+    tokenLimitPerRun: 100_000,
+    openingBehavior: "landing",
+  };
+
+  test("starts with defaults before an owner is available", () => {
+    const store = createAgentStore();
+
+    expect(s(store).preferences).toEqual(defaults);
+    expect(s(store).preferencesStorageError).toBe(false);
+  });
+
+  test("persists custom preferences without mutating chats or window state", () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/alpha");
+    const before = s(store);
+
+    s(store).updatePreferences({
+      sendWithEnter: false,
+      tokenLimitPerRun: 125_000,
+      openingBehavior: "continue",
+    });
+
+    expect(s(store).preferences).toEqual({
+      sendWithEnter: false,
+      tokenLimitPerRun: 125_000,
+      openingBehavior: "continue",
+    });
+    expect(s(store).chats).toBe(before.chats);
+    expect(s(store).currentChatId).toBe(before.currentChatId);
+    expect(s(store).messagesByChatId).toBe(before.messagesByChatId);
+    expect(s(store).visible).toBe(before.visible);
+    expect(s(store).size).toBe(before.size);
+
+    const reloaded = createAgentStore();
+    s(reloaded).setWorkspaceName("workspaces/alpha");
+    expect(s(reloaded).preferences).toEqual(s(store).preferences);
+  });
+
+  test("isolates preferences by member and Workspace", () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/alpha", "first@example.com");
+    s(store).updatePreferences({ tokenLimitPerRun: 25_000 });
+
+    s(store).setWorkspaceName("workspaces/beta", "first@example.com");
+    expect(s(store).preferences).toEqual(defaults);
+    s(store).updatePreferences({ tokenLimitPerRun: 35_000 });
+
+    s(store).setWorkspaceName("workspaces/alpha", "second@example.com");
+    expect(s(store).preferences).toEqual(defaults);
+    s(store).updatePreferences({ tokenLimitPerRun: 45_000 });
+
+    s(store).setWorkspaceName("workspaces/alpha", "first@example.com");
+    expect(s(store).preferences.tokenLimitPerRun).toBe(25_000);
+    s(store).setWorkspaceName("workspaces/beta", "first@example.com");
+    expect(s(store).preferences.tokenLimitPerRun).toBe(35_000);
+    s(store).setWorkspaceName("workspaces/alpha", "second@example.com");
+    expect(s(store).preferences.tokenLimitPerRun).toBe(45_000);
+  });
+
+  test("clears preferences when the authenticated owner becomes unavailable", () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/alpha");
+    s(store).updatePreferences({ sendWithEnter: false });
+
+    s(store).setWorkspaceName("workspaces/alpha", "");
+    expect(s(store).preferences).toEqual(defaults);
+    s(store).updatePreferences({ tokenLimitPerRun: 30_000 });
+    expect(s(store).preferences).toEqual(defaults);
+
+    s(store).setWorkspaceName("workspaces/alpha");
+    expect(s(store).preferences.sendWithEnter).toBe(false);
+  });
+
+  test("does not hydrate the requested Workspace when a switch is blocked", () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/beta");
+    s(store).updatePreferences({ tokenLimitPerRun: 30_000 });
+    s(store).setWorkspaceName("workspaces/alpha");
+    s(store).startChatRun(s(store).currentChatId!);
+
+    expect(s(store).setWorkspaceName("workspaces/beta")).toBe(false);
+    expect(s(store).workspaceName).toBe("workspaces/alpha");
+    expect(s(store).preferences).toEqual(defaults);
+  });
+
+  test("resets only the current owner's preferences", () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/alpha");
+    s(store).updatePreferences({ tokenLimitPerRun: 25_000 });
+    s(store).setWorkspaceName("workspaces/beta");
+    s(store).updatePreferences({ sendWithEnter: false });
+    const before = s(store);
+
+    s(store).resetPreferences();
+    expect(s(store).preferences).toEqual(defaults);
+    expect(s(store).chats).toBe(before.chats);
+    expect(s(store).currentChatId).toBe(before.currentChatId);
+    expect(s(store).size).toBe(before.size);
+    s(store).setWorkspaceName("workspaces/alpha");
+    expect(s(store).preferences.tokenLimitPerRun).toBe(25_000);
+    s(store).setWorkspaceName("workspaces/beta");
+    expect(s(store).preferences).toEqual(defaults);
+  });
+
+  test("keeps colliding flattened scope keys isolated", () => {
+    const firstScope = ["workspaces/a.b", "c@example.com"] as const;
+    const secondScope = ["workspaces/a", "b.c@example.com"] as const;
+    expect(`${firstScope[0].slice(11)}.${firstScope[1]}`).toBe(
+      `${secondScope[0].slice(11)}.${secondScope[1]}`
+    );
+    const store = createAgentStore();
+    s(store).setWorkspaceName(...firstScope);
+    s(store).updatePreferences({ tokenLimitPerRun: 20_000 });
+    s(store).setWorkspaceName(...secondScope);
+    expect(s(store).preferences).toEqual(defaults);
+    s(store).updatePreferences({ tokenLimitPerRun: 30_000 });
+
+    s(store).setWorkspaceName(...firstScope);
+    expect(s(store).preferences.tokenLimitPerRun).toBe(20_000);
+    s(store).setWorkspaceName(...secondScope);
+    expect(s(store).preferences.tokenLimitPerRun).toBe(30_000);
+  });
+
+  test.each([0, -1, 1.5, null, "12000", Number.MAX_SAFE_INTEGER + 1])(
+    "falls back only the invalid token limit %s during hydration",
+    (tokenLimitPerRun) => {
+      mockStorage.setItem(
+        getAgentPreferencesKey("workspaces/alpha", TEST_USER_EMAIL)!,
+        JSON.stringify({
+          sendWithEnter: false,
+          tokenLimitPerRun,
+          openingBehavior: "continue",
+        })
+      );
+      const store = createAgentStore();
+
+      s(store).setWorkspaceName("workspaces/alpha");
+
+      expect(s(store).preferences).toEqual({
+        sendWithEnter: false,
+        tokenLimitPerRun: 100_000,
+        openingBehavior: "continue",
+      });
+      expect(s(store).preferencesStorageError).toBe(false);
+    }
+  );
+
+  test.each(["null", "[]", "42", '"text"'])(
+    "uses defaults for non-object preferences %s",
+    (serialized) => {
+      mockStorage.setItem(
+        getAgentPreferencesKey("workspaces/alpha", TEST_USER_EMAIL)!,
+        serialized
+      );
+      const store = createAgentStore();
+
+      s(store).setWorkspaceName("workspaces/alpha");
+      expect(s(store).preferences).toEqual(defaults);
+    }
+  );
+
+  test("keeps a valid token limit when other saved fields are invalid", () => {
+    mockStorage.setItem(
+      getAgentPreferencesKey("workspaces/alpha", TEST_USER_EMAIL)!,
+      JSON.stringify({
+        sendWithEnter: "false",
+        tokenLimitPerRun: 85_000,
+        openingBehavior: "unexpected",
+      })
+    );
+    const store = createAgentStore();
+
+    s(store).setWorkspaceName("workspaces/alpha");
+
+    expect(s(store).preferences).toEqual({
+      ...defaults,
+      tokenLimitPerRun: 85_000,
+    });
+  });
+
+  test("recovers from malformed saved preferences and reports the read failure", () => {
+    const key = getAgentPreferencesKey("workspaces/alpha", TEST_USER_EMAIL)!;
+    mockStorage.setItem(key, "{broken");
+    const store = createAgentStore();
+
+    expect(() => s(store).setWorkspaceName("workspaces/alpha")).not.toThrow();
+    expect(s(store).preferences).toEqual(defaults);
+    expect(s(store).preferencesStorageError).toBe(true);
+    s(store).resetPreferences();
+    expect(s(store).preferencesStorageError).toBe(false);
+    expect(JSON.parse(mockStorage.getItem(key)!)).toEqual(defaults);
+  });
+
+  test("reports preference reads blocked by the browser without leaking the previous owner", () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/alpha", "first@example.com");
+    s(store).updatePreferences({ tokenLimitPerRun: 25_000 });
+    const getItem = mockStorage.getItem.bind(mockStorage);
+    vi.spyOn(mockStorage, "getItem").mockImplementation((key) => {
+      if (
+        key === getAgentPreferencesKey("workspaces/alpha", "second@example.com")
+      ) {
+        throw new DOMException("Storage unavailable", "SecurityError");
+      }
+      return getItem(key);
+    });
+
+    expect(() =>
+      s(store).setWorkspaceName("workspaces/alpha", "second@example.com")
+    ).not.toThrow();
+    expect(s(store).preferences).toEqual(defaults);
+    expect(s(store).preferencesStorageError).toBe(true);
+  });
+
+  test("keeps edits in memory and reports a failed write until a retry succeeds", () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/alpha");
+    const key = getAgentPreferencesKey("workspaces/alpha", TEST_USER_EMAIL)!;
+    const setItem = mockStorage.setItem.bind(mockStorage);
+    const blocked = vi
+      .spyOn(mockStorage, "setItem")
+      .mockImplementation((target, value) => {
+        if (target === key)
+          throw new DOMException("Quota exceeded", "QuotaExceededError");
+        setItem(target, value);
+      });
+
+    expect(() =>
+      s(store).updatePreferences({ tokenLimitPerRun: 75_000 })
+    ).not.toThrow();
+    expect(s(store).preferences.tokenLimitPerRun).toBe(75_000);
+    expect(s(store).preferencesStorageError).toBe(true);
+    expect(mockStorage.getItem(key)).toBeNull();
+    blocked.mockRestore();
+
+    s(store).updatePreferences({ sendWithEnter: false });
+    expect(s(store).preferencesStorageError).toBe(false);
+    expect(JSON.parse(mockStorage.getItem(key)!)).toEqual({
+      sendWithEnter: false,
+      tokenLimitPerRun: 75_000,
+      openingBehavior: "landing",
+    });
+  });
+
+  test("uses safe defaults and reports unavailable localStorage", () => {
+    vi.stubGlobal("localStorage", undefined);
+    const store = createAgentStore();
+
+    expect(() => s(store).setWorkspaceName("workspaces/alpha")).not.toThrow();
+    expect(s(store).preferences).toEqual(defaults);
+    expect(s(store).preferencesStorageError).toBe(true);
+    expect(() =>
+      s(store).updatePreferences({ sendWithEnter: false })
+    ).not.toThrow();
+    expect(s(store).preferencesStorageError).toBe(true);
+  });
+
+  test("hydrates safe defaults when all localStorage methods throw", () => {
+    const store = createAgentStore();
+    vi.spyOn(mockStorage, "getItem").mockImplementation(() => {
+      throw new DOMException("Storage unavailable", "SecurityError");
+    });
+    vi.spyOn(mockStorage, "setItem").mockImplementation(() => {
+      throw new DOMException("Storage unavailable", "SecurityError");
+    });
+
+    expect(() => s(store).setWorkspaceName("workspaces/alpha")).not.toThrow();
+    expect(s(store).workspaceName).toBe("workspaces/alpha");
+    expect(s(store).preferences).toEqual(defaults);
+    expect(s(store).preferencesStorageError).toBe(true);
+    expect(() => s(store).resetPreferences()).not.toThrow();
+  });
+
+  test("reports a quota failure without interrupting owner hydration", () => {
+    vi.spyOn(mockStorage, "setItem").mockImplementation(() => {
+      throw new DOMException("Quota exceeded", "QuotaExceededError");
+    });
+    const store = createAgentStore();
+
+    expect(() => s(store).setWorkspaceName("workspaces/alpha")).not.toThrow();
+    expect(s(store).workspaceName).toBe("workspaces/alpha");
+    expect(() =>
+      s(store).updatePreferences({ tokenLimitPerRun: 35_000 })
+    ).not.toThrow();
+    expect(s(store).preferences.tokenLimitPerRun).toBe(35_000);
+    expect(s(store).preferencesStorageError).toBe(true);
+  });
+
+  test("handles a blocked localStorage getter during hydration and reset", () => {
+    Object.defineProperty(globalThis, "localStorage", {
+      configurable: true,
+      get() {
+        throw new DOMException("Storage unavailable", "SecurityError");
+      },
+    });
+    const store = createAgentStore();
+
+    expect(() => s(store).setWorkspaceName("workspaces/alpha")).not.toThrow();
+    expect(s(store).preferences).toEqual(defaults);
+    expect(s(store).preferencesStorageError).toBe(true);
+    expect(() => s(store).resetPreferences()).not.toThrow();
+  });
+
+  test("imports preference storage events passively without echo writes or chat mutations", () => {
+    s(useAgentStore).setWorkspaceName(undefined, "");
+    s(useAgentStore).setWorkspaceName("workspaces/alpha");
+    const before = s(useAgentStore);
+    const key = getAgentPreferencesKey("workspaces/alpha", TEST_USER_EMAIL)!;
+    mockStorage.setItem(
+      key,
+      JSON.stringify({
+        sendWithEnter: false,
+        tokenLimitPerRun: 90_000,
+        openingBehavior: "continue",
+      })
+    );
+    const write = vi.spyOn(mockStorage, "setItem");
+
+    window.dispatchEvent(new StorageEvent("storage", { key }));
+
+    expect(s(useAgentStore).preferences).toEqual({
+      sendWithEnter: false,
+      tokenLimitPerRun: 90_000,
+      openingBehavior: "continue",
+    });
+    expect(s(useAgentStore).chats).toBe(before.chats);
+    expect(s(useAgentStore).currentChatId).toBe(before.currentChatId);
+    expect(s(useAgentStore).queuedUserMessagesByChatId).toBe(
+      before.queuedUserMessagesByChatId
+    );
+    expect(s(useAgentStore).abortControllersByChatId).toBe(
+      before.abortControllersByChatId
+    );
+    expect(write).not.toHaveBeenCalled();
+    s(useAgentStore).setWorkspaceName(undefined, "");
+  });
+
+  test.each([
+    ["workspaces/beta", TEST_USER_EMAIL],
+    ["workspaces/alpha", "other@example.com"],
+  ])("ignores preference events for %s and %s", (workspace, email) => {
+    s(useAgentStore).setWorkspaceName(undefined, "");
+    s(useAgentStore).setWorkspaceName("workspaces/alpha");
+    const preferences = s(useAgentStore).preferences;
+    const key = getAgentPreferencesKey(workspace, email)!;
+    mockStorage.setItem(key, JSON.stringify({ tokenLimitPerRun: 20_000 }));
+
+    window.dispatchEvent(new StorageEvent("storage", { key }));
+
+    expect(s(useAgentStore).preferences).toBe(preferences);
+    s(useAgentStore).setWorkspaceName(undefined, "");
+  });
+});
 
 describe("selectContinueChatForContext", () => {
   const workspaceName = "workspaces/alpha";

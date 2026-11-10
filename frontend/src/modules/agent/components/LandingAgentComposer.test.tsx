@@ -23,6 +23,11 @@ const mocks = vi.hoisted(() => ({
   selectOrCreateChatForContext: vi.fn(() => ({ id: "chat-1" })),
   queueUserMessage: vi.fn(),
   openAgent: vi.fn(),
+  preferences: {
+    sendWithEnter: true,
+    tokenLimitPerRun: 60_000,
+    openingBehavior: "landing",
+  },
 }));
 
 vi.mock("react-i18next", async (importOriginal) => ({
@@ -87,7 +92,7 @@ vi.mock("@/stores/app", () => ({
 vi.mock("../store/agent", () => ({
   useAgentStore: Object.assign(
     (selector: (state: object) => unknown) =>
-      selector({ queuedUserMessagesByChatId: {} }),
+      selector({ queuedUserMessagesByChatId: {}, preferences: mocks.preferences }),
     {
       getState: () => ({
         selectOrCreateChatForContext: mocks.selectOrCreateChatForContext,
@@ -150,6 +155,7 @@ function triggerMention(value: string) {
 }
 
 beforeEach(() => {
+  mocks.preferences.sendWithEnter = true;
   mocks.canListWorkspaceProjects = true;
   mocks.canListWorkspaceDatabases = true;
   mocks.canListProjectDatabases = true;
@@ -186,6 +192,55 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("LandingAgentComposer", () => {
+  test.each([
+    { sendWithEnter: true, key: "Enter", sends: true },
+    { sendWithEnter: true, key: "Enter", shiftKey: true, sends: false },
+    { sendWithEnter: true, key: "Enter", ctrlKey: true, sends: false },
+    { sendWithEnter: true, key: "Enter", metaKey: true, sends: false },
+    { sendWithEnter: false, key: "Enter", sends: false },
+    { sendWithEnter: false, key: "Enter", shiftKey: true, sends: false },
+    { sendWithEnter: false, key: "Enter", ctrlKey: true, sends: true },
+    { sendWithEnter: false, key: "Enter", metaKey: true, sends: true },
+    { sendWithEnter: false, key: "Enter", ctrlKey: true, shiftKey: true, sends: false },
+    { sendWithEnter: false, key: "Enter", ctrlKey: true, altKey: true, sends: false },
+    { sendWithEnter: true, key: "Enter", isComposing: true, sends: false },
+    { sendWithEnter: true, key: "Enter", keyCode: 229, sends: false },
+    { sendWithEnter: false, key: "Enter", ctrlKey: true, isComposing: true, sends: false },
+    { sendWithEnter: false, key: "Enter", metaKey: true, keyCode: 229, sends: false },
+  ])("honors the configured send shortcut for %j", ({ sendWithEnter, sends, ...event }) => {
+    mocks.preferences.sendWithEnter = sendWithEnter;
+    renderComposer(project.name);
+    const prompt = screen.getByRole("textbox", { name: "Ask a question" });
+    fireEvent.change(prompt, { target: { value: "List recent changes" } });
+
+    const allowsDefault = fireEvent.keyDown(prompt, event);
+
+    expect(allowsDefault).toBe(!sends);
+    expect(mocks.queueUserMessage).toHaveBeenCalledTimes(sends ? 1 : 0);
+    expect(prompt).toHaveValue(sends ? "" : "List recent changes");
+  });
+
+  test.each([true, false])("shows the matching shortcut hint with sendWithEnter %s", (sendWithEnter) => {
+    mocks.preferences.sendWithEnter = sendWithEnter;
+    renderComposer(project.name);
+    expect(screen.getByRole("textbox", { name: "Ask a question" })).toHaveAttribute(
+      "placeholder",
+      `Ask a question · ${sendWithEnter ? "agent.input-keyboard-hint" : "agent.input-keyboard-hint-newline"}`
+    );
+  });
+
+  test.each([{ ctrlKey: true }, { metaKey: true }])("does not submit a resource picker selection with modified Enter %j", async (modifiers) => {
+    mocks.preferences.sendWithEnter = false;
+    renderComposer(project.name);
+    const prompt = triggerMention("@");
+    await waitFor(() => expect(screen.getByRole("button", { name: "Databases" })).toBeInTheDocument());
+
+    fireEvent.keyDown(prompt, { key: "Enter", ...modifiers });
+
+    expect(mocks.queueUserMessage).not.toHaveBeenCalled();
+    expect(prompt).toHaveValue("@");
+  });
+
   test("submits a question from the unified composer footer", () => {
     const { container } = renderComposer(project.name);
     const prompt = screen.getByRole("textbox", { name: "Ask a question" });

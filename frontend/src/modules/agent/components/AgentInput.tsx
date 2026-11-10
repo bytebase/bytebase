@@ -69,6 +69,7 @@ import {
   updateDraftResourceMentions,
 } from "../logic/resourceMention";
 import { acceptAgentResponseActions } from "../logic/responseActions";
+import { isAgentSendShortcut } from "../logic/sendShortcut";
 import {
   getMaskingSkillGuidance,
   type MaskingSkillSection,
@@ -443,6 +444,7 @@ export function AgentInput({
   const currentChatId = useAgentStore((s) => s.currentChatId);
   const workspaceName = useAgentStore((s) => s.workspaceName);
   const userEmail = useAgentStore((s) => s.userEmail);
+  const sendWithEnter = useAgentStore((s) => s.preferences.sendWithEnter);
   const currentDraft = useAgentStore((s) =>
     currentChatId ? s.draftsByChatId[currentChatId] : undefined
   );
@@ -1095,6 +1097,7 @@ export function AgentInput({
       skipReferencePreflight = false
     ) => {
       const store = useAgentStore.getState();
+      const maxTotalTokens = store.preferences.tokenLimitPerRun;
       const references = getCurrentTurnResourceReferences(
         store.getMessages(chatId)
       );
@@ -1684,6 +1687,7 @@ export function AgentInput({
           controller.signal,
           {
             allowPlainTextCompletion: runMode === "read-only",
+            maxTotalTokens,
             resolveRequestContext,
           }
         );
@@ -2546,7 +2550,8 @@ export function AgentInput({
 
   const handleTextareaKeydown = useCallback(
     (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (event.nativeEvent.isComposing) return;
+      if (event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229)
+        return;
       if (resourcePickerOpen && canMentionResource) {
         const range = getMentionTriggerRange(
           input,
@@ -2569,13 +2574,7 @@ export function AgentInput({
         }
         if (range) return;
       }
-      if (
-        event.key === "Enter" &&
-        !event.shiftKey &&
-        !event.altKey &&
-        !event.ctrlKey &&
-        !event.metaKey
-      ) {
+      if (isAgentSendShortcut(event.nativeEvent, sendWithEnter)) {
         event.preventDefault();
         void send();
       }
@@ -2586,6 +2585,7 @@ export function AgentInput({
       input,
       resourcePickerOpen,
       send,
+      sendWithEnter,
     ]
   );
 
@@ -2835,7 +2835,10 @@ export function AgentInput({
                     t("agent.input-processing-placeholder")
                   ) : (
                     <>
-                      {inputPlaceholder} · {t("agent.input-keyboard-hint")}
+                      {inputPlaceholder} ·{" "}
+                      {sendWithEnter
+                        ? t("agent.input-keyboard-hint")
+                        : t("agent.input-keyboard-hint-newline")}
                     </>
                   )}
                 </div>

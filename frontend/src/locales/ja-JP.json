@@ -144,6 +144,7 @@
       "view-failed-tasks": "失敗したタスクを表示"
     },
     "input-keyboard-hint": "Enter で送信・Shift+Enter で改行",
+    "input-keyboard-hint-newline": "Enter で改行・Cmd/Ctrl+Enter で送信",
     "input-placeholder": "AI に質問するか、@ でリソースを選択",
     "input-processing-placeholder": "処理中...",
     "interrupted": "中断",
@@ -259,6 +260,23 @@
       "unavailable": "プランの下書きを開けませんでした。データベースまたは SQL が変更された可能性があります。エージェントに再生成を依頼してください。"
     },
     "plan-reference-unavailable": "このプランは利用できないか、アクセス権がありません。",
+    "preferences": {
+      "back": "チャットに戻る",
+      "continue-last-chat": "前回のチャットを続ける",
+      "enter-help": "Shift+Enter で改行します。",
+      "invalid-token-limit": "正の整数を入力してください。",
+      "newline-help": "Enter で改行し、Cmd/Ctrl+Enter で送信します。",
+      "reset": "既定値に戻す",
+      "reset-confirmation": "設定を既定値に戻しますか？",
+      "scope": "このワークスペースとブラウザー内のアカウント設定として保存されます。",
+      "send-with-enter": "Enter で送信",
+      "show-landing": "開始ページを表示",
+      "storage-failed": "ローカルに保存できませんでした。変更はページを再読み込みするまで適用されます。",
+      "title": "エージェントの設定",
+      "token-limit": "実行ごとのトークン上限",
+      "tokens": "トークン",
+      "when-opening": "エージェントを開くとき"
+    },
     "project-attention": {
       "checking": "対応が必要な項目を確認しています...",
       "empty": "このプロジェクトに対応が必要なオープン issue はありません。",
