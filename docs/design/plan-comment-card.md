@@ -214,7 +214,8 @@ A slice is finished when the rows it names hold and no invariant is broken. This
 slice's files so its size can be judged, and its tests by the rows they assert. Which props and
 helpers carry the rules is decided in the slice's own PR and reviewed there.
 
-1. **Bar and folding in the Changes section.** Depends on nothing.
+1. **Bar and folding in the Changes section (D3, D4, D5, and "Resolved" from D6).** Depends on
+   nothing.
    - Delivers, for a card in the Changes section: the first row of Title; "Resolved" from State
      labels; the Footer row; the Changes section row of Folding; invariants 3, 4, 5 and 6.
      `CollapsedThreadRow` goes. Until slice 2 the Activity card is untouched.
@@ -226,7 +227,8 @@ helpers carry the rules is decided in the slice's own PR and reviewed there.
      selection; a resolved thread whose reader can neither reply nor resolve has no footer. E2E:
      `frontend/tests/e2e/plan-detail/plan-detail.page.ts` reads `thread-row`, which this slice
      removes, and `plan-detail-review.spec.ts` covers folding and resolving in the Changes section.
-2. **The Activity card takes the bar.** Depends on slice 1.
+2. **The Activity card takes the bar (D2's shadow; D3, D4 and D5 in Activity; the rest of D6;
+   D10).** Depends on slice 1.
    - Delivers, for a card in Activity: the three Activity rows of Title; every row of State
      labels, lines and link; the Excerpt and Footer rows, with the excerpt still in the body and
      drawn as today; the Activity row of Folding; the frame's shadow. After this slice no card is
@@ -237,22 +239,24 @@ helpers carry the rules is decided in the slice's own PR and reviewed there.
      row delivered. They include: a deleted change and a thread that is not on lines; two folded
      cards whose fold controls have different names; the excerpt renders in the body and not in the
      bar. E2E: `plan-detail-review.spec.ts` covers folding and resolving in Activity.
-3. **No line tints, and the width limit.** Depends on slice 1, which gives every thread in the
-   Changes section a title that names its lines.
+3. **No line tints, and the width limit (D1, D2's width).** Depends on slice 1, which gives every
+   thread in the Changes section a title that names its lines.
    - Delivers: invariant 1 and every row of On the statement.
    - Files: `StatementThreadsLayer.tsx`, `statementThreads.css`.
    - Tests: `StatementThreadsLayer.test.tsx`: no line is decorated for an open, an unfolded or a
      resolved thread; a selection and an open composer are still highlighted. E2E:
      `plan-detail-review.spec.ts` asserts that a selected line's background is the grey token.
-4. **Comment column and replies.** Depends on nothing.
+4. **Comment column and replies (D7).** Depends on nothing.
    - Delivers: the First comment and Replies rows of Body and footer.
    - Files: `ThreadComment.tsx`, `CommentThreadCard.tsx`, `CommentThreadCard.css`.
    - Tests: `ThreadComment.test.tsx`, `CommentThreadCard.test.tsx`.
-5. **Composer.** Depends on slice 1, for the bar.
+5. **Composer (D8).** Depends on slice 1, for the bar.
    - Delivers: the composer row of Title, and invariant 2 for the composer.
    - Files: `InlineThreadComposer.tsx`.
    - Tests: a new `InlineThreadComposer.test.tsx`: the composer has the frame, including the
      shadow, and its avatar is in the body.
+
+D9 changes nothing, so no slice carries it.
 
 The two sibling docs add three more PRs. Across all three docs the order is:
 
