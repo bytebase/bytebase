@@ -2,6 +2,7 @@ package tidb
 
 import (
 	"context"
+	"slices"
 	"strings"
 
 	"github.com/bytebase/omni/tidb/ast"
@@ -258,10 +259,10 @@ func (c *accessTableCollector) Visit(node ast.Node) ast.Visitor {
 	if node == nil {
 		return nil
 	}
-	return c.visit(node)
+	return c.enter(node)
 }
 
-func (c *accessTableCollector) visit(node ast.Node) ast.Visitor {
+func (c *accessTableCollector) enter(node ast.Node) ast.Visitor {
 	// Locking clauses reference FROM aliases, whose physical sources are visited separately.
 	if sel, ok := node.(*ast.SelectStmt); ok && sel.ForUpdate != nil {
 		if c.lockingTables == nil {
@@ -313,7 +314,7 @@ func (g *accessTableScopeGuard) Visit(node ast.Node) ast.Visitor {
 		g.c.cteScopes = g.c.cteScopes[:len(g.c.cteScopes)-1]
 		return nil
 	}
-	return g.c.visit(node)
+	return g.c.enter(node)
 }
 
 // accessTableCTEGuard registers the CTE name in the enclosing scope on leave.
@@ -329,7 +330,7 @@ func (g *accessTableCTEGuard) Visit(node ast.Node) ast.Visitor {
 		}
 		return nil
 	}
-	return g.c.visit(node)
+	return g.c.enter(node)
 }
 
 func (q *querySpanExtractor) existsTableMetadata(databaseName string, tableName string) bool {
@@ -444,7 +445,21 @@ func (q *querySpanExtractor) extractRecursiveCTE(node *ast.CommonTableExpr) (*ba
 		}
 	}
 
+	// The body's own WITH clause must be visible to the anchor, e.g. the `seed`
+	// in `WITH RECURSIVE r AS (WITH seed AS (...) SELECT ... FROM seed UNION ALL
+	// SELECT ... FROM r) ...`. The fixpoint loop below re-registers these via
+	// extractSelect, so this scope is scoped to the initial anchor extraction.
+	previousInnerCteLength := len(q.ctes)
+	for _, cte := range selectStmt.CTEs {
+		cteTableSource, cteErr := q.extractCTE(cte)
+		if cteErr != nil {
+			q.ctes = q.ctes[:previousInnerCteLength]
+			return nil, cteErr
+		}
+		q.ctes = append(q.ctes, cteTableSource)
+	}
 	initialTableSource, err := q.extractRecursiveCTEAnchor(selectStmt)
+	q.ctes = q.ctes[:previousInnerCteLength]
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to extract table source from initial part of recursive CTE")
 	}
@@ -816,7 +831,7 @@ func (q *querySpanExtractor) extractSubquerySourceColumnSet(selectStmt *ast.Sele
 		gCtx:                q.gCtx,
 		lowerTableViewMap:   q.lowerTableViewMap,
 		ctes:                q.ctes,
-		outerTableSources:   append(append([]base.TableSource{}, q.outerTableSources...), q.tableSourcesFrom...),
+		outerTableSources:   slices.Concat(q.outerTableSources, q.tableSourcesFrom),
 		tableSourcesFrom:    []base.TableSource{},
 		baseTableSources:    q.baseTableSources,
 		viewResolutionStack: cloneViewResolutionStack(q.viewResolutionStack),
