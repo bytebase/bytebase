@@ -71,7 +71,10 @@ card gains it; the Activity card keeps its full width. Rejected: keeping the ful
 **D3 · A title bar names the lines.** Every card starts with a bar on `bg-control-bg`, in 12/16
 text. In the Changes section it reads "Comment on line 1" or "Comment on lines 1–7". In Activity it
 shows the change the thread belongs to on the left, and the line range followed by "View in
-Statement" on the right, which is the order the Activity header has today. The bar's text is
+Statement" on the right, which is the order the Activity header has today. A thread that is not on
+lines, which the API allows and the product's own comment box does not create, gets the same bar
+titled "Comment on the plan", with no lines and no link. So every thread has a bar, and the card
+has one layout. The bar's text is
 `text-control`, not `text-control-light`: light text on `bg-control-bg` is 4.4:1, under the 4.5:1
 minimum. The new-comment composer already has a bar of this kind ("Add a comment on lines 9 to
 10"), so a thread keeps one look from draft to posted. Rejected: the range label that appears only
@@ -139,7 +142,7 @@ and long lists do not fit.
 | Reply editor open | Editor with the "Resolve thread" checkbox, in the footer | Same |
 | Reader cannot reply or resolve | No footer | No footer |
 | New comment | Selected lines highlighted in grey; composer card | Does not apply |
-| Thread that is not on lines | Does not apply | Today's card, unchanged: no bar, and the state stays in the footer |
+| Thread that is not on lines | Does not apply | Card with the bar titled "Comment on the plan"; no SQL, no lines, no link |
 
 Which threads the Changes section shows is unchanged and is decided by placement
 (`selectEditorThreads` in `threadModel.ts`): a thread shows there only while its lines are in the
@@ -159,7 +162,8 @@ row of States that differs from today traces to one of them.
      takes an optional controlled pair, `expanded` and `onExpandedChange`, which replaces `onClose`
      and the `collapsible` prop; the close button in the author row goes. A card with a bar renders
      its footer only when the reader can reply or settle, since the badge is in the bar. A card
-     without a bar is unchanged, which is what Activity renders until slice 2.
+     without a bar is unchanged. That is what Activity renders until slice 2, which gives every
+     card a bar and removes the path.
    - `ThreadStack.tsx`: pass the title; delete `CollapsedThreadRow` and `showRanges`. Every thread
      renders the card, folded or not, with `expanded` from `expandedRoots` and `onExpandedChange`
      calling the layer's `onExpand` and `onCollapse`.
@@ -182,13 +186,18 @@ row of States that differs from today traces to one of them.
      and `variant="default"`.
    - `CommentThreadCard.tsx` and `ReviewActivityTimeline.tsx`: the card's `renderContext` slot
      becomes those two slots, bar content and body excerpt, and `ThreadActivityRow` passes both.
-   - `CommentThreadCard.tsx`: an uncontrolled card folds in any state, by dropping the
-     `thread.resolved` condition, and still starts folded when resolved; delete `ThreadSummary`;
-     take `shadow-sm` into the card's own classes.
+     For a thread that is not on lines it passes the title "Comment on the plan" and no excerpt.
+   - `CommentThreadCard.tsx`: every card now has a bar, so the path without one goes: the bar is
+     required, the footer's guard loses `thread.resolved`, and the last collapse button in the
+     author row goes. An uncontrolled card folds in any state, by dropping the `thread.resolved`
+     condition, and still starts folded when resolved. Delete `ThreadSummary`. Take `shadow-sm`
+     into the card's own classes.
+   - The five locale files, for the title of a thread that is not on lines.
    - `ThreadStack.tsx`: stop passing `shadow-sm`.
    - Tests: `CommentThreadCard.test.tsx` (an open thread in Activity folds; folded, it shows the
      bar and no summary row; unfolded, the excerpt renders in the body under the bar and not
-     inside it), `StatementAnchorContext.test.tsx` (no `Badge` for the outdated and
+     inside it; a resolved thread that is not on lines starts folded to a bar titled "Comment on
+     the plan" and unfolds from it), `StatementAnchorContext.test.tsx` (no `Badge` for the outdated and
      unavailable states; no collapse button of its own). E2E: `plan-detail-review.spec.ts` asserts
      the folded and resolved states in Activity.
 3. **No line tints, and the width limit (D1, D2).** Depends on slice 1, which gives every thread in
@@ -235,8 +244,5 @@ The two sibling docs add three more PRs. Across all three docs the order is:
   (BYT-10513), and a label in the bar for a comment that involves a production database
   (BYT-10514).
 - Naming who resolved a thread. It needs a field on the thread first.
-- A title bar for a thread that is not on lines. The API allows such a thread; the comment box in
-  Activity posts a plain comment, so the product does not create one today. It keeps today's
-  card.
 - Highlighting a thread's lines while the pointer is on its title bar.
 - The thread stepper (`StatementThreadWalker`) and the margin markers, which do not change.
