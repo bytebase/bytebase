@@ -17,7 +17,7 @@ func init() {
 func validateQuery(statement string) (bool, bool, error) {
 	stmts, err := ParseMySQL(statement)
 	if err != nil {
-		return false, false, convertOmniError(err, base.Statement{Text: statement})
+		return false, false, convertError(err, base.Statement{Text: statement})
 	}
 
 	hasExecute := false
@@ -53,7 +53,7 @@ func validateQuery(statement string) (bool, bool, error) {
 // selectIntoTargets reports what a SELECT's INTO clause targets. It searches
 // the whole statement rather than its root because the parser attaches INTO to
 // an arm of a set operation or to a parenthesized query, not necessarily to the
-// node the caller holds — the same reason pg's omniIntoClause walks its arms.
+// node the caller holds — the same reason pg's intoClause walks its arms.
 //
 // A subquery cannot carry INTO in MySQL, so reaching into the tree cannot
 // over-match a legal statement; if the grammar ever allowed it, the answer here

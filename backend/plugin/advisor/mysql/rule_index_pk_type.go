@@ -34,8 +34,8 @@ func (*IndexPkTypeAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 		return nil, err
 	}
 
-	rule := &indexPkTypeOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &indexPkTypeRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
@@ -43,20 +43,20 @@ func (*IndexPkTypeAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 		tablesNewColumns: make(tableColumnTypes),
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type indexPkTypeOmniRule struct {
-	OmniBaseRule
+type indexPkTypeRule struct {
+	BaseRule
 	originalMetadata *model.DatabaseMetadata
 	tablesNewColumns tableColumnTypes
 }
 
-func (*indexPkTypeOmniRule) Name() string {
+func (*indexPkTypeRule) Name() string {
 	return "IndexPkTypeRule"
 }
 
-func (r *indexPkTypeOmniRule) OnStatement(node ast.Node) {
+func (r *indexPkTypeRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		r.checkCreateTable(n)
@@ -66,7 +66,7 @@ func (r *indexPkTypeOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *indexPkTypeOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+func (r *indexPkTypeRule) checkCreateTable(n *ast.CreateTableStmt) {
 	if n.Table == nil {
 		return
 	}
@@ -91,7 +91,7 @@ func (r *indexPkTypeOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
 	}
 }
 
-func (r *indexPkTypeOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+func (r *indexPkTypeRule) checkAlterTable(n *ast.AlterTableStmt) {
 	if n.Table == nil {
 		return
 	}
@@ -102,7 +102,7 @@ func (r *indexPkTypeOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
 		}
 		switch cmd.Type {
 		case ast.ATAddColumn:
-			for _, col := range omniGetColumnsFromCmd(cmd) {
+			for _, col := range getColumnsFromCmd(cmd) {
 				if col == nil || col.TypeName == nil {
 					continue
 				}
@@ -146,7 +146,7 @@ func (r *indexPkTypeOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
 	}
 }
 
-func (r *indexPkTypeOmniRule) checkConstraint(tableName string, constraint *ast.Constraint, line int32) {
+func (r *indexPkTypeRule) checkConstraint(tableName string, constraint *ast.Constraint, line int32) {
 	if constraint.Type != ast.ConstrPrimaryKey {
 		return
 	}
@@ -159,7 +159,7 @@ func (r *indexPkTypeOmniRule) checkConstraint(tableName string, constraint *ast.
 	}
 }
 
-func (r *indexPkTypeOmniRule) addAdvice(tableName, columnName, columnType string, lineNumber int) {
+func (r *indexPkTypeRule) addAdvice(tableName, columnName, columnType string, lineNumber int) {
 	if !strings.EqualFold(columnType, "INT") && !strings.EqualFold(columnType, "BIGINT") {
 		r.AddAdviceAbsolute(&storepb.Advice{
 			Status:        r.Level,
@@ -171,7 +171,7 @@ func (r *indexPkTypeOmniRule) addAdvice(tableName, columnName, columnType string
 	}
 }
 
-func (r *indexPkTypeOmniRule) getPKColumnType(tableName string, columnName string) (string, error) {
+func (r *indexPkTypeRule) getPKColumnType(tableName string, columnName string) (string, error) {
 	if columnType, ok := r.tablesNewColumns.get(tableName, columnName); ok {
 		return columnType, nil
 	}
@@ -182,7 +182,7 @@ func (r *indexPkTypeOmniRule) getPKColumnType(tableName string, columnName strin
 	return "", errors.Errorf("cannot find the type of `%s`.`%s`", tableName, columnName)
 }
 
-func (*indexPkTypeOmniRule) getIntOrBigIntStr(dt *ast.DataType) string {
+func (*indexPkTypeRule) getIntOrBigIntStr(dt *ast.DataType) string {
 	if dt == nil {
 		return ""
 	}

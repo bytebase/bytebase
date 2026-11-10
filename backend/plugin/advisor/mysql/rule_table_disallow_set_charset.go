@@ -30,25 +30,25 @@ func (*TableDisallowSetCharsetAdvisor) Check(_ context.Context, checkCtx advisor
 		return nil, err
 	}
 
-	rule := &tableDisallowSetCharsetOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &tableDisallowSetCharsetRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type tableDisallowSetCharsetOmniRule struct {
-	OmniBaseRule
+type tableDisallowSetCharsetRule struct {
+	BaseRule
 }
 
-func (*tableDisallowSetCharsetOmniRule) Name() string {
+func (*tableDisallowSetCharsetRule) Name() string {
 	return "TableDisallowSetCharsetRule"
 }
 
-func (r *tableDisallowSetCharsetOmniRule) OnStatement(node ast.Node) {
+func (r *tableDisallowSetCharsetRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		r.checkCreateTable(n)
@@ -58,7 +58,7 @@ func (r *tableDisallowSetCharsetOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *tableDisallowSetCharsetOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+func (r *tableDisallowSetCharsetRule) checkCreateTable(n *ast.CreateTableStmt) {
 	for _, opt := range n.Options {
 		if opt != nil && strings.EqualFold(opt.Name, "CHARSET") || strings.EqualFold(opt.Name, "CHARACTER SET") || strings.EqualFold(opt.Name, "DEFAULT CHARSET") || strings.EqualFold(opt.Name, "DEFAULT CHARACTER SET") {
 			r.AddAdvice(&storepb.Advice{
@@ -72,7 +72,7 @@ func (r *tableDisallowSetCharsetOmniRule) checkCreateTable(n *ast.CreateTableStm
 	}
 }
 
-func (r *tableDisallowSetCharsetOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+func (r *tableDisallowSetCharsetRule) checkAlterTable(n *ast.AlterTableStmt) {
 	for _, cmd := range n.Commands {
 		if cmd == nil {
 			continue

@@ -32,15 +32,15 @@ func (*StatementMergeAlterTableAdvisor) Check(_ context.Context, checkCtx adviso
 		return nil, err
 	}
 
-	rule := &mergeAlterTableOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &mergeAlterTableRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 		tableMap: make(map[string]tableStatement),
 	}
 
-	RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	RunRules(checkCtx.ParsedStatements, []Rule{rule})
 	rule.generateAdvice()
 	return rule.GetAdviceList(), nil
 }
@@ -52,16 +52,16 @@ type tableStatement struct {
 	lastLine int
 }
 
-type mergeAlterTableOmniRule struct {
-	OmniBaseRule
+type mergeAlterTableRule struct {
+	BaseRule
 	tableMap map[string]tableStatement
 }
 
-func (*mergeAlterTableOmniRule) Name() string {
+func (*mergeAlterTableRule) Name() string {
 	return "StatementMergeAlterTableRule"
 }
 
-func (r *mergeAlterTableOmniRule) OnStatement(node ast.Node) {
+func (r *mergeAlterTableRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		if n.Table == nil {
@@ -92,7 +92,7 @@ func (r *mergeAlterTableOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *mergeAlterTableOmniRule) generateAdvice() {
+func (r *mergeAlterTableRule) generateAdvice() {
 	var tableList []tableStatement
 	for _, table := range r.tableMap {
 		tableList = append(tableList, table)

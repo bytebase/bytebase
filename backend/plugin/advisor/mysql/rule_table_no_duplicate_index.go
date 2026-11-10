@@ -32,14 +32,14 @@ func (*TableNoDuplicateIndexAdvisor) Check(_ context.Context, checkCtx advisor.C
 		return nil, err
 	}
 
-	rule := &tableNoDuplicateIndexOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &tableNoDuplicateIndexRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type duplicateIndex struct {
@@ -53,16 +53,16 @@ type duplicateIndex struct {
 	line      int
 }
 
-type tableNoDuplicateIndexOmniRule struct {
-	OmniBaseRule
+type tableNoDuplicateIndexRule struct {
+	BaseRule
 	indexList []duplicateIndex
 }
 
-func (*tableNoDuplicateIndexOmniRule) Name() string {
+func (*tableNoDuplicateIndexRule) Name() string {
 	return "TableNoDuplicateIndexRule"
 }
 
-func (r *tableNoDuplicateIndexOmniRule) OnStatement(node ast.Node) {
+func (r *tableNoDuplicateIndexRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		r.checkCreateTable(n)
@@ -74,7 +74,7 @@ func (r *tableNoDuplicateIndexOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *tableNoDuplicateIndexOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+func (r *tableNoDuplicateIndexRule) checkCreateTable(n *ast.CreateTableStmt) {
 	if n.Table == nil {
 		return
 	}
@@ -96,7 +96,7 @@ func (r *tableNoDuplicateIndexOmniRule) checkCreateTable(n *ast.CreateTableStmt)
 	}
 }
 
-func (r *tableNoDuplicateIndexOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+func (r *tableNoDuplicateIndexRule) checkAlterTable(n *ast.AlterTableStmt) {
 	if n.Table == nil {
 		return
 	}
@@ -124,7 +124,7 @@ func (r *tableNoDuplicateIndexOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
 	}
 }
 
-func (r *tableNoDuplicateIndexOmniRule) handleConstraint(tableName string, constraint *ast.Constraint, line int32) {
+func (r *tableNoDuplicateIndexRule) handleConstraint(tableName string, constraint *ast.Constraint, line int32) {
 	switch constraint.Type {
 	case ast.ConstrPrimaryKey, ast.ConstrUnique, ast.ConstrIndex, ast.ConstrFulltextIndex, ast.ConstrSpatialIndex:
 	default:
@@ -153,7 +153,7 @@ func (r *tableNoDuplicateIndexOmniRule) handleConstraint(tableName string, const
 	r.indexList = append(r.indexList, index)
 }
 
-func (r *tableNoDuplicateIndexOmniRule) checkCreateIndex(n *ast.CreateIndexStmt) {
+func (r *tableNoDuplicateIndexRule) checkCreateIndex(n *ast.CreateIndexStmt) {
 	if n.Table == nil {
 		return
 	}
@@ -164,7 +164,7 @@ func (r *tableNoDuplicateIndexOmniRule) checkCreateIndex(n *ast.CreateIndexStmt)
 		line:      r.BaseLine + int(r.LocToLine(n.Loc)),
 		table:     tableName,
 		indexName: n.IndexName,
-		columns:   omniIndexColumns(n.Columns),
+		columns:   indexColumns(n.Columns),
 	}
 	if n.IndexType != "" {
 		index.indexType = n.IndexType

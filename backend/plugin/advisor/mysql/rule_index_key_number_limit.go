@@ -36,27 +36,27 @@ func (*IndexKeyNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.Con
 		return nil, errors.New("number_payload is required for this rule")
 	}
 
-	rule := &indexKeyNumberLimitOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &indexKeyNumberLimitRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 		max: int(numberPayload.Number),
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type indexKeyNumberLimitOmniRule struct {
-	OmniBaseRule
+type indexKeyNumberLimitRule struct {
+	BaseRule
 	max int
 }
 
-func (*indexKeyNumberLimitOmniRule) Name() string {
+func (*indexKeyNumberLimitRule) Name() string {
 	return "IndexKeyNumberLimitRule"
 }
 
-func (r *indexKeyNumberLimitOmniRule) OnStatement(node ast.Node) {
+func (r *indexKeyNumberLimitRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		r.checkCreateTable(n)
@@ -68,7 +68,7 @@ func (r *indexKeyNumberLimitOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *indexKeyNumberLimitOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+func (r *indexKeyNumberLimitRule) checkCreateTable(n *ast.CreateTableStmt) {
 	if n.Table == nil {
 		return
 	}
@@ -81,7 +81,7 @@ func (r *indexKeyNumberLimitOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
 	}
 }
 
-func (r *indexKeyNumberLimitOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+func (r *indexKeyNumberLimitRule) checkAlterTable(n *ast.AlterTableStmt) {
 	if n.Table == nil {
 		return
 	}
@@ -100,7 +100,7 @@ func (r *indexKeyNumberLimitOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
 	}
 }
 
-func (r *indexKeyNumberLimitOmniRule) handleConstraint(tableName string, constraint *ast.Constraint, line int32) {
+func (r *indexKeyNumberLimitRule) handleConstraint(tableName string, constraint *ast.Constraint, line int32) {
 	var columnList []string
 	switch constraint.Type {
 	case ast.ConstrPrimaryKey, ast.ConstrUnique, ast.ConstrIndex:
@@ -111,7 +111,7 @@ func (r *indexKeyNumberLimitOmniRule) handleConstraint(tableName string, constra
 		return
 	}
 
-	indexName := omniConstraintName(constraint)
+	indexName := constraintName(constraint)
 	if indexName == "" && constraint.Type == ast.ConstrPrimaryKey {
 		indexName = extractPKNameFromText(r.StmtText)
 	}
@@ -126,7 +126,7 @@ func (r *indexKeyNumberLimitOmniRule) handleConstraint(tableName string, constra
 	}
 }
 
-func (r *indexKeyNumberLimitOmniRule) checkCreateIndex(n *ast.CreateIndexStmt) {
+func (r *indexKeyNumberLimitRule) checkCreateIndex(n *ast.CreateIndexStmt) {
 	if n.Table == nil {
 		return
 	}
@@ -136,7 +136,7 @@ func (r *indexKeyNumberLimitOmniRule) checkCreateIndex(n *ast.CreateIndexStmt) {
 
 	tableName := n.Table.Name
 	indexName := n.IndexName
-	columnList := omniIndexColumns(n.Columns)
+	columnList := indexColumns(n.Columns)
 	if r.max > 0 && len(columnList) > r.max {
 		r.AddAdviceAbsolute(&storepb.Advice{
 			Status:        r.Level,

@@ -32,25 +32,25 @@ func (*IndexNoDuplicateColumnAdvisor) Check(_ context.Context, checkCtx advisor.
 		return nil, err
 	}
 
-	rule := &indexNoDuplicateColumnOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &indexNoDuplicateColumnRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type indexNoDuplicateColumnOmniRule struct {
-	OmniBaseRule
+type indexNoDuplicateColumnRule struct {
+	BaseRule
 }
 
-func (*indexNoDuplicateColumnOmniRule) Name() string {
+func (*indexNoDuplicateColumnRule) Name() string {
 	return "IndexNoDuplicateColumnRule"
 }
 
-func (r *indexNoDuplicateColumnOmniRule) OnStatement(node ast.Node) {
+func (r *indexNoDuplicateColumnRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		r.checkCreateTable(n)
@@ -62,7 +62,7 @@ func (r *indexNoDuplicateColumnOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *indexNoDuplicateColumnOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+func (r *indexNoDuplicateColumnRule) checkCreateTable(n *ast.CreateTableStmt) {
 	if n.Table == nil {
 		return
 	}
@@ -75,7 +75,7 @@ func (r *indexNoDuplicateColumnOmniRule) checkCreateTable(n *ast.CreateTableStmt
 	}
 }
 
-func (r *indexNoDuplicateColumnOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+func (r *indexNoDuplicateColumnRule) checkAlterTable(n *ast.AlterTableStmt) {
 	if n.Table == nil {
 		return
 	}
@@ -94,7 +94,7 @@ func (r *indexNoDuplicateColumnOmniRule) checkAlterTable(n *ast.AlterTableStmt) 
 	}
 }
 
-func (r *indexNoDuplicateColumnOmniRule) checkCreateIndex(n *ast.CreateIndexStmt) {
+func (r *indexNoDuplicateColumnRule) checkCreateIndex(n *ast.CreateIndexStmt) {
 	if n.Table == nil {
 		return
 	}
@@ -110,7 +110,7 @@ func (r *indexNoDuplicateColumnOmniRule) checkCreateIndex(n *ast.CreateIndexStmt
 		indexType = "UNIQUE INDEX "
 	}
 
-	columnList := omniIndexColumns(n.Columns)
+	columnList := indexColumns(n.Columns)
 	if column, duplicate := hasDuplicateColumn(columnList); duplicate {
 		r.AddAdviceAbsolute(&storepb.Advice{
 			Status:        r.Level,
@@ -122,7 +122,7 @@ func (r *indexNoDuplicateColumnOmniRule) checkCreateIndex(n *ast.CreateIndexStmt
 	}
 }
 
-func (r *indexNoDuplicateColumnOmniRule) handleConstraint(tableName string, constraint *ast.Constraint, line int32) {
+func (r *indexNoDuplicateColumnRule) handleConstraint(tableName string, constraint *ast.Constraint, line int32) {
 	var columnList []string
 	indexType := ""
 	switch constraint.Type {
@@ -144,7 +144,7 @@ func (r *indexNoDuplicateColumnOmniRule) handleConstraint(tableName string, cons
 		return
 	}
 
-	indexName := omniConstraintName(constraint)
+	indexName := constraintName(constraint)
 	// Workaround: omni parser doesn't capture PRIMARY KEY constraint names.
 	// Extract from statement text as a fallback.
 	if indexName == "" && constraint.Type == ast.ConstrPrimaryKey {

@@ -33,7 +33,7 @@ func parseStatements(statement string) ([]base.ParsedStatement, error) {
 
 		list, omniErr := ParseOceanBase(stmt.Text)
 		if omniErr != nil {
-			return nil, convertOmniError(omniErr, stmt)
+			return nil, convertError(omniErr, stmt)
 		}
 		if list == nil || len(list.Items) == 0 {
 			continue
@@ -54,8 +54,8 @@ func parseStatements(statement string) ([]base.ParsedStatement, error) {
 	return result, nil
 }
 
-// convertOmniError converts an omni parser error to a base.SyntaxError with proper line:column position.
-func convertOmniError(err error, stmt base.Statement) error {
+// convertError converts an omni parser error to a base.SyntaxError with proper line:column position.
+func convertError(err error, stmt base.Statement) error {
 	var parseErr *omniparser.ParseError
 	if !errors.As(err, &parseErr) {
 		return err

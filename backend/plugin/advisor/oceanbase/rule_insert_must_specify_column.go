@@ -31,25 +31,25 @@ func (*InsertMustSpecifyColumnAdvisor) Check(_ context.Context, checkCtx advisor
 		return nil, err
 	}
 
-	rule := &insertMustSpecifyColumnOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &insertMustSpecifyColumnRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type insertMustSpecifyColumnOmniRule struct {
-	OmniBaseRule
+type insertMustSpecifyColumnRule struct {
+	BaseRule
 }
 
-func (*insertMustSpecifyColumnOmniRule) Name() string {
+func (*insertMustSpecifyColumnRule) Name() string {
 	return "InsertMustSpecifyColumnRule"
 }
 
-func (r *insertMustSpecifyColumnOmniRule) OnStatement(node ast.Node) {
+func (r *insertMustSpecifyColumnRule) OnStatement(node ast.Node) {
 	ins, ok := node.(*ast.InsertStmt)
 	if !ok {
 		return

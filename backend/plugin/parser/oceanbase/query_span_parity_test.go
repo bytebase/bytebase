@@ -18,10 +18,10 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-// TestOmniQuerySpanGoldenHarness is the strict cutover guard. It compares
+// TestQuerySpanGoldenHarness is the strict cutover guard. It compares
 // the package-internal omni path against the existing YAML corpus instead of
 // comparing GetQuerySpan to itself after the production cutover.
-func TestOmniQuerySpanGoldenHarness(t *testing.T) {
+func TestQuerySpanGoldenHarness(t *testing.T) {
 	type testCase struct {
 		Description        string              `yaml:"description,omitempty"`
 		Statement          string              `yaml:"statement,omitempty"`
@@ -41,7 +41,7 @@ func TestOmniQuerySpanGoldenHarness(t *testing.T) {
 
 	var diffs []diff
 	total := 0
-	for _, testDataPath := range mysqlOmniProbeFixturePaths {
+	for _, testDataPath := range mysqlProbeFixturePaths {
 		engine := storepb.Engine_OCEANBASE
 
 		yamlFile, err := os.Open(testDataPath)
@@ -67,7 +67,7 @@ func TestOmniQuerySpanGoldenHarness(t *testing.T) {
 			}
 			total++
 
-			omni, err := runMySQLOmniGoldenCase(context.Background(), tc.Statement, tc.Metadata, tc.DefaultDatabase, engine, tc.IgnoreCaseSensitve)
+			omni, err := runMySQLGoldenCase(context.Background(), tc.Statement, tc.Metadata, tc.DefaultDatabase, engine, tc.IgnoreCaseSensitve)
 			if err != nil {
 				diffs = append(diffs, diff{
 					fixture:     testDataPath,
@@ -96,12 +96,12 @@ func TestOmniQuerySpanGoldenHarness(t *testing.T) {
 			t.Logf("... %d more diffs omitted", len(diffs)-i)
 			break
 		}
-		t.Logf("[%s case %d %q] %s\n  SQL: %s", d.fixture, d.index, d.description, d.details, firstMySQLOmniProbeLine(d.statement))
+		t.Logf("[%s case %d %q] %s\n  SQL: %s", d.fixture, d.index, d.description, d.details, firstMySQLProbeLine(d.statement))
 	}
 	require.Empty(t, diffs)
 }
 
-func runMySQLOmniGoldenCase(
+func runMySQLGoldenCase(
 	ctx context.Context,
 	statement string,
 	metadataText string,

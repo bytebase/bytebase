@@ -31,30 +31,30 @@ func (*TableDisallowDMLAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 	}
 	stringArrayPayload := checkCtx.Rule.GetStringArrayPayload()
 
-	rule := &tableDisallowDMLOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &tableDisallowDMLRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 		disallowList: stringArrayPayload.List,
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type tableDisallowDMLOmniRule struct {
-	OmniBaseRule
+type tableDisallowDMLRule struct {
+	BaseRule
 	disallowList []string
 }
 
-func (*tableDisallowDMLOmniRule) Name() string {
+func (*tableDisallowDMLRule) Name() string {
 	return "TableDisallowDMLRule"
 }
 
-func (r *tableDisallowDMLOmniRule) OnStatement(node ast.Node) {
+func (r *tableDisallowDMLRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.DeleteStmt:
-		for _, name := range omniTableExprNames(n.Tables) {
+		for _, name := range tableExprNames(n.Tables) {
 			r.checkTableName(name, r.LocToLine(n.Loc))
 		}
 	case *ast.InsertStmt:
@@ -66,14 +66,14 @@ func (r *tableDisallowDMLOmniRule) OnStatement(node ast.Node) {
 			r.checkTableName(n.Into.Outfile, r.LocToLine(n.Loc))
 		}
 	case *ast.UpdateStmt:
-		for _, name := range omniTableExprNames(n.Tables) {
+		for _, name := range tableExprNames(n.Tables) {
 			r.checkTableName(name, r.LocToLine(n.Loc))
 		}
 	default:
 	}
 }
 
-func (r *tableDisallowDMLOmniRule) checkTableName(tableName string, lineNumber int32) {
+func (r *tableDisallowDMLRule) checkTableName(tableName string, lineNumber int32) {
 	for _, disallow := range r.disallowList {
 		if tableName == disallow {
 			absoluteLine := r.BaseLine + int(lineNumber)
@@ -89,8 +89,8 @@ func (r *tableDisallowDMLOmniRule) checkTableName(tableName string, lineNumber i
 	}
 }
 
-// omniTableExprNames extracts table names from a slice of TableExpr.
-func omniTableExprNames(exprs []ast.TableExpr) []string {
+// tableExprNames extracts table names from a slice of TableExpr.
+func tableExprNames(exprs []ast.TableExpr) []string {
 	var names []string
 	for _, expr := range exprs {
 		ast.Inspect(expr, func(n ast.Node) bool {

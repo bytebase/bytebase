@@ -80,7 +80,7 @@ func DescribeExplain(statement string) (format string, executed bool, ok bool) {
 func singleStatement(text string) (ast.Node, error) {
 	list, err := ParseMySQL(text)
 	if err != nil {
-		return nil, convertOmniError(err, base.Statement{Text: text})
+		return nil, convertError(err, base.Statement{Text: text})
 	}
 	if list == nil || len(list.Items) == 0 {
 		return nil, errors.New("EXPLAIN needs a statement to plan")

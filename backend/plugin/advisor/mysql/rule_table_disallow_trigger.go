@@ -31,25 +31,25 @@ func (*TableDisallowTriggerAdvisor) Check(_ context.Context, checkCtx advisor.Co
 		return nil, err
 	}
 
-	rule := &tableDisallowTriggerOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &tableDisallowTriggerRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type tableDisallowTriggerOmniRule struct {
-	OmniBaseRule
+type tableDisallowTriggerRule struct {
+	BaseRule
 }
 
-func (*tableDisallowTriggerOmniRule) Name() string {
+func (*tableDisallowTriggerRule) Name() string {
 	return "TableDisallowTriggerRule"
 }
 
-func (r *tableDisallowTriggerOmniRule) OnStatement(node ast.Node) {
+func (r *tableDisallowTriggerRule) OnStatement(node ast.Node) {
 	n, ok := node.(*ast.CreateTriggerStmt)
 	if !ok {
 		return

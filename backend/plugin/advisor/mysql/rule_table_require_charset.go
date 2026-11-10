@@ -31,25 +31,25 @@ func (*TableRequireCharsetAdvisor) Check(_ context.Context, checkCtx advisor.Con
 		return nil, err
 	}
 
-	rule := &tableRequireCharsetOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &tableRequireCharsetRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type tableRequireCharsetOmniRule struct {
-	OmniBaseRule
+type tableRequireCharsetRule struct {
+	BaseRule
 }
 
-func (*tableRequireCharsetOmniRule) Name() string {
+func (*tableRequireCharsetRule) Name() string {
 	return "TableRequireCharsetRule"
 }
 
-func (r *tableRequireCharsetOmniRule) OnStatement(node ast.Node) {
+func (r *tableRequireCharsetRule) OnStatement(node ast.Node) {
 	n, ok := node.(*ast.CreateTableStmt)
 	if !ok {
 		return
@@ -57,7 +57,7 @@ func (r *tableRequireCharsetOmniRule) OnStatement(node ast.Node) {
 	r.checkCreateTable(n)
 }
 
-func (r *tableRequireCharsetOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+func (r *tableRequireCharsetRule) checkCreateTable(n *ast.CreateTableStmt) {
 	if n.Table == nil {
 		return
 	}

@@ -30,25 +30,25 @@ func (*ColumnRequireCollationAdvisor) Check(_ context.Context, checkCtx advisor.
 		return nil, err
 	}
 
-	rule := &columnRequireCollationOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &columnRequireCollationRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type columnRequireCollationOmniRule struct {
-	OmniBaseRule
+type columnRequireCollationRule struct {
+	BaseRule
 }
 
-func (*columnRequireCollationOmniRule) Name() string {
+func (*columnRequireCollationRule) Name() string {
 	return "ColumnRequireCollationRule"
 }
 
-func (r *columnRequireCollationOmniRule) OnStatement(node ast.Node) {
+func (r *columnRequireCollationRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		r.checkCreateTable(n)
@@ -58,7 +58,7 @@ func (r *columnRequireCollationOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *columnRequireCollationOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+func (r *columnRequireCollationRule) checkCreateTable(n *ast.CreateTableStmt) {
 	if n.Table == nil {
 		return
 	}
@@ -66,7 +66,7 @@ func (r *columnRequireCollationOmniRule) checkCreateTable(n *ast.CreateTableStmt
 		if col == nil || col.TypeName == nil {
 			continue
 		}
-		if omniIsCharsetDataType(col.TypeName) && col.TypeName.Collate == "" {
+		if isCharsetDataType(col.TypeName) && col.TypeName.Collate == "" {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.Level,
 				Code:          code.NoCollation.Int32(),
@@ -78,7 +78,7 @@ func (r *columnRequireCollationOmniRule) checkCreateTable(n *ast.CreateTableStmt
 	}
 }
 
-func (r *columnRequireCollationOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+func (r *columnRequireCollationRule) checkAlterTable(n *ast.AlterTableStmt) {
 	if n.Table == nil {
 		return
 	}
@@ -87,7 +87,7 @@ func (r *columnRequireCollationOmniRule) checkAlterTable(n *ast.AlterTableStmt) 
 			continue
 		}
 		if cmd.Column != nil && cmd.Column.TypeName != nil {
-			if omniIsCharsetDataType(cmd.Column.TypeName) && cmd.Column.TypeName.Collate == "" {
+			if isCharsetDataType(cmd.Column.TypeName) && cmd.Column.TypeName.Collate == "" {
 				r.AddAdvice(&storepb.Advice{
 					Status:        r.Level,
 					Code:          code.NoCollation.Int32(),
@@ -101,7 +101,7 @@ func (r *columnRequireCollationOmniRule) checkAlterTable(n *ast.AlterTableStmt) 
 			if col == nil || col.TypeName == nil {
 				continue
 			}
-			if omniIsCharsetDataType(col.TypeName) && col.TypeName.Collate == "" {
+			if isCharsetDataType(col.TypeName) && col.TypeName.Collate == "" {
 				r.AddAdvice(&storepb.Advice{
 					Status:        r.Level,
 					Code:          code.NoCollation.Int32(),

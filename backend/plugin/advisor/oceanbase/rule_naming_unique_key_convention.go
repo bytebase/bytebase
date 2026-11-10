@@ -53,8 +53,8 @@ func (*NamingUKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 		maxLength = advisor.DefaultNameLengthLimit
 	}
 
-	rule := &namingUKOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &namingUKRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
@@ -64,7 +64,7 @@ func (*NamingUKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 		originalMetadata: checkCtx.OriginalMetadata,
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 // ukIndexMetaData is the metadata for unique key.
@@ -75,19 +75,19 @@ type ukIndexMetaData struct {
 	line      int
 }
 
-type namingUKOmniRule struct {
-	OmniBaseRule
+type namingUKRule struct {
+	BaseRule
 	format           string
 	maxLength        int
 	templateList     []string
 	originalMetadata *model.DatabaseMetadata
 }
 
-func (*namingUKOmniRule) Name() string {
+func (*namingUKRule) Name() string {
 	return "NamingUKConventionRule"
 }
 
-func (r *namingUKOmniRule) OnStatement(node ast.Node) {
+func (r *namingUKRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		r.checkCreateTable(n)
@@ -99,7 +99,7 @@ func (r *namingUKOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *namingUKOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+func (r *namingUKRule) checkCreateTable(n *ast.CreateTableStmt) {
 	if n.Table == nil {
 		return
 	}
@@ -116,7 +116,7 @@ func (r *namingUKOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
 	r.handleIndexList(indexDataList)
 }
 
-func (r *namingUKOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+func (r *namingUKRule) checkAlterTable(n *ast.AlterTableStmt) {
 	tableName := ""
 	if n.Table != nil {
 		tableName = n.Table.Name
@@ -161,7 +161,7 @@ func (r *namingUKOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
 	r.handleIndexList(indexDataList)
 }
 
-func (r *namingUKOmniRule) checkCreateIndex(n *ast.CreateIndexStmt) {
+func (r *namingUKRule) checkCreateIndex(n *ast.CreateIndexStmt) {
 	// Only focus on unique index.
 	if !n.Unique {
 		return
@@ -170,7 +170,7 @@ func (r *namingUKOmniRule) checkCreateIndex(n *ast.CreateIndexStmt) {
 		return
 	}
 	tableName := n.Table.Name
-	columnList := omniIndexColumns(n.Columns)
+	columnList := indexColumns(n.Columns)
 	metaData := map[string]string{
 		advisor.ColumnListTemplateToken: strings.Join(columnList, "_"),
 		advisor.TableNameTemplateToken:  tableName,
@@ -186,7 +186,7 @@ func (r *namingUKOmniRule) checkCreateIndex(n *ast.CreateIndexStmt) {
 	r.handleIndexList(indexDataList)
 }
 
-func (r *namingUKOmniRule) handleIndexList(indexDataList []*ukIndexMetaData) {
+func (r *namingUKRule) handleIndexList(indexDataList []*ukIndexMetaData) {
 	for _, indexData := range indexDataList {
 		regex, err := getTemplateRegexp(r.format, r.templateList, indexData.metaData)
 		if err != nil {
@@ -219,7 +219,7 @@ func (r *namingUKOmniRule) handleIndexList(indexDataList []*ukIndexMetaData) {
 	}
 }
 
-func (*namingUKOmniRule) handleConstraint(tableName string, constraint *ast.Constraint, line int) *ukIndexMetaData {
+func (*namingUKRule) handleConstraint(tableName string, constraint *ast.Constraint, line int) *ukIndexMetaData {
 	// Focus on unique index.
 	if constraint.Type != ast.ConstrUnique {
 		return nil
@@ -227,7 +227,7 @@ func (*namingUKOmniRule) handleConstraint(tableName string, constraint *ast.Cons
 	indexName := constraint.Name
 	columnList := constraint.Columns
 	if len(columnList) == 0 {
-		columnList = omniIndexColumns(constraint.IndexColumns)
+		columnList = indexColumns(constraint.IndexColumns)
 	}
 	metaData := map[string]string{
 		advisor.ColumnListTemplateToken: strings.Join(columnList, "_"),

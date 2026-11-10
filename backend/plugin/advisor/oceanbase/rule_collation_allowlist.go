@@ -38,27 +38,27 @@ func (*CollationAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 		allowList[strings.ToLower(collation)] = true
 	}
 
-	rule := &collationAllowlistOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &collationAllowlistRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 		allowList: allowList,
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type collationAllowlistOmniRule struct {
-	OmniBaseRule
+type collationAllowlistRule struct {
+	BaseRule
 	allowList map[string]bool
 }
 
-func (*collationAllowlistOmniRule) Name() string {
+func (*collationAllowlistRule) Name() string {
 	return "CollationAllowlistRule"
 }
 
-func (r *collationAllowlistOmniRule) OnStatement(node ast.Node) {
+func (r *collationAllowlistRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateDatabaseStmt:
 		r.checkCreateDatabase(n)
@@ -72,7 +72,7 @@ func (r *collationAllowlistOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *collationAllowlistOmniRule) checkCollation(collation string, line int) {
+func (r *collationAllowlistRule) checkCollation(collation string, line int) {
 	collation = strings.ToLower(collation)
 	if collation != "" && !r.allowList[collation] {
 		r.AddAdvice(&storepb.Advice{
@@ -85,7 +85,7 @@ func (r *collationAllowlistOmniRule) checkCollation(collation string, line int) 
 	}
 }
 
-func (r *collationAllowlistOmniRule) checkCreateDatabase(n *ast.CreateDatabaseStmt) {
+func (r *collationAllowlistRule) checkCreateDatabase(n *ast.CreateDatabaseStmt) {
 	for _, opt := range n.Options {
 		if strings.EqualFold(opt.Name, "COLLATE") {
 			r.checkCollation(opt.Value, r.BaseLine+int(r.LocToLine(n.Loc)))
@@ -93,7 +93,7 @@ func (r *collationAllowlistOmniRule) checkCreateDatabase(n *ast.CreateDatabaseSt
 	}
 }
 
-func (r *collationAllowlistOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+func (r *collationAllowlistRule) checkCreateTable(n *ast.CreateTableStmt) {
 	// Check table-level collation option.
 	for _, opt := range n.Options {
 		if strings.EqualFold(opt.Name, "COLLATE") {
@@ -117,7 +117,7 @@ func (r *collationAllowlistOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
 	}
 }
 
-func (r *collationAllowlistOmniRule) checkAlterDatabase(n *ast.AlterDatabaseStmt) {
+func (r *collationAllowlistRule) checkAlterDatabase(n *ast.AlterDatabaseStmt) {
 	for _, opt := range n.Options {
 		if strings.EqualFold(opt.Name, "COLLATE") {
 			r.checkCollation(opt.Value, r.BaseLine+int(r.LocToLine(n.Loc)))
@@ -125,14 +125,14 @@ func (r *collationAllowlistOmniRule) checkAlterDatabase(n *ast.AlterDatabaseStmt
 	}
 }
 
-func (r *collationAllowlistOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+func (r *collationAllowlistRule) checkAlterTable(n *ast.AlterTableStmt) {
 	for _, cmd := range n.Commands {
 		if cmd == nil {
 			continue
 		}
 		switch cmd.Type {
 		case ast.ATAddColumn, ast.ATModifyColumn, ast.ATChangeColumn:
-			for _, col := range omniGetColumnsFromCmd(cmd) {
+			for _, col := range getColumnsFromCmd(cmd) {
 				if col == nil || col.TypeName == nil {
 					continue
 				}

@@ -31,27 +31,27 @@ func (*ColumnCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor
 	}
 	commentPayload := checkCtx.Rule.GetCommentConventionPayload()
 
-	rule := &columnCommentConventionOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &columnCommentConventionRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 		payload: commentPayload,
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type columnCommentConventionOmniRule struct {
-	OmniBaseRule
+type columnCommentConventionRule struct {
+	BaseRule
 	payload *storepb.SQLReviewRule_CommentConventionRulePayload
 }
 
-func (*columnCommentConventionOmniRule) Name() string {
+func (*columnCommentConventionRule) Name() string {
 	return "ColumnCommentConventionRule"
 }
 
-func (r *columnCommentConventionOmniRule) OnStatement(node ast.Node) {
+func (r *columnCommentConventionRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		r.checkCreateTable(n)
@@ -61,8 +61,8 @@ func (r *columnCommentConventionOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *columnCommentConventionOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
-	tableName := omniTableName(n.Table)
+func (r *columnCommentConventionRule) checkCreateTable(n *ast.CreateTableStmt) {
+	tableName := tableName(n.Table)
 	if tableName == "" {
 		return
 	}
@@ -72,8 +72,8 @@ func (r *columnCommentConventionOmniRule) checkCreateTable(n *ast.CreateTableStm
 	}
 }
 
-func (r *columnCommentConventionOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
-	tableName := omniTableName(n.Table)
+func (r *columnCommentConventionRule) checkAlterTable(n *ast.AlterTableStmt) {
+	tableName := tableName(n.Table)
 	if tableName == "" {
 		return
 	}
@@ -96,8 +96,8 @@ func (r *columnCommentConventionOmniRule) checkAlterTable(n *ast.AlterTableStmt)
 	}
 }
 
-func (r *columnCommentConventionOmniRule) checkColumn(tableName string, col *ast.ColumnDef) {
-	comment := omniColumnComment(col)
+func (r *columnCommentConventionRule) checkColumn(tableName string, col *ast.ColumnDef) {
+	comment := columnComment(col)
 
 	if comment != "" && r.payload.MaxLength >= 0 && int32(len(comment)) > r.payload.MaxLength {
 		r.AddAdvice(&storepb.Advice{

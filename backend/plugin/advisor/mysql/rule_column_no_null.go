@@ -33,8 +33,8 @@ func (*ColumnNoNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) (
 		return nil, err
 	}
 
-	rule := &columnNoNullOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &columnNoNullRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
@@ -43,7 +43,7 @@ func (*ColumnNoNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) (
 	}
 
 	// Walk all statements to collect columns.
-	RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	RunRules(checkCtx.ParsedStatements, []Rule{rule})
 
 	// Generate advice after walking all statements.
 	rule.generateAdvice()
@@ -61,17 +61,17 @@ func (c columnName) name() string {
 	return fmt.Sprintf("%s.%s", c.tableName, c.columnName)
 }
 
-type columnNoNullOmniRule struct {
-	OmniBaseRule
+type columnNoNullRule struct {
+	BaseRule
 	columnSet     map[string]columnName
 	finalMetadata *model.DatabaseMetadata
 }
 
-func (*columnNoNullOmniRule) Name() string {
+func (*columnNoNullRule) Name() string {
 	return "ColumnNoNullRule"
 }
 
-func (r *columnNoNullOmniRule) OnStatement(node ast.Node) {
+func (r *columnNoNullRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		r.checkCreateTable(n)
@@ -81,7 +81,7 @@ func (r *columnNoNullOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *columnNoNullOmniRule) generateAdvice() {
+func (r *columnNoNullRule) generateAdvice() {
 	var columnList []columnName
 	for _, column := range r.columnSet {
 		columnList = append(columnList, column)
@@ -124,7 +124,7 @@ func (r *columnNoNullOmniRule) generateAdvice() {
 	}
 }
 
-func (r *columnNoNullOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+func (r *columnNoNullRule) checkCreateTable(n *ast.CreateTableStmt) {
 	if n.Table == nil {
 		return
 	}
@@ -144,7 +144,7 @@ func (r *columnNoNullOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
 	}
 }
 
-func (r *columnNoNullOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+func (r *columnNoNullRule) checkAlterTable(n *ast.AlterTableStmt) {
 	if n.Table == nil {
 		return
 	}

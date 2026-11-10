@@ -47,8 +47,8 @@ func (*NamingAutoIncrementColumnAdvisor) Check(_ context.Context, checkCtx advis
 		maxLength = advisor.DefaultNameLengthLimit
 	}
 
-	rule := &namingAutoIncrementColumnOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &namingAutoIncrementColumnRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
@@ -56,20 +56,20 @@ func (*NamingAutoIncrementColumnAdvisor) Check(_ context.Context, checkCtx advis
 		maxLength: maxLength,
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type namingAutoIncrementColumnOmniRule struct {
-	OmniBaseRule
+type namingAutoIncrementColumnRule struct {
+	BaseRule
 	format    *regexp.Regexp
 	maxLength int
 }
 
-func (*namingAutoIncrementColumnOmniRule) Name() string {
+func (*namingAutoIncrementColumnRule) Name() string {
 	return "NamingAutoIncrementColumnRule"
 }
 
-func (r *namingAutoIncrementColumnOmniRule) OnStatement(node ast.Node) {
+func (r *namingAutoIncrementColumnRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		if n.Table == nil {
@@ -93,7 +93,7 @@ func (r *namingAutoIncrementColumnOmniRule) OnStatement(node ast.Node) {
 			}
 			switch cmd.Type {
 			case ast.ATAddColumn, ast.ATModifyColumn, ast.ATChangeColumn:
-				for _, col := range omniGetColumnsFromCmd(cmd) {
+				for _, col := range getColumnsFromCmd(cmd) {
 					if col.AutoIncrement {
 						r.handleAutoIncrementColumn(tableName, col.Name, r.LocToLine(n.Loc))
 					}
@@ -105,7 +105,7 @@ func (r *namingAutoIncrementColumnOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *namingAutoIncrementColumnOmniRule) handleAutoIncrementColumn(tableName, columnName string, lineNumber int32) {
+func (r *namingAutoIncrementColumnRule) handleAutoIncrementColumn(tableName, columnName string, lineNumber int32) {
 	absoluteLine := r.BaseLine + int(lineNumber)
 	if !r.format.MatchString(columnName) {
 		r.AddAdviceAbsolute(&storepb.Advice{

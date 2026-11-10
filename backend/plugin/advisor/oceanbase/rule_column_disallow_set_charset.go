@@ -31,25 +31,25 @@ func (*ColumnDisallowSetCharsetAdvisor) Check(_ context.Context, checkCtx adviso
 		return nil, err
 	}
 
-	rule := &columnDisallowSetCharsetOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &columnDisallowSetCharsetRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type columnDisallowSetCharsetOmniRule struct {
-	OmniBaseRule
+type columnDisallowSetCharsetRule struct {
+	BaseRule
 }
 
-func (*columnDisallowSetCharsetOmniRule) Name() string {
+func (*columnDisallowSetCharsetRule) Name() string {
 	return "ColumnDisallowSetCharsetRule"
 }
 
-func (r *columnDisallowSetCharsetOmniRule) OnStatement(node ast.Node) {
+func (r *columnDisallowSetCharsetRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		r.checkCreateTable(n)
@@ -59,7 +59,7 @@ func (r *columnDisallowSetCharsetOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *columnDisallowSetCharsetOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+func (r *columnDisallowSetCharsetRule) checkCreateTable(n *ast.CreateTableStmt) {
 	if n.Table == nil {
 		return
 	}
@@ -79,7 +79,7 @@ func (r *columnDisallowSetCharsetOmniRule) checkCreateTable(n *ast.CreateTableSt
 	}
 }
 
-func (r *columnDisallowSetCharsetOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+func (r *columnDisallowSetCharsetRule) checkAlterTable(n *ast.AlterTableStmt) {
 	if n.Table == nil {
 		return
 	}

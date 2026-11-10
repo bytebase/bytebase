@@ -39,8 +39,8 @@ func (*StatementWhereMaximumLogicalOperatorCountAdvisor) Check(_ context.Context
 	maximum := int(numberPayload.Number)
 	var allAdvice []*storepb.Advice
 	for _, stmt := range checkCtx.ParsedStatements {
-		rule := &maxLogicalOperatorOmniRule{
-			OmniBaseRule: OmniBaseRule{
+		rule := &maxLogicalOperatorRule{
+			BaseRule: BaseRule{
 				Level: level,
 				Title: checkCtx.Rule.Type.String(),
 			},
@@ -63,21 +63,21 @@ func (*StatementWhereMaximumLogicalOperatorCountAdvisor) Check(_ context.Context
 	return allAdvice, nil
 }
 
-type maxLogicalOperatorOmniRule struct {
-	OmniBaseRule
+type maxLogicalOperatorRule struct {
+	BaseRule
 	maximum int
 }
 
-func (*maxLogicalOperatorOmniRule) Name() string {
+func (*maxLogicalOperatorRule) Name() string {
 	return "StatementWhereMaximumLogicalOperatorCountRule"
 }
 
-func (r *maxLogicalOperatorOmniRule) OnStatement(node ast.Node) {
+func (r *maxLogicalOperatorRule) OnStatement(node ast.Node) {
 	text := strings.TrimSpace(r.StmtText)
 	r.walkNode(node, text)
 }
 
-func (r *maxLogicalOperatorOmniRule) walkNode(node ast.Node, text string) {
+func (r *maxLogicalOperatorRule) walkNode(node ast.Node, text string) {
 	switch n := node.(type) {
 	case *ast.SelectStmt:
 		r.checkSelect(n, text)
@@ -93,7 +93,7 @@ func (r *maxLogicalOperatorOmniRule) walkNode(node ast.Node, text string) {
 	}
 }
 
-func (r *maxLogicalOperatorOmniRule) checkSelect(sel *ast.SelectStmt, text string) {
+func (r *maxLogicalOperatorRule) checkSelect(sel *ast.SelectStmt, text string) {
 	if sel == nil {
 		return
 	}
@@ -109,7 +109,7 @@ func (r *maxLogicalOperatorOmniRule) checkSelect(sel *ast.SelectStmt, text strin
 	r.checkExpr(sel.Where, text)
 }
 
-func (r *maxLogicalOperatorOmniRule) checkExpr(expr ast.ExprNode, text string) {
+func (r *maxLogicalOperatorRule) checkExpr(expr ast.ExprNode, text string) {
 	if expr == nil {
 		return
 	}
@@ -131,7 +131,7 @@ func (r *maxLogicalOperatorOmniRule) checkExpr(expr ast.ExprNode, text string) {
 
 // countOrOperands returns the number of operands in an OR chain.
 // For `a OR b OR c OR d OR e` (4 OR operators), returns 5.
-func (*maxLogicalOperatorOmniRule) countOrOperands(expr ast.ExprNode) int {
+func (*maxLogicalOperatorRule) countOrOperands(expr ast.ExprNode) int {
 	if expr == nil {
 		return 0
 	}
@@ -152,7 +152,7 @@ func (*maxLogicalOperatorOmniRule) countOrOperands(expr ast.ExprNode) int {
 	return count
 }
 
-func (r *maxLogicalOperatorOmniRule) findFirstOrLine(expr ast.ExprNode) int32 {
+func (r *maxLogicalOperatorRule) findFirstOrLine(expr ast.ExprNode) int32 {
 	if expr == nil {
 		return r.ContentStartLine()
 	}
@@ -167,7 +167,7 @@ func (r *maxLogicalOperatorOmniRule) findFirstOrLine(expr ast.ExprNode) int32 {
 	return r.LocToLine(bin.Loc)
 }
 
-func (r *maxLogicalOperatorOmniRule) walkExprForIn(expr ast.ExprNode, text string) {
+func (r *maxLogicalOperatorRule) walkExprForIn(expr ast.ExprNode, text string) {
 	ast.Inspect(expr, func(n ast.Node) bool {
 		e, ok := n.(*ast.InExpr)
 		if !ok {

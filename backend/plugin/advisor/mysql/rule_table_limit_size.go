@@ -37,8 +37,8 @@ func (*MaximumTableSizeAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 		return nil, err
 	}
 
-	rule := &tableLimitSizeOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &tableLimitSizeRule{
+		BaseRule: BaseRule{
 			Level: status,
 			Title: checkCtx.Rule.Type.String(),
 		},
@@ -46,7 +46,7 @@ func (*MaximumTableSizeAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 		dbMetadata: checkCtx.DBSchema,
 	}
 
-	RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	RunRules(checkCtx.ParsedStatements, []Rule{rule})
 
 	// Generate advice based on collected table information.
 	rule.generateAdvice()
@@ -54,18 +54,18 @@ func (*MaximumTableSizeAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 	return rule.GetAdviceList(), nil
 }
 
-type tableLimitSizeOmniRule struct {
-	OmniBaseRule
+type tableLimitSizeRule struct {
+	BaseRule
 	affectedTabNames []string
 	maxRows          int
 	dbMetadata       *metadatapb.DatabaseSchemaMetadata
 }
 
-func (*tableLimitSizeOmniRule) Name() string {
+func (*tableLimitSizeRule) Name() string {
 	return "TableLimitSizeRule"
 }
 
-func (r *tableLimitSizeOmniRule) OnStatement(node ast.Node) {
+func (r *tableLimitSizeRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.AlterTableStmt:
 		r.checkAlterTable(n)
@@ -77,14 +77,14 @@ func (r *tableLimitSizeOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *tableLimitSizeOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+func (r *tableLimitSizeRule) checkAlterTable(n *ast.AlterTableStmt) {
 	if n.Table == nil {
 		return
 	}
 	r.affectedTabNames = append(r.affectedTabNames, n.Table.Name)
 }
 
-func (r *tableLimitSizeOmniRule) checkTruncate(n *ast.TruncateStmt) {
+func (r *tableLimitSizeRule) checkTruncate(n *ast.TruncateStmt) {
 	for _, ref := range n.Tables {
 		if ref != nil {
 			r.affectedTabNames = append(r.affectedTabNames, ref.Name)
@@ -92,7 +92,7 @@ func (r *tableLimitSizeOmniRule) checkTruncate(n *ast.TruncateStmt) {
 	}
 }
 
-func (r *tableLimitSizeOmniRule) checkDropTable(n *ast.DropTableStmt) {
+func (r *tableLimitSizeRule) checkDropTable(n *ast.DropTableStmt) {
 	for _, ref := range n.Tables {
 		if ref != nil {
 			r.affectedTabNames = append(r.affectedTabNames, ref.Name)
@@ -100,7 +100,7 @@ func (r *tableLimitSizeOmniRule) checkDropTable(n *ast.DropTableStmt) {
 	}
 }
 
-func (r *tableLimitSizeOmniRule) generateAdvice() {
+func (r *tableLimitSizeRule) generateAdvice() {
 	if r.dbMetadata != nil && len(r.dbMetadata.Schemas) != 0 {
 		for _, tabName := range r.affectedTabNames {
 			tableRows := getTabRowsByName(tabName, r.dbMetadata.Schemas[0].Tables)

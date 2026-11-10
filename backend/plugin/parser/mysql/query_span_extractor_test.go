@@ -11,7 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func TestOmniQuerySpanScaffold_QueryTypesAndAccessTables(t *testing.T) {
+func TestQuerySpanScaffold_QueryTypesAndAccessTables(t *testing.T) {
 	tests := []struct {
 		name          string
 		statement     string
@@ -88,7 +88,7 @@ func TestOmniQuerySpanScaffold_QueryTypesAndAccessTables(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			span, err := newOmniQuerySpanExtractor("db", newOmniTestQuerySpanContext(), false).getOmniQuerySpan(context.Background(), tc.statement)
+			span, err := newOmniQuerySpanExtractor("db", newTestQuerySpanContext(), false).getOmniQuerySpan(context.Background(), tc.statement)
 			require.NoError(t, err)
 			require.Equal(t, tc.wantType, span.Type)
 			require.Equal(t, sourceColumnSetFromResources(tc.wantResources), span.SourceColumns)
@@ -100,7 +100,7 @@ func TestOmniQuerySpanScaffold_QueryTypesAndAccessTables(t *testing.T) {
 	}
 }
 
-func TestOmniQuerySpanPhase1_SimpleSelectResultColumns(t *testing.T) {
+func TestQuerySpanPhase1_SimpleSelectResultColumns(t *testing.T) {
 	tests := []struct {
 		name      string
 		statement string
@@ -166,7 +166,7 @@ func TestOmniQuerySpanPhase1_SimpleSelectResultColumns(t *testing.T) {
 		},
 	}
 
-	gCtx := newOmniTestQuerySpanContext()
+	gCtx := newTestQuerySpanContext()
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			span, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), tc.statement)
@@ -177,8 +177,8 @@ func TestOmniQuerySpanPhase1_SimpleSelectResultColumns(t *testing.T) {
 	}
 }
 
-func TestOmniQuerySpanPhase2_ExpressionSourceMerging(t *testing.T) {
-	span, err := newOmniQuerySpanExtractor("db", newOmniTestQuerySpanContext(), false).getOmniQuerySpan(
+func TestQuerySpanPhase2_ExpressionSourceMerging(t *testing.T) {
+	span, err := newOmniQuerySpanExtractor("db", newTestQuerySpanContext(), false).getOmniQuerySpan(
 		context.Background(),
 		"SELECT max(a), a-b AS c1, a=b AS c2, a>b, b in (a, c) FROM t",
 	)
@@ -225,14 +225,14 @@ func TestOmniQuerySpanPhase2_ExpressionSourceMerging(t *testing.T) {
 	}, span.Results)
 }
 
-// TestOmniQuerySpanKeywordArgAndWeightString covers the omni AST nodes
+// TestQuerySpanKeywordArgAndWeightString covers the omni AST nodes
 // introduced with the $-token bump: KeywordArg (the unit selector in
 // TIMESTAMPDIFF/TIMESTAMPADD/GET_FORMAT — a keyword, not a column, so no
 // lineage) and WeightStringExpr (lineage follows the real operand).
 // TIMESTAMPDIFF regressed to "unsupported omni MySQL expression" without
 // these cases.
-func TestOmniQuerySpanKeywordArgAndWeightString(t *testing.T) {
-	span, err := newOmniQuerySpanExtractor("db", newOmniTestQuerySpanContext(), false).getOmniQuerySpan(
+func TestQuerySpanKeywordArgAndWeightString(t *testing.T) {
+	span, err := newOmniQuerySpanExtractor("db", newTestQuerySpanContext(), false).getOmniQuerySpan(
 		context.Background(),
 		"SELECT TIMESTAMPDIFF(SECOND, a, b) AS d1, TIMESTAMPADD(MINUTE, 5, a) AS d2, GET_FORMAT(DATE, 'ISO') AS d3, WEIGHT_STRING(c AS CHAR(10)) AS w FROM t",
 	)
@@ -268,7 +268,7 @@ func TestOmniQuerySpanKeywordArgAndWeightString(t *testing.T) {
 	}, span.Results)
 }
 
-func TestOmniQuerySpanPhase3_FromJoinAliasAndScope(t *testing.T) {
+func TestQuerySpanPhase3_FromJoinAliasAndScope(t *testing.T) {
 	tests := []struct {
 		name      string
 		statement string
@@ -305,7 +305,7 @@ func TestOmniQuerySpanPhase3_FromJoinAliasAndScope(t *testing.T) {
 		},
 	}
 
-	gCtx := newOmniTestQuerySpanContext()
+	gCtx := newTestQuerySpanContext()
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			span, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), tc.statement)
@@ -315,8 +315,8 @@ func TestOmniQuerySpanPhase3_FromJoinAliasAndScope(t *testing.T) {
 	}
 }
 
-func TestOmniQuerySpanPhase4_SubqueryExpressions(t *testing.T) {
-	gCtx := newOmniTestQuerySpanContext()
+func TestQuerySpanPhase4_SubqueryExpressions(t *testing.T) {
+	gCtx := newTestQuerySpanContext()
 
 	t.Run("scalar_subquery_results", func(t *testing.T) {
 		span, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(
@@ -357,7 +357,7 @@ func TestOmniQuerySpanPhase4_SubqueryExpressions(t *testing.T) {
 	})
 }
 
-func TestOmniQuerySpanPhase5And6_CTEAndSetOperations(t *testing.T) {
+func TestQuerySpanPhase5And6_CTEAndSetOperations(t *testing.T) {
 	tests := []struct {
 		name      string
 		statement string
@@ -397,7 +397,7 @@ func TestOmniQuerySpanPhase5And6_CTEAndSetOperations(t *testing.T) {
 		},
 	}
 
-	gCtx := newOmniTestQuerySpanContext()
+	gCtx := newTestQuerySpanContext()
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			span, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), tc.statement)
@@ -407,8 +407,8 @@ func TestOmniQuerySpanPhase5And6_CTEAndSetOperations(t *testing.T) {
 	}
 }
 
-func TestOmniQuerySpanPhase7_JSONTable(t *testing.T) {
-	span, err := newOmniQuerySpanExtractor("db", newOmniTestQuerySpanContext(), false).getOmniQuerySpan(
+func TestQuerySpanPhase7_JSONTable(t *testing.T) {
+	span, err := newOmniQuerySpanExtractor("db", newTestQuerySpanContext(), false).getOmniQuerySpan(
 		context.Background(),
 		`SELECT *
 FROM products,
@@ -425,7 +425,7 @@ JSON_TABLE(product_info, '$' COLUMNS (
 	}, span.Results)
 }
 
-func TestOmniQuerySpanPhase9_ResourceNotFoundFailOpen(t *testing.T) {
+func TestQuerySpanPhase9_ResourceNotFoundFailOpen(t *testing.T) {
 	metadata := &metadatapb.DatabaseSchemaMetadata{Name: "db"}
 	databaseMetadataGetter, databaseNameLister := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{metadata})
 	span, err := newOmniQuerySpanExtractor("db", base.GetQuerySpanContext{
@@ -440,8 +440,8 @@ func TestOmniQuerySpanPhase9_ResourceNotFoundFailOpen(t *testing.T) {
 	require.ErrorAs(t, span.NotFoundError, new(*base.ResourceNotFoundError))
 }
 
-func TestOmniQuerySpanSystematicMigrationRegressions(t *testing.T) {
-	gCtx := newOmniTestQuerySpanContext()
+func TestQuerySpanSystematicMigrationRegressions(t *testing.T) {
+	gCtx := newTestQuerySpanContext()
 
 	t.Run("derived_table_column_aliases_are_applied", func(t *testing.T) {
 		span, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(
@@ -539,8 +539,8 @@ FROM t`,
 	})
 }
 
-func TestOmniQuerySpanScenarioBatch1_RootAndQueryTypeCoverage(t *testing.T) {
-	gCtx := newOmniTestQuerySpanContext()
+func TestQuerySpanScenarioBatch1_RootAndQueryTypeCoverage(t *testing.T) {
+	gCtx := newTestQuerySpanContext()
 
 	t.Run("select_family_roots", func(t *testing.T) {
 		tests := []struct {
@@ -632,8 +632,8 @@ func TestOmniQuerySpanScenarioBatch1_RootAndQueryTypeCoverage(t *testing.T) {
 	})
 }
 
-func TestOmniQuerySpanScenarioBatch4_QueryTypeEdges(t *testing.T) {
-	gCtx := newOmniTestQuerySpanContext()
+func TestQuerySpanScenarioBatch4_QueryTypeEdges(t *testing.T) {
+	gCtx := newTestQuerySpanContext()
 
 	t.Run("legacy_query_type_buckets", func(t *testing.T) {
 		tests := []struct {
@@ -668,8 +668,8 @@ func TestOmniQuerySpanScenarioBatch4_QueryTypeEdges(t *testing.T) {
 	})
 }
 
-func TestOmniQuerySpanScenarioBatch1_ExpressionCoverage(t *testing.T) {
-	gCtx := newOmniTestQuerySpanContext()
+func TestQuerySpanScenarioBatch1_ExpressionCoverage(t *testing.T) {
+	gCtx := newTestQuerySpanContext()
 
 	t.Run("quoted_identifier_names", func(t *testing.T) {
 		span, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(
@@ -741,8 +741,8 @@ func TestOmniQuerySpanScenarioBatch1_ExpressionCoverage(t *testing.T) {
 	})
 }
 
-func TestOmniQuerySpanScenarioBatch2_FromJoinAndScopeCoverage(t *testing.T) {
-	gCtx := newOmniTestQuerySpanContext()
+func TestQuerySpanScenarioBatch2_FromJoinAndScopeCoverage(t *testing.T) {
+	gCtx := newTestQuerySpanContext()
 
 	t.Run("table_source_variants", func(t *testing.T) {
 		tests := []struct {
@@ -920,8 +920,8 @@ func TestOmniQuerySpanScenarioBatch2_FromJoinAndScopeCoverage(t *testing.T) {
 	})
 }
 
-func TestOmniQuerySpanScenarioBatch2_SubqueryCTEAndSetCoverage(t *testing.T) {
-	gCtx := newOmniTestQuerySpanContext()
+func TestQuerySpanScenarioBatch2_SubqueryCTEAndSetCoverage(t *testing.T) {
+	gCtx := newTestQuerySpanContext()
 
 	t.Run("subquery_access_locations", func(t *testing.T) {
 		tests := []string{
@@ -1091,8 +1091,8 @@ func TestOmniQuerySpanScenarioBatch2_SubqueryCTEAndSetCoverage(t *testing.T) {
 	})
 }
 
-func TestOmniQuerySpanScenarioBatch4_JSONTableCoverage(t *testing.T) {
-	span, err := newOmniQuerySpanExtractor("db", newOmniTestQuerySpanContext(), false).getOmniQuerySpan(
+func TestQuerySpanScenarioBatch4_JSONTableCoverage(t *testing.T) {
+	span, err := newOmniQuerySpanExtractor("db", newTestQuerySpanContext(), false).getOmniQuerySpan(
 		context.Background(),
 		`SELECT *
 FROM products,
@@ -1112,7 +1112,7 @@ JSON_TABLE(product_info, '$' COLUMNS (
 		{Name: "variant_name", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "products", Column: "product_info"}}), IsPlainField: true},
 	}, span.Results)
 
-	_, err = newOmniQuerySpanExtractor("db", newOmniTestQuerySpanContext(), false).getOmniQuerySpan(
+	_, err = newOmniQuerySpanExtractor("db", newTestQuerySpanContext(), false).getOmniQuerySpan(
 		context.Background(),
 		`SELECT *
 FROM products,
@@ -1123,8 +1123,8 @@ JSON_TABLE(product_info, '$' COLUMNS (
 	require.Error(t, err)
 }
 
-func TestOmniQuerySpanScenarioBatch4_AccessTableExpressions(t *testing.T) {
-	gCtx := newOmniTestQuerySpanContext()
+func TestQuerySpanScenarioBatch4_AccessTableExpressions(t *testing.T) {
+	gCtx := newTestQuerySpanContext()
 
 	tests := []struct {
 		name      string
@@ -1178,9 +1178,9 @@ func TestOmniQuerySpanScenarioBatch4_AccessTableExpressions(t *testing.T) {
 	}
 }
 
-func TestOmniQuerySpanScenarioBatch3_ErrorAndMetadataCoverage(t *testing.T) {
+func TestQuerySpanScenarioBatch3_ErrorAndMetadataCoverage(t *testing.T) {
 	t.Run("error_semantics", func(t *testing.T) {
-		gCtx := newOmniTestQuerySpanContext()
+		gCtx := newTestQuerySpanContext()
 
 		_, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "SELECT a INTO @x FROM t")
 		require.ErrorContains(t, err, "unsupported select statement with into")
@@ -1245,7 +1245,7 @@ func TestOmniQuerySpanScenarioBatch3_ErrorAndMetadataCoverage(t *testing.T) {
 	})
 
 	t.Run("view_lineage", func(t *testing.T) {
-		gCtx := newOmniViewTestQuerySpanContext()
+		gCtx := newViewTestQuerySpanContext()
 
 		span, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "SELECT * FROM v")
 		require.NoError(t, err)
@@ -1262,7 +1262,7 @@ func TestOmniQuerySpanScenarioBatch3_ErrorAndMetadataCoverage(t *testing.T) {
 	})
 
 	t.Run("missing_view_dependency_fails_open", func(t *testing.T) {
-		gCtx := newOmniViewTestQuerySpanContext()
+		gCtx := newViewTestQuerySpanContext()
 		span, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "SELECT * FROM broken_v")
 		require.NoError(t, err)
 		require.Equal(t, base.Select, span.Type)
@@ -1324,7 +1324,7 @@ func TestOmniQuerySpanScenarioBatch3_ErrorAndMetadataCoverage(t *testing.T) {
 
 		for _, tc := range tests {
 			t.Run(tc.name, func(t *testing.T) {
-				span, err := newOmniQuerySpanExtractor("db", newOmniTestQuerySpanContext(), tc.ignoreCaseSensitive).getOmniQuerySpan(context.Background(), tc.statement)
+				span, err := newOmniQuerySpanExtractor("db", newTestQuerySpanContext(), tc.ignoreCaseSensitive).getOmniQuerySpan(context.Background(), tc.statement)
 				require.NoError(t, err)
 				require.Equal(t, tc.wantType, span.Type)
 				require.Equal(t, sourceColumnSetFromResources(tc.wantSource), span.SourceColumns)
@@ -1338,8 +1338,8 @@ func TestOmniQuerySpanScenarioBatch3_ErrorAndMetadataCoverage(t *testing.T) {
 	})
 }
 
-func TestOmniQuerySpanScenarioBatch4_CaseSensitivityCoverage(t *testing.T) {
-	gCtx := newOmniTestQuerySpanContext()
+func TestQuerySpanScenarioBatch4_CaseSensitivityCoverage(t *testing.T) {
+	gCtx := newTestQuerySpanContext()
 
 	t.Run("table_alias_case_sensitivity", func(t *testing.T) {
 		span, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "SELECT X.a FROM t AS x")
@@ -1376,9 +1376,9 @@ func TestOmniQuerySpanScenarioBatch4_CaseSensitivityCoverage(t *testing.T) {
 	})
 }
 
-func TestOmniQuerySpanScenarioBatch5_MetadataCoverage(t *testing.T) {
+func TestQuerySpanScenarioBatch5_MetadataCoverage(t *testing.T) {
 	t.Run("duplicate_database_case_uses_ignore_case_setting", func(t *testing.T) {
-		gCtx := newOmniCaseCollisionTestQuerySpanContext()
+		gCtx := newCaseCollisionTestQuerySpanContext()
 
 		span, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "SELECT DB.t.a FROM DB.t")
 		require.NoError(t, err)
@@ -1404,7 +1404,7 @@ func sourceColumnSetFromResources(resources []base.ColumnResource) base.SourceCo
 	return result
 }
 
-func newOmniViewTestQuerySpanContext() base.GetQuerySpanContext {
+func newViewTestQuerySpanContext() base.GetQuerySpanContext {
 	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
 		Schemas: []*metadatapb.SchemaMetadata{
@@ -1444,7 +1444,7 @@ func newOmniViewTestQuerySpanContext() base.GetQuerySpanContext {
 	}
 }
 
-func newOmniTestQuerySpanContext() base.GetQuerySpanContext {
+func newTestQuerySpanContext() base.GetQuerySpanContext {
 	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
 		Schemas: []*metadatapb.SchemaMetadata{
@@ -1514,7 +1514,7 @@ func newOmniTestQuerySpanContext() base.GetQuerySpanContext {
 	}
 }
 
-func newOmniCaseCollisionTestQuerySpanContext() base.GetQuerySpanContext {
+func newCaseCollisionTestQuerySpanContext() base.GetQuerySpanContext {
 	dbMetadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
 		Schemas: []*metadatapb.SchemaMetadata{

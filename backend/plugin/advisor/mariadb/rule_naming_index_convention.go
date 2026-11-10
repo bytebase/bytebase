@@ -61,8 +61,8 @@ func (*NamingIndexConventionAdvisor) Check(_ context.Context, checkCtx advisor.C
 		maxLength = advisor.DefaultNameLengthLimit
 	}
 
-	rule := &namingIndexOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &namingIndexRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
@@ -72,22 +72,22 @@ func (*NamingIndexConventionAdvisor) Check(_ context.Context, checkCtx advisor.C
 		originalMetadata: checkCtx.OriginalMetadata,
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type namingIndexOmniRule struct {
-	OmniBaseRule
+type namingIndexRule struct {
+	BaseRule
 	format           string
 	maxLength        int
 	templateList     []string
 	originalMetadata *model.DatabaseMetadata
 }
 
-func (*namingIndexOmniRule) Name() string {
+func (*namingIndexRule) Name() string {
 	return "NamingIndexConventionRule"
 }
 
-func (r *namingIndexOmniRule) OnStatement(node ast.Node) {
+func (r *namingIndexRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		r.checkCreateTable(n)
@@ -99,7 +99,7 @@ func (r *namingIndexOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *namingIndexOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+func (r *namingIndexRule) checkCreateTable(n *ast.CreateTableStmt) {
 	if n.Table == nil {
 		return
 	}
@@ -116,7 +116,7 @@ func (r *namingIndexOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
 	r.handleIndexList(indexDataList)
 }
 
-func (r *namingIndexOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+func (r *namingIndexRule) checkAlterTable(n *ast.AlterTableStmt) {
 	tableName := ""
 	if n.Table != nil {
 		tableName = n.Table.Name
@@ -161,7 +161,7 @@ func (r *namingIndexOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
 	r.handleIndexList(indexDataList)
 }
 
-func (r *namingIndexOmniRule) checkCreateIndex(n *ast.CreateIndexStmt) {
+func (r *namingIndexRule) checkCreateIndex(n *ast.CreateIndexStmt) {
 	// Unique, fulltext, spatial index naming convention should be in other rules.
 	if n.Unique || n.Fulltext || n.Spatial {
 		return
@@ -170,7 +170,7 @@ func (r *namingIndexOmniRule) checkCreateIndex(n *ast.CreateIndexStmt) {
 		return
 	}
 	tableName := n.Table.Name
-	columnList := omniIndexColumns(n.Columns)
+	columnList := indexColumns(n.Columns)
 	metaData := map[string]string{
 		advisor.ColumnListTemplateToken: strings.Join(columnList, "_"),
 		advisor.TableNameTemplateToken:  tableName,
@@ -186,7 +186,7 @@ func (r *namingIndexOmniRule) checkCreateIndex(n *ast.CreateIndexStmt) {
 	r.handleIndexList(indexDataList)
 }
 
-func (r *namingIndexOmniRule) handleIndexList(indexDataList []*indexMetaData) {
+func (r *namingIndexRule) handleIndexList(indexDataList []*indexMetaData) {
 	for _, indexData := range indexDataList {
 		regex, err := getTemplateRegexp(r.format, r.templateList, indexData.metaData)
 		if err != nil {
@@ -219,7 +219,7 @@ func (r *namingIndexOmniRule) handleIndexList(indexDataList []*indexMetaData) {
 	}
 }
 
-func (*namingIndexOmniRule) handleConstraint(tableName string, constraint *ast.Constraint, line int) *indexMetaData {
+func (*namingIndexRule) handleConstraint(tableName string, constraint *ast.Constraint, line int) *indexMetaData {
 	// We only focus on normal index.
 	if constraint.Type != ast.ConstrIndex {
 		return nil
@@ -227,7 +227,7 @@ func (*namingIndexOmniRule) handleConstraint(tableName string, constraint *ast.C
 	indexName := constraint.Name
 	columnList := constraint.Columns
 	if len(columnList) == 0 {
-		columnList = omniIndexColumns(constraint.IndexColumns)
+		columnList = indexColumns(constraint.IndexColumns)
 	}
 	metaData := map[string]string{
 		advisor.ColumnListTemplateToken: strings.Join(columnList, "_"),
