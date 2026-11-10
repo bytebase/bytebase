@@ -1223,7 +1223,7 @@
                 {
                   "name": "id",
                   "position": 1,
-                  "default": "AUTO_RANDOM(5)",
+                  "default": "AUTO_RANDOM(5, 54)",
                   "type": "bigint"
                 },
                 {
@@ -1411,7 +1411,7 @@
                 {
                   "name": "id",
                   "position": 1,
-                  "default": "AUTO_RANDOM(5)",
+                  "default": "AUTO_RANDOM(5, 54)",
                   "type": "bigint"
                 },
                 {

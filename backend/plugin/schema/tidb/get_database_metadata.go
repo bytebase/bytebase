@@ -131,8 +131,17 @@ func tidbTableToProto(t *catalog.Table) *metadatapb.TableMetadata {
 		}
 		switch {
 		case col.AutoRandom:
-			// TiDB reports an AUTO_RANDOM column's default as AUTO_RANDOM(<shard bits>).
-			colMeta.Default = fmt.Sprintf("AUTO_RANDOM(%d)", col.AutoRandomShardBits)
+			// Match the native sync (db/tidb/sync.go): bare AUTO_RANDOM when the
+			// shard count is unspecified, AUTO_RANDOM(<bits>) when it is, and
+			// AUTO_RANDOM(<bits>, <range>) when a range is set too.
+			switch {
+			case col.AutoRandomShardBits == 0 && col.AutoRandomRangeBits == 0:
+				colMeta.Default = "AUTO_RANDOM"
+			case col.AutoRandomRangeBits != 0:
+				colMeta.Default = fmt.Sprintf("AUTO_RANDOM(%d, %d)", col.AutoRandomShardBits, col.AutoRandomRangeBits)
+			default:
+				colMeta.Default = fmt.Sprintf("AUTO_RANDOM(%d)", col.AutoRandomShardBits)
+			}
 		case col.AutoIncrement:
 			colMeta.Default = "AUTO_INCREMENT"
 		case col.Default != nil:
