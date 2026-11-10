@@ -1,6 +1,10 @@
 import { useEffect, useMemo } from "react";
 import { useAppDatabase } from "@/hooks/useAppDatabase";
 import {
+  type EffectiveQueryDataPolicy,
+  getEffectiveQueryDataPolicy,
+} from "@/lib/queryDataPolicy";
+import {
   getSQLEditorEditorState,
   useSQLEditorEditorState,
 } from "@/modules/sql-editor/store/editor";
@@ -11,10 +15,7 @@ import { isValidDatabaseName, isValidProjectName } from "@/types";
 import type { Permission } from "@/types/iam";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { InstanceResource } from "@/types/proto-es/v1/instance_service_pb";
-import {
-  PolicyType,
-  type QueryDataPolicy,
-} from "@/types/proto-es/v1/org_policy_service_pb";
+import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
 import type { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { Environment } from "@/types/v1/environment";
 import {
@@ -42,28 +43,6 @@ export const useSQLEditorFeature = (feature: PlanFeature): boolean => {
   return useAppStore((s) => s.hasFeature(feature));
 };
 
-// Normalize unlimited result-row values before merging workspace and project
-// policy limits.
-type FormattedQueryDataPolicy = {
-  disableCopyData: boolean;
-  // Workspace-level only.
-  disableDownload: boolean;
-  allowAdminDataSource: boolean;
-  maximumResultRows: number;
-};
-
-const formatQueryDataPolicy = (
-  policy: QueryDataPolicy | undefined
-): FormattedQueryDataPolicy => {
-  const max = policy?.maximumResultRows ?? -1;
-  return {
-    disableCopyData: policy?.disableCopyData ?? false,
-    disableDownload: policy?.disableDownload ?? false,
-    allowAdminDataSource: policy?.allowAdminDataSource ?? false,
-    maximumResultRows: max <= 0 ? Number.MAX_VALUE : max,
-  };
-};
-
 /**
  * React access to the active project's QueryDataPolicy. Fetches the
  * workspace-level and project-level DATA_QUERY policies and merges them — the project's
@@ -71,7 +50,7 @@ const formatQueryDataPolicy = (
  */
 export const useSQLEditorQueryDataPolicy = (
   project: string
-): FormattedQueryDataPolicy => {
+): EffectiveQueryDataPolicy => {
   const workspaceResourceName = useAppStore((s) => s.workspaceResourceName());
   const workspacePolicy = useAppStore((s) =>
     workspaceResourceName
@@ -102,14 +81,10 @@ export const useSQLEditorQueryDataPolicy = (
     });
   }, [project, getOrFetchPolicyByParentAndType]);
 
-  return useMemo(() => {
-    const ws = formatQueryDataPolicy(workspacePolicy);
-    const proj = formatQueryDataPolicy(projectPolicy);
-    return {
-      ...ws,
-      maximumResultRows: Math.min(ws.maximumResultRows, proj.maximumResultRows),
-    };
-  }, [workspacePolicy, projectPolicy]);
+  return useMemo(
+    () => getEffectiveQueryDataPolicy(workspacePolicy, projectPolicy),
+    [workspacePolicy, projectPolicy]
+  );
 };
 
 /**
