@@ -84,12 +84,19 @@ even where it follows the tables.
 4. **The fold control is named by the bar's text.** Its accessible name is the title, followed by
    the lines where the bar shows them apart from the title. Whatever the title is, the control has
    a name.
-5. **State is words in the bar.** "Resolved", "Outdated" and "Statement unavailable" are text with
-   an icon, never a filled badge.
+5. **State is words in the bar, in the bar's one text color.** "Resolved", "Outdated" and
+   "Statement unavailable" are text with an icon, never a filled badge. Every word and icon in
+   the bar is `text-control`: the title, the state labels and the lines. Only the link differs,
+   in the link color. Nothing in the bar is `text-control-light`, which is 4.4:1 on the bar's
+   background and under the 4.5:1 minimum.
 6. **The footer is there only when the reader can act.** A reader who can neither reply nor resolve
    sees none.
 7. **A place adds content, not a layout.** The Changes section and Activity fill the same bar and
    body differently. Neither draws a different card.
+8. **Folding keeps what the reader typed.** A reply draft and an unsaved edit of a comment are
+   both still there when the card is unfolded, however it came to be folded: by the reader, or
+   because the thread was resolved. Folding is a way to look at a thread and never a way to
+   discard work.
 
 ### Title
 
@@ -161,8 +168,8 @@ composer gain it. The Activity card keeps its full width. Rejected: keeping the 
 Changes section. A box as wide as the code reads as a band of the statement.
 
 **D3 · A title bar names the lines.** Every card starts with a bar, and its title says what the
-thread is on. The bar's text is `text-control`, not `text-control-light`: light text on
-`bg-control-bg` is 4.4:1, under the 4.5:1 minimum. In Activity the lines stay on the right, before
+thread is on. The bar's text is `text-control`, not `text-control-light`, by invariant 5. In
+Activity the lines stay on the right, before
 "View in Statement", which is the order the Activity header has today. Rejected: the range label
 that appears only when two threads' ranges differ. With D1 it would leave most threads with
 nothing saying which lines they are on.
@@ -177,10 +184,15 @@ removes.
 of the bar, with `aria-expanded`. It is the only part of the bar that folds, because in Activity
 the bar also holds a link. In the Changes section it replaces the close button in the author row.
 Rejected: folding only resolved threads. A long open finding cannot be put away while reading the
-rest of the timeline.
+rest of the timeline. An open thread is also where a reader is most likely to be typing, so
+invariant 8 comes with this decision. Today a reply draft survives a fold and an unsaved edit
+does not: `ThreadComment` keeps the edit itself, and a folded card does not render it. Rejected:
+blocking the fold, or asking to confirm it, while an edit is unsaved. A card in Activity also
+folds when someone else resolves its thread, and that fold can be neither blocked nor confirmed.
 
 **D6 · State is a quiet text label in the bar.** "Resolved" moves from the footer into the bar and
-keeps the form `ThreadStateBadge` has today: an icon and text, no fill. "Outdated" and "Statement
+keeps the form `ThreadStateBadge` has today, an icon and text with no fill. Its color changes
+from `text-control-light` to the bar's `text-control`, by invariant 5. "Outdated" and "Statement
 unavailable" take the same form in the same place. Today "Outdated" is an amber badge, which D1
 would leave as the only strong color in the card. Rejected: "Resolved by" with the name.
 `IssueComment` records `thread_state` and nothing about who set it, so the name needs a backend
@@ -227,29 +239,36 @@ there.
 1. **Bar and folding in the Changes section (D3, D4, D5, and "Resolved" from D6).** Depends on
    nothing.
    - Delivers, for a card in the Changes section: the first row of Title; "Resolved" from State
-     labels; the Footer row; the Changes section row of Folding; invariants 3, 4, 5 and 6.
-     `CollapsedThreadRow` goes. Until slice 2 the Activity card is untouched.
-   - Files: `CommentThreadCard.tsx`, `ThreadStack.tsx`, `StatementThreadsLayer.tsx`, and the five
-     locale files for the title.
+     labels; the Footer row; the Changes section row of Folding; invariants 3, 4, 5, 6 and 8.
+     `CollapsedThreadRow` goes. Until slice 2 the Activity card is untouched, apart from the color
+     of "Resolved", which both places draw with `ThreadStateBadge`.
+   - Files: `CommentThreadCard.tsx`, `ThreadStack.tsx`, `StatementThreadsLayer.tsx`,
+     `ThreadStateBadge.tsx`, `ThreadComment.tsx` for the unsaved edit, and the five locale files
+     for the title.
    - Tests: `CommentThreadCard.test.tsx`, `ThreadStack.test.tsx` and
      `StatementThreadsLayer.test.tsx`. They include: the bar is
      the same folded and unfolded, and a folded card shows nothing from the body, by invariant 3;
      folding from the bar updates the layer's state and the stepper's
-     selection; a resolved thread whose reader can neither reply nor resolve has no footer. E2E:
+     selection; a resolved thread whose reader can neither reply nor resolve has no footer; nothing
+     in the bar carries `text-control-light`; a reply draft and an unsaved edit are both back
+     after a fold and an unfold. E2E:
      `frontend/tests/e2e/plan-detail/plan-detail.page.ts` reads `thread-row`, which this slice
      removes, and `plan-detail-review.spec.ts` covers folding and resolving in the Changes section.
 2. **The Activity card takes the bar (D2's shadow; D3, D4 and D5 in Activity; the rest of D6;
    D10).** Depends on slice 1.
    - Delivers, for a card in Activity: the three Activity rows of Title; every row of State
      labels, lines and link; the Excerpt and Footer rows, with the excerpt still in the body and
-     drawn as today; the Activity row of Folding; the frame's shadow. After this slice no card is
-     drawn without a bar, so invariants 2 and 7 hold in full and `ThreadSummary` goes.
+     drawn as today; the Activity row of Folding; the frame's shadow; invariants 5 and 8 in
+     Activity. After this slice no card is drawn without a bar, so invariants 2 and 7 hold in full
+     and `ThreadSummary` goes.
    - Files: `CommentThreadCard.tsx`, `StatementAnchorContext.tsx`, `ReviewActivityTimeline.tsx`,
      `ThreadStack.tsx`, and the five locale files for "Comment on the plan".
    - Tests: `CommentThreadCard.test.tsx` and `StatementAnchorContext.test.tsx`. They include: a
      deleted change and a thread that is not on lines; two folded
      cards whose fold controls have different names; the excerpt renders in the body and not in the
-     bar. E2E: `plan-detail-review.spec.ts` covers folding and resolving in Activity.
+     bar; nothing in the bar carries `text-control-light`, "Outdated" included; an unsaved edit is
+     back after the card folds because its thread was resolved. E2E: `plan-detail-review.spec.ts`
+     covers folding and resolving in Activity.
 3. **No line tints, and the width limit (D1, D2's width).** Depends on slice 1, which gives every
    thread in the Changes section a title that names its lines.
    - Delivers: invariant 1 and every row of On the statement.
