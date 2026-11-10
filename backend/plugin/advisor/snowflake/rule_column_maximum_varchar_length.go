@@ -57,7 +57,7 @@ func (*ColumnMaximumVarcharLengthAdvisor) Check(_ context.Context, checkCtx advi
 		if stmt.AST == nil {
 			continue
 		}
-		node, ok := snowsqlparser.GetOmniNode(stmt.AST)
+		node, ok := snowsqlparser.GetNode(stmt.AST)
 		if !ok {
 			continue
 		}

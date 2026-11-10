@@ -39,7 +39,7 @@ func (*WhereRequireForUpdateDeleteAdvisor) Check(_ context.Context, checkCtx adv
 	}
 
 	for _, stmt := range checkCtx.ParsedStatements {
-		node, ok := snowsqlparser.GetOmniNode(stmt.AST)
+		node, ok := snowsqlparser.GetNode(stmt.AST)
 		if !ok {
 			continue
 		}
