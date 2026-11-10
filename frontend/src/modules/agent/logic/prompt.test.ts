@@ -1,12 +1,20 @@
 // @vitest-environment node
 import { describe, expect, test } from "vitest";
 import { buildSystemPrompt } from "./prompt";
+import { getMaskingSkillGuidance, type MaskingSkillSection } from "./skills";
 
-test("uses permission-aware runtime masking choices and custom type drafts", () => {
-  const prompt = buildSystemPrompt({
-    path: "/semantic-types",
-    title: "Semantic Types",
-  });
+function buildPromptWithMaskingGuidance(
+  pageContext: Parameters<typeof buildSystemPrompt>[0],
+  sections: readonly MaskingSkillSection[] = ["overview"]
+): string {
+  return `${buildSystemPrompt(pageContext)}\n\n${getMaskingSkillGuidance(sections)}`;
+}
+
+test("composes permission-aware masking choices and custom type draft guidance", () => {
+  const prompt = buildPromptWithMaskingGuidance(
+    { path: "/semantic-types", title: "Semantic Types" },
+    ["rule", "semantic-type"]
+  );
   expect(prompt).toContain("ask_masking_semantic_type()");
   expect(prompt).toContain("ask_masking_rule_scope");
   expect(prompt).toContain("prepare_semantic_type_draft");
@@ -22,6 +30,36 @@ test("uses permission-aware runtime masking choices and custom type drafts", () 
 });
 
 describe("buildSystemPrompt", () => {
+  test("keeps unrelated Plan requests free of detailed masking workflows", () => {
+    const prompt = buildSystemPrompt({
+      path: "/projects/orders/plans/7",
+      title: "Plan",
+      context: "projects/orders",
+      referencedProject: "projects/orders",
+      referencedPlan: "projects/orders/plans/7",
+    });
+
+    expect(prompt).not.toContain("prepare_masking_rule_draft");
+    expect(prompt).not.toContain("ask_masking_exemption_scope");
+    expect(prompt).not.toContain("EDIT is review-only");
+    expect(prompt).not.toContain("prefix and suffix");
+    expect(prompt.length).toBeLessThan(16_000);
+    expect(prompt).toContain('get_skill(name="data-masking", section=');
+    expect(prompt).toContain("Selected Plan for this turn");
+    expect(prompt).toContain("does not include Sheet or Release SQL");
+  });
+
+  test("keeps a short always-on masking safety and discovery bridge", () => {
+    const prompt = buildSystemPrompt({ path: "/landing", title: "Workspace" });
+
+    expect(prompt).toContain('section="overview"');
+    expect(prompt).toContain('"rule", "exemption", or "semantic-type"');
+    expect(prompt).toContain("Never read or query real row values");
+    expect(prompt).toContain("via APIs or DOM actions");
+    expect(prompt).toContain("member-clicked typed drafts");
+    expect(prompt).toContain("local unsaved forms");
+  });
+
   test("respects no-persistence SQL review despite SQL Editor auto-save", () => {
     const prompt = buildSystemPrompt({
       path: "/sql-editor/projects/orders",
@@ -41,16 +79,15 @@ describe("buildSystemPrompt", () => {
     expect(prompt).toContain("return the SQL inline in chat instead");
     expect(prompt).toContain("Do not equate not executed with not saved");
     expect(prompt).toContain(
-      "The typed Plan and masking draft handoffs remain local, unsaved forms"
+      "The typed Plan draft handoff remains local and unsaved"
     );
   });
 
   test("uses code-owned exemption scope choices instead of model-generated alternatives", () => {
-    const prompt = buildSystemPrompt({
-      path: "/landing",
-      title: "Home",
-      context: "projects/orders",
-    });
+    const prompt = buildPromptWithMaskingGuidance(
+      { path: "/landing", title: "Home", context: "projects/orders" },
+      ["exemption"]
+    );
     expect(prompt).toContain("call ask_masking_exemption_scope()");
     expect(prompt).toContain("The only optional argument is database");
     expect(prompt).toContain("Do not pass a question, options, or a default");
@@ -61,11 +98,10 @@ describe("buildSystemPrompt", () => {
   });
 
   test("keeps exemption expiration and member questions on generic ask_user", () => {
-    const prompt = buildSystemPrompt({
-      path: "/landing",
-      title: "Home",
-      context: "projects/orders",
-    });
+    const prompt = buildPromptWithMaskingGuidance(
+      { path: "/landing", title: "Home", context: "projects/orders" },
+      ["exemption"]
+    );
 
     expect(prompt).toContain(
       "For expiration and member questions, use ask_user without purpose"
@@ -91,12 +127,15 @@ describe("buildSystemPrompt", () => {
   });
 
   test("reviews current existing-rule fields without preparing a replacement", () => {
-    const prompt = buildSystemPrompt({
-      path: "/settings/global-masking",
-      title: "Global Masking",
-      context: "workspaces/default",
-      maskingPage: { kind: "global-masking" },
-    });
+    const prompt = buildPromptWithMaskingGuidance(
+      {
+        path: "/settings/global-masking",
+        title: "Global Masking",
+        context: "workspaces/default",
+        maskingPage: { kind: "global-masking" },
+      },
+      ["rule"]
+    );
 
     expect(prompt).toContain("EDIT is review-only");
     expect(prompt).toContain("current unsaved values, not saved policy");
@@ -104,18 +143,17 @@ describe("buildSystemPrompt", () => {
       "Only CREATE supports full-rule preparation and Apply to draft"
     );
     expect(prompt).toContain(
-      "Never prepare a full-rule replacement for an existing-rule editor"
+      "Never prepare or apply a full-rule replacement in EDIT"
     );
   });
 
   test.each(["workspaces/default", "projects/orders"])(
     "requires a prepared draft for ready masking setup in %s",
     (context) => {
-      const prompt = buildSystemPrompt({
-        path: "/landing",
-        title: "Workspace",
-        context,
-      });
+      const prompt = buildPromptWithMaskingGuidance(
+        { path: "/landing", title: "Workspace", context },
+        ["rule"]
+      );
 
       expect(prompt).toContain(
         "MUST call prepare_masking_rule_draft before done"
@@ -184,18 +222,18 @@ describe("buildSystemPrompt", () => {
   });
 
   test("uses masking configuration evidence and synthetic-only previews on masking pages", () => {
-    const prompt = buildSystemPrompt({
+    const prompt = buildPromptWithMaskingGuidance({
       path: "/settings/global-masking",
       title: "Masking",
       context: "workspaces/default",
       maskingPage: { kind: "global-masking" },
     });
 
-    expect(prompt).toContain("call get_masking_overview");
+    expect(prompt).toMatch(/call get_masking_overview/i);
     expect(prompt).toContain("synthetic values only");
     expect(prompt).toMatch(/never read or query real row values/i);
     expect(prompt).toContain(
-      "Never change masking rules, semantic types, classifications, or exemptions"
+      "Never change saved masking rules, semantic types, classifications, catalog metadata, or exemptions via APIs or DOM actions"
     );
     expect(prompt).toContain("prefix and suffix cover the whole value");
     expect(prompt).toContain("interior is masked");
@@ -206,27 +244,29 @@ describe("buildSystemPrompt", () => {
   test.each(["workspaces/default", "projects/orders"])(
     "discovers permission-aware masking setup from ordinary %s chats",
     (context) => {
-      const prompt = buildSystemPrompt({
+      const prompt = buildPromptWithMaskingGuidance({
         path: "/landing",
         title: "Workspace",
         context,
       });
 
-      expect(prompt).toContain('get_skill(name="data-masking")');
-      expect(prompt).toContain("call get_masking_overview");
+      expect(prompt).toContain(
+        'get_skill(name="data-masking", section="overview")'
+      );
+      expect(prompt).toMatch(/call get_masking_overview/i);
       expect(prompt).toContain("even from a workspace or project chat");
       expect(prompt).toContain(
-        "before claiming current configuration or setup eligibility"
+        "before describing settings, choosing an existing semantic type, recommending setup, or claiming configure access"
       );
       expect(prompt).toContain("exact missing permissions and resource scope");
       expect(prompt).toContain("Block only that step and its dependent steps");
       expect(prompt).toContain("continue independent allowed steps");
-      expect(prompt).toContain("unknown or needs-scope");
+      expect(prompt).toContain("Unknown/needs-scope is unverified");
       expect(prompt).toContain(
         "unavailable facet is not proof of permission denial"
       );
       expect(prompt).toContain(
-        "feature availability separately from permissions"
+        "Check read and configure permissions separately from features"
       );
       expect(prompt).toContain("Re-read get_masking_overview");
       expect(prompt).toContain("Never read or query real row values");
@@ -237,16 +277,18 @@ describe("buildSystemPrompt", () => {
   );
 
   test("keeps read-only masking discovery available for landing starters", () => {
-    const prompt = buildSystemPrompt({
+    const prompt = buildPromptWithMaskingGuidance({
       path: "/projects/orders",
       title: "Orders",
       context: "projects/orders",
       runMode: "read-only",
     });
 
-    expect(prompt).toContain('get_skill(name="data-masking")');
-    expect(prompt).toContain("call get_masking_overview");
-    expect(prompt).toContain("Never change masking rules");
+    expect(prompt).toContain(
+      'get_skill(name="data-masking", section="overview")'
+    );
+    expect(prompt).toMatch(/call get_masking_overview/i);
+    expect(prompt).toContain("Never change saved masking rules");
     expect(prompt).toContain("catalog metadata");
   });
 
@@ -312,7 +354,7 @@ describe("buildSystemPrompt", () => {
   test("requests useful English follow-up questions that send on click", () => {
     const prompt = buildSystemPrompt({ path: "/landing", title: "Workspace" });
     expect(prompt).toContain(
-      "one primary action: Open, draft-plan, draft-issue-comment, or draft-masking-rule"
+      "at most one primary action: Open, draft-plan, or draft-issue-comment"
     );
     expect(prompt).toContain("current-turn overview evidence");
     expect(prompt).toContain("2-3 distinct, contextual Continue questions");
@@ -488,13 +530,16 @@ describe("buildSystemPrompt", () => {
     expect(selectedPrompt).toContain("opens a populated, unsaved Plan");
     expect(selectedPrompt).toContain("never persists or executes SQL");
     expect(selectedPrompt).toContain(
-      "one primary action: Open, draft-plan, draft-issue-comment, or draft-masking-rule"
+      "at most one primary action: Open, draft-plan, or draft-issue-comment"
     );
     expect(unselectedPrompt).not.toContain("generated DDL");
   });
 
   test("leaves masking draft actions to the current-run runtime handoff", () => {
-    const prompt = buildSystemPrompt({ path: "/landing", title: "Workspace" });
+    const prompt = buildPromptWithMaskingGuidance(
+      { path: "/landing", title: "Workspace" },
+      ["rule"]
+    );
 
     expect(prompt).toContain(
       "runtime supplies the latest eligible current-run masking draft action"

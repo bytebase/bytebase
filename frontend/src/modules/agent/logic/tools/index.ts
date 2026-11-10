@@ -20,7 +20,16 @@ import { GetDatabaseRequestSchema } from "@/types/proto-es/v1/database_service_p
 import { GetIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { GetPlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { GetProjectRequestSchema } from "@/types/proto-es/v1/project_service_pb";
-import { getSkill, type GetSkillArgs } from "../skills";
+import {
+  resolveSkill,
+  type GetSkillArgs,
+  type MaskingSkillSection,
+  type SkillLoadResult,
+} from "../skills";
+import {
+  getMaskingSectionsForPage,
+  isMaskingToolEnabled,
+} from "../maskingSkillContext";
 import { normalizeAgentHandoff } from "../handoff";
 import { normalizeAgentResponseActions } from "../responseActions";
 import {
@@ -36,11 +45,6 @@ import {
   getMaskingExemptionEditorSnapshot,
   type MaskingExemptionEditorSnapshot,
 } from "../maskingExemptionDraftTarget";
-import {
-  maskingDraftSetupInstruction,
-  maskingExemptionDraftSetupInstruction,
-  maskingExemptionScopeInstruction,
-} from "../maskingDraftWorkflow";
 import {
   getMaskingRuleEditorSnapshot,
   type MaskingRuleEditorSnapshot,
@@ -357,13 +361,16 @@ const targetsSelectedPlan = (
   return (args.body as Record<string, unknown>).name === referencedPlan;
 };
 
+export interface AgentToolDefinitionOptions {
+  runMode?: AgentRunMode;
+  referencedProject?: string;
+  instanceName?: string;
+  maskingPage?: AgentMaskingPageResource;
+  maskingSections?: readonly MaskingSkillSection[];
+}
+
 export function getToolDefinitions(
-  options: {
-    runMode?: AgentRunMode;
-    referencedProject?: string;
-    instanceName?: string;
-    maskingPage?: AgentMaskingPageResource;
-  } = {}
+  options: AgentToolDefinitionOptions = {}
 ): ToolDefinition[] {
   const referencedProject = isCanonicalProjectName(options.referencedProject)
     ? options.referencedProject
@@ -648,16 +655,8 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
     },
     {
       name: "get_skill",
-      description: `Get step-by-step workflow guides for common Bytebase tasks. Load a skill before performing multi-step operations.
-
-| Mode | Parameters | Result |
-|------|------------|--------|
-| List | (none) | All available skills |
-| Load | name="query" | Step-by-step workflow guide |
-
-**Available skills:** query, database-change, grant-permission, data-masking
-
-**Workflow:** get_skill() → get_skill(name="...") → follow the guide using its relevant read tools; masking guidance uses get_masking_overview and never changes settings.`,
+      description:
+        "Load a registered workflow before multi-step work. Omit name to list skills: query, database-change, grant-permission, data-masking. Masking defaults to overview; load rule, exemption, or semantic-type for that workflow. A masking load supplies its guidance and tools in the next request, never permission to change settings.",
       parametersSchema: {
         type: "object",
         properties: {
@@ -666,12 +665,19 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
             description:
               'Skill name to load. Omit to list all skills. Examples: "query", "database-change", "grant-permission", "data-masking"',
           },
+          section: {
+            type: "string",
+            enum: ["overview", "rule", "exemption", "semantic-type"],
+            description:
+              "For data-masking only. Specialized sections include overview.",
+          },
         },
       },
     },
     {
       name: "ask_masking_exemption_scope",
-      description: maskingExemptionScopeInstruction,
+      description:
+        "Ask for project exemption scope using current permission-aware, unselected runtime choices. Optional database is only a candidate. Load the masking exemption guide before use.",
       parametersSchema: {
         type: "object",
         properties: {
@@ -687,7 +693,7 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
     {
       name: "ask_user",
       description:
-        "Ask the user for missing information, confirmation, or an explicit choice. Use kind='input' for free-form text, kind='confirm' for confirm/cancel decisions, and kind='choose' with options=[{label,value}] for ordinary choices such as exemption expiration or custom algorithm parameters. This tool always pairs your prompt with your options; do not specify purpose. Use ask_masking_semantic_type for masking-method selection so runtime lists all readable semantic types and permission-gates custom creation; never substitute a full/partial-only choice. Use ask_masking_rule_scope for missing global-rule scope and ask_masking_exemption_scope for missing project exemption scope. These runtime tools supply permission-aware scope options; use a separate database picker only when a specific database remains unresolved. For a database input default, set kind='input', resourceKind='database', and defaultValue to the exact canonical database name in the current Project; runtime verifies it and displays a bound database mention. Omit defaultValue when the member still needs to select a database. Use resourceKind='none' for ordinary preferences, even when the question concerns a database. For choices, only use resourceKind='database' when every option is a database with a canonical resource-name value; never mix scope intents into that picker. Labels are refreshed from the API. If a choice is rejected, correct its options or resourceKind and retry kind='choose' rather than changing it to input.",
+        "Ask for missing information or a choice: input, confirm, or choose with options. resourceKind describes option values, not question context: none for ordinary preferences, database only for verified canonical databases in the current Project. Never mix database and scope-intent choices. Use the loaded masking workflow's dedicated scope/type pickers, not fabricated alternatives. A clarification is not approval for a write API.",
       parametersSchema: {
         type: "object",
         properties: {
@@ -750,11 +756,7 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
     {
       name: "done",
       description:
-        maskingExemptionDraftSetupInstruction +
-        " " +
-        `${maskingDraftSetupInstruction} ` +
-        "After successful prepare_semantic_type_draft, runtime supplies a draft-semantic-type action to open the unsaved Semantic Types form; the member must confirm the new row to save it. Refresh settings and use the actual saved type ID before continuing a masking rule. " +
-        "Complete the current task explicitly. Provide final user-visible text, success, and actions. For a successful answer, use at most one primary action: Open for an evidenced next step, draft-plan for generated DDL grounded in this turn's selected @Database, draft-issue-comment for an unsent review, or draft-masking-rule for a prepared unsaved rule. After successful masking preparation, the runtime supplies the latest eligible current-run masking draft action; you do not need to repeat its opaque draft ID or add a competing Open action. A draft-plan action names only its project and database; put the SQL in exactly one fenced `sql` block in text, never in the action. If clicked while the member is already on that project's Plan-create page, the runtime applies SQL only to that unsaved Plan when its sole target is the same database, prompting append or replace when SQL already exists. It never persists or executes SQL. Normally include 2-3 distinct, contextual Continue questions in English, with or without a primary action. Include fewer or none when no further meaningful questions exist; do not invent filler. Use actions: [] for a failed answer or when no useful action exists. Actions require a member click; the runtime validates their targets. Never open, apply, or save automatically.",
+        "Finish explicitly with final text, success, and actions. Use at most one evidenced member-clicked primary action plus up to three distinct contextual Continue questions in English; fewer or none when not useful. Use actions: [] on failure. Put generated DDL in one fenced sql block in text, never the action payload. Runtime supplies eligible prepared masking actions. Never open, apply, post, save, approve, or execute automatically.",
       parametersSchema: {
         type: "object",
         properties: {
@@ -872,8 +874,7 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
     {
       name: "prepare_masking_rule_draft",
       description:
-        `${maskingDraftSetupInstruction} ` +
-        "Validate and prepare a temporary NEW global masking rule or a refinement of the current unsaved rule in CREATE mode only. Never prepare a full-rule replacement for an existing-rule editor: EDIT is review-only. Does not open, apply, or save anything. First confirm which DATABASES the rule should cover: all users describes the audience, not database scope, and project chat context is not consent. Reuse an explicitly confirmed scope from this chat. Use observed semantic type IDs and selector-supported conditions only. Runtime independently adds verified project/database restrictions and rechecks permissions/features. Show the returned scope, condition, type and synthetic effect, then finish successfully with done; the runtime supplies the latest eligible current-run masking draft action. Do not require the member to copy a draft ID or claim no button is available because you omitted it. The member clicks Open rule draft or Apply to draft; only the page Create rule button saves. After a resumed run or source change, read the current form and prepare again. Never open, apply, or save automatically, or claim it has been applied or saved.",
+        "Prepare a NEW unsaved global rule or refine its CREATE editor after confirming database scope. EDIT is review-only. Runtime validates selector-compatible conditions, observed semantic type IDs, scope, permissions, features, and editor revision. No opening or saving occurs; finish with done and the runtime supplies the member-clicked draft action. Follow the loaded rule guide.",
       parametersSchema: {
         type: "object",
         properties: {
@@ -910,8 +911,7 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
     {
       name: "get_masking_overview",
       description:
-        `${maskingDraftSetupInstruction} ` +
-        "Read a bounded masking configuration and step-by-step setup eligibility snapshot from any workspace or project chat. It returns the signed-in member's separate read/configure permission checks, exact scoped missing permissions, unknown states, and feature availability for semantic types, classifications, global masking rules, catalog assignments, and project exemptions. The default semantic-type catalog is capped at 100; pass semanticTypeId to verify the exact selected or newly saved type even beyond that limit. An exact lookup returns only that matching type, or an explicit not-found result, without exposing salts; algorithm configurations retain their truncation metadata. A project chat stays bound to its project. A workspace chat may select an accessible exact project; select a database only with its project to inspect catalog metadata. It excludes exemption member identities, MD5 salts, credentials, and all row values. Never changes settings; use synthetic values only for illustrative previews. Use before claiming current configuration or that a setup step is permitted or blocked.",
+        "Read bounded current masking configuration and separate read/configure/feature eligibility. A project chat stays bound to its project; a workspace chat may select an accessible project. Database requires its project. Catalog defaults to 100 semantic types; semanticTypeId verifies one exact type beyond that cap, without salts. Unavailable/partial facets do not prove absence or denied access. No settings changes or row values; follow the loaded overview guide.",
       parametersSchema: {
         type: "object",
         properties: {
@@ -972,7 +972,8 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
     },
     {
       name: "prepare_masking_exemption_draft",
-      description: maskingExemptionDraftSetupInstruction,
+      description:
+        "Prepare a NEW unsaved project exemption using explicitly confirmed scope, members, condition, and expiration. Runtime revalidates permissions, features, and editor revision. Does not open, apply, or save; finish with done for a member-clicked draft action. Follow the loaded exemption guide.",
       parametersSchema: {
         type: "object",
         properties: {
@@ -1139,13 +1140,20 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
     });
   }
 
+  const sections =
+    options.maskingSections ?? getMaskingSectionsForPage(options.maskingPage);
+  const enabledTools = tools.filter((tool) =>
+    isMaskingToolEnabled(tool.name, sections)
+  );
   if (referencedProject) {
-    return tools.filter((tool) => REFERENCED_PROJECT_TOOL_NAMES.has(tool.name));
+    return enabledTools.filter((tool) =>
+      REFERENCED_PROJECT_TOOL_NAMES.has(tool.name)
+    );
   }
   if (options.runMode === "read-only") {
-    return tools.filter((tool) => READ_ONLY_TOOL_NAMES.has(tool.name));
+    return enabledTools.filter((tool) => READ_ONLY_TOOL_NAMES.has(tool.name));
   }
-  return tools.filter(
+  return enabledTools.filter(
     (tool) =>
       (Boolean(referencedProject) || tool.name !== "get_project_open_issues") &&
       (Boolean(referencedProject) ||
@@ -1156,6 +1164,7 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
 }
 
 interface CreateToolExecutorOptions {
+  onSkillLoaded?: (load: Extract<SkillLoadResult, { kind: "loaded" }>) => void;
   chatId?: string;
   canUseCurrentPage?: () => boolean;
   userName?: string;
@@ -1726,8 +1735,25 @@ export function createToolExecutor(
             return await domActionTool(args as unknown as DomActionArgs);
           })
         );
-      case "get_skill":
-        return toToolResult(await getSkill(args as GetSkillArgs));
+      case "get_skill": {
+        const load = resolveSkill(args as GetSkillArgs);
+        if (load.kind === "error") {
+          return toToolResult(
+            JSON.stringify({ kind: "error", message: load.message })
+          );
+        }
+        if (load.kind === "listed") return toToolResult(load.content);
+        options.onSkillLoaded?.(load);
+        return toToolResult(
+          load.name === "data-masking"
+            ? JSON.stringify({
+                kind: "loaded",
+                name: load.name,
+                section: load.section,
+              })
+            : load.content
+        );
+      }
       case "prepare_semantic_type_draft": {
         if (!options.workspaceName || !options.userName || !options.chatId)
           return toToolResult(

@@ -11,6 +11,7 @@ import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { AIChatResponse_StopReason } from "@/types/proto-es/v1/ai_service_pb";
 import type { DomRefSuggestion } from "../dom";
 import type { AgentMaskingPageResource } from "../logic/chatContext";
+import type { createToolExecutor } from "../logic/tools";
 import type { AgentPendingAsk } from "../logic/types";
 import { createAgentStore, useAgentStore } from "../store/agent";
 import {
@@ -436,6 +437,52 @@ afterEach(() => {
 });
 
 describe("AgentInput", () => {
+  test("resolves masking tools and registered guidance after a trusted skill load", async () => {
+    mocks.runAgentLoop.mockImplementation(
+      async (_history, _tools, _execute, _callbacks, _signal, options) => {
+        expect(options.resolveRequestContext().systemGuidance).toBe("");
+        const executorCalls = mocks.createToolExecutor.mock.calls as unknown as
+          Parameters<typeof createToolExecutor>[];
+        const executorOptions = executorCalls.at(-1)?.[1];
+        expect(executorOptions?.onSkillLoaded).toBeTypeOf("function");
+        executorOptions?.onSkillLoaded?.({
+          kind: "loaded",
+          name: "data-masking",
+          section: "rule",
+          content: "ignored result text",
+        });
+        const context = options.resolveRequestContext();
+        expect(context.systemGuidance).toContain("# Data Masking");
+        expect(context.systemGuidance).not.toContain("ignored result text");
+        expect(mocks.getToolDefinitions).toHaveBeenLastCalledWith(
+          expect.objectContaining({ maskingSections: ["rule"] })
+        );
+        return { kind: "completed", totalTokensUsed: 0 };
+      }
+    );
+    const store = useAgentStore.getState();
+    store.setDraft(store.currentChatId!, { text: "Help with masking" });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    try {
+      await act(async () => {
+        view.container.querySelector("textarea")!.dispatchEvent(
+          new KeyboardEvent("keydown", {
+            key: "Enter",
+            bubbles: true,
+            cancelable: true,
+          })
+        );
+      });
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+      expect(
+        useAgentStore.getState().getChat(store.currentChatId!)?.status
+      ).not.toBe("error");
+    } finally {
+      view.unmount();
+    }
+  });
+
   test.each([undefined, "", " \n\t "])(
     "uses visible fallback confirmation labels for %j custom labels",
     async (label) => {
@@ -1568,6 +1615,7 @@ describe("AgentInput", () => {
     );
     expect(mocks.getToolDefinitions).toHaveBeenCalledWith({
       runMode: "read-only",
+      maskingSections: [],
     });
     expect(mocks.createToolExecutor).toHaveBeenCalledWith(
       expect.anything(),
@@ -1848,6 +1896,7 @@ describe("AgentInput", () => {
     );
     expect(mocks.getToolDefinitions).toHaveBeenCalledWith({
       runMode: "read-only",
+      maskingSections: [],
     });
     expect(
       useAgentStore
@@ -2377,7 +2426,7 @@ describe("AgentInput", () => {
     view.unmount();
   });
 
-  test("generates three contextual questions for an accepted action without Continue", async () => {
+  test("keeps an accepted action without generating Continue questions", async () => {
     mocks.aiChat.mockResolvedValue({
       content: JSON.stringify([
         "What information do I need to connect a new instance?",
@@ -2442,17 +2491,13 @@ describe("AgentInput", () => {
       kind: "transfer-project-databases",
       project: "projects/orders",
     });
-    expect(answer?.metadata?.actions).toEqual([
-      { kind: "continue", prompt: "What information do I need to connect a new instance?" },
-      { kind: "continue", prompt: "Which databases can I transfer?" },
-      { kind: "continue", prompt: "How do I verify the transfer?" },
-    ]);
-    expect(mocks.aiChat).toHaveBeenCalledOnce();
-    expect(useAgentStore.getState().getChat(chat.id)?.totalTokensUsed).toBe(7);
+    expect(answer?.metadata?.actions).toBeUndefined();
+    expect(mocks.aiChat).not.toHaveBeenCalled();
+    expect(useAgentStore.getState().getChat(chat.id)?.totalTokensUsed).toBe(0);
     view.unmount();
   });
 
-  test("records each model response once while automatically adding follow-up questions", async () => {
+  test("records the main response once without a follow-up provider call", async () => {
     mocks.aiChat.mockResolvedValue({
       content: '["What should I do next?", "How can I verify this?"]',
       toolCalls: [],
@@ -2471,13 +2516,14 @@ describe("AgentInput", () => {
     const view = renderIntoContainer(<AgentInput />);
     view.render();
     await act(async () => {
-      await vi.waitFor(() => expect(store.getChat(chat.id)?.totalTokensUsed).toBe(150));
+      await vi.waitFor(() => expect(store.getChat(chat.id)?.status).toBe("idle"));
     });
+    expect(store.getChat(chat.id)?.totalTokensUsed).toBe(120);
     expect(store.getChat(chat.id)?.lastRunUsage?.calls).toEqual([
       { purpose: "agent", toolNames: ["done"], totalTokens: 120, inputTokens: 100, outputTokens: 20 },
-      { purpose: "follow-up", toolNames: [], totalTokens: 30, inputTokens: 20, outputTokens: 10 },
     ]);
-    expect(store.getMessages(chat.id).find(message => message.content === "Two changes need your review.")?.metadata?.actions).toHaveLength(2);
+    expect(store.getMessages(chat.id).find(message => message.content === "Two changes need your review.")?.metadata?.actions).toBeUndefined();
+    expect(mocks.aiChat).not.toHaveBeenCalled();
     view.unmount();
   });
 
@@ -2505,7 +2551,7 @@ describe("AgentInput", () => {
     view.unmount();
   });
 
-  test("generates follow-up questions for a successful answer without a primary action", async () => {
+  test("keeps a successful answer without a primary action or generated questions", async () => {
     mocks.aiChat.mockResolvedValue({
       content: JSON.stringify([
         "Which change should I review first?",
@@ -2531,20 +2577,16 @@ describe("AgentInput", () => {
         expect(
           useAgentStore.getState().getMessages(chat.id).find((message) =>
             message.content === "Two changes need your review."
-          )?.metadata?.actions
-        ).toHaveLength(2)
+          )?.content
+        ).toBe("Two changes need your review.")
       );
     });
-    expect(mocks.aiChat).toHaveBeenCalledOnce();
-    expect(useAgentStore.getState().getChat(chat.id)?.totalTokensUsed).toBe(5);
+    expect(mocks.aiChat).not.toHaveBeenCalled();
+    expect(useAgentStore.getState().getChat(chat.id)?.totalTokensUsed).toBe(0);
     view.unmount();
   });
 
-  test("keeps a completed answer when optional follow-up generation is canceled", async () => {
-    let resolveFollowUp!: (value: unknown) => void;
-    mocks.aiChat.mockImplementation(
-      () => new Promise((resolve) => (resolveFollowUp = resolve))
-    );
+  test("releases the completed answer's controller without a pending suggestion request", async () => {
     mocks.runAgentLoop.mockImplementation(
       async (_history, _tools, _executor, callbacks) => {
         callbacks.onAssistantMessage({
@@ -2583,7 +2625,9 @@ describe("AgentInput", () => {
     const view = renderIntoContainer(<AgentInput />);
     view.render();
     await act(async () => {
-      await vi.waitFor(() => expect(mocks.aiChat).toHaveBeenCalledOnce());
+      await vi.waitFor(() =>
+        expect(useAgentStore.getState().getChat(chat.id)?.status).toBe("idle")
+      );
     });
 
     const completedAnswer = useAgentStore
@@ -2595,16 +2639,8 @@ describe("AgentInput", () => {
       project: "projects/orders",
     });
     expect(useAgentStore.getState().getChat(chat.id)?.status).toBe("idle");
-
-    act(() => useAgentStore.getState().cancel(chat.id, "user"));
-    await act(async () => {
-      resolveFollowUp({
-        content: '["What should I check on the issue?"]',
-        toolCalls: [],
-        stopReason: AIChatResponse_StopReason.TURN_COMPLETED,
-      });
-    });
-
+    expect(useAgentStore.getState().getAbortController(chat.id)).toBeNull();
+    expect(mocks.aiChat).not.toHaveBeenCalled();
     expect(
       useAgentStore
         .getState()
@@ -2615,11 +2651,7 @@ describe("AgentInput", () => {
     view.unmount();
   });
 
-  test("counts a late suggestion call without attaching it to an older turn", async () => {
-    let resolveFollowUp!: (value: unknown) => void;
-    mocks.aiChat.mockImplementation(
-      () => new Promise((resolve) => (resolveFollowUp = resolve))
-    );
+  test("starts the next turn without leaving suggestion work on the completed answer", async () => {
     mocks.runAgentLoop
       .mockImplementationOnce(async (_history, _tools, _executor, callbacks) => {
         callbacks.onAssistantMessage({
@@ -2661,7 +2693,9 @@ describe("AgentInput", () => {
     const view = renderIntoContainer(<AgentInput />);
     view.render();
     await act(async () => {
-      await vi.waitFor(() => expect(mocks.aiChat).toHaveBeenCalledOnce());
+      await vi.waitFor(() =>
+        expect(useAgentStore.getState().getChat(chat.id)?.status).toBe("idle")
+      );
     });
 
     act(() => {
@@ -2674,16 +2708,8 @@ describe("AgentInput", () => {
     await act(async () => {
       await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledTimes(2));
     });
-    await act(async () => {
-      resolveFollowUp({
-        content: '["What else should I review?"]',
-        toolCalls: [],
-        stopReason: AIChatResponse_StopReason.TURN_COMPLETED,
-        usage: { totalTokens: 7 },
-      });
-    });
-
-    expect(useAgentStore.getState().getChat(chat.id)?.totalTokensUsed).toBe(7);
+    expect(mocks.aiChat).not.toHaveBeenCalled();
+    expect(useAgentStore.getState().getChat(chat.id)?.totalTokensUsed).toBe(0);
     expect(
       useAgentStore
         .getState()
@@ -2700,7 +2726,7 @@ describe("AgentInput", () => {
     view.unmount();
   });
 
-  test("tops up an existing question when Open matches current-turn evidence", async () => {
+  test.each([0, 1, 2, 3])("preserves %i validated Continue questions without a post-answer provider call", async (questionCount) => {
     mocks.aiChat.mockResolvedValue({
       content: JSON.stringify([
         "What should I configure first?",
@@ -2749,7 +2775,11 @@ describe("AgentInput", () => {
                 project: "projects/orders",
               },
             },
-            { kind: "continue", prompt: "What should I configure first?" },
+            ...[
+              { kind: "continue" as const, prompt: "What should I configure first?" },
+              { kind: "continue" as const, prompt: "How can I test the connection?" },
+              { kind: "continue" as const, prompt: "How do I assign a database afterward?" },
+            ].slice(0, questionCount),
           ],
           totalTokensUsed: 0,
         };
@@ -2791,25 +2821,27 @@ describe("AgentInput", () => {
           project: "projects/orders",
         },
       },
-      { kind: "continue", prompt: "What should I configure first?" },
-      { kind: "continue", prompt: "How can I test the connection?" },
-      { kind: "continue", prompt: "How do I assign a database afterward?" },
+      ...[
+        { kind: "continue", prompt: "What should I configure first?" },
+        { kind: "continue", prompt: "How can I test the connection?" },
+        { kind: "continue", prompt: "How do I assign a database afterward?" },
+      ].slice(0, questionCount),
     ]);
-    expect(mocks.aiChat).toHaveBeenCalledOnce();
+    expect(mocks.aiChat).not.toHaveBeenCalled();
     expect(
       useAgentStore
         .getState()
         .getMessages(chat.id)
         .find((message) => message.content === "Set up an instance.")?.metadata
         ?.resourceReferences
-    ).toEqual([
+    ).toEqual(questionCount > 0 ? [
       {
         kind: "project",
         name: "projects/orders",
         project: "projects/orders",
         label: "Orders",
       },
-    ]);
+    ] : undefined);
     view.unmount();
   });
 
@@ -3096,7 +3128,7 @@ describe("AgentInput", () => {
     expect(
       useAgentStore.getState().getMessages(chat.id).find((message) => message.content === answer)?.metadata?.actions
     ).toBeUndefined();
-    expect(mocks.aiChat).toHaveBeenCalledOnce();
+    expect(mocks.aiChat).not.toHaveBeenCalled();
     view.unmount();
   });
 
@@ -4353,6 +4385,7 @@ describe("AgentInput", () => {
     await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
     expect(mocks.getToolDefinitions).toHaveBeenCalledWith({
       runMode: "default",
+      maskingSections: [],
     });
     view.unmount();
   });
@@ -4679,6 +4712,7 @@ describe("AgentInput", () => {
     );
     expect(mocks.getToolDefinitions).toHaveBeenLastCalledWith({
       runMode: "default",
+      maskingSections: [],
     });
     expect(mocks.createToolExecutor).toHaveBeenLastCalledWith(
       expect.anything(),
@@ -4728,6 +4762,7 @@ describe("AgentInput", () => {
 
     expect(mocks.getToolDefinitions).toHaveBeenLastCalledWith({
       runMode: "read-only",
+      maskingSections: [],
     });
     view.unmount();
   });
@@ -4759,7 +4794,10 @@ describe("AgentInput", () => {
 
     expect(store.getMessages(chatId)).toEqual(history);
     expect(mocks.buildOutboundHistory).toHaveBeenLastCalledWith("system", history, undefined);
-    expect(mocks.getToolDefinitions).toHaveBeenLastCalledWith({ runMode: "read-only" });
+    expect(mocks.getToolDefinitions).toHaveBeenLastCalledWith({
+      runMode: "read-only",
+      maskingSections: [],
+    });
     expect(store.getDraft(chatId)).toEqual(draft);
     expect(textarea.value).toBe(draft.text);
     expect(textarea.selectionStart).toBe(3);
@@ -4783,7 +4821,10 @@ describe("AgentInput", () => {
       retryActionRef.current?.();
       await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledTimes(2));
     });
-    expect(mocks.getToolDefinitions).toHaveBeenLastCalledWith({ runMode: "read-only" });
+    expect(mocks.getToolDefinitions).toHaveBeenLastCalledWith({
+      runMode: "read-only",
+      maskingSections: [],
+    });
     expect(store.getMessages(chatId).filter((message) => message.role === "user")).toHaveLength(1);
     view.unmount();
   });
@@ -4853,9 +4894,7 @@ describe("AgentInput", () => {
     view.unmount();
   });
 
-  test("allows Resend once the answer is complete while optional follow-ups are still loading", async () => {
-    let resolveFollowUp!: (value: unknown) => void;
-    mocks.aiChat.mockImplementationOnce(() => new Promise((resolve) => { resolveFollowUp = resolve; }));
+  test("allows Resend once the answer completes without a pending follow-up request", async () => {
     mocks.runAgentLoop
       .mockImplementationOnce(async (_history, _tools, _executor, callbacks) => {
         callbacks.onText("Hello");
@@ -4870,18 +4909,16 @@ describe("AgentInput", () => {
     view.render();
     await act(async () => {
       resendActionRef.current?.(message.id);
-      await vi.waitFor(() => expect(resolveFollowUp).toBeTypeOf("function"));
+      await vi.waitFor(() => expect(store.getChat(chatId)?.status).toBe("idle"));
     });
     expect(store.getChat(chatId)?.status).toBe("idle");
-    try {
-      await act(async () => {
-        resendActionRef.current?.(message.id);
-        await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledTimes(2));
-      });
-    } finally {
-      await act(async () => resolveFollowUp({ content: "[]", toolCalls: [], usage: { totalTokens: 0 } }));
-      view.unmount();
-    }
+    expect(store.getAbortController(chatId)).toBeNull();
+    expect(mocks.aiChat).not.toHaveBeenCalled();
+    await act(async () => {
+      resendActionRef.current?.(message.id);
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledTimes(2));
+    });
+    view.unmount();
   });
 
   test.each(["retry", "resend"] as const)("deduplicates %s while configuration loads", async (action) => {
@@ -5008,6 +5045,7 @@ describe("AgentInput", () => {
 
     expect(mocks.getToolDefinitions).toHaveBeenLastCalledWith({
       runMode: "read-only",
+      maskingSections: [],
     });
     view.unmount();
   });
@@ -5871,6 +5909,7 @@ describe("AgentInput", () => {
     expect(mocks.getToolDefinitions).toHaveBeenCalledWith({
       runMode: "read-only",
       referencedProject: "projects/billing",
+      maskingSections: [],
     });
     expect(mocks.executeTool).toHaveBeenCalledWith(
       "get_project_overview",

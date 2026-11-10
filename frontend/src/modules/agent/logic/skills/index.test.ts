@@ -1,11 +1,183 @@
 // @vitest-environment node
 import { describe, expect, test } from "vitest";
 import { maskingDraftSetupInstruction } from "../maskingDraftWorkflow";
-import { getSkill } from "./index";
+import { skill as databaseChangeSkill } from "./databaseChange";
+import { skill as grantPermissionSkill } from "./grantPermission";
+import {
+  getMaskingSkillGuidance,
+  getSkill,
+  type MaskingSkillSection,
+  resolveSkill,
+} from "./index";
+import { skill as querySkill } from "./query";
+
+describe("resolveSkill", () => {
+  test("defaults masking loads to a bounded discoverable overview", () => {
+    const result = resolveSkill({ name: "data-masking" });
+    expect(result).toMatchObject({
+      kind: "loaded",
+      name: "data-masking",
+      section: "overview",
+    });
+    if (result.kind !== "loaded") throw new Error("Expected loaded skill");
+    expect(result.content.length).toBeLessThanOrEqual(8000);
+    expect(result.content).toContain('section="rule"');
+    expect(result.content).toContain('section="exemption"');
+    expect(result.content).toContain('section="semantic-type"');
+    expect(result.content).not.toContain(maskingDraftSetupInstruction);
+    expect(getSkill({ name: "data-masking" })).toBe(result.content);
+  });
+
+  test.each(["rule", "exemption", "semantic-type"] as const)(
+    "loads %s with overview safety guidance exactly once",
+    (section) => {
+      const result = resolveSkill({ name: "data-masking", section });
+      expect(result).toMatchObject({ kind: "loaded", section });
+      if (result.kind !== "loaded") throw new Error("Expected loaded skill");
+      expect(result.content).toBe(getMaskingSkillGuidance([section]));
+      expect(result.content.match(/# Data Masking Overview/g)).toHaveLength(1);
+      expect(result.content).toContain("Never query or read real row values");
+    }
+  );
+
+  test("deduplicates dependency closure in registry order", () => {
+    expect(getMaskingSkillGuidance([])).toBe("");
+    expect(
+      getMaskingSkillGuidance(["exemption", "rule", "overview", "rule"])
+    ).toBe(getMaskingSkillGuidance(["rule", "exemption"]));
+    const all = getMaskingSkillGuidance(["semantic-type", "rule", "exemption"]);
+    for (const heading of [
+      "# Data Masking Overview",
+      "## Global Masking Rules",
+      "## Project Masking Exemptions",
+      "## Semantic Type Drafts",
+    ]) {
+      expect(all.split(heading)).toHaveLength(2);
+    }
+    expect(all.split(maskingDraftSetupInstruction)).toHaveLength(2);
+  });
+
+  test.each([querySkill, databaseChangeSkill, grantPermissionSkill])(
+    "preserves $name content without masking activation",
+    (skill) => {
+      expect(resolveSkill({ name: skill.name })).toEqual({
+        kind: "loaded",
+        name: skill.name,
+        content: skill.content,
+      });
+      expect(getSkill({ name: skill.name })).toBe(skill.content);
+      expect(
+        resolveSkill({ name: skill.name, section: "overview" })
+      ).toMatchObject({ kind: "error" });
+    }
+  );
+
+  test("returns typed list and input errors without loading guidance", () => {
+    expect(resolveSkill({})).toMatchObject({ kind: "listed" });
+    for (const args of [
+      { name: "missing" },
+      { section: "rule" as const },
+      { name: "data-masking", section: "missing" as MaskingSkillSection },
+      { name: "data-masking", section: "toString" as MaskingSkillSection },
+      {
+        name: "data-masking",
+        section: null as unknown as MaskingSkillSection,
+      },
+      {
+        name: "data-masking",
+        section: ["rule"] as unknown as MaskingSkillSection,
+      },
+    ]) {
+      const result = resolveSkill(args);
+      expect(result).toMatchObject({ kind: "error" });
+      if (result.kind !== "error") throw new Error("Expected error");
+      expect(getSkill(args)).toBe(result.message);
+    }
+  });
+});
 
 describe("getSkill", () => {
+  test("requires member-selected future expiration instead of a fixed date", () => {
+    const guidance = getSkill({ name: "grant-permission" });
+    expect(guidance).toContain("explicitly selected by the member");
+    expect(guidance).toContain("Never invent a duration or expiration.");
+    expect(
+      guidance.match(/timestamp\('\{member-selected-future-instant\}'\)/g)
+    ).toHaveLength(2);
+    expect(guidance).not.toMatch(/timestamp\('\d{4}-\d{2}-\d{2}T/);
+  });
+
+  test("keeps specialized guidance out of unrelated section loads", () => {
+    const overview = getSkill({ name: "data-masking" });
+    const rule = getSkill({ name: "data-masking", section: "rule" });
+    const exemption = getSkill({ name: "data-masking", section: "exemption" });
+    const semanticType = getSkill({
+      name: "data-masking",
+      section: "semantic-type",
+    });
+    expect(overview).not.toContain("## Global Masking Rules");
+    expect(rule).not.toContain("## Project Masking Exemptions");
+    expect(rule).not.toContain("## Semantic Type Drafts");
+    expect(exemption).not.toContain("## Global Masking Rules");
+    expect(semanticType).not.toContain("## Project Masking Exemptions");
+  });
+
+  test("keeps rule selectors, batch saves, and source revisions bounded", () => {
+    const guidance = getSkill({ name: "data-masking", section: "rule" });
+    for (const invariant of [
+      "selector-compatible CEL",
+      "never lowerAscii(), transformed receivers, arbitrary functions",
+      "Runtime independently adds verified project/database constraints",
+      "prepare ALL confirmed requirements together in one batch",
+      "one successful save is not evidence all requested rules saved",
+      "current editor session/revision",
+      "changed fields require fresh review, not overwrite",
+      "Never navigate away from an unrelated editor",
+      "Only CREATE supports full-rule preparation and Apply to draft",
+    ]) {
+      expect(guidance).toContain(invariant);
+    }
+  });
+
+  test("keeps exemption member, expiry, selector, and unsaved-form boundaries", () => {
+    const guidance = getSkill({ name: "data-masking", section: "exemption" });
+    for (const invariant of [
+      "Use self for the current authenticated member",
+      "Never offer workspace scope for a project exemption",
+      "Never automatically modify, narrow, revoke, or replace an existing exemption",
+      "does not grant query access by itself",
+      "Do not copy global-rule CEL",
+      "fresh currentTime (UTC ISO)",
+      "expirationTimestamp",
+      "IANA time zones",
+      "daylight-saving ambiguous times",
+      "source identity, and revision",
+      "only Grant Exemption saves",
+    ]) {
+      expect(guidance).toContain(invariant);
+    }
+  });
+
+  test("keeps new semantic types synthetic, exact, and separately saved", () => {
+    const guidance = getSkill({
+      name: "data-masking",
+      section: "semantic-type",
+    });
+    for (const invariant of [
+      "missing requested type must not be replaced",
+      "md5-mask has no salt argument",
+      "non-overlapping slices",
+      "discriminated plain algorithm shape",
+      "never replaces an active create/edit form or saves",
+      "Do not prepare a rule referencing the new type before its save is verified",
+      "Creation does not assign the type to columns",
+    ]) {
+      expect(guidance).toContain(invariant);
+    }
+  });
+
   test("uses the complete permission-aware runtime semantic type and scope choices", () => {
-    const guidance = getSkill({ name: "data-masking" });
+    const guidance = getSkill({ name: "data-masking", section: "rule" });
     expect(guidance).toContain("ask_masking_semantic_type()");
     expect(guidance).toContain("all available semantic types");
     expect(guidance).toContain("Do not rank, filter, or deduplicate");
@@ -16,7 +188,10 @@ describe("getSkill", () => {
   });
 
   test("prepares a new custom type before continuing the original rule after verified save", () => {
-    const guidance = getSkill({ name: "data-masking" });
+    const guidance = getSkill({
+      name: "data-masking",
+      section: "semantic-type",
+    });
     expect(guidance).toContain("prepare_semantic_type_draft");
     expect(guidance).toContain(
       "Duplicate titles and equivalent masking configurations are allowed"
@@ -51,7 +226,7 @@ describe("getSkill", () => {
   });
 
   test("uses the dedicated runtime-owned project exemption scope question", () => {
-    const guidance = getSkill({ name: "data-masking" });
+    const guidance = getSkill({ name: "data-masking", section: "exemption" });
 
     expect(guidance).toContain("call ask_masking_exemption_scope()");
     expect(guidance).toContain("The only optional argument is database");
@@ -63,7 +238,7 @@ describe("getSkill", () => {
   });
 
   test("keeps exemption expiration and member questions on generic ask_user", () => {
-    const guidance = getSkill({ name: "data-masking" });
+    const guidance = getSkill({ name: "data-masking", section: "exemption" });
 
     expect(guidance).toContain(
       "For expiration and member questions, use ask_user without purpose"
@@ -148,7 +323,7 @@ describe("getSkill", () => {
   });
 
   test("offers prepared drafts without delegating runtime IDs to the model", () => {
-    const guidance = getSkill({ name: "data-masking" });
+    const guidance = getSkill({ name: "data-masking", section: "rule" });
 
     expect(guidance).toContain(
       "runtime supplies the latest eligible current-run masking draft action"
@@ -165,7 +340,7 @@ describe("getSkill", () => {
   });
 
   test("makes ready new-rule setup draft-first instead of a manual-entry fallback", () => {
-    const guidance = getSkill({ name: "data-masking" });
+    const guidance = getSkill({ name: "data-masking", section: "rule" });
 
     expect(guidance).toContain(maskingDraftSetupInstruction);
     expect(guidance).toContain(
@@ -187,7 +362,7 @@ describe("getSkill", () => {
   });
 
   test("distinguishes existing-rule review from new-rule draft refinement", () => {
-    const guidance = getSkill({ name: "data-masking" });
+    const guidance = getSkill({ name: "data-masking", section: "rule" });
 
     expect(guidance).toContain("inspect its mode before proposing changes");
     expect(guidance).toContain("EDIT is review-only for an existing rule");

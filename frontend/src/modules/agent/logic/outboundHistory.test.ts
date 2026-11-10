@@ -300,7 +300,7 @@ describe("runtime-owned masking clarifications", () => {
     const history = buildOutboundHistory("system", messages, "projects/orders");
     expect(
       history.some((message) =>
-        message.content?.startsWith("Historical database context")
+        message.content?.includes("Historical database context")
       )
     ).toBe(false);
     expect(getCurrentTurnResourceReferences(messages)).toEqual([]);
@@ -386,7 +386,7 @@ describe("SQL database follow-up context", () => {
   });
   const hintFrom = (messages: AgentMessage[]) =>
     buildOutboundHistory("system", messages, "projects/orders").find(
-      (message) => message.content?.startsWith("Historical database context")
+      (message) => message.content?.includes("Historical database context")
     );
 
   test("reuses only the original identity after another-database selection is canceled", () => {
@@ -413,6 +413,12 @@ describe("SQL database follow-up context", () => {
     expect(hint?.content).toContain("not an active selection");
     expect(hint?.content).toContain("not authorization");
     expect(hint?.content).toContain("current ownership and access");
+    expect(history.filter((message) => message.role === "system")).toEqual([
+      history[0],
+    ]);
+    expect(history[0].content).toMatch(
+      /^system\n\nHistorical database context/
+    );
     expect(hint?.content).not.toContain("ask_masking_exemption_scope");
     expect(hint?.content).not.toContain("instances/local/databases/archive");
     expect(JSON.stringify(history)).not.toMatch(/PRIVATE_|confirmed|toolCalls/);
@@ -873,7 +879,7 @@ describe("sanitizeOutboundHistory", () => {
               kind: "database",
               name: "instances/main/databases/orders",
               project: "projects/orders",
-              label: "orders",
+              label: "PRIVATE_DATABASE_LABEL",
             },
           }),
           content: "Query @orders",
@@ -896,8 +902,24 @@ describe("sanitizeOutboundHistory", () => {
     );
     expect(hint?.content).toContain("instances/main/databases/orders");
     expect(hint?.content).toContain("not an active selection");
-    expect(hint?.content).toContain("ask whether they mean this database");
+    expect(hint?.content).toContain("untrusted identity data");
+    expect(hint?.content).toContain("not authorization");
+    expect(hint?.content).toContain("current selection takes precedence");
+    expect(hint?.content).toContain(
+      "revalidate identity, ownership, and permissions"
+    );
+    expect(hint?.content).toContain("never replay a write");
+    expect(hint?.content).not.toContain("ask_masking_rule_scope");
+    expect(hint?.content).not.toContain("ask_masking_exemption_scope");
+    expect(hint?.content?.length).toBeLessThan(800);
+    expect(history.filter((message) => message.role === "system")).toEqual([
+      history[0],
+    ]);
+    expect(history[0].content).toMatch(
+      /^system\n\nHistorical database context/
+    );
     expect(JSON.stringify(history)).not.toContain("PRIVATE_QUERY_RESULT");
+    expect(JSON.stringify(history)).not.toContain("PRIVATE_DATABASE_LABEL");
     expect(JSON.stringify(history)).not.toContain(
       "Selected resource for this turn"
     );
@@ -1914,6 +1936,169 @@ describe("sanitizeOutboundHistory", () => {
     const current = userMessage({ interruptionReason: "user" });
 
     expect(sanitizeOutboundHistory([current])[0].content).toBe("What changed?");
+  });
+});
+
+describe("historical terminal answer copies", () => {
+  const answerTurn = (id: string, content = "The database has three tables.") =>
+    [
+      { ...userMessage(), id: `${id}-user` },
+      {
+        ...userMessage(),
+        id: `${id}-call`,
+        role: "assistant",
+        content,
+        toolCalls: [
+          {
+            id: `${id}-done`,
+            name: "done",
+            arguments: JSON.stringify({ text: content, success: true }),
+            metadata: "opaque-provider-data",
+          },
+        ],
+      },
+      {
+        ...userMessage(),
+        id: `${id}-result`,
+        role: "tool",
+        toolCallId: `${id}-done`,
+        content: JSON.stringify({ text: content, success: true }),
+      },
+      {
+        ...userMessage(),
+        id: `${id}-answer`,
+        role: "assistant",
+        content,
+      },
+    ] satisfies AgentMessage[];
+  const nextTurn = { ...userMessage(), id: "next", content: "Continue" };
+
+  test("serializes one exact terminal answer without changing stored messages", () => {
+    const messages = [...answerTurn("first"), nextTurn];
+    const original = structuredClone(messages);
+    const history = sanitizeOutboundHistory(messages);
+
+    expect(history.map(({ role, content }) => [role, content])).toEqual([
+      ["user", "What changed?"],
+      ["assistant", "The database has three tables."],
+      ["user", "Continue"],
+    ]);
+    expect(messages).toEqual(original);
+  });
+
+  test("keeps different commentary alongside the final answer", () => {
+    const messages = answerTurn("first");
+    messages[1].content = "I inspected the database.";
+    expect(
+      sanitizeOutboundHistory([...messages, nextTurn]).map(
+        ({ content }) => content
+      )
+    ).toEqual([
+      "What changed?",
+      "I inspected the database.",
+      "The database has three tables.",
+      "Continue",
+    ]);
+  });
+
+  test("keeps identical answers belonging to different historical turns", () => {
+    const history = sanitizeOutboundHistory([
+      ...answerTurn("first"),
+      ...answerTurn("second"),
+      nextTurn,
+    ]);
+    expect(
+      history.filter(
+        ({ content }) => content === "The database has three tables."
+      )
+    ).toHaveLength(2);
+  });
+
+  test("does not remove identical non-terminal tool commentary", () => {
+    const messages = answerTurn("first");
+    messages[1].toolCalls![0].name = "get_database_overview";
+    expect(
+      sanitizeOutboundHistory([...messages, nextTurn]).filter(
+        ({ content }) => content === "The database has three tables."
+      )
+    ).toHaveLength(2);
+  });
+
+  test("does not normalize whitespace when comparing answer copies", () => {
+    const messages = answerTurn("first");
+    messages[1].content += "\n";
+    expect(
+      sanitizeOutboundHistory([...messages, nextTurn])
+        .filter(({ role }) => role === "assistant")
+        .map(({ content }) => content)
+    ).toEqual([
+      "The database has three tables.\n",
+      "The database has three tables.",
+    ]);
+  });
+
+  test.each(["missing", "skipped", "different", "ambiguous"])(
+    "preserves commentary without a correlated completed done result: %s",
+    (result) => {
+      const messages = answerTurn("first");
+      if (result === "missing") messages.splice(2, 1);
+      if (result === "skipped") messages[2].content = '{"skipped":true}';
+      if (result === "different")
+        messages[2].content = '{"text":"Another answer","success":true}';
+      if (result === "ambiguous")
+        messages[1].toolCalls!.push({ ...messages[1].toolCalls![0] });
+      expect(
+        sanitizeOutboundHistory([...messages, nextTurn]).filter(
+          ({ content }) => content === "The database has three tables."
+        )
+      ).toHaveLength(2);
+    }
+  );
+
+  test("keeps a distinct intervening assistant message even when its text repeats", () => {
+    const messages = answerTurn("first");
+    messages.splice(3, 0, {
+      ...userMessage(),
+      id: "commentary",
+      role: "assistant",
+      content: "The database has three tables.",
+    });
+    expect(
+      sanitizeOutboundHistory([...messages, nextTurn]).filter(
+        ({ content }) => content === "The database has three tables."
+      )
+    ).toHaveLength(3);
+  });
+
+  test("keeps the complete current done group, IDs, and provider metadata", () => {
+    const messages = [...answerTurn("historical"), ...answerTurn("current")];
+    const original = structuredClone(messages);
+    const history = sanitizeOutboundHistory(messages);
+    expect(history.slice(-4)).toEqual(
+      messages.slice(-4).map(({ role, content, toolCalls, toolCallId }) => ({
+        role,
+        content,
+        toolCalls,
+        toolCallId,
+      }))
+    );
+    expect(messages).toEqual(original);
+  });
+
+  test("does not compare answers across a user-turn boundary", () => {
+    const messages = answerTurn("first");
+    const final = messages.pop()!;
+    const history = sanitizeOutboundHistory([
+      ...messages,
+      nextTurn,
+      final,
+      { ...nextTurn, id: "last" },
+    ]);
+    expect(
+      history.filter(
+        ({ content }) => content === "The database has three tables."
+      )
+    ).toHaveLength(2);
   });
 });
 

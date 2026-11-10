@@ -24,6 +24,65 @@ import {
   IssueSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { MaskingRuleEditorSnapshot } from "../maskingRuleDraftTarget";
+import { getMaskingSkillGuidance } from "../skills";
+
+describe("progressive masking tool definitions", () => {
+  test("keeps masking schemas out of an unrelated Plan request", () => {
+    const names = getToolDefinitions({
+      referencedProject: "projects/example",
+    }).map((tool) => tool.name);
+    expect(names).toContain("get_plan_overview");
+    expect(names).toContain("get_skill");
+    expect(names).not.toContain("get_masking_overview");
+    expect(names).not.toContain("prepare_masking_rule_draft");
+  });
+
+  test("advertises only loaded bundles and their overview dependency", () => {
+    const tools = getToolDefinitions({ maskingSections: ["rule"] });
+    const names = tools.map((tool) => tool.name);
+    expect(names).toContain("get_masking_overview");
+    expect(names).toContain("ask_masking_rule_scope");
+    expect(names).toContain("ask_masking_semantic_type");
+    expect(names).not.toContain("prepare_masking_exemption_draft");
+    expect(names).not.toContain("prepare_semantic_type_draft");
+    expect(new Set(names).size).toBe(names.length);
+  });
+
+  test("activates only successful skill loads and acknowledges masking content", async () => {
+    const onSkillLoaded = vi.fn();
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      onSkillLoaded,
+    });
+    const result = await executor(
+      "get_skill",
+      { name: "data-masking", section: "rule" },
+      "load"
+    );
+    expect(result).toEqual({
+      kind: "tool_result",
+      result: JSON.stringify({
+        kind: "loaded",
+        name: "data-masking",
+        section: "rule",
+      }),
+    });
+    expect(onSkillLoaded).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        kind: "loaded",
+        name: "data-masking",
+        section: "rule",
+      })
+    );
+    onSkillLoaded.mockClear();
+    await executor(
+      "get_skill",
+      { name: "data-masking", section: "invalid" },
+      "bad"
+    );
+    await executor("get_skill", {}, "list");
+    expect(onSkillLoaded).not.toHaveBeenCalled();
+  });
+});
 
 const projectApi = vi.hoisted(() => ({ getProject: vi.fn() }));
 const issueApi = vi.hoisted(() => ({ getIssue: vi.fn() }));
@@ -84,7 +143,8 @@ vi.mock("@/api", () => ({
   celServiceClientConnect: { batchParse: celApi.batchParse },
 }));
 
-vi.mock("../skills", () => ({
+vi.mock("../skills", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../skills")>()),
   getSkill: vi.fn(async () => "skill"),
 }));
 vi.mock("./callApi", async (importOriginal) => ({
@@ -595,6 +655,7 @@ describe("done tool", () => {
         workspaceName: "workspaces/test",
         context: "projects/sample",
         runMode: "read-only" as const,
+        maskingSections: ["rule", "exemption"] as const,
       };
       expect(
         getToolDefinitions(options).some((tool) => tool.name === name)
@@ -737,12 +798,17 @@ describe("done tool", () => {
 describe("masking overview tool", () => {
   const maskingPage = { kind: "global-masking" as const };
 
-  test("is available from ordinary chats as well as masking pages", () => {
+  test("is available after loading overview from ordinary chats and masking pages", () => {
     expect(
       getToolDefinitions().some((tool) => tool.name === "get_masking_overview")
+    ).toBe(false);
+    expect(
+      getToolDefinitions({ maskingSections: ["overview"] }).some(
+        (tool) => tool.name === "get_masking_overview"
+      )
     ).toBe(true);
     expect(
-      getToolDefinitions({ maskingPage }).some(
+      getToolDefinitions({ maskingPage, maskingSections: ["overview"] }).some(
         (tool) => tool.name === "get_masking_overview"
       )
     ).toBe(true);
@@ -765,9 +831,9 @@ describe("masking overview tool", () => {
   });
 
   test("supports an optional exact semantic type lookup without widening the default catalog", async () => {
-    const definition = getToolDefinitions().find(
-      (tool) => tool.name === "get_masking_overview"
-    );
+    const definition = getToolDefinitions({
+      maskingSections: ["overview"],
+    }).find((tool) => tool.name === "get_masking_overview");
     expect(definition?.parametersSchema).toMatchObject({
       properties: {
         semanticTypeId: { type: "string", minLength: 1, maxLength: 500 },
@@ -2205,18 +2271,8 @@ describe("agent tools read-only mode", () => {
       "get_workspace_attention",
       "get_workspace_recent_activity",
       "get_skill",
-      "ask_masking_exemption_scope",
       "ask_user",
       "done",
-      "get_masking_rule_draft",
-      "prepare_masking_rule_draft",
-      "get_masking_overview",
-      "prepare_masking_rule_drafts",
-      "get_masking_exemption_draft",
-      "prepare_masking_exemption_draft",
-      "ask_masking_semantic_type",
-      "ask_masking_rule_scope",
-      "prepare_semantic_type_draft",
     ]);
     expect(getToolDefinitions().map((tool) => tool.name)).not.toContain(
       "get_project_open_issues"
@@ -2248,6 +2304,32 @@ describe("agent tools read-only mode", () => {
     expect(getToolDefinitions().map((tool) => tool.name)).toContain(
       "get_database_count"
     );
+  });
+
+  test("keeps loaded local masking workflows available without page or API writes", () => {
+    const names = getToolDefinitions({
+      runMode: "read-only",
+      maskingSections: ["rule", "exemption", "semantic-type"],
+    }).map((tool) => tool.name);
+
+    expect(names).toEqual(
+      expect.arrayContaining([
+        "get_masking_overview",
+        "get_masking_rule_draft",
+        "prepare_masking_rule_draft",
+        "prepare_masking_rule_drafts",
+        "ask_masking_rule_scope",
+        "get_masking_exemption_draft",
+        "prepare_masking_exemption_draft",
+        "ask_masking_exemption_scope",
+        "ask_masking_semantic_type",
+        "prepare_semantic_type_draft",
+      ])
+    );
+    expect(names).not.toContain("call_api");
+    expect(names).not.toContain("dom_action");
+    expect(names).not.toContain("navigate");
+    expect(new Set(names).size).toBe(names.length);
   });
 
   test.each([
@@ -3537,7 +3619,9 @@ describe("agent tools ask_user", () => {
     });
 
     test("separates the fixed scope tool schema from ordinary questions", () => {
-      const definitions = getToolDefinitions();
+      const definitions = getToolDefinitions({
+        maskingSections: ["exemption"],
+      });
       const generic = definitions.find((tool) => tool.name === "ask_user");
       const scope = definitions.find(
         (tool) => tool.name === "ask_masking_exemption_scope"
@@ -3718,7 +3802,7 @@ describe("agent tools ask_user", () => {
       (tool) => tool.name === "done"
     );
     expect(definition?.description).toContain(
-      "2-3 distinct, contextual Continue questions"
+      "up to three distinct contextual Continue questions"
     );
     expect(definition?.parametersSchema).toMatchObject({
       properties: { actions: { type: "array", maxItems: 4 } },
@@ -3857,15 +3941,21 @@ describe("agent tools ask_user", () => {
   });
 
   test("describes masking draft actions as runtime-owned member handoffs", () => {
-    const definitions = getToolDefinitions();
+    const definitions = getToolDefinitions({
+      maskingSections: ["rule", "semantic-type"],
+    });
+    const guidance = getMaskingSkillGuidance(["rule", "semantic-type"]);
     const done = definitions.find((tool) => tool.name === "done");
     const prepare = definitions.find(
       (tool) => tool.name === "prepare_masking_rule_draft"
     );
 
-    expect(done?.description).toContain("draft-masking-rule");
-    expect(done?.description).toContain("draft-semantic-type");
     expect(done?.description).toContain(
+      "Runtime supplies eligible prepared masking actions"
+    );
+    expect(guidance).toContain("draft-masking-rule");
+    expect(guidance).toContain("draft-semantic-type");
+    expect(guidance).toContain(
       "runtime supplies the latest eligible current-run masking draft action"
     );
     expect(done?.parametersSchema).toMatchObject({
@@ -3886,25 +3976,36 @@ describe("agent tools ask_user", () => {
         },
       },
     });
-    expect(prepare?.description).toContain(
-      "Do not require the member to copy a draft ID"
-    );
-    expect(prepare?.description).toContain(
+    expect(prepare?.description).toContain("No opening or saving occurs");
+    expect(guidance).toContain("you do not need to repeat its opaque draft ID");
+    expect(guidance).toContain(
       "After a resumed run or source change, read the current form and prepare again"
     );
   });
 
   test("defers masking catalog and scope choices to permission-aware runtime tools", () => {
-    const ask = getToolDefinitions().find((tool) => tool.name === "ask_user");
-    expect(ask?.description).toContain("ask_masking_semantic_type");
-    expect(ask?.description).toContain("ask_masking_rule_scope");
+    const definitions = getToolDefinitions({ maskingSections: ["rule"] });
+    const ask = definitions.find((tool) => tool.name === "ask_user");
+    const guidance = getMaskingSkillGuidance(["rule"]);
+    expect(ask?.description).toContain(
+      "dedicated scope/type pickers, not fabricated alternatives"
+    );
+    expect(guidance).toContain("ask_masking_semantic_type");
+    expect(guidance).toContain("ask_masking_rule_scope");
+    expect(definitions.map((tool) => tool.name)).toEqual(
+      expect.arrayContaining([
+        "ask_masking_semantic_type",
+        "ask_masking_rule_scope",
+      ])
+    );
     expect(ask?.description).not.toContain(
       "ordinary preferences such as full versus partial masking"
     );
   });
 
   test("keeps existing-rule snapshots review-only in masking draft tool guidance", () => {
-    const definitions = getToolDefinitions();
+    const definitions = getToolDefinitions({ maskingSections: ["rule"] });
+    const guidance = getMaskingSkillGuidance(["rule"]);
     const read = definitions.find(
       (tool) => tool.name === "get_masking_rule_draft"
     );
@@ -3913,25 +4014,30 @@ describe("agent tools ask_user", () => {
     );
 
     expect(read?.description).toContain("EDIT is review-only");
-    expect(prepare?.description).toContain("CREATE mode only");
-    expect(prepare?.description).toContain(
-      "Never prepare a full-rule replacement for an existing-rule editor"
+    expect(prepare?.description).toContain("refine its CREATE editor");
+    expect(guidance).toContain(
+      "Only CREATE supports full-rule preparation and Apply to draft"
+    );
+    expect(guidance).toContain(
+      "Never prepare or apply a full-rule replacement in EDIT"
     );
   });
 
   test.each(["done", "prepare_masking_rule_draft", "get_masking_overview"])(
-    "requires draft-first masking setup in the %s tool guidance",
+    "pairs %s with loaded draft-first masking setup guidance",
     (name) => {
-      const definition = getToolDefinitions().find(
+      const definition = getToolDefinitions({ maskingSections: ["rule"] }).find(
         (tool) => tool.name === name
       );
-      expect(definition?.description).toContain(
+      expect(definition).toBeDefined();
+      const guidance = getMaskingSkillGuidance(["rule"]);
+      expect(guidance).toContain(
         "MUST call prepare_masking_rule_draft before done"
       );
-      expect(definition?.description).toContain(
+      expect(guidance).toContain(
         "Do not finish a ready setup with only manual steps or an Open settings action"
       );
-      expect(definition?.description).toContain(
+      expect(guidance).toContain(
         "Conceptual or effect questions, explicitly requested manual-only instructions"
       );
     }

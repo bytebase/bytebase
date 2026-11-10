@@ -559,6 +559,192 @@ describe("runAgentLoop", () => {
     expect(aiServiceClientConnect.chat).toHaveBeenCalledTimes(12);
   });
 
+  test("counts retries toward the per-run provider attempt limit", async () => {
+    vi.useFakeTimers();
+    try {
+      vi.mocked(aiServiceClientConnect.chat).mockImplementation(async () => {
+        const attempt = vi.mocked(aiServiceClientConnect.chat).mock.calls
+          .length;
+        if (attempt % 2 === 1) throw new Error("503 temporary failure");
+        return {
+          content: "",
+          toolCalls: [
+            { id: `lookup-${attempt}`, name: "lookup", arguments: "{}" },
+          ],
+        } as never;
+      });
+      const executeTool = vi.fn(async () => ({
+        kind: "tool_result" as const,
+        result: "ok",
+      }));
+      const run = runAgentLoop(
+        [{ role: "user", content: "Inspect" }],
+        [{ name: "lookup", description: "Lookup", parametersSchema: {} }],
+        executeTool
+      );
+      await vi.runAllTimersAsync();
+
+      expect(await run).toMatchObject({ kind: "completed", success: false });
+      expect(aiServiceClientConnect.chat).toHaveBeenCalledTimes(12);
+      expect(executeTool).toHaveBeenCalledTimes(6);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test("resolves loaded guidance and terminal tools together before each request", async () => {
+    let loaded = false;
+    vi.mocked(aiServiceClientConnect.chat)
+      .mockResolvedValueOnce({
+        content: "",
+        toolCalls: [{ id: "load", name: "get_skill", arguments: "{}" }],
+      } as never)
+      .mockResolvedValueOnce({
+        content: "Ready to clarify",
+        toolCalls: [],
+      } as never)
+      .mockResolvedValueOnce({
+        content: "",
+        toolCalls: [
+          { id: "scope", name: "ask_masking_rule_scope", arguments: "{}" },
+        ],
+      } as never);
+    const onRequestDiagnostics = vi.fn();
+    const outcome = await runAgentLoop(
+      [
+        { role: "system", content: "Core safety" },
+        { role: "user", content: "Help" },
+      ],
+      [],
+      vi.fn(async (name) => {
+        if (name === "get_skill") {
+          loaded = true;
+          return { kind: "tool_result" as const, result: "loaded" };
+        }
+        return {
+          kind: "ask_user" as const,
+          ask: {
+            toolCallId: "scope",
+            prompt: "Which scope?",
+            kind: "input" as const,
+          },
+        };
+      }),
+      { onRequestDiagnostics },
+      undefined,
+      {
+        resolveRequestContext: () => ({
+          systemGuidance: loaded ? "Registered masking rules" : "",
+          tools: [
+            { name: "get_skill", description: "Load", parametersSchema: {} },
+            { name: "done", description: "Finish", parametersSchema: {} },
+            ...(loaded
+              ? [
+                  {
+                    name: "ask_masking_rule_scope",
+                    description: "Scope",
+                    parametersSchema: {},
+                  },
+                ]
+              : []),
+          ],
+        }),
+      }
+    );
+
+    expect(outcome.kind).toBe("awaiting_user");
+    const requests = vi
+      .mocked(aiServiceClientConnect.chat)
+      .mock.calls.map(([request]) => request);
+    expect(requests[0]?.messages?.[0]?.content).toBe("Core safety");
+    for (const request of requests.slice(1)) {
+      expect(
+        request.messages?.filter(
+          (message) =>
+            message.role === AIChatMessageRole.AI_CHAT_MESSAGE_ROLE_SYSTEM
+        )
+      ).toHaveLength(1);
+      expect(request.messages?.[0]?.content).toBe(
+        "Core safety\n\nRegistered masking rules"
+      );
+      expect(request.toolDefinitions?.map((tool) => tool.name)).toContain(
+        "ask_masking_rule_scope"
+      );
+    }
+    expect(
+      requests[2]?.toolDefinitions?.map((tool) => tool.name)
+    ).not.toContain("get_skill");
+    expect(onRequestDiagnostics).toHaveBeenCalledTimes(3);
+    expect(onRequestDiagnostics.mock.calls[0]![0]).toEqual({
+      serializedBytes: expect.any(Number),
+      systemBytes: expect.any(Number),
+      conversationBytes: expect.any(Number),
+      toolBytes: expect.any(Number),
+      messageCount: expect.any(Number),
+      toolCount: expect.any(Number),
+    });
+  });
+
+  test("preserves core and registered guidance when compacting skill results", async () => {
+    vi.mocked(aiServiceClientConnect.chat).mockResolvedValue({
+      content: "Finished",
+      toolCalls: [],
+    } as never);
+    await runAgentLoop(
+      [
+        { role: "system", content: "Core safety" },
+        {
+          role: "assistant",
+          toolCalls: [{ id: "load", name: "get_skill", arguments: "{}" }],
+        },
+        { role: "tool", toolCallId: "load", content: "x".repeat(300_000) },
+        { role: "user", content: "Continue" },
+      ],
+      [],
+      vi.fn(),
+      undefined,
+      undefined,
+      {
+        allowPlainTextCompletion: true,
+        resolveRequestContext: () => ({
+          tools: [],
+          systemGuidance: "Registered guide",
+        }),
+      }
+    );
+    const request = vi.mocked(aiServiceClientConnect.chat).mock.calls[0]![0];
+    const systems = request.messages?.filter(
+      (message) =>
+        message.role === AIChatMessageRole.AI_CHAT_MESSAGE_ROLE_SYSTEM
+    );
+    expect(systems).toHaveLength(1);
+    expect(systems?.[0]?.content).toContain("Core safety");
+    expect(systems?.[0]?.content).toContain("Registered guide");
+    expect(systems?.[0]?.content).toContain("omitted to fit the context limit");
+    expect(systems?.[0]?.content?.match(/Registered guide/g)).toHaveLength(1);
+  });
+
+  test("does not drop oversized required guidance to send a request", async () => {
+    const outcome = await runAgentLoop(
+      [
+        { role: "system", content: "Core safety" },
+        { role: "user", content: "Help" },
+      ],
+      [],
+      vi.fn(),
+      undefined,
+      undefined,
+      {
+        resolveRequestContext: () => ({
+          tools: [],
+          systemGuidance: "x".repeat(300_000),
+        }),
+      }
+    );
+    expect(outcome).toMatchObject({ kind: "completed", success: false });
+    expect(aiServiceClientConnect.chat).not.toHaveBeenCalled();
+  });
+
   test("replays completed tool flows with matched tool results", async () => {
     vi.mocked(aiServiceClientConnect.chat)
       .mockResolvedValueOnce({
