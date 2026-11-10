@@ -28,7 +28,7 @@ type ColumnDisallowChangingTypeAdvisor struct {
 
 // Check checks for disallow changing column type.
 func (*ColumnDisallowChangingTypeAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, err := getTiDBOmniNodes(checkCtx)
+	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -105,10 +105,10 @@ func columnTypeChanged(metadata *model.DatabaseMetadata, tableName, columnName s
 	if column == nil {
 		return false
 	}
-	return normalizeColumnType(column.GetProto().Type) != normalizeColumnType(omniBuildColumnTypeString(dt))
+	return normalizeColumnType(column.GetProto().Type) != normalizeColumnType(buildColumnTypeString(dt))
 }
 
-// omniBuildColumnTypeString renders an omni DataType into the lowercase
+// buildColumnTypeString renders an omni DataType into the lowercase
 // "name[(...)] [unsigned] [zerofill]" form that the normalizeColumnType
 // helper + catalog comparison expects.
 //
@@ -153,7 +153,7 @@ func columnTypeChanged(metadata *model.DatabaseMetadata, tableName, columnName s
 //     annotation on BLOB/TINYBLOB/VARBINARY; omni's DataType has no
 //     charset suffix. Latent pingcap false-positive — silently fixed
 //     by the migration (cumulative #21).
-func omniBuildColumnTypeString(dt *ast.DataType) string {
+func buildColumnTypeString(dt *ast.DataType) string {
 	if dt == nil {
 		return ""
 	}
@@ -168,7 +168,7 @@ func omniBuildColumnTypeString(dt *ast.DataType) string {
 	// UNSIGNED/ZEROFILL — this avoids the bare-form × modifier
 	// Cartesian product false-positive class (Codex round-8 catch
 	// on PR #20302).
-	base := omniBuildCompactTypeString(dt, lower)
+	base := buildCompactTypeString(dt, lower)
 
 	// ZEROFILL implies UNSIGNED in MySQL storage; pingcap's Tp.String()
 	// rendered both. Match that convention.
@@ -181,7 +181,7 @@ func omniBuildColumnTypeString(dt *ast.DataType) string {
 	return base
 }
 
-// omniBuildCompactTypeString renders the type body in the
+// buildCompactTypeString renders the type body in the
 // CompactStr-equivalent form: type name + canonicalized length/scale
 // (ENUM/SET value list) without UNSIGNED/ZEROFILL/charset suffixes.
 // Matches pingcap's `column.Tp.CompactStr()` output and MySQL
@@ -192,7 +192,7 @@ func omniBuildColumnTypeString(dt *ast.DataType) string {
 //   - Pingcap CompactStr-equivalent fixture content
 //
 // For catalog comparison that needs UNSIGNED/ZEROFILL preservation,
-// wrap with omniBuildColumnTypeString which appends the modifiers.
+// wrap with buildColumnTypeString which appends the modifiers.
 //
 // The `lower` argument should be `strings.ToLower(dt.Name)` — callers
 // often have it available already; passing in avoids re-computing.
@@ -211,7 +211,7 @@ func omniBuildColumnTypeString(dt *ast.DataType) string {
 //     BIT → bit(1), BINARY → binary(1), YEAR → year(4), BOOLEAN →
 //     tinyint(1), DECIMAL → decimal(10,0), …).
 //   - **All other types**: (Length) when Length > 0; bare name otherwise.
-func omniBuildCompactTypeString(dt *ast.DataType, lower string) string {
+func buildCompactTypeString(dt *ast.DataType, lower string) string {
 	if dt == nil {
 		return ""
 	}
@@ -368,7 +368,7 @@ func normalizeColumnType(tp string) string {
 		// user writes bare DECIMAL (or its NUMERIC / FIXED aliases).
 		// Pingcap's Tp.String() and INFORMATION_SCHEMA both
 		// canonicalize the bare form to decimal(10,0). The
-		// omniBuildColumnTypeString builder renders the bare form
+		// buildColumnTypeString builder renders the bare form
 		// when Length=0 because there's no length to render;
 		// catch the canonicalization here.
 		return "decimal(10,0)"

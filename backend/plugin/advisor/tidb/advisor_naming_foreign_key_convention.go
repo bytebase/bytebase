@@ -29,7 +29,7 @@ func (*NamingFKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 		mismatchCode:       code.NamingFKConventionMismatch,
 		typeNoun:           "Foreign key",
 		internalErrorTitle: "Internal error for foreign key naming convention rule",
-	}, func(ostmt OmniStmt) []*indexMetaData {
+	}, func(ostmt Stmt) []*indexMetaData {
 		switch n := ostmt.Node.(type) {
 		case *ast.CreateTableStmt:
 			return collectFKCreateTable(ostmt, n)
@@ -40,7 +40,7 @@ func (*NamingFKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 	})
 }
 
-func collectFKCreateTable(ostmt OmniStmt, n *ast.CreateTableStmt) []*indexMetaData {
+func collectFKCreateTable(ostmt Stmt, n *ast.CreateTableStmt) []*indexMetaData {
 	if n.Table == nil {
 		return nil
 	}
@@ -60,7 +60,7 @@ func collectFKCreateTable(ostmt OmniStmt, n *ast.CreateTableStmt) []*indexMetaDa
 	return res
 }
 
-func collectFKAlterTable(ostmt OmniStmt, n *ast.AlterTableStmt) []*indexMetaData {
+func collectFKAlterTable(ostmt Stmt, n *ast.AlterTableStmt) []*indexMetaData {
 	if n.Table == nil {
 		return nil
 	}
@@ -102,7 +102,7 @@ func buildFKMetaData(tableName string, constraint *ast.Constraint, line int) *in
 		advisor.ReferencedColumnNameTemplateToken:  strings.Join(referencedColumnList, "_"),
 	}
 	return &indexMetaData{
-		indexName: omniConstraintName(constraint),
+		indexName: constraintName(constraint),
 		tableName: tableName,
 		metaData:  metaData,
 		line:      line,

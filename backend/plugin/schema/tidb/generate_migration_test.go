@@ -95,6 +95,6 @@ func requireParses(t *testing.T, migration string) {
 	if strings.TrimSpace(migration) == "" {
 		return
 	}
-	_, err := tidbparser.ParseTiDBOmni(migration)
+	_, err := tidbparser.ParseTiDB(migration)
 	require.NoError(t, err, "generated migration should parse")
 }

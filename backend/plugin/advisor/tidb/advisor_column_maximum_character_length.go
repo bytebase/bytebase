@@ -27,7 +27,7 @@ type ColumnMaximumCharacterLengthAdvisor struct {
 
 // Check checks for maximum character length.
 func (*ColumnMaximumCharacterLengthAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, err := getTiDBOmniNodes(checkCtx)
+	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -62,11 +62,11 @@ func (*ColumnMaximumCharacterLengthAdvisor) Check(_ context.Context, checkCtx ad
 // Rule fires on CHAR or BINARY columns whose length exceeds the
 // configured maximum. Cumulative #22 territory: pingcap's
 // `mysql.TypeString` covered BOTH CHAR and BINARY (charset-pair
-// unification); my omni port matches both via omniIsCharOrBinaryType.
+// unification); my omni port matches both via isCharOrBinaryType.
 // MySQL's "max character length" rule conceptually applies to CHAR;
 // extending to BINARY preserves the pingcap behavior even though it's
 // semantically odd (BINARY length is bytes, not characters).
-func checkStmtForCharLength(ostmt OmniStmt, maximum int, level storepb.Advice_Status, title string) *storepb.Advice {
+func checkStmtForCharLength(ostmt Stmt, maximum int, level storepb.Advice_Status, title string) *storepb.Advice {
 	if maximum <= 0 {
 		return nil
 	}
@@ -80,7 +80,7 @@ func checkStmtForCharLength(ostmt OmniStmt, maximum int, level storepb.Advice_St
 			if column == nil {
 				continue
 			}
-			if charLength := omniCharLength(column.TypeName); charLength > maximum {
+			if charLength := charLength(column.TypeName); charLength > maximum {
 				return buildCharLengthAdvice(level, title, tableName, column.Name, charLength, maximum, ostmt.AbsoluteLine(column.Loc.Start))
 			}
 		}
@@ -111,7 +111,7 @@ func checkStmtForCharLength(ostmt OmniStmt, maximum int, level storepb.Advice_St
 					if column == nil {
 						continue
 					}
-					if charLength := omniCharLength(column.TypeName); charLength > maximum {
+					if charLength := charLength(column.TypeName); charLength > maximum {
 						lastCol = column
 						lastLen = charLength
 					}
@@ -123,7 +123,7 @@ func checkStmtForCharLength(ostmt OmniStmt, maximum int, level storepb.Advice_St
 				if cmd.Column == nil {
 					continue
 				}
-				if charLength := omniCharLength(cmd.Column.TypeName); charLength > maximum {
+				if charLength := charLength(cmd.Column.TypeName); charLength > maximum {
 					return buildCharLengthAdvice(level, title, tableName, cmd.Column.Name, charLength, maximum, stmtLine)
 				}
 			default:

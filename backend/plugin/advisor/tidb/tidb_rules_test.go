@@ -388,7 +388,7 @@ func TestTiDBPriorBackupCheckAdvisor(t *testing.T) {
 			// multi-target UPDATE with unqualified SET → skip → no
 			// UPDATE target recorded → following DELETE on orders
 			// would not fire as mixed-DML (false-negative).
-			// Post-fix-1e: omniResolveUnqualifiedSETColumn walks
+			// Post-fix-1e: resolveUnqualifiedSETColumn walks
 			// dbMetadata, finds customer_name on orders → UPDATE
 			// attributed to orders → DELETE on orders → mixed-DML
 			// fires.

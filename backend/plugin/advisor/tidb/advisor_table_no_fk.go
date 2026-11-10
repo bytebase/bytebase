@@ -26,7 +26,7 @@ type TableNoFKAdvisor struct {
 
 // Check checks table disallow foreign key.
 func (*TableNoFKAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, err := getTiDBOmniNodes(checkCtx)
+	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +52,7 @@ type tableNoFKChecker struct {
 	title      string
 }
 
-func (c *tableNoFKChecker) checkStmt(ostmt OmniStmt) {
+func (c *tableNoFKChecker) checkStmt(ostmt Stmt) {
 	switch n := ostmt.Node.(type) {
 	case *ast.CreateTableStmt:
 		if n.Table == nil {

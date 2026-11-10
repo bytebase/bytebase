@@ -64,7 +64,7 @@ func init() {
 //     reached only via SubqueryExpr in TableExpr; the SubqueryExpr
 //     arm returns nil — derived tables aren't base-table candidates.
 //   - #29 (filter-effect): no expression-tree filter here. Dropped
-//     omniIsConstantLit (was for the unique-WHERE machinery).
+//     isConstantLit (was for the unique-WHERE machinery).
 type StatementPriorBackupCheckAdvisor struct{}
 
 // Check evaluates the prior-backup compatibility of the reviewed
@@ -93,7 +93,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 		})
 	}
 
-	stmts, err := getTiDBOmniNodes(checkCtx)
+	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -149,15 +149,15 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 			// full Tables list (which includes JOIN-only read-only
 			// tables). For `UPDATE t1 JOIN t2 ON ... SET t1.col = ...`
 			// the mutation target is t1; t2 must NOT be tagged.
-			aliasMap := omniBuildTableAliasMap(n.Tables, defaultDB)
-			for _, t := range omniExtractUpdateTargets(n.SetList, aliasMap, checkCtx.DBSchema) {
+			aliasMap := buildTableAliasMap(n.Tables, defaultDB)
+			for _, t := range extractUpdateTargets(n.SetList, aliasMap, checkCtx.DBSchema) {
 				dmlRefs = append(dmlRefs, dmlRef{table: t, stmtType: "UPDATE"})
 			}
 		case *ast.DeleteStmt:
 			// DELETE's Tables field IS the mutation target set (per
 			// omni parsenodes.go:123); Using[] is the filter-only
 			// joins. Use Tables directly.
-			for _, t := range omniExtractDMLTables(n.Tables, defaultDB) {
+			for _, t := range extractDMLTables(n.Tables, defaultDB) {
 				dmlRefs = append(dmlRefs, dmlRef{table: t, stmtType: "DELETE"})
 			}
 		default:
@@ -186,8 +186,8 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 	groups := make(map[string]*tableTypes)
 	for _, ref := range dmlRefs {
 		// Cumulative #30 Codex-fix-2 (revised): database is already
-		// resolved to defaultDB at extraction time (see omniExtractDMLTables
-		// + omniBuildTableAliasMap), so equivalent references (qualified
+		// resolved to defaultDB at extraction time (see extractDMLTables
+		// + buildTableAliasMap), so equivalent references (qualified
 		// vs unqualified) share the same database segment. Key is
 		// lowercased for case-insensitive grouping.
 		key := strings.ToLower(ref.table.database) + "." + strings.ToLower(ref.table.table)
@@ -262,7 +262,7 @@ type priorBackupTable struct {
 	table    string
 }
 
-// omniExtractDMLTables walks an UpdateStmt.Tables or DeleteStmt.Tables
+// extractDMLTables walks an UpdateStmt.Tables or DeleteStmt.Tables
 // slice (each element is a TableExpr — *TableRef, *JoinClause, or
 // *SubqueryExpr) and returns the base-table references reached.
 // Unqualified references get defaultDB filled in (cumulative #30
@@ -271,18 +271,18 @@ type priorBackupTable struct {
 // Cumulative #26 — UNION-rooted derived tables (accessed via
 // SubqueryExpr at this layer) return nil. Derived tables aren't
 // base-table candidates for backup-type mixing.
-func omniExtractDMLTables(tables []ast.TableExpr, defaultDB string) []priorBackupTable {
+func extractDMLTables(tables []ast.TableExpr, defaultDB string) []priorBackupTable {
 	var result []priorBackupTable
 	for _, t := range tables {
-		result = append(result, omniExtractTableExprRefs(t, defaultDB)...)
+		result = append(result, extractTableExprRefs(t, defaultDB)...)
 	}
 	return result
 }
 
-// omniExtractTableExprRefs walks a single omni TableExpr, returning
+// extractTableExprRefs walks a single omni TableExpr, returning
 // the base-table references reached. Empty Schema is resolved to
 // defaultDB (typically checkCtx.DBSchema.Name).
-func omniExtractTableExprRefs(t ast.TableExpr, defaultDB string) []priorBackupTable {
+func extractTableExprRefs(t ast.TableExpr, defaultDB string) []priorBackupTable {
 	if t == nil {
 		return nil
 	}
@@ -297,8 +297,8 @@ func omniExtractTableExprRefs(t ast.TableExpr, defaultDB string) []priorBackupTa
 			database: db,
 		}}
 	case *ast.JoinClause:
-		left := omniExtractTableExprRefs(n.Left, defaultDB)
-		right := omniExtractTableExprRefs(n.Right, defaultDB)
+		left := extractTableExprRefs(n.Left, defaultDB)
+		right := extractTableExprRefs(n.Right, defaultDB)
 		return append(left, right...)
 	case *ast.SubqueryExpr:
 		// Cumulative #26: derived tables aren't base-table candidates;
@@ -340,25 +340,25 @@ type updateTableAliasMap struct {
 	distinctBases []priorBackupTable
 }
 
-// omniBuildTableAliasMap walks an UpdateStmt's Tables slice and
+// buildTableAliasMap walks an UpdateStmt's Tables slice and
 // builds resolution state for SET-clause target extraction.
 // Unqualified TableRef Schema is resolved to defaultDB.
 // JoinClause recurses into Left+Right. SubqueryExpr contributes
 // nothing — derived tables aren't base-table candidates (cumulative
 // #26).
-func omniBuildTableAliasMap(tables []ast.TableExpr, defaultDB string) *updateTableAliasMap {
+func buildTableAliasMap(tables []ast.TableExpr, defaultDB string) *updateTableAliasMap {
 	m := &updateTableAliasMap{
 		bySchemaName: make(map[string]priorBackupTable),
 		byAlias:      make(map[string]priorBackupTable),
 		byBareName:   make(map[string][]priorBackupTable),
 	}
 	for _, t := range tables {
-		omniCollectTableAliases(t, defaultDB, m)
+		collectTableAliases(t, defaultDB, m)
 	}
 	return m
 }
 
-func omniCollectTableAliases(t ast.TableExpr, defaultDB string, m *updateTableAliasMap) {
+func collectTableAliases(t ast.TableExpr, defaultDB string, m *updateTableAliasMap) {
 	if t == nil {
 		return
 	}
@@ -389,15 +389,15 @@ func omniCollectTableAliases(t ast.TableExpr, defaultDB string, m *updateTableAl
 			m.distinctBases = append(m.distinctBases, base)
 		}
 	case *ast.JoinClause:
-		omniCollectTableAliases(n.Left, defaultDB, m)
-		omniCollectTableAliases(n.Right, defaultDB, m)
+		collectTableAliases(n.Left, defaultDB, m)
+		collectTableAliases(n.Right, defaultDB, m)
 	case *ast.SubqueryExpr:
 		// Derived table — not a base-table candidate.
 	default:
 	}
 }
 
-// omniExtractUpdateTargets walks an UpdateStmt's SetList and returns
+// extractUpdateTargets walks an UpdateStmt's SetList and returns
 // the distinct base-table references that are actual mutation
 // targets. Resolution by qualifier type:
 //
@@ -415,7 +415,7 @@ func omniCollectTableAliases(t ast.TableExpr, defaultDB string, m *updateTableAl
 //     refs at execution time).
 //
 // Returns deduplicated targets.
-func omniExtractUpdateTargets(setList []*ast.Assignment, m *updateTableAliasMap, dbMetadata *metadatapb.DatabaseSchemaMetadata) []priorBackupTable {
+func extractUpdateTargets(setList []*ast.Assignment, m *updateTableAliasMap, dbMetadata *metadatapb.DatabaseSchemaMetadata) []priorBackupTable {
 	var result []priorBackupTable
 	seen := make(map[string]bool)
 	add := func(t priorBackupTable) {
@@ -464,7 +464,7 @@ func omniExtractUpdateTargets(setList []*ast.Assignment, m *updateTableAliasMap,
 			// (Codex-fix-1e, refined by Codex-fix-1h to mirror
 			// transformer semantics — any-match attributes; zero-
 			// match or no-metadata falls back to all distinctBases).
-			for _, t := range omniResolveUnqualifiedSETColumn(col.Column, m.distinctBases, dbMetadata) {
+			for _, t := range resolveUnqualifiedSETColumn(col.Column, m.distinctBases, dbMetadata) {
 				add(t)
 			}
 		}
@@ -472,7 +472,7 @@ func omniExtractUpdateTargets(setList []*ast.Assignment, m *updateTableAliasMap,
 	return result
 }
 
-// omniResolveUnqualifiedSETColumn resolves an unqualified SET column
+// resolveUnqualifiedSETColumn resolves an unqualified SET column
 // name to its owning base table(s). Mirrors the transformer's
 // resolveUnqualifiedColumns semantics at
 // parser/tidb/backup.go:539-576 (cumulative #30 Codex-fix-1h):
@@ -501,7 +501,7 @@ func omniExtractUpdateTargets(setList []*ast.Assignment, m *updateTableAliasMap,
 // SET fall through to the zero-match path → all distinctBases
 // fallback. Case-insensitive matching on table/column names per
 // MySQL convention.
-func omniResolveUnqualifiedSETColumn(colName string, distinctBases []priorBackupTable, dbMetadata *metadatapb.DatabaseSchemaMetadata) []priorBackupTable {
+func resolveUnqualifiedSETColumn(colName string, distinctBases []priorBackupTable, dbMetadata *metadatapb.DatabaseSchemaMetadata) []priorBackupTable {
 	if colName == "" {
 		return distinctBases
 	}

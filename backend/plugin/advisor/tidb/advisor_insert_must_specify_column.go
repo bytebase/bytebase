@@ -26,7 +26,7 @@ type InsertMustSpecifyColumnAdvisor struct {
 
 // Check checks for to enforce column specified.
 func (*InsertMustSpecifyColumnAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, err := getTiDBOmniNodes(checkCtx)
+	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +54,7 @@ type insertMustSpecifyColumnChecker struct {
 	title      string
 }
 
-func (c *insertMustSpecifyColumnChecker) checkStmt(ostmt OmniStmt) {
+func (c *insertMustSpecifyColumnChecker) checkStmt(ostmt Stmt) {
 	node, ok := ostmt.Node.(*ast.InsertStmt)
 	if !ok {
 		return

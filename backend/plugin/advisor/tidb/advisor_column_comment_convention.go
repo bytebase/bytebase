@@ -36,7 +36,7 @@ type ColumnCommentConventionAdvisor struct {
 // advice path is intentionally removed in this migration — there's no
 // fallible op left to wrap.
 func (*ColumnCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, err := getTiDBOmniNodes(checkCtx)
+	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +63,7 @@ func (*ColumnCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor
 				rows = append(rows, columnCommentRow{
 					table:   tableName,
 					column:  col.Name,
-					exists:  omniColumnHasComment(col),
+					exists:  columnHasComment(col),
 					comment: col.Comment,
 					line:    ostmt.AbsoluteLine(col.Loc.Start),
 				})
@@ -87,7 +87,7 @@ func (*ColumnCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor
 						rows = append(rows, columnCommentRow{
 							table:   tableName,
 							column:  col.Name,
-							exists:  omniColumnHasComment(col),
+							exists:  columnHasComment(col),
 							comment: col.Comment,
 							line:    stmtLine,
 						})
@@ -99,7 +99,7 @@ func (*ColumnCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor
 					rows = append(rows, columnCommentRow{
 						table:   tableName,
 						column:  cmd.Column.Name,
-						exists:  omniColumnHasComment(cmd.Column),
+						exists:  columnHasComment(cmd.Column),
 						comment: cmd.Column.Comment,
 						line:    stmtLine,
 					})

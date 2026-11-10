@@ -45,7 +45,7 @@ type NoLeadingWildcardLikeAdvisor struct {
 //     calls) silently skip — pingcap's restoreNode produced text starting
 //     with `?` / column-name / function-name, none of which start with `%`.
 func (*NoLeadingWildcardLikeAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, err := getTiDBOmniNodes(checkCtx)
+	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}

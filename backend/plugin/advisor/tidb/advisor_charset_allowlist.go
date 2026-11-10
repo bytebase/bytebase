@@ -30,7 +30,7 @@ type CharsetAllowlistAdvisor struct {
 // advisor), and CreateDatabase/CreateTable/AlterDatabase/AlterTable
 // can't nest themselves. No wrapper-statement risk.
 func (*CharsetAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, err := getTiDBOmniNodes(checkCtx)
+	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -63,13 +63,13 @@ func (*CharsetAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 		stmtLine := ostmt.FirstTokenLine()
 		switch n := ostmt.Node.(type) {
 		case *ast.CreateDatabaseStmt:
-			if cs := omniDatabaseOption(n.Options, omniOptionNamesCharset); cs != "" {
+			if cs := databaseOption(n.Options, optionNamesCharset); cs != "" {
 				if _, ok := allowlist[cs]; !ok {
 					emit(text, cs, stmtLine)
 				}
 			}
 		case *ast.AlterDatabaseStmt:
-			if cs := omniDatabaseOption(n.Options, omniOptionNamesCharset); cs != "" {
+			if cs := databaseOption(n.Options, optionNamesCharset); cs != "" {
 				if _, ok := allowlist[cs]; !ok {
 					emit(text, cs, stmtLine)
 				}
@@ -78,7 +78,7 @@ func (*CharsetAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 			// Table-level charset first; pingcap parity stops at the first
 			// violation per top-level statement (table-level OR column-level,
 			// not both).
-			if cs := omniTableOption(n.Options, omniOptionNamesCharset); cs != "" {
+			if cs := tableOption(n.Options, optionNamesCharset); cs != "" {
 				if _, ok := allowlist[cs]; !ok {
 					emit(text, cs, stmtLine)
 					continue
@@ -88,7 +88,7 @@ func (*CharsetAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 				if col == nil {
 					continue
 				}
-				cs := omniColumnCharset(col)
+				cs := columnCharset(col)
 				if cs == "" {
 					continue
 				}
@@ -114,7 +114,7 @@ func (*CharsetAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 					if cmd.Option == nil {
 						continue
 					}
-					if !omniOptionNameMatches(cmd.Option.Name, omniOptionNamesCharset) {
+					if !optionNameMatches(cmd.Option.Name, optionNamesCharset) {
 						continue
 					}
 					cs := strings.ToLower(cmd.Option.Value)
@@ -145,7 +145,7 @@ func (*CharsetAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 						if col == nil {
 							continue
 						}
-						cs := omniColumnCharset(col)
+						cs := columnCharset(col)
 						if cs == "" {
 							continue
 						}
@@ -158,7 +158,7 @@ func (*CharsetAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 					if cmd.Column == nil {
 						continue
 					}
-					cs := omniColumnCharset(cmd.Column)
+					cs := columnCharset(cmd.Column)
 					if cs == "" {
 						continue
 					}

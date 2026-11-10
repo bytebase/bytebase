@@ -26,7 +26,7 @@ type StatementDisallowCommitAdvisor struct {
 
 // Check checks for disallow COMMIT.
 func (*StatementDisallowCommitAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, err := getTiDBOmniNodes(checkCtx)
+	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}

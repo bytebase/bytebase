@@ -26,7 +26,7 @@ type ColumnAutoIncrementMustUnsignedAdvisor struct {
 
 // Check checks for unsigned auto-increment column.
 func (*ColumnAutoIncrementMustUnsignedAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, err := getTiDBOmniNodes(checkCtx)
+	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -53,9 +53,9 @@ type columnAutoIncrementMustUnsignedChecker struct {
 	title      string
 }
 
-func (c *columnAutoIncrementMustUnsignedChecker) checkStmt(ostmt OmniStmt) {
+func (c *columnAutoIncrementMustUnsignedChecker) checkStmt(ostmt Stmt) {
 	cols := collectColumnViolations(ostmt, func(col *ast.ColumnDef) bool {
-		return !autoIncrementColumnIsUnsignedOmni(col)
+		return !autoIncrementColumnIsUnsigned(col)
 	})
 	for _, col := range cols {
 		c.adviceList = append(c.adviceList, &storepb.Advice{
@@ -68,7 +68,7 @@ func (c *columnAutoIncrementMustUnsignedChecker) checkStmt(ostmt OmniStmt) {
 	}
 }
 
-// autoIncrementColumnIsUnsignedOmni returns true unless the column is
+// autoIncrementColumnIsUnsigned returns true unless the column is
 // AUTO_INCREMENT and neither Unsigned nor Zerofill is set. Pingcap-typed
 // `mysql.HasUnsignedFlag(column.Tp.GetFlag())` returned true when EITHER
 // the unsigned flag OR the zerofill flag was set (ZEROFILL implies
@@ -76,7 +76,7 @@ func (c *columnAutoIncrementMustUnsignedChecker) checkStmt(ostmt OmniStmt) {
 // `col.TypeName.Zerofill` are separate booleans. Check both to preserve
 // pingcap-tidb behavior. Mirrors mysql analog at
 // `mysql/rule_column_auto_increment_must_unsigned.go:102`.
-func autoIncrementColumnIsUnsignedOmni(col *ast.ColumnDef) bool {
+func autoIncrementColumnIsUnsigned(col *ast.ColumnDef) bool {
 	if col == nil {
 		return true
 	}
