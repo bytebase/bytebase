@@ -438,7 +438,9 @@ export function AgentWindow() {
       contextualPageHelpRef.current &&
       isAgentPageHelpRequestCurrent(contextualPageHelpRef.current)
     ) {
-      setPreferencesOpen(false);
+      if (!wasVisibleRef.current) {
+        setPreferencesOpen(false);
+      }
       setShowArchivedOnly(false);
       setRenamingChatId(null);
       setMobileScreen("conversation");

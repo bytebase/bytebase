@@ -575,6 +575,81 @@ test("shows an empty start on general pages without discarding the previous disc
 });
 
 describe("AgentWindow", () => {
+  test.each([
+    { width: 1200, action: "change" },
+    { width: 390, action: "change" },
+    { width: 1200, action: "reset" },
+    { width: 390, action: "reset" },
+  ])("keeps preferences open after $action with current page help at $width px", async ({ width, action }) => {
+    vi.stubGlobal("innerWidth", width);
+    useAgentStore.setState({ size: { width, height: 600 } });
+    const store = useAgentStore.getState();
+    store.updatePreferences({ openingBehavior: action === "reset" ? "continue" : "landing" });
+    const chat = store.createChat({ context: mocks.workspace.name, workspaceName: mocks.workspace.name });
+    store.setDraft(chat.id, { text: "Keep this draft" });
+    store.addMessage({ chatId: chat.id, role: "user", content: "Existing discussion" });
+    const onStart = vi.fn(() => true);
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    let revoke = () => {};
+    try {
+      render();
+      act(() => { revoke = openAgentPageHelp({ page: { kind: "global-masking" }, maskingRuleEditor: true, onStart }); });
+      const chatCount = useAgentStore.getState().chats.length;
+      act(() => screen.getByRole("button", { name: "agent.preferences.title" }).click());
+
+      if (action === "change") {
+        act(() => screen.getByRole("radio", { name: "agent.preferences.continue-last-chat" }).click());
+      } else {
+        await act(async () => screen.getByRole("button", { name: "agent.preferences.reset" }).click());
+        const confirmation = screen.getByRole("dialog", { name: "agent.preferences.reset-confirmation" });
+        await act(async () => within(confirmation).getByRole("button", { name: "common.reset" }).click());
+      }
+
+      expect(screen.getByRole("region", { name: "agent.preferences.title" })).toBeVisible();
+      expect(screen.getByRole("radio", { name: action === "change" ? "agent.preferences.continue-last-chat" : "agent.preferences.show-landing" })).toBeChecked();
+      if (action === "reset") {
+        expect(useAgentStore.getState().preferences).toEqual(DEFAULT_AGENT_PREFERENCES);
+      }
+      act(() => screen.getByRole("button", { name: "agent.preferences.back" }).click());
+      expect(document.body.querySelector('[data-agent-contextual-start="global-masking"]')).toBeVisible();
+      expect(useAgentStore.getState().currentChatId).toBe(chat.id);
+      expect(useAgentStore.getState().chats).toHaveLength(chatCount);
+      expect(store.getDraft(chat.id).text).toBe("Keep this draft");
+      expect(store.getMessages(chat.id)).toHaveLength(1);
+      expect(onStart).not.toHaveBeenCalled();
+      expect(getCurrentQueuedUserMessage()).toBeUndefined();
+    } finally {
+      act(() => revoke());
+      unmount();
+    }
+  });
+
+  test.each(["reopen", "new help"])("dismisses preferences on %s while page help is current", (action) => {
+    const store = useAgentStore.getState();
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    let revoke = () => {};
+    try {
+      render();
+      act(() => { revoke = openAgentPageHelp({ page: { kind: "global-masking" } }); });
+      act(() => screen.getByRole("button", { name: "agent.preferences.title" }).click());
+      expect(screen.getByRole("region", { name: "agent.preferences.title" })).toBeVisible();
+
+      if (action === "reopen") {
+        act(() => store.toggle());
+        act(() => store.open());
+      } else {
+        act(() => { revoke = openAgentPageHelp({ page: { kind: "semantic-types" } }); });
+      }
+
+      expect(screen.queryByRole("region", { name: "agent.preferences.title" })).toBeNull();
+      expect(document.body.querySelector(`[data-agent-contextual-start="${action === "reopen" ? "global-masking" : "semantic-types"}"]`)).toBeVisible();
+      expect(getCurrentQueuedUserMessage()).toBeUndefined();
+    } finally {
+      act(() => revoke());
+      unmount();
+    }
+  });
+
   test.each([false, true])("opens editor help without submitting and dismisses only when started=%s", (started) => {
     const store = useAgentStore.getState();
     const owner = store.createChat({ context: mocks.workspace.name, workspaceName: mocks.workspace.name });
