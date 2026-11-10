@@ -47,15 +47,15 @@ func extractChangedResources(currentDatabase string, currentSchema string, dbMet
 	}
 
 	for _, unifiedAST := range asts {
-		omniAST, ok := unifiedAST.(*OmniAST)
+		node, ok := unifiedAST.(*AST)
 		if !ok {
-			return nil, errors.New("expected OmniAST for MSSQL")
+			return nil, errors.New("expected AST for MSSQL")
 		}
-		if omniAST.Node == nil {
+		if node.Node == nil {
 			continue
 		}
 
-		switch n := omniAST.Node.(type) {
+		switch n := node.Node.(type) {
 		case *ast.CreateTableStmt:
 			addTable(n.Name, false)
 
@@ -119,25 +119,25 @@ func extractChangedResources(currentDatabase string, currentSchema string, dbMet
 				dmlCount++
 				continue
 			}
-			addDML(omniAST.Text)
+			addDML(node.Text)
 
 		case *ast.UpdateStmt:
 			if ref, ok := n.Relation.(*ast.TableRef); ok {
 				addTable(resolveDMLWriteTarget(ref, n.FromClause, n.WithClause), false)
 			}
-			addDML(omniAST.Text)
+			addDML(node.Text)
 
 		case *ast.DeleteStmt:
 			if ref, ok := n.Relation.(*ast.TableRef); ok {
 				addTable(resolveDMLWriteTarget(ref, n.FromClause, n.WithClause), false)
 			}
-			addDML(omniAST.Text)
+			addDML(node.Text)
 
 		case *ast.MergeStmt:
 			if ref, ok := n.Target.(*ast.TableRef); ok {
 				addTable(ref, false)
 			}
-			addDML(omniAST.Text)
+			addDML(node.Text)
 
 		case *ast.CreateTableAsSelectStmt:
 			addTable(n.Name, false)

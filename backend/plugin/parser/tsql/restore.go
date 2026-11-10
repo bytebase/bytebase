@@ -40,7 +40,7 @@ func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement
 	// Find the AST that contains the statement at the backup position
 	var targetResult ast.Node
 	for _, parsedStatement := range parsedStatements {
-		node, ok := GetOmniNode(parsedStatement.AST)
+		node, ok := GetNode(parsedStatement.AST)
 		if !ok || node == nil || !isRestorableDML(node) {
 			continue
 		}
@@ -392,7 +392,7 @@ func extractStatement(statement string, backupItem *storepb.PriorBackupDetail_It
 
 	var originalSQL []string
 	for _, parsedStatement := range parseResults {
-		node, ok := GetOmniNode(parsedStatement.AST)
+		node, ok := GetNode(parsedStatement.AST)
 		if !ok || node == nil || !isRestorableDML(node) {
 			continue
 		}

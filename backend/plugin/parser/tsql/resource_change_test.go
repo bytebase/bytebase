@@ -198,9 +198,9 @@ func TestClassifyQueryType_SelectInto(t *testing.T) {
 		require.NoError(t, err, statement)
 		asts := base.ExtractASTs(stmts)
 		require.Len(t, asts, 1, statement)
-		omniAST, ok := asts[0].(*OmniAST)
+		node, ok := asts[0].(*AST)
 		require.True(t, ok, statement)
-		return classifyQueryType(omniAST.Node, false)
+		return classifyQueryType(node.Node, false)
 	}
 	// SELECT ... INTO creates a table — a write — so it must classify as DDL and take the
 	// write-authorization path, not be authorized as a read. INTO may sit on the first

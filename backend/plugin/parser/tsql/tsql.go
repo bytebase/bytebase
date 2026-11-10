@@ -45,7 +45,7 @@ func parseTSQLStatements(statement string) ([]base.ParsedStatement, error) {
 			}
 			result = append(result, base.ParsedStatement{
 				Statement: stmt,
-				AST: &OmniAST{
+				AST: &AST{
 					Node:          os.AST,
 					Text:          stmt.Text,
 					StartPosition: stmt.Start,

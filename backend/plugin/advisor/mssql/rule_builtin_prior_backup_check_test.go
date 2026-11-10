@@ -27,7 +27,7 @@ DELETE p FROM dbo.pokes AS p WHERE p.c1 = 1;`
 				Text:  stmt.Text,
 				Start: start,
 			},
-			AST: &tsqlparser.OmniAST{
+			AST: &tsqlparser.AST{
 				Node:          stmt.AST,
 				StartPosition: start,
 			},
