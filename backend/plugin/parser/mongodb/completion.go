@@ -42,7 +42,7 @@ func Completion(ctx context.Context, cCtx base.CompletionContext, statement stri
 			text = formatCollectionCandidate(c.Text, inBracket)
 		}
 		result = append(result, base.Candidate{
-			Type: omniCandidateTypeToBase(c.Type),
+			Type: candidateTypeToBase(c.Type),
 			Text: text,
 		})
 	}
@@ -137,8 +137,8 @@ func formatCollectionCandidate(name string, inBracket bool) string {
 	return name
 }
 
-// omniCandidateTypeToBase maps omni completion candidate types to Bytebase base types.
-func omniCandidateTypeToBase(t omnicompletion.CandidateType) base.CandidateType {
+// candidateTypeToBase maps omni completion candidate types to Bytebase base types.
+func candidateTypeToBase(t omnicompletion.CandidateType) base.CandidateType {
 	switch t {
 	case omnicompletion.CandidateCollection:
 		return base.CandidateTypeTable
