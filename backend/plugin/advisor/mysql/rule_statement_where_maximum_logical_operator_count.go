@@ -49,7 +49,7 @@ func (*StatementWhereMaximumLogicalOperatorCountAdvisor) Check(_ context.Context
 		if stmt.AST == nil {
 			continue
 		}
-		node, ok := mysqlparser.GetOmniNode(stmt.AST)
+		node, ok := mysqlparser.GetNode(stmt.AST)
 		if !ok {
 			continue
 		}

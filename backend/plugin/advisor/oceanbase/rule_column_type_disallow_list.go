@@ -50,7 +50,7 @@ func (*ColumnTypeDisallowListAdvisor) Check(_ context.Context, checkCtx advisor.
 		if stmt.AST == nil {
 			continue
 		}
-		node, ok := oceanbaseparser.GetOmniNode(stmt.AST)
+		node, ok := oceanbaseparser.GetNode(stmt.AST)
 		if !ok {
 			continue
 		}

@@ -142,7 +142,7 @@ func TestExtractChangedResourcesRejectsForeignAST(t *testing.T) {
 	stmts, err := base.ParseStatements(storepb.Engine_MYSQL, "CREATE TABLE t (a INT);")
 	require.NoError(t, err)
 	_, err = extractChangedResources("db", "", nil /* dbMetadata */, base.ExtractASTs(stmts), "CREATE TABLE t (a INT);")
-	require.ErrorContains(t, err, "expected OmniAST for MariaDB")
+	require.ErrorContains(t, err, "expected AST for MariaDB")
 }
 
 // TestExtractChangedResourcesCreateOrReplaceCountsExistingRows covers a form

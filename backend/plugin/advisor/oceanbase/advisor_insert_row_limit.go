@@ -52,7 +52,7 @@ func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Contex
 		if stmt.AST == nil {
 			continue
 		}
-		node, ok := oceanbaseparser.GetOmniNode(stmt.AST)
+		node, ok := oceanbaseparser.GetNode(stmt.AST)
 		if !ok {
 			continue
 		}
@@ -76,7 +76,7 @@ type insertRowLimitChecker struct {
 }
 
 func (checker *insertRowLimitChecker) checkInsert(text string, baseLine int, stmt *ast.InsertStmt) {
-	line := omniLine(baseLine, text, stmt.Loc)
+	line := lineOf(baseLine, text, stmt.Loc)
 	if stmt.Select != nil || stmt.TableSource != nil {
 		checker.handleInsertQueryExpression(text, line)
 	}

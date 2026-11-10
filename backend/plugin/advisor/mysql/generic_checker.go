@@ -133,7 +133,7 @@ func RunRules(stmts []base.ParsedStatement, rules []OmniRule) []*storepb.Advice 
 		if stmt.AST == nil {
 			continue
 		}
-		node, ok := mysqlparser.GetOmniNode(stmt.AST)
+		node, ok := mysqlparser.GetNode(stmt.AST)
 		if !ok {
 			continue
 		}

@@ -49,7 +49,7 @@ func (*ColumnMaximumCharacterLengthAdvisor) Check(_ context.Context, checkCtx ad
 		if stmt.AST == nil {
 			continue
 		}
-		node, ok := oceanbaseparser.GetOmniNode(stmt.AST)
+		node, ok := oceanbaseparser.GetNode(stmt.AST)
 		if !ok {
 			continue
 		}

@@ -50,7 +50,7 @@ func (*ColumnAutoIncrementInitialValueAdvisor) Check(_ context.Context, checkCtx
 		if stmt.AST == nil {
 			continue
 		}
-		node, ok := mariadbparser.GetOmniNode(stmt.AST)
+		node, ok := mariadbparser.GetNode(stmt.AST)
 		if !ok {
 			continue
 		}

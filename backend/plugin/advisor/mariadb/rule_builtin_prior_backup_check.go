@@ -52,7 +52,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 		if stmt.AST == nil {
 			continue
 		}
-		node, ok := mariadbparser.GetOmniNode(stmt.AST)
+		node, ok := mariadbparser.GetNode(stmt.AST)
 		if !ok {
 			continue
 		}
@@ -117,7 +117,7 @@ func prepareTransformation(databaseName string, parsedStatements []base.ParsedSt
 		if stmt.AST == nil {
 			continue
 		}
-		node, ok := mariadbparser.GetOmniNode(stmt.AST)
+		node, ok := mariadbparser.GetNode(stmt.AST)
 		if !ok {
 			continue
 		}

@@ -45,11 +45,11 @@ func TestParseStatementsReadsMariaDBOnlySyntax(t *testing.T) {
 		require.NoError(t, err, statement)
 		require.Len(t, statements, 1, statement)
 
-		omniAST, ok := statements[0].AST.(*OmniAST)
+		node, ok := statements[0].AST.(*AST)
 		require.True(t, ok, statement)
-		require.NotNil(t, omniAST.Node, statement)
-		require.Equal(t, statements[0].Text, omniAST.Text, statement)
-		require.Equal(t, statements[0].Start, omniAST.StartPosition, statement)
+		require.NotNil(t, node.Node, statement)
+		require.Equal(t, statements[0].Text, node.Text, statement)
+		require.Equal(t, statements[0].Start, node.StartPosition, statement)
 	}
 }
 
