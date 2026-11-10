@@ -9,7 +9,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PROJECT_V1_ROUTE_RELEASES } from "@/app/router/handles";
 import gitopsWorkflowImage from "@/assets/gitops-workflow.svg";
-import { CreateWorkloadIdentitySheet } from "@/components/CreateWorkloadIdentitySheet";
 import { DatabaseSelect } from "@/components/DatabaseSelect";
 import { ExternalUrlAlert } from "@/components/ExternalUrlAlert";
 import { PermissionGuard } from "@/components/PermissionGuard";
@@ -21,6 +20,7 @@ import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import { CopyButton } from "@/components/ui/copy-button";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsPanel, TabsTrigger } from "@/components/ui/tabs";
+import { WorkloadIdentityDialog } from "@/components/WorkloadIdentityFlow/WorkloadIdentityDialog";
 import { useProjectByName } from "@/hooks/useProjectByName";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/app";
@@ -575,7 +575,7 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
         </p>
       </div>
 
-      <CreateWorkloadIdentitySheet
+      <WorkloadIdentityDialog
         open={showCreateDrawer}
         project={projectName}
         onClose={() => setShowCreateDrawer(false)}

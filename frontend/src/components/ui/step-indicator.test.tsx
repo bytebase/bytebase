@@ -135,4 +135,70 @@ describe("StepIndicator", () => {
       });
     });
   });
+
+  describe("vertical", () => {
+    test("shows each description and marks finished steps as success", () => {
+      const { container, unmount } = renderIntoContainer(
+        <StepIndicator
+          orientation="vertical"
+          currentIndex={1}
+          steps={[
+            { title: "First", description: "Pick one" },
+            { title: "Second", description: "Fill in" },
+          ]}
+        />
+      );
+
+      const items = container.querySelectorAll("li");
+      expect(items[0].textContent).toContain("Pick one");
+      expect(items[1].textContent).toContain("Fill in");
+      expect(items[0].querySelector(".bg-success")).toBeTruthy();
+      expect(items[1].querySelector('[aria-current="step"]')).toBeTruthy();
+      unmount();
+    });
+  });
+
+  test("rail row shows only the current title and marks finished steps", () => {
+    const { container, unmount } = renderIntoContainer(
+      <StepIndicator
+        variant="rail"
+        currentIndex={1}
+        steps={[{ title: "First" }, { title: "Second" }, { title: "Third" }]}
+      />
+    );
+
+    const titles = Array.from(container.querySelectorAll("li span")).map(
+      (span) => ({
+        text: span.textContent,
+        shown: !span.classList.contains("sr-only"),
+      })
+    );
+    expect(titles).toEqual([
+      { text: "First", shown: false },
+      { text: "Second", shown: true },
+      { text: "Third", shown: false },
+    ]);
+    expect(
+      container.querySelectorAll("li")[0].querySelector(".bg-success")
+    ).toBeTruthy();
+    unmount();
+  });
+
+  test("moves to a step when it is clicked", () => {
+    const onStepClick = vi.fn();
+    const { container, unmount } = renderIntoContainer(
+      <StepIndicator
+        orientation="vertical"
+        currentIndex={0}
+        onStepClick={onStepClick}
+        steps={[{ title: "First" }, { title: "Second" }]}
+      />
+    );
+
+    act(() => {
+      container.querySelectorAll("button")[1].click();
+    });
+    expect(onStepClick).toHaveBeenCalledWith(1);
+    unmount();
+  });
 });
