@@ -24,6 +24,8 @@ one line. Under `frontend/src/routes/project/plan-detail/components/review/`:
   gives it a timeline icon of its own and a card offset by `ml-3`.
 - **Show and Hide have no visible scope.** Show reveals a run's findings as further entries below
   the line. With two reviews in a row, the reader cannot see where one review's findings end.
+- **Show and Hide read as static text.** The control is a link `Button` whose color is overridden
+  with `text-control-light`, so it looks like the timestamp beside it. BYT-10508 reports this.
 
 ## Principle
 
@@ -85,6 +87,12 @@ show is a plain line, as today.
 AI review as one review. This design does not depend on the outcome: the group belongs to a review
 line, however many reviewers the page distinguishes.
 
+**D7 · Show and Hide look like actions.** The control drops the `text-control-light` override and
+takes the shared link `Button`'s own color, the same as "View in Statement" on a finding's card.
+Hover and keyboard focus come from the shared button. Rejected: a chevron in place of the word. It
+would sit directly above the cards' own fold chevrons, and it is less clear which one folds what.
+Rejected: an outlined button, which is heavier than the one line it sits on.
+
 ## States
 
 | Review | Activity shows |
@@ -102,20 +110,22 @@ line, however many reviewers the page distinguishes.
 Frontend and one guideline file. One PR. It depends on slice 1 of
 [Plan comment card](plan-comment-card.md), which gives a finding card its title bar.
 
-1. **Group (D1 to D5).**
-   - Files: `timelineEvents.ts` (a run's finding entries become children of its `review-run`
-     entry), `ReviewActivityTimeline.tsx` (`ReviewRunActivityRow` renders the group;
-     `ThreadActivityRow` keeps rendering a person's thread), `foldTimeline.ts` (a group stays
-     together when a long history folds, as an open run's line and cards do today), and `docs/agents/frontend-ux.md` (the exception in D4).
-   - Tests: `timelineEvents.test.ts` (the kept-card rule in D5, unchanged cases plus the grouping),
-     `ReviewActivityTimeline.test.tsx` (a finding renders inside its review's group and without a
-     timeline icon; a hidden review with a kept finding still renders a group; a review with no
-     cards renders no frame), `foldTimeline.test.ts`. E2E:
-     `frontend/tests/e2e/plan-detail/plan-detail-review.spec.ts`.
+1. **Group (D1 to D5, D7).**
+   - `timelineEvents.ts`: a run's finding entries become children of its `review-run` entry.
+   - `ReviewActivityTimeline.tsx`: `ReviewRunActivityRow` renders the group, and its Show and Hide
+     control drops the `text-control-light` override. `ThreadActivityRow` keeps rendering a
+     person's thread.
+   - `foldTimeline.ts`: a group stays together when a long history folds, as an open run's line
+     and cards do today.
+   - `docs/agents/frontend-ux.md`: the exception in D4.
+   - Tests: `timelineEvents.test.ts` (the kept-card rule in D5, unchanged cases plus the
+     grouping), `ReviewActivityTimeline.test.tsx` (a finding renders inside its review's group and
+     without a timeline icon; a hidden review with a kept finding still renders a group; a review
+     with no cards renders no frame; the Show and Hide control carries no color override),
+     `foldTimeline.test.ts`. E2E: `frontend/tests/e2e/plan-detail/plan-detail-review.spec.ts`.
 
 ## Not in this PR
 
-- Making Show and Hide look like actions, and grouping review events by SQL change. Both are
-  BYT-10508.
+- Grouping review events by SQL change, which is the other half of BYT-10508.
 - Merging the two reviewers into one review. That is BYT-10505.
 - The wording of review lines, which is BYT-10495.
