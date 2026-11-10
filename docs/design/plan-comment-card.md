@@ -203,8 +203,11 @@ thread is open or resolved. Rejected: a count or the database names in the bar. 
 being simple and long lists do not fit. BYT-10514 tracks the one signal worth adding there later,
 a label for a comment that involves a production database.
 
-**D10 · A thread that is not on lines has a bar too.** The API allows such a thread, and the
-product's own comment box does not create one. It is titled "Comment on the plan", so invariant 2
+**D10 · A thread that is not on lines has a bar too.** A thread is on lines when it has a
+statement anchor, and the anchor is also what names its change. A thread without one can come
+from an API client, or from the rule review for a syntax error that has no position, which the
+parsers do not report today. The product's own comment box does not create one. Whoever posted
+it, it is titled "Comment on the plan", because the card has no change to name. So invariant 2
 has no exception and the card has one layout. Rejected: keeping today's card without a bar for it.
 Every other rule would then need a second version. Rejected: never folding it. A resolved one
 could not be put away.
@@ -285,8 +288,10 @@ The two sibling docs add three more PRs. Across all three docs the order is:
   (BYT-10513), and a label in the bar for a comment that involves a production database
   (BYT-10514).
 - Naming who resolved a thread. It needs a field on the thread first.
-- Creating a thread that is not on lines from the product. D10 only gives such a thread a bar when
-  the API creates one. The comment box in Activity keeps posting a plain comment, and the Changes
+- Creating a thread that is not on lines from the product. D10 gives such a thread a bar and adds
+  no way to create one. The comment box in Activity keeps posting a plain comment, and the Changes
   section keeps creating threads on selected lines only.
+- A title that names the change for a review finding without lines. The finding would first need
+  to record its change, and no review posts one today.
 - Highlighting a thread's lines while the pointer is on its title bar.
 - The thread stepper (`StatementThreadWalker`) and the margin markers, which do not change.
