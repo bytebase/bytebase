@@ -86,6 +86,10 @@ func TestValidateSQLForEditor(t *testing.T) {
 			gotAllQuery: false,
 		},
 		{
+			// A CTE may precede INSERT ... SELECT but not INSERT ... VALUES.
+			// omni accepts this (TiDB v8.5.5 rejects it at parse), so the
+			// validator refuses it by classifying the INSERT as non-read rather
+			// than surfacing a parse error — the editor blocks it either way.
 			statement: `
 				With t as (
 					select * from t1
@@ -96,7 +100,6 @@ func TestValidateSQLForEditor(t *testing.T) {
 				`,
 			valid:       false,
 			gotAllQuery: false,
-			err:         true,
 		},
 		{
 			statement:   "select * from t where a = 'klasjdfkljsa$tag$; -- lkjdlkfajslkdfj'",
