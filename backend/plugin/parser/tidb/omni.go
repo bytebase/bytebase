@@ -1,6 +1,8 @@
 package tidb
 
 import (
+	"errors"
+	"fmt"
 	"log/slog"
 	"unicode/utf8"
 
@@ -10,6 +12,83 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
+
+// parseTiDBStatements is the registered ParseStatementsFunc for TiDB (see
+// tidb.go init). omni is the sole TiDB parser: the input is split and every
+// statement is parsed with omni. A statement omni rejects surfaces as a
+// base.SyntaxError with coordinates relative to the original input; there is
+// no pingcap fallback.
+//
+// Accepted limitation: a little TiDB grammar newer than the pinned TiDB
+// v8.5.5 that omni does not yet accept (notably TRAFFIC CAPTURE and COLUMNAR
+// INDEX, which pingcap-master still parses) now surfaces as a parse error
+// rather than being parsed by pingcap. Closing those omni gaps is follow-up.
+func parseTiDBStatements(statement string) ([]base.ParsedStatement, error) {
+	stmts, err := base.SplitMultiSQL(storepb.Engine_TIDB, statement)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []base.ParsedStatement
+	for _, stmt := range stmts {
+		if stmt.Empty {
+			result = append(result, base.ParsedStatement{Statement: stmt})
+			continue
+		}
+
+		list, err := ParseTiDBOmni(stmt.Text)
+		if err != nil {
+			return nil, convertOmniParseError(err, stmt)
+		}
+		if list == nil || len(list.Items) == 0 {
+			// Omni succeeded but produced no items (e.g. a comment-only
+			// statement that survived the splitter). Preserve the statement
+			// position with a nil AST.
+			result = append(result, base.ParsedStatement{Statement: stmt})
+			continue
+		}
+		for _, node := range list.Items {
+			result = append(result, base.ParsedStatement{
+				Statement: stmt,
+				AST: &OmniAST{
+					Node:          node,
+					Text:          stmt.Text,
+					StartPosition: stmt.Start,
+				},
+			})
+		}
+	}
+
+	return result, nil
+}
+
+// convertOmniParseError takes an omni parser error and produces a
+// base.SyntaxError with absolute line/column coordinates (so the customer
+// sees a position relative to the original multi-statement input, not the
+// per-statement excerpt). Returns the original error unchanged if it is not
+// an *omniparser.ParseError.
+func convertOmniParseError(err error, stmt base.Statement) error {
+	var parseErr *omniparser.ParseError
+	if !errors.As(err, &parseErr) {
+		return err
+	}
+
+	pos := ByteOffsetToRunePosition(stmt.Text, parseErr.Position)
+	if stmt.Start != nil {
+		pos.Line += stmt.Start.Line - 1
+	}
+
+	msg := fmt.Sprintf("Syntax error at line %d:%d: %s", pos.Line, pos.Column, parseErr.Message)
+	if parseErr.RelatedText != "" {
+		msg += "\nrelated text: " + parseErr.RelatedText
+	}
+
+	return &base.SyntaxError{
+		Position:   pos,
+		Message:    msg,
+		RawMessage: parseErr.Message,
+	}
+}
 
 // OmniAST wraps an omni/tidb AST node and implements the base.AST interface.
 //

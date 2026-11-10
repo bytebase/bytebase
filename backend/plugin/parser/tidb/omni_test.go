@@ -376,3 +376,52 @@ func TestCreateTableColumnLineTrackingBlankLines(t *testing.T) {
 	a.Equal(5, ct.Cols[0].OriginTextPosition(), "column id should be on line 5")
 	a.Equal(6, ct.Cols[1].OriginTextPosition(), "column name should be on line 6")
 }
+
+// TestParseTiDBStatements_AllAccepted pins the happy path for the registered
+// TiDB ParseStatementsFunc: omni accepts every statement, so every result
+// entry is an *OmniAST and no error is returned.
+func TestParseTiDBStatements_AllAccepted(t *testing.T) {
+	const input = "CREATE TABLE t (id INT); INSERT INTO t VALUES (1);"
+
+	result, err := parseTiDBStatements(input)
+	require.NoError(t, err)
+	require.Len(t, result, 2)
+	for _, ps := range result {
+		require.IsType(t, &OmniAST{}, ps.AST,
+			"happy path: every statement must be *OmniAST")
+	}
+}
+
+// TestParseTiDBStatements_OmniRejectSurfacesError pins that omni is the sole
+// TiDB parser: a statement omni rejects surfaces as a *base.SyntaxError with
+// no pingcap fallback. The COLUMNAR INDEX and TRAFFIC CAPTURE cases are TiDB
+// grammar newer than the pinned v8.5.5 that pingcap-master still accepts —
+// the accepted regression from retiring the omni/pingcap dispatcher. The last
+// case is a genuine syntax error. Error strings are verified against the live
+// omni pin (they differ per case, so the assertion checks the converted type
+// and a populated position, not a shared substring).
+func TestParseTiDBStatements_OmniRejectSurfacesError(t *testing.T) {
+	cases := []struct {
+		name  string
+		input string
+	}{
+		{"traffic capture, newer than v8.5.5", "TRAFFIC CAPTURE TO 's3://x' DURATION = '1h';"},
+		{"create columnar index, newer than v8.5.5", "CREATE COLUMNAR INDEX idx ON t (id);"},
+		{"alter add columnar index, newer than v8.5.5", "ALTER TABLE t ADD COLUMNAR INDEX idx (id);"},
+		{"genuine syntax error", "SELECT FROM WHERE;"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := parseTiDBStatements(tc.input)
+			require.Error(t, err,
+				"omni rejection must surface as an error; there is no pingcap fallback")
+			syntaxErr, ok := err.(*base.SyntaxError)
+			require.True(t, ok,
+				"omni parse error must convert to *base.SyntaxError; got %T", err)
+			require.NotEmpty(t, syntaxErr.RawMessage,
+				"converted error must carry omni's parser complaint")
+			require.NotNil(t, syntaxErr.Position,
+				"converted error must carry a position in the original input")
+		})
+	}
+}
