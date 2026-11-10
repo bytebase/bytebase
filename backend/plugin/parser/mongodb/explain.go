@@ -115,7 +115,7 @@ func singleCollectionStatement(statement string) (*ast.CollectionStatement, erro
 	if len(statements) > 1 {
 		return nil, errors.New("a plan covers a single statement")
 	}
-	node, ok := GetOmniNode(statements[0].AST)
+	node, ok := GetNode(statements[0].AST)
 	if !ok || node == nil {
 		return nil, errors.New("the statement cannot be planned")
 	}

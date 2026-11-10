@@ -13,27 +13,27 @@ func init() {
 	base.RegisterParseStatementsFunc(storepb.Engine_MONGODB, ParseMongoShell)
 }
 
-// OmniAST wraps an omni MongoDB AST node and implements the base.AST interface.
-type OmniAST struct {
+// AST wraps an omni MongoDB AST node and implements the base.AST interface.
+type AST struct {
 	Node          ast.Node
 	StartPosition *storepb.Position
 }
 
 // ASTStartPosition implements base.AST.
-func (a *OmniAST) ASTStartPosition() *storepb.Position {
+func (a *AST) ASTStartPosition() *storepb.Position {
 	return a.StartPosition
 }
 
-// GetOmniNode extracts the omni AST node from a base.AST interface.
-func GetOmniNode(a base.AST) (ast.Node, bool) {
+// GetNode extracts the omni AST node from a base.AST interface.
+func GetNode(a base.AST) (ast.Node, bool) {
 	if a == nil {
 		return nil, false
 	}
-	omniAST, ok := a.(*OmniAST)
+	wrapped, ok := a.(*AST)
 	if !ok {
 		return nil, false
 	}
-	return omniAST.Node, true
+	return wrapped.Node, true
 }
 
 // ParseMongoShell parses a MongoDB shell script and returns parsed statements
@@ -77,7 +77,7 @@ func convertStatements(input string, stmts []mongo.Statement) []base.ParsedState
 					End:   int32(stmt.ByteEnd),
 				},
 			},
-			AST: &OmniAST{
+			AST: &AST{
 				Node:          stmt.AST,
 				StartPosition: startPos,
 			},
