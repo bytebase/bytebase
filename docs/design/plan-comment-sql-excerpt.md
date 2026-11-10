@@ -50,11 +50,12 @@ card names the same lines in words. VS Code marks commented lines the same way, 
 margin. Rejected: darker, bolder line numbers for the range and no bar. It is the quietest option
 and the easiest to miss.
 
-**D3 · The SQL is inset from the comment.** The excerpt's left padding grows from 12px to 40px,
-which is where the comment's text column starts once
-[Plan comment card](plan-comment-card.md) D7 gives the avatar its own column: 12px of padding, a
-20px avatar and an 8px gap. The line numbers then line up with the comment's text and the avatar
-column stays clear. The comment, its replies and the reply footer keep the card's full width and
+**D3 · The SQL is inset from the comment.** The excerpt's left padding becomes the start of the
+comment's text column once [Plan comment card](plan-comment-card.md) D7 gives the avatar its own
+column: the comment's own left padding, a 20px avatar and an 8px gap. The comment is padded
+`px-2 sm:px-3`, so the inset is 36px below the `sm` breakpoint and 40px from it up
+(`pl-9 sm:pl-10`), where today it is 12px at every width. The line numbers then line up with the
+comment's text and the avatar column stays clear. The comment, its replies and the reply footer keep the card's full width and
 its left edge. GitHub's conversation view does the same thing: the comment starts at the box's
 left edge and the code sits behind a number gutter about 64px wide. Rejected: a bordered comment
 box that starts at the code column. Inside a review's group it would be a third frame, which
@@ -67,14 +68,17 @@ still marks the range.
 
 ## States
 
-The excerpt follows the anchor state `StatementAnchorContext` already computes.
+The excerpt follows the anchor state `StatementAnchorContext` already computes. When it renders
+does not change: it renders once the recorded sheet has loaded, with whatever lines of the range
+the sheet's preview holds. This doc changes only how it is drawn.
 
 | Anchor state | Excerpt |
 | --- | --- |
 | `CURRENT` | Context and range in syntax colors, bar on the range |
 | `OUTDATED` | The recorded lines in grey, bar on the range |
-| `UNAVAILABLE`, recorded lines can be loaded | The recorded lines in grey, bar on the range |
-| `UNAVAILABLE`, recorded lines cannot be loaded | No excerpt |
+| `UNAVAILABLE`, the recorded sheet loaded | The recorded lines in grey, bar on the range |
+| `UNAVAILABLE`, a large sheet's preview ends inside the range | The lines the preview holds, in grey, as today |
+| `UNAVAILABLE`, the recorded sheet did not load | No excerpt |
 | `PENDING` | No excerpt until the sheet loads; it loads when the card nears the viewport, as today |
 | Range starts on line 1 or 2 | Fewer than two context lines, as today |
 
@@ -85,11 +89,12 @@ sets the comment's text column that D3 lines up with.
 
 1. **Excerpt (D1 to D4).**
    - Files: `StatementAnchorContext.tsx` (`SqlExcerpt`): drop `bg-accent/12` and `opacity-60`, add
-     the bar and the 40px inset, and render a dimmed excerpt as plain text in `text-control-light`
-     instead of the colorized HTML.
+     the bar and the `pl-9 sm:pl-10` inset, and render a dimmed excerpt as plain text in
+     `text-control-light` instead of the colorized HTML. The condition that mounts `SqlExcerpt`
+     does not change.
    - Tests: `StatementAnchorContext.test.tsx`: no row carries a background class; rows inside the
      range carry the marker and rows outside do not; a dimmed excerpt uses the grey text class, no
-     opacity and no colorized HTML.
+     opacity and no colorized HTML; rows carry the inset class pair.
 
 ## Not in this PR
 
@@ -97,3 +102,5 @@ sets the comment's text column that D3 lines up with.
   two lines above it.
 - Showing how the statement differs now from the revision an outdated comment was made on.
 - Limiting the height of a very long range.
+- Hiding the excerpt when a large sheet's preview ends inside the commented range. Today it shows
+  the lines the preview holds, and this doc leaves when the excerpt renders as it is.
