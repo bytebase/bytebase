@@ -37,8 +37,8 @@ func (*RequireAlgorithmOrLockOptionAdvisor) Check(_ context.Context, checkCtx ad
 		requiredOption, errorCode = "LOCK", code.StatementNoLockOption
 	}
 
-	rule := &requireAlgoLockOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &requireAlgoLockRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
@@ -46,20 +46,20 @@ func (*RequireAlgorithmOrLockOptionAdvisor) Check(_ context.Context, checkCtx ad
 		errorCode:      errorCode,
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type requireAlgoLockOmniRule struct {
-	OmniBaseRule
+type requireAlgoLockRule struct {
+	BaseRule
 	requiredOption string
 	errorCode      code.Code
 }
 
-func (*requireAlgoLockOmniRule) Name() string {
+func (*requireAlgoLockRule) Name() string {
 	return "RequireAlgorithmOrLockOptionRule"
 }
 
-func (r *requireAlgoLockOmniRule) OnStatement(node ast.Node) {
+func (r *requireAlgoLockRule) OnStatement(node ast.Node) {
 	alter, ok := node.(*ast.AlterTableStmt)
 	if !ok {
 		return
@@ -89,7 +89,7 @@ func (r *requireAlgoLockOmniRule) OnStatement(node ast.Node) {
 }
 
 // nolint:unused
-func omniAlterCmdHasOption(cmds []*ast.AlterTableCmd, optName string) bool {
+func alterCmdHasOption(cmds []*ast.AlterTableCmd, optName string) bool {
 	for _, cmd := range cmds {
 		if optName == "ALGORITHM" && cmd.Type == ast.ATAlgorithm {
 			return true
@@ -102,7 +102,7 @@ func omniAlterCmdHasOption(cmds []*ast.AlterTableCmd, optName string) bool {
 }
 
 // nolint:unused
-func omniAlterCmdOptionValue(cmd *ast.AlterTableCmd) string {
+func alterCmdOptionValue(cmd *ast.AlterTableCmd) string {
 	if cmd == nil || cmd.Name == "" {
 		return ""
 	}

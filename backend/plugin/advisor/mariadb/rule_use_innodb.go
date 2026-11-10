@@ -35,25 +35,25 @@ func (*UseInnoDBAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*
 		return nil, err
 	}
 
-	rule := &useInnoDBOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &useInnoDBRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type useInnoDBOmniRule struct {
-	OmniBaseRule
+type useInnoDBRule struct {
+	BaseRule
 }
 
-func (*useInnoDBOmniRule) Name() string {
+func (*useInnoDBRule) Name() string {
 	return "UseInnoDBRule"
 }
 
-func (r *useInnoDBOmniRule) OnStatement(node ast.Node) {
+func (r *useInnoDBRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		r.checkCreateTable(n)
@@ -65,8 +65,8 @@ func (r *useInnoDBOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *useInnoDBOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
-	engine := omniTableOptionValue(n.Options, "ENGINE")
+func (r *useInnoDBRule) checkCreateTable(n *ast.CreateTableStmt) {
+	engine := tableOptionValue(n.Options, "ENGINE")
 	if engine == "" {
 		return
 	}
@@ -76,7 +76,7 @@ func (r *useInnoDBOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
 	}
 }
 
-func (r *useInnoDBOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+func (r *useInnoDBRule) checkAlterTable(n *ast.AlterTableStmt) {
 	for _, cmd := range n.Commands {
 		if cmd.Type == ast.ATTableOption && cmd.Option != nil {
 			if strings.EqualFold(cmd.Option.Name, "ENGINE") && strings.ToLower(cmd.Option.Value) != innoDB {
@@ -88,7 +88,7 @@ func (r *useInnoDBOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
 	}
 }
 
-func (r *useInnoDBOmniRule) checkSetStatement(n *ast.SetStmt) {
+func (r *useInnoDBRule) checkSetStatement(n *ast.SetStmt) {
 	for _, assign := range n.Assignments {
 		if assign.Column == nil {
 			continue
@@ -117,7 +117,7 @@ func (r *useInnoDBOmniRule) checkSetStatement(n *ast.SetStmt) {
 	}
 }
 
-func (r *useInnoDBOmniRule) addAdvice(content string, lineNumber int32) {
+func (r *useInnoDBRule) addAdvice(content string, lineNumber int32) {
 	absoluteLine := r.BaseLine + int(lineNumber)
 	r.AddAdviceAbsolute(&storepb.Advice{
 		Status:        r.Level,

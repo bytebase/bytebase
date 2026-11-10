@@ -34,25 +34,25 @@ func (*InsertDisallowOrderByRandAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, err
 	}
 
-	rule := &insertDisallowOrderByRandOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &insertDisallowOrderByRandRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type insertDisallowOrderByRandOmniRule struct {
-	OmniBaseRule
+type insertDisallowOrderByRandRule struct {
+	BaseRule
 }
 
-func (*insertDisallowOrderByRandOmniRule) Name() string {
+func (*insertDisallowOrderByRandRule) Name() string {
 	return "InsertDisallowOrderByRandRule"
 }
 
-func (r *insertDisallowOrderByRandOmniRule) OnStatement(node ast.Node) {
+func (r *insertDisallowOrderByRandRule) OnStatement(node ast.Node) {
 	ins, ok := node.(*ast.InsertStmt)
 	if !ok {
 		return
@@ -68,7 +68,7 @@ func (r *insertDisallowOrderByRandOmniRule) OnStatement(node ast.Node) {
 	r.checkSelectForRandOrderBy(ins.Select, text)
 }
 
-func (r *insertDisallowOrderByRandOmniRule) checkSelectForRandOrderBy(sel *ast.SelectStmt, text string) {
+func (r *insertDisallowOrderByRandRule) checkSelectForRandOrderBy(sel *ast.SelectStmt, text string) {
 	if sel == nil {
 		return
 	}
@@ -95,7 +95,7 @@ func (r *insertDisallowOrderByRandOmniRule) checkSelectForRandOrderBy(sel *ast.S
 	}
 }
 
-func (*insertDisallowOrderByRandOmniRule) isRandFunc(expr ast.ExprNode) bool {
+func (*insertDisallowOrderByRandRule) isRandFunc(expr ast.ExprNode) bool {
 	if expr == nil {
 		return false
 	}

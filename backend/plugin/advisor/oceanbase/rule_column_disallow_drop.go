@@ -31,25 +31,25 @@ func (*ColumnDisallowDropAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 		return nil, err
 	}
 
-	rule := &columnDisallowDropOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &columnDisallowDropRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type columnDisallowDropOmniRule struct {
-	OmniBaseRule
+type columnDisallowDropRule struct {
+	BaseRule
 }
 
-func (*columnDisallowDropOmniRule) Name() string {
+func (*columnDisallowDropRule) Name() string {
 	return "ColumnDisallowDropRule"
 }
 
-func (r *columnDisallowDropOmniRule) OnStatement(node ast.Node) {
+func (r *columnDisallowDropRule) OnStatement(node ast.Node) {
 	n, ok := node.(*ast.AlterTableStmt)
 	if !ok || n.Table == nil {
 		return

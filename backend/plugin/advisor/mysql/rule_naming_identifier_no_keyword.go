@@ -32,25 +32,25 @@ func (*NamingIdentifierNoKeywordAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, err
 	}
 
-	rule := &namingIdentifierNoKeywordOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &namingIdentifierNoKeywordRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type namingIdentifierNoKeywordOmniRule struct {
-	OmniBaseRule
+type namingIdentifierNoKeywordRule struct {
+	BaseRule
 }
 
-func (*namingIdentifierNoKeywordOmniRule) Name() string {
+func (*namingIdentifierNoKeywordRule) Name() string {
 	return "NamingIdentifierNoKeywordRule"
 }
 
-func (r *namingIdentifierNoKeywordOmniRule) OnStatement(node ast.Node) {
+func (r *namingIdentifierNoKeywordRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		r.checkCreateTable(n)
@@ -62,7 +62,7 @@ func (r *namingIdentifierNoKeywordOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *namingIdentifierNoKeywordOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+func (r *namingIdentifierNoKeywordRule) checkCreateTable(n *ast.CreateTableStmt) {
 	if n.Table != nil {
 		r.checkIdentifierAtLine(n.Table.Name, r.LocToLine(n.Loc))
 	}
@@ -80,18 +80,18 @@ func (r *namingIdentifierNoKeywordOmniRule) checkCreateTable(n *ast.CreateTableS
 	}
 }
 
-func (r *namingIdentifierNoKeywordOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+func (r *namingIdentifierNoKeywordRule) checkAlterTable(n *ast.AlterTableStmt) {
 	for _, cmd := range n.Commands {
 		if cmd == nil {
 			continue
 		}
 		switch cmd.Type {
 		case ast.ATAddColumn:
-			for _, col := range omniGetColumnsFromCmd(cmd) {
+			for _, col := range getColumnsFromCmd(cmd) {
 				r.checkIdentifierAtLine(col.Name, r.LocToLine(n.Loc))
 			}
 		case ast.ATRenameTable:
-			if newTableName := omniRenameTableName(cmd); newTableName != "" {
+			if newTableName := renameTableName(cmd); newTableName != "" {
 				r.checkIdentifierAtLine(newTableName, r.LocToLine(n.Loc))
 			}
 		case ast.ATRenameColumn:
@@ -115,7 +115,7 @@ func (r *namingIdentifierNoKeywordOmniRule) checkAlterTable(n *ast.AlterTableStm
 	}
 }
 
-func (r *namingIdentifierNoKeywordOmniRule) checkCreateIndex(n *ast.CreateIndexStmt) {
+func (r *namingIdentifierNoKeywordRule) checkCreateIndex(n *ast.CreateIndexStmt) {
 	if n.IndexName != "" {
 		r.checkIdentifierAtLine(n.IndexName, r.LocToLine(n.Loc))
 	}
@@ -123,7 +123,7 @@ func (r *namingIdentifierNoKeywordOmniRule) checkCreateIndex(n *ast.CreateIndexS
 
 // checkConstraintNames checks the CONSTRAINT symbol and, for FOREIGN KEY, the
 // name written after FOREIGN KEY.
-func (r *namingIdentifierNoKeywordOmniRule) checkConstraintNames(c *ast.Constraint, lineNumber int32) {
+func (r *namingIdentifierNoKeywordRule) checkConstraintNames(c *ast.Constraint, lineNumber int32) {
 	for _, name := range []string{c.Name, c.IndexName} {
 		if name != "" {
 			r.checkIdentifierAtLine(name, lineNumber)
@@ -131,7 +131,7 @@ func (r *namingIdentifierNoKeywordOmniRule) checkConstraintNames(c *ast.Constrai
 	}
 }
 
-func (r *namingIdentifierNoKeywordOmniRule) checkIdentifierAtLine(identifier string, lineNumber int32) {
+func (r *namingIdentifierNoKeywordRule) checkIdentifierAtLine(identifier string, lineNumber int32) {
 	// Strip backticks if present.
 	identifier = strings.Trim(identifier, "`")
 	if !isKeyword(identifier) {
@@ -147,6 +147,6 @@ func (r *namingIdentifierNoKeywordOmniRule) checkIdentifierAtLine(identifier str
 	})
 }
 
-func (r *namingIdentifierNoKeywordOmniRule) findColumnLine(name string) int32 {
+func (r *namingIdentifierNoKeywordRule) findColumnLine(name string) int32 {
 	return r.FindLineByName(name)
 }

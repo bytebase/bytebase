@@ -38,8 +38,8 @@ func (*IndexTotalNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.C
 		return nil, errors.New("number_payload is required for this rule")
 	}
 
-	rule := &indexTotalNumberLimitOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &indexTotalNumberLimitRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
@@ -48,22 +48,22 @@ func (*IndexTotalNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.C
 		finalMetadata: checkCtx.FinalMetadata,
 	}
 
-	RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	RunRules(checkCtx.ParsedStatements, []Rule{rule})
 	return rule.generateAdvice(), nil
 }
 
-type indexTotalNumberLimitOmniRule struct {
-	OmniBaseRule
+type indexTotalNumberLimitRule struct {
+	BaseRule
 	max           int
 	lineForTable  map[string]int
 	finalMetadata *model.DatabaseMetadata
 }
 
-func (*indexTotalNumberLimitOmniRule) Name() string {
+func (*indexTotalNumberLimitRule) Name() string {
 	return "IndexTotalNumberLimitRule"
 }
 
-func (r *indexTotalNumberLimitOmniRule) OnStatement(node ast.Node) {
+func (r *indexTotalNumberLimitRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		r.checkCreateTable(n)
@@ -75,7 +75,7 @@ func (r *indexTotalNumberLimitOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *indexTotalNumberLimitOmniRule) generateAdvice() []*storepb.Advice {
+func (r *indexTotalNumberLimitRule) generateAdvice() []*storepb.Advice {
 	type tableName struct {
 		name string
 		line int
@@ -118,7 +118,7 @@ func (r *indexTotalNumberLimitOmniRule) generateAdvice() []*storepb.Advice {
 	return r.Advice
 }
 
-func (r *indexTotalNumberLimitOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+func (r *indexTotalNumberLimitRule) checkCreateTable(n *ast.CreateTableStmt) {
 	if n.Table == nil {
 		return
 	}
@@ -126,7 +126,7 @@ func (r *indexTotalNumberLimitOmniRule) checkCreateTable(n *ast.CreateTableStmt)
 	r.lineForTable[tableName] = r.BaseLine + int(r.LocToLine(n.Loc))
 }
 
-func (r *indexTotalNumberLimitOmniRule) checkCreateIndex(n *ast.CreateIndexStmt) {
+func (r *indexTotalNumberLimitRule) checkCreateIndex(n *ast.CreateIndexStmt) {
 	if n.Table == nil {
 		return
 	}
@@ -134,7 +134,7 @@ func (r *indexTotalNumberLimitOmniRule) checkCreateIndex(n *ast.CreateIndexStmt)
 	r.lineForTable[tableName] = r.BaseLine + int(r.LocToLine(n.Loc))
 }
 
-func (r *indexTotalNumberLimitOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+func (r *indexTotalNumberLimitRule) checkAlterTable(n *ast.AlterTableStmt) {
 	if n.Table == nil {
 		return
 	}
@@ -145,7 +145,7 @@ func (r *indexTotalNumberLimitOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
 		}
 		switch cmd.Type {
 		case ast.ATAddColumn:
-			for _, col := range omniGetColumnsFromCmd(cmd) {
+			for _, col := range getColumnsFromCmd(cmd) {
 				if col == nil {
 					continue
 				}

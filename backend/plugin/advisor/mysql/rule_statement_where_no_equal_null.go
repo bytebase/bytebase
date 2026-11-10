@@ -30,25 +30,25 @@ func (*StatementWhereNoEqualNullAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, err
 	}
 
-	rule := &whereNoEqualNullOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &whereNoEqualNullRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type whereNoEqualNullOmniRule struct {
-	OmniBaseRule
+type whereNoEqualNullRule struct {
+	BaseRule
 }
 
-func (*whereNoEqualNullOmniRule) Name() string {
+func (*whereNoEqualNullRule) Name() string {
 	return "StatementWhereNoEqualNullRule"
 }
 
-func (r *whereNoEqualNullOmniRule) OnStatement(node ast.Node) {
+func (r *whereNoEqualNullRule) OnStatement(node ast.Node) {
 	text := strings.TrimSpace(r.StmtText)
 	// Collect WHERE expressions from all SelectStmt nodes (including UNION branches).
 	ast.Inspect(node, func(n ast.Node) bool {

@@ -137,7 +137,7 @@ func (q *omniQuerySpanExtractor) collectConditionColumns(expr ast.ExprNode) {
 	}
 	inCondition := q.inCondition
 	q.inCondition = true
-	field, err := q.extractOmniExpr(expr)
+	field, err := q.extractExpr(expr)
 	q.inCondition = inCondition
 	if err != nil {
 		q.recordColumnsNamedIn(expr)
@@ -157,7 +157,7 @@ func (q *omniQuerySpanExtractor) collectNestedQueryColumns(node ast.Node) {
 		if !ok {
 			return true
 		}
-		if _, _, err := q.extractOmniSelectSourceColumns(sel); err != nil {
+		if _, _, err := q.extractSelectSourceColumns(sel); err != nil {
 			q.recordColumnsNamedIn(sel)
 		}
 		return false
@@ -183,7 +183,7 @@ func (q *omniQuerySpanExtractor) collectTrailingClauses(orderBy []*ast.OrderByIt
 // EXPLAIN ANALYZE runs, whose plan reports the rows each condition kept. The
 // plan is not a result set, so the query's lineage is dropped.
 func (q *omniQuerySpanExtractor) collectExplainedQueryColumns(stmt ast.StmtNode) {
-	if _, err := q.extractOmniSelectRoot(stmt); err != nil {
+	if _, err := q.extractSelectRoot(stmt); err != nil {
 		q.recordColumnsNamedIn(stmt)
 	}
 }

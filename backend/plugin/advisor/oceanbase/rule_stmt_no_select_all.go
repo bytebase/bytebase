@@ -32,25 +32,25 @@ func (*NoSelectAllAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 		return nil, err
 	}
 
-	rule := &noSelectAllOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &noSelectAllRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type noSelectAllOmniRule struct {
-	OmniBaseRule
+type noSelectAllRule struct {
+	BaseRule
 }
 
-func (*noSelectAllOmniRule) Name() string {
+func (*noSelectAllRule) Name() string {
 	return "NoSelectAllRule"
 }
 
-func (r *noSelectAllOmniRule) OnStatement(node ast.Node) {
+func (r *noSelectAllRule) OnStatement(node ast.Node) {
 	text := strings.TrimSpace(r.StmtText)
 	ast.Inspect(node, func(n ast.Node) bool {
 		sel, ok := n.(*ast.SelectStmt)
@@ -77,7 +77,7 @@ func (r *noSelectAllOmniRule) OnStatement(node ast.Node) {
 	})
 }
 
-func (*noSelectAllOmniRule) isStarTarget(expr ast.ExprNode) bool {
+func (*noSelectAllRule) isStarTarget(expr ast.ExprNode) bool {
 	switch e := expr.(type) {
 	case *ast.StarExpr:
 		return true
@@ -90,7 +90,7 @@ func (*noSelectAllOmniRule) isStarTarget(expr ast.ExprNode) bool {
 	return false
 }
 
-func (r *noSelectAllOmniRule) findStarLine(expr ast.ExprNode) int32 {
+func (r *noSelectAllRule) findStarLine(expr ast.ExprNode) int32 {
 	switch e := expr.(type) {
 	case *ast.StarExpr:
 		return r.LocToLine(e.Loc)

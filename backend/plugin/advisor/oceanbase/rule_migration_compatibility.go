@@ -31,26 +31,26 @@ func (*CompatibilityAdvisor) Check(_ context.Context, checkCtx advisor.Context) 
 		return nil, err
 	}
 
-	rule := &compatibilityOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &compatibilityRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type compatibilityOmniRule struct {
-	OmniBaseRule
+type compatibilityRule struct {
+	BaseRule
 	lastCreateTable string
 }
 
-func (*compatibilityOmniRule) Name() string {
+func (*compatibilityRule) Name() string {
 	return "CompatibilityRule"
 }
 
-func (r *compatibilityOmniRule) OnStatement(node ast.Node) {
+func (r *compatibilityRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		r.checkCreateTable(n)
@@ -68,7 +68,7 @@ func (r *compatibilityOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *compatibilityOmniRule) addIncompat(c code.Code, loc ast.Loc) {
+func (r *compatibilityRule) addIncompat(c code.Code, loc ast.Loc) {
 	r.AddAdvice(&storepb.Advice{
 		Status:        r.Level,
 		Code:          c.Int32(),
@@ -78,14 +78,14 @@ func (r *compatibilityOmniRule) addIncompat(c code.Code, loc ast.Loc) {
 	})
 }
 
-func (r *compatibilityOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+func (r *compatibilityRule) checkCreateTable(n *ast.CreateTableStmt) {
 	if n.Table == nil || len(n.Columns) == 0 {
 		return
 	}
 	r.lastCreateTable = n.Table.Name
 }
 
-func (r *compatibilityOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+func (r *compatibilityRule) checkAlterTable(n *ast.AlterTableStmt) {
 	if n.Table == nil {
 		return
 	}
@@ -141,7 +141,7 @@ func (r *compatibilityOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
 	}
 }
 
-func (r *compatibilityOmniRule) checkCreateIndex(n *ast.CreateIndexStmt) {
+func (r *compatibilityRule) checkCreateIndex(n *ast.CreateIndexStmt) {
 	if !n.Unique {
 		return
 	}

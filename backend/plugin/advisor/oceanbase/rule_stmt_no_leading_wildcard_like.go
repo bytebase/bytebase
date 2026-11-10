@@ -32,25 +32,25 @@ func (*NoLeadingWildcardLikeAdvisor) Check(_ context.Context, checkCtx advisor.C
 		return nil, err
 	}
 
-	rule := &noLeadingWildcardLikeOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &noLeadingWildcardLikeRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type noLeadingWildcardLikeOmniRule struct {
-	OmniBaseRule
+type noLeadingWildcardLikeRule struct {
+	BaseRule
 }
 
-func (*noLeadingWildcardLikeOmniRule) Name() string {
+func (*noLeadingWildcardLikeRule) Name() string {
 	return "NoLeadingWildcardLikeRule"
 }
 
-func (r *noLeadingWildcardLikeOmniRule) OnStatement(node ast.Node) {
+func (r *noLeadingWildcardLikeRule) OnStatement(node ast.Node) {
 	text := strings.TrimSpace(r.StmtText)
 	ast.Inspect(node, func(n ast.Node) bool {
 		if like, ok := n.(*ast.LikeExpr); ok {
@@ -60,7 +60,7 @@ func (r *noLeadingWildcardLikeOmniRule) OnStatement(node ast.Node) {
 	})
 }
 
-func (r *noLeadingWildcardLikeOmniRule) checkLikeExpr(like *ast.LikeExpr, text string) {
+func (r *noLeadingWildcardLikeRule) checkLikeExpr(like *ast.LikeExpr, text string) {
 	if like.Pattern == nil {
 		return
 	}

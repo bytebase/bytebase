@@ -38,27 +38,27 @@ func (*FunctionDisallowedListAdvisor) Check(_ context.Context, checkCtx advisor.
 		disallowList = append(disallowList, strings.ToUpper(fn))
 	}
 
-	rule := &functionDisallowedListOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &functionDisallowedListRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 		disallowList: disallowList,
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type functionDisallowedListOmniRule struct {
-	OmniBaseRule
+type functionDisallowedListRule struct {
+	BaseRule
 	disallowList []string
 }
 
-func (*functionDisallowedListOmniRule) Name() string {
+func (*functionDisallowedListRule) Name() string {
 	return "FunctionDisallowedListRule"
 }
 
-func (r *functionDisallowedListOmniRule) OnStatement(node ast.Node) {
+func (r *functionDisallowedListRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.SelectStmt:
 		r.checkSelectStmt(n)
@@ -76,7 +76,7 @@ func (r *functionDisallowedListOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *functionDisallowedListOmniRule) checkExpr(expr ast.ExprNode) {
+func (r *functionDisallowedListRule) checkExpr(expr ast.ExprNode) {
 	if expr == nil {
 		return
 	}
@@ -98,7 +98,7 @@ func (r *functionDisallowedListOmniRule) checkExpr(expr ast.ExprNode) {
 	})
 }
 
-func (r *functionDisallowedListOmniRule) checkCreateTableStmt(n *ast.CreateTableStmt) {
+func (r *functionDisallowedListRule) checkCreateTableStmt(n *ast.CreateTableStmt) {
 	if n == nil {
 		return
 	}
@@ -111,7 +111,7 @@ func (r *functionDisallowedListOmniRule) checkCreateTableStmt(n *ast.CreateTable
 	}
 }
 
-func (r *functionDisallowedListOmniRule) checkAlterTableStmt(n *ast.AlterTableStmt) {
+func (r *functionDisallowedListRule) checkAlterTableStmt(n *ast.AlterTableStmt) {
 	if n == nil {
 		return
 	}
@@ -119,7 +119,7 @@ func (r *functionDisallowedListOmniRule) checkAlterTableStmt(n *ast.AlterTableSt
 		if cmd == nil {
 			continue
 		}
-		for _, col := range omniGetColumnsFromCmd(cmd) {
+		for _, col := range getColumnsFromCmd(cmd) {
 			if col == nil {
 				continue
 			}
@@ -130,7 +130,7 @@ func (r *functionDisallowedListOmniRule) checkAlterTableStmt(n *ast.AlterTableSt
 	}
 }
 
-func (r *functionDisallowedListOmniRule) checkSelectStmt(n *ast.SelectStmt) {
+func (r *functionDisallowedListRule) checkSelectStmt(n *ast.SelectStmt) {
 	if n == nil {
 		return
 	}
@@ -161,7 +161,7 @@ func (r *functionDisallowedListOmniRule) checkSelectStmt(n *ast.SelectStmt) {
 	}
 }
 
-func (r *functionDisallowedListOmniRule) checkInsertStmt(n *ast.InsertStmt) {
+func (r *functionDisallowedListRule) checkInsertStmt(n *ast.InsertStmt) {
 	if n == nil {
 		return
 	}
@@ -175,7 +175,7 @@ func (r *functionDisallowedListOmniRule) checkInsertStmt(n *ast.InsertStmt) {
 	}
 }
 
-func (r *functionDisallowedListOmniRule) checkUpdateStmt(n *ast.UpdateStmt) {
+func (r *functionDisallowedListRule) checkUpdateStmt(n *ast.UpdateStmt) {
 	if n == nil {
 		return
 	}
@@ -187,7 +187,7 @@ func (r *functionDisallowedListOmniRule) checkUpdateStmt(n *ast.UpdateStmt) {
 	r.checkExpr(n.Where)
 }
 
-func (r *functionDisallowedListOmniRule) checkDeleteStmt(n *ast.DeleteStmt) {
+func (r *functionDisallowedListRule) checkDeleteStmt(n *ast.DeleteStmt) {
 	if n == nil {
 		return
 	}

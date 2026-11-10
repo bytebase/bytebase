@@ -32,25 +32,25 @@ func (*WhereRequirementForUpdateDeleteAdvisor) Check(_ context.Context, checkCtx
 		return nil, err
 	}
 
-	rule := &whereRequirementForUpdateDeleteOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &whereRequirementForUpdateDeleteRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type whereRequirementForUpdateDeleteOmniRule struct {
-	OmniBaseRule
+type whereRequirementForUpdateDeleteRule struct {
+	BaseRule
 }
 
-func (*whereRequirementForUpdateDeleteOmniRule) Name() string {
+func (*whereRequirementForUpdateDeleteRule) Name() string {
 	return "WhereRequirementForUpdateDeleteRule"
 }
 
-func (r *whereRequirementForUpdateDeleteOmniRule) OnStatement(node ast.Node) {
+func (r *whereRequirementForUpdateDeleteRule) OnStatement(node ast.Node) {
 	text := strings.TrimSpace(r.StmtText)
 	switch n := node.(type) {
 	case *ast.DeleteStmt:

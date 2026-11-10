@@ -31,27 +31,27 @@ func (*TableDisallowDDLAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 	}
 	stringArrayPayload := checkCtx.Rule.GetStringArrayPayload()
 
-	rule := &tableDisallowDDLOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &tableDisallowDDLRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 		disallowList: stringArrayPayload.List,
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type tableDisallowDDLOmniRule struct {
-	OmniBaseRule
+type tableDisallowDDLRule struct {
+	BaseRule
 	disallowList []string
 }
 
-func (*tableDisallowDDLOmniRule) Name() string {
+func (*tableDisallowDDLRule) Name() string {
 	return "TableDisallowDDLRule"
 }
 
-func (r *tableDisallowDDLOmniRule) OnStatement(node ast.Node) {
+func (r *tableDisallowDDLRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		if n.Table != nil {
@@ -79,7 +79,7 @@ func (r *tableDisallowDDLOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *tableDisallowDDLOmniRule) checkTableName(tableName string, lineNumber int32) {
+func (r *tableDisallowDDLRule) checkTableName(tableName string, lineNumber int32) {
 	for _, disallow := range r.disallowList {
 		if tableName == disallow {
 			absoluteLine := r.BaseLine + int(lineNumber)

@@ -1540,7 +1540,7 @@ var roundcubeSchema string
 //go:embed testdata/sdl_migration/mediawiki.sql
 var mediawikiSchema string
 
-// omniViewParseBug is the precise classification for the (B) omni SDL-parser limitation that
+// viewParseBug is the precise classification for the (B) omni SDL-parser limitation that
 // blocks every multi-table view in the real-world corpus.
 //
 // REPRO: schema.MetadataToSDL dumps a multi-table view's FROM clause in MySQL's canonical
@@ -1562,14 +1562,14 @@ var mediawikiSchema string
 // collation phantom-MODIFY bug. Until omni fixes the parenthesized-join table_reference and the
 // pin updates, any fixture whose synced+dumped form carries a multi-table view (sakila and the
 // employees family, via current_dept_emp) cannot round-trip — these legs are pending, not red.
-const omniViewParseBug = "omni SDL view-body parser rejects MySQL's canonical parenthesized JOIN in a view FROM clause (omni mysql/parser/select.go:390); blocks every multi-table view"
+const viewParseBug = "omni SDL view-body parser rejects MySQL's canonical parenthesized JOIN in a view FROM clause (omni mysql/parser/select.go:390); blocks every multi-table view"
 
-// omniVarcharBinaryBug is the OTHER known, being-fixed-in-parallel (B) omni bug: the omni SDL
+// varcharBinaryBug is the OTHER known, being-fixed-in-parallel (B) omni bug: the omni SDL
 // loader drops the `BINARY` modifier on a `varchar(N) BINARY` column (which MySQL stores as the
 // `_bin` collation), so the original-vs-synced diff emits a phantom
 // `ALTER TABLE ... MODIFY COLUMN ... varchar(N)`. roundcube's cache/users tables use that form.
 // Pending until the omni fix merges and the pin updates.
-const omniVarcharBinaryBug = "omni SDL loader drops varchar(N) BINARY -> _bin collation, producing a phantom MODIFY COLUMN (confirmed (B) bug, fixed in omni separately)"
+const varcharBinaryBug = "omni SDL loader drops varchar(N) BINARY -> _bin collation, producing a phantom MODIFY COLUMN (confirmed (B) bug, fixed in omni separately)"
 
 // realWorldSchema describes one embedded production schema fixture.
 type realWorldSchema struct {
@@ -1583,7 +1583,7 @@ type realWorldSchema struct {
 	// classification rather than failing).
 	only57Skip string
 	// viewParsePending, when non-empty, marks a fixture whose canonical dump carries a
-	// multi-table view that the current omni SDL parser cannot re-read (see omniViewParseBug).
+	// multi-table view that the current omni SDL parser cannot re-read (see viewParseBug).
 	// The SDL-path legs (idempotence, original-vs-synced, and every migration scenario on this
 	// schema) are skipped with this classification rather than failing on an out-of-scope,
 	// being-fixed-upstream engine bug. The live LOAD + sync + MetadataToSDL dump still run and
@@ -1811,9 +1811,9 @@ func TestSDLRealWorldOriginalVsSynced(t *testing.T) {
 	//
 	// Both eligible fixtures currently surface a distinct, being-fixed-upstream (B) omni bug, so
 	// the assertion is pending with a precise classification (the load + sync still run):
-	//   - roundcube: varchar(N) BINARY -> _bin phantom MODIFY (omniVarcharBinaryBug),
-	//   - employees: current_dept_emp's parenthesized-join dump fails to re-parse (omniViewParseBug).
-	eligible := map[string]string{"roundcube": omniVarcharBinaryBug, "employees": omniViewParseBug}
+	//   - roundcube: varchar(N) BINARY -> _bin phantom MODIFY (varcharBinaryBug),
+	//   - employees: current_dept_emp's parenthesized-join dump fails to re-parse (viewParseBug).
+	eligible := map[string]string{"roundcube": varcharBinaryBug, "employees": viewParseBug}
 
 	for _, srv := range liveServers {
 		srv := srv

@@ -32,25 +32,25 @@ func (*StatementDisallowCommitAdvisor) Check(_ context.Context, checkCtx advisor
 		return nil, err
 	}
 
-	rule := &disallowCommitOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &disallowCommitRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type disallowCommitOmniRule struct {
-	OmniBaseRule
+type disallowCommitRule struct {
+	BaseRule
 }
 
-func (*disallowCommitOmniRule) Name() string {
+func (*disallowCommitRule) Name() string {
 	return "StatementDisallowCommitRule"
 }
 
-func (r *disallowCommitOmniRule) OnStatement(node ast.Node) {
+func (r *disallowCommitRule) OnStatement(node ast.Node) {
 	n, ok := node.(*ast.CommitStmt)
 	if !ok {
 		return

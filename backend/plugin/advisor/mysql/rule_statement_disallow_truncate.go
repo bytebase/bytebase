@@ -25,17 +25,17 @@ func (*StatementDisallowTruncateAdvisor) Check(_ context.Context, checkCtx advis
 	if err != nil {
 		return nil, err
 	}
-	rule := &statementDisallowTruncateOmniRule{
-		OmniBaseRule: OmniBaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
+	rule := &statementDisallowTruncateRule{
+		BaseRule: BaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
 	}
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type statementDisallowTruncateOmniRule struct{ OmniBaseRule }
+type statementDisallowTruncateRule struct{ BaseRule }
 
-func (*statementDisallowTruncateOmniRule) Name() string { return "StatementDisallowTruncateRule" }
+func (*statementDisallowTruncateRule) Name() string { return "StatementDisallowTruncateRule" }
 
-func (r *statementDisallowTruncateOmniRule) OnStatement(node ast.Node) {
+func (r *statementDisallowTruncateRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.TruncateStmt:
 		for _, tbl := range n.Tables {
@@ -66,7 +66,7 @@ func (r *statementDisallowTruncateOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *statementDisallowTruncateOmniRule) emitTable(tbl *ast.TableRef, loc ast.Loc) {
+func (r *statementDisallowTruncateRule) emitTable(tbl *ast.TableRef, loc ast.Loc) {
 	r.AddAdviceAbsolute(&storepb.Advice{
 		Status:        r.Level,
 		Code:          code.StatementDisallowTruncate.Int32(),
@@ -76,7 +76,7 @@ func (r *statementDisallowTruncateOmniRule) emitTable(tbl *ast.TableRef, loc ast
 	})
 }
 
-func (r *statementDisallowTruncateOmniRule) emitPartition(tbl *ast.TableRef, partition string, loc ast.Loc) {
+func (r *statementDisallowTruncateRule) emitPartition(tbl *ast.TableRef, partition string, loc ast.Loc) {
 	r.AddAdviceAbsolute(&storepb.Advice{
 		Status:        r.Level,
 		Code:          code.StatementDisallowTruncate.Int32(),

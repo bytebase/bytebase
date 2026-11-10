@@ -48,8 +48,8 @@ func (*NamingTableConventionAdvisor) Check(_ context.Context, checkCtx advisor.C
 		maxLength = advisor.DefaultNameLengthLimit
 	}
 
-	rule := &namingTableOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &namingTableRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
@@ -57,20 +57,20 @@ func (*NamingTableConventionAdvisor) Check(_ context.Context, checkCtx advisor.C
 		maxLength: maxLength,
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type namingTableOmniRule struct {
-	OmniBaseRule
+type namingTableRule struct {
+	BaseRule
 	format    *regexp.Regexp
 	maxLength int
 }
 
-func (*namingTableOmniRule) Name() string {
+func (*namingTableRule) Name() string {
 	return "NamingTableRule"
 }
 
-func (r *namingTableOmniRule) OnStatement(node ast.Node) {
+func (r *namingTableRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		if n.Table != nil {
@@ -78,7 +78,7 @@ func (r *namingTableOmniRule) OnStatement(node ast.Node) {
 		}
 	case *ast.AlterTableStmt:
 		for _, cmd := range n.Commands {
-			if newTableName := omniRenameTableName(cmd); newTableName != "" {
+			if newTableName := renameTableName(cmd); newTableName != "" {
 				r.handleTableName(newTableName, r.LocToLine(n.Loc))
 			}
 		}
@@ -92,7 +92,7 @@ func (r *namingTableOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *namingTableOmniRule) handleTableName(tableName string, lineNumber int32) {
+func (r *namingTableRule) handleTableName(tableName string, lineNumber int32) {
 	absoluteLine := r.BaseLine + int(lineNumber)
 	if !r.format.MatchString(tableName) {
 		r.AddAdviceAbsolute(&storepb.Advice{

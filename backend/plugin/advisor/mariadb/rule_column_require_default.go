@@ -30,25 +30,25 @@ func (*ColumnRequireDefaultAdvisor) Check(_ context.Context, checkCtx advisor.Co
 		return nil, err
 	}
 
-	rule := &columnRequireDefaultOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &columnRequireDefaultRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type columnRequireDefaultOmniRule struct {
-	OmniBaseRule
+type columnRequireDefaultRule struct {
+	BaseRule
 }
 
-func (*columnRequireDefaultOmniRule) Name() string {
+func (*columnRequireDefaultRule) Name() string {
 	return "ColumnRequireDefaultRule"
 }
 
-func (r *columnRequireDefaultOmniRule) OnStatement(node ast.Node) {
+func (r *columnRequireDefaultRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		r.checkCreateTable(n)
@@ -58,13 +58,13 @@ func (r *columnRequireDefaultOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *columnRequireDefaultOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
-	tableName := omniTableName(n.Table)
+func (r *columnRequireDefaultRule) checkCreateTable(n *ast.CreateTableStmt) {
+	tableName := tableName(n.Table)
 	if tableName == "" {
 		return
 	}
 
-	pkCols := omniPKColumnNames(n.Columns, n.Constraints)
+	pkCols := pKColumnNames(n.Columns, n.Constraints)
 
 	for _, col := range n.Columns {
 		if pkCols[col.Name] {
@@ -74,8 +74,8 @@ func (r *columnRequireDefaultOmniRule) checkCreateTable(n *ast.CreateTableStmt) 
 	}
 }
 
-func (r *columnRequireDefaultOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
-	tableName := omniTableName(n.Table)
+func (r *columnRequireDefaultRule) checkAlterTable(n *ast.AlterTableStmt) {
+	tableName := tableName(n.Table)
 	if tableName == "" {
 		return
 	}
@@ -98,8 +98,8 @@ func (r *columnRequireDefaultOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
 	}
 }
 
-func (r *columnRequireDefaultOmniRule) checkColumn(tableName string, col *ast.ColumnDef) {
-	if !omniHasDefault(col) && !omniIsDefaultExemptType(col) {
+func (r *columnRequireDefaultRule) checkColumn(tableName string, col *ast.ColumnDef) {
+	if !hasDefault(col) && !isDefaultExemptType(col) {
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.Level,
 			Code:    code.NoDefault.Int32(),

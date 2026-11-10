@@ -52,8 +52,8 @@ func (*NamingFKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 		maxLength = advisor.DefaultNameLengthLimit
 	}
 
-	rule := &namingFKOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &namingFKRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
@@ -62,7 +62,7 @@ func (*NamingFKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 		templateList: templateList,
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 // fkIndexMetaData is the metadata for foreign key.
@@ -73,18 +73,18 @@ type fkIndexMetaData struct {
 	line      int
 }
 
-type namingFKOmniRule struct {
-	OmniBaseRule
+type namingFKRule struct {
+	BaseRule
 	format       string
 	maxLength    int
 	templateList []string
 }
 
-func (*namingFKOmniRule) Name() string {
+func (*namingFKRule) Name() string {
 	return "NamingFKConventionRule"
 }
 
-func (r *namingFKOmniRule) OnStatement(node ast.Node) {
+func (r *namingFKRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		r.checkCreateTable(n)
@@ -94,7 +94,7 @@ func (r *namingFKOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *namingFKOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+func (r *namingFKRule) checkCreateTable(n *ast.CreateTableStmt) {
 	if n.Table == nil {
 		return
 	}
@@ -111,7 +111,7 @@ func (r *namingFKOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
 	r.handleIndexList(indexDataList)
 }
 
-func (r *namingFKOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+func (r *namingFKRule) checkAlterTable(n *ast.AlterTableStmt) {
 	tableName := ""
 	if n.Table != nil {
 		tableName = n.Table.Name
@@ -130,7 +130,7 @@ func (r *namingFKOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
 	r.handleIndexList(indexDataList)
 }
 
-func (r *namingFKOmniRule) handleIndexList(indexDataList []*fkIndexMetaData) {
+func (r *namingFKRule) handleIndexList(indexDataList []*fkIndexMetaData) {
 	for _, indexData := range indexDataList {
 		regex, err := getTemplateRegexp(r.format, r.templateList, indexData.metaData)
 		if err != nil {
@@ -163,13 +163,13 @@ func (r *namingFKOmniRule) handleIndexList(indexDataList []*fkIndexMetaData) {
 	}
 }
 
-func (*namingFKOmniRule) handleConstraint(tableName string, constraint *ast.Constraint, line int) *fkIndexMetaData {
+func (*namingFKRule) handleConstraint(tableName string, constraint *ast.Constraint, line int) *fkIndexMetaData {
 	// Focus on foreign key.
 	if constraint.Type != ast.ConstrForeignKey {
 		return nil
 	}
 
-	indexName := omniConstraintName(constraint)
+	indexName := constraintName(constraint)
 
 	referencingColumnList := constraint.Columns
 	referencedTable := ""

@@ -42,8 +42,8 @@ func (*ColumnRequirementAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 		requiredColumns[column] = true
 	}
 
-	rule := &columnRequiredOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &columnRequiredRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
@@ -52,23 +52,23 @@ func (*ColumnRequirementAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 		line:            make(map[string]int),
 	}
 
-	adviceList := RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	adviceList := RunRules(checkCtx.ParsedStatements, []Rule{rule})
 	adviceList = append(adviceList, rule.generateAdviceList()...)
 	return adviceList, nil
 }
 
-type columnRequiredOmniRule struct {
-	OmniBaseRule
+type columnRequiredRule struct {
+	BaseRule
 	requiredColumns columnSet
 	tables          tableState
 	line            map[string]int
 }
 
-func (*columnRequiredOmniRule) Name() string {
+func (*columnRequiredRule) Name() string {
 	return "ColumnRequiredRule"
 }
 
-func (r *columnRequiredOmniRule) OnStatement(node ast.Node) {
+func (r *columnRequiredRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		r.checkCreateTable(n)
@@ -80,8 +80,8 @@ func (r *columnRequiredOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *columnRequiredOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
-	tableName := omniTableName(n.Table)
+func (r *columnRequiredRule) checkCreateTable(n *ast.CreateTableStmt) {
+	tableName := tableName(n.Table)
 	if tableName == "" {
 		return
 	}
@@ -93,15 +93,15 @@ func (r *columnRequiredOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
 	}
 }
 
-func (r *columnRequiredOmniRule) checkDropTable(n *ast.DropTableStmt) {
+func (r *columnRequiredRule) checkDropTable(n *ast.DropTableStmt) {
 	for _, ref := range n.Tables {
-		tableName := omniTableName(ref)
+		tableName := tableName(ref)
 		delete(r.tables, tableName)
 	}
 }
 
-func (r *columnRequiredOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
-	tableName := omniTableName(n.Table)
+func (r *columnRequiredRule) checkAlterTable(n *ast.AlterTableStmt) {
+	tableName := tableName(n.Table)
 	if tableName == "" {
 		return
 	}
@@ -133,7 +133,7 @@ func (r *columnRequiredOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
 	}
 }
 
-func (r *columnRequiredOmniRule) generateAdviceList() []*storepb.Advice {
+func (r *columnRequiredRule) generateAdviceList() []*storepb.Advice {
 	var adviceList []*storepb.Advice
 	tableList := r.tables.tableList()
 	for _, tableName := range tableList {
@@ -162,12 +162,12 @@ func (r *columnRequiredOmniRule) generateAdviceList() []*storepb.Advice {
 	return adviceList
 }
 
-func (r *columnRequiredOmniRule) initEmptyTable(tableName string) columnSet {
+func (r *columnRequiredRule) initEmptyTable(tableName string) columnSet {
 	r.tables[tableName] = make(columnSet)
 	return r.tables[tableName]
 }
 
-func (r *columnRequiredOmniRule) addColumn(tableName string, columnName string) {
+func (r *columnRequiredRule) addColumn(tableName string, columnName string) {
 	if _, ok := r.requiredColumns[columnName]; !ok {
 		return
 	}
@@ -179,7 +179,7 @@ func (r *columnRequiredOmniRule) addColumn(tableName string, columnName string) 
 	}
 }
 
-func (r *columnRequiredOmniRule) dropColumn(tableName string, columnName string) bool {
+func (r *columnRequiredRule) dropColumn(tableName string, columnName string) bool {
 	if _, ok := r.requiredColumns[columnName]; !ok {
 		return false
 	}
@@ -191,7 +191,7 @@ func (r *columnRequiredOmniRule) dropColumn(tableName string, columnName string)
 	return true
 }
 
-func (r *columnRequiredOmniRule) renameColumn(tableName string, oldColumn string, newColumn string) bool {
+func (r *columnRequiredRule) renameColumn(tableName string, oldColumn string, newColumn string) bool {
 	_, oldNeed := r.requiredColumns[oldColumn]
 	_, newNeed := r.requiredColumns[newColumn]
 	if !oldNeed && !newNeed {
@@ -210,7 +210,7 @@ func (r *columnRequiredOmniRule) renameColumn(tableName string, oldColumn string
 	return oldNeed
 }
 
-func (r *columnRequiredOmniRule) initFullTable(tableName string) columnSet {
+func (r *columnRequiredRule) initFullTable(tableName string) columnSet {
 	table := r.initEmptyTable(tableName)
 	for column := range r.requiredColumns {
 		table[column] = true

@@ -37,8 +37,8 @@ func (*ColumnMaximumVarcharLengthAdvisor) Check(_ context.Context, checkCtx advi
 		return nil, errors.New("number_payload is required for column maximum varchar length rule")
 	}
 
-	rule := &columnMaximumVarcharLengthOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &columnMaximumVarcharLengthRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
@@ -60,16 +60,16 @@ func (*ColumnMaximumVarcharLengthAdvisor) Check(_ context.Context, checkCtx advi
 	return rule.GetAdviceList(), nil
 }
 
-type columnMaximumVarcharLengthOmniRule struct {
-	OmniBaseRule
+type columnMaximumVarcharLengthRule struct {
+	BaseRule
 	maximum int
 }
 
-func (*columnMaximumVarcharLengthOmniRule) Name() string {
+func (*columnMaximumVarcharLengthRule) Name() string {
 	return "VarcharLengthRule"
 }
 
-func (r *columnMaximumVarcharLengthOmniRule) OnStatement(node ast.Node) {
+func (r *columnMaximumVarcharLengthRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		r.checkCreateTable(n)
@@ -79,13 +79,13 @@ func (r *columnMaximumVarcharLengthOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *columnMaximumVarcharLengthOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
-	tableName := omniTableName(n.Table)
+func (r *columnMaximumVarcharLengthRule) checkCreateTable(n *ast.CreateTableStmt) {
+	tableName := tableName(n.Table)
 	if tableName == "" {
 		return
 	}
 	for _, col := range n.Columns {
-		length := getVarcharLengthFromOmni(col.TypeName)
+		length := getVarcharLengthFrom(col.TypeName)
 		if r.maximum > 0 && length > r.maximum {
 			r.AddAdvice(&storepb.Advice{
 				Status:  r.Level,
@@ -100,15 +100,15 @@ func (r *columnMaximumVarcharLengthOmniRule) checkCreateTable(n *ast.CreateTable
 	}
 }
 
-func (r *columnMaximumVarcharLengthOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
-	tableName := omniTableName(n.Table)
+func (r *columnMaximumVarcharLengthRule) checkAlterTable(n *ast.AlterTableStmt) {
+	tableName := tableName(n.Table)
 	if tableName == "" {
 		return
 	}
 	for _, cmd := range n.Commands {
-		cols := omniGetColumnsFromCmd(cmd)
+		cols := getColumnsFromCmd(cmd)
 		for _, col := range cols {
-			length := getVarcharLengthFromOmni(col.TypeName)
+			length := getVarcharLengthFrom(col.TypeName)
 			if r.maximum > 0 && length > r.maximum {
 				r.AddAdvice(&storepb.Advice{
 					Status:  r.Level,
@@ -124,7 +124,7 @@ func (r *columnMaximumVarcharLengthOmniRule) checkAlterTable(n *ast.AlterTableSt
 	}
 }
 
-func getVarcharLengthFromOmni(dt *ast.DataType) int {
+func getVarcharLengthFrom(dt *ast.DataType) int {
 	if dt == nil {
 		return 0
 	}

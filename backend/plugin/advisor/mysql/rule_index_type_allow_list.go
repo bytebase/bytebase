@@ -33,27 +33,27 @@ func (*IndexTypeAllowListAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 
 	stringArrayPayload := checkCtx.Rule.GetStringArrayPayload()
 
-	rule := &indexTypeAllowListOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &indexTypeAllowListRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 		allowList: stringArrayPayload.List,
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type indexTypeAllowListOmniRule struct {
-	OmniBaseRule
+type indexTypeAllowListRule struct {
+	BaseRule
 	allowList []string
 }
 
-func (*indexTypeAllowListOmniRule) Name() string {
+func (*indexTypeAllowListRule) Name() string {
 	return "IndexTypeAllowListRule"
 }
 
-func (r *indexTypeAllowListOmniRule) OnStatement(node ast.Node) {
+func (r *indexTypeAllowListRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		r.checkCreateTable(n)
@@ -65,7 +65,7 @@ func (r *indexTypeAllowListOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *indexTypeAllowListOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+func (r *indexTypeAllowListRule) checkCreateTable(n *ast.CreateTableStmt) {
 	if n.Table == nil {
 		return
 	}
@@ -77,7 +77,7 @@ func (r *indexTypeAllowListOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
 	}
 }
 
-func (r *indexTypeAllowListOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+func (r *indexTypeAllowListRule) checkAlterTable(n *ast.AlterTableStmt) {
 	if n.Table == nil {
 		return
 	}
@@ -95,7 +95,7 @@ func (r *indexTypeAllowListOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
 	}
 }
 
-func (r *indexTypeAllowListOmniRule) handleConstraint(constraint *ast.Constraint, line int32) {
+func (r *indexTypeAllowListRule) handleConstraint(constraint *ast.Constraint, line int32) {
 	switch constraint.Type {
 	case ast.ConstrPrimaryKey, ast.ConstrUnique, ast.ConstrIndex, ast.ConstrFulltextIndex, ast.ConstrSpatialIndex:
 	default:
@@ -117,7 +117,7 @@ func (r *indexTypeAllowListOmniRule) handleConstraint(constraint *ast.Constraint
 	r.validateIndexType(indexType, line)
 }
 
-func (r *indexTypeAllowListOmniRule) checkCreateIndex(n *ast.CreateIndexStmt) {
+func (r *indexTypeAllowListRule) checkCreateIndex(n *ast.CreateIndexStmt) {
 	if n.Table == nil {
 		return
 	}
@@ -133,7 +133,7 @@ func (r *indexTypeAllowListOmniRule) checkCreateIndex(n *ast.CreateIndexStmt) {
 	r.validateIndexType(indexType, r.LocToLine(n.Loc))
 }
 
-func (r *indexTypeAllowListOmniRule) validateIndexType(indexType string, line int32) {
+func (r *indexTypeAllowListRule) validateIndexType(indexType string, line int32) {
 	if slices.Contains(r.allowList, indexType) {
 		return
 	}

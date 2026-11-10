@@ -31,25 +31,25 @@ func (*TableRequireCollationAdvisor) Check(_ context.Context, checkCtx advisor.C
 		return nil, err
 	}
 
-	rule := &tableRequireCollationOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &tableRequireCollationRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type tableRequireCollationOmniRule struct {
-	OmniBaseRule
+type tableRequireCollationRule struct {
+	BaseRule
 }
 
-func (*tableRequireCollationOmniRule) Name() string {
+func (*tableRequireCollationRule) Name() string {
 	return "TableRequireCollationRule"
 }
 
-func (r *tableRequireCollationOmniRule) OnStatement(node ast.Node) {
+func (r *tableRequireCollationRule) OnStatement(node ast.Node) {
 	n, ok := node.(*ast.CreateTableStmt)
 	if !ok {
 		return
@@ -57,7 +57,7 @@ func (r *tableRequireCollationOmniRule) OnStatement(node ast.Node) {
 	r.checkCreateTable(n)
 }
 
-func (r *tableRequireCollationOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+func (r *tableRequireCollationRule) checkCreateTable(n *ast.CreateTableStmt) {
 	if n.Table == nil {
 		return
 	}

@@ -31,8 +31,8 @@ func (*ColumnAutoIncrementMustIntegerAdvisor) Check(_ context.Context, checkCtx 
 		return nil, err
 	}
 
-	rule := &columnAutoIncrementMustIntegerOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &columnAutoIncrementMustIntegerRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
@@ -53,15 +53,15 @@ func (*ColumnAutoIncrementMustIntegerAdvisor) Check(_ context.Context, checkCtx 
 	return rule.GetAdviceList(), nil
 }
 
-type columnAutoIncrementMustIntegerOmniRule struct {
-	OmniBaseRule
+type columnAutoIncrementMustIntegerRule struct {
+	BaseRule
 }
 
-func (*columnAutoIncrementMustIntegerOmniRule) Name() string {
+func (*columnAutoIncrementMustIntegerRule) Name() string {
 	return "ColumnAutoIncrementMustIntegerRule"
 }
 
-func (r *columnAutoIncrementMustIntegerOmniRule) OnStatement(node ast.Node) {
+func (r *columnAutoIncrementMustIntegerRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		r.checkCreateTable(n)
@@ -71,8 +71,8 @@ func (r *columnAutoIncrementMustIntegerOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *columnAutoIncrementMustIntegerOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
-	tableName := omniTableName(n.Table)
+func (r *columnAutoIncrementMustIntegerRule) checkCreateTable(n *ast.CreateTableStmt) {
+	tableName := tableName(n.Table)
 	if tableName == "" {
 		return
 	}
@@ -81,23 +81,23 @@ func (r *columnAutoIncrementMustIntegerOmniRule) checkCreateTable(n *ast.CreateT
 	}
 }
 
-func (r *columnAutoIncrementMustIntegerOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
-	tableName := omniTableName(n.Table)
+func (r *columnAutoIncrementMustIntegerRule) checkAlterTable(n *ast.AlterTableStmt) {
+	tableName := tableName(n.Table)
 	if tableName == "" {
 		return
 	}
 	for _, cmd := range n.Commands {
-		for _, col := range omniGetColumnsFromCmd(cmd) {
+		for _, col := range getColumnsFromCmd(cmd) {
 			r.checkColumn(tableName, col)
 		}
 	}
 }
 
-func (r *columnAutoIncrementMustIntegerOmniRule) checkColumn(tableName string, col *ast.ColumnDef) {
-	if !omniIsAutoIncrement(col) {
+func (r *columnAutoIncrementMustIntegerRule) checkColumn(tableName string, col *ast.ColumnDef) {
+	if !isAutoIncrement(col) {
 		return
 	}
-	if !omniIsIntegerType(col.TypeName) {
+	if !isIntegerType(col.TypeName) {
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.Level,
 			Code:    code.AutoIncrementColumnNotInteger.Int32(),

@@ -30,25 +30,25 @@ func (*ColumnSetDefaultForNotNullAdvisor) Check(_ context.Context, checkCtx advi
 		return nil, err
 	}
 
-	rule := &columnSetDefaultForNotNullOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &columnSetDefaultForNotNullRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type columnSetDefaultForNotNullOmniRule struct {
-	OmniBaseRule
+type columnSetDefaultForNotNullRule struct {
+	BaseRule
 }
 
-func (*columnSetDefaultForNotNullOmniRule) Name() string {
+func (*columnSetDefaultForNotNullRule) Name() string {
 	return "ColumnSetDefaultForNotNullRule"
 }
 
-func (r *columnSetDefaultForNotNullOmniRule) OnStatement(node ast.Node) {
+func (r *columnSetDefaultForNotNullRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		r.checkCreateTable(n)
@@ -58,13 +58,13 @@ func (r *columnSetDefaultForNotNullOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *columnSetDefaultForNotNullOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
-	tableName := omniTableName(n.Table)
+func (r *columnSetDefaultForNotNullRule) checkCreateTable(n *ast.CreateTableStmt) {
+	tableName := tableName(n.Table)
 	if tableName == "" {
 		return
 	}
 
-	pkCols := omniPKColumnNames(n.Columns, n.Constraints)
+	pkCols := pKColumnNames(n.Columns, n.Constraints)
 
 	for _, col := range n.Columns {
 		if pkCols[col.Name] {
@@ -74,8 +74,8 @@ func (r *columnSetDefaultForNotNullOmniRule) checkCreateTable(n *ast.CreateTable
 	}
 }
 
-func (r *columnSetDefaultForNotNullOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
-	tableName := omniTableName(n.Table)
+func (r *columnSetDefaultForNotNullRule) checkAlterTable(n *ast.AlterTableStmt) {
+	tableName := tableName(n.Table)
 	if tableName == "" {
 		return
 	}
@@ -98,8 +98,8 @@ func (r *columnSetDefaultForNotNullOmniRule) checkAlterTable(n *ast.AlterTableSt
 	}
 }
 
-func (r *columnSetDefaultForNotNullOmniRule) checkColumn(tableName string, col *ast.ColumnDef) {
-	if !omniIsNullable(col) && !omniHasDefault(col) && omniColumnNeedDefaultNotNull(col) {
+func (r *columnSetDefaultForNotNullRule) checkColumn(tableName string, col *ast.ColumnDef) {
+	if !isNullable(col) && !hasDefault(col) && columnNeedDefaultNotNull(col) {
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.Level,
 			Code:    code.NotNullColumnWithNoDefault.Int32(),

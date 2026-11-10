@@ -32,8 +32,8 @@ func (*ColumnDisallowDropInIndexAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, err
 	}
 
-	rule := &columnDisallowDropInIndexOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &columnDisallowDropInIndexRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
@@ -41,20 +41,20 @@ func (*ColumnDisallowDropInIndexAdvisor) Check(_ context.Context, checkCtx advis
 		originalMetadata: checkCtx.OriginalMetadata,
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type columnDisallowDropInIndexOmniRule struct {
-	OmniBaseRule
+type columnDisallowDropInIndexRule struct {
+	BaseRule
 	tables           tableState
 	originalMetadata *model.DatabaseMetadata
 }
 
-func (*columnDisallowDropInIndexOmniRule) Name() string {
+func (*columnDisallowDropInIndexRule) Name() string {
 	return "ColumnDisallowDropInIndexRule"
 }
 
-func (r *columnDisallowDropInIndexOmniRule) OnStatement(node ast.Node) {
+func (r *columnDisallowDropInIndexRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		r.checkCreateTable(n)
@@ -64,7 +64,7 @@ func (r *columnDisallowDropInIndexOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *columnDisallowDropInIndexOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+func (r *columnDisallowDropInIndexRule) checkCreateTable(n *ast.CreateTableStmt) {
 	if n.Table == nil {
 		return
 	}
@@ -86,7 +86,7 @@ func (r *columnDisallowDropInIndexOmniRule) checkCreateTable(n *ast.CreateTableS
 	}
 }
 
-func (r *columnDisallowDropInIndexOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+func (r *columnDisallowDropInIndexRule) checkAlterTable(n *ast.AlterTableStmt) {
 	if n.Table == nil {
 		return
 	}

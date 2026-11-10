@@ -38,8 +38,8 @@ func (*TableMaximumVarcharLengthAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, errors.New("number_payload is required for this rule")
 	}
 
-	rule := &tableTextFieldsTotalLengthOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &tableTextFieldsTotalLengthRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
@@ -62,17 +62,17 @@ func (*TableMaximumVarcharLengthAdvisor) Check(_ context.Context, checkCtx advis
 	return rule.GetAdviceList(), nil
 }
 
-type tableTextFieldsTotalLengthOmniRule struct {
-	OmniBaseRule
+type tableTextFieldsTotalLengthRule struct {
+	BaseRule
 	finalMetadata *model.DatabaseMetadata
 	maximum       int
 }
 
-func (*tableTextFieldsTotalLengthOmniRule) Name() string {
+func (*tableTextFieldsTotalLengthRule) Name() string {
 	return "TableTextFieldsTotalLengthRule"
 }
 
-func (r *tableTextFieldsTotalLengthOmniRule) OnStatement(node ast.Node) {
+func (r *tableTextFieldsTotalLengthRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		r.checkCreateTable(n)
@@ -82,8 +82,8 @@ func (r *tableTextFieldsTotalLengthOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *tableTextFieldsTotalLengthOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
-	tableName := omniTableName(n.Table)
+func (r *tableTextFieldsTotalLengthRule) checkCreateTable(n *ast.CreateTableStmt) {
+	tableName := tableName(n.Table)
 	if tableName == "" {
 		return
 	}
@@ -109,8 +109,8 @@ func (r *tableTextFieldsTotalLengthOmniRule) checkCreateTable(n *ast.CreateTable
 	}
 }
 
-func (r *tableTextFieldsTotalLengthOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
-	tableName := omniTableName(n.Table)
+func (r *tableTextFieldsTotalLengthRule) checkAlterTable(n *ast.AlterTableStmt) {
+	tableName := tableName(n.Table)
 	if tableName == "" {
 		return
 	}

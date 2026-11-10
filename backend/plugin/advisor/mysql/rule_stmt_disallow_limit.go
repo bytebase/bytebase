@@ -32,25 +32,25 @@ func (*StatementDisallowLimitAdvisor) Check(_ context.Context, checkCtx advisor.
 		return nil, err
 	}
 
-	rule := &disallowLimitOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &disallowLimitRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type disallowLimitOmniRule struct {
-	OmniBaseRule
+type disallowLimitRule struct {
+	BaseRule
 }
 
-func (*disallowLimitOmniRule) Name() string {
+func (*disallowLimitRule) Name() string {
 	return "StatementDisallowLimitRule"
 }
 
-func (r *disallowLimitOmniRule) OnStatement(node ast.Node) {
+func (r *disallowLimitRule) OnStatement(node ast.Node) {
 	text := strings.TrimSpace(r.StmtText)
 	switch n := node.(type) {
 	case *ast.DeleteStmt:
@@ -69,7 +69,7 @@ func (r *disallowLimitOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *disallowLimitOmniRule) checkSelectLimit(sel *ast.SelectStmt, text string) {
+func (r *disallowLimitRule) checkSelectLimit(sel *ast.SelectStmt, text string) {
 	if sel == nil {
 		return
 	}
@@ -94,7 +94,7 @@ func (r *disallowLimitOmniRule) checkSelectLimit(sel *ast.SelectStmt, text strin
 	}
 }
 
-func (r *disallowLimitOmniRule) addLimitAdvice(c code.Code, text string, _ ast.Loc) {
+func (r *disallowLimitRule) addLimitAdvice(c code.Code, text string, _ ast.Loc) {
 	r.AddAdviceAbsolute(&storepb.Advice{
 		Status:        r.Level,
 		Code:          c.Int32(),

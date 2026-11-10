@@ -31,25 +31,25 @@ func (*ColumnDisallowChangingOrderAdvisor) Check(_ context.Context, checkCtx adv
 		return nil, err
 	}
 
-	rule := &columnDisallowChangingOrderOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &columnDisallowChangingOrderRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type columnDisallowChangingOrderOmniRule struct {
-	OmniBaseRule
+type columnDisallowChangingOrderRule struct {
+	BaseRule
 }
 
-func (*columnDisallowChangingOrderOmniRule) Name() string {
+func (*columnDisallowChangingOrderRule) Name() string {
 	return "ColumnDisallowChangingOrderRule"
 }
 
-func (r *columnDisallowChangingOrderOmniRule) OnStatement(node ast.Node) {
+func (r *columnDisallowChangingOrderRule) OnStatement(node ast.Node) {
 	n, ok := node.(*ast.AlterTableStmt)
 	if !ok {
 		return

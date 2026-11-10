@@ -32,27 +32,27 @@ func (*DatabaseAllowDropIfEmptyAdvisor) Check(_ context.Context, checkCtx adviso
 		return nil, err
 	}
 
-	rule := &databaseDropEmptyDBOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &databaseDropEmptyDBRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 		originMetadata: checkCtx.OriginalMetadata,
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type databaseDropEmptyDBOmniRule struct {
-	OmniBaseRule
+type databaseDropEmptyDBRule struct {
+	BaseRule
 	originMetadata *model.DatabaseMetadata
 }
 
-func (*databaseDropEmptyDBOmniRule) Name() string {
+func (*databaseDropEmptyDBRule) Name() string {
 	return "DatabaseDropEmptyDBRule"
 }
 
-func (r *databaseDropEmptyDBOmniRule) OnStatement(node ast.Node) {
+func (r *databaseDropEmptyDBRule) OnStatement(node ast.Node) {
 	n, ok := node.(*ast.DropDatabaseStmt)
 	if !ok {
 		return

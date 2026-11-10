@@ -46,8 +46,8 @@ func (*NamingColumnConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 		maxLength = advisor.DefaultNameLengthLimit
 	}
 
-	rule := &namingColumnOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &namingColumnRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
@@ -55,20 +55,20 @@ func (*NamingColumnConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 		maxLength: maxLength,
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type namingColumnOmniRule struct {
-	OmniBaseRule
+type namingColumnRule struct {
+	BaseRule
 	format    *regexp.Regexp
 	maxLength int
 }
 
-func (*namingColumnOmniRule) Name() string {
+func (*namingColumnRule) Name() string {
 	return "NamingColumnRule"
 }
 
-func (r *namingColumnOmniRule) OnStatement(node ast.Node) {
+func (r *namingColumnRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		if n.Table == nil {
@@ -92,7 +92,7 @@ func (r *namingColumnOmniRule) OnStatement(node ast.Node) {
 			}
 			switch cmd.Type {
 			case ast.ATAddColumn:
-				for _, col := range omniGetColumnsFromCmd(cmd) {
+				for _, col := range getColumnsFromCmd(cmd) {
 					r.handleColumn(tableName, col.Name, r.LocToLine(n.Loc))
 				}
 			case ast.ATRenameColumn:
@@ -110,7 +110,7 @@ func (r *namingColumnOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *namingColumnOmniRule) handleColumn(tableName, columnName string, lineNumber int32) {
+func (r *namingColumnRule) handleColumn(tableName, columnName string, lineNumber int32) {
 	absoluteLine := r.BaseLine + int(lineNumber)
 	if !r.format.MatchString(columnName) {
 		r.AddAdviceAbsolute(&storepb.Advice{

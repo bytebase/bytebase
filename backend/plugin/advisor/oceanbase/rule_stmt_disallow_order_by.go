@@ -32,25 +32,25 @@ func (*DisallowOrderByAdvisor) Check(_ context.Context, checkCtx advisor.Context
 		return nil, err
 	}
 
-	rule := &disallowOrderByOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &disallowOrderByRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type disallowOrderByOmniRule struct {
-	OmniBaseRule
+type disallowOrderByRule struct {
+	BaseRule
 }
 
-func (*disallowOrderByOmniRule) Name() string {
+func (*disallowOrderByRule) Name() string {
 	return "DisallowOrderByRule"
 }
 
-func (r *disallowOrderByOmniRule) OnStatement(node ast.Node) {
+func (r *disallowOrderByRule) OnStatement(node ast.Node) {
 	text := strings.TrimSpace(r.StmtText)
 	switch n := node.(type) {
 	case *ast.DeleteStmt:
@@ -65,7 +65,7 @@ func (r *disallowOrderByOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *disallowOrderByOmniRule) addOrderByAdvice(c code.Code, text string, loc ast.Loc) {
+func (r *disallowOrderByRule) addOrderByAdvice(c code.Code, text string, loc ast.Loc) {
 	r.AddAdviceAbsolute(&storepb.Advice{
 		Status:        r.Level,
 		Code:          c.Int32(),

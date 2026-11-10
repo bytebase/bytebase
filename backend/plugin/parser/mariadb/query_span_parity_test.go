@@ -35,11 +35,11 @@ func firstLineOf(s string) string {
 	return s
 }
 
-// TestMySQLOmniQuerySpanGoldenHarness holds this package's query span to the
+// TestMySQLQuerySpanGoldenHarness holds this package's query span to the
 // shared YAML corpus. It drives the extractor directly rather than through
 // GetQuerySpan, so a span is compared against the fixture's expectation and not
 // against itself.
-func TestMySQLOmniQuerySpanGoldenHarness(t *testing.T) {
+func TestMySQLQuerySpanGoldenHarness(t *testing.T) {
 	type testCase struct {
 		Description        string              `yaml:"description,omitempty"`
 		Statement          string              `yaml:"statement,omitempty"`
@@ -85,7 +85,7 @@ func TestMySQLOmniQuerySpanGoldenHarness(t *testing.T) {
 			}
 			total++
 
-			omni, err := runMySQLOmniGoldenCase(context.Background(), tc.Statement, tc.Metadata, tc.DefaultDatabase, engine, tc.IgnoreCaseSensitve)
+			omni, err := runMySQLGoldenCase(context.Background(), tc.Statement, tc.Metadata, tc.DefaultDatabase, engine, tc.IgnoreCaseSensitve)
 			if err != nil {
 				diffs = append(diffs, diff{
 					fixture:     testDataPath,
@@ -119,7 +119,7 @@ func TestMySQLOmniQuerySpanGoldenHarness(t *testing.T) {
 	require.Empty(t, diffs)
 }
 
-func runMySQLOmniGoldenCase(
+func runMySQLGoldenCase(
 	ctx context.Context,
 	statement string,
 	metadataText string,
