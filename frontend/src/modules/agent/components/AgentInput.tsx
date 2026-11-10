@@ -1777,7 +1777,7 @@ export function AgentInput({
             ? acceptAgentResponseActions(
                 proposedActions,
                 handoffCandidates,
-                verifiedDatabase && readDatabaseSchema
+                !capability && verifiedDatabase && readDatabaseSchema
                   ? { verifiedDatabase, answer: finalText }
                   : undefined,
                 maskingDraftIds,

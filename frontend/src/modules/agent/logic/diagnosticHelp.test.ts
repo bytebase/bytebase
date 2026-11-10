@@ -239,6 +239,89 @@ describe("Agent diagnostic snapshot", () => {
   });
 
   test.each([
+    ["SET PASSWORD FOR 'app'@'localhost' =", "'example-secret'"],
+    [
+      'set\npassword\tfor\n"app" @ "localhost" =',
+      '"private first;second suffix-secret"',
+    ],
+    [
+      "SET PASSWORD FOR `app``name`@`local``host`=",
+      "'private first;second suffix-secret'",
+    ],
+    [
+      "SET PASSWORD FOR app@localhost =",
+      "'private first;second suffix-secret'",
+    ],
+    [
+      "SET PASSWORD FOR 'app = login'@'localhost' =",
+      "'private first;second suffix-secret'",
+    ],
+    [
+      "SET PASSWORD FOR 'app''name'@'local''host' =",
+      "'private ''first;second suffix-secret'",
+    ],
+    [
+      String.raw`SET PASSWORD FOR 'app\'name'@'localhost' =`,
+      String.raw`'private \'first;second suffix-secret'`,
+    ],
+    [
+      "SET PASSWORD FOR CURRENT_USER() =",
+      "'private first;second suffix-secret'",
+    ],
+    [
+      "SET PASSWORD FOR CURRENT_USER () =",
+      "'private first;second suffix-secret'",
+    ],
+    [
+      "SET PASSWORD FOR CURRENT_USER( ) =",
+      "'private first;second suffix-secret'",
+    ],
+    ["SET PASSWORD =", "'private first;second suffix-secret'"],
+    [
+      "SET PASSWORD FOR 'app'@'localhost' = PASSWORD(",
+      "'private first;second suffix-secret')",
+    ],
+    ["SET PASSWORD = PASSWORD (", "'private first;second suffix-secret')"],
+  ])("redacts SET PASSWORD values before launch: %s", (clause, credential) => {
+    vi.mocked(openAgentWithPrompt).mockClear();
+    const evidence = `${clause} ${credential}; SELECT 1;`;
+    const input = context();
+    input.summary = evidence;
+    input.detail = evidence;
+    input.sql!.text = evidence;
+    input.sql!.sheet = evidence;
+    input.facts = [
+      { label: "evidence", value: evidence },
+      { label: evidence, value: "visible" },
+    ];
+
+    openAgentDiagnosticHelp(input);
+
+    const [prompt, references, , options] =
+      vi.mocked(openAgentWithPrompt).mock.lastCall!;
+    const outbound = JSON.stringify({ prompt, references, options });
+    for (const secret of [
+      "example-secret",
+      "private",
+      "first",
+      "second",
+      "suffix-secret",
+    ]) {
+      expect(outbound).not.toContain(secret);
+    }
+    const safeEvidence = `${clause} [redacted]${credential.endsWith(")") ? ")" : ""}; SELECT 1;`;
+    expect(snapshotFromPrompt(prompt)).toMatchObject({
+      summary: safeEvidence,
+      detail: safeEvidence,
+      sql: { text: safeEvidence, sheet: safeEvidence },
+      facts: [
+        { label: "evidence", value: safeEvidence },
+        { label: safeEvidence, value: "[redacted]" },
+      ],
+    });
+  });
+
+  test.each([
     { kind: "project", name: "projects/example" },
     { name: "projects/other/plans/42" },
     { name: "projects/example/plans/create" },

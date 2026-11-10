@@ -4920,6 +4920,88 @@ describe("AgentInput", () => {
     view.unmount();
   });
 
+  test.each([false, true])(
+    "diagnostic DDL answers cannot synthesize Plan drafts with Continue=%s",
+    async (withContinue) => {
+      const resource = {
+        kind: "database" as const,
+        name: "instances/prod/databases/orders",
+        project: "projects/orders",
+        label: "instances/prod/databases/orders",
+      };
+      const answer =
+        "Proposed change:\n\n```sql\nCREATE TABLE audit_log (id INT PRIMARY KEY);\n```";
+      const actions = withContinue
+        ? [{ kind: "continue", prompt: "Why did this check fail?" }]
+        : [];
+      mocks.executeTool.mockImplementation(async (name) => ({
+        kind: "tool_result",
+        result: JSON.stringify(
+          name === "call_api"
+            ? { status: 200, response: { schema: "CREATE TABLE orders (id INT);" } }
+            : {
+                project: resource.project,
+                database: {
+                  status: "available",
+                  name: resource.name,
+                  state: "ACTIVE",
+                },
+              }
+        ),
+      }));
+      mocks.runAgentLoop.mockImplementation(
+        async (_history, _tools, executor, callbacks) => {
+          await executor(
+            "call_api",
+            {
+              operationId: "DatabaseService/GetDatabaseSchema",
+              body: { name: `${resource.name}/schema` },
+            },
+            "schema-1"
+          );
+          callbacks.onText(answer);
+          return {
+            kind: "completed",
+            success: true,
+            totalTokensUsed: 0,
+            actions,
+          };
+        }
+      );
+      const store = useAgentStore.getState();
+      const page = { path: "/projects/orders", title: "Orders" };
+      const chat = store.createChat({
+        context: resource.project,
+        capability: { kind: "diagnostic", resource },
+      });
+      store.queueUserMessage({
+        chatId: chat.id,
+        text: "Explain this database check",
+        page,
+        resourceReferences: [resource],
+      });
+      const view = renderIntoContainer(<AgentInput />);
+      view.render();
+      await act(async () => {
+        await vi.waitFor(() =>
+          expect(
+            store.getMessages(chat.id).some((message) => message.content === answer)
+          ).toBe(true)
+        );
+      });
+      const finalMessage = store
+        .getMessages(chat.id)
+        .find((message) => message.content === answer);
+      expect(finalMessage?.metadata?.actions).toEqual(
+        withContinue ? actions : undefined
+      );
+      expect(finalMessage?.metadata?.resourceReferences).toEqual(
+        withContinue ? [resource] : undefined
+      );
+      view.unmount();
+    }
+  );
+
   test("diagnostic answers cannot stage Issue comment drafts", async () => {
     const resource = { kind: "issue" as const, name: "projects/orders/issues/42", project: "projects/orders", label: "projects/orders/issues/42" };
     mocks.executeTool.mockResolvedValue({ kind: "tool_result", result: JSON.stringify({ project: resource.project, issue: { status: "available", name: resource.name } }) });

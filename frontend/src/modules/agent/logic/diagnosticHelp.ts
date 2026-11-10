@@ -66,11 +66,22 @@ function credentialValueEnd(value: string, start: number): number {
 }
 
 function redactCredentialValues(value: string): string {
-  const prefix =
-    /["']?\b[A-Za-z0-9_-]*(?:password|passwd|pwd|token|secret|credential|private[_-]?key|api[_-]?key|access[_-]?key|auth|username|user[_-]?id|cookie)[A-Za-z0-9_-]*["']?\s*[:=]\s*|\b(?:IDENTIFIED\s+(?:BY|WITH\s+(?:[A-Za-z0-9_]+|'[^']+'|"[^"]+"|`[^`]+`)\s+(?:BY|AS))|PASSWORD)\s+/gi;
+  const accountPart =
+    /CURRENT_USER\b\s*(?:\(\s*\))?|'(?:''|\\.|[^'\\])*'|"(?:""|\\.|[^"\\])*"|`(?:``|\\.|[^`\\])*`|[^\s@=;'"`]+/
+      .source;
+  const prefix = new RegExp(
+    String.raw`\bSET\s+PASSWORD\s+FOR\s+(?:${accountPart})(?:\s*@\s*(?:${accountPart}))?\s*=\s*|` +
+      /["']?\b[A-Za-z0-9_-]*(?:password|passwd|pwd|token|secret|credential|private[_-]?key|api[_-]?key|access[_-]?key|auth|username|user[_-]?id|cookie)[A-Za-z0-9_-]*["']?\s*[:=]\s*|\b(?:IDENTIFIED\s+(?:BY|WITH\s+(?:[A-Za-z0-9_]+|'[^']+'|"[^"]+"|`[^`]+`)\s+(?:BY|AS))|PASSWORD)\s+/
+        .source,
+    "gi"
+  );
   let output = "";
   let offset = 0;
   for (let match = prefix.exec(value); match; match = prefix.exec(value)) {
+    const passwordFunction = /^PASSWORD\s*\(\s*/i.exec(
+      value.slice(prefix.lastIndex)
+    );
+    if (passwordFunction) prefix.lastIndex += passwordFunction[0].length;
     output += value.slice(offset, prefix.lastIndex) + "[redacted]";
     offset = credentialValueEnd(value, prefix.lastIndex);
     prefix.lastIndex = offset;
