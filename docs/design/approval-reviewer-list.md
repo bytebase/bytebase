@@ -84,8 +84,9 @@ is a popover inside a popover: opening it or clicking inside it must not close t
 popover, and Escape closes the reviewer list first. Rejected: making the count in the header plain
 text, which would remove a list the header shows today.
 
-**D6 · The overflow avatar grows to fit its count.** The "+N" avatar keeps its 20px height and
-widens into a pill when the count needs more room, so "+1200" stays inside it.
+**D6 · The overflow count grows to fit.** The "+N" count keeps its 20px height and widens when
+the count needs more room, so "+1200" stays inside it. Once it can widen it is a text label, which
+the UX contract gives `rounded-xs` corners; `rounded-full` stays with the avatars.
 
 What does not change: the avatar stack shows the first three candidates; the order is the one
 `useApprovalCandidates` produces; the last plan editor stays in the list with its "Can't approve"
@@ -109,15 +110,17 @@ has nothing to open.
 One PR. It holds this doc and the frontend change, and needs no backend change.
 
 1. **Reviewer list (D1–D6).**
-   - Files: `ReviewApprovalFlow.tsx` (`NodeReviewers` and `CandidateRow`, or a new
-     `ReviewerList.tsx` beside it if the popover body outgrows the file);
+   - Files: `ReviewApprovalFlow.tsx` (`NodeReviewers`: the trigger and the "+N" count); a new
+     `ReviewerList.tsx` beside it for the popover body (search, list, rows);
      `frontend/src/components/ui/copy-button.tsx` (optional accessible label); the five locale files
      for the search placeholder, the empty-search message and the copy label, with the unused
      `and-n-more` keys removed.
-   - Unit tests in `ReviewApprovalFlow.test.tsx`: the popover does not open on hover and stays open when the pointer leaves; a
-     role with more than 50 holders lists a holder past the 50th once searched for; search matches
-     by email as well as by name; no search box at 10 or fewer; the empty-search state clears; each
-     row's copy button names its person and copies its email; the "+N" pill shows the full count.
+   - Unit tests. `ReviewApprovalFlow.test.tsx`: the popover does not open on hover, opens on
+     click, stays open when the pointer leaves, and lists every reviewer; the "+N" count shows
+     every candidate past the third and widens to fit. `ReviewerList.test.tsx`: a holder past the
+     50th is found by name or email; search keeps the order; no search box at 10 or fewer; the
+     empty-search state clears; each row's copy button names its person and copies its email.
+     `copy-button.test.tsx`: the label becomes the accessible name.
    - E2E: `frontend/tests/e2e/plan-detail/plan-detail-review.spec.ts` opens the reviewer list by
      clicking instead of hovering ("the step lists the service account as its reviewer"), and a new
      case opens the list from the header Plan status popover and closes it with Escape while the

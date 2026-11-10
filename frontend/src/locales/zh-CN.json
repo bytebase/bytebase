@@ -2297,16 +2297,18 @@
       },
       "approval-after-submit": "提交审核后开始审批。",
       "approval-flow": {
-        "and-n-more_one": "还有 {{count}} 位",
-        "and-n-more_other": "还有 {{count}} 位",
         "approved-by": "由 {{user}} 批准",
+        "clear-search": "清除搜索",
+        "copy-email": "复制 {{user}} 的邮箱",
         "current": "当前",
         "n-approved": "{{n}} 人已批准",
         "n-pending": "{{n}} 个待审批",
         "n-reviewers_one": "{{count}} 位审批人",
         "n-reviewers_other": "{{count}} 位审批人",
+        "no-matching-reviewers": "没有与“{{query}}”匹配的审批人",
         "no-reviewers": "无审批人",
-        "rejected-by": "由 {{user}} 拒绝"
+        "rejected-by": "由 {{user}} 拒绝",
+        "search-placeholder": "按姓名或邮箱搜索"
       },
       "candidate-last-changed-plan": "无法审批 — 最后修改了此计划",
       "comment-required-to-reject": "拒绝时必须填写评论",

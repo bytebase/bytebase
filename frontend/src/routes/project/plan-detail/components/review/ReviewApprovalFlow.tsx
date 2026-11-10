@@ -17,15 +17,13 @@ import { projectNamePrefix } from "@/stores/modules/v1/common";
 import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { Issue_Approver_Status } from "@/types/proto-es/v1/issue_service_pb";
-import {
-  type ApprovalCandidate,
-  useApprovalCandidates,
-} from "../../../useApprovalCandidates";
+import { useApprovalCandidates } from "../../../useApprovalCandidates";
 import { usePlanDetailContext } from "../../shell/PlanDetailContext";
 import {
   type ApprovalStepStatus,
   computeApprovalFlowLayout,
 } from "./approvalFlowLayout";
+import { REVIEWER_SEARCH_THRESHOLD, ReviewerList } from "./ReviewerList";
 
 export interface FlowStep {
   index: number;
@@ -309,8 +307,8 @@ function FlowNode({
 }
 
 // The reviewer line under a current/pending node: an avatar stack + "N
-// reviewers" count, where the whole row is a hover target that reveals the full
-// reviewer list (BYT-9711). Rendered for future stages too, not just current.
+// reviewers" count that opens the step's full reviewer list on click
+// (BYT-9711). Rendered for future stages too, not just current.
 function NodeReviewers({
   issue,
   projectId,
@@ -322,6 +320,8 @@ function NodeReviewers({
 }) {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
+  const searchRef = useRef<HTMLInputElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
   // Whether the project IAM policy is in cache yet — used to tell "still
   // loading" (show nothing) apart from "genuinely no eligible reviewers".
   const policyLoaded = useAppStore(
@@ -351,54 +351,40 @@ function NodeReviewers({
   const lastPlanEditorCandidate = candidates.find((candidate) =>
     candidate.ineligibilities.includes("last-plan-editor")
   );
-  // A role can resolve to thousands of candidates; render a bounded, scrollable
-  // slice in the popover and summarize the rest rather than mounting every row.
-  const MAX_LISTED = 50;
-  const listed = candidates.slice(0, MAX_LISTED);
-  const remaining = candidates.length - listed.length;
+  const hasSearch = candidates.length > REVIEWER_SEARCH_THRESHOLD;
 
   return (
     <div className="mt-1">
       <Popover>
-        <PopoverTrigger
-          delay={100}
-          nativeButton={false}
-          openOnHover
-          render={
-            <div className="flex h-5 w-fit cursor-default items-center gap-x-1.5">
-              <div className="flex items-center">
-                {visible.map(({ user }) => (
-                  <InitialsAvatar
-                    className="-ml-1 size-5 text-xs ring-2 ring-background first:ml-0"
-                    key={user.name}
-                    name={principalLabel(user)}
-                  />
-                ))}
-                {overflow > 0 && (
-                  <span className="-ml-1 flex size-5 items-center justify-center rounded-full bg-control-bg font-medium text-control text-xs ring-2 ring-background first:ml-0">
-                    +{overflow}
-                  </span>
-                )}
-              </div>
-              <span className="text-xs text-control-light">
-                {t("plan.review.approval-flow.n-reviewers", {
-                  count: candidates.length,
-                })}
-              </span>
-            </div>
-          }
-        />
-        <PopoverContent align="start" className="w-72" side="bottom">
-          <div className="flex max-h-64 flex-col gap-y-2 overflow-y-auto">
-            {listed.map((candidate) => (
-              <CandidateRow candidate={candidate} key={candidate.user.name} />
+        <PopoverTrigger className="-ml-0.5 flex h-5 w-fit cursor-pointer items-center gap-x-1.5 rounded-xs pr-1 pl-0.5 hover:bg-control-bg focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent data-[popup-open]:bg-control-bg">
+          <span className="flex items-center">
+            {visible.map(({ user }) => (
+              <InitialsAvatar
+                className="-ml-1 size-5 text-xs ring-2 ring-background first:ml-0"
+                key={user.name}
+                name={principalLabel(user)}
+              />
             ))}
-          </div>
-          {remaining > 0 && (
-            <div className="mt-2 border-t pt-1.5 text-xs text-control-placeholder">
-              {t("plan.review.approval-flow.and-n-more", { count: remaining })}
-            </div>
-          )}
+            {overflow > 0 && (
+              <span className="-ml-1 flex h-5 min-w-5 items-center justify-center rounded-xs bg-control-bg px-1 font-medium text-control text-xs ring-2 ring-background first:ml-0">
+                +{overflow}
+              </span>
+            )}
+          </span>
+          <span className="text-xs text-control-light">
+            {t("plan.review.approval-flow.n-reviewers", {
+              count: candidates.length,
+            })}
+          </span>
+        </PopoverTrigger>
+        <PopoverContent
+          ref={popupRef}
+          align="start"
+          className="w-80"
+          initialFocus={hasSearch ? searchRef : popupRef}
+          side="bottom"
+        >
+          <ReviewerList candidates={candidates} searchRef={searchRef} />
         </PopoverContent>
       </Popover>
       {lastPlanEditorCandidate && (
@@ -409,33 +395,6 @@ function NodeReviewers({
           {t("plan.review.candidate-last-changed-plan")}
         </div>
       )}
-    </div>
-  );
-}
-
-function CandidateRow({ candidate }: { candidate: ApprovalCandidate }) {
-  const { t } = useTranslation();
-  const { user } = candidate;
-  return (
-    <div className="flex items-center gap-x-2">
-      <InitialsAvatar
-        className="size-6 shrink-0 text-xs"
-        name={principalLabel(user)}
-      />
-      <div className="min-w-0">
-        <div className="flex items-center gap-x-1.5">
-          <span className="truncate text-sm text-main">
-            {principalLabel(user)}
-          </span>
-          <AccountTypeBadge compact email={user.email} />
-        </div>
-        <div className="truncate text-xs text-control-light">{user.email}</div>
-        {candidate.ineligibilities.includes("last-plan-editor") && (
-          <div className="text-xs text-warning">
-            {t("plan.review.candidate-last-changed-plan")}
-          </div>
-        )}
-      </div>
     </div>
   );
 }
