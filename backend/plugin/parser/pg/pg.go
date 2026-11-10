@@ -30,12 +30,12 @@ func parsePgStatements(statement string) ([]base.ParsedStatement, error) {
 			continue
 		}
 
-		omniStmts, omniErr := ParsePg(stmt.Text)
-		if omniErr != nil {
-			return nil, convertError(omniErr, statement, stmt)
+		stmts, err := ParsePg(stmt.Text)
+		if err != nil {
+			return nil, convertError(err, statement, stmt)
 		}
 
-		for _, os := range omniStmts {
+		for _, os := range stmts {
 			result = append(result, base.ParsedStatement{
 				Statement: stmt,
 				AST: &AST{

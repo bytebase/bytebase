@@ -53,13 +53,13 @@ func (*indexCreateConcurrentlyRule) Name() string {
 func (r *indexCreateConcurrentlyRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateStmt:
-		tableName := omniTableName(n.Relation)
+		tableName := rangeVarTableName(n.Relation)
 		if tableName != "" {
 			r.newlyCreatedTables[tableName] = true
 		}
 	case *ast.IndexStmt:
 		if !n.Concurrent {
-			tableName := omniTableName(n.Relation)
+			tableName := rangeVarTableName(n.Relation)
 			if r.newlyCreatedTables[tableName] {
 				return
 			}

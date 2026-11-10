@@ -101,7 +101,7 @@ func (r *namingUKConventionRule) handleIndexStmt(n *ast.IndexStmt) {
 	}
 
 	indexName := n.Idxname
-	tableName := omniTableName(n.Relation)
+	tableName := rangeVarTableName(n.Relation)
 	columnList := indexColumns(n)
 
 	metaData := map[string]string{
@@ -112,7 +112,7 @@ func (r *namingUKConventionRule) handleIndexStmt(n *ast.IndexStmt) {
 }
 
 func (r *namingUKConventionRule) handleCreateStmt(n *ast.CreateStmt) {
-	tableName := omniTableName(n.Relation)
+	tableName := rangeVarTableName(n.Relation)
 	cols, constraints := tableElements(n)
 
 	// Check table-level UNIQUE constraints
@@ -148,7 +148,7 @@ func (r *namingUKConventionRule) handleCreateStmt(n *ast.CreateStmt) {
 }
 
 func (r *namingUKConventionRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
-	tableName := omniTableName(n.Relation)
+	tableName := rangeVarTableName(n.Relation)
 
 	for _, cmd := range alterTableCmds(n) {
 		if ast.AlterTableType(cmd.Subtype) == ast.AT_AddConstraint {
@@ -214,7 +214,7 @@ func (r *namingUKConventionRule) handleRenameStmt(n *ast.RenameStmt) {
 
 	// ALTER TABLE ... RENAME CONSTRAINT
 	if n.RenameType == ast.OBJECT_TABCONSTRAINT && r.originalMetadata != nil {
-		tableName := omniTableName(n.Relation)
+		tableName := rangeVarTableName(n.Relation)
 		schemaName := ""
 		if n.Relation != nil {
 			schemaName = n.Relation.Schemaname

@@ -99,7 +99,7 @@ func handleIndexTotalStmt(node ast.Node, baseLine int, stmtText string, tl table
 
 	switch n := node.(type) {
 	case *ast.CreateStmt:
-		tableName := omniTableName(n.Relation)
+		tableName := rangeVarTableName(n.Relation)
 		if tableName == "" {
 			return
 		}
@@ -123,7 +123,7 @@ func handleIndexTotalStmt(node ast.Node, baseLine int, stmtText string, tl table
 		}
 
 	case *ast.AlterTableStmt:
-		tableName := omniTableName(n.Relation)
+		tableName := rangeVarTableName(n.Relation)
 		if tableName == "" {
 			return
 		}
@@ -152,7 +152,7 @@ func handleIndexTotalStmt(node ast.Node, baseLine int, stmtText string, tl table
 		}
 
 	case *ast.IndexStmt:
-		tableName := omniTableName(n.Relation)
+		tableName := rangeVarTableName(n.Relation)
 		if tableName == "" {
 			return
 		}

@@ -763,10 +763,10 @@ func (q *querySpanExtractor) extractJoin(join *ast.JoinClause) (base.TableSource
 	if condition, ok := join.Condition.(*ast.UsingCondition); ok && condition != nil {
 		using = condition.Columns
 	}
-	return joinTableSources(left, right, omniJoinType(join.Type), using), nil
+	return joinTableSources(left, right, toJoinType(join.Type), using), nil
 }
 
-func omniJoinType(joinType ast.JoinType) joinType {
+func toJoinType(joinType ast.JoinType) joinType {
 	switch joinType {
 	case ast.JoinInner:
 		return InnerJoin

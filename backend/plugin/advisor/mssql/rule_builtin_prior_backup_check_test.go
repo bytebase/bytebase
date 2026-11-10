@@ -13,11 +13,11 @@ import (
 func TestPrepareTransformationUsesAST(t *testing.T) {
 	sql := `UPDATE p SET c1 = 1 FROM dbo.pokes AS p WHERE p.c1 = 1;
 DELETE p FROM dbo.pokes AS p WHERE p.c1 = 1;`
-	omniStmts, err := tsqlparser.ParseTSQL(sql)
+	stmts, err := tsqlparser.ParseTSQL(sql)
 	require.NoError(t, err)
 
 	var parsedStatements []base.ParsedStatement
-	for _, stmt := range omniStmts {
+	for _, stmt := range stmts {
 		start := &storepb.Position{
 			Line:   int32(stmt.Start.Line),
 			Column: int32(stmt.Start.Column),

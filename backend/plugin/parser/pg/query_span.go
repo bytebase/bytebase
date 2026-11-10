@@ -248,7 +248,7 @@ func (e *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	e.ctx = ctx
 
 	// Step 1: Parse with omni.
-	omniStmts, err := ParsePg(stmt)
+	stmts, err := ParsePg(stmt)
 	if err != nil {
 		// Convert omni parse error to *base.SyntaxError with position info
 		// so the SQL service can populate DetailedError.SyntaxError.
@@ -262,8 +262,8 @@ func (e *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 		}
 		return nil, syntaxErr
 	}
-	if len(omniStmts) != 1 {
-		return nil, errors.Errorf("expected exactly 1 statement, got %d", len(omniStmts))
+	if len(stmts) != 1 {
+		return nil, errors.Errorf("expected exactly 1 statement, got %d", len(stmts))
 	}
 
 	// Step 2: Extract access tables (non-fatal on error — some statement
@@ -291,7 +291,7 @@ func (e *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	}
 
 	// Step 4: Classify query type.
-	queryType, isExplainAnalyze := classifyQueryType(omniStmts[0].AST, allSystems)
+	queryType, isExplainAnalyze := classifyQueryType(stmts[0].AST, allSystems)
 
 	// Step 5: Return early for non-SELECT queries, keeping the tables the
 	// statement touches and no result columns. EXPLAIN ANALYZE runs its query
@@ -300,7 +300,7 @@ func (e *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	if queryType != base.Select || isExplainAnalyze {
 		var unresolved *base.UnresolvedColumnsError
 		if isExplainAnalyze {
-			if err := e.collectExplainedPredicateColumns(omniStmts[0].AST, accessesMap); err != nil {
+			if err := e.collectExplainedPredicateColumns(stmts[0].AST, accessesMap); err != nil {
 				return nil, err
 			}
 			e.mergeFunctionAccesses(accessesMap)
@@ -319,7 +319,7 @@ func (e *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	}
 
 	// Step 6: Cast to SelectStmt, init catalog, analyze.
-	selStmt, ok := omniStmts[0].AST.(*ast.SelectStmt)
+	selStmt, ok := stmts[0].AST.(*ast.SelectStmt)
 	if !ok {
 		// Not a SelectStmt (e.g., SET, SHOW classified as Select type).
 		return &base.QuerySpan{

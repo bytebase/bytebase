@@ -30,16 +30,16 @@ func parseTSQLStatements(statement string) ([]base.ParsedStatement, error) {
 			continue
 		}
 
-		omniStmts, omniErr := ParseTSQL(stmt.Text)
-		if omniErr != nil {
-			return nil, convertError(omniErr, stmt)
+		stmts, err := ParseTSQL(stmt.Text)
+		if err != nil {
+			return nil, convertError(err, stmt)
 		}
 
-		if len(omniStmts) == 0 {
+		if len(stmts) == 0 {
 			continue
 		}
 
-		for _, os := range omniStmts {
+		for _, os := range stmts {
 			if os.Empty() {
 				continue
 			}

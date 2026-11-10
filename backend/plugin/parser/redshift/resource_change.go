@@ -19,7 +19,7 @@ func extractChangedResources(database string, schema string, dbMetadata *model.D
 	if schema == "" {
 		schema = "public"
 	}
-	omniSummary, err := omniredshift.ExtractChangedResources(statement, database, schema)
+	rawSummary, err := omniredshift.ExtractChangedResources(statement, database, schema)
 	if err != nil {
 		return nil, err
 	}
@@ -33,7 +33,7 @@ func extractChangedResources(database string, schema string, dbMetadata *model.D
 	}
 
 	summary := &base.ChangeSummary{ChangedResources: model.NewChangedResources(dbMetadata)}
-	for _, table := range omniSummary.Tables {
+	for _, table := range rawSummary.Tables {
 		summary.ChangedResources.AddTable(
 			table.Database,
 			table.Schema,

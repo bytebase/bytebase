@@ -88,7 +88,7 @@ func (r *statementMergeAlterTableRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateStmt:
 		if n.Relation != nil {
-			tableName := omniTableName(n.Relation)
+			tableName := rangeVarTableName(n.Relation)
 			schema := schemaName(n.Relation)
 			if tableName != "" {
 				r.tableMap.set(schema, tableName, int(r.ContentEndLine()))
@@ -96,7 +96,7 @@ func (r *statementMergeAlterTableRule) OnStatement(node ast.Node) {
 		}
 	case *ast.AlterTableStmt:
 		if n.Relation != nil {
-			tableName := omniTableName(n.Relation)
+			tableName := rangeVarTableName(n.Relation)
 			schema := schemaName(n.Relation)
 			if tableName != "" {
 				r.tableMap.add(schema, tableName, int(r.ContentEndLine()))

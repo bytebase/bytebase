@@ -57,7 +57,7 @@ func (r *columnDefaultDisallowVolatileRule) OnStatement(node ast.Node) {
 }
 
 func (r *columnDefaultDisallowVolatileRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
-	tableName := omniTableName(n.Relation)
+	tableName := rangeVarTableName(n.Relation)
 	if tableName == "" {
 		return
 	}

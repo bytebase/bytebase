@@ -30,7 +30,7 @@ func plannedStatement(statement string) (planned string, rebuild bool, err error
 	if !ok {
 		return statement, true, nil
 	}
-	if isExplainAnalyzeOmni(explain) {
+	if isExplainAnalyzeStmt(explain) {
 		return "", false, base.ErrExplainAnalyzeExecutes
 	}
 	inner, ok := explainedText(explain, statement)
@@ -72,7 +72,7 @@ func DescribeExplain(statement string) (format string, executed bool, ok bool) {
 	if !ok {
 		return "", false, false
 	}
-	return explainFormat(explain), isExplainAnalyzeOmni(explain), true
+	return explainFormat(explain), isExplainAnalyzeStmt(explain), true
 }
 
 func explainFormat(explain *ast.ExplainStmt) string {

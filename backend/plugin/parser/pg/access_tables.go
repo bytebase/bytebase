@@ -31,13 +31,13 @@ type ExtractAccessTablesOption struct {
 // ExtractAccessTables extracts all table/view references from a SQL statement.
 // This is a lightweight version that doesn't perform full query span analysis.
 func ExtractAccessTables(statement string, option ExtractAccessTablesOption) ([]base.ColumnResource, error) {
-	omniStmts, err := ParsePg(statement)
+	stmts, err := ParsePg(statement)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse PostgreSQL statement")
 	}
 
-	if len(omniStmts) != 1 {
-		return nil, errors.Errorf("expected exactly 1 statement, got %d", len(omniStmts))
+	if len(stmts) != 1 {
+		return nil, errors.Errorf("expected exactly 1 statement, got %d", len(stmts))
 	}
 
 	searchPath := option.SearchPath
@@ -58,7 +58,7 @@ func ExtractAccessTables(statement string, option ExtractAccessTablesOption) ([]
 	}
 
 	// Walk the omni AST to find all RangeVar nodes (table references)
-	ast.Inspect(omniStmts[0].AST, func(n ast.Node) bool {
+	ast.Inspect(stmts[0].AST, func(n ast.Node) bool {
 		if extractor.err != nil {
 			return false
 		}

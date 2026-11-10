@@ -74,7 +74,7 @@ func (r *indexKeyNumberLimitRule) handleIndexStmt(n *ast.IndexStmt) {
 	keyCount := len(indexColumns(n))
 	if r.max > 0 && keyCount > r.max {
 		indexName := n.Idxname
-		tableName := omniTableName(n.Relation)
+		tableName := rangeVarTableName(n.Relation)
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.Level,
 			Code:    code.IndexKeyNumberExceedsLimit.Int32(),
@@ -89,7 +89,7 @@ func (r *indexKeyNumberLimitRule) handleIndexStmt(n *ast.IndexStmt) {
 }
 
 func (r *indexKeyNumberLimitRule) handleCreateStmt(n *ast.CreateStmt) {
-	tableName := omniTableName(n.Relation)
+	tableName := rangeVarTableName(n.Relation)
 	_, constraints := tableElements(n)
 	for _, c := range constraints {
 		r.checkConstraint(c, tableName)
@@ -97,7 +97,7 @@ func (r *indexKeyNumberLimitRule) handleCreateStmt(n *ast.CreateStmt) {
 }
 
 func (r *indexKeyNumberLimitRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
-	tableName := omniTableName(n.Relation)
+	tableName := rangeVarTableName(n.Relation)
 	for _, cmd := range alterTableCmds(n) {
 		if cmd.Subtype == int(ast.AT_AddConstraint) {
 			if c, ok := cmd.Def.(*ast.Constraint); ok {

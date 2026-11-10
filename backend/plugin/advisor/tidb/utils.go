@@ -684,7 +684,7 @@ func needDefault(col *omniast.ColumnDef) bool {
 // stmtsCacheKey is the advisor.Context.Memo key for the per-review
 // omni-parse result. All migrated tidb advisors share one parse pass through
 // this cache.
-const stmtsCacheKey = "tidb.omniStmts"
+const stmtsCacheKey = "tidb.stmts"
 
 // getTiDBNodes returns omni-parsed statements for migrated advisors. The
 // dispatcher has already parsed and populated stmt.AST; this helper unwraps the

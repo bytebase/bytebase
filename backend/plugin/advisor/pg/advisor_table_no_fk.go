@@ -60,7 +60,7 @@ func (r *tableNoFKRule) OnStatement(node ast.Node) {
 
 // handleCreateStmt handles CREATE TABLE with FK constraints.
 func (r *tableNoFKRule) handleCreateStmt(n *ast.CreateStmt) {
-	tableName := omniTableName(n.Relation)
+	tableName := rangeVarTableName(n.Relation)
 	schema := schemaName(n.Relation)
 
 	cols, constraints := tableElements(n)
@@ -86,7 +86,7 @@ func (r *tableNoFKRule) handleCreateStmt(n *ast.CreateStmt) {
 
 // handleAlterTableStmt handles ALTER TABLE ADD CONSTRAINT with FK.
 func (r *tableNoFKRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
-	tableName := omniTableName(n.Relation)
+	tableName := rangeVarTableName(n.Relation)
 	schema := schemaName(n.Relation)
 
 	for _, cmd := range alterTableCmds(n) {
