@@ -11,10 +11,20 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func TestExplainAnalyzeDigestRejected(t *testing.T) {
+func TestExplainByDigestOrConnectionRejected(t *testing.T) {
+	// EXPLAIN FOR CONNECTION parses to an ExplainStmt with no wrapped statement.
+	// Its referenced tables cannot be determined, so it is rejected with a clear
+	// message rather than an empty span.
 	span, err := GetQuerySpan(context.Background(), base.GetQuerySpanContext{},
-		base.Statement{Text: "EXPLAIN ANALYZE 'sqldigest'"}, "db", "", false)
+		base.Statement{Text: "EXPLAIN FOR CONNECTION 5"}, "db", "", false)
 	require.ErrorContains(t, err, "EXPLAIN by digest or connection is not supported")
+	require.Nil(t, span)
+
+	// omni does not accept EXPLAIN by SQL digest, so that form is rejected at
+	// parse time (the statement cannot run regardless).
+	span, err = GetQuerySpan(context.Background(), base.GetQuerySpanContext{},
+		base.Statement{Text: "EXPLAIN ANALYZE 'sqldigest'"}, "db", "", false)
+	require.Error(t, err)
 	require.Nil(t, span)
 }
 
@@ -173,6 +183,26 @@ func TestExplainAnalyzeAccessTables(t *testing.T) {
 			require.Empty(t, span.Results)
 		})
 	}
+}
+
+func TestRecursiveCTEWithInnerWith(t *testing.T) {
+	getter, lister := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{{
+		Name: "db",
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Tables: []*metadatapb.TableMetadata{{Name: "t", Columns: []*metadatapb.ColumnMetadata{{Name: "n"}}}},
+		}},
+	}})
+	// The recursive CTE body has its own WITH clause (seed); its anchor reads
+	// from seed, which must resolve as the inner CTE, not a physical table.
+	statement := "WITH RECURSIVE r(n) AS (WITH seed AS (SELECT n FROM t) SELECT n FROM seed UNION ALL SELECT n + 1 FROM r WHERE n < 3) SELECT n FROM r"
+	span, err := GetQuerySpan(context.Background(), base.GetQuerySpanContext{
+		GetDatabaseMetadataFunc: getter,
+		ListDatabaseNamesFunc:   lister,
+	}, base.Statement{Text: statement}, "db", "", false)
+	require.NoError(t, err)
+	require.Nil(t, span.NotFoundError)
+	require.Len(t, span.Results, 1)
+	require.Equal(t, base.SourceColumnSet{{Database: "db", Table: "t", Column: "n"}: true}, span.Results[0].SourceColumns)
 }
 
 func TestRecursiveCTEShadowedInitialReference(t *testing.T) {

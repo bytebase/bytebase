@@ -49,10 +49,7 @@ import {
 } from "@/components/WorkspacePageLayout";
 import { useSemanticTypes } from "@/hooks/useSemanticTypes";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
-import {
-  factorOperatorOverrideMap,
-  getClassificationLevelOptions,
-} from "@/lib/sensitive-data/components-utils";
+import { getClassificationLevelOptions } from "@/lib/sensitive-data/components-utils";
 import { cn } from "@/lib/utils";
 import { AgentHelpButton } from "@/modules/agent/components/AgentHelpButton";
 import { openAgentPageHelp } from "@/modules/agent/logic/contextualHelp";
@@ -207,7 +204,6 @@ function MaskingRuleCondition({
       expr={expr}
       factorList={factorList}
       optionConfigMap={optionConfigMap}
-      factorOperatorOverrideMap={factorOperatorOverrideMap}
       onUpdate={() => {}}
     />
   );
@@ -605,7 +601,6 @@ function MaskingRuleEditor({
             readonly={locked}
             factorList={factorList}
             optionConfigMap={optionConfigMap}
-            factorOperatorOverrideMap={factorOperatorOverrideMap}
             onUpdate={setExpr}
           />
           {showConditionError && (

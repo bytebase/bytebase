@@ -23,12 +23,14 @@ export const parseWorkloadIdentitySubjectPattern = (wi: {
 
   switch (wi.workloadIdentityConfig.providerType) {
     case WorkloadIdentityConfig_ProviderType.GITHUB: {
-      const match = /^repo:([^/]+)\/(.*)$/.exec(pattern);
+      // An "@ID" suffix pins the owner or repository to GitHub's numeric ID;
+      // it is not part of the name.
+      const match = /^repo:([^/@]+)(?:@\d+)?\/(.*)$/.exec(pattern);
       if (!match) return;
       const owner = match[1];
       const rest = match[2];
       if (rest === "*") return { owner, repo: "", branch: "" };
-      const repoMatch = /^([^:]+):(.*)$/.exec(rest);
+      const repoMatch = /^([^:@]+)(?:@\d+)?:(.*)$/.exec(rest);
       if (!repoMatch) return;
       const repo = repoMatch[1];
       const refPart = repoMatch[2];

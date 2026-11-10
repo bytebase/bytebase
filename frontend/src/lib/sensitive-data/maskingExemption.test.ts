@@ -1,4 +1,4 @@
-// @vitest-environment node
+import { renderHook } from "@testing-library/react";
 import { describe, expect, test } from "vitest";
 import {
   type ConditionGroupExpr,
@@ -6,6 +6,7 @@ import {
   emptySimpleExpr,
   wrapAsGroup,
 } from "@/modules/cel";
+import { buildSelectorCapabilities } from "@/modules/cel/logic/agentPrompt";
 import type { DatabaseResource } from "@/types";
 import {
   CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL,
@@ -20,6 +21,7 @@ import {
   buildMaskingExemption,
   getMaskingExemptionSelectorConfig,
   rewriteMaskingExemptionDatabaseConditions,
+  useMaskingExemptionExprConfig,
 } from "./maskingExemption";
 
 const expr = wrapAsGroup(emptySimpleExpr());
@@ -36,13 +38,6 @@ describe("getMaskingExemptionSelectorConfig", () => {
     ]);
     expect([...config.factorOperatorOverrideMap]).toEqual([
       [CEL_ATTRIBUTE_RESOURCE_DATABASE, ["_==_", "@in"]],
-      [CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME, ["_==_"]],
-      [CEL_ATTRIBUTE_RESOURCE_TABLE_NAME, ["_==_", "@in"]],
-      [CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME, ["_==_", "@in"]],
-      [
-        CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL,
-        ["_==_", "_!=_", "_<_", "_<=_", "_>=_", "_>_"],
-      ],
     ]);
   });
 
@@ -51,13 +46,50 @@ describe("getMaskingExemptionSelectorConfig", () => {
     const second = getMaskingExemptionSelectorConfig();
     first.factorList.length = 0;
     first.factorOperatorOverrideMap.get(
-      CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME
+      CEL_ATTRIBUTE_RESOURCE_DATABASE
     )!.length = 0;
     first.factorOperatorOverrideMap.clear();
     expect(second.factorList).toHaveLength(5);
     expect(
-      second.factorOperatorOverrideMap.get(CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME)
+      second.factorOperatorOverrideMap.get(CEL_ATTRIBUTE_RESOURCE_DATABASE)
     ).toEqual(["_==_", "@in"]);
+  });
+});
+
+describe("masking exemption selector capabilities", () => {
+  test("offers string predicates for names without treating the database picker as a pattern", () => {
+    const { result } = renderHook(() =>
+      useMaskingExemptionExprConfig("projects/example")
+    );
+    const { fields } = JSON.parse(
+      buildSelectorCapabilities(
+        result.current.factorList,
+        result.current.factorOperatorOverrideMap
+      )
+    ) as { fields: { name: string; templates: string[] }[] };
+
+    for (const factor of [
+      CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
+      CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
+      CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME,
+    ]) {
+      expect(fields.find((field) => field.name === factor)?.templates).toEqual(
+        expect.arrayContaining([
+          `${factor}.contains("value")`,
+          `!(${factor}.contains("value"))`,
+          `${factor}.startsWith("value")`,
+          `${factor}.endsWith("value")`,
+          `${factor}.matches("value")`,
+        ])
+      );
+    }
+    expect(
+      fields.find((field) => field.name === CEL_ATTRIBUTE_RESOURCE_DATABASE)
+        ?.templates
+    ).toEqual([
+      'resource.database == "value"',
+      'resource.database in ["value"]',
+    ]);
   });
 });
 

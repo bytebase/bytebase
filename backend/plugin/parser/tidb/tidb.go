@@ -19,23 +19,20 @@ import (
 )
 
 func init() {
-	// Phase 1.5 §1.5.N+1 dispatcher flip: register the Option B
-	// omni-first/pingcap-fallback dispatcher (parseTiDBStatementsOmni in
-	// dispatcher.go). See plans/2026-04-23-omni-tidb-completion-plan.md
-	// §1.5.0 invariant #8 for the contract.
-	base.RegisterParseStatementsFunc(storepb.Engine_TIDB, parseTiDBStatementsOmni)
+	// omni is the sole TiDB statement parser (parseTiDBStatements in omni.go).
+	base.RegisterParseStatementsFunc(storepb.Engine_TIDB, parseTiDBStatements)
 	base.RegisterGetStatementTypes(storepb.Engine_TIDB, GetStatementTypes)
 }
 
-// ParseTiDBForSyntaxCheck parses TiDB SQL for syntax checking purposes.
-// Returns []base.AST with *AST instances.
+// ParseTiDBForSyntaxCheck parses TiDB SQL with the native pingcap parser and
+// returns []base.AST with *AST instances. It is the pingcap-AST entry point
+// that un-migrated advisors still rely on; new statement parsing goes through
+// the registered omni ParseStatementsFunc instead.
 //
 // Per-statement parse + line-tracking is delegated to
-// parsePingCapSingleStatement (in dispatcher.go) so the dispatcher's
-// pingcap-fallback path and this canonical pre-flip path produce
-// structurally identical *AST values. (nil, nil) from the helper
-// signals "non-1 node count, skip" — same semantic as the pre-
-// refactor inline `if len(nodes) != 1 { continue }`.
+// parsePingCapSingleStatement. (nil, nil) from the helper signals "non-1 node
+// count, skip" — same semantic as the pre-refactor inline
+// `if len(nodes) != 1 { continue }`.
 func ParseTiDBForSyntaxCheck(statement string) ([]base.AST, error) {
 	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_TIDB, statement)
 	if err != nil {
@@ -55,6 +52,40 @@ func ParseTiDBForSyntaxCheck(statement string) ([]base.AST, error) {
 	}
 
 	return results, nil
+}
+
+// parsePingCapSingleStatement runs the native pingcap parser on a single
+// pre-split base.Statement and applies line-tracking, producing the *AST
+// values un-migrated advisors expect (identical line numbers + node shape).
+//
+// Returns:
+//   - (*AST, nil) on a clean single-node parse.
+//   - (nil, nil) when the parser returned a non-1 node count (skip — same
+//     semantic as ParseTiDBForSyntaxCheck's `if len(nodes) != 1 { continue }`).
+//   - (nil, err) on a hard parser error, with the syntax error's line
+//     adjusted to absolute coordinates.
+func parsePingCapSingleStatement(singleSQL base.Statement) (*AST, error) {
+	p := newTiDBParser()
+	nodes, _, err := p.Parse(singleSQL.Text, "", "")
+	if err != nil {
+		syntaxErr := convertParserError(err)
+		if se, ok := syntaxErr.(*base.SyntaxError); ok && se.Position != nil {
+			se.Position.Line = int32(singleSQL.BaseLine()) + se.Position.Line
+		}
+		return nil, syntaxErr
+	}
+	if len(nodes) != 1 {
+		return nil, nil
+	}
+	node := nodes[0]
+	actualStartLine, err := applyTiDBLineTracking(node, singleSQL.BaseLine(), singleSQL.Text)
+	if err != nil {
+		return nil, err
+	}
+	return &AST{
+		StartPosition: &storepb.Position{Line: int32(actualStartLine)},
+		Node:          node,
+	}, nil
 }
 
 // applyTiDBLineTracking sets OriginTextPosition on a freshly-parsed pingcap

@@ -217,15 +217,27 @@ it("keeps database membership inside the confirmed database restriction", async 
 });
 
 it.each([
-  ["column not-equal", call("_!=_", [select("column_name"), literal("email")])],
-  [
-    "column contains",
-    call("contains", [literal("mail")], select("column_name")),
-  ],
-  ["table contains", call("contains", [literal("user")], select("table_name"))],
-  [
-    "schema membership",
-    call("@in", [
+  {
+    name: "column not-equal",
+    parsed: call("_!=_", [select("column_name"), literal("email")]),
+    operator: "_!=_",
+    args: ["resource.column_name", "email"],
+  },
+  {
+    name: "column contains",
+    parsed: call("contains", [literal("mail")], select("column_name")),
+    operator: "contains",
+    args: ["resource.column_name", "mail"],
+  },
+  {
+    name: "table contains",
+    parsed: call("contains", [literal("user")], select("table_name")),
+    operator: "contains",
+    args: ["resource.table_name", "user"],
+  },
+  {
+    name: "schema membership",
+    parsed: call("@in", [
       select("schema_name"),
       create(ExprSchema, {
         exprKind: {
@@ -234,9 +246,50 @@ it.each([
         },
       }),
     ]),
+    operator: "@in",
+    args: ["resource.schema_name", ["public"]],
+  },
+])(
+  "accepts $name while retaining exact database scope",
+  async ({ parsed, operator, args }) => {
+    expressions.set("supported-selector", parsed);
+    const predicate = { type: "Condition", operator, args };
+    expect(
+      await parseMaskingExemptionDraftCondition("supported-selector")
+    ).toEqual({
+      type: "ConditionGroup",
+      operator: "_&&_",
+      args: [predicate],
+    });
+
+    const { draft } = await prepareMaskingExemptionDraft(
+      { ...input, condition: "supported-selector" },
+      context
+    );
+    expect(await parseMaskingExemptionDraftCondition(draft.condition)).toEqual({
+      type: "ConditionGroup",
+      operator: "_&&_",
+      args: [
+        {
+          type: "Condition",
+          operator: "_==_",
+          args: ["resource.database", database],
+        },
+        predicate,
+      ],
+    });
+  }
+);
+
+it.each([
+  ["database not-equal", call("_!=_", [select("database"), literal(database)])],
+  ["database contains", call("contains", [literal("app")], select("database"))],
+  [
+    "computed string operand",
+    call("contains", [select("column_name")], select("table_name")),
   ],
 ])(
-  "rejects %s when the exemption form does not offer that operator",
+  "rejects %s outside the exemption selector capabilities",
   async (_, parsed) => {
     expressions.set("unsupported-selector", parsed);
     await expect(

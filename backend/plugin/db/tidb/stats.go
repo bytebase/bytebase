@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
+	omniast "github.com/bytebase/omni/tidb/ast"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -70,45 +70,52 @@ func getAffectedRows(plan []planRow, statement string) (int64, error) {
 // targets a multi-table DELETE lists, or the tables its assignments qualify, counting an unqualified
 // assignment as another joined table, up to the number of joined tables. Other statements change one.
 func countDMLTargets(statement string) int {
-	nodes, err := tidbparser.ParseTiDB(statement, "", "")
-	if err != nil || len(nodes) != 1 {
+	list, err := tidbparser.ParseTiDBOmni(statement)
+	if err != nil || list == nil || len(list.Items) != 1 {
 		return 1
 	}
-	switch n := nodes[0].(type) {
-	case *tidbast.DeleteStmt:
-		if n.IsMultiTable && n.Tables != nil {
-			return max(len(n.Tables.Tables), 1)
-		}
-	case *tidbast.UpdateStmt:
-		if n.TableRefs == nil {
-			return 1
-		}
+	switch n := list.Items[0].(type) {
+	case *omniast.DeleteStmt:
+		// Tables holds the delete targets in every form: [t] for the single-table
+		// DELETE FROM t, and the listed targets for a multi-table delete.
+		return max(len(n.Tables), 1)
+	case *omniast.UpdateStmt:
 		var tables []string
 		unqualified := 0
-		for _, assignment := range n.List {
+		for _, assignment := range n.SetList {
 			switch {
-			case assignment.Column == nil || assignment.Column.Table.L == "":
+			case assignment.Column == nil || assignment.Column.Table == "":
 				unqualified++
-			case !slices.Contains(tables, assignment.Column.Table.L):
-				tables = append(tables, assignment.Column.Table.L)
 			default:
+				table := strings.ToLower(assignment.Column.Table)
+				if !slices.Contains(tables, table) {
+					tables = append(tables, table)
+				}
 			}
 		}
-		return max(min(len(tables)+unqualified, countTableSources(n.TableRefs.TableRefs)), 1)
+		return max(min(len(tables)+unqualified, countTableSources(n.Tables)), 1)
 	default:
 	}
 	return 1
 }
 
-func countTableSources(node tidbast.ResultSetNode) int {
-	switch n := node.(type) {
-	case *tidbast.Join:
-		count := countTableSources(n.Left)
+func countTableSources(exprs []omniast.TableExpr) int {
+	total := 0
+	for _, expr := range exprs {
+		total += countTableExpr(expr)
+	}
+	return total
+}
+
+func countTableExpr(expr omniast.TableExpr) int {
+	switch n := expr.(type) {
+	case *omniast.JoinClause:
+		count := countTableExpr(n.Left)
 		if n.Right != nil {
-			count += countTableSources(n.Right)
+			count += countTableExpr(n.Right)
 		}
 		return count
-	case *tidbast.TableSource:
+	case *omniast.TableRef, *omniast.SubqueryExpr:
 		return 1
 	default:
 		return 0

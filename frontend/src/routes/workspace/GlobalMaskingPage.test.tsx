@@ -269,7 +269,6 @@ vi.mock("@/hooks/useUnsavedChangesGuard", () => ({
   useUnsavedChangesGuard: guard,
 }));
 vi.mock("@/lib/sensitive-data/components-utils", () => ({
-  factorOperatorOverrideMap: {},
   getClassificationLevelOptions: () => [],
 }));
 vi.mock("@/stores/app", () => ({

@@ -4,8 +4,13 @@ import { IssueDetailRoleGrantDetails } from "./IssueDetailRoleGrantDetails";
 
 // vi.mock factories are hoisted above imports — wrap mutable test state in
 // vi.hoisted so the closure reads from a binding that's initialized at hoist time.
-const { mockContextRef } = vi.hoisted(() => ({
+const { mockContextRef, mockParsedConditionRef } = vi.hoisted(() => ({
   mockContextRef: { current: undefined as unknown },
+  mockParsedConditionRef: {
+    current: undefined as
+      | { environments?: string[]; expiredTime?: string }
+      | undefined,
+  },
 }));
 
 vi.mock("react-i18next", async () =>
@@ -100,6 +105,7 @@ vi.mock("@/stores/app", () => {
 
 vi.mock("@/utils/issue/cel", () => ({
   readableConditionFromCELString: async (expr: string) => {
+    if (mockParsedConditionRef.current) return mockParsedConditionRef.current;
     if (expr === "unreadable") throw new Error("unreadable");
     // Mini parser just for tests: only recognizes "environment_id in [...]".
     const m = expr.match(/environment_id in \[([^\]]*)\]/);
@@ -140,6 +146,7 @@ const issueWith = (
 
 beforeEach(() => {
   mockContextRef.current = undefined;
+  mockParsedConditionRef.current = undefined;
 });
 
 describe("IssueDetailRoleGrantDetails", () => {
@@ -203,6 +210,28 @@ describe("IssueDetailRoleGrantDetails", () => {
     });
     render(<IssueDetailRoleGrantDetails />);
     expect(await screen.findByText(/direct-execution\.all/)).toBeTruthy();
+  });
+
+  test("shows a raw resource scope after parsing without losing expiry or environments", async () => {
+    const expression =
+      'resource.table_name.contains("archive") && resource.environment_id in ["prod"] && request.time < timestamp("2026-10-01T00:00:00Z")';
+    mockContextRef.current = issueWith({ expression });
+    mockParsedConditionRef.current = {
+      environments: ["environments/prod"],
+      expiredTime: "2026-10-01T00:00:00.000Z",
+    };
+
+    render(<IssueDetailRoleGrantDetails />);
+    expect(screen.queryByText(expression)).toBeNull();
+
+    const rawCondition = await screen.findByText(expression);
+    expect(rawCondition.tagName).toBe("PRE");
+    expect(screen.getByText("cel.condition.self")).toBeTruthy();
+    expect(screen.queryByText("issue.role-grant.all-databases")).toBeNull();
+    expect(screen.getByTestId("env-label").textContent).toBe("environments/prod");
+    const expiry = screen.getByText("issue.role-grant.expired-at").parentElement;
+    expect(expiry?.textContent).toContain("2026");
+    expect(expiry?.textContent).not.toContain("project.members.never-expires");
   });
 
   test("an empty expression is unscoped too", () => {

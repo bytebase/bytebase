@@ -900,6 +900,104 @@ func TestGetDatabasesForRoleGrantRejectsNoncanonicalScopeForMissingDatabase(t *t
 	require.ErrorContains(t, err, `instance "prod" not found in requested scope`)
 }
 
+func TestRoleGrantDatabaseScopePreservesProductionApproval(t *testing.T) {
+	ctx := context.Background()
+	const workspaceID = "workspace-a"
+	const projectID = "project-a"
+	const devDatabase = "projects/project-a/instances/dev/databases/app"
+	s := setupApprovalRunnerStoreInWorkspace(ctx, t, workspaceID)
+	setupApprovalProjectInstanceDatabase(ctx, t, s)
+	_, err := s.UpsertSetting(ctx, &store.SettingMessage{
+		Name:      storepb.SettingName_ENVIRONMENT,
+		Workspace: workspaceID,
+		Value: &storepb.EnvironmentSetting{Environments: []*storepb.EnvironmentSetting_Environment{
+			{Id: "dev", Title: "Development"},
+			{Id: "prod", Title: "Production"},
+		}},
+	})
+	require.NoError(t, err)
+	devEnvironment := "dev"
+	project := projectID
+	_, err = s.CreateInstance(ctx, &store.InstanceMessage{
+		ResourceID:    "dev",
+		Workspace:     workspaceID,
+		ProjectID:     &project,
+		EnvironmentID: &devEnvironment,
+		Metadata: &storepb.Instance{
+			Engine:      storepb.Engine_POSTGRES,
+			DataSources: []*storepb.DataSource{{Id: "admin", Type: storepb.DataSourceType_ADMIN}},
+		},
+	})
+	require.NoError(t, err)
+	_, err = s.UpsertDatabase(ctx, &store.DatabaseMessage{
+		ProjectID:    projectID,
+		InstanceID:   "dev",
+		DatabaseName: "app",
+		Metadata:     &storepb.DatabaseMetadata{Labels: map[string]string{}},
+	})
+	require.NoError(t, err)
+	ctx = context.WithValue(ctx, common.WorkspaceIDContextKey, workspaceID)
+	approvalSetting := &storepb.WorkspaceApprovalSetting{Rules: []*storepb.WorkspaceApprovalSetting_Rule{
+		{
+			Source:    storepb.WorkspaceApprovalSetting_Rule_REQUEST_ROLE,
+			Condition: &expr.Expr{Expression: `resource.environment_id == "prod"`},
+			Template:  &storepb.ApprovalTemplate{Flow: &storepb.ApprovalFlow{Roles: []string{"roles/projectOwner"}}},
+		},
+	}}
+	for _, tc := range []struct {
+		name         string
+		condition    string
+		environments []string
+		wantApproval bool
+	}{
+		{
+			name:         "negated database membership",
+			condition:    `!(resource.database in ["` + devDatabase + `"])`,
+			environments: []string{"dev", "prod"},
+			wantApproval: true,
+		},
+		{
+			name:         "database or unrelated table predicate",
+			condition:    `resource.database == "` + devDatabase + `" || resource.table_name.contains("orders")`,
+			environments: []string{"dev", "prod"},
+			wantApproval: true,
+		},
+		{
+			name:         "positive database bound with table predicate",
+			condition:    `resource.database in ["` + devDatabase + `"] && resource.table_name.contains("orders")`,
+			environments: []string{"dev"},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			variables, done, err := buildCELVariablesForRoleGrant(ctx, s, &store.IssueMessage{
+				ProjectID: projectID,
+				Payload: &storepb.Issue{RoleGrant: &storepb.RoleGrant{
+					Role:      "roles/sqlEditorUser",
+					Condition: &expr.Expr{Expression: tc.condition},
+				}},
+			})
+			require.NoError(t, err)
+			require.True(t, done)
+			var environments []string
+			for _, variable := range variables {
+				environment, ok := variable[common.CELAttributeResourceEnvironmentID].(string)
+				require.True(t, ok)
+				environments = append(environments, environment)
+			}
+			require.ElementsMatch(t, tc.environments, environments)
+
+			template, err := getApprovalTemplate(approvalSetting, storepb.WorkspaceApprovalSetting_Rule_REQUEST_ROLE, variables)
+			require.NoError(t, err)
+			if tc.wantApproval {
+				require.NotNil(t, template)
+				require.Equal(t, []string{"roles/projectOwner"}, template.GetFlow().GetRoles())
+			} else {
+				require.Nil(t, template)
+			}
+		})
+	}
+}
+
 func setupApprovalProjectInstanceDatabase(ctx context.Context, t *testing.T, s *store.Store) {
 	t.Helper()
 	const workspaceID = "workspace-a"
