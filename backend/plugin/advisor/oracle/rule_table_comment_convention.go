@@ -34,7 +34,7 @@ func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 
 	rule := NewTableCommentConventionRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase, commentPayload)
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule})
 }
 
 // TableCommentConventionRule is the rule implementation for table comment convention.
@@ -70,14 +70,14 @@ func (*TableCommentConventionRule) Name() string {
 func (r *TableCommentConventionRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
-		tableName := omniObjectName(n.Name, r.currentDatabase)
+		tableName := objectName(n.Name, r.currentDatabase)
 		r.tableNames = append(r.tableNames, tableName)
 		r.tableLine[tableName] = r.locLine(n.Loc)
 	case *ast.CommentStmt:
 		if n.ObjectType != ast.OBJECT_TABLE {
 			return
 		}
-		r.tableComment[omniObjectName(n.Object, r.currentDatabase)] = n.Comment
+		r.tableComment[objectName(n.Object, r.currentDatabase)] = n.Comment
 	default:
 	}
 }

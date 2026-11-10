@@ -240,7 +240,7 @@ func (g *generator) findDisjointUniqueKey(columns []string) ([]string, error) {
 }
 
 func (g *generator) generateUpdate(stmt *oracleast.UpdateStmt) error {
-	updateColumns := extractOmniUpdateColumns(stmt)
+	updateColumns := extractUpdateColumns(stmt)
 	uk, err := g.findDisjointUniqueKey(updateColumns)
 	if err != nil {
 		return err
@@ -307,7 +307,7 @@ func (g *generator) generateUpdate(stmt *oracleast.UpdateStmt) error {
 	return nil
 }
 
-func extractOmniUpdateColumns(stmt *oracleast.UpdateStmt) []string {
+func extractUpdateColumns(stmt *oracleast.UpdateStmt) []string {
 	var result []string
 	if stmt == nil || stmt.SetClauses == nil {
 		return result
@@ -320,14 +320,14 @@ func extractOmniUpdateColumns(stmt *oracleast.UpdateStmt) []string {
 		if clause.Column != nil {
 			result = append(result, clause.Column.Column)
 		}
-		for _, column := range omniColumnRefList(clause.Columns) {
+		for _, column := range columnRefList(clause.Columns) {
 			result = append(result, column.Column)
 		}
 	}
 	return result
 }
 
-func omniColumnRefList(list *oracleast.List) []*oracleast.ColumnRef {
+func columnRefList(list *oracleast.List) []*oracleast.ColumnRef {
 	if list == nil {
 		return nil
 	}

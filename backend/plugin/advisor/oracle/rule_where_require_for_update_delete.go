@@ -33,7 +33,7 @@ func (*WhereRequireForUpdateDeleteAdvisor) Check(_ context.Context, checkCtx adv
 
 	rule := NewWhereRequireForUpdateDeleteRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule})
 }
 
 // WhereRequireForUpdateDeleteRule is the rule implementation for WHERE clause requirement in UPDATE/DELETE.
@@ -84,7 +84,7 @@ func (r *WhereRequireForUpdateDeleteRule) OnStatement(node ast.Node) {
 }
 
 func (r *WhereRequireForUpdateDeleteRule) checkPLSQLBlock(block *ast.PLSQLBlock) {
-	omniWalkPLSQLBlockStatements(block, func(stmt ast.StmtNode) bool {
+	walkPLSQLBlockStatements(block, func(stmt ast.StmtNode) bool {
 		switch stmt.(type) {
 		case *ast.UpdateStmt, *ast.DeleteStmt:
 			r.OnStatement(stmt)

@@ -35,7 +35,7 @@ func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 
 	rule := NewTableRequirePKRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule})
 }
 
 // TableRequirePKRule is the rule implementation for table requires PK.
@@ -66,12 +66,12 @@ func (*TableRequirePKRule) Name() string {
 func (r *TableRequirePKRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
-		tableName := omniObjectName(n.Name, r.currentDatabase)
+		tableName := objectName(n.Name, r.currentDatabase)
 		r.tableWitPK[tableName] = r.createTableHasPK(n)
 		r.tableLine[tableName] = r.locLine(n.Loc)
 	case *ast.AlterTableStmt:
-		tableName := omniObjectName(n.Name, r.currentDatabase)
-		for _, cmd := range omniAlterTableCmds(n) {
+		tableName := objectName(n.Name, r.currentDatabase)
+		for _, cmd := range alterTableCmds(n) {
 			switch cmd.Action {
 			case ast.AT_ADD_CONSTRAINT:
 				if cmd.Constraint != nil && cmd.Constraint.Type == ast.CONSTRAINT_PRIMARY {
@@ -89,7 +89,7 @@ func (r *TableRequirePKRule) OnStatement(node ast.Node) {
 		for _, item := range listItems(n.Names) {
 			name, ok := item.(*ast.ObjectName)
 			if ok {
-				delete(r.tableWitPK, omniObjectName(name, r.currentDatabase))
+				delete(r.tableWitPK, objectName(name, r.currentDatabase))
 			}
 		}
 	default:
@@ -97,12 +97,12 @@ func (r *TableRequirePKRule) OnStatement(node ast.Node) {
 }
 
 func (*TableRequirePKRule) createTableHasPK(stmt *ast.CreateTableStmt) bool {
-	for _, col := range omniColumnDefs(stmt.Columns) {
-		if omniColumnHasConstraint(col, ast.CONSTRAINT_PRIMARY) {
+	for _, col := range columnDefs(stmt.Columns) {
+		if columnHasConstraint(col, ast.CONSTRAINT_PRIMARY) {
 			return true
 		}
 	}
-	for _, c := range omniTableConstraints(stmt.Constraints) {
+	for _, c := range tableConstraints(stmt.Constraints) {
 		if c.Type == ast.CONSTRAINT_PRIMARY {
 			return true
 		}

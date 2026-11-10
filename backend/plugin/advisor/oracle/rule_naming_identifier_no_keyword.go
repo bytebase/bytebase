@@ -35,7 +35,7 @@ func (*NamingIdentifierNoKeywordAdvisor) Check(_ context.Context, checkCtx advis
 
 	rule := NewNamingIdentifierNoKeywordRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule})
 }
 
 // NamingIdentifierNoKeywordRule is the rule implementation for identifier naming convention without keyword.
@@ -60,7 +60,7 @@ func (*NamingIdentifierNoKeywordRule) Name() string {
 
 // OnStatement checks identifiers exposed by the omni AST.
 func (r *NamingIdentifierNoKeywordRule) OnStatement(node ast.Node) {
-	for _, ident := range omniIdentifiers(node) {
+	for _, ident := range identifiers(node) {
 		if plsqlparser.IsOracleKeyword(ident.name) {
 			r.AddAdvice(
 				r.level,

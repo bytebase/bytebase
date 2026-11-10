@@ -37,7 +37,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 
 	rule := NewStatementPriorBackupCheckRule(ctx, level, checkCtx.Rule.Type.String(), checkCtx)
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule})
 }
 
 type StatementType int
@@ -102,7 +102,7 @@ func (r *StatementPriorBackupCheckRule) OnStatement(node ast.Node) {
 			table:     oracleTableReferenceFromObjectName(r.checkCtx.DBSchema.Name, n.Table, StatementTypeDelete),
 		})
 	default:
-		if omniIsOracleDDL(node) {
+		if isOracleDDL(node) {
 			r.hasDDL = true
 		}
 	}
@@ -283,7 +283,7 @@ func oracleTableReferenceFromObjectName(databaseName string, name *ast.ObjectNam
 	}
 }
 
-func omniIsOracleDDL(node ast.Node) bool {
+func isOracleDDL(node ast.Node) bool {
 	switch node.(type) {
 	case *ast.CreateTableStmt, *ast.AlterTableStmt, *ast.DropStmt, *ast.CreateIndexStmt,
 		*ast.CreateViewStmt, *ast.TruncateStmt, *ast.CommentStmt:

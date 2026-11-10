@@ -43,7 +43,7 @@ func (*ColumnMaximumCharacterLengthAdvisor) Check(_ context.Context, checkCtx ad
 
 	rule := NewColumnMaximumCharacterLengthRule(level, checkCtx.Rule.Type.String(), int(numberPayload.Number))
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule})
 }
 
 // ColumnMaximumCharacterLengthRule is the rule implementation for maximum character length.
@@ -68,16 +68,16 @@ func (*ColumnMaximumCharacterLengthRule) Name() string {
 
 // OnStatement checks CHAR/CHARACTER type modifiers in the omni AST.
 func (r *ColumnMaximumCharacterLengthRule) OnStatement(node ast.Node) {
-	omniWalk(node, func(n ast.Node) {
+	walk(node, func(n ast.Node) {
 		col, ok := n.(*ast.ColumnDef)
 		if !ok || col.TypeName == nil {
 			return
 		}
-		typeName := omniTypeName(col.TypeName)
+		typeName := typeName(col.TypeName)
 		if typeName != "CHAR" && typeName != "CHARACTER" {
 			return
 		}
-		length, ok := omniFirstTypeModInt(col.TypeName)
+		length, ok := firstTypeModInt(col.TypeName)
 		if !ok || length <= r.maximum {
 			return
 		}

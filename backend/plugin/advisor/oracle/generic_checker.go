@@ -70,20 +70,20 @@ func (r *BaseRule) rawText(loc ast.Loc) string {
 // OnStatement is a no-op default for rules while they are migrated to omni.
 func (*BaseRule) OnStatement(_ ast.Node) {}
 
-// OmniRule defines the Oracle omni SQL review rule interface.
-type OmniRule interface {
+// Rule defines the Oracle omni SQL review rule interface.
+type Rule interface {
 	OnStatement(node ast.Node)
 	Name() string
 	GetAdviceList() ([]*storepb.Advice, error)
 }
 
 // RunRules dispatches parsed Oracle omni AST nodes to rules.
-func RunRules(stmts []base.ParsedStatement, rules []OmniRule) ([]*storepb.Advice, error) {
+func RunRules(stmts []base.ParsedStatement, rules []Rule) ([]*storepb.Advice, error) {
 	for _, stmt := range stmts {
 		if stmt.AST == nil {
 			continue
 		}
-		node, ok := plsqlparser.GetOmniNode(stmt.AST)
+		node, ok := plsqlparser.GetNode(stmt.AST)
 		if !ok {
 			continue
 		}

@@ -34,7 +34,7 @@ func (*ColumnAddNotNullColumnRequireDefaultAdvisor) Check(_ context.Context, che
 
 	rule := NewColumnAddNotNullColumnRequireDefaultRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule})
 }
 
 // ColumnAddNotNullColumnRequireDefaultRule is the rule implementation for adding not null column requires default.
@@ -63,15 +63,15 @@ func (r *ColumnAddNotNullColumnRequireDefaultRule) OnStatement(node ast.Node) {
 	if !ok {
 		return
 	}
-	for _, cmd := range omniAlterTableCmds(stmt) {
+	for _, cmd := range alterTableCmds(stmt) {
 		if cmd.Action != ast.AT_ADD_COLUMN {
 			continue
 		}
-		for _, col := range append(omniColumnDefs(cmd.ColumnDefs), cmd.ColumnDef) {
+		for _, col := range append(columnDefs(cmd.ColumnDefs), cmd.ColumnDef) {
 			if col == nil || col.Default != nil {
 				continue
 			}
-			if col.NotNull || omniColumnHasConstraint(col, ast.CONSTRAINT_NOT_NULL) {
+			if col.NotNull || columnHasConstraint(col, ast.CONSTRAINT_NOT_NULL) {
 				r.AddAdvice(
 					r.level,
 					code.NotNullColumnWithNoDefault.Int32(),

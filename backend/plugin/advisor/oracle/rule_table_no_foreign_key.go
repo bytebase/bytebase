@@ -34,7 +34,7 @@ func (*TableNoForeignKeyAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 
 	rule := NewTableNoForeignKeyRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule})
 }
 
 // TableNoForeignKeyRule is the rule implementation for table disallow foreign key.
@@ -65,14 +65,14 @@ func (*TableNoForeignKeyRule) Name() string {
 func (r *TableNoForeignKeyRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
-		tableName := omniObjectName(n.Name, r.currentDatabase)
+		tableName := objectName(n.Name, r.currentDatabase)
 		if r.createTableHasFK(n) {
 			r.tableWithFK[tableName] = true
 			r.tableLine[tableName] = r.locLine(n.Loc)
 		}
 	case *ast.AlterTableStmt:
-		tableName := omniObjectName(n.Name, r.currentDatabase)
-		for _, cmd := range omniAlterTableCmds(n) {
+		tableName := objectName(n.Name, r.currentDatabase)
+		for _, cmd := range alterTableCmds(n) {
 			if cmd.Constraint != nil && cmd.Constraint.Type == ast.CONSTRAINT_FOREIGN {
 				r.tableWithFK[tableName] = true
 				r.tableLine[tableName] = r.locLine(cmd.Constraint.Loc)
@@ -83,12 +83,12 @@ func (r *TableNoForeignKeyRule) OnStatement(node ast.Node) {
 }
 
 func (*TableNoForeignKeyRule) createTableHasFK(stmt *ast.CreateTableStmt) bool {
-	for _, col := range omniColumnDefs(stmt.Columns) {
-		if omniColumnHasConstraint(col, ast.CONSTRAINT_FOREIGN) {
+	for _, col := range columnDefs(stmt.Columns) {
+		if columnHasConstraint(col, ast.CONSTRAINT_FOREIGN) {
 			return true
 		}
 	}
-	for _, c := range omniTableConstraints(stmt.Constraints) {
+	for _, c := range tableConstraints(stmt.Constraints) {
 		if c.Type == ast.CONSTRAINT_FOREIGN {
 			return true
 		}

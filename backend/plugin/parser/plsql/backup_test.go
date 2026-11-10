@@ -71,7 +71,7 @@ func TestBackup(t *testing.T) {
 	}
 }
 
-func TestBackupOmniBoundaryCases(t *testing.T) {
+func TestBackupBoundaryCases(t *testing.T) {
 	tests := []struct {
 		name    string
 		input   string

@@ -44,7 +44,7 @@ func (*StatementDisallowTruncateAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, err
 	}
 	rule := &StatementDisallowTruncateRule{BaseRule: NewBaseRule(level, checkCtx.Rule.Type.String(), 0)}
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule})
 }
 
 type StatementDisallowTruncateRule struct{ BaseRule }
@@ -58,7 +58,7 @@ func (r *StatementDisallowTruncateRule) OnStatement(node ast.Node) {
 		if n.Cluster {
 			return
 		}
-		name := omniLastObjectName(n.Table)
+		name := lastObjectName(n.Table)
 		if n.Table != nil {
 			if raw := r.rawText(n.Table.Loc); raw != "" {
 				name = raw
@@ -71,13 +71,13 @@ func (r *StatementDisallowTruncateRule) OnStatement(node ast.Node) {
 			base.ConvertANTLRLineToPosition(r.locLine(n.Loc)),
 		)
 	case *ast.AlterTableStmt:
-		table := omniLastObjectName(n.Name)
+		table := lastObjectName(n.Name)
 		if n.Name != nil {
 			if raw := r.rawText(n.Name.Loc); raw != "" {
 				table = raw
 			}
 		}
-		for _, cmd := range omniAlterTableCmds(n) {
+		for _, cmd := range alterTableCmds(n) {
 			if cmd.Action != ast.AT_TRUNCATE_PARTITION {
 				continue
 			}

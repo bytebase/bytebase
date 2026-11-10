@@ -14,9 +14,9 @@ import (
 func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
 	sqlTypeSet := make(map[storepb.StatementType]bool)
 	for _, ast := range asts {
-		node, ok := GetOmniNode(ast)
+		node, ok := GetNode(ast)
 		if ok {
-			sqlTypeSet[classifyOmniStatementType(node)] = true
+			sqlTypeSet[classifyStatementType(node)] = true
 			continue
 		}
 
@@ -29,7 +29,7 @@ func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
 	return sqlTypes, nil
 }
 
-func classifyOmniStatementType(node oracleast.Node) storepb.StatementType {
+func classifyStatementType(node oracleast.Node) storepb.StatementType {
 	switch n := node.(type) {
 	case *oracleast.CreateTableStmt:
 		return storepb.StatementType_CREATE_TABLE
@@ -50,9 +50,9 @@ func classifyOmniStatementType(node oracleast.Node) storepb.StatementType {
 	case *oracleast.CreateTypeStmt:
 		return storepb.StatementType_CREATE_TYPE
 	case *oracleast.DropStmt:
-		return classifyOmniDropStatementType(n.ObjectType)
+		return classifyDropStatementType(n.ObjectType)
 	case *oracleast.AdminDDLStmt:
-		return classifyOmniAdminDDLStatementType(n.Action, n.ObjectType)
+		return classifyAdminDDLStatementType(n.Action, n.ObjectType)
 	case *oracleast.AlterTableStmt:
 		return storepb.StatementType_ALTER_TABLE
 	case *oracleast.AlterIndexStmt:
@@ -84,7 +84,7 @@ func classifyOmniStatementType(node oracleast.Node) storepb.StatementType {
 	}
 }
 
-func classifyOmniAdminDDLStatementType(action string, objectType oracleast.ObjectType) storepb.StatementType {
+func classifyAdminDDLStatementType(action string, objectType oracleast.ObjectType) storepb.StatementType {
 	if objectType != oracleast.OBJECT_DATABASE {
 		return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
 	}
@@ -100,7 +100,7 @@ func classifyOmniAdminDDLStatementType(action string, objectType oracleast.Objec
 	}
 }
 
-func classifyOmniDropStatementType(objectType oracleast.ObjectType) storepb.StatementType {
+func classifyDropStatementType(objectType oracleast.ObjectType) storepb.StatementType {
 	switch objectType {
 	case oracleast.OBJECT_DATABASE:
 		return storepb.StatementType_DROP_DATABASE

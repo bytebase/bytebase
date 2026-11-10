@@ -43,7 +43,7 @@ func (*ColumnMaximumVarcharLengthAdvisor) Check(_ context.Context, checkCtx advi
 
 	rule := NewColumnMaximumVarcharLengthRule(level, checkCtx.Rule.Type.String(), int(numberPayload.Number))
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule})
 }
 
 // ColumnMaximumVarcharLengthRule is the rule implementation for maximum varchar length.
@@ -68,16 +68,16 @@ func (*ColumnMaximumVarcharLengthRule) Name() string {
 
 // OnStatement checks VARCHAR/VARCHAR2 type modifiers in the omni AST.
 func (r *ColumnMaximumVarcharLengthRule) OnStatement(node ast.Node) {
-	omniWalk(node, func(n ast.Node) {
+	walk(node, func(n ast.Node) {
 		col, ok := n.(*ast.ColumnDef)
 		if !ok || col.TypeName == nil {
 			return
 		}
-		typeName := omniTypeName(col.TypeName)
+		typeName := typeName(col.TypeName)
 		if typeName != "VARCHAR" && typeName != "VARCHAR2" {
 			return
 		}
-		length, ok := omniFirstTypeModInt(col.TypeName)
+		length, ok := firstTypeModInt(col.TypeName)
 		if !ok || length <= r.maximum {
 			return
 		}

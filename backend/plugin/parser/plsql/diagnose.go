@@ -34,7 +34,7 @@ func parsePLSQLStatement(statement string) *base.SyntaxError {
 
 	if _, err := ParsePLSQL(statement); err != nil {
 		var syntaxErr *base.SyntaxError
-		if errors.As(convertOmniError(err, base.Statement{Text: statement}), &syntaxErr) {
+		if errors.As(convertError(err, base.Statement{Text: statement}), &syntaxErr) {
 			return syntaxErr
 		}
 		return &base.SyntaxError{

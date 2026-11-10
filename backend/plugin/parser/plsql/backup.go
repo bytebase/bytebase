@@ -219,7 +219,7 @@ func prepareTransformation(databaseName, statement string) ([]statementInfo, err
 			if !ok || raw.Stmt == nil {
 				continue
 			}
-			info := extractOmniDML(databaseName, raw.Stmt, stmt.Text)
+			info := extractDML(databaseName, raw.Stmt, stmt.Text)
 			if info == nil {
 				continue
 			}
@@ -242,25 +242,25 @@ func prepareTransformation(databaseName, statement string) ([]statementInfo, err
 	return result, nil
 }
 
-func extractOmniDML(databaseName string, node oracleast.StmtNode, fullSQL string) *statementInfo {
+func extractDML(databaseName string, node oracleast.StmtNode, fullSQL string) *statementInfo {
 	switch n := node.(type) {
 	case *oracleast.DeleteStmt:
-		table := omniDMLTableReference(databaseName, n.Table, n.Alias, StatementTypeDelete)
+		table := dMLTableReference(databaseName, n.Table, n.Alias, StatementTypeDelete)
 		if table == nil {
 			return nil
 		}
 		return &statementInfo{
-			statement: extractOmniStatementText(fullSQL, n.Loc),
+			statement: extractStatementText(fullSQL, n.Loc),
 			node:      n,
 			table:     table,
 		}
 	case *oracleast.UpdateStmt:
-		table := omniDMLTableReference(databaseName, n.Table, n.Alias, StatementTypeUpdate)
+		table := dMLTableReference(databaseName, n.Table, n.Alias, StatementTypeUpdate)
 		if table == nil {
 			return nil
 		}
 		return &statementInfo{
-			statement: extractOmniStatementText(fullSQL, n.Loc),
+			statement: extractStatementText(fullSQL, n.Loc),
 			node:      n,
 			table:     table,
 		}
@@ -269,7 +269,7 @@ func extractOmniDML(databaseName string, node oracleast.StmtNode, fullSQL string
 	}
 }
 
-func omniDMLTableReference(databaseName string, name *oracleast.ObjectName, alias *oracleast.Alias, statementType StatementType) *TableReference {
+func dMLTableReference(databaseName string, name *oracleast.ObjectName, alias *oracleast.Alias, statementType StatementType) *TableReference {
 	if name == nil || name.Name == "" {
 		return nil
 	}
@@ -436,7 +436,7 @@ func joinOracleSuffix(parts ...string) string {
 	return strings.Join(nonEmpty, " ")
 }
 
-func extractOmniStatementText(sql string, loc oracleast.Loc) string {
+func extractStatementText(sql string, loc oracleast.Loc) string {
 	return strings.TrimSpace(strings.TrimSuffix(oracleLocText(sql, loc.Start, loc.End), ";"))
 }
 
