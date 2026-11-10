@@ -175,15 +175,20 @@ row of States that differs from today traces to one of them.
      Changes section.
 2. **The Activity card takes the bar (D2's shadow, D3 and D5 in Activity, the rest of D6).**
    Depends on slice 1.
-   - `StatementAnchorContext.tsx`: its header becomes the bar's content and loses its own collapse
-     button (`onCollapse`). `AnchorStatePill` renders "Outdated" and "Statement unavailable" as
-     text labels in place of `Badge variant="warning"` and `variant="default"`.
+   - `StatementAnchorContext.tsx`: it splits in two. Its header becomes the bar's content and
+     loses its own collapse button (`onCollapse`). Its `SqlExcerpt` stays in the card body,
+     directly under the bar, and is not restyled in this slice. `AnchorStatePill` renders
+     "Outdated" and "Statement unavailable" as text labels in place of `Badge variant="warning"`
+     and `variant="default"`.
+   - `CommentThreadCard.tsx` and `ReviewActivityTimeline.tsx`: the card's `renderContext` slot
+     becomes those two slots, bar content and body excerpt, and `ThreadActivityRow` passes both.
    - `CommentThreadCard.tsx`: an uncontrolled card folds in any state, by dropping the
      `thread.resolved` condition, and still starts folded when resolved; delete `ThreadSummary`;
      take `shadow-sm` into the card's own classes.
    - `ThreadStack.tsx`: stop passing `shadow-sm`.
    - Tests: `CommentThreadCard.test.tsx` (an open thread in Activity folds; folded, it shows the
-     bar and no summary row), `StatementAnchorContext.test.tsx` (no `Badge` for the outdated and
+     bar and no summary row; unfolded, the excerpt renders in the body under the bar and not
+     inside it), `StatementAnchorContext.test.tsx` (no `Badge` for the outdated and
      unavailable states; no collapse button of its own). E2E: `plan-detail-review.spec.ts` asserts
      the folded and resolved states in Activity.
 3. **No line tints, and the width limit (D1, D2).** Depends on slice 1, which gives every thread in
