@@ -115,8 +115,9 @@ Frontend and one guideline file. Two PRs. Each leaves main shippable and names w
    - `ReviewActivityTimeline.tsx`: the Show and Hide control in `ReviewRunActivityRow` drops the
      `text-control-light` override.
    - Tests: `ReviewActivityTimeline.test.tsx` (the control carries no color override).
-2. **Group (D1 to D5).** Depends on slice 2 of [Plan comment card](plan-comment-card.md), which
-   gives a finding's card in Activity its title bar.
+2. **Group (D1 to D5).** Depends on the slice of [Plan comment card](plan-comment-card.md) that
+   gives the Activity card its title bar, D3 there. The slice is named by what it builds because
+   its number can change while that doc is in review.
    - `timelineEvents.ts`: a run's finding entries become children of its `review-run` entry.
    - `ReviewActivityTimeline.tsx`: `ReviewRunActivityRow` renders the group. `ThreadActivityRow`
      keeps rendering a person's thread.
