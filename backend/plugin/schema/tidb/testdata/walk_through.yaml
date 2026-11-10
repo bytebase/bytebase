@@ -19,7 +19,7 @@
     title: BLOB, TEXT or JSON column `a` can't have a default value
     content: BLOB, TEXT or JSON column `a` can't have a default value
     startPosition:
-        line: 2
+        line: 1
 - statement: '      CREATE TABLE t(a TEXT DEFAULT ''1'')'
   ignore_case_sensitive: false
   want: ""
@@ -41,7 +41,7 @@
     title: Invalid default value for column `a`
     content: Invalid default value for column `a`
     startPosition:
-        line: 2
+        line: 1
 - statement: '      CREATE TABLE t(a INT NOT NULL DEFAULT NULL)'
   ignore_case_sensitive: false
   want: ""
@@ -81,7 +81,7 @@
     title: CREATE TABLE AS statement is used in "CREATE TABLE t as select * from t1;"
     content: CREATE TABLE AS statement is used in "CREATE TABLE t as select * from t1;"
     startPosition:
-        line: 0
+        line: 1
 - statement: "\n\t\t\t\tCREATE TABLE t(a int, b int); \n\t\t\t\tCREATE INDEX idx_c on t(c);\n\t\t\t"
   ignore_case_sensitive: false
   want: ""
@@ -667,14 +667,16 @@
     CREATE TABLE t(a int);
     RENAME TABLE t to other_db.t1
   ignore_case_sensitive: false
-  want: ""
-  advice:
-    status: 3
-    code: 702
-    title: Database `other_db` is not the current database `test`
-    content: Database `other_db` is not the current database `test`
-    startPosition:
-        line: 2
+  want: |-
+    {
+      "name":  "test",
+      "schemas":  [
+        {}
+      ],
+      "characterSet":  "utf8mb4",
+      "collation":  "utf8mb4_bin"
+    }
+  advice: null
 - statement: |-
     CREATE TABLE t(a int);
     RENAME TABLE t to test.t1
@@ -717,7 +719,7 @@
     title: Database `test` is deleted
     content: Database `test` is deleted
     startPosition:
-        line: 0
+        line: 1
 - statement: |-
     CREATE TABLE t(
       a int PRIMARY KEY DEFAULT 1,
@@ -751,7 +753,7 @@
     title: can't drop column c with composite index covered or Primary Key covered now
     content: can't drop column c with composite index covered or Primary Key covered now
     startPosition:
-        line: 15
+        line: 14
 - statement: |-
     CREATE TABLE t(
       a int PRIMARY KEY DEFAULT 1,
@@ -771,7 +773,7 @@
     title: FULLTEXT and SPATIAL index is not supported
     content: FULLTEXT and SPATIAL index is not supported
     startPosition:
-        line: 10
+        line: 9
 - statement: |-
     CREATE TABLE t(
       a int PRIMARY KEY DEFAULT 1,
@@ -859,7 +861,7 @@
     title: Index `nonexistent` does not exist
     content: Index `nonexistent` does not exist
     startPosition:
-        line: 5
+        line: 4
 - statement: |-
     CREATE TABLE t(
       a int PRIMARY KEY DEFAULT 1,
@@ -959,7 +961,7 @@
     title: Column `a` already exists
     content: Column `a` already exists
     startPosition:
-        line: 2
+        line: 1
 - statement: |
     CREATE TABLE t(a int);
     ALTER TABLE t DROP COLUMN IF EXISTS b;
@@ -1079,7 +1081,7 @@
     title: Index `idx_a` already exists
     content: Index `idx_a` already exists
     startPosition:
-        line: 3
+        line: 2
 - statement: |
     CREATE TABLE t(a int);
     CREATE INDEX idx_a ON t(a);

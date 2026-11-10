@@ -35,7 +35,7 @@ func init() {
 // The registered signature carries no raw SQL, so the statement text is
 // rebuilt by joining each omni AST's original text.
 func WalkThrough(d *model.DatabaseMetadata, asts []base.AST) *storepb.Advice {
-	rawSQL := tidbJoinASTText(asts)
+	rawSQL, execASTs := tidbBuildRawSQL(asts)
 	if strings.TrimSpace(rawSQL) == "" {
 		return nil
 	}
@@ -44,9 +44,14 @@ func WalkThrough(d *model.DatabaseMetadata, asts []base.AST) *storepb.Advice {
 	precheck := precheckTiDBOmniWalkThrough(d, asts)
 
 	// Step 1: create the catalog and select the target database. LoadMetadata
-	// creates and selects it, so only foreign-key checks need disabling here.
+	// creates and selects it; cross-database rename destinations are seeded up
+	// front so a rename into an existing database is not read as missing.
 	c := catalog.New()
-	if _, err := c.Exec("SET foreign_key_checks = 0;", &catalog.ExecOptions{ContinueOnError: true}); err != nil {
+	initSQL := "SET foreign_key_checks = 0;"
+	for _, targetDB := range tidbRenameTargetDatabases(d, asts) {
+		initSQL += fmt.Sprintf("\nCREATE DATABASE IF NOT EXISTS %s;", tidbQuoteIdentifier(targetDB))
+	}
+	if _, err := c.Exec(initSQL, &catalog.ExecOptions{ContinueOnError: true}); err != nil {
 		return tidbDDLSimulationAdvice("Failed to initialize catalog", err)
 	}
 
@@ -58,20 +63,22 @@ func WalkThrough(d *model.DatabaseMetadata, asts []base.AST) *storepb.Advice {
 	// Step 3: execute the user DDL.
 	results, execErr := c.Exec(rawSQL, &catalog.ExecOptions{ContinueOnError: true})
 	if execErr != nil {
-		execAdvice := tidbExecErrorAdvice(d, -1, 0, execErr)
+		execAdvice := tidbExecErrorAdvice(d, -1, &storepb.Position{Line: 0}, execErr)
 		if precheck.beforeOrSame(execAdvice) {
 			return precheck.advice
 		}
 		return execAdvice.advice
 	}
 
-	// Step 4: report the first error from the simulation.
+	// Step 4: report the first error from the simulation, anchored to the
+	// originating statement's position in the submitted SQL (not the rebuilt
+	// rawSQL that tidbBuildRawSQL produced).
 	var execAdvice tiDBWalkThroughAdvice
 	for _, r := range results {
 		if r.Error == nil {
 			continue
 		}
-		execAdvice = tidbExecErrorAdvice(d, r.Index, r.Line, r.Error)
+		execAdvice = tidbExecErrorAdvice(d, r.Index, tidbExecStatementPosition(execASTs, r.Index), r.Error)
 		break
 	}
 	if precheck.beforeOrSame(execAdvice) {
@@ -81,18 +88,24 @@ func WalkThrough(d *model.DatabaseMetadata, asts []base.AST) *storepb.Advice {
 		return execAdvice.advice
 	}
 
-	// Step 5: convert the updated catalog back to DatabaseMetadata.
+	// Step 5: convert the updated catalog back to DatabaseMetadata, keeping the
+	// database's case sensitivity (TiDB is case-insensitive) so downstream
+	// advisors can still find objects by the statement's spelling.
 	newProto := tidbCatalogToProto(c, dbName)
-	newMetadata := model.NewDatabaseMetadata(newProto, nil, d.GetConfig(), storepb.Engine_TIDB, true)
+	newMetadata := model.NewDatabaseMetadata(newProto, nil, d.GetConfig(), storepb.Engine_TIDB, d.GetIsObjectCaseSensitive())
 	d.ReplaceFrom(newMetadata)
 	return nil
 }
 
-// tidbJoinASTText rebuilds the original SQL from the omni ASTs. Each statement
+// tidbBuildRawSQL rebuilds the original SQL from the omni ASTs. Each statement
 // keeps its own text; they are re-joined with a terminator so catalog.Exec
-// re-parses them as a statement list.
-func tidbJoinASTText(asts []base.AST) string {
+// re-parses them as a statement list. The returned slice is parallel to that
+// list: execASTs[i] is the base.AST that produced the i-th executed statement,
+// so a simulation error's index maps back to the submitted statement's
+// position.
+func tidbBuildRawSQL(asts []base.AST) (string, []base.AST) {
 	var b strings.Builder
+	execASTs := make([]base.AST, 0, len(asts))
 	for _, a := range asts {
 		omniAST, ok := a.(*tidbparser.OmniAST)
 		if !ok {
@@ -104,8 +117,70 @@ func tidbJoinASTText(asts []base.AST) string {
 		}
 		b.WriteString(strings.TrimRight(text, ";"))
 		b.WriteString(";\n")
+		execASTs = append(execASTs, a)
 	}
-	return b.String()
+	return b.String(), execASTs
+}
+
+// tidbExecStatementPosition maps a catalog result index back to the originating
+// statement's position in the submitted SQL.
+func tidbExecStatementPosition(execASTs []base.AST, index int) *storepb.Position {
+	if index >= 0 && index < len(execASTs) {
+		if pos := execASTs[index].ASTStartPosition(); pos != nil {
+			return &storepb.Position{Line: pos.Line, Column: pos.Column}
+		}
+	}
+	return &storepb.Position{Line: 0}
+}
+
+// tidbRenameTargetDatabases collects the destination databases of RENAME TABLE
+// (and ALTER TABLE ... RENAME TO) statements whose source is the current
+// database but whose destination is a different, existing one, mirroring the
+// MySQL walk-through so a cross-database rename is not treated as missing.
+func tidbRenameTargetDatabases(d *model.DatabaseMetadata, asts []base.AST) []string {
+	seen := make(map[string]bool)
+	var targets []string
+	addTarget := func(sourceTable, targetTable *ast.TableRef) {
+		if sourceTable == nil || targetTable == nil {
+			return
+		}
+		if sourceTable.Schema != "" && !isCurrentDatabase(d, sourceTable.Schema) {
+			return
+		}
+		if targetTable.Schema == "" || isCurrentDatabase(d, targetTable.Schema) || seen[targetTable.Schema] {
+			return
+		}
+		seen[targetTable.Schema] = true
+		targets = append(targets, targetTable.Schema)
+	}
+	for _, unifiedAST := range asts {
+		node, ok := tidbparser.GetOmniNode(unifiedAST)
+		if !ok {
+			continue
+		}
+		switch stmt := node.(type) {
+		case *ast.RenameTableStmt:
+			for _, pair := range stmt.Pairs {
+				if pair == nil {
+					continue
+				}
+				addTarget(pair.Old, pair.New)
+			}
+		case *ast.AlterTableStmt:
+			for _, cmd := range stmt.Commands {
+				if cmd == nil || cmd.Type != ast.ATRenameTable {
+					continue
+				}
+				addTarget(stmt.Table, cmd.NewTable)
+			}
+		default:
+		}
+	}
+	return targets
+}
+
+func tidbQuoteIdentifier(identifier string) string {
+	return "`" + strings.ReplaceAll(identifier, "`", "``") + "`"
 }
 
 func tidbDDLSimulationAdvice(title string, err error) *storepb.Advice {
@@ -149,7 +224,7 @@ func (a tiDBWalkThroughAdvice) beforeOrSame(b tiDBWalkThroughAdvice) bool {
 }
 
 // tidbExecErrorAdvice maps an omni catalog execution error to an advice.
-func tidbExecErrorAdvice(d *model.DatabaseMetadata, index, line int, err error) tiDBWalkThroughAdvice {
+func tidbExecErrorAdvice(d *model.DatabaseMetadata, index int, position *storepb.Position, err error) tiDBWalkThroughAdvice {
 	errCode := code.DDLSimulationFailed
 	content := err.Error()
 	var catErr *catalog.Error
@@ -164,7 +239,7 @@ func tidbExecErrorAdvice(d *model.DatabaseMetadata, index, line int, err error) 
 			Code:          errCode.Int32(),
 			Title:         content,
 			Content:       content,
-			StartPosition: &storepb.Position{Line: int32(line)},
+			StartPosition: position,
 		},
 	}
 }
@@ -183,7 +258,7 @@ func precheckTiDBOmniWalkThrough(d *model.DatabaseMetadata, asts []base.AST) tiD
 			text = strings.TrimSpace(omniAST.Text)
 		}
 		if advice := precheckTiDBOmniNode(d, node, text); advice != nil {
-			advice.StartPosition = &storepb.Position{Line: 0}
+			advice.StartPosition = tidbStatementStartPosition(unifiedAST.ASTStartPosition())
 			return tiDBWalkThroughAdvice{index: i, advice: advice}
 		}
 	}
@@ -245,9 +320,25 @@ func precheckTiDBOmniNode(d *model.DatabaseMetadata, node ast.Node, text string)
 		return precheckTiDBTableRefDatabase(d, n.Table)
 	case *ast.CreateViewStmt:
 		return precheckTiDBTableRefDatabase(d, n.Name)
+	case *ast.RenameTableStmt:
+		for _, pair := range n.Pairs {
+			if pair == nil {
+				continue
+			}
+			if advice := precheckTiDBTableRefDatabase(d, pair.Old); advice != nil {
+				return advice
+			}
+		}
 	default:
 	}
 	return nil
+}
+
+func tidbStatementStartPosition(pos *storepb.Position) *storepb.Position {
+	if pos == nil {
+		return &storepb.Position{Line: 0}
+	}
+	return &storepb.Position{Line: pos.Line, Column: pos.Column}
 }
 
 func precheckTiDBTableRefDatabase(d *model.DatabaseMetadata, table *ast.TableRef) *storepb.Advice {
