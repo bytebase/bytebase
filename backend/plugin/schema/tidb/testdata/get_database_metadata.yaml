@@ -20,7 +20,6 @@
     );
   metadata: |
     {
-      "name": "tmp",
       "schemas": [
         {
           "tables": [
@@ -240,7 +239,6 @@
     );
   metadata: |
     {
-      "name": "tmp",
       "schemas": [
         {
           "tables": [
@@ -488,7 +486,6 @@
     );
   metadata: |
     {
-      "name": "tmp",
       "schemas": [
         {
           "tables": [
@@ -654,7 +651,6 @@
     WHERE status = 'active';
   metadata: |
     {
-      "name": "tmp",
       "schemas": [
         {
           "tables": [
@@ -744,7 +740,6 @@
     );
   metadata: |
     {
-      "name": "tmp",
       "schemas": [
         {
           "tables": [
@@ -881,7 +876,6 @@
     ) COMMENT='PK_AUTO_RANDOM_BITS=5';
   metadata: |
     {
-      "name": "tmp",
       "schemas": [
         {
           "tables": [
@@ -950,7 +944,6 @@
       COMMENT='Table with various TiDB options';
   metadata: |
     {
-      "name": "tmp",
       "schemas": [
         {
           "tables": [
@@ -1017,7 +1010,6 @@
     );
   metadata: |
     {
-      "name": "tmp",
       "schemas": [
         {
           "tables": [
@@ -1113,7 +1105,6 @@
     );
   metadata: |
     {
-      "name": "tmp",
       "schemas": [
         {
           "tables": [
@@ -1223,7 +1214,6 @@
     );
   metadata: |
     {
-      "name": "tmp",
       "schemas": [
         {
           "tables": [
@@ -1281,7 +1271,6 @@
     );
   metadata: |
     {
-      "name": "tmp",
       "schemas": [
         {
           "tables": [
@@ -1318,7 +1307,6 @@
     );
   metadata: |
     {
-      "name": "tmp",
       "schemas": [
         {
           "tables": [
@@ -1414,7 +1402,6 @@
     ) COMMENT='PK_AUTO_RANDOM_BITS=5';
   metadata: |
     {
-      "name": "tmp",
       "schemas": [
         {
           "tables": [

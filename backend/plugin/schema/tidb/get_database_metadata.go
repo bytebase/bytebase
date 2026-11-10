@@ -17,11 +17,11 @@ func init() {
 	schema.RegisterGetDatabaseMetadata(storepb.Engine_TIDB, GetDatabaseMetadata)
 }
 
-// catalogDBName is the scratch database the schema DDL is simulated in. omni's
-// catalog qualifies a view body's same-database references with the current
-// database, as live TiDB does, so this name is stripped from view definitions
-// (tidbViewDefinition) to keep the metadata database-agnostic.
-const catalogDBName = "tmp"
+// catalogDBName is the scratch database the schema DDL is simulated in when it
+// selects none of its own. The name is deliberately unlikely to appear as a
+// real table, alias or literal, so stripping its view-definition qualifier
+// (tidbViewDefinition) is unambiguous.
+const catalogDBName = "_bytebase_schema_scratch"
 
 // GetDatabaseMetadata parses TiDB schema DDL text and returns database metadata
 // using the omni TiDB catalog.
@@ -46,7 +46,10 @@ func GetDatabaseMetadata(schemaText string) (*metadatapb.DatabaseSchemaMetadata,
 		}
 	}
 
-	return tidbCatalogToProto(c, catalogDBName), nil
+	// The DDL may select its own database (CREATE DATABASE app; USE app; ...),
+	// in which case its objects live there rather than in the scratch database.
+	// Read back whichever database the DDL ended in.
+	return tidbCatalogToProto(c, c.CurrentDatabase()), nil
 }
 
 // tidbCatalogToProto converts the omni TiDB catalog state to a
@@ -54,7 +57,14 @@ func GetDatabaseMetadata(schemaText string) (*metadatapb.DatabaseSchemaMetadata,
 // the scratch database the DDL was simulated in, and the single empty-name
 // schema holds the objects.
 func tidbCatalogToProto(c *catalog.Catalog, dbName string) *metadatapb.DatabaseSchemaMetadata {
-	dbMeta := &metadatapb.DatabaseSchemaMetadata{Name: dbName}
+	// When the DDL selected no database of its own, the objects sit in the
+	// scratch database; the returned metadata is then schema-relative (empty
+	// database name), as the old extractor produced it.
+	name := dbName
+	if dbName == catalogDBName {
+		name = ""
+	}
+	dbMeta := &metadatapb.DatabaseSchemaMetadata{Name: name}
 	db := c.GetDatabase(dbName)
 	if db == nil {
 		return dbMeta
@@ -87,11 +97,17 @@ func tidbCatalogToProto(c *catalog.Catalog, dbName string) *metadatapb.DatabaseS
 	return dbMeta
 }
 
-// tidbViewDefinition drops the scratch database qualifier omni adds to a view
-// body's same-database references, so the definition does not mention the
-// throwaway database GetDatabaseMetadata simulated the DDL in. A reference to a
-// genuinely different database keeps its qualifier.
+// tidbViewDefinition drops the qualifier omni adds to a view body's
+// same-database references ONLY when that database is the throwaway scratch one,
+// so the definition does not mention it. When the DDL selected a real database,
+// its qualifier is left intact — live TiDB qualifies same-database references in
+// information_schema.VIEWS the same way, so the stored definition matches sync.
+// The scratch name cannot occur as a real alias or literal, so this replacement
+// is unambiguous.
 func tidbViewDefinition(definition, dbName string) string {
+	if dbName != catalogDBName {
+		return definition
+	}
 	return strings.ReplaceAll(definition, fmt.Sprintf("`%s`.", dbName), "")
 }
 
