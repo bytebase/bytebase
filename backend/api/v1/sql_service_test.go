@@ -810,3 +810,95 @@ func TestExecuteWithTimeoutTellsCancellationFromTimeout(t *testing.T) {
 		require.ErrorAs(t, err, &timedOut)
 	})
 }
+
+// TestOceanBaseDDLAccessCheckMatchesMySQL verifies that OceanBase supports the per-statement
+// query ACL like MySQL, so DDL statements bypass the read-only gate and are classified as bb.sql.ddl,
+// returning a permission denied error rather than failing with raw NON_READ_ONLY command error.
+func TestOceanBaseDDLAccessCheckMatchesMySQL(t *testing.T) {
+	t.Parallel()
+	for _, engine := range []storepb.Engine{storepb.Engine_MYSQL, storepb.Engine_OCEANBASE} {
+		t.Run(engine.String(), func(t *testing.T) {
+			t.Parallel()
+			ctx := context.WithValue(context.Background(), common.WorkspaceIDContextKey, "default")
+			db, stores, _ := testcontainer.NewMetadataDB(t)
+			_, err := db.ExecContext(ctx, `
+				INSERT INTO workspace (resource_id) VALUES ('default');
+				INSERT INTO principal (name, email, password_hash) VALUES
+					('reader', 'reader@example.com', 'unused'),
+					('admin', 'admin@example.com', 'unused');
+				INSERT INTO project (resource_id, workspace, name) VALUES ('project-a', 'default', 'A');
+			`)
+			require.NoError(t, err)
+
+			for _, role := range []struct {
+				id   string
+				perm permission.Permission
+			}{
+				{id: "reader", perm: permission.SQLSelect},
+				{id: "admin", perm: permission.SQLDdl},
+			} {
+				_, err = stores.CreateRole(ctx, &store.RoleMessage{
+					ResourceID: role.id, Workspace: "default", Name: role.id,
+					Permissions: map[permission.Permission]bool{role.perm: true},
+				})
+				require.NoError(t, err)
+			}
+
+			for _, binding := range []struct {
+				role   string
+				member string
+			}{
+				{role: "reader", member: "reader@example.com"},
+				{role: "admin", member: "admin@example.com"},
+			} {
+				_, err = stores.PatchIamPolicy(ctx, "default", storepb.Policy_PROJECT, common.FormatProject("project-a"), func(policy *storepb.IamPolicy) error {
+					policy.Bindings = append(policy.Bindings, &storepb.Binding{
+						Role:    "roles/" + binding.role,
+						Members: []string{common.FormatUserEmail(binding.member)},
+					})
+					return nil
+				})
+				require.NoError(t, err)
+			}
+
+			instance, err := stores.CreateInstance(ctx, &store.InstanceMessage{
+				ResourceID: "test", Workspace: "default",
+				Metadata: &storepb.Instance{Engine: engine, Activation: true, DataSources: []*storepb.DataSource{{Id: "admin", Type: storepb.DataSourceType_ADMIN}}},
+			})
+			require.NoError(t, err)
+
+			database, err := stores.UpsertDatabase(ctx, &store.DatabaseMessage{
+				InstanceID: "test", DatabaseName: "db_a", ProjectID: "project-a", Metadata: &storepb.DatabaseMetadata{},
+			})
+			require.NoError(t, err)
+
+			iamManager, err := iam.NewManager(stores, nil, false)
+			require.NoError(t, err)
+
+			service := &SQLService{store: stores, iamManager: iamManager}
+
+			// Engine must support QueryNewACL so the read-only gate at sql_service.go:320 is bypassed.
+			require.True(t, common.EngineSupportQueryNewACL(instance.Metadata.GetEngine()))
+
+			statement := "CREATE TABLE t (id INT)"
+			spans, err := buildQuerySpans(ctx, stores, instance, database, []parserbase.Statement{{Text: statement}}, "")
+			require.NoError(t, err)
+			require.Len(t, spans, 1)
+			require.Equal(t, parserbase.DDL, spans[0].Type)
+
+			// Reader user without bb.sql.ddl should be denied with permission.SQLDdl
+			readerUser := &store.UserMessage{Email: "reader@example.com"}
+			err = service.accessCheckWithGrantedTargets(ctx, instance, database, readerUser, spans, false, []parserbase.Statement{{Text: statement}}, nil, false, "", false)
+			var denied *queryError
+			require.ErrorAs(t, err, &denied)
+			require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(denied.err))
+			require.Equal(t, permission.SQLDdl, denied.permission)
+			require.Equal(t, []string{"instances/test/databases/db_a"}, denied.resources)
+
+			// Admin user with bb.sql.ddl should be allowed through access check
+			adminUser := &store.UserMessage{Email: "admin@example.com"}
+			err = service.accessCheckWithGrantedTargets(ctx, instance, database, adminUser, spans, false, []parserbase.Statement{{Text: statement}}, nil, false, "", false)
+			require.NoError(t, err)
+		})
+	}
+}

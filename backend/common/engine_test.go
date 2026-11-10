@@ -77,3 +77,20 @@ func TestEngineSupportStatementAdvise(t *testing.T) {
 		})
 	}
 }
+
+func TestEngineSupportQueryNewACL(t *testing.T) {
+	tests := []struct {
+		engine storepb.Engine
+		want   bool
+	}{
+		{storepb.Engine_MYSQL, true},
+		{storepb.Engine_POSTGRES, true},
+		{storepb.Engine_OCEANBASE, true},
+		{storepb.Engine_REDIS, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.engine.String(), func(t *testing.T) {
+			require.Equal(t, tt.want, EngineSupportQueryNewACL(tt.engine))
+		})
+	}
+}
