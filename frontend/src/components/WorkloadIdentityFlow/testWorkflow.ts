@@ -11,7 +11,19 @@ export interface TestWorkflowParams {
   externalUrl: string;
   email: string;
   audience: string;
+  // The one GitHub environment the subject pattern names, if any. The job must
+  // run in it, or its token's subject cannot match the pattern.
+  environment?: string;
 }
+
+// A YAML scalar that reads back as the same string: plain when it is a simple
+// word that YAML would not take for a number, boolean or null, quoted
+// otherwise, so an audience such as "123" or "[bytebase]" stays a string.
+export const yamlString = (value: string) =>
+  /^[A-Za-z][A-Za-z0-9._/-]*$/.test(value) &&
+  !/^(y|yes|n|no|true|false|on|off|null)$/i.test(value)
+    ? value
+    : JSON.stringify(value);
 
 const exchangeUrl = (externalUrl: string) =>
   `${externalUrl.replace(/\/+$/, "")}/v1/auth:exchangeToken`;
@@ -23,6 +35,7 @@ export const buildGitHubTestWorkflow = ({
   externalUrl,
   email,
   audience,
+  environment,
 }: TestWorkflowParams) => `name: bytebase-wif-test
 on:
   push:
@@ -33,7 +46,7 @@ permissions:
   contents: read
 jobs:
   sign-in:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest${environment ? `\n    environment: ${yamlString(environment)}` : ""}
     steps:
       - name: Fetch GitHub OIDC token
         run: |
@@ -59,7 +72,7 @@ export const buildGitLabTestJob = ({
   when: manual
   id_tokens:
     GITLAB_OIDC_TOKEN:
-      aud: ${audience}
+      aud: ${yamlString(audience)}
   script:
     - apk add --no-cache curl jq
     - |

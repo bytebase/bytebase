@@ -553,6 +553,22 @@ describe("WorkloadIdentityDialog", () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 
+  test("runs the test job in the environment the pattern names", async () => {
+    await render({
+      workloadIdentity: storedIdentity({
+        subjectPattern: "repo:acme-corp/deploy:environment:prod",
+      }),
+    });
+    await click("workload-identity.continue");
+    await type("workload-identity.repositories.owner", "acme-labs");
+    await click("workload-identity.continue");
+    await click("common.update");
+
+    expect(container.querySelector("pre")?.textContent).toContain(
+      "    environment: prod\n"
+    );
+  });
+
   test("keeps Update disabled until something changes", async () => {
     await render({ workloadIdentity: storedIdentity({}) });
     await click("workload-identity.continue");

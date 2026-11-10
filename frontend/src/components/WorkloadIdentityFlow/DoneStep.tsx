@@ -16,7 +16,7 @@ import { useAppStore } from "@/stores/app";
 import { WorkloadIdentityConfig_ProviderType } from "@/types/proto-es/v1/workload_identity_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { Field, InlineCode, StepHeading } from "./StepParts";
-import type { SubjectFields } from "./subjectPattern";
+import { type SubjectFields, subjectEnvironment } from "./subjectPattern";
 import {
   buildGitHubTestWorkflow,
   buildGitLabTestJob,
@@ -90,7 +90,12 @@ export function DoneStep(props: DoneStepProps) {
             pattern: props.subjectPattern,
           });
 
+  // A pattern pinned to one environment needs the test job to run in it.
+  const environment = isGitHub
+    ? subjectEnvironment(props.subjectPattern)
+    : undefined;
   const testParams = {
+    environment: environment === "*" ? undefined : environment,
     externalUrl: needConfigureExternalUrl
       ? EXTERNAL_URL_PLACEHOLDER
       : externalUrl,

@@ -219,7 +219,11 @@ redact line as its own script item.
   https://YOUR-BYTEBASE-URL with the address your CI jobs can reach, or set the External URL." and,
   for a user who can set it, a "Configure now" link to the workspace settings. A run with the
   placeholder fails loudly ("Could not resolve host").
-- The audience is the identity's first audience.
+- The audience is the identity's first audience, written as a YAML string (quoted when YAML
+  would read it as a number, list or boolean, such as `123` or `[bytebase]`).
+- When a GitHub pattern names one environment (`...:environment:prod`), the job gets
+  `environment: prod`, so its token's subject carries the environment and matches. A pattern
+  for any environment (`environment:*`) leaves the job as is.
 
 Rejected: a live "waiting for the first sign-in" status in the dialog, which needs new backend
 state; the job log already shows the result and the refusal reason. Also rejected: an "Add to an
@@ -334,7 +338,8 @@ Tests:
   names. The GitHub parse cases mirror `backend/plugin/idp/wif/github_test.go`, so the form and
   the server read a pattern the same way.
 - `testWorkflow.test.ts`: the GitHub file and the GitLab job parse as YAML and carry the URL,
-  email and audience; the GitLab redact line is its own script item.
+  email and audience; the GitLab redact line is its own script item; the GitHub job runs in the
+  environment the pattern names; an audience such as `123` stays a string.
 - `tag-input.test.tsx`: Enter adds, blanks and duplicates are ignored, × and Backspace remove, and
   the read-only mode has no input or remove buttons.
 - `step-indicator.test.tsx`: the vertical rail with descriptions, the `rail` row and a step click.
@@ -358,6 +363,7 @@ Tests:
     Update stays disabled until something changes.
   - Update ends on step 4 with "Changes saved", the test file header with Copy and no email row;
     Done closes the dialog.
+  - A pattern that names an environment gives a test job that runs in it.
   - Edit of an identity with no provider requires picking one, and keeps the stored pattern.
   - Edit of an identity with no audiences requires one.
   - An `InvalidArgument` about the subject pattern moves the user to step 2.
