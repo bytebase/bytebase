@@ -25,6 +25,7 @@ import {
   removeMentionTrigger,
   updateDraftResourceMentions,
 } from "../logic/resourceMention";
+import { isAgentSendShortcut } from "../logic/sendShortcut";
 import type {
   AgentResourceMention,
   AgentResourceReference,
@@ -51,6 +52,7 @@ export function LandingAgentComposer({
   starterIds,
 }: LandingAgentComposerProps) {
   const { t } = useTranslation();
+  const sendWithEnter = useAgentStore((s) => s.preferences.sendWithEnter);
   const [prompt, setPrompt] = useState("");
   const [stagedMentions, setStagedMentions] = useState<AgentResourceMention[]>(
     []
@@ -254,7 +256,7 @@ export function LandingAgentComposer({
           rows={2}
           value={prompt}
           aria-label={placeholder}
-          placeholder={`${placeholder} · ${t("agent.input-keyboard-hint")}`}
+          placeholder={`${placeholder} · ${sendWithEnter ? t("agent.input-keyboard-hint") : t("agent.input-keyboard-hint-newline")}`}
           className="min-h-20 resize-none border-0 focus:border-0 focus:ring-0"
           onChange={(event) => {
             const nextText = event.target.value;
@@ -273,7 +275,11 @@ export function LandingAgentComposer({
             setResourcePickerOpen(Boolean(range));
           }}
           onKeyDown={(event) => {
-            if (event.nativeEvent.isComposing) return;
+            if (
+              event.nativeEvent.isComposing ||
+              event.nativeEvent.keyCode === 229
+            )
+              return;
             if (resourcePickerOpen) {
               const range = getMentionTriggerRange(
                 prompt,
@@ -296,14 +302,9 @@ export function LandingAgentComposer({
                 event.preventDefault();
                 return;
               }
+              if (range) return;
             }
-            if (
-              event.key === "Enter" &&
-              !event.shiftKey &&
-              !event.altKey &&
-              !event.ctrlKey &&
-              !event.metaKey
-            ) {
+            if (isAgentSendShortcut(event.nativeEvent, sendWithEnter)) {
               event.preventDefault();
               sendMessage();
             }

@@ -9,6 +9,7 @@ interface TooltipProps {
   readonly children: ReactNode;
   readonly side?: "top" | "bottom" | "left" | "right";
   readonly delayDuration?: number;
+  readonly closeOnClick?: boolean;
   readonly popupClassName?: string;
   readonly layer?: LayerFamily;
   readonly open?: boolean;
@@ -29,6 +30,7 @@ export function Tooltip({
   children,
   side = "top",
   delayDuration = 100,
+  closeOnClick,
   popupClassName,
   layer = "overlay",
   open,
@@ -47,6 +49,7 @@ export function Tooltip({
     <BaseTooltip.Root open={open} onOpenChange={onOpenChange}>
       <BaseTooltip.Trigger
         delay={delayDuration}
+        closeOnClick={closeOnClick}
         render={render ?? <span className="inline-flex" />}
       >
         {children}

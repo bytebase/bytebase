@@ -144,6 +144,7 @@
       "view-failed-tasks": "查看失败的任务"
     },
     "input-keyboard-hint": "按 Enter 发送 · 按 Shift+Enter 换行",
+    "input-keyboard-hint-newline": "按 Enter 换行 · 按 Cmd/Ctrl+Enter 发送",
     "input-placeholder": "向 AI 提问，或输入 @ 选择资源",
     "input-processing-placeholder": "正在处理...",
     "interrupted": "已中断",
@@ -259,6 +260,23 @@
       "unavailable": "无法打开计划草稿。数据库或 SQL 可能已更改。请让 Agent 重新生成。"
     },
     "plan-reference-unavailable": "此计划已不可用，或你没有访问权限。",
+    "preferences": {
+      "back": "返回对话",
+      "continue-last-chat": "继续上次对话",
+      "enter-help": "按 Shift+Enter 换行。",
+      "invalid-token-limit": "请输入正整数。",
+      "newline-help": "按 Enter 换行，按 Cmd/Ctrl+Enter 发送。",
+      "reset": "恢复默认设置",
+      "reset-confirmation": "将偏好设置恢复为默认值？",
+      "scope": "设置仅保存在此浏览器中，适用于当前账号和工作空间。",
+      "send-with-enter": "按 Enter 发送",
+      "show-landing": "显示起始页",
+      "storage-failed": "无法保存到本地。更改仅在刷新此页面前生效。",
+      "title": "Agent 偏好设置",
+      "token-limit": "每次运行的 Token 上限",
+      "tokens": "Token",
+      "when-opening": "打开 Agent 时"
+    },
     "project-attention": {
       "checking": "正在检查需要你关注的事项...",
       "empty": "此项目中没有需要你关注的开放 issue。",

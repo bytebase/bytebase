@@ -11,8 +11,10 @@ import {
   FolderOpen,
   LoaderCircle,
   MessageSquare,
+  Minus,
   Pencil,
   Plus,
+  Settings,
   Trash2,
   Undo2,
   X,
@@ -106,7 +108,11 @@ import {
 import { AgentChat } from "./AgentChat";
 import { AgentContextualStart } from "./AgentContextualStart";
 import { AgentInput } from "./AgentInput";
-import { AgentMinimizedLauncher } from "./AgentMinimizedLauncher";
+import {
+  type AgentLauncherPosition,
+  AgentMinimizedLauncher,
+} from "./AgentMinimizedLauncher";
+import { AgentPreferences } from "./AgentPreferences";
 import {
   RESIZE_POINTER_MEDIA_QUERY,
   supportsWindowBorderResize,
@@ -211,6 +217,7 @@ export function AgentWindow() {
   const hasRunningChat = useAgentStore(selectHasRunningChat);
   const storedWorkspaceName = useAgentStore((s) => s.workspaceName);
   const storedUserEmail = useAgentStore((s) => s.userEmail);
+  const openingBehavior = useAgentStore((s) => s.preferences.openingBehavior);
   const getOrFetchSettingByName = useAppStore((s) => s.getOrFetchSettingByName);
   const aiEnabled = useAppStore((s) => s.serverInfo?.aiEnabled);
   const batchFetchProjects = useAppStore((s) => s.batchFetchProjects);
@@ -230,10 +237,23 @@ export function AgentWindow() {
 
   const windowRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
+  const launcherPositionRef = useRef<AgentLauncherPosition | undefined>(
+    undefined
+  );
   const continuedChatIdRef = useRef<string | null>(null);
   const compactPanelTriggerRef = useRef<HTMLElement | null>(null);
   const renameInputRef = useRef<HTMLInputElement>(null);
   const renameFocusChatIdRef = useRef<string | null>(null);
+  const preferencesTriggerRef = useRef<HTMLButtonElement>(null);
+  const preferencesReturnFocusRef = useRef(false);
+  const [preferencesOpen, setPreferencesOpen] = useState(false);
+
+  useLayoutEffect(() => {
+    if (!preferencesOpen && preferencesReturnFocusRef.current) {
+      preferencesTriggerRef.current?.focus();
+      preferencesReturnFocusRef.current = false;
+    }
+  }, [preferencesOpen]);
 
   const [viewportSize, setViewportSize] = useState({
     width: window.innerWidth,
@@ -334,11 +354,12 @@ export function AgentWindow() {
         ))
     );
   });
-  const openingRef = useRef(false);
   const openedOwnerRef = useRef<{
     workspaceName: string | null;
     userEmail: string | null;
+    openingBehavior: "landing" | "continue";
   } | null>(null);
+  const wasVisibleRef = useRef(false);
   const resetContextualStart = useCallback(
     (context?: string) => {
       contextualPageHelpRef.current = null;
@@ -389,44 +410,113 @@ export function AgentWindow() {
   const [renamingTitle, setRenamingTitle] = useState("");
 
   useEffect(() => {
+    setPreferencesOpen(false);
+  }, [storedWorkspaceName, storedUserEmail]);
+
+  useEffect(() => {
     const isOpen = visible && !minimized;
+    const store = useAgentStore.getState();
+    const selected = store.currentChatId
+      ? store.getChat(store.currentChatId)
+      : undefined;
     const hasQueuedChat = Boolean(
-      queuedChatId && queuedChatId === currentChatId && !currentChat?.archived
+      store.currentChatId &&
+        store.queuedUserMessagesByChatId[store.currentChatId] &&
+        !selected?.archived
     );
-    const { workspaceName, userEmail: ownerEmail } = useAgentStore.getState();
+    const { workspaceName, userEmail: ownerEmail } = store;
+    if (workspaceName !== workspace?.name || ownerEmail !== userEmail) return;
     const hasOpenedForOwner =
       openedOwnerRef.current?.workspaceName === workspaceName &&
       openedOwnerRef.current?.userEmail === ownerEmail;
+    const openingPreferenceChanged =
+      !wasVisibleRef.current &&
+      openedOwnerRef.current?.openingBehavior !==
+        store.preferences.openingBehavior;
     if (
       isOpen &&
       contextualPageHelpRef.current &&
       isAgentPageHelpRequestCurrent(contextualPageHelpRef.current)
     ) {
+      setPreferencesOpen(false);
       setShowArchivedOnly(false);
       setRenamingChatId(null);
       setMobileScreen("conversation");
-    } else if (isOpen && !openingRef.current && !hasOpenedForOwner) {
+    } else if (isOpen && (!hasOpenedForOwner || openingPreferenceChanged)) {
+      setPreferencesOpen(false);
       const pageResource = hasQueuedChat ? undefined : resetContextualStart();
       if (hasQueuedChat) setContextualStart(null);
-      if (pageResource || hasQueuedChat) {
+      const context = pageResource
+        ? ("project" in pageResource && pageResource.project) || workspaceName
+        : getCurrentChatContext() || workspaceName;
+      const lastChat =
+        !hasQueuedChat && store.preferences.openingBehavior === "continue"
+          ? selectContinueChatForContext(
+              store,
+              context ?? undefined,
+              workspaceName ?? undefined
+            )
+          : null;
+      if (lastChat) {
+        continuedChatIdRef.current = lastChat.id;
+        store.setCurrentChat(lastChat.id);
+        if (useAgentStore.getState().currentChatId === lastChat.id) {
+          setContextualStart(null);
+        } else {
+          continuedChatIdRef.current = null;
+        }
+      }
+      if (!pageResource && !hasQueuedChat && !lastChat) {
+        const selected = store.currentChatId
+          ? store.getChat(store.currentChatId)
+          : undefined;
+        const draft = store.getDraft();
+        if (
+          selected &&
+          !selected.archived &&
+          !store.isChatRunning(selected.id) &&
+          selected.status !== "awaiting_user" &&
+          !draft.text &&
+          !draft.mentions?.length &&
+          !draft.project &&
+          !draft.resource &&
+          store.getMessages(selected.id).length > 0
+        ) {
+          store.createChat({
+            context: context ?? undefined,
+            workspaceName: workspaceName ?? undefined,
+            page: {
+              path: `${window.location.pathname}${window.location.search}${window.location.hash}`,
+              title: document.title,
+            },
+          });
+        }
+      }
+      if (pageResource || hasQueuedChat || lastChat) {
         setShowArchivedOnly(false);
         setRenamingChatId(null);
         setMobileScreen("conversation");
       }
     } else if (isOpen && hasQueuedChat) {
+      setPreferencesOpen(false);
       setContextualStart(null);
       setShowArchivedOnly(false);
       setMobileScreen("conversation");
     }
-    if (isOpen) {
-      openedOwnerRef.current = { workspaceName, userEmail: ownerEmail };
+    if (isOpen && (!hasOpenedForOwner || !wasVisibleRef.current)) {
+      openedOwnerRef.current = {
+        workspaceName,
+        userEmail: ownerEmail,
+        openingBehavior: store.preferences.openingBehavior,
+      };
     }
-    openingRef.current = isOpen;
+    wasVisibleRef.current = visible;
   }, [
     contextualPageHelp,
     currentChat?.archived,
     currentChatId,
     minimized,
+    openingBehavior,
     queuedChatId,
     resetContextualStart,
     userEmail,
@@ -445,6 +535,7 @@ export function AgentWindow() {
         return;
       }
       contextualPageHelpRef.current = request;
+      setPreferencesOpen(false);
       setContextualPageHelp(request);
       setContextualStart(request.page);
       setContextualChatScope({
@@ -1895,7 +1986,13 @@ export function AgentWindow() {
 
   if (minimized) {
     return createPortal(
-      <AgentMinimizedLauncher onOpen={() => useAgentStore.getState().open()} />,
+      <AgentMinimizedLauncher
+        initialPosition={launcherPositionRef.current}
+        onPositionChange={(position) => {
+          launcherPositionRef.current = position;
+        }}
+        onOpen={() => useAgentStore.getState().open()}
+      />,
       getLayerRoot("agent")
     );
   }
@@ -1987,104 +2084,161 @@ export function AgentWindow() {
             className="relative flex select-none items-center justify-between border-b bg-control-bg px-3 py-2"
           >
             <div className="flex min-w-0 items-center gap-x-2">
-              {isMobileWindow && mobileScreen === "conversation" && (
-                <Button
-                  appearance="secondary"
-                  size="xs"
-                  data-agent-window-action
-                  className="-ml-1 text-control-light hover:bg-control-bg-hover"
-                  aria-label={t("agent.chat-list-label")}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    returnToMobileChatList();
-                  }}
-                >
-                  <ChevronLeft className="size-4" aria-hidden="true" />
-                </Button>
+              {preferencesOpen && (
+                <AgentTooltip content={t("agent.preferences.back")}>
+                  <Button
+                    appearance="secondary"
+                    size="xs"
+                    data-agent-window-action
+                    className="text-control-light hover:bg-control-bg-hover pointer-coarse:min-h-11 pointer-coarse:min-w-11"
+                    aria-label={t("agent.preferences.back")}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      preferencesReturnFocusRef.current = true;
+                      setPreferencesOpen(false);
+                    }}
+                  >
+                    <ChevronLeft className="size-3.5" aria-hidden="true" />
+                  </Button>
+                </AgentTooltip>
               )}
-              {isMobileWindow && mobileScreen === "archived" && (
-                <Button
-                  appearance="secondary"
-                  size="xs"
-                  data-agent-window-action
-                  className="-ml-1 text-control-light hover:bg-control-bg-hover"
-                  aria-label={t("agent.chat-list-label")}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    openMobileChatList();
-                  }}
-                >
-                  <ChevronLeft className="size-4" aria-hidden="true" />
-                </Button>
-              )}
-              <span className="truncate text-sm font-medium">
-                {isMobileWindow && mobileScreen === "chats"
+              {!preferencesOpen &&
+                isMobileWindow &&
+                mobileScreen === "conversation" && (
+                  <Button
+                    appearance="secondary"
+                    size="xs"
+                    data-agent-window-action
+                    className="-ml-1 text-control-light hover:bg-control-bg-hover"
+                    aria-label={t("agent.chat-list-label")}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      returnToMobileChatList();
+                    }}
+                  >
+                    <ChevronLeft className="size-4" aria-hidden="true" />
+                  </Button>
+                )}
+              {!preferencesOpen &&
+                isMobileWindow &&
+                mobileScreen === "archived" && (
+                  <Button
+                    appearance="secondary"
+                    size="xs"
+                    data-agent-window-action
+                    className="-ml-1 text-control-light hover:bg-control-bg-hover"
+                    aria-label={t("agent.chat-list-label")}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      openMobileChatList();
+                    }}
+                  >
+                    <ChevronLeft className="size-4" aria-hidden="true" />
+                  </Button>
+                )}
+              <h2 className="truncate text-sm font-medium">
+                {!preferencesOpen && isMobileWindow && mobileScreen === "chats"
                   ? t("agent.chat-list-label")
-                  : isMobileWindow && mobileScreen === "archived"
+                  : !preferencesOpen &&
+                      isMobileWindow &&
+                      mobileScreen === "archived"
                     ? t("agent.archived-only-chats")
                     : t("agent.assistant-title")}
-              </span>
+              </h2>
             </div>
             <div className="flex items-center gap-x-1">
-              {isMobileWindow && mobileScreen === "chats" && (
-                <>
-                  <AgentTooltip content={t("agent.archived-only-chats")}>
-                    <Button
-                      appearance="secondary"
-                      size="xs"
-                      data-agent-window-action
-                      className="text-control-light hover:bg-control-bg-hover"
-                      aria-label={t("agent.archived-only-chats")}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        openMobileArchivedChats();
-                      }}
-                    >
-                      <Archive className="size-3.5" aria-hidden="true" />
-                    </Button>
-                  </AgentTooltip>
-                  <AgentTooltip content={t("agent.new-chat")}>
-                    <Button
-                      appearance="secondary"
-                      size="xs"
-                      data-agent-window-action
-                      className="text-control-light hover:bg-control-bg-hover"
-                      aria-label={t("agent.new-chat")}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        createMobileChat();
-                      }}
-                    >
-                      <Plus className="size-3.5" aria-hidden="true" />
-                    </Button>
-                  </AgentTooltip>
-                </>
-              )}
+              {!preferencesOpen &&
+                isMobileWindow &&
+                mobileScreen === "chats" && (
+                  <>
+                    <AgentTooltip content={t("agent.archived-only-chats")}>
+                      <Button
+                        appearance="secondary"
+                        size="xs"
+                        data-agent-window-action
+                        className="text-control-light hover:bg-control-bg-hover"
+                        aria-label={t("agent.archived-only-chats")}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          openMobileArchivedChats();
+                        }}
+                      >
+                        <Archive className="size-3.5" aria-hidden="true" />
+                      </Button>
+                    </AgentTooltip>
+                    <AgentTooltip content={t("agent.new-chat")}>
+                      <Button
+                        appearance="secondary"
+                        size="xs"
+                        data-agent-window-action
+                        className="text-control-light hover:bg-control-bg-hover"
+                        aria-label={t("agent.new-chat")}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          createMobileChat();
+                        }}
+                      >
+                        <Plus className="size-3.5" aria-hidden="true" />
+                      </Button>
+                    </AgentTooltip>
+                  </>
+                )}
+              <AgentTooltip content={t("agent.preferences.title")}>
+                <Button
+                  ref={preferencesTriggerRef}
+                  appearance="secondary"
+                  size="xs"
+                  data-agent-window-action
+                  className={cn(
+                    "text-control-placeholder hover:bg-control-bg-hover hover:text-control-light",
+                    preferencesOpen && "hidden"
+                  )}
+                  hidden={preferencesOpen}
+                  aria-label={t("agent.preferences.title")}
+                  aria-pressed={preferencesOpen}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setCompactPanel(null);
+                    setPreferencesOpen((open) => !open);
+                  }}
+                >
+                  <Settings className="size-3.5" aria-hidden="true" />
+                </Button>
+              </AgentTooltip>
               <Button
                 appearance="secondary"
                 size="xs"
                 data-agent-window-action
-                className="flex items-center justify-center rounded-xs text-control-placeholder hover:bg-control-bg-hover hover:text-control-light"
+                className={cn(
+                  "flex items-center justify-center rounded-xs text-control-placeholder hover:bg-control-bg-hover hover:text-control-light",
+                  preferencesOpen &&
+                    "pointer-coarse:min-h-11 pointer-coarse:min-w-11",
+                  preferencesOpen && isMobileWindow && "pointer-coarse:hidden"
+                )}
                 title={t("agent.minimize")}
                 onClick={(e) => {
                   e.stopPropagation();
                   useAgentStore.getState().minimize();
                 }}
               >
-                &#8722;
+                <Minus className="size-3.5" aria-hidden="true" />
               </Button>
               <Button
                 appearance="secondary"
                 size="xs"
                 data-agent-window-action
-                className="flex items-center justify-center rounded-xs text-control-placeholder hover:bg-control-bg-hover hover:text-control-light"
+                className={cn(
+                  "flex items-center justify-center rounded-xs text-control-placeholder hover:bg-control-bg-hover hover:text-control-light",
+                  preferencesOpen &&
+                    "pointer-coarse:min-h-11 pointer-coarse:min-w-11"
+                )}
                 title={t("agent.close")}
                 onClick={(e) => {
                   e.stopPropagation();
                   useAgentStore.getState().toggle();
                 }}
               >
-                &#10005;
+                <X className="size-3.5" aria-hidden="true" />
               </Button>
             </div>
           </div>
@@ -2098,14 +2252,24 @@ export function AgentWindow() {
             {isMobileWindow ? (
               mobileScreen === "conversation" ? (
                 <div
-                  className="flex size-full flex-col bg-background"
+                  className={cn(
+                    "flex size-full flex-col bg-background",
+                    preferencesOpen && "hidden"
+                  )}
+                  hidden={preferencesOpen}
+                  inert={preferencesOpen || undefined}
                   data-agent-mobile-conversation
                 >
                   {renderConversation()}
                 </div>
               ) : (
                 <div
-                  className="size-full overflow-y-auto bg-control-bg"
+                  className={cn(
+                    "size-full overflow-y-auto bg-control-bg",
+                    preferencesOpen && "hidden"
+                  )}
+                  hidden={preferencesOpen}
+                  inert={preferencesOpen || undefined}
                   data-agent-mobile-chat-list
                 >
                   <div className="flex flex-col" data-agent-chat-list>
@@ -2198,7 +2362,12 @@ export function AgentWindow() {
                 </div>
               )
             ) : (
-              <div className="flex size-full" data-agent-desktop-layout>
+              <div
+                className={cn("flex size-full", preferencesOpen && "hidden")}
+                hidden={preferencesOpen}
+                inert={preferencesOpen || undefined}
+                data-agent-desktop-layout
+              >
                 <div className="w-12 shrink-0">{renderRail()}</div>
                 <PanelGroup
                   orientation="horizontal"
@@ -2467,6 +2636,7 @@ export function AgentWindow() {
                 </PanelGroup>
               </div>
             )}
+            {preferencesOpen && <AgentPreferences />}
           </div>
         </div>
       </BaseDialog.Root>

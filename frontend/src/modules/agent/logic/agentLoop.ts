@@ -11,6 +11,7 @@ import {
   AIChatMessageSchema,
   AIChatToolDefinitionSchema,
 } from "@/types/proto-es/v1/ai_service_pb";
+import { DEFAULT_AGENT_PREFERENCES } from "../store/preferences";
 import { parseCallApiResult } from "./callApiResult";
 import {
   measureAgentRequest,
@@ -28,7 +29,6 @@ import type {
 } from "./types";
 
 const MAX_PROVIDER_ATTEMPTS_PER_RUN = 12;
-const MAX_TOTAL_TOKENS_PER_RUN = 60_000;
 const MAX_SERIALIZED_REQUEST_BYTES = 256 * 1024;
 const MAX_RETRIES_PER_REQUEST = 2;
 const RETRY_BASE_DELAY_MS = 1000;
@@ -187,6 +187,7 @@ export interface AgentCallbacks {
 
 export interface AgentLoopOptions {
   allowPlainTextCompletion?: boolean;
+  maxTotalTokens?: number;
   resolveRequestContext?: () => {
     tools: ToolDefinition[];
     systemGuidance: string;
@@ -270,6 +271,13 @@ export async function runAgentLoop(
   options: AgentLoopOptions = {}
 ): Promise<AgentLoopOutcome> {
   const conversation: Message[] = [...messages];
+  const configuredTokenLimit = options.maxTotalTokens;
+  const tokenLimitPerRun =
+    typeof configuredTokenLimit === "number" &&
+    Number.isSafeInteger(configuredTokenLimit) &&
+    configuredTokenLimit > 0
+      ? configuredTokenLimit
+      : DEFAULT_AGENT_PREFERENCES.tokenLimitPerRun;
   const terminalToolNames = new Set([
     "done",
     "ask_user",
@@ -308,7 +316,7 @@ export async function runAgentLoop(
         return { kind: "aborted", totalTokensUsed };
       }
       if (
-        totalTokensUsed >= MAX_TOTAL_TOKENS_PER_RUN ||
+        totalTokensUsed >= tokenLimitPerRun ||
         providerAttemptCount >= MAX_PROVIDER_ATTEMPTS_PER_RUN
       ) {
         return completeWithRunLimit();

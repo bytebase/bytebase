@@ -97,13 +97,14 @@ vi.mock("@/modules/agent/store/agent", () => ({
   selectHasRunningChat: () => mocks.chatRunning,
   useAgentStore: Object.assign(
     (selector: (state: object) => unknown) =>
-      selector({ queuedUserMessage: mocks.queuedUserMessage }),
+      selector({ queuedUserMessage: mocks.queuedUserMessage, preferences: { sendWithEnter: true, tokenLimitPerRun: 60000, openingBehavior: "landing" } }),
     {
       getState: () => ({
         selectOrCreateChatForContext: mocks.selectOrCreateChatForContext,
         open: mocks.openAgent,
         queueUserMessage: mocks.queueUserMessage,
         queuedUserMessage: mocks.queuedUserMessage,
+        preferences: { sendWithEnter: true, tokenLimitPerRun: 60000, openingBehavior: "landing" },
       }),
     }
   ),

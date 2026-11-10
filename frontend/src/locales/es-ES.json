@@ -144,6 +144,7 @@
       "view-failed-tasks": "Ver tareas fallidas"
     },
     "input-keyboard-hint": "Enter para enviar · Shift+Enter para un salto de línea",
+    "input-keyboard-hint-newline": "Enter para un salto de línea · Cmd/Ctrl+Enter para enviar",
     "input-placeholder": "Pregunta a la IA o escribe @ para seleccionar un recurso",
     "input-processing-placeholder": "Procesando...",
     "interrupted": "Interrumpido",
@@ -259,6 +260,23 @@
       "unavailable": "No se pudo abrir el borrador del plan. Es posible que la base de datos o el SQL hayan cambiado. Pide al agente que lo genere de nuevo."
     },
     "plan-reference-unavailable": "Este plan ya no está disponible o no tienes acceso a él.",
+    "preferences": {
+      "back": "Volver al chat",
+      "continue-last-chat": "Continuar el último chat",
+      "enter-help": "Shift+Enter inserta un salto de línea.",
+      "invalid-token-limit": "Introduce un número entero positivo.",
+      "newline-help": "Enter inserta un salto de línea. Cmd/Ctrl+Enter envía.",
+      "reset": "Restablecer valores predeterminados",
+      "reset-confirmation": "¿Restablecer las preferencias a sus valores predeterminados?",
+      "scope": "Guardado para tu cuenta en este espacio de trabajo y navegador.",
+      "send-with-enter": "Enviar con Enter",
+      "show-landing": "Mostrar la página de inicio",
+      "storage-failed": "No se pudo guardar localmente. Los cambios se aplican hasta recargar esta página.",
+      "title": "Preferencias del agente",
+      "token-limit": "Límite de tokens por ejecución",
+      "tokens": "tokens",
+      "when-opening": "Al abrir el agente"
+    },
     "project-attention": {
       "checking": "Comprobando los elementos que necesitan tu atención...",
       "empty": "No tienes issues abiertos que requieran tu atención en este proyecto.",
